@@ -20,6 +20,7 @@
     "@umijs/preset-react": "^1.2.2"
   },
   "dependencies": {
+    "@material-ui/core": "^4.9.5",
     "antd": "^4.0.0"
   }
 }

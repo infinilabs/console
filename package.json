@@ -1,0 +1,22 @@
+{
+  "name": "logging-center",
+  "version": "1.0.0",
+  "description": "INFINI Logging Center",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "umi dev",
+    "build": "umi build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "ssh://git@git.infini.ltd:64221/infini/logging-center.git"
+  },
+  "keywords": [],
+  "author": "INFINI",
+  "license": "ISC",
+  "devDependencies": {
+    "umi": "^3.0.1",
+    "@umijs/preset-react": "^1.2.2"
+  }
+}

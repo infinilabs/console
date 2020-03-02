@@ -1,5 +1,4 @@
 export default () => {
-    var QRCode = require('qrcode')
     QRCode.toDataURL('some text', { version: 2 }, function (err, url) {
   console.log(url)
 })

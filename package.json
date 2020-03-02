@@ -21,7 +21,6 @@
   },
   "dependencies": {
     "@material-ui/core": "^4.9.5",
-    "antd": "^4.0.0",
-    "qrcode": "^1.4.4"
+    "antd": "^4.0.0"
   }
 }

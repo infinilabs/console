@@ -14,7 +14,7 @@ npm install -g cnpm --registry=https://registry.npm.taobao.org
 
 ## 新增依赖包到本地
 ```
-cnpm install --save qrcode
+cnpm install --save md5
 ```
 
 ## 下载依赖包

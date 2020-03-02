@@ -7,6 +7,7 @@ INFINI Logging Center
 node -v
 npm -v
 ```
+
 在国内，你可以安装 `cnpm` 获得更快速、更安全的包管理体验。使用如下命令安装：
 ```sh
 npm install -g cnpm --registry=https://registry.npm.taobao.org

@@ -18,5 +18,8 @@
   "devDependencies": {
     "umi": "^3.0.1",
     "@umijs/preset-react": "^1.2.2"
+  },
+  "dependencies": {
+    "antd": "^4.0.0"
   }
 }

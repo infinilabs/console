@@ -22,7 +22,6 @@
   "dependencies": {
     "@material-ui/core": "^4.9.5",
     "antd": "^4.0.0",
-    "md5": "^2.2.1",
     "qrcode": "^1.4.4"
   }
 }

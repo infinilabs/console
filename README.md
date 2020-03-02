@@ -12,6 +12,16 @@ npm -v
 npm install -g cnpm --registry=https://registry.npm.taobao.org
 ```
 
+## 新增依赖包到本地
+```
+cnpm install --save qrcode
+```
+
+## 下载依赖包
+```
+cnpm install
+```
+
 ## 启动开发模式
 
 ```sh

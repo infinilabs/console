@@ -1,26 +1,52 @@
 {
   "name": "logging-center",
   "version": "1.0.0",
-  "description": "INFINI Logging Center",
-  "main": "index.js",
+  "description": "",
+  "private": true,
+  "egg": {
+    "declarations": true
+  },
+  "dependencies": {
+    "egg": "^2.15.1",
+    "egg-scripts": "^2.11.0",
+    "egg-view-assets": "^1.6.0",
+    "egg-view-nunjucks": "^2.2.0"
+  },
+  "devDependencies": {
+    "@umijs/preset-react": "^1.3.9",
+    "autod": "^3.0.1",
+    "autod-egg": "^1.1.0",
+    "egg-bin": "^4.11.0",
+    "egg-ci": "^1.11.0",
+    "egg-mock": "^3.21.0",
+    "eslint": "^5.13.0",
+    "eslint-config-egg": "^7.1.0",
+    "umi": "^3.0.4"
+  },
+  "engines": {
+    "node": ">=10.0.0"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "umi dev",
-    "build": "umi build"
+    "start": "egg-scripts start --daemon --title=egg-server-ctest --env=prod",
+    "stop": "egg-scripts stop --title=egg-server-ctest",
+    "dev": "egg-bin dev",
+    "debug": "egg-bin debug",
+    "build": "npm run umi:build",
+    "test": "npm run lint -- --fix && npm run test-local",
+    "test-local": "egg-bin test",
+    "cov": "egg-bin cov",
+    "lint": "eslint .",
+    "ci": "npm run lint && npm run cov",
+    "autod": "autod",
+    "umi:build": "UMI_ENV=prod CI=true APP_ROOT=$PWD/app/web umi build"
+  },
+  "ci": {
+    "version": "10"
   },
   "repository": {
     "type": "git",
     "url": "ssh://git@git.infini.ltd:64221/infini/logging-center.git"
   },
-  "keywords": [],
-  "author": "INFINI",
-  "license": "ISC",
-  "devDependencies": {
-    "umi": "^3.0.1",
-    "@umijs/preset-react": "^1.2.2"
-  },
-  "dependencies": {
-    "@material-ui/core": "^4.9.5",
-    "antd": "^4.0.0"
-  }
+  "author": "",
+  "license": "MIT"
 }

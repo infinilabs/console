@@ -1,9 +1,9 @@
 import React, { PureComponent } from 'react';
 import { Menu, Icon } from 'antd';
-import Link from 'umi/link';
+import {Link} from 'umi';
 import isEqual from 'lodash/isEqual';
 import memoizeOne from 'memoize-one';
-import { formatMessage } from 'umi/locale';
+import { formatMessage } from 'umi';
 import pathToRegexp from 'path-to-regexp';
 import { urlToList } from '../_utils/pathTools';
 import styles from './index.less';

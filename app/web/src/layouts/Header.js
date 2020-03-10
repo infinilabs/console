@@ -1,9 +1,9 @@
 import React, { PureComponent } from 'react';
-import { formatMessage } from 'umi/locale';
+import { formatMessage } from 'umi';
 import { Layout, message } from 'antd';
 import Animate from 'rc-animate';
 import { connect } from 'dva';
-import router from 'umi/router';
+import {history} from 'umi';
 import GlobalHeader from '@/components/GlobalHeader';
 import TopNavHeader from '@/components/TopNavHeader';
 import styles from './Header.less';
@@ -54,15 +54,15 @@ class HeaderView extends PureComponent {
   handleMenuClick = ({ key }) => {
     const { dispatch } = this.props;
     if (key === 'userCenter') {
-      router.push('/account/center');
+      history.push('/account/center');
       return;
     }
     if (key === 'triggerError') {
-      router.push('/exception/trigger');
+      history.push('/exception/trigger');
       return;
     }
     if (key === 'userinfo') {
-      router.push('/account/settings/base');
+      history.push('/account/settings/base');
       return;
     }
     if (key === 'logout') {

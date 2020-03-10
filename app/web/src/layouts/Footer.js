@@ -7,7 +7,7 @@ const FooterView = () => (
   <Footer style={{ padding: 0 }}>
     <GlobalFooter
       links={[
-        {
+        /*{
           key: 'Pro 首页',
           title: 'Pro 首页',
           href: 'https://pro.ant.design',
@@ -24,11 +24,11 @@ const FooterView = () => (
           title: 'Ant Design',
           href: 'https://ant.design',
           blankTarget: true,
-        },
+        },*/
       ]}
       copyright={
         <Fragment>
-          Copyright <Icon type="copyright" /> 2018 蚂蚁金服体验技术部出品
+          Copyright <Icon type="copyright" /> 2020 ©极限科技
         </Fragment>
       }
     />

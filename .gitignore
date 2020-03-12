@@ -4,6 +4,7 @@
 .vscode
 .DS_Store
 .umi
+*.swp
 
 dist
 run

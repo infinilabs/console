@@ -28,7 +28,7 @@ export default [
           {
             path: '/dashboard/analysis',
             name: 'collect',
-           // component: './Dashboard/Analysis',
+            component: './helloworld',
           },
           {
             path: '/dashboard/monitor',

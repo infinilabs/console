@@ -36,9 +36,9 @@ module.exports = appInfo => {
       autoPort: true,
       command: 'umi dev --port={port}',
       env: {
-        APP_ROOT: process.cwd() + '/app/web',
+        APP_ROOT: path.resolve('app/web'),
         BROWSER: 'none',
-        SOCKET_SERVER: 'http://192.168.5.102:{port}',
+        SOCKET_SERVER: 'http://127.0.0.1:{port}',
       },
       debug: true,
     },

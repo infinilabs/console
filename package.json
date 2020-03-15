@@ -1,7 +1,7 @@
 {
   "name": "logging-center",
   "version": "1.0.0",
-  "description": "极限科技日志统一分析管理平台",
+  "description": "极限日志分析中心",
   "private": true,
   "egg": {
     "declarations": true

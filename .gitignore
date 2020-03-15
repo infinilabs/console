@@ -5,6 +5,7 @@
 .DS_Store
 .umi
 *.swp
+*.iml
 
 dist
 run

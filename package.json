@@ -1,7 +1,7 @@
 {
   "name": "logging-center",
   "version": "1.0.0",
-  "description": "",
+  "description": "极限科技日志统一分析管理平台",
   "private": true,
   "egg": {
     "declarations": true
@@ -54,5 +54,5 @@
     "url": "ssh://git@git.infini.ltd:64221/infini/logging-center.git"
   },
   "author": "",
-  "license": "MIT"
+  "license": "INFINI-EULA"
 }

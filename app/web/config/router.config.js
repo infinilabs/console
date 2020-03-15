@@ -46,6 +46,18 @@ export default [
           },
         ],
       },
+      {
+        path: '/agents',
+        name: 'agents',
+        icon: 'dashboard',
+        routes: [
+          {
+            path: '/agents/overview',
+            name: 'overview',
+            component: './helloworld',
+          }
+        ],
+      }
     ],
-  },
+  }
 ];

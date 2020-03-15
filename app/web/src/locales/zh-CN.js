@@ -72,6 +72,8 @@ export default {
   'menu.dashboard.notification': '告警统计',
   'menu.dashboard.logging': '日志数据统计',
   'menu.dashboard.gateway': '采集网关统计',
+  'menu.agents': '终端管理',
+  'menu.agents.overview': '终端统计',
   'menu.form': '表单页',
   'menu.form.basicform': '基础表单',
   'menu.form.stepform': '分步表单',

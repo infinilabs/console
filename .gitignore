@@ -6,6 +6,7 @@
 .umi
 *.swp
 *.iml
+jsconfig.json
 
 dist
 run

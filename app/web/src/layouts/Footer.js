@@ -28,7 +28,7 @@ const FooterView = () => (
       ]}
       copyright={
         <Fragment>
-          Copyright <Icon type="copyright" /> 2020 ©极限科技
+        ©INFINI, All Rights Reserved.
         </Fragment>
       }
     />

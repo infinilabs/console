@@ -2,9 +2,14 @@ version: "3.5"
 
 services:
   infini-logging-build:
-    build: 
-      context: ../
-      dockerfile: docker/Dockerfile
+    # option 1: pull image from infini docker registry
+    image: docker.infini.ltd:64443/nodejs-dev:latest
+
+    # option 2: build image locally
+    # build: 
+      # context: ../
+      # dockerfile: docker/Dockerfile
+      
     ports:
       - 3000:3000
       - 7001:7001

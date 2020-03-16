@@ -23,6 +23,7 @@ module.exports = appInfo => {
       env: {
         APP_ROOT: path.join(__dirname, '../app/web'),
         BROWSER: 'none',
+        HOST: '0.0.0.0',
         SOCKET_SERVER: 'http://127.0.0.1:{port}',
       },
       debug: true,

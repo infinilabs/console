@@ -70,9 +70,9 @@
     "node": ">=8.9.0"
   },
   "scripts": {
-    "start": "egg-scripts start --daemon --title=egg-server-ant-design-pro --env prod",
-    "stop": "egg-scripts stop --title=egg-server-ant-design-pro",
-    "dev": "UMI_UI=none egg-bin dev",
+    "start": "egg-scripts start --daemon --title=infini-logging-center --env prod",
+    "stop": "egg-scripts stop --title=infini-logging-center",
+    "dev": "SOCKET_SERVER=none UMI_UI=none egg-bin dev",
     "debug": "egg-bin debug",
     "build": "APP_ROOT=$PWD/app/web umi build",
     "test": "npm run lint -- --fix && npm run test-local",
@@ -83,7 +83,8 @@
     "autod": "autod",
     "sync": "./script/sync.js",
     "docker:build": "docker-compose -f ./docker/docker-compose.dev.yml build",
-    "docker:dev": "docker-compose -f ./docker/docker-compose.dev.yml up"
+    "docker:dev": "docker-compose -f ./docker/docker-compose.dev.yml up",
+    "docker:stop": "docker-compose -f ./docker/docker-compose.dev.yml down"
   },
   "ci": {
     "version": "8",

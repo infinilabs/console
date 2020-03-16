@@ -1,0 +1,20 @@
+version: "3.5"
+
+services:
+  infini-logging-build:
+    build: 
+      context: ../
+      dockerfile: docker/Dockerfile
+    ports:
+      - 3000:3000
+      - 7001:7001
+      - 10000:10000
+    container_name: "infini-nodejs-dev"
+    volumes:
+      - ../app:/usr/src/app/app
+      - ../config:/usr/src/app/config
+      - ../package.json:/usr/src/app/package.json
+      # - .node_modules:/usr/src/app/node_modules
+
+volumes:
+  dist:

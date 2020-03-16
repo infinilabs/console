@@ -5,7 +5,42 @@ INFINI Logging Center
 
 ## 开发说明
 
-### 开发环境准备
+
+### Docker 开发环境准备
+
+#### 安装 Docker
+
+#### 设置 Docker 国内镜像
+
+修改 Docker engine 的设置，Windows 在 Docker Desktop 的 setting 里面，Linux 在 /etc/docker/daemon.json
+
+```
+{
+  "registry-mirrors": [
+    "https://registry.docker-cn.com",
+    "https://docker.mirrors.ustc.edu.cn/"
+  ],
+  "insecure-registries": [],
+  "debug": true,
+  "experimental": false
+}
+```
+
+#### 本地构建开发镜像
+
+```
+npm run docker:build
+```
+
+#### 启动开发环境
+
+```
+cnpm run docker:dev
+```
+
+启动完成，稍等片刻，打开 http://localhost:10000/，手动刷新即可看到最新的更改。
+
+### 本地开发环境准备
 
 确保已经安装好`nodejs`（版本大于等于 8.5.0）环境：
 ```sh

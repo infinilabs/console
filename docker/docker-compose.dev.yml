@@ -19,7 +19,7 @@ services:
       - ../app:/usr/src/app/app
       - ../config:/usr/src/app/config
       - ../package.json:/usr/src/app/package.json
-      - ./entrypoint.sh:/entrypoint.sh
+      # - ./entrypoint.sh:/entrypoint.sh
       # - .node_modules:/usr/src/app/node_modules
 
 volumes:

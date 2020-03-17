@@ -23,11 +23,14 @@ const SiderMenuWrapper = props => {
   return isMobile ? (
     <Drawer
       visible={!collapsed}
+      bodyStyle={{
+        padding: 0,
+      }}
       placement="left"
       onClose={() => onCollapse(true)}
       style={{
         padding: 0,
-        height: '100vh',
+        height: '100vh'
       }}
     >
       <SiderMenu

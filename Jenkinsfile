@@ -8,7 +8,9 @@ pipeline {
         
         stage('Stop Docker') { 
             steps {
-                sh 'cd /home/deploy/logging-center && cnpm run docker:stop' 
+                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
+                    sh 'cd /home/deploy/logging-center && cnpm run docker:stop' 
+                }
             }
         }
 

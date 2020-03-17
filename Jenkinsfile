@@ -5,20 +5,27 @@ pipeline {
         CI = 'true'
     }
     stages {
-        stage('Build') {
+        stage('Update') {
             steps {
-                sh 'cnpm install'
+                sh 'cd /home/deploy/logging-center && git pull origin master'
             }
         }
-        stage('Test') {
+        stage('Install') {
             steps {
-                sh '/bin/true'
+                sh 'cd /home/deploy/logging-center && cnpm install'
             }
         }
-        stage('Deliver') { 
+        stage('Docker') { 
             steps {
-                sh '/bin/true' 
+                sh 'cd /home/deploy/logging-center && cnpm run docker:stop' 
             }
         }
+
+        stage('Start Docker') { 
+            steps {
+                sh 'cd /home/deploy/logging-center && cnpm run docker:dev'  
+            }
+        }
+
     }
 }

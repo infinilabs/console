@@ -73,6 +73,7 @@
     "start": "egg-scripts start --daemon --title=infini-logging-center --env prod",
     "stop": "egg-scripts stop --title=infini-logging-center",
     "dev": "SOCKET_SERVER=none UMI_UI=none egg-bin dev",
+    "local-dev": "egg-bin dev",
     "debug": "egg-bin debug",
     "build": "APP_ROOT=$PWD/app/web umi build",
     "test": "npm run lint -- --fix && npm run test-local",

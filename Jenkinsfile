@@ -9,7 +9,7 @@ pipeline {
         stage('Stop Docker') { 
             steps {
                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
-                    sh 'cd /home/deploy/logging-center && cnpm run docker:stop || true 
+                    sh 'cd /home/deploy/logging-center && cnpm run docker:stop || true' 
                 }
             }
         }

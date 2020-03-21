@@ -18,10 +18,10 @@ export default [
     authority: ['admin', 'user'],
     routes: [
       // dashboard
-      { path: '/', redirect: '/dashboard/analysis' },
+      { path: '/', redirect: '/platform' },
       {
-        path: '/dashboard',
-        name: 'dashboard',
+        path: '/platform',
+        name: 'platform',
         icon: 'dashboard',
         component: './Dashboard/Analysis',
       },
@@ -31,6 +31,40 @@ export default [
         path: '/endpoints',
         name: 'endpoints',
         icon: 'database',
+        component: './List/TableList',
+      },
+
+      
+      //reportings
+      {
+        path: '/reports',
+        name: 'reports',
+        icon: 'fund',
+        component: './List/TableList',
+      },
+
+      
+      //logging
+      {
+        path: '/logs',
+        name: 'logs',
+        icon: 'search',
+        component: './List/TableList',
+      },
+
+      //alertings
+      {
+        path: '/alerts',
+        name: 'alerts',
+        icon: 'alert',
+        component: './List/TableList',
+      },
+
+      //settings
+      {
+        path: '/settings',
+        name: 'settings',
+        icon: 'setting',
         component: './List/TableList',
       },
 

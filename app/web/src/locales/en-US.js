@@ -69,12 +69,13 @@ export default {
   'component.noticeIcon.cleared': 'Cleared',
   'component.noticeIcon.empty': 'No notifications',
   'menu.home': 'Home',
-  'menu.dashboard': 'Dashboard',
-  'menu.dashboard.analysis': 'Analysis',
-  'menu.dashboard.monitor': 'Monitor',
-  'menu.dashboard.workplace': 'Workplace',
   
-  'menu.endpoints': 'Endpoints',
+  'menu.platform': 'DASHBOARD',
+  'menu.endpoints': 'ENDPOINTS',
+  'menu.reports': 'REPORTS',
+  'menu.logs': 'LOGS',
+  'menu.alerts': 'ALERTS',
+  'menu.settings': 'SETTINGS',
   
 
   'menu.form': 'Form',

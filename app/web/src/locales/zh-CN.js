@@ -68,14 +68,14 @@ export default {
   'component.noticeIcon.empty': '暂无数据',
   
   'menu.home': '首页',
-  'menu.dashboard': 'Dashboard',
-  'menu.dashboard.analysis': '分析页',
-  'menu.dashboard.monitor': '监控页',
-  'menu.dashboard.workplace': '工作台',
-  
-  'menu.endpoints': '终端管理',
-  'menu.endpoints.overview': '终端一览',
 
+  'menu.platform': '平台概览',
+  'menu.endpoints': '终端管理',
+  'menu.reports': '报表管理',
+  'menu.logs': '日志管理',
+  'menu.alerts': '告警管理',
+  'menu.settings': '系统设置',
+  
 
   'menu.form': '表单页',
   'menu.form.basicform': '基础表单',

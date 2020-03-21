@@ -40,6 +40,12 @@ cnpm run docker:dev
 
 启动完成，稍等片刻，打开 http://localhost:10000/，手动刷新即可看到最新的更改。
 
+#### 手动更新开发镜像
+
+```
+docker pull docker.infini.ltd:64443/nodejs-dev:latest
+```
+
 ### 本地开发环境准备
 
 确保已经安装好`nodejs`（版本大于等于 8.5.0）环境：

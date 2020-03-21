@@ -178,6 +178,9 @@ export default {
   'app.monitor.popular-searches': 'Popular Searches',
   'app.monitor.resource-surplus': 'Resource Surplus',
   'app.monitor.fund-surplus': 'Fund Surplus',
+  
+  'app.setting.appname':"Logging Center",
+
   'app.settings.menuMap.basic': 'Basic Settings',
   'app.settings.menuMap.security': 'Security Settings',
   'app.settings.menuMap.binding': 'Account Binding',

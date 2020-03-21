@@ -177,6 +177,9 @@ export default {
   'app.monitor.popular-searches': '热门搜索',
   'app.monitor.resource-surplus': '资源剩余',
   'app.monitor.fund-surplus': '补贴资金剩余',
+  
+  'app.setting.appname':"日志分析中心",
+  
   'app.settings.menuMap.basic': '基本设置',
   'app.settings.menuMap.security': '安全设置',
   'app.settings.menuMap.binding': '账号绑定',

@@ -23,24 +23,17 @@ export default [
         path: '/dashboard',
         name: 'dashboard',
         icon: 'dashboard',
-        routes: [
-          {
-            path: '/dashboard/analysis',
-            name: 'analysis',
-            component: './Dashboard/Analysis',
-          },
-          {
-            path: '/dashboard/monitor',
-            name: 'monitor',
-            component: './Dashboard/Monitor',
-          },
-          {
-            path: '/dashboard/workplace',
-            name: 'workplace',
-            component: './Dashboard/Workplace',
-          },
-        ],
+        component: './Dashboard/Analysis',
       },
+
+      //endpoints
+      {
+        path: '/endpoints',
+        name: 'endpoints',
+        icon: 'database',
+        component: './List/TableList',
+      },
+
       // // forms
       // {
       //   path: '/form',

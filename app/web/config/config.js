@@ -39,7 +39,7 @@ export default {
     [
       'umi-plugin-ga',
       {
-        code: 'UA-72788897-6',
+        code: 'UA-12123-6',
         judge: () => process.env.APP_TYPE === 'site',
       },
     ],

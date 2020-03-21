@@ -66,11 +66,17 @@ export default {
   'component.noticeIcon.clear': '清空',
   'component.noticeIcon.cleared': '清空了',
   'component.noticeIcon.empty': '暂无数据',
+  
   'menu.home': '首页',
   'menu.dashboard': 'Dashboard',
   'menu.dashboard.analysis': '分析页',
   'menu.dashboard.monitor': '监控页',
   'menu.dashboard.workplace': '工作台',
+  
+  'menu.endpoints': '终端管理',
+  'menu.endpoints.overview': '终端一览',
+
+
   'menu.form': '表单页',
   'menu.form.basicform': '基础表单',
   'menu.form.stepform': '分步表单',

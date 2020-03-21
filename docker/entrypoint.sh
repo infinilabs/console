@@ -9,7 +9,7 @@ cd /usr/src/app
 echo "START INFINI-LOGGING-CENTER v1.0"
 
 if [ ! -f "$lockPath" ]; then
-#   npm i --production;
+  npm i --production;
 #   npm run autod
   npm run dev
 else

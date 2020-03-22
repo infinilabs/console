@@ -5,7 +5,8 @@ const Controller = require('egg').Controller;
 class HomeController extends Controller {
   async index() {
     if(this.app.config.env == "local") {
-        this.app.config.assets.url = `http://${this.ctx.helper.getIPAddress()}:10000`;
+        //TODO remove hardcode
+        this.app.config.assets.url = `http://localhost:10000`;
     }
     await this.ctx.render('index.html');
   }

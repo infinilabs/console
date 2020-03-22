@@ -16,3 +16,5 @@ config/manifest.json
 app/web/.temp
 .umi
 docker/.node_modules/*
+.vscode/
+.umi*

@@ -1,8 +1,13 @@
 export default {
   'navBar.lang': '语言',
+  
+  'layout.user.appname':"极限日志分析中心",
+  'layout.user.appslogon':"极限科技的日志分析中心是东半球最好用的日志分析平台",
+
   'layout.user.link.help': '帮助',
   'layout.user.link.privacy': '隐私',
   'layout.user.link.terms': '条款',
+
   'validation.email.required': '请输入邮箱地址！',
   'validation.email.wrong-format': '邮箱地址格式错误！',
   'validation.password.required': '请输入密码！',
@@ -179,6 +184,8 @@ export default {
   'app.monitor.fund-surplus': '补贴资金剩余',
   
   'app.setting.appname':"日志分析中心",
+  
+  'app.login.appname':"日志分析中心",
   
   'app.settings.menuMap.basic': '基本设置',
   'app.settings.menuMap.security': '安全设置',

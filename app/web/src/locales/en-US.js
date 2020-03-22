@@ -1,5 +1,9 @@
 export default {
   'navBar.lang': 'Languages',
+
+  'layout.user.appname':"INFINI LOGGING CENTER",
+  'layout.user.appslogon':"INFINI logging center is the best log analysis platform in the world",
+
   'layout.user.link.help': 'Help',
   'layout.user.link.privacy': 'Privacy',
   'layout.user.link.terms': 'Terms',

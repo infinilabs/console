@@ -14,6 +14,19 @@ pipeline {
             }
         }
 
+
+        stage('Update Docker') { 
+            steps {
+                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
+                    sh 'docker pull docker.infini.ltd:64443/nodejs-dev:latest' 
+                }
+            }
+        }
+
+
+        
+
+
         stage('Update Files') {
             steps {
                 sh 'cd /home/deploy/logging-center && git pull origin master'

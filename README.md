@@ -38,7 +38,7 @@ npm run docker:build
 cnpm run docker:dev
 ```
 
-启动完成，稍等片刻，打开 http://localhost:10000/，手动刷新即可看到最新的更改。
+启动完成，稍等片刻，打开 http://localhost:7001/，手动刷新即可看到最新的更改。
 
 #### 手动更新开发镜像
 
@@ -70,7 +70,9 @@ cnpm install
 cnpm run dev
 ```
 
-在浏览器中访问：[http://localhost:8000](http://localhost:8000) 
+后端开发：在浏览器中访问：[http://localhost:7001](http://localhost:7001) ，使用真实接口实现；
+
+前端开发：在浏览器中访问：[http://localhost:10000](http://localhost:10000)，使用 Mock 接口数据。 
 
 
 ### 构建和部署
@@ -79,9 +81,21 @@ cnpm run dev
 cnpm run build
 ```
 
-执行该命令后会生成最终的 HTML、CSS 和 JS 到 `dist` 目录下。它们是浏览器可以直接识别并运行的代码，这样你就可以将它们部署到你想要的服务器上了。
+执行该命令后会生成最终的 HTML、CSS 和 JS 到 `app/public` 目录下。它们是浏览器可以直接识别并运行的代码，这样你就可以将它们部署到你想要的服务器上了。
+
+或者使用 Docker 来运行最终的程序。
+```
+cnpm run docker:prod
+```
+启动完成，稍等片刻，打开 http://localhost:8001/，即可看到最终的程序界面。
 
 ### 新增项目依赖包
 ```
 cnpm install --save md5
 ```
+
+### 启动 MySQL 服务器
+```
+npm run docker:start-mysql
+```
+端口 3306，默认 root 密码 admin

@@ -73,7 +73,7 @@
     "node": ">=8.9.0"
   },
   "scripts": {
-    "start": "egg-scripts start --daemon --title=infini-logging-center --env prod",
+    "start": "egg-scripts start --title=infini-logging-center --env prod",
     "stop": "egg-scripts stop --title=infini-logging-center",
     "dev": "SOCKET_SERVER=none UMI_UI=none egg-bin dev",
     "local-dev": "egg-bin dev",
@@ -86,9 +86,14 @@
     "ci": "npm run lint && npm run cov",
     "autod": "autod",
     "sync": "./script/sync.js",
-    "docker:build": "docker-compose -f ./docker/docker-compose.dev.yml build",
+    "docker:build-dev-images": "docker-compose -f ./docker/docker-compose.dev.yml build",
     "docker:dev": "docker-compose -f ./docker/docker-compose.dev.yml up -d",
-    "docker:stop": "docker-compose -f ./docker/docker-compose.dev.yml down"
+    "docker:stop-dev": "docker-compose -f ./docker/docker-compose.dev.yml down",
+    "docker:build-release-images": "docker-compose -f ./docker/docker-compose.release.yml build",
+    "docker:prod": "docker-compose -f ./docker/docker-compose.release.yml up -d",
+    "docker:stop-prod": "docker-compose -f ./docker/docker-compose.release.yml down",
+    "docker:start-mysql": "docker-compose -f ./docker/docker-compose-mysql.dev.yml up -d"
+
   },
   "ci": {
     "version": "8",

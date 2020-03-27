@@ -31,22 +31,14 @@ const copyright = (
   </Fragment>
 );
 
+const appname = formatMessage({ id: 'layout.user.appname' });
+const appslogon = formatMessage({ id: 'layout.user.appslogon' });
+
 class UserLayout extends React.PureComponent {
-  // @TODO title
-  // getPageTitle() {
-  //   const { routerData, location } = this.props;
-  //   const { pathname } = location;
-  //   let title = 'Ant Design Pro';
-  //   if (routerData[pathname] && routerData[pathname].name) {
-  //     title = `${routerData[pathname].name} - Ant Design Pro`;
-  //   }
-  //   return title;
-  // }
 
   render() {
     const { children } = this.props;
     return (
-      // @TODO <DocumentTitle title={this.getPageTitle()}>
       <div className={styles.container}>
         <div className={styles.lang}>
           <SelectLang />
@@ -56,10 +48,10 @@ class UserLayout extends React.PureComponent {
             <div className={styles.header}>
               <Link to="/">
                 <img alt="logo" className={styles.logo} src={logo} />
-                <span className={styles.title}>极限日志分析中心</span>
+                  <span className={styles.title}>{appname}</span>
               </Link>
             </div>
-            <div className={styles.desc}>极限科技的日志分析中心是东半球最好用的日志分析平台</div>
+                <div className={styles.desc}>{appslogon}</div>
           </div>
           {children}
         </div>

@@ -70,7 +70,9 @@ cnpm install
 cnpm run dev
 ```
 
-在浏览器中访问：[http://localhost:8000](http://localhost:7001) 
+后端开发：在浏览器中访问：[http://localhost:7001](http://localhost:7001) ，使用真实接口实现；
+
+前端开发：在浏览器中访问：[http://localhost:10000](http://localhost:10000)，使用 Mock 接口数据。 
 
 
 ### 构建和部署

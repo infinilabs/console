@@ -11,9 +11,9 @@ services:
     #   dockerfile: docker/Dockerfile
       
     ports:
-      - 3000:3000
-      - 7001:7001
-      - 10000:10000
+      # - 3000:3000
+      - 8001:7001
+      # - 10000:10000
     container_name: "infini-nodejs-release"
     volumes:
       - ../app:/usr/src/app/app

@@ -90,7 +90,7 @@
     "docker:stop-dev": "docker-compose -f ./docker/docker-compose.dev.yml down",
     "docker:build-release-images": "docker-compose -f ./docker/docker-compose.release.yml build",
     "docker:prod": "docker-compose -f ./docker/docker-compose.release.yml up -d",
-    "docker:stop-prod": "docker-compose -f ./docker/docker-compose.release.yml up down"
+    "docker:stop-prod": "docker-compose -f ./docker/docker-compose.release.yml down"
 
   },
   "ci": {

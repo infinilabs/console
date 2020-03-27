@@ -4,6 +4,7 @@
   "description": "极限日志分析中心，简单易用。",
   "private": true,
   "dependencies": {
+    "@ant-design/icons": "^4.0.0",
     "@antv/data-set": "^0.9.6",
     "@babel/runtime": "^7.1.2",
     "antd": "^3.10.0",

@@ -93,3 +93,9 @@ cnpm run docker:prod
 ```
 cnpm install --save md5
 ```
+
+### 启动 MySQL 服务器
+```
+npm run docker:start-mysql
+```
+端口 3306，默认 root 密码 admin

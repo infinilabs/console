@@ -18,3 +18,5 @@ app/web/.temp
 docker/.node_modules/*
 .vscode/
 .umi*
+
+data

@@ -1,0 +1,131 @@
+
+.colmargin {
+  padding: 0 10px;
+}
+@colorWhite:white;
+
+.colRed {
+  .colmargin;
+  background-color: red;
+  height: 30px;
+  color: white;
+}
+
+.colBlue {
+  .colmargin;
+  background-color: blueviolet;
+  height: 30px;
+  color: white;
+}
+
+.panelItemClicked() {
+  border-top: 5px solid white;
+  background-color: grey;
+  cursor: pointer;
+  box-shadow: 1px -1px 3px 1px rgba(0,0,0,0.2), -1px 0px 3px 1px rgba(0,0,0,0.2);
+}
+
+.panel {
+  height: 80px;
+  background-color: #314659;
+  padding-left: 15px;
+  border-radius: 5px;
+  .item {
+    &:hover {
+      .panelItemClicked();
+    }
+    position: relative;
+    display: inline-block;
+    width: 100px;
+    height: 100%;
+    text-align: center;
+    .wrap {
+      width: 100%;
+      position: absolute;
+      top: 50%;
+      transform: translate(0,-50%);
+      .val {
+        color:@colorWhite;
+        font-size: 24px;
+      }
+      .name {
+        color:@colorWhite;
+        font-size: 14px;
+        text-transform:capitalize;
+      }
+    }
+  }
+  .item.clicked {
+    .panelItemClicked();
+  }
+}
+
+.subPanel {
+  height: 80px;
+  background-color: white;
+  padding-left: 15px;
+  .item {
+    position: relative;
+    display: inline-block;
+    width: 100px;
+    height: 100%;
+    text-align: center;
+    .wrap {
+      &:hover {
+        font-weight: bold;
+      }
+      width: 100%;
+      position: absolute;
+      top: 50%;
+      transform: translate(0,-50%);
+      .val {
+        font-size: 18px;
+      }
+      .name {
+        font-size: 14px;
+        text-transform:capitalize;
+      }
+    }
+    .wrapBorderLeft {
+      border-left:1px solid #fafafa;
+    }
+  }
+}
+
+.groupSection {
+  .content {
+    margin:10px 0;
+    .item {
+      position: relative;
+      .itemContent {
+        display: inline-block;
+        border: 1px solid #e8e8e8;
+        position: relative;
+        width: 85%;
+        padding:0 10px;
+        background-color: #fafafa;
+
+        .text {
+          display: inline-block;
+          float: left;
+        }
+        .badge {
+          display: inline-block;
+          float: right;
+        }
+      }
+      .itemOption {
+        display: inline-block;
+        background-color: #fafafa;
+        border: 1px solid #e8e8e8;
+        text-align: center;
+        width: 13%;
+        float: right;
+      }
+    }
+  }
+}
+
+
+
+

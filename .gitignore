@@ -1,4 +1,4 @@
-logs/
+/logs/
 npm-debug.log
 yarn-error.log
 node_modules
@@ -19,4 +19,4 @@ docker/.node_modules/*
 .vscode/
 .umi*
 
-data
+/data

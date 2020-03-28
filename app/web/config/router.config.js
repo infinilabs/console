@@ -17,15 +17,6 @@ export default [
     Routes: ['src/pages/Authorized'],
     authority: ['admin', 'user'],
     routes: [
-
-       //测试专用
-       {
-        path: '/test',
-        name: 'test',
-        icon: 'AppstoreAdd',
-        component: './Endpoints/Execute',
-      },
-
       // dashboard
       { path: '/', redirect: '/platform' },
       {
@@ -58,7 +49,7 @@ export default [
         path: '/logs',
         name: 'logs',
         icon: 'search',
-        component: './List/TableList',
+        component: './Logs/Overview',
       },
 
       //alertings

@@ -49,7 +49,7 @@ export default [
         path: '/logs',
         name: 'logs',
         icon: 'search',
-        component: './List/TableList',
+        component: './Logs/Overview',
       },
 
       //alertings

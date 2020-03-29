@@ -93,7 +93,6 @@
     "docker:prod": "docker-compose -f ./docker/docker-compose.release.yml up -d",
     "docker:stop-prod": "docker-compose -f ./docker/docker-compose.release.yml down",
     "docker:start-mysql": "docker-compose -f ./docker/docker-compose-mysql.dev.yml up -d"
-
   },
   "ci": {
     "version": "8",

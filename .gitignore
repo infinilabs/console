@@ -20,3 +20,5 @@ docker/.node_modules/*
 .umi*
 
 /data
+appveyor.yml
+.travis.yml

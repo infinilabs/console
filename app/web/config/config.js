@@ -108,4 +108,9 @@ export default {
     fileName: '../../config/manifest.json',
     publicPath: '',
   },
+
+  copy:[
+    '../web/src/assets/favicon.ico'
+  ]
+
 };

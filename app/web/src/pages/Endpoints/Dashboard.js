@@ -235,7 +235,7 @@ class Dashboard extends React.Component {
                 dataSource={dataSource}
                 columns={columns}
                 size="small"
-              />;
+              />
             </div>
           </Col>
         </Row>

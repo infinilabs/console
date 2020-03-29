@@ -191,9 +191,9 @@ class Dashboard extends React.Component {
 
         <br />
         <Row gutter={[16, 24]}>
-          <Col span={6}>
+          <Col  xs={24} sm={24} md={24} lg={6} xl={6} >
             <div style={style}>
-              <Card title="GROUPS" extra={groupExtra} style={{ width: 300 }}>
+              <Card title="GROUPS" extra={groupExtra}>
                 <div>
                   <Search
                     placeholder="搜索"
@@ -226,7 +226,7 @@ class Dashboard extends React.Component {
               </Card>
             </div>
           </Col>
-          <Col span={18}>
+          <Col xs={24} sm={24} md={24} lg={18} xl={18} >
             <div style={style}>
               <Table
                 rowSelection={{
@@ -234,6 +234,7 @@ class Dashboard extends React.Component {
                 }}
                 dataSource={dataSource}
                 columns={columns}
+                size="small"
               />;
             </div>
           </Col>

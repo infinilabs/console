@@ -9,6 +9,7 @@
     "@babel/runtime": "^7.1.2",
     "antd": "^3.10.0",
     "antd-pro-merge-less": "^0.1.0",
+    "antd-table-infinity": "^1.1.6",
     "bizcharts": "^3.2.2",
     "bizcharts-plugin-slider": "^2.0.3",
     "classnames": "^2.2.6",
@@ -38,7 +39,10 @@
     "react-document-title": "^2.0.3",
     "react-dom": "^16.5.1",
     "react-fittext": "^1.0.0",
-    "react-router-dom": "^4.3.1"
+    "react-highlight-words": "^0.16.0",
+    "react-json-view": "^1.19.1",
+    "react-router-dom": "^4.3.1",
+    "react-sparklines": "^1.7.0"
   },
   "devDependencies": {
     "antd-pro-merge-less": "^0.1.0",

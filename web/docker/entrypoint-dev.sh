@@ -6,12 +6,10 @@ npm config set registry http://registry.npm.taobao.org/;
 
 cd /usr/src/app
 
-echo "START INFINI-LOGGING-CENTER v1.0"
+echo "START DEBUG INFINI-LOGGING-CENTER"
 
 if [ ! -f "$lockPath" ]; then
   npm install --registry=https://registry.npm.taobao.org
-  # npm i --production;
-#   npm run autod
   npm run dev
 else
   npm run dev

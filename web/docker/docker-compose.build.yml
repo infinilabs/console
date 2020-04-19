@@ -1,23 +1,23 @@
 version: "3.5"
 
 services:
-  infini-logging-release:
+  infini-logging-build:
     # option 1: pull image from infini docker registry
-    image: docker.infini.ltd:64443/nodejs-release:latest
+    image: docker.infini.ltd:64443/nodejs-dev:latest
 
     # option 2: build image locally
     # build: 
     #   context: ../
     #   dockerfile: docker/Dockerfile
       
-    ports:
-      - 8001:7001
-    container_name: "infini-nodejs-release"
+    container_name: "infini-nodejs-build"
     volumes:
-      - ../app:/usr/src/app/app
+      - ../src:/usr/src/app/src
       - ../config:/usr/src/app/config
+      - ../mock:/usr/src/app/mock
       - ../package.json:/usr/src/app/package.json
-      - ./entrypoint-release.sh:/entrypoint.sh
+      - ../../public:/usr/src/public
+      - ./entrypoint-build.sh:/entrypoint.sh
 
 volumes:
   dist:

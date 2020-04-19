@@ -5,6 +5,8 @@ node_modules
 package-lock.json
 yarn.lock
 coverage/
+/web/LICENSE
+/web/.temp/
 .idea/
 run/
 .DS_Store
@@ -22,3 +24,4 @@ docker/.node_modules/*
 /data
 appveyor.yml
 .travis.yml
+/public

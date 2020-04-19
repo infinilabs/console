@@ -105,16 +105,16 @@ export default {
   hash: true,
   outputPath: '../public',
   manifest: {
-    fileName: '../../config/manifest.json',
+    fileName: '../public/manifest.json',
     publicPath: '',
   },
 
   copy:[
-    '../web/src/assets/favicon.ico'
+    './src/assets/favicon.ico'
   ],
   history: 'hash',
-  exportStatic: {
-    // htmlSuffix: true,
-    dynamicRoot: true,
-  },
+  // exportStatic: {
+  //   // htmlSuffix: true,
+  //   dynamicRoot: true,
+  // },
 };

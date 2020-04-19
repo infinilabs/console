@@ -3,8 +3,9 @@
 INFINI Logging Center
 
 
-## 开发说明
+## 前端开发说明
 
+前端采用 React 开发，最终输出为 `public` 目录的纯静态资源，可以独立部署无需依赖 Node 环境。
 
 ### Docker 开发环境准备
 
@@ -26,19 +27,13 @@ INFINI Logging Center
 }
 ```
 
-#### 本地构建开发镜像
-
-```
-npm run docker:build
-```
-
 #### 启动开发环境
 
 ```
 cnpm run docker:dev
 ```
 
-启动完成，稍等片刻，打开 http://localhost:7001/，手动刷新即可看到最新的更改。
+启动完成，稍等片刻，打开 http://localhost:8000/，手动刷新即可看到最新的更改。
 
 #### 手动更新开发镜像
 
@@ -75,26 +70,28 @@ cnpm run dev
 前端开发：在浏览器中访问：[http://localhost:10000](http://localhost:10000)，使用 Mock 接口数据。 
 
 
-### 构建和部署
+### 编译静态资源
 
 ```sh
 cnpm run build
 ```
 
-执行该命令后会生成最终的 HTML、CSS 和 JS 到 `app/public` 目录下。它们是浏览器可以直接识别并运行的代码，这样你就可以将它们部署到你想要的服务器上了。
+执行该命令后会生成最终的 HTML、CSS 和 JS 到 `/public` 目录下。它们是浏览器可以直接识别并运行的代码，这样你就可以将它们部署到你想要的服务器上了。
 
-或者使用 Docker 来运行最终的程序。
+或者使用 Docker 来打包生成。
 ```
-cnpm run docker:prod
+cnpm run docker:build
 ```
-启动完成，稍等片刻，打开 http://localhost:8001/，即可看到最终的程序界面。
 
 ### 新增项目依赖包
 ```
 cnpm install --save md5
 ```
 
-### 启动 MySQL 服务器
+
+
+## 启动 MySQL 服务器
+
 ```
 npm run docker:start-mysql
 ```

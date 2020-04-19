@@ -38,6 +38,12 @@ pipeline {
             }
         }
         
+        stage('Fix FileAttr') { 
+            steps {
+                sh "cd /home/deploy/logging-center/web/docker && chmod a+x *.sh && perl -pi -e 's/\r\n/\n/g' *.sh"  
+            }
+        }
+
         stage('Start Docker') { 
             steps {
                 sh 'cd /home/deploy/logging-center/web && cnpm run docker:dev'  

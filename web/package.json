@@ -80,7 +80,7 @@
     "dev": "HOST=0.0.0.0 umi dev",
     "build": "umi build",
     "autod": "autod",
-    "docker:dev": "docker-compose -f ./docker/docker-compose.dev.yml up",
+    "docker:dev": "docker-compose -f ./docker/docker-compose.dev.yml up -d",
     "docker:stop-dev": "docker-compose -f ./docker/docker-compose.dev.yml down",
     "docker:build": "docker-compose -f ./docker/docker-compose.build.yml up",
     "docker:start-mysql": "docker-compose -f ./docker/docker-compose-mysql.dev.yml up -d"

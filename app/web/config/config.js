@@ -111,6 +111,10 @@ export default {
 
   copy:[
     '../web/src/assets/favicon.ico'
-  ]
-
+  ],
+  history: 'hash',
+  exportStatic: {
+    // htmlSuffix: true,
+    dynamicRoot: true,
+  },
 };

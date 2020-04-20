@@ -52,7 +52,8 @@ pipeline {
         
         stage('Fix FileAttr') { 
             steps {
-                sh "cd /home/deploy/logging-center/web/docker && chmod a+x *.sh && perl -pi -e 's/\r\n/\n/g' *.sh"  
+                sh "cd /home/deploy/logging-center/docker && chmod a+x *.sh && perl -pi -e 's/\r\n/\n/g' *.sh && \
+                cd /home/deploy/logging-center/web/docker && chmod a+x *.sh && perl -pi -e 's/\r\n/\n/g' *.sh"
             }
         }
 

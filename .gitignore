@@ -24,4 +24,6 @@ docker/.node_modules/*
 /data
 appveyor.yml
 .travis.yml
-/public
+/.public
+/vendor
+/bin

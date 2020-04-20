@@ -1,0 +1,20 @@
+elasticsearch:
+  - name: default
+    enabled: true
+    endpoint: http://localhost:9200
+    index_prefix: infini-
+    basic_auth:
+      username: elastic
+      password: 13A1EcwWs1He6w3BXHuJ
+
+modules:
+  - name: web
+    enabled: true
+    network:
+      binding: 127.0.0.1:9000
+
+logging-center:
+  index_name: reports
+  ui_path: .public
+  ui_vfs: true
+  ui_local: true

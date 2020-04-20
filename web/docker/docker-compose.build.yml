@@ -6,9 +6,9 @@ services:
     image: docker.infini.ltd:64443/nodejs-dev:latest
 
     # option 2: build image locally
-    # build: 
-    #   context: ../
-    #   dockerfile: docker/Dockerfile
+#    build:
+#       context: ../
+#       dockerfile: docker/Dockerfile
       
     container_name: "infini-nodejs-build"
     volumes:
@@ -16,7 +16,7 @@ services:
       - ../config:/usr/src/app/config
       - ../mock:/usr/src/app/mock
       - ../package.json:/usr/src/app/package.json
-      - ../../public:/usr/src/public
+      - ../../.public:/usr/src/.public
       - ./entrypoint-build.sh:/entrypoint.sh
 
 volumes:

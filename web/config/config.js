@@ -103,9 +103,9 @@ export default {
   // extra configuration for egg
   runtimePublicPath: true,
   hash: true,
-  outputPath: '../public',
+  outputPath: '../.public',
   manifest: {
-    fileName: '../public/manifest.json',
+    fileName: '../.public/manifest.json',
     publicPath: '',
   },
 

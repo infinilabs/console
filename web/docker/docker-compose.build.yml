@@ -7,8 +7,8 @@ services:
 
     # option 2: build image locally
 #    build:
-#       context: ../
-#       dockerfile: docker/Dockerfile
+#       context: ./
+#       dockerfile: ./Dockerfile
       
     container_name: "infini-nodejs-build"
     volumes:

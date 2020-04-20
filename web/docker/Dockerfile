@@ -18,7 +18,7 @@ RUN \
 WORKDIR /usr/src/app
 
 #COPY package.json /usr/src/app/
-COPY docker/entrypoint.sh /
+COPY ./entrypoint.sh /
 
 
 #RUN npm install --registry=https://registry.npm.taobao.org

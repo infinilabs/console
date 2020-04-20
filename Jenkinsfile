@@ -39,7 +39,7 @@ pipeline {
 
         stage('Update Files') {
             steps {
-                sh 'cd /home/deploy/logging-center && git pull origin master'
+                sh 'cd /home/deploy/logging-center && git add . && git stash && git pull origin master'
             }
         }
 

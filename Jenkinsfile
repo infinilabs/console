@@ -15,11 +15,12 @@ pipeline {
         }
 
         stage('Stop Backend Docker') {
-                    steps {
-                        sh 'cd /home/deploy/logging-center/docker && docker-compose -f docker-compose.dev.yml  down || true'
-                    }
+            steps {
+                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
+                    sh 'cd /home/deploy/logging-center/docker && docker-compose -f docker-compose.dev.yml  down || true'
+                }
+            }
         }
-
 
         stage('Update Front Docker') {
             steps {

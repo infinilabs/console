@@ -5,7 +5,7 @@ INFINI Logging Center
 
 ## 前端开发说明
 
-前端采用 React 开发，最终输出为 `public` 目录的纯静态资源，可以独立部署无需依赖 Node 环境。
+前端采用 React 开发，最终输出为 `.public` 目录的纯静态资源，可以独立部署无需依赖 Node 环境。
 
 ### Docker 开发环境准备
 
@@ -69,14 +69,13 @@ cnpm run dev
 
 前端开发：在浏览器中访问：[http://localhost:10000](http://localhost:10000)，使用 Mock 接口数据。 
 
-
 ### 编译静态资源
 
 ```sh
 cnpm run build
 ```
 
-执行该命令后会生成最终的 HTML、CSS 和 JS 到 `/public` 目录下。它们是浏览器可以直接识别并运行的代码，这样你就可以将它们部署到你想要的服务器上了。
+执行该命令后会生成最终的 HTML、CSS 和 JS 到 `/.public` 目录下。它们是浏览器可以直接识别并运行的代码，这样你就可以将它们部署到你想要的服务器上了。
 
 或者使用 Docker 来打包生成。
 ```
@@ -89,6 +88,18 @@ cnpm install --save md5
 ```
 
 
+## 后端开发说明
+
+后端采用 Golang 开发，最终输出为 `bin` 目录的可执行文件 `logging-center` 和配置文件 `logging-center.yml`。
+
+### Docker 开发环境
+
+```
+cd docker
+docker-compose -f docker-compose.dev.yml  up
+```
+
+Docker 实例每次启动都会重新编译打包，并启动监听端口 `9000`，使用浏览器打开 `localhost:9000` 即可看到最终效果。
 
 ## 启动 MySQL 服务器
 

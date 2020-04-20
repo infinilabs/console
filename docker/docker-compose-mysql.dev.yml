@@ -1,0 +1,12 @@
+version: '3'
+
+services:
+  infini-logging-db:
+    image: mariadb:10.1.19
+    # volumes: 
+    #   - ../data/db_data:/var/lib/mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+    ports:
+      - "3306:3306"

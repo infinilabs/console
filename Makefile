@@ -28,7 +28,7 @@ OLDGOPATH:= $(GOPATH)
 NEWGOPATH:= $(CURDIR):$(CURDIR)/vendor:$(GOPATH)
 
 GO        := GO15VENDOREXPERIMENT="1" GO111MODULE=off go
-GOBUILD  := GOPATH=$(NEWGOPATH) CGO_ENABLED=1  $(GO) build -ldflags -s -gcflags "-m -m"
+GOBUILD  := GOPATH=$(NEWGOPATH) CGO_ENABLED=1  $(GO) build -ldflags -s -gcflags "-m" -x --work
 GOBUILDNCGO  := GOPATH=$(NEWGOPATH) CGO_ENABLED=0  $(GO) build -ldflags -s
 GOTEST   := GOPATH=$(NEWGOPATH) CGO_ENABLED=1  $(GO) test -ldflags -s
 
@@ -123,6 +123,8 @@ init:
 	@mkdir -p $(INFINI_BASE_FOLDER)
 	@if [ ! -d $(FRAMEWORK_FOLDER) ]; then echo "framework does not exist";(cd $(INFINI_BASE_FOLDER)&&git clone -b $(FRAMEWORK_BRANCH) ssh://git@git.infini.ltd:64221/infini/framework.git) fi
 	@if [ ! -d $(FRAMEWORK_VENDOR_FOLDER) ]; then echo "framework vendor does not exist";(git clone  -b $(FRAMEWORK_VENDOR_BRANCH) ssh://git@git.infini.ltd:64221/infini/framework-vendor.git vendor) fi
+	@if [ "" == $(FRAMEWORK_OFFLINE_BUILD) ]; then (cd $(FRAMEWORK_FOLDER) && git pull origin $(FRAMEWORK_BRANCH)); fi;
+	@if [ "" == $(FRAMEWORK_OFFLINE_BUILD) ]; then (cd vendor && git pull origin $(FRAMEWORK_VENDOR_BRANCH)); fi;
 
 update-generated-file:
 	@echo "update generated info"

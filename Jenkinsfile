@@ -69,7 +69,7 @@ pipeline {
 
         stage('Start Backend Docker') {
             steps {
-                sh 'cd /home/deploy/logging-center/docker && docker-compose -f docker-compose.dev.yml  up'
+                sh 'cd /home/deploy/logging-center/docker && docker-compose -f docker-compose.dev.yml  up -d'
             }
         }
 

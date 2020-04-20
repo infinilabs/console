@@ -6,7 +6,7 @@ pipeline {
     }
     stages {
         
-        stage('Stop Docker') { 
+        stage('Stop Front Docker') {
             steps {
                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
                     sh 'cd /home/deploy/logging-center/web && cnpm run docker:stop-dev || true' 
@@ -14,8 +14,14 @@ pipeline {
             }
         }
 
+        stage('Stop Backend Docker') {
+                    steps {
+                        sh 'cd /home/deploy/logging-center/docker && docker-compose -f docker-compose.dev.yml  down || true'
+                    }
+        }
 
-        stage('Update Docker') { 
+
+        stage('Update Front Docker') {
             steps {
                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
                     sh 'docker pull docker.infini.ltd:64443/nodejs-dev:latest' 
@@ -23,15 +29,20 @@ pipeline {
             }
         }
 
-
-        
-
+        stage('Update Backend Docker') {
+            steps {
+                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
+                    sh 'docker pull docker.infini.ltd:64443/golang-dev:latest'
+                }
+            }
+        }
 
         stage('Update Files') {
             steps {
                 sh 'cd /home/deploy/logging-center && git pull origin master'
             }
         }
+
         stage('Install Packages') {
             steps {
                 sh 'cd /home/deploy/logging-center && cnpm install'
@@ -44,9 +55,21 @@ pipeline {
             }
         }
 
-        stage('Start Docker') { 
+        stage('Start Front Docker') {
             steps {
                 sh 'cd /home/deploy/logging-center/web && cnpm run docker:dev'  
+            }
+        }
+
+        stage('Build Front Files') {
+            steps {
+                sh 'cd /home/deploy/logging-center/web && cnpm run docker:build'
+            }
+        }
+
+        stage('Start Backend Docker') {
+            steps {
+                sh 'cd /home/deploy/logging-center/docker && docker-compose -f docker-compose.dev.yml  up'
             }
         }
 

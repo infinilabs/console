@@ -1,7 +1,7 @@
 version: "3.5"
 
 services:
-  infini-logging-build:
+  infini-logging-center-api-dev:
     # option 1: pull image from infini docker registry
     image: docker.infini.ltd:64443/golang-dev:latest
 
@@ -12,7 +12,7 @@ services:
       
     ports:
       - 9000:9000
-    container_name: "infini-golang-dev"
+    container_name: "infini-logging-center-api-dev"
     volumes:
       - ../:/go/src/infini.sh/logging-center
       - ./entrypoint.sh:/entrypoint.sh

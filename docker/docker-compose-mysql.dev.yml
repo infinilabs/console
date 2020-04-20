@@ -1,11 +1,12 @@
 version: '3'
 
 services:
-  infini-logging-db:
+  infini-logging-center-db:
     image: mariadb:10.1.19
     # volumes: 
     #   - ../data/db_data:/var/lib/mysql
     restart: always
+    container_name: "infini-logging-center-db"
     environment:
       MYSQL_ROOT_PASSWORD: admin
     ports:

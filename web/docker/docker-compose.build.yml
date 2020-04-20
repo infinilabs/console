@@ -1,7 +1,7 @@
 version: "3.5"
 
 services:
-  infini-logging-build:
+  infini-logging-center-ui-dev:
     # option 1: pull image from infini docker registry
     image: docker.infini.ltd:64443/nodejs-dev:latest
 
@@ -10,7 +10,7 @@ services:
 #       context: ./
 #       dockerfile: ./Dockerfile
       
-    container_name: "infini-nodejs-build"
+    container_name: "infini-logging-center-ui-dev"
     volumes:
       - ../src:/usr/src/app/src
       - ../config:/usr/src/app/config

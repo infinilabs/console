@@ -1,20 +1,13 @@
 version: "3.5"
 
 services:
-  infini-logging-center-api-dev:
-    # option 1: pull image from infini docker registry
+  infini-search-center-api-dev:
     image: docker.infini.ltd:64443/golang-dev:latest
-
-    # # option 2: build image locally
-#    build:
-#       context: .
-#       dockerfile: ./Dockerfile
-      
     ports:
       - 9000:9000
-    container_name: "infini-logging-center-api-dev"
+    container_name: "infini-search-center-api-dev"
     volumes:
-      - ../:/go/src/infini.sh/logging-center
+      - ../:/go/src/infini.sh/search-center
       - ./entrypoint.sh:/entrypoint.sh
 
 volumes:

@@ -1,7 +1,7 @@
 {
-  "name": "logging-center",
+  "name": "search-center",
   "version": "1.0.0",
-  "description": "极限日志分析中心，致力于简单易用。",
+  "description": "极限搜索，致力于简单易用。",
   "dependencies": {
     "@ant-design/charts": "^1.0.4",
     "@ant-design/icons": "^4.0.0",
@@ -95,7 +95,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "ssh://git@git.infini.ltd:64221/infini/logging-center.git"
+    "url": "ssh://git@git.infini.ltd:64221/infini/search-center.git"
   },
   "author": "INFINI.LTD",
   "license": "INFINI-EULA"

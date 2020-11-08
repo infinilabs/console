@@ -1,6 +1,6 @@
-# 极限日志分析中心
+# 极限搜索中心
 
-INFINI Logging Center
+INFINI Search Center
 
 
 ## 前端开发说明
@@ -95,7 +95,7 @@ cnpm install --save md5
 
 ## 后端开发说明
 
-后端采用 Golang 开发，最终输出为 `bin` 目录的可执行文件 `logging-center` 和配置文件 `logging-center.yml`。
+后端采用 Golang 开发，最终输出为 `bin` 目录的可执行文件 `search-center` 和配置文件 `search-center.yml`。
 
 ### Docker 开发环境
 

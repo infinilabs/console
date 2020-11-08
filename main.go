@@ -7,7 +7,7 @@ import (
 	"infini.sh/framework/core/env"
 	"infini.sh/framework/core/module"
 	"infini.sh/framework/modules"
-	"infini.sh/logging-center/config"
+	"infini.sh/search-center/config"
 )
 
 var appConfig *config.AppConfig
@@ -35,7 +35,7 @@ func main() {
 	terminalFooter += ("/_//_/|_//_/  /_//_/|_//_/() /___//_/ /__,'    \n\n")
 	terminalFooter += ("©2020 INFINI.LTD, All Rights Reserved.\n")
 
-	app := framework.NewApp("logging-center", "the easiest way to operate your own logging center.",
+	app := framework.NewApp("search-center", "the easiest way to operate your own search center.",
 		config.Version, config.LastCommitLog, config.BuildDate, terminalHeader, terminalFooter)
 
 	app.Init(nil)
@@ -53,7 +53,7 @@ func main() {
 			UILocalEnabled: true,
 		}
 
-		ok, err := env.ParseConfig("logging-center", appConfig)
+		ok, err := env.ParseConfig("search-center", appConfig)
 		if err != nil {
 			panic(err)
 		}

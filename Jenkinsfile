@@ -9,7 +9,7 @@ pipeline {
         stage('Stop Front Docker') {
             steps {
                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
-                    sh 'cd /home/deploy/logging-center/web && cnpm run docker:stop-dev || true' 
+                    sh 'cd /home/deploy/search-center/web && cnpm run docker:stop-dev || true'
                 }
             }
         }
@@ -17,7 +17,7 @@ pipeline {
         stage('Stop Backend Docker') {
             steps {
                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
-                    sh 'cd /home/deploy/logging-center/docker && docker-compose -f docker-compose.dev.yml  down || true'
+                    sh 'cd /home/deploy/search-center/docker && docker-compose -f docker-compose.dev.yml  down || true'
                 }
             }
         }
@@ -40,38 +40,38 @@ pipeline {
 
         stage('Update Files') {
             steps {
-                sh 'cd /home/deploy/logging-center && git add . && git stash && git pull origin master'
+                sh 'cd /home/deploy/search-center && git add . && git stash && git pull origin master'
             }
         }
 
         stage('Install Packages') {
             steps {
-                sh 'cd /home/deploy/logging-center && cnpm install'
+                sh 'cd /home/deploy/search-center && cnpm install'
             }
         }
         
         stage('Fix FileAttr') { 
             steps {
-                sh "cd /home/deploy/logging-center/docker && chmod a+x *.sh && perl -pi -e 's/\r\n/\n/g' *.sh && \
-                cd /home/deploy/logging-center/web/docker && chmod a+x *.sh && perl -pi -e 's/\r\n/\n/g' *.sh"
+                sh "cd /home/deploy/search-center/docker && chmod a+x *.sh && perl -pi -e 's/\r\n/\n/g' *.sh && \
+                cd /home/deploy/search-center/web/docker && chmod a+x *.sh && perl -pi -e 's/\r\n/\n/g' *.sh"
             }
         }
 
         stage('Start Front Docker') {
             steps {
-                sh 'cd /home/deploy/logging-center/web && cnpm run docker:dev'  
+                sh 'cd /home/deploy/search-center/web && cnpm run docker:dev'
             }
         }
 
         stage('Build Front Files') {
             steps {
-                sh 'cd /home/deploy/logging-center/web && cnpm run docker:build'
+                sh 'cd /home/deploy/search-center/web && cnpm run docker:build'
             }
         }
 
         stage('Start Backend Docker') {
             steps {
-                sh 'cd /home/deploy/logging-center/docker && docker-compose -f docker-compose.dev.yml  up -d'
+                sh 'cd /home/deploy/search-center/docker && docker-compose -f docker-compose.dev.yml  up -d'
             }
         }
 

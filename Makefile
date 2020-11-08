@@ -1,7 +1,7 @@
 SHELL=/bin/bash
 
 # APP info
-APP_NAME := logging-center
+APP_NAME := search-center
 APP_VERSION := 1.0.0_SNAPSHOT
 APP_CONFIG := $(APP_NAME).yml
 APP_STATIC_FOLDER := .public

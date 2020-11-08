@@ -4,7 +4,7 @@ cd /go/src/infini.sh/
 
 echo "INFINI GOLANG ENV READY TO ROCK!"
 
-cd logging-center
+cd search-center
 make build
 
-cd /go/src/infini.sh/logging-center && ./bin/logging-center
+cd /go/src/infini.sh/search-center && ./bin/search-center

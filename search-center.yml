@@ -1,7 +1,7 @@
 elasticsearch:
   - name: default
     enabled: true
-    endpoint: http://192.168.3.98:9200
+    endpoint: https://192.168.3.98:9200
     index_prefix: infini-
     basic_auth:
       username: elastic
@@ -13,7 +13,7 @@ modules:
     network:
       binding: 0.0.0.0:9000
 
-logging-center:
+search-center:
   index_name: reports
   ui_path: .public
   ui_vfs: true

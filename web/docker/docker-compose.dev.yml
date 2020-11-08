@@ -1,7 +1,7 @@
 version: "3.5"
 
 services:
-  infini-logging-center-ui-build:
+  infini-search-center-ui-build:
     # option 1: pull image from infini docker registry
     image: docker.infini.ltd:64443/nodejs-dev:latest
 
@@ -13,7 +13,7 @@ services:
     ports:
       - 3000:3000
       - 8000:8000
-    container_name: "infini-logging-center-ui-build"
+    container_name: "infini-search-center-ui-build"
     volumes:
       - ../src:/usr/src/app/src
       - ../config:/usr/src/app/config

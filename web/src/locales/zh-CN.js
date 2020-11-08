@@ -1,8 +1,8 @@
 export default {
   'navBar.lang': '语言',
   
-  'layout.user.appname':"极限日志分析中心",
-  'layout.user.appslogon':"极限科技的日志分析中心是东半球最好用的日志分析平台",
+  'layout.user.appname':"极限搜索管理后台",
+  'layout.user.appslogon':"极限科技的搜索平台是东半球最好用的搜索服务平台",
 
   'layout.user.link.help': '帮助',
   'layout.user.link.privacy': '隐私',
@@ -183,10 +183,9 @@ export default {
   'app.monitor.resource-surplus': '资源剩余',
   'app.monitor.fund-surplus': '补贴资金剩余',
   
-  'app.setting.appname':"日志分析中心",
+  'app.setting.appname':"极限搜索中心",
   
-  'app.login.appname':"日志分析中心",
-  
+
   'app.settings.menuMap.basic': '基本设置',
   'app.settings.menuMap.security': '安全设置',
   'app.settings.menuMap.binding': '账号绑定',

@@ -1,8 +1,8 @@
 export default {
   'navBar.lang': 'Languages',
 
-  'layout.user.appname':"INFINI LOGGING CENTER",
-  'layout.user.appslogon':"INFINI logging center is the best log analysis platform in the world",
+  'layout.user.appname':"INFINI SEARCH CENTER",
+  'layout.user.appslogon':"INFINI search center is the best search platform in the world",
 
   'layout.user.link.help': 'Help',
   'layout.user.link.privacy': 'Privacy',
@@ -183,7 +183,7 @@ export default {
   'app.monitor.resource-surplus': 'Resource Surplus',
   'app.monitor.fund-surplus': 'Fund Surplus',
   
-  'app.setting.appname':"Logging Center",
+  'app.setting.appname':"Search Center",
 
   'app.settings.menuMap.basic': 'Basic Settings',
   'app.settings.menuMap.security': 'Security Settings',

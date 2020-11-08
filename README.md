@@ -38,6 +38,7 @@ cnpm run docker:dev
 #### 手动更新开发镜像
 
 ```
+docker login -u infini -p ltd docker.infini.ltd:64443
 docker pull docker.infini.ltd:64443/nodejs-dev:latest
 ```
 

@@ -28,3 +28,4 @@ appveyor.yml
 /vendor
 /bin
 *.exe
+web/.github/

@@ -1,0 +1,5 @@
+.temp
+.git
+*.swp
+node_modules/
+.github/

@@ -5,6 +5,7 @@ APP_NAME := logging-center
 APP_VERSION := 1.0.0_SNAPSHOT
 APP_CONFIG := $(APP_NAME).yml
 APP_STATIC_FOLDER := .public
+APP_STATIC_PACKAGE := public
 APP_UI_FOLDER := ui
 APP_PLUGIN_FOLDER := plugin
 
@@ -25,11 +26,22 @@ PATH := $(PATH):$(GOPATH)/bin
 # Go environment
 CURDIR := $(shell pwd)
 OLDGOPATH:= $(GOPATH)
-NEWGOPATH:= $(CURDIR):$(CURDIR)/vendor:$(GOPATH)
+
+# INFINI framework
+INFINI_BASE_FOLDER := $(OLDGOPATH)/src/infini.sh/
+FRAMEWORK_FOLDER := $(INFINI_BASE_FOLDER)framework/
+FRAMEWORK_REPO := ssh://git@git.infini.ltd:64221/infini/framework.git
+FRAMEWORK_BRANCH := master
+FRAMEWORK_VENDOR_FOLDER := $(CURDIR)/../vendor/
+FRAMEWORK_VENDOR_REPO :=  ssh://git@git.infini.ltd:64221/infini/framework-vendor.git
+FRAMEWORK_VENDOR_BRANCH := master
+
+
+NEWGOPATH:= $(CURDIR):$(FRAMEWORK_VENDOR_FOLDER):$(GOPATH)
 
 GO        := GO15VENDOREXPERIMENT="1" GO111MODULE=off go
-GOBUILD  := GOPATH=$(NEWGOPATH) CGO_ENABLED=1  $(GO) build -ldflags -s -gcflags "-m" -x --work
-GOBUILDNCGO  := GOPATH=$(NEWGOPATH) CGO_ENABLED=0  $(GO) build -ldflags -s
+GOBUILD  := GOPATH=$(NEWGOPATH) CGO_ENABLED=0 GRPC_GO_REQUIRE_HANDSHAKE=off  $(GO) build -ldflags='-s -w' -gcflags "-m"  --work
+GOBUILDNCGO  := GOPATH=$(NEWGOPATH) CGO_ENABLED=1  $(GO) build -ldflags -s
 GOTEST   := GOPATH=$(NEWGOPATH) CGO_ENABLED=1  $(GO) test -ldflags -s
 
 ARCH      := "`uname -s`"
@@ -37,12 +49,6 @@ LINUX     := "Linux"
 MAC       := "Darwin"
 GO_FILES=$(find . -iname '*.go' | grep -v /vendor/)
 PKGS=$(go list ./... | grep -v /vendor/)
-
-INFINI_BASE_FOLDER := $(GOPATH)/src/infini.sh/
-FRAMEWORK_FOLDER := $(INFINI_BASE_FOLDER)/framework/
-FRAMEWORK_BRANCH := master
-FRAMEWORK_VENDOR_FOLDER := $(CURDIR)/vendor/
-FRAMEWORK_VENDOR_BRANCH := master
 
 FRAMEWORK_OFFLINE_BUILD := ""
 ifneq "$(OFFLINE_BUILD)" ""
@@ -85,11 +91,15 @@ build-win:
 build-linux:
 	GOOS=linux  GOARCH=amd64  $(GOBUILD) -o bin/$(APP_NAME)-linux64
 	GOOS=linux  GOARCH=386    $(GOBUILD) -o bin/$(APP_NAME)-linux32
+
+build-arm:
 	GOOS=linux  GOARCH=arm   GOARM=5    $(GOBUILD) -o bin/$(APP_NAME)-armv5
+	# for Raspberry Pi
+	#env GOOS=linux GOARCH=arm GOARM=5 go build
 
 build-darwin:
 	GOOS=darwin  GOARCH=amd64     $(GOBUILD) -o bin/$(APP_NAME)-darwin64
-	GOOS=darwin  GOARCH=386       $(GOBUILD) -o bin/$(APP_NAME)-darwin32
+	#GOOS=darwin  GOARCH=386       $(GOBUILD) -o bin/$(APP_NAME)-darwin32
 
 build-bsd:
 	GOOS=freebsd  GOARCH=amd64    $(GOBUILD) -o bin/$(APP_NAME)-freebsd64
@@ -121,10 +131,11 @@ init:
 	@echo building $(APP_NAME) $(APP_VERSION)
 	@echo $(CURDIR)
 	@mkdir -p $(INFINI_BASE_FOLDER)
-	@if [ ! -d $(FRAMEWORK_FOLDER) ]; then echo "framework does not exist";(cd $(INFINI_BASE_FOLDER)&&git clone -b $(FRAMEWORK_BRANCH) ssh://git@git.infini.ltd:64221/infini/framework.git) fi
-	@if [ ! -d $(FRAMEWORK_VENDOR_FOLDER) ]; then echo "framework vendor does not exist";(git clone  -b $(FRAMEWORK_VENDOR_BRANCH) ssh://git@git.infini.ltd:64221/infini/framework-vendor.git vendor) fi
+	@echo "framework path: " $(FRAMEWORK_FOLDER)
+	@if [ ! -d $(FRAMEWORK_FOLDER) ]; then echo "framework does not exist";(cd $(INFINI_BASE_FOLDER)&&git clone -b $(FRAMEWORK_BRANCH) $(FRAMEWORK_REPO) framework ) fi
+	@if [ ! -d $(FRAMEWORK_VENDOR_FOLDER) ]; then echo "framework vendor does not exist";(git clone  -b $(FRAMEWORK_VENDOR_BRANCH) $(FRAMEWORK_VENDOR_REPO) vendor) fi
 	@if [ "" == $(FRAMEWORK_OFFLINE_BUILD) ]; then (cd $(FRAMEWORK_FOLDER) && git pull origin $(FRAMEWORK_BRANCH)); fi;
-	@if [ "" == $(FRAMEWORK_OFFLINE_BUILD) ]; then (cd vendor && git pull origin $(FRAMEWORK_VENDOR_BRANCH)); fi;
+	@if [ "" == $(FRAMEWORK_OFFLINE_BUILD) ]; then (cd $(FRAMEWORK_VENDOR_FOLDER) && git pull origin $(FRAMEWORK_VENDOR_BRANCH)); fi;
 
 update-generated-file:
 	@echo "update generated info"
@@ -139,15 +150,10 @@ restore-generated-file:
 
 
 update-vfs:
-	cd $(FRAMEWORK_FOLDER) && cd cmd/vfs && go build && cp vfs ~/
-	@if [ -d $(APP_STATIC_FOLDER) ]; then  echo "generate static files";(cd $(APP_STATIC_FOLDER) && ~/vfs -ignore="static.go|.DS_Store" -o static.go -pkg public . ) fi
+	cd $(FRAMEWORK_FOLDER) && cd cmd/vfs && $(GO) build && cp vfs ~/
+	@if [ -d $(APP_STATIC_FOLDER) ]; then  echo "generate static files";(cd $(APP_STATIC_FOLDER) && ~/vfs -ignore="static.go|.DS_Store" -o static.go -pkg $(APP_STATIC_PACKAGE) . ) fi
 
-update-template-ui:
-	@if [ -d $(APP_UI_FOLDER) ]; then  (echo "generate main UI pages";$(GO) get infini.sh/ego/cmd/ego;cd $(APP_UI_FOLDER)/ && ego) fi
-	@if [ -d $(APP_PLUGIN_FOLDER) ]; then  (echo "generate plugin UI pages";$(GO) get infini.sh/ego/cmd/ego;cd $(APP_PLUGIN_FOLDER)/ && ego) fi
-
-#config: init update-vfs update-template-ui
-config: init update-vfs update-template-ui update-generated-file
+config: init update-vfs update-generated-file
 	@echo "update configs"
 	@# $(GO) env
 	@mkdir -p bin
@@ -179,7 +185,7 @@ package-all-platform: package-darwin-platform package-linux-platform package-win
 package-darwin-platform:
 	@echo "Packaging Darwin"
 	cd bin && tar cfz ../bin/darwin64.tar.gz      $(APP_NAME)-darwin64 $(APP_CONFIG)
-	cd bin && tar cfz ../bin/darwin32.tar.gz      $(APP_NAME)-darwin32 $(APP_CONFIG)
+	#cd bin && tar cfz ../bin/darwin32.tar.gz      $(APP_NAME)-darwin32 $(APP_CONFIG)
 
 package-linux-platform:
 	@echo "Packaging Linux"

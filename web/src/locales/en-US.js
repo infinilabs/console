@@ -75,9 +75,32 @@ export default {
   'menu.home': 'Home',
   
   'menu.platform': 'DASHBOARD',
-  'menu.data': 'DATA',
+  'menu.platform.gateway': 'GATEWAY',
+  'menu.platform.cluster': 'CLUSTER',
+  'menu.platform.tasks': 'TASKS',
+  'menu.platform.search': 'SEARCH',
+
+
+  'menu.data': 'DATA MANAGEMENT',
+  'menu.data.pipes': 'PIPELINE',
+  'menu.data.index': 'INDEX',
+  'menu.data.snapshot': 'SNAPSHOT',
+  'menu.data.rebuild': 'REBUILD',
+  'menu.data.export': 'IMPORT&EXPORT',
+
   'menu.search': 'SEARCH',
+  'menu.search.template': 'TEMPLATE',
+  'menu.search.alias': 'ALIAS',
+  'menu.search.dict': 'DICTIONARY',
+  'menu.search.analyzer': 'ANALYZER',
+  'menu.search.nlp': 'NLP',
+
   'menu.settings': 'SETTINGS',
+  'menu.settings.authentication': 'AUTHENTICATION',
+  'menu.settings.authorization': 'AUTHORIZATION',
+  'menu.settings.audit': 'AUDIT',
+  'menu.settings.certs': 'CERTS',
+  'menu.settings.others': 'OTHERS',
 
 
   'menu.form': 'Form',

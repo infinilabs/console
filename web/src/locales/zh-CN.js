@@ -75,9 +75,32 @@ export default {
   'menu.home': '首页',
 
   'menu.platform': '平台概览',
+  'menu.platform.gateway': '网关监控',
+  'menu.platform.cluster': '集群监控',
+  'menu.platform.tasks': '任务监控',
+  'menu.platform.search': '搜索监控',
+
+
   'menu.data': '数据管理',
+  'menu.data.pipes': '数据加工',
+  'menu.data.index': '索引管理',
+  'menu.data.snapshot': '快照管理',
+  'menu.data.rebuild': '重建管理',
+  'menu.data.export': '导入导出',
+
   'menu.search': '搜索管理',
+  'menu.search.template': '搜索模板',
+  'menu.search.alias': '别名管理',
+  'menu.search.dict': '词库管理',
+  'menu.search.analyzer': '分词管理',
+  'menu.search.nlp': '自然语言处理',
+
   'menu.settings': '系统设置',
+  'menu.settings.authentication': '认证管理',
+  'menu.settings.authorization': '授权管理',
+  'menu.settings.audit': '审计日志',
+  'menu.settings.certs': '证书管理',
+  'menu.settings.others': '其它设置',
   
 
   'menu.form': '表单页',

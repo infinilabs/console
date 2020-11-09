@@ -75,10 +75,8 @@ export default {
   'menu.home': '首页',
 
   'menu.platform': '平台概览',
-  'menu.endpoints': '终端管理',
-  'menu.reports': '报表管理',
-  'menu.logs': '日志管理',
-  'menu.alerts': '告警管理',
+  'menu.data': '数据管理',
+  'menu.search': '搜索管理',
   'menu.settings': '系统设置',
   
 

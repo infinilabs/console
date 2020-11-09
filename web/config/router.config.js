@@ -26,38 +26,21 @@ export default [
         component: './Dashboard/Analysis',
       },
 
-      //endpoints
-      {
-        path: '/endpoints',
-        name: 'endpoints',
-        icon: 'database',
-        component: './Endpoints/Dashboard',
-      },
-
-
       //reportings
       {
-        path: '/reports',
-        name: 'reports',
-        icon: 'fund',
+        path: '/data',
+        name: 'data',
+        icon: 'database',
         component: './List/TableList',
       },
 
 
       //logging
       {
-        path: '/logs',
-        name: 'logs',
+        path: '/search',
+        name: 'search',
         icon: 'search',
         component: './Logs/Overview',
-      },
-
-      //alertings
-      {
-        path: '/alerts',
-        name: 'alerts',
-        icon: 'alert',
-        component: './List/TableList',
       },
 
       //settings

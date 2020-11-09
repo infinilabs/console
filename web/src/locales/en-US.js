@@ -75,12 +75,10 @@ export default {
   'menu.home': 'Home',
   
   'menu.platform': 'DASHBOARD',
-  'menu.endpoints': 'ENDPOINTS',
-  'menu.reports': 'REPORTS',
-  'menu.logs': 'LOGS',
-  'menu.alerts': 'ALERTS',
+  'menu.data': 'DATA',
+  'menu.search': 'SEARCH',
   'menu.settings': 'SETTINGS',
-  
+
 
   'menu.form': 'Form',
   'menu.form.basicform': 'Basic Form',

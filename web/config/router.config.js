@@ -45,7 +45,7 @@ export default [
         ]
       },
 
-      //reportings
+      //data
       {
         path: '/data',
         name: 'data',
@@ -90,7 +90,7 @@ export default [
       },
 
 
-      //logging
+      //search
       {
         path: '/search',
         name: 'search',

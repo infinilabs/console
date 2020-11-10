@@ -113,6 +113,11 @@ export default {
   'menu.account.settings': '个人设置',
   'menu.account.trigger': '触发报错',
   'menu.account.logout': '退出登录',
+
+  'menu.data':'数据管理',
+  'menu.data.logstash': 'Logstash配置管理',
+  'menu.data.ingestpipline': 'Elasticsearch Ingest Pipline 管理',
+  
   'app.login.message-invalid-credentials': '账户或密码错误（admin/888888）',
   'app.login.message-invalid-verification-code': '验证码错误',
   'app.login.tab-login-credentials': '账户密码登录',

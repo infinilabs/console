@@ -67,6 +67,18 @@ export default [
         icon: 'setting',
         component: './List/TableList',
       },
+      {
+        path: '/data',
+        icon: 'form',
+        name: 'data',
+        routes: [
+          {
+            path: '/data/logstash',
+            name: 'logstash',
+            component: './DataManagement/LogstashConfig',
+          }
+        ],
+      },
 
       // // forms
       // {

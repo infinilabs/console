@@ -24,40 +24,88 @@ export default [
         name: 'platform',
         icon: 'dashboard',
         component: './Dashboard/Analysis',
+        routes: [
+            {
+              path: '/list/table-list',
+              name: 'gateway',
+              component: './List/TableList',
+            }, {
+              path: '/list/table-list',
+              name: 'cluster',
+              component: './List/TableList',
+            }, {
+              path: '/list/table-list',
+              name: 'tasks',
+              component: './List/TableList',
+            }, {
+              path: '/list/table-list',
+              name: 'search',
+              component: './List/TableList',
+            },
+        ]
       },
-
-      //endpoints
-      {
-        path: '/endpoints',
-        name: 'endpoints',
-        icon: 'database',
-        component: './Endpoints/Dashboard',
-      },
-
 
       //reportings
       {
-        path: '/reports',
-        name: 'reports',
-        icon: 'fund',
+        path: '/data',
+        name: 'data',
+        icon: 'database',
         component: './List/TableList',
+        routes: [
+          {
+            path: '/list/table-list',
+            name: 'pipes',
+            component: './List/TableList',
+          }, {
+            path: '/list/table-list',
+            name: 'index',
+            component: './List/TableList',
+          }, {
+            path: '/list/table-list',
+            name: 'snapshot',
+            component: './List/TableList',
+          }, {
+            path: '/list/table-list',
+            name: 'rebuild',
+            component: './List/TableList',
+          }, {
+            path: '/list/table-list',
+            name: 'export',
+            component: './List/TableList',
+          },
+        ]
       },
 
 
       //logging
       {
-        path: '/logs',
-        name: 'logs',
+        path: '/search',
+        name: 'search',
         icon: 'search',
         component: './Logs/Overview',
-      },
-
-      //alertings
-      {
-        path: '/alerts',
-        name: 'alerts',
-        icon: 'alert',
-        component: './List/TableList',
+        routes: [
+          {
+            path: '/list/table-list',
+            name: 'template',
+            component: './List/TableList',
+          }, {
+            path: '/list/table-list',
+            name: 'alias',
+            component: './List/TableList',
+          }, {
+            path: '/list/table-list',
+            name: 'dict',
+            component: './List/TableList',
+          }, {
+            path: '/list/table-list',
+            name: 'analyzer',
+            component: './List/TableList',
+          }, {
+            path: '/list/table-list',
+            name: 'nlp',
+            component: './List/TableList',
+          },
+        ]
       },
 
       //settings
@@ -66,6 +114,29 @@ export default [
         name: 'settings',
         icon: 'setting',
         component: './List/TableList',
+        routes: [
+          {
+            path: '/list/table-list',
+            name: 'authentication',
+            component: './List/TableList',
+          }, {
+            path: '/list/table-list',
+            name: 'authorization',
+            component: './List/TableList',
+          }, {
+            path: '/list/table-list',
+            name: 'audit',
+            component: './List/TableList',
+          }, {
+            path: '/list/table-list',
+            name: 'certs',
+            component: './List/TableList',
+          }, {
+            path: '/list/table-list',
+            name: 'others',
+            component: './List/TableList',
+          },
+        ]
       },
       {
         path: '/data',

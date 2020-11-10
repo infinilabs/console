@@ -135,10 +135,6 @@ export default {
   'menu.account.trigger': 'Trigger Error',
   'menu.account.logout': 'Logout',
 
-  'menu.data':'Data Management',
-  'menu.data.logstash': 'Logstash Configuration',
-  'menu.data.ingestpipline': 'Elasticsearch Ingest Pipline Management',
-  
   'app.login.message-invalid-credentials': 'Invalid username or password（admin/888888）',
   'app.login.message-invalid-verification-code': 'Invalid verification code',
   'app.login.tab-login-credentials': 'Credentials',

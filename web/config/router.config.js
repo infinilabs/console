@@ -26,13 +26,13 @@ export default [
         component: './Dashboard/Analysis',
         routes: [
             {
-              path: '/list/table-list',
+              path: '/platform/gateway',
               name: 'gateway',
-              component: './List/TableList',
+              component: './Dashboard/Analysis',
             }, {
-              path: '/list/table-list',
+              path: '/platform/cluster',
               name: 'cluster',
-              component: './List/TableList',
+              component: './Dashboard/Monitor',
             }, {
               path: '/list/table-list',
               name: 'tasks',
@@ -95,28 +95,27 @@ export default [
         path: '/search',
         name: 'search',
         icon: 'search',
-        component: './Logs/Overview',
         routes: [
           {
-            path: '/list/table-list',
+            path: '/search/template',
             name: 'template',
-            component: './List/TableList',
+            component: './SearchManage/SearchTemplate',
           }, {
-            path: '/list/table-list',
+            path: '/search/alias',
             name: 'alias',
-            component: './List/TableList',
+            component: './SearchManage/AliasManage',
           }, {
-            path: '/list/table-list',
+            path: '/search/dict',
             name: 'dict',
-            component: './List/TableList',
+            component: './SearchManage/DictManage',
           }, {
-            path: '/list/table-list',
+            path: '/search/analyzer',
             name: 'analyzer',
-            component: './List/TableList',
+            component: './SearchManage/AnalyzerManage',
           }, {
-            path: '/list/table-list',
+            path: '/search/nlp',
             name: 'nlp',
-            component: './List/TableList',
+            component: './SearchManage/NLPManage',
           },
         ]
       },

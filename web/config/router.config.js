@@ -50,13 +50,26 @@ export default [
         path: '/data',
         name: 'data',
         icon: 'database',
-        component: './List/TableList',
         routes: [
           {
-            path: '/list/table-list',
+            path: '/data/pipes',
             name: 'pipes',
-            component: './List/TableList',
-          }, {
+            component: './DataManagement/Pipes',
+            routes: [
+              {
+                path: '/data/pipes',
+                redirect: '/data/pipes/logstash',
+              },
+              {
+                path: '/data/pipes/logstash',
+                component: './DataManagement/LogstashConfig',
+              },
+              {
+                path: '/data/pipes/ingestpipeline',
+                component: './DataManagement/IngestPipeline',
+              },
+            ]
+          },{
             path: '/list/table-list',
             name: 'index',
             component: './List/TableList',

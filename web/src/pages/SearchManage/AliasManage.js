@@ -37,7 +37,33 @@ const getValue = obj =>
     .join(',');
 const statusMap = ['default', 'processing', 'success', 'error'];
 const status = ['关闭', '运行中', '已上线', '异常'];
+const CreateForm = Form.create()(props => {
+    const { modalVisible, form, handleAdd, handleModalVisible } = props;
+    const okHandle = () => {
+        form.validateFields((err, fieldsValue) => {
+            if (err) return;
+            form.resetFields();
+            handleAdd(fieldsValue);
+        });
+    };
+    return (
+        <Modal
+    destroyOnClose
+    title="新建规则"
+    visible={modalVisible}
+    onOk={okHandle}
+    onCancel={() => handleModalVisible()}
+>
+<FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="描述">
+        {form.getFieldDecorator('desc', {
+            rules: [{ required: true, message: '请输入至少五个字符的规则描述！', min: 5 }],
+        })(<Input placeholder="请输入" />)}
+</FormItem>
+    </Modal>
+);
+});
 
+@Form.create()
 class UpdateForm extends PureComponent {
   constructor(props) {
     super(props);
@@ -159,20 +185,20 @@ class UpdateForm extends PureComponent {
         </FormItem>,
       ];
     }
-    return [
-      <FormItem key="name" {...this.formLayout} label="索引名称">
-        {form.getFieldDecorator('name', {
-          rules: [{ required: true, message: '请输入索引名称！' }],
-          initialValue: formVals.name,
-        })(<Input placeholder="请输入" />)}
-      </FormItem>,
-      <FormItem key="desc" {...this.formLayout} label="索引描述">
-        {form.getFieldDecorator('desc', {
-          rules: [{ required: true, message: '请输入至少五个字符的索引描述！', min: 5 }],
-          initialValue: formVals.desc,
-        })(<TextArea rows={4} placeholder="请输入至少五个字符" />)}
-      </FormItem>,
-    ];
+      return [
+          <FormItem key="name" {...this.formLayout} label="别名">
+          {form.getFieldDecorator('name', {
+              rules: [{ required: true, message: '请输入别名！' }],
+              initialValue: formVals.name,
+          })(<Input placeholder="请输入" />)}
+          </FormItem>,
+              <FormItem key="desc" {...this.formLayout} label="描述">
+                  {form.getFieldDecorator('desc', {
+                      rules: [{ required: true, message: '请输入至少五个字符的描述！', min: 5 }],
+                      initialValue: formVals.desc,
+                  })(<TextArea rows={4} placeholder="请输入至少五个字符" />)}
+          </FormItem>,
+          ];
   };
 
   renderFooter = currentStep => {
@@ -222,7 +248,7 @@ class UpdateForm extends PureComponent {
         width={640}
         bodyStyle={{ padding: '32px 40px 48px' }}
         destroyOnClose
-        title="规则配置"
+        title="别名配置"
         visible={updateModalVisible}
         footer={this.renderFooter(currentStep)}
         onCancel={() => handleUpdateModalVisible()}
@@ -609,6 +635,7 @@ class AliasManage extends PureComponent {
             />
           </div>
         </Card>
+        <CreateForm {...parentMethods} modalVisible={modalVisible} />
         {stepFormValues && Object.keys(stepFormValues).length ? (
           <UpdateForm
             {...updateMethods}

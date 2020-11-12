@@ -34,13 +34,13 @@ export default [
               name: 'cluster',
               component: './Dashboard/Monitor',
             }, {
-              path: '/list/table-list',
+              path: '/platform/tasks',
               name: 'tasks',
-              component: './List/TableList',
+              component: './Dashboard/Workplace',
             }, {
-              path: '/list/table-list',
+              path: '/platform/search',
               name: 'search',
-              component: './List/TableList',
+              component: './Dashboard/Search',
             },
         ]
       },

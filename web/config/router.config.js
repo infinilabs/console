@@ -70,9 +70,31 @@ export default [
               },
             ]
           },{
-            path: '/list/table-list',
+            path: '/data/indices',
             name: 'index',
-            component: './List/TableList',
+            component: './DataManagement/Indices',
+            routes: [
+              {
+                path: '/data/indices',
+                redirect: '/data/indices/summary',
+              },
+              {
+                path: '/data/indices/summary',
+                component: './DataManagement/IndexSummary',
+              },
+              {
+                path: '/data/indices/doc',
+                component: './DataManagement/Document',
+              },
+              {
+                path: '/data/indices/template',
+                component: './DataManagement/IndexTemplate',
+              },
+              {
+                path: '/data/indices/ilm',
+                component: './DataManagement/IndexLifeCycle',
+              },
+            ]
           }, {
             path: '/list/table-list',
             name: 'snapshot',

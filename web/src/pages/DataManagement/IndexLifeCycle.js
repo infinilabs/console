@@ -1,39 +1,22 @@
 import React, { PureComponent, Fragment } from 'react';
 import { connect } from 'dva';
-import moment from 'moment';
 import {
   Row,
   Col,
   Card,
   Form,
   Input,
-  Select,
-  Icon,
   Button,
-  Dropdown,
-  Menu,
-  InputNumber,
-  DatePicker,
   Modal,
   message,
-  Badge,
   Divider,
-  Steps,
-  Radio,
 } from 'antd';
 import StandardTable from '@/components/StandardTable';
-import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 
 import styles from '../List/TableList.less';
 
 const FormItem = Form.Item;
-const { Step } = Steps;
 const { TextArea } = Input;
-const { Option } = Select;
-const getValue = obj =>
-  Object.keys(obj)
-    .map(key => obj[key])
-    .join(',');
 
 const CreateForm = Form.create()(props => {
   const { modalVisible, form, handleAdd, handleModalVisible } = props;
@@ -47,24 +30,19 @@ const CreateForm = Form.create()(props => {
   return (
     <Modal
       destroyOnClose
-      title="新建Pipeline"
+      title="新建索引模板"
       visible={modalVisible}
       width={640}
       onOk={okHandle}
       onCancel={() => handleModalVisible()}
     >
-       <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="名称">
+       <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="索引模板名称">
         {form.getFieldDecorator('name', {
           rules: [{ required: true, message: '请输入至少五个字符的名称！', min: 5 }],
         })(<Input placeholder="请输入名称" />)}
       </FormItem>
-      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="描述">
-        {form.getFieldDecorator('desc', {
-          rules: [{ required: false }],
-        })(<Input placeholder="请输入" />)}
-      </FormItem>
-      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="处理器">
-        {form.getFieldDecorator('processors', {
+      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="模板设置">
+        {form.getFieldDecorator('settings', {
           rules: [{ required: true }],
         })(<TextArea
           style={{ minHeight: 24 }}
@@ -90,27 +68,21 @@ const UpdateForm = Form.create()(props => {
   return (
     <Modal
       destroyOnClose
-      title="更新Pipeline"
+      title="索引模板设置"
       visible={updateModalVisible}
       width={640}
       onOk={okHandle}
       onCancel={() => handleUpdateModalVisible()}
     >
-       <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="名称">
+       <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="索引模板名称">
         {form.getFieldDecorator('name', {
           initialValue: values.name,
           rules: [{ required: true, message: '请输入至少五个字符的名称！', min: 5 }],
         })(<Input placeholder="请输入名称" />)}
       </FormItem>
-      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="描述">
-        {form.getFieldDecorator('desc', {
-          initialValue: values.desc,
-          rules: [{ required: false }],
-        })(<Input placeholder="请输入" />)}
-      </FormItem>
-      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="处理器">
-        {form.getFieldDecorator('processors', {
-          initialValue: values.processors,
+      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="索引模板设置">
+        {form.getFieldDecorator('policy', {
+          initialValue: values.policy,
           rules: [{ required: true }],
         })(<TextArea
           style={{ minHeight: 24 }}
@@ -128,7 +100,7 @@ const UpdateForm = Form.create()(props => {
   loading: loading.models.pipeline,
 }))
 @Form.create()
-class IngestPipeline extends PureComponent {
+class IndexLifeCycle extends PureComponent {
   state = {
     modalVisible: false,
     updateModalVisible: false,
@@ -137,26 +109,37 @@ class IngestPipeline extends PureComponent {
     formValues: {},
     updateFormValues: {},
   };
-
+  datasource = `{"ilm-history-ilm-policy":{"version":1,"modified_date":"2020-08-28T13:19:39.550Z","policy":{"phases":{"hot":{"min_age":"0ms","actions":{"rollover":{"max_size":"50gb","max_age":"30d"}}},"delete":{"min_age":"90d","actions":{"delete":{"delete_searchable_snapshot":true}}}}}},"watch-history-ilm-policy":{"version":1,"modified_date":"2020-08-28T13:19:39.460Z","policy":{"phases":{"delete":{"min_age":"7d","actions":{"delete":{"delete_searchable_snapshot":true}}}}}},"kibana-event-log-policy":{"version":1,"modified_date":"2020-08-28T13:43:28.035Z","policy":{"phases":{"hot":{"min_age":"0ms","actions":{"rollover":{"max_size":"50gb","max_age":"30d"}}},"delete":{"min_age":"90d","actions":{"delete":{"delete_searchable_snapshot":true}}}}}},"metrics":{"version":1,"modified_date":"2020-08-28T13:19:39.367Z","policy":{"phases":{"hot":{"min_age":"0ms","actions":{"rollover":{"max_size":"50gb","max_age":"30d"}}}}}},"ml-size-based-ilm-policy":{"version":1,"modified_date":"2020-08-28T13:19:39.166Z","policy":{"phases":{"hot":{"min_age":"0ms","actions":{"rollover":{"max_size":"50gb"}}}}}},"filebeat":{"version":1,"modified_date":"2020-08-29T10:49:38.774Z","policy":{"phases":{"hot":{"min_age":"0ms","actions":{"rollover":{"max_size":"50gb","max_age":"30d"}}}}}},"logs":{"version":1,"modified_date":"2020-08-28T13:19:39.289Z","policy":{"phases":{"hot":{"min_age":"0ms","actions":{"rollover":{"max_size":"50gb","max_age":"30d"}}}}}},"slm-history-ilm-policy":{"version":1,"modified_date":"2020-08-28T13:19:39.637Z","policy":{"phases":{"hot":{"min_age":"0ms","actions":{"rollover":{"max_size":"50gb","max_age":"30d"}}},"delete":{"min_age":"90d","actions":{"delete":{"delete_searchable_snapshot":true}}}}}}}`;
+  parseData = ()=>{
+    let ds = JSON.parse(this.datasource);
+    var values = [];
+    for(let key in ds){
+      values.push({
+        name: key,
+        ...ds[key],
+        policy: JSON.stringify(ds[key].policy),
+      });
+    }
+    return values;
+  }
   columns = [
     {
-      title: '名称',
+      title: '策略名称',
       dataIndex: 'name',
     },
     {
-      title: '描述',
-      dataIndex: 'desc',
+      title: '修改日期',
+      dataIndex: 'modified_date',
     },
     {
-      title: '处理器',
-      dataIndex: 'processors',
-      ellipsis: true,
+      title: '版本',
+      dataIndex: 'version'
     },
     {
       title: '操作',
       render: (text, record) => (
         <Fragment>
-          <a onClick={() => this.handleUpdateModalVisible(true, record)}>编辑</a>
+          <a onClick={() => this.handleUpdateModalVisible(true, record)}>设置</a>
           <Divider type="vertical" />
           <a onClick={() => {
             this.state.selectedRows.push(record);
@@ -169,9 +152,9 @@ class IngestPipeline extends PureComponent {
 
   componentDidMount() {
     const { dispatch } = this.props;
-    dispatch({
-      type: 'pipeline/fetch',
-    });
+    // dispatch({
+    //   type: 'pipeline/fetch',
+    // });
   }
 
   handleStandardTableChange = (pagination, filtersArg, sorter) => {
@@ -311,7 +294,7 @@ class IngestPipeline extends PureComponent {
       <Form onSubmit={this.handleSearch} layout="inline">
         <Row gutter={{ md: 8, lg: 24, xl: 48 }}>
           <Col md={8} sm={24}>
-            <FormItem label="Pipeline 名称">
+            <FormItem label="索引模板名称">
               {getFieldDecorator('name')(<Input placeholder="请输入" />)}
             </FormItem>
           </Col>
@@ -335,7 +318,12 @@ class IngestPipeline extends PureComponent {
   }
 
   render() {
-    let {pipeline, loading} = this.props;
+    const data = {
+      list: this.parseData(),
+      pagination: {
+        pageSize: 5,
+      },
+    };
     const { selectedRows, modalVisible, updateModalVisible, updateFormValues } = this.state;
     const parentMethods = {
       handleAdd: this.handleAdd,
@@ -346,7 +334,7 @@ class IngestPipeline extends PureComponent {
       handleUpdate: this.handleUpdate,
     };
     return (
-      <PageHeaderWrapper>
+      <Fragment>
         <Card bordered={false}>
           <div className={styles.tableList}>
             <div className={styles.tableListForm}>{this.renderForm()}</div>
@@ -362,8 +350,7 @@ class IngestPipeline extends PureComponent {
             </div>
             <StandardTable
               selectedRows={selectedRows}
-              loading={loading}
-              data={pipeline.datalist}
+              data={data}
               columns={this.columns}
               onSelectRow={this.handleSelectRows}
               onChange={this.handleStandardTableChange}
@@ -378,9 +365,9 @@ class IngestPipeline extends PureComponent {
             values={updateFormValues}
           />
         ) : null}
-      </PageHeaderWrapper>
+      </Fragment>
     );
   }
 }
 
-export default IngestPipeline;
+export default IndexLifeCycle;

@@ -1,25 +1,15 @@
 import React, { PureComponent, Fragment } from 'react';
 import { connect } from 'dva';
-import moment from 'moment';
 import {
   Row,
   Col,
   Card,
   Form,
   Input,
-  Select,
-  Icon,
   Button,
-  Dropdown,
-  Menu,
-  InputNumber,
-  DatePicker,
   Modal,
   message,
-  Badge,
   Divider,
-  Steps,
-  Radio,
 } from 'antd';
 import StandardTable from '@/components/StandardTable';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
@@ -27,13 +17,7 @@ import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 import styles from '../List/TableList.less';
 
 const FormItem = Form.Item;
-const { Step } = Steps;
 const { TextArea } = Input;
-const { Option } = Select;
-const getValue = obj =>
-  Object.keys(obj)
-    .map(key => obj[key])
-    .join(',');
 
 const CreateForm = Form.create()(props => {
   const { modalVisible, form, handleAdd, handleModalVisible } = props;
@@ -47,24 +31,19 @@ const CreateForm = Form.create()(props => {
   return (
     <Modal
       destroyOnClose
-      title="新建Pipeline"
+      title="新建索引模板"
       visible={modalVisible}
       width={640}
       onOk={okHandle}
       onCancel={() => handleModalVisible()}
     >
-       <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="名称">
+       <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="索引模板名称">
         {form.getFieldDecorator('name', {
           rules: [{ required: true, message: '请输入至少五个字符的名称！', min: 5 }],
         })(<Input placeholder="请输入名称" />)}
       </FormItem>
-      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="描述">
-        {form.getFieldDecorator('desc', {
-          rules: [{ required: false }],
-        })(<Input placeholder="请输入" />)}
-      </FormItem>
-      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="处理器">
-        {form.getFieldDecorator('processors', {
+      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="模板设置">
+        {form.getFieldDecorator('settings', {
           rules: [{ required: true }],
         })(<TextArea
           style={{ minHeight: 24 }}
@@ -90,26 +69,20 @@ const UpdateForm = Form.create()(props => {
   return (
     <Modal
       destroyOnClose
-      title="更新Pipeline"
+      title="索引模板设置"
       visible={updateModalVisible}
       width={640}
       onOk={okHandle}
       onCancel={() => handleUpdateModalVisible()}
     >
-       <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="名称">
+       <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="索引模板名称">
         {form.getFieldDecorator('name', {
           initialValue: values.name,
           rules: [{ required: true, message: '请输入至少五个字符的名称！', min: 5 }],
         })(<Input placeholder="请输入名称" />)}
       </FormItem>
-      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="描述">
-        {form.getFieldDecorator('desc', {
-          initialValue: values.desc,
-          rules: [{ required: false }],
-        })(<Input placeholder="请输入" />)}
-      </FormItem>
-      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="处理器">
-        {form.getFieldDecorator('processors', {
+      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="索引模板设置">
+        {form.getFieldDecorator('settings', {
           initialValue: values.processors,
           rules: [{ required: true }],
         })(<TextArea
@@ -128,7 +101,7 @@ const UpdateForm = Form.create()(props => {
   loading: loading.models.pipeline,
 }))
 @Form.create()
-class IngestPipeline extends PureComponent {
+class IndexTemplate extends PureComponent {
   state = {
     modalVisible: false,
     updateModalVisible: false,
@@ -137,26 +110,93 @@ class IngestPipeline extends PureComponent {
     formValues: {},
     updateFormValues: {},
   };
+  //index template detail example
+  // {
+  //   ".ml-state" : {
+  //     "order" : 0,
+  //     "version" : 7090199,
+  //     "index_patterns" : [
+  //       ".ml-state*"
+  //     ],
+  //     "settings" : {
+  //       "index" : {
+  //         "hidden" : "true",
+  //         "lifecycle" : {
+  //           "name" : "ml-size-based-ilm-policy",
+  //           "rollover_alias" : ".ml-state-write"
+  //         },
+  //         "auto_expand_replicas" : "0-1"
+  //       }
+  //     },
+  //     "mappings" : {
+  //       "_meta" : {
+  //         "version" : "7090199"
+  //       },
+  //       "enabled" : false
+  //     },
+  //     "aliases" : { }
+  //   }
+  // }
+  datasource = `
+  [
+    {
+      "name" : "filebeat-7.9.1",
+      "index_patterns" : "[filebeat-7.9.1-*]",
+      "order" : "1",
+      "version" : null,
+      "composed_of" : ""
+    },
+    {
+      "name" : "apm-7.9.1-span",
+      "index_patterns" : "[apm-7.9.1-span*]",
+      "order" : "2",
+      "version" : null,
+      "composed_of" : ""
+    },
+    {
+      "name" : ".lists-default",
+      "index_patterns" : "[.lists-default-*]",
+      "order" : "0",
+      "version" : null,
+      "composed_of" : ""
+    },
+    {
+      "name" : ".monitoring-es",
+      "index_patterns" : "[.monitoring-es-7-*]",
+      "order" : "0",
+      "version" : "7000199",
+      "composed_of" : ""
+    },
+    {
+      "name" : ".monitoring-beats",
+      "index_patterns" : "[.monitoring-beats-7-*]",
+      "order" : "0",
+      "version" : "7000199",
+      "composed_of" : ""
+    }]`;
 
   columns = [
     {
-      title: '名称',
+      title: '模板名称',
       dataIndex: 'name',
     },
     {
-      title: '描述',
-      dataIndex: 'desc',
+      title: '索引模式',
+      dataIndex: 'index_patterns',
     },
     {
-      title: '处理器',
-      dataIndex: 'processors',
-      ellipsis: true,
+      title: 'order',
+      dataIndex: 'order'
+    },
+    {
+      title: '版本',
+      dataIndex: 'version'
     },
     {
       title: '操作',
       render: (text, record) => (
         <Fragment>
-          <a onClick={() => this.handleUpdateModalVisible(true, record)}>编辑</a>
+          <a onClick={() => this.handleUpdateModalVisible(true, record)}>设置</a>
           <Divider type="vertical" />
           <a onClick={() => {
             this.state.selectedRows.push(record);
@@ -169,9 +209,9 @@ class IngestPipeline extends PureComponent {
 
   componentDidMount() {
     const { dispatch } = this.props;
-    dispatch({
-      type: 'pipeline/fetch',
-    });
+    // dispatch({
+    //   type: 'pipeline/fetch',
+    // });
   }
 
   handleStandardTableChange = (pagination, filtersArg, sorter) => {
@@ -311,7 +351,7 @@ class IngestPipeline extends PureComponent {
       <Form onSubmit={this.handleSearch} layout="inline">
         <Row gutter={{ md: 8, lg: 24, xl: 48 }}>
           <Col md={8} sm={24}>
-            <FormItem label="Pipeline 名称">
+            <FormItem label="索引模板名称">
               {getFieldDecorator('name')(<Input placeholder="请输入" />)}
             </FormItem>
           </Col>
@@ -335,7 +375,12 @@ class IngestPipeline extends PureComponent {
   }
 
   render() {
-    let {pipeline, loading} = this.props;
+    const data = {
+      list: JSON.parse(this.datasource),
+      pagination: {
+        pageSize: 5,
+      },
+    };
     const { selectedRows, modalVisible, updateModalVisible, updateFormValues } = this.state;
     const parentMethods = {
       handleAdd: this.handleAdd,
@@ -346,7 +391,7 @@ class IngestPipeline extends PureComponent {
       handleUpdate: this.handleUpdate,
     };
     return (
-      <PageHeaderWrapper>
+      <Fragment>
         <Card bordered={false}>
           <div className={styles.tableList}>
             <div className={styles.tableListForm}>{this.renderForm()}</div>
@@ -362,8 +407,7 @@ class IngestPipeline extends PureComponent {
             </div>
             <StandardTable
               selectedRows={selectedRows}
-              loading={loading}
-              data={pipeline.datalist}
+              data={data}
               columns={this.columns}
               onSelectRow={this.handleSelectRows}
               onChange={this.handleStandardTableChange}
@@ -378,9 +422,9 @@ class IngestPipeline extends PureComponent {
             values={updateFormValues}
           />
         ) : null}
-      </PageHeaderWrapper>
+      </Fragment>
     );
   }
 }
 
-export default IngestPipeline;
+export default IndexTemplate;

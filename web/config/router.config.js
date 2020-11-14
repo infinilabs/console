@@ -23,8 +23,8 @@ export default [
         path: '/platform',
         name: 'platform',
         icon: 'dashboard',
-        component: './Dashboard/Analysis',
         routes: [
+      //      { path: '/', redirect: '/platform/gateway' },
             {
               path: '/platform/gateway',
               name: 'gateway',
@@ -72,41 +72,54 @@ export default [
           },{
             path: '/data/indices',
             name: 'index',
-            // component: './DataManagement/Indices',
-            // routes: [
-            //   {
-            //     path: '/data/indices',
-            //     redirect: '/data/indices/summary',
-            //   },
-            //   {
-            //     path: '/data/indices/summary',
-            //     component: './DataManagement/IndexSummary',
-            //   },
-            //   {
-            //     path: '/data/indices/doc',
-            //     component: './DataManagement/Document',
-            //   },
-            //   {
-            //     path: '/data/indices/template',
-            //     component: './DataManagement/IndexTemplate',
-            //   },
-            //   {
-            //     path: '/data/indices/ilm',
-            //     component: './DataManagement/IndexLifeCycle',
-            //   },
-            // ]
+            component: './DataManagement/Indices',
+            routes: [
+              {
+                path: '/data/indices',
+                redirect: '/data/indices/summary',
+              },
+              {
+                path: '/data/indices/summary',
+                component: './DataManagement/IndexSummary',
+              },
+              {
+                path: '/data/indices/doc',
+                component: './DataManagement/Document',
+              },
+              {
+                path: '/data/indices/template',
+                component: './DataManagement/IndexTemplate',
+              },
+              {
+                path: '/data/indices/ilm',
+                component: './DataManagement/IndexLifeCycle',
+              },
+            ]
           }, {
-            path: '/list/table-list',
+            path: '/data/backup',
             name: 'snapshot',
-            component: './List/TableList',
+            component: './DataManagement/Backup',
+            routes: [
+              {
+                path: '/data/backup',
+                redirect: '/data/backup/bakandrestore',
+              },
+              {
+                path: '/data/backup/bakandrestore',
+                component: './DataManagement/backup/BakAndRestore',
+              },{
+                path: '/data/backup/bakcycle',
+                component: './DataManagement/backup/BakCycle',
+              }
+            ]
           }, {
-            path: '/list/table-list',
+            path: '/data/rebuild',
             name: 'rebuild',
-            component: './List/TableList',
+            component: './DataManagement/Rebuild',
           }, {
-            path: '/list/table-list',
+            path: '/data/import',
             name: 'export',
-            component: './List/TableList',
+            component: './DataManagement/Import',
           },
         ]
       },

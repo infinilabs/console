@@ -18,7 +18,7 @@ export default [
     authority: ['admin', 'user'],
     routes: [
       // dashboard
-      { path: '/', redirect: '/platform' },
+      { path: '/', redirect: '/platform/gateway' },
       {
         path: '/platform',
         name: 'platform',

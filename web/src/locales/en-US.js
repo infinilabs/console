@@ -96,11 +96,9 @@ export default {
   'menu.search.nlp': 'NLP',
 
   'menu.settings': 'SETTINGS',
-  'menu.settings.authentication': 'AUTHENTICATION',
-  'menu.settings.authorization': 'AUTHORIZATION',
+  'menu.settings.global': 'GLOBAL',
+  'menu.settings.security': 'SECURITY',
   'menu.settings.audit': 'AUDIT',
-  'menu.settings.certs': 'CERTS',
-  'menu.settings.others': 'OTHERS',
 
 
   'menu.form': 'Form',
@@ -206,6 +204,10 @@ export default {
   'app.monitor.fund-surplus': 'Fund Surplus',
   
   'app.setting.appname':"Search Center",
+
+
+  'app.settings.security.update':"Update Setting",
+  'app.settings.global.update':"Update Setting",
 
   'app.settings.menuMap.basic': 'Basic Settings',
   'app.settings.menuMap.security': 'Security Settings',

@@ -1,4 +1,4 @@
-# 极限搜索中心
+# 极限企业搜索中心
 
 INFINI Search Center
 

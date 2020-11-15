@@ -160,27 +160,30 @@ export default [
         path: '/settings',
         name: 'settings',
         icon: 'setting',
-        component: './List/TableList',
+        // component: './List/TableList',
         routes: [
           {
-            path: '/list/table-list',
-            name: 'authentication',
-            component: './List/TableList',
+            path: '/settings/global',
+            name: 'global',
+            component: './Settings/Global/Global',
           }, {
-            path: '/list/table-list',
-            name: 'authorization',
-            component: './List/TableList',
+            path: '/settings/security',
+            name: 'security',
+            hideChildrenInMenu: true,
+            routes: [
+                {
+                  path: '/settings/security',
+                  name: 'security',
+                  component: './Settings/Security/General',
+                }, {
+                  path: '/settings/security/general',
+                  name: 'general',
+                  component: './Forms/BasicForm',
+                },
+            ]
           }, {
-            path: '/list/table-list',
+            path: '/settings/audit',
             name: 'audit',
-            component: './List/TableList',
-          }, {
-            path: '/list/table-list',
-            name: 'certs',
-            component: './List/TableList',
-          }, {
-            path: '/list/table-list',
-            name: 'others',
             component: './List/TableList',
           },
         ]

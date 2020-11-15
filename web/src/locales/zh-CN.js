@@ -104,12 +104,11 @@ export default {
   'menu.search.nlp': '自然语言处理',
 
   'menu.settings': '系统设置',
-  'menu.settings.authentication': '认证管理',
+  'menu.settings.global': '全局设置',
+  'menu.settings.security': '安全设置',
   'menu.settings.authorization': '授权管理',
   'menu.settings.audit': '审计日志',
-  'menu.settings.certs': '证书管理',
-  'menu.settings.others': '其它设置',
-  
+
 
   'menu.form': '表单页',
   'menu.form.basicform': '基础表单',
@@ -214,7 +213,9 @@ export default {
   'app.monitor.fund-surplus': '补贴资金剩余',
   
   'app.setting.appname':"极限搜索中心",
-  
+
+  'app.settings.security.update':"更新设置",
+  'app.settings.global.update':"更新设置",
 
   'app.settings.menuMap.basic': '基本设置',
   'app.settings.menuMap.security': '安全设置',

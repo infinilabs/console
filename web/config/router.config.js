@@ -132,25 +132,115 @@ export default [
         icon: 'search',
         routes: [
           {
-            path: '/search/template',
-            name: 'template',
-            component: './SearchManage/SearchTemplate',
+              path: '/search/template',
+              name: 'template',
+              component: './SearchManage/template/Template',
+              routes: [
+                  {
+                      path: '/search/template',
+                      redirect: '/search/template/summary',
+                  },
+                  {
+                      path: '/search/template/summary',
+                      component: './SearchManage/template/Summary',
+                  },
+                  {
+                      path: '/search/template/template',
+                      component: './SearchManage/template/SearchTemplate',
+                  },
+                  {
+                      path: '/search/template/param',
+                      component: './SearchManage/template/Param',
+                  },
+                  {
+                      path: '/search/template/history',
+                      component: './SearchManage/template/History',
+                  },
+              ]
           }, {
             path: '/search/alias',
             name: 'alias',
-            component: './SearchManage/AliasManage',
+            component: './SearchManage/alias/Alias',
+                routes: [
+                    {
+                        path: '/search/alias',
+                        redirect: '/search/alias/index',
+                    },
+                    {
+                        path: '/search/alias/index',
+                        component: './SearchManage/alias/AliasManage',
+                    },
+                    {
+                        path: '/search/alias/param',
+                        component: './SearchManage/alias/Param',
+                    },
+                    {
+                        path: '/search/alias/rule',
+                        component: './SearchManage/alias/Rule',
+                    }
+                ]
           }, {
             path: '/search/dict',
             name: 'dict',
-            component: './SearchManage/DictManage',
+            component: './SearchManage/dict/Dict',
+                routes: [
+                    {
+                        path: '/search/dict',
+                        redirect: '/search/dict/professional',
+                    },
+                    {
+                        path: '/search/dict/professional',
+                        component: './SearchManage/dict/Professional',
+                    },
+                    {
+                        path: '/search/dict/common',
+                        component: './SearchManage/dict/Common',
+                    }
+                ]
           }, {
             path: '/search/analyzer',
             name: 'analyzer',
-            component: './SearchManage/AnalyzerManage',
+            component: './SearchManage/analyzer/Analyzer',
+                routes: [
+                    {
+                        path: '/search/analyzer',
+                        redirect: '/search/analyzer/manage',
+                    },
+                    {
+                        path: '/search/analyzer/manage',
+                        component: './SearchManage/analyzer/Manage',
+                    },
+                    {
+                        path: '/search/analyzer/test',
+                        component: './SearchManage/analyzer/AnalyzerTest',
+                    }
+                ]
           }, {
             path: '/search/nlp',
             name: 'nlp',
-            component: './SearchManage/NLPManage',
+            component: './SearchManage/nlp/NLP',
+            routes: [
+                {
+                    path: '/search/nlp',
+                    redirect: '/search/nlp/query',
+                },
+                {
+                    path: '/search/nlp/query',
+                    component: './SearchManage/nlp/Query',
+                },
+                {
+                    path: '/search/nlp/intention',
+                    component: './SearchManage/nlp/Intention',
+                },
+                {
+                    path: '/search/nlp/knowledge',
+                    component: './SearchManage/nlp/Knowledge',
+                },
+                {
+                    path: '/search/nlp/text',
+                    component: './SearchManage/nlp/Text',
+                }
+            ]
           },
         ]
       },

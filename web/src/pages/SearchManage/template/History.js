@@ -24,7 +24,7 @@ import {
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 import Result from '@/components/Result';
 
-import styles from './SearchTemplate.less';
+import styles from './History.less';
 
 const FormItem = Form.Item;
 const RadioButton = Radio.Button;
@@ -37,7 +37,7 @@ const { Search, TextArea } = Input;
     loading: loading.models.list,
 }))
 @Form.create()
-class SearchTemplate extends PureComponent {
+class History extends PureComponent {
     state = { visible: false, done: false };
 
     formLayout = {
@@ -224,23 +224,8 @@ class SearchTemplate extends PureComponent {
         );
         };
         return (
-            <PageHeaderWrapper>
             <div className={styles.standardList}>
-    <Card bordered={false}>
-            <Row>
-            <Col sm={8} xs={24}>
-            <Info title="模板" value="8个模板" bordered />
-        </Col>
-        <Col sm={8} xs={24}>
-            <Info title="本周新增模板" value="2个模板" bordered />
-        </Col>
-        <Col sm={8} xs={24}>
-            <Info title="本周通过模板创建的索引" value="24个索引" />
-            </Col>
-            </Row>
-            </Card>
-
-            <Card
+        <Card
         className={styles.listCard}
         bordered={false}
         title="搜索模板"
@@ -292,20 +277,9 @@ class SearchTemplate extends PureComponent {
         />
         </Card>
         </div>
-        <Modal
-        title={done ? null : `模板${current ? '编辑' : '添加'}`}
-        className={styles.standardListForm}
-        width={640}
-        bodyStyle={done ? { padding: '72px 0' } : { padding: '28px 0 0' }}
-        destroyOnClose
-        visible={visible}
-        {...modalFooter}
-    >
-        {getModalContent()}
-    </Modal>
-        </PageHeaderWrapper>
+
     );
     }
 }
 
-export default SearchTemplate;
+export default History;

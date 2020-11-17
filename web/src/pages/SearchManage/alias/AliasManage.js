@@ -24,7 +24,7 @@ import {
 import StandardTable from '@/components/StandardTable';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 
-import styles from './AnalyzerManage.less';
+import styles from './AliasManage.less';
 
 const FormItem = Form.Item;
 const { Step } = Steps;
@@ -37,31 +37,30 @@ const getValue = obj =>
     .join(',');
 const statusMap = ['default', 'processing', 'success', 'error'];
 const status = ['关闭', '运行中', '已上线', '异常'];
-
 const CreateForm = Form.create()(props => {
-  const { modalVisible, form, handleAdd, handleModalVisible } = props;
-  const okHandle = () => {
-    form.validateFields((err, fieldsValue) => {
-      if (err) return;
-      form.resetFields();
-      handleAdd(fieldsValue);
-    });
-  };
-  return (
-    <Modal
-      destroyOnClose
-      title="新建规则"
-      visible={modalVisible}
-      onOk={okHandle}
-      onCancel={() => handleModalVisible()}
-    >
-      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="描述">
+    const { modalVisible, form, handleAdd, handleModalVisible } = props;
+    const okHandle = () => {
+        form.validateFields((err, fieldsValue) => {
+            if (err) return;
+            form.resetFields();
+            handleAdd(fieldsValue);
+        });
+    };
+    return (
+        <Modal
+    destroyOnClose
+    title="新建规则"
+    visible={modalVisible}
+    onOk={okHandle}
+    onCancel={() => handleModalVisible()}
+>
+<FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="描述">
         {form.getFieldDecorator('desc', {
-          rules: [{ required: true, message: '请输入至少五个字符的规则描述！', min: 5 }],
+            rules: [{ required: true, message: '请输入至少五个字符的规则描述！', min: 5 }],
         })(<Input placeholder="请输入" />)}
-      </FormItem>
+</FormItem>
     </Modal>
-  );
+);
 });
 
 @Form.create()
@@ -186,20 +185,20 @@ class UpdateForm extends PureComponent {
         </FormItem>,
       ];
     }
-    return [
-      <FormItem key="name" {...this.formLayout} label="规则名称">
-        {form.getFieldDecorator('name', {
-          rules: [{ required: true, message: '请输入规则名称！' }],
-          initialValue: formVals.name,
-        })(<Input placeholder="请输入" />)}
-      </FormItem>,
-      <FormItem key="desc" {...this.formLayout} label="规则描述">
-        {form.getFieldDecorator('desc', {
-          rules: [{ required: true, message: '请输入至少五个字符的规则描述！', min: 5 }],
-          initialValue: formVals.desc,
-        })(<TextArea rows={4} placeholder="请输入至少五个字符" />)}
-      </FormItem>,
-    ];
+      return [
+          <FormItem key="name" {...this.formLayout} label="别名">
+          {form.getFieldDecorator('name', {
+              rules: [{ required: true, message: '请输入别名！' }],
+              initialValue: formVals.name,
+          })(<Input placeholder="请输入" />)}
+          </FormItem>,
+              <FormItem key="desc" {...this.formLayout} label="描述">
+                  {form.getFieldDecorator('desc', {
+                      rules: [{ required: true, message: '请输入至少五个字符的描述！', min: 5 }],
+                      initialValue: formVals.desc,
+                  })(<TextArea rows={4} placeholder="请输入至少五个字符" />)}
+          </FormItem>,
+          ];
   };
 
   renderFooter = currentStep => {
@@ -249,7 +248,7 @@ class UpdateForm extends PureComponent {
         width={640}
         bodyStyle={{ padding: '32px 40px 48px' }}
         destroyOnClose
-        title="规则配置"
+        title="别名配置"
         visible={updateModalVisible}
         footer={this.renderFooter(currentStep)}
         onCancel={() => handleUpdateModalVisible()}
@@ -271,7 +270,7 @@ class UpdateForm extends PureComponent {
   loading: loading.models.rule,
 }))
 @Form.create()
-class AnalyzerManage extends PureComponent {
+class AliasManage extends PureComponent {
   state = {
     modalVisible: false,
     updateModalVisible: false,
@@ -283,15 +282,15 @@ class AnalyzerManage extends PureComponent {
 
   columns = [
     {
-      title: '规则名称',
+      title: '索引名称',
       dataIndex: 'name',
     },
     {
-      title: '描述',
+      title: '别名',
       dataIndex: 'desc',
     },
     {
-      title: '服务调用次数',
+      title: '索引调用次数',
       dataIndex: 'callNo',
       sorter: true,
       align: 'right',
@@ -300,7 +299,7 @@ class AnalyzerManage extends PureComponent {
       needTotal: true,
     },
     {
-      title: '状态',
+      title: '索引状态',
       dataIndex: 'status',
       filters: [
         {
@@ -325,7 +324,7 @@ class AnalyzerManage extends PureComponent {
       },
     },
     {
-      title: '上次调度时间',
+      title: '最后更新时间',
       dataIndex: 'updatedAt',
       sorter: true,
       render: val => <span>{moment(val).format('YYYY-MM-DD HH:mm:ss')}</span>,
@@ -334,7 +333,7 @@ class AnalyzerManage extends PureComponent {
       title: '操作',
       render: (text, record) => (
         <Fragment>
-          <a onClick={() => this.handleUpdateModalVisible(true, record)}>配置</a>
+          <a onClick={() => this.handleUpdateModalVisible(true, record)}>配置别名</a>
           <Divider type="vertical" />
           <a href="">订阅警报</a>
         </Fragment>
@@ -497,12 +496,12 @@ class AnalyzerManage extends PureComponent {
       <Form onSubmit={this.handleSearch} layout="inline">
         <Row gutter={{ md: 8, lg: 24, xl: 48 }}>
           <Col md={8} sm={24}>
-            <FormItem label="规则名称">
+            <FormItem label="索引名称">
               {getFieldDecorator('name')(<Input placeholder="请输入" />)}
             </FormItem>
           </Col>
           <Col md={8} sm={24}>
-            <FormItem label="使用状态">
+            <FormItem label="别名">
               {getFieldDecorator('status')(
                 <Select placeholder="请选择" style={{ width: '100%' }}>
                   <Option value="0">关闭</Option>
@@ -537,12 +536,12 @@ class AnalyzerManage extends PureComponent {
       <Form onSubmit={this.handleSearch} layout="inline">
         <Row gutter={{ md: 8, lg: 24, xl: 48 }}>
           <Col md={8} sm={24}>
-            <FormItem label="规则名称">
+            <FormItem label="索引名称">
               {getFieldDecorator('name')(<Input placeholder="请输入" />)}
             </FormItem>
           </Col>
           <Col md={8} sm={24}>
-            <FormItem label="使用状态">
+            <FormItem label="别名">
               {getFieldDecorator('status')(
                 <Select placeholder="请选择" style={{ width: '100%' }}>
                   <Option value="0">关闭</Option>
@@ -552,7 +551,7 @@ class AnalyzerManage extends PureComponent {
             </FormItem>
           </Col>
           <Col md={8} sm={24}>
-            <FormItem label="调用次数">
+            <FormItem label="索引状态">
               {getFieldDecorator('number')(<InputNumber style={{ width: '100%' }} />)}
             </FormItem>
           </Col>
@@ -562,26 +561,6 @@ class AnalyzerManage extends PureComponent {
             <FormItem label="更新日期">
               {getFieldDecorator('date')(
                 <DatePicker style={{ width: '100%' }} placeholder="请输入更新日期" />
-              )}
-            </FormItem>
-          </Col>
-          <Col md={8} sm={24}>
-            <FormItem label="使用状态">
-              {getFieldDecorator('status3')(
-                <Select placeholder="请选择" style={{ width: '100%' }}>
-                  <Option value="0">关闭</Option>
-                  <Option value="1">运行中</Option>
-                </Select>
-              )}
-            </FormItem>
-          </Col>
-          <Col md={8} sm={24}>
-            <FormItem label="使用状态">
-              {getFieldDecorator('status4')(
-                <Select placeholder="请选择" style={{ width: '100%' }}>
-                  <Option value="0">关闭</Option>
-                  <Option value="1">运行中</Option>
-                </Select>
               )}
             </FormItem>
           </Col>
@@ -630,14 +609,11 @@ class AnalyzerManage extends PureComponent {
       handleUpdate: this.handleUpdate,
     };
     return (
-      <PageHeaderWrapper title="分词管理">
+      <Fragment>
         <Card bordered={false}>
           <div className={styles.tableList}>
             <div className={styles.tableListForm}>{this.renderForm()}</div>
             <div className={styles.tableListOperator}>
-              <Button icon="plus" type="primary" onClick={() => this.handleModalVisible(true)}>
-                新建
-              </Button>
               {selectedRows.length > 0 && (
                 <span>
                   <Button>批量操作</Button>
@@ -667,9 +643,9 @@ class AnalyzerManage extends PureComponent {
             values={stepFormValues}
           />
         ) : null}
-      </PageHeaderWrapper>
+        </Fragment>
     );
   }
 }
 
-export default AnalyzerManage;
+export default AliasManage;

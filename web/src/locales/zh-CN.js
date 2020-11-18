@@ -219,9 +219,13 @@ export default {
   'app.settings.global.site_name':"站点名称",
   'app.settings.global.domain':"站点域名",
   'app.settings.global.listen_addr':"监听地址",
-  'app.settings.global.is_tls':"是否开启 TLS",
+  'app.settings.global.is_tls':"开启 TLS",
   'app.settings.global.data_path':"数据目录",
   'app.settings.global.log_path':"日志目录",
+
+  'app.settings.security.auth2factor_enabled':"开启双因子身份认证",
+  'app.settings.security.audit_enabled':"开启审计日志",
+
 
   'app.settings.menuMap.basic': '基本设置',
   'app.settings.menuMap.security': '安全设置',

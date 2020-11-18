@@ -88,6 +88,7 @@ const UpdateForm = Form.create()(props => {
 
     <Form.Item labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label={fieldLabels.keyword_type}>
     {form.getFieldDecorator('keyword_type', {
+        initialValue: values.value,
         rules: [{ required: true, message: '请选择关键词类型' }],
     })(
     <Select placeholder="请选择关键词类型">
@@ -96,7 +97,7 @@ const UpdateForm = Form.create()(props => {
         <Option value="xianlu">线路</Option>
         </Select>
     )}
-</Form.Item>
+    </Form.Item>
     </Modal>
 );
 });
@@ -120,28 +121,35 @@ class Professional extends PureComponent {
   [
     {
       "keyword" : "验收标准",
-      "type" : "客运"
+      "type" : "客运",
+      "value": "keyun"
     },
     {
       "keyword" : "桥梁施工技术规范",
-      "type" : "客运"
+      "type" : "客运",
+      "value": "keyun"
     },{
       "keyword" : "路规",
-      "type" : "客运"
+      "type" : "客运",
+      "value": "keyun"
     },{
       "keyword" : "遂规",
-      "type" : "客运"
+      "type" : "客运",
+      "value": "keyun"
     },
     {
       "keyword" : "铁路技术管理规则",
-      "type" : "客运"
+      "type" : "客运",
+      "value": "keyun"
     },{
       "keyword" : "行车组织规则",
-      "type" : "客运"
+      "type" : "客运",
+      "value": "keyun"
     },
     {
       "keyword" : "铁路交通事故调查处理规则",
-      "type" : "客运"
+      "type" : "客运",
+      "value": "keyun"
     }]`;
 
   columns = [

@@ -1,6 +1,6 @@
 import React, {Component, Fragment} from 'react';
 import {connect} from 'dva';
-import {Card, Form, Input, Select, Button, message, Divider, Drawer, Descriptions} from 'antd';
+import {Card, Form, Input,Switch, Select, Button, message, Divider, Drawer, Descriptions} from 'antd';
 
 const {Option} = Select;
 import {formatMessage, FormattedMessage} from 'umi/locale';
@@ -45,20 +45,99 @@ class Global extends Component {
         hideRequiredMark >
 
         < FormItem
-        label = {formatMessage({id: 'app.settings.global.cluster_name'})} >
-            {getFieldDecorator('address',
-        {
-            rules: [
+            label = {formatMessage({id: 'app.settings.global.site_name'})} >
+            {getFieldDecorator('site_name',
                 {
-                    required: true,
-                    message: formatMessage({id: 'app.settings.basic.address-message'}, {}),
-                },
-            ],
+                    rules: [
+                        {
+                            required: true,
+                            message: formatMessage({id: 'app.settings.global.site_name-message'}, {}),
+                        },
+                    ],
+                }
+            )
+            ( < Input / >)
+            }
+        </FormItem>
+
+        < FormItem
+        label = {formatMessage({id: 'app.settings.global.domain'})} >
+            {getFieldDecorator('domain',
+            {
+                rules: [
+                    {
+                        required: true,
+                        message: formatMessage({id: 'app.settings.global.domain-message'}, {}),
+                    },
+                ],
+            }
+        )
+            ( < Input / >)
         }
-    )
+        </FormItem>
+                < FormItem
+                label = {formatMessage({id: 'app.settings.global.listen_addr'})} >
+                {getFieldDecorator('listen_addr',
+                {
+                rules: [
+                {
+                required: true,
+                message: formatMessage({id: 'app.settings.global.listen_addr-message'}, {}),
+                },
+                ],
+                }
+                )
+                ( < Input / >)
+                }
+        </FormItem>
+                <Form.Item label = {formatMessage({id: 'app.settings.global.is_tls'})}>
+                {getFieldDecorator('isTLS', {
+                initialValue: true,
+                rules: [
+                {
+                required: true,
+                message: "勾选状态",
+                },
+                ],
+                })(
+                <Switch defaultChecked onChange={()=>{}} />
+                )}
+                </Form.Item>
+
+
+        < FormItem
+        label = {formatMessage({id: 'app.settings.global.data_path'})} >
+        {getFieldDecorator('work_dir',
+        {
+        rules: [
+        {
+        required: true,
+        message: formatMessage({id: 'app.settings.global.data_path-message'}, {}),
+        },
+        ],
+        }
+        )
         ( < Input / >)
-    }
-    </FormItem>
+        }
+        </FormItem>
+
+        < FormItem
+        label = {formatMessage({id: 'app.settings.global.log_path'})} >
+        {getFieldDecorator('work_dir',
+        {
+        rules: [
+        {
+        required: true,
+        message: formatMessage({id: 'app.settings.global.log_path-message'}, {}),
+        },
+        ],
+        }
+        )
+        ( < Input / >)
+        }
+        </FormItem>
+
+
         < Button type = "primary" >
             < FormattedMessage
         id = "app.settings.global.update"

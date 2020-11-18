@@ -208,6 +208,12 @@ export default {
 
   'app.settings.security.update':"Update Setting",
   'app.settings.global.update':"Update Setting",
+  'app.settings.global.site_name':"Site Name",
+  'app.settings.global.domain':"Site Domain",
+  'app.settings.global.listen_addr':"Listen Address",
+  'app.settings.global.is_tls':"Enable TLS",
+  'app.settings.global.data_path':"Data Path",
+  'app.settings.global.log_path':"Log Path",
 
   'app.settings.menuMap.basic': 'Basic Settings',
   'app.settings.menuMap.security': 'Security Settings',

@@ -215,6 +215,10 @@ export default {
   'app.settings.global.data_path':"Data Path",
   'app.settings.global.log_path':"Log Path",
 
+  'app.settings.security.auth2factor_enabled':"Enable 2FA(two-factor) Authentication",
+  'app.settings.security.audit_enabled':"Enable Audit Logging",
+
+
   'app.settings.menuMap.basic': 'Basic Settings',
   'app.settings.menuMap.security': 'Security Settings',
   'app.settings.menuMap.binding': 'Account Binding',

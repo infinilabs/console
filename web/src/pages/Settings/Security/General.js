@@ -1,6 +1,8 @@
 import React, {Component, Fragment} from 'react';
 import {connect} from 'dva';
-import {Card, Form, Input, Select, Button, message, Divider, Drawer, Descriptions} from 'antd';
+import {Card, Form, Input, Select,Switch, Button, message, Divider, Drawer, Descriptions} from 'antd';
+import { Table, Tag } from 'antd';
+import { Icon } from 'antd';
 
 const {Option} = Select;
 import {formatMessage, FormattedMessage} from 'umi/locale';
@@ -60,6 +62,151 @@ class General extends Component {
         this.setState({operationkey: key});
     };
 
+    ssoSettings() {
+        const columns = [
+            {
+                title: 'ID',
+                dataIndex: 'key',
+                key: 'key',
+                render: text => <a>{text}</a>,
+            },
+            {
+                title: '名称',
+                dataIndex: 'name',
+                key: 'name',
+            },
+            {
+                title: '类型',
+                dataIndex: 'type',
+                key: 'type',
+            },
+            {
+                title: '启用',
+                key: 'enabled',
+                dataIndex: 'enabled',
+                render: text => <Icon type="check-square" />,
+            }, {
+                title: '最后更新时间',
+                key: 'modify_time',
+                dataIndex: 'modify_time',
+            }, {
+                title: '创建时间',
+                key: 'create_time',
+                dataIndex: 'create_time',
+            },
+            {
+                title: '操作',
+                key: 'action',
+                render: (text, record) => (
+                    <span>
+        <a>修改</a>
+        <Divider type="vertical" />
+        <a>删除</a>
+      </span>
+                ),
+            },
+        ];
+
+        const data = [
+            {
+                key: '1',
+                name: 'github',
+                type: "OAuth2",
+                enabled: true,
+                modify_time: "Mar 01, 2020",
+                create_time: "Oct 19, 2019",
+            },{
+                key: '2',
+                name: 'okta',
+                type: "OAuth2",
+                enabled: true,
+                modify_time: "Mar 02, 2020",
+                create_time: "Oct 29, 2019",
+            },
+        ];
+        return (<Table columns={columns} dataSource={data} />);
+    }
+
+    userSettings() {
+        const columns = [
+            {
+                title: 'ID',
+                dataIndex: 'key',
+                key: 'key',
+                render: text => <a>{text}</a>,
+            },
+            {
+                title: '用户名',
+                dataIndex: 'user_name',
+                key: 'user_name',
+            },
+            {
+                title: '电子邮件地址',
+                dataIndex: 'email',
+                key: 'email',
+            },
+            {
+                title: '已激活',
+                key: 'enabled',
+                dataIndex: 'enabled',
+                render: text => <Icon type="check-square" />,
+            }, {
+                title: '管理员',
+                key: 'is_admin',
+                dataIndex: 'is_admin',
+                render: (text, record) => {
+                    if (record.is_admin){
+                        return <Icon type="check-square" />
+                    }else{
+                        return <Icon type="border" />
+                    }
+                },
+            }, {
+                title: '创建时间',
+                key: 'create_time',
+                dataIndex: 'create_time',
+            },{
+                title: '上次登录',
+                key: 'last_login_time',
+                dataIndex: 'last_login_time',
+            },
+            {
+                title: '操作',
+                key: 'action',
+                render: (text, record) => (
+                    <span>
+        <a>修改</a>
+        <Divider type="vertical" />
+        <a>删除</a>
+      </span>
+                ),
+            },
+        ];
+
+        const data = [
+            {
+                key: '1',
+                user_name: 'admin',
+                email: "admin@infini.ltd",
+                enabled: true,
+                is_admin: true,
+                create_time: "Oct 19, 2019",
+                last_login_time: "Mar 01, 2020",
+
+            }, {
+                key: '2',
+                user_name: 'user',
+                email: "user@infini.ltd",
+                enabled: true,
+                is_admin: false,
+                create_time: "Oct 19, 2019",
+                last_login_time: "Mar 01, 2020",
+
+            },
+        ];
+        return (<Table columns={columns} dataSource={data} />);
+    }
+
     generalSettings = () => {
         const {
             form: {getFieldDecorator},
@@ -75,140 +222,40 @@ class General extends Component {
         layout = "vertical"
         hideRequiredMark >
 
+
+        <Form.Item label = {formatMessage({id: 'app.settings.security.auth2factor_enabled'})}>
+            {getFieldDecorator('auth2factor_enabled', {
+                initialValue: true,
+                rules: [
+                    {
+                        required: true,
+                        message: formatMessage({id: 'app.settings.security.auth2factor_enabled-message'}, {}),
+                    },
+                ],
+            })(
+                <Switch defaultChecked onChange={()=>{}} />
+            )}
+        </Form.Item>
+
         < FormItem
-        label = {formatMessage({id: 'app.settings.security.auth2factor_enabled'})} >
-            {getFieldDecorator('profile',
+        label = {formatMessage({id: 'app.settings.security.audit_enabled'})} >
+            {getFieldDecorator('audit_enabled',
         {
             rules: [
                 {
                     required: true,
-                    message: formatMessage({id: 'app.settings.basic.profile-message'}, {}),
+                    message: formatMessage({id: 'app.settings.security.audit_enabled-message'}, {}),
                 },
             ],
         }
     )
-        ( < Input   /> )
+            (
+                <Switch defaultChecked onChange={()=>{}} />
+            )
     }
     </FormItem>
 
-        < FormItem
-        label = {formatMessage({id: 'app.settings.basic.email'})} >
-            {getFieldDecorator('email',
-        {
-            rules: [
-                {
-                    required: true,
-                    message: formatMessage({id: 'app.settings.basic.email-message'}, {}),
-                },
-            ],
-        }
-    )
-        ( < Input / >
-    )
-    }
-    <
-        /FormItem>
-        < FormItem
-        label = {formatMessage({id: 'app.settings.basic.nickname'})} >
-            {getFieldDecorator('name',
-        {
-            rules: [
-                {
-                    required: true,
-                    message: formatMessage({id: 'app.settings.basic.nickname-message'}, {}),
-                },
-            ],
-        }
-    )
-        ( < Input / >
-    )
-    }
-    <
-        /FormItem>
-        < FormItem
-        label = {formatMessage({id: 'app.settings.basic.profile'})} >
-            {getFieldDecorator('profile',
-        {
-            rules: [
-                {
-                    required: true,
-                    message: formatMessage({id: 'app.settings.basic.profile-message'}, {}),
-                },
-            ],
-        }
-    )
-        (
-        < Input.TextArea
-        placeholder = {formatMessage({id: 'app.settings.basic.profile-placeholder'})}
-        rows = {4}
-        />
-    )
-    }
-    <
-        /FormItem>
-        < FormItem
-        label = {formatMessage({id: 'app.settings.basic.country'})} >
-            {getFieldDecorator('country',
-        {
-            rules: [
-                {
-                    required: true,
-                    message: formatMessage({id: 'app.settings.basic.country-message'}, {}),
-                },
-            ],
-        }
-    )
-        (
-        < Select
-        style = {
-        {
-            maxWidth: 220
-        }
-    }>
-    <
-        Option
-        value = "China" > 中国 < /Option>
-            < /Select>
-    )
-    }
-    <
-        /FormItem>
 
-        < FormItem
-        label = {formatMessage({id: 'app.settings.basic.address'})} >
-            {getFieldDecorator('address',
-        {
-            rules: [
-                {
-                    required: true,
-                    message: formatMessage({id: 'app.settings.basic.address-message'}, {}),
-                },
-            ],
-        }
-    )
-        ( < Input / >
-    )
-    }
-    <
-        /FormItem>
-        < FormItem
-        label = {formatMessage({id: 'app.settings.basic.phone'})} >
-            {getFieldDecorator('phone',
-        {
-            rules: [
-                {
-                    required: true,
-                    message: formatMessage({id: 'app.settings.basic.phone-message'}, {}),
-                },
-                // { validator: validatorPhone },
-            ],
-        }
-    )
-        ( < PhoneView / >
-    )
-    }
-    <
-        /FormItem>
         < Button
         type = "primary" >
             < FormattedMessage
@@ -233,9 +280,9 @@ class General extends Component {
         const {operationkey} = this.state;
         const contentList = {
             tab1: ( < div > {this.generalSettings()} < /div>),
-            tab2: ( < div > SSO 集成 < /div>),
+            tab2: ( < div > {this.ssoSettings()}< /div>),
         tab3: ( < div > 角色管理 < /div>),
-        tab4: ( < div > 用户管理 < /div>),
+        tab4: ( < div > {this.userSettings()} < /div>),
         tab5: ( < div > 证书管理 < /div>),
     }
         ;

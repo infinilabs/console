@@ -265,16 +265,12 @@ export default [
                   path: '/settings/security',
                   name: 'security',
                   component: './Settings/Security/General',
-                }, {
-                  path: '/settings/security/general',
-                  name: 'general',
-                  component: './Forms/BasicForm',
                 },
             ]
           }, {
             path: '/settings/audit',
             name: 'audit',
-            component: './List/TableList',
+            component: './Settings/Security/Audit',
           },
         ]
       },

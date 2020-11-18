@@ -96,7 +96,7 @@ class Global extends Component {
                 rules: [
                 {
                 required: true,
-                message: "勾选状态",
+                message: formatMessage({id: 'app.settings.global.is_tls-message'}, {}),
                 },
                 ],
                 })(

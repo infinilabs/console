@@ -81,7 +81,7 @@ const UpdateForm = Form.create()(props => {
 
 <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="关键词">
         {form.getFieldDecorator('keyword', {
-            initialValue: values.nakeywordme,
+            initialValue: values.keyword,
             rules: [{ required: true, message: '请输入至少一个字符的名称！', min: 1 }],
         })(<Input placeholder="请输入关键词" />)}
 </FormItem>

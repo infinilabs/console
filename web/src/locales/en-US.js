@@ -3,6 +3,8 @@ export default {
 
   'layout.user.appname':"INFINI SEARCH CENTER",
   'layout.user.appslogon':"INFINI search center is the best search platform in the world",
+  'app.setting.appname':"Search Center",
+
 
   'layout.user.link.help': 'Help',
   'layout.user.link.privacy': 'Privacy',
@@ -202,9 +204,6 @@ export default {
   'app.monitor.popular-searches': 'Popular Searches',
   'app.monitor.resource-surplus': 'Resource Surplus',
   'app.monitor.fund-surplus': 'Fund Surplus',
-  
-  'app.setting.appname':"Search Center",
-
 
   'app.settings.security.update':"Update Setting",
   'app.settings.global.update':"Update Setting",

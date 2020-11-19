@@ -3,6 +3,7 @@ export default {
   
   'layout.user.appname':"极限搜索管理后台",
   'layout.user.appslogon':"极限科技的搜索平台是东半球最好用的搜索服务平台",
+  'app.setting.appname':"极限搜索中心",
 
   'layout.user.link.help': '帮助',
   'layout.user.link.privacy': '隐私',
@@ -212,7 +213,6 @@ export default {
   'app.monitor.resource-surplus': '资源剩余',
   'app.monitor.fund-surplus': '补贴资金剩余',
   
-  'app.setting.appname':"极限搜索中心",
 
   'app.settings.security.update':"更新设置",
   'app.settings.global.update':"更新设置",

@@ -247,73 +247,89 @@ export default [
 
       //settings
       {
-        path: '/settings',
-        name: 'settings',
+        path: '/system',
+        name: 'system',
         icon: 'setting',
-        // component: './List/TableList',
         routes: [
           {
-            path: '/settings/global',
-            name: 'global',
-            component: './Settings/Global/Global',
-          }, {
-            path: '/settings/security',
+            path: '/system/settings',
+            name: 'settings',
+            component: './System/Settings/Base',
+              hideChildrenInMenu: true,
+              routes: [
+                  {
+                      path: '/system/settings',
+                      redirect: '/system/settings/global',
+                  },
+                  {
+                      path: '/system/settings/global',
+                      name: 'global',
+                      component: './System/Settings/Global',
+                  }, {
+                      path: '/system/settings/gateway',
+                      name: 'gateway',
+                      component: './System/Settings/Gateway',
+                  },
+              ]
+          },
+            {
+            path: '/system/security',
             name: 'security',
-            component: './Settings/Security/Base',
+            component: './System/Security/Base',
             hideChildrenInMenu: true,
             routes: [
                 {
-                    path: '/settings/security',
-                    redirect: '/settings/security/general',
+                    path: '/system/security',
+                    redirect: '/system/security/general',
                 },
                 {
-                    path: '/settings/security/general',
+                    path: '/system/security/general',
                     name: 'general',
-                    component: './Settings/Security/General',
+                    component: './System/Security/General',
                 }, {
-                    path: '/settings/security/sso',
+                    path: '/system/security/sso',
                     name: 'sso',
-                    component: './Settings/Security/SSO',
+                    component: './System/Security/SSO',
                 }, {
-                    path: '/settings/security/roles',
+                    path: '/system/security/roles',
                     name: 'roles',
-                    component: './Settings/Security/Roles',
+                    component: './System/Security/Roles',
                 }, {
-                    path: '/settings/security/users',
+                    path: '/system/security/users',
                     name: 'users',
-                    component: './Settings/Security/Users',
+                    component: './System/Security/Users',
                 }, {
-                    path: '/settings/security/certs',
+                    path: '/system/security/certs',
                     name: 'certs',
-                    component: './Settings/Security/Certs',
+                    component: './System/Security/Certs',
                 },
             ]
           }, {
-            path: '/settings/logs',
+            path: '/system/logs',
             name: 'logs',
-            component: './Settings/Logs/Base',
+            component: './System/Logs/Base',
             hideChildrenInMenu: true,
             routes: [
             {
-                path: '/settings/logs',
-                redirect: '/settings/logs/overview',
+                path: '/system/logs',
+                redirect: '/system/logs/overview',
             },
             {
-                path: '/settings/logs/overview',
+                path: '/system/logs/overview',
                 name: 'overview',
-                component: './Settings/Logs/Overview',
+                component: './System/Logs/Overview',
             }, {
-                path: '/settings/logs/audit',
+                path: '/system/logs/audit',
                 name: 'audit',
-                component: './Settings/Logs/Audit',
+                component: './System/Logs/Audit',
             }, {
-                path: '/settings/logs/query',
+                path: '/system/logs/query',
                 name: 'query',
-                component: './Settings/Logs/Audit',
+                component: './System/Logs/Audit',
             }, {
-                path: '/settings/logs/slow',
+                path: '/system/logs/slow',
                 name: 'slow',
-                component: './Settings/Logs/Audit',
+                component: './System/Logs/Audit',
             },
             ]
           },

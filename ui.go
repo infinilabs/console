@@ -8,7 +8,7 @@ import (
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/core/vfs"
 	"infini.sh/search-center/.public"
-	"infini.sh/search-center/api/index_management"
+	uiapi "infini.sh/search-center/api"
 	"infini.sh/search-center/config"
 	"net/http"
 )
@@ -24,7 +24,7 @@ func (h UI) InitUI() {
 
 	ui.HandleUI("/", vfs.FileServer(vfs.VFS()))
 
-	index_management.Init()
+	uiapi.Init()
 
 	ui.HandleUIFunc("/api/", func(w http.ResponseWriter, req *http.Request) {
 		log.Warn("api: ",req.URL," not implemented")

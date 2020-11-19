@@ -1,13 +1,30 @@
 elasticsearch:
   - name: default
     enabled: true
-    endpoint: https://192.168.3.98:9200
+    endpoint: http://localhost:9200
     index_prefix: infini-
     basic_auth:
       username: elastic
       password: 13A1EcwWs1He6w3BXHuJ
 
+web:
+  enabled: true
+  ui:
+    enabled: true
+    path: .public
+    vfs: true
+    local: true
+  network:
+    binding: 127.0.0.1:2900
+    skip_occupied_port: true
+
 modules:
+  - name: elastic
+    elasticsearch: default
+    enabled: true
+    indexer_enabled: false
+    store_enabled: false
+    orm_enabled: false
   - name: web
     enabled: true
     network:

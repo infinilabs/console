@@ -268,9 +268,33 @@ export default [
                 },
             ]
           }, {
-            path: '/settings/audit',
-            name: 'audit',
-            component: './Settings/Security/Audit',
+            path: '/settings/logs',
+            name: 'logs',
+            component: './Settings/Logs/Base',
+            hideChildrenInMenu: true,
+            routes: [
+            {
+                path: '/settings/logs',
+                redirect: '/settings/logs/overview',
+            },
+            {
+                path: '/settings/logs/overview',
+                name: 'overview',
+                component: './Settings/Logs/Overview',
+            }, {
+                path: '/settings/logs/audit',
+                name: 'audit',
+                component: './Settings/Logs/Audit',
+            }, {
+                path: '/settings/logs/query',
+                name: 'query',
+                component: './Settings/Logs/Audit',
+            }, {
+                path: '/settings/logs/slow',
+                name: 'slow',
+                component: './Settings/Logs/Audit',
+            },
+            ]
           },
         ]
       },

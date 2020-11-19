@@ -100,7 +100,11 @@ export default {
   'menu.settings': 'SETTINGS',
   'menu.settings.global': 'GLOBAL',
   'menu.settings.security': 'SECURITY',
-  'menu.settings.audit': 'AUDIT',
+  'menu.settings.logs': 'LOGS',
+  'menu.settings.logs.overview': 'OVERVIEW',
+  'menu.settings.logs.audit': 'AUDIT',
+  'menu.settings.logs.query': 'QUERY',
+  'menu.settings.logs.slow': 'SLOW',
 
 
   'menu.form': 'Form',

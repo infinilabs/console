@@ -108,7 +108,11 @@ export default {
   'menu.settings.global': '全局设置',
   'menu.settings.security': '安全设置',
   'menu.settings.authorization': '授权管理',
-  'menu.settings.audit': '审计日志',
+  'menu.settings.logs': '系统日志',
+  'menu.settings.logs.overview': '日志概要',
+  'menu.settings.logs.audit': '审计日志',
+  'menu.settings.logs.query': '查询日志',
+  'menu.settings.logs.slow': '慢日志',
 
 
   'menu.form': '表单页',

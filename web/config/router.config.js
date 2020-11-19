@@ -259,12 +259,33 @@ export default [
           }, {
             path: '/settings/security',
             name: 'security',
+            component: './Settings/Security/Base',
             hideChildrenInMenu: true,
             routes: [
                 {
-                  path: '/settings/security',
-                  name: 'security',
-                  component: './Settings/Security/General',
+                    path: '/settings/security',
+                    redirect: '/settings/security/general',
+                },
+                {
+                    path: '/settings/security/general',
+                    name: 'general',
+                    component: './Settings/Security/General',
+                }, {
+                    path: '/settings/security/sso',
+                    name: 'sso',
+                    component: './Settings/Security/SSO',
+                }, {
+                    path: '/settings/security/roles',
+                    name: 'roles',
+                    component: './Settings/Security/Roles',
+                }, {
+                    path: '/settings/security/users',
+                    name: 'users',
+                    component: './Settings/Security/Users',
+                }, {
+                    path: '/settings/security/certs',
+                    name: 'certs',
+                    component: './Settings/Security/Certs',
                 },
             ]
           }, {

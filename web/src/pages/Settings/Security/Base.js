@@ -19,17 +19,20 @@ class Base extends Component {
     handleTabChange = key => {
         const { match,children } = this.props;
         switch (key) {
-            case 'overview':
-                router.push(`${match.url}/overview`);
+            case 'general':
+                router.push(`${match.url}/general`);
                 break;
-            case 'audit':
-                router.push(`${match.url}/audit`);
+            case 'sso':
+                router.push(`${match.url}/sso`);
                 break;
-            case 'query':
-                router.push(`${match.url}/query`);
+            case 'roles':
+                router.push(`${match.url}/roles`);
                 break;
-            case 'slow':
-                router.push(`${match.url}/slow`);
+            case 'users':
+                router.push(`${match.url}/users`);
+                break;
+            case 'certs':
+                router.push(`${match.url}/certs`);
                 break;
             default:
                 break;
@@ -39,20 +42,24 @@ class Base extends Component {
     render() {
         const tabList = [
             {
-                key: 'overview',
-                tab: '日志概要',
+                key: 'general',
+                tab: '基础设置',
             },
             {
-                key: 'audit',
-                tab: '审计日志',
+                key: 'sso',
+                tab: '单点登录',
             },
             {
-                key: 'query',
-                tab: '查询日志',
+                key: 'roles',
+                tab: '角色管理',
             },
             {
-                key: 'slow',
-                tab: '慢日志',
+                key: 'users',
+                tab: '用户管理',
+            },
+            {
+                key: 'certs',
+                tab: '证书管理',
             }
         ];
 

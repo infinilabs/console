@@ -11,7 +11,13 @@ import {
   message,
   Divider,
   Drawer,
+  Steps,
+  Select,
+  TimePicker,
+  Switch,
+  Icon,
 } from 'antd';
+import moment from 'moment';
 import StandardTable from '@/components/StandardTable';
 
 import styles from '../../List/TableList.less';
@@ -19,81 +25,171 @@ import styles from '../../List/TableList.less';
 const FormItem = Form.Item;
 const { TextArea } = Input;
 
-const CreateForm = Form.create()(props => {
-  const { modalVisible, form, handleAdd, handleModalVisible } = props;
-  const okHandle = () => {
-    form.validateFields((err, fieldsValue) => {
-      if (err) return;
-      form.resetFields();
-      handleAdd(fieldsValue);
-    });
-  };
-  return (
-    <Modal
-      destroyOnClose
-      title="新建索引模板"
-      visible={modalVisible}
-      width={640}
-      onOk={okHandle}
-      onCancel={() => handleModalVisible()}
-    >
-       <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="索引模板名称">
-        {form.getFieldDecorator('name', {
-          rules: [{ required: true, message: '请输入至少五个字符的名称！', min: 5 }],
-        })(<Input placeholder="请输入名称" />)}
-      </FormItem>
-      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="模板设置">
-        {form.getFieldDecorator('settings', {
-          rules: [{ required: true }],
-        })(<TextArea
-          style={{ minHeight: 24 }}
-          placeholder="请输入"
-          rows={9}
-      />)}
-      </FormItem>
-    </Modal>
-  );
-});
-
-const UpdateForm = Form.create()(props => {
-  const { updateModalVisible, handleUpdateModalVisible, handleUpdate,values,form } = props;
-
-  const okHandle = () => {
-    form.validateFields((err, fieldsValue) => {
-      if (err) return;
-      form.resetFields();
-      handleUpdate(fieldsValue);
-    });
-  };
-  
-  return (
-    <Modal
-      destroyOnClose
-      title="索引模板设置"
-      visible={updateModalVisible}
-      width={640}
-      onOk={okHandle}
-      onCancel={() => handleUpdateModalVisible()}
-    >
-       <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="索引模板名称">
-        {form.getFieldDecorator('name', {
-          initialValue: values.name,
-          rules: [{ required: true, message: '请输入至少五个字符的名称！', min: 5 }],
-        })(<Input placeholder="请输入名称" />)}
-      </FormItem>
-      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="索引模板设置">
-        {form.getFieldDecorator('policy', {
-          initialValue: values.policy,
-          rules: [{ required: true }],
-        })(<TextArea
-          style={{ minHeight: 24 }}
-          placeholder="请输入"
-          rows={9}
-      />)}
-      </FormItem>
-    </Modal>
-  );
-});
+@Form.create()
+class NewForm extends PureComponent {
+  state = {
+    currentStep: 0,
+  }
+    renderStep=()=>{
+      let {form} = this.props;
+      let retDom = '';
+      let formLayout = {
+        labelCol:{span:5},
+        wrapperCol:{span:15}
+      };
+      let sformLayout = {
+        labelCol:{span:15},
+        wrapperCol:{span:5}
+      };
+      const format = 'HH:mm';
+      switch(this.state.currentStep){
+        case 0:
+          retDom = (
+            <Form>
+              <Form.Item label="策略名称" {...formLayout}>
+                {form.getFieldDecorator('name', {
+                  rules: [{ required: true }],
+                })(<Input placeholder="请输入策略名称" style={{width:200}} />)}
+              </Form.Item>
+              <Form.Item label="快照名称" {...formLayout}>
+                {form.getFieldDecorator('snapshot', {
+                  rules: [{ required: true }],
+                })(<Input placeholder="请输入快照名称" style={{width:200}} />)}
+              </Form.Item>
+              <Form.Item label="选择仓库" {...formLayout}>
+                {form.getFieldDecorator('repo', {
+                  rules: [{ required: true }],
+                })(
+                  <Select style={{width:200}}>
+                    <Select.Option value="my_local_repo">
+                      my_local_repo
+                    </Select.Option>
+                    <Select.Option value="my_local_repo">
+                      my_remote_repo
+                    </Select.Option>
+                  </Select>
+                )}
+              </Form.Item>
+              <Form.Item label="频率" {...formLayout}>
+                {form.getFieldDecorator('frequency', {
+                  rules: [{ required: true }],
+                })(
+                  <Select style={{width:200}}>
+                    <Select.Option value="day">
+                      每天
+                    </Select.Option>
+                    <Select.Option value="month">
+                      每月
+                    </Select.Option>
+                  </Select>
+                )}
+              </Form.Item>
+              <Form.Item label="时间" {...formLayout}>
+                {form.getFieldDecorator('time', {
+                  rules: [{ required: true }],
+                })(
+                  <TimePicker defaultValue={moment('12:08', format)} format={format} style={{width:200}} />
+                )}
+              </Form.Item>
+            </Form>
+          );
+          break;
+        case 1:
+          retDom = (
+            <Form>
+              <Form.Item label="all data streams and indices, including system indices" {...sformLayout}>
+                {form.getFieldDecorator('indices', {
+                initialValue: true,
+                })(
+                  <Switch
+                    checkedChildren={<Icon type="check" />}
+                    unCheckedChildren={<Icon type="close" />}
+                    defaultChecked
+                  />
+                )}
+              </Form.Item>
+              <Form.Item label="Ignore unavaiable indices" {...sformLayout}>
+                {form.getFieldDecorator('unavaiable', {
+                initialValue: false,
+                })(
+                  <Switch
+                    checkedChildren={<Icon type="check" />}
+                    unCheckedChildren={<Icon type="close" />}
+                    defaultChecked
+                  />
+                )}
+              </Form.Item>
+              <Form.Item label="Allow partial indices" {...sformLayout}>
+                {form.getFieldDecorator('partial', {
+                initialValue: false,
+                })(
+                  <Switch
+                    checkedChildren={<Icon type="check" />}
+                    unCheckedChildren={<Icon type="close" />}
+                    defaultChecked
+                  />
+                )}
+              </Form.Item>
+              <Form.Item label="Include global state" {...sformLayout}>
+                {form.getFieldDecorator('global', {
+                initialValue: true,
+                })(
+                  <Switch
+                    checkedChildren={<Icon type="check" />}
+                    unCheckedChildren={<Icon type="close" />}
+                    defaultChecked
+                  />
+                )}
+              </Form.Item>
+            </Form>
+          );
+          break;
+        case 2:
+          break;
+      }
+      return retDom;
+    }
+    handleNext(currentStep){
+      this.setState({
+        currentStep: currentStep +1,
+      });
+    }
+    render(){
+      const {currentStep} = this.state;
+      return (
+        <div>
+          <Steps current={this.state.currentStep}>
+            <Steps.Step title="基本设置" description=""/>
+            <Steps.Step title="快照设置" description=""/>
+            <Steps.Step title="快照保存设置" description=""/>
+            <Steps.Step title="确认" description=""/>
+          </Steps>
+          <Divider />
+          {this.renderStep()}
+          <div style={{
+              position: 'absolute',
+              right: 0,
+              bottom: 0,
+              width: '100%',
+              borderTop: '1px solid #e9e9e9',
+              padding: '10px 16px',
+              background: '#fff',
+            }}>
+            <Button key="back" onClick={()=>this.backward(currentStep)}>
+            上一步
+            </Button>,
+            <Button key="forward" style={{marginLeft:'2em'}}  type="primary" onClick={() => this.handleNext(currentStep)}>
+              下一步
+            </Button>
+            <Button key="cancel"  style={{float:'right'}} onClick={() =>{}}>
+              取消
+            </Button>,
+           
+          </div>
+        </div>
+      )
+    }
+}
 
 /* eslint react/no-multi-comp:0 */
 @connect(({ pipeline, loading }) => ({
@@ -296,7 +392,7 @@ class BakCycle extends PureComponent {
       <Form onSubmit={this.handleSearch} layout="inline">
         <Row gutter={{ md: 8, lg: 24, xl: 48 }}>
           <Col md={8} sm={24}>
-            <FormItem label="索引模板名称">
+            <FormItem label="备份策略模板名称">
               {getFieldDecorator('name')(<Input placeholder="请输入" />)}
             </FormItem>
           </Col>
@@ -318,6 +414,17 @@ class BakCycle extends PureComponent {
   renderForm() {
     return this.renderSimpleForm();
   }
+  handleNewClick = ()=>{
+    this.setState({
+      drawerVisible: true,
+    });
+  };
+
+  onCloseDrawer = ()=>{
+    this.setState({
+      drawerVisible: false,
+    });
+  };
 
   render() {
     const data = {
@@ -341,7 +448,7 @@ class BakCycle extends PureComponent {
           <div className={styles.tableList}>
             <div className={styles.tableListForm}>{this.renderForm()}</div>
             <div className={styles.tableListOperator}>
-              <Button icon="plus" type="primary" onClick={() => this.handleModalVisible(true)}>
+              <Button icon="plus" type="primary" onClick={() => this.handleNewClick(true)}>
                 新建
               </Button>
               {selectedRows.length > 0 && (
@@ -359,14 +466,6 @@ class BakCycle extends PureComponent {
             />
           </div>
         </Card>
-        <CreateForm {...parentMethods} modalVisible={modalVisible} />
-        {updateFormValues && Object.keys(updateFormValues).length ? (
-          <UpdateForm
-            {...updateMethods}
-            updateModalVisible={updateModalVisible}
-            values={updateFormValues}
-          />
-        ) : null}
           <Drawer
               title="备份策略"
               placement="right"
@@ -374,10 +473,8 @@ class BakCycle extends PureComponent {
               onClose={this.onCloseDrawer}
               visible={this.state.drawerVisible}
             >
-              <p>Some contents...</p>
-              <p>Some contents...</p>
-              <p>Some contents...</p>
-            </Drawer>
+             <NewForm />
+          </Drawer>
       </Fragment>
     );
   }

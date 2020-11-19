@@ -1,6 +1,6 @@
 import React, { Component,Fragment } from 'react';
 import { connect } from 'dva';
-import { Card,Form,Input, Select,Button,message,Upload, Icon } from 'antd';
+import { Card,Form,Input, Select,Button,message,Upload, Icon,Switch } from 'antd';
 const { Option } = Select;
 import { formatMessage, FormattedMessage } from 'umi/locale';
 import DescriptionList from '@/components/DescriptionList';

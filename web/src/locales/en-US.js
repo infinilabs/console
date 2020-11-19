@@ -97,21 +97,24 @@ export default {
   'menu.search.analyzer': 'ANALYZER',
   'menu.search.nlp': 'NLP',
 
-  'menu.settings': 'SETTINGS',
-  'menu.settings.global': 'GLOBAL',
-  'menu.settings.security': 'SECURITY',
+  'menu.system': 'SYSTEM',
+  'menu.system.settings': 'SETTINGS',
+  'menu.system.settings.global': 'GLOBAL',
+  'menu.system.settings.gateway': 'GATEWAY',
 
-  'menu.settings.security.general': 'GENERAL',
-  'menu.settings.security.sso': 'SSO',
-  'menu.settings.security.roles': 'ROLES',
-  'menu.settings.security.users': 'USERS',
-  'menu.settings.security.certs': 'CERTS',
+  'menu.system.security': 'SECURITY',
+  'menu.system.security.general': 'GENERAL',
+  'menu.system.security.sso': 'SSO',
+  'menu.system.security.roles': 'ROLES',
+  'menu.system.security.users': 'USERS',
+  'menu.system.security.certs': 'CERTS',
 
-  'menu.settings.logs': 'LOGS',
-  'menu.settings.logs.overview': 'OVERVIEW',
-  'menu.settings.logs.audit': 'AUDIT',
-  'menu.settings.logs.query': 'QUERY',
-  'menu.settings.logs.slow': 'SLOW',
+
+  'menu.system.logs': 'LOGS',
+  'menu.system.logs.overview': 'OVERVIEW',
+  'menu.system.logs.audit': 'AUDIT',
+  'menu.system.logs.query': 'QUERY',
+  'menu.system.logs.slow': 'SLOW',
 
 
   'menu.form': 'Form',

@@ -263,11 +263,9 @@ export default [
                   },
                   {
                       path: '/system/settings/global',
-                      name: 'global',
                       component: './System/Settings/Global',
                   }, {
                       path: '/system/settings/gateway',
-                      name: 'gateway',
                       component: './System/Settings/Gateway',
                   },
               ]
@@ -284,23 +282,18 @@ export default [
                 },
                 {
                     path: '/system/security/general',
-                    name: 'general',
                     component: './System/Security/General',
                 }, {
                     path: '/system/security/sso',
-                    name: 'sso',
                     component: './System/Security/SSO',
                 }, {
                     path: '/system/security/roles',
-                    name: 'roles',
                     component: './System/Security/Roles',
                 }, {
                     path: '/system/security/users',
-                    name: 'users',
                     component: './System/Security/Users',
                 }, {
                     path: '/system/security/certs',
-                    name: 'certs',
                     component: './System/Security/Certs',
                 },
             ]
@@ -316,19 +309,15 @@ export default [
             },
             {
                 path: '/system/logs/overview',
-                name: 'overview',
                 component: './System/Logs/Overview',
             }, {
                 path: '/system/logs/audit',
-                name: 'audit',
                 component: './System/Logs/Audit',
             }, {
                 path: '/system/logs/query',
-                name: 'query',
                 component: './System/Logs/Audit',
             }, {
                 path: '/system/logs/slow',
-                name: 'slow',
                 component: './System/Logs/Audit',
             },
             ]

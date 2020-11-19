@@ -107,7 +107,12 @@ export default {
   'menu.settings': '系统设置',
   'menu.settings.global': '全局设置',
   'menu.settings.security': '安全设置',
-  'menu.settings.authorization': '授权管理',
+  'menu.settings.security.general': '基础设置',
+  'menu.settings.security.sso': '单点登录',
+  'menu.settings.security.roles': '角色管理',
+  'menu.settings.security.users': '用户管理',
+  'menu.settings.security.certs': '证书管理',
+
   'menu.settings.logs': '系统日志',
   'menu.settings.logs.overview': '日志概要',
   'menu.settings.logs.audit': '审计日志',

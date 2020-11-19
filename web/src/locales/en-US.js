@@ -100,6 +100,13 @@ export default {
   'menu.settings': 'SETTINGS',
   'menu.settings.global': 'GLOBAL',
   'menu.settings.security': 'SECURITY',
+
+  'menu.settings.security.general': 'GENERAL',
+  'menu.settings.security.sso': 'SSO',
+  'menu.settings.security.roles': 'ROLES',
+  'menu.settings.security.users': 'USERS',
+  'menu.settings.security.certs': 'CERTS',
+
   'menu.settings.logs': 'LOGS',
   'menu.settings.logs.overview': 'OVERVIEW',
   'menu.settings.logs.audit': 'AUDIT',

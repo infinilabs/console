@@ -19,7 +19,7 @@ import {
   Badge,
   Divider,
   Steps,
-  Radio,
+  Popconfirm
 } from 'antd';
 import StandardTable from '@/components/StandardTable';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
@@ -213,21 +213,30 @@ class IngestPipeline extends PureComponent {
   };
 
   handleDeleteClick = e => {
+    Modal.confirm({
+      title: '删除Pipeline',
+      content: '确定删除该Pipeline吗？',
+      okText: '确认',
+      cancelText: '取消',
+      onOk: () => this.deleteItem(),
+    });
+  };
+  deleteItem = ()=>{
     const { dispatch } = this.props;
     const { selectedRows } = this.state;
 
     if (!selectedRows) return;
-        dispatch({
-          type: 'pipeline/delete',
-          payload: {
-            key: selectedRows.map(row => row.name),
-          },
-          callback: () => {
-            this.setState({
-              selectedRows: [],
-            });
-          },
+    dispatch({
+      type: 'pipeline/delete',
+      payload: {
+        key: selectedRows.map(row => row.name),
+      },
+      callback: () => {
+        this.setState({
+          selectedRows: [],
         });
+      },
+    });
   };
 
   handleSelectRows = rows => {

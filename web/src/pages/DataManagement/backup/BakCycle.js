@@ -1,4 +1,4 @@
-import React, { PureComponent, Fragment } from 'react';
+import React, { PureComponent, Fragment,forwardRef } from 'react';
 import { connect } from 'dva';
 import {
   Row,
@@ -25,11 +25,28 @@ import styles from '../../List/TableList.less';
 const FormItem = Form.Item;
 const { TextArea } = Input;
 
+let RightSwitch = forwardRef((props, _ref) => {
+  return (
+    <div>
+      <Switch
+        name={props.id}
+        checkedChildren={<Icon type="check" />}
+        unCheckedChildren={<Icon type="close" />}
+        checked={props.value}
+        style={{marginRight:5}}
+        onChange={(v)=>{props.onChange(v)}}
+      />
+      {props.description}
+  </div>
+  )
+});
+
 @Form.create()
 class NewForm extends PureComponent {
   state = {
     currentStep: 0,
   }
+  
     renderStep=()=>{
       let {form} = this.props;
       let retDom = '';
@@ -88,7 +105,7 @@ class NewForm extends PureComponent {
                 {form.getFieldDecorator('time', {
                   rules: [{ required: true }],
                 })(
-                  <TimePicker defaultValue={moment('12:08', format)} format={format} style={{width:200}} />
+                  <TimePicker format={format} style={{width:200}} />
                 )}
               </Form.Item>
             </Form>
@@ -97,48 +114,32 @@ class NewForm extends PureComponent {
         case 1:
           retDom = (
             <Form>
-              <Form.Item label="all data streams and indices, including system indices" {...sformLayout}>
+              <Form.Item label="">
                 {form.getFieldDecorator('indices', {
-                initialValue: true,
+                  initialValue: true,
                 })(
-                  <Switch
-                    checkedChildren={<Icon type="check" />}
-                    unCheckedChildren={<Icon type="close" />}
-                    defaultChecked
-                  />
+                  <RightSwitch description="all data streams and indices, including system indices"/>
                 )}
               </Form.Item>
-              <Form.Item label="Ignore unavaiable indices" {...sformLayout}>
+              <Form.Item>
                 {form.getFieldDecorator('unavaiable', {
                 initialValue: false,
                 })(
-                  <Switch
-                    checkedChildren={<Icon type="check" />}
-                    unCheckedChildren={<Icon type="close" />}
-                    defaultChecked
-                  />
+                  <RightSwitch description="Ignore unavaiable indices"/>
                 )}
               </Form.Item>
-              <Form.Item label="Allow partial indices" {...sformLayout}>
+              <Form.Item label="">
                 {form.getFieldDecorator('partial', {
-                initialValue: false,
+                // initialValue: true,
                 })(
-                  <Switch
-                    checkedChildren={<Icon type="check" />}
-                    unCheckedChildren={<Icon type="close" />}
-                    defaultChecked
-                  />
+                  <RightSwitch description="Allow partial indices"/>
                 )}
               </Form.Item>
-              <Form.Item label="Include global state" {...sformLayout}>
+              <Form.Item label="" >
                 {form.getFieldDecorator('global', {
                 initialValue: true,
                 })(
-                  <Switch
-                    checkedChildren={<Icon type="check" />}
-                    unCheckedChildren={<Icon type="close" />}
-                    defaultChecked
-                  />
+                  <RightSwitch description="Include global state"/>
                 )}
               </Form.Item>
             </Form>
@@ -150,10 +151,26 @@ class NewForm extends PureComponent {
       return retDom;
     }
     handleNext(currentStep){
+      const {form} = this.props;
+      form.validateFieldsAndScroll((err, values) => {
+        console.log(values);
+      });
+      form.validate
       this.setState({
         currentStep: currentStep +1,
       });
     }
+    backward(){
+      this.setState(preState=>{
+        if(preState.currentStep < 1) {
+          return preState;
+        }
+        return {
+          currentStep: preState.currentStep - 1
+        };
+      });
+    }
+    
     render(){
       const {currentStep} = this.state;
       return (
@@ -177,14 +194,13 @@ class NewForm extends PureComponent {
             }}>
             <Button key="back" onClick={()=>this.backward(currentStep)}>
             上一步
-            </Button>,
+            </Button>
             <Button key="forward" style={{marginLeft:'2em'}}  type="primary" onClick={() => this.handleNext(currentStep)}>
               下一步
             </Button>
             <Button key="cancel"  style={{float:'right'}} onClick={() =>{}}>
               取消
-            </Button>,
-           
+            </Button>         
           </div>
         </div>
       )

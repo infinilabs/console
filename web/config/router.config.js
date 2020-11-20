@@ -18,7 +18,7 @@ export default [
     authority: ['admin', 'user'],
     routes: [
       // dashboard
-      { path: '/', redirect: '/platform/gateway' },
+      { path: '/', redirect: '/platform/cluster' },
       {
         path: '/platform',
         name: 'platform',
@@ -28,7 +28,7 @@ export default [
             {
               path: '/platform/gateway',
               name: 'gateway',
-              component: './Dashboard/Analysis',
+              component: './Dashboard/GatewayMonitor',
             }, {
               path: '/platform/cluster',
               name: 'cluster',
@@ -40,7 +40,7 @@ export default [
             }, {
               path: '/platform/search',
               name: 'search',
-              component: './Dashboard/Search',
+              component: './Dashboard/SearchMonitor',
             },
         ]
       },

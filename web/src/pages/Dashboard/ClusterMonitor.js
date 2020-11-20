@@ -27,7 +27,7 @@ const havePermissionAsync = new Promise(resolve => {
   monitor,
   loading: loading.models.monitor,
 }))
-class Search extends PureComponent {
+class ClusterMonitor extends PureComponent {
   componentDidMount() {
     const { dispatch } = this.props;
     dispatch({
@@ -40,9 +40,9 @@ class Search extends PureComponent {
     const { tags } = monitor;
 
     return (
-      <h1>search monitor</h1>
+      <h1>cluster monitor</h1>
     );
   }
 }
 
-export default Search;
+export default ClusterMonitor;

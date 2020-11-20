@@ -3,6 +3,8 @@ export default {
 
   'layout.user.appname':"INFINI SEARCH CENTER",
   'layout.user.appslogon':"INFINI search center is the best search platform in the world",
+  'app.setting.appname':"Search Center",
+
 
   'layout.user.link.help': 'Help',
   'layout.user.link.privacy': 'Privacy',
@@ -95,10 +97,24 @@ export default {
   'menu.search.analyzer': 'ANALYZER',
   'menu.search.nlp': 'NLP',
 
-  'menu.settings': 'SETTINGS',
-  'menu.settings.global': 'GLOBAL',
-  'menu.settings.security': 'SECURITY',
-  'menu.settings.audit': 'AUDIT',
+  'menu.system': 'SYSTEM',
+  'menu.system.settings': 'SETTINGS',
+  'menu.system.settings.global': 'GLOBAL',
+  'menu.system.settings.gateway': 'GATEWAY',
+
+  'menu.system.security': 'SECURITY',
+  'menu.system.security.general': 'GENERAL',
+  'menu.system.security.sso': 'SSO',
+  'menu.system.security.roles': 'ROLES',
+  'menu.system.security.users': 'USERS',
+  'menu.system.security.certs': 'CERTS',
+
+
+  'menu.system.logs': 'LOGS',
+  'menu.system.logs.overview': 'OVERVIEW',
+  'menu.system.logs.audit': 'AUDIT',
+  'menu.system.logs.query': 'QUERY',
+  'menu.system.logs.slow': 'SLOW',
 
 
   'menu.form': 'Form',
@@ -202,9 +218,6 @@ export default {
   'app.monitor.popular-searches': 'Popular Searches',
   'app.monitor.resource-surplus': 'Resource Surplus',
   'app.monitor.fund-surplus': 'Fund Surplus',
-  
-  'app.setting.appname':"Search Center",
-
 
   'app.settings.security.update':"Update Setting",
   'app.settings.global.update':"Update Setting",

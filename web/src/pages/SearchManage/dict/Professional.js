@@ -10,6 +10,11 @@ import {
   Modal,
   message,
   Divider,
+  Icon,
+  DatePicker,
+  TimePicker,
+  Select,
+  Popover,
 } from 'antd';
 import StandardTable from '@/components/StandardTable';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
@@ -18,81 +23,83 @@ import styles from '../../List/TableList.less';
 
 const FormItem = Form.Item;
 const { TextArea } = Input;
+const fieldLabels = {
+    keyword_type: '关键词分类'
 
+};
 const CreateForm = Form.create()(props => {
-  const { modalVisible, form, handleAdd, handleModalVisible } = props;
-  const okHandle = () => {
-    form.validateFields((err, fieldsValue) => {
-      if (err) return;
-      form.resetFields();
-      handleAdd(fieldsValue);
-    });
-  };
-  return (
-    <Modal
-      destroyOnClose
-      title="新建模板"
-      visible={modalVisible}
-      width={640}
-      onOk={okHandle}
-      onCancel={() => handleModalVisible()}
-    >
-       <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="模板名称">
+    const { modalVisible, form, handleAdd, handleModalVisible } = props;
+    const okHandle = () => {
+        form.validateFields((err, fieldsValue) => {
+            if (err) return;
+            form.resetFields();
+            handleAdd(fieldsValue);
+        });
+    };
+    return (
+        <Modal
+    destroyOnClose
+    title="新建模板"
+    visible={modalVisible}
+    width={640}
+    onOk={okHandle}
+    onCancel={() => handleModalVisible()}>
+<FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="关键词">
         {form.getFieldDecorator('name', {
-          rules: [{ required: true, message: '请输入至少五个字符的名称！', min: 5 }],
-        })(<Input placeholder="请输入名称" />)}
-      </FormItem>
-      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="模板设置">
-        {form.getFieldDecorator('settings', {
-          rules: [{ required: true }],
-        })(<TextArea
-          style={{ minHeight: 24 }}
-          placeholder="请输入"
-          rows={9}
-      />)}
-      </FormItem>
+            rules: [{ required: true, message: '请输入至少一个字符的名称！', min: 1 }],
+        })(<Input placeholder="请输入关键词" />)}
+</FormItem>
+    <Form.Item labelCol={{ span: 5 }} wrapperCol={{ span: 15 }}  label='关键词分类'>
+        {form.getFieldDecorator('keyword_type', {
+            rules: [{ required: true, message: '请选择关键词类型' }],
+        })(
+        <Select placeholder="请选择关键词类型">
+        <Option value="keyun">客运</Option>
+        <Option value="huoyun">货运</Option>
+        <Option value="xianlu">线路</Option>
+        </Select>
+)}
+</Form.Item>
     </Modal>
-  );
+);
 });
 
 const UpdateForm = Form.create()(props => {
-  const { updateModalVisible, handleUpdateModalVisible, handleUpdate,values,form } = props;
+    const { updateModalVisible, handleUpdateModalVisible, handleUpdate,values,form } = props;
 
-  const okHandle = () => {
-    form.validateFields((err, fieldsValue) => {
-      if (err) return;
-      form.resetFields();
-      handleUpdate(fieldsValue);
-    });
-  };
-  
-  return (
-    <Modal
-      destroyOnClose
-      title="模板设置"
-      visible={updateModalVisible}
-      width={640}
-      onOk={okHandle}
-      onCancel={() => handleUpdateModalVisible()}
-    >
-       <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="模板名称">
-        {form.getFieldDecorator('name', {
-          initialValue: values.name,
-          rules: [{ required: true, message: '请输入至少五个字符的名称！', min: 5 }],
-        })(<Input placeholder="请输入名称" />)}
-      </FormItem>
-      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="模板设置">
-        {form.getFieldDecorator('settings', {
-          initialValue: values.processors,
-          rules: [{ required: true }],
-        })(<TextArea
-          style={{ minHeight: 24 }}
-          placeholder="请输入"
-          rows={9}
-      />)}
-      </FormItem>
+    const okHandle = () => {
+        form.validateFields((err, fieldsValue) => {
+            if (err) return;
+            form.resetFields();
+            handleUpdate(fieldsValue);
+        });
+    };
+
+    return (
+        <Modal destroyOnClose title="新增关键词" visible={updateModalVisible} width={640} onOk={okHandle}
+    onCancel={() => handleUpdateModalVisible()}>
+
+<FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="关键词">
+        {form.getFieldDecorator('keyword', {
+            initialValue: values.keyword,
+            rules: [{ required: true, message: '请输入至少一个字符的名称！', min: 1 }],
+        })(<Input placeholder="请输入关键词" />)}
+</FormItem>
+
+    <Form.Item labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label={fieldLabels.keyword_type}>
+    {form.getFieldDecorator('keyword_type', {
+        initialValue: values.value,
+        rules: [{ required: true, message: '请选择关键词类型' }],
+    })(
+    <Select placeholder="请选择关键词类型">
+        <Option value="keyun">客运</Option>
+        <Option value="huoyun">货运</Option>
+        <Option value="xianlu">线路</Option>
+        </Select>
+    )}
+    </Form.Item>
     </Modal>
-  );
+);
 });
 
 /* eslint react/no-multi-comp:0 */
@@ -110,93 +117,55 @@ class Professional extends PureComponent {
     formValues: {},
     updateFormValues: {},
   };
-  //index template detail example
-  // {
-  //   ".ml-state" : {
-  //     "order" : 0,
-  //     "version" : 7090199,
-  //     "index_patterns" : [
-  //       ".ml-state*"
-  //     ],
-  //     "settings" : {
-  //       "index" : {
-  //         "hidden" : "true",
-  //         "lifecycle" : {
-  //           "name" : "ml-size-based-ilm-policy",
-  //           "rollover_alias" : ".ml-state-write"
-  //         },
-  //         "auto_expand_replicas" : "0-1"
-  //       }
-  //     },
-  //     "mappings" : {
-  //       "_meta" : {
-  //         "version" : "7090199"
-  //       },
-  //       "enabled" : false
-  //     },
-  //     "aliases" : { }
-  //   }
-  // }
   datasource = `
   [
     {
-      "name" : "filebeat-7.9.1",
-      "index_patterns" : "[filebeat-7.9.1-*]",
-      "order" : "1",
-      "version" : null,
-      "composed_of" : ""
+      "keyword" : "验收标准",
+      "type" : "客运",
+      "value": "keyun"
     },
     {
-      "name" : "apm-7.9.1-span",
-      "index_patterns" : "[apm-7.9.1-span*]",
-      "order" : "2",
-      "version" : null,
-      "composed_of" : ""
+      "keyword" : "桥梁施工技术规范",
+      "type" : "客运",
+      "value": "keyun"
+    },{
+      "keyword" : "路规",
+      "type" : "客运",
+      "value": "keyun"
+    },{
+      "keyword" : "遂规",
+      "type" : "客运",
+      "value": "keyun"
     },
     {
-      "name" : ".lists-default",
-      "index_patterns" : "[.lists-default-*]",
-      "order" : "0",
-      "version" : null,
-      "composed_of" : ""
+      "keyword" : "铁路技术管理规则",
+      "type" : "客运",
+      "value": "keyun"
+    },{
+      "keyword" : "行车组织规则",
+      "type" : "客运",
+      "value": "keyun"
     },
     {
-      "name" : ".monitoring-es",
-      "index_patterns" : "[.monitoring-es-7-*]",
-      "order" : "0",
-      "version" : "7000199",
-      "composed_of" : ""
-    },
-    {
-      "name" : ".monitoring-beats",
-      "index_patterns" : "[.monitoring-beats-7-*]",
-      "order" : "0",
-      "version" : "7000199",
-      "composed_of" : ""
+      "keyword" : "铁路交通事故调查处理规则",
+      "type" : "客运",
+      "value": "keyun"
     }]`;
 
   columns = [
     {
-      title: '模板名称',
-      dataIndex: 'name',
+      title: '关键词名称',
+      dataIndex: 'keyword',
     },
     {
-      title: '模式',
-      dataIndex: 'index_patterns',
-    },
-    {
-      title: 'order',
-      dataIndex: 'order'
-    },
-    {
-      title: '版本',
-      dataIndex: 'version'
+      title: '关键词分类',
+      dataIndex: 'type',
     },
     {
       title: '操作',
       render: (text, record) => (
         <Fragment>
-          <a onClick={() => this.handleUpdateModalVisible(true, record)}>设置</a>
+          <a onClick={() => this.handleUpdateModalVisible(true, record)}>修改</a>
           <Divider type="vertical" />
           <a onClick={() => {
             this.state.selectedRows.push(record);
@@ -350,9 +319,22 @@ class Professional extends PureComponent {
     return (
       <Form onSubmit={this.handleSearch} layout="inline">
         <Row gutter={{ md: 8, lg: 24, xl: 48 }}>
+          <Col lg={6} md={12} sm={24}>
+                  <Form.Item label={fieldLabels.keyword_type}>
+              {getFieldDecorator('keyword_type', {
+                  rules: [{ required: true, message: '请选择关键词类型' }],
+              })(
+                 <Select placeholder="请选择关键词类型">
+                  <Option value="keyun">客运</Option>
+                  <Option value="huoyun">货运</Option>
+                  <Option value="xianlu">线路</Option>
+                  </Select>
+              )}
+          </Form.Item>
+              </Col>
           <Col md={8} sm={24}>
-            <FormItem label="模板名称">
-              {getFieldDecorator('name')(<Input placeholder="请输入" />)}
+            <FormItem label="关键词">
+              {getFieldDecorator('name')(<Input placeholder="请输入关键词" />)}
             </FormItem>
           </Col>
           <Col md={8} sm={24}>
@@ -397,7 +379,7 @@ class Professional extends PureComponent {
             <div className={styles.tableListForm}>{this.renderForm()}</div>
             <div className={styles.tableListOperator}>
               <Button icon="plus" type="primary" onClick={() => this.handleModalVisible(true)}>
-                新建
+                新增关键词
               </Button>
               {selectedRows.length > 0 && (
                 <span>

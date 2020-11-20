@@ -3,6 +3,7 @@ export default {
   
   'layout.user.appname':"极限搜索管理后台",
   'layout.user.appslogon':"极限科技的搜索平台是东半球最好用的搜索服务平台",
+  'app.setting.appname':"极限搜索中心",
 
   'layout.user.link.help': '帮助',
   'layout.user.link.privacy': '隐私',
@@ -103,11 +104,23 @@ export default {
   'menu.search.analyzer': '分词管理',
   'menu.search.nlp': '自然语言处理',
 
-  'menu.settings': '系统设置',
-  'menu.settings.global': '全局设置',
-  'menu.settings.security': '安全设置',
-  'menu.settings.authorization': '授权管理',
-  'menu.settings.audit': '审计日志',
+  'menu.system': '系统管理',
+  'menu.system.settings': '系统设置',
+  'menu.system.settings.global': '全局设置',
+  'menu.system.settings.gateway': '网关设置',
+
+  'menu.system.security': '安全设置',
+  'menu.system.security.general': '基础设置',
+  'menu.system.security.sso': '单点登录',
+  'menu.system.security.roles': '角色管理',
+  'menu.system.security.users': '用户管理',
+  'menu.system.security.certs': '证书管理',
+
+  'menu.system.logs': '系统日志',
+  'menu.system.logs.overview': '日志概要',
+  'menu.system.logs.audit': '审计日志',
+  'menu.system.logs.query': '查询日志',
+  'menu.system.logs.slow': '慢日志',
 
 
   'menu.form': '表单页',
@@ -212,7 +225,6 @@ export default {
   'app.monitor.resource-surplus': '资源剩余',
   'app.monitor.fund-surplus': '补贴资金剩余',
   
-  'app.setting.appname':"极限搜索中心",
 
   'app.settings.security.update':"更新设置",
   'app.settings.global.update':"更新设置",

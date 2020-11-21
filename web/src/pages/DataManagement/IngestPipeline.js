@@ -19,7 +19,7 @@ import {
   Badge,
   Divider,
   Steps,
-  Popconfirm
+  Drawer
 } from 'antd';
 import StandardTable from '@/components/StandardTable';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
@@ -136,6 +136,8 @@ class IngestPipeline extends PureComponent {
     selectedRows: [],
     formValues: {},
     updateFormValues: {},
+    drawerVisible: false,
+    btnSaveExtraLoading: false,
   };
 
   columns = [
@@ -162,10 +164,26 @@ class IngestPipeline extends PureComponent {
             this.state.selectedRows.push(record);
             this.handleDeleteClick();
           }}>删除</a>
+          <Divider type="vertical"/>
+          <a onClick={() => {
+            this.handlePipelineClick(record);
+          }}>管道参数配置</a>
         </Fragment>
       ),
     },
   ];
+
+  handlePipelineClick = (r)=>{
+    this.setState((prevState)=>{
+      let newState =  {
+        drawerVisible: !prevState.drawerVisible,
+      };
+      if(r) {
+        newState["editingRecord"] = r;
+      }
+      return newState;
+    });
+  }
 
   componentDidMount() {
     const { dispatch } = this.props;
@@ -231,10 +249,12 @@ class IngestPipeline extends PureComponent {
       payload: {
         key: selectedRows.map(row => row.name),
       },
-      callback: () => {
-        this.setState({
-          selectedRows: [],
-        });
+      callback: (res) => {
+        if(res.message == "Ok"){
+          this.setState({
+            selectedRows: [],
+          });
+        }
       },
     });
   };
@@ -343,9 +363,36 @@ class IngestPipeline extends PureComponent {
     return this.renderSimpleForm();
   }
 
+  handleSaveExtra = (r)=>{
+    this.setState({btnSaveExtraLoading:true});
+    const {form, dispatch} = this.props;
+    form.validateFields((err, fieldsValue) => {
+      if (err) return;
+      console.log(fieldsValue);
+      for(let key in fieldsValue){
+        if(fieldsValue[key]){
+          r[key] = fieldsValue[key];
+        }
+      }
+      dispatch({
+        type: 'pipeline/update',
+        payload: r,
+        callback: (res) => {
+          if(res.message == "Ok"){
+            this.setState({
+              drawerVisible: false,
+              editingRecord: null,
+              btnSaveExtraLoading: false,
+            });
+          }
+        },
+      });
+    });
+  };
+
   render() {
-    let {pipeline, loading} = this.props;
-    const { selectedRows, modalVisible, updateModalVisible, updateFormValues } = this.state;
+    let {pipeline, loading, form} = this.props;
+    const { selectedRows, modalVisible, updateModalVisible, updateFormValues,drawerVisible, editingRecord} = this.state;
     const parentMethods = {
       handleAdd: this.handleAdd,
       handleModalVisible: this.handleModalVisible,
@@ -355,7 +402,7 @@ class IngestPipeline extends PureComponent {
       handleUpdate: this.handleUpdate,
     };
     return (
-      <PageHeaderWrapper>
+      <Fragment>
         <Card bordered={false}>
           <div className={styles.tableList}>
             <div className={styles.tableListForm}>{this.renderForm()}</div>
@@ -387,7 +434,63 @@ class IngestPipeline extends PureComponent {
             values={updateFormValues}
           />
         ) : null}
-      </PageHeaderWrapper>
+        { editingRecord &&(
+        <Drawer title="管道参数配置" 
+          width={640}
+          onClose={this.handlePipelineClick}
+          visible={drawerVisible}>
+          <Form name="edit_extra">
+          <FormItem labelCol={{ span: 6 }} wrapperCol={{ span: 15 }} label="工作线程数">
+            {form.getFieldDecorator('thread_num', {
+              initialValue: editingRecord.thread_num,
+              rules: [{ required: true }],
+            })(<Input placeholder="Number of cpu cores" />)}
+          </FormItem>
+          <FormItem labelCol={{ span: 6 }} wrapperCol={{ span: 15 }} label="管道批大小">
+            {form.getFieldDecorator('batch_size', {
+              initialValue: editingRecord.batch_size,
+              rules: [{ required: true }],
+            })(<Input placeholder="pipeline batch size" />)}
+          </FormItem>
+          <FormItem labelCol={{ span: 6 }} wrapperCol={{ span: 15 }} label="管道批延迟">
+            {form.getFieldDecorator('batch_delay', {
+              initialValue: editingRecord.batch_delay,
+              rules: [{ required: true }],
+            })(<Input placeholder="pipeline batch delay, eg: 50" />)}
+          </FormItem>
+          <FormItem labelCol={{ span: 6 }} wrapperCol={{ span: 15 }} label="队列类型">
+            {form.getFieldDecorator('queue_type', {
+              initialValue: editingRecord.queue_type,
+              rules: [{ required: true }],
+            })(
+              <Select>
+                <Select.Option value="memory">
+                  Memory
+                </Select.Option>
+              </Select>
+            )}
+          </FormItem>
+          <FormItem labelCol={{ span: 6 }} wrapperCol={{ span: 15 }} label="队列最大字节数">
+            {form.getFieldDecorator('queue_max_bytes', {
+              initialValue: editingRecord.queue_max_bytes,
+              rules: [{ required: true }],
+            })(<Input placeholder="size of max queue bytes, eg: 1024" />)}
+          </FormItem>
+          <FormItem labelCol={{ span: 6 }} wrapperCol={{ span: 15 }} label="队列检查点写入数">
+            {form.getFieldDecorator('queue_checkpoint_num', {
+              initialValue: editingRecord.queue_checkpoint_num,
+              rules: [{ required: true }],
+            })(<Input placeholder="number of writing queue checkpoint, eg: 1024" />)}
+          </FormItem>
+          <div style={{position:"absolute", bottom:20, textAlign: 'center', width: '100%'}}>
+            <Button type="primary" loading={this.state.btnSaveExtraLoading} onClick={()=>this.handleSaveExtra(editingRecord)}>保存</Button>
+            <Button style={{marginLeft: '2em'}}>保存并部署</Button>
+          </div>
+          </Form>
+        
+        </Drawer>
+        )}
+      </Fragment>
     );
   }
 }

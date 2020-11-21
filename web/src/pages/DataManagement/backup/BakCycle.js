@@ -66,18 +66,18 @@ class NewForm extends PureComponent {
               <Form.Item label="策略名称" {...formLayout}>
                 {form.getFieldDecorator('name', {
                   rules: [{ required: true }],
-                })(<Input placeholder="请输入策略名称" style={{width:200}} />)}
+                })(<Input placeholder="请输入策略名称"  />)}
               </Form.Item>
               <Form.Item label="快照名称" {...formLayout}>
                 {form.getFieldDecorator('snapshot', {
                   rules: [{ required: true }],
-                })(<Input placeholder="请输入快照名称" style={{width:200}} />)}
+                })(<Input placeholder="请输入快照名称" />)}
               </Form.Item>
               <Form.Item label="选择仓库" {...formLayout}>
                 {form.getFieldDecorator('repo', {
                   rules: [{ required: true }],
                 })(
-                  <Select style={{width:200}}>
+                  <Select>
                     <Select.Option value="my_local_repo">
                       my_local_repo
                     </Select.Option>
@@ -91,7 +91,7 @@ class NewForm extends PureComponent {
                 {form.getFieldDecorator('frequency', {
                   rules: [{ required: true }],
                 })(
-                  <Select style={{width:200}}>
+                  <Select>
                     <Select.Option value="day">
                       每天
                     </Select.Option>
@@ -105,7 +105,7 @@ class NewForm extends PureComponent {
                 {form.getFieldDecorator('time', {
                   rules: [{ required: true }],
                 })(
-                  <TimePicker format={format} style={{width:200}} />
+                  <TimePicker format={format} />
                 )}
               </Form.Item>
             </Form>
@@ -485,7 +485,7 @@ class BakCycle extends PureComponent {
           <Drawer
               title="备份策略"
               placement="right"
-              width={720}
+              width={640}
               onClose={this.onCloseDrawer}
               visible={this.state.drawerVisible}
             >

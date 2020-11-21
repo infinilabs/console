@@ -29,7 +29,7 @@ export default {
             });
         }
     },
-    *update({payload}, {call, put}){
+    *update({payload,callback}, {call, put}){
         const res = yield call(updatePipeline, payload);
         if(res.message == "Ok") {
             yield put({
@@ -37,8 +37,11 @@ export default {
                 payload: payload,
             });
         }
+        if(callback && typeof callback === "function"){
+            callback(res);
+        }
     },
-    *delete({payload}, {call, put}){
+    *delete({payload, callback}, {call, put}){
         const res = yield call(deletePipeline, payload);
         console.log(res);
         if(res.message == "Ok") {
@@ -46,6 +49,9 @@ export default {
                 type: 'deleteData',
                 payload: payload,
             });
+        }
+        if(callback && typeof callback === "function"){
+            callback(res);
         }
     },
   },

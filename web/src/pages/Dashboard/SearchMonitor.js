@@ -1,46 +1,72 @@
 import React, { PureComponent } from 'react';
-import { connect } from 'dva';
-import { formatMessage, FormattedMessage } from 'umi/locale';
-import { Row, Col, Card, Tooltip } from 'antd';
-import numeral from 'numeral';
-import { Pie, WaterWave, Gauge, TagCloud } from '@/components/Charts';
-import NumberInfo from '@/components/NumberInfo';
-import CountDown from '@/components/CountDown';
-import ActiveChart from '@/components/ActiveChart';
+
 import GridContent from '@/components/PageHeaderWrapper/GridContent';
+import {
+  Row,
+  Col,
+  Icon,
+  Card,
+  Tabs,
+  Table,
+  Radio,
+  DatePicker,
+  Menu,
+  Dropdown,
+} from 'antd';
+import _ from 'lodash';
+import {
+  G2,
+  Chart,
+  Geom,
+  Axis,
+  Tooltip,
+  Coord,
+  Label,
+  Legend,
+  View,
+  Guide,
+  Shape,
+  Facet,
+  Util
+} from 'bizcharts';
+import DataSet from '@antv/data-set';
+import Slider from 'bizcharts-plugin-slider';
+import TagCloud from './Search/TagCloud';
 
-import Authorized from '@/utils/Authorized';
-import styles from './Monitor.less';
+import styles from "./Monitor.less";
 
-const { Secured } = Authorized;
 
-const targetTime = new Date().getTime() + 3900000;
-
-// use permission as a parameter
-const havePermissionAsync = new Promise(resolve => {
-  // Call resolve on behalf of passed
-  setTimeout(() => resolve(), 300);
-});
-
-@Secured(havePermissionAsync)
-@connect(({ monitor, loading }) => ({
-  monitor,
-  loading: loading.models.monitor,
-}))
 class SearchMonitor extends PureComponent {
-  componentDidMount() {
-    const { dispatch } = this.props;
-    dispatch({
-      type: 'monitor/fetchTags',
-    });
-  }
 
   render() {
-    const { monitor, loading } = this.props;
-    const { tags } = monitor;
 
     return (
-      <h1>search monitor</h1>
+        <GridContent>
+          <Row gutter={24}>
+            {/*<Col xl={6} lg={12} sm={24} xs={24}>*/}
+            {/*  <Card*/}
+            {/*      title="待定"*/}
+            {/*      loading={false}*/}
+            {/*      bordered={false}*/}
+            {/*      bodyStyle={{ overflow: 'hidden' }}*/}
+            {/*  >*/}
+            {/*    <h1>待定</h1>*/}
+            {/*  </Card>*/}
+            {/*</Col>*/}
+            <Col xl={6} lg={12} sm={24} xs={24}>
+              <Card
+                  title="热门搜索"
+                  loading={false}
+                  bordered={false}
+                  bodyStyle={{ overflow: 'hidden' }}
+              >
+                <TagCloud>
+
+                </TagCloud>
+              </Card>
+            </Col>
+          </Row>
+        </GridContent>
     );
   }
 }

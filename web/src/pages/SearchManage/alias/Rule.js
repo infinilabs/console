@@ -37,7 +37,7 @@ const CreateForm = Form.create()(props => {
       onOk={okHandle}
       onCancel={() => handleModalVisible()}
     >
-       <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="模板名称">
+       <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="index pattern 规则">
         {form.getFieldDecorator('name', {
           rules: [{ required: true, message: '请输入至少五个字符的名称！', min: 5 }],
         })(<Input placeholder="请输入名称" />)}
@@ -75,7 +75,7 @@ const UpdateForm = Form.create()(props => {
       onOk={okHandle}
       onCancel={() => handleUpdateModalVisible()}
     >
-       <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="模板名称">
+       <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="index pattern 规则">
         {form.getFieldDecorator('name', {
           initialValue: values.name,
           rules: [{ required: true, message: '请输入至少五个字符的名称！', min: 5 }],
@@ -101,7 +101,7 @@ const UpdateForm = Form.create()(props => {
   loading: loading.models.pipeline,
 }))
 @Form.create()
-class param extends PureComponent {
+class rule extends PureComponent {
   state = {
     modalVisible: false,
     updateModalVisible: false,
@@ -177,15 +177,15 @@ class param extends PureComponent {
 
   columns = [
     {
-      title: '模板名称',
+      title: '索引 pattern',
       dataIndex: 'name',
     },
     {
-      title: '模式',
+      title: 'rule',
       dataIndex: 'index_patterns',
     },
     {
-      title: 'order',
+      title: '排序',
       dataIndex: 'order'
     },
     {
@@ -196,7 +196,7 @@ class param extends PureComponent {
       title: '操作',
       render: (text, record) => (
         <Fragment>
-          <a onClick={() => this.handleUpdateModalVisible(true, record)}>设置</a>
+          <a onClick={() => this.handleUpdateModalVisible(true, record)}>设置规则</a>
           <Divider type="vertical" />
           <a onClick={() => {
             this.state.selectedRows.push(record);
@@ -351,7 +351,7 @@ class param extends PureComponent {
       <Form onSubmit={this.handleSearch} layout="inline">
         <Row gutter={{ md: 8, lg: 24, xl: 48 }}>
           <Col md={8} sm={24}>
-            <FormItem label="模板名称">
+            <FormItem label="index pattern 规则">
               {getFieldDecorator('name')(<Input placeholder="请输入" />)}
             </FormItem>
           </Col>
@@ -427,4 +427,4 @@ class param extends PureComponent {
   }
 }
 
-export default param;
+export default rule;

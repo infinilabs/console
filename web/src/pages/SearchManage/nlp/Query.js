@@ -37,12 +37,12 @@ const CreateForm = Form.create()(props => {
       onOk={okHandle}
       onCancel={() => handleModalVisible()}
     >
-       <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="模板名称">
+       <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="语义词">
         {form.getFieldDecorator('name', {
           rules: [{ required: true, message: '请输入至少五个字符的名称！', min: 5 }],
         })(<Input placeholder="请输入名称" />)}
       </FormItem>
-      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="模板设置">
+      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="设置">
         {form.getFieldDecorator('settings', {
           rules: [{ required: true }],
         })(<TextArea
@@ -75,13 +75,13 @@ const UpdateForm = Form.create()(props => {
       onOk={okHandle}
       onCancel={() => handleUpdateModalVisible()}
     >
-       <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="模板名称">
+       <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="语义词">
         {form.getFieldDecorator('name', {
           initialValue: values.name,
           rules: [{ required: true, message: '请输入至少五个字符的名称！', min: 5 }],
         })(<Input placeholder="请输入名称" />)}
       </FormItem>
-      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="模板设置">
+      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="设置">
         {form.getFieldDecorator('settings', {
           initialValue: values.processors,
           rules: [{ required: true }],
@@ -177,11 +177,11 @@ class Query extends PureComponent {
 
   columns = [
     {
-      title: '模板名称',
+      title: '语义词',
       dataIndex: 'name',
     },
     {
-      title: '模式',
+      title: '语义',
       dataIndex: 'index_patterns',
     },
     {
@@ -351,7 +351,7 @@ class Query extends PureComponent {
       <Form onSubmit={this.handleSearch} layout="inline">
         <Row gutter={{ md: 8, lg: 24, xl: 48 }}>
           <Col md={8} sm={24}>
-            <FormItem label="模板名称">
+            <FormItem label="语义词">
               {getFieldDecorator('name')(<Input placeholder="请输入" />)}
             </FormItem>
           </Col>

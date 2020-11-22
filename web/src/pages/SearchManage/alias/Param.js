@@ -75,7 +75,7 @@ const UpdateForm = Form.create()(props => {
       onOk={okHandle}
       onCancel={() => handleUpdateModalVisible()}
     >
-       <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="模板名称">
+       <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="别名">
         {form.getFieldDecorator('name', {
           initialValue: values.name,
           rules: [{ required: true, message: '请输入至少五个字符的名称！', min: 5 }],
@@ -101,7 +101,7 @@ const UpdateForm = Form.create()(props => {
   loading: loading.models.pipeline,
 }))
 @Form.create()
-class rule extends PureComponent {
+class Param extends PureComponent {
   state = {
     modalVisible: false,
     updateModalVisible: false,
@@ -177,15 +177,15 @@ class rule extends PureComponent {
 
   columns = [
     {
-      title: '模板名称',
+      title: '字段名称',
       dataIndex: 'name',
     },
     {
-      title: '模式',
+      title: '别名',
       dataIndex: 'index_patterns',
     },
     {
-      title: 'order',
+      title: '排序',
       dataIndex: 'order'
     },
     {
@@ -196,7 +196,7 @@ class rule extends PureComponent {
       title: '操作',
       render: (text, record) => (
         <Fragment>
-          <a onClick={() => this.handleUpdateModalVisible(true, record)}>设置</a>
+          <a onClick={() => this.handleUpdateModalVisible(true, record)}>别名设置</a>
           <Divider type="vertical" />
           <a onClick={() => {
             this.state.selectedRows.push(record);
@@ -351,7 +351,7 @@ class rule extends PureComponent {
       <Form onSubmit={this.handleSearch} layout="inline">
         <Row gutter={{ md: 8, lg: 24, xl: 48 }}>
           <Col md={8} sm={24}>
-            <FormItem label="模板名称">
+            <FormItem label="别名">
               {getFieldDecorator('name')(<Input placeholder="请输入" />)}
             </FormItem>
           </Col>
@@ -427,4 +427,4 @@ class rule extends PureComponent {
   }
 }
 
-export default rule;
+export default Param;

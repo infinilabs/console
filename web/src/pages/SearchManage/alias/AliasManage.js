@@ -110,12 +110,173 @@ class AliasManage extends PureComponent {
     formValues: {},
     updateFormValues: {},
   };
-  datasource = `[{"health":"green","status":"open","index":"blogs_fixed","uuid":"Q6zngGf9QVaWqpV0lF-0nw","pri":"1","rep":"1","docs.count":"1594","docs.deleted":"594","store.size":"17.9mb","pri.store.size":"8.9mb"},{"health":"red","status":"open","index":"elastic_qa","uuid":"_qkVlQ5LRoOKffV-nFj8Uw","pri":"1","rep":"1","docs.count":null,"docs.deleted":null,"store.size":null,"pri.store.size":null},{"health":"green","status":"open","index":".kibana-event-log-7.9.0-000001","uuid":"fgTtyl62Tc6F1ddJfPwqHA","pri":"1","rep":"1","docs.count":"20","docs.deleted":"0","store.size":"25kb","pri.store.size":"12.5kb"},{"health":"green","status":"open","index":"blogs","uuid":"Mb2n4wnNQSKqSToI_QO0Yg","pri":"1","rep":"1","docs.count":"1594","docs.deleted":"0","store.size":"11mb","pri.store.size":"5.5mb"},{"health":"green","status":"open","index":".kibana-event-log-7.9.0-000002","uuid":"8GpbwnDXR2KJUsw6srLnWw","pri":"1","rep":"1","docs.count":"9","docs.deleted":"0","store.size":"96.9kb","pri.store.size":"48.4kb"},{"health":"green","status":"open","index":".apm-agent-configuration","uuid":"vIaV9k2VS-W48oUOe2xNWA","pri":"1","rep":"1","docs.count":"0","docs.deleted":"0","store.size":"416b","pri.store.size":"208b"},{"health":"green","status":"open","index":"logs_server1","uuid":"u56jv2AyR2KOkruOfxIAnA","pri":"1","rep":"1","docs.count":"5386","docs.deleted":"0","store.size":"5.1mb","pri.store.size":"2.5mb"},{"health":"green","status":"open","index":".kibana_1","uuid":"dBCrfVblRPGVlYAIlP_Duw","pri":"1","rep":"1","docs.count":"3187","docs.deleted":"50","store.size":"24.8mb","pri.store.size":"12.4mb"},{"health":"green","status":"open","index":".tasks","uuid":"3RafayGeSNiqglO2BHof9Q","pri":"1","rep":"1","docs.count":"3","docs.deleted":"0","store.size":"39.9kb","pri.store.size":"19.9kb"},{"health":"green","status":"open","index":"filebeat-7.9.0-elastic_qa","uuid":"tktSYU14S3CrsrJb0ybpSQ","pri":"1","rep":"1","docs.count":"3009880","docs.deleted":"0","store.size":"1.6gb","pri.store.size":"850.1mb"},{"health":"green","status":"open","index":"analysis_test","uuid":"6ZHEAW1ST_qfg7mo4Bva4w","pri":"1","rep":"1","docs.count":"0","docs.deleted":"0","store.size":"416b","pri.store.size":"208b"},{"health":"green","status":"open","index":".apm-custom-link","uuid":"Y4N2TeVERrGacEGwY-NPAQ","pri":"1","rep":"1","docs.count":"0","docs.deleted":"0","store.size":"416b","pri.store.size":"208b"},{"health":"green","status":"open","index":"kibana_sample_data_ecommerce","uuid":"4FIWJKhGSr6bE72R0xEQyA","pri":"1","rep":"1","docs.count":"4675","docs.deleted":"0","store.size":"9.2mb","pri.store.size":"4.6mb"},{"health":"green","status":"open","index":".kibana_task_manager_1","uuid":"9afyndU_Q26oqOiEIoqRJw","pri":"1","rep":"1","docs.count":"6","docs.deleted":"2","store.size":"378.8kb","pri.store.size":"12.5kb"},{"health":"green","status":"open","index":".async-search","uuid":"2VbJgnN7SsqC-DWN64yXUQ","pri":"1","rep":"1","docs.count":"0","docs.deleted":"0","store.size":"3.9kb","pri.store.size":"3.7kb"}]`;
+  datasource = `[
+    {
+        "health": "green",
+        "status": "blog",
+        "index": "blogs_fixed",
+        "uuid": "Q6zngGf9QVaWqpV0lF-0nw",
+        "pri": "1",
+        "rep": "1",
+        "docs.count": "1594",
+        "docs.deleted": "594",
+        "store.size": "17.9mb",
+        "pri.store.size": "8.9mb"
+    },
+    {
+        "health": "red",
+        "status": "elastic",
+        "index": "elastic_qa",
+        "uuid": "_qkVlQ5LRoOKffV-nFj8Uw",
+        "pri": "1",
+        "rep": "1",
+        "docs.count": null,
+        "docs.deleted": null,
+        "store.size": null,
+        "pri.store.size": null
+    },
+    {
+        "health": "green",
+        "status": "kibana",
+        "index": ".kibana-event-log-7.9.0-000001",
+        "uuid": "fgTtyl62Tc6F1ddJfPwqHA",
+        "pri": "1",
+        "rep": "1",
+        "docs.count": "20",
+        "docs.deleted": "0",
+        "store.size": "25kb",
+        "pri.store.size": "12.5kb"
+    },
+    {
+        "health": "green",
+        "status": "blog",
+        "index": "blogs",
+        "uuid": "Mb2n4wnNQSKqSToI_QO0Yg",
+        "pri": "1",
+        "rep": "1",
+        "docs.count": "1594",
+        "docs.deleted": "0",
+        "store.size": "11mb",
+        "pri.store.size": "5.5mb"
+    },
+    {
+        "health": "green",
+        "status": "kibana",
+        "index": ".kibana-event-log-7.9.0-000002",
+        "uuid": "8GpbwnDXR2KJUsw6srLnWw",
+        "pri": "1",
+        "rep": "1",
+        "docs.count": "9",
+        "docs.deleted": "0",
+        "store.size": "96.9kb",
+        "pri.store.size": "48.4kb"
+    },
+    {
+        "health": "green",
+        "status": "apm",
+        "index": ".apm-agent-configuration",
+        "uuid": "vIaV9k2VS-W48oUOe2xNWA",
+        "pri": "1",
+        "rep": "1",
+        "docs.count": "0",
+        "docs.deleted": "0",
+        "store.size": "416b",
+        "pri.store.size": "208b"
+    },
+    {
+        "health": "green",
+        "status": "logs",
+        "index": "logs_server1",
+        "uuid": "u56jv2AyR2KOkruOfxIAnA",
+        "pri": "1",
+        "rep": "1",
+        "docs.count": "5386",
+        "docs.deleted": "0",
+        "store.size": "5.1mb",
+        "pri.store.size": "2.5mb"
+    },
+    {
+        "health": "green",
+        "status": "kibana",
+        "index": ".kibana_1",
+        "uuid": "dBCrfVblRPGVlYAIlP_Duw",
+        "pri": "1",
+        "rep": "1",
+        "docs.count": "3187",
+        "docs.deleted": "50",
+        "store.size": "24.8mb",
+        "pri.store.size": "12.4mb"
+    },
+    {
+        "health": "green",
+        "status": "tasks",
+        "index": ".tasks",
+        "uuid": "3RafayGeSNiqglO2BHof9Q",
+        "pri": "1",
+        "rep": "1",
+        "docs.count": "3",
+        "docs.deleted": "0",
+        "store.size": "39.9kb",
+        "pri.store.size": "19.9kb"
+    },
+    {
+        "health": "green",
+        "status": "filebeat",
+        "index": "filebeat-7.9.0-elastic_qa",
+        "uuid": "tktSYU14S3CrsrJb0ybpSQ",
+        "pri": "1",
+        "rep": "1",
+        "docs.count": "3009880",
+        "docs.deleted": "0",
+        "store.size": "1.6gb",
+        "pri.store.size": "850.1mb"
+    },
+    {
+        "health": "green",
+        "status": "analysis",
+        "index": "analysis_test",
+        "uuid": "6ZHEAW1ST_qfg7mo4Bva4w",
+        "pri": "1",
+        "rep": "1",
+        "docs.count": "0",
+        "docs.deleted": "0",
+        "store.size": "416b",
+        "pri.store.size": "208b"
+    },
+    {
+        "health": "green",
+        "status": "open",
+        "index": ".apm-custom-link",
+        "uuid": "Y4N2TeVERrGacEGwY-NPAQ",
+        "pri": "1",
+        "rep": "1",
+        "docs.count": "0",
+        "docs.deleted": "0",
+        "store.size": "416b",
+        "pri.store.size": "208b"
+    },
+    {
+        "health": "green",
+        "status": "open",
+        "index": "kibana_sample_data_ecommerce",
+        "uuid": "4FIWJKhGSr6bE72R0xEQyA",
+        "pri": "1",
+        "rep": "1",
+        "docs.count": "4675",
+        "docs.deleted": "0",
+        "store.size": "9.2mb",
+        "pri.store.size": "4.6mb"
+    }
+]`;
 
   columns = [
     {
       title: '索引名称',
       dataIndex: 'index',
+    },
+    {
+        title: '别名',
+        dataIndex: 'status',
     },
     {
       title: '文档数',

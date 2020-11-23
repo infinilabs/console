@@ -141,35 +141,35 @@ class SearchTemplate extends PureComponent {
   [
     {
       "name" : "filebeat-7.9.1",
-      "index_patterns" : "[filebeat-7.9.1-*]",
+      "index_patterns" : "[template6,search_template2,template2]",
       "order" : "1",
-      "version" : null,
+      "version" : 70002,
       "composed_of" : ""
     },
     {
       "name" : "apm-7.9.1-span",
-      "index_patterns" : "[apm-7.9.1-span*]",
+      "index_patterns" : "[search_template2,template3,template2]",
       "order" : "2",
-      "version" : null,
-      "composed_of" : ""
+      "version" : 70002,
+      "composed_of" : "70002"
     },
     {
       "name" : ".lists-default",
-      "index_patterns" : "[.lists-default-*]",
+      "index_patterns" : "[template3,search_template2,template2]",
       "order" : "0",
-      "version" : null,
-      "composed_of" : ""
+      "version" : 700034,
+      "composed_of" : "70001"
     },
     {
       "name" : ".monitoring-es",
-      "index_patterns" : "[.monitoring-es-7-*]",
+      "index_patterns" : "[template1,search_template2,search_template2]",
       "order" : "0",
       "version" : "7000199",
       "composed_of" : ""
     },
     {
       "name" : ".monitoring-beats",
-      "index_patterns" : "[.monitoring-beats-7-*]",
+      "index_patterns" : "[template3,search_template2,template2]",
       "order" : "0",
       "version" : "7000199",
       "composed_of" : ""
@@ -177,16 +177,12 @@ class SearchTemplate extends PureComponent {
 
   columns = [
     {
-      title: '模板名称',
+      title: '索引名称',
       dataIndex: 'name',
     },
     {
-      title: '模式',
+      title: '模板名称',
       dataIndex: 'index_patterns',
-    },
-    {
-      title: 'order',
-      dataIndex: 'order'
     },
     {
       title: '版本',

@@ -141,51 +141,51 @@ class Manage extends PureComponent {
   [
     {
       "name" : "filebeat-7.9.1",
-      "index_patterns" : "[filebeat-7.9.1-*]",
-      "order" : "1",
-      "version" : null,
+      "index_patterns" : "[Analyzer1,Analyzer2]",
+      "order" : "2020-01-11 10:00:00",
+      "version" : 99,
       "composed_of" : ""
     },
     {
       "name" : "apm-7.9.1-span",
-      "index_patterns" : "[apm-7.9.1-span*]",
-      "order" : "2",
-      "version" : null,
+      "index_patterns" : "[Analyzer1,Analyzer4]",
+      "order" : "2020-11-12 10:10:00",
+      "version" : 87,
       "composed_of" : ""
     },
     {
       "name" : ".lists-default",
-      "index_patterns" : "[.lists-default-*]",
-      "order" : "0",
-      "version" : null,
+      "index_patterns" : "[Analyzer1,Analyzer3,Analyzer4]",
+      "order" : "2020-03-12 09:00:00",
+      "version" : 30,
       "composed_of" : ""
     },
     {
       "name" : ".monitoring-es",
-      "index_patterns" : "[.monitoring-es-7-*]",
-      "order" : "0",
-      "version" : "7000199",
+      "index_patterns" : "[Analyzer1,Analyzer3,Analyzer4]",
+      "order" : "2020-02-12 10:00:00",
+      "version" : "67",
       "composed_of" : ""
     },
     {
       "name" : ".monitoring-beats",
-      "index_patterns" : "[.monitoring-beats-7-*]",
-      "order" : "0",
-      "version" : "7000199",
+      "index_patterns" : "[Analyzer1,Analyzer3,Analyzer4]",
+      "order" : "2020-05-21 10:09:00",
+      "version" : "34",
       "composed_of" : ""
     }]`;
 
   columns = [
     {
-      title: '分词器名称',
+      title: '索引名称',
       dataIndex: 'name',
     },
     {
-      title: '模式',
+      title: '分词器名称',
       dataIndex: 'index_patterns',
     },
     {
-      title: 'order',
+      title: '创建时间',
       dataIndex: 'order'
     },
     {

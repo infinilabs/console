@@ -138,19 +138,11 @@ export default [
               routes: [
                   {
                       path: '/search/template',
-                      redirect: '/search/template/summary',
-                  },
-                  {
-                      path: '/search/template/summary',
-                      component: './SearchManage/template/Summary',
+                      redirect: '/search/template/template',
                   },
                   {
                       path: '/search/template/template',
                       component: './SearchManage/template/SearchTemplate',
-                  },
-                  {
-                      path: '/search/template/param',
-                      component: './SearchManage/template/Param',
                   },
                   {
                       path: '/search/template/history',
@@ -169,10 +161,6 @@ export default [
                     {
                         path: '/search/alias/index',
                         component: './SearchManage/alias/AliasManage',
-                    },
-                    {
-                        path: '/search/alias/param',
-                        component: './SearchManage/alias/Param',
                     },
                     {
                         path: '/search/alias/rule',
@@ -215,33 +203,33 @@ export default [
                         component: './SearchManage/analyzer/AnalyzerTest',
                     }
                 ]
-          }, {
-            path: '/search/nlp',
-            name: 'nlp',
-            component: './SearchManage/nlp/NLP',
-            routes: [
-                {
-                    path: '/search/nlp',
-                    redirect: '/search/nlp/query',
-                },
-                {
-                    path: '/search/nlp/query',
-                    component: './SearchManage/nlp/Query',
-                },
-                {
-                    path: '/search/nlp/intention',
-                    component: './SearchManage/nlp/Intention',
-                },
-                {
-                    path: '/search/nlp/knowledge',
-                    component: './SearchManage/nlp/Knowledge',
-                },
-                {
-                    path: '/search/nlp/text',
-                    component: './SearchManage/nlp/Text',
-                }
-            ]
-          },
+          }//, {
+            //  path: '/search/nlp',
+            // name: 'nlp',
+            // component: './SearchManage/nlp/NLP',
+            // routes: [
+            //    {
+            //        path: '/search/nlp',
+            //        redirect: '/search/nlp/query',
+            //    },
+            //    {
+            //       path: '/search/nlp/query',
+            //        component: './SearchManage/nlp/Query',
+            //  },
+            //  {
+            //      path: '/search/nlp/intention',
+            //     component: './SearchManage/nlp/Intention',
+            // },
+            // {
+            //     path: '/search/nlp/knowledge',
+            //      component: './SearchManage/nlp/Knowledge',
+            //  },
+            // {
+            //      path: '/search/nlp/text',
+            //      component: './SearchManage/nlp/Text',
+            //     }
+            //]
+            //},
         ]
       },
 

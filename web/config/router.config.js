@@ -32,7 +32,7 @@ export default [
             }, {
               path: '/platform/cluster',
               name: 'cluster',
-              component: './Dashboard/Monitor',
+              component: './Dashboard/ClusterMonitor',
             }, {
               path: '/platform/tasks',
               name: 'tasks',

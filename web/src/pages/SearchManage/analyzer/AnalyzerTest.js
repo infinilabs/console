@@ -117,9 +117,9 @@ class AnalyzerTest extends Component {
             ],
         })(
         <Select placeholder="Please select" style={{ width: 150 }}>
-    <Option value="blogs">blogs</Option>
-            <Option value="logs">logs</Option>
-            <Option value="filebeat">filebeat</Option>
+    <Option value="blogs">name_analyzer</Option>
+            <Option value="logs">text_analyzer</Option>
+            <Option value="filebeat">title_analyzer</Option>
             </Select>
     )}
     </FormItem>

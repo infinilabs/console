@@ -390,7 +390,7 @@ class Professional extends PureComponent {
                 <Card bodyStyle={{ padding: 0 }} bordered={false}>
                     <Card.Meta
                     title={<div className={styles.cardTitle}>
-                        <Avatar size="small" src="https://gw.alipayobjects.com/zos/rmsportal/kZzEzemZyKLKFsojXItE.png" />
+                        <Avatar size="small" src="https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1606239682187&di=8dcf007d76393225eea97898cb87401e&imgtype=0&src=http%3A%2F%2Fbpic.588ku.com%2Felement_origin_min_pic%2F00%2F16%2F78%2F8756af452585a1b.jpg" />
                             <Link to="">道路词汇大全</Link>
                             </div> }
                     description="词条样例：晨明、作业段、作业标志、左开道岔、左港、遵义南、遵义北、俎上之肉、组合辙叉、阻工、走马岭、纵向间距、纵向轨枕、纵向标线、纵梁桥、纵断面高程、总监代表处、总监办、总概算汇总"/>
@@ -399,6 +399,14 @@ class Professional extends PureComponent {
                           更新时间： 2009-12-28 19:34:26
                     </span>
                 </div>
+    <span className={styles.submitButtons}>
+<Button type="primary" htmlType="submit">
+        修改
+        </Button>
+        <Button style={{ marginLeft: 8 }} onClick={this.handleFormReset}>
+    删除
+    </Button>
+    </span>
             </Card>
             </Card.Grid>
 
@@ -406,7 +414,7 @@ class Professional extends PureComponent {
         <Card bodyStyle={{ padding: 0 }} bordered={false}>
         <Card.Meta
     title={<div className={styles.cardTitle}>
-<Avatar size="small" src="https://gw.alipayobjects.com/zos/rmsportal/kZzEzemZyKLKFsojXItE.png" />
+<Avatar size="small" src="https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1606239682187&di=8dcf007d76393225eea97898cb87401e&imgtype=0&src=http%3A%2F%2Fbpic.588ku.com%2Felement_origin_min_pic%2F00%2F16%2F78%2F8756af452585a1b.jpg" />
         <Link to="">中国国道省道高速公路名录</Link>
         </div> }
     description="中国国道省道高速公路名录词条样例：京福高速公路、同三高速公路、青银高速公路、日东高速公路、潍莱高速公路、威乌高速公路、济青高速公路、青红高速公路、京珠高速公路、济菏高速公路、沪瑞高速公路、赣粤高速公路、连霍高速公路、丹拉高速公路"/>
@@ -415,13 +423,21 @@ class Professional extends PureComponent {
         更新时间： 2009-12-28 19:34:26
     </span>
     </div>
+    <span className={styles.submitButtons}>
+<Button type="primary" htmlType="submit">
+        修改
+        </Button>
+        <Button style={{ marginLeft: 8 }} onClick={this.handleFormReset}>
+    删除
+    </Button>
+    </span>
     </Card>
     </Card.Grid>
     <Card.Grid className={styles.projectGrid} key="1">
         <Card bodyStyle={{ padding: 0 }} bordered={false}>
         <Card.Meta
     title={<div className={styles.cardTitle}>
-<Avatar size="small" src="https://gw.alipayobjects.com/zos/rmsportal/kZzEzemZyKLKFsojXItE.png" />
+<Avatar size="small" src="https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1606239682187&di=8dcf007d76393225eea97898cb87401e&imgtype=0&src=http%3A%2F%2Fbpic.588ku.com%2Felement_origin_min_pic%2F00%2F16%2F78%2F8756af452585a1b.jpg" />
         <Link to="">物流货运专业术语</Link>
         </div> }
     description="词条样例：物流、物流活动、物流作业、物流模数、物流技术、物流成本、物流管理、物流中心、物流网络、物流信息、物流企业、物流单证、物流联盟、供应物流、生产物流、销售物流、回收物流、废弃物物流、绿色物流"/>
@@ -430,28 +446,45 @@ class Professional extends PureComponent {
         更新时间： 2009-12-28 19:34:26
     </span>
     </div>
+    <span className={styles.submitButtons}>
+<Button type="primary" htmlType="submit">
+        修改
+        </Button>
+        <Button style={{ marginLeft: 8 }} onClick={this.handleFormReset}>
+    删除
+    </Button>
+    </span>
     </Card>
     </Card.Grid>
     <Card.Grid className={styles.projectGrid} key="1">
         <Card bodyStyle={{ padding: 0 }} bordered={false}>
         <Card.Meta
     title={<div className={styles.cardTitle}>
-<Avatar size="small" src="https://gw.alipayobjects.com/zos/rmsportal/kZzEzemZyKLKFsojXItE.png" />
+<Avatar size="small" src="https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1606239682187&di=8dcf007d76393225eea97898cb87401e&imgtype=0&src=http%3A%2F%2Fbpic.588ku.com%2Felement_origin_min_pic%2F00%2F16%2F78%2F8756af452585a1b.jpg" />
         <Link to="">铁路词汇</Link>
         </div> }
     description="铁路词汇词条样例：铁路、铁道、铁道部、铁路局、太原铁路局、北京铁路局、车务段、机务段、工务段、供电段、电务段、列车段、车辆段、铁通、车务、机务、工务、供电、电务"/>
         <div className={styles.projectItemContent}>
-<span className={styles.datetime} title="2020-10-11">
-        更新时间： 2009-12-28 19:34:26
-    </span>
+            <span className={styles.datetime} title="2020-10-11">
+                    更新时间： 2009-12-28 19:34:26
+            </span>
+
     </div>
+    <span className={styles.submitButtons}>
+    <Button type="primary" htmlType="submit">
+            修改
+            </Button>
+            <Button style={{ marginLeft: 8 }} onClick={this.handleFormReset}>
+        删除
+        </Button>
+        </span>
     </Card>
     </Card.Grid>
     <Card.Grid className={styles.projectGrid} key="1">
         <Card bodyStyle={{ padding: 0 }} bordered={false}>
         <Card.Meta
     title={<div className={styles.cardTitle}>
-<Avatar size="small" src="https://gw.alipayobjects.com/zos/rmsportal/kZzEzemZyKLKFsojXItE.png" />
+<Avatar size="small" src="https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1606239682187&di=8dcf007d76393225eea97898cb87401e&imgtype=0&src=http%3A%2F%2Fbpic.588ku.com%2Felement_origin_min_pic%2F00%2F16%2F78%2F8756af452585a1b.jpg" />
         <Link to="">客运专线铁路</Link>
         </div> }
     description="词条样例：验收标准、验标、桥梁施工技术规范、桥规、路规、遂规、铁路技术管理规则、行车组织规则、铁路交通事故调查处理规则、运输组织、铁路安全管理规则、铁路行车操作规则、铁路运用组织规程、区段号、司机号、总重、辆数"/>
@@ -460,13 +493,21 @@ class Professional extends PureComponent {
         更新时间： 2009-12-28 19:34:26
     </span>
     </div>
+    <span className={styles.submitButtons}>
+<Button type="primary" htmlType="submit">
+        修改
+        </Button>
+        <Button style={{ marginLeft: 8 }} onClick={this.handleFormReset}>
+    删除
+    </Button>
+    </span>
     </Card>
     </Card.Grid>
     <Card.Grid className={styles.projectGrid} key="1">
         <Card bodyStyle={{ padding: 0 }} bordered={false}>
         <Card.Meta
     title={<div className={styles.cardTitle}>
-<Avatar size="small" src="https://gw.alipayobjects.com/zos/rmsportal/kZzEzemZyKLKFsojXItE.png" />
+<Avatar size="small" src="https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1606239682187&di=8dcf007d76393225eea97898cb87401e&imgtype=0&src=http%3A%2F%2Fbpic.588ku.com%2Felement_origin_min_pic%2F00%2F16%2F78%2F8756af452585a1b.jpg" />
         <Link to="">民用航空</Link>
         </div> }
     description="词条样例：晨明、作业段、作业标志、左开道岔、左港、遵义南、遵义北、俎上之肉、组合辙叉、阻工、走马岭、纵向间距、纵向轨枕、纵向标线、纵梁桥、纵断面高程、总监代表处、总监办、总概算汇总"/>
@@ -475,13 +516,21 @@ class Professional extends PureComponent {
         更新时间： 2009-12-28 19:34:26
     </span>
     </div>
+    <span className={styles.submitButtons}>
+<Button type="primary" htmlType="submit">
+        修改
+        </Button>
+        <Button style={{ marginLeft: 8 }} onClick={this.handleFormReset}>
+    删除
+    </Button>
+    </span>
     </Card>
     </Card.Grid>
     <Card.Grid className={styles.projectGrid} key="1">
         <Card bodyStyle={{ padding: 0 }} bordered={false}>
         <Card.Meta
     title={<div className={styles.cardTitle}>
-<Avatar size="small" src="https://gw.alipayobjects.com/zos/rmsportal/kZzEzemZyKLKFsojXItE.png" />
+<Avatar size="small" src="https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1606239682187&di=8dcf007d76393225eea97898cb87401e&imgtype=0&src=http%3A%2F%2Fbpic.588ku.com%2Felement_origin_min_pic%2F00%2F16%2F78%2F8756af452585a1b.jpg" />
         <Link to="">物流术语</Link>
         </div> }
     description="词条样例：晨明、作业段、作业标志、左开道岔、左港、遵义南、遵义北、俎上之肉、组合辙叉、阻工、走马岭、纵向间距、纵向轨枕、纵向标线、纵梁桥、纵断面高程、总监代表处、总监办、总概算汇总"/>
@@ -490,6 +539,14 @@ class Professional extends PureComponent {
         更新时间： 2009-12-28 19:34:26
     </span>
     </div>
+    <span className={styles.submitButtons}>
+<Button type="primary" htmlType="submit">
+        修改
+        </Button>
+        <Button style={{ marginLeft: 8 }} onClick={this.handleFormReset}>
+    删除
+    </Button>
+    </span>
     </Card>
     </Card.Grid>
 
@@ -497,7 +554,7 @@ class Professional extends PureComponent {
         <Card bodyStyle={{ padding: 0 }} bordered={false}>
         <Card.Meta
     title={<div className={styles.cardTitle}>
-<Avatar size="small" src="https://gw.alipayobjects.com/zos/rmsportal/kZzEzemZyKLKFsojXItE.png" />
+<Avatar size="small" src="https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1606239682187&di=8dcf007d76393225eea97898cb87401e&imgtype=0&src=http%3A%2F%2Fbpic.588ku.com%2Felement_origin_min_pic%2F00%2F16%2F78%2F8756af452585a1b.jpg" />
         <Link to="">民航业词库</Link>
         </div> }
     description="词条样例：晨明、作业段、作业标志、左开道岔、左港、遵义南、遵义北、俎上之肉、组合辙叉、阻工、走马岭、纵向间距、纵向轨枕、纵向标线、纵梁桥、纵断面高程、总监代表处、总监办、总概算汇总"/>
@@ -506,6 +563,14 @@ class Professional extends PureComponent {
         更新时间： 2009-12-28 19:34:26
     </span>
     </div>
+    <span className={styles.submitButtons}>
+<Button type="primary" htmlType="submit">
+        修改
+        </Button>
+        <Button style={{ marginLeft: 8 }} onClick={this.handleFormReset}>
+    删除
+    </Button>
+    </span>
     </Card>
     </Card.Grid>
 
@@ -513,7 +578,7 @@ class Professional extends PureComponent {
         <Card bodyStyle={{ padding: 0 }} bordered={false}>
         <Card.Meta
     title={<div className={styles.cardTitle}>
-<Avatar size="small" src="https://gw.alipayobjects.com/zos/rmsportal/kZzEzemZyKLKFsojXItE.png" />
+<Avatar size="small" src="https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1606239682187&di=8dcf007d76393225eea97898cb87401e&imgtype=0&src=http%3A%2F%2Fbpic.588ku.com%2Felement_origin_min_pic%2F00%2F16%2F78%2F8756af452585a1b.jpg" />
         <Link to="">港口列表</Link>
         </div> }
     description="词条样例：阿比让、阿布扎比、阿德莱德、阿尔及尔、阿卡胡特拉、阿拉木图、阿里卡、阿帕帕、阿什杜德、阿什哈巴特、阿特利斯科、埃德蒙顿、安科纳、安特卫普、敖德萨、奥胡斯、奥克兰、奥兰、巴尔的摩"/>
@@ -522,6 +587,14 @@ class Professional extends PureComponent {
         更新时间： 2009-12-28 19:34:26
     </span>
     </div>
+    <span className={styles.submitButtons}>
+<Button type="primary" htmlType="submit">
+        修改
+        </Button>
+        <Button style={{ marginLeft: 8 }} onClick={this.handleFormReset}>
+    删除
+    </Button>
+    </span>
     </Card>
     </Card.Grid>
         </Card>

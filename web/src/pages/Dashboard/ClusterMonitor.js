@@ -14,9 +14,9 @@ import {
 
 let generateHeapData = (target)=>{
   let data = [];
-  setInterval(() => {
+  let generator = (initTime) => {
     var now = new Date();
-    var time = now.getTime();
+    var time = initTime||now.getTime();
     var heap1 = ~~(Math.random() * 500) + 200;
     var heap2 = ~~(Math.random() * 300) + 512;
     if (data.length >= 120) {
@@ -34,17 +34,25 @@ let generateHeapData = (target)=>{
       heap_ratio: (heap2 *100)/1024,
       type: "node2"
     });
+    !initTime && target.setState({
+      data
+    });
+  };
+    let stime = new Date();
+    for(let i=120;i>0;i--){
+      generator(new Date(stime.valueOf()- i * 1000 * 30));
+    }
     target.setState({
       data
     });
-  }, 30000);
+  setInterval(()=>{generator(null)}, 30000);
 }
 
 let generateCpuData = (target)=>{
   let data = [];
-  setInterval(() => {
+  let generator = (initTime) => {
     var now = new Date();
-    var time = now.getTime();
+    var time = initTime || now.getTime();
     var cpu1 = ~~(Math.random()*5) + 0.1;
     var cpu2 = ~~(Math.random()*3) +0.2;
     if (data.length >= 120) {
@@ -62,17 +70,25 @@ let generateCpuData = (target)=>{
       cpu_ratio: cpu2,
       type: "node2"
     });
+    !initTime && target.setState({
+      data
+    });
+  };
+    let stime = new Date();
+    for(let i=120;i>0;i--){
+      generator(new Date(stime.valueOf()- i * 1000 * 30));
+    }
     target.setState({
       data
     });
-  }, 30000);
+  setInterval(()=>{generator(null)}, 30000);
 }
 
 let generateSearchLatencyData = (target)=>{
   let data = [];
-  setInterval(() => {
+  let generator = (initTime) => {
     var now = new Date();
-    var time = now.getTime();
+    var time = initTime || now.getTime();
     var latency1 = ~~(Math.random()*100) + 10;
     var latency2 = ~~(Math.random()*150) +30;
     if (data.length >= 120) {
@@ -90,17 +106,25 @@ let generateSearchLatencyData = (target)=>{
       latency: latency2,
       type: "node2"
     });
-    target.setState({
+    !initTime && target.setState({
       data
     });
-  }, 30000);
+  };
+  let stime = new Date();
+  for(let i=120;i>0;i--){
+    generator(new Date(stime.valueOf()- i * 1000 * 30));
+  }
+  target.setState({
+    data
+  });
+  setInterval(()=>{generator(null)}, 30000);
 }
 
 let generateIndexLatencyData = (target)=>{
   let data = [];
-  setInterval(() => {
+  let generator = (initTime) => {
     var now = new Date();
-    var time = now.getTime();
+    var time = initTime || now.getTime();
     var latency1 = ~~(Math.random()*400) + 50;
     var latency2 = ~~(Math.random()*500) +20;
     if (data.length >= 120) {
@@ -118,10 +142,19 @@ let generateIndexLatencyData = (target)=>{
       latency: latency2,
       type: "node2"
     });
-    target.setState({
+    !initTime && target.setState({
       data
     });
-  }, 30000);
+  };
+
+  let stime = new Date();
+  for(let i=120;i>0;i--){
+    generator(new Date(stime.valueOf()- i * 1000 * 30));
+  }
+  target.setState({
+    data
+  });
+  setInterval(()=>{generator(null)}, 30000);
 }
 
 

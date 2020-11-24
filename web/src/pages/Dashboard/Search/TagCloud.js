@@ -143,7 +143,7 @@ class TagCloud extends PureComponent {
     dv.transform({
       type: "tag-cloud",
       fields: ["name", "value"],
-      size: [300, 200],
+      size: [400, 300],
       font: "Verdana",
       padding: 0,
       timeInterval: 5000,// max execute time
@@ -176,7 +176,7 @@ class TagCloud extends PureComponent {
           <Chart
               // height={window.innerHeight}
               width={window.innerWidth}
-              height={200}
+              height={248}
               data={dv}
               scale={scale}
               padding={0}

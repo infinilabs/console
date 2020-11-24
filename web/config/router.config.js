@@ -42,6 +42,16 @@ export default [
               name: 'search',
               component: './Dashboard/SearchMonitor',
             },
+            // {
+            //     path: '/platform/analysis',
+            //     name: 'analysis',
+            //     component: './Dashboard/Analysis',
+            // },
+            // {
+            //     path: '/platform/monitor',
+            //     name: 'monitor',
+            //     component: './Dashboard/Monitor',
+            // },
         ]
       },
 

@@ -38,6 +38,132 @@ for (let i = 0; i < 50; i += 1) {
     status: Math.floor((Math.random() * 10) % 2),
   });
 }
+
+
+const searchDataBaseTerms = [{
+  "name": "北京",
+  "value": Math.floor((Math.random() * 1000)),
+  "category": "城市"
+}, {
+  "name": "广州",
+  "value": Math.floor((Math.random() * 1000)),
+  "category": "城市"
+}, {
+  "name": "深圳",
+  "value": Math.floor((Math.random() * 1000)),
+  "category": "城市"
+}, {
+  "name": "长沙",
+  "value": Math.floor((Math.random() * 1000)),
+  "category": "城市"
+}, {
+  "name": "上海",
+  "value": Math.floor((Math.random() * 1000)),
+  "category": "城市"
+}, {
+  "name": "成都",
+  "value": Math.floor((Math.random() * 1000)),
+  "category": "城市"
+}, {
+  "name": "哈尔滨",
+  "value": Math.floor((Math.random() * 1000)),
+  "category": "城市"
+}, {
+  "name": "海口",
+  "value": Math.floor((Math.random() * 1000)),
+  "category": "城市"
+}, {
+  "name": "青岛",
+  "value": Math.floor((Math.random() * 1000)),
+  "category": "城市"
+}, {
+  "name": "G71",
+  "value": Math.floor((Math.random() * 1000)),
+  "category": "车次"
+}, {
+  "name": "G121",
+  "value": Math.floor((Math.random() * 1000)),
+  "category": "车次"
+}, {
+  "name": "T109",
+  "value": Math.floor((Math.random() * 1000)),
+  "category": "车次"
+}, {
+  "name": "K81",
+  "value": Math.floor((Math.random() * 1000)),
+  "category": "车次"
+}, {
+  "name": "Z13",
+  "value": Math.floor((Math.random() * 1000)),
+  "category": "车次"
+}, {
+  "name": "Z121",
+  "value": Math.floor((Math.random() * 1000)),
+  "category": "车次"
+}, {
+  "name": "G431",
+  "value": Math.floor((Math.random() * 1000)),
+  "category": "车次"
+}, {
+  "name": "退票",
+  "value": Math.floor((Math.random() * 1000)),
+  "category": "票务"
+}, {
+  "name": "春运",
+  "value": Math.floor((Math.random() * 1000)),
+  "category": "票务"
+}, {
+  "name": "学生票",
+  "value": Math.floor((Math.random() * 1000)),
+  "category": "票务"
+}, {
+  "name": "二等座",
+  "value": Math.floor((Math.random() * 1000)),
+  "category": "其他"
+}, {
+  "name": "订餐",
+  "value": Math.floor((Math.random() * 1000)),
+  "category": "其他"
+}];
+
+const searchDataInfini = [];
+for (let i = 0; i < searchDataBaseTerms.length; i += 1) {
+  searchDataInfini.push({
+    index: i + 1,
+    keyword: `${searchDataBaseTerms[i].name}`,
+    count: Math.floor(Math.random() * 1000),
+    range: Math.floor(Math.random() * 100),
+    status: Math.floor((Math.random() * 10) % 2),
+  });
+}
+
+const docTypeDataInfini = [
+  {
+    x: 'user',
+    y: 39274,
+  },
+  {
+    x: 'city',
+    y: 31008,
+  },
+  {
+    x: 'train',
+    y: 27610,
+  },
+  {
+    x: 'news',
+    y: 19302,
+  },
+  {
+    x: 'order',
+    y: 17624,
+  },
+  {
+    x: 'other',
+    y: 12900,
+  },
+];
+
 const salesTypeData = [
   {
     x: '家用电器',
@@ -189,6 +315,8 @@ const getFakeChartData = {
   salesTypeDataOnline,
   salesTypeDataOffline,
   radarData,
+  searchDataInfini,
+  docTypeDataInfini,
 };
 
 export default {

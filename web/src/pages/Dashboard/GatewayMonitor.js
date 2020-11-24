@@ -112,7 +112,7 @@ class GatewayMonitor extends PureComponent {
                   bodyStyle={{ padding: '30px 0 10px' }}
                   style={{ marginTop: 32 }}
               >
-                <Chart height={400} data={chartDataIndex} scale={cols} forceFit>
+                <Chart height={300} data={chartDataIndex} scale={cols} forceFit>
                   <h3 className='main-title' style={styles.mainTitle}>
                     索引QPS
                   </h3>
@@ -146,7 +146,7 @@ class GatewayMonitor extends PureComponent {
                   style={{ marginTop: 32 }}
               >
                 <div style={{ padding: '0 24px' }}>
-                  <Chart height={400} data={chartDataQuery} scale={cols} forceFit>
+                  <Chart height={300} data={chartDataQuery} scale={cols} forceFit>
                     <h3 className='main-title' style={styles.mainTitle}>
                       查询QPS
                     </h3>
@@ -183,7 +183,7 @@ class GatewayMonitor extends PureComponent {
                   bodyStyle={{ padding: '30px 0 10px' }}
                   style={{ marginTop: 32 }}
               >
-                <Chart height={400} data={chartDataGateway} scale={cols} forceFit>
+                <Chart height={300} data={chartDataGateway} scale={cols} forceFit>
                   <h3 className='main-title' style={styles.mainTitle}>
                     网关写入QPS
                   </h3>
@@ -217,7 +217,7 @@ class GatewayMonitor extends PureComponent {
                   style={{ marginTop: 32 }}
               >
                 <div style={{ padding: '0 24px' }}>
-                <Chart height={400} data={chartDataTop} scale={cols} forceFit>
+                <Chart height={300} data={chartDataTop} scale={cols} forceFit>
                 <h3 className='main-title' style={styles.mainTitle}>
                     Top用户统计
                   </h3>

@@ -89,11 +89,18 @@ class BakAndRestore extends Component {
       }
     };
     return (
-      <StandardTable
-        selectedRows={[]}
-        data={data}
-        columns={this.repoColumns}
-      /> 
+      <div>
+         <div style={{marginBottom: 10}}>
+            <Button icon="plus" type="primary" onClick={() => {}}>
+              新建
+            </Button>
+        </div>
+        <StandardTable
+          selectedRows={[]}
+          data={data}
+          columns={this.repoColumns}
+        /> 
+      </div>
     );
   };
 
@@ -164,11 +171,18 @@ class BakAndRestore extends Component {
       }
     };
     return (
-      <StandardTable
-        selectedRows={[]}
-        data={data}
-        columns={this.snapshotColumns}
-      /> 
+      <div>
+         <div style={{marginBottom: 10}}>
+            <Button icon="plus" type="primary" onClick={() => {}}>
+              新建
+            </Button>
+        </div>
+        <StandardTable
+          selectedRows={[]}
+          data={data}
+          columns={this.snapshotColumns}
+        /> 
+      </div>
     );
   };
 
@@ -222,11 +236,22 @@ class BakAndRestore extends Component {
               visible={this.state.snapshotVisible}
             >
               <div>
-                <Descriptions>
-                  <Descriptions.Item label="快照名称">Zhou Maomao</Descriptions.Item>
-                  <Descriptions.Item label="仓库">1810000000</Descriptions.Item>
+                <Descriptions bordered>
+                  <Descriptions.Item label="快照名称" span={2}>cluster_snapshot_1</Descriptions.Item>
+                  <Descriptions.Item label="时长">2s</Descriptions.Item>
+                  <Descriptions.Item label="仓库" span={3}>
+                    <Select value="my_local_repo" style={{width:200}}>
+                      <Select.Option value="my_local_repo">my_local_repo</Select.Option>
+                      <Select.Option value="remote_aws_repo">remote_aws_repo</Select.Option>
+                    </Select>
+                  </Descriptions.Item>
+                  <Descriptions.Item  span={3} label="创建时间">2020-10-09 20:30:23</Descriptions.Item>
                 </Descriptions>
-                <Button type="primary" className={styles.btnRestore}>恢复</Button>
+                <div className={styles.drawerFooter}>
+                  <Button className={styles.btnRestore} type="primary" >恢复</Button>
+                  <Button type="primary">保存</Button>
+                </div>
+                
               </div>
             </Drawer>
         </Fragment>

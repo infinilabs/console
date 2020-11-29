@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { connect } from 'dva';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
-import {Steps, Card, Form, Select, Input,Button, Divider,message,Spin} from 'antd';
+import {Steps, Card, Form, Select, Input,Button, Divider,message,Spin, Row, Col,Result} from 'antd';
 
 const {Step} = Steps;
 const {Option} = Select;
@@ -128,6 +128,19 @@ class Rebuild extends Component {
               </div>
             </div>
           )
+          break;
+        case 3:
+          stepDom = (<Result
+            status="success"
+            title="数据重建成功"
+            subTitle=""
+            extra={[
+              // <Button type="primary" key="console">
+              // </Button>,
+              <Button key="continue">继续重建</Button>,
+            ]}
+          />)
+          break;
     }
     return stepDom;
   }
@@ -206,10 +219,10 @@ class Rebuild extends Component {
       <PageHeaderWrapper >
         <Card>
           <Steps current={this.state.currentStep}>
-            <Step title="源索引信息" description="This is a description." />
-            <Step title="目标索引信息" description="This is a description." />
-            <Step title="数据重建中" subTitle="Left 00:00:08" description="This is a description." />
-            <Step title="重建结果" description="This is a description." />
+            <Step title="源索引信息"  /> 
+            <Step title="目标索引信息" />
+            <Step title="数据重建中" subTitle="剩余 00:00:08"  />
+            <Step title="重建结果" />
           </Steps>
           <Divider/>
           {this.renderSteps(this.state.currentStep)}

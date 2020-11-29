@@ -96,6 +96,7 @@ export default {
   'menu.data.snapshot': '快照管理',
   'menu.data.rebuild': '重建管理',
   'menu.data.export': '导入导出',
+  'menu.data.query': '文档管理',
 
   'menu.search': '搜索管理',
   'menu.search.template': '搜索模板',

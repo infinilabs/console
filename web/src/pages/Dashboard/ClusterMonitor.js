@@ -258,7 +258,7 @@ class ClusterMonitor extends PureComponent {
           <Row gutter={24} style={{marginBottom:10}}>
             <Col xl={12} lg={24} md={24} sm={24} xs={24}>
               <Card>
-                <SliderChart title="节点内存使用占比(%)" xname="time" yname="heap_ratio"
+                <SliderChart title="内存使用占比(%)" xname="time" yname="heap_ratio"
                   generateFunc={generateHeapData}
                   unit="%"
                   scale={{

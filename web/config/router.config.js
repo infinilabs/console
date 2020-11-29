@@ -121,6 +121,10 @@ export default [
             path: '/data/import',
             name: 'export',
             component: './DataManagement/Import',
+          },{
+            path: '/data/doc',
+            name: 'query',
+            component: './DataManagement/Query',
           },
         ]
       },

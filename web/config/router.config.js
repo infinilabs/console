@@ -36,22 +36,22 @@ export default [
             }, {
               path: '/platform/tasks',
               name: 'tasks',
-              component: './Dashboard/Workplace',
+              component: './Dashboard/TaskMonitor',
             }, {
               path: '/platform/search',
               name: 'search',
               component: './Dashboard/SearchMonitor',
             },
-            // {
-            //     path: '/platform/analysis',
-            //     name: 'analysis',
-            //     component: './Dashboard/Analysis',
-            // },
-            // {
-            //     path: '/platform/monitor',
-            //     name: 'monitor',
-            //     component: './Dashboard/Monitor',
-            // },
+            {
+                path: '/platform/analysis',
+                name: 'analysis',
+                component: './Dashboard/Analysis',
+            },
+            {
+                path: '/platform/monitor',
+                name: 'monitor',
+                component: './Dashboard/Monitor',
+            },
         ]
       },
 

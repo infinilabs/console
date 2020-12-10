@@ -161,7 +161,7 @@ let generateIndexLatencyData = (target)=>{
 }
 
 
-
+  let charts = [];
   class SliderChart extends React.Component {
     constructor() {
       super();
@@ -198,11 +198,29 @@ let generateIndexLatencyData = (target)=>{
     
     let  pos = `${xname}*${yname}`;
       return (
+        <div style={{background:"#fff",padding: 10}}>
         <Chart
           data={this.props.data}
+          onGetG2Instance={c=>{
+            charts.push(c);
+          }}
+          onPlotMove={ev=>{
+            charts.forEach((chart)=>{
+              chart.showTooltip({
+                x: ev.x,
+                y: ev.y
+              });
+            });
+          }}
+          onPlotLeave={ev=>{
+            charts.forEach(chart=>{
+              chart.hideTooltip();
+            });
+          }}
           scale={scale}
-          height={300}
+          height={180}
           forceFit
+          padding="auto"
           // onGetG2Instance={g2Chart => {
           //   chart = g2Chart;
           // }}
@@ -211,7 +229,7 @@ let generateIndexLatencyData = (target)=>{
               {this.props.title}
           </h3>
           <Tooltip />
-          <Axis grid={grid} name={xname} title={axisTitle}/>
+          <Axis grid={grid} name={xname} />
           <Axis grid={grid} label={axisLabel} name={yname} title={axisTitle}/>
           <Legend />
           <Geom
@@ -230,18 +248,19 @@ let generateIndexLatencyData = (target)=>{
           color="type"
         />
         </Chart>
+        </div>
       );
     }
   }
 
 const styles ={
   mainTitle:{
-    fontSize:20,
+    fontSize:14,
     color:"black",
     textAlign:"center"
   },
   subTitle:{
-    fontSize:16,
+    fontSize:12,
     color:"gray",
     textAlign:"center"
   }
@@ -284,74 +303,71 @@ class StatsCharts extends PureComponent {
     indexLatency:[],
     timeScale: {min: moment().subtract(1, 'h').valueOf(), max: new Date()},
   }
-  componentDidMount(){
+  fetchData() {
     let {dispatch} = this.props;
-    let me = this;
-    setInterval(function(){
-      dispatch({
-        type: 'clusterMonitor/fetchClusterNodeStats',
-        callback: ({nodes_stats})=> {
-          // var heapStats = [], cpuStats=[],searchLatency=[], indexLatency=[];
-          // for(let st of nodes_stats){
-          //   var fields = {
-          //     time: st.timestamp,
-          //     type: st.node_name,
-          //   }
-          //   heapStats.push({
-          //     ...fields,
-          //     heap_ratio: st.node_stats.jvm.mem.heap_used_percent,
-          //   });
-          //   cpuStats.push({
-          //     ...fields,
-          //     cpu_ratio: st.node_stats.process.cpu.percent,
-          //   });
-          // }
-          let nodesStats = nodes_stats;
-          let nodeCpu = [],nodeHeap=[],nodeSearchLatency=[],nodeIndexLatency=[];
-          let now = moment(1607085646112);
-            for(let ns of nodesStats){
-              let i = 0;
-                for(let bk of ns.metrics.buckets){
-                    let fields = {
-                        time: now.subtract(300-30*i , 's').valueOf(), //bk.key_as_string,
-                        type: ns.key,
-                    };
-                    i++;
-                    nodeCpu.push({
-                        ...fields,
-                        cpu_ratio: bk.cpu_used.value,      
-                    });
-                    nodeHeap.push({
-                        ...fields,
-                        heap_ratio: bk.heap_percent.value,
-                    });
-                    nodeSearchLatency.push({
-                        ...fields,
-                        latency: bk.ds1 ? (bk.ds1.value/bk.ds.value).toFixed(2): 0,
-                    });
-                    nodeIndexLatency.push({
-                        ...fields,
-                        latency: bk.ds1 ? (bk.ds4.value/bk.ds3.value).toFixed(2): 0,
-                    });
-                }
-            }
-          me.setState({
-              heapStats: nodeHeap,
-              cpuStats: nodeCpu,
-              searchLatency: nodeSearchLatency,
-              indexLatency: nodeIndexLatency,
-              timeScale: {min: moment().subtract(1, 'h').valueOf(), max: new Date()},
-          });
-        }
-      });
-    }, 10000);
+    dispatch({
+      type: 'clusterMonitor/fetchClusterNodeStats',
+      callback: ({nodes_stats})=> {
+        let nodesStats = nodes_stats;
+        console.log(nodesStats);
+        let nodeCpu = [],nodeHeap=[],nodeSearchLatency=[],nodeIndexLatency=[], readThreadQueue=[],writeThreadQueue=[];
+        //let now = moment(1607085646112);
+          for(let ns of nodesStats){
+            //let i = 0;
+              for(let bk of ns.metrics.buckets){
+                  let fields = {
+                      time: bk.key_as_string, //now.subtract(300-30*i , 's').valueOf(), 
+                      type: ns.key,
+                  };
+                  nodeCpu.push({
+                      ...fields,
+                      cpu_ratio: bk.cpu_used.value,      
+                  });
+                  nodeHeap.push({
+                      ...fields,
+                      heap_ratio: bk.heap_percent.value,
+                  });
+                  nodeSearchLatency.push({
+                      ...fields,
+                      latency: bk.ds1 ? (bk.ds1.value/bk.ds.value).toFixed(2): 0,
+                  });
+                  nodeIndexLatency.push({
+                      ...fields,
+                      latency: bk.ds1 ? (bk.ds4.value/bk.ds3.value).toFixed(2): 0,
+                  });
+                  readThreadQueue.push({
+                    ...fields,
+                    queue: bk.read_threads_queue.value,
+                  });
+                  writeThreadQueue.push({
+                    ...fields,
+                    queue: bk.write_threads_queue.value,
+                  });
+              }
+          }
+        this.setState({
+            heapStats: nodeHeap,
+            cpuStats: nodeCpu,
+            searchLatency: nodeSearchLatency,
+            indexLatency: nodeIndexLatency,
+            readThreadQueue: readThreadQueue,
+            writeThreadQueue: writeThreadQueue,
+            timeScale: {min: moment().subtract(1, 'h').valueOf(), max: new Date()},
+        });
+      }
+    });  
+  }
+  componentDidMount(){
+    this.fetchData();
+    setInterval(() =>{
+      this.fetchData();
+    }, 30000);
   }
   render(){
     return (
       <div>
       <Row gutter={24} style={{marginBottom:10}}>
       <Col xl={12} lg={24} md={24} sm={24} xs={24}>
-        <Card>
           <SliderChart title="内存使用占比(%)" xname="time" yname="heap_ratio"
             data={this.state.heapStats}
             unit="%"
@@ -374,11 +390,9 @@ class StatsCharts extends PureComponent {
               }
             }
           }
-          />
-        </Card>        
+          />       
       </Col>
       <Col xl={12} lg={24} md={24} sm={24} xs={24}>
-        <Card>
         <SliderChart title="CPU使用占比(%)" xname="time" yname="cpu_ratio"
             type="cpu_ratio"
             data={this.state.cpuStats}
@@ -404,13 +418,11 @@ class StatsCharts extends PureComponent {
             }
           }
           />       
-        </Card>
       </Col>
       </Row>
 
-      <Row gutter={24}>
+      <Row gutter={24} style={{marginBottom:10}}>
       <Col xl={12} lg={24} md={24} sm={24} xs={24}>
-        <Card>
           <SliderChart title="搜索延迟(ms)" xname="time" yname="latency"
             type="search_latency"
             data={this.state.searchLatency}
@@ -435,11 +447,9 @@ class StatsCharts extends PureComponent {
               }
             }
           }
-          />
-        </Card>        
+          />     
       </Col>
       <Col xl={12} lg={24} md={24} sm={24} xs={24}>
-        <Card>
         <SliderChart title="索引延迟(ms)" xname="time" yname="latency"
             type="index_latency"
             data={this.state.indexLatency}
@@ -447,7 +457,7 @@ class StatsCharts extends PureComponent {
             unit="ms"
             scale={{
               time: {
-                alias: "时间",
+            //    alias: "时间",
                 type: "time",
                 mask: "HH:mm",
                 tickCount: 6,
@@ -465,9 +475,58 @@ class StatsCharts extends PureComponent {
             }
           }
           />       
-        </Card>
       </Col>
-      </Row></div>
+      </Row>
+      <Row gutter={24} style={{marginBottom:10}}>
+        <Col xl={12} lg={24} md={24} sm={24} xs={24}>
+            <SliderChart title="索引线程" xname="time" yname="queue"
+              data={this.state.readThreadQueue}
+              unit=""
+              scale={{
+                time: {
+                  alias: "时间",
+                  type: "time",
+                  mask: "HH:mm",
+                  tickCount: 6,
+                  ...this.state.timeScale,
+                  nice: false,
+                },
+                queue: {
+                  min: 0,
+                },
+                type: {
+                  type: "cat"
+                }
+              }
+            }
+            />     
+        </Col>
+        <Col xl={12} lg={24} md={24} sm={24} xs={24}>
+          <SliderChart title="读线程" xname="time" yname="queue"
+              data={this.state.writeThreadQueue}
+              unit=""
+              scale={{
+                time: {
+              //    alias: "时间",
+                  type: "time",
+                  mask: "HH:mm",
+                  tickCount: 6,
+                  ...this.state.timeScale,
+                  nice: false,
+                },
+                queue: {
+                  min: 0,
+                  // max: 1
+                },
+                type: {
+                  type: "cat"
+                }
+              }
+            }
+            />       
+        </Col>
+        </Row>
+      </div>
     )
   }
 }
@@ -478,11 +537,17 @@ class StatsCharts extends PureComponent {
 class ClusterMonitor extends PureComponent {
   state={
   }
-  componentDidMount() {
+  fetchData(){
     const { dispatch } = this.props;
     dispatch({
       type: 'clusterMonitor/fetchClusterOverview',
     });
+  }
+  componentDidMount() {
+    this.fetchData();
+    setInterval(()=>{
+      this.fetchData();
+    }, 30000);
   }
 
   render() {
@@ -517,7 +582,7 @@ class ClusterMonitor extends PureComponent {
                 <Statistic valueStyle={vstyle} title="在线时长" value={clusterStats.online_duration} />
               </Col>
               <Col md={2} xs={4}>
-                <Statistic valueStyle={vstyle} title="健康情况" value={clusterStats.status} prefix={<HealthCircle color="yellow"/>} />
+                <Statistic valueStyle={vstyle} title="健康情况" value={clusterStats.status} prefix={<HealthCircle color={clusterStats.status}/>} />
               </Col>
               <Col md={2} xs={4}>
                 <Statistic valueStyle={vstyle} title="节点数" value={clusterStats.nodes_count} />

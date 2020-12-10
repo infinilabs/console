@@ -1,4 +1,4 @@
-import { func } from "prop-types";
+import fetch from 'node-fetch';
 
 let data = JSON.parse(`{
     "cluster_stats" : {
@@ -478,54 +478,246 @@ let data = JSON.parse(`{
     }
   ]`);
 
+const apiUrls = {
+    CLUSTER_OVERVIEW: {
+      path:'/.monitoring-es-*/_search',
+      body: `{
+        "_source": [ "cluster_stats"], 
+        "size": 1, 
+        "sort": [
+          {
+            "timestamp": {
+              "order": "desc"
+            }
+          }
+        ], 
+        "query": {
+          "bool": {
+            "must": [
+              {
+                "match": {
+                  "type": "cluster_stats"
+                } 
+              }
+            ], 
+            "filter": [
+              {
+                "range": {
+                  "timestamp": {
+                    "gte": "now-1h",
+                    "lte": "now"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }`
+    },
+    "GET_ES_NODE_STATS":{
+        path: '/.monitoring-es-*/_search',
+        body: `{
+            "size": 0,
+            "query": {
+              "bool": {
+                "must": [
+                  {
+                    "match": {
+                      "type": "node_stats"
+                    }
+                  }
+                ],
+                "filter": [
+                  {
+                    "range": {
+                      "timestamp": {
+                        "gte": "now-1h",
+                        "lte": "now"
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            "aggs": {
+              "nodes": {
+                "terms": {
+                  "field": "source_node.name",
+                  "size": 10
+                },
+                "aggs": {
+                  "metrics": {
+                    "date_histogram": {
+                      "field": "timestamp",
+                      "fixed_interval": "30s"
+                    },
+                    "aggs": {
+                      "cpu_used": {
+                        "max": {
+                          "field": "node_stats.process.cpu.percent"
+                        }
+                      },
+                      "heap_used": {
+                        "max": {
+                          "field": "node_stats.jvm.mem.heap_used_in_bytes"
+                        }
+                      },
+                      "heap_percent": {
+                        "max": {
+                          "field": "node_stats.jvm.mem.heap_used_percent"
+                        }
+                      },
+                      "search_query_total": {
+                        "max": {
+                          "field": "node_stats.indices.search.query_total"
+                        }
+                      },
+                      "search_query_time": {
+                        "max": {
+                          "field": "node_stats.indices.search.query_time_in_millis"
+                        }
+                      },
+                      "ds": {
+                        "derivative": {
+                          "buckets_path": "search_query_total"
+                        }
+                      },
+                      "ds1": {
+                        "derivative": {
+                          "buckets_path": "search_query_time"
+                        }
+                      },
+                      "index_total": {
+                        "max": {
+                          "field": "node_stats.indices.indexing.index_total"
+                        }
+                      },
+                      "index_time": {
+                        "max": {
+                          "field": "node_stats.indices.indexing.index_time_in_millis"
+                        }
+                      },
+                      "ds3": {
+                        "derivative": {
+                          "buckets_path": "index_total"
+                        }
+                      },
+                      "ds4": {
+                        "derivative": {
+                          "buckets_path": "index_time"
+                        }
+                      },
+                      "read_threads_queue":{
+                        "max": {
+                          "field": "node_stats.thread_pool.get.queue"
+                        }
+                      },
+                      "write_threads_queue":{
+                        "max": {
+                          "field": "node_stats.thread_pool.write.queue"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }`
+    }   
+};
+  
+  const gatewayUrl = 'http://localhost:8001';
+
+function getClusterOverview(){
+  return fetch(gatewayUrl+apiUrls.CLUSTER_OVERVIEW.path, {
+    method: 'POST',
+    body: apiUrls.CLUSTER_OVERVIEW.body,
+    headers:{
+        'Content-Type': 'application/json'
+    }
+  }).then(esRes=>{
+      return esRes.json();
+  }).then(rel=>{
+      if(rel.hits.hits.length>0){
+          var rdata = rel.hits.hits[0]._source;
+      }else{
+          rdata = data;
+      }
+      let cluster_stats = rdata.cluster_stats;
+      let result = {
+          elasticsearch:{
+              cluster_stats:{
+                  status: cluster_stats.status,
+                  indices: {
+                      count: cluster_stats.indices.count,
+                      docs: cluster_stats.indices.docs,
+                      shards: cluster_stats.indices.shards,
+                      store: cluster_stats.indices.store,
+                  },
+                  nodes: {
+                      count:{
+                          total: cluster_stats.nodes.count.total,
+                      },
+                      fs: cluster_stats.nodes.fs,
+                      jvm: {
+                          max_uptime_in_millis: cluster_stats.nodes.jvm.max_uptime_in_millis,
+                          mem: cluster_stats.nodes.jvm.mem,
+                      }
+                  }
+              }
+          }
+      };
+      return result;
+  });
+}
+
+function getNodesStats(){
+  return fetch(gatewayUrl+apiUrls.GET_ES_NODE_STATS.path, {
+    method: 'POST',
+    body: apiUrls.GET_ES_NODE_STATS.body,
+    headers:{
+        'Content-Type': 'application/json'
+    }
+  }).then(esRes=>{
+      return esRes.json();
+  }).then(rel=>{
+    //console.log(rel);
+    if(rel.aggregations.nodes.buckets.length>0){
+        var rdata = rel.aggregations.nodes.buckets;
+        //console.log(rdata);
+    }else{
+        rdata = nodesStats;
+    }
+    return rdata;
+  });
+}
+
   export default {
       'GET /dashboard/cluster/overview': function(req, res){
-        let cluster_stats = data.cluster_stats;
-        let result = {
-            elasticsearch:{
-                cluster_stats:{
-                    status: cluster_stats.status,
-                    indices: {
-                        count: cluster_stats.indices.count,
-                        docs: cluster_stats.indices.docs,
-                        shards: cluster_stats.indices.shards,
-                        store: cluster_stats.indices.store,
-                    },
-                    nodes: {
-                        count:{
-                            total: cluster_stats.nodes.count.total,
-                        },
-                        fs: cluster_stats.nodes.fs,
-                        jvm: {
-                            max_uptime_in_millis: cluster_stats.nodes.jvm.max_uptime_in_millis,
-                            mem: cluster_stats.nodes.jvm.mem,
-                        }
-                    }
-                }
-            }
-        };
-        res.send(result);
+        //console.log(typeof fetch);
+        getClusterOverview().then((result)=>{
+            //console.log(result);
+            res.send(result);
+        }).catch(err=>{
+            console.log(err);
+        });
       },
       'GET /dashboard/cluster/nodes_stats': function(req, res) {
-        //   var statsData = [{
-        //         node_name: nodesStats.source_node.name,
-        //         node_id: nodesStats.source_node.uuid,
-        //         timestamp: nodesStats.timestamp,
-        //         node_stats: {
-        //             jvm: nodesStats.node_stats.jvm,
-        //             process: nodesStats.node_stats.process,
-        //             node_master: nodesStats.node_stats.node_master,
-        //             indices: {
-        //                 search: nodesStats.node_stats.indices.search,
-        //                 indexing: nodesStats.node_stats.indices.indices,
-        //             },
-        //             fs: nodesStats.node_stats.fs,
-        //             os: nodesStats.node_stats.os,
-        //         }
-        //   }];
-            
+        Promise.all([ getNodesStats()]).then((values) => {
+          //console.log(values);
           res.send({
-              nodes_stats: nodesStats
+          //  elasticsearch: values[0].elasticsearch,
+            nodes_stats: values[0],
           });
+        }).catch(err=>{
+          console.log(err);
+        });
+        // getNodesStats().then((rdata)=>{
+        //   res.send({
+        //     nodes_stats: rdata
+        //   });
+        // }).catch(err=>{
+        //     console.log(err);
+        // })
       },
   };

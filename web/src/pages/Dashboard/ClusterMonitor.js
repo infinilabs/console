@@ -242,7 +242,7 @@ let generateIndexLatencyData = (target)=>{
 					<Geom
 					    type="point"
           position={pos}
-          size={3}
+          size={2}
           shape={'circle'}
           style={{ stroke: '#fff', lineWidth: 1 }}
           color="type"
@@ -309,9 +309,20 @@ class StatsCharts extends PureComponent {
       type: 'clusterMonitor/fetchClusterNodeStats',
       callback: ({nodes_stats})=> {
         let nodesStats = nodes_stats;
-        console.log(nodesStats);
-        let nodeCpu = [],nodeHeap=[],nodeSearchLatency=[],nodeIndexLatency=[], readThreadQueue=[],writeThreadQueue=[];
+        //console.log(nodesStats);
+        let nodeCpu = [],nodeHeap=[],nodeSearchLatency=[],nodeIndexLatency=[], readThreadQueue=[],writeThreadQueue=[],
+        searchQps=[], indexQps=[];
         //let now = moment(1607085646112);
+        let startTime = new Date();
+        let startMinutes = (Math.floor(startTime.getMinutes()/10)*10 + 70) % 60;
+        startTime.setMinutes(startMinutes == 0 ? 60: startMinutes, 0,0);
+        let vtime = startTime.valueOf();
+        let ticks = [];
+        for(let i=0; i<6;i++){
+          ticks.push(
+            new Date(vtime + (i - 6) * 10 * 60 *1000 ).toUTCString()
+          );
+        }
           for(let ns of nodesStats){
             //let i = 0;
               for(let bk of ns.metrics.buckets){
@@ -327,13 +338,13 @@ class StatsCharts extends PureComponent {
                       ...fields,
                       heap_ratio: bk.heap_percent.value,
                   });
-                  nodeSearchLatency.push({
+                  bk.ds1 && nodeSearchLatency.push({
                       ...fields,
-                      latency: bk.ds1 ? (bk.ds1.value/bk.ds.value).toFixed(2): 0,
+                      latency: bk.ds1.value ? (bk.ds1.value/bk.ds.value).toFixed(2) : null,
                   });
-                  nodeIndexLatency.push({
+                  bk.ds4 && nodeIndexLatency.push({
                       ...fields,
-                      latency: bk.ds1 ? (bk.ds4.value/bk.ds3.value).toFixed(2): 0,
+                      latency: bk.ds4.value? (bk.ds4.value/bk.ds3.value).toFixed(2): null,
                   });
                   readThreadQueue.push({
                     ...fields,
@@ -342,6 +353,14 @@ class StatsCharts extends PureComponent {
                   writeThreadQueue.push({
                     ...fields,
                     queue: bk.write_threads_queue.value,
+                  });
+                  bk.search_qps && searchQps.push({
+                    ...fields,
+                    qps: bk.search_qps.normalized_value ? bk.search_qps.normalized_value.toFixed(2) : null,
+                  });
+                  bk.index_qps && indexQps.push({
+                    ...fields, 
+                    qps: bk.index_qps.normalized_value ? bk.index_qps.normalized_value.toFixed(2): null,
                   });
               }
           }
@@ -352,7 +371,10 @@ class StatsCharts extends PureComponent {
             indexLatency: nodeIndexLatency,
             readThreadQueue: readThreadQueue,
             writeThreadQueue: writeThreadQueue,
-            timeScale: {min: moment().subtract(1, 'h').valueOf(), max: new Date()},
+            searchQps: searchQps,
+            indexQps: indexQps,
+            //timeScale: {min: moment().subtract(1, 'h').valueOf(), max: new Date()},
+            timeScale:{ticks: ticks, min: moment().subtract(1, 'h').valueOf(), max: moment().add(1, 'm').valueOf()}
         });
       }
     });  
@@ -376,7 +398,7 @@ class StatsCharts extends PureComponent {
                 alias: "时间",
                 type: "time",
                 mask: "HH:mm",
-                tickCount: 6,
+              //  tickCount: 6,
                 ...this.state.timeScale,
                 nice: false,
               },
@@ -384,9 +406,7 @@ class StatsCharts extends PureComponent {
                 alias: "内存使用百分比",
                 min: 0,
             //    max: 100
-              },
-              type: {
-                type: "cat"
+                type: "linear"
               }
             }
           }
@@ -411,9 +431,7 @@ class StatsCharts extends PureComponent {
                 alias: "CPU使用百分比",
                 min: 0,
                 // max: 1
-              },
-              type: {
-                type: "cat"
+                type: "linear"
               }
             }
           }
@@ -424,9 +442,7 @@ class StatsCharts extends PureComponent {
       <Row gutter={24} style={{marginBottom:10}}>
       <Col xl={12} lg={24} md={24} sm={24} xs={24}>
           <SliderChart title="搜索延迟(ms)" xname="time" yname="latency"
-            type="search_latency"
             data={this.state.searchLatency}
-            generateFunc={generateSearchLatencyData}
             unit="ms"
             scale={{
               time: {
@@ -437,13 +453,11 @@ class StatsCharts extends PureComponent {
                 ...this.state.timeScale,
                 nice: false,
               },
-              heap_ratio: {
+              latency: {
                 alias: "延迟时长",
                 min: 0,
             //    max: 100
-              },
-              type: {
-                type: "cat"
+                type: "linear"
               }
             }
           }
@@ -464,18 +478,61 @@ class StatsCharts extends PureComponent {
                 ...this.state.timeScale,
                 nice: false,
               },
-              cpu_ratio: {
+              latency: {
                 alias: "延迟时长",
                 min: 0,
+                type: "linear"
                 // max: 1
-              },
-              type: {
-                type: "cat"
               }
             }
           }
           />       
       </Col>
+      </Row>
+      <Row gutter={24} style={{marginBottom:10}}>
+        <Col xl={12} lg={24} md={24} sm={24} xs={24}>
+            <SliderChart title="搜索QPS" xname="time" yname="qps"
+              data={this.state.searchQps}
+              unit=""
+              scale={{
+                time: {
+                  alias: "时间",
+                  type: "time",
+                  mask: "HH:mm",
+                  tickCount: 6,
+                  ...this.state.timeScale,
+                  nice: false,
+                },
+                qps: {
+                  min: 0,
+                  type: "linear"
+                },
+              }
+            }
+            />     
+        </Col>
+        <Col xl={12} lg={24} md={24} sm={24} xs={24}>
+          <SliderChart title="索引QPS" xname="time" yname="qps"
+              data={this.state.indexQps}
+              unit=""
+              scale={{
+                time: {
+              //    alias: "时间",
+                  type: "time",
+                  mask: "HH:mm",
+                  tickCount: 6,
+                  ...this.state.timeScale,
+                  nice: false,
+                },
+                qps: {
+                  min: 0,
+                  // max: 1
+                  type: "linear"
+                }
+              }
+            }
+            />       
+        </Col>
       </Row>
       <Row gutter={24} style={{marginBottom:10}}>
         <Col xl={12} lg={24} md={24} sm={24} xs={24}>
@@ -493,10 +550,8 @@ class StatsCharts extends PureComponent {
                 },
                 queue: {
                   min: 0,
+                  type: "linear"
                 },
-                type: {
-                  type: "cat"
-                }
               }
             }
             />     
@@ -517,9 +572,7 @@ class StatsCharts extends PureComponent {
                 queue: {
                   min: 0,
                   // max: 1
-                },
-                type: {
-                  type: "cat"
+                  type: "linear"
                 }
               }
             }
@@ -556,7 +609,7 @@ class ClusterMonitor extends PureComponent {
     };
     let descStryle= {color:'#6a717d', fontSize: 12};
     const {clusterMonitor} = this.props;
-    console.log(clusterMonitor);
+    //console.log(clusterMonitor);
     let clusterStats = {};
     if(clusterMonitor.elasticsearch){
       let rawStats = clusterMonitor.elasticsearch.cluster_stats;

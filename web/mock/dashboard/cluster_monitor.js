@@ -607,6 +607,20 @@ const apiUrls = {
                           "buckets_path": "index_time"
                         }
                       },
+                      "search_qps":{
+                        "derivative": {
+                          "buckets_path": "search_query_total",
+                          "gap_policy": "skip",
+                          "unit": "1s"
+                        }
+                      },
+                      "index_qps":{
+                        "derivative": {
+                          "buckets_path": "index_total",
+                          "gap_policy": "skip",
+                          "unit": "1s"
+                        }
+                      },
                       "read_threads_queue":{
                         "max": {
                           "field": "node_stats.thread_pool.get.queue"

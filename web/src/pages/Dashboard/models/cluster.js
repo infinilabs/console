@@ -6,8 +6,8 @@ export default {
 
     },
     effects:{
-        *fetchClusterOverview({callback}, {call, put}){
-            let clusterData = yield call(getClusterOverview);
+        *fetchClusterOverview({payload, callback}, {call, put}){
+            let clusterData = yield call(getClusterOverview, payload);
             yield put({type: 'saveData', payload: clusterData})
             if(callback && typeof callback == 'function'){
                 callback(clusterData);

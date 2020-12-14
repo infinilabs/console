@@ -1,4 +1,10 @@
 import fetch from 'node-fetch';
+import moment from 'moment';
+import {calculateTimeseriesInterval} from './calculate_timeseries_interval';
+import { promises } from 'dns';
+//import {formatTimestampToDuration} from './format_timestamp_to_duration';
+const minIntervalSeconds = 10;
+
 
 let data = JSON.parse(`{
     "cluster_stats" : {
@@ -319,6 +325,20 @@ let data = JSON.parse(`{
             },
             "search_query_time" : {
               "value" : 7314.0
+            },
+            "read_threads_queue" : {
+              "value" : 0.0
+            },
+            "write_threads_queue" : {
+              "value" : 0.0
+            },
+            "search_qps" : {
+              "value" : 0.0,
+              "normalized_value" : 2.1
+            },
+            "index_qps" : {
+              "value" : 165.0,
+              "normalized_value" : 5.9
             }
           },
           {
@@ -357,6 +377,20 @@ let data = JSON.parse(`{
             },
             "ds4" : {
               "value" : 102.0
+            },
+            "read_threads_queue" : {
+              "value" : 0.0
+            },
+            "write_threads_queue" : {
+              "value" : 0.0
+            },
+            "search_qps" : {
+              "value" : 0.0,
+              "normalized_value" : 1.8
+            },
+            "index_qps" : {
+              "value" : 165.0,
+              "normalized_value" : 5.3
             }
           },
           {
@@ -395,6 +429,20 @@ let data = JSON.parse(`{
             },
             "ds4" : {
               "value" : 144.0
+            },
+            "read_threads_queue" : {
+              "value" : 0.0
+            },
+            "write_threads_queue" : {
+              "value" : 0.0
+            },
+            "search_qps" : {
+              "value" : 0.0,
+              "normalized_value" : 2.5
+            },
+            "index_qps" : {
+              "value" : 165.0,
+              "normalized_value" : 5.0
             }
           },
           {
@@ -433,6 +481,20 @@ let data = JSON.parse(`{
             },
             "ds4" : {
               "value" : 123.0
+            }, 
+            "read_threads_queue" : {
+              "value" : 0.0
+            },
+            "write_threads_queue" : {
+              "value" : 0.0
+            },
+            "search_qps" : {
+              "value" : 0.0,
+              "normalized_value" : 3.0
+            },
+            "index_qps" : {
+              "value" : 165.0,
+              "normalized_value" : 5.8
             }
           },
           {
@@ -471,6 +533,20 @@ let data = JSON.parse(`{
             },
             "ds4" : {
               "value" : 19.0
+            },
+            "read_threads_queue" : {
+              "value" : 0.0
+            },
+            "write_threads_queue" : {
+              "value" : 0.0
+            },
+            "search_qps" : {
+              "value" : 0.0,
+              "normalized_value" : 0.0
+            },
+            "index_qps" : {
+              "value" : 165.0,
+              "normalized_value" : 5.5
             }
           }
         ]
@@ -478,180 +554,193 @@ let data = JSON.parse(`{
     }
   ]`);
 
+  function getOverviewBody(params){
+    let body =  {
+      _source: [ "cluster_stats"], 
+      size: 1, 
+      sort: [
+        {
+          timestamp: {
+            order: "desc"
+          }
+        }
+      ], 
+      query: {
+        bool: {
+          must: [
+            {
+              match: {
+                type: "cluster_stats"
+              } 
+            }
+          ], 
+          filter: [
+            {
+              range: {
+                timestamp: {
+                  "gte": params.timeRange.min,
+                  lte: params.timeRange.max
+                }
+              }
+            }
+          ]
+        }
+      }
+    };
+    return JSON.stringify(body);
+  }
+
+function getNodesStatsBody(params){
+  let min = moment(params.timeRange.min).valueOf();
+  let max = moment(params.timeRange.max).valueOf();
+  const bucketSizeInSeconds = calculateTimeseriesInterval(min, max, minIntervalSeconds);
+  console.log(bucketSizeInSeconds);
+  let body = {
+    "size": 0,
+    "query": {
+      "bool": {
+        "must": [
+          {
+            "match": {
+              "type": "node_stats"
+            }
+          }
+        ],
+        "filter": [
+          {
+            "range": {
+              "timestamp": {
+                "gte": params.timeRange.min,
+                "lte": params.timeRange.max
+              }
+            }
+          }
+        ]
+      }
+    },
+    "aggs": {
+      "nodes": {
+        "terms": {
+          "field": "source_node.name",
+          "size": 10
+        },
+        "aggs": {
+          "metrics": {
+            "date_histogram": {
+              "field": "timestamp",
+              "fixed_interval": bucketSizeInSeconds + 's'
+            },
+            "aggs": {
+              "cpu_used": {
+                "max": {
+                  "field": "node_stats.process.cpu.percent"
+                }
+              },
+              "heap_used": {
+                "max": {
+                  "field": "node_stats.jvm.mem.heap_used_in_bytes"
+                }
+              },
+              "heap_percent": {
+                "max": {
+                  "field": "node_stats.jvm.mem.heap_used_percent"
+                }
+              },
+              "search_query_total": {
+                "max": {
+                  "field": "node_stats.indices.search.query_total"
+                }
+              },
+              "search_query_time": {
+                "max": {
+                  "field": "node_stats.indices.search.query_time_in_millis"
+                }
+              },
+              "ds": {
+                "derivative": {
+                  "buckets_path": "search_query_total"
+                }
+              },
+              "ds1": {
+                "derivative": {
+                  "buckets_path": "search_query_time"
+                }
+              },
+              "index_total": {
+                "max": {
+                  "field": "node_stats.indices.indexing.index_total"
+                }
+              },
+              "index_time": {
+                "max": {
+                  "field": "node_stats.indices.indexing.index_time_in_millis"
+                }
+              },
+              "ds3": {
+                "derivative": {
+                  "buckets_path": "index_total"
+                }
+              },
+              "ds4": {
+                "derivative": {
+                  "buckets_path": "index_time"
+                }
+              },
+              "search_qps":{
+                "derivative": {
+                  "buckets_path": "search_query_total",
+                  "gap_policy": "skip",
+                  "unit": "1s"
+                }
+              },
+              "index_qps":{
+                "derivative": {
+                  "buckets_path": "index_total",
+                  "gap_policy": "skip",
+                  "unit": "1s"
+                }
+              },
+              "read_threads_queue":{
+                "max": {
+                  "field": "node_stats.thread_pool.get.queue"
+                }
+              },
+              "write_threads_queue":{
+                "max": {
+                  "field": "node_stats.thread_pool.write.queue"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  };
+  return JSON.stringify(body);
+}
+
 const apiUrls = {
     CLUSTER_OVERVIEW: {
       path:'/.monitoring-es-*/_search',
-      body: `{
-        "_source": [ "cluster_stats"], 
-        "size": 1, 
-        "sort": [
-          {
-            "timestamp": {
-              "order": "desc"
-            }
-          }
-        ], 
-        "query": {
-          "bool": {
-            "must": [
-              {
-                "match": {
-                  "type": "cluster_stats"
-                } 
-              }
-            ], 
-            "filter": [
-              {
-                "range": {
-                  "timestamp": {
-                    "gte": "now-1h",
-                    "lte": "now"
-                  }
-                }
-              }
-            ]
-          }
-        }
-      }`
     },
     "GET_ES_NODE_STATS":{
         path: '/.monitoring-es-*/_search',
-        body: `{
-            "size": 0,
-            "query": {
-              "bool": {
-                "must": [
-                  {
-                    "match": {
-                      "type": "node_stats"
-                    }
-                  }
-                ],
-                "filter": [
-                  {
-                    "range": {
-                      "timestamp": {
-                        "gte": "now-1h",
-                        "lte": "now"
-                      }
-                    }
-                  }
-                ]
-              }
-            },
-            "aggs": {
-              "nodes": {
-                "terms": {
-                  "field": "source_node.name",
-                  "size": 10
-                },
-                "aggs": {
-                  "metrics": {
-                    "date_histogram": {
-                      "field": "timestamp",
-                      "fixed_interval": "30s"
-                    },
-                    "aggs": {
-                      "cpu_used": {
-                        "max": {
-                          "field": "node_stats.process.cpu.percent"
-                        }
-                      },
-                      "heap_used": {
-                        "max": {
-                          "field": "node_stats.jvm.mem.heap_used_in_bytes"
-                        }
-                      },
-                      "heap_percent": {
-                        "max": {
-                          "field": "node_stats.jvm.mem.heap_used_percent"
-                        }
-                      },
-                      "search_query_total": {
-                        "max": {
-                          "field": "node_stats.indices.search.query_total"
-                        }
-                      },
-                      "search_query_time": {
-                        "max": {
-                          "field": "node_stats.indices.search.query_time_in_millis"
-                        }
-                      },
-                      "ds": {
-                        "derivative": {
-                          "buckets_path": "search_query_total"
-                        }
-                      },
-                      "ds1": {
-                        "derivative": {
-                          "buckets_path": "search_query_time"
-                        }
-                      },
-                      "index_total": {
-                        "max": {
-                          "field": "node_stats.indices.indexing.index_total"
-                        }
-                      },
-                      "index_time": {
-                        "max": {
-                          "field": "node_stats.indices.indexing.index_time_in_millis"
-                        }
-                      },
-                      "ds3": {
-                        "derivative": {
-                          "buckets_path": "index_total"
-                        }
-                      },
-                      "ds4": {
-                        "derivative": {
-                          "buckets_path": "index_time"
-                        }
-                      },
-                      "search_qps":{
-                        "derivative": {
-                          "buckets_path": "search_query_total",
-                          "gap_policy": "skip",
-                          "unit": "1s"
-                        }
-                      },
-                      "index_qps":{
-                        "derivative": {
-                          "buckets_path": "index_total",
-                          "gap_policy": "skip",
-                          "unit": "1s"
-                        }
-                      },
-                      "read_threads_queue":{
-                        "max": {
-                          "field": "node_stats.thread_pool.get.queue"
-                        }
-                      },
-                      "write_threads_queue":{
-                        "max": {
-                          "field": "node_stats.thread_pool.write.queue"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }`
     }   
 };
   
-  const gatewayUrl = 'http://localhost:8001';
+  const gatewayUrl = 'http://localhost:9200';
 
-function getClusterOverview(){
+function getClusterOverview(params){
   return fetch(gatewayUrl+apiUrls.CLUSTER_OVERVIEW.path, {
     method: 'POST',
-    body: apiUrls.CLUSTER_OVERVIEW.body,
+    body: getOverviewBody(params),
     headers:{
         'Content-Type': 'application/json'
     }
   }).then(esRes=>{
       return esRes.json();
   }).then(rel=>{
+    //console.log(rel);
       if(rel.hits.hits.length>0){
           var rdata = rel.hits.hits[0]._source;
       }else{
@@ -681,19 +770,20 @@ function getClusterOverview(){
               }
           }
       };
-      return result;
+      return Promise.resolve(result);
   });
 }
 
-function getNodesStats(){
+function getNodesStats(params){
   return fetch(gatewayUrl+apiUrls.GET_ES_NODE_STATS.path, {
     method: 'POST',
-    body: apiUrls.GET_ES_NODE_STATS.body,
+    body: getNodesStatsBody(params),
     headers:{
         'Content-Type': 'application/json'
     }
   }).then(esRes=>{
-      return esRes.json();
+    return esRes.json();
+     // return esRes.json();
   }).then(rel=>{
     //console.log(rel);
     if(rel.aggregations.nodes.buckets.length>0){
@@ -702,21 +792,41 @@ function getNodesStats(){
     }else{
         rdata = nodesStats;
     }
-    return rdata;
+    return Promise.resolve(rdata);
   });
 }
 
   export default {
-      'GET /dashboard/cluster/overview': function(req, res){
-        //console.log(typeof fetch);
-        getClusterOverview().then((result)=>{
-            //console.log(result);
-            res.send(result);
-        }).catch(err=>{
-            console.log(err);
+      'POST /dashboard/cluster/overview': function(req, res){
+        // console.log(1, req.body);
+        let params = req.body;
+        !params.timeRange && (params.timeRange={
+          min: 'now-1h',
+          max: 'now'
         });
+        Promise.all([getClusterOverview(params),getNodesStats(params)]).then(function(values){
+          let robj = values[0];
+          robj = Object.assign(robj, {nodes_stats: values[1]});
+          res.send(robj);
+        }).catch(function(err){
+          console.log(err);
+        });
+        // getClusterOverview(params).then((result)=>{
+        //     //console.log(result);
+        //     res.send(result);
+        // }).catch(err=>{
+        //     console.log(err);
+        // });
       },
       'GET /dashboard/cluster/nodes_stats': function(req, res) {
+        let min = moment(1607839878669 - 2592000000).valueOf();
+        const max = moment(1607839878669).valueOf();
+        const bucketSizeInSeconds = calculateTimeseriesInterval(min, max, minIntervalSeconds);
+        const now = moment();
+        const timestamp = moment(now).add(bucketSizeInSeconds, 'seconds'); // clone the `now` object
+
+        //console.log(bucketSizeInSeconds); //, formatTimestampToDuration(timestamp, 'until', now));
+  
         Promise.all([ getNodesStats()]).then((values) => {
           //console.log(values);
           res.send({

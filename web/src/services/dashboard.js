@@ -1,7 +1,11 @@
 import request from '@/utils/request';
 
-export async function getClusterOverview(){
-    return request('/dashboard/cluster/overview');
+export async function getClusterOverview(payload){
+    return request('/dashboard/cluster/overview',{
+        method: 'POST',
+        body: payload,
+        expirys: 0,
+      });
 }
 
 export async function getClusterNodeStats(){

@@ -88,6 +88,7 @@ export default {
   'menu.platform.cluster': '集群监控',
   'menu.platform.tasks': '任务监控',
   'menu.platform.search': '搜索监控',
+  'menu.platform.clusterlist': '集群列表',
 
 
   'menu.data': '数据管理',

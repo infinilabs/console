@@ -1,4 +1,5 @@
 import request from '@/utils/request';
+import { func } from 'prop-types';
 
 export async function getClusterOverview(payload){
     return request('/dashboard/cluster/overview',{
@@ -10,4 +11,8 @@ export async function getClusterOverview(payload){
 
 export async function getClusterNodeStats(){
     return request('/dashboard/cluster/nodes_stats');
+}
+
+export async function getClusterList(){
+    return request('/dashboard/cluster/list');
 }

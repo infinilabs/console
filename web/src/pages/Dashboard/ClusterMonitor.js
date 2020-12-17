@@ -86,6 +86,9 @@ import {
           }}
           onPlotLeave={ev=>{
             charts.forEach(chart=>{
+              if(!chart.get('tooltipController')){
+                return;
+              }
               chart.hideTooltip();
             });
           }}
@@ -496,8 +499,10 @@ class ClusterMonitor extends PureComponent {
     //console.log(msDiff);
     if(msDiff > 1000 * 3600 + 5 * 1000 && msDiff <= 1000 * 3600 * 24 * 5 ){
       timeMask = 'MM-DD HH'
-    }else if (msDiff > 1000 * 3600 * 24 * 5){
+    }else if (msDiff > 1000 * 3600 * 24 * 5  && msDiff <= 1000 * 3600 * 24 * 182){
       timeMask = 'MM-DD'
+    }else if(msDiff > 1000 * 3600 * 24 * 182){
+      timeMask = 'YY-MM-DD'
     }
     this.setState({timeScale: {min: timeRange.min, max: timeRange.max, mask: timeMask}});
     dispatch({
@@ -511,7 +516,23 @@ class ClusterMonitor extends PureComponent {
     clearInterval(tv1);
   }
   componentDidMount() {
-    this.fetchData();
+    const { match, location } = this.props;
+    console.log(location.query.name, match.params);
+    let min = location.query.start || '2020-12-10 15:00';
+    let max = location.query.end || '2020-12-10 16:00';
+    min = moment(min, 'YYYY-MM-DD HH:mm');
+    max = moment(max, 'YYYY-MM-DD HH:mm');
+    this.setState({
+      timeRange:{
+        min: min,
+        max: max,
+      },
+      lastSeconds: 0,
+      pickerValue: [min, max],
+    },()=>{
+      this.fetchData();
+    })
+    
     // tv1 = setInterval(()=>{
     //   this.fetchData();
     // }, 10000);
@@ -548,7 +569,8 @@ class ClusterMonitor extends PureComponent {
 
   handleQuickSelect = (ev) =>{
     let lastSeconds = 0;
-    switch(ev.key){
+    let key = ev.key || ev.target.type;
+    switch(key){
       case "2":
         lastSeconds = 3600 * 24;
         break;
@@ -559,7 +581,11 @@ class ClusterMonitor extends PureComponent {
         lastSeconds = 3600 * 24 * 30;
         break;
       case "5":
-        return;
+        lastSeconds = 3600 * 24 * 30 * 3;
+        break;
+      case "6":
+          lastSeconds = 3600 * 24 * 365;
+          break;
       default:
         lastSeconds = 60 * 60;
     }
@@ -607,6 +633,37 @@ class ClusterMonitor extends PureComponent {
     this.autoRefresh(durationInSeconds);
   }
 
+  handleRecentInput = ()=>{
+    let unit = this.recentUnit.rcSelect.state.value[0];
+    let base = 1;
+    switch(unit){
+      case "minutes":
+        base *= 60;
+        break;
+      case "hours":
+        base *= 3600;
+        break;
+      case "days":
+        base *= 3600 * 24;
+        break;
+      case "weeks":
+        base *= 3600 * 24 * 7;
+        break;
+      case "months":
+        base *= 3600 * 24 * 30;
+        break;
+      case "years":
+        base *= 3600 * 24 * 365;
+        break;
+    }
+    let lastSeconds = this.recentNum.inputNumberRef.state.value * base;
+    this.setState({
+      lastSeconds: lastSeconds,
+    },()=>{
+      this.fetchData();
+    });
+  }
+
   render() {
     let vstyle = {
       fontSize: 16,
@@ -633,21 +690,51 @@ class ClusterMonitor extends PureComponent {
     }
     //console.log(clusterMonitor.nodes_stats);
     const menu = (
-      <Menu onClick={this.handleQuickSelect}>
-        <Menu.Item key="1">
-          最近一小时
-        </Menu.Item>
-        <Menu.Item key="2">
-          最近一天
-        </Menu.Item>
-        <Menu.Item key="3">
-          最近一周
-        </Menu.Item>
-        <Menu.Item key="4">
-          最近一个月
-        </Menu.Item>
-        <Menu.Divider/>
-        <Menu.Item key="5">
+      <div style={{background:"#fff", border: "1px solid #ccc", padding: 10}}>
+         <Input.Group compact style={{marginBottom: 10}}>
+            <Button style={{cursor: "default"}}>最近</Button>
+            <InputNumber min={1} defaultValue={1} ref={el => this.recentNum = el} />
+            <Select defaultValue="hours"  ref={el => this.recentUnit = el}>
+              <Select.Option value="minutes">分</Select.Option>
+              <Select.Option value="hours">时</Select.Option>
+              <Select.Option value="days">天</Select.Option>
+              <Select.Option value="weeks">周</Select.Option>
+              <Select.Option value="months">月</Select.Option>
+              <Select.Option value="years">年</Select.Option>
+            </Select>
+            <Button type="primary" onClick={this.handleRecentInput}>
+                确定
+            </Button>
+          </Input.Group>
+        <div style={{marginBottom: 10}}>
+          <Row gutter={[24, 5]}>
+            <Col span={12}><a type="1" onClick={this.handleQuickSelect}>最近一个小时</a></Col>
+            <Col span={12}><a type="2" onClick={this.handleQuickSelect}>最近一天</a></Col>
+          </Row>
+          <Row gutter={[24,5]}>
+            <Col span={12}><a type="3" onClick={this.handleQuickSelect}>最近一周</a></Col>
+            <Col span={12}><a type="4" onClick={this.handleQuickSelect}>最近一个月</a></Col>
+          </Row>
+          <Row gutter={[24,5]}>
+            <Col span={12}><a type="5" onClick={this.handleQuickSelect}>最近三个月</a></Col>
+            <Col span={12}><a type="6" onClick={this.handleQuickSelect}>最近一年</a></Col>
+          </Row>
+        </div>
+      {/* // <Menu onClick={this.handleQuickSelect}>
+      //   <Menu.Item key="1">
+      //     最近一小时
+      //   </Menu.Item>
+      //   <Menu.Item key="2">
+      //     最近一天
+      //   </Menu.Item>
+      //   <Menu.Item key="3">
+      //     最近一周
+      //   </Menu.Item>
+      //   <Menu.Item key="4">
+      //     最近一个月
+      //   </Menu.Item>
+      //   <Menu.Divider/>
+      //   <Menu.Item key="5"> */}
           <Input.Group compact>
             <Button style={{cursor: "default"}}>自动刷新间隔</Button>
             <InputNumber min={1} defaultValue={10} ref={el => this.refreshNum = el} />
@@ -660,8 +747,9 @@ class ClusterMonitor extends PureComponent {
                 确定
             </Button>
           </Input.Group>
-        </Menu.Item>
-      </Menu>
+      {/* //   </Menu.Item>
+      // </Menu> */}
+      </div>
     );
     return (
       <div>

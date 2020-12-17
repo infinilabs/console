@@ -30,9 +30,14 @@ export default [
               name: 'gateway',
               component: './Dashboard/GatewayMonitor',
             }, {
-              path: '/platform/cluster',
+              path: '/platform/cluster/:name',
               name: 'cluster',
               component: './Dashboard/ClusterMonitor',
+              hideInMenu: true,
+            }, {
+              path: '/platform/clusterlist',
+              name: 'cluster',
+              component: './Dashboard/ClusterList',
             }, {
               path: '/platform/tasks',
               name: 'tasks',

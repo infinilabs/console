@@ -1,4 +1,4 @@
-import {getClusterOverview, getClusterNodeStats} from "@/services/dashboard";
+import {getClusterOverview, getClusterNodeStats, getClusterList} from "@/services/dashboard";
 
 export default {
     namespace: 'clusterMonitor',
@@ -18,6 +18,15 @@ export default {
             //yield put({type: 'saveData', payload: nodesStats})
             if(callback && typeof callback == 'function'){
                 callback(nodesStats);
+            }
+        },
+        *fetchClusterList({callback}, {call, put}){
+            let clusterData = yield call(getClusterList);
+            yield put({type: 'saveData', payload: {
+                clusterList: clusterData
+            }})
+            if(callback && typeof callback == 'function'){
+                callback(clusterData);
             }
         }
     },

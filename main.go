@@ -6,8 +6,10 @@ import (
 	"infini.sh/framework"
 	"infini.sh/framework/core/env"
 	"infini.sh/framework/core/module"
+	"infini.sh/framework/core/orm"
 	"infini.sh/framework/modules"
 	"infini.sh/search-center/config"
+	"infini.sh/search-center/model"
 )
 
 var appConfig *config.AppConfig
@@ -66,7 +68,7 @@ func main() {
 		module.Start()
 
 	}, func() {
-
+		orm.RegisterSchema(model.Dict{})
 	})
 
 }

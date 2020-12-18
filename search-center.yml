@@ -1,11 +1,11 @@
 elasticsearch:
   - name: default
     enabled: true
-    endpoint: http://localhost:9200
+    endpoint: https://192.168.3.98:9200
     index_prefix: infini-
     basic_auth:
       username: elastic
-      password: 13A1EcwWs1He6w3BXHuJ
+      password: ZBdkVQUUdF1Sir4X4BGB
 
 web:
   enabled: true
@@ -24,7 +24,7 @@ modules:
     enabled: true
     indexer_enabled: false
     store_enabled: false
-    orm_enabled: false
+    orm_enabled: true
   - name: web
     enabled: true
     network:
@@ -35,3 +35,19 @@ search-center:
   ui_path: .public
   ui_vfs: true
   ui_local: true
+
+
+
+queue:
+  min_msg_size: 1
+  max_msg_size: 5000000000
+  max_bytes_per_file: 53687091200
+  sync_every_records: 100000 # sync by records count
+  sync_timeout_in_ms: 10000 # sync by time in million seconds
+  read_chan_buffer: 0
+
+statsd:
+  enabled: false
+  host: 127.0.0.1
+  port: 8125
+  namespace: gateway.

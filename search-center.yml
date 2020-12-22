@@ -1,7 +1,7 @@
 elasticsearch:
   - name: default
     enabled: true
-    endpoint: https://192.168.3.98:9200
+    endpoint: http://localhost:9200
     index_prefix: infini-
     basic_auth:
       username: elastic

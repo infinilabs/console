@@ -188,7 +188,7 @@ export default [
                     },
                     {
                         path: '/search/dict/professional',
-                        component: './SearchManage/dict/Professional',
+                        component: './SearchManage/dict/Pro',
                     },
                     {
                         path: '/search/dict/common',

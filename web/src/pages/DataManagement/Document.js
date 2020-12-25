@@ -1,610 +1,392 @@
-import React, { PureComponent, Fragment } from 'react';
+import React, { Component } from 'react';
 import { connect } from 'dva';
-import {
-  Row,
-  Col,
-  Card,
-  Form,
-  Input,
-  Button,
-  Modal,
-  message,
-  Divider,
-  Drawer,
-  Tabs,
-  Descriptions,
-  Menu,
-  Dropdown,
-  Icon
-} from 'antd';
-import StandardTable from '@/components/StandardTable';
-import PageHeaderWrapper from '@/components/PageHeaderWrapper';
+import { Col, Form, Row,Select, Input, Card,Icon, Table, InputNumber, Popconfirm,
+   Divider,Button,Tooltip, Cascader } from 'antd';
+const {Option} = Select;
 
-import styles from '../List/TableList.less';
-import JSONPretty from 'react-json-prettify';
+const EditableContext = React.createContext();
 
-const FormItem = Form.Item;
-const { TextArea } = Input;
-const {TabPane} = Tabs;
-
-class JSONWrapper extends PureComponent {
-  state ={
-    height: 400,
-  }
-  componentDidMount(){
-    
-    let  getElementTop = (elem)=>{
-      　　var elemTop=elem.offsetTop;
-      　　elem=elem.offsetParent;
-      
-      　　while(elem!=null){ 
-      　　　　elemTop+=elem.offsetTop;
-      　　　　elem=elem.offsetParent;     
-      　　}
-      
-      　　return elemTop;
-      
+class EditableCell extends React.Component {
+    getInput = () => {
+      let {record, dataIndex} = this.props;
+      if (typeof record[dataIndex] === 'number') {
+        return <InputNumber />;
       }
-      console.log(getElementTop(this.refs.jsonw));
-    this.setState({height: window.innerHeight - getElementTop(this.refs.jsonw) -50});
-  }
-  render(){
-    return (
-    <div id="jsonw" ref="jsonw" onClick={()=>{console.log(document.getElementById('jsonw').offsetTop)}} style={{overflow:"scroll", height: this.state.height}}> {this.props.children}</div>
-    )
-  }
-}
-
-const CreateForm = Form.create()(props => {
-  const { modalVisible, form, handleAdd, handleModalVisible } = props;
-  const okHandle = () => {
-    form.validateFields((err, fieldsValue) => {
-      if (err) return;
-      form.resetFields();
-      handleAdd(fieldsValue);
-    });
-  };
-  return (
-    <Modal
-      destroyOnClose
-      title="新建索引"
-      visible={modalVisible}
-      width={640}
-      onOk={okHandle}
-      onCancel={() => handleModalVisible()}
-    >
-       <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="索引名称">
-        {form.getFieldDecorator('index', {
-          rules: [{ required: true, message: '请输入至少五个字符的名称！', min: 5 }],
-        })(<Input placeholder="请输入名称" />)}
-      </FormItem>
-      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="索引设置">
-        {form.getFieldDecorator('settings', {
-          rules: [{ required: true }],
-        })(<TextArea
-          style={{ minHeight: 24 }}
-          placeholder="请输入"
-          rows={9}
-      />)}
-      </FormItem>
-    </Modal>
-  );
-});
-
-const UpdateForm = Form.create()(props => {
-  const { updateModalVisible, handleUpdateModalVisible, handleUpdate,values,form } = props;
-
-  const okHandle = () => {
-    form.validateFields((err, fieldsValue) => {
-      if (err) return;
-      form.resetFields();
-      handleUpdate(fieldsValue);
-    });
-  };
+      return <Input />;
+    };
   
-  return (
-    <Modal
-      destroyOnClose
-      title="索引设置"
-      visible={updateModalVisible}
-      width={640}
-      onOk={okHandle}
-      onCancel={() => handleUpdateModalVisible()}
-    >
-       <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="索引名称">
-        {form.getFieldDecorator('index', {
-          initialValue: values.index,
-          rules: [{ required: true, message: '请输入至少五个字符的名称！', min: 5 }],
-        })(<Input placeholder="请输入名称" />)}
-      </FormItem>
-      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="索引设置">
-        {form.getFieldDecorator('settings', {
-          initialValue: values.processors,
-          rules: [{ required: true }],
-        })(<TextArea
-          style={{ minHeight: 24 }}
-          placeholder="请输入"
-          rows={9}
-      />)}
-      </FormItem>
-    </Modal>
-  );
-});
+    renderCell = ({ getFieldDecorator }) => {
+      const {
+        editing,
+        dataIndex,
+        title,
+        record,
+        index,
+        children,
+        ...restProps
+      } = this.props;
+      return (
+        <td {...restProps}>
+          {editing ? (
+            <Form.Item style={{ margin: 0 }}>
+              {getFieldDecorator(dataIndex, {
+                rules: [
+                  {
+                    required: true,
+                    message: `Please Input ${title}!`,
+                  },
+                ],
+                initialValue: record[dataIndex],
+              })(this.getInput())}
+            </Form.Item>
+          ) : (
+            children
+          )}
+        </td>
+      );
+    };
+  
+    render() {
+      return <EditableContext.Consumer>{this.renderCell}</EditableContext.Consumer>;
+    }
+  }
 
-/* eslint react/no-multi-comp:0 */
-@connect(({ pipeline, loading }) => ({
-  pipeline,
-  loading: loading.models.pipeline,
+  @Form.create()
+  class EditableTable extends React.Component {
+    constructor(props) {
+      super(props);
+      this.operField =  {
+        title: 'operation',
+        dataIndex: 'operation',
+        render: (text, record) => {
+          const { editingKey } = this.props.doclist;
+          const editable = this.isEditing(record);
+          return editable ? (
+            <span>
+              <EditableContext.Consumer>
+                {form => (
+                  <a
+                    onClick={() => this.save(form, record.id)}
+                    style={{ marginRight: 8 }}
+                  >
+                    Save
+                  </a>
+                )}
+              </EditableContext.Consumer>
+              <Popconfirm title="Sure to cancel?" onConfirm={() => this.cancel(record.id)}>
+                <a>Cancel</a>
+              </Popconfirm>
+            </span>
+          ) : (<div>
+            <a disabled={editingKey !== ''} onClick={() => this.edit(record)}>
+              Edit
+            </a>
+            <Divider type="vertical"/>
+              <Popconfirm title="Sure to delete?" onConfirm={() => this.delete(record)}>
+                <a>Delete</a>
+              </Popconfirm>
+           </div>
+          );
+        },
+      };
+    }
+  
+    isEditing = record => record.id === this.props.doclist.editingKey;
+  
+    cancel = () => {
+      const {dispatch, doclist} = this.props;
+      if(!doclist.isAddNew){
+        dispatch({
+          type: 'document/saveData',
+          payload: { editingKey: '' },
+        });
+      }else{
+        dispatch({
+          type: 'document/cancelNew',
+          payload: {},
+        });
+      }
+    };
+  
+    save(form, key) {
+      const {dispatch,doclist} = this.props;
+      form.validateFields((error, row) => {
+        if (error) {
+          return;
+        }
+        //console.log(row, key, doclist._index);
+        if(!doclist.isAddNew){
+          dispatch({
+            type: 'document/saveDocItem',
+            payload: {
+              index: doclist._index,
+              data: {
+                id: key,
+                ...row,
+              }
+            }
+          })
+        }else{
+          dispatch({
+            type: 'document/addDocItem',
+            payload: {
+              index: doclist.index,
+              data: row,
+            }
+          })
+        }
+      });
+    }
+  
+    edit(record) {
+      const {dispatch} = this.props;
+      dispatch({
+        type: 'document/saveData',
+        payload: { editingKey: record.id, _index: record._index }
+      });
+    }
+
+    delete(record) {
+      const {dispatch} = this.props;
+      dispatch({
+        type: 'document/deleteDocItem',
+        payload: {
+          index: record._index,
+          data: {
+            id: record.id,
+          }
+        }
+      });
+    }
+    handlePageChange = (pageIndex)=>{
+      const {fetchData, doclist} = this.props;
+      fetchData({
+        pageIndex: pageIndex,
+        pageSize: doclist.pageSize,
+        index: doclist.index,
+        cluster: doclist.cluster,
+        filter: doclist.filter,
+      })
+    }
+
+    onShowSizeChange(current, pageSize) {
+      console.log(current, pageSize);
+    }    
+  
+    render() {
+      let {doclist} = this.props;
+      let columns = [];
+      if(doclist.data && doclist.data.length > 0 ){
+        for(let key in doclist.data[0]){
+          if(["_index"].includes(key)){
+            continue;
+          }
+          let col = {
+            title: key,
+            dataIndex: key,
+            ellipsis: true,
+            render: (text)=>(<Tooltip placement="top" title={text}>{text}</Tooltip>),
+            onCell: record => ({
+              record,
+              dataIndex: key,
+              title: key,
+              editing: this.isEditing(record),
+              // onMouseEnter: event => {console.log(event)}, 
+              // onMouseLeave: event => {},
+            }),
+          }
+          if(["id"].includes(key)){
+            col.onCell = "";
+          }
+          columns.push(col)
+        }
+      }
+      columns.push(this.operField);
+      //console.log(columns);
+     
+      const components = {
+        body: {
+          cell: EditableCell,
+        },
+      };
+      return (
+        <EditableContext.Provider value={this.props.form}>
+          <Table
+            components={components}
+            bordered
+            rowKey="id"
+            size="small"
+            loading={doclist.isLoading}
+            dataSource={doclist.data}
+            columns={columns}
+            rowClassName="editable-row"
+            pagination={{
+              onChange: this.cancel,
+              //showSizeChanger: true,
+              //onShowSizeChange: this.onShowSizeChange,
+              total: doclist.total?  doclist.total.value: 0,
+              pageSize: doclist.pageSize,
+              current: doclist.pageIndex,
+              onChange: this.handlePageChange,
+              showTotal: (total, range) => `Total ${total} items`,
+              size: 'small',
+            }}
+          />
+        </EditableContext.Provider>
+      );
+    }
+  }
+
+
+@connect(({document})=>({
+  document
 }))
 @Form.create()
-class Document extends PureComponent {
-  state = {
-    modalVisible: false,
-    updateModalVisible: false,
-    expandForm: false,
-    selectedRows: [],
-    formValues: {},
-    updateFormValues: {},
-    drawerVisible: false,
-    editingIndex:{},
-  };
-  datasource = `[{"health":"green","status":"open","index":"blogs_fixed","uuid":"Q6zngGf9QVaWqpV0lF-0nw","pri":"1","rep":"1","docs.count":"1594","docs.deleted":"594","store.size":"17.9mb","pri.store.size":"8.9mb"},{"health":"red","status":"open","index":"elastic_qa","uuid":"_qkVlQ5LRoOKffV-nFj8Uw","pri":"1","rep":"1","docs.count":null,"docs.deleted":null,"store.size":null,"pri.store.size":null},{"health":"green","status":"open","index":".kibana-event-log-7.9.0-000001","uuid":"fgTtyl62Tc6F1ddJfPwqHA","pri":"1","rep":"1","docs.count":"20","docs.deleted":"0","store.size":"25kb","pri.store.size":"12.5kb"},{"health":"green","status":"open","index":"blogs","uuid":"Mb2n4wnNQSKqSToI_QO0Yg","pri":"1","rep":"1","docs.count":"1594","docs.deleted":"0","store.size":"11mb","pri.store.size":"5.5mb"},{"health":"green","status":"open","index":".kibana-event-log-7.9.0-000002","uuid":"8GpbwnDXR2KJUsw6srLnWw","pri":"1","rep":"1","docs.count":"9","docs.deleted":"0","store.size":"96.9kb","pri.store.size":"48.4kb"},{"health":"green","status":"open","index":".apm-agent-configuration","uuid":"vIaV9k2VS-W48oUOe2xNWA","pri":"1","rep":"1","docs.count":"0","docs.deleted":"0","store.size":"416b","pri.store.size":"208b"},{"health":"green","status":"open","index":"logs_server1","uuid":"u56jv2AyR2KOkruOfxIAnA","pri":"1","rep":"1","docs.count":"5386","docs.deleted":"0","store.size":"5.1mb","pri.store.size":"2.5mb"},{"health":"green","status":"open","index":".kibana_1","uuid":"dBCrfVblRPGVlYAIlP_Duw","pri":"1","rep":"1","docs.count":"3187","docs.deleted":"50","store.size":"24.8mb","pri.store.size":"12.4mb"},{"health":"green","status":"open","index":".tasks","uuid":"3RafayGeSNiqglO2BHof9Q","pri":"1","rep":"1","docs.count":"3","docs.deleted":"0","store.size":"39.9kb","pri.store.size":"19.9kb"},{"health":"green","status":"open","index":"filebeat-7.9.0-elastic_qa","uuid":"tktSYU14S3CrsrJb0ybpSQ","pri":"1","rep":"1","docs.count":"3009880","docs.deleted":"0","store.size":"1.6gb","pri.store.size":"850.1mb"},{"health":"green","status":"open","index":"analysis_test","uuid":"6ZHEAW1ST_qfg7mo4Bva4w","pri":"1","rep":"1","docs.count":"0","docs.deleted":"0","store.size":"416b","pri.store.size":"208b"},{"health":"green","status":"open","index":".apm-custom-link","uuid":"Y4N2TeVERrGacEGwY-NPAQ","pri":"1","rep":"1","docs.count":"0","docs.deleted":"0","store.size":"416b","pri.store.size":"208b"},{"health":"green","status":"open","index":"kibana_sample_data_ecommerce","uuid":"4FIWJKhGSr6bE72R0xEQyA","pri":"1","rep":"1","docs.count":"4675","docs.deleted":"0","store.size":"9.2mb","pri.store.size":"4.6mb"},{"health":"green","status":"open","index":".kibana_task_manager_1","uuid":"9afyndU_Q26oqOiEIoqRJw","pri":"1","rep":"1","docs.count":"6","docs.deleted":"2","store.size":"378.8kb","pri.store.size":"12.5kb"},{"health":"green","status":"open","index":".async-search","uuid":"2VbJgnN7SsqC-DWN64yXUQ","pri":"1","rep":"1","docs.count":"0","docs.deleted":"0","store.size":"3.9kb","pri.store.size":"3.7kb"}]`;
-
-  columns = [
-    {
-      title: '索引名称',
-      dataIndex: 'index',
-      render: (text, record) => (
-      <a onClick={()=>{
-        this.setState({
-          editingIndex: record,
-          drawerVisible: true,
-        });
-      }}>{text}</a>
-      )
-    },
-    {
-      title: '文档数',
-      dataIndex: 'docs.count',
-    },
-    {
-      title: '主分片数',
-      dataIndex: 'pri'
-    },
-    {
-      title: '从分片数',
-      dataIndex: 'rep'
-    },
-    {
-      title: '存储大小',
-      dataIndex: 'store.size'
-    },
-    {
-      title: '操作',
-      render: (text, record) => (
-        <Fragment>
-          {/* <a onClick={() => this.handleUpdateModalVisible(true, record)}>设置</a>
-          <Divider type="vertical" /> */}
-          <a onClick={() => {
-            this.state.selectedRows.push(record);
-            this.handleDeleteClick();
-          }}>删除</a>
-          <Divider type="vertical" />
-          <a onClick={() => {
-            this.state.selectedRows.push(record);
-            this.handleDeleteClick();
-          }}>文档管理</a>
-        </Fragment>
-      ),
-    },
-  ];
-
-  componentDidMount() {
-    const { dispatch } = this.props;
-    // dispatch({
-    //   type: 'pipeline/fetch',
-    // });
+class Doucment extends React.Component {
+  state={
+      bodyDisplay: 'none',
   }
 
-  handleStandardTableChange = (pagination, filtersArg, sorter) => {
-    const { dispatch } = this.props;
-    const { formValues } = this.state;
-
-    const filters = Object.keys(filtersArg).reduce((obj, key) => {
-      const newObj = { ...obj };
-      newObj[key] = getValue(filtersArg[key]);
-      return newObj;
-    }, {});
-
-    const params = {
-      currentPage: pagination.current,
-      pageSize: pagination.pageSize,
-      ...formValues,
-      ...filters,
-    };
-    if (sorter.field) {
-      params.sorter = `${sorter.field}_${sorter.order}`;
-    }
-
+  fetchData = (params) => {
+    const {dispatch} = this.props;
     dispatch({
-      type: 'pipeline/fetch',
+      type: 'document/fetchDocList',
       payload: params,
-    });
-  };
-
-  handleFormReset = () => {
-    const { form, dispatch } = this.props;
-    form.resetFields();
-    this.setState({
-      formValues: {},
-    });
-    dispatch({
-      type: 'pipeline/fetch',
-      payload: {},
-    });
-  };
-
-  handleDeleteClick = e => {
-    const { dispatch } = this.props;
-    const { selectedRows } = this.state;
-
-    if (!selectedRows) return;
-        dispatch({
-          type: 'pipeline/delete',
-          payload: {
-            key: selectedRows.map(row => row.name),
-          },
-          callback: () => {
-            this.setState({
-              selectedRows: [],
-            });
-          },
-        });
-  };
-
-  handleSelectRows = rows => {
-    this.setState({
-      selectedRows: rows,
-    });
-  };
-
-  handleSearch = e => {
-    e.preventDefault();
-
-    const { dispatch, form } = this.props;
-
-    form.validateFields((err, fieldsValue) => {
-      if (err) return;
-
-      const values = {
-        ...fieldsValue,
-        updatedAt: fieldsValue.updatedAt && fieldsValue.updatedAt.valueOf(),
-      };
-
-      this.setState({
-        formValues: values,
-      });
-
-      dispatch({
-        type: 'rule/fetch',
-        payload: values,
-      });
-    });
-  };
-
-  handleModalVisible = flag => {
-    this.setState({
-      modalVisible: !!flag,
-    });
-  };
-
-  handleUpdateModalVisible = (flag, record) => {
-    this.setState({
-      updateModalVisible: !!flag,
-      updateFormValues: record || {},
-    });
-  };
-
-  handleAdd = fields => {
-    const { dispatch } = this.props;
-    dispatch({
-      type: 'pipeline/add',
-      payload: {
-        name: fields.name,
-        desc: fields.desc,
-        processors: fields.processors,
-      },
-    });
-
-    message.success('添加成功');
-    this.handleModalVisible();
-  };
-
-  handleUpdate = fields => {
-    const { dispatch } = this.props;
-    dispatch({
-      type: 'pipeline/update',
-      payload: {
-        name: fields.name,
-        desc: fields.desc,
-        processors: fields.processors,
-      },
-    });
-
-    message.success('修改成功');
-    this.handleUpdateModalVisible();
-  };
-
-  renderSimpleForm() {
-    const {
-      form: { getFieldDecorator },
-    } = this.props;
-    return (
-      <Form onSubmit={this.handleSearch} layout="inline">
-        <Row gutter={{ md: 8, lg: 24, xl: 48 }}>
-          <Col md={8} sm={24}>
-            <FormItem label="索引名称">
-              {getFieldDecorator('name')(<Input placeholder="请输入" />)}
-            </FormItem>
-          </Col>
-          <Col md={8} sm={24}>
-            <span className={styles.submitButtons}>
-              <Button type="primary" htmlType="submit">
-                查询
-              </Button>
-              <Button style={{ marginLeft: 8 }} onClick={this.handleFormReset}>
-                重置
-              </Button>
-            </span>
-          </Col>
-        </Row>
-      </Form>
-    );
+    })
   }
-
-  renderForm() {
-    return this.renderSimpleForm();
+  
+  componentDidMount(){
+    this.fetchData({
+        pageSize: 10,
+        pageIndex: 1,
+        index: 'infini-test',
+    })
   }
-
-  render() {
-    const data = {
-      list: JSON.parse(this.datasource),
-      pagination: {
-        pageSize: 5,
-      },
-    };
-    const { selectedRows, modalVisible, updateModalVisible, updateFormValues,editingIndex, drawerVisible } = this.state;
-    const parentMethods = {
-      handleAdd: this.handleAdd,
-      handleModalVisible: this.handleModalVisible,
-    };
-    const updateMethods = {
-      handleUpdateModalVisible: this.handleUpdateModalVisible,
-      handleUpdate: this.handleUpdate,
-    };
-    
-    return (
-      <Fragment>
-        <Card bordered={false}>
-          <div className={styles.tableList}>
-            <div className={styles.tableListForm}>{this.renderForm()}</div>
-            <div className={styles.tableListOperator}>
-              <Button icon="plus" type="primary" onClick={() => this.handleModalVisible(true)}>
-                新建
-              </Button>
-              {selectedRows.length > 0 && (
-                <span>
-                  <Button onClick={() => this.handleDeleteClick()}>删除</Button>
-                </span>
-              )}
-            </div>
-            <StandardTable
-              selectedRows={selectedRows}
-              data={data}
-              columns={this.columns}
-              onSelectRow={this.handleSelectRows}
-              onChange={this.handleStandardTableChange}
-            />
-          </div>
-        </Card>
-        <CreateForm {...parentMethods} modalVisible={modalVisible} />
-        {updateFormValues && Object.keys(updateFormValues).length ? (
-          <UpdateForm
-            {...updateMethods}
-            updateModalVisible={updateModalVisible}
-            values={updateFormValues}
-          />
-        ) : null}
-        <Drawer title={editingIndex.index}
-          visible={drawerVisible}
-          onClose={()=>{
-            this.setState({
-              drawerVisible: false,
-            });
-          }}
-          width={640}
-        >
-           <Tabs defaultActiveKey="1" onChange={()=>{}}>
-            <TabPane tab="Summary" key="1">
-            <Descriptions title="General" column={2}>
-              <Descriptions.Item label="Health">green</Descriptions.Item>
-              <Descriptions.Item label="Status">open</Descriptions.Item>
-              <Descriptions.Item label="Primaries">1</Descriptions.Item>
-              <Descriptions.Item label="Replicas">0</Descriptions.Item>
-              <Descriptions.Item label="Docs Count">5</Descriptions.Item>
-              <Descriptions.Item label="Docs Deleted">0</Descriptions.Item>
-              <Descriptions.Item label="Storage Size">115.3kb</Descriptions.Item>
-              <Descriptions.Item label="Primary Storage Size"></Descriptions.Item>
-              <Descriptions.Item label="Alias">
-              </Descriptions.Item>
-            </Descriptions>
-            </TabPane>
-            <TabPane tab="Mappings" key="2">
-              <JSONWrapper>
-              <JSONPretty json={JSON.parse(`{
-  "mappings": {
-    "_doc": {
-      "dynamic": "strict",
-      "_meta": {
-        "migrationMappingPropertyHashes": {
-          "migrationVersion": "4a1746014a75ade3a714e1db5763276f",
-          "originId": "2f4316de49999235636386fe51dc06c1",
-          "task": "235412e52d09e7165fac8a67a43ad6b4",
-          "updated_at": "00da57df13e94e9d98437d13ace4bfe0",
-          "references": "7997cf5a56cc02bdc9c93361bde732b0",
-          "namespace": "2f4316de49999235636386fe51dc06c1",
-          "type": "2f4316de49999235636386fe51dc06c1",
-          "namespaces": "2f4316de49999235636386fe51dc06c1"
-        }
-      },
-      "properties": {
-        "migrationVersion": {
-          "dynamic": "true",
-          "properties": {
-            "task": {
-              "type": "text",
-              "fields": {
-                "keyword": {
-                  "type": "keyword",
-                  "ignore_above": 256
-                }
-              }
-            }
-          }
-        },
-        "namespace": {
-          "type": "keyword"
-        },
-        "namespaces": {
-          "type": "keyword"
-        },
-        "originId": {
-          "type": "keyword"
-        },
-        "references": {
-          "type": "nested",
-          "properties": {
-            "id": {
-              "type": "keyword"
-            },
-            "name": {
-              "type": "keyword"
-            },
-            "type": {
-              "type": "keyword"
-            }
-          }
-        },
-        "task": {
-          "properties": {
-            "attempts": {
-              "type": "integer"
-            },
-            "ownerId": {
-              "type": "keyword"
-            },
-            "params": {
-              "type": "text"
-            },
-            "retryAt": {
-              "type": "date"
-            },
-            "runAt": {
-              "type": "date"
-            },
-            "schedule": {
-              "properties": {
-                "interval": {
-                  "type": "keyword"
-                }
-              }
-            },
-            "scheduledAt": {
-              "type": "date"
-            },
-            "scope": {
-              "type": "keyword"
-            },
-            "startedAt": {
-              "type": "date"
-            },
-            "state": {
-              "type": "text"
-            },
-            "status": {
-              "type": "keyword"
-            },
-            "taskType": {
-              "type": "keyword"
-            },
-            "user": {
-              "type": "keyword"
-            }
-          }
-        },
-        "type": {
-          "type": "keyword"
-        },
-        "updated_at": {
-          "type": "date"
-        }
-      }
+  
+  handleNewClick = ()=>{
+    const {dispatch, document} = this.props;
+    if(!document.data || document.data.length == 0 || document.isAddNew){
+      return;
     }
+    let keys = Object.keys(document.data[0])
+    let newDoc = {};
+    for(let key of keys){
+      newDoc[key] = ""
+    }
+    dispatch({
+      type: 'document/_addNew',
+      payload: {
+        docItem: newDoc,
+        extra: {
+          isAddNew: true
+        }
+      },
+    })
   }
-}
 
-`)} theme={{
-  background: '#F5F7FA',
-  brace: '#343741',
-  keyQuotes: '#343741',
-  valueQuotes: '#343741',
-  colon: '#343741',
-  comma: '#343741',
-  key: '#343741',
-  value: {
-      string: '#343741',
-      null: '#343741',
-      number: '#343741',
-      boolean: '#343741',
-  },
-  bracket: '#343741',
-}} /></JSONWrapper>
-            </TabPane>
-            <TabPane tab="Stats" key="3">
-              Content of Tab Pane 3
-            </TabPane>
-            <TabPane tab="Edit settings" key="4">
-              Content of Tab Pane 3
-            </TabPane>
-          </Tabs>
-          <div style={{position:'absolute', bottom: 10}}>
-          <Dropdown 
-            placement="topLeft"
-            overlay={(
-            <Menu onClick={()=>{}}>
-              <Menu.Item key="1">
-                <Icon type="delete" />
-                Delete
-              </Menu.Item>
-              <Menu.Item key="2">
-                <Icon type="edit" />
-                Edit
-              </Menu.Item>
-              <Menu.Item key="3">
-                <Icon type="close" />
-                Close
-              </Menu.Item>
-            </Menu>
-          )}>
-            <Button type="primary">
-              Manage <Icon type="up" />
-            </Button>
-          </Dropdown>
+  handleSearchClick = (value)=>{
+    const [cluster, index] = this.indexEl.state.value;
+    let targetIndex = index;
+    if(value != ""){
+      targetIndex = value;
+    }
+    console.log(targetIndex);
+    this.fetchData({
+      cluster,
+      index: targetIndex,
+      pageSize: 10,
+      pageIndex: 1,
+      filter: this.filterEl.state.value,
+    })
+  }
+  
+  renderNew = ()=>{
+    const {indices} = this.props.document;
+    if((indices && indices.length > 1)){
+      return;
+    }
+    return (
+      <div>
+        {(indices && indices.length > 1) ? (<Select style={{width: 200, marginRight:5}} placeholder="please select a index">
+          {indices.map(item=>{
+            return (<Select.Option key={item} label={item}>{item}</Select.Option>)
+          })}
+        </Select>) : ''}
+        <Button type="primary" icon="plus" onClick={this.handleNewClick}>新建</Button>
+      </div>
+    )
+  }
+
+  render(){
+      // const {getFieldDecorator} = this.props.form;
+      //console.log(this.props.document);
+      const options =[
+        {
+          value: 'single-es',
+          label: 'single-es',
+          children: [
+            {
+              value: 'infini-test',
+              label: 'infini-test',
+            }
+        ]}];
+      return (
+          <div>
+              <Card>
+                  <Row gutter={[16, { xs: 8, sm: 16, md: 24, lg: 32 }]}>
+                      <Col span={20}>
+                      <Input.Group compact>
+                          <Cascader
+                            options={options}
+                            ref={el=>{this.indexEl=el}}
+                            style={{width: '20%'}}
+                            onChange={(value, selectedOptions)=>{console.log(value)}}
+                            placeholder="Please select index"
+                            showSearch={{filter: (inputValue, path)=>path.some(option => option.label.toLowerCase().indexOf(inputValue.toLowerCase()) > -1) }}
+                          />
+                          <Input.Search
+                              style={{width:"80%"}}
+                              placeholder="input rewrite index or index pattern"
+                              enterButton="execute"     
+                              onSearch={this.handleSearchClick}
+                          />
+                      </Input.Group>
+                      </Col>
+                      <Col span={4}>
+                          <a style={{marginTop:5,display:'block'}} onClick={(e)=>{
+                              this.setState((preState)=>{
+                                  if(preState.bodyDisplay == 'none') {
+                                      return {
+                                          bodyDisplay: 'block',
+                                      };
+                                  }else{
+                                      return {
+                                          bodyDisplay: 'none'
+                                      };
+                                  }
+                              });
+                          }}>{this.state.bodyDisplay == 'none' ? '高级':'收起'}<Icon type="down" /></a>
+                      </Col>
+                  </Row>
+                  <Row style={{display: this.state.bodyDisplay}} gutter={[16, { xs: 8, sm: 16, md: 24, lg: 32 }]}>
+                      <Col span={20}>
+                          <Input.TextArea ref={el=>{this.filterEl=el}} placeholder="input query filter (elasticsearch query DSL)" rows={8}/>
+                      </Col>
+                  </Row>
+              </Card>
+              <div>
+                  <Card title={`Index: ${this.props.document.index}`} 
+                    bodyStyle={{padding:0, paddingBottom: 24}}
+                    extra={this.renderNew()}
+                    bordered={false}>
+                      <EditableTable doclist={this.props.document} dispatch={this.props.dispatch} 
+                      fetchData={(params)=>{this.fetchData(params)}}/>
+                    </Card>
+              </div>
           </div>
-        </Drawer>
-      </Fragment>
-    );
+      )
   }
+    
 }
 
-export default Document;
+export default Doucment;

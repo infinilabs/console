@@ -2,7 +2,7 @@ elasticsearch:
   - name: default
     enabled: true
     endpoint: http://localhost:9200
-    index_prefix: infini-
+    index_prefix: 
     basic_auth:
       username: elastic
       password: ZBdkVQUUdF1Sir4X4BGB

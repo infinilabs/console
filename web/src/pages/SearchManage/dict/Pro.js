@@ -15,7 +15,7 @@ const UpdateForm = Form.create()(props => {
     form.validateFields((err, fieldsValue) => {
       if (err) return;
       form.resetFields();
-      let upVals = Object.assign(values, fieldsValue);
+      let upVals = Object.assign(_.cloneDeep(values), fieldsValue);
       handleUpdate(upVals);
     });
   };
@@ -69,33 +69,22 @@ class Pro extends React.Component {
     super(props);
     this.handleUpdate = this.handleUpdate.bind(this);
   }
-  state = {
-    updateFormValues: null,
-    currentFormOp: null,
-    data: [],
-    search: {
-      size: 6,
-      name: "",
-      tags: "",
-      pageIndex: 1,
-    }
-  }
   componentDidMount(){
-    this.fetchData();
+    const {size} = this.props.dict.search;
+    this.fetchData({
+      from: 0,
+      size: size,
+    });
   }
 
   handleReset = ()=>{
     const {form} = this.props;
     form.resetFields();
-    this.setState({
-      search: {
-        size: 6,
-        name: "",
-        tags: "",
-        pageIndex: 1,
-      }
-    },()=>{
-      this.fetchData();
+    this.fetchData({
+      from: 0,
+      size: this.props.dict.search.size,
+      name: '',
+      tags: ''
     });
   }
 
@@ -104,14 +93,12 @@ class Pro extends React.Component {
     let me = this;
     form.validateFields((err, fieldsValue) => {
       if (err) return;
-      me.setState({search:{
-          ...me.state.search,
-          pageIndex: 1,
+        me.fetchData({
+          form: 0,
+          size: me.props.dict.search.size,
           name: fieldsValue.name,
           tags: fieldsValue.tags.join(',')
-      }},()=>{
-        me.fetchData();
-      })
+        })
     })
   }
 
@@ -161,18 +148,24 @@ class Pro extends React.Component {
     );
   }
   handleNewClick = () => {
-    this.setState({
-      currentFormOp: 'NEW',
-      updateFormValues: {},
-      formTitle: '添加词典'
+    const {dispatch} = this.props;
+    dispatch({
+      type: 'dict/saveData',
+      payload: {
+        currentFormOp: 'NEW',
+        updateFormValues: {},
+        formTitle: '添加词典'
+      }
     })
   }
 
   handleDelete = (item) =>{
-    const {dispatch} = this.props;
+    const {dispatch, dict} = this.props;
+    const search = dict.search;
+    const me = this;
     Modal.confirm({
-      title: '删除Pipeline',
-      content: '确定删除该Pipeline吗？',
+      title: '删除词典',
+      content: '确定删除该词典吗？',
       okText: '确认',
       cancelText: '取消',
       onOk: () => {
@@ -188,15 +181,19 @@ class Pro extends React.Component {
   }
   
   handleModifyClick = (item)=>{
-    this.setState({
-      updateFormValues: item,
-      formTitle: '修改词典',
-      currentFormOp: 'UPDATE',
-    })
+    const {dispatch} = this.props;
+    dispatch({
+      type: 'dict/saveData',
+      payload: {
+        updateFormValues: item,
+        formTitle: '修改词典',
+        currentFormOp: 'UPDATE',
+      }
+    });
   }
 
   handleUpdate(values){
-    let {currentFormOp, data} = this.state;
+    let {currentFormOp} = this.props.dict;
     const {dispatch} = this.props;
     let me = this;
     switch(currentFormOp){
@@ -204,69 +201,51 @@ class Pro extends React.Component {
         dispatch({
           type: 'dict/addDictItem',
           payload: values,
-          callback: ()=>{
-            me.setState({
-              updateFormValues: null,
-              currentFormOp: null
-            });
-          }
         });
         break;
       case "UPDATE":
         dispatch({
           type: 'dict/updateDictItem',
           payload: values,
-          callback: ()=>{
-            me.setState({
-              updateFormValues: null,
-              currentFormOp: null
-            });
-          }
         });
     }
   }
 
-  fetchData = ()=>{
+  fetchData = (params)=>{
     const {dispatch} = this.props;
-    let {size, pageIndex} = this.state.search;
-    let me = this;
     dispatch({
       type: 'dict/fetchDictList',
-      payload: {
-        from: (pageIndex - 1) * size,
-        ...this.state.search
-      },
-      callback: ()=>{
-      }
+      payload: params
     });
   }
 
   handlePageChange = (p)=>{
-    this.setState({
-      search: {
-        ...this.state.search,
-        pageIndex: p,
-      }
-    },()=>{
-      this.fetchData();
-    })
+    let search = this.props.dict.search;
+
+    this.fetchData({
+      ...search,
+      from: (p-1) * search.size,
+      pageIndex: p,
+    });
   }
 
   render(){
-    let data = this.props.dict ? this.props.dict.dictList : [];
-    let total = this.props.dict ? this.props.dict.total: 0;
-    let updateFormValues = this.state.updateFormValues;
-    let size = this.state.search.size;
+    //console.log('render');
+    let {dictList, search, updateFormValues, total, formTitle} = this.props.dict;
+    let {pageIndex, size} = search;
+    const {dispatch} = this.props;
     const updateMethods = {
       handleUpdate: this.handleUpdate,
       handleUpdateModalVisible: ()=>{
-        this.setState({
-          updateFormValues: null,
-          currentFormOp: null,
-        })
+        dispatch({
+          type:'dict/saveData',
+          payload: {
+            updateFormValues: null,
+            currentFormOp: null,
+          }
+        });
       }
     };
-    console.log('render');
     return (
       <div>
         <Card bordered={false} bodyStyle={{paddingBottom:0}} >
@@ -278,11 +257,11 @@ class Pro extends React.Component {
           bordered={false}>
           <List
           className="dic-list"
-          dataSource={data}
+          dataSource={dictList}
           pagination={{
             pageSize: size,
             total: total,
-            current: this.state.search.pageIndex,
+            current: pageIndex,
             onChange: this.handlePageChange
           }}
           grid={{
@@ -320,7 +299,7 @@ class Pro extends React.Component {
           </Card>
           {updateFormValues ? (
           <UpdateForm
-            title={this.state.formTitle}
+            title={formTitle}
             {...updateMethods}
             values={updateFormValues}
           />

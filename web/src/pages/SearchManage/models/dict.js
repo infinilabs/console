@@ -50,9 +50,18 @@ export default {
   namespace: 'dict',
 
   state: {
+    updateFormValues: null,
+    currentFormOp: null,
+    formTitle: '',
+    search: {
+      size: 6,
+      name: "",
+      tags: "",
+      pageIndex: 1,
+    }
   },
   effects: {
-    *fetchDictList({payload, callback}, {call, put}){
+    *fetchDictList({payload}, {call, put}){
         const resp = yield call(getDictList, payload);
         if(resp.errno != "0" || !resp.data.Result){
             return
@@ -61,21 +70,26 @@ export default {
             item.content = utf8.decode(atob(item.content))
             return item;
         })
+        let search = {name:'', tags: ''};
+        payload.pageIndex = payload.from / payload.size + 1;
+        search = Object.assign(search, payload);
+        
         yield put({
             type: 'saveData',
             payload: {
                 dictList: resp.data.Result,
                 total: resp.data.Total,
-                ...payload,
+                search: search,
             },
         });
-        if(callback && typeof callback == 'function'){
-            callback(resp);
-        }
         //message.loading('数据加载完成', 'initdata');
     },
-    *addDictItem({payload, callback}, {call, put}){
-        const rel = yield call(addDict, payload);
+    *addDictItem({payload}, {call, put}){
+        let upVals = {
+            ...payload,
+        }
+        upVals.content = btoa(utf8.encode(upVals.content));
+        const rel = yield call(addDict, upVals);
         if(rel.errno != "0"){
             message.warn('添加失败：'+ rel.errmsg)
             return
@@ -83,25 +97,34 @@ export default {
         rel.payload.content = utf8.decode(atob(rel.payload.content));
         yield put({
             type: 'addDict',
-            payload: rel.payload,
+            payload: {
+                dictItem: rel.payload,
+                extra: {
+                    updateFormValues: null,
+                    currentFormOp: null
+                }
+            }
         })
-        if(callback && typeof callback == 'function'){
-            callback(rel);
-        }
     },
-    *updateDictItem({payload, callback}, {call, put}){
+    *updateDictItem({payload}, {call, put}){
+        let rawContent  = payload.content;
+        payload.content = btoa(utf8.encode(payload.content));
         const rel = yield call(updateDict, payload);
         if(rel.errno != "0"){
             message.warn('修改：'+ rel.errmsg)
             return
         }
+        payload.content = rawContent;
         yield put({
             type: 'updateDict',
-            payload: payload,
+            payload: {
+                dictItem: payload,
+                extra:{
+                    updateFormValues: null,
+                    currentFormOp: null
+                }
+            }
         })
-        if(callback && typeof callback == 'function'){
-            callback(rel);
-        }
     },
     *deleteDictItem({payload}, {call, put, select}){
         let rel = yield call(deleteDict, payload);
@@ -112,14 +135,20 @@ export default {
             message.warn('删除失败：'+ rel.errmsg)
             return
         }
-        const state = yield select(state => state.dict)
+
         yield put({
-            type: 'fetchDictList',
+            type:'deleteDict',
             payload: {
-                from: state.from,
-                size: state.size,
+                dictItem: payload,
             }
-        })
+        });
+        //const search = yield select(state => state.dict.search)
+        
+        // yield put({
+        //     type: 'fetchDictList',
+        //     payload: search,
+        // })
+       //yield take('fetchDictList/@@end')
     }
   },
   reducers: {
@@ -131,17 +160,35 @@ export default {
     },
     addDict(state, {payload}){
         let dictList = state.dictList || [];
-        dictList.unshift(payload);
+        dictList.unshift(payload.dictItem);
         state.dictList = dictList;
-        return state;
+        return {
+            ...state,
+            ...payload.extra,
+            total: state.total + 1,
+        };
     },
     updateDict(state, {payload}){
         let cdata = state.dictList;
         let idx = cdata.findIndex((item)=>{
-          return item.id == payload.id;
+          return item.id == payload.dictItem.id;
         })
-        idx > -1 && (cdata[idx] = values);
-        return state;
+        idx > -1 && (cdata[idx] = payload.dictItem);
+        return {
+            ...state,
+            ...payload.extra,
+        }
+    },
+    deleteDict(state, {payload}){
+        let cdata = state.dictList;
+        let idx = cdata.findIndex((item)=>{
+          return item.id == payload.dictItem.id;
+        })
+        idx > -1 && (state.dictList.splice(idx, 1));
+        return {
+            ...state,
+            total: state.total - 1,
+        }
     }
   },
 };

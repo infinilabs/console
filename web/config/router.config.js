@@ -90,7 +90,7 @@ export default [
               },
               {
                 path: '/data/indices/doc',
-                component: './DataManagement/Document',
+                component: './DataManagement/Index',
               },
               {
                 path: '/data/indices/template',
@@ -129,7 +129,7 @@ export default [
           },{
             path: '/data/doc',
             name: 'query',
-            component: './DataManagement/Query',
+            component: './DataManagement/Document',
           },
         ]
       },

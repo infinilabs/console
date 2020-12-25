@@ -10,10 +10,12 @@ import (
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
+	"infini.sh/search-center/config"
 	model2 "infini.sh/search-center/model"
 )
 
 type APIHandler struct {
+	Config *config.AppConfig
 	api.Handler
 }
 
@@ -44,36 +46,21 @@ func (handler APIHandler) GetDictListAction(w http.ResponseWriter, req *http.Req
 
 func (handler APIHandler) CreateDictItemAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	//id := ps.ByName("id")
-	jq, err := handler.GetJSON(req)
-	if err != nil {
-		handler.Error(w, err)
-		return
-	}
-	name, err := jq.String("name")
-	if err != nil {
-		handler.Error(w, err)
-		return
-	}
-	tags, err := jq.ArrayOfStrings("tags")
-	if err != nil {
-		handler.Error(w, err)
-		return
-	}
-
-	content, err := jq.String("content")
-	if err != nil {
-		handler.Error(w, err)
-		return
-	}
 	createdAt := time.Now()
 
 	dict := model2.Dict{
 		ID:        util.GetUUID(),
-		Name:      name,
-		Tags:      tags,
-		Content:   []byte(content),
 		CreatedAt: createdAt,
 		UpdatedAt: createdAt,
+	}
+	err := handler.DecodeJSON(req, &dict)
+	if err != nil {
+		handler.WriteJSON(w, map[string]interface{}{
+			"payload": nil,
+			"errno":   "E100001",
+			"errmsg":  err.Error(),
+		}, http.StatusOK)
+		return
 	}
 
 	err = orm.Save(dict)
@@ -103,41 +90,18 @@ func (handler APIHandler) DeleteDictItemAction(w http.ResponseWriter, req *http.
 }
 
 func (handler APIHandler) UpdateDictItemAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	jq, err := handler.GetJSON(req)
+	dict := model2.Dict{}
+	err := handler.DecodeJSON(req, &dict)
 	if err != nil {
-		handler.Error(w, err)
+		handler.WriteJSON(w, map[string]interface{}{
+			"payload": nil,
+			"errno":   "E100002",
+			"errmsg":  err.Error(),
+		}, http.StatusOK)
 		return
-	}
-	id, err := jq.String("id")
-	if err != nil {
-		handler.Error(w, err)
-		return
-	}
-	name, err := jq.String("name")
-	if err != nil {
-		handler.Error(w, err)
-		return
-	}
-	tags, err := jq.ArrayOfStrings("tags")
-	if err != nil {
-		handler.Error(w, err)
-		return
-	}
 
-	content, err := jq.String("content")
-	if err != nil {
-		handler.Error(w, err)
-		return
 	}
-	updatedAt := time.Now()
-
-	dict := model2.Dict{
-		ID:        id,
-		Name:      name,
-		Tags:      tags,
-		Content:   []byte(content),
-		UpdatedAt: updatedAt,
-	}
+	dict.UpdatedAt = time.Now()
 
 	err = orm.Update(dict)
 	if err != nil {

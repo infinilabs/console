@@ -15,7 +15,7 @@ import (
 
 type UI struct {
 	api.Handler
-	config *config.AppConfig
+	Config *config.AppConfig
 }
 
 func (h UI) InitUI() {
@@ -24,7 +24,7 @@ func (h UI) InitUI() {
 
 	ui.HandleUI("/", vfs.FileServer(vfs.VFS()))
 
-	uiapi.Init()
+	uiapi.Init(h.Config)
 
 	ui.HandleUIFunc("/api/", func(w http.ResponseWriter, req *http.Request) {
 		log.Warn("api: ", req.URL, " not implemented")

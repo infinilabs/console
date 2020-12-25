@@ -47,7 +47,7 @@ func main() {
 		modules.Register()
 
 		appConfig = &config.AppConfig{
-			ElasticConfig:  "default",
+			Elasticsearch:  "default",
 			UILocalPath:    ".public",
 			UIVFSEnabled:   true,
 			UILocalEnabled: true,
@@ -62,7 +62,7 @@ func main() {
 		}
 
 		//load web UI files
-		appUI = &UI{config: appConfig}
+		appUI = &UI{Config: appConfig}
 		appUI.InitUI()
 
 		//start each module, with enabled provider

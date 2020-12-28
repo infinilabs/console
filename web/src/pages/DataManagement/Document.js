@@ -1,7 +1,84 @@
-import React, { Component } from 'react';
+import React, { Component, createRef } from 'react';
+import router from 'umi/router';
 import { connect } from 'dva';
 import { Col, Form, Row,Select, Input, Card,Icon, Table, InputNumber, Popconfirm,
-   Divider,Button,Tooltip, Cascader } from 'antd';
+   Divider,Button,Tooltip, Cascader, Modal } from 'antd';
+import Editor, {monaco} from '@monaco-editor/react';
+
+import {createDependencyProposals} from './autocomplete';
+
+function findParentIdentifier(textUntilPosition){
+  let chars = textUntilPosition;
+  let length = chars.length;
+  let stack = [];
+  let targetIdx = -1;
+  for(let i = length-1; i>-1; i--){
+    if(chars[i] == '}'){
+      stack.push('}');
+    }else if(chars[i] == '{'){
+      if(stack.length == 0){
+        targetIdx = i;
+        break;
+      }
+      stack.pop();
+    }
+  }
+  let foundColon = false;
+  for(let i = targetIdx; i > -1; i--){
+    if(chars[i] == ":"){
+      targetIdx = i;
+      foundColon = true;
+      break;
+    }
+  }
+  if(!foundColon){
+    return ""
+  }
+  let identifer = [];
+  let startFound = false;
+  for(let i = targetIdx; i > -1; i--){
+    if((chars[i]>='a' && chars[i] <= 'z') || chars[i] == '_'){
+      identifer.push(chars[i]);
+      startFound = true;
+    }else if(startFound){
+      break;
+    }
+  }
+  return identifer.reverse().join('');
+}
+
+monaco.init().then((mi)=>{
+  mi.languages.registerCompletionItemProvider('json', {
+    provideCompletionItems: function(model, position) {
+        // find out if we are completing a property in the 'dependencies' object.
+        var textUntilPosition = model.getValueInRange({startLineNumber: 1, startColumn: 1, endLineNumber: position.lineNumber, endColumn: position.column});
+        
+        if(textUntilPosition.indexOf('{') < 0){
+          return { suggestions: [] };
+        }
+        
+        let key = findParentIdentifier(textUntilPosition);
+        //console.log(key);
+        // var match = textUntilPosition.match(/"match"\s*:\s*\{\s*("[^"]*"\s*:\s*"[^"]*"\s*,\s*)*([^"]*)?$/);
+        // if (!match) {
+        //     return { suggestions: [] };
+        // }
+        var word = model.getWordUntilPosition(position);
+        
+        var range = {
+            startLineNumber: position.lineNumber,
+            endLineNumber: position.lineNumber,
+            startColumn: word.startColumn,
+            endColumn: word.endColumn
+        };
+        return {
+            suggestions: createDependencyProposals(key, range, mi)
+        };
+    }
+  });
+
+})
+
 const {Option} = Select;
 
 const EditableContext = React.createContext();
@@ -130,7 +207,7 @@ class EditableCell extends React.Component {
           dispatch({
             type: 'document/addDocItem',
             payload: {
-              index: doclist.index,
+              index: doclist._index,
               data: row,
             }
           })
@@ -244,22 +321,37 @@ class EditableCell extends React.Component {
 @Form.create()
 class Doucment extends React.Component {
   state={
-      bodyDisplay: 'none',
+    bodyDisplay: 'none',
   }
-
+  // constructor(props){
+  //   super(props);
+  //   this.filterGetter = createRef();
+  // }
+  
   fetchData = (params) => {
     const {dispatch} = this.props;
-    dispatch({
+    return dispatch({
       type: 'document/fetchDocList',
       payload: params,
     })
   }
+
+  handleEditorDidMount = (_valueGetter) =>{
+    this.filterGetter = _valueGetter;
+  }
   
   componentDidMount(){
+    const {location } = this.props;
+    //console.log(match, location);
+    let index = location.query.index || 'infini-test';
+    let cluster = location.query.cluster || 'single-es';
+    this.indexEl.setState({
+      value: [cluster, index]
+    })
     this.fetchData({
         pageSize: 10,
         pageIndex: 1,
-        index: 'infini-test',
+        index,
     })
   }
   
@@ -267,6 +359,21 @@ class Doucment extends React.Component {
     const {dispatch, document} = this.props;
     if(!document.data || document.data.length == 0 || document.isAddNew){
       return;
+    }
+    let {indices} = document;
+    let _index = indices[0];
+    if(indices && indices.length > 1){
+      console.log(this.indexSelEl);
+      let vals = this.indexSelEl.rcSelect.state.value;
+      if(vals.length == 0){
+        Modal.error({
+          title: '系统提示',
+          content: '请选择新建文档目标索引',
+        });
+        return
+      }else{
+        _index = vals[0];
+      }
     }
     let keys = Object.keys(document.data[0])
     let newDoc = {};
@@ -278,36 +385,45 @@ class Doucment extends React.Component {
       payload: {
         docItem: newDoc,
         extra: {
-          isAddNew: true
+          isAddNew: true,
+          _index
         }
       },
     })
   }
 
   handleSearchClick = (value)=>{
-    const [cluster, index] = this.indexEl.state.value;
-    let targetIndex = index;
-    if(value != ""){
-      targetIndex = value;
+    let [cluster, index] = this.indexEl.state.value;
+    let rewriteIndex = this.reindexEl.state.value;
+    if(typeof rewriteIndex !== 'undefined' && rewriteIndex !=""){
+      index = rewriteIndex;
     }
-    console.log(targetIndex);
+
     this.fetchData({
       cluster,
-      index: targetIndex,
+      index: index,
       pageSize: 10,
       pageIndex: 1,
-      filter: this.filterEl.state.value,
+      //filter: this.filterEl.state.value,
+      filter: this.filterGetter(),
+      keyword: value,
+    }).then(()=>{
+      if(this.hashChanged){
+        router.push(`/data/doc?index=${index}`);
+        this.hashChanged = !this.hashChanged;
+      }
     })
+    
   }
-  
+
   renderNew = ()=>{
     const {indices} = this.props.document;
-    if((indices && indices.length > 1)){
-      return;
-    }
+    // if((indices && indices.length > 1)){
+    //   return;
+    // }
     return (
       <div>
-        {(indices && indices.length > 1) ? (<Select style={{width: 200, marginRight:5}} placeholder="please select a index">
+        {(indices && indices.length > 1) ? (<Select ref={el=>{this.indexSelEl=el}} style={{width: 200, marginRight:5}} placeholder="please select a index">
           {indices.map(item=>{
             return (<Select.Option key={item} label={item}>{item}</Select.Option>)
           })}
@@ -328,25 +444,30 @@ class Doucment extends React.Component {
             {
               value: 'infini-test',
               label: 'infini-test',
+            },
+            {
+              value: 'infini-test1',
+              label: 'infini-test1',
             }
         ]}];
       return (
           <div>
               <Card>
                   <Row gutter={[16, { xs: 8, sm: 16, md: 24, lg: 32 }]}>
-                      <Col span={20}>
+                      <Col span={20} style={{paddingLeft:0}}>
                       <Input.Group compact>
                           <Cascader
                             options={options}
                             ref={el=>{this.indexEl=el}}
                             style={{width: '20%'}}
-                            onChange={(value, selectedOptions)=>{console.log(value)}}
+                            onChange={(values, selectedOptions)=>{this.reindexEl.setState({value: values[1]}); this.hashChanged = true;}}
                             placeholder="Please select index"
                             showSearch={{filter: (inputValue, path)=>path.some(option => option.label.toLowerCase().indexOf(inputValue.toLowerCase()) > -1) }}
                           />
+                          <Input ref={el=>{this.reindexEl=el}} placeholder="rewrite index or index pattern" style={{width: '20%'}}/>
                           <Input.Search
-                              style={{width:"80%"}}
-                              placeholder="input rewrite index or index pattern"
+                              style={{width:"50%"}}
+                              placeholder="input search keyword"
                               enterButton="execute"     
                               onSearch={this.handleSearchClick}
                           />
@@ -369,8 +490,22 @@ class Doucment extends React.Component {
                       </Col>
                   </Row>
                   <Row style={{display: this.state.bodyDisplay}} gutter={[16, { xs: 8, sm: 16, md: 24, lg: 32 }]}>
-                      <Col span={20}>
-                          <Input.TextArea ref={el=>{this.filterEl=el}} placeholder="input query filter (elasticsearch query DSL)" rows={8}/>
+                      <Col span={20} style={{border:'1px solid #e8e8e8'}}>
+                          {/* <Input.TextArea ref={el=>{this.filterEl=el}} placeholder="input query filter (elasticsearch query DSL)" rows={8}/> */}
+                          <Editor
+                            height="200px"
+                            language="json"
+                            theme="light"
+                          //  value={`{"match":{"name": "cincky"}}`}
+                            options={{
+                              minimap: {
+                                enabled: false,
+                              },
+                              tabSize: 2,
+                              wordBasedSuggestions: true,
+                            }}
+                            editorDidMount={this.handleEditorDidMount}
+                          />
                       </Col>
                   </Row>
               </Card>

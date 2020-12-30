@@ -30,3 +30,4 @@ appveyor.yml
 *.exe
 web/.github/
 web/report*
+log/

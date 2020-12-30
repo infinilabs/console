@@ -94,10 +94,10 @@ class Pro extends React.Component {
     form.validateFields((err, fieldsValue) => {
       if (err) return;
         me.fetchData({
-          form: 0,
+          from: 0,
           size: me.props.dict.search.size,
           name: fieldsValue.name,
-          tags: fieldsValue.tags.join(',')
+          tags: fieldsValue.tags && fieldsValue.tags.join(',')
         })
     })
   }

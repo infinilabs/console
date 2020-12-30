@@ -12,14 +12,16 @@ import (
 )
 
 type docReqBody struct {
-	Index     string                 `json:"index"`
-	Action    string                 `json:"action"`
-	Payload   map[string]interface{} `json:"payload"`
-	PageIndex int                    `json:"pageIndex"`
-	PageSize  int                    `json:"pageSize"`
-	Filter    string                 `json:"filter"`
-	Cluster   string                 `json:"cluster"`
-	Keyword   string                 `json:"keyword"`
+	Index         string                 `json:"index"`
+	Action        string                 `json:"action"`
+	Payload       map[string]interface{} `json:"payload"`
+	PageIndex     int                    `json:"pageIndex"`
+	PageSize      int                    `json:"pageSize"`
+	Filter        string                 `json:"filter"`
+	Cluster       string                 `json:"cluster"`
+	Keyword       string                 `json:"keyword"`
+	Sort          string                 `json:"sort"`
+	SortDirection string                 `json:"sort_direction"`
 }
 
 func (handler APIHandler) HandleDocumentAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -94,6 +96,7 @@ func (handler APIHandler) HandleDocumentAction(w http.ResponseWriter, req *http.
 		var (
 			pageSize  = 10
 			pageIndex = 1
+			sort      = ""
 		)
 		if reqBody.PageSize > 0 {
 			pageSize = reqBody.PageSize
@@ -109,7 +112,14 @@ func (handler APIHandler) HandleDocumentAction(w http.ResponseWriter, req *http.
 		if reqBody.Filter != "" {
 			filter = reqBody.Filter
 		}
-		query := fmt.Sprintf(`{"from":%d, "size": %d, "query": %s}`, from, pageSize, filter)
+		if sortField := strings.Trim(reqBody.Sort, " "); sortField != "" {
+			sortDirection := reqBody.SortDirection
+			if sortDirection != "desc" {
+				sortDirection = "asc"
+			}
+			sort = fmt.Sprintf(`"%s":{"order":"%s"}`, sortField, sortDirection)
+		}
+		query := fmt.Sprintf(`{"from":%d, "size": %d, "query": %s, "sort": [{%s}]}`, from, pageSize, filter, sort)
 		fmt.Println(indexName, query)
 		var reqBytes = []byte(query)
 		resp, err := client.SearchWithRawQueryDSL(indexName, reqBytes)

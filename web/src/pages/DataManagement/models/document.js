@@ -46,6 +46,12 @@ export default {
       let res = yield call(getDocList, payload);
       if(res.errno != "0"){
         message.warn("加载数据失败")
+        yield put({
+          type: 'saveData',
+          payload:{
+            isLoading: false,
+          }
+        })
         return
       }
       let indices = Object.keys(res.payload.mappings); //indices state can remove

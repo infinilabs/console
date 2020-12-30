@@ -1,4 +1,5 @@
-import React, { Component, createRef } from 'react';
+import React from 'react';
+import { formatMessage, FormattedMessage } from 'umi/locale';
 import router from 'umi/router';
 import { connect } from 'dva';
 import { Col, Form, Row,Select, Input, Card,Icon, Table, InputNumber, Popconfirm,
@@ -120,7 +121,7 @@ class EditableCell extends React.Component {
       let initialValue = '';
       if(editing){
         if(type=='date'){
-          initialValue = moment(record[dataIndex]);
+          initialValue = record[dataIndex] && moment(record[dataIndex]);
         }else{
           initialValue = record[dataIndex];
         }
@@ -169,21 +170,21 @@ class EditableCell extends React.Component {
                     onClick={() => this.save(form, record.id)}
                     style={{ marginRight: 8 }}
                   >
-                    Save
+                    {formatMessage({id:'form.save'})}
                   </a>
                 )}
               </EditableContext.Consumer>
               <Popconfirm title="Sure to cancel?" onConfirm={() => this.cancel(record.id)}>
-                <a>Cancel</a>
+                <a>{formatMessage({id:'form.button.cancel'})}</a>
               </Popconfirm>
             </span>
           ) : (<div>
             <a disabled={editingKey !== ''} onClick={() => this.edit(record)}>
-              Edit
+              {formatMessage({id:'form.button.edit'})}
             </a>
             <Divider type="vertical"/>
               <Popconfirm title="Sure to delete?" onConfirm={() => this.delete(record)}>
-                <a>Delete</a>
+                <a>{formatMessage({id:'form.button.delete'})}</a>
               </Popconfirm>
            </div>
           );
@@ -268,58 +269,67 @@ class EditableCell extends React.Component {
         }
       });
     }
-    handlePageChange = (pageIndex)=>{
+
+    handleTableChange = (pagination, filters, sorter) =>{
+      //console.log(pagination, filters, sorter);
+  
       const {fetchData, doclist} = this.props;
       fetchData({
-        pageIndex: pageIndex,
-        pageSize: doclist.pageSize,
+        pageIndex: pagination.current,
+        pageSize: pagination.pageSize,
         index: doclist.index,
         cluster: doclist.cluster,
         filter: doclist.filter,
+        sort: (sorter.order && sorter.field) || '',
+        sort_direction: sorter.order == 'ascend' ? 'asc' : 'desc'
       })
     }
+    
+    isSortable = (type) => {
+      return ['keyword', 'date', 'long', 'integer', 'short', 'byte', 'double', 'float', 'scaled_float'].includes(type)
+    }
 
-    onShowSizeChange = (current, pageSize)=> {
-      const {fetchData, doclist} = this.props;
-      fetchData({
-        pageIndex: current,
-        pageSize: pageSize,
-        index: doclist.index,
-        cluster: doclist.cluster,
-        filter: doclist.filter,
-      })
-      //console.log(current, pageSize);
-    }    
-  
     render() {
       let {doclist} = this.props;
       let columns = [];
-      if(doclist.data && doclist.data.length > 0 ){
-        for(let key in doclist.data[0]){
-          if(["_index"].includes(key)){
-            continue;
-          }
-          let col = {
-            title: key,
-            dataIndex: key,
-            ellipsis: true,
-            render: (text)=>(<Tooltip placement="top" title={text}>{text}</Tooltip>),
-            onCell: record => ({
-              record,
-              dataIndex: key,
-              title: key,
-              editing: this.isEditing(record),
-              type: this.getFieldType(record, key),
-              // onMouseEnter: event => {console.log(event)}, 
-              // onMouseLeave: event => {},
-            }),
-          }
-          if(["id"].includes(key)){
-            col.onCell = "";
-          }
-          columns.push(col)
+      let keys = [];
+      let sortObj = {};
+      if(doclist.mappings){
+        for(let mkey in doclist.mappings){
+          Object.keys(doclist.mappings[mkey].mappings.properties).forEach(key=>{
+            if(!keys.includes(key)){
+              keys.push(key);
+              sortObj[key] = this.isSortable(doclist.mappings[mkey].mappings.properties[key].type);
+            }
+          })
         }
       }
+      for(let key of keys){
+        if(["_index"].includes(key)){
+          continue;
+        }
+        let col = {
+          title: key,
+          dataIndex: key,
+          ellipsis: true,
+          sorter: sortObj[key],
+          render: (text)=>(<Tooltip placement="top" title={text}>{text}</Tooltip>),
+          onCell: record => ({
+            record,
+            dataIndex: key,
+            title: key,
+            editing: this.isEditing(record),
+            type: this.getFieldType(record, key),
+            // onMouseEnter: event => {console.log(event)}, 
+            // onMouseLeave: event => {},
+          }),
+        }
+        if(["id"].includes(key)){
+          col.onCell = "";
+        }
+        columns.push(col)
+      }
+      
       columns.push(this.operField);
       //console.log(columns);
      
@@ -334,19 +344,17 @@ class EditableCell extends React.Component {
             components={components}
             bordered
             rowKey="id"
+            onChange={this.handleTableChange}
             size="small"
             loading={doclist.isLoading}
             dataSource={doclist.data}
             columns={columns}
             rowClassName="editable-row"
             pagination={{
-              onChange: this.cancel,
               showSizeChanger: true,
-              onShowSizeChange: this.onShowSizeChange,
               total: doclist.total?  doclist.total.value: 0,
               pageSize: doclist.pageSize,
               current: doclist.pageIndex,
-              onChange: this.handlePageChange,
               showTotal: (total, range) => `Total ${total} items`,
               size: 'small',
             }}
@@ -470,10 +478,15 @@ class Doucment extends React.Component {
         _index = vals[0];
       }
     }
-    let keys = Object.keys(mappings[_index].mappings.properties)
+    let properties = mappings[_index].mappings.properties;
+    let keys = Object.keys(properties)
     let newDoc = {id:"", _index};
     for(let key of keys){
-      newDoc[key] = ""
+      if(properties[key].type == 'date'){
+        newDoc[key] = null
+      }else{
+        newDoc[key] = ""
+      }
     }
     dispatch({
       type: 'document/_addNew',
@@ -528,7 +541,7 @@ class Doucment extends React.Component {
             return (<Select.Option key={item} label={item}>{item}</Select.Option>)
           })}
         </Select>) : ''}
-        <Button type="primary" icon="plus" onClick={this.handleNewClick}>新建</Button>
+        <Button type="primary" icon="plus" onClick={this.handleNewClick}>{formatMessage({ id: 'form.button.new' })}</Button>
       </div>
     )
   }
@@ -566,7 +579,7 @@ class Doucment extends React.Component {
                               placeholder="input search keyword"    
                               disabled = {this.state.bodyDisplay != 'none'}
                           />
-                          <Button type="primary" onClick={this.handleSearchClick}>execute</Button>
+                          <Button type="primary" onClick={this.handleSearchClick}>{formatMessage({ id: 'form.button.search' })}</Button>
                       </Input.Group>
                       </Col>
                       <Col span={4}>
@@ -582,7 +595,7 @@ class Doucment extends React.Component {
                                       };
                                   }
                               });
-                          }}>{this.state.bodyDisplay == 'none' ? '高级':'收起'}<Icon type="down" /></a>
+                          }}>{this.state.bodyDisplay == 'none' ? formatMessage({id:'form.button.advanced'}): formatMessage({id:'form.button.collapse'})}<Icon type="down" /></a>
                       </Col>
                   </Row>
                   <Row style={{display: this.state.bodyDisplay}} gutter={[16, { xs: 8, sm: 16, md: 24, lg: 32 }]}>
@@ -606,15 +619,16 @@ class Doucment extends React.Component {
                       <Col span={8}>
                         <div style={{fontSize: 12, paddingLeft: 20}}>
                           <div style={{fontSize: 16, paddingBottom: 10, color: '#1890FF'}}>query example:</div>
-                          <code dangerouslySetInnerHTML={{ __html: `{<br/>&nbsp;&nbsp;"bool":{<br/>
-                            &nbsp;&nbsp;&nbsp;&nbsp;"must": {<br/>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"match":{ <br/>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"FIELD": "VALUE"<br/>
-                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
-                            &nbsp;&nbsp;&nbsp;&nbsp;}<br/>
-                          &nbsp;&nbsp;}<br/>}` }}>
-                          
-                          </code>
+                          <div style={{background:'rgb(245, 247, 250)', padding: 10}}>
+                            <code dangerouslySetInnerHTML={{ __html: `{<br/>&nbsp;&nbsp;"bool":{<br/>
+                              &nbsp;&nbsp;&nbsp;&nbsp;"must": {<br/>
+                              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"match":{ <br/>
+                              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"FIELD": "VALUE"<br/>
+                              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+                              &nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+                            &nbsp;&nbsp;}<br/>}` }}>                           
+                            </code>
+                          </div>
                         </div>
                       </Col>
                   </Row>

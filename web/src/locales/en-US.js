@@ -60,6 +60,15 @@ export default {
   'form.publicUsers.option.A': 'Colleague A',
   'form.publicUsers.option.B': 'Colleague B',
   'form.publicUsers.option.C': 'Colleague C',
+  'form.button.search': 'Search',
+  'form.button.new': 'New',
+  'form.button.edit': 'Edit',
+  'form.button.delete': 'Delete',
+  'form.button.cancel': 'Cancel',
+  'form.button.collapse': 'Collapse',
+  'form.button.advanced': 'Advanced',
+  'table.field.operation': 'Operation',
+
   'component.globalHeader.search': 'Search',
   'component.globalHeader.search.example1': 'Search example 1',
   'component.globalHeader.search.example2': 'Search example 2',
@@ -89,6 +98,7 @@ export default {
   'menu.data.snapshot': 'SNAPSHOT',
   'menu.data.rebuild': 'REBUILD',
   'menu.data.export': 'IMPORT&EXPORT',
+  'menu.data.query': 'DOCUMENT',
 
   'menu.search': 'SEARCH',
   'menu.search.template': 'TEMPLATE',

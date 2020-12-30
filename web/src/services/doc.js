@@ -42,3 +42,9 @@ export async function addDoc(params) {
     },
   });
 }
+
+export async function getIndices(params) {
+  return request(`/api/indices/_cat`, {
+    method: 'GET'
+  });
+}

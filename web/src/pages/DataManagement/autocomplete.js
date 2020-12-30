@@ -4,19 +4,19 @@ function registerKeyProposals(key){
     'bool': [{
       label: 'filter',
       documentation: "filter",
-      insertText: '"filter": [\n\t{}\n]',
+      insertText: '"filter": [\n\t{$0}\n]',
     },{
       label: 'minimum_should_match',
       insertText: '"minimum_should_match": 1',
     },{
       label: 'must',
-      insertText: '"must": [\n\t{}\n]',
+      insertText: '"must": [\n\t{$0}\n]',
     },{
       label: 'must_not',
-      insertText: '"must_not": [\n\t{}\n]',
+      insertText: '"must_not": [\n\t{$0}\n]',
     },{
       label: 'should',
-      insertText: '"should": [\n\t{}\n]',
+      insertText: '"should": [\n\t{$0}\n]',
     }],
     'multi_match':[{
       label: 'analyzer',
@@ -37,7 +37,7 @@ function registerKeyProposals(key){
       label: 'type',
       insertText: '"type": "best_fields"',
     }]
-  };
+  }; //${1|one,two,three|}
   if(proposals[key]){
     return proposals[key];
   }else{
@@ -45,21 +45,37 @@ function registerKeyProposals(key){
   }
 }
 
-export function createDependencyProposals(key, range, mi) {
+export function createDependencyProposals(key, range, mi, triggerChar) {
   if(['', 'must', 'must_not', 'should'].includes(key)){
     return queryProposals.map(p=>{
+      let copyItem = {
+        ...p
+      };
+      let insertText = copyItem.insertText;
+      triggerChar == '"' && (copyItem.insertText=insertText.slice(1)) && (range = {
+        ...range,
+        endColumn: range.endColumn +1
+      })
       return {
         kind: mi.languages.CompletionItemKind.Property,
-        ...p,
+        ...copyItem,
         insertTextRules: mi.languages.CompletionItemInsertTextRule.InsertAsSnippet,
         range: range
       }
     })
   }
   return registerKeyProposals(key).map(p=>{
+    let copyItem = {
+      ...p
+    };
+    let insertText = copyItem.insertText;
+    triggerChar == '"' && (copyItem.insertText=insertText.slice(1)) && (range = {
+      ...range,
+      endColumn: range.endColumn +1
+    })
     return {
       kind: mi.languages.CompletionItemKind.Property,
-      ...p,
+      ...copyItem,
       insertTextRules: mi.languages.CompletionItemInsertTextRule.InsertAsSnippet,
       range: range
     }

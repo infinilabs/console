@@ -2,9 +2,9 @@ import React, { Component, createRef } from 'react';
 import router from 'umi/router';
 import { connect } from 'dva';
 import { Col, Form, Row,Select, Input, Card,Icon, Table, InputNumber, Popconfirm,
-   Divider,Button,Tooltip, Cascader, Modal } from 'antd';
+   Divider,Button,Tooltip, Cascader, Modal, DatePicker, Dropdown,Menu, message } from 'antd';
 import Editor, {monaco} from '@monaco-editor/react';
-
+import moment from 'moment';
 import {createDependencyProposals} from './autocomplete';
 
 function findParentIdentifier(textUntilPosition){
@@ -47,35 +47,44 @@ function findParentIdentifier(textUntilPosition){
   return identifer.reverse().join('');
 }
 
+// monaco.config({
+//   paths: {
+//     vs: '...',
+//   },
+//   'vs/nls' : {
+//     availableLanguages: {
+//       '*': 'de',
+//     },
+//   },
+// });
 monaco.init().then((mi)=>{
-  mi.languages.registerCompletionItemProvider('json', {
-    provideCompletionItems: function(model, position) {
-        // find out if we are completing a property in the 'dependencies' object.
-        var textUntilPosition = model.getValueInRange({startLineNumber: 1, startColumn: 1, endLineNumber: position.lineNumber, endColumn: position.column});
-        
-        if(textUntilPosition.indexOf('{') < 0){
-          return { suggestions: [] };
-        }
-        
-        let key = findParentIdentifier(textUntilPosition);
-        //console.log(key);
-        // var match = textUntilPosition.match(/"match"\s*:\s*\{\s*("[^"]*"\s*:\s*"[^"]*"\s*,\s*)*([^"]*)?$/);
-        // if (!match) {
-        //     return { suggestions: [] };
-        // }
-        var word = model.getWordUntilPosition(position);
-        
-        var range = {
-            startLineNumber: position.lineNumber,
-            endLineNumber: position.lineNumber,
-            startColumn: word.startColumn,
-            endColumn: word.endColumn
-        };
-        return {
-            suggestions: createDependencyProposals(key, range, mi)
-        };
-    }
-  });
+  mi.languages.onLanguage("json", ()=>{
+    mi.languages.registerCompletionItemProvider('json', {
+      triggerCharacters: ['"'],
+      provideCompletionItems: function(model, position, ctx) { 
+          var textUntilPosition = model.getValueInRange({startLineNumber: 1, startColumn: 1, endLineNumber: position.lineNumber, endColumn: position.column});
+          
+          if(textUntilPosition.indexOf('{') < 0){
+            return { suggestions: [] };
+          }
+          
+          let key = findParentIdentifier(textUntilPosition);
+          var word = model.getWordUntilPosition(position);
+          
+          var range = {
+              startLineNumber: position.lineNumber,
+              endLineNumber: position.lineNumber,
+              startColumn: word.startColumn,
+              endColumn: word.endColumn
+          };
+          
+          //console.log(ctx, range,textUntilPosition)
+          return {
+              suggestions: createDependencyProposals(key, range, mi, ctx.triggerCharacter)
+          };
+      }
+    });
+  })
 
 })
 
@@ -85,11 +94,16 @@ const EditableContext = React.createContext();
 
 class EditableCell extends React.Component {
     getInput = () => {
-      let {record, dataIndex} = this.props;
-      if (typeof record[dataIndex] === 'number') {
-        return <InputNumber />;
+      let {record, dataIndex, type} = this.props;
+      if(['byte','short', 'integer', 'long'].includes(type)){
+        return  <InputNumber />;
+      }else if(type == 'date'){
+        return <DatePicker showTime/>
       }
-      return <Input />;
+      // if (typeof record[dataIndex] === 'number') {
+      //   return <InputNumber />;
+      // }
+      return <Input/>;
     };
   
     renderCell = ({ getFieldDecorator }) => {
@@ -100,8 +114,17 @@ class EditableCell extends React.Component {
         record,
         index,
         children,
+        type,
         ...restProps
       } = this.props;
+      let initialValue = '';
+      if(editing){
+        if(type=='date'){
+          initialValue = moment(record[dataIndex]);
+        }else{
+          initialValue = record[dataIndex];
+        }
+      }
       return (
         <td {...restProps}>
           {editing ? (
@@ -113,7 +136,7 @@ class EditableCell extends React.Component {
                     message: `Please Input ${title}!`,
                   },
                 ],
-                initialValue: record[dataIndex],
+                initialValue: initialValue,
               })(this.getInput())}
             </Form.Item>
           ) : (
@@ -169,6 +192,16 @@ class EditableCell extends React.Component {
     }
   
     isEditing = record => record.id === this.props.doclist.editingKey;
+
+    getFieldType = (record, key)=>{
+      const {doclist} = this.props;
+      // if(!doclist.mappings[record._index]){
+      //   console.log(record, doclist.mappings)
+      //   return
+      // }
+      const {properties} = doclist.mappings[record._index].mappings;
+      return properties[key].type;
+    }
   
     cancel = () => {
       const {dispatch, doclist} = this.props;
@@ -188,7 +221,7 @@ class EditableCell extends React.Component {
     save(form, key) {
       const {dispatch,doclist} = this.props;
       form.validateFields((error, row) => {
-        if (error) {
+        if (error) { 
           return;
         }
         //console.log(row, key, doclist._index);
@@ -246,8 +279,16 @@ class EditableCell extends React.Component {
       })
     }
 
-    onShowSizeChange(current, pageSize) {
-      console.log(current, pageSize);
+    onShowSizeChange = (current, pageSize)=> {
+      const {fetchData, doclist} = this.props;
+      fetchData({
+        pageIndex: current,
+        pageSize: pageSize,
+        index: doclist.index,
+        cluster: doclist.cluster,
+        filter: doclist.filter,
+      })
+      //console.log(current, pageSize);
     }    
   
     render() {
@@ -268,6 +309,7 @@ class EditableCell extends React.Component {
               dataIndex: key,
               title: key,
               editing: this.isEditing(record),
+              type: this.getFieldType(record, key),
               // onMouseEnter: event => {console.log(event)}, 
               // onMouseLeave: event => {},
             }),
@@ -299,8 +341,8 @@ class EditableCell extends React.Component {
             rowClassName="editable-row"
             pagination={{
               onChange: this.cancel,
-              //showSizeChanger: true,
-              //onShowSizeChange: this.onShowSizeChange,
+              showSizeChanger: true,
+              onShowSizeChange: this.onShowSizeChange,
               total: doclist.total?  doclist.total.value: 0,
               pageSize: doclist.pageSize,
               current: doclist.pageIndex,
@@ -314,6 +356,53 @@ class EditableCell extends React.Component {
     }
   }
 
+class InputSelect extends React.Component{
+  state = {
+    value: this.props.defaultValue
+  }
+  onClick = ({ key }) => {
+    this.inputEl.setState({
+      value: key
+    })
+    this.setState({
+      value: key,
+    })
+    this.triggerChange(key)
+  }
+  triggerChange = (val)=>{
+    let {onChange} = this.props;
+    if(onChange && typeof onChange == 'function'){
+      onChange(val)
+    }
+  }
+  handleChange = (ev) => {
+    let val = ev.target.value;
+    let filterData = this.props.data.slice();
+    if(val != ""){
+      filterData = filterData.filter(v=>v.value.includes(val))
+    }
+    this.setState({
+      value: val,
+      data: filterData
+    })
+   this.triggerChange(val);
+  }
+  render(){
+    let {data, onChange, ...restProps} = this.props;
+    let filterData = this.state.data || data;
+    return (
+        <Dropdown overlay={
+          <Menu onClick={this.onClick} style={{maxHeight:'350px', overflow:"scroll"}}>
+            {filterData.map(op =>(
+              <Menu.Item key={op.value}>{op.label}</Menu.Item>
+            ))}
+          </Menu>
+        } trigger={['focus']}>
+          <Input ref={el=>{this.inputEl=el}} {...restProps} onChange={this.handleChange}/>
+        </Dropdown>
+    )
+  }
+}
 
 @connect(({document})=>({
   document
@@ -341,29 +430,35 @@ class Doucment extends React.Component {
   }
   
   componentDidMount(){
-    const {location } = this.props;
+    const {location, dispatch } = this.props;
     //console.log(match, location);
     let index = location.query.index || 'infini-test';
     let cluster = location.query.cluster || 'single-es';
-    this.indexEl.setState({
-      value: [cluster, index]
-    })
-    this.fetchData({
+    dispatch({
+      type: 'document/fetchIndices',
+      payload: {
+        cluster,
+      }
+    }).then(()=>{
+      this.fetchData({
         pageSize: 10,
         pageIndex: 1,
+        cluster,
         index,
+      })
     })
+   
   }
   
   handleNewClick = ()=>{
     const {dispatch, document} = this.props;
-    if(!document.data || document.data.length == 0 || document.isAddNew){
+    if(document.isAddNew){ //!document.data || document.data.length == 0 
       return;
     }
-    let {indices} = document;
+    let {indices, mappings} = document;
     let _index = indices[0];
     if(indices && indices.length > 1){
-      console.log(this.indexSelEl);
+      //console.log(this.indexSelEl);
       let vals = this.indexSelEl.rcSelect.state.value;
       if(vals.length == 0){
         Modal.error({
@@ -375,8 +470,8 @@ class Doucment extends React.Component {
         _index = vals[0];
       }
     }
-    let keys = Object.keys(document.data[0])
-    let newDoc = {};
+    let keys = Object.keys(mappings[_index].mappings.properties)
+    let newDoc = {id:"", _index};
     for(let key of keys){
       newDoc[key] = ""
     }
@@ -392,24 +487,29 @@ class Doucment extends React.Component {
     })
   }
 
-  handleSearchClick = (value)=>{
-    let [cluster, index] = this.indexEl.state.value;
-    let rewriteIndex = this.reindexEl.state.value;
-    if(typeof rewriteIndex !== 'undefined' && rewriteIndex !=""){
-      index = rewriteIndex;
+  handleSearchClick = (e)=>{
+    let value = this.keywordEl.state.value;
+    let index = this.indexEl.state.value;
+    let cluster = this.clusterEl.rcSelect.state.value[0];
+    let filter = '';
+    if(!cluster || !index){
+      message.error('please select cluster and index');
+      return;
     }
-
+    if(this.state.bodyDisplay != 'none'){
+      filter = this.filterGetter();
+    }
     this.fetchData({
       cluster,
-      index: index,
-      pageSize: 10,
+      index,
+      pageSize: this.props.document.pageSize,
       pageIndex: 1,
       //filter: this.filterEl.state.value,
-      filter: this.filterGetter(),
+      filter,
       keyword: value,
     }).then(()=>{
       if(this.hashChanged){
-        router.push(`/data/doc?index=${index}`);
+        router.push(`/data/doc?cluster=${cluster}&index=${index}`);
         this.hashChanged = !this.hashChanged;
       }
     })
@@ -436,41 +536,37 @@ class Doucment extends React.Component {
   render(){
       // const {getFieldDecorator} = this.props.form;
       //console.log(this.props.document);
-      const options =[
-        {
-          value: 'single-es',
-          label: 'single-es',
-          children: [
-            {
-              value: 'infini-test',
-              label: 'infini-test',
-            },
-            {
-              value: 'infini-test1',
-              label: 'infini-test1',
-            }
-        ]}];
+      let clusterIndices = this.props.document.clusterIndices || [];
+     
+      clusterIndices = clusterIndices.map((index) =>{
+        return {
+          label: index,
+          value: index,
+        };
+      })
+      const clusters = ["single-es"];
+      let {cluster, index}= this.props.document;
+      cluster = cluster || this.props.location.query.cluster;
+      index = index || this.props.location.query.index;
       return (
           <div>
               <Card>
                   <Row gutter={[16, { xs: 8, sm: 16, md: 24, lg: 32 }]}>
                       <Col span={20} style={{paddingLeft:0}}>
                       <Input.Group compact>
-                          <Cascader
-                            options={options}
-                            ref={el=>{this.indexEl=el}}
-                            style={{width: '20%'}}
-                            onChange={(values, selectedOptions)=>{this.reindexEl.setState({value: values[1]}); this.hashChanged = true;}}
-                            placeholder="Please select index"
-                            showSearch={{filter: (inputValue, path)=>path.some(option => option.label.toLowerCase().indexOf(inputValue.toLowerCase()) > -1) }}
+                         <Select ref={el=>this.clusterEl=el} defaultValue={cluster} style={{width: '20%'}}>
+                            {
+                              clusters.map(op=>(<Select.Option value={op} key={op}>{op}</Select.Option>))
+                            }
+                          </Select>
+                          <InputSelect data={clusterIndices} onChange={()=>{this.hashChanged=true;}} defaultValue={index} ref={el=>{this.indexEl=el}} placeholder="input index or index pattern" style={{width: '25%'}}/>
+                          <Input
+                              style={{width:"40%"}}
+                              ref={el=>this.keywordEl=el}
+                              placeholder="input search keyword"    
+                              disabled = {this.state.bodyDisplay != 'none'}
                           />
-                          <Input ref={el=>{this.reindexEl=el}} placeholder="rewrite index or index pattern" style={{width: '20%'}}/>
-                          <Input.Search
-                              style={{width:"50%"}}
-                              placeholder="input search keyword"
-                              enterButton="execute"     
-                              onSearch={this.handleSearchClick}
-                          />
+                          <Button type="primary" onClick={this.handleSearchClick}>execute</Button>
                       </Input.Group>
                       </Col>
                       <Col span={4}>
@@ -490,7 +586,7 @@ class Doucment extends React.Component {
                       </Col>
                   </Row>
                   <Row style={{display: this.state.bodyDisplay}} gutter={[16, { xs: 8, sm: 16, md: 24, lg: 32 }]}>
-                      <Col span={20} style={{border:'1px solid #e8e8e8'}}>
+                      <Col span={16} style={{border:'1px solid #e8e8e8'}}>
                           {/* <Input.TextArea ref={el=>{this.filterEl=el}} placeholder="input query filter (elasticsearch query DSL)" rows={8}/> */}
                           <Editor
                             height="200px"
@@ -506,6 +602,20 @@ class Doucment extends React.Component {
                             }}
                             editorDidMount={this.handleEditorDidMount}
                           />
+                      </Col>
+                      <Col span={8}>
+                        <div style={{fontSize: 12, paddingLeft: 20}}>
+                          <div style={{fontSize: 16, paddingBottom: 10, color: '#1890FF'}}>query example:</div>
+                          <code dangerouslySetInnerHTML={{ __html: `{<br/>&nbsp;&nbsp;"bool":{<br/>
+                            &nbsp;&nbsp;&nbsp;&nbsp;"must": {<br/>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"match":{ <br/>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"FIELD": "VALUE"<br/>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+                            &nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+                          &nbsp;&nbsp;}<br/>}` }}>
+                          
+                          </code>
+                        </div>
                       </Col>
                   </Row>
               </Card>

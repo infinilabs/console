@@ -19,4 +19,5 @@ func Init(cfg *config.AppConfig) {
 	//ui.HandleUIMethod(api.DELETE, "/api/dict/", handler.DeleteDictItemAction2)
 	ui.HandleUIMethod(api.POST, "/api/dict/_update", handler.UpdateDictItemAction)
 	ui.HandleUIMethod(api.POST, "/api/doc/:index", handler.HandleDocumentAction)
+	ui.HandleUIMethod(api.GET, "/api/indices/_cat", handler.HandleGetIndicesAction)
 }

@@ -1,4 +1,4 @@
-import {getDocList, saveDoc, deleteDoc, addDoc}  from '@/services/doc';
+import {getDocList, saveDoc, deleteDoc, addDoc, getIndices}  from '@/services/doc';
 import { message } from 'antd';
 
 function encodeObjectField(doc){
@@ -48,7 +48,7 @@ export default {
         message.warn("加载数据失败")
         return
       }
-      let indices = [];
+      let indices = Object.keys(res.payload.mappings); //indices state can remove
       if(res.payload.data && res.payload.data.length > 0){
         for(let doc of res.payload.data){
           if(!indices.includes(doc._index)){
@@ -139,6 +139,7 @@ export default {
         return
       }
       encodeObjectField(res.payload);
+      res.payload['_index'] = payload.index;
       yield put({
         type: '_addNew',
         payload: {
@@ -148,8 +149,21 @@ export default {
           }
         } 
       })
+    },
+    *fetchIndices({payload}, {call, put}){
+      let resp = yield call(getIndices)
+      if(resp.errno != "0"){
+        message.warn("获取数据失败")
+        return
+      }
+      yield put({
+        type: 'saveData', 
+        payload: {
+          clusterIndices: resp.payload,
+          cluster: payload.cluster,
+        }
+      })
     }
-    
   },
   reducers: {
     saveData(state, {payload}){
@@ -179,11 +193,18 @@ export default {
       state.data.splice(idx, 1);
       return {
         ...state,
-        ...payload.extra
+        ...payload.extra,
+        total: {
+          ...state.total,
+          value: state.total.value-1
+        }
       };
     },
     _addNew(state, {payload}){
       if(payload.extra && payload.extra.isAddNew){
+        if(!state.data){
+          state.data = [];
+        }
         state.data.unshift(payload.docItem)
         return {
           ...state,
@@ -193,7 +214,11 @@ export default {
         state.data[0] = payload.docItem;
         return {
           ...state,
-          ...payload.extra
+          ...payload.extra,
+          total: {
+            ...state.total,
+            value: state.total.value + 1
+          }
         }
       }
     },

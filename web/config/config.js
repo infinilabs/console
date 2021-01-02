@@ -68,7 +68,7 @@ export default {
   //   },
   // },
   proxy: {
-    '/api/': {
+    '/_search-center/': {
       target: 'http://localhost:2900',
       changeOrigin: true,
     //  pathRewrite: { '^/server': '' },

@@ -3,10 +3,11 @@ import { formatMessage, FormattedMessage } from 'umi/locale';
 import router from 'umi/router';
 import { connect } from 'dva';
 import { Col, Form, Row,Select, Input, Card,Icon, Table, InputNumber, Popconfirm,
-   Divider,Button,Tooltip, Cascader, Modal, DatePicker, Dropdown,Menu, message } from 'antd';
+   Divider,Button,Tooltip, Modal, DatePicker, message } from 'antd';
 import Editor, {monaco} from '@monaco-editor/react';
 import moment from 'moment';
 import {createDependencyProposals} from './autocomplete';
+import InputSelect from '@/components/infini/InputSelect';
 
 function findParentIdentifier(textUntilPosition){
   let chars = textUntilPosition;
@@ -364,54 +365,6 @@ class EditableCell extends React.Component {
     }
   }
 
-class InputSelect extends React.Component{
-  state = {
-    value: this.props.defaultValue
-  }
-  onClick = ({ key }) => {
-    this.inputEl.setState({
-      value: key
-    })
-    this.setState({
-      value: key,
-    })
-    this.triggerChange(key)
-  }
-  triggerChange = (val)=>{
-    let {onChange} = this.props;
-    if(onChange && typeof onChange == 'function'){
-      onChange(val)
-    }
-  }
-  handleChange = (ev) => {
-    let val = ev.target.value;
-    let filterData = this.props.data.slice();
-    if(val != ""){
-      filterData = filterData.filter(v=>v.value.includes(val))
-    }
-    this.setState({
-      value: val,
-      data: filterData
-    })
-   this.triggerChange(val);
-  }
-  render(){
-    let {data, onChange, ...restProps} = this.props;
-    let filterData = this.state.data || data;
-    return (
-        <Dropdown overlay={
-          <Menu onClick={this.onClick} style={{maxHeight:'350px', overflow:"scroll"}}>
-            {filterData.map(op =>(
-              <Menu.Item key={op.value}>{op.label}</Menu.Item>
-            ))}
-          </Menu>
-        } trigger={['focus']}>
-          <Input ref={el=>{this.inputEl=el}} {...restProps} onChange={this.handleChange}/>
-        </Dropdown>
-    )
-  }
-}
-
 @connect(({document})=>({
   document
 }))
@@ -440,14 +393,20 @@ class Doucment extends React.Component {
   componentDidMount(){
     const {location, dispatch } = this.props;
     //console.log(match, location);
-    let index = location.query.index || 'infini-test';
+    let index = location.query.index;
     let cluster = location.query.cluster || 'single-es';
+    if(!cluster){
+      return
+    }
     dispatch({
       type: 'document/fetchIndices',
       payload: {
         cluster,
       }
     }).then(()=>{
+      if(!index){
+        return
+      }
       this.fetchData({
         pageSize: 10,
         pageIndex: 1,
@@ -559,7 +518,7 @@ class Doucment extends React.Component {
       })
       const clusters = ["single-es"];
       let {cluster, index}= this.props.document;
-      cluster = cluster || this.props.location.query.cluster;
+      cluster = cluster || this.props.location.query.cluster || 'single-es';
       index = index || this.props.location.query.index;
       return (
           <div>
@@ -620,14 +579,13 @@ class Doucment extends React.Component {
                         <div style={{fontSize: 12, paddingLeft: 20}}>
                           <div style={{fontSize: 16, paddingBottom: 10, color: '#1890FF'}}>query example:</div>
                           <div style={{background:'rgb(245, 247, 250)', padding: 10}}>
-                            <code dangerouslySetInnerHTML={{ __html: `{<br/>&nbsp;&nbsp;"bool":{<br/>
-                              &nbsp;&nbsp;&nbsp;&nbsp;"must": {<br/>
-                              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"match":{ <br/>
-                              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"FIELD": "VALUE"<br/>
-                              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
-                              &nbsp;&nbsp;&nbsp;&nbsp;}<br/>
-                            &nbsp;&nbsp;}<br/>}` }}>                           
-                            </code>
+                            <pre className="language-json">{JSON.stringify({
+                              must: {
+                                match: {
+                                  FIELD: "VALUE"
+                                }
+                              }
+                            }, null, 2)}</pre>
                           </div>
                         </div>
                       </Col>

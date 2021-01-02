@@ -1,0 +1,1 @@
+export const pathPrefix = '/_search-center';

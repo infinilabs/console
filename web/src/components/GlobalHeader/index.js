@@ -4,6 +4,7 @@ import Link from 'umi/link';
 import Debounce from 'lodash-decorators/debounce';
 import styles from './index.less';
 import RightContent from './RightContent';
+import DropdownSelect from './DropdownSelect'
 
 export default class GlobalHeader extends PureComponent {
   componentWillUnmount() {
@@ -36,6 +37,9 @@ export default class GlobalHeader extends PureComponent {
           type={collapsed ? 'menu-unfold' : 'menu-fold'}
           onClick={this.toggle}
         />
+        <DropdownSelect defaultValue="Select cluster" 
+          onChange={(item)=>{}}
+        data={['cluster1', 'cluster2','cluster3', 'cluster4','cluster5', 'cluster6']}/>
         <RightContent {...this.props} />
       </div>
     );

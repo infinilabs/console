@@ -48,16 +48,10 @@ func reindex(esName string, body *model.InfiniReindex) (string, error) {
 	source := map[string]interface{}{
 		"index": body.Source.Index,
 	}
-	if body.Source.MaxDocs > 0 {
-		source["max_docs"] = body.Source.MaxDocs
-	}
 	if body.Source.Query != nil {
 		source["query"] = body.Source.Query
 	}
-	if body.Source.Sort != "" {
-		source["sort"] = body.Source.Sort
-	}
-	if body.Source.Source != "" {
+	if len(body.Source.Source) > 0 {
 		source["_source"] = body.Source.Source
 	}
 	dest := map[string]string{
@@ -71,7 +65,7 @@ func reindex(esName string, body *model.InfiniReindex) (string, error) {
 		"dest":   dest,
 	}
 	buf, _ := json.Marshal(esBody)
-	fmt.Println(string(buf))
+	//fmt.Println(string(buf))
 	reindexRes, err := client.Request("POST", url, buf)
 	if err != nil {
 		return "", err
@@ -92,4 +86,102 @@ func reindex(esName string, body *model.InfiniReindex) (string, error) {
 		return "", err
 	}
 	return body.ID, nil
+}
+
+func newResponseBody() map[string]interface{} {
+	return map[string]interface{}{
+		"errno":   "0",
+		"errmsg":  "",
+		"payload": nil,
+	}
+
+}
+
+func (handler APIHandler) HandleGetRebuildListAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Println(err)
+		}
+	}()
+	var (
+		from    = handler.GetIntOrDefault(req, "from", 0)
+		size    = handler.GetIntOrDefault(req, "size", 10)
+		name    = handler.GetParameter(req, "name")
+		resBody = newResponseBody()
+		esName  = handler.Config.Elasticsearch
+	)
+	esResp, err := model.GetRebuildList(esName, from, size, name)
+	if err != nil {
+		resBody["errno"] = "E20003"
+		resBody["errmsg"] = err.Error()
+		handler.WriteJSON(w, resBody, http.StatusOK)
+		return
+	}
+
+	var ids = []string{}
+	idMap := map[string]int{}
+	for idx, doc := range esResp.Hits.Hits {
+		taskId := doc.Source["task_id"].(string)
+		ids = append(ids, taskId)
+		idMap[taskId] = idx
+	}
+	taskResp, err := getTasksByTerms(esName, ids)
+	if err != nil {
+		resBody["errno"] = "E20004"
+		resBody["errmsg"] = err.Error()
+	}
+	var (
+		completed bool
+		status    string
+		esErrStr  string
+		tookTime  int
+	)
+	for _, doc := range taskResp.Hits.Hits {
+		status = "RUNNING"
+		tookTime = 0
+		esErrStr = ""
+		completed = doc.Source["completed"].(bool)
+		source := esResp.Hits.Hits[idMap[doc.ID.(string)]].Source
+		if esErr, ok := doc.Source["error"]; ok {
+			status = "FAILED"
+			if errMap, ok := esErr.(map[string]interface{}); ok {
+				esErrStr = errMap["reason"].(string)
+			}
+		} else {
+			if resMap, ok := doc.Source["response"].(map[string]interface{}); ok {
+				tookTime = int(resMap["took"].(float64))
+			}
+			status = "SUCCESS"
+		}
+		if !completed {
+			status = "RUNNING"
+		}
+		source["status"] = status
+		source["error"] = esErrStr
+		source["took_time"] = tookTime
+	}
+	resBody["payload"] = formatESSearchResult(esResp)
+	handler.WriteJSON(w, resBody, http.StatusOK)
+}
+
+func getTasksByTerms(esName string, terms []string) (*elastic.SearchResponse, error) {
+	if len(terms) == 0 {
+		return nil, nil
+	}
+	client := elastic.GetClient(esName)
+	esBody := `{
+  "query":{
+    "terms": {
+      "_id": [
+	  %s
+      ]
+    }
+  }
+}`
+	strTerms := ""
+	for _, term := range terms {
+		strTerms += fmt.Sprintf(`"%s",`, term)
+	}
+	esBody = fmt.Sprintf(esBody, strTerms[0:len(strTerms)-1])
+	return client.SearchWithRawQueryDSL(".tasks", []byte(esBody))
 }

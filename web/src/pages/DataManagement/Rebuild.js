@@ -9,16 +9,13 @@ const {Option} = Select;
 const {TextArea} = Input;
 
 @Form.create()
-@connect(({document}) => ({
-  document
+@connect(({document,rebuild}) => ({
+  document,
+  rebuild,
 }))
 class Rebuild extends Component {
   state = {
-    currentStep: 0,
-    configData: {
-      source:{},
-      dest:{},
-    },
+   selectedSourceIndex: ''
   }
   componentDidMount(){
     const {dispatch} = this.props;
@@ -26,6 +23,50 @@ class Rebuild extends Component {
       type:'document/fetchIndices',
       payload:{
         cluster: 'sinlge-es'
+      }
+    })
+    dispatch({
+      type: 'rebuild/fetchMappings',
+      payload: {
+        index: ''
+      }
+    })
+  }
+  getFields = (index)=>{
+    if(!index){
+      return [];
+    }
+    let {mappings} = this.props.rebuild;
+    let filterMappings = {};
+    if(index.indexOf("*")>0){
+      index = index.replace("*", '');
+      for(let key in mappings){
+        if(key.startsWith(index)){
+          filterMappings['key'] = mappings[key];
+        }
+      }
+    }else{
+      filterMappings[index] = mappings[index] || {};
+    }
+    
+    let fields = [];
+    for(let key in filterMappings){
+      for(let fi in filterMappings[key].mappings.properties){
+        fields.push(fi);
+      }
+    }
+
+    return fields;
+  }
+  handleSourceIndexChange = (v) =>{
+    const {dispatch, form} = this.props;
+    form.setFieldsValue({
+      source__source: [],
+    });
+    dispatch({
+      type: 'rebuild/saveData',
+      payload: {
+        selectedSourceIndex: v
       }
     })
   }
@@ -71,13 +112,15 @@ class Rebuild extends Component {
         }
       },
     };
+    let {configData, selectedSourceIndex} = this.props.rebuild;
+   
     switch(currentStep){
       case 0:
         stepDom = (
           <div style={{marginTop:20}}>
             <Form.Item {...formItemLayout}  label="Task Name">
               {getFieldDecorator('name', {
-                initialValue: this.state.configData.name,
+                initialValue: configData.name,
                 rules: [{ required: true, message: 'please input a task name' }],
               })(
                <Input autoComplete="off" style={{width: 200}}/>
@@ -85,7 +128,7 @@ class Rebuild extends Component {
             </Form.Item>
             <Form.Item {...formItemLayout} label="Task Description">
                 {getFieldDecorator('desc', {
-                initialValue: this.state.configData.creterial,
+                initialValue: configData.desc,
                 rules: [
                 ],
                 })(
@@ -106,17 +149,16 @@ class Rebuild extends Component {
           <div style={{marginTop:20}}>
             <Form.Item {...formItemLayout}  label="选择源索引">
               {getFieldDecorator('source_index', {
-                initialValue: this.state.configData.source.index,
+                initialValue: configData.source.index,
                 rules: [{ required: true, message: '请选择要重建的索引' }],
               })(
-                <InputSelect data={indices} style={{width: 200}}/>
+                <InputSelect onChange={this.handleSourceIndexChange} data={indices} style={{width: 200}}/>
               )}
             </Form.Item>
             <Form.Item {...formItemLayout} label="Query">
                 {getFieldDecorator('source_query', {
-                initialValue: this.state.configData.source.query,
+                initialValue: configData.source.query,
                 rules: [
-                    {required: true, },
                 ],
                 })(
                 <TextArea
@@ -125,31 +167,17 @@ class Rebuild extends Component {
                 />
                 )}
               </Form.Item>
-              <Form.Item {...formItemLayout} label="max_docs">
-                {getFieldDecorator('source_max_docs', {
-                initialValue: this.state.configData.source_max_docs,
-                rules: [
-                ],
-                })(
-                  <InputNumber min={1} style={{width:200}}/>
-                )}
-              </Form.Item>
               <Form.Item {...formItemLayout} label="_source">
                 {getFieldDecorator('source__source', {
-                initialValue: this.state.configData.source__source,
+                initialValue: configData.source__source,
                 rules: [
                 ],
                 })(
-                  <Input style={{width:'50%'}}/>
-                )}
-              </Form.Item>
-              <Form.Item {...formItemLayout} label="sort">
-                {getFieldDecorator('source_sort', {
-                initialValue: this.state.configData.source_sort,
-                rules: [
-                ],
-                })(
-                  <Input style={{width:'50%'}}/>
+                  <Select mode="multiple" style={{width:'80%'}}>
+                    {  this.getFields(selectedSourceIndex).map(item=>{
+                      return (<Select.Option key={item} value={item}>{item}</Select.Option>)
+                    })}
+                  </Select>
                 )}
               </Form.Item>
             <Form.Item {...tailFormItemLayout}>
@@ -164,7 +192,7 @@ class Rebuild extends Component {
               <span style={{height:1}}/>
               <Form.Item {...formItemLayout}  label="目标索引名">
                 {getFieldDecorator('dest_index', {
-                  initialValue: this.state.configData.dest.index || '',
+                  initialValue: configData.dest.index || '',
                   rules: [{ required: true, message: '请输入目标索引名称' }],
                 })(
                   <InputSelect data={indices} style={{width: 200}}/>
@@ -172,7 +200,7 @@ class Rebuild extends Component {
               </Form.Item>
               <Form.Item {...formItemLayout} label="Pipeline">
                   {getFieldDecorator('dest_pipeline', {
-                  initialValue: this.state.configData.dest.source,
+                  initialValue: configData.dest.source,
                   rules: [
                   ],
                   })(
@@ -191,8 +219,7 @@ class Rebuild extends Component {
 
   handleNext(currentStep){
     const { form, dispatch } = this.props;
-    const { configData: oldValue } = this.state;
-    var formValues = {};
+    const { configData: oldValue } = this.props.rebuild;
     form.validateFields((err, fieldsValue) => {
       if (err) return;
       let newValue = {};
@@ -200,7 +227,7 @@ class Rebuild extends Component {
         fieldsValue['source_query'] = JSON.parse(fieldsValue['source_query'])
       }
       for(let key in fieldsValue){
-        if(key.startsWith('source_')){
+        if(key.startsWith('source_') && fieldsValue[key]){
           !newValue.source && (newValue.source ={})
           newValue.source[key.slice(7)] = fieldsValue[key]
         }else if(key.startsWith('dest_')){
@@ -220,25 +247,31 @@ class Rebuild extends Component {
           }
         })
       }
-      this.setState({
-        configData: {
-          ...oldValue,
-          ...newValue,
-        },
-        currentStep: currentStep+1
-      },()=>{
-        message.info(JSON.stringify(this.state));
-      });
+      dispatch({
+        type:"rebuild/saveData",
+        payload: {
+          configData: {
+            ...oldValue,
+            ...newValue,
+          },
+          currentStep: currentStep+1
+        }
+      })
+       // message.info(JSON.stringify(this.state));
     });
    
   }
   backward(currentStep){
+    const {dispatch} = this.props;
     if(currentStep > 0){
       currentStep = currentStep - 1;
     }
-    this.setState({
-      currentStep: currentStep,
-    });
+    dispatch({
+      type: 'rebuild/saveData',
+      payload: {
+        currentStep: currentStep,
+      }
+    })
   }
   renderFooter = currentStep => {
     if (currentStep === 1) {
@@ -277,16 +310,17 @@ class Rebuild extends Component {
     ];
   };
   render() {
+    const {currentStep} = this.props.rebuild;
     return (
       <PageHeaderWrapper >
         <Card>
-          <Steps current={this.state.currentStep}>
+          <Steps current={currentStep}>
             <Step title="基本信息" />
             <Step title="源索引信息"  /> 
             <Step title="目标索引信息" />
           </Steps>
           <Divider/>
-          {this.renderSteps(this.state.currentStep)}
+          {this.renderSteps(currentStep)}
         </Card>
       </PageHeaderWrapper>
     );

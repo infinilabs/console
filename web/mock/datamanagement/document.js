@@ -12,37 +12,37 @@ function getUUID(len){
 }
 
 export default {
-  'post /_search-center/doc/:index': function(req, res){
-    switch(req.body.action){
-      case 'SAVE':
-        res.send({
-          errno: "0",
-          errmsg: ""
-        });
-        break;
-      case 'ADD':
-        res.send({
-          errno: "0",
-          errmsg: "",
-          payload: {
-            ...req.body.payload,
-            id: getUUID(),
-          }
-        });
-        break;
-      case 'DELETE':
-        res.send({
-          errno: "0"
-        });
-        break;
-      default:
-        res.send(queryData)
-    }
-  },
-  'get /_search-center/indices/_cat': function(req, res){
-    res.send({
-      errno: "0",
-      payload: ["infini-test"],
-    });
-  }
+  // 'post /_search-center/doc/:index': function(req, res){
+  //   switch(req.body.action){
+  //     case 'SAVE':
+  //       res.send({
+  //         errno: "0",
+  //         errmsg: ""
+  //       });
+  //       break;
+  //     case 'ADD':
+  //       res.send({
+  //         errno: "0",
+  //         errmsg: "",
+  //         payload: {
+  //           ...req.body.payload,
+  //           id: getUUID(),
+  //         }
+  //       });
+  //       break;
+  //     case 'DELETE':
+  //       res.send({
+  //         errno: "0"
+  //       });
+  //       break;
+  //     default:
+  //       res.send(queryData)
+  //   }
+  // },
+  // 'get /_search-center/indices/_cat': function(req, res){
+  //   res.send({
+  //     errno: "0",
+  //     payload: ["infini-test"],
+  //   });
+  // }
 }

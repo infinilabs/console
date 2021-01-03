@@ -120,7 +120,7 @@ func (handler APIHandler) HandleDocumentAction(w http.ResponseWriter, req *http.
 			sort = fmt.Sprintf(`"%s":{"order":"%s"}`, sortField, sortDirection)
 		}
 		query := fmt.Sprintf(`{"from":%d, "size": %d, "query": %s, "sort": [{%s}]}`, from, pageSize, filter, sort)
-		fmt.Println(indexName, query)
+		//fmt.Println(indexName, query)
 		var reqBytes = []byte(query)
 		resp, err := client.SearchWithRawQueryDSL(indexName, reqBytes)
 		if err != nil {

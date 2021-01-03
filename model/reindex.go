@@ -1,6 +1,12 @@
 package model
 
-import "time"
+import (
+	"fmt"
+	"strings"
+	"time"
+
+	"infini.sh/framework/core/elastic"
+)
 
 type InfiniReindex struct {
 	ID     string `json:"id" elastic_meta:"_id"`
@@ -8,11 +14,10 @@ type InfiniReindex struct {
 	Desc   string `json:"desc" elastic_mapping:"desc:{type:text}"`
 	TaskId string `json:"task_id" elastic_mapping:"task_id:{type:keyword}"`
 	Source struct {
-		Index   string                 `json:"index"`
-		MaxDocs int                    `json:"max_docs"`
-		Query   map[string]interface{} `json:"query"`
-		Sort    string                 `json:"sort"`
-		Source  string                 `json:"_source"`
+		Index string `json:"index"`
+		//Size   int                    `json:"size"`
+		Query  map[string]interface{} `json:"query"`
+		Source []string               `json:"_source"`
 	} `json:"source" elastic_mapping:"source:{type:object}"`
 	Dest struct {
 		Index    string `json:"index"`
@@ -21,4 +26,28 @@ type InfiniReindex struct {
 
 	CreatedAt time.Time `json:"created_at" elastic_mapping:"created_at:{type:date}"`
 	Status    string    `json:"status" elastic_mapping:"status:{type:keyword}"`
+}
+
+func GetRebuildList(esName string, from, size int, name string) (*elastic.SearchResponse, error) {
+	var (
+		sort = `[{
+      "created_at": {
+        "order": "desc"
+      }}]`
+		query = `{
+    "bool": {
+      "must": [
+		%s
+      ]
+    }
+  }`
+		must = ""
+	)
+	if name = strings.Trim(name, " "); name != "" {
+		must = fmt.Sprintf(`{"match":{"name": "%s"}}`, name)
+	}
+	query = fmt.Sprintf(query, must)
+	rq := fmt.Sprintf(`{"from":%d, "size":%d, "sort": %s, "query": %s}`, from, size, sort, query)
+	client := elastic.GetClient(esName)
+	return client.SearchWithRawQueryDSL("infinireindex", []byte(rq))
 }

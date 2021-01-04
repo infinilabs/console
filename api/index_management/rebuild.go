@@ -97,6 +97,25 @@ func newResponseBody() map[string]interface{} {
 
 }
 
+func (handler APIHandler) HandleDeleteRebuildAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	var ids = []string{}
+	resBody := newResponseBody()
+	err := handler.DecodeJSON(req, &ids)
+	if err != nil {
+		resBody["errno"] = "E30001"
+		resBody["errmsg"] = err.Error()
+		handler.WriteJSON(w, resBody, http.StatusOK)
+		return
+	}
+	err = deleteTasksByTerms(handler.Config.Elasticsearch, ids)
+	if err != nil {
+		resBody["errno"] = "E30002"
+		resBody["errmsg"] = err.Error()
+	}
+	resBody["payload"] = true
+	handler.WriteJSON(w, resBody, http.StatusOK)
+}
+
 func (handler APIHandler) HandleGetRebuildListAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -169,6 +188,11 @@ func getTasksByTerms(esName string, terms []string) (*elastic.SearchResponse, er
 		return nil, nil
 	}
 	client := elastic.GetClient(esName)
+	esBody := buildTermsQuery(terms)
+	return client.SearchWithRawQueryDSL(".tasks", []byte(esBody))
+}
+
+func buildTermsQuery(terms []string) string {
 	esBody := `{
   "query":{
     "terms": {
@@ -183,5 +207,28 @@ func getTasksByTerms(esName string, terms []string) (*elastic.SearchResponse, er
 		strTerms += fmt.Sprintf(`"%s",`, term)
 	}
 	esBody = fmt.Sprintf(esBody, strTerms[0:len(strTerms)-1])
-	return client.SearchWithRawQueryDSL(".tasks", []byte(esBody))
+	return esBody
+}
+
+func deleteTasksByTerms(esName string, terms []string) error {
+	client := elastic.GetClient(esName)
+	esConfig := elastic.GetConfig(esName)
+	url := fmt.Sprintf("%s/infinireindex/_delete_by_query", esConfig.Endpoint)
+	esBody := buildTermsQuery(terms)
+	result, err := client.Request("POST", url, []byte(esBody))
+	if err != nil {
+		return err
+	}
+	var deleteRes = struct {
+		Deleted int `json:"deleted"`
+		Total   int `json:"total"`
+	}{}
+	err = json.Unmarshal(result.Body, &deleteRes)
+	if err != nil {
+		return err
+	}
+	if deleteRes.Deleted != deleteRes.Total {
+		return fmt.Errorf("total: %d, deleted: %d", deleteRes.Total, deleteRes.Deleted)
+	}
+	return nil
 }

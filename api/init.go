@@ -24,5 +24,6 @@ func Init(cfg *config.AppConfig) {
 
 	ui.HandleUIMethod(api.POST, pathPrefix+"rebuild/_create", handler.ReindexAction)
 	ui.HandleUIMethod(api.GET, pathPrefix+"rebuild/list", handler.HandleGetRebuildListAction)
+	ui.HandleUIMethod(api.POST, pathPrefix+"rebuild/_delete", handler.HandleDeleteRebuildAction)
 	ui.HandleUIMethod(api.GET, pathPrefix+"indices/_mappings/:index", handler.HandleGetMappingsAction)
 }

@@ -15,7 +15,6 @@ export default {
   effects:{
     *addTask({payload}, {call, put}){
       let resp = yield call(reindex, payload);
-      console.log(resp);
       if(resp.errno != "0"){
         message.warn("rebuild failed")
         return
@@ -34,7 +33,6 @@ export default {
     },
     *fetchMappings({payload}, {call, put}){
       let resp = yield call(getMappings, payload);
-      console.log(resp);
       if(resp.errno != "0"){
         message.warn("get mappings failed")
         return

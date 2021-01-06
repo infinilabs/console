@@ -12,26 +12,19 @@ import (
 )
 
 type docReqBody struct {
-	Index         string                 `json:"index"`
-	Action        string                 `json:"action"`
-	Payload       map[string]interface{} `json:"payload"`
-	PageIndex     int                    `json:"pageIndex"`
-	PageSize      int                    `json:"pageSize"`
-	Filter        string                 `json:"filter"`
-	Cluster       string                 `json:"cluster"`
-	Keyword       string                 `json:"keyword"`
-	Sort          string                 `json:"sort"`
-	SortDirection string                 `json:"sort_direction"`
+	PageIndex     int    `json:"pageIndex"`
+	PageSize      int    `json:"pageSize"`
+	Filter        string `json:"filter"`
+	Cluster       string `json:"cluster"`
+	Keyword       string `json:"keyword"`
+	Sort          string `json:"sort"`
+	SortDirection string `json:"sort_direction"`
 }
 
-func (handler APIHandler) HandleDocumentAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+func (handler APIHandler) HandleAddDocumentAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	client := elastic.GetClient(handler.Config.Elasticsearch)
-	reqBody := docReqBody{}
-	resResult := map[string]interface{}{
-		"errno":   "0",
-		"errmsg":  "",
-		"payload": nil,
-	}
+	reqBody := map[string]interface{}{}
+	resResult := newResponseBody()
 	err := handler.DecodeJSON(req, &reqBody)
 	if err != nil {
 		resResult["errno"] = "E10001"
@@ -40,106 +33,129 @@ func (handler APIHandler) HandleDocumentAction(w http.ResponseWriter, req *http.
 		return
 	}
 	indexName := ps.ByName("index")
-	var id string
-	if val, ok := reqBody.Payload["id"]; ok {
-		id = val.(string)
+	id := util.GetUUID()
+	_, err = client.Index(indexName, id, reqBody)
+	if err != nil {
+		resResult["errno"] = "E10002"
+		resResult["errmsg"] = err.Error()
+		handler.WriteJSON(w, resResult, http.StatusOK)
+		return
 	}
-	if _, ok := reqBody.Payload["_index"]; ok {
-		delete(reqBody.Payload, "_index")
+	reqBody["id"] = id
+	resResult["payload"] = reqBody
+	handler.WriteJSON(w, resResult, http.StatusOK)
+}
+
+func (handler APIHandler) HandleUpdateDocumentAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	client := elastic.GetClient(handler.Config.Elasticsearch)
+	reqBody := map[string]interface{}{}
+	resResult := newResponseBody()
+	err := handler.DecodeJSON(req, &reqBody)
+	if err != nil {
+		resResult["errno"] = "E10001"
+		resResult["errmsg"] = err.Error()
+		handler.WriteJSON(w, resResult, http.StatusOK)
+		return
 	}
-	switch reqBody.Action {
-	case "ADD":
-		id = util.GetUUID()
-		//security problem
-		_, err := client.Index(indexName, id, reqBody.Payload)
-		if err != nil {
-			resResult["errno"] = "E10002"
-			resResult["errmsg"] = err.Error()
-			break
-		}
-		reqBody.Payload["id"] = id
-		resResult["payload"] = reqBody.Payload
-	case "SAVE":
-		if id == "" {
-			resResult["errno"] = "E10003"
-			resResult["errmsg"] = "empty id"
-			break
-		}
-		resp, err := client.Get(indexName, id)
-		if err != nil {
-			resResult["errno"] = "E10004"
-			resResult["errmsg"] = err.Error()
-			break
-		}
-		source := resp.Source
-		for k, v := range reqBody.Payload {
-			source[k] = v
-		}
-		_, err = client.Index(indexName, id, source)
-		if err != nil {
-			resResult["errno"] = "E10005"
-			resResult["errmsg"] = err.Error()
-			break
-		}
-
-	case "DELETE":
-		if id == "" {
-			panic("empty id")
-		}
-		_, err = client.Delete(indexName, id)
-		if err != nil {
-			resResult["errmsg"] = err.Error()
-			resResult["errno"] = "E10006"
-			break
-		}
-	default:
-		var (
-			pageSize  = 10
-			pageIndex = 1
-			sort      = ""
-		)
-		if reqBody.PageSize > 0 {
-			pageSize = reqBody.PageSize
-		}
-		if reqBody.PageIndex > 0 {
-			pageIndex = reqBody.PageIndex
-		}
-		from := (pageIndex - 1) * pageSize
-		filter := `{"match_all": {}}`
-		if reqBody.Keyword != "" {
-			filter = fmt.Sprintf(`{"query_string":{"query":"%s"}}`, reqBody.Keyword)
-		}
-		if reqBody.Filter != "" {
-			filter = reqBody.Filter
-		}
-		if sortField := strings.Trim(reqBody.Sort, " "); sortField != "" {
-			sortDirection := reqBody.SortDirection
-			if sortDirection != "desc" {
-				sortDirection = "asc"
-			}
-			sort = fmt.Sprintf(`"%s":{"order":"%s"}`, sortField, sortDirection)
-		}
-		query := fmt.Sprintf(`{"from":%d, "size": %d, "query": %s, "sort": [{%s}]}`, from, pageSize, filter, sort)
-		//fmt.Println(indexName, query)
-		var reqBytes = []byte(query)
-		resp, err := client.SearchWithRawQueryDSL(indexName, reqBytes)
-		if err != nil {
-			resResult["errno"] = "E10007"
-			resResult["errmsg"] = err.Error()
-			break
-		}
-		result := formatESSearchResult(resp)
-
-		_, _, idxs, err := client.GetMapping(false, indexName)
-		if err != nil {
-			resResult["errno"] = "E10008"
-			resResult["errmsg"] = err.Error()
-			break
-		}
-		result["mappings"] = idxs
-		resResult["payload"] = result
-
+	indexName := ps.ByName("index")
+	id := ps.ByName("id")
+	resp, err := client.Get(indexName, id)
+	if err != nil {
+		resResult["errno"] = "E10004"
+		resResult["errmsg"] = err.Error()
+		handler.WriteJSON(w, resResult, http.StatusOK)
+		return
 	}
+	source := resp.Source
+	for k, v := range reqBody {
+		source[k] = v
+	}
+	_, err = client.Index(indexName, id, source)
+	if err != nil {
+		resResult["errno"] = "E10005"
+		resResult["errmsg"] = err.Error()
+		handler.WriteJSON(w, resResult, http.StatusOK)
+		return
+	}
+	resResult["payload"] = reqBody
+	handler.WriteJSON(w, resResult, http.StatusOK)
+}
+
+func (handler APIHandler) HandleDeleteDocumentAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	client := elastic.GetClient(handler.Config.Elasticsearch)
+	resResult := newResponseBody()
+	indexName := ps.ByName("index")
+	id := ps.ByName("id")
+	_, err := client.Delete(indexName, id)
+	if err != nil {
+		resResult["errmsg"] = err.Error()
+		resResult["errno"] = "E10006"
+		handler.WriteJSON(w, resResult, http.StatusOK)
+		return
+	}
+	resResult["payload"] = true
+	handler.WriteJSON(w, resResult, http.StatusOK)
+}
+func (handler APIHandler) HandleSearchDocumentAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	client := elastic.GetClient(handler.Config.Elasticsearch)
+	reqBody := docReqBody{}
+	resResult := newResponseBody()
+	err := handler.DecodeJSON(req, &reqBody)
+	if err != nil {
+		resResult["errno"] = "E10001"
+		resResult["errmsg"] = err.Error()
+		handler.WriteJSON(w, resResult, http.StatusOK)
+		return
+	}
+	indexName := ps.ByName("index")
+	var (
+		pageSize  = 10
+		pageIndex = 1
+		sort      = ""
+	)
+	if reqBody.PageSize > 0 {
+		pageSize = reqBody.PageSize
+	}
+	if reqBody.PageIndex > 0 {
+		pageIndex = reqBody.PageIndex
+	}
+	from := (pageIndex - 1) * pageSize
+	filter := `{"match_all": {}}`
+	if reqBody.Keyword != "" {
+		filter = fmt.Sprintf(`{"query_string":{"query":"%s"}}`, reqBody.Keyword)
+	}
+	if reqBody.Filter != "" {
+		filter = reqBody.Filter
+	}
+	if sortField := strings.Trim(reqBody.Sort, " "); sortField != "" {
+		sortDirection := reqBody.SortDirection
+		if sortDirection != "desc" {
+			sortDirection = "asc"
+		}
+		sort = fmt.Sprintf(`"%s":{"order":"%s"}`, sortField, sortDirection)
+	}
+	query := fmt.Sprintf(`{"from":%d, "size": %d, "query": %s, "sort": [{%s}]}`, from, pageSize, filter, sort)
+	//fmt.Println(indexName, query)
+	var reqBytes = []byte(query)
+	resp, err := client.SearchWithRawQueryDSL(indexName, reqBytes)
+	if err != nil {
+		resResult["errno"] = "E10007"
+		resResult["errmsg"] = err.Error()
+		handler.WriteJSON(w, resResult, http.StatusOK)
+		return
+	}
+	result := formatESSearchResult(resp)
+
+	_, _, idxs, err := client.GetMapping(false, indexName)
+	if err != nil {
+		resResult["errno"] = "E10008"
+		resResult["errmsg"] = err.Error()
+		handler.WriteJSON(w, resResult, http.StatusOK)
+		return
+	}
+	result["mappings"] = idxs
+	resResult["payload"] = result
+
 	handler.WriteJSON(w, resResult, http.StatusOK)
 }
 

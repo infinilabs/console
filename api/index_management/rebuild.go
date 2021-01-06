@@ -28,7 +28,7 @@ func (handler APIHandler) ReindexAction(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	fmt.Println(reindexItem)
+	//fmt.Println(reindexItem)
 
 	taskID, err := reindex(handler.Config.Elasticsearch, reindexItem)
 	if err != nil {
@@ -79,6 +79,7 @@ func reindex(esName string, body *model.InfiniReindex) (string, error) {
 	}
 	body.ID = util.GetUUID()
 	body.TaskId = resBody.Task
+	body.Status = model.ReindexStatusRunning
 	body.CreatedAt = time.Now()
 
 	_, err = client.Index("infinireindex", body.ID, body)
@@ -136,60 +137,56 @@ func (handler APIHandler) HandleGetRebuildListAction(w http.ResponseWriter, req 
 		handler.WriteJSON(w, resBody, http.StatusOK)
 		return
 	}
-
-	var ids = []string{}
-	idMap := map[string]int{}
-	for idx, doc := range esResp.Hits.Hits {
-		taskId := doc.Source["task_id"].(string)
-		ids = append(ids, taskId)
-		idMap[taskId] = idx
-	}
-	taskResp, err := getTasksByTerms(esName, ids)
+	err = SyncRebuildResult(esName)
 	if err != nil {
 		resBody["errno"] = "E20004"
 		resBody["errmsg"] = err.Error()
+		handler.WriteJSON(w, resBody, http.StatusOK)
+		return
 	}
-	var (
-		completed bool
-		status    string
-		esErrStr  string
-		tookTime  int
-	)
-	for _, doc := range taskResp.Hits.Hits {
-		status = "RUNNING"
-		tookTime = 0
-		esErrStr = ""
-		completed = doc.Source["completed"].(bool)
-		source := esResp.Hits.Hits[idMap[doc.ID.(string)]].Source
-		if esErr, ok := doc.Source["error"]; ok {
-			status = "FAILED"
-			if errMap, ok := esErr.(map[string]interface{}); ok {
-				esErrStr = errMap["reason"].(string)
-			}
-		} else {
-			if resMap, ok := doc.Source["response"].(map[string]interface{}); ok {
-				tookTime = int(resMap["took"].(float64))
-			}
-			status = "SUCCESS"
-		}
-		if !completed {
-			status = "RUNNING"
-		}
-		source["status"] = status
-		source["error"] = esErrStr
-		source["took_time"] = tookTime
-	}
+
 	resBody["payload"] = formatESSearchResult(esResp)
 	handler.WriteJSON(w, resBody, http.StatusOK)
 }
 
-func getTasksByTerms(esName string, terms []string) (*elastic.SearchResponse, error) {
-	if len(terms) == 0 {
-		return nil, nil
-	}
+func SyncRebuildResult(esName string) error {
 	client := elastic.GetClient(esName)
-	esBody := buildTermsQuery(terms)
-	return client.SearchWithRawQueryDSL(".tasks", []byte(esBody))
+	esBody := `{"query":{"match":{"status": "RUNNING"}}}`
+	esRes, err := client.SearchWithRawQueryDSL("infinireindex", []byte(esBody))
+	if err != nil {
+		return err
+	}
+	var ids = []string{}
+	idMap := map[string]int{}
+	for idx, doc := range esRes.Hits.Hits {
+		taskId := doc.Source["task_id"].(string)
+		ids = append(ids, taskId)
+		idMap[taskId] = idx
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	taskResp, err := client.SearchTasksByIds(ids)
+	if err != nil {
+		return err
+	}
+	var (
+		status model.ReindexStatus
+	)
+	for _, doc := range taskResp.Hits.Hits {
+		status = model.ReindexStatusRunning
+		source := esRes.Hits.Hits[idMap[doc.ID.(string)]].Source
+		if _, ok := doc.Source["error"]; ok {
+			status = model.ReindexStatusFailed
+		} else {
+			status = model.ReindexStatusSuccess
+		}
+		source["status"] = status
+		source["task_source"] = doc.Source
+		_, err := client.Index("infinireindex", esRes.Hits.Hits[idMap[doc.ID.(string)]].ID, source)
+		return err
+	}
+	return nil
 }
 
 func buildTermsQuery(terms []string) string {

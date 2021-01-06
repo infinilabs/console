@@ -1,7 +1,10 @@
 package api
 
 import (
+	"log"
+
 	"infini.sh/framework/core/api"
+	"infini.sh/framework/core/task"
 	"infini.sh/framework/core/ui"
 	"infini.sh/search-center/api/index_management"
 	"infini.sh/search-center/config"
@@ -19,11 +22,24 @@ func Init(cfg *config.AppConfig) {
 	ui.HandleUIMethod(api.DELETE, pathPrefix+"dict/:id", handler.DeleteDictItemAction)
 	//ui.HandleUIMethod(api.DELETE, "/api/dict/", handler.DeleteDictItemAction2)
 	ui.HandleUIMethod(api.POST, pathPrefix+"dict/_update", handler.UpdateDictItemAction)
-	ui.HandleUIMethod(api.POST, pathPrefix+"doc/:index", handler.HandleDocumentAction)
+	ui.HandleUIMethod(api.POST, pathPrefix+"doc/:index/_search", handler.HandleSearchDocumentAction)
+	ui.HandleUIMethod(api.POST, pathPrefix+"doc/:index/_create", handler.HandleAddDocumentAction)
+	ui.HandleUIMethod(api.PUT, pathPrefix+"doc/:index/:id", handler.HandleUpdateDocumentAction)
+	ui.HandleUIMethod(api.DELETE, pathPrefix+"doc/:index/:id", handler.HandleDeleteDocumentAction)
 	ui.HandleUIMethod(api.GET, pathPrefix+"indices/_cat", handler.HandleGetIndicesAction)
 
 	ui.HandleUIMethod(api.POST, pathPrefix+"rebuild/_create", handler.ReindexAction)
 	ui.HandleUIMethod(api.GET, pathPrefix+"rebuild/list", handler.HandleGetRebuildListAction)
 	ui.HandleUIMethod(api.POST, pathPrefix+"rebuild/_delete", handler.HandleDeleteRebuildAction)
 	ui.HandleUIMethod(api.GET, pathPrefix+"indices/_mappings/:index", handler.HandleGetMappingsAction)
+
+	task.RegisterScheduleTask(task.ScheduleTask{
+		Description: "sync reindex task result to index infinireindex",
+		Task: func() {
+			err := index_management.SyncRebuildResult(cfg.Elasticsearch)
+			if err != nil {
+				log.Println(err)
+			}
+		},
+	})
 }

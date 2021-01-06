@@ -46,7 +46,10 @@ class Rebuild extends Component {
         }
       }
     }else{
-      filterMappings[index] = mappings[index] || {};
+      if(!mappings[index]){
+        return [];
+      }
+      filterMappings[index] = mappings[index];
     }
     
     let fields = [];
@@ -279,32 +282,32 @@ class Rebuild extends Component {
         <Button key="back" onClick={()=>this.backward(currentStep)}>
           上一步
         </Button>,
-        <Button key="cancel"  style={{margin:'auto 2em'}} onClick={() =>{}}>
-          取消
-        </Button>,
-        <Button key="forward" type="primary" onClick={() => this.handleNext(currentStep)}>
+        // <Button key="cancel"  style={{margin:'auto 2em'}} onClick={() =>{}}>
+        //   取消
+        // </Button>,
+        <Button key="forward" style={{ marginLeft: '2em' }} type="primary" onClick={() => this.handleNext(currentStep)}>
           下一步
         </Button>,
       ];
     }
     if (currentStep === 2) {
       return [
-        <Button key="back" style={{ float: 'left' }} onClick={()=>this.backward(currentStep)}>
+        <Button key="back" onClick={()=>this.backward(currentStep)}>
           上一步
         </Button>,
-        <Button key="cancel" style={{margin:'auto 2em'}} onClick={() => {}}>
-          取消
-        </Button>,
-        <Button key="submit" type="primary" onClick={() =>this.handleNext(currentStep)}>
+        // <Button key="cancel" style={{margin:'auto 2em'}} onClick={() => {}}>
+        //   取消
+        // </Button>,
+        <Button key="submit"  style={{ marginLeft: '2em' }} type="primary" onClick={() =>this.handleNext(currentStep)}>
           完成
         </Button>,
       ];
     }
     return [
-      <Button key="cancel" onClick={() => {}}>
-        取消
-      </Button>,
-      <Button style={{marginLeft:'2em'}} key="forward" type="primary" onClick={() => this.handleNext(currentStep)}>
+      // <Button key="cancel" onClick={() => {}}>
+      //   取消
+      // </Button>,
+      <Button key="forward" type="primary" onClick={() => this.handleNext(currentStep)}>
         下一步
       </Button>,
     ];

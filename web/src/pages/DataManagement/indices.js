@@ -32,7 +32,7 @@ class Indices extends Component {
       },
       {
         key: 'doc',
-        tab: '索引文档管理',
+        tab: '索引管理',
       },
       {
         key: 'template',

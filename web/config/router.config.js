@@ -120,12 +120,12 @@ export default [
             ]
           }, {
             path: '/data/rebuild',
-            name: 'rebuild',
-            component: './DataManagement/Rebuild',
-          },{
-            path: '/data/rebuild/list',
             name: 'rebuildlist',
             component: './DataManagement/RebuildList',
+          },{
+            path: '/data/rebuild/new',
+            name: 'rebuild',
+            component: './DataManagement/Rebuild',
             hideInMenu: true,
           }, {
             path: '/data/import',

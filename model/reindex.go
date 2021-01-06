@@ -8,6 +8,14 @@ import (
 	"infini.sh/framework/core/elastic"
 )
 
+type ReindexStatus string
+
+const (
+	ReindexStatusRunning ReindexStatus = "RUNNING"
+	ReindexStatusSuccess ReindexStatus = "SUCCEED"
+	ReindexStatusFailed  ReindexStatus = "FAILED"
+)
+
 type InfiniReindex struct {
 	ID     string `json:"id" elastic_meta:"_id"`
 	Name   string `json:"name" elastic_mapping:"name:{type:text}"`
@@ -24,8 +32,8 @@ type InfiniReindex struct {
 		Pipeline string `json:"pipeline"`
 	} `json:"dest" elastic_mapping:"dest:{type:object}"`
 
-	CreatedAt time.Time `json:"created_at" elastic_mapping:"created_at:{type:date}"`
-	Status    string    `json:"status" elastic_mapping:"status:{type:keyword}"`
+	CreatedAt time.Time     `json:"created_at" elastic_mapping:"created_at:{type:date}"`
+	Status    ReindexStatus `json:"status" elastic_mapping:"status:{type:keyword}"`
 }
 
 func GetRebuildList(esName string, from, size int, name string) (*elastic.SearchResponse, error) {

@@ -2,6 +2,7 @@ import { Card, Table, Form, Row, Input, Col, Button, Divider, Tooltip,Popconfirm
 import Link from 'umi/link';
 import React from 'react';
 import {connect} from 'dva'
+import moment from 'moment';
 
 @connect(({rebuildlist}) => ({
   rebuildlist,
@@ -22,41 +23,52 @@ class RebuildList extends React.Component {
     })
   }
   columns = [{
-    title: 'id',
-    dataIndex: 'id',
-    key: 'id',
-  },{
     title: 'rebuild name',
     dataIndex: 'name',
     key: 'name',
-  },{
-    title: 'description',
-    dataIndex: 'desc',
-    key: 'desc',
   },{
     title: 'status',
     dataIndex: 'status',
     key: 'status',
     render: (text, record) => (
-      <span style={{color: text== 'SUCCESS' ? 'green': (text=='FAILED' ? 'red': 'blue')}}>
-        {text == 'FAILED'? <Tooltip placeholder="top" title={record.error}>{text}</Tooltip> : text}
+      <span style={{color: text== 'SUCCEED' ? 'green': (text=='FAILED' ? 'red': 'blue')}}>
+        {text == 'FAILED'? <Tooltip placeholder="top" title={record.task_source.error.reason}>{text}</Tooltip> : text}
       </span>
     ),
   },{
     title: 'took_time',
     dataIndex: 'took_time',
     key: 'took_time',
+    render: (_, record)=>(record.task_source &&record.task_source.response ?record.task_source.response.took: -1)
+  },{
+    title: 'total',
+    dataIndex: 'total',
+    key: 'total',
+    render: (_, record)=>(record.task_source && record.task_source.response ?record.task_source.response.total: 0)
+  },{
+    title: 'updated',
+    dataIndex: 'updated',
+    key: 'updated',
+    render: (_, record)=>(record.task_source && record.task_source.response ?record.task_source.response.updated: 0)
+  },{
+    title: 'created',
+    dataIndex: 'created',
+    key: 'created',
+    render: (_, record)=>(record.task_source && record.task_source.response ?record.task_source.response.created: 0)
   },{
     title: 'created_at',
     dataIndex: 'created_at',
     key: 'created_at',
+    render: (text) =>(<span>{moment(text).format('YYYY-MM-DD HH:mm:ss')}</span>)
   },{
     title: 'Operation',
     render: (text, record) => (
       <div>
          <Popconfirm title="Sure to delete?" onConfirm={() => this.handleDeleteClick(record)}><a key="delete">Delete</a>
         </Popconfirm> 
-        {record.status=='FAILED' ? <span><Divider type="vertical" /><a key="redo" onClick={()=>this.handleRedoClick(record)}>Redo</a></span>
+        {record.status=='FAILED' ? <span><Divider type="vertical" />
+        <Popconfirm title="Sure to redo?" onConfirm={() => this.handleRedoClick(record)}><a key="redo">Redo</a></Popconfirm>
+        </span>
         : ''}
        
       </div>
@@ -100,6 +112,15 @@ class RebuildList extends React.Component {
       name: nameVal,
     })
   }
+
+  handleRefreshClick = ()=>{
+    const {rebuildlist} = this.props;
+    this.fetchData({
+      pageIndex: rebuildlist.pageIndex,
+      pageSize: rebuildlist.pageSize,
+      name: rebuildlist.name,
+    })
+  }
   
   render(){
     const {getFieldDecorator} = this.props.form;
@@ -120,7 +141,7 @@ class RebuildList extends React.Component {
             </Col>
             <Col md={8} sm={8}>
               <div style={{paddingTop:4}}>
-                <Button type="primary" onClick={this.handleSearch}>
+                <Button type="primary" icon="search" onClick={this.handleSearch}>
                   Search
                 </Button>
               </div>
@@ -130,13 +151,19 @@ class RebuildList extends React.Component {
         <Divider style={{marginBottom:0}} />
         <Card 
           bodyStyle={{padding:0}}
-          extra={<Link to="/data/rebuild"> <Button type="primary" icon="plus">New</Button></Link>}
+          extra={<div><Button onClick={this.handleRefreshClick} icon="redo">Refresh</Button><Link to="/data/rebuild/new"> <Button type="primary" icon="plus">New</Button></Link></div>}
           bordered={false}>
           <Table columns={this.columns}
             loading={rebuildlist.isLoading}
             bordered
             rowKey="id"
             expandedRowRender={record => <div>
+              <Row>
+                <Col span={24}>
+                <span style={{fontSize: 16,color: 'rgba(0, 0, 0, 0.85)'}}>description: </span>
+                <span>{record.desc}</span>
+                </Col>
+              </Row>
               <Row>
                 <Col span={12}><span style={{fontSize: 16,color: 'rgba(0, 0, 0, 0.85)'}}>source</span><pre>{JSON.stringify(record.source, null, 2)}</pre></Col>
                 <Col span={12}><span style={{fontSize: 16,color: 'rgba(0, 0, 0, 0.85)'}}>dest</span><pre>{JSON.stringify(record.dest, null, 2)}</pre></Col>

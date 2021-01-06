@@ -22,9 +22,7 @@ const operationTabList = [
   ];
 
 @connect(({logstash,loading }) => ({
-    data: logstash.logstash,
-    loading: loading.models.logstash,
-    submitting: loading.effects['logstash/submitLogstashConfig'],
+
 }))
 
 @Form.create()
@@ -70,7 +68,7 @@ class Import extends Component {
 
   render() {
     const { operationkey } = this.state;
-    const { submitting, data, loading } = this.props;
+    const { submitting, data } = this.props;
     const {
       form: { getFieldDecorator, getFieldValue },
     } = this.props;
@@ -114,7 +112,7 @@ class Import extends Component {
             <Form onSubmit={this.handleSubmit}  hideRequiredMark style={{ marginTop: 8 }}>
             <FormItem {...formItemLayout} label="选择索引">
                 {getFieldDecorator('index', {
-                 initialValue: data.index,
+                 initialValue: '',
                 rules: [
                     {
                     required: true,
@@ -131,7 +129,7 @@ class Import extends Component {
                 </FormItem>
                 <FormItem {...formItemLayout} label="_bulk数据">
                 {getFieldDecorator('bulk', {
-                initialValue: data.bulk,
+                initialValue: '',
                 rules: [
                     {
                     required: true,

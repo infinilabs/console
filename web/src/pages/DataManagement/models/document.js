@@ -115,6 +115,9 @@ export default {
         }
       });
       let res = yield call(deleteDoc, payload);
+      if(typeof res == 'string'){
+        res = JSON.parse(res);
+      }
       if(res.errno != "0"){
         message.warn("删除数据失败")
         return
@@ -152,6 +155,7 @@ export default {
           docItem: res.payload,
           extra: {
             isLoading: false,
+            isAddNew: false,
           }
         } 
       })

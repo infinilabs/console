@@ -104,7 +104,8 @@ export default {
   'menu.data.pipes': '数据加工',
   'menu.data.index': '索引管理',
   'menu.data.snapshot': '快照管理',
-  'menu.data.rebuild': '重建管理',
+  'menu.data.rebuildlist': '重建管理',
+  'menu.data.rebuild': '新建重建',
   'menu.data.export': '导入导出',
   'menu.data.query': '文档管理',
 

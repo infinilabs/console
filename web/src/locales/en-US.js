@@ -96,7 +96,8 @@ export default {
   'menu.data.pipes': 'PIPELINE',
   'menu.data.index': 'INDEX',
   'menu.data.snapshot': 'SNAPSHOT',
-  'menu.data.rebuild': 'REBUILD',
+  'menu.data.rebuildlist': 'REBUILD',
+  'menu.data.rebuild': 'NEW REBUILD',
   'menu.data.export': 'IMPORT&EXPORT',
   'menu.data.query': 'DOCUMENT',
 

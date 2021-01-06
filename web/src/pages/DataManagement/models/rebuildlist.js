@@ -88,14 +88,17 @@ export default {
         message.error("delete failed")
         return
       }
-      yield call(delay, 1000);
-      let {pageIndex, pageSize, name} = select(state=>state.rebuildlist);
+      let {data, total} = yield select(state=>state.rebuildlist);
+      let newData = data.filter(item=> !payload.includes(item.id));
       yield put({
-        type: 'fetchRebuildList',
+        type: 'saveData',
         payload: {
-          pageIndex: pageIndex,
-          pageSize: pageSize,
-          name: name
+          data: newData,
+          total: {
+            ...total,
+            value: total.value - payload.length,
+          },
+          isLoading: false,
         }
       })
     }

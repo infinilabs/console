@@ -26,7 +26,7 @@ func Init(cfg *config.AppConfig) {
 	ui.HandleUIMethod(api.PUT, pathPrefix+"doc/:index/:id", handler.HandleUpdateDocumentAction)
 	ui.HandleUIMethod(api.DELETE, pathPrefix+"doc/:index/:id", handler.HandleDeleteDocumentAction)
 
-	ui.HandleUIMethod(api.POST, pathPrefix+"rebuild/*id", handler.ReindexAction)
+	ui.HandleUIMethod(api.POST, pathPrefix+"rebuild/*id", handler.HandleReindexAction)
 	ui.HandleUIMethod(api.GET, pathPrefix+"rebuild/_search", handler.HandleGetRebuildListAction)
 	ui.HandleUIMethod(api.DELETE, pathPrefix+"rebuild/:id", handler.HandleDeleteRebuildAction)
 	ui.HandleUIMethod(api.GET, pathPrefix+"_cat/indices", handler.HandleGetIndicesAction)

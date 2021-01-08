@@ -4,10 +4,7 @@ import {pathPrefix} from './common';
 export async function getDocList(params) {
   return request(`${pathPrefix}/doc/${params.index}/_search`, {
     method: 'POST',
-    body: {
-      action: 'SEARCH',
-      ...params,
-    },
+    body: params,
   });
 }
 
@@ -21,6 +18,7 @@ export async function saveDoc(params) {
 export async function deleteDoc(params) {
   return request(`${pathPrefix}/doc/${params.index}/${params.data.id}`, {
     method: 'DELETE',
+    body: ['testid1', 'testid2'],
   });
 }
 

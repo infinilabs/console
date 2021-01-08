@@ -70,7 +70,7 @@ func main() {
 
 	}, func() {
 		orm.RegisterSchema(model.Dict{})
-		orm.RegisterSchema(model.InfiniReindex{})
+		orm.RegisterSchema(model.Reindex{})
 	})
 
 }

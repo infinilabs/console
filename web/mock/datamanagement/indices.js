@@ -1,20 +1,238 @@
 let data = {
-  "errmsg": "",
-  "errno": "0",
   "payload": [
-    "blogs",
-    "mock_log1",
-    "metricbeat-7.10.0-2020.12.24-000002",
-    "metricbeat-7.10.0-2020.11.24-000001",
-    "infinireindex",
-    "gateway_requests",
-    "infini-test1",
-    "dict",
-    "infini-test",
-    "mock_log",
-    "infini-test8",
-    "infini-dict"
-  ]
+    {
+      "health": "green",
+      "index": "blogs",
+      "uuid": "3YOmOx_BSDqF-6EqAzBLVg",
+      "pri": "1",
+      "rep": "1",
+      "docs.count": "3",
+      "docs.deleted": "0",
+      "store.size": "29.2kb",
+      "pri.store.size": "14.6kb"
+    },
+    {
+      "health": "green",
+      "index": ".apm-agent-configuration",
+      "uuid": "uQiIf-y9TuaOaO1H0stK0g",
+      "pri": "1",
+      "rep": "1",
+      "docs.count": "0",
+      "docs.deleted": "0",
+      "store.size": "416b",
+      "pri.store.size": "208b"
+    },
+    {
+      "health": "green",
+      "index": ".kibana_2",
+      "uuid": "YI3glc42SOugYrw07g4ANw",
+      "pri": "1",
+      "rep": "1",
+      "docs.count": "0",
+      "docs.deleted": "0",
+      "store.size": "416b",
+      "pri.store.size": "208b"
+    },
+    {
+      "health": "green",
+      "index": ".kibana_1",
+      "uuid": "EK13_lDIRN-vSTd0WRFPgg",
+      "pri": "1",
+      "rep": "1",
+      "docs.count": "158",
+      "docs.deleted": "38",
+      "store.size": "20.9mb",
+      "pri.store.size": "10.4mb"
+    },
+    {
+      "health": "green",
+      "index": ".tasks",
+      "uuid": "F2IVDbwASJOGgSbhvs6rpQ",
+      "pri": "1",
+      "rep": "1",
+      "docs.count": "48",
+      "docs.deleted": "0",
+      "store.size": "148.2kb",
+      "pri.store.size": "74.1kb"
+    },
+    {
+      "health": "green",
+      "index": "mock_log1",
+      "uuid": "FEuAjVAYTCG5FJSVqjB4cA",
+      "pri": "1",
+      "rep": "1",
+      "docs.count": "45806",
+      "docs.deleted": "0",
+      "store.size": "4.1mb",
+      "pri.store.size": "2mb"
+    },
+    {
+      "health": "green",
+      "index": "metricbeat-7.10.0-2020.12.24-000002",
+      "uuid": "Q3f7CTSfScCLTUCBKURzCw",
+      "pri": "1",
+      "rep": "1",
+      "docs.count": "0",
+      "docs.deleted": "0",
+      "store.size": "416b",
+      "pri.store.size": "208b"
+    },
+    {
+      "health": "green",
+      "index": "metricbeat-7.10.0-2020.11.24-000001",
+      "uuid": "j5hJlvknQliWmVvdLVSH7w",
+      "pri": "1",
+      "rep": "1",
+      "docs.count": "257315",
+      "docs.deleted": "0",
+      "store.size": "144.6mb",
+      "pri.store.size": "72.3mb"
+    },
+    {
+      "health": "green",
+      "index": "infinireindex",
+      "uuid": "lKLfKdswTqOjYmQrQehnQw",
+      "pri": "1",
+      "rep": "1",
+      "docs.count": "7",
+      "docs.deleted": "2",
+      "store.size": "285kb",
+      "pri.store.size": "127.5kb"
+    },
+    {
+      "health": "green",
+      "index": ".apm-custom-link",
+      "uuid": "3jcumkqTRJi7PhsLLSwklw",
+      "pri": "1",
+      "rep": "1",
+      "docs.count": "0",
+      "docs.deleted": "0",
+      "store.size": "416b",
+      "pri.store.size": "208b"
+    },
+    {
+      "health": "green",
+      "index": "gateway_requests",
+      "uuid": "C0j0942KR6muJMHyagG2AQ",
+      "pri": "1",
+      "rep": "1",
+      "docs.count": "17961",
+      "docs.deleted": "0",
+      "store.size": "109.9mb",
+      "pri.store.size": "54.9mb"
+    },
+    {
+      "health": "yellow",
+      "index": ".kibana_task_manager_1",
+      "uuid": "uiVESvY_TiedZ5LuQLWxuw",
+      "pri": "1",
+      "rep": "1",
+      "docs.count": "5",
+      "docs.deleted": "10455",
+      "store.size": "2.6mb",
+      "pri.store.size": "2.6mb"
+    },
+    {
+      "health": "green",
+      "index": "infini-test1",
+      "uuid": "mVxvSFwSRBmxQx8tvIf7Jw",
+      "pri": "1",
+      "rep": "1",
+      "docs.count": "5",
+      "docs.deleted": "2",
+      "store.size": "48.1kb",
+      "pri.store.size": "29.3kb"
+    },
+    {
+      "health": "green",
+      "index": "dict",
+      "uuid": "F6vp1k_XRn-FmXoHOsBl2Q",
+      "pri": "1",
+      "rep": "1",
+      "docs.count": "8",
+      "docs.deleted": "1",
+      "store.size": "301.4kb",
+      "pri.store.size": "149.4kb"
+    },
+    {
+      "health": "green",
+      "index": ".kibana-event-log-7.10.0-000001",
+      "uuid": "ZhsJvWMeT9S0BzRhHzVr6Q",
+      "pri": "1",
+      "rep": "1",
+      "docs.count": "16",
+      "docs.deleted": "0",
+      "store.size": "79.9kb",
+      "pri.store.size": "39.9kb"
+    },
+    {
+      "health": "green",
+      "index": "infini-test",
+      "uuid": "eFLziuhBQ02ErA0n58-2hg",
+      "pri": "1",
+      "rep": "1",
+      "docs.count": "11",
+      "docs.deleted": "4",
+      "store.size": "86.3kb",
+      "pri.store.size": "43.1kb"
+    },
+    {
+      "health": "green",
+      "index": "mock_log",
+      "uuid": "NI7ntH_YRHapvjqB30LFQA",
+      "pri": "1",
+      "rep": "1",
+      "docs.count": "45806",
+      "docs.deleted": "0",
+      "store.size": "4.1mb",
+      "pri.store.size": "2mb"
+    },
+    {
+      "health": "green",
+      "index": ".async-search",
+      "uuid": "1ygzjQtgQDyksA7CDAeZxw",
+      "pri": "1",
+      "rep": "1",
+      "docs.count": "0",
+      "docs.deleted": "0",
+      "store.size": "462b",
+      "pri.store.size": "231b"
+    },
+    {
+      "health": "green",
+      "index": "infini-test8",
+      "uuid": "Uwj8JfmIRrOWQs1KT-pn9A",
+      "pri": "1",
+      "rep": "1",
+      "docs.count": "16",
+      "docs.deleted": "4",
+      "store.size": "35.4kb",
+      "pri.store.size": "17.7kb"
+    },
+    {
+      "health": "green",
+      "index": ".kibana-event-log-7.10.0-000002",
+      "uuid": "DyUerTJJR5Cy1HslL5qN8w",
+      "pri": "1",
+      "rep": "1",
+      "docs.count": "1",
+      "docs.deleted": "0",
+      "store.size": "11.2kb",
+      "pri.store.size": "5.6kb"
+    },
+    {
+      "health": "green",
+      "index": "infini-dict",
+      "uuid": "606XUzqLQFOna39joQFhlQ",
+      "pri": "1",
+      "rep": "1",
+      "docs.count": "8",
+      "docs.deleted": "1",
+      "store.size": "264.8kb",
+      "pri.store.size": "132.4kb"
+    }
+  ],
+  "status": true
 };
 
 const mappings = {
@@ -45875,10 +46093,10 @@ const mappings = {
 };
 
 export default {
-  // 'get /_search-center/indices/_cat': function(req, res){
-  //   res.send(data)
-  // },
-  // 'get /_search-center/indices/_mappings/:index': function(req, res){
-  //   res.send(mappings)
-  // }
+  'get /_search-center/_cat/indices': function(req, res){
+    res.send(data)
+  },
+  'get /_search-center/index/:index/_mappings': function(req, res){
+    res.send(mappings)
+  }
 }

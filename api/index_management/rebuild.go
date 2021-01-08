@@ -13,8 +13,8 @@ import (
 	"infini.sh/search-center/model"
 )
 
-func (handler APIHandler) ReindexAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	reindexItem := &model.InfiniReindex{}
+func (handler APIHandler) HandleReindexAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	reindexItem := &model.Reindex{}
 	id := ps.ByName("id")
 	if strings.Trim(id, "/") != "" {
 		reindexItem.ID = id
@@ -42,7 +42,7 @@ func (handler APIHandler) ReindexAction(w http.ResponseWriter, req *http.Request
 	handler.WriteJSON(w, resResult, http.StatusOK)
 }
 
-func reindex(esName string, body *model.InfiniReindex) (string, error) {
+func reindex(esName string, body *model.Reindex) (string, error) {
 	client := elastic.GetClient(esName)
 	source := map[string]interface{}{
 		"index": body.Source.Index,
@@ -138,7 +138,7 @@ func (handler APIHandler) HandleGetRebuildListAction(w http.ResponseWriter, req 
 
 func SyncRebuildResult(esName string) error {
 	client := elastic.GetClient(esName)
-	esBody := `{"query":{"match":{"status": "RUNNING"}}}`
+	esBody := fmt.Sprintf(`{"query":{"match":{"status": "%s"}}}`, model.ReindexStatusRunning)
 	esRes, err := client.SearchWithRawQueryDSL("infinireindex", []byte(esBody))
 	if err != nil {
 		return err

@@ -17,21 +17,20 @@ func Init(cfg *config.AppConfig) {
 	var pathPrefix = "/_search-center/"
 	//ui.HandleUIMethod(api.POST, "/api/get_indices",index_management.API1)
 	ui.HandleUIMethod(api.GET, pathPrefix+"dict/_search", handler.GetDictListAction)
-	ui.HandleUIMethod(api.POST, pathPrefix+"dict/_create", handler.CreateDictItemAction)
+	ui.HandleUIMethod(api.POST, pathPrefix+"dict/*id", handler.CreateDictItemAction)
 	//ui.HandleUIMethod(api.GET, "/api/dict/:id",handler.GetDictItemAction)
 	ui.HandleUIMethod(api.DELETE, pathPrefix+"dict/:id", handler.DeleteDictItemAction)
-	//ui.HandleUIMethod(api.DELETE, "/api/dict/", handler.DeleteDictItemAction2)
-	ui.HandleUIMethod(api.POST, pathPrefix+"dict/_update", handler.UpdateDictItemAction)
+	ui.HandleUIMethod(api.PUT, pathPrefix+"dict/:id", handler.UpdateDictItemAction)
 	ui.HandleUIMethod(api.POST, pathPrefix+"doc/:index/_search", handler.HandleSearchDocumentAction)
 	ui.HandleUIMethod(api.POST, pathPrefix+"doc/:index/_create", handler.HandleAddDocumentAction)
 	ui.HandleUIMethod(api.PUT, pathPrefix+"doc/:index/:id", handler.HandleUpdateDocumentAction)
 	ui.HandleUIMethod(api.DELETE, pathPrefix+"doc/:index/:id", handler.HandleDeleteDocumentAction)
-	ui.HandleUIMethod(api.GET, pathPrefix+"indices/_cat", handler.HandleGetIndicesAction)
 
-	ui.HandleUIMethod(api.POST, pathPrefix+"rebuild/_create", handler.ReindexAction)
-	ui.HandleUIMethod(api.GET, pathPrefix+"rebuild/list", handler.HandleGetRebuildListAction)
-	ui.HandleUIMethod(api.POST, pathPrefix+"rebuild/_delete", handler.HandleDeleteRebuildAction)
-	ui.HandleUIMethod(api.GET, pathPrefix+"indices/_mappings/:index", handler.HandleGetMappingsAction)
+	ui.HandleUIMethod(api.POST, pathPrefix+"rebuild/*id", handler.ReindexAction)
+	ui.HandleUIMethod(api.GET, pathPrefix+"rebuild/_search", handler.HandleGetRebuildListAction)
+	ui.HandleUIMethod(api.DELETE, pathPrefix+"rebuild/:id", handler.HandleDeleteRebuildAction)
+	ui.HandleUIMethod(api.GET, pathPrefix+"_cat/indices", handler.HandleGetIndicesAction)
+	ui.HandleUIMethod(api.GET, pathPrefix+"index/:index/_mappings", handler.HandleGetMappingsAction)
 
 	task.RegisterScheduleTask(task.ScheduleTask{
 		Description: "sync reindex task result to index infinireindex",

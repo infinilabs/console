@@ -3,14 +3,14 @@ import { connect } from 'dva';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 import {Steps, Card, Form, Select, Input,Button, Divider,message, InputNumber} from 'antd';
 import InputSelect from '@/components/infini/InputSelect';
+import {getFields} from '@/utils/elasticsearch';
 
 const {Step} = Steps;
 const {Option} = Select;
 const {TextArea} = Input;
 
 @Form.create()
-@connect(({document,rebuild}) => ({
-  document,
+@connect(({rebuild}) => ({
   rebuild,
 }))
 class Rebuild extends Component {
@@ -19,12 +19,6 @@ class Rebuild extends Component {
   }
   componentDidMount(){
     const {dispatch} = this.props;
-    dispatch({
-      type:'document/fetchIndices',
-      payload:{
-        cluster: 'sinlge-es'
-      }
-    })
     dispatch({
       type: 'rebuild/fetchMappings',
       payload: {
@@ -37,29 +31,7 @@ class Rebuild extends Component {
       return [];
     }
     let {mappings} = this.props.rebuild;
-    let filterMappings = {};
-    if(index.indexOf("*")>0){
-      index = index.replace("*", '');
-      for(let key in mappings){
-        if(key.startsWith(index)){
-          filterMappings['key'] = mappings[key];
-        }
-      }
-    }else{
-      if(!mappings[index]){
-        return [];
-      }
-      filterMappings[index] = mappings[index];
-    }
-    
-    let fields = [];
-    for(let key in filterMappings){
-      for(let fi in filterMappings[key].mappings.properties){
-        fields.push(fi);
-      }
-    }
-
-    return fields;
+    return getFields(index, mappings);
   }
   handleSourceIndexChange = (v) =>{
     const {dispatch, form} = this.props;
@@ -74,12 +46,12 @@ class Rebuild extends Component {
     })
   }
   renderSteps = (currentStep) => {
-    let {clusterIndices} = this.props.document;
-    clusterIndices = clusterIndices || [];
-    let indices = clusterIndices.map((item)=>{
+    let {mappings} = this.props.rebuild;
+    mappings = mappings || {};
+    let indices = Object.keys(mappings).map((key)=>{
       return {
-        label: item,
-        value: item,
+        label: key,
+        value: key,
       }
     });
     var stepDom = '';

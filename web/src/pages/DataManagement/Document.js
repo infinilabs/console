@@ -8,6 +8,7 @@ import Editor, {monaco} from '@monaco-editor/react';
 import moment from 'moment';
 import {createDependencyProposals} from './autocomplete';
 import InputSelect from '@/components/infini/InputSelect';
+import {getFields} from '@/utils/elasticsearch';
 
 function findParentIdentifier(textUntilPosition){
   let chars = textUntilPosition;
@@ -202,6 +203,9 @@ class EditableCell extends React.Component {
       //   return
       // }
       const {properties} = doclist.mappings[record._index].mappings;
+      if(!properties[key]){
+        return '';
+      }
       return properties[key].type;
     }
   
@@ -296,14 +300,7 @@ class EditableCell extends React.Component {
       let keys = [];
       let sortObj = {};
       if(doclist.mappings){
-        for(let mkey in doclist.mappings){
-          Object.keys(doclist.mappings[mkey].mappings.properties).forEach(key=>{
-            if(!keys.includes(key)){
-              keys.push(key);
-              sortObj[key] = this.isSortable(doclist.mappings[mkey].mappings.properties[key].type);
-            }
-          })
-        }
+        keys = getFields(doclist.index, doclist.mappings)
       }
       for(let key of keys){
         if(["_index"].includes(key)){
@@ -344,7 +341,7 @@ class EditableCell extends React.Component {
           <Table
             components={components}
             bordered
-            rowKey="id"
+            rowKey={record=>(record._index+record.id)}
             onChange={this.handleTableChange}
             size="small"
             loading={doclist.isLoading}
@@ -398,6 +395,12 @@ class Doucment extends React.Component {
     if(!cluster){
       return
     }
+    dispatch({
+      type: 'document/fetchMappings',
+      payload: {
+        cluster,
+      }
+    });
     dispatch({
       type: 'document/fetchIndices',
       payload: {
@@ -510,10 +513,10 @@ class Doucment extends React.Component {
       //console.log(this.props.document);
       let clusterIndices = this.props.document.clusterIndices || [];
      
-      clusterIndices = clusterIndices.map((index) =>{
+      clusterIndices = clusterIndices.filter(index => !index.index.startsWith('.')).map((index) =>{
         return {
-          label: index,
-          value: index,
+          label: index.index,
+          value: index.index,
         };
       })
       const clusters = ["single-es"];

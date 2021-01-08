@@ -1,5 +1,7 @@
 import {getRebuildList,reindex, deleteRebuild}  from '@/services/rebuild';
 import { message } from 'antd';
+import {formatESSearchResult} from '@/utils/utils';
+
 
 const delay = (ms) => new Promise((resolve) => {
   setTimeout(resolve, ms);
@@ -25,10 +27,11 @@ export default {
         from: (payload.pageIndex - 1) *  payload.pageSize,
         size: payload.pageSize,
       })
-      if(resp.errno != "0"){
+      if(!resp.status){
         message.error('fetch data failed')
         return
       }
+      resp.payload = formatESSearchResult(resp.payload)
       yield put({
         type: 'saveData',
         payload: {
@@ -84,12 +87,12 @@ export default {
         }
       })
       let resp = yield call(deleteRebuild, payload);
-      if(resp.errno != "0"){
+      if(resp.status === false){
         message.error("delete failed")
         return
       }
       let {data, total} = yield select(state=>state.rebuildlist);
-      let newData = data.filter(item=> !payload.includes(item.id));
+      let newData = data.filter(item=> payload.id != item.id);
       yield put({
         type: 'saveData',
         payload: {

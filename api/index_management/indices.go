@@ -11,11 +11,7 @@ import (
 func (handler APIHandler) HandleGetMappingsAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	client := elastic.GetClient(handler.Config.Elasticsearch)
 	indexName := ps.ByName("index")
-	resBody := map[string]interface{}{
-		"errno":   "0",
-		"errmsg":  "",
-		"payload": nil,
-	}
+	resBody := newResponseBody()
 	var copyAll = false
 	if indexName == "*" {
 		indexName = ""
@@ -23,8 +19,8 @@ func (handler APIHandler) HandleGetMappingsAction(w http.ResponseWriter, req *ht
 	}
 	_, _, idxs, err := client.GetMapping(copyAll, indexName)
 	if err != nil {
-		resBody["errno"] = "E30001"
-		resBody["errmsg"] = err.Error()
+		resBody["error"] = err
+		resBody["status"] = false
 		handler.WriteJSON(w, resBody, http.StatusOK)
 		return
 	}
@@ -38,5 +34,19 @@ func (handler APIHandler) HandleGetMappingsAction(w http.ResponseWriter, req *ht
 
 	resBody["payload"] = idxs
 
+	handler.WriteJSON(w, resBody, http.StatusOK)
+}
+
+func (handler APIHandler) HandleGetIndicesAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	client := elastic.GetClient(handler.Config.Elasticsearch)
+	catIndices, err := client.GetIndices()
+	resBody := newResponseBody()
+	if err != nil {
+		resBody["status"] = false
+		resBody["error"] = err
+		handler.WriteJSON(w, resBody, http.StatusOK)
+		return
+	}
+	resBody["payload"] = catIndices
 	handler.WriteJSON(w, resBody, http.StatusOK)
 }

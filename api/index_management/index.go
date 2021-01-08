@@ -28,76 +28,78 @@ func (handler APIHandler) GetDictListAction(w http.ResponseWriter, req *http.Req
 		from, _ = strconv.Atoi(fromStr)
 		size, _ = strconv.Atoi(sizeStr)
 		tags    = strings.Split(tag, ",")
+		resp    = newResponseBody()
 	)
 	if len(tags) > 3 {
 		tags = tags[0:3]
 	}
 	rel, err := model2.GetDictList(from, size, name, tags)
 	if err != nil {
-		handler.Error(w, err)
+		resp["error"] = err
+		resp["status"] = false
+		handler.WriteJSON(w, resp, http.StatusOK)
+		return
 	}
-	resp := map[string]interface{}{
-		"errno":  "0",
-		"errmsg": "",
-		"data":   rel,
-	}
+	resp["payload"] = rel
 	handler.WriteJSON(w, resp, http.StatusOK)
 }
 
 func (handler APIHandler) CreateDictItemAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	//id := ps.ByName("id")
+	id := ps.ByName("id")
+	if strings.Trim(id, "/") == "" {
+		id = util.GetUUID()
+	}
 	createdAt := time.Now()
 
+	resp := newResponseBody()
 	dict := model2.Dict{
-		ID:        util.GetUUID(),
+		ID:        id,
 		CreatedAt: createdAt,
 		UpdatedAt: createdAt,
 	}
 	err := handler.DecodeJSON(req, &dict)
 	if err != nil {
-		handler.WriteJSON(w, map[string]interface{}{
-			"payload": nil,
-			"errno":   "E100001",
-			"errmsg":  err.Error(),
-		}, http.StatusOK)
+		resp["status"] = false
+		resp["error"] = err
+		handler.WriteJSON(w, resp, http.StatusOK)
 		return
 	}
 
 	err = orm.Save(dict)
 	if err != nil {
-		panic(err)
+		resp["status"] = false
+		resp["error"] = err
+		handler.WriteJSON(w, resp, http.StatusOK)
+		return
 	}
-	handler.WriteJSON(w, map[string]interface{}{
-		"payload": dict,
-		"errno":   "0",
-		"errmsg":  "",
-	}, http.StatusOK)
+	resp["payload"] = dict
+	handler.WriteJSON(w, resp, http.StatusOK)
 }
 
 func (handler APIHandler) DeleteDictItemAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	id := ps.ByName("id")
 	dict := model2.Dict{}
 	dict.ID = id
+	resp := newResponseBody()
 
 	err := orm.Delete(dict)
 	if err != nil {
-		panic(err)
+		resp["status"] = false
+		resp["error"] = err
+		handler.WriteJSON(w, resp, http.StatusOK)
+		return
 	}
-	handler.WriteJSON(w, map[string]interface{}{
-		"errno":  "0",
-		"errmsg": "",
-	}, http.StatusOK)
+	handler.WriteJSON(w, resp, http.StatusOK)
 }
 
 func (handler APIHandler) UpdateDictItemAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	dict := model2.Dict{}
 	err := handler.DecodeJSON(req, &dict)
+	resp := newResponseBody()
 	if err != nil {
-		handler.WriteJSON(w, map[string]interface{}{
-			"payload": nil,
-			"errno":   "E100002",
-			"errmsg":  err.Error(),
-		}, http.StatusOK)
+		resp["status"] = false
+		resp["error"] = err
+		handler.WriteJSON(w, resp, http.StatusOK)
 		return
 
 	}
@@ -105,13 +107,13 @@ func (handler APIHandler) UpdateDictItemAction(w http.ResponseWriter, req *http.
 
 	err = orm.Update(dict)
 	if err != nil {
-		panic(err)
+		resp["status"] = false
+		resp["error"] = err
+		handler.WriteJSON(w, resp, http.StatusOK)
+		return
 	}
-	handler.WriteJSON(w, map[string]interface{}{
-		"payload": dict,
-		"errno":   "0",
-		"errmsg":  "",
-	}, http.StatusOK)
+	resp["payload"] = dict
+	handler.WriteJSON(w, resp, http.StatusOK)
 
 }
 

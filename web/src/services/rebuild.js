@@ -2,7 +2,8 @@ import request from '@/utils/request';
 import {pathPrefix} from './common';
 
 export async function reindex(payload){
-    let url = `${pathPrefix}/rebuild/_create`;
+  let id = payload.id || '';
+    let url = `${pathPrefix}/rebuild/${id}`;
     return request(url,{
         method: 'POST',
         body: payload,
@@ -11,17 +12,17 @@ export async function reindex(payload){
 }
 
 export async function deleteRebuild(payload){
-  let url = `${pathPrefix}/rebuild/_delete`;
+  let id = payload.id;
+  let url = `${pathPrefix}/rebuild/${id}`;
   return request(url,{
-      method: 'POST',
-      body: payload,
+      method: 'DELETE',
       expirys: 0,
     });
 }
 
 
 export async function getRebuildList(payload){
-  let url = `${pathPrefix}/rebuild/list?`;
+  let url = `${pathPrefix}/rebuild/_search?`;
   payload.from && (url+=`from=${payload.from}`)
   payload.size && (url+=`&size=${payload.size}`)
   payload.name && (url+=`&name=${payload.name}`)

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	httprouter "infini.sh/framework/core/api/router"
@@ -14,37 +15,35 @@ import (
 
 func (handler APIHandler) ReindexAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	reindexItem := &model.InfiniReindex{}
-	resResult := map[string]interface{}{
-		"errno":   "0",
-		"errmsg":  "",
-		"payload": nil,
+	id := ps.ByName("id")
+	if strings.Trim(id, "/") != "" {
+		reindexItem.ID = id
 	}
+	resResult := newResponseBody()
 
 	err := handler.DecodeJSON(req, reindexItem)
 	if err != nil {
-		resResult["errno"] = "E20001"
-		resResult["errmsg"] = err.Error()
+		resResult["error"] = err
+		resResult["status"] = false
 		handler.WriteJSON(w, resResult, http.StatusOK)
 		return
 	}
 
 	//fmt.Println(reindexItem)
 
-	taskID, err := reindex(handler.Config.Elasticsearch, reindexItem)
+	ID, err := reindex(handler.Config.Elasticsearch, reindexItem)
 	if err != nil {
-		resResult["errno"] = "E20002"
-		resResult["errmsg"] = err.Error()
+		resResult["error"] = err
+		resResult["status"] = false
 		handler.WriteJSON(w, resResult, http.StatusOK)
 		return
 	}
-	resResult["payload"] = taskID
+	resResult["payload"] = ID
 	handler.WriteJSON(w, resResult, http.StatusOK)
 }
 
 func reindex(esName string, body *model.InfiniReindex) (string, error) {
 	client := elastic.GetClient(esName)
-	esConfig := elastic.GetConfig(esName)
-	url := fmt.Sprintf("%s/_reindex?wait_for_completion=false", esConfig.Endpoint)
 	source := map[string]interface{}{
 		"index": body.Source.Index,
 	}
@@ -66,19 +65,14 @@ func reindex(esName string, body *model.InfiniReindex) (string, error) {
 	}
 	buf, _ := json.Marshal(esBody)
 	//fmt.Println(string(buf))
-	reindexRes, err := client.Request("POST", url, buf)
+	reindexResp, err := client.Reindex(buf)
 	if err != nil {
 		return "", err
 	}
-	resBody := struct {
-		Task string `json:"task"`
-	}{}
-	err = json.Unmarshal(reindexRes.Body, &resBody)
-	if err != nil {
-		return "", err
+	if body.ID == "" {
+		body.ID = util.GetUUID()
 	}
-	body.ID = util.GetUUID()
-	body.TaskId = resBody.Task
+	body.TaskId = reindexResp.Task
 	body.Status = model.ReindexStatusRunning
 	body.CreatedAt = time.Now()
 
@@ -91,27 +85,20 @@ func reindex(esName string, body *model.InfiniReindex) (string, error) {
 
 func newResponseBody() map[string]interface{} {
 	return map[string]interface{}{
-		"errno":   "0",
-		"errmsg":  "",
-		"payload": nil,
+		"status": true,
 	}
-
 }
 
 func (handler APIHandler) HandleDeleteRebuildAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	var ids = []string{}
+	id := ps.ByName("id")
+	var ids = []string{id}
 	resBody := newResponseBody()
-	err := handler.DecodeJSON(req, &ids)
+	err := deleteTasksByIds(handler.Config.Elasticsearch, ids)
 	if err != nil {
-		resBody["errno"] = "E30001"
-		resBody["errmsg"] = err.Error()
+		resBody["error"] = err
+		resBody["status"] = false
 		handler.WriteJSON(w, resBody, http.StatusOK)
 		return
-	}
-	err = deleteTasksByTerms(handler.Config.Elasticsearch, ids)
-	if err != nil {
-		resBody["errno"] = "E30002"
-		resBody["errmsg"] = err.Error()
 	}
 	resBody["payload"] = true
 	handler.WriteJSON(w, resBody, http.StatusOK)
@@ -132,20 +119,20 @@ func (handler APIHandler) HandleGetRebuildListAction(w http.ResponseWriter, req 
 	)
 	esResp, err := model.GetRebuildList(esName, from, size, name)
 	if err != nil {
-		resBody["errno"] = "E20003"
-		resBody["errmsg"] = err.Error()
+		resBody["error"] = err.Error()
+		resBody["status"] = false
 		handler.WriteJSON(w, resBody, http.StatusOK)
 		return
 	}
 	err = SyncRebuildResult(esName)
 	if err != nil {
-		resBody["errno"] = "E20004"
-		resBody["errmsg"] = err.Error()
+		resBody["status"] = false
+		resBody["error"] = err
 		handler.WriteJSON(w, resBody, http.StatusOK)
 		return
 	}
 
-	resBody["payload"] = formatESSearchResult(esResp)
+	resBody["payload"] = esResp
 	handler.WriteJSON(w, resBody, http.StatusOK)
 }
 
@@ -189,11 +176,11 @@ func SyncRebuildResult(esName string) error {
 	return nil
 }
 
-func buildTermsQuery(terms []string) string {
+func buildTermsQuery(fieldName string, terms []string) string {
 	esBody := `{
   "query":{
     "terms": {
-      "_id": [
+      "%s": [
 	  %s
       ]
     }
@@ -203,24 +190,14 @@ func buildTermsQuery(terms []string) string {
 	for _, term := range terms {
 		strTerms += fmt.Sprintf(`"%s",`, term)
 	}
-	esBody = fmt.Sprintf(esBody, strTerms[0:len(strTerms)-1])
+	esBody = fmt.Sprintf(esBody, fieldName, strTerms[0:len(strTerms)-1])
 	return esBody
 }
 
-func deleteTasksByTerms(esName string, terms []string) error {
+func deleteTasksByIds(esName string, terms []string) error {
 	client := elastic.GetClient(esName)
-	esConfig := elastic.GetConfig(esName)
-	url := fmt.Sprintf("%s/infinireindex/_delete_by_query", esConfig.Endpoint)
-	esBody := buildTermsQuery(terms)
-	result, err := client.Request("POST", url, []byte(esBody))
-	if err != nil {
-		return err
-	}
-	var deleteRes = struct {
-		Deleted int `json:"deleted"`
-		Total   int `json:"total"`
-	}{}
-	err = json.Unmarshal(result.Body, &deleteRes)
+	esBody := buildTermsQuery("_id", terms)
+	deleteRes, err := client.DeleteByQuery("infinireindex", []byte(esBody))
 	if err != nil {
 		return err
 	}

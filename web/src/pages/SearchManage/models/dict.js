@@ -63,10 +63,11 @@ export default {
   effects: {
     *fetchDictList({payload}, {call, put}){
         const resp = yield call(getDictList, payload);
-        if(resp.errno != "0" || !resp.data.Result){
+        if(resp.status ===false){
+            message.error(resp.error)
             return
         }
-        resp.data.Result = resp.data.Result.map((item)=>{
+        resp.payload.Result = resp.payload.Result.map((item)=>{
             item.content = utf8.decode(atob(item.content))
             return item;
         })
@@ -77,8 +78,8 @@ export default {
         yield put({
             type: 'saveData',
             payload: {
-                dictList: resp.data.Result,
-                total: resp.data.Total,
+                dictList: resp.payload.Result,
+                total: resp.payload.Total,
                 search: search,
             },
         });
@@ -90,7 +91,7 @@ export default {
         }
         upVals.content = btoa(utf8.encode(upVals.content));
         const rel = yield call(addDict, upVals);
-        if(rel.errno != "0"){
+        if(rel.status === false){
             message.warn('添加失败：'+ rel.errmsg)
             return
         }
@@ -110,7 +111,7 @@ export default {
         let rawContent  = payload.content;
         payload.content = btoa(utf8.encode(payload.content));
         const rel = yield call(updateDict, payload);
-        if(rel.errno != "0"){
+        if(rel.status === false){
             message.warn('修改：'+ rel.errmsg)
             return
         }
@@ -131,7 +132,7 @@ export default {
         if(typeof rel !== 'object'){
             rel = JSON.parse(rel);
         }
-        if(rel.errno != "0"){
+        if(rel.status === false){
             message.warn('删除失败：'+ rel.errmsg)
             return
         }

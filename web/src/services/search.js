@@ -13,7 +13,8 @@ export async function getDictList(payload){
 }
 
 export async function addDict(payload){
-  return request(`${pathPrefix}/dict/_create`,{
+  let id = payload.id || '';
+  return request(`${pathPrefix}/dict/${id}`,{
       method: 'POST',
       body: payload,
       expirys: 0,
@@ -28,8 +29,9 @@ export async function deleteDict(payload){
 }
 
 export async function updateDict(payload){
-  return request(`${pathPrefix}/dict/_update`,{
-      method: 'POST',
+  let id = payload.id || '';
+  return request(`${pathPrefix}/dict/${id}`,{
+      method: 'PUT',
       body: payload,
       expirys: 0,
     });

@@ -25,15 +25,10 @@ export async function deleteDoc(params) {
 }
 
 export async function addDoc(params) {
+  let id = params.data.id || '';
   delete(params.data, 'id');
-  return request(`${pathPrefix}/doc/${params.index}/_create`, {
+  return request(`${pathPrefix}/doc/${params.index}/${id}`, {
     method: 'POST',
     body: params.data,
-  });
-}
-
-export async function getIndices(params) {
-  return request(`${pathPrefix}/indices/_cat`, {
-    method: 'GET'
   });
 }

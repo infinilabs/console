@@ -45875,10 +45875,10 @@ const mappings = {
 };
 
 export default {
-  'get /_search-center/indices/_cat': function(req, res){
-    res.send(data)
-  },
-  'get /_search-center/indices/_mappings/:index': function(req, res){
-    res.send(mappings)
-  }
+  // 'get /_search-center/indices/_cat': function(req, res){
+  //   res.send(data)
+  // },
+  // 'get /_search-center/indices/_mappings/:index': function(req, res){
+  //   res.send(mappings)
+  // }
 }

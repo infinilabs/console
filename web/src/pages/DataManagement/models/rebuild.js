@@ -15,7 +15,7 @@ export default {
   effects:{
     *addTask({payload}, {call, put}){
       let resp = yield call(reindex, payload);
-      if(resp.errno != "0"){
+      if(!resp.status){
         message.warn("rebuild failed")
         return
       }
@@ -33,7 +33,7 @@ export default {
     },
     *fetchMappings({payload}, {call, put}){
       let resp = yield call(getMappings, payload);
-      if(resp.errno != "0"){
+      if(resp.status === false){
         message.warn("get mappings failed")
         return
       }

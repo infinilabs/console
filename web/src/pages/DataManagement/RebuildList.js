@@ -79,7 +79,9 @@ class RebuildList extends React.Component {
     const {dispatch} = this.props;
     dispatch({
       type: 'rebuildlist/deleteTask',
-      payload: [record.id],
+      payload: {
+        id: record.id,
+      }
     })
   }
 

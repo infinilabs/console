@@ -1,4 +1,6 @@
-import {getDocList, saveDoc, deleteDoc, addDoc, getIndices}  from '@/services/doc';
+import {getDocList, saveDoc, deleteDoc, addDoc}  from '@/services/doc';
+import {getMappings, getIndices} from '@/services/indices';
+import {formatESSearchResult} from '@/utils/utils';
 import { message } from 'antd';
 
 function encodeObjectField(doc){
@@ -44,7 +46,7 @@ export default {
         }
       });
       let res = yield call(getDocList, payload);
-      if(res.errno != "0"){
+      if(res.status === false){
         message.warn("加载数据失败")
         yield put({
           type: 'saveData',
@@ -54,7 +56,8 @@ export default {
         })
         return
       }
-      let indices = Object.keys(res.payload.mappings); //indices state can remove
+      res.payload = formatESSearchResult(res.payload);
+      let indices = []; //indices state can remove
       if(res.payload.data && res.payload.data.length > 0){
         for(let doc of res.payload.data){
           if(!indices.includes(doc._index)){
@@ -90,7 +93,7 @@ export default {
         return;
       }
       let res = yield call(saveDoc, payload);
-      if(res.errno != "0"){
+      if(res.status === false){
         message.warn("保存数据失败")
         return
       }
@@ -118,7 +121,7 @@ export default {
       if(typeof res == 'string'){
         res = JSON.parse(res);
       }
-      if(res.errno != "0"){
+      if(res.status === false){
         message.warn("删除数据失败")
         return
       }
@@ -143,7 +146,7 @@ export default {
         return;
       }
       let res = yield call(addDoc, payload);
-      if(res.errno != "0"){
+      if(res.status === false){
         message.warn("添加文档失败")
         return
       }
@@ -162,7 +165,7 @@ export default {
     },
     *fetchIndices({payload}, {call, put}){
       let resp = yield call(getIndices)
-      if(resp.errno != "0"){
+      if(resp.status === false){
         message.warn("获取数据失败")
         return
       }
@@ -171,6 +174,19 @@ export default {
         payload: {
           clusterIndices: resp.payload,
           cluster: payload.cluster,
+        }
+      })
+    },
+    *fetchMappings({payload}, {call, put}){
+      let resp = yield call(getMappings, payload);
+      if(resp.status === false){
+        message.warn("get mappings failed")
+        return
+      }
+      yield put({
+        type: 'saveData',
+        payload: {
+          mappings: resp.payload,
         }
       })
     }

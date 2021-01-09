@@ -22,16 +22,15 @@ modules:
   - name: elastic
     elasticsearch: default
     enabled: true
-    indexer_enabled: false
-    store_enabled: false
-    orm_enabled: true
-  - name: web
-    enabled: true
-    network:
-      binding: 0.0.0.0:9000
+    store:
+      enabled: true
+    orm:
+      enabled: true
+      init_template: true
+      template_name: ".infini-default"
+      index_prefix: ".infini-"
 
 search-center:
-  index_name: reports
   ui_path: .public
   ui_vfs: true
   ui_local: true
@@ -50,4 +49,4 @@ statsd:
   enabled: false
   host: 127.0.0.1
   port: 8125
-  namespace: gateway.
+  namespace: search-center.

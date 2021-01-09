@@ -4,6 +4,7 @@ SHELL=/bin/bash
 APP_NAME := search-center
 APP_VERSION := 1.0.0_SNAPSHOT
 APP_CONFIG := $(APP_NAME).yml
+APP_EOLDate := "2021-12-31 10:10:10"
 APP_STATIC_FOLDER := .public
 APP_STATIC_PACKAGE := public
 APP_UI_FOLDER := ui
@@ -12,6 +13,10 @@ APP_PLUGIN_FOLDER := plugin
 # Get release version from environment
 ifneq "$(VERSION)" ""
    APP_VERSION := $(VERSION)
+endif
+
+ifneq "$(EOL)" ""
+   APP_EOLDate := $(EOL)
 endif
 
 # Ensure GOPATH is set before running build process.
@@ -33,10 +38,10 @@ OUTPUT_DIR := $(CURDIR)/bin
 
 # INFINI framework
 INFINI_BASE_FOLDER := $(OLDGOPATH)/src/infini.sh/
-FRAMEWORK_FOLDER := $(INFINI_BASE_FOLDER)framework/
+FRAMEWORK_FOLDER := $(INFINI_BASE_FOLDER)/framework/
 FRAMEWORK_REPO := ssh://git@git.infini.ltd:64221/infini/framework.git
 FRAMEWORK_BRANCH := master
-FRAMEWORK_VENDOR_FOLDER := $(CURDIR)/vendor/
+FRAMEWORK_VENDOR_FOLDER := $(CURDIR)/../vendor/
 FRAMEWORK_VENDOR_REPO :=  ssh://git@git.infini.ltd:64221/infini/framework-vendor.git
 FRAMEWORK_VENDOR_BRANCH := master
 
@@ -63,9 +68,15 @@ endif
 
 default: build
 
+env:
+	@echo OLDGOPATH：$(OLDGOPATH)
+	@echo GOPATH：$(GOPATH)
+	@echo NEWGOPATH：$(NEWGOPATH)
+	@echo INFINI_BASE_FOLDER：$(INFINI_BASE_FOLDER)
+	@echo FRAMEWORK_FOLDER：$(FRAMEWORK_FOLDER)
+	@echo FRAMEWORK_VENDOR_FOLDER：$(FRAMEWORK_VENDOR_FOLDER)
+
 build: config
-	@#echo $(GOPATH)
-	@echo $(NEWGOPATH)
 	$(GOBUILD) -o $(OUTPUT_DIR)/$(APP_NAME)
 	@$(MAKE) restore-generated-file
 
@@ -99,9 +110,10 @@ build-linux:
 	GOOS=linux  GOARCH=386    $(GOBUILD) -o $(OUTPUT_DIR)/$(APP_NAME)-linux32
 
 build-arm:
+	GOOS=linux  GOARCH=arm64    $(GOBUILD) -o $(OUTPUT_DIR)/$(APP_NAME)-arm64
 	GOOS=linux  GOARCH=arm   GOARM=5    $(GOBUILD) -o $(OUTPUT_DIR)/$(APP_NAME)-armv5
-	# for Raspberry Pi
-	#env GOOS=linux GOARCH=arm GOARM=5 go build
+	GOOS=linux  GOARCH=arm   GOARM=6    $(GOBUILD) -o $(OUTPUT_DIR)/$(APP_NAME)-armv6
+	GOOS=linux  GOARCH=arm   GOARM=7    $(GOBUILD) -o $(OUTPUT_DIR)/$(APP_NAME)-armv7
 
 build-darwin:
 	GOOS=darwin  GOARCH=amd64     $(GOBUILD) -o $(OUTPUT_DIR)/$(APP_NAME)-darwin64
@@ -139,19 +151,21 @@ init:
 	@mkdir -p $(INFINI_BASE_FOLDER)
 	@echo "framework path: " $(FRAMEWORK_FOLDER)
 	@if [ ! -d $(FRAMEWORK_FOLDER) ]; then echo "framework does not exist";(cd $(INFINI_BASE_FOLDER)&&git clone -b $(FRAMEWORK_BRANCH) $(FRAMEWORK_REPO) framework ) fi
-	@if [ ! -d $(FRAMEWORK_VENDOR_FOLDER) ]; then echo "framework vendor does not exist";(git clone  -b $(FRAMEWORK_VENDOR_BRANCH) $(FRAMEWORK_VENDOR_REPO) vendor) fi
+	@if [ ! -d $(FRAMEWORK_VENDOR_FOLDER) ]; then echo "framework vendor does not exist";(cd $(INFINI_BASE_FOLDER)&&git clone  -b $(FRAMEWORK_VENDOR_BRANCH) $(FRAMEWORK_VENDOR_REPO) vendor) fi
 	@if [ "" == $(FRAMEWORK_OFFLINE_BUILD) ]; then (cd $(FRAMEWORK_FOLDER) && git pull origin $(FRAMEWORK_BRANCH)); fi;
 	@if [ "" == $(FRAMEWORK_OFFLINE_BUILD) ]; then (cd $(FRAMEWORK_VENDOR_FOLDER) && git pull origin $(FRAMEWORK_VENDOR_BRANCH)); fi;
 
 update-generated-file:
 	@echo "update generated info"
-	@echo -e "package config\n\nconst LastCommitLog = \""`git log -1 --pretty=format:"%h, %ad, %an, %s"` "\"\nconst BuildDate = \"`date`\"" > config/generated.go
+	@echo -e "package config\n\nconst LastCommitLog = \""`git log -1 --pretty=format:"%h, %ad, %an, %s"` "\"\nconst BuildDate = \"`date "+%Y-%m-%d %H:%M:%S"`\"" > config/generated.go
+	@echo -e "\nconst EOLDate  = \"$(APP_EOLDate)\"" >> config/generated.go
 	@echo -e "\nconst Version  = \"$(APP_VERSION)\"" >> config/generated.go
 
 
 restore-generated-file:
 	@echo "restore generated info"
 	@echo -e "package config\n\nconst LastCommitLog = \"N/A\"\nconst BuildDate = \"N/A\"" > config/generated.go
+	@echo -e "\nconst EOLDate = \"N/A\"" >> config/generated.go
 	@echo -e "\nconst Version = \"0.0.1-SNAPSHOT\"" >> config/generated.go
 
 
@@ -197,7 +211,13 @@ package-linux-platform:
 	@echo "Packaging Linux"
 	cd $(OUTPUT_DIR) && tar cfz $(OUTPUT_DIR)/linux64.tar.gz     $(APP_NAME)-linux64 $(APP_CONFIG)
 	cd $(OUTPUT_DIR) && tar cfz $(OUTPUT_DIR)/linux32.tar.gz     $(APP_NAME)-linux32 $(APP_CONFIG)
+
+package-linux-arm-platform:
+	@echo "Packaging Linux (ARM)"
+	cd $(OUTPUT_DIR) && tar cfz $(OUTPUT_DIR)/arm64.tar.gz       $(APP_NAME)-arm64   $(APP_CONFIG)
 	cd $(OUTPUT_DIR) && tar cfz $(OUTPUT_DIR)/armv5.tar.gz       $(APP_NAME)-armv5   $(APP_CONFIG)
+	cd $(OUTPUT_DIR) && tar cfz $(OUTPUT_DIR)/armv6.tar.gz       $(APP_NAME)-armv6   $(APP_CONFIG)
+	cd $(OUTPUT_DIR) && tar cfz $(OUTPUT_DIR)/armv7.tar.gz       $(APP_NAME)-armv7   $(APP_CONFIG)
 
 package-windows-platform:
 	@echo "Packaging Windows"

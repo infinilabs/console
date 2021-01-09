@@ -26,7 +26,7 @@ func (handler APIHandler) HandleGetMappingsAction(w http.ResponseWriter, req *ht
 	}
 	if copyAll {
 		for key, _ := range *idxs {
-			if strings.HasPrefix(key, ".") {
+			if strings.HasPrefix(key, ".") || strings.HasPrefix(key, "infini-") {
 				delete(*idxs, key)
 			}
 		}
@@ -40,6 +40,11 @@ func (handler APIHandler) HandleGetMappingsAction(w http.ResponseWriter, req *ht
 func (handler APIHandler) HandleGetIndicesAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	client := elastic.GetClient(handler.Config.Elasticsearch)
 	catIndices, err := client.GetIndices()
+	for key, _ := range *catIndices {
+		if strings.HasPrefix(key,".") || strings.HasPrefix(key, "infini-"){
+			delete(*catIndices, key)
+		}
+	}
 	resBody := newResponseBody()
 	if err != nil {
 		resBody["status"] = false

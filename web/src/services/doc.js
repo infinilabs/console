@@ -18,14 +18,13 @@ export async function saveDoc(params) {
 export async function deleteDoc(params) {
   return request(`${pathPrefix}/doc/${params.index}/${params.data.id}`, {
     method: 'DELETE',
-    body: ['testid1', 'testid2'],
   });
 }
 
 export async function addDoc(params) {
   let id = params.data.id || '';
   delete(params.data, 'id');
-  return request(`${pathPrefix}/doc/${params.index}/${id}`, {
+  return request(`${pathPrefix}/doc/${params.index}/_create`, {
     method: 'POST',
     body: params.data,
   });

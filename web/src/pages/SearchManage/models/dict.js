@@ -1,5 +1,6 @@
 import { message } from 'antd';
 import { getDictList, addDict, deleteDict,updateDict } from '@/services/search';
+import {formatESSearchResult} from '@/utils/elasticsearch';
 
 const utf8 = {
     encode: function (string) {  
@@ -67,7 +68,9 @@ export default {
             message.error(resp.error)
             return
         }
-        resp.payload.Result = resp.payload.Result.map((item)=>{
+        resp.payload = formatESSearchResult(resp.payload);
+        console.log(resp.payload);
+        resp.payload.data = resp.payload.data.map((item)=>{
             item.content = utf8.decode(atob(item.content))
             return item;
         })
@@ -78,8 +81,8 @@ export default {
         yield put({
             type: 'saveData',
             payload: {
-                dictList: resp.payload.Result,
-                total: resp.payload.Total,
+                dictList: resp.payload.data,
+                total: resp.payload.total.value,
                 search: search,
             },
         });

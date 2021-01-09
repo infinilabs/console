@@ -33,7 +33,7 @@ func (handler APIHandler) GetDictListAction(w http.ResponseWriter, req *http.Req
 	if len(tags) > 3 {
 		tags = tags[0:3]
 	}
-	rel, err := model2.GetDictList(from, size, name, tags)
+	rel, err := model2.GetDictList(from, size, name, tags, handler.Config.Elasticsearch)
 	if err != nil {
 		resp["error"] = err
 		resp["status"] = false
@@ -115,30 +115,4 @@ func (handler APIHandler) UpdateDictItemAction(w http.ResponseWriter, req *http.
 	resp["payload"] = dict
 	handler.WriteJSON(w, resp, http.StatusOK)
 
-}
-
-// TaskAction handle task creation and return task list which support parameter: `from`, `size` and `host`, eg:
-//curl -XGET http://127.0.0.1:8001/task?from=100&size=10&host=elasticsearch.cn
-func (handler APIHandler) TaskAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-
-	//fr := handler.GetParameter(req, "from")
-	//si := handler.GetParameter(req, "size")
-	//host := handler.GetParameter(req, "host")
-	//status := handler.GetIntOrDefault(req, "status", -1)
-	//
-	//from, err := strconv.Atoi(fr)
-	//if err != nil {
-	//	from = 0
-	//}
-	//size, err := strconv.Atoi(si)
-	//if err != nil {
-	//	size = 10
-	//}
-	//
-	//orm.Search()
-	//total, tasks, err := model.GetTaskList(from, size, host, status)
-	//if err != nil {
-	//	handler.Error(w, err)
-	//} else {
-	//	handler.WriteJSONListResult(w, total, tasks, http.StatusOK)
 }

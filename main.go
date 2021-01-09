@@ -69,8 +69,8 @@ func main() {
 		module.Start()
 
 	}, func() {
-		orm.RegisterSchema(model.Dict{})
-		orm.RegisterSchema(model.Reindex{})
+		orm.RegisterSchemaWithIndexName(model.Dict{}, "infini-dict")
+		orm.RegisterSchemaWithIndexName(model.Reindex{}, "infini-reindex")
 	})
 
 }

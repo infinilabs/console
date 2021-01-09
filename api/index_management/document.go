@@ -34,7 +34,7 @@ func (handler APIHandler) HandleAddDocumentAction(w http.ResponseWriter, req *ht
 	indexName := ps.ByName("index")
 	id := ps.ByName("id")
 	if strings.Trim(id, "/") == "" {
-		util.GetUUID()
+		id = util.GetUUID()
 	}
 	_, err = client.Index(indexName, id, reqBody)
 	if err != nil {

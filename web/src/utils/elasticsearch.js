@@ -26,3 +26,25 @@ export function getFields(index, mappings){
 
   return fields;
 }
+
+export function formatESSearchResult(esResp) {
+  const total = esResp.hits.total
+  if(total.value == 0){
+    return {
+      total: total,
+      data: [],
+    };
+  }
+  let dataArr = [];
+  for(let hit of esResp.hits.hits) {
+    if(!hit._source.id){
+      hit._source["id"] = hit._id
+    }
+    hit._source["_index"] = hit._index
+    dataArr.push(hit._source)
+  }
+  return {
+    total: total,
+    data: dataArr,
+  }
+}

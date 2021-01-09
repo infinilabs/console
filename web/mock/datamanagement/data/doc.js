@@ -5,12 +5,12 @@ export const queryData = {
     "hits": {
       "total": {
         "relation": "eq",
-        "value": 11
+        "value": 12
       },
       "max_score": 1,
       "hits": [
         {
-          "_index": "infini-test",
+          "_index": "test-custom",
           "_type": "_doc",
           "_id": "jc6_jXYBKoaaPbVfj_8W",
           "_source": {
@@ -23,7 +23,7 @@ export const queryData = {
           }
         },
         {
-          "_index": "infini-test",
+          "_index": "test-custom",
           "_type": "_doc",
           "_id": "bvhm18dath2d6oa9046g",
           "_source": {
@@ -35,7 +35,7 @@ export const queryData = {
           }
         },
         {
-          "_index": "infini-test",
+          "_index": "test-custom",
           "_type": "_doc",
           "_id": "bvhlv6dath2d6oa9045g",
           "_source": {
@@ -47,7 +47,7 @@ export const queryData = {
           }
         },
         {
-          "_index": "infini-test",
+          "_index": "test-custom",
           "_type": "_doc",
           "_id": "bvhltpdath2d6oa90450",
           "_source": {
@@ -59,20 +59,7 @@ export const queryData = {
           }
         },
         {
-          "_index": "infini-test",
-          "_type": "_doc",
-          "_id": "js7EjXYBKoaaPbVfvf-c",
-          "_source": {
-            "address": "hunan zhuzhou",
-            "created_at": "2020-12-23T03:59:57.620Z",
-            "email": "cincky@qq.com",
-            "hobbies": "[\"basketball\",\"badminton1\"]",
-            "id": "js7EjXYBKoaaPbVfvf-c",
-            "name": "cincky"
-          }
-        },
-        {
-          "_index": "infini-test",
+          "_index": "test-custom",
           "_type": "_doc",
           "_id": "bvi5ellath2e0ukbq5e0",
           "_source": {
@@ -87,7 +74,7 @@ export const queryData = {
           }
         },
         {
-          "_index": "infini-test",
+          "_index": "test-custom",
           "_type": "_doc",
           "_id": "bvia41lath2eneoeeij0",
           "_source": {
@@ -101,7 +88,7 @@ export const queryData = {
           }
         },
         {
-          "_index": "infini-test",
+          "_index": "test-custom",
           "_type": "_doc",
           "_id": "bvi5omtath2e0ukbq5eg",
           "_source": {
@@ -116,7 +103,7 @@ export const queryData = {
           }
         },
         {
-          "_index": "infini-test",
+          "_index": "test-custom",
           "_type": "_doc",
           "_id": "bvhlsptath2d6oa9044g",
           "_source": {
@@ -131,7 +118,7 @@ export const queryData = {
           }
         },
         {
-          "_index": "infini-test",
+          "_index": "test-custom",
           "_type": "_doc",
           "_id": "bvhm0d5ath2d6oa90460",
           "_source": {
@@ -144,6 +131,23 @@ export const queryData = {
             ],
             "id": "bvhm0d5ath2d6oa90460",
             "name": "hello2"
+          }
+        },
+        {
+          "_index": "test-custom",
+          "_type": "_doc",
+          "_id": "bvia4ctath2eneoeeijg",
+          "_source": {
+            "address": "beijing",
+            "age": 31,
+            "created_at": "2020-12-23T03:57:57.620Z",
+            "email": "786027438@qq.com",
+            "hobbies": [
+              "basketball1",
+              "badminton"
+            ],
+            "id": "bvia4ctath2eneoeeijg",
+            "name": "北京"
           }
         }
       ]

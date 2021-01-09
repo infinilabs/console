@@ -1,6 +1,6 @@
 import {getRebuildList,reindex, deleteRebuild}  from '@/services/rebuild';
 import { message } from 'antd';
-import {formatESSearchResult} from '@/utils/utils';
+import {formatESSearchResult} from '@/utils/elasticsearch';
 
 
 const delay = (ms) => new Promise((resolve) => {

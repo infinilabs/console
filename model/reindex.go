@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"infini.sh/framework/core/orm"
 	"strings"
 	"time"
 
@@ -59,5 +60,5 @@ func GetRebuildList(esName string, from, size int, name string) (*elastic.Search
 	query = fmt.Sprintf(query, must)
 	rq := fmt.Sprintf(`{"from":%d, "size":%d, "sort": %s, "query": %s}`, from, size, sort, query)
 	client := elastic.GetClient(esName)
-	return client.SearchWithRawQueryDSL("infinireindex", []byte(rq))
+	return client.SearchWithRawQueryDSL(orm.GetIndexName(Reindex{}), []byte(rq))
 }

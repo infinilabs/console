@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"infini.sh/framework/core/elastic"
 	"strings"
 	"time"
 
@@ -18,7 +19,7 @@ type Dict struct {
 	UpdatedAt time.Time `json:"updated_at" elastic_mapping:"updated_at:{type:date}"`
 }
 
-func GetDictList(from, size int, name string, tags []string) (orm.Result, error) {
+func GetDictList(from, size int, name string, tags []string, esName string) (*elastic.SearchResponse, error) {
 	//sort := []orm.Sort{}
 	//sort = append(sort, orm.Sort{Field: "created_at", SortType: orm.DESC})
 	var (
@@ -56,14 +57,10 @@ func GetDictList(from, size int, name string, tags []string) (orm.Result, error)
 	}
 	query = fmt.Sprintf(query, must, should, minShould)
 	rq := fmt.Sprintf(`{"from":%d, "size":%d, "sort": %s, "query": %s}`, from, size, sort, query)
-	//fmt.Println(rq)
-	q := &orm.Query{
-		//From: from,
-		//Size: size,
-		//Sort: &sort,
-		RawQuery: []byte(rq),
-	}
-	//var dictList = []Dict{}
-	err, sr := orm.Search(Dict{}, nil, q)
-	return sr, err
+	//q := &orm.Query{
+	//	RawQuery: []byte(rq),
+	//}
+	//err, sr := orm.Search(Dict{}, nil, q)
+	client := elastic.GetClient(esName)
+	return client.SearchWithRawQueryDSL(orm.GetIndexName(Dict{}), []byte(rq))
 }

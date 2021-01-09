@@ -12,7 +12,7 @@ function getUUID(len){
 }
 
 export default {
-  'get /_search-center/doc/:index/_search': function(req, res){
+  'post /_search-center/doc/:index/_search': function(req, res){
     res.send(queryData)
   },
   'post /_search-center/doc/:index/_create': function(req, res){

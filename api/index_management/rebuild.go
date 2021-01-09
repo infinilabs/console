@@ -3,6 +3,7 @@ package index_management
 import (
 	"encoding/json"
 	"fmt"
+	"infini.sh/framework/core/orm"
 	"net/http"
 	"strings"
 	"time"
@@ -76,7 +77,7 @@ func reindex(esName string, body *model.Reindex) (string, error) {
 	body.Status = model.ReindexStatusRunning
 	body.CreatedAt = time.Now()
 
-	_, err = client.Index("infinireindex", body.ID, body)
+	_, err = client.Index(orm.GetIndexName(body), body.ID, body)
 	if err != nil {
 		return "", err
 	}
@@ -139,7 +140,7 @@ func (handler APIHandler) HandleGetRebuildListAction(w http.ResponseWriter, req 
 func SyncRebuildResult(esName string) error {
 	client := elastic.GetClient(esName)
 	esBody := fmt.Sprintf(`{"query":{"match":{"status": "%s"}}}`, model.ReindexStatusRunning)
-	esRes, err := client.SearchWithRawQueryDSL("infinireindex", []byte(esBody))
+	esRes, err := client.SearchWithRawQueryDSL(orm.GetIndexName(model.Reindex{}), []byte(esBody))
 	if err != nil {
 		return err
 	}
@@ -170,7 +171,7 @@ func SyncRebuildResult(esName string) error {
 		}
 		source["status"] = status
 		source["task_source"] = doc.Source
-		_, err := client.Index("infinireindex", esRes.Hits.Hits[idMap[doc.ID.(string)]].ID, source)
+		_, err := client.Index(orm.GetIndexName(model.Reindex{}), esRes.Hits.Hits[idMap[doc.ID.(string)]].ID, source)
 		return err
 	}
 	return nil
@@ -197,7 +198,7 @@ func buildTermsQuery(fieldName string, terms []string) string {
 func deleteTasksByIds(esName string, terms []string) error {
 	client := elastic.GetClient(esName)
 	esBody := buildTermsQuery("_id", terms)
-	deleteRes, err := client.DeleteByQuery("infinireindex", []byte(esBody))
+	deleteRes, err := client.DeleteByQuery(orm.GetIndexName(model.Reindex{}), []byte(esBody))
 	if err != nil {
 		return err
 	}

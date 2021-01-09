@@ -513,10 +513,10 @@ class Doucment extends React.Component {
       //console.log(this.props.document);
       let clusterIndices = this.props.document.clusterIndices || [];
      
-      clusterIndices = clusterIndices.filter(index => !index.index.startsWith('.')).map((index) =>{
+      clusterIndices = Object.keys(clusterIndices).map((index) =>{
         return {
-          label: index.index,
-          value: index.index,
+          label: index,
+          value: index,
         };
       })
       const clusters = ["single-es"];

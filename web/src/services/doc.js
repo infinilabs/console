@@ -2,6 +2,10 @@ import request from '@/utils/request';
 import {pathPrefix} from './common';
 
 export async function getDocList(params) {
+  params.from = (params.pageIndex - 1) * params.pageSize;
+  params.size = params.pageSize;
+  delete params.pageSize;
+  delete params.pageIndex;
   return request(`${pathPrefix}/doc/${params.index}/_search`, {
     method: 'POST',
     body: params,

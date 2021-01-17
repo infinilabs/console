@@ -11,8 +11,8 @@ import (
 )
 
 type docReqBody struct {
-	PageIndex     int    `json:"pageIndex"`
-	PageSize      int    `json:"pageSize"`
+	From     int    `json:"from"`
+	Size      int    `json:"size"`
 	Filter        string `json:"filter"`
 	Cluster       string `json:"cluster"`
 	Keyword       string `json:"keyword"`
@@ -111,17 +111,14 @@ func (handler APIHandler) HandleSearchDocumentAction(w http.ResponseWriter, req 
 	}
 	indexName := ps.ByName("index")
 	var (
-		pageSize  = 10
-		pageIndex = 1
 		sort      = ""
 	)
-	if reqBody.PageSize > 0 {
-		pageSize = reqBody.PageSize
+	if reqBody.From < 0 {
+		reqBody.From = 0
 	}
-	if reqBody.PageIndex > 0 {
-		pageIndex = reqBody.PageIndex
+	if reqBody.Size <= 0 {
+		reqBody.Size = 10
 	}
-	from := (pageIndex - 1) * pageSize
 	filter := `{"match_all": {}}`
 	if reqBody.Keyword != "" {
 		filter = fmt.Sprintf(`{"query_string":{"query":"%s"}}`, reqBody.Keyword)
@@ -136,7 +133,7 @@ func (handler APIHandler) HandleSearchDocumentAction(w http.ResponseWriter, req 
 		}
 		sort = fmt.Sprintf(`"%s":{"order":"%s"}`, sortField, sortDirection)
 	}
-	query := fmt.Sprintf(`{"from":%d, "size": %d, "query": %s, "sort": [{%s}]}`, from, pageSize, filter, sort)
+	query := fmt.Sprintf(`{"from":%d, "size": %d, "query": %s, "sort": [{%s}]}`, reqBody.From, reqBody.Size, filter, sort)
 	//fmt.Println(indexName, query)
 	var reqBytes = []byte(query)
 	resp, err := client.SearchWithRawQueryDSL(indexName, reqBytes)

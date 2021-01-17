@@ -45,7 +45,7 @@ export default {
           isLoading: true,
         }
       });
-      let res = yield call(getDocList, payload);
+      let res = yield call(getDocList, _.clone(payload));
       if(res.status === false){
         message.warn("加载数据失败")
         yield put({

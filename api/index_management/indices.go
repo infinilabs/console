@@ -55,3 +55,41 @@ func (handler APIHandler) HandleGetIndicesAction(w http.ResponseWriter, req *htt
 	resBody["payload"] = catIndices
 	handler.WriteJSON(w, resBody, http.StatusOK)
 }
+
+func (handler APIHandler) HandleGetSettingsAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	client := elastic.GetClient(handler.Config.Elasticsearch)
+	indexName := ps.ByName("index")
+	resBody := newResponseBody()
+	indexes, err := client.GetIndexSettings(indexName)
+	if err != nil {
+		resBody["status"] = false
+		resBody["error"] = err
+		handler.WriteJSON(w, resBody, http.StatusOK)
+		return
+	}
+	resBody["payload"] = indexes
+	handler.WriteJSON(w, resBody, http.StatusOK)
+}
+
+func (handler APIHandler) HandleUpdateSettingsAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	client := elastic.GetClient(handler.Config.Elasticsearch)
+	indexName := ps.ByName("index")
+	settings := map[string]interface{}{}
+	resBody := newResponseBody()
+	err := handler.DecodeJSON(req, &settings)
+	if err != nil {
+		resBody["status"] = false
+		resBody["error"] = err
+		handler.WriteJSON(w, resBody, http.StatusOK)
+		return
+	}
+	err = client.UpdateIndexSettings(indexName, settings)
+	if err != nil {
+		resBody["status"] = false
+		resBody["error"] = err
+		handler.WriteJSON(w, resBody, http.StatusOK)
+		return
+	}
+	resBody["payload"] = true
+	handler.WriteJSON(w, resBody, http.StatusOK)
+}

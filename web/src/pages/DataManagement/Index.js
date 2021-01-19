@@ -1,5 +1,6 @@
 import React, { PureComponent, Fragment } from 'react';
 import { connect } from 'dva';
+import {Link} from 'umi';
 import {
   Row,
   Col,
@@ -14,14 +15,14 @@ import {
   Tabs,
   Descriptions,
   Menu,
+  Table,
   Dropdown,
-  Icon
+  Icon, Popconfirm
 } from 'antd';
-import StandardTable from '@/components/StandardTable';
-import PageHeaderWrapper from '@/components/PageHeaderWrapper';
+import Editor from '@monaco-editor/react';
 
 import styles from '../List/TableList.less';
-import JSONPretty from 'react-json-prettify';
+import {transformSettingsForApi} from '@/lib/elasticsearch/edit_settings';
 
 const FormItem = Form.Item;
 const { TextArea } = Input;
@@ -132,9 +133,8 @@ const UpdateForm = Form.create()(props => {
 });
 
 /* eslint react/no-multi-comp:0 */
-@connect(({ pipeline, loading }) => ({
-  pipeline,
-  loading: loading.models.pipeline,
+@connect(({ index }) => ({
+  index
 }))
 @Form.create()
 class Index extends PureComponent {
@@ -142,14 +142,12 @@ class Index extends PureComponent {
     modalVisible: false,
     updateModalVisible: false,
     expandForm: false,
-    selectedRows: [],
     formValues: {},
     updateFormValues: {},
     drawerVisible: false,
     editingIndex:{},
+    indexActiveKey: '1',
   };
-  datasource = `[{"health":"green","status":"open","index":"blogs_fixed","uuid":"Q6zngGf9QVaWqpV0lF-0nw","pri":"1","rep":"1","docs.count":"1594","docs.deleted":"594","store.size":"17.9mb","pri.store.size":"8.9mb"},{"health":"red","status":"open","index":"elastic_qa","uuid":"_qkVlQ5LRoOKffV-nFj8Uw","pri":"1","rep":"1","docs.count":null,"docs.deleted":null,"store.size":null,"pri.store.size":null},{"health":"green","status":"open","index":".kibana-event-log-7.9.0-000001","uuid":"fgTtyl62Tc6F1ddJfPwqHA","pri":"1","rep":"1","docs.count":"20","docs.deleted":"0","store.size":"25kb","pri.store.size":"12.5kb"},{"health":"green","status":"open","index":"blogs","uuid":"Mb2n4wnNQSKqSToI_QO0Yg","pri":"1","rep":"1","docs.count":"1594","docs.deleted":"0","store.size":"11mb","pri.store.size":"5.5mb"},{"health":"green","status":"open","index":".kibana-event-log-7.9.0-000002","uuid":"8GpbwnDXR2KJUsw6srLnWw","pri":"1","rep":"1","docs.count":"9","docs.deleted":"0","store.size":"96.9kb","pri.store.size":"48.4kb"},{"health":"green","status":"open","index":".apm-agent-configuration","uuid":"vIaV9k2VS-W48oUOe2xNWA","pri":"1","rep":"1","docs.count":"0","docs.deleted":"0","store.size":"416b","pri.store.size":"208b"},{"health":"green","status":"open","index":"logs_server1","uuid":"u56jv2AyR2KOkruOfxIAnA","pri":"1","rep":"1","docs.count":"5386","docs.deleted":"0","store.size":"5.1mb","pri.store.size":"2.5mb"},{"health":"green","status":"open","index":".kibana_1","uuid":"dBCrfVblRPGVlYAIlP_Duw","pri":"1","rep":"1","docs.count":"3187","docs.deleted":"50","store.size":"24.8mb","pri.store.size":"12.4mb"},{"health":"green","status":"open","index":".tasks","uuid":"3RafayGeSNiqglO2BHof9Q","pri":"1","rep":"1","docs.count":"3","docs.deleted":"0","store.size":"39.9kb","pri.store.size":"19.9kb"},{"health":"green","status":"open","index":"filebeat-7.9.0-elastic_qa","uuid":"tktSYU14S3CrsrJb0ybpSQ","pri":"1","rep":"1","docs.count":"3009880","docs.deleted":"0","store.size":"1.6gb","pri.store.size":"850.1mb"},{"health":"green","status":"open","index":"analysis_test","uuid":"6ZHEAW1ST_qfg7mo4Bva4w","pri":"1","rep":"1","docs.count":"0","docs.deleted":"0","store.size":"416b","pri.store.size":"208b"},{"health":"green","status":"open","index":".apm-custom-link","uuid":"Y4N2TeVERrGacEGwY-NPAQ","pri":"1","rep":"1","docs.count":"0","docs.deleted":"0","store.size":"416b","pri.store.size":"208b"},{"health":"green","status":"open","index":"kibana_sample_data_ecommerce","uuid":"4FIWJKhGSr6bE72R0xEQyA","pri":"1","rep":"1","docs.count":"4675","docs.deleted":"0","store.size":"9.2mb","pri.store.size":"4.6mb"},{"health":"green","status":"open","index":".kibana_task_manager_1","uuid":"9afyndU_Q26oqOiEIoqRJw","pri":"1","rep":"1","docs.count":"6","docs.deleted":"2","store.size":"378.8kb","pri.store.size":"12.5kb"},{"health":"green","status":"open","index":".async-search","uuid":"2VbJgnN7SsqC-DWN64yXUQ","pri":"1","rep":"1","docs.count":"0","docs.deleted":"0","store.size":"3.9kb","pri.store.size":"3.7kb"}]`;
-
   columns = [
     {
       title: '索引名称',
@@ -165,19 +163,15 @@ class Index extends PureComponent {
     },
     {
       title: '文档数',
-      dataIndex: 'docs.count',
+      dataIndex: 'docs_count',
     },
     {
       title: '主分片数',
-      dataIndex: 'pri'
+      dataIndex: 'shards'
     },
     {
       title: '从分片数',
-      dataIndex: 'rep'
-    },
-    {
-      title: '存储大小',
-      dataIndex: 'store.size'
+      dataIndex: 'replicas'
     },
     {
       title: '操作',
@@ -185,15 +179,11 @@ class Index extends PureComponent {
         <Fragment>
           {/* <a onClick={() => this.handleUpdateModalVisible(true, record)}>设置</a>
           <Divider type="vertical" /> */}
-          <a onClick={() => {
-            this.state.selectedRows.push(record);
-            this.handleDeleteClick();
-          }}>删除</a>
+          <Popconfirm title="Sure to delete?" onConfirm={() => this.handleDeleteClick(record.index)}>
+            <a>删除</a>
+          </Popconfirm>
           <Divider type="vertical" />
-          <a onClick={() => {
-            this.state.selectedRows.push(record);
-            this.handleDeleteClick();
-          }}>文档管理</a>
+          <Link to={"/data/doc?index=" + record.index}>文档管理</Link>
         </Fragment>
       ),
     },
@@ -201,36 +191,13 @@ class Index extends PureComponent {
 
   componentDidMount() {
     const { dispatch } = this.props;
-    // dispatch({
-    //   type: 'pipeline/fetch',
-    // });
-  }
-
-  handleStandardTableChange = (pagination, filtersArg, sorter) => {
-    const { dispatch } = this.props;
-    const { formValues } = this.state;
-
-    const filters = Object.keys(filtersArg).reduce((obj, key) => {
-      const newObj = { ...obj };
-      newObj[key] = getValue(filtersArg[key]);
-      return newObj;
-    }, {});
-
-    const params = {
-      currentPage: pagination.current,
-      pageSize: pagination.pageSize,
-      ...formValues,
-      ...filters,
-    };
-    if (sorter.field) {
-      params.sorter = `${sorter.field}_${sorter.order}`;
-    }
-
     dispatch({
-      type: 'pipeline/fetch',
-      payload: params,
+      type: 'index/fetchIndices',
+      payload: {
+        cluster: 'single-es'
+      }
     });
-  };
+  }
 
   handleFormReset = () => {
     const { form, dispatch } = this.props;
@@ -244,50 +211,25 @@ class Index extends PureComponent {
     });
   };
 
-  handleDeleteClick = e => {
+  handleDeleteClick = (indexName) => {
     const { dispatch } = this.props;
-    const { selectedRows } = this.state;
-
-    if (!selectedRows) return;
-        dispatch({
-          type: 'pipeline/delete',
-          payload: {
-            key: selectedRows.map(row => row.name),
-          },
-          callback: () => {
-            this.setState({
-              selectedRows: [],
-            });
-          },
-        });
-  };
-
-  handleSelectRows = rows => {
-    this.setState({
-      selectedRows: rows,
+    dispatch({
+      type: 'index/removeIndex',
+      payload: {
+        index: indexName
+      }
     });
   };
 
   handleSearch = e => {
     e.preventDefault();
-
     const { dispatch, form } = this.props;
 
     form.validateFields((err, fieldsValue) => {
       if (err) return;
 
-      const values = {
-        ...fieldsValue,
-        updatedAt: fieldsValue.updatedAt && fieldsValue.updatedAt.valueOf(),
-      };
-
       this.setState({
-        formValues: values,
-      });
-
-      dispatch({
-        type: 'rule/fetch',
-        payload: values,
+        searchKey: fieldsValue.name,
       });
     });
   };
@@ -366,14 +308,63 @@ class Index extends PureComponent {
     return this.renderSimpleForm();
   }
 
+  handleIndexTabChanged = (activeKey, indexName) => {
+    this.setState({
+      indexActiveKey: activeKey,
+    })
+    const {dispatch} = this.props;
+    if(activeKey == '2'){
+      if(this.props.index.mappings[indexName]){
+        return
+      }
+      dispatch({
+        type: 'index/fetchMappings',
+        payload: {
+          index: indexName,
+        }
+      })
+    }else if(activeKey == '4'){
+      if(this.props.index.settings[indexName]){
+        return
+      }
+      dispatch({
+        type: 'index/fetchSettings',
+        payload: {
+          index: indexName,
+        }
+      })
+    }
+  }
+  handleEditorDidMount = (_valueGetter)=>{
+    this.indexSettingsGetter = _valueGetter;
+  }
+
+  handleIndexSettingsSaveClick = (indexName)=>{
+    let settings = this.indexSettingsGetter();
+    settings = JSON.parse(settings);
+    const {dispatch} = this.props;
+    dispatch({
+      type: 'index/saveSettings',
+      payload: {
+        index: indexName,
+        settings: settings.settings,
+      }
+    })
+  }
+
   render() {
-    const data = {
-      list: JSON.parse(this.datasource),
-      pagination: {
-        pageSize: 5,
-      },
-    };
-    const { selectedRows, modalVisible, updateModalVisible, updateFormValues,editingIndex, drawerVisible } = this.state;
+    const {clusterIndices, settings} = this.props.index;
+    let indices = [];
+    for(let key in clusterIndices) {
+      if(this.state.searchKey){
+        if(key.indexOf(this.state.searchKey) > -1){
+          indices.push(clusterIndices[key]);
+        }
+        continue
+      }
+      indices.push(clusterIndices[key]);
+    }
+    const { modalVisible, updateModalVisible, updateFormValues,editingIndex, drawerVisible } = this.state;
     const parentMethods = {
       handleAdd: this.handleAdd,
       handleModalVisible: this.handleModalVisible,
@@ -382,6 +373,10 @@ class Index extends PureComponent {
       handleUpdateModalVisible: this.handleUpdateModalVisible,
       handleUpdate: this.handleUpdate,
     };
+    let newSettings = {};
+    if(settings && settings[editingIndex.index]){
+      newSettings = transformSettingsForApi(settings[editingIndex.index], editingIndex.status === 'open')
+    }
     
     return (
       <Fragment>
@@ -392,18 +387,14 @@ class Index extends PureComponent {
               <Button icon="plus" type="primary" onClick={() => this.handleModalVisible(true)}>
                 新建
               </Button>
-              {selectedRows.length > 0 && (
-                <span>
-                  <Button onClick={() => this.handleDeleteClick()}>删除</Button>
-                </span>
-              )}
             </div>
-            <StandardTable
-              selectedRows={selectedRows}
-              data={data}
+            <Table bordered
+              dataSource={indices}
+              rowKey='index'
+              pagination={
+                {pageSize: 5,}
+              }
               columns={this.columns}
-              onSelectRow={this.handleSelectRows}
-              onChange={this.handleStandardTableChange}
             />
           </div>
         </Card>
@@ -420,20 +411,21 @@ class Index extends PureComponent {
           onClose={()=>{
             this.setState({
               drawerVisible: false,
+              indexActiveKey: '1',
             });
           }}
-          width={640}
+          width={720}
         >
-           <Tabs defaultActiveKey="1" onChange={()=>{}}>
+           <Tabs activeKey={this.state.indexActiveKey} onChange={(activeKey)=>{this.handleIndexTabChanged(activeKey, editingIndex.index)}}>
             <TabPane tab="Summary" key="1">
             <Descriptions title="General" column={2}>
-              <Descriptions.Item label="Health">green</Descriptions.Item>
-              <Descriptions.Item label="Status">open</Descriptions.Item>
-              <Descriptions.Item label="Primaries">1</Descriptions.Item>
-              <Descriptions.Item label="Replicas">0</Descriptions.Item>
-              <Descriptions.Item label="Docs Count">5</Descriptions.Item>
-              <Descriptions.Item label="Docs Deleted">0</Descriptions.Item>
-              <Descriptions.Item label="Storage Size">115.3kb</Descriptions.Item>
+              <Descriptions.Item label="Health">{editingIndex.health}</Descriptions.Item>
+              <Descriptions.Item label="Status">{editingIndex.status}</Descriptions.Item>
+              <Descriptions.Item label="Primaries">{editingIndex.shards}</Descriptions.Item>
+              <Descriptions.Item label="Replicas">{editingIndex.replicas}</Descriptions.Item>
+              <Descriptions.Item label="Docs Count">{editingIndex.docs_count}</Descriptions.Item>
+              <Descriptions.Item label="Docs Deleted">{editingIndex.docs_deleted}</Descriptions.Item>
+              <Descriptions.Item label="Storage Size"></Descriptions.Item>
               <Descriptions.Item label="Primary Storage Size"></Descriptions.Item>
               <Descriptions.Item label="Alias">
               </Descriptions.Item>
@@ -441,140 +433,38 @@ class Index extends PureComponent {
             </TabPane>
             <TabPane tab="Mappings" key="2">
               <JSONWrapper>
-              <JSONPretty json={JSON.parse(`{
-  "mappings": {
-    "_doc": {
-      "dynamic": "strict",
-      "_meta": {
-        "migrationMappingPropertyHashes": {
-          "migrationVersion": "4a1746014a75ade3a714e1db5763276f",
-          "originId": "2f4316de49999235636386fe51dc06c1",
-          "task": "235412e52d09e7165fac8a67a43ad6b4",
-          "updated_at": "00da57df13e94e9d98437d13ace4bfe0",
-          "references": "7997cf5a56cc02bdc9c93361bde732b0",
-          "namespace": "2f4316de49999235636386fe51dc06c1",
-          "type": "2f4316de49999235636386fe51dc06c1",
-          "namespaces": "2f4316de49999235636386fe51dc06c1"
-        }
-      },
-      "properties": {
-        "migrationVersion": {
-          "dynamic": "true",
-          "properties": {
-            "task": {
-              "type": "text",
-              "fields": {
-                "keyword": {
-                  "type": "keyword",
-                  "ignore_above": 256
-                }
-              }
-            }
-          }
-        },
-        "namespace": {
-          "type": "keyword"
-        },
-        "namespaces": {
-          "type": "keyword"
-        },
-        "originId": {
-          "type": "keyword"
-        },
-        "references": {
-          "type": "nested",
-          "properties": {
-            "id": {
-              "type": "keyword"
-            },
-            "name": {
-              "type": "keyword"
-            },
-            "type": {
-              "type": "keyword"
-            }
-          }
-        },
-        "task": {
-          "properties": {
-            "attempts": {
-              "type": "integer"
-            },
-            "ownerId": {
-              "type": "keyword"
-            },
-            "params": {
-              "type": "text"
-            },
-            "retryAt": {
-              "type": "date"
-            },
-            "runAt": {
-              "type": "date"
-            },
-            "schedule": {
-              "properties": {
-                "interval": {
-                  "type": "keyword"
-                }
-              }
-            },
-            "scheduledAt": {
-              "type": "date"
-            },
-            "scope": {
-              "type": "keyword"
-            },
-            "startedAt": {
-              "type": "date"
-            },
-            "state": {
-              "type": "text"
-            },
-            "status": {
-              "type": "keyword"
-            },
-            "taskType": {
-              "type": "keyword"
-            },
-            "user": {
-              "type": "keyword"
-            }
-          }
-        },
-        "type": {
-          "type": "keyword"
-        },
-        "updated_at": {
-          "type": "date"
-        }
-      }
-    }
-  }
-}
-
-`)} theme={{
-  background: '#F5F7FA',
-  brace: '#343741',
-  keyQuotes: '#343741',
-  valueQuotes: '#343741',
-  colon: '#343741',
-  comma: '#343741',
-  key: '#343741',
-  value: {
-      string: '#343741',
-      null: '#343741',
-      number: '#343741',
-      boolean: '#343741',
-  },
-  bracket: '#343741',
-}} /></JSONWrapper>
+                <div style={{background:'#F5F7FA', color:'#343741', padding:10}}>
+                 <pre className="language-json">{JSON.stringify(this.props.index.mappings[editingIndex.index], null, 2)}</pre>
+                </div>
+              </JSONWrapper>
             </TabPane>
-            <TabPane tab="Stats" key="3">
-              Content of Tab Pane 3
-            </TabPane>
+            {/*<TabPane tab="Stats" key="3">*/}
+            {/*  Content of Tab Pane 3*/}
+            {/*</TabPane>*/}
             <TabPane tab="Edit settings" key="4">
-              Content of Tab Pane 3
+              <div style={{textAlign:'right', marginBottom: 10}}>
+                <span style={{marginRight: 30}}>Edit, then save your JSON</span>
+                <Button type='primary' onClick={
+                ()=>{
+                  this.handleIndexSettingsSaveClick(editingIndex.index)
+                }
+              }>Save</Button></div>
+              <div style={{border: '1px solid rgb(232, 232, 232)'}}>
+                <Editor
+                    height="300px"
+                    language="json"
+                    theme="light"
+                    value={JSON.stringify(newSettings, null, 2)}
+                    options={{
+                      minimap: {
+                        enabled: false,
+                      },
+                      tabSize: 2,
+                      wordBasedSuggestions: true,
+                    }}
+                    editorDidMount={this.handleEditorDidMount}
+                />
+              </div>
             </TabPane>
           </Tabs>
           <div style={{position:'absolute', bottom: 10}}>
@@ -586,10 +476,10 @@ class Index extends PureComponent {
                 <Icon type="delete" />
                 Delete
               </Menu.Item>
-              <Menu.Item key="2">
-                <Icon type="edit" />
-                Edit
-              </Menu.Item>
+              {/*<Menu.Item key="2">*/}
+              {/*  <Icon type="edit" />*/}
+              {/*  Edit*/}
+              {/*</Menu.Item>*/}
               <Menu.Item key="3">
                 <Icon type="close" />
                 Close

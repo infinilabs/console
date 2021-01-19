@@ -33,6 +33,7 @@ func Init(cfg *config.AppConfig) {
 	ui.HandleUIMethod(api.GET, pathPrefix+"index/:index/_mappings", handler.HandleGetMappingsAction)
 	ui.HandleUIMethod(api.GET, pathPrefix+"index/:index/_settings", handler.HandleGetSettingsAction)
 	ui.HandleUIMethod(api.PUT, pathPrefix+"index/:index/_settings", handler.HandleUpdateSettingsAction)
+	ui.HandleUIMethod(api.DELETE, pathPrefix+"index/:index", handler.HandleDeleteIndexAction)
 
 	task.RegisterScheduleTask(task.ScheduleTask{
 		Description: "sync reindex task result to index infinireindex",

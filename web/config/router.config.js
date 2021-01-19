@@ -18,7 +18,7 @@ export default [
     authority: ['admin', 'user'],
     routes: [
       // dashboard
-      { path: '/', redirect: '/platform/cluster' },
+      { path: '/', redirect: '/platform/clusterlist' },
       {
         path: '/platform',
         name: 'platform',

@@ -93,3 +93,18 @@ func (handler APIHandler) HandleUpdateSettingsAction(w http.ResponseWriter, req 
 	resBody["payload"] = true
 	handler.WriteJSON(w, resBody, http.StatusOK)
 }
+
+func (handler APIHandler) HandleDeleteIndexAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	client := elastic.GetClient(handler.Config.Elasticsearch)
+	indexName := ps.ByName("index")
+	resBody := newResponseBody()
+	err := client.DeleteIndex(indexName)
+	if err != nil {
+		resBody["status"] = false
+		resBody["error"] = err
+		handler.WriteJSON(w, resBody, http.StatusOK)
+		return
+	}
+	resBody["payload"] = true
+	handler.WriteJSON(w, resBody, http.StatusOK)
+}

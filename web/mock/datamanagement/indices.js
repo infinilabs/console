@@ -648,10 +648,10 @@ const mappings = {
 };
 
 export default {
-    'get /_search-center/_cat/indices': function(req, res){
-        res.send(data)
-    },
-    'get /_search-center/index/:index/_mappings': function(req, res){
-        res.send(mappings)
-    }
+    // 'get /_search-center/_cat/indices': function(req, res){
+    //     res.send(data)
+    // },
+    // 'get /_search-center/index/:index/_mappings': function(req, res){
+    //     res.send(mappings)
+    // }
 }

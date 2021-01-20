@@ -426,6 +426,9 @@ class Doucment extends React.Component {
       return;
     }
     let {indices, mappings} = document;
+    if(!indices){
+        return
+    }
     let _index = indices[0];
     if(indices && indices.length > 1){
       //console.log(this.indexSelEl);

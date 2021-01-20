@@ -55,82 +55,56 @@ class JSONWrapper extends PureComponent {
     )
   }
 }
-
-const CreateForm = Form.create()(props => {
-  const { modalVisible, form, handleAdd, handleModalVisible } = props;
-  const okHandle = () => {
+@Form.create()
+class CreateForm extends React.Component {
+  okHandle = () => {
+    const {handleAdd, form} = this.props;
     form.validateFields((err, fieldsValue) => {
       if (err) return;
       form.resetFields();
+      fieldsValue['config'] = this.editorValueGetter();
       handleAdd(fieldsValue);
     });
   };
-  return (
-    <Modal
-      destroyOnClose
-      title="新建索引"
-      visible={modalVisible}
-      width={640}
-      onOk={okHandle}
-      onCancel={() => handleModalVisible()}
-    >
-       <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="索引名称">
-        {form.getFieldDecorator('index', {
-          rules: [{ required: true, message: '请输入至少五个字符的名称！', min: 5 }],
-        })(<Input placeholder="请输入名称" />)}
-      </FormItem>
-      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="索引设置">
-        {form.getFieldDecorator('settings', {
-          rules: [{ required: true }],
-        })(<TextArea
-          style={{ minHeight: 24 }}
-          placeholder="请输入"
-          rows={9}
-      />)}
-      </FormItem>
-    </Modal>
-  );
-});
 
-const UpdateForm = Form.create()(props => {
-  const { updateModalVisible, handleUpdateModalVisible, handleUpdate,values,form } = props;
+  render() {
+    const {modalVisible, form, handleModalVisible} = this.props;
+    return (
+        <Modal
+            destroyOnClose
+            title="新建索引"
+            visible={modalVisible}
+            width={640}
+            onOk={this.okHandle}
+            onCancel={() => handleModalVisible()}
+        >
+          <FormItem labelCol={{span: 5}} wrapperCol={{span: 15}} label="索引名称">
+            {form.getFieldDecorator('index', {
+              rules: [{required: true, message: '请输入至少五个字符的名称！', min: 5}],
+            })(<Input placeholder="请输入名称"/>)}
+          </FormItem>
+          <FormItem labelCol={{span: 5}} wrapperCol={{span: 15}} label="索引设置">
+            <div style={{border: '1px solid rgb(232, 232, 232)'}}>
+              <Editor
+                  height="300px"
+                  language="json"
+                  theme="light"
+                  options={{
+                    minimap: {
+                      enabled: false,
+                    },
+                    tabSize: 2,
+                    wordBasedSuggestions: true,
+                  }}
+                  editorDidMount={(valueGetter)=>{this.editorValueGetter=valueGetter}}
+              />
+            </div>
+          </FormItem>
+        </Modal>
+    );
+  }
+}
 
-  const okHandle = () => {
-    form.validateFields((err, fieldsValue) => {
-      if (err) return;
-      form.resetFields();
-      handleUpdate(fieldsValue);
-    });
-  };
-  
-  return (
-    <Modal
-      destroyOnClose
-      title="索引设置"
-      visible={updateModalVisible}
-      width={640}
-      onOk={okHandle}
-      onCancel={() => handleUpdateModalVisible()}
-    >
-       <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="索引名称">
-        {form.getFieldDecorator('index', {
-          initialValue: values.index,
-          rules: [{ required: true, message: '请输入至少五个字符的名称！', min: 5 }],
-        })(<Input placeholder="请输入名称" />)}
-      </FormItem>
-      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="索引设置">
-        {form.getFieldDecorator('settings', {
-          initialValue: values.processors,
-          rules: [{ required: true }],
-        })(<TextArea
-          style={{ minHeight: 24 }}
-          placeholder="请输入"
-          rows={9}
-      />)}
-      </FormItem>
-    </Modal>
-  );
-});
 
 /* eslint react/no-multi-comp:0 */
 @connect(({ index }) => ({
@@ -143,7 +117,6 @@ class Index extends PureComponent {
     updateModalVisible: false,
     expandForm: false,
     formValues: {},
-    updateFormValues: {},
     drawerVisible: false,
     editingIndex:{},
     indexActiveKey: '1',
@@ -190,6 +163,10 @@ class Index extends PureComponent {
   ];
 
   componentDidMount() {
+    this.fetchData()
+  }
+
+  fetchData = ()=>{
     const { dispatch } = this.props;
     dispatch({
       type: 'index/fetchIndices',
@@ -204,10 +181,6 @@ class Index extends PureComponent {
     form.resetFields();
     this.setState({
       formValues: {},
-    });
-    dispatch({
-      type: 'pipeline/fetch',
-      payload: {},
     });
   };
 
@@ -240,73 +213,17 @@ class Index extends PureComponent {
     });
   };
 
-  handleUpdateModalVisible = (flag, record) => {
-    this.setState({
-      updateModalVisible: !!flag,
-      updateFormValues: record || {},
-    });
-  };
-
   handleAdd = fields => {
     const { dispatch } = this.props;
     dispatch({
-      type: 'pipeline/add',
+      type: 'index/addIndex',
       payload: {
-        name: fields.name,
-        desc: fields.desc,
-        processors: fields.processors,
+        index: fields.index,
+        config: JSON.parse(fields.config)
       },
     });
-
-    message.success('添加成功');
     this.handleModalVisible();
   };
-
-  handleUpdate = fields => {
-    const { dispatch } = this.props;
-    dispatch({
-      type: 'pipeline/update',
-      payload: {
-        name: fields.name,
-        desc: fields.desc,
-        processors: fields.processors,
-      },
-    });
-
-    message.success('修改成功');
-    this.handleUpdateModalVisible();
-  };
-
-  renderSimpleForm() {
-    const {
-      form: { getFieldDecorator },
-    } = this.props;
-    return (
-      <Form onSubmit={this.handleSearch} layout="inline">
-        <Row gutter={{ md: 8, lg: 24, xl: 48 }}>
-          <Col md={8} sm={24}>
-            <FormItem label="索引名称">
-              {getFieldDecorator('name')(<Input placeholder="请输入" />)}
-            </FormItem>
-          </Col>
-          <Col md={8} sm={24}>
-            <span className={styles.submitButtons}>
-              <Button type="primary" htmlType="submit">
-                查询
-              </Button>
-              <Button style={{ marginLeft: 8 }} onClick={this.handleFormReset}>
-                重置
-              </Button>
-            </span>
-          </Col>
-        </Row>
-      </Form>
-    );
-  }
-
-  renderForm() {
-    return this.renderSimpleForm();
-  }
 
   handleIndexTabChanged = (activeKey, indexName) => {
     this.setState({
@@ -335,8 +252,8 @@ class Index extends PureComponent {
       })
     }
   }
-  handleEditorDidMount = (_valueGetter)=>{
-    this.indexSettingsGetter = _valueGetter;
+  handleEditorDidMount = (editorName, _valueGetter)=>{
+    this[editorName] = _valueGetter;
   }
 
   handleIndexSettingsSaveClick = (indexName)=>{
@@ -347,7 +264,7 @@ class Index extends PureComponent {
       type: 'index/saveSettings',
       payload: {
         index: indexName,
-        settings: settings.settings,
+        settings: settings,
       }
     })
   }
@@ -377,35 +294,53 @@ class Index extends PureComponent {
     if(settings && settings[editingIndex.index]){
       newSettings = transformSettingsForApi(settings[editingIndex.index], editingIndex.status === 'open')
     }
+    const {form: { getFieldDecorator }} = this.props;
     
     return (
       <Fragment>
         <Card bordered={false}>
           <div className={styles.tableList}>
-            <div className={styles.tableListForm}>{this.renderForm()}</div>
+            <div className={styles.tableListForm}>
+              <Form onSubmit={this.handleSearch} layout="inline">
+                <Row gutter={{ md: 8, lg: 24, xl: 48 }}>
+                  <Col md={8} sm={24}>
+                    <FormItem label="索引名称">
+                      {getFieldDecorator('name')(<Input placeholder="请输入" />)}
+                    </FormItem>
+                  </Col>
+                  <Col md={8} sm={24}>
+                    <span className={styles.submitButtons}>
+                      <Button type="primary" htmlType="submit">
+                        查询
+                      </Button>
+                      <Button style={{ marginLeft: 8 }} onClick={this.handleFormReset}>
+                        重置
+                      </Button>
+                    </span>
+                  </Col>
+                  <Col md={8} sm={24} style={{textAlign:"right"}}>
+                    <Button icon="redo" style={{marginRight:10}} onClick={()=>{this.fetchData()}}>刷新</Button>
+                    <Button icon="plus" type="primary" onClick={() => this.handleModalVisible(true)}>
+                      新建
+                    </Button>
+                  </Col>
+                </Row>
+              </Form>
+            </div>
             <div className={styles.tableListOperator}>
-              <Button icon="plus" type="primary" onClick={() => this.handleModalVisible(true)}>
-                新建
-              </Button>
+
             </div>
             <Table bordered
               dataSource={indices}
-              rowKey='index'
+              rowKey='id'
               pagination={
-                {pageSize: 5,}
+                {pageSize: 10,}
               }
               columns={this.columns}
             />
           </div>
         </Card>
         <CreateForm {...parentMethods} modalVisible={modalVisible} />
-        {updateFormValues && Object.keys(updateFormValues).length ? (
-          <UpdateForm
-            {...updateMethods}
-            updateModalVisible={updateModalVisible}
-            values={updateFormValues}
-          />
-        ) : null}
         <Drawer title={editingIndex.index}
           visible={drawerVisible}
           onClose={()=>{
@@ -417,17 +352,17 @@ class Index extends PureComponent {
           width={720}
         >
            <Tabs activeKey={this.state.indexActiveKey} onChange={(activeKey)=>{this.handleIndexTabChanged(activeKey, editingIndex.index)}}>
-            <TabPane tab="Summary" key="1">
+            <TabPane tab="概览" key="1">
             <Descriptions title="General" column={2}>
-              <Descriptions.Item label="Health">{editingIndex.health}</Descriptions.Item>
-              <Descriptions.Item label="Status">{editingIndex.status}</Descriptions.Item>
-              <Descriptions.Item label="Primaries">{editingIndex.shards}</Descriptions.Item>
-              <Descriptions.Item label="Replicas">{editingIndex.replicas}</Descriptions.Item>
-              <Descriptions.Item label="Docs Count">{editingIndex.docs_count}</Descriptions.Item>
-              <Descriptions.Item label="Docs Deleted">{editingIndex.docs_deleted}</Descriptions.Item>
-              <Descriptions.Item label="Storage Size"></Descriptions.Item>
-              <Descriptions.Item label="Primary Storage Size"></Descriptions.Item>
-              <Descriptions.Item label="Alias">
+              <Descriptions.Item label="健康">{editingIndex.health}</Descriptions.Item>
+              <Descriptions.Item label="状态">{editingIndex.status}</Descriptions.Item>
+              <Descriptions.Item label="主分片数">{editingIndex.shards}</Descriptions.Item>
+              <Descriptions.Item label="副分片数">{editingIndex.replicas}</Descriptions.Item>
+              <Descriptions.Item label="文档数">{editingIndex.docs_count}</Descriptions.Item>
+              <Descriptions.Item label="删除文档数">{editingIndex.docs_deleted}</Descriptions.Item>
+              <Descriptions.Item label="存贮大小"></Descriptions.Item>
+              <Descriptions.Item label="主存贮大小"></Descriptions.Item>
+              <Descriptions.Item label="别名">
               </Descriptions.Item>
             </Descriptions>
             </TabPane>
@@ -462,7 +397,7 @@ class Index extends PureComponent {
                       tabSize: 2,
                       wordBasedSuggestions: true,
                     }}
-                    editorDidMount={this.handleEditorDidMount}
+                    editorDidMount={(valueGetter)=>this.handleEditorDidMount('indexSettingsGetter', valueGetter)}
                 />
               </div>
             </TabPane>

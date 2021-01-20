@@ -41,3 +41,12 @@ export async function deleteIndex(params) {
         method: 'DELETE'
     });
 }
+
+
+export async function createIndex(params) {
+    let index = params.index;
+    return request(`${pathPrefix}/index/${index}`, {
+        method: 'POST',
+        body: params.config
+    });
+}

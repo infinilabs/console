@@ -1,6 +1,7 @@
 package index_management
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -99,6 +100,34 @@ func (handler APIHandler) HandleDeleteIndexAction(w http.ResponseWriter, req *ht
 	indexName := ps.ByName("index")
 	resBody := newResponseBody()
 	err := client.DeleteIndex(indexName)
+	if err != nil {
+		resBody["status"] = false
+		resBody["error"] = err
+		handler.WriteJSON(w, resBody, http.StatusOK)
+		return
+	}
+	resBody["payload"] = true
+	handler.WriteJSON(w, resBody, http.StatusOK)
+}
+
+func (handler APIHandler) HandleCreateIndexAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Println(err)
+		}
+	}()
+	client := elastic.GetClient(handler.Config.Elasticsearch)
+	indexName := ps.ByName("index")
+	resBody := newResponseBody()
+	config := map[string]interface{}{}
+	err := handler.DecodeJSON(req, &config)
+	if err != nil {
+		resBody["status"] = false
+		resBody["error"] = err
+		handler.WriteJSON(w, resBody, http.StatusOK)
+		return
+	}
+	err = client.CreateIndex(indexName, config)
 	if err != nil {
 		resBody["status"] = false
 		resBody["error"] = err

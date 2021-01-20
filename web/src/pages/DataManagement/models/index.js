@@ -1,5 +1,5 @@
 import { getIndices,getMappings, getSettings, deleteIndex,
-updateSettings} from '@/services/indices';
+updateSettings,createIndex} from '@/services/indices';
 import { message } from 'antd';
 
 export default {
@@ -79,7 +79,17 @@ export default {
                     clusterIndices: clusterIndices,
                 }
             })
-        }
+        },
+        *addIndex({payload}, {call, put, select}){
+            let resp = yield call(createIndex, payload);
+            if(resp.status === false){
+                message.warn("create index failed")
+                return
+            }
+            yield put({
+                type: 'fetchIndices'
+            })
+        },
     },
     reducers:{
         saveData(state, {payload}){

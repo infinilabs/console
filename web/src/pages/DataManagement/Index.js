@@ -332,7 +332,7 @@ class Index extends PureComponent {
             </div>
             <Table bordered
               dataSource={indices}
-              rowKey='id'
+              rowKey='index'
               pagination={
                 {pageSize: 10,}
               }

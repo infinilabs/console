@@ -95,6 +95,14 @@ export default {
       let res = yield call(saveDoc, payload);
       if(res.status === false){
         message.warn("保存数据失败")
+        yield put({
+          type: 'saveData',
+          payload: {
+            editingKey: '',
+            isLoading: false,
+            _index: ''
+          }
+        })
         return
       }
       encodeObjectField(doc);
@@ -152,6 +160,7 @@ export default {
       }
       encodeObjectField(res.payload);
       res.payload['_index'] = payload.index;
+      res.payload['_type'] = payload._type;
       yield put({
         type: '_addNew',
         payload: {

@@ -3,12 +3,12 @@ import { formatMessage, FormattedMessage } from 'umi/locale';
 import router from 'umi/router';
 import { connect } from 'dva';
 import { Col, Form, Row,Select, Input, Card,Icon, Table, InputNumber, Popconfirm,
-   Divider,Button,Tooltip, Modal, DatePicker, message } from 'antd';
+   Divider,Button,Tooltip, Modal, DatePicker, message,Cascader } from 'antd';
 import Editor, {monaco} from '@monaco-editor/react';
 import moment from 'moment';
 import {createDependencyProposals} from './autocomplete';
 import InputSelect from '@/components/infini/InputSelect';
-import {getFields} from '@/utils/elasticsearch';
+import {getFields,getESAPI} from '@/utils/elasticsearch';
 
 function findParentIdentifier(textUntilPosition){
   let chars = textUntilPosition;
@@ -60,36 +60,44 @@ function findParentIdentifier(textUntilPosition){
 //     },
 //   },
 // });
-monaco.init().then((mi)=>{
-  mi.languages.onLanguage("json", ()=>{
-    mi.languages.registerCompletionItemProvider('json', {
-      triggerCharacters: ['"'],
-      provideCompletionItems: function(model, position, ctx) { 
-          var textUntilPosition = model.getValueInRange({startLineNumber: 1, startColumn: 1, endLineNumber: position.lineNumber, endColumn: position.column});
-          
-          if(textUntilPosition.indexOf('{') < 0){
-            return { suggestions: [] };
-          }
-          
-          let key = findParentIdentifier(textUntilPosition);
-          var word = model.getWordUntilPosition(position);
-          
-          var range = {
-              startLineNumber: position.lineNumber,
-              endLineNumber: position.lineNumber,
-              startColumn: word.startColumn,
-              endColumn: word.endColumn
-          };
-          
-          //console.log(ctx, range,textUntilPosition)
-          return {
-              suggestions: createDependencyProposals(key, range, mi, ctx.triggerCharacter)
-          };
-      }
-    });
-  })
+var langDisposer = null;
+function initEditor() {
+    monaco.init().then((mi) => {
+        //mi.languages.onLanguage("json", () => {
+            langDisposer = mi.languages.registerCompletionItemProvider('json', {
+                triggerCharacters: ['"'],
+                provideCompletionItems: function (model, position, ctx) {
+                    var textUntilPosition = model.getValueInRange({
+                        startLineNumber: 1,
+                        startColumn: 1,
+                        endLineNumber: position.lineNumber,
+                        endColumn: position.column
+                    });
 
-})
+                    if (textUntilPosition.indexOf('{') < 0) {
+                        return {suggestions: []};
+                    }
+
+                    let key = findParentIdentifier(textUntilPosition);
+                    var word = model.getWordUntilPosition(position);
+
+                    var range = {
+                        startLineNumber: position.lineNumber,
+                        endLineNumber: position.lineNumber,
+                        startColumn: word.startColumn,
+                        endColumn: word.endColumn
+                    };
+
+                    //console.log(ctx, range,textUntilPosition)
+                    return {
+                        suggestions: createDependencyProposals(key, range, mi, ctx.triggerCharacter)
+                    };
+                }
+            });
+       // })
+
+    })
+}
 
 const {Option} = Select;
 
@@ -202,7 +210,14 @@ class EditableCell extends React.Component {
       //   console.log(record, doclist.mappings)
       //   return
       // }
-      const {properties} = doclist.mappings[record._index].mappings;
+      let properties = null;
+      let _type = record._type || doclist._type;
+      if(typeof _type !== 'undefined' && _type !== '' && _type !== '_doc'){
+        properties = doclist.mappings[record._index].mappings[_type].properties;
+      }else{
+        properties = doclist.mappings[record._index].mappings.properties;
+      }
+
       if(!properties[key]){
         return '';
       }
@@ -236,6 +251,7 @@ class EditableCell extends React.Component {
             type: 'document/saveDocItem',
             payload: {
               index: doclist._index,
+              _type: doclist._type,
               data: {
                 id: key,
                 ...row,
@@ -247,6 +263,7 @@ class EditableCell extends React.Component {
             type: 'document/addDocItem',
             payload: {
               index: doclist._index,
+              _type: doclist._type,
               data: row,
             }
           })
@@ -258,7 +275,7 @@ class EditableCell extends React.Component {
       const {dispatch} = this.props;
       dispatch({
         type: 'document/saveData',
-        payload: { editingKey: record.id, _index: record._index }
+        payload: { editingKey: record.id, _index: record._index, _type: record._type }
       });
     }
 
@@ -268,6 +285,7 @@ class EditableCell extends React.Component {
         type: 'document/deleteDocItem',
         payload: {
           index: record._index,
+          _type: record._type,
           data: {
             id: record.id,
           }
@@ -336,6 +354,10 @@ class EditableCell extends React.Component {
           cell: EditableCell,
         },
       };
+      let total = doclist.total || 0;
+      if(total.value){
+        total = total.value;
+      }
       return (
         <EditableContext.Provider value={this.props.form}>
           <Table
@@ -350,7 +372,7 @@ class EditableCell extends React.Component {
             rowClassName="editable-row"
             pagination={{
               showSizeChanger: true,
-              total: doclist.total?  doclist.total.value: 0,
+              total: total,
               pageSize: doclist.pageSize,
               current: doclist.pageIndex,
               showTotal: (total, range) => `Total ${total} items`,
@@ -362,19 +384,20 @@ class EditableCell extends React.Component {
     }
   }
 
-@connect(({document})=>({
-  document
+@connect(({document,cluster})=>({
+  document,
+  cluster,
 }))
 @Form.create()
 class Doucment extends React.Component {
-  state={
+    state={
     bodyDisplay: 'none',
   }
   // constructor(props){
   //   super(props);
   //   this.filterGetter = createRef();
   // }
-  
+
   fetchData = (params) => {
     const {dispatch} = this.props;
     return dispatch({
@@ -386,8 +409,13 @@ class Doucment extends React.Component {
   handleEditorDidMount = (_valueGetter) =>{
     this.filterGetter = _valueGetter;
   }
-  
+  componentWillUnmount() {
+      if(langDisposer != null) {
+          langDisposer.dispose();
+      }
+  }
   componentDidMount(){
+      initEditor()
     const {location, dispatch } = this.props;
     //console.log(match, location);
     let index = location.query.index;
@@ -421,19 +449,23 @@ class Doucment extends React.Component {
   }
   
   handleNewClick = ()=>{
-    const {dispatch, document} = this.props;
+    const {dispatch, document,cluster} = this.props;
     if(document.isAddNew){ //!document.data || document.data.length == 0 
       return;
     }
-    let {indices, mappings} = document;
-    if(!indices){
+    let {mappings, indices} = document;
+    if(indices.length === 0) {
+      indices = Object.keys(mappings);
+    }
+    if(indices.length === 0){
         return
     }
     let _index = indices[0];
-    if(indices && indices.length > 1){
+    let _type = '';
+    if(indices.length > 0){
       //console.log(this.indexSelEl);
-      let vals = this.indexSelEl.rcSelect.state.value;
-      if(vals.length == 0){
+      let vals = this.indexSelEl.state.value;
+      if(vals.length === 0){
         Modal.error({
           title: '系统提示',
           content: '请选择新建文档目标索引',
@@ -441,13 +473,20 @@ class Doucment extends React.Component {
         return
       }else{
         _index = vals[0];
+        if(vals.length>1){
+          _type = vals[1];
+        }
       }
     }
-    let properties = mappings[_index].mappings.properties;
+    let properties = getESAPI(cluster.major).getProperties({
+      index: _index,
+      mappings: mappings,
+      typ: _type,
+    }); //mappings[_index].mappings.properties;
     let keys = Object.keys(properties)
-    let newDoc = {id:"", _index};
+    let newDoc = {id:"", _index,_type};
     for(let key of keys){
-      if(properties[key].type == 'date'){
+      if(properties[key].type === 'date'){
         newDoc[key] = null
       }else{
         newDoc[key] = ""
@@ -459,7 +498,8 @@ class Doucment extends React.Component {
         docItem: newDoc,
         extra: {
           isAddNew: true,
-          _index
+          _index,
+          _type,
         }
       },
     })
@@ -495,17 +535,43 @@ class Doucment extends React.Component {
   }
 
   renderNew = ()=>{
-    const {indices} = this.props.document;
+    let {indices, mappings} = this.props.document;
     // if((indices && indices.length > 1)){
     //   return;
     // }
+    const {major} = this.props.cluster;
+    if(indices && indices.length >= 0){
+      indices = getESAPI(major).extractIndicesFromMappings(mappings).filter(item=>{
+        if(indices.length > 0){
+          return indices.indexOf(item.index) > -1;
+        }
+        return true;
+      }).map(item=>{
+
+        let newItem= {
+          label: item.index,
+          value: item.index,
+        };
+        if(item.types){
+          newItem.children = item.types.map(typ=>{
+            return {
+              label: typ,
+              value: typ,
+            }
+          })
+        }
+        return newItem;
+      })
+    }
     return (
       <div>
-        {(indices && indices.length > 1) ? (<Select ref={el=>{this.indexSelEl=el}} style={{width: 200, marginRight:5}} placeholder="please select a index">
-          {indices.map(item=>{
-            return (<Select.Option key={item} label={item}>{item}</Select.Option>)
-          })}
-        </Select>) : ''}
+        {(indices) ? (<Cascader ref={el=>{this.indexSelEl=el}} options={indices} style={{width: 200, marginRight:5}} placeholder="please select a index">
+        </Cascader>) : ''}
+        {/*{(indices) ? (<Select ref={el=>{this.indexSelEl=el}} style={{width: 200, marginRight:5}} placeholder="please select a index">*/}
+        {/*  {indices.map(item=>{*/}
+        {/*    return (<Select.Option key={item} label={item}>{item}</Select.Option>)*/}
+        {/*  })}*/}
+        {/*</Select>) : ''}*/}
         <Button type="primary" icon="plus" onClick={this.handleNewClick}>{formatMessage({ id: 'form.button.new' })}</Button>
       </div>
     )

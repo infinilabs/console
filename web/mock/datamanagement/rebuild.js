@@ -527,7 +527,7 @@ let data = {
 };
 
 export default {
-  'get /_search-center/rebuild/_search': function(req, res){
-    res.send(data)
-  }
+  // 'get /_search-center/rebuild/_search': function(req, res){
+  //   res.send(data)
+  // }
 }

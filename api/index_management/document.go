@@ -36,7 +36,8 @@ func (handler APIHandler) HandleAddDocumentAction(w http.ResponseWriter, req *ht
 	if strings.Trim(id, "/") == "" {
 		id = util.GetUUID()
 	}
-	_, err = client.Index(indexName, id, reqBody)
+	docType := handler.GetParameter(req, "_type")
+	_, err = client.Index(indexName, docType, id, reqBody)
 	if err != nil {
 		resResult["status"] = false
 		resResult["error"] = err
@@ -61,7 +62,8 @@ func (handler APIHandler) HandleUpdateDocumentAction(w http.ResponseWriter, req 
 	}
 	indexName := ps.ByName("index")
 	id := ps.ByName("id")
-	resp, err := client.Get(indexName, id)
+	typ := handler.GetParameter(req, "_type")
+	resp, err := client.Get(indexName,typ, id)
 	if err != nil {
 		resResult["status"] = false
 		resResult["error"] = err.Error()
@@ -70,9 +72,12 @@ func (handler APIHandler) HandleUpdateDocumentAction(w http.ResponseWriter, req 
 	}
 	source := resp.Source
 	for k, v := range reqBody {
+		if k == "id" {
+			continue
+		}
 		source[k] = v
 	}
-	_, err = client.Index(indexName, id, source)
+	_, err = client.Index(indexName, typ, id, source)
 	if err != nil {
 		resResult["status"] = false
 		resResult["error"] = err.Error()
@@ -88,7 +93,8 @@ func (handler APIHandler) HandleDeleteDocumentAction(w http.ResponseWriter, req 
 	resResult := newResponseBody()
 	indexName := ps.ByName("index")
 	id := ps.ByName("id")
-	_, err := client.Delete(indexName, id)
+	typ := handler.GetParameter(req, "_type")
+	_, err := client.Delete(indexName, typ, id)
 	if err != nil {
 		resResult["error"] = err.Error()
 		resResult["status"] = false

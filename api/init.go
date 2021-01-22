@@ -36,6 +36,8 @@ func Init(cfg *config.AppConfig) {
 	ui.HandleUIMethod(api.DELETE, pathPrefix+"index/:index", handler.HandleDeleteIndexAction)
 	ui.HandleUIMethod(api.POST, pathPrefix+"index/:index", handler.HandleCreateIndexAction)
 
+	ui.HandleUIMethod(api.GET, pathPrefix+"cluster/:cluster/version", handler.GetClusterVersion)
+
 	task.RegisterScheduleTask(task.ScheduleTask{
 		Description: "sync reindex task result to index infinireindex",
 		Task: func() {

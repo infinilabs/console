@@ -12,29 +12,29 @@ function getUUID(len){
 }
 
 export default {
-  'post /_search-center/doc/:index/_search': function(req, res){
-    res.send(queryData)
-  },
-  'post /_search-center/doc/:index/_create': function(req, res){
-    res.send({
-      status: true,
-      payload: {
-        ...req.body.payload,
-        id: getUUID(),
-      }
-    });
-  },
-  'put /_search-center/doc/:index/:id': function(req, res){
-    res.send({
-      status: true,
-      payload: req.body
-    });
-  },
-
-  'delete /_search-center/doc/:index/:id': function(req, res){
-    res.send({
-      status: true,
-      payload: null,
-    });
-  }
+  // 'post /_search-center/doc/:index/_search': function(req, res){
+  //   res.send(queryData)
+  // },
+  // 'post /_search-center/doc/:index/_create': function(req, res){
+  //   res.send({
+  //     status: true,
+  //     payload: {
+  //       ...req.body.payload,
+  //       id: getUUID(),
+  //     }
+  //   });
+  // },
+  // 'put /_search-center/doc/:index/:id': function(req, res){
+  //   res.send({
+  //     status: true,
+  //     payload: req.body
+  //   });
+  // },
+  //
+  // 'delete /_search-center/doc/:index/:id': function(req, res){
+  //   res.send({
+  //     status: true,
+  //     payload: null,
+  //   });
+  // }
 }

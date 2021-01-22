@@ -1,7 +1,6 @@
 package index_management
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -111,11 +110,6 @@ func (handler APIHandler) HandleDeleteIndexAction(w http.ResponseWriter, req *ht
 }
 
 func (handler APIHandler) HandleCreateIndexAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	defer func() {
-		if err := recover(); err != nil {
-			fmt.Println(err)
-		}
-	}()
 	client := elastic.GetClient(handler.Config.Elasticsearch)
 	indexName := ps.ByName("index")
 	resBody := newResponseBody()

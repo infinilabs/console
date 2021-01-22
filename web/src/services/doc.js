@@ -13,14 +13,22 @@ export async function getDocList(params) {
 }
 
 export async function saveDoc(params) {
-  return request(`${pathPrefix}/doc/${params.index}/${params.data.id}`, {
+  let url =  `${pathPrefix}/doc/${params.index}/${params.data.id}`;
+  if(params._type){
+    url += `?_type=${params._type}`;
+  }
+  return request(url, {
     method: 'PUT',
     body: params.data,
   });
 }
 
 export async function deleteDoc(params) {
-  return request(`${pathPrefix}/doc/${params.index}/${params.data.id}`, {
+  let url =`${pathPrefix}/doc/${params.index}/${params.data.id}`;
+  if(params._type){
+    url += `?_type=${params._type}`;
+  }
+  return request(url, {
     method: 'DELETE',
   });
 }
@@ -28,7 +36,11 @@ export async function deleteDoc(params) {
 export async function addDoc(params) {
   let id = params.data.id || '';
   delete(params.data, 'id');
-  return request(`${pathPrefix}/doc/${params.index}/_create`, {
+  let url = `${pathPrefix}/doc/${params.index}/_create`;
+  if(params._type){
+    url += `?_type=${params._type}`;
+  }
+  return request(url, {
     method: 'POST',
     body: params.data,
   });

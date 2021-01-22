@@ -20,7 +20,7 @@ export default {
                 type: 'saveData',
                 payload: {
                     clusterIndices: resp.payload,
-                    cluster: payload.cluster,
+                  //  cluster: payload.cluster,
                 }
             })
         },

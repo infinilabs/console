@@ -31,8 +31,8 @@ func (handler APIHandler) HandleReindexAction(w http.ResponseWriter, req *http.R
 	}
 
 	//fmt.Println(reindexItem)
-
-	ID, err := reindex(handler.Config.Elasticsearch, reindexItem)
+	typ := handler.GetParameter(req, "_type")
+	ID, err := reindex(handler.Config.Elasticsearch, reindexItem, typ)
 	if err != nil {
 		resResult["error"] = err
 		resResult["status"] = false
@@ -43,7 +43,7 @@ func (handler APIHandler) HandleReindexAction(w http.ResponseWriter, req *http.R
 	handler.WriteJSON(w, resResult, http.StatusOK)
 }
 
-func reindex(esName string, body *model.Reindex) (string, error) {
+func reindex(esName string, body *model.Reindex, typ string) (string, error) {
 	client := elastic.GetClient(esName)
 	source := map[string]interface{}{
 		"index": body.Source.Index,
@@ -77,7 +77,7 @@ func reindex(esName string, body *model.Reindex) (string, error) {
 	body.Status = model.ReindexStatusRunning
 	body.CreatedAt = time.Now()
 
-	_, err = client.Index(orm.GetIndexName(body), body.ID, body)
+	_, err = client.Index(orm.GetIndexName(body), typ, body.ID, body)
 	if err != nil {
 		return "", err
 	}
@@ -171,7 +171,7 @@ func SyncRebuildResult(esName string) error {
 		}
 		source["status"] = status
 		source["task_source"] = doc.Source
-		_, err := client.Index(orm.GetIndexName(model.Reindex{}), esRes.Hits.Hits[idMap[doc.ID.(string)]].ID, source)
+		_, err := client.Index(orm.GetIndexName(model.Reindex{}), "", esRes.Hits.Hits[idMap[doc.ID.(string)]].ID, source)
 		return err
 	}
 	return nil

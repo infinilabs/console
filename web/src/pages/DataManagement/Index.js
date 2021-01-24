@@ -46,7 +46,7 @@ class JSONWrapper extends PureComponent {
       　　return elemTop;
       
       }
-      console.log(getElementTop(this.refs.jsonw));
+     // console.log(getElementTop(this.refs.jsonw));
     this.setState({height: window.innerHeight - getElementTop(this.refs.jsonw) -50});
   }
   render(){
@@ -292,7 +292,11 @@ class Index extends PureComponent {
     };
     let newSettings = {};
     if(settings && settings[editingIndex.index]){
-      newSettings = transformSettingsForApi(settings[editingIndex.index], editingIndex.status === 'open')
+      if(settings[editingIndex.index].settings) {
+        newSettings = transformSettingsForApi(settings[editingIndex.index], editingIndex.status === 'open')
+      }else{
+        newSettings = settings[editingIndex.index];
+      }
     }
     const {form: { getFieldDecorator }} = this.props;
     

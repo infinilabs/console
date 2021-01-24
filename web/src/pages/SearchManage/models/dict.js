@@ -1,6 +1,6 @@
 import { message } from 'antd';
 import { getDictList, addDict, deleteDict,updateDict } from '@/services/search';
-import {formatESSearchResult} from '@/utils/elasticsearch';
+import {formatESSearchResult} from '@/lib/elasticsearch/util';
 
 const utf8 = {
     encode: function (string) {  

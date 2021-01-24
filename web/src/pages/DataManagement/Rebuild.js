@@ -3,7 +3,7 @@ import { connect } from 'dva';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 import {Steps, Card, Form, Select, Input,Button, Divider,message, InputNumber} from 'antd';
 import InputSelect from '@/components/infini/InputSelect';
-import {getFields} from '@/utils/elasticsearch';
+import {getFields} from '@/lib/elasticsearch/util';
 
 const {Step} = Steps;
 const {Option} = Select;

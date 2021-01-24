@@ -8,7 +8,7 @@ import Editor, {monaco} from '@monaco-editor/react';
 import moment from 'moment';
 import {createDependencyProposals} from './autocomplete';
 import InputSelect from '@/components/infini/InputSelect';
-import {getFields,getESAPI} from '@/utils/elasticsearch';
+import {getFields,getESAPI} from '@/lib/elasticsearch/util';
 
 function findParentIdentifier(textUntilPosition){
   let chars = textUntilPosition;
@@ -561,11 +561,14 @@ class Doucment extends React.Component {
           })
         }
         return newItem;
+      });
+      this.indexSelEl && this.indexSelEl.setState({
+        value: [indices[0].value]
       })
     }
     return (
       <div>
-        {(indices) ? (<Cascader ref={el=>{this.indexSelEl=el}} options={indices} style={{width: 200, marginRight:5}} placeholder="please select a index">
+        {(indices && indices.length>0) ? (<Cascader ref={el=>{this.indexSelEl=el}} defaultValue={[indices[0].value]} options={indices} style={{width: 200, marginRight:5}} placeholder="please select a index">
         </Cascader>) : ''}
         {/*{(indices) ? (<Select ref={el=>{this.indexSelEl=el}} style={{width: 200, marginRight:5}} placeholder="please select a index">*/}
         {/*  {indices.map(item=>{*/}

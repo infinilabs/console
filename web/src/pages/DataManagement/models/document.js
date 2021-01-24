@@ -1,6 +1,6 @@
 import {getDocList, saveDoc, deleteDoc, addDoc}  from '@/services/doc';
 import {getMappings, getIndices} from '@/services/indices';
-import {formatESSearchResult} from '@/utils/elasticsearch';
+import {formatESSearchResult} from '@/lib/elasticsearch/util';
 import { message } from 'antd';
 
 function encodeObjectField(doc){

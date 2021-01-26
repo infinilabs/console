@@ -13,7 +13,7 @@ export async function getDocList(params) {
 }
 
 export async function saveDoc(params) {
-  let url =  `${pathPrefix}/doc/${params.index}/${params.data.id}`;
+  let url =  `${pathPrefix}/doc/${params._index}/${params._id}`;
   if(params._type){
     url += `?_type=${params._type}`;
   }
@@ -24,7 +24,7 @@ export async function saveDoc(params) {
 }
 
 export async function deleteDoc(params) {
-  let url =`${pathPrefix}/doc/${params.index}/${params.data.id}`;
+  let url =`${pathPrefix}/doc/${params._index}/${params._id}`;
   if(params._type){
     url += `?_type=${params._type}`;
   }
@@ -34,9 +34,7 @@ export async function deleteDoc(params) {
 }
 
 export async function addDoc(params) {
-  let id = params.data.id || '';
-  delete(params.data, 'id');
-  let url = `${pathPrefix}/doc/${params.index}/_create`;
+  let url = `${pathPrefix}/doc/${params._index}/_create`;
   if(params._type){
     url += `?_type=${params._type}`;
   }

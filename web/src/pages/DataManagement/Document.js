@@ -2,13 +2,16 @@ import React from 'react';
 import { formatMessage, FormattedMessage } from 'umi/locale';
 import router from 'umi/router';
 import { connect } from 'dva';
-import { Col, Form, Row,Select, Input, Card,Icon, Table, InputNumber, Popconfirm,
-   Divider,Button,Tooltip, Modal, DatePicker, message,Cascader } from 'antd';
+import {
+  Col, Form, Row, Select, Input, Card, Icon, Table, InputNumber, Popconfirm,
+  Divider, Button, Tooltip, Modal, DatePicker, message, Cascader, List,Radio
+} from 'antd';
 import Editor, {monaco} from '@monaco-editor/react';
 import moment from 'moment';
 import {createDependencyProposals} from './autocomplete';
 import InputSelect from '@/components/infini/InputSelect';
 import {getFields,getESAPI} from '@/lib/elasticsearch/util';
+import {Link} from "_umi@2.13.16@umi";
 
 function findParentIdentifier(textUntilPosition){
   let chars = textUntilPosition;
@@ -99,7 +102,184 @@ function initEditor() {
     })
 }
 
-const {Option} = Select;
+class EditModal extends React.Component{
+   okHandle = () => {
+     const {handleUpdate, values} = this.props;
+     handleUpdate({
+       _type: values._type,
+       _index: values._index,
+       _id: values.id,
+       data: JSON.parse(this.valueGetter()),
+     });
+  }
+  handleEditorDidMount = (valueGetter)=>{
+     this.valueGetter = valueGetter;
+  }
+  render(){
+    const { handleModalVisible, values, cleanRecord } = this.props;
+    let newR = cleanRecord(values);
+    return (
+      <Modal
+        destroyOnClose
+        title="update document"
+        width={640}
+        visible={values!==null}
+        onOk={this.okHandle}
+        onCancel={() => handleModalVisible()}
+      >
+        <div>
+          <Editor
+            height="300px"
+            language="json"
+            theme="light"
+            value={JSON.stringify(newR,null,2)}
+            options={{
+              minimap: {
+                enabled: false,
+              },
+              tabSize: 2,
+              wordBasedSuggestions: true,
+            }}
+            editorDidMount={this.handleEditorDidMount}
+          />
+        </div>
+      </Modal>
+    );
+  }
+}
+
+class JSONTable extends React.Component{
+  handleTableChange = (page, size) =>{
+    //console.log(pagination, filters, sorter);
+
+    const {fetchData, doclist} = this.props;
+    fetchData({
+      pageIndex: page,
+      pageSize: size || doclist.pageSize,
+      index: doclist.index,
+      cluster: doclist.cluster,
+      filter: doclist.filter,
+    })
+  }
+  setStateValue = (payload) =>{
+    const {dispatch} = this.props;
+    dispatch({
+      type: 'document/saveData',
+      payload: {
+        ...payload,
+      }
+    })
+  }
+  handleEditClick = (record)=>{
+    this.setStateValue({
+      editValue: record
+    });
+  }
+  handleModalVisible =()=>{
+    const {doclist} = this.props;
+    let payload = {
+      editValue: null,
+    };
+    if(doclist.isAddNew){
+      payload.isAddNew = false;
+    }
+    this.setStateValue(payload);
+  }
+  handleDeleteClick = (record)=>{
+    const {dispatch} = this.props;
+    dispatch({
+      type: 'document/deleteDocItem',
+      payload: {
+        _id: record.id,
+        _index: record._index,
+        _type: record._type,
+      },
+    })
+  }
+  handleSaveItemClick = (values)=>{
+    const {dispatch, doclist} = this.props;
+    if(doclist.isAddNew){
+      dispatch({
+        type: 'document/addDocItem',
+        payload: values,
+      });
+    }else {
+      dispatch({
+        type: 'document/saveDocItem',
+        payload: values,
+      });
+    }
+  }
+  cleanRecord = (record)=>{
+    let newR = {
+      ...record
+    };
+    delete(newR["_type"]);
+    delete(newR["_index"]);
+    delete(newR["id"]);
+    return newR;
+  }
+  render() {
+    let {data, total, pageSize,pageIndex, resultKey, editValue} = this.props.doclist;
+    if(total && total.value){
+      total = total.value;
+    }
+    let dataList = _.clone(data) || [];
+    dataList = dataList.filter(item=>{
+      return item._index === resultKey;
+    })
+    return(
+      <div>
+        {editValue ? <EditModal handleModalVisible={this.handleModalVisible}
+                                           cleanRecord={this.cleanRecord}
+                                           handleUpdate={this.handleSaveItemClick}
+                                           values={editValue}/>: null}
+      <List
+        grid={{
+          gutter: 8,
+          xs: 1,
+          sm: 2,
+          md: 2,
+          lg: 2,
+          xl: 3,
+          xxl: 3,
+        }}
+        dataSource={dataList}
+        pagination={{
+          onChange: (page, size) => {
+            this.handleTableChange(page, size);
+          },
+          onShowSizeChange: (current, size)=>{
+            this.handleTableChange(current, size);
+          },
+          total: total,
+          showSizeChanger: true,
+          pageSizeOptions: ["3","6","10","20"],
+          pageSize: pageSize || 10,
+          current: pageIndex || 1,
+          showTotal: (total, range) => `Total ${total} items`,
+          size: 'small',
+        }}
+        renderItem={item => (
+          <List.Item key={item.id}>
+            <Card title={item.id}
+              actions={[
+                <Icon type="edit" key="edit" onClick={()=>this.handleEditClick(item)} />,
+                <Popconfirm title="Sure to delete?" onConfirm={()=>this.handleDeleteClick(item)}>
+                  <Icon type="delete" key="delete" />
+                </Popconfirm>,
+              ]}>
+              <div style={{height:200, overflow:'scroll'}}>
+                 <pre className="language-json">{JSON.stringify(this.cleanRecord(item), null, 2)}</pre>
+              </div>
+            </Card>
+          </List.Item>
+        )}
+      />
+      </div>
+    )
+  }
+}
 
 const EditableContext = React.createContext();
 
@@ -128,12 +308,10 @@ class EditableCell extends React.Component {
         type,
         ...restProps
       } = this.props;
-      let initialValue = '';
+      let initialValue = (record && record[dataIndex]) || '';
       if(editing){
         if(type=='date'){
           initialValue = record[dataIndex] && moment(record[dataIndex]);
-        }else{
-          initialValue = record[dataIndex];
         }
       }
       return (
@@ -250,19 +428,17 @@ class EditableCell extends React.Component {
           dispatch({
             type: 'document/saveDocItem',
             payload: {
-              index: doclist._index,
+              _index: doclist._index,
               _type: doclist._type,
-              data: {
-                id: key,
-                ...row,
-              }
+              _id: key,
+              data: row,
             }
           })
         }else{
           dispatch({
             type: 'document/addDocItem',
             payload: {
-              index: doclist._index,
+              _index: doclist._index,
               _type: doclist._type,
               data: row,
             }
@@ -284,11 +460,9 @@ class EditableCell extends React.Component {
       dispatch({
         type: 'document/deleteDocItem',
         payload: {
-          index: record._index,
+          _index: record._index,
           _type: record._type,
-          data: {
-            id: record.id,
-          }
+          _id: record.id,
         }
       });
     }
@@ -318,7 +492,11 @@ class EditableCell extends React.Component {
       let keys = [];
       let sortObj = {};
       if(doclist.mappings){
-        keys = getFields(doclist.index, doclist.mappings)
+        let index = doclist.index;
+        if(!doclist.data || doclist.data.length === 0 || (doclist.data.length===1 &&doclist.data[0].id==="" )){
+          index = doclist.resultKey;
+        }
+        keys = getFields(index, doclist.mappings)
       }
       for(let key of keys){
         if(["_index"].includes(key)){
@@ -358,6 +536,10 @@ class EditableCell extends React.Component {
       if(total.value){
         total = total.value;
       }
+      let data = _.clone(doclist.data) || [];
+      data = data.filter(item=>{
+        return item._index === doclist.resultKey;
+      })
       return (
         <EditableContext.Provider value={this.props.form}>
           <Table
@@ -367,7 +549,7 @@ class EditableCell extends React.Component {
             onChange={this.handleTableChange}
             size="small"
             loading={doclist.isLoading}
-            dataSource={doclist.data}
+            dataSource={data}
             columns={columns}
             rowClassName="editable-row"
             pagination={{
@@ -390,7 +572,7 @@ class EditableCell extends React.Component {
 }))
 @Form.create()
 class Doucment extends React.Component {
-    state={
+  state={
     bodyDisplay: 'none',
   }
   // constructor(props){
@@ -415,7 +597,7 @@ class Doucment extends React.Component {
       }
   }
   componentDidMount(){
-      initEditor()
+    //  initEditor()
     const {location, dispatch } = this.props;
     //console.log(match, location);
     let index = location.query.index;
@@ -453,7 +635,7 @@ class Doucment extends React.Component {
     if(document.isAddNew){ //!document.data || document.data.length == 0 
       return;
     }
-    let {mappings, indices} = document;
+    let {mappings, indices, tableMode} = document;
     if(indices.length === 0) {
       indices = Object.keys(mappings);
     }
@@ -492,17 +674,29 @@ class Doucment extends React.Component {
         newDoc[key] = ""
       }
     }
-    dispatch({
-      type: 'document/_addNew',
-      payload: {
-        docItem: newDoc,
-        extra: {
+    if(tableMode !== 'JSON') {
+      dispatch({
+        type: 'document/_addNew',
+        payload: {
+          docItem: newDoc,
+          extra: {
+            isAddNew: true,
+            _index,
+            _type,
+          }
+        },
+      })
+    }else{
+      dispatch({
+        type: 'document/saveData',
+        payload: {
           isAddNew: true,
+          editValue: newDoc,
           _index,
           _type,
-        }
-      },
-    })
+        },
+      })
+    }
   }
 
   handleSearchClick = (e)=>{
@@ -514,7 +708,7 @@ class Doucment extends React.Component {
       message.error('please select cluster and index');
       return;
     }
-    if(this.state.bodyDisplay != 'none'){
+    if(this.state.bodyDisplay !== 'none'){
       filter = this.filterGetter();
     }
     this.fetchData({
@@ -533,9 +727,18 @@ class Doucment extends React.Component {
     })
     
   }
+  handleTableModeChange = (e)=> {
+    const {dispatch} = this.props;
+    dispatch({
+      type: 'document/saveData',
+      payload: {
+        tableMode: e.target.value,
+      }
+    });
+  }
 
   renderNew = ()=>{
-    let {indices, mappings} = this.props.document;
+    let {indices, mappings, resultKey, tableMode} = this.props.document;
     // if((indices && indices.length > 1)){
     //   return;
     // }
@@ -562,13 +765,10 @@ class Doucment extends React.Component {
         }
         return newItem;
       });
-      this.indexSelEl && this.indexSelEl.setState({
-        value: [indices[0].value]
-      })
     }
     return (
       <div>
-        {(indices && indices.length>0) ? (<Cascader ref={el=>{this.indexSelEl=el}} defaultValue={[indices[0].value]} options={indices} style={{width: 200, marginRight:5}} placeholder="please select a index">
+        {(indices && indices.length>0) ? (<Cascader ref={el=>{this.indexSelEl=el}} onChange={(vals)=>{this.handleResultTabKeyChange(vals[0])}} value={[resultKey]} options={indices} style={{width: 200, marginRight:5}} placeholder="please select a index">
         </Cascader>) : ''}
         {/*{(indices) ? (<Select ref={el=>{this.indexSelEl=el}} style={{width: 200, marginRight:5}} placeholder="please select a index">*/}
         {/*  {indices.map(item=>{*/}
@@ -576,8 +776,24 @@ class Doucment extends React.Component {
         {/*  })}*/}
         {/*</Select>) : ''}*/}
         <Button type="primary" icon="plus" onClick={this.handleNewClick}>{formatMessage({ id: 'form.button.new' })}</Button>
+        <span style={{marginLeft:20}}>
+          {/*Select Viewer:  */}
+          <Radio.Group value={tableMode} onChange={this.handleTableModeChange} buttonStyle="solid">
+            <Radio.Button value="TABLE">TABLE</Radio.Button>
+            <Radio.Button value="JSON">JSON</Radio.Button>
+          </Radio.Group>
+        </span>
       </div>
     )
+  }
+  handleResultTabKeyChange=(key)=>{
+      const {dispatch} = this.props;
+      dispatch({
+        type:'document/saveData',
+        payload:{
+          resultKey: key,
+        }
+      })
   }
 
   render(){
@@ -592,9 +808,17 @@ class Doucment extends React.Component {
         };
       })
       const clusters = ["single-es"];
-      let {cluster, index}= this.props.document;
+      let {cluster, index, indices, tableMode}= this.props.document;
       cluster = cluster || this.props.location.query.cluster || 'single-es';
       index = index || this.props.location.query.index;
+      indices = indices || [];
+
+      let resultTabList = indices.map(item=>{
+        return {
+          key: item,
+          tab: item,
+        }
+      });
       return (
           <div>
               <Card>
@@ -608,10 +832,10 @@ class Doucment extends React.Component {
                           </Select>
                           <InputSelect data={clusterIndices} onChange={()=>{this.hashChanged=true;}} defaultValue={index} ref={el=>{this.indexEl=el}} placeholder="input index or index pattern" style={{width: '25%'}}/>
                           <Input
-                              style={{width:"40%"}}
+                              style={{width:"40%", display: this.state.bodyDisplay === 'none' ? 'inline': 'none'}}
                               ref={el=>this.keywordEl=el}
-                              placeholder="input search keyword"    
-                              disabled = {this.state.bodyDisplay != 'none'}
+                              placeholder="input search keyword"
+                              // disabled={this.state.bodyDisplay != 'none'}
                           />
                           <Button type="primary" onClick={this.handleSearchClick}>{formatMessage({ id: 'form.button.search' })}</Button>
                       </Input.Group>
@@ -619,17 +843,21 @@ class Doucment extends React.Component {
                       <Col span={4}>
                           <a style={{marginTop:5,display:'block'}} onClick={(e)=>{
                               this.setState((preState)=>{
-                                  if(preState.bodyDisplay == 'none') {
+                                  if(preState.bodyDisplay === 'none') {
+                                    initEditor();
                                       return {
                                           bodyDisplay: 'block',
                                       };
                                   }else{
+                                    if(langDisposer != null) {
+                                      langDisposer.dispose();
+                                    }
                                       return {
                                           bodyDisplay: 'none'
                                       };
                                   }
                               });
-                          }}>{this.state.bodyDisplay == 'none' ? formatMessage({id:'form.button.advanced'}): formatMessage({id:'form.button.collapse'})}<Icon type="down" /></a>
+                          }}>{this.state.bodyDisplay === 'none' ? formatMessage({id:'form.button.advanced'}): formatMessage({id:'form.button.collapse'})}<Icon type="down" /></a>
                       </Col>
                   </Row>
                   <Row style={{display: this.state.bodyDisplay}} gutter={[16, { xs: 8, sm: 16, md: 24, lg: 32 }]}>
@@ -670,9 +898,16 @@ class Doucment extends React.Component {
                   <Card title={`Index: ${this.props.document.index}`} 
                     bodyStyle={{padding:0, paddingBottom: 24}}
                     extra={this.renderNew()}
+                    tabList={resultTabList}
+                    onTabChange={this.handleResultTabKeyChange}
                     bordered={false}>
-                      <EditableTable doclist={this.props.document} dispatch={this.props.dispatch} 
-                      fetchData={(params)=>{this.fetchData(params)}}/>
+                    {tableMode !== 'JSON' ?
+                      <EditableTable doclist={this.props.document} dispatch={this.props.dispatch}
+                                     fetchData={(params) => {
+                                       this.fetchData(params)
+                                     }}/> :
+                      <JSONTable doclist={this.props.document} dispatch={this.props.dispatch} fetchData={(params)=>{this.fetchData(params)}} />
+                    }
                     </Card>
               </div>
           </div>

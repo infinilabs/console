@@ -2,14 +2,15 @@ import {getDocList, saveDoc, deleteDoc, addDoc}  from '@/services/doc';
 import {getMappings, getIndices} from '@/services/indices';
 import {formatESSearchResult} from '@/lib/elasticsearch/util';
 import { message } from 'antd';
+import moment from "moment";
 
 function encodeObjectField(doc){
-  //let rawData = {};
   for(let key of Object.keys(doc)){
     if(typeof doc[key] == 'object'){
-      // let docId = doc['id'];
-      // !rawData[docId] && (rawData[docId] = {});
-      // rawData[docId][key] = doc[key];
+      if(doc[key] instanceof moment){
+        doc[key] = doc[key].toJSON();
+        continue;
+      }
       doc[key] = JSON.stringify(doc[key]);
     }
   }
@@ -18,6 +19,9 @@ function encodeObjectField(doc){
 
 function decodeObjectField(doc){
   for(let key of Object.keys(doc)){
+    if(!doc[key]){
+      continue;
+    }
     if(['[', '{'].includes(doc[key][0])){
       try{
         doc[key] = JSON.parse(doc[key])
@@ -36,9 +40,11 @@ export default {
     index: '',
     editingKey: '',
     isLoading: false,
+    resultKey: '',
+    tableMode: 'JSON',
   },
   effects: {
-    *fetchDocList({payload}, {call, put}){
+    *fetchDocList({payload}, {call, put, select}){
       yield put({
         type: 'saveData',
         payload: {
@@ -56,6 +62,7 @@ export default {
         })
         return
       }
+      const {tableMode} = yield select(state=>state.document);
       res.payload = formatESSearchResult(res.payload);
       let indices = []; //indices state can remove
       if(res.payload.data && res.payload.data.length > 0){
@@ -63,7 +70,9 @@ export default {
           if(!indices.includes(doc._index)){
             indices.push(doc._index);
           }
-           encodeObjectField(doc);
+          if(tableMode !== "JSON") {
+            encodeObjectField(doc);
+          }
         }
       }
       yield put({
@@ -74,6 +83,7 @@ export default {
           isLoading: false,
           index: payload.index,
           indices,
+          resultKey: indices[0] || '',
           cluster: payload.cluster || '',
           filter: payload.filter || '',
           ...res.payload,
@@ -89,8 +99,11 @@ export default {
       });
       let doc = payload.data;
       //let {rawData} = yield select(state => state.document);
-      if(decodeObjectField(doc) === false){
-        return;
+      const {tableMode} = yield select(state=>state.document);
+      if(tableMode !== 'JSON') {
+        if (decodeObjectField(doc) === false) {
+          return;
+        }
       }
       let res = yield call(saveDoc, payload);
       if(res.status === false){
@@ -105,18 +118,24 @@ export default {
         })
         return
       }
-      encodeObjectField(doc);
+      if(tableMode !== 'JSON') {
+        encodeObjectField(doc);
+      }
+      //console.log(payload.data);
       yield put({
         type: '_saveDocItem',
         payload: {
           docItem: payload.data,
+          id: payload._id,
           extra: {
             editingKey: '',
             isLoading: false,
+            editValue: null,
             _index: ''
           }
         } 
-      })
+      });
+      message.success("保存数据成功");
     },
     *deleteDocItem({payload}, {call, put}){
       yield put({
@@ -136,30 +155,36 @@ export default {
       yield put({
         type: '_deleteDocItem',
         payload: {
-          docItem: payload.data,
+          id: payload._id,
           extra: {
             isLoading: false,
           }
         } 
       })
+      message.success("删除数据成功")
     },
-    *addDocItem({payload},{call, put}){
+    *addDocItem({payload},{call, put, select}) {
       yield put({
         type: 'saveData',
         payload: {
           isLoading: true,
         }
       });
-      if(decodeObjectField(payload.data) === false){
-        return;
+      const {tableMode} = yield select(state => state.document);
+      if (tableMode !== 'JSON') {
+        if (decodeObjectField(payload.data) === false) {
+          return;
+        }
       }
       let res = yield call(addDoc, payload);
-      if(res.status === false){
+      if (res.status === false) {
         message.warn("添加文档失败")
         return
       }
-      encodeObjectField(res.payload);
-      res.payload['_index'] = payload.index;
+      if (tableMode !== 'JSON') {
+        encodeObjectField(res.payload);
+      }
+      res.payload['_index'] = payload._index;
       res.payload['_type'] = payload._type;
       yield put({
         type: '_addNew',
@@ -168,9 +193,11 @@ export default {
           extra: {
             isLoading: false,
             isAddNew: false,
+            editValue: null,
           }
         } 
-      })
+      });
+      message.success("添加文档成功")
     },
     *fetchIndices({payload}, {call, put}){
       let resp = yield call(getIndices)
@@ -209,7 +236,7 @@ export default {
     },
     _saveDocItem(state, {payload}){
       let idx = state.data.findIndex((item) => {
-        return item.id == payload.docItem.id;
+        return item.id === payload.id;
       });
       idx > -1 && (state.data[idx] = {
         ...state.data[idx],
@@ -223,7 +250,7 @@ export default {
     },
     _deleteDocItem(state, {payload}){ 
       let idx = state.data.findIndex((item) => {
-        return item.id == payload.docItem.id;
+        return item.id === payload.id;
       });
       state.data.splice(idx, 1);
       return {
@@ -237,16 +264,19 @@ export default {
     },
     _addNew(state, {payload}){
       if(payload.extra && payload.extra.isAddNew){
-        if(!state.data){
-          state.data = [];
-        }
-        state.data.unshift(payload.docItem)
+        let data = state.data || [];
+        data.unshift(payload.docItem);
         return {
           ...state,
+          data: data,
           ...payload.extra,
         }
       }else{
-        state.data[0] = payload.docItem;
+        if(state.tableMode !=='JSON') {
+          state.data[0] = payload.docItem;
+        }else{
+          state.data.unshift(payload.docItem);
+        }
         return {
           ...state,
           ...payload.extra,

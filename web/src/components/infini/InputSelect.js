@@ -9,7 +9,6 @@ class InputSelect extends React.Component{
     super(props);
     this.state = {
       value: props.defaultValue || props.value,
-      originData: props.data || [],
     }
   }
 
@@ -27,7 +26,7 @@ class InputSelect extends React.Component{
   }
   handleChange = (ev) => {
     let val = ev.target.value;
-    let filterData = this.state.originData.slice();
+    let filterData = this.props.data.slice();
     if(val != ""){
       filterData = filterData.filter(v=>v.value.includes(val))
     }

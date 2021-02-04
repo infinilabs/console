@@ -33,7 +33,7 @@ class ClusterList extends React.Component{
           renderItem={item => (
             <List.Item key={item.name}>
               <Card title={item.name + ": "+ item.nodes.length}
-               extra={<Link to={"/platform/cluster/" + item.name}>查看更多</Link>}
+               extra={<Link to={"/cluster/monitoring/" + item.name}>查看更多</Link>}
               >
                 <div>
                   {/* {item.nodes.map(node => {

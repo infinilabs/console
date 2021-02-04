@@ -17,35 +17,45 @@ export default [
     Routes: ['src/pages/Authorized'],
     authority: ['admin', 'user'],
     routes: [
-      // dashboard
-      { path: '/', redirect: '/platform/clusterlist' },
+      // cluster
+      { path: '/', redirect: '/cluster/overview' },
       {
-        path: '/platform',
-        name: 'platform',
-        icon: 'dashboard',
+        path: '/cluster',
+        name: 'cluster',
+        icon: 'cluster',
         routes: [
       //      { path: '/', redirect: '/platform/gateway' },
             {
-              path: '/platform/gateway',
-              name: 'gateway',
-              component: './Dashboard/GatewayMonitor',
+              path: '/cluster/overview',
+              name: 'overview',
+              component: './Cluster/ClusterList',
             }, {
-              path: '/platform/cluster/:name',
+              path: '/cluster/monitoring/:name',
               name: 'cluster',
-              component: './Dashboard/ClusterMonitor',
+              component: './Cluster/ClusterMonitor',
               hideInMenu: true,
             }, {
-              path: '/platform/clusterlist',
-              name: 'cluster',
-              component: './Dashboard/ClusterList',
+              path: '/cluster/monitoring',
+              name: 'monitoring',
+              component: './Cluster/ClusterList',
             }, {
-              path: '/platform/tasks',
-              name: 'tasks',
-              component: './Dashboard/TaskMonitor',
+              path: '/cluster/settings',
+              name: 'settings',
+              component: './Cluster/Settings/Base',
+              routes: [
+                {
+                  path: '/cluster/settings',
+                  redirect: '/cluster/settings/repository',
+                },
+                {
+                  path: '/cluster/settings/repository',
+                  component: './Cluster/Settings/Repository',
+                }
+              ]
             }, {
-              path: '/platform/search',
-              name: 'search',
-              component: './Dashboard/SearchMonitor',
+              path: '/cluster/logging',
+              name: 'logging',
+              component: './Cluster/SearchMonitor',
             },
 
         ]
@@ -57,84 +67,52 @@ export default [
         name: 'data',
         icon: 'database',
         routes: [
+          // {
+          //   path: '/data/pipes',
+          //   name: 'pipes',
+          //   component: './DataManagement/Pipes',
+          //   routes: [
+          //     {
+          //       path: '/data/pipes',
+          //       redirect: '/data/pipes/logstash',
+          //     },
+          //     {
+          //       path: '/data/pipes/logstash',
+          //       component: './DataManagement/LogstashConfig',
+          //     },
+          //     {
+          //       path: '/data/pipes/ingestpipeline',
+          //       component: './DataManagement/IngestPipeline',
+          //     },
+          //   ]
+          // },
           {
-            path: '/data/pipes',
-            name: 'pipes',
-            component: './DataManagement/Pipes',
-            routes: [
-              {
-                path: '/data/pipes',
-                redirect: '/data/pipes/logstash',
-              },
-              {
-                path: '/data/pipes/logstash',
-                component: './DataManagement/LogstashConfig',
-              },
-              {
-                path: '/data/pipes/ingestpipeline',
-                component: './DataManagement/IngestPipeline',
-              },
-            ]
-          },{
-            path: '/data/indices',
+            path: '/data/overview',
+            name: 'overview',
+            component: './DataManagement/Indices',
+          }, {
+            path: '/data/index',
             name: 'index',
             component: './DataManagement/Indices',
-            routes: [
-              {
-                path: '/data/indices',
-                redirect: '/data/indices/summary',
-              },
-              {
-                path: '/data/indices/summary',
-                component: './DataManagement/IndexSummary',
-              },
-              {
-                path: '/data/indices/doc',
-                component: './DataManagement/Index',
-              },
-              {
-                path: '/data/indices/template',
-                component: './DataManagement/IndexTemplate',
-              },
-              {
-                path: '/data/indices/ilm',
-                component: './DataManagement/IndexLifeCycle',
-              },
-            ]
-          }, {
-            path: '/data/backup',
-            name: 'snapshot',
-            component: './DataManagement/Backup',
-            routes: [
-              {
-                path: '/data/backup',
-                redirect: '/data/backup/bakandrestore',
-              },
-              {
-                path: '/data/backup/bakandrestore',
-                component: './DataManagement/backup/BakAndRestore',
-              },{
-                path: '/data/backup/bakcycle',
-                component: './DataManagement/backup/BakCycle',
-              }
-            ]
-          }, {
-            path: '/data/rebuild',
-            name: 'rebuildlist',
-            component: './DataManagement/RebuildList',
           },{
-            path: '/data/rebuild/new',
-            name: 'rebuild',
-            component: './DataManagement/Rebuild',
-            hideInMenu: true,
-          }, {
-            path: '/data/import',
-            name: 'export',
-            component: './DataManagement/Import',
-          },{
-            path: '/data/doc',
-            name: 'query',
+            path: '/data/document',
+            name: 'document',
             component: './DataManagement/Document',
+          }, {
+            path: '/data/template',
+            name: 'template',
+            component: './DataManagement/Indices',
+          },
+          // {
+          //   path: '/data/rebuild/new',
+          //   name: 'rebuild',
+          //   component: './DataManagement/Rebuild',
+          //   hideInMenu: true,
+          // },
+          {
+            path: '/data/lifecycle',
+            name: 'lifecycle',
+            component: './DataManagement/Indices',
           },
         ]
       },
@@ -146,6 +124,11 @@ export default [
         name: 'search',
         icon: 'search',
         routes: [
+          {
+            path: '/search/overview',
+            name: 'overview',
+            component: './SearchManage/template/Template',
+          },
           {
               path: '/search/template',
               name: 'template',
@@ -248,12 +231,79 @@ export default [
         ]
       },
 
+      //sync
+      {
+        path: '/sync',
+        name: 'synchronize',
+        icon: 'sync',
+        routes: [
+          {
+            path: '/sync/overview',
+            name: 'overview',
+            component: './Synchronize/Pipes',
+          },
+          {
+            path: '/sync/pipeline',
+            name: 'pipeline',
+            component: './Synchronize/Pipes',
+            routes: [
+              {
+                path: '/sync/pipeline',
+                redirect: '/sync/pipeline',
+              },
+              {
+                path: '/sync/pipeline/ingestpipeline',
+                component: './Synchronize/IngestPipeline',
+              }, {
+                path: '/sync/pipeline/logstash',
+                component: './Synchronize/LogstashConfig',
+              }]
+          },{
+            path: '/sync/rebuild',
+            name: 'rebuild',
+            component: './Synchronize/RebuildList',
+          },{
+            path: '/sync/inout',
+            name: 'inout',
+            component: './Synchronize/Import',
+          }
+        ]
+      },
+
+      //backup
+      {
+        path: '/backup',
+        name: 'backup',
+        icon: 'cloud',
+        routes: [
+          {
+            path: '/backup/overview',
+            name: 'overview',
+            component: './SearchManage/template/Template',
+          },
+          {
+            path: '/backup/index',
+            name: 'index',
+            component: './SearchManage/template/Template',
+          },{
+            path: '/backup/lifecycle',
+            name: 'lifecycle',
+            component: './SearchManage/template/Template',
+          }
+        ]
+      },
+
       //settings
       {
         path: '/system',
         name: 'system',
         icon: 'setting',
         routes: [
+          {
+            path: '/system/cluster',
+            name: 'cluster',
+            component: './System/Settings/Base',
+          },
           {
             path: '/system/settings',
             name: 'settings',

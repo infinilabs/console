@@ -1,11 +1,11 @@
 elasticsearch:
   - name: default
     enabled: true
-    endpoint: http://localhost:9200
+    endpoint: http://localhost:8001
     index_prefix: 
     basic_auth:
       username: elastic
-      password: ZBdkVQUUdF1Sir4X4BGB
+      password: liugq123
 
 web:
   enabled: true

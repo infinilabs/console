@@ -481,7 +481,7 @@ class ClusterMonitor extends PureComponent {
   }
   fetchData = () => {
     fetchDataCount++;
-    console.log(fetchDataCount, moment().diff(startTime)/1000);
+    //console.log(fetchDataCount, moment().diff(startTime)/1000);
     const { dispatch } = this.props;
     let {timeRange, lastSeconds } = this.state;
     if(lastSeconds && lastSeconds > 0){

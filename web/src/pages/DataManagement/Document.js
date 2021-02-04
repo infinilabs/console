@@ -507,7 +507,7 @@ class EditableCell extends React.Component {
           dataIndex: key,
           ellipsis: true,
           sorter: sortObj[key],
-          render: (text)=>(<Tooltip placement="top" title={text}>{text}</Tooltip>),
+          //render: (text)=>(<Tooltip placement="top" title={text}>{text}</Tooltip>),
           onCell: record => ({
             record,
             dataIndex: key,
@@ -867,7 +867,6 @@ class Doucment extends React.Component {
                             height="200px"
                             language="json"
                             theme="light"
-                          //  value={`{"match":{"name": "cincky"}}`}
                             options={{
                               minimap: {
                                 enabled: false,

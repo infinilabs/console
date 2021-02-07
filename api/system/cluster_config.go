@@ -20,11 +20,9 @@ type APIHandler struct {
 func (h *APIHandler) HandleCreateClusterAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
 	var conf = &model.ClusterConfig{}
 	resBody := map[string] interface{}{
-		"status": true,
 	}
 	err := h.DecodeJSON(req, conf)
 	if err != nil {
-		resBody["status"] = false
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusOK)
 		return
@@ -34,7 +32,6 @@ func (h *APIHandler) HandleCreateClusterAction(w http.ResponseWriter, req *http.
 	id := util.GetUUID()
 	ir, err := esClient.Index(orm.GetIndexName(model.ClusterConfig{}), "", id, conf)
 	if err != nil {
-		resBody["status"] = false
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusOK)
 		return
@@ -46,11 +43,9 @@ func (h *APIHandler) HandleCreateClusterAction(w http.ResponseWriter, req *http.
 func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
 	var conf = map[string]interface{}{}
 	resBody := map[string] interface{}{
-		"status": true,
 	}
 	err := h.DecodeJSON(req, conf)
 	if err != nil {
-		resBody["status"] = false
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusOK)
 		return
@@ -60,7 +55,6 @@ func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.
 	indexName := orm.GetIndexName(model.ClusterConfig{})
 	originConf, err := esClient.Get(indexName, "", id)
 	if err != nil {
-		resBody["status"] = false
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusOK)
 		return
@@ -74,36 +68,33 @@ func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.
 	}
 	ir, err := esClient.Index(indexName, "", id, source)
 	if err != nil {
-		resBody["status"] = false
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusOK)
 		return
 	}
+	resBody["acknowledged"] = true
 	resBody["payload"] = ir
 	h.WriteJSON(w, resBody, http.StatusOK)
 }
 
 func (h *APIHandler) HandleDeleteClusterAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
 	resBody := map[string] interface{}{
-		"status": true,
 	}
 	id := ps.ByName("id")
 	esClient := elastic.GetClient(h.Config.Elasticsearch)
 	_, err := esClient.Delete(orm.GetIndexName(model.ClusterConfig{}), "", id)
 	if err != nil {
-		resBody["status"] = false
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusOK)
 		return
 	}
 
-	resBody["payload"] = true
+	resBody["acknowledged"] = true
 	h.WriteJSON(w, resBody, http.StatusOK)
 }
 
 func (h *APIHandler) HandleSearchClusterAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
 	resBody := map[string] interface{}{
-		"status": true,
 	}
 	var (
 		name = h.GetParameterOrDefault(req, "name", "")
@@ -123,12 +114,10 @@ func (h *APIHandler) HandleSearchClusterAction(w http.ResponseWriter, req *http.
 	esClient := elastic.GetClient(h.Config.Elasticsearch)
 	res, err := esClient.SearchWithRawQueryDSL(orm.GetIndexName(model.ClusterConfig{}), []byte(queryDSL))
 	if err != nil {
-		resBody["status"] = false
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusOK)
 		return
 	}
 
-	resBody["payload"] = res
-	h.WriteJSON(w, resBody, http.StatusOK)
+	h.WriteJSON(w, res, http.StatusOK)
 }

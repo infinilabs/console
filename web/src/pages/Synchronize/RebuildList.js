@@ -153,7 +153,7 @@ class RebuildList extends React.Component {
         <Divider style={{marginBottom:0}} />
         <Card 
           bodyStyle={{padding:0}}
-          extra={<div><Button onClick={this.handleRefreshClick} icon="redo">Refresh</Button><Link to="/data/rebuild/new"> <Button type="primary" icon="plus">New</Button></Link></div>}
+          extra={<div><Button onClick={this.handleRefreshClick} icon="redo">Refresh</Button><Link to="/sync/rebuild/new"> <Button type="primary" icon="plus">New</Button></Link></div>}
           bordered={false}>
           <Table columns={this.columns}
             loading={rebuildlist.isLoading}

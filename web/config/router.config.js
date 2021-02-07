@@ -39,6 +39,10 @@ export default [
               name: 'monitoring',
               component: './Cluster/ClusterList',
             }, {
+            path: '/cluster/logging',
+            name: 'logging',
+            component: './Cluster/SearchMonitor',
+            },{
               path: '/cluster/settings',
               name: 'settings',
               component: './Cluster/Settings/Base',
@@ -52,12 +56,7 @@ export default [
                   component: './Cluster/Settings/Repository',
                 }
               ]
-            }, {
-              path: '/cluster/logging',
-              name: 'logging',
-              component: './Cluster/SearchMonitor',
             },
-
         ]
       },
 
@@ -89,11 +88,11 @@ export default [
           {
             path: '/data/overview',
             name: 'overview',
-            component: './DataManagement/Indices',
+            component: './DataManagement/IndexSummary',
           }, {
             path: '/data/index',
             name: 'index',
-            component: './DataManagement/Indices',
+            component: './DataManagement/Index',
           },{
             path: '/data/document',
             name: 'document',
@@ -101,18 +100,12 @@ export default [
           }, {
             path: '/data/template',
             name: 'template',
-            component: './DataManagement/Indices',
+            component: './DataManagement/IndexTemplate',
           },
-          // {
-          //   path: '/data/rebuild/new',
-          //   name: 'rebuild',
-          //   component: './DataManagement/Rebuild',
-          //   hideInMenu: true,
-          // },
           {
             path: '/data/lifecycle',
             name: 'lifecycle',
-            component: './DataManagement/Indices',
+            component: './DataManagement/IndexLifeCycle',
           },
         ]
       },
@@ -249,7 +242,7 @@ export default [
             routes: [
               {
                 path: '/sync/pipeline',
-                redirect: '/sync/pipeline',
+                redirect: '/sync/pipeline/logstash',
               },
               {
                 path: '/sync/pipeline/ingestpipeline',
@@ -262,6 +255,11 @@ export default [
             path: '/sync/rebuild',
             name: 'rebuild',
             component: './Synchronize/RebuildList',
+          },
+          {
+            path: '/sync/rebuild/new',
+            component: './Synchronize/Rebuild',
+            hideInMenu: true,
           },{
             path: '/sync/inout',
             name: 'inout',
@@ -302,7 +300,13 @@ export default [
           {
             path: '/system/cluster',
             name: 'cluster',
-            component: './System/Settings/Base',
+            component: './System/Cluster/Index',
+          },
+          {
+            path: '/system/cluster/new',
+            name: 'new-cluster',
+            component: './System/Cluster/Form',
+            hideInMenu: true
           },
           {
             path: '/system/settings',

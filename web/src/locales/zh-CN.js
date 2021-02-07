@@ -93,7 +93,7 @@ export default {
   'menu.home': '首页',
 
   'menu.cluster': '集群管理',
-  'menu.cluster.overview': '集群概览',
+  'menu.cluster.overview': '概览',
   'menu.cluster.monitoring': '集群监控',
   'menu.cluster.settings': '集群设置',
   'menu.cluster.logging': '集群日志',
@@ -103,8 +103,8 @@ export default {
   'menu.data.overview': '概览',
   'menu.data.index': '索引管理',
   'menu.data.document': '文档管理',
-  'menu.data.template': '索引模版管理',
-  'menu.data.lifecycle': '索引生命周期管理',
+  'menu.data.template': '模版管理',
+  'menu.data.lifecycle': '周期管理',
 
   'menu.search': '搜索管理',
   'menu.search.overview': '概览',

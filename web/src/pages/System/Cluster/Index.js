@@ -1,8 +1,12 @@
 import  React from 'react';
-import {Button, Card, Col, Divider, Form, Input, Row, Table,Switch, Icon} from "antd";
+import {Button, Card, Col, Divider, Form, Input, Row, Table, Switch, Icon, Popconfirm} from "antd";
 import Link from "_umi@2.13.16@umi/link";
+import {connect} from "dva";
 
 @Form.create()
+@connect(({clusterConfig}) =>({
+  clusterConfig
+}))
 class Index extends  React.Component {
   columns = [{
     title: '集群名称',
@@ -32,7 +36,79 @@ class Index extends  React.Component {
     title: '是否启用',
     dataIndex: 'enabled',
     key: 'enabled',
+    render: (val) =>{
+      return val === true ? '是': '否';
+    }
+  },{
+    title: 'Operation',
+    render: (text, record) => (
+      <div>
+        <Link to='/system/cluster/edit' onClick={()=>{this.handleEditClick(record)}}>Edit</Link>
+        <span><Divider type="vertical" />
+          <Popconfirm title="Sure to delete?" onConfirm={() => this.handleDeleteClick(record)}><a key="delete">Delete</a>
+         </Popconfirm>
+          </span>
+      </div>
+    ),
   }]
+
+  fetchData = (params)=>{
+    const {dispatch} = this.props;
+    dispatch({
+      type: 'clusterConfig/fetchClusterList',
+      payload: params,
+    })
+  }
+  componentDidMount() {
+    this.fetchData({})
+  }
+
+  handleSearchClick = ()=>{
+    const {form} = this.props;
+    this.fetchData({
+      name: form.getFieldValue('name'),
+    })
+  }
+
+  handleDeleteClick = (record)=>{
+    const {dispatch} = this.props;
+    return dispatch({
+      type:'clusterConfig/deleteCluster',
+      payload: {
+        id: record.id
+      }
+    });
+  }
+
+  saveData = (payload)=>{
+    const {dispatch} = this.props;
+    return dispatch({
+      type:'clusterConfig/saveData',
+      payload: {
+        ...payload
+      }
+    });
+  }
+  handleNewClick = () => {
+    this.saveData({
+      editMode: 'NEW',
+      editValue: {},
+    })
+  }
+  handleEditClick = (record)=>{
+    this.saveData({
+      editMode : 'UPDATE',
+      editValue: record,
+    })
+  }
+
+  handleEnabledChange = (enabled) => {
+    const {form} = this.props;
+    this.fetchData({
+      name: form.getFieldValue('name'),
+      enabled: enabled,
+    })
+  }
 
   render() {
     const {getFieldDecorator} = this.props.form;
@@ -41,6 +117,7 @@ class Index extends  React.Component {
       wrapperCol: { span: 14 },
       style: {marginBottom: 0}
     };
+    const {data} = this.props.clusterConfig;
     return (
       <Card>
         <Form>
@@ -52,7 +129,7 @@ class Index extends  React.Component {
             </Col>
             <Col md={8} sm={8}>
               <div style={{paddingTop:4}}>
-                <Button type="primary" icon="search" onClick={this.handleSearch}>
+                <Button type="primary" icon="search" onClick={this.handleSearchClick}>
                   Search
                 </Button>
               </div>
@@ -66,15 +143,16 @@ class Index extends  React.Component {
             <span style={{marginRight:24}}><Switch
               checkedChildren={<Icon type="check" />}
               unCheckedChildren={<Icon type="close" />}
+              onChange={this.handleEnabledChange}
               defaultChecked
             />是否启用</span>
-           <Link to='/system/cluster/new'> <Button type="primary" icon="plus">New</Button></Link>
+           <Link to='/system/cluster/edit' onClick={this.handleNewClick}> <Button type="primary" icon="plus">New</Button></Link>
           </div>}
           bordered={false}>
           <Table
             bordered
             columns={this.columns}
-            dataSource={[]}
+            dataSource={data}
             rowKey='id'
           />
         </Card>

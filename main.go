@@ -71,7 +71,7 @@ func main() {
 	}, func() {
 		orm.RegisterSchemaWithIndexName(model.Dict{}, "infini-dict")
 		orm.RegisterSchemaWithIndexName(model.Reindex{}, "infini-reindex")
-		orm.RegisterSchemaWithIndexName(model.Reindex{}, "infini-cluster")
+		orm.RegisterSchemaWithIndexName(model.ClusterConfig{}, "infini-cluster")
 	})
 
 }

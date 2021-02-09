@@ -303,8 +303,8 @@ export default [
             component: './System/Cluster/Index',
           },
           {
-            path: '/system/cluster/new',
-            name: 'new-cluster',
+            path: '/system/cluster/edit',
+            name: 'edit-cluster',
             component: './System/Cluster/Form',
             hideInMenu: true
           },

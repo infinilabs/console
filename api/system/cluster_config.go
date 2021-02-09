@@ -10,6 +10,8 @@ import (
 	"infini.sh/search-center/model"
 	"infini.sh/framework/core/orm"
 	"net/http"
+	"strings"
+	"time"
 )
 
 type APIHandler struct {
@@ -30,13 +32,18 @@ func (h *APIHandler) HandleCreateClusterAction(w http.ResponseWriter, req *http.
 	// TODO validate data format
 	esClient := elastic.GetClient(h.Config.Elasticsearch)
 	id := util.GetUUID()
+	conf.Created = time.Now()
+	conf.Updated = conf.Created
+	conf.ID = id
 	ir, err := esClient.Index(orm.GetIndexName(model.ClusterConfig{}), "", id, conf)
 	if err != nil {
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusOK)
 		return
 	}
-	resBody["payload"] = ir
+	conf.ID = ir.ID
+	resBody["payload"] = conf
+	resBody["acknowledged"] = true
 	h.WriteJSON(w, resBody, http.StatusOK)
 }
 
@@ -44,9 +51,9 @@ func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.
 	var conf = map[string]interface{}{}
 	resBody := map[string] interface{}{
 	}
-	err := h.DecodeJSON(req, conf)
+	err := h.DecodeJSON(req, &conf)
 	if err != nil {
-		resBody["error"] = err
+		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusOK)
 		return
 	}
@@ -55,7 +62,7 @@ func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.
 	indexName := orm.GetIndexName(model.ClusterConfig{})
 	originConf, err := esClient.Get(indexName, "", id)
 	if err != nil {
-		resBody["error"] = err
+		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusOK)
 		return
 	}
@@ -66,14 +73,15 @@ func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.
 		}
 		source[k] = v
 	}
-	ir, err := esClient.Index(indexName, "", id, source)
+	conf["updated"] = time.Now()
+	_, err = esClient.Index(indexName, "", id, source)
 	if err != nil {
-		resBody["error"] = err
+		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusOK)
 		return
 	}
 	resBody["acknowledged"] = true
-	resBody["payload"] = ir
+	resBody["payload"] = conf
 	h.WriteJSON(w, resBody, http.StatusOK)
 }
 
@@ -84,7 +92,7 @@ func (h *APIHandler) HandleDeleteClusterAction(w http.ResponseWriter, req *http.
 	esClient := elastic.GetClient(h.Config.Elasticsearch)
 	_, err := esClient.Delete(orm.GetIndexName(model.ClusterConfig{}), "", id)
 	if err != nil {
-		resBody["error"] = err
+		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusOK)
 		return
 	}
@@ -98,23 +106,28 @@ func (h *APIHandler) HandleSearchClusterAction(w http.ResponseWriter, req *http.
 	}
 	var (
 		name = h.GetParameterOrDefault(req, "name", "")
-		enable = h.GetParameterOrDefault(req, "enable", "")
-		queryDSL = `{"query":{"bool":{"must":[%s, %s]}}}`
+		enabled = h.GetParameterOrDefault(req, "enabled", "")
+		queryDSL = `{"query":{"bool":{"must":[%s]}}}`
+		mustBuilder = &strings.Builder{}
 	)
 	if name != ""{
-		name = fmt.Sprintf(`{"match":{"name": "%s""}}`, name)
+		mustBuilder.WriteString(fmt.Sprintf(`{"match":{"name": "%s"}}`, name))
 	}
-	if enable != "" {
-		if enable != "true" {
-			enable = "false"
+	if enabled != "" {
+		if enabled != "true" {
+			enabled = "false"
 		}
-		enable = fmt.Sprintf(`{"match":{"enable": "%s""}}`, enable)
+		if mustBuilder.Len() > 0 {
+			mustBuilder.WriteString(",")
+		}
+		mustBuilder.WriteString(fmt.Sprintf(`{"match":{"enabled": %s}}`, enabled))
 	}
-	queryDSL = fmt.Sprintf(queryDSL, name, enable)
+
+	queryDSL = fmt.Sprintf(queryDSL, mustBuilder.String())
 	esClient := elastic.GetClient(h.Config.Elasticsearch)
 	res, err := esClient.SearchWithRawQueryDSL(orm.GetIndexName(model.ClusterConfig{}), []byte(queryDSL))
 	if err != nil {
-		resBody["error"] = err
+		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusOK)
 		return
 	}

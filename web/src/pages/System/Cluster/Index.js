@@ -1,6 +1,6 @@
 import  React from 'react';
 import {Button, Card, Col, Divider, Form, Input, Row, Table, Switch, Icon, Popconfirm} from "antd";
-import Link from "_umi@2.13.16@umi/link";
+import Link from "umi/link";
 import {connect} from "dva";
 
 @Form.create()

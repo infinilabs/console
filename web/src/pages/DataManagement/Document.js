@@ -11,7 +11,6 @@ import moment from 'moment';
 import {createDependencyProposals} from './autocomplete';
 import InputSelect from '@/components/infini/InputSelect';
 import {getFields,getESAPI} from '@/lib/elasticsearch/util';
-import {Link} from "_umi@2.13.16@umi";
 
 function findParentIdentifier(textUntilPosition){
   let chars = textUntilPosition;

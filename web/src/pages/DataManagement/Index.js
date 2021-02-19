@@ -156,7 +156,7 @@ class Index extends PureComponent {
             <a>删除</a>
           </Popconfirm>
           <Divider type="vertical" />
-          <Link to={"/data/doc?index=" + record.index}>文档管理</Link>
+          <Link to={"/data/document?index=" + record.index}>文档管理</Link>
         </Fragment>
       ),
     },

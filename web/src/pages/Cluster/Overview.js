@@ -1,6 +1,6 @@
 import React, {Fragment} from 'react';
 import {Card, Divider, Popconfirm, Table} from "antd";
-import Link from "_umi@2.13.16@umi/link";
+import {Link} from "umi"
 import moment from "moment";
 
 class Overview extends  React.Component {

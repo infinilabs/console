@@ -3,7 +3,7 @@ import {Card, Form, Icon, Input, InputNumber, Button, Switch} from 'antd';
 import router from 'umi/router';
 
 import  styles from './Form.less';
-import {connect} from "_dva@2.4.1@dva";
+import {connect} from "dva";
 
 @Form.create()
 @connect(({clusterConfig}) =>({

@@ -136,7 +136,7 @@ class RebuildList extends React.Component {
       <Card>
         <Form>
           <Row gutter={{md:16, sm:8}}>
-            <Col md={8} sm={10}>
+            <Col md={10} sm={16}>
               <Form.Item {...formItemLayout} label="Rebuild Name">
                 {getFieldDecorator('name')(<Input placeholder="please input rebuild name" />)}
               </Form.Item>

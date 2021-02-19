@@ -1,35 +1,17 @@
 import React, { Component,Fragment } from 'react';
 import { connect } from 'dva';
-import { Card,Form,Input, Select,Button,message,Divider,Drawer,Descriptions } from 'antd';
+import {Card, Form, Input, Select, Button, message, Divider, Drawer, Descriptions, Table} from 'antd';
 const { Option } = Select;
 import { formatMessage, FormattedMessage } from 'umi/locale';
 import StandardTable from '@/components/StandardTable';
 import styles from './BakAndRestore.less';
-const FormItem = Form.Item;
-const { TextArea } = Input;
-const operationTabList = [
-    {
-      key: 'tab1',
-      tab: '快照',
-    },
-    {
-      key: 'tab2',
-      tab: '仓库',
-    }
-  ];
 
-@connect(({logstash,loading }) => ({
-    data: logstash.logstash,
-    loading: loading.models.logstash,
-    submitting: loading.effects['logstash/submitLogstashConfig'],
+@connect(({ }) => ({
 }))
-
 @Form.create()
 class BakAndRestore extends Component {
     state = {
-        operationkey: 'tab1',
         snapshotVisible: false,
-        repVisible: false,
     };
   componentDidMount() {
     // message.loading('数据加载中..', 'initdata');
@@ -38,9 +20,6 @@ class BakAndRestore extends Component {
     //   type: 'logstash/queryInitialLogstashConfig',
     // });
   }
-  onOperationTabChange = key => {
-    this.setState({ operationkey: key });
-  };
 
   handleSnapshotClick(record){
     this.setState({
@@ -75,41 +54,6 @@ class BakAndRestore extends Component {
       ),
     },
   ];
-
-  repoData = [{
-    id: "my_local_repo",
-    dateCreated: "2020-10-09 20:30:23",
-  }];
-  
-  repoTable = () =>{
-    var data = {
-      list: this.repoData,
-      pagination: {
-        pageSize: 5,
-      }
-    };
-    return (
-      <div>
-         <div style={{marginBottom: 10}}>
-            <Button icon="plus" type="primary" onClick={() => {}}>
-              新建
-            </Button>
-        </div>
-        <StandardTable
-          selectedRows={[]}
-          data={data}
-          columns={this.repoColumns}
-        /> 
-      </div>
-    );
-  };
-
-  onCloseRep = () => {
-    this.setState({
-      repVisible: false,
-    });
-  };
-
   snapshotColumns = [
     {
       title: '快照',
@@ -164,12 +108,6 @@ class BakAndRestore extends Component {
   }];
   
   snapshotTable = () =>{
-    var data = {
-      list: this.snapshotData,
-      pagination: {
-        pageSize: 5,
-      }
-    };
     return (
       <div>
          <div style={{marginBottom: 10}}>
@@ -177,11 +115,10 @@ class BakAndRestore extends Component {
               新建
             </Button>
         </div>
-        <StandardTable
-          selectedRows={[]}
-          data={data}
-          columns={this.snapshotColumns}
-        /> 
+        <Table columns={this.snapshotColumns}
+          dataSource={this.snapshotData}
+               bordered
+        />
       </div>
     );
   };
@@ -193,39 +130,14 @@ class BakAndRestore extends Component {
   };
 
   render() {
-    const { operationkey } = this.state;
-    const contentList = {
-        tab1: (
-          <div>
-            {this.snapshotTable()}
-          </div>
-        ),
-        tab2: (
-          <div>
-            {this.repoTable()}
-            <Drawer
-              title="仓库"
-              placement="right"
-              width={720}
-              onClose={this.onCloseRepo}
-              visible={this.state.repoVisible}
-            >
-              <p>Some contents...</p>
-              <p>Some contents...</p>
-              <p>Some contents...</p>
-            </Drawer>
-          </div>
-        )
-      };
     return (
         <Fragment>
             <Card
-            className={styles.tabsCard}
             bordered={false}
-            tabList={operationTabList}
-            onTabChange={this.onOperationTabChange}
             >
-            {contentList[operationkey]}
+              <div>
+                {this.snapshotTable()}
+              </div>
             </Card>
             <Drawer
               title="快照"

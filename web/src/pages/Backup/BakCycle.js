@@ -15,12 +15,9 @@ import {
   Select,
   TimePicker,
   Switch,
-  Icon,
+  Icon, Table,
 } from 'antd';
 import moment from 'moment';
-import StandardTable from '@/components/StandardTable';
-
-import styles from '../../List/TableList.less';
 
 const FormItem = Form.Item;
 const { TextArea } = Input;
@@ -400,36 +397,6 @@ class BakCycle extends PureComponent {
     this.handleUpdateModalVisible();
   };
 
-  renderSimpleForm() {
-    const {
-      form: { getFieldDecorator },
-    } = this.props;
-    return (
-      <Form onSubmit={this.handleSearch} layout="inline">
-        <Row gutter={{ md: 8, lg: 24, xl: 48 }}>
-          <Col md={8} sm={24}>
-            <FormItem label="备份策略模板名称">
-              {getFieldDecorator('name')(<Input placeholder="请输入" />)}
-            </FormItem>
-          </Col>
-          <Col md={8} sm={24}>
-            <span className={styles.submitButtons}>
-              <Button type="primary" htmlType="submit">
-                查询
-              </Button>
-              <Button style={{ marginLeft: 8 }} onClick={this.handleFormReset}>
-                重置
-              </Button>
-            </span>
-          </Col>
-        </Row>
-      </Form>
-    );
-  }
-
-  renderForm() {
-    return this.renderSimpleForm();
-  }
   handleNewClick = ()=>{
     this.setState({
       drawerVisible: true,
@@ -443,42 +410,41 @@ class BakCycle extends PureComponent {
   };
 
   render() {
-    const data = {
-      list: this.parseData(),
-      pagination: {
-        pageSize: 5,
-      },
-    };
-    const { selectedRows, modalVisible, updateModalVisible, updateFormValues } = this.state;
-    const parentMethods = {
-      handleAdd: this.handleAdd,
-      handleModalVisible: this.handleModalVisible,
-    };
-    const updateMethods = {
-      handleUpdateModalVisible: this.handleUpdateModalVisible,
-      handleUpdate: this.handleUpdate,
-    };
+    const {
+      form: { getFieldDecorator },
+    } = this.props;
+
     return (
       <Fragment>
         <Card bordered={false}>
-          <div className={styles.tableList}>
-            <div className={styles.tableListForm}>{this.renderForm()}</div>
-            <div className={styles.tableListOperator}>
+          <div >
+            <div>
+                <Row gutter={{md:16, sm:8}}>
+                  <Col md={16}  lg={8}>
+                    备份策略模板名称：<Input style={{width:200}} placeholder="请输入" />
+                  </Col>
+                  <Col md={8} lg={16}>
+                    <span>
+                      <Button type="primary" htmlType="submit">
+                        查询
+                      </Button>
+                      <Button style={{ marginLeft: 8 }} onClick={this.handleFormReset}>
+                        重置
+                      </Button>
+                    </span>
+                  </Col>
+                </Row>
+            </div>
+            <div style={{marginBottom: 10, marginTop:10}}>
               <Button icon="plus" type="primary" onClick={() => this.handleNewClick(true)}>
                 新建
               </Button>
-              {selectedRows.length > 0 && (
-                <span>
-                  <Button onClick={() => this.handleDeleteClick()}>删除</Button>
-                </span>
-              )}
             </div>
-            <StandardTable
-              selectedRows={selectedRows}
-              data={data}
+            <Table
+              dataSource={this.parseData()}
               columns={this.columns}
-              onSelectRow={this.handleSelectRows}
-              onChange={this.handleStandardTableChange}
+              rowKey="name"
+              bordered
             />
           </div>
         </Card>

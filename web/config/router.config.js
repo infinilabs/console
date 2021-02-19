@@ -28,7 +28,7 @@ export default [
             {
               path: '/cluster/overview',
               name: 'overview',
-              component: './Cluster/ClusterList',
+              component: './Cluster/Overview',
             }, {
               path: '/cluster/monitoring/:name',
               name: 'cluster',
@@ -280,13 +280,13 @@ export default [
             component: './SearchManage/template/Template',
           },
           {
-            path: '/backup/index',
+            path: '/backup/bakandrestore',
             name: 'index',
-            component: './SearchManage/template/Template',
+            component: './Backup/BakAndRestore',
           },{
             path: '/backup/lifecycle',
             name: 'lifecycle',
-            component: './SearchManage/template/Template',
+            component: './Backup/BakCycle',
           }
         ]
       },

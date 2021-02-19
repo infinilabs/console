@@ -721,7 +721,7 @@ class Doucment extends React.Component {
       keyword: value,
     }).then(()=>{
       if(this.hashChanged){
-        router.push(`/data/doc?cluster=${cluster}&index=${index}`);
+        router.push(`/data/document?cluster=${cluster}&index=${index}`);
         this.hashChanged = !this.hashChanged;
       }
     })

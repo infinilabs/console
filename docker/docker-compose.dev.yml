@@ -4,7 +4,7 @@ services:
   infini-search-center-api-dev:
     image: docker.infini.ltd:64443/golang-dev:latest
     ports:
-      - 9000:9000
+      - 9010:9000
     container_name: "infini-search-center-api-dev"
     volumes:
       - ../:/go/src/infini.sh/search-center

@@ -11,8 +11,8 @@ services:
     #   dockerfile: ./Dockerfile
       
     ports:
-      - 3000:3000
-      - 8000:8000
+      - 3010:3000
+      - 8010:8000
     container_name: "infini-search-center-ui-build"
     volumes:
       - ../src:/usr/src/app/src

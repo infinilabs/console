@@ -31,7 +31,6 @@ func (h *APIHandler) HandleCreateClusterAction(w http.ResponseWriter, req *http.
 	}
 	// TODO validate data format
 	esClient := elastic.GetClient(h.Config.Elasticsearch)
-	esClient.
 	id := util.GetUUID()
 	conf.Created = time.Now()
 	conf.Updated = conf.Created

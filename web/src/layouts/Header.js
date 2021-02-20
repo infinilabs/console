@@ -121,6 +121,7 @@ class HeaderView extends PureComponent {
       payload: {
         from,
         size,
+        enabled: true,
       }
     });
   };

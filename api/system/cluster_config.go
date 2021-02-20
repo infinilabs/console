@@ -137,7 +137,7 @@ func (h *APIHandler) HandleSearchClusterAction(w http.ResponseWriter, req *http.
 	res, err := esClient.SearchWithRawQueryDSL(orm.GetIndexName(model.ClusterConfig{}), []byte(queryDSL))
 	if err != nil {
 		resBody["error"] = err.Error()
-		h.WriteJSON(w, resBody, http.StatusOK)
+		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
 	}
 

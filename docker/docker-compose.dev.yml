@@ -5,7 +5,7 @@ services:
     image: docker.infini.ltd:64443/golang-dev:latest
     ports:
       - 9010:9000
-    container_name: "infini-search-center-api-dev"
+    container_name: "infini-search-center-dev"
     volumes:
       - ../:/go/src/infini.sh/search-center
       - ./entrypoint.sh:/entrypoint.sh

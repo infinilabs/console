@@ -33,6 +33,7 @@ func (h *APIHandler) HandleCreateClusterAction(w http.ResponseWriter, req *http.
 	esClient := elastic.GetClient(h.Config.Elasticsearch)
 	id := util.GetUUID()
 	conf.Created = time.Now()
+	conf.Enabled=true
 	conf.Updated = conf.Created
 	//conf.ID = id
 	index:=orm.GetIndexName(model.ClusterConfig{})

@@ -17,8 +17,6 @@ const (
 	ReindexStatusFailed  ReindexStatus = "FAILED"
 )
 
-//const IndexReindex = ".reindex"
-
 type Reindex struct {
 	ID     string `json:"id" elastic_meta:"_id"`
 	Name   string `json:"name" elastic_mapping:"name:{type:text}"`

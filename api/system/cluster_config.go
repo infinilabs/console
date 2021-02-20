@@ -35,7 +35,8 @@ func (h *APIHandler) HandleCreateClusterAction(w http.ResponseWriter, req *http.
 	conf.Created = time.Now()
 	conf.Updated = conf.Created
 	conf.ID = id
-	ir, err := esClient.Index(orm.GetIndexName(model.ClusterConfig{}), "", id, conf)
+	index:=orm.GetIndexName(model.ClusterConfig{})
+	ir, err := esClient.Index(index, "", id, conf)
 	if err != nil {
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusOK)

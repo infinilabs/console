@@ -1,14 +1,13 @@
 package api
 
 import (
-	"log"
-
 	"infini.sh/framework/core/api"
 	"infini.sh/framework/core/task"
 	"infini.sh/framework/core/ui"
 	"infini.sh/search-center/api/index_management"
-	"infini.sh/search-center/config"
 	"infini.sh/search-center/api/system"
+	"infini.sh/search-center/config"
+	log "github.com/cihub/seelog"
 )
 
 func Init(cfg *config.AppConfig) {
@@ -40,11 +39,11 @@ func Init(cfg *config.AppConfig) {
 	ui.HandleUIMethod(api.GET, pathPrefix+"cluster/:cluster/version", handler.GetClusterVersion)
 
 	task.RegisterScheduleTask(task.ScheduleTask{
-		Description: "sync reindex task result to index infinireindex",
+		Description: "sync reindex task result",
 		Task: func() {
 			err := index_management.SyncRebuildResult(cfg.Elasticsearch)
 			if err != nil {
-				log.Println(err)
+				log.Error(err)
 			}
 		},
 	})

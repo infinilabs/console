@@ -69,9 +69,9 @@ func main() {
 		module.Start()
 
 	}, func() {
-		orm.RegisterSchemaWithIndexName(model.Dict{}, "infini-dict")
-		orm.RegisterSchemaWithIndexName(model.Reindex{}, "infini-reindex")
-		orm.RegisterSchemaWithIndexName(model.ClusterConfig{}, "infini-cluster")
+		orm.RegisterSchemaWithIndexName(model.Dict{}, "dict")
+		orm.RegisterSchemaWithIndexName(model.Reindex{}, "reindex")
+		orm.RegisterSchemaWithIndexName(model.ClusterConfig{}, "cluster")
 	})
 
 }

@@ -114,6 +114,25 @@ class HeaderView extends PureComponent {
     this.ticking = false;
   };
 
+  handleFetchClusterList = (from, size) => {
+    const { dispatch } = this.props;
+    return dispatch({
+      type: 'global/fetchClusterList',
+      payload: {
+        from,
+        size,
+      }
+    });
+  };
+
+  handleSaveGlobalState = (newState) => {
+    const { dispatch } = this.props;
+    return dispatch({
+      type: 'global/saveData',
+      payload: newState
+    });
+  }
+
   render() {
     const { isMobile, handleMenuCollapse, setting } = this.props;
     const { navTheme, layout, fixedHeader } = setting;
@@ -139,6 +158,8 @@ class HeaderView extends PureComponent {
             onNoticeClear={this.handleNoticeClear}
             onMenuClick={this.handleMenuClick}
             onNoticeVisibleChange={this.handleNoticeVisibleChange}
+            onFetchClusterList={this.handleFetchClusterList}
+            handleSaveGlobalState={this.handleSaveGlobalState}
             {...this.props}
           />
         )}
@@ -158,4 +179,6 @@ export default connect(({ user, global, setting, loading }) => ({
   fetchingNotices: loading.effects['global/fetchNotices'],
   notices: global.notices,
   setting,
+  clusterVisible: global.clusterVisible,
+  clusterList: global.clusterList,
 }))(HeaderView);

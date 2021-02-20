@@ -1,5 +1,5 @@
 import  React from 'react';
-import {Button, Card, Col, Divider, Form, Input, Row, Table, Switch, Icon, Popconfirm} from "antd";
+import {Button, Card, Col, Divider, Form, Input, Row, Table, Switch, Icon, Popconfirm, message} from "antd";
 import Link from "umi/link";
 import {connect} from "dva";
 
@@ -18,12 +18,15 @@ class Index extends  React.Component {
     key: 'endpoint',
   },{
     title: '用户名',
-    dataIndex: 'username',
+    dataIndex: 'basic_auth.username',
     key: 'username',
   },{
     title: '密码',
-    dataIndex: 'password',
+    dataIndex: 'basic_auth.password',
     key: 'password',
+    render: (val) =>{
+      return "******";
+    }
   },{
     title: '排序权重',
     dataIndex: 'order',
@@ -60,7 +63,9 @@ class Index extends  React.Component {
     })
   }
   componentDidMount() {
-    this.fetchData({})
+    if(typeof this.props.clusterConfig.data === 'undefined') {
+      this.fetchData({})
+    }
   }
 
   handleSearchClick = ()=>{
@@ -77,6 +82,10 @@ class Index extends  React.Component {
       payload: {
         id: record.id
       }
+    }).then((result)=>{
+      if(result){
+        message.success("删除成功");
+      }
     });
   }
 
@@ -92,7 +101,7 @@ class Index extends  React.Component {
   handleNewClick = () => {
     this.saveData({
       editMode: 'NEW',
-      editValue: {},
+      editValue: {basic_auth: {}},
     })
   }
   handleEditClick = (record)=>{

@@ -1,5 +1,5 @@
 import React from 'react';
-import {Card, Form, Icon, Input, InputNumber, Button, Switch} from 'antd';
+import {Card, Form, Icon, Input, InputNumber, Button, Switch, message} from 'antd';
 import router from 'umi/router';
 
 import  styles from './Form.less';
@@ -42,15 +42,23 @@ class ClusterForm extends React.Component{
       }
       //console.log(values);
       let newVals = {
-        ...values
+        name: values.name,
+        endpoint: values.endpoint,
+        basic_auth: {
+          username: values.username,
+          password: values.password,
+        },
+        description: values.description,
+        enabled: values.enabled,
+        order: values.order,
       }
-      delete(newVals['confirm']);
       if(clusterConfig.editMode === 'NEW') {
         dispatch({
           type: 'clusterConfig/addCluster',
           payload: newVals,
         }).then(function (rel){
           if(rel){
+            message.success("添加成功")
             router.push('/system/cluster');
           }
         });
@@ -61,6 +69,7 @@ class ClusterForm extends React.Component{
           payload: newVals,
         }).then(function (rel){
           if(rel){
+            message.success("修改成功")
             router.push('/system/cluster');
           }
         });
@@ -124,34 +133,21 @@ class ClusterForm extends React.Component{
         </Form.Item>
         <Form.Item label="ES 用户名">
           {getFieldDecorator('username', {
-            initialValue: editValue.username,
+            initialValue: editValue.basic_auth.username,
             rules: [
             ],
           })(<Input autoComplete='off' />)}
         </Form.Item>
         <Form.Item label="ES 密码" hasFeedback>
           {getFieldDecorator('password', {
-            initialValue: editValue.password,
+            initialValue: editValue.basic_auth.password,
             rules: [
-              {
-                validator: this.validateToNextPassword,
-              },
             ],
           })(<Input.Password />)}
         </Form.Item>
-        <Form.Item label="ES 确认密码" hasFeedback>
-          {getFieldDecorator('confirm', {
-            initialValue: editValue.password,
-            rules: [
-              {
-                validator: this.compareToFirstPassword,
-              },
-            ],
-          })(<Input.Password onBlur={this.handleConfirmBlur} />)}
-        </Form.Item>
         <Form.Item label="排序权重">
           {getFieldDecorator('order', {
-            initialValue: editValue.order,
+            initialValue: editValue.order || 0,
           })(<InputNumber />)}
         </Form.Item>
         <Form.Item label="描述">

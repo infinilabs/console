@@ -120,6 +120,7 @@ export default {
 
   'menu.system': 'SYSTEM',
   'menu.system.cluster': 'CLUSTER',
+  'menu.system.editCluster': 'EDIT CLUSTER',
   'menu.system.settings': 'SETTINGS',
   'menu.system.settings.global': 'GLOBAL',
   'menu.system.settings.gateway': 'GATEWAY',

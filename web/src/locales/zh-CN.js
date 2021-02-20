@@ -127,6 +127,7 @@ export default {
 
   'menu.system': '系统管理',
   'menu.system.cluster': '集群管理',
+  'menu.system.editCluster': '集群编辑',
   'menu.system.settings': '系统设置',
   'menu.system.settings.global': '全局设置',
   'menu.system.settings.gateway': '网关设置',

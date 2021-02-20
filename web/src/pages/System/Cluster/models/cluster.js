@@ -27,6 +27,28 @@ export default {
         message.error(res.error)
         return false;
       }
+      let {data, total} = yield select(state => state.clusterConfig);
+      data.unshift({
+        ...res._source,
+        id: res._id,
+      });
+      yield put({
+        type: 'saveData',
+        payload: {
+          data,
+          total: {
+            ...total,
+            value: total.value + 1
+          },
+        }
+      })
+      yield put({
+        type: 'global/addCluster',
+        payload: {
+          id: res._id,
+          name: res._source.name,
+        }
+      })
       return res;
     },
     *updateCluster({payload}, {call, put, select}) {
@@ -35,6 +57,27 @@ export default {
         message.error(res.error)
         return false;
       }
+      let {data} = yield select(state => state.clusterConfig);
+      let idx = data.findIndex((item)=>{
+        return item.id === res._id;
+      });
+      data[idx] = {
+        ...data[idx],
+        ...res._source
+      };
+      yield put({
+        type: 'saveData',
+        payload: {
+          data
+        }
+      })
+      yield put({
+        type: 'global/updateCluster',
+        payload: {
+          id: res._id,
+          name: res._source.name,
+        }
+      })
       return res;
     },
     *deleteCluster({payload}, {call, put, select}) {
@@ -51,7 +94,16 @@ export default {
         type: 'saveData',
         payload: {
           data,
-          total: total -1,
+          total: {
+            ...total,
+            value: total.value + 1
+          }
+        }
+      })
+      yield put({
+        type: 'global/removeCluster',
+        payload: {
+          id: payload.id
         }
       })
       return res;

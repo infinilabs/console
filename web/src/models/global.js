@@ -1,4 +1,8 @@
 import { queryNotices } from '@/services/api';
+import {message} from "antd";
+import {searchClusterConfig} from "@/services/clusterConfig";
+import {formatESSearchResult} from '@/lib/elasticsearch/util';
+
 
 export default {
   namespace: 'global',
@@ -6,6 +10,9 @@ export default {
   state: {
     collapsed: false,
     notices: [],
+    clusterVisible: true,
+    clusterList: [],
+    selectedCluster: '',
   },
 
   effects: {
@@ -31,6 +38,29 @@ export default {
         payload: count,
       });
     },
+    *fetchClusterList({payload}, {call, put, select}){
+      let res = yield call(searchClusterConfig, payload);
+      if(res.error){
+        message.error(res.error)
+        return false;
+      }
+      res = formatESSearchResult(res)
+      let clusterList = yield select(state => state.global.clusterList);
+      let data = res.data.map((item)=>{
+        return {
+          name: item.name,
+          id: item.id,
+        };
+      })
+
+      yield put({
+        type: 'saveData',
+        payload: {
+          clusterList: clusterList.concat(data)
+        }
+      })
+      return data;
+    },
   },
 
   reducers: {
@@ -52,12 +82,43 @@ export default {
         notices: state.notices.filter(item => item.type !== payload),
       };
     },
+    saveData(state, {payload}){
+      return {
+        ...state,
+        ...payload,
+      }
+    },
+    removeCluster(state, {payload}){
+      return {
+        ...state,
+        clusterList: state.clusterList.filter(item => item.id !== payload.id)
+      }
+    },
+    addCluster(state, {payload}){
+      state.clusterList.push(payload)
+      return state;
+    },
+    updateCluster(state, {payload}){
+      let idx = state.clusterList.findIndex(item => item.id === payload.id);
+      idx > -1 && (state.clusterList[idx].name = payload.name);
+      return state;
+    }
   },
 
   subscriptions: {
-    setup({ history }) {
+    setup({ history, dispatch }) {
       // Subscribe history(url) change, trigger `load` action if pathname is `/`
       return history.listen(({ pathname, search }) => {
+        let clusterVisible = true;
+        if(pathname.startsWith("/system")){
+          clusterVisible = false;
+        }
+        dispatch({
+          type: 'saveData',
+          payload: {
+            clusterVisible,
+          }
+        })
         if (typeof window.ga !== 'undefined') {
           window.ga('send', 'pageview', pathname + search);
         }

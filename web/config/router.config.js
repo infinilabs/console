@@ -304,7 +304,7 @@ export default [
           },
           {
             path: '/system/cluster/edit',
-            name: 'edit-cluster',
+            name: 'editCluster',
             component: './System/Cluster/Form',
             hideInMenu: true
           },

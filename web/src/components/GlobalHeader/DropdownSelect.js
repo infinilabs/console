@@ -6,7 +6,6 @@ import styles from './DropdownSelect.less';
 class DropdownSelect extends React.Component{
   state={
     value: this.props.defaultValue,
-    data: this.props.data || [],
     loading: false,
     hasMore: true,
   }
@@ -24,26 +23,23 @@ class DropdownSelect extends React.Component{
   }
   
   componentDidMount(){
-    let data = [];
-    for(let i = 1; i<=28; i++){
-      data.push('cluster'+i)
-    }
-    this.setState({
-      data: data,
+    let me = this;
+    this.fetchData().then((data)=>{
+      let hasMore = true;
+      if(data.length < this.props.size){
+        hasMore = false;
+      }
+      me.setState({
+        hasMore
+      })
     })
   }
   fetchData = ()=>{
     let me = this;
-    return new Promise(resolve => {
-      setTimeout(() => {
-        let start = me.state.data.length;
-        let data =[]
-        for(let i = start + 1; i<start+11; i++){
-          data.push('cluster'+i)
-        }
-        resolve(data)
-      }, 2000)
-    });
+    const {fetchData, size} = this.props;
+    let data = this.props.data || [];
+    let from = data.length;
+    return fetchData(from, size);
   }
 
   handleInfiniteOnLoad = (page) => {
@@ -51,28 +47,24 @@ class DropdownSelect extends React.Component{
     this.setState({
       loading: true,
     })
-    if (data.length > 50) {  
-       message.warning('No more data');
-      this.setState({
-        hasMore: false,
-        loading: false,
-      });
-      return;
-    }
     this.fetchData().then((newdata)=>{
-      data = data.concat(newdata);
-      this.setState({
-        data,
+      let newState = {
         loading: false,
-      });
+      };
+      if(newdata.length < this.props.size){
+        message.info("no more data");
+        newState.hasMore = false;
+      }
+      this.setState(newState);
     });
   }
 
 
   render(){
     let me = this;
-    const menu = (<div className={styles.dropmenu}>
-      <div className={styles.infiniteContainer}>
+    const {labelField} = this.props;
+    const menu = (<div className={styles.dropmenu} style={{width: this.props.width}}>
+      <div className={styles.infiniteContainer} style={{height: this.props.height}}>
         <InfiniteScroll
             initialLoad={false}
             loadMore={this.handleInfiniteOnLoad}
@@ -84,10 +76,10 @@ class DropdownSelect extends React.Component{
             gutter: 8,
             column: 4,
           }}
-          dataSource={this.state.data}
+          dataSource={this.props.data}
           renderItem={item => (
-            <List.Item key={item}>
-              <Button onClick={()=>{this.handleItemClick(item)}} className={styles.btnitem}>{item}</Button>
+            <List.Item key={item[labelField]}>
+              <Button onClick={()=>{this.handleItemClick(item)}} className={styles.btnitem}>{item[labelField]}</Button>
             </List.Item>
           )}
         >
@@ -106,9 +98,11 @@ class DropdownSelect extends React.Component{
       )}
     </div>);
     return(
-      <Dropdown overlay={menu} placement="bottomLeft">
-        <Button className={styles['btn-ds']}>{this.state.value} <Icon style={{float:'right', marginTop:3}} type="caret-down"/></Button>
-      </Dropdown>
+      this.props.visible ?
+          (<Dropdown overlay={menu} placement="bottomLeft">
+            <Button className={styles['btn-ds']}>{this.state.value[labelField]} <Icon style={{float: 'right', marginTop: 3}}
+                                                                          type="caret-down"/></Button>
+          </Dropdown>) : ""
     )
   }
   

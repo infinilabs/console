@@ -24,7 +24,7 @@ export default class GlobalHeader extends PureComponent {
     this.triggerResizeEvent();
   };
   render() {
-    const { collapsed, isMobile, logo } = this.props;
+    const { collapsed, isMobile, logo, clusterVisible, clusterList } = this.props;
     return (
       <div className={styles.header}>
         {isMobile && (
@@ -37,9 +37,34 @@ export default class GlobalHeader extends PureComponent {
           type={collapsed ? 'menu-unfold' : 'menu-fold'}
           onClick={this.toggle}
         />
-        <DropdownSelect defaultValue="Select cluster" 
-          onChange={(item)=>{}}
-        data={['cluster1', 'cluster2','cluster3', 'cluster4','cluster5', 'cluster6']}/>
+        <DropdownSelect defaultValue={{name:"Select cluster"}}
+          labelField="name"
+          visible={clusterVisible}
+          onChange={(item)=>{
+            this.props.handleSaveGlobalState({
+              selectedCluster: item
+            })
+          }}
+          size={56}
+           fetchData={
+             this.props.onFetchClusterList
+          //   (from, size)=>{
+          //   return new Promise(resolve => {
+          //     setTimeout(() => {
+          //       let start = from;
+          //       let data =[]
+          //       for(let i = start + 1; i<start+size+1; i++){
+          //         if(start+size > 56){
+          //           break;
+          //         }
+          //         data.push('cluster'+i)
+          //       }
+          //       resolve(data)
+          //     }, 2000)
+          //   });
+          // }
+          }
+        data={clusterList}/>
         <RightContent {...this.props} />
       </div>
     );

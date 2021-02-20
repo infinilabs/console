@@ -1,8 +1,26 @@
 import React, {Fragment} from 'react';
-import {Card, Divider, Popconfirm, Table} from "antd";
+import {Card, Divider, Popconfirm, Row, Col, Table, Descriptions} from "antd";
 import {Link} from "umi"
 import moment from "moment";
+import styles from "./Overview.less";
+import {connect} from "dva";
 
+let HealthCircle = (props)=>{
+  return (
+    <div style={{
+      background: props.color,
+      width: 12,
+      height: 12,
+      borderRadius: 12,
+      display: "inline-block",
+      marginRight: 3,
+    }}></div>
+  )
+}
+
+@connect(({global}) => ({
+  selectedCluster: global.selectedCluster
+}))
 class Overview extends  React.Component {
   state = {
     data: [{id:"JFpIbacZQamv9hkgQEDZ2Q", name:"single-es", endpoint:"http://localhost:9200", health: "green", version: "7.10.0", uptime:"320883955"}]
@@ -39,13 +57,43 @@ class Overview extends  React.Component {
     }
   ];
   render() {
-    return (<Card>
-      <Table
-        bordered
-        dataSource={this.state.data}
-        columns={this.clusterColumns}
-        rowKey="id"
-      />
+    return (<Card title={this.props.selectedCluster?this.props.selectedCluster.name:''}>
+      <Row gutter={[16,16]}>
+        <Col xs={24} sm={12} md={12} lg={8} >
+          <Card title="Summary" size={"small"}>
+            <Descriptions column={1} bordered colon={false} className={styles.overview}>
+              <Descriptions.Item label="Health"><HealthCircle color="green"/>Healthy</Descriptions.Item>
+              <Descriptions.Item label="Version">7.10.0</Descriptions.Item>
+              <Descriptions.Item label="Uptime">3 天</Descriptions.Item>
+              <Descriptions.Item label="License">Basic</Descriptions.Item>
+            </Descriptions>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={12} lg={8}>
+          <Card title="Nodes:2" size={"small"}>
+            <Descriptions column={1} bordered colon={false} size="small" className={styles.overview}>
+              <Descriptions.Item label="Disk Available">
+                83.21%
+                <p className={styles.light}>775.1 GB / 931.5 GB</p>
+              </Descriptions.Item>
+              <Descriptions.Item label="JVM Heap">
+                27.60%
+                <p className={styles.light}>565.3 GB / 2.0 GB</p>
+              </Descriptions.Item>
+            </Descriptions>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={12} lg={8}>
+          <Card title="Indices:27" size={"small"}>
+            <Descriptions column={1} bordered colon={false} className={styles.overview}>
+              <Descriptions.Item label="Documents">20,812,087</Descriptions.Item>
+              <Descriptions.Item label="Disk Usage">1.1 GB</Descriptions.Item>
+              <Descriptions.Item label="Primary Shards">28</Descriptions.Item>
+              <Descriptions.Item label="Replica Shards">26</Descriptions.Item>
+            </Descriptions>
+          </Card>
+        </Col>
+      </Row>,
     </Card>)
   }
 }

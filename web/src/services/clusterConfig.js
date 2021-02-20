@@ -9,7 +9,9 @@ export async function createClusterConfig(params) {
 }
 
 export async function updateClusterConfig(params) {
-  return request(`${pathPrefix}/system/cluster/${params.id}`, {
+  let id = params.id;
+  delete(params['id']);
+  return request(`${pathPrefix}/system/cluster/${id}`, {
     method: 'PUT',
     body: params,
   });
@@ -23,7 +25,7 @@ export async function deleteClusterConfig(params) {
 }
 
 export async function searchClusterConfig(params) {
-  let url = `${pathPrefix}/system/cluster`;
+  let url = `${pathPrefix}/system/cluster/_search`;
   let args = buildQueryArgs({
     name: params.name,
     enabled: params.enabled

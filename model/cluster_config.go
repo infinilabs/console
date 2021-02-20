@@ -12,7 +12,7 @@ type ClusterConfig struct {
 	} `json:"basic_auth,omitempty" elastic_mapping:"basic_auth:{type:object}"`
 	Order       int       `json:"order,omitempty" elastic_mapping:"order:{type:integer}"`
 	Description string    `json:"description,omitempty" elastic_mapping:"description:{type:text}"`
-	Enabled     bool      `json:"enabled" elastic_mapping:"enabled:{type:boolean}"`
+	Enabled     bool      `json:"enabled,omitempty" elastic_mapping:"enabled:{type:boolean}"`
 	Created     time.Time `json:"created,omitempty" elastic_mapping:"created:{type:date}"`
 	Updated     time.Time `json:"updated,omitempty" elastic_mapping:"updated:{type:date}"`
 }

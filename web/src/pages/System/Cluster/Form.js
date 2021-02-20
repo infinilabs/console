@@ -10,8 +10,17 @@ import {connect} from "dva";
   clusterConfig
 }))
 class ClusterForm extends React.Component{
-  state = {
-    confirmDirty: false,
+  constructor(props) {
+    super(props);
+    let editValue = this.props.clusterConfig.editValue;
+    let needAuth = false;
+    if(editValue.basic_auth && typeof editValue.basic_auth.username !== 'undefined' && editValue.basic_auth.username !== ''){
+      needAuth = true;
+    }
+    this.state = {
+      confirmDirty: false,
+      needAuth: needAuth,
+    }
   }
   componentDidMount() {
     //console.log(this.props.clusterConfig.editMode)
@@ -77,6 +86,12 @@ class ClusterForm extends React.Component{
     })
   }
 
+  handleAuthChange = (val) => {
+    this.setState({
+      needAuth: val,
+    })
+  }
+
   render() {
     const {getFieldDecorator} = this.props.form;
     const formItemLayout = {
@@ -103,7 +118,11 @@ class ClusterForm extends React.Component{
     };
     const {editValue, editMode} = this.props.clusterConfig;
     return (
-      <Card title={editMode === 'NEW' ? '注册集群': '修改集群配置'}>
+      <Card title={editMode === 'NEW' ? '注册集群': '修改集群配置'}
+        extra={[<Button type="primary" onClick={()=>{
+          router.push('/system/cluster');
+        }}>返回</Button>]}
+      >
       <Form {...formItemLayout}>
         <Form.Item label="集群名称">
           {getFieldDecorator('name', {
@@ -131,6 +150,15 @@ class ClusterForm extends React.Component{
             ],
           })(<Input />)}
         </Form.Item>
+        <Form.Item label="是否需要身份验证">
+          <Switch
+            defaultChecked={this.state.needAuth}
+            onChange={this.handleAuthChange}
+            checkedChildren={<Icon type="check" />}
+            unCheckedChildren={<Icon type="close" />}
+          />
+        </Form.Item>
+        {this.state.needAuth === true ? (<div>
         <Form.Item label="ES 用户名">
           {getFieldDecorator('username', {
             initialValue: editValue.basic_auth.username,
@@ -145,6 +173,7 @@ class ClusterForm extends React.Component{
             ],
           })(<Input.Password />)}
         </Form.Item>
+        </div>):''}
         <Form.Item label="排序权重">
           {getFieldDecorator('order', {
             initialValue: editValue.order || 0,

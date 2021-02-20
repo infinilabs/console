@@ -61,6 +61,18 @@ export default {
       })
       return data;
     },
+    *reloadClusterList({payload}, {call, put, select}){
+      yield put({
+        type: 'saveData',
+        payload: {
+          clusterList: [],
+        }
+      });
+      yield put({
+        type: 'fetchClusterList',
+        payload: payload
+      })
+    }
   },
 
   reducers: {

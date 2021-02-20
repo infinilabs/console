@@ -17,20 +17,13 @@ class Index extends  React.Component {
     dataIndex: 'endpoint',
     key: 'endpoint',
   },{
-    title: '用户名',
-    dataIndex: 'basic_auth.username',
+    title: '是否需要身份验证',
+    dataIndex: 'basic_auth',
     key: 'username',
-  },{
-    title: '密码',
-    dataIndex: 'basic_auth.password',
-    key: 'password',
-    render: (val) =>{
-      return "******";
+    render: (val) => {
+      console.log(val)
+      return (val && typeof val.username !=='undefined' && val.username !== '')? '是': '否';
     }
-  },{
-    title: '排序权重',
-    dataIndex: 'order',
-    key: 'order',
   },{
     title: '描述',
     dataIndex: 'description',

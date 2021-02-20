@@ -4,7 +4,6 @@ import { Card,Form,Input, Select,Button,message,Upload, Icon,Switch } from 'antd
 const { Option } = Select;
 import { formatMessage, FormattedMessage } from 'umi/locale';
 import DescriptionList from '@/components/DescriptionList';
-import styles from '../profile/AdvancedProfile.less';
 const { Description } = DescriptionList;
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 const FormItem = Form.Item;
@@ -168,7 +167,6 @@ class Import extends Component {
     return (
         <PageHeaderWrapper>
             <Card
-            className={styles.tabsCard}
             bordered={false}
             tabList={operationTabList}
             onTabChange={this.onOperationTabChange}

@@ -4,7 +4,6 @@ import { Card,Form,Input, Select,Button,message,Upload, Icon,Switch } from 'antd
 const { Option } = Select;
 import { formatMessage, FormattedMessage } from 'umi/locale';
 import DescriptionList from '@/components/DescriptionList';
-import styles from '../../profile/AdvancedProfile.less';
 const { Description } = DescriptionList;
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 const FormItem = Form.Item;
@@ -103,7 +102,7 @@ class AnalyzerTest extends Component {
 
         return (
             <Fragment>
-            <Card className={styles.tabsCard} bordered={false}>
+            <Card bordered={false}>
             <div>
             <Form onSubmit={this.handleSubmit}  hideRequiredMark style={{ marginTop: 8 }}>
     <FormItem {...formItemLayout} label="选择分词器">

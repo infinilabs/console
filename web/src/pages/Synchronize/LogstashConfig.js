@@ -6,7 +6,6 @@ import { Card,Form,Input, Select,Button,message, Drawer,
 const { Option } = Select;
 import { formatMessage, FormattedMessage } from 'umi/locale';
 import DescriptionList from '@/components/DescriptionList';
-import styles from '../profile/AdvancedProfile.less';
 const { Description } = DescriptionList;
 const FormItem = Form.Item;
 const { TextArea } = Input;
@@ -216,7 +215,6 @@ class LogstashConfig extends Component {
     return (
         <Fragment>
             <Card
-            className={styles.tabsCard}
             bordered={false}
             tabList={operationTabList}
             onTabChange={this.onOperationTabChange}

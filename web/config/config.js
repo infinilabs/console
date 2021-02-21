@@ -67,13 +67,13 @@ export default {
   //     pathRewrite: { '^/server': '' },
   //   },
   // },
-  proxy: {
-    '/_search-center/': {
-      target: 'http://localhost:9000',
-      changeOrigin: true,
-    //  pathRewrite: { '^/server': '' },
-    },
-  },
+  // proxy: {
+  //   '/_search-center/': {
+  //     target: 'http://localhost:9000',
+  //     changeOrigin: true,
+  //   //  pathRewrite: { '^/server': '' },
+  //   },
+  // },
   ignoreMomentLocale: true,
   lessLoaderOptions: {
     javascriptEnabled: true,
@@ -102,7 +102,7 @@ export default {
     },
   },
 
-  chainWebpack: webpackPlugin,
+  // chainWebpack: webpackPlugin,
   cssnano: {
     mergeRules: false,
   },

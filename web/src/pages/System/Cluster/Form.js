@@ -159,14 +159,14 @@ class ClusterForm extends React.Component{
           />
         </Form.Item>
         {this.state.needAuth === true ? (<div>
-        <Form.Item label="ES 用户名">
+        <Form.Item label="用户名">
           {getFieldDecorator('username', {
             initialValue: editValue.basic_auth.username,
             rules: [
             ],
           })(<Input autoComplete='off' />)}
         </Form.Item>
-        <Form.Item label="ES 密码" hasFeedback>
+        <Form.Item label="密码" hasFeedback>
           {getFieldDecorator('password', {
             initialValue: editValue.basic_auth.password,
             rules: [

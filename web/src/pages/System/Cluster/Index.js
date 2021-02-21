@@ -21,7 +21,7 @@ class Index extends  React.Component {
     dataIndex: 'basic_auth',
     key: 'username',
     render: (val) => {
-      console.log(val)
+      //console.log(val)
       return (val && typeof val.username !=='undefined' && val.username !== '')? '是': '否';
     }
   },{

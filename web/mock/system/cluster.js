@@ -65,7 +65,7 @@ export default {
   },
   'POST /_search-center/system/cluster': function(req, res){
     res.send({
-      "_id": "c0obhd4gq9s7akom0o60",
+      "_id": "c0oc4kkgq9s8qss2uk50",
       "_source": {
         "name": "cluster1",
         "endpoint": "http://localhost:9200",
@@ -83,7 +83,7 @@ export default {
   },
   'PUT /_search-center/system/cluster/:id': function(req, res){
     res.send({
-      "_id": "c0obhd4gq9s7akom0o60",
+      "_id": "c0oc4kkgq9s8qss2uk50",
       "_source": {
         "basic_auth": {
           "password": "456",
@@ -92,6 +92,7 @@ export default {
         "description": "xx业务集群2",
         "endpoint": "http://localhost:9201",
         "name": "cluster2",
+        "enabled": true,
         "updated": "2021-02-20T15:25:12.159789+08:00"
       },
       "result": "updated"
@@ -99,7 +100,7 @@ export default {
   },
   'DELETE /_search-center/system/cluster/:id': function(req, res){
     res.send({
-      "_id": "c0obk7cgq9s7hi05aou0",
+      "_id": "c0oc4kkgq9s8qss2uk50",
       "result": "deleted"
     });
   }

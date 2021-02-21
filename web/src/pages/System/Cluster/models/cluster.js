@@ -61,6 +61,7 @@ export default {
       let idx = data.findIndex((item)=>{
         return item.id === res._id;
       });
+
       let originalEnabled = data[idx].enabled;
       data[idx] = {
         ...data[idx],

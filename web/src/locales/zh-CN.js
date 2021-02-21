@@ -122,8 +122,8 @@ export default {
 
   'menu.backup': '备份管理',
   'menu.backup.overview': '概览',
-  'menu.backup.index': '索引备份与还原',
-  'menu.backup.lifecycle': '备份周期管理',
+  'menu.backup.index': '备份还原',
+  'menu.backup.lifecycle': '备份策略',
 
   'menu.system': '系统管理',
   'menu.system.cluster': '集群管理',

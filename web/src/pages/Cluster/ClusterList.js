@@ -4,6 +4,7 @@ import {Link} from 'umi';
 import {extendHex, defineGrid} from 'honeycomb-grid';
 import { SVG } from '@svgdotjs/svg.js'
 import { connect } from 'dva';
+import styles from './ClusterItem.less';
 
 @connect(({ clusterMonitor }) => ({
   clusterMonitor
@@ -64,7 +65,7 @@ class ClusterItem extends Component {
     const draw = SVG().addTo(this.root).size('100%', '100%')
 
     let data = this.props.data;
-    const rect = { width: 5, height: 3 };
+    const rect = { width: 4, height: 20 };
     
     const Hex = extendHex({
       size: 30,
@@ -116,9 +117,10 @@ class ClusterItem extends Component {
   }
   render(){
     return (
-      <div ref={ref=>this.root=ref}></div>
+      <div className={styles.clusterItem} ref={ref=>this.root=ref}></div>
     )
   }
 }
 
+export {ClusterItem};
 export default ClusterList;

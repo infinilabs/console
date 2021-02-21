@@ -1,9 +1,10 @@
 import React, {Fragment} from 'react';
-import {Card, Divider, Popconfirm, Row, Col, Table, Descriptions} from "antd";
+import {Card, List, Divider, Popconfirm, Row, Col, Table, Descriptions} from "antd";
 import {Link} from "umi"
 import moment from "moment";
 import styles from "./Overview.less";
 import {connect} from "dva";
+import {ClusterItem} from "./ClusterList";
 
 let HealthCircle = (props)=>{
   return (
@@ -56,45 +57,133 @@ class Overview extends  React.Component {
       ),
     }
   ];
+
+  clusterItem = {
+    name: 'cluster-test-name4',
+    nodes: [{
+      name: 'node-32',
+      status: 'green'
+    },{
+      name: 'node-33',
+      status: 'green'
+    },{
+      name: 'node-34',
+      status: 'green'
+    },{
+      name: 'node-35',
+      status: 'green'
+    },{
+      name: 'node-36',
+      status: 'green'
+    },{
+      name: 'node-37',
+      status: 'yellow'
+    },{
+      name: 'node-33',
+      status: 'green'
+    },{
+      name: 'node-34',
+      status: 'green'
+    },{
+      name: 'node-35',
+      status: 'green'
+    },{
+      name: 'node-36',
+      status: 'green'
+    },{
+      name: 'node-37',
+      status: 'yellow'
+    },{
+      name: 'node-33',
+      status: 'green'
+    },{
+      name: 'node-34',
+      status: 'green'
+    },{
+      name: 'node-35',
+      status: 'green'
+    },{
+      name: 'node-36',
+      status: 'green'
+    },{
+      name: 'node-37',
+      status: 'yellow'
+    },{
+      name: 'node-33',
+      status: 'green'
+    },{
+      name: 'node-34',
+      status: 'green'
+    },{
+      name: 'node-35',
+      status: 'green'
+    },{
+      name: 'node-36',
+      status: 'green'
+    },{
+      name: 'node-37',
+      status: 'yellow'
+    },{
+      name: 'node-38',
+      status: 'green'
+    }],
+  };
+
   render() {
-    return (<Card title={this.props.selectedCluster?this.props.selectedCluster.name:''}>
-      <Row gutter={[16,16]}>
-        <Col xs={24} sm={12} md={12} lg={8} >
-          <Card title="Summary" size={"small"}>
-            <Descriptions column={1} bordered colon={false} className={styles.overview}>
-              <Descriptions.Item label="Health"><HealthCircle color="green"/>Healthy</Descriptions.Item>
-              <Descriptions.Item label="Version">7.10.0</Descriptions.Item>
-              <Descriptions.Item label="Uptime">3 天</Descriptions.Item>
-              <Descriptions.Item label="License">Basic</Descriptions.Item>
-            </Descriptions>
+
+    return (
+        <div>
+          <Card title={this.props.selectedCluster?this.props.selectedCluster.name:''}>
+            <Row gutter={[16,16]}>
+              <Col xs={24} sm={12} md={12} lg={8} >
+                <Card title="Summary" size={"small"}>
+                  <Descriptions column={1} bordered colon={false} className={styles.overview}>
+                    <Descriptions.Item label="Health"><HealthCircle color="green"/>Healthy</Descriptions.Item>
+                    <Descriptions.Item label="Version">7.10.0</Descriptions.Item>
+                    <Descriptions.Item label="Uptime">3 天</Descriptions.Item>
+                    <Descriptions.Item label="License">Basic</Descriptions.Item>
+                  </Descriptions>
+                </Card>
+              </Col>
+              <Col xs={24} sm={12} md={12} lg={8}>
+                <Card title="Nodes:2" size={"small"}>
+                  <Descriptions column={1} bordered colon={false} size="small" className={styles.overview}>
+                    <Descriptions.Item label="Disk Available">
+                      83.21%
+                      <p className={styles.light}>775.1 GB / 931.5 GB</p>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="JVM Heap">
+                      27.60%
+                      <p className={styles.light}>565.3 GB / 2.0 GB</p>
+                    </Descriptions.Item>
+                  </Descriptions>
+                </Card>
+              </Col>
+              <Col xs={24} sm={12} md={12} lg={8}>
+                <Card title="Indices:27" size={"small"}>
+                  <Descriptions column={1} bordered colon={false} className={styles.overview}>
+                    <Descriptions.Item label="Documents">20,812,087</Descriptions.Item>
+                    <Descriptions.Item label="Disk Usage">1.1 GB</Descriptions.Item>
+                    <Descriptions.Item label="Primary Shards">28</Descriptions.Item>
+                    <Descriptions.Item label="Replica Shards">26</Descriptions.Item>
+                  </Descriptions>
+                </Card>
+              </Col>
+            </Row>
           </Card>
-        </Col>
-        <Col xs={24} sm={12} md={12} lg={8}>
-          <Card title="Nodes:2" size={"small"}>
-            <Descriptions column={1} bordered colon={false} size="small" className={styles.overview}>
-              <Descriptions.Item label="Disk Available">
-                83.21%
-                <p className={styles.light}>775.1 GB / 931.5 GB</p>
-              </Descriptions.Item>
-              <Descriptions.Item label="JVM Heap">
-                27.60%
-                <p className={styles.light}>565.3 GB / 2.0 GB</p>
-              </Descriptions.Item>
-            </Descriptions>
+
+          <Card title={this.clusterItem.name + ": "+ this.clusterItem.nodes.length}
+                extra={<Link to={"/cluster/monitoring/" + this.clusterItem.name}>查看更多</Link>}
+          >
+            <div className={styles.clusterItemCard}>
+              {/* {item.nodes.map(node => {
+                    return (<a><Tag style={{marginBottom:5}} color={node.status}>{node.name}</Tag></a>);
+                  })} */}
+              <ClusterItem data={this.clusterItem} />
+            </div>
           </Card>
-        </Col>
-        <Col xs={24} sm={12} md={12} lg={8}>
-          <Card title="Indices:27" size={"small"}>
-            <Descriptions column={1} bordered colon={false} className={styles.overview}>
-              <Descriptions.Item label="Documents">20,812,087</Descriptions.Item>
-              <Descriptions.Item label="Disk Usage">1.1 GB</Descriptions.Item>
-              <Descriptions.Item label="Primary Shards">28</Descriptions.Item>
-              <Descriptions.Item label="Replica Shards">26</Descriptions.Item>
-            </Descriptions>
-          </Card>
-        </Col>
-      </Row>
-    </Card>)
+        </div>
+    )
   }
 }
 

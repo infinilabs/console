@@ -56,4 +56,5 @@ func Init(cfg *config.AppConfig) {
 	ui.HandleUIMethod(api.PUT, pathPrefix + "system/cluster/:id", shdl.HandleUpdateClusterAction)
 	ui.HandleUIMethod(api.DELETE, pathPrefix + "system/cluster/:id", shdl.HandleDeleteClusterAction)
 	ui.HandleUIMethod(api.GET, pathPrefix + "system/cluster/_search", shdl.HandleSearchClusterAction)
+	ui.HandleUIMethod(api.POST, pathPrefix + "system/cluster/_search", shdl.HandleSearchClusterAction)
 }

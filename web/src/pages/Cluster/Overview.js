@@ -93,7 +93,7 @@ class Overview extends  React.Component {
             </Descriptions>
           </Card>
         </Col>
-      </Row>,
+      </Row>
     </Card>)
   }
 }

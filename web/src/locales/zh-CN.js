@@ -178,6 +178,12 @@ export default {
   'menu.account.trigger': '触发报错',
   'menu.account.logout': '退出登录',
 
+  'dashboard.charts.title.cluster_throughput.axis.indexing':"索引吞吐",
+  'dashboard.charts.title.cluster_throughput.axis.searching':"查询吞吐",
+  'dashboard.charts.title.cluster_latency.axis.indexing':"索引延迟",
+  'dashboard.charts.title.cluster_latency.axis.searching':"查询延迟",
+
+
   'app.login.message-invalid-credentials': '账户或密码错误（admin/888888）',
   'app.login.message-invalid-verification-code': '验证码错误',
   'app.login.tab-login-credentials': '账户密码登录',

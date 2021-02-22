@@ -102,12 +102,12 @@ class BasicLayout extends React.PureComponent {
     dispatch({
       type: 'setting/getSetting',
     });
-    dispatch({
-      type: 'cluster/fetchClusterVersion',
-      payload: {
-        cluster: 'single-es'
-      }
-    });
+    // dispatch({
+    //   type: 'cluster/fetchClusterVersion',
+    //   payload: {
+    //     cluster: 'single-es'
+    //   }
+    // });
     this.renderRef = requestAnimationFrame(() => {
       this.setState({
         rendering: false,

@@ -1,5 +1,5 @@
 export default {
-  'GET /_search-center/system/cluster/_search': function(req, res){
+  'GET /_search-center/cluster/_search': function(req, res){
     res.send({
       "took": 0,
       "timed_out": false,
@@ -31,7 +31,7 @@ export default {
       }
     })
   },
-  'POST /_search-center/system/cluster/_search': function(req, res){
+  'POST /_search-center/cluster/_search': function(req, res){
     res.send({
       "took": 0,
       "timed_out": false,
@@ -63,7 +63,7 @@ export default {
       }
     })
   },
-  'POST /_search-center/system/cluster': function(req, res){
+  'POST /_search-center/cluster': function(req, res){
     res.send({
       "_id": "c0oc4kkgq9s8qss2uk50",
       "_source": {
@@ -81,7 +81,7 @@ export default {
       "result": "created"
     });
   },
-  'PUT /_search-center/system/cluster/:id': function(req, res){
+  'PUT /_search-center/cluster/:id': function(req, res){
     res.send({
       "_id": "c0oc4kkgq9s8qss2uk50",
       "_source": {
@@ -98,7 +98,7 @@ export default {
       "result": "updated"
     });
   },
-  'DELETE /_search-center/system/cluster/:id': function(req, res){
+  'DELETE /_search-center/cluster/:id': function(req, res){
     res.send({
       "_id": "c0oc4kkgq9s8qss2uk50",
       "result": "deleted"

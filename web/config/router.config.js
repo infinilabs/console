@@ -35,9 +35,9 @@ export default [
               component: './Cluster/ClusterMonitor',
               hideInMenu: true,
             }, {
-              path: '/cluster/monitoring',
+              path: '/cluster/metrics',
               name: 'monitoring',
-              component: './Cluster/ClusterList',
+              component: './Cluster/Metrics',
             }, {
             path: '/cluster/logging',
             name: 'logging',

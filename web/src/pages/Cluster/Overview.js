@@ -22,6 +22,7 @@ let HealthCircle = (props)=>{
 @connect(({global}) => ({
   selectedCluster: global.selectedCluster
 }))
+
 class Overview extends  React.Component {
   state = {
     data: [{id:"JFpIbacZQamv9hkgQEDZ2Q", name:"single-es", endpoint:"http://localhost:9200", health: "green", version: "7.10.0", uptime:"320883955"}]

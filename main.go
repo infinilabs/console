@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	_ "expvar"
+	"infini.sh/framework/core/elastic"
 
 	"infini.sh/framework"
 	"infini.sh/framework/core/env"
@@ -71,7 +72,7 @@ func main() {
 	}, func() {
 		orm.RegisterSchemaWithIndexName(model.Dict{}, "dict")
 		orm.RegisterSchemaWithIndexName(model.Reindex{}, "reindex")
-		orm.RegisterSchemaWithIndexName(model.ClusterConfig{}, "cluster")
+		orm.RegisterSchemaWithIndexName(elastic.ElasticsearchConfig{}, "cluster")
 	})
 
 }

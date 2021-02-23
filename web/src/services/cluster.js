@@ -8,8 +8,8 @@ export async function getClusterVersion(params) {
 }
 
 export async function getClusterMetrics(params) {
-    let id = params.id;
-    delete(params['id']);
+    let id = params.cluster_id;
+    delete(params['cluster_id']);
     return request(`${pathPrefix}/cluster/${id}/metrics`, {
         method: 'GET'
     });

@@ -138,8 +138,9 @@ const vstyle = {
     marginRight: "5px"
 };
 
-@connect(({clusterMonitor}) => ({
-    clusterMonitor
+@connect(({clusterMonitor,global}) => ({
+    clusterMonitor,
+    selectedCluster: global.selectedCluster
 }))
 
 class ClusterMonitor extends PureComponent {
@@ -183,10 +184,12 @@ class ClusterMonitor extends PureComponent {
             timeMask = 'YY-MM-DD'
         }
         this.setState({timeScale: {min: timeRange.min, max: timeRange.max, mask: timeMask}});
+        // console.log(this.props.selectedCluster)
         dispatch({
             type: 'clusterMonitor/fetchClusterMetrics',
             payload: {
                 timeRange: timeRange,
+                cluster_id:this.props.selectedCluster?this.props.selectedCluster.id:''
             },
         });
     }
@@ -197,6 +200,9 @@ class ClusterMonitor extends PureComponent {
 
     componentDidMount() {
         const {match, location} = this.props;
+
+
+
         let min = location.query.start || '2020-12-10 15:00';
         let max = location.query.end || '2020-12-10 16:00';
         min = moment(min, 'YYYY-MM-DD HH:mm');
@@ -462,7 +468,9 @@ class ClusterMonitor extends PureComponent {
                     </Input.Group>
                 </div>
 
-                <Card style={{marginBottom: 5}}>
+                <Card
+                    // title={this.props.selectedCluster?this.props.selectedCluster.name:''}
+                    style={{marginBottom: 5}}>
                     <Row>
                         <Col md={2} xs={4}>
                             <Statistic valueStyle={vstyle} title="在线时长" value={clusterStats.uptime}/>

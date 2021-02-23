@@ -1,4 +1,4 @@
-package system
+package cluster
 
 import (
 	"fmt"
@@ -7,7 +7,6 @@ import (
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/util"
 	"infini.sh/search-center/config"
-	"infini.sh/search-center/model"
 	"infini.sh/framework/core/orm"
 	"net/http"
 	"strings"
@@ -20,7 +19,7 @@ type APIHandler struct {
 }
 
 func (h *APIHandler) HandleCreateClusterAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
-	var conf = &model.ClusterConfig{}
+	var conf = &elastic.ElasticsearchConfig{}
 	resBody := map[string] interface{}{
 	}
 	err := h.DecodeJSON(req, conf)
@@ -36,7 +35,7 @@ func (h *APIHandler) HandleCreateClusterAction(w http.ResponseWriter, req *http.
 	conf.Enabled=true
 	conf.Updated = conf.Created
 	//conf.ID = id
-	index:=orm.GetIndexName(model.ClusterConfig{})
+	index:=orm.GetIndexName(elastic.ElasticsearchConfig{})
 	_, err = esClient.Index(index, "", id, conf)
 	if err != nil {
 		resBody["error"] = err
@@ -66,7 +65,7 @@ func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.
 	}
 	id := ps.ByName("id")
 	esClient := elastic.GetClient(h.Config.Elasticsearch)
-	indexName := orm.GetIndexName(model.ClusterConfig{})
+	indexName := orm.GetIndexName(elastic.ElasticsearchConfig{})
 	originConf, err := esClient.Get(indexName, "", id)
 	if err != nil {
 		resBody["error"] = err.Error()
@@ -98,7 +97,7 @@ func (h *APIHandler) HandleDeleteClusterAction(w http.ResponseWriter, req *http.
 	}
 	id := ps.ByName("id")
 	esClient := elastic.GetClient(h.Config.Elasticsearch)
-	response, err := esClient.Delete(orm.GetIndexName(model.ClusterConfig{}), "", id)
+	response, err := esClient.Delete(orm.GetIndexName(elastic.ElasticsearchConfig{}), "", id)
 
 	if err != nil {
 		resBody["error"] = err.Error()
@@ -135,7 +134,7 @@ func (h *APIHandler) HandleSearchClusterAction(w http.ResponseWriter, req *http.
 
 	queryDSL = fmt.Sprintf(queryDSL, mustBuilder.String())
 	esClient := elastic.GetClient(h.Config.Elasticsearch)
-	res, err := esClient.SearchWithRawQueryDSL(orm.GetIndexName(model.ClusterConfig{}), []byte(queryDSL))
+	res, err := esClient.SearchWithRawQueryDSL(orm.GetIndexName(elastic.ElasticsearchConfig{}), []byte(queryDSL))
 	if err != nil {
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
@@ -144,3 +143,15 @@ func (h *APIHandler) HandleSearchClusterAction(w http.ResponseWriter, req *http.
 
 	h.WriteJSON(w, res, http.StatusOK)
 }
+
+//new
+func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
+	resBody := map[string] interface{}{}
+	id := ps.ByName("id")
+
+	//esClient := elastic.GetClient(h.Config.Elasticsearch)
+
+	//resBody["summary"] = conf
+	resBody["metrics"] = id
+
+	h.WriteJSON(w, resBody,http.StatusOK)}

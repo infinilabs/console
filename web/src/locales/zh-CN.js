@@ -182,7 +182,11 @@ export default {
   'dashboard.charts.title.cluster_throughput.axis.searching':"查询吞吐",
   'dashboard.charts.title.cluster_latency.axis.indexing':"索引延迟",
   'dashboard.charts.title.cluster_latency.axis.searching':"查询延迟",
-
+  'dashboard.charts.title.system_load.axis.load':"系统负载",
+  'dashboard.charts.title.system_network.axis.traffic':"网络吞吐",
+  'dashboard.charts.title.system_disk.axis.throughput':"磁盘吞吐",
+  'dashboard.charts.title.system_disk.axis.iops':"磁盘 IOPS",
+  'dashboard.charts.title.system_memory.axis.memory':"内存统计",
 
   'app.login.message-invalid-credentials': '账户或密码错误（admin/888888）',
   'app.login.message-invalid-verification-code': '验证码错误',

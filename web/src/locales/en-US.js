@@ -177,6 +177,11 @@ export default {
   'dashboard.charts.title.cluster_throughput.axis.searching':"Searching Throughput",
   'dashboard.charts.title.cluster_latency.axis.indexing':"Indexing Latency",
   'dashboard.charts.title.cluster_latency.axis.searching':"Searching Latency",
+  'dashboard.charts.title.system_load.axis.load':"System Load",
+  'dashboard.charts.title.system_network.axis.traffic':"Network Throughput",
+  'dashboard.charts.title.system_disk.axis.throughput':"Disk Throughput",
+  'dashboard.charts.title.system_disk.axis.iops':"Disk IOPS",
+  'dashboard.charts.title.system_memory.axis.memory':"Memory Usage",
 
 
   'app.login.message-invalid-credentials': 'Invalid username or password（admin/888888）',

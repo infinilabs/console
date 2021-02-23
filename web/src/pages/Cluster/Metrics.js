@@ -38,12 +38,12 @@ let HealthCircle = (props) => {
     )
 }
 
-const unitArr = Array("Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB");
+const unitArr = Array("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB");
 
 let formatter = {
     bytes: (value) => {
-        if (null == value || value === '') {
-            return "0 Bytes";
+        if (isNaN(value) || null == value || value === ''||value==0) {
+            return "0B";
         }
         var index = 0;
         var srcsize = parseFloat(value);

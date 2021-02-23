@@ -1,6 +1,6 @@
 import { queryNotices } from '@/services/api';
 import {message} from "antd";
-import {searchClusterConfig} from "@/services/clusterConfig";
+import {searchClusterConfig} from "@/services/cluster";
 import {formatESSearchResult} from '@/lib/elasticsearch/util';
 
 

@@ -1,4 +1,4 @@
-import {createClusterConfig,searchClusterConfig, updateClusterConfig,deleteClusterConfig} from "@/services/clusterConfig";
+import {createClusterConfig, searchClusterConfig, updateClusterConfig,deleteClusterConfig} from "@/services/cluster";
 import {message} from "antd";
 import {formatESSearchResult} from '@/lib/elasticsearch/util';
 

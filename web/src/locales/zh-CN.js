@@ -188,6 +188,8 @@ export default {
   'dashboard.charts.title.system_disk.axis.iops':"磁盘 IOPS",
   'dashboard.charts.title.system_memory.axis.memory':"内存统计",
   'dashboard.charts.title.system_memory.axis.gc':"GC 次数",
+  'dashboard.charts.title.system_disk-usage.axis.storage':"存储统计",
+  'dashboard.charts.title.system_disk-usage.axis.shards':"分片统计",
 
   'app.login.message-invalid-credentials': '账户或密码错误（admin/888888）',
   'app.login.message-invalid-verification-code': '验证码错误',

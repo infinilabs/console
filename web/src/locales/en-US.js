@@ -182,6 +182,7 @@ export default {
   'dashboard.charts.title.system_disk.axis.throughput':"Disk Throughput",
   'dashboard.charts.title.system_disk.axis.iops':"Disk IOPS",
   'dashboard.charts.title.system_memory.axis.memory':"Memory Usage",
+  'dashboard.charts.title.system_memory.axis.gc':"GC Activity",
 
 
   'app.login.message-invalid-credentials': 'Invalid username or password（admin/888888）',

@@ -187,6 +187,7 @@ export default {
   'dashboard.charts.title.system_disk.axis.throughput':"磁盘吞吐",
   'dashboard.charts.title.system_disk.axis.iops':"磁盘 IOPS",
   'dashboard.charts.title.system_memory.axis.memory':"内存统计",
+  'dashboard.charts.title.system_memory.axis.gc':"GC 次数",
 
   'app.login.message-invalid-credentials': '账户或密码错误（admin/888888）',
   'app.login.message-invalid-verification-code': '验证码错误',

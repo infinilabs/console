@@ -104,6 +104,7 @@ func (handler APIHandler) HandleDeleteDocumentAction(w http.ResponseWriter, req 
 	resResult["payload"] = true
 	handler.WriteJSON(w, resResult, http.StatusOK)
 }
+
 func (handler APIHandler) HandleSearchDocumentAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	client := elastic.GetClient(handler.Config.Elasticsearch)
 	reqBody := docReqBody{}

@@ -358,6 +358,7 @@ class ClusterMonitor extends PureComponent {
         if (clusterMonitor.summary) {
             let rawStats = clusterMonitor.summary;
             clusterStats = {
+                cluster_name: rawStats.cluster_name,
                 status: rawStats.status,
                 version: rawStats.version,
                 nodes_count: rawStats.nodes_count,
@@ -425,7 +426,7 @@ class ClusterMonitor extends PureComponent {
       //   <Menu.Divider/>
       //   <Menu.Item key="5"> */}
                 <Input.Group compact>
-                    <Button style={{cursor: "default"}}>自动刷新间隔</Button>
+                    <Button style={{cursor: "default"}}>刷新间隔</Button>
                     <InputNumber min={1} defaultValue={10} ref={el => this.refreshNum = el}/>
                     <Select defaultValue="seconds" ref={el => this.refreshUnit = el}>
                         <Select.Option value="seconds">秒</Select.Option>
@@ -472,6 +473,9 @@ class ClusterMonitor extends PureComponent {
                     // title={this.props.selectedCluster?this.props.selectedCluster.name:''}
                     style={{marginBottom: 5}}>
                     <Row>
+                        <Col md={2} xs={4}>
+                            <Statistic valueStyle={vstyle} title="集群名称" value={clusterStats.cluster_name}/>
+                        </Col>
                         <Col md={2} xs={4}>
                             <Statistic valueStyle={vstyle} title="在线时长" value={clusterStats.uptime}/>
                         </Col>

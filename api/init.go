@@ -6,7 +6,6 @@ import (
 	"infini.sh/framework/core/task"
 	"infini.sh/framework/core/ui"
 	"infini.sh/search-center/api/index_management"
-	"infini.sh/search-center/api/cluster"
 	"infini.sh/search-center/config"
 	"path"
 )
@@ -48,14 +47,4 @@ func Init(cfg *config.AppConfig) {
 		},
 	})
 
-	shdl := cluster.APIHandler{
-		Config: cfg,
-	}
-	ui.HandleUIMethod(api.GET, path.Join(pathPrefix, "/cluster/:id/version"), shdl.GetClusterVersion)
-	ui.HandleUIMethod(api.GET, path.Join(pathPrefix, "/cluster/:id/metrics"), shdl.HandleClusterMetricsAction)
-	ui.HandleUIMethod(api.POST, path.Join(pathPrefix, "/cluster"), shdl.HandleCreateClusterAction)
-	ui.HandleUIMethod(api.PUT, path.Join(pathPrefix, "/cluster/:id"), shdl.HandleUpdateClusterAction)
-	ui.HandleUIMethod(api.DELETE, path.Join(pathPrefix, "/cluster/:id"), shdl.HandleDeleteClusterAction)
-	ui.HandleUIMethod(api.GET, path.Join(pathPrefix, "/cluster/_search"), shdl.HandleSearchClusterAction)
-	ui.HandleUIMethod(api.POST, path.Join(pathPrefix, "/cluster/_search"), shdl.HandleSearchClusterAction)
 }

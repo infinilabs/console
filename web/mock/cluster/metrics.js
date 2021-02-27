@@ -1,7 +1,8 @@
 export default {
-    'GET /_search-center/cluster/:id/metrics': function(req, res){
+    'GET /elasticsearch/:id/metrics': function(req, res){
         res.send({
             "summary" : {
+                "cluster_name" : "test-cluster",
                 "status" : "green",
                 "used_store_bytes" : 2440421140,
                 "max_store_bytes" : 4440421140,

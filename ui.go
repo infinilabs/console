@@ -39,6 +39,6 @@ func (h UI) InitUI() {
 		response := map[string]interface{}{}
 		response["request"] = string(request)
 
-		w.Write(util.ToJSONBytes(request))
+		w.Write(util.MustToJSONBytes(request))
 	})
 }

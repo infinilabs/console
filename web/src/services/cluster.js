@@ -2,7 +2,7 @@ import request from '@/utils/request';
 import {buildQueryArgs, pathPrefix} from './common';
 
 export async function getClusterVersion(params) {
-    return request(`${pathPrefix}/cluster/${params.cluster}/version`, {
+    return request(`/elasticsearch/${params.cluster}/version`, {
         method: 'GET'
     });
 }
@@ -10,13 +10,13 @@ export async function getClusterVersion(params) {
 export async function getClusterMetrics(params) {
     let id = params.cluster_id;
     delete(params['cluster_id']);
-    return request(`${pathPrefix}/cluster/${id}/metrics`, {
+    return request(`/elasticsearch/${id}/metrics`, {
         method: 'GET'
     });
 }
 
 export async function createClusterConfig(params) {
-    return request(`${pathPrefix}/cluster`, {
+    return request(`/elasticsearch`, {
         method: 'POST',
         body: params,
     });
@@ -25,21 +25,21 @@ export async function createClusterConfig(params) {
 export async function updateClusterConfig(params) {
     let id = params.id;
     delete(params['id']);
-    return request(`${pathPrefix}/cluster/${id}`, {
+    return request(`/elasticsearch/${id}`, {
         method: 'PUT',
         body: params,
     });
 }
 
 export async function deleteClusterConfig(params) {
-    return request(`${pathPrefix}/cluster/${params.id}`, {
+    return request(`/elasticsearch/${params.id}`, {
         method: 'DELETE',
         body: params,
     });
 }
 
 export async function searchClusterConfig(params) {
-    let url = `${pathPrefix}/cluster/_search`;
+    let url = `/elasticsearch/_search`;
     let args = buildQueryArgs({
         name: params.name,
         enabled: params.enabled

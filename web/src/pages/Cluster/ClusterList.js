@@ -52,6 +52,9 @@ class ClusterList extends React.Component{
 }
 
 class ClusterItem extends Component {
+  state={
+    wrapperWidth: 235
+  }
   componentDidMount(){
     
     this.root.addEventListener("click", function({offsetX, offsetY}){
@@ -117,7 +120,9 @@ class ClusterItem extends Component {
   }
   render(){
     return (
-      <div className={styles.clusterItem} ref={ref=>this.root=ref}></div>
+      <div className={styles.clusterItemWrapper} style={{width: this.state.wrapperWidth}}>
+        <div className={styles.clusterItem} ref={ref=>this.root=ref}></div>
+      </div>
     )
   }
 }

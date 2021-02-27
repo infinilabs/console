@@ -24,7 +24,7 @@ export default class GlobalHeader extends PureComponent {
     this.triggerResizeEvent();
   };
   render() {
-    const { collapsed, isMobile, logo, clusterVisible, clusterList } = this.props;
+    const { collapsed, isMobile, logo, clusterVisible, clusterList, selectedCluster } = this.props;
     return (
       <div className={styles.header}>
         {isMobile && (
@@ -37,7 +37,8 @@ export default class GlobalHeader extends PureComponent {
           type={collapsed ? 'menu-unfold' : 'menu-fold'}
           onClick={this.toggle}
         />
-        <DropdownSelect defaultValue={{name:"Select cluster"}}
+        <DropdownSelect defaultValue={selectedCluster}
+          value={selectedCluster}
           labelField="name"
           visible={clusterVisible}
           onChange={(item)=>{

@@ -182,4 +182,5 @@ export default connect(({ user, global, setting, loading }) => ({
   setting,
   clusterVisible: global.clusterVisible,
   clusterList: global.clusterList,
+  selectedCluster: global.selectedCluster,
 }))(HeaderView);

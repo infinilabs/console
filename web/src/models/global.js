@@ -12,7 +12,7 @@ export default {
     notices: [],
     clusterVisible: true,
     clusterList: [],
-    selectedCluster: '',
+    selectedCluster: {name:"Select cluster", id: ""},
   },
 
   effects: {
@@ -46,6 +46,17 @@ export default {
       }
       res = formatESSearchResult(res)
       let clusterList = yield select(state => state.global.clusterList);
+      if(clusterList.length === 0 && res.data.length > 0){
+        yield put({
+          type: 'saveData',
+          payload: {
+            selectedCluster: {
+              name: res.data[0].name,
+              id: res.data[0].id,
+            }
+          }
+        })
+      }
       let data = res.data.map((item)=>{
         return {
           name: item.name,

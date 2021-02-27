@@ -73,8 +73,9 @@ class DropdownSelect extends React.Component{
         >
         <List
           grid={{
-            gutter: 8,
-            column: 4,
+            gutter: 16,
+            sm: 4,
+            xs: 3
           }}
           dataSource={this.props.data}
           renderItem={item => (
@@ -100,7 +101,7 @@ class DropdownSelect extends React.Component{
     return(
       this.props.visible ?
           (<Dropdown overlay={menu} placement="bottomLeft">
-            <Button className={styles['btn-ds']}>{this.state.value[labelField]} <Icon style={{float: 'right', marginTop: 3}}
+            <Button className={styles['btn-ds']}>{this.props.value[labelField] || this.state.value[labelField]} <Icon style={{float: 'right', marginTop: 3}}
                                                                           type="caret-down"/></Button>
           </Dropdown>) : ""
     )

@@ -67,7 +67,7 @@ export default {
       yield put({
         type: 'saveData',
         payload: {
-          clusterList: clusterList.concat(data)
+          clusterList: clusterList.concat(data),
         }
       })
       return data;
@@ -111,6 +111,7 @@ export default {
         ...payload,
       }
     },
+
     removeCluster(state, {payload}){
       return {
         ...state,
@@ -124,6 +125,16 @@ export default {
     updateCluster(state, {payload}){
       let idx = state.clusterList.findIndex(item => item.id === payload.id);
       idx > -1 && (state.clusterList[idx].name = payload.name);
+      return state;
+    },
+    changeClusterById(state,{payload}){
+      let idx = state.clusterList.findIndex(item => item.id === payload.id);
+      if(idx > -1){
+        return {
+          ...state,
+          selectedCluster: state.clusterList[idx],
+        }
+      }
       return state;
     }
   },

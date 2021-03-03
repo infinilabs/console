@@ -2,6 +2,7 @@ import { Button,  Dropdown, List, Spin, message, Icon } from 'antd';
 import React from 'react';
 import InfiniteScroll from 'react-infinite-scroller';
 import styles from './DropdownSelect.less';
+import _ from "lodash";
 
 class DropdownSelect extends React.Component{
   state={
@@ -11,7 +12,7 @@ class DropdownSelect extends React.Component{
   }
 
   handleItemClick = (item)=>{
-    let preValue = this.state.value;
+    let preValue = this.props.value || this.state.value;
     this.setState({
       value: item,
     },()=>{
@@ -63,6 +64,8 @@ class DropdownSelect extends React.Component{
   render(){
     let me = this;
     const {labelField} = this.props;
+    let value = this.props.value || this.state.value;
+
     const menu = (<div className={styles.dropmenu} style={{width: this.props.width}}>
       <div className={styles.infiniteContainer} style={{height: this.props.height}}>
         <InfiniteScroll
@@ -78,11 +81,16 @@ class DropdownSelect extends React.Component{
             xs: 3
           }}
           dataSource={this.props.data}
-          renderItem={item => (
-            <List.Item key={item[labelField]}>
-              <Button onClick={()=>{this.handleItemClick(item)}} className={styles.btnitem}>{item[labelField]}</Button>
-            </List.Item>
-          )}
+          renderItem={item => {
+           return (
+              <List.Item key={item[labelField]}>
+                <Button onClick={() => {
+                  this.handleItemClick(item)
+                }}
+                        className={_.isEqual(item, value) ? styles.btnitem + " " + styles.selected : styles.btnitem}>{item[labelField]}</Button>
+              </List.Item>
+            )
+          }}
         >
               {this.state.loading && this.state.hasMore && (
                 <div className={styles.loadingContainer}>
@@ -101,7 +109,7 @@ class DropdownSelect extends React.Component{
     return(
       this.props.visible ?
           (<Dropdown overlay={menu} placement="bottomLeft">
-            <Button className={styles['btn-ds']}>{this.props.value[labelField] || this.state.value[labelField]} <Icon style={{float: 'right', marginTop: 3}}
+            <Button className={styles['btn-ds']}>{value[labelField]} <Icon style={{float: 'right', marginTop: 3}}
                                                                           type="caret-down"/></Button>
           </Dropdown>) : ""
     )

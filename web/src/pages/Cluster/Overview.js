@@ -1,5 +1,5 @@
 import React, {Fragment} from 'react';
-import {Card, List, Divider, Popconfirm, Row, Col, Table, Descriptions} from "antd";
+import {Card, List, Divider, Popconfirm, Row, Col, Table, Descriptions, Button} from "antd";
 import {Link} from "umi"
 import moment from "moment";
 import styles from "./Overview.less";
@@ -130,10 +130,21 @@ class Overview extends  React.Component {
     }],
   };
 
+  handleChangeClusterById = () =>{
+    const {dispatch} = this.props;
+    dispatch({
+      type: 'global/changeClusterById',
+      payload: {
+        id: "c0oc4kkgq9s8qss2uk51"
+      }
+    })
+  }
+
   render() {
 
     return (
         <div>
+          <Button type="primary" onClick={this.handleChangeClusterById}>change cluster</Button>
           <Card title={this.props.selectedCluster?this.props.selectedCluster.name:''}>
             <Row gutter={[16,16]}>
               <Col xs={24} sm={12} md={12} lg={8} >

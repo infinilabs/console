@@ -24,6 +24,7 @@ let HealthCircle = (props)=>{
 }))
 
 class Overview extends  React.Component {
+
   state = {
     data: [{id:"JFpIbacZQamv9hkgQEDZ2Q", name:"single-es", endpoint:"http://localhost:9200", health: "green", version: "7.10.0", uptime:"320883955"}]
   }
@@ -141,6 +142,10 @@ class Overview extends  React.Component {
   }
 
   render() {
+
+    // useEffect(() => {
+    //   console.log('Listening: ', name);
+    // }, [name]);
 
     return (
         <div>

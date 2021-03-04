@@ -6,10 +6,25 @@ import styles from './index.less';
 import RightContent from './RightContent';
 import DropdownSelect from './DropdownSelect'
 
+import router from "umi/router";
+const path=require('path');
+
+
 export default class GlobalHeader extends PureComponent {
-  componentWillUnmount() {
+
+   constructor(props) {
+       super(props);
+   }
+
+   componentDidMount() {
+
+   }
+
+    componentWillUnmount() {
     this.triggerResizeEvent.cancel();
   }
+
+
   /* eslint-disable*/
   @Debounce(600)
   triggerResizeEvent() {
@@ -44,7 +59,17 @@ export default class GlobalHeader extends PureComponent {
           onChange={(item)=>{
             this.props.handleSaveGlobalState({
               selectedCluster: item
-            })
+            });
+
+            const path1=this.props.location.pathname
+
+            if (path1[path1.length-1] !=='/'){
+                const currentPath=path.dirname(path1);
+                router.replace(currentPath+'/'+item.id);
+            }else{
+                router.replace(path1+item.id);
+            }
+            //location.reload()
           }}
           size={56}
            fetchData={

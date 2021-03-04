@@ -18,7 +18,7 @@ export default [
     authority: ['admin', 'user'],
     routes: [
       // cluster
-      { path: '/', redirect: '/cluster/overview' },
+      { path: '/', redirect: '/cluster/overview/' },
       {
         path: '/cluster',
         name: 'cluster',
@@ -26,24 +26,35 @@ export default [
         routes: [
       //      { path: '/', redirect: '/platform/gateway' },
             {
-              path: '/cluster/overview',
+              path: '/cluster/overview/',
               name: 'overview',
               component: './Cluster/Overview',
-            }, {
+            },   {
+              path: '/cluster/overview/:elasticsearch',
+              name: 'overview',
+              component: './Cluster/Overview',
+              hideInMenu: true,
+            },
+            {
               path: '/cluster/monitoring/:name',
               name: 'cluster',
               component: './Cluster/ClusterMonitor',
               hideInMenu: true,
             }, {
-              path: '/cluster/metrics',
+              path: '/cluster/metrics/',
               name: 'monitoring',
               component: './Cluster/Metrics',
             }, {
-            path: '/cluster/logging',
+              path: '/cluster/metrics/:elasticsearch',
+              name: 'monitoring',
+              component: './Cluster/Metrics',
+              hideInMenu: true,
+            }, {
+            path: '/cluster/logs/',
             name: 'logging',
             component: './Cluster/SearchMonitor',
             },{
-              path: '/cluster/settings',
+              path: '/cluster/settings/',
               name: 'settings',
               component: './Cluster/Settings/Base',
               routes: [

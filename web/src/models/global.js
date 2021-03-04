@@ -13,6 +13,7 @@ export default {
     clusterVisible: true,
     clusterList: [],
     selectedCluster: {name:"Select cluster", id: ""},
+    selectedClusterID: "",
   },
 
   effects: {
@@ -122,6 +123,7 @@ export default {
         return {
           ...state,
           selectedCluster: state.clusterList[idx],
+          selectedClusterID: state.clusterList[idx].id,
         }
       }
       return state;

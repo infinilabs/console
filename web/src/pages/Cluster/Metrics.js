@@ -4,6 +4,7 @@ import {formatMessage} from 'umi/locale';
 import {Button, Card, Col, DatePicker, Dropdown, Icon, Input, InputNumber, Row, Select, Statistic} from 'antd';
 import moment from 'moment';
 import {DateTime} from 'luxon';
+import router from "umi/router";
 
 import numeral from 'numeral';
 
@@ -20,6 +21,9 @@ import {
     timeFormatter
 } from "@elastic/charts";
 import styles from './Metrics.less';
+
+import { Spin, Alert } from 'antd';
+
 
 const {RangePicker} = DatePicker;
 
@@ -140,7 +144,8 @@ const vstyle = {
 
 @connect(({clusterMonitor,global}) => ({
     clusterMonitor,
-    selectedCluster: global.selectedCluster
+    selectedCluster: global.selectedCluster,
+    clusterList: global.clusterList
 }))
 
 class ClusterMonitor extends PureComponent {
@@ -151,6 +156,8 @@ class ClusterMonitor extends PureComponent {
     }
 
     state = {
+        spinning: false,
+        clusterID:null,
         timeRange: {
             min: moment().subtract(1, 'h').toISOString(),
             max: moment().toISOString()
@@ -158,7 +165,24 @@ class ClusterMonitor extends PureComponent {
         lastSeconds: 3600,
         qsVisible: false,
     }
+
+
+    componentWillReceiveProps(newProps) {
+
+    }
+
     fetchData = () => {
+
+        console.log("fetching data ing."+this.state.clusterID)
+
+        if (this.state.clusterID===undefined||this.state.clusterID===""||this.state.clusterID===null){
+            return
+        }
+
+        this.setState({
+            spinning:true,
+        })
+
         fetchDataCount++;
         //console.log(fetchDataCount, moment().diff(startTime)/1000);
         const {dispatch} = this.props;
@@ -184,24 +208,58 @@ class ClusterMonitor extends PureComponent {
             timeMask = 'YY-MM-DD'
         }
         this.setState({timeScale: {min: timeRange.min, max: timeRange.max, mask: timeMask}});
-        // console.log(this.props.selectedCluster)
         dispatch({
             type: 'clusterMonitor/fetchClusterMetrics',
             payload: {
                 timeRange: timeRange,
-                cluster_id:this.props.selectedCluster?this.props.selectedCluster.id:''
+                cluster_id:this.state.clusterID
             },
-        });
+        }).then(()=>{
+            this.setState({
+                spinning:false,
+            })
+        })
     }
 
     componentWillUnmount() {
         clearInterval(tv1);
     }
 
+    componentDidUpdate(prevProps, prevState, snapshot) {
+
+        // console.log(this.props.selectedCluster)
+        // console.log(this.state.clusterID)
+
+        if (this.props.selectedCluster.id!==this.state.clusterID){
+            console.log("cluster changed")
+
+            this.setState({ clusterID:this.props.selectedCluster.id }, () => {
+                //TODO 处理 cancel 事件，先把当前还在执行中的请求结束，避免更新完成之后，被晚到的之前的请求给覆盖了。
+                this.fetchData();
+            });
+        }
+    }
+
     componentDidMount() {
         const {match, location} = this.props;
 
+        const queryESID=this.props.match.params.elasticsearch;
 
+        if (queryESID !== null&&queryESID !== undefined){
+            this.state.clusterID=queryESID
+            const {dispatch} = this.props;
+            dispatch({
+                type: 'global/changeClusterById',
+                payload: {
+                    id: queryESID
+                }
+            })
+        }else{
+            //alert("cluster ID is not set");
+            return
+        }
+
+        console.log("selectedCluster:"+this.state.clusterID)
 
         let min = location.query.start || '2020-12-10 15:00';
         let max = location.query.end || '2020-12-10 16:00';
@@ -221,7 +279,8 @@ class ClusterMonitor extends PureComponent {
         // tv1 = setInterval(()=>{
         //   this.fetchData();
         // }, 10000);
-        this.autoRefresh();
+
+        //this.autoRefresh();
     }
 
     autoRefresh(durationInSeconds) {
@@ -427,7 +486,7 @@ class ClusterMonitor extends PureComponent {
       //   <Menu.Item key="5"> */}
                 <Input.Group compact>
                     <Button style={{cursor: "default"}}>刷新间隔</Button>
-                    <InputNumber min={1} defaultValue={10} ref={el => this.refreshNum = el}/>
+                    <InputNumber min={-1} defaultValue={-1} ref={el => this.refreshNum = el}/>
                     <Select defaultValue="seconds" ref={el => this.refreshUnit = el}>
                         <Select.Option value="seconds">秒</Select.Option>
                         <Select.Option value="minutes">分</Select.Option>
@@ -443,137 +502,140 @@ class ClusterMonitor extends PureComponent {
         );
 
         return (
-            <div>
-                <div style={{background: "#fff", padding: "5px", marginBottom: 5}}>
-                    <Input.Group compact>
-                        <Dropdown overlay={menu}
-                                  onVisibleChange={this.handleQSVisibleChange}
-                                  visible={this.state.qsVisible}
-                        >
-                            <Button>
-                                快速选择 <Icon type="clock-circle"/>
+            <Spin spinning={this.state.spinning} tip="Loading...">
+                <div>
+
+                    <div style={{background: "#fff", padding: "5px", marginBottom: 5}}>
+                        <Input.Group compact>
+                            <Dropdown overlay={menu}
+                                      onVisibleChange={this.handleQSVisibleChange}
+                                      visible={this.state.qsVisible}
+                            >
+                                <Button>
+                                    快速选择 <Icon type="clock-circle"/>
+                                </Button>
+                            </Dropdown>
+                            <RangePicker
+                                showTime={{format: 'HH:mm'}}
+                                format="YYYY-MM-DD HH:mm"
+                                placeholder={['开始时间', '结束时间']}
+                                defaultValue={[moment().subtract(1, 'h'), moment()]}
+                                value={this.state.pickerValue}
+                                onChange={this.onTimeChange}
+                                onOk={this.onTimeOk}
+                            />
+                            <Button type="primary" onClick={this.fetchData}>
+                                刷新
                             </Button>
-                        </Dropdown>
-                        <RangePicker
-                            showTime={{format: 'HH:mm'}}
-                            format="YYYY-MM-DD HH:mm"
-                            placeholder={['开始时间', '结束时间']}
-                            defaultValue={[moment().subtract(1, 'h'), moment()]}
-                            value={this.state.pickerValue}
-                            onChange={this.onTimeChange}
-                            onOk={this.onTimeOk}
-                        />
-                        <Button type="primary" onClick={this.fetchData}>
-                            刷新
-                        </Button>
-                    </Input.Group>
+                        </Input.Group>
+                    </div>
+
+                    <Card
+                         //title={this.state.clusterID?this.state.clusterID:''}
+                        style={{marginBottom: 5}}>
+                        <Row>
+                            <Col md={2} xs={4}>
+                                <Statistic valueStyle={vstyle} title="集群名称" value={clusterStats.cluster_name}/>
+                            </Col>
+                            <Col md={2} xs={4}>
+                                <Statistic valueStyle={vstyle} title="在线时长" value={clusterStats.uptime}/>
+                            </Col>
+                            <Col md={2} xs={4}>
+                                <Statistic valueStyle={vstyle} title="集群版本" value={clusterStats.version}/>
+                            </Col>
+                            <Col md={2} xs={4}>
+                                <Statistic valueStyle={vstyle} title="健康情况" value={clusterStats.status}
+                                           prefix={<HealthCircle color={clusterStats.status}/>}/>
+                            </Col>
+                            <Col md={2} xs={4}>
+                                <Statistic valueStyle={vstyle} title="节点数" value={clusterStats.nodes_count}/>
+                            </Col>
+                            <Col md={2} xs={4}>
+                                <Statistic valueStyle={vstyle} title="索引数" value={clusterStats.indices_count}/>
+                            </Col>
+
+                            <Col md={3} xs={4}>
+                                <Statistic valueStyle={vstyle} title="分片数"
+                                           value={clusterStats.primary_shards + '/' + clusterStats.unassigned_shards + '/' + clusterStats.total_shards}/>
+                            </Col>
+
+                            <Col md={3} xs={4}>
+                                <Statistic valueStyle={vstyle} title="文档数" value={clusterStats.document_count}/>
+                            </Col>
+
+                            <Col md={3} xs={4}>
+                                <Statistic valueStyle={vstyle} title="存储空间"
+                                           value={clusterStats.used_store_bytes + '/' + clusterStats.max_store_bytes}/>
+                            </Col>
+                            <Col md={3} xs={4}>
+                                <Statistic valueStyle={vstyle} title="JVM 内存"
+                                           value={clusterStats.used_jvm_bytes + '/' + clusterStats.max_jvm_bytes}/>
+                            </Col>
+
+
+                        </Row>
+                    </Card>
+
+
+                    {
+                        Object.keys(clusterMetrics).map((e, i) => {
+                            let axis = clusterMetrics[e].axis
+                            let lines = clusterMetrics[e].lines
+                            let disableHeaderFormat = false
+                            let headerUnit = ""
+                            return (
+                                <div className={styles.vizChartContainer}>
+                                    <Chart size={[, 200]} className={styles.vizChartItem}>
+                                        <Settings theme={theme} showLegend legendPosition={Position.Top}
+                                                  tooltip={{
+                                                      headerFormatter: disableHeaderFormat
+                                                          ? undefined
+                                                          : ({value}) => `${formatter.full_dates(value)}${headerUnit ? ` ${headerUnit}` : ''}`,
+                                                  }}
+                                                  debug={false}/>
+                                        <Axis id="{e}-bottom" position={Position.Bottom} showOverlappingTicks
+                                              labelFormat={formatter.dates}
+                                              tickFormat={formatter.dates}
+                                        />
+                                        {
+                                            axis.map((item) => {
+                                                return <Axis
+                                                    id={e + '-' + item.id}
+                                                    showGridLines={item.showGridLines}
+                                                    groupId={item.group}
+                                                    title={formatMessage({id: 'dashboard.charts.title.' + e + '.axis.' + item.title})}
+                                                    position={item.position}
+                                                    ticks={item.ticks}
+                                                    labelFormat={getFormatter(item.formatType, item.labelFormat)}
+                                                    tickFormat={getFormatter(item.formatType, item.tickFormat)}
+                                                />
+                                            })
+                                        }
+
+                                        {
+                                            lines.map((item) => {
+                                                return <LineSeries
+                                                    id={item.metric.label}
+                                                    groupId={item.metric.group}
+                                                    timeZone={timezone}
+                                                    xScaleType={ScaleType.Time}
+                                                    yScaleType={ScaleType.Linear}
+                                                    xAccessor={0}
+                                                    tickFormat={getFormatter(item.metric.formatType, item.metric.tickFormat, item.metric.units)}
+                                                    yAccessors={[1]}
+                                                    data={item.data}
+                                                    curve={CurveType.CURVE_MONOTONE_X}
+                                                />
+                                            })
+                                        }
+
+                                    </Chart>
+                                </div>
+                            )
+                        })
+                    }
                 </div>
-
-                <Card
-                    // title={this.props.selectedCluster?this.props.selectedCluster.name:''}
-                    style={{marginBottom: 5}}>
-                    <Row>
-                        <Col md={2} xs={4}>
-                            <Statistic valueStyle={vstyle} title="集群名称" value={clusterStats.cluster_name}/>
-                        </Col>
-                        <Col md={2} xs={4}>
-                            <Statistic valueStyle={vstyle} title="在线时长" value={clusterStats.uptime}/>
-                        </Col>
-                        <Col md={2} xs={4}>
-                            <Statistic valueStyle={vstyle} title="集群版本" value={clusterStats.version}/>
-                        </Col>
-                        <Col md={2} xs={4}>
-                            <Statistic valueStyle={vstyle} title="健康情况" value={clusterStats.status}
-                                       prefix={<HealthCircle color={clusterStats.status}/>}/>
-                        </Col>
-                        <Col md={2} xs={4}>
-                            <Statistic valueStyle={vstyle} title="节点数" value={clusterStats.nodes_count}/>
-                        </Col>
-                        <Col md={2} xs={4}>
-                            <Statistic valueStyle={vstyle} title="索引数" value={clusterStats.indices_count}/>
-                        </Col>
-
-                        <Col md={3} xs={4}>
-                            <Statistic valueStyle={vstyle} title="分片数"
-                                       value={clusterStats.primary_shards + '/' + clusterStats.unassigned_shards + '/' + clusterStats.total_shards}/>
-                        </Col>
-
-                        <Col md={3} xs={4}>
-                            <Statistic valueStyle={vstyle} title="文档数" value={clusterStats.document_count}/>
-                        </Col>
-
-                        <Col md={2} xs={4}>
-                            <Statistic valueStyle={vstyle} title="存储空间"
-                                       value={clusterStats.used_store_bytes + '/' + clusterStats.max_store_bytes}/>
-                        </Col>
-                        <Col md={2} xs={4}>
-                            <Statistic valueStyle={vstyle} title="JVM 内存"
-                                       value={clusterStats.used_jvm_bytes + '/' + clusterStats.max_jvm_bytes}/>
-                        </Col>
-
-
-                    </Row>
-                </Card>
-
-
-                {
-                    Object.keys(clusterMetrics).map((e, i) => {
-                        let axis = clusterMetrics[e].axis
-                        let lines = clusterMetrics[e].lines
-                        let disableHeaderFormat = false
-                        let headerUnit = ""
-                        return (
-                            <div className={styles.vizChartContainer}>
-                                <Chart size={[, 200]} className={styles.vizChartItem}>
-                                    <Settings theme={theme} showLegend legendPosition={Position.Top}
-                                              tooltip={{
-                                                  headerFormatter: disableHeaderFormat
-                                                      ? undefined
-                                                      : ({value}) => `${formatter.full_dates(value)}${headerUnit ? ` ${headerUnit}` : ''}`,
-                                              }}
-                                              debug={false}/>
-                                    <Axis id="{e}-bottom" position={Position.Bottom} showOverlappingTicks
-                                          labelFormat={formatter.dates}
-                                          tickFormat={formatter.dates}
-                                    />
-                                    {
-                                        axis.map((item) => {
-                                            return <Axis
-                                                id={e + '-' + item.id}
-                                                showGridLines={item.showGridLines}
-                                                groupId={item.group}
-                                                title={formatMessage({id: 'dashboard.charts.title.' + e + '.axis.' + item.title})}
-                                                position={item.position}
-                                                ticks={item.ticks}
-                                                labelFormat={getFormatter(item.formatType, item.labelFormat)}
-                                                tickFormat={getFormatter(item.formatType, item.tickFormat)}
-                                            />
-                                        })
-                                    }
-
-                                    {
-                                        lines.map((item) => {
-                                            return <LineSeries
-                                                id={item.metric.label}
-                                                groupId={item.metric.group}
-                                                timeZone={timezone}
-                                                xScaleType={ScaleType.Time}
-                                                yScaleType={ScaleType.Linear}
-                                                xAccessor={0}
-                                                tickFormat={getFormatter(item.metric.formatType, item.metric.tickFormat, item.metric.units)}
-                                                yAccessors={[1]}
-                                                data={item.data}
-                                                curve={CurveType.CURVE_MONOTONE_X}
-                                            />
-                                        })
-                                    }
-
-                                </Chart>
-                            </div>
-                        )
-                    })
-                }
-            </div>
+            </Spin>
         );
     }
 }

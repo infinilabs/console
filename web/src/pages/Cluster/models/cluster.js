@@ -19,6 +19,7 @@ export default {
             yield put({type: 'saveData', payload: clusterMetrics})
             if(callback && typeof callback == 'function'){
                 callback(clusterMetrics);
+                console.log("finished call:"+params.cluster_id);
             }
         },
         *fetchClusterNodeStats({callback}, {call, put}){

@@ -486,7 +486,7 @@ class ClusterMonitor extends PureComponent {
       //   <Menu.Item key="5"> */}
                 <Input.Group compact>
                     <Button style={{cursor: "default"}}>刷新间隔</Button>
-                    <InputNumber min={10} defaultValue={10} ref={el => this.refreshNum = el}/>
+                    <InputNumber min={1} defaultValue={10} ref={el => this.refreshNum = el}/>
                     <Select defaultValue="seconds" ref={el => this.refreshUnit = el}>
                         <Select.Option value="seconds">秒</Select.Option>
                         <Select.Option value="minutes">分</Select.Option>
@@ -554,20 +554,25 @@ class ClusterMonitor extends PureComponent {
                                 <Statistic valueStyle={vstyle} title="索引数" value={clusterStats.indices_count}/>
                             </Col>
 
-                            <Col md={3} xs={4}>
-                                <Statistic valueStyle={vstyle} title="分片数"
-                                           value={clusterStats.primary_shards + '/' + clusterStats.unassigned_shards + '/' + clusterStats.total_shards}/>
+                            <Col md={2} xs={4}>
+                                <Statistic valueStyle={vstyle} title="主/总分片"
+                                           value={clusterStats.primary_shards + '/' + clusterStats.total_shards}/>
                             </Col>
 
-                            <Col md={3} xs={4}>
+                            <Col md={2} xs={4}>
+                                <Statistic valueStyle={vstyle} title="未分配分片"
+                                           value={clusterStats.unassigned_shards}/>
+                            </Col>
+
+                            <Col md={2} xs={4}>
                                 <Statistic valueStyle={vstyle} title="文档数" value={clusterStats.document_count}/>
                             </Col>
 
-                            <Col md={3} xs={4}>
+                            <Col md={2} xs={4}>
                                 <Statistic valueStyle={vstyle} title="存储空间"
                                            value={clusterStats.used_store_bytes + '/' + clusterStats.max_store_bytes}/>
                             </Col>
-                            <Col md={3} xs={4}>
+                            <Col md={2} xs={4}>
                                 <Statistic valueStyle={vstyle} title="JVM 内存"
                                            value={clusterStats.used_jvm_bytes + '/' + clusterStats.max_jvm_bytes}/>
                             </Col>

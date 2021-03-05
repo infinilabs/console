@@ -486,7 +486,7 @@ class ClusterMonitor extends PureComponent {
       //   <Menu.Item key="5"> */}
                 <Input.Group compact>
                     <Button style={{cursor: "default"}}>刷新间隔</Button>
-                    <InputNumber min={-1} defaultValue={-1} ref={el => this.refreshNum = el}/>
+                    <InputNumber min={10} defaultValue={10} ref={el => this.refreshNum = el}/>
                     <Select defaultValue="seconds" ref={el => this.refreshUnit = el}>
                         <Select.Option value="seconds">秒</Select.Option>
                         <Select.Option value="minutes">分</Select.Option>

@@ -30,13 +30,13 @@ export default [
               name: 'overview',
               component: './Cluster/Overview',
             },   {
-              path: '/cluster/overview/:elasticsearch',
+              path: '/cluster/overview/:cluster_id',
               name: 'overview',
               component: './Cluster/Overview',
               hideInMenu: true,
             },
             {
-              path: '/cluster/monitoring/:name',
+              path: '/cluster/monitoring/:cluster_id',
               name: 'cluster',
               component: './Cluster/ClusterMonitor',
               hideInMenu: true,
@@ -45,7 +45,7 @@ export default [
               name: 'monitoring',
               component: './Cluster/Metrics',
             }, {
-              path: '/cluster/metrics/:elasticsearch',
+              path: '/cluster/metrics/:cluster_id',
               name: 'monitoring',
               component: './Cluster/Metrics',
               hideInMenu: true,

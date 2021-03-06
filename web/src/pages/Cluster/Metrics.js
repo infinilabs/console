@@ -243,7 +243,7 @@ class ClusterMonitor extends PureComponent {
     componentDidMount() {
         const {match, location} = this.props;
 
-        const queryESID=this.props.match.params.elasticsearch;
+        const queryESID=this.props.match.params.cluster_id;
 
         if (queryESID !== null&&queryESID !== undefined){
             this.state.clusterID=queryESID

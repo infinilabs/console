@@ -166,7 +166,6 @@ class ClusterMonitor extends PureComponent {
         qsVisible: false,
     }
 
-
     componentWillReceiveProps(newProps) {
 
     }
@@ -254,6 +253,9 @@ class ClusterMonitor extends PureComponent {
                     id: queryESID
                 }
             })
+        }else if (this.props.selectedCluster.id!==undefined&&this.props.selectedCluster.id!==null){
+            this.setState({ clusterID:this.props.selectedCluster.id }, () => {
+            });
         }else{
             //alert("cluster ID is not set");
             return
@@ -305,6 +307,7 @@ class ClusterMonitor extends PureComponent {
             this.fetchData();
         });
     }
+
     onTimeChange = (values) => {
         this.setState({
             pickerValue: values,

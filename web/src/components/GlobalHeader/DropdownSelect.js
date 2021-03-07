@@ -44,7 +44,7 @@ class DropdownSelect extends React.Component{
   }
 
   handleInfiniteOnLoad = (page) => {
-    let { data } = this.state;
+    let { data } = this.props;
     this.setState({
       loading: true,
     })

@@ -21,7 +21,7 @@ export default {
               },
               "created": "2021-02-20T16:03:30.867084+08:00",
               "description": "xx业务集群1",
-              "enabled": false,
+              "enabled": true,
               "endpoint": "http://localhost:9200",
               "name": "cluster1",
               "updated": "2021-02-20T16:03:30.867084+08:00"
@@ -38,7 +38,7 @@ export default {
               },
               "created": "2021-02-20T16:03:30.867084+08:00",
               "description": "xx业务集群2",
-              "enabled": false,
+              "enabled": true,
               "endpoint": "http://localhost:9201",
               "name": "cluster2",
               "updated": "2021-02-20T16:03:30.867084+08:00"

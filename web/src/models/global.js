@@ -2,6 +2,8 @@ import { queryNotices } from '@/services/api';
 import {message} from "antd";
 import {searchClusterConfig} from "@/services/cluster";
 import {formatESSearchResult} from '@/lib/elasticsearch/util';
+import {Modal} from 'antd';
+import router from "umi/router";
 
 
 export default {
@@ -47,12 +49,32 @@ export default {
       }
       res = formatESSearchResult(res)
       let clusterList = yield select(state => state.global.clusterList);
-      let data = res.data.map((item)=>{
+      let data = res.data.filter(item=>item.enabled).map((item)=>{
         return {
           name: item.name,
           id: item.id,
         };
       })
+
+      if(clusterList.length === 0){
+        if(data.length === 0 ){
+          Modal.info({
+            title: '系统提示',
+            content: '当前没有可用集群，点击确定将自动跳转到 系统设置=>集群设置',
+            okText: '确定',
+            onOk() {
+              router.push('/system/cluster')
+            },
+          });
+        }else{
+          yield put({
+            type: 'saveData',
+            payload:{
+              selectedCluster: data[0],
+            }
+          });
+        }
+      }
 
       yield put({
         type: 'saveData',

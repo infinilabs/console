@@ -3,9 +3,8 @@ package main
 import (
 	"errors"
 	_ "expvar"
-	"infini.sh/framework/core/elastic"
-
 	"infini.sh/framework"
+	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/env"
 	"infini.sh/framework/core/module"
 	"infini.sh/framework/core/orm"
@@ -37,7 +36,7 @@ func main() {
 	terminalFooter += ("©2020 INFINI.LTD, All Rights Reserved.\n")
 
 	app := framework.NewApp("search-center", "the easiest way to operate your own search center.",
-		config.Version, config.LastCommitLog, config.BuildDate, terminalHeader, terminalFooter)
+		config.Version, config.LastCommitLog, config.BuildDate,config.EOLDate, terminalHeader, terminalFooter)
 
 	app.Init(nil)
 	defer app.Shutdown()

@@ -23,6 +23,8 @@ modules:
     enabled: true
     store:
       enabled: true
+    monitoring:
+      enabled: true
     orm:
       enabled: true
       init_template: true

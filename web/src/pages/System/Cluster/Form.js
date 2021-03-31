@@ -59,6 +59,7 @@ class ClusterForm extends React.Component{
         },
         description: values.description,
         enabled: values.enabled,
+        monitored: values.monitored,
         order: values.order,
       }
       if(clusterConfig.editMode === 'NEW') {
@@ -188,6 +189,15 @@ class ClusterForm extends React.Component{
           {getFieldDecorator('enabled', {
             valuePropName: 'checked',
             initialValue: typeof editValue.enabled === 'undefined' ? true: editValue.enabled,
+          })(<Switch
+            checkedChildren={<Icon type="check" />}
+            unCheckedChildren={<Icon type="close" />}
+          />)}
+        </Form.Item>
+        <Form.Item label="启用监控">
+          {getFieldDecorator('monitored', {
+            valuePropName: 'checked',
+            initialValue: typeof editValue.monitored === 'undefined' ? true: editValue.monitored,
           })(<Switch
             checkedChildren={<Icon type="check" />}
             unCheckedChildren={<Icon type="close" />}

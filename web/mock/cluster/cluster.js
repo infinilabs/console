@@ -22,6 +22,7 @@ export default {
               "created": "2021-02-20T16:03:30.867084+08:00",
               "description": "xx业务集群1",
               "enabled": true,
+              "monitored": true,
               "endpoint": "http://localhost:9200",
               "name": "cluster1",
               "updated": "2021-02-20T16:03:30.867084+08:00"
@@ -39,6 +40,7 @@ export default {
               "created": "2021-02-20T16:03:30.867084+08:00",
               "description": "xx业务集群2",
               "enabled": true,
+              "monitored": true,
               "endpoint": "http://localhost:9201",
               "name": "cluster2",
               "updated": "2021-02-20T16:03:30.867084+08:00"
@@ -71,6 +73,7 @@ export default {
               "created": "2021-02-20T16:03:30.867084+08:00",
               "description": "xx业务集群1",
               "enabled": false,
+              "monitored": true,
               "endpoint": "http://localhost:9200",
               "name": "cluster1",
               "updated": "2021-02-20T16:03:30.867084+08:00"
@@ -92,6 +95,7 @@ export default {
         },
         "description": "xx业务集群1",
         "enabled": false,
+        "monitored": true,
         "created": "2021-02-20T15:12:50.984062+08:00",
         "updated": "2021-02-20T15:12:50.984062+08:00"
       },
@@ -110,6 +114,7 @@ export default {
         "endpoint": "http://localhost:9201",
         "name": "cluster2",
         "enabled": true,
+        "monitored": true,
         "updated": "2021-02-20T15:25:12.159789+08:00"
       },
       "result": "updated"

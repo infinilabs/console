@@ -72,5 +72,37 @@ export default {
       "_id": "c1nc0dkagrh0jobkn6s0",
       "result": "deleted"
     });
+  },
+  'GET /elasticsearch/:id/search_template_history/_search': function(req, res){
+    res.send({
+      "took": 0,
+      "timed_out": false,
+      "hits": {
+        "total": {
+          "relation": "eq",
+          "value": 1
+        },
+        "max_score": 0.5753642,
+        "hits": [
+          {
+            "_index": ".infini-search-center_searchtemplatehistory",
+            "_type": "_doc",
+            "_id": "c1o5k3kagrh1tfml0qfg",
+            "_source": {
+              "action": "update",
+              "content": {
+                "cluster_id": "c0octmtath23m973pf4g",
+                "created": "2021-04-08T16:35:02.746223+08:00",
+                "name": "test_search_template",
+                "source": "{\"query\":{\"match\":{\"{{my_field}}\":\"{{my_value}}\"}},\"size\":\"{{my_size}}\"}",
+                "updated": "2021-04-08T22:03:25.987193+08:00"
+              },
+              "created": "2021-04-09T21:43:42.611027+08:00",
+              "template_id": "c1nc0dkagrh0jobkn6s0"
+            }
+          }
+        ]
+      }
+    });
   }
 }

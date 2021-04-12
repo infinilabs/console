@@ -42,7 +42,7 @@ export default {
     res.send({
       "_id": "c1nc0dkagrh0jobkn6s0",
       "_source": {
-        "name": "test_search_template",
+        "name": "test_search_template_new",
         "source": "{\"query\":{\"match\":{\"{{my_field}}\":\"{{my_value}}\"}},\"size\":\"{{my_size}}\"}",
         "cluster_id": "c0octmtath23m973pf4g",
         "created": "2021-04-08T16:35:02.746223+08:00",

@@ -147,6 +147,10 @@ export default [
                       component: './SearchManage/template/SearchTemplate',
                   },
                   {
+                      path: '/search/template/:cluster_id',
+                      component: './SearchManage/template/SearchTemplate',
+                  },
+                  {
                       path: '/search/template/history',
                       component: './SearchManage/template/History',
                   },

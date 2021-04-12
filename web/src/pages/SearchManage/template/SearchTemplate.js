@@ -23,6 +23,7 @@ const CreateForm = Form.create()(props => {
   const { modalVisible, form, handleAdd, handleModalVisible } = props;
   const okHandle = () => {
     form.validateFields((err, fieldsValue) => {
+      console.log('create form:',fieldsValue);
       if (err) return;
       form.resetFields();
       handleAdd(fieldsValue);
@@ -43,7 +44,7 @@ const CreateForm = Form.create()(props => {
         })(<Input placeholder="请输入名称" />)}
       </FormItem>
       <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="模板设置">
-        {form.getFieldDecorator('settings', {
+        {form.getFieldDecorator('source', {
           rules: [{ required: true }],
         })(<TextArea
           style={{ minHeight: 24 }}
@@ -82,8 +83,8 @@ const UpdateForm = Form.create()(props => {
         })(<Input placeholder="请输入名称" />)}
       </FormItem>
       <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="模板设置">
-        {form.getFieldDecorator('settings', {
-          initialValue: values.processors,
+        {form.getFieldDecorator('source', {
+          initialValue: values.source,
           rules: [{ required: true }],
         })(<TextArea
           style={{ minHeight: 24 }}
@@ -96,9 +97,12 @@ const UpdateForm = Form.create()(props => {
 });
 
 /* eslint react/no-multi-comp:0 */
-@connect(({ pipeline, loading }) => ({
-  pipeline,
-  loading: loading.models.pipeline,
+@connect(({ searchTemplate, loading ,global}) => ({
+  searchTemplate,
+  loading: loading.effects['searchTemplate/fetchList'],
+  list:searchTemplate.list,
+  pagination: searchTemplate.pagination,
+  clusterID:global.selectedCluster.id,
 }))
 @Form.create()
 class SearchTemplate extends PureComponent {
@@ -110,83 +114,19 @@ class SearchTemplate extends PureComponent {
     formValues: {},
     updateFormValues: {},
   };
-  //index template detail example
-  // {
-  //   ".ml-state" : {
-  //     "order" : 0,
-  //     "version" : 7090199,
-  //     "index_patterns" : [
-  //       ".ml-state*"
-  //     ],
-  //     "settings" : {
-  //       "index" : {
-  //         "hidden" : "true",
-  //         "lifecycle" : {
-  //           "name" : "ml-size-based-ilm-policy",
-  //           "rollover_alias" : ".ml-state-write"
-  //         },
-  //         "auto_expand_replicas" : "0-1"
-  //       }
-  //     },
-  //     "mappings" : {
-  //       "_meta" : {
-  //         "version" : "7090199"
-  //       },
-  //       "enabled" : false
-  //     },
-  //     "aliases" : { }
-  //   }
-  // }
-  datasource = `
-  [
-    {
-      "name" : "filebeat-7.9.1",
-      "index_patterns" : "[template6,search_template2,template2]",
-      "order" : "1",
-      "version" : 70002,
-      "composed_of" : ""
-    },
-    {
-      "name" : "apm-7.9.1-span",
-      "index_patterns" : "[search_template2,template3,template2]",
-      "order" : "2",
-      "version" : 70002,
-      "composed_of" : "70002"
-    },
-    {
-      "name" : ".lists-default",
-      "index_patterns" : "[template3,search_template2,template2]",
-      "order" : "0",
-      "version" : 700034,
-      "composed_of" : "70001"
-    },
-    {
-      "name" : ".monitoring-es",
-      "index_patterns" : "[template1,search_template2,search_template2]",
-      "order" : "0",
-      "version" : "7000199",
-      "composed_of" : ""
-    },
-    {
-      "name" : ".monitoring-beats",
-      "index_patterns" : "[template3,search_template2,template2]",
-      "order" : "0",
-      "version" : "7000199",
-      "composed_of" : ""
-    }]`;
 
   columns = [
     {
-      title: '索引名称',
+      title: '模板名称',
       dataIndex: 'name',
     },
     {
-      title: '模板名称',
-      dataIndex: 'index_patterns',
+      title: '创建时间',
+      dataIndex: 'created'
     },
     {
-      title: '版本',
-      dataIndex: 'version'
+      title: '更新时间',
+      dataIndex: 'updated'
     },
     {
       title: '操作',
@@ -204,11 +144,22 @@ class SearchTemplate extends PureComponent {
   ];
 
   componentDidMount() {
-    const { dispatch } = this.props;
-    // dispatch({
-    //   type: 'pipeline/fetch',
-    // });
+    //初始化拉取模版表格数据
+    this.handleGetListData();
   }
+
+  //获取基本数据列表
+  handleGetListData = () => {
+    const {dispatch,clusterID} = this.props;
+    let payload = {size: 10, from: 0,cluster_id:clusterID};
+    if (this.state.formValues.name) {
+      payload.name = this.state.formValues.name;
+    }
+    dispatch({
+      type: 'searchTemplate/fetchList',
+      payload: payload,
+    });
+  };
 
   handleStandardTableChange = (pagination, filtersArg, sorter) => {
     const { dispatch } = this.props;
@@ -230,10 +181,10 @@ class SearchTemplate extends PureComponent {
       params.sorter = `${sorter.field}_${sorter.order}`;
     }
 
-    dispatch({
-      type: 'pipeline/fetch',
-      payload: params,
-    });
+    // dispatch({
+    //   type: 'pipeline/fetch',
+    //   payload: params,
+    // });
   };
 
   handleFormReset = () => {
@@ -242,21 +193,18 @@ class SearchTemplate extends PureComponent {
     this.setState({
       formValues: {},
     });
-    dispatch({
-      type: 'pipeline/fetch',
-      payload: {},
-    });
   };
 
   handleDeleteClick = e => {
-    const { dispatch } = this.props;
+    const { dispatch,clusterID } = this.props;
     const { selectedRows } = this.state;
 
-    if (!selectedRows) return;
+    if (!selectedRows) return message.warn("请选择需要删除的行");
         dispatch({
-          type: 'pipeline/delete',
+          type: 'searchTemplate/delete',
           payload: {
-            key: selectedRows.map(row => row.name),
+            cluster_id: clusterID,
+            id: selectedRows.map(row => row.id),
           },
           callback: () => {
             this.setState({
@@ -288,11 +236,11 @@ class SearchTemplate extends PureComponent {
       this.setState({
         formValues: values,
       });
-
-      dispatch({
-        type: 'rule/fetch',
-        payload: values,
-      });
+      if (! values.name) {
+        message.warn("请输入模版名称");
+        return;
+      }
+      this.handleGetListData();
     });
   };
 
@@ -310,13 +258,13 @@ class SearchTemplate extends PureComponent {
   };
 
   handleAdd = fields => {
-    const { dispatch } = this.props;
+    const { dispatch,clusterID } = this.props;
     dispatch({
-      type: 'pipeline/add',
+      type: 'searchTemplate/add',
       payload: {
+        cluster_id: clusterID,
         name: fields.name,
-        desc: fields.desc,
-        processors: fields.processors,
+        source: fields.source,
       },
     });
 
@@ -325,13 +273,13 @@ class SearchTemplate extends PureComponent {
   };
 
   handleUpdate = fields => {
-    const { dispatch } = this.props;
+    const { dispatch,clusterID } = this.props;
     dispatch({
-      type: 'pipeline/update',
+      type: 'searchTemplate/update',
       payload: {
+        cluster_id: clusterID,
         name: fields.name,
-        desc: fields.desc,
-        processors: fields.processors,
+        source: fields.source,
       },
     });
 
@@ -371,10 +319,13 @@ class SearchTemplate extends PureComponent {
   }
 
   render() {
+    const {pagination, list} = this.props;
+
+
     const data = {
-      list: JSON.parse(this.datasource),
+      list: list,
       pagination: {
-        pageSize: 5,
+        size: pagination.size,
       },
     };
     const { selectedRows, modalVisible, updateModalVisible, updateFormValues } = this.state;

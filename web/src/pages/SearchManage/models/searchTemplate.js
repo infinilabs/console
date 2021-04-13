@@ -19,7 +19,10 @@ export default {
       console.log("fetchList response:",res);
       if (res.hits) {
         let newList = [];
-        let hits = res.hits.hits;
+        let hits = res.hits.hits || [];
+        if (!hits.length) {
+          return;
+        }
         for (let item of hits) {
           item._source.id = item._id;
           newList.push(item._source);

@@ -76,6 +76,12 @@ const UpdateForm = Form.create()(props => {
       onOk={okHandle}
       onCancel={() => handleUpdateModalVisible()}
     >
+      <FormItem>
+        {form.getFieldDecorator('id', {
+          initialValue: values.id,
+        })(<Input type="hidden" />)}
+      </FormItem>
+
        <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="模板名称">
         {form.getFieldDecorator('name', {
           initialValue: values.name,
@@ -278,6 +284,7 @@ class SearchTemplate extends PureComponent {
       type: 'searchTemplate/update',
       payload: {
         cluster_id: clusterID,
+        id: fields.id,
         name: fields.name,
         source: fields.source,
       },

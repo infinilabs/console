@@ -71,6 +71,7 @@ export default {
             type: 'saveData',
             payload:{
               selectedCluster: data[0],
+              selectedClusterID: (data[0] || {}).id
             }
           });
         }

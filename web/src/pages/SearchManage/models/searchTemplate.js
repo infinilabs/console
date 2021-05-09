@@ -14,7 +14,8 @@ export default {
   },
 
   effects: {
-    *fetchList({ payload }, { call, put }) {
+    *fetchList({ payload }, { call, put , select }) {
+      payload.cluster_id = yield select(state => state.global.selectedClusterID);
       const res = yield call(getTemplateList, payload);
       console.log("fetchList response:",res);
       if (res.hits) {
@@ -39,7 +40,8 @@ export default {
         message.warning(res.msg);
       }
     },
-    *add({ payload, callback }, { call, put }) {
+    *add({ payload, callback }, { call, put , select }) {
+      payload.cluster_id =yield select(state => state.global.selectedClusterID);
       const res = yield call(addTemplate, payload);
       console.log("add res:",res);
       //业务数据格式化处理
@@ -59,7 +61,8 @@ export default {
 
       if (callback) callback();
     },
-    *update({ payload, callback }, { call, put }) {
+    *update({ payload, callback }, { call, put , select }) {
+      payload.cluster_id = yield select(state => state.global.selectedClusterID);
       const res = yield call(updateTemplate, payload);
       console.log("update res:",res);
       //业务数据格式化处理
@@ -69,7 +72,9 @@ export default {
 
       if (callback) callback();
     },
-    *delete({ payload, callback }, { call, put }) {
+    *delete({ payload, callback }, { call, put, select }) {
+      // payload.cluster_id =yield select(state => state.global.selectedClusterID);
+      payload.cluster_id = yield select(state => state.global.selectedClusterID);
       const payloadNew = {...payload};
       if (Array.isArray(payload.id)) {
         payloadNew.id = payload.id.toString();

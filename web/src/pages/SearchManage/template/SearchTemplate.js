@@ -108,8 +108,8 @@ const UpdateForm = Form.create()(props => {
   loading: loading.effects['searchTemplate/fetchList'],
   list:searchTemplate.list,
   pagination: searchTemplate.pagination,
-  clusterID:global.selectedCluster.id,
 }))
+
 @Form.create()
 class SearchTemplate extends PureComponent {
   state = {
@@ -156,8 +156,8 @@ class SearchTemplate extends PureComponent {
 
   //获取基本数据列表
   handleGetListData = () => {
-    const {dispatch,clusterID} = this.props;
-    let payload = {size: 10, from: 0,cluster_id:clusterID};
+    const {dispatch} = this.props;
+    let payload = {size: 10, from: 0};
     if (this.state.formValues.name) {
       payload.name = this.state.formValues.name;
     }
@@ -202,14 +202,13 @@ class SearchTemplate extends PureComponent {
   };
 
   handleDeleteClick = e => {
-    const { dispatch,clusterID } = this.props;
+    const { dispatch} = this.props;
     const { selectedRows } = this.state;
 
     if (!selectedRows) return message.warn("请选择需要删除的行");
         dispatch({
           type: 'searchTemplate/delete',
           payload: {
-            cluster_id: clusterID,
             id: selectedRows.map(row => row.id),
           },
           callback: () => {
@@ -264,11 +263,10 @@ class SearchTemplate extends PureComponent {
   };
 
   handleAdd = fields => {
-    const { dispatch,clusterID } = this.props;
+    const { dispatch} = this.props;
     dispatch({
       type: 'searchTemplate/add',
       payload: {
-        cluster_id: clusterID,
         name: fields.name,
         source: fields.source,
       },
@@ -279,11 +277,10 @@ class SearchTemplate extends PureComponent {
   };
 
   handleUpdate = fields => {
-    const { dispatch,clusterID } = this.props;
+    const { dispatch} = this.props;
     dispatch({
       type: 'searchTemplate/update',
       payload: {
-        cluster_id: clusterID,
         id: fields.id,
         name: fields.name,
         source: fields.source,

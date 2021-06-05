@@ -1,5 +1,5 @@
 export default {
-    // 'POST /elasticsearch/:id/_console/proxy': function(req, res){
+    // 'POST /elasticsearch/:id/_proxy': function(req, res){
     //     res.set('content-type', 'content-type: text/plain; charset=UTF-8');
     //     res.send('.security               .security-7                    - - - -\n' +
     //         'ilm-history-2           ilm-history-2-000002           - - - true\n' +
@@ -80,9 +80,6 @@ export default {
                             "_source" : {
                                 "created" : "2021-02-02T13:23:16.799Z",
                                 "request" : {
-                                    "method" : "POST",
-                                    "path" : "/myindex/_search",
-                                    "body" : "{ \"query\": { \"match\": { \"name\": \"medcl\" } } }"
                                 },
                                 "status":200,
                                 "user":{
@@ -97,19 +94,18 @@ export default {
         );
     },
 
-    //保存/修改常用命令, id 可选
+    //新增/修改常用命令, id 可选
     //curl -XPOST /elasticsearch/:id/command/:id -d'
     // {
     //     "request" : {
-    //     "method" : "POST",
+    //          "method" : "POST",
     //         "path" : "/myindex/_search",
     //         "body" : "{ \"query\": { \"match\": { \"name\": \"medcl\" } } }"
     // },
-    //     "status":200,
     //     "title":"一个常用查询的例子",
     //     "tag":["example","search"],
     //     "user":{
-    //     "username":"medcl",
+    //         "username":"medcl",
     //         "group":["superuser"]
     // }
     // }'
@@ -123,7 +119,6 @@ export default {
                     "path" : "/myindex/_search",
                     "body" : "{ \"query\": { \"match\": { \"name\": \"medcl\" } } }"
                 },
-                "status":200,
                 "title":"一个常用查询的例子",
                 "tag":["example","search"],
                 "user":{
@@ -197,7 +192,6 @@ export default {
                                     "path" : "/myindex/_search",
                                     "body" : "{ \"query\": { \"match\": { \"name\": \"medcl\" } } }"
                                 },
-                                "status":200,
                                 "title":"一个常用查询的例子",
                                 "tag":["example","search"],
                                 "user":{

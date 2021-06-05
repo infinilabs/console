@@ -80,12 +80,11 @@ export default {
                             "_source" : {
                                 "created" : "2021-02-02T13:23:16.799Z",
                                 "request" : {
+                                         "method" : "POST",
+                                        "path" : "/myindex/_search",
+                                        "body" : "{ \"query\": { \"match\": { \"name\": \"medcl\" } } }"
                                 },
-                                "status":200,
-                                "user":{
-                                    "username":"medcl",
-                                    "group":["superuser"]
-                                }
+                                "status":200
                             }
                         }
                     ]
@@ -103,13 +102,9 @@ export default {
     //         "body" : "{ \"query\": { \"match\": { \"name\": \"medcl\" } } }"
     // },
     //     "title":"一个常用查询的例子",
-    //     "tag":["example","search"],
-    //     "user":{
-    //         "username":"medcl",
-    //         "group":["superuser"]
-    // }
+    //     "tag":["example","search"]
     // }'
-    'POST /elasticsearch/:id/command/[:id]': function(req, res){
+    'POST /elasticsearch/:id/command': function(req, res){
         res.send({
             "_id": "c0oc4kkgq9s8qss2uk50",
             "_source": {
@@ -120,11 +115,23 @@ export default {
                     "body" : "{ \"query\": { \"match\": { \"name\": \"medcl\" } } }"
                 },
                 "title":"一个常用查询的例子",
-                "tag":["example","search"],
-                "user":{
-                    "username":"medcl",
-                    "group":["superuser"]
-                }
+                "tag":["example","search"]
+            },
+            "result": "created"
+        });
+    },
+    'POST /elasticsearch/:id/command/:id': function(req, res){
+        res.send({
+            "_id": "c0oc4kkgq9s8qss2uk50",
+            "_source": {
+                "created" : "2021-02-02T13:23:16.799Z",
+                "request" : {
+                    "method" : "POST",
+                    "path" : "/myindex/_search",
+                    "body" : "{ \"query\": { \"match\": { \"name\": \"medcl\" } } }"
+                },
+                "title":"一个常用查询的例子",
+                "tag":["example","search"]
             },
             "result": "created"
         });
@@ -143,24 +150,19 @@ export default {
                 },
                 "status":200,
                 "title":"一个常用查询的例子",
-                "tag":["example","search"],
-                "user":{
-                    "username":"medcl",
-                    "group":["superuser"]
-                }
+                "tag":["example","search"]
             },
             "found": true
         });
     },
 
     //删除常用命令
-    'DELETE /elasticsearch/:id/command/:command_id': function(req, res){
+    'DELETE /elasticsearch/:id/command/:id': function(req, res){
         res.send({
                 "_id": "c0oc4kkgq9s8qss2uk50",
                 "result": "deleted"
             });
     },
-
 
     //搜索常用命令
     'GET /elasticsearch/:id/command/_search': function(req, res){
@@ -193,11 +195,7 @@ export default {
                                     "body" : "{ \"query\": { \"match\": { \"name\": \"medcl\" } } }"
                                 },
                                 "title":"一个常用查询的例子",
-                                "tag":["example","search"],
-                                "user":{
-                                    "username":"medcl",
-                                    "group":["superuser"]
-                                }
+                                "tag":["example","search"]
                             }
                         }
                     ]

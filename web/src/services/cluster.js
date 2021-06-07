@@ -10,7 +10,7 @@ export async function getClusterVersion(params) {
 export async function getClusterMetrics(params) {
     let id = params.cluster_id;
     delete(params['cluster_id']);
-    return request(`/elasticsearch/${id}/metrics`, {
+    return request(`/elasticsearch/${id}/metrics?min=${params.timeRange.min}&max=${params.timeRange.max}`, {
         method: 'GET'
     });
 }
@@ -47,6 +47,13 @@ export async function searchClusterConfig(params) {
     if(args.length > 0){
         url += args;
     }
+    return request(url, {
+        method: 'GET',
+    });
+}
+
+export async function getClusterStatus(params) {
+    let url = `/elasticsearch/status`;
     return request(url, {
         method: 'GET',
     });

@@ -1,4 +1,4 @@
-import {createClusterConfig, searchClusterConfig, updateClusterConfig,deleteClusterConfig} from "@/services/cluster";
+import {createClusterConfig, searchClusterConfig, updateClusterConfig,deleteClusterConfig, getClusterStatus} from "@/services/cluster";
 import {message} from "antd";
 import {formatESSearchResult} from '@/lib/elasticsearch/util';
 
@@ -9,13 +9,30 @@ export default {
     editValue: {},
   },
   effects:{
-    *fetchClusterList({payload}, {call, put}){
+    *fetchClusterStatus({payload}, {call, put}){
+      let res = yield call(getClusterStatus, payload);
+      if(res.error){
+        message.error(res.error)
+        return false;
+      }
+      yield put({
+        type: 'saveData',
+        payload: {
+          clusterStatus: res
+        }
+      })
+    },
+    *fetchClusterList({payload}, {call, put, select}){
       let res = yield call(searchClusterConfig, payload);
       if(res.error){
         message.error(res.error)
         return false;
       }
       res = formatESSearchResult(res)
+      const {clusterStatus} = yield select(state => state.clusterConfig);
+      for(let item of res.data){
+        item.status= clusterStatus[item.id]
+      }
       yield put({
         type: 'saveData',
         payload: res

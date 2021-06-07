@@ -132,3 +132,12 @@ export function getESAPI(ver){
   }
   return ESAPI["0"];
 }
+
+
+export function extractClusterIDFromURL(){
+  const matchs = location.hash.match(/\/elasticsearch\/(\w+)\/?/);
+  if(!matchs){
+    return ''
+  }
+  return matchs[1];
+}

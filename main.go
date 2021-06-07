@@ -32,7 +32,7 @@ func main() {
 	terminalFooter += ("  / // |/ // __// // |/ // /   / //_  _//  \\                        \n")
 	terminalFooter += (" / // || // _/ / // || // /   / /_ / / / o |                        \n")
 	terminalFooter += ("/_//_/|_//_/  /_//_/|_//_/() /___//_/ /__,'    \n\n")
-	terminalFooter += ("©2020 INFINI.LTD, All Rights Reserved.\n")
+	terminalFooter += ("©INFINI.LTD, All Rights Reserved.\n")
 
 	app := framework.NewApp("search-center", "the easiest way to operate your own search center.",
 		config.Version, config.LastCommitLog, config.BuildDate,config.EOLDate, terminalHeader, terminalFooter)

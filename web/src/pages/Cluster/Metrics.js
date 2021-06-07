@@ -1,4 +1,4 @@
-import React, {PureComponent} from 'react';
+import React, {PureComponent, useState} from 'react';
 import {connect} from 'dva';
 import {formatMessage} from 'umi/locale';
 import {Button, Card, Col, DatePicker, Dropdown, Icon, Input, InputNumber, Row, Select, Statistic} from 'antd';
@@ -23,7 +23,8 @@ import {
 import styles from './Metrics.less';
 
 import { Spin, Alert } from 'antd';
-
+import {EuiSuperDatePicker} from '@elastic/eui';
+import {calculateBounds} from '../../components/kibana/data/common/query/timefilter';
 
 const {RangePicker} = DatePicker;
 
@@ -142,6 +143,43 @@ const vstyle = {
     marginRight: "5px"
 };
 
+const MonitorDatePicker = ({timeRange, commonlyUsedRanges, onChange, isLoading}) => {
+    // const [recentlyUsedRanges, setRecentlyUsedRanges] = useState([]);
+    const [isPaused, setIsPaused] = useState(true);
+    const [refreshInterval, setRefreshInterval] = useState();
+  
+    const onTimeChange = ({ start, end }) => {
+        onChange({
+            start,
+            end,
+        });
+    };
+  
+    const onRefresh = ({ start, end, refreshInterval }) => {
+        onChange({start, end})
+    };
+  
+    const onRefreshChange = ({ isPaused, refreshInterval }) => {
+      setIsPaused(isPaused);
+      setRefreshInterval(refreshInterval);
+    };
+  
+    return (
+        <EuiSuperDatePicker
+          isLoading={isLoading}
+          start={timeRange?.min}
+          end={timeRange?.max}
+          onTimeChange={onTimeChange}
+          onRefresh={onRefresh}
+          isPaused={isPaused}
+          refreshInterval={refreshInterval}
+          onRefreshChange={onRefreshChange}
+          commonlyUsedRanges={commonlyUsedRanges}
+        //   recentlyUsedRanges={recentlyUsedRanges}
+        />
+    );
+  };
+
 @connect(({clusterMonitor,global}) => ({
     clusterMonitor,
     selectedCluster: global.selectedCluster,
@@ -159,11 +197,9 @@ class ClusterMonitor extends PureComponent {
         spinning: false,
         clusterID:null,
         timeRange: {
-            min: moment().subtract(1, 'h').toISOString(),
-            max: moment().toISOString()
+            min: 'now-1h', //moment().subtract(1, 'h').toISOString(),
+            max: 'now'//moment().toISOString()
         },
-        lastSeconds: 3600,
-        qsVisible: false,
     }
 
     componentWillReceiveProps(newProps) {
@@ -183,34 +219,19 @@ class ClusterMonitor extends PureComponent {
         })
 
         fetchDataCount++;
-        //console.log(fetchDataCount, moment().diff(startTime)/1000);
         const {dispatch} = this.props;
-        let {timeRange, lastSeconds} = this.state;
-        if (lastSeconds && lastSeconds > 0) {
-            timeRange = {
-                min: moment().subtract(lastSeconds, 's').toISOString(),
-                max: moment().toISOString(),
-            };
-            this.setState({
-                pickerValue: [moment().subtract(lastSeconds, 's'), moment()],
-            });
-            //this.timePicker.current.value= [moment().subtract(lastSeconds, 's'), moment()];
-        }
-        let msDiff = moment(timeRange.max).diff(moment(timeRange.min));
-        let timeMask = 'HH:mm';
-        //console.log(msDiff);
-        if (msDiff > 1000 * 3600 + 5 * 1000 && msDiff <= 1000 * 3600 * 24 * 5) {
-            timeMask = 'MM-DD HH'
-        } else if (msDiff > 1000 * 3600 * 24 * 5 && msDiff <= 1000 * 3600 * 24 * 182) {
-            timeMask = 'MM-DD'
-        } else if (msDiff > 1000 * 3600 * 24 * 182) {
-            timeMask = 'YY-MM-DD'
-        }
-        this.setState({timeScale: {min: timeRange.min, max: timeRange.max, mask: timeMask}});
+        const {timeRange} = this.state;
+        const bounds = calculateBounds({
+            from: timeRange.min,
+            to: timeRange.max,
+        });
         dispatch({
             type: 'clusterMonitor/fetchClusterMetrics',
             payload: {
-                timeRange: timeRange,
+                timeRange: {
+                    min: bounds.min.valueOf(),
+                    max: bounds.max.valueOf(),
+                },
                 cluster_id:this.state.clusterID
             },
         }).then(()=>{
@@ -263,20 +284,17 @@ class ClusterMonitor extends PureComponent {
 
         console.log("selectedCluster:"+this.state.clusterID)
 
-        let min = location.query.start || '2020-12-10 15:00';
-        let max = location.query.end || '2020-12-10 16:00';
-        min = moment(min, 'YYYY-MM-DD HH:mm');
-        max = moment(max, 'YYYY-MM-DD HH:mm');
+        let min = location.query.start || this.state.timeRange.min;//'2020-12-10 15:00';
+        let max = location.query.end || this.state.timeRange.max;//'2020-12-10 16:00';
         this.setState({
             timeRange: {
                 min: min,
                 max: max,
             },
-            lastSeconds: 0,
-            pickerValue: [min, max],
         }, () => {
             this.fetchData();
         })
+
 
         // tv1 = setInterval(()=>{
         //   this.fetchData();
@@ -293,123 +311,36 @@ class ClusterMonitor extends PureComponent {
         }, durationInSeconds * 1000);
     }
 
-    onTimeOk = (values) => {
-        //console.log('onOk: ', values);
-        const min = values[0].toISOString();
-        const max = values[1].toISOString();
-        this.setState({
-            timeRange: {
-                min: min,
-                max: max
-            },
-            lastSeconds: 0,
-        }, () => {
-            this.fetchData();
-        });
-    }
 
-    onTimeChange = (values) => {
-        this.setState({
-            pickerValue: values,
-        });
-    }
-
-    handleQuickSelect = (ev) => {
-        let lastSeconds = 0;
-        let key = ev.key || ev.target.type;
-        switch (key) {
-            case "2":
-                lastSeconds = 3600 * 24;
-                break;
-            case "3":
-                lastSeconds = 3600 * 24 * 7;
-                break;
-            case "4":
-                lastSeconds = 3600 * 24 * 30;
-                break;
-            case "5":
-                lastSeconds = 3600 * 24 * 30 * 3;
-                break;
-            case "6":
-                lastSeconds = 3600 * 24 * 365;
-                break;
-            default:
-                lastSeconds = 60 * 60;
-        }
-        this.setState({
-            lastSeconds: lastSeconds,
-            qsVisible: false,
-        }, () => {
-            this.fetchData();
-        });
-    }
-
-    handleQSVisibleChange = flag => {
-        this.setState({qsVisible: flag});
-    };
-
-    handleChartBrush(ev) {
-        let dtimes = ev.time;
-        if (dtimes.length < 2)
+    handleChartBrush({x}) {
+        if (!x) {
             return;
+        }
+        const [from, to] = x;
         let timeRange = {
-            min: dtimes[0],
-            max: dtimes[1],
+            min: from,
+            max: to,
         }
         this.setState({
             timeRange: timeRange,
             lastSeconds: 0,
-            pickerValue: [moment(dtimes[0]), moment(dtimes[1])],
+            pickerValue: [moment(from), moment(to)],
         }, () => {
             this.fetchData();
         });
     }
 
-    handleAutoRefresh = () => {
-        let unit = this.refreshUnit.rcSelect.state.value[0];
-        let base = 1;
-        switch (unit) {
-            case "minutes":
-                base *= 60;
-                break;
-            case "hours":
-                base *= 3600
-                break;
-        }
-        let durationInSeconds = this.refreshNum.inputNumberRef.state.value * base;
-        this.autoRefresh(durationInSeconds);
-    }
-
-    handleRecentInput = () => {
-        let unit = this.recentUnit.rcSelect.state.value[0];
-        let base = 1;
-        switch (unit) {
-            case "minutes":
-                base *= 60;
-                break;
-            case "hours":
-                base *= 3600;
-                break;
-            case "days":
-                base *= 3600 * 24;
-                break;
-            case "weeks":
-                base *= 3600 * 24 * 7;
-                break;
-            case "months":
-                base *= 3600 * 24 * 30;
-                break;
-            case "years":
-                base *= 3600 * 24 * 365;
-                break;
-        }
-        let lastSeconds = this.recentNum.inputNumberRef.state.value * base;
+    handleTimeChange = ({start, end})=>{
         this.setState({
-            lastSeconds: lastSeconds,
-        }, () => {
+            timeRange: {
+                min: start,
+                max: end,
+            }
+        },()=>{
             this.fetchData();
-        });
+        })
     }
+
 
     render() {
 
@@ -441,96 +372,73 @@ class ClusterMonitor extends PureComponent {
             clusterMetrics = clusterMonitor.metrics;
         }
 
-        const menu = (
-            <div style={{background: "#fff", border: "1px solid #ccc", padding: 5}}>
-                <Input.Group compact style={{marginBottom: 10}}>
-                    <Button style={{cursor: "default"}}>最近</Button>
-                    <InputNumber min={1} defaultValue={1} ref={el => this.recentNum = el}/>
-                    <Select defaultValue="hours" ref={el => this.recentUnit = el}>
-                        <Select.Option value="minutes">分</Select.Option>
-                        <Select.Option value="hours">时</Select.Option>
-                        <Select.Option value="days">天</Select.Option>
-                        <Select.Option value="weeks">周</Select.Option>
-                        <Select.Option value="months">月</Select.Option>
-                        <Select.Option value="years">年</Select.Option>
-                    </Select>
-                    <Button type="primary" onClick={this.handleRecentInput}>
-                        确定
-                    </Button>
-                </Input.Group>
-                <div style={{marginBottom: 10}}>
-                    <Row gutter={[24, 5]}>
-                        <Col span={12}><a type="1" onClick={this.handleQuickSelect}>最近一个小时</a></Col>
-                        <Col span={12}><a type="2" onClick={this.handleQuickSelect}>最近一天</a></Col>
-                    </Row>
-                    <Row gutter={[24, 5]}>
-                        <Col span={12}><a type="3" onClick={this.handleQuickSelect}>最近一周</a></Col>
-                        <Col span={12}><a type="4" onClick={this.handleQuickSelect}>最近一个月</a></Col>
-                    </Row>
-                    <Row gutter={[24, 5]}>
-                        <Col span={12}><a type="5" onClick={this.handleQuickSelect}>最近三个月</a></Col>
-                        <Col span={12}><a type="6" onClick={this.handleQuickSelect}>最近一年</a></Col>
-                    </Row>
-                </div>
-                {/* // <Menu onClick={this.handleQuickSelect}>
-      //   <Menu.Item key="1">
-      //     最近一小时
-      //   </Menu.Item>
-      //   <Menu.Item key="2">
-      //     最近一天
-      //   </Menu.Item>
-      //   <Menu.Item key="3">
-      //     最近一周
-      //   </Menu.Item>
-      //   <Menu.Item key="4">
-      //     最近一个月
-      //   </Menu.Item>
-      //   <Menu.Divider/>
-      //   <Menu.Item key="5"> */}
-                <Input.Group compact>
-                    <Button style={{cursor: "default"}}>刷新间隔</Button>
-                    <InputNumber min={1} defaultValue={10} ref={el => this.refreshNum = el}/>
-                    <Select defaultValue="seconds" ref={el => this.refreshUnit = el}>
-                        <Select.Option value="seconds">秒</Select.Option>
-                        <Select.Option value="minutes">分</Select.Option>
-                        <Select.Option value="hours">时</Select.Option>
-                    </Select>
-                    <Button type="primary" onClick={this.handleAutoRefresh}>
-                        确定
-                    </Button>
-                </Input.Group>
-                {/* //   </Menu.Item>
-      // </Menu> */}
-            </div>
-        );
+        const commonlyUsedRanges =
+        [
+          {
+            from: 'now/d',
+            to: 'now/d',
+            display:'今天',
+          },
+          {
+            from: 'now/w',
+            to: 'now/w',
+            display: '这个星期'
+          },
+          {
+            from: 'now-15m',
+            to: 'now',
+            display: '最近15分钟'
+          },
+          {
+            from: 'now-30m',
+            to: 'now',
+            display:  '最近三十分钟'
+          },
+          {
+            from: 'now-1h',
+            to: 'now',
+            display: '最近一小时'
+          },
+          {
+            from: 'now-24h',
+            to: 'now',
+            display: '最近一天',
+          },
+          {
+            from: 'now-7d',
+            to: 'now',
+            display:  '最近一周',
+          },
+          {
+            from: 'now-30d',
+            to: 'now',
+            display: '最近一个月',
+          },
+          {
+            from: 'now-90d',
+            to: 'now',
+            display:  '最近三个月',
+          },
+          {
+            from: 'now-1y',
+            to: 'now',
+            display: '最近一年',
+          },
+        ].map(({ from, to, display }) => {
+          return {
+            start: from,
+            end: to,
+            label: display,
+          };
+        });
 
         return (
             <Spin spinning={this.state.spinning} tip="Loading...">
                 <div>
-
                     <div style={{background: "#fff", padding: "5px", marginBottom: 5}}>
-                        <Input.Group compact>
-                            <Dropdown overlay={menu}
-                                      onVisibleChange={this.handleQSVisibleChange}
-                                      visible={this.state.qsVisible}
-                            >
-                                <Button>
-                                    快速选择 <Icon type="clock-circle"/>
-                                </Button>
-                            </Dropdown>
-                            <RangePicker
-                                showTime={{format: 'HH:mm'}}
-                                format="YYYY-MM-DD HH:mm"
-                                placeholder={['开始时间', '结束时间']}
-                                defaultValue={[moment().subtract(1, 'h'), moment()]}
-                                value={this.state.pickerValue}
-                                onChange={this.onTimeChange}
-                                onOk={this.onTimeOk}
-                            />
-                            <Button type="primary" onClick={this.fetchData}>
-                                刷新
-                            </Button>
-                        </Input.Group>
+                        <MonitorDatePicker timeRange={this.state.timeRange} commonlyUsedRanges={commonlyUsedRanges} 
+                        isLoading={this.state.spinning}
+                        onChange={this.handleTimeChange} />
                     </div>
 
                     <Card
@@ -592,9 +500,10 @@ class ClusterMonitor extends PureComponent {
                             let disableHeaderFormat = false
                             let headerUnit = ""
                             return (
-                                <div className={styles.vizChartContainer}>
+                                <div key={e} className={styles.vizChartContainer}>
                                     <Chart size={[, 200]} className={styles.vizChartItem}>
                                         <Settings theme={theme} showLegend legendPosition={Position.Top}
+                                                    // onBrushEnd={this.handleChartBrush}
                                                   tooltip={{
                                                       headerFormatter: disableHeaderFormat
                                                           ? undefined
@@ -607,7 +516,7 @@ class ClusterMonitor extends PureComponent {
                                         />
                                         {
                                             axis.map((item) => {
-                                                return <Axis
+                                                return <Axis key={e + '-' + item.id}
                                                     id={e + '-' + item.id}
                                                     showGridLines={item.showGridLines}
                                                     groupId={item.group}
@@ -622,7 +531,7 @@ class ClusterMonitor extends PureComponent {
 
                                         {
                                             lines.map((item) => {
-                                                return <LineSeries
+                                                return <LineSeries key={item.metric.label}
                                                     id={item.metric.label}
                                                     groupId={item.metric.group}
                                                     timeZone={timezone}

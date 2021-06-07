@@ -2,6 +2,21 @@
 
 @nav-header-height: 64px;
 
+.icon {
+  height: @nav-header-height;
+  position: relative;
+  line-height: @nav-header-height;
+  padding-left: (@menu-collapsed-width - 32px) / 2;
+  transition: all 0.3s;
+  background: #ffffff;
+  img {
+    display: inline-block;
+    vertical-align: middle;
+    max-height: 32px;
+    max-width:32px;
+  }
+}
+
 .logo {
   height: @nav-header-height;
   position: relative;
@@ -13,8 +28,9 @@
   img {
     display: inline-block;
     vertical-align: middle;
-    max-height: 32px;
-    max-width:32px;
+    //max-height: 32px;
+    //max-width:32px;
+    max-width: 200px;
   }
   h1 {
     color: #000000;
@@ -87,5 +103,11 @@
   .ant-menu-submenu-title .sider-menu-item-img + span {
     transition: opacity 0.3s @ease-in-out, width 0.3s @ease-in-out;
     opacity: 1;
+  }
+  .ant-menu:not(.ant-menu-horizontal) .ant-menu-item-selected {
+    background-color: #939ea0;
+  }
+  .ant-menu:not(.ant-menu-horizontal) .ant-menu-item-selected a {
+    color: #FFFFFF;
   }
 }

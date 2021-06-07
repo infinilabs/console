@@ -5,7 +5,7 @@ import { Icon } from 'antd';
 import GlobalFooter from '@/components/GlobalFooter';
 import SelectLang from '@/components/SelectLang';
 import styles from './UserLayout.less';
-import logo from '../assets/logo-color.svg';
+import logo from '../assets/logo.svg';
 
 const links = [
   {
@@ -48,7 +48,7 @@ class UserLayout extends React.PureComponent {
             <div className={styles.header}>
               <Link to="/">
                 <img alt="logo" className={styles.logo} src={logo} />
-                  <span className={styles.title}>{appname}</span>
+                  {/*<span className={styles.title}>{appname}</span>*/}
               </Link>
             </div>
                 <div className={styles.desc}>{appslogon}</div>

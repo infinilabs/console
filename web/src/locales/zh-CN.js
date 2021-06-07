@@ -91,6 +91,7 @@ export default {
   'component.noticeIcon.empty': '暂无数据',
   
   'menu.home': '首页',
+  'menu.devtool': '开发工具',
 
   'menu.cluster': '集群管理',
   'menu.cluster.overview': '概览',
@@ -105,6 +106,8 @@ export default {
   'menu.data.document': '文档管理',
   'menu.data.template': '模版管理',
   'menu.data.lifecycle': '周期管理',
+  'menu.data.discover': '数据探索',
+  'menu.data.indexPatterns': '数据视图',
 
   'menu.search': '搜索管理',
   'menu.search.overview': '概览',
@@ -188,8 +191,12 @@ export default {
   'dashboard.charts.title.system_disk.axis.iops':"磁盘 IOPS",
   'dashboard.charts.title.system_memory.axis.memory':"内存统计",
   'dashboard.charts.title.system_memory.axis.gc':"GC 次数",
-  'dashboard.charts.title.cluster_storage.axis.storage':"存储统计",
-  'dashboard.charts.title.cluster_storage.axis.shards':"分片统计",
+
+  'dashboard.charts.title.cluster_storage.axis.indices_storage':"索引存储",
+  'dashboard.charts.title.cluster_storage.axis.available_storage':"剩余存储",
+
+  'dashboard.charts.title.cluster_documents.axis.documents':"文档总数",
+  'dashboard.charts.title.cluster_documents.axis.counts':"分片总数",
 
   'app.login.message-invalid-credentials': '账户或密码错误（admin/888888）',
   'app.login.message-invalid-verification-code': '验证码错误',

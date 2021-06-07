@@ -84,6 +84,7 @@ export default {
   'component.noticeIcon.cleared': 'Cleared',
   'component.noticeIcon.empty': 'No notifications',
   'menu.home': 'Home',
+  'menu.devtool': 'CONSOLE',
   
   'menu.cluster': 'CLUSTER',
   'menu.cluster.overview': 'OVERVIEW',
@@ -98,6 +99,8 @@ export default {
   'menu.data.document': 'DOCUMENTS',
   'menu.data.template': 'TEMPLATES',
   'menu.data.lifecycle': 'LIFECYCLES',
+  'menu.data.discover': 'EXPLORE',
+  'menu.data.indexPatterns': 'VIEWS',
 
   'menu.search': 'SEARCH',
   'menu.search.overview': 'OVERVIEW',
@@ -183,8 +186,10 @@ export default {
   'dashboard.charts.title.system_disk.axis.iops':"Disk IOPS",
   'dashboard.charts.title.system_memory.axis.memory':"Memory Usage",
   'dashboard.charts.title.system_memory.axis.gc':"GC Activity",
-  'dashboard.charts.title.cluster_storage.axis.storage':"Storage Usage",
-  'dashboard.charts.title.cluster_storage.axis.shards':"Shards Count",
+  'dashboard.charts.title.cluster_storage.axis.indices_storage':"Storage Usage",
+  'dashboard.charts.title.cluster_storage.axis.available_storage':"Storage Available",
+  'dashboard.charts.title.cluster_documents.axis.documents':"Documents Count",
+  'dashboard.charts.title.cluster_documents.axis.counts':"Shards Count",
 
 
   'app.login.message-invalid-credentials': 'Invalid username or password（admin/888888）',

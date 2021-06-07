@@ -88,8 +88,27 @@ export default class SiderMenu extends PureComponent {
     });
   };
 
+
+  renderIcon(collapsed,icon,logo){
+
+    if (collapsed){
+      return (<div className={styles.icon} id="logo">
+        <Link to="/">
+          <img src={icon} alt="logo" />
+          {/*<h1>{formatMessage({ id: 'app.setting.appname' })}</h1>*/}
+        </Link>
+      </div>);
+    }
+
+    return (<div className={styles.logo} id="logo">
+      <Link to="/">
+        <img src={logo} alt="logo" />
+      </Link>
+    </div>);
+  }
+
   render() {
-    const { logo, collapsed, onCollapse, fixSiderbar, theme } = this.props;
+    const { icon,logo, collapsed, onCollapse, fixSiderbar, theme } = this.props;
     const { openKeys } = this.state;
     const defaultProps = collapsed ? {} : { openKeys };
 
@@ -109,12 +128,7 @@ export default class SiderMenu extends PureComponent {
         theme={theme}
         className={siderClassName}
       >
-        <div className={styles.logo} id="logo">
-          <Link to="/">
-            <img src={logo} alt="logo" />
-            <h1>{formatMessage({ id: 'app.setting.appname' })}</h1>
-          </Link>
-        </div>
+        {this.renderIcon(collapsed,icon,logo)}
         <BaseMenu
           {...this.props}
           mode="inline"

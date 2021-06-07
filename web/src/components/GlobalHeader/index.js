@@ -57,19 +57,30 @@ export default class GlobalHeader extends PureComponent {
           labelField="name"
           visible={clusterVisible}
           onChange={(item)=>{
-            this.props.handleSaveGlobalState({
-              selectedCluster: item
+            const rel = this.props.handleSaveGlobalState({
+              selectedCluster: item,
+              selectedClusterID: item.id,
+            }).then(()=>{
+              const {dispatch,history} = this.props;
+              dispatch({
+                type:'global/rewriteURL',
+                payload:{
+                  history,
+                  pathname: history.location.pathname,
+                }
+              })
             });
 
-            const path1=this.props.location.pathname
+            // const path1=this.props.location.pathname
 
-            if (path1[path1.length-1] !=='/'){
-                const currentPath=path.dirname(path1);
-                router.replace(currentPath+'/'+item.id);
-            }else{
-                router.replace(path1+item.id);
-            }
+            // if (path1[path1.length-1] !=='/'){
+            //     const currentPath=path.dirname(path1);
+            //     router.replace(currentPath+'/'+item.id);
+            // }else{
+            //     router.replace(path1+item.id);
+            // }
             //location.reload()
+           
           }}
           size={56}
            fetchData={

@@ -4,6 +4,7 @@ import router from 'umi/router';
 
 import  styles from './Form.less';
 import {connect} from "dva";
+import NewCluster from './Step';
 
 @Form.create()
 @connect(({clusterConfig}) =>({
@@ -124,6 +125,7 @@ class ClusterForm extends React.Component{
           router.push('/system/cluster');
         }}>返回</Button>]}
       >
+      {/* <NewCluster/> */}
       <Form {...formItemLayout}>
         <Form.Item label="集群名称">
           {getFieldDecorator('name', {
@@ -134,7 +136,7 @@ class ClusterForm extends React.Component{
                 message: 'Please input cluster name!',
               },
             ],
-          })(<Input autoComplete='off' />)}
+          })(<Input autoComplete='off' placeholder="cluster-name" />)}
         </Form.Item>
         <Form.Item label="集群 URL">
           {getFieldDecorator('endpoint', {
@@ -149,7 +151,7 @@ class ClusterForm extends React.Component{
                 message: 'Please input cluster name!',
               },
             ],
-          })(<Input />)}
+          })(<Input placeholder="http://127.0.0.1:9200" />)}
         </Form.Item>
         <Form.Item label="是否需要身份验证">
           <Switch
@@ -175,6 +177,11 @@ class ClusterForm extends React.Component{
           })(<Input.Password />)}
         </Form.Item>
         </div>):''}
+        {/* <Form.Item label="Elasticsearch 版本">
+          {getFieldDecorator('version', {
+            initialValue: editValue.version || '',
+          })(<Input readOnly={true} />)}
+        </Form.Item> */}
         <Form.Item label="排序权重">
           {getFieldDecorator('order', {
             initialValue: editValue.order || 0,
@@ -183,7 +190,7 @@ class ClusterForm extends React.Component{
         <Form.Item label="描述">
           {getFieldDecorator('description', {
             initialValue: editValue.description,
-          })(<Input.TextArea />)}
+          })(<Input.TextArea placeholder="集群应用描述" />)}
         </Form.Item>
         <Form.Item label="是否启用">
           {getFieldDecorator('enabled', {
@@ -205,8 +212,11 @@ class ClusterForm extends React.Component{
         </Form.Item>
         <Form.Item {...tailFormItemLayout}>
           <Button type="primary" onClick={this.handleSubmit}>
-            {editMode === 'NEW' ? 'Register': 'Save'}
+            {editMode === 'NEW' ? '注册': '保存'}
           </Button>
+          {/* <Button style={{marginLeft:20}}>
+            测试连接
+          </Button> */}
         </Form.Item>
       </Form>
       </Card>

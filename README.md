@@ -58,6 +58,7 @@ npm install -g cnpm --registry=https://registry.npm.taobao.org
 ### 下载项目依赖包
 ```
 cnpm install
+cnpm install -g  cross-env
 ```
 
 ### 启动开发模式

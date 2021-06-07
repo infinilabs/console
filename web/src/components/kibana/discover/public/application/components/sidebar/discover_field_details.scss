@@ -1,0 +1,15 @@
+// .dscFieldDetails__visualizeBtn {
+//   @include euiFontSizeXS;
+//   height: $euiSizeL !important;
+//   min-width: $euiSize * 4;
+// }
+
+.dscFieldDetails {
+  color: #333;
+  margin-bottom: 5;
+}
+
+.dscFieldDetails__visualizeBtn {
+  height: 20 !important;
+  min-width: 50;
+}

@@ -129,7 +129,7 @@ class HeaderView extends PureComponent {
   handleSaveGlobalState = (newState) => {
     const { dispatch } = this.props;
     return dispatch({
-      type: 'global/saveData',
+      type: 'global/changeClusterState',
       payload: newState
     });
   }

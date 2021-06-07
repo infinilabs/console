@@ -67,13 +67,13 @@ export default {
   //     pathRewrite: { '^/server': '' },
   //   },
   // },
-  // proxy: {
-  //   '/_search-center/': {
-  //     target: 'http://localhost:9000',
-  //     changeOrigin: true,
-  //   //  pathRewrite: { '^/server': '' },
-  //   },
-  // },
+  proxy: {
+    '/elasticsearch/': {
+      target: 'http://localhost:9000',
+      changeOrigin: true,
+    //  pathRewrite: { '^/server': '' },
+    },
+  },
   ignoreMomentLocale: true,
   lessLoaderOptions: {
     javascriptEnabled: true,
@@ -85,7 +85,8 @@ export default {
       if (
         context.resourcePath.includes('node_modules') ||
         context.resourcePath.includes('ant.design.pro.less') ||
-        context.resourcePath.includes('global.less')
+        context.resourcePath.includes('global.less') ||
+        context.resourcePath.includes('.scss')
       ) {
         return localName;
       }
@@ -124,4 +125,5 @@ export default {
   //   // htmlSuffix: true,
   //   dynamicRoot: true,
   // },
+  sass: { },
 };

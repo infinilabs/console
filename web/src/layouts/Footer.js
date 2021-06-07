@@ -11,7 +11,7 @@ const FooterView = () => (
       ]}
       copyright={
         <Fragment>
-          ©2020 INFINI.LTD, All Rights Reserved.
+          ©INFINI.LTD, All Rights Reserved.
         </Fragment>
       }
     />

@@ -12,6 +12,15 @@ export default {
 
     // curl -XPOST  http://localhost:8000/elasticsearch/uuid/_proxy\?path=%2F_search&method=GET?pretty -d '{ "size": 1 }'
     'POST /elasticsearch/:id/_proxy': function(req, res){
+        const {path} = req.query;
+        switch(path){
+            case '_mapping':
+                return res.send({"test-custom9":{"mappings":{"properties":{"address":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"age":{"type":"long"},"created_at":{"type":"date"},"email":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"hobbies":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"id":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"name":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}}}}},"test-custom1":{"mappings":{"properties":{"address":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"age":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"created_at":{"type":"date"},"email":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"hobbies":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"id":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"name":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}}}}},"test-custom":{"mappings":{"properties":{"address":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"age":{"type":"long"},"created_at":{"type":"date"},"email":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"hobbies":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"id":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"name":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}}}}},"test-custom8":{"mappings":{"properties":{"address":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"age":{"type":"long"},"created_at":{"type":"date"},"email":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"hobbies":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"id":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}},"name":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}}}}}});
+            case '_aliases':
+                return res.send({"test-custom8":{"aliases":{"custom":{"filter":{"match":{"name":"test"}},"index_routing":"1","search_routing":"1"}}},"test-custom9":{"aliases":{"custom":{"filter":{"match":{"name":"test"}},"index_routing":"1","search_routing":"1"}}},"test-custom1":{"aliases":{"custom":{"filter":{"match":{"name":"test"}},"index_routing":"1","search_routing":"1"}}},"test-custom":{"aliases":{"custom":{"filter":{"match":{"name":"test"}},"index_routing":"1","search_routing":"1","is_write_index":true}}}});
+            case 'template':
+                return res.send({"search-center":{"order":0,"index_patterns":["infini-*"],"settings":{"index":{"max_result_window":"10000000","number_of_shards":"1"}},"mappings":{"dynamic_templates":[{"strings":{"mapping":{"ignore_above":256,"type":"keyword"},"match_mapping_type":"string"}}]},"aliases":{}}});
+        }
         res.send({
                 "took" : 1055,
                 "timed_out" : false,
@@ -138,23 +147,23 @@ export default {
     },
 
     //加载常用命令
-    'GET /elasticsearch/:id/command/:id': function(req, res){
-        res.send({
-            "_id": "c0oc4kkgq9s8qss2uk50",
-            "_source": {
-                "created" : "2021-02-02T13:23:16.799Z",
-                "request" : {
-                    "method" : "POST",
-                    "path" : "/myindex/_search",
-                    "body" : "{ \"query\": { \"match\": { \"name\": \"medcl\" } } }"
-                },
-                "status":200,
-                "title":"一个常用查询的例子",
-                "tag":["example","search"]
-            },
-            "found": true
-        });
-    },
+    // 'GET /elasticsearch/:id/command/:id': function(req, res){
+    //     res.send({
+    //         "_id": "c0oc4kkgq9s8qss2uk50",
+    //         "_source": {
+    //             "created" : "2021-02-02T13:23:16.799Z",
+    //             "request" : {
+    //                 "method" : "POST",
+    //                 "path" : "/myindex/_search",
+    //                 "body" : "{ \"query\": { \"match\": { \"name\": \"medcl\" } } }"
+    //             },
+    //             "status":200,
+    //             "title":"一个常用查询的例子",
+    //             "tag":["example","search"]
+    //         },
+    //         "found": true
+    //     });
+    // },
 
     //删除常用命令
     'DELETE /elasticsearch/:id/command/:id': function(req, res){
@@ -194,7 +203,23 @@ export default {
                                     "path" : "/myindex/_search",
                                     "body" : "{ \"query\": { \"match\": { \"name\": \"medcl\" } } }"
                                 },
-                                "title":"一个常用查询的例子",
+                                "title":"command1",
+                                "tag":["example","search"]
+                            }
+                        },
+                        {
+                            "_index" : "gateway-command-7.9.2-000001",
+                            "_type" : "_doc",
+                            "_id" : "VLvqYncBwyX1iJ4H4cBA",
+                            "_score" : 1.0,
+                            "_source" : {
+                                "created" : "2021-02-02T13:23:16.799Z",
+                                "request" : {
+                                    "method" : "GET",
+                                    "path" : "/myindex/_search",
+                                    "body" : "{ \"query\": { \"match\": { \"name\": \"medcl\" } } }"
+                                },
+                                "title":"command2",
                                 "tag":["example","search"]
                             }
                         }

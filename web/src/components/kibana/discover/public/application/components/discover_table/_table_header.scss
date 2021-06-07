@@ -1,0 +1,22 @@
+.kbnDocTableHeader {
+  white-space: nowrap;
+}
+.kbnDocTableHeader button {
+  margin-left: 4px;
+}
+.kbnDocTableHeader__move,
+.kbnDocTableHeader__sortChange {
+  opacity: 0;
+  th:hover &,
+  &:focus {
+    opacity: 1;
+  }
+}
+
+.fa {
+  display: inline-block;
+  font: normal normal normal 14px/1 FontAwesome;
+  font-size: inherit;
+  text-rendering: auto;
+  -webkit-font-smoothing: antialiased;
+}

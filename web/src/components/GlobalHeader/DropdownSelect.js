@@ -74,7 +74,7 @@ class DropdownSelect extends React.Component{
             hasMore={!this.state.loading && this.state.hasMore}
             useWindow={false}
         >
-        <List
+        {/* <List
           grid={{
             gutter: 16,
             sm: 4,
@@ -97,7 +97,15 @@ class DropdownSelect extends React.Component{
                   <Spin />
                 </div>
               )}
-        </List>
+        </List> */}
+        <div className={styles.dslist}>
+          {(this.props.data || []).map((item)=>{
+            return  <div className={styles.item}><Button key={item[labelField]} onClick={() => {
+                        this.handleItemClick(item)
+                      }}
+                    className={_.isEqual(item, value) ? styles.btnitem + " " + styles.selected : styles.btnitem}>{item[labelField]}</Button></div>
+          })}
+        </div>
         </InfiniteScroll>
       </div>
       {!this.state.loading && this.state.hasMore && (

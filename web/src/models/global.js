@@ -1,7 +1,7 @@
 import { queryNotices } from '@/services/api';
 import {message} from "antd";
 import {searchClusterConfig} from "@/services/cluster";
-import {formatESSearchResult} from '@/lib/elasticsearch/util';
+import {formatESSearchResult, extractClusterIDFromURL} from '@/lib/elasticsearch/util';
 import {Modal} from 'antd';
 import router from "umi/router";
 
@@ -67,11 +67,16 @@ export default {
             },
           });
         }else{
+          const targetID = extractClusterIDFromURL();
+          let idx = data.findIndex((item)=>{
+            return item.id == targetID;
+          });
+          idx = idx > -1 ? idx : 0;
           yield put({
             type: 'saveData',
             payload:{
-              selectedCluster: data[0],
-              selectedClusterID: (data[0] || {}).id
+              selectedCluster: data[idx],
+              selectedClusterID: (data[idx] || {}).id
             }
           });
         }
@@ -96,6 +101,27 @@ export default {
         type: 'fetchClusterList',
         payload: payload
       })
+    },
+    *changeClusterState({payload}, {put}){
+      yield put({
+        type: 'saveData',
+        payload:{
+          ...payload,
+        }
+      });
+    },
+    *rewriteURL({payload}, {select}){
+      const {pathname, history} = payload;
+      const global = yield select(state=>state.global);
+      if(pathname && global.selectedClusterID){
+        const newPart = `/elasticsearch/${global.selectedClusterID}/`;
+        if(!pathname.includes('elasticsearch')){
+          history.replace(pathname+newPart)
+        }else{
+          const newPath = pathname.replace(/\/elasticsearch\/(\w+)\/?/, newPart);
+          history.replace(newPath)
+        }
+      }
     }
   },
 
@@ -126,12 +152,23 @@ export default {
     },
 
     removeCluster(state, {payload}){
-      return {
+      let newState = {
         ...state,
         clusterList: state.clusterList.filter(item => item.id !== payload.id)
       }
+      if(state.selectedCluster?.id === payload.id){
+        if(newState.clusterList.length > 0){
+          newState.selectedCluster = newState.clusterList[0];
+          newState.selectedClusterID = newState.selectedCluster.id;
+        }
+      }
+      return newState;
     },
     addCluster(state, {payload}){
+      if(state.clusterList.length === 0){
+        state.selectedCluster = payload;
+        state.selectedClusterID = payload.id;
+      }
       state.clusterList.push(payload)
       return state;
     },
@@ -160,6 +197,16 @@ export default {
         let clusterVisible = true;
         if(pathname.startsWith("/system")){
           clusterVisible = false;
+        }else{
+          if(!pathname.includes('elasticsearch')){
+            dispatch({
+              type: 'rewriteURL',
+              payload: {
+                pathname,
+                history,
+              }
+            })
+          }
         }
         dispatch({
           type: 'saveData',

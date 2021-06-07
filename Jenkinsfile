@@ -71,7 +71,7 @@ pipeline {
 
         stage('Start Backend Docker') {
             steps {
-                sh 'cd /home/deploy/search-center/docker && docker-compose -f docker-compose.dev.yml  up -d'
+                sh 'cd /home/deploy/search-center/docker && docker-compose -f docker-compose.dev.yml  up --remove-orphans -d'
             }
         }
 

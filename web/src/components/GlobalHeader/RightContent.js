@@ -92,7 +92,9 @@ export default class GlobalHeaderRight extends PureComponent {
             console.log('enter', value); // eslint-disable-line
           }}
         />
-     
+
+        <a className={styles.action}> <Icon type="code" /></a>
+
         <NoticeIcon
           className={styles.action}
           count={currentUser.notifyCount}

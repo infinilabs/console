@@ -10,9 +10,8 @@ import {
   Modal,
   message,
   Divider,
+  Table, AutoComplete, Switch,
 } from 'antd';
-import StandardTable from '@/components/StandardTable';
-import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 
 import styles from '../../List/TableList.less';
 
@@ -56,7 +55,7 @@ const CreateForm = Form.create()(props => {
 });
 
 const UpdateForm = Form.create()(props => {
-  const { updateModalVisible, handleUpdateModalVisible, handleUpdate,values,form } = props;
+  const { updateModalVisible, handleUpdateModalVisible, handleUpdate,values,form, indices } = props;
 
   const okHandle = () => {
     form.validateFields((err, fieldsValue) => {
@@ -69,36 +68,67 @@ const UpdateForm = Form.create()(props => {
   return (
     <Modal
       destroyOnClose
-      title="索引设置"
+      title="别名设置"
       visible={updateModalVisible}
       width={640}
       onOk={okHandle}
       onCancel={() => handleUpdateModalVisible()}
     >
-       <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="索引名称">
-        {form.getFieldDecorator('index', {
-          initialValue: values.index,
-          rules: [{ required: true, message: '请输入至少五个字符的名称！', min: 5 }],
-        })(<Input placeholder="请输入名称" />)}
-      </FormItem>
-      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="索引设置">
-        {form.getFieldDecorator('settings', {
-          initialValue: values.processors,
+       <FormItem labelCol={{ span: 4 }} wrapperCol={{ span: 20 }} label="别名">
+        {form.getFieldDecorator('alias', {
+          initialValue: values.alias,
           rules: [{ required: true }],
+        })(<Input placeholder="请输入别名" disabled={!!values.alias} />)}
+      </FormItem>
+      <FormItem labelCol={{ span: 4 }} wrapperCol={{ span: 20 }} label="索引">
+      {form.getFieldDecorator('index', {
+        initialValue: values.index,
+        rules: [{ required: true }],
+      })(<IndexComplete disabled={!!values.alias} dataSource={indices}/>)}
+    </FormItem>
+      <FormItem labelCol={{ span: 4 }} wrapperCol={{ span: 20 }} label="是否为写索引">
+        {form.getFieldDecorator('is_write_index', {
+          valuePropName: 'checked',
+          initialValue: values.is_write_index,
+          rules: [],
+        })(<Switch/>)}
+      </FormItem>
+      <FormItem labelCol={{ span: 4 }} wrapperCol={{ span: 20 }} label="过滤查询">
+        {form.getFieldDecorator('filter', {
+          initialValue: values.filter? JSON.stringify(values.filter, '', 2):'',
+          rules: [{ }],
         })(<TextArea
-          style={{ minHeight: 24 }}
-          placeholder="请输入"
-          rows={9}
+          style={{ minHeight: 16 }}
+          placeholder='示例：{"match":{"field_name":"field_value"}}'
+          rows={5}
       />)}
       </FormItem>
+      <Row>
+        <Col span={12}>
+          <FormItem label="索引路由" labelCol={{ span: 8 }} wrapperCol={{ span: 16 }} >
+            {form.getFieldDecorator('index_routing', {
+              initialValue: values.index_routing,
+              rules: [],
+            })(<Input />)}
+          </FormItem>
+        </Col>
+        <Col span={12} >
+          <FormItem label="搜索路由" labelCol={{ span: 8 }} wrapperCol={{ span: 16 }} >
+            {form.getFieldDecorator('search_routing', {
+              initialValue: values.search_routing,
+              rules: [],
+            })(<Input />)}
+          </FormItem>
+        </Col>
+      </Row>
     </Modal>
   );
 });
 
 /* eslint react/no-multi-comp:0 */
-@connect(({ pipeline, loading }) => ({
-  pipeline,
-  loading: loading.models.pipeline,
+@connect(({ global,  alias}) => ({
+  selectedClusterID: global.selectedClusterID,
+  alias,
 }))
 @Form.create()
 class AliasManage extends PureComponent {
@@ -110,201 +140,33 @@ class AliasManage extends PureComponent {
     formValues: {},
     updateFormValues: {},
   };
-  datasource = `[
-    {
-        "health": "green",
-        "status": "blog",
-        "index": "blogs_fixed",
-        "uuid": "Q6zngGf9QVaWqpV0lF-0nw",
-        "pri": "1",
-        "rep": "1",
-        "docs.count": "1594",
-        "docs.deleted": "594",
-        "store.size": "17.9mb",
-        "pri.store.size": "8.9mb"
-    },
-    {
-        "health": "red",
-        "status": "elastic",
-        "index": "elastic_qa",
-        "uuid": "_qkVlQ5LRoOKffV-nFj8Uw",
-        "pri": "1",
-        "rep": "1",
-        "docs.count": null,
-        "docs.deleted": null,
-        "store.size": null,
-        "pri.store.size": null
-    },
-    {
-        "health": "green",
-        "status": "kibana",
-        "index": ".kibana-event-log-7.9.0-000001",
-        "uuid": "fgTtyl62Tc6F1ddJfPwqHA",
-        "pri": "1",
-        "rep": "1",
-        "docs.count": "20",
-        "docs.deleted": "0",
-        "store.size": "25kb",
-        "pri.store.size": "12.5kb"
-    },
-    {
-        "health": "green",
-        "status": "blog",
-        "index": "blogs",
-        "uuid": "Mb2n4wnNQSKqSToI_QO0Yg",
-        "pri": "1",
-        "rep": "1",
-        "docs.count": "1594",
-        "docs.deleted": "0",
-        "store.size": "11mb",
-        "pri.store.size": "5.5mb"
-    },
-    {
-        "health": "green",
-        "status": "kibana",
-        "index": ".kibana-event-log-7.9.0-000002",
-        "uuid": "8GpbwnDXR2KJUsw6srLnWw",
-        "pri": "1",
-        "rep": "1",
-        "docs.count": "9",
-        "docs.deleted": "0",
-        "store.size": "96.9kb",
-        "pri.store.size": "48.4kb"
-    },
-    {
-        "health": "green",
-        "status": "apm",
-        "index": ".apm-agent-configuration",
-        "uuid": "vIaV9k2VS-W48oUOe2xNWA",
-        "pri": "1",
-        "rep": "1",
-        "docs.count": "0",
-        "docs.deleted": "0",
-        "store.size": "416b",
-        "pri.store.size": "208b"
-    },
-    {
-        "health": "green",
-        "status": "logs",
-        "index": "logs_server1",
-        "uuid": "u56jv2AyR2KOkruOfxIAnA",
-        "pri": "1",
-        "rep": "1",
-        "docs.count": "5386",
-        "docs.deleted": "0",
-        "store.size": "5.1mb",
-        "pri.store.size": "2.5mb"
-    },
-    {
-        "health": "green",
-        "status": "kibana",
-        "index": ".kibana_1",
-        "uuid": "dBCrfVblRPGVlYAIlP_Duw",
-        "pri": "1",
-        "rep": "1",
-        "docs.count": "3187",
-        "docs.deleted": "50",
-        "store.size": "24.8mb",
-        "pri.store.size": "12.4mb"
-    },
-    {
-        "health": "green",
-        "status": "tasks",
-        "index": ".tasks",
-        "uuid": "3RafayGeSNiqglO2BHof9Q",
-        "pri": "1",
-        "rep": "1",
-        "docs.count": "3",
-        "docs.deleted": "0",
-        "store.size": "39.9kb",
-        "pri.store.size": "19.9kb"
-    },
-    {
-        "health": "green",
-        "status": "filebeat",
-        "index": "filebeat-7.9.0-elastic_qa",
-        "uuid": "tktSYU14S3CrsrJb0ybpSQ",
-        "pri": "1",
-        "rep": "1",
-        "docs.count": "3009880",
-        "docs.deleted": "0",
-        "store.size": "1.6gb",
-        "pri.store.size": "850.1mb"
-    },
-    {
-        "health": "green",
-        "status": "analysis",
-        "index": "analysis_test",
-        "uuid": "6ZHEAW1ST_qfg7mo4Bva4w",
-        "pri": "1",
-        "rep": "1",
-        "docs.count": "0",
-        "docs.deleted": "0",
-        "store.size": "416b",
-        "pri.store.size": "208b"
-    },
-    {
-        "health": "green",
-        "status": "open",
-        "index": ".apm-custom-link",
-        "uuid": "Y4N2TeVERrGacEGwY-NPAQ",
-        "pri": "1",
-        "rep": "1",
-        "docs.count": "0",
-        "docs.deleted": "0",
-        "store.size": "416b",
-        "pri.store.size": "208b"
-    },
-    {
-        "health": "green",
-        "status": "open",
-        "index": "kibana_sample_data_ecommerce",
-        "uuid": "4FIWJKhGSr6bE72R0xEQyA",
-        "pri": "1",
-        "rep": "1",
-        "docs.count": "4675",
-        "docs.deleted": "0",
-        "store.size": "9.2mb",
-        "pri.store.size": "4.6mb"
-    }
-]`;
 
   columns = [
     {
-      title: '索引名称',
-      dataIndex: 'index',
-    },
-    {
         title: '别名',
-        dataIndex: 'status',
+        dataIndex: 'alias',
     },
     {
-      title: '文档数',
-      dataIndex: 'docs.count',
-    },
-    {
-      title: '主分片数',
-      dataIndex: 'pri'
-    },
-    {
-      title: '从分片数',
-      dataIndex: 'rep'
-    },
-    {
-      title: '存储大小',
-      dataIndex: 'store.size'
+      title: '写索引',
+      dataIndex: 'write_index',
     },
     {
       title: '操作',
       render: (text, record) => (
         <Fragment>
-          <a onClick={() => this.handleUpdateModalVisible(true, record)}>别名设置</a>
-          <Divider type="vertical" />
+          {/*<a onClick={() => this.handleUpdateModalVisible(true, record)}>别名设置</a>*/}
+          {/*<Divider type="vertical" />*/}
           <a onClick={() => {
-            this.state.selectedRows.push(record);
-            this.handleDeleteClick();
+            let indices = [];
+            for(let index of record.indexes){
+              indices.push(index.index);
+            }
+            let vals = {
+              alias: record.alias,
+              indices,
+            };
+            this.handleDeleteClick(vals);
           }}>删除</a>
-          <Divider type="vertical" />
         </Fragment>
       ),
     },
@@ -312,35 +174,16 @@ class AliasManage extends PureComponent {
 
   componentDidMount() {
     const { dispatch } = this.props;
-    // dispatch({
-    //   type: 'pipeline/fetch',
-    // });
+    dispatch({
+      type: 'alias/fetchAliasList',
+      payload: {
+        clusterID: this.props.selectedClusterID,
+      }
+    });
   }
 
   handleStandardTableChange = (pagination, filtersArg, sorter) => {
-    const { dispatch } = this.props;
-    const { formValues } = this.state;
 
-    const filters = Object.keys(filtersArg).reduce((obj, key) => {
-      const newObj = { ...obj };
-      newObj[key] = getValue(filtersArg[key]);
-      return newObj;
-    }, {});
-
-    const params = {
-      currentPage: pagination.current,
-      pageSize: pagination.pageSize,
-      ...formValues,
-      ...filters,
-    };
-    if (sorter.field) {
-      params.sorter = `${sorter.field}_${sorter.order}`;
-    }
-
-    dispatch({
-      type: 'pipeline/fetch',
-      payload: params,
-    });
   };
 
   handleFormReset = () => {
@@ -348,29 +191,21 @@ class AliasManage extends PureComponent {
     form.resetFields();
     this.setState({
       formValues: {},
-    });
-    dispatch({
-      type: 'pipeline/fetch',
-      payload: {},
+      keyword: '',
     });
   };
 
-  handleDeleteClick = e => {
+  handleDeleteClick = (record) => {
     const { dispatch } = this.props;
-    const { selectedRows } = this.state;
-
-    if (!selectedRows) return;
-        dispatch({
-          type: 'pipeline/delete',
-          payload: {
-            key: selectedRows.map(row => row.name),
-          },
-          callback: () => {
-            this.setState({
-              selectedRows: [],
-            });
-          },
-        });
+    dispatch({
+      type: 'alias/delete',
+      payload: {
+        clusterID: this.props.selectedClusterID,
+        index: record.index,
+        alias: record.alias,
+        indices: record.indices,
+      }
+    })
   };
 
   handleSelectRows = rows => {
@@ -380,27 +215,10 @@ class AliasManage extends PureComponent {
   };
 
   handleSearch = e => {
-    e.preventDefault();
-
-    const { dispatch, form } = this.props;
-
-    form.validateFields((err, fieldsValue) => {
-      if (err) return;
-
-      const values = {
-        ...fieldsValue,
-        updatedAt: fieldsValue.updatedAt && fieldsValue.updatedAt.valueOf(),
-      };
-
-      this.setState({
-        formValues: values,
-      });
-
-      dispatch({
-        type: 'rule/fetch',
-        payload: values,
-      });
-    });
+    let values = this.props.form.getFieldsValue();
+    this.setState({
+      keyword: values.keyword,
+    })
   };
 
   handleModalVisible = flag => {
@@ -410,10 +228,16 @@ class AliasManage extends PureComponent {
   };
 
   handleUpdateModalVisible = (flag, record) => {
-    this.setState({
+    let values =  record || {};
+    let newState = {
       updateModalVisible: !!flag,
-      updateFormValues: record || {},
-    });
+      updateFormValues: values,
+    };
+    if(!values.alias){
+      newState.editMode = 'NEW';
+    }
+
+    this.setState(newState);
   };
 
   handleAdd = fields => {
@@ -432,13 +256,22 @@ class AliasManage extends PureComponent {
   };
 
   handleUpdate = fields => {
+    let upVals = {}
+    for(let k in fields){
+      if(fields[k]){
+        if(k === 'filter'){
+          upVals[k]=JSON.parse(fields[k]);
+        }else {
+          upVals[k] = fields[k];
+        }
+      }
+    }
     const { dispatch } = this.props;
     dispatch({
-      type: 'pipeline/update',
+      type: 'alias/update',
       payload: {
-        name: fields.name,
-        desc: fields.desc,
-        processors: fields.processors,
+        actionBody: upVals,
+        clusterID: this.props.selectedClusterID,
       },
     });
 
@@ -451,16 +284,16 @@ class AliasManage extends PureComponent {
       form: { getFieldDecorator },
     } = this.props;
     return (
-      <Form onSubmit={this.handleSearch} layout="inline">
+      <Form layout="inline">
         <Row gutter={{ md: 8, lg: 24, xl: 48 }}>
           <Col md={8} sm={24}>
-            <FormItem label="索引名称">
-              {getFieldDecorator('name')(<Input placeholder="请输入" />)}
+            <FormItem label="别名">
+              {getFieldDecorator('keyword')(<Input placeholder="请输入" />)}
             </FormItem>
           </Col>
           <Col md={8} sm={24}>
             <span className={styles.submitButtons}>
-              <Button type="primary" htmlType="submit">
+              <Button type="primary" onClick={this.handleSearch}>
                 查询
               </Button>
               <Button style={{ marginLeft: 8 }} onClick={this.handleFormReset}>
@@ -478,28 +311,22 @@ class AliasManage extends PureComponent {
   }
 
   render() {
-    const data = {
-      list: JSON.parse(this.datasource),
-      pagination: {
-        pageSize: 5,
-      },
-    };
-    const { selectedRows, modalVisible, updateModalVisible, updateFormValues } = this.state;
-    const parentMethods = {
-      handleAdd: this.handleAdd,
-      handleModalVisible: this.handleModalVisible,
-    };
+    const { selectedRows, updateModalVisible, updateFormValues } = this.state;
     const updateMethods = {
       handleUpdateModalVisible: this.handleUpdateModalVisible,
       handleUpdate: this.handleUpdate,
     };
+    let aliasList = [...(this.props.alias.aliasList||[])];
+    if(this.state.keyword) {
+      aliasList = aliasList.filter(al=>al.alias.includes(this.state.keyword))
+    }
     return (
       <Fragment>
         <Card bordered={false}>
           <div className={styles.tableList}>
             <div className={styles.tableListForm}>{this.renderForm()}</div>
             <div className={styles.tableListOperator}>
-              <Button icon="plus" type="primary" onClick={() => this.handleModalVisible(true)}>
+              <Button icon="plus" type="primary" onClick={() => this.handleUpdateModalVisible(true)}>
                 新建
               </Button>
               {selectedRows.length > 0 && (
@@ -508,26 +335,109 @@ class AliasManage extends PureComponent {
                 </span>
               )}
             </div>
-            <StandardTable
+            <Table
+              size="small"
+              bordered
               selectedRows={selectedRows}
-              data={data}
+              rowKey="alias"
+              dataSource={aliasList}
+              expandedRowRender={record => {
+                return (
+                  <div>
+                    <AliasIndexTable rawData={record}
+                                     handleDeleteClick={this.handleDeleteClick}
+                                     handleUpdateModalVisible={this.handleUpdateModalVisible} data={record.indexes}/>
+                  </div>
+                  );
+              }}
               columns={this.columns}
               onSelectRow={this.handleSelectRows}
               onChange={this.handleStandardTableChange}
             />
           </div>
         </Card>
-        <CreateForm {...parentMethods} modalVisible={modalVisible} />
-        {updateFormValues && Object.keys(updateFormValues).length ? (
           <UpdateForm
             {...updateMethods}
             updateModalVisible={updateModalVisible}
             values={updateFormValues}
+            indices={['test-custom', 'dict']}
           />
-        ) : null}
+
       </Fragment>
     );
   }
 }
 
 export default AliasManage;
+
+
+class AliasIndexTable extends React.Component {
+  columns = [
+    {
+      title: '索引',
+      dataIndex: 'index',
+    },
+    {
+      title: '索引路由',
+      dataIndex: 'index_routing'
+    },
+    {
+      title: '搜索路由',
+      dataIndex: 'search_routing'
+    },
+    {
+      title: '过滤查询',
+      dataIndex: 'filter',
+      render:(text)=>{
+        return text ? JSON.stringify(text): '';
+      }
+    },
+    {
+      title: '操作',
+      render: (text, record) => (
+        <div>
+          <a onClick={() => this.props.handleUpdateModalVisible(true, {
+            ...record,
+            alias: this.props.rawData.alias,
+          })}>设置</a>
+          <Divider type="vertical" />
+          <a onClick={() => {
+            this.props.handleDeleteClick({
+              ...record,
+              alias: this.props.rawData.alias,
+            });
+          }}>删除</a>
+        </div>
+      ),
+    },]
+  render() {
+    return (
+      <Table columns={this.columns}
+             size="small"
+             // pagination={false}
+             rowKey="index"
+        dataSource={this.props.data}/>
+    )
+  }
+}
+
+class IndexComplete extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      dataSource: [...props.dataSource],
+    }
+  }
+  handleSearch = v => {
+    let data = this.props.dataSource.filter(d=>d.includes(v));
+    // if(data.length > 0 && v.length >0) {
+    //   data.push(v+'*');
+    // }
+    this.setState({
+      dataSource: data,
+    })
+  }
+  render() {
+    return <AutoComplete style={{width:'100%'}} disabled={this.props.disabled} onChange={this.props.onChange} value={this.props.value} onSearch={this.handleSearch} dataSource={this.state.dataSource} />
+  }
+}

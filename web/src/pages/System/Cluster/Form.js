@@ -53,7 +53,7 @@ class ClusterForm extends React.Component{
       //console.log(values);
       let newVals = {
         name: values.name,
-        endpoint: values.endpoint,
+        host: values.host,
         basic_auth: {
           username: values.username,
           password: values.password,
@@ -61,7 +61,8 @@ class ClusterForm extends React.Component{
         description: values.description,
         enabled: values.enabled,
         monitored: values.monitored,
-        order: values.order,
+        schema: values.isTLS === true ? 'https': 'http',
+        // order: values.order,
       }
       if(clusterConfig.editMode === 'NEW') {
         dispatch({
@@ -125,7 +126,6 @@ class ClusterForm extends React.Component{
           router.push('/system/cluster');
         }}>返回</Button>]}
       >
-      {/* <NewCluster/> */}
       <Form {...formItemLayout}>
         <Form.Item label="集群名称">
           {getFieldDecorator('name', {
@@ -138,20 +138,31 @@ class ClusterForm extends React.Component{
             ],
           })(<Input autoComplete='off' placeholder="cluster-name" />)}
         </Form.Item>
-        <Form.Item label="集群 URL">
-          {getFieldDecorator('endpoint', {
-            initialValue: editValue.endpoint,
+        <Form.Item label="集群地址">
+          {getFieldDecorator('host', {
+            initialValue: editValue.host,
             rules: [
               {
-                type: 'url', //https://github.com/yiminghe/async-validator#type
-                message: 'The input is not valid url!',
+                type: 'string',
+                pattern: /^[\w\.]+\:\d+$/, //(https?:\/\/)?
+                message: '请输入域名或 IP 地址和端口号',
               },
               {
                 required: true,
-                message: 'Please input cluster name!',
+                message: '请输入域名或 IP 地址和端口号!',
               },
             ],
-          })(<Input placeholder="http://127.0.0.1:9200" />)}
+          })(<Input placeholder="127.0.0.1:9200" />)}
+        </Form.Item>
+        <Form.Item label="TLS">
+        {getFieldDecorator('isTLS', {
+            initialValue: editValue?.schema === "https",
+        })(
+          <Switch
+          defaultChecked={editValue?.schema === "https"}
+            checkedChildren={<Icon type="check" />}
+            unCheckedChildren={<Icon type="close" />}
+          />)}
         </Form.Item>
         <Form.Item label="是否需要身份验证">
           <Switch
@@ -177,22 +188,17 @@ class ClusterForm extends React.Component{
           })(<Input.Password />)}
         </Form.Item>
         </div>):''}
-        {/* <Form.Item label="Elasticsearch 版本">
-          {getFieldDecorator('version', {
-            initialValue: editValue.version || '',
-          })(<Input readOnly={true} />)}
-        </Form.Item> */}
-        <Form.Item label="排序权重">
+        {/* <Form.Item label="排序权重">
           {getFieldDecorator('order', {
             initialValue: editValue.order || 0,
           })(<InputNumber />)}
-        </Form.Item>
+        </Form.Item> */}
         <Form.Item label="描述">
           {getFieldDecorator('description', {
             initialValue: editValue.description,
           })(<Input.TextArea placeholder="集群应用描述" />)}
         </Form.Item>
-        <Form.Item label="是否启用">
+        {/* <Form.Item label="是否启用">
           {getFieldDecorator('enabled', {
             valuePropName: 'checked',
             initialValue: typeof editValue.enabled === 'undefined' ? true: editValue.enabled,
@@ -200,7 +206,7 @@ class ClusterForm extends React.Component{
             checkedChildren={<Icon type="check" />}
             unCheckedChildren={<Icon type="close" />}
           />)}
-        </Form.Item>
+        </Form.Item> */}
         <Form.Item label="启用监控">
           {getFieldDecorator('monitored', {
             valuePropName: 'checked',
@@ -214,9 +220,6 @@ class ClusterForm extends React.Component{
           <Button type="primary" onClick={this.handleSubmit}>
             {editMode === 'NEW' ? '注册': '保存'}
           </Button>
-          {/* <Button style={{marginLeft:20}}>
-            测试连接
-          </Button> */}
         </Form.Item>
       </Form>
       </Card>

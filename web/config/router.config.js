@@ -443,6 +443,12 @@ export default [
             component: './System/Cluster/Index',
           },
           {
+            path: '/system/cluster/regist',
+            name: 'registCluster',
+            component: './System/Cluster/Step',
+            hideInMenu: true
+          },
+          {
             path: '/system/cluster/edit',
             name: 'editCluster',
             component: './System/Cluster/Form',

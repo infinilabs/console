@@ -123,6 +123,7 @@ export default {
 
   'menu.system': 'SYSTEM',
   'menu.system.cluster': 'CLUSTERS',
+  'menu.system.registCluster': 'REGIST CLUSTER',
   'menu.system.editCluster': 'EDIT CLUSTER',
   'menu.system.settings': 'SETTINGS',
   'menu.system.settings.global': 'GLOBAL',

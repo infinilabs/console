@@ -29,6 +29,8 @@ import { IndexPatternCreationOption } from '../../types';
 import { CreateButton } from '../../create_button';
 import { Illustration } from './assets/index_pattern_illustration';
 import { ManagementAppMountParams } from '../../../../../management/public';
+import Link from 'umi/link';
+import Exception from '@/components/Exception';
 
 interface Props {
   canSave: boolean;
@@ -53,9 +55,9 @@ export const EmptyIndexPatternPrompt = ({
       horizontalPosition="center"
     >
       <EuiFlexGroup gutterSize="xl" alignItems="center" direction="rowReverse" wrap>
-        <EuiFlexItem grow={1} className="inpEmptyIndexPatternPrompt__illustration">
+        {/* <EuiFlexItem grow={1} className="inpEmptyIndexPatternPrompt__illustration">
           <Illustration />
-        </EuiFlexItem>
+        </EuiFlexItem> */}
         <EuiFlexItem grow={2} className="inpEmptyIndexPatternPrompt__text">
           <EuiText grow={false}>
             <h2>

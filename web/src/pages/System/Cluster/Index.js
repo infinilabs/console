@@ -40,14 +40,14 @@ class Index extends  React.Component {
     }
   }, {
     title: '部署环境',
-    dataIndex: 'business_department',
-    key: 'business_department',
+    dataIndex: 'deploy_env',
+    key: 'deploy_env',
     render: ()=>{
       return 'PROD'
     }
   },{
     title: '程序版本',
-    dataIndex: 'status.version',
+    dataIndex: 'version',
     key: 'elasticsearch_version',
     // render: (data)=>{
     //   return 
@@ -212,7 +212,7 @@ class Index extends  React.Component {
                 onChange={this.handleEnabledChange}
                 defaultChecked
               />是否启用</span>
-            <Link to='/system/cluster/edit' onClick={this.handleNewClick}> <Button type="primary" icon="plus">新建集群</Button></Link>
+            <Link to='/system/cluster/regist' onClick={this.handleNewClick}> <Button type="primary" icon="plus">注册集群</Button></Link>
             </div>
           </div>
           <Table

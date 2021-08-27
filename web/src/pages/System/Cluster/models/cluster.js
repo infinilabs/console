@@ -1,4 +1,5 @@
-import {createClusterConfig, searchClusterConfig, updateClusterConfig,deleteClusterConfig, getClusterStatus} from "@/services/cluster";
+import {createClusterConfig, searchClusterConfig, updateClusterConfig,deleteClusterConfig,
+   getClusterStatus, tryConnect} from "@/services/cluster";
 import {message} from "antd";
 import {formatESSearchResult} from '@/lib/elasticsearch/util';
 
@@ -45,6 +46,9 @@ export default {
         return false;
       }
       let {data, total} = yield select(state => state.clusterConfig);
+      if(!data){
+        return
+      }
       data.unshift({
         ...res._source,
         id: res._id,
@@ -144,6 +148,21 @@ export default {
         type: 'global/removeCluster',
         payload: {
           id: payload.id
+        }
+      })
+      return res;
+    },
+    *doTryConnect({payload}, {call, put, select}) {
+      let res = yield call(tryConnect, payload)
+      if(res.error){
+        message.error(res.error)
+        return false;
+      }
+
+      yield put({
+        type: 'saveData',
+        payload: {
+          tempClusterInfo: res,
         }
       })
       return res;

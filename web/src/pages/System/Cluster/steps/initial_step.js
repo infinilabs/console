@@ -1,10 +1,12 @@
 import {Form, Input, Switch, Icon} from 'antd';
-import {useState} from 'react';
 
 @Form.create()
-class InitialStep extends React.Component {
-  state = {
-    needAuth: false,
+export class InitialStep extends React.Component {
+  constructor(props){
+    super(props);
+    this.state = {
+      needAuth: props.initialValue?.username !== undefined,
+    }
   }
   handleAuthChange = (val) => {
     this.setState({
@@ -12,7 +14,7 @@ class InitialStep extends React.Component {
     })
   }
   render(){
-    const {form:{getFieldDecorator}} = this.props;
+    const {form:{getFieldDecorator}, initialValue} = this.props;
     const formItemLayout = {
       labelCol: {
         xs: { span: 24 },
@@ -24,34 +26,33 @@ class InitialStep extends React.Component {
       },
     };
     return (
-      <Form {...formItemLayout} style={{marginTop:15}} form={this.props.formRef}>
-        <Form.Item label="集群名称" >
-          {getFieldDecorator('name', {
-            initialValue: '',
+      <Form {...formItemLayout} form={this.props.formRef}>
+        <Form.Item label="集群地址">
+          {getFieldDecorator('host', {
+            initialValue: initialValue?.host || '',
             rules: [
               {
-                required: true,
-                message: 'Please input cluster name!',
-              },
-            ],
-          })(<Input autoComplete='off' placeholder="cluster-name" />)}
-        </Form.Item>
-        <Form.Item label="集群 URL">
-          {getFieldDecorator('endpoint', {
-            initialValue: '',
-            rules: [
-              {
-                type: 'url', 
-                message: 'The input is not valid url!',
+                type: 'string',
+                pattern: /^[\w\.]+\:\d+$/, //(https?:\/\/)?
+                message: '请输入域名或 IP 地址和端口号',
               },
               {
                 required: true,
-                message: 'Please input cluster endpoint!',
+                message: '请输入集群地址!',
               },
             ],
-          })(<Input placeholder="http://127.0.0.1:9200" />)}
+          })(<Input placeholder="127.0.0.1:9200" />)}
         </Form.Item>
-        <Form.Item label="是否需要身份验证">
+        <Form.Item label="TLS">
+        {getFieldDecorator('isTLS', {
+            initialValue: initialValue?.isTLS || false,
+        })(
+          <Switch
+            checkedChildren={<Icon type="check" />}
+            unCheckedChildren={<Icon type="close" />}
+          />)}
+        </Form.Item>
+        <Form.Item label="身份验证">
           <Switch
             defaultChecked={this.state.needAuth}
             onChange={this.handleAuthChange}
@@ -62,7 +63,7 @@ class InitialStep extends React.Component {
         {this.state.needAuth === true ? (<div>
         <Form.Item label="用户名">
           {getFieldDecorator('username', {
-            initialValue: '',
+            initialValue: initialValue?.username || '',
             rules: [
               {
                 required: true,
@@ -73,7 +74,7 @@ class InitialStep extends React.Component {
         </Form.Item>
         <Form.Item label="密码" hasFeedback>
           {getFieldDecorator('password', {
-            initialValue: '',
+            initialValue: initialValue?.password || '',
             rules: [
               {
                 required: true,
@@ -87,5 +88,3 @@ class InitialStep extends React.Component {
       )
     }
 }
-
-export default InitialStep;

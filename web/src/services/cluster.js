@@ -16,7 +16,7 @@ export async function getClusterMetrics(params) {
 }
 
 export async function createClusterConfig(params) {
-    return request(`/elasticsearch`, {
+    return request(`/elasticsearch/`, {
         method: 'POST',
         body: params,
     });
@@ -56,5 +56,13 @@ export async function getClusterStatus(params) {
     let url = `/elasticsearch/status`;
     return request(url, {
         method: 'GET',
+    });
+}
+
+export async function tryConnect(params) {
+    let url = `/elasticsearch/try_connect`;
+    return request(url, {
+        method: 'POST',
+        body: params,
     });
 }

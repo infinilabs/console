@@ -146,7 +146,7 @@ const vstyle = {
 const MonitorDatePicker = ({timeRange, commonlyUsedRanges, onChange, isLoading}) => {
     // const [recentlyUsedRanges, setRecentlyUsedRanges] = useState([]);
     const [isPaused, setIsPaused] = useState(true);
-    const [refreshInterval, setRefreshInterval] = useState();
+    const [refreshInterval, setRefreshInterval] = useState(10000);
   
     const onTimeChange = ({ start, end }) => {
         onChange({

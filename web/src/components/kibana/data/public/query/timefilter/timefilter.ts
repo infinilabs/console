@@ -23,7 +23,9 @@ import moment from 'moment';
 import { areRefreshIntervalsDifferent, areTimeRangesDifferent } from './lib/diff_time_picker_vals';
 import { getForceNow } from './lib/get_force_now';
 import { TimefilterConfig, InputTimeRange, TimeRangeBounds } from './types';
-import { calculateBounds, getTime, RefreshInterval, TimeRange } from '../../../common';
+import { getTime, RefreshInterval, TimeRange } from '../../../common';
+import { calculateBounds } from '../../../common/query/timefilter/get_time';
+
 import { TimeHistoryContract } from './time_history';
 import { IndexPattern } from '../../index_patterns';
 
@@ -173,6 +175,9 @@ export class Timefilter {
   }
 
   public calculateBounds(timeRange: TimeRange): TimeRangeBounds {
+    if(typeof calculateBounds !== 'function'){
+      console.log(typeof(calculateBounds), calculateBounds)
+    }
     return calculateBounds(timeRange, { forceNow: this.getForceNow() });
   }
 

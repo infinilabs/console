@@ -21,7 +21,8 @@ export default {
         payload: {
           clusterStatus: res
         }
-      })
+      });
+      return res;
     },
     *fetchClusterList({payload}, {call, put, select}){
       let res = yield call(searchClusterConfig, payload);
@@ -31,9 +32,9 @@ export default {
       }
       res = formatESSearchResult(res)
       const {clusterStatus} = yield select(state => state.clusterConfig);
-      for(let item of res.data){
-        item.status= clusterStatus[item.id]
-      }
+      // for(let item of res.data){
+      //   item.status= clusterStatus[item.id]
+      // }
       yield put({
         type: 'saveData',
         payload: res

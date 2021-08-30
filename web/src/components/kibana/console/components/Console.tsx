@@ -43,7 +43,7 @@ const ConsoleWrapper = ({
           <EuiFlexItem className="conApp__tabsExtension">
           <RequestStatusBar
             requestInProgress={requestInProgress}
-            // selectedCluster={selectedCluster}
+            selectedCluster={selectedCluster}
             requestResult={
               lastDatum
                 ? {

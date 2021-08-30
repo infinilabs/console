@@ -2,10 +2,27 @@ import  React from 'react';
 import {Button, Card, Col, Divider, Form, Input, Row, Table, Switch, Icon, Popconfirm, message} from "antd";
 import Link from "umi/link";
 import {connect} from "dva";
+import {HealthStatusCircle} from './health_status';
+import PageHeaderWrapper from '@/components/PageHeaderWrapper';
+import styles from './step.less';
+import clusterBg from '@/assets/cluster_bg.png';
 
-const HealthStatusCircle = ({status})=>{
-  return <div style={{background: status, height:14, width:14, borderRadius: 14, boxShadow: '0px 0px 5px #555'}}></div>
-}
+const content = (
+  <div className={styles.pageHeaderContent}>
+    <p>
+      集群管理通过注册新集群，删除集群让您高效的管理多个 Elasticsearch 集群。
+    </p>
+  </div>
+);
+
+const extraContent = (
+  <div className={styles.extraImg}>
+    <img
+      alt="集群管理"
+      src={clusterBg}
+    />
+  </div>
+);
 
 @Form.create()
 @connect(({clusterConfig}) =>({
@@ -18,10 +35,15 @@ class Index extends  React.Component {
     key: 'name',
   },{
     title: '健康状态',
-    dataIndex: 'status.health_status',
+    dataIndex: 'id',
     key: 'health_status',
     render: (val)=>{
-      return <HealthStatusCircle  status={val}/>
+      const {clusterStatus} = this.props.clusterConfig;
+      if(!clusterStatus || !clusterStatus[val]){
+        return
+      }
+      const status = clusterStatus[val].health_status;
+      return <HealthStatusCircle  status={status}/>
     }
   },{
     title: '所属业务',
@@ -54,10 +76,14 @@ class Index extends  React.Component {
     // }
   },{
     title: '节点数',
-    dataIndex: 'node_count',
+    dataIndex: 'id',
     key: 'mode_count',
-    render: ()=>{
-      return 1;
+    render: (val)=>{
+      const {clusterStatus} = this.props.clusterConfig;
+      if(!clusterStatus || !clusterStatus[val]){
+        return
+      }
+      return clusterStatus[val].nodes_count;
     }
   },{
     title: '集群地址',
@@ -69,7 +95,7 @@ class Index extends  React.Component {
       dataIndex: 'monitored',
       key: 'monitored',
       render: (val) => {
-        return val? '是': '否';
+        return val? '启用': '关闭';
       }
     },
   // {
@@ -114,15 +140,26 @@ class Index extends  React.Component {
     })
   }
   componentDidMount() {
+    this.fetchData({})
+    this.fetchClusterStatus();
+  }
+  componentWillUnmount(){
+    if(this.fetchClusterStatusTimer){
+      clearTimeout(this.fetchClusterStatusTimer);
+    }
+  }
+  fetchClusterStatus = async ()=>{
     const {dispatch} = this.props;
-    dispatch({
+    const res = await dispatch({
       type: 'clusterConfig/fetchClusterStatus',
-    }).then(()=>{
-      if(typeof this.props.clusterConfig.data === 'undefined') {
-        this.fetchData({})
-      }
-    })
-  
+    });
+    if(this.fetchClusterStatusTimer){
+      clearTimeout(this.fetchClusterStatusTimer);
+    }
+    if(!res){
+     return
+    }
+    this.fetchClusterStatusTimer = setTimeout(this.fetchClusterStatus, 10000);
   }
 
   handleSearchClick = ()=>{
@@ -185,43 +222,45 @@ class Index extends  React.Component {
     };
     const {data} = this.props.clusterConfig;
     return (
-      <Card>
-        <div style={{display:'flex', marginBottom:10, flex:"1 1 auto", justifyContent: 'space-between'}}>
-            <div>
-              <Form>
-                <Row gutter={{md:24, sm:16}}>
-                  <Col md={16} sm={20}>
-                    <Form.Item {...formItemLayout} label="集群名称">
-                      {getFieldDecorator('name')(<Input placeholder="please input cluster name" />)}
-                    </Form.Item>
-                  </Col>
-                  <Col md={8} sm={16}>
-                    <div style={{paddingTop:4}}>
-                      <Button type="primary" icon="search" onClick={this.handleSearchClick}>
-                        搜索
-                      </Button>
-                    </div>
-                  </Col>
-                </Row>
-              </Form>
+      <PageHeaderWrapper title="集群管理" content={content} extraContent={extraContent}>
+        <Card>
+          <div style={{display:'flex', marginBottom:10, flex:"1 1 auto", justifyContent: 'space-between'}}>
+              <div>
+                <Form>
+                  <Row gutter={{md:24, sm:16}}>
+                    <Col md={16} sm={20}>
+                      <Form.Item {...formItemLayout} label="集群名称">
+                        {getFieldDecorator('name')(<Input placeholder="please input cluster name" />)}
+                      </Form.Item>
+                    </Col>
+                    <Col md={8} sm={16}>
+                      <div style={{paddingTop:4}}>
+                        <Button type="primary" icon="search" onClick={this.handleSearchClick}>
+                          搜索
+                        </Button>
+                      </div>
+                    </Col>
+                  </Row>
+                </Form>
+              </div>
+              <div>
+                {/* <span style={{marginRight:24}}><Switch
+                  checkedChildren={<Icon type="check" />}
+                  unCheckedChildren={<Icon type="close" />}
+                  onChange={this.handleEnabledChange}
+                  defaultChecked
+                />是否启用</span> */}
+              <Link to='/system/cluster/regist' onClick={this.handleNewClick}> <Button type="primary" icon="plus">注册集群</Button></Link>
+              </div>
             </div>
-            <div>
-              <span style={{marginRight:24}}><Switch
-                checkedChildren={<Icon type="check" />}
-                unCheckedChildren={<Icon type="close" />}
-                onChange={this.handleEnabledChange}
-                defaultChecked
-              />是否启用</span>
-            <Link to='/system/cluster/regist' onClick={this.handleNewClick}> <Button type="primary" icon="plus">注册集群</Button></Link>
-            </div>
-          </div>
-          <Table
-            bordered
-            columns={this.columns}
-            dataSource={data}
-            rowKey='id'
-          />
-      </Card>
+            <Table
+              bordered
+              columns={this.columns}
+              dataSource={data}
+              rowKey='id'
+            />
+        </Card>
+      </PageHeaderWrapper>
     );
   }
 

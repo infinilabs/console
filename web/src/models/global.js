@@ -53,6 +53,8 @@ export default {
         return {
           name: item.name,
           id: item.id,
+          endpoint: item.endpoint,
+          version: item.version,
         };
       })
 

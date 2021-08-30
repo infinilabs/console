@@ -1,10 +1,11 @@
 import React from 'react';
-import {Card, Form, Icon, Input, InputNumber, Button, Switch, message} from 'antd';
+import {Card, Form, Icon, Input, InputNumber, Button, Switch, message, Spin} from 'antd';
 import router from 'umi/router';
 
 import  styles from './Form.less';
 import {connect} from "dva";
 import NewCluster from './Step';
+import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 
 @Form.create()
 @connect(({clusterConfig}) =>({
@@ -21,6 +22,7 @@ class ClusterForm extends React.Component{
     this.state = {
       confirmDirty: false,
       needAuth: needAuth,
+      isLoading: false,
     }
   }
   componentDidMount() {
@@ -61,6 +63,7 @@ class ClusterForm extends React.Component{
         description: values.description,
         enabled: values.enabled,
         monitored: values.monitored,
+        version: values.version,
         schema: values.isTLS === true ? 'https': 'http',
         // order: values.order,
       }
@@ -95,6 +98,40 @@ class ClusterForm extends React.Component{
     })
   }
 
+  tryConnect = async ()=>{
+    const {dispatch, form} = this.props;
+    const values =  await form.validateFields((errors, values) => {
+      if(errors){
+        return false;
+      }
+      let newVals = {
+        name: values.name,
+        host: values.host,
+        basic_auth: {
+          username: values.username,
+          password: values.password,
+        },
+        schema: values.isTLS === true ? 'https': 'http',
+      }
+      return values;
+    });
+    if(!values){
+      return
+    }
+    this.setState({isLoading: true})
+    const res = await dispatch({
+      type: 'clusterConfig/doTryConnect',
+      payload: values
+    });
+    if(res){
+      message.success('连接成功！')
+      form.setFieldsValue({
+        version: res.version
+      })
+    }
+    this.setState({isLoading: false})
+  }
+
   render() {
     const {getFieldDecorator} = this.props.form;
     const formItemLayout = {
@@ -121,11 +158,13 @@ class ClusterForm extends React.Component{
     };
     const {editValue, editMode} = this.props.clusterConfig;
     return (
+    <PageHeaderWrapper>
       <Card title={editMode === 'NEW' ? '注册集群': '修改集群配置'}
         extra={[<Button type="primary" onClick={()=>{
           router.push('/system/cluster');
         }}>返回</Button>]}
       >
+      <Spin spinning={this.state.isLoading}>
       <Form {...formItemLayout}>
         <Form.Item label="集群名称">
           {getFieldDecorator('name', {
@@ -154,6 +193,13 @@ class ClusterForm extends React.Component{
             ],
           })(<Input placeholder="127.0.0.1:9200" />)}
         </Form.Item>
+        <Form.Item style={{marginBottom:0}}>
+          {getFieldDecorator('version', {
+            initialValue: editValue.version,
+            rules: [
+            ],
+          })(<Input type="hidden"/>)}
+        </Form.Item>
         <Form.Item label="TLS">
         {getFieldDecorator('isTLS', {
             initialValue: editValue?.schema === "https",
@@ -175,14 +221,14 @@ class ClusterForm extends React.Component{
         {this.state.needAuth === true ? (<div>
         <Form.Item label="用户名">
           {getFieldDecorator('username', {
-            initialValue: editValue.basic_auth.username,
+            initialValue: editValue.basic_auth?.username,
             rules: [
             ],
           })(<Input autoComplete='off' />)}
         </Form.Item>
         <Form.Item label="密码" hasFeedback>
           {getFieldDecorator('password', {
-            initialValue: editValue.basic_auth.password,
+            initialValue: editValue.basic_auth?.password,
             rules: [
             ],
           })(<Input.Password />)}
@@ -220,9 +266,14 @@ class ClusterForm extends React.Component{
           <Button type="primary" onClick={this.handleSubmit}>
             {editMode === 'NEW' ? '注册': '保存'}
           </Button>
+          <Button style={{marginLeft: 15}} onClick={this.tryConnect}>
+              测试连接
+          </Button>
         </Form.Item>
       </Form>
+      </Spin>
       </Card>
+      </PageHeaderWrapper>
     )
   }
 }

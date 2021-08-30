@@ -4,20 +4,19 @@ import { useState, useRef } from 'react';
 import {InitialStep, ExtraStep, ResultStep} from './steps';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 import styles from './step.less';
+import clusterBg from '@/assets/cluster_bg.png';
 
 const { Step } = Steps;
 
 const steps = [
   {
-    title: '初始化',
+    title: '连接',
   },
   {
-    title: '信息确认',
-    content: 'Second-content',
+    title: '确认',
   },
   {
     title: '完成',
-    content: 'Last-content',
   },
 ];
 
@@ -152,7 +151,7 @@ const ClusterStep = ({
       <p>
         输入集群地址和身份验证信息分步创建集群。
       </p>
-      <div className={styles.contentLink}>
+      {/* <div className={styles.contentLink}>
         <a>
           <img alt="" src="https://gw.alipayobjects.com/zos/rmsportal/MjEImQtenlyueSmVEfUD.svg" />{' '}
           快速开始
@@ -165,15 +164,15 @@ const ClusterStep = ({
           <img alt="" src="https://gw.alipayobjects.com/zos/rmsportal/ohOEPSYdDTNnyMbGuyLb.svg" />{' '}
           产品文档
         </a>
-      </div>
+      </div> */}
     </div>
   );
 
   const extraContent = (
     <div className={styles.extraImg}>
       <img
-        alt="这是一个标题"
-        src="https://gw.alipayobjects.com/zos/rmsportal/RzwpdLnhmvDJToTdfDPe.png"
+        alt="集群管理"
+        src={clusterBg}
       />
     </div>
   );

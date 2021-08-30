@@ -1,4 +1,5 @@
 import {Form, Input, Switch, Icon, InputNumber, Divider, Descriptions} from 'antd';
+import {HealthStatusCircle} from '../health_status';
 
 @Form.create()
 export class ExtraStep extends React.Component {
@@ -19,19 +20,28 @@ export class ExtraStep extends React.Component {
     return (
       <>
         <Descriptions column={2} size="small" bordered>
+          <Descriptions.Item label="集群地址" >
+              {initialValue?.host}
+          </Descriptions.Item>
+          <Descriptions.Item label="TLS" >
+            {initialValue?.isTLS ? <Icon type="lock" style={{color:  '#52c41a'}}/> : null}
+          </Descriptions.Item>
           <Descriptions.Item label="集群版本" >
               {initialValue?.version}
-            </Descriptions.Item>
-          <Descriptions.Item label="健康状态" >
-            {initialValue?.status}
           </Descriptions.Item>
-          <Descriptions.Item label="节点数" >
+          <Descriptions.Item label="身份验证" >
+            {initialValue?.username ? <Icon type="user"/>: null}
+          </Descriptions.Item>
+          <Descriptions.Item label="健康状态" >
+            <HealthStatusCircle status={initialValue?.status}/>
+          </Descriptions.Item>
+          <Descriptions.Item label="节点总数" >
             {initialValue?.number_of_nodes}
           </Descriptions.Item>     
           <Descriptions.Item label="数据节点数" >
             {initialValue?.number_of_data_nodes}
           </Descriptions.Item>
-          <Descriptions.Item label="分片数" >
+          <Descriptions.Item label="分片总数" >
             {initialValue?.active_shards}
           </Descriptions.Item>
         </Descriptions>

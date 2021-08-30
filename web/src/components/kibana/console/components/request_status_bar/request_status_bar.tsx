@@ -63,8 +63,14 @@ const mapStatusCodeToBadgeColor = (statusCode: number) => {
 export const RequestStatusBar: FunctionComponent<Props> = ({
   requestInProgress,
   requestResult,
+  selectedCluster,
 }) => {
   let content: React.ReactNode = null;
+  const clusterContent = (<EuiFlexItem grow={false} style={{marginRight:'auto'}}>
+  <EuiBadge>
+    {selectedCluster.endpoint}&nbsp;-&nbsp;{selectedCluster.version}
+  </EuiBadge>
+</EuiFlexItem>);
 
   if (requestInProgress) {
     content = (
@@ -122,6 +128,7 @@ export const RequestStatusBar: FunctionComponent<Props> = ({
       gutterSize="s"
       responsive={false}
     >
+      {clusterContent}
       {content}
     </EuiFlexGroup>
   );

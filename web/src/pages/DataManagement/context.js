@@ -164,7 +164,7 @@ const filterManager = new FilterManager();
 const storage = new Storage(localStorage); 
 const queryStringManager = new QueryStringManager(storage);
 const timefilterConfig = {
-  timeDefaults: { from: 'now-1y', to: 'now' },
+  timeDefaults: { from: 'now-15m', to: 'now' },
   refreshIntervalDefaults: { pause: true, value: 10000 },
 };
 const timeHistory = new TimeHistory(storage);

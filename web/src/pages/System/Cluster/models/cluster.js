@@ -1,5 +1,5 @@
 import {createClusterConfig, searchClusterConfig, updateClusterConfig,deleteClusterConfig,
-   getClusterStatus, tryConnect} from "@/services/cluster";
+   tryConnect} from "@/services/cluster";
 import {message} from "antd";
 import {formatESSearchResult} from '@/lib/elasticsearch/util';
 
@@ -10,20 +10,6 @@ export default {
     editValue: {},
   },
   effects:{
-    *fetchClusterStatus({payload}, {call, put}){
-      let res = yield call(getClusterStatus, payload);
-      if(res.error){
-        message.error(res.error)
-        return false;
-      }
-      yield put({
-        type: 'saveData',
-        payload: {
-          clusterStatus: res
-        }
-      });
-      return res;
-    },
     *fetchClusterList({payload}, {call, put, select}){
       let res = yield call(searchClusterConfig, payload);
       if(res.error){

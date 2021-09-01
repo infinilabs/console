@@ -218,7 +218,7 @@ export class CreateIndexPatternWizard extends Component<
       return <LoadingState />;
     }
 
-    const header = this.renderHeader();
+    // const header = this.renderHeader();
 
     if (step === 1) {
       const { location } = this.props;
@@ -226,8 +226,8 @@ export class CreateIndexPatternWizard extends Component<
 
       return (
         <EuiPageContent>
-          {header}
-          <EuiHorizontalRule />
+          {/* {header}
+          <EuiHorizontalRule /> */}
           <StepIndexPattern
             allIndices={allIndices}
             initialQuery={indexPattern || initialQuery}
@@ -245,8 +245,8 @@ export class CreateIndexPatternWizard extends Component<
     if (step === 2) {
       return (
         <EuiPageContent>
-          {header}
-          <EuiHorizontalRule />
+          {/* {header}
+          <EuiHorizontalRule /> */}
           <StepTimeField
             indexPattern={indexPattern}
             viewName={viewName}

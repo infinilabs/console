@@ -27,10 +27,14 @@ class HeaderView extends PureComponent {
 
   componentDidMount() {
     document.addEventListener('scroll', this.handScroll, { passive: true });
+    this.fetchClusterStatus()
   }
 
   componentWillUnmount() {
     document.removeEventListener('scroll', this.handScroll);
+    if(this.fetchClusterStatusTimer){
+      clearTimeout(this.fetchClusterStatusTimer);
+    }
   }
 
   getHeadWidth = () => {
@@ -114,14 +118,13 @@ class HeaderView extends PureComponent {
     this.ticking = false;
   };
 
-  handleFetchClusterList = (from, size) => {
+  handleFetchClusterList = (name, size) => {
     const { dispatch } = this.props;
     return dispatch({
       type: 'global/fetchClusterList',
       payload: {
-        from,
         size,
-        enabled: true,
+        name
       }
     });
   };
@@ -132,6 +135,20 @@ class HeaderView extends PureComponent {
       type: 'global/changeClusterState',
       payload: newState
     });
+  }
+
+  fetchClusterStatus = async ()=>{
+    const {dispatch} = this.props;
+    const res = await dispatch({
+      type: 'global/fetchClusterStatus',
+    });
+    if(this.fetchClusterStatusTimer){
+      clearTimeout(this.fetchClusterStatusTimer);
+    }
+    if(!res){
+     return
+    }
+    this.fetchClusterStatusTimer = setTimeout(this.fetchClusterStatus, 10000);
   }
 
   render() {
@@ -183,4 +200,5 @@ export default connect(({ user, global, setting, loading }) => ({
   clusterVisible: global.clusterVisible,
   clusterList: global.clusterList,
   selectedCluster: global.selectedCluster,
+  clusterStatus: global.clusterStatus,
 }))(HeaderView);

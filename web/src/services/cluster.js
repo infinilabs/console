@@ -42,7 +42,9 @@ export async function searchClusterConfig(params) {
     let url = `/elasticsearch/_search`;
     let args = buildQueryArgs({
         name: params.name,
-        enabled: params.enabled
+        enabled: params.enabled,
+        from: params.from,
+        size: params.size,
     });
     if(args.length > 0){
         url += args;

@@ -14,6 +14,11 @@ const config = {
     title: '500',
     desc: '抱歉，服务器出错了',
   },
+  empty: {
+    img: 'https://gw.alipayobjects.com/zos/rmsportal/KpnpchXsobRgLElEozzI.svg',
+    title: '找不到数据',
+    desc: '当前集群找到相关数据',
+  }
 };
 
 export default config;

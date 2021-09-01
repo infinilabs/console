@@ -1,5 +1,5 @@
 import {Form, Input, Switch, Icon, InputNumber, Divider, Descriptions} from 'antd';
-import {HealthStatusCircle} from '../health_status';
+import {HealthStatusCircle} from '@/components/infini/health_status_circle';
 
 @Form.create()
 export class ExtraStep extends React.Component {

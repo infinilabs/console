@@ -1,6 +1,6 @@
 import { queryNotices } from '@/services/api';
 import {message} from "antd";
-import {searchClusterConfig} from "@/services/cluster";
+import {searchClusterConfig, getClusterStatus} from "@/services/cluster";
 import {formatESSearchResult, extractClusterIDFromURL} from '@/lib/elasticsearch/util';
 import {Modal} from 'antd';
 import router from "umi/router";
@@ -16,6 +16,10 @@ export default {
     clusterList: [],
     selectedCluster: {name:"Select cluster", id: ""},
     selectedClusterID: "",
+    search:{
+      cluster: {
+      }
+    }
   },
 
   effects: {
@@ -48,7 +52,7 @@ export default {
         return false;
       }
       res = formatESSearchResult(res)
-      let clusterList = yield select(state => state.global.clusterList);
+      let {clusterList, search} = yield select(state => state.global);
       let data = res.data.filter(item=>item.enabled).map((item)=>{
         return {
           name: item.name,
@@ -58,7 +62,7 @@ export default {
         };
       })
 
-      if(clusterList.length === 0){
+      if(clusterList.length === 0 && !payload.name){
         if(data.length === 0 ){
           Modal.info({
             title: '系统提示',
@@ -83,11 +87,20 @@ export default {
           });
         }
       }
-
+      let newClusterList = [];
+      if(search.name != payload.name){
+        newClusterList = data;
+      }else{
+        newClusterList = clusterList.concat(data);
+      }
       yield put({
         type: 'saveData',
         payload: {
-          clusterList: clusterList.concat(data),
+          clusterList: newClusterList,
+          search: {
+            ...search,
+            cluster: payload,
+          }
         }
       })
       return data;
@@ -124,7 +137,24 @@ export default {
           history.replace(newPath)
         }
       }
-    }
+    },
+    *fetchClusterStatus({payload}, {call, put}){
+      let res = yield call(getClusterStatus, payload);
+      if(!res){
+        return false
+      }
+      if(res.error){
+        console.log(res.error)
+        return false;
+      }
+      yield put({
+        type: 'saveData',
+        payload: {
+          clusterStatus: res
+        }
+      });
+      return res;
+    },
   },
 
   reducers: {

@@ -1,5 +1,5 @@
 import React, { PureComponent } from 'react';
-import { Icon } from 'antd';
+import { Icon, Select } from 'antd';
 import Link from 'umi/link';
 import Debounce from 'lodash-decorators/debounce';
 import styles from './index.less';
@@ -13,7 +13,7 @@ const path=require('path');
 export default class GlobalHeader extends PureComponent {
 
    constructor(props) {
-       super(props);
+      super(props);
    }
 
    componentDidMount() {
@@ -53,6 +53,7 @@ export default class GlobalHeader extends PureComponent {
           onClick={this.toggle}
         />
         <DropdownSelect defaultValue={selectedCluster}
+          clusterStatus={this.props.clusterStatus}
           value={selectedCluster}
           labelField="name"
           visible={clusterVisible}

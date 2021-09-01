@@ -23,8 +23,8 @@ import moment from 'moment';
 import { areRefreshIntervalsDifferent, areTimeRangesDifferent } from './lib/diff_time_picker_vals';
 import { getForceNow } from './lib/get_force_now';
 import { TimefilterConfig, InputTimeRange, TimeRangeBounds } from './types';
-import { getTime, RefreshInterval, TimeRange } from '../../../common';
-import { calculateBounds } from '../../../common/query/timefilter/get_time';
+import { RefreshInterval, TimeRange } from '../../../common';
+import {getTime, calculateBounds } from '../../../common/query/timefilter/get_time';
 
 import { TimeHistoryContract } from './time_history';
 import { IndexPattern } from '../../index_patterns';

@@ -9,6 +9,7 @@
   margin-left: 15px;
   position: relative;
   bottom: 8px;
+  height: 32px;
   span{
     color: #333;
   }
@@ -16,7 +17,7 @@
 
 .dropmenu{
   box-shadow: 0 0 15px 0 rgba(0, 0, 0, .15);
-  padding: 20px;
+  padding: 0px;
   padding-bottom: 4px;
   width: 500px;
   background: #fff;
@@ -56,4 +57,28 @@
 .dslist{
   display: inline-block;
   width: 100%;
+}
+
+.dropdown-item{
+  box-shadow: 0 0 1px 0 rgba(196, 191, 191, 0.15);
+  .wrapper{
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    padding-left: 15px;
+    .name{
+      margin-left: 5px;
+    }
+    .version{
+      margin-left: auto;
+    }
+  }
+  :hover{
+   background-color: #939ea0;
+   color: #fff;
+   cursor: pointer;
+  }
+  &.selected {
+    background-color: #eee;
+  }
 }

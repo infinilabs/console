@@ -626,10 +626,6 @@ export class IndexPatternsService {
       });
   }
 
-  /**
-   * Deletes an index pattern from .kibana index
-   * @param indexPatternId: Id of kibana Index Pattern to delete
-   */
   async delete(indexPatternId: string) {
     indexPatternCache.clear(indexPatternId);
     return this.savedObjectsClient.delete(savedObjectType, indexPatternId);

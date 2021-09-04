@@ -32,6 +32,7 @@ import {
   EuiSwitch,
 } from '@elastic/eui';
 import {useState} from 'react';
+import {Button, Icon} from 'antd';
 
 
 interface HeaderProps {
@@ -140,18 +141,15 @@ export const Header: React.FC<HeaderProps> = ({
       </EuiFlexItem>
       <EuiFlexItem grow={false} >
         <EuiFormRow hasEmptyLabelSpace style={{marginBottom:60,marginTop:'auto'}}>
-          <EuiButton
-            fill
-            iconSide="right"
-            iconType="arrowRight"
+          <Button
+            type="primary"
             onClick={() => {
               goToNextStep(query, viewName)
             }}
-            isDisabled={isNextStepDisabled || viewName.replace(' ', '').length <= 0}
-            data-test-subj="createIndexPatternGoToStep2Button"
+            disabled={isNextStepDisabled || viewName.replace(' ', '').length <= 0}
           >
-            下一步
-          </EuiButton>
+            下一步<Icon type="right"/>
+          </Button>
         </EuiFormRow>
       </EuiFlexItem>
     </EuiFlexGroup>

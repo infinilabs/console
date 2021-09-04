@@ -8,6 +8,7 @@ import (
 	"infini.sh/search-center/api/index_management"
 	"infini.sh/search-center/config"
 	"path"
+	"infini.sh/search-center/service/alerting"
 )
 
 func Init(cfg *config.AppConfig) {
@@ -35,6 +36,13 @@ func Init(cfg *config.AppConfig) {
 	ui.HandleUIMethod(api.PUT, path.Join(pathPrefix, "index/:index/_settings"), handler.HandleUpdateSettingsAction)
 	ui.HandleUIMethod(api.DELETE, path.Join(pathPrefix, "index/:index"), handler.HandleDeleteIndexAction)
 	ui.HandleUIMethod(api.POST, path.Join(pathPrefix, "index/:index"), handler.HandleCreateIndexAction)
+
+	ui.HandleUIMethod(api.GET, "/elasticsearch/:id/alerting/alerts", alerting.GetAlerts)
+	ui.HandleUIMethod(api.POST, "/elasticsearch/:id/alerting/monitors/_search", alerting.Search)
+	ui.HandleUIMethod(api.POST, "/elasticsearch/:id/alerting/_indices", alerting.GetIndices)
+	ui.HandleUIMethod(api.POST, "/elasticsearch/:id/alerting/_aliases", alerting.GetAliases)
+	ui.HandleUIMethod(api.POST, "/elasticsearch/:id/alerting/_mappings", alerting.GetMappings)
+	ui.HandleUIMethod(api.GET, "/elasticsearch/:id/alerting/_plugins", alerting.GetPlugins)
 
 
 	task.RegisterScheduleTask(task.ScheduleTask{

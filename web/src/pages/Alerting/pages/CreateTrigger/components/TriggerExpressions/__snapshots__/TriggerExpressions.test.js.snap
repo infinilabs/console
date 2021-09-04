@@ -1,0 +1,83 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`TriggerExpressions renders 1`] = `
+<EuiFlexGroup
+  alignItems="center"
+>
+  <EuiFlexItem
+    grow={false}
+  >
+    <EuiPopover
+      anchorPosition="downLeft"
+      button={
+        <EuiFormRow
+          describedByIds={Array []}
+          display="row"
+          fullWidth={false}
+          hasChildLabel={true}
+          hasEmptyLabelSpace={false}
+          labelType="label"
+        >
+          <EuiExpression
+            description="IS ABOVE"
+            isActive={false}
+            onClick={[Function]}
+            value="500"
+          />
+        </EuiFormRow>
+      }
+      closePopover={[Function]}
+      display="inlineBlock"
+      hasArrow={true}
+      id="trigger-popover"
+      isOpen={false}
+      ownFocus={true}
+      panelPaddingSize="none"
+      withTitle={true}
+    >
+      <div
+        style={
+          Object {
+            "zIndex": "200",
+          }
+        }
+      >
+        <EuiFlexGroup
+          style={
+            Object {
+              "maxWidth": 600,
+              "padding": "20px",
+              "whiteSpace": "nowrap",
+            }
+          }
+        >
+          <EuiFlexItem
+            grow={false}
+            style={
+              Object {
+                "width": 150,
+              }
+            }
+          >
+            <Field>
+              <Component />
+            </Field>
+          </EuiFlexItem>
+          <EuiFlexItem
+            grow={false}
+            style={
+              Object {
+                "width": 100,
+              }
+            }
+          >
+            <Field>
+              <Component />
+            </Field>
+          </EuiFlexItem>
+        </EuiFlexGroup>
+      </div>
+    </EuiPopover>
+  </EuiFlexItem>
+</EuiFlexGroup>
+`;

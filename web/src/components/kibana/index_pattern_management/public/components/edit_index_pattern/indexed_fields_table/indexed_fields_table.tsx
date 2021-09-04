@@ -24,6 +24,7 @@ import { Table } from './components/table';
 import { getFieldFormat } from './lib';
 import { IndexedFieldItem } from './types';
 import { IndexPatternField, IndexPattern, IFieldType } from '../../../import';
+import {EuiContext} from '@elastic/eui';
 
 interface IndexedFieldsTableProps {
   fields: IndexPatternField[];
@@ -108,11 +109,18 @@ export class IndexedFieldsTable extends Component<
 
     return (
       <div>
+         <EuiContext i18n={{
+            mapping: {
+              'euiTablePagination.rowsPerPage': '每页行数',
+              'euiTablePagination.rowsPerPageOption': '{rowsPerPage} 行'
+            }
+          }}>
         <Table
           indexPattern={indexPattern}
           items={fields}
           editField={(field) => this.props.helpers.redirectToRoute(field)}
         />
+        </EuiContext>
       </div>
     );
   }

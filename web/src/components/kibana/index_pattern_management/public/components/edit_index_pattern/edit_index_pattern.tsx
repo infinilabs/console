@@ -39,6 +39,10 @@ import { IndexPatternTableItem } from '../types';
 import { getIndexPatterns } from '../utils';
 import {useGlobalContext} from '../../context';
 import { IndexPattern, IndexPatternField } from '../../import';
+import PageHeaderWrapper from '@/components/PageHeaderWrapper';
+import styles from '@/pages/System/Cluster/step.less';
+import clusterBg from '@/assets/cluster_bg.png';
+
 
 export interface EditIndexPatternProps extends RouteComponentProps {
   indexPattern: IndexPattern;
@@ -152,62 +156,90 @@ export const EditIndexPattern = withRouter(
 
     const showTagsSection = Boolean(indexPattern.timeFieldName || (tags && tags.length > 0));
 
+    const content = (
+      <div className={styles.pageHeaderContent}>
+        <EuiText>
+              <p>
+                当前页面列出匹配 <strong>{indexPattern.title}</strong> 索引的所有字段，字段类型为 Elasticsearch 定义类型。 若需要更改类型，请使用 Elasticsearch{' '}
+                <EuiLink
+                  href="http://www.elastic.co/guide/en/elasticsearch/reference/current/mapping.html"
+                  target="_blank"
+                  external
+                >
+                  {mappingAPILink}
+                </EuiLink>
+              </p>
+            </EuiText>
+      </div>
+    );
+    
+    const extraContent = (
+      <div className={styles.extraImg}>
+        <img
+          alt="数据视图"
+          src={clusterBg}
+        />
+      </div>
+    );
+
     return (
-      <EuiPanel paddingSize={'l'}>
-        <div data-test-subj="editIndexPattern" role="region" aria-label={headingAriaLabel}>
-          <IndexHeader
-            indexPattern={indexPattern}
-            setDefault={setDefaultPattern}
-            refreshFields={refreshFields}
-            deleteIndexPatternClick={removePattern}
-            defaultIndex={defaultIndex}
-          />
-          <EuiSpacer size="s" />
-          {showTagsSection && (
-            <EuiFlexGroup wrap>
-              {Boolean(indexPattern.timeFieldName) && (
-                <EuiFlexItem grow={false}>
-                  <EuiBadge color="warning">{timeFilterHeader}</EuiBadge>
-                </EuiFlexItem>
-              )}
-              {tags.map((tag: any) => (
-                <EuiFlexItem grow={false} key={tag.key}>
-                  <EuiBadge color="hollow">{tag.name}</EuiBadge>
-                </EuiFlexItem>
-              ))}
-            </EuiFlexGroup>
-          )}
-          <EuiSpacer size="m" />
-          <EuiText>
-            <p>
-              当前页面列出匹配 <strong>{indexPattern.title}</strong> 索引的所有字段，字段类型为 Elasticsearch 定义类型。 若需要更改类型，请使用 Elasticsearch{' '}
-              <EuiLink
-                href="http://www.elastic.co/guide/en/elasticsearch/reference/current/mapping.html"
-                target="_blank"
-                external
-              >
-                {mappingAPILink}
-              </EuiLink>
-            </p>
-          </EuiText>
-          {conflictedFields.length > 0 && (
-            <>
-              <EuiSpacer />
-              <EuiCallOut title={mappingConflictHeader} color="warning" iconType="alert">
-                <p>{mappingConflictLabel}</p>
-              </EuiCallOut>
-            </>
-          )}
-          <EuiSpacer />
-          <Tabs
-            indexPattern={indexPattern}
-            saveIndexPattern={data.indexPatterns.updateSavedObject.bind(data.indexPatterns)}
-            fields={fields}
-            history={history}
-            location={location}
-          />
-        </div>
-      </EuiPanel>
+      <PageHeaderWrapper title={indexPattern.viewName} content={content} extraContent={extraContent}>
+        <EuiPanel paddingSize={'l'}>
+          <div data-test-subj="editIndexPattern" role="region" aria-label={headingAriaLabel}>
+            {/* <IndexHeader
+              indexPattern={indexPattern}
+              setDefault={setDefaultPattern}
+              refreshFields={refreshFields}
+              deleteIndexPatternClick={removePattern}
+              defaultIndex={defaultIndex}
+            /> */}
+            <EuiSpacer size="s" />
+            {showTagsSection && (
+              <EuiFlexGroup wrap>
+                {Boolean(indexPattern.timeFieldName) && (
+                  <EuiFlexItem grow={false}>
+                    <EuiBadge color="warning">{timeFilterHeader}</EuiBadge>
+                  </EuiFlexItem>
+                )}
+                {tags.map((tag: any) => (
+                  <EuiFlexItem grow={false} key={tag.key}>
+                    <EuiBadge color="hollow">{tag.name}</EuiBadge>
+                  </EuiFlexItem>
+                ))}
+              </EuiFlexGroup>
+            )}
+            <EuiSpacer size="m" />
+            <EuiText>
+              <p>
+                当前页面列出匹配 <strong>{indexPattern.title}</strong> 索引的所有字段，字段类型为 Elasticsearch 定义类型。 若需要更改类型，请使用 Elasticsearch{' '}
+                <EuiLink
+                  href="http://www.elastic.co/guide/en/elasticsearch/reference/current/mapping.html"
+                  target="_blank"
+                  external
+                >
+                  {mappingAPILink}
+                </EuiLink>
+              </p>
+            </EuiText>
+            {conflictedFields.length > 0 && (
+              <>
+                <EuiSpacer />
+                <EuiCallOut title={mappingConflictHeader} color="warning" iconType="alert">
+                  <p>{mappingConflictLabel}</p>
+                </EuiCallOut>
+              </>
+            )}
+            <EuiSpacer />
+            <Tabs
+              indexPattern={indexPattern}
+              saveIndexPattern={data.indexPatterns.updateSavedObject.bind(data.indexPatterns)}
+              fields={fields}
+              history={history}
+              location={location}
+            />
+          </div>
+        </EuiPanel>
+      </PageHeaderWrapper>
     );
   }
 );

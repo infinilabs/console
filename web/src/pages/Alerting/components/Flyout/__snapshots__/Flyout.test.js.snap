@@ -1,0 +1,63 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Flyout defaults if bad flyout data 1`] = `
+<EuiFlyout
+  onClose={[MockFunction]}
+/>
+`;
+
+exports[`Flyout renders 1`] = `
+<EuiFlyout
+  aria-labelledby="messageFlyout"
+  maxWidth={500}
+  onClose={[MockFunction]}
+  size="m"
+>
+  <EuiFlyoutHeader
+    hasBorder={true}
+  >
+    <EuiTitle
+      size="m"
+      style={
+        Object {
+          "fontSize": "25px",
+        }
+      }
+    >
+      <h2>
+        <strong>
+          Message
+        </strong>
+      </h2>
+    </EuiTitle>
+  </EuiFlyoutHeader>
+  <EuiFlyoutBody>
+    <EuiText
+      style={
+        Object {
+          "fontSize": "14px",
+        }
+      }
+    >
+      <p>
+        You have access to a "ctx" variable in your painless scripts and action mustache templates.
+      </p>
+      <h3>
+        Learn More
+      </h3>
+      <ul>
+        <li>
+          <EuiLink
+            href="https://mustache.github.io/mustache.5.html"
+            target="_blank"
+          >
+            HTML Templates with Mustache.js
+          </EuiLink>
+        </li>
+      </ul>
+    </EuiText>
+  </EuiFlyoutBody>
+</EuiFlyout>
+`;
+
+exports[`Flyout renders null if no flyout 1`] = `""`;

@@ -1,0 +1,253 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`<DestinationsControls /> should render DestinationsControls 1`] = `
+<div
+  class="euiFlexGroup euiFlexGroup--gutterLarge euiFlexGroup--directionRow euiFlexGroup--responsive"
+  style="padding:0px 5px"
+>
+  <div
+    class="euiFlexItem"
+  >
+    <div
+      class="euiFormControlLayout euiFormControlLayout--fullWidth"
+    >
+      <div
+        class="euiFormControlLayout__childrenWrapper"
+      >
+        <input
+          class="euiFieldSearch euiFieldSearch--fullWidth euiFieldSearch-isClearable"
+          placeholder="Search"
+          type="search"
+          value=""
+        />
+        <div
+          class="euiFormControlLayoutIcons"
+        >
+          <span
+            class="euiFormControlLayoutCustomIcon"
+          >
+            <div>
+              EuiIconMock
+            </div>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="euiFlexItem euiFlexItem--flexGrowZero"
+  >
+    <div
+      class="euiFormControlLayout"
+    >
+      <div
+        class="euiFormControlLayout__childrenWrapper"
+      >
+        <select
+          class="euiSelect"
+        >
+          <option
+            selected=""
+            value="ALL"
+          >
+            All type
+          </option>
+          <option
+            value="chime"
+          >
+            Amazon Chime
+          </option>
+          <option
+            value="slack"
+          >
+            Slack
+          </option>
+          <option
+            value="custom_webhook"
+          >
+            Custom webhook
+          </option>
+          <option
+            value="email"
+          >
+            Email
+          </option>
+        </select>
+        <div
+          class="euiFormControlLayoutIcons euiFormControlLayoutIcons--right"
+        >
+          <span
+            class="euiFormControlLayoutCustomIcon"
+          >
+            <div>
+              EuiIconMock
+            </div>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="euiFlexItem euiFlexItem--flexGrowZero"
+    style="justify-content:center"
+  >
+    <nav
+      class="euiPagination"
+    >
+      <button
+        aria-label="Previous page"
+        class="euiButtonIcon euiButtonIcon--text"
+        data-test-subj="pagination-button-previous"
+        disabled=""
+        type="button"
+      >
+        <div>
+          EuiIconMock
+        </div>
+      </button>
+      <ul
+        class="euiPagination__list"
+      >
+        <li
+          class="euiPagination__item"
+        >
+          <button
+            aria-current="true"
+            aria-label="Page 1 of 10"
+            class="euiButtonEmpty euiButtonEmpty--text euiButtonEmpty--xSmall euiButtonEmpty-isDisabled euiPaginationButton euiPaginationButton-isActive euiPaginationButton--hideOnMobile"
+            data-test-subj="pagination-button-0"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="euiButtonContent euiButtonEmpty__content"
+            >
+              <span
+                class="euiButtonEmpty__text"
+              >
+                1
+              </span>
+            </span>
+          </button>
+        </li>
+        <li
+          class="euiPagination__item"
+        >
+          <button
+            aria-label="Page 2 of 10"
+            class="euiButtonEmpty euiButtonEmpty--text euiButtonEmpty--xSmall euiPaginationButton euiPaginationButton--hideOnMobile"
+            data-test-subj="pagination-button-1"
+            type="button"
+          >
+            <span
+              class="euiButtonContent euiButtonEmpty__content"
+            >
+              <span
+                class="euiButtonEmpty__text"
+              >
+                2
+              </span>
+            </span>
+          </button>
+        </li>
+        <li
+          class="euiPagination__item"
+        >
+          <button
+            aria-label="Page 3 of 10"
+            class="euiButtonEmpty euiButtonEmpty--text euiButtonEmpty--xSmall euiPaginationButton euiPaginationButton--hideOnMobile"
+            data-test-subj="pagination-button-2"
+            type="button"
+          >
+            <span
+              class="euiButtonContent euiButtonEmpty__content"
+            >
+              <span
+                class="euiButtonEmpty__text"
+              >
+                3
+              </span>
+            </span>
+          </button>
+        </li>
+        <li
+          class="euiPagination__item"
+        >
+          <button
+            aria-label="Page 4 of 10"
+            class="euiButtonEmpty euiButtonEmpty--text euiButtonEmpty--xSmall euiPaginationButton euiPaginationButton--hideOnMobile"
+            data-test-subj="pagination-button-3"
+            type="button"
+          >
+            <span
+              class="euiButtonContent euiButtonEmpty__content"
+            >
+              <span
+                class="euiButtonEmpty__text"
+              >
+                4
+              </span>
+            </span>
+          </button>
+        </li>
+        <li
+          class="euiPagination__item"
+        >
+          <button
+            aria-label="Page 5 of 10"
+            class="euiButtonEmpty euiButtonEmpty--text euiButtonEmpty--xSmall euiPaginationButton euiPaginationButton--hideOnMobile"
+            data-test-subj="pagination-button-4"
+            type="button"
+          >
+            <span
+              class="euiButtonContent euiButtonEmpty__content"
+            >
+              <span
+                class="euiButtonEmpty__text"
+              >
+                5
+              </span>
+            </span>
+          </button>
+        </li>
+        <li
+          aria-label="Skipping pages 6 to 9"
+          class="euiPaginationButton-isPlaceholder euiPagination__item"
+        >
+          …
+        </li>
+        <li
+          class="euiPagination__item"
+        >
+          <button
+            aria-label="Page 10 of 10"
+            class="euiButtonEmpty euiButtonEmpty--text euiButtonEmpty--xSmall euiPaginationButton euiPaginationButton--hideOnMobile"
+            data-test-subj="pagination-button-9"
+            type="button"
+          >
+            <span
+              class="euiButtonContent euiButtonEmpty__content"
+            >
+              <span
+                class="euiButtonEmpty__text"
+              >
+                10
+              </span>
+            </span>
+          </button>
+        </li>
+      </ul>
+      <button
+        aria-label="Next page, 2"
+        class="euiButtonIcon euiButtonIcon--text"
+        data-test-subj="pagination-button-next"
+        type="button"
+      >
+        <div>
+          EuiIconMock
+        </div>
+      </button>
+    </nav>
+  </div>
+</div>
+`;

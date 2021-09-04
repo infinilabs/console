@@ -105,7 +105,7 @@ export class IndicesList extends React.Component<IndicesListProps, IndicesListSt
         iconSide="right"
         onClick={this.openPerPageControl}
       >
-        {`Rows per page: ${perPage}`}
+        {`每页行数: ${perPage}`}
       </EuiButtonEmpty>
     );
 

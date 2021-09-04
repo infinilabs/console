@@ -20,6 +20,7 @@
 import React from 'react';
 
 import { EuiFlexGroup, EuiFlexItem, EuiButton, EuiButtonEmpty } from '@elastic/eui';
+import {Button} from 'antd';
 
 export const ActionButtons = ({
   goToPreviousStep,
@@ -32,19 +33,18 @@ export const ActionButtons = ({
 }) => (
   <EuiFlexGroup justifyContent="flexEnd">
     <EuiFlexItem grow={false}>
-      <EuiButtonEmpty iconType="arrowLeft" onClick={goToPreviousStep}>
+      <Button icon="left" onClick={goToPreviousStep}>
         返回
-      </EuiButtonEmpty>
+      </Button>
     </EuiFlexItem>
     <EuiFlexItem grow={false}>
-      <EuiButton
-        isDisabled={!submittable}
-        data-test-subj="createIndexPatternButton"
-        fill
+      <Button
+        disabled={!submittable}
+        type="primary"
         onClick={createIndexPattern}
       >
         创建视图
-      </EuiButton>
+        </Button>
     </EuiFlexItem>
   </EuiFlexGroup>
 );

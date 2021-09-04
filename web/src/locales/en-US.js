@@ -85,6 +85,7 @@ export default {
   'component.noticeIcon.empty': 'No notifications',
   'menu.home': 'Home',
   'menu.devtool': 'CONSOLE',
+  'menu.alerting': 'AERTING',
   
   'menu.cluster': 'CLUSTER',
   'menu.cluster.overview': 'OVERVIEW',

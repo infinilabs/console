@@ -104,6 +104,17 @@ export default [
         component: './DevTool/Console',
       },
 
+       //alerting
+       {
+        routes:[
+          { path: '/', redirect: '/' },
+        ],
+        path: '/alerting',
+        name: 'alerting',
+        icon: 'alert',
+        component: './Alerting/index',
+      },
+
       //data
       {
         path: '/data',

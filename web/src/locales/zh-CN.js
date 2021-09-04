@@ -92,6 +92,7 @@ export default {
   
   'menu.home': '首页',
   'menu.devtool': '开发工具',
+  'menu.alerting': '告警管理',
 
   'menu.cluster': '集群管理',
   'menu.cluster.overview': '概览',

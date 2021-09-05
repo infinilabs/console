@@ -89,7 +89,7 @@ class CreateDestination extends React.Component {
   getDestination = async (destinationId) => {
     const { httpClient, history, notifications } = this.props;
     try {
-      const resp = await httpClient.get(`../api/alerting/destinations/${destinationId}`);
+      const resp = await httpClient.get(`/alerting/destinations/${destinationId}`);
       if (resp.ok) {
         const ifSeqNo = _.get(resp, 'ifSeqNo');
         const ifPrimaryTerm = _.get(resp, 'ifPrimaryTerm');
@@ -118,7 +118,7 @@ class CreateDestination extends React.Component {
     } = this.props;
     const { ifSeqNo, ifPrimaryTerm } = this.state;
     try {
-      const resp = await httpClient.put(`../api/alerting/destinations/${destinationId}`, {
+      const resp = await httpClient.put(`/alerting/destinations/${destinationId}`, {
         query: { ifSeqNo, ifPrimaryTerm },
         body: JSON.stringify(requestData),
       });
@@ -139,7 +139,7 @@ class CreateDestination extends React.Component {
   handleCreate = async (requestData, { setSubmitting }) => {
     const { httpClient, history, notifications } = this.props;
     try {
-      const resp = await httpClient.post('../api/alerting/destinations', {
+      const resp = await httpClient.post('/alerting/destinations', {
         body: JSON.stringify(requestData),
       });
       setSubmitting(false);

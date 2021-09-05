@@ -7,6 +7,7 @@ import (
 	"infini.sh/framework/core/elastic"
 	"net/http"
 	"runtime/debug"
+	"strings"
 )
 
 type SearchBody struct {
@@ -28,7 +29,7 @@ func Search(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
 		writeError(w, err)
 		return
 	}
-	reqUrl := conf.Endpoint +"/_opendistro/_alerting/monitors/_search"
+	reqUrl := fmt.Sprintf("%s/%s/_alerting/monitors/_search", conf.Endpoint, API_PREFIX)
 	params := map[string]string{
 		"index": body.Index,
 	}
@@ -47,10 +48,8 @@ func Search(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
 	}
 
 	writeJSON(w, IfaceMap{
-		"body": IfaceMap{
-			"ok": true,
-			"resp": resBody,
-		},
+		"ok": true,
+		"resp": resBody,
 	}, http.StatusOK)
 
 }
@@ -90,10 +89,8 @@ func GetIndices(w http.ResponseWriter, req *http.Request, ps httprouter.Params) 
 	}
 
 	writeJSON(w, IfaceMap{
-		"body": IfaceMap{
-			"ok": true,
-			"resp": resBody,
-		},
+		"ok": true,
+		"resp": resBody,
 	}, http.StatusOK)
 }
 
@@ -137,10 +134,8 @@ func GetAliases(w http.ResponseWriter, req *http.Request, ps httprouter.Params) 
 	}
 
 	writeJSON(w, IfaceMap{
-		"body": IfaceMap{
-			"ok": true,
-			"resp": resBody,
-		},
+		"ok": true,
+		"resp": resBody,
 	}, http.StatusOK)
 }
 
@@ -153,14 +148,14 @@ func GetMappings(w http.ResponseWriter, req *http.Request, ps httprouter.Params)
 	}
 
 	var body = struct{
-		Index string `json:"index"`
+		Index []string `json:"index"`
 	}{}
 	err := decodeJSON(req.Body, &body)
 	if err != nil {
 		writeError(w, err)
 		return
 	}
-	reqUrl := fmt.Sprintf("%s/%s/_mapping", conf.Endpoint, body.Index)
+	reqUrl := fmt.Sprintf("%s/%s/_mapping", conf.Endpoint, strings.Join(body.Index, ","))
 	res, err := doRequest(reqUrl, http.MethodGet, nil, nil)
 	if err != nil {
 		writeError(w, err)
@@ -175,10 +170,8 @@ func GetMappings(w http.ResponseWriter, req *http.Request, ps httprouter.Params)
 	}
 
 	writeJSON(w, IfaceMap{
-		"body": IfaceMap{
-			"ok": true,
-			"resp": resBody,
-		},
+		"ok": true,
+		"resp": resBody,
 	}, http.StatusOK)
 }
 
@@ -209,9 +202,38 @@ func GetPlugins(w http.ResponseWriter, req *http.Request, ps httprouter.Params) 
 	}
 
 	writeJSON(w, IfaceMap{
-		"body": IfaceMap{
-			"ok": true,
-			"resp": resBody,
-		},
+		"ok": true,
+		"resp": resBody,
+	}, http.StatusOK)
+}
+
+func GetSettings(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	id := ps.ByName("id")
+	conf := elastic.GetConfig(id)
+	if conf == nil {
+		writeError(w, errors.New("cluster not found"))
+		return
+	}
+
+	// /_cluster/settings?include_defaults=true
+	reqUrl := fmt.Sprintf("%s/_cluster/settings", conf.Endpoint)
+	res, err := doRequest(reqUrl, http.MethodGet, map[string]string{
+		"include_defaults": "true",
+	}, nil)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	defer res.Body.Close()
+	var resBody = IfaceMap{}
+	err = decodeJSON(res.Body, &resBody)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+
+	writeJSON(w, IfaceMap{
+		"ok": true,
+		"resp": resBody,
 	}, http.StatusOK)
 }

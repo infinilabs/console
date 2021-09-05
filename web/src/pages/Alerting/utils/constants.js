@@ -66,10 +66,10 @@ export const AD_PREVIEW_DAYS = 7;
 export const MAX_QUERY_RESULT_SIZE = 200;
 
 
-export const OPEN_DISTRO_PREFIX = '';
+export const OPEN_DISTRO_PREFIX = 'opendistro';
 
 export const PLUGIN_NAME = `alerting`;
-export const INDEX_PREFIX = `alerting`;
+export const INDEX_PREFIX = `${OPEN_DISTRO_PREFIX}-alerting`;
 export const INDEX = {
   SCHEDULED_JOBS: `.${INDEX_PREFIX}-config`,
   ALERTS: `.${INDEX_PREFIX}-alerts`,

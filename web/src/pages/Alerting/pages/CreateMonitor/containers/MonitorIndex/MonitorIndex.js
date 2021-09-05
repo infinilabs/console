@@ -121,7 +121,7 @@ class MonitorIndex extends React.Component {
       return [];
     }
     try {
-      const response = await this.props.httpClient.post('../api/alerting/_indices', {
+      const response = await this.props.httpClient.post('/alerting/_indices', {
         body: JSON.stringify({ index }),
       });
       if (response.ok) {
@@ -151,7 +151,7 @@ class MonitorIndex extends React.Component {
     }
 
     try {
-      const response = await this.props.httpClient.post('../api/alerting/_aliases', {
+      const response = await this.props.httpClient.post('/alerting/_aliases', {
         body: JSON.stringify({ alias }),
       });
       if (response.ok) {

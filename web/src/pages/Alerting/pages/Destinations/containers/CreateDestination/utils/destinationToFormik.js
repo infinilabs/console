@@ -49,7 +49,7 @@ const customWebhookToFormik = ({
 
 const getSender = async (httpClient, id) => {
   try {
-    const response = await httpClient.get(`../api/alerting/destinations/email_accounts/${id}`);
+    const response = await httpClient.get(`/alerting/email_accounts/${id}`);
     if (response.ok) {
       return response.resp;
     }
@@ -62,7 +62,7 @@ const getSender = async (httpClient, id) => {
 
 const getEmailGroup = async (httpClient, id) => {
   try {
-    const response = await httpClient.get(`../api/alerting/destinations/email_groups/${id}`);
+    const response = await httpClient.get(`/alerting/destinations/email_groups/${id}`);
     if (response.ok) {
       return response.resp;
     }

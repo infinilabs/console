@@ -19,7 +19,7 @@ import { backendErrorNotification } from '../../../utils/helpers';
 
 export async function getAllowList(httpClient) {
   try {
-    const response = await httpClient.get('../api/alerting/_settings');
+    const response = await httpClient.get('/alerting/_settings');
     if (response.ok) {
       // Attempt to resolve the value of allow_list in the order of 'persistent, 'transient' and 'defaults' settings
       const { defaults, transient, persistent } = response.resp;

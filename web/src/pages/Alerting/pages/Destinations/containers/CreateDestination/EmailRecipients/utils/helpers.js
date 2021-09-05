@@ -17,7 +17,7 @@ import { MAX_QUERY_RESULT_SIZE } from '../../../../../../utils/constants';
 
 export default async function getEmailGroups(httpClient, searchText = '') {
   try {
-    const response = await httpClient.get('../api/alerting/destinations/email_groups', {
+    const response = await httpClient.get('/alerting/destinations/email_groups', {
       query: { search: searchText, size: MAX_QUERY_RESULT_SIZE },
     });
     if (response.ok) {

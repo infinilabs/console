@@ -72,7 +72,7 @@
     "rxjs": "^7.2.0",
     "sass-loader": "^8.0.2",
     "use-query-params": "^1.2.3",
-    "uuidv4": "^6.2.12"
+    "uuid-v4": "^0.1.0"
   },
   "devDependencies": {
     "antd-pro-merge-less": "^0.1.0",

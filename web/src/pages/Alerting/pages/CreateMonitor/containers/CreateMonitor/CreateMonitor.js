@@ -77,7 +77,7 @@ export default class CreateMonitor extends Component {
   async onCreate(monitor, { setSubmitting, setErrors }) {
     const { httpClient, notifications } = this.props;
     try {
-      const resp = await httpClient.post('../api/alerting/monitors', {
+      const resp = await httpClient.post('/alerting/monitors', {
         body: JSON.stringify(monitor),
       });
       setSubmitting(false);

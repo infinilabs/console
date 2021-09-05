@@ -119,7 +119,7 @@ class DestinationsList extends React.Component {
       query: isDeleteAllowedQuery(type, id),
       index: INDEX.SCHEDULED_JOBS,
     };
-    const resp = await httpClient.post('../api/alerting/monitors/_search', {
+    const resp = await httpClient.post('/alerting/monitors/_search', {
       body: JSON.stringify(requestBody),
     });
     const total = _.get(resp, 'resp.hits.total.value');
@@ -151,7 +151,7 @@ class DestinationsList extends React.Component {
     const { id: destinationId } = this.state.destinationToDelete;
     const { httpClient, notifications } = this.props;
     try {
-      const resp = await httpClient.delete(`../api/alerting/destinations/${destinationId}`);
+      const resp = await httpClient.delete(`/alerting/destinations/${destinationId}`);
       if (resp.ok) {
         await this.getDestinations();
       } else {
@@ -214,7 +214,7 @@ class DestinationsList extends React.Component {
       //   search: queryParms,
       // });
       try {
-        const resp = await httpClient.get('../api/alerting/destinations', {
+        const resp = await httpClient.get('/alerting/destinations', {
           query: { from, ...params },
         });
         if (resp.ok) {

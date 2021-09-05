@@ -34,7 +34,7 @@ func GetAlerts (w http.ResponseWriter, req *http.Request, ps httprouter.Params){
 	var (
 		from = getQueryParam(req, "from", "0")
 		size = getQueryParam(req, "size", "20")
-		search = getQueryParam(req, "search")
+		search = getQueryParam(req, "search", "")
 		sortDirection = getQueryParam(req, "sortDirection", "desc")
 		sortField = getQueryParam(req, "sortField", "start_time")
 		severityLevel = getQueryParam(req, "severityLevel", "ALL")
@@ -74,57 +74,65 @@ func GetAlerts (w http.ResponseWriter, req *http.Request, ps httprouter.Params){
 		clearSearch = strings.Join(searches, "* *")
 		params["searchString"] = fmt.Sprintf("*%s*", clearSearch)
 	}
-	reqUrl := conf.Endpoint + "/_opendistro/_alerting/monitors/alerts"
+	reqUrl := fmt.Sprintf("%s/%s/_alerting/monitors/alerts", conf.Endpoint, API_PREFIX )
 
 	res, err := doRequest(reqUrl, http.MethodGet, params, nil)
 	if err != nil {
 		writeError(w, err)
 		return
 	}
-	var alertRes = AlertResponse{}
+	var alertRes = IfaceMap{}
 	err = decodeJSON(res.Body, &alertRes)
 	defer res.Body.Close()
 	if err != nil {
 		writeError(w, err)
 		return
 	}
+	alerts := []IfaceMap{}
+	rawAlerts := queryValue(alertRes, "alerts", nil)
+	if ds, ok := rawAlerts.([]interface{}); ok {
+		for _, alert := range ds {
+			if alertItem, ok := alert.(map[string]interface{}); ok {
 
-	var alerts = []IfaceMap{}
-	for _, hit := range alertRes.Alerts {
-		alert := IfaceMap{
-			"id": hit["alert_id"],
+				alertItem["version"] = queryValue(alertItem, "alert_version", "")
+				alertItem["id"] = queryValue(alertItem, "alert_id", "")
+				alerts = append(alerts, alertItem)
+			}
 		}
-		for k, v := range hit {
-			alert[k] = v
-		}
-		alert["version"] = hit["alert_version"]
 	}
 	writeJSON(w, IfaceMap{
 		"ok": true,
 		"alerts": alerts,
-		"totalAlerts": alertRes.TotalAlerts,
+		"totalAlerts": queryValue(alertRes, "totalAlerts", 0),
 	}, http.StatusOK)
 
 }
 func writeError(w http.ResponseWriter, err error) {
 	writeJSON(w, map[string]interface{}{
-		"body": map[string]interface{}{
-			"ok": false,
-			"err": err.Error(),
-		},
+		"ok": false,
+		"resp": err.Error(),
 	}, http.StatusOK)
 }
 
 type IfaceMap map[string]interface{}
 
-type AlertResponse struct {
-	Alerts []IfaceMap `json:"alerts"`
-	TotalAlerts int `json:"totalAlerts"`
-}
-
 func decodeJSON(reader io.Reader, obj interface{}) error{
 	dec := json.NewDecoder(reader)
-	return dec.Decode(obj)
+	err :=  dec.Decode(obj)
+	if err != nil {
+		return err
+	}
+
+	if m, ok := obj.(*IfaceMap); ok {
+		if errStr := queryValue(*m,"error", nil); errStr != nil {
+			if str, ok := errStr.(string); ok {
+				errors.New(str)
+			}
+			buf, _ := json.Marshal(errStr)
+			return errors.New(string(buf))
+		}
+	}
+	return nil
 }
 
 func writeJSON(w http.ResponseWriter, data interface{}, statusCode int){
@@ -168,5 +176,36 @@ func doRequest(requestUrl string, method string, params map[string]string, body 
 	}
 	req, _ = http.NewRequest(method, requestUrl, reader)
 	req.Header.Set("content-type", "application/json")
+	req.Header.Set("User-Agent", "Kibana")
 	return alertClient.Do(req)
+}
+
+func queryValue(obj map[string]interface{}, key string, defaultValue interface{}) interface{} {
+	if key == "" {
+		return obj
+	}
+	idx := strings.Index(key, ".")
+	if idx == -1 {
+		if v, ok := obj[key]; ok {
+			return v
+		}
+		return defaultValue
+	}
+	ckey := key[0:idx]
+
+	if v, ok := obj[ckey]; ok {
+		if vmap, ok := v.(map[string]interface{}); ok {
+			return queryValue(vmap, key[idx+1:], defaultValue)
+		}
+	}
+	return defaultValue
+}
+
+func assignTo(dst IfaceMap, src IfaceMap){
+	if dst == nil || src == nil {
+		return
+	}
+	for k, v := range src {
+		dst[k] = v
+	}
 }

@@ -200,7 +200,7 @@ class MonitorHistory extends PureComponent {
         ),
         index: INDEX.ALL_ALERTS,
       };
-      const resp = await httpClient.post('../api/alerting/monitors/_search', {
+      const resp = await httpClient.post('/alerting/monitors/_search', {
         body: JSON.stringify(requestBody),
       });
       if (resp.ok) {
@@ -242,7 +242,7 @@ class MonitorHistory extends PureComponent {
         monitorIds: monitorId,
       };
 
-      const resp = await httpClient.get('../api/alerting/alerts', { query: params });
+      const resp = await httpClient.get('/alerting/alerts', { query: params });
       var alerts;
       if (resp.ok) {
         alerts = resp.alerts;

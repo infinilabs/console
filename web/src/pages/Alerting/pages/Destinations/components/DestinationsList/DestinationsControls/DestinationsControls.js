@@ -17,6 +17,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { EuiFieldSearch, EuiFlexGroup, EuiFlexItem, EuiPagination, EuiSelect } from '@elastic/eui';
 import { DESTINATION_OPTIONS } from '../../../utils/constants';
+import { formatMessage } from 'umi/locale';
 
 const filterTypes = [{ value: 'ALL', text: 'All type' }, ...DESTINATION_OPTIONS];
 
@@ -47,14 +48,14 @@ const DestinationsControls = ({
   allowList,
 }) => {
   const allowedOptions = DESTINATION_OPTIONS.filter((option) => allowList.includes(option.value));
-  const filterTypes = [{ value: 'ALL', text: 'All type' }, ...allowedOptions];
+  const filterTypes = [{ value: 'ALL', text: formatMessage({ id: 'alert.destination.type.all' }) }, ...allowedOptions];
   return (
     <EuiFlexGroup style={{ padding: '0px 5px' }}>
       <EuiFlexItem>
         <EuiFieldSearch
           fullWidth={true}
           value={search}
-          placeholder="Search"
+          placeholder={formatMessage({ id: 'form.button.search' })}
           onChange={onSearchChange}
         />
       </EuiFlexItem>

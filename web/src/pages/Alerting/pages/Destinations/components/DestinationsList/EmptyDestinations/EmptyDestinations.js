@@ -19,19 +19,19 @@ import { EuiButton, EuiEmptyPrompt, EuiText } from '@elastic/eui';
 
 import { APP_PATH } from '../../../../../utils/constants';
 import { PLUGIN_NAME } from '../../../../../utils/constants';
+import { formatMessage } from 'umi/locale';
 
-const filterText =
-  'There are no destinations matching your applied filters. Reset your filters to view all destinations.';
-const emptyText = 'There are no existing destinations. Add a destination.';
+const filterText = formatMessage({ id: 'alert.destination.filter-text' });
+const emptyText = formatMessage({ id: 'alert.destination.empty-destination-text' });
 const createDestinationButton = (
   <EuiButton fill href={`#/${PLUGIN_NAME}${APP_PATH.CREATE_DESTINATION}`}>
-    Add destination
+    {formatMessage({ id: 'alert.button.add-destination' })}
   </EuiButton>
 );
 
 const resetFiltersButton = resetFilters => (
   <EuiButton fill onClick={resetFilters}>
-    Reset filters
+    {formatMessage({ id: 'alert.destination.reset-filters' })}
   </EuiButton>
 );
 

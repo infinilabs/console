@@ -25,6 +25,7 @@ import {
 
 import { APP_PATH } from '../../../../../utils/constants';
 import { PLUGIN_NAME } from '../../../../../utils/constants';
+import { formatMessage } from 'umi/locale';
 
 export default class DestinationsActions extends Component {
   state = {
@@ -40,7 +41,7 @@ export default class DestinationsActions extends Component {
           this.props.onClickManageSenders();
         }}
       >
-        Manage email senders
+        {formatMessage({ id: 'alert.destination.actions.manger-email-senders' })}
       </EuiContextMenuItem>,
       <EuiContextMenuItem
         key="manageEmailGroups"
@@ -49,7 +50,7 @@ export default class DestinationsActions extends Component {
           this.props.onClickManageEmailGroups();
         }}
       >
-        Manage email groups
+        {formatMessage({ id: 'alert.destination.actions.manger-email-groups' })}
       </EuiContextMenuItem>,
     ];
   };
@@ -73,7 +74,7 @@ export default class DestinationsActions extends Component {
               id="destinationActionsPopover"
               button={
                 <EuiButton onClick={this.onClickActions} iconType="arrowDown" iconSide="right">
-                  Actions
+                  {formatMessage({ id: 'alert.destination.actions' })}
                 </EuiButton>
               }
               isOpen={isActionsOpen}
@@ -87,7 +88,7 @@ export default class DestinationsActions extends Component {
         ) : null}
         <EuiFlexItem grow={false}>
           <EuiButton fill href={`#/${PLUGIN_NAME}${APP_PATH.CREATE_DESTINATION}`}>
-            Add destination
+            {formatMessage({ id: 'alert.button.add-destination' })}
           </EuiButton>
         </EuiFlexItem>
       </EuiFlexGroup>

@@ -25,6 +25,7 @@ import {
 
 import { APP_PATH } from '../../../../utils/constants';
 import { PLUGIN_NAME } from '../../../../utils/constants';
+import { formatMessage } from 'umi/locale';
 
 export default class MonitorActions extends Component {
   state = {
@@ -41,7 +42,7 @@ export default class MonitorActions extends Component {
           this.props.onBulkAcknowledge();
         }}
       >
-        Acknowledge
+        {formatMessage({ id: 'alert.monitor.actions.acknowledge' })}
       </EuiContextMenuItem>,
       <EuiContextMenuItem
         key="enable"
@@ -51,7 +52,7 @@ export default class MonitorActions extends Component {
           this.props.onBulkEnable();
         }}
       >
-        Enable
+          {formatMessage({ id: 'alert.monitor.actions.enable' })}
       </EuiContextMenuItem>,
       <EuiContextMenuItem
         key="disable"
@@ -61,7 +62,7 @@ export default class MonitorActions extends Component {
           this.props.onBulkDisable();
         }}
       >
-        Disable
+          {formatMessage({ id: 'alert.monitor.actions.disable' })}
       </EuiContextMenuItem>,
       <EuiContextMenuItem
         key="delete"
@@ -71,7 +72,7 @@ export default class MonitorActions extends Component {
           this.props.onBulkDelete();
         }}
       >
-        Delete
+        {formatMessage({ id: 'alert.monitor.actions.delete' })}
       </EuiContextMenuItem>,
     ];
   };
@@ -99,7 +100,7 @@ export default class MonitorActions extends Component {
                 iconSide="right"
                 data-test-subj="actionsButton"
               >
-                Actions
+                {formatMessage({ id: 'alert.monitor.actions' })}
               </EuiButton>
             }
             isOpen={isActionsOpen}
@@ -112,7 +113,7 @@ export default class MonitorActions extends Component {
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
           <EuiButton disabled={isEditDisabled} onClick={onClickEdit} data-test-subj="editButton">
-            Edit
+            {formatMessage({ id: 'form.button.edit' })}
           </EuiButton>
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
@@ -121,7 +122,7 @@ export default class MonitorActions extends Component {
             href={`#/${PLUGIN_NAME}${APP_PATH.CREATE_MONITOR}`}
             data-test-subj="createButton"
           >
-            Create monitor
+            {formatMessage({ id: 'alert.button.create-monitor' })}
           </EuiButton>
         </EuiFlexItem>
       </EuiFlexGroup>

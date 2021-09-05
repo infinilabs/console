@@ -35,6 +35,7 @@ import ManageEmailGroups from '../CreateDestination/ManageEmailGroups';
 import { getAllowList } from '../../utils/helpers';
 import { DESTINATION_TYPE } from '../../utils/constants';
 import { backendErrorNotification } from '../../../../utils/helpers';
+import { formatMessage } from 'umi/locale';
 
 class DestinationsList extends React.Component {
   constructor(props) {
@@ -67,17 +68,17 @@ class DestinationsList extends React.Component {
     this.columns = [
       ...staticColumns,
       {
-        name: 'Actions',
+        name: formatMessage({ id: 'alert.destination.actions' }),
         width: '35px',
         actions: [
           {
-            name: 'Edit',
+            name: formatMessage({ id: 'form.button.edit' }),
             description: 'Edit this destination.',
             enabled: this.isEditEnabled,
             onClick: this.handleEditDestination,
           },
           {
-            name: 'Delete',
+            name: formatMessage({ id: 'form.button.delete' }),
             description: 'Delete this destination.',
             onClick: this.handleDeleteAction,
           },
@@ -310,7 +311,7 @@ class DestinationsList extends React.Component {
         ) : null}
         <ContentPanel
           bodyStyles={{ padding: 'initial' }}
-          title="Destinations"
+          title={formatMessage({id: 'alert.destination.destinations' })}
           actions={
             <DestinationsActions
               isEmailAllowed={this.isEmailAllowed()}
@@ -368,7 +369,7 @@ class DestinationsList extends React.Component {
             pagination={pagination}
             noItemsMessage={
               isDestinationLoading ? (
-                'Loading destinations...'
+                formatMessage({id: 'alert.destination.loading-destinations' })
               ) : (
                 <EmptyDestinations
                   isFilterApplied={isFilterApplied}

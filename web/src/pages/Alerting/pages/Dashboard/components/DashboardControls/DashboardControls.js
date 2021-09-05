@@ -16,9 +16,10 @@
 import React from 'react';
 import { EuiFieldSearch, EuiFlexGroup, EuiSelect, EuiFlexItem, EuiPagination } from '@elastic/eui';
 import { ALERT_STATE } from '../../../../utils/constants';
+import { formatMessage } from 'umi/locale';
 
 const severityOptions = [
-  { value: 'ALL', text: 'All severity levels' },
+  { value: 'ALL', text: formatMessage({ id: 'alert.dashboard.severity-options.all' }) },
   { value: '1', text: '1' },
   { value: '2', text: '2' },
   { value: '3', text: '3' },
@@ -27,12 +28,12 @@ const severityOptions = [
 ];
 
 const stateOptions = [
-  { value: 'ALL', text: 'All alerts' },
-  { value: ALERT_STATE.ACTIVE, text: 'Active' },
-  { value: ALERT_STATE.ACKNOWLEDGED, text: 'Acknowledged' },
-  { value: ALERT_STATE.COMPLETED, text: 'Completed' },
-  { value: ALERT_STATE.ERROR, text: 'Error' },
-  { value: ALERT_STATE.DELETED, text: 'Deleted' },
+  { value: 'ALL', text: formatMessage({ id: 'alert.dashboard.state-options.all' }) },
+  { value: ALERT_STATE.ACTIVE, text: formatMessage({ id: 'alert.dashboard.state-options.active' }) },
+  { value: ALERT_STATE.ACKNOWLEDGED, text: formatMessage({ id: 'alert.dashboard.state-options.acknowledged' }) },
+  { value: ALERT_STATE.COMPLETED, text: formatMessage({ id: 'alert.dashboard.state-options.completed' }) },
+  { value: ALERT_STATE.ERROR, text: formatMessage({ id: 'alert.dashboard.state-options.error' }) },
+  { value: ALERT_STATE.DELETED, text: formatMessage({ id: 'alert.dashboard.state-options.deleted' }) },
 ];
 
 const DashboardControls = ({
@@ -50,7 +51,7 @@ const DashboardControls = ({
     <EuiFlexItem>
       <EuiFieldSearch
         fullWidth={true}
-        placeholder="Search"
+        placeholder={formatMessage({ id: 'form.button.search' })}
         onChange={onSearchChange}
         value={search}
       />

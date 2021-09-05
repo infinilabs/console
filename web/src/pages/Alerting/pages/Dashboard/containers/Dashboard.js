@@ -24,6 +24,7 @@ import DashboardControls from '../components/DashboardControls';
 import { columns } from '../utils/tableUtils';
 import { KIBANA_AD_PLUGIN } from '../../../utils/constants';
 import { backendErrorNotification } from '../../../utils/helpers';
+import { formatMessage } from 'umi/locale';
 
 const DEFAULT_PAGE_SIZE_OPTIONS = [5, 10, 20, 50];
 const DEFAULT_QUERY_PARAMS = {
@@ -323,7 +324,7 @@ export default class Dashboard extends Component {
     };
 
     const actions = () => {
-      const actions = [<EuiButton onClick={this.acknowledgeAlert}>Acknowledge</EuiButton>];
+      const actions = [<EuiButton onClick={this.acknowledgeAlert}>{formatMessage({ id: 'alert.button.acknowledge'})}</EuiButton>];
       // if (detectorIds.length) {
       //   actions.unshift(
       //     <EuiButton href={`${KIBANA_AD_PLUGIN}#/detectors/${detectorIds[0]}`} target="_blank">
@@ -336,7 +337,7 @@ export default class Dashboard extends Component {
 
     return (
       <ContentPanel
-        title="Alerts"
+        title={formatMessage({ id: 'alert.dashboard.alerts' })}
         titleSize={monitorIds.length ? 's' : 'l'}
         bodyStyles={{ padding: 'initial' }}
         actions={actions()}

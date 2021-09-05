@@ -18,20 +18,19 @@ import { EuiButton, EuiEmptyPrompt, EuiText } from '@elastic/eui';
 
 import { APP_PATH } from '../../../../utils/constants';
 import { PLUGIN_NAME } from '../../../../utils/constants';
+import { formatMessage } from 'umi/locale';
 
-const filterText =
-  'There are no monitors matching your applied filters. Reset your filters to view your monitors.';
-const emptyMonitorText =
-  'There are no existing monitors. Create a monitor to add triggers and actions.';
-const loadingText = 'Loading monitors...';
+const filterText = formatMessage({ id: 'alert.monitor.filter-text' });
+const emptyMonitorText = formatMessage({ id: 'alert.monitor.empty-monitor-text' });
+const loadingText = formatMessage({ id: 'loading-monitors' });
 const createMonitorButton = (
   <EuiButton fill href={`#/${PLUGIN_NAME}${APP_PATH.CREATE_MONITOR}`}>
-    Create monitor
+      {formatMessage({ id: 'alert.button.create-monitor' })}
   </EuiButton>
 );
 const resetFiltersButton = resetFilters => (
   <EuiButton fill onClick={resetFilters}>
-    Reset Filters
+      {formatMessage({ id: 'reset-filters' })}
   </EuiButton>
 );
 

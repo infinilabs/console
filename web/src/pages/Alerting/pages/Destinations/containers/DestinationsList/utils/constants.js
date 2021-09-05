@@ -14,6 +14,7 @@
  */
 
 import { DESTINATION_OPTIONS } from '../../../utils/constants';
+import { formatMessage } from 'umi/locale';
 
 export const DEFAULT_QUERY_PARAMS = {
   from: 0,
@@ -29,7 +30,7 @@ export const MAX_DESTINATIONS = 200;
 export const staticColumns = [
   {
     field: 'name',
-    name: 'Destination name',
+    name: formatMessage({ id: 'alert.destination.table.columns.name' }),
     sortable: true,
     truncateText: true,
     textOnly: true,
@@ -37,7 +38,7 @@ export const staticColumns = [
   },
   {
     field: 'type',
-    name: 'Destination type',
+    name: formatMessage({ id: 'alert.destination.table.columns.type' }),
     truncateText: true,
     sortable: true,
     textOnly: true,

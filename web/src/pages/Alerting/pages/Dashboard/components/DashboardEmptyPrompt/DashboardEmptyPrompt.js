@@ -18,19 +18,18 @@ import PropTypes from 'prop-types';
 import { EuiButton, EuiEmptyPrompt, EuiText } from '@elastic/eui';
 
 import { APP_PATH,PLUGIN_NAME } from '../../../../utils/constants';
+import { formatMessage } from 'umi/locale';
 
-const createMonitorText =
-  'There are no existing alerts. Create a monitor to add triggers and actions. Once an alarm is triggered, the state will show in this table.';
-const createTriggerText =
-  'There are no existing alerts. Create a trigger to start alerting. Once an alarm is triggered, the state will show in this table.';
+const createMonitorText = formatMessage({ id: 'alert.dashboard.create-monitor-text' });
+const createTriggerText = formatMessage({ id: 'alert.dashboard.create-trigger-text' });
 const createMonitorButton = (
   <EuiButton fill href={`#/${PLUGIN_NAME}${APP_PATH.CREATE_MONITOR}`}>
-    Create monitor
+      {formatMessage({ id: 'alert.button.create-monitor' })}
   </EuiButton>
 );
 const createTriggerButton = onCreateTrigger => (
   <EuiButton fill onClick={onCreateTrigger}>
-    Create trigger
+      {formatMessage({ id: 'alert.button.create-trigger' })}
   </EuiButton>
 );
 

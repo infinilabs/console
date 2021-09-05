@@ -13,18 +13,22 @@
  *   permissions and limitations under the License.
  */
 
+import React from 'react';
+import { formatMessage } from 'umi/locale';
+
 export const DESTINATION_TYPE = {
-  CHIME: 'chime',
-  SLACK: 'slack',
-  CUSTOM_HOOK: 'custom_webhook',
   EMAIL: 'email',
+  CUSTOM_HOOK: 'custom_webhook',
+  SLACK: 'slack',
+  // CHIME: 'chime',
 };
 
 export const DESTINATION_OPTIONS = [
-  { value: DESTINATION_TYPE.CHIME, text: 'Amazon Chime' },
-  { value: DESTINATION_TYPE.SLACK, text: 'Slack' },
-  { value: DESTINATION_TYPE.CUSTOM_HOOK, text: 'Custom webhook' },
-  { value: DESTINATION_TYPE.EMAIL, text: 'Email' },
+  { value: DESTINATION_TYPE.EMAIL, text: formatMessage({ id: 'alert.destination.type.email' }) },
+  { value: DESTINATION_TYPE.CUSTOM_HOOK, text: formatMessage({ id: 'alert.destination.type.custom_webhook' }) },
+  { value: DESTINATION_TYPE.SLACK, text: formatMessage({ id: 'alert.destination.type.slack' }) },
+  // { value: DESTINATION_TYPE.CHIME, text: formatMessage({ id: 'alert.destination.type.chime' }) },
+
 ];
 
 export const ALLOW_LIST_SETTING_PATH = 'opendistro.alerting.destination.allow_list';

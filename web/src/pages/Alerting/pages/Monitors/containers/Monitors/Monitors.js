@@ -28,6 +28,7 @@ import { getURLQueryParams } from './utils/helpers';
 import { columns as staticColumns } from './utils/tableUtils';
 import { MONITOR_ACTIONS } from '../../../../utils/constants';
 import { backendErrorNotification } from '../../../../utils/helpers';
+import { formatMessage } from 'umi/locale';
 
 const MAX_MONITOR_COUNT = 1000;
 
@@ -84,26 +85,26 @@ export default class Monitors extends Component {
     this.columns = [
       ...staticColumns,
       {
-        name: 'Actions',
+        name: formatMessage({ id: 'alert.monitor.actions' }),
         width: '75px',
         actions: [
           {
-            name: 'Acknowledge',
+            name: formatMessage({ id: 'alert.monitor.actions.acknowledge' }),
             description: 'Acknowledge this Monitor',
             onClick: this.onClickAcknowledge,
           },
           {
-            name: 'Enable',
+            name: formatMessage({ id: 'alert.monitor.actions.enable' }),
             description: 'Enable this Monitor',
             onClick: this.onClickEnable,
           },
           {
-            name: 'Disable',
+            name: formatMessage({ id: 'alert.monitor.actions.disable' }),
             description: 'Disable this Monitor',
             onClick: this.onClickDisable,
           },
           {
-            name: 'Delete',
+            name: formatMessage({ id: 'alert.monitor.actions.delete' }),
             description: 'Delete this Monitor',
             onClick: this.onClickDelete,
           },
@@ -400,7 +401,7 @@ export default class Monitors extends Component {
           />
         }
         bodyStyles={{ padding: 'initial' }}
-        title="Monitors"
+        title={formatMessage({ id: 'alert.monitor.monitors' })}
       >
         <MonitorControls
           activePage={page}

@@ -18,6 +18,7 @@ import { EuiLink } from '@elastic/eui';
 import moment from 'moment';
 import { DEFAULT_EMPTY_DATA } from '../../../../../utils/constants';
 import { PLUGIN_NAME } from '../../../../../utils/constants';
+import { formatMessage } from 'umi/locale';
 
 const renderTime = (time) => {
   const momentTime = moment(time);
@@ -28,7 +29,7 @@ const renderTime = (time) => {
 export const columns = [
   {
     field: 'name',
-    name: 'Monitor name',
+    name: formatMessage({ id: 'alert.monitor.table.columns.name' }),
     sortable: true,
     truncateText: true,
     textOnly: true,
@@ -37,7 +38,7 @@ export const columns = [
   },
   {
     field: 'user',
-    name: 'Last updated by',
+    name: formatMessage({ id: 'alert.monitor.table.columns.user' }),
     sortable: true,
     truncateText: true,
     textOnly: true,
@@ -53,7 +54,7 @@ export const columns = [
   },
   {
     field: 'latestAlert',
-    name: 'Latest alert',
+    name: formatMessage({ id: 'alert.monitor.table.columns.latest_alert' }),
     sortable: false,
     truncateText: true,
     textOnly: true,
@@ -61,7 +62,7 @@ export const columns = [
   },
   {
     field: 'enabled',
-    name: 'State',
+    name: formatMessage({ id: 'alert.monitor.table.columns.state' }),
     sortable: false,
     truncateText: false,
     // width: '100px',
@@ -69,7 +70,7 @@ export const columns = [
   },
   {
     field: 'lastNotificationTime',
-    name: 'Last notification time',
+    name: formatMessage({ id: 'alert.monitor.table.columns.last_notification_time' }),
     sortable: true,
     truncateText: false,
     render: renderTime,
@@ -78,28 +79,28 @@ export const columns = [
   },
   {
     field: 'active',
-    name: 'Active',
+    name: formatMessage({ id: 'alert.monitor.table.columns.active' }),
     sortable: true,
     truncateText: false,
     // width: '100px',
   },
   {
     field: 'acknowledged',
-    name: 'Acknowledged',
+    name: formatMessage({ id: 'alert.monitor.table.columns.acknowledged' }),
     sortable: true,
     truncateText: false,
     // width: '100px',
   },
   {
     field: 'errors',
-    name: 'Errors',
+    name: formatMessage({ id: 'alert.monitor.table.columns.errors' }),
     sortable: true,
     truncateText: false,
     // width: '100px',
   },
   {
     field: 'ignored',
-    name: 'Ignored',
+    name: formatMessage({ id: 'alert.monitor.table.columns.ignored' }),
     sortable: true,
     truncateText: false,
     // width: '100px',

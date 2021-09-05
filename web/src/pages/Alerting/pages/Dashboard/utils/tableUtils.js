@@ -20,6 +20,7 @@ import moment from 'moment';
 
 import { ALERT_STATE, DEFAULT_EMPTY_DATA } from '../../../utils/constants';
 import { PLUGIN_NAME } from '../../../utils/constants';
+import { formatMessage } from 'umi/locale';
 
 const renderTime = (time) => {
   const momentTime = moment(time);
@@ -30,7 +31,7 @@ const renderTime = (time) => {
 export const columns = [
   {
     field: 'start_time',
-    name: 'Alert start time',
+    name: formatMessage({ id: 'alert.dashboard.table.columns.start_time' }),
     sortable: true,
     truncateText: false,
     render: renderTime,
@@ -38,7 +39,7 @@ export const columns = [
   },
   {
     field: 'end_time',
-    name: 'Alert end time',
+    name: formatMessage({ id: 'alert.dashboard.table.columns.end_time' }),
     sortable: true,
     truncateText: false,
     render: renderTime,
@@ -46,7 +47,7 @@ export const columns = [
   },
   {
     field: 'monitor_name',
-    name: 'Monitor name',
+    name: formatMessage({ id: 'alert.dashboard.table.columns.monitor_name' }),
     sortable: true,
     truncateText: true,
     textOnly: true,
@@ -56,20 +57,20 @@ export const columns = [
   },
   {
     field: 'trigger_name',
-    name: 'Trigger name',
+    name: formatMessage({ id: 'alert.dashboard.table.columns.trigger_name' }),
     sortable: true,
     truncateText: true,
     textOnly: true,
   },
   {
     field: 'severity',
-    name: 'Severity',
+    name: formatMessage({ id: 'alert.dashboard.table.columns.severity' }),
     sortable: false,
     truncateText: false,
   },
   {
     field: 'state',
-    name: 'State',
+    name: formatMessage({ id: 'alert.dashboard.table.columns.state' }),
     sortable: false,
     truncateText: false,
     render: (state, alert) => {
@@ -80,7 +81,7 @@ export const columns = [
   },
   {
     field: 'acknowledged_time',
-    name: 'Time acknowledged',
+    name: formatMessage({ id: 'alert.dashboard.table.columns.acknowledged_time' }),
     sortable: true,
     truncateText: false,
     render: renderTime,

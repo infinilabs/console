@@ -20,6 +20,7 @@ import { EuiTab, EuiTabs } from '@elastic/eui';
 import Dashboard from '../Dashboard/containers/Dashboard';
 import Monitors from '../Monitors/containers/Monitors';
 import DestinationsList from '../Destinations/containers/DestinationsList';
+import { formatMessage } from 'umi/locale';
 
 const getSelectedTabId = (pathname) => {
   if (pathname.includes('monitors')) return 'monitors';
@@ -39,17 +40,17 @@ export default class Home extends Component {
     this.tabs = [
       {
         id: 'dashboard',
-        name: 'Dashboard',
+        name: formatMessage({ id: 'alert.dashboard' }),
         route: 'dashboard',
       },
       {
         id: 'monitors',
-        name: 'Monitors',
+        name: formatMessage({ id: 'alert.monitor' }),
         route: 'monitors',
       },
       {
         id: 'destinations',
-        name: 'Destinations',
+        name: formatMessage({ id: 'alert.destination' }),
         route: 'destinations',
       },
     ];

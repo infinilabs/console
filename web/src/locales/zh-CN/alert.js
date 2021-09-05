@@ -51,8 +51,8 @@ export default {
 
   'alert.destination.destinations': '通知渠道管理',
   'alert.destination.actions': '操作',
-  'alert.destination.actions.manger-email-senders': '管理邮件发送者',
-  'alert.destination.actions.manger-email-groups': '管理邮件组',
+  'alert.destination.actions.manager-email-senders': '管理邮件发送者',
+  'alert.destination.actions.manager-email-groups': '管理邮件组',
   'alert.destination.loading-destinations': '加载中...',
   'alert.destination.filter-text': '未搜索到结果。',
   'alert.destination.empty-destination-text': '暂无通知渠道。 添加渠道。',

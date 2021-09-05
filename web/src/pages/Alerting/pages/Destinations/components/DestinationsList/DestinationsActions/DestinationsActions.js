@@ -41,7 +41,7 @@ export default class DestinationsActions extends Component {
           this.props.onClickManageSenders();
         }}
       >
-        {formatMessage({ id: 'alert.destination.actions.manger-email-senders' })}
+        {formatMessage({ id: 'alert.destination.actions.manager-email-senders' })}
       </EuiContextMenuItem>,
       <EuiContextMenuItem
         key="manageEmailGroups"
@@ -50,7 +50,7 @@ export default class DestinationsActions extends Component {
           this.props.onClickManageEmailGroups();
         }}
       >
-        {formatMessage({ id: 'alert.destination.actions.manger-email-groups' })}
+        {formatMessage({ id: 'alert.destination.actions.manager-email-groups' })}
       </EuiContextMenuItem>,
     ];
   };

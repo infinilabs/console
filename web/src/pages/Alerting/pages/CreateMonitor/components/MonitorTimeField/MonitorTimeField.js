@@ -18,6 +18,7 @@ import PropTypes from 'prop-types';
 import FormikSelect from '../../../../components/FormControls/FormikSelect/FormikSelect';
 import { hasError, isInvalid } from '../../../../utils/validate';
 import { validateTimeField } from './utils/validation';
+import { formatMessage } from 'umi/locale';
 
 const MonitorTimeField = ({ dataTypes }) => {
   // Default empty option + options from index mappings mapped to ui select form
@@ -29,9 +30,9 @@ const MonitorTimeField = ({ dataTypes }) => {
       formRow
       fieldProps={{ validate: validateTimeField(dateFields) }}
       rowProps={{
-        label: 'Time field',
+        label: formatMessage({ id: 'alert.monitor.create.define.time_field'}),
         style: { paddingLeft: '10px' },
-        helpText: 'Choose the time field you want to use for your x-axis',
+        helpText: formatMessage({ id: 'alert.monitor.create.define.time_field.help-text'}),
         isInvalid,
         error: hasError,
       }}

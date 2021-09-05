@@ -21,6 +21,7 @@ import { EuiHealth, EuiHighlight } from '@elastic/eui';
 import { FormikComboBox } from '../../../../components/FormControls';
 import { validateIndex, hasError, isInvalid } from '../../../../utils/validate';
 import { canAppendWildcard, createReasonableWait, getMatchedOptions } from './utils/helpers';
+import { formatMessage } from 'umi/locale';
 
 const CustomOption = ({ option, searchValue, contentClassName }) => {
   const { health, label, index } = option;
@@ -231,14 +232,14 @@ class MonitorIndex extends React.Component {
         formRow
         fieldProps={{ validate: validateIndex }}
         rowProps={{
-          label: 'Index',
-          helpText: 'You can use a * as a wildcard in your index pattern',
+          label: formatMessage({ id: 'alert.monitor.create.define.index'}),
+          helpText: formatMessage({ id: 'alert.monitor.create.define.index.help-text'}),
           isInvalid,
           error: hasError,
           style: { paddingLeft: '10px' },
         }}
         inputProps={{
-          placeholder: 'Select indices',
+          placeholder: formatMessage({ id: 'alert.monitor.create.define.index.select.placeholder'}),
           async: true,
           isLoading,
           options: visibleOptions,

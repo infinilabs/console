@@ -20,15 +20,16 @@ import ContentPanel from '../../../../components/ContentPanel';
 import MonitorState from '../../components/MonitorState';
 import { hasError, isInvalid, required, validateMonitorName } from '../../../../utils/validate';
 import FormikFieldText from '../../../../components/FormControls/FormikFieldText';
+import { formatMessage } from 'umi/locale';
 
 const ConfigureMonitor = ({ httpClient, monitorToEdit }) => (
-  <ContentPanel title="Configure monitor" titleSize="s" bodyStyles={{ padding: 'initial' }}>
+  <ContentPanel title={formatMessage({ id: 'alert.monitor.create.configure-monitor'})} titleSize="s" bodyStyles={{ padding: 'initial' }}>
     <FormikFieldText
       name="name"
       formRow
       fieldProps={{ validate: validateMonitorName(httpClient, monitorToEdit) }}
       rowProps={{
-        label: 'Monitor name',
+        label: formatMessage({ id: 'alert.monitor.table.columns.name'}),
         style: { paddingLeft: '10px' },
         isInvalid,
         error: hasError,

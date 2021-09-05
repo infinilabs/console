@@ -36,6 +36,7 @@ import { TRIGGER_ACTIONS, SEARCH_TYPE } from '../../../../utils/constants';
 import { initializeFromQueryParams } from './utils/monitorQueryParams';
 import { SubmitErrorHandler } from '../../../../utils/SubmitErrorHandler';
 import { backendErrorNotification } from '../../../../utils/helpers';
+import { formatMessage } from 'umi/locale';
 
 export default class CreateMonitor extends Component {
   static defaultProps = {
@@ -137,7 +138,7 @@ export default class CreateMonitor extends Component {
           {({ values, errors, handleSubmit, isSubmitting, isValid }) => (
             <Fragment>
               <EuiTitle size="l">
-                <h1>{edit ? 'Edit' : 'Create'} monitor</h1>
+                <h1>{edit ? formatMessage({ id: 'form.button.edit'}) : formatMessage({ id: 'form.button.create'})} {formatMessage({ id: 'alert.monitor.self'})}</h1>
               </EuiTitle>
               <EuiSpacer />
               <ConfigureMonitor httpClient={httpClient} monitorToEdit={monitorToEdit} />
@@ -158,11 +159,11 @@ export default class CreateMonitor extends Component {
               <EuiSpacer />
               <EuiFlexGroup alignItems="center" justifyContent="flexEnd">
                 <EuiFlexItem grow={false}>
-                  <EuiButtonEmpty onClick={this.onCancel}>Cancel</EuiButtonEmpty>
+                  <EuiButtonEmpty onClick={this.onCancel}>{formatMessage({ id: 'form.button.cancel'})}</EuiButtonEmpty>
                 </EuiFlexItem>
                 <EuiFlexItem grow={false}>
                   <EuiButton fill onClick={handleSubmit} isLoading={isSubmitting}>
-                    {edit ? 'Update' : 'Create'}
+                    {edit ? formatMessage({ id: 'form.button.update'}) : formatMessage({ id: 'form.button.create'})}
                   </EuiButton>
                 </EuiFlexItem>
               </EuiFlexGroup>

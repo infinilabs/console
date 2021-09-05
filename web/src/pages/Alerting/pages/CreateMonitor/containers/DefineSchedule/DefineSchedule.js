@@ -16,9 +16,10 @@
 import React from 'react';
 import ContentPanel from '../../../../components/ContentPanel';
 import Schedule from '../../components/Schedule';
+import { formatMessage } from 'umi/locale';
 
 const MonitorSchedule = ({ httpClient, monitorToEdit, isAd }) => (
-  <ContentPanel title="Monitor schedule" titleSize="s" bodyStyles={{ padding: 'initial' }}>
+  <ContentPanel title={formatMessage({ id: 'alert.monitor.create.schedule-monitor'})} titleSize="s" bodyStyles={{ padding: 'initial' }}>
     <Schedule isAd={isAd} />
   </ContentPanel>
 );

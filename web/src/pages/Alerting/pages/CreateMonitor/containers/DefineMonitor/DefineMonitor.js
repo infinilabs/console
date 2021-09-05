@@ -31,6 +31,7 @@ import { buildSearchRequest } from './utils/searchRequests';
 import { SEARCH_TYPE, ES_AD_PLUGIN } from '../../../../utils/constants';
 import AnomalyDetectors from '../AnomalyDetectors/AnomalyDetectors';
 import { backendErrorNotification } from '../../../../utils/helpers';
+import { formatMessage } from 'umi/locale';
 
 function renderEmptyMessage(message) {
   return (
@@ -250,9 +251,9 @@ class DefineMonitor extends Component {
     if (index.length) {
       content = timeField
         ? this.renderGraph()
-        : renderEmptyMessage('You must specify a time field.');
+        : renderEmptyMessage(formatMessage({ id: 'alert.monitor.create.define.time_field.empty-message'}));
     } else {
-      content = renderEmptyMessage('You must specify an index.');
+      content = renderEmptyMessage(formatMessage({ id: 'alert.monitor.create.define.index.empty-message'}));
     }
     return {
       actions: [],
@@ -277,7 +278,7 @@ class DefineMonitor extends Component {
       invalidJSON = true;
     }
     const runIsDisabled = invalidJSON || !values.index.length;
-    let content = renderEmptyMessage('You must specify an index.');
+    let content = renderEmptyMessage(formatMessage({ id: 'alert.monitor.create.define.index.empty-message'}));
     if (values.index.length) {
       content = (
         <ExtractionQuery
@@ -342,7 +343,7 @@ class DefineMonitor extends Component {
     const monitorContent = this.getMonitorContent();
     return (
       <ContentPanel
-        title="Define monitor"
+        title={formatMessage({ id: 'alert.monitor.create.define-monitor'})}
         titleSize="s"
         bodyStyles={{ padding: 'initial' }}
         actions={monitorContent.actions}

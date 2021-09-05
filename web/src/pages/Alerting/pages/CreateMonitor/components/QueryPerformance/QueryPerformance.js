@@ -20,15 +20,16 @@ import { EuiFlexGroup, EuiFlexItem, EuiSpacer, EuiText } from '@elastic/eui';
 import SubHeader from '../../../../components/SubHeader';
 import { DEFAULT_EMPTY_DATA } from '../../../../utils/constants';
 import { URL } from '../../../../utils/constants';
+import { formatMessage } from 'umi/locale';
 
 const QueryPerformance = ({ response }) => (
   <Fragment>
     <SubHeader
-      title={<h4>Query performance</h4>}
+      title={<h4>{formatMessage({ id: 'alert.monitor.create.define.query-performance'})}</h4>}
       description={
         <span>
-          Check the performance of your query and make sure to follow best practices.{' '}
-          <a href={URL.DOCUMENTATION}>Learn more</a>
+          {formatMessage({ id: 'alert.monitor.create.define.query-performance.tips'})}{' '}
+          {/*<a href={URL.DOCUMENTATION}>Learn more</a>*/}
         </span>
       }
     />
@@ -41,7 +42,7 @@ const QueryPerformance = ({ response }) => (
     >
       <EuiFlexItem>
         <EuiText size="xs">
-          <strong>Query duration</strong>
+          <strong>{formatMessage({ id: 'alert.monitor.create.define.query-performance.query-duration'})}</strong>
           <span style={{ display: 'block' }}>
             {`${_.get(response, 'took', DEFAULT_EMPTY_DATA)} ms`}
           </span>
@@ -49,7 +50,7 @@ const QueryPerformance = ({ response }) => (
       </EuiFlexItem>
       <EuiFlexItem>
         <EuiText size="xs">
-          <strong>Request duration</strong>
+          <strong>{formatMessage({ id: 'alert.monitor.create.define.query-performance.request-duration'})}</strong>
           <span style={{ display: 'block' }}>
             {_.get(response, 'invalid.path', DEFAULT_EMPTY_DATA)}
           </span>
@@ -57,7 +58,7 @@ const QueryPerformance = ({ response }) => (
       </EuiFlexItem>
       <EuiFlexItem>
         <EuiText size="xs">
-          <strong>Hits</strong>
+          <strong>{formatMessage({ id: 'alert.monitor.create.define.query-performance.hits'})}</strong>
           <span style={{ display: 'block' }}>
             {_.get(response, 'hits.total.value', DEFAULT_EMPTY_DATA)}
           </span>

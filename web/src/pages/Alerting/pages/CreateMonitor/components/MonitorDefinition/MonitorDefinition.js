@@ -16,10 +16,11 @@
 import React from 'react';
 import FormikSelect from '../../../../components/FormControls/FormikSelect/FormikSelect';
 import { ES_AD_PLUGIN } from '../../../../utils/constants';
+import { formatMessage } from 'umi/locale';
 
 const defaultSelectDefinitions = [
-  { value: 'graph', text: 'Define using visual graph' },
-  { value: 'query', text: 'Define using extraction query' },
+  { value: 'query', text: formatMessage({ id: 'alert.monitor.create.define.method.query'}) },
+  { value: 'graph', text: formatMessage({ id: 'alert.monitor.create.define.method.graph'}) },
 ];
 
 const onChangeDefinition = (e, form, resetResponse) => {
@@ -39,7 +40,7 @@ const MonitorDefinition = ({ resetResponse, plugins }) => (
     name="searchType"
     formRow
     rowProps={{
-      label: 'Method of definition',
+      label: formatMessage({ id: 'alert.monitor.create.define.method'}),
       style: { paddingLeft: '10px' },
     }}
     inputProps={{

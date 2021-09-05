@@ -18,19 +18,20 @@ import { EuiSpacer } from '@elastic/eui';
 
 import SubHeader from '../../../../components/SubHeader';
 import { FormikCheckbox } from '../../../../components/FormControls';
+import { formatMessage } from 'umi/locale';
 
 const MonitorState = () => (
   <Fragment>
     <SubHeader
-      title={<h4>Monitor state</h4>}
-      description={<span>Disabled monitors do not run.</span>}
+      title={<h4>{formatMessage({ id: 'alert.monitor.create.state.title'})}</h4>}
+      description={<span>{formatMessage({ id: 'alert.monitor.create.state.description'})}</span>}
     />
     <EuiSpacer size="s" />
     <FormikCheckbox
       name="disabled"
       formRow
       rowProps={{ style: { paddingLeft: '10px' } }}
-      inputProps={{ label: 'Disable monitor' }}
+      inputProps={{ label: formatMessage({ id: 'alert.monitor.create.state.disable'}) }}
     />
   </Fragment>
 );

@@ -24,6 +24,7 @@ import {
   MONITOR_ACTIONS,
   TRIGGER_ACTIONS,
 } from '../../utils/constants';
+import { formatMessage } from 'umi/locale';
 
 const propTypes = {
   history: PropTypes.object.isRequired,
@@ -122,7 +123,7 @@ export async function getBreadcrumb(route, routeState, httpClient) {
         const destinationName = _.get(routeState, 'destinationToEdit.name', base);
         const destinationBreadcrumbs = [{ text: destinationName, href: `/destinations/${base}` }];
         if (action === DESTINATION_ACTIONS.UPDATE_DESTINATION) {
-          destinationBreadcrumbs.push({ text: 'Update destination', href: '/' });
+          destinationBreadcrumbs.push({ text: formatMessage({ id: 'alert.button.update-destination' }), href: '/' });
         }
         return destinationBreadcrumbs;
       default:
@@ -138,27 +139,27 @@ export async function getBreadcrumb(route, routeState, httpClient) {
         }
         const breadcrumbs = [{ text: monitorName, href: `/monitors/${base}` }];
         if (action === MONITOR_ACTIONS.UPDATE_MONITOR)
-          breadcrumbs.push({ text: 'Update monitor', href: '/' });
+          breadcrumbs.push({ text: formatMessage({ id: 'alert.button.update-monitor' }), href: '/' });
         if (action === TRIGGER_ACTIONS.CREATE_TRIGGER)
-          breadcrumbs.push({ text: 'Create trigger', href: '/' });
+          breadcrumbs.push({ text: formatMessage({ id: 'alert.button.create-trigger' }), href: '/' });
         if (action === TRIGGER_ACTIONS.UPDATE_TRIGGER)
-          breadcrumbs.push({ text: 'Update trigger', href: '/' });
+          breadcrumbs.push({ text: formatMessage({ id: 'alert.button.update-trigger' }), href: '/' });
         return breadcrumbs;
     }
   }
 
   return {
-    '#': { text: 'Alerting', href: '/' },
-    monitors: { text: 'Monitors', href: '/monitors' },
-    dashboard: { text: 'Dashboard', href: '/dashboard' },
-    destinations: { text: 'Destinations', href: '/destinations' },
+    '#': { text: formatMessage({ id: 'alert.alerting' }), href: '/' },
+    monitors: { text: formatMessage({ id: 'alert.monitor' }), href: '/monitors' },
+    dashboard: { text: formatMessage({ id: 'alert.dashboard' }), href: '/dashboard' },
+    destinations: { text: formatMessage({ id: 'alert.destination' }), href: '/destinations' },
     'create-monitor': [
-      { text: 'Monitors', href: '/monitors' },
-      { text: 'Create monitor', href: APP_PATH.CREATE_MONITOR },
+      { text: formatMessage({ id: 'alert.monitor' }), href: '/monitors' },
+      { text: formatMessage({ id: 'alert.button.create-monitor' }), href: APP_PATH.CREATE_MONITOR },
     ],
     'create-destination': [
-      { text: 'Destinations', href: '/destinations' },
-      { text: 'Create destination', href: APP_PATH.CREATE_DESTINATION },
+      { text: formatMessage({ id: 'alert.destination' }), href: '/destinations' },
+      { text: formatMessage({ id: 'alert.button.create-destination' }), href: APP_PATH.CREATE_DESTINATION },
     ],
   }[base];
 }

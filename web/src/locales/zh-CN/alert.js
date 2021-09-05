@@ -1,8 +1,14 @@
 export default {
   'alert.button.acknowledge': '确认',
   'alert.button.create-monitor': '创建监控项',
+  'alert.button.update-monitor': '更新监控项',
   'alert.button.create-trigger': '创建触发器',
+  'alert.button.update-trigger': '更新触发器',
   'alert.button.add-destination': '添加渠道',
+  'alert.button.create-destination': '创建渠道',
+  'alert.button.update-destination': '更新渠道',
+
+  'alert.alerting': '告警管理',
 
   'alert.dashboard': '告警概览',
   'alert.dashboard.alerts': '告警管理',

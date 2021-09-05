@@ -1,8 +1,14 @@
 export default {
   'alert.button.acknowledge': 'Acknowledge',
   'alert.button.create-monitor': 'Create monitor',
+  'alert.button.update-monitor': 'Update monitor',
   'alert.button.create-trigger': 'Create trigger',
+  'alert.button.update-trigger': 'Update trigger',
   'alert.button.add-destination': 'Add destination',
+  'alert.button.create-destination': 'Create destination',
+  'alert.button.update-destination': 'Update destination',
+
+  'alert.alerting': 'Alerting',
 
   'alert.dashboard': 'Dashboard',
   'alert.dashboard.alerts': 'Alerts',

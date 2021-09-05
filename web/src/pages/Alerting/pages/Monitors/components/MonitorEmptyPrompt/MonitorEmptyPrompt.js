@@ -22,7 +22,7 @@ import { formatMessage } from 'umi/locale';
 
 const filterText = formatMessage({ id: 'alert.monitor.filter-text' });
 const emptyMonitorText = formatMessage({ id: 'alert.monitor.empty-monitor-text' });
-const loadingText = formatMessage({ id: 'loading-monitors' });
+const loadingText = formatMessage({ id: 'alert.monitor.loading-monitors' });
 const createMonitorButton = (
   <EuiButton fill href={`#/${PLUGIN_NAME}${APP_PATH.CREATE_MONITOR}`}>
       {formatMessage({ id: 'alert.button.create-monitor' })}

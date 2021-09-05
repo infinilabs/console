@@ -52,7 +52,7 @@ export const columns = [
     truncateText: true,
     textOnly: true,
     render: (name, alert) => (
-      <EuiLink href={`${PLUGIN_NAME}#/monitors/${alert.monitor_id}`}>{name}</EuiLink>
+      <EuiLink href={`#/${PLUGIN_NAME}/monitors/${alert.monitor_id}`}>{name}</EuiLink>
     ),
   },
   {

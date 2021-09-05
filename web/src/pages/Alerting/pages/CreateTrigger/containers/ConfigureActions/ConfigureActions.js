@@ -62,7 +62,7 @@ class ConfigureActions extends React.Component {
       return destination.type;
     };
     try {
-      const response = await httpClient.get('../api/alerting/destinations', {
+      const response = await httpClient.get('/alerting/destinations', {
         query: { search: searchText, size: MAX_QUERY_RESULT_SIZE },
       });
       if (response.ok) {
@@ -97,7 +97,7 @@ class ConfigureActions extends React.Component {
     const condition = { script: { lang: 'painless', source: 'return true' } };
     const testMonitor = { ...monitor, triggers: [{ ...trigger, actions: [action], condition }] };
     try {
-      const response = await httpClient.post('../api/alerting/monitors/_execute', {
+      const response = await httpClient.post('/alerting/monitors/_execute', {
         query: { dryrun: false },
         body: JSON.stringify(testMonitor),
       });

@@ -56,7 +56,7 @@ class AnomalyDetectorData extends React.Component {
       preview: this.props.preview,
     };
     try {
-      const response = await httpClient.get(`../api/alerting/detectors/${detectorId}/results`, {
+      const response = await httpClient.get(`/alerting/detectors/${detectorId}/results`, {
         query: requestParams,
       });
       if (response.ok) {

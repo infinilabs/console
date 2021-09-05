@@ -43,6 +43,27 @@ func Init(cfg *config.AppConfig) {
 	ui.HandleUIMethod(api.POST, "/elasticsearch/:id/alerting/_aliases", alerting.GetAliases)
 	ui.HandleUIMethod(api.POST, "/elasticsearch/:id/alerting/_mappings", alerting.GetMappings)
 	ui.HandleUIMethod(api.GET, "/elasticsearch/:id/alerting/_plugins", alerting.GetPlugins)
+	ui.HandleUIMethod(api.GET, "/elasticsearch/:id/alerting/monitors/:monitorID", alerting.GetMonitor)
+	ui.HandleUIMethod(api.PUT, "/elasticsearch/:id/alerting/monitors/:monitorID", alerting.UpdateMonitor)
+	ui.HandleUIMethod(api.GET, "/elasticsearch/:id/alerting/monitors", alerting.GetMonitors)
+	ui.HandleUIMethod(api.POST, "/elasticsearch/:id/alerting/monitors", alerting.CreateMonitor)
+	ui.HandleUIMethod(api.POST, "/elasticsearch/:id/alerting/monitors/_execute", alerting.ExecuteMonitor)
+	ui.HandleUIMethod(api.DELETE, "/elasticsearch/:id/alerting/monitors/:monitorID", alerting.DeleteMonitor)
+	ui.HandleUIMethod(api.GET, "/elasticsearch/:id/alerting/_settings", alerting.GetSettings)
+	ui.HandleUIMethod(api.GET, "/elasticsearch/:id/alerting/destinations", alerting.GetDestinations)
+	ui.HandleUIMethod(api.POST, "/elasticsearch/:id/alerting/destinations", alerting.CreateDestination)
+	ui.HandleUIMethod(api.PUT, "/elasticsearch/:id/alerting/destinations/:destinationId", alerting.UpdateDestination)
+	ui.HandleUIMethod(api.DELETE, "/elasticsearch/:id/alerting/destinations/:destinationId", alerting.DeleteDestination)
+	ui.HandleUIMethod(api.POST, "/elasticsearch/:id/alerting/destinations/email_accounts", alerting.CreateEmailAccount)
+	ui.HandleUIMethod(api.GET, "/elasticsearch/:id/alerting/destinations/email_accounts", alerting.GetEmailAccounts)
+	ui.HandleUIMethod(api.DELETE, "/elasticsearch/:id/alerting/email_accounts/:emailAccountId", alerting.DeleteEmailAccount)
+	ui.HandleUIMethod(api.GET, "/elasticsearch/:id/alerting/email_accounts/:emailAccountId", alerting.GetEmailAccount)
+	ui.HandleUIMethod(api.PUT, "/elasticsearch/:id/alerting/email_accounts/:emailAccountId", alerting.UpdateEmailAccount)
+	ui.HandleUIMethod(api.POST, "/elasticsearch/:id/alerting/destinations/email_groups", alerting.CreateEmailGroup)
+	ui.HandleUIMethod(api.GET, "/elasticsearch/:id/alerting/destinations/email_groups", alerting.GetEmailGroups)
+	ui.HandleUIMethod(api.DELETE, "/elasticsearch/:id/alerting/email_groups/:emailGroupId", alerting.DeleteEmailGroup)
+	ui.HandleUIMethod(api.PUT, "/elasticsearch/:id/alerting/email_groups/:emailGroupId", alerting.UpdateEmailGroup)
+
 
 
 	task.RegisterScheduleTask(task.ScheduleTask{

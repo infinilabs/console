@@ -12,7 +12,7 @@ const httpClient = new Fetch({
     get: () => '',
     prepend: (url) => url,
     remove: (url) => url,
-    serverBasePath: '/elasticsearch',
+    serverBasePath: '',
   }
 });
 const notifications = {
@@ -23,6 +23,11 @@ const notifications = {
         description: text,
         duration: toastLifeTimeMs/1000,
       })
+    },
+    addSuccess: (message) => {
+      notification.success({
+        description: message,
+      })
     }
   }
 }
@@ -32,8 +37,8 @@ const AlertingUI =  (props)=>{
     return null;
   }
   useMemo(()=>{
-    httpClient.getServerBasePath = ()=>{
-      return  '/api/elasticsearch/'+ props.selectedCluster.id;
+    httpClient.params.basePath.prepend = (url)=>{
+      return  '/elasticsearch/'+ props.selectedCluster.id + url;
     }
   }, [props.selectedCluster]);
   const isDarkMode = false;

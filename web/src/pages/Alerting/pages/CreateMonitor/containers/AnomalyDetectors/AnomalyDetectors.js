@@ -38,7 +38,7 @@ class AnomalyDetectors extends React.Component {
   async searchDetectors() {
     const { http: httpClient, notifications } = this.context;
     try {
-      const response = await httpClient.post('../api/alerting/detectors/_search');
+      const response = await httpClient.post('/alerting/detectors/_search');
       if (response.ok) {
         const detectorOptions = response.detectors
           .filter((detector) => detector.detectionDateRange === undefined)

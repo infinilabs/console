@@ -81,7 +81,7 @@ export default class MonitorDetails extends Component {
   getDetector = (id) => {
     const { httpClient, notifications } = this.props;
     httpClient
-      .get(`../api/alerting/detectors/${id}`)
+      .get(`/alerting/detectors/${id}`)
       .then((resp) => {
         const { ok, detector, version: detectorVersion, seqNo, primaryTerm } = resp;
         if (ok) {
@@ -101,7 +101,7 @@ export default class MonitorDetails extends Component {
   getMonitor = (id) => {
     const { httpClient } = this.props;
     httpClient
-      .get(`../api/alerting/monitors/${id}`)
+      .get(`/alerting/monitors/${id}`)
       .then((resp) => {
         const {
           ok,
@@ -148,7 +148,7 @@ export default class MonitorDetails extends Component {
     const { monitor, ifSeqNo, ifPrimaryTerm } = this.state;
     this.setState({ updating: true });
     return httpClient
-      .put(`../api/alerting/monitors/${monitorId}`, {
+      .put(`/alerting/monitors/${monitorId}`, {
         query: { ifSeqNo, ifPrimaryTerm },
         body: JSON.stringify({ ...monitor, ...update }),
       })

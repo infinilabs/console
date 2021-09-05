@@ -126,7 +126,7 @@ class DefineMonitor extends Component {
   async getPlugins() {
     const { httpClient } = this.props;
     try {
-      const pluginsResponse = await httpClient.get('../api/alerting/_plugins');
+      const pluginsResponse = await httpClient.get('/alerting/_plugins');
       if (pluginsResponse.ok) {
         this.setState({ plugins: pluginsResponse.resp.map((plugin) => plugin.component) });
       } else {
@@ -186,7 +186,7 @@ class DefineMonitor extends Component {
         _.set(monitor, 'name', 'TEMP_MONITOR');
         _.set(monitor, 'triggers', []);
         _.set(monitor, 'inputs[0].search', searchRequest);
-        return httpClient.post('../api/alerting/monitors/_execute', {
+        return httpClient.post('/alerting/monitors/_execute', {
           body: JSON.stringify(monitor),
         });
       });
@@ -231,7 +231,7 @@ class DefineMonitor extends Component {
     }
 
     try {
-      const response = await this.props.httpClient.post('../api/alerting/_mappings', {
+      const response = await this.props.httpClient.post('/alerting/_mappings', {
         body: JSON.stringify({ index }),
       });
       if (response.ok) {

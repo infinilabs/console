@@ -129,7 +129,7 @@ export async function getBreadcrumb(route, routeState, httpClient) {
         // TODO::Everything else is considered as monitor, we should break this.
         let monitorName = base;
         try {
-          const response = await httpClient.get(`../api/alerting/monitors/${base}`);
+          const response = await httpClient.get(`/alerting/monitors/${base}`);
           if (response.ok) {
             monitorName = response.resp.name;
           }

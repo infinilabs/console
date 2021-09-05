@@ -34,7 +34,7 @@ export const columns = [
     truncateText: true,
     textOnly: true,
     // width: '150px',
-    render: (name, item) => <EuiLink href={`${PLUGIN_NAME}#/monitors/${item.id}`}>{name}</EuiLink>,
+    render: (name, item) => <EuiLink href={`#/${PLUGIN_NAME}/monitors/${item.id}`}>{name}</EuiLink>,
   },
   {
     field: 'user',

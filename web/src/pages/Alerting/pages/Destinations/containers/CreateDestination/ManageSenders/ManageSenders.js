@@ -107,7 +107,7 @@ export default class ManageSenders extends React.Component {
       method: sender.method,
     };
     try {
-      const response = await httpClient.post(`../api/alerting/destinations/email_accounts`, {
+      const response = await httpClient.post(`/alerting/destinations/email_accounts`, {
         body: JSON.stringify(body),
       });
       if (!response.ok) {
@@ -138,7 +138,7 @@ export default class ManageSenders extends React.Component {
       method: updatedSender.method,
     };
     try {
-      const response = await httpClient.put(`../api/alerting/destinations/email_accounts/${id}`, {
+      const response = await httpClient.put(`/alerting/email_accounts/${id}`, {
         query: { ifSeqNo, ifPrimaryTerm },
         body: JSON.stringify(body),
       });
@@ -163,7 +163,7 @@ export default class ManageSenders extends React.Component {
     const { httpClient, notifications } = this.props;
     const { id } = sender;
     try {
-      const response = await httpClient.delete(`../api/alerting/destinations/email_accounts/${id}`);
+      const response = await httpClient.delete(`/alerting/email_accounts/${id}`);
       if (!response.ok) {
         this.setState({ failedSenders: true });
         notifications.toasts.addDanger({

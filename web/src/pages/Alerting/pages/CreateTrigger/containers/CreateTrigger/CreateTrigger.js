@@ -128,7 +128,7 @@ export default class CreateTrigger extends Component {
       _.set(monitorToExecute, 'inputs[0].search', searchRequest);
     }
     httpClient
-      .post('../api/alerting/monitors/_execute', { body: JSON.stringify(monitorToExecute) })
+      .post('/alerting/monitors/_execute', { body: JSON.stringify(monitorToExecute) })
       .then((resp) => {
         if (resp.ok) {
           this.setState({ executeResponse: resp.resp });

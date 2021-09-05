@@ -144,8 +144,8 @@ export default class Monitors extends Component {
       const params = { from, size, search, sortField, sortDirection, state };
       const queryParamsString = queryString.stringify(params);
       const { httpClient, history } = this.props;
-      history.replace({ ...this.props.location, search: queryParamsString });
-      const response = await httpClient.get('../api/alerting/monitors', { query: params });
+      //history.replace({ ...this.props.location, search: queryParamsString });
+      const response = await httpClient.get('/alerting/monitors', { query: params });
       if (response.ok) {
         const { monitors, totalMonitors } = response;
         this.setState({ monitors, totalMonitors });
@@ -182,7 +182,7 @@ export default class Monitors extends Component {
     const { httpClient, notifications } = this.props;
     const { id, ifSeqNo, ifPrimaryTerm, monitor } = item;
     return httpClient
-      .put(`../api/alerting/monitors/${id}`, {
+      .put(`/alerting/monitors/${id}`, {
         query: { ifSeqNo, ifPrimaryTerm },
         body: JSON.stringify({ ...monitor, ...update }),
       })
@@ -199,7 +199,7 @@ export default class Monitors extends Component {
     const { httpClient, notifications } = this.props;
     const { id, version } = item;
     return httpClient
-      .delete(`../api/alerting/monitors/${id}`, { query: { version } })
+      .delete(`/alerting/monitors/${id}`, { query: { version } })
       .then((resp) => {
         if (!resp.ok) {
           backendErrorNotification(notifications, 'delete', 'monitor', resp.resp);
@@ -249,7 +249,7 @@ export default class Monitors extends Component {
 
     const promises = Object.entries(monitorAlerts).map(([monitorId, alerts]) =>
       httpClient
-        .post(`../api/alerting/monitors/${monitorId}/_acknowledge/alerts`, {
+        .post(`/alerting/monitors/${monitorId}/_acknowledge/alerts`, {
           body: JSON.stringify({ alerts }),
         })
         .then((resp) => {
@@ -321,7 +321,7 @@ export default class Monitors extends Component {
 
     const { httpClient, notifications } = this.props;
 
-    const response = await httpClient.get('../api/alerting/alerts', { query: params });
+    const response = await httpClient.get('/alerting/alerts', { query: params });
 
     if (response.ok) {
       const { alerts, totalAlerts } = response;

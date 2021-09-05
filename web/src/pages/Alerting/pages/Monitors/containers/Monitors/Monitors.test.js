@@ -160,7 +160,7 @@ describe('Monitors', () => {
 
     expect(updateMonitor).toHaveBeenCalled();
     expect(httpClientMock.put).toHaveBeenCalled();
-    expect(httpClientMock.put).toHaveBeenCalledWith(`../api/alerting/monitors/random_id`, {
+    expect(httpClientMock.put).toHaveBeenCalledWith(`/alerting/monitors/random_id`, {
       query: { ifSeqNo: 17, ifPrimaryTerm: 20 },
       body: JSON.stringify({ ...monitor, name: 'UNIQUE_NAME' }),
     });

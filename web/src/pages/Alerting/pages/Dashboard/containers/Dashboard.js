@@ -185,7 +185,7 @@ export default class Dashboard extends Component {
       location.search;
       const { httpClient, history, notifications } = this.props;
       history.replace({ ...this.props.location, search: queryParamsString });
-      httpClient.get(httpClient.getServerBasePath()+'/alerting/alerts', { query: params }).then((resp) => {
+      httpClient.get('/alerting/alerts', { query: params }).then((resp) => {
         if (resp.ok) {
           const { alerts, totalAlerts } = resp;
           this.setState({
@@ -218,7 +218,7 @@ export default class Dashboard extends Component {
 
     const promises = Object.entries(monitorAlerts).map(([monitorId, alerts]) =>
       httpClient
-        .post(`../api/alerting/monitors/${monitorId}/_acknowledge/alerts`, {
+        .post(`/alerting/monitors/${monitorId}/_acknowledge/alerts`, {
           body: JSON.stringify({ alerts }),
         })
         .then((resp) => {

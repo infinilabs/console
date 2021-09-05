@@ -119,7 +119,7 @@ export default class ManageEmailGroups extends React.Component {
       emails: emailGroup.emails.map((email) => ({ email: email.label })),
     };
     try {
-      const response = await httpClient.post(`../api/alerting/destinations/email_groups`, {
+      const response = await httpClient.post(`/alerting/destinations/email_groups`, {
         body: JSON.stringify(body),
       });
       if (!response.ok) {
@@ -147,7 +147,7 @@ export default class ManageEmailGroups extends React.Component {
       emails: updatedEmailGroup.emails.map((email) => ({ email: email.label })),
     };
     try {
-      const response = await httpClient.put(`../api/alerting/destinations/email_groups/${id}`, {
+      const response = await httpClient.put(`/alerting/email_groups/${id}`, {
         query: { ifSeqNo, ifPrimaryTerm },
         body: JSON.stringify(body),
       });
@@ -172,7 +172,7 @@ export default class ManageEmailGroups extends React.Component {
     const { httpClient, notifications } = this.props;
     const { id } = emailGroup;
     try {
-      const response = await httpClient.delete(`../api/alerting/destinations/email_groups/${id}`);
+      const response = await httpClient.delete(`/alerting/email_groups/${id}`);
       if (!response.ok) {
         this.setState({ failedEmailGroups: true });
         notifications.toasts.addDanger({

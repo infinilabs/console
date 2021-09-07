@@ -50,12 +50,12 @@ export function IndexHeader({
 }: IndexHeaderProps) {
   return (
     <EuiFlexGroup justifyContent="spaceBetween" alignItems="center">
-      <EuiFlexItem>
+      {/* <EuiFlexItem>
         <EuiTitle>
           <h1 data-test-subj="indexPatternTitle">{indexPattern.viewName}</h1>
         </EuiTitle>
-      </EuiFlexItem>
-      <EuiFlexItem grow={false}>
+      </EuiFlexItem> */}
+      <EuiFlexItem grow={false} style={{marginLeft:'auto'}}>
         <EuiFlexGroup responsive={false}>
           {defaultIndex !== indexPattern.id && setDefault && (
             <EuiFlexItem>

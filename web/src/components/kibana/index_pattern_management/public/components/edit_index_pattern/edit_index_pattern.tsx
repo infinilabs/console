@@ -186,14 +186,14 @@ export const EditIndexPattern = withRouter(
       <PageHeaderWrapper title={indexPattern.viewName} content={content} extraContent={extraContent}>
         <EuiPanel paddingSize={'l'}>
           <div data-test-subj="editIndexPattern" role="region" aria-label={headingAriaLabel}>
-            {/* <IndexHeader
+            <IndexHeader
               indexPattern={indexPattern}
               setDefault={setDefaultPattern}
               refreshFields={refreshFields}
               deleteIndexPatternClick={removePattern}
               defaultIndex={defaultIndex}
-            /> */}
-            <EuiSpacer size="s" />
+            />
+            {/* <EuiSpacer size="s" />
             {showTagsSection && (
               <EuiFlexGroup wrap>
                 {Boolean(indexPattern.timeFieldName) && (
@@ -207,8 +207,8 @@ export const EditIndexPattern = withRouter(
                   </EuiFlexItem>
                 ))}
               </EuiFlexGroup>
-            )}
-            <EuiSpacer size="m" />
+            )} */}
+            {/* <EuiSpacer size="m" />
             <EuiText>
               <p>
                 当前页面列出匹配 <strong>{indexPattern.title}</strong> 索引的所有字段，字段类型为 Elasticsearch 定义类型。 若需要更改类型，请使用 Elasticsearch{' '}
@@ -220,7 +220,7 @@ export const EditIndexPattern = withRouter(
                   {mappingAPILink}
                 </EuiLink>
               </p>
-            </EuiText>
+            </EuiText> */}
             {conflictedFields.length > 0 && (
               <>
                 <EuiSpacer />
@@ -229,7 +229,7 @@ export const EditIndexPattern = withRouter(
                 </EuiCallOut>
               </>
             )}
-            <EuiSpacer />
+            {/* <EuiSpacer /> */}
             <Tabs
               indexPattern={indexPattern}
               saveIndexPattern={data.indexPatterns.updateSavedObject.bind(data.indexPatterns)}

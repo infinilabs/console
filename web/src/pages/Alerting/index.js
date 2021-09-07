@@ -32,7 +32,7 @@ const notifications = {
   }
 }
 
-const AlertingMain = React.memo(Main)
+// const AlertingMain = React.memo(Main)
 
 const AlertingUI =  (props)=>{
   if(!props.selectedCluster.id){
@@ -49,12 +49,12 @@ const AlertingUI =  (props)=>{
   }, [props.history])
 
   return  (
-    <CoreContext.Provider
+    <CoreContext.Provider key={props.selectedCluster.id}
         value={{ http: httpClient, isDarkMode, notifications: notifications }}
       >
         <Router history={history}>
           <div style={{background:'#fff'}}>
-          <AlertingMain title="Alerting" {...props} />
+          <Main title="Alerting" {...props} />
           </div>
         </Router>
     </CoreContext.Provider>

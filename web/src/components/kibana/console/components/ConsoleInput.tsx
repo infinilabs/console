@@ -106,7 +106,7 @@ const ConsoleInputUI = ({clusterID, initialText}:ConsoleInputProps) => {
     editorInstanceRef.current = senseEditor;
     setInputEditor(senseEditor);
     senseEditor.update(initialText || DEFAULT_INPUT_VALUE);
-    applyCurrentSettings(senseEditor!.getCoreEditor(), {fontSize:14, wrapMode: true,});
+    // applyCurrentSettings(senseEditor!.getCoreEditor(), {fontSize:14, wrapMode: true,});
 
     function setupAutosave() {
       let timer: number;

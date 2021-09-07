@@ -15,7 +15,7 @@ export default {
   'alert.dashboard.severity-options.all': '所有告警级别',
   'alert.dashboard.state-options.all': '所有状态',
   'alert.dashboard.state-options.active': '告警中',
-  'alert.dashboard.state-options.acknowledged': '已知晓',
+  'alert.dashboard.state-options.acknowledged': '已响应',
   'alert.dashboard.state-options.completed': '已恢复',
   'alert.dashboard.state-options.error': '错误',
   'alert.dashboard.state-options.deleted': '已删除',
@@ -27,7 +27,7 @@ export default {
   'alert.dashboard.table.columns.trigger_name': '触发器名称',
   'alert.dashboard.table.columns.severity': '告警级别',
   'alert.dashboard.table.columns.state': '状态',
-  'alert.dashboard.table.columns.acknowledged_time': '确认时间',
+  'alert.dashboard.table.columns.acknowledged_time': '响应时间',
 
   'alert.monitor': '监控管理',
   'alert.monitor.self': '监控项',

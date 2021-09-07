@@ -20,6 +20,7 @@ web:
 elastic:
     elasticsearch: default
     enabled: true
+    remote_configs: true
     store:
       enabled: true
     monitoring:
@@ -29,7 +30,6 @@ elastic:
       init_template: true
       template_name: ".infini-search-center"
       index_prefix: ".infini-search-center_"
-      #    load_remote_elasticsearch_configs: true
 
 search-center:
   ui_path: .public

@@ -68,7 +68,7 @@ export const RequestStatusBar: FunctionComponent<Props> = ({
   let content: React.ReactNode = null;
   const clusterContent = (<EuiFlexItem grow={false} style={{marginRight:'auto'}}>
   <EuiBadge>
-    {selectedCluster.endpoint}&nbsp;-&nbsp;{selectedCluster.version}
+    {selectedCluster.host}&nbsp;-&nbsp;{selectedCluster.version}
   </EuiBadge>
 </EuiFlexItem>);
 

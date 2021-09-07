@@ -58,6 +58,7 @@ export default {
           name: item.name,
           id: item.id,
           endpoint: item.endpoint,
+          host: item.host,
           version: item.version,
         };
       })
@@ -131,10 +132,10 @@ export default {
       if(pathname && global.selectedClusterID){
         const newPart = `/elasticsearch/${global.selectedClusterID}/`;
         if(!pathname.includes('elasticsearch')){
-          history.replace(pathname+newPart+search)
+          history.replace(pathname+newPart+ (search || ''))
         }else{
           const newPath = pathname.replace(/\/elasticsearch\/(\w+)\/?/, newPart);
-          history.replace(newPath+search)
+          history.replace(newPath+(search || ''))
         }
       }
     },

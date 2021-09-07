@@ -93,8 +93,8 @@ class Index extends  React.Component {
     }
   },{
     title: '集群地址',
-    dataIndex: 'endpoint',
-    key: 'endpoint',
+    dataIndex: 'host',
+    key: 'host',
   },
   {
       title: '监控启用状态',

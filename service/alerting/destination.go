@@ -445,7 +445,6 @@ func GetEmailAccounts(w http.ResponseWriter, req *http.Request, ps httprouter.Pa
 
 	reqUrl := fmt.Sprintf("%s/%s/_alerting/destinations/email_accounts/_search", conf.Endpoint, API_PREFIX)
 	res, err := doRequest(reqUrl, http.MethodPost, nil, reqBody)
-	//TODO to handle api error in doRequest function
 	if err != nil {
 		writeError(w, err)
 		return
@@ -507,7 +506,6 @@ func GetEmailAccount(w http.ResponseWriter, req *http.Request, ps httprouter.Par
 		writeError(w, err)
 		return
 	}
-	//TODO error handle: check whether resBody has contains field error
 
 	writeJSON(w, IfaceMap{
 		"ok": true,
@@ -703,8 +701,8 @@ func GetEmailGroups(w http.ResponseWriter, req *http.Request, ps httprouter.Para
 				if ms, ok :=  source.(map[string]interface{}); ok {
 					assignTo(newItem, ms)
 				}
-				newItem["ifSeqNo"] = queryValue(emailGroup, "seq_no", 0)
-				newItem["ifPrimaryTerm"] = queryValue(emailGroup, "primary_term", 0)
+				newItem["ifSeqNo"] = queryValue(emailGroup, "_seq_no", 0)
+				newItem["ifPrimaryTerm"] = queryValue(emailGroup, "_primary_term", 0)
 				emailGroups = append(emailGroups, newItem)
 			}
 		}
@@ -716,5 +714,44 @@ func GetEmailGroups(w http.ResponseWriter, req *http.Request, ps httprouter.Para
 	}, http.StatusOK)
 }
 
+func GetEmailGroup(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	id := ps.ByName("id")
+	conf := elastic.GetConfig(id)
+	if conf == nil {
+		writeError(w, errors.New("cluster not found"))
+		return
+	}
 
+	emailAccountId := ps.ByName("emailGroupId")
+
+	reqUrl := fmt.Sprintf("%s/%s/_alerting/destinations/email_groups/%s", conf.Endpoint, API_PREFIX, emailAccountId)
+	res, err := doRequest(reqUrl, http.MethodGet,nil, req.Body)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+
+	var resBody = IfaceMap{}
+	err = decodeJSON(res.Body, &resBody)
+	res.Body.Close()
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	emailGroup := queryValue(resBody, "email_group", nil)
+	if emailGroup == nil {
+		writeJSON(w, IfaceMap{
+			"ok": false,
+		}, http.StatusOK)
+		return
+	}
+
+	writeJSON(w, IfaceMap{
+		"ok": true,
+		"resp": emailGroup,
+		"ifSeqNo":  queryValue(resBody, "_seq_no", 0),
+		"ifPrimaryTerm": queryValue(resBody, "_primary_term", 0),
+	}, http.StatusOK)
+
+}
 

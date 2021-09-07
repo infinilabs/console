@@ -178,7 +178,8 @@ export default class MonitorDetails extends Component {
   };
 
   onCloseTrigger = () => {
-    this.props.history.push({ ...this.props.location, search: '' });
+    const {pathname} = this.props.location; //important change
+    this.props.history.push({ pathname, search: '' });
     this.setState({ triggerToEdit: null });
   };
 
@@ -301,7 +302,7 @@ export default class MonitorDetails extends Component {
               </h1>
             </EuiTitle>
 
-            {detector ? (
+            {/* {detector ? (
               <EuiFlexItem grow={false}>
                 <EuiText size="s">
                   Created from detector:{' '}
@@ -310,7 +311,7 @@ export default class MonitorDetails extends Component {
                   </EuiLink>
                 </EuiText>
               </EuiFlexItem>
-            ) : null}
+            ) : null} */}
           </EuiFlexItem>
 
           <EuiFlexItem grow={false}>

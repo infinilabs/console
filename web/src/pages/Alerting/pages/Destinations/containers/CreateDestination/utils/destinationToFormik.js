@@ -62,7 +62,7 @@ const getSender = async (httpClient, id) => {
 
 const getEmailGroup = async (httpClient, id) => {
   try {
-    const response = await httpClient.get(`/alerting/destinations/email_groups/${id}`);
+    const response = await httpClient.get(`/alerting/email_groups/${id}`);
     if (response.ok) {
       return response.resp;
     }

@@ -49,6 +49,7 @@ func Init(cfg *config.AppConfig) {
 	ui.HandleUIMethod(api.POST, "/elasticsearch/:id/alerting/monitors", alerting.CreateMonitor)
 	ui.HandleUIMethod(api.POST, "/elasticsearch/:id/alerting/monitors/_execute", alerting.ExecuteMonitor)
 	ui.HandleUIMethod(api.DELETE, "/elasticsearch/:id/alerting/monitors/:monitorID", alerting.DeleteMonitor)
+	ui.HandleUIMethod(api.POST, "/elasticsearch/:id/alerting/_monitors/:monitorID/_acknowledge/alerts", alerting.AcknowledgeAlerts)
 	ui.HandleUIMethod(api.GET, "/elasticsearch/:id/alerting/_settings", alerting.GetSettings)
 	ui.HandleUIMethod(api.GET, "/elasticsearch/:id/alerting/destinations", alerting.GetDestinations)
 	ui.HandleUIMethod(api.POST, "/elasticsearch/:id/alerting/destinations", alerting.CreateDestination)
@@ -63,6 +64,7 @@ func Init(cfg *config.AppConfig) {
 	ui.HandleUIMethod(api.GET, "/elasticsearch/:id/alerting/destinations/email_groups", alerting.GetEmailGroups)
 	ui.HandleUIMethod(api.DELETE, "/elasticsearch/:id/alerting/email_groups/:emailGroupId", alerting.DeleteEmailGroup)
 	ui.HandleUIMethod(api.PUT, "/elasticsearch/:id/alerting/email_groups/:emailGroupId", alerting.UpdateEmailGroup)
+	ui.HandleUIMethod(api.GET, "/elasticsearch/:id/alerting/email_groups/:emailGroupId", alerting.GetEmailGroup)
 
 
 

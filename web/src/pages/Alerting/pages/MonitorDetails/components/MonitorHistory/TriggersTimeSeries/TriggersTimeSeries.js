@@ -96,7 +96,7 @@ class TriggersTimeSeries extends Component {
                               align={{ vertical: 'top', horizontal: 'auto' }}
                               value={hints[currentTrigger.name]}
                               format={formatTooltip}
-                              style={{ title: { fontWeight: 'bold' } }}
+                              style={{ title: { fontWeight: 'bold' }, backgroundColor: '#fff'}}
                             />
                           ) : null}
                         </FlexibleWidthXYPlot>

@@ -125,6 +125,7 @@ export class ScopedHistory<HistoryLocationState = unknown>
     if (typeof pathOrLocation === 'string') {
       this.parentHistory.push(this.prependBasePath(pathOrLocation), state);
     } else {
+      !pathOrLocation.key && (pathOrLocation.key = pathOrLocation.pathname+(pathOrLocation.search||''))
       this.parentHistory.push(this.prependBasePath(pathOrLocation));
     }
   };

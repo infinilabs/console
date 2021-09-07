@@ -249,7 +249,7 @@ export default class Monitors extends Component {
 
     const promises = Object.entries(monitorAlerts).map(([monitorId, alerts]) =>
       httpClient
-        .post(`/alerting/monitors/${monitorId}/_acknowledge/alerts`, {
+        .post(`/alerting/_monitors/${monitorId}/_acknowledge/alerts`, {
           body: JSON.stringify({ alerts }),
         })
         .then((resp) => {

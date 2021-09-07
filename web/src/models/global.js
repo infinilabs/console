@@ -126,15 +126,15 @@ export default {
       });
     },
     *rewriteURL({payload}, {select}){
-      const {pathname, history} = payload;
+      const {pathname, history, search} = payload;
       const global = yield select(state=>state.global);
       if(pathname && global.selectedClusterID){
         const newPart = `/elasticsearch/${global.selectedClusterID}/`;
         if(!pathname.includes('elasticsearch')){
-          history.replace(pathname+newPart)
+          history.replace(pathname+newPart+search)
         }else{
           const newPath = pathname.replace(/\/elasticsearch\/(\w+)\/?/, newPart);
-          history.replace(newPath)
+          history.replace(newPath+search)
         }
       }
     },
@@ -230,14 +230,17 @@ export default {
         if(pathname.startsWith("/system")){
           clusterVisible = false;
         }else{
-          if(!pathname.includes('elasticsearch')){
-            dispatch({
-              type: 'rewriteURL',
-              payload: {
-                pathname,
-                history,
-              }
-            })
+          if(!pathname.startsWith("/exception") && pathname != '/alerting'){
+            if(!pathname.includes('elasticsearch')){
+              dispatch({
+                type: 'rewriteURL',
+                payload: {
+                  pathname,
+                  history,
+                  search,
+                }
+              })
+            }
           }
         }
         dispatch({

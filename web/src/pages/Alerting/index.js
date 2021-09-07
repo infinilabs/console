@@ -32,6 +32,8 @@ const notifications = {
   }
 }
 
+const AlertingMain = React.memo(Main)
+
 const AlertingUI =  (props)=>{
   if(!props.selectedCluster.id){
     return null;
@@ -52,12 +54,13 @@ const AlertingUI =  (props)=>{
       >
         <Router history={history}>
           <div style={{background:'#fff'}}>
-          <Main title="Alerting" {...props} />
+          <AlertingMain title="Alerting" {...props} />
           </div>
         </Router>
     </CoreContext.Provider>
   )
 }
+
 
 export default connect(({
   global

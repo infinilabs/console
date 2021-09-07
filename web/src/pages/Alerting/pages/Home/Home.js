@@ -97,7 +97,7 @@ export default class Home extends Component {
         <div style={{ padding: '25px 25px' }}>
           <Switch>
             <Route
-              exact
+              // exact
               path="/dashboard"
               render={(props) => (
                 <Dashboard {...props} httpClient={httpClient} notifications={notifications} />
@@ -121,7 +121,15 @@ export default class Home extends Component {
                 />
               )}
             />
-            <Redirect to="/dashboard" />
+             <Route
+                exact
+                path="/"
+                render={() => {
+                    return (
+                      <Redirect to="/dashboard" /> 
+                    )
+                }}
+              />
           </Switch>
         </div>
       </div>

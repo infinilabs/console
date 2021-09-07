@@ -165,11 +165,11 @@ class CreateDestination extends React.Component {
 
   handleCancel = () => {
     const { edit, history } = this.props;
-    if (edit) {
-      history.goBack();
-    } else {
+    // if (edit) {
+    //   history.goBack();
+    // } else {
       history.push('/destinations');
-    }
+    // }
   };
 
   render() {

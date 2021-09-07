@@ -443,12 +443,48 @@ func UpdateMonitor(w http.ResponseWriter, req *http.Request, ps httprouter.Param
 		writeError(w, err)
 		return
 	}
-	//TODO error handle: check whether resBody has contains field error
 
 	writeJSON(w, IfaceMap{
 		"ok": true,
 		"version": queryValue(resBody, "_version", ""),
 		"id": queryValue(resBody, "_id", ""),
+	}, http.StatusOK)
+
+}
+
+func AcknowledgeAlerts(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	id := ps.ByName("id")
+	conf := elastic.GetConfig(id)
+	if conf == nil {
+		writeError(w, errors.New("cluster not found"))
+		return
+	}
+
+	monitorId := ps.ByName("monitorID")
+
+	reqUrl := fmt.Sprintf("%s/%s/_alerting/monitors/%s/_acknowledge/alerts", conf.Endpoint, API_PREFIX, monitorId)
+	res, err := doRequest(reqUrl, http.MethodPost,nil, req.Body)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+
+	var resBody = IfaceMap{}
+	err = decodeJSON(res.Body, &resBody)
+	res.Body.Close()
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+
+	var isOk = false
+	if failed, ok := resBody["failed"].([]interface{}); ok && len(failed) == 0 {
+		isOk = true
+	}
+
+	writeJSON(w, IfaceMap{
+		"ok": isOk,
+		"resp": resBody,
 	}, http.StatusOK)
 
 }

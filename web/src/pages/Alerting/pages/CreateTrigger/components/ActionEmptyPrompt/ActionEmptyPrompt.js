@@ -22,7 +22,7 @@ const actionEmptyText = 'Add an action to perform when this trigger is triggered
 const destinationEmptyText =
   'There are no existing destinations. Add a destinations to create an action';
 const createDestinationButton = (
-  <EuiButton fill href={`${PLUGIN_NAME}#/create-destination`}>
+  <EuiButton fill href={`#/${PLUGIN_NAME}/create-destination`}>
     Add destination
   </EuiButton>
 );

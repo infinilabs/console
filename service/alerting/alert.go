@@ -39,7 +39,7 @@ func GetAlerts (w http.ResponseWriter, req *http.Request, ps httprouter.Params){
 		sortField = getQueryParam(req, "sortField", "start_time")
 		severityLevel = getQueryParam(req, "severityLevel", "ALL")
 		alertState = getQueryParam(req, "alertState", "ALL")
-		//monitorIds = getQueryParam(req, "monitorIds")
+		monitorIds = req.URL.Query()["monitorIds"]
 		params = map[string]string{
 			"startIndex": from,
 			"size": size,
@@ -68,6 +68,9 @@ func GetAlerts (w http.ResponseWriter, req *http.Request, ps httprouter.Params){
 		params["sortOrder"] = sortDirection
 		params["missing"] = "_last"
 	}
+	if len(monitorIds) > 0{
+		params["monitorId"] = monitorIds[0]
+	}
 
 	if clearSearch := strings.TrimSpace(search); clearSearch != ""{
 		searches := strings.Split(clearSearch, " ")
@@ -93,9 +96,10 @@ func GetAlerts (w http.ResponseWriter, req *http.Request, ps httprouter.Params){
 	if ds, ok := rawAlerts.([]interface{}); ok {
 		for _, alert := range ds {
 			if alertItem, ok := alert.(map[string]interface{}); ok {
-
 				alertItem["version"] = queryValue(alertItem, "alert_version", "")
-				alertItem["id"] = queryValue(alertItem, "alert_id", "")
+				if  queryValue(alertItem, "id", nil) == nil {
+					alertItem["id"] = queryValue(alertItem, "alert_id", nil)
+				}
 				alerts = append(alerts, alertItem)
 			}
 		}

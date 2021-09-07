@@ -30,7 +30,7 @@ const renderTime = (time) => {
 
 const stateOptions = {
   'ALL': formatMessage({ id: 'alert.dashboard.state-options.all' }),
-  [ALERT_STATE.ACTIVE]: formatMessage({ id: 'alert.dashboard.state-options.active' }),
+  [ALERT_STATE.ACTIVE]: <span style={{color:'red'}}>{formatMessage({ id: 'alert.dashboard.state-options.active' })}</span>,
   [ALERT_STATE.ACKNOWLEDGED]: formatMessage({ id: 'alert.dashboard.state-options.acknowledged' }),
   [ALERT_STATE.COMPLETED]: formatMessage({ id: 'alert.dashboard.state-options.completed' }),
   [ALERT_STATE.ERROR]: formatMessage({ id: 'alert.dashboard.state-options.error' }),

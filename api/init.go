@@ -38,6 +38,7 @@ func Init(cfg *config.AppConfig) {
 	ui.HandleUIMethod(api.POST, path.Join(pathPrefix, "index/:index"), handler.HandleCreateIndexAction)
 
 	//new api
+	ui.HandleUIMethod(api.GET, "/elasticsearch/:id/alerting/overview", alerting.GetAlertOverview)
 	ui.HandleUIMethod(api.POST, "/elasticsearch/:id/alerting/destinations/email_accounts", alerting.CreateEmailAccount)
 	ui.HandleUIMethod(api.PUT, "/elasticsearch/:id/alerting/email_accounts/:emailAccountId", alerting.UpdateEmailAccount)
 	ui.HandleUIMethod(api.DELETE, "/elasticsearch/:id/alerting/email_accounts/:emailAccountId", alerting.DeleteEmailAccount)

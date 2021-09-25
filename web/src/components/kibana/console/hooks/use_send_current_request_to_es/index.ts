@@ -118,5 +118,5 @@ export const useSendCurrentRequestToES = () => {
         });
       }
     }
-  }, [dispatch, history]);
+  }, [dispatch, history, clusterID]);
 };

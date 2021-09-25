@@ -28,9 +28,9 @@ func getQueryParam(req *http.Request, key string, or ...string) string {
 func getAlertIndexName(typ string) string {
 	switch  typ{
 	case INDEX_ALL_ALERTS:
-			return fmt.Sprintf("%s,%s", orm.GetIndexName(alerting.AlertHistory{}),  orm.GetIndexName(alerting.Alert{}))
+			return fmt.Sprintf("%s,%s", orm.GetIndexName(alerting.AlertingHistory{}),  orm.GetIndexName(alerting.Alert{}))
 	case INDEX_ALERT_HISTORY:
-		return orm.GetIndexName(alerting.AlertHistory{})
+		return orm.GetIndexName(alerting.AlertingHistory{})
 	}
 	return orm.GetIndexName(alerting.Alert{})
 }

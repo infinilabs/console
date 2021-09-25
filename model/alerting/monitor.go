@@ -18,7 +18,7 @@ type MonitorInput struct {
 
 type MonitorSearch struct {
 	Indices []string `json:"indices" elastic_mapping:"indices:{type:text,fields: {keyword: {type: keyword, ignore_above: 256}}}"`
-	Query map[string]interface{} `json:"query" elastic_mapping:"query:{type:object,enabled:false}}"`
+	Query map[string]interface{} `json:"query" elastic_mapping:"query:{type:object,enabled:false}"`
 }
 
 type Cron struct {
@@ -57,7 +57,7 @@ type Trigger struct {
 	ID string `json:"id"`
 	Severity string `json:"severity" elastic_mapping:"severity:{type:keyword}"`
 	Name string `json:"name" elastic_mapping:"name:{type:text,fields: {keyword: {type: keyword, ignore_above: 256}}}"`
-	Condition map[string]interface{} `json:"condition" elastic_mapping:"condition:{type:object, enable:false}"`
+	Condition map[string]interface{} `json:"condition" elastic_mapping:"condition:{type:object, enabled:false}"`
 	Actions []Action `json:"actions" elastic_mapping:"actions"`
 	MinTimeBetweenExecutions int `json:"min_time_between_executions" elastic_mapping:"min_time_between_executions:{type:integer}"`
 }

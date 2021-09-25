@@ -6,13 +6,22 @@ import (
 	"net/http"
 )
 
-func GetAlertMetric(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-
+func GetAlertOverview(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	alertDayMetricData, err := getLastAlertDayCount()
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, IfaceMap{
+		"metrics": IfaceMap{
+			"alert_day": alertDayMetricData,
+		},
+	}, http.StatusOK)
 }
 
-func getLastAlertDayCount() error{
+func getLastAlertDayCount() (interface{}, error){
 	conf := getDefaultConfig()
-	reqUrl := fmt.Sprintf("%s/%s", conf.Endpoint, getAlertIndexName(INDEX_ALL_ALERTS))
+	reqUrl := fmt.Sprintf("%s/%s/_search", conf.Endpoint, getAlertIndexName(INDEX_ALL_ALERTS))
 	reqBody := IfaceMap{
 		"size": 0,
 		"query": IfaceMap{
@@ -35,15 +44,16 @@ func getLastAlertDayCount() error{
 			},
 		},
 	}
+
 	res, err := doRequest(reqUrl, http.MethodGet, nil, reqBody)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	result := IfaceMap{}
 	defer res.Body.Close()
 	err = decodeJSON(res.Body, &result)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	buckets := queryValue(result, "aggregations.alert_day_count.buckets", []interface{}{})
 	var metricData []interface{}
@@ -57,5 +67,5 @@ func getLastAlertDayCount() error{
 			}
 		}
 	}
-	return nil
+	return metricData, nil
 }

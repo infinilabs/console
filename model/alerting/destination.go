@@ -25,7 +25,7 @@ type Recipient struct {
 type CustomWebhook struct {
 	HeaderParams map[string]string `json:"header_params" elastic_mapping:"header_params:{type:object,enabled:false}"`
 	Host string `json:"host" elastic_mapping:"host:{type:text}"`
-	Method string `json:"method" elastic_mapping:"host:{type:keyword}"`
+	Method string `json:"method" elastic_mapping:"method:{type:keyword}"`
 	Password string `json:"password" elastic_mapping:"password:{type:text}"`
 	Path string `json:"path" elastic_mapping:"path:{type:keyword}"`
 	Port int `json:"port" elastic_mapping:"port:{type:integer}"`

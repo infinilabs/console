@@ -76,7 +76,7 @@ func main() {
 		orm.RegisterSchemaWithIndexName(elastic.IndexPattern{}, "view")
 		orm.RegisterSchemaWithIndexName(alerting.Config{}, "alerting-config")
 		orm.RegisterSchemaWithIndexName(alerting.Alert{}, "alerting-alerts")
-		orm.RegisterSchemaWithIndexName(alerting.AlertHistory{}, "alerting-alert-history")
+		orm.RegisterSchemaWithIndexName(alerting.AlertingHistory{}, "alerting-alert-history")
 		alertSrv.GetScheduler().Start()
 	})
 

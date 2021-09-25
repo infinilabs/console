@@ -18,6 +18,8 @@ type Alert struct {
 	TriggerName string `json:"trigger_name" elastic_mapping:"trigger_name:{type:text,fields:{keyword:{type:keyword,ignore_above:256}}}"`
 }
 
+type AlertingHistory Alert
+
 type ActionExecutionResult struct {
 	ActionID string `json:"action_id" elastic_mapping:"action_id:{type:keyword}"`
 	LastExecutionTime int64 `json:"last_execution_time" elastic_mapping:"last_execution_time:{type:date}"`

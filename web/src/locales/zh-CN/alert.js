@@ -81,6 +81,7 @@ export default {
 
   'alert.destination': '通知渠道',
   'alert.destination.self': '通知渠道',
+  'alert.destination.self-upper': '通知渠道',
   'alert.destination.destinations': '通知渠道管理',
   'alert.destination.actions': '操作',
   'alert.destination.actions.manager-email-senders': '管理邮件发送者',
@@ -96,6 +97,13 @@ export default {
   'alert.destination.type.chime': 'Amazon Chime',
   'alert.destination.table.columns.name': '渠道名称',
   'alert.destination.table.columns.type': '渠道类型',
+  'alert.destination.create.from.field.name': '名称',
+  'alert.destination.create.from.field.name.help-text': '指定渠道名称。',
+  'alert.destination.create.from.field.type': '类型',
+  'alert.destination.create.settings': '设置',
+  'alert.destination.create.settings.webhook-url': 'Webhook URL',
+  'alert.destination.create.settings.fullUrl.label': '通过 URL 定义端点',
+  'alert.destination.create.settings.attributes.label': '通过自定义属性 URL 定义端点',
 
   'alert.trigger': '触发器',
 };

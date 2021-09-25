@@ -80,6 +80,7 @@ export default {
 
   'alert.destination': 'Destinations',
   'alert.destination.self': 'destination',
+  'alert.destination.self-upper': 'Destination',
   'alert.destination.destinations': 'Destinations',
   'alert.destination.actions': 'Actions',
   'alert.destination.actions.manager-email-senders': 'Manage email senders',
@@ -95,6 +96,13 @@ export default {
   'alert.destination.type.chime': 'Amazon Chime',
   'alert.destination.table.columns.name': 'Destination name',
   'alert.destination.table.columns.type': 'Destination type',
+  'alert.destination.create.from.field.name': 'Name',
+  'alert.destination.create.from.field.name.help-text': 'Specify a name of the destination.',
+  'alert.destination.create.from.field.type': 'Type',
+  'alert.destination.create.settings': 'Settings',
+  'alert.destination.create.settings.webhook-url': 'Webhook URL',
+  'alert.destination.create.settings.fullUrl.label': 'Define endpoint by URL',
+  'alert.destination.create.settings.attributes.label': 'Define endpoint by custom attributes URL',
 
   'alert.trigger': 'Triggers',
   'alert.trigger.self': 'trigger',

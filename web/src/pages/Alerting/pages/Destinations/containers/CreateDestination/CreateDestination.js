@@ -38,6 +38,7 @@ import { Webhook, CustomWebhook, Email } from '../../components/createDestinatio
 import { SubmitErrorHandler } from '../../../../utils/SubmitErrorHandler';
 import { getAllowList } from '../../utils/helpers';
 import { backendErrorNotification } from '../../../../utils/helpers';
+import { formatMessage } from 'umi/locale';
 
 const destinationType = {
   [DESTINATION_TYPE.SLACK]: (props) => <Webhook {...props} />,
@@ -186,10 +187,10 @@ class CreateDestination extends React.Component {
           {({ values, handleSubmit, isSubmitting, errors, isValid }) => (
             <Fragment>
               <EuiTitle size="l">
-                <h1>{edit ? 'Edit' : 'Add'} destination</h1>
+                <h1>{edit ? formatMessage({ id: 'form.button.edit' }) : formatMessage({ id: 'form.button.add' })} {formatMessage({ id: 'alert.destination.self' })}</h1>
               </EuiTitle>
               <EuiSpacer size="m" />
-              <ContentPanel title="Destination" titleSize="s" bodyStyles={{ padding: 'initial' }}>
+              <ContentPanel title={formatMessage({ id: 'alert.destination.self-upper' })} titleSize="s" bodyStyles={{ padding: 'initial' }}>
                 <div style={{ padding: '0px 10px' }}>
                   <FormikFieldText
                     name="name"
@@ -201,8 +202,8 @@ class CreateDestination extends React.Component {
                       ),
                     }}
                     rowProps={{
-                      label: 'Name',
-                      helpText: 'Specify a name of the destination.',
+                      label: formatMessage({ id: 'alert.destination.create.from.field.name' }),
+                      helpText: formatMessage({ id: 'alert.destination.create.from.field.name.help-text' }),
                       style: { paddingLeft: '10px' },
                       isInvalid,
                       error: hasError,
@@ -225,7 +226,7 @@ class CreateDestination extends React.Component {
                       validate: validateDestinationType(httpClient, notifications),
                     }}
                     rowProps={{
-                      label: 'Type',
+                      label: formatMessage({ id: 'alert.destination.create.from.field.type' }),
                       style: { paddingLeft: '10px' },
                       isInvalid,
                       error: hasError,
@@ -237,7 +238,7 @@ class CreateDestination extends React.Component {
                     }}
                   />
                   <EuiSpacer size="m" />
-                  <SubHeader title={<h4>Settings</h4>} description={''} />
+                  <SubHeader title={<h4>{formatMessage({ id: 'alert.destination.create.settings' })}</h4>} description={''} />
                   <EuiSpacer size="m" />
                   {destinationType[values.type]({
                     httpClient,
@@ -251,11 +252,11 @@ class CreateDestination extends React.Component {
               <EuiSpacer />
               <EuiFlexGroup alignItems="center" justifyContent="flexEnd">
                 <EuiFlexItem grow={false}>
-                  <EuiButtonEmpty onClick={this.handleCancel}>Cancel</EuiButtonEmpty>
+                  <EuiButtonEmpty onClick={this.handleCancel}>{formatMessage({ id: 'form.button.cancel' })}</EuiButtonEmpty>
                 </EuiFlexItem>
                 <EuiFlexItem grow={false}>
                   <EuiButton fill onClick={handleSubmit} isLoading={isSubmitting}>
-                    {edit ? 'Update' : 'Create'}
+                    {edit ? formatMessage({ id: 'form.button.update' }) : formatMessage({ id: 'form.button.create' })}
                   </EuiButton>
                 </EuiFlexItem>
               </EuiFlexGroup>

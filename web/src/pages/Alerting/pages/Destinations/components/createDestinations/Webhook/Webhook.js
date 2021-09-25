@@ -17,6 +17,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { FormikFieldText } from '../../../../../components/FormControls';
 import { hasError, isInvalid, required } from '../../../../../utils/validate';
+import { formatMessage } from 'umi/locale';
 
 //TODO:: verify the Regex for all the cases based on what backend support
 const validateURL = (value) => {
@@ -34,7 +35,7 @@ const Webhook = ({ type }) => {
       formRow
       fieldProps={{ validate: validateURL }}
       rowProps={{
-        label: 'Webhook URL:',
+        label: formatMessage({ id: 'alert.destination.create.settings.webhook-url' }),
         style: { paddingLeft: '10px' },
         isInvalid,
         error: hasError,

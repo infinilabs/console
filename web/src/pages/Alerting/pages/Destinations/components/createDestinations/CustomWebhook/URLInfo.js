@@ -27,6 +27,7 @@ import { URL_TYPE } from '../../../containers/CreateDestination/utils/constants'
 import { formikInitialValues } from '../../../containers/CreateDestination/utils/constants';
 import { DESTINATION_TYPE } from '../../../utils/constants';
 import QueryParamsEditor from './QueryParamsEditor';
+import { formatMessage } from 'umi/locale';
 
 const propTypes = {
   type: PropTypes.string.isRequired,
@@ -48,7 +49,7 @@ const URLInfo = ({ type, values }) => {
           id: 'fullUrl',
           value: URL_TYPE.FULL_URL,
           checked: isUrlEnabled,
-          label: 'Define endpoint by URL',
+          label: formatMessage({ id: 'alert.destination.create.settings.fullUrl.label' }),
           onChange: (e, field, form) => {
             // Clear Custom URL if user switched to custom URL
             if (field.value === URL_TYPE.ATTRIBUTE_URL) {
@@ -107,7 +108,7 @@ const URLInfo = ({ type, values }) => {
           id: 'customUrl',
           value: URL_TYPE.ATTRIBUTE_URL,
           checked: !isUrlEnabled,
-          label: 'Define endpoint by custom attributes URL',
+          label: formatMessage({ id: 'alert.destination.create.settings.attributes.label' }),
           onChange: (e, field, form) => {
             // Clear Full URL if user switched to custom URL
             if (field.value === URL_TYPE.FULL_URL) {

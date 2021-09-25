@@ -71,6 +71,7 @@ export default {
   'form.button.search': '搜索',
   'form.button.new': '新建',
   'form.button.create': '创建',
+  'form.button.add': '添加',
   'form.button.edit': '编辑',
   'form.button.update': '更新',
   'form.button.delete': '删除',

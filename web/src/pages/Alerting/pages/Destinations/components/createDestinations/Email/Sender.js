@@ -19,6 +19,7 @@ import {
   FormikFieldText,
   FormikFieldNumber,
   FormikSelect,
+  FormikFieldPassword,
 } from '../../../../../components/FormControls';
 import { isInvalid, hasError } from '../../../../../utils/validate';
 import { validateEmail, validateHost, validatePort, validateSenderName } from './utils/validate';
@@ -101,6 +102,28 @@ const Sender = ({ sender, arrayHelpers, context, index, onDelete }) => {
             }}
           />
         </EuiFlexItem>
+        <EuiFlexItem grow={false}>
+          <FormikFieldPassword
+            name={`senders.${index}.password`}
+            formRow
+            // fieldProps={{ validate: validateEmail }}
+            rowProps={{
+              label: 'Email password',
+              isInvalid,
+              error: hasError,
+            }}
+            inputProps={{
+              placeholder: '',
+              onChange: (e, field, form) => {
+                field.onChange(e);
+                onSenderChange(index, sender, arrayHelpers);
+              },
+              isInvalid,
+            }}
+          />
+        </EuiFlexItem>
+      </EuiFlexGroup>
+      <EuiFlexGroup>
         <EuiFlexItem grow={false}>
           <FormikFieldText
             name={`senders.${index}.host`}

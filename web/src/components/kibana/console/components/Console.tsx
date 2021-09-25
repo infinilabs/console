@@ -91,7 +91,7 @@ const Console = (params:props) => {
   return ( <PanelContextProvider registry={registryRef.current}>
     <RequestContextProvider>
       <EditorContextProvider>
-          <ServicesContextProvider value={{ services: { history, storage, objectStorageClient, settings} }}>
+          <ServicesContextProvider value={{ services: { history, storage, objectStorageClient, settings}, clusterID: params.selectedCluster.id }}>
             <ConsoleWrapper {...params} />
           </ServicesContextProvider>
           </EditorContextProvider>

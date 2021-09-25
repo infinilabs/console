@@ -44,6 +44,7 @@ interface ContextServices {
 
 export interface ContextValue {
   services: ContextServices;
+  clusterID: string;
 }
 
 interface ContextProps {

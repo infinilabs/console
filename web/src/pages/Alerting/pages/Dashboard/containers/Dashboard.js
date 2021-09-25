@@ -16,7 +16,7 @@
 import React, { Component } from 'react';
 import _ from 'lodash';
 import queryString from 'query-string';
-import { EuiBasicTable, EuiButton, EuiHorizontalRule, EuiIcon } from '@elastic/eui';
+import { EuiBasicTable, EuiButton, EuiHorizontalRule, EuiIcon,RIGHT_ALIGNMENT,EuiButtonIcon } from '@elastic/eui';
 
 import ContentPanel from '../../../components/ContentPanel';
 import DashboardEmptyPrompt from '../components/DashboardEmptyPrompt';
@@ -55,6 +55,21 @@ export default class Dashboard extends Component {
       sortField,
     } = this.getURLQueryParams();
 
+    const tableColumns = [...columns, {
+      align: RIGHT_ALIGNMENT,
+      width: '40px',
+      isExpander: true,
+      render: (item) => {
+        const {itemIdToExpandedRowMap} = this.state;
+        (
+        <EuiButtonIcon
+          onClick={() => toggleDetails(item)}
+          aria-label={itemIdToExpandedRowMap[item.id] ? 'Collapse' : 'Expand'}
+          iconType={itemIdToExpandedRowMap[item.id] ? 'arrowUp' : 'arrowDown'}
+        />
+      )},
+    }]
+
     this.state = {
       alerts: [],
       alertState,
@@ -67,6 +82,8 @@ export default class Dashboard extends Component {
       sortDirection,
       sortField,
       totalAlerts: 0,
+      itemIdToExpandedRowMap:{},
+      columns: tableColumns,
     };
   }
 
@@ -357,6 +374,8 @@ export default class Dashboard extends Component {
         <EuiHorizontalRule margin="xs" />
 
         <EuiBasicTable
+          itemIdToExpandedRowMap={this.state.itemIdToExpandedRowMap}
+          isExpandable={true}
           items={alerts}
           /*
            * If using just ID, doesn't update selectedItems when doing acknowledge
@@ -364,7 +383,7 @@ export default class Dashboard extends Component {
            * $id-$version will correctly remove selected items
            * */
           itemId={(item) => `${item.id}-${item.version}`}
-          columns={columns}
+          columns={this.state.columns}
           pagination={pagination}
           sorting={sorting}
           isSelectable={true}

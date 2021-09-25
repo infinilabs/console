@@ -166,6 +166,7 @@ const MonitorDatePicker = ({timeRange, commonlyUsedRanges, onChange, isLoading})
   
     return (
         <EuiSuperDatePicker
+            dateFormat= ''
           isLoading={isLoading}
           start={timeRange?.min}
           end={timeRange?.max}
@@ -318,13 +319,11 @@ class ClusterMonitor extends PureComponent {
         }
         const [from, to] = x;
         let timeRange = {
-            min: from,
-            max: to,
+            min: moment(from).toISOString(),
+            max: moment(to).toISOString(),
         }
         this.setState({
             timeRange: timeRange,
-            lastSeconds: 0,
-            pickerValue: [moment(from), moment(to)],
         }, () => {
             this.fetchData();
         });
@@ -374,6 +373,26 @@ class ClusterMonitor extends PureComponent {
 
         const commonlyUsedRanges =
         [
+            {
+                from: 'now-15m',
+                to: 'now',
+                display: '最近15分钟'
+            },
+            {
+            from: 'now-30m',
+            to: 'now',
+            display:  '最近30分钟'
+            },
+            {
+            from: 'now-1h',
+            to: 'now',
+            display: '最近一小时'
+            },
+            {
+            from: 'now-24h',
+            to: 'now',
+            display: '最近一天',
+            },
           {
             from: 'now/d',
             to: 'now/d',
@@ -383,26 +402,6 @@ class ClusterMonitor extends PureComponent {
             from: 'now/w',
             to: 'now/w',
             display: '这个星期'
-          },
-          {
-            from: 'now-15m',
-            to: 'now',
-            display: '最近15分钟'
-          },
-          {
-            from: 'now-30m',
-            to: 'now',
-            display:  '最近三十分钟'
-          },
-          {
-            from: 'now-1h',
-            to: 'now',
-            display: '最近一小时'
-          },
-          {
-            from: 'now-24h',
-            to: 'now',
-            display: '最近一天',
           },
           {
             from: 'now-7d',
@@ -503,7 +502,7 @@ class ClusterMonitor extends PureComponent {
                                 <div key={e} className={styles.vizChartContainer}>
                                     <Chart size={[, 200]} className={styles.vizChartItem}>
                                         <Settings theme={theme} showLegend legendPosition={Position.Top}
-                                                    // onBrushEnd={this.handleChartBrush}
+                                                    onBrushEnd={this.handleChartBrush}
                                                   tooltip={{
                                                       headerFormatter: disableHeaderFormat
                                                           ? undefined

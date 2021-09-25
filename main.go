@@ -11,6 +11,8 @@ import (
 	"infini.sh/framework/modules"
 	"infini.sh/search-center/config"
 	"infini.sh/search-center/model"
+	"infini.sh/search-center/model/alerting"
+	alertSrv "infini.sh/search-center/service/alerting"
 )
 
 var appConfig *config.AppConfig
@@ -72,6 +74,10 @@ func main() {
 		orm.RegisterSchemaWithIndexName(model.Dict{}, "dict")
 		orm.RegisterSchemaWithIndexName(model.Reindex{}, "reindex")
 		orm.RegisterSchemaWithIndexName(elastic.IndexPattern{}, "view")
+		orm.RegisterSchemaWithIndexName(alerting.Config{}, "alerting-config")
+		orm.RegisterSchemaWithIndexName(alerting.Alert{}, "alerting-alerts")
+		orm.RegisterSchemaWithIndexName(alerting.AlertHistory{}, "alerting-alert-history")
+		alertSrv.GetScheduler().Start()
 	})
 
 }

@@ -8,6 +8,8 @@ import (
 	"fmt"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/orm"
+	"infini.sh/search-center/model/alerting"
 	"io"
 	"net/http"
 	"net/url"
@@ -21,6 +23,16 @@ func getQueryParam(req *http.Request, key string, or ...string) string {
 		return or[0]
 	}
 	return val
+}
+
+func getAlertIndexName(typ string) string {
+	switch  typ{
+	case INDEX_ALL_ALERTS:
+			return fmt.Sprintf("%s,%s", orm.GetIndexName(alerting.AlertHistory{}),  orm.GetIndexName(alerting.Alert{}))
+	case INDEX_ALERT_HISTORY:
+		return orm.GetIndexName(alerting.AlertHistory{})
+	}
+	return orm.GetIndexName(alerting.Alert{})
 }
 
 func GetAlerts (w http.ResponseWriter, req *http.Request, ps httprouter.Params){
@@ -41,11 +53,6 @@ func GetAlerts (w http.ResponseWriter, req *http.Request, ps httprouter.Params){
 		alertState = getQueryParam(req, "alertState", "ALL")
 		monitorIds = req.URL.Query()["monitorIds"]
 		params = map[string]string{
-			"startIndex": from,
-			"size": size,
-			"severityLevel": severityLevel,
-			"alertState": alertState,
-			"searchString": search,
 		}
 	)
 
@@ -68,18 +75,67 @@ func GetAlerts (w http.ResponseWriter, req *http.Request, ps httprouter.Params){
 		params["sortOrder"] = sortDirection
 		params["missing"] = "_last"
 	}
+	sort := IfaceMap{
+		params["sortString"]: params["sortOrder"],
+	}
+	must := []IfaceMap{
+		{
+			"match": IfaceMap{
+				"cluster_id": id,
+			},
+		},
+	}
+	if severityLevel != "ALL" {
+		must = append(must, IfaceMap{
+			"match": IfaceMap{
+				"severity": severityLevel,
+			},
+		})
+	}
+	if alertState != "ALL" {
+		must = append(must, IfaceMap{
+			"match": IfaceMap{
+				"state": alertState,
+			},
+		})
+	}
 	if len(monitorIds) > 0{
-		params["monitorId"] = monitorIds[0]
+		must = append(must, IfaceMap{
+			"match": IfaceMap{
+				"monitor_id": monitorIds[0],
+			},
+		})
 	}
 
 	if clearSearch := strings.TrimSpace(search); clearSearch != ""{
 		searches := strings.Split(clearSearch, " ")
 		clearSearch = strings.Join(searches, "* *")
 		params["searchString"] = fmt.Sprintf("*%s*", clearSearch)
+		must = append(must, IfaceMap{
+			"query_string": IfaceMap{
+				//"default_field": "destination.name",
+				"default_operator": "AND",
+				"query": fmt.Sprintf(`*%s*`, clearSearch),
+			},
+		})
 	}
-	reqUrl := fmt.Sprintf("%s/%s/_alerting/monitors/alerts", conf.Endpoint, API_PREFIX )
 
-	res, err := doRequest(reqUrl, http.MethodGet, params, nil)
+	reqBody := IfaceMap{
+		"size":size,
+		"from": from,
+		"query": IfaceMap{
+			"bool":IfaceMap{
+				"must": must,
+			},
+		},
+		"sort": sort,
+	}
+	indexName := getAlertIndexName(INDEX_ALL_ALERTS)
+
+	config := getDefaultConfig()
+	reqUrl := fmt.Sprintf("%s/%s/_search", config.Endpoint, indexName )
+
+	res, err := doRequest(reqUrl, http.MethodGet, nil, reqBody)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -91,23 +147,25 @@ func GetAlerts (w http.ResponseWriter, req *http.Request, ps httprouter.Params){
 		writeError(w, err)
 		return
 	}
-	alerts := []IfaceMap{}
-	rawAlerts := queryValue(alertRes, "alerts", nil)
+	alerts := []interface{}{}
+	rawAlerts := queryValue(alertRes, "hits.hits", nil)
 	if ds, ok := rawAlerts.([]interface{}); ok {
 		for _, alert := range ds {
 			if alertItem, ok := alert.(map[string]interface{}); ok {
-				alertItem["version"] = queryValue(alertItem, "alert_version", "")
-				if  queryValue(alertItem, "id", nil) == nil {
-					alertItem["id"] = queryValue(alertItem, "alert_id", nil)
+				//alertItem["version"] = queryValue(alertItem, "alert_version", "")
+				if alertID, ok := queryValue(alertItem, "_source.id", "").(string); ok && alertID == "" {
+					if source, ok := alertItem["_source"].(map[string]interface{}); ok {
+						source["id"] = alertItem["_id"]
+					}
 				}
-				alerts = append(alerts, alertItem)
+				alerts = append(alerts, alertItem["_source"])
 			}
 		}
 	}
 	writeJSON(w, IfaceMap{
 		"ok": true,
 		"alerts": alerts,
-		"totalAlerts": queryValue(alertRes, "totalAlerts", 0),
+		"totalAlerts": queryValue(alertRes, "hits.total.value", 0),
 	}, http.StatusOK)
 
 }
@@ -140,8 +198,8 @@ func decodeJSON(reader io.Reader, obj interface{}) error{
 }
 
 func writeJSON(w http.ResponseWriter, data interface{}, statusCode int){
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	w.Header().Set("content-type", "application/json")
 	buf, _ := json.Marshal(data)
 	w.Write(buf)
 }

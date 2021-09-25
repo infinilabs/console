@@ -5,12 +5,15 @@ import {formatESSearchResult, extractClusterIDFromURL} from '@/lib/elasticsearch
 import {Modal} from 'antd';
 import router from "umi/router";
 
+const MENU_COLLAPSED_KEY = "search-center:menu:collapsed";
 
+console.log(localStorage.getItem(MENU_COLLAPSED_KEY))
 export default {
   namespace: 'global',
 
   state: {
-    collapsed: false,
+    collapsed: localStorage.getItem(MENU_COLLAPSED_KEY) === 'true',
+    isInitCollapsed:false,
     notices: [],
     clusterVisible: true,
     clusterList: [],
@@ -160,9 +163,18 @@ export default {
 
   reducers: {
     changeLayoutCollapsed(state, { payload }) {
+      //layout sider init(false) bug
+      if(!state.isInitCollapsed && state.collapsed){
+        return {
+          ...state,
+          isInitCollapsed: true,
+        };
+      }
+      localStorage.setItem(MENU_COLLAPSED_KEY, payload);
       return {
         ...state,
         collapsed: payload,
+        isInitCollapsed: true,
       };
     },
     saveNotices(state, { payload }) {

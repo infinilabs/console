@@ -69,7 +69,8 @@ export default class CreateTrigger extends Component {
 
   onCreate = (trigger, triggerMetadata, { setSubmitting, setErrors }) => {
     const { monitor, updateMonitor, onCloseTrigger } = this.props;
-    const { ui_metadata: uiMetadata, triggers } = monitor;
+    let { ui_metadata: uiMetadata, triggers } = monitor;
+    uiMetadata = uiMetadata || {triggers:[]};
     const updatedTriggers = [trigger].concat(triggers);
     const updatedUiMetadata = {
       ...uiMetadata,

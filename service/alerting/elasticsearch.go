@@ -13,7 +13,7 @@ import (
 type SearchBody struct {
 	Query IfaceMap `json:"query"`
 	Index string `json:"index"`
-	Size int `json:""size`
+	Size int `json:"size"`
 }
 
 func Search(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
@@ -29,12 +29,11 @@ func Search(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
 		writeError(w, err)
 		return
 	}
-	reqUrl := fmt.Sprintf("%s/%s/_alerting/monitors/_search", conf.Endpoint, API_PREFIX)
-	params := map[string]string{
-		"index": body.Index,
-	}
+	config := getDefaultConfig()
+	reqUrl := fmt.Sprintf("%s/%s/_search", config.Endpoint, body.Index)
+
 	body.Query["size"] = body.Size
-	res, err := doRequest(reqUrl, http.MethodPost, params, body.Query)
+	res, err := doRequest(reqUrl, http.MethodPost, nil, body.Query)
 	if err != nil {
 		writeError(w, err)
 		return

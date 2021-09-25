@@ -267,7 +267,7 @@ export function clear() {
   templates = [];
 }
 
-function retrieveSettings(settingsKey, settingsToRetrieve) {
+function retrieveSettings(settingsKey, settingsToRetrieve, clusterID) {
   const settingKeyToPathMap = {
     fields: '_mapping',
     indices: '_aliases',
@@ -280,7 +280,7 @@ function retrieveSettings(settingsKey, settingsToRetrieve) {
     if(settingsKey === 'commands'){
       return es.queryCommonCommands();
     }
-    return es.send('GET', settingKeyToPathMap[settingsKey], null, true);
+    return es.send('GET', settingKeyToPathMap[settingsKey], null, {clusterID, asSystemRequest: true});
   } else {
     const settingsPromise = new $.Deferred();
     if (settingsToRetrieve[settingsKey] === false) {
@@ -319,13 +319,13 @@ function getObject(value){
  * @param settings Settings A way to retrieve the current settings
  * @param settingsToRetrieve any
  */
-export function retrieveAutoCompleteInfo(settings, settingsToRetrieve) {
+export function retrieveAutoCompleteInfo(settings, settingsToRetrieve, clusterID) {
   clearSubscriptions();
 
-  const mappingPromise = retrieveSettings('fields', settingsToRetrieve);
-  const aliasesPromise = retrieveSettings('indices', settingsToRetrieve);
-  const templatesPromise = retrieveSettings('templates', settingsToRetrieve);
-  const commandsPromise = retrieveSettings('commands', settingsToRetrieve);
+  const mappingPromise = retrieveSettings('fields', settingsToRetrieve, clusterID);
+  const aliasesPromise = retrieveSettings('indices', settingsToRetrieve, clusterID);
+  const templatesPromise = retrieveSettings('templates', settingsToRetrieve, clusterID);
+  const commandsPromise = retrieveSettings('commands', settingsToRetrieve, clusterID);
 
 
   $.when(mappingPromise, aliasesPromise, templatesPromise, commandsPromise).done((mappings, aliases, templates, commands) => {

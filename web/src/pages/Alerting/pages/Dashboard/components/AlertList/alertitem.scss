@@ -1,0 +1,54 @@
+.alert {
+  background-color: #fff;
+  border-radius: 5px;
+  border-bottom: none !important;
+  overflow:hidden;
+  padding: 0 !important;
+  margin-bottom: 5px;
+  &:hover{
+    cursor: pointer;
+    background-color: rgb(147, 158, 160);
+    color: #fff;
+  }
+  .wrapper{
+    display: flex;
+    min-height: 50px;
+    align-items: center;
+    .status{
+      width: 40px;
+      align-self: stretch;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 20px;
+      &.COMPLETED{
+        background-color: sandybrown;
+      }
+      &.ACKNOWLEDGED{
+        background-color: seagreen;
+      }
+      &.ACTIVE{
+        background-color:tomato;
+      }
+      &.ERROR{
+        background-color:red;
+      }
+      &.DELETED{
+        background-color: gray;
+      }
+    }
+    .content{
+      padding-left: 10px;
+    }
+    .right{
+      margin-left: auto;
+      flex: 0 0 120px;
+      display: inline-flex;
+      .arrow{
+        margin-left: auto;
+        padding-right: 10px;
+      }
+    }
+  }
+}

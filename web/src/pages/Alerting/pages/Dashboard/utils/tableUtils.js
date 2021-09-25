@@ -95,5 +95,5 @@ export const columns = [
     truncateText: false,
     render: renderTime,
     dataType: 'date',
-  },
+  }
 ];

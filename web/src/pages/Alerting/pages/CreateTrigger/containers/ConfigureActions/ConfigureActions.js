@@ -71,8 +71,8 @@ class ConfigureActions extends React.Component {
             label: `${destination.name} - (${getDestinationLabel(destination)})`,
             value: destination.id,
             type: destination.type,
-          }))
-          .filter(({ type }) => allowList.includes(type));
+          }));
+          // .filter(({ type }) => allowList.includes(type));
         this.setState({ destinations, loadingDestinations: false });
         // If actions is not defined  If user choose to delete actions, it will not override customer's preferences.
         if (destinations.length > 0 && !values.actions && !actionDeleted) {

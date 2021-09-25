@@ -47,7 +47,7 @@ function buildRawCommonCommandRequest(cmd:any){
 }
 export const useSendCurrentRequestToES = () => {
   const dispatch = useRequestActionContext();
-  const { services: { history } } = useServicesContext();
+  const { services: { history }, clusterID } = useServicesContext();
 
   return useCallback(async () => {
     try {
@@ -80,7 +80,7 @@ export const useSendCurrentRequestToES = () => {
       dispatch({ type: 'sendRequest', payload: undefined });
 
       // @ts-ignore
-      const results = await sendRequestToES({ requests });
+      const results = await sendRequestToES({ requests, clusterID });
 
       // let saveToHistoryError: undefined | Error;
 

@@ -141,7 +141,7 @@ const ConsoleInputUI = ({clusterID, initialText}:ConsoleInputProps) => {
     }
   }, []);
   useEffect(()=>{
-    retrieveAutoCompleteInfo(settings, settings.getAutocomplete());
+    retrieveAutoCompleteInfo(settings, settings.getAutocomplete(), clusterID);
   },[clusterID])
 
   const handleSaveAsCommonCommand = async () => {

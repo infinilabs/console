@@ -1,0 +1,14 @@
+.alert-list{
+  background: #f0f2f5;
+  padding: 10px 5px;
+  .title{
+    color: #333;
+    font-weight:600;
+    padding-bottom: 6px;
+    .total{
+      color: #999;
+      margin-left: 15px;
+      font-size: 12px;
+    }
+  }
+}

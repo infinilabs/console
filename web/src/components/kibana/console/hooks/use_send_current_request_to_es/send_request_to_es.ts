@@ -69,7 +69,7 @@ export function sendRequestToES(args: EsRequestArgs): Promise<ESRequestResult[]>
       } // append a new line for bulk requests.
 
       const startTime = Date.now();
-      send(esMethod, esPath, esData).always(
+      send(esMethod, esPath, esData, {clusterID: args.clusterID}).always(
         (dataOrjqXHR, textStatus: string, jqXhrORerrorThrown) => {
           if (reqId !== CURRENT_REQ_ID) {
             return;

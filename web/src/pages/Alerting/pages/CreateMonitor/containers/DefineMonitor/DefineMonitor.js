@@ -127,12 +127,13 @@ class DefineMonitor extends Component {
   async getPlugins() {
     const { httpClient } = this.props;
     try {
-      const pluginsResponse = await httpClient.get('/alerting/_plugins');
-      if (pluginsResponse.ok) {
-        this.setState({ plugins: pluginsResponse.resp.map((plugin) => plugin.component) });
-      } else {
-        console.error('There was a problem getting plugins list');
-      }
+      return [];
+      // const pluginsResponse = await httpClient.get('/alerting/_plugins');
+      // if (pluginsResponse.ok) {
+      //   this.setState({ plugins: pluginsResponse.resp.map((plugin) => plugin.component) });
+      // } else {
+      //   console.error('There was a problem getting plugins list');
+      // }
     } catch (e) {
       console.error('There was a problem getting plugins list', e);
     }

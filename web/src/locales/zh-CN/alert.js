@@ -22,7 +22,7 @@ export default {
   'alert.dashboard.create-monitor-text': '暂无监控项。 创建监控项以添加触发器和操作。 一旦触发警报，状态将显示在此表中。',
   'alert.dashboard.create-trigger-text': '暂无监控项。 创建触发器以开始警报。 一旦触发警报，状态将显示在此表中。',
   'alert.dashboard.table.columns.start_time': '告警开始时间',
-  'alert.dashboard.table.columns.end_time': '告警截止时间',
+  'alert.dashboard.table.columns.end_time': '告警结束时间',
   'alert.dashboard.table.columns.monitor_name': '监控项名称',
   'alert.dashboard.table.columns.trigger_name': '触发器名称',
   'alert.dashboard.table.columns.severity': '告警级别',

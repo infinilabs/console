@@ -1,7 +1,6 @@
 package alerting
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	httprouter "infini.sh/framework/core/api/router"
@@ -200,8 +199,6 @@ func GetMonitors(w http.ResponseWriter, req *http.Request, ps httprouter.Params)
 		},
 	}
 	assignTo(params, sortPageData)
-	buf, _ := json.Marshal(params)
-	fmt.Println(string(buf))
 	config := getDefaultConfig()
 	reqUrl := fmt.Sprintf("%s/%s/_search", config.Endpoint, orm.GetIndexName(alerting.Config{}) )
 	res, err := doRequest(reqUrl, http.MethodGet, nil, params)
@@ -576,7 +573,7 @@ func AcknowledgeAlerts(w http.ResponseWriter, req *http.Request, ps httprouter.P
 	}
 
 	config := getDefaultConfig()
-	reqUrl := fmt.Sprintf("%s/%s/_update_by_query", getAlertIndexName(INDEX_ALERT), config.Endpoint)
+	reqUrl := fmt.Sprintf("%s/%s/_update_by_query", config.Endpoint, getAlertIndexName(INDEX_ALERT))
 	reqBody := IfaceMap{
 		"query": IfaceMap{
 			"bool": IfaceMap{

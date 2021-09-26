@@ -16,22 +16,23 @@
 import React from 'react';
 import { EuiFlexGroup, EuiFlexItem, EuiText } from '@elastic/eui';
 import { ALERT_TIMELINE_COLORS_MAP } from '../../../containers/MonitorHistory/utils/constants';
+import { formatMessage } from 'umi/locale';
 
 const timeSeriesLegend = [
   {
-    title: 'Triggered',
+    title: formatMessage({ id: 'alert.dashboard.state-options.active' }),//'Triggered',
     color: ALERT_TIMELINE_COLORS_MAP.TRIGGERED,
   },
   {
-    title: 'Error',
+    title: formatMessage({ id: 'alert.dashboard.state-options.error' }),
     color: ALERT_TIMELINE_COLORS_MAP.ERROR,
   },
   {
-    title: 'Acknowledge',
+    title: formatMessage({ id: 'alert.dashboard.state-options.acknowledged' }), //'Acknowledge',
     color: ALERT_TIMELINE_COLORS_MAP.ACKNOWLEDGED,
   },
   {
-    title: 'No alerts',
+    title: formatMessage({ id: 'alert.dashboard.state-options.normal' }), 
     color: ALERT_TIMELINE_COLORS_MAP.NO_ALERTS,
   },
 ];

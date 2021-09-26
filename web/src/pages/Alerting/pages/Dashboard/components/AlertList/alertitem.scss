@@ -23,16 +23,16 @@
       color: #fff;
       font-size: 20px;
       &.COMPLETED{
-        background-color: sandybrown;
+        background-color: rgb(208, 2, 27);
       }
       &.ACKNOWLEDGED{
-        background-color: seagreen;
+        background-color: pink;
       }
       &.ACTIVE{
-        background-color:tomato;
+        background-color: rgb(208, 2, 27);
       }
       &.ERROR{
-        background-color:red;
+        background-color:lightgrey;
       }
       &.DELETED{
         background-color: gray;

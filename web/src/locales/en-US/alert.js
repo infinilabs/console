@@ -19,6 +19,7 @@ export default {
   'alert.dashboard.state-options.completed': 'Completed',
   'alert.dashboard.state-options.error': 'Error',
   'alert.dashboard.state-options.deleted': 'Deleted',
+  'alert.dashboard.state-options.normal': 'No alerts',
   'alert.dashboard.create-monitor-text': 'There are no existing alerts. Create a monitor to add triggers and actions. Once an alarm is triggered, the state will show in this table.',
   'alert.dashboard.create-trigger-text': 'There are no existing alerts. Create a trigger to start alerting. Once an alarm is triggered, the state will show in this table.',
   'alert.dashboard.table.columns.start_time': 'Alert start time',

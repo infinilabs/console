@@ -19,6 +19,7 @@ export default {
   'alert.dashboard.state-options.completed': '已恢复',
   'alert.dashboard.state-options.error': '错误',
   'alert.dashboard.state-options.deleted': '已删除',
+  'alert.dashboard.state-options.normal': '正常',
   'alert.dashboard.create-monitor-text': '暂无监控项。 创建监控项以添加触发器和操作。 一旦触发警报，状态将显示在此表中。',
   'alert.dashboard.create-trigger-text': '暂无监控项。 创建触发器以开始警报。 一旦触发警报，状态将显示在此表中。',
   'alert.dashboard.table.columns.start_time': '告警开始时间',

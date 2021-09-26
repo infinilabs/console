@@ -16,6 +16,7 @@ func GetAlertOverview(w http.ResponseWriter, req *http.Request, ps httprouter.Pa
 		"metrics": IfaceMap{
 			"alert_day": alertDayMetricData,
 		},
+		"ok": true,
 	}, http.StatusOK)
 }
 

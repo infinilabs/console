@@ -86,10 +86,10 @@ export default (props)=>{
     <div style={{height:'150px'}}>
        <Chart>
         <Settings theme={theme} />
-        <Axis id="bottom" position={Position.Bottom} showOverlappingTicks tickFormat={timeFormatter(niceTimeFormatByDay(2))} /> 
+        <Axis id="bottom" position={Position.Bottom} showOverlappingTicks tickFormat={timeFormatter(niceTimeFormatByDay(90))} /> 
         <Axis
           id="left"
-          title={'最近告警统计'}
+          title={'最近三个月告警统计'}
           position={Position.Left}
         />
         <LineSeries

@@ -24,6 +24,7 @@ import MonitorDetails from '../MonitorDetails/containers/MonitorDetails';
 import CreateDestination from '../Destinations/containers/CreateDestination';
 import Flyout from '../../components/Flyout';
 import { APP_PATH } from '../../utils/constants';
+import Overview from '../Overview/Overview';
 
 class Main extends Component {
   state = { flyout: null };
@@ -55,6 +56,12 @@ class Main extends Component {
                 }}
               />
               <Switch>
+                <Route
+                  path="/overview"
+                  render={(props) => (
+                    <Overview {...props} httpClient={core.http} notifications={core.notifications} />
+                  )}
+                />
                 <Route
                   path={APP_PATH.CREATE_MONITOR}
                   render={(props) => (

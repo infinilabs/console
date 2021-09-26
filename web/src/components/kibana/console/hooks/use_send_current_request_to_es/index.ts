@@ -50,6 +50,7 @@ export const useSendCurrentRequestToES = () => {
   const { services: { history }, clusterID } = useServicesContext();
 
   return useCallback(async () => {
+    console.log(clusterID)
     try {
       const editor = registry.getInputEditor();
       const requests = await editor.getRequestsInRange();

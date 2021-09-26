@@ -43,11 +43,11 @@ class Index extends  React.Component {
       if(!clusterStatus || !clusterStatus[val]){
         return
       }
-      const isAvailable = clusterStatus[val].cluster_available;
+      const isAvailable = clusterStatus[val].available;
       if(!isAvailable){
         return <Icon type="close-circle" style={{width:14, height:14, color:'red',borderRadius: 14, boxShadow: '0px 0px 5px #555'}}/>
       }
-      const status = clusterStatus[val].health_status;
+      const status = clusterStatus[val].health?.status;
       return <HealthStatusCircle  status={status}/>
       
     }
@@ -83,13 +83,13 @@ class Index extends  React.Component {
   },{
     title: '节点数',
     dataIndex: 'id',
-    key: 'mode_count',
+    key: 'number_of_nodes',
     render: (val)=>{
       const {clusterStatus} = this.props;
       if(!clusterStatus || !clusterStatus[val]){
         return
       }
-      return clusterStatus[val].nodes_count;
+      return clusterStatus[val].health?.number_of_nodes;
     }
   },{
     title: '集群地址',

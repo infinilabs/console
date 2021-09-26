@@ -22,7 +22,6 @@ import Monitors from '../Monitors/containers/Monitors';
 import DestinationsList from '../Destinations/containers/DestinationsList';
 import { formatMessage } from 'umi/locale';
 import {AlertOverview} from '../Dashboard/containers/AlertOverview';
-import Overview from '../Overview/Overview';
 
 const getSelectedTabId = (pathname) => {
   if (pathname.includes('monitors')) return 'monitors';
@@ -122,12 +121,6 @@ export default class Home extends Component {
                   httpClient={httpClient}
                   notifications={notifications}
                 />
-              )}
-            />
-             <Route
-              path="/overview"
-              render={(props) => (
-                <Overview {...props} httpClient={httpClient} notifications={notifications} />
               )}
             />
              <Route

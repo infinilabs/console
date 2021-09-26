@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"infini.sh/framework/core/conditions"
 	"infini.sh/framework/core/util"
-	"src/github.com/elastic/go-ucfg/yaml"
+	"github.com/elastic/go-ucfg/yaml"
 	"testing"
 )
 

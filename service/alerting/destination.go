@@ -5,7 +5,6 @@ import (
 	"fmt"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
-	"infini.sh/framework/core/elastic/model"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"infini.sh/search-center/model/alerting"
@@ -315,7 +314,7 @@ func DeleteDestination(w http.ResponseWriter, req *http.Request, ps httprouter.P
 
 }
 
-func getDefaultConfig() *model.ElasticsearchConfig{
+func getDefaultConfig() *elastic.ElasticsearchConfig {
 	return elastic.GetConfig("default")
 }
 

@@ -1,7 +1,7 @@
 package alerting
 
 import (
-	"src/github.com/buger/jsonparser"
+	"github.com/buger/jsonparser"
 	"strconv"
 	"strings"
 )

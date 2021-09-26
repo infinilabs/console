@@ -78,7 +78,7 @@ func GetDestinations(w http.ResponseWriter, req *http.Request, ps httprouter.Par
 		clearSearch = strings.ReplaceAll(clearSearch, " ", "* *")
 		must = append(must, IfaceMap{
 			"query_string": IfaceMap{
-				"default_field": "destination.name",
+				//"default_field": "destination.name",
 				"default_operator": "AND",
 				"query": fmt.Sprintf(`*%s*`, clearSearch),
 			},
@@ -183,8 +183,6 @@ func CreateDestination(w http.ResponseWriter, req *http.Request, ps httprouter.P
 		toSaveDest[destination.Type] = destination.Email
 	case "custom_webhook":
 		toSaveDest[destination.Type] = destination.CustomWebhook
-	case "slack":
-		toSaveDest[destination.Type] = destination.Slack
 	default:
 		writeError(w, errors.New("type unsupported"))
 		return
@@ -250,8 +248,6 @@ func UpdateDestination(w http.ResponseWriter, req *http.Request, ps httprouter.P
 		toSaveDest[destination.Type] = destination.Email
 	case "custom_webhook":
 		toSaveDest[destination.Type] = destination.CustomWebhook
-	case "slack":
-		toSaveDest[destination.Type] = destination.Slack
 	default:
 		writeError(w, errors.New("type unsupported"))
 		return

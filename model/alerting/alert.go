@@ -3,8 +3,8 @@ package alerting
 type Alert struct {
 	ClusterID string `json:"cluster_id"`
 	AcknowledgedTime *int64 `json:"acknowledged_time" elastic_mapping:"acknowledged_time:{type:date}"`
-	ActionExecutionResults []ActionExecutionResult `json:"action_execution_results" elastic_mapping:"action_execution_results"`
-	AlertHistories []AlertHistory `json:"alert_history" elastic_mapping:"alert_history"`
+	ActionExecutionResults []ActionExecutionResult `json:"action_execution_results" elastic_mapping:"action_execution_results:{type:object}"`
+	AlertHistories []AlertHistory `json:"alert_history" elastic_mapping:"alert_history:{type:object}"`
 	EndTime *int64 `json:"end_time" elastic_mapping:"end_time:{type:date}"`
 	ErrorMessage string `json:"error_message" elastic_mapping:"error_message:{type:text}"`
 	Id string `json:"id" elastic_mapping:"id:{type:keyword}"`

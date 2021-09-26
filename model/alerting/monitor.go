@@ -3,17 +3,17 @@ package alerting
 type Monitor struct {
 	Enabled bool `json:"enabled" elastic_mapping:"enabled: {type:boolean}"`
 	EnabledTime int64 `json:"enabled_time" elastic_mapping:"enabled_time:{type:date,format:strict_date_time||epoch_millis}"`
-	Inputs []MonitorInput `json:"inputs" elastic_mapping:"inputs"`
+	Inputs []MonitorInput `json:"inputs" elastic_mapping:"inputs:{type:nested}"`
 	LastUpdateTime int64 `json:"last_update_time" elastic_mapping:"last_update_time:{type:date,format:strict_date_time||epoch_millis}"`
 	Name string `json:"name" elastic_mapping:"name:{type:text,fields: {keyword: {type: keyword, ignore_above: 256}}}"`
-	Schedule Schedule `json:"schedule" elastic_mapping:"schedule"`
+	Schedule Schedule `json:"schedule" elastic_mapping:"schedule:{type:object}"`
 	SchemaVersion int `json:"schema_version" elastic_mapping:"schema_version:{type:integer}"`
-	Triggers []Trigger `json:"triggers" elastic_mapping:"triggers"`
+	Triggers []Trigger `json:"triggers" elastic_mapping:"triggers:{type:nested}"`
 	Type string `json:"type" elastic_mapping:"type:{type:keyword}`
 }
 
 type MonitorInput struct {
-	Search MonitorSearch `json:"search" elastic_mapping:"search"`
+	Search MonitorSearch `json:"search" elastic_mapping:"search:{type:object}"`
 }
 
 type MonitorSearch struct {
@@ -33,8 +33,8 @@ type Period struct {
 
 
 type Schedule struct {
-	Cron *Cron `json:"cron,omitempty" elastic_mapping:"cron"`
-	Period *Period `json:"period,omitempty" elastic_mapping:"period"`
+	Cron *Cron `json:"cron,omitempty" elastic_mapping:"cron:{type:object}"`
+	Period *Period `json:"period,omitempty" elastic_mapping:"period:{type:object}"`
 }
 
 
@@ -50,7 +50,7 @@ type Action struct {
 	Name string `json:"name" elastic_mapping:"name:{type:text,fields: {keyword: {type: keyword, ignore_above: 256}}}"`
 	SubjectTemplate map[string]interface{} `json:"subject_template" elastic_mapping:"subject_template:{type:object}"`
 	ThrottleEnabled bool `json:"throttle_enabled" elastic_mapping:"throttle_enabled:{type:boolean}"`
-	Throttle *Throttle `json:"throttle,omitempty" elastic_mapping:"throttle"`
+	Throttle *Throttle `json:"throttle,omitempty" elastic_mapping:"throttle:{type:object}"`
 }
 
 type Trigger struct {
@@ -58,6 +58,6 @@ type Trigger struct {
 	Severity string `json:"severity" elastic_mapping:"severity:{type:keyword}"`
 	Name string `json:"name" elastic_mapping:"name:{type:text,fields: {keyword: {type: keyword, ignore_above: 256}}}"`
 	Condition map[string]interface{} `json:"condition" elastic_mapping:"condition:{type:object, enabled:false}"`
-	Actions []Action `json:"actions" elastic_mapping:"actions"`
+	Actions []Action `json:"actions" elastic_mapping:"actions:{type:nested}"`
 	MinTimeBetweenExecutions int `json:"min_time_between_executions" elastic_mapping:"min_time_between_executions:{type:integer}"`
 }

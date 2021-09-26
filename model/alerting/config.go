@@ -12,8 +12,8 @@ package alerting
 type Config struct {
 	ID string `json:"id" index:"id"`
 	Type string `json:"type" elastic_mapping:"type:{type:keyword}"`
-	Destination Destination `json:"destination,omitempty" elastic_mapping:"destination"`
-	EmailAccount EmailAccount `json:"email_account,omitempty" elastic_mapping:"email_account"`
-	EmailGroup EmailGroup `json:"email_group,omitempty" elastic_mapping:"email_group"`
-	Monitor Monitor `json:"monitor,omitempty" elastic_mapping:"monitor"`
+	Destination Destination `json:"destination,omitempty" elastic_mapping:"destination:{type:object}"`
+	EmailAccount EmailAccount `json:"email_account,omitempty" elastic_mapping:"email_account:{type:object}"`
+	EmailGroup EmailGroup `json:"email_group,omitempty" elastic_mapping:"email_group:{type:object}"`
+	Monitor Monitor `json:"monitor,omitempty" elastic_mapping:"monitor:{type:object}"`
 }

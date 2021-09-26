@@ -5,14 +5,14 @@ type Destination struct {
 	Name string `json:"name" elastic_mapping:"name:{type:text,fields: {keyword: {type: keyword, ignore_above: 256}}}"`
 	SchemaVersion int `json:"schema_version" elastic_mapping:"schema_version:{type:integer}"`
 	LastUpdateTime int64 `json:"last_update_time" elastic_mapping:"last_update_time:{type:date,format:strict_date_time||epoch_millis}"`
-	CustomWebhook CustomWebhook `json:"custom_webhook,omitempty" elastic_mapping:"custom_webhook"`
-	Email EmailDestination `json:"email,omitempty" elastic_mapping:"email"`
-	Slack Slack `json:"slack,omitempty" elastic_mapping:"slack"`
+	CustomWebhook CustomWebhook `json:"custom_webhook,omitempty" elastic_mapping:"custom_webhook:{type:object}"`
+	Email EmailDestination `json:"email,omitempty" elastic_mapping:"email:{type:object}"`
+	//Slack Slack `json:"slack,omitempty" elastic_mapping:"slack"`
 }
 
 type EmailDestination struct {
 	EmailAccountID string `json:"email_account_id" elastic_mapping:"email_account_id:{type:keyword}"`
-	Recipients []Recipient `json:"recipients" elastic_mapping:"recipients"`
+	Recipients []Recipient `json:"recipients" elastic_mapping:"recipients:{type:nested}"`
 }
 
 type Recipient struct {

@@ -18,7 +18,7 @@ export default [
     authority: ['admin', 'user'],
     routes: [
       // cluster
-      { path: '/', redirect: '/cluster/overview/' },
+      { path: '/', redirect: '/cluster/overview' },
       {
         path: '/cluster',
         name: 'cluster',
@@ -34,10 +34,10 @@ export default [
       //         ],
       //       },
           {
-              path: '/cluster/overview/:cluster_id',
+              path: '/cluster/overview',
               name: 'overview',
               component: './Cluster/Overview',
-              hideInMenu: true,
+              // hideInMenu: true,
               routes:[
                 { path: '/', redirect: '/' },
               ],

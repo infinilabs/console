@@ -1,102 +1,135 @@
-import React, {Fragment} from 'react';
-import {Card, List, Divider, Popconfirm, Row, Col, Table, Descriptions, Button} from "antd";
-import {Link} from "umi"
-import moment from "moment";
+import React from 'react';
+import {List,Card,Row,Icon,Col} from "antd";
 import styles from "./Overview.less";
 import {connect} from "dva";
-import {ClusterItem} from "./ClusterList";
-import CalendarHeatmap from 'react-calendar-heatmap';
-import 'react-calendar-heatmap/dist/styles.css';
-import { Avatar } from 'antd';
-import { Tabs } from 'antd';
-const { TabPane } = Tabs;
-import ClusterLoadMore from "../../components/List/LoadMoreList"
-const data = [
+import {formatGigNumber} from "@/utils/utils";
+
+
+const tabList = [
     {
-        title: 'Ant Design Title 1',
+        key: 'tabCluster',
+        tab: '集群',
     },
     {
-        title: 'Ant Design Title 2',
+        key: 'tabHost',
+        tab: '主机',
     },
     {
-        title: 'Ant Design Title 3',
-    },
-    {
-        title: 'Ant Design Title 4',
+        key: 'tabNode',
+        tab: '节点',
     },
 ];
 
+
 @connect(({global}) => ({
-  selectedCluster: global.selectedCluster
+  
 }))
 
 
 class Overview extends  React.Component {
+    state = {
+        tabkey: 'tabCluster',
+    };
 
-  render() {
-    return (
-        <div>
-            <Row gutter={24}>
-              <Col lg={17} md={24}>
-                  <Card className={styles.card}  title={'Overall Platform Status'}>
-                    <CalendarHeatmap
-                        showMonthLabels={false}
-                        showWeekdayLabels={false}
-                        showOutOfRangeDays={true}
-                        startDate={new Date('2016-01-01')}
-                        endDate={new Date('2016-12-31')}
-                        monthLabels={['01','02','03','04','05','06',
-                          '07','08','09','10','11','12']}
-                        weekdayLabels={['周日','周一','周二','周三','周四'
-                          ,'周五','周六']}
-                        values={[
-                          { date: '2016-01-01', count: 12 },
-                          { date: '2016-01-22', count: 122 },
-                          { date: '2016-01-30', count: 38 },
-                        ]}
-                        // tooltipDataAttrs={
-                        //   (value) => (value.count > 0 ? 'blue' : 'white')
-                        // }
-                        // onClick={value => alert(`Clicked on value with count: ${value.count}`)}
-                    />
-                  </Card>
+    onOperationTabChange = key => {
+        this.setState({ tabkey: key });
+    };
 
-                  <Card className={styles.card}  title={'Open Issues'}>
-                      <List
-                          itemLayout="horizontal"
-                          dataSource={data}
-                          renderItem={item => (
-                              <List.Item>
-                                  <List.Item.Meta
-                                      avatar={<Avatar src="https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png" />}
-                                      title={<a href="https://ant.design">{item.title}</a>}
-                                      description="Ant Design, a design language for background applications, is refined by Ant UED Team"
-                                  />
-                              </List.Item>
-                          )}
-                      />
-                  </Card>
-              </Col>
-              <Col lg={7} md={24}>
-                  <Card>
-                      <Tabs defaultActiveKey="1" >
-                          <TabPane tab="Elasticsearch" key="1" >
-                            <ClusterLoadMore />
+    render() {
 
-                          </TabPane>
-                          <TabPane tab="业务部门" key="2">
-                              Content of Tab Pane 2
-                          </TabPane>
-                      </Tabs>
-                  </Card>
-              </Col>
-            </Row>
+        const {  tabkey } = this.state;
 
+        const contentList = {
+          tabCluster: (
+              <Card title="集群列表" style={{ marginBottom: 24 }} bordered={false}>
+                  <div>
+                      <Icon type="frown-o" />
+                      暂无数据
+                  </div>
+              </Card>
+          ),
+          tabHost: (
+              <Card title="主机列表" style={{ marginBottom: 24 }} bordered={false}>
+                  <div>
+                      <Icon type="frown-o" />
+                      暂无数据
+                  </div>
+              </Card>
+          ),
+          tabNode: (
+              <Card title="节点列表" style={{ marginBottom: 24 }} bordered={false}>
+                  <div>
+                      <Icon type="frown-o" />
+                      暂无数据
+                  </div>
+              </Card>
+          ),
+      };
 
+        return (
+          <div>
+              <Row gutter={24} className={styles.rowSpace}>
+                  <Col md={6} sm={12}>
+                      <Card
+                          bodyStyle={{ paddingBottom: 20 }}
+                          className={styles.clusterMeta}
+                      >
+                          <Card.Meta title='集群总数' className={styles.title} />
+                          <div>
+                              <span className={styles.total}>1</span>
+                          </div>
+                      </Card>
+                  </Col>
+                  <Col md={6} sm={12}>
+                      <Card
+                          bodyStyle={{ paddingBottom: 20 }}
+                          className={styles.clusterMeta}
+                      >
+                          <Card.Meta title='主机总数' className={styles.title} />
+                          <div>
+                              <span className={styles.total}>1</span>
+                          </div>
+                      </Card>
+                  </Col>
+                  <Col md={6} sm={12}>
+                      <Card
+                          bodyStyle={{ paddingBottom: 20 }}
+                          className={styles.clusterMeta}
+                      >
+                          <Card.Meta title='节点总数' className={styles.title} />
+                          <div>
+                              <span className={styles.total}>1</span>
+                          </div>
+                      </Card>
+                  </Col>
+                  <Col md={6} sm={12}>
+                      <Card
+                          bodyStyle={{ paddingBottom: 20 }}
+                          className={styles.clusterMeta}
+                      >
+                          <Card.Meta title='存储空间' className={styles.title} />
+                          <div>
+                              <span className={styles.total}>100</span><span className={styles.unit}>GB</span>
+                          </div>
+                      </Card>
+                  </Col>
+              </Row>
 
-        </div>
-    )
-  }
+              <Row gutter={24} className={styles.rowSpace}>
+                  <Col lg={24} md={24}>
+                      <Card
+                          className={styles.tabsCard}
+                          bordered={false}
+                          tabList={tabList}
+                          onTabChange={this.onOperationTabChange}
+                      >
+                          {contentList[tabkey]}
+                      </Card>
+                  </Col>
+              </Row>
+          </div>
+      )
+    }
 }
 
 export  default Overview;

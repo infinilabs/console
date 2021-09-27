@@ -20,6 +20,7 @@ export type BaseResponseType =
 
 export interface EsRequestArgs {
   requests: Array<{ url: string; method: string; data: string[] }>;
+  clusterID: string;
 }
 
 export interface ESResponseObject<V = unknown> {

@@ -47,9 +47,10 @@ function buildRawCommonCommandRequest(cmd:any){
 }
 export const useSendCurrentRequestToES = () => {
   const dispatch = useRequestActionContext();
-  const { services: { history } } = useServicesContext();
+  const { services: { history }, clusterID } = useServicesContext();
 
   return useCallback(async () => {
+    console.log(clusterID)
     try {
       const editor = registry.getInputEditor();
       const requests = await editor.getRequestsInRange();
@@ -80,7 +81,7 @@ export const useSendCurrentRequestToES = () => {
       dispatch({ type: 'sendRequest', payload: undefined });
 
       // @ts-ignore
-      const results = await sendRequestToES({ requests });
+      const results = await sendRequestToES({ requests, clusterID });
 
       // let saveToHistoryError: undefined | Error;
 
@@ -118,5 +119,5 @@ export const useSendCurrentRequestToES = () => {
         });
       }
     }
-  }, [dispatch, history]);
+  }, [dispatch, history, clusterID]);
 };

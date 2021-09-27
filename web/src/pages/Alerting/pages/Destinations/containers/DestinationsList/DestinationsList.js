@@ -110,7 +110,8 @@ class DestinationsList extends React.Component {
 
   isEmailAllowed = () => {
     const { allowList } = this.state;
-    return allowList.includes(DESTINATION_TYPE.EMAIL);
+    return true;
+    // return allowList.includes(DESTINATION_TYPE.EMAIL);
   };
 
   isDeleteAllowed = async (type, id) => {

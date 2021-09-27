@@ -5,19 +5,17 @@ import (
 	"fmt"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/orm"
+	"infini.sh/framework/core/util"
+	"infini.sh/search-center/model/alerting"
+	alertUtil "infini.sh/search-center/service/alerting/util"
 	"net/http"
-	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
 )
 
 func GetMonitor(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	defer func() {
-		if err := recover(); err != nil {
-			debug.PrintStack()
-		}
-	}()
 	id := ps.ByName("id")
 	conf := elastic.GetConfig(id)
 	if conf == nil {
@@ -26,8 +24,9 @@ func GetMonitor(w http.ResponseWriter, req *http.Request, ps httprouter.Params) 
 	}
 
 	mid := ps.ByName("monitorID")
-	// /_opendistro/_alerting/monitors/uiSjqXsBHT9Hsiy5Dq6g
-	reqUrl := fmt.Sprintf("%s/%s/_alerting/monitors/%s", conf.Endpoint, API_PREFIX, mid)
+	config := getDefaultConfig()
+
+	reqUrl := fmt.Sprintf("%s/%s/_doc/%s", config.Endpoint, orm.GetIndexName(alerting.Config{}), mid)
 	res, err := doRequest(reqUrl, http.MethodGet, nil, nil)
 	if err != nil {
 		writeError(w, err)
@@ -40,44 +39,39 @@ func GetMonitor(w http.ResponseWriter, req *http.Request, ps httprouter.Params) 
 		return
 	}
 	res.Body.Close()
-
-	if _, ok := resBody["monitor"]; !ok {
-		writeJSON(w, IfaceMap{
-				"ok": false,
-		}, http.StatusOK)
+	if found, ok := resBody["found"].(bool); ok && !found {
+		writeError(w, errors.New("monitor not found"))
 		return
 	}
 
 	queryDSL := ` {
-            "size": 0,
-            "query": {
-              "bool": {
-                "must": {
-                  "term": {
-                    "monitor_id": "%s"
-                  }
-                }
-              }
-            },
-            "aggs": {
-              "active_count": {
-                "terms": {
-                  "field": "state"
-                }
-              },
-              "24_hour_count": {
-                "date_range": {
-                  "field": "start_time",
-                  "ranges": [{ "from": "now-24h/h" }]
-                }
-              }
-            }
-          }`
-	queryDSL = fmt.Sprintf(queryDSL, id)
-	reqUrl = fmt.Sprintf("%s/%s/_alerting/monitors/_search", conf.Endpoint, API_PREFIX)
-	res, err = doRequest(reqUrl, http.MethodPost, map[string]string{
-		"index": INDEX_ALL_ALERTS,
-	}, queryDSL)
+           "size": 0,
+           "query": {
+             "bool": {
+               "must": {
+                 "term": {
+                   "monitor_id": "%s"
+                 }
+               }
+             }
+           },
+           "aggs": {
+             "active_count": {
+               "terms": {
+                 "field": "state"
+               }
+             },
+             "24_hour_count": {
+               "date_range": {
+                 "field": "start_time",
+                 "ranges": [{ "from": "now-24h/h" }]
+               }
+             }
+           }
+         }`
+	queryDSL = fmt.Sprintf(queryDSL, mid)
+	reqUrl = fmt.Sprintf("%s/%s/_search", config.Endpoint, getAlertIndexName(INDEX_ALL_ALERTS))
+	res, err = doRequest(reqUrl, http.MethodPost,nil, queryDSL)
 
 	if err != nil {
 		writeError(w, err)
@@ -90,33 +84,37 @@ func GetMonitor(w http.ResponseWriter, req *http.Request, ps httprouter.Params) 
 		writeError(w, err)
 		return
 	}
-	dayCount := queryValue(searchResBody,  "aggregations.24_hour_count.buckets.0.doc_count", 0)
+	dayCountBuckets := queryValue(searchResBody,  "aggregations.24_hour_count.buckets", 0)
+	dayCount := 0
+	if dcb, ok := dayCountBuckets.([]interface{}); ok {
+		if dayAgg, ok := dcb[0].(map[string]interface{}); ok {
+			dayCount = int(dayAgg["doc_count"].(float64))
+		}
+	}
+
 	activeBuckets := queryValue(searchResBody, "aggregations.active_count.buckets",[]interface{}{})
 	activeCount := 0
-	if ab, ok := activeBuckets.([]IfaceMap); ok {
-		for _, curr := range ab {
-			if  curr["key"].(string) == "ACTIVE" {
-				activeCount = int(curr["doc_count"].(float64))
+	if ab, ok := activeBuckets.([]interface{}); ok {
+		for _, bk := range ab {
+			if curr, ok := bk.(map[string]interface{}); ok {
+				if curr["key"].(string) == "ACTIVE" {
+					activeCount = int(curr["doc_count"].(float64))
+					break
+				}
 			}
 		}
 	}
+	monitor := queryValue(resBody, "_source.monitor", nil)
 	writeJSON(w, IfaceMap{
 		"ok": true,
-		"resp": resBody["monitor"],
+		"resp": monitor,
 		"activeCount": activeCount,
 		"dayCount": dayCount,
 		"version": queryValue(resBody, "_version", nil),
-		"ifSeqNo": queryValue(resBody, "_seq_no", nil),
-		"ifPrimaryTerm": queryValue(resBody, "_primary_term", nil),
 	}, http.StatusOK)
 }
 
 func GetMonitors(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	defer func() {
-		if err := recover(); err != nil {
-			debug.PrintStack()
-		}
-	}()
 	id := ps.ByName("id")
 	conf := elastic.GetConfig(id)
 	if conf == nil {
@@ -130,20 +128,31 @@ func GetMonitors(w http.ResponseWriter, req *http.Request, ps httprouter.Params)
 		sortDirection = getQueryParam(req, "sortDirection")
 		sortField = getQueryParam(req, "sortField")
 		state = getQueryParam(req, "state")
-		must = IfaceMap{ "match_all": IfaceMap{} }
+		must = []IfaceMap{
+			{
+				"match": IfaceMap{
+					"cluster_id": id,
+				},
+			},
+			{
+				"exists": IfaceMap{
+					"field": MONITOR_FIELD,
+				},
+			},
+		}
 	)
 	if clearSearch := strings.TrimSpace(search); clearSearch != "" {
 		clearSearch =  strings.ReplaceAll(clearSearch, " ", "* *")
-		must = IfaceMap{
-          "query_string": IfaceMap{
-			"default_field": "monitor.name",
-            "default_operator": "AND",
-            "query": fmt.Sprintf("*%s*", clearSearch),
-          },
-        }
+		must = append(must, IfaceMap{
+			"query_string": IfaceMap{
+				//"default_field": "monitor.name",
+				"default_operator": "AND",
+				"query": fmt.Sprintf("*%s*", clearSearch),
+			},
+		})
 	}
 	var filter = []IfaceMap{
-		IfaceMap{ "term": IfaceMap{ "monitor.type": "monitor" }},
+		{ "term": IfaceMap{ "monitor.type": "monitor" }},
 	}
 	if state != "all" {
 		filter = append(filter, IfaceMap{
@@ -175,18 +184,24 @@ func GetMonitors(w http.ResponseWriter, req *http.Request, ps httprouter.Params)
 		sortPageData["from"] = intFrom
 	}
 	var params = IfaceMap{
-		"seq_no_primary_term": true,
-		"version":             true,
 		"query": IfaceMap{
 			"bool": IfaceMap{
 				"filter": filter,
 				"must": must,
+				"must_not": []IfaceMap{
+					{
+						"exists": IfaceMap{
+							"field": "monitor.status",
+						},
+					},
+				},
 			},
 		},
 	}
 	assignTo(params, sortPageData)
-	reqUrl := fmt.Sprintf("%s/%s/_alerting/monitors/_search", conf.Endpoint, API_PREFIX )
-	res, err := doRequest(reqUrl, http.MethodPost, nil, params)
+	config := getDefaultConfig()
+	reqUrl := fmt.Sprintf("%s/%s/_search", config.Endpoint, orm.GetIndexName(alerting.Config{}) )
+	res, err := doRequest(reqUrl, http.MethodGet, nil, params)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -208,12 +223,10 @@ func GetMonitors(w http.ResponseWriter, req *http.Request, ps httprouter.Params)
 			if hit, ok := hitIface.(map[string]interface{}); ok {
 				id := queryValue(hit, "_id", "")
 				monitorIDs = append(monitorIDs, id)
-				monitor := queryValue(hit, "_source", IfaceMap{}).(map[string]interface{})
+				monitor := queryValue(hit, "_source.monitor", IfaceMap{}).(map[string]interface{})
 				monitorMap[id.(string)] = IfaceMap{
 					"id":            id,
 					"version":       queryValue(hit, "_version", ""),
-					"ifSeqNo":       queryValue(hit, "_seq_no", false),
-					"ifPrimaryTerm": queryValue(hit, "_primary_term", false),
 					"name":          queryValue(monitor, "name", ""),
 					"enabled":       queryValue(monitor, "enabled", false),
 					"monitor":       monitor,
@@ -235,9 +248,7 @@ func GetMonitors(w http.ResponseWriter, req *http.Request, ps httprouter.Params)
 	if sortF, ok := aggsSorts[sortField]; ok {
 		aggsOrderData["order"] = IfaceMap{ sortF.(string): sortDirection }
 	}
-	var queryParams = map[string]string{
-		"index": INDEX_ALL_ALERTS,
-	}
+
 	var termsMap = IfaceMap{
 		"field": "monitor_id",
 		"size": intFrom + intSize,
@@ -250,13 +261,13 @@ func GetMonitors(w http.ResponseWriter, req *http.Request, ps httprouter.Params)
 			"uniq_monitor_ids": IfaceMap{
 				"terms": termsMap,
 				"aggregations": IfaceMap{
-					"active": IfaceMap{ "filter": IfaceMap{ "term": IfaceMap{ "state": "ACTIVE" } } },
-					"acknowledged": IfaceMap{ "filter": IfaceMap{ "term": IfaceMap{ "state": "ACKNOWLEDGED" } } },
-					"errors": IfaceMap{ "filter": IfaceMap{ "term": IfaceMap{ "state": "ERROR" } } },
+					"active": IfaceMap{ "filter": IfaceMap{ "term": IfaceMap{ "state": ALERT_ACTIVE } } },
+					"acknowledged": IfaceMap{ "filter": IfaceMap{ "term": IfaceMap{ "state": ALERT_ACKNOWLEDGED } } },
+					"errors": IfaceMap{ "filter": IfaceMap{ "term": IfaceMap{ "state": ALERT_ERROR } } },
 					"ignored": IfaceMap{
 						"filter": IfaceMap{
 							"bool": IfaceMap{
-								"filter": IfaceMap{ "term": IfaceMap{ "state": "COMPLETED" } },
+								"filter": IfaceMap{ "term": IfaceMap{ "state": ALERT_COMPLETED } },
 								"must_not": IfaceMap{ "exists": IfaceMap{ "field": "acknowledged_time" } },
 							},
 						},
@@ -276,9 +287,8 @@ func GetMonitors(w http.ResponseWriter, req *http.Request, ps httprouter.Params)
 		},
 	}
 
-
-	reqUrl = fmt.Sprintf("%s/%s/_alerting/monitors/_search", conf.Endpoint, API_PREFIX)
-	searchRes, err := doRequest(reqUrl, http.MethodPost, queryParams, aggsParams)
+	reqUrl = fmt.Sprintf("%s/%s/_search", config.Endpoint, getAlertIndexName(INDEX_ALL_ALERTS))
+	searchRes, err := doRequest(reqUrl, http.MethodPost, nil, aggsParams)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -309,6 +319,7 @@ func GetMonitors(w http.ResponseWriter, req *http.Request, ps httprouter.Params)
 				monitor["latestAlert"] = latestAlert
 				monitor["active"] = queryValue(bk, "active.doc_count", 0)
 				monitor["errors"] = queryValue(bk, "errors.doc_count", 0)
+				monitor["acknowledged"] = queryValue(bk, "acknowledged.doc_count", 0)
 				monitor["currentTime"] = time.Now().UnixNano() / 1e6
 				usedMonitors = append(usedMonitors, monitor)
 				delete(monitorMap, id.(string))
@@ -351,10 +362,22 @@ func CreateMonitor(w http.ResponseWriter, req *http.Request, ps httprouter.Param
 		return
 	}
 
-	reqUrl := fmt.Sprintf("%s/%s/_alerting/monitors", conf.Endpoint, API_PREFIX)
+	var monitor = &alerting.Monitor{}
+	err := decodeJSON(req.Body, &monitor)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+
+	monitor.LastUpdateTime = time.Now().UnixNano()/1e6
+	config := getDefaultConfig()
+	reqUrl := fmt.Sprintf("%s/%s/_doc", config.Endpoint, orm.GetIndexName(alerting.Config{}))
 	res, err := doRequest(reqUrl, http.MethodPost, map[string]string{
 		"refresh": "wait_for",
-	}, req.Body)
+	}, IfaceMap{
+		"cluster_id": id,
+		MONITOR_FIELD: monitor,
+	})
 	if err != nil {
 		writeError(w, err)
 		return
@@ -367,10 +390,19 @@ func CreateMonitor(w http.ResponseWriter, req *http.Request, ps httprouter.Param
 		writeError(w, err)
 		return
 	}
+	monitorId := queryValue(resBody, "_id", "").(string)
+	GetScheduler().AddMonitor(monitorId, &ScheduleMonitor{
+		Monitor: monitor,
+		ClusterID: id,
+	})
 
 	writeJSON(w, IfaceMap{
 		"ok": true,
-		"resp": resBody,
+		"resp": IfaceMap{
+			MONITOR_FIELD: monitor,
+			"_id": monitorId,
+			"_version":  queryValue(resBody, "_version", 0),
+		},
 	}, http.StatusOK)
 }
 
@@ -383,9 +415,56 @@ func DeleteMonitor(w http.ResponseWriter, req *http.Request, ps httprouter.Param
 	}
 
 	monitorId := ps.ByName("monitorID")
+	config := getDefaultConfig()
 
-	reqUrl := fmt.Sprintf("%s/%s/_alerting/monitors/%s", conf.Endpoint, API_PREFIX, monitorId)
-	res, err := doRequest(reqUrl, http.MethodDelete, nil, nil)
+	//change alert state to deleted and move alert to history
+	reqUrl := fmt.Sprintf("%s/_reindex", config.Endpoint)
+	query := IfaceMap{
+		"bool": IfaceMap{
+			"must": []IfaceMap{
+				{"match": IfaceMap{
+					"monitor_id": monitorId,
+				}},
+			},
+		},
+	}
+	reqBody := IfaceMap{
+		"source": IfaceMap{
+			"index": getAlertIndexName(INDEX_ALERT),
+			"query": query,
+		},
+		"dest": IfaceMap{
+			"index": getAlertIndexName(INDEX_ALERT_HISTORY),
+		},
+		"script": IfaceMap{
+			"source": fmt.Sprintf("ctx._source['state'] = '%s';", ALERT_DELETED),
+		},
+	}
+	_, err := doRequest(reqUrl, http.MethodPost,nil, reqBody)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	//delete alert
+	reqUrl = fmt.Sprintf("%s/%s/_delete_by_query", config.Endpoint, getAlertIndexName(INDEX_ALERT))
+	_, err = doRequest(reqUrl, http.MethodPost, nil, IfaceMap{
+		"query" : query,
+	})
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+
+	//logic delete monitor
+	reqUrl = fmt.Sprintf("%s/%s/_update/%s", config.Endpoint, orm.GetIndexName(alerting.Config{}), monitorId)
+	res, err := doRequest(reqUrl, http.MethodPost, map[string]string{
+		"refresh": "wait_for",
+	}, IfaceMap{
+		"script" : IfaceMap{
+			"source": "ctx._source.monitor.status = 'DELETED';",
+			"lang": "painless",
+		},
+	})
 	if err != nil {
 		writeError(w, err)
 		return
@@ -398,12 +477,12 @@ func DeleteMonitor(w http.ResponseWriter, req *http.Request, ps httprouter.Param
 		writeError(w, err)
 		return
 	}
-	//TODO error handle: check whether resBody has contains field error
 
 	resultIfce := queryValue(resBody, "result", "")
 	var isOk = false
-	if result, ok := resultIfce.(string); ok && result == "deleted" {
+	if result, ok := resultIfce.(string); ok && result == "updated" {
 		isOk = true
+		GetScheduler().RemoveMonitor(monitorId)
 	}
 	writeJSON(w, IfaceMap{
 		"ok": isOk,
@@ -420,17 +499,36 @@ func UpdateMonitor(w http.ResponseWriter, req *http.Request, ps httprouter.Param
 	}
 
 	monitorId := ps.ByName("monitorID")
-	var (
-		ifSeqNo = getQueryParam(req, "ifSeqNo")
-		ifPrimaryTerm = getQueryParam(req, "ifPrimaryTerm")
-	)
+	config := getDefaultConfig()
+	reqUrl := fmt.Sprintf("%s/%s/_doc/%s", config.Endpoint, orm.GetIndexName(alerting.Config{}), monitorId)
 
-	reqUrl := fmt.Sprintf("%s/%s/_alerting/monitors/%s", conf.Endpoint, API_PREFIX, monitorId)
+	var monitor = &alerting.Monitor{}
+	err := decodeJSON(req.Body, &monitor)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	if len(monitor.Triggers) > 0 {
+		for i, trigger := range monitor.Triggers {
+			if trigger.ID == "" {
+				monitor.Triggers[i].ID = util.GetUUID()
+			}
+			if len(trigger.Actions) > 0 {
+				for j, action := range trigger.Actions {
+					if action.ID == ""{
+						monitor.Triggers[i].Actions[j].ID = util.GetUUID()
+					}
+				}
+			}
+		}
+	}
+	monitor.LastUpdateTime = time.Now().UnixNano()/1e6
 	res, err := doRequest(reqUrl, http.MethodPut, map[string]string{
 		"refresh": "wait_for",
-		"if_seq_no": ifSeqNo,
-		"if_primary_term": ifPrimaryTerm,
-	}, req.Body)
+	}, IfaceMap{
+		"cluster_id": id,
+		MONITOR_FIELD: monitor,
+	})
 	if err != nil {
 		writeError(w, err)
 		return
@@ -444,6 +542,10 @@ func UpdateMonitor(w http.ResponseWriter, req *http.Request, ps httprouter.Param
 		return
 	}
 
+	GetScheduler().UpdateMonitor(monitorId, &ScheduleMonitor{
+		Monitor: monitor,
+		ClusterID: id,
+	})
 	writeJSON(w, IfaceMap{
 		"ok": true,
 		"version": queryValue(resBody, "_version", ""),
@@ -461,9 +563,40 @@ func AcknowledgeAlerts(w http.ResponseWriter, req *http.Request, ps httprouter.P
 	}
 
 	monitorId := ps.ByName("monitorID")
+	var ackAlertsReq = struct {
+		AlertIDs []string `json:"alerts"`
+	}{}
+	err := decodeJSON(req.Body, &ackAlertsReq)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
 
-	reqUrl := fmt.Sprintf("%s/%s/_alerting/monitors/%s/_acknowledge/alerts", conf.Endpoint, API_PREFIX, monitorId)
-	res, err := doRequest(reqUrl, http.MethodPost,nil, req.Body)
+	config := getDefaultConfig()
+	reqUrl := fmt.Sprintf("%s/%s/_update_by_query", config.Endpoint, getAlertIndexName(INDEX_ALERT))
+	reqBody := IfaceMap{
+		"query": IfaceMap{
+			"bool": IfaceMap{
+				"must":[]IfaceMap{
+					{"match": IfaceMap{
+						"monitor_id": monitorId,
+					}},
+					{
+						"terms": IfaceMap{
+							"_id": ackAlertsReq.AlertIDs,
+						},
+					},
+				},
+			},
+
+		},
+		"script": IfaceMap{
+			"source": fmt.Sprintf("ctx._source['state'] = '%s';ctx._source['acknowledged_time'] = %dL;", ALERT_ACKNOWLEDGED, time.Now().UnixNano()/1e6),
+		},
+	}
+	res, err := doRequest(reqUrl, http.MethodPost, map[string]string{
+		"refresh":"",
+	}, reqBody)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -478,13 +611,16 @@ func AcknowledgeAlerts(w http.ResponseWriter, req *http.Request, ps httprouter.P
 	}
 
 	var isOk = false
-	if failed, ok := resBody["failed"].([]interface{}); ok && len(failed) == 0 {
+	if failed, ok := resBody["failures"].([]interface{}); ok && len(failed) == 0 {
 		isOk = true
 	}
 
 	writeJSON(w, IfaceMap{
 		"ok": isOk,
-		"resp": resBody,
+		"resp": IfaceMap{
+			"success": ackAlertsReq.AlertIDs,
+			"failed": []string{},
+		},
 	}, http.StatusOK)
 
 }
@@ -500,10 +636,23 @@ func ExecuteMonitor(w http.ResponseWriter, req *http.Request, ps httprouter.Para
 		dryrun = getQueryParam(req, "dryrun", "true")
 	)
 
-	reqUrl := fmt.Sprintf("%s/%s/_alerting/monitors/_execute", conf.Endpoint, API_PREFIX)
-	res, err := doRequest(reqUrl, http.MethodPost, map[string]string{
-		"dryrun": dryrun,
-	}, req.Body)
+	var monitor = &alerting.Monitor{}
+	err := decodeJSON(req.Body, &monitor)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+
+	if monitor.Name == "TEMP_MONITOR"{
+
+	}
+	if len(monitor.Inputs) == 0 {
+		writeError(w, errors.New("no input"))
+		return
+	}
+	periodStart := time.Now()
+	reqUrl := fmt.Sprintf("%s/%s/_search", conf.Endpoint, strings.Join(monitor.Inputs[0].Search.Indices, ","))
+	res, err := doRequest(reqUrl, http.MethodGet, nil, monitor.Inputs[0].Search.Query)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -516,10 +665,49 @@ func ExecuteMonitor(w http.ResponseWriter, req *http.Request, ps httprouter.Para
 		writeError(w, err)
 		return
 	}
-	//TODO error handle: check whether resBody has contains field error
 
+	var triggerResults = IfaceMap{}
+	if dryrun == "true" {
+		sm := ScheduleMonitor{
+			Monitor: monitor,
+		}
+		for _, trigger := range monitor.Triggers {
+			triggerResult := IfaceMap{
+				"error": nil,
+				"action_results": IfaceMap{},
+				"name": trigger.Name,
+			}
+			monitorCtx, err := createMonitorContext(&trigger, resBody, &sm, IfaceMap{})
+			if err != nil {
+				triggerResult["error"] = err
+				triggerResults[trigger.ID] = triggerResult
+				continue
+			}
+			isTrigger, err := resolveTriggerResult(&trigger, monitorCtx)
+			triggerResult["triggered"] = isTrigger
+			if err != nil {
+				triggerResult["error"] = err
+			}
+			if trigger.ID == "" {
+				trigger.ID = util.GetUUID()
+			}
+			triggerResults[trigger.ID] = triggerResult
+		}
+	}
+
+	period := alertUtil.GetMonitorPeriod(&periodStart, &monitor.Schedule)
 	writeJSON(w, IfaceMap{
 		"ok": true,
-		"resp": resBody,
+		"resp": IfaceMap{
+			"error": nil,
+			"monitor_name": monitor.Name,
+			"input_results": IfaceMap{
+				"error": nil,
+				"results": []IfaceMap{resBody},
+			},
+			"trigger_results": triggerResults,
+			"period_start": period.Start,
+			"period_end": period.End,
+		},
 	}, http.StatusOK)
 }

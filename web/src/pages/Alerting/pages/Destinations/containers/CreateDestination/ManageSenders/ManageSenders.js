@@ -105,6 +105,7 @@ export default class ManageSenders extends React.Component {
       host: sender.host,
       port: sender.port,
       method: sender.method,
+      password: sender.password,
     };
     try {
       const response = await httpClient.post(`/alerting/destinations/email_accounts`, {
@@ -136,6 +137,7 @@ export default class ManageSenders extends React.Component {
       host: updatedSender.host,
       port: updatedSender.port,
       method: updatedSender.method,
+      password: updatedSender.password,
     };
     try {
       const response = await httpClient.put(`/alerting/email_accounts/${id}`, {

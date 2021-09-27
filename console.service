@@ -1,0 +1,16 @@
+[Unit]
+Description=infini-console
+After=network.target
+
+[Service]
+Type=forking
+WorkingDirectory=/opt/console
+ExecStart=/opt/console/console -daemon -pidfile /var/run/infini-console.pid  -config /opt/console/console.yml
+ExecStop=/bin/kill `cat /var/run/infini-console.pid`
+PrivateTmp=true
+User=root
+Group=root
+LimitNOFILE=16384:163840
+
+[Install]
+WantedBy=multi-user.target

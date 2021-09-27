@@ -41,11 +41,10 @@ const SendRequestButton = (props: any) => {
   const sendCurrentRequestToES = useSendCurrentRequestToES();
   const saveCurrentTextObject = useSaveCurrentTextObject();
 
-  const {sendCurrentRequestToESRef, saveCurrentTextObjectRef} = props;
+  const {saveCurrentTextObjectRef} = props;
   useEffect(()=>{
-    sendCurrentRequestToESRef.current = sendCurrentRequestToES
     saveCurrentTextObjectRef.current = saveCurrentTextObject
-  }, [sendCurrentRequestToESRef, saveCurrentTextObjectRef])
+  }, [saveCurrentTextObjectRef])
   
 
   return (
@@ -87,6 +86,7 @@ const ConsoleInputUI = ({clusterID, initialText}:ConsoleInputProps) => {
 
   const sendCurrentRequestToESRef = useRef(()=>{});
   const saveCurrentTextObjectRef = useRef((content:string)=>{});
+  sendCurrentRequestToESRef.current = useSendCurrentRequestToES();
   
   const {services:{settings}} = useServicesContext();
 
@@ -141,7 +141,7 @@ const ConsoleInputUI = ({clusterID, initialText}:ConsoleInputProps) => {
     }
   }, []);
   useEffect(()=>{
-    retrieveAutoCompleteInfo(settings, settings.getAutocomplete());
+    retrieveAutoCompleteInfo(settings, settings.getAutocomplete(), clusterID);
   },[clusterID])
 
   const handleSaveAsCommonCommand = async () => {
@@ -168,7 +168,7 @@ const ConsoleInputUI = ({clusterID, initialText}:ConsoleInputProps) => {
               ref={editorActionsRef}
             >
               <EuiFlexItem>
-                <SendRequestButton sendCurrentRequestToESRef={sendCurrentRequestToESRef} saveCurrentTextObjectRef={saveCurrentTextObjectRef}/>
+                <SendRequestButton saveCurrentTextObjectRef={saveCurrentTextObjectRef}/>
               </EuiFlexItem>
               <EuiFlexItem>
                 <ConsoleMenu

@@ -128,7 +128,7 @@ class DropdownSelect extends React.Component{
                                                                           type="caret-down"/></Button> */}
             <span style={{position:'relative'}}>
               <i style={{position: 'absolute', left:15,zIndex:10, top: -28}}>
-              {cstatus?.cluster_available ? <HealthStatusCircle status={cstatus?.health_status} />: <Icon type='close-circle' style={{width:14, height:14, color:'red',borderRadius: 14, boxShadow: '0px 0px 5px #555'}} />}
+              {cstatus?.available ? <HealthStatusCircle status={cstatus?.health?.status} />: <Icon type='close-circle' style={{width:14, height:14, color:'red',borderRadius: 14, boxShadow: '0px 0px 5px #555'}} />}
               </i> 
               <input className={styles['btn-ds']} style={{outline:'none', paddingLeft:22}} value={value[labelField]} readOnly={true} />
               <Icon style={{position:'absolute', top:-6, right:-4}} type="caret-down"/>

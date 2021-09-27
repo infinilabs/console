@@ -21,7 +21,7 @@ import { SEARCH_TYPE, INPUTS_DETECTOR_ID } from '../../../../../utils/constants'
 export default function monitorToFormik(monitor) {
   const formikValues = _.cloneDeep(FORMIK_INITIAL_VALUES);
   if (!monitor) return formikValues;
-  const {
+  let {
     name,
     enabled,
     schedule: { cron: { expression: cronExpression = formikValues.cronExpression, timezone } = {} },
@@ -32,6 +32,11 @@ export default function monitorToFormik(monitor) {
   // In that case we don't want to guess on the UI what selections a user made, so we will default to just showing the extraction query
   const { searchType = 'query', fieldName } = search;
   const isAD = searchType === SEARCH_TYPE.AD;
+  if(monitor.schedule) {
+    schedule = monitor.schedule
+    schedule.cron && (schedule.frequency = "cronExpression")
+    schedule.period && (schedule.frequency = "interval")
+  }
 
   return {
     /* INITIALIZE WITH DEFAULTS */

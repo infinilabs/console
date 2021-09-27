@@ -137,7 +137,7 @@ class MonitorHistory extends PureComponent {
               acknowledgedTime,
               endTime: currentEndTime,
               state,
-              errorsCount: alert_history.length,
+              errorsCount: alert_history?.length || 0,
             },
           },
           lastEndTime

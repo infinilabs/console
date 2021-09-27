@@ -24,8 +24,9 @@ export const FORMIK_INITIAL_VALUES = {
   minTimeBetweenExecutions: null,
   rollingWindowSize: null,
   script: {
-    lang: 'painless',
-    source: `ctx.results[0].hits.total.value > 0`,
+    lang: 'yaml',
+    source: `range:
+    _ctx.results.[0].hits.total.value.gt: 0`,
   },
   thresholdValue: 10000,
   thresholdEnum: 'ABOVE',
@@ -39,9 +40,9 @@ export const FORMIK_INITIAL_VALUES = {
   actions: undefined,
 };
 
-export const HITS_TOTAL_RESULTS_PATH = 'ctx.results[0].hits.total.value';
-export const AGGREGATION_RESULTS_PATH = 'ctx.results[0].aggregations.when.value';
-export const ANOMALY_GRADE_RESULT_PATH = 'ctx.results[0].aggregations.max_anomaly_grade.value';
-export const ANOMALY_CONFIDENCE_RESULT_PATH = 'ctx.results[0].hits.hits[0]._source.confidence';
+export const HITS_TOTAL_RESULTS_PATH = '_ctx.results[0].hits.total.value';
+export const AGGREGATION_RESULTS_PATH = '_ctx.results[0].aggregations.when.value';
+export const ANOMALY_GRADE_RESULT_PATH = '_ctx.results[0].aggregations.max_anomaly_grade.value';
+export const ANOMALY_CONFIDENCE_RESULT_PATH = '_ctx.results[0].hits.hits[0]._source.confidence';
 export const NOT_EMPTY_RESULT =
   'ctx.results != null && ctx.results.length > 0 && ctx.results[0].aggregations != null && ctx.results[0].aggregations.max_anomaly_grade != null && ctx.results[0].hits.total.value > 0 && ctx.results[0].hits.hits[0]._source != null && ctx.results[0].hits.hits[0]._source.confidence != null';

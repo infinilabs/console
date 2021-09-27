@@ -37,6 +37,7 @@ import { stringify } from 'query-string';
 
 interface SendOptions {
   asSystemRequest?: boolean;
+  clusterID?: string;
 }
 
 const esVersion: string[] = [];
@@ -62,15 +63,15 @@ export function send(
   method: string,
   path: string,
   data: string | object,
-  { asSystemRequest }: SendOptions = {}
+  { asSystemRequest, clusterID }: SendOptions = {}
 ) {
   const wrappedDfd = $.Deferred();
 
-  const clusterID = extractClusterIDFromURL();
-  if(!clusterID){
-    console.log('can not get clusterid from url');
-    return;
-  }
+  // const clusterID = extractClusterIDFromURL();
+  // if(!clusterID){
+  //   console.log('can not get clusterid from url');
+  //   return;
+  // }
   // @ts-ignore
   const options: JQuery.AjaxSettings = {
     url: `/elasticsearch/${clusterID}/_proxy?` + stringify({ path, method }),

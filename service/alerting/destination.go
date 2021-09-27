@@ -5,8 +5,13 @@ import (
 	"fmt"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/orm"
+	"infini.sh/framework/core/util"
+	"infini.sh/search-center/model/alerting"
 	"net/http"
+	"runtime/debug"
 	"strings"
+	"time"
 )
 
 func GetDestination(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -18,7 +23,7 @@ func GetDestination(w http.ResponseWriter, req *http.Request, ps httprouter.Para
 	}
 
 	dstID := ps.ByName("destID")
-	reqUrl := fmt.Sprintf("%s/_opendistro/_alerting/monitors/%s", conf.Endpoint, dstID)
+	reqUrl := fmt.Sprintf("%s/%s/_doc/%s", conf.Endpoint, orm.GetIndexName(alerting.Config{}), dstID)
 	res, err := doRequest(reqUrl, http.MethodGet, nil, nil)
 	if err != nil {
 		writeError(w, err)
@@ -32,74 +37,11 @@ func GetDestination(w http.ResponseWriter, req *http.Request, ps httprouter.Para
 	}
 	res.Body.Close()
 
-	if _, ok := resBody["monitor"]; !ok {
-		writeJSON(w, IfaceMap{
-			"ok": false,
-		}, http.StatusOK)
-		return
-	}
-
-	queryDSL := ` {
-            "size": 0,
-            "query"": {
-              "bool": {
-                "must": {
-                  "term"": {
-                    "monitor_id": "%s",
-                  },
-                },
-              },
-            },
-            "aggs": {
-              "active_count": {
-                "terms": {
-                  "field": "state",
-                }
-              },
-              "24_hour_count": {
-                "date_range": {
-                  "field": "start_time",
-                  "ranges": [{ "from": "now-24h/h" }]
-                }
-              }
-            }
-          }`
-	queryDSL = fmt.Sprintf(queryDSL, id)
-	reqUrl = fmt.Sprintf("%s/_opendistro/_alerting/monitors/_search", conf.Endpoint)
-	res, err = doRequest(reqUrl, http.MethodPost, map[string]string{
-		"index": ".opendistro-alerting-alert*",
-	}, queryDSL)
-
-	if err != nil {
-		writeError(w, err)
-		return
-	}
-
-	var searchResBody = IfaceMap{}
-	err = decodeJSON(res.Body, &searchResBody)
-	if err != nil {
-		writeError(w, err)
-		return
-	}
-	dayCount := queryValue(searchResBody,  "aggregations.24_hour_count.buckets.0.doc_count", 0)
-	activeBuckets := queryValue(searchResBody, "aggregations.active_count.buckets",[]interface{}{})
-	activeCount := 0
-	if ab, ok := activeBuckets.([]IfaceMap); ok {
-		for _, curr := range ab {
-			if  curr["key"].(string) == "ACTIVE" {
-				activeCount = int(curr["doc_count"].(float64))
-			}
-		}
-	}
 	writeJSON(w, IfaceMap{
 		"ok": true,
-		"resp": resBody["monitor"],
-		"activeCount": activeCount,
-		"dayCount": dayCount,
-		"version": queryValue(resBody, "_version", nil),
-		"ifSeqNo": queryValue(resBody, "_seq_no", nil),
-		"ifPrimaryTerm": queryValue(resBody, "_primary_term", nil),
+		"destination": queryValue(resBody, "_source.destination", nil),
 	}, http.StatusOK)
+
 }
 
 func GetDestinations(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -114,65 +56,99 @@ func GetDestinations(w http.ResponseWriter, req *http.Request, ps httprouter.Par
 		size          = getQueryParam(req, "size", "20")
 		search        = getQueryParam(req, "search", "")
 		sortDirection = getQueryParam(req, "sortDirection", "desc")
-		sortField     = getQueryParam(req, "sortField", "start_time")
-		typ         = getQueryParam(req, "type", "ALL")
+		sortField     = getQueryParam(req, "sortField", "")
+		typ         = getQueryParam(req, "type", "")
 	)
 
-	var params = map[string]string{}
-	switch (sortField) {
-	case "name":
-		params =  map[string]string{
-			"sortString": "destination.name.keyword",
-			"sortOrder": sortDirection,
-		}
-	case "type":
-		params =  map[string]string{
-			"sortString": "destination.type",
-			"sortOrder": sortDirection,
-		}
-	default:
-	}
-	params["startIndex"] = from
-	params["size"] = size
-	params["searchString"] = search
-	params["destinationType"] = typ
-	if clearSearch := strings.TrimSpace(search); clearSearch != "" {
-		clearSearch = strings.ReplaceAll(clearSearch, " ", "* *")
-		params["searchString"] = clearSearch
+	must := []IfaceMap{
+		{
+			"exists": IfaceMap{
+				"field": DESTINATION_FIELD,
+			},
+		},
+		//{
+		//	"match": IfaceMap{
+		//		"cluster_id": id,
+		//	},
+		//},
 	}
 
-	reqUrl := fmt.Sprintf("%s/%s/_alerting/destinations", conf.Endpoint, API_PREFIX)
-	res, err := doRequest(reqUrl, http.MethodGet, params, nil)
+	if clearSearch := strings.TrimSpace(search); clearSearch != "" {
+		clearSearch = strings.ReplaceAll(clearSearch, " ", "* *")
+		must = append(must, IfaceMap{
+			"query_string": IfaceMap{
+				//"default_field": "destination.name",
+				"default_operator": "AND",
+				"query": fmt.Sprintf(`*%s*`, clearSearch),
+			},
+		})
+	}
+
+	var sort interface{} = IfaceMap{}
+	switch (sortField) {
+	case "name":
+		sort =  IfaceMap{ "destination.name.keyword": sortDirection }
+	case "type":
+		sort = IfaceMap{ "destination.type": sortDirection }
+	default:
+	}
+	if typ != "" && typ != "ALL" {
+		must = append(must, IfaceMap{
+			"match": IfaceMap{
+				"destination.type": typ,
+			},
+		})
+	}
+
+	reqBody := IfaceMap{
+		"from": from,
+		"size": size,
+		"sort": sort,
+		"query": IfaceMap{
+			"bool": IfaceMap{
+				"must": must,
+			},
+		},
+	}
+
+	config := getDefaultConfig()
+	reqUrl := fmt.Sprintf("%s/%s/_search", config.Endpoint, orm.GetIndexName(alerting.Config{}))
+
+	res, err := doRequest(reqUrl, http.MethodGet, nil, reqBody)
 
 	if err != nil {
 		writeError(w, err)
 		return
 	}
-
 	var resBody = IfaceMap{}
 	err = decodeJSON(res.Body, &resBody)
 	if err != nil {
 		writeError(w, err)
 		return
 	}
-	rawDests := queryValue(resBody, "destinations", []interface{}{})
+
+	totalDestinations := queryValue(resBody, "hits.total.value", 0)
+	rawHits := queryValue(resBody, "hits.hits", []interface{}{})
 	dests := []IfaceMap{}
 
-	if ds, ok := rawDests.([]interface{}); ok {
-		for _, dest := range ds {
-			if destination, ok := dest.(map[string]interface{}); ok {
-
-				destination["version"] = queryValue(destination, "schema_version", "")
-				destination["ifSeqNo"] = queryValue(destination, "seq_no", 0)
-				destination["ifPrimaryTerm"] = queryValue(destination, "primary_term", 0)
-				dests = append(dests, destination)
+	if rh, ok := rawHits.([]interface{}); ok {
+		for _, hit := range rh {
+			if destination, ok := hit.(map[string]interface{}); ok {
+				newItem := IfaceMap{}
+				newItem["id"] = queryValue(destination, "_id", "")
+				source := queryValue(destination, "_source."+DESTINATION_FIELD, nil)
+				if ms, ok :=  source.(map[string]interface{}); ok {
+					assignTo(newItem, ms)
+				}
+				dests = append(dests, newItem)
 			}
 		}
 	}
+
 	writeJSON(w, IfaceMap{
 		"ok": true,
 		"destinations": dests,
-		"totalDestinations": queryValue(resBody, "totalDestinations", 0),
+		"totalDestinations":totalDestinations,
 	}, http.StatusOK)
 }
 
@@ -184,10 +160,38 @@ func CreateDestination(w http.ResponseWriter, req *http.Request, ps httprouter.P
 		return
 	}
 
-	reqUrl := fmt.Sprintf("%s/%s/_alerting/destinations", conf.Endpoint, API_PREFIX)
+	config := getDefaultConfig()
+	destId := util.GetUUID()
+	reqUrl := fmt.Sprintf("%s/%s/_doc/%s", config.Endpoint, orm.GetIndexName(alerting.Config{}), destId)
+	var destination = &alerting.Destination{}
+	err := decodeJSON(req.Body, &destination)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	destination.LastUpdateTime = time.Now().UnixNano()/1e6
+	var toSaveDest = IfaceMap{
+		"type": destination.Type,
+		"name": destination.Name,
+		"last_update_time": destination.LastUpdateTime,
+		"schema_version": destination.SchemaVersion,
+		"id": destId,
+	}
+	switch destination.Type {
+	case "email" :
+		toSaveDest[destination.Type] = destination.Email
+	case "custom_webhook":
+		toSaveDest[destination.Type] = destination.CustomWebhook
+	default:
+		writeError(w, errors.New("type unsupported"))
+		return
+	}
 	res, err := doRequest(reqUrl, http.MethodPost, map[string]string{
 		"refresh": "wait_for",
-	}, req.Body)
+	}, IfaceMap{
+		"cluster_id": id,
+		DESTINATION_FIELD: toSaveDest,
+	})
 	if err != nil {
 		writeError(w, err)
 		return
@@ -203,7 +207,11 @@ func CreateDestination(w http.ResponseWriter, req *http.Request, ps httprouter.P
 
 	writeJSON(w, IfaceMap{
 		"ok": true,
-		"resp": resBody,
+		"resp": IfaceMap{
+			DESTINATION_FIELD: toSaveDest,
+			"_id": queryValue(resBody, "_id", ""),
+			"_version":  queryValue(resBody, "_version", 0),
+		},
 	}, http.StatusOK)
 
 }
@@ -217,18 +225,38 @@ func UpdateDestination(w http.ResponseWriter, req *http.Request, ps httprouter.P
 	}
 
 	destinationId := ps.ByName("destinationId")
-	var (
-		ifSeqNo = getQueryParam(req, "ifSeqNo")
-		ifPrimaryTerm = getQueryParam(req, "ifPrimaryTerm")
-	)
-	//PUT /_opendistro/_alerting/destinations/2g3CsHsB3EDgQAwRGzgS?if_seq_no=15&if_primary_term=2&refresh=wait_for
 
-	reqUrl := fmt.Sprintf("%s/%s/_alerting/destinations/%s", conf.Endpoint, API_PREFIX, destinationId)
+	config := getDefaultConfig()
+	reqUrl := fmt.Sprintf("%s/%s/_doc/%s", config.Endpoint, orm.GetIndexName(alerting.Config{}), destinationId)
+	var destination = &alerting.Destination{}
+	err := decodeJSON(req.Body, &destination)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	destination.LastUpdateTime = time.Now().UnixNano()/1e6
+	var toSaveDest = IfaceMap{
+		"type": destination.Type,
+		"name": destination.Name,
+		"last_update_time": destination.LastUpdateTime,
+		"schema_version": destination.SchemaVersion,
+		"id": destinationId,
+	}
+	switch destination.Type {
+	case "email" :
+		toSaveDest[destination.Type] = destination.Email
+	case "custom_webhook":
+		toSaveDest[destination.Type] = destination.CustomWebhook
+	default:
+		writeError(w, errors.New("type unsupported"))
+		return
+	}
 	res, err := doRequest(reqUrl, http.MethodPut, map[string]string{
 		"refresh": "wait_for",
-		"if_seq_no": ifSeqNo,
-		"if_primary_term": ifPrimaryTerm,
-	}, req.Body)
+	}, IfaceMap{
+		"cluster_id": id,
+		DESTINATION_FIELD: toSaveDest,
+	})
 	if err != nil {
 		writeError(w, err)
 		return
@@ -241,8 +269,6 @@ func UpdateDestination(w http.ResponseWriter, req *http.Request, ps httprouter.P
 		writeError(w, err)
 		return
 	}
-	//TODO error handle: check whether resBody has contains field error
-
 	writeJSON(w, IfaceMap{
 		"ok": true,
 		"version": queryValue(resBody, "_version", ""),
@@ -261,7 +287,8 @@ func DeleteDestination(w http.ResponseWriter, req *http.Request, ps httprouter.P
 
 	destinationId := ps.ByName("destinationId")
 
-	reqUrl := fmt.Sprintf("%s/%s/_alerting/destinations/%s", conf.Endpoint, API_PREFIX, destinationId)
+	config := getDefaultConfig()
+	reqUrl := fmt.Sprintf("%s/%s/_doc/%s", config.Endpoint, orm.GetIndexName(alerting.Config{}), destinationId)
 	res, err := doRequest(reqUrl, http.MethodDelete, nil, nil)
 	if err != nil {
 		writeError(w, err)
@@ -275,7 +302,6 @@ func DeleteDestination(w http.ResponseWriter, req *http.Request, ps httprouter.P
 		writeError(w, err)
 		return
 	}
-	//TODO error handle: check whether resBody has contains field error
 
 	resultIfce := queryValue(resBody, "result", "")
 	var isOk = false
@@ -288,18 +314,57 @@ func DeleteDestination(w http.ResponseWriter, req *http.Request, ps httprouter.P
 
 }
 
+func getDefaultConfig() *elastic.ElasticsearchConfig {
+	return elastic.GetConfig("default")
+}
+
+//var (
+//	ks keystore.WritableKeystore
+//	ksOnce = &sync.Once{}
+//)
+//func getKeystore() keystore.WritableKeystore {
+//	ksOnce.Do(func() {
+//		tempKS, err := keystore.Factory(nil, "data/search-center/keystore")
+//		if err != nil {
+//			panic(err)
+//		}
+//		ks, err = keystore.AsWritableKeystore(tempKS)
+//		if err != nil {
+//			panic(err)
+//		}
+//	})
+//	return ks
+//}
+
 func CreateEmailAccount(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	defer func() {
+		if err := recover(); err != nil {
+			debug.PrintStack()
+		}
+	}()
 	id := ps.ByName("id")
 	conf := elastic.GetConfig(id)
 	if conf == nil {
 		writeError(w, errors.New("cluster not found"))
 		return
 	}
+	config := getDefaultConfig()
 
-	reqUrl := fmt.Sprintf("%s/%s/_alerting/destinations/email_accounts", conf.Endpoint, API_PREFIX)
+	reqUrl := fmt.Sprintf("%s/%s/_doc", config.Endpoint, orm.GetIndexName(alerting.Config{}))
+	var emailAccount = &alerting.EmailAccount{}
+	err := decodeJSON(req.Body, &emailAccount)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	//var password = emailAccount.Password
+	//emailAccount.Password = ""
 	res, err := doRequest(reqUrl, http.MethodPost, map[string]string{
 		"refresh": "wait_for",
-	}, req.Body)
+	}, IfaceMap{
+		EMAIL_ACCOUNT_FIELD: emailAccount,
+		"cluster_id": id,
+	})
 	if err != nil {
 		writeError(w, err)
 		return
@@ -313,9 +378,27 @@ func CreateEmailAccount(w http.ResponseWriter, req *http.Request, ps httprouter.
 		return
 	}
 
+	//kk := fmt.Sprintf("search-center_alerting.destination.email.%s.password", emailAccount.Name)
+	//secStr, _ := getKeystore().Retrieve(kk)
+	//kst := getKeystore()
+	//if secStr == nil {
+	//	kst.Store(kk, []byte(password))
+	//	kst.Save()
+	//}else{
+	//	oldPwd, _ := secStr.Get()
+	//	if bytes.Compare(oldPwd, []byte(password)) != 0 {
+	//		kst.Store(kk, []byte(password))
+	//	}
+	//	kst.Save()
+	//}
+
 	writeJSON(w, IfaceMap{
 		"ok": true,
-		"resp": resBody,
+		"resp": IfaceMap{
+			EMAIL_ACCOUNT_FIELD: emailAccount,
+			"_id": queryValue(resBody, "_id", ""),
+			"_version":  queryValue(resBody, "_version", 0),
+		},
 	}, http.StatusOK)
 }
 
@@ -328,17 +411,22 @@ func UpdateEmailAccount(w http.ResponseWriter, req *http.Request, ps httprouter.
 	}
 
 	emailAccountId := ps.ByName("emailAccountId")
-	var (
-		ifSeqNo = getQueryParam(req, "ifSeqNo")
-		ifPrimaryTerm = getQueryParam(req, "ifPrimaryTerm")
-	)
+	config := getDefaultConfig()
 
-	reqUrl := fmt.Sprintf("%s/%s/_alerting/destinations/email_accounts/%s", conf.Endpoint, API_PREFIX, emailAccountId)
+	reqUrl := fmt.Sprintf("%s/%s/_doc/%s", config.Endpoint, orm.GetIndexName(alerting.Config{}), emailAccountId)
+	var emailAccount = &alerting.EmailAccount{}
+	err := decodeJSON(req.Body, &emailAccount)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+
 	res, err := doRequest(reqUrl, http.MethodPut, map[string]string{
 		"refresh": "wait_for",
-		"if_seq_no": ifSeqNo,
-		"if_primary_term": ifPrimaryTerm,
-	}, req.Body)
+	}, IfaceMap{
+		"cluster_id": id,
+		EMAIL_ACCOUNT_FIELD: emailAccount,
+	})
 	if err != nil {
 		writeError(w, err)
 		return
@@ -351,7 +439,6 @@ func UpdateEmailAccount(w http.ResponseWriter, req *http.Request, ps httprouter.
 		writeError(w, err)
 		return
 	}
-	//TODO error handle: check whether resBody has contains field error
 
 	writeJSON(w, IfaceMap{
 		"ok": true,
@@ -369,9 +456,13 @@ func DeleteEmailAccount(w http.ResponseWriter, req *http.Request, ps httprouter.
 	}
 
 	emailAccountId := ps.ByName("emailAccountId")
+	config := getDefaultConfig()
 
-	reqUrl := fmt.Sprintf("%s/%s/_alerting/destinations/email_accounts/%s", conf.Endpoint, API_PREFIX, emailAccountId)
-	res, err := doRequest(reqUrl, http.MethodDelete, nil, nil)
+	reqUrl := fmt.Sprintf("%s/%s/_doc/%s", config.Endpoint, orm.GetIndexName(alerting.Config{}), emailAccountId)
+
+	res, err := doRequest(reqUrl, http.MethodDelete, map[string]string{
+		"refresh": "wait_for",
+	}, nil)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -384,7 +475,6 @@ func DeleteEmailAccount(w http.ResponseWriter, req *http.Request, ps httprouter.
 		writeError(w, err)
 		return
 	}
-	//TODO error handle: check whether resBody has contains field error
 
 	resultIfce := queryValue(resBody, "result", "")
 	var isOk = false
@@ -394,7 +484,6 @@ func DeleteEmailAccount(w http.ResponseWriter, req *http.Request, ps httprouter.
 	writeJSON(w, IfaceMap{
 		"ok": isOk,
 	}, http.StatusOK)
-
 }
 
 func GetEmailAccounts(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -412,24 +501,28 @@ func GetEmailAccounts(w http.ResponseWriter, req *http.Request, ps httprouter.Pa
 		sortField     = getQueryParam(req, "sortField", "name")
 	)
 
-	must := IfaceMap{
-		"match_all": IfaceMap{},
+	must := []IfaceMap{
+		{
+			"exists": IfaceMap{
+				"field": EMAIL_ACCOUNT_FIELD,
+			},
+		},
 	}
 
 	if clearSearch := strings.TrimSpace(search); clearSearch != "" {
 		clearSearch = strings.ReplaceAll(clearSearch, " ", "* *")
-		must = IfaceMap{
+		must = append(must, IfaceMap{
 			"query_string": IfaceMap{
 				"default_field": "email_account.name",
 				"default_operator": "AND",
 				"query": fmt.Sprintf(`*%s*`, clearSearch),
 			},
-		}
+		})
 	}
 
 	sortQueryMap := IfaceMap{ "name": IfaceMap{ "email_account.name.keyword": sortDirection } }
 	var sort interface{}
-	 if sortQuery, ok := sortQueryMap[sortField]; ok {
+	if sortQuery, ok := sortQueryMap[sortField]; ok {
 		sort = sortQuery
 	}
 	reqBody := IfaceMap{
@@ -443,8 +536,11 @@ func GetEmailAccounts(w http.ResponseWriter, req *http.Request, ps httprouter.Pa
 		},
 	}
 
-	reqUrl := fmt.Sprintf("%s/%s/_alerting/destinations/email_accounts/_search", conf.Endpoint, API_PREFIX)
-	res, err := doRequest(reqUrl, http.MethodPost, nil, reqBody)
+	config := getDefaultConfig()
+
+	reqUrl := fmt.Sprintf("%s/%s/_search", config.Endpoint, orm.GetIndexName(alerting.Config{}))
+
+	res, err := doRequest(reqUrl, http.MethodGet, nil, reqBody)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -465,12 +561,10 @@ func GetEmailAccounts(w http.ResponseWriter, req *http.Request, ps httprouter.Pa
 			if emailAccount, ok := hit.(map[string]interface{}); ok {
 				newItem := IfaceMap{}
 				newItem["id"] = queryValue(emailAccount, "_id", "")
-				source := queryValue(emailAccount, "_source", nil)
+				source := queryValue(emailAccount, "_source."+EMAIL_ACCOUNT_FIELD, nil)
 				if ms, ok :=  source.(map[string]interface{}); ok {
 					assignTo(newItem, ms)
 				}
-				newItem["ifSeqNo"] = queryValue(emailAccount, "_seq_no", 0)
-				newItem["ifPrimaryTerm"] = queryValue(emailAccount, "_primary_term", 0)
 				emailAccounts = append(emailAccounts, newItem)
 			}
 		}
@@ -492,8 +586,11 @@ func GetEmailAccount(w http.ResponseWriter, req *http.Request, ps httprouter.Par
 
 	emailAccountId := ps.ByName("emailAccountId")
 
-	reqUrl := fmt.Sprintf("%s/%s/_alerting/destinations/email_accounts/%s", conf.Endpoint, API_PREFIX, emailAccountId)
-	res, err := doRequest(reqUrl, http.MethodGet,nil, req.Body)
+	config := getDefaultConfig()
+
+	reqUrl := fmt.Sprintf("%s/%s/_doc/%s", config.Endpoint, orm.GetIndexName(alerting.Config{}), emailAccountId)
+
+	res, err := doRequest(reqUrl, http.MethodGet,nil, nil)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -506,14 +603,18 @@ func GetEmailAccount(w http.ResponseWriter, req *http.Request, ps httprouter.Par
 		writeError(w, err)
 		return
 	}
+	//name :=  queryValue(resBody,"_source.email_account.name", "")
+	//kk := fmt.Sprintf("search-center_alerting.destination.email.%s.password", name)
+	//secStr, _ := getKeystore().Retrieve(kk)
+	//if secStr != nil {
+	//	pwd, _ := secStr.Get()
+	//	fmt.Println(string(pwd))
+	//}
 
 	writeJSON(w, IfaceMap{
 		"ok": true,
-		"resp": queryValue(resBody, "email_account", nil),
-		"ifSeqNo":  queryValue(resBody, "_seq_no", 0),
-		"ifPrimaryTerm": queryValue(resBody, "_primary_term", 0),
+		"resp": queryValue(resBody, "_source.email_account", nil),
 	}, http.StatusOK)
-
 }
 
 
@@ -527,10 +628,20 @@ func CreateEmailGroup(w http.ResponseWriter, req *http.Request, ps httprouter.Pa
 		return
 	}
 
-	reqUrl := fmt.Sprintf("%s/%s/_alerting/destinations/email_groups", conf.Endpoint, API_PREFIX)
+	config := getDefaultConfig()
+	reqUrl := fmt.Sprintf("%s/%s/_doc", config.Endpoint, orm.GetIndexName(alerting.Config{}))
+	var emailGroup = &alerting.EmailGroup{}
+	err := decodeJSON(req.Body, &emailGroup)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
 	res, err := doRequest(reqUrl, http.MethodPost, map[string]string{
 		"refresh": "wait_for",
-	}, req.Body)
+	}, IfaceMap{
+		"cluster_id": id,
+		EMAIL_GROUP_FIELD: emailGroup,
+	})
 	if err != nil {
 		writeError(w, err)
 		return
@@ -546,7 +657,15 @@ func CreateEmailGroup(w http.ResponseWriter, req *http.Request, ps httprouter.Pa
 
 	writeJSON(w, IfaceMap{
 		"ok": true,
-		"resp": resBody,
+		"resp": IfaceMap{
+			EMAIL_GROUP_FIELD: IfaceMap{
+				"emails": emailGroup.Emails,
+				"name": emailGroup.Name,
+				"schema_version": emailGroup.SchemaVersion,
+			},
+			"_id": queryValue(resBody, "_id", ""),
+			"_version":  queryValue(resBody, "_version", 0),
+		},
 	}, http.StatusOK)
 }
 
@@ -559,17 +678,20 @@ func UpdateEmailGroup(w http.ResponseWriter, req *http.Request, ps httprouter.Pa
 	}
 
 	emailGroupId := ps.ByName("emailGroupId")
-	var (
-		ifSeqNo = getQueryParam(req, "ifSeqNo")
-		ifPrimaryTerm = getQueryParam(req, "ifPrimaryTerm")
-	)
-
-	reqUrl := fmt.Sprintf("%s/%s/_alerting/destinations/email_groups/%s", conf.Endpoint, API_PREFIX, emailGroupId)
+	config := getDefaultConfig()
+	reqUrl := fmt.Sprintf("%s/%s/_doc/%s", config.Endpoint, orm.GetIndexName(alerting.Config{}), emailGroupId)
+	var emailGroup = &alerting.EmailGroup{}
+	err := decodeJSON(req.Body, &emailGroup)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
 	res, err := doRequest(reqUrl, http.MethodPut, map[string]string{
 		"refresh": "wait_for",
-		"if_seq_no": ifSeqNo,
-		"if_primary_term": ifPrimaryTerm,
-	}, req.Body)
+	}, IfaceMap{
+		"cluster_id": id,
+		EMAIL_GROUP_FIELD: emailGroup,
+	})
 	if err != nil {
 		writeError(w, err)
 		return
@@ -582,8 +704,6 @@ func UpdateEmailGroup(w http.ResponseWriter, req *http.Request, ps httprouter.Pa
 		writeError(w, err)
 		return
 	}
-	//TODO error handle: check whether resBody has contains field error
-
 	writeJSON(w, IfaceMap{
 		"ok": true,
 		"id": queryValue(resBody, "_id", ""),
@@ -600,8 +720,9 @@ func DeleteEmailGroup(w http.ResponseWriter, req *http.Request, ps httprouter.Pa
 	}
 
 	emailGroupId := ps.ByName("emailGroupId")
+	config := getDefaultConfig()
+	reqUrl := fmt.Sprintf("%s/%s/_doc/%s", config.Endpoint, orm.GetIndexName(alerting.Config{}), emailGroupId)
 
-	reqUrl := fmt.Sprintf("%s/%s/_alerting/destinations/email_groups/%s", conf.Endpoint, API_PREFIX, emailGroupId)
 	res, err := doRequest(reqUrl, http.MethodDelete, nil, nil)
 	if err != nil {
 		writeError(w, err)
@@ -615,7 +736,6 @@ func DeleteEmailGroup(w http.ResponseWriter, req *http.Request, ps httprouter.Pa
 		writeError(w, err)
 		return
 	}
-	//TODO error handle: check whether resBody has contains field error
 
 	resultIfce := queryValue(resBody, "result", "")
 	var isOk = false
@@ -643,19 +763,23 @@ func GetEmailGroups(w http.ResponseWriter, req *http.Request, ps httprouter.Para
 		sortField     = getQueryParam(req, "sortField", "name")
 	)
 
-	must := IfaceMap{
-		"match_all": IfaceMap{},
+	must := []IfaceMap{
+		{
+			"exists": IfaceMap{
+				"field": EMAIL_GROUP_FIELD,
+			},
+		},
 	}
 
 	if clearSearch := strings.TrimSpace(search); clearSearch != "" {
 		clearSearch = strings.ReplaceAll(clearSearch, " ", "* *")
-		must = IfaceMap{
+		must = append(must, IfaceMap{
 			"query_string": IfaceMap{
 				"default_field": "email_group.name",
 				"default_operator": "AND",
 				"query": fmt.Sprintf(`*%s*`, clearSearch),
 			},
-		}
+		})
 	}
 
 	sortQueryMap := IfaceMap{ "name": IfaceMap{ "email_group.name.keyword": sortDirection } }
@@ -674,9 +798,10 @@ func GetEmailGroups(w http.ResponseWriter, req *http.Request, ps httprouter.Para
 		},
 	}
 
-	reqUrl := fmt.Sprintf("%s/%s/_alerting/destinations/email_groups/_search", conf.Endpoint, API_PREFIX)
-	res, err := doRequest(reqUrl, http.MethodPost, nil, reqBody)
-	//TODO to handle api error in doRequest function
+	config := getDefaultConfig()
+	reqUrl := fmt.Sprintf("%s/%s/_search", config.Endpoint, orm.GetIndexName(alerting.Config{}))
+
+	res, err := doRequest(reqUrl, http.MethodGet, nil, reqBody)
 	if err != nil {
 		writeError(w, err)
 		return
@@ -697,12 +822,10 @@ func GetEmailGroups(w http.ResponseWriter, req *http.Request, ps httprouter.Para
 			if emailGroup, ok := hit.(map[string]interface{}); ok {
 				newItem := IfaceMap{}
 				newItem["id"] = queryValue(emailGroup, "_id", "")
-				source := queryValue(emailGroup, "_source", nil)
+				source := queryValue(emailGroup, "_source."+EMAIL_GROUP_FIELD, nil)
 				if ms, ok :=  source.(map[string]interface{}); ok {
 					assignTo(newItem, ms)
 				}
-				newItem["ifSeqNo"] = queryValue(emailGroup, "_seq_no", 0)
-				newItem["ifPrimaryTerm"] = queryValue(emailGroup, "_primary_term", 0)
 				emailGroups = append(emailGroups, newItem)
 			}
 		}
@@ -722,9 +845,10 @@ func GetEmailGroup(w http.ResponseWriter, req *http.Request, ps httprouter.Param
 		return
 	}
 
-	emailAccountId := ps.ByName("emailGroupId")
+	emailGroupId := ps.ByName("emailGroupId")
 
-	reqUrl := fmt.Sprintf("%s/%s/_alerting/destinations/email_groups/%s", conf.Endpoint, API_PREFIX, emailAccountId)
+	config := getDefaultConfig()
+	reqUrl := fmt.Sprintf("%s/%s/_doc/%s", config.Endpoint, orm.GetIndexName(alerting.Config{}), emailGroupId)
 	res, err := doRequest(reqUrl, http.MethodGet,nil, req.Body)
 	if err != nil {
 		writeError(w, err)
@@ -738,7 +862,7 @@ func GetEmailGroup(w http.ResponseWriter, req *http.Request, ps httprouter.Param
 		writeError(w, err)
 		return
 	}
-	emailGroup := queryValue(resBody, "email_group", nil)
+	emailGroup := queryValue(resBody, "_source."+EMAIL_GROUP_FIELD, nil)
 	if emailGroup == nil {
 		writeJSON(w, IfaceMap{
 			"ok": false,
@@ -749,8 +873,6 @@ func GetEmailGroup(w http.ResponseWriter, req *http.Request, ps httprouter.Param
 	writeJSON(w, IfaceMap{
 		"ok": true,
 		"resp": emailGroup,
-		"ifSeqNo":  queryValue(resBody, "_seq_no", 0),
-		"ifPrimaryTerm": queryValue(resBody, "_primary_term", 0),
 	}, http.StatusOK)
 
 }

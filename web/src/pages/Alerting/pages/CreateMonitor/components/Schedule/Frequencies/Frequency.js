@@ -20,9 +20,9 @@ import { isInvalid, hasError } from '../../../../../utils/validate';
 
 const frequencies = [
   { value: 'interval', text: 'By interval' },
-  { value: 'daily', text: 'Daily' },
-  { value: 'weekly', text: 'Weekly' },
-  { value: 'monthly', text: 'Monthly' },
+  // { value: 'daily', text: 'Daily' },
+  // { value: 'weekly', text: 'Weekly' },
+  // { value: 'monthly', text: 'Monthly' },
   { value: 'cronExpression', text: 'Custom cron expression' },
 ];
 

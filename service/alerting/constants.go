@@ -1,10 +1,17 @@
 package alerting
 
-const INFINI_PREFIX = "opendistro"
+const EMAIL_ACCOUNT_FIELD = "email_account"
+const EMAIL_GROUP_FIELD = "email_group"
+const DESTINATION_FIELD = "destination"
+const MONITOR_FIELD = "monitor"
+const INDEX_ALERT = "ALERT"
+const INDEX_ALERT_HISTORY = "ALERT_HISTORY"
+const INDEX_ALL_ALERTS = "ALL_ALERTS"
 
-const PLUGIN_NAME = INFINI_PREFIX + "-alerting"
-const INDEX_PREFIX = INFINI_PREFIX +"-alerting"
-
-const INDEX_ALL_ALERTS =  "."+INDEX_PREFIX +`-alert*`
-
-const API_PREFIX = "_opendistro"
+const (
+	ALERT_ACTIVE = "ACTIVE"
+	ALERT_COMPLETED = "COMPLETED"
+	ALERT_DELETED = "DELETED"
+	ALERT_ACKNOWLEDGED = "ACKNOWLEDGED"
+	ALERT_ERROR = "ERROR"
+)

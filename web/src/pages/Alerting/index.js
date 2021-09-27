@@ -40,7 +40,7 @@ const AlertingUI =  (props)=>{
   }
   useMemo(()=>{
     httpClient.params.basePath.prepend = (url)=>{
-      return  '/elasticsearch/'+ props.selectedCluster.id + url;
+      return  '/elasticsearch/'+ props.selectedCluster.id +"/" + url;
     }
   }, [props.selectedCluster]);
   const isDarkMode = false;

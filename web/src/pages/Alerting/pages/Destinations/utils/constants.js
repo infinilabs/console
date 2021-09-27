@@ -26,7 +26,7 @@ export const DESTINATION_TYPE = {
 export const DESTINATION_OPTIONS = [
   { value: DESTINATION_TYPE.EMAIL, text: formatMessage({ id: 'alert.destination.type.email' }) },
   { value: DESTINATION_TYPE.CUSTOM_HOOK, text: formatMessage({ id: 'alert.destination.type.custom_webhook' }) },
-  { value: DESTINATION_TYPE.SLACK, text: formatMessage({ id: 'alert.destination.type.slack' }) },
+  // { value: DESTINATION_TYPE.SLACK, text: formatMessage({ id: 'alert.destination.type.slack' }) },
   // { value: DESTINATION_TYPE.CHIME, text: formatMessage({ id: 'alert.destination.type.chime' }) },
 
 ];

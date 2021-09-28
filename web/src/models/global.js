@@ -250,6 +250,8 @@ export default {
         let clusterVisible = true;
         if(pathname.startsWith("/system")){
           clusterVisible = false;
+        }else if(pathname.startsWith("/cluster/overview")){
+          clusterVisible = false;
         }else{
           if(!pathname.startsWith("/exception")){
               dispatch({

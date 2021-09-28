@@ -173,6 +173,7 @@ func generateMonitorJob(smt *ScheduleMonitor) MonitorJob{
 				Severity: trigger.Severity,
 				State: ALERT_COMPLETED,
 				ClusterID: sm.ClusterID,
+				ClusterName: elastic.GetMetadata(sm.ClusterID).Config.Name,
 			}
 			if !isTrigger {
 				endTime := time.Now().UnixNano()/1e6
@@ -466,8 +467,8 @@ func resolveEmailGroup(ID string)(*alerting.EmailGroup, error){
 }
 
 func getQueryResult(clusterID string, input *alerting.MonitorInput) (IfaceMap, error) {
-	conf := elastic.GetConfig(clusterID)
-	reqUrl := fmt.Sprintf("%s/%s/_search", conf.Endpoint, strings.Join(input.Search.Indices, ","))
+	meta := elastic.GetMetadata(clusterID)
+	reqUrl := fmt.Sprintf("%s/%s/_search", meta.GetActiveEndpoint(), strings.Join(input.Search.Indices, ","))
 	res, err := doRequest(reqUrl, http.MethodGet, nil, input.Search.Query)
 	if err != nil {
 		return nil, err
@@ -535,7 +536,7 @@ func resolveTriggerResult(trigger *alerting.Trigger, monitorCtx []byte ) (bool, 
 }
 
 func getEnabledMonitors() (map[string]ScheduleMonitor, error){
-	config := elastic.GetConfig("default")
+	config := getDefaultConfig()
 	reqUrl := fmt.Sprintf("%s/%s/_search", config.Endpoint, orm.GetIndexName(alerting.Config{}))
 	must := []IfaceMap{
 		{

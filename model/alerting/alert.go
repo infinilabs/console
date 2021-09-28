@@ -1,7 +1,8 @@
 package alerting
 
 type Alert struct {
-	ClusterID string `json:"cluster_id"`
+	ClusterID string `json:"cluster_id" elastic_mapping:"cluster_id:{type:keyword}"`
+	ClusterName string `json:"cluster_name" elastic_mapping:"cluster_name:{type:text}"`
 	AcknowledgedTime *int64 `json:"acknowledged_time" elastic_mapping:"acknowledged_time:{type:date}"`
 	ActionExecutionResults []ActionExecutionResult `json:"action_execution_results" elastic_mapping:"action_execution_results:{type:object}"`
 	AlertHistories []AlertHistory `json:"alert_history" elastic_mapping:"alert_history:{type:object}"`

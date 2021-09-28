@@ -63,6 +63,7 @@ func Init(cfg *config.AppConfig) {
 	ui.HandleUIMethod(api.GET, "/elasticsearch/:id/alerting/_settings", alerting.GetSettings)
 	ui.HandleUIMethod(api.POST, "/elasticsearch/:id/alerting/_indices", alerting.GetIndices)
 	ui.HandleUIMethod(api.POST, "/elasticsearch/:id/alerting/_aliases", alerting.GetAliases)
+	ui.HandleUIMethod(api.POST, "/elasticsearch/:id/alerting/_mappings", alerting.GetMappings)
 	ui.HandleUIMethod(api.POST, "/elasticsearch/:id/alerting/monitors/_search", alerting.Search)
 	ui.HandleUIMethod(api.GET, "/elasticsearch/:id/alerting/alerts", alerting.GetAlerts)
 	ui.HandleUIMethod(api.POST, "/elasticsearch/:id/alerting/_monitors/:monitorID/_acknowledge/alerts", alerting.AcknowledgeAlerts)

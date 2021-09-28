@@ -14,6 +14,7 @@ export interface AlertRecord {
   acknowledged_time: TimeValue,
   action_execution_results?: ActionExecutionResult[];
   cluster_id: string;
+  cluster_name: string;
   end_time: TimeValue;
   error_message: string;
   id: string;
@@ -36,6 +37,7 @@ export const AlertItem = ({
   item,
   onClick
 }: AlertItemProps)=>{
+  const clusterName = item.cluster_name ? item.cluster_name + ': ' : '';
   return (
     <List.Item
       onClick={()=>{onClick(item)}}
@@ -46,7 +48,7 @@ export const AlertItem = ({
           <div className={"status" + ` ${item.state}`}>
             <div>{item.severity}</div>
           </div>
-          <div className="content">{item.monitor_name+":"+item.trigger_name}</div>
+          <div className="content">{clusterName +item.monitor_name+": "+item.trigger_name}</div>
           <div className="right">
             <div className="time">{moment(item.start_time).fromNow()}</div>
             <div className="arrow">

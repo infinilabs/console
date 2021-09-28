@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	httprouter "infini.sh/framework/core/api/router"
-	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/orm"
 	"infini.sh/search-center/model/alerting"
 	"io"
@@ -37,11 +36,6 @@ func getAlertIndexName(typ string) string {
 
 func GetAlerts (w http.ResponseWriter, req *http.Request, ps httprouter.Params){
 	id := ps.ByName("id")
-	conf := elastic.GetConfig(id)
-	if conf == nil {
-		writeError(w, errors.New("cluster not found"))
-		return
-	}
 
 	var (
 		from = getQueryParam(req, "from", "0")
@@ -54,6 +48,7 @@ func GetAlerts (w http.ResponseWriter, req *http.Request, ps httprouter.Params){
 		monitorIds = req.URL.Query()["monitorIds"]
 		params = map[string]string{
 		}
+		alertType = getQueryParam(req, "type", INDEX_ALL_ALERTS)
 	)
 
 	switch sortField {
@@ -79,11 +74,13 @@ func GetAlerts (w http.ResponseWriter, req *http.Request, ps httprouter.Params){
 		params["sortString"]: params["sortOrder"],
 	}
 	must := []IfaceMap{
-		{
+	}
+	if id != "_all" {
+		must = append(must, IfaceMap{
 			"match": IfaceMap{
 				"cluster_id": id,
 			},
-		},
+		})
 	}
 	if severityLevel != "ALL" {
 		must = append(must, IfaceMap{
@@ -130,7 +127,7 @@ func GetAlerts (w http.ResponseWriter, req *http.Request, ps httprouter.Params){
 		},
 		"sort": sort,
 	}
-	indexName := getAlertIndexName(INDEX_ALL_ALERTS)
+	indexName := getAlertIndexName(alertType)
 
 	config := getDefaultConfig()
 	reqUrl := fmt.Sprintf("%s/%s/_search", config.Endpoint, indexName )

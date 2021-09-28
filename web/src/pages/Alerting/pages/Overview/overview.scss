@@ -1,0 +1,24 @@
+.layout{
+  display: flex;
+  .left{
+    display: flex;
+    flex: 1 1 60%;
+    flex-direction: column;
+    .state-count{
+      display: flex;
+      text-align: center;
+      justify-content: space-between;
+      .item{
+        min-width: 30%;
+      }
+      margin-bottom: 10px;
+    }
+  }
+  .right{
+    flex: 1 1 40%;
+  }
+}
+
+.overview-wrapper {
+  padding: 10px;
+}

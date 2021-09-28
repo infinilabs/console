@@ -129,7 +129,7 @@ export default {
         }
       });
     },
-    *rewriteURL({payload}, {select}){
+    *rewriteURL({payload}, {select, put}){
       const {pathname, history, search} = payload;
       const global = yield select(state=>state.global);
       if(pathname && global.selectedClusterID){
@@ -137,8 +137,16 @@ export default {
         if(!pathname.includes('elasticsearch')){
           history.replace(pathname+newPart+ (search || ''))
         }else{
-          const newPath = pathname.replace(/\/elasticsearch\/(\w+)\/?/, newPart);
-          history.replace(newPath+(search || ''))
+          const ms = pathname.match(/\/elasticsearch\/(\w+)\/?/);
+          if(ms && ms.length>1 && ms[1] != global.selectedClusterID){
+            console.log(ms[1])
+            yield put({
+              type: 'changeClusterById',
+              payload:{
+                id: ms[1]
+              }
+            });
+          }
         }
       }
     },
@@ -243,8 +251,7 @@ export default {
         if(pathname.startsWith("/system")){
           clusterVisible = false;
         }else{
-          if(!pathname.startsWith("/exception") && pathname != '/alerting'){
-            if(!pathname.includes('elasticsearch')){
+          if(!pathname.startsWith("/exception")){
               dispatch({
                 type: 'rewriteURL',
                 payload: {
@@ -253,7 +260,6 @@ export default {
                   search,
                 }
               })
-            }
           }
         }
         dispatch({

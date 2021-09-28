@@ -18,8 +18,8 @@ type SearchBody struct {
 
 func Search(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
 	id := ps.ByName("id")
-	conf := elastic.GetConfig(id)
-	if conf == nil {
+	meta := elastic.GetMetadata(id)
+	if meta == nil {
 		writeError(w, errors.New("cluster not found"))
 		return
 	}
@@ -55,8 +55,8 @@ func Search(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
 
 func GetIndices(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	id := ps.ByName("id")
-	conf := elastic.GetConfig(id)
-	if conf == nil {
+	meta := elastic.GetMetadata(id)
+	if meta == nil {
 		writeError(w, errors.New("cluster not found"))
 		return
 	}
@@ -69,7 +69,7 @@ func GetIndices(w http.ResponseWriter, req *http.Request, ps httprouter.Params) 
 		writeError(w, err)
 		return
 	}
-	reqUrl := fmt.Sprintf("%s/_cat/indices/%s", conf.Endpoint, body.Index)
+	reqUrl := fmt.Sprintf("%s/_cat/indices/%s", meta.GetActiveEndpoint(), body.Index)
 	params := map[string]string{
 		"format": "json",
 		"h": "health,index,status",
@@ -100,8 +100,8 @@ func GetAliases(w http.ResponseWriter, req *http.Request, ps httprouter.Params) 
 		}
 	}()
 	id := ps.ByName("id")
-	conf := elastic.GetConfig(id)
-	if conf == nil {
+	meta := elastic.GetMetadata(id)
+	if meta == nil {
 		writeError(w, errors.New("cluster not found"))
 		return
 	}
@@ -114,7 +114,7 @@ func GetAliases(w http.ResponseWriter, req *http.Request, ps httprouter.Params) 
 		writeError(w, err)
 		return
 	}
-	reqUrl := fmt.Sprintf("%s/_cat/aliases/%s", conf.Endpoint, body.Alias)
+	reqUrl := fmt.Sprintf("%s/_cat/aliases/%s", meta.GetActiveEndpoint(), body.Alias)
 	params := map[string]string{
 		"format": "json",
 		"h": "alias,index",
@@ -140,8 +140,8 @@ func GetAliases(w http.ResponseWriter, req *http.Request, ps httprouter.Params) 
 
 func GetMappings(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	id := ps.ByName("id")
-	conf := elastic.GetConfig(id)
-	if conf == nil {
+	meta := elastic.GetMetadata(id)
+	if meta == nil {
 		writeError(w, errors.New("cluster not found"))
 		return
 	}
@@ -154,7 +154,7 @@ func GetMappings(w http.ResponseWriter, req *http.Request, ps httprouter.Params)
 		writeError(w, err)
 		return
 	}
-	reqUrl := fmt.Sprintf("%s/%s/_mapping", conf.Endpoint, strings.Join(body.Index, ","))
+	reqUrl := fmt.Sprintf("%s/%s/_mapping", meta.GetActiveEndpoint(), strings.Join(body.Index, ","))
 	res, err := doRequest(reqUrl, http.MethodGet, nil, nil)
 	if err != nil {
 		writeError(w, err)
@@ -174,48 +174,16 @@ func GetMappings(w http.ResponseWriter, req *http.Request, ps httprouter.Params)
 	}, http.StatusOK)
 }
 
-
-func GetPlugins(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	id := ps.ByName("id")
-	conf := elastic.GetConfig(id)
-	if conf == nil {
-		writeError(w, errors.New("cluster not found"))
-		return
-	}
-
-	reqUrl := fmt.Sprintf("%s/_cat/plugins", conf.Endpoint)
-	res, err := doRequest(reqUrl, http.MethodGet, map[string]string{
-		"format": "json",
-		"h": "component",
-	}, nil)
-	if err != nil {
-		writeError(w, err)
-		return
-	}
-	defer res.Body.Close()
-	var resBody = []IfaceMap{}
-	err = decodeJSON(res.Body, &resBody)
-	if err != nil {
-		writeError(w, err)
-		return
-	}
-
-	writeJSON(w, IfaceMap{
-		"ok": true,
-		"resp": resBody,
-	}, http.StatusOK)
-}
-
 func GetSettings(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	id := ps.ByName("id")
-	conf := elastic.GetConfig(id)
-	if conf == nil {
+	meta := elastic.GetMetadata(id)
+	if meta == nil {
 		writeError(w, errors.New("cluster not found"))
 		return
 	}
 
 	// /_cluster/settings?include_defaults=true
-	reqUrl := fmt.Sprintf("%s/_cluster/settings", conf.Endpoint)
+	reqUrl := fmt.Sprintf("%s/_cluster/settings", meta.GetActiveEndpoint())
 	res, err := doRequest(reqUrl, http.MethodGet, map[string]string{
 		"include_defaults": "true",
 	}, nil)

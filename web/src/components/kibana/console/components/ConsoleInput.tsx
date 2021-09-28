@@ -96,7 +96,7 @@ const ConsoleInputUI = ({clusterID, initialText}:ConsoleInputProps) => {
     const legacyCoreEditor = new LegacyCoreEditor(aceEditor, editorActionsRef.current as HTMLElement);
     aceEditor.commands.addCommand({
       name: 'exec_request',
-      bindKey: 'ctrl+enter',
+      bindKey: {win: "Ctrl-enter", mac: "Command-enter|Ctrl-enter"},
       exec: ()=>{
         sendCurrentRequestToESRef.current();
       }
@@ -150,7 +150,7 @@ const ConsoleInputUI = ({clusterID, initialText}:ConsoleInputProps) => {
     const formattedRequest = requests.map(request => ({
       method: request.method,
       path: request.url,
-      body: (request.data || [])[0],
+      body: (request.data || []).join('\n'),
     }));
     return formattedRequest;
   };

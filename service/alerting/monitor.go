@@ -627,8 +627,8 @@ func AcknowledgeAlerts(w http.ResponseWriter, req *http.Request, ps httprouter.P
 
 func ExecuteMonitor(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	id := ps.ByName("id")
-	conf := elastic.GetConfig(id)
-	if conf == nil {
+	meta := elastic.GetMetadata(id)
+	if meta == nil {
 		writeError(w, errors.New("cluster not found"))
 		return
 	}
@@ -651,7 +651,7 @@ func ExecuteMonitor(w http.ResponseWriter, req *http.Request, ps httprouter.Para
 		return
 	}
 	periodStart := time.Now()
-	reqUrl := fmt.Sprintf("%s/%s/_search", conf.Endpoint, strings.Join(monitor.Inputs[0].Search.Indices, ","))
+	reqUrl := fmt.Sprintf("%s/%s/_search", meta.GetActiveEndpoint(), strings.Join(monitor.Inputs[0].Search.Indices, ","))
 	res, err := doRequest(reqUrl, http.MethodGet, nil, monitor.Inputs[0].Search.Query)
 	if err != nil {
 		writeError(w, err)

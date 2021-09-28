@@ -834,7 +834,6 @@ export default function ({
     if (ret.method !== 'LOAD') {
       components = getTopLevelUrlCompleteComponents(context.method);
     }else{
-      debugger
       components = getCommandComponents();
     }
     populateContext(ret.urlTokenPath, context, editor, true, components);

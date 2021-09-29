@@ -19,6 +19,7 @@ import uuid from 'uuid-v4';
 import { EuiButton, EuiInMemoryTable } from '@elastic/eui';
 
 import ContentPanel from '../../../../components/ContentPanel';
+import {formatMessage} from 'umi/locale';
 
 const MAX_TRIGGERS = 10;
 
@@ -80,20 +81,20 @@ export default class Triggers extends Component {
     const columns = [
       {
         field: 'name',
-        name: 'Name',
+        name: formatMessage({ id: 'alert.monitor.triggers.table.header.name' }),
         sortable: true,
         truncateText: true,
       },
       {
         field: 'actions',
-        name: 'Number of actions',
+        name: formatMessage({ id: 'alert.monitor.triggers.table.header.number_of_actions' }),
         sortable: true,
         truncateText: false,
         render: actions => actions.length,
       },
       {
         field: 'severity',
-        name: 'Severity',
+        name: formatMessage({ id: 'alert.monitor.triggers.table.header.severity' }),
         sortable: true,
         truncateText: false,
       },
@@ -105,22 +106,22 @@ export default class Triggers extends Component {
 
     return (
       <ContentPanel
-        title="Triggers"
+        title={formatMessage({ id: 'alert.monitor.triggers.title' })}
         titleSize="s"
         bodyStyles={{ padding: 'initial' }}
         actions={[
           <EuiButton onClick={this.onEdit} disabled={selectedItems.length !== 1}>
-            Edit
+             {formatMessage({ id: 'form.button.edit' })}
           </EuiButton>,
           <EuiButton onClick={this.onDelete} disabled={!selectedItems.length}>
-            Delete
+            {formatMessage({ id: 'form.button.delete' })}
           </EuiButton>,
           <EuiButton
             onClick={onCreateTrigger}
             disabled={monitor.triggers.length >= MAX_TRIGGERS}
             fill
           >
-            Create
+            {formatMessage({ id: 'form.button.create' })}
           </EuiButton>,
         ]}
       >

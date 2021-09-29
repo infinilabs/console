@@ -18,10 +18,11 @@ import _ from 'lodash';
 import { EuiButton } from '@elastic/eui';
 
 import { FORMIK_INITIAL_SENDER_VALUES } from '../Email/utils/constants';
+import {formatMessage} from 'umi/locale';
 
 const AddSenderButton = ({ arrayHelpers }) => (
   <EuiButton onClick={() => arrayHelpers.unshift(_.cloneDeep(FORMIK_INITIAL_SENDER_VALUES))}>
-    Add sender
+    {formatMessage({id:'alert.email.manage.button.add'})}
   </EuiButton>
 );
 

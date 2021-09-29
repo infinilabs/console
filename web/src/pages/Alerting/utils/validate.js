@@ -15,6 +15,7 @@
 
 import _ from 'lodash';
 import { INDEX, MAX_THROTTLE_VALUE, WRONG_THROTTLE_WARNING } from '../utils/constants';
+import {pathPrefix} from '@/services/common'
 
 // TODO: Use a validation framework to clean all of this up or create own.
 
@@ -56,8 +57,9 @@ export const validateMonitorName = (httpClient, monitorToEdit) => async (value) 
       index: INDEX.SCHEDULED_JOBS,
       query: { query: { term: { 'monitor.name.keyword': value } } },
     };
-    const response = await httpClient.post('/alerting/monitors/_search', {
+    const response = await httpClient.post(pathPrefix + '/alerting/_search', {
       body: JSON.stringify(options),
+      prependBasePath: false,
     });
     if (_.get(response, 'resp.hits.total.value', 0)) {
       if (!monitorToEdit) return 'Monitor name is already used';

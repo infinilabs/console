@@ -18,6 +18,7 @@ import moment from 'moment-timezone';
 
 import getScheduleFromMonitor from './getScheduleFromMonitor';
 import { DEFAULT_EMPTY_DATA, SEARCH_TYPE } from '../../../../../utils/constants';
+import {formatMessage} from 'umi/locale';
 
 // TODO: used in multiple places, move into helper
 function getTime(time) {
@@ -31,42 +32,42 @@ export default function getOverviewStats(monitor, monitorId, monitorVersion, act
   const searchType = _.get(monitor, 'ui_metadata.search.searchType', 'query');
   return [
     {
-      header: 'State',
+      header: formatMessage({id:"alert.monitor.overview.header.state"}),
       value: monitor.enabled ? 'Enabled' : 'Disabled',
     },
     {
-      header: 'Monitor definition type',
+      header: formatMessage({id:"alert.monitor.overview.header.definition_type"}),
       value: searchType === SEARCH_TYPE.QUERY ? 'Extraction Query' : 'Visual graph',
     },
     {
-      header: 'Total active alerts',
+      header: formatMessage({id:"alert.monitor.overview.header.total_active_alerts"}),
       value: activeCount,
     },
     {
-      header: 'Schedule',
+      header: formatMessage({id:"alert.monitor.overview.header.schedule"}),
       value: getScheduleFromMonitor(monitor),
     },
     {
-      header: 'Last updated',
+      header: formatMessage({id:"alert.monitor.overview.header.last_updated"}),
       value: getTime(monitor.last_update_time),
     },
     {
-      header: 'Monitor ID',
+      header: formatMessage({id:"alert.monitor.overview.header.monitor_id"}),
       value: monitorId,
     },
     {
-      header: 'Monitor version number',
+      header: formatMessage({id:"alert.monitor.overview.header.version_number"}),
       value: monitorVersion,
     },
-    {
-      /* There are 3 cases:
-      1. Monitors created by older versions and never updated.
-         These monitors won’t have User details in the monitor object. `monitor.user` will be null.
-      2. Monitors are created when security plugin is disabled, these will have empty User object.
-         (`monitor.user.name`, `monitor.user.roles` are empty )
-      3. Monitors are created when security plugin is enabled, these will have an User object. */
-      header: 'Last updated by',
-      value: monitor.user && monitor.user.name ? monitor.user.name : 'N/A',
-    },
+    // {
+    //   /* There are 3 cases:
+    //   1. Monitors created by older versions and never updated.
+    //      These monitors won’t have User details in the monitor object. `monitor.user` will be null.
+    //   2. Monitors are created when security plugin is disabled, these will have empty User object.
+    //      (`monitor.user.name`, `monitor.user.roles` are empty )
+    //   3. Monitors are created when security plugin is enabled, these will have an User object. */
+    //   header: 'Last updated by',
+    //   value: monitor.user && monitor.user.name ? monitor.user.name : 'N/A',
+    // },
   ];
 }

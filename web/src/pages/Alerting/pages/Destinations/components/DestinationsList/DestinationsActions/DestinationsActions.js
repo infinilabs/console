@@ -87,7 +87,7 @@ export default class DestinationsActions extends Component {
           </EuiFlexItem>
         ) : null}
         <EuiFlexItem grow={false}>
-          <EuiButton fill href={`#/${PLUGIN_NAME}${APP_PATH.CREATE_DESTINATION}`}>
+          <EuiButton fill href={`#/alerting/destination${APP_PATH.CREATE_DESTINATION}`}>
             {formatMessage({ id: 'alert.button.add-destination' })}
           </EuiButton>
         </EuiFlexItem>

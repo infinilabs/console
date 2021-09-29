@@ -14,22 +14,22 @@
  */
 
 const DEFAULT_MESSAGE_SOURCE = `
-Monitor {{ctx.monitor.name}} just entered alert status. Please investigate the issue.
-- Trigger: {{ctx.trigger.name}}
-- Severity: {{ctx.trigger.severity}}
-- Period start: {{ctx.periodStart}}
-- Period end: {{ctx.periodEnd}}
+Monitor {{_ctx.monitor.name}} just entered alert status. Please investigate the issue.
+- Trigger: {{_ctx.trigger.name}}
+- Severity: {{_ctx.trigger.severity}}
+- Period start: {{_ctx.periodStart}}
+- Period end: {{_ctx.periodEnd}}
 `.trim();
 
 export const FORMIK_INITIAL_ACTION_VALUES = {
   name: '',
   destination_id: '',
   subject_template: {
-    lang: 'mustache',
+    lang: 'quicktemplate',
     source: '',
   },
   message_template: {
-    lang: 'mustache',
+    lang: 'quicktemplate',
     source: DEFAULT_MESSAGE_SOURCE,
   },
   throttle_enabled: false,
@@ -39,4 +39,4 @@ export const FORMIK_INITIAL_ACTION_VALUES = {
   },
 };
 
-export const DEFAULT_ACTION_TYPE = 'slack';
+export const DEFAULT_ACTION_TYPE = 'custom_webhook';

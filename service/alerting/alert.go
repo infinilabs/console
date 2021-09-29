@@ -75,7 +75,7 @@ func GetAlerts (w http.ResponseWriter, req *http.Request, ps httprouter.Params){
 	}
 	must := []IfaceMap{
 	}
-	if id != "_all" {
+	if id != "" {
 		must = append(must, IfaceMap{
 			"match": IfaceMap{
 				"cluster_id": id,

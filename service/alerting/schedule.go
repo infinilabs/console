@@ -15,6 +15,7 @@ import (
 	"infini.sh/framework/core/orm"
 	"infini.sh/search-center/model/alerting"
 	"infini.sh/search-center/service/alerting/action"
+	"infini.sh/search-center/service/alerting/util"
 	"io"
 	"net/http"
 	"strings"
@@ -148,12 +149,17 @@ type MonitorJob func()
 func generateMonitorJob(smt *ScheduleMonitor) MonitorJob{
 	sm := *smt
 	return func() {
+		startTime := time.Now()
 		queryResult, err := getQueryResult(sm.ClusterID, &sm.Monitor.Inputs[0])
 		if err != nil {
 			log.Error(err)
 		}
+		periods := util.GetMonitorPeriod(startTime, &sm.Monitor.Schedule)
 		for _, trigger := range sm.Monitor.Triggers {
-			monitorCtx, err := createMonitorContext(&trigger, queryResult, &sm, IfaceMap{})
+			monitorCtx, err := createMonitorContext(&trigger, queryResult, &sm, IfaceMap{
+				"periodStart": periods.Start,
+				"periodEnd": periods.End,
+			})
 			if err != nil {
 				log.Error(err)
 				continue
@@ -496,17 +502,17 @@ func resolveMessage(messageTemplate IfaceMap, monitorCtx []byte ) ([]byte, error
 }
 
 func createMonitorContext(trigger *alerting.Trigger, result IfaceMap, smt *ScheduleMonitor, extra IfaceMap) ([]byte, error){
-	ctx := IfaceMap{
-		"_ctx": IfaceMap{
-			"results": []interface{}{
-				result,
-			},
-			"trigger": trigger,
-			"monitor": smt.Monitor,
-			"cluster_id": smt.ClusterID,
-			"periodStart": "",
-			"periodEnd":"",
+	params := IfaceMap{
+		"results": []interface{}{
+			result,
 		},
+		"trigger": trigger,
+		"monitor": smt.Monitor,
+		"cluster_id": smt.ClusterID,
+	}
+	assignTo(params, extra)
+	ctx := IfaceMap{
+		"_ctx": params,
 	}
 	return json.Marshal(ctx)
 }

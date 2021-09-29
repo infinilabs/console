@@ -68,6 +68,7 @@ export default class GlobalHeader extends PureComponent {
                 payload:{
                   history,
                   pathname: history.location.pathname,
+                  isChangedState: true,
                 }
               })
             });

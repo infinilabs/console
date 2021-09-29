@@ -43,7 +43,7 @@ export default class EmailSender extends React.Component {
 
   async componentDidMount() {
     const { httpClient } = this.props;
-    const allowList = await getAllowList(httpClient);
+    const allowList = [DESTINATION_TYPE.CUSTOM_HOOK, DESTINATION_TYPE.EMAIL];//await getAllowList(httpClient);
     this.setState({ allowList });
 
     this.loadSenders();

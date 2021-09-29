@@ -39,6 +39,8 @@ import { senderToFormik } from './utils/helpers';
 import getSenders from '../EmailSender/utils/helpers';
 import { STATE } from '../../../components/createDestinations/Email/utils/constants';
 import { ignoreEscape } from '../../../../../utils/helpers';
+import {pathPrefix} from '@/services/common';
+import {formatMessage} from 'umi/locale';
 
 const createSenderContext = (senders) => ({
   ctx: {
@@ -108,7 +110,7 @@ export default class ManageSenders extends React.Component {
       password: sender.password,
     };
     try {
-      const response = await httpClient.post(`/alerting/destinations/email_accounts`, {
+      const response = await httpClient.post(pathPrefix+`/alerting/destinations/email_accounts`, {
         body: JSON.stringify(body),
       });
       if (!response.ok) {
@@ -140,7 +142,7 @@ export default class ManageSenders extends React.Component {
       password: updatedSender.password,
     };
     try {
-      const response = await httpClient.put(`/alerting/email_accounts/${id}`, {
+      const response = await httpClient.put(pathPrefix+`/alerting/email_accounts/${id}`, {
         query: { ifSeqNo, ifPrimaryTerm },
         body: JSON.stringify(body),
       });
@@ -165,7 +167,7 @@ export default class ManageSenders extends React.Component {
     const { httpClient, notifications } = this.props;
     const { id } = sender;
     try {
-      const response = await httpClient.delete(`/alerting/email_accounts/${id}`);
+      const response = await httpClient.delete(pathPrefix+`/alerting/email_accounts/${id}`);
       if (!response.ok) {
         this.setState({ failedSenders: true });
         notifications.toasts.addDanger({
@@ -266,7 +268,7 @@ export default class ManageSenders extends React.Component {
               onClose={ignoreEscape(onClickCancel)}
             >
               <EuiModalHeader>
-                <EuiModalHeaderTitle>Manage email senders</EuiModalHeaderTitle>
+                <EuiModalHeaderTitle>{formatMessage({id:'alert.email.manage.title'})}</EuiModalHeaderTitle>
               </EuiModalHeader>
 
               <EuiHorizontalRule margin="s" />
@@ -291,11 +293,11 @@ export default class ManageSenders extends React.Component {
                   <EuiModalFooter>
                     <EuiFlexGroup alignItems="center" justifyContent="flexEnd">
                       <EuiFlexItem grow={false}>
-                        <EuiButtonEmpty onClick={onClickCancel}>Cancel</EuiButtonEmpty>
+                        <EuiButtonEmpty onClick={onClickCancel}>{formatMessage({id:'form.button.cancel'})}</EuiButtonEmpty>
                       </EuiFlexItem>
                       <EuiFlexItem grow={false}>
                         <EuiButton onClick={handleSubmit} isLoading={isSubmitting} fill>
-                          Save
+                        {formatMessage({id:'form.button.save'})}
                         </EuiButton>
                       </EuiFlexItem>
                     </EuiFlexGroup>

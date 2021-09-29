@@ -30,6 +30,7 @@ import 'brace/mode/plain_text';
 import 'brace/snippets/javascript';
 import 'brace/ext/language_tools';
 import { formikToTrigger } from '../../containers/CreateTrigger/utils/formikToTrigger';
+import {formatMessage} from 'umi/locale';
 
 export const getExecuteMessage = (response) => {
   if (!response) return 'No response';
@@ -59,7 +60,7 @@ const TriggerQuery = ({
     <div style={{ padding: '0px 10px', marginTop: '0px' }}>
       <EuiFlexGroup direction="column">
         <EuiFlexItem>
-          <EuiFormRow label="Extraction query response" fullWidth>
+          <EuiFormRow label={formatMessage({id:'alert.trigger.edit.define.field.query_response'})} fullWidth>
             <EuiCodeEditor
               mode="json"
               theme={isDarkMode ? 'sense-dark' : 'github'}
@@ -75,7 +76,7 @@ const TriggerQuery = ({
               <EuiFormRow
                 label={
                   <div>
-                    <span>Trigger condition</span>
+                    <span>{formatMessage({id:'alert.trigger.edit.define.field.condition'})}</span>
                     <EuiButtonEmpty
                       size="s"
                       onClick={() => {
@@ -108,7 +109,7 @@ const TriggerQuery = ({
           </Field>
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
-          <EuiFormRow label="Trigger condition response:" fullWidth>
+          <EuiFormRow label={formatMessage({id:'alert.trigger.edit.define.field.condition_response'})} fullWidth>
             <EuiCodeEditor
               mode="plain_text"
               theme={isDarkMode ? 'sense-dark' : 'github'}
@@ -125,7 +126,7 @@ const TriggerQuery = ({
 
       <EuiFlexGroup justifyContent="spaceBetween" alignItems="center">
         <EuiFlexItem grow={false}>
-          <EuiButton onClick={() => onRun([trigger])}>Run</EuiButton>
+          <EuiButton onClick={() => onRun([trigger])}>{formatMessage({id:'alert.trigger.edit.define.button.run'})}</EuiButton>
         </EuiFlexItem>
       </EuiFlexGroup>
     </div>

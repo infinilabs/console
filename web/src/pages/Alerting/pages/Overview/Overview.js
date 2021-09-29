@@ -1,5 +1,6 @@
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useState, useMemo} from "react";
 import {Spin, Card} from 'antd';
+import {Fetch} from '../../../../components/kibana/core/public/http/fetch';
 import './overview.scss';
 import {
   Axis,
@@ -13,9 +14,11 @@ import {
   timeFormatter,
   BarSeries,
 } from "@elastic/charts";
+import {pathPrefix} from '@/services/common';
 
 import {useAlertData, useAlertHsitoryData} from './hooks/use_alert_data';
 import {AlertList} from '../Dashboard/components/AlertList/AlertList';
+import { formatMessage } from 'umi/locale';
 
 const theme = {
   legend: {
@@ -70,7 +73,7 @@ const theme = {
 
 
 export default (props)=>{
-  const {httpClient, history} = props;
+  const {history} = props;
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState({
     metrics: {
@@ -78,8 +81,18 @@ export default (props)=>{
       top_ten_cluster:{},
     },
   });
+  const httpClient = useMemo(()=>{
+    return new Fetch({
+      basePath:{
+        get: () => '',
+        prepend: (url) => url,
+        remove: (url) => url,
+        serverBasePath: '',
+      }
+    });
+  })
   useEffect(()=>{
-    httpClient.get('/alerting/overview', {}).then((resp) => {
+    httpClient.get(pathPrefix + '/alerting/overview', {}).then((resp) => {
       if (resp.ok) {
         const { metrics, state_count } = resp;
         setData({
@@ -97,9 +110,18 @@ export default (props)=>{
   const [historyAlerts, onAlertHistoryPageChange] = useAlertHsitoryData(pageSize);
 
   const onItemClick = (item)=>{
-    history.push(`/monitors/${item.monitor_id}/elasticsearch/${item.cluster_id}`)
+    history.push(`/alerting/monitor/monitors/${item.monitor_id}/elasticsearch/${item.cluster_id}`)
   }
-
+  const pickLegendItems = (items)=>{
+    return [{title:'ACKNOWLEDGED',color:'pink'}, {title:'ACTIVE',color:' rgb(208, 2, 27)'},
+    {title:'ERROR', color:'lightgrey'}, {color:'rgb(208, 2, 27)', title:'COMPLETED'}, {title:'DELETED', color:'gray'}]
+    .filter(legend=> items.includes(legend.title)).map(legend=>{
+      return {
+        ...legend,
+        title: formatMessage({id: `alert.dashboard.state-options.${legend.title.toLowerCase()}`})
+      }
+    })
+  }
 
   return (
     <div className="overview-wrapper">
@@ -107,19 +129,29 @@ export default (props)=>{
         <div className="layout">
           <div className="left">
             <div className="state-count">
-              <Card className="item" title="激活告警">
-                {data.state_count?.ACTIVE || 0}
+              <Card className="item" bodyStyle={{ paddingBottom: 20 }}>
+                <Card.Meta title={formatMessage({id:'alert.overview.metric.active'})} className="title" />
+                <div>
+                    <span className="total">{data.state_count?.ACTIVE || 0}</span>
+                </div>
               </Card>
-              <Card className="item" title="已响应告警" >
-              {data.state_count?.ACKNOWLEDGED || 0}
+              <Card className="item" bodyStyle={{ paddingBottom: 20 }}>
+                <Card.Meta title={formatMessage({id:'alert.overview.metric.acknowledged'})} className="title" />
+                <div>
+                    <span className="total">{data.state_count?.ACKNOWLEDGED || 0}</span>
+                </div>
               </Card>
-              <Card className="item" title="错误告警">
-              {data.state_count?.ERROR || 0}
+              <Card className="item" bodyStyle={{ paddingBottom: 20 }}>
+                <Card.Meta title={formatMessage({id:'alert.overview.metric.error'})} className="title" />
+                <div>
+                    <span className="total">{data.state_count?.ERROR || 0}</span>
+                </div>
               </Card>
             </div>
             <div>
               <AlertList dataSource={alerts.data} 
-                title="Open Alerts"
+                title={formatMessage({id:'alert.overview.alertlist.title'})}
+                legendItems={pickLegendItems(['ACTIVE','ERROR','ACKNOWLEDGED'])}
                 onItemClick={onItemClick}
                 pagination={{
                   pageSize: 10,
@@ -127,10 +159,11 @@ export default (props)=>{
                   onChange: onAlertPageChange,
                 }}/>
             </div>
-            <div>
+            <div style={{marginTop:10}}>
               <AlertList dataSource={historyAlerts.data} 
-                title="History Alerts"
+                title={formatMessage({id:'alert.overview.alertlist-history.title'})}
                 onItemClick={onItemClick}
+                legendItems={pickLegendItems(["ACKNOWLEDGED", "ACTIVE", "ERROR", "COMPLETED", "DELETED"])}
                 pagination={{
                   pageSize: 10,
                   total: historyAlerts.total,

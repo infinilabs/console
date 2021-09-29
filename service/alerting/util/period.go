@@ -8,11 +8,11 @@ import (
 )
 
 type MonitorPeriod struct {
-	Start int64
-	End int64
+	Start time.Time
+	End time.Time
 }
 
-func GetMonitorPeriod(currentTime *time.Time, schedule *alerting.Schedule) *MonitorPeriod{
+func GetMonitorPeriod(currentTime time.Time, schedule *alerting.Schedule) *MonitorPeriod{
 	if schedule.Period != nil {
 		return transformPeriod(currentTime, schedule.Period)
 	}
@@ -23,7 +23,7 @@ func GetMonitorPeriod(currentTime *time.Time, schedule *alerting.Schedule) *Moni
 }
 
 
-func transformCron(currentTime *time.Time, cron *alerting.Cron) *MonitorPeriod {
+func transformCron(currentTime time.Time, cron *alerting.Cron) *MonitorPeriod {
 	timezone := ""
 	if cron.Timezone != "" {
 		timezone = fmt.Sprintf("CRON_TZ=%s ", cron.Timezone)
@@ -39,7 +39,7 @@ func transformCron(currentTime *time.Time, cron *alerting.Cron) *MonitorPeriod {
 	if ssd.Hour == 1 {
 		duration = time.Hour
 	}
-	tempTime := *currentTime
+	tempTime := currentTime
 	nextTime := sd.Next(tempTime)
 	var preTime = tempTime
 	for {
@@ -49,18 +49,18 @@ func transformCron(currentTime *time.Time, cron *alerting.Cron) *MonitorPeriod {
 		}
 	}
 	mp := &MonitorPeriod{
-		Start: preTime.UnixNano()/1e6,
-		End: currentTime.UnixNano()/1e6,
+		Start: preTime,
+		End: currentTime,
 	}
 	return mp
 }
 
-func transformPeriod(currentTime *time.Time, period *alerting.Period) *MonitorPeriod {
+func transformPeriod(currentTime time.Time, period *alerting.Period) *MonitorPeriod {
 	if period == nil {
 		return nil
 	}
 	mp := &MonitorPeriod{
-		End: currentTime.UnixNano()/1e6,
+		End: currentTime,
 	}
 	var duration time.Duration
 	switch period.Unit {
@@ -73,6 +73,6 @@ func transformPeriod(currentTime *time.Time, period *alerting.Period) *MonitorPe
 	default:
 		return nil
 	}
-	mp.Start = currentTime.Add(-duration * time.Duration(period.Interval)).UnixNano()/1e6
+	mp.Start = currentTime.Add(-duration * time.Duration(period.Interval))
 	return mp
 }

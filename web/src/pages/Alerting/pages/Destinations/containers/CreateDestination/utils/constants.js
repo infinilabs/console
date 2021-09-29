@@ -27,7 +27,7 @@ const DEFAULT_CONTENT_VALUE = 'application/json';
 export const formikInitialValues = {
   urlType: 'url',
   name: '',
-  type: 'slack',
+  type: 'custom_webhook',
   [DESTINATION_TYPE.SLACK]: {
     url: '',
   },

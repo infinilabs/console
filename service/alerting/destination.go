@@ -9,19 +9,12 @@ import (
 	"infini.sh/framework/core/util"
 	"infini.sh/search-center/model/alerting"
 	"net/http"
-	"runtime/debug"
 	"strings"
 	"time"
 )
 
 func GetDestination(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	id := ps.ByName("id")
-	conf := elastic.GetConfig(id)
-	if conf == nil {
-		writeError(w, errors.New("cluster not found"))
-		return
-	}
-
+	conf := getDefaultConfig()
 	dstID := ps.ByName("destID")
 	reqUrl := fmt.Sprintf("%s/%s/_doc/%s", conf.Endpoint, orm.GetIndexName(alerting.Config{}), dstID)
 	res, err := doRequest(reqUrl, http.MethodGet, nil, nil)
@@ -45,12 +38,6 @@ func GetDestination(w http.ResponseWriter, req *http.Request, ps httprouter.Para
 }
 
 func GetDestinations(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	id := ps.ByName("id")
-	conf := elastic.GetConfig(id)
-	if conf == nil {
-		writeError(w, errors.New("cluster not found"))
-		return
-	}
 	var (
 		from          = getQueryParam(req, "from", "0")
 		size          = getQueryParam(req, "size", "20")
@@ -153,13 +140,6 @@ func GetDestinations(w http.ResponseWriter, req *http.Request, ps httprouter.Par
 }
 
 func CreateDestination(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	id := ps.ByName("id")
-	conf := elastic.GetConfig(id)
-	if conf == nil {
-		writeError(w, errors.New("cluster not found"))
-		return
-	}
-
 	config := getDefaultConfig()
 	destId := util.GetUUID()
 	reqUrl := fmt.Sprintf("%s/%s/_doc/%s", config.Endpoint, orm.GetIndexName(alerting.Config{}), destId)
@@ -189,7 +169,6 @@ func CreateDestination(w http.ResponseWriter, req *http.Request, ps httprouter.P
 	res, err := doRequest(reqUrl, http.MethodPost, map[string]string{
 		"refresh": "wait_for",
 	}, IfaceMap{
-		"cluster_id": id,
 		DESTINATION_FIELD: toSaveDest,
 	})
 	if err != nil {
@@ -217,13 +196,6 @@ func CreateDestination(w http.ResponseWriter, req *http.Request, ps httprouter.P
 }
 
 func UpdateDestination(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	id := ps.ByName("id")
-	conf := elastic.GetConfig(id)
-	if conf == nil {
-		writeError(w, errors.New("cluster not found"))
-		return
-	}
-
 	destinationId := ps.ByName("destinationId")
 
 	config := getDefaultConfig()
@@ -254,7 +226,6 @@ func UpdateDestination(w http.ResponseWriter, req *http.Request, ps httprouter.P
 	res, err := doRequest(reqUrl, http.MethodPut, map[string]string{
 		"refresh": "wait_for",
 	}, IfaceMap{
-		"cluster_id": id,
 		DESTINATION_FIELD: toSaveDest,
 	})
 	if err != nil {
@@ -278,13 +249,6 @@ func UpdateDestination(w http.ResponseWriter, req *http.Request, ps httprouter.P
 }
 
 func DeleteDestination(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	id := ps.ByName("id")
-	conf := elastic.GetConfig(id)
-	if conf == nil {
-		writeError(w, errors.New("cluster not found"))
-		return
-	}
-
 	destinationId := ps.ByName("destinationId")
 
 	config := getDefaultConfig()
@@ -337,17 +301,6 @@ func getDefaultConfig() *elastic.ElasticsearchConfig {
 //}
 
 func CreateEmailAccount(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	defer func() {
-		if err := recover(); err != nil {
-			debug.PrintStack()
-		}
-	}()
-	id := ps.ByName("id")
-	conf := elastic.GetConfig(id)
-	if conf == nil {
-		writeError(w, errors.New("cluster not found"))
-		return
-	}
 	config := getDefaultConfig()
 
 	reqUrl := fmt.Sprintf("%s/%s/_doc", config.Endpoint, orm.GetIndexName(alerting.Config{}))
@@ -363,7 +316,6 @@ func CreateEmailAccount(w http.ResponseWriter, req *http.Request, ps httprouter.
 		"refresh": "wait_for",
 	}, IfaceMap{
 		EMAIL_ACCOUNT_FIELD: emailAccount,
-		"cluster_id": id,
 	})
 	if err != nil {
 		writeError(w, err)
@@ -403,13 +355,6 @@ func CreateEmailAccount(w http.ResponseWriter, req *http.Request, ps httprouter.
 }
 
 func UpdateEmailAccount(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	id := ps.ByName("id")
-	conf := elastic.GetConfig(id)
-	if conf == nil {
-		writeError(w, errors.New("cluster not found"))
-		return
-	}
-
 	emailAccountId := ps.ByName("emailAccountId")
 	config := getDefaultConfig()
 
@@ -424,7 +369,6 @@ func UpdateEmailAccount(w http.ResponseWriter, req *http.Request, ps httprouter.
 	res, err := doRequest(reqUrl, http.MethodPut, map[string]string{
 		"refresh": "wait_for",
 	}, IfaceMap{
-		"cluster_id": id,
 		EMAIL_ACCOUNT_FIELD: emailAccount,
 	})
 	if err != nil {
@@ -448,13 +392,6 @@ func UpdateEmailAccount(w http.ResponseWriter, req *http.Request, ps httprouter.
 }
 
 func DeleteEmailAccount(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	id := ps.ByName("id")
-	conf := elastic.GetConfig(id)
-	if conf == nil {
-		writeError(w, errors.New("cluster not found"))
-		return
-	}
-
 	emailAccountId := ps.ByName("emailAccountId")
 	config := getDefaultConfig()
 
@@ -487,12 +424,6 @@ func DeleteEmailAccount(w http.ResponseWriter, req *http.Request, ps httprouter.
 }
 
 func GetEmailAccounts(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	id := ps.ByName("id")
-	conf := elastic.GetConfig(id)
-	if conf == nil {
-		writeError(w, errors.New("cluster not found"))
-		return
-	}
 	var (
 		from          = getQueryParam(req, "from", "0")
 		size          = getQueryParam(req, "size", "20")
@@ -577,13 +508,6 @@ func GetEmailAccounts(w http.ResponseWriter, req *http.Request, ps httprouter.Pa
 }
 
 func GetEmailAccount(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	id := ps.ByName("id")
-	conf := elastic.GetConfig(id)
-	if conf == nil {
-		writeError(w, errors.New("cluster not found"))
-		return
-	}
-
 	emailAccountId := ps.ByName("emailAccountId")
 
 	config := getDefaultConfig()
@@ -621,13 +545,6 @@ func GetEmailAccount(w http.ResponseWriter, req *http.Request, ps httprouter.Par
 // --- email group
 
 func CreateEmailGroup(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	id := ps.ByName("id")
-	conf := elastic.GetConfig(id)
-	if conf == nil {
-		writeError(w, errors.New("cluster not found"))
-		return
-	}
-
 	config := getDefaultConfig()
 	reqUrl := fmt.Sprintf("%s/%s/_doc", config.Endpoint, orm.GetIndexName(alerting.Config{}))
 	var emailGroup = &alerting.EmailGroup{}
@@ -639,7 +556,6 @@ func CreateEmailGroup(w http.ResponseWriter, req *http.Request, ps httprouter.Pa
 	res, err := doRequest(reqUrl, http.MethodPost, map[string]string{
 		"refresh": "wait_for",
 	}, IfaceMap{
-		"cluster_id": id,
 		EMAIL_GROUP_FIELD: emailGroup,
 	})
 	if err != nil {
@@ -670,13 +586,6 @@ func CreateEmailGroup(w http.ResponseWriter, req *http.Request, ps httprouter.Pa
 }
 
 func UpdateEmailGroup(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	id := ps.ByName("id")
-	conf := elastic.GetConfig(id)
-	if conf == nil {
-		writeError(w, errors.New("cluster not found"))
-		return
-	}
-
 	emailGroupId := ps.ByName("emailGroupId")
 	config := getDefaultConfig()
 	reqUrl := fmt.Sprintf("%s/%s/_doc/%s", config.Endpoint, orm.GetIndexName(alerting.Config{}), emailGroupId)
@@ -689,7 +598,6 @@ func UpdateEmailGroup(w http.ResponseWriter, req *http.Request, ps httprouter.Pa
 	res, err := doRequest(reqUrl, http.MethodPut, map[string]string{
 		"refresh": "wait_for",
 	}, IfaceMap{
-		"cluster_id": id,
 		EMAIL_GROUP_FIELD: emailGroup,
 	})
 	if err != nil {
@@ -712,13 +620,6 @@ func UpdateEmailGroup(w http.ResponseWriter, req *http.Request, ps httprouter.Pa
 }
 
 func DeleteEmailGroup(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	id := ps.ByName("id")
-	conf := elastic.GetConfig(id)
-	if conf == nil {
-		writeError(w, errors.New("cluster not found"))
-		return
-	}
-
 	emailGroupId := ps.ByName("emailGroupId")
 	config := getDefaultConfig()
 	reqUrl := fmt.Sprintf("%s/%s/_doc/%s", config.Endpoint, orm.GetIndexName(alerting.Config{}), emailGroupId)
@@ -749,12 +650,6 @@ func DeleteEmailGroup(w http.ResponseWriter, req *http.Request, ps httprouter.Pa
 }
 
 func GetEmailGroups(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	id := ps.ByName("id")
-	conf := elastic.GetConfig(id)
-	if conf == nil {
-		writeError(w, errors.New("cluster not found"))
-		return
-	}
 	var (
 		from          = getQueryParam(req, "from", "0")
 		size          = getQueryParam(req, "size", "20")
@@ -838,13 +733,6 @@ func GetEmailGroups(w http.ResponseWriter, req *http.Request, ps httprouter.Para
 }
 
 func GetEmailGroup(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	id := ps.ByName("id")
-	conf := elastic.GetConfig(id)
-	if conf == nil {
-		writeError(w, errors.New("cluster not found"))
-		return
-	}
-
 	emailGroupId := ps.ByName("emailGroupId")
 
 	config := getDefaultConfig()

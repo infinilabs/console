@@ -73,6 +73,11 @@ export default {
       changeOrigin: true,
     //  pathRewrite: { '^/server': '' },
     },
+    '/_search-center/': {
+      target: 'http://localhost:9000',
+      changeOrigin: true,
+    //  pathRewrite: { '^/server': '' },
+    },
   },
   ignoreMomentLocale: true,
   lessLoaderOptions: {

@@ -18,10 +18,11 @@ import _ from 'lodash';
 import { EuiButton } from '@elastic/eui';
 
 import { FORMIK_INITIAL_ACTION_VALUES } from '../../utils/constants';
+import {formatMessage} from 'umi/locale';
 
 const AddActionButton = ({ arrayHelpers, type = 'slack' }) => (
   <EuiButton fill onClick={() => arrayHelpers.unshift(_.cloneDeep(FORMIK_INITIAL_ACTION_VALUES))}>
-    Add action
+    {formatMessage({id:'alert.trigger.edit.action.button.add_action'})}
   </EuiButton>
 );
 

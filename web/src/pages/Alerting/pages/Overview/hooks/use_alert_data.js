@@ -1,5 +1,6 @@
 import {useState, useEffect} from 'react';
 import _ from 'lodash';
+import {pathPrefix} from '@/services/common';
 
 const getAlerts = 
   async (from, size,type) => {
@@ -15,14 +16,11 @@ const getAlerts =
     if(qstr){
       qstr = `?${qstr.slice(1)}`
     }
-    const resp = await fetch('/elasticsearch/_all/alerting/alerts'+qstr);
+    const resp = await fetch(pathPrefix + '/alerting/overview/alerts'+qstr);
     return resp.json();
-    // if (resp.ok) {
-    //   const { alerts, totalAlerts } = resp;
-    
   }
 
-export const useAlertData = (pageSize, page)=>{
+const useData = (pageSize, page, type) => {
   const [size, setSize] = useState(pageSize || 10);
   const [pageIndex, setPageIndex] = useState(page || 1);
   const [alertData, setAlertData] = useState({
@@ -32,7 +30,7 @@ export const useAlertData = (pageSize, page)=>{
   useEffect(()=>{
     const from = (pageIndex - 1) * size;
     const fetchAlerts = async (from, size)=>{
-      const resp = await getAlerts(from, size, 'ALERT');
+      const resp = await getAlerts(from, size, type);
       if(resp.ok){
         const { alerts, totalAlerts } = resp;
         setAlertData({
@@ -43,7 +41,7 @@ export const useAlertData = (pageSize, page)=>{
       }
     }
     fetchAlerts(from,size);
-  }, [pageIndex, size]);
+  }, [pageIndex, size, type]);
   const changePage = (pageIndex) => {
     setPageIndex(pageIndex);
   }
@@ -51,32 +49,10 @@ export const useAlertData = (pageSize, page)=>{
   return [alertData, changePage];
 }
 
-export const useAlertHsitoryData = (pageSize, page)=>{
-  const [size, setSize] = useState(pageSize || 10);
-  const [pageIndex, setPageIndex] = useState(page || 1);
-  const [alertHisotryData, setAlertHisotryData] = useState({
-    data: [],
-    total: 0,
-  });
-  useEffect(()=>{
-    const from = (pageIndex - 1) * size;
-    const fetchHistoryAlerts = async (from, size)=>{
-      const resp = await getAlerts(from, size, 'ALERT_HISTORY');
-      if(resp.ok){
-        const { alerts, totalAlerts } = resp;
-        setAlertHisotryData({
-          ...alertHisotryData,
-          data: alerts,
-          total: totalAlerts,
-        })
-      }
-    }
-    fetchHistoryAlerts(from, size);
-  }, [pageIndex, size])
+export const useAlertData = (pageSize, page)=>{
+  return useData(pageSize, page, 'ALERT');
+}
 
-  const changePage = (pageIndex) => {
-    setPageIndex(pageIndex);
-  }
-  
-  return [alertHisotryData, changePage];
+export const useAlertHsitoryData = (pageSize, page)=>{
+  return useData(pageSize, page, 'ALERT_HISTORY');
 }

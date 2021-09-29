@@ -17,12 +17,6 @@ type SearchBody struct {
 }
 
 func Search(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
-	id := ps.ByName("id")
-	meta := elastic.GetMetadata(id)
-	if meta == nil {
-		writeError(w, errors.New("cluster not found"))
-		return
-	}
 	var body = SearchBody{}
 	err := decodeJSON(req.Body, &body)
 	if err != nil {
@@ -175,15 +169,10 @@ func GetMappings(w http.ResponseWriter, req *http.Request, ps httprouter.Params)
 }
 
 func GetSettings(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	id := ps.ByName("id")
-	meta := elastic.GetMetadata(id)
-	if meta == nil {
-		writeError(w, errors.New("cluster not found"))
-		return
-	}
 
 	// /_cluster/settings?include_defaults=true
-	reqUrl := fmt.Sprintf("%s/_cluster/settings", meta.GetActiveEndpoint())
+	config := getDefaultConfig()
+	reqUrl := fmt.Sprintf("%s/_cluster/settings", config.Endpoint)
 	res, err := doRequest(reqUrl, http.MethodGet, map[string]string{
 		"include_defaults": "true",
 	}, nil)

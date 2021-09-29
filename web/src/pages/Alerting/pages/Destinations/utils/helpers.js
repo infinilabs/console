@@ -16,10 +16,13 @@
 import _ from 'lodash';
 import { ALLOW_LIST_SETTING_PATH } from './constants';
 import { backendErrorNotification } from '../../../utils/helpers';
+import {pathPrefix} from '@/services/common';
 
 export async function getAllowList(httpClient) {
   try {
-    const response = await httpClient.get('/alerting/_settings');
+    const response = await httpClient.get(pathPrefix+'/alerting/_settings', {
+      prependBasePath: false,
+    });
     if (response.ok) {
       // Attempt to resolve the value of allow_list in the order of 'persistent, 'transient' and 'defaults' settings
       const { defaults, transient, persistent } = response.resp;

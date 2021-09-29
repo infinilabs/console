@@ -45,7 +45,7 @@ const AlertingUI =  (props)=>{
   }, [props.selectedCluster]);
   const isDarkMode = false;
   const history = useMemo(()=>{
-    return new ScopedHistory(props.history, '/alerting');
+    return new ScopedHistory(props.history, '/alerting/monitor');
   }, [props.history])
 
   return  (

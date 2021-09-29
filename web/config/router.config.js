@@ -106,13 +106,31 @@ export default [
 
        //alerting
        {
-        routes:[
-          { path: '/', redirect: '/' },
-        ],
         path: '/alerting',
         name: 'alerting',
         icon: 'alert',
-        component: './Alerting/index',
+        routes: [{
+          routes:[
+            { path: '/', redirect: '/' },
+          ],
+          path: '/alerting/overview',
+          component: './Alerting/pages/Overview/Overview',
+          name: 'overview'
+        },{
+          routes:[
+            { path: '/', redirect: '/' },
+          ],
+          path: '/alerting/monitor',
+          component: './Alerting/index',
+          name: 'monitor'
+        },{
+          routes:[
+            { path: '/', redirect: '/' },
+          ],
+          path: '/alerting/destination',
+          component: './Alerting/destination',
+          name: 'destination'
+        }]
       },
 
       //data

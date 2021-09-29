@@ -16,6 +16,7 @@
 import _ from 'lodash';
 import { INDEX } from '../../../../../utils/constants';
 import { getAllowList } from '../../../utils/helpers';
+import {pathPrefix} from '@/services/common';
 
 export const validateDestinationName = (httpClient, destinationToEdit) => async (value) => {
   try {
@@ -24,8 +25,9 @@ export const validateDestinationName = (httpClient, destinationToEdit) => async 
       index: INDEX.SCHEDULED_JOBS,
       query: { query: { term: { 'destination.name.keyword': value } } },
     };
-    const response = await httpClient.post('/alerting/monitors/_search', {
+    const response = await httpClient.post(pathPrefix+'/alerting/_search', {
       body: JSON.stringify(options),
+      prependBasePath: false,
     });
     if (_.get(response, 'resp.hits.total.value', 0)) {
       if (!destinationToEdit) return 'Destination name is already used';

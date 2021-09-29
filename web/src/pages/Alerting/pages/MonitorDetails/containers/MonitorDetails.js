@@ -43,6 +43,7 @@ import {
 } from '../../../utils/constants';
 import { migrateTriggerMetadata } from './utils/helpers';
 import { backendErrorNotification } from '../../../utils/helpers';
+import {formatMessage} from 'umi/locale';
 
 export default class MonitorDetails extends Component {
   constructor(props) {
@@ -323,7 +324,7 @@ export default class MonitorDetails extends Component {
                 });
               }}
             >
-              Edit
+              {formatMessage({ id: 'form.button.edit' })}
             </EuiButton>
           </EuiFlexItem>
           <EuiFlexItem grow={false}>
@@ -331,7 +332,7 @@ export default class MonitorDetails extends Component {
               isLoading={updating}
               onClick={() => this.updateMonitor({ enabled: !monitor.enabled })}
             >
-              {monitor.enabled ? 'Disable' : 'Enable'}
+              {monitor.enabled ? formatMessage({id:'alert.monitor.actions.disable'}) : formatMessage({id:'alert.monitor.actions.enable'})}
             </EuiButton>
           </EuiFlexItem>
         </EuiFlexGroup>

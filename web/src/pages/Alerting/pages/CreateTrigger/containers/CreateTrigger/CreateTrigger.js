@@ -42,6 +42,7 @@ import { FORMIK_INITIAL_VALUES } from './utils/constants';
 import { SEARCH_TYPE } from '../../../../utils/constants';
 import { SubmitErrorHandler } from '../../../../utils/SubmitErrorHandler';
 import { backendErrorNotification } from '../../../../utils/helpers';
+import {formatMessage} from 'umi/locale';
 
 export default class CreateTrigger extends Component {
   constructor(props) {
@@ -201,7 +202,7 @@ export default class CreateTrigger extends Component {
           {({ values, handleSubmit, isSubmitting, errors, isValid }) => (
             <Fragment>
               <EuiTitle size="l">
-                <h1>{edit ? 'Edit' : 'Create'} trigger</h1>
+                <h1>{edit ? formatMessage({id:'alert.trigger.edit.title'}):formatMessage({id:'alert.trigger.create.title'})}</h1>
               </EuiTitle>
               <EuiSpacer />
               <DefineTrigger
@@ -230,11 +231,11 @@ export default class CreateTrigger extends Component {
               <EuiSpacer />
               <EuiFlexGroup alignItems="center" justifyContent="flexEnd">
                 <EuiFlexItem grow={false}>
-                  <EuiButtonEmpty onClick={onCloseTrigger}>Cancel</EuiButtonEmpty>
+                  <EuiButtonEmpty onClick={onCloseTrigger}>{formatMessage({id:'form.button.cancel'})}</EuiButtonEmpty>
                 </EuiFlexItem>
                 <EuiFlexItem grow={false}>
                   <EuiButton onClick={handleSubmit} isLoading={isSubmitting} fill>
-                    {edit ? 'Update' : 'Create'}
+                    {edit ? formatMessage({id:'form.button.update'}) : formatMessage({id:'form.button.create'})}
                   </EuiButton>
                 </EuiFlexItem>
               </EuiFlexGroup>

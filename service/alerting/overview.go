@@ -3,6 +3,8 @@ package alerting
 import (
 	"fmt"
 	httprouter "infini.sh/framework/core/api/router"
+	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/orm"
 	"net/http"
 )
 
@@ -127,13 +129,35 @@ func getTopTenAlertCluster()(interface{}, error){
 			}
 		}
 	}
-	//reqBody = IfaceMap{
-	//	"query": IfaceMap{
-	//		"terms": IfaceMap{
-	//			"_id": clusterIDs,
-	//		},
-	//	},
-	//}
+	reqBody = IfaceMap{
+		"_source": "name",
+		"query": IfaceMap{
+			"terms": IfaceMap{
+				"_id": clusterIDs,
+			},
+		},
+	}
+	config := getDefaultConfig()
+	reqUrl := fmt.Sprintf("%s/%s/_search", config.Endpoint, orm.GetIndexName(elastic.ElasticsearchConfig{}))
+	res, err := doRequest(reqUrl, http.MethodGet, nil, reqBody)
+	if err != nil {
+		return nil, err
+	}
+	var resBody = &elastic.SearchResponse{}
+	err = decodeJSON(res.Body, resBody)
+	if err != nil {
+		return nil, err
+	}
+	res.Body.Close()
+	clusterMap := IfaceMap{}
+	for _, hit := range resBody.Hits.Hits {
+		clusterMap[hit.ID.(string)] = hit.Source["name"]
+	}
+	for _, d := range metricData {
+		if name, ok := clusterMap[d["x"].(string)]; ok {
+			d["x"] = name
+		}
+	}
 	return metricData, nil
 }
 

@@ -14,10 +14,11 @@
  */
 
 import { MAX_QUERY_RESULT_SIZE } from '../../../../../../utils/constants';
+import {pathPrefix} from '@/services/common';
 
 export default async function getSenders(httpClient, searchText = '') {
   try {
-    const response = await httpClient.get('/alerting/destinations/email_accounts', {
+    const response = await httpClient.get(pathPrefix+'/alerting/destinations/email_accounts', {
       query: { search: searchText, size: MAX_QUERY_RESULT_SIZE },
     });
     if (response.ok) {

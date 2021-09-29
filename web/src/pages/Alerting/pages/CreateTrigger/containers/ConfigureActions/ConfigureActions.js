@@ -24,9 +24,11 @@ import { DESTINATION_OPTIONS } from '../../../Destinations/utils/constants';
 import { getAllowList } from '../../../Destinations/utils/helpers';
 import { MAX_QUERY_RESULT_SIZE } from '../../../../utils/constants';
 import { backendErrorNotification } from '../../../../utils/helpers';
+import {pathPrefix} from '@/services/common'
+import {formatMessage} from 'umi/locale';
 
 const createActionContext = (context, action) => ({
-  ctx: {
+  _ctx: {
     ...context,
     action,
   },
@@ -62,8 +64,9 @@ class ConfigureActions extends React.Component {
       return destination.type;
     };
     try {
-      const response = await httpClient.get('/alerting/destinations', {
+      const response = await httpClient.get(pathPrefix +'/alerting/destinations', {
         query: { search: searchText, size: MAX_QUERY_RESULT_SIZE },
+        prependBasePath: false,
       });
       if (response.ok) {
         const destinations = response.destinations
@@ -143,7 +146,7 @@ class ConfigureActions extends React.Component {
     //TODO:: Handle loading Destinations inside the Action which will be more intuitive for customers.
     return (
       <ContentPanel
-        title="Configure actions"
+        title={formatMessage({id:'alert.trigger.edit.action.title'})}
         titleSize="s"
         panelStyles={{ paddingBottom: '0px' }}
         bodyStyles={{ padding: '10px' }}

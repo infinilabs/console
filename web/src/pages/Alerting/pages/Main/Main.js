@@ -57,12 +57,6 @@ class Main extends Component {
               />
               <Switch>
                 <Route
-                  path="/overview"
-                  render={(props) => (
-                    <Overview {...props} httpClient={core.http} notifications={core.notifications} />
-                  )}
-                />
-                <Route
                   path={APP_PATH.CREATE_MONITOR}
                   render={(props) => (
                     <CreateMonitor
@@ -74,7 +68,7 @@ class Main extends Component {
                     />
                   )}
                 />
-                <Route
+                {/* <Route
                   path={APP_PATH.CREATE_DESTINATION}
                   render={(props) => (
                     <CreateDestination
@@ -96,7 +90,7 @@ class Main extends Component {
                       edit
                     />
                   )}
-                />
+                /> */}
                 <Route
                   path="/monitors/:monitorId"
                   render={(props) => (

@@ -68,7 +68,7 @@ export const MAX_QUERY_RESULT_SIZE = 200;
 
 export const OPEN_DISTRO_PREFIX = 'infini-search-center';
 
-export const PLUGIN_NAME = `alerting`;
+export const PLUGIN_NAME = `alerting/monitor`;
 export const INDEX_PREFIX = `${OPEN_DISTRO_PREFIX}_alerting`;
 export const INDEX = {
   SCHEDULED_JOBS: `.${INDEX_PREFIX}-config`,

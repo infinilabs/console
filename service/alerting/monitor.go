@@ -695,7 +695,7 @@ func ExecuteMonitor(w http.ResponseWriter, req *http.Request, ps httprouter.Para
 		}
 	}
 
-	period := alertUtil.GetMonitorPeriod(&periodStart, &monitor.Schedule)
+	period := alertUtil.GetMonitorPeriod(periodStart, &monitor.Schedule)
 	writeJSON(w, IfaceMap{
 		"ok": true,
 		"resp": IfaceMap{

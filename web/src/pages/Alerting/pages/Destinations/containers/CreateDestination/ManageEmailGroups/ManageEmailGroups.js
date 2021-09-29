@@ -39,6 +39,8 @@ import { emailGroupToFormik } from './utils/helpers';
 import getEmailGroups from '../EmailRecipients/utils/helpers';
 import { STATE } from '../../../components/createDestinations/Email/utils/constants';
 import { ignoreEscape } from '../../../../../utils/helpers';
+import {pathPrefix} from '@/services/common';
+import {formatMessage} from 'umi/locale';
 
 const createEmailGroupContext = (emailGroups) => ({
   ctx: {
@@ -119,7 +121,7 @@ export default class ManageEmailGroups extends React.Component {
       emails: emailGroup.emails.map((email) => ({ email: email.label })),
     };
     try {
-      const response = await httpClient.post(`/alerting/destinations/email_groups`, {
+      const response = await httpClient.post(pathPrefix+`/alerting/destinations/email_groups`, {
         body: JSON.stringify(body),
       });
       if (!response.ok) {
@@ -147,7 +149,7 @@ export default class ManageEmailGroups extends React.Component {
       emails: updatedEmailGroup.emails.map((email) => ({ email: email.label })),
     };
     try {
-      const response = await httpClient.put(`/alerting/email_groups/${id}`, {
+      const response = await httpClient.put(pathPrefix + `/alerting/email_groups/${id}`, {
         query: { ifSeqNo, ifPrimaryTerm },
         body: JSON.stringify(body),
       });
@@ -172,7 +174,7 @@ export default class ManageEmailGroups extends React.Component {
     const { httpClient, notifications } = this.props;
     const { id } = emailGroup;
     try {
-      const response = await httpClient.delete(`/alerting/email_groups/${id}`);
+      const response = await httpClient.delete(pathPrefix + `/alerting/email_groups/${id}`);
       if (!response.ok) {
         this.setState({ failedEmailGroups: true });
         notifications.toasts.addDanger({
@@ -276,7 +278,7 @@ export default class ManageEmailGroups extends React.Component {
               onClose={ignoreEscape(onClickCancel)}
             >
               <EuiModalHeader>
-                <EuiModalHeaderTitle>Manage email groups</EuiModalHeaderTitle>
+                <EuiModalHeaderTitle> {formatMessage({id:'alert.emailgroup.manage.title'})}</EuiModalHeaderTitle>
               </EuiModalHeader>
 
               <EuiHorizontalRule margin="s" />
@@ -301,11 +303,11 @@ export default class ManageEmailGroups extends React.Component {
                   <EuiModalFooter>
                     <EuiFlexGroup alignItems="center" justifyContent="flexEnd">
                       <EuiFlexItem grow={false}>
-                        <EuiButtonEmpty onClick={onClickCancel}>Cancel</EuiButtonEmpty>
+                        <EuiButtonEmpty onClick={onClickCancel}>{formatMessage({id:'form.button.cancel'})}</EuiButtonEmpty>
                       </EuiFlexItem>
                       <EuiFlexItem grow={false}>
                         <EuiButton onClick={handleSubmit} isLoading={isSubmitting} fill>
-                          Save
+                        {formatMessage({id:'form.button.save'})}
                         </EuiButton>
                       </EuiFlexItem>
                     </EuiFlexGroup>

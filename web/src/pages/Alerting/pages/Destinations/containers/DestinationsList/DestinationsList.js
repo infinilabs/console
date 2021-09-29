@@ -36,6 +36,7 @@ import { getAllowList } from '../../utils/helpers';
 import { DESTINATION_TYPE } from '../../utils/constants';
 import { backendErrorNotification } from '../../../../utils/helpers';
 import { formatMessage } from 'umi/locale';
+import {pathPrefix} from '@/services/common';
 
 class DestinationsList extends React.Component {
   constructor(props) {
@@ -101,7 +102,7 @@ class DestinationsList extends React.Component {
 
   async componentDidMount() {
     const { httpClient } = this.props;
-    const allowList = await getAllowList(httpClient);
+    const allowList = [DESTINATION_TYPE.EMAIL, DESTINATION_TYPE.CUSTOM_HOOK];//await getAllowList(httpClient);
     this.setState({ allowList });
 
     const { page, queryParams } = this.state;
@@ -120,8 +121,9 @@ class DestinationsList extends React.Component {
       query: isDeleteAllowedQuery(type, id),
       index: INDEX.SCHEDULED_JOBS,
     };
-    const resp = await httpClient.post('/alerting/monitors/_search', {
+    const resp = await httpClient.post(pathPrefix+'/alerting/_search', {
       body: JSON.stringify(requestBody),
+      prependBasePath: false,
     });
     const total = _.get(resp, 'resp.hits.total.value');
     return total === 0;
@@ -152,7 +154,7 @@ class DestinationsList extends React.Component {
     const { id: destinationId } = this.state.destinationToDelete;
     const { httpClient, notifications } = this.props;
     try {
-      const resp = await httpClient.delete(`/alerting/destinations/${destinationId}`);
+      const resp = await httpClient.delete(pathPrefix+`/alerting/destinations/${destinationId}`);
       if (resp.ok) {
         await this.getDestinations();
       } else {
@@ -215,7 +217,7 @@ class DestinationsList extends React.Component {
       //   search: queryParms,
       // });
       try {
-        const resp = await httpClient.get('/alerting/destinations', {
+        const resp = await httpClient.get(pathPrefix+ '/alerting/destinations', {
           query: { from, ...params },
         });
         if (resp.ok) {

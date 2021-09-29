@@ -34,16 +34,16 @@ const message = () => ({
   body: (
     <EuiText style={{ fontSize: '14px' }}>
       <p>
-        {`You have access to a "ctx" variable in your painless scripts and action mustache templates.`}
+        {`You have access to a "_ctx" variable in your yaml scripts and action quicktemplate templates.`}
       </p>
-      <h3>Learn More</h3>
+      {/* <h3>Learn More</h3>
       <ul>
         <li>
           <EuiLink target="_blank" href={URL.MUSTACHE}>
             HTML Templates with Mustache.js
           </EuiLink>
         </li>
-      </ul>
+      </ul> */}
     </EuiText>
   ),
 });

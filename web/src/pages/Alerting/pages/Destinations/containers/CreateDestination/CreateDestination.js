@@ -39,6 +39,7 @@ import { SubmitErrorHandler } from '../../../../utils/SubmitErrorHandler';
 import { getAllowList } from '../../utils/helpers';
 import { backendErrorNotification } from '../../../../utils/helpers';
 import { formatMessage } from 'umi/locale';
+import {pathPrefix} from '@/services/common';
 
 const destinationType = {
   [DESTINATION_TYPE.SLACK]: (props) => <Webhook {...props} />,
@@ -59,7 +60,7 @@ class CreateDestination extends React.Component {
   async componentDidMount() {
     const { httpClient, location, edit, history } = this.props;
 
-    const allowList = await getAllowList(httpClient);
+    const allowList = [DESTINATION_TYPE.EMAIL,DESTINATION_TYPE.CUSTOM_HOOK];//await getAllowList(httpClient);
     this.setState({ allowList });
 
     let ifSeqNo, ifPrimaryTerm;
@@ -90,7 +91,7 @@ class CreateDestination extends React.Component {
   getDestination = async (destinationId) => {
     const { httpClient, history, notifications } = this.props;
     try {
-      const resp = await httpClient.get(`/alerting/destinations/${destinationId}`);
+      const resp = await httpClient.get(pathPrefix + `/alerting/destinations/${destinationId}`);
       if (resp.ok) {
         const ifSeqNo = _.get(resp, 'ifSeqNo');
         const ifPrimaryTerm = _.get(resp, 'ifPrimaryTerm');
@@ -101,7 +102,7 @@ class CreateDestination extends React.Component {
       } else {
         // Handle error, show message in case of 404
         backendErrorNotification(notifications, 'get', 'destination', resp.resp);
-        history.push(`/destinations`);
+        history.push(`alerting/destination`);
       }
     } catch (e) {
       console.log('Unable to get the data');
@@ -119,7 +120,7 @@ class CreateDestination extends React.Component {
     } = this.props;
     const { ifSeqNo, ifPrimaryTerm } = this.state;
     try {
-      const resp = await httpClient.put(`/alerting/destinations/${destinationId}`, {
+      const resp = await httpClient.put(pathPrefix+`/alerting/destinations/${destinationId}`, {
         query: { ifSeqNo, ifPrimaryTerm },
         body: JSON.stringify(requestData),
       });
@@ -140,7 +141,7 @@ class CreateDestination extends React.Component {
   handleCreate = async (requestData, { setSubmitting }) => {
     const { httpClient, history, notifications } = this.props;
     try {
-      const resp = await httpClient.post('/alerting/destinations', {
+      const resp = await httpClient.post(pathPrefix+'/alerting/destinations', {
         body: JSON.stringify(requestData),
       });
       setSubmitting(false);

@@ -68,6 +68,7 @@ export default {
   'form.button.add': 'Add',
   'form.button.edit': 'Edit',
   'form.button.update': 'Update',
+  'form.button.save': 'Save',
   'form.button.delete': 'Delete',
   'form.button.cancel': 'Cancel',
   'form.button.collapse': 'Collapse',
@@ -91,6 +92,9 @@ export default {
   'menu.home': 'Home',
   'menu.devtool': 'CONSOLE',
   'menu.alerting': 'AERTING',
+  'menu.alerting.overview': 'OVERVIEW',
+  'menu.alerting.monitor': 'MONITORS',
+  'menu.alerting.destination': 'DESTINATIONS',
   
   'menu.cluster': 'CLUSTER',
   'menu.cluster.overview': 'OVERVIEW',

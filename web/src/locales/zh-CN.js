@@ -74,6 +74,7 @@ export default {
   'form.button.add': '添加',
   'form.button.edit': '编辑',
   'form.button.update': '更新',
+  'form.button.save': '保存',
   'form.button.delete': '删除',
   'form.button.cancel': '取消',
   'form.button.collapse': '收起',
@@ -98,6 +99,9 @@ export default {
   'menu.home': '首页',
   'menu.devtool': '开发工具',
   'menu.alerting': '告警管理',
+  'menu.alerting.overview': '概览',
+  'menu.alerting.monitor': '监控管理',
+  'menu.alerting.destination': '渠道管理',
 
   'menu.cluster': '集群管理',
   'menu.cluster.overview': '概览',

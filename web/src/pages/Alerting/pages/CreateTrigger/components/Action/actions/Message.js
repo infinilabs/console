@@ -40,14 +40,15 @@ import {
   required,
 } from '../../../../../utils/validate';
 import { URL, MAX_THROTTLE_VALUE, WRONG_THROTTLE_WARNING } from '../../../../../utils/constants';
+import {formatMessage} from 'umi/locale';
 
 const messageHelpText = (index, sendTestMessage) => (
   <EuiFlexGroup justifyContent="spaceBetween" alignItems="center">
     <EuiFlexItem>
-      <EuiText size="xs">
+      {/* <EuiText size="xs">
         Embed variables in your message using Mustache templates.{' '}
         <a href={URL.MUSTACHE}>Learn more about Mustache</a>
-      </EuiText>
+      </EuiText> */}
     </EuiFlexItem>
     <EuiFlexItem grow={false}>
       <EuiText size="xs">
@@ -56,7 +57,7 @@ const messageHelpText = (index, sendTestMessage) => (
             sendTestMessage(index);
           }}
         >
-          Send test message
+          {formatMessage({id:'alert.trigger.edit.action.send_test_message'})}
         </EuiButtonEmpty>
       </EuiText>
     </EuiFlexItem>
@@ -76,7 +77,7 @@ const Message = ({
     preview = Mustache.render(action.message_template.source, context);
   } catch (err) {
     preview = err.message;
-    console.error('There was an error rendering mustache template', err);
+    console.error('There was an error rendering template', err);
   }
   return (
     <div>
@@ -86,7 +87,7 @@ const Message = ({
           formRow
           fieldProps={{ validate: required }}
           rowProps={{
-            label: 'Message subject',
+            label: formatMessage({id:'alert.trigger.edit.action.field.message_subject'}),
             isInvalid,
             error: hasError,
           }}
@@ -100,7 +101,7 @@ const Message = ({
         rowProps={{
           label: (
             <div>
-              <span>Message</span>
+              <span>{formatMessage({id:'alert.trigger.edit.action.field.message'})}</span>
               <EuiButtonEmpty
                 size="s"
                 onClick={() => {
@@ -117,15 +118,15 @@ const Message = ({
           error: hasError,
         }}
         inputProps={{
-          placeholder: 'Can use mustache templates',
+          placeholder: 'Can use templates',
           fullWidth: true,
           isInvalid,
         }}
       />
 
-      <EuiFormRow label="Message preview" style={{ maxWidth: '100%' }}>
+      <EuiFormRow label={formatMessage({id:'alert.trigger.edit.action.field.message_preview'})} style={{ maxWidth: '100%' }}>
         <EuiTextArea
-          placeholder="Preview of mustache template"
+          placeholder="Preview of template"
           fullWidth
           value={preview}
           readOnly
@@ -133,7 +134,7 @@ const Message = ({
         />
       </EuiFormRow>
 
-      <EuiSpacer size="s" />
+      {/* <EuiSpacer size="s" />
 
       <EuiFormRow
         label={
@@ -201,7 +202,7 @@ const Message = ({
             </EuiFlexItem>
           </EuiFlexGroup>
         </EuiFlexGroup>
-      </EuiFormRow>
+      </EuiFormRow> */}
     </div>
   );
 };

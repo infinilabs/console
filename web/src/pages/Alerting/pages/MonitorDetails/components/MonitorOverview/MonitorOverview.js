@@ -19,11 +19,12 @@ import { EuiFlexGrid } from '@elastic/eui';
 import ContentPanel from '../../../../components/ContentPanel/index';
 import OverviewStat from '../OverviewStat/index';
 import getOverviewStats from './utils/getOverviewStats';
+import {formatMessage} from 'umi/locale';
 
 const MonitorOverview = ({ monitor, monitorId, monitorVersion, activeCount }) => {
   const items = getOverviewStats(monitor, monitorId, monitorVersion, activeCount);
   return (
-    <ContentPanel title="Overview" titleSize="s">
+    <ContentPanel title={formatMessage({id:'alert.monitor.overview.title'})} titleSize="s">
       <EuiFlexGrid columns={4}>
         {items.map(props => (
           <OverviewStat key={props.header} {...props} />

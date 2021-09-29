@@ -49,11 +49,11 @@ export default class Home extends Component {
         name: formatMessage({ id: 'alert.monitor' }),
         route: 'monitors',
       },
-      {
-        id: 'destinations',
-        name: formatMessage({ id: 'alert.destination' }),
-        route: 'destinations',
-      },
+      // {
+      //   id: 'destinations',
+      //   name: formatMessage({ id: 'alert.destination' }),
+      //   route: 'destinations',
+      // },
     ];
   }
 
@@ -100,10 +100,11 @@ export default class Home extends Component {
             <Route
               // exact
               path="/dashboard"
-              render={(props) => (
+              render={(props) => {
+               return (
                 // <Dashboard {...props} httpClient={httpClient} notifications={notifications} />
                 <AlertOverview {...props} httpClient={httpClient} notifications={notifications} />
-              )}
+              )}}
             />
             <Route
               exact
@@ -112,7 +113,7 @@ export default class Home extends Component {
                 <Monitors {...props} httpClient={httpClient} notifications={notifications} />
               )}
             />
-            <Route
+            {/* <Route
               exact
               path="/destinations"
               render={(props) => (
@@ -122,7 +123,7 @@ export default class Home extends Component {
                   notifications={notifications}
                 />
               )}
-            />
+            /> */}
              <Route
                 exact
                 path="/"

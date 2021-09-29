@@ -15,6 +15,7 @@
 
 import React from 'react';
 import { EuiCodeBlock, EuiCodeEditor, EuiSpacer, EuiText, EuiTitle } from '@elastic/eui';
+import {formatMessage} from 'umi/locale';
 
 const CONTEXT_VARIABLES = JSON.stringify(
   {
@@ -40,17 +41,16 @@ const triggerCondition = context => ({
   header: (
     <EuiTitle size="m" style={{ fontSize: '25px' }}>
       <h2>
-        <strong>Trigger condition</strong>
+        <strong>{formatMessage({id:'alert.trigger.edit.define.field.condition'})}</strong>
       </h2>
     </EuiTitle>
   ),
   body: (
     <div>
       <EuiText style={{ fontSize: '14px' }}>
-        <p>You have access to a "ctx" variable in your painless scripts</p>
+        <p>{formatMessage({id:'alert.trigger.edit.define.field.condition.info.paragraph1'})}</p>
         <p>
-          Below shows a quick JSON example of what's available under the "ctx" variable along with
-          the actual results (where possible) for you to reference.
+        {formatMessage({id:'alert.trigger.edit.define.field.condition.info.paragraph2'})}
         </p>
       </EuiText>
 

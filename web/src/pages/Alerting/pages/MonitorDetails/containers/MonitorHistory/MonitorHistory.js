@@ -37,6 +37,8 @@ import {
 import * as HistoryConstants from './utils/constants';
 import { INDEX } from '../../../../utils/constants';
 import { backendErrorNotification } from '../../../../utils/helpers';
+import {pathPrefix} from '@/services/common';
+import {formatMessage} from 'umi/locale';
 
 class MonitorHistory extends PureComponent {
   constructor(props) {
@@ -200,8 +202,9 @@ class MonitorHistory extends PureComponent {
         ),
         index: INDEX.ALL_ALERTS,
       };
-      const resp = await httpClient.post('/alerting/monitors/_search', {
+      const resp = await httpClient.post(pathPrefix + '/alerting/_search', {
         body: JSON.stringify(requestBody),
+        prependBasePath: false,
       });
       if (resp.ok) {
         const poiData = get(resp, 'resp.aggregations.alerts_over_time.buckets', []).map((item) => ({
@@ -309,7 +312,7 @@ class MonitorHistory extends PureComponent {
     const { triggers, onShowTrigger } = this.props;
     return (
       <ContentPanel
-        title="History"
+        title={formatMessage({id:"alert.monitor.history.title"})}
         titleSize="s"
         bodyStyles={{ minHeight: 200, padding: 0 }}
         actions={[

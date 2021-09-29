@@ -18,7 +18,6 @@ type EmailAction struct {
 
 func (act *EmailAction) Execute() ([]byte, error){
 	from := act.Sender.Email
-	//Todo add password input in frontend?
 	act.Sender.Host = strings.TrimSpace(act.Sender.Host)
 	addr := fmt.Sprintf("%s:%d", act.Sender.Host, act.Sender.Port)
 	msg := fmt.Sprintf("To: %s\r\nSubject: %s\r\n%s\r\n", strings.Join(act.Receiver, ","), act.Subject, act.Message)
@@ -41,6 +40,10 @@ func SendEmailOverTLS(addr string, auth smtp.Auth, from string, to []string, msg
 	}
 
 	conn, err := tls.Dial("tcp", addr, tlsConfig)
+	//dialer := &net.Dialer{
+	//	Timeout: time.Second * 15,
+	//}
+	//conn, err := tls.DialWithDialer(dialer, "tcp", addr, tlsConfig)
 	if err != nil {
 		return err
 	}

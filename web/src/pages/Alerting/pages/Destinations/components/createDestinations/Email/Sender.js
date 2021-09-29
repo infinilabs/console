@@ -24,6 +24,7 @@ import {
 import { isInvalid, hasError } from '../../../../../utils/validate';
 import { validateEmail, validateHost, validatePort, validateSenderName } from './utils/validate';
 import { METHOD_TYPE, STATE } from './utils/constants';
+import {formatMessage} from 'umi/locale';
 
 const methodOptions = [
   { value: METHOD_TYPE.NONE, text: 'None' },
@@ -51,7 +52,7 @@ const Sender = ({ sender, arrayHelpers, context, index, onDelete }) => {
       paddingSize="l"
       extraAction={
         <EuiButton color="danger" size="s" onClick={onDelete}>
-          Remove sender
+          {formatMessage({id:'alert.email.manage.button.remove'})}
         </EuiButton>
       }
     >
@@ -60,10 +61,8 @@ const Sender = ({ sender, arrayHelpers, context, index, onDelete }) => {
         formRow
         fieldProps={{ validate: validateSenderName(context.ctx.senders) }}
         rowProps={{
-          label: 'Sender name',
-          helpText:
-            'A unique and descriptive name that is easy to search. ' +
-            'Valid characters are upper and lowercase a-z, 0-9, and _ (underscore).',
+          label: formatMessage({id:'alert.email.manage.field.name'}),
+          helpText:formatMessage({id:'alert.email.manage.field.name.help'}),
           style: { padding: '10px 0px' },
           isInvalid,
           error: hasError,
@@ -88,7 +87,7 @@ const Sender = ({ sender, arrayHelpers, context, index, onDelete }) => {
             formRow
             fieldProps={{ validate: validateEmail }}
             rowProps={{
-              label: 'Email address',
+              label: formatMessage({id:'alert.email.manage.field.address'}),
               isInvalid,
               error: hasError,
             }}
@@ -108,7 +107,7 @@ const Sender = ({ sender, arrayHelpers, context, index, onDelete }) => {
             formRow
             // fieldProps={{ validate: validateEmail }}
             rowProps={{
-              label: 'Email password',
+              label: formatMessage({id:'alert.email.manage.field.password'}),
               isInvalid,
               error: hasError,
             }}
@@ -130,7 +129,7 @@ const Sender = ({ sender, arrayHelpers, context, index, onDelete }) => {
             formRow
             fieldProps={{ validate: validateHost }}
             rowProps={{
-              label: 'Host',
+              label: formatMessage({id:'alert.email.manage.field.host'}),
               isInvalid,
               error: hasError,
             }}
@@ -150,7 +149,7 @@ const Sender = ({ sender, arrayHelpers, context, index, onDelete }) => {
             formRow
             fieldProps={{ validate: validatePort }}
             rowProps={{
-              label: 'Port',
+              label: formatMessage({id:'alert.email.manage.field.port'}),
               isInvalid,
               error: hasError,
             }}
@@ -169,11 +168,11 @@ const Sender = ({ sender, arrayHelpers, context, index, onDelete }) => {
         name={`senders.${index}.method`}
         formRow
         rowProps={{
-          label: 'Encryption method',
-          helpText: `SSL or TLS is recommended for security.
-          SSL and TLS requires validation by adding the following fields to the Elasticsearch keystore:
-          opendistro.alerting.destination.email.${!name ? '[sender name]' : name}.username
-          opendistro.alerting.destination.email.${!name ? '[sender name]' : name}.password`,
+          label: formatMessage({id:'alert.email.manage.field.method'}),
+          // helpText: `SSL or TLS is recommended for security.
+          // SSL and TLS requires validation by adding the following fields to the Elasticsearch keystore:
+          // opendistro.alerting.destination.email.${!name ? '[sender name]' : name}.username
+          // opendistro.alerting.destination.email.${!name ? '[sender name]' : name}.password`,
           style: { padding: '10px 0px' },
         }}
         inputProps={{

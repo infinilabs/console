@@ -7,7 +7,6 @@ import router from "umi/router";
 
 const MENU_COLLAPSED_KEY = "search-center:menu:collapsed";
 
-console.log(localStorage.getItem(MENU_COLLAPSED_KEY))
 export default {
   namespace: 'global',
 
@@ -22,7 +21,7 @@ export default {
     search:{
       cluster: {
       }
-    }
+    },
   },
 
   effects: {
@@ -130,7 +129,7 @@ export default {
       });
     },
     *rewriteURL({payload}, {select, put}){
-      const {pathname, history, search} = payload;
+      const {pathname, history, search, isChangedState} = payload;
       const global = yield select(state=>state.global);
       if(pathname && global.selectedClusterID){
         const newPart = `/elasticsearch/${global.selectedClusterID}/`;
@@ -139,7 +138,11 @@ export default {
         }else{
           const ms = pathname.match(/\/elasticsearch\/(\w+)\/?/);
           if(ms && ms.length>1 && ms[1] != global.selectedClusterID){
-            console.log(ms[1])
+            if(isChangedState){
+              const newPath = pathname.replace(/\/elasticsearch\/(\w+)\/?/, newPart);
+              history.replace(newPath+(search || ''))
+              return
+            }
             yield put({
               type: 'changeClusterById',
               payload:{
@@ -248,12 +251,21 @@ export default {
       // Subscribe history(url) change, trigger `load` action if pathname is `/`
       return history.listen(({ pathname, search }) => {
         let clusterVisible = true;
-        if(pathname.startsWith("/system")){
+        const clusterHiddenPath = ["/system", "/cluster/overview", "/alerting/overview", "/alerting/monitor/monitors/", "/alerting/destination"];
+        if(clusterHiddenPath.some(p=>pathname.startsWith(p))){
           clusterVisible = false;
-        }else if(pathname.startsWith("/cluster/overview")){
-          clusterVisible = false;
+          if(pathname.includes("elasticsearch")){
+            dispatch({
+              type: 'rewriteURL',
+              payload: {
+                pathname,
+                history,
+                search,
+              }
+            });
+          }
         }else{
-          if(!pathname.startsWith("/exception")){
+          if(!pathname.startsWith("/exception") && pathname !="/alerting/monitor"){
               dispatch({
                 type: 'rewriteURL',
                 payload: {

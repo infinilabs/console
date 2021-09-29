@@ -26,10 +26,11 @@ import { validateTriggerName } from './utils/validation';
 import { SEARCH_TYPE } from '../../../../utils/constants';
 import { AnomalyDetectorTrigger } from './AnomalyDetectorTrigger';
 import { TRIGGER_TYPE } from '../CreateTrigger/utils/constants';
+import {formatMessage} from 'umi/locale';
 
 const defaultRowProps = {
-  label: 'Trigger name',
-  helpText: `Trigger names must be unique. Names can only contain letters, numbers, and special characters.`,
+  label: formatMessage({id:"alert.trigger.edit.define.field.name"}),
+  helpText: formatMessage({id:"alert.trigger.edit.define.field.name.help"}),
   style: { paddingLeft: '10px' },
   isInvalid,
   error: hasError,
@@ -38,8 +39,8 @@ const defaultInputProps = { isInvalid };
 
 const selectFieldProps = { validate: () => {} };
 const selectRowProps = {
-  label: 'Severity level',
-  helpText: `Severity levels help you organize your triggers and actions. A trigger with a high severity level might page a specific individual, whereas a trigger with a low severity level might email a list.`,
+  label: formatMessage({id:"alert.trigger.edit.define.field.severity"}),
+  helpText: formatMessage({id:'alert.trigger.edit.define.field.severity.help'}),
   style: { paddingLeft: '10px', marginTop: '0px' },
   isInvalid,
   error: hasError,
@@ -119,7 +120,7 @@ const DefineTrigger = ({
   }
 
   return (
-    <ContentPanel title="Define trigger" titleSize="s" bodyStyles={{ padding: 'initial' }}>
+    <ContentPanel title={formatMessage({id:"alert.trigger.edit.define.title"})} titleSize="s" bodyStyles={{ padding: 'initial' }}>
       <FormikFieldText
         name="name"
         fieldProps={{ validate: validateTriggerName(triggers, triggerValues) }}

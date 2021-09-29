@@ -1,12 +1,14 @@
 import {List} from 'antd';
 import {AlertItem, AlertRecord} from './AlertItem';
 import './alertlist.scss';
+import {Legend, LegendItem} from './Legend';
 
 interface AlertListProps {
   dataSource: AlertRecord[];
   pagination?: any;
   title: string;
-  onItemClick: (item: AlertRecord)=>void
+  onItemClick: (item: AlertRecord)=>void;
+  legendItems?: LegendItem[];
 }
 
 export const AlertList = ({
@@ -14,13 +16,22 @@ export const AlertList = ({
   pagination,
   title,
   onItemClick,
+  legendItems
 }: AlertListProps)=>{
   return (
     <div className="alert-list">
-      <div className="title">
-        {title}
-        <span className="total">({pagination?.total})</span>
-      </div>
+      <div className="header">
+        <div className="title">
+          {title}
+          <span className="total">({pagination?.total})</span>
+        </div>
+        {
+          legendItems ? ( <div className="legend">
+          <Legend items={legendItems}/>
+          </div>):null
+        }
+       
+      </div> 
       <List
       itemLayout="vertical"
       size="large"

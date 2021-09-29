@@ -21,6 +21,7 @@ import { isInvalid, hasError, validateActionName } from '../../../../utils/valid
 import { ActionsMap } from './utils/constants';
 import { validateDestination } from './utils/validate';
 import { DEFAULT_ACTION_TYPE } from '../../utils/constants';
+import {formatMessage} from 'umi/locale';
 
 const Action = ({
   action,
@@ -44,12 +45,12 @@ const Action = ({
       className="accordion-action"
       buttonContent={
         !_.get(selectedDestination, '0.type', undefined)
-          ? 'Notification'
+          ? formatMessage({id:'alert.trigger.edit.action.default_name'})
           : `${actionLabel}: ${name}`
       }
       extraAction={
         <div style={{ paddingRight: '10px' }}>
-          <EuiButton onClick={onDelete}>Delete</EuiButton>
+          <EuiButton onClick={onDelete}>{formatMessage({id:'form.button.delete'})}</EuiButton>
         </div>
       }
     >
@@ -58,9 +59,9 @@ const Action = ({
         <FormikFieldText
           name={`actions.${index}.name`}
           formRow
-          fieldProps={{ validate: validateActionName(context.ctx.trigger) }}
+          fieldProps={{ validate: validateActionName(context._ctx.trigger) }}
           rowProps={{
-            label: 'Action name',
+            label: formatMessage({id:'alert.trigger.edit.action.field.name'}),
             helpText: 'Names can only contain letters, numbers, and special characters',
             isInvalid,
             error: hasError,
@@ -72,7 +73,7 @@ const Action = ({
           formRow
           fieldProps={{ validate: validateDestination(destinations) }}
           rowProps={{
-            label: 'Destination',
+            label: formatMessage({id:'alert.trigger.edit.action.field.destination'}),
             isInvalid,
             error: hasError,
           }}

@@ -19,6 +19,7 @@ import { FormikComboBox, FormikFieldText } from '../../../../../components/FormC
 import { isInvalid, hasError } from '../../../../../utils/validate';
 import { validateEmailGroupEmails, validateEmailGroupName } from './utils/validate';
 import { STATE } from './utils/constants';
+import {formatMessage} from 'umi/locale';
 
 const onEmailGroupChange = (index, emailGroup, arrayHelpers) => {
   // Checking for id here since new email groups should not be marked as updated
@@ -49,7 +50,7 @@ const EmailGroup = ({ emailGroup, emailOptions, arrayHelpers, context, index, on
       paddingSize="l"
       extraAction={
         <EuiButton color="danger" size="s" onClick={onDelete}>
-          Remove email group
+          {formatMessage({id:'alert.emailgroup.manage.button.remove'})}
         </EuiButton>
       }
     >
@@ -58,10 +59,8 @@ const EmailGroup = ({ emailGroup, emailOptions, arrayHelpers, context, index, on
         formRow
         fieldProps={{ validate: validateEmailGroupName(context.ctx.emailGroups) }}
         rowProps={{
-          label: 'Email group name',
-          helpText:
-            'A unique and descriptive name that is easy to search. ' +
-            'Valid characters are upper and lowercase a-z, 0-9, _ (underscore) and - (hyphen).',
+          label: formatMessage({id:'alert.emailgroup.manage.field.name'}),
+          helpText:formatMessage({id:'alert.emailgroup.manage.field.name.help'}),
           style: { padding: '10px 0px' },
           isInvalid,
           error: hasError,
@@ -79,8 +78,8 @@ const EmailGroup = ({ emailGroup, emailOptions, arrayHelpers, context, index, on
         formRow
         fieldProps={{ validate: validateEmailGroupEmails }}
         rowProps={{
-          label: 'Emails',
-          helpText: 'Search for previously used email addresses or type in new ones.',
+          label: formatMessage({id:'alert.emailgroup.manage.field.emails'}),
+          helpText: formatMessage({id:'alert.emailgroup.manage.field.emails.help'}),
           isInvalid,
           error: hasError,
         }}

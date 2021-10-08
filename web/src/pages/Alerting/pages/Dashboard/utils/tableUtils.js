@@ -85,7 +85,7 @@ export const columns = [
     render: (state, alert) => {
       const stateText =
         typeof state !== 'string' ? DEFAULT_EMPTY_DATA : _.capitalize(state.toLowerCase());
-      return state === ALERT_STATE.ERROR ? `${stateText}: ${alert.error_message}` : (stateOptions[state] || stateText);
+      return (stateOptions[state] || stateText); // state === ALERT_STATE.ERROR ? `${stateText}: ${alert.error_message}` :
     },
   },
   {

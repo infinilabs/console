@@ -6,6 +6,7 @@ import {useMemo} from 'react';
 import {ScopedHistory} from '../../components/kibana/core/public/application/scoped_history';
 import {notification} from 'antd';
 import {connect} from 'dva'
+import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 
 const httpClient = new Fetch({
   basePath:{
@@ -49,15 +50,17 @@ const AlertingUI =  (props)=>{
   }, [props.history])
 
   return  (
-    <CoreContext.Provider key={props.selectedCluster.id}
-        value={{ http: httpClient, isDarkMode, notifications: notifications }}
-      >
-        <Router history={history}>
-          <div style={{background:'#fff'}}>
-          <Main title="Alerting" {...props} />
-          </div>
-        </Router>
-    </CoreContext.Provider>
+    <PageHeaderWrapper>
+      <CoreContext.Provider key={props.selectedCluster.id}
+          value={{ http: httpClient, isDarkMode, notifications: notifications }}
+        >
+          <Router history={history}>
+            <div style={{background:'#fff'}}>
+            <Main title="Alerting" {...props} />
+            </div>
+          </Router>
+      </CoreContext.Provider>
+      </PageHeaderWrapper>
   )
 }
 

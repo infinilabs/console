@@ -35,7 +35,7 @@ export class Settings {
   constructor(private readonly storage: Storage) {}
 
   getFontSize() {
-    return this.storage.get('font_size', 14);
+    return this.storage.get('font_size', 12);
   }
 
   setFontSize(size: any) {

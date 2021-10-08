@@ -679,14 +679,14 @@ func ExecuteMonitor(w http.ResponseWriter, req *http.Request, ps httprouter.Para
 			}
 			monitorCtx, err := createMonitorContext(&trigger, resBody, &sm, IfaceMap{})
 			if err != nil {
-				triggerResult["error"] = err
+				triggerResult["error"] = err.Error()
 				triggerResults[trigger.ID] = triggerResult
 				continue
 			}
 			isTrigger, err := resolveTriggerResult(&trigger, monitorCtx)
 			triggerResult["triggered"] = isTrigger
 			if err != nil {
-				triggerResult["error"] = err
+				triggerResult["error"] = err.Error()
 			}
 			if trigger.ID == "" {
 				trigger.ID = util.GetUUID()

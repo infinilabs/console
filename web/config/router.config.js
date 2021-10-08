@@ -214,9 +214,9 @@ export default [
           },
         ]
       },
-      //
-      //
-      // //search
+      
+      
+      //search
       // {
       //   path: '/search',
       //   name: 'search',

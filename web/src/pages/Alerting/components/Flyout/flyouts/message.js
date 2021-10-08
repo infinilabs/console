@@ -16,6 +16,7 @@
 import React from 'react';
 import { EuiLink, EuiText, EuiTitle } from '@elastic/eui';
 import { URL } from '../../../utils/constants';
+import {formatMessage} from 'umi/locale';
 
 const message = () => ({
   flyoutProps: {
@@ -27,14 +28,14 @@ const message = () => ({
   header: (
     <EuiTitle size="m" style={{ fontSize: '25px' }}>
       <h2>
-        <strong>Message</strong>
+        <strong>{formatMessage({id:"alert.trigger.edit.action.field.message"})}</strong>
       </h2>
     </EuiTitle>
   ),
   body: (
     <EuiText style={{ fontSize: '14px' }}>
       <p>
-        {`You have access to a "_ctx" variable in your yaml scripts and action quicktemplate templates.`}
+        {formatMessage({id:"alert.trigger.edit.action.field.message.info.paragraph1"})}
       </p>
       {/* <h3>Learn More</h3>
       <ul>

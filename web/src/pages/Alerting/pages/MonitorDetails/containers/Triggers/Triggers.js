@@ -98,6 +98,17 @@ export default class Triggers extends Component {
         sortable: true,
         truncateText: false,
       },
+      {
+        actions: [{
+          name: 'Edit',
+          icon: 'documentEdit',
+          type: 'icon',
+          description: formatMessage({ id: 'form.button.edit' }),
+          onClick: (item)=>{
+            this.props.onEditTrigger(item);
+          },
+        }],
+      },
     ];
 
     const sorting = { sort: { field, direction } };
@@ -110,9 +121,9 @@ export default class Triggers extends Component {
         titleSize="s"
         bodyStyles={{ padding: 'initial' }}
         actions={[
-          <EuiButton onClick={this.onEdit} disabled={selectedItems.length !== 1}>
-             {formatMessage({ id: 'form.button.edit' })}
-          </EuiButton>,
+          // <EuiButton onClick={this.onEdit} disabled={selectedItems.length !== 1}>
+          //    {formatMessage({ id: 'form.button.edit' })}
+          // </EuiButton>,
           <EuiButton onClick={this.onDelete} disabled={!selectedItems.length}>
             {formatMessage({ id: 'form.button.delete' })}
           </EuiButton>,

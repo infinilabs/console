@@ -16,7 +16,7 @@
 import React, { Component } from 'react';
 import _ from 'lodash';
 import queryString from 'query-string';
-import { EuiBasicTable, EuiButton, EuiHorizontalRule, EuiIcon,RIGHT_ALIGNMENT,EuiButtonIcon } from '@elastic/eui';
+import { EuiBasicTable, EuiButton, EuiHorizontalRule, EuiIcon,RIGHT_ALIGNMENT,EuiButtonIcon,EuiDescriptionList } from '@elastic/eui';
 
 import ContentPanel from '../../../components/ContentPanel';
 import DashboardEmptyPrompt from '../components/DashboardEmptyPrompt';
@@ -55,20 +55,6 @@ export default class Dashboard extends Component {
       sortField,
     } = this.getURLQueryParams();
 
-    const tableColumns = [...columns, {
-      align: RIGHT_ALIGNMENT,
-      width: '40px',
-      isExpander: true,
-      render: (item) => {
-        const {itemIdToExpandedRowMap} = this.state;
-        (
-        <EuiButtonIcon
-          onClick={() => toggleDetails(item)}
-          aria-label={itemIdToExpandedRowMap[item.id] ? 'Collapse' : 'Expand'}
-          iconType={itemIdToExpandedRowMap[item.id] ? 'arrowUp' : 'arrowDown'}
-        />
-      )},
-    }]
 
     this.state = {
       alerts: [],
@@ -83,7 +69,7 @@ export default class Dashboard extends Component {
       sortField,
       totalAlerts: 0,
       itemIdToExpandedRowMap:{},
-      columns: tableColumns,
+      columns: columns,
     };
   }
 
@@ -305,6 +291,27 @@ export default class Dashboard extends Component {
     this.setState({ page });
   };
 
+  toggleDetails = (item)=>{
+    const id = `${item.id}-${item.version}`;
+    const itemIdToExpandedRowMapValues = { ...this.state.itemIdToExpandedRowMap };
+    if (itemIdToExpandedRowMapValues[id]) {
+      delete itemIdToExpandedRowMapValues[id];
+    } else {
+      const listItems = [
+        {
+          title: 'error',
+          description: `${item.error_message}`,
+        }
+      ]
+      itemIdToExpandedRowMapValues[id] = (
+        <EuiDescriptionList listItems={listItems} />
+      );
+    }
+    this.setState({
+      itemIdToExpandedRowMap:itemIdToExpandedRowMapValues,
+    });
+  }
+
   render() {
     const {
       alerts,
@@ -316,8 +323,27 @@ export default class Dashboard extends Component {
       sortDirection,
       sortField,
       totalAlerts,
+      columns,
+      itemIdToExpandedRowMap,
     } = this.state;
     const { monitorIds, detectorIds, onCreateTrigger } = this.props;
+
+    const tableColumns = [...columns, {
+      align: RIGHT_ALIGNMENT,
+      width: '40px',
+      isExpander: true,
+      render: (item) => {
+        if(item.state != 'ERROR'){
+          return null;
+        }
+        return (
+        <EuiButtonIcon
+          onClick={() => this.toggleDetails(item)}
+          aria-label={itemIdToExpandedRowMap[item.id] ? 'Collapse' : 'Expand'}
+          iconType={itemIdToExpandedRowMap[item.id] ? 'arrowUp' : 'arrowDown'}
+        />
+      )},
+    }]
 
     const pagination = {
       pageIndex: page,
@@ -376,6 +402,7 @@ export default class Dashboard extends Component {
         <EuiBasicTable
           itemIdToExpandedRowMap={this.state.itemIdToExpandedRowMap}
           isExpandable={true}
+          hasActions={true}
           items={alerts}
           /*
            * If using just ID, doesn't update selectedItems when doing acknowledge
@@ -383,7 +410,7 @@ export default class Dashboard extends Component {
            * $id-$version will correctly remove selected items
            * */
           itemId={(item) => `${item.id}-${item.version}`}
-          columns={this.state.columns}
+          columns={tableColumns}
           pagination={pagination}
           sorting={sorting}
           isSelectable={true}

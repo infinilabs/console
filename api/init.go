@@ -17,6 +17,8 @@ func Init(cfg *config.AppConfig) {
 	}
 	var pathPrefix = "/_search-center/"
 	//ui.HandleUIMethod(api.POST, "/api/get_indices",index_management.API1)
+	ui.HandleUIMethod(api.GET, path.Join(pathPrefix, "elasticsearch/overview"), handler.ElasticsearchOverviewAction)
+
 	ui.HandleUIMethod(api.GET, path.Join(pathPrefix, "dict/_search"), handler.GetDictListAction)
 	ui.HandleUIMethod(api.POST, path.Join(pathPrefix, "dict/*id"), handler.CreateDictItemAction)
 	//ui.HandleUIMethod(api.GET, "/api/dict/:id",handler.GetDictItemAction)

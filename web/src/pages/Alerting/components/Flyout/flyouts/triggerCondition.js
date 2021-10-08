@@ -34,7 +34,7 @@ const CONTEXT_VARIABLES = JSON.stringify(
 const triggerCondition = context => ({
   flyoutProps: {
     'aria-labelledby': 'triggerConditionFlyout',
-    maxWidth: 500,
+    maxWidth: 540,
     size: 'm',
   },
   headerProps: { hasBorder: true },
@@ -49,6 +49,16 @@ const triggerCondition = context => ({
     <div>
       <EuiText style={{ fontSize: '14px' }}>
         <p>{formatMessage({id:'alert.trigger.edit.define.field.condition.info.paragraph1'})}</p>
+        <p>
+        逻辑判断操作包括 or, and, not, in, range, equals, contains, regexp。其中 or, and, not 支持嵌套，如
+        <EuiCodeBlock language="yaml">
+       {`and: 
+    - range:
+        _ctx.results.[0].hits.total.value.gt: 0
+    - contains:
+        _ctx.results.[0].hits.hits.[0]._source.field: value`}
+        </EuiCodeBlock>
+        </p>
         <p>
         {formatMessage({id:'alert.trigger.edit.define.field.condition.info.paragraph2'})}
         </p>

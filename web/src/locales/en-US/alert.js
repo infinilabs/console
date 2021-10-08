@@ -145,6 +145,7 @@ export default {
   'alert.trigger.edit.action.field.name': 'Action name',
   'alert.trigger.edit.action.field.destination': 'Destination',
   'alert.trigger.edit.action.field.message': 'Message',
+  'alert.trigger.edit.action.field.message.info.paragraph1': 'You have access to a "_ctx" variable in your yaml scripts and action templates.',
   'alert.trigger.edit.action.field.message_subject': 'Message subject',
   'alert.trigger.edit.action.field.message_preview': 'Message preview',
   'alert.trigger.edit.action.send_test_message': 'Send test message',

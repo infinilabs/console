@@ -5,6 +5,7 @@ import DestinationsList from './pages/Destinations/containers/DestinationsList';
 import {Fetch} from  '../../components/kibana/core/public/http/fetch';
 import {ScopedHistory} from '../../components/kibana/core/public/application/scoped_history';
 import {notification} from 'antd';
+import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 
 const Destination = ({httpClient, notifications, history})=> {
   return (
@@ -85,6 +86,8 @@ export default (props)=>{
   }, [props.history])
 
   return  (
-    <Destination httpClient={httpClient} notifications={notifications} history={history} />
+    <PageHeaderWrapper>
+       <Destination httpClient={httpClient} notifications={notifications} history={history} />
+    </PageHeaderWrapper> 
   )
 }

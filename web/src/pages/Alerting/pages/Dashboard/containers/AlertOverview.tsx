@@ -4,6 +4,7 @@ import {useState, useEffect} from 'react';
 import './alertoverview.scss';
 import { formatMessage } from 'umi/locale';
 
+
 export const AlertOverview = (props: any)=>{
   const {httpClient, history} = props;
   const [data, setData] = useState({
@@ -16,8 +17,7 @@ export const AlertOverview = (props: any)=>{
     totalAlerts: 0,
   });
 
-  const getAlerts = _.debounce(
-    (from, size, search, sortField, sortDirection, severityLevel, alertState, monitorIds, type) => {
+  const getAlerts = (from, size, search, sortField, sortDirection, severityLevel, alertState, monitorIds, type) => {
       let params = {
         from,
         size,
@@ -31,41 +31,42 @@ export const AlertOverview = (props: any)=>{
       if(monitorIds){
         params["monitorIds"]= monitorIds;
       }
-      httpClient.get('/alerting/alerts', { query: params }).then((resp:any) => {
-        if (resp.ok) {
+      return httpClient.get('/alerting/alerts', { query: params })
+    }
+
+  const useData = (pageSize: number, page: number, type: string):[any,any] => {
+    const [size, setSize] = useState(pageSize || 10);
+    const [pageIndex, setPageIndex] = useState(page || 1);
+    const [alertData, setAlertData] = useState({
+      data: [],
+      total: 0,
+    });
+    useEffect(()=>{
+      const from = (pageIndex - 1) * size;
+      const fetchAlerts = async (from: number, size: number)=>{
+        const resp = await getAlerts(from, size,"", "start_time", "desc", "ALL", "ALL","", type);
+        if(resp.ok){
           const { alerts, totalAlerts } = resp;
-          if(type == 'ALERT_HISTORY'){
-            setHistoryData({
-              alerts,
-              totalAlerts,
-            });
-            return;
-          }
-          setData({
-            alerts,
-            totalAlerts,
-          });
-        } else {
-          console.log('error getting alerts:', resp);
+          setAlertData({
+            ...alertData,
+            data: alerts,
+            total: totalAlerts,
+          })
         }
-      });
-    },
-    500,
-    { leading: true }
-  );
+      }
+      fetchAlerts(from,size);
+    }, [pageIndex, size, type]);
+    const changePage = (pageIndex: number) => {
+      setPageIndex(pageIndex);
+    }
+    
+    return [alertData, changePage];
+  }
   
   const pageSize = 10;
-  useEffect(()=>{
-    getAlerts(0, pageSize, "", "start_time", "desc", "ALL", "ALL","", "ALERT");
-    getAlerts(0, pageSize, "", "start_time", "desc", "ALL", "ALL","", "ALERT_HISTORY")
-  },[])
+  const [alerts, onAlertPageChange] = useData(pageSize, 1, "ALERT");
+  const [historyAlerts, onAlertHistoryPageChange] = useData(pageSize, 1, "ALERT_HISTORY");
 
-  const onPageChangeGen = (type:string) => {
-    return  (pageIndex: number)=>{
-      const from = (pageIndex - 1) * pageSize;
-      getAlerts(from, pageSize, "", "start_time", "desc", "ALL", "ALL","", type)
-    }
-  }
  
 
   const onItemClick = (item: any)=>{
@@ -75,21 +76,21 @@ export const AlertOverview = (props: any)=>{
   return (
   <div className="alert-overview">
     <div className="left">
-      <AlertList dataSource={data.alerts} 
+      <AlertList dataSource={alerts.data as any} 
       title={formatMessage({id:'alert.overview.alertlist.title'})}
       onItemClick={onItemClick}
       pagination={{
         pageSize,
-        total: data.totalAlerts,
-        onChange: onPageChangeGen('ALERT'),
+        total: alerts.total,
+        onChange: onAlertPageChange,
       }}/>
-       <AlertList dataSource={historyData.alerts} 
+       <AlertList dataSource={historyAlerts.data} 
       title={formatMessage({id:'alert.overview.alertlist-history.title'})}
       onItemClick={onItemClick}
       pagination={{
         pageSize,
-        total: historyData.totalAlerts,
-        onChange: onPageChangeGen('ALERT_HISTORY'),
+        total: historyAlerts.total,
+        onChange: onAlertHistoryPageChange,
       }}/>
     </div>
     {/* <div className="right">

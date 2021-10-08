@@ -65,7 +65,7 @@ const SendRequestButton = (props: any) => {
 
 interface ConsoleInputProps {
   clusterID: string,
-  initialText: string,
+  initialText: string | undefined,
 }
 
 const DEFAULT_INPUT_VALUE = `GET _search
@@ -198,7 +198,7 @@ const ConsoleInputUI = ({clusterID, initialText}:ConsoleInputProps) => {
   );
 };
 
-const ConsoleInput = ({clusterID}:ConsoleInputProps)=>{
+const ConsoleInput = ({clusterID}:{clusterID:string})=>{
   const { done, error, retry } = useDataInit();
   const { currentTextObject } = useEditorReadContext();
   return done ? <ConsoleInputUI clusterID={clusterID} initialText={currentTextObject?.text}/>: <></>

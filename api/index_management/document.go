@@ -21,92 +21,91 @@ type docReqBody struct {
 }
 
 func (handler APIHandler) HandleAddDocumentAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	client := elastic.GetClient(handler.Config.Elasticsearch)
+	targetClusterID := ps.ByName("id")
+	client := elastic.GetClient(targetClusterID)
 	reqBody := map[string]interface{}{}
-	resResult := newResponseBody()
+	resBody := newResponseBody()
 	err := handler.DecodeJSON(req, &reqBody)
 	if err != nil {
-		resResult["status"] = false
-		resResult["error"] = err.Error()
-		handler.WriteJSON(w, resResult, http.StatusOK)
+		resBody["error"] = err.Error()
+		handler.WriteJSON(w, resBody, http.StatusOK)
 		return
 	}
 	indexName := ps.ByName("index")
-	id := ps.ByName("id")
-	if strings.Trim(id, "/") == "" {
-		id = util.GetUUID()
+	docID := ps.ByName("docId")
+	if strings.Trim(docID, "/") == "" {
+		docID = util.GetUUID()
 	}
 	docType := handler.GetParameter(req, "_type")
-	_, err = client.Index(indexName, docType, id, reqBody)
+	insertRes, err := client.Index(indexName, docType, docID, reqBody)
 	if err != nil {
-		resResult["status"] = false
-		resResult["error"] = err
-		handler.WriteJSON(w, resResult, http.StatusOK)
+		resBody["error"] = err
+		handler.WriteJSON(w, resBody, http.StatusOK)
 		return
 	}
-	reqBody["id"] = id
-	resResult["payload"] = reqBody
-	handler.WriteJSON(w, resResult, http.StatusOK)
+	reqBody["_id"] = docID
+	resBody["result"] = insertRes.Result
+	handler.WriteJSON(w, resBody, http.StatusOK)
 }
 
 func (handler APIHandler) HandleUpdateDocumentAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	client := elastic.GetClient(handler.Config.Elasticsearch)
+	targetClusterID := ps.ByName("id")
+	client := elastic.GetClient(targetClusterID)
+	resBody := newResponseBody()
+	if client == nil {
+		resBody["error"] = "can not found target cluster"
+		handler.WriteJSON(w, resBody, http.StatusOK)
+		return
+	}
 	reqBody := map[string]interface{}{}
-	resResult := newResponseBody()
+
 	err := handler.DecodeJSON(req, &reqBody)
 	if err != nil {
-		resResult["status"] = false
-		resResult["error"] = err
-		handler.WriteJSON(w, resResult, http.StatusOK)
+		resBody["error"] = err
+		handler.WriteJSON(w, resBody, http.StatusOK)
 		return
 	}
 	indexName := ps.ByName("index")
-	id := ps.ByName("id")
+	docID := ps.ByName("docId")
 	typ := handler.GetParameter(req, "_type")
-	resp, err := client.Get(indexName,typ, id)
+	insertRes, err := client.Index(indexName, typ, docID, reqBody)
 	if err != nil {
-		resResult["status"] = false
-		resResult["error"] = err.Error()
-		handler.WriteJSON(w, resResult, http.StatusOK)
+		resBody["error"] = err.Error()
+		handler.WriteJSON(w, resBody, http.StatusOK)
 		return
 	}
-	source := resp.Source
-	for k, v := range reqBody {
-		if k == "id" {
-			continue
-		}
-		source[k] = v
-	}
-	_, err = client.Index(indexName, typ, id, source)
-	if err != nil {
-		resResult["status"] = false
-		resResult["error"] = err.Error()
-		handler.WriteJSON(w, resResult, http.StatusOK)
-		return
-	}
-	resResult["payload"] = reqBody
-	handler.WriteJSON(w, resResult, http.StatusOK)
+	resBody["_source"] = reqBody
+	resBody["_id"] = docID
+	resBody["result"] = insertRes.Result
+	handler.WriteJSON(w, resBody, http.StatusOK)
 }
 
 func (handler APIHandler) HandleDeleteDocumentAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	client := elastic.GetClient(handler.Config.Elasticsearch)
-	resResult := newResponseBody()
-	indexName := ps.ByName("index")
-	id := ps.ByName("id")
-	typ := handler.GetParameter(req, "_type")
-	_, err := client.Delete(indexName, typ, id)
-	if err != nil {
-		resResult["error"] = err.Error()
-		resResult["status"] = false
-		handler.WriteJSON(w, resResult, http.StatusOK)
+	targetClusterID := ps.ByName("id")
+	client := elastic.GetClient(targetClusterID)
+	resBody := newResponseBody()
+	if client == nil {
+		resBody["error"] = "can not found target cluster"
+		handler.WriteJSON(w, resBody, http.StatusOK)
 		return
 	}
-	resResult["payload"] = true
-	handler.WriteJSON(w, resResult, http.StatusOK)
+
+	indexName := ps.ByName("index")
+	docID := ps.ByName("docId")
+	typ := handler.GetParameter(req, "_type")
+	delRes, err := client.Delete(indexName, typ, docID, "wait_for")
+	if err != nil {
+		resBody["error"] = err.Error()
+		handler.WriteJSON(w, resBody, http.StatusOK)
+		return
+	}
+	resBody["result"] = delRes.Result
+	handler.WriteJSON(w, resBody, http.StatusOK)
 }
 
 func (handler APIHandler) HandleSearchDocumentAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	client := elastic.GetClient(handler.Config.Elasticsearch)
+	targetClusterID := ps.ByName("id")
+	client := elastic.GetClient(targetClusterID)
 	reqBody := docReqBody{}
 	resResult := newResponseBody()
 	err := handler.DecodeJSON(req, &reqBody)

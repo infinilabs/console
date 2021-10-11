@@ -13,3 +13,5 @@ export function buildQueryArgs(params){
   }
   return argsStr;
 }
+
+export const ESPrefix = '/elasticsearch';

@@ -1,6 +1,10 @@
 @import '../../../../../core/public/variables.scss';
 .kbnDocViewerTable {
   margin-top: $euiSizeS;
+  font-size: 12px;
+  .kbnDocViewer__buttons{
+    padding-top: 0px !important;
+  }
 }
 
 .kbnDocViewer {

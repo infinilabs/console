@@ -383,14 +383,10 @@ class EditableCell extends React.Component {
 
     getFieldType = (record, key)=>{
       const {doclist} = this.props;
-      // if(!doclist.mappings[record._index]){
-      //   console.log(record, doclist.mappings)
-      //   return
-      // }
       let properties = null;
       let _type = record._type || doclist._type;
       if(typeof _type !== 'undefined' && _type !== '' && _type !== '_doc'){
-        properties = doclist.mappings[record._index].mappings[_type].properties;
+        properties = doclist.mappings[record._index].mappings[_type]?.properties || {};
       }else{
         properties = doclist.mappings[record._index].mappings.properties;
       }
@@ -565,9 +561,10 @@ class EditableCell extends React.Component {
     }
   }
 
-@connect(({document,cluster})=>({
+@connect(({document,global})=>({
   document,
-  cluster,
+  clusterID: global.selectedClusterID,
+  cluster: global.selectedCluster,
 }))
 @Form.create()
 class Doucment extends React.Component {
@@ -580,10 +577,13 @@ class Doucment extends React.Component {
   // }
 
   fetchData = (params) => {
-    const {dispatch} = this.props;
+    const {dispatch, clusterID} = this.props;
     return dispatch({
       type: 'document/fetchDocList',
-      payload: params,
+      payload: {
+        ...params,
+        clusterID
+      },
     })
   }
 
@@ -595,38 +595,28 @@ class Doucment extends React.Component {
           langDisposer.dispose();
       }
   }
-  componentDidMount(){
-    //  initEditor()
-    const {location, dispatch } = this.props;
-    //console.log(match, location);
-    let index = location.query.index;
-    let cluster = location.query.cluster || 'single-es';
-    if(!cluster){
-      return
+  componentDidUpdate(oldProps,newState,snapshot){
+    if(oldProps.clusterID != this.props.clusterID){
+      this.initData()
     }
+  }
+  initData = ()=>{
+    const {dispatch, clusterID} = this.props;
     dispatch({
       type: 'document/fetchMappings',
       payload: {
-        cluster,
+        clusterID,
       }
     });
     dispatch({
       type: 'document/fetchIndices',
       payload: {
-        cluster,
+        clusterID,
       }
-    }).then(()=>{
-      if(!index){
-        return
-      }
-      this.fetchData({
-        pageSize: 10,
-        pageIndex: 1,
-        cluster,
-        index,
-      })
     })
-   
+  }
+  componentDidMount(){
+    this.initData()
   }
   
   handleNewClick = ()=>{
@@ -644,7 +634,6 @@ class Doucment extends React.Component {
     let _index = indices[0];
     let _type = '';
     if(indices.length > 0){
-      //console.log(this.indexSelEl);
       let vals = this.indexSelEl.state.value;
       if(vals.length === 0){
         Modal.error({
@@ -701,9 +690,8 @@ class Doucment extends React.Component {
   handleSearchClick = (e)=>{
     let value = this.keywordEl.state.value;
     let index = this.indexEl.state.value;
-    let cluster = this.clusterEl.rcSelect.state.value[0];
     let filter = '';
-    if(!cluster || !index){
+    if(!index){
       message.error('please select cluster and index');
       return;
     }
@@ -711,7 +699,6 @@ class Doucment extends React.Component {
       filter = this.filterGetter();
     }
     this.fetchData({
-      cluster,
       index,
       pageSize: this.props.document.pageSize,
       pageIndex: 1,
@@ -719,10 +706,10 @@ class Doucment extends React.Component {
       filter,
       keyword: value,
     }).then(()=>{
-      if(this.hashChanged){
-        router.push(`/data/document?cluster=${cluster}&index=${index}`);
-        this.hashChanged = !this.hashChanged;
-      }
+      // if(this.hashChanged){
+      //   router.push(`/data/document?cluster=${cluster}&index=${index}`);
+      //   this.hashChanged = !this.hashChanged;
+      // }
     })
     
   }
@@ -741,8 +728,9 @@ class Doucment extends React.Component {
     // if((indices && indices.length > 1)){
     //   return;
     // }
-    const {major} = this.props.cluster;
-    if(indices && indices.length >= 0){
+    const {version} = this.props.cluster;
+    const major = version.split('.')?.[0] || '';
+    if(indices && indices.length >= 0 && major !=''){
       indices = getESAPI(major).extractIndicesFromMappings(mappings).filter(item=>{
         if(indices.length > 0){
           return indices.indexOf(item.index) > -1;
@@ -769,11 +757,6 @@ class Doucment extends React.Component {
       <div>
         {(indices && indices.length>0) ? (<Cascader ref={el=>{this.indexSelEl=el}} onChange={(vals)=>{this.handleResultTabKeyChange(vals[0])}} value={[resultKey]} options={indices} style={{width: 200, marginRight:5}} placeholder="please select a index">
         </Cascader>) : ''}
-        {/*{(indices) ? (<Select ref={el=>{this.indexSelEl=el}} style={{width: 200, marginRight:5}} placeholder="please select a index">*/}
-        {/*  {indices.map(item=>{*/}
-        {/*    return (<Select.Option key={item} label={item}>{item}</Select.Option>)*/}
-        {/*  })}*/}
-        {/*</Select>) : ''}*/}
         <Button type="primary" icon="plus" onClick={this.handleNewClick}>{formatMessage({ id: 'form.button.new' })}</Button>
         <span style={{marginLeft:20}}>
           {/*Select Viewer:  */}
@@ -806,9 +789,7 @@ class Doucment extends React.Component {
           value: index,
         };
       })
-      const clusters = ["single-es"];
-      let {cluster, index, indices, tableMode}= this.props.document;
-      cluster = cluster || this.props.location.query.cluster || 'single-es';
+      let {index, indices, tableMode}= this.props.document;
       index = index || this.props.location.query.index;
       indices = indices || [];
 
@@ -824,12 +805,7 @@ class Doucment extends React.Component {
                   <Row gutter={[16, { xs: 8, sm: 16, md: 24, lg: 32 }]}>
                       <Col span={20} style={{paddingLeft:0}}>
                       <Input.Group compact>
-                         <Select ref={el=>this.clusterEl=el} defaultValue={cluster} style={{width: '20%'}}>
-                            {
-                              clusters.map(op=>(<Select.Option value={op} key={op}>{op}</Select.Option>))
-                            }
-                          </Select>
-                          <InputSelect data={clusterIndices} onChange={()=>{this.hashChanged=true;}} defaultValue={index} ref={el=>{this.indexEl=el}} placeholder="input index or index pattern" style={{width: '25%'}}/>
+                          <InputSelect data={clusterIndices} onChange={()=>{this.hashChanged=true;}} defaultValue={index} ref={el=>{this.indexEl=el}} placeholder="input index or index pattern" style={{width: '40%'}}/>
                           <Input
                               style={{width:"40%", display: this.state.bodyDisplay === 'none' ? 'inline': 'none'}}
                               ref={el=>this.keywordEl=el}

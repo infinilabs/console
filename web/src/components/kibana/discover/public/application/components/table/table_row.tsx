@@ -100,7 +100,7 @@ export function DocViewTableRow({
           <DocViewTableRowBtnCollapse onClick={onToggleCollapse} isCollapsed={isCollapsed} />
         )}
         {displayUnderscoreWarning && <DocViewTableRowIconUnderscore />}
-        {displayNoMappingWarning && <DocViewTableRowIconNoMapping />}
+        {/* {displayNoMappingWarning && <DocViewTableRowIconNoMapping />} */}
         <div
           className={valueClassName}
           data-test-subj={`tableDocViewRow-${field}-value`}

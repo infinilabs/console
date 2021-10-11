@@ -227,7 +227,7 @@ class Overview extends  React.Component {
                       >
                           <Card.Meta title='存储空间' className={styles.title} />
                           <div>
-                              <span className={styles.total}>{totalStoreSize.size}</span><span className={styles.unit}>{totalStoreSize.unit}</span>
+                              <span className={styles.total}>{totalStoreSize.size || '-'}</span><span className={styles.unit}>{totalStoreSize.unit}</span>
                           </div>
                       </Card>
                   </Col>

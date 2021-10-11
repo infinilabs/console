@@ -16,6 +16,7 @@ func Init(cfg *config.AppConfig) {
 		Config: cfg,
 	}
 	var pathPrefix = "/_search-center/"
+	var esPrefix = "/elasticsearch/:id/"
 	//ui.HandleUIMethod(api.POST, "/api/get_indices",index_management.API1)
 	ui.HandleUIMethod(api.GET, path.Join(pathPrefix, "elasticsearch/overview"), handler.ElasticsearchOverviewAction)
 
@@ -24,20 +25,21 @@ func Init(cfg *config.AppConfig) {
 	//ui.HandleUIMethod(api.GET, "/api/dict/:id",handler.GetDictItemAction)
 	ui.HandleUIMethod(api.DELETE, path.Join(pathPrefix, "dict/:id"), handler.DeleteDictItemAction)
 	ui.HandleUIMethod(api.PUT, path.Join(pathPrefix, "dict/:id"), handler.UpdateDictItemAction)
-	ui.HandleUIMethod(api.POST, path.Join(pathPrefix, "doc/:index/_search"), handler.HandleSearchDocumentAction)
-	ui.HandleUIMethod(api.POST, path.Join(pathPrefix, "doc/:index/_create"), handler.HandleAddDocumentAction)
-	ui.HandleUIMethod(api.PUT, path.Join(pathPrefix, "doc/:index/:id"), handler.HandleUpdateDocumentAction)
-	ui.HandleUIMethod(api.DELETE, path.Join(pathPrefix, "doc/:index/:id"), handler.HandleDeleteDocumentAction)
+	ui.HandleUIMethod(api.POST, path.Join(esPrefix, "doc/:index/_search"), handler.HandleSearchDocumentAction)
+	ui.HandleUIMethod(api.POST, path.Join(esPrefix, "doc/:index"), handler.HandleAddDocumentAction)
+	ui.HandleUIMethod(api.PUT, path.Join(esPrefix, "doc/:index/:docId"), handler.HandleUpdateDocumentAction)
+	ui.HandleUIMethod(api.DELETE, path.Join(esPrefix, "doc/:index/:docId"), handler.HandleDeleteDocumentAction)
 
 	ui.HandleUIMethod(api.POST, path.Join(pathPrefix, "rebuild/*id"), handler.HandleReindexAction)
 	ui.HandleUIMethod(api.GET, path.Join(pathPrefix, "rebuild/_search"), handler.HandleGetRebuildListAction)
 	ui.HandleUIMethod(api.DELETE, path.Join(pathPrefix, "rebuild/:id"), handler.HandleDeleteRebuildAction)
-	ui.HandleUIMethod(api.GET, path.Join(pathPrefix, "_cat/indices"), handler.HandleGetIndicesAction)
-	ui.HandleUIMethod(api.GET, path.Join(pathPrefix, "index/:index/_mappings"), handler.HandleGetMappingsAction)
-	ui.HandleUIMethod(api.GET, path.Join(pathPrefix, "index/:index/_settings"), handler.HandleGetSettingsAction)
-	ui.HandleUIMethod(api.PUT, path.Join(pathPrefix, "index/:index/_settings"), handler.HandleUpdateSettingsAction)
-	ui.HandleUIMethod(api.DELETE, path.Join(pathPrefix, "index/:index"), handler.HandleDeleteIndexAction)
-	ui.HandleUIMethod(api.POST, path.Join(pathPrefix, "index/:index"), handler.HandleCreateIndexAction)
+
+	ui.HandleUIMethod(api.GET,  path.Join(esPrefix, "_cat/indices"), handler.HandleGetIndicesAction)
+	ui.HandleUIMethod(api.GET, path.Join(esPrefix, "index/:index/_mappings"), handler.HandleGetMappingsAction)
+	ui.HandleUIMethod(api.GET, path.Join(esPrefix, "index/:index/_settings"), handler.HandleGetSettingsAction)
+	ui.HandleUIMethod(api.PUT, path.Join(esPrefix, "index/:index/_settings"), handler.HandleUpdateSettingsAction)
+	ui.HandleUIMethod(api.DELETE, path.Join(esPrefix, "index/:index"), handler.HandleDeleteIndexAction)
+	ui.HandleUIMethod(api.POST, path.Join(esPrefix, "index/:index"), handler.HandleCreateIndexAction)
 
 	//new api
 	ui.HandleUIMethod(api.GET,  path.Join(pathPrefix, "alerting/overview"), alerting.GetAlertOverview)

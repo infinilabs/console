@@ -17,12 +17,14 @@ import {
   Menu,
   Table,
   Dropdown,
-  Icon, Popconfirm
+  Icon, Popconfirm,
+  Switch,
 } from 'antd';
 import Editor from '@monaco-editor/react';
 
 import styles from '../List/TableList.less';
 import {transformSettingsForApi} from '@/lib/elasticsearch/edit_settings';
+import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 
 const FormItem = Form.Item;
 const { TextArea } = Input;
@@ -107,8 +109,9 @@ class CreateForm extends React.Component {
 
 
 /* eslint react/no-multi-comp:0 */
-@connect(({ index }) => ({
-  index
+@connect(({ index,global }) => ({
+  index,
+  clusterID: global.selectedClusterID,
 }))
 @Form.create()
 class Index extends PureComponent {
@@ -120,6 +123,7 @@ class Index extends PureComponent {
     drawerVisible: false,
     editingIndex:{},
     indexActiveKey: '1',
+    showSystemIndices: false,
   };
   columns = [
     {
@@ -137,6 +141,9 @@ class Index extends PureComponent {
     {
       title: '文档数',
       dataIndex: 'docs_count',
+      render: (val)=>{
+        return val || 0;
+      }
     },
     {
       title: '主分片数',
@@ -165,13 +172,18 @@ class Index extends PureComponent {
   componentDidMount() {
     this.fetchData()
   }
+  componentDidUpdate(oldProps,newState,snapshot){
+    if(oldProps.clusterID != this.props.clusterID){
+      this.fetchData()
+    }
+  }
 
   fetchData = ()=>{
-    const { dispatch } = this.props;
+    const { dispatch, clusterID } = this.props;
     dispatch({
       type: 'index/fetchIndices',
       payload: {
-        cluster: 'single-es'
+        clusterID:  clusterID,
       }
     });
   }
@@ -185,11 +197,12 @@ class Index extends PureComponent {
   };
 
   handleDeleteClick = (indexName) => {
-    const { dispatch } = this.props;
+    const { dispatch,clusterID } = this.props;
     dispatch({
       type: 'index/removeIndex',
       payload: {
-        index: indexName
+        index: indexName,
+        clusterID,
       }
     });
   };
@@ -214,12 +227,13 @@ class Index extends PureComponent {
   };
 
   handleAdd = fields => {
-    const { dispatch } = this.props;
+    const { dispatch, clusterID} = this.props;
     dispatch({
       type: 'index/addIndex',
       payload: {
         index: fields.index,
-        config: JSON.parse(fields.config)
+        config: JSON.parse(fields.config || '{}'),
+        clusterID
       },
     });
     this.handleModalVisible();
@@ -229,7 +243,7 @@ class Index extends PureComponent {
     this.setState({
       indexActiveKey: activeKey,
     })
-    const {dispatch} = this.props;
+    const {dispatch, clusterID} = this.props;
     if(activeKey == '2'){
       if(this.props.index.mappings[indexName]){
         return
@@ -238,6 +252,7 @@ class Index extends PureComponent {
         type: 'index/fetchMappings',
         payload: {
           index: indexName,
+          clusterID,
         }
       })
     }else if(activeKey == '4'){
@@ -248,6 +263,7 @@ class Index extends PureComponent {
         type: 'index/fetchSettings',
         payload: {
           index: indexName,
+          clusterID,
         }
       })
     }
@@ -259,12 +275,13 @@ class Index extends PureComponent {
   handleIndexSettingsSaveClick = (indexName)=>{
     let settings = this.indexSettingsGetter();
     settings = JSON.parse(settings);
-    const {dispatch} = this.props;
+    const {dispatch,clusterID} = this.props;
     dispatch({
       type: 'index/saveSettings',
       payload: {
         index: indexName,
         settings: settings,
+        clusterID,
       }
     })
   }
@@ -280,6 +297,9 @@ class Index extends PureComponent {
         continue
       }
       indices.push(clusterIndices[key]);
+    }
+    if(!this.state.showSystemIndices){
+      indices = indices.filter(item=>!item.index.startsWith('.'));
     }
     const { modalVisible, updateModalVisible, updateFormValues,editingIndex, drawerVisible } = this.state;
     const parentMethods = {
@@ -301,7 +321,7 @@ class Index extends PureComponent {
     const {form: { getFieldDecorator }} = this.props;
     
     return (
-      <Fragment>
+      <PageHeaderWrapper>
         <Card bordered={false}>
           <div className={styles.tableList}>
             <div className={styles.tableListForm}>
@@ -332,7 +352,9 @@ class Index extends PureComponent {
               </Form>
             </div>
             <div className={styles.tableListOperator}>
-
+              <div style={{marginLeft:'auto'}}>显示系统索引<Switch style={{marginLeft:5}} 
+                onChange={(checked)=>{this.setState({showSystemIndices:checked})}}
+               defaultChecked={this.state.showSystemIndices}/></div>
             </div>
             <Table bordered
               dataSource={indices}
@@ -357,17 +379,17 @@ class Index extends PureComponent {
         >
            <Tabs activeKey={this.state.indexActiveKey} onChange={(activeKey)=>{this.handleIndexTabChanged(activeKey, editingIndex.index)}}>
             <TabPane tab="概览" key="1">
-            <Descriptions title="General" column={2}>
+            <Descriptions column={2}>
               <Descriptions.Item label="健康">{editingIndex.health}</Descriptions.Item>
               <Descriptions.Item label="状态">{editingIndex.status}</Descriptions.Item>
               <Descriptions.Item label="主分片数">{editingIndex.shards}</Descriptions.Item>
               <Descriptions.Item label="副分片数">{editingIndex.replicas}</Descriptions.Item>
               <Descriptions.Item label="文档数">{editingIndex.docs_count}</Descriptions.Item>
               <Descriptions.Item label="删除文档数">{editingIndex.docs_deleted}</Descriptions.Item>
-              <Descriptions.Item label="存贮大小"></Descriptions.Item>
-              <Descriptions.Item label="主存贮大小"></Descriptions.Item>
-              <Descriptions.Item label="别名">
-              </Descriptions.Item>
+              <Descriptions.Item label="存贮大小">{editingIndex.store_size}</Descriptions.Item>
+              <Descriptions.Item label="主存贮大小">{editingIndex.pri_store_size}</Descriptions.Item>
+              {/* <Descriptions.Item label="别名">
+              </Descriptions.Item> */}
             </Descriptions>
             </TabPane>
             <TabPane tab="Mappings" key="2">
@@ -431,7 +453,7 @@ class Index extends PureComponent {
           </Dropdown>
           </div>
         </Drawer>
-      </Fragment>
+      </PageHeaderWrapper>
     );
   }
 }

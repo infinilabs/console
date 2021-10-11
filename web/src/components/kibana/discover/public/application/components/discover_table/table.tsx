@@ -15,12 +15,14 @@ interface TableProps {
   onChangeSortOrder?: (sortOrder: SortOrder[]) => void;
   onMoveColumn?: (name: string, index: number) => void;
   onRemoveColumn?: (name: string) => void;
+  onAddColumn?: (name: string) => void;
+  document: any;
 }
 
 const pageCount = 50;
 
-const Table: React.FC<TableProps> = ({ columns, hits, sortOrder, indexPattern, onFilter, onMoveColumn, 
-  onRemoveColumn, onChangeSortOrder }) => {
+const Table: React.FC<TableProps> = ({ columns, hits, sortOrder, indexPattern, onFilter, onMoveColumn, onAddColumn,
+  onRemoveColumn, onChangeSortOrder, document }) => {
   const [scrollState, setScrollState] = useState({limit: pageCount, hasMore: true});
   useEffect(()=>{
     setScrollState({
@@ -46,7 +48,7 @@ const Table: React.FC<TableProps> = ({ columns, hits, sortOrder, indexPattern, o
       <div>
         {hits.length ? (
           <div>
-            <table className="kbn-table table" data-test-subj="docTable">
+            <table className="kbn-table table">
               <thead>
               <TableHeader  columns={columns}
                 defaultSortOrder={''}
@@ -66,9 +68,10 @@ const Table: React.FC<TableProps> = ({ columns, hits, sortOrder, indexPattern, o
                   hideTimeColumn={false}
                   indexPattern={indexPattern}
                   isShortDots={false}
-                  onAddColumn={()=>{}}
-                  onRemoveColumn={()=>{}}
+                  onAddColumn={onAddColumn}
+                  onRemoveColumn={onRemoveColumn}
                   row={row}
+                  document={document}
                   />
                 })}
               </tbody>

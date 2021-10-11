@@ -41,7 +41,7 @@ const EditIndexPatternCont: React.FC<RouteComponentProps<{ id: string }>> = ({ .
   }, [data.indexPatterns, props.match.params.id, ]); //setBreadcrumbs
 
   if (indexPattern) {
-    return <EditIndexPattern indexPattern={indexPattern} />;
+    return <EditIndexPattern indexPattern={indexPattern} id={indexPattern.id} />;
   } else {
     return <></>;
   }

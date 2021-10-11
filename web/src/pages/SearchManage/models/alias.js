@@ -1,4 +1,5 @@
 import {getAliasList, doAlias } from '@/services/alias';
+import {getIndices } from '@/services/indices';
 
 export default {
   namespace: 'alias',
@@ -16,6 +17,19 @@ export default {
         type: 'saveData',
         payload: {
           aliasList,
+        }
+      })
+    },
+    *fetchIndices({ payload }, { call, put }) {
+      const res = yield call(getIndices, payload);
+      let indices = [];
+      for(let k in res){
+        indices.push(k);
+      }
+      yield put({
+        type: 'saveData',
+        payload: {
+          indices,
         }
       })
     },

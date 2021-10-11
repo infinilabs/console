@@ -57,7 +57,7 @@ interface SavedObjectBody {
 type FormatFieldFn = (hit: Record<string, any>, fieldName: string) => any;
 
 export class IndexPattern implements IIndexPattern {
-  public id?: string;
+  public id: string;
   public title: string = '';
   public viewName: string = '';
   public fieldFormatMap: Record<string, any>;

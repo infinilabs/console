@@ -140,39 +140,22 @@ export default [
         icon: 'database',
         routes: [
           // {
-          //   path: '/data/pipes',
-          //   name: 'pipes',
-          //   component: './DataManagement/Pipes',
-          //   routes: [
-          //     {
-          //       path: '/data/pipes',
-          //       redirect: '/data/pipes/logstash',
-          //     },
-          //     {
-          //       path: '/data/pipes/logstash',
-          //       component: './DataManagement/LogstashConfig',
-          //     },
-          //     {
-          //       path: '/data/pipes/ingestpipeline',
-          //       component: './DataManagement/IngestPipeline',
-          //     },
-          //   ]
-          // },
-          // {
           //   path: '/data/overview',
           //   name: 'overview',
           //   component: './DataManagement/IndexSummary',
           //   routes:[
           //     { path: '/', redirect: '/' },
           //   ],
-          // }, {
-          //   path: '/data/index',
-          //   name: 'index',
-          //   component: './DataManagement/Index',
-          //   routes:[
-          //     { path: '/', redirect: '/' },
-          //   ],
-          // },{
+          // }, 
+          {
+            path: '/data/index',
+            name: 'index',
+            component: './DataManagement/Index',
+            routes:[
+              { path: '/', redirect: '/' },
+            ],
+          },
+          // {
           //   path: '/data/document',
           //   name: 'document',
           //   component: './DataManagement/Document',
@@ -269,9 +252,9 @@ export default [
       //               {
       //                   path: '/search/alias',
       //                   redirect: '/search/alias/index',
-      //                   routes:[
-      //                     { path: '/', redirect: '/' },
-      //                   ],
+      //                   // routes:[
+      //                   //   { path: '/', redirect: '/' },
+      //                   // ],
       //               },
       //               {
       //                   path: '/search/alias/index',
@@ -296,9 +279,9 @@ export default [
       //               {
       //                   path: '/search/dict',
       //                   redirect: '/search/dict/professional',
-      //                   routes:[
-      //                     { path: '/', redirect: '/' },
-      //                   ],
+      //                   // routes:[
+      //                   //   { path: '/', redirect: '/' },
+      //                   // ],
       //               },
       //               {
       //                   path: '/search/dict/professional',

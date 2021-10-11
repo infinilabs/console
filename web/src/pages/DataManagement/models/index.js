@@ -11,48 +11,48 @@ export default {
     },
     effects:{
         *fetchIndices({payload}, {call, put}){
-            let resp = yield call(getIndices)
-            if(resp.status === false){
+            let resp = yield call(getIndices, payload)
+            if(resp.error){
                 message.warn("获取数据失败")
                 return
             }
             yield put({
                 type: 'saveData',
                 payload: {
-                    clusterIndices: resp.payload,
+                    clusterIndices: resp,
                   //  cluster: payload.cluster,
                 }
             })
         },
         *fetchMappings({payload}, {call, put}){
             let resp = yield call(getMappings, payload);
-            if(resp.status === false){
+            if(resp.error){
                 message.warn("get mappings failed")
                 return
             }
             yield put({
                 type: 'saveData',
                 payload: {
-                    mappings: resp.payload,
+                    mappings: resp,
                 }
             })
         },
         *fetchSettings({payload}, {call, put}){
             let resp = yield call(getSettings, payload);
-            if(resp.status === false){
+            if(resp.error){
                 message.warn("get settings failed")
                 return
             }
             yield put({
                 type: 'saveData',
                 payload: {
-                    settings: resp.payload,
+                    settings: resp,
                 }
             })
         },
         *saveSettings({payload}, {call, put, select}){
             let resp = yield call(updateSettings, payload);
-            if(resp.status === false){
+            if(resp.error){
                 message.warn("save settings failed")
                 return
             }
@@ -67,7 +67,7 @@ export default {
         },
         *removeIndex({payload}, {call, put, select}){
             let resp = yield call(deleteIndex, payload);
-            if(resp.status === false){
+            if(resp.error){
                 message.warn("get mappings failed")
                 return
             }
@@ -82,12 +82,15 @@ export default {
         },
         *addIndex({payload}, {call, put, select}){
             let resp = yield call(createIndex, payload);
-            if(resp.status === false){
+            if(resp.error){
                 message.warn("create index failed")
                 return
             }
             yield put({
-                type: 'fetchIndices'
+                type: 'fetchIndices',
+                payload: {
+                    clusterID: payload.clusterID,
+                }
             })
         },
     },

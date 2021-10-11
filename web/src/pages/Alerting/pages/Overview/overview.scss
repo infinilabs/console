@@ -1,9 +1,9 @@
 .layout{
-  display: flex;
+  // display: flex;
   .left{
-    display: flex;
-    flex: 1 1 60%;
-    flex-direction: column;
+    // display: flex;
+    // flex: 1 1 60%;
+    // flex-direction: column;
     .state-count{
       display: flex;
       justify-content: space-between;
@@ -21,8 +21,18 @@
             font-size: 12px;
             font-weight: normal;
         }     
-    }
+      }
       margin-bottom: 10px;
+    }
+    .alertlist-item{
+      margin-top: 20px;
+    }
+  }
+  .charts{
+    display: flex;
+    margin-top: 25px;
+    >.chart{
+      flex: 1 1 50%;
     }
   }
   .right{
@@ -31,6 +41,6 @@
 }
 
 .overview-wrapper {
-  padding: 10px;
+  padding: 20px;
   background-color: #fff;
 }

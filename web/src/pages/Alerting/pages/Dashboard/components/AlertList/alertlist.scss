@@ -3,19 +3,22 @@
   padding: 10px 5px;
   .header{
     display: flex;
-    .title{
-      color: #333;
-      font-weight:600;
-      padding-bottom: 6px;
-      .total{
-        color: #999;
-        margin-left: 15px;
-        font-size: 12px;
-      }
-    }
     .legend{
       margin-left: auto;
     }
+    margin-bottom: 5px;
   }
-  
+}
+.alert-list-layout{
+  .title{
+    color: #333;
+    font-weight:600;
+    font-size: 16px;
+    padding-bottom: 6px;
+    .total{
+      color: #999;
+      margin-left: 15px;
+      font-size: 12px;
+    }
+  }
 }

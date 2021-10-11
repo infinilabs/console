@@ -26,6 +26,7 @@ import { createGetterSetter } from '../../kibana_utils/common/';
 import { search } from '../../data/public';
 import { DocViewsRegistry } from './application/doc_views/doc_views_registry';
 import { JsonCodeBlock } from './application/components/json_code_block/json_code_block';
+import { DocViewTable } from './application/components/table/table';
 
 let angularModule: any = null;
 let services: DiscoverServices | null = null;
@@ -74,11 +75,11 @@ export const [getDocViewsRegistry, setDocViewsRegistry] = createGetterSetter<Doc
 
 const docViewsRegistry = new DocViewsRegistry();
 setDocViewsRegistry(docViewsRegistry);
-// docViewsRegistry.addDocView({
-//   title: 'Table',
-//   order: 10,
-//   component: DocViewTable,
-// });
+docViewsRegistry.addDocView({
+  title: 'Table',
+  order: 10,
+  component: DocViewTable,
+});
 docViewsRegistry.addDocView({
   title: 'JSON',
   order: 20,

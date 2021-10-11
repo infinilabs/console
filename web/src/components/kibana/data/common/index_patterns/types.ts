@@ -174,7 +174,7 @@ export interface FieldSpec {
 export type IndexPatternFieldMap = Record<string, FieldSpec>;
 
 export interface IndexPatternSpec {
-  id?: string;
+  id: string;
   version?: string;
   title?: string;
   intervalName?: string;

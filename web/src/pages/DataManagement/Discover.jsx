@@ -31,7 +31,7 @@ import * as styles from './discover.scss';
 import { Subscription } from 'rxjs';
 import { connect } from 'dva';
 
-import { Card, Spin } from 'antd';
+import { Card, Spin, message } from 'antd';
 // import DiscoverGrid from './Components/discover_grid';
 import {flattenHitWrapper} from '../../components/kibana/data/common/index_patterns/index_patterns';
 import {getStateColumnActions} from '../../components/kibana/discover/public/application/angular/doc_table/actions/columns';
@@ -55,8 +55,6 @@ const SidebarMemoized = React.memo(DiscoverSidebar);
 
 const {filterManager, queryStringManager, timefilter, storage, getEsQuery, getSearchParams, 
   intervalOptions, getTimeBuckets, fetchESRequest, services} = getContext();
-
-//const histogramData = buildPointSeriesData(chartTable, dimensions);
 
 const SearchBar = createSearchBar();
 
@@ -246,7 +244,7 @@ const Discover = (props)=>{
         state,
         useNewFieldsApi:false,
       }),
-    [indexPattern, state]
+    [indexPattern,state]
   );
 
   const collapseIcon = useRef(null);
@@ -309,6 +307,41 @@ const Discover = (props)=>{
     const hits = searchRes.hits.total?.value || searchRes.hits.total;
     const resetQuery = ()=>{};
     const showDatePicker = indexPattern.timeFieldName != "";
+
+    const saveDocument = useCallback(async ({_index, _id, _type, _source})=>{
+      const {http} = getContext();
+      const res = await http.put(`/elasticsearch/${props.selectedCluster.id}/doc/${_index}/${_id}`, {
+        prependBasePath: false,
+        query: {
+          _type,
+        },
+        body: JSON.stringify(_source),
+      });
+      if(res.error){
+        message.error(res.error)
+        return res
+      } 
+      message.success('saved successfully');
+      updateQuery()
+      return res
+    },[props.selectedCluster])
+
+    const deleteDocument = useCallback(async ({_index, _id, _type})=>{
+      const {http} = getContext();
+      const res = await http.delete(`/elasticsearch/${props.selectedCluster.id}/doc/${_index}/${_id}`, {
+        prependBasePath: false,
+        query: {
+          _type,
+        }
+      });
+      if(res.error){
+        message.error(res.error)
+        return res
+      } 
+      message.success('deleted successfully');
+      updateQuery()
+      return res
+    },[props.selectedCluster])
   
   return (
     <Card bordered={false}>
@@ -495,7 +528,9 @@ const Discover = (props)=>{
                               onFilter={onAddFilter}
                               onRemoveColumn={onRemoveColumn}
                               onMoveColumn={onMoveColumn}
+                              onAddColumn={onAddColumn}
                               onChangeSortOrder={onSort}
+                              document={{saveDocument, deleteDocument}}
                               hits={rows}/>
                           </div>
                         ):null}

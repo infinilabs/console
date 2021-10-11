@@ -13,6 +13,7 @@ interface Props {
   onAddColumn?: (name: string) => void;
   onRemoveColumn?: (name: string) => void;
   row: any;
+  document: any;
 }
 
 export function TableRow({
@@ -24,6 +25,7 @@ export function TableRow({
   onAddColumn,
   onRemoveColumn,
   row,
+  document
 }:Props){
   const mapping = indexPattern.fields.getByName;
   const [open,setOpen] = useState(false);
@@ -60,6 +62,7 @@ export function TableRow({
       <Detail columns={columns}
         indexPattern={indexPattern}
         row={row}
+        document={document}
         onFilter={onFilter}
         onAddColumn={onAddColumn}
         onRemoveColumn={onRemoveColumn}/>

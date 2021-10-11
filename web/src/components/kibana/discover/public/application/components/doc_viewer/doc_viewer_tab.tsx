@@ -51,8 +51,8 @@ export class DocViewerTab extends React.Component<Props, State> {
 
   shouldComponentUpdate(nextProps: Props, nextState: State) {
     return (
-      nextProps.renderProps.hit._id !== this.props.renderProps.hit._id ||
-      nextProps.id !== this.props.id ||
+      nextProps.renderProps.hit !== this.props.renderProps.hit ||
+      nextProps.id !== this.props.id || nextProps.renderProps.columns !== this.props.renderProps.columns ||
       nextState.hasError
     );
   }

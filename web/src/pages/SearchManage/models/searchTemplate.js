@@ -17,7 +17,6 @@ export default {
     *fetchList({ payload }, { call, put , select }) {
       payload.cluster_id = yield select(state => state.global.selectedClusterID);
       const res = yield call(getTemplateList, payload);
-      console.log("fetchList response:",res);
       if (res.hits) {
         let newList = [];
         let hits = res.hits.hits || [];

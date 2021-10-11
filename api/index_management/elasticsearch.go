@@ -2,13 +2,13 @@ package index_management
 
 import (
 	"fmt"
+	log "github.com/cihub/seelog"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/modules/elastic/common"
 	"net/http"
-	log "github.com/cihub/seelog"
 )
 
 func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -49,6 +49,7 @@ func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req
 		}
 		return true
 	})
+
 	resBody := util.MapStr{
 		"total_node": totalNode,
 		"total_store_size_in_bytes": totalStoreSize,

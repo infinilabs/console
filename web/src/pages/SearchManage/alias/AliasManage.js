@@ -11,48 +11,13 @@ import {
   message,
   Divider,
   Table, AutoComplete, Switch,
+  Popconfirm
 } from 'antd';
 
 import styles from '../../List/TableList.less';
 
 const FormItem = Form.Item;
 const { TextArea } = Input;
-
-const CreateForm = Form.create()(props => {
-  const { modalVisible, form, handleAdd, handleModalVisible } = props;
-  const okHandle = () => {
-    form.validateFields((err, fieldsValue) => {
-      if (err) return;
-      form.resetFields();
-      handleAdd(fieldsValue);
-    });
-  };
-  return (
-    <Modal
-      destroyOnClose
-      title="新建索引"
-      visible={modalVisible}
-      width={640}
-      onOk={okHandle}
-      onCancel={() => handleModalVisible()}
-    >
-       <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="索引名称">
-        {form.getFieldDecorator('index', {
-          rules: [{ required: true, message: '请输入至少五个字符的名称！', min: 5 }],
-        })(<Input placeholder="请输入名称" />)}
-      </FormItem>
-      <FormItem labelCol={{ span: 5 }} wrapperCol={{ span: 15 }} label="索引设置">
-        {form.getFieldDecorator('settings', {
-          rules: [{ required: true }],
-        })(<TextArea
-          style={{ minHeight: 24 }}
-          placeholder="请输入"
-          rows={9}
-      />)}
-      </FormItem>
-    </Modal>
-  );
-});
 
 const UpdateForm = Form.create()(props => {
   const { updateModalVisible, handleUpdateModalVisible, handleUpdate,values,form, indices } = props;
@@ -156,23 +121,28 @@ class AliasManage extends PureComponent {
         <Fragment>
           {/*<a onClick={() => this.handleUpdateModalVisible(true, record)}>别名设置</a>*/}
           {/*<Divider type="vertical" />*/}
-          <a onClick={() => {
-            let indices = [];
-            for(let index of record.indexes){
-              indices.push(index.index);
-            }
-            let vals = {
-              alias: record.alias,
-              indices,
-            };
-            this.handleDeleteClick(vals);
-          }}>删除</a>
+          <Popconfirm title="确定要删除？" onConfirm={()=>this.handleDeleteAliasClick(record)}> <a>删除</a></Popconfirm>
         </Fragment>
       ),
     },
   ];
+  handleDeleteAliasClick = (record)=>{
+    let indices = [];
+    for(let index of record.indexes){
+      indices.push(index.index);
+    }
+    let vals = {
+      alias: record.alias,
+      indices,
+    };
+    this.handleDeleteClick(vals);
+  }
 
   componentDidMount() {
+    this.fetchAliasList();
+    this.fetchIndices();
+  }
+  fetchAliasList = ()=>{
     const { dispatch } = this.props;
     dispatch({
       type: 'alias/fetchAliasList',
@@ -180,6 +150,21 @@ class AliasManage extends PureComponent {
         clusterID: this.props.selectedClusterID,
       }
     });
+  }
+  fetchIndices = ()=>{
+    const { dispatch } = this.props;
+    dispatch({
+      type: 'alias/fetchIndices',
+      payload: {
+        clusterID: this.props.selectedClusterID,
+      }
+    });
+  }
+  componentDidUpdate(oldProps,newState,snapshot){
+    if(oldProps.selectedClusterID != this.props.selectedClusterID){
+      this.fetchAliasList();
+      this.fetchIndices();
+    }
   }
 
   handleStandardTableChange = (pagination, filtersArg, sorter) => {
@@ -320,6 +305,7 @@ class AliasManage extends PureComponent {
     if(this.state.keyword) {
       aliasList = aliasList.filter(al=>al.alias.includes(this.state.keyword))
     }
+    const {indices} = this.props.alias;
     return (
       <Fragment>
         <Card bordered={false}>
@@ -329,11 +315,6 @@ class AliasManage extends PureComponent {
               <Button icon="plus" type="primary" onClick={() => this.handleUpdateModalVisible(true)}>
                 新建
               </Button>
-              {selectedRows.length > 0 && (
-                <span>
-                  <Button onClick={() => this.handleDeleteClick()}>删除</Button>
-                </span>
-              )}
             </div>
             <Table
               size="small"
@@ -345,8 +326,8 @@ class AliasManage extends PureComponent {
                 return (
                   <div>
                     <AliasIndexTable rawData={record}
-                                     handleDeleteClick={this.handleDeleteClick}
-                                     handleUpdateModalVisible={this.handleUpdateModalVisible} data={record.indexes}/>
+                      handleDeleteClick={this.handleDeleteClick}
+                      handleUpdateModalVisible={this.handleUpdateModalVisible} data={record.indexes}/>
                   </div>
                   );
               }}
@@ -360,7 +341,7 @@ class AliasManage extends PureComponent {
             {...updateMethods}
             updateModalVisible={updateModalVisible}
             values={updateFormValues}
-            indices={['test-custom', 'dict']}
+            indices={indices||[]}
           />
 
       </Fragment>
@@ -401,12 +382,13 @@ class AliasIndexTable extends React.Component {
             alias: this.props.rawData.alias,
           })}>设置</a>
           <Divider type="vertical" />
-          <a onClick={() => {
+          <Popconfirm title="确定要删除？" onConfirm={() => {
             this.props.handleDeleteClick({
               ...record,
               alias: this.props.rawData.alias,
             });
-          }}>删除</a>
+          }}><a>删除</a>
+          </Popconfirm>
         </div>
       ),
     },]
@@ -429,7 +411,7 @@ class IndexComplete extends React.Component {
     }
   }
   handleSearch = v => {
-    let data = this.props.dataSource.filter(d=>d.includes(v));
+    let data = this.props.dataSource.filter(d=>d.includes(v.replace(/\*$/, '')));
     // if(data.length > 0 && v.length >0) {
     //   data.push(v+'*');
     // }

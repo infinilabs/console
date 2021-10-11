@@ -17,7 +17,6 @@
  * under the License.
  */
 import React from 'react';
-import { i18n } from '@kbn/i18n';
 import { EuiToolTip, EuiButtonIcon } from '@elastic/eui';
 
 export interface Props {
@@ -26,9 +25,7 @@ export interface Props {
 }
 
 export function DocViewTableRowBtnCollapse({ onClick, isCollapsed }: Props) {
-  const label = i18n.translate('discover.docViews.table.toggleFieldDetails', {
-    defaultMessage: 'Toggle field details',
-  });
+  const label = 'Toggle field details';
   return (
     <EuiToolTip content={label}>
       <EuiButtonIcon

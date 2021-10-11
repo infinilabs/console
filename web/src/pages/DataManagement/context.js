@@ -2,7 +2,7 @@ import {AutocompleteService} from '../../components/kibana/data/public/autocompl
 import {FilterManager} from '../../components/kibana/data/public/query/filter_manager/filter_manager';
 import {QueryStringManager} from '../../components/kibana/data/public/query/query_string/query_string_manager';
 import {Timefilter, TimeHistory} from '../../components/kibana/data/public/query/timefilter';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, createContext } from 'react';
 import { Subscription } from 'rxjs';
 import {buildEsQuery} from '../../components/kibana/data/common/es_query/es_query/build_es_query';
 import {getCalculateAutoTimeExpression} from '../../components/kibana/data/common/search/aggs/utils/calculate_auto_time_expression';

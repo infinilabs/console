@@ -76,22 +76,26 @@ export const AlertOverview = (props: any)=>{
   return (
   <div className="alert-overview">
     <div className="left">
-      <AlertList dataSource={alerts.data as any} 
-      title={formatMessage({id:'alert.overview.alertlist.title'})}
-      onItemClick={onItemClick}
-      pagination={{
-        pageSize,
-        total: alerts.total,
-        onChange: onAlertPageChange,
-      }}/>
+      <div>
+        <AlertList dataSource={alerts.data} 
+        title={formatMessage({id:'alert.overview.alertlist.title'})}
+        onItemClick={onItemClick}
+        pagination={{
+          pageSize,
+          total: alerts.total,
+          onChange: onAlertPageChange,
+        }}/>
+      </div>
+      <div style={{marginTop:10}}>
        <AlertList dataSource={historyAlerts.data} 
-      title={formatMessage({id:'alert.overview.alertlist-history.title'})}
-      onItemClick={onItemClick}
-      pagination={{
-        pageSize,
-        total: historyAlerts.total,
-        onChange: onAlertHistoryPageChange,
-      }}/>
+        title={formatMessage({id:'alert.overview.alertlist-history.title'})}
+        onItemClick={onItemClick}
+        pagination={{
+          pageSize,
+          total: historyAlerts.total,
+          onChange: onAlertHistoryPageChange,
+        }}/>
+      </div>
     </div>
     {/* <div className="right">
       <div>提示</div>

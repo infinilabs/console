@@ -17,9 +17,7 @@
  * under the License.
  */
 import React from 'react';
-import { FormattedMessage } from '@kbn/i18n/react';
 import { EuiToolTip, EuiButtonIcon } from '@elastic/eui';
-import { i18n } from '@kbn/i18n';
 
 export interface Props {
   active: boolean;
@@ -31,9 +29,7 @@ export function DocViewTableRowBtnToggleColumn({ onClick, active, disabled = fal
   if (disabled) {
     return (
       <EuiButtonIcon
-        aria-label={i18n.translate('discover.docViews.table.toggleColumnInTableButtonAriaLabel', {
-          defaultMessage: 'Toggle column in table',
-        })}
+        aria-label= 'Toggle column in table'
         className="kbnDocViewer__actionButton"
         data-test-subj="toggleColumnButton"
         disabled
@@ -44,17 +40,10 @@ export function DocViewTableRowBtnToggleColumn({ onClick, active, disabled = fal
   }
   return (
     <EuiToolTip
-      content={
-        <FormattedMessage
-          id="discover.docViews.table.toggleColumnInTableButtonTooltip"
-          defaultMessage="Toggle column in table"
-        />
-      }
+      content="Toggle column in table"
     >
       <EuiButtonIcon
-        aria-label={i18n.translate('discover.docViews.table.toggleColumnInTableButtonAriaLabel', {
-          defaultMessage: 'Toggle column in table',
-        })}
+        aria-label= 'Toggle column in table'
         aria-pressed={active}
         onClick={onClick}
         className="kbnDocViewer__actionButton"

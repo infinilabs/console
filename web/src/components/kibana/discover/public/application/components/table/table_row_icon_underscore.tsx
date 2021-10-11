@@ -18,22 +18,10 @@
  */
 import React from 'react';
 import { EuiIconTip } from '@elastic/eui';
-import { i18n } from '@kbn/i18n';
 
 export function DocViewTableRowIconUnderscore() {
-  const ariaLabel = i18n.translate(
-    'discover.docViews.table.fieldNamesBeginningWithUnderscoreUnsupportedAriaLabel',
-    {
-      defaultMessage: 'Warning',
-    }
-  );
-  const tooltipContent = i18n.translate(
-    'discover.docViews.table.fieldNamesBeginningWithUnderscoreUnsupportedTooltip',
-    {
-      defaultMessage: 'Field names beginning with {underscoreSign} are not supported',
-      values: { underscoreSign: '_' },
-    }
-  );
+  const ariaLabel = 'Warning';
+  const tooltipContent = 'Field names beginning with _ are not supported';
 
   return (
     <EuiIconTip

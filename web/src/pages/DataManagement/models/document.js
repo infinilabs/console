@@ -200,29 +200,28 @@ export default {
       message.success("添加文档成功")
     },
     *fetchIndices({payload}, {call, put}){
-      let resp = yield call(getIndices)
-      if(resp.status === false){
+      let resp = yield call(getIndices, payload)
+      if(resp.error){
         message.warn("获取数据失败")
         return
       }
       yield put({
         type: 'saveData', 
         payload: {
-          clusterIndices: resp.payload,
-          cluster: payload.cluster,
+          clusterIndices: resp,
         }
       })
     },
     *fetchMappings({payload}, {call, put}){
       let resp = yield call(getMappings, payload);
-      if(resp.status === false){
+      if(resp.error){
         message.warn("get mappings failed")
         return
       }
       yield put({
         type: 'saveData',
         payload: {
-          mappings: resp.payload,
+          mappings: resp,
         }
       })
     }

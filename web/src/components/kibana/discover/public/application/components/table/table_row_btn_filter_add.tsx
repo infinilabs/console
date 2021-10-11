@@ -17,9 +17,7 @@
  * under the License.
  */
 import React from 'react';
-import { FormattedMessage } from '@kbn/i18n/react';
 import { EuiToolTip, EuiButtonIcon } from '@elastic/eui';
-import { i18n } from '@kbn/i18n';
 
 export interface Props {
   onClick: () => void;
@@ -28,23 +26,15 @@ export interface Props {
 
 export function DocViewTableRowBtnFilterAdd({ onClick, disabled = false }: Props) {
   const tooltipContent = disabled ? (
-    <FormattedMessage
-      id="discover.docViews.table.unindexedFieldsCanNotBeSearchedTooltip"
-      defaultMessage="Unindexed fields can not be searched"
-    />
+    "Unindexed fields can not be searched"
   ) : (
-    <FormattedMessage
-      id="discover.docViews.table.filterForValueButtonTooltip"
-      defaultMessage="Filter for value"
-    />
+    "Filter for value"
   );
 
   return (
     <EuiToolTip content={tooltipContent}>
       <EuiButtonIcon
-        aria-label={i18n.translate('discover.docViews.table.filterForValueButtonAriaLabel', {
-          defaultMessage: 'Filter for value',
-        })}
+        aria-label='Filter for value'
         className="kbnDocViewer__actionButton"
         data-test-subj="addInclusiveFilterButton"
         disabled={disabled}

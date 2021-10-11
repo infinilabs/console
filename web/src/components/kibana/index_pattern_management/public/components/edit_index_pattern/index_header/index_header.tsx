@@ -20,6 +20,7 @@
 import React from 'react';
 import { EuiFlexGroup, EuiToolTip, EuiFlexItem, EuiTitle, EuiButtonIcon } from '@elastic/eui';
 import { IIndexPattern } from 'src/plugins/data/public';
+import {Popconfirm} from 'antd';
 
 interface IndexHeaderProps {
   indexPattern: IIndexPattern;
@@ -88,13 +89,15 @@ export function IndexHeader({
           {deleteIndexPatternClick && (
             <EuiFlexItem>
               <EuiToolTip content={removeTooltip}>
-                <EuiButtonIcon
-                  color="danger"
-                  onClick={deleteIndexPatternClick}
-                  iconType="trash"
-                  aria-label={removeAriaLabel}
-                  data-test-subj="deleteIndexPatternButton"
-                />
+                <Popconfirm title="确定要删除？" onConfirm={deleteIndexPatternClick}>
+                  <EuiButtonIcon
+                    color="danger"
+                    // onClick={deleteIndexPatternClick}
+                    iconType="trash"
+                    aria-label={removeAriaLabel}
+                    data-test-subj="deleteIndexPatternButton"
+                  />
+                </Popconfirm>
               </EuiToolTip>
             </EuiFlexItem>
           )}

@@ -46,6 +46,7 @@ import clusterBg from '@/assets/cluster_bg.png';
 
 export interface EditIndexPatternProps extends RouteComponentProps {
   indexPattern: IndexPattern;
+  id: string;
 }
 
 const mappingAPILink = 'Mapping API';
@@ -65,7 +66,7 @@ const confirmModalOptionsDelete = {
 };
 
 export const EditIndexPattern = withRouter(
-  ({ indexPattern, history, location }: EditIndexPatternProps) => {
+  ({ indexPattern, history, location, id }: EditIndexPatternProps) => {
     const {
       uiSettings,
       indexPatternManagementStart,
@@ -131,8 +132,8 @@ export const EditIndexPattern = withRouter(
             uiSettings.set('defaultIndex', otherPatterns[0].id);
           }
         }
-        if (indexPattern.id) {
-          Promise.resolve(data.indexPatterns.delete(indexPattern.id)).then(function () {
+        if (indexPattern.id || id) {
+          Promise.resolve(data.indexPatterns.delete(indexPattern.id || id)).then(function () {
             history.push('');
           });
         }

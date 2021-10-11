@@ -1,5 +1,5 @@
 import React, {useEffect, useState, useMemo} from "react";
-import {Spin, Card} from 'antd';
+import {Spin, Card, Empty, Button} from 'antd';
 import {Fetch} from '../../../../components/kibana/core/public/http/fetch';
 import './overview.scss';
 import {
@@ -148,7 +148,49 @@ export default (props)=>{
                 </div>
               </Card>
             </div>
-            <div>
+            <div className="charts">
+              <div style={{height:'150px'}} className="chart">
+                <Chart>
+                  <Settings theme={theme} />
+                  <Axis id="bottom" position={Position.Bottom} title="Last 3 months" showOverlappingTicks tickFormat={timeFormatter(niceTimeFormatByDay(data.metrics.last_tree_month.day))} /> 
+                  <Axis
+                    id="left"
+                    title="Alert number"
+                    position={Position.Left}
+                  />
+                  <LineSeries
+                    id="lines"
+                    xScaleType={ScaleType.Time}
+                    yScaleType={ScaleType.Linear}
+                    xAccessor={0}
+                    yAccessors={[1]}
+                    data={data.metrics.last_tree_month?.data || []}
+                  />
+                </Chart>
+              </div>
+              <div style={{height:'150px', marginTop: 10}} className="chart">
+                <Chart>
+                  <Settings showLegend showLegendExtra legendPosition={Position.Right} theme={theme}  />
+                  <Axis id="bottom" position={Position.Bottom} title="Top 10 cluster" showOverlappingTicks />
+                  <Axis id="left2" title="Alert number" position={Position.Left} tickFormat={(d) => Number(d).toFixed(0)} />
+
+                  <BarSeries
+                    id="bars"
+                    xScaleType={ScaleType.Linear}
+                    yScaleType={ScaleType.Linear}
+                    xAccessor="x"
+                    yAccessors={['y']}
+                    stackAccessors={['x']}
+                    splitSeriesAccessors={['g']}
+                    data={data.metrics.top_ten_cluster?.data || []}
+                  />
+                </Chart>
+              </div>
+            </div>
+            <div className="alertlist-item">
+              {alerts.data.length == 0 && historyAlerts.data.length == 0 && <Empty description=''>
+                <Button>创建监控项</Button>
+              </Empty>}
               <AlertList dataSource={alerts.data} 
                 title={formatMessage({id:'alert.overview.alertlist.title'})}
                 legendItems={pickLegendItems(['ACTIVE','ERROR','ACKNOWLEDGED'])}
@@ -159,7 +201,7 @@ export default (props)=>{
                   onChange: onAlertPageChange,
                 }}/>
             </div>
-            <div style={{marginTop:10}}>
+            {historyAlerts.data.length > 0 && <div className="alertlist-item">
               <AlertList dataSource={historyAlerts.data} 
                 title={formatMessage({id:'alert.overview.alertlist-history.title'})}
                 onItemClick={onItemClick}
@@ -169,47 +211,11 @@ export default (props)=>{
                   total: historyAlerts.total,
                   onChange: onAlertHistoryPageChange,
                 }}/>
-            </div>
+            </div>}
           </div>
          
           <div className="right">
-            <div style={{height:'150px'}}>
-              <Chart>
-                <Settings theme={theme} />
-                <Axis id="bottom" position={Position.Bottom} title="Last 3 months" showOverlappingTicks tickFormat={timeFormatter(niceTimeFormatByDay(data.metrics.last_tree_month.day))} /> 
-                <Axis
-                  id="left"
-                  title="Alert number"
-                  position={Position.Left}
-                />
-                <LineSeries
-                  id="lines"
-                  xScaleType={ScaleType.Time}
-                  yScaleType={ScaleType.Linear}
-                  xAccessor={0}
-                  yAccessors={[1]}
-                  data={data.metrics.last_tree_month?.data || []}
-                />
-              </Chart>
-            </div>
-            <div style={{height:'150px', marginTop: 10}}>
-            <Chart>
-              <Settings showLegend showLegendExtra legendPosition={Position.Right} theme={theme}  />
-              <Axis id="bottom" position={Position.Bottom} title="Top 10 cluster" showOverlappingTicks />
-              <Axis id="left2" title="Alert number" position={Position.Left} tickFormat={(d) => Number(d).toFixed(0)} />
-
-              <BarSeries
-                id="bars"
-                xScaleType={ScaleType.Linear}
-                yScaleType={ScaleType.Linear}
-                xAccessor="x"
-                yAccessors={['y']}
-                stackAccessors={['x']}
-                splitSeriesAccessors={['g']}
-                data={data.metrics.top_ten_cluster?.data || []}
-              />
-            </Chart>
-            </div>
+          
           </div>
           </div>
       </Spin>

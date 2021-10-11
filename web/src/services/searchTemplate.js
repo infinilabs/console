@@ -2,9 +2,8 @@ import request from '@/utils/request';
 
 
 export async function getTemplateList(payload){
-    let url = `/elasticsearch/${payload.cluster_id}/search_template/_search?from=${payload.from}&size=${payload.size}`;
+    let url = `/elasticsearch/${payload.cluster_id}/search_template?from=${payload.from}&size=${payload.size}`;
     payload.name && (url+= `&name=${payload.name}`);
-    console.log("url:",url);
     return request(url,{
         method: 'GET',
         // body: payload,

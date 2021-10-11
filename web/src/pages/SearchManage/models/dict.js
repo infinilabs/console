@@ -69,7 +69,6 @@ export default {
             return
         }
         resp.payload = formatESSearchResult(resp.payload);
-        console.log(resp.payload);
         resp.payload.data = resp.payload.data.map((item)=>{
             item.content = utf8.decode(atob(item.content))
             return item;

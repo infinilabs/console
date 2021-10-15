@@ -162,7 +162,8 @@ export default [
           //   routes:[
           //     { path: '/', redirect: '/' },
           //   ],
-          // }, {
+          // }, 
+          // {
           //   path: '/data/template',
           //   name: 'template',
           //   component: './DataManagement/IndexTemplate',
@@ -200,157 +201,161 @@ export default [
       
       
       //search
-      // {
-      //   path: '/search',
-      //   name: 'search',
-      //   icon: 'search',
-      //   routes: [
-      //     {
-      //       path: '/search/overview',
-      //       name: 'overview',
-      //       component: './SearchManage/template/Template',
-      //       routes:[
-      //         { path: '/', redirect: '/' },
-      //       ],
-      //     },
-      //     {
-      //         path: '/search/template',
-      //         name: 'template',
-      //         component: './SearchManage/template/Template',
-      //         routes: [
-      //             {
-      //                 path: '/search/template',
-      //                 redirect: '/search/template/template',
-      //             },
-      //             {
-      //                 path: '/search/template/template',
-      //                 component: './SearchManage/template/SearchTemplate',
-      //                 routes:[
-      //                   { path: '/', redirect: '/' },
-      //                 ],
-      //             },
-      //             {
-      //                 path: '/search/template/:cluster_id',
-      //                 component: './SearchManage/template/SearchTemplate',
-      //                 routes:[
-      //                   { path: '/', redirect: '/' },
-      //                 ],
-      //             },
-      //             {
-      //                 path: '/search/template/history',
-      //                 component: './SearchManage/template/History',
-      //                 routes:[
-      //                   { path: '/', redirect: '/' },
-      //                 ],
-      //             },
-      //         ]
-      //     }, {
-      //       path: '/search/alias',
-      //       name: 'alias',
-      //       component: './SearchManage/alias/Alias',
-      //           routes: [
-      //               {
-      //                   path: '/search/alias',
-      //                   redirect: '/search/alias/index',
-      //                   // routes:[
-      //                   //   { path: '/', redirect: '/' },
-      //                   // ],
-      //               },
-      //               {
-      //                   path: '/search/alias/index',
-      //                   component: './SearchManage/alias/AliasManage',
-      //                   routes:[
-      //                     { path: '/', redirect: '/' },
-      //                   ],
-      //               },
-      //               {
-      //                   path: '/search/alias/rule',
-      //                   component: './SearchManage/alias/Rule',
-      //                   routes:[
-      //                     { path: '/', redirect: '/' },
-      //                   ],
-      //               }
-      //           ]
-      //     }, {
-      //       path: '/search/dict',
-      //       name: 'dict',
-      //       component: './SearchManage/dict/Dict',
-      //           routes: [
-      //               {
-      //                   path: '/search/dict',
-      //                   redirect: '/search/dict/professional',
-      //                   // routes:[
-      //                   //   { path: '/', redirect: '/' },
-      //                   // ],
-      //               },
-      //               {
-      //                   path: '/search/dict/professional',
-      //                   component: './SearchManage/dict/Pro',
-      //                   routes:[
-      //                     { path: '/', redirect: '/' },
-      //                   ],
-      //               },
-      //               {
-      //                   path: '/search/dict/common',
-      //                   component: './SearchManage/dict/Common',
-      //                   routes:[
-      //                     { path: '/', redirect: '/' },
-      //                   ],
-      //               }
-      //           ]
-      //     }, {
-      //       path: '/search/analyzer',
-      //       name: 'analyzer',
-      //       component: './SearchManage/analyzer/Analyzer',
-      //           routes: [
-      //               {
-      //                   path: '/search/analyzer',
-      //                   redirect: '/search/analyzer/manage',
-      //               },
-      //               {
-      //                   path: '/search/analyzer/manage',
-      //                   component: './SearchManage/analyzer/Manage',
-      //                   routes:[
-      //                     { path: '/', redirect: '/' },
-      //                   ],
-      //               },
-      //               {
-      //                   path: '/search/analyzer/test',
-      //                   component: './SearchManage/analyzer/AnalyzerTest',
-      //                   routes:[
-      //                     { path: '/', redirect: '/' },
-      //                   ],
-      //               }
-      //           ]
-      //     }//, {
-      //       //  path: '/search/nlp',
-      //       // name: 'nlp',
-      //       // component: './SearchManage/nlp/NLP',
-      //       // routes: [
-      //       //    {
-      //       //        path: '/search/nlp',
-      //       //        redirect: '/search/nlp/query',
-      //       //    },
-      //       //    {
-      //       //       path: '/search/nlp/query',
-      //       //        component: './SearchManage/nlp/Query',
-      //       //  },
-      //       //  {
-      //       //      path: '/search/nlp/intention',
-      //       //     component: './SearchManage/nlp/Intention',
-      //       // },
-      //       // {
-      //       //     path: '/search/nlp/knowledge',
-      //       //      component: './SearchManage/nlp/Knowledge',
-      //       //  },
-      //       // {
-      //       //      path: '/search/nlp/text',
-      //       //      component: './SearchManage/nlp/Text',
-      //       //     }
-      //       //]
-      //       //},
-      //   ]
-      // },
+      {
+        path: '/search',
+        name: 'search',
+        icon: 'search',
+        routes: [
+          // {
+          //   path: '/search/overview',
+          //   name: 'overview',
+          //   component: './SearchManage/template/Template',
+          //   routes:[
+          //     { path: '/', redirect: '/' },
+          //   ],
+          // },
+          // {
+          //     path: '/search/template',
+          //     name: 'template',
+          //     component: './SearchManage/template/Template',
+          //     routes: [
+          //         {
+          //             path: '/search/template',
+          //             redirect: '/search/template/template',
+          //         },
+          //         {
+          //             path: '/search/template/template',
+          //             component: './SearchManage/template/SearchTemplate',
+          //             routes:[
+          //               { path: '/', redirect: '/' },
+          //             ],
+          //         },
+          //         {
+          //             path: '/search/template/:cluster_id',
+          //             component: './SearchManage/template/SearchTemplate',
+          //             routes:[
+          //               { path: '/', redirect: '/' },
+          //             ],
+          //         },
+          //         {
+          //             path: '/search/template/history',
+          //             component: './SearchManage/template/History',
+          //             routes:[
+          //               { path: '/', redirect: '/' },
+          //             ],
+          //         },
+          //     ]
+          // }, 
+          {
+            path: '/search/alias',
+            name: 'alias',
+            component: './SearchManage/alias/Alias',
+                routes: [
+                    {
+                        path: '/search/alias',
+                        redirect: '/search/alias/index',
+                        // routes:[
+                        //   { path: '/', redirect: '/' },
+                        // ],
+                    },
+                    {
+                        path: '/search/alias/index',
+                        component: './SearchManage/alias/AliasManage',
+                        routes:[
+                          { path: '/', redirect: '/' },
+                        ],
+                    },
+                    {
+                        path: '/search/alias/rule',
+                        component: './SearchManage/alias/Rule',
+                        routes:[
+                          { path: '/', redirect: '/' },
+                        ],
+                    }
+                ]
+          },
+          //  {
+          //   path: '/search/dict',
+          //   name: 'dict',
+          //   component: './SearchManage/dict/Dict',
+          //       routes: [
+          //           {
+          //               path: '/search/dict',
+          //               redirect: '/search/dict/professional',
+          //               // routes:[
+          //               //   { path: '/', redirect: '/' },
+          //               // ],
+          //           },
+          //           {
+          //               path: '/search/dict/professional',
+          //               component: './SearchManage/dict/Pro',
+          //               routes:[
+          //                 { path: '/', redirect: '/' },
+          //               ],
+          //           },
+          //           {
+          //               path: '/search/dict/common',
+          //               component: './SearchManage/dict/Common',
+          //               routes:[
+          //                 { path: '/', redirect: '/' },
+          //               ],
+          //           }
+          //       ]
+          // },
+          //  {
+          //   path: '/search/analyzer',
+          //   name: 'analyzer',
+          //   component: './SearchManage/analyzer/Analyzer',
+          //       routes: [
+          //           {
+          //               path: '/search/analyzer',
+          //               redirect: '/search/analyzer/manage',
+          //           },
+          //           {
+          //               path: '/search/analyzer/manage',
+          //               component: './SearchManage/analyzer/Manage',
+          //               routes:[
+          //                 { path: '/', redirect: '/' },
+          //               ],
+          //           },
+          //           {
+          //               path: '/search/analyzer/test',
+          //               component: './SearchManage/analyzer/AnalyzerTest',
+          //               routes:[
+          //                 { path: '/', redirect: '/' },
+          //               ],
+          //           }
+          //       ]
+          // }
+          //, {
+            //  path: '/search/nlp',
+            // name: 'nlp',
+            // component: './SearchManage/nlp/NLP',
+            // routes: [
+            //    {
+            //        path: '/search/nlp',
+            //        redirect: '/search/nlp/query',
+            //    },
+            //    {
+            //       path: '/search/nlp/query',
+            //        component: './SearchManage/nlp/Query',
+            //  },
+            //  {
+            //      path: '/search/nlp/intention',
+            //     component: './SearchManage/nlp/Intention',
+            // },
+            // {
+            //     path: '/search/nlp/knowledge',
+            //      component: './SearchManage/nlp/Knowledge',
+            //  },
+            // {
+            //      path: '/search/nlp/text',
+            //      component: './SearchManage/nlp/Text',
+            //     }
+            //]
+            //},
+        ]
+      },
       //
       // //sync
       // {

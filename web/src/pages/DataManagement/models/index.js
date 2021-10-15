@@ -13,7 +13,7 @@ export default {
         *fetchIndices({payload}, {call, put}){
             let resp = yield call(getIndices, payload)
             if(resp.error){
-                message.warn("获取数据失败")
+                message.error("获取数据失败")
                 return
             }
             yield put({
@@ -27,7 +27,7 @@ export default {
         *fetchMappings({payload}, {call, put}){
             let resp = yield call(getMappings, payload);
             if(resp.error){
-                message.warn("get mappings failed")
+                message.warn(resp.error)
                 return
             }
             yield put({
@@ -40,7 +40,7 @@ export default {
         *fetchSettings({payload}, {call, put}){
             let resp = yield call(getSettings, payload);
             if(resp.error){
-                message.warn("get settings failed")
+                message.warn(resp.error)
                 return
             }
             yield put({
@@ -53,8 +53,11 @@ export default {
         *saveSettings({payload}, {call, put, select}){
             let resp = yield call(updateSettings, payload);
             if(resp.error){
-                message.warn("save settings failed")
+                message.error(resp.error)
                 return
+            }
+            if(resp.result == 'updated'){
+                message.success("save successfully")
             }
             let {settings} = yield select(state=>state.index);
             settings[payload.index] = payload.settings;
@@ -68,7 +71,7 @@ export default {
         *removeIndex({payload}, {call, put, select}){
             let resp = yield call(deleteIndex, payload);
             if(resp.error){
-                message.warn("get mappings failed")
+                message.error(resp.error)
                 return
             }
             let {clusterIndices} = yield  select(state=>state.index);
@@ -83,7 +86,7 @@ export default {
         *addIndex({payload}, {call, put, select}){
             let resp = yield call(createIndex, payload);
             if(resp.error){
-                message.warn("create index failed")
+                message.error(resp.error)
                 return
             }
             yield put({

@@ -37,6 +37,7 @@ export class EditorRegistry {
 
   setInputEditor(inputEditor: SenseEditor) {
     this.inputEditor = inputEditor;
+    inputEditor.setAutocompleter();
   }
 
   getInputEditor() {
@@ -46,3 +47,29 @@ export class EditorRegistry {
 
 // Create a single instance of this and use as private state.
 export const instance = new EditorRegistry();
+
+export class EditorList {
+  private inputEditors: SenseEditor[];
+  constructor(){
+    this.inputEditors = [];
+  }
+  addInputEditor(inputEditor: SenseEditor) {
+    this.inputEditors.push(inputEditor);
+  }
+
+  removeInputEditor(inputEditor: SenseEditor){
+    const idx = this.inputEditors.findIndex(editor=> editor==inputEditor);
+    if(idx > -1) this.inputEditors = this.inputEditors.splice(idx,1);
+  }
+
+  setActiveEditor(key: string){
+    for(let i=0; i<this.inputEditors.length; i++){
+      const editor = this.inputEditors[i];
+      if(key == editor.paneKey) {
+        instance.setInputEditor(editor);
+        break;
+      }
+    }
+  }
+}
+export const editorList = new EditorList();

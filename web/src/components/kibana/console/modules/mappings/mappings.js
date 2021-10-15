@@ -40,14 +40,15 @@ const POLL_INTERVAL = 60000;
 let pollTimeoutId;
 
 let perIndexTypes = {};
-let perAliasIndexes = [];
-let templates = [];
+let perAliasIndexes = {};
+let templates = {};
 //new add
 let commands = [];
-
 const mappingObj = {};
+let clusterID = '';
 
-export function expandAliases(indicesOrAliases) {
+export function expandAliases(indicesOrAliases, clusterID) {
+  const clusterPerAliasIndexes = perAliasIndexes[clusterID] || {};
   // takes a list of indices or aliases or a string which may be either and returns a list of indices
   // returns a list for multiple values or a string for a single.
 
@@ -59,8 +60,8 @@ export function expandAliases(indicesOrAliases) {
     indicesOrAliases = [indicesOrAliases];
   }
   indicesOrAliases = $.map(indicesOrAliases, function (iOrA) {
-    if (perAliasIndexes[iOrA]) {
-      return perAliasIndexes[iOrA];
+    if (clusterPerAliasIndexes[iOrA]) {
+      return clusterPerAliasIndexes[iOrA];
     }
     return [iOrA];
   });
@@ -75,17 +76,21 @@ export function expandAliases(indicesOrAliases) {
   return ret.length > 1 ? ret : ret[0];
 }
 
-export function getTemplates() {
-  return [...templates];
+export function getTemplates(key) {
+  key = key.editor.editor.clusterID || clusterID;
+  const clusterTemplates = templates[key] || [];
+  return [...clusterTemplates];
 }
 
-export function getFields(indices, types) {
+export function getFields(indices, types, key) {
+  key = key || clusterID
+  const clusterPerIndexTypes = perIndexTypes[key] || {}; 
   // get fields for indices and types. Both can be a list, a string or null (meaning all).
   let ret = [];
-  indices = expandAliases(indices);
+  indices = expandAliases(indices, key);
 
   if (typeof indices === 'string') {
-    const typeDict = perIndexTypes[indices];
+    const typeDict = clusterPerIndexTypes[indices];
     if (!typeDict) {
       return [];
     }
@@ -105,9 +110,9 @@ export function getFields(indices, types) {
     }
   } else {
     // multi index mode.
-    $.each(perIndexTypes, function (index) {
+    $.each(clusterPerIndexTypes, function (index) {
       if (!indices || indices.length === 0 || $.inArray(index, indices) !== -1) {
-        ret.push(getFields(index, types));
+        ret.push(getFields(index, types, key));
       }
     });
     ret = [].concat.apply([], ret);
@@ -118,11 +123,12 @@ export function getFields(indices, types) {
   });
 }
 
-export function getTypes(indices) {
+export function getTypes(indices, clusterID) {
+  const clusterPerIndexTypes = perIndexTypes[clusterID] || {}; 
   let ret = [];
-  indices = expandAliases(indices);
+  indices = expandAliases(indices, clusterID);
   if (typeof indices === 'string') {
-    const typeDict = perIndexTypes[indices];
+    const typeDict = clusterPerIndexTypes[indices];
     if (!typeDict) {
       return [];
     }
@@ -133,9 +139,9 @@ export function getTypes(indices) {
     });
   } else {
     // multi index mode.
-    $.each(perIndexTypes, function (index) {
+    $.each(clusterPerIndexTypes, function (index) {
       if (!indices || $.inArray(index, indices) !== -1) {
-        ret.push(getTypes(index));
+        ret.push(getTypes(index, clusterID));
       }
     });
     ret = [].concat.apply([], ret);
@@ -144,13 +150,18 @@ export function getTypes(indices) {
   return _.uniq(ret);
 }
 
-export function getIndices(includeAliases) {
+export function getIndices(includeAliases, key) {
+  if(typeof key != 'string') {
+    key = key?.editor?.clusterID || clusterID
+  }
+  const clusterPerIndexTypes = perIndexTypes[key] || {};
+  const clusterPerAliasIndexes = perAliasIndexes[key] || [];
   const ret = [];
-  $.each(perIndexTypes, function (index) {
+  $.each(clusterPerIndexTypes, function (index) {
     ret.push(index);
   });
   if (typeof includeAliases === 'undefined' ? true : includeAliases) {
-    $.each(perAliasIndexes, function (alias) {
+    $.each(clusterPerAliasIndexes, function (alias) {
       ret.push(alias);
     });
   }
@@ -211,12 +222,12 @@ function getFieldNamesFromProperties(properties = {}) {
   });
 }
 
-function loadTemplates(templatesObject = {}) {
-  templates = Object.keys(templatesObject);
+function loadTemplates(templatesObject = {}, clusterID) {
+  templates[clusterID] = Object.keys(templatesObject);
 }
 
-export function loadMappings(mappings) {
-  perIndexTypes = {};
+export function loadMappings(mappings, clusterID) {
+  let clusterPerIndexTypes = {};
 
   $.each(mappings, function (index, indexMapping) {
     const normalizedIndexMappings = {};
@@ -234,31 +245,32 @@ export function loadMappings(mappings) {
         normalizedIndexMappings[typeName] = [];
       }
     });
-
-    perIndexTypes[index] = normalizedIndexMappings;
+    clusterPerIndexTypes[index] = normalizedIndexMappings;
   });
+  perIndexTypes[clusterID] = clusterPerIndexTypes;
 }
 
-export function loadAliases(aliases) {
-  perAliasIndexes = {};
+export function loadAliases(aliases, clusterID) {
+  let clusterPerAliasIndexes = {};
   $.each(aliases || {}, function (index, omdexAliases) {
     // verify we have an index defined. useful when mapping loading is disabled
-    perIndexTypes[index] = perIndexTypes[index] || {};
+    // clusterPerAliasIndexes[index] = clusterPerAliasIndexes[index] || {};
 
     $.each(omdexAliases.aliases || {}, function (alias) {
       if (alias === index) {
         return;
       } // alias which is identical to index means no index.
-      let curAliases = perAliasIndexes[alias];
+      
+      let curAliases = clusterPerAliasIndexes[alias];
       if (!curAliases) {
         curAliases = [];
-        perAliasIndexes[alias] = curAliases;
+        clusterPerAliasIndexes[alias] = curAliases;
       }
       curAliases.push(index);
     });
   });
-
-  perAliasIndexes._all = getIndices(false);
+  clusterPerAliasIndexes._all = getIndices(false, clusterID);
+  perAliasIndexes[clusterID] = clusterPerAliasIndexes;
 }
 
 export function clear() {
@@ -343,15 +355,15 @@ export function retrieveAutoCompleteInfo(settings, settingsToRetrieve, clusterID
       } else {
         mappingsResponse = mappings[0];
       }
-      loadMappings(getObject(mappingsResponse)); //
+      loadMappings(getObject(mappingsResponse), clusterID); //
     }
 
     if (aliases) {
-      loadAliases(getObject(aliases[0]));
+      loadAliases(getObject(aliases[0]), clusterID);
     }
 
     if (templates) {
-      loadTemplates(getObject(templates[0]));
+      loadTemplates(getObject(templates[0]), clusterID);
     }
 
     if (mappings && aliases) {
@@ -410,4 +422,8 @@ export function getCommand(title) {
     return c._source['title'] == title;
   })
   return command && command[0];
+}
+
+export function setClusterID(id) {
+  clusterID = id;
 }

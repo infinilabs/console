@@ -5,6 +5,7 @@ import (
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/util"
 	"net/http"
+	"runtime/debug"
 )
 
 func (handler APIHandler) HandleGetMappingsAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -62,6 +63,11 @@ func (handler APIHandler) HandleGetSettingsAction(w http.ResponseWriter, req *ht
 }
 
 func (handler APIHandler) HandleUpdateSettingsAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	defer func() {
+		if err := recover(); err != nil {
+			debug.PrintStack()
+		}
+	}()
 	targetClusterID := ps.ByName("id")
 	client := elastic.GetClient(targetClusterID)
 	indexName := ps.ByName("index")

@@ -61,13 +61,18 @@ class JSONWrapper extends PureComponent {
 class CreateForm extends React.Component {
   okHandle = () => {
     const {handleAdd, form} = this.props;
+    const me = this;
+
     form.validateFields((err, fieldsValue) => {
       if (err) return;
-      form.resetFields();
-      fieldsValue['config'] = this.editorValueGetter();
+      fieldsValue['config'] = me.editor.getValue();
       handleAdd(fieldsValue);
+      form.resetFields();
     });
   };
+  onEditorDidMount = (editor)=>{
+    this.editor = editor;
+  }
 
   render() {
     const {modalVisible, form, handleModalVisible} = this.props;
@@ -98,7 +103,7 @@ class CreateForm extends React.Component {
                     tabSize: 2,
                     wordBasedSuggestions: true,
                   }}
-                  editorDidMount={(valueGetter)=>{this.editorValueGetter=valueGetter}}
+                  onMount={this.onEditorDidMount}
               />
             </div>
           </FormItem>
@@ -162,8 +167,8 @@ class Index extends PureComponent {
           <Popconfirm title="Sure to delete?" onConfirm={() => this.handleDeleteClick(record.index)}>
             <a>删除</a>
           </Popconfirm>
-          <Divider type="vertical" />
-          <Link to={"/data/document?index=" + record.index}>文档管理</Link>
+          {/* <Divider type="vertical" />
+          <Link to={"/data/document?index=" + record.index}>文档管理</Link> */}
         </Fragment>
       ),
     },
@@ -268,12 +273,12 @@ class Index extends PureComponent {
       })
     }
   }
-  handleEditorDidMount = (editorName, _valueGetter)=>{
-    this[editorName] = _valueGetter;
+  handleEditorDidMount = (editorName, editor)=>{
+    this[editorName] = editor;
   }
 
   handleIndexSettingsSaveClick = (indexName)=>{
-    let settings = this.indexSettingsGetter();
+    let settings = this.indexSettingsEditor.getValue();
     settings = JSON.parse(settings);
     const {dispatch,clusterID} = this.props;
     dispatch({
@@ -423,7 +428,7 @@ class Index extends PureComponent {
                       tabSize: 2,
                       wordBasedSuggestions: true,
                     }}
-                    editorDidMount={(valueGetter)=>this.handleEditorDidMount('indexSettingsGetter', valueGetter)}
+                    onMount={(editor)=>this.handleEditorDidMount('indexSettingsEditor', editor)}
                 />
               </div>
             </TabPane>
@@ -432,10 +437,15 @@ class Index extends PureComponent {
           <Dropdown 
             placement="topLeft"
             overlay={(
-            <Menu onClick={()=>{}}>
+            <Menu>
               <Menu.Item key="1">
-                <Icon type="delete" />
-                Delete
+                <Popconfirm onConfirm={()=>{
+                  this.handleDeleteClick(editingIndex.index);
+                  this.setState({drawerVisible: false})
+                }} title="sure to delete ?">
+                  <Icon type="delete" />
+                  Delete
+                </Popconfirm>
               </Menu.Item>
               {/*<Menu.Item key="2">*/}
               {/*  <Icon type="edit" />*/}

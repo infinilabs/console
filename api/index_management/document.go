@@ -61,13 +61,28 @@ func (handler APIHandler) HandleUpdateDocumentAction(w http.ResponseWriter, req 
 
 	err := handler.DecodeJSON(req, &reqBody)
 	if err != nil {
-		resBody["error"] = err
+		resBody["error"] = err.Error()
 		handler.WriteJSON(w, resBody, http.StatusOK)
 		return
 	}
 	indexName := ps.ByName("index")
 	docID := ps.ByName("docId")
 	typ := handler.GetParameter(req, "_type")
+	isNew := handler.GetParameter(req, "is_new")
+	if isNew == "1" {
+		getRes, err := client.Get(indexName, typ, docID)
+		if err != nil {
+			resBody["error"] = err.Error()
+			handler.WriteJSON(w, resBody, http.StatusOK)
+			return
+		}
+		if getRes.Found {
+			resBody["error"] = "doc id already exists"
+			handler.WriteJSON(w, resBody, http.StatusOK)
+			return
+		}
+	}
+
 	insertRes, err := client.Index(indexName, typ, docID, reqBody)
 	if err != nil {
 		resBody["error"] = err.Error()
@@ -154,6 +169,30 @@ func (handler APIHandler) HandleSearchDocumentAction(w http.ResponseWriter, req 
 	resResult["payload"] = resp
 
 	handler.WriteJSON(w, resResult, http.StatusOK)
+}
+
+func (handler APIHandler) ValidateDocIDAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	targetClusterID := ps.ByName("id")
+	client := elastic.GetClient(targetClusterID)
+	resBody := util.MapStr{}
+	if client != nil {
+		resBody["error"] = "cluster not found"
+		handler.WriteJSON(w, resBody, http.StatusOK)
+		return
+	}
+	var (
+		index = handler.GetParameter(req, "index")
+		docID = handler.GetParameter(req, "doc_id")
+		typ = handler.GetParameter(req, "type")
+	)
+	getRes, err := client.Get(index, typ, docID)
+	if err != nil {
+		resBody["error"] = err
+		handler.WriteJSON(w, resBody, http.StatusOK)
+		return
+	}
+	resBody["found"] = getRes.Found
+	handler.WriteJSON(w, resBody, http.StatusOK)
 }
 
 func formatESSearchResult(esResp *elastic.SearchResponse) map[string]interface{} {

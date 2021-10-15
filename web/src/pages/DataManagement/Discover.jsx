@@ -93,7 +93,6 @@ const Discover = (props)=>{
         columns: ['_source'],
         sort: [],
       })
-     // updateQuery({indexPattern:IP});
    }
  
    //const indexPatterns = [{"id":"1ccce5c0-bb9a-11eb-957b-939add21a246","type":"index-pattern","namespaces":["default"],"updated_at":"2021-05-23T07:40:14.747Z","version":"WzkxOTEsNDhd","attributes":{"title":"test-custom*","timeFieldName":"created_at","fields":"[{\"count\":0,\"name\":\"_id\",\"type\":\"string\",\"esTypes\":[\"_id\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":false},{\"count\":0,\"name\":\"_index\",\"type\":\"string\",\"esTypes\":[\"_index\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":false},{\"count\":0,\"name\":\"_score\",\"type\":\"number\",\"scripted\":false,\"searchable\":false,\"aggregatable\":false,\"readFromDocValues\":false},{\"count\":0,\"name\":\"_source\",\"type\":\"_source\",\"esTypes\":[\"_source\"],\"scripted\":false,\"searchable\":false,\"aggregatable\":false,\"readFromDocValues\":false},{\"count\":0,\"name\":\"_type\",\"type\":\"string\",\"esTypes\":[\"_type\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":false},{\"count\":0,\"name\":\"address\",\"type\":\"string\",\"esTypes\":[\"text\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"count\":0,\"name\":\"address.keyword\",\"type\":\"string\",\"esTypes\":[\"keyword\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true,\"subType\":{\"multi\":{\"parent\":\"address\"}}},{\"count\":0,\"conflictDescriptions\":{\"text\":[\"test-custom1\"],\"long\":[\"test-custom\",\"test-custom8\",\"test-custom9\"]},\"name\":\"age\",\"type\":\"conflict\",\"esTypes\":[\"text\",\"long\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":false},{\"count\":0,\"name\":\"age.keyword\",\"type\":\"string\",\"esTypes\":[\"keyword\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true,\"subType\":{\"multi\":{\"parent\":\"age\"}}},{\"count\":0,\"name\":\"created_at\",\"type\":\"date\",\"esTypes\":[\"date\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true},{\"count\":0,\"name\":\"email\",\"type\":\"string\",\"esTypes\":[\"text\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"count\":0,\"name\":\"email.keyword\",\"type\":\"string\",\"esTypes\":[\"keyword\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true,\"subType\":{\"multi\":{\"parent\":\"email\"}}},{\"count\":0,\"name\":\"hobbies\",\"type\":\"string\",\"esTypes\":[\"text\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"count\":0,\"name\":\"hobbies.keyword\",\"type\":\"string\",\"esTypes\":[\"keyword\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true,\"subType\":{\"multi\":{\"parent\":\"hobbies\"}}},{\"count\":0,\"name\":\"id\",\"type\":\"string\",\"esTypes\":[\"text\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"count\":0,\"name\":\"id.keyword\",\"type\":\"string\",\"esTypes\":[\"keyword\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true,\"subType\":{\"multi\":{\"parent\":\"id\"}}},{\"count\":0,\"name\":\"name\",\"type\":\"string\",\"esTypes\":[\"text\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"count\":0,\"name\":\"name.keyword\",\"type\":\"string\",\"esTypes\":[\"keyword\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true,\"subType\":{\"multi\":{\"parent\":\"name\"}}}]"},"references":[],"migrationVersion":{"index-pattern":"7.6.0"}}];
@@ -113,9 +112,7 @@ const Discover = (props)=>{
   const columns = state.columns;
 
   const updateQuery = useCallback(
-    async (_payload, isUpdate) => {
-      // if (isUpdate === false) {
-      // }
+    async (_payload) => {
       if(!indexPattern){
         return
       }
@@ -139,10 +136,8 @@ const Discover = (props)=>{
       //console.log(JSON.stringify(params));
       //console.log(getEsQuery(indexPattern))
     },
-    [props.indexPatternList, state.interval, state.sort]
+    [indexPattern, state.interval,]
   );
-
- 
 
   const onChangeInterval = useCallback(
     (interval) => {
@@ -276,7 +271,7 @@ const Discover = (props)=>{
       filterManager.addFilters(newFilters);
       updateQuery()
     },
-    [indexPattern, indexPatterns]
+    [indexPattern]
   );
 
   const timefilterUpdateHandler = useCallback(
@@ -308,12 +303,13 @@ const Discover = (props)=>{
     const resetQuery = ()=>{};
     const showDatePicker = indexPattern.timeFieldName != "";
 
-    const saveDocument = useCallback(async ({_index, _id, _type, _source})=>{
+    const saveDocument = useCallback(async ({_index, _id, _type, _source, is_new})=>{
       const {http} = getContext();
       const res = await http.put(`/elasticsearch/${props.selectedCluster.id}/doc/${_index}/${_id}`, {
         prependBasePath: false,
         query: {
           _type,
+          is_new,
         },
         body: JSON.stringify(_source),
       });
@@ -323,8 +319,8 @@ const Discover = (props)=>{
       } 
       message.success('saved successfully');
       updateQuery()
-      return res
-    },[props.selectedCluster])
+      return res;
+    },[props.selectedCluster, updateQuery])
 
     const deleteDocument = useCallback(async ({_index, _id, _type})=>{
       const {http} = getContext();
@@ -341,7 +337,7 @@ const Discover = (props)=>{
       message.success('deleted successfully');
       updateQuery()
       return res
-    },[props.selectedCluster])
+    },[props.selectedCluster, updateQuery])
   
   return (
     <Card bordered={false}>
@@ -589,9 +585,9 @@ const DiscoverUI = (props)=>{
       }
     }
     initialFetch();
-    return ()=>{
-      queryStringManager.setQuery('');
-    }
+    // return ()=>{
+    //   queryStringManager.setQuery('');
+    // }
   },[props.selectedCluster]);
 
   function changeIndexPattern(indexPattern){

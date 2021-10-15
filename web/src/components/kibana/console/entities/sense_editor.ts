@@ -30,6 +30,10 @@ export class SenseEditor {
     this.coreEditor.on('changeScrollTop', this.updateActionsBar.bind(this));
   }
 
+  setAutocompleter = ()=>{
+    this.coreEditor.registerAutocompleter(this.autocomplete.getCompletions);
+  }
+
   prevRequestStart = (rowOrPos?: number | Position): Position => {
     let curRow: number;
 

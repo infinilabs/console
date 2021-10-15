@@ -11,7 +11,7 @@ import './ConsoleInput.scss';
 import { useSendCurrentRequestToES } from '../hooks/use_send_current_request_to_es';
 import { useSetInputEditor } from '../hooks/use_set_input_editor';
 import '@elastic/eui/dist/eui_theme_light.css';
-import { instance as registry } from '../contexts/editor_context/editor_registry';
+import { instance as registry, editorList } from '../contexts/editor_context/editor_registry';
 import 'antd/dist/antd.css';
 import {retrieveAutoCompleteInfo} from '../modules/mappings/mappings';
 import {useSaveCurrentTextObject} from '../hooks/use_save_current_text_object';
@@ -66,6 +66,8 @@ const SendRequestButton = (props: any) => {
 interface ConsoleInputProps {
   clusterID: string,
   initialText: string | undefined,
+  saveEditorContent: (content: string)=>void,
+  paneKey: string,
 }
 
 const DEFAULT_INPUT_VALUE = `GET _search
@@ -75,7 +77,8 @@ const DEFAULT_INPUT_VALUE = `GET _search
   }
 }`;
 
-const ConsoleInputUI = ({clusterID, initialText}:ConsoleInputProps) => {
+
+const ConsoleInputUI = ({clusterID, initialText, saveEditorContent, paneKey}:ConsoleInputProps) => {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const editorActionsRef = useRef<HTMLDivElement | null>(null);
   const editorInstanceRef = useRef<SenseEditor | null>(null);
@@ -105,8 +108,10 @@ const ConsoleInputUI = ({clusterID, initialText}:ConsoleInputProps) => {
     // senseEditor.highlightCurrentRequestsAndUpdateActionBar();
     editorInstanceRef.current = senseEditor;
     setInputEditor(senseEditor);
+    senseEditor.paneKey = paneKey;
+    editorList.addInputEditor(senseEditor);
     senseEditor.update(initialText || DEFAULT_INPUT_VALUE);
-    // applyCurrentSettings(senseEditor!.getCoreEditor(), {fontSize:14, wrapMode: true,});
+    applyCurrentSettings(senseEditor!.getCoreEditor(), {fontSize:12, wrapMode: true,});
 
     function setupAutosave() {
       let timer: number;
@@ -123,7 +128,8 @@ const ConsoleInputUI = ({clusterID, initialText}:ConsoleInputProps) => {
     function saveCurrentState() {
       try {
         const content = senseEditor.getCoreEditor().getValue();
-        saveCurrentTextObjectRef.current(content);
+        // saveCurrentTextObjectRef.current(content);
+        saveEditorContent(content)
       } catch (e) {
         console.log(e)
         // Ignoring saving error
@@ -142,6 +148,7 @@ const ConsoleInputUI = ({clusterID, initialText}:ConsoleInputProps) => {
   }, []);
   useEffect(()=>{
     retrieveAutoCompleteInfo(settings, settings.getAutocomplete(), clusterID);
+    aceEditorRef.current && (aceEditorRef.current['clusterID'] = clusterID);
   },[clusterID])
 
   const handleSaveAsCommonCommand = async () => {
@@ -188,7 +195,7 @@ const ConsoleInputUI = ({clusterID, initialText}:ConsoleInputProps) => {
             </EuiFlexGroup>
             <div
               ref={editorRef}
-              id="ConAppEditor"
+              id={`Editor_${editorInstanceRef.current?.paneKey}`}
               className="conApp__editorContent"
               data-test-subj="request-editor"
               onClick={()=>{consoleMenuRef.current?.closePopover(); aceEditorRef.current?.focus()}}
@@ -198,13 +205,14 @@ const ConsoleInputUI = ({clusterID, initialText}:ConsoleInputProps) => {
   );
 };
 
-const ConsoleInput = ({clusterID}:{clusterID:string})=>{
-  const { done, error, retry } = useDataInit();
-  const { currentTextObject } = useEditorReadContext();
-  return done ? <ConsoleInputUI clusterID={clusterID} initialText={currentTextObject?.text}/>: <></>
-}
+// const ConsoleInput = ({clusterID}:{clusterID:string})=>{
+//   const { done, error, retry } = useDataInit();
+//   const { currentTextObject } = useEditorReadContext();
+//   return done ? <ConsoleInputUI clusterID={clusterID} initialText={currentTextObject?.text}/>: <></>
+// }
 
-export default ConsoleInput;
+// export default ConsoleInput;
+export default ConsoleInputUI;
 
 
 

@@ -63,7 +63,7 @@ const Table: React.FC<TableProps> = ({ columns, hits, sortOrder, indexPattern, o
               <tbody>
                 {hits.slice(0, scrollState.limit).map((row, idx)=>{
                   
-                  return <TableRow key={'discover-table-row'+idx} onFilter={onFilter}
+                  return <TableRow key={'discover-table-row'+row._id} onFilter={onFilter}
                   columns={columns}
                   hideTimeColumn={false}
                   indexPattern={indexPattern}

@@ -51,12 +51,15 @@ export function Detail({
       message.error('wrong json format')
       return
     }
-    const res = await document.saveDocument({
+    let params = {
       _index: row._index,
       _id: docID || row._id,
       _type: row._type,
-      _source: source
-    })
+      _source: source,
+    };
+    
+    docID && (params['is_new'] = '1')
+    const res = await document.saveDocument(params)
     if(!res.error) setEditorVisble(false)
   }
   const deleteDocumentClick = ()=>{

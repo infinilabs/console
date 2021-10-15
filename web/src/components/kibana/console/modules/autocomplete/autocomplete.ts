@@ -333,6 +333,30 @@ export function getCurrentMethodAndTokenPaths(
   return ret;
 }
 
+function isUrlPathToken(token: Token | null) {
+  switch ((token || ({} as Token)).type) {
+    case 'url.slash':
+    case 'url.comma':
+    case 'url.part':
+      return true;
+    default:
+      return false;
+  }
+}
+
+function addMetaToTermsList(
+  list: unknown[],
+  meta: unknown,
+  template?: string
+): Array<{ meta: unknown; template: unknown; name?: string }> {
+  return _.map(list, function (t) {
+    if (typeof t !== 'object') {
+      t = { name: t };
+    }
+    return _.defaults(t, { meta, template });
+  });
+}
+
 // eslint-disable-next-line
 export default function ({
   coreEditor: editor,
@@ -341,29 +365,7 @@ export default function ({
   coreEditor: CoreEditor;
   parser: RowParser;
 }) {
-  function isUrlPathToken(token: Token | null) {
-    switch ((token || ({} as Token)).type) {
-      case 'url.slash':
-      case 'url.comma':
-      case 'url.part':
-        return true;
-      default:
-        return false;
-    }
-  }
-
-  function addMetaToTermsList(
-    list: unknown[],
-    meta: unknown,
-    template?: string
-  ): Array<{ meta: unknown; template: unknown; name?: string }> {
-    return _.map(list, function (t) {
-      if (typeof t !== 'object') {
-        t = { name: t };
-      }
-      return _.defaults(t, { meta, template });
-    });
-  }
+  
 
   function applyTerm(term: {
     value?: string;

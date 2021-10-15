@@ -10,6 +10,28 @@ import { EditorEvent, AutoCompleterFunction } from '../../entities/core_editor';
 import { AceTokensProvider } from '../../entities/ace_tokens_providers';
 import * as curl from './curl';
 import smartResize from './smart_resize';
+ace.define(
+  'ace/autocomplete/text_completer',
+  ['require', 'exports', 'module'],
+  function (
+    require: unknown,
+    exports: {
+      getCompletions: (
+        innerEditor: unknown,
+        session: unknown,
+        pos: unknown,
+        prefix: unknown,
+        callback: (e: null | Error, values: string[]) => void
+      ) => void;
+    }
+  ) {
+    exports.getCompletions = function (innerEditor, session, pos, prefix, callback) {
+      callback(null, []);
+    };
+  }
+);
+
+const langTools = ace.acequire('ace/ext/language_tools');
 
 // @ts-ignore
 import * as InputMode from './mode/input';
@@ -351,28 +373,6 @@ export class LegacyCoreEditor implements CoreEditor {
 
     // disable standard context based autocompletion.
     // @ts-ignore
-    ace.define(
-      'ace/autocomplete/text_completer',
-      ['require', 'exports', 'module'],
-      function (
-        require: unknown,
-        exports: {
-          getCompletions: (
-            innerEditor: unknown,
-            session: unknown,
-            pos: unknown,
-            prefix: unknown,
-            callback: (e: null | Error, values: string[]) => void
-          ) => void;
-        }
-      ) {
-        exports.getCompletions = function (innerEditor, session, pos, prefix, callback) {
-          callback(null, []);
-        };
-      }
-    );
-
-    const langTools = ace.acequire('ace/ext/language_tools');
 
     langTools.setCompleters( //addCompleters
       [{

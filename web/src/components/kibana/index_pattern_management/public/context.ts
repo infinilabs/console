@@ -83,7 +83,7 @@ const indexPatternManagementStart = indexPatternManagementService.start()
 
 const indexPatternsApiClient = new IndexPatternsApiClient(http);
 const uiconfigs = {
-  ['metaFields']: ['_source', '_id', '_type', '_index', '_score'],
+  ['metaFields']: ['_source', '_id', '_type', '_index' ],//'_score'
   defaultIndex: '',
 };
 const uiSettings = {

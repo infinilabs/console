@@ -86,7 +86,6 @@ func reindex(esName string, body *model.Reindex, typ string) (string, error) {
 
 func newResponseBody() map[string]interface{} {
 	return map[string]interface{}{
-		"status": true,
 	}
 }
 

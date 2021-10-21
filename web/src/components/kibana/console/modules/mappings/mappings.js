@@ -223,15 +223,23 @@ function getFieldNamesFromProperties(properties = {}) {
 }
 
 function loadTemplates(templatesObject = {}, clusterID) {
+  templatesObject = getRawBody(templatesObject);
   templates[clusterID] = Object.keys(templatesObject);
 }
 
+function getRawBody(body) {
+  if(body.response_body){
+    return JSON.parse(body.response_body);
+  }
+  return body;
+}
+
 export function loadMappings(mappings, clusterID) {
+  mappings = getRawBody(mappings)
   let clusterPerIndexTypes = {};
 
   $.each(mappings, function (index, indexMapping) {
     const normalizedIndexMappings = {};
-
     // Migrate 1.0.0 mappings. This format has changed, so we need to extract the underlying mapping.
     if (indexMapping.mappings && _.keys(indexMapping).length === 1) {
       indexMapping = indexMapping.mappings;
@@ -242,7 +250,7 @@ export function loadMappings(mappings, clusterID) {
         const fieldList = getFieldNamesFromProperties(typeMapping);
         normalizedIndexMappings[typeName] = fieldList;
       } else {
-        normalizedIndexMappings[typeName] = [];
+        normalizedIndexMappings[typeName] = getFieldNamesFromProperties(typeMapping.properties); // for es 2.x, 5.x, 6.x
       }
     });
     clusterPerIndexTypes[index] = normalizedIndexMappings;
@@ -251,6 +259,7 @@ export function loadMappings(mappings, clusterID) {
 }
 
 export function loadAliases(aliases, clusterID) {
+  aliases = getRawBody(aliases)
   let clusterPerAliasIndexes = {};
   $.each(aliases || {}, function (index, omdexAliases) {
     // verify we have an index defined. useful when mapping loading is disabled

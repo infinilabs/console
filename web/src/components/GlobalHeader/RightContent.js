@@ -7,8 +7,12 @@ import NoticeIcon from '../NoticeIcon';
 import HeaderSearch from '../HeaderSearch';
 import SelectLang from '../SelectLang';
 import styles from './index.less';
+import {ConsoleUI} from '@/pages/DevTool/Console';
+import { Resizable } from "re-resizable";
+import {ResizeBar} from '@/components/infini/resize_bar';
 
 export default class GlobalHeaderRight extends PureComponent {
+  state={consoleVisible: false}
   getNoticeData() {
     const { notices = [] } = this.props;
     if (notices.length === 0) {
@@ -95,7 +99,10 @@ export default class GlobalHeaderRight extends PureComponent {
 
         <a className={styles.action} onClick={()=>{
           const {history, selectedCluster} = this.props;
-          history.push(`/dev_tool/elasticsearch/${selectedCluster.id}/`);
+          // history.push(`/dev_tool`);
+          this.setState({
+            consoleVisible: !this.state.consoleVisible
+          })
         }}> <Icon type="code" /></a>
 
         {/* <NoticeIcon
@@ -151,7 +158,52 @@ export default class GlobalHeaderRight extends PureComponent {
           <Spin size="small" style={{ marginLeft: 8, marginRight: 8 }} />
         )} */}
         <SelectLang className={styles.action} />
+          <div style={{
+              display: this.state.consoleVisible ? 'block': 'none',
+              borderTop: "solid 1px #ddd",
+              background: "#fff",
+              position: "fixed",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 1002,
+            }}>
+               {/* <Resizable
+            defaultSize={{
+              height: '50vh'
+            }}
+            minHeight={200}
+            maxHeight="100vh"
+            handleComponent={{ top: <ResizeBar/> }}
+            enable={{
+              top: true,
+              right: false,
+              bottom: false,
+              left: false,
+              topRight: false,
+              bottomRight: false,
+              bottomLeft: false,
+              topLeft: false,
+            }}> */}
+              <ConsoleUI selectedCluster={this.props.selectedCluster} 
+              clusterList={this.props.clusterList} 
+              visible={false}
+              minimize={true}
+              onMinimizeClick={()=>{
+                this.setState({
+                  consoleVisible: false,
+                })
+              }}
+              clusterStatus={this.props.clusterStatus}
+              resizeable={true}
+              />
+            {/* </Resizable> */}
+          </div> 
       </div>
     );
   }
 }
+
+const TopHandle = () => {
+  return <div style={{ background: "red" }}>hello world</div>;
+};

@@ -36,6 +36,7 @@ import { instance as registry } from '../../contexts/editor_context/editor_regis
 import { useRequestActionContext } from '../../contexts/request_context';
 import { useServicesContext } from '../../contexts/services_context';
 import {getCommand} from '../../modules/mappings/mappings';
+import {useEditorReadContext} from '../../contexts/editor_context';
 
 function buildRawCommonCommandRequest(cmd:any){
   const {requests} = cmd._source;
@@ -48,10 +49,12 @@ function buildRawCommonCommandRequest(cmd:any){
 export const useSendCurrentRequestToES = () => {
   const dispatch = useRequestActionContext();
   const { services: { history }, clusterID } = useServicesContext();
+  const {sensorEditor:editor} = useEditorReadContext();
 
   return useCallback(async () => {
     try {
-      const editor = registry.getInputEditor();
+      // const editor = registry.getInputEditor();
+      if(!editor) return
       const requests = await editor.getRequestsInRange();
       if (!requests.length) {
         console.log('No request selected. Select a request by placing the cursor inside it.');
@@ -118,5 +121,5 @@ export const useSendCurrentRequestToES = () => {
         });
       }
     }
-  }, [dispatch, history, clusterID]);
+  }, [dispatch, history, clusterID, editor]);
 };

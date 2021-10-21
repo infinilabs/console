@@ -16,7 +16,7 @@ function useStorage(key, defaultValue, storageObject, encryptor) {
       return storeValue
     }
 
-    if (typeof initialValue === "function") {
+    if (typeof defaultValue === "function") {
       return defaultValue()
     } else {
       return defaultValue

@@ -74,7 +74,6 @@ export function sendRequestToES(args: EsRequestArgs): Promise<ESRequestResult[]>
           if (reqId !== CURRENT_REQ_ID) {
             return;
           }
-
           const xhr = dataOrjqXHR.promise ? dataOrjqXHR : jqXhrORerrorThrown;
 
           const isSuccess =
@@ -83,7 +82,10 @@ export function sendRequestToES(args: EsRequestArgs): Promise<ESRequestResult[]>
             ((xhr.status >= 200 && xhr.status < 300) || xhr.status === 404);
 
           if (isSuccess) {
-            let value = xhr.responseText;
+            // let value = xhr.responseText;
+            let resObj = JSON.parse(xhr.responseText)
+  
+            let value = resObj.response_body;
 
             const warnings = xhr.getResponseHeader('warning');
             if (warnings) {
@@ -102,11 +104,13 @@ export function sendRequestToES(args: EsRequestArgs): Promise<ESRequestResult[]>
                 statusText: xhr.statusText,
                 contentType: xhr.getResponseHeader('Content-Type'),
                 value,
+                header: resObj.response_header,
               },
               request: {
                 data: esData,
                 method: esMethod,
                 path: esPath,
+                header: resObj.request_header,
               },
             });
 
@@ -116,8 +120,15 @@ export function sendRequestToES(args: EsRequestArgs): Promise<ESRequestResult[]>
             let value;
             let contentType: string;
             if (xhr.responseText) {
-              value = xhr.responseText; // ES error should be shown
-              contentType = xhr.getResponseHeader('Content-Type');
+              const resObj = JSON.parse(xhr.responseText)
+              if(resObj.error){
+                value = resObj.error;
+                contentType = 'text/plain';
+              }else{
+                value = resObj.response_body; // ES error should be shown
+                contentType = xhr.getResponseHeader('Content-Type');
+              }
+              
             } else {
               value = 'Request failed to get to the server (status code: ' + xhr.status + ')';
               contentType = 'text/plain';

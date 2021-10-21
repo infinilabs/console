@@ -39,12 +39,14 @@ import { SenseEditor } from '../entities/sense_editor';
 export interface Store {
   ready: boolean;
   currentTextObject: TextObject | null;
+  sensorEditor: SenseEditor | null;
 }
 
 export const initialValue: Store = produce<Store>(
   {
     ready: false,
     currentTextObject: null,
+    sensorEditor: null,
   },
   identity
 );
@@ -58,7 +60,8 @@ export const reducer: Reducer<Store, Action> = (state, action) =>
     if (action.type === 'setInputEditor') {
       if (action.payload) {
         draft.ready = true;
-      }
+        draft.sensorEditor = action.payload;
+      }   
       return;
     }
 

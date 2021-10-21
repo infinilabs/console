@@ -11,7 +11,7 @@ import './ConsoleInput.scss';
 import { useSendCurrentRequestToES } from '../hooks/use_send_current_request_to_es';
 import { useSetInputEditor } from '../hooks/use_set_input_editor';
 import '@elastic/eui/dist/eui_theme_light.css';
-import { instance as registry, editorList } from '../contexts/editor_context/editor_registry';
+import { instance as registry } from '../contexts/editor_context/editor_registry';
 import 'antd/dist/antd.css';
 import {retrieveAutoCompleteInfo} from '../modules/mappings/mappings';
 import {useSaveCurrentTextObject} from '../hooks/use_save_current_text_object';
@@ -109,7 +109,6 @@ const ConsoleInputUI = ({clusterID, initialText, saveEditorContent, paneKey}:Con
     editorInstanceRef.current = senseEditor;
     setInputEditor(senseEditor);
     senseEditor.paneKey = paneKey;
-    editorList.addInputEditor(senseEditor);
     senseEditor.update(initialText || DEFAULT_INPUT_VALUE);
     applyCurrentSettings(senseEditor!.getCoreEditor(), {fontSize:12, wrapMode: true,});
 
@@ -151,8 +150,12 @@ const ConsoleInputUI = ({clusterID, initialText, saveEditorContent, paneKey}:Con
     aceEditorRef.current && (aceEditorRef.current['clusterID'] = clusterID);
   },[clusterID])
 
-  const handleSaveAsCommonCommand = async () => {
-    const editor = registry.getInputEditor();
+  const handleSaveAsCommonCommand =  async () => {
+    const editor = editorInstanceRef.current;
+    if(editor == null){
+      console.warn('editor is null')
+      return
+    }
     const requests = await editor.getRequestsInRange();
     const formattedRequest = requests.map(request => ({
       method: request.method,

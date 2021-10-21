@@ -41,7 +41,7 @@ export const useSetInputEditor = () => {
   return useCallback(
     (editor: SenseEditor) => {
       dispatch({ type: 'setInputEditor', payload: editor });
-      registry.setInputEditor(editor);
+      // registry.setInputEditor(editor);
     },
     [dispatch]
   );

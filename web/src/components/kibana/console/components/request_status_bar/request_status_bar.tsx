@@ -18,7 +18,10 @@
  */
 
 import React, { FunctionComponent } from 'react';
-import { EuiFlexGroup, EuiFlexItem, EuiBadge, EuiText, EuiToolTip } from '@elastic/eui';
+import { EuiFlexGroup, EuiFlexItem, EuiBadge, EuiText, EuiToolTip,EuiCodeBlock } from '@elastic/eui';
+import {HealthStatusCircle} from '@/components/infini/health_status_circle';
+import './request_status_bar.scss';
+import {Drawer, Tabs, Button} from 'antd';
 
 export interface Props {
   requestInProgress: boolean;
@@ -37,6 +40,8 @@ export interface Props {
 
     // The time, in milliseconds, that the last request took
     timeElapsedMs: number;
+    responseHeader: string;
+    requestHeader: string;
   };
 }
 
@@ -60,17 +65,103 @@ const mapStatusCodeToBadgeColor = (statusCode: number) => {
   return 'danger';
 };
 
-export const RequestStatusBar: FunctionComponent<Props> = ({
+// export const RequestStatusBar: FunctionComponent<Props> = ({
+//   requestInProgress,
+//   requestResult,
+//   selectedCluster,
+// }) => {
+//   let content: React.ReactNode = null;
+//   const clusterContent = (<EuiFlexItem grow={false} style={{marginRight:'auto'}}>
+//   <EuiBadge style={{position:'relative', paddingLeft: 20}}>
+//     <i style={{marginRight:3, position:'absolute', top: 1, left:3}}><HealthStatusCircle status={selectedCluster.status}/></i>{selectedCluster.host}&nbsp;-&nbsp;{selectedCluster.version}
+//   </EuiBadge>
+// </EuiFlexItem>);
+
+//   if (requestInProgress) {
+//     content = (
+//       <EuiFlexItem grow={false}>
+//         <EuiBadge color="hollow">
+//            Request in progress
+//         </EuiBadge>
+//       </EuiFlexItem>
+//     );
+//   } else if (requestResult) {
+//     const { endpoint, method, statusCode, statusText, timeElapsedMs } = requestResult;
+
+//     content = (
+//       <>
+//         <EuiFlexItem grow={false}>
+//           <EuiToolTip
+//             position="top"
+//             content={
+//               <EuiText size="s">{`${method} ${
+//                 endpoint.startsWith('/') ? endpoint : '/' + endpoint
+//               }`}</EuiText>
+//             }
+//           >
+//             <EuiBadge color={mapStatusCodeToBadgeColor(statusCode)}>
+//               {/*  Use &nbsp; to ensure that no matter the width we don't allow line breaks */}
+//               {statusCode}&nbsp;-&nbsp;{statusText}
+//             </EuiBadge>
+//           </EuiToolTip>
+//         </EuiFlexItem>
+//         <EuiFlexItem grow={false}>
+//           <EuiToolTip
+//             position="top"
+//             content={
+//               <EuiText size="s">
+//                 Time Elapsed
+//               </EuiText>
+//             }
+//           >
+//             <EuiText size="s">
+//               <EuiBadge color="default">
+//                 {timeElapsedMs}&nbsp;{'ms'}
+//               </EuiBadge>
+//             </EuiText>
+//           </EuiToolTip>
+//         </EuiFlexItem>
+//       </>
+//     );
+//   }
+
+//   return (
+//     <EuiFlexGroup
+//       justifyContent="flexEnd"
+//       alignItems="center"
+//       direction="row"
+//       gutterSize="s"
+//       responsive={false}
+//     >
+//       {clusterContent}
+//       {content}
+//     </EuiFlexGroup>
+//   );
+// };
+
+export const RequestStatusBar = ({
   requestInProgress,
   requestResult,
   selectedCluster,
-}) => {
+}:Props) => {
   let content: React.ReactNode = null;
-  const clusterContent = (<EuiFlexItem grow={false} style={{marginRight:'auto'}}>
-  <EuiBadge>
-    {selectedCluster.host}&nbsp;-&nbsp;{selectedCluster.version}
-  </EuiBadge>
-</EuiFlexItem>);
+  const clusterContent = (<div className="base-info">
+      <div className="info-item health">
+        <span>健康状态：</span>
+        <i style={{position:'absolute', top: 1, right:0}}>
+        <HealthStatusCircle status={selectedCluster.status}/>
+        </i>
+      </div>
+      <div className="info-item">
+        <span>集群地址：</span>
+        {selectedCluster.host}
+      </div>
+      <div className="info-item">
+        <span>版本：</span>
+        {selectedCluster.version}
+      </div> 
+</div>);
+const [headerInfoVisible, setHeaderInfoVisible] = React.useState(false)
 
   if (requestInProgress) {
     content = (
@@ -85,7 +176,8 @@ export const RequestStatusBar: FunctionComponent<Props> = ({
 
     content = (
       <>
-        <EuiFlexItem grow={false}>
+      <div className="status_info">
+        <div className="info-item">
           <EuiToolTip
             position="top"
             content={
@@ -99,8 +191,8 @@ export const RequestStatusBar: FunctionComponent<Props> = ({
               {statusCode}&nbsp;-&nbsp;{statusText}
             </EuiBadge>
           </EuiToolTip>
-        </EuiFlexItem>
-        <EuiFlexItem grow={false}>
+        </div>
+        <div className="info-item">
           <EuiToolTip
             position="top"
             content={
@@ -115,21 +207,48 @@ export const RequestStatusBar: FunctionComponent<Props> = ({
               </EuiBadge>
             </EuiText>
           </EuiToolTip>
-        </EuiFlexItem>
+        </div>
+        <div className="info-item">
+          <EuiText size="s">
+            <Button type="link" onClick={()=>{setHeaderInfoVisible(true)}}>
+              Headers
+            </Button>
+          </EuiText>
+        </div>
+        </div>
       </>
     );
   }
 
   return (
-    <EuiFlexGroup
-      justifyContent="flexEnd"
-      alignItems="center"
-      direction="row"
-      gutterSize="s"
-      responsive={false}
-    >
-      {clusterContent}
-      {content}
-    </EuiFlexGroup>
+    <div className="request-status-bar">
+      <div className="bar-item">{clusterContent}</div>
+      <div className="bar-item">{content}</div>
+      <Drawer title="Request header info" 
+        style={{zIndex:1004}}
+        width={520}
+        
+        destroyOnClose={true}
+        visible={headerInfoVisible}
+        onClose={()=>{setHeaderInfoVisible(false)}}
+      >
+        <Tabs>
+        <Tabs.TabPane tab="Request" key="1">
+          <div>
+          <EuiCodeBlock language="text" isCopyable paddingSize="s">
+            {requestResult?.requestHeader}
+          </EuiCodeBlock>
+            
+          </div>
+        </Tabs.TabPane>
+        <Tabs.TabPane tab="Response" key="2">
+          <EuiCodeBlock language="text" isCopyable paddingSize="s">
+            {requestResult?.responseHeader}
+          </EuiCodeBlock>
+        </Tabs.TabPane>
+        </Tabs>
+        </Drawer>
+    </div>
+    
   );
 };

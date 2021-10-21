@@ -1,0 +1,19 @@
+.tab-title{
+  display: inline-block;
+  .input-eidtor{
+    border-radius: 0;
+    border:none;
+    border-bottom: 1px solid #ccc;
+    border-right: none;
+    padding-left: 1em;
+    &:focus{
+      outline: none;
+    }
+  }
+}
+
+#console{
+  .ant-tabs-bar{
+    margin: 0px 0 5px 0;
+  }
+}

@@ -1,5 +1,5 @@
 // @ts-ignore
-import React, { useRef, useMemo,useEffect } from 'react';
+import React, { useRef, useMemo,useEffect, useLayoutEffect } from 'react';
 import ConsoleInput from './ConsoleInput';
 import ConsoleOutput from './ConsoleOutput';
 import { Panel } from './Panel';
@@ -14,12 +14,14 @@ import { createHistory, History, createStorage, createSettings } from '../servic
 import { create } from '../storage/local_storage_object_client';
 import { EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
 import {RequestStatusBar} from './request_status_bar';
+import useEventListener from '@/lib/hooks/use_event_listener';
 
 interface props {
   selectedCluster: any;
   saveEditorContent: (content: string)=>void;
   initialText: string;
   paneKey: string;
+  height: number;
 }
 
 const INITIAL_PANEL_WIDTH = 50;
@@ -30,8 +32,8 @@ const ConsoleWrapper = ({
   saveEditorContent,
   initialText,
   paneKey,
+  height,
 }:props) => {
-
   const {
     requestInFlight: requestInProgress,
     lastResult: { data: requestData, error: requestError },
@@ -53,26 +55,36 @@ const ConsoleWrapper = ({
     const statusBarRef = useRef<HTMLDivElement>(null);
     const consoleRef = useRef<HTMLDivElement>(null);
 
-    useEffect(()=>{
-      statusBarRef.current && consoleRef.current && (statusBarRef.current.style.width=consoleRef.current.offsetWidth+'px');
-      const winScroll = ()=>{
-        const wsTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop;
-        if(wsTop>getElementTop(consoleRef.current)) {
-          statusBarRef.current && (statusBarRef.current.style.position='relative');
-        }else{
-          statusBarRef.current && (statusBarRef.current.style.position='fixed');
-        }
-      }
-      window.addEventListener('scroll', winScroll)
-      return ()=>{
-        window.removeEventListener('scroll', winScroll)
-      }
-    },[])
+    // useEffect(()=>{
+    //   const winScroll = ()=>{
+    //     const wsTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop;
+    //     if(wsTop>getElementTop(consoleRef.current)) {
+    //       statusBarRef.current && (statusBarRef.current.style.position='relative');
+    //     }else{
+    //       statusBarRef.current && (statusBarRef.current.style.position='fixed');
+    //     }
+    //   }
+    //   window.addEventListener('scroll', winScroll, {passive:true})
+    //   return ()=>{
+    //     window.removeEventListener('scroll', winScroll)
+    //   }
+    // },[])
 
+    useEventListener('resize', ()=>{
+      statusBarRef.current && consoleRef.current && (statusBarRef.current.style.width=consoleRef.current.offsetWidth+'px');
+    })
+
+    useLayoutEffect(()=>{
+      // console.log(consoleRef.current?.offsetWidth)
+      if(consoleRef.current.offsetWidth>0)
+      statusBarRef.current && consoleRef.current && (statusBarRef.current.style.width=consoleRef.current.offsetWidth+'px');
+    }, [consoleRef.current?.offsetWidth])
+
+  const calcHeight = height > 0 ? (height-35)+'px' : '100%';
 
   return ( 
-    <div>
-    <div ref={consoleRef} className="Console">
+    <div style={{height: calcHeight}}>
+    <div ref={consoleRef} className="Console" style={{height:'100%'}}>
       <PanelsContainer resizerClassName="resizer">
         <Panel style={{ height: '100%', position: 'relative', minWidth: PANEL_MIN_WIDTH }} initialWidth={INITIAL_PANEL_WIDTH}>
           <ConsoleInput clusterID={selectedCluster.id} saveEditorContent={saveEditorContent} initialText={initialText} paneKey={paneKey} />
@@ -82,12 +94,8 @@ const ConsoleWrapper = ({
         </Panel>
       </PanelsContainer>
     </div>
-    <div ref={statusBarRef} style={{ position:'fixed', bottom:0, borderTop: '1px solid #eee', zIndex:5000}}>
-      <EuiFlexGroup className="consoleContainer"
-          style={{height:30, background:'#fff'}}
-            gutterSize="none"
-            direction="column">
-            <EuiFlexItem className="conApp__tabsExtension">
+    <div ref={statusBarRef} style={{ position:'fixed', bottom:0, borderTop: '1px solid #eee', zIndex:1001, width:'100%'}}>
+      <div style={{background:'#fff',height:30,  width:'100%'}}>
             <RequestStatusBar
               requestInProgress={requestInProgress}
               selectedCluster={selectedCluster}
@@ -99,18 +107,20 @@ const ConsoleWrapper = ({
                       statusCode: lastDatum.response.statusCode,
                       statusText: lastDatum.response.statusText,
                     timeElapsedMs: lastDatum.response.timeMs,
+                    requestHeader: lastDatum.request.header,
+                    responseHeader: lastDatum.response.header,
                   }
                 : undefined
             }
           />
-        </EuiFlexItem>
-      </EuiFlexGroup>
+        </div>
       </div>
   </div>          
   );
 };
 
 const Console = (params:props) => {
+  
   const registryRef = useRef(new PanelRegistry());
   // const [consoleInputKey]  = useMemo(()=>{
   //   return [selectedCluster.id + '-console-input'];

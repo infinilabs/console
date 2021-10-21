@@ -42,6 +42,9 @@ func Init(cfg *config.AppConfig) {
 	ui.HandleUIMethod(api.DELETE, path.Join(esPrefix, "index/:index"), handler.HandleDeleteIndexAction)
 	ui.HandleUIMethod(api.POST, path.Join(esPrefix, "index/:index"), handler.HandleCreateIndexAction)
 
+	ui.HandleUIMethod(api.POST,  path.Join(pathPrefix, "elasticsearch/command"), handler.HandleSaveCommonCommandAction)
+	ui.HandleUIMethod(api.GET, path.Join(pathPrefix, "elasticsearch/command"), handler.HandleQueryCommonCommandAction)
+
 	//new api
 	ui.HandleUIMethod(api.GET,  path.Join(pathPrefix, "alerting/overview"), alerting.GetAlertOverview)
 	ui.HandleUIMethod(api.GET,  path.Join(pathPrefix, "alerting/overview/alerts"), alerting.GetAlerts)
@@ -73,6 +76,7 @@ func Init(cfg *config.AppConfig) {
 	ui.HandleUIMethod(api.POST, path.Join(pathPrefix, "alerting/_search"), alerting.Search)
 	ui.HandleUIMethod(api.GET, "/elasticsearch/:id/alerting/alerts", alerting.GetAlerts)
 	ui.HandleUIMethod(api.POST, "/elasticsearch/:id/alerting/_monitors/:monitorID/_acknowledge/alerts", alerting.AcknowledgeAlerts)
+
 
 	task.RegisterScheduleTask(task.ScheduleTask{
 		Description: "sync reindex task result",

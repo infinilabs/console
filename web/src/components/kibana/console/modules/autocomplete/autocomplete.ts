@@ -360,13 +360,10 @@ function addMetaToTermsList(
 // eslint-disable-next-line
 export default function ({
   coreEditor: editor,
-  parser,
 }: {
   coreEditor: CoreEditor;
-  parser: RowParser;
 }) {
-  
-
+  const parser = new RowParser(editor)
   function applyTerm(term: {
     value?: string;
     context?: AutoCompleteContext;

@@ -1,5 +1,6 @@
 import { TokensProvider } from './tokens_provider';
 import { Token } from './token';
+import RowParser from './row_parser';
 
 type MarkerRef = any;
 
@@ -81,6 +82,9 @@ export enum LINE_MODE {
  * being used which is usually vendor code such as Ace or Monaco.
  */
 export interface CoreEditor {
+  getParser(): RowParser;
+  getAutocompleter(): AutoCompleterFunction;
+
   /**
    * Get the current position of the cursor.
    */

@@ -1,0 +1,28 @@
+.request-status-bar{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  .bar-item{
+    flex: 0 0 50%;
+    .base-info{
+      display: flex;
+      font-size: 12px;
+      .info-item{
+        margin: 12px;
+        position: relative;
+        &.health{
+          padding-right: 14px;
+        }
+      }
+    }
+    .status_info{
+      display: flex;
+      font-size: 12px;
+      align-items: center;
+      .info-item{
+        margin: 12px;
+      }
+    }
+  }
+}

@@ -37,7 +37,6 @@ export class EditorRegistry {
 
   setInputEditor(inputEditor: SenseEditor) {
     this.inputEditor = inputEditor;
-    inputEditor.setAutocompleter();
   }
 
   getInputEditor() {

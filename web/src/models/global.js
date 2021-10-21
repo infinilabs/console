@@ -4,6 +4,7 @@ import {searchClusterConfig, getClusterStatus} from "@/services/cluster";
 import {formatESSearchResult, extractClusterIDFromURL} from '@/lib/elasticsearch/util';
 import {Modal} from 'antd';
 import router from "umi/router";
+import _ from 'lodash';
 
 const MENU_COLLAPSED_KEY = "search-center:menu:collapsed";
 
@@ -153,21 +154,24 @@ export default {
         }
       }
     },
-    *fetchClusterStatus({payload}, {call, put}){
+    *fetchClusterStatus({payload}, {call, put,  select}){
       let res = yield call(getClusterStatus, payload);
       if(!res){
         return false
       }
+      const {clusterStatus} = yield select(state=>state.global);
       if(res.error){
         console.log(res.error)
         return false;
       }
-      yield put({
-        type: 'saveData',
-        payload: {
-          clusterStatus: res
-        }
-      });
+      if(!_.isEqual(res, clusterStatus)){
+        yield put({
+          type: 'saveData',
+          payload: {
+            clusterStatus: res
+          }
+        });
+      }  
       return res;
     },
   },
@@ -251,7 +255,7 @@ export default {
       // Subscribe history(url) change, trigger `load` action if pathname is `/`
       return history.listen(({ pathname, search }) => {
         let clusterVisible = true;
-        const clusterHiddenPath = ["/system", "/cluster/overview", "/alerting/overview", "/alerting/monitor/monitors/", "/alerting/destination"];
+        const clusterHiddenPath = ["/system", "/cluster/overview", "/alerting/overview", "/alerting/monitor/monitors/", "/alerting/destination", '/dev_tool'];
         if(clusterHiddenPath.some(p=>pathname.startsWith(p))){
           clusterVisible = false;
           if(pathname.includes("elasticsearch")){

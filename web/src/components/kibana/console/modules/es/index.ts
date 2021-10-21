@@ -34,6 +34,7 @@
 import $ from 'jquery';
 // @ts-ignore
 import { stringify } from 'query-string';
+import {pathPrefix} from '@/services/common';
 
 interface SendOptions {
   asSystemRequest?: boolean;
@@ -103,12 +104,7 @@ export function send(
 }
 
 export function queryCommonCommands(title?: string) {
-  const clusterID = extractClusterIDFromURL();
-  if(!clusterID){
-    console.log('can not get clusterid from url');
-    return;
-  }
-  let url = `/elasticsearch/${clusterID}/command/_search`;
+  let url = `${pathPrefix}/elasticsearch/command`;
   if(title){
     url +=`?title=${title}`
   }
@@ -124,12 +120,7 @@ export function constructESUrl(baseUri: string, path: string) {
 }
 
 export function saveCommonCommand(params: any) {
-  const clusterID = extractClusterIDFromURL();
-  if(!clusterID){
-    console.log('can not get clusterid from url');
-    return;
-  }
-  return fetch(`/elasticsearch/${clusterID}/command`, {
+  return fetch(`${pathPrefix}/elasticsearch/command`, {
     method: 'POST',
     body: JSON.stringify(params),
     headers:{

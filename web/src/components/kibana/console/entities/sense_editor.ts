@@ -12,26 +12,22 @@ export class SenseEditor {
   currentReqRange: (Range & { markerRef: unknown }) | null;
   parser: RowParser;
 
-  private readonly autocomplete: ReturnType<typeof createAutocompleter>;
+  // private readonly autocomplete: ReturnType<typeof createAutocompleter>;
 
   constructor(private readonly coreEditor: CoreEditor) {
     this.currentReqRange = null;
-    this.parser = new RowParser(this.coreEditor);
-    this.autocomplete = createAutocompleter({
-      coreEditor,
-      parser: this.parser,
-    });
-    this.coreEditor.registerAutocompleter(this.autocomplete.getCompletions);
+    // this.parser = new RowParser(this.coreEditor);
+    // this.autocomplete = createAutocompleter({
+    //   coreEditor,
+    // });
+    // this.coreEditor.registerAutocompleter(this.autocomplete.getCompletions);
+    this.parser = coreEditor.getParser();
     this.coreEditor.on(
       'tokenizerUpdate',
       this.highlightCurrentRequestsAndUpdateActionBar.bind(this)
     );
     this.coreEditor.on('changeCursor', this.highlightCurrentRequestsAndUpdateActionBar.bind(this));
     this.coreEditor.on('changeScrollTop', this.updateActionsBar.bind(this));
-  }
-
-  setAutocompleter = ()=>{
-    this.coreEditor.registerAutocompleter(this.autocomplete.getCompletions);
   }
 
   prevRequestStart = (rowOrPos?: number | Position): Position => {

@@ -66,7 +66,7 @@ const CommonCommandModal = Form.create()((props: ICommonCommandModalProps) => {
   };
 
   return (
-    <Modal title="保存常用命令" visible={true} onCancel={props.onClose} onOk={handleConfirm} cancelText="取消" okText="确认">
+    <Modal title="保存常用命令" visible={true} onCancel={props.onClose} onOk={handleConfirm} zIndex={1003} cancelText="取消" okText="确认">
       <Form layout="vertical">
         <Form.Item label="标题">
           {form.getFieldDecorator('title', {

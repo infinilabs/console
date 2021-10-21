@@ -10,28 +10,58 @@ import { EditorEvent, AutoCompleterFunction } from '../../entities/core_editor';
 import { AceTokensProvider } from '../../entities/ace_tokens_providers';
 import * as curl from './curl';
 import smartResize from './smart_resize';
-ace.define(
-  'ace/autocomplete/text_completer',
-  ['require', 'exports', 'module'],
-  function (
-    require: unknown,
-    exports: {
-      getCompletions: (
-        innerEditor: unknown,
-        session: unknown,
-        pos: unknown,
-        prefix: unknown,
-        callback: (e: null | Error, values: string[]) => void
-      ) => void;
-    }
-  ) {
-    exports.getCompletions = function (innerEditor, session, pos, prefix, callback) {
-      callback(null, []);
-    };
-  }
-);
+import createAutocompleter from '../../modules/autocomplete/autocomplete';
+import RowParser from '../../entities/row_parser';
 
-const langTools = ace.acequire('ace/ext/language_tools');
+(function initAceEditor() {
+  ace.define(
+    'ace/autocomplete/text_completer',
+    ['require', 'exports', 'module'],
+    function (
+      require: unknown,
+      exports: {
+        getCompletions: (
+          innerEditor: unknown,
+          session: unknown,
+          pos: unknown,
+          prefix: unknown,
+          callback: (e: null | Error, values: string[]) => void
+        ) => void;
+      }
+    ) {
+      exports.getCompletions = function (innerEditor, session, pos, prefix, callback) {
+        callback(null, []);
+      };
+    }
+  );
+  
+  const langTools = ace.acequire('ace/ext/language_tools');
+  
+  langTools.setCompleters( //addCompleters
+    [{
+      identifierRegexps: [
+        /[a-zA-Z_0-9\.\$\-\u00A2-\uFFFF]/, // adds support for dot character
+      ],
+      getCompletions: (
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        DO_NOT_USE_1: IAceEditor,
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        DO_NOT_USE_2: IAceEditSession,
+        pos: { row: number; column: number },
+        prefix: string,
+        callback: (...args: unknown[]) => void
+      ) => {
+        const {coreEditor} = DO_NOT_USE_1;
+        const position: Position = {
+          lineNumber: pos.row + 1,
+          column: pos.column + 1,
+        };
+        coreEditor.autocompleter(position, prefix, callback);
+        // autocompleter(position, prefix, callback);
+      },
+    }],
+  );
+})();
 
 // @ts-ignore
 import * as InputMode from './mode/input';
@@ -45,10 +75,16 @@ export class LegacyCoreEditor implements CoreEditor {
   // @ts-ignore
   $actions: JQuery<HTMLElement>;
   resize: () => void;
+  private autocompleter: AutoCompleterFunction;
+  private parser: RowParser;
 
-  constructor(private readonly editor: IAceEditor, actions: HTMLElement) {
+  constructor(private editor: IAceEditor, actions: HTMLElement) {
     this.$actions = $(actions);
     this.editor.setShowPrintMargin(false);
+    this.parser = new RowParser(this);
+    this.autocompleter = createAutocompleter({
+      coreEditor: this,
+    }).getCompletions
 
     const session = this.editor.getSession();
     // @ts-ignore
@@ -72,6 +108,14 @@ export class LegacyCoreEditor implements CoreEditor {
     this.editor.$blockScrolling = Infinity;
     this.hideActionsBar();
     this.editor.focus();
+    editor.coreEditor = this;
+  }
+
+  getParser(): RowParser {
+    return this.parser;
+  }
+  getAutocompleter(): AutoCompleterFunction {
+    return this.autocompleter;
   }
 
   // dirty check for tokenizer state, uses a lot less cycles
@@ -388,6 +432,7 @@ export class LegacyCoreEditor implements CoreEditor {
           prefix: string,
           callback: (...args: unknown[]) => void
         ) => {
+          debugger
           const position: Position = {
             lineNumber: pos.row + 1,
             column: pos.column + 1,

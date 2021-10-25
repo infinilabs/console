@@ -119,8 +119,9 @@ export function sendRequestToES(args: EsRequestArgs): Promise<ESRequestResult[]>
           } else {
             let value;
             let contentType: string;
+            let resObj:any = {};
             if (xhr.responseText) {
-              const resObj = JSON.parse(xhr.responseText)
+              resObj = JSON.parse(xhr.responseText)
               if(resObj.error){
                 value = resObj.error;
                 contentType = 'text/plain';
@@ -143,11 +144,13 @@ export function sendRequestToES(args: EsRequestArgs): Promise<ESRequestResult[]>
                 timeMs: Date.now() - startTime,
                 statusCode: xhr.status,
                 statusText: xhr.statusText,
+                header: resObj.response_header,
               },
               request: {
                 data: esData,
                 method: esMethod,
                 path: esPath,
+                header: resObj.request_header,
               },
             });
           }

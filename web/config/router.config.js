@@ -94,15 +94,15 @@ export default [
         ]
       },
       //devtools
-      {
-        routes:[
-          { path: '/', redirect: '/' },
-        ],
-        path: '/dev_tool',
-        name: 'devtool',
-        icon: 'code',
-        component: './DevTool/Console',
-      },
+      // {
+      //   routes:[
+      //     { path: '/', redirect: '/' },
+      //   ],
+      //   path: '/dev_tool',
+      //   name: 'devtool',
+      //   icon: 'code',
+      //   component: './DevTool/Console',
+      // },
 
        //alerting
        {

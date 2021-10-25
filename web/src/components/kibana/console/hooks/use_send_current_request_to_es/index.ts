@@ -60,9 +60,10 @@ export const useSendCurrentRequestToES = () => {
         console.log('No request selected. Select a request by placing the cursor inside it.');
         return;
       }
-      const {url, method} = requests[0];
+      const {url, method, data} = requests[0];
       if(method === 'LOAD'){
-        const cmd = getCommand(url);
+        const rawUrl = data[0].slice(4).trim();
+        const cmd = getCommand(rawUrl);
        // const curPostion = editor.currentReqRange //(editor.getCoreEditor().getCurrentPosition());
         const lineNumber = editor.getCoreEditor().getCurrentPosition().lineNumber;
         let crange = await editor.getRequestRange(lineNumber)

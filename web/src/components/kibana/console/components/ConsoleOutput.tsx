@@ -83,6 +83,10 @@ function ConsoleOutput({clusterID}: props) {
   
     } else if (error) {
       const mode = modeForContentType(error.response.contentType);
+      if(mode == 'ace/mode/json'){
+        editor.update(JSON.stringify(JSON.parse(error.response.value), null, 2), mode);
+        return
+      }
       editor.update(error.response.value as string, mode);
     } else {
       editor.update('');

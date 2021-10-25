@@ -49,6 +49,7 @@
     "qs": "^6.5.2",
     "raw-loader": "^4.0.2",
     "rc-animate": "^2.4.4",
+    "re-resizable": "^6.9.1",
     "react": "^16.5.1",
     "react-calendar-heatmap": "^1.8.1",
     "react-container-query": "^0.11.0",

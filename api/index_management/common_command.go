@@ -7,6 +7,8 @@ import (
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -52,20 +54,55 @@ func (h *APIHandler) HandleQueryCommonCommandAction(w http.ResponseWriter, req *
 	resBody := map[string]interface{}{
 	}
 
-	//title := h.GetParameterOrDefault(req, "title", "")
-	//tag := h.GetParameterOrDefault(req, "search", "")
+	var (
+		title          = h.GetParameterOrDefault(req, "title", "")
+		queryDSL      = `{"query":{"bool":{"filter":[%s]}}, "size": %d, "from": %d}`
+		strSize       = h.GetParameterOrDefault(req, "size", "20")
+		strFrom       = h.GetParameterOrDefault(req, "from", "0")
+		filterBuilder = &strings.Builder{}
+	)
+	if title != ""{
+		filterBuilder.WriteString(fmt.Sprintf(`{"prefix":{"title": "%s"}}`, title))
+	}
+	size, _ := strconv.Atoi(strSize)
+	if size <= 0 {
+		size = 20
+	}
+	from, _ := strconv.Atoi(strFrom)
+	if from < 0 {
+		from = 0
+	}
 
+	queryDSL = fmt.Sprintf(queryDSL, filterBuilder.String(), size, from)
 	esClient := elastic.GetClient(h.Config.Elasticsearch)
-	//queryDSL :=[]byte(fmt.Sprintf(`{"query":{"bool":{"must":{"match":{"title":"%s"}}}}}`, title))
 
-	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetIndexName(elastic.CommonCommand{}),nil)
+	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetIndexName(elastic.CommonCommand{}), []byte(queryDSL))
 	if err != nil {
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
 	}
 
-
-
 	h.WriteJSON(w, searchRes,http.StatusOK)
+}
+
+func (h *APIHandler) HandleDeleteCommonCommandAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	resBody := map[string]interface{}{}
+	id := ps.ByName("cid")
+	esClient := elastic.GetClient(h.Config.Elasticsearch)
+	delRes, err := esClient.Delete(orm.GetIndexName(elastic.CommonCommand{}), "", id, "wait_for")
+	if err != nil {
+		resBody["error"] = err.Error()
+		if delRes!=nil{
+			h.WriteJSON(w, resBody, delRes.StatusCode)
+		}else{
+			h.WriteJSON(w, resBody, http.StatusInternalServerError)
+		}
+		return
+	}
+
+	elastic.RemoveInstance(id)
+	resBody["_id"] = id
+	resBody["result"] = delRes.Result
+	h.WriteJSON(w, resBody, delRes.StatusCode)
 }

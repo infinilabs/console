@@ -99,6 +99,7 @@ const ConsoleWrapper = ({
             <RequestStatusBar
               requestInProgress={requestInProgress}
               selectedCluster={selectedCluster}
+              container={consoleRef}
               requestResult={
                 lastDatum
                   ? {

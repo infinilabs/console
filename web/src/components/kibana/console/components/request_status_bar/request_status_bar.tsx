@@ -143,6 +143,7 @@ export const RequestStatusBar = ({
   requestInProgress,
   requestResult,
   selectedCluster,
+  container,
 }:Props) => {
   let content: React.ReactNode = null;
   const clusterContent = (<div className="base-info">
@@ -154,11 +155,11 @@ export const RequestStatusBar = ({
       </div>
       <div className="info-item">
         <span>集群地址：</span>
-        {selectedCluster.host}
+        <EuiBadge color="default">{selectedCluster.host}</EuiBadge>
       </div>
       <div className="info-item">
         <span>版本：</span>
-        {selectedCluster.version}
+        <EuiBadge color="default"> {selectedCluster.version}</EuiBadge>
       </div> 
 </div>);
 const [headerInfoVisible, setHeaderInfoVisible] = React.useState(false)
@@ -178,6 +179,7 @@ const [headerInfoVisible, setHeaderInfoVisible] = React.useState(false)
       <>
       <div className="status_info">
         <div className="info-item">
+          <span>响应状态：</span>
           <EuiToolTip
             position="top"
             content={
@@ -193,6 +195,7 @@ const [headerInfoVisible, setHeaderInfoVisible] = React.useState(false)
           </EuiToolTip>
         </div>
         <div className="info-item">
+          <span>时延：</span>
           <EuiToolTip
             position="top"
             content={
@@ -227,7 +230,8 @@ const [headerInfoVisible, setHeaderInfoVisible] = React.useState(false)
       <Drawer title="Request header info" 
         style={{zIndex:1004}}
         width={520}
-        
+        mask={false}
+        // getContainer={container.current}
         destroyOnClose={true}
         visible={headerInfoVisible}
         onClose={()=>{setHeaderInfoVisible(false)}}

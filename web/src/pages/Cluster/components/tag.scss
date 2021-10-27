@@ -1,0 +1,22 @@
+.tag-list{
+  display: flex;
+  align-items: center;
+  .tag{
+    margin-left: 10px;
+    display: inline-block;
+    border: 1px solid #e8e8e8;
+    cursor: pointer;
+    &.checked{
+      background: #1890ff;
+      color: #fff;
+    }
+    >.wrapper{
+      font-size: 12px;
+      line-height: 2em;
+      padding: 0 10px;
+    }
+  }
+  .tag:first-child{
+    margin-left: 0px;
+  }
+}

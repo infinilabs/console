@@ -33,6 +33,15 @@ export default [
       //           { path: '/', redirect: '/' },
       //         ],
       //       },
+      {
+        path: '/cluster/overview_new',
+        name: 'overview',
+        component: './Cluster/NewOverview',
+        // hideInMenu: true,
+        routes:[
+          { path: '/', redirect: '/' },
+        ],
+      },
           {
               path: '/cluster/overview',
               name: 'overview',
@@ -469,6 +478,12 @@ export default [
             path: '/system/cluster/edit',
             name: 'editCluster',
             component: './System/Cluster/Form',
+            hideInMenu: true
+          },
+          {
+            path: '/system/command',
+            name: 'command',
+            component: './System/Command/Index',
             hideInMenu: true
           },
           // {

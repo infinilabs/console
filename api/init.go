@@ -44,6 +44,7 @@ func Init(cfg *config.AppConfig) {
 
 	ui.HandleUIMethod(api.POST,  path.Join(pathPrefix, "elasticsearch/command"), handler.HandleSaveCommonCommandAction)
 	ui.HandleUIMethod(api.GET, path.Join(pathPrefix, "elasticsearch/command"), handler.HandleQueryCommonCommandAction)
+	ui.HandleUIMethod(api.DELETE, path.Join(pathPrefix, "elasticsearch/command/:cid"), handler.HandleDeleteCommonCommandAction)
 
 	//new api
 	ui.HandleUIMethod(api.GET,  path.Join(pathPrefix, "alerting/overview"), alerting.GetAlertOverview)

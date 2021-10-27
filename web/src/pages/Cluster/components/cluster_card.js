@@ -11,7 +11,7 @@ const ClusterCard = ()=>{
                 <span class="text">Availability History(Last 7 Days)</span>
             </div>
             <div class="info-middle">
-                <span class="label">100.0%</span>
+                <span class="label font-bold">100.0%</span>
                 <span class="label label-primary">128 Nodes</span>
                 <span class="label label-primary">1280 Shards</span>
             </div>

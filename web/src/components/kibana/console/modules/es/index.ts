@@ -34,7 +34,7 @@
 import $ from 'jquery';
 // @ts-ignore
 import { stringify } from 'query-string';
-import {pathPrefix} from '@/services/common';
+import {pathPrefix, ESPrefix} from '@/services/common';
 
 interface SendOptions {
   asSystemRequest?: boolean;
@@ -48,7 +48,7 @@ export function getVersion() {
 }
 
 export function getContentType(body: unknown) {
-  if (!body) return;
+  if (!body) return 'text/plain';
   return 'application/json';
 }
 
@@ -75,11 +75,12 @@ export function send(
   // }
   // @ts-ignore
   const options: JQuery.AjaxSettings = {
-    url: `/elasticsearch/${clusterID}/_proxy?` + stringify({ path, method }),
-    headers: {
-      'infini-xsrf': 'search-center',
-      ...(asSystemRequest && { 'infini-request': 'true' }),
-    },
+    url: `${ESPrefix}/${clusterID}/_proxy?` + stringify({ path, method }),
+    // headers: {
+    //   'infini-xsrf': 'search-center',
+    //   'origin': location.origin,
+    //   ...(asSystemRequest && { 'infini-request': 'true' }),
+    // },
     data,
     contentType: getContentType(data),
     cache: false,

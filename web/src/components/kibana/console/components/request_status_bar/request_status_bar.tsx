@@ -65,85 +65,11 @@ const mapStatusCodeToBadgeColor = (statusCode: number) => {
   return 'danger';
 };
 
-// export const RequestStatusBar: FunctionComponent<Props> = ({
-//   requestInProgress,
-//   requestResult,
-//   selectedCluster,
-// }) => {
-//   let content: React.ReactNode = null;
-//   const clusterContent = (<EuiFlexItem grow={false} style={{marginRight:'auto'}}>
-//   <EuiBadge style={{position:'relative', paddingLeft: 20}}>
-//     <i style={{marginRight:3, position:'absolute', top: 1, left:3}}><HealthStatusCircle status={selectedCluster.status}/></i>{selectedCluster.host}&nbsp;-&nbsp;{selectedCluster.version}
-//   </EuiBadge>
-// </EuiFlexItem>);
-
-//   if (requestInProgress) {
-//     content = (
-//       <EuiFlexItem grow={false}>
-//         <EuiBadge color="hollow">
-//            Request in progress
-//         </EuiBadge>
-//       </EuiFlexItem>
-//     );
-//   } else if (requestResult) {
-//     const { endpoint, method, statusCode, statusText, timeElapsedMs } = requestResult;
-
-//     content = (
-//       <>
-//         <EuiFlexItem grow={false}>
-//           <EuiToolTip
-//             position="top"
-//             content={
-//               <EuiText size="s">{`${method} ${
-//                 endpoint.startsWith('/') ? endpoint : '/' + endpoint
-//               }`}</EuiText>
-//             }
-//           >
-//             <EuiBadge color={mapStatusCodeToBadgeColor(statusCode)}>
-//               {/*  Use &nbsp; to ensure that no matter the width we don't allow line breaks */}
-//               {statusCode}&nbsp;-&nbsp;{statusText}
-//             </EuiBadge>
-//           </EuiToolTip>
-//         </EuiFlexItem>
-//         <EuiFlexItem grow={false}>
-//           <EuiToolTip
-//             position="top"
-//             content={
-//               <EuiText size="s">
-//                 Time Elapsed
-//               </EuiText>
-//             }
-//           >
-//             <EuiText size="s">
-//               <EuiBadge color="default">
-//                 {timeElapsedMs}&nbsp;{'ms'}
-//               </EuiBadge>
-//             </EuiText>
-//           </EuiToolTip>
-//         </EuiFlexItem>
-//       </>
-//     );
-//   }
-
-//   return (
-//     <EuiFlexGroup
-//       justifyContent="flexEnd"
-//       alignItems="center"
-//       direction="row"
-//       gutterSize="s"
-//       responsive={false}
-//     >
-//       {clusterContent}
-//       {content}
-//     </EuiFlexGroup>
-//   );
-// };
-
 export const RequestStatusBar = ({
   requestInProgress,
   requestResult,
   selectedCluster,
-  container,
+  left,
 }:Props) => {
   let content: React.ReactNode = null;
   const clusterContent = (<div className="base-info">
@@ -225,8 +151,8 @@ const [headerInfoVisible, setHeaderInfoVisible] = React.useState(false)
 
   return (
     <div className="request-status-bar">
-      <div className="bar-item">{clusterContent}</div>
-      <div className="bar-item">{content}</div>
+      {left? <div className="bar-item">{clusterContent}</div>:
+      [<div className="bar-item">{content}</div>,
       <Drawer title="Request header info" 
         style={{zIndex:1004}}
         width={520}
@@ -251,7 +177,8 @@ const [headerInfoVisible, setHeaderInfoVisible] = React.useState(false)
           </EuiCodeBlock>
         </Tabs.TabPane>
         </Tabs>
-        </Drawer>
+        </Drawer>]
+      }
     </div>
     
   );

@@ -1,5 +1,5 @@
 // @ts-ignore
-import React, { useRef, useMemo,useEffect, useLayoutEffect } from 'react';
+import React, { useRef, useMemo,useEffect, useLayoutEffect, useState } from 'react';
 import ConsoleInput from './ConsoleInput';
 import ConsoleOutput from './ConsoleOutput';
 import { Panel } from './Panel';
@@ -40,61 +40,68 @@ const ConsoleWrapper = ({
   } = useRequestReadContext();
 
   const lastDatum = requestData?.[requestData.length - 1] ?? requestError;
-  const getElementTop = (elem: any)=>{
-    　　var elemTop=elem.offsetTop;
-    　　elem=elem.offsetParent;
-    
-    　　while(elem!=null){ 
-    　　　　elemTop+=elem.offsetTop;
-    　　　　elem=elem.offsetParent;     
-    　　}
-    
-    　　return elemTop;
-    
-    }
-    const statusBarRef = useRef<HTMLDivElement>(null);
-    const consoleRef = useRef<HTMLDivElement>(null);
-
-    // useEffect(()=>{
-    //   const winScroll = ()=>{
-    //     const wsTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop;
-    //     if(wsTop>getElementTop(consoleRef.current)) {
-    //       statusBarRef.current && (statusBarRef.current.style.position='relative');
-    //     }else{
-    //       statusBarRef.current && (statusBarRef.current.style.position='fixed');
-    //     }
-    //   }
-    //   window.addEventListener('scroll', winScroll, {passive:true})
-    //   return ()=>{
-    //     window.removeEventListener('scroll', winScroll)
-    //   }
-    // },[])
-
-    useEventListener('resize', ()=>{
-      statusBarRef.current && consoleRef.current && (statusBarRef.current.style.width=consoleRef.current.offsetWidth+'px');
-    })
-
-    useLayoutEffect(()=>{
-      // console.log(consoleRef.current?.offsetWidth)
-      if(consoleRef.current.offsetWidth>0)
-      statusBarRef.current && consoleRef.current && (statusBarRef.current.style.width=consoleRef.current.offsetWidth+'px');
-    }, [consoleRef.current?.offsetWidth])
 
   const calcHeight = height > 0 ? (height-35)+'px' : '100%';
+  const leftBarRef = useRef(null)
+  const rightBarRef = useRef(null)
+  const [widths, setWidths] = useState(['50%', '50%'])
+  const onPanelWidthChange = (widths:any)=>{
+    const [lp, rp] = widths;
+    setWidths([lp+2+'%', rp+'%']);
+  }
 
   return ( 
     <div style={{height: calcHeight}}>
-    <div ref={consoleRef} className="Console" style={{height:'100%'}}>
-      <PanelsContainer resizerClassName="resizer">
+    <div className="Console" style={{height:'100%'}}>
+      <PanelsContainer resizerClassName="resizer" onPanelWidthChange={onPanelWidthChange}>
         <Panel style={{ height: '100%', position: 'relative', minWidth: PANEL_MIN_WIDTH }} initialWidth={INITIAL_PANEL_WIDTH}>
           <ConsoleInput clusterID={selectedCluster.id} saveEditorContent={saveEditorContent} initialText={initialText} paneKey={paneKey} />
+          <div ref={leftBarRef} style={{background:'#fff', position:'fixed', left:0, bottom:0, width: widths[0], height:30, zIndex:1001, borderTop: '1px solid #eee'}}>
+            <RequestStatusBar
+                requestInProgress={requestInProgress}
+                selectedCluster={selectedCluster}
+                left={true}
+                requestResult={
+                  lastDatum
+                    ? {
+                        method: lastDatum.request.method.toUpperCase(),
+                        endpoint: lastDatum.request.path,
+                        statusCode: lastDatum.response.statusCode,
+                        statusText: lastDatum.response.statusText,
+                      timeElapsedMs: lastDatum.response.timeMs,
+                      requestHeader: lastDatum.request.header,
+                      responseHeader: lastDatum.response.header,
+                    }
+                  : undefined
+              }
+            />
+          </div>
         </Panel>
         <Panel style={{ height: '100%', position: 'relative', minWidth: PANEL_MIN_WIDTH }} initialWidth={INITIAL_PANEL_WIDTH}>
           <ConsoleOutput clusterID={selectedCluster.id} /> 
+          <div ref={rightBarRef} style={{background:'#fff', position:'fixed', right:0, bottom:0, width: widths[1], height:30, zIndex:1001, borderTop: '1px solid #eee'}}>
+            <RequestStatusBar
+                requestInProgress={requestInProgress}
+                selectedCluster={selectedCluster}
+                requestResult={
+                  lastDatum
+                    ? {
+                        method: lastDatum.request.method.toUpperCase(),
+                        endpoint: lastDatum.request.path,
+                        statusCode: lastDatum.response.statusCode,
+                        statusText: lastDatum.response.statusText,
+                      timeElapsedMs: lastDatum.response.timeMs,
+                      requestHeader: lastDatum.request.header,
+                      responseHeader: lastDatum.response.header,
+                    }
+                  : undefined
+              }
+            />
+          </div>
         </Panel>
       </PanelsContainer>
     </div>
-    <div ref={statusBarRef} style={{ position:'fixed', bottom:0, borderTop: '1px solid #eee', zIndex:1001, width:'100%'}}>
+    {/* <div ref={statusBarRef} style={{ position:'fixed', bottom:0, borderTop: '1px solid #eee', zIndex:1001, width:'100%'}}>
       <div style={{background:'#fff',height:30,  width:'100%'}}>
             <RequestStatusBar
               requestInProgress={requestInProgress}
@@ -115,7 +122,7 @@ const ConsoleWrapper = ({
             }
           />
         </div>
-      </div>
+      </div> */}
   </div>          
   );
 };

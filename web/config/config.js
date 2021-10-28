@@ -49,6 +49,8 @@ export default {
   },
   define: {
     APP_TYPE: process.env.APP_TYPE || '',
+    ENV:  process.env.NODE_ENV,
+    API_ENDPOINT: 'http://localhost:2900',
   },
   // 路由配置
   routes: pageRoutes,

@@ -15,6 +15,7 @@ import styles from '../System/Cluster/step.less';
 import clusterBg from '@/assets/cluster_bg.png';
 
 import { connect } from 'dva';
+import {ESPrefix} from '@/services/common';
 
 
 const createContent = (
@@ -42,7 +43,7 @@ const IndexPatterns = (props)=> {
   const createComponentKey = useMemo(()=>{
     const {http, uiSettings} = useGlobalContext();
     http.getServerBasePath = ()=>{
-      return  '/elasticsearch/'+ props.selectedCluster.id;
+      return  `${ESPrefix}/`+ props.selectedCluster.id;
     }
     return 'CreateIndexPatternWizard_'+Math.random();
   },[props.selectedCluster]);

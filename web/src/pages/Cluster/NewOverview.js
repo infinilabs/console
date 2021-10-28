@@ -19,6 +19,7 @@ const NewOverview = ()=>{
       onChange={()=>{}}
       type="card"
       tabBarGutter={10}
+      tabindex="-1"
       >
         {panes.map(pane => (
           <TabPane tab={pane.title} key={pane.key}>

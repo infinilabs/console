@@ -1,8 +1,8 @@
 import request from '@/utils/request';
-import {buildQueryArgs, pathPrefix} from './common';
+import {buildQueryArgs, ESPrefix} from './common';
 
 export async function getClusterVersion(params) {
-    return request(`/elasticsearch/${params.cluster}/version`, {
+    return request(`${ESPrefix}/${params.cluster}/version`, {
         method: 'GET'
     });
 }
@@ -10,13 +10,13 @@ export async function getClusterVersion(params) {
 export async function getClusterMetrics(params) {
     let id = params.cluster_id;
     delete(params['cluster_id']);
-    return request(`/elasticsearch/${id}/metrics?min=${params.timeRange.min}&max=${params.timeRange.max}`, {
+    return request(`${ESPrefix}/${id}/metrics?min=${params.timeRange.min}&max=${params.timeRange.max}`, {
         method: 'GET'
     });
 }
 
 export async function createClusterConfig(params) {
-    return request(`/elasticsearch/`, {
+    return request(`${ESPrefix}/`, {
         method: 'POST',
         body: params,
     });
@@ -25,21 +25,21 @@ export async function createClusterConfig(params) {
 export async function updateClusterConfig(params) {
     let id = params.id;
     delete(params['id']);
-    return request(`/elasticsearch/${id}`, {
+    return request(`${ESPrefix}/${id}`, {
         method: 'PUT',
         body: params,
     });
 }
 
 export async function deleteClusterConfig(params) {
-    return request(`/elasticsearch/${params.id}`, {
+    return request(`${ESPrefix}/${params.id}`, {
         method: 'DELETE',
         body: params,
     });
 }
 
 export async function searchClusterConfig(params) {
-    let url = `/elasticsearch/_search`;
+    let url = `${ESPrefix}/_search`;
     let args = buildQueryArgs({
         name: params.name,
         enabled: params.enabled,
@@ -55,14 +55,14 @@ export async function searchClusterConfig(params) {
 }
 
 export async function getClusterStatus(params) {
-    let url = `/elasticsearch/status`;
+    let url = `${ESPrefix}/status`;
     return request(url, {
         method: 'GET',
     });
 }
 
 export async function tryConnect(params) {
-    let url = `/elasticsearch/try_connect`;
+    let url = `${ESPrefix}/try_connect`;
     return request(url, {
         method: 'POST',
         body: params,

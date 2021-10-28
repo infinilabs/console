@@ -23,6 +23,7 @@ import {
 import {FieldFormatsRegistry,} from '../../components/kibana/data/common/field_formats';
 import {baseFormattersPublic} from '../../components/kibana/data/public/field_formats';
 import { deserializeFieldFormat } from '../../components/kibana/data/public/field_formats/utils/deserialize';
+import {ESPrefix} from '@/services/common'
 
 const timeBucketConfig = {
   'histogram:maxBars': 100,
@@ -304,7 +305,7 @@ const getSearchParams = (indexPattern, internal, sort) =>{
 }
 
 const fetchESRequest = (params, clusterID) => {
-  return fetch(`/elasticsearch/${clusterID}/search/ese`, {
+  return fetch(`${ESPrefix}/${clusterID}/search/ese`, {
     headers:{
       'Content-Type': 'application/json',
     },

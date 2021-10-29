@@ -1,6 +1,7 @@
 import Console from '../../components/kibana/console/components/Console';
 import {connect} from 'dva';
-import {Tabs, Button, Icon, Menu, Dropdown} from 'antd';
+import {Button, Icon, Menu, Dropdown, Tabs} from 'antd';
+// import Tabs from '@/components/infini/tabs';
 import {useState, useReducer, useCallback, useEffect, useMemo, useRef, useLayoutEffect} from 'react';
 import {useLocalStorage} from '@/lib/hooks/storage';
 import {setClusterID} from '../../components/kibana/console/modules/mappings/mappings';

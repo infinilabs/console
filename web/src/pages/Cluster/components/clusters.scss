@@ -9,6 +9,7 @@
         &.left{
           border-right: 1px solid rgb(232, 232, 232);
           padding-right: 15px;
+          min-width: 642px;
           .card-cnt{
             margin-top: 10px;
             .ant-list-item{

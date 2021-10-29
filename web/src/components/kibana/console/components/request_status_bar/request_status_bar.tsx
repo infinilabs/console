@@ -22,6 +22,7 @@ import { EuiFlexGroup, EuiFlexItem, EuiBadge, EuiText, EuiToolTip,EuiCodeBlock }
 import {HealthStatusCircle} from '@/components/infini/health_status_circle';
 import './request_status_bar.scss';
 import {Drawer, Tabs, Button} from 'antd';
+import { FormattedMessage, formatMessage } from 'umi/locale';
 
 export interface Props {
   requestInProgress: boolean;
@@ -74,18 +75,18 @@ export const RequestStatusBar = ({
   let content: React.ReactNode = null;
   const clusterContent = (<div className="base-info">
       <div className="info-item health">
-        <span>健康状态：</span>
+        <span> <FormattedMessage id="console.cluster.status"/>：</span>
         <i style={{position:'absolute', top: 1, right:0}}>
         <HealthStatusCircle status={selectedCluster.status}/>
         </i>
       </div>
       <div className="info-item">
-        <span>集群地址：</span>
-        <EuiBadge color="default">{selectedCluster.host}</EuiBadge>
+        <span><FormattedMessage id="console.cluster.endpoint"/>：</span>
+         <EuiBadge color="default">{selectedCluster.host}</EuiBadge>
       </div>
       <div className="info-item">
-        <span>版本：</span>
-        <EuiBadge color="default"> {selectedCluster.version}</EuiBadge>
+        <span><FormattedMessage id="console.cluster.version"/>：</span>
+        <EuiBadge color="default">{selectedCluster.version}</EuiBadge>
       </div> 
 </div>);
 const [headerInfoVisible, setHeaderInfoVisible] = React.useState(false)
@@ -105,7 +106,7 @@ const [headerInfoVisible, setHeaderInfoVisible] = React.useState(false)
       <>
       <div className="status_info">
         <div className="info-item">
-          <span>响应状态：</span>
+          <span><FormattedMessage id="console.response.status"/>：</span>
           <EuiToolTip
             position="top"
             content={
@@ -114,14 +115,16 @@ const [headerInfoVisible, setHeaderInfoVisible] = React.useState(false)
               }`}</EuiText>
             }
           >
-            <EuiBadge color={mapStatusCodeToBadgeColor(statusCode)}>
-              {/*  Use &nbsp; to ensure that no matter the width we don't allow line breaks */}
-              {statusCode}&nbsp;-&nbsp;{statusText}
-            </EuiBadge>
+             <EuiText size="s">
+              <EuiBadge color={mapStatusCodeToBadgeColor(statusCode)}>
+                {/*  Use &nbsp; to ensure that no matter the width we don't allow line breaks */}
+                {statusCode}&nbsp;-&nbsp;{statusText}
+              </EuiBadge>
+             </EuiText>
           </EuiToolTip>
         </div>
         <div className="info-item">
-          <span>时延：</span>
+          <span><FormattedMessage id="console.response.time_elapsed"/>：</span>
           <EuiToolTip
             position="top"
             content={
@@ -138,11 +141,10 @@ const [headerInfoVisible, setHeaderInfoVisible] = React.useState(false)
           </EuiToolTip>
         </div>
         <div className="info-item">
-          <EuiText size="s">
-            <Button type="link" onClick={()=>{setHeaderInfoVisible(true)}}>
-              Headers
-            </Button>
-          </EuiText>
+            {/* <Button type="link" onClick={()=>{setHeaderInfoVisible(true)}}> */}
+            {/* <FormattedMessage id="console.request.headers"/> */}
+            Headers
+            {/* </Button> */}
         </div>
         </div>
       </>

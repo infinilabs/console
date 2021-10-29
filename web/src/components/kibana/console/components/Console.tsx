@@ -41,22 +41,22 @@ const ConsoleWrapper = ({
 
   const lastDatum = requestData?.[requestData.length - 1] ?? requestError;
 
-  const calcHeight = height > 0 ? (height-35)+'px' : '100%';
-  const leftBarRef = useRef(null)
-  const rightBarRef = useRef(null)
-  const [widths, setWidths] = useState(['50%', '50%'])
-  const onPanelWidthChange = (widths:any)=>{
-    const [lp, rp] = widths;
-    setWidths([lp+2+'%', rp+'%']);
-  }
+  const calcHeight = height > 0 ? (height)+'px' : '100%';
+  // const leftBarRef = useRef(null)
+  // const rightBarRef = useRef(null)
+  // const [widths, setWidths] = useState(['calc(50% - 7px)', 'calc(50% - 7px)'])
+  // const onPanelWidthChange = (widths:any)=>{
+  //   const [lp, rp] = widths;
+  //   setWidths([lp+'%', rp+'%']);
+  // }
 
   return ( 
     <div style={{height: calcHeight}}>
     <div className="Console" style={{height:'100%'}}>
-      <PanelsContainer resizerClassName="resizer" onPanelWidthChange={onPanelWidthChange}>
-        <Panel style={{ height: '100%', position: 'relative', minWidth: PANEL_MIN_WIDTH }} initialWidth={INITIAL_PANEL_WIDTH}>
+      <PanelsContainer resizerClassName="resizer">
+        <Panel style={{ height: '100%', position: 'relative', minWidth: PANEL_MIN_WIDTH, paddingBottom:30 }} initialWidth={INITIAL_PANEL_WIDTH}>
           <ConsoleInput clusterID={selectedCluster.id} saveEditorContent={saveEditorContent} initialText={initialText} paneKey={paneKey} />
-          <div ref={leftBarRef} style={{background:'#fff', position:'fixed', left:0, bottom:0, width: widths[0], height:30, zIndex:1001, borderTop: '1px solid #eee'}}>
+          <div style={{background:'#fff', position:'absolute', left:0, bottom:0, width: '100%', height:30, zIndex:1001, borderTop: '1px solid #eee'}}>
             <RequestStatusBar
                 requestInProgress={requestInProgress}
                 selectedCluster={selectedCluster}
@@ -77,9 +77,9 @@ const ConsoleWrapper = ({
             />
           </div>
         </Panel>
-        <Panel style={{ height: '100%', position: 'relative', minWidth: PANEL_MIN_WIDTH }} initialWidth={INITIAL_PANEL_WIDTH}>
+        <Panel style={{ height: '100%', position: 'relative', minWidth: PANEL_MIN_WIDTH, paddingBottom:30 }} initialWidth={INITIAL_PANEL_WIDTH}>
           <ConsoleOutput clusterID={selectedCluster.id} /> 
-          <div ref={rightBarRef} style={{background:'#fff', position:'fixed', right:0, bottom:0, width: widths[1], height:30, zIndex:1001, borderTop: '1px solid #eee'}}>
+          <div style={{background:'#fff', position:'absolute', right:0, bottom:0, width: '100%', height:30, zIndex:1001, borderTop: '1px solid #eee'}}>
             <RequestStatusBar
                 requestInProgress={requestInProgress}
                 selectedCluster={selectedCluster}

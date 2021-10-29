@@ -96,16 +96,16 @@
   width: 50%;
   display: flex;
   justify-content: space-between;
-  background-color: lightgray;
+  //background-color: lightgray;
 }
 .cluster-item .cluster-chart .chart-top .pie-chart .item {
   width: 50%;
 }
 .cluster-item .cluster-chart .chart-top .pie-chart .item.pie1{
-  background-color: goldenrod;
+  //background-color: goldenrod;
 }
 .cluster-item .cluster-chart .chart-top .pie-chart .item.pie2{
-  background-color: greenyellow;
+  //background-color: greenyellow;
 }
 .cluster-item .cluster-chart .chart-top .line-chart {
   height: 80px;
@@ -117,11 +117,18 @@
   height: 40px;
   width: 100%;
 }
+
+.cluster-item .cluster-chart .chart-top .line-chart .item .line-subtitle{
+  margin-top: -5px;
+  text-align: center;
+  font-size: 10px;
+}
 .cluster-item .cluster-chart .chart-top .line-chart .item.line1{
-  background-color: #ff8080;
+  //background-color: #ff8080;
+  margin-top: -10px;
 }
 .cluster-item .cluster-chart .chart-top .line-chart .item.line2{
-  background-color: lightseagreen;
+  //background-color: lightseagreen;
 }
 .cluster-item .cluster-chart .chart-bottom {
   height: 26px;

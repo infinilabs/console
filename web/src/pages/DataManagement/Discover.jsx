@@ -49,7 +49,8 @@ import {generateFilters} from '../../components/kibana/data/public/query/filter_
 import Table from '../../components/kibana/discover/public/application/components/discover_table/table';
 
 import {useQueryParam, StringParam, QueryParamProvider, ArrayParam} from 'use-query-params';
-import {Route} from 'umi'
+import {Route} from 'umi';
+import {ESPrefix} from '@/services/common';
  
 const SidebarMemoized = React.memo(DiscoverSidebar);
 
@@ -550,7 +551,7 @@ const DiscoverUI = (props)=>{
   useMemo(()=>{
     const {http} = getContext();
     http.getServerBasePath = ()=>{
-      return  '/elasticsearch/'+ props.selectedCluster.id;
+      return  `${ESPrefix}/`+ props.selectedCluster.id;
     }
   }, [props.selectedCluster])
   useEffect(()=>{

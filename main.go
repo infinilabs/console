@@ -67,6 +67,14 @@ func main() {
 		appUI = &UI{Config: appConfig}
 		appUI.InitUI()
 
+		//uiConfig := ui.UIConfig{}
+		//env.ParseConfig("web", &uiConfig)
+		//
+		//if len(global.Env().SystemConfig.APIConfig.CrossDomain.AllowedOrigins)==0{
+		//	global.Env().SystemConfig.APIConfig.CrossDomain.AllowedOrigins=
+		//		append(global.Env().SystemConfig.APIConfig.CrossDomain.AllowedOrigins,uiConfig.NetworkConfig.GetBindingAddr())
+		//}
+
 		//start each module, with enabled provider
 		module.Start()
 

@@ -1,4 +1,5 @@
 import alert from './zh-CN/alert';
+import console from './zh-CN/console'; 
 
 export default {
   'navBar.lang': '语言',
@@ -158,6 +159,7 @@ export default {
   'menu.system.logs.audit': '审计日志',
   'menu.system.logs.query': '查询日志',
   'menu.system.logs.slow': '慢日志',
+  'menu.system.commonCommand': '常用命令',
 
 
   'menu.form': '表单页',
@@ -406,4 +408,5 @@ export default {
     '配置栏只在开发环境用于预览，生产环境不会展现，请拷贝后手动修改配置文件',
 
   ...alert,
+  ...console,
 };

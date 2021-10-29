@@ -1,4 +1,5 @@
 import alert from './en-US/alert';
+import console from './en-US/console';
 
 export default {
   'navBar.lang': 'Languages',
@@ -152,6 +153,7 @@ export default {
   'menu.system.logs.audit': 'AUDIT',
   'menu.system.logs.query': 'QUERY',
   'menu.system.logs.slow': 'SLOW',
+  'menu.system.commonCommand': 'COMMON COMMAND',
 
 
   'menu.form': 'Form',
@@ -405,4 +407,5 @@ export default {
     'Setting panel shows in development environment only, please manually modify',
 
   ...alert,
+  ...console,
 };

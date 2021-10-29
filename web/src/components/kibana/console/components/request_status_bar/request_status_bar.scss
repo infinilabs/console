@@ -1,15 +1,14 @@
 .request-status-bar{
-  display: flex;
-  justify-content: center;
-  align-items: center;
   height: 100%;
   .bar-item{
-    flex: 0 0 50%;
+    height: 100%;
     .base-info{
       display: flex;
-      font-size: 12px;
+      font-size: 12px; 
+      align-items: center;
+      margin-top: 2px;
       .info-item{
-        margin: 12px;
+        margin: 0 12px;
         position: relative;
         &.health{
           padding-right: 14px;
@@ -21,7 +20,7 @@
       font-size: 12px;
       align-items: center;
       .info-item{
-        margin: 12px;
+        margin: 0 12px;
       }
     }
   }

@@ -482,7 +482,7 @@ export default [
           },
           {
             path: '/system/command',
-            name: 'command',
+            name: 'commonCommand',
             component: './System/Command/Index',
             hideInMenu: true
           },

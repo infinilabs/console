@@ -7,6 +7,7 @@ import {ScopedHistory} from '../../components/kibana/core/public/application/sco
 import {notification} from 'antd';
 import {connect} from 'dva'
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
+import {ESPrefix} from '@/services/common'
 
 const httpClient = new Fetch({
   basePath:{
@@ -41,7 +42,7 @@ const AlertingUI =  (props)=>{
   }
   useMemo(()=>{
     httpClient.params.basePath.prepend = (url)=>{
-      return  '/elasticsearch/'+ props.selectedCluster.id +"/" + url;
+      return  `${ESPrefix}/${props.selectedCluster.id}/${url}`;
     }
   }, [props.selectedCluster]);
   const isDarkMode = false;

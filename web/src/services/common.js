@@ -1,4 +1,4 @@
-export const pathPrefix = '/_search-center';
+export const pathPrefix = (API_ENDPOINT || '') + '/_search-center';
 
 export function buildQueryArgs(params){
   let argsStr = '';
@@ -14,4 +14,4 @@ export function buildQueryArgs(params){
   return argsStr;
 }
 
-export const ESPrefix = '/elasticsearch';
+export const ESPrefix = (API_ENDPOINT || '') + '/elasticsearch';

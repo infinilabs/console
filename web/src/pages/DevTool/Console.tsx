@@ -1,7 +1,8 @@
 import Console from '../../components/kibana/console/components/Console';
 import {connect} from 'dva';
-import {Button, Icon, Menu, Dropdown, Tabs} from 'antd';
-// import Tabs from '@/components/infini/tabs';
+import {Button, Icon, Menu, Dropdown, } from 'antd';
+import Tabs from '@/components/infini/tabs';
+import {DraggableTabs} from '@/components/infini/tabs/DraggableTabs';
 import {useState, useReducer, useCallback, useEffect, useMemo, useRef, useLayoutEffect} from 'react';
 import {useLocalStorage} from '@/lib/hooks/storage';
 import {setClusterID} from '../../components/kibana/console/modules/mappings/mappings';
@@ -9,6 +10,7 @@ import {TabTitle} from './console_tab_title';
 import '@/assets/utility.scss';
 import { Resizable } from "re-resizable";
 import {ResizeBar} from '@/components/infini/resize_bar';
+import NewTabMenu from './NewTabMenu';
 
 const { TabPane } = Tabs;
 
@@ -94,6 +96,11 @@ const consoleTabReducer = (state: any, action: any) => {
         panes,
       });
       break;
+    case 'saveOrder':
+      newState = ({
+        ...state,
+        order: action.payload.order,
+      });
     default:
   }
   // setLocalState(newState);
@@ -123,8 +130,8 @@ export const ConsoleUI = ({selectedCluster,
       return cm;
     }
     (clusterList || []).map((cluster: any)=>{
-      cluster.status = clusterStatus[cluster.id].health?.status;
-      if(!clusterStatus[cluster.id].available){
+      cluster.status = clusterStatus[cluster.id]?.health?.status;
+      if(!clusterStatus[cluster.id]?.available){
         cluster.status = 'unavailable';
       }     
       cm[cluster.id] = cluster;
@@ -184,7 +191,7 @@ export const ConsoleUI = ({selectedCluster,
   };
 
   const newTabClick = useCallback((param: any)=>{
-    const cluster = clusterList.find(item=>item.id == param.key);
+    const cluster = clusterList.find(item=>item.id == param.id);
     if(!cluster){
       console.log('cluster not found')
       return;
@@ -198,11 +205,16 @@ export const ConsoleUI = ({selectedCluster,
   },[clusterList])
 
   const menu = (
-    <Menu onClick={newTabClick}>
-      {(clusterList||[]).map((cluster:any)=>{
-        return <Menu.Item key={cluster.id}>{cluster.name}</Menu.Item>
-      })}
-    </Menu>
+    // <Menu onClick={newTabClick}>
+    //   {(clusterList||[]).map((cluster:any)=>{
+    //     return <Menu.Item key={cluster.id}>{cluster.name}</Menu.Item>
+    //   })}
+    // </Menu>
+    <NewTabMenu data={clusterList} 
+    onItemClick={newTabClick}
+    clusterStatus={clusterStatus} 
+    size={10}
+    width="300px"/>
   );
   
   const rootRef = useRef(null);
@@ -220,26 +232,35 @@ export const ConsoleUI = ({selectedCluster,
     setIsFullscreen(!isFullscreen)
   }
 
-  const tabBarExtra =(
+  const tabBarExtra ={
+    left: <div>
+        {minimize? <Button size="small" onClick={onMinimizeClick} style={{marginLeft:5}} title="Close">
+            {/* <Icon type="minus"/> */}
+            <Icon type="poweroff"/>
+        </Button>:null}
+        </div>,
+    right:(
     <div>
-      <Dropdown overlay={menu}>
-        <Button size="small" style={{marginRight:5}}>
-            <Icon type="plus"/>
-        </Button>
-      </Dropdown>
       {isFullscreen?
        <Button size="small" onClick={fullscreenClick}>
             <Icon type="fullscreen-exit"/>
         </Button>:
-       <Button size="small" onClick={fullscreenClick}>
+       <Button size="small" onClick={fullscreenClick} title="Fullscreen">
             <Icon type="fullscreen"/>
         </Button>
       }
-      {minimize? <Button size="small" onClick={onMinimizeClick} style={{marginLeft:5}}>
-            <Icon type="minus"/>
-        </Button>:null}
       </div>
-  );
+  ),
+  append:(
+    <div>
+        <Dropdown overlay={menu} placement="bottomLeft">
+        <Button size="small" style={{marginRight:5}}>
+            <Icon type="plus"/>
+        </Button>
+      </Dropdown>
+    </div>
+  )
+};
 
   setClusterID(tabState.activeKey?.split(':')[0]);
   const panes = tabState.panes.filter((pane: any)=>{
@@ -268,6 +289,14 @@ export const ConsoleUI = ({selectedCluster,
   const enableWindowScroll = ()=>{
     document.body.style.overflow = '';
   }
+  const onTabNodeMoved=(newOrder:string[])=>{
+    dispatch({
+      type:'saveOrder',
+      payload: {
+       order: newOrder,
+      }
+    })
+  }
   
   
   return (
@@ -275,7 +304,7 @@ export const ConsoleUI = ({selectedCluster,
     defaultSize={{
       height: editorHeight||'50vh'
     }}
-    minHeight={200}
+    minHeight={70}
     maxHeight="100vh"
     handleComponent={{ top: <ResizeBar/> }}
     onResize={onResize}
@@ -294,13 +323,15 @@ export const ConsoleUI = ({selectedCluster,
       onMouseOut={enableWindowScroll}
       id="console"
      ref={rootRef} >
-      <Tabs
+      <DraggableTabs
         onChange={onChange}
         activeKey={tabState.activeKey}
         type="editable-card"
         onEdit={onEdit}
         hideAdd
+        initialOrder={tabState.order}
         tabBarExtraContent={tabBarExtra}
+        onTabNodeMoved={onTabNodeMoved}
       >
         {panes.map(pane => (
           <TabPane tab={<TabTitle title={pane.title} onTitleChange={(title)=>{saveTitle(pane.key, title)}}/>} key={pane.key} closable={pane.closable}>
@@ -308,7 +339,7 @@ export const ConsoleUI = ({selectedCluster,
             {/*  {pane.content} */}
           </TabPane>
         ))}
-      </Tabs>
+      </DraggableTabs>
     </div>
   </Resizable>
   );

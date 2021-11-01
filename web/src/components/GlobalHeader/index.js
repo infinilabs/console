@@ -17,7 +17,7 @@ export default class GlobalHeader extends PureComponent {
    }
 
    componentDidMount() {
-
+    this.props.onFetchClusterList('', 200)
    }
 
     componentWillUnmount() {
@@ -40,6 +40,9 @@ export default class GlobalHeader extends PureComponent {
   };
   render() {
     const { collapsed, isMobile, logo, clusterVisible, clusterList, selectedCluster } = this.props;
+    if(clusterList.length == 0){
+      return null
+    }
     return (
       <div className={styles.header}>
         {isMobile && (
@@ -85,24 +88,6 @@ export default class GlobalHeader extends PureComponent {
            
           }}
           size={56}
-           fetchData={
-             this.props.onFetchClusterList
-          //   (from, size)=>{
-          //   return new Promise(resolve => {
-          //     setTimeout(() => {
-          //       let start = from;
-          //       let data =[]
-          //       for(let i = start + 1; i<start+size+1; i++){
-          //         if(start+size > 56){
-          //           break;
-          //         }
-          //         data.push('cluster'+i)
-          //       }
-          //       resolve(data)
-          //     }, 2000)
-          //   });
-          // }
-          }
         data={clusterList}/>
         <RightContent {...this.props} />
       </div>

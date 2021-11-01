@@ -89,7 +89,6 @@ export const RequestStatusBar = ({
         <EuiBadge color="default">{selectedCluster.version}</EuiBadge>
       </div> 
 </div>);
-const [headerInfoVisible, setHeaderInfoVisible] = React.useState(false)
 
   if (requestInProgress) {
     content = (
@@ -140,12 +139,6 @@ const [headerInfoVisible, setHeaderInfoVisible] = React.useState(false)
             </EuiText>
           </EuiToolTip>
         </div>
-        <div className="info-item">
-            {/* <Button type="link" onClick={()=>{setHeaderInfoVisible(true)}}> */}
-            {/* <FormattedMessage id="console.request.headers"/> */}
-            Headers
-            {/* </Button> */}
-        </div>
         </div>
       </>
     );
@@ -154,32 +147,7 @@ const [headerInfoVisible, setHeaderInfoVisible] = React.useState(false)
   return (
     <div className="request-status-bar">
       {left? <div className="bar-item">{clusterContent}</div>:
-      [<div className="bar-item">{content}</div>,
-      <Drawer title="Request header info" 
-        style={{zIndex:1004}}
-        width={520}
-        mask={false}
-        // getContainer={container.current}
-        destroyOnClose={true}
-        visible={headerInfoVisible}
-        onClose={()=>{setHeaderInfoVisible(false)}}
-      >
-        <Tabs>
-        <Tabs.TabPane tab="Request" key="1">
-          <div>
-          <EuiCodeBlock language="text" isCopyable paddingSize="s">
-            {requestResult?.requestHeader}
-          </EuiCodeBlock>
-            
-          </div>
-        </Tabs.TabPane>
-        <Tabs.TabPane tab="Response" key="2">
-          <EuiCodeBlock language="text" isCopyable paddingSize="s">
-            {requestResult?.responseHeader}
-          </EuiCodeBlock>
-        </Tabs.TabPane>
-        </Tabs>
-        </Drawer>]
+      [<div className="bar-item">{content}</div>,]
       }
     </div>
     

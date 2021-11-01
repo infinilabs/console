@@ -1,0 +1,24 @@
+.ant-tabs-top-bar{
+  display: flex;
+}
+.ant-tabs-extra-left{
+  order: 1;
+  flex: 0 0 auto;
+}
+.ant-tabs-nav-container{
+  order: 2;
+  flex: 0 0 auto;
+ 
+}
+.flex-tabbar .ant-tabs-top-bar .ant-tabs-nav-container{
+  max-width: calc(100% - 140px);
+}
+.ant-tabs-extra-append{
+  order: 3;
+  margin-left: 10px;
+}
+.ant-tabs-extra-right{
+  order: 4;
+  margin-left: auto;
+  flex: 0 0 auto;
+}

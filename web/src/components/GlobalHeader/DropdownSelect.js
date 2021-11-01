@@ -7,11 +7,16 @@ import {DropdownItem} from './DropdownItem';
 import {HealthStatusCircle} from '@/components/infini/health_status_circle'
 
 class DropdownSelect extends React.Component{
-  state={
-    value: this.props.defaultValue,
-    loading: false,
-    hasMore: true,
-    overlayVisible: false,
+  constructor(props){
+    super(props)
+    this.state={
+      value: props.defaultValue,
+      loading: false,
+      hasMore: props.data.length > props.size,
+      overlayVisible: false,
+      data: (props.data || []).slice(0, props.size),
+      dataSource: [...props.data],
+    }
   }
 
   handleItemClick = (item)=>{
@@ -28,47 +33,35 @@ class DropdownSelect extends React.Component{
   }
   
   componentDidMount(){
-    let me = this;
-    this.fetchData().then((data)=>{
-      let hasMore = true;
-      if(data.length < this.props.size){
-        hasMore = false;
-      }
-      me.setState({
-        hasMore
-      })
-    })
-  }
-  fetchData = (name)=>{
-    let me = this;
-    const {fetchData, size} = this.props;
-    let data = this.props.data || [];
-    return fetchData(name || '', size);
   }
 
-  handleInfiniteOnLoad = (name) => {
-    let { data } = this.props;
+  handleInfiniteOnLoad = (current) => {
+    let {size } = this.props;
+    let targetLength = current * size;
+    let {hasMore, dataSource} = this.state;
+    if(dataSource.length < targetLength){
+      targetLength = dataSource.length;
+      hasMore = false
+    }
+    const newData = this.state.dataSource.slice(0, targetLength);
+
     this.setState({
-      loading: true,
+      data: newData,
+      hasMore: hasMore,
     })
-    this.fetchData(name).then((newdata)=>{
-      let newState = {
-        loading: false,
-      };
-      if(newdata.length < this.props.size){
-        //message.info("no more data");
-        newState.hasMore = false;
-      }
-      this.setState(newState);
-    });
   }
 
   handleInputChange = (e) =>{
     const name = e.target.value;
+    const newData = this.props.data.filter(item=>{
+      return item.name.includes(name);
+    });
     this.setState({
       displayValue: name,
+      dataSource: newData,
+      data: newData,
+      hasMore: newData.length > this.props.size,
     })
-    this.handleInfiniteOnLoad(name);
   }
 
 
@@ -79,7 +72,7 @@ class DropdownSelect extends React.Component{
     let displayVaue = value[labelField];
     const menu = (<div className={styles.dropmenu} style={{width: this.props.width}}>
       <div className={styles.infiniteContainer} style={{height: this.props.height}}>
-        <div className="filter" style={{paddingTop: 10, paddingBottom:0}}>
+        <div className={styles.filter} style={{paddingTop: 10, paddingBottom:0}}>
          <input className={styles['btn-ds']} style={{outline:'none'}} onChange={this.handleInputChange} placeholder="输入集群名称查找" value={this.state.displayValue||''} />
         </div>
         <InfiniteScroll
@@ -89,8 +82,8 @@ class DropdownSelect extends React.Component{
             useWindow={false}
         >
         <div className={styles.dslist}>
-          {(!this.props.data || !this.props.data.length)&& <div style={{display:'flex', justifyContent:'center', alignItems: 'center', height:50}}>匹配不到集群(匹配规则为前缀匹配)</div>}
-          {(this.props.data || []).map((item)=>{
+          {(!this.state.data || !this.state.data.length)&& <div style={{display:'flex', justifyContent:'center', alignItems: 'center', height:50}}>匹配不到集群(匹配规则为前缀匹配)</div>}
+          {(this.state.data || []).map((item)=>{
             // return  <div className={styles.item}>
             //           <Button key={item[labelField]} 
             //           onClick={() => {

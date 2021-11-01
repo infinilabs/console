@@ -12,9 +12,10 @@ import {EditorContextProvider} from '../contexts/editor_context/editor_context';
 import { ServicesContextProvider } from '../contexts/services_context';
 import { createHistory, History, createStorage, createSettings } from '../services';
 import { create } from '../storage/local_storage_object_client';
-import { EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
+import { EuiFlexGroup, EuiFlexItem,EuiCodeBlock } from '@elastic/eui';
 import {RequestStatusBar} from './request_status_bar';
 import useEventListener from '@/lib/hooks/use_event_listener';
+import {Tabs} from 'antd';
 
 interface props {
   selectedCluster: any;
@@ -78,7 +79,28 @@ const ConsoleWrapper = ({
           </div>
         </Panel>
         <Panel style={{ height: '100%', position: 'relative', minWidth: PANEL_MIN_WIDTH, paddingBottom:30 }} initialWidth={INITIAL_PANEL_WIDTH}>
-          <ConsoleOutput clusterID={selectedCluster.id} /> 
+          <Tabs tabPosition='right' style={{height:'100%', width:'100%'}} size="small">
+            <Tabs.TabPane tab="Result" key="result">
+              <div style={{height:height-30}}>
+              <ConsoleOutput clusterID={selectedCluster.id} /> 
+              </div>
+             
+            </Tabs.TabPane>
+            <Tabs.TabPane tab="Headers" key="headers">
+              <Tabs>
+                <Tabs.TabPane tab="Request" key="1">
+                  <EuiCodeBlock language="text" isCopyable paddingSize="s">
+                    {lastDatum?.request.header}
+                  </EuiCodeBlock>
+                </Tabs.TabPane>
+                <Tabs.TabPane tab="Response" key="2">
+                  <EuiCodeBlock language="text" isCopyable paddingSize="s">
+                    {lastDatum?.response.header}
+                  </EuiCodeBlock>
+                </Tabs.TabPane>
+              </Tabs>
+            </Tabs.TabPane>
+          </Tabs>
           <div style={{background:'#fff', position:'absolute', right:0, bottom:0, width: '100%', height:30, zIndex:1001, borderTop: '1px solid #eee'}}>
             <RequestStatusBar
                 requestInProgress={requestInProgress}

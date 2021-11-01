@@ -32,4 +32,12 @@
       background-color: #cce1f0;
     }
   }
+  .ant-tabs-right-content{
+    padding-right: 0px;
+  }
+  .ant-tabs-right-bar .ant-tabs-tab{
+    padding: 8px 10px;
+    writing-mode: vertical-lr;
+    height: max-content;
+  }
 }

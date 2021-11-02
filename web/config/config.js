@@ -50,7 +50,7 @@ export default {
   define: {
     APP_TYPE: process.env.APP_TYPE || '',
     ENV:  process.env.NODE_ENV,
-    API_ENDPOINT: 'http://localhost:2900',
+    API_ENDPOINT:  process.env.API_ENDPOINT || '',
   },
   // 路由配置
   routes: pageRoutes,
@@ -125,7 +125,7 @@ export default {
   },
 
   copy:[
-    './src/assets/favicon.ico'
+    './src/assets/favicon.ico',
   ],
   history: 'hash',
   // exportStatic: {

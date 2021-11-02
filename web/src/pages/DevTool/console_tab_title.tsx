@@ -1,10 +1,10 @@
 import {useState, useRef, useEffect} from 'react';
 import './console_tab_title.scss';
-import ElasticSvg from '@/assets/elasticsearch.svg'; 
+import ElasticImg from '@/assets/elasticsearch.ico'; 
 import {Icon} from 'antd';
 
 const ElasticIcon = () => (
-  <img height="14px" width="14px" src={ElasticSvg} />
+  <img height="14px" width="14px" src={ElasticImg} />
 );
 
 interface TabTitleProps {

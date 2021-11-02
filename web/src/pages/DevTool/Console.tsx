@@ -139,10 +139,14 @@ export const ConsoleUI = ({selectedCluster,
     return cm;
   }, [clusterList, clusterStatus])
   const initialDefaultState = ()=>{
-    const defaultActiveKey = `${selectedCluster.id}:${new Date().valueOf()}`;
-    const defaultState = selectedCluster? {
+    let defaultCluster = selectedCluster;
+    if(!defaultCluster.id){
+      defaultCluster = clusterList[0] ;
+    }
+    const defaultActiveKey = `${defaultCluster.id || ''}:${new Date().valueOf()}`;
+    const defaultState = defaultCluster? {
       panes:[{
-      key: defaultActiveKey, cluster_id: selectedCluster.id, title: selectedCluster.name
+      key: defaultActiveKey, cluster_id: defaultCluster.id, title: defaultCluster.name
       }],
     activeKey: defaultActiveKey,
     }: {panes:[],activeKey:''};

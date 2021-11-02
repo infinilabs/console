@@ -87,7 +87,7 @@ const ConsoleWrapper = ({
              
             </Tabs.TabPane>
             <Tabs.TabPane tab="Headers" key="headers">
-              <Tabs>
+              <Tabs animated={false}>
                 <Tabs.TabPane tab="Request" key="1">
                   <EuiCodeBlock language="text" isCopyable paddingSize="s">
                     {lastDatum?.request.header}

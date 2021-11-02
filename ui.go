@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"infini.sh/framework/core/global"
 	"net/http"
+	"src/github.com/segmentio/encoding/json"
+	"strings"
 
 	public "infini.sh/search-center/.public"
 
@@ -22,11 +25,24 @@ type UI struct {
 
 func (h UI) InitUI() {
 
-	vfs.RegisterFS(public.StaticFS{StaticFolder: h.Config.UILocalPath, TrimLeftPath: h.Config.UILocalPath, CheckLocalFirst: h.Config.UILocalEnabled, SkipVFS: !h.Config.UIVFSEnabled})
+	vfs.RegisterFS(public.StaticFS{StaticFolder: h.Config.UI.LocalPath, TrimLeftPath: h.Config.UI.LocalPath, CheckLocalFirst: h.Config.UI.LocalEnabled, SkipVFS: !h.Config.UI.VFSEnabled})
 
 	ui.HandleUI("/", vfs.FileServer(vfs.VFS()))
 
 	uiapi.Init(h.Config)
+
+	var apiEndpoint = h.Config.UI.APIEndpoint
+	if strings.TrimSpace(apiEndpoint) == "" {
+		apiConfig := &global.Env().SystemConfig.APIConfig
+		apiEndpoint = fmt.Sprintf("%s://%s", apiConfig.GetSchema(), apiConfig.NetworkConfig.GetPublishAddr())
+	}
+
+	ui.HandleUIFunc("/config", func(w http.ResponseWriter, req *http.Request){
+		buf, _ := json.Marshal(util.MapStr{
+			"api_endpoint": apiEndpoint,
+		})
+		w.Write(buf)
+	})
 
 	ui.HandleUIFunc("/api/", func(w http.ResponseWriter, req *http.Request) {
 		log.Warn("api: ", req.URL, " not implemented")

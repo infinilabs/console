@@ -1,5 +1,34 @@
-export const pathPrefix = (API_ENDPOINT || '') + '/_search-center';
+import $ from 'jquery';
 
+function getConfig(){
+  const options = {
+    url: "/config",
+    cache: false,
+    type: 'GET',
+    dataType: 'json', // disable automatic guessing
+    async: false,
+  };
+  let result = {}
+  try{
+    const text = $.ajax(options).responseText;
+    result = JSON.parse(text);
+  }catch(e){
+    console.warn('failed get config data')
+  }
+  return result;
+  
+}
+const {api_endpoint} = getConfig();
+
+let apiEndpoint = api_endpoint;
+if(!apiEndpoint){
+  apiEndpoint = API_ENDPOINT;
+  if(!API_ENDPOINT){
+    apiEndpoint = `${location.protocol}//${location.hostname}:2900`
+  }
+}
+
+export const pathPrefix = (apiEndpoint || '') + '/_search-center';
 export function buildQueryArgs(params){
   let argsStr = '';
   for(let key in params){
@@ -14,4 +43,4 @@ export function buildQueryArgs(params){
   return argsStr;
 }
 
-export const ESPrefix = (API_ENDPOINT || '') + '/elasticsearch';
+export const ESPrefix = (apiEndpoint || '') + '/elasticsearch';

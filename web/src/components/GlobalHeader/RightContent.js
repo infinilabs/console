@@ -185,7 +185,7 @@ export default class GlobalHeaderRight extends PureComponent {
               bottomLeft: false,
               topLeft: false,
             }}> */}
-              <ConsoleUI selectedCluster={this.props.selectedCluster} 
+            {this.props.clusterList.length > 0 && <ConsoleUI selectedCluster={this.props.selectedCluster} 
               clusterList={this.props.clusterList} 
               visible={false}
               minimize={true}
@@ -196,8 +196,7 @@ export default class GlobalHeaderRight extends PureComponent {
               }}
               clusterStatus={this.props.clusterStatus}
               resizeable={true}
-              />
-            {/* </Resizable> */}
+              />}
           </div> 
       </div>
     );

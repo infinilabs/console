@@ -3,9 +3,11 @@ package main
 import (
 	"errors"
 	_ "expvar"
+	"fmt"
 	"infini.sh/framework"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/env"
+	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/module"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/modules"
@@ -50,12 +52,14 @@ func main() {
 
 		appConfig = &config.AppConfig{
 			Elasticsearch:  "default",
-			UILocalPath:    ".public",
-			UIVFSEnabled:   true,
-			UILocalEnabled: true,
+			UI: config.UIConfig{
+				LocalPath:   ".public",
+				VFSEnabled:   true,
+				LocalEnabled: true,
+			},
 		}
 
-		ok, err := env.ParseConfig("search-center", appConfig)
+		ok, err := env.ParseConfig("web", appConfig)
 		if err != nil {
 			panic(err)
 		}
@@ -74,6 +78,12 @@ func main() {
 		//	global.Env().SystemConfig.APIConfig.CrossDomain.AllowedOrigins=
 		//		append(global.Env().SystemConfig.APIConfig.CrossDomain.AllowedOrigins,uiConfig.NetworkConfig.GetBindingAddr())
 		//}
+		apiConfig := global.Env().SystemConfig.APIConfig
+		if len(apiConfig.CrossDomain.AllowedOrigins) == 0 {
+			apiConfig.CrossDomain.AllowedOrigins = []string{
+				fmt.Sprintf("%s://%s", appConfig.GetSchema(), apiConfig.NetworkConfig.GetPublishAddr()),
+			}
+		}
 
 		//start each module, with enabled provider
 		module.Start()

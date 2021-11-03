@@ -31,13 +31,9 @@ func main() {
 	terminalHeader += ("_/ ___\\_/ __ \\  /    \\\\   __\\_/ __ \\\\_  __ \\   \n")
 	terminalHeader += ("\\  \\___\\  ___/ |   |  \\|  |  \\  ___/ |  | \\/   \n")
 	terminalHeader += (" \\___  >\\___  >|___|  /|__|   \\___  >|__|      \n")
-	terminalHeader += ("     \\/     \\/      \\/            \\/           \n")
+	terminalHeader += ("     \\/     \\/      \\/            \\/           \n\n")
 
-	terminalFooter := ("   __ _  __ ____ __ _  __ __    __ _____ __                         \n")
-	terminalFooter += ("  / // |/ // __// // |/ // /   / //_  _//  \\                        \n")
-	terminalFooter += (" / // || // _/ / // || // /   / /_ / / / o |                        \n")
-	terminalFooter += ("/_//_/|_//_/  /_//_/|_//_/() /___//_/ /__,'    \n\n")
-	terminalFooter += ("©INFINI.LTD, All Rights Reserved.\n")
+	terminalFooter := ""
 
 	app := framework.NewApp("search-center", "the easiest way to operate your own search center.",
 		config.Version, config.LastCommitLog, config.BuildDate,config.EOLDate, terminalHeader, terminalFooter)

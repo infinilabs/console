@@ -62,7 +62,7 @@ export const useSendCurrentRequestToES = () => {
       }
       const {url, method, data} = requests[0];
       if(method === 'LOAD'){
-        const rawUrl = data[0].slice(4).trim();
+        const rawUrl = data[0]? data[0].slice(4).trim(): url;
         const cmd = getCommand(rawUrl);
        // const curPostion = editor.currentReqRange //(editor.getCoreEditor().getCurrentPosition());
         const lineNumber = editor.getCoreEditor().getCurrentPosition().lineNumber;

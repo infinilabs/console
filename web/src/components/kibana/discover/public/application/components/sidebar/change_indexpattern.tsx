@@ -24,16 +24,19 @@ import {
   EuiPopoverTitle,
   EuiSelectable,
   EuiButtonEmptyProps,
+  EuiTabs,
+  EuiTabbedContent,
+  EuiTab,
+  EuiSwitch,
 } from '@elastic/eui';
 import { EuiSelectableProps } from '@elastic/eui/src/components/selectable/selectable';
 import { IndexPatternRef } from './types';
+
 
 export type ChangeIndexPatternTriggerProps = EuiButtonEmptyProps & {
   label: string;
   title?: string;
 };
-
-// TODO: refactor to shared component with ../../../../../../../../x-pack/legacy/plugins/lens/public/indexpattern_plugin/change_indexpattern
 
 export function ChangeIndexPattern({
   indexPatternRefs,
@@ -41,12 +44,14 @@ export function ChangeIndexPattern({
   onChangeIndexPattern,
   trigger,
   selectableProps,
+  indices,
 }: {
   trigger: ChangeIndexPatternTriggerProps;
   indexPatternRefs: IndexPatternRef[];
-  onChangeIndexPattern: (newId: string) => void;
+  onChangeIndexPattern: (newId: string, typ: string) => void;
   indexPatternId?: string;
   selectableProps?: EuiSelectableProps;
+  indices: string[];
 }) {
   const [isPopoverOpen, setPopoverIsOpen] = useState(false);
 
@@ -68,22 +73,21 @@ export function ChangeIndexPattern({
     );
   };
 
-  return (
-    <EuiPopover
-      button={createTrigger()}
-      isOpen={isPopoverOpen}
-      closePopover={() => setPopoverIsOpen(false)}
-      className="eui-textTruncate"
-      anchorClassName="eui-textTruncate"
-      display="block"
-      panelPaddingSize="s"
-      ownFocus
-    >
-      <div style={{ width: 320 }}>
-        <EuiPopoverTitle>
-          选择视图
-        </EuiPopoverTitle>
-        <EuiSelectable
+  const [selectedTabId, setSelectedTabId] = useState(indices.includes(indexPatternId) ? 1 :0);
+  const onSelectedTabChanged = (id: number) => {
+    setSelectedTabId(id);
+  };
+  const [includeSystemIndex, setIncludeSystemIndex] = useState(false); 
+
+  const tabs = React.useMemo(()=>{
+    const showIndices = includeSystemIndex ? indices: indices.filter(key=>!key.startsWith("."));
+    const tabs = [
+      {
+        id: 'view',
+        name: 'View',
+        disabled: false,
+        content: ( <EuiSelectable
+          style={{marginTop:10}}
           data-test-subj="indexPattern-switcher"
           {...selectableProps}
           searchable
@@ -98,7 +102,7 @@ export function ChangeIndexPattern({
             const choice = (choices.find(({ checked }) => checked) as unknown) as {
               value: string;
             };
-            onChangeIndexPattern(choice.value);
+            onChangeIndexPattern(choice.value, 'view');
             setPopoverIsOpen(false);
           }}
           searchProps={{
@@ -112,7 +116,103 @@ export function ChangeIndexPattern({
               {list}
             </>
           )}
-        </EuiSelectable>
+        </EuiSelectable>),
+      },
+      {
+        id: 'index',
+        name: 'Index',
+        disabled: false,
+        content:( 
+          <div>
+            <div style={{display:'flex', margin:'10px auto', flexDirection: 'row-reverse',}}>
+            <EuiSwitch
+              label="Include system index"
+              checked={includeSystemIndex}
+              onChange={(e) => setIncludeSystemIndex(!includeSystemIndex)}
+            />
+            </div>
+          
+        <EuiSelectable
+          style={{marginTop:5}}
+          {...selectableProps}
+          searchable
+          singleSelection="always"
+          options={showIndices.map((indexName) => ({
+            label: indexName,
+            key: indexName,
+            value: indexName,
+            checked: indexName === indexPatternId ? 'on' : undefined,
+          }))}
+          onChange={(choices) => {
+            const choice = (choices.find(({ checked }) => checked) as unknown) as {
+              value: string;
+            };
+            onChangeIndexPattern(choice.value, 'index');
+            setPopoverIsOpen(false);
+          }}
+          searchProps={{
+            compressed: true,
+            ...(selectableProps ? selectableProps.searchProps : undefined),
+          }}
+        >
+          {(list, search) => (
+            <>
+              {search}
+              {list}
+            </>
+          )}
+        </EuiSelectable></div>),
+      },
+    ];
+    return tabs;
+  },[selectableProps, indexPatternId, indexPatternRefs, indices, includeSystemIndex])
+
+  const selectedTabContent = React.useMemo(() => {
+    return tabs.find((obj) => obj.id === selectedTabId)?.content;
+  }, [selectedTabId, tabs]);
+
+  const renderTabs = () => {
+    return tabs.map((tab, index) => (
+      <EuiTab
+        key={index}
+        onClick={() => onSelectedTabChanged(tab.id)}
+        isSelected={tab.id === selectedTabId}
+        disabled={tab.disabled}
+      >
+        {tab.name}
+      </EuiTab>
+    ));
+  };
+
+  return (
+    <EuiPopover
+      button={createTrigger()}
+      isOpen={isPopoverOpen}
+      closePopover={() => setPopoverIsOpen(false)}
+      className="eui-textTruncate"
+      anchorClassName="eui-textTruncate"
+      display="block"
+      panelPaddingSize="s"
+      ownFocus
+    >
+      <div style={{ width: 320 }}>
+        {/* <EuiPopoverTitle>
+          选择视图
+        </EuiPopoverTitle> */}
+         {/* <EuiTabs size="s" expand>
+          {renderTabs()}
+        </EuiTabs> */}
+         <EuiTabbedContent
+          tabs={tabs}
+          initialSelectedTab={tabs[selectedTabId]}
+          autoFocus="selected"
+          onTabClick={(tab) => {
+            const idx = tabs.findIndex(item=>item.id == tab.id);
+            setSelectedTabId(idx);
+          }}
+        />
+        {/* <div style={{marginTop:5}}></div>
+        {selectedTabContent} */}
       </div>
     </EuiPopover>
   );

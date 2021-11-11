@@ -16,12 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React from 'react';
-import { EuiCodeBlock } from '@elastic/eui';
-import { DocViewRenderProps } from '../../doc_views/doc_views_types';
+import React from "react";
+import { EuiCodeBlock } from "@elastic/eui";
+import { DocViewRenderProps } from "../../doc_views/doc_views_types";
 
 export function JsonCodeBlock({ hit }: DocViewRenderProps) {
-  const label = 'Read only JSON view of an elasticsearch document';
+  const label = "Read only JSON view of an elasticsearch document";
   return (
     <EuiCodeBlock aria-label={label} language="json" isCopyable paddingSize="s">
       {JSON.stringify(hit, null, 2)}

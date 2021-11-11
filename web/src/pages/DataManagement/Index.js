@@ -135,12 +135,7 @@ class Index extends PureComponent {
       title: '索引名称',
       dataIndex: 'index',
       render: (text, record) => (
-      <a onClick={()=>{
-        this.setState({
-          editingIndex: record,
-          drawerVisible: true,
-        });
-      }}>{text}</a>
+      <Link to={`/data/discover?viewID=${text}`}>{text}</Link>
       )
     },
     {
@@ -162,8 +157,13 @@ class Index extends PureComponent {
       title: '操作',
       render: (text, record) => (
         <Fragment>
-          {/* <a onClick={() => this.handleUpdateModalVisible(true, record)}>设置</a>
-          <Divider type="vertical" /> */}
+          <a onClick={() => {
+            this.setState({
+              editingIndex: record,
+              drawerVisible: true,
+            });
+          }}>设置</a>
+          <Divider type="vertical" />
           <Popconfirm title="Sure to delete?" onConfirm={() => this.handleDeleteClick(record.index)}>
             <a>删除</a>
           </Popconfirm>

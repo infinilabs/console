@@ -22,11 +22,16 @@ class NewTabMenu extends React.Component{
       initialLoad: true,
       dataSource: [...props.data],
       dataSourceKey: 1,
+      selectedIndex: -1,
+      overlayVisible: false,
     }
   }
   
   componentDidMount(){
+
   }
+
+
   handleInfiniteOnLoad = (current) => {
     let {size } = this.props;
     let targetLength = current * size;
@@ -54,17 +59,56 @@ class NewTabMenu extends React.Component{
       dataSource: newData,
       data: newData,
       hasMore: newData.length > this.props.size,
+      selectedIndex: -1,
     })
    
+  }
+
+  selectOffset = (offset)=> {
+    let {selectedIndex, data} = this.state; 
+    const len = data.length;
+    selectedIndex = (selectedIndex + offset + len) % len;
+      // const item = data[selectedIndex];
+      this.setState({
+        selectedIndex,
+      })
+  }
+
+  onKeyDown = (e) => {
+    const { which } = e;
+    // e.preventDefault();
+    
+    switch (which) {
+      case 38:
+        this.selectOffset(-1);
+        e.preventDefault();
+        e.stopPropagation()
+        break;
+      case 40:
+        this.selectOffset(1);
+        e.stopPropagation()
+        break;
+      case 13:
+        const {data, selectedIndex} = this.state;
+        if(selectedIndex > -1){
+          this.handleItemClick(data[selectedIndex]);
+          this.setState({ overlayVisible: false })
+        }
+        break;
+    }
   }
 
 
   render(){
     const {clusterStatus} = this.props;
-    return (<div className={styles.dropmenu} style={{width: this.props.width}}>
-      <div className={styles.infiniteContainer} style={{height: this.props.height}}>
+    const menu = (<div className={styles.dropmenu} style={{width: this.props.width}}>
+      <div className={styles.infiniteContainer} style={{height: this.props.height}}
+      onMouseEnter={()=>{this.searchInputRef.focus()}}
+       tabIndex="0" onKeyDown={this.onKeyDown}>
         <div className={styles.filter} style={{paddingTop: 10, paddingBottom:0}}>
-         <input className={styles['btn-ds']} style={{outline:'none'}} onChange={this.handleInputChange} placeholder="输入集群名称查找" value={this.state.displayValue||''} />
+         <input className={styles['btn-ds']} style={{outline:'none'}}
+          ref={(ref)=>{this.searchInputRef= ref;}}
+          onChange={this.handleInputChange} placeholder="输入集群名称查找" value={this.state.displayValue||''} />
         </div>
         <InfiniteScroll
           initialLoad={this.state.initialLoad}
@@ -74,11 +118,12 @@ class NewTabMenu extends React.Component{
         >
         <div className={styles.dslist}>
           {(!this.state.data || !this.state.data.length)&& <div style={{display:'flex', justifyContent:'center', alignItems: 'center', height:50}}>匹配不到集群(匹配规则为前缀匹配)</div>}
-          {(this.state.data || []).map((item)=>{
+          {(this.state.data || []).map((item, idx)=>{
             const cstatus = clusterStatus ? clusterStatus[item.id] : null;
             return <DropdownItem key={item.id} 
               clusterItem={item}
               clusterStatus={cstatus}
+              isSelected={this.state.selectedIndex == idx}
               onClick={() => {
                 this.handleItemClick(item)
               }}
@@ -93,6 +138,17 @@ class NewTabMenu extends React.Component{
         </div>
       )}
     </div>);
+    return (
+      <div>
+        <Dropdown overlay={menu} placement="bottomLeft" 
+        visible={this.state.overlayVisible} 
+         onVisibleChange={(flag)=>{
+          this.setState({ overlayVisible: flag });
+        }}>
+        {this.props.children}
+      </Dropdown>
+    </div>
+    )
   }
   
 }

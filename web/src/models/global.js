@@ -101,6 +101,7 @@ export default {
         type: 'saveData',
         payload: {
           clusterList: newClusterList,
+          clusterTotal: res.total,
           search: {
             ...search,
             cluster: payload,

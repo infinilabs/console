@@ -1,6 +1,6 @@
-import moment, { unitOfTime } from 'moment-timezone';
-import React, { Component } from 'react';
-import PropTypes from 'prop-types';
+import moment, { unitOfTime } from "moment-timezone";
+import React, { Component } from "react";
+import PropTypes from "prop-types";
 
 import {
   Axis,
@@ -15,28 +15,27 @@ import {
   BrushEndListener,
   Theme,
   LIGHT_THEME,
-} from '@elastic/charts';
-import lightEuiTheme from '@elastic/eui/dist/eui_theme_light.json';
-import darkEuiTheme from '@elastic/eui/dist/eui_theme_dark.json';
+} from "@elastic/charts";
+import lightEuiTheme from "@elastic/eui/dist/eui_theme_light.json";
+import darkEuiTheme from "@elastic/eui/dist/eui_theme_dark.json";
 import "@elastic/charts/dist/theme_light.css";
 
-import { Subscription, combineLatest } from 'rxjs';
-import {CurrentTime} from './current_time';
+import { Subscription, combineLatest } from "rxjs";
+import { CurrentTime } from "./current_time";
 import {
   Endzones,
   getAdjustedInterval,
   renderEndzoneTooltip,
-} from './endzones';
-
+} from "./endzones";
 
 function getTimezone() {
   const detectedTimezone = moment.tz.guess();
   if (detectedTimezone) return detectedTimezone;
-  else return moment().format('Z');
+  else return moment().format("Z");
 }
 
-export class DiscoverHistogram extends Component{
-   static propTypes = {
+export class DiscoverHistogram extends Component {
+  static propTypes = {
     chartData: PropTypes.object,
     timefilterUpdateHandler: PropTypes.func,
   };
@@ -62,7 +61,7 @@ export class DiscoverHistogram extends Component{
     }
   }
 
-   onBrushEnd = ({ x }) => {
+  onBrushEnd = ({ x }) => {
     if (!x) {
       return;
     }
@@ -71,7 +70,7 @@ export class DiscoverHistogram extends Component{
   };
 
   onElementClick = (xInterval) => ([elementData]) => {
-    const startRange = (elementData)[0].x;
+    const startRange = elementData[0].x;
 
     const range = {
       from: startRange,
@@ -130,28 +129,33 @@ export class DiscoverHistogram extends Component{
       ),
     };
     const tooltipProps = {
-      headerFormatter: renderEndzoneTooltip(xInterval, domainStart, domainEnd, this.formatXValue),
+      headerFormatter: renderEndzoneTooltip(
+        xInterval,
+        domainStart,
+        domainEnd,
+        this.formatXValue
+      ),
       type: TooltipType.VerticalCursor,
     };
     // const xAxisFormatter = getServices().data.fieldFormats.deserialize(
     //   this.props.chartData.yAxisFormat
     // );
     const xAxisFormatter = {
-      convert: (value)=>{
+      convert: (value) => {
         return value;
-      }
-    }
+      },
+    };
     //console.log(data)
 
     return (
-      <Chart size="100%" size={{height:200}}>
+      <Chart size="100%" size={{ height: 120 }}>
         <Settings
           xDomain={xDomain}
           onBrushEnd={this.onBrushEnd}
           onElementClick={this.onElementClick(xInterval)}
           tooltip={tooltipProps}
           theme={LIGHT_THEME}
-         // baseTheme={chartsBaseTheme}
+          // baseTheme={chartsBaseTheme}
         />
         <Axis
           id="discover-histogram-left-axis"
@@ -159,13 +163,15 @@ export class DiscoverHistogram extends Component{
           ticks={5}
           title={chartData.yAxisLabel}
           integersOnly
-          tickFormat={(value) => {return xAxisFormatter.convert(value)}}
+          tickFormat={(value) => {
+            return xAxisFormatter.convert(value);
+          }}
           showGridLines
         />
         <Axis
           id="discover-histogram-bottom-axis"
           position={Position.Bottom}
-          title={chartData.xAxisLabel}
+          // title={chartData.xAxisLabel}
           tickFormat={this.formatXValue}
           ticks={10}
           //showGridLines
@@ -185,12 +191,11 @@ export class DiscoverHistogram extends Component{
           xScaleType={ScaleType.Time}
           yScaleType={ScaleType.Linear}
           xAccessor="x"
-          yAccessors={['y']}
+          yAccessors={["y"]}
           data={data}
           timeZone={timeZone}
           name={chartData.yAxisLabel}
         />
-        
       </Chart>
     );
   }

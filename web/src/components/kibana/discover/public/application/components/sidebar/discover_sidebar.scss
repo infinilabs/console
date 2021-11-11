@@ -1,4 +1,4 @@
-@import '../../../../../core/public/variables.scss';
+@import "../../../../../core/public/variables.scss";
 .dscSidebar__container {
   padding-left: 0 !important;
   padding-right: 0 !important;
@@ -26,11 +26,17 @@
 
 .dscFieldListHeader {
   padding: $euiSizeS $euiSizeS 0 $euiSizeS;
-  background-color: lightOrDarkTheme(tint($euiColorPrimary, 90%), $euiColorLightShade);
+  background-color: lightOrDarkTheme(
+    tint($euiColorPrimary, 90%),
+    $euiColorLightShade
+  );
 }
 
 .dscFieldList--popular {
-  background-color: lightOrDarkTheme(tint($euiColorPrimary, 90%), $euiColorLightShade);
+  background-color: lightOrDarkTheme(
+    tint($euiColorPrimary, 90%),
+    $euiColorLightShade
+  );
 }
 
 .dscFieldChooser {
@@ -45,7 +51,7 @@
 .dscSidebarItem {
   &:hover,
   &:focus-within,
-  &[class*='-isActive'] {
+  &[class*="-isActive"] {
     .dscSidebarItem__action {
       opacity: 1;
     }
@@ -94,4 +100,24 @@
 .dscFieldDetails {
   color: $euiTextColor;
   margin-bottom: $euiSizeS;
+}
+
+#fields-tree-wrapper {
+  .ant-tree-switcher-noop {
+    display: none;
+  }
+  .ant-tree-treenode-switcher-close {
+    padding: 0;
+    .ant-tree-node-content-wrapper {
+      height: 32px;
+    }
+    .ant-tree-title {
+      display: block;
+      height: 32px;
+      .kbnFieldButton__button {
+        padding: 0;
+        align-items: center;
+      }
+    }
+  }
 }

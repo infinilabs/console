@@ -162,17 +162,6 @@ export default class ConsoleMenu extends Component<Props, State> {
 
     const items = [
       <EuiContextMenuItem
-        key="Copy as cURL"
-        id="ConCopyAsCurl"
-        disabled={!window.navigator?.clipboard}
-        onClick={() => {
-          this.closePopover();
-          this.copyAsCurl();
-        }}
-      >
-        复制为curl命令
-      </EuiContextMenuItem>,
-      <EuiContextMenuItem
         key="Auto indent"
         onClick={this.autoIndent}
       >
@@ -185,6 +174,19 @@ export default class ConsoleMenu extends Component<Props, State> {
         保存为常用命令
       </EuiContextMenuItem>,
     ];
+    if(window.navigator?.clipboard){
+      items.unshift(<EuiContextMenuItem
+        key="Copy as cURL"
+        id="ConCopyAsCurl"
+        disabled={!window.navigator?.clipboard}
+        onClick={() => {
+          this.closePopover();
+          this.copyAsCurl();
+        }}
+      >
+        复制为curl命令
+      </EuiContextMenuItem>)
+    }
 
     return (
       <span onMouseEnter={this.mouseEnter}>

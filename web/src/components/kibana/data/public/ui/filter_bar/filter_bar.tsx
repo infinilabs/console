@@ -185,7 +185,7 @@ function FilterBarUI(props: Props) {
       alignItems="flexStart"
       responsive={false}
     >
-      <EuiFlexItem className="globalFilterGroup__branch" grow={false}>
+      <EuiFlexItem className="globalFilterGroup__branch" grow={false} style={{padding:0, alignSelf:'center'}}>
         <FilterOptions
           onEnableAll={onEnableAll}
           onDisableAll={onDisableAll}

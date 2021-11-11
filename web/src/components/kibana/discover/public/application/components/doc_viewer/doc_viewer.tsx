@@ -16,12 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import './doc_viewer.scss';
-import React from 'react';
-import { EuiTabbedContent } from '@elastic/eui';
-import { getDocViewsRegistry } from '../../../kibana_services';
-import { DocViewerTab } from './doc_viewer_tab';
-import { DocView, DocViewRenderProps } from '../../doc_views/doc_views_types';
+import "./doc_viewer.scss";
+import React from "react";
+import { EuiTabbedContent } from "@elastic/eui";
+import { getDocViewsRegistry } from "../../../kibana_services";
+import { DocViewerTab } from "./doc_viewer_tab";
+import { DocView, DocViewRenderProps } from "../../doc_views/doc_views_types";
+import TableContext from "../discover_table/table_context";
 
 /**
  * Rendering tabs with different views of 1 Elasticsearch hit in Discover.
@@ -54,9 +55,23 @@ export function DocViewer(renderProps: DocViewRenderProps) {
     // This condition takes care of unit tests with 0 tabs.
     return null;
   }
+  const { tableRef } = React.useContext(TableContext);
+  const [viewerWidth, setViewerWidth] = React.useState(
+    tableRef?.offsetWidth - 40
+  );
+
+  React.useEffect(() => {
+    const onResize = () => {
+      setViewerWidth(tableRef?.offsetWidth - 40);
+    };
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+    };
+  }, []);
 
   return (
-    <div className="kbnDocViewer">
+    <div className="kbnDocViewer" style={{ width: viewerWidth }}>
       <EuiTabbedContent tabs={tabs} />
     </div>
   );

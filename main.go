@@ -87,7 +87,7 @@ func main() {
 	}, func() {
 		orm.RegisterSchemaWithIndexName(model.Dict{}, "dict")
 		orm.RegisterSchemaWithIndexName(model.Reindex{}, "reindex")
-		orm.RegisterSchemaWithIndexName(elastic.IndexPattern{}, "view")
+		orm.RegisterSchemaWithIndexName(elastic.View{}, "view")
 		orm.RegisterSchemaWithIndexName(alerting.Config{}, "alerting-config")
 		orm.RegisterSchemaWithIndexName(alerting.Alert{}, "alerting-alerts")
 		orm.RegisterSchemaWithIndexName(alerting.AlertingHistory{}, "alerting-alert-history")

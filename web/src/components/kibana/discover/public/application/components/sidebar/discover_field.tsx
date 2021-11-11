@@ -16,15 +16,20 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { useState } from 'react';
-import { EuiPopover, EuiPopoverTitle, EuiButtonIcon, EuiToolTip } from '@elastic/eui';
-import { DiscoverFieldDetails } from './discover_field_details';
-import { FieldIcon, FieldButton } from '../../../../../kibana_react/public';
-import { FieldDetails } from './types';
-import { IndexPatternField, IndexPattern } from '../../../../../data/public';
-import { shortenDottedString } from '../../helpers';
-import { getFieldTypeName } from './lib/get_field_type_name';
-import './discover_field.scss';
+import React, { useState } from "react";
+import {
+  EuiPopover,
+  EuiPopoverTitle,
+  EuiButtonIcon,
+  EuiToolTip,
+} from "@elastic/eui";
+import { DiscoverFieldDetails } from "./discover_field_details";
+import { FieldIcon, FieldButton } from "../../../../../kibana_react/public";
+import { FieldDetails } from "./types";
+import { IndexPatternField, IndexPattern } from "../../../../../data/public";
+import { shortenDottedString } from "../../helpers";
+import { getFieldTypeName } from "./lib/get_field_type_name";
+import "./discover_field.scss";
 
 export interface DiscoverFieldProps {
   /**
@@ -42,7 +47,11 @@ export interface DiscoverFieldProps {
   /**
    * Callback to add a filter to filter bar
    */
-  onAddFilter: (field: IndexPatternField | string, value: string, type: '+' | '-') => void;
+  onAddFilter: (
+    field: IndexPatternField | string,
+    value: string,
+    type: "+" | "-"
+  ) => void;
   /**
    * Callback to remove/deselect a the field
    * @param fieldName
@@ -72,8 +81,8 @@ export function DiscoverField({
   selected,
   useShortDots,
 }: DiscoverFieldProps) {
-  const addLabelAria = `Add ${field.name } to table`;
-  const removeLabelAria = `Remove ${field.name } to table`;
+  const addLabelAria = `Add ${field.name} to table`;
+  const removeLabelAria = `Remove ${field.name} to table`;
 
   const [infoIsOpen, setOpen] = useState(false);
 
@@ -93,11 +102,15 @@ export function DiscoverField({
     // u200B is a non-width white-space character, which allows
     // the browser to efficiently word-wrap right after the dot
     // without us having to draw a lot of extra DOM elements, etc
-    return str ? str.replace(/\./g, '.\u200B') : '';
+    return str ? str.replace(/\./g, ".\u200B") : "";
   }
 
   const dscFieldIcon = (
-    <FieldIcon type={field.type} label={getFieldTypeName(field.type)} scripted={field.scripted} />
+    <FieldIcon
+      type={field.type}
+      label={getFieldTypeName(field.type)}
+      scripted={field.scripted}
+    />
   );
 
   const fieldName = (
@@ -106,22 +119,21 @@ export function DiscoverField({
       title={field.name}
       className="dscSidebarField__name"
     >
-      {useShortDots ? wrapOnDot(shortenDottedString(field.name)) : wrapOnDot(field.displayName)}
+      {useShortDots
+        ? wrapOnDot(shortenDottedString(field.name))
+        : wrapOnDot(field.displayName)}
     </span>
   );
 
   let actionButton;
-  if (field.name !== '_source' && !selected) {
+  if (field.name !== "_source" && !selected) {
     actionButton = (
-      <EuiToolTip
-        delay="long"
-        content={ 'Add field as column'}
-      >
+      <EuiToolTip delay="long" content={"Add field as column"}>
         <EuiButtonIcon
           iconType="plusInCircleFilled"
           className="dscSidebarItem__action"
           onClick={(ev: React.MouseEvent<HTMLButtonElement>) => {
-            if (ev.type === 'click') {
+            if (ev.type === "click") {
               ev.currentTarget.focus();
             }
             ev.preventDefault();
@@ -133,18 +145,15 @@ export function DiscoverField({
         />
       </EuiToolTip>
     );
-  } else if (field.name !== '_source' && selected) {
+  } else if (field.name !== "_source" && selected) {
     actionButton = (
-      <EuiToolTip
-        delay="long"
-        content={ 'Remove field from table'}
-      >
+      <EuiToolTip delay="long" content={"Remove field from table"}>
         <EuiButtonIcon
           color="danger"
           iconType="cross"
           className="dscSidebarItem__action"
           onClick={(ev: React.MouseEvent<HTMLButtonElement>) => {
-            if (ev.type === 'click') {
+            if (ev.type === "click") {
               ev.currentTarget.focus();
             }
             ev.preventDefault();
@@ -158,7 +167,7 @@ export function DiscoverField({
     );
   }
 
-  if (field.type === '_source') {
+  if (field.type === "_source") {
     return (
       <FieldButton
         size="s"
@@ -194,10 +203,7 @@ export function DiscoverField({
       anchorPosition="rightUp"
       panelClassName="dscSidebarItem__fieldPopoverPanel"
     >
-      <EuiPopoverTitle>
-        {' '}
-        { 'Top 5 values'}
-      </EuiPopoverTitle>
+      <EuiPopoverTitle> {"Top 5 values"}</EuiPopoverTitle>
       {infoIsOpen && (
         <DiscoverFieldDetails
           indexPattern={indexPattern}

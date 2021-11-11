@@ -1,7 +1,7 @@
 // @ts-ignore
 import React, { useRef, useEffect, CSSProperties, useMemo } from 'react';
 import ace from 'brace';
-import { EuiFlexGroup, EuiFlexItem, EuiIcon, EuiToolTip } from '@elastic/eui';
+import { EuiFlexGroup, EuiFlexItem, EuiIcon, EuiToolTip, PropertySortType } from '@elastic/eui';
 import { SenseEditor } from '../entities/sense_editor';
 import { LegacyCoreEditor } from '../modules/legacy_core_editor/legacy_core_editor';
 import ConsoleMenu from './ConsoleMenu';
@@ -68,6 +68,7 @@ interface ConsoleInputProps {
   initialText: string | undefined,
   saveEditorContent: (content: string)=>void,
   paneKey: string,
+  height?: string,
 }
 
 const DEFAULT_INPUT_VALUE = `GET _search
@@ -78,7 +79,7 @@ const DEFAULT_INPUT_VALUE = `GET _search
 }`;
 
 
-const ConsoleInputUI = ({clusterID, initialText, saveEditorContent, paneKey}:ConsoleInputProps) => {
+const ConsoleInputUI = ({clusterID, initialText, saveEditorContent, paneKey, height='100%'}:ConsoleInputProps) => {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const editorActionsRef = useRef<HTMLDivElement | null>(null);
   const editorInstanceRef = useRef<SenseEditor | null>(null);
@@ -167,7 +168,7 @@ const ConsoleInputUI = ({clusterID, initialText, saveEditorContent, paneKey}:Con
 
   return (
       
-        <div style={abs} data-test-subj="console-application" className="conApp">
+        <div style={{...abs, height: height}} data-test-subj="console-application" className="conApp">
           <div className="conApp__editor">
             <ul className="conApp__autoComplete" id="autocomplete" />
             <EuiFlexGroup

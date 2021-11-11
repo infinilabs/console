@@ -55,9 +55,9 @@ const ConsoleWrapper = ({
     <div style={{height: calcHeight}}>
     <div className="Console" style={{height:'100%'}}>
       <PanelsContainer resizerClassName="resizer">
-        <Panel style={{ height: '100%', position: 'relative', minWidth: PANEL_MIN_WIDTH, paddingBottom:30 }} initialWidth={INITIAL_PANEL_WIDTH}>
-          <ConsoleInput clusterID={selectedCluster.id} saveEditorContent={saveEditorContent} initialText={initialText} paneKey={paneKey} />
-          <div style={{background:'#fff', position:'absolute', left:0, bottom:0, width: '100%', height:30, zIndex:1001, borderTop: '1px solid #eee'}}>
+        <Panel style={{ height: '100%', position: 'relative', minWidth: PANEL_MIN_WIDTH, paddingBottom:26 }} initialWidth={INITIAL_PANEL_WIDTH}>
+          <ConsoleInput height={height-26+'px'} clusterID={selectedCluster.id} saveEditorContent={saveEditorContent} initialText={initialText} paneKey={paneKey} />
+          <div style={{background:'#fff', position:'absolute', left:0, bottom:0, width: '100%', height:26, zIndex:997, borderTop: '1px solid #eee'}}>
             <RequestStatusBar
                 requestInProgress={requestInProgress}
                 selectedCluster={selectedCluster}
@@ -78,10 +78,10 @@ const ConsoleWrapper = ({
             />
           </div>
         </Panel>
-        <Panel style={{ height: '100%', position: 'relative', minWidth: PANEL_MIN_WIDTH, paddingBottom:30 }} initialWidth={INITIAL_PANEL_WIDTH}>
+        <Panel style={{ height: '100%', position: 'relative', minWidth: PANEL_MIN_WIDTH, paddingBottom:26 }} initialWidth={INITIAL_PANEL_WIDTH}>
           <Tabs tabPosition='right' style={{height:'100%', width:'100%'}} size="small">
             <Tabs.TabPane tab="Result" key="result">
-              <div style={{height:height-30}}>
+              <div style={{height:height-26}}>
               <ConsoleOutput clusterID={selectedCluster.id} /> 
               </div>
              
@@ -101,7 +101,7 @@ const ConsoleWrapper = ({
               </Tabs>
             </Tabs.TabPane>
           </Tabs>
-          <div style={{background:'#fff', position:'absolute', right:0, bottom:0, width: '100%', height:30, zIndex:1001, borderTop: '1px solid #eee'}}>
+          <div style={{background:'#fff', position:'absolute', right:0, bottom:0, width: '100%', height:26, zIndex:997, borderTop: '1px solid #eee'}}>
             <RequestStatusBar
                 requestInProgress={requestInProgress}
                 selectedCluster={selectedCluster}

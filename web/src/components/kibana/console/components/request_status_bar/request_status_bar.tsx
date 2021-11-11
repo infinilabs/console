@@ -17,12 +17,19 @@
  * under the License.
  */
 
-import React, { FunctionComponent } from 'react';
-import { EuiFlexGroup, EuiFlexItem, EuiBadge, EuiText, EuiToolTip,EuiCodeBlock } from '@elastic/eui';
-import {HealthStatusCircle} from '@/components/infini/health_status_circle';
-import './request_status_bar.scss';
-import {Drawer, Tabs, Button} from 'antd';
-import { FormattedMessage, formatMessage } from 'umi/locale';
+import React, { FunctionComponent } from "react";
+import {
+  EuiFlexGroup,
+  EuiFlexItem,
+  EuiBadge,
+  EuiText,
+  EuiToolTip,
+  EuiCodeBlock,
+} from "@elastic/eui";
+import { HealthStatusCircle } from "@/components/infini/health_status_circle";
+import "./request_status_bar.scss";
+import { Drawer, Tabs, Button } from "antd";
+import { FormattedMessage, formatMessage } from "umi/locale";
 
 export interface Props {
   requestInProgress: boolean;
@@ -48,22 +55,22 @@ export interface Props {
 
 const mapStatusCodeToBadgeColor = (statusCode: number) => {
   if (statusCode <= 199) {
-    return 'default';
+    return "default";
   }
 
   if (statusCode <= 299) {
-    return 'secondary';
+    return "secondary";
   }
 
   if (statusCode <= 399) {
-    return 'primary';
+    return "primary";
   }
 
   if (statusCode <= 499) {
-    return 'warning';
+    return "warning";
   }
 
-  return 'danger';
+  return "danger";
 };
 
 export const RequestStatusBar = ({
@@ -71,74 +78,87 @@ export const RequestStatusBar = ({
   requestResult,
   selectedCluster,
   left,
-}:Props) => {
+}: Props) => {
   let content: React.ReactNode = null;
-  const clusterContent = (<div className="base-info">
+  const clusterContent = (
+    <div className="base-info">
       <div className="info-item health">
-        <span> <FormattedMessage id="console.cluster.status"/>：</span>
-        <i style={{position:'absolute', top: 1, right:0}}>
-        <HealthStatusCircle status={selectedCluster.status}/>
+        <span>
+          {" "}
+          <FormattedMessage id="console.cluster.status" />：
+        </span>
+        <i style={{ position: "absolute", top: 1, right: 0 }}>
+          <HealthStatusCircle status={selectedCluster.status} />
         </i>
       </div>
       <div className="info-item">
-        <span><FormattedMessage id="console.cluster.endpoint"/>：</span>
-         <EuiBadge color="default">{selectedCluster.host}</EuiBadge>
+        <span>
+          <FormattedMessage id="console.cluster.endpoint" />：
+        </span>
+        <EuiBadge color="default">{selectedCluster.host}</EuiBadge>
       </div>
       <div className="info-item">
-        <span><FormattedMessage id="console.cluster.version"/>：</span>
+        <span>
+          <FormattedMessage id="console.cluster.version" />：
+        </span>
         <EuiBadge color="default">{selectedCluster.version}</EuiBadge>
-      </div> 
-</div>);
+      </div>
+    </div>
+  );
 
   if (requestInProgress) {
     content = (
       <EuiFlexItem grow={false}>
-        <EuiBadge color="hollow">
-           Request in progress
-        </EuiBadge>
+        <EuiBadge color="hollow">Request in progress</EuiBadge>
       </EuiFlexItem>
     );
   } else if (requestResult) {
-    const { endpoint, method, statusCode, statusText, timeElapsedMs } = requestResult;
+    const {
+      endpoint,
+      method,
+      statusCode,
+      statusText,
+      timeElapsedMs,
+    } = requestResult;
 
     content = (
       <>
-      <div className="status_info">
-        <div className="info-item">
-          <span><FormattedMessage id="console.response.status"/>：</span>
-          <EuiToolTip
-            position="top"
-            content={
-              <EuiText size="s">{`${method} ${
-                endpoint.startsWith('/') ? endpoint : '/' + endpoint
-              }`}</EuiText>
-            }
-          >
-             <EuiText size="s">
-              <EuiBadge color={mapStatusCodeToBadgeColor(statusCode)}>
-                {/*  Use &nbsp; to ensure that no matter the width we don't allow line breaks */}
-                {statusCode}&nbsp;-&nbsp;{statusText}
-              </EuiBadge>
-             </EuiText>
-          </EuiToolTip>
-        </div>
-        <div className="info-item">
-          <span><FormattedMessage id="console.response.time_elapsed"/>：</span>
-          <EuiToolTip
-            position="top"
-            content={
+        <div className="status_info">
+          <div className="info-item">
+            <span>
+              <FormattedMessage id="console.response.status" />：
+            </span>
+            <EuiToolTip
+              position="top"
+              content={
+                <EuiText size="s">{`${method} ${
+                  endpoint.startsWith("/") ? endpoint : "/" + endpoint
+                }`}</EuiText>
+              }
+            >
               <EuiText size="s">
-                Time Elapsed
+                <EuiBadge color={mapStatusCodeToBadgeColor(statusCode)}>
+                  {/*  Use &nbsp; to ensure that no matter the width we don't allow line breaks */}
+                  {statusCode}&nbsp;-&nbsp;{statusText}
+                </EuiBadge>
               </EuiText>
-            }
-          >
-            <EuiText size="s">
-              <EuiBadge color="default">
-                {timeElapsedMs}&nbsp;{'ms'}
-              </EuiBadge>
-            </EuiText>
-          </EuiToolTip>
-        </div>
+            </EuiToolTip>
+          </div>
+          <div className="info-item">
+            <span>
+              <FormattedMessage id="console.response.time_elapsed" />：
+            </span>
+            <EuiToolTip
+              position="top"
+              content={<EuiText size="s">Time Elapsed</EuiText>}
+            >
+              <EuiText size="s">
+                <EuiBadge color="default">
+                  {timeElapsedMs}&nbsp;{"ms"}
+                </EuiBadge>
+              </EuiText>
+            </EuiToolTip>
+          </div>
         </div>
       </>
     );
@@ -146,10 +166,11 @@ export const RequestStatusBar = ({
 
   return (
     <div className="request-status-bar">
-      {left? <div className="bar-item">{clusterContent}</div>:
-      [<div className="bar-item">{content}</div>,]
-      }
+      {left ? (
+        <div className="bar-item">{clusterContent}</div>
+      ) : (
+        <div className="bar-item">{content}</div>
+      )}
     </div>
-    
   );
 };

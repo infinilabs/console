@@ -34,7 +34,8 @@ export interface DiscoverIndexPatternProps {
   /**
    * triggered when user selects a new index pattern
    */
-  setIndexPattern: (id: string) => void;
+  setIndexPattern: (id: string, typ: string) => void;
+  indices: string[];
 }
 
 /**
@@ -44,6 +45,7 @@ export function DiscoverIndexPattern({
   indexPatternList,
   selectedIndexPattern,
   setIndexPattern,
+  indices,
 }: DiscoverIndexPatternProps) {
   const options: IndexPatternRef[] = (indexPatternList || []).map((entity) => ({
     id: entity.id,
@@ -75,13 +77,27 @@ export function DiscoverIndexPattern({
           }}
           indexPatternId={selected.id}
           indexPatternRefs={options}
-          onChangeIndexPattern={(id) => {
-            const indexPattern = options.find((pattern) => pattern.id === id);
+          onChangeIndexPattern={(id, typ) => {
+            let indexPattern = null;
+            if(typ == 'index'){
+              indices.forEach((indexName)=>{
+                if(indexName == id){
+                  indexPattern = {
+                    id: indexName,
+                    title: indexName,
+                    viewName: indexName,
+                  }
+                }
+              })
+            }else{
+              indexPattern = options.find((pattern) => pattern.id === id);
+            }  
             if (indexPattern) {
-              setIndexPattern(id);
+              setIndexPattern(id, typ);
               setSelected(indexPattern);
             }
           }}
+          indices={indices}
         />
     </div>
   );

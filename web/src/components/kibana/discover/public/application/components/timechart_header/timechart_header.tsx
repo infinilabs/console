@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   EuiFlexGroup,
   EuiFlexItem,
@@ -24,8 +24,8 @@ import {
   EuiText,
   EuiSelect,
   EuiIconTip,
-} from '@elastic/eui';
-import moment from 'moment';
+} from "@elastic/eui";
+import moment from "moment";
 
 export interface TimechartHeaderProps {
   /**
@@ -39,6 +39,7 @@ export interface TimechartHeaderProps {
     scaled?: boolean;
     description?: string;
     scale?: number;
+    timeFieldName: string;
   };
   /**
    * Range of dates to be displayed
@@ -59,6 +60,7 @@ export interface TimechartHeaderProps {
    * selected interval
    */
   stateInterval: string;
+  hits: number;
 }
 
 export function TimechartHeader({
@@ -68,12 +70,13 @@ export function TimechartHeader({
   options,
   onChangeInterval,
   stateInterval,
+  hits,
 }: TimechartHeaderProps) {
   const [interval, setInterval] = useState(stateInterval);
   const toMoment = useCallback(
     (datetime: string) => {
       if (!datetime) {
-        return '';
+        return "";
       }
       if (!dateFormat) {
         return datetime;
@@ -92,27 +95,36 @@ export function TimechartHeader({
     onChangeInterval(e.target.value);
   };
 
-  if (!timeRange || !bucketInterval) {
-    return null;
-  }
+  // if (!timeRange || !bucketInterval) {
+  //   return null;
+  // }
 
   return (
-      <EuiFlexGroup gutterSize="s" responsive justifyContent="center" alignItems="center">
-        <EuiFlexItem grow={false}>
-          <EuiToolTip
-            content={ 'To change the time, use the global time filter above'}
-            delay="long"
-          >
-            <EuiText data-test-subj="discoverIntervalDateRange" size="s">
-              {`${toMoment(timeRange.from)} - ${toMoment(timeRange.to)} ${
-                interval !== 'auto'
-                  ? 'per'
-                  : ''
+    <EuiFlexGroup
+      gutterSize="s"
+      responsive
+      justifyContent="center"
+      alignItems="center"
+    >
+      <EuiFlexItem grow={false}>
+        <div>
+          Found <span style={{ fontSize: 16, fontWeight: "bold" }}>{hits}</span>{" "}
+          records
+          {timeRange && (
+            <span style={{ fontSize: 12, marginLeft: 5 }}>
+              {`between ${toMoment(timeRange.from)} and ${toMoment(
+                timeRange.to
+              )} ${
+                interval !== "auto" ? "" : "" //per
               }`}
-            </EuiText>
-          </EuiToolTip>
-        </EuiFlexItem>
-        <EuiFlexItem grow={false}>
+            </span>
+          )}
+          {bucketInterval && (
+            <span>{`(${bucketInterval.timeFieldName} per ${bucketInterval.description})`}</span>
+          )}
+        </div>
+      </EuiFlexItem>
+      {/* <EuiFlexItem grow={false}>
           <EuiSelect
             aria-label={'Time interval'}
             compressed
@@ -145,7 +157,7 @@ export function TimechartHeader({
               ) : undefined
             }
           />
-        </EuiFlexItem>
-      </EuiFlexGroup>
+        </EuiFlexItem> */}
+    </EuiFlexGroup>
   );
 }

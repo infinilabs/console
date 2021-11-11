@@ -33,19 +33,10 @@ export default [
       //           { path: '/', redirect: '/' },
       //         ],
       //       },
-      {
-        path: '/cluster/overview_new',
-        name: 'overview',
-        component: './Cluster/NewOverview',
-        // hideInMenu: true,
-        routes:[
-          { path: '/', redirect: '/' },
-        ],
-      },
           {
               path: '/cluster/overview',
               name: 'overview',
-              component: './Cluster/Overview',
+              component: './Cluster/NewOverview',
               // hideInMenu: true,
               routes:[
                 { path: '/', redirect: '/' },

@@ -17,14 +17,14 @@
  * under the License.
  */
 
-import { SavedObjectsClientCommon } from '../..';
+import { SavedObjectsClientCommon } from "../..";
 
-import { createIndexPatternCache } from '.';
-import { IndexPattern } from './index_pattern';
+import { createIndexPatternCache } from ".";
+import { IndexPattern } from "./index_pattern";
 import {
   createEnsureDefaultIndexPattern,
   EnsureDefaultIndexPattern,
-} from './ensure_default_index_pattern';
+} from "./ensure_default_index_pattern";
 import {
   OnNotification,
   OnError,
@@ -37,17 +37,17 @@ import {
   FieldSpec,
   FieldFormatMap,
   IndexPatternFieldMap,
-} from '../types';
-import { FieldFormatsStartCommon } from '../../field_formats';
-import { UI_SETTINGS, SavedObject } from '../../../common';
-import { SavedObjectNotFound } from '../../../../kibana_utils/common';
-import { IndexPatternMissingIndices } from '../lib';
-import { findByTitle } from '../utils';
-import { DuplicateIndexPatternError } from '../errors';
+} from "../types";
+import { FieldFormatsStartCommon } from "../../field_formats";
+import { UI_SETTINGS, SavedObject } from "../../../common";
+import { SavedObjectNotFound } from "../../../../kibana_utils/common";
+import { IndexPatternMissingIndices } from "../lib";
+import { findByTitle } from "../utils";
+import { DuplicateIndexPatternError } from "../errors";
 
 const indexPatternCache = createIndexPatternCache();
 const MAX_ATTEMPTS_TO_RESOLVE_CONFLICTS = 3;
-const savedObjectType = 'view';
+const savedObjectType = "view";
 
 export interface IndexPatternSavedObjectAttrs {
   title: string;
@@ -67,7 +67,9 @@ interface IndexPatternsServiceDeps {
 export class IndexPatternsService {
   private config: UiSettingsCommon;
   private savedObjectsClient: SavedObjectsClientCommon;
-  private savedObjectsCache?: Array<SavedObject<IndexPatternSavedObjectAttrs>> | null;
+  private savedObjectsCache?: Array<
+    SavedObject<IndexPatternSavedObjectAttrs>
+  > | null;
   private apiClient: IIndexPatternsApiClient;
   private fieldFormats: FieldFormatsStartCommon;
   private onNotification: OnNotification;
@@ -102,9 +104,11 @@ export class IndexPatternsService {
    * Refresh cache of index pattern ids and titles
    */
   private async refreshSavedObjectsCache() {
-    this.savedObjectsCache = await this.savedObjectsClient.find<IndexPatternSavedObjectAttrs>({
-      type: 'index-pattern',
-      fields: ['title'],
+    this.savedObjectsCache = await this.savedObjectsClient.find<
+      IndexPatternSavedObjectAttrs
+    >({
+      type: "index-pattern",
+      fields: ["title"],
       perPage: 10000,
     });
   }
@@ -180,7 +184,7 @@ export class IndexPatternsService {
    * Get default index pattern
    */
   getDefault = async () => {
-    const defaultIndexPatternId = await this.config.get('defaultIndex');
+    const defaultIndexPatternId = await this.config.get("defaultIndex");
     if (defaultIndexPatternId) {
       return await this.get(defaultIndexPatternId);
     }
@@ -194,8 +198,8 @@ export class IndexPatternsService {
    * @param force
    */
   setDefault = async (id: string, force = false) => {
-    if (force || !this.config.get('defaultIndex')) {
-      await this.config.set('defaultIndex', id);
+    if (force || !this.config.get("defaultIndex")) {
+      await this.config.set("defaultIndex", id);
     }
   };
 
@@ -206,10 +210,10 @@ export class IndexPatternsService {
 
     return Object.values(specs).every((spec) => {
       // See https://github.com/elastic/kibana/pull/8421
-      const hasFieldCaps = 'aggregatable' in spec && 'searchable' in spec;
+      const hasFieldCaps = "aggregatable" in spec && "searchable" in spec;
 
       // See https://github.com/elastic/kibana/pull/11969
-      const hasDocValuesFlag = 'readFromDocValues' in spec;
+      const hasDocValuesFlag = "readFromDocValues" in spec;
 
       return !hasFieldCaps || !hasDocValuesFlag;
     });
@@ -251,15 +255,22 @@ export class IndexPatternsService {
   refreshFields = async (indexPattern: IndexPattern) => {
     try {
       const fields = await this.getFieldsForIndexPattern(indexPattern);
-      const scripted = indexPattern.getScriptedFields().map((field) => field.spec);
+      const scripted = indexPattern
+        .getScriptedFields()
+        .map((field) => field.spec);
       indexPattern.fields.replaceAll([...fields, ...scripted]);
     } catch (err) {
       if (err instanceof IndexPatternMissingIndices) {
-        this.onNotification({ title: (err as any).message, color: 'danger', iconType: 'alert' });
+        this.onNotification({
+          title: (err as any).message,
+          color: "danger",
+          iconType: "alert",
+        });
       }
 
       this.onError(err, {
-        title: 'Error fetching fields for index pattern {indexPattern.title} (ID: {indexPattern.id})',
+        title:
+          "Error fetching fields for index pattern {indexPattern.title} (ID: {indexPattern.id})",
       });
     }
   };
@@ -277,18 +288,24 @@ export class IndexPatternsService {
     title: string,
     options: GetFieldsOptions
   ) => {
-    const scriptdFields = Object.values(fields).filter((field) => field.scripted);
+    const scriptdFields = Object.values(fields).filter(
+      (field) => field.scripted
+    );
     try {
       const newFields = await this.getFieldsForWildcard(options);
       return this.fieldArrayToMap([...newFields, ...scriptdFields]);
     } catch (err) {
       if (err instanceof IndexPatternMissingIndices) {
-        this.onNotification({ title: (err as any).message, color: 'danger', iconType: 'alert' });
+        this.onNotification({
+          title: (err as any).message,
+          color: "danger",
+          iconType: "alert",
+        });
         return {};
       }
 
       this.onError(err, {
-        title: `Error fetching fields for index pattern ${title} (ID: ${id})`
+        title: `Error fetching fields for index pattern ${title} (ID: ${id})`,
       });
     }
     return fields;
@@ -299,7 +316,10 @@ export class IndexPatternsService {
    * @param fieldSpecs
    * @param fieldFormatMap
    */
-  private addFormatsToFields = (fieldSpecs: FieldSpec[], fieldFormatMap: FieldFormatMap) => {
+  private addFormatsToFields = (
+    fieldSpecs: FieldSpec[],
+    fieldFormatMap: FieldFormatMap
+  ) => {
     Object.entries(fieldFormatMap).forEach(([fieldName, value]) => {
       const field = fieldSpecs.find((fld: FieldSpec) => fld.name === fieldName);
       if (field) {
@@ -323,7 +343,9 @@ export class IndexPatternsService {
    * @param savedObject
    */
 
-  savedObjectToSpec = (savedObject: SavedObject<IndexPatternAttributes>): IndexPatternSpec => {
+  savedObjectToSpec = (
+    savedObject: SavedObject<IndexPatternAttributes>
+  ): IndexPatternSpec => {
     const {
       id,
       version,
@@ -336,13 +358,17 @@ export class IndexPatternsService {
         sourceFilters,
         fieldFormatMap,
         typeMeta,
-        type,
       },
+      type,
     } = savedObject;
 
-    const parsedSourceFilters = sourceFilters ? JSON.parse(sourceFilters) : undefined;
+    const parsedSourceFilters = sourceFilters
+      ? JSON.parse(sourceFilters)
+      : undefined;
     const parsedTypeMeta = typeMeta ? JSON.parse(typeMeta) : undefined;
-    const parsedFieldFormatMap = fieldFormatMap ? JSON.parse(fieldFormatMap) : {};
+    const parsedFieldFormatMap = fieldFormatMap
+      ? JSON.parse(fieldFormatMap)
+      : {};
     const parsedFields: FieldSpec[] = fields ? JSON.parse(fields) : [];
 
     this.addFormatsToFields(parsedFields, parsedFieldFormatMap);
@@ -365,16 +391,20 @@ export class IndexPatternsService {
    * @param id
    */
 
-  get = async (id: string): Promise<IndexPattern> => {
-    const cache = indexPatternCache.get(id);
+  get = async (
+    id: string,
+    typ: string,
+    clusterID: string
+  ): Promise<IndexPattern> => {
+    const cacheID = typ == "index" ? clusterID + id : id;
+    const cache = indexPatternCache.get(cacheID);
     if (cache) {
       return cache;
     }
 
-    const savedObject = await this.savedObjectsClient.get<IndexPatternAttributes>(
-      savedObjectType,
-      id
-    );
+    const savedObject = await this.savedObjectsClient.get<
+      IndexPatternAttributes
+    >(typ || savedObjectType, id);
 
     // if (!savedObject.version) {
     //   throw new SavedObjectNotFound(savedObjectType, id, 'management/kibana/indexPatterns');
@@ -382,28 +412,34 @@ export class IndexPatternsService {
 
     const spec = this.savedObjectToSpec(savedObject);
     const { title, type, typeMeta } = spec;
-    const parsedFieldFormats: FieldFormatMap = savedObject.attributes.fieldFormatMap
+    const parsedFieldFormats: FieldFormatMap = savedObject.attributes
+      .fieldFormatMap
       ? JSON.parse(savedObject.attributes.fieldFormatMap)
       : {};
-
-    const isFieldRefreshRequired = this.isFieldRefreshRequired(spec.fields);
+    const isFieldRefreshRequired =
+      spec.type == "index" ? false : this.isFieldRefreshRequired(spec.fields);
     let isSaveRequired = isFieldRefreshRequired;
     try {
       spec.fields = isFieldRefreshRequired
-        ? await this.refreshFieldSpecMap(spec.fields || {}, id, spec.title as string, {
-            pattern: title,
-            metaFields: await this.config.get(UI_SETTINGS.META_FIELDS),
-            type,
-            params: typeMeta && typeMeta.params,
-          })
+        ? await this.refreshFieldSpecMap(
+            spec.fields || {},
+            id,
+            spec.title as string,
+            {
+              pattern: title,
+              metaFields: await this.config.get(UI_SETTINGS.META_FIELDS),
+              type,
+              params: typeMeta && typeMeta.params,
+            }
+          )
         : spec.fields;
     } catch (err) {
       isSaveRequired = false;
       if (err instanceof IndexPatternMissingIndices) {
         this.onNotification({
           title: (err as any).message,
-          color: 'danger',
-          iconType: 'alert',
+          color: "danger",
+          iconType: "alert",
         });
       } else {
         this.onError(err, {
@@ -468,8 +504,13 @@ export class IndexPatternsService {
    * @param spec
    * @param skipFetchFields
    */
-  async create(spec: IndexPatternSpec, skipFetchFields = false): Promise<IndexPattern> {
-    const shortDotsEnable = await this.config.get(UI_SETTINGS.SHORT_DOTS_ENABLE);
+  async create(
+    spec: IndexPatternSpec,
+    skipFetchFields = false
+  ): Promise<IndexPattern> {
+    const shortDotsEnable = await this.config.get(
+      UI_SETTINGS.SHORT_DOTS_ENABLE
+    );
     const metaFields = await this.config.get(UI_SETTINGS.META_FIELDS);
 
     const indexPattern = new IndexPattern({
@@ -488,11 +529,13 @@ export class IndexPatternsService {
   }
 
   find = async (search: string, size: number = 10): Promise<IndexPattern[]> => {
-    const savedObjects = await this.savedObjectsClient.find<IndexPatternSavedObjectAttrs>({
-      type: 'index-pattern',
-      fields: ['title'],
+    const savedObjects = await this.savedObjectsClient.find<
+      IndexPatternSavedObjectAttrs
+    >({
+      type: "index-pattern",
+      fields: ["title"],
       search,
-      searchFields: ['title'],
+      searchFields: ["title"],
       perPage: size,
     });
     const getIndexPatternPromises = savedObjects.map(async (savedObject) => {
@@ -508,7 +551,11 @@ export class IndexPatternsService {
    * @param skipFetchFields
    */
 
-  async createAndSave(spec: IndexPatternSpec, override = false, skipFetchFields = false) {
+  async createAndSave(
+    spec: IndexPatternSpec,
+    override = false,
+    skipFetchFields = false
+  ) {
     const indexPattern = await this.create(spec, skipFetchFields);
     await this.createSavedObject(indexPattern, override);
     await this.setDefault(indexPattern.id as string);
@@ -527,14 +574,20 @@ export class IndexPatternsService {
       if (override) {
         await this.delete(dupe.id);
       } else {
-        throw new DuplicateIndexPatternError(`Duplicate index pattern: ${indexPattern.title}`);
+        throw new DuplicateIndexPatternError(
+          `Duplicate index pattern: ${indexPattern.title}`
+        );
       }
     }
 
     const body = indexPattern.getAsSavedObjectBody();
-    const response = await this.savedObjectsClient.create(savedObjectType, body, {
-      id: indexPattern.id,
-    });
+    const response = await this.savedObjectsClient.create(
+      savedObjectType,
+      body,
+      {
+        id: indexPattern.id,
+      }
+    );
     indexPattern.id = response.id;
     indexPatternCache.set(indexPattern.id, indexPattern);
     return indexPattern;
@@ -551,6 +604,7 @@ export class IndexPatternsService {
     saveAttempts: number = 0,
     ignoreErrors: boolean = false
   ): Promise<void | Error> {
+    debugger;
     if (!indexPattern.id) return;
 
     // get the list of attributes
@@ -566,13 +620,18 @@ export class IndexPatternsService {
     });
 
     return this.savedObjectsClient
-      .update(savedObjectType, indexPattern.id, body, { version: indexPattern.version })
+      .update(savedObjectType, indexPattern.id, body, {
+        version: indexPattern.version,
+      })
       .then((resp) => {
         indexPattern.id = resp.id;
         indexPattern.version = resp.version;
       })
       .catch(async (err) => {
-        if (err?.res?.status === 409 && saveAttempts++ < MAX_ATTEMPTS_TO_RESOLVE_CONFLICTS) {
+        if (
+          err?.res?.status === 409 &&
+          saveAttempts++ < MAX_ATTEMPTS_TO_RESOLVE_CONFLICTS
+        ) {
           const samePattern = await this.get(indexPattern.id as string);
           // What keys changed from now and what the server returned
           const updatedBody = samePattern.getAsSavedObjectBody();
@@ -584,7 +643,10 @@ export class IndexPatternsService {
 
           const serverChangedKeys: string[] = [];
           Object.entries(updatedBody).forEach(([key, value]) => {
-            if (value !== (body as any)[key] && value !== (originalBody as any)[key]) {
+            if (
+              value !== (body as any)[key] &&
+              value !== (originalBody as any)[key]
+            ) {
               serverChangedKeys.push(key);
             }
           });
@@ -603,10 +665,10 @@ export class IndexPatternsService {
             if (ignoreErrors) {
               return;
             }
-            const title = 
-                'Unable to write index pattern! Refresh the page to get the most up to date changes for this index pattern.';
+            const title =
+              "Unable to write index pattern! Refresh the page to get the most up to date changes for this index pattern.";
 
-            this.onNotification({ title, color: 'danger' });
+            this.onNotification({ title, color: "danger" });
             throw err;
           }
 
@@ -620,7 +682,11 @@ export class IndexPatternsService {
           indexPatternCache.clear(indexPattern.id!);
 
           // Try the save again
-          return this.updateSavedObject(indexPattern, saveAttempts, ignoreErrors);
+          return this.updateSavedObject(
+            indexPattern,
+            saveAttempts,
+            ignoreErrors
+          );
         }
         throw err;
       });

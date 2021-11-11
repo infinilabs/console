@@ -21,17 +21,18 @@
 .dscPageContent__wrapper {
   padding: 0 5 5 0;
   overflow: hidden; // Ensures horizontal scroll of table
-  box-shadow: 0 2px 2px -1px rgb(152 162 179 / 30%), 0 1px 5px -2px rgb(152 162 179 / 30%);
+  box-shadow: 0 2px 2px -1px rgb(152 162 179 / 30%),
+    0 1px 5px -2px rgb(152 162 179 / 30%);
   //  border: 1px solid #D3DAE6;
-    border-radius: 4px;
-    flex-grow: 1;
+  border-radius: 4px;
+  flex-grow: 1;
 }
 
 .dscPageContent {
   //border: $euiBorderThin;
   // text-align: center;
   box-shadow: none !important;
-  .euiDataGrid--fullScreen{
+  .euiDataGrid--fullScreen {
     z-index: 801;
   }
   position: relative;
@@ -57,7 +58,7 @@
 
   // SASSTODO: the visualizing component should have an option or a modifier
   .series > rect {
-    fill-opacity: .5;
+    fill-opacity: 0.5;
     stroke-width: 1;
   }
 }
@@ -75,23 +76,24 @@
 //   padding: 5 5 0 5;
 // }
 .euiDataGrid--headerUnderline .euiDataGridHeaderCell {
-  border-bottom: 1px solid #D3DAE6 !important;
+  border-bottom: 1px solid #d3dae6 !important;
   border-top: none !important;
 }
-.dscSidebar{
-  .euiButton--text, .euiButton--text:hover{
+.dscSidebar {
+  .euiButton--text,
+  .euiButton--text:hover {
     background-color: #fff;
   }
 }
 
-.sidebar-list{
+.sidebar-list {
   max-width: 200px;
 }
 
 .euiSuperUpdateButton.euiButton--success {
-  background-color: #017D73 !important;
-  border-color: #017D73 !important;
-  color: #FFF !important;
+  background-color: #017d73 !important;
+  border-color: #017d73 !important;
+  color: #fff !important;
   border-radius: 0 !important;
 }
 
@@ -109,6 +111,64 @@
   background-color: transparent;
 }
 
-.kbnQueryBar__wrap{
+.kbnQueryBar__wrap {
   box-shadow: none;
+}
+
+.dscSetting {
+  position: absolute;
+  right: 0px;
+  top: 0;
+  &.setting-icon {
+    cursor: pointer;
+    padding: 0 4px;
+    &:hover {
+      background-color: #d3dae6;
+    }
+  }
+  &.setting-content {
+    background-color: #fff;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
+    width: 300px;
+    max-height: 200px;
+    overflow-y: scroll;
+    z-index: 2;
+    .setting-wrapper {
+      padding: 10px;
+    }
+    .setting-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      &:last-child {
+        margin-bottom: 0;
+      }
+      .label {
+        // font-size: 12px;
+        width: 90px;
+        flex: none;
+        text-align: right;
+        margin-right: 5px;
+      }
+    }
+  }
+}
+
+.fake-chart {
+  position: relative;
+  .fake-mask {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 1;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #fff;
+    font-size: 24px;
+    font-weight: 600;
+    background-color: rgba($color: #000000, $alpha: 0.15);
+  }
 }

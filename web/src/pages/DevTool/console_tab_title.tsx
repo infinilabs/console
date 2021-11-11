@@ -26,16 +26,26 @@ export const TabTitle = ({title, onTitleChange}: TabTitleProps)=>{
     }
   },[editable])
   const inputRef = useRef(null);
+  const onKeyDown = (e: any)=>{
+    const { which } = e;
+    
+    switch (which) {
+      case 13:
+        e.target.blur();
+        break;
+    }
+  }
+
   return (<div title="double click to change title" className="tab-title" onDoubleClick={()=>{
     setEditable(true)
   }}>
-      {editable ? <input ref={inputRef} className="input-eidtor" 
+      {editable ? <input ref={inputRef} className="input-eidtor" onKeyDown={onKeyDown}
       type="text" value={value} 
       onBlur={()=>{
         setEditable(false)
       }}
       onChange={onValueChange}/>:
-      <div style={{display:'flex', alignItems:'center'}}><Icon component={ElasticIcon} />{value}</div>}
+      <div className="icon-cont"><Icon component={ElasticIcon} />{value}</div>}
     </div>)
 }
 

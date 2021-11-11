@@ -5,7 +5,7 @@ import (
 	log "github.com/cihub/seelog"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
-	"infini.sh/framework/core/metrics"
+	"infini.sh/framework/core/event"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"net/http"
@@ -77,7 +77,7 @@ func (handler APIHandler) getLatestClusterMonitorData(clusterID interface{}) (ut
   ]
 }`
 	queryDSL := fmt.Sprintf(queryDSLTpl, clusterID)
-	searchRes, err := client.SearchWithRawQueryDSL(orm.GetIndexName(metrics.MetricEvent{}), []byte(queryDSL))
+	searchRes, err := client.SearchWithRawQueryDSL(orm.GetIndexName(event.Event{}), []byte(queryDSL))
 	if err != nil {
 		return nil, err
 	}

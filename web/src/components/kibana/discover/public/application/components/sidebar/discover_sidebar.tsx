@@ -16,22 +16,27 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import './discover_sidebar.scss';
-import React, { useCallback, useEffect, useState, useMemo } from 'react';
-import { EuiButtonIcon, EuiTitle, EuiSpacer,EuiHideFor } from '@elastic/eui';
-import { sortBy } from 'lodash';
-import { DiscoverField } from './discover_field';
-import { DiscoverIndexPattern } from './discover_index_pattern';
-import { DiscoverFieldSearch } from './discover_field_search';
-import { IndexPatternAttributes } from '../../../../../data/common';
-import { SavedObject } from '../../../../../../core/types';
+import "./discover_sidebar.scss";
+import React, { useCallback, useEffect, useState, useMemo } from "react";
+import { EuiButtonIcon, EuiTitle, EuiSpacer, EuiHideFor } from "@elastic/eui";
+import { sortBy } from "lodash";
+import { DiscoverField } from "./discover_field";
+import { DiscoverIndexPattern } from "./discover_index_pattern";
+import { DiscoverFieldSearch } from "./discover_field_search";
+import { IndexPatternAttributes } from "../../../../../data/common";
+import { SavedObject } from "../../../../../../core/types";
 // import { FIELDS_LIMIT_SETTING } from '../../../../common';
-import { groupFields } from './lib/group_fields';
-import { IndexPatternField, IndexPattern, UI_SETTINGS } from '../../../../../data/public';
-import { getDetails } from './lib/get_details';
-import { getDefaultFieldFilter, setFieldFilterProp } from './lib/field_filter';
-import { getIndexPatternFieldList } from './lib/get_index_pattern_field_list';
+import { groupFields } from "./lib/group_fields";
+import {
+  IndexPatternField,
+  IndexPattern,
+  UI_SETTINGS,
+} from "../../../../../data/public";
+import { getDetails } from "./lib/get_details";
+import { getDefaultFieldFilter, setFieldFilterProp } from "./lib/field_filter";
+import { getIndexPatternFieldList } from "./lib/get_index_pattern_field_list";
 // import { getServices } from '../../../kibana_services';
+import { Tree, Icon } from "antd";
 
 export interface DiscoverSidebarProps {
   /**
@@ -57,7 +62,11 @@ export interface DiscoverSidebarProps {
   /**
    * Callback function when adding a filter from sidebar
    */
-  onAddFilter: (field: IndexPatternField | string, value: string, type: '+' | '-') => void;
+  onAddFilter: (
+    field: IndexPatternField | string,
+    value: string,
+    type: "+" | "-"
+  ) => void;
   /**
    * Callback function when removing a field
    * @param fieldName
@@ -72,6 +81,7 @@ export interface DiscoverSidebarProps {
    */
   setIndexPattern: (id: string) => void;
   isClosed: boolean;
+  indices: string[];
 }
 
 export function DiscoverSidebar({
@@ -85,16 +95,22 @@ export function DiscoverSidebar({
   selectedIndexPattern,
   setIndexPattern,
   isClosed,
+  indices,
 }: DiscoverSidebarProps) {
   const [showFields, setShowFields] = useState(false);
   const [fields, setFields] = useState<IndexPatternField[] | null>(null);
-  const [fieldFilterState, setFieldFilterState] = useState(getDefaultFieldFilter());
+  const [fieldFilterState, setFieldFilterState] = useState(
+    getDefaultFieldFilter()
+  );
   // const services = useMemo(() => getServices(), []);
 
   useEffect(() => {
-    const newFields = getIndexPatternFieldList(selectedIndexPattern, fieldCounts);
+    const newFields = getIndexPatternFieldList(
+      selectedIndexPattern,
+      fieldCounts
+    );
     setFields(newFields);
-  }, [selectedIndexPattern, fieldCounts, hits, ]);//services
+  }, [selectedIndexPattern, fieldCounts, hits]); //services
 
   const onChangeFieldSearch = useCallback(
     (field: string, value: string | boolean | undefined) => {
@@ -105,27 +121,51 @@ export function DiscoverSidebar({
   );
 
   const getDetailsByField = useCallback(
-    (ipField: IndexPatternField) => getDetails(ipField, hits, columns, selectedIndexPattern),
+    (ipField: IndexPatternField) =>
+      getDetails(ipField, hits, columns, selectedIndexPattern),
     [hits, columns, selectedIndexPattern]
   );
 
-  const popularLimit =  5;//services.uiSettings.get(FIELDS_LIMIT_SETTING);
-  const useShortDots = false;//services.uiSettings.get(UI_SETTINGS.SHORT_DOTS_ENABLE);
+  const popularLimit = 5; //services.uiSettings.get(FIELDS_LIMIT_SETTING);
+  const useShortDots = false; //services.uiSettings.get(UI_SETTINGS.SHORT_DOTS_ENABLE);
 
   const {
     selected: selectedFields,
     popular: popularFields,
     unpopular: unpopularFields,
-  } = useMemo(() => groupFields(fields, columns, popularLimit, fieldCounts, fieldFilterState), [
-    fields,
-    columns,
-    popularLimit,
-    fieldCounts,
-    fieldFilterState,
-  ]);
+    fieldsTree,
+  } = useMemo(() => {
+    const groupedFields = groupFields(
+      fields,
+      columns,
+      popularLimit,
+      fieldCounts,
+      fieldFilterState
+    );
+    const fieldsTree = {};
+    groupedFields.unpopular.forEach((field) => {
+      const keys = field.displayName.split(".");
+      let currentObj = fieldsTree;
+      keys.forEach((key: string, i: number) => {
+        if (!currentObj[key]) {
+          currentObj[key] = {};
+        }
+        if (keys.length == i + 1) {
+          field.isLeaf = true;
+          currentObj[key] = field;
+          return;
+        }
+        currentObj = currentObj[key];
+      });
+    });
+    return {
+      ...groupedFields,
+      fieldsTree,
+    };
+  }, [fields, columns, popularLimit, fieldCounts, fieldFilterState]);
 
   const fieldTypes = useMemo(() => {
-    const result = ['any'];
+    const result = ["any"];
     if (Array.isArray(fields)) {
       for (const field of fields) {
         if (result.indexOf(field.type) === -1) {
@@ -136,20 +176,56 @@ export function DiscoverSidebar({
     return result;
   }, [fields]);
 
-  if (!selectedIndexPattern || !fields || isClosed ) {
+  if (!selectedIndexPattern || !fields || isClosed) {
     return null;
   }
 
+  const buildTree = (treeObj: any) => {
+    return Object.keys(treeObj).map((key) => {
+      if (treeObj[key].isLeaf) {
+        return (
+          <Tree.TreeNode
+            icon={<Icon type="carry-out" />}
+            selectable={false}
+            title={
+              <DiscoverField
+                field={treeObj[key]}
+                indexPattern={selectedIndexPattern}
+                onAddField={onAddField}
+                onRemoveField={onRemoveField}
+                onAddFilter={onAddFilter}
+                getDetails={getDetailsByField}
+                useShortDots={true}
+              />
+            }
+            key={key}
+          />
+        );
+      }
+      return (
+        <Tree.TreeNode
+          icon={<Icon type="carry-out" />}
+          selectable={false}
+          title={key}
+          key={key}
+        >
+          {buildTree(treeObj[key])}
+        </Tree.TreeNode>
+      );
+    });
+  };
+
   return (
-    <EuiHideFor sizes={['xs', 's']}>
-      <section
-        className="sidebar-list"
-        aria-label={'Index and fields'}
-      >
+    <EuiHideFor sizes={["xs", "s"]}>
+      <section className="sidebar-list" aria-label={"Index and fields"}>
         <DiscoverIndexPattern
           selectedIndexPattern={selectedIndexPattern}
           setIndexPattern={setIndexPattern}
-          indexPatternList={sortBy(indexPatternList, (o) => o.attributes.viewName)}
+          indexPatternList={sortBy(
+            indexPatternList,
+            (o) => o.attributes.viewName
+          )}
+          indices={indices}
         />
         <div className="dscSidebar__item">
           <form>
@@ -164,9 +240,7 @@ export function DiscoverSidebar({
           {fields.length > 0 && (
             <>
               <EuiTitle size="xxxs" id="selected_fields">
-                <h3>
-                  Selected fields
-                </h3>
+                <h3>Selected fields</h3>
               </EuiTitle>
               <EuiSpacer size="xs" />
               <ul
@@ -196,10 +270,12 @@ export function DiscoverSidebar({
                 })}
               </ul>
               <div className="euiFlexGroup euiFlexGroup--gutterMedium">
-                <EuiTitle size="xxxs" id="available_fields" className="euiFlexItem">
-                  <h3>
-                    Available fields
-                  </h3>
+                <EuiTitle
+                  size="xxxs"
+                  id="available_fields"
+                  className="euiFlexItem"
+                >
+                  <h3>Available fields</h3>
                 </EuiTitle>
                 {/* <div className="euiFlexItem euiFlexItem--flexGrowZero">
                   <EuiButtonIcon
@@ -220,15 +296,20 @@ export function DiscoverSidebar({
             <div>
               <EuiTitle
                 size="xxxs"
-                className={`dscFieldListHeader ${!showFields ? 'hidden-sm hidden-xs' : ''}`}
+                className={`dscFieldListHeader ${
+                  !showFields ? "hidden-sm hidden-xs" : ""
+                }`}
               >
-                <h4 style={{ fontWeight: 'normal' }} id="available_fields_popular">
+                <h4
+                  style={{ fontWeight: "normal" }}
+                  id="available_fields_popular"
+                >
                   Popular
                 </h4>
               </EuiTitle>
               <ul
                 className={`dscFieldList dscFieldList--popular ${
-                  !showFields ? 'hidden-sm hidden-xs' : ''
+                  !showFields ? "hidden-sm hidden-xs" : ""
                 }`}
                 aria-labelledby="available_fields available_fields_popular"
                 data-test-subj={`fieldList-popular`}
@@ -256,9 +337,9 @@ export function DiscoverSidebar({
             </div>
           )}
 
-          <ul
+          {/* <ul
             className={`dscFieldList dscFieldList--unpopular ${
-              !showFields ? 'hidden-sm hidden-xs' : ''
+              !showFields ? "hidden-sm hidden-xs" : ""
             }`}
             aria-labelledby="available_fields"
             data-test-subj={`fieldList-unpopular`}
@@ -282,9 +363,18 @@ export function DiscoverSidebar({
                 </li>
               );
             })}
-          </ul>
+          </ul> */}
+          <div id="fields-tree-wrapper">
+            <Tree
+              showLine={false}
+              showIcon={false}
+              defaultExpandedKeys={["0-0-0", "0-0-1", "0-0-2"]}
+            >
+              {buildTree(fieldsTree)}
+            </Tree>
+          </div>
         </div>
       </section>
-      </EuiHideFor>
+    </EuiHideFor>
   );
 }

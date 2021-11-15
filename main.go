@@ -41,7 +41,7 @@ func main() {
 	app.Init(nil)
 	defer app.Shutdown()
 
-	app.Start(func() {
+	app.Setup(func() {
 
 		//load core modules first
 		modules.Register()
@@ -92,6 +92,8 @@ func main() {
 		orm.RegisterSchemaWithIndexName(alerting.Alert{}, "alerting-alerts")
 		orm.RegisterSchemaWithIndexName(alerting.AlertingHistory{}, "alerting-alert-history")
 		alertSrv.GetScheduler().Start()
-	})
+	},nil)
+
+	app.Run()
 
 }

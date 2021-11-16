@@ -2,7 +2,7 @@ elasticsearch:
   - name: default
     enabled: true
     monitored: true
-    endpoint: http://127.0.0.1:9200
+    endpoint: http://192.168.3.188:9299
     basic_auth:
       username: elastic
       password: ZBdkVQUUdF1Sir4X4BGB
@@ -27,8 +27,8 @@ elastic:
     orm:
       enabled: true
       init_template: true
-      template_name: ".infini-search-center"
-      index_prefix: ".infini-search-center_"
+      template_name: ".infini"
+      index_prefix: ".infini_"
 
 search-center:
   ui_path: .public
@@ -51,7 +51,8 @@ pipeline:
     keep_running: true
     processor:
       - json_indexing:
-          index_prefix: ".infini-search-center_metrics"
+          index_name: ".infini_metrics"
+          index_prefix: ".infini_"
           elasticsearch: "default"
           input_queue: "metrics"
           worker_size: 1

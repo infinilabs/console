@@ -1,6 +1,7 @@
 elasticsearch:
   - name: default
     enabled: true
+    monitored: true
     endpoint: http://127.0.0.1:9200
     basic_auth:
       username: elastic
@@ -23,8 +24,6 @@ elastic:
     remote_configs: true
     store:
       enabled: true
-    monitoring:
-      enabled: true
     orm:
       enabled: true
       init_template: true
@@ -37,6 +36,7 @@ search-center:
   ui_local: true
 
 metrics:
+  enabled: true
   major_ip_pattern: "192.*"
   queue: metrics
   elasticsearch:

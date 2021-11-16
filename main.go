@@ -11,6 +11,7 @@ import (
 	"infini.sh/framework/core/module"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/modules"
+	"infini.sh/framework/modules/metrics"
 	"infini.sh/search-center/config"
 	"infini.sh/search-center/model"
 	"infini.sh/search-center/model/alerting"
@@ -45,6 +46,7 @@ func main() {
 
 		//load core modules first
 		modules.Register()
+		module.RegisterUserPlugin(&metrics.MetricsModule{})
 
 		appConfig = &config.AppConfig{
 			Elasticsearch:  "default",

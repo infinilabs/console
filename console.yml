@@ -51,7 +51,7 @@ pipeline:
     keep_running: true
     processor:
       - json_indexing:
-          index_name: ".infini-search-center_metrics"
+          index_prefix: ".infini-search-center_metrics"
           elasticsearch: "default"
           input_queue: "metrics"
           worker_size: 1

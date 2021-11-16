@@ -24,21 +24,16 @@ var appConfig *config.AppConfig
 var appUI *UI
 
 func main() {
+	terminalHeader := ("   ___                      _\n")
+	terminalHeader += ("  / __\\___  _ __  ___  ___ | | ___\n")
+	terminalHeader += (" / /  / _ \\| '_ \\/ __|/ _ \\| |/ _ \\\n")
+	terminalHeader += ("/ /__| (_) | | | \\__ \\ (_) | |  __/\n")
+	terminalHeader += ("\\____/\\___/|_| |_|___/\\___/|_|\\___|\n\n")
 
-	terminalHeader := ("                                       .__     \n")
-	terminalHeader += ("  ______  ____  _____  _______   ____  |  |__  \n")
-	terminalHeader += (" /  ___/_/ __ \\ \\__  \\ \\_  __ \\_/ ___\\ |  |  \\ \n")
-	terminalHeader += (" \\___ \\ \\  ___/  / __ \\_|  | \\/\\  \\___ |   Y  \\ \n")
-	terminalHeader += ("/____  > \\___  >(____  /___|    \\___  >|___|  /\n")
-	terminalHeader += ("  ____/  ____\\/  ____\\_/  |_   ____ _______ \\/ \n")
-	terminalHeader += ("_/ ___\\_/ __ \\  /    \\\\   __\\_/ __ \\\\_  __ \\   \n")
-	terminalHeader += ("\\  \\___\\  ___/ |   |  \\|  |  \\  ___/ |  | \\/   \n")
-	terminalHeader += (" \\___  >\\___  >|___|  /|__|   \\___  >|__|      \n")
-	terminalHeader += ("     \\/     \\/      \\/            \\/           \n\n")
 
 	terminalFooter := ""
 
-	app := framework.NewApp("search-center", "the easiest way to operate your own search center.",
+	app := framework.NewApp("console", "the easiest way to operate your elasticsearch platform.",
 		config.Version, config.LastCommitLog, config.BuildDate,config.EOLDate, terminalHeader, terminalFooter)
 
 	app.Init(nil)

@@ -52,7 +52,7 @@ pipeline:
     processor:
       - json_indexing:
           index_name: ".infini-search-center_metrics"
-          elasticsearch: "714"
+          elasticsearch: "default"
           input_queue: "metrics"
           worker_size: 1
           bulk_size_in_mb: 10

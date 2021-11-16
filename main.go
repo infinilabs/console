@@ -10,8 +10,10 @@ import (
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/module"
 	"infini.sh/framework/core/orm"
+	pipe "infini.sh/framework/core/pipeline"
 	"infini.sh/framework/modules"
 	"infini.sh/framework/modules/metrics"
+	"infini.sh/framework/plugins/elastic/json_indexing"
 	"infini.sh/search-center/config"
 	"infini.sh/search-center/model"
 	"infini.sh/search-center/model/alerting"
@@ -46,6 +48,7 @@ func main() {
 
 		//load core modules first
 		modules.Register()
+		pipe.RegisterProcessorPlugin("json_indexing", json_indexing.New)
 		module.RegisterUserPlugin(&metrics.MetricsModule{})
 
 		appConfig = &config.AppConfig{

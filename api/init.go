@@ -41,7 +41,8 @@ func Init(cfg *config.AppConfig) {
 	api.HandleAPIMethod(api.DELETE, path.Join(esPrefix, "index/:index"), handler.HandleDeleteIndexAction)
 	api.HandleAPIMethod(api.POST, path.Join(esPrefix, "index/:index"), handler.HandleCreateIndexAction)
 
-	api.HandleAPIMethod(api.POST,  path.Join(pathPrefix, "elasticsearch/command"), handler.HandleSaveCommonCommandAction)
+	api.HandleAPIMethod(api.POST,  path.Join(pathPrefix, "elasticsearch/command"), handler.HandleAddCommonCommandAction)
+	api.HandleAPIMethod(api.PUT,  path.Join(pathPrefix, "elasticsearch/command/:cid"), handler.HandleSaveCommonCommandAction)
 	api.HandleAPIMethod(api.GET, path.Join(pathPrefix, "elasticsearch/command"), handler.HandleQueryCommonCommandAction)
 	api.HandleAPIMethod(api.DELETE, path.Join(pathPrefix, "elasticsearch/command/:cid"), handler.HandleDeleteCommonCommandAction)
 

@@ -1,24 +1,24 @@
-import React, { PureComponent } from 'react';
-import { FormattedMessage, formatMessage } from 'umi/locale';
-import { Spin, Tag, Menu, Icon, Dropdown, Avatar, Tooltip } from 'antd';
-import moment from 'moment';
-import groupBy from 'lodash/groupBy';
-import NoticeIcon from '../NoticeIcon';
-import HeaderSearch from '../HeaderSearch';
-import SelectLang from '../SelectLang';
-import styles from './index.less';
-import {ConsoleUI} from '@/pages/DevTool/Console';
+import React, { PureComponent } from "react";
+import { FormattedMessage, formatMessage } from "umi/locale";
+import { Spin, Tag, Menu, Icon, Dropdown, Avatar, Tooltip } from "antd";
+import moment from "moment";
+import groupBy from "lodash/groupBy";
+import NoticeIcon from "../NoticeIcon";
+import HeaderSearch from "../HeaderSearch";
+import SelectLang from "../SelectLang";
+import styles from "./index.less";
+import { ConsoleUI } from "@/pages/DevTool/Console";
 import { Resizable } from "re-resizable";
-import {ResizeBar} from '@/components/infini/resize_bar';
+import { ResizeBar } from "@/components/infini/resize_bar";
 
 export default class GlobalHeaderRight extends PureComponent {
-  state={consoleVisible: false}
+  state = { consoleVisible: false };
   getNoticeData() {
     const { notices = [] } = this.props;
     if (notices.length === 0) {
       return {};
     }
-    const newNotices = notices.map(notice => {
+    const newNotices = notices.map((notice) => {
       const newNotice = { ...notice };
       if (newNotice.datetime) {
         newNotice.datetime = moment(notice.datetime).fromNow();
@@ -28,10 +28,10 @@ export default class GlobalHeaderRight extends PureComponent {
       }
       if (newNotice.extra && newNotice.status) {
         const color = {
-          todo: '',
-          processing: 'blue',
-          urgent: 'red',
-          doing: 'gold',
+          todo: "",
+          processing: "blue",
+          urgent: "red",
+          doing: "gold",
         }[newNotice.status];
         newNotice.extra = (
           <Tag color={color} style={{ marginRight: 0 }}>
@@ -41,7 +41,7 @@ export default class GlobalHeaderRight extends PureComponent {
       }
       return newNotice;
     });
-    return groupBy(newNotices, 'type');
+    return groupBy(newNotices, "type");
   }
 
   render() {
@@ -57,15 +57,24 @@ export default class GlobalHeaderRight extends PureComponent {
       <Menu className={styles.menu} selectedKeys={[]} onClick={onMenuClick}>
         <Menu.Item key="userCenter">
           <Icon type="user" />
-          <FormattedMessage id="menu.account.center" defaultMessage="account center" />
+          <FormattedMessage
+            id="menu.account.center"
+            defaultMessage="account center"
+          />
         </Menu.Item>
         <Menu.Item key="userinfo">
           <Icon type="setting" />
-          <FormattedMessage id="menu.account.settings" defaultMessage="account settings" />
+          <FormattedMessage
+            id="menu.account.settings"
+            defaultMessage="account settings"
+          />
         </Menu.Item>
         <Menu.Item key="triggerError">
           <Icon type="close-circle" />
-          <FormattedMessage id="menu.account.trigger" defaultMessage="Trigger Error" />
+          <FormattedMessage
+            id="menu.account.trigger"
+            defaultMessage="Trigger Error"
+          />
         </Menu.Item>
         <Menu.Divider />
         <Menu.Item key="logout">
@@ -76,7 +85,7 @@ export default class GlobalHeaderRight extends PureComponent {
     );
     const noticeData = this.getNoticeData();
     let className = styles.right;
-    if (theme === 'dark') {
+    if (theme === "dark") {
       className = `${styles.right}  ${styles.dark}`;
     }
     return (
@@ -97,13 +106,19 @@ export default class GlobalHeaderRight extends PureComponent {
           }}
         /> */}
 
-        <a className={styles.action} onClick={()=>{
-          const {history, selectedCluster} = this.props;
-          // history.push(`/dev_tool`);
-          this.setState({
-            consoleVisible: !this.state.consoleVisible
-          })
-        }}> <Icon type="code" /></a>
+        <a
+          className={styles.action}
+          onClick={() => {
+            const { history, selectedCluster } = this.props;
+            // history.push(`/dev_tool`);
+            this.setState({
+              consoleVisible: !this.state.consoleVisible,
+            });
+          }}
+        >
+          {" "}
+          <Icon type="code" />
+        </a>
 
         {/* <NoticeIcon
           className={styles.action}
@@ -158,17 +173,19 @@ export default class GlobalHeaderRight extends PureComponent {
           <Spin size="small" style={{ marginLeft: 8, marginRight: 8 }} />
         )} */}
         <SelectLang className={styles.action} />
-          <div style={{
-              display: this.state.consoleVisible ? 'block': 'none',
-              borderTop: "solid 1px #ddd",
-              background: "#fff",
-              position: "fixed",
-              left: 0,
-              right: 0,
-              bottom: 0,
-              zIndex: 1002,
-            }}>
-               {/* <Resizable
+        <div
+          style={{
+            display: this.state.consoleVisible ? "block" : "none",
+            borderTop: "solid 1px #ddd",
+            background: "#fff",
+            position: "fixed",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 1002,
+          }}
+        >
+          {/* <Resizable
             defaultSize={{
               height: '50vh'
             }}
@@ -185,19 +202,23 @@ export default class GlobalHeaderRight extends PureComponent {
               bottomLeft: false,
               topLeft: false,
             }}> */}
-            {this.props.clusterList.length > 0 && <ConsoleUI selectedCluster={this.props.selectedCluster} 
-              clusterList={this.props.clusterList} 
-              visible={false}
-              minimize={true}
-              onMinimizeClick={()=>{
-                this.setState({
-                  consoleVisible: false,
-                })
-              }}
-              clusterStatus={this.props.clusterStatus}
-              resizeable={true}
-              />}
-          </div> 
+          {this.props.clusterList.length > 0 &&
+            this.props.selectedCluster.id != "" && (
+              <ConsoleUI
+                selectedCluster={this.props.selectedCluster}
+                clusterList={this.props.clusterList}
+                visible={false}
+                minimize={true}
+                onMinimizeClick={() => {
+                  this.setState({
+                    consoleVisible: false,
+                  });
+                }}
+                clusterStatus={this.props.clusterStatus}
+                resizeable={true}
+              />
+            )}
+        </div>
       </div>
     );
   }

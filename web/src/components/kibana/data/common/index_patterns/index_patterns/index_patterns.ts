@@ -456,7 +456,7 @@ export class IndexPatternsService {
     });
 
     const indexPattern = await this.create(spec, true);
-    indexPatternCache.set(id, indexPattern);
+    indexPatternCache.set(cacheID, indexPattern);
     if (isSaveRequired) {
       try {
         this.updateSavedObject(indexPattern);

@@ -1,8 +1,8 @@
-@import '../../../../../core/public/variables.scss';
+@import "../../../../../core/public/variables.scss";
 .kbnDocViewerTable {
   margin-top: $euiSizeS;
   font-size: 12px;
-  .kbnDocViewer__buttons{
+  .kbnDocViewer__buttons {
     padding-top: 0px !important;
   }
 }
@@ -20,6 +20,7 @@
   }
   .kbnDocViewer__field {
     padding-top: 8px;
+    max-width: 250px;
   }
 
   .dscFieldName {
@@ -73,4 +74,3 @@
 .kbnDocViewer__warning {
   margin-right: $euiSizeS;
 }
-

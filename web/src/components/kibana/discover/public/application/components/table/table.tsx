@@ -16,11 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { useState } from 'react';
-import { escapeRegExp } from 'lodash';
-import { DocViewTableRow } from './table_row';
-import { arrayContainsObjects, trimAngularSpan } from './table_helper';
-import { DocViewRenderProps } from '../../doc_views/doc_views_types';
+import React, { useState } from "react";
+import { escapeRegExp } from "lodash";
+import { DocViewTableRow } from "./table_row";
+import { arrayContainsObjects, trimAngularSpan } from "./table_helper";
+import { DocViewRenderProps } from "../../doc_views/doc_views_types";
 
 const COLLAPSE_LINE_LENGTH = 350;
 
@@ -34,8 +34,10 @@ export function DocViewTable({
 }: DocViewRenderProps) {
   const mapping = indexPattern.fields.getByName;
   const flattened = indexPattern.flattenHit(hit);
-  const formatted = indexPattern.formatHit(hit, 'html');
-  const [fieldRowOpen, setFieldRowOpen] = useState({} as Record<string, boolean>);
+  const formatted = indexPattern.formatHit(hit, "html");
+  const [fieldRowOpen, setFieldRowOpen] = useState(
+    {} as Record<string, boolean>
+  );
 
   function toggleValueCollapse(field: string) {
     fieldRowOpen[field] = fieldRowOpen[field] !== true;
@@ -64,8 +66,10 @@ export function DocViewTable({
                   }
                 : undefined;
             const isArrayOfObjects =
-              Array.isArray(flattened[field]) && arrayContainsObjects(flattened[field]);
-            const displayUnderscoreWarning = !mapping(field) && field.indexOf('_') === 0;
+              Array.isArray(flattened[field]) &&
+              arrayContainsObjects(flattened[field]);
+            const displayUnderscoreWarning =
+              !mapping(field) && field.indexOf("_") === 0;
             const displayNoMappingWarning =
               !mapping(field) && !displayUnderscoreWarning && !isArrayOfObjects;
 
@@ -107,10 +111,16 @@ export function DocViewTable({
               !indexPattern.fields.getByName(field) &&
               !!indexPattern.fields.getAll().find((patternField) => {
                 // We only want to match a full path segment
-                const nestedRootRegex = new RegExp(escapeRegExp(field) + '(\\.|$)');
-                return nestedRootRegex.test(patternField.subType?.nested?.path ?? '');
+                const nestedRootRegex = new RegExp(
+                  escapeRegExp(field) + "(\\.|$)"
+                );
+                return nestedRootRegex.test(
+                  patternField.subType?.nested?.path ?? ""
+                );
               });
-            const fieldType = isNestedField ? 'nested' : indexPattern.fields.getByName(field)?.type;
+            const fieldType = isNestedField
+              ? "nested"
+              : indexPattern.fields.getByName(field)?.type;
 
             return (
               <DocViewTableRow
@@ -122,7 +132,9 @@ export function DocViewTable({
                 displayNoMappingWarning={displayNoMappingWarning}
                 isCollapsed={isCollapsed}
                 isCollapsible={isCollapsible}
-                isColumnActive={Array.isArray(columns) && columns.includes(field)}
+                isColumnActive={
+                  Array.isArray(columns) && columns.includes(field)
+                }
                 onFilter={filter}
                 onToggleCollapse={() => toggleValueCollapse(field)}
                 onToggleColumn={toggleColumn}

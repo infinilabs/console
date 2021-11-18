@@ -1,97 +1,93 @@
 export default [
   // user
   {
-    path: '/user',
-    component: '../layouts/UserLayout',
+    path: "/user",
+    component: "../layouts/UserLayout",
     routes: [
-      { path: '/user', redirect: '/user/login' },
-      { path: '/user/login', component: './User/Login' },
-      { path: '/user/register', component: './User/Register' },
-      { path: '/user/register-result', component: './User/RegisterResult' },
+      { path: "/user", redirect: "/user/login" },
+      { path: "/user/login", component: "./User/Login" },
+      { path: "/user/register", component: "./User/Register" },
+      { path: "/user/register-result", component: "./User/RegisterResult" },
     ],
   },
   // app
   {
-    path: '/',
-    component: '../layouts/BasicLayout',
-    Routes: ['src/pages/Authorized'],
-    authority: ['admin', 'user'],
+    path: "/",
+    component: "../layouts/BasicLayout",
+    Routes: ["src/pages/Authorized"],
+    authority: ["admin", "user"],
     routes: [
       // cluster
-      { path: '/', redirect: '/cluster/overview' },
+      { path: "/", redirect: "/cluster/overview" },
       {
-        path: '/cluster',
-        name: 'cluster',
-        icon: 'cluster',
+        path: "/cluster",
+        name: "cluster",
+        icon: "cluster",
         routes: [
-      //      { path: '/', redirect: '/platform/gateway' },
-      //       {
-      //         path: '/cluster/overview/',
-      //         name: 'overview',
-      //         component: './Cluster/Overview',
-      //         routes:[
-      //           { path: '/', redirect: '/' },
-      //         ],
-      //       },
+          //      { path: '/', redirect: '/platform/gateway' },
+          //       {
+          //         path: '/cluster/overview/',
+          //         name: 'overview',
+          //         component: './Cluster/Overview',
+          //         routes:[
+          //           { path: '/', redirect: '/' },
+          //         ],
+          //       },
           {
-              path: '/cluster/overview',
-              name: 'overview',
-              component: './Cluster/NewOverview',
-              // hideInMenu: true,
-              routes:[
-                { path: '/', redirect: '/' },
-              ],
-            },
-            {
-              path: '/cluster/monitoring/:cluster_id',
-              name: 'cluster',
-              component: './Cluster/ClusterMonitor',
-              hideInMenu: true,
-              routes:[
-                { path: '/', redirect: '/' },
-              ],
-            }, {
-              path: '/cluster/metrics/',
-              name: 'monitoring',
-              component: './Cluster/Metrics',
-              routes:[
-                { path: '/', redirect: '/' },
-              ],
-            }, {
-              path: '/cluster/metrics/:cluster_id',
-              name: 'monitoring',
-              component: './Cluster/Metrics',
-              hideInMenu: true,
-            },
-            // {
-            // path: '/cluster/logs/',
-            // name: 'logging',
-            // component: './Cluster/SearchMonitor',
-            // routes:[
-            //   { path: '/', redirect: '/' },
-            // ],
-            // },{
-            //   path: '/cluster/settings/',
-            //   name: 'settings',
-            //   component: './Cluster/Settings/Base',
-            //   routes: [
-            //     {
-            //       path: '/cluster/settings',
-            //       redirect: '/cluster/settings/repository',
-            //       routes:[
-            //         { path: '/', redirect: '/' },
-            //       ],
-            //     },
-            //     {
-            //       path: '/cluster/settings/repository',
-            //       component: './Cluster/Settings/Repository',
-            //       routes:[
-            //         { path: '/', redirect: '/' },
-            //       ],
-            //     }
-            //   ]
-            // },
-        ]
+            path: "/cluster/overview",
+            name: "overview",
+            component: "./Cluster/NewOverview",
+            // hideInMenu: true,
+            routes: [{ path: "/", redirect: "/" }],
+          },
+          {
+            path: "/cluster/monitoring/:cluster_id",
+            name: "cluster",
+            component: "./Cluster/ClusterMonitor",
+            hideInMenu: true,
+            routes: [{ path: "/", redirect: "/" }],
+          },
+          {
+            path: "/cluster/metrics/",
+            name: "monitoring",
+            component: "./Cluster/Metrics",
+            routes: [{ path: "/", redirect: "/" }],
+          },
+          {
+            path: "/cluster/metrics/:cluster_id",
+            name: "monitoring",
+            component: "./Cluster/Metrics",
+            hideInMenu: true,
+          },
+          // {
+          // path: '/cluster/logs/',
+          // name: 'logging',
+          // component: './Cluster/SearchMonitor',
+          // routes:[
+          //   { path: '/', redirect: '/' },
+          // ],
+          // },{
+          //   path: '/cluster/settings/',
+          //   name: 'settings',
+          //   component: './Cluster/Settings/Base',
+          //   routes: [
+          //     {
+          //       path: '/cluster/settings',
+          //       redirect: '/cluster/settings/repository',
+          //       routes:[
+          //         { path: '/', redirect: '/' },
+          //       ],
+          //     },
+          //     {
+          //       path: '/cluster/settings/repository',
+          //       component: './Cluster/Settings/Repository',
+          //       routes:[
+          //         { path: '/', redirect: '/' },
+          //       ],
+          //     }
+          //   ]
+          // },
+        ],
       },
       //devtools
       // {
@@ -104,40 +100,38 @@ export default [
       //   component: './DevTool/Console',
       // },
 
-       //alerting
-       {
-        path: '/alerting',
-        name: 'alerting',
-        icon: 'alert',
-        routes: [{
-          routes:[
-            { path: '/', redirect: '/' },
-          ],
-          path: '/alerting/overview',
-          component: './Alerting/pages/Overview/Overview',
-          name: 'overview'
-        },{
-          routes:[
-            { path: '/', redirect: '/' },
-          ],
-          path: '/alerting/monitor',
-          component: './Alerting/index',
-          name: 'monitor'
-        },{
-          routes:[
-            { path: '/', redirect: '/' },
-          ],
-          path: '/alerting/destination',
-          component: './Alerting/destination',
-          name: 'destination'
-        }]
+      //alerting
+      {
+        path: "/alerting",
+        name: "alerting",
+        icon: "alert",
+        routes: [
+          {
+            routes: [{ path: "/", redirect: "/" }],
+            path: "/alerting/overview",
+            component: "./Alerting/pages/Overview/Overview",
+            name: "overview",
+          },
+          {
+            routes: [{ path: "/", redirect: "/" }],
+            path: "/alerting/monitor",
+            component: "./Alerting/index",
+            name: "monitor",
+          },
+          {
+            routes: [{ path: "/", redirect: "/" }],
+            path: "/alerting/destination",
+            component: "./Alerting/destination",
+            name: "destination",
+          },
+        ],
       },
 
       //data
       {
-        path: '/data',
-        name: 'data',
-        icon: 'database',
+        path: "/data",
+        name: "data",
+        icon: "database",
         routes: [
           // {
           //   path: '/data/overview',
@@ -146,14 +140,12 @@ export default [
           //   routes:[
           //     { path: '/', redirect: '/' },
           //   ],
-          // }, 
+          // },
           {
-            path: '/data/index',
-            name: 'index',
-            component: './DataManagement/Index',
-            routes:[
-              { path: '/', redirect: '/' },
-            ],
+            path: "/data/index",
+            name: "index",
+            component: "./DataManagement/Index",
+            routes: [{ path: "/", redirect: "/" }],
           },
           // {
           //   path: '/data/document',
@@ -162,7 +154,7 @@ export default [
           //   routes:[
           //     { path: '/', redirect: '/' },
           //   ],
-          // }, 
+          // },
           // {
           //   path: '/data/template',
           //   name: 'template',
@@ -180,31 +172,25 @@ export default [
           //   ],
           // },
           {
-            routes:[
-              { path: '/', redirect: '/' },
-            ],
-            path: '/data/discover',
-            name: 'discover',
-            component: './DataManagement/Discover',
+            routes: [{ path: "/", redirect: "/" }],
+            path: "/data/discover",
+            name: "discover",
+            component: "./DataManagement/Discover",
           },
           {
-            routes:[
-              { path: '/', redirect: '/' },
-            ],
-            path: '/data/views/',
-            name: 'indexPatterns',
-            component: './DataManagement/IndexPatterns',
-
+            routes: [{ path: "/", redirect: "/" }],
+            path: "/data/views/",
+            name: "indexPatterns",
+            component: "./DataManagement/IndexPatterns",
           },
-        ]
+        ],
       },
-      
-      
+
       //search
       {
-        path: '/search',
-        name: 'search',
-        icon: 'search',
+        path: "/search",
+        name: "search",
+        icon: "search",
         routes: [
           // {
           //   path: '/search/overview',
@@ -245,34 +231,30 @@ export default [
           //             ],
           //         },
           //     ]
-          // }, 
+          // },
           {
-            path: '/search/alias',
-            name: 'alias',
-            component: './SearchManage/alias/Alias',
-                routes: [
-                    {
-                        path: '/search/alias',
-                        redirect: '/search/alias/index',
-                        // routes:[
-                        //   { path: '/', redirect: '/' },
-                        // ],
-                    },
-                    {
-                        path: '/search/alias/index',
-                        component: './SearchManage/alias/AliasManage',
-                        routes:[
-                          { path: '/', redirect: '/' },
-                        ],
-                    },
-                    {
-                        path: '/search/alias/rule',
-                        component: './SearchManage/alias/Rule',
-                        routes:[
-                          { path: '/', redirect: '/' },
-                        ],
-                    }
-                ]
+            path: "/search/alias",
+            name: "alias",
+            component: "./SearchManage/alias/Alias",
+            routes: [
+              {
+                path: "/search/alias",
+                redirect: "/search/alias/index",
+                // routes:[
+                //   { path: '/', redirect: '/' },
+                // ],
+              },
+              {
+                path: "/search/alias/index",
+                component: "./SearchManage/alias/AliasManage",
+                routes: [{ path: "/", redirect: "/" }],
+              },
+              {
+                path: "/search/alias/rule",
+                component: "./SearchManage/alias/Rule",
+                routes: [{ path: "/", redirect: "/" }],
+              },
+            ],
           },
           //  {
           //   path: '/search/dict',
@@ -328,33 +310,33 @@ export default [
           //       ]
           // }
           //, {
-            //  path: '/search/nlp',
-            // name: 'nlp',
-            // component: './SearchManage/nlp/NLP',
-            // routes: [
-            //    {
-            //        path: '/search/nlp',
-            //        redirect: '/search/nlp/query',
-            //    },
-            //    {
-            //       path: '/search/nlp/query',
-            //        component: './SearchManage/nlp/Query',
-            //  },
-            //  {
-            //      path: '/search/nlp/intention',
-            //     component: './SearchManage/nlp/Intention',
-            // },
-            // {
-            //     path: '/search/nlp/knowledge',
-            //      component: './SearchManage/nlp/Knowledge',
-            //  },
-            // {
-            //      path: '/search/nlp/text',
-            //      component: './SearchManage/nlp/Text',
-            //     }
-            //]
-            //},
-        ]
+          //  path: '/search/nlp',
+          // name: 'nlp',
+          // component: './SearchManage/nlp/NLP',
+          // routes: [
+          //    {
+          //        path: '/search/nlp',
+          //        redirect: '/search/nlp/query',
+          //    },
+          //    {
+          //       path: '/search/nlp/query',
+          //        component: './SearchManage/nlp/Query',
+          //  },
+          //  {
+          //      path: '/search/nlp/intention',
+          //     component: './SearchManage/nlp/Intention',
+          // },
+          // {
+          //     path: '/search/nlp/knowledge',
+          //      component: './SearchManage/nlp/Knowledge',
+          //  },
+          // {
+          //      path: '/search/nlp/text',
+          //      component: './SearchManage/nlp/Text',
+          //     }
+          //]
+          //},
+        ],
       },
       //
       // //sync
@@ -450,32 +432,32 @@ export default [
 
       //settings
       {
-        path: '/system',
-        name: 'system',
-        icon: 'setting',
+        path: "/system",
+        name: "system",
+        icon: "setting",
         routes: [
           {
-            path: '/system/cluster',
-            name: 'cluster',
-            component: './System/Cluster/Index',
+            path: "/system/cluster",
+            name: "cluster",
+            component: "./System/Cluster/Index",
           },
           {
-            path: '/system/cluster/regist',
-            name: 'registCluster',
-            component: './System/Cluster/Step',
-            hideInMenu: true
+            path: "/system/cluster/regist",
+            name: "registCluster",
+            component: "./System/Cluster/Step",
+            hideInMenu: true,
           },
           {
-            path: '/system/cluster/edit',
-            name: 'editCluster',
-            component: './System/Cluster/Form',
-            hideInMenu: true
+            path: "/system/cluster/edit",
+            name: "editCluster",
+            component: "./System/Cluster/Form",
+            hideInMenu: true,
           },
           {
-            path: '/system/command',
-            name: 'commonCommand',
-            component: './System/Command/Index',
-            hideInMenu: true
+            path: "/system/command",
+            name: "commonCommand",
+            component: "./System/Command/Index",
+            // hideInMenu: true
           },
           // {
           //   path: '/system/settings',
@@ -549,7 +531,7 @@ export default [
           //   },
           //   ]
           // },
-        ]
+        ],
       },
 
       // // forms
@@ -768,7 +750,7 @@ export default [
       //   ],
       // },
       {
-        component: '404',
+        component: "404",
       },
     ],
   },

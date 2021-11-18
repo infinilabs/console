@@ -1,50 +1,56 @@
-import {getClusterOverview, getClusterNodeStats, getClusterList} from "@/services/dashboard";
-import {getClusterMetrics} from "@/services/cluster";
+import {
+  getClusterOverview,
+  getClusterNodeStats,
+  getClusterList,
+} from "@/services/dashboard";
+import { getClusterMetrics } from "@/services/cluster";
 
 export default {
-    namespace: 'clusterMonitor',
-    state: {
-
+  namespace: "clusterMonitor",
+  state: {},
+  effects: {
+    *fetchClusterOverview({ payload, callback }, { call, put }) {
+      let clusterData = yield call(getClusterOverview, payload);
+      yield put({ type: "saveData", payload: clusterData });
+      if (callback && typeof callback == "function") {
+        callback(clusterData);
+      }
     },
-    effects:{
-        *fetchClusterOverview({payload, callback}, {call, put}){
-            let clusterData = yield call(getClusterOverview, payload);
-            yield put({type: 'saveData', payload: clusterData})
-            if(callback && typeof callback == 'function'){
-                callback(clusterData);
-            }
-        },
-        *fetchClusterMetrics({payload, callback}, {call, put}){
-            let clusterMetrics = yield call(getClusterMetrics, payload);
-            yield put({type: 'saveData', payload: clusterMetrics})
-            if(callback && typeof callback == 'function'){
-                callback(clusterMetrics);
-                console.log("finished call:"+params.cluster_id);
-            }
-        },
-        *fetchClusterNodeStats({callback}, {call, put}){
-            let nodesStats = yield call(getClusterNodeStats);
-            //yield put({type: 'saveData', payload: nodesStats})
-            if(callback && typeof callback == 'function'){
-                callback(nodesStats);
-            }
-        },
-        *fetchClusterList({callback}, {call, put}){
-            let clusterData = yield call(getClusterList);
-            yield put({type: 'saveData', payload: {
-                clusterList: clusterData
-            }})
-            if(callback && typeof callback == 'function'){
-                callback(clusterData);
-            }
-        }
+    *fetchClusterMetrics({ payload, callback }, { call, put }) {
+      let clusterMetrics = yield call(getClusterMetrics, payload);
+      yield put({ type: "saveData", payload: clusterMetrics });
+      if (callback && typeof callback == "function") {
+        callback(clusterMetrics);
+        console.log("finished call:" + params.cluster_id);
+      }
+      return clusterMetrics;
     },
-    reducers:{
-        saveData(state, {payload}){
-            return {
-                ...state,
-                ...payload
-            };
+    *fetchClusterNodeStats({ callback }, { call, put }) {
+      let nodesStats = yield call(getClusterNodeStats);
+      //yield put({type: 'saveData', payload: nodesStats})
+      if (callback && typeof callback == "function") {
+        callback(nodesStats);
+      }
+    },
+    *fetchClusterList({ callback }, { call, put }) {
+      let clusterData = yield call(getClusterList);
+      yield put({
+        type: "saveData",
+        payload: {
+          clusterList: clusterData,
         },
-    }
+      });
+      if (callback && typeof callback == "function") {
+        callback(clusterData);
+      }
+    },
+  },
+  reducers: {
+    saveData(state, { payload }) {
+      return {
+        ...state,
+        ...payload,
+      };
+    },
+  },
 };

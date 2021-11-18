@@ -1,0 +1,13 @@
+.metric-control {
+  display: flex;
+  .selector {
+    margin-left: auto;
+    display: flex;
+    .value-selector {
+      margin-left: 5px;
+    }
+  }
+}
+.px {
+  padding: 0 15px;
+}

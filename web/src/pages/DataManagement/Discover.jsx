@@ -392,6 +392,9 @@ const Discover = (props) => {
     },
     [props.selectedCluster, updateQuery]
   );
+  const document = useMemo(() => {
+    saveDocument, deleteDocument;
+  }, [saveDocument, deleteDocument]);
 
   const [settingsVisible, setSettingsVisible] = React.useState(false);
 
@@ -627,7 +630,7 @@ const Discover = (props) => {
                               onMoveColumn={onMoveColumn}
                               onAddColumn={onAddColumn}
                               onChangeSortOrder={onSort}
-                              document={{ saveDocument, deleteDocument }}
+                              document={document}
                               hits={rows}
                             />
                           </div>

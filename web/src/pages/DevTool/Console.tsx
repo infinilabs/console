@@ -10,7 +10,6 @@ import {
   useEffect,
   useMemo,
   useRef,
-  useLayoutEffect,
 } from "react";
 import { useLocalStorage } from "@/lib/hooks/storage";
 import { setClusterID } from "../../components/kibana/console/modules/mappings/mappings";
@@ -195,12 +194,16 @@ export const ConsoleUI = ({
   const [tabState, dispatch] = useReducer(consoleTabReducer, localState);
 
   useEffect(() => {
-    if (tabState.panes.length == 0) {
+    const panes = tabState.panes.filter((pane: any) => {
+      return typeof clusterMap[pane.cluster_id] != "undefined";
+    });
+
+    if (panes.length == 0) {
       removeLocalState();
       return;
     }
     setLocalState(tabState);
-  }, [tabState]);
+  }, [tabState, clusterMap]);
 
   const saveEditorContent = useCallback(
     (content) => {

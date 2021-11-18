@@ -1,166 +1,171 @@
-import {createClusterConfig, searchClusterConfig, updateClusterConfig,deleteClusterConfig,
-   tryConnect} from "@/services/cluster";
-import {message} from "antd";
-import {formatESSearchResult} from '@/lib/elasticsearch/util';
+import {
+  createClusterConfig,
+  searchClusterConfig,
+  updateClusterConfig,
+  deleteClusterConfig,
+  tryConnect,
+} from "@/services/cluster";
+import { message } from "antd";
+import { formatESSearchResult } from "@/lib/elasticsearch/util";
 
 export default {
-  namespace: 'clusterConfig',
+  namespace: "clusterConfig",
   state: {
-    editMode: '',
+    editMode: "",
     editValue: {},
   },
-  effects:{
-    *fetchClusterList({payload}, {call, put, select}){
+  effects: {
+    *fetchClusterList({ payload }, { call, put, select }) {
       let res = yield call(searchClusterConfig, payload);
-      if(res.error){
-        message.error(res.error)
+      if (res.error) {
+        message.error(res.error);
         return false;
       }
-      res = formatESSearchResult(res)
-      const {clusterStatus} = yield select(state => state.clusterConfig);
+      res = formatESSearchResult(res);
+      const { clusterStatus } = yield select((state) => state.clusterConfig);
       // for(let item of res.data){
       //   item.status= clusterStatus[item.id]
       // }
       yield put({
-        type: 'saveData',
-        payload: res
-      })
+        type: "saveData",
+        payload: res,
+      });
     },
-    *addCluster({payload}, {call, put, select}) {
-      let res = yield call(createClusterConfig, payload)
-      if(res.error){
-        message.error(res.error)
+    *addCluster({ payload }, { call, put, select }) {
+      let res = yield call(createClusterConfig, payload);
+      if (res.error) {
+        message.error(res.error);
         return false;
       }
-      let {data, total} = yield select(state => state.clusterConfig);
-      if(!data){
-        return
+      let { data, total } = yield select((state) => state.clusterConfig);
+      if (!data) {
+        return;
       }
       data.unshift({
         ...res._source,
         id: res._id,
       });
       yield put({
-        type: 'saveData',
+        type: "saveData",
         payload: {
           data,
           total: {
             ...total,
-            value: total.value + 1
+            value: total.value + 1,
           },
-        }
-      })
+        },
+      });
       yield put({
-        type: 'global/addCluster',
+        type: "global/addCluster",
         payload: {
+          ...res._source,
           id: res._id,
-          name: res._source.name,
-        }
-      })
+        },
+      });
       return res;
     },
-    *updateCluster({payload}, {call, put, select}) {
-      let res = yield call(updateClusterConfig, payload)
-      if(res.error){
-        message.error(res.error)
+    *updateCluster({ payload }, { call, put, select }) {
+      let res = yield call(updateClusterConfig, payload);
+      if (res.error) {
+        message.error(res.error);
         return false;
       }
-      let {data} = yield select(state => state.clusterConfig);
-      let idx = data.findIndex((item)=>{
+      let { data } = yield select((state) => state.clusterConfig);
+      let idx = data.findIndex((item) => {
         return item.id === res._id;
       });
 
       let originalEnabled = data[idx].enabled;
       data[idx] = {
         ...data[idx],
-        ...res._source
+        ...res._source,
       };
       yield put({
-        type: 'saveData',
+        type: "saveData",
         payload: {
-          data
-        }
-      })
+          data,
+        },
+      });
       //handle global cluster logic
-      if(originalEnabled !== res._source.enabled){
-        if(res._source.enabled === true) {
+      if (originalEnabled !== res._source.enabled) {
+        if (res._source.enabled === true) {
           yield put({
-            type: 'global/addCluster',
+            type: "global/addCluster",
             payload: {
               id: res._id,
               name: res._source.name,
-            }
-          })
-        }else{
+            },
+          });
+        } else {
           yield put({
-            type: 'global/removeCluster',
+            type: "global/removeCluster",
             payload: {
               id: res._id,
-            }
-          })
+            },
+          });
         }
-      }else{
+      } else {
         yield put({
-          type: 'global/updateCluster',
+          type: "global/updateCluster",
           payload: {
             id: res._id,
             name: res._source.name,
-          }
-        })
+          },
+        });
       }
 
       return res;
     },
-    *deleteCluster({payload}, {call, put, select}) {
-      let res = yield call(deleteClusterConfig, payload)
-      if(res.error){
-        message.error(res.error)
+    *deleteCluster({ payload }, { call, put, select }) {
+      let res = yield call(deleteClusterConfig, payload);
+      if (res.error) {
+        message.error(res.error);
         return false;
       }
-      let {data, total} = yield select(state => state.clusterConfig);
-      data = data.filter((item)=>{
+      let { data, total } = yield select((state) => state.clusterConfig);
+      data = data.filter((item) => {
         return item.id !== payload.id;
-      })
+      });
       yield put({
-        type: 'saveData',
+        type: "saveData",
         payload: {
           data,
           total: {
             ...total,
-            value: total.value + 1
-          }
-        }
-      })
+            value: total.value + 1,
+          },
+        },
+      });
       yield put({
-        type: 'global/removeCluster',
+        type: "global/removeCluster",
         payload: {
-          id: payload.id
-        }
-      })
+          id: payload.id,
+        },
+      });
       return res;
     },
-    *doTryConnect({payload}, {call, put, select}) {
-      let res = yield call(tryConnect, payload)
-      if(res.error){
-        message.error(res.error)
+    *doTryConnect({ payload }, { call, put, select }) {
+      let res = yield call(tryConnect, payload);
+      if (res.error) {
+        message.error(res.error);
         return false;
       }
 
       yield put({
-        type: 'saveData',
+        type: "saveData",
         payload: {
           tempClusterInfo: res,
-        }
-      })
+        },
+      });
       return res;
-    }
+    },
   },
-  reducers:{
-    saveData(state, {payload}){
+  reducers: {
+    saveData(state, { payload }) {
       return {
         ...state,
         ...payload,
-      }
-    }
-  }
-}
+      };
+    },
+  },
+};

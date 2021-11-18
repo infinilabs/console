@@ -12,15 +12,15 @@ import (
 	"time"
 )
 
-func (h *APIHandler) HandleSaveCommonCommandAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+func (h *APIHandler) HandleAddCommonCommandAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	resBody := map[string]interface{}{
 	}
 
 	reqParams := elastic.CommonCommand{}
 	err := h.DecodeJSON(req, &reqParams)
 	if err != nil {
-		resBody["error"] = err
-		h.WriteJSON(w, resBody, http.StatusInternalServerError)
+		resBody["error"] = err.Error()
+		h.WriteJSON(w, resBody, http.StatusOK)
 		return
 	}
 
@@ -28,23 +28,68 @@ func (h *APIHandler) HandleSaveCommonCommandAction(w http.ResponseWriter, req *h
 	reqParams.ID = util.GetUUID()
 	esClient := elastic.GetClient(h.Config.Elasticsearch)
 
-	queryDSL :=[]byte(fmt.Sprintf(`{"size":1, "query":{"bool":{"must":{"match":{"title":"%s"}}}}}`, reqParams.Title))
+	queryDSL :=[]byte(fmt.Sprintf(`{"size":1, "query":{"bool":{"must":{"match":{"title.keyword":"%s"}}}}}`, reqParams.Title))
 	var indexName  = orm.GetIndexName(reqParams)
 	searchRes, err := esClient.SearchWithRawQueryDSL(indexName, queryDSL)
 	if err != nil {
-		resBody["error"] = err
-		h.WriteJSON(w, resBody, http.StatusInternalServerError)
+		resBody["error"] = err.Error()
+		h.WriteJSON(w, resBody, http.StatusOK)
 		return
 	}
 	if  len(searchRes.Hits.Hits) > 0 {
 		resBody["error"] = "title already exists"
-		h.WriteJSON(w, resBody, http.StatusInternalServerError)
+		h.WriteJSON(w, resBody, http.StatusOK)
 		return
 	}
 	_, err = esClient.Index(indexName,"", reqParams.ID, reqParams)
+	if err != nil {
+		resBody["error"] = err.Error()
+		h.WriteJSON(w, resBody, http.StatusOK)
+		return
+	}
 
 	resBody["_id"] = reqParams.ID
 	resBody["result"] = "created"
+	resBody["_source"] = reqParams
+
+	h.WriteJSON(w, resBody,http.StatusOK)
+}
+func (h *APIHandler) HandleSaveCommonCommandAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	resBody := map[string]interface{}{
+	}
+
+	reqParams := elastic.CommonCommand{}
+	err := h.DecodeJSON(req, &reqParams)
+	if err != nil {
+		resBody["error"] = err.Error()
+		h.WriteJSON(w, resBody, http.StatusOK)
+		return
+	}
+	reqParams.ID = ps.ByName("cid")
+	esClient := elastic.GetClient(h.Config.Elasticsearch)
+
+	queryDSL :=[]byte(fmt.Sprintf(`{"size":1, "query":{"bool":{"must":{"match":{"title.keyword":"%s"}}}}}`, reqParams.Title))
+	var indexName  = orm.GetIndexName(reqParams)
+	searchRes, err := esClient.SearchWithRawQueryDSL(indexName, queryDSL)
+	if err != nil {
+		resBody["error"] = err.Error()
+		h.WriteJSON(w, resBody, http.StatusOK)
+		return
+	}
+	if  len(searchRes.Hits.Hits) > 0 && searchRes.Hits.Hits[0].ID.(string) != reqParams.ID {
+		resBody["error"] = "title already exists"
+		h.WriteJSON(w, resBody, http.StatusOK)
+		return
+	}
+	_, err = esClient.Index(indexName,"", reqParams.ID, reqParams)
+	if err != nil {
+		resBody["error"] = err.Error()
+		h.WriteJSON(w, resBody, http.StatusOK)
+		return
+	}
+
+	resBody["_id"] = reqParams.ID
+	resBody["result"] = "updated"
 	resBody["_source"] = reqParams
 
 	h.WriteJSON(w, resBody,http.StatusOK)
@@ -55,14 +100,18 @@ func (h *APIHandler) HandleQueryCommonCommandAction(w http.ResponseWriter, req *
 	}
 
 	var (
-		title          = h.GetParameterOrDefault(req, "title", "")
-		queryDSL      = `{"query":{"bool":{"filter":[%s]}}, "size": %d, "from": %d}`
+		keyword          = h.GetParameterOrDefault(req, "keyword", "")
+		queryDSL      = `{"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d}`
 		strSize       = h.GetParameterOrDefault(req, "size", "20")
 		strFrom       = h.GetParameterOrDefault(req, "from", "0")
 		filterBuilder = &strings.Builder{}
 	)
-	if title != ""{
-		filterBuilder.WriteString(fmt.Sprintf(`{"prefix":{"title": "%s"}}`, title))
+	if keyword != ""{
+		filterBuilder.WriteString(fmt.Sprintf(`{"query_string": {
+            "default_field": "*",
+            "query": "%s"
+          }
+        }`, keyword))
 	}
 	size, _ := strconv.Atoi(strSize)
 	if size <= 0 {

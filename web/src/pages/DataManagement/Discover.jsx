@@ -101,7 +101,11 @@ const Discover = (props) => {
     return subscriptions;
   }, [props.indexPattern]);
   const setIndexPattern = async (id, typ) => {
-    const IP = await services.indexPatternService.get(id, typ);
+    const IP = await services.indexPatternService.get(
+      id,
+      typ,
+      props.selectedCluster.id
+    );
     subscriptions.unsubscribe();
     props.changeIndexPattern(IP);
     setState({
@@ -111,9 +115,14 @@ const Discover = (props) => {
     });
   };
   const onTimeFieldChange = async (id, timeField) => {
-    const IP = await services.indexPatternService.get(id, "index");
+    const IP = await services.indexPatternService.get(
+      id,
+      "index",
+      props.selectedCluster.id
+    );
     IP.timeFieldName = timeField;
     props.changeIndexPattern(IP);
+    updateQuery();
   };
 
   //const indexPatterns = [{"id":"1ccce5c0-bb9a-11eb-957b-939add21a246","type":"index-pattern","namespaces":["default"],"updated_at":"2021-05-23T07:40:14.747Z","version":"WzkxOTEsNDhd","attributes":{"title":"test-custom*","timeFieldName":"created_at","fields":"[{\"count\":0,\"name\":\"_id\",\"type\":\"string\",\"esTypes\":[\"_id\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":false},{\"count\":0,\"name\":\"_index\",\"type\":\"string\",\"esTypes\":[\"_index\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":false},{\"count\":0,\"name\":\"_score\",\"type\":\"number\",\"scripted\":false,\"searchable\":false,\"aggregatable\":false,\"readFromDocValues\":false},{\"count\":0,\"name\":\"_source\",\"type\":\"_source\",\"esTypes\":[\"_source\"],\"scripted\":false,\"searchable\":false,\"aggregatable\":false,\"readFromDocValues\":false},{\"count\":0,\"name\":\"_type\",\"type\":\"string\",\"esTypes\":[\"_type\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":false},{\"count\":0,\"name\":\"address\",\"type\":\"string\",\"esTypes\":[\"text\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"count\":0,\"name\":\"address.keyword\",\"type\":\"string\",\"esTypes\":[\"keyword\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true,\"subType\":{\"multi\":{\"parent\":\"address\"}}},{\"count\":0,\"conflictDescriptions\":{\"text\":[\"test-custom1\"],\"long\":[\"test-custom\",\"test-custom8\",\"test-custom9\"]},\"name\":\"age\",\"type\":\"conflict\",\"esTypes\":[\"text\",\"long\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":false},{\"count\":0,\"name\":\"age.keyword\",\"type\":\"string\",\"esTypes\":[\"keyword\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true,\"subType\":{\"multi\":{\"parent\":\"age\"}}},{\"count\":0,\"name\":\"created_at\",\"type\":\"date\",\"esTypes\":[\"date\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true},{\"count\":0,\"name\":\"email\",\"type\":\"string\",\"esTypes\":[\"text\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"count\":0,\"name\":\"email.keyword\",\"type\":\"string\",\"esTypes\":[\"keyword\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true,\"subType\":{\"multi\":{\"parent\":\"email\"}}},{\"count\":0,\"name\":\"hobbies\",\"type\":\"string\",\"esTypes\":[\"text\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"count\":0,\"name\":\"hobbies.keyword\",\"type\":\"string\",\"esTypes\":[\"keyword\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true,\"subType\":{\"multi\":{\"parent\":\"hobbies\"}}},{\"count\":0,\"name\":\"id\",\"type\":\"string\",\"esTypes\":[\"text\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"count\":0,\"name\":\"id.keyword\",\"type\":\"string\",\"esTypes\":[\"keyword\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true,\"subType\":{\"multi\":{\"parent\":\"id\"}}},{\"count\":0,\"name\":\"name\",\"type\":\"string\",\"esTypes\":[\"text\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"count\":0,\"name\":\"name.keyword\",\"type\":\"string\",\"esTypes\":[\"keyword\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true,\"subType\":{\"multi\":{\"parent\":\"name\"}}}]"},"references":[],"migrationVersion":{"index-pattern":"7.6.0"}}];
@@ -723,7 +732,8 @@ const DiscoverUI = (props) => {
         } else {
           defaultIP = await services.indexPatternService.get(
             indexNames[0],
-            "index"
+            "index",
+            props.selectedCluster.id
           );
           setIndex(indexNames[0]);
         }

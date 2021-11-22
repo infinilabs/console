@@ -5,9 +5,9 @@ import cluster from "./zh-CN/cluster";
 export default {
   "navBar.lang": "语言",
 
-  "layout.user.appname": "极限搜索管理后台",
-  "layout.user.appslogon": "极限科技的搜索平台是东半球最好用的搜索服务平台",
-  "app.setting.appname": "极限搜索中心",
+  "layout.user.appname": "极限数据管理后台",
+  "layout.user.appslogon": "极限科技的数据管理平台是东半球最好用的实时数据管理平台",
+  "app.setting.appname": "极限数据中心",
 
   "layout.user.link.help": "帮助",
   "layout.user.link.privacy": "隐私",

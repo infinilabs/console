@@ -1,12 +1,13 @@
+#配置应用存储数据的 Elasticsearch 集群信息
 elasticsearch:
   - name: default
     enabled: true
     monitored: true
-    endpoint: http://192.168.3.188:9299
+    endpoint: http://localhost:9200
     basic_auth:
       username: elastic
       password: ZBdkVQUUdF1Sir4X4BGB
-
+#前端 UI HTTP 配置
 web:
   enabled: true
   ui:
@@ -14,9 +15,19 @@ web:
     path: .public
     vfs: true
     local: true
+    #api_endpoint: 10.0.2.5:9000 #配置 api_endpoint 可覆盖默认 api 访问地址
   network:
     binding: 0.0.0.0:9000
     skip_occupied_port: true
+#API IP 地址需要在前端可连通（虚拟机环境安装，宿主机访问）
+api:
+  enabled: true
+  network:
+    binding: 0.0.0.0:2900
+    skip_occupied_port: true
+  cors:
+    allowed_origins:
+      - "*"
 
 elastic:
     elasticsearch: default

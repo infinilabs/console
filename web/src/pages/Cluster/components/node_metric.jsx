@@ -38,19 +38,25 @@ export default ({ clusterID, timezone, timeRange, handleTimeChange }) => {
     node_name: undefined,
   });
 
-  const topChange = (e) => {
-    setFilter({
-      node_name: undefined,
-      top: e.target.value,
-    });
-  };
+  const topChange = React.useCallback(
+    (e) => {
+      setFilter({
+        node_name: undefined,
+        top: e.target.value,
+      });
+    },
+    [setFilter]
+  );
 
-  const nodeValueChange = (value) => {
-    setFilter({
-      top: undefined,
-      node_name: value,
-    });
-  };
+  const nodeValueChange = React.useCallback(
+    (value) => {
+      setFilter({
+        top: undefined,
+        node_name: value,
+      });
+    },
+    [setFilter]
+  );
   const queryParams = React.useMemo(() => {
     const bounds = calculateBounds({
       from: timeRange.min,
@@ -127,10 +133,18 @@ export default ({ clusterID, timezone, timeRange, handleTimeChange }) => {
           <div className="selector">
             <div className="top_radio">
               <Radio.Group onChange={topChange} value={filter.top}>
-                <Radio.Button value="5">Top5</Radio.Button>
-                <Radio.Button value="10">Top10</Radio.Button>
-                <Radio.Button value="15">Top15</Radio.Button>
-                <Radio.Button value="20">Top20</Radio.Button>
+                <Radio.Button key="5" value="5">
+                  Top5
+                </Radio.Button>
+                <Radio.Button key="10" value="10">
+                  Top10
+                </Radio.Button>
+                <Radio.Button key="15" value="15">
+                  Top15
+                </Radio.Button>
+                <Radio.Button key="20" value="20">
+                  Top20
+                </Radio.Button>
               </Radio.Group>
             </div>
             <div className="value-selector">
@@ -154,7 +168,7 @@ export default ({ clusterID, timezone, timeRange, handleTimeChange }) => {
           {//Object.keys(metrics)
           gorupOrder.map((e, i) => {
             return (
-              <div style={{ margin: "8px 0" }}>
+              <div key={e} style={{ margin: "8px 0" }}>
                 <MetricContainer
                   title={formatMessage({ id: `cluster.metrics.group.${e}` })}
                   collapsed={false}

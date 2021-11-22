@@ -16,7 +16,13 @@ export const formatter = {
     size = size.toFixed(1);
     return size + unitArr[index];
   },
-  dates: (day) => timeFormatter(niceTimeFormatByDay(day)),
+  dates: (day) => {
+    let formatStr = niceTimeFormatByDay(day).replace(":ss", "");
+    if (day == 7) {
+      formatStr = formatStr.replace(":mm", "");
+    }
+    return timeFormatter(formatStr);
+  },
   full_dates: (d) => DateTime.fromMillis(d).toFormat("yyyy-MM-dd HH:mm:ss"),
   utc_full_dates: (d) =>
     DateTime.fromMillis(d)

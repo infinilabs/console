@@ -319,9 +319,12 @@ export const ConsoleUI = ({
 
   setClusterID(tabState.activeKey?.split(":")[0]);
   const panes = tabState.panes.filter((pane: any) => {
+    pane.closable = true;
     return typeof clusterMap[pane.cluster_id] != "undefined";
   });
-
+  if (panes.length == 1) {
+    panes[0].closable = false;
+  }
   const saveTitle = (key: string, title: string) => {
     dispatch({
       type: "saveTitle",
@@ -336,6 +339,18 @@ export const ConsoleUI = ({
     // console.log(refToElement.offsetHeight, delta)
     setEditorHeight(refToElement.clientHeight);
   };
+
+  useEffect(() => {
+    const winResize = () => {
+      if (isFullscreen) {
+        setEditorHeight(rootRef.current.offsetHeight);
+      }
+    };
+    window.addEventListener("resize", winResize);
+    return () => {
+      window.removeEventListener("resize", winResize);
+    };
+  }, [isFullscreen]);
 
   const disableWindowScroll = () => {
     document.body.style.overflow = "hidden";

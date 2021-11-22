@@ -15,3 +15,27 @@
   fill-opacity: 50%;
   padding-left: 5px;
 }
+
+.summary {
+  padding: 15px;
+  border-top: 1px solid rgb(232, 232, 232);
+  border-bottom: 1px solid rgb(232, 232, 232);
+  position: relative;
+  .mask {
+    position: absolute;
+    inset: 0;
+    background: rgba(96, 96, 96, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: red;
+    font-size: 20px;
+  }
+  .metricMask {
+    filter: blur(4px);
+    -o-filter: blur(4px);
+    -ms-filter: blur(4px);
+    -moz-filter: blur(4px);
+    -webkit-filter: blur(4px);
+  }
+}

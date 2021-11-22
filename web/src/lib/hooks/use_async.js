@@ -8,7 +8,7 @@ export default function useAsync(callback, dependencies = []) {
   const callbackMemoized = React.useCallback(() => {
     setLoading(true);
     setError(undefined);
-    setValue(undefined);
+    // setValue(undefined);
     callback()
       .then(setValue)
       .catch(setError)

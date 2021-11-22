@@ -119,6 +119,14 @@ export default class GlobalHeaderRight extends PureComponent {
           {" "}
           <Icon type="code" />
         </a>
+        <a
+          className={styles.action}
+          target="_blank"
+          href="https://www.infinilabs.com"
+        >
+          {" "}
+          <Icon type="question-circle" />
+        </a>
 
         {/* <NoticeIcon
           className={styles.action}
@@ -172,7 +180,10 @@ export default class GlobalHeaderRight extends PureComponent {
         ) : (
           <Spin size="small" style={{ marginLeft: 8, marginRight: 8 }} />
         )} */}
-        <SelectLang className={styles.action} />
+        <a className={styles.action}>
+          <SelectLang />
+        </a>
+
         <div
           style={{
             display: this.state.consoleVisible ? "block" : "none",

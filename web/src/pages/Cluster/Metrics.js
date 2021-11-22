@@ -162,6 +162,7 @@ const MonitorDatePicker = ({
   clusterMonitor,
   selectedCluster: global.selectedCluster,
   clusterList: global.clusterList,
+  clusterStatus: global.clusterStatus,
 }))
 class ClusterMonitor extends PureComponent {
   constructor(props) {
@@ -376,52 +377,72 @@ class ClusterMonitor extends PureComponent {
       {
         from: "now-15m",
         to: "now",
-        display: "最近15分钟",
+        display: formatMessage({
+          id: "cluster.monitor.timepicker.last15minutes",
+        }),
       },
       {
         from: "now-30m",
         to: "now",
-        display: "最近30分钟",
+        display: formatMessage({
+          id: "cluster.monitor.timepicker.last30minutes",
+        }),
       },
       {
         from: "now-1h",
         to: "now",
-        display: "最近一小时",
+        display: formatMessage({
+          id: "cluster.monitor.timepicker.lasthour",
+        }),
       },
       {
         from: "now-24h",
         to: "now",
-        display: "最近一天",
+        display: formatMessage({
+          id: "cluster.monitor.timepicker.lastday",
+        }),
       },
       {
         from: "now/d",
         to: "now/d",
-        display: "今天",
+        display: formatMessage({
+          id: "cluster.monitor.timepicker.today",
+        }),
       },
       {
         from: "now/w",
         to: "now/w",
-        display: "这个星期",
+        display: formatMessage({
+          id: "cluster.monitor.timepicker.thisweek",
+        }),
       },
       {
         from: "now-7d",
         to: "now",
-        display: "最近一周",
+        display: formatMessage({
+          id: "cluster.monitor.timepicker.lastweek",
+        }),
       },
       {
         from: "now-30d",
         to: "now",
-        display: "最近一个月",
+        display: formatMessage({
+          id: "cluster.monitor.timepicker.lastmonth",
+        }),
       },
       {
         from: "now-90d",
         to: "now",
-        display: "最近三个月",
+        display: formatMessage({
+          id: "cluster.monitor.timepicker.last3month",
+        }),
       },
       {
         from: "now-1y",
         to: "now",
-        display: "最近一年",
+        display: formatMessage({
+          id: "cluster.monitor.timepicker.lastyear",
+        }),
       },
     ].map(({ from, to, display }) => {
       return {
@@ -430,240 +451,278 @@ class ClusterMonitor extends PureComponent {
         label: display,
       };
     });
+    let clusterAvailable = true;
+    const { clusterStatus: cstatus, selectedCluster } = this.props;
+    if (cstatus && selectedCluster) {
+      clusterAvailable = cstatus[selectedCluster.id].available;
+    }
 
     return (
-      <Spin spinning={this.state.spinning} tip="Loading...">
-        <div style={{ background: "#fff" }}>
-          <div style={{ background: "#fff", padding: "5px", marginBottom: 5 }}>
-            <MonitorDatePicker
-              timeRange={this.state.timeRange}
-              commonlyUsedRanges={commonlyUsedRanges}
-              isLoading={this.state.spinning}
-              onChange={this.handleTimeChange}
-            />
-          </div>
-
-          <div
-            style={{
-              padding: 15,
-              borderTop: "1px solid rgb(232, 232, 232)",
-              borderBottom: "1px solid rgb(232, 232, 232)",
-            }}
-          >
-            <Row gutter={[16, { xs: 8, sm: 16, md: 24, lg: 32 }]}>
-              <Col md={2} xs={4}>
-                <Statistic
-                  valueStyle={vstyle}
-                  title="集群名称"
-                  value={clusterStats.cluster_name}
-                />
-              </Col>
-              <Col md={2} xs={4}>
-                <Statistic
-                  valueStyle={vstyle}
-                  title="在线时长"
-                  value={clusterStats.uptime}
-                />
-              </Col>
-              <Col md={2} xs={4}>
-                <Statistic
-                  valueStyle={vstyle}
-                  title="集群版本"
-                  value={clusterStats.version}
-                />
-              </Col>
-              <Col md={2} xs={4}>
-                <Statistic
-                  valueStyle={vstyle}
-                  title="健康情况"
-                  value={clusterStats.status}
-                  prefix={<HealthCircle color={clusterStats.status} />}
-                />
-              </Col>
-              <Col md={2} xs={4}>
-                <Statistic
-                  valueStyle={vstyle}
-                  title="节点数"
-                  value={clusterStats.nodes_count}
-                />
-              </Col>
-              <Col md={2} xs={4}>
-                <Statistic
-                  valueStyle={vstyle}
-                  title="索引数"
-                  value={clusterStats.indices_count}
-                />
-              </Col>
-
-              <Col md={2} xs={4}>
-                <Statistic
-                  valueStyle={vstyle}
-                  title="主/总分片"
-                  value={
-                    clusterStats.primary_shards +
-                    "/" +
-                    clusterStats.total_shards
-                  }
-                />
-              </Col>
-
-              <Col md={2} xs={4}>
-                <Statistic
-                  valueStyle={vstyle}
-                  title="未分配分片"
-                  value={clusterStats.unassigned_shards}
-                />
-              </Col>
-
-              <Col md={2} xs={4}>
-                <Statistic
-                  valueStyle={vstyle}
-                  title="文档数"
-                  value={clusterStats.document_count}
-                />
-              </Col>
-
-              <Col md={2} xs={4}>
-                <Statistic
-                  valueStyle={vstyle}
-                  title="存储空间"
-                  value={
-                    clusterStats.used_store_bytes +
-                    "/" +
-                    clusterStats.max_store_bytes
-                  }
-                />
-              </Col>
-              <Col md={2} xs={4}>
-                <Statistic
-                  valueStyle={vstyle}
-                  title="JVM 内存"
-                  value={
-                    clusterStats.used_jvm_bytes +
-                    "/" +
-                    clusterStats.max_jvm_bytes
-                  }
-                />
-              </Col>
-            </Row>
-          </div>
-          <div>
-            <Tabs animated={false}>
-              <Tabs.TabPane key="cluster" tab="Cluster">
-                {Object.keys(clusterMetrics).map((e, i) => {
-                  let axis = clusterMetrics[e].axis;
-                  let lines = clusterMetrics[e].lines;
-                  let disableHeaderFormat = false;
-                  let headerUnit = "";
-                  return (
-                    <div key={e} className={styles.vizChartContainer}>
-                      <Chart
-                        size={[, 200]}
-                        className={styles.vizChartItem}
-                        ref={this.chartRefs[i]}
-                      >
-                        <Settings
-                          pointerUpdateDebounce={0}
-                          pointerUpdateTrigger="x"
-                          externalPointerEvents={{
-                            tooltip: { visible: true },
-                          }}
-                          onPointerUpdate={this.pointerUpdate}
-                          theme={theme}
-                          showLegend
-                          legendPosition={Position.Top}
-                          onBrushEnd={this.handleChartBrush}
-                          tooltip={{
-                            headerFormatter: disableHeaderFormat
-                              ? undefined
-                              : ({ value }) =>
-                                  `${formatter.full_dates(value)}${
-                                    headerUnit ? ` ${headerUnit}` : ""
-                                  }`,
-                          }}
-                          debug={false}
-                        />
-                        <Axis
-                          id="{e}-bottom"
-                          position={Position.Bottom}
-                          showOverlappingTicks
-                          labelFormat={this.state.timeRange.timeFormatter}
-                          tickFormat={this.state.timeRange.timeFormatter}
-                        />
-                        {axis.map((item) => {
-                          return (
-                            <Axis
-                              key={e + "-" + item.id}
-                              id={e + "-" + item.id}
-                              showGridLines={item.showGridLines}
-                              groupId={item.group}
-                              title={formatMessage({
-                                id:
-                                  "dashboard.charts.title." +
-                                  e +
-                                  ".axis." +
-                                  item.title,
-                              })}
-                              position={item.position}
-                              ticks={item.ticks}
-                              labelFormat={getFormatter(
-                                item.formatType,
-                                item.labelFormat
-                              )}
-                              tickFormat={getFormatter(
-                                item.formatType,
-                                item.tickFormat
-                              )}
-                            />
-                          );
-                        })}
-
-                        {lines.map((item) => {
-                          return (
-                            <LineSeries
-                              key={item.metric.label}
-                              id={item.metric.label}
-                              groupId={item.metric.group}
-                              timeZone={timezone}
-                              xScaleType={ScaleType.Time}
-                              yScaleType={ScaleType.Linear}
-                              xAccessor={0}
-                              tickFormat={getFormatter(
-                                item.metric.formatType,
-                                item.metric.tickFormat,
-                                item.metric.units
-                              )}
-                              yAccessors={[1]}
-                              data={item.data}
-                              curve={CurveType.CURVE_MONOTONE_X}
-                            />
-                          );
-                        })}
-                      </Chart>
-                    </div>
-                  );
-                })}
-              </Tabs.TabPane>
-              <Tabs.TabPane key="node" tab="Node">
-                <NodeMetric
-                  clusterID={this.props.selectedCluster.id}
-                  timezone={timezone}
-                  timeRange={this.state.timeRange}
-                  handleTimeChange={this.handleTimeChange}
-                />
-              </Tabs.TabPane>
-              <Tabs.TabPane key="index" tab="Index">
-                <IndexMetric
-                  clusterID={this.props.selectedCluster.id}
-                  timezone={timezone}
-                  timeRange={this.state.timeRange}
-                  handleTimeChange={this.handleTimeChange}
-                />
-              </Tabs.TabPane>
-            </Tabs>
-          </div>
+      //   <Spin spinning={this.state.spinning} tip="Loading...">
+      <div style={{ background: "#fff" }}>
+        <div style={{ background: "#fff", padding: "5px", marginBottom: 5 }}>
+          <MonitorDatePicker
+            timeRange={this.state.timeRange}
+            commonlyUsedRanges={commonlyUsedRanges}
+            isLoading={this.state.spinning}
+            onChange={this.handleTimeChange}
+          />
         </div>
-      </Spin>
+
+        <div className={styles.summary}>
+          {!clusterAvailable ? (
+            <div className={styles.mask}>Cluster is not availabe.</div>
+          ) : null}
+          <Row
+            gutter={[16, { xs: 8, sm: 16, md: 24, lg: 32 }]}
+            className={!clusterAvailable ? styles.metricMask : ""}
+          >
+            <Col md={2} xs={4}>
+              <Statistic
+                valueStyle={vstyle}
+                title={formatMessage({
+                  id: "cluster.monitor.summary.name",
+                })}
+                value={clusterStats.cluster_name}
+              />
+            </Col>
+            <Col md={2} xs={4}>
+              <Statistic
+                valueStyle={vstyle}
+                title={formatMessage({
+                  id: "cluster.monitor.summary.online_time",
+                })}
+                value={clusterStats.uptime}
+              />
+            </Col>
+            <Col md={2} xs={4}>
+              <Statistic
+                valueStyle={vstyle}
+                title={formatMessage({
+                  id: "cluster.monitor.summary.version",
+                })}
+                value={clusterStats.version}
+              />
+            </Col>
+            <Col md={2} xs={4}>
+              <Statistic
+                valueStyle={vstyle}
+                title={formatMessage({
+                  id: "cluster.monitor.summary.health",
+                })}
+                value={clusterStats.status}
+                prefix={<HealthCircle color={clusterStats.status} />}
+              />
+            </Col>
+            <Col md={2} xs={4}>
+              <Statistic
+                valueStyle={vstyle}
+                title={formatMessage({
+                  id: "cluster.monitor.summary.node_count",
+                })}
+                value={clusterStats.nodes_count}
+              />
+            </Col>
+            <Col md={2} xs={4}>
+              <Statistic
+                valueStyle={vstyle}
+                title={formatMessage({
+                  id: "cluster.monitor.summary.total_index",
+                })}
+                value={clusterStats.indices_count}
+              />
+            </Col>
+
+            <Col md={2} xs={4}>
+              <Statistic
+                valueStyle={vstyle}
+                title={formatMessage({
+                  id: "cluster.monitor.summary.shard",
+                })}
+                value={
+                  clusterStats.primary_shards + "/" + clusterStats.total_shards
+                }
+              />
+            </Col>
+
+            <Col md={2} xs={4}>
+              <Statistic
+                valueStyle={vstyle}
+                title={formatMessage({
+                  id: "cluster.monitor.summary.unassign_shard",
+                })}
+                value={clusterStats.unassigned_shards}
+              />
+            </Col>
+
+            <Col md={2} xs={4}>
+              <Statistic
+                valueStyle={vstyle}
+                title={formatMessage({
+                  id: "cluster.monitor.summary.total_docs",
+                })}
+                value={clusterStats.document_count}
+              />
+            </Col>
+
+            <Col md={2} xs={4}>
+              <Statistic
+                valueStyle={vstyle}
+                title={formatMessage({
+                  id: "cluster.monitor.summary.storage",
+                })}
+                value={
+                  clusterStats.used_store_bytes +
+                  "/" +
+                  clusterStats.max_store_bytes
+                }
+              />
+            </Col>
+            <Col md={2} xs={4}>
+              <Statistic
+                valueStyle={vstyle}
+                title={formatMessage({
+                  id: "cluster.monitor.summary.jvm",
+                })}
+                value={
+                  clusterStats.used_jvm_bytes + "/" + clusterStats.max_jvm_bytes
+                }
+              />
+            </Col>
+          </Row>
+        </div>
+        <div>
+          <Tabs animated={false}>
+            <Tabs.TabPane
+              key="cluster"
+              tab={formatMessage({
+                id: "cluster.monitor.cluster.title",
+              })}
+            >
+              {Object.keys(clusterMetrics).map((e, i) => {
+                let axis = clusterMetrics[e].axis;
+                let lines = clusterMetrics[e].lines;
+                let disableHeaderFormat = false;
+                let headerUnit = "";
+                return (
+                  <div key={e} className={styles.vizChartContainer}>
+                    <Chart
+                      size={[, 200]}
+                      className={styles.vizChartItem}
+                      ref={this.chartRefs[i]}
+                    >
+                      <Settings
+                        pointerUpdateDebounce={0}
+                        pointerUpdateTrigger="x"
+                        // externalPointerEvents={{
+                        //   tooltip: { visible: true },
+                        // }}
+                        onPointerUpdate={this.pointerUpdate}
+                        theme={theme}
+                        showLegend
+                        legendPosition={Position.Top}
+                        onBrushEnd={this.handleChartBrush}
+                        tooltip={{
+                          headerFormatter: disableHeaderFormat
+                            ? undefined
+                            : ({ value }) =>
+                                `${formatter.full_dates(value)}${
+                                  headerUnit ? ` ${headerUnit}` : ""
+                                }`,
+                        }}
+                        debug={false}
+                      />
+                      <Axis
+                        id="{e}-bottom"
+                        position={Position.Bottom}
+                        showOverlappingTicks
+                        labelFormat={this.state.timeRange.timeFormatter}
+                        tickFormat={this.state.timeRange.timeFormatter}
+                      />
+                      {axis.map((item) => {
+                        return (
+                          <Axis
+                            key={e + "-" + item.id}
+                            id={e + "-" + item.id}
+                            showGridLines={item.showGridLines}
+                            groupId={item.group}
+                            title={formatMessage({
+                              id:
+                                "dashboard.charts.title." +
+                                e +
+                                ".axis." +
+                                item.title,
+                            })}
+                            position={item.position}
+                            ticks={item.ticks}
+                            labelFormat={getFormatter(
+                              item.formatType,
+                              item.labelFormat
+                            )}
+                            tickFormat={getFormatter(
+                              item.formatType,
+                              item.tickFormat
+                            )}
+                          />
+                        );
+                      })}
+
+                      {lines.map((item) => {
+                        return (
+                          <LineSeries
+                            key={item.metric.label}
+                            id={item.metric.label}
+                            groupId={item.metric.group}
+                            timeZone={timezone}
+                            xScaleType={ScaleType.Time}
+                            yScaleType={ScaleType.Linear}
+                            xAccessor={0}
+                            tickFormat={getFormatter(
+                              item.metric.formatType,
+                              item.metric.tickFormat,
+                              item.metric.units
+                            )}
+                            yAccessors={[1]}
+                            data={item.data}
+                            curve={CurveType.CURVE_MONOTONE_X}
+                          />
+                        );
+                      })}
+                    </Chart>
+                  </div>
+                );
+              })}
+            </Tabs.TabPane>
+            <Tabs.TabPane
+              key="node"
+              tab={formatMessage({
+                id: "cluster.monitor.node.title",
+              })}
+            >
+              <NodeMetric
+                clusterID={this.props.selectedCluster.id}
+                timezone={timezone}
+                timeRange={this.state.timeRange}
+                handleTimeChange={this.handleTimeChange}
+              />
+            </Tabs.TabPane>
+            <Tabs.TabPane
+              key="index"
+              tab={formatMessage({
+                id: "cluster.monitor.index.title",
+              })}
+            >
+              <IndexMetric
+                clusterID={this.props.selectedCluster.id}
+                timezone={timezone}
+                timeRange={this.state.timeRange}
+                handleTimeChange={this.handleTimeChange}
+              />
+            </Tabs.TabPane>
+          </Tabs>
+        </div>
+      </div>
+      //   </Spin>
     );
   }
 }

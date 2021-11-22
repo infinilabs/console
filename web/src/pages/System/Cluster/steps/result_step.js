@@ -1,15 +1,19 @@
-import Result from '@/components/Result';
-import React, { Fragment } from 'react';
-import { Button, Row, Col } from 'antd';
-import styles from './styles.less';
+import Result from "@/components/Result";
+import React, { Fragment } from "react";
+import { Button, Row, Col } from "antd";
+import styles from "./styles.less";
+import { formatMessage } from "umi/locale";
 
-export const ResultStep = (props)=>{
-  const {clusterConfig, oneMoreClick, goToClusterList} = props;
+export const ResultStep = (props) => {
+  const { clusterConfig, oneMoreClick, goToClusterList } = props;
   const information = (
     <div className={styles.information}>
       <Row>
         <Col xs={24} sm={8} className={styles.label}>
-          集群名称：
+          {formatMessage({
+            id: "cluster.manage.table.column.name",
+          })}
+          ：
         </Col>
         <Col xs={24} sm={16}>
           {clusterConfig?.cluster_name}
@@ -17,18 +21,24 @@ export const ResultStep = (props)=>{
       </Row>
       <Row>
         <Col xs={24} sm={8} className={styles.label}>
-          集群版本：
+          {formatMessage({
+            id: "cluster.manage.table.column.version",
+          })}
+          ：
         </Col>
         <Col xs={24} sm={16}>
-        {clusterConfig?.version}
+          {clusterConfig?.version}
         </Col>
       </Row>
       <Row>
         <Col xs={24} sm={8} className={styles.label}>
-          集群地址：
+          {formatMessage({
+            id: "cluster.manage.table.column.endpoint",
+          })}
+          ：
         </Col>
         <Col xs={24} sm={16}>
-        {clusterConfig?.host}
+          {clusterConfig?.host}
         </Col>
       </Row>
       <Row>
@@ -36,7 +46,11 @@ export const ResultStep = (props)=>{
           TLS：
         </Col>
         <Col xs={24} sm={16}>
-        {clusterConfig?.isTLS ? '是': '否'}
+          {formatMessage({
+            id: clusterConfig?.isTLS
+              ? "cluster.regist.step.complete.tls.yes"
+              : "cluster.regist.step.complete.tls.no",
+          })}
         </Col>
       </Row>
     </div>
@@ -44,20 +58,28 @@ export const ResultStep = (props)=>{
   const actions = (
     <Fragment>
       <Button type="primary" onClick={oneMoreClick}>
-        再创建一个集群
+        {formatMessage({
+          id: "cluster.regist.step.complete.btn.create",
+        })}
       </Button>
-      <Button onClick={goToClusterList}>查看集群列表</Button>
+      <Button onClick={goToClusterList}>
+        {formatMessage({
+          id: "cluster.regist.step.complete.btn.goto",
+        })}
+      </Button>
     </Fragment>
   );
 
   return (
     <Result
       type="success"
-      title="创建成功"
+      title={formatMessage({
+        id: "cluster.regist.step.complete.success",
+      })}
       description=""
       extra={information}
       actions={actions}
       className={styles.result}
     />
   );
-}
+};

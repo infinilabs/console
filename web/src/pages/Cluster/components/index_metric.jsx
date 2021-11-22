@@ -18,6 +18,9 @@ import { formatter, getFormatter, getNumFormatter } from "../format";
 import "./node_metric.scss";
 import { calculateBounds } from "@/components/kibana/data/common/query/timefilter";
 import moment from "moment";
+import { formatMessage } from "umi/locale";
+import MetricContainer from "./metric_container";
+import _ from "lodash";
 
 export default ({ clusterID, timezone, timeRange, handleTimeChange }) => {
   const [filter, setFilter] = React.useState({
@@ -58,16 +61,21 @@ export default ({ clusterID, timezone, timeRange, handleTimeChange }) => {
   );
 
   const metrics = React.useMemo(() => {
-    return Object.values(value?.metrics || {}).sort(
-      (a, b) => a.order - b.order
-    );
+    return _.groupBy(value?.metrics, "group");
+    // return Object.values(value?.metrics || {}).sort(
+    //   (a, b) => a.order - b.order
+    // );
   }, [value]);
 
   const chartRefs = React.useRef();
   React.useEffect(() => {
-    chartRefs.current = metrics.map(() => {
-      return React.createRef();
+    let refs = [];
+    Object.values(metrics).map((m) => {
+      m.forEach(() => {
+        refs.push(React.createRef());
+      });
     });
+    chartRefs.current = refs;
   }, [metrics]);
 
   const { value: indices } = useFetch(
@@ -99,9 +107,10 @@ export default ({ clusterID, timezone, timeRange, handleTimeChange }) => {
       });
     }
   };
+  let refIdx = 0;
 
   return (
-    <div>
+    <div id="node-metric">
       <div className="px">
         <div className="metric-control">
           <div className="selector">
@@ -117,7 +126,7 @@ export default ({ clusterID, timezone, timeRange, handleTimeChange }) => {
               <Select
                 style={{ width: 200 }}
                 onChange={indexValueChange}
-                placeholder="请选择索引"
+                placeholder="Select index"
                 value={filter.index_name}
                 showSearch={true}
               >
@@ -130,91 +139,110 @@ export default ({ clusterID, timezone, timeRange, handleTimeChange }) => {
         </div>
       </div>
       <div className="px">
-        <Skeleton active loading={loading} paragraph={{ rows: 20 }}>
+        <Skeleton active loading={!value} paragraph={{ rows: 20 }}>
           {Object.keys(metrics).map((e, i) => {
-            let axis = metrics[e].axis;
-            let lines = metrics[e].lines;
-            let disableHeaderFormat = false;
-            let headerUnit = "";
             return (
-              <div key={e} className={styles.vizChartContainer}>
-                <Chart
-                  size={[, 200]}
-                  className={styles.vizChartItem}
-                  ref={chartRefs.current[i]}
+              <div style={{ margin: "8px 0" }}>
+                <MetricContainer
+                  title={formatMessage({ id: `cluster.metrics.group.${e}` })}
+                  collapsed={false}
                 >
-                  <Settings
-                    // theme={theme}
-                    pointerUpdateDebounce={0}
-                    pointerUpdateTrigger="x"
-                    externalPointerEvents={{
-                      tooltip: { visible: true },
-                    }}
-                    onPointerUpdate={pointerUpdate}
-                    showLegend
-                    legendPosition={Position.Top}
-                    onBrushEnd={handleChartBrush}
-                    tooltip={{
-                      headerFormatter: disableHeaderFormat
-                        ? undefined
-                        : ({ value }) =>
-                            `${formatter.full_dates(value)}${
-                              headerUnit ? ` ${headerUnit}` : ""
-                            }`,
-                    }}
-                    debug={false}
-                  />
-                  <Axis
-                    id="{e}-bottom"
-                    position={Position.Bottom}
-                    showOverlappingTicks
-                    labelFormat={timeRange.timeFormatter}
-                    tickFormat={timeRange.timeFormatter}
-                  />
-                  {axis.map((item) => {
-                    return (
-                      <Axis
-                        key={e + "-" + item.id}
-                        id={e + "-" + item.id}
-                        showGridLines={item.showGridLines}
-                        groupId={item.group}
-                        title={item.title}
-                        position={item.position}
-                        ticks={item.ticks}
-                        labelFormat={getFormatter(
-                          item.formatType,
-                          item.labelFormat
-                        )}
-                        tickFormat={getFormatter(
-                          item.formatType,
-                          item.tickFormat
-                        )}
-                      />
-                    );
-                  })}
+                  <div className="metric-inner-cnt">
+                    {metrics[e].map((metric) => {
+                      let axis = metric.axis;
+                      let lines = metric.lines;
+                      let disableHeaderFormat = false;
+                      let headerUnit = "";
+                      return (
+                        <div key={metric.key} className="metric-item">
+                          <Chart
+                            size={[, 200]}
+                            className={styles.vizChartItem}
+                            ref={chartRefs.current[refIdx++]}
+                          >
+                            <Settings
+                              // theme={theme}
+                              pointerUpdateDebounce={0}
+                              pointerUpdateTrigger="x"
+                              // externalPointerEvents={{
+                              //   tooltip: { visible: true },
+                              // }}
+                              onPointerUpdate={pointerUpdate}
+                              showLegend
+                              legendPosition={Position.Top}
+                              onBrushEnd={handleChartBrush}
+                              tooltip={{
+                                headerFormatter: disableHeaderFormat
+                                  ? undefined
+                                  : ({ value }) =>
+                                      `${formatter.full_dates(value)}${
+                                        headerUnit ? ` ${headerUnit}` : ""
+                                      }`,
+                              }}
+                              debug={false}
+                            />
+                            <Axis
+                              id="{e}-bottom"
+                              position={Position.Bottom}
+                              showOverlappingTicks
+                              labelFormat={timeRange.timeFormatter}
+                              tickFormat={timeRange.timeFormatter}
+                              ticks={8}
+                            />
+                            {axis.map((item) => {
+                              return (
+                                <Axis
+                                  key={e + "-" + item.id}
+                                  id={e + "-" + item.id}
+                                  showGridLines={item.showGridLines}
+                                  groupId={item.group}
+                                  title={formatMessage({
+                                    id:
+                                      "cluster.metrics.index.axis." +
+                                      metric.key +
+                                      ".title",
+                                  })}
+                                  position={item.position}
+                                  ticks={item.ticks}
+                                  labelFormat={getFormatter(
+                                    item.formatType,
+                                    item.labelFormat
+                                  )}
+                                  tickFormat={getFormatter(
+                                    item.formatType,
+                                    item.tickFormat
+                                  )}
+                                />
+                              );
+                            })}
 
-                  {lines.map((item) => {
-                    return (
-                      <LineSeries
-                        key={item.metric.label}
-                        id={item.metric.label}
-                        groupId={item.metric.group}
-                        timeZone={timezone}
-                        xScaleType={ScaleType.Time}
-                        yScaleType={ScaleType.Linear}
-                        xAccessor={0}
-                        tickFormat={getFormatter(
-                          item.metric.formatType,
-                          item.metric.tickFormat,
-                          item.metric.units
-                        )}
-                        yAccessors={[1]}
-                        data={item.data}
-                        curve={CurveType.CURVE_MONOTONE_X}
-                      />
-                    );
-                  })}
-                </Chart>
+                            {lines.map((item) => {
+                              return (
+                                <LineSeries
+                                  key={item.metric.label}
+                                  id={item.metric.label}
+                                  groupId={item.metric.group}
+                                  timeZone={timezone}
+                                  xScaleType={ScaleType.Time}
+                                  yScaleType={ScaleType.Linear}
+                                  xAccessor={0}
+                                  tickFormat={getFormatter(
+                                    item.metric.formatType,
+                                    item.metric.tickFormat,
+                                    item.metric.units
+                                  )}
+                                  yAccessors={[1]}
+                                  data={item.data}
+                                  curve={CurveType.CURVE_MONOTONE_X}
+                                />
+                              );
+                            })}
+                          </Chart>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </MetricContainer>
               </div>
             );
           })}

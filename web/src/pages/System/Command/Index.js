@@ -24,6 +24,7 @@ import {
 // import { loader } from "@monaco-editor/react";
 import Editor from "@monaco-editor/react";
 import { EuiCodeBlock } from "@elastic/eui";
+import clusterBg from "@/assets/cluster_bg.png";
 // loader.config({
 //   paths: {
 //     vs: "monaco-editor/min/vs",
@@ -34,10 +35,27 @@ import styles from "../../List/TableList.less";
 import { transformSettingsForApi } from "@/lib/elasticsearch/edit_settings";
 import PageHeaderWrapper from "@/components/PageHeaderWrapper";
 import { TagGenerator } from "@/components/kibana/console/components/CommonCommandModal";
+import { formatMessage } from "umi/locale";
+import { deleteCommand } from "@/components/kibana/console/modules/mappings/mappings";
 
 const FormItem = Form.Item;
 const { TextArea } = Input;
 const { TabPane } = Tabs;
+
+const content = (
+  <div className={styles.pageHeaderContent}>
+    <p>
+      常用命令可以帮助您保存常用的请求，并且在开发工具里面通过 LOAD
+      命令快速地加载。
+    </p>
+  </div>
+);
+
+const extraContent = (
+  <div className={styles.extraImg}>
+    <img src={clusterBg} />
+  </div>
+);
 
 /* eslint react/no-multi-comp:0 */
 @connect(({ command }) => ({
@@ -125,6 +143,7 @@ class Index extends PureComponent {
       },
     }).then((res) => {
       if (!res.error) {
+        deleteCommand(id);
         message.success("删除成功！");
       }
     });
@@ -235,7 +254,11 @@ class Index extends PureComponent {
     } = this.props;
 
     return (
-      <PageHeaderWrapper>
+      <PageHeaderWrapper
+        title="常用命令管理"
+        content={content}
+        extraContent={extraContent}
+      >
         <Card bordered={false}>
           <div className={styles.tableList}>
             <div className={styles.tableListForm}>
@@ -313,7 +336,7 @@ class Index extends PureComponent {
             <div>标签：</div>
             <div>
               <TagGenerator
-                value={editingCommand.tag}
+                value={editingCommand.tag || []}
                 onChange={this.onEditTagChange}
               />
               {/* <Input  style={{ width: 250 }} /> */}

@@ -22,6 +22,7 @@ import { formatMessage } from "umi/locale";
 import MetricContainer from "./metric_container";
 import _ from "lodash";
 
+const gorupOrder = ["storage", "operations", "latency", "memory", "cache"];
 export default ({ clusterID, timezone, timeRange, handleTimeChange }) => {
   const [filter, setFilter] = React.useState({
     top: "5",
@@ -108,6 +109,9 @@ export default ({ clusterID, timezone, timeRange, handleTimeChange }) => {
     }
   };
   let refIdx = 0;
+  if (Object.keys(metrics).length == 0) {
+    return null;
+  }
 
   return (
     <div id="node-metric">
@@ -140,7 +144,7 @@ export default ({ clusterID, timezone, timeRange, handleTimeChange }) => {
       </div>
       <div className="px">
         <Skeleton active loading={!value} paragraph={{ rows: 20 }}>
-          {Object.keys(metrics).map((e, i) => {
+          {gorupOrder.map((e, i) => {
             return (
               <div style={{ margin: "8px 0" }}>
                 <MetricContainer

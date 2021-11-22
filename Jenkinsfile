@@ -4,76 +4,41 @@ pipeline {
     environment { 
         CI = 'true'
     }
+
     stages {
+
+         stage('build') {
         
-        stage('Stop Front Docker') {
-            steps {
-                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
-                    sh 'cd /home/deploy/search-center/web && cnpm run docker:stop-dev || true'
-                }
-            }
-        }
-
-        stage('Stop Backend Docker') {
-            steps {
-                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
-                    sh 'cd /home/deploy/search-center/docker && docker-compose -f docker-compose.dev.yml  down || true'
-                }
-            }
-        }
-
-        stage('Update Front Docker') {
-            steps {
-                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
-                    sh 'docker pull docker.infini.ltd:64443/nodejs-dev:latest' 
-                }
-            }
-        }
-
-        stage('Update Backend Docker') {
-            steps {
-                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
-                    sh 'docker pull docker.infini.ltd:64443/golang-dev:latest'
-                }
-            }
-        }
-
-        stage('Update Files') {
-            steps {
-                sh 'cd /home/deploy/search-center && git add . && git stash && git pull origin master'
-            }
-        }
-
-        stage('Install Packages') {
-            steps {
-                sh 'cd /home/deploy/search-center && cnpm install'
-            }
-        }
+                parallel {
         
-        stage('Fix FileAttr') { 
-            steps {
-                sh "cd /home/deploy/search-center/docker && chmod a+x *.sh && perl -pi -e 's/\r\n/\n/g' *.sh && \
-                cd /home/deploy/search-center/web/docker && chmod a+x *.sh && perl -pi -e 's/\r\n/\n/g' *.sh"
-            }
-        }
-
-        stage('Start Front Docker') {
-            steps {
-                sh 'cd /home/deploy/search-center/web && cnpm run docker:dev'
-            }
-        }
-
-        stage('Build Front Files') {
-            steps {
-                sh 'cd /home/deploy/search-center/web && cnpm run docker:build'
-            }
-        }
-
-        stage('Start Backend Docker') {
-            steps {
-                sh 'cd /home/deploy/search-center/docker && docker-compose -f docker-compose.dev.yml  up --remove-orphans -d'
-            }
-        }
+                stage('Build Linux Packages') {
+        
+                    agent {
+                        label 'linux'
+                    }
+        
+                    steps {
+                        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
+                            sh 'cd /home/jenkins/go/src/infini.sh/search-center && git stash && git pull origin master && make clean config build-linux build-arm'
+                            sh "cd /home/deploy/search-center/docker && chmod a+x *.sh && perl -pi -e 's/\r\n/\n/g' *.sh && \
+                                            cd /home/deploy/search-center/web/docker && chmod a+x *.sh && perl -pi -e 's/\r\n/\n/g' *.sh"
+                            sh 'cd /home/deploy/search-center && cnpm install'
+                            sh 'cd /home/deploy/search-center/web && cnpm run build'
+                            sh label: 'package-linux-amd64', script: 'cd /home/jenkins/go/src/infini.sh/search-center/bin && tar cfz ${WORKSPACE}/console-$VERSION-$BUILD_NUMBER-linux-amd64.tar.gz console-linux-amd64 console.yml '
+                            sh label: 'package-linux-386', script: 'cd /home/jenkins/go/src/infini.sh/search-center/bin && tar cfz ${WORKSPACE}/console-$VERSION-$BUILD_NUMBER-linux-386.tar.gz console-linux-386 console.yml '
+                            sh label: 'package-linux-mips', script: 'cd /home/jenkins/go/src/infini.sh/search-center/bin && tar cfz ${WORKSPACE}/console-$VERSION-$BUILD_NUMBER-linux-mips.tar.gz console-linux-mips console.yml '
+                            sh label: 'package-linux-mipsle', script: 'cd /home/jenkins/go/src/infini.sh/search-center/bin && tar cfz ${WORKSPACE}/console-$VERSION-$BUILD_NUMBER-linux-mipsle.tar.gz console-linux-mipsle console.yml '
+                            sh label: 'package-linux-mips64', script: 'cd /home/jenkins/go/src/infini.sh/search-center/bin && tar cfz ${WORKSPACE}/console-$VERSION-$BUILD_NUMBER-linux-mips64.tar.gz console-linux-mips64 console.yml '
+                            sh label: 'package-linux-mips64le', script: 'cd /home/jenkins/go/src/infini.sh/search-center/bin && tar cfz ${WORKSPACE}/console-$VERSION-$BUILD_NUMBER-linux-mips64le.tar.gz console-linux-mips64le console.yml '
+                            sh label: 'package-linux-arm5', script: 'cd /home/jenkins/go/src/infini.sh/search-center/bin && tar cfz ${WORKSPACE}/console-$VERSION-$BUILD_NUMBER-linux-arm5.tar.gz console-linux-armv5 console.yml '
+                            sh label: 'package-linux-arm6', script: 'cd /home/jenkins/go/src/infini.sh/search-center/bin && tar cfz ${WORKSPACE}/console-$VERSION-$BUILD_NUMBER-linux-arm6.tar.gz console-linux-armv6 console.yml '
+                            sh label: 'package-linux-arm7', script: 'cd /home/jenkins/go/src/infini.sh/search-center/bin && tar cfz ${WORKSPACE}/console-$VERSION-$BUILD_NUMBER-linux-arm7.tar.gz console-linux-armv7 console.yml '
+                            sh label: 'package-linux-arm64', script: 'cd /home/jenkins/go/src/infini.sh/search-center/bin && tar cfz ${WORKSPACE}/console-$VERSION-$BUILD_NUMBER-linux-arm64.tar.gz console-linux-arm64 console.yml '
+                            archiveArtifacts artifacts: 'console-$VERSION-$BUILD_NUMBER-*.tar.gz', fingerprint: true, followSymlinks: true, onlyIfSuccessful: false
+                        }
+                    }
+                 }
+         }
 
     }
 }

@@ -20,10 +20,10 @@ pipeline {
                     steps {
                         catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
                             sh 'cd /home/jenkins/go/src/infini.sh/search-center && git stash && git pull origin master && make clean config build-linux build-arm'
-                            sh "cd /home/deploy/search-center/docker && chmod a+x *.sh && perl -pi -e 's/\r\n/\n/g' *.sh && \
-                                            cd /home/deploy/search-center/web/docker && chmod a+x *.sh && perl -pi -e 's/\r\n/\n/g' *.sh"
-                            sh 'cd /home/deploy/search-center && cnpm install'
-                            sh 'cd /home/deploy/search-center/web && cnpm run build'
+                            sh "cd /home/jenkins/go/src/infini.sh/search-center/docker && chmod a+x *.sh && perl -pi -e 's/\r\n/\n/g' *.sh && \
+                                            cd /home/jenkins/go/src/infini.sh/search-center/web/docker && chmod a+x *.sh && perl -pi -e 's/\r\n/\n/g' *.sh"
+                            sh 'cd /home/jenkins/go/src/infini.sh/search-center && cnpm install'
+                            sh 'cd /home/jenkins/go/src/infini.sh/search-center/web && cnpm run build'
                             sh label: 'package-linux-amd64', script: 'cd /home/jenkins/go/src/infini.sh/search-center/bin && tar cfz ${WORKSPACE}/console-$VERSION-$BUILD_NUMBER-linux-amd64.tar.gz console-linux-amd64 console.yml '
                             sh label: 'package-linux-386', script: 'cd /home/jenkins/go/src/infini.sh/search-center/bin && tar cfz ${WORKSPACE}/console-$VERSION-$BUILD_NUMBER-linux-386.tar.gz console-linux-386 console.yml '
                             sh label: 'package-linux-mips', script: 'cd /home/jenkins/go/src/infini.sh/search-center/bin && tar cfz ${WORKSPACE}/console-$VERSION-$BUILD_NUMBER-linux-mips.tar.gz console-linux-mips console.yml '
@@ -41,4 +41,6 @@ pipeline {
          }
 
     }
+}
+
 }

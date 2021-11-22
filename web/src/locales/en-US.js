@@ -5,10 +5,10 @@ import cluster from "./en-US/cluster";
 export default {
   "navBar.lang": "Languages",
 
-  "layout.user.appname": "INFINI SEARCH CENTER",
+  "layout.user.appname": "INFINI DATA CENTER",
   "layout.user.appslogon":
-    "INFINI search center is the best search platform in the world",
-  "app.setting.appname": "Search Center",
+    "INFINI data center is the best search platform in the world",
+  "app.setting.appname": "INFINI Console",
 
   "layout.user.link.help": "Help",
   "layout.user.link.privacy": "Privacy",
@@ -157,7 +157,7 @@ export default {
   "menu.system.logs.audit": "AUDIT",
   "menu.system.logs.query": "QUERY",
   "menu.system.logs.slow": "SLOW",
-  "menu.system.commonCommand": "COMMON COMMAND",
+  "menu.system.commonCommand": "COMMANDS",
 
   "menu.form": "Form",
   "menu.form.basicform": "Basic Form",

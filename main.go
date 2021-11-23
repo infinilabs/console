@@ -9,8 +9,14 @@ import (
 	"infini.sh/framework/core/module"
 	"infini.sh/framework/core/orm"
 	pipe "infini.sh/framework/core/pipeline"
-	"infini.sh/framework/modules"
+	elastic2 "infini.sh/framework/modules/elastic"
+	"infini.sh/framework/modules/filter"
 	"infini.sh/framework/modules/metrics"
+	"infini.sh/framework/modules/pipeline"
+	"infini.sh/framework/modules/queue"
+	"infini.sh/framework/modules/stats"
+	"infini.sh/framework/modules/task"
+	"infini.sh/framework/modules/ui"
 	"infini.sh/framework/plugins/elastic/json_indexing"
 	"infini.sh/search-center/config"
 	"infini.sh/search-center/model"
@@ -40,7 +46,16 @@ func main() {
 	if app.Setup(func() {
 
 		//load core modules first
-		modules.Register()
+		module.RegisterSystemModule(elastic2.ElasticModule{})
+		module.RegisterSystemModule(filter.FilterModule{})
+		module.RegisterSystemModule(&stats.SimpleStatsModule{})
+		module.RegisterSystemModule(&queue.DiskQueue{})
+		module.RegisterSystemModule(&queue.RedisModule{})
+		module.RegisterSystemModule(&queue.QueueModule{})
+		module.RegisterSystemModule(&ui.UIModule{})
+		module.RegisterSystemModule(&pipeline.PipeModule{})
+		module.RegisterSystemModule(&task.TaskModule{})
+
 		pipe.RegisterProcessorPlugin("json_indexing", json_indexing.New)
 		module.RegisterUserPlugin(&metrics.MetricsModule{})
 

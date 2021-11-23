@@ -11,7 +11,6 @@ import (
 
 	log "github.com/cihub/seelog"
 	"infini.sh/framework/core/api"
-	"infini.sh/framework/core/ui"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/core/vfs"
 	uiapi "infini.sh/search-center/api"
@@ -27,7 +26,7 @@ func (h UI) InitUI() {
 
 	vfs.RegisterFS(public.StaticFS{StaticFolder: h.Config.UI.LocalPath, TrimLeftPath: h.Config.UI.LocalPath, CheckLocalFirst: h.Config.UI.LocalEnabled, SkipVFS: !h.Config.UI.VFSEnabled})
 
-	ui.HandleUI("/", vfs.FileServer(vfs.VFS()))
+	api.HandleUI("/", vfs.FileServer(vfs.VFS()))
 
 	uiapi.Init(h.Config)
 
@@ -37,14 +36,14 @@ func (h UI) InitUI() {
 		apiEndpoint = fmt.Sprintf("%s://%s", apiConfig.GetSchema(), apiConfig.NetworkConfig.GetPublishAddr())
 	}
 
-	ui.HandleUIFunc("/config", func(w http.ResponseWriter, req *http.Request){
+	api.HandleUIFunc("/config", func(w http.ResponseWriter, req *http.Request){
 		buf, _ := json.Marshal(util.MapStr{
 			"api_endpoint": apiEndpoint,
 		})
 		w.Write(buf)
 	})
 
-	ui.HandleUIFunc("/api/", func(w http.ResponseWriter, req *http.Request) {
+	api.HandleUIFunc("/api/", func(w http.ResponseWriter, req *http.Request) {
 		log.Warn("api: ", req.URL, " not implemented")
 		request, err := h.GetRawBody(req)
 		if err != nil {

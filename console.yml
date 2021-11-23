@@ -2,7 +2,7 @@
 elasticsearch:
   - name: default
     enabled: true
-    monitored: true
+    monitored: false
     endpoint: http://192.168.3.188:9299
     basic_auth:
       username: elastic
@@ -25,6 +25,12 @@ elastic:
     elasticsearch: default
     enabled: true
     remote_configs: true
+    health_check:
+      enabled: false
+    availability_check:
+      enabled: false
+    metadata_refresh:
+      enabled: false
     store:
       enabled: true
     orm:

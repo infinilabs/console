@@ -15,7 +15,7 @@ web:
     path: .public
     vfs: true
     local: true
-    #api_endpoint: 10.0.2.5:9000 #配置 api_endpoint 可覆盖默认 api 访问地址
+    #api_endpoint: 10.0.2.5:2900 #配置 api_endpoint 可覆盖默认 api 访问地址
   network:
     binding: 0.0.0.0:9000
     skip_occupied_port: true

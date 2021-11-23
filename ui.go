@@ -32,12 +32,14 @@ func (h UI) InitUI() {
 	uiapi.Init(h.Config)
 
 	var apiEndpoint = h.Config.UI.APIEndpoint
-	if strings.TrimSpace(apiEndpoint) == "" {
-		apiConfig := &global.Env().SystemConfig.APIConfig
-		apiEndpoint = fmt.Sprintf("%s://%s", apiConfig.GetSchema(), apiConfig.NetworkConfig.GetPublishAddr())
-	}
+	apiConfig := &global.Env().SystemConfig.APIConfig
 
 	ui.HandleUIFunc("/config", func(w http.ResponseWriter, req *http.Request){
+
+		if(strings.TrimSpace(apiEndpoint) == ""){
+			hostParts := strings.Split(req.Host, ":")
+			apiEndpoint = fmt.Sprintf("%s//%s:%s", apiConfig.GetSchema(), hostParts[0], apiConfig.NetworkConfig.GetBindingPort())
+		}
 		buf, _ := json.Marshal(util.MapStr{
 			"api_endpoint": apiEndpoint,
 		})

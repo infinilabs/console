@@ -37,8 +37,8 @@ pipeline {
 
                             sh label: 'package-mac-amd64', script: 'cd /home/jenkins/go/src/infini.sh/search-center/bin && zip -r ${WORKSPACE}/console-$VERSION-$BUILD_NUMBER-mac-amd64.zip console-mac-amd64 console.yml '
 //                             sh label: 'package-mac-arm64', script: 'cd /home/jenkins/go/src/infini.sh/search-center/bin && zip -r ${WORKSPACE}/console-$VERSION-$BUILD_NUMBER-mac-arm64.zip console-mac-arm64 console.yml '
-                            sh label: 'package-win-amd64', script: 'cd /home/jenkins/go/src/infini.sh/search-center/bin && zip -r ${WORKSPACE}/console-$VERSION-$BUILD_NUMBER-windows-amd64.zip console-windows-amd64 console.yml '
-                            sh label: 'package-win-386', script: 'cd /home/jenkins/go/src/infini.sh/search-center/bin && zip -r ${WORKSPACE}/console-$VERSION-$BUILD_NUMBER-windows-386.zip console-windows-386 console.yml '
+                            sh label: 'package-win-amd64', script: 'cd /home/jenkins/go/src/infini.sh/search-center/bin && zip -r ${WORKSPACE}/console-$VERSION-$BUILD_NUMBER-windows-amd64.zip console-windows-amd64.exe console.yml '
+                            sh label: 'package-win-386', script: 'cd /home/jenkins/go/src/infini.sh/search-center/bin && zip -r ${WORKSPACE}/console-$VERSION-$BUILD_NUMBER-windows-386.zip console-windows-386.exe console.yml '
                             archiveArtifacts artifacts: 'console-$VERSION-$BUILD_NUMBER-*.*', fingerprint: true, followSymlinks: true, onlyIfSuccessful: false
                         }
                     }

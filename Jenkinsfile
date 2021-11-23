@@ -16,9 +16,13 @@ pipeline {
 
                         steps {
                             catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
+                                sh 'cd /home/jenkins/go/src/infini.sh/search-center && git stash && git pull origin master && make clean'
                                 sh 'cd /home/jenkins/go/src/infini.sh/search-center && cnpm install'
                                 sh 'cd /home/jenkins/go/src/infini.sh/search-center/web && cnpm run build'
-                                sh 'cd /home/jenkins/go/src/infini.sh/search-center && git stash && git pull origin master && make clean config build-linux build-arm build-darwin build-win'
+                                sh 'cd /home/jenkins/go/src/infini.sh/search-center && git stash && git pull origin master && make config build-linux'
+                                sh 'cd /home/jenkins/go/src/infini.sh/search-center && git stash && git pull origin master && make config build-arm'
+                                sh 'cd /home/jenkins/go/src/infini.sh/search-center && git stash && git pull origin master && make config build-darwin'
+                                sh 'cd /home/jenkins/go/src/infini.sh/search-center && git stash && git pull origin master && make config build-win'
                                 sh "cd /home/jenkins/go/src/infini.sh/search-center/docker && chmod a+x *.sh && perl -pi -e 's/\r\n/\n/g' *.sh && \
                                                 cd /home/jenkins/go/src/infini.sh/search-center/web/docker && chmod a+x *.sh && perl -pi -e 's/\r\n/\n/g' *.sh"
 

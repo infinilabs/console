@@ -13,7 +13,7 @@ COPY ./search-center /go/src/infini.sh/search-center
 COPY ./license /go/src/infini.sh/license
 COPY ./vendor /go/src/infini.sh/vendor
 
-RUN cd gateway && OFFLINE_BUILD=true make config build
+RUN cd search-center && OFFLINE_BUILD=true make config build
 RUN chmod a+x /go/src/infini.sh/search-center/bin/console
 
 FROM alpine:latest

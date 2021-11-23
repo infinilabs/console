@@ -213,9 +213,9 @@ package-all-platform: package-darwin-platform package-linux-platform package-win
 
 package-darwin-platform:
 	@echo "Packaging Darwin"
-	cd $(OUTPUT_DIR) && tar cfz $(OUTPUT_DIR)/mac-amd64.tar.gz      $(APP_NAME)-mac-amd64 $(APP_CONFIG)
-# 	cd $(OUTPUT_DIR) && tar cfz $(OUTPUT_DIR)/mac-386.tar.gz      $(APP_NAME)-mac-386 $(APP_CONFIG)
-# 	cd $(OUTPUT_DIR) && tar cfz $(OUTPUT_DIR)/mac-arm64.tar.gz      $(APP_NAME)-mac-arm64 $(APP_CONFIG)
+	cd $(OUTPUT_DIR) && zip -r $(OUTPUT_DIR)/mac-amd64.zip      $(APP_NAME)-mac-amd64 $(APP_CONFIG)
+# 	cd $(OUTPUT_DIR) && zip -r $(OUTPUT_DIR)/mac-386.zip      $(APP_NAME)-mac-386 $(APP_CONFIG)
+	cd $(OUTPUT_DIR) && zip -r $(OUTPUT_DIR)/mac-arm64.zip      $(APP_NAME)-mac-arm64 $(APP_CONFIG)
 
 package-linux-platform:
 	@echo "Packaging Linux"
@@ -235,8 +235,8 @@ package-linux-arm-platform:
 
 package-windows-platform:
 	@echo "Packaging Windows"
-	cd $(OUTPUT_DIR) && tar cfz $(OUTPUT_DIR)/windows-amd64.tar.gz   $(APP_NAME)-windows-amd64.exe $(APP_CONFIG)
-	cd $(OUTPUT_DIR) && tar cfz $(OUTPUT_DIR)/windows-386.tar.gz   $(APP_NAME)-windows-386.exe $(APP_CONFIG)
+	cd $(OUTPUT_DIR) && zip -r $(OUTPUT_DIR)/windows-amd64.zip   $(APP_NAME)-windows-amd64.exe $(APP_CONFIG)
+	cd $(OUTPUT_DIR) && zip -r $(OUTPUT_DIR)/windows-386.zip   $(APP_NAME)-windows-386.exe $(APP_CONFIG)
 
 test:
 	go get -u github.com/kardianos/govendor

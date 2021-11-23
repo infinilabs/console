@@ -19,7 +19,7 @@ pipeline {
         
                     steps {
                         catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
-                            sh 'cd /home/jenkins/go/src/infini.sh/search-center && git stash && git pull origin master && make clean config build-linux build-arm'
+                            sh 'cd /home/jenkins/go/src/infini.sh/search-center && git stash && git pull origin master && make clean config build-linux build-arm build-darwin build-win'
                             sh "cd /home/jenkins/go/src/infini.sh/search-center/docker && chmod a+x *.sh && perl -pi -e 's/\r\n/\n/g' *.sh && \
                                             cd /home/jenkins/go/src/infini.sh/search-center/web/docker && chmod a+x *.sh && perl -pi -e 's/\r\n/\n/g' *.sh"
                             sh 'cd /home/jenkins/go/src/infini.sh/search-center && cnpm install'
@@ -34,6 +34,11 @@ pipeline {
                             sh label: 'package-linux-arm6', script: 'cd /home/jenkins/go/src/infini.sh/search-center/bin && tar cfz ${WORKSPACE}/console-$VERSION-$BUILD_NUMBER-linux-arm6.tar.gz console-linux-armv6 console.yml '
                             sh label: 'package-linux-arm7', script: 'cd /home/jenkins/go/src/infini.sh/search-center/bin && tar cfz ${WORKSPACE}/console-$VERSION-$BUILD_NUMBER-linux-arm7.tar.gz console-linux-armv7 console.yml '
                             sh label: 'package-linux-arm64', script: 'cd /home/jenkins/go/src/infini.sh/search-center/bin && tar cfz ${WORKSPACE}/console-$VERSION-$BUILD_NUMBER-linux-arm64.tar.gz console-linux-arm64 console.yml '
+
+                            sh label: 'package-mac-amd64', script: 'cd /home/jenkins/go/src/infini.sh/search-center/bin && zip -r ${WORKSPACE}/console-$VERSION-$BUILD_NUMBER-mac-amd64.zip console-mac-amd64 console.yml '
+                            sh label: 'package-mac-arm64', script: 'cd /home/jenkins/go/src/infini.sh/search-center/bin && zip -r ${WORKSPACE}/console-$VERSION-$BUILD_NUMBER-mac-arm64.zip console-mac-arm64 console.yml '
+                            sh label: 'package-win-amd64', script: 'cd /home/jenkins/go/src/infini.sh/search-center/bin && zip -r ${WORKSPACE}/console-$VERSION-$BUILD_NUMBER-windows-amd64.zip console-windows-amd64 console.yml '
+                            sh label: 'package-win-386', script: 'cd /home/jenkins/go/src/infini.sh/search-center/bin && zip -r ${WORKSPACE}/console-$VERSION-$BUILD_NUMBER-windows-386.zip console-windows-386 console.yml '
                             archiveArtifacts artifacts: 'console-$VERSION-$BUILD_NUMBER-*.tar.gz', fingerprint: true, followSymlinks: true, onlyIfSuccessful: false
                         }
                     }

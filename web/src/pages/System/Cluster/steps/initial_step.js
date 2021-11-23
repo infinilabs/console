@@ -41,7 +41,7 @@ export class InitialStep extends React.Component {
             rules: [
               {
                 type: "string",
-                pattern: /^[\w\.\-_~%]+\:\d+$/, //(https?:\/\/)?
+                pattern: /^[\w\.\-_~%]+(\:\d+)?$/, //(https?:\/\/)?
                 message: "请输入域名或 IP 地址和端口号",
               },
               {

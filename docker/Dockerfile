@@ -1,29 +1,23 @@
 FROM golang:alpine
 
-ENV TIME_ZONE=Asia/Shanghai
-
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositories \
-  && apk update \
-  && apk add --no-cache shadow git bash perl openssh vim tar curl python python-dev py-pip gcc g++ libcurl make\
+RUN  apk update \
+  && apk add --no-cache shadow git bash perl openssh vim tar curl python3 python3-dev py-pip gcc g++ libcurl make\
   && usermod -s /bin/bash root \
-  && rm -rf /var/cache/apk/* 
+  && rm -rf /var/cache/apk/*
 
-
-RUN \
-  mkdir -p /go/src/infini.sh/ \
-  && apk add --no-cache tzdata \
-  && echo "${TIME_ZONE}" > /etc/timezone \ 
-  && ln -sf /usr/share/zoneinfo/${TIME_ZONE} /etc/localtime 
+RUN mkdir -p /go/src/infini.sh
 
 WORKDIR /go/src/infini.sh/
+COPY ./framework /go/src/infini.sh/framework
+COPY ./search-center /go/src/infini.sh/search-center
+COPY ./license /go/src/infini.sh/license
+COPY ./vendor /go/src/infini.sh/vendor
 
-COPY ./entrypoint.sh /
-COPY ./ssh_config /etc/ssh/ssh_config
-COPY deploy.key /root/.ssh/id_rsa
-RUN perl -pi -e 's/\r\n/\n/g' /root/.ssh/id_rsa
-RUN chmod 600 /root/.ssh/id_rsa
+RUN cd gateway && OFFLINE_BUILD=true make config build
+RUN chmod a+x /go/src/infini.sh/search-center/bin/console
 
-EXPOSE 9000
-
-#CMD npm run dev
-ENTRYPOINT ["/entrypoint.sh"]
+FROM alpine:latest
+WORKDIR /
+COPY  --from=0 /go/src/infini.sh/search-center/bin/console /console
+COPY  --from=0 /go/src/infini.sh/search-center/bin/console.yml /console.yml
+CMD ["/console"]

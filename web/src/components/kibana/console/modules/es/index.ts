@@ -31,10 +31,10 @@
  */
 
 // @ts-ignore
-import $ from 'jquery';
+import $ from "jquery";
 // @ts-ignore
-import { stringify } from 'query-string';
-import {pathPrefix, ESPrefix} from '@/services/common';
+import { stringify } from "query-string";
+import { pathPrefix, ESPrefix } from "@/services/common";
 
 interface SendOptions {
   asSystemRequest?: boolean;
@@ -48,14 +48,14 @@ export function getVersion() {
 }
 
 export function getContentType(body: unknown) {
-  if (!body) return 'text/plain';
-  return 'application/json';
+  if (!body) return "text/plain";
+  return "application/json";
 }
 
-export function extractClusterIDFromURL(){
+export function extractClusterIDFromURL() {
   const matchs = location.hash.match(/\/elasticsearch\/(\w+)\/?/);
-  if(!matchs){
-    return ''
+  if (!matchs) {
+    return "";
   }
   return matchs[1];
 }
@@ -84,16 +84,20 @@ export function send(
     data,
     contentType: getContentType(data),
     cache: false,
-    crossDomain: true,
-    type: 'POST',
-    dataType: 'json', // disable automatic guessing
+    // crossDomain: true,
+    type: "POST",
+    dataType: "json", // disable automatic guessing
   };
 
   $.ajax(options).then(
     (responseData: any, textStatus: string, jqXHR: unknown) => {
       wrappedDfd.resolveWith({}, [responseData, textStatus, jqXHR]);
     },
-    ((jqXHR: { status: number; responseText: string }, textStatus: string, errorThrown: Error) => {
+    ((
+      jqXHR: { status: number; responseText: string },
+      textStatus: string,
+      errorThrown: Error
+    ) => {
       if (jqXHR.status === 0) {
         jqXHR.responseText =
           "\n\nFailed to connect to Console's backend.\nPlease check the  server is up and running";
@@ -106,26 +110,26 @@ export function send(
 
 export function queryCommonCommands(title?: string) {
   let url = `${pathPrefix}/elasticsearch/command`;
-  if(title){
-    url +=`?title=${title}`
+  if (title) {
+    url += `?title=${title}`;
   }
   return fetch(url, {
-    method: 'GET',
-  })
+    method: "GET",
+  });
 }
 
 export function constructESUrl(baseUri: string, path: string) {
-  baseUri = baseUri.replace(/\/+$/, '');
-  path = path.replace(/^\/+/, '');
-  return baseUri + '/' + path;
+  baseUri = baseUri.replace(/\/+$/, "");
+  path = path.replace(/^\/+/, "");
+  return baseUri + "/" + path;
 }
 
 export function saveCommonCommand(params: any) {
   return fetch(`${pathPrefix}/elasticsearch/command`, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify(params),
-    headers:{
-      'content-type': 'application/json'
-    }
-  })
+    headers: {
+      "content-type": "application/json",
+    },
+  });
 }

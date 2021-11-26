@@ -166,8 +166,10 @@ const ConsoleInputUI = ({
     };
   }, []);
   useEffect(() => {
-    retrieveAutoCompleteInfo(settings, settings.getAutocomplete(), clusterID);
-    aceEditorRef.current && (aceEditorRef.current["clusterID"] = clusterID);
+    if (clusterID) {
+      retrieveAutoCompleteInfo(settings, settings.getAutocomplete(), clusterID);
+      aceEditorRef.current && (aceEditorRef.current["clusterID"] = clusterID);
+    }
   }, [clusterID]);
 
   const handleSaveAsCommonCommand = async () => {

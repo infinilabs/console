@@ -113,7 +113,9 @@ class Index extends PureComponent {
   ];
 
   componentDidMount() {
-    this.fetchData();
+    this.fetchData({
+      current: 1,
+    });
   }
 
   fetchData = (params = {}) => {
@@ -159,6 +161,7 @@ class Index extends PureComponent {
         keyword: fieldsValue.keyword,
         from: 0,
         size: 10,
+        current: 1,
       });
       this.setState({
         searchKey: fieldsValue.keyword,
@@ -231,9 +234,19 @@ class Index extends PureComponent {
       },
     });
   };
+  handleTableChange = (pagination, filters, sorter, extra) => {
+    const { form } = this.props;
+    const { pageSize, current } = pagination;
+    this.fetchData({
+      from: (current - 1) * pageSize,
+      size: pageSize,
+      keyword: form.getFieldValue("keyword"),
+      current,
+    });
+  };
 
   render() {
-    const { data, total } = this.props.command;
+    const { data, total, pageSize, current } = this.props.command;
     const {
       modalVisible,
       updateModalVisible,
@@ -301,7 +314,12 @@ class Index extends PureComponent {
               bordered
               dataSource={data}
               rowKey="id"
-              pagination={{ pageSize: 10 }}
+              pagination={{
+                pageSize: pageSize,
+                current: current,
+                total: total?.value || total,
+              }}
+              onChange={this.handleTableChange}
               columns={this.columns}
             />
           </div>

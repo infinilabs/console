@@ -13,6 +13,8 @@ export default {
   state: {
     editMode: "",
     editValue: {},
+    pageSize: 20,
+    current: 1,
   },
   effects: {
     *fetchClusterList({ payload }, { call, put, select }) {
@@ -28,7 +30,10 @@ export default {
       // }
       yield put({
         type: "saveData",
-        payload: res,
+        payload: {
+          ...res,
+          current: payload.current,
+        },
       });
     },
     *addCluster({ payload }, { call, put, select }) {

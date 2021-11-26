@@ -1,9 +1,7 @@
 package api
 
 import (
-	log "github.com/cihub/seelog"
 	"infini.sh/framework/core/api"
-	"infini.sh/framework/core/task"
 	"infini.sh/search-center/api/index_management"
 	"infini.sh/search-center/config"
 	"infini.sh/search-center/service/alerting"
@@ -79,14 +77,14 @@ func Init(cfg *config.AppConfig) {
 	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/alerting/_monitors/:monitorID/_acknowledge/alerts", alerting.AcknowledgeAlerts)
 
 
-	task.RegisterScheduleTask(task.ScheduleTask{
-		Description: "sync reindex task result",
-		Task: func() {
-			err := index_management.SyncRebuildResult(cfg.Elasticsearch)
-			if err != nil {
-				log.Error(err)
-			}
-		},
-	})
+	//task.RegisterScheduleTask(task.ScheduleTask{
+	//	Description: "sync reindex task result",
+	//	Task: func() {
+	//		err := index_management.SyncRebuildResult(cfg.Elasticsearch)
+	//		if err != nil {
+	//			log.Error(err)
+	//		}
+	//	},
+	//})
 
 }

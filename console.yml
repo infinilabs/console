@@ -3,10 +3,14 @@ elasticsearch:
   - name: default
     enabled: true
     monitored: false
-    endpoint: http://192.168.3.188:9299
+#    endpoint: https://k8es.client.bindiego.com
+#    basic_auth:
+#      username: infini
+#      password: BTxSrT5m33rfpF4
+    endpoint: http://localhost:9200
     basic_auth:
       username: elastic
-      password: ZBdkVQUUdF1Sir4X4BGB
+      password: infinilabs
 
 #前端 UI HTTP 配置
 web:

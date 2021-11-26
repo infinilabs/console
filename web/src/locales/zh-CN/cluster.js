@@ -77,6 +77,16 @@ export default {
   "cluster.metrics.node.axis.docs_count.title": "Document Count",
   "cluster.metrics.node.axis.index_storage.title": "Indices Storage",
   "cluster.metrics.node.axis.jvm_heap_used_percent.title": "JVM Heap Usage",
+  "cluster.metrics.node.axis.os_cpu.title": "OS CPU Percent",
+  "cluster.metrics.node.axis.os_used_mem.title": "OS Mem Usage",
+  "cluster.metrics.node.axis.indexing_pressure_memory.title":
+    "Indexing Pressure",
+  "cluster.metrics.node.axis.jvm_used_heap.title": "JVM Used Heap",
+  "cluster.metrics.node.axis.jvm_young_gc_rate.title": "Young GC Rate",
+  "cluster.metrics.node.axis.jvm_young_gc_latency.title": "Young GC Latency",
+  "cluster.metrics.node.axis.jvm_mem_young_used.title": "Pools Young Used",
+  "cluster.metrics.node.axis.jvm_mem_young_peak_used.title":
+    "Pools Young Peak Used",
 
   "cluster.metrics.index.axis.index_storage.title": "Index Storage",
   "cluster.metrics.index.axis.doc_count.title": "Document count",
@@ -106,4 +116,5 @@ export default {
   "cluster.metrics.group.http": "Http Traffic",
   "cluster.metrics.group.memory": "Memory",
   "cluster.metrics.group.cache": "Cache",
+  "cluster.metrics.group.JVM": "JVM",
 };

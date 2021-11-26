@@ -10,6 +10,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useLayoutEffect,
 } from "react";
 import { useLocalStorage } from "@/lib/hooks/storage";
 import { setClusterID } from "../../components/kibana/console/modules/mappings/mappings";
@@ -116,6 +117,9 @@ const consoleTabReducer = (state: any, action: any) => {
         ...state,
         order: action.payload.order,
       };
+      break;
+    case "init":
+      newState = action.payload;
     default:
   }
   // setLocalState(newState);
@@ -199,11 +203,16 @@ export const ConsoleUI = ({
     });
 
     if (panes.length == 0) {
-      removeLocalState();
+      //reset tabState
+      dispatch({
+        type: "init",
+        payload: initialDefaultState(),
+      });
+      //removeLocalState();
       return;
     }
     setLocalState(tabState);
-  }, [tabState, clusterMap]);
+  }, [tabState, clusterMap, dispatch]);
 
   const saveEditorContent = useCallback(
     (content) => {

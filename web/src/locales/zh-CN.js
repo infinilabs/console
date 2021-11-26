@@ -6,7 +6,8 @@ export default {
   "navBar.lang": "语言",
 
   "layout.user.appname": "极限数据管理后台",
-  "layout.user.appslogon": "极限科技的数据管理平台是东半球最好用的实时数据管理平台",
+  "layout.user.appslogon":
+    "极限科技的数据管理平台是东半球最好用的实时数据管理平台",
   "app.setting.appname": "极限数据中心",
 
   "layout.user.link.help": "帮助",
@@ -209,8 +210,12 @@ export default {
 
   "dashboard.charts.title.cluster_storage.axis.indices_storage": "索引存储",
   "dashboard.charts.title.cluster_storage.axis.available_storage": "剩余存储",
+  "dashboard.charts.title.node_count.axis.count": "节点数",
+  "dashboard.charts.title.cluster_health.axis.percent": "健康状态百分比",
 
-  "dashboard.charts.title.cluster_documents.axis.documents": "文档总数",
+  "dashboard.charts.title.cluster_documents.axis.count": "文档总数",
+  "dashboard.charts.title.cluster_documents.axis.deleted": "文档删除数",
+  "dashboard.charts.title.cluster_indices.axis.count": "索引总数",
   "dashboard.charts.title.cluster_documents.axis.counts": "分片总数",
 
   "app.login.message-invalid-credentials": "账户或密码错误（admin/888888）",

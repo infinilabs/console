@@ -453,7 +453,7 @@ class ClusterMonitor extends PureComponent {
     });
     let clusterAvailable = true;
     const { clusterStatus: cstatus, selectedCluster } = this.props;
-    if (cstatus && selectedCluster) {
+    if (cstatus && selectedCluster && cstatus[selectedCluster.id]) {
       clusterAvailable = cstatus[selectedCluster.id].available;
     }
 
@@ -674,6 +674,7 @@ class ClusterMonitor extends PureComponent {
                             id={item.metric.label}
                             groupId={item.metric.group}
                             timeZone={timezone}
+                            color={item.color}
                             xScaleType={ScaleType.Time}
                             yScaleType={ScaleType.Linear}
                             xAccessor={0}

@@ -30,58 +30,64 @@
  * GitHub history for details.
  */
 
-import { useCallback } from 'react';
-import { sendRequestToES } from './send_request_to_es';
-import { instance as registry } from '../../contexts/editor_context/editor_registry';
-import { useRequestActionContext } from '../../contexts/request_context';
-import { useServicesContext } from '../../contexts/services_context';
-import {getCommand} from '../../modules/mappings/mappings';
-import {useEditorReadContext} from '../../contexts/editor_context';
+import { useCallback } from "react";
+import { sendRequestToES } from "./send_request_to_es";
+import { instance as registry } from "../../contexts/editor_context/editor_registry";
+import { useRequestActionContext } from "../../contexts/request_context";
+import { useServicesContext } from "../../contexts/services_context";
+import { getCommand } from "../../modules/mappings/mappings";
+import { useEditorReadContext } from "../../contexts/editor_context";
 
-function buildRawCommonCommandRequest(cmd:any){
-  const {requests} = cmd._source;
-  const strReqs = requests.map((req: any)=>{
-    const {method, path, body} = req;
+function buildRawCommonCommandRequest(cmd: any) {
+  const { requests } = cmd._source;
+  const strReqs = requests.map((req: any) => {
+    const { method, path, body } = req;
     return `${method} ${path}\n${body}`;
-  })
-  return strReqs.join('\n');
+  });
+  return strReqs.join("\n");
 }
 export const useSendCurrentRequestToES = () => {
   const dispatch = useRequestActionContext();
-  const { services: { history }, clusterID } = useServicesContext();
-  const {sensorEditor:editor} = useEditorReadContext();
+  const {
+    services: { history },
+    clusterID,
+  } = useServicesContext();
+  const { sensorEditor: editor } = useEditorReadContext();
 
   return useCallback(async () => {
     try {
       // const editor = registry.getInputEditor();
-      if(!editor) return
+      if (!editor) return;
       const requests = await editor.getRequestsInRange();
       if (!requests.length) {
-        console.log('No request selected. Select a request by placing the cursor inside it.');
+        console.log(
+          "No request selected. Select a request by placing the cursor inside it."
+        );
         return;
       }
-      const {url, method, data} = requests[0];
-      if(method === 'LOAD'){
-        const rawUrl = data[0]? data[0].slice(4).trim(): url;
+      const { url, method, data } = requests[0];
+      if (method === "LOAD") {
+        const rawUrl = data[0] ? data[0].slice(4).trim() : url;
         const cmd = getCommand(rawUrl);
-       // const curPostion = editor.currentReqRange //(editor.getCoreEditor().getCurrentPosition());
-        const lineNumber = editor.getCoreEditor().getCurrentPosition().lineNumber;
-        let crange = await editor.getRequestRange(lineNumber)
-        const rawRequest = buildRawCommonCommandRequest(cmd)
+        // const curPostion = editor.currentReqRange //(editor.getCoreEditor().getCurrentPosition());
+        const lineNumber = editor.getCoreEditor().getCurrentPosition()
+          .lineNumber;
+        let crange = await editor.getRequestRange(lineNumber);
+        const rawRequest = buildRawCommonCommandRequest(cmd);
         await editor.getCoreEditor().replaceRange(crange as any, rawRequest);
         // await editor.autoIndent();
         // editor.getCoreEditor().getContainer().focus();
         // crange = await editor.getRequestRange(lineNumber)
-        
+
         // editor.getCoreEditor().moveCursorToPosition({
         //   ...crange?.end as any,
         // //  column: editor.getCoreEditor().getLineValue(lineNumber).length + 1,
         // });
-      
+
         return;
       }
 
-      dispatch({ type: 'sendRequest', payload: undefined });
+      dispatch({ type: "sendRequest", payload: undefined });
 
       // @ts-ignore
       const results = await sendRequestToES({ requests, clusterID });
@@ -104,20 +110,20 @@ export const useSendCurrentRequestToES = () => {
       // }
       //
       dispatch({
-        type: 'requestSuccess',
+        type: "requestSuccess",
         payload: {
           data: results,
         },
       });
     } catch (e) {
-      if (e?.response) {
+      if (e) {
         dispatch({
-          type: 'requestFail',
-          payload: e,
+          type: "requestSuccess",
+          payload: { data: [e] },
         });
       } else {
         dispatch({
-          type: 'requestFail',
+          type: "requestFail",
           payload: undefined,
         });
       }

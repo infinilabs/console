@@ -4,7 +4,10 @@ import { formatESSearchResult } from "@/lib/elasticsearch/util";
 
 export default {
   namespace: "command",
-  state: {},
+  state: {
+    pageSize: 20,
+    current: 1,
+  },
   effects: {
     *fetchCommandList({ payload }, { call, put, select }) {
       let res = yield call(searchCommand, payload);
@@ -15,7 +18,10 @@ export default {
       res = formatESSearchResult(res);
       yield put({
         type: "saveData",
-        payload: res,
+        payload: {
+          ...res,
+          current: payload.current,
+        },
       });
     },
 

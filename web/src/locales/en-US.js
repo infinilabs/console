@@ -207,8 +207,12 @@ export default {
     "Storage Usage",
   "dashboard.charts.title.cluster_storage.axis.available_storage":
     "Storage Available",
-  "dashboard.charts.title.cluster_documents.axis.documents": "Documents Count",
+  "dashboard.charts.title.cluster_documents.axis.count": "Documents Count",
+  "dashboard.charts.title.cluster_documents.axis.deleted": "Docmuents Deleted",
+  "dashboard.charts.title.cluster_indices.axis.count": "Indices Count",
   "dashboard.charts.title.cluster_documents.axis.counts": "Shards Count",
+  "dashboard.charts.title.node_count.axis.count": "Nodes Count",
+  "dashboard.charts.title.cluster_health.axis.percent": "Health Percent",
 
   "app.login.message-invalid-credentials":
     "Invalid username or password（admin/888888）",

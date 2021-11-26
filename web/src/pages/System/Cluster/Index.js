@@ -214,13 +214,17 @@ class Index extends React.Component {
     });
   };
   componentDidMount() {
-    this.fetchData({});
+    const { pageSize } = this.props.clusterConfig;
+    this.fetchData({
+      size: pageSize,
+    });
   }
 
   handleSearchClick = () => {
     const { form } = this.props;
     this.fetchData({
       name: form.getFieldValue("name"),
+      current: 1,
     });
   };
 
@@ -268,6 +272,17 @@ class Index extends React.Component {
     });
   };
 
+  handleTableChange = (pagination, filters, sorter, extra) => {
+    const { form } = this.props;
+    const { pageSize, current } = pagination;
+    this.fetchData({
+      from: (current - 1) * pageSize,
+      size: pageSize,
+      name: form.getFieldValue("name"),
+      current,
+    });
+  };
+
   render() {
     const { getFieldDecorator } = this.props.form;
     const formItemLayout = {
@@ -275,7 +290,7 @@ class Index extends React.Component {
       wrapperCol: { span: 14 },
       style: { marginBottom: 0 },
     };
-    const { data } = this.props.clusterConfig;
+    const { total, data, pageSize, current } = this.props.clusterConfig;
     return (
       <PageHeaderWrapper
         title={formatMessage({ id: "cluster.manage.title" })}
@@ -342,7 +357,13 @@ class Index extends React.Component {
             bordered
             columns={this.columns}
             dataSource={data}
+            onChange={this.handleTableChange}
             rowKey="id"
+            pagination={{
+              pageSize: pageSize,
+              total: total?.value || total,
+              current: current,
+            }}
           />
         </Card>
       </PageHeaderWrapper>

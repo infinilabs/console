@@ -3,10 +3,6 @@ elasticsearch:
   - name: default
     enabled: true
     monitored: false
-#    endpoint: https://k8es.client.bindiego.com
-#    basic_auth:
-#      username: infini
-#      password: BTxSrT5m33rfpF4
     endpoint: http://localhost:9200
     basic_auth:
       username: elastic

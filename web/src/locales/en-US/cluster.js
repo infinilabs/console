@@ -55,7 +55,7 @@ export default {
   "cluster.monitor.timepicker.lastyear": "Last year",
   "cluster.monitor.timepicker.today": "Today",
 
-  "cluster.metrics.node.axis.cpu.title": "CPU Usage",
+  "cluster.metrics.node.axis.cpu.title": "Process CPU Usage",
   "cluster.metrics.node.axis.disk.title": "Disk Available",
   "cluster.metrics.node.axis.indexing_rate.title": "Indexing Rate",
   "cluster.metrics.node.axis.query_rate.title": "Query Rate",
@@ -76,7 +76,7 @@ export default {
   "cluster.metrics.node.axis.docs_count.title": "Document Count",
   "cluster.metrics.node.axis.index_storage.title": "Indices Storage",
   "cluster.metrics.node.axis.jvm_heap_used_percent.title": "JVM Heap Usage",
-  "cluster.metrics.node.axis.os_cpu.title": "OS CPU Percent",
+  "cluster.metrics.node.axis.os_cpu.title": "OS CPU Usage",
   "cluster.metrics.node.axis.os_used_mem.title": "OS Mem Usage",
   "cluster.metrics.node.axis.indexing_pressure_memory.title":
     "Indexing Pressure",

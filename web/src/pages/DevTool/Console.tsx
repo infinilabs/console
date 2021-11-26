@@ -198,6 +198,9 @@ export const ConsoleUI = ({
   const [tabState, dispatch] = useReducer(consoleTabReducer, localState);
 
   useEffect(() => {
+    if (Object.keys(clusterMap).length == 0) {
+      return;
+    }
     const panes = tabState.panes.filter((pane: any) => {
       return typeof clusterMap[pane.cluster_id] != "undefined";
     });

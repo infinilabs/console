@@ -1,6 +1,7 @@
 import alert from "./en-US/alert";
 import console from "./en-US/console";
 import cluster from "./en-US/cluster";
+import command from "./en-US/command";
 
 export default {
   "navBar.lang": "Languages",
@@ -77,9 +78,13 @@ export default {
   "form.button.cancel": "Cancel",
   "form.button.collapse": "Collapse",
   "form.button.advanced": "Advanced",
+  "form.button.regist": "Regist",
   "table.field.operation": "Operation",
   "form.button.next": "Next",
   "form.button.pre": "Previous",
+  "form.button.goback": "Back",
+  "form.button.reset": "Reset",
+  "form.label.search-keyword": "Keyword",
 
   "component.globalHeader.search": "Search",
   "component.globalHeader.search.example1": "Search example 1",
@@ -422,4 +427,5 @@ export default {
   ...alert,
   ...console,
   ...cluster,
+  ...command,
 };

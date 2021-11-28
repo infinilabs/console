@@ -16,6 +16,7 @@ import styles from "./Form.less";
 import { connect } from "dva";
 import NewCluster from "./Step";
 import PageHeaderWrapper from "@/components/PageHeaderWrapper";
+import { formatMessage } from "umi/locale";
 
 @Form.create()
 @connect(({ clusterConfig }) => ({
@@ -176,7 +177,12 @@ class ClusterForm extends React.Component {
     return (
       <PageHeaderWrapper>
         <Card
-          title={editMode === "NEW" ? "注册集群" : "修改集群配置"}
+          title={formatMessage({
+            id:
+              editMode === "NEW"
+                ? "cluster.regist.title"
+                : "cluster.edit.title",
+          })}
           extra={[
             <Button
               type="primary"
@@ -184,13 +190,19 @@ class ClusterForm extends React.Component {
                 router.push("/system/cluster");
               }}
             >
-              返回
+              {formatMessage({
+                id: "form.button.goback",
+              })}
             </Button>,
           ]}
         >
           <Spin spinning={this.state.isLoading}>
             <Form {...formItemLayout}>
-              <Form.Item label="集群名称">
+              <Form.Item
+                label={formatMessage({
+                  id: "cluster.manage.label.cluster_name",
+                })}
+              >
                 {getFieldDecorator("name", {
                   initialValue: editValue.name,
                   rules: [
@@ -201,7 +213,11 @@ class ClusterForm extends React.Component {
                   ],
                 })(<Input autoComplete="off" placeholder="cluster-name" />)}
               </Form.Item>
-              <Form.Item label="集群地址">
+              <Form.Item
+                label={formatMessage({
+                  id: "cluster.manage.label.cluster_host",
+                })}
+              >
                 {getFieldDecorator("host", {
                   initialValue: editValue.host,
                   rules: [
@@ -234,7 +250,11 @@ class ClusterForm extends React.Component {
                   />
                 )}
               </Form.Item>
-              <Form.Item label="是否需要身份验证">
+              <Form.Item
+                label={formatMessage({
+                  id: "cluster.regist.step.connect.label.auth",
+                })}
+              >
                 <Switch
                   defaultChecked={this.state.needAuth}
                   onChange={this.handleAuthChange}
@@ -244,13 +264,22 @@ class ClusterForm extends React.Component {
               </Form.Item>
               {this.state.needAuth === true ? (
                 <div>
-                  <Form.Item label="用户名">
+                  <Form.Item
+                    label={formatMessage({
+                      id: "cluster.regist.step.connect.label.username",
+                    })}
+                  >
                     {getFieldDecorator("username", {
                       initialValue: editValue.basic_auth?.username,
                       rules: [],
                     })(<Input autoComplete="off" />)}
                   </Form.Item>
-                  <Form.Item label="密码" hasFeedback>
+                  <Form.Item
+                    label={formatMessage({
+                      id: "cluster.regist.step.connect.label.password",
+                    })}
+                    hasFeedback
+                  >
                     {getFieldDecorator("password", {
                       initialValue: editValue.basic_auth?.password,
                       rules: [],
@@ -265,10 +294,14 @@ class ClusterForm extends React.Component {
             initialValue: editValue.order || 0,
           })(<InputNumber />)}
         </Form.Item> */}
-              <Form.Item label="描述">
+              <Form.Item
+                label={formatMessage({
+                  id: "cluster.manage.table.column.description",
+                })}
+              >
                 {getFieldDecorator("description", {
                   initialValue: editValue.description,
-                })(<Input.TextArea placeholder="集群应用描述" />)}
+                })(<Input.TextArea placeholder="Cluster Descirption" />)}
               </Form.Item>
               {/* <Form.Item label="是否启用">
           {getFieldDecorator('enabled', {
@@ -279,7 +312,11 @@ class ClusterForm extends React.Component {
             unCheckedChildren={<Icon type="close" />}
           />)}
         </Form.Item> */}
-              <Form.Item label="启用监控">
+              <Form.Item
+                label={formatMessage({
+                  id: "cluster.manage.table.column.monitored",
+                })}
+              >
                 {getFieldDecorator("monitored", {
                   valuePropName: "checked",
                   initialValue:
@@ -295,10 +332,17 @@ class ClusterForm extends React.Component {
               </Form.Item>
               <Form.Item {...tailFormItemLayout}>
                 <Button type="primary" onClick={this.handleSubmit}>
-                  {editMode === "NEW" ? "注册" : "保存"}
+                  {formatMessage({
+                    id:
+                      editMode === "NEW"
+                        ? "form.button.regist"
+                        : "form.button.save",
+                  })}
                 </Button>
                 <Button style={{ marginLeft: 15 }} onClick={this.tryConnect}>
-                  测试连接
+                  {formatMessage({
+                    id: "cluster.manage.btn.try_connect",
+                  })}
                 </Button>
               </Form.Item>
             </Form>

@@ -2,6 +2,7 @@
 import React, { useState, useCallback } from "react";
 import { Modal, Form, Input, Tag } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
+import { formatMessage } from "umi/locale";
 
 interface ITagGeneratorProps {
   value?: Array<string>;
@@ -61,7 +62,7 @@ export const TagGenerator = ({ value = [], onChange }: ITagGeneratorProps) => {
       )}
       {!inputVisible && (
         <Tag onClick={showInput} style={{ padding: "4px 6px", fontSize: 16 }}>
-          <PlusOutlined /> 新建标签
+          <PlusOutlined /> {formatMessage({ id: "command.btn.newtag" })}
         </Tag>
       )}
     </div>
@@ -86,21 +87,21 @@ const CommonCommandModal = Form.create()((props: ICommonCommandModalProps) => {
 
   return (
     <Modal
-      title="保存常用命令"
+      title={formatMessage({ id: "command.manage.save.title" })}
       visible={true}
       onCancel={props.onClose}
       onOk={handleConfirm}
       zIndex={1003}
-      cancelText="取消"
-      okText="确认"
+      cancelText={formatMessage({ id: "form.button.cancel" })}
+      okText={formatMessage({ id: "form.button.save" })}
     >
       <Form layout="vertical">
-        <Form.Item label="标题">
+        <Form.Item label={formatMessage({ id: "command.table.field.name" })}>
           {form.getFieldDecorator("title", {
             rules: [{ required: true, message: "请输入标题" }],
           })(<Input />)}
         </Form.Item>
-        <Form.Item label="标签">
+        <Form.Item label={formatMessage({ id: "command.table.field.tag" })}>
           {form.getFieldDecorator("tag")(<TagGenerator />)}
         </Form.Item>
       </Form>

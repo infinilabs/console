@@ -30,14 +30,20 @@
  * GitHub history for details.
  */
 
-import React, { Component } from 'react';
-import { EuiIcon, EuiContextMenuPanel, EuiContextMenuItem, EuiPopover } from '@elastic/eui';
-import { ESRequestParams } from '../entities/es_request';
-import {notification} from 'antd';
+import React, { Component } from "react";
+import {
+  EuiIcon,
+  EuiContextMenuPanel,
+  EuiContextMenuItem,
+  EuiPopover,
+} from "@elastic/eui";
+import { ESRequestParams } from "../entities/es_request";
+import { notification } from "antd";
 
-import CommonCommandModal from './CommonCommandModal';
-import {saveCommonCommand} from '../modules/es';
-import {pushCommand} from '../modules/mappings/mappings';
+import CommonCommandModal from "./CommonCommandModal";
+import { saveCommonCommand } from "../modules/es";
+import { pushCommand } from "../modules/mappings/mappings";
+import { formatMessage } from "umi/locale";
 
 interface Props {
   getCurl: () => Promise<string>;
@@ -57,7 +63,7 @@ export default class ConsoleMenu extends Component<Props, State> {
     super(props);
 
     this.state = {
-      curlCode: '',
+      curlCode: "",
       isPopoverOpen: false,
       modalVisible: false,
     };
@@ -74,14 +80,14 @@ export default class ConsoleMenu extends Component<Props, State> {
     try {
       await this.copyText(this.state.curlCode);
       notification.open({
-       message: 'Request copied as cURL',
-       placement: 'bottomRight'
+        message: "Request copied as cURL",
+        placement: "bottomRight",
       });
     } catch (e) {
       notification.error({
-        message: 'Could not copy request as cURL',
-        placement: 'bottomRight'
-       });
+        message: "Could not copy request as cURL",
+        placement: "bottomRight",
+      });
     }
   }
 
@@ -90,7 +96,7 @@ export default class ConsoleMenu extends Component<Props, State> {
       await window.navigator.clipboard.writeText(text);
       return;
     }
-    throw new Error('Could not copy to clipboard!');
+    throw new Error("Could not copy to clipboard!");
   }
 
   onButtonClick = () => {
@@ -111,7 +117,7 @@ export default class ConsoleMenu extends Component<Props, State> {
     if (!documentation) {
       return;
     }
-    window.open(documentation, '_blank');
+    window.open(documentation, "_blank");
   };
 
   autoIndent = (event: React.MouseEvent) => {
@@ -122,7 +128,7 @@ export default class ConsoleMenu extends Component<Props, State> {
   saveAsCommonCommand = () => {
     this.setState({
       isPopoverOpen: false,
-      modalVisible: true
+      modalVisible: true,
     });
   };
 
@@ -137,14 +143,14 @@ export default class ConsoleMenu extends Component<Props, State> {
       requests,
     };
     const result = await (await saveCommonCommand(reqBody))?.json();
-    if(result.error){
+    if (result.error) {
       notification.error({
-        message: result.error
+        message: result.error,
       });
-    }else{
+    } else {
       this.handleClose();
       notification.success({
-        message:'保存成功'
+        message: "保存成功",
       });
       pushCommand(result);
     }
@@ -152,40 +158,36 @@ export default class ConsoleMenu extends Component<Props, State> {
 
   render() {
     const button = (
-      <button
-        className="euiButtonIcon--primary"
-        onClick={this.onButtonClick}
-      >
+      <button className="euiButtonIcon--primary" onClick={this.onButtonClick}>
         <EuiIcon type="wrench" />
       </button>
     );
 
     const items = [
-      <EuiContextMenuItem
-        key="Auto indent"
-        onClick={this.autoIndent}
-      >
-        自动缩进
+      <EuiContextMenuItem key="Auto indent" onClick={this.autoIndent}>
+        {formatMessage({ id: "console.menu.auto_indent" })}
       </EuiContextMenuItem>,
       <EuiContextMenuItem
         key="Save as common command"
         onClick={this.saveAsCommonCommand}
       >
-        保存为常用命令
+        {formatMessage({ id: "console.menu.save_as_command" })}
       </EuiContextMenuItem>,
     ];
-    if(window.navigator?.clipboard){
-      items.unshift(<EuiContextMenuItem
-        key="Copy as cURL"
-        id="ConCopyAsCurl"
-        disabled={!window.navigator?.clipboard}
-        onClick={() => {
-          this.closePopover();
-          this.copyAsCurl();
-        }}
-      >
-        复制为curl命令
-      </EuiContextMenuItem>)
+    if (window.navigator?.clipboard) {
+      items.unshift(
+        <EuiContextMenuItem
+          key="Copy as cURL"
+          id="ConCopyAsCurl"
+          disabled={!window.navigator?.clipboard}
+          onClick={() => {
+            this.closePopover();
+            this.copyAsCurl();
+          }}
+        >
+          {formatMessage({ id: "console.menu.copy_as_curl" })}
+        </EuiContextMenuItem>
+      );
     }
 
     return (
@@ -200,7 +202,12 @@ export default class ConsoleMenu extends Component<Props, State> {
         >
           <EuiContextMenuPanel items={items} />
         </EuiPopover>
-        {this.state.modalVisible && <CommonCommandModal onClose={this.handleClose} onConfirm={this.handleConfirm} />}
+        {this.state.modalVisible && (
+          <CommonCommandModal
+            onClose={this.handleClose}
+            onConfirm={this.handleConfirm}
+          />
+        )}
       </span>
     );
   }

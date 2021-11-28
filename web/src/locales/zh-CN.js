@@ -1,6 +1,7 @@
 import alert from "./zh-CN/alert";
 import console from "./zh-CN/console";
 import cluster from "./zh-CN/cluster";
+import command from "./zh-CN/command";
 
 export default {
   "navBar.lang": "语言",
@@ -83,9 +84,13 @@ export default {
   "form.button.cancel": "取消",
   "form.button.collapse": "收起",
   "form.button.advanced": "高级",
+  "form.button.regist": "注册",
   "table.field.operation": "操作",
   "form.button.next": "下一步",
   "form.button.pre": "上一步",
+  "form.button.goback": "返回",
+  "form.button.reset": "重置",
+  "form.label.search-keyword": "观检测",
 
   "component.globalHeader.search": "站内搜索",
   "component.globalHeader.search.example1": "搜索提示一",
@@ -420,4 +425,5 @@ export default {
   ...alert,
   ...console,
   ...cluster,
+  ...command,
 };

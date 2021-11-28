@@ -44,10 +44,7 @@ const { TabPane } = Tabs;
 
 const content = (
   <div className={styles.pageHeaderContent}>
-    <p>
-      常用命令可以帮助您保存常用的请求，并且在开发工具里面通过 LOAD
-      命令快速地加载。
-    </p>
+    <p>{formatMessage({ id: "command.manage.description" })}</p>
   </div>
 );
 
@@ -75,7 +72,7 @@ class Index extends PureComponent {
   };
   columns = [
     {
-      title: "名称",
+      title: formatMessage({ id: "command.table.field.name" }),
       dataIndex: "title",
       render: (text, record) => (
         <a
@@ -91,21 +88,21 @@ class Index extends PureComponent {
       ),
     },
     {
-      title: "标签",
+      title: formatMessage({ id: "command.table.field.tag" }),
       dataIndex: "tag",
       render: (val) => {
         return (val || []).join(",");
       },
     },
     {
-      title: "操作",
+      title: formatMessage({ id: "table.field.operation" }),
       render: (text, record) => (
         <Fragment>
           <Popconfirm
             title="Sure to delete?"
             onConfirm={() => this.handleDeleteClick(record.id)}
           >
-            <a>删除</a>
+            <a>{formatMessage({ id: "form.button.delete" })}</a>
           </Popconfirm>
         </Fragment>
       ),
@@ -268,7 +265,7 @@ class Index extends PureComponent {
 
     return (
       <PageHeaderWrapper
-        title="常用命令管理"
+        title={formatMessage({ id: "command.manage.title" })}
         content={content}
         extraContent={extraContent}
       >
@@ -278,22 +275,24 @@ class Index extends PureComponent {
               <Form onSubmit={this.handleSearch} layout="inline">
                 <Row gutter={{ md: 8, lg: 24, xl: 48 }}>
                   <Col md={8} sm={24}>
-                    <FormItem label="关键词">
+                    <FormItem
+                      label={formatMessage({ id: "form.label.search-keyword" })}
+                    >
                       {getFieldDecorator("keyword")(
-                        <Input placeholder="请输入" />
+                        <Input placeholder="Input keyword to search" />
                       )}
                     </FormItem>
                   </Col>
                   <Col md={8} sm={24}>
                     <span className={styles.submitButtons}>
                       <Button type="primary" htmlType="submit">
-                        查询
+                        {formatMessage({ id: "form.button.search" })}
                       </Button>
                       <Button
                         style={{ marginLeft: 8 }}
                         onClick={this.handleFormReset}
                       >
-                        重置
+                        {formatMessage({ id: "form.button.reset" })}
                       </Button>
                     </span>
                   </Col>
@@ -326,7 +325,7 @@ class Index extends PureComponent {
         </Card>
         <Drawer
           // title={editingCommand.title}
-          title="常用命令"
+          title={formatMessage({ id: "command.manage.edit.title" })}
           visible={drawerVisible}
           onClose={() => {
             this.setState({
@@ -339,7 +338,7 @@ class Index extends PureComponent {
           <div
             style={{ display: "flex", alignItems: "center", marginBottom: 15 }}
           >
-            <div>标题：</div>
+            <div>{formatMessage({ id: "command.table.field.name" })}：</div>
             <div>
               <Input
                 value={editingCommand.title}
@@ -351,7 +350,7 @@ class Index extends PureComponent {
           <div
             style={{ display: "flex", alignItems: "center", marginBottom: 15 }}
           >
-            <div>标签：</div>
+            <div>{formatMessage({ id: "command.table.field.tag" })}：</div>
             <div>
               <TagGenerator
                 value={editingCommand.tag || []}
@@ -360,7 +359,7 @@ class Index extends PureComponent {
               {/* <Input  style={{ width: 250 }} /> */}
             </div>
           </div>
-          <div>内容：</div>
+          <div>{formatMessage({ id: "command.table.field.content" })}：</div>
           <div style={{ border: "1px solid rgb(232, 232, 232)" }}>
             <EuiCodeBlock language="json" style={{ height: 300 }} isCopyable>
               {this.buildRawCommonCommandRequest(editingCommand)}
@@ -385,7 +384,7 @@ class Index extends PureComponent {
           </div>
           <div style={{ marginTop: 15, textAlign: "right" }}>
             <Button type="primary" onClick={this.handleSaveClick}>
-              保存
+              {formatMessage({ id: "form.button.save" })}
             </Button>
           </div>
         </Drawer>

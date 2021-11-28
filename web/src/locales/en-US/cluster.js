@@ -1,9 +1,11 @@
 export default {
   "cluster.manage.title": "CLUSTERS",
   "cluster.manage.description":
-    "集群管理可以帮助您快速接入不同版本的 Elasticsearch 集群，以及删除和修改集群配置。",
+    "Cluster management can help you quickly access different versions of Elasticsearch clusters, as well as delete and modify cluster configurations.",
   "cluster.manage.label.cluster_name": "Cluster Name",
+  "cluster.manage.label.cluster_host": "Cluster Host",
   "cluster.manage.btn.regist": "Regist Cluster",
+  "cluster.manage.btn.try_connect": "Try Connect",
   "cluster.manage.table.column.name": "Name",
   "cluster.manage.table.column.health": "Health",
   "cluster.manage.table.column.version": "Version",
@@ -15,7 +17,9 @@ export default {
   "cluster.manage.monitored.on": "ON",
   "cluster.manage.monitored.off": "OFF",
   "cluster.regist.title": "REGIST CLUSTER",
-  "cluster.regist.description": "输入集群地址和身份验证信息分步创建集群。",
+  "cluster.edit.title": "EDIT CLUSTER",
+  "cluster.regist.description":
+    "Enter the cluster address and authentication information to create a cluster step by step.",
   "cluster.regist.step.connect.title": "Connect",
   "cluster.regist.step.confirm.title": "Confirm",
   "cluster.regist.step.complete.title": "Complete",

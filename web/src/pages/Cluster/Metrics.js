@@ -36,6 +36,7 @@ import { EuiSuperDatePicker } from "@elastic/eui";
 import { calculateBounds } from "../../components/kibana/data/common/query/timefilter";
 import NodeMetric from "./components/node_metric";
 import IndexMetric from "./components/index_metric";
+import ClusterMetric from "./components/cluster_metric";
 import { formatter, getFormatter, getNumFormatter } from "./format";
 
 const { RangePicker } = DatePicker;
@@ -169,7 +170,6 @@ class ClusterMonitor extends PureComponent {
     super(props);
     //this.timePicker = React.createRef();
     this.handleChartBrush = this.handleChartBrush.bind(this);
-    this.chartRefs = [];
     this.handleTimeChange = this.handleTimeChange.bind(this);
     this.state = {
       spinning: false,
@@ -214,9 +214,6 @@ class ClusterMonitor extends PureComponent {
         cluster_id: this.state.clusterID,
       },
     }).then((res) => {
-      this.chartRefs = Object.keys(res?.metrics || {}).map(() => {
-        return React.createRef();
-      });
       this.setState({
         spinning: false,
       });
@@ -592,107 +589,19 @@ class ClusterMonitor extends PureComponent {
           </Row>
         </div>
         <div>
-          <Tabs animated={false}>
+          <Tabs destroyInactiveTabPane animated={false}>
             <Tabs.TabPane
               key="cluster"
               tab={formatMessage({
                 id: "cluster.monitor.cluster.title",
               })}
             >
-              {Object.keys(clusterMetrics).map((e, i) => {
-                let axis = clusterMetrics[e].axis;
-                let lines = clusterMetrics[e].lines;
-                let disableHeaderFormat = false;
-                let headerUnit = "";
-                return (
-                  <div key={e} className={styles.vizChartContainer}>
-                    <Chart
-                      size={[, 200]}
-                      className={styles.vizChartItem}
-                      ref={this.chartRefs[i]}
-                    >
-                      <Settings
-                        pointerUpdateDebounce={0}
-                        pointerUpdateTrigger="x"
-                        // externalPointerEvents={{
-                        //   tooltip: { visible: true },
-                        // }}
-                        onPointerUpdate={this.pointerUpdate}
-                        theme={theme}
-                        showLegend
-                        legendPosition={Position.Top}
-                        onBrushEnd={this.handleChartBrush}
-                        tooltip={{
-                          headerFormatter: disableHeaderFormat
-                            ? undefined
-                            : ({ value }) =>
-                                `${formatter.full_dates(value)}${
-                                  headerUnit ? ` ${headerUnit}` : ""
-                                }`,
-                        }}
-                        debug={false}
-                      />
-                      <Axis
-                        id="{e}-bottom"
-                        position={Position.Bottom}
-                        showOverlappingTicks
-                        labelFormat={this.state.timeRange.timeFormatter}
-                        tickFormat={this.state.timeRange.timeFormatter}
-                      />
-                      {axis.map((item) => {
-                        return (
-                          <Axis
-                            key={e + "-" + item.id}
-                            id={e + "-" + item.id}
-                            showGridLines={item.showGridLines}
-                            groupId={item.group}
-                            title={formatMessage({
-                              id:
-                                "dashboard.charts.title." +
-                                e +
-                                ".axis." +
-                                item.title,
-                            })}
-                            position={item.position}
-                            ticks={item.ticks}
-                            labelFormat={getFormatter(
-                              item.formatType,
-                              item.labelFormat
-                            )}
-                            tickFormat={getFormatter(
-                              item.formatType,
-                              item.tickFormat
-                            )}
-                          />
-                        );
-                      })}
-
-                      {lines.map((item) => {
-                        return (
-                          <LineSeries
-                            key={item.metric.label}
-                            id={item.metric.label}
-                            groupId={item.metric.group}
-                            timeZone={timezone}
-                            color={item.color}
-                            xScaleType={ScaleType.Time}
-                            yScaleType={ScaleType.Linear}
-                            xAccessor={0}
-                            tickFormat={getFormatter(
-                              item.metric.formatType,
-                              item.metric.tickFormat,
-                              item.metric.units
-                            )}
-                            yAccessors={[1]}
-                            data={item.data}
-                            curve={CurveType.CURVE_MONOTONE_X}
-                          />
-                        );
-                      })}
-                    </Chart>
-                  </div>
-                );
-              })}
+              <ClusterMetric
+                clusterID={this.props.selectedCluster.id}
+                timezone={timezone}
+                timeRange={this.state.timeRange}
+                handleTimeChange={this.handleTimeChange}
+              />
             </Tabs.TabPane>
             <Tabs.TabPane
               key="node"

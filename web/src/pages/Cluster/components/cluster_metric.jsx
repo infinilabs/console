@@ -40,7 +40,11 @@ export default ({ clusterID, timezone, timeRange, handleTimeChange }) => {
     },
     [clusterID, queryParams]
   );
-  const { metrics = {} } = value || {};
+
+  const metrics = React.useMemo(() => {
+    const { metrics = {} } = value || {};
+    return Object.values(metrics).sort((a, b) => a.order - b.order);
+  }, [value]);
 
   const chartRefs = React.useRef();
   React.useEffect(() => {
@@ -120,11 +124,14 @@ export default ({ clusterID, timezone, timeRange, handleTimeChange }) => {
                     labelFormat={timeRange.timeFormatter}
                     tickFormat={timeRange.timeFormatter}
                   />
-                  {e == "cluster_health" ? (
+                  {metrics[e].key == "cluster_health" ? (
                     <Axis
                       id="cluster_health"
                       title={formatMessage({
-                        id: "dashboard.charts.title." + e + ".axis.percent",
+                        id:
+                          "dashboard.charts.title." +
+                          metrics[e].key +
+                          ".axis.percent",
                       })}
                       position={Position.Left}
                       tickFormat={(d) => Number(d).toFixed(0) + "%"}
@@ -141,7 +148,7 @@ export default ({ clusterID, timezone, timeRange, handleTimeChange }) => {
                         title={formatMessage({
                           id:
                             "dashboard.charts.title." +
-                            e +
+                            metrics[e].key +
                             ".axis." +
                             item.title,
                         })}
@@ -160,7 +167,7 @@ export default ({ clusterID, timezone, timeRange, handleTimeChange }) => {
                   })}
 
                   {lines.map((item) => {
-                    if (item.type == "bar") {
+                    if (item.type == "Bar") {
                       return (
                         <BarSeries
                           xScaleType={ScaleType.Time}

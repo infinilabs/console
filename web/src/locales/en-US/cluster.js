@@ -61,6 +61,8 @@ export default {
 
   "cluster.metrics.node.axis.cpu.title": "Process CPU Usage",
   "cluster.metrics.node.axis.disk.title": "Disk Available",
+  "cluster.metrics.node.axis.open_file.title": "Open File",
+  "cluster.metrics.node.axis.open_file_percent.title": "Open File Percent",
   "cluster.metrics.node.axis.indexing_rate.title": "Indexing Rate",
   "cluster.metrics.node.axis.query_rate.title": "Query Rate",
   "cluster.metrics.node.axis.fetch_rate.title": "Fetch Rate",
@@ -73,6 +75,7 @@ export default {
   "cluster.metrics.node.axis.flush_latency.title": "Flush Latency",
   "cluster.metrics.node.axis.query_cache.title": "Query Cache",
   "cluster.metrics.node.axis.request_cache.title": "Request Cache",
+  "cluster.metrics.node.axis.fielddata_cache.title": "Fielddata Cache",
   "cluster.metrics.node.axis.http_connect_num.title": "Http Connections",
   "cluster.metrics.node.axis.http_rate.title": "Rate Of Opened Connections",
   "cluster.metrics.node.axis.segment_memory.title": "Segment Memory",
@@ -82,11 +85,24 @@ export default {
   "cluster.metrics.node.axis.jvm_heap_used_percent.title": "JVM Heap Usage",
   "cluster.metrics.node.axis.os_cpu.title": "OS CPU Usage",
   "cluster.metrics.node.axis.os_used_mem.title": "OS Mem Usage",
+  "cluster.metrics.node.axis.os_used_swap.title": "OS Swap Usage",
   "cluster.metrics.node.axis.indexing_pressure_memory.title":
     "Indexing Pressure",
   "cluster.metrics.node.axis.jvm_used_heap.title": "JVM Used Heap",
   "cluster.metrics.node.axis.jvm_young_gc_rate.title": "Young GC Rate",
   "cluster.metrics.node.axis.jvm_young_gc_latency.title": "Young GC Latency",
+  "cluster.metrics.node.axis.jvm_mem_young_used.title": "Pools Young Used",
+  "cluster.metrics.node.axis.jvm_mem_young_peak_used.title":
+    "Pools Young Peak Used",
+  "cluster.metrics.node.axis.jvm_mem_old_used.title": "Pools Old Used",
+  "cluster.metrics.node.axis.jvm_mem_old_peak_used.title":
+    "Pools Old Peak Used",
+  "cluster.metrics.node.axis.jvm_old_gc_rate.title": "Old GC Rate",
+  "cluster.metrics.node.axis.jvm_old_gc_latency.title": "Old GC Latency",
+  "cluster.metrics.node.axis.transport_tx_rate.title": "Transport TX Rate",
+  "cluster.metrics.node.axis.transport_rx_rate.title": "Transport RX Rate",
+  "cluster.metrics.node.axis.transport_tx_bytes.title": "Transport TX Bytes",
+  "cluster.metrics.node.axis.transport_rx_bytes.title": "Transport RX Bytes",
 
   "cluster.metrics.index.axis.index_storage.title": "Index Storage",
   "cluster.metrics.index.axis.doc_count.title": "Document count",
@@ -117,4 +133,5 @@ export default {
   "cluster.metrics.group.memory": "Memory",
   "cluster.metrics.group.cache": "Cache",
   "cluster.metrics.group.JVM": "JVM",
+  "cluster.metrics.group.transport": "Transport",
 };

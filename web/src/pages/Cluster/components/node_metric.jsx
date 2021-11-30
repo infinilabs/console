@@ -24,6 +24,7 @@ import _ from "lodash";
 
 const gorupOrder = [
   "system",
+  "transport",
   "operations",
   "latency",
   "storage",

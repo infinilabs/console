@@ -221,7 +221,7 @@ export default {
   "dashboard.charts.title.cluster_documents.axis.count": "文档总数",
   "dashboard.charts.title.cluster_documents.axis.deleted": "文档删除数",
   "dashboard.charts.title.cluster_indices.axis.count": "索引总数",
-  "dashboard.charts.title.cluster_documents.axis.counts": "分片总数",
+  "dashboard.charts.title.shard_count.axis.counts": "分片数",
 
   "app.login.message-invalid-credentials": "账户或密码错误（admin/888888）",
   "app.login.message-invalid-verification-code": "验证码错误",

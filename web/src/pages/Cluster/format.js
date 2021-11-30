@@ -37,7 +37,7 @@ export const formatter = {
 export function getFormatter(type, format, units) {
   switch (type) {
     case "bytes":
-      return formatter.bytes;
+      return getBytesFormatter(units);
     case "ratio":
       return formatter.ratio;
     case "num":
@@ -49,4 +49,8 @@ export function getFormatter(type, format, units) {
 
 export function getNumFormatter(format, units) {
   return (d) => numeral(d).format(format) + (units ? ` ${units}` : "");
+}
+
+export function getBytesFormatter(units) {
+  return (value) => formatter.bytes(value) + (units ? `/${units}` : "");
 }

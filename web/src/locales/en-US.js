@@ -215,7 +215,7 @@ export default {
   "dashboard.charts.title.cluster_documents.axis.count": "Documents Count",
   "dashboard.charts.title.cluster_documents.axis.deleted": "Docmuents Deleted",
   "dashboard.charts.title.cluster_indices.axis.count": "Indices Count",
-  "dashboard.charts.title.cluster_documents.axis.counts": "Shards Count",
+  "dashboard.charts.title.shard_count.axis.counts": "Shards Count",
   "dashboard.charts.title.node_count.axis.count": "Nodes Count",
   "dashboard.charts.title.cluster_health.axis.percent": "Health Percent",
 

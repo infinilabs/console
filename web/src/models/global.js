@@ -22,8 +22,8 @@ export default {
     notices: [],
     clusterVisible: true,
     clusterList: [],
-    selectedCluster: { name: "Select cluster", id: "" },
-    selectedClusterID: "",
+    selectedCluster: {},
+    selectedClusterID: null,
     search: {
       cluster: {},
     },

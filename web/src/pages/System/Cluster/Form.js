@@ -223,7 +223,7 @@ class ClusterForm extends React.Component {
                   rules: [
                     {
                       type: "string",
-                      pattern: /^[\w\.]+\:\d+$/, //(https?:\/\/)?
+                      pattern: /^[\w\.\-_~%]+(\:\d+)?$/,
                       message: "请输入域名或 IP 地址和端口号",
                     },
                     {

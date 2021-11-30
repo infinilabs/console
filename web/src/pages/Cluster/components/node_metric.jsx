@@ -179,7 +179,7 @@ export default ({ clusterID, timezone, timeRange, handleTimeChange }) => {
                     {metrics[e].map((metric) => {
                       let axis = metric.axis;
                       let lines = metric.lines;
-                      if (lines && lines[0].data && lines[0].data.length == 0) {
+                      if (lines && lines[0]?.data?.length == 0) {
                         return null;
                       }
                       let disableHeaderFormat = false;

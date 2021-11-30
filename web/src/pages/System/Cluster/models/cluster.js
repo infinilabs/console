@@ -80,7 +80,6 @@ export default {
         return item.id === res._id;
       });
 
-      let originalEnabled = data[idx].enabled;
       data[idx] = {
         ...data[idx],
         ...res._source,
@@ -92,32 +91,14 @@ export default {
         },
       });
       //handle global cluster logic
-      if (originalEnabled !== res._source.enabled) {
-        if (res._source.enabled === true) {
-          yield put({
-            type: "global/addCluster",
-            payload: {
-              id: res._id,
-              name: res._source.name,
-            },
-          });
-        } else {
-          yield put({
-            type: "global/removeCluster",
-            payload: {
-              id: res._id,
-            },
-          });
-        }
-      } else {
-        yield put({
-          type: "global/updateCluster",
-          payload: {
-            id: res._id,
-            name: res._source.name,
-          },
-        });
-      }
+
+      yield put({
+        type: "global/updateCluster",
+        payload: {
+          id: res._id,
+          name: res._source.name,
+        },
+      });
 
       return res;
     },

@@ -36,6 +36,7 @@ export default {
   "cluster.monitor.cluster.title": "Cluster",
   "cluster.monitor.node.title": "Node",
   "cluster.monitor.index.title": "Index",
+  "cluster.monitor.queue.title": "Thread Pool",
   "cluster.monitor.summary.name": "Cluster Name",
   "cluster.monitor.summary.online_time": "Uptime",
   "cluster.monitor.summary.version": "Version",

@@ -37,6 +37,7 @@ import { calculateBounds } from "../../components/kibana/data/common/query/timef
 import NodeMetric from "./components/node_metric";
 import IndexMetric from "./components/index_metric";
 import ClusterMetric from "./components/cluster_metric";
+import QueueMetric from "./components/queue_metric";
 import { formatter, getFormatter, getNumFormatter } from "./format";
 
 const { RangePicker } = DatePicker;
@@ -629,6 +630,19 @@ class ClusterMonitor extends PureComponent {
                 handleTimeChange={this.handleTimeChange}
               />
             </Tabs.TabPane>
+            {/* <Tabs.TabPane
+              key="queue"
+              tab={formatMessage({
+                id: "cluster.monitor.queue.title",
+              })}
+            >
+              <QueueMetric
+                clusterID={this.props.selectedCluster.id}
+                timezone={timezone}
+                timeRange={this.state.timeRange}
+                handleTimeChange={this.handleTimeChange}
+              />
+            </Tabs.TabPane> */}
           </Tabs>
         </div>
       </div>

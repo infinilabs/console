@@ -36,6 +36,7 @@ export default {
   "cluster.monitor.cluster.title": "集群",
   "cluster.monitor.node.title": "节点",
   "cluster.monitor.index.title": "索引",
+  "cluster.monitor.queue.title": "线程池",
   "cluster.monitor.summary.name": "集群名称",
   "cluster.monitor.summary.online_time": "在线时长",
   "cluster.monitor.summary.version": "集群版本",

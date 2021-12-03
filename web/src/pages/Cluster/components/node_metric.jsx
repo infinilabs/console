@@ -80,10 +80,12 @@ export default ({ clusterID, timezone, timeRange, handleTimeChange }) => {
   );
 
   const metrics = React.useMemo(() => {
-    return _.groupBy(value?.metrics, "group");
-    // return Object.values(value?.metrics || {}).sort(
-    //   (a, b) => a.order - b.order
-    // );
+    const grpMetrics = _.groupBy(value?.metrics, "group");
+    let metrics = {};
+    Object.keys(grpMetrics).forEach((k) => {
+      metrics[k] = (grpMetrics[k] || []).sort((a, b) => a.order - b.order);
+    });
+    return metrics;
   }, [value]);
 
   const chartRefs = React.useRef();

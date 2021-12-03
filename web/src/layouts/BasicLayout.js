@@ -8,12 +8,13 @@ import { ContainerQuery } from 'react-container-query';
 import classNames from 'classnames';
 import pathToRegexp from 'path-to-regexp';
 import { enquireScreen, unenquireScreen } from 'enquire-js';
-import { formatMessage } from 'umi/locale';
+import { formatMessage,getLocale } from 'umi/locale';
 import SiderMenu from '@/components/SiderMenu';
 import Authorized from '@/utils/Authorized';
 import SettingDrawer from '@/components/SettingDrawer';
 import icon from '../assets/icon.png';
 import logo from '../assets/logo.svg';
+import logoEN from '../assets/logo_en.svg';
 import Footer from './Footer';
 import Header from './Header';
 import Context from './MenuContext';
@@ -240,7 +241,7 @@ class BasicLayout extends React.PureComponent {
         {isTop && !isMobile ? null : (
           <SiderMenu
             icon={icon}
-            logo={logo}
+            logo={getLocale() === 'zh-CN' ? logo : logoEN}
             Authorized={Authorized}
             theme={navTheme}
             onCollapse={this.handleMenuCollapse}

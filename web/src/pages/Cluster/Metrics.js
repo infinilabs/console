@@ -364,6 +364,7 @@ class ClusterMonitor extends PureComponent {
         max_jvm_bytes: formatter.bytes(rawStats.max_jvm_bytes),
         document_count: formatter.number(rawStats.document_count),
         uptime: moment.duration(rawStats.uptime).humanize(),
+        timestamp: moment(rawStats.timestamp).toLocaleString(),
       };
     }
 
@@ -469,7 +470,12 @@ class ClusterMonitor extends PureComponent {
 
         <div className={styles.summary}>
           {!clusterAvailable ? (
-            <div className={styles.mask}>Cluster is not availabe.</div>
+            <div className={styles.mask}>
+              <div>Cluster is not availabe.</div>
+              <div className={styles.time}>
+                Last data collection time: {clusterStats?.timestamp}
+              </div>
+            </div>
           ) : null}
           <Row
             gutter={[16, { xs: 8, sm: 16, md: 24, lg: 32 }]}
@@ -630,7 +636,7 @@ class ClusterMonitor extends PureComponent {
                 handleTimeChange={this.handleTimeChange}
               />
             </Tabs.TabPane>
-            {/* <Tabs.TabPane
+            <Tabs.TabPane
               key="queue"
               tab={formatMessage({
                 id: "cluster.monitor.queue.title",
@@ -642,7 +648,7 @@ class ClusterMonitor extends PureComponent {
                 timeRange={this.state.timeRange}
                 handleTimeChange={this.handleTimeChange}
               />
-            </Tabs.TabPane> */}
+            </Tabs.TabPane>
           </Tabs>
         </div>
       </div>

@@ -28,6 +28,7 @@ const gorupOrder = [
   "operations",
   "latency",
   "storage",
+  "document",
   "http",
   "JVM",
   "memory",

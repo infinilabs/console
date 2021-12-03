@@ -43,6 +43,35 @@ export default class GlobalHeaderRight extends PureComponent {
     });
     return groupBy(newNotices, "type");
   }
+  onKeyDown = (e) => {
+    const { keyCode } = e;
+    if (this.keysPressed["17"] && this.keysPressed["16"] && keyCode == 79) {
+      this.setState({
+        consoleVisible: !this.state.consoleVisible,
+      });
+      return true;
+    }
+    this.keysPressed[keyCode] = e.type == "keydown";
+    return false;
+  };
+  onKeyUp = (e) => {
+    const { keyCode } = e;
+    delete this.keysPressed[keyCode];
+  };
+  constructor(props) {
+    super(props);
+    this.onKeyDown = this.onKeyDown.bind(this);
+    this.onKeyUp = this.onKeyUp.bind(this);
+  }
+  componentDidMount() {
+    this.keysPressed = {};
+    document.addEventListener("keydown", this.onKeyDown, false);
+    document.addEventListener("keyup", this.onKeyUp, false);
+  }
+  componentWillUnmount() {
+    document.removeEventListener("keydown", this.onKeyDown);
+    document.removeEventListener("keyup", this.onKeyUp);
+  }
 
   render() {
     const {
@@ -234,7 +263,3 @@ export default class GlobalHeaderRight extends PureComponent {
     );
   }
 }
-
-const TopHandle = () => {
-  return <div style={{ background: "red" }}>hello world</div>;
-};

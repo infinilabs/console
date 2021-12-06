@@ -12,11 +12,13 @@ import {
   Icon,
   Popconfirm,
   message,
+  Descriptions,
 } from "antd";
 import Link from "umi/link";
 import { connect } from "dva";
 import { HealthStatusCircle } from "@/components/infini/health_status_circle";
 import PageHeaderWrapper from "@/components/PageHeaderWrapper";
+import indexStyles from "./index.less";
 import styles from "./step.less";
 import clusterBg from "@/assets/cluster_bg.png";
 import { formatMessage } from "umi/locale";
@@ -206,6 +208,37 @@ class Index extends React.Component {
     },
   ];
 
+  componentDidMount() {
+    const { pageSize } = this.props.clusterConfig;
+    this.fetchData({
+      size: pageSize,
+    });
+  }
+
+  formatExpandedRowRender = (item) => {
+    return (
+        <div>
+          <Descriptions
+              size='small'
+          >
+            <Descriptions.Item className={indexStyles.descriptionsItem} label="TLS">
+              {formatMessage({id: item.schema === 'https'
+                  ? "cluster.regist.step.complete.tls.yes"
+                  : "cluster.regist.step.complete.tls.no"})}
+            </Descriptions.Item>
+            <Descriptions.Item className={indexStyles.descriptionsItem} label={formatMessage({id: "cluster.regist.step.connect.label.auth"})}>
+              {(item.basic_auth && typeof item.basic_auth.username !=='undefined' && item.basic_auth.username !== '')
+                  ? formatMessage({id: "cluster.regist.step.complete.tls.yes"})
+                  : formatMessage({id: "cluster.regist.step.complete.tls.no"})}
+            </Descriptions.Item>
+            <Descriptions.Item className={indexStyles.descriptionsItem} label={formatMessage({id: "cluster.manage.table.column.description"})}>
+              {item.description}
+            </Descriptions.Item>
+          </Descriptions>
+        </div>
+    );
+  };
+
   fetchData = (params) => {
     const { dispatch } = this.props;
     dispatch({
@@ -213,12 +246,6 @@ class Index extends React.Component {
       payload: params,
     });
   };
-  componentDidMount() {
-    const { pageSize } = this.props.clusterConfig;
-    this.fetchData({
-      size: pageSize,
-    });
-  }
 
   handleSearchClick = () => {
     const { form } = this.props;
@@ -356,6 +383,7 @@ class Index extends React.Component {
           <Table
             bordered
             columns={this.columns}
+            expandedRowRender={this.formatExpandedRowRender}
             dataSource={data}
             onChange={this.handleTableChange}
             rowKey="id"

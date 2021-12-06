@@ -23,6 +23,9 @@ import { formatMessage } from "umi/locale";
 import _ from "lodash";
 
 export default ({ clusterID, timezone, timeRange, handleTimeChange }) => {
+  if (!clusterID) {
+    return null;
+  }
   const queryParams = React.useMemo(() => {
     const bounds = calculateBounds({
       from: timeRange.min,

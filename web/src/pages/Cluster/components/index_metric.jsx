@@ -22,8 +22,18 @@ import { formatMessage } from "umi/locale";
 import MetricContainer from "./metric_container";
 import _ from "lodash";
 
-const gorupOrder = ["storage", "operations", "latency", "memory", "cache"];
+const gorupOrder = [
+  "storage",
+  "document",
+  "operations",
+  "latency",
+  "memory",
+  "cache",
+];
 export default ({ clusterID, timezone, timeRange, handleTimeChange }) => {
+  if (!clusterID) {
+    return null;
+  }
   const [filter, setFilter] = React.useState({
     top: "5",
     index_name: undefined,
@@ -62,10 +72,12 @@ export default ({ clusterID, timezone, timeRange, handleTimeChange }) => {
   );
 
   const metrics = React.useMemo(() => {
-    return _.groupBy(value?.metrics, "group");
-    // return Object.values(value?.metrics || {}).sort(
-    //   (a, b) => a.order - b.order
-    // );
+    const grpMetrics = _.groupBy(value?.metrics, "group");
+    let metrics = {};
+    Object.keys(grpMetrics).forEach((k) => {
+      metrics[k] = (grpMetrics[k] || []).sort((a, b) => a.order - b.order);
+    });
+    return metrics;
   }, [value]);
 
   const chartRefs = React.useRef();
@@ -145,6 +157,9 @@ export default ({ clusterID, timezone, timeRange, handleTimeChange }) => {
       <div className="px">
         <Skeleton active loading={!value} paragraph={{ rows: 20 }}>
           {gorupOrder.map((e, i) => {
+            if (!metrics[e]) {
+              return null;
+            }
             return (
               <div style={{ margin: "8px 0" }}>
                 <MetricContainer

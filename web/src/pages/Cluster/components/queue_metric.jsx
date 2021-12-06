@@ -22,9 +22,21 @@ import { formatMessage } from "umi/locale";
 import MetricContainer from "./metric_container";
 import _ from "lodash";
 
-const gorupOrder = ["system"];
+const gorupOrder = [
+  "thread_pool_search",
+  "thread_pool_write",
+  "thread_pool_index",
+  "thread_pool_bulk",
+  "thread_pool_get",
+  "thread_pool_flush",
+  "thread_pool_refresh",
+  "thread_pool_force_merge",
+];
 
 export default ({ clusterID, timezone, timeRange, handleTimeChange }) => {
+  if (!clusterID) {
+    return null;
+  }
   const [filter, setFilter] = React.useState({
     top: "5",
     node_name: undefined,
@@ -159,6 +171,9 @@ export default ({ clusterID, timezone, timeRange, handleTimeChange }) => {
         <Skeleton active loading={!value} paragraph={{ rows: 20 }}>
           {//Object.keys(metrics)
           gorupOrder.map((e, i) => {
+            if (!metrics[e]) {
+              return null;
+            }
             return (
               <div key={e} style={{ margin: "8px 0" }}>
                 <MetricContainer
@@ -219,7 +234,7 @@ export default ({ clusterID, timezone, timeRange, handleTimeChange }) => {
                                   groupId={item.group}
                                   title={formatMessage({
                                     id:
-                                      "cluster.metrics.node.axis." +
+                                      "cluster.metrics.threadpool.axis." +
                                       metric.key +
                                       ".title",
                                   })}

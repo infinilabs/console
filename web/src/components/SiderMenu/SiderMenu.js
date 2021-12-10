@@ -6,7 +6,6 @@ import Link from 'umi/link';
 import styles from './index.less';
 import BaseMenu, { getMenuMatches } from './BaseMenu';
 import { urlToList } from '../_utils/pathTools';
-import { formatMessage, FormattedMessage } from 'umi/locale';
 
 
 const { Sider } = Layout;

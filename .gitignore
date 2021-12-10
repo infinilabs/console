@@ -31,3 +31,4 @@ appveyor.yml
 web/.github/
 web/report*
 log/
+.env

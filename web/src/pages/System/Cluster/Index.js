@@ -178,7 +178,7 @@ class Index extends React.Component {
       render: (text, record) => (
         <div>
           <Link
-            to="/system/cluster/edit"
+            to={`/system/cluster/${record.id}/edit`}
             onClick={() => {
               this.handleEditClick(record);
             }}

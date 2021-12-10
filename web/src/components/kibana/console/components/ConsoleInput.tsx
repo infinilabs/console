@@ -71,6 +71,7 @@ interface ConsoleInputProps {
   initialText: string | undefined;
   saveEditorContent: (content: string) => void;
   paneKey: string;
+  isActive: boolean;
   height?: string;
 }
 
@@ -87,6 +88,7 @@ const ConsoleInputUI = ({
   saveEditorContent,
   paneKey,
   height = "100%",
+  isActive,
 }: ConsoleInputProps) => {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const editorActionsRef = useRef<HTMLDivElement | null>(null);
@@ -103,6 +105,11 @@ const ConsoleInputUI = ({
   const {
     services: { settings },
   } = useServicesContext();
+  // if (isActive) {
+  //   if (aceEditorRef.current) {
+  //     aceEditorRef.current.focus();
+  //   }
+  // }
 
   useEffect(() => {
     const aceEditor = ace.edit(editorRef.current!);

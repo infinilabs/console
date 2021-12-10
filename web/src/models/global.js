@@ -246,6 +246,7 @@ export default {
     updateCluster(state, { payload }) {
       let idx = state.clusterList.findIndex((item) => item.id === payload.id);
       idx > -1 && (state.clusterList[idx].name = payload.name);
+      state.clusterStatus[payload.id].config.monitored = payload.monitored;
       return state;
     },
     changeClusterById(state, { payload }) {

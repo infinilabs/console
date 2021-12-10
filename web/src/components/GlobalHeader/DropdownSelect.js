@@ -16,6 +16,7 @@ class DropdownSelect extends React.Component {
       overlayVisible: false,
       data: (props.data || []).slice(0, props.size),
       dataSource: [...props.data],
+      selectedIndex: -1,
     };
   }
 
@@ -75,9 +76,38 @@ class DropdownSelect extends React.Component {
       hasMore: newData.length > this.props.size,
     });
   };
+  selectOffset = (offset) => {
+    let { selectedIndex, data } = this.state;
+    const len = data.length;
+    selectedIndex = (selectedIndex + offset + len) % len;
+    this.setState({
+      selectedIndex,
+    });
+  };
+
+  onKeyDown = (e) => {
+    const { which } = e;
+    switch (which) {
+      case 38:
+        this.selectOffset(-1);
+        e.preventDefault();
+        e.stopPropagation();
+        break;
+      case 40:
+        this.selectOffset(1);
+        e.stopPropagation();
+        break;
+      case 13:
+        const { data, selectedIndex } = this.state;
+        if (selectedIndex > -1) {
+          this.handleItemClick(data[selectedIndex]);
+          this.setState({ overlayVisible: false });
+        }
+        break;
+    }
+  };
 
   render() {
-    let me = this;
     const { labelField, clusterStatus } = this.props;
     let value = this.props.value || this.state.value;
     let displayVaue = value[labelField];
@@ -86,6 +116,10 @@ class DropdownSelect extends React.Component {
         <div
           className={styles.infiniteContainer}
           style={{ height: this.props.height }}
+          onMouseEnter={() => {
+            this.searchInputRef.focus();
+          }}
+          onKeyDown={this.onKeyDown}
         >
           <div
             className={styles.filter}
@@ -97,6 +131,9 @@ class DropdownSelect extends React.Component {
               onChange={this.handleInputChange}
               placeholder="输入集群名称查找"
               value={this.state.displayValue || ""}
+              ref={(ref) => {
+                this.searchInputRef = ref;
+              }}
             />
           </div>
           <InfiniteScroll
@@ -118,7 +155,7 @@ class DropdownSelect extends React.Component {
                   匹配不到集群(匹配规则为前缀匹配)
                 </div>
               )}
-              {(this.state.data || []).map((item) => {
+              {(this.state.data || []).map((item, idx) => {
                 // return  <div className={styles.item}>
                 //           <Button key={item[labelField]}
                 //           onClick={() => {
@@ -132,6 +169,7 @@ class DropdownSelect extends React.Component {
                     key={item.id}
                     isSelected={item.id === value.id}
                     clusterItem={item}
+                    isSelected={this.state.selectedIndex == idx}
                     clusterStatus={cstatus}
                     onClick={() => {
                       this.handleItemClick(item);

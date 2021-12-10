@@ -4,6 +4,7 @@ import {
   updateClusterConfig,
   deleteClusterConfig,
   tryConnect,
+  getClusterConfig,
 } from "@/services/cluster";
 import { message } from "antd";
 import { formatESSearchResult } from "@/lib/elasticsearch/util";
@@ -35,6 +36,23 @@ export default {
           current: payload.current,
         },
       });
+    },
+    *fetchCluster({ payload }, { call, put, select }) {
+      let res = yield call(getClusterConfig, payload);
+      if (res.error) {
+        message.error(res.error);
+        return false;
+      }
+      yield put({
+        type: "saveData",
+        payload: {
+          editValue: {
+            ...res._source,
+            id: res._id,
+          },
+        },
+      });
+      return res;
     },
     *addCluster({ payload }, { call, put, select }) {
       let res = yield call(createClusterConfig, payload);
@@ -76,20 +94,22 @@ export default {
         return false;
       }
       let { data } = yield select((state) => state.clusterConfig);
-      let idx = data.findIndex((item) => {
-        return item.id === res._id;
-      });
+      if (data) {
+        let idx = data.findIndex((item) => {
+          return item.id === res._id;
+        });
+        data[idx] = {
+          ...data[idx],
+          ...res._source,
+        };
+        yield put({
+          type: "saveData",
+          payload: {
+            data,
+          },
+        });
+      }
 
-      data[idx] = {
-        ...data[idx],
-        ...res._source,
-      };
-      yield put({
-        type: "saveData",
-        payload: {
-          data,
-        },
-      });
       //handle global cluster logic
 
       yield put({
@@ -97,9 +117,9 @@ export default {
         payload: {
           id: res._id,
           name: res._source.name,
+          monitored: res._source.monitored,
         },
       });
-
       return res;
     },
     *deleteCluster({ payload }, { call, put, select }) {

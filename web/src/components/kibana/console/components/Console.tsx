@@ -37,6 +37,7 @@ interface props {
   initialText: string;
   paneKey: string;
   height: number;
+  isActive: boolean;
 }
 
 const INITIAL_PANEL_WIDTH = 50;
@@ -47,6 +48,7 @@ const ConsoleWrapper = ({
   saveEditorContent,
   initialText,
   paneKey,
+  isActive,
   height,
 }: props) => {
   const {
@@ -84,6 +86,7 @@ const ConsoleWrapper = ({
               saveEditorContent={saveEditorContent}
               initialText={initialText}
               paneKey={paneKey}
+              isActive={isActive}
             />
             <div
               style={{

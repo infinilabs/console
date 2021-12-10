@@ -16,6 +16,7 @@ import {
 } from "antd";
 import moment from "moment";
 import router from "umi/router";
+import Link from "umi/link";
 
 import "@elastic/charts/dist/theme_only_light.css";
 import {
@@ -38,6 +39,7 @@ import NodeMetric from "./components/node_metric";
 import IndexMetric from "./components/index_metric";
 import ClusterMetric from "./components/cluster_metric";
 import QueueMetric from "./components/queue_metric";
+// import StorageMetric from "./components/storage_metric";
 import { formatter, getFormatter, getNumFormatter } from "./format";
 
 const { RangePicker } = DatePicker;
@@ -452,8 +454,10 @@ class ClusterMonitor extends PureComponent {
     });
     let clusterAvailable = true;
     const { clusterStatus: cstatus, selectedCluster } = this.props;
+    let clusterMonitored = true;
     if (cstatus && selectedCluster && cstatus[selectedCluster.id]) {
       clusterAvailable = cstatus[selectedCluster.id].available;
+      clusterMonitored = cstatus[selectedCluster.id].config.monitored;
     }
 
     return (
@@ -476,10 +480,26 @@ class ClusterMonitor extends PureComponent {
                 Last data collection time: {clusterStats?.timestamp}
               </div>
             </div>
+          ) : !clusterMonitored ? (
+            <div className={styles.mask}>
+              <div>
+                Cluster is not monitored.{" "}
+                <Button type="primary">
+                  <Link to={`/system/cluster/${selectedCluster.id}/edit`}>
+                    Go to open
+                  </Link>
+                </Button>
+              </div>
+              <div className={styles.time}>
+                Last data collection time: {clusterStats?.timestamp}
+              </div>
+            </div>
           ) : null}
           <Row
             gutter={[16, { xs: 8, sm: 16, md: 24, lg: 32 }]}
-            className={!clusterAvailable ? styles.metricMask : ""}
+            className={
+              !clusterAvailable || !clusterMonitored ? styles.metricMask : ""
+            }
           >
             <Col md={2} xs={4}>
               <Statistic
@@ -510,7 +530,11 @@ class ClusterMonitor extends PureComponent {
             </Col>
             <Col md={2} xs={4}>
               <Statistic
-                valueStyle={vstyle}
+                valueStyle={{
+                  ...vstyle,
+                  display: "flex",
+                  alignItems: "center",
+                }}
                 title={formatMessage({
                   id: "cluster.monitor.summary.health",
                 })}
@@ -649,6 +673,18 @@ class ClusterMonitor extends PureComponent {
                 handleTimeChange={this.handleTimeChange}
               />
             </Tabs.TabPane>
+            {/* <Tabs.TabPane
+              key="storage"
+              tab={formatMessage({
+                id: "cluster.monitor.queue.storage",
+              })}
+            >
+              <StorageMetric
+                clusterID={this.props.selectedCluster.id}
+                timezone={timezone}
+                timeRange={this.state.timeRange}
+              />
+            </Tabs.TabPane> */}
           </Tabs>
         </div>
       </div>

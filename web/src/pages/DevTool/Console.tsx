@@ -436,6 +436,7 @@ export const ConsoleUI = ({
                 paneKey={pane.key}
                 saveEditorContent={saveEditorContent}
                 initialText={pane.content}
+                isActive={pane.key == tabState.activeKey}
               />
               {/*  {pane.content} */}
             </TabPane>

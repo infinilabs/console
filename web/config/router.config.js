@@ -448,7 +448,7 @@ export default [
             hideInMenu: true,
           },
           {
-            path: "/system/cluster/edit",
+            path: "/system/cluster/:id/edit",
             name: "editCluster",
             component: "./System/Cluster/Form",
             hideInMenu: true,

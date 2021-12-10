@@ -23,10 +23,10 @@ import MetricContainer from "./metric_container";
 import _ from "lodash";
 
 const gorupOrder = [
-  "storage",
-  "document",
   "operations",
   "latency",
+  "storage",
+  "document",
   "memory",
   "cache",
 ];

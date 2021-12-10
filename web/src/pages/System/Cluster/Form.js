@@ -25,23 +25,36 @@ import { formatMessage } from "umi/locale";
 class ClusterForm extends React.Component {
   constructor(props) {
     super(props);
-    let editValue = this.props.clusterConfig.editValue;
-    let needAuth = false;
-    if (
-      editValue.basic_auth &&
-      typeof editValue.basic_auth.username !== "undefined" &&
-      editValue.basic_auth.username !== ""
-    ) {
-      needAuth = true;
-    }
+
     this.state = {
       confirmDirty: false,
-      needAuth: needAuth,
       isLoading: false,
     };
   }
+
   componentDidMount() {
     //console.log(this.props.clusterConfig.editMode)
+    const { match, dispatch, clusterConfig } = this.props;
+    dispatch({
+      type: "clusterConfig/fetchCluster",
+      payload: {
+        id: match.params.id,
+      },
+    }).then((res) => {
+      if (res && res.found) {
+        let editValue = res._source;
+        let needAuth = false;
+        if (
+          editValue.basic_auth &&
+          typeof editValue.basic_auth.username !== "undefined"
+        ) {
+          needAuth = true;
+        }
+        this.setState({
+          needAuth: needAuth,
+        });
+      }
+    });
   }
 
   compareToFirstPassword = (rule, value, callback) => {
@@ -62,7 +75,7 @@ class ClusterForm extends React.Component {
   };
 
   handleSubmit = () => {
-    const { form, dispatch, clusterConfig } = this.props;
+    const { form, dispatch, clusterConfig, history } = this.props;
     form.validateFields((errors, values) => {
       if (errors) {
         return;
@@ -100,7 +113,8 @@ class ClusterForm extends React.Component {
         }).then(function(rel) {
           if (rel) {
             message.success("修改成功");
-            router.push("/system/cluster");
+            // router.push("/system/cluster");
+            history.go(-1);
           }
         });
       }
@@ -256,7 +270,7 @@ class ClusterForm extends React.Component {
                 })}
               >
                 <Switch
-                  defaultChecked={this.state.needAuth}
+                  checked={this.state.needAuth}
                   onChange={this.handleAuthChange}
                   checkedChildren={<Icon type="check" />}
                   unCheckedChildren={<Icon type="close" />}

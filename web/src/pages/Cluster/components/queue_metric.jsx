@@ -23,8 +23,8 @@ import MetricContainer from "./metric_container";
 import _ from "lodash";
 
 const gorupOrder = [
-  "thread_pool_search",
   "thread_pool_write",
+  "thread_pool_search",
   "thread_pool_index",
   "thread_pool_bulk",
   "thread_pool_get",

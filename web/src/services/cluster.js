@@ -72,3 +72,10 @@ export async function tryConnect(params) {
     body: params,
   });
 }
+
+export async function getClusterConfig(params) {
+  let url = `${ESPrefix}/${params.id}`;
+  return request(url, {
+    method: "GET",
+  });
+}

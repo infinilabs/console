@@ -90,7 +90,7 @@ export default {
   "form.button.pre": "上一步",
   "form.button.goback": "返回",
   "form.button.reset": "重置",
-  "form.label.search-keyword": "观检测",
+  "form.label.search-keyword": "关键词",
 
   "component.globalHeader.search": "站内搜索",
   "component.globalHeader.search.example1": "搜索提示一",

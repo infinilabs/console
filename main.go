@@ -105,6 +105,7 @@ func main() {
 		orm.RegisterSchemaWithIndexName(alerting.Alert{}, "alerting-alerts")
 		orm.RegisterSchemaWithIndexName(alerting.AlertingHistory{}, "alerting-alert-history")
 		orm.RegisterSchema(elastic.CommonCommand{})
+		orm.RegisterSchemaWithIndexName(elastic.TraceMeta{}, "traces")
 		alertSrv.GetScheduler().Start()
 	},nil){
 		app.Run()

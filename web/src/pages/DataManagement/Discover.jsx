@@ -32,7 +32,17 @@ import * as styles from "./discover.scss";
 import { Subscription } from "rxjs";
 import { connect } from "dva";
 
-import { Card, Spin, message, Select, Icon, Popover } from "antd";
+import {
+  Card,
+  Spin,
+  message,
+  Select,
+  Icon,
+  Popover,
+  Tabs,
+  Input,
+  Button,
+} from "antd";
 // import DiscoverGrid from './Components/discover_grid';
 import { flattenHitWrapper } from "../../components/kibana/data/common/index_patterns/index_patterns";
 import { getStateColumnActions } from "../../components/kibana/discover/public/application/angular/doc_table/actions/columns";
@@ -85,7 +95,9 @@ const Discover = (props) => {
   const [state, setState] = useState({
     columns: columnsParam || ["_source"], //['name', 'address'],
     interval: "auto",
+    activeTabKey: "normal",
   });
+  const [searchType, setSearchType] = React.useState("normal");
 
   // const [sort, setSort] = useState(null);
 
@@ -100,7 +112,7 @@ const Discover = (props) => {
     );
     return subscriptions;
   }, [props.indexPattern]);
-  const setIndexPattern = async (id, typ) => {
+  const setIndexPattern = async (id, typ, filters, isReset = false) => {
     const IP = await services.indexPatternService.get(
       id,
       typ,
@@ -113,6 +125,14 @@ const Discover = (props) => {
       columns: ["_source"],
       sort: [],
     });
+    if (filters && filters.length > 0) {
+      if (isReset) {
+        filterManager.setFilters(filters);
+      } else {
+        filterManager.addFilters(filters);
+      }
+    }
+    updateQuery();
   };
   const onTimeFieldChange = async (id, timeField) => {
     const IP = await services.indexPatternService.get(
@@ -130,6 +150,8 @@ const Discover = (props) => {
   const indexPatterns = [indexPattern];
   const indexPatternList = props.indexPatternList;
   const contentCentered = false; //resultState != 'ready';
+  const indexPatternRef = React.useRef();
+  indexPatternRef.current = indexPattern;
 
   indexPatterns.get = (id) => {
     return Promise.resolve(indexPatterns.find((ip) => ip.id == id));
@@ -143,12 +165,12 @@ const Discover = (props) => {
 
   const updateQuery = useCallback(
     async (_payload) => {
-      if (!indexPattern) {
+      if (!indexPatternRef.current) {
         return;
       }
       setResultState("loading");
       const params = getSearchParams(
-        _payload?.indexPattern || indexPattern,
+        _payload?.indexPattern || indexPatternRef.current,
         _payload?.interval || state.interval,
         _payload?.sort
       );
@@ -171,7 +193,7 @@ const Discover = (props) => {
       // console.log(getEsQuery(indexPattern));
       // console.log(timefilter.createFilter(indexPattern));
     },
-    [indexPattern, state.interval]
+    [state.interval]
   );
 
   const onChangeInterval = useCallback(
@@ -406,34 +428,82 @@ const Discover = (props) => {
   }, [saveDocument, deleteDocument]);
 
   const [settingsVisible, setSettingsVisible] = React.useState(false);
+  const onTraceIDSearch = React.useCallback(
+    async (value) => {
+      const { http } = getContext();
+      const indexNames = await http
+        .fetch(http.getServerBasePath() + "/search/trace_id", {
+          query: {
+            traceID: value,
+          },
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+      if (indexNames && indexNames.length > 0) {
+        const newFilters = generateFilters(
+          filterManager,
+          "trace_id",
+          value,
+          "+",
+          indexNames.join(",")
+        );
+        setIndexPattern(indexNames.join(","), "index", newFilters, true);
+        setSearchType("normal");
+      }
+    },
+    [setIndexPattern]
+  );
 
   return (
     <Card bordered={false} bodyStyle={{ paddingTop: 10 }}>
-      <SearchBar
-        {...{
-          showSearchBar: false,
-          showQueryBar: true,
-          showQueryInput: true,
-          showDatePicker: showDatePicker,
-          showFilterBar: true,
-          useDefaultBehaviors: true,
-          screenTitle: "",
-          // filters: filters,
-          onFiltersUpdated: getContext().defaultFiltersUpdated(),
-          indexPatterns: [indexPattern],
-          filterManager,
-          query: {
-            language: "kuery",
-            query: queryParam || "",
-          },
-          queryStringManager,
-          queryString: queryStringManager,
-          timefilter,
-          storage,
-          onQuerySubmit: updateQuery,
-          services,
-        }}
-      />
+      <Tabs
+        animated={false}
+        tabPosition="right"
+        activeKey={searchType}
+        onChange={setSearchType}
+        type="card"
+      >
+        <Tabs.TabPane key="normal" tab="Normal">
+          <SearchBar
+            {...{
+              showSearchBar: false,
+              showQueryBar: true,
+              showQueryInput: true,
+              showDatePicker: showDatePicker,
+              showFilterBar: true,
+              useDefaultBehaviors: true,
+              screenTitle: "",
+              // filters: filters,
+              onFiltersUpdated: getContext().defaultFiltersUpdated(),
+              indexPatterns: [indexPattern],
+              filterManager,
+              query: {
+                language: "kuery",
+                query: queryParam || "",
+              },
+              queryStringManager,
+              queryString: queryStringManager,
+              timefilter,
+              storage,
+              onQuerySubmit: updateQuery,
+              services,
+            }}
+          />
+        </Tabs.TabPane>
+        <Tabs.TabPane key="traceid" tab="TraceID">
+          <Input.Search
+            placeholder="Input trace ID"
+            enterButton={
+              <Button icon="search" type="primary">
+                搜索
+              </Button>
+            }
+            size="large"
+            onSearch={onTraceIDSearch}
+          />
+        </Tabs.TabPane>
+      </Tabs>
 
       <EuiPageBody className="dscPageBody" aria-describedby="savedSearchTitle">
         <EuiFlexGroup className="dscPageBody__contents" gutterSize="none">
@@ -658,6 +728,9 @@ const Discover = (props) => {
 };
 
 const DiscoverUI = (props) => {
+  if (!props.selectedCluster.id) {
+    return null;
+  }
   const [viewID, setViewID] = useQueryParam("viewID", StringParam);
   const [index, setIndex] = useQueryParam("index", StringParam);
   // const [type, setType] = useQueryParam('type', StringParam);

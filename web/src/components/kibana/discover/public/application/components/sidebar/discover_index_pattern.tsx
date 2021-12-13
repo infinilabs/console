@@ -16,12 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-import React, { useState, useEffect } from 'react';
-import { SavedObject } from 'kibana/public';
-import { IIndexPattern, IndexPatternAttributes } from 'src/plugins/data/public';
+import React, { useState, useEffect } from "react";
+import { SavedObject } from "kibana/public";
+import { IIndexPattern, IndexPatternAttributes } from "src/plugins/data/public";
 
-import { IndexPatternRef } from './types';
-import { ChangeIndexPattern } from './change_indexpattern';
+import { IndexPatternRef } from "./types";
+import { ChangeIndexPattern } from "./change_indexpattern";
 export interface DiscoverIndexPatternProps {
   /**
    * list of available index patterns, if length > 1, component offers a "change" link
@@ -56,7 +56,7 @@ export function DiscoverIndexPattern({
 
   const [selected, setSelected] = useState({
     id: selectedId,
-    title: selectedTitle || '',
+    title: selectedTitle || "",
   });
   useEffect(() => {
     const { id, title, viewName } = selectedIndexPattern;
@@ -68,37 +68,37 @@ export function DiscoverIndexPattern({
 
   return (
     <div className="dscIndexPattern__container">
-        <ChangeIndexPattern
-          trigger={{
-            label: selected.viewName,
-            title: selected.title,
-            'data-test-subj': 'indexPattern-switch-link',
-            className: 'dscIndexPattern__triggerButton',
-          }}
-          indexPatternId={selected.id}
-          indexPatternRefs={options}
-          onChangeIndexPattern={(id, typ) => {
-            let indexPattern = null;
-            if(typ == 'index'){
-              indices.forEach((indexName)=>{
-                if(indexName == id){
-                  indexPattern = {
-                    id: indexName,
-                    title: indexName,
-                    viewName: indexName,
-                  }
-                }
-              })
-            }else{
-              indexPattern = options.find((pattern) => pattern.id === id);
-            }  
-            if (indexPattern) {
-              setIndexPattern(id, typ);
-              setSelected(indexPattern);
-            }
-          }}
-          indices={indices}
-        />
+      <ChangeIndexPattern
+        trigger={{
+          label: selected.viewName,
+          title: selected.title,
+          "data-test-subj": "indexPattern-switch-link",
+          className: "dscIndexPattern__triggerButton",
+        }}
+        indexPatternId={selected.id}
+        indexPatternRefs={options}
+        onChangeIndexPattern={(id, typ) => {
+          let indexPattern = null;
+          if (typ == "index") {
+            // indices.forEach((indexName)=>{
+            //   if(indexName == id){
+            indexPattern = {
+              id: id,
+              title: id,
+              viewName: id,
+            };
+            //   }
+            // })
+          } else {
+            indexPattern = options.find((pattern) => pattern.id === id);
+          }
+          if (indexPattern) {
+            setIndexPattern(id, typ);
+            setSelected(indexPattern);
+          }
+        }}
+        indices={indices}
+      />
     </div>
   );
 }

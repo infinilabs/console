@@ -127,64 +127,64 @@ export default [
       //   ],
       // },
 
-      //data
-      // {
-      //   path: "/data",
-      //   name: "data",
-      //   icon: "database",
-      //   routes: [
-      //     // {
-      //     //   path: '/data/overview',
-      //     //   name: 'overview',
-      //     //   component: './DataManagement/IndexSummary',
-      //     //   routes:[
-      //     //     { path: '/', redirect: '/' },
-      //     //   ],
-      //     // },
-      //     {
-      //       path: "/data/index",
-      //       name: "index",
-      //       component: "./DataManagement/Index",
-      //       routes: [{ path: "/", redirect: "/" }],
-      //     },
-      //     // {
-      //     //   path: '/data/document',
-      //     //   name: 'document',
-      //     //   component: './DataManagement/Document',
-      //     //   routes:[
-      //     //     { path: '/', redirect: '/' },
-      //     //   ],
-      //     // },
-      //     // {
-      //     //   path: '/data/template',
-      //     //   name: 'template',
-      //     //   component: './DataManagement/IndexTemplate',
-      //     //   routes:[
-      //     //     { path: '/', redirect: '/' },
-      //     //   ],
-      //     // },
-      //     // {
-      //     //   path: '/data/lifecycle',
-      //     //   name: 'lifecycle',
-      //     //   component: './DataManagement/IndexLifeCycle',
-      //     //   routes:[
-      //     //     { path: '/', redirect: '/' },
-      //     //   ],
-      //     // },
-      //     {
-      //       routes: [{ path: "/", redirect: "/" }],
-      //       path: "/data/discover",
-      //       name: "discover",
-      //       component: "./DataManagement/Discover",
-      //     },
-      //     {
-      //       routes: [{ path: "/", redirect: "/" }],
-      //       path: "/data/views/",
-      //       name: "indexPatterns",
-      //       component: "./DataManagement/IndexPatterns",
-      //     },
-      //   ],
-      // },
+      // data
+      {
+        path: "/data",
+        name: "data",
+        icon: "database",
+        routes: [
+          // {
+          //   path: '/data/overview',
+          //   name: 'overview',
+          //   component: './DataManagement/IndexSummary',
+          //   routes:[
+          //     { path: '/', redirect: '/' },
+          //   ],
+          // },
+          {
+            path: "/data/index",
+            name: "index",
+            component: "./DataManagement/Index",
+            routes: [{ path: "/", redirect: "/" }],
+          },
+          // {
+          //   path: '/data/document',
+          //   name: 'document',
+          //   component: './DataManagement/Document',
+          //   routes:[
+          //     { path: '/', redirect: '/' },
+          //   ],
+          // },
+          // {
+          //   path: '/data/template',
+          //   name: 'template',
+          //   component: './DataManagement/IndexTemplate',
+          //   routes:[
+          //     { path: '/', redirect: '/' },
+          //   ],
+          // },
+          // {
+          //   path: '/data/lifecycle',
+          //   name: 'lifecycle',
+          //   component: './DataManagement/IndexLifeCycle',
+          //   routes:[
+          //     { path: '/', redirect: '/' },
+          //   ],
+          // },
+          {
+            routes: [{ path: "/", redirect: "/" }],
+            path: "/data/discover",
+            name: "discover",
+            component: "./DataManagement/Discover",
+          },
+          {
+            routes: [{ path: "/", redirect: "/" }],
+            path: "/data/views/",
+            name: "indexPatterns",
+            component: "./DataManagement/IndexPatterns",
+          },
+        ],
+      },
 
       //search
       // {

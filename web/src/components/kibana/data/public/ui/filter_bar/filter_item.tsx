@@ -17,14 +17,14 @@
  * under the License.
  */
 
-import { EuiContextMenu, EuiPopover } from '@elastic/eui';
-import { InjectedIntl } from '@kbn/i18n/react';
-import classNames from 'classnames';
-import React, { MouseEvent, useState, useEffect } from 'react';
-import { IUiSettingsClient } from 'src/core/public';
-import { FilterEditor } from './filter_editor';
-import { FilterView } from './filter_view';
-import { IIndexPattern } from '../..';
+import { EuiContextMenu, EuiPopover } from "@elastic/eui";
+import { InjectedIntl } from "@kbn/i18n/react";
+import classNames from "classnames";
+import React, { MouseEvent, useState, useEffect } from "react";
+import { IUiSettingsClient } from "src/core/public";
+import { FilterEditor } from "./filter_editor";
+import { FilterView } from "./filter_view";
+import { IIndexPattern } from "../..";
 import {
   Filter,
   isFilterPinned,
@@ -33,8 +33,8 @@ import {
   toggleFilterPinned,
   toggleFilterDisabled,
   getIndexPatternFromFilter,
-} from '../../../common';
-import { getIndexPatterns } from '../../services';
+} from "../../../common";
+import { getIndexPatterns } from "../../services";
 
 interface Props {
   id: string;
@@ -53,9 +53,9 @@ interface LabelOptions {
   message?: string;
 }
 
-const FILTER_ITEM_OK = '';
-const FILTER_ITEM_WARNING = 'warn';
-const FILTER_ITEM_ERROR = 'error';
+const FILTER_ITEM_OK = "";
+const FILTER_ITEM_WARNING = "warn";
+const FILTER_ITEM_ERROR = "error";
 
 export type FilterLabelStatus =
   | typeof FILTER_ITEM_OK
@@ -64,7 +64,9 @@ export type FilterLabelStatus =
 
 export function FilterItem(props: Props) {
   const [isPopoverOpen, setIsPopoverOpen] = useState<boolean>(false);
-  const [indexPatternExists, setIndexPatternExists] = useState<boolean | undefined>(undefined);
+  const [indexPatternExists, setIndexPatternExists] = useState<
+    boolean | undefined
+  >(undefined);
   const { id, filter, indexPatterns } = props;
 
   useEffect(() => {
@@ -123,26 +125,35 @@ export function FilterItem(props: Props) {
 
   function getClasses(negate: boolean, labelConfig: LabelOptions) {
     return classNames(
-      'globalFilterItem',
+      "globalFilterItem",
       {
-        'globalFilterItem-isDisabled': isDisabled(labelConfig),
-        'globalFilterItem-isError': labelConfig.status === FILTER_ITEM_ERROR,
-        'globalFilterItem-isWarning': labelConfig.status === FILTER_ITEM_WARNING,
-        'globalFilterItem-isPinned': isFilterPinned(filter),
-        'globalFilterItem-isExcluded': negate,
+        "globalFilterItem-isDisabled": isDisabled(labelConfig),
+        "globalFilterItem-isError": labelConfig.status === FILTER_ITEM_ERROR,
+        "globalFilterItem-isWarning":
+          labelConfig.status === FILTER_ITEM_WARNING,
+        "globalFilterItem-isPinned": isFilterPinned(filter),
+        "globalFilterItem-isExcluded": negate,
       },
       props.className
     );
   }
 
   function getDataTestSubj(labelConfig: LabelOptions) {
-    const dataTestSubjKey = filter.meta.key ? `filter-key-${filter.meta.key}` : '';
+    const dataTestSubjKey = filter.meta.key
+      ? `filter-key-${filter.meta.key}`
+      : "";
     const dataTestSubjValue = filter.meta.value
-      ? `filter-value-${isValidLabel(labelConfig) ? labelConfig.title : labelConfig.status}`
-      : '';
-    const dataTestSubjNegated = filter.meta.negate ? 'filter-negated' : '';
-    const dataTestSubjDisabled = `filter-${isDisabled(labelConfig) ? 'disabled' : 'enabled'}`;
-    const dataTestSubjPinned = `filter-${isFilterPinned(filter) ? 'pinned' : 'unpinned'}`;
+      ? `filter-value-${
+          isValidLabel(labelConfig) ? labelConfig.title : labelConfig.status
+        }`
+      : "";
+    const dataTestSubjNegated = filter.meta.negate ? "filter-negated" : "";
+    const dataTestSubjDisabled = `filter-${
+      isDisabled(labelConfig) ? "disabled" : "enabled"
+    }`;
+    const dataTestSubjPinned = `filter-${
+      isFilterPinned(filter) ? "pinned" : "unpinned"
+    }`;
     return `filter ${dataTestSubjDisabled} ${dataTestSubjKey} ${dataTestSubjValue} ${dataTestSubjPinned} ${dataTestSubjNegated}`;
   }
 
@@ -153,52 +164,46 @@ export function FilterItem(props: Props) {
         id: 0,
         items: [
           {
-            name: isFilterPinned(filter)
-              ? 'Unpin'
-              : 'Pin across all apps',
-            icon: 'pin',
+            name: isFilterPinned(filter) ? "Unpin" : "Pin across all apps",
+            icon: "pin",
             onClick: () => {
               setIsPopoverOpen(false);
               onTogglePinned();
             },
-            'data-test-subj': 'pinFilter',
+            "data-test-subj": "pinFilter",
           },
           {
-            name: 'Edit filter',
-            icon: 'pencil',
+            name: "Edit filter",
+            icon: "pencil",
             panel: 1,
-            'data-test-subj': 'editFilter',
+            "data-test-subj": "editFilter",
           },
           {
-            name: negate
-              ? 'Include results'
-              : 'Exclude results',
-            icon: negate ? 'plusInCircle' : 'minusInCircle',
+            name: negate ? "Include results" : "Exclude results",
+            icon: negate ? "plusInCircle" : "minusInCircle",
             onClick: () => {
               setIsPopoverOpen(false);
               onToggleNegated();
             },
-            'data-test-subj': 'negateFilter',
+            "data-test-subj": "negateFilter",
           },
           {
-            name: disabled
-              ? 'Re-enable'
-              : 'Temporarily disable',
-            icon: `${disabled ? 'eye' : 'eyeClosed'}`,
+            name: disabled ? "Re-enable" : "Temporarily disable",
+            icon: `${disabled ? "eye" : "eyeClosed"}`,
             onClick: () => {
               setIsPopoverOpen(false);
               onToggleDisabled();
             },
-            'data-test-subj': 'disableFilter',
+            "data-test-subj": "disableFilter",
           },
           {
-            name: 'Delete',
-            icon: 'trash',
+            name: "Delete",
+            icon: "trash",
             onClick: () => {
               setIsPopoverOpen(false);
               props.onRemove();
             },
-            'data-test-subj': 'deleteFilter',
+            "data-test-subj": "deleteFilter",
           },
         ],
       },
@@ -236,31 +241,23 @@ export function FilterItem(props: Props) {
     const allFields = indexPatterns.map((indexPattern) => {
       return indexPattern.fields.map((field) => field.name);
     });
-    const flatFields = allFields.reduce((acc: string[], it: string[]) => [...acc, ...it], []);
-    return flatFields.includes(filter.meta?.key || '');
+    const flatFields = allFields.reduce(
+      (acc: string[], it: string[]) => [...acc, ...it],
+      []
+    );
+    return flatFields.includes(filter.meta?.key || "");
   }
 
   function getValueLabel(): LabelOptions {
     const label: LabelOptions = {
-      title: '',
-      message: '',
+      title: "",
+      message: "",
       status: FILTER_ITEM_OK,
     };
     if (indexPatternExists === false) {
       label.status = FILTER_ITEM_ERROR;
-      label.title = props.intl.formatMessage({
-        id: 'data.filter.filterBar.labelErrorText',
-        defaultMessage: `Error`,
-      });
-      label.message = props.intl.formatMessage(
-        {
-          id: 'data.filter.filterBar.labelErrorInfo',
-          defaultMessage: 'Index pattern {indexPattern} not found',
-        },
-        {
-          indexPattern: filter.meta.index,
-        }
-      );
+      label.title = "Error";
+      label.message = "Index pattern  not found";
     } else if (isFilterApplicable()) {
       try {
         label.title = getDisplayValueFromFilter(filter, indexPatterns);

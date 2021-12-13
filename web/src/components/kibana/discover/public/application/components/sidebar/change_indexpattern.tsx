@@ -17,7 +17,7 @@
  * under the License.
  */
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   EuiButtonEmpty,
   EuiPopover,
@@ -28,10 +28,9 @@ import {
   EuiTabbedContent,
   EuiTab,
   EuiSwitch,
-} from '@elastic/eui';
-import { EuiSelectableProps } from '@elastic/eui/src/components/selectable/selectable';
-import { IndexPatternRef } from './types';
-
+} from "@elastic/eui";
+import { EuiSelectableProps } from "@elastic/eui/src/components/selectable/selectable";
+import { IndexPatternRef } from "./types";
 
 export type ChangeIndexPatternTriggerProps = EuiButtonEmptyProps & {
   label: string;
@@ -55,7 +54,7 @@ export function ChangeIndexPattern({
 }) {
   const [isPopoverOpen, setPopoverIsOpen] = useState(false);
 
-  const createTrigger = function () {
+  const createTrigger = function() {
     const { label, title, ...rest } = trigger;
     return (
       <EuiButtonEmpty
@@ -72,100 +71,133 @@ export function ChangeIndexPattern({
       </EuiButtonEmpty>
     );
   };
-
-  const [selectedTabId, setSelectedTabId] = useState(indices.includes(indexPatternId) ? 1 :0);
+  const indexNames = (indexPatternId || "").split(",");
+  const [selectedTabId, setSelectedTabId] = useState(
+    indexNames.every((index) => indices.includes(index)) ? 1 : 0
+  );
+  const singleSelection = React.useMemo(() => {
+    return indexNames.length > 1 ? true : "always";
+  }, [indexNames]);
   const onSelectedTabChanged = (id: number) => {
     setSelectedTabId(id);
   };
-  const [includeSystemIndex, setIncludeSystemIndex] = useState(false); 
+  const [includeSystemIndex, setIncludeSystemIndex] = useState(false);
 
-  const tabs = React.useMemo(()=>{
-    const showIndices = includeSystemIndex ? indices: indices.filter(key=>!key.startsWith("."));
+  const tabs = React.useMemo(() => {
+    const showIndices = includeSystemIndex
+      ? indices
+      : indices.filter((key) => !key.startsWith("."));
     const tabs = [
       {
-        id: 'view',
-        name: 'View',
+        id: "view",
+        name: "View",
         disabled: false,
-        content: ( <EuiSelectable
-          style={{marginTop:10}}
-          data-test-subj="indexPattern-switcher"
-          {...selectableProps}
-          searchable
-          singleSelection="always"
-          options={indexPatternRefs.map(({ title, id ,viewName}) => ({
-            label: viewName,
-            key: id,
-            value: id,
-            checked: id === indexPatternId ? 'on' : undefined,
-          }))}
-          onChange={(choices) => {
-            const choice = (choices.find(({ checked }) => checked) as unknown) as {
-              value: string;
-            };
-            onChangeIndexPattern(choice.value, 'view');
-            setPopoverIsOpen(false);
-          }}
-          searchProps={{
-            compressed: true,
-            ...(selectableProps ? selectableProps.searchProps : undefined),
-          }}
-        >
-          {(list, search) => (
-            <>
-              {search}
-              {list}
-            </>
-          )}
-        </EuiSelectable>),
+        content: (
+          <EuiSelectable
+            style={{ marginTop: 10 }}
+            data-test-subj="indexPattern-switcher"
+            {...selectableProps}
+            searchable
+            singleSelection="always"
+            options={indexPatternRefs.map(({ title, id, viewName }) => ({
+              label: viewName,
+              key: id,
+              value: id,
+              checked: id === indexPatternId ? "on" : undefined,
+            }))}
+            onChange={(choices) => {
+              const choice = (choices.find(
+                ({ checked }) => checked
+              ) as unknown) as {
+                value: string;
+              };
+              onChangeIndexPattern(choice.value, "view");
+              setPopoverIsOpen(false);
+            }}
+            searchProps={{
+              compressed: true,
+              ...(selectableProps ? selectableProps.searchProps : undefined),
+            }}
+          >
+            {(list, search) => (
+              <>
+                {search}
+                {list}
+              </>
+            )}
+          </EuiSelectable>
+        ),
       },
       {
-        id: 'index',
-        name: 'Index',
+        id: "index",
+        name: "Index",
         disabled: false,
-        content:( 
+        content: (
           <div>
-            <div style={{display:'flex', margin:'10px auto', flexDirection: 'row-reverse',}}>
-            <EuiSwitch
-              label="Include system index"
-              checked={includeSystemIndex}
-              onChange={(e) => setIncludeSystemIndex(!includeSystemIndex)}
-            />
+            <div
+              style={{
+                display: "flex",
+                margin: "10px auto",
+                flexDirection: "row-reverse",
+              }}
+            >
+              <EuiSwitch
+                label="Include system index"
+                checked={includeSystemIndex}
+                onChange={(e) => setIncludeSystemIndex(!includeSystemIndex)}
+              />
             </div>
-          
-        <EuiSelectable
-          style={{marginTop:5}}
-          {...selectableProps}
-          searchable
-          singleSelection="always"
-          options={showIndices.map((indexName) => ({
-            label: indexName,
-            key: indexName,
-            value: indexName,
-            checked: indexName === indexPatternId ? 'on' : undefined,
-          }))}
-          onChange={(choices) => {
-            const choice = (choices.find(({ checked }) => checked) as unknown) as {
-              value: string;
-            };
-            onChangeIndexPattern(choice.value, 'index');
-            setPopoverIsOpen(false);
-          }}
-          searchProps={{
-            compressed: true,
-            ...(selectableProps ? selectableProps.searchProps : undefined),
-          }}
-        >
-          {(list, search) => (
-            <>
-              {search}
-              {list}
-            </>
-          )}
-        </EuiSelectable></div>),
+
+            <EuiSelectable
+              style={{ marginTop: 5 }}
+              {...selectableProps}
+              searchable
+              singleSelection={singleSelection}
+              options={showIndices.map((indexName) => ({
+                label: indexName,
+                key: indexName,
+                value: indexName,
+                checked: indexNames.includes(indexName) ? "on" : undefined,
+              }))}
+              onChange={(choices) => {
+                // const choice = (choices.find(
+                //   ({ checked }) => checked
+                // ) as unknown) as {
+                //   value: string;
+                // };
+                const values = choices
+                  .filter(({ checked }) => checked)
+                  .map((choice) => {
+                    return choice.value;
+                  });
+                onChangeIndexPattern(values.join(","), "index");
+                setPopoverIsOpen(false);
+              }}
+              searchProps={{
+                compressed: true,
+                ...(selectableProps ? selectableProps.searchProps : undefined),
+              }}
+            >
+              {(list, search) => (
+                <>
+                  {search}
+                  {list}
+                </>
+              )}
+            </EuiSelectable>
+          </div>
+        ),
       },
     ];
     return tabs;
-  },[selectableProps, indexPatternId, indexPatternRefs, indices, includeSystemIndex])
+  }, [
+    selectableProps,
+    indexPatternId,
+    indexPatternRefs,
+    indices,
+    includeSystemIndex,
+    singleSelection,
+  ]);
 
   const selectedTabContent = React.useMemo(() => {
     return tabs.find((obj) => obj.id === selectedTabId)?.content;
@@ -199,15 +231,15 @@ export function ChangeIndexPattern({
         {/* <EuiPopoverTitle>
           选择视图
         </EuiPopoverTitle> */}
-         {/* <EuiTabs size="s" expand>
+        {/* <EuiTabs size="s" expand>
           {renderTabs()}
         </EuiTabs> */}
-         <EuiTabbedContent
+        <EuiTabbedContent
           tabs={tabs}
           initialSelectedTab={tabs[selectedTabId]}
           autoFocus="selected"
           onTabClick={(tab) => {
-            const idx = tabs.findIndex(item=>item.id == tab.id);
+            const idx = tabs.findIndex((item) => item.id == tab.id);
             setSelectedTabId(idx);
           }}
         />

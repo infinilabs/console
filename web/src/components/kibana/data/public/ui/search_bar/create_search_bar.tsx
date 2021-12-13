@@ -17,29 +17,28 @@
  * under the License.
  */
 
-import _ from 'lodash';
-import React, { useEffect, useRef } from 'react';
-import { QueryStart, SavedQuery } from '../../query';
-import { SearchBar } from './';
-import { useFilterManager } from './lib/use_filter_manager';
-import { useTimefilter } from './lib/use_timefilter';
+import _ from "lodash";
+import React, { useEffect, useRef } from "react";
+import { QueryStart, SavedQuery } from "../../query";
+import { SearchBar } from "./";
+import { useFilterManager } from "./lib/use_filter_manager";
+import { useTimefilter } from "./lib/use_timefilter";
 // import { useSavedQuery } from './lib/use_saved_query';
-import { Filter, Query, TimeRange } from '../../../common';
-import { useQueryStringManager } from './lib/use_query_string_manager';
+import { Filter, Query, TimeRange } from "../../../common";
+import { useQueryStringManager } from "./lib/use_query_string_manager";
 
 // Respond to user changing the filters
 const defaultFiltersUpdated = (props) => {
   return (filters: Filter[]) => {
     props.filterManager.setFilters(filters);
-    if (props.onQuerySubmit)
-      props.onQuerySubmit();
+    if (props.onQuerySubmit) props.onQuerySubmit();
   };
 };
 
 // Respond to user changing the refresh settings
 const defaultOnRefreshChange = (props) => {
   // const { timefilter } = props.timefilter;
-  const timefilter = props.timefilter
+  const timefilter = props.timefilter;
   return (options: { isPaused: boolean; refreshInterval: number }) => {
     timefilter.setRefreshInterval({
       value: options.refreshInterval,
@@ -49,14 +48,11 @@ const defaultOnRefreshChange = (props) => {
 };
 
 // Respond to user changing the query string or time settings
-const defaultOnQuerySubmit = (
-  props,
-  currentQuery
-) => {
+const defaultOnQuerySubmit = (props, currentQuery) => {
   if (!props.useDefaultBehaviors) return props.onQuerySubmit;
 
   //const { timefilter } = props.timefilter;
-  const  timefilter = props.timefilter;
+  const timefilter = props.timefilter;
 
   return (payload: { dateRange: TimeRange; query?: Query }) => {
     const isUpdate =
@@ -69,8 +65,7 @@ const defaultOnQuerySubmit = (
       } else {
         props.queryString.clearQuery();
       }
-    } 
-    else {
+    } else {
       // Refresh button triggered for an update
       if (props.onQuerySubmit)
         props.onQuerySubmit(
@@ -143,7 +138,7 @@ export function createSearchBar() {
     useEffect(() => {
       if (!useDefaultBehaviors || !props.onQuerySubmit) return; //!onQuerySubmitRef.current
       //onQuerySubmitRef.current(
-        props.onQuerySubmit(
+      props.onQuerySubmit(
         {
           dateRange: timeRange,
           query,
@@ -153,34 +148,34 @@ export function createSearchBar() {
     }, [query, timeRange, useDefaultBehaviors, props.onQuerySubmit]);
 
     return (
-        <SearchBar
-          showAutoRefreshOnly={props.showAutoRefreshOnly}
-          showDatePicker={props.showDatePicker}
-          showFilterBar={props.showFilterBar}
-          showQueryBar={props.showQueryBar}
-          showQueryInput={props.showQueryInput}
-          showSaveQuery={props.showSaveQuery}
-          screenTitle={props.screenTitle}
-          indexPatterns={props.indexPatterns}
-          indicateNoData={props.indicateNoData}
-          timeHistory={props.timefilter.history}
-          dateRangeFrom={timeRange.from}
-          dateRangeTo={timeRange.to}
-          refreshInterval={refreshInterval.value}
-          isRefreshPaused={refreshInterval.pause}
-          filters={filters}
-          query={query}
-          onFiltersUpdated={defaultFiltersUpdated(props)}
-          onRefreshChange={defaultOnRefreshChange(props)}
-          //savedQuery={savedQuery}
-          onQuerySubmit={defaultOnQuerySubmit(props, query)}
-          //onClearSavedQuery={defaultOnClearSavedQuery(props, clearSavedQuery)}
-          //onSavedQueryUpdated={defaultOnSavedQueryUpdated(props, setSavedQuery)}
-          //onSaved={defaultOnSavedQueryUpdated(props, setSavedQuery)}
-          {...overrideDefaultBehaviors(props)}
-          storage={props.storage}
-          services={props.services}
-        />
+      <SearchBar
+        showAutoRefreshOnly={props.showAutoRefreshOnly}
+        showDatePicker={props.showDatePicker}
+        showFilterBar={props.showFilterBar}
+        showQueryBar={props.showQueryBar}
+        showQueryInput={props.showQueryInput}
+        showSaveQuery={props.showSaveQuery}
+        screenTitle={props.screenTitle}
+        indexPatterns={props.indexPatterns}
+        indicateNoData={props.indicateNoData}
+        timeHistory={props.timefilter.history}
+        dateRangeFrom={timeRange.from}
+        dateRangeTo={timeRange.to}
+        refreshInterval={refreshInterval.value}
+        isRefreshPaused={refreshInterval.pause}
+        filters={filters}
+        query={query}
+        onFiltersUpdated={defaultFiltersUpdated(props)}
+        onRefreshChange={defaultOnRefreshChange(props)}
+        //savedQuery={savedQuery}
+        onQuerySubmit={defaultOnQuerySubmit(props, query)}
+        //onClearSavedQuery={defaultOnClearSavedQuery(props, clearSavedQuery)}
+        //onSavedQueryUpdated={defaultOnSavedQueryUpdated(props, setSavedQuery)}
+        //onSaved={defaultOnSavedQueryUpdated(props, setSavedQuery)}
+        {...overrideDefaultBehaviors(props)}
+        storage={props.storage}
+        services={props.services}
+      />
     );
   };
 }

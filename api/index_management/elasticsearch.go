@@ -79,6 +79,7 @@ func (handler APIHandler) getLatestClusterMonitorData(clusterID interface{}) (ut
 	queryDSL := fmt.Sprintf(queryDSLTpl, clusterID)
 	searchRes, err := client.SearchWithRawQueryDSL(orm.GetIndexName(event.Event{}), []byte(queryDSL))
 	if err != nil {
+		log.Error(err)
 		return nil, err
 	}
 	if len(searchRes.Hits.Hits) == 0 {

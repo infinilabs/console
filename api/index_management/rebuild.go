@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"infini.sh/framework/core/orm"
 	"net/http"
+	log "github.com/cihub/seelog"
 	"strings"
 	"time"
 
@@ -24,8 +25,8 @@ func (handler APIHandler) HandleReindexAction(w http.ResponseWriter, req *http.R
 
 	err := handler.DecodeJSON(req, reindexItem)
 	if err != nil {
+		log.Error(err)
 		resResult["error"] = err
-		resResult["status"] = false
 		handler.WriteJSON(w, resResult, http.StatusOK)
 		return
 	}
@@ -34,8 +35,8 @@ func (handler APIHandler) HandleReindexAction(w http.ResponseWriter, req *http.R
 	typ := handler.GetParameter(req, "_type")
 	ID, err := reindex(handler.Config.Elasticsearch, reindexItem, typ)
 	if err != nil {
+		log.Error(err)
 		resResult["error"] = err
-		resResult["status"] = false
 		handler.WriteJSON(w, resResult, http.StatusOK)
 		return
 	}
@@ -95,8 +96,8 @@ func (handler APIHandler) HandleDeleteRebuildAction(w http.ResponseWriter, req *
 	resBody := newResponseBody()
 	err := deleteTasksByIds(handler.Config.Elasticsearch, ids)
 	if err != nil {
+		log.Error(err)
 		resBody["error"] = err
-		resBody["status"] = false
 		handler.WriteJSON(w, resBody, http.StatusOK)
 		return
 	}
@@ -105,11 +106,6 @@ func (handler APIHandler) HandleDeleteRebuildAction(w http.ResponseWriter, req *
 }
 
 func (handler APIHandler) HandleGetRebuildListAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	defer func() {
-		if err := recover(); err != nil {
-			fmt.Println(err)
-		}
-	}()
 	var (
 		from    = handler.GetIntOrDefault(req, "from", 0)
 		size    = handler.GetIntOrDefault(req, "size", 10)
@@ -119,14 +115,14 @@ func (handler APIHandler) HandleGetRebuildListAction(w http.ResponseWriter, req 
 	)
 	esResp, err := model.GetRebuildList(esName, from, size, name)
 	if err != nil {
+		log.Error(err)
 		resBody["error"] = err.Error()
-		resBody["status"] = false
 		handler.WriteJSON(w, resBody, http.StatusOK)
 		return
 	}
 	err = SyncRebuildResult(esName)
 	if err != nil {
-		resBody["status"] = false
+		log.Error(err)
 		resBody["error"] = err
 		handler.WriteJSON(w, resBody, http.StatusOK)
 		return

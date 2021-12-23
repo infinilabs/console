@@ -2,6 +2,7 @@ package index_management
 
 import (
 	"fmt"
+	log "github.com/cihub/seelog"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/orm"
@@ -19,6 +20,7 @@ func (h *APIHandler) HandleAddCommonCommandAction(w http.ResponseWriter, req *ht
 	reqParams := elastic.CommonCommand{}
 	err := h.DecodeJSON(req, &reqParams)
 	if err != nil {
+		log.Error(err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusOK)
 		return
@@ -32,17 +34,20 @@ func (h *APIHandler) HandleAddCommonCommandAction(w http.ResponseWriter, req *ht
 	var indexName  = orm.GetIndexName(reqParams)
 	searchRes, err := esClient.SearchWithRawQueryDSL(indexName, queryDSL)
 	if err != nil {
+		log.Error(err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusOK)
 		return
 	}
 	if  len(searchRes.Hits.Hits) > 0 {
 		resBody["error"] = "title already exists"
+		log.Error(resBody["error"])
 		h.WriteJSON(w, resBody, http.StatusOK)
 		return
 	}
 	_, err = esClient.Index(indexName,"", reqParams.ID, reqParams)
 	if err != nil {
+		log.Error(err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusOK)
 		return
@@ -61,8 +66,9 @@ func (h *APIHandler) HandleSaveCommonCommandAction(w http.ResponseWriter, req *h
 	reqParams := elastic.CommonCommand{}
 	err := h.DecodeJSON(req, &reqParams)
 	if err != nil {
+		log.Error(err)
 		resBody["error"] = err.Error()
-		h.WriteJSON(w, resBody, http.StatusOK)
+		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
 	}
 	reqParams.ID = ps.ByName("cid")
@@ -72,19 +78,22 @@ func (h *APIHandler) HandleSaveCommonCommandAction(w http.ResponseWriter, req *h
 	var indexName  = orm.GetIndexName(reqParams)
 	searchRes, err := esClient.SearchWithRawQueryDSL(indexName, queryDSL)
 	if err != nil {
+		log.Error(err)
 		resBody["error"] = err.Error()
-		h.WriteJSON(w, resBody, http.StatusOK)
+		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
 	}
 	if  len(searchRes.Hits.Hits) > 0 && searchRes.Hits.Hits[0].ID.(string) != reqParams.ID {
 		resBody["error"] = "title already exists"
-		h.WriteJSON(w, resBody, http.StatusOK)
+		log.Error(resBody["error"])
+		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
 	}
 	_, err = esClient.Index(indexName,"", reqParams.ID, reqParams)
 	if err != nil {
+		log.Error(err)
 		resBody["error"] = err.Error()
-		h.WriteJSON(w, resBody, http.StatusOK)
+		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
 	}
 
@@ -127,6 +136,7 @@ func (h *APIHandler) HandleQueryCommonCommandAction(w http.ResponseWriter, req *
 
 	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetIndexName(elastic.CommonCommand{}), []byte(queryDSL))
 	if err != nil {
+		log.Error(err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -141,6 +151,7 @@ func (h *APIHandler) HandleDeleteCommonCommandAction(w http.ResponseWriter, req 
 	esClient := elastic.GetClient(h.Config.Elasticsearch)
 	delRes, err := esClient.Delete(orm.GetIndexName(elastic.CommonCommand{}), "", id, "wait_for")
 	if err != nil {
+		log.Error(err)
 		resBody["error"] = err.Error()
 		if delRes!=nil{
 			h.WriteJSON(w, resBody, delRes.StatusCode)

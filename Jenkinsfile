@@ -17,6 +17,8 @@ pipeline {
                         steps {
                             catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
                                 sh 'cd /home/jenkins/go/src/infini.sh/search-center && git stash && git pull origin master && make clean'
+                                sh 'cd /home/jenkins/go/src/infini.sh/search-center/web && git stash && git pull origin master'
+                                sh 'cd /home/jenkins/go/src/infini.sh/search-center/web && cnpm install'
                                 sh 'cd /home/jenkins/go/src/infini.sh/search-center && cnpm install'
                                 sh 'cd /home/jenkins/go/src/infini.sh/search-center/web && cnpm run build'
                                 sh 'cd /home/jenkins/go/src/infini.sh/search-center && git stash && git pull origin master && make config build-linux'

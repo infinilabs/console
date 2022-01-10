@@ -32,4 +32,4 @@ web/.github/
 web/report*
 log/
 .env
-web
+/web/

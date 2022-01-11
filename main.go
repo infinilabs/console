@@ -47,7 +47,7 @@ func main() {
 
 		//load core modules first
 		module.RegisterSystemModule(elastic2.ElasticModule{})
-		module.RegisterSystemModule(filter.FilterModule{})
+		module.RegisterSystemModule(&filter.FilterModule{})
 		module.RegisterSystemModule(&stats.SimpleStatsModule{})
 		module.RegisterSystemModule(&queue.DiskQueue{})
 		module.RegisterSystemModule(&queue.RedisModule{})

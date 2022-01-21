@@ -9,12 +9,12 @@ import (
 	"infini.sh/framework/core/module"
 	"infini.sh/framework/core/orm"
 	pipe "infini.sh/framework/core/pipeline"
+	queue2 "infini.sh/framework/modules/disk_queue"
 	elastic2 "infini.sh/framework/modules/elastic"
 	"infini.sh/framework/modules/filter"
 	"infini.sh/framework/modules/metrics"
 	"infini.sh/framework/modules/pipeline"
-	"infini.sh/framework/modules/queue"
-	queue2 "infini.sh/framework/modules/queue/disk_queue"
+	"infini.sh/framework/modules/redis"
 	"infini.sh/framework/modules/stats"
 	"infini.sh/framework/modules/task"
 	"infini.sh/framework/modules/ui"
@@ -51,8 +51,7 @@ func main() {
 		module.RegisterSystemModule(&filter.FilterModule{})
 		module.RegisterSystemModule(&stats.SimpleStatsModule{})
 		module.RegisterSystemModule(&queue2.DiskQueue{})
-		module.RegisterSystemModule(&queue.RedisModule{})
-		module.RegisterSystemModule(&queue.QueueModule{})
+		module.RegisterSystemModule(&redis.RedisModule{})
 		module.RegisterSystemModule(&ui.UIModule{})
 		module.RegisterSystemModule(&pipeline.PipeModule{})
 		module.RegisterSystemModule(&task.TaskModule{})

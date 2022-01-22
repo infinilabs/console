@@ -19,6 +19,7 @@ import (
 	"infini.sh/framework/modules/task"
 	"infini.sh/framework/modules/ui"
 	"infini.sh/framework/plugins/elastic/json_indexing"
+	"infini.sh/gateway/proxy"
 	"infini.sh/search-center/config"
 	"infini.sh/search-center/model"
 	"infini.sh/search-center/model/alerting"
@@ -55,6 +56,7 @@ func main() {
 		module.RegisterSystemModule(&ui.UIModule{})
 		module.RegisterSystemModule(&pipeline.PipeModule{})
 		module.RegisterSystemModule(&task.TaskModule{})
+		module.RegisterSystemModule(&proxy.GatewayModule{})
 
 		pipe.RegisterProcessorPlugin("json_indexing", json_indexing.New)
 		module.RegisterUserPlugin(&metrics.MetricsModule{})

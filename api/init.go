@@ -78,11 +78,9 @@ func Init(cfg *config.AppConfig) {
 
 
 
-	api.HandleAPIMethod(api.POST, "/api/login/account", handler.AccountLogin)
-	api.HandleAPIMethod(api.GET, "/api/currentUser", handler.CurrentUser)
-
-
 	api.HandleAPIMethod(api.POST, "/account/login", handler.AccountLogin)
+	api.HandleAPIMethod(api.GET, "/account/current_user", handler.CurrentUser)
+
 	api.HandleAPIMethod(api.GET, "/account/current_user", handler.CurrentUser)
 
 

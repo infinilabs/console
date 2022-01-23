@@ -19,7 +19,7 @@ import (
 	"infini.sh/framework/modules/task"
 	"infini.sh/framework/modules/ui"
 	"infini.sh/framework/plugins/elastic/json_indexing"
-	"infini.sh/gateway/proxy"
+	api2 "infini.sh/gateway/api"
 	"infini.sh/search-center/config"
 	"infini.sh/search-center/model"
 	"infini.sh/search-center/model/alerting"
@@ -36,14 +36,15 @@ func main() {
 	terminalHeader += ("/ /__| (_) | | | \\__ \\ (_) | |  __/\n")
 	terminalHeader += ("\\____/\\___/|_| |_|___/\\___/|_|\\___|\n\n")
 
-
 	terminalFooter := ""
 
 	app := framework.NewApp("console", "the easiest way to operate your own elasticsearch platform.",
-		config.Version, config.LastCommitLog, config.BuildDate,config.EOLDate, terminalHeader, terminalFooter)
+		config.Version, config.LastCommitLog, config.BuildDate, config.EOLDate, terminalHeader, terminalFooter)
 
 	app.Init(nil)
 	defer app.Shutdown()
+
+	api := api2.GatewayAPI{}
 
 	if app.Setup(func() {
 
@@ -56,15 +57,15 @@ func main() {
 		module.RegisterSystemModule(&ui.UIModule{})
 		module.RegisterSystemModule(&pipeline.PipeModule{})
 		module.RegisterSystemModule(&task.TaskModule{})
-		module.RegisterSystemModule(&proxy.GatewayModule{})
 
 		pipe.RegisterProcessorPlugin("json_indexing", json_indexing.New)
 		module.RegisterUserPlugin(&metrics.MetricsModule{})
+		api.RegisterAPI("")
 
 		appConfig = &config.AppConfig{
-			Elasticsearch:  "default",
+			Elasticsearch: "default",
 			UI: config.UIConfig{
-				LocalPath:   ".public",
+				LocalPath:    ".public",
 				VFSEnabled:   true,
 				LocalEnabled: true,
 			},
@@ -97,21 +98,26 @@ func main() {
 		//}
 
 		//start each module, with enabled provider
-		module.Start()
 
 	}, func() {
+
+		module.Start()
+
 		orm.RegisterSchemaWithIndexName(model.Dict{}, "dict")
 		orm.RegisterSchemaWithIndexName(model.Reindex{}, "reindex")
 		orm.RegisterSchemaWithIndexName(elastic.View{}, "view")
 		orm.RegisterSchemaWithIndexName(alerting.Config{}, "alerting-config")
 		orm.RegisterSchemaWithIndexName(alerting.Alert{}, "alerting-alerts")
-		orm.RegisterSchemaWithIndexName(alerting.AlertingHistory{}, "alerting-alert-history")
-		orm.RegisterSchema(elastic.CommonCommand{})
+		orm.RegisterSchemaWithIndexName(alerting.AlertingHistory{}, "alerting-history")
+		orm.RegisterSchemaWithIndexName(elastic.CommonCommand{}, "commands")
 		orm.RegisterSchemaWithIndexName(elastic.TraceTemplate{}, "trace-template")
+
+		api.RegisterSchema()
+
 		alertSrv.GetScheduler().Start()
-	},nil){
+
+	}, nil) {
 		app.Run()
 	}
-
 
 }

@@ -20,6 +20,7 @@ import (
 	"infini.sh/framework/modules/ui"
 	"infini.sh/framework/plugins/elastic/json_indexing"
 	api2 "infini.sh/gateway/api"
+	_ "infini.sh/gateway/proxy"
 	"infini.sh/search-center/config"
 	"infini.sh/search-center/model"
 	"infini.sh/search-center/model/alerting"

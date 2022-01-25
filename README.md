@@ -1,7 +1,6 @@
-# 极限企业搜索中心
+#INFINI Cloud
 
-INFINI Search Center
-
+INFINI Cloud for Elasticsearch
 
 ## 前端开发说明
 
@@ -92,24 +91,3 @@ cnpm install --save md5
 - ProComponents: https://procomponents.ant.design/
 - 图表组件：https://charts.ant.design/guide
 - Ant Design Pro 预览: https://preview.pro.ant.design
-
-
-## 后端开发说明
-
-后端采用 Golang 开发，最终输出为 `bin` 目录的可执行文件 `search-center` 和配置文件 `search-center.yml`。
-
-### Docker 开发环境
-
-```
-cd docker
-docker-compose -f docker-compose.dev.yml  up
-```
-
-Docker 实例每次启动都会重新编译打包，并启动监听端口 `9000`，使用浏览器打开 `localhost:9000` 即可看到最终效果。
-
-## 启动 MySQL 服务器
-
-```
-npm run docker:start-mysql
-```
-端口 3306，默认 root 密码 admin

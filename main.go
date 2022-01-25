@@ -39,7 +39,7 @@ func main() {
 
 	terminalFooter := ""
 
-	app := framework.NewApp("console", "the easiest way to operate your own elasticsearch platform.",
+	app := framework.NewApp("console", "INFINI Cloud, The easiest way to operate your own elasticsearch platform.",
 		config.Version, config.LastCommitLog, config.BuildDate, config.EOLDate, terminalHeader, terminalFooter)
 
 	app.Init(nil)

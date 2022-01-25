@@ -25,6 +25,7 @@ import (
 	"infini.sh/framework/plugins/elastic/json_indexing"
 	api2 "infini.sh/gateway/api"
 	_ "infini.sh/gateway/proxy"
+	_ "infini.sh/console/plugin"
 )
 
 var appConfig *config.AppConfig

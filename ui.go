@@ -2,15 +2,15 @@ package main
 
 import (
 	"fmt"
-	public "infini.sh/search-center/.public"
+	public "infini.sh/console/.public"
 	"net/http"
 
 	log "github.com/cihub/seelog"
 	"infini.sh/framework/core/api"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/core/vfs"
-	uiapi "infini.sh/search-center/api"
-	"infini.sh/search-center/config"
+	"infini.sh/console/config"
+	uiapi "infini.sh/console/plugin/api"
 )
 
 type UI struct {

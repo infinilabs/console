@@ -3,7 +3,7 @@ package action
 import (
 	"crypto/tls"
 	"fmt"
-	"infini.sh/search-center/model/alerting"
+	"infini.sh/console/model/alerting"
 	"io/ioutil"
 	"net/http"
 	"strings"

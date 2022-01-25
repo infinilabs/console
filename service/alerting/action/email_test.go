@@ -1,7 +1,7 @@
 package action
 
 import (
-	"infini.sh/search-center/model/alerting"
+	"infini.sh/console/model/alerting"
 	"testing"
 )
 

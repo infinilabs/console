@@ -2,7 +2,7 @@ package util
 
 import (
 	"fmt"
-	"infini.sh/search-center/model/alerting"
+	"infini.sh/console/model/alerting"
 	"testing"
 	"time"
 )

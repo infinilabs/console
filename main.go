@@ -3,6 +3,10 @@ package main
 import (
 	"errors"
 	_ "expvar"
+	"infini.sh/console/config"
+	"infini.sh/console/model"
+	"infini.sh/console/model/alerting"
+	alertSrv "infini.sh/console/service/alerting"
 	"infini.sh/framework"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/env"
@@ -21,10 +25,6 @@ import (
 	"infini.sh/framework/plugins/elastic/json_indexing"
 	api2 "infini.sh/gateway/api"
 	_ "infini.sh/gateway/proxy"
-	"infini.sh/search-center/config"
-	"infini.sh/search-center/model"
-	"infini.sh/search-center/model/alerting"
-	alertSrv "infini.sh/search-center/service/alerting"
 )
 
 var appConfig *config.AppConfig

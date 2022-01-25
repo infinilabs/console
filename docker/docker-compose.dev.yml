@@ -7,7 +7,7 @@ services:
       - 9010:9000
     container_name: "infini-search-center-dev"
     volumes:
-      - ../:/go/src/infini.sh/search-center
+      - ../:/go/src/infini.sh/console
       - ./entrypoint.sh:/entrypoint.sh
 
 volumes:

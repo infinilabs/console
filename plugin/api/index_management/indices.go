@@ -1,11 +1,11 @@
 package index_management
 
 import (
-	log "github.com/cihub/seelog"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/util"
 	"net/http"
+	log "src/github.com/cihub/seelog"
 )
 
 func (handler APIHandler) HandleGetMappingsAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {

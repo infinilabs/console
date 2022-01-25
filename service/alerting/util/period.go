@@ -3,7 +3,7 @@ package util
 import (
 	"fmt"
 	cronlib "github.com/robfig/cron"
-	"infini.sh/search-center/model/alerting"
+	"infini.sh/console/model/alerting"
 	"time"
 )
 

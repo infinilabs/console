@@ -1,14 +1,15 @@
 package api
 
 import (
+	"infini.sh/console/config"
+	"infini.sh/console/plugin/api/index_management"
+	"infini.sh/console/service/alerting"
 	"infini.sh/framework/core/api"
-	"infini.sh/search-center/api/index_management"
-	"infini.sh/search-center/config"
-	"infini.sh/search-center/service/alerting"
 	"path"
 )
 
 func Init(cfg *config.AppConfig) {
+
 	handler := index_management.APIHandler{
 		Config: cfg,
 	}
@@ -75,15 +76,6 @@ func Init(cfg *config.AppConfig) {
 	api.HandleAPIMethod(api.POST, path.Join(pathPrefix, "alerting/_search"), alerting.Search)
 	api.HandleAPIMethod(api.GET, "/elasticsearch/:id/alerting/alerts", alerting.GetAlerts)
 	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/alerting/_monitors/:monitorID/_acknowledge/alerts", alerting.AcknowledgeAlerts)
-
-
-
-	api.HandleAPIMethod(api.POST, "/account/login", handler.AccountLogin)
-	api.HandleAPIMethod(api.GET, "/account/current_user", handler.CurrentUser)
-
-	api.HandleAPIMethod(api.GET, "/account/current_user", handler.CurrentUser)
-
-
 
 
 	//task.RegisterScheduleTask(task.ScheduleTask{

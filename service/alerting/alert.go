@@ -8,7 +8,7 @@ import (
 	"fmt"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/orm"
-	"infini.sh/search-center/model/alerting"
+	"infini.sh/console/model/alerting"
 	"io"
 	"net/http"
 	"net/url"

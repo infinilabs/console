@@ -3,16 +3,16 @@ package index_management
 import (
 	"encoding/json"
 	"fmt"
+	log "github.com/cihub/seelog"
 	"infini.sh/framework/core/orm"
 	"net/http"
-	log "github.com/cihub/seelog"
 	"strings"
 	"time"
 
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/util"
-	"infini.sh/search-center/model"
+	"infini.sh/console/model"
 )
 
 func (handler APIHandler) HandleReindexAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {

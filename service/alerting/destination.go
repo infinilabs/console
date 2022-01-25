@@ -7,7 +7,7 @@ import (
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
-	"infini.sh/search-center/model/alerting"
+	"infini.sh/console/model/alerting"
 	"net/http"
 	"strings"
 	"time"

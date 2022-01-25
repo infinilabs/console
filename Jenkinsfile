@@ -21,7 +21,6 @@ pipeline {
                                 sh 'cd /home/jenkins/go/src/infini.sh/console/ && git clone ssh://git@git.infini.ltd:64221/infini/console-ui.git web'
                                 sh 'cd /home/jenkins/go/src/infini.sh/console/web && cnpm install'
                                 sh 'cd /home/jenkins/go/src/infini.sh/console/web && cnpm run build'
-                                sh 'cd /home/jenkins/go/src/infini.sh/console/web && mv static/* ../.public/static'
                                 sh 'cd /home/jenkins/go/src/infini.sh/console && git stash && git pull origin master && make config build-linux'
                                 sh 'cd /home/jenkins/go/src/infini.sh/console && git stash && git pull origin master && make config build-arm'
                                 sh 'cd /home/jenkins/go/src/infini.sh/console && git stash && git pull origin master && make config build-darwin'

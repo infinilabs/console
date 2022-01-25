@@ -33,3 +33,4 @@ web/report*
 log/
 .env
 /web/
+generated_*.go

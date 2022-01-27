@@ -59,6 +59,7 @@ func (h *APIHandler) HandleAddCommonCommandAction(w http.ResponseWriter, req *ht
 
 	h.WriteJSON(w, resBody,http.StatusOK)
 }
+
 func (h *APIHandler) HandleSaveCommonCommandAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	resBody := map[string]interface{}{
 	}
@@ -83,7 +84,7 @@ func (h *APIHandler) HandleSaveCommonCommandAction(w http.ResponseWriter, req *h
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
 	}
-	if  len(searchRes.Hits.Hits) > 0 && searchRes.Hits.Hits[0].ID.(string) != reqParams.ID {
+	if  len(searchRes.Hits.Hits) > 0 && searchRes.Hits.Hits[0].ID != reqParams.ID {
 		resBody["error"] = "title already exists"
 		log.Error(resBody["error"])
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)

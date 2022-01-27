@@ -10,12 +10,12 @@ import (
 	"github.com/elastic/go-ucfg/yaml"
 	cronlib "github.com/robfig/cron"
 	"github.com/valyala/fasttemplate"
-	"infini.sh/framework/core/conditions"
-	"infini.sh/framework/core/elastic"
-	"infini.sh/framework/core/orm"
 	"infini.sh/console/model/alerting"
 	"infini.sh/console/service/alerting/action"
 	"infini.sh/console/service/alerting/util"
+	"infini.sh/framework/core/conditions"
+	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/orm"
 	"io"
 	"net/http"
 	"strings"
@@ -370,7 +370,7 @@ func saveAlertInfo(alertItem *alerting.Alert) error {
 		return err
 	}
 	currentState := queryValue(resBody.Hits.Hits[0].Source, "state", "").(string)
-	alertItem.Id = resBody.Hits.Hits[0].ID.(string)
+	alertItem.Id = resBody.Hits.Hits[0].ID
 	if currentState != alertItem.State {
 		reqUrl = fmt.Sprintf("%s/%s/_doc/%s", conf.Endpoint, getAlertIndexName(INDEX_ALERT_HISTORY), alertItem.Id)
 		source := resBody.Hits.Hits[0].Source
@@ -381,7 +381,7 @@ func saveAlertInfo(alertItem *alerting.Alert) error {
 			}
 		}
 		_,err = doRequest(reqUrl, http.MethodPut, nil, source)
-		reqUrl = fmt.Sprintf("%s/%s/_doc/%s", conf.Endpoint, indexName, resBody.Hits.Hits[0].ID.(string))
+		reqUrl = fmt.Sprintf("%s/%s/_doc/%s", conf.Endpoint, indexName, resBody.Hits.Hits[0].ID)
 		_,err = doRequest(reqUrl, http.MethodDelete, nil,   alertItem)
 		return err
 	}
@@ -581,7 +581,7 @@ func getEnabledMonitors() (map[string]ScheduleMonitor, error){
 		monitor := &alerting.Monitor{}
 		buf, _ := json.Marshal(hit.Source[MONITOR_FIELD])
 		_ = json.Unmarshal(buf, monitor)
-		monitors[hit.ID.(string)] = ScheduleMonitor{
+		monitors[hit.ID] = ScheduleMonitor{
 			Monitor: monitor,
 			ClusterID: hit.Source["cluster_id"].(string),
 		}

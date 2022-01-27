@@ -151,7 +151,7 @@ func getTopTenAlertCluster()(interface{}, error){
 	res.Body.Close()
 	clusterMap := IfaceMap{}
 	for _, hit := range resBody.Hits.Hits {
-		clusterMap[hit.ID.(string)] = hit.Source["name"]
+		clusterMap[hit.ID] = hit.Source["name"]
 	}
 	for _, d := range metricData {
 		if name, ok := clusterMap[d["x"].(string)]; ok {

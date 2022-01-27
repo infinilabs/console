@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
+	"infini.sh/console/model"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/util"
-	"infini.sh/console/model"
 )
 
 func (handler APIHandler) HandleReindexAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -158,7 +158,7 @@ func SyncRebuildResult(esName string) error {
 	)
 	for _, doc := range taskResp.Hits.Hits {
 		status = model.ReindexStatusRunning
-		source := esRes.Hits.Hits[idMap[doc.ID.(string)]].Source
+		source := esRes.Hits.Hits[idMap[doc.ID]].Source
 		if _, ok := doc.Source["error"]; ok {
 			status = model.ReindexStatusFailed
 		} else {
@@ -166,7 +166,7 @@ func SyncRebuildResult(esName string) error {
 		}
 		source["status"] = status
 		source["task_source"] = doc.Source
-		_, err := client.Index(orm.GetIndexName(model.Reindex{}), "", esRes.Hits.Hits[idMap[doc.ID.(string)]].ID, source)
+		_, err := client.Index(orm.GetIndexName(model.Reindex{}), "", esRes.Hits.Hits[idMap[doc.ID]].ID, source)
 		return err
 	}
 	return nil

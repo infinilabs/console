@@ -1,4 +1,5 @@
-#存储极限数据平台相关数据的 Elasticsearch 集群信息，版本 v7.0+
+
+# for the system cluster, please use Elasticsearch v7.0+
 elasticsearch:
   - name: default
     enabled: true
@@ -8,7 +9,6 @@ elasticsearch:
       username: elastic
       password: infinilabs
 
-#前端 UI HTTP 配置
 web:
   enabled: true
   embedding_api: true

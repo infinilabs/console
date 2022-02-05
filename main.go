@@ -32,11 +32,7 @@ var appConfig *config.AppConfig
 var appUI *UI
 
 func main() {
-	terminalHeader := ("\n\n  _____    __  ________    __ _____   \n")
-	terminalHeader += ("  \\_   \\/\\ \\ \\/ __\\_   \\/\\ \\ \\\\_   \\  \n")
-	terminalHeader += ("   / /\\/  \\/ / _\\  / /\\/  \\/ / / /\\/  \n")
-	terminalHeader += ("/\\/ /_/ /\\  / / /\\/ /_/ /\\  /\\/ /_    \n")
-	terminalHeader += ("\\____/\\_\\ \\/\\/  \\____/\\_\\ \\/\\____/    \n")
+	terminalHeader := ("\n\n")
 	terminalHeader += ("   ___  __   ___         ___          \n")
 	terminalHeader += ("  / __\\/ /  /___\\/\\ /\\  /   \\         \n")
 	terminalHeader += (" / /  / /  //  // / \\ \\/ /\\ /         \n")

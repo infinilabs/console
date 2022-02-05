@@ -32,15 +32,26 @@ var appConfig *config.AppConfig
 var appUI *UI
 
 func main() {
-	terminalHeader := ("   ___                      _\n")
-	terminalHeader += ("  / __\\___  _ __  ___  ___ | | ___\n")
-	terminalHeader += (" / /  / _ \\| '_ \\/ __|/ _ \\| |/ _ \\\n")
-	terminalHeader += ("/ /__| (_) | | | \\__ \\ (_) | |  __/\n")
-	terminalHeader += ("\\____/\\___/|_| |_|___/\\___/|_|\\___|\n\n")
+	terminalHeader := ("\n\n  _____    __  ________    __ _____   \n")
+	terminalHeader += ("  \\_   \\/\\ \\ \\/ __\\_   \\/\\ \\ \\\\_   \\  \n")
+	terminalHeader += ("   / /\\/  \\/ / _\\  / /\\/  \\/ / / /\\/  \n")
+	terminalHeader += ("/\\/ /_/ /\\  / / /\\/ /_/ /\\  /\\/ /_    \n")
+	terminalHeader += ("\\____/\\_\\ \\/\\/  \\____/\\_\\ \\/\\____/    \n")
+	terminalHeader += ("   ___  __   ___         ___          \n")
+	terminalHeader += ("  / __\\/ /  /___\\/\\ /\\  /   \\         \n")
+	terminalHeader += (" / /  / /  //  // / \\ \\/ /\\ /         \n")
+	terminalHeader += ("/ /__/ /__/ \\_//\\ \\_/ / /_//          \n")
+	terminalHeader += ("\\____|____|___/  \\___/___,'           \n")
+	terminalHeader += ("   ___  ___    __  __    ___  __   __ \n")
+	terminalHeader += ("  / __\\/___\\/\\ \\ \\/ _\\  /___\\/ /  /__\\\n")
+	terminalHeader += (" / /  //  //  \\/ /\\ \\  //  // /  /_\\  \n")
+	terminalHeader += ("/ /__/ \\_// /\\  / _\\ \\/ \\_// /__//__  \n")
+	terminalHeader += ("\\____|___/\\_\\ \\/  \\__/\\___/\\____|__/  \n")
+	terminalHeader += ("                                      \n\n")
 
 	terminalFooter := ""
 
-	app := framework.NewApp("console", "INFINI Cloud, The easiest way to operate your own elasticsearch platform.",
+	app := framework.NewApp("console", "INFINI Cloud Console, The easiest way to operate your own elasticsearch platform.",
 		config.Version, config.LastCommitLog, config.BuildDate, config.EOLDate, terminalHeader, terminalFooter)
 
 	app.Init(nil)

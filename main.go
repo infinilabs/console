@@ -58,7 +58,7 @@ func main() {
 	if app.Setup(func() {
 
 		//load core modules first
-		module.RegisterSystemModule(elastic2.ElasticModule{})
+		module.RegisterSystemModule(&elastic2.ElasticModule{})
 		module.RegisterSystemModule(&filter.FilterModule{})
 		module.RegisterSystemModule(&stats.SimpleStatsModule{})
 		module.RegisterSystemModule(&queue2.DiskQueue{})

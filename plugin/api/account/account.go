@@ -3,6 +3,7 @@ package account
 import (
 	"infini.sh/framework/core/api"
 	 "infini.sh/framework/core/api/router"
+	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/util"
 	"net/http"
 )
@@ -19,14 +20,42 @@ func init() {
 
 func (handler Account)AccountLogin(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 
-	data := util.MapStr{
-		"status":           "ok",
-		"type":             "account",
-		"currentAuthority": "admin",
-		"userid":           "10001",
+	//{"userName":"admin","password":"111111","type":"account"}
+
+	json,err:=handler.GetJSON(req)
+	if err!=nil{
+		handler.Error(w,err)
+		return
+	}
+	userName,err:=json.String("userName")
+	if err!=nil{
+		handler.Error(w,err)
+		return
+	}
+	password,err:=json.String("password")
+	if err!=nil{
+		handler.Error(w,err)
+		return
 	}
 
-	handler.WriteJSON(w, data, http.StatusOK)
+	u,_:=global.Env().GetConfig("bootstrap.username","admin")
+	p,_:=global.Env().GetConfig("bootstrap.password","admin")
+	if u==userName&&p==password{
+		data := util.MapStr{
+			"status":           "ok",
+			"type":             "account",
+			"currentAuthority": "admin",
+			"userid":           "10001",
+		}
+		handler.WriteJSON(w, data, http.StatusOK)
+	}else{
+		data := util.MapStr{
+			"status":           "error",
+			"type":             "account",
+			"currentAuthority": "guest",
+		}
+		handler.WriteJSON(w, data, http.StatusOK)
+	}
 }
 
 func (handler Account)CurrentUser(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {

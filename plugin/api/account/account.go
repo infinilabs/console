@@ -18,6 +18,8 @@ func init() {
 	api.HandleAPIMethod(api.GET, "/account/current_user", account.CurrentUser)
 }
 
+var userInSession string="user_in_session"
+
 func (handler Account)AccountLogin(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 
 	//{"userName":"admin","password":"111111","type":"account"}
@@ -47,6 +49,7 @@ func (handler Account)AccountLogin(w http.ResponseWriter, req *http.Request, ps 
 			"currentAuthority": "admin",
 			"userid":           "10001",
 		}
+		api.SetSession(w,req, userInSession,userName)
 		handler.WriteJSON(w, data, http.StatusOK)
 	}else{
 		data := util.MapStr{
@@ -59,6 +62,45 @@ func (handler Account)AccountLogin(w http.ResponseWriter, req *http.Request, ps 
 }
 
 func (handler Account)CurrentUser(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	data := []byte("{ \"name\": \"INFINI Labs\", \"avatar\": \"\", \"userid\": \"10001\", \"email\": \"hello@infini.ltd\", \"signature\": \"极限科技 - 专业的开源搜索与实时数据分析整体解决方案提供商。\", \"title\": \"首席设计师\", \"group\": \"INFINI Labs－UED\", \"tags\": [ { \"key\": \"0\", \"label\": \"很有想法的\" }, { \"key\": \"1\", \"label\": \"专注设计\" }, { \"key\": \"2\", \"label\": \"辣~\" }, { \"key\": \"3\", \"label\": \"大长腿\" }, { \"key\": \"4\", \"label\": \"川妹子\" }, { \"key\": \"5\", \"label\": \"海纳百川\" } ], \"notifyCount\": 12, \"country\": \"China\", \"geographic\": { \"province\": { \"label\": \"湖南省\", \"key\": \"330000\" }, \"city\": { \"label\": \"长沙市\", \"key\": \"330100\" } }, \"address\": \"岳麓区湘江金融中心\", \"phone\": \"4001399200\" }")
-	handler.Write(w, data)
+
+	exists,user:=api.GetSession(w,req, userInSession)
+	if exists{
+		data:=util.MapStr{
+			"name": user,
+			"avatar": "",
+			"userid": "10001",
+			"email": "hello@infini.ltd",
+			"signature": "极限科技 - 专业的开源搜索与实时数据分析整体解决方案提供商。",
+			"title": "首席设计师",
+			"group": "INFINI Labs",
+			"tags": []util.MapStr{
+				{
+					"key": "0",
+					"label": "很有想法的",
+				}},
+			"notifyCount": 12,
+			"country": "China",
+			"geographic": util.MapStr{
+				"province": util.MapStr{
+					"label": "湖南省",
+					"key": "330000",
+				},
+				"city": util.MapStr{
+					"label": "长沙市",
+					"key": "330100",
+				},
+			},
+			"address": "岳麓区湘江金融中心",
+			"phone": "4001399200",
+		}
+
+		handler.WriteJSON(w, data,200)
+	}else{
+		data := util.MapStr{
+			"status":           "error",
+			"type":             "account",
+			"currentAuthority": "guest",
+		}
+		handler.WriteJSON(w, data, 403)
+	}
 }

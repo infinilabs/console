@@ -10,7 +10,6 @@ import (
 	"github.com/segmentio/encoding/json"
 	"infini.sh/console/model/gateway"
 	httprouter "infini.sh/framework/core/api/router"
-	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/lib/fasthttp"
@@ -30,24 +29,11 @@ func (h *GatewayAPI) createInstance(w http.ResponseWriter, req *http.Request, ps
 		return
 	}
 
-	var groupID = obj.Group
-	obj.Group = ""
 	err = orm.Create(obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
 		return
-	}
-	if groupID != "" {
-		groupInstance := &gateway.InstanceGroup{}
-		groupInstance.InstanceID = obj.ID
-		groupInstance.GroupID = groupID
-		err = orm.Create(groupInstance)
-		if err != nil {
-			h.WriteError(w, err.Error(), http.StatusInternalServerError)
-			log.Error(err)
-			return
-		}
 	}
 
 	h.WriteJSON(w, util.MapStr{
@@ -71,7 +57,6 @@ func (h *GatewayAPI) getInstance(w http.ResponseWriter, req *http.Request, ps ht
 		}, http.StatusNotFound)
 		return
 	}
-	obj.Group, err = fetchInstanceGroup(id)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -98,12 +83,6 @@ func (h *GatewayAPI) updateInstance(w http.ResponseWriter, req *http.Request, ps
 		}, http.StatusNotFound)
 		return
 	}
-	oldGroup, err := fetchInstanceGroup(id)
-	if err != nil {
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
-		return
-	}
 
 	id = obj.ID
 	create := obj.Created
@@ -114,50 +93,10 @@ func (h *GatewayAPI) updateInstance(w http.ResponseWriter, req *http.Request, ps
 		log.Error(err)
 		return
 	}
-	if obj.Group != oldGroup {
-		delQuery := util.MapStr{
-			"query": util.MapStr{
-				"bool": util.MapStr{
-					"must": []util.MapStr{
-						//{
-						//	"term": util.MapStr{
-						//		"group_id": util.MapStr{
-						//			"value": oldGroup,
-						//		},
-						//	},
-						//},
-						{
-							"term": util.MapStr{
-								"instance_id": util.MapStr{
-									"value": id,
-								},
-							},
-						},
-					},
-				},
-			},
-		}
-		err = orm.DeleteBy(&gateway.InstanceGroup{}, util.MustToJSONBytes(delQuery))
-		if err != nil {
-			h.WriteError(w, err.Error(), http.StatusInternalServerError)
-			log.Error(err)
-			return
-		}
-		err = orm.Create(&gateway.InstanceGroup{
-			GroupID: obj.Group,
-			InstanceID: id,
-		})
-		if err != nil {
-			h.WriteError(w, err.Error(), http.StatusInternalServerError)
-			log.Error(err)
-			return
-		}
-	}
 
 	//protect
 	obj.ID = id
 	obj.Created = create
-	obj.Group = ""
 	err = orm.Update(&obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -202,14 +141,14 @@ func (h *GatewayAPI) deleteInstance(w http.ResponseWriter, req *http.Request, ps
 func (h *GatewayAPI) searchInstance(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 
 	var (
-		name        = h.GetParameterOrDefault(req, "name", "")
+		keyword        = h.GetParameterOrDefault(req, "keyword", "")
 		queryDSL    = `{"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d}`
 		strSize     = h.GetParameterOrDefault(req, "size", "20")
 		strFrom     = h.GetParameterOrDefault(req, "from", "0")
 		mustBuilder = &strings.Builder{}
 	)
-	if name != "" {
-		mustBuilder.WriteString(fmt.Sprintf(`{"prefix":{"name": "%s"}}`, name))
+	if keyword != "" {
+		mustBuilder.WriteString(fmt.Sprintf(`{"query_string":{"default_field":"*","query": "%s"}}`, keyword))
 	}
 	size, _ := strconv.Atoi(strSize)
 	if size <= 0 {
@@ -230,44 +169,7 @@ func (h *GatewayAPI) searchInstance(w http.ResponseWriter, req *http.Request, ps
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	//fetch relationship
-	instanceIDs := pickElasticsearchColumnValues(res.Result, "id")
-	instanceGroups, err := fetchInstanceGroupByID(instanceIDs)
-	if err != nil {
-		log.Error(err)
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	//fetch group
-
-	groupIDs := pickElasticsearchColumnValues(instanceGroups, "group_id")
-	groups, err := fetchGroupByID(groupIDs)
-	if err != nil {
-		log.Error(err)
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	groupsMap := getRelationshipMap(groups, "id", "name")
-	relationshipMap := getRelationshipMap(instanceGroups, "instance_id", "group_id")
-
-	resultRes := &elastic.SearchResponse{}
-	err = util.FromJSONBytes(res.Raw, resultRes)
-	if err != nil {
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
-		return
-	}
-	for _, hit := range resultRes.Hits.Hits {
-		hit.Source["group"] = relationshipMap[hit.ID]
-	}
-
-	h.WriteJSON(w, struct{
-		elastic.SearchResponse
-		Groups interface{} `json:"groups"`
-	}{
-		SearchResponse: *resultRes,
-		Groups: groupsMap,
-	}, http.StatusOK)
+	h.Write(w, res.Raw)
 }
 
 type GatewayConnectResponse struct {

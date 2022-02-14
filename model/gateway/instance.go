@@ -21,6 +21,6 @@ type Instance struct {
 		Password string `json:"password,omitempty" config:"password" elastic_mapping:"password:{type:keyword}"`
 	} `config:"basic_auth" json:"basic_auth,omitempty" elastic_mapping:"basic_auth:{type:object}"`
 	Owner string `json:"owner,omitempty" config:"owner" elastic_mapping:"owner:{type:keyword}"`
-	Group string `json:"group,omitempty"`
+	Tags [] string `json:"tags,omitempty"`
 	Description string `json:"description,omitempty" config:"description" elastic_mapping:"description:{type:keyword}"`
 }

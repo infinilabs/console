@@ -122,8 +122,6 @@ func main() {
 		orm.RegisterSchemaWithIndexName(elastic.CommonCommand{}, "commands")
 		orm.RegisterSchemaWithIndexName(elastic.TraceTemplate{}, "trace-template")
 		orm.RegisterSchemaWithIndexName(gateway.Instance{} , "gateway-instance")
-		orm.RegisterSchemaWithIndexName(gateway.Group{} , "gateway-group")
-		orm.RegisterSchemaWithIndexName(gateway.InstanceGroup{} , "gateway-instance-group")
 
 		api.RegisterSchema()
 

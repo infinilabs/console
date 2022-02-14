@@ -6,6 +6,8 @@ import (
 	"infini.sh/console/config"
 	"infini.sh/console/model"
 	"infini.sh/console/model/alerting"
+	"infini.sh/console/model/gateway"
+	_ "infini.sh/console/plugin"
 	alertSrv "infini.sh/console/service/alerting"
 	"infini.sh/framework"
 	"infini.sh/framework/core/elastic"
@@ -25,7 +27,6 @@ import (
 	"infini.sh/framework/plugins/elastic/json_indexing"
 	api2 "infini.sh/gateway/api"
 	_ "infini.sh/gateway/proxy"
-	_ "infini.sh/console/plugin"
 )
 
 var appConfig *config.AppConfig
@@ -120,6 +121,9 @@ func main() {
 		orm.RegisterSchemaWithIndexName(alerting.AlertingHistory{}, "alerting-history")
 		orm.RegisterSchemaWithIndexName(elastic.CommonCommand{}, "commands")
 		orm.RegisterSchemaWithIndexName(elastic.TraceTemplate{}, "trace-template")
+		orm.RegisterSchemaWithIndexName(gateway.Instance{} , "gateway-instance")
+		orm.RegisterSchemaWithIndexName(gateway.Group{} , "gateway-group")
+		orm.RegisterSchemaWithIndexName(gateway.InstanceGroup{} , "gateway-instance-group")
 
 		api.RegisterSchema()
 

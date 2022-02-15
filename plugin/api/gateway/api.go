@@ -20,4 +20,5 @@ func init() {
 	api.HandleAPIMethod(api.PUT, "/gateway/instance/:instance_id", gateway.updateInstance)
 	api.HandleAPIMethod(api.DELETE, "/gateway/instance/:instance_id", gateway.deleteInstance)
 	api.HandleAPIMethod(api.GET, "/gateway/instance/_search", gateway.searchInstance)
+	api.HandleAPIMethod(api.POST, "/gateway/instance/status", gateway.getInstanceStatus)
 }

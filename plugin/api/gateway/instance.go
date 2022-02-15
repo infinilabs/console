@@ -7,6 +7,7 @@ package gateway
 import (
 	"crypto/tls"
 	"fmt"
+	log "github.com/cihub/seelog"
 	"github.com/segmentio/encoding/json"
 	"infini.sh/console/model/gateway"
 	httprouter "infini.sh/framework/core/api/router"
@@ -14,7 +15,6 @@ import (
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/lib/fasthttp"
 	"net/http"
-	log "src/github.com/cihub/seelog"
 	"strconv"
 	"strings"
 	"time"
@@ -170,6 +170,60 @@ func (h *GatewayAPI) searchInstance(w http.ResponseWriter, req *http.Request, ps
 		return
 	}
 	h.Write(w, res.Raw)
+}
+
+func (h *GatewayAPI) getInstanceStatus(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	var instanceIDs = []string{}
+	err := h.DecodeJSON(req, &instanceIDs)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if len(instanceIDs) == 0 {
+		h.WriteJSON(w, util.MapStr{}, http.StatusOK)
+		return
+	}
+	q := orm.Query{}
+	queryDSL := util.MapStr{
+		"query": util.MapStr{
+			"terms": util.MapStr{
+				"_id": instanceIDs,
+			},
+		},
+	}
+	q.RawQuery = util.MustToJSONBytes(queryDSL)
+
+	err, res := orm.Search(&gateway.Instance{}, &q)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	result := util.MapStr{}
+	for _, item := range res.Result {
+		instance := util.MapStr(item.(map[string]interface{}))
+		if err != nil {
+			log.Error(err)
+			continue
+		}
+		endpoint, _ := instance.GetValue("endpoint")
+		username, _ := instance.GetValue("basic_auth.username")
+		if username == nil {
+			username = ""
+		}
+		password, _ := instance.GetValue("basic_auth.password")
+		if  password == nil {
+			password = ""
+		}
+		gid, _ := instance.GetValue("id")
+		connRes, err := h.doConnect(endpoint.(string), username.(string), password.(string))
+		if err != nil {
+			log.Error(err)
+		}
+		result[gid.(string)] = connRes
+	}
+	h.WriteJSON(w, result, http.StatusOK)
 }
 
 type GatewayConnectResponse struct {

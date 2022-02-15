@@ -16,7 +16,7 @@ type Instance struct {
 	Name        string `json:"name,omitempty" elastic_mapping:"name:{type:keyword,fields:{text: {type: text}}}"`
 	Endpoint string `json:"endpoint,omitempty" elastic_mapping:"endpoint: { type: keyword }"`
 	Version map[string]interface{} `json:"version,omitempty" elastic_mapping:"version: { type: object }"`
-	BasicAuth *struct {
+	BasicAuth struct {
 		Username string `json:"username,omitempty" config:"username" elastic_mapping:"username:{type:keyword}"`
 		Password string `json:"password,omitempty" config:"password" elastic_mapping:"password:{type:keyword}"`
 	} `config:"basic_auth" json:"basic_auth,omitempty" elastic_mapping:"basic_auth:{type:object}"`

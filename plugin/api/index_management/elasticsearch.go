@@ -25,14 +25,14 @@ func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req
 		if err != nil{
 			log.Error(err)
 		}
-		val, err := data.GetValue("cluster_stats.nodes.count.total")
+		val, err := data.GetValue("payload.elasticsearch.cluster_stats.nodes.count.total")
 		if err != nil {
 			log.Warn(err)
 		}
 		if num, ok := val.(float64); ok {
 			totalNode += int(num)
 		}
-		val, err = data.GetValue("index_stats._all.total.store.size_in_bytes")
+		val, err = data.GetValue("payload.elasticsearch.cluster_stats.indices.store.size_in_bytes")
 		if err != nil {
 			log.Warn(err)
 		}
@@ -63,14 +63,36 @@ func (handler APIHandler) getLatestClusterMonitorData(clusterID interface{}) (ut
 	client := elastic.GetClient(handler.Config.Elasticsearch)
 	queryDSLTpl := `{
   "size": 1, 
-  "query": {
-    "match": {
-      "elasticsearch": "%s"
+   "query": {
+    "bool": {
+      "must": [
+        {
+          "term": {
+            "metadata.labels.cluster_id": {
+              "value": "%s"
+            }
+          }
+        },
+        {
+          "term": {
+            "metadata.name": {
+              "value": "cluster_stats"
+            }
+          }
+        },
+        {
+          "term": {
+            "metadata.category": {
+              "value": "elasticsearch"
+            }
+          }
+        }
+      ]
     }
   }, 
   "sort": [
     {
-      "cluster_stats.timestamp": {
+      "timestamp": {
         "order": "desc"
       }
     }

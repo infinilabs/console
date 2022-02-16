@@ -15,7 +15,6 @@ func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req
 	var (
 		totalNode int
 		totalStoreSize int
-		hosts = map[string]struct{}{}
 	)
 	elastic.WalkConfigs(func(key, value interface{})bool{
 		if handler.Config.Elasticsearch == key {
@@ -39,21 +38,17 @@ func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req
 		if num, ok := val.(float64); ok {
 			totalStoreSize += int(num)
 		}
-
-		val, err = data.GetValue("agent.ip")
-		if err != nil {
-			log.Warn(err)
-		}
-		if ip, ok := val.(string); ok {
-			hosts[ip] = struct{}{}
-		}
 		return true
 	})
 
+	hostCount, err := handler.getLastActiveHostCount()
+	if err != nil{
+		log.Error(err)
+	}
 	resBody := util.MapStr{
-		"total_node": totalNode,
-		"total_store_size_in_bytes": totalStoreSize,
-		"total_host": len(hosts),
+		"nodes_count": totalNode,
+		"total_used_store_in_bytes": totalStoreSize,
+		"hosts_count": hostCount,
 		//"hosts": hosts,
 	}
 	handler.WriteJSON(w, resBody, http.StatusOK)
@@ -109,3 +104,55 @@ func (handler APIHandler) getLatestClusterMonitorData(clusterID interface{}) (ut
 	}
 	return searchRes.Hits.Hits[0].Source, nil
 }
+
+func (handler APIHandler) getLastActiveHostCount() (int, error){
+	client := elastic.GetClient(handler.Config.Elasticsearch)
+	queryDSL := `{
+  "size": 0, 
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "term": {
+            "metadata.name": {
+              "value": "node_stats"
+            }
+          }
+        },
+        {
+          "term": {
+            "metadata.category": {
+              "value": "elasticsearch"
+            }
+          }
+        }
+      ],
+      "filter": [
+        {
+          "range": {
+            "timestamp": {
+              "gte": "now-w",
+              "lte": "now"
+            }
+          }
+        }
+      ]
+    }
+  }, 
+  "aggs": {
+    "week_active_host": {
+      "terms": {
+        "field": "payload.elasticsearch.node_stats.host",
+        "size": 10000
+      }
+    }
+  }
+}`
+	searchRes, err := client.SearchWithRawQueryDSL(orm.GetIndexName(event.Event{}), []byte(queryDSL))
+	if err != nil {
+		log.Error(err)
+		return 0, err
+	}
+	return len(searchRes.Aggregations["week_active_host"].Buckets), nil
+}
+

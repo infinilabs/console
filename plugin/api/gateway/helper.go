@@ -4,6 +4,16 @@
 
 package gateway
 
+import (
+	"bytes"
+	"crypto/tls"
+	"github.com/segmentio/encoding/json"
+	"infini.sh/console/model/gateway"
+	"infini.sh/framework/lib/fasthttp"
+	"io"
+	"time"
+)
+
 //import (
 //	"fmt"
 //	"infini.sh/console/model/gateway"
@@ -88,3 +98,65 @@ package gateway
 //	return resultMap
 //}
 
+type ProxyRequest struct {
+	Endpoint string
+	Path string
+	Method string
+	BasicAuth gateway.BasicAuth
+	Body interface{}
+}
+
+type ProxyResponse struct {
+	Body []byte
+	StatusCode int
+}
+
+func doGatewayRequest(req *ProxyRequest) (*ProxyResponse, error){
+	var (
+		freq = fasthttp.AcquireRequest()
+		fres = fasthttp.AcquireResponse()
+	)
+	defer func() {
+		fasthttp.ReleaseRequest(freq)
+		fasthttp.ReleaseResponse(fres)
+	}()
+	freq.SetRequestURI(req.Endpoint+ req.Path)
+	freq.Header.SetMethod(req.Method)
+	if req.BasicAuth.Username != ""{
+		freq.SetBasicAuth(req.BasicAuth.Username, req.BasicAuth.Password)
+	}
+	if req.Body != nil {
+		switch req.Body.(type) {
+		case []byte:
+			freq.SetBody(req.Body.([]byte))
+		case string:
+			 freq.SetBody([]byte(req.Body.(string)))
+		case io.Reader:
+			 freq.SetBodyStream(req.Body.(io.Reader), -1)
+		default:
+			rw := &bytes.Buffer{}
+			enc := json.NewEncoder(rw)
+			err := enc.Encode(req.Body)
+			if err != nil {
+				return nil, err
+			}
+			freq.SetBody(rw.Bytes())
+		}
+	}
+
+	client := &fasthttp.Client{
+		MaxConnsPerHost: 1000,
+		TLSConfig:       &tls.Config{InsecureSkipVerify: true},
+		ReadTimeout: time.Second * 5,
+	}
+	err := client.Do(freq, fres)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ProxyResponse{
+		Body: fres.Body(),
+		StatusCode: fres.StatusCode(),
+	}, nil
+
+}

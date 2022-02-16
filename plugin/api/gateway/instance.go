@@ -5,7 +5,6 @@
 package gateway
 
 import (
-	"crypto/tls"
 	"fmt"
 	log "github.com/cihub/seelog"
 	"github.com/segmentio/encoding/json"
@@ -13,11 +12,9 @@ import (
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
-	"infini.sh/framework/lib/fasthttp"
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 )
 
 func (h *GatewayAPI) createInstance(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -217,13 +214,53 @@ func (h *GatewayAPI) getInstanceStatus(w http.ResponseWriter, req *http.Request,
 			password = ""
 		}
 		gid, _ := instance.GetValue("id")
-		connRes, err := h.doConnect(endpoint.(string), username.(string), password.(string))
+		connRes, err := h.doConnect(endpoint.(string), gateway.BasicAuth{
+			Username: username.(string),
+			Password: password.(string),
+		})
 		if err != nil {
 			log.Error(err)
 		}
 		result[gid.(string)] = connRes
 	}
 	h.WriteJSON(w, result, http.StatusOK)
+}
+func (h *GatewayAPI) proxy(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	var (
+		method = h.Get(req, "method", "GET")
+		path = h.Get(req, "path", "")
+	)
+	instanceID := ps.MustGetParameter("instance_id")
+
+	obj := gateway.Instance{}
+	obj.ID = instanceID
+
+	exists, err := orm.Get(&obj)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
+	if !exists  {
+		h.WriteJSON(w, util.MapStr{
+			"error": "gateway instance not found",
+		}, http.StatusNotFound)
+		return
+	}
+	res, err := doGatewayRequest(&ProxyRequest{
+		Method: method,
+		Endpoint: obj.Endpoint,
+		Path: path,
+		Body: req.Body,
+		BasicAuth: obj.BasicAuth,
+	})
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
+	h.WriteHeader(w, res.StatusCode)
+	h.Write(w, res.Body)
 }
 
 type GatewayConnectResponse struct {
@@ -238,32 +275,17 @@ type GatewayConnectResponse struct {
 	} `json:"version"`
 
 }
-func (h *GatewayAPI) doConnect(endpoint, username, password string) (*GatewayConnectResponse, error) {
-	var (
-		freq = fasthttp.AcquireRequest()
-		fres = fasthttp.AcquireResponse()
-	)
-	defer func() {
-		fasthttp.ReleaseRequest(freq)
-		fasthttp.ReleaseResponse(fres)
-	}()
-
-	freq.SetRequestURI(fmt.Sprintf("%s/_framework/api/_info", endpoint))
-	freq.Header.SetMethod("GET")
-	if username != ""{
-		freq.SetBasicAuth(username, password)
-	}
-
-	client := &fasthttp.Client{
-		MaxConnsPerHost: 1000,
-		TLSConfig:       &tls.Config{InsecureSkipVerify: true},
-		ReadTimeout: time.Second * 5,
-	}
-	err := client.Do(freq, fres)
+func (h *GatewayAPI) doConnect(endpoint string, basicAuth gateway.BasicAuth) (*GatewayConnectResponse, error) {
+	res, err := doGatewayRequest(&ProxyRequest{
+		Method: http.MethodGet,
+		Endpoint: endpoint,
+		Path: "/_framework/api/_info",
+		BasicAuth: basicAuth,
+	})
 	if err != nil {
 		return nil, err
 	}
-	b := fres.Body()
+	b := res.Body
 	gres := &GatewayConnectResponse{}
 	err = json.Unmarshal(b, gres)
 	return gres, err
@@ -273,17 +295,14 @@ func (h *GatewayAPI) doConnect(endpoint, username, password string) (*GatewayCon
 func (h *GatewayAPI) tryConnect(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	var reqBody = struct {
 		Endpoint string `json:"endpoint"`
-		BasicAuth struct {
-			Username string `json:"username"`
-			Password string `json:"password"`
-		}
+		BasicAuth gateway.BasicAuth
 	}{}
 	err := h.DecodeJSON(req, &reqBody)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	connectRes, err := h.doConnect(reqBody.Endpoint, reqBody.BasicAuth.Username, reqBody.BasicAuth.Password)
+	connectRes, err := h.doConnect(reqBody.Endpoint, reqBody.BasicAuth)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return

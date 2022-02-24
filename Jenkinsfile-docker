@@ -25,7 +25,7 @@ pipeline {
                             sh 'cd /home/jenkins/go/src/infini.sh/console/ && git clone ssh://git@git.infini.ltd:64221/infini/console-ui.git web'
                             sh 'cd /home/jenkins/go/src/infini.sh/console/web && cnpm install'
                             sh 'cd /home/jenkins/go/src/infini.sh/console/web && cnpm run build'
-                            sh 'cd /home/jenkins/go/src/infini.sh/console && git stash && git pull origin master && make config build  && chmod a+x bin/console'
+                            sh 'cd /home/jenkins/go/src/infini.sh/console && git pull origin master && make config build  && chmod a+x bin/console'
 
                             sh label: 'docker-build', script: 'cd /home/jenkins/go/src/infini.sh/console/bin && docker build -t infini-console  -f ../docker/Dockerfile .'
                             sh label: 'docker-tagging', script: 'docker tag infini-console infinilabs/console:latest && docker tag infini-console infinilabs/console:$VERSION-$BUILD_NUMBER'

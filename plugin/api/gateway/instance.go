@@ -214,14 +214,24 @@ func (h *GatewayAPI) getInstanceStatus(w http.ResponseWriter, req *http.Request,
 			password = ""
 		}
 		gid, _ := instance.GetValue("id")
-		connRes, err := h.doConnect(endpoint.(string), gateway.BasicAuth{
-			Username: username.(string),
-			Password: password.(string),
+		res, err := doGatewayRequest(&ProxyRequest{
+			Endpoint: endpoint.(string),
+			Method: http.MethodGet,
+			Path: "/stats",
+			BasicAuth: gateway.BasicAuth{
+				Username: username.(string),
+				Password: password.(string),
+			},
 		})
 		if err != nil {
 			log.Error(err)
+			result[gid.(string)] = util.MapStr{}
+			continue
 		}
-		result[gid.(string)] = connRes
+		var resMap = util.MapStr{}
+		util.MustFromJSONBytes(res.Body, &resMap)
+
+		result[gid.(string)] = resMap
 	}
 	h.WriteJSON(w, result, http.StatusOK)
 }

@@ -225,7 +225,7 @@ func (h *GatewayAPI) getInstanceStatus(w http.ResponseWriter, req *http.Request,
 		})
 		if err != nil {
 			log.Error(err)
-			result[gid.(string)] = util.MapStr{}
+			//result[gid.(string)] = util.MapStr{}
 			continue
 		}
 		var resMap = util.MapStr{}

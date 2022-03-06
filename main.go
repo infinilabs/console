@@ -14,7 +14,7 @@ import (
 	"infini.sh/framework/core/env"
 	"infini.sh/framework/core/module"
 	"infini.sh/framework/core/orm"
-	pipe "infini.sh/framework/core/pipeline"
+	_ "infini.sh/framework/plugins"
 	queue2 "infini.sh/framework/modules/disk_queue"
 	elastic2 "infini.sh/framework/modules/elastic"
 	"infini.sh/framework/modules/filter"
@@ -24,7 +24,6 @@ import (
 	"infini.sh/framework/modules/stats"
 	"infini.sh/framework/modules/task"
 	"infini.sh/framework/modules/ui"
-	"infini.sh/framework/plugins/elastic/json_indexing"
 	api2 "infini.sh/gateway/api"
 	_ "infini.sh/gateway/proxy"
 )
@@ -68,7 +67,6 @@ func main() {
 		module.RegisterSystemModule(&pipeline.PipeModule{})
 		module.RegisterSystemModule(&task.TaskModule{})
 
-		pipe.RegisterProcessorPlugin("json_indexing", json_indexing.New)
 		module.RegisterUserPlugin(&metrics.MetricsModule{})
 		api.RegisterAPI("")
 

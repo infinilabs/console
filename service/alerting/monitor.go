@@ -3,12 +3,12 @@ package alerting
 import (
 	"errors"
 	"fmt"
+	"infini.sh/console/model/alerting"
+	alertUtil "infini.sh/console/service/alerting/util"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
-	"infini.sh/console/model/alerting"
-	alertUtil "infini.sh/console/service/alerting/util"
 	"net/http"
 	"strconv"
 	"strings"
@@ -160,28 +160,27 @@ func GetMonitors(w http.ResponseWriter, req *http.Request, ps httprouter.Params)
 		})
 	}
 	var monitorSorts = IfaceMap{ "name": "monitor.name.keyword" }
-	sortPageData := IfaceMap{
-		"size": 1000,
-		"from": 0,
-	}
 	var (
 		intSize int
 		intFrom int
 	)
+	intSize, _ = strconv.Atoi(size)
+	if intSize < 0 {
+		intSize = 1000
+	}
+	intFrom, _ = strconv.Atoi(from)
+	if intFrom < 0 {
+		intFrom = 0
+	}
+
+	sortPageData := IfaceMap{
+		"size": intSize,
+		"from": intFrom,
+	}
 	if msort, ok := monitorSorts[sortField]; ok {
 		sortPageData["sort"] = []IfaceMap{
 			{ msort.(string): sortDirection },
 		}
-		intSize, _ = strconv.Atoi(size)
-		if intSize < 0 {
-			intSize = 1000
-		}
-		sortPageData["size"] = intSize
-		intFrom, _ = strconv.Atoi(from)
-		if intFrom < 0 {
-			intFrom = 0
-		}
-		sortPageData["from"] = intFrom
 	}
 	var params = IfaceMap{
 		"query": IfaceMap{
@@ -215,22 +214,24 @@ func GetMonitors(w http.ResponseWriter, req *http.Request, ps httprouter.Params)
 	}
 
 	totalMonitors := queryValue(resBody, "hits.total.value", 0)
-	monitorMap:= map[string]IfaceMap{}
+	var monitors  []IfaceMap
 	var hits = queryValue(resBody, "hits.hits", []IfaceMap{})
 	monitorIDs := []interface{}{}
+	monitorMap := map[string]int{}
 	if hitsArr, ok := hits.([]interface{}); ok {
-		for _, hitIface := range hitsArr {
+		for i, hitIface := range hitsArr {
 			if hit, ok := hitIface.(map[string]interface{}); ok {
 				id := queryValue(hit, "_id", "")
 				monitorIDs = append(monitorIDs, id)
 				monitor := queryValue(hit, "_source.monitor", IfaceMap{}).(map[string]interface{})
-				monitorMap[id.(string)] = IfaceMap{
+				monitorMap[id.(string)] = i
+				monitors = append(monitors, IfaceMap{
 					"id":            id,
 					"version":       queryValue(hit, "_version", ""),
 					"name":          queryValue(monitor, "name", ""),
 					"enabled":       queryValue(monitor, "enabled", false),
 					"monitor":       monitor,
-				}
+				})
 			}
 		}
 	}
@@ -301,12 +302,11 @@ func GetMonitors(w http.ResponseWriter, req *http.Request, ps httprouter.Params)
 		return
 	}
 	buckets := queryValue(searchResBody, "aggregations.uniq_monitor_ids.buckets",[]IfaceMap{})
-	usedMonitors := []IfaceMap{}
 	if bks, ok := buckets.([]interface{}); ok {
 		for _, bk := range bks {
 			if bk, ok := bk.(map[string]interface{}); ok {
 				id := queryValue(bk, "key", "")
-				monitor := monitorMap[id.(string)]
+				monitor := monitors[monitorMap[id.(string)]]
 				monitor["lastNotificationTime"] = queryValue(bk, "last_notification_time.value", "")
 				monitor["ignored"] = queryValue(bk, "ignored.doc_count", 0)
 				alertHits := queryValue(bk, "latest_alert.hits.hits", nil)
@@ -321,15 +321,13 @@ func GetMonitors(w http.ResponseWriter, req *http.Request, ps httprouter.Params)
 				monitor["errors"] = queryValue(bk, "errors.doc_count", 0)
 				monitor["acknowledged"] = queryValue(bk, "acknowledged.doc_count", 0)
 				monitor["currentTime"] = time.Now().UnixNano() / 1e6
-				usedMonitors = append(usedMonitors, monitor)
 				delete(monitorMap, id.(string))
 			}
 		}
 	}
-	unusedMonitors := []IfaceMap{}
 
-	for _, m := range monitorMap {
-		assignTo(m, IfaceMap{
+	for _, idx := range monitorMap {
+		assignTo(monitors[idx], IfaceMap{
 			"lastNotificationTime": nil,
 			"ignored": 0,
 			"active": 0,
@@ -338,14 +336,13 @@ func GetMonitors(w http.ResponseWriter, req *http.Request, ps httprouter.Params)
 			"latestAlert": "--",
 			"currentTime": time.Now().UnixNano()/1e6,
 		})
-		unusedMonitors = append(unusedMonitors,m)
 	}
 
-	results := append(usedMonitors, unusedMonitors...)
+	results := monitors
 
-	if _, ok := monitorSorts[sortField]; !ok {
-		results = results[intFrom: intFrom + intSize]
-	}
+	//if _, ok := monitorSorts[sortField]; !ok {
+	//	results = results[intFrom: intFrom + intSize]
+	//}
 	writeJSON(w, IfaceMap{
 		"ok": true,
 		"monitors": results,
@@ -667,39 +664,66 @@ func ExecuteMonitor(w http.ResponseWriter, req *http.Request, ps httprouter.Para
 	}
 
 	var triggerResults = IfaceMap{}
+	sm := ScheduleMonitor{
+		Monitor: monitor,
+	}
+	period := alertUtil.GetMonitorPeriod(periodStart, &monitor.Schedule)
+	var monitorCtx []byte
 	if dryrun == "true" {
-		sm := ScheduleMonitor{
-			Monitor: monitor,
-		}
 		for _, trigger := range monitor.Triggers {
 			triggerResult := IfaceMap{
 				"error": nil,
 				"action_results": IfaceMap{},
 				"name": trigger.Name,
 			}
-			monitorCtx, err := createMonitorContext(&trigger, resBody, &sm, IfaceMap{})
+			monitorCtx, err = createMonitorContext(&trigger, resBody, &sm, IfaceMap{})
 			if err != nil {
 				triggerResult["error"] = err.Error()
 				triggerResults[trigger.ID] = triggerResult
 				continue
 			}
-			isTrigger, err := resolveTriggerResult(&trigger, monitorCtx)
+			isTrigger, rerr := resolveTriggerResult(&trigger, monitorCtx)
 			triggerResult["triggered"] = isTrigger
-			if err != nil {
-				triggerResult["error"] = err.Error()
+			if rerr != nil {
+				triggerResult["error"] = rerr.Error()
 			}
 			if trigger.ID == "" {
 				trigger.ID = util.GetUUID()
 			}
 			triggerResults[trigger.ID] = triggerResult
 		}
+	}else{
+		LOOP_TRIGGER:
+		for _, trigger := range monitor.Triggers {
+			monitorCtx, err = createMonitorContext(&trigger, resBody, &sm, IfaceMap{
+				"periodStart": period.Start,
+				"periodEnd": period.End,
+			})
+			if err != nil {
+				break
+			}
+			for _, action := range trigger.Actions {
+				_, err = doAction(action, monitorCtx)
+				if err != nil {
+					break LOOP_TRIGGER
+				}
+			}
+		}
 	}
 
-	period := alertUtil.GetMonitorPeriod(periodStart, &monitor.Schedule)
+
+	var (
+		ok = true
+		errStr string
+	)
+	if err != nil {
+		ok = false
+		errStr = err.Error()
+	}
 	writeJSON(w, IfaceMap{
-		"ok": true,
+		"ok": ok,
 		"resp": IfaceMap{
-			"error": nil,
+			"error": errStr,
 			"monitor_name": monitor.Name,
 			"input_results": IfaceMap{
 				"error": nil,

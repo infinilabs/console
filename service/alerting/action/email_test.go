@@ -12,7 +12,7 @@ func TestEmailAction(t *testing.T){
 			Host: "smtp.ym.163.com",
 			Port: 994,
 			Method: "ssl",
-			Password: "<your email password>",
+			Password: "hello@infini$", //"<your email password>",
 		},
 		Message: "hello world",
 		Subject: "test email",

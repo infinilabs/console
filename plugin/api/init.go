@@ -13,6 +13,7 @@ func Init(cfg *config.AppConfig) {
 	handler := index_management.APIHandler{
 		Config: cfg,
 	}
+	alerting.InitAppConfig(cfg)
 	var pathPrefix = "/_search-center/"
 	var esPrefix = "/elasticsearch/:id/"
 	api.HandleAPIMethod(api.GET, path.Join(pathPrefix, "elasticsearch/overview"), handler.ElasticsearchOverviewAction)

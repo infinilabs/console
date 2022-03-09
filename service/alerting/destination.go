@@ -3,11 +3,12 @@ package alerting
 import (
 	"errors"
 	"fmt"
+	"infini.sh/console/config"
+	"infini.sh/console/model/alerting"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
-	"infini.sh/console/model/alerting"
 	"net/http"
 	"strings"
 	"time"
@@ -252,7 +253,7 @@ func DeleteDestination(w http.ResponseWriter, req *http.Request, ps httprouter.P
 	destinationId := ps.ByName("destinationId")
 
 	config := getDefaultConfig()
-	reqUrl := fmt.Sprintf("%s/%s/_doc/%s", config.Endpoint, orm.GetIndexName(alerting.Config{}), destinationId)
+	reqUrl := fmt.Sprintf("%s/%s/_doc/%s?refresh=wait_for", config.Endpoint, orm.GetIndexName(alerting.Config{}), destinationId)
 	res, err := doRequest(reqUrl, http.MethodDelete, nil, nil)
 	if err != nil {
 		writeError(w, err)
@@ -279,7 +280,15 @@ func DeleteDestination(w http.ResponseWriter, req *http.Request, ps httprouter.P
 }
 
 func getDefaultConfig() *elastic.ElasticsearchConfig {
-	return elastic.GetConfig("default")
+	elasticsearch := "default"
+	if appConfig != nil {
+		elasticsearch = appConfig.Elasticsearch
+	}
+	return elastic.GetConfig(elasticsearch)
+}
+var appConfig *config.AppConfig
+func InitAppConfig(config *config.AppConfig){
+	appConfig = config
 }
 
 //var (

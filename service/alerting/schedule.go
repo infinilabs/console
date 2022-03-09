@@ -202,62 +202,20 @@ func generateMonitorJob(smt *ScheduleMonitor) MonitorJob{
 
 			alertItem.State = ALERT_ACTIVE
 			for _, act := range trigger.Actions {
-				message, err := resolveMessage(act.MessageTemplate, monitorCtx)
+				actResult, err := doAction(act, monitorCtx)
+				var errMsg string
 				if err != nil {
-					alertItem.ErrorMessage = err.Error()
-					continue
+					errMsg =  err.Error()
+					alertItem.ErrorMessage += errMsg
 				}
-				destination, err := resolveDestination(act.DestinationId)
-				if err != nil {
-					alertItem.ErrorMessage = err.Error()
-					continue
-				}
-				var tact action.Action
+				alertItem.ActionExecutionResults = append(alertItem.ActionExecutionResults, alerting.ActionExecutionResult{
+					ActionID: act.ID,
+					LastExecutionTime: alertItem.LastNotificationTime,
+					Error: errMsg,
+					Result: string(actResult),
+				})
 				alertItem.LastNotificationTime = time.Now().UnixNano()/1e6
-				switch destination.Type {
-					case action.ACTION_EMAIL:
-						sender, err := resolveEmailAccount(destination.Email.EmailAccountID)
-						if err != nil {
-							alertItem.ErrorMessage = err.Error()
-							continue
-						}
-						subject, err := resolveMessage(act.SubjectTemplate, monitorCtx)
-						if err != nil {
-							alertItem.ErrorMessage = err.Error()
-							continue
-						}
-						receiver, err := getEmailRecipient(destination.Email.Recipients)
-						if err != nil {
-							alertItem.ErrorMessage = err.Error()
-							continue
-						}
-						tact = &action.EmailAction{
-							Message: string(message),
-							Subject: string(subject),
-							Sender: sender,
-							Receiver: receiver,
-						}
-				case action.ACTION_WEBHOOK:
-					tact = &action.WebhookAction{
-						Data: &destination.CustomWebhook,
-						Message: string(message),
-					}
-				}
-				if tact != nil {
-					actResult, err := tact.Execute()
-					var errStr string
-					if err != nil {
-						errStr = err.Error()
-						alertItem.ErrorMessage += errStr
-					}
-					alertItem.ActionExecutionResults = append(alertItem.ActionExecutionResults, alerting.ActionExecutionResult{
-						ActionID: act.ID,
-						LastExecutionTime: alertItem.LastNotificationTime,
-						Error: errStr,
-						Result: string(actResult),
-					})
 
-				}
 				if alertItem.ErrorMessage != "" {
 					alertItem.State = ALERT_ERROR
 				}
@@ -268,6 +226,49 @@ func generateMonitorJob(smt *ScheduleMonitor) MonitorJob{
 			}
 		}
 	}
+}
+
+func doAction(act alerting.Action, monitorCtx []byte) ([]byte, error) {
+	message, err := resolveMessage(act.MessageTemplate, monitorCtx)
+	if err != nil {
+		//alertItem.ErrorMessage = err.Error()
+		return nil, err
+	}
+	destination, err := resolveDestination(act.DestinationId)
+	if err != nil {
+		return nil, err
+	}
+	var tact action.Action
+
+	switch destination.Type {
+	case action.ACTION_EMAIL:
+		sender, err := resolveEmailAccount(destination.Email.EmailAccountID)
+		if err != nil {
+			return nil, err
+		}
+		subject, err := resolveMessage(act.SubjectTemplate, monitorCtx)
+		if err != nil {
+			return nil, err
+		}
+		receiver, err := getEmailRecipient(destination.Email.Recipients)
+		if err != nil {
+			return nil, err
+		}
+		tact = &action.EmailAction{
+			Message:  string(message),
+			Subject:  string(subject),
+			Sender:   sender,
+			Receiver: receiver,
+		}
+	case action.ACTION_WEBHOOK:
+		tact = &action.WebhookAction{
+			Data:    &destination.CustomWebhook,
+			Message: string(message),
+		}
+	default:
+		return nil, fmt.Errorf("unsupported action type: %s", destination.Type)
+	}
+	return tact.Execute()
 }
 
 

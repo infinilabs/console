@@ -295,6 +295,9 @@ func (h *GatewayAPI) doConnect(endpoint string, basicAuth gateway.BasicAuth) (*G
 	if err != nil {
 		return nil, err
 	}
+	if res.StatusCode == http.StatusNotFound {
+		return nil, fmt.Errorf("unknow gateway version")
+	}
 	b := res.Body
 	gres := &GatewayConnectResponse{}
 	err = json.Unmarshal(b, gres)

@@ -1,10 +1,10 @@
 package alerting
 
 import (
-	"fmt"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/orm"
+	"infini.sh/framework/core/util"
 	"net/http"
 )
 
@@ -56,11 +56,9 @@ func getAlertByState() (IfaceMap, error){
 		return  nil, err
 	}
 	var metricData = IfaceMap{}
-	if bks, ok := buckets.([]interface{}); ok {
+	if bks, ok := buckets.([]elastic.BucketBase); ok {
 		for _, bk := range bks {
-			if bkm, ok :=  bk.(map[string]interface{}); ok {
-				metricData[queryValue(bkm, "key", "").(string)]= queryValue(bkm, "doc_count", 0)
-			}
+			metricData[queryValue(bk, "key", "").(string)]= queryValue(bk, "doc_count", 0)
 		}
 	}
 	return metricData, nil
@@ -68,18 +66,15 @@ func getAlertByState() (IfaceMap, error){
 
 func queryMetricBuckets(reqBody IfaceMap, metricKey, indexName string)(interface{}, error){
 	conf := getDefaultConfig()
-	reqUrl := fmt.Sprintf("%s/%s/_search", conf.Endpoint, getAlertIndexName(indexName))
-	res, err := doRequest(reqUrl, http.MethodGet, nil, reqBody)
+	esClient := elastic.GetClient(conf.ID)
+	res, err := esClient.SearchWithRawQueryDSL(getAlertIndexName(indexName), util.MustToJSONBytes(reqBody))
 	if err != nil {
 		return nil, err
 	}
-	result := IfaceMap{}
-	defer res.Body.Close()
-	err = decodeJSON(res.Body, &result)
-	if err != nil {
-		return nil, err
+	var buckets interface{}
+	if agg, ok := res.Aggregations[metricKey]; ok {
+		buckets = agg.Buckets
 	}
-	buckets := queryValue(result, fmt.Sprintf("aggregations.%s.buckets", metricKey), []interface{}{})
 	return buckets, nil
 }
 
@@ -109,11 +104,10 @@ func getTopTenAlertCluster()(interface{}, error){
 	}
 	var metricData []IfaceMap
 	var clusterIDs []interface{}
-	if bks, ok := buckets.([]interface{}); ok {
+	if bks, ok := buckets.([]elastic.BucketBase); ok {
 		for _, bk := range bks {
-			if bkm, ok :=  bk.(map[string]interface{}); ok {
-				stateBuckets := queryValue(bkm, "group_by_state.buckets", nil )
-				key := queryValue(bkm, "key", "" )
+				stateBuckets := queryValue(bk, "group_by_state.buckets", nil )
+				key := queryValue(bk, "key", "" )
 				clusterIDs = append(clusterIDs, key)
 				if stateBKS, ok := stateBuckets.([]interface{}); ok{
 					for _, stateBK := range stateBKS {
@@ -127,7 +121,6 @@ func getTopTenAlertCluster()(interface{}, error){
 					}
 				}
 			}
-		}
 	}
 	reqBody = IfaceMap{
 		"_source": "name",
@@ -138,17 +131,11 @@ func getTopTenAlertCluster()(interface{}, error){
 		},
 	}
 	config := getDefaultConfig()
-	reqUrl := fmt.Sprintf("%s/%s/_search", config.Endpoint, orm.GetIndexName(elastic.ElasticsearchConfig{}))
-	res, err := doRequest(reqUrl, http.MethodGet, nil, reqBody)
+	esClient := elastic.GetClient(config.ID)
+	resBody, err := esClient.SearchWithRawQueryDSL( orm.GetIndexName(elastic.ElasticsearchConfig{}), util.MustToJSONBytes(reqBody))
 	if err != nil {
 		return nil, err
 	}
-	var resBody = &elastic.SearchResponse{}
-	err = decodeJSON(res.Body, resBody)
-	if err != nil {
-		return nil, err
-	}
-	res.Body.Close()
 	clusterMap := IfaceMap{}
 	for _, hit := range resBody.Hits.Hits {
 		clusterMap[hit.ID] = hit.Source["name"]
@@ -189,14 +176,12 @@ func getLastAlertDayCount() (interface{}, error){
 		return nil, err
 	}
 	var metricData []interface{}
-	if bks, ok := buckets.([]interface{}); ok {
+	if bks, ok := buckets.([]elastic.BucketBase); ok {
 		for _, bk := range bks {
-			if bkm, ok :=  bk.(map[string]interface{}); ok {
-				metricData = append(metricData, []interface{}{
-					queryValue(bkm, "key", ""),
-					queryValue(bkm, "doc_count", 0),
-				})
-			}
+			metricData = append(metricData, []interface{}{
+				queryValue(bk, "key", ""),
+				queryValue(bk, "doc_count", 0),
+			})
 		}
 	}
 	return metricData, nil

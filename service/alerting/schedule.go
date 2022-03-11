@@ -12,12 +12,12 @@ import (
 	"github.com/valyala/fasttemplate"
 	"infini.sh/console/model/alerting"
 	"infini.sh/console/service/alerting/action"
-	"infini.sh/console/service/alerting/util"
+	util1 "infini.sh/console/service/alerting/util"
 	"infini.sh/framework/core/conditions"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/orm"
+	"infini.sh/framework/core/util"
 	"io"
-	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -154,7 +154,7 @@ func generateMonitorJob(smt *ScheduleMonitor) MonitorJob{
 		if err != nil {
 			log.Error(err)
 		}
-		periods := util.GetMonitorPeriod(startTime, &sm.Monitor.Schedule)
+		periods := util1.GetMonitorPeriod(startTime, &sm.Monitor.Schedule)
 		for _, trigger := range sm.Monitor.Triggers {
 			monitorCtx, err := createMonitorContext(&trigger, queryResult, &sm, IfaceMap{
 				"periodStart": periods.Start,
@@ -274,7 +274,7 @@ func doAction(act alerting.Action, monitorCtx []byte) ([]byte, error) {
 
 func getLastAlert(monitorID, triggerID, clusterID string) (map[string]interface{}, error) {
 	conf := getDefaultConfig()
-	reqUrl := fmt.Sprintf("%s/%s/_search", conf.Endpoint, getAlertIndexName(INDEX_ALERT))
+	esClient := elastic.GetClient(conf.ID)
 	reqBody := IfaceMap{
 		"size": 1,
 		"query": IfaceMap{
@@ -303,12 +303,8 @@ func getLastAlert(monitorID, triggerID, clusterID string) (map[string]interface{
 			{"start_time": IfaceMap{"order":"desc"}},
 		},
 	}
-	res, err := doRequest(reqUrl, http.MethodGet, nil, reqBody)
-	if err != nil {
-		return nil, err
-	}
-	var resBody = &elastic.SearchResponse{}
-	err = decodeJSON(res.Body, resBody)
+
+	resBody, err := esClient.SearchWithRawQueryDSL(getAlertIndexName(INDEX_ALERT), util.MustToJSONBytes(reqBody))
 	if err != nil {
 		return nil, err
 	}
@@ -320,8 +316,8 @@ func getLastAlert(monitorID, triggerID, clusterID string) (map[string]interface{
 
 func saveAlertInfo(alertItem *alerting.Alert) error {
 	conf := getDefaultConfig()
+	esClient := elastic.GetClient(conf.ID)
 	indexName := getAlertIndexName(INDEX_ALERT)
-	reqUrl := fmt.Sprintf("%s/%s/_search", conf.Endpoint, indexName)
 	reqBody := IfaceMap{
 		"size": 1,
 		"query": IfaceMap{
@@ -352,28 +348,20 @@ func saveAlertInfo(alertItem *alerting.Alert) error {
 
 		},
 	}
-	res, err := doRequest(reqUrl, http.MethodGet, nil, reqBody)
+	resBody, err := esClient.SearchWithRawQueryDSL(indexName, util.MustToJSONBytes(reqBody))
 	if err != nil {
 		return err
 	}
-	var resBody = elastic.SearchResponse{}
-	err = decodeJSON(res.Body, &resBody)
-	if err != nil {
-		return  err
-	}
-	res.Body.Close()
 	if len(resBody.Hits.Hits) == 0 {
 		if alertItem.State == ALERT_COMPLETED {
 			return nil
 		}
-		reqUrl = fmt.Sprintf("%s/%s/_doc", conf.Endpoint, indexName)
-		_,err = doRequest(reqUrl, http.MethodPost, nil,  alertItem)
+		_, err = esClient.Index(indexName,"", util.GetUUID(), alertItem)
 		return err
 	}
 	currentState := queryValue(resBody.Hits.Hits[0].Source, "state", "").(string)
 	alertItem.Id = resBody.Hits.Hits[0].ID
 	if currentState != alertItem.State {
-		reqUrl = fmt.Sprintf("%s/%s/_doc/%s", conf.Endpoint, getAlertIndexName(INDEX_ALERT_HISTORY), alertItem.Id)
 		source := resBody.Hits.Hits[0].Source
 		source["end_time"] = time.Now().UnixNano()/1e6
 		if alertItem.State == ALERT_COMPLETED {
@@ -381,15 +369,13 @@ func saveAlertInfo(alertItem *alerting.Alert) error {
 				source["state"] = ALERT_COMPLETED
 			}
 		}
-		_,err = doRequest(reqUrl, http.MethodPut, nil, source)
-		reqUrl = fmt.Sprintf("%s/%s/_doc/%s", conf.Endpoint, indexName, resBody.Hits.Hits[0].ID)
-		_,err = doRequest(reqUrl, http.MethodDelete, nil,   alertItem)
+		esClient.Index( getAlertIndexName(INDEX_ALERT_HISTORY), "", alertItem.Id, source)
+		_,err = esClient.Delete(indexName, "", resBody.Hits.Hits[0].ID)
 		return err
 	}
 	alertItem.StartTime = int64(queryValue(resBody.Hits.Hits[0].Source, "start_time", 0).(float64))
 
-	reqUrl = fmt.Sprintf("%s/%s/_doc/%s", conf.Endpoint, indexName, alertItem.Id)
-	_,err = doRequest(reqUrl, http.MethodPut, nil,  alertItem)
+	_, err = esClient.Index(indexName, "", alertItem.Id, alertItem )
 	return err
 }
 
@@ -416,74 +402,55 @@ func getEmailRecipient(recipients []alerting.Recipient) ([]string, error){
 }
 
 func resolveDestination(ID string)(*alerting.Destination, error){
-	//todo may be cache destination ?
 	conf := getDefaultConfig()
-	reqUrl := fmt.Sprintf("%s/%s/_doc/%s", conf.Endpoint, orm.GetIndexName(alerting.Config{}), ID)
-	res, err := doRequest(reqUrl, http.MethodGet, nil, nil)
+	esClient := elastic.GetClient(conf.ID)
+	res, err := esClient.Get( orm.GetIndexName(alerting.Config{}), "", ID)
 	if err != nil {
 		return nil,err
 	}
-	var resBody = IfaceMap{}
-	err = decodeJSON(res.Body, &resBody)
-	if err != nil {
-		return nil, err
-	}
-	res.Body.Close()
 	destination := &alerting.Destination{}
-	buf, _ := json.Marshal(queryValue(resBody, "_source."+DESTINATION_FIELD, IfaceMap{}))
+	buf, _ := json.Marshal(queryValue(res.Source, DESTINATION_FIELD, IfaceMap{}))
 	_ = json.Unmarshal(buf, destination)
 	return destination, nil
 }
 
 func resolveEmailAccount(ID string)(*alerting.EmailAccount, error){
 	conf := getDefaultConfig()
-	reqUrl := fmt.Sprintf("%s/%s/_doc/%s", conf.Endpoint, orm.GetIndexName(alerting.Config{}), ID)
-	res, err := doRequest(reqUrl, http.MethodGet, nil, nil)
+	esClient := elastic.GetClient(conf.ID)
+	res, err := esClient.Get( orm.GetIndexName(alerting.Config{}), "", ID)
 	if err != nil {
 		return nil,err
 	}
-	var resBody = IfaceMap{}
-	err = decodeJSON(res.Body, &resBody)
-	if err != nil {
-		return nil, err
-	}
-	res.Body.Close()
 	email := &alerting.EmailAccount{}
-	buf, _ := json.Marshal(queryValue(resBody, "_source."+EMAIL_ACCOUNT_FIELD, IfaceMap{}))
+	buf, _ := json.Marshal(queryValue(res.Source, EMAIL_ACCOUNT_FIELD, IfaceMap{}))
 	_ = json.Unmarshal(buf, email)
 	return email, nil
 }
 
 func resolveEmailGroup(ID string)(*alerting.EmailGroup, error){
 	conf := getDefaultConfig()
-	reqUrl := fmt.Sprintf("%s/%s/_doc/%s", conf.Endpoint, orm.GetIndexName(alerting.Config{}), ID)
-	res, err := doRequest(reqUrl, http.MethodGet, nil, nil)
+	esClient := elastic.GetClient(conf.ID)
+	res, err := esClient.Get( orm.GetIndexName(alerting.Config{}), "", ID)
 	if err != nil {
 		return nil,err
 	}
-	var resBody = IfaceMap{}
-	err = decodeJSON(res.Body, &resBody)
-	if err != nil {
-		return nil, err
-	}
-	res.Body.Close()
+
 	emailGroup := &alerting.EmailGroup{}
-	buf, _ := json.Marshal(queryValue(resBody, "_source."+EMAIL_GROUP_FIELD, IfaceMap{}))
-	_ = json.Unmarshal(buf, emailGroup)
-	return emailGroup, nil
+	buf, _ := json.Marshal(queryValue(res.Source, EMAIL_GROUP_FIELD, IfaceMap{}))
+	err = json.Unmarshal(buf, emailGroup)
+	return emailGroup, err
 }
 
 func getQueryResult(clusterID string, input *alerting.MonitorInput) (IfaceMap, error) {
-	meta := elastic.GetMetadata(clusterID)
-	reqUrl := fmt.Sprintf("%s/%s/_search", meta.GetActiveEndpoint(), strings.Join(input.Search.Indices, ","))
-	res, err := doRequest(reqUrl, http.MethodGet, nil, input.Search.Query)
+	esClient := elastic.GetClient(clusterID)
+	queryDsl := util.MustToJSONBytes(input.Search.Query)
+	searchRes, err := esClient.SearchWithRawQueryDSL(strings.Join(input.Search.Indices, ","), queryDsl)
 	if err != nil {
 		return nil, err
 	}
-	defer res.Body.Close()
-	resBody := IfaceMap{}
-	err = decodeJSON(res.Body, &resBody)
-	return resBody, err
+	var resBody = IfaceMap{}
+	util.MustFromJSONBytes(searchRes.RawResult.Body, &resBody)
+	return resBody, nil
 }
 
 func resolveMessage(messageTemplate IfaceMap, monitorCtx []byte ) ([]byte, error){
@@ -544,7 +511,7 @@ func resolveTriggerResult(trigger *alerting.Trigger, monitorCtx []byte ) (bool, 
 
 func getEnabledMonitors() (map[string]ScheduleMonitor, error){
 	config := getDefaultConfig()
-	reqUrl := fmt.Sprintf("%s/%s/_search", config.Endpoint, orm.GetIndexName(alerting.Config{}))
+	esClient := elastic.GetClient(config.ID)
 	must := []IfaceMap{
 		{
 			"exists": IfaceMap{
@@ -562,15 +529,18 @@ func getEnabledMonitors() (map[string]ScheduleMonitor, error){
 		"query": IfaceMap{
 			"bool": IfaceMap{
 				"must": must,
+				"must_not": []IfaceMap{
+					{
+						"match": IfaceMap{
+							MONITOR_FIELD+".status": "DELETED",
+						},
+					},
+				},
 			},
 		},
 	}
-	resBody := elastic.SearchResponse{}
-	res, err := doRequest(reqUrl, http.MethodGet, nil, reqBody)
-	if err != nil {
-		return nil, err
-	}
-	err = decodeJSON(res.Body, &resBody)
+	queryDsl := util.MustToJSONBytes(reqBody)
+	resBody, err := esClient.SearchWithRawQueryDSL(orm.GetIndexName(alerting.Config{}),queryDsl)
 	if err != nil {
 		return nil, err
 	}

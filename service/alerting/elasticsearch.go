@@ -5,6 +5,7 @@ import (
 	"fmt"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/util"
 	"net/http"
 	"runtime/debug"
 	"strings"
@@ -24,17 +25,9 @@ func Search(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
 		return
 	}
 	config := getDefaultConfig()
-	reqUrl := fmt.Sprintf("%s/%s/_search", config.Endpoint, body.Index)
-
+	esClient := elastic.GetClient(config.ID)
 	body.Query["size"] = body.Size
-	res, err := doRequest(reqUrl, http.MethodPost, nil, body.Query)
-	if err != nil {
-		writeError(w, err)
-		return
-	}
-	defer res.Body.Close()
-	var resBody = IfaceMap{}
-	err = decodeJSON(res.Body, &resBody)
+	searchRes, err := esClient.SearchWithRawQueryDSL(body.Index, util.MustToJSONBytes(body.Query))
 	if err != nil {
 		writeError(w, err)
 		return
@@ -42,15 +35,15 @@ func Search(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
 
 	writeJSON(w, IfaceMap{
 		"ok": true,
-		"resp": resBody,
+		"resp": searchRes,
 	}, http.StatusOK)
 
 }
 
 func GetIndices(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	id := ps.ByName("id")
-	meta := elastic.GetMetadata(id)
-	if meta == nil {
+	esClient := elastic.GetClient(id)
+	if esClient == nil {
 		writeError(w, errors.New("cluster not found"))
 		return
 	}
@@ -63,27 +56,19 @@ func GetIndices(w http.ResponseWriter, req *http.Request, ps httprouter.Params) 
 		writeError(w, err)
 		return
 	}
-	reqUrl := fmt.Sprintf("%s/_cat/indices/%s", meta.GetActiveEndpoint(), body.Index)
-	params := map[string]string{
-		"format": "json",
-		"h": "health,index,status",
-	}
-	res, err := doRequest(reqUrl, http.MethodGet, params, nil)
-	if err != nil {
-		writeError(w, err)
-		return
-	}
-	defer res.Body.Close()
-	var resBody = []IfaceMap{}
-	err = decodeJSON(res.Body, &resBody)
-	if err != nil {
-		writeError(w, err)
-		return
-	}
 
+	indexInfos, err := esClient.GetIndices( body.Index)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	indices := make([]elastic.IndexInfo, 0, len(*indexInfos))
+	for _, info := range *indexInfos {
+		indices = append(indices, info)
+	}
 	writeJSON(w, IfaceMap{
 		"ok": true,
-		"resp": resBody,
+		"resp": indices,
 	}, http.StatusOK)
 }
 
@@ -94,8 +79,8 @@ func GetAliases(w http.ResponseWriter, req *http.Request, ps httprouter.Params) 
 		}
 	}()
 	id := ps.ByName("id")
-	meta := elastic.GetMetadata(id)
-	if meta == nil {
+	esClient := elastic.GetClient(id)
+	if esClient == nil {
 		writeError(w, errors.New("cluster not found"))
 		return
 	}
@@ -108,34 +93,30 @@ func GetAliases(w http.ResponseWriter, req *http.Request, ps httprouter.Params) 
 		writeError(w, err)
 		return
 	}
-	reqUrl := fmt.Sprintf("%s/_cat/aliases/%s", meta.GetActiveEndpoint(), body.Alias)
-	params := map[string]string{
-		"format": "json",
-		"h": "alias,index",
-	}
-	res, err := doRequest(reqUrl, http.MethodGet, params, nil)
+	//reqUrl := fmt.Sprintf("%s/_cat/aliases/%s", meta.GetActiveEndpoint(), body.Alias)
+	//params := map[string]string{
+	//	"format": "json",
+	//	"h": "alias,index",
+	//}
+	res, err := esClient.GetAliases()
 	if err != nil {
 		writeError(w, err)
 		return
 	}
-	defer res.Body.Close()
-	var resBody = []IfaceMap{}
-	err = decodeJSON(res.Body, &resBody)
-	if err != nil {
-		writeError(w, err)
-		return
+	aliases := make([]elastic.AliasInfo, 0, len(*res))
+	for _, alias := range *res {
+		aliases =append(aliases, alias)
 	}
-
 	writeJSON(w, IfaceMap{
 		"ok": true,
-		"resp": resBody,
+		"resp": aliases,
 	}, http.StatusOK)
 }
 
 func GetMappings(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	id := ps.ByName("id")
-	meta := elastic.GetMetadata(id)
-	if meta == nil {
+	esClient := elastic.GetClient(id)
+	if esClient == nil {
 		writeError(w, errors.New("cluster not found"))
 		return
 	}
@@ -148,15 +129,7 @@ func GetMappings(w http.ResponseWriter, req *http.Request, ps httprouter.Params)
 		writeError(w, err)
 		return
 	}
-	reqUrl := fmt.Sprintf("%s/%s/_mapping", meta.GetActiveEndpoint(), strings.Join(body.Index, ","))
-	res, err := doRequest(reqUrl, http.MethodGet, nil, nil)
-	if err != nil {
-		writeError(w, err)
-		return
-	}
-	defer res.Body.Close()
-	var resBody = IfaceMap{}
-	err = decodeJSON(res.Body, &resBody)
+	_, _, mappings, err := esClient.GetMapping(false, strings.Join(body.Index, ","))
 	if err != nil {
 		writeError(w, err)
 		return
@@ -164,7 +137,7 @@ func GetMappings(w http.ResponseWriter, req *http.Request, ps httprouter.Params)
 
 	writeJSON(w, IfaceMap{
 		"ok": true,
-		"resp": resBody,
+		"resp": mappings,
 	}, http.StatusOK)
 }
 

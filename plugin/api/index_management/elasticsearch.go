@@ -51,7 +51,7 @@ func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req
 		}
 	}
 
-	hostCount, err := handler.getMetricCount(orm.GetIndexName(elastic.NodeConfig{}), "metadata.labels.host")
+	hostCount, err := handler.getMetricCount(orm.GetIndexName(elastic.NodeConfig{}), "metadata.host")
 	if err != nil{
 		log.Error(err)
 	}

@@ -7,7 +7,6 @@ import (
 	"infini.sh/console/model"
 	"infini.sh/console/model/alerting"
 	"infini.sh/console/model/gateway"
-	_ "infini.sh/console/plugin"
 	alertSrv "infini.sh/console/service/alerting"
 	"infini.sh/framework"
 	"infini.sh/framework/core/elastic"
@@ -26,6 +25,7 @@ import (
 	"infini.sh/framework/modules/ui"
 	api2 "infini.sh/gateway/api"
 	_ "infini.sh/gateway/proxy"
+	_ "infini.sh/console/plugin"
 )
 
 var appConfig *config.AppConfig

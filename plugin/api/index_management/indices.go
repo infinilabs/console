@@ -5,7 +5,7 @@ import (
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/util"
 	"net/http"
-	log "src/github.com/cihub/seelog"
+	log "github.com/cihub/seelog"
 )
 
 func (handler APIHandler) HandleGetMappingsAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {

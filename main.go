@@ -49,7 +49,7 @@ func main() {
 	terminalFooter := ""
 
 	app := framework.NewApp("console", "INFINI Cloud Console, The easiest way to operate your own elasticsearch platform.",
-		config.Version, config.LastCommitLog, config.BuildDate, config.EOLDate, terminalHeader, terminalFooter)
+		config.Version,config.BuildNumber, config.LastCommitLog, config.BuildDate, config.EOLDate, terminalHeader, terminalFooter)
 
 	app.Init(nil)
 	defer app.Shutdown()

@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	_ "expvar"
+	_ "infini.sh/framework/core/log"
 	"infini.sh/console/config"
 	"infini.sh/console/model"
 	"infini.sh/console/model/alerting"

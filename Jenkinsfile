@@ -18,7 +18,7 @@ pipeline {
                             catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
                                 sh 'cd /home/jenkins/go/src/infini.sh/console && git stash && git pull origin master && make clean'
                                 sh 'cd /home/jenkins/go/src/infini.sh/console/ && rm -rif web'
-                                sh 'true||cd /home/jenkins/go/src/infini.sh/console/ && mv web /dev/null'
+                                sh 'cd /home/jenkins/go/src/infini.sh/console/ && true|| mv web /dev/null'
                                 sh 'cd /home/jenkins/go/src/infini.sh/console/ && git clone ssh://git@git.infini.ltd:64221/infini/console-ui.git web'
                                 sh 'cd /home/jenkins/go/src/infini.sh/console/web && cnpm install'
                                 sh 'cd /home/jenkins/go/src/infini.sh/console/web && cnpm run build'

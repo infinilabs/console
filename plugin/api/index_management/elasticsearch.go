@@ -17,13 +17,26 @@ func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req
 		totalStoreSize int
 		clusterIDs []interface{}
 	)
-	elastic.WalkConfigs(func(key, value interface{})bool{
-		if handler.Config.Elasticsearch == key {
-			return true
-		}
-		clusterIDs = append(clusterIDs, key)
-		return true
-	})
+	//elastic.WalkConfigs(func(key, value interface{})bool{
+	//	if handler.Config.Elasticsearch == key {
+	//		return true
+	//	}
+	//	clusterIDs = append(clusterIDs, key)
+	//	return true
+	//})
+	esClient := elastic.GetClient(handler.Config.Elasticsearch)
+
+	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetIndexName(elastic.ElasticsearchConfig{}), nil)
+	if err != nil {
+		log.Error(err)
+		handler.WriteJSON(w, util.MapStr{
+			"error": err.Error(),
+		}, http.StatusInternalServerError)
+		return
+	}
+	for _, hit := range searchRes.Hits.Hits {
+		clusterIDs = append(clusterIDs, hit.ID)
+	}
 
 	res, err := handler.getLatestClusterMonitorData(clusterIDs)
 	if err != nil {

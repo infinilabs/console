@@ -6,9 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	httprouter "infini.sh/framework/core/api/router"
-	"infini.sh/framework/core/orm"
 	"infini.sh/console/model/alerting"
+	httprouter "infini.sh/framework/core/api/router"
+	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/orm"
+	"infini.sh/framework/core/util"
 	"io"
 	"net/http"
 	"net/url"
@@ -130,39 +132,22 @@ func GetAlerts (w http.ResponseWriter, req *http.Request, ps httprouter.Params){
 	indexName := getAlertIndexName(alertType)
 
 	config := getDefaultConfig()
-	reqUrl := fmt.Sprintf("%s/%s/_search", config.Endpoint, indexName )
-
-	res, err := doRequest(reqUrl, http.MethodGet, nil, reqBody)
-	if err != nil {
-		writeError(w, err)
-		return
-	}
-	var alertRes = IfaceMap{}
-	err = decodeJSON(res.Body, &alertRes)
-	defer res.Body.Close()
+	esClient := elastic.GetClient(config.ID)
+	res, err := esClient.SearchWithRawQueryDSL(indexName, util.MustToJSONBytes(reqBody))
 	if err != nil {
 		writeError(w, err)
 		return
 	}
 	alerts := []interface{}{}
-	rawAlerts := queryValue(alertRes, "hits.hits", nil)
-	if ds, ok := rawAlerts.([]interface{}); ok {
-		for _, alert := range ds {
-			if alertItem, ok := alert.(map[string]interface{}); ok {
-				//alertItem["version"] = queryValue(alertItem, "alert_version", "")
-				if alertID, ok := queryValue(alertItem, "_source.id", "").(string); ok && alertID == "" {
-					if source, ok := alertItem["_source"].(map[string]interface{}); ok {
-						source["id"] = alertItem["_id"]
-					}
-				}
-				alerts = append(alerts, alertItem["_source"])
-			}
-		}
+	rawAlerts := res.Hits.Hits
+	for _, alert := range rawAlerts {
+		alert.Source["id"] = alert.ID
+		alerts = append(alerts, alert.Source)
 	}
 	writeJSON(w, IfaceMap{
 		"ok": true,
 		"alerts": alerts,
-		"totalAlerts": queryValue(alertRes, "hits.total.value", 0),
+		"totalAlerts": res.GetTotal(),
 	}, http.StatusOK)
 
 }
@@ -235,7 +220,7 @@ func doRequest(requestUrl string, method string, params map[string]string, body 
 	}
 	req, _ = http.NewRequest(method, requestUrl, reader)
 	req.Header.Set("content-type", "application/json")
-	req.Header.Set("User-Agent", "Kibana")
+	req.Header.Set("User-Agent", "infini-client")
 	return alertClient.Do(req)
 }
 

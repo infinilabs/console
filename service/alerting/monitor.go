@@ -346,7 +346,7 @@ func CreateMonitor(w http.ResponseWriter, req *http.Request, ps httprouter.Param
 	indexRes, err := esClient.Index(indexName,"",util.GetUUID(),IfaceMap{
 		"cluster_id": id,
 		MONITOR_FIELD: monitor,
-	})
+	},"wait_for")
 	if err != nil {
 		writeError(w, err)
 		return
@@ -426,7 +426,7 @@ func DeleteMonitor(w http.ResponseWriter, req *http.Request, ps httprouter.Param
 	}
 	source := util.MapStr(getRes.Source)
 	source.Put("monitor.status", "DELETED")
-	indexRes, err := esClient.Index(indexName, "", monitorId, source)
+	indexRes, err := esClient.Index(indexName, "", monitorId, source, "wait_for")
 	if err != nil {
 		writeError(w, err)
 		return
@@ -490,7 +490,7 @@ func UpdateMonitor(w http.ResponseWriter, req *http.Request, ps httprouter.Param
 	indexRes, err := esClient.Index(indexName, "", monitorId,  IfaceMap{
 		"cluster_id": getRes.Source["cluster_id"],
 		MONITOR_FIELD: monitor,
-	})
+	}, "wait_for")
 	if err != nil {
 		writeError(w, err)
 		return

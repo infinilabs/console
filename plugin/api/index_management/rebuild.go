@@ -78,7 +78,7 @@ func reindex(esName string, body *model.Reindex, typ string) (string, error) {
 	body.Status = model.ReindexStatusRunning
 	body.CreatedAt = time.Now()
 
-	_, err = client.Index(orm.GetIndexName(body), typ, body.ID, body)
+	_, err = client.Index(orm.GetIndexName(body), typ, body.ID, body, "wait_for")
 	if err != nil {
 		return "", err
 	}
@@ -166,7 +166,7 @@ func SyncRebuildResult(esName string) error {
 		}
 		source["status"] = status
 		source["task_source"] = doc.Source
-		_, err := client.Index(orm.GetIndexName(model.Reindex{}), "", esRes.Hits.Hits[idMap[doc.ID]].ID, source)
+		_, err := client.Index(orm.GetIndexName(model.Reindex{}), "", esRes.Hits.Hits[idMap[doc.ID]].ID, source, "")
 		return err
 	}
 	return nil

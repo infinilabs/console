@@ -37,7 +37,7 @@ func (handler APIHandler) HandleAddDocumentAction(w http.ResponseWriter, req *ht
 		docID = util.GetUUID()
 	}
 	docType := handler.GetParameter(req, "_type")
-	insertRes, err := client.Index(indexName, docType, docID, reqBody)
+	insertRes, err := client.Index(indexName, docType, docID, reqBody, "wait_for")
 	if err != nil {
 		resBody["error"] = err
 		handler.WriteJSON(w, resBody, http.StatusOK)
@@ -83,7 +83,7 @@ func (handler APIHandler) HandleUpdateDocumentAction(w http.ResponseWriter, req 
 		}
 	}
 
-	insertRes, err := client.Index(indexName, typ, docID, reqBody)
+	insertRes, err := client.Index(indexName, typ, docID, reqBody, "wait_for")
 	if err != nil {
 		resBody["error"] = err.Error()
 		handler.WriteJSON(w, resBody, http.StatusOK)

@@ -45,7 +45,7 @@ func (h *APIHandler) HandleAddCommonCommandAction(w http.ResponseWriter, req *ht
 		h.WriteJSON(w, resBody, http.StatusOK)
 		return
 	}
-	_, err = esClient.Index(indexName,"", reqParams.ID, reqParams)
+	_, err = esClient.Index(indexName,"", reqParams.ID, reqParams, "wait_for")
 	if err != nil {
 		log.Error(err)
 		resBody["error"] = err.Error()
@@ -90,7 +90,7 @@ func (h *APIHandler) HandleSaveCommonCommandAction(w http.ResponseWriter, req *h
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
 	}
-	_, err = esClient.Index(indexName,"", reqParams.ID, reqParams)
+	_, err = esClient.Index(indexName,"", reqParams.ID, reqParams, "wait_for")
 	if err != nil {
 		log.Error(err)
 		resBody["error"] = err.Error()

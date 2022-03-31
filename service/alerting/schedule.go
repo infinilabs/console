@@ -356,7 +356,7 @@ func saveAlertInfo(alertItem *alerting.Alert) error {
 		if alertItem.State == ALERT_COMPLETED {
 			return nil
 		}
-		_, err = esClient.Index(indexName,"", util.GetUUID(), alertItem)
+		_, err = esClient.Index(indexName,"", util.GetUUID(), alertItem, "")
 		return err
 	}
 	currentState := queryValue(resBody.Hits.Hits[0].Source, "state", "").(string)
@@ -369,13 +369,13 @@ func saveAlertInfo(alertItem *alerting.Alert) error {
 				source["state"] = ALERT_COMPLETED
 			}
 		}
-		esClient.Index( getAlertIndexName(INDEX_ALERT_HISTORY), "", alertItem.Id, source)
+		esClient.Index( getAlertIndexName(INDEX_ALERT_HISTORY), "", alertItem.Id, source, "")
 		_,err = esClient.Delete(indexName, "", resBody.Hits.Hits[0].ID)
 		return err
 	}
 	alertItem.StartTime = int64(queryValue(resBody.Hits.Hits[0].Source, "start_time", 0).(float64))
 
-	_, err = esClient.Index(indexName, "", alertItem.Id, alertItem )
+	_, err = esClient.Index(indexName, "", alertItem.Id, alertItem, "" )
 	return err
 }
 

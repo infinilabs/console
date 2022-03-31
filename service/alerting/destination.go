@@ -157,7 +157,7 @@ func CreateDestination(w http.ResponseWriter, req *http.Request, ps httprouter.P
 	esClient := elastic.GetClient(esConfig.ID)
 	indexRes, err := esClient.Index(orm.GetIndexName(alerting.Config{}), "", destId, IfaceMap{
 		DESTINATION_FIELD: toSaveDest,
-	})
+	}, "wait_for")
 	if err != nil {
 		writeError(w, err)
 		return
@@ -205,7 +205,7 @@ func UpdateDestination(w http.ResponseWriter, req *http.Request, ps httprouter.P
 	esClient := elastic.GetClient(config.ID)
 	indexRes, err := esClient.Index(orm.GetIndexName(alerting.Config{}), "", destinationId,  IfaceMap{
 		DESTINATION_FIELD: toSaveDest,
-	})
+	}, "wait_for")
 	if err != nil {
 		writeError(w, err)
 		return
@@ -284,7 +284,7 @@ func CreateEmailAccount(w http.ResponseWriter, req *http.Request, ps httprouter.
 	esClient := elastic.GetClient(config.ID)
 	indexRes, err := esClient.Index(orm.GetIndexName(alerting.Config{}), "", util.GetUUID(), IfaceMap{
 		EMAIL_ACCOUNT_FIELD: emailAccount,
-	})
+	},"wait_for")
 	if err != nil {
 		writeError(w, err)
 		return
@@ -327,7 +327,7 @@ func UpdateEmailAccount(w http.ResponseWriter, req *http.Request, ps httprouter.
 	esClient := elastic.GetClient(config.ID)
 	indexRes, err := esClient.Index(orm.GetIndexName(alerting.Config{}),"", emailAccountId, IfaceMap{
 		EMAIL_ACCOUNT_FIELD: emailAccount,
-	})
+	}, "wait_for")
 	if err != nil {
 		writeError(w, err)
 		return
@@ -469,7 +469,7 @@ func CreateEmailGroup(w http.ResponseWriter, req *http.Request, ps httprouter.Pa
 	esClient := elastic.GetClient(config.ID)
 	indexRes, err := esClient.Index(orm.GetIndexName(alerting.Config{}), "", util.GetUUID(),  IfaceMap{
 		EMAIL_GROUP_FIELD: emailGroup,
-	})
+	},"wait_for")
 	if err != nil {
 		writeError(w, err)
 		return
@@ -501,7 +501,7 @@ func UpdateEmailGroup(w http.ResponseWriter, req *http.Request, ps httprouter.Pa
 	esClient := elastic.GetClient(config.ID)
 	indexRes, err := esClient.Index( orm.GetIndexName(alerting.Config{}), "", emailGroupId,  IfaceMap{
 		EMAIL_GROUP_FIELD: emailGroup,
-	})
+	}, "wait_for")
 	if err != nil {
 		writeError(w, err)
 		return

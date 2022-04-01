@@ -57,6 +57,11 @@ func main() {
 	api := api2.GatewayAPI{}
 
 	if app.Setup(func() {
+		err := bootstrapRequirementCheck()
+		if err !=nil{
+			panic(err)
+		}
+
 
 		//load core modules first
 		module.RegisterSystemModule(&elastic2.ElasticModule{})

@@ -229,7 +229,12 @@ func (h *GatewayAPI) getInstanceStatus(w http.ResponseWriter, req *http.Request,
 			continue
 		}
 		var resMap = util.MapStr{}
-		util.MustFromJSONBytes(res.Body, &resMap)
+		err = util.FromJSONBytes(res.Body, &resMap)
+		if err != nil {
+			result[gid.(string)] = util.MapStr{}
+			log.Error(err)
+			continue
+		}
 
 		result[gid.(string)] = resMap
 	}

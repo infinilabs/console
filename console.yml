@@ -1,5 +1,5 @@
 
-# for the system cluster, please use Elasticsearch v7.0+
+# for the system cluster, please use Elasticsearch v7.3+
 elasticsearch:
   - name: default
     enabled: true

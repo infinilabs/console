@@ -232,7 +232,7 @@ func (h *GatewayAPI) getInstanceStatus(w http.ResponseWriter, req *http.Request,
 		err = util.FromJSONBytes(res.Body, &resMap)
 		if err != nil {
 			result[gid.(string)] = util.MapStr{}
-			log.Error(err)
+			log.Errorf("get stats of %v error: %v", endpoint, err)
 			continue
 		}
 

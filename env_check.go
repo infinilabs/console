@@ -82,7 +82,7 @@ func checkElasticsearchRequire() error{
 		return fmt.Errorf("check elasticsearch requirement error: %v", err)
 	}
 	if cr == -1 {
-		return fmt.Errorf("elasticsearch cluster version of store data required to be version 7.0 and above, but got %s", versionNumber)
+		return fmt.Errorf("elasticsearch cluster version of store data required to be version 7.3 and above, but got %s", versionNumber)
 	}
 	return nil
 }

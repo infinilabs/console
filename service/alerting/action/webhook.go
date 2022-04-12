@@ -1,8 +1,11 @@
+/* Copyright © INFINI Ltd. All rights reserved.
+ * web: https://infinilabs.com
+ * mail: hello#infini.ltd */
+
 package action
 
 import (
 	"crypto/tls"
-	"fmt"
 	"infini.sh/console/model/alerting"
 	"io/ioutil"
 	"net/http"
@@ -25,25 +28,7 @@ var actionClient = http.Client{
 }
 
 func (act *WebhookAction) Execute()([]byte, error){
-	var reqURL string
-	if act.Data.URL != "" {
-		reqURL = act.Data.URL
-	}
-	if act.Data.Host != "" {
-		reqURL = fmt.Sprintf("%s://%s:%d/%s", act.Data.Scheme, act.Data.Host, act.Data.Port, act.Data.Path )
-		urlBuilder := strings.Builder{}
-		urlBuilder.WriteString(reqURL)
-		if len(act.Data.QueryParams) > 0 {
-			urlBuilder.WriteString("?")
-		}
-		for k, v := range act.Data.QueryParams {
-			urlBuilder.WriteString(k)
-			urlBuilder.WriteString("=")
-			urlBuilder.WriteString(v)
-			urlBuilder.WriteString("&")
-		}
-		reqURL = urlBuilder.String()
-	}
+	var reqURL = act.Data.URL
 	reqBody := strings.NewReader(act.Message)
 	req, err := http.NewRequest(http.MethodPost, reqURL, reqBody)
 	if err != nil {

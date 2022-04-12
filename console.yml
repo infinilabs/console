@@ -27,10 +27,16 @@ elastic:
     remote_configs: true
     health_check:
       enabled: true
+      interval: 30s
     availability_check:
       enabled: false
+      interval: 60s
     metadata_refresh:
       enabled: true
+      interval: 30s
+    cluster_settings_check:
+      enabled: true
+      interval: 20s
     store:
       enabled: true
     orm:

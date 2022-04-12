@@ -9,7 +9,7 @@ import (
 
 func TestGetMonitorPeriod(t *testing.T) {
 	now := time.Now()
-	periods := GetMonitorPeriod(&now, &alerting.Schedule{
+	periods := GetMonitorPeriod(now, &alerting.Schedule{
 		Cron: &alerting.Cron{
 			Expression: "0 0 1 */1 *",
 		},

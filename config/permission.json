@@ -1,0 +1,206 @@
+{
+    "list": [
+        "msearch",
+        "info",
+        "bulk",
+        "count",
+        "delete",
+        "termvectors",
+        "ping",
+        "mtermvectors",
+        "exists",
+        "explain",
+        "index",
+        "search",
+        "scroll",
+        "update",
+        "get",
+        "create",
+        "reindex",
+        "scripts",
+        "mget"
+    ],
+    "bulk": [
+        "bulk"
+    ],
+    "cat": [
+        "cat.indices",
+        "cat.help",
+        "cat.repositories",
+        "cat.pending_tasks",
+        "cat.tasks",
+        "cat.allocation",
+        "cat.count",
+        "cat.shards",
+        "cat.aliases",
+        "cat.nodeattrs",
+        "cat.templates",
+        "cat.thread_pool",
+        "cat.health",
+        "cat.recovery",
+        "cat.fielddata",
+        "cat.nodes",
+        "cat.plugins",
+        "cat.segments",
+        "cat.snapshots",
+        "cat.master"
+    ],
+    "cluster": [
+        "cluster.health",
+        "cluster.get_settings",
+        "cluster.pending_tasks",
+        "cluster.stats",
+        "cluster.remote_info",
+        "cluster.allocation_explain",
+        "cluster.put_settings",
+        "cluster.reroute",
+        "cluster.state"
+    ],
+    "count": [
+        "count"
+    ],
+    "doc": [
+        "doc.update",
+        "doc.put",
+        "doc.create",
+        "doc.delete"
+    ],
+    "exists": [
+        "exists"
+    ],
+    "explain": [
+        "explain"
+    ],
+    "field_caps": [
+        "field_caps"
+    ],
+    "get": [
+        "get"
+    ],
+    "indices": [
+        "indices.exists_alias",
+        "indices.get_alias",
+        "indices.recovery",
+        "indices.delete",
+        "indices.clear_cache",
+        "indices.update_by_query",
+        "indices.shrink",
+        "indices.forcemerge",
+        "indices.put_alias",
+        "indices.create",
+        "indices.split",
+        "indices.flush",
+        "indices.get_mapping",
+        "indices.upgrade",
+        "indices.validate_query",
+        "indices.exists_template",
+        "indices.get_upgrade",
+        "indices.update_aliases",
+        "indices.analyze",
+        "indices.exists",
+        "indices.close",
+        "indices.delete_template",
+        "indices.get_field_mapping",
+        "indices.delete_alias",
+        "indices.exists_type",
+        "indices.get_template",
+        "indices.put_template",
+        "indices.refresh",
+        "indices.segments",
+        "indices.termvectors",
+        "indices.flush_synced",
+        "indices.put_mapping",
+        "indices.get",
+        "indices.get_settings",
+        "indices.open",
+        "indices.put_settings",
+        "indices.stats",
+        "indices.delete_by_query",
+        "indices.rollover",
+        "indices.shard_stores"
+    ],
+    "info": [
+        "info"
+    ],
+    "ingest": [
+        "ingest.delete_pipeline",
+        "ingest.put_pipeline",
+        "ingest.simulate",
+        "ingest.get_pipeline",
+        "ingest.processor_grok"
+    ],
+    "mget": [
+        "mget"
+    ],
+    "msearch": [
+        "msearch"
+    ],
+    "msearch_template": [
+        "msearch_template"
+    ],
+    "mtermvectors": [
+        "mtermvectors"
+    ],
+    "nodes": [
+        "nodes.info",
+        "nodes.stats",
+        "nodes.reload_secure_settings",
+        "nodes.usage",
+        "nodes.hot_threads"
+    ],
+    "ping": [
+        "ping"
+    ],
+    "rank_eval": [
+        "rank_eval"
+    ],
+    "reindex": [
+        "reindex"
+    ],
+    "reindex_rethrottle": [
+        "reindex_rethrottle"
+    ],
+    "render_search_template": [
+        "render_search_template"
+    ],
+    "scripts": [
+        "scripts.get",
+        "scripts.put",
+        "scripts.delete"
+    ],
+    "scripts_painless_execute": [
+        "scripts_painless_execute"
+    ],
+    "scroll": [
+        "scroll.delete"
+    ],
+    "search": [
+        "search"
+    ],
+    "search_shards": [
+        "search_shards"
+    ],
+    "search_template": [
+        "search_template"
+    ],
+    "snapshot": [
+        "snapshot.get_repository",
+        "snapshot.create_repository",
+        "snapshot.create",
+        "snapshot.restore",
+        "snapshot.status",
+        "snapshot.delete",
+        "snapshot.delete_repository",
+        "snapshot.verify_repository",
+        "snapshot.get"
+    ],
+    "source": [
+        "source.head",
+        "source.get"
+    ],
+    "tasks": [
+        "tasks.list",
+        "tasks.cancel",
+        "tasks.get"
+    ]
+}

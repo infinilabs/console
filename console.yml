@@ -20,6 +20,8 @@ web:
   network:
     binding: 0.0.0.0:9000
     skip_occupied_port: true
+  gzip:
+    enabled: true
 
 elastic:
     elasticsearch: default

@@ -27,6 +27,7 @@ import (
 	api2 "infini.sh/gateway/api"
 	_ "infini.sh/gateway/proxy"
 	_ "infini.sh/console/plugin"
+	_ "infini.sh/framework/modules/api"
 )
 
 var appConfig *config.AppConfig

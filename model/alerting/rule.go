@@ -5,12 +5,13 @@
 package alerting
 
 import (
-	"infini.sh/framework/core/orm"
 	"time"
 )
 
 type Rule struct {
-	orm.ORMObjectBase
+	ID      string    `json:"id,omitempty"      elastic_meta:"_id" elastic_mapping:"id: { type: keyword }"`
+	Created time.Time `json:"created,omitempty" elastic_mapping:"created: { type: date }"`
+	Updated time.Time `json:"updated,omitempty" elastic_mapping:"updated: { type: date }"`
 	//Name string `json:"name" elastic_mapping:"name:{type:keyword,copy_to:search_text}"`
 	Enabled bool `json:"enabled" elastic_mapping:"enabled:{type:keyword}"`
 	Resource Resource `json:"resource" elastic_mapping:"resource:{type:object}"`

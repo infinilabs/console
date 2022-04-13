@@ -3,7 +3,6 @@ package api
 import (
 	"infini.sh/console/config"
 	"infini.sh/console/plugin/api/index_management"
-	"infini.sh/console/service/alerting"
 	"infini.sh/framework/core/api"
 	"path"
 )
@@ -13,7 +12,6 @@ func Init(cfg *config.AppConfig) {
 	handler := index_management.APIHandler{
 		Config: cfg,
 	}
-	alerting.InitAppConfig(cfg)
 	var pathPrefix = "/_search-center/"
 	var esPrefix = "/elasticsearch/:id/"
 	api.HandleAPIMethod(api.GET, path.Join(pathPrefix, "elasticsearch/overview"), handler.ElasticsearchOverviewAction)
@@ -45,39 +43,6 @@ func Init(cfg *config.AppConfig) {
 	api.HandleAPIMethod(api.PUT,  path.Join(pathPrefix, "elasticsearch/command/:cid"), handler.HandleSaveCommonCommandAction)
 	api.HandleAPIMethod(api.GET, path.Join(pathPrefix, "elasticsearch/command"), handler.HandleQueryCommonCommandAction)
 	api.HandleAPIMethod(api.DELETE, path.Join(pathPrefix, "elasticsearch/command/:cid"), handler.HandleDeleteCommonCommandAction)
-
-	//new api
-	api.HandleAPIMethod(api.GET,  path.Join(pathPrefix, "alerting/overview"), alerting.GetAlertOverview)
-	api.HandleAPIMethod(api.GET,  path.Join(pathPrefix, "alerting/overview/alerts"), alerting.GetAlerts)
-	api.HandleAPIMethod(api.POST,  path.Join(pathPrefix,"alerting/destinations/email_accounts"), alerting.CreateEmailAccount)
-	api.HandleAPIMethod(api.PUT,  path.Join(pathPrefix, "alerting/email_accounts/:emailAccountId"), alerting.UpdateEmailAccount)
-	api.HandleAPIMethod(api.DELETE,  path.Join(pathPrefix,"alerting/email_accounts/:emailAccountId"), alerting.DeleteEmailAccount)
-	api.HandleAPIMethod(api.GET,  path.Join(pathPrefix,"alerting/destinations/email_accounts"), alerting.GetEmailAccounts)
-	api.HandleAPIMethod(api.GET,  path.Join(pathPrefix,"alerting/email_accounts/:emailAccountId"), alerting.GetEmailAccount)
-	api.HandleAPIMethod(api.POST,  path.Join(pathPrefix,"alerting/destinations/email_groups"), alerting.CreateEmailGroup)
-	api.HandleAPIMethod(api.GET,  path.Join(pathPrefix,"alerting/destinations/email_groups"), alerting.GetEmailGroups)
-	api.HandleAPIMethod(api.DELETE,  path.Join(pathPrefix,"alerting/email_groups/:emailGroupId"), alerting.DeleteEmailGroup)
-	api.HandleAPIMethod(api.PUT,  path.Join(pathPrefix,"alerting/email_groups/:emailGroupId"), alerting.UpdateEmailGroup)
-	api.HandleAPIMethod(api.GET,  path.Join(pathPrefix,"alerting/email_groups/:emailGroupId"), alerting.GetEmailGroup)
-	api.HandleAPIMethod(api.GET,  path.Join(pathPrefix, "alerting/destinations"), alerting.GetDestinations)
-	api.HandleAPIMethod(api.POST,  path.Join(pathPrefix,"alerting/destinations"), alerting.CreateDestination)
-	api.HandleAPIMethod(api.PUT,  path.Join(pathPrefix,"alerting/destinations/:destinationId"), alerting.UpdateDestination)
-	api.HandleAPIMethod(api.DELETE,  path.Join(pathPrefix, "alerting/destinations/:destinationId"), alerting.DeleteDestination)
-	api.HandleAPIMethod(api.GET, "/elasticsearch/:id/alerting/monitors/:monitorID", alerting.GetMonitor)
-	api.HandleAPIMethod(api.PUT, "/elasticsearch/:id/alerting/monitors/:monitorID", alerting.UpdateMonitor)
-	api.HandleAPIMethod(api.GET, "/elasticsearch/:id/alerting/monitors", alerting.GetMonitors)
-	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/alerting/monitors", alerting.CreateMonitor)
-	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/alerting/monitors/_execute", alerting.ExecuteMonitor)
-	api.HandleAPIMethod(api.DELETE, "/elasticsearch/:id/alerting/monitors/:monitorID", alerting.DeleteMonitor)
-
-	api.HandleAPIMethod(api.GET,  path.Join(pathPrefix,"alerting/_settings"), alerting.GetSettings)
-	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/alerting/_indices", alerting.GetIndices)
-	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/alerting/_aliases", alerting.GetAliases)
-	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/alerting/_mappings", alerting.GetMappings)
-	api.HandleAPIMethod(api.POST, path.Join(pathPrefix, "alerting/_search"), alerting.Search)
-	api.HandleAPIMethod(api.GET, "/elasticsearch/:id/alerting/alerts", alerting.GetAlerts)
-	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/alerting/_monitors/:monitorID/_acknowledge/alerts", alerting.AcknowledgeAlerts)
-
 
 	//task.RegisterScheduleTask(task.ScheduleTask{
 	//	Description: "sync reindex task result",

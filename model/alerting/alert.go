@@ -1,35 +1,40 @@
+/* Copyright © INFINI Ltd. All rights reserved.
+ * web: https://infinilabs.com
+ * mail: hello#infini.ltd */
+
 package alerting
 
-type Alert struct {
-	ClusterID string `json:"cluster_id" elastic_mapping:"cluster_id:{type:keyword}"`
-	ClusterName string `json:"cluster_name" elastic_mapping:"cluster_name:{type:text}"`
-	AcknowledgedTime *int64 `json:"acknowledged_time" elastic_mapping:"acknowledged_time:{type:date}"`
-	ActionExecutionResults []ActionExecutionResult `json:"action_execution_results" elastic_mapping:"action_execution_results:{type:object}"`
-	AlertHistories []AlertHistory `json:"alert_history" elastic_mapping:"alert_history:{type:object}"`
-	EndTime *int64 `json:"end_time" elastic_mapping:"end_time:{type:date}"`
-	ErrorMessage string `json:"error_message" elastic_mapping:"error_message:{type:text}"`
-	Id string `json:"id" elastic_mapping:"id:{type:keyword}"`
-	LastNotificationTime int64 `json:"last_notification_time" elastic_mapping:"last_notification_time:{type:date}"`
-	MonitorId string `json:"monitor_id" elastic_mapping:"monitor_id:{type:keyword}"`
-	MonitorName string `json:"monitor_name" elastic_mapping:"monitor_name:{type:text,fields:{keyword:{type:keyword,ignore_above:256}}}"`
-	Severity string `json:"severity" elastic_mapping:"severity:{type:keyword}"`
-	StartTime int64 `json:"start_time"  elastic_mapping:"start_time:{type:date}"`
-	State string `json:"state"  elastic_mapping:"state:{type:keyword}"`
-	TriggerId string `json:"trigger_id" elastic_mapping:"trigger_id:{type:keyword}"`
-	TriggerName string `json:"trigger_name" elastic_mapping:"trigger_name:{type:text,fields:{keyword:{type:keyword,ignore_above:256}}}"`
-}
+import (
+	"time"
+)
 
-type AlertingHistory Alert
+type Alert struct {
+	ID      string    `json:"id,omitempty"      elastic_meta:"_id" elastic_mapping:"id: { type: keyword }"`
+	Created time.Time `json:"created,omitempty" elastic_mapping:"created: { type: date }"`
+	Updated time.Time `json:"updated,omitempty" elastic_mapping:"updated: { type: date }"`
+	RuleID string `json:"rule_id"`
+	ClusterID string `json:"cluster_id"`
+	Expression string `json:"expression"`
+	Objects []string `json:"objects"`
+	Severity string `json:"severity"`
+	Content string `json:"content"`
+	AcknowledgedTime       interface{}             `json:"acknowledged_time,omitempty"`
+	ActionExecutionResults []ActionExecutionResult `json:"action_execution_results"`
+	Users []string `json:"users,omitempty"`
+	State string `json:"state"`
+	Error string `json:"error,omitempty"`
+}
 
 type ActionExecutionResult struct {
-	ActionID string `json:"action_id" elastic_mapping:"action_id:{type:keyword}"`
-	LastExecutionTime int64 `json:"last_execution_time" elastic_mapping:"last_execution_time:{type:date}"`
-	ThrottledCount int `json:"throttled_count" elastic_mapping:"throttled_count:{type:integer}"`
-	Error string `json:"error,omitempty"`
-	Result string `json:"result"`
+	//ActionId          string `json:"action_id"`
+	LastExecutionTime int    `json:"last_execution_time"`
+	Error             string `json:"error"`
+	Result            string `json:"result"`
 }
 
-type AlertHistory struct {
-	Message string `json:"message" elastic_mapping:"message:{type:text}"`
-	Timestamp int64 `json:"timestamp" elastic_mapping:"timestamp:{type:date}"`
-}
+const (
+	AlertStateActive string = "active"
+	AlertStateAcknowledge = "acknowledge"
+	AlertStateNormal = "normal"
+	AlertStateError = "error"
+)

@@ -9,14 +9,18 @@ import (
 	"path"
 )
 
-type Permisson struct {
+type Rbac struct {
 	api.Handler
 }
 
 func registerRouter() {
-	p := Permisson{}
-
-	api.HandleAPIMethod(api.GET, "/permission/:type", p.ListPermission)
+	r := Rbac{}
+	api.HandleAPIMethod(api.GET, "/permission/:type", r.ListPermission)
+	api.HandleAPIMethod(api.POST, "/role", r.CreateRole)
+	api.HandleAPIMethod(api.GET, "/role/:id", r.GetRole)
+	api.HandleAPIMethod(api.DELETE, "/role/:id", r.DeleteRole)
+	api.HandleAPIMethod(api.PUT, "/role/:id", r.UpdateRole)
+	api.HandleAPIMethod(api.GET, "/roles", r.ListRole)
 
 }
 func loadJsonConfig() {

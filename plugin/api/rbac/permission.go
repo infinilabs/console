@@ -19,9 +19,20 @@ type Response struct {
 	Hit interface{} `json:"hit"`
 }
 
-func (h Permisson) ListPermission(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+func validateRoleType(roleType RoleType) (err error) {
+	if roleType != Console && roleType != Elastisearch {
+		err = errors.New("unsupport type parmeter " + roleType)
+	}
+	return
+}
+func (h Rbac) ListPermission(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	typ := ps.MustGetParameter("type")
-	var err error
+	err := validateRoleType(typ)
+	if err != nil {
+		_ = log.Error(err.Error())
+		_ = h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	var permissons interface{}
 	switch typ {
 	case Console:
@@ -29,8 +40,6 @@ func (h Permisson) ListPermission(w http.ResponseWriter, req *http.Request, ps h
 
 	case Elastisearch:
 		permissons, err = biz.ListElasticsearchPermisson()
-	default:
-		err = errors.New("unsupport type parmeter " + typ)
 	}
 	if err != nil {
 		_ = log.Error(err.Error())

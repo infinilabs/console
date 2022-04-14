@@ -1,29 +1,10 @@
 {
-    "list": [
-        "msearch",
-        "info",
-        "bulk",
-        "count",
-        "delete",
-        "termvectors",
-        "ping",
-        "mtermvectors",
-        "exists",
-        "explain",
-        "index",
-        "search",
-        "scroll",
-        "update",
-        "get",
-        "create",
-        "reindex",
-        "scripts",
-        "mget"
-    ],
+
     "bulk": [
         "bulk"
     ],
     "cat": [
+        "*",
         "cat.indices",
         "cat.help",
         "cat.repositories",
@@ -46,6 +27,7 @@
         "cat.master"
     ],
     "cluster": [
+        "*",
         "cluster.health",
         "cluster.get_settings",
         "cluster.pending_tasks",
@@ -57,15 +39,18 @@
         "cluster.state"
     ],
     "count": [
+        "*",
         "count"
     ],
     "doc": [
+        "*",
         "doc.update",
         "doc.put",
         "doc.create",
         "doc.delete"
     ],
     "exists": [
+        "*",
         "exists"
     ],
     "explain": [

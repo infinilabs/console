@@ -23,6 +23,8 @@ func registerRouter() {
 	api.HandleAPIMethod(api.GET, "/roles", r.ListRole)
 
 }
+
+//TODO 权限一级配置全局变量，
 func loadJsonConfig() {
 	pwd, _ := os.Getwd()
 
@@ -32,11 +34,17 @@ func loadJsonConfig() {
 
 	}
 
-	err = json.Unmarshal(bytes, &biz.CategoryApi)
+	err = json.Unmarshal(bytes, &biz.EsApis)
 	if err != nil {
 		panic("json config unmarshal err " + err.Error())
-
 	}
+	list := make([]string, 0)
+	list = append(list, "*")
+	for k := range biz.EsApis {
+		list = append(list, k)
+	}
+	biz.ClusterApis = list
+
 }
 func init() {
 	registerRouter()

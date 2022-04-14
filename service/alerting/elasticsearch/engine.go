@@ -19,6 +19,7 @@ import (
 	"infini.sh/framework/core/util"
 	"io"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -38,11 +39,7 @@ func (engine *Engine) GenerateQuery(rule *alerting.Rule) (interface{}, error) {
 	}
 	basicAggs := util.MapStr{}
 	for _, metricItem  := range rule.Metrics.Items {
-		basicAggs[metricItem.Name] = util.MapStr{
-			metricItem.Statistic: util.MapStr{
-				"field": metricItem.Field,
-			},
-		}
+		basicAggs[metricItem.Name] = engine.generateAgg(&metricItem)
 	}
 	timeAggs := util.MapStr{
 		"date_histogram": util.MapStr{
@@ -91,6 +88,37 @@ func (engine *Engine) GenerateQuery(rule *alerting.Rule) (interface{}, error) {
 		"query": filter,
 		"aggs": rootAggs,
 	}, nil
+}
+func (engine *Engine) generateAgg(metricItem *alerting.MetricItem) interface{}{
+	var (
+		aggType = "value_count"
+		field = metricItem.Field
+	)
+	if field == "" || field == "*" {
+		field = "_id"
+	}
+	var percent = 0.0
+	switch metricItem.Statistic {
+	case "max", "min", "sum", "avg":
+		aggType = metricItem.Statistic
+	case "count", "value_count":
+		aggType = "value_count"
+	case "medium":
+		aggType = "median_absolute_deviation"
+	case "p99", "p95","p90","p80","p50":
+		aggType = "percentiles"
+		percentStr := strings.TrimPrefix(metricItem.Statistic, "p")
+		percent, _ = strconv.ParseFloat(percentStr, 32)
+	}
+	aggValue := util.MapStr{
+		"field": field,
+	}
+	if aggType == "percentiles" {
+		aggValue["percents"] = []interface{}{percent}
+	}
+	return util.MapStr{
+		aggType: aggValue,
+	}
 }
 
 func (engine *Engine) GenerateRawFilter(rule *alerting.Rule) (map[string]interface{}, error) {
@@ -141,9 +169,15 @@ func (engine *Engine) GenerateRawFilter(rule *alerting.Rule) (map[string]interfa
 			}
 		}
 	}else{
-		query["bool"] = util.MapStr{
-			"must": []interface{}{
-				timeQuery,
+		must := []interface{}{
+			timeQuery,
+		}
+		if _, ok := query["match_all"]; !ok {
+			must = append(must, query)
+		}
+		query = util.MapStr{
+			"bool":  util.MapStr{
+				"must": must,
 			},
 		}
 	}
@@ -465,7 +499,27 @@ func collectMetricData(agg interface{}, groupValues string, metricData *[]alerti
 								continue
 							}
 							if vm, ok := v.(map[string]interface{}); ok {
-								md.Data[k] = append(md.Data[k], alerting.TimeMetricData{bkM["key"], vm["value"]})
+								if metricVal, ok := vm["value"]; ok {
+									md.Data[k] = append(md.Data[k], alerting.TimeMetricData{bkM["key"], metricVal})
+								}else{
+									//percentiles agg type
+									switch  vm["values"].(type) {
+									case []interface{}:
+										for _, val := range vm["values"].([]interface{}) {
+											if valM, ok := val.(map[string]interface{}); ok {
+												md.Data[k] = append(md.Data[k], alerting.TimeMetricData{bkM["key"], valM["value"]})
+											}
+											break
+										}
+									case map[string]interface{}:
+										for _, val := range vm["values"].(map[string]interface{}) {
+												md.Data[k] = append(md.Data[k], alerting.TimeMetricData{bkM["key"], val})
+											break
+										}
+									}
+
+								}
+
 							}
 
 						}

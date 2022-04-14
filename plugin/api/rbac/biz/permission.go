@@ -30,6 +30,7 @@ func ListElasticsearchPermisson() (permisson ElasticsearchPermisson, err error) 
 
 	permisson = ElasticsearchPermisson{
 		ClusterPrivileges: CategoryApi["list"],
+		IndexPrivileges:   CategoryApi["indices"],
 	}
 	return
 }

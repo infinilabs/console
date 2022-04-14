@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	_ "expvar"
-	_ "infini.sh/framework/core/log"
 	"infini.sh/console/config"
 	"infini.sh/console/model"
 	"infini.sh/console/model/alerting"
@@ -12,13 +11,15 @@ import (
 	"infini.sh/framework"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/env"
+	_ "infini.sh/framework/core/log"
 	"infini.sh/framework/core/module"
 	"infini.sh/framework/core/orm"
-	queue2 "infini.sh/framework/modules/disk_queue"
+	_ "infini.sh/framework/modules/api"
 	elastic2 "infini.sh/framework/modules/elastic"
 	"infini.sh/framework/modules/filter"
 	"infini.sh/framework/modules/metrics"
 	"infini.sh/framework/modules/pipeline"
+	queue2 "infini.sh/framework/modules/queue/disk_queue"
 	"infini.sh/framework/modules/redis"
 	"infini.sh/framework/modules/stats"
 	"infini.sh/framework/modules/task"
@@ -26,8 +27,6 @@ import (
 	_ "infini.sh/framework/plugins"
 	api2 "infini.sh/gateway/api"
 	_ "infini.sh/gateway/proxy"
-	_ "infini.sh/console/plugin"
-	_ "infini.sh/framework/modules/api"
 )
 
 var appConfig *config.AppConfig

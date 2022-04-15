@@ -40,14 +40,22 @@ func (h Rbac) CreateRole(w http.ResponseWriter, r *http.Request, ps httprouter.P
 
 func (h Rbac) SearchRole(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
-	roleType := ps.MustGetParameter("type")
-	err := validateRoleType(roleType)
+	var (
+		keyword = h.GetParameterOrDefault(r, "keyword", "")
+		from    = h.GetIntOrDefault(r, "from", 0)
+		size    = h.GetIntOrDefault(r, "size", 20)
+	)
+
+	res, err := biz.SearchRole(keyword, from, size)
 	if err != nil {
-		_ = log.Error(err.Error())
-		_ = h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	h.WriteJSON(w, Response{Hit: res.Result, Total: res.Total}, http.StatusOK)
 	return
+
 }
 
 func (h Rbac) GetRole(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

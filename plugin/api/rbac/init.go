@@ -60,6 +60,7 @@ func init() {
 }
 
 type Response struct {
+	Total  int64       `json:"total,omitempty"`
 	Hit    interface{} `json:"hit,omitempty"`
 	Id     string      `json:"_id,omitempty"`
 	Result string      `json:"result,omitempty"`
@@ -86,7 +87,7 @@ func DeleteResponse(id string) Response {
 }
 func NotFoundResponse(id string) Response {
 	return Response{
-		Id:    id,
+
 		Found: false,
 	}
 }

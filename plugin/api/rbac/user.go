@@ -100,5 +100,20 @@ func (h Rbac) DeleteUser(w http.ResponseWriter, r *http.Request, ps httprouter.P
 }
 
 func (h Rbac) SearchUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	var (
+		keyword = h.GetParameterOrDefault(r, "keyword", "")
+		from    = h.GetIntOrDefault(r, "from", 0)
+		size    = h.GetIntOrDefault(r, "size", 20)
+	)
+
+	res, err := biz.SearchUser(keyword, from, size)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	h.WriteJSON(w, Response{Hit: res.Result, Total: res.Total}, http.StatusOK)
+	return
 
 }

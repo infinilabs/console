@@ -8,7 +8,6 @@ type ConsolePermisson struct {
 	Name string `json:"name"`
 }
 
-//
 func ListConsolePermisson() (list []ConsolePermisson, err error) {
 	list = []ConsolePermisson{
 		{

@@ -6,6 +6,7 @@ import (
 	"infini.sh/console/plugin/api/rbac/dto"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
+	"strings"
 	"time"
 )
 
@@ -24,11 +25,15 @@ func CreateUser(req dto.CreateUser) (id string, err error) {
 	q := orm.Query{Size: 1000}
 	q.Conds = orm.And(orm.Eq("name", req.Name))
 
-	err, result := orm.Search(rbac.Role{}, &q)
+	err, result := orm.Search(rbac.User{}, &q)
 	if err != nil {
 		return
 	}
-	fmt.Println(string(result.Raw))
+	if result.Total > 0 {
+		err = fmt.Errorf("user name %s already exists", req.Name)
+		return
+	}
+
 	roles := make([]rbac.UserRole, 0)
 	for _, v := range req.Roles {
 		roles = append(roles, rbac.UserRole{
@@ -98,6 +103,20 @@ func GetUser(id string) (user rbac.User, err error) {
 	return
 
 }
-func SearchUser() {
+func SearchUser(keyword string, from, size int) (users orm.Result, err error) {
+	query := orm.Query{}
+
+	queryDSL := `{"query":{"bool":{"must":[%s]}}, "from": %d,"size": %d}`
+	mustBuilder := &strings.Builder{}
+
+	if keyword != "" {
+		mustBuilder.WriteString(fmt.Sprintf(`{"query_string":{"default_field":"*","query": "%s"}}`, keyword))
+	}
+	queryDSL = fmt.Sprintf(queryDSL, mustBuilder.String(), from, size)
+	query.RawQuery = []byte(queryDSL)
+
+	err, users = orm.Search(rbac.User{}, &query)
+
+	return
 
 }

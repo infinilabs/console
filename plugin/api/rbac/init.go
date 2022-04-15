@@ -16,11 +16,16 @@ type Rbac struct {
 func registerRouter() {
 	r := Rbac{}
 	api.HandleAPIMethod(api.GET, "/permission/:type", r.ListPermission)
-	api.HandleAPIMethod(api.POST, "/role", r.CreateRole)
+	api.HandleAPIMethod(api.POST, "/role/:type", r.CreateRole)
 	api.HandleAPIMethod(api.GET, "/role/:id", r.GetRole)
 	api.HandleAPIMethod(api.DELETE, "/role/:id", r.DeleteRole)
 	api.HandleAPIMethod(api.PUT, "/role/:id", r.UpdateRole)
-	api.HandleAPIMethod(api.GET, "/roles", r.ListRole)
+	api.HandleAPIMethod(api.GET, "/roles/:type", r.ListRole)
+
+	api.HandleAPIMethod(api.GET, "/user/:id", r.ListRole)
+	api.HandleAPIMethod(api.GET, "/users", r.ListRole)
+	api.HandleAPIMethod(api.DELETE, "/user/:id", r.ListRole)
+	api.HandleAPIMethod(api.GET, "/users", r.ListRole)
 
 }
 
@@ -49,4 +54,36 @@ func loadJsonConfig() {
 func init() {
 	registerRouter()
 	loadJsonConfig()
+}
+
+type Response struct {
+	Hit    interface{} `json:"hit,omitempty"`
+	Id     string      `json:"_id,omitempty"`
+	Result string      `json:"result,omitempty"`
+	Found  bool        `json:"found,omitempty"`
+}
+
+func CreateResponse(id string) Response {
+	return Response{
+		Id:     id,
+		Result: "created",
+	}
+}
+func UpdateResponse(id string) Response {
+	return Response{
+		Id:     id,
+		Result: "updated",
+	}
+}
+func DeleteResponse(id string) Response {
+	return Response{
+		Id:     id,
+		Result: "deleted",
+	}
+}
+func NotFoundResponse(id string) Response {
+	return Response{
+		Id:    id,
+		Found: false,
+	}
 }

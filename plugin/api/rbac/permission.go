@@ -15,10 +15,6 @@ const (
 	Elastisearch RoleType = "elasticsearch"
 )
 
-type Response struct {
-	Hit interface{} `json:"hit"`
-}
-
 func validateRoleType(roleType RoleType) (err error) {
 	if roleType != Console && roleType != Elastisearch {
 		err = errors.New("unsupport type parmeter " + roleType)

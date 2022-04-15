@@ -7,6 +7,7 @@ import (
 	"infini.sh/console/model"
 	"infini.sh/console/model/alerting"
 	"infini.sh/console/model/gateway"
+	"infini.sh/console/model/rbac"
 	_ "infini.sh/console/plugin"
 	"infini.sh/framework"
 	"infini.sh/framework/core/elastic"
@@ -49,7 +50,7 @@ func main() {
 	terminalFooter := ""
 
 	app := framework.NewApp("console", "INFINI Cloud Console, The easiest way to operate your own elasticsearch platform.",
-		config.Version,config.BuildNumber, config.LastCommitLog, config.BuildDate, config.EOLDate, terminalHeader, terminalFooter)
+		config.Version, config.BuildNumber, config.LastCommitLog, config.BuildDate, config.EOLDate, terminalHeader, terminalFooter)
 
 	app.Init(nil)
 	defer app.Shutdown()
@@ -58,10 +59,9 @@ func main() {
 
 	if app.Setup(func() {
 		err := bootstrapRequirementCheck()
-		if err !=nil{
+		if err != nil {
 			panic(err)
 		}
-
 
 		//load core modules first
 		module.RegisterSystemModule(&elastic2.ElasticModule{})
@@ -117,19 +117,18 @@ func main() {
 
 		module.Start()
 
-
 		orm.RegisterSchemaWithIndexName(model.Dict{}, "dict")
 		orm.RegisterSchemaWithIndexName(model.Reindex{}, "reindex")
 		orm.RegisterSchemaWithIndexName(elastic.View{}, "view")
 		orm.RegisterSchemaWithIndexName(alerting.Alert{}, "alerting-alerts")
 		orm.RegisterSchemaWithIndexName(elastic.CommonCommand{}, "commands")
 		orm.RegisterSchemaWithIndexName(elastic.TraceTemplate{}, "trace-template")
-		orm.RegisterSchemaWithIndexName(gateway.Instance{} , "gateway-instance")
-		orm.RegisterSchemaWithIndexName(alerting.Rule{} , "alert-rule")
-		orm.RegisterSchemaWithIndexName(alerting.Alert{} , "alert-history")
-
+		orm.RegisterSchemaWithIndexName(gateway.Instance{}, "gateway-instance")
+		orm.RegisterSchemaWithIndexName(alerting.Rule{}, "alert-rule")
+		orm.RegisterSchemaWithIndexName(alerting.Alert{}, "alert-history")
+		orm.RegisterSchemaWithIndexName(rbac.Role{}, "rbac-role")
+		orm.RegisterSchemaWithIndexName(rbac.User{}, "rbac-user")
 		api.RegisterSchema()
-
 
 	}, nil) {
 		app.Run()

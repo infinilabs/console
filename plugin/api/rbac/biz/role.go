@@ -10,12 +10,12 @@ import (
 	"infini.sh/framework/core/orm"
 )
 
-func CreateRole(req dto.CreateRoleReq) (id string, err error) {
+func CreateRole(req dto.CreateRole) (id string, err error) {
 
-	q := &orm.Query{Size: 1000}
+	q := orm.Query{Size: 1000}
 	q.Conds = orm.And(orm.Eq("name", req.Name))
 
-	err, result := orm.Search(rbac.Role{}, q)
+	err, result := orm.Search(rbac.Role{}, &q)
 	if err != nil {
 		return
 	}
@@ -34,7 +34,7 @@ func CreateRole(req dto.CreateRoleReq) (id string, err error) {
 	return
 }
 func DeleteRole(id string) (err error) {
-	role := &rbac.Role{}
+	role := rbac.Role{}
 	role.ID = id
 	_, err = orm.Get(&role)
 	if err != nil {
@@ -42,15 +42,8 @@ func DeleteRole(id string) (err error) {
 	}
 	return orm.Delete(role)
 }
-func isExistRole(o interface{}) (err error) {
-	_, err = orm.Get(o)
-	if err != nil {
-		return
-	}
 
-	return
-}
-func UpdateRole(id string, req dto.UpdateRoleReq) (err error) {
+func UpdateRole(id string, req dto.UpdateRole) (err error) {
 	role := rbac.Role{}
 	role.ID = id
 	_, err = orm.Get(&role)
@@ -59,6 +52,7 @@ func UpdateRole(id string, req dto.UpdateRoleReq) (err error) {
 	}
 	role.Description = req.Description
 	role.Permission = req.Permission
+	role.Updated = time.Now()
 	err = orm.Save(role)
 	return
 }

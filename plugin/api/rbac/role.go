@@ -17,19 +17,17 @@ func (h Rbac) CreateRole(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		_ = h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	var id string
 
-	switch roleType {
-	case Console:
-		var req dto.CreateRoleReq
-		err = h.DecodeJSON(r, &req)
-		if err != nil {
-			_ = h.WriteError(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		id, err = biz.CreateRole(req)
+	var req dto.CreateRole
+	err = h.DecodeJSON(r, &req)
+	if err != nil {
+		_ = h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
+	req.RoleType = roleType
+
+	var id string
+	id, err = biz.CreateRole(req)
 	if err != nil {
 		_ = log.Error(err.Error())
 		_ = h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -40,7 +38,7 @@ func (h Rbac) CreateRole(w http.ResponseWriter, r *http.Request, ps httprouter.P
 
 }
 
-func (h Rbac) ListRole(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (h Rbac) SearchRole(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	roleType := ps.MustGetParameter("type")
 	err := validateRoleType(roleType)
@@ -74,11 +72,12 @@ func (h Rbac) DeleteRole(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		return
 	}
 	_ = h.WriteJSON(w, DeleteResponse(id), http.StatusOK)
+	return
 }
 
 func (h Rbac) UpdateRole(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	id := ps.MustGetParameter("id")
-	var req dto.UpdateRoleReq
+	var req dto.UpdateRole
 	err := h.DecodeJSON(r, &req)
 	if err != nil {
 		_ = h.WriteError(w, err.Error(), http.StatusInternalServerError)

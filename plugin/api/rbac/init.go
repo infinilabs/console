@@ -20,12 +20,15 @@ func registerRouter() {
 	api.HandleAPIMethod(api.GET, "/role/:id", r.GetRole)
 	api.HandleAPIMethod(api.DELETE, "/role/:id", r.DeleteRole)
 	api.HandleAPIMethod(api.PUT, "/role/:id", r.UpdateRole)
-	api.HandleAPIMethod(api.GET, "/roles/:type", r.ListRole)
+	api.HandleAPIMethod(api.GET, "/role/_search", r.SearchRole)
 
-	api.HandleAPIMethod(api.GET, "/user/:id", r.ListRole)
-	api.HandleAPIMethod(api.GET, "/users", r.ListRole)
-	api.HandleAPIMethod(api.DELETE, "/user/:id", r.ListRole)
-	api.HandleAPIMethod(api.GET, "/users", r.ListRole)
+	api.HandleAPIMethod(api.POST, "/user", r.CreateUser)
+	api.HandleAPIMethod(api.GET, "/user/:id", r.GetUser)
+	api.HandleAPIMethod(api.GET, "/user/search", r.SearchUser)
+	api.HandleAPIMethod(api.DELETE, "/user/:id", r.DeleteUser)
+	api.HandleAPIMethod(api.PUT, "/user/:id", r.UpdateUser)
+	api.HandleAPIMethod(api.PUT, "/user/:id/role", r.UpdateUserRole)
+	api.HandleAPIMethod(api.GET, "/user/_search", r.SearchUser)
 
 }
 

@@ -31,7 +31,7 @@ elastic:
       enabled: true
       interval: 30s
     availability_check:
-      enabled: false
+      enabled: true
       interval: 60s
     metadata_refresh:
       enabled: true

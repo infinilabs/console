@@ -2,13 +2,16 @@ package biz
 
 import (
 	"fmt"
+	"infini.sh/console/internal/dto"
 	"infini.sh/console/model/rbac"
-	"infini.sh/console/plugin/api/rbac/dto"
+
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"strings"
 	"time"
 )
+
+var ErrNotFound = fmt.Errorf("not found")
 
 func DeleteUser(id string) (err error) {
 
@@ -16,6 +19,7 @@ func DeleteUser(id string) (err error) {
 	user.ID = id
 	_, err = orm.Get(&user)
 	if err != nil {
+		err = ErrNotFound
 		return
 	}
 	return orm.Delete(user)
@@ -23,7 +27,7 @@ func DeleteUser(id string) (err error) {
 }
 func CreateUser(req dto.CreateUser) (id string, err error) {
 	q := orm.Query{Size: 1000}
-	q.Conds = orm.And(orm.Eq("name", req.Name))
+	q.Conds = orm.And(orm.Eq("username", req.Username))
 
 	err, result := orm.Search(rbac.User{}, &q)
 	if err != nil {
@@ -48,6 +52,7 @@ func CreateUser(req dto.CreateUser) (id string, err error) {
 		Email:    req.Email,
 		Phone:    req.Phone,
 		Roles:    roles,
+		Tags:     req.Tags,
 	}
 	user.ID = util.GetUUID()
 	user.Created = time.Now()
@@ -64,11 +69,13 @@ func UpdateUser(id string, req dto.UpdateUser) (err error) {
 	user.ID = id
 	_, err = orm.Get(&user)
 	if err != nil {
+		err = ErrNotFound
 		return
 	}
 	user.Name = req.Name
 	user.Email = req.Email
 	user.Phone = req.Phone
+	user.Tags = req.Tags
 	user.Updated = time.Now()
 	err = orm.Save(user)
 	return
@@ -78,6 +85,7 @@ func UpdateUserRole(id string, req dto.UpdateUserRole) (err error) {
 	user.ID = id
 	_, err = orm.Get(&user)
 	if err != nil {
+		err = ErrNotFound
 		return
 	}
 	roles := make([]rbac.UserRole, 0)

@@ -2,8 +2,9 @@ package biz
 
 import (
 	"fmt"
+	"infini.sh/console/internal/dto"
 	"infini.sh/console/model/rbac"
-	"infini.sh/console/plugin/api/rbac/dto"
+
 	"infini.sh/framework/core/util"
 	"strings"
 	"time"
@@ -43,6 +44,7 @@ func DeleteRole(id string) (err error) {
 	role.ID = id
 	_, err = orm.Get(&role)
 	if err != nil {
+		err = ErrNotFound
 		return
 	}
 	return orm.Delete(role)
@@ -53,6 +55,7 @@ func UpdateRole(id string, req dto.UpdateRole) (err error) {
 	role.ID = id
 	_, err = orm.Get(&role)
 	if err != nil {
+		err = ErrNotFound
 		return
 	}
 	role.Description = req.Description
@@ -66,9 +69,9 @@ func GetRole(id string) (role rbac.Role, err error) {
 	role.ID = id
 	_, err = orm.Get(&role)
 	if err != nil {
+		err = ErrNotFound
 		return
 	}
-
 	return
 }
 func SearchRole(keyword string, from, size int) (roles orm.Result, err error) {

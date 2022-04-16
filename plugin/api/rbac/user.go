@@ -1,19 +1,22 @@
 package rbac
 
 import (
-	"infini.sh/console/plugin/api/rbac/biz"
-	"infini.sh/console/plugin/api/rbac/dto"
+	"errors"
+	"infini.sh/console/internal/biz"
+	"infini.sh/console/internal/dto"
 	httprouter "infini.sh/framework/core/api/router"
+	"infini.sh/framework/modules/elastic"
 	"net/http"
 	log "src/github.com/cihub/seelog"
 )
 
 type CreateUserReq struct {
-	Username string `json:"username" `
-	Password string `json:"password" `
-	Name     string `json:"name" `
-	Phone    string `json:"phone" `
-	Email    string `json:"email" `
+	Username string   `json:"username" `
+	Password string   `json:"password" `
+	Name     string   `json:"name" `
+	Phone    string   `json:"phone" `
+	Email    string   `json:"email" `
+	Tags     []string `json:"tags"`
 }
 
 func (h Rbac) CreateUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -21,13 +24,13 @@ func (h Rbac) CreateUser(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	var req dto.CreateUser
 	err := h.DecodeJSON(r, &req)
 	if err != nil {
-		_ = h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err)
 		return
 	}
 	id, err := biz.CreateUser(req)
 	if err != nil {
 		_ = log.Error(err.Error())
-		_ = h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err)
 		return
 	}
 	_ = h.WriteJSON(w, CreateResponse(id), http.StatusOK)
@@ -38,9 +41,14 @@ func (h Rbac) CreateUser(w http.ResponseWriter, r *http.Request, ps httprouter.P
 func (h Rbac) GetUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	id := ps.MustGetParameter("id")
 	user, err := biz.GetUser(id)
+	if errors.Is(err, elastic.ErrNotFound) {
+		h.WriteJSON(w, NotFoundResponse(id), http.StatusNotFound)
+		return
+	}
+
 	if err != nil {
 		_ = log.Error(err.Error())
-		_ = h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err)
 		return
 	}
 	h.WriteJSON(w, Response{Hit: user}, http.StatusOK)
@@ -53,13 +61,14 @@ func (h Rbac) UpdateUser(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	err := h.DecodeJSON(r, &req)
 	if err != nil {
 		_ = log.Error(err.Error())
-		_ = h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err)
 		return
 	}
 	err = biz.UpdateUser(id, req)
+
 	if err != nil {
 		_ = log.Error(err.Error())
-		_ = h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err)
 		return
 	}
 	_ = h.WriteJSON(w, UpdateResponse(id), http.StatusOK)
@@ -72,14 +81,14 @@ func (h Rbac) UpdateUserRole(w http.ResponseWriter, r *http.Request, ps httprout
 	err := h.DecodeJSON(r, &req)
 	if err != nil {
 		_ = log.Error(err.Error())
-		_ = h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err)
 		return
 	}
 	err = biz.UpdateUserRole(id, req)
 
 	if err != nil {
 		_ = log.Error(err.Error())
-		_ = h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err)
 		return
 	}
 	_ = h.WriteJSON(w, UpdateResponse(id), http.StatusOK)
@@ -89,10 +98,13 @@ func (h Rbac) UpdateUserRole(w http.ResponseWriter, r *http.Request, ps httprout
 func (h Rbac) DeleteUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	id := ps.MustGetParameter("id")
 	err := biz.DeleteUser(id)
-
+	if errors.Is(err, elastic.ErrNotFound) {
+		h.WriteJSON(w, NotFoundResponse(id), http.StatusNotFound)
+		return
+	}
 	if err != nil {
 		_ = log.Error(err.Error())
-		_ = h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err)
 		return
 	}
 	_ = h.WriteJSON(w, DeleteResponse(id), http.StatusOK)
@@ -108,8 +120,8 @@ func (h Rbac) SearchUser(w http.ResponseWriter, r *http.Request, ps httprouter.P
 
 	res, err := biz.SearchUser(keyword, from, size)
 	if err != nil {
-		log.Error(err)
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err.Error())
+		h.Error(w, err)
 		return
 	}
 

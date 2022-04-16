@@ -3,7 +3,8 @@ package rbac
 import (
 	log "github.com/cihub/seelog"
 	"github.com/pkg/errors"
-	"infini.sh/console/plugin/api/rbac/biz"
+	"infini.sh/console/internal/biz"
+
 	httprouter "infini.sh/framework/core/api/router"
 	"net/http"
 )
@@ -26,7 +27,7 @@ func (h Rbac) ListPermission(w http.ResponseWriter, req *http.Request, ps httpro
 	err := validateRoleType(typ)
 	if err != nil {
 		_ = log.Error(err.Error())
-		_ = h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err)
 		return
 	}
 	var permissons interface{}
@@ -39,7 +40,7 @@ func (h Rbac) ListPermission(w http.ResponseWriter, req *http.Request, ps httpro
 	}
 	if err != nil {
 		_ = log.Error(err.Error())
-		_ = h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err)
 		return
 	}
 

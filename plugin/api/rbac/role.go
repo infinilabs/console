@@ -2,8 +2,9 @@ package rbac
 
 import (
 	log "github.com/cihub/seelog"
-	"infini.sh/console/plugin/api/rbac/biz"
-	"infini.sh/console/plugin/api/rbac/dto"
+	"infini.sh/console/internal/biz"
+	"infini.sh/console/internal/dto"
+
 	httprouter "infini.sh/framework/core/api/router"
 	"net/http"
 )
@@ -14,14 +15,14 @@ func (h Rbac) CreateRole(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	err = validateRoleType(roleType)
 	if err != nil {
 		_ = log.Error(err.Error())
-		_ = h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err)
 		return
 	}
 
 	var req dto.CreateRole
 	err = h.DecodeJSON(r, &req)
 	if err != nil {
-		_ = h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err)
 		return
 	}
 	req.RoleType = roleType
@@ -30,7 +31,7 @@ func (h Rbac) CreateRole(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	id, err = biz.CreateRole(req)
 	if err != nil {
 		_ = log.Error(err.Error())
-		_ = h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err)
 		return
 	}
 	_ = h.WriteJSON(w, CreateResponse(id), http.StatusOK)
@@ -49,7 +50,7 @@ func (h Rbac) SearchRole(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	res, err := biz.SearchRole(keyword, from, size)
 	if err != nil {
 		log.Error(err)
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err)
 		return
 	}
 
@@ -64,7 +65,7 @@ func (h Rbac) GetRole(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 
 	if err != nil {
 		_ = log.Error(err.Error())
-		_ = h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err)
 		return
 	}
 	h.WriteJSON(w, Response{Hit: role}, http.StatusOK)
@@ -74,9 +75,10 @@ func (h Rbac) GetRole(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 func (h Rbac) DeleteRole(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	id := ps.MustGetParameter("id")
 	err := biz.DeleteRole(id)
+
 	if err != nil {
 		_ = log.Error(err.Error())
-		_ = h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err)
 		return
 	}
 	_ = h.WriteJSON(w, DeleteResponse(id), http.StatusOK)
@@ -88,14 +90,14 @@ func (h Rbac) UpdateRole(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	var req dto.UpdateRole
 	err := h.DecodeJSON(r, &req)
 	if err != nil {
-		_ = h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err)
 		return
 	}
 	err = biz.UpdateRole(id, req)
 
 	if err != nil {
 		_ = log.Error(err.Error())
-		_ = h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		h.Error(w, err)
 		return
 	}
 	_ = h.WriteJSON(w, UpdateResponse(id), http.StatusOK)

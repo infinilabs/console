@@ -2,7 +2,8 @@ package rbac
 
 import (
 	"encoding/json"
-	"infini.sh/console/plugin/api/rbac/biz"
+	"infini.sh/console/internal/biz"
+
 	"infini.sh/framework/core/api"
 	"infini.sh/framework/core/util"
 	"os"
@@ -64,7 +65,10 @@ type Response struct {
 	Hit    interface{} `json:"hit,omitempty"`
 	Id     string      `json:"_id,omitempty"`
 	Result string      `json:"result,omitempty"`
-	Found  bool        `json:"found,omitempty"`
+}
+type NotFoundResp struct {
+	Found bool   `json:"found"`
+	Id    string `json:"_id,omitempty"`
 }
 
 func CreateResponse(id string) Response {
@@ -85,9 +89,9 @@ func DeleteResponse(id string) Response {
 		Result: "deleted",
 	}
 }
-func NotFoundResponse(id string) Response {
-	return Response{
-
+func NotFoundResponse(id string) NotFoundResp {
+	return NotFoundResp{
+		Id:    id,
 		Found: false,
 	}
 }

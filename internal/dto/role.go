@@ -17,22 +17,23 @@ type ElasticsearchPermission struct {
 	IndexPrivilege   []string `json:"index_privilege" `
 }
 type CreateUser struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Phone    string `json:"phone"`
-	Roles    []Role `json:"roles"`
+	Username string   `json:"username"`
+	Password string   `json:"password"`
+	Name     string   `json:"name"`
+	Email    string   `json:"email"`
+	Phone    string   `json:"phone"`
+	Roles    []Role   `json:"roles"`
+	Tags     []string `json:"tags"`
 }
 type Role struct {
 	Id   string `json:"id"`
 	Name string `json:"name"`
 }
 type UpdateUser struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
-	Phone string `json:"phone"`
-	//	Roles []Role `json:"roles"`
+	Name  string   `json:"name"`
+	Email string   `json:"email"`
+	Phone string   `json:"phone"`
+	Tags  []string `json:"tags"`
 }
 type UpdateUserRole struct {
 	Roles []Role `json:"roles"`

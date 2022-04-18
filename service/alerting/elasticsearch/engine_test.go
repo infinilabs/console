@@ -25,7 +25,7 @@ func TestEngine( t *testing.T)  {
 			Type: "elasticsearch",
 			Objects: []string{".infini_metrics*"},
 			TimeField: "timestamp",
-			Filter: alerting.Filter{
+			Filter: alerting.FilterQuery{
 				And: []alerting.FilterQuery{
 					{Field: "timestamp", Operator: "gte", Values: []string{"now-15m"}},
 					//{Field: "payload.elasticsearch.cluster_health.status", Operator: "equals", Values: []string{"red"}},
@@ -179,6 +179,39 @@ func TestGeneratePercentilesAggQuery(t *testing.T) {
 	}
 	eng := &Engine{}
 	q, err := eng.GenerateQuery(&rule)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println(util.MustToJSON(q))
+}
+
+func TestConvertFilterQuery(t *testing.T) {
+	fq := alerting.FilterQuery{
+		And: []alerting.FilterQuery{
+			{
+				Field: "metadata.category",
+				Values: []string{"elasticsearch"},
+				Operator: "equals",
+			},
+			{
+				Field: "metadata.name",
+				Values: []string{"index_stats", "node_stats"},
+				Operator: "in",
+			},
+			{
+				Not: []alerting.FilterQuery{
+					{
+						Field: "timestamp",
+						Operator: "gt",
+						Values: []string{"2022-04-16T16:16:39.168605+08:00"},
+					},
+				},
+			},
+		},
+	}
+
+	eng := &Engine{}
+	q, err := eng.ConvertFilterQueryToDsl(&fq)
 	if err != nil {
 		t.Fatal(err)
 	}

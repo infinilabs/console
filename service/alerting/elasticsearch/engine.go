@@ -27,7 +27,12 @@ import (
 type Engine struct {
 
 }
-
+//GenerateQuery generate a final elasticsearch query dsl object
+//when RawFilter of rule is not empty, priority use it, otherwise to covert from Filter of rule (todo)
+//auto generate time filter query and then attach to final query
+//auto generate elasticsearch aggregations by metrics of rule
+//group of metric item converted to terms aggregation and TimeField of rule converted to date_histogram aggregation
+//convert statistic of metric item to elasticsearch aggregation
 func (engine *Engine) GenerateQuery(rule *alerting.Rule) (interface{}, error) {
 	filter, err := engine.GenerateRawFilter(rule)
 	if err != nil {
@@ -89,6 +94,7 @@ func (engine *Engine) GenerateQuery(rule *alerting.Rule) (interface{}, error) {
 		"aggs": rootAggs,
 	}, nil
 }
+//generateAgg convert statistic of metric item to elasticsearch aggregation
 func (engine *Engine) generateAgg(metricItem *alerting.MetricItem) interface{}{
 	var (
 		aggType = "value_count"
@@ -121,10 +127,117 @@ func (engine *Engine) generateAgg(metricItem *alerting.MetricItem) interface{}{
 	}
 }
 
+func (engine *Engine) ConvertFilterQueryToDsl(fq *alerting.FilterQuery) (map[string]interface{}, error){
+	if !fq.IsComplex(){
+		q := map[string]interface{}{}
+		if len(fq.Values) == 0 {
+			return nil, fmt.Errorf("values should not be empty")
+		}
+		//equals/gte/gt/lt/lte/in/match/regexp/wildcard/range/prefix/suffix/contain/
+		switch fq.Operator {
+		case "equals":
+			q["term"] = util.MapStr{
+				fq.Field: util.MapStr{
+					"value": fq.Values[0],
+				},
+			}
+		case "in":
+			q["terms"] = util.MapStr{
+				fq.Field: fq.Values,
+			}
+		case "match":
+			q[fq.Operator] = util.MapStr{
+				fq.Field: fq.Values[0],
+			}
+		case "gte", "gt", "lt", "lte":
+			q["range"] = util.MapStr{
+				fq.Field: util.MapStr{
+					fq.Operator: fq.Values[0],
+				},
+			}
+		case "range":
+			if len(fq.Values) != 2 {
+				return nil, fmt.Errorf("values length of range query must be 2, but got %d", len(fq.Values))
+			}
+			q["range"] = util.MapStr{
+				fq.Field: util.MapStr{
+					"gte": fq.Values[0],
+					"lte": fq.Values[1],
+				},
+			}
+		case "prefix":
+			q["prefix"] = util.MapStr{
+				fq.Field: fq.Values[0],
+			}
+		case "regexp", "wildcard":
+			q[fq.Operator] = util.MapStr{
+				fq.Field: util.MapStr{
+					"value": fq.Values[0],
+				},
+			}
+		default:
+			return nil, fmt.Errorf("unsupport query operator %s", fq.Operator)
+		}
+		return q, nil
+	}
+	if fq.Or != nil && fq.And != nil {
+		return nil, fmt.Errorf("filter format error: or, and bool operation in same level")
+	}
+	if fq.Or != nil && fq.Not != nil {
+		return nil, fmt.Errorf("filter format error: or, not bool operation in same level")
+	}
+	if fq.And != nil && fq.Not != nil {
+		return nil, fmt.Errorf("filter format error: and, not bool operation in same level")
+	}
+	var (
+		boolOperator  string
+		filterQueries []alerting.FilterQuery
+	)
+
+	if len(fq.Not) >0 {
+		boolOperator = "must_not"
+		filterQueries = fq.Not
+
+	}else if len(fq.Or) > 0 {
+		boolOperator = "should"
+		filterQueries = fq.Or
+	}else {
+		boolOperator = "must"
+		filterQueries = fq.And
+	}
+	var subQueries []interface{}
+	for _, subQ := range filterQueries {
+		subQuery, err := engine.ConvertFilterQueryToDsl(&subQ)
+		if err != nil {
+			return nil, err
+		}
+		subQueries = append(subQueries, subQuery)
+	}
+	boolQuery := util.MapStr{
+		boolOperator: subQueries,
+	}
+	if boolOperator == "should" {
+		boolQuery["minimum_should_match"] = 1
+	}
+	resultQuery := map[string]interface{}{
+		"bool": boolQuery,
+	}
+
+	return resultQuery, nil
+}
+
 func (engine *Engine) GenerateRawFilter(rule *alerting.Rule) (map[string]interface{}, error) {
 	query := map[string]interface{}{}
+	var err error
 	if rule.Resource.RawFilter != nil {
 		query = rule.Resource.RawFilter
+	}else{
+		if !rule.Resource.Filter.IsEmpty(){
+			query, err = engine.ConvertFilterQueryToDsl(&rule.Resource.Filter)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 	intervalDuration, err := time.ParseDuration(rule.Metrics.PeriodInterval)
 	if err != nil {
@@ -208,6 +321,9 @@ func (engine *Engine) ExecuteQuery(rule *alerting.Rule)([]alerting.MetricData, e
 	collectMetricData(searchResult["aggregations"], "", &metricData)
 	return metricData, nil
 }
+//CheckCondition check whether rule conditions triggered or not
+//if triggered returns an array of ConditionResult
+//sort conditions by severity desc  before check , and then if condition is true, then continue check another group
 func (engine *Engine) CheckCondition(rule *alerting.Rule)([]alerting.ConditionResult, error){
 	metricData, err := engine.ExecuteQuery(rule)
 	if err != nil {
@@ -325,7 +441,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		return err
 	}
 	lastAlertItem := alerting.Alert{}
-	err = getLastAlert(rule.ID, rule.Resource.ID, &lastAlertItem)
+	err = getLastAlert(rule.ID, &lastAlertItem)
 	if err != nil {
 		return err
 	}
@@ -349,11 +465,11 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 	if len(conditionResults) == 0 {
 		if lastAlertItem.State != alerting.AlertStateNormal && lastAlertItem.ID != "" {
 			alertItem = &alerting.Alert{
-					ID: util.GetUUID(),
-					Created: time.Now(),
-					Updated: time.Now(),
+				ID: util.GetUUID(),
+				Created: time.Now(),
+				Updated: time.Now(),
 				RuleID: rule.ID,
-				ClusterID: rule.Resource.ID,
+				ResourceID: rule.Resource.ID,
 				Expression: rule.Metrics.Expression,
 				Objects: rule.Resource.Objects,
 				Severity: "info",
@@ -363,6 +479,9 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		}
 		return nil
 	}else{
+		if lastAlertItem.State == "" || lastAlertItem.State == alerting.AlertStateNormal {
+			rule.LastTermStartTime = time.Now()
+		}
 		log.Debugf("check condition result of rule %s is %v", conditionResults, rule.ID )
 		var (
 			severity = conditionResults[0].ConditionItem.Severity
@@ -379,7 +498,8 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 				Created: time.Now(),
 				Updated: time.Now(),
 			RuleID: rule.ID,
-			ClusterID: rule.Resource.ID,
+			ResourceID: rule.Resource.ID,
+			ResourceName: rule.Resource.Name,
 			Expression: rule.Metrics.Expression,
 			Objects: rule.Resource.Objects,
 			Severity: severity,
@@ -394,20 +514,36 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			alertItem.Error = err.Error()
 			return err
 		}
+		period := time.Now().Sub(rule.LastNotificationTime)
+		//log.Error(lastAlertItem.ID, period, periodDuration)
 
-		if time.Now().Sub(lastAlertItem.Created) > periodDuration {
+		if lastAlertItem.ID == "" || period > periodDuration {
 			actionResults := performChannels(rule.Channels.Normal, conditionResults)
 			alertItem.ActionExecutionResults = actionResults
-
+			//todo init last notification time when create task (by last alert item is notified)
+			rule.LastNotificationTime = time.Now()
+			alertItem.IsNotified = true
 		}
-		if rule.Channels.EscalationEnabled && lastAlertItem.State != alerting.AlertStateNormal {
-			periodDuration, err = time.ParseDuration(rule.Channels.EscalationThrottlePeriod)
+		isAck, err :=  hasAcknowledgedRule(rule.ID, rule.LastTermStartTime)
+		if err != nil {
+			alertItem.Error = err.Error()
+			return err
+		}
+		if rule.Channels.EscalationEnabled && lastAlertItem.ID !="" && !isAck {
+			throttlePeriod, err := time.ParseDuration(rule.Channels.EscalationThrottlePeriod)
 			if err != nil {
 				return err
 			}
-			if time.Now().Sub(lastAlertItem.Created) > periodDuration {
-				actionResults := performChannels(rule.Channels.Escalation, conditionResults)
-				alertItem.ActionExecutionResults = actionResults
+			//todo init last term start time when create task (by last alert item of state normal)
+			if time.Now().Sub(rule.LastTermStartTime) > throttlePeriod {
+				if time.Now().Sub(rule.LastEscalationTime) > periodDuration {
+					actionResults := performChannels(rule.Channels.Escalation, conditionResults)
+					alertItem.ActionExecutionResults = append(alertItem.ActionExecutionResults, actionResults...)
+					//todo init last escalation time when create task (by last alert item is escalated)
+					rule.LastEscalationTime = time.Now()
+					alertItem.IsEscalated = true
+				}
+
 			}
 		}
 	}
@@ -555,8 +691,7 @@ func collectMetricData(agg interface{}, groupValues string, metricData *[]alerti
 	}
 }
 
-func getLastAlert(ruleID, clusterID string, alertItem *alerting.Alert) error {
-	esClient := elastic.GetClient(clusterID)
+func getLastAlert(ruleID string, alertItem *alerting.Alert) error {
 	queryDsl := util.MapStr{
 		"size": 1,
 		"sort": []util.MapStr{
@@ -574,13 +709,60 @@ func getLastAlert(ruleID, clusterID string, alertItem *alerting.Alert) error {
 			},
 		},
 	}
-	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetWildcardIndexName(alertItem), util.MustToJSONBytes(queryDsl) )
+	q := orm.Query{
+		RawQuery: util.MustToJSONBytes(queryDsl),
+	}
+	err, searchResult := orm.Search(alertItem, &q )
 	if err != nil {
 		return err
 	}
-	if len(searchRes.Hits.Hits) == 0 {
+	if len(searchResult.Result) == 0 {
 		return nil
 	}
-	alertBytes := util.MustToJSONBytes(searchRes.Hits.Hits[0].Source)
+	alertBytes := util.MustToJSONBytes(searchResult.Result[0])
 	return util.FromJSONBytes(alertBytes, alertItem)
+}
+
+func hasAcknowledgedRule(ruleID string, startTime time.Time) (bool, error){
+	queryDsl := util.MapStr{
+		"size": 1,
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must":[]util.MapStr{
+					{
+						"term": util.MapStr{
+							"rule_id": util.MapStr{
+								"value": ruleID,
+							},
+						},
+					},
+					{
+						"term": util.MapStr{
+							"state": alerting.AlertStateAcknowledge,
+						},
+					},
+					{
+						"range": util.MapStr{
+							"created": util.MapStr{
+								"gte": startTime,
+							},
+						},
+					},
+				},
+
+			},
+		},
+	}
+	q := orm.Query{
+		WildcardIndex: true,
+		RawQuery: util.MustToJSONBytes(queryDsl),
+	}
+	err, searchResult := orm.Search(alerting.Alert{}, &q )
+	if err != nil {
+		return false, err
+	}
+	if len(searchResult.Result) == 0 {
+		return false, nil
+	}
+	return true, nil
 }

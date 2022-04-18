@@ -238,6 +238,110 @@ func (alertAPI *AlertAPI) searchRule(w http.ResponseWriter, req *http.Request, p
 	w.Write(searchResult.Raw)
 }
 
+func (alertAPI *AlertAPI) getRuleAlertNumbers(ruleIDs []string) ( map[string]interface{},error) {
+	esClient := elastic.GetClient(alertAPI.Config.Elasticsearch)
+	queryDsl := util.MapStr{
+		"size": 0,
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": []util.MapStr{
+					{
+						"terms": util.MapStr{
+							"rule_id": ruleIDs,
+						},
+					},
+					{
+						"terms": util.MapStr{
+							"state": []string{alerting.AlertStateError, alerting.AlertStateActive},
+						},
+					},
+				},
+			},
+		},
+		"aggs": util.MapStr{
+			"terms_rule_id": util.MapStr{
+				"terms": util.MapStr{
+					"field": "rule_id",
+				},
+			},
+		},
+	}
+
+	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetWildcardIndexName(alerting.Alert{}), util.MustToJSONBytes(queryDsl) )
+	if err != nil {
+		return nil, err
+	}
+
+	ruleAlertNumbers := map[string]interface{}{}
+	if termRules, ok := searchRes.Aggregations["terms_rule_id"]; ok {
+		for _, bk := range termRules.Buckets {
+			key := bk["key"].(string)
+			ruleAlertNumbers[key] = bk["doc_count"]
+		}
+	}
+	return ruleAlertNumbers, nil
+}
+
+func (alertAPI *AlertAPI) fetchAlertInfos(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	var ruleIDs = []string{}
+	alertAPI.DecodeJSON(req, &ruleIDs)
+
+	if len(ruleIDs) == 0 {
+		alertAPI.WriteJSON(w, util.MapStr{}, http.StatusOK)
+		return
+	}
+	esClient := elastic.GetClient(alertAPI.Config.Elasticsearch)
+	queryDsl := util.MapStr{
+		"_source": []string{"state", "rule_id"},
+		"sort": []util.MapStr{
+			{
+				"created": util.MapStr{
+					"order": "desc",
+				},
+			},
+		},
+		"collapse": util.MapStr{
+			"field": "rule_id",
+		},
+		"query": util.MapStr{
+			"terms": util.MapStr{
+				"rule_id": ruleIDs,
+			},
+		},
+	}
+
+	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetWildcardIndexName(alerting.Alert{}), util.MustToJSONBytes(queryDsl) )
+	if err != nil {
+		alertAPI.WriteJSON(w, util.MapStr{
+			"error": err.Error(),
+		}, http.StatusInternalServerError)
+		return
+	}
+	if len(searchRes.Hits.Hits) == 0 {
+		alertAPI.WriteJSON(w, util.MapStr{}, http.StatusOK)
+		return
+	}
+	aletNumbers, err  := alertAPI.getRuleAlertNumbers(ruleIDs)
+	if err != nil {
+		alertAPI.WriteJSON(w, util.MapStr{
+			"error": err.Error(),
+		}, http.StatusInternalServerError)
+		return
+	}
+
+	latestAlertInfos := map[string]util.MapStr{}
+	for _, hit := range searchRes.Hits.Hits {
+		if ruleID, ok := hit.Source["rule_id"].(string); ok {
+			latestAlertInfos[ruleID] = util.MapStr{
+				"status": hit.Source["state"],
+				"alert_count": aletNumbers[ruleID],
+			}
+		}
+
+	}
+	alertAPI.WriteJSON(w, latestAlertInfos, http.StatusOK)
+}
+
 func checkResourceExists(rule *alerting.Rule) (bool, error) {
 	if rule.Resource.ID == "" {
 		return false, fmt.Errorf("resource id can not be empty")
@@ -249,6 +353,9 @@ func checkResourceExists(rule *alerting.Rule) (bool, error) {
 		ok, err := orm.Get(&obj)
 		if err != nil {
 			return false, err
+		}
+		if rule.Resource.Name == "" {
+			rule.Resource.Name = obj.Name
 		}
 		return ok && obj.Name != "", nil
 	default:

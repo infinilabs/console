@@ -312,6 +312,9 @@ func (engine *Engine) ExecuteQuery(rule *alerting.Rule)([]alerting.MetricData, e
 	if err != nil {
 		return nil, err
 	}
+	if searchRes.StatusCode != 200 {
+		return nil, fmt.Errorf("search error: %s", string(searchRes.RawResult.Body))
+	}
 	searchResult := map[string]interface{}{}
 	err = util.FromJSONBytes(searchRes.RawResult.Body, &searchResult)
 	if err != nil {
@@ -435,18 +438,26 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule)([]alerting.ConditionRe
 	return conditionResults, nil
 }
 func (engine *Engine) Do(rule *alerting.Rule) error {
-	log.Tracef("start check condition of rule %s", rule.ID)
-	conditionResults, err := engine.CheckCondition(rule)
-	if err != nil {
-		return err
-	}
-	lastAlertItem := alerting.Alert{}
-	err = getLastAlert(rule.ID, &lastAlertItem)
-	if err != nil {
-		return err
-	}
-	var alertItem *alerting.Alert
+
+	var (
+		alertItem *alerting.Alert
+		err error
+	)
 	defer func() {
+		if err != nil && alertItem == nil {
+			alertItem = &alerting.Alert{
+				ID: util.GetUUID(),
+				Created: time.Now(),
+				Updated: time.Now(),
+				RuleID: rule.ID,
+				ResourceID: rule.Resource.ID,
+				ResourceName: rule.Resource.Name,
+				Expression: rule.Metrics.Expression,
+				Objects: rule.Resource.Objects,
+				State: alerting.AlertStateError,
+				Error: err.Error(),
+			}
+		}
 		if alertItem != nil {
 			for _, actionResult := range alertItem.ActionExecutionResults {
 				if actionResult.Error != "" {
@@ -462,6 +473,16 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			}
 		}
 	}()
+	log.Tracef("start check condition of rule %s", rule.ID)
+	conditionResults, err := engine.CheckCondition(rule)
+	if err != nil {
+		return err
+	}
+	lastAlertItem := alerting.Alert{}
+	err = getLastAlert(rule.ID, &lastAlertItem)
+	if err != nil {
+		return err
+	}
 	if len(conditionResults) == 0 {
 		if lastAlertItem.State != alerting.AlertStateNormal && lastAlertItem.ID != "" {
 			alertItem = &alerting.Alert{

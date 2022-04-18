@@ -4,7 +4,6 @@ import (
 	log "github.com/cihub/seelog"
 	"infini.sh/console/internal/biz"
 	"infini.sh/console/internal/dto"
-
 	httprouter "infini.sh/framework/core/api/router"
 	"net/http"
 )
@@ -12,12 +11,6 @@ import (
 func (h Rbac) CreateRole(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	roleType := ps.MustGetParameter("type")
 	var err error
-	err = validateRoleType(roleType)
-	if err != nil {
-		_ = log.Error(err.Error())
-		h.Error(w, err)
-		return
-	}
 
 	var req dto.CreateRole
 	err = h.DecodeJSON(r, &req)
@@ -28,13 +21,20 @@ func (h Rbac) CreateRole(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	req.RoleType = roleType
 
 	var id string
-	id, err = biz.CreateRole(req)
+	localUser, err := biz.FromUserContext(r.Context())
+	if err != nil {
+		log.Error(err.Error())
+		h.Error(w, err)
+		return
+	}
+	id, err = biz.CreateRole(localUser, req)
 	if err != nil {
 		_ = log.Error(err.Error())
 		h.Error(w, err)
 		return
 	}
-	_ = h.WriteJSON(w, CreateResponse(id), http.StatusOK)
+
+	_ = h.WriteOKJSON(w, CreateResponse(id))
 	return
 
 }
@@ -54,7 +54,7 @@ func (h Rbac) SearchRole(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		return
 	}
 
-	h.WriteJSON(w, Response{Hit: res.Result, Total: res.Total}, http.StatusOK)
+	h.WriteOKJSON(w, Response{Hit: res.Result, Total: res.Total})
 	return
 
 }
@@ -68,38 +68,52 @@ func (h Rbac) GetRole(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 		h.Error(w, err)
 		return
 	}
-	h.WriteJSON(w, Response{Hit: role}, http.StatusOK)
+	h.WriteOKJSON(w, Response{Hit: role})
 	return
 }
 
 func (h Rbac) DeleteRole(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	id := ps.MustGetParameter("id")
-	err := biz.DeleteRole(id)
+
+	localUser, err := biz.FromUserContext(r.Context())
+	if err != nil {
+		log.Error(err.Error())
+		h.Error(w, err)
+		return
+	}
+	err = biz.DeleteRole(localUser, id)
 
 	if err != nil {
 		_ = log.Error(err.Error())
 		h.Error(w, err)
 		return
 	}
-	_ = h.WriteJSON(w, DeleteResponse(id), http.StatusOK)
+	_ = h.WriteOKJSON(w, DeleteResponse(id))
 	return
 }
 
 func (h Rbac) UpdateRole(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	id := ps.MustGetParameter("id")
+
 	var req dto.UpdateRole
 	err := h.DecodeJSON(r, &req)
 	if err != nil {
 		h.Error(w, err)
 		return
 	}
-	err = biz.UpdateRole(id, req)
+	localUser, err := biz.FromUserContext(r.Context())
+	if err != nil {
+		log.Error(err.Error())
+		h.Error(w, err)
+		return
+	}
+	err = biz.UpdateRole(localUser, id, req)
 
 	if err != nil {
 		_ = log.Error(err.Error())
 		h.Error(w, err)
 		return
 	}
-	_ = h.WriteJSON(w, UpdateResponse(id), http.StatusOK)
+	_ = h.WriteOKJSON(w, UpdateResponse(id))
 	return
 }

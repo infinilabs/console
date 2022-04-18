@@ -33,7 +33,7 @@ func (h Rbac) CreateUser(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		h.Error(w, err)
 		return
 	}
-	_ = h.WriteJSON(w, CreateResponse(id), http.StatusOK)
+	_ = h.WriteOKJSON(w, CreateResponse(id))
 	return
 
 }
@@ -51,7 +51,7 @@ func (h Rbac) GetUser(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 		h.Error(w, err)
 		return
 	}
-	h.WriteJSON(w, Response{Hit: user}, http.StatusOK)
+	h.WriteOKJSON(w, Response{Hit: user})
 	return
 }
 
@@ -71,7 +71,7 @@ func (h Rbac) UpdateUser(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		h.Error(w, err)
 		return
 	}
-	_ = h.WriteJSON(w, UpdateResponse(id), http.StatusOK)
+	_ = h.WriteOKJSON(w, UpdateResponse(id))
 	return
 }
 
@@ -91,7 +91,7 @@ func (h Rbac) UpdateUserRole(w http.ResponseWriter, r *http.Request, ps httprout
 		h.Error(w, err)
 		return
 	}
-	_ = h.WriteJSON(w, UpdateResponse(id), http.StatusOK)
+	_ = h.WriteOKJSON(w, UpdateResponse(id))
 	return
 }
 
@@ -107,7 +107,7 @@ func (h Rbac) DeleteUser(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		h.Error(w, err)
 		return
 	}
-	_ = h.WriteJSON(w, DeleteResponse(id), http.StatusOK)
+	_ = h.WriteOKJSON(w, DeleteResponse(id))
 	return
 }
 
@@ -125,7 +125,7 @@ func (h Rbac) SearchUser(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		return
 	}
 
-	h.WriteJSON(w, Response{Hit: res.Result, Total: res.Total}, http.StatusOK)
+	h.WriteOKJSON(w, Response{Hit: res.Result, Total: res.Total})
 	return
 
 }

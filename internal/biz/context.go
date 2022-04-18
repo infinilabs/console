@@ -21,9 +21,3 @@ func FromUserContext(ctx context.Context) (*User, error) {
 	}
 	return reqUser.User, nil
 }
-func NewPermissionContext(ctx context.Context) {
-
-}
-func FromPermissionContext(ctx context.Context) {
-
-}

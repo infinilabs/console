@@ -3,6 +3,7 @@ package rbac
 import (
 	"encoding/json"
 	"infini.sh/console/internal/biz"
+	m "infini.sh/console/internal/middleware"
 
 	"infini.sh/framework/core/api"
 	"infini.sh/framework/core/util"
@@ -18,10 +19,10 @@ func registerRouter() {
 	r := Rbac{}
 	api.HandleAPIMethod(api.GET, "/permission/:type", r.ListPermission)
 	api.HandleAPIMethod(api.POST, "/role/:type", r.CreateRole)
-	api.HandleAPIMethod(api.GET, "/role/:id", r.GetRole)
+	api.HandleAPIMethod(api.GET, "/role/:id", m.LoginRequired(r.GetRole))
 	api.HandleAPIMethod(api.DELETE, "/role/:id", r.DeleteRole)
 	api.HandleAPIMethod(api.PUT, "/role/:id", r.UpdateRole)
-	api.HandleAPIMethod(api.GET, "/role/_search", r.SearchRole)
+	api.HandleAPIMethod(api.GET, "/role/_search", m.LoginRequired(m.PermissionRequired(r.SearchRole, "search.role")))
 
 	api.HandleAPIMethod(api.POST, "/user", r.CreateUser)
 	api.HandleAPIMethod(api.GET, "/user/:id", r.GetUser)

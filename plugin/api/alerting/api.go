@@ -31,5 +31,6 @@ func (alert *AlertAPI) Init() {
 
 	//just for test
 	//api.HandleAPIMethod(api.GET, "/alerting/rule/test", alert.testRule)
+
 }
 

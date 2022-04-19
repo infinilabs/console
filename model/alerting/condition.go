@@ -19,6 +19,10 @@ type ConditionItem struct {
 }
 
 type ConditionResult struct {
+	ResultItems []ConditionResultItem `json:"result_items"`
+	QueryResult *QueryResult `json:"query_result"`
+}
+type ConditionResultItem struct {
 	GroupValues []string `json:"group_values"`
 	ConditionItem *ConditionItem `json:"condition_item"`
 }

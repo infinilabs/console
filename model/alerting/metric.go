@@ -48,6 +48,12 @@ type MetricItem struct {
 	Group []string `json:"group"` //bucket group
 }
 
+type QueryResult struct {
+	Query string `json:"query"`
+	Raw string `json:"raw"`
+	MetricData []MetricData `json:"metric_data"`
+}
+
 type MetricData struct {
 	GroupValues []string `json:"group_values"`
 	Data map[string][]TimeMetricData `json:"data"`

@@ -109,10 +109,10 @@ func (alertAPI *AlertAPI) getRule(w http.ResponseWriter, req *http.Request, ps h
 
 func (alertAPI *AlertAPI) updateRule(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	id := ps.MustGetParameter("rule_id")
-	obj := alerting.Rule{}
+	obj := &alerting.Rule{}
 
 	obj.ID = id
-	exists, err := orm.Get(&obj)
+	exists, err := orm.Get(obj)
 	if !exists || err != nil {
 		alertAPI.WriteJSON(w, util.MapStr{
 			"_id":    id,
@@ -123,8 +123,8 @@ func (alertAPI *AlertAPI) updateRule(w http.ResponseWriter, req *http.Request, p
 
 	id = obj.ID
 	create := obj.Created
-	obj = alerting.Rule{}
-	err = alertAPI.DecodeJSON(req, &obj)
+	obj = &alerting.Rule{}
+	err = alertAPI.DecodeJSON(req, obj)
 	if err != nil {
 		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -135,7 +135,13 @@ func (alertAPI *AlertAPI) updateRule(w http.ResponseWriter, req *http.Request, p
 	obj.ID = id
 	obj.Created = create
 	obj.Updated = time.Now()
-	err = orm.Update(&obj)
+	err = obj.Metrics.RefreshExpression()
+	if err != nil {
+		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
+	err = orm.Update(obj)
 	if err != nil {
 		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -143,6 +149,13 @@ func (alertAPI *AlertAPI) updateRule(w http.ResponseWriter, req *http.Request, p
 	}
 
 	if obj.Enabled {
+		exists, err = checkResourceExists(obj)
+		if err != nil || !exists {
+			alertAPI.WriteJSON(w, util.MapStr{
+				"error": err.Error(),
+			}, http.StatusInternalServerError)
+			return
+		}
 		//update task
 		task.StopTask(id)
 		eng := alerting2.GetEngine(obj.Resource.Type)
@@ -150,7 +163,7 @@ func (alertAPI *AlertAPI) updateRule(w http.ResponseWriter, req *http.Request, p
 			ID:          obj.ID,
 			Interval:    obj.Schedule.Interval,
 			Description: obj.Metrics.Expression,
-			Task:        eng.GenerateTask(&obj),
+			Task:        eng.GenerateTask(obj),
 		}
 		task.RegisterScheduleTask(ruleTask)
 		task.StartTask(ruleTask.ID)

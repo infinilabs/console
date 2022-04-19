@@ -8,6 +8,7 @@ import (
 	"infini.sh/console/model/alerting"
 	"infini.sh/console/model/gateway"
 	_ "infini.sh/console/plugin"
+	alerting2 "infini.sh/console/service/alerting"
 	"infini.sh/framework"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/env"
@@ -27,6 +28,7 @@ import (
 	_ "infini.sh/framework/plugins"
 	api2 "infini.sh/gateway/api"
 	_ "infini.sh/gateway/proxy"
+	log "src/github.com/cihub/seelog"
 )
 
 var appConfig *config.AppConfig
@@ -130,7 +132,12 @@ func main() {
 
 		api.RegisterSchema()
 
-
+		go func() {
+			err := alerting2.InitTasks()
+			if err != nil {
+				log.Errorf("init alerting task error: %v", err)
+			}
+		}()
 	}, nil) {
 		app.Run()
 	}

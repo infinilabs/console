@@ -26,11 +26,12 @@ type Alert struct {
 	Error string `json:"error,omitempty"`
 	IsNotified bool `json:"is_notified" elastic_mapping:"is_notified: { type: boolean }"` //标识本次检测是否发送了告警通知
 	IsEscalated bool `json:"is_escalated" elastic_mapping:"is_escalated: { type: boolean }"` //标识本次检测是否发送了升级告警通知
+	Conditions Condition `json:"condition"`
+	ConditionResult *ConditionResult `json:"condition_result,omitempty" elastic_mapping:"condition_result: { type: object,enabled:false }"`
 	SearchText string `json:"-" elastic_mapping:"search_text:{type:text,index_prefixes:{},index_phrases:true, analyzer:suggest_text_search }"`
 }
 
 type ActionExecutionResult struct {
-	//ActionId          string `json:"action_id"`
 	LastExecutionTime int    `json:"last_execution_time"`
 	Error             string `json:"error"`
 	Result            string `json:"result"`

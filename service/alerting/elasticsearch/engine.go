@@ -18,6 +18,8 @@ import (
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"io"
+	"math"
+	"runtime/debug"
 	"sort"
 	"strconv"
 	"strings"
@@ -44,7 +46,10 @@ func (engine *Engine) GenerateQuery(rule *alerting.Rule) (interface{}, error) {
 	}
 	basicAggs := util.MapStr{}
 	for _, metricItem  := range rule.Metrics.Items {
-		basicAggs[metricItem.Name] = engine.generateAgg(&metricItem)
+		metricAggs := engine.generateAgg(&metricItem)
+		if err = util.MergeFields(basicAggs, metricAggs, true); err != nil {
+			return nil, err
+		}
 	}
 	timeAggs := util.MapStr{
 		"date_histogram": util.MapStr{
@@ -95,7 +100,7 @@ func (engine *Engine) GenerateQuery(rule *alerting.Rule) (interface{}, error) {
 	}, nil
 }
 //generateAgg convert statistic of metric item to elasticsearch aggregation
-func (engine *Engine) generateAgg(metricItem *alerting.MetricItem) interface{}{
+func (engine *Engine) generateAgg(metricItem *alerting.MetricItem) map[string]interface{}{
 	var (
 		aggType = "value_count"
 		field = metricItem.Field
@@ -104,11 +109,15 @@ func (engine *Engine) generateAgg(metricItem *alerting.MetricItem) interface{}{
 		field = "_id"
 	}
 	var percent = 0.0
+	var isPipeline = false
 	switch metricItem.Statistic {
 	case "max", "min", "sum", "avg":
 		aggType = metricItem.Statistic
 	case "count", "value_count":
 		aggType = "value_count"
+	case "rate":
+		aggType = "max"
+		isPipeline = true
 	case "medium":
 		aggType = "median_absolute_deviation"
 	case "p99", "p95","p90","p80","p50":
@@ -122,9 +131,22 @@ func (engine *Engine) generateAgg(metricItem *alerting.MetricItem) interface{}{
 	if aggType == "percentiles" {
 		aggValue["percents"] = []interface{}{percent}
 	}
-	return util.MapStr{
-		aggType: aggValue,
+	aggs := util.MapStr{
+		metricItem.Name: util.MapStr{
+			aggType: aggValue,
+		},
 	}
+	if !isPipeline{
+		return aggs
+	}
+	pipelineAggID := util.GetUUID()
+	aggs[pipelineAggID] = aggs[metricItem.Name]
+	aggs[metricItem.Name] = util.MapStr{
+		"derivative": util.MapStr{
+			"buckets_path": pipelineAggID,
+		},
+	}
+	return aggs
 }
 
 func (engine *Engine) ConvertFilterQueryToDsl(fq *alerting.FilterQuery) (map[string]interface{}, error){
@@ -285,8 +307,10 @@ func (engine *Engine) GenerateRawFilter(rule *alerting.Rule) (map[string]interfa
 		must := []interface{}{
 			timeQuery,
 		}
-		if _, ok := query["match_all"]; !ok {
-			must = append(must, query)
+		if len(query) > 0 {
+			if _, ok = query["match_all"]; !ok {
+				must = append(must, query)
+			}
 		}
 		query = util.MapStr{
 			"bool":  util.MapStr{
@@ -297,8 +321,9 @@ func (engine *Engine) GenerateRawFilter(rule *alerting.Rule) (map[string]interfa
 	return query, nil
 }
 
-func (engine *Engine) ExecuteQuery(rule *alerting.Rule)([]alerting.MetricData, error){
+func (engine *Engine) ExecuteQuery(rule *alerting.Rule)(*alerting.QueryResult, error){
 	esClient := elastic.GetClient(rule.Resource.ID)
+	queryResult := &alerting.QueryResult{}
 	indexName := strings.Join(rule.Resource.Objects, ",")
 	queryDsl, err := engine.GenerateQuery(rule)
 	if err != nil {
@@ -308,6 +333,7 @@ func (engine *Engine) ExecuteQuery(rule *alerting.Rule)([]alerting.MetricData, e
 	if err != nil {
 		return nil, err
 	}
+	queryResult.Query = string(queryDslBytes)
 	searchRes, err := esClient.SearchWithRawQueryDSL(indexName, queryDslBytes)
 	if err != nil {
 		return nil, err
@@ -315,6 +341,7 @@ func (engine *Engine) ExecuteQuery(rule *alerting.Rule)([]alerting.MetricData, e
 	if searchRes.StatusCode != 200 {
 		return nil, fmt.Errorf("search error: %s", string(searchRes.RawResult.Body))
 	}
+	queryResult.Raw = string(searchRes.RawResult.Body)
 	searchResult := map[string]interface{}{}
 	err = util.FromJSONBytes(searchRes.RawResult.Body, &searchResult)
 	if err != nil {
@@ -322,18 +349,24 @@ func (engine *Engine) ExecuteQuery(rule *alerting.Rule)([]alerting.MetricData, e
 	}
 	metricData := []alerting.MetricData{}
 	collectMetricData(searchResult["aggregations"], "", &metricData)
-	return metricData, nil
+	queryResult.MetricData = metricData
+	return queryResult, nil
 }
 //CheckCondition check whether rule conditions triggered or not
 //if triggered returns an array of ConditionResult
 //sort conditions by severity desc  before check , and then if condition is true, then continue check another group
-func (engine *Engine) CheckCondition(rule *alerting.Rule)([]alerting.ConditionResult, error){
-	metricData, err := engine.ExecuteQuery(rule)
-	if err != nil {
-		return nil, err
+func (engine *Engine) CheckCondition(rule *alerting.Rule)(*alerting.ConditionResult, error){
+	queryResult, err := engine.ExecuteQuery(rule)
+	conditionResult := &alerting.ConditionResult{
+		QueryResult: queryResult,
 	}
-	var conditionResults []alerting.ConditionResult
-	for _, md := range metricData {
+	if err != nil {
+		return conditionResult, err
+	}
+
+	var resultItems []alerting.ConditionResultItem
+	var targetMetricData []alerting.MetricData
+	for _, md := range queryResult.MetricData {
 		var targetData alerting.MetricData
 		if len(rule.Metrics.Items) == 1 {
 			targetData = md
@@ -344,7 +377,7 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule)([]alerting.ConditionRe
 			}
 			expression, err := govaluate.NewEvaluableExpression(rule.Metrics.Formula)
 			if err != nil {
-				return nil, err
+				return conditionResult, err
 			}
 			dataLength := 0
 			for _, v := range md.Data {
@@ -357,8 +390,14 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule)([]alerting.ConditionRe
 				}
 				var timestamp interface{}
 				for k, v := range md.Data {
+					if len(k) == 20 {
+						continue
+					}
 					//drop nil value bucket
-					if v[i][1] == nil {
+					if len(v[i]) < 2 {
+						continue DataLoop
+					}
+					if _, ok := v[i][1].(float64); !ok {
 						continue DataLoop
 					}
 					parameters[k] = v[i][1]
@@ -366,11 +405,18 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule)([]alerting.ConditionRe
 				}
 				result, err := expression.Evaluate(parameters)
 				if err != nil {
-					return nil, err
+					return conditionResult, err
 				}
+				if r, ok := result.(float64); ok {
+					if math.IsNaN(r){
+						continue
+					}
+				}
+
 				targetData.Data["result"] = append(targetData.Data["result"], []interface{}{timestamp, result})
 			}
 		}
+		targetMetricData = append(targetMetricData, targetData)
 		sort.Slice(rule.Conditions.Items, func(i, j int) bool {
 			return alerting.SeverityWeights[rule.Conditions.Items[i].Severity] > alerting.SeverityWeights[rule.Conditions.Items[j].Severity]
 		})
@@ -379,7 +425,7 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule)([]alerting.ConditionRe
 			conditionExpression := ""
 			valueLength := len(cond.Values)
 			if valueLength == 0 {
-				return nil, fmt.Errorf("condition values: %v should not be empty", cond.Values)
+				return conditionResult, fmt.Errorf("condition values: %v should not be empty", cond.Values)
 			}
 			switch cond.Operator {
 			case "equals":
@@ -394,15 +440,15 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule)([]alerting.ConditionRe
 				conditionExpression = fmt.Sprintf("result < %v", cond.Values[0])
 			case "range":
 				if valueLength != 2 {
-					return nil, fmt.Errorf("length of %s condition values should be 2", cond.Operator)
+					return conditionResult, fmt.Errorf("length of %s condition values should be 2", cond.Operator)
 				}
 				conditionExpression = fmt.Sprintf("result >= %v && result <= %v", cond.Values[0], cond.Values[1])
 			default:
-				return nil, fmt.Errorf("unsupport condition operator: %s", cond.Operator)
+				return conditionResult, fmt.Errorf("unsupport condition operator: %s", cond.Operator)
 			}
 			expression, err := govaluate.NewEvaluableExpression(conditionExpression)
 			if err != nil {
-				return nil, err
+				return conditionResult, err
 			}
 			dataLength := 0
 			dataKey := ""
@@ -412,20 +458,20 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule)([]alerting.ConditionRe
 			}
 			triggerCount := 0
 			for i := 0; i < dataLength; i++ {
-				conditionResult, err := expression.Evaluate(map[string]interface{}{
+				evaluateResult, err := expression.Evaluate(map[string]interface{}{
 					"result": targetData.Data[dataKey][i][1],
 				})
 				if err != nil {
 					return nil, err
 				}
-				if conditionResult == true {
+				if evaluateResult == true {
 					triggerCount += 1
 				}else {
 					triggerCount = 0
 				}
 				if triggerCount >= cond.MinimumPeriodMatch {
 					log.Debugf("triggered condition  %v, groups: %v\n", cond, targetData.GroupValues)
-					conditionResults = append(conditionResults, alerting.ConditionResult{
+					resultItems = append(resultItems, alerting.ConditionResultItem{
 						GroupValues: targetData.GroupValues,
 						ConditionItem: &cond,
 					})
@@ -435,7 +481,9 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule)([]alerting.ConditionRe
 
 		}
 	}
-	return conditionResults, nil
+	conditionResult.QueryResult.MetricData = targetMetricData
+	conditionResult.ResultItems = resultItems
+	return conditionResult, nil
 }
 func (engine *Engine) Do(rule *alerting.Rule) error {
 
@@ -474,7 +522,18 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		}
 	}()
 	log.Tracef("start check condition of rule %s", rule.ID)
-	conditionResults, err := engine.CheckCondition(rule)
+	checkResults, err := engine.CheckCondition(rule)
+	alertItem = &alerting.Alert{
+		ID: util.GetUUID(),
+		Created: time.Now(),
+		Updated: time.Now(),
+		RuleID: rule.ID,
+		ResourceID: rule.Resource.ID,
+		Expression: rule.Metrics.Expression,
+		Objects: rule.Resource.Objects,
+		ConditionResult: checkResults,
+		Conditions: rule.Conditions,
+	}
 	if err != nil {
 		return err
 	}
@@ -483,21 +542,11 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 	if err != nil {
 		return err
 	}
+	conditionResults := checkResults.ResultItems
 	if len(conditionResults) == 0 {
-		if lastAlertItem.State != alerting.AlertStateNormal && lastAlertItem.ID != "" {
-			alertItem = &alerting.Alert{
-				ID: util.GetUUID(),
-				Created: time.Now(),
-				Updated: time.Now(),
-				RuleID: rule.ID,
-				ResourceID: rule.Resource.ID,
-				Expression: rule.Metrics.Expression,
-				Objects: rule.Resource.Objects,
-				Severity: "info",
-				Content: "",
-				State: alerting.AlertStateNormal,
-			}
-		}
+		alertItem.Severity = "info"
+		alertItem.Content = ""
+		alertItem.State =  alerting.AlertStateNormal
 		return nil
 	}else{
 		if lastAlertItem.State == "" || lastAlertItem.State == alerting.AlertStateNormal {
@@ -511,22 +560,12 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		for _, conditionResult := range conditionResults {
 			if alerting.SeverityWeights[severity] < alerting.SeverityWeights[conditionResult.ConditionItem.Severity] {
 				severity = conditionResult.ConditionItem.Severity
+				content = conditionResult.ConditionItem.Message
 			}
-			content += conditionResult.ConditionItem.Message + ";"
 		}
-		alertItem = &alerting.Alert{
-				ID: util.GetUUID(),
-				Created: time.Now(),
-				Updated: time.Now(),
-			RuleID: rule.ID,
-			ResourceID: rule.Resource.ID,
-			ResourceName: rule.Resource.Name,
-			Expression: rule.Metrics.Expression,
-			Objects: rule.Resource.Objects,
-			Severity: severity,
-			Content: content,
-			State: alerting.AlertStateActive,
-		}
+		alertItem.Severity = severity
+		alertItem.Content = content
+		alertItem.State = alerting.AlertStateActive
 	}
 
 	if rule.Channels.AcceptTimeRange.Include(time.Now()) {
@@ -571,7 +610,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 	return nil
 }
 
-func performChannels(channels []alerting.Channel, conditionResults []alerting.ConditionResult) []alerting.ActionExecutionResult {
+func performChannels(channels []alerting.Channel, conditionResults []alerting.ConditionResultItem) []alerting.ActionExecutionResult {
 	var message string
 	for _, conditionResult := range conditionResults {
 		message += fmt.Sprintf("severity: %s\t message:%s\t groups:%v\t timestamp: %v;", conditionResult.ConditionItem.Severity, conditionResult.ConditionItem.Message, conditionResult.GroupValues, time.Now())
@@ -632,6 +671,12 @@ func performChannel(channel *alerting.Channel, ctx []byte) ([]byte, error) {
 }
 func (engine *Engine) GenerateTask(rule *alerting.Rule) func(ctx context.Context) {
 	return func(ctx context.Context) {
+		defer func() {
+			if err := recover(); err != nil {
+				log.Error(err)
+				debug.PrintStack()
+			}
+		}()
 		err := engine.Do(rule)
 		if err != nil {
 			log.Error(err)

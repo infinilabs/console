@@ -126,6 +126,57 @@ func TestGenerateAgg(t *testing.T)  {
 }
 
 func TestGeneratePercentilesAggQuery(t *testing.T) {
+	//rule := alerting.Rule{
+	//	ID: util.GetUUID(),
+	//	Created: time.Now(),
+	//	Updated: time.Now(),
+	//	Enabled: true,
+	//	Resource: alerting.Resource{
+	//		ID: "c8i18llath2blrusdjng",
+	//		Type: "elasticsearch",
+	//		Objects: []string{".infini_metrics*"},
+	//		TimeField: "timestamp",
+	//		RawFilter: map[string]interface{}{
+	//			"match_all": util.MapStr{
+	//
+	//			},
+	//		},
+	//	},
+	//
+	//	Metrics: alerting.Metric{
+	//		PeriodInterval: "1m",
+	//		MaxPeriods:     15,
+	//		Items: []alerting.MetricItem{
+	//			{Name: "a", Field: "payload.elasticsearch.node_stats.os.cpu.percent", Statistic: "p99", Group: []string{"metadata.labels.cluster_id", "metadata.labels.node_id"}},
+	//		},
+	//	},
+	//	Conditions: alerting.Condition{
+	//		Operator: "any",
+	//		Items: []alerting.ConditionItem{
+	//			{MinimumPeriodMatch: 5, Operator: "gte", Values: []string{"90"}, Severity: "error", Message: "cpu使用率大于90%"},
+	//		},
+	//	},
+	//
+	//	Channels: alerting.RuleChannel{
+	//		Normal: []alerting.Channel{
+	//			{Name: "钉钉", Type: alerting.ChannelWebhook, Webhook: &alerting.CustomWebhook{
+	//				HeaderParams: map[string]string{
+	//					"Content-Type": "application/json",
+	//				},
+	//				Body:   `{"msgtype": "text","text": {"content":"告警通知: {{ctx.message}}"}}`,
+	//				Method: http.MethodPost,
+	//				URL:    "https://oapi.dingtalk.com/robot/send?access_token=XXXXXX",
+	//			}},
+	//		},
+	//		ThrottlePeriod: "1h",
+	//		AcceptTimeRange: alerting.TimeRange{
+	//			Start: "8:00",
+	//			End: "21:00",
+	//		},
+	//		EscalationEnabled: true,
+	//		EscalationThrottlePeriod: "30m",
+	//	},
+	//}
 	rule := alerting.Rule{
 		ID: util.GetUUID(),
 		Created: time.Now(),
@@ -137,8 +188,16 @@ func TestGeneratePercentilesAggQuery(t *testing.T) {
 			Objects: []string{".infini_metrics*"},
 			TimeField: "timestamp",
 			RawFilter: map[string]interface{}{
-				"match_all": util.MapStr{
-
+				"bool": map[string]interface{}{
+					"must": []interface{}{
+						util.MapStr{
+							"term": util.MapStr{
+								"metadata.name": util.MapStr{
+									"value": "index_stats",
+								},
+							},
+						},
+					},
 				},
 			},
 		},
@@ -147,13 +206,15 @@ func TestGeneratePercentilesAggQuery(t *testing.T) {
 			PeriodInterval: "1m",
 			MaxPeriods:     15,
 			Items: []alerting.MetricItem{
-				{Name: "a", Field: "payload.elasticsearch.node_stats.os.cpu.percent", Statistic: "p99", Group: []string{"metadata.labels.cluster_id", "metadata.labels.node_id"}},
+				{Name: "a", Field: "payload.elasticsearch.index_stats.total.search.query_total", Statistic: "rate", Group: []string{"metadata.labels.cluster_id"}},
+				{Name: "b", Field: "payload.elasticsearch.index_stats.total.search.query_time_in_millis", Statistic: "rate", Group: []string{"metadata.labels.cluster_id"}},
 			},
+			Formula: "b/a",
 		},
 		Conditions: alerting.Condition{
 			Operator: "any",
 			Items: []alerting.ConditionItem{
-				{MinimumPeriodMatch: 5, Operator: "gte", Values: []string{"90"}, Severity: "error", Message: "cpu使用率大于90%"},
+				{MinimumPeriodMatch: 1, Operator: "gte", Values: []string{"10"}, Severity: "warning", Message: "搜索延迟大于10ms"},
 			},
 		},
 
@@ -170,7 +231,7 @@ func TestGeneratePercentilesAggQuery(t *testing.T) {
 			},
 			ThrottlePeriod: "1h",
 			AcceptTimeRange: alerting.TimeRange{
-				Start: "8:00",
+				Start: "08:00",
 				End: "21:00",
 			},
 			EscalationEnabled: true,
@@ -209,11 +270,13 @@ func TestConvertFilterQuery(t *testing.T) {
 			},
 		},
 	}
-
+	var targetDsl = `{"bool":{"must":[{"term":{"metadata.category":{"value":"elasticsearch"}}},{"terms":{"metadata.name":["index_stats","node_stats"]}},{"bool":{"must_not":[{"range":{"timestamp":{"gt":"2022-04-16T16:16:39.168605+08:00"}}}]}}]}}`
 	eng := &Engine{}
 	q, err := eng.ConvertFilterQueryToDsl(&fq)
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(util.MustToJSON(q))
+	if dsl := util.MustToJSON(q); dsl != targetDsl {
+		t.Errorf("expect dsl %s but got %s", targetDsl, dsl)
+	}
 }

@@ -27,10 +27,10 @@ type Rule struct {
 
 type RuleChannel struct {
 	Normal []Channel      `json:"normal"`
-	Escalation []Channel  `json:"escalation"`
+	Escalation []Channel  `json:"escalation,omitempty"`
 	ThrottlePeriod string `json:"throttle_period"` //沉默周期
 	AcceptTimeRange TimeRange   `json:"accept_time_range"`
-	EscalationThrottlePeriod string `json:"escalation_throttle_period"`
+	EscalationThrottlePeriod string `json:"escalation_throttle_period,omitempty"`
 	EscalationEnabled bool `json:"escalation_enabled"`
 }
 

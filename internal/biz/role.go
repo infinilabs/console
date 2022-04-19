@@ -91,11 +91,16 @@ func DeleteRole(localUser *User, id string) (err error) {
 			"userid":   localUser.UserId,
 			"username": localUser.Username,
 		},
-	}, nil))
+	}, util.MapStr{
+		"id":          id,
+		"name":        role.Name,
+		"description": role.Description,
+		"permission":  role.Permission,
+		"type":        role.RoleType,
+		"created":     role.Created.Format("2006-01-02 15:04:05"),
+		"updated":     role.Updated.Format("2006-01-02 15:04:05"),
+	}))
 
-	if err != nil {
-		log.Error(err)
-	}
 	return
 }
 
@@ -111,6 +116,25 @@ func UpdateRole(localUser *User, id string, req dto.UpdateRole) (err error) {
 	role.Permission = req.Permission
 	role.Updated = time.Now()
 	err = orm.Save(role)
+	if err != nil {
+		return
+	}
+	err = orm.Save(GenerateEvent(event.ActivityMetadata{
+		Category: "platform",
+		Group:    "rbac",
+		Name:     "role",
+		Type:     "update",
+		Labels: util.MapStr{
+			"id":          id,
+			"description": role.Description,
+			"permission":  role.Permission,
+			"updated":     role.Updated,
+		},
+		User: util.MapStr{
+			"userid":   localUser.UserId,
+			"username": localUser.Username,
+		},
+	}, nil))
 	return
 }
 func GetRole(id string) (role rbac.Role, err error) {

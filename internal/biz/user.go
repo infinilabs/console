@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"infini.sh/console/internal/dto"
 	"infini.sh/console/model/rbac"
+	"infini.sh/framework/core/event"
 
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
@@ -13,7 +14,7 @@ import (
 
 var ErrNotFound = fmt.Errorf("not found")
 
-func DeleteUser(id string) (err error) {
+func DeleteUser(localUser *User, id string) (err error) {
 
 	user := rbac.User{}
 	user.ID = id
@@ -22,10 +23,37 @@ func DeleteUser(id string) (err error) {
 		err = ErrNotFound
 		return
 	}
-	return orm.Delete(user)
-
+	err = orm.Delete(user)
+	if err != nil {
+		return
+	}
+	err = orm.Save(GenerateEvent(event.ActivityMetadata{
+		Category: "platform",
+		Group:    "rbac",
+		Name:     "user",
+		Type:     "delete",
+		Labels: util.MapStr{
+			"id": id,
+		},
+		User: util.MapStr{
+			"userid":   localUser.UserId,
+			"username": localUser.Username,
+		},
+	}, util.MapStr{
+		"id":       id,
+		"username": user.Username,
+		"email":    user.Email,
+		"phone":    user.Phone,
+		"password": user.Password,
+		"name":     user.Name,
+		"tags":     user.Tags,
+		"roles":    user.Roles,
+		"created":  user.Created,
+		"updated":  user.Updated,
+	}))
+	return
 }
-func CreateUser(req dto.CreateUser) (id string, err error) {
+func CreateUser(localUser *User, req dto.CreateUser) (id string, err error) {
 	q := orm.Query{Size: 1000}
 	q.Conds = orm.And(orm.Eq("username", req.Username))
 
@@ -62,9 +90,32 @@ func CreateUser(req dto.CreateUser) (id string, err error) {
 
 		return
 	}
-	return user.ID, nil
+	id = user.ID
+	err = orm.Save(GenerateEvent(event.ActivityMetadata{
+		Category: "platform",
+		Group:    "rbac",
+		Name:     "user",
+		Type:     "create",
+		Labels: util.MapStr{
+			"id":       id,
+			"username": user.Username,
+			"email":    user.Email,
+			"phone":    user.Phone,
+			"password": user.Password,
+			"name":     user.Name,
+			"tags":     user.Tags,
+			"roles":    user.Roles,
+			"created":  user.Created,
+			"updated":  user.Updated,
+		},
+		User: util.MapStr{
+			"userid":   localUser.UserId,
+			"username": localUser.Username,
+		},
+	}, nil))
+	return
 }
-func UpdateUser(id string, req dto.UpdateUser) (err error) {
+func UpdateUser(localUser *User, id string, req dto.UpdateUser) (err error) {
 	user := rbac.User{}
 	user.ID = id
 	_, err = orm.Get(&user)
@@ -78,9 +129,30 @@ func UpdateUser(id string, req dto.UpdateUser) (err error) {
 	user.Tags = req.Tags
 	user.Updated = time.Now()
 	err = orm.Save(user)
+	if err != nil {
+		return
+	}
+	err = orm.Save(GenerateEvent(event.ActivityMetadata{
+		Category: "platform",
+		Group:    "rbac",
+		Name:     "user",
+		Type:     "update",
+		Labels: util.MapStr{
+			"id":      id,
+			"email":   user.Email,
+			"phone":   user.Phone,
+			"name":    user.Name,
+			"tags":    user.Tags,
+			"updated": user.Updated,
+		},
+		User: util.MapStr{
+			"userid":   localUser.UserId,
+			"username": localUser.Username,
+		},
+	}, nil))
 	return
 }
-func UpdateUserRole(id string, req dto.UpdateUserRole) (err error) {
+func UpdateUserRole(localUser *User, id string, req dto.UpdateUserRole) (err error) {
 	user := rbac.User{}
 	user.ID = id
 	_, err = orm.Get(&user)
@@ -98,6 +170,24 @@ func UpdateUserRole(id string, req dto.UpdateUserRole) (err error) {
 	user.Roles = roles
 	user.Updated = time.Now()
 	err = orm.Save(user)
+	if err != nil {
+		return
+	}
+	err = orm.Save(GenerateEvent(event.ActivityMetadata{
+		Category: "platform",
+		Group:    "rbac",
+		Name:     "user",
+		Type:     "update",
+		Labels: util.MapStr{
+			"id":      id,
+			"roles":   user.Roles,
+			"updated": user.Updated,
+		},
+		User: util.MapStr{
+			"userid":   localUser.UserId,
+			"username": localUser.Username,
+		},
+	}, nil))
 	return
 
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/util"
-	"net/http"
 	"src/github.com/golang-jwt/jwt"
 	"strings"
 	"time"
@@ -16,9 +15,9 @@ type UserClaims struct {
 	*User
 }
 type User struct {
-	Username      string              `json:"username"`
-	UserId        string              `json:"user_id"`
-	ApiPermission map[string]struct{} `json:"api_permission"`
+	Username string   `json:"username"`
+	UserId   string   `json:"user_id"`
+	Role     []string `json:"role"`
 }
 
 const Secret = "console"
@@ -36,9 +35,7 @@ func Login(username string, password string) (m map[string]interface{}, err erro
 		User: &User{
 			Username: u,
 			UserId:   "admin",
-			ApiPermission: map[string]struct{}{
-				"account.profile": struct{}{},
-			},
+			Role:     []string{"admin_user"},
 		},
 		RegisteredClaims: &jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
@@ -92,8 +89,9 @@ func ValidateLogin(authorizationHeader string) (clams *UserClaims, err error) {
 	return
 
 }
-func ValidatePermission(r *http.Request, permissions string) (err error) {
-	reqUser, err := FromUserContext(r.Context())
+func ValidatePermission(claims *UserClaims, permissions []string) (err error) {
+
+	reqUser := claims.User
 	if err != nil {
 
 		return
@@ -102,16 +100,31 @@ func ValidatePermission(r *http.Request, permissions string) (err error) {
 		err = errors.New("user id is empty")
 		return
 	}
-	if reqUser.ApiPermission == nil {
+	if reqUser.Role == nil {
 		err = errors.New("api permission is empty")
 		return
 	}
 
-	if _, ok := reqUser.ApiPermission[permissions]; !ok {
-		err = errors.New("permission denied")
-		return
+	// 权限校验
+	userPermissionMap := make(map[string]struct{})
+	for _, role := range reqUser.Role {
+		if _, ok := RolePermission[role]; ok {
+			for _, v := range RolePermission[role] {
+				userPermissionMap[v] = struct{}{}
+			}
+		}
 	}
-
+	var count int
+	for _, v := range permissions {
+		if _, ok := userPermissionMap[v]; ok {
+			count++
+			continue
+		}
+	}
+	if count == len(permissions) {
+		return nil
+	}
+	err = errors.New("permission denied")
 	return
 
 }

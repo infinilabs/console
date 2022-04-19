@@ -20,7 +20,7 @@ func init() {
 
 	//api.HandleAPIMethod(api.GET, "/account/current_user", account.CurrentUser)
 
-	api.HandleAPIMethod(api.DELETE, "/account/logout", m.LoginRequired(account.Logout))
+	api.HandleAPIMethod(api.DELETE, "/account/logout", account.Logout)
 	api.HandleAPIMethod(api.GET, "/account/profile", m.LoginRequired(account.Profile))
 }
 

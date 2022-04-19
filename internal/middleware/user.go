@@ -20,9 +20,14 @@ func LoginRequired(h httprouter.Handle) httprouter.Handle {
 	}
 }
 
-func PermissionRequired(h httprouter.Handle, permissions string) httprouter.Handle {
+func PermissionRequired(h httprouter.Handle, permissions ...string) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-		err := biz.ValidatePermission(r, permissions)
+		claims, err := biz.ValidateLogin(r.Header.Get("Authorization"))
+		if err != nil {
+			w = handleError(w, err)
+			return
+		}
+		err = biz.ValidatePermission(claims, permissions)
 		if err != nil {
 			w = handleError(w, err)
 			return

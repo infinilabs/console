@@ -27,7 +27,13 @@ func (h Rbac) CreateUser(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		h.Error(w, err)
 		return
 	}
-	id, err := biz.CreateUser(req)
+	localUser, err := biz.FromUserContext(r.Context())
+	if err != nil {
+		log.Error(err.Error())
+		h.Error(w, err)
+		return
+	}
+	id, err := biz.CreateUser(localUser, req)
 	if err != nil {
 		_ = log.Error(err.Error())
 		h.Error(w, err)
@@ -64,7 +70,13 @@ func (h Rbac) UpdateUser(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		h.Error(w, err)
 		return
 	}
-	err = biz.UpdateUser(id, req)
+	localUser, err := biz.FromUserContext(r.Context())
+	if err != nil {
+		log.Error(err.Error())
+		h.Error(w, err)
+		return
+	}
+	err = biz.UpdateUser(localUser, id, req)
 
 	if err != nil {
 		_ = log.Error(err.Error())
@@ -84,7 +96,13 @@ func (h Rbac) UpdateUserRole(w http.ResponseWriter, r *http.Request, ps httprout
 		h.Error(w, err)
 		return
 	}
-	err = biz.UpdateUserRole(id, req)
+	localUser, err := biz.FromUserContext(r.Context())
+	if err != nil {
+		log.Error(err.Error())
+		h.Error(w, err)
+		return
+	}
+	err = biz.UpdateUserRole(localUser, id, req)
 
 	if err != nil {
 		_ = log.Error(err.Error())
@@ -97,7 +115,13 @@ func (h Rbac) UpdateUserRole(w http.ResponseWriter, r *http.Request, ps httprout
 
 func (h Rbac) DeleteUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	id := ps.MustGetParameter("id")
-	err := biz.DeleteUser(id)
+	localUser, err := biz.FromUserContext(r.Context())
+	if err != nil {
+		log.Error(err.Error())
+		h.Error(w, err)
+		return
+	}
+	err = biz.DeleteUser(localUser, id)
 	if errors.Is(err, elastic.ErrNotFound) {
 		h.WriteJSON(w, NotFoundResponse(id), http.StatusNotFound)
 		return

@@ -3,6 +3,7 @@ package rbac
 import (
 	"encoding/json"
 	"infini.sh/console/internal/biz"
+	"infini.sh/console/internal/biz/enum"
 	m "infini.sh/console/internal/middleware"
 
 	"infini.sh/framework/core/api"
@@ -17,24 +18,23 @@ type Rbac struct {
 
 func registerRouter() {
 	r := Rbac{}
-	api.HandleAPIMethod(api.GET, "/permission/:type", m.LoginRequired(m.PermissionRequired(r.ListPermission, "list.permission")))
-	api.HandleAPIMethod(api.POST, "/role/:type", m.LoginRequired(m.PermissionRequired(r.CreateRole, "create.role")))
-	api.HandleAPIMethod(api.GET, "/role/:id", m.LoginRequired(m.PermissionRequired(r.GetRole, "get.role")))
-	api.HandleAPIMethod(api.DELETE, "/role/:id", m.LoginRequired(m.PermissionRequired(r.DeleteRole, "delete.role")))
-	api.HandleAPIMethod(api.PUT, "/role/:id", m.LoginRequired(m.PermissionRequired(r.UpdateRole, "update.role")))
-	api.HandleAPIMethod(api.GET, "/role/_search", m.LoginRequired(m.PermissionRequired(r.SearchRole, "search.role")))
+	api.HandleAPIMethod(api.GET, "/permission/:type", m.PermissionRequired(r.ListPermission, enum.ListPermission))
+	api.HandleAPIMethod(api.POST, "/role/:type", m.PermissionRequired(r.CreateRole, enum.CreateRole))
+	api.HandleAPIMethod(api.GET, "/role/:id", m.PermissionRequired(r.GetRole, enum.GetRole))
+	api.HandleAPIMethod(api.DELETE, "/role/:id", m.PermissionRequired(r.DeleteRole, enum.DeleteRole))
+	api.HandleAPIMethod(api.PUT, "/role/:id", m.PermissionRequired(r.UpdateRole, enum.UpdateRole))
+	api.HandleAPIMethod(api.GET, "/role/_search", m.PermissionRequired(r.SearchRole, enum.ListRole))
 
-	api.HandleAPIMethod(api.POST, "/user", m.LoginRequired(m.PermissionRequired(r.CreateUser, "create.user")))
-	api.HandleAPIMethod(api.GET, "/user/:id", m.LoginRequired(m.PermissionRequired(r.GetUser, "get.user")))
-	api.HandleAPIMethod(api.GET, "/user/search", m.LoginRequired(m.PermissionRequired(r.SearchUser, "search.user")))
-	api.HandleAPIMethod(api.DELETE, "/user/:id", m.LoginRequired(m.PermissionRequired(r.DeleteUser, "delete.user")))
-	api.HandleAPIMethod(api.PUT, "/user/:id", m.LoginRequired(m.PermissionRequired(r.UpdateUser, "update.user")))
-	api.HandleAPIMethod(api.PUT, "/user/:id/role", m.LoginRequired(m.PermissionRequired(r.UpdateUserRole, "update.user.role")))
-	api.HandleAPIMethod(api.GET, "/user/_search", m.LoginRequired(m.PermissionRequired(r.SearchUser, "search.user")))
+	api.HandleAPIMethod(api.POST, "/user", m.PermissionRequired(r.CreateUser, enum.CreateUser))
+	api.HandleAPIMethod(api.GET, "/user/:id", m.PermissionRequired(r.GetUser, enum.GetUser))
+	api.HandleAPIMethod(api.GET, "/user/search", m.PermissionRequired(r.SearchUser, enum.ListUser))
+	api.HandleAPIMethod(api.DELETE, "/user/:id", m.PermissionRequired(r.DeleteUser, enum.DeleteUser))
+	api.HandleAPIMethod(api.PUT, "/user/:id", m.PermissionRequired(r.UpdateUser, enum.UpdateUser))
+	api.HandleAPIMethod(api.PUT, "/user/:id/role", m.PermissionRequired(r.UpdateUserRole, enum.UpdateUser))
+	api.HandleAPIMethod(api.GET, "/user/_search", m.PermissionRequired(r.SearchUser, enum.ListUser))
 
 }
 
-//TODO 权限一级配置全局变量，
 func loadJsonConfig() {
 	pwd, _ := os.Getwd()
 
@@ -56,9 +56,14 @@ func loadJsonConfig() {
 	biz.ClusterApis = list
 
 }
+func loadRolePermission() {
+	biz.RolePermission = make(map[string][]string)
+	biz.RolePermission["admin_user"] = []string{enum.GetUser}
+}
 func init() {
 	registerRouter()
 	loadJsonConfig()
+	loadRolePermission()
 }
 
 type Response struct {

@@ -50,7 +50,7 @@ func DeleteUser(localUser *User, id string) (err error) {
 		"roles":    user.Roles,
 		"created":  user.Created,
 		"updated":  user.Updated,
-	}))
+	}, nil))
 	return
 }
 func CreateUser(localUser *User, req dto.CreateUser) (id string, err error) {
@@ -112,7 +112,7 @@ func CreateUser(localUser *User, req dto.CreateUser) (id string, err error) {
 			"userid":   localUser.UserId,
 			"username": localUser.Username,
 		},
-	}, nil))
+	}, nil, nil))
 	return
 }
 func UpdateUser(localUser *User, id string, req dto.UpdateUser) (err error) {
@@ -123,6 +123,7 @@ func UpdateUser(localUser *User, id string, req dto.UpdateUser) (err error) {
 		err = ErrNotFound
 		return
 	}
+	changeLog, _ := util.DiffTwoObject(user, req)
 	user.Name = req.Name
 	user.Email = req.Email
 	user.Phone = req.Phone
@@ -149,7 +150,7 @@ func UpdateUser(localUser *User, id string, req dto.UpdateUser) (err error) {
 			"userid":   localUser.UserId,
 			"username": localUser.Username,
 		},
-	}, nil))
+	}, nil, changeLog))
 	return
 }
 func UpdateUserRole(localUser *User, id string, req dto.UpdateUserRole) (err error) {
@@ -160,6 +161,7 @@ func UpdateUserRole(localUser *User, id string, req dto.UpdateUserRole) (err err
 		err = ErrNotFound
 		return
 	}
+	changeLog, _ := util.DiffTwoObject(user, req)
 	roles := make([]rbac.UserRole, 0)
 	for _, v := range req.Roles {
 		roles = append(roles, rbac.UserRole{
@@ -187,7 +189,7 @@ func UpdateUserRole(localUser *User, id string, req dto.UpdateUserRole) (err err
 			"userid":   localUser.UserId,
 			"username": localUser.Username,
 		},
-	}, nil))
+	}, nil, changeLog))
 	return
 
 }

@@ -32,6 +32,7 @@ func PermissionRequired(h httprouter.Handle, permissions ...string) httprouter.H
 			w = handleError(w, err)
 			return
 		}
+		r = r.WithContext(biz.NewUserContext(r.Context(), claims))
 		h(w, r, ps)
 	}
 }

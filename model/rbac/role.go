@@ -14,8 +14,9 @@ type Role struct {
 	BuiltIn     bool        `json:"builtin" elastic_mapping:"builtin:{type:boolean}"` //是否内置
 }
 type ConsolePermission struct {
-	ID   string `json:"id" elastic_mapping:"id:{type:keyword}"`
-	Name string `json:"name" elastic_mapping:"name:{type:keyword}"`
+	ApiPermission []string `json:"api_permission"`
+	//ID   string `json:"id" elastic_mapping:"id:{type:keyword}"`
+	//Name string `json:"name" elastic_mapping:"name:{type:keyword}"`
 }
 type ElasticsearchPermission struct {
 	Cluster          []string `json:"cluster" elastic_mapping:"cluster:{type:object}"`

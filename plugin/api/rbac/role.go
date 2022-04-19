@@ -3,6 +3,7 @@ package rbac
 import (
 	log "github.com/cihub/seelog"
 	"infini.sh/console/internal/biz"
+	"infini.sh/console/internal/biz/enum"
 	"infini.sh/console/internal/dto"
 	httprouter "infini.sh/framework/core/api/router"
 	"net/http"
@@ -53,8 +54,15 @@ func (h Rbac) SearchRole(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		h.Error(w, err)
 		return
 	}
+	roles := make([]interface{}, 0)
+	for _, role := range enum.BuildRoles {
+		roles = append(roles, role)
+	}
+	for _, v := range res.Result {
+		roles = append(roles, v)
+	}
 
-	h.WriteOKJSON(w, Response{Hit: res.Result, Total: res.Total})
+	h.WriteOKJSON(w, Response{Hit: roles, Total: res.Total + int64(len(enum.BuildRoles))})
 	return
 
 }

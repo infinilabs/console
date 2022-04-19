@@ -88,6 +88,9 @@ func (h Account) CurrentUser(w http.ResponseWriter, req *http.Request, ps httpro
 }
 func (h Account) Logout(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
+	h.WriteOKJSON(w, util.MapStr{
+		"status": "ok",
+	})
 }
 func (h Account) Profile(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	reqUser, err := biz.FromUserContext(r.Context())

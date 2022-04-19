@@ -3,7 +3,10 @@ package biz
 import (
 	"errors"
 	"fmt"
+	"infini.sh/console/model/rbac"
+	"infini.sh/framework/core/event"
 	"infini.sh/framework/core/global"
+	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"src/github.com/golang-jwt/jwt"
 	"strings"
@@ -17,12 +20,31 @@ type UserClaims struct {
 type User struct {
 	Username string   `json:"username"`
 	UserId   string   `json:"user_id"`
-	Role     []string `json:"role"`
+	Roles    []string `json:"roles"`
 }
 
 const Secret = "console"
 
-func Login(username string, password string) (m map[string]interface{}, err error) {
+func authenticateUser(username string, password string) (user rbac.User, err error) {
+	q := orm.Query{Size: 1000}
+	q.Conds = orm.And(orm.Eq("username", username))
+
+	err, result := orm.Search(rbac.User{}, &q)
+	if err != nil {
+		return
+	}
+	if result.Total == 0 {
+		err = errors.New("user not found")
+		return
+	}
+	user = result.Result[0].(rbac.User)
+	if util.MD5digest(password) != user.Password {
+		err = errors.New("password error")
+		return
+	}
+	return
+}
+func authenticateAdmin(username string, password string) (user rbac.User, err error) {
 
 	u, _ := global.Env().GetConfig("bootstrap.username", "admin")
 	p, _ := global.Env().GetConfig("bootstrap.password", "admin")
@@ -31,11 +53,16 @@ func Login(username string, password string) (m map[string]interface{}, err erro
 		err = errors.New("invalid username or password")
 		return
 	}
+	user.ID = username
+	user.Username = username
+	return user, nil
+}
+func authorize(user rbac.User) (m map[string]interface{}, err error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, UserClaims{
 		User: &User{
-			Username: u,
-			UserId:   "admin",
-			Role:     []string{"admin_user"},
+			Username: user.Username,
+			UserId:   user.ID,
+			Roles:    []string{"admin"},
 		},
 		RegisteredClaims: &jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
@@ -44,17 +71,49 @@ func Login(username string, password string) (m map[string]interface{}, err erro
 
 	tokenString, err := token.SignedString([]byte(Secret))
 	if err != nil {
-
 		return
 	}
 	m = util.MapStr{
 		"access_token": tokenString,
-		"username":     u,
-		"userid":       "admin",
+		"username":     user.Username,
+		"userid":       user.ID,
+	}
+	return
+}
+func Login(username string, password string) (m map[string]interface{}, err error) {
+	var user rbac.User
+	if username == "admin" {
+		user, err = authenticateAdmin(username, password)
+		if err != nil {
+			return nil, err
+		}
+
+	} else {
+		user, err = authenticateUser(username, password)
+		if err != nil {
+			return nil, err
+		}
 	}
 
+	m, err = authorize(user)
+	if err != nil {
+		return
+	}
+	err = orm.Save(GenerateEvent(event.ActivityMetadata{
+		Category: "platform",
+		Group:    "rbac",
+		Name:     "login",
+		Type:     "create",
+		Labels: util.MapStr{
+			"username": username,
+			"password": password,
+		},
+		User: util.MapStr{
+			"userid":   user.ID,
+			"username": user.Username,
+		},
+	}, nil, nil))
 	return
-
 }
 
 func ValidateLogin(authorizationHeader string) (clams *UserClaims, err error) {
@@ -100,14 +159,14 @@ func ValidatePermission(claims *UserClaims, permissions []string) (err error) {
 		err = errors.New("user id is empty")
 		return
 	}
-	if reqUser.Role == nil {
+	if reqUser.Roles == nil {
 		err = errors.New("api permission is empty")
 		return
 	}
 
 	// 权限校验
 	userPermissionMap := make(map[string]struct{})
-	for _, role := range reqUser.Role {
+	for _, role := range reqUser.Roles {
 		if _, ok := RolePermission[role]; ok {
 			for _, v := range RolePermission[role] {
 				userPermissionMap[v] = struct{}{}

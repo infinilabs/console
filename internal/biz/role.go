@@ -60,7 +60,7 @@ func CreateRole(localUser *User, req dto.CreateRole) (id string, err error) {
 			"userid":   localUser.UserId,
 			"username": localUser.Username,
 		},
-	}, nil))
+	}, nil, nil))
 
 	if err != nil {
 		log.Error(err)
@@ -99,7 +99,7 @@ func DeleteRole(localUser *User, id string) (err error) {
 		"type":        role.RoleType,
 		"created":     role.Created.Format("2006-01-02 15:04:05"),
 		"updated":     role.Updated.Format("2006-01-02 15:04:05"),
-	}))
+	}, nil))
 
 	return
 }
@@ -112,6 +112,7 @@ func UpdateRole(localUser *User, id string, req dto.UpdateRole) (err error) {
 		err = ErrNotFound
 		return
 	}
+	changeLog, _ := util.DiffTwoObject(role, req)
 	role.Description = req.Description
 	role.Permission = req.Permission
 	role.Updated = time.Now()
@@ -134,7 +135,7 @@ func UpdateRole(localUser *User, id string, req dto.UpdateRole) (err error) {
 			"userid":   localUser.UserId,
 			"username": localUser.Username,
 		},
-	}, nil))
+	}, nil, changeLog))
 	return
 }
 func GetRole(id string) (role rbac.Role, err error) {

@@ -43,6 +43,8 @@ func (h Account) Login(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 		return
 	}
 	data["status"] = "ok"
+
+	api.SetSession(w, r, userInSession, req.Username)
 	h.WriteOKJSON(w, data)
 }
 

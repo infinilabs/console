@@ -150,7 +150,7 @@ func (h Rbac) SearchUser(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		return
 	}
 
-	h.WriteOKJSON(w, res)
+	h.Write(w, res.Raw)
 	return
 
 }

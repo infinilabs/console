@@ -82,7 +82,7 @@ func authorize(user Account) (m map[string]interface{}, err error) {
 		User: &User{
 			Username: user.Username,
 			UserId:   user.ID,
-			Roles:    []string{"admin_user"},
+			Roles:    []string{"admin"},
 		},
 		RegisteredClaims: &jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
@@ -98,7 +98,7 @@ func authorize(user Account) (m map[string]interface{}, err error) {
 		"username":     user.Username,
 		"id":           user.ID,
 		"expire_in":    86400,
-		"roles":        []string{"admin_user"},
+		"roles":        []string{"admin"},
 	}
 	return
 }

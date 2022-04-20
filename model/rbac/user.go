@@ -9,8 +9,8 @@ type User struct {
 	Name     string     `json:"name" elastic_mapping:"name:{type:keyword}"`
 	Phone    string     `json:"phone" elastic_mapping:"phone:{type:keyword}"`
 	Email    string     `json:"email" elastic_mapping:"email:{type:keyword}"`
-	Roles    []UserRole `json:"roles" elastic_mapping:"roles:{type:text}"`
-	Tags     []string   `json:"tags" elastic_mapping:"tags:{type:text}"`
+	Roles    []UserRole `json:"roles"`
+	Tags     []string   `json:"tags,omitempty" elastic_mapping:"tags:{type:text}"`
 }
 type UserRole struct {
 	Id   string `json:"id" elastic_mapping:"id:{type:keyword}"`

@@ -75,7 +75,7 @@ func (h *AlertAPI) searchAlert(w http.ResponseWriter, req *http.Request, ps http
 
 	var (
 		keyword        = h.GetParameterOrDefault(req, "keyword", "")
-		queryDSL    = `{"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d}`
+		queryDSL    = `{"sort":[{"created":{ "order": "desc"}}],"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d}`
 		strSize     = h.GetParameterOrDefault(req, "size", "20")
 		strFrom     = h.GetParameterOrDefault(req, "from", "0")
 		mustBuilder = &strings.Builder{}

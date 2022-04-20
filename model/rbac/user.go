@@ -13,6 +13,6 @@ type User struct {
 	Tags     []string   `json:"tags" elastic_mapping:"tags:{type:text}"`
 }
 type UserRole struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
+	Id   string `json:"id" elastic_mapping:"id:{type:keyword}"`
+	Name string `json:"name" elastic_mapping:"name:{type:keyword}" `
 }

@@ -135,7 +135,7 @@ func UpdateUser(localUser *User, id string, req dto.UpdateUser) (err error) {
 	user.Phone = req.Phone
 	user.Tags = req.Tags
 	user.Updated = time.Now()
-	err = orm.Save(user)
+	err = orm.Save(&user)
 	if err != nil {
 		return
 	}
@@ -177,7 +177,7 @@ func UpdateUserRole(localUser *User, id string, req dto.UpdateUserRole) (err err
 	}
 	user.Roles = roles
 	user.Updated = time.Now()
-	err = orm.Save(user)
+	err = orm.Save(&user)
 	if err != nil {
 		return
 	}

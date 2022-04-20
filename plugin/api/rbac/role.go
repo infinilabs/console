@@ -4,6 +4,7 @@ import (
 	log "github.com/cihub/seelog"
 	"infini.sh/console/internal/biz"
 	"infini.sh/console/internal/biz/enum"
+	"infini.sh/console/internal/core"
 	"infini.sh/console/internal/dto"
 	httprouter "infini.sh/framework/core/api/router"
 	"net/http"
@@ -35,7 +36,7 @@ func (h Rbac) CreateRole(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		return
 	}
 
-	_ = h.WriteOKJSON(w, CreateResponse(id))
+	_ = h.WriteOKJSON(w, core.CreateResponse(id))
 	return
 
 }
@@ -62,7 +63,7 @@ func (h Rbac) SearchRole(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		roles = append(roles, v)
 	}
 
-	h.WriteOKJSON(w, Response{Hit: roles, Total: res.Total + int64(len(enum.BuildRoles))})
+	h.WriteOKJSON(w, core.Response{Hit: roles, Total: res.Total + int64(len(enum.BuildRoles))})
 	return
 
 }
@@ -76,7 +77,7 @@ func (h Rbac) GetRole(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 		h.Error(w, err)
 		return
 	}
-	h.WriteOKJSON(w, Response{Hit: role})
+	h.WriteOKJSON(w, core.Response{Hit: role})
 	return
 }
 
@@ -96,7 +97,7 @@ func (h Rbac) DeleteRole(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		h.Error(w, err)
 		return
 	}
-	_ = h.WriteOKJSON(w, DeleteResponse(id))
+	_ = h.WriteOKJSON(w, core.DeleteResponse(id))
 	return
 }
 
@@ -122,6 +123,6 @@ func (h Rbac) UpdateRole(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		h.Error(w, err)
 		return
 	}
-	_ = h.WriteOKJSON(w, UpdateResponse(id))
+	_ = h.WriteOKJSON(w, core.UpdateResponse(id))
 	return
 }

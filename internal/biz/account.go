@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/golang-jwt/jwt"
+	"github.com/mitchellh/mapstructure"
 	"golang.org/x/crypto/bcrypt"
 	"infini.sh/console/internal/dto"
 	"infini.sh/console/model/rbac"
@@ -11,6 +12,7 @@ import (
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
+
 	"strings"
 	"time"
 )
@@ -24,10 +26,21 @@ type User struct {
 	UserId   string   `json:"user_id"`
 	Roles    []string `json:"roles"`
 }
+type Account struct {
+	ID       string   `json:"id,omitempty"     `
+	Created  string   `json:"created,omitempty" `
+	Updated  string   `json:"updated,omitempty" `
+	Username string   `json:"username" elastic_mapping:"username:{type:keyword}"`
+	Password string   `json:"password" elastic_mapping:"password:{type:text}"`
+	Name     string   `json:"name" elastic_mapping:"name:{type:keyword}"`
+	Phone    string   `json:"phone" elastic_mapping:"phone:{type:keyword}"`
+	Email    string   `json:"email" elastic_mapping:"email:{type:keyword}"`
+	Tags     []string `json:"tags" elastic_mapping:"tags:{type:text}"`
+}
 
 const Secret = "console"
 
-func authenticateUser(username string, password string) (user rbac.User, err error) {
+func authenticateUser(username string, password string) (user Account, err error) {
 
 	err, result := orm.GetBy("username", username, rbac.User{})
 	if err != nil {
@@ -38,7 +51,11 @@ func authenticateUser(username string, password string) (user rbac.User, err err
 		err = errors.New("user not found")
 		return
 	}
-	user = result.Result[0].(rbac.User)
+
+	err = mapstructure.Decode(result.Result[0], &user)
+	if err != nil {
+		return
+	}
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err == bcrypt.ErrMismatchedHashAndPassword {
 		err = errors.New("password incorrect")
@@ -47,7 +64,7 @@ func authenticateUser(username string, password string) (user rbac.User, err err
 
 	return
 }
-func authenticateAdmin(username string, password string) (user rbac.User, err error) {
+func authenticateAdmin(username string, password string) (user Account, err error) {
 
 	u, _ := global.Env().GetConfig("bootstrap.username", "admin")
 	p, _ := global.Env().GetConfig("bootstrap.password", "admin")
@@ -60,7 +77,7 @@ func authenticateAdmin(username string, password string) (user rbac.User, err er
 	user.Username = username
 	return user, nil
 }
-func authorize(user rbac.User) (m map[string]interface{}, err error) {
+func authorize(user Account) (m map[string]interface{}, err error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, UserClaims{
 		User: &User{
 			Username: user.Username,
@@ -86,7 +103,7 @@ func authorize(user rbac.User) (m map[string]interface{}, err error) {
 	return
 }
 func Login(username string, password string) (m map[string]interface{}, err error) {
-	var user rbac.User
+	var user Account
 	if username == "admin" {
 		user, err = authenticateAdmin(username, password)
 		if err != nil {
@@ -128,7 +145,7 @@ func UpdatePassword(localUser *User, req dto.UpdatePassword) (err error) {
 		err = ErrNotFound
 		return
 	}
-	err = bcrypt.CompareHashAndPassword([]byte(req.OldPassword), []byte(user.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.OldPassword))
 	if err == bcrypt.ErrMismatchedHashAndPassword {
 		err = errors.New("old password is not correct")
 		return

@@ -3,6 +3,7 @@ package rbac
 import (
 	"errors"
 	"infini.sh/console/internal/biz"
+	"infini.sh/console/internal/core"
 	"infini.sh/console/internal/dto"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/modules/elastic"
@@ -39,7 +40,7 @@ func (h Rbac) CreateUser(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		h.Error(w, err)
 		return
 	}
-	_ = h.WriteOKJSON(w, CreateResponse(id))
+	_ = h.WriteOKJSON(w, core.CreateResponse(id))
 	return
 
 }
@@ -48,7 +49,7 @@ func (h Rbac) GetUser(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 	id := ps.MustGetParameter("id")
 	user, err := biz.GetUser(id)
 	if errors.Is(err, elastic.ErrNotFound) {
-		h.WriteJSON(w, NotFoundResponse(id), http.StatusNotFound)
+		h.WriteJSON(w, core.NotFoundResponse(id), http.StatusNotFound)
 		return
 	}
 
@@ -57,7 +58,7 @@ func (h Rbac) GetUser(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 		h.Error(w, err)
 		return
 	}
-	h.WriteOKJSON(w, Response{Hit: user})
+	h.WriteOKJSON(w, core.FoundResponse(id, user))
 	return
 }
 
@@ -83,7 +84,7 @@ func (h Rbac) UpdateUser(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		h.Error(w, err)
 		return
 	}
-	_ = h.WriteOKJSON(w, UpdateResponse(id))
+	_ = h.WriteOKJSON(w, core.UpdateResponse(id))
 	return
 }
 
@@ -109,7 +110,7 @@ func (h Rbac) UpdateUserRole(w http.ResponseWriter, r *http.Request, ps httprout
 		h.Error(w, err)
 		return
 	}
-	_ = h.WriteOKJSON(w, UpdateResponse(id))
+	_ = h.WriteOKJSON(w, core.UpdateResponse(id))
 	return
 }
 
@@ -123,7 +124,7 @@ func (h Rbac) DeleteUser(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	}
 	err = biz.DeleteUser(localUser, id)
 	if errors.Is(err, elastic.ErrNotFound) {
-		h.WriteJSON(w, NotFoundResponse(id), http.StatusNotFound)
+		h.WriteJSON(w, core.NotFoundResponse(id), http.StatusNotFound)
 		return
 	}
 	if err != nil {
@@ -131,7 +132,7 @@ func (h Rbac) DeleteUser(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		h.Error(w, err)
 		return
 	}
-	_ = h.WriteOKJSON(w, DeleteResponse(id))
+	_ = h.WriteOKJSON(w, core.DeleteResponse(id))
 	return
 }
 
@@ -149,7 +150,7 @@ func (h Rbac) SearchUser(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		return
 	}
 
-	h.WriteOKJSON(w, Response{Hit: res.Result, Total: res.Total})
+	h.WriteOKJSON(w, core.Response{Hit: res.Result, Total: res.Total})
 	return
 
 }

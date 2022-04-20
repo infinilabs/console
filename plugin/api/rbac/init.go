@@ -65,39 +65,3 @@ func init() {
 	loadJsonConfig()
 	loadRolePermission()
 }
-
-type Response struct {
-	Total  int64       `json:"total,omitempty"`
-	Hit    interface{} `json:"hit,omitempty"`
-	Id     string      `json:"_id,omitempty"`
-	Result string      `json:"result,omitempty"`
-}
-type NotFoundResp struct {
-	Found bool   `json:"found"`
-	Id    string `json:"_id,omitempty"`
-}
-
-func CreateResponse(id string) Response {
-	return Response{
-		Id:     id,
-		Result: "created",
-	}
-}
-func UpdateResponse(id string) Response {
-	return Response{
-		Id:     id,
-		Result: "updated",
-	}
-}
-func DeleteResponse(id string) Response {
-	return Response{
-		Id:     id,
-		Result: "deleted",
-	}
-}
-func NotFoundResponse(id string) NotFoundResp {
-	return NotFoundResp{
-		Id:    id,
-		Found: false,
-	}
-}

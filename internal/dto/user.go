@@ -5,6 +5,6 @@ type Login struct {
 	Password string `json:"password"`
 }
 type UpdatePassword struct {
-	OldPassword string `json:"oldPassword"`
-	NewPassword string `json:"newPassword"`
+	OldPassword string `json:"old_password"`
+	NewPassword string `json:"new_password"`
 }

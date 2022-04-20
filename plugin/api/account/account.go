@@ -2,6 +2,7 @@ package account
 
 import (
 	"infini.sh/console/internal/biz"
+	"infini.sh/console/internal/core"
 	"infini.sh/console/internal/dto"
 	m "infini.sh/console/internal/middleware"
 	"infini.sh/framework/core/api"
@@ -99,7 +100,19 @@ func (h Account) Profile(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		h.Error(w, err)
 		return
 	}
-	h.WriteJSON(w, reqUser, 200)
+	user, err := biz.GetUser(reqUser.UserId)
+	if err != nil {
+		h.Error(w, err)
+		return
+	}
+	u := util.MapStr{
+		"id":       user.ID,
+		"username": user.Username,
+		"email":    user.Email,
+		"phone":    user.Phone,
+		"name":     user.Name,
+	}
+	h.WriteOKJSON(w, core.FoundResponse(reqUser.UserId, u))
 	return
 }
 func (h Account) UpdatePassword(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

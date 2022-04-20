@@ -9,6 +9,7 @@ import (
 	"infini.sh/console/model/gateway"
 	"infini.sh/console/model/rbac"
 	_ "infini.sh/console/plugin"
+	alerting2 "infini.sh/console/service/alerting"
 	"infini.sh/framework"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/env"
@@ -28,6 +29,7 @@ import (
 	_ "infini.sh/framework/plugins"
 	api2 "infini.sh/gateway/api"
 	_ "infini.sh/gateway/proxy"
+	log "src/github.com/cihub/seelog"
 )
 
 var appConfig *config.AppConfig
@@ -50,7 +52,7 @@ func main() {
 	terminalFooter := ""
 
 	app := framework.NewApp("console", "INFINI Cloud Console, The easiest way to operate your own elasticsearch platform.",
-		config.Version, config.BuildNumber, config.LastCommitLog, config.BuildDate, config.EOLDate, terminalHeader, terminalFooter)
+		config.Version,config.BuildNumber, config.LastCommitLog, config.BuildDate, config.EOLDate, terminalHeader, terminalFooter)
 
 	app.Init(nil)
 	defer app.Shutdown()
@@ -59,9 +61,10 @@ func main() {
 
 	if app.Setup(func() {
 		err := bootstrapRequirementCheck()
-		if err != nil {
+		if err !=nil{
 			panic(err)
 		}
+
 
 		//load core modules first
 		module.RegisterSystemModule(&elastic2.ElasticModule{})
@@ -117,6 +120,7 @@ func main() {
 
 		module.Start()
 
+
 		orm.RegisterSchemaWithIndexName(model.Dict{}, "dict")
 		orm.RegisterSchemaWithIndexName(model.Reindex{}, "reindex")
 		orm.RegisterSchemaWithIndexName(elastic.View{}, "view")
@@ -130,6 +134,12 @@ func main() {
 		orm.RegisterSchemaWithIndexName(rbac.User{}, "rbac-user")
 		api.RegisterSchema()
 
+		go func() {
+			err := alerting2.InitTasks()
+			if err != nil {
+				log.Errorf("init alerting task error: %v", err)
+			}
+		}()
 	}, nil) {
 		app.Run()
 	}

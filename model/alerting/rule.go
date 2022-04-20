@@ -19,15 +19,18 @@ type Rule struct {
 	Conditions       Condition   `json:"conditions" elastic_mapping:"conditions:{type:object}"`
 	Channels     RuleChannel `json:"channels" elastic_mapping:"channels:{type:object}"`
 	Schedule Schedule `json:"schedule" elastic_mapping:"schedule:{type:object}"`
+	LastNotificationTime time.Time `json:"-" elastic_mapping:"last_notification_time:{type:date}"`
+	LastTermStartTime time.Time `json:"-"` //标识最近一轮告警的开始时间
+	LastEscalationTime time.Time `json:"-"` //标识最近一轮告警的开始时间
 	SearchText string `json:"-" elastic_mapping:"search_text:{type:text,index_prefixes:{},index_phrases:true, analyzer:suggest_text_search }"`
 }
 
 type RuleChannel struct {
 	Normal []Channel      `json:"normal"`
-	Escalation []Channel  `json:"escalation"`
+	Escalation []Channel  `json:"escalation,omitempty"`
 	ThrottlePeriod string `json:"throttle_period"` //沉默周期
 	AcceptTimeRange TimeRange   `json:"accept_time_range"`
-	EscalationThrottlePeriod string `json:"escalation_throttle_period"`
+	EscalationThrottlePeriod string `json:"escalation_throttle_period,omitempty"`
 	EscalationEnabled bool `json:"escalation_enabled"`
 }
 

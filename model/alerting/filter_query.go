@@ -12,3 +12,11 @@ type FilterQuery struct {
 	Or []FilterQuery `json:"or,omitempty"`
 	Not []FilterQuery `json:"not,omitempty"`
 }
+
+func (fq FilterQuery) IsComplex() bool {
+	return len(fq.And) > 0 || len(fq.Or) > 0 || len(fq.Not) > 0
+}
+
+func (f FilterQuery) IsEmpty() bool {
+	return !f.IsComplex() && f.Operator == ""
+}

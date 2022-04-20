@@ -13,8 +13,8 @@ import (
 
 type Engine interface {
 	GenerateQuery(rule *alerting.Rule) (interface{}, error)
-	ExecuteQuery(rule *alerting.Rule)([]alerting.MetricData, error)
-	CheckCondition(rule *alerting.Rule)([]alerting.ConditionResult, error)
+	ExecuteQuery(rule *alerting.Rule)(*alerting.QueryResult, error)
+	CheckCondition(rule *alerting.Rule)(*alerting.ConditionResult, error)
 	GenerateTask(rule *alerting.Rule) func(ctx context.Context)
 }
 

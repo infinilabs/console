@@ -7,6 +7,8 @@ import (
 	"infini.sh/console/internal/core"
 	"infini.sh/console/internal/dto"
 	httprouter "infini.sh/framework/core/api/router"
+	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/util"
 	"net/http"
 )
 
@@ -55,15 +57,24 @@ func (h Rbac) SearchRole(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		h.Error(w, err)
 		return
 	}
-	roles := make([]interface{}, 0)
-	for _, role := range enum.BuildRoles {
-		roles = append(roles, role)
-	}
-	for _, v := range res.Result {
-		roles = append(roles, v)
+	response := elastic.SearchResponse{}
+	util.FromJSONBytes(res.Raw, &response)
+
+	list := response.Hits.Hits
+	var index string
+	for _, v := range list {
+		index = v.Index
 	}
 
-	h.WriteOKJSON(w, core.Response{Hit: roles, Total: res.Total + int64(len(enum.BuildRoles))})
+	list = append(list, elastic.IndexDocument{
+		ID:     "admin",
+		Index:  index,
+		Type:   "_doc",
+		Source: enum.BuildRoles["admin"],
+	})
+	response.Hits.Hits = list
+
+	h.WriteOKJSON(w, response)
 	return
 
 }

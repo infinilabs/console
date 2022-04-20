@@ -147,6 +147,7 @@ func GetRole(id string) (role rbac.Role, err error) {
 	return
 }
 func SearchRole(keyword string, from, size int) (roles orm.Result, err error) {
+
 	query := orm.Query{}
 
 	queryDSL := `{"query":{"bool":{"must":[%s]}}, "from": %d,"size": %d}`

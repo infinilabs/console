@@ -1,9 +1,6 @@
 package enum
 
-import (
-	"infini.sh/console/model/rbac"
-	"infini.sh/framework/core/orm"
-)
+import "time"
 
 const CreateUser = "create_user"
 const UpdateUser = "update_user"
@@ -36,29 +33,50 @@ const InstanceProxy = "instance_proxy"
 var Admin = []string{CreateUser, UpdateUser, DeleteUser, GetUser, SearchUser, CreateRole, UpdateRole, DeleteRole, GetRole, SearchRole, ListPermission}
 var AdminUser = []string{CreateUser, UpdateUser, DeleteUser, GetUser, SearchUser}
 var AdminRole = []string{CreateRole, UpdateRole, DeleteRole, GetRole, SearchRole, ListPermission}
-var BuildRoles = []rbac.Role{
-	{
-		ORMObjectBase: orm.ORMObjectBase{
-			ID: "admin",
-		},
-		Name:        "admin",
-		Description: "管理员",
-		RoleType:    "console",
-		Permission: rbac.ConsolePermission{
-			ApiPermission: Admin,
-		},
-		BuiltIn: true,
-	},
-	{
-		ORMObjectBase: orm.ORMObjectBase{
-			ID: "admin_user",
-		},
-		Name:        "admin_user",
-		Description: "用户模块管理员",
-		RoleType:    "console",
-		Permission: rbac.ConsolePermission{
-			ApiPermission: AdminUser,
-		},
-		BuiltIn: true,
-	},
+var BuildRoles = make(map[string]map[string]interface{}, 0)
+
+func init() {
+	BuildRoles["admin"] = map[string]interface{}{
+		"id":          "admin",
+		"name":        "admin",
+		"permission":  AdminUser,
+		"builtin":     true,
+		"description": "is admin",
+		"created":     time.Now(),
+	}
 }
+
+// BuildRoles["admin"] = {
+//	"id":"admin",
+//	"name":"admin",
+//}
+//{
+//	"name":"admin",
+//	"id":"admin",
+//
+//},{
+//
+//}
+//	{
+//		"name": "admin",
+//		Name:        "admin",
+//		Description: "管理员",
+//		RoleType:    "console",
+//		Permission: rbac.ConsolePermission{
+//			ApiPermission: Admin,
+//		},
+//		BuiltIn: true,
+//	},
+//	{
+//		ORMObjectBase: orm.ORMObjectBase{
+//			ID: "admin_user",
+//		},
+//		Name:        "admin_user",
+//		Description: "用户模块管理员",
+//		RoleType:    "console",
+//		Permission: rbac.ConsolePermission{
+//			ApiPermission: AdminUser,
+//		},
+//		BuiltIn: true,
+//	},
+//}

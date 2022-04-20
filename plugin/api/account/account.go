@@ -19,14 +19,14 @@ func init() {
 	account := Account{}
 	api.HandleAPIMethod(api.POST, "/account/login", account.Login)
 
-	//api.HandleAPIMethod(api.GET, "/account/current_user", account.CurrentUser)
+	api.HandleAPIMethod(api.GET, "/account/current_user", account.CurrentUser)
 
 	api.HandleAPIMethod(api.DELETE, "/account/logout", account.Logout)
 	api.HandleAPIMethod(api.GET, "/account/profile", m.LoginRequired(account.Profile))
 	api.HandleAPIMethod(api.PUT, "/account/password", m.LoginRequired(account.UpdatePassword))
 }
 
-const userInSession = "user_in_session"
+const userInSession = "user_session:"
 
 func (h Account) Login(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
@@ -44,7 +44,7 @@ func (h Account) Login(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 	}
 	data["status"] = "ok"
 
-	api.SetSession(w, r, userInSession, req.Username)
+	//api.SetSession(w, r, userInSession+req.Username, req.Username)
 	h.WriteOKJSON(w, data)
 }
 

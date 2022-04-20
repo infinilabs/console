@@ -42,6 +42,7 @@ func (h Account) Login(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 		h.Error(w, err)
 		return
 	}
+	data["status"] = "ok"
 	h.WriteOKJSON(w, data)
 }
 

@@ -529,6 +529,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		Updated: time.Now(),
 		RuleID: rule.ID,
 		ResourceID: rule.Resource.ID,
+		ResourceName: rule.Resource.Name,
 		Expression: rule.Metrics.Expression,
 		Objects: rule.Resource.Objects,
 		ConditionResult: checkResults,

@@ -35,7 +35,7 @@ const InstanceProxy = "instance_proxy"
 
 var Admin = []string{CreateUser, UpdateUser, DeleteUser, GetUser, SearchUser, CreateRole, UpdateRole, DeleteRole, GetRole, SearchRole, ListPermission}
 var AdminUser = []string{CreateUser, UpdateUser, DeleteUser, GetUser, SearchUser}
-
+var AdminRole = []string{CreateRole, UpdateRole, DeleteRole, GetRole, SearchRole, ListPermission}
 var BuildRoles = []rbac.Role{
 	{
 		ORMObjectBase: orm.ORMObjectBase{

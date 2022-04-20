@@ -1,6 +1,9 @@
 package biz
 
-import "fmt"
+import (
+	"fmt"
+	"infini.sh/console/internal/biz/enum"
+)
 
 var ClusterApis = make([]string, 0)
 var EsApis = make(map[string][]string)
@@ -38,33 +41,37 @@ type ConsolePermisson struct {
 }
 
 func (r ConsoleRole) ListPermission() interface{} {
-	list := []ConsolePermisson{
-		{
-			Id:   "cluster_overview",
-			Name: "平台概览",
-		},
-		{
-			Id:   "cluster_search",
-			Name: "平台搜索",
-		},
-		{
-			Id:   "cluster_elasticsearch",
-			Name: "集群监控",
-		},
-		{
-			Id:   "cluster_elasticsearch_refresh",
-			Name: "集群监控刷新",
-		},
-		{
-			Id:   "cluster_activities",
-			Name: "集群动态",
-		},
-		{
-			Id:   "cluster_activities_search",
-			Name: "集群动态搜索",
-		},
-	}
-	return list
+	//list := []ConsolePermisson{
+	//	{
+	//		Id:   "cluster_overview",
+	//		Name: "平台概览",
+	//	},
+	//	{
+	//		Id:   "cluster_search",
+	//		Name: "平台搜索",
+	//	},
+	//	{
+	//		Id:   "cluster_elasticsearch",
+	//		Name: "集群监控",
+	//	},
+	//	{
+	//		Id:   "cluster_elasticsearch_refresh",
+	//		Name: "集群监控刷新",
+	//	},
+	//	{
+	//		Id:   "cluster_activities",
+	//		Name: "集群动态",
+	//	},
+	//	{
+	//		Id:   "cluster_activities_search",
+	//		Name: "集群动态搜索",
+	//	},
+	//
+	//}
+	m := make(map[string]map[string][]string)
+	m["api"]["用户管理"] = enum.AdminUser
+	m["api"]["角色管理"] = enum.AdminRole
+	return m
 }
 func (r ElasticsearchRole) ListPermission() interface{} {
 	list := ElasticsearchPermisson{

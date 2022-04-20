@@ -22,6 +22,7 @@ func init() {
 
 	api.HandleAPIMethod(api.DELETE, "/account/logout", account.Logout)
 	api.HandleAPIMethod(api.GET, "/account/profile", m.LoginRequired(account.Profile))
+	api.HandleAPIMethod(api.PUT, "/account/password", m.LoginRequired(account.UpdatePassword))
 }
 
 const userInSession = "user_in_session"
@@ -100,4 +101,26 @@ func (h Account) Profile(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	}
 	h.WriteJSON(w, reqUser, 200)
 	return
+}
+func (h Account) UpdatePassword(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	reqUser, err := biz.FromUserContext(r.Context())
+	if err != nil {
+		h.Error(w, err)
+		return
+	}
+	var req dto.UpdatePassword
+	err = h.DecodeJSON(r, &req)
+	if err != nil {
+		h.Error(w, err)
+		return
+	}
+	err = biz.UpdatePassword(reqUser, req)
+	if err != nil {
+		h.Error(w, err)
+		return
+	}
+	h.WriteOKJSON(w, util.MapStr{
+		"status": "ok",
+	})
+
 }

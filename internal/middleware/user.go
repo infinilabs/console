@@ -12,7 +12,7 @@ func LoginRequired(h httprouter.Handle) httprouter.Handle {
 
 		claims, err := biz.ValidateLogin(r.Header.Get("Authorization"))
 		if err != nil {
-			w = handleError(w, err)
+			w = handleError(w, http.StatusUnauthorized, err)
 			return
 		}
 		r = r.WithContext(biz.NewUserContext(r.Context(), claims))
@@ -24,21 +24,30 @@ func PermissionRequired(h httprouter.Handle, permissions ...string) httprouter.H
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		claims, err := biz.ValidateLogin(r.Header.Get("Authorization"))
 		if err != nil {
-			w = handleError(w, err)
+
+			w = handleError(w, http.StatusUnauthorized, err)
+
 			return
 		}
 		err = biz.ValidatePermission(claims, permissions)
 		if err != nil {
-			w = handleError(w, err)
+			w = handleError(w, http.StatusForbidden, err)
 			return
 		}
 		r = r.WithContext(biz.NewUserContext(r.Context(), claims))
 		h(w, r, ps)
 	}
 }
-func handleError(w http.ResponseWriter, err error) http.ResponseWriter {
+func handleError(w http.ResponseWriter, statusCode int, err error) http.ResponseWriter {
 	w.Header().Set("Content-type", util.ContentTypeJson)
-	w.WriteHeader(http.StatusUnauthorized)
-	w.Write([]byte(`{"error":"` + err.Error() + `"}`))
+	w.WriteHeader(statusCode)
+	json := util.ToJson(util.MapStr{
+		"error": util.MapStr{
+			"status": statusCode,
+			"reason": err.Error(),
+		},
+	}, true)
+	w.Write([]byte(json))
+
 	return w
 }

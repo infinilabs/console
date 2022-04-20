@@ -3,12 +3,14 @@ package biz
 import (
 	"errors"
 	"fmt"
+	"github.com/golang-jwt/jwt"
+	"golang.org/x/crypto/bcrypt"
+	"infini.sh/console/internal/dto"
 	"infini.sh/console/model/rbac"
 	"infini.sh/framework/core/event"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
-	"src/github.com/golang-jwt/jwt"
 	"strings"
 	"time"
 )
@@ -26,11 +28,10 @@ type User struct {
 const Secret = "console"
 
 func authenticateUser(username string, password string) (user rbac.User, err error) {
-	q := orm.Query{Size: 1000}
-	q.Conds = orm.And(orm.Eq("username", username))
 
-	err, result := orm.Search(rbac.User{}, &q)
+	err, result := orm.GetBy("username", username, rbac.User{})
 	if err != nil {
+		err = ErrNotFound
 		return
 	}
 	if result.Total == 0 {
@@ -38,10 +39,12 @@ func authenticateUser(username string, password string) (user rbac.User, err err
 		return
 	}
 	user = result.Result[0].(rbac.User)
-	if util.MD5digest(password) != user.Password {
-		err = errors.New("password error")
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if err == bcrypt.ErrMismatchedHashAndPassword {
+		err = errors.New("password incorrect")
 		return
 	}
+
 	return
 }
 func authenticateAdmin(username string, password string) (user rbac.User, err error) {
@@ -62,7 +65,7 @@ func authorize(user rbac.User) (m map[string]interface{}, err error) {
 		User: &User{
 			Username: user.Username,
 			UserId:   user.ID,
-			Roles:    []string{"admin"},
+			Roles:    []string{"admin_user"},
 		},
 		RegisteredClaims: &jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
@@ -76,7 +79,9 @@ func authorize(user rbac.User) (m map[string]interface{}, err error) {
 	m = util.MapStr{
 		"access_token": tokenString,
 		"username":     user.Username,
-		"userid":       user.ID,
+		"id":           user.ID,
+		"expire_in":    86400,
+		"roles":        []string{"admin_user"},
 	}
 	return
 }
@@ -115,7 +120,30 @@ func Login(username string, password string) (m map[string]interface{}, err erro
 	}, nil, nil))
 	return
 }
-
+func UpdatePassword(localUser *User, req dto.UpdatePassword) (err error) {
+	user := rbac.User{}
+	user.ID = localUser.UserId
+	_, err = orm.Get(&user)
+	if err != nil {
+		err = ErrNotFound
+		return
+	}
+	err = bcrypt.CompareHashAndPassword([]byte(req.OldPassword), []byte(user.Password))
+	if err == bcrypt.ErrMismatchedHashAndPassword {
+		err = errors.New("old password is not correct")
+		return
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return
+	}
+	user.Password = string(hash)
+	err = orm.Save(&user)
+	if err != nil {
+		return
+	}
+	return
+}
 func ValidateLogin(authorizationHeader string) (clams *UserClaims, err error) {
 
 	if authorizationHeader == "" {
@@ -151,10 +179,7 @@ func ValidateLogin(authorizationHeader string) (clams *UserClaims, err error) {
 func ValidatePermission(claims *UserClaims, permissions []string) (err error) {
 
 	reqUser := claims.User
-	if err != nil {
 
-		return
-	}
 	if reqUser.UserId == "" {
 		err = errors.New("user id is empty")
 		return

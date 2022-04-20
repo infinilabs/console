@@ -2,6 +2,7 @@ package biz
 
 import (
 	"fmt"
+	"golang.org/x/crypto/bcrypt"
 	"infini.sh/console/internal/dto"
 	"infini.sh/console/model/rbac"
 	"infini.sh/framework/core/event"
@@ -73,10 +74,15 @@ func CreateUser(localUser *User, req dto.CreateUser) (id string, err error) {
 			Name: v.Name,
 		})
 	}
+	hash, err := bcrypt.GenerateFromPassword([]byte("123456"), bcrypt.DefaultCost)
+	if err != nil {
+
+		return
+	}
 	user := rbac.User{
 		Name:     req.Name,
 		Username: req.Username,
-		Password: util.MD5digest(req.Password),
+		Password: string(hash),
 		Email:    req.Email,
 		Phone:    req.Phone,
 		Roles:    roles,

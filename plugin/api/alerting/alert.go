@@ -45,7 +45,7 @@ func (h *AlertAPI) getAlert(w http.ResponseWriter, req *http.Request, ps httprou
 
 func (h *AlertAPI) acknowledgeAlert(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	body := struct {
-		AlertIDs []string `json:"alert_ids"`
+		AlertIDs []string `json:"ids"`
 	}{}
 	queryDsl := util.MapStr{
 		"query": util.MapStr{

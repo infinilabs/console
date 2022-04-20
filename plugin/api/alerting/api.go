@@ -29,6 +29,10 @@ func (alert *AlertAPI) Init() {
 	api.HandleAPIMethod(api.PUT, "/alerting/channel/:channel_id", alert.updateChannel)
 	api.HandleAPIMethod(api.GET, "/alerting/channel/_search", alert.searchChannel)
 
+	api.HandleAPIMethod(api.GET, "/alerting/alert/_search", alert.searchAlert)
+	api.HandleAPIMethod(api.GET, "/alerting/alert/:alert_id", alert.getAlert)
+	api.HandleAPIMethod(api.POST, "/alerting/alert/_acknowledge", alert.acknowledgeAlert)
+
 	//just for test
 	//api.HandleAPIMethod(api.GET, "/alerting/rule/test", alert.testRule)
 

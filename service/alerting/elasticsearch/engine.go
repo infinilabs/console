@@ -583,6 +583,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			//todo init last notification time when create task (by last alert item is notified)
 			rule.LastNotificationTime = time.Now()
 			alertItem.IsNotified = true
+			//kv.AddValue(alerting2.KVLastNotificationTime, []byte(rule.ID), []byte(rule.LastNotificationTime.Format(time.RFC3339)))
 		}
 		isAck, err :=  hasAcknowledgedRule(rule.ID, rule.LastTermStartTime)
 		if err != nil {

@@ -18,9 +18,9 @@ type ConsolePermission struct {
 }
 
 type Menu struct {
-	Id         string `json:"id"`
-	Name       string `json:"name"`
-	Permission string `json:"permission"`
+	Id        string `json:"id"`
+	Name      string `json:"name"`
+	Privilege string `json:"privilege"`
 }
 type ElasticsearchPermission struct {
 	Cluster          []string `json:"cluster" elastic_mapping:"cluster:{type:object}"`

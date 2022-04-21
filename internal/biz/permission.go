@@ -40,10 +40,10 @@ type ConsolePermisson struct {
 	Menu []Menu   `json:"menu"`
 }
 type Menu struct {
-	Id         string   `json:"id"`
-	Name       string   `json:"name"`
-	Permission []string `json:"permission,omitempty"`
-	Children   []Menu   `json:"children,omitempty"`
+	Id        string   `json:"id"`
+	Name      string   `json:"name"`
+	Privilege []string `json:"privilege,omitempty"`
+	Children  []Menu   `json:"children,omitempty"`
 }
 
 func (r ConsoleRole) ListPermission() interface{} {
@@ -68,20 +68,20 @@ func (r ConsoleRole) ListPermission() interface{} {
 			Name: "平台管理",
 			Children: []Menu{
 				{
-					Id:         "cluster_overview",
-					Name:       "平台概览",
-					Permission: []string{"none", "write", "read"},
+					Id:        "cluster_overview",
+					Name:      "平台概览",
+					Privilege: []string{"none", "write", "read"},
 				},
 				{
 
-					Id:         "cluster_elasticsearch",
-					Name:       "集群监控",
-					Permission: []string{"none", "write", "read"},
+					Id:        "cluster_elasticsearch",
+					Name:      "集群监控",
+					Privilege: []string{"none", "write", "read"},
 				}, {
 
-					Id:         "cluster_activities",
-					Name:       "集群动态",
-					Permission: []string{"none", "write", "read"},
+					Id:        "cluster_activities",
+					Name:      "集群动态",
+					Privilege: []string{"none", "write", "read"},
 				},
 			},
 		},

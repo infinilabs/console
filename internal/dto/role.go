@@ -11,9 +11,9 @@ type RolePermission struct {
 	Menu []Menu   `json:"menu"`
 }
 type Menu struct {
-	Id     string `json:"id"`
-	Name   string `json:"name"`
-	Switch string `json:"switch"`
+	Id        string `json:"id"`
+	Name      string `json:"name"`
+	Privilege string `json:"privilege"`
 }
 type UpdateConsoleRole struct {
 	Description string         `json:"description" `

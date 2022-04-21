@@ -1,10 +1,19 @@
 package dto
 
 type CreateRole struct {
-	Name        string      `json:"name"`
-	Description string      `json:"description" `
-	RoleType    string      `json:"type" `
-	Permission  interface{} `json:"permission"`
+	Name        string         `json:"name"`
+	Description string         `json:"description" `
+	RoleType    string         `json:"type" `
+	Permission  RolePermission `json:"permission"`
+}
+type RolePermission struct {
+	Api  []string `json:"api"`
+	Menu []Menu   `json:"menu"`
+}
+type Menu struct {
+	Id     string `json:"id"`
+	Name   string `json:"name"`
+	Switch string `json:"switch"`
 }
 type UpdateRole struct {
 	Description string      `json:"description" `

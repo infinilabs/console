@@ -30,17 +30,19 @@ const GetInstanceStatus = "get_instance_status"
 const ConnectInstance = "connect_instance"
 const InstanceProxy = "instance_proxy"
 
-var All = []string{CreateUser, UpdateUser, DeleteUser, GetUser, SearchUser, CreateRole, UpdateRole, DeleteRole, GetRole, SearchRole, ListPermission}
+var All = []string{CreateUser, UpdateUser, DeleteUser, GetUser, SearchUser, CreateRole, UpdateRole, DeleteRole, GetRole,
+	SearchRole, ListPermission, CreateRule, UpdateRule, DeleteRule, GetRule, SearchRule, CreateInstance, UpdateInstance, DeleteInstance,
+	GetInstance, SearchInstance, GetInstanceStatus, ConnectInstance, InstanceProxy}
+
 var Admin = []string{CreateUser, UpdateUser, DeleteUser, GetUser, SearchUser, CreateRole, UpdateRole, DeleteRole, GetRole, SearchRole, ListPermission}
 var AdminUser = []string{CreateUser, UpdateUser, DeleteUser, GetUser, SearchUser}
-var AdminRole = []string{CreateRole, UpdateRole, DeleteRole, GetRole, SearchRole, ListPermission}
 var BuildRoles = make(map[string]map[string]interface{}, 0)
 
 func init() {
 	BuildRoles["admin"] = map[string]interface{}{
 		"id":          "admin",
 		"name":        "admin",
-		"permission":  AdminUser,
+		"permission":  Admin,
 		"builtin":     true,
 		"description": "is admin",
 		"created":     time.Now(),

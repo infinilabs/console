@@ -30,6 +30,7 @@ const GetInstanceStatus = "get_instance_status"
 const ConnectInstance = "connect_instance"
 const InstanceProxy = "instance_proxy"
 
+var All = []string{CreateUser, UpdateUser, DeleteUser, GetUser, SearchUser, CreateRole, UpdateRole, DeleteRole, GetRole, SearchRole, ListPermission}
 var Admin = []string{CreateUser, UpdateUser, DeleteUser, GetUser, SearchUser, CreateRole, UpdateRole, DeleteRole, GetRole, SearchRole, ListPermission}
 var AdminUser = []string{CreateUser, UpdateUser, DeleteUser, GetUser, SearchUser}
 var AdminRole = []string{CreateRole, UpdateRole, DeleteRole, GetRole, SearchRole, ListPermission}

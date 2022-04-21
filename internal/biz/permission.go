@@ -36,24 +36,18 @@ func NewRole(typ string) (r IRole, err error) {
 }
 
 type ConsolePermisson struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
+	Api  []string `json:"api"`
+	Menu []Menu   `json:"menu"`
+}
+type Menu struct {
+	Id       string   `json:"id"`
+	Name     string   `json:"name"`
+	Switch   []string `json:"switch,omitempty"`
+	Children []Menu   `json:"children,omitempty"`
 }
 
 func (r ConsoleRole) ListPermission() interface{} {
-	//list := []ConsolePermisson{
-	//	{
-	//		Id:   "cluster_overview",
-	//		Name: "平台概览",
-	//	},
-	//	{
-	//		Id:   "cluster_search",
-	//		Name: "平台搜索",
-	//	},
-	//	{
-	//		Id:   "cluster_elasticsearch",
-	//		Name: "集群监控",
-	//	},
+
 	//	{
 	//		Id:   "cluster_elasticsearch_refresh",
 	//		Name: "集群监控刷新",
@@ -68,10 +62,36 @@ func (r ConsoleRole) ListPermission() interface{} {
 	//	},
 	//
 	//}
-	m := make(map[string]map[string][]string)
-	m["api"]["用户管理"] = enum.AdminUser
-	m["api"]["角色管理"] = enum.AdminRole
-	return m
+	menu := []Menu{
+		{
+			Id:   "cluster",
+			Name: "平台管理",
+			Children: []Menu{
+				{
+					Id:     "cluster_overview",
+					Name:   "平台概览",
+					Switch: []string{"none", "write", "read"},
+				},
+				{
+
+					Id:     "cluster_elasticsearch",
+					Name:   "集群监控",
+					Switch: []string{"none", "write", "read"},
+				}, {
+
+					Id:     "cluster_activities",
+					Name:   "集群动态",
+					Switch: []string{"none", "write", "read"},
+				},
+			},
+		},
+	}
+	p := ConsolePermisson{
+		Api:  enum.All,
+		Menu: menu,
+	}
+
+	return p
 }
 func (r ElasticsearchRole) ListPermission() interface{} {
 	list := ElasticsearchPermisson{

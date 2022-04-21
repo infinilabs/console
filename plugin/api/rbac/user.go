@@ -25,7 +25,12 @@ func (h Rbac) CreateUser(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	var req dto.CreateUser
 	err := h.DecodeJSON(r, &req)
 	if err != nil {
-		h.Error(w, err)
+		h.Error400(w, err.Error())
+		return
+	}
+	if req.Username == "" || req.Password == "" {
+
+		h.Error400(w, "username or password require")
 		return
 	}
 	localUser, err := biz.FromUserContext(r.Context())
@@ -68,7 +73,7 @@ func (h Rbac) UpdateUser(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	err := h.DecodeJSON(r, &req)
 	if err != nil {
 		_ = log.Error(err.Error())
-		h.Error(w, err)
+		h.Error400(w, err.Error())
 		return
 	}
 	localUser, err := biz.FromUserContext(r.Context())
@@ -94,7 +99,7 @@ func (h Rbac) UpdateUserRole(w http.ResponseWriter, r *http.Request, ps httprout
 	err := h.DecodeJSON(r, &req)
 	if err != nil {
 		_ = log.Error(err.Error())
-		h.Error(w, err)
+		h.Error400(w, err.Error())
 		return
 	}
 	localUser, err := biz.FromUserContext(r.Context())

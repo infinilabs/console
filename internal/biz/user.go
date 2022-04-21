@@ -74,7 +74,7 @@ func CreateUser(localUser *User, req dto.CreateUser) (id string, err error) {
 			Name: v.Name,
 		})
 	}
-	hash, err := bcrypt.GenerateFromPassword([]byte("123456"), bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 
 		return

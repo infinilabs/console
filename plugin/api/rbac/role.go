@@ -19,7 +19,7 @@ func (h Rbac) CreateRole(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	var req dto.CreateRole
 	err = h.DecodeJSON(r, &req)
 	if err != nil {
-		h.Error(w, err)
+		h.Error400(w, err.Error())
 		return
 	}
 	req.RoleType = roleType

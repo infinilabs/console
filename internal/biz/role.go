@@ -12,7 +12,59 @@ import (
 	"time"
 )
 
-func CreateRole(localUser *User, req dto.CreateRole) (id string, err error) {
+func CreateEsRole(localUser *User, req dto.CreateEsRole) (id string, err error) {
+	q := orm.Query{Size: 1000}
+	q.Conds = orm.And(orm.Eq("name", req.Name))
+
+	err, result := orm.Search(rbac.Role{}, &q)
+	if err != nil {
+		return
+	}
+	if result.Total > 0 {
+		err = fmt.Errorf("role name %s already exists", req.Name)
+		return
+	}
+
+	role := &rbac.Role{
+		Name:        req.Name,
+		Description: req.Description,
+		RoleType:    req.RoleType,
+		Permission:  req.Permission,
+	}
+	role.ID = util.GetUUID()
+	role.Created = time.Now()
+	role.Updated = time.Now()
+	err = orm.Save(role)
+	if err != nil {
+		return
+	}
+	id = role.ID
+	err = orm.Save(GenerateEvent(event.ActivityMetadata{
+		Category: "platform",
+		Group:    "rbac",
+		Name:     "role",
+		Type:     "create",
+		Labels: util.MapStr{
+			"id":          id,
+			"name":        req.Name,
+			"description": req.Description,
+			"permission":  req.Permission,
+			"type":        req.RoleType,
+			"created":     role.Created.Format("2006-01-02 15:04:05"),
+			"updated":     role.Updated.Format("2006-01-02 15:04:05"),
+		},
+		User: util.MapStr{
+			"userid":   localUser.UserId,
+			"username": localUser.Username,
+		},
+	}, nil, nil))
+
+	if err != nil {
+		log.Error(err)
+	}
+	return
+}
+func CreateRole(localUser *User, req dto.CreateConsoleRole) (id string, err error) {
 
 	q := orm.Query{Size: 1000}
 	q.Conds = orm.And(orm.Eq("name", req.Name))
@@ -102,7 +154,7 @@ func DeleteRole(localUser *User, id string) (err error) {
 	return
 }
 
-func UpdateRole(localUser *User, id string, req dto.UpdateRole) (err error) {
+func UpdateRole(localUser *User, id string, req dto.UpdateConsoleRole) (err error) {
 	role := rbac.Role{}
 	role.ID = id
 	_, err = orm.Get(&role)

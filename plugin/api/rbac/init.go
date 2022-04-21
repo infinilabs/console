@@ -5,7 +5,6 @@ import (
 	"infini.sh/console/internal/biz"
 	"infini.sh/console/internal/biz/enum"
 	m "infini.sh/console/internal/middleware"
-
 	"infini.sh/framework/core/api"
 	"infini.sh/framework/core/util"
 	"os"
@@ -57,11 +56,33 @@ func loadJsonConfig() {
 }
 func loadRolePermission() {
 	biz.RolePermission = make(map[string][]string)
-	biz.RolePermission["admin_user"] = enum.AdminUser
+
 	biz.RolePermission["admin"] = enum.Admin
 }
 func init() {
 	registerRouter()
 	loadJsonConfig()
 	loadRolePermission()
+
+}
+func existInternalUser() {
+	//user, err := biz.GetUser("admin")
+	//if errors.Is(err, elastic.ErrNotFound) {
+	//	user.ID = "admin"
+	//	user.Username = "admin"
+	//	hash, _ := bcrypt.GenerateFromPassword([]byte("admin"), bcrypt.DefaultCost)
+	//
+	//	user.Password = string(hash)
+	//	user.Email = ""
+	//	user.Phone = ""
+	//	user.Name = ""
+	//
+	//
+	//	user.Created = time.Now()
+	//	user.Updated = time.Now()
+	//
+	//}
+}
+func existInternalRole() {
+
 }

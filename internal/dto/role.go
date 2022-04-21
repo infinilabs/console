@@ -1,6 +1,6 @@
 package dto
 
-type CreateRole struct {
+type CreateConsoleRole struct {
 	Name        string         `json:"name"`
 	Description string         `json:"description" `
 	RoleType    string         `json:"type" `
@@ -15,9 +15,15 @@ type Menu struct {
 	Name   string `json:"name"`
 	Switch string `json:"switch"`
 }
-type UpdateRole struct {
-	Description string      `json:"description" `
-	Permission  interface{} `json:"permission"`
+type UpdateConsoleRole struct {
+	Description string         `json:"description" `
+	Permission  RolePermission `json:"permission"`
+}
+type CreateEsRole struct {
+	Name        string                  `json:"name"`
+	Description string                  `json:"description" `
+	RoleType    string                  `json:"type" `
+	Permission  ElasticsearchPermission `json:"permission"`
 }
 type ElasticsearchPermission struct {
 	Cluster          []string `json:"cluster" `

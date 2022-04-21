@@ -39,10 +39,10 @@ type MenuPermission struct {
 	Privilege string `json:"privilege"`
 }
 type ElasticsearchRole struct {
-	Name        string      `json:"name"`
-	Description string      `json:"description" `
-	RoleType    string      `json:"type" `
-	Permission  interface{} `json:"permission"`
+	Name        string `json:"name"`
+	Description string `json:"description" `
+	RoleType    string `json:"type" `
+	rbac.ElasticRole
 }
 
 func NewRole(typ string) (r IRole, err error) {
@@ -132,8 +132,10 @@ func (role ElasticsearchRole) Create(localUser *User) (id string, err error) {
 		Name:        role.Name,
 		Description: role.Description,
 		RoleType:    role.RoleType,
-		Permission:  role.Permission,
 	}
+	newRole.Cluster = role.Cluster
+	newRole.Index = role.Index
+	newRole.ClusterPrivilege = role.ClusterPrivilege
 	newRole.ID = util.GetUUID()
 	newRole.Created = time.Now()
 	newRole.Updated = time.Now()
@@ -151,10 +153,10 @@ func (role ElasticsearchRole) Create(localUser *User) (id string, err error) {
 			"id":          id,
 			"name":        role.Name,
 			"description": role.Description,
-			"permission":  role.Permission,
-			"type":        role.RoleType,
-			"created":     newRole.Created.Format("2006-01-02 15:04:05"),
-			"updated":     newRole.Updated.Format("2006-01-02 15:04:05"),
+
+			"type":    role.RoleType,
+			"created": newRole.Created.Format("2006-01-02 15:04:05"),
+			"updated": newRole.Updated.Format("2006-01-02 15:04:05"),
 		},
 		User: util.MapStr{
 			"userid":   localUser.UserId,

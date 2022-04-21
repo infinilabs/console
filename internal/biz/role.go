@@ -12,33 +12,83 @@ import (
 	"time"
 )
 
-func CreateEsRole(localUser *User, req dto.CreateEsRole) (id string, err error) {
-	q := orm.Query{Size: 1000}
-	q.Conds = orm.And(orm.Eq("name", req.Name))
+type RoleType = string
+
+const (
+	Console      RoleType = "console"
+	Elastisearch RoleType = "elasticsearch"
+)
+
+type IRole interface {
+	ListPermission() interface{}
+	Create(localUser *User) (id string, err error)
+}
+type ConsoleRole struct {
+	Name        string     `json:"name"`
+	Description string     `json:"description" `
+	RoleType    string     `json:"type" `
+	Permission  Permission `json:"permission"`
+}
+type Permission struct {
+	Api  []string         `json:"api"`
+	Menu []MenuPermission `json:"menu"`
+}
+type MenuPermission struct {
+	Id        string `json:"id"`
+	Name      string `json:"name"`
+	Privilege string `json:"privilege"`
+}
+type ElasticsearchRole struct {
+	Name        string      `json:"name"`
+	Description string      `json:"description" `
+	RoleType    string      `json:"type" `
+	Permission  interface{} `json:"permission"`
+}
+
+func NewRole(typ string) (r IRole, err error) {
+	switch typ {
+	case Console:
+		r = &ConsoleRole{
+			RoleType: typ,
+		}
+
+	case Elastisearch:
+		r = &ElasticsearchRole{
+			RoleType: typ,
+		}
+	default:
+		err = fmt.Errorf("role type %s not support", typ)
+	}
+	return
+}
+
+func (role ConsoleRole) Create(localUser *User) (id string, err error) {
+	q := orm.Query{Size: 1}
+	q.Conds = orm.And(orm.Eq("name", role.Name))
 
 	err, result := orm.Search(rbac.Role{}, &q)
 	if err != nil {
 		return
 	}
 	if result.Total > 0 {
-		err = fmt.Errorf("role name %s already exists", req.Name)
+		err = fmt.Errorf("role name %s already exists", role.Name)
 		return
 	}
 
-	role := &rbac.Role{
-		Name:        req.Name,
-		Description: req.Description,
-		RoleType:    req.RoleType,
-		Permission:  req.Permission,
+	newRole := rbac.Role{
+		Name:        role.Name,
+		Description: role.Description,
+		RoleType:    role.RoleType,
+		Permission:  role.Permission,
 	}
-	role.ID = util.GetUUID()
-	role.Created = time.Now()
-	role.Updated = time.Now()
-	err = orm.Save(role)
+	newRole.ID = util.GetUUID()
+	newRole.Created = time.Now()
+	newRole.Updated = time.Now()
+	err = orm.Save(&newRole)
 	if err != nil {
 		return
 	}
-	id = role.ID
+	id = newRole.ID
 	err = orm.Save(GenerateEvent(event.ActivityMetadata{
 		Category: "platform",
 		Group:    "rbac",
@@ -46,12 +96,12 @@ func CreateEsRole(localUser *User, req dto.CreateEsRole) (id string, err error) 
 		Type:     "create",
 		Labels: util.MapStr{
 			"id":          id,
-			"name":        req.Name,
-			"description": req.Description,
-			"permission":  req.Permission,
-			"type":        req.RoleType,
-			"created":     role.Created.Format("2006-01-02 15:04:05"),
-			"updated":     role.Updated.Format("2006-01-02 15:04:05"),
+			"name":        role.Name,
+			"description": role.Description,
+			"permission":  role.Permission,
+			"type":        role.RoleType,
+			"created":     newRole.Created.Format("2006-01-02 15:04:05"),
+			"updated":     newRole.Updated.Format("2006-01-02 15:04:05"),
 		},
 		User: util.MapStr{
 			"userid":   localUser.UserId,
@@ -63,35 +113,35 @@ func CreateEsRole(localUser *User, req dto.CreateEsRole) (id string, err error) 
 		log.Error(err)
 	}
 	return
-}
-func CreateRole(localUser *User, req dto.CreateConsoleRole) (id string, err error) {
 
-	q := orm.Query{Size: 1000}
-	q.Conds = orm.And(orm.Eq("name", req.Name))
+}
+func (role ElasticsearchRole) Create(localUser *User) (id string, err error) {
+	q := orm.Query{Size: 1}
+	q.Conds = orm.And(orm.Eq("name", role.Name))
 
 	err, result := orm.Search(rbac.Role{}, &q)
 	if err != nil {
 		return
 	}
 	if result.Total > 0 {
-		err = fmt.Errorf("role name %s already exists", req.Name)
+		err = fmt.Errorf("role name %s already exists", role.Name)
 		return
 	}
 
-	role := &rbac.Role{
-		Name:        req.Name,
-		Description: req.Description,
-		RoleType:    req.RoleType,
-		Permission:  req.Permission,
+	newRole := rbac.Role{
+		Name:        role.Name,
+		Description: role.Description,
+		RoleType:    role.RoleType,
+		Permission:  role.Permission,
 	}
-	role.ID = util.GetUUID()
-	role.Created = time.Now()
-	role.Updated = time.Now()
-	err = orm.Save(role)
+	newRole.ID = util.GetUUID()
+	newRole.Created = time.Now()
+	newRole.Updated = time.Now()
+	err = orm.Save(&newRole)
 	if err != nil {
 		return
 	}
-	id = role.ID
+	id = newRole.ID
 	err = orm.Save(GenerateEvent(event.ActivityMetadata{
 		Category: "platform",
 		Group:    "rbac",
@@ -99,12 +149,12 @@ func CreateRole(localUser *User, req dto.CreateConsoleRole) (id string, err erro
 		Type:     "create",
 		Labels: util.MapStr{
 			"id":          id,
-			"name":        req.Name,
-			"description": req.Description,
-			"permission":  req.Permission,
-			"type":        req.RoleType,
-			"created":     role.Created.Format("2006-01-02 15:04:05"),
-			"updated":     role.Updated.Format("2006-01-02 15:04:05"),
+			"name":        role.Name,
+			"description": role.Description,
+			"permission":  role.Permission,
+			"type":        role.RoleType,
+			"created":     newRole.Created.Format("2006-01-02 15:04:05"),
+			"updated":     newRole.Updated.Format("2006-01-02 15:04:05"),
 		},
 		User: util.MapStr{
 			"userid":   localUser.UserId,

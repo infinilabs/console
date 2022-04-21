@@ -25,27 +25,19 @@ func (h Rbac) CreateRole(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		h.Error(w, err)
 		return
 	}
-	var id string
-	switch roleType {
-	case biz.Console:
-		var req dto.CreateConsoleRole
-		err = h.DecodeJSON(r, &req)
-		if err != nil {
-			h.Error400(w, err.Error())
-			return
-		}
-		req.RoleType = roleType
-		id, err = biz.CreateRole(localUser, req)
-	case biz.Elastisearch:
-		var req dto.CreateEsRole
-		err = h.DecodeJSON(r, &req)
-		if err != nil {
-			h.Error400(w, err.Error())
-			return
-		}
-		req.RoleType = roleType
-		id, err = biz.CreateEsRole(localUser, req)
+	irole, err := biz.NewRole(roleType)
+	if err != nil {
+		h.Error(w, err)
+		return
 	}
+
+	err = h.DecodeJSON(r, &irole)
+	if err != nil {
+		h.Error400(w, err.Error())
+		return
+	}
+	var id string
+	id, err = irole.Create(localUser)
 
 	if err != nil {
 		_ = log.Error(err.Error())

@@ -1,11 +1,5 @@
 package dto
 
-type CreateConsoleRole struct {
-	Name        string         `json:"name"`
-	Description string         `json:"description" `
-	RoleType    string         `json:"type" `
-	Permission  RolePermission `json:"permission"`
-}
 type RolePermission struct {
 	Api  []string `json:"api"`
 	Menu []Menu   `json:"menu"`

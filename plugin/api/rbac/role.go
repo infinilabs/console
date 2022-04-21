@@ -73,6 +73,7 @@ func (h Rbac) SearchRole(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		Source: enum.BuildRoles["admin"],
 	})
 	response.Hits.Hits = list
+	response.Hits.Total = response.GetTotal() + 1
 
 	h.WriteOKJSON(w, response)
 	return

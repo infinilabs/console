@@ -3,8 +3,6 @@ package rbac
 import (
 	log "github.com/cihub/seelog"
 	"infini.sh/console/internal/biz"
-	"infini.sh/console/internal/core"
-
 	httprouter "infini.sh/framework/core/api/router"
 	"net/http"
 )
@@ -19,8 +17,6 @@ func (h Rbac) ListPermission(w http.ResponseWriter, r *http.Request, ps httprout
 		return
 	}
 	permissions := role.ListPermission()
-	h.WriteOKJSON(w, core.Response{
-		Hit: permissions,
-	})
+	h.WriteOKJSON(w, permissions)
 	return
 }

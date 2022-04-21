@@ -9,6 +9,12 @@ import (
 
 func (h Rbac) ListPermission(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	typ := ps.MustGetParameter("type")
+
+	err := biz.IsAllowRoleType(typ)
+	if err != nil {
+		h.Error400(w, err.Error())
+		return
+	}
 	role, err := biz.NewRole(typ)
 
 	if err != nil {

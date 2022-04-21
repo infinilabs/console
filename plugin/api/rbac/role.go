@@ -14,6 +14,11 @@ import (
 
 func (h Rbac) CreateRole(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	roleType := ps.MustGetParameter("type")
+	err := biz.IsAllowRoleType(roleType)
+	if err != nil {
+		h.Error400(w, err.Error())
+		return
+	}
 	localUser, err := biz.FromUserContext(r.Context())
 	if err != nil {
 		log.Error(err.Error())

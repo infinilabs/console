@@ -215,3 +215,10 @@ func SearchRole(keyword string, from, size int) (roles orm.Result, err error) {
 
 	return
 }
+func IsAllowRoleType(roleType string) (err error) {
+	if roleType != Console && roleType != Elastisearch {
+		err = fmt.Errorf("invalid role type %s ", roleType)
+		return
+	}
+	return
+}

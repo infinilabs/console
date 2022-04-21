@@ -5,7 +5,8 @@ import (
 	"infini.sh/console/internal/biz/enum"
 )
 
-var ClusterApis = make([]string, 0)
+var ClusterApis = make(map[string][]string)
+var IndexApis = make([]string, 0)
 var EsApis = make(map[string][]string)
 var RolePermission = make(map[string][]string)
 
@@ -18,8 +19,24 @@ const (
 
 type IRole interface {
 	ListPermission() interface{}
+
+	Create(localUser *User) (id string, err error)
 }
-type ConsoleRole struct{}
+type ConsoleRole struct {
+	Name        string     `json:"name"`
+	Description string     `json:"description" `
+	RoleType    string     `json:"type" `
+	Permission  Permission `json:"permission"`
+}
+type Permission struct {
+	Api  []string         `json:"api"`
+	Menu []MenuPermission `json:"menu"`
+}
+type MenuPermission struct {
+	Id        string `json:"id"`
+	Name      string `json:"name"`
+	Privilege string `json:"privilege"`
+}
 type ElasticsearchRole struct{}
 
 func NewRole(typ string) (r IRole, err error) {
@@ -46,22 +63,13 @@ type Menu struct {
 	Children  []Menu   `json:"children,omitempty"`
 }
 
-func (r ConsoleRole) ListPermission() interface{} {
-
-	//	{
-	//		Id:   "cluster_elasticsearch_refresh",
-	//		Name: "集群监控刷新",
-	//	},
-	//	{
-	//		Id:   "cluster_activities",
-	//		Name: "集群动态",
-	//	},
-	//	{
-	//		Id:   "cluster_activities_search",
-	//		Name: "集群动态搜索",
-	//	},
-	//
-	//}
+func (role ConsoleRole) Create(localUser *User) (id string, err error) {
+	return
+}
+func (role ElasticsearchRole) Create(localUser *User) (id string, err error) {
+	return
+}
+func (role ConsoleRole) ListPermission() interface{} {
 	menu := []Menu{
 		{
 			Id:   "cluster",
@@ -93,15 +101,15 @@ func (r ConsoleRole) ListPermission() interface{} {
 
 	return p
 }
-func (r ElasticsearchRole) ListPermission() interface{} {
+func (role ElasticsearchRole) ListPermission() interface{} {
 	list := ElasticsearchPermisson{
 		ClusterPrivileges: ClusterApis,
-		IndexPrivileges:   EsApis["indices"],
+		IndexPrivileges:   IndexApis,
 	}
 	return list
 }
 
 type ElasticsearchPermisson struct {
-	IndexPrivileges   []string `json:"index_privileges"`
-	ClusterPrivileges []string `json:"cluster_privileges"`
+	IndexPrivileges   []string            `json:"index_privileges"`
+	ClusterPrivileges map[string][]string `json:"cluster_privileges"`
 }

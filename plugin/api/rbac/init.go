@@ -41,17 +41,14 @@ func loadJsonConfig() {
 		panic("load json file err " + err.Error())
 
 	}
-
-	err = json.Unmarshal(bytes, &biz.EsApis)
+	apis := make(map[string][]string)
+	err = json.Unmarshal(bytes, &apis)
 	if err != nil {
 		panic("json config unmarshal err " + err.Error())
 	}
-	list := make([]string, 0)
-	list = append(list, "*")
-	for k := range biz.EsApis {
-		list = append(list, k)
-	}
-	biz.ClusterApis = list
+	biz.IndexApis = apis["indices"]
+	delete(apis, "indices")
+	biz.ClusterApis = apis
 
 }
 func loadRolePermission() {

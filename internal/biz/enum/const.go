@@ -29,14 +29,16 @@ func init() {
 		"description": "is admin",
 		"created":     time.Now(),
 	}
-	//自定义角色=》内置角色 =》权限列表
-	// userrole=> cluster；read =>  permissionList
-	// login=> userrole=> cluster:read =>permissionList
-	// search require = (search)
+	//自定义角色=》 =》permissionKey
+	// userrole=> [cluster::all,clust] =>  permissionValue [cluster::read,cluster::write]
+	// login=> userrole=> cluster::all =>permissionList[]
+	// cluster search api require = (cluster::read)
 	//Permission = map[string][]string{
 	//
 	//	UserRead : {UserRead},
 	//	UserAll: {UserRead, UserWrite},
 	//}
+	//zhangsan  userrole [cluster::read,cluster::write]
+	// cluster/_search reqire(cluster::read)
 
 }

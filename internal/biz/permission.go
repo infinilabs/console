@@ -16,27 +16,29 @@ type Menu struct {
 }
 
 func (role ConsoleRole) ListPermission() interface{} {
-	menu := []Menu{{
-		Id:        "cluster",
-		Name:      "平台管理",
-		Privilege: []string{"none", "read", "all"},
-	},
+	menu := []Menu{
 		{
-			Id:        "role",
-			Name:      "角色管理",
-			Privilege: []string{"none", "read", "all"},
-		},
-		{
-			Id:        "user",
-			Name:      "用户管理",
-			Privilege: []string{"none", "read", "all"},
+			Id:   "system",
+			Name: "系统管理",
+			Children: []Menu{
+				{
+					Id:        "system_user",
+					Name:      "用户管理",
+					Privilege: []string{"none", "read", "all"},
+				},
+				{
+
+					Id:        "system_role",
+					Name:      "角色管理",
+					Privilege: []string{"none", "read", "all"},
+				},
+			},
 		},
 	}
 	p := ConsolePermisson{
 
 		Menu: menu,
 	}
-
 	return p
 }
 func (role ElasticsearchRole) ListPermission() interface{} {

@@ -99,6 +99,9 @@ func authorize(user Account) (m map[string]interface{}, err error) {
 		"id":           user.ID,
 		"expire_in":    86400,
 		"roles":        []string{"admin"},
+		"privilege": []string{
+			"system_user:all", "system_role:all", "system_cluster:all", "system_command:all",
+		},
 	}
 	return
 }

@@ -33,18 +33,18 @@ func Init(cfg *config.AppConfig) {
 	api.HandleAPIMethod(api.GET, path.Join(pathPrefix, "rebuild/_search"), handler.HandleGetRebuildListAction)
 	api.HandleAPIMethod(api.DELETE, path.Join(pathPrefix, "rebuild/:id"), handler.HandleDeleteRebuildAction)
 
-	api.HandleAPIMethod(api.GET,  path.Join(esPrefix, "_cat/indices"), handler.HandleGetIndicesAction)
+	api.HandleAPIMethod(api.GET, path.Join(esPrefix, "_cat/indices"), handler.HandleGetIndicesAction)
 	api.HandleAPIMethod(api.GET, path.Join(esPrefix, "index/:index/_mappings"), handler.HandleGetMappingsAction)
 	api.HandleAPIMethod(api.GET, path.Join(esPrefix, "index/:index/_settings"), handler.HandleGetSettingsAction)
 	api.HandleAPIMethod(api.PUT, path.Join(esPrefix, "index/:index/_settings"), handler.HandleUpdateSettingsAction)
 	api.HandleAPIMethod(api.DELETE, path.Join(esPrefix, "index/:index"), handler.HandleDeleteIndexAction)
 	api.HandleAPIMethod(api.POST, path.Join(esPrefix, "index/:index"), handler.HandleCreateIndexAction)
 
-	api.HandleAPIMethod(api.POST,  path.Join(pathPrefix, "elasticsearch/command"), handler.HandleAddCommonCommandAction)
-	api.HandleAPIMethod(api.PUT,  path.Join(pathPrefix, "elasticsearch/command/:cid"), handler.HandleSaveCommonCommandAction)
+	api.HandleAPIMethod(api.POST, path.Join(pathPrefix, "elasticsearch/command"), handler.HandleAddCommonCommandAction)
+	api.HandleAPIMethod(api.PUT, path.Join(pathPrefix, "elasticsearch/command/:cid"), handler.HandleSaveCommonCommandAction)
 	api.HandleAPIMethod(api.GET, path.Join(pathPrefix, "elasticsearch/command"), handler.HandleQueryCommonCommandAction)
 	api.HandleAPIMethod(api.DELETE, path.Join(pathPrefix, "elasticsearch/command/:cid"), handler.HandleDeleteCommonCommandAction)
-
+	api.HandleAPIMethod(api.GET, path.Join(pathPrefix, "cluster/indices"), handler.ListIndex)
 	//task.RegisterScheduleTask(task.ScheduleTask{
 	//	Description: "sync reindex task result",
 	//	Task: func() {

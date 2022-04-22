@@ -2,6 +2,7 @@ package biz
 
 import (
 	"fmt"
+	"infini.sh/console/internal/biz/enum"
 	"infini.sh/console/internal/dto"
 	"infini.sh/console/model/rbac"
 	"infini.sh/framework/core/event"
@@ -63,6 +64,10 @@ func NewRole(typ string) (r IRole, err error) {
 }
 
 func (role ConsoleRole) Create(localUser *User) (id string, err error) {
+	if _, ok := enum.BuildRoles[role.Name]; ok {
+		err = fmt.Errorf("role name %s already exists", role.Name)
+		return
+	}
 	q := orm.Query{Size: 1}
 	q.Conds = orm.And(orm.Eq("name", role.Name))
 
@@ -116,6 +121,11 @@ func (role ConsoleRole) Create(localUser *User) (id string, err error) {
 
 }
 func (role ElasticsearchRole) Create(localUser *User) (id string, err error) {
+
+	if _, ok := enum.BuildRoles[role.Name]; ok {
+		err = fmt.Errorf("role name %s already exists", role.Name)
+		return
+	}
 	q := orm.Query{Size: 1}
 	q.Conds = orm.And(orm.Eq("name", role.Name))
 

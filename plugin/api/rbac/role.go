@@ -67,19 +67,23 @@ func (h Rbac) SearchRole(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	util.FromJSONBytes(res.Raw, &response)
 
 	list := response.Hits.Hits
+	total := response.GetTotal()
 	var index string
 	for _, v := range list {
 		index = v.Index
 	}
+	for k, v := range enum.BuildRoles {
+		list = append(list, elastic.IndexDocument{
+			ID:     k,
+			Index:  index,
+			Type:   "_doc",
+			Source: v,
+		})
+		total++
+	}
 
-	list = append(list, elastic.IndexDocument{
-		ID:     "admin",
-		Index:  index,
-		Type:   "_doc",
-		Source: enum.BuildRoles["admin"],
-	})
 	response.Hits.Hits = list
-	response.Hits.Total = response.GetTotal() + 1
+	response.Hits.Total = total
 
 	h.WriteOKJSON(w, response)
 	return

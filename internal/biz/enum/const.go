@@ -8,11 +8,11 @@ var UserAll = []string{"user::read", "user::write"}
 var RoleRead = []string{"role::read"}
 var RoleAll = []string{"role::read", "role::write"}
 
-//const RuleRead = "rule::read"
-//const RuleAll = "rule::all"
-//
-//const InstanceRead = "instance::read"
-//const InstanceAll = "instance::all"
+var RuleRead = []string{"rule::read"}
+var RuleAll = []string{"rule::read", "rule::write"}
+
+var InstanceRead = []string{"instance::read"}
+var InstanceAll = []string{"instance::read", "instance::write"}
 
 var Admin []string
 var BuildRoles = make(map[string]map[string]interface{}, 0)
@@ -21,14 +21,39 @@ var Permission = make(map[string][]string)
 func init() {
 	Admin = append(Admin, UserAll...)
 	Admin = append(Admin, RoleAll...)
+
+	UserMenu := Menu{
+		Id:        "system_user",
+		Name:      "用户管理",
+		Privilege: "all",
+	}
+	RoleMenu := Menu{
+		Id:        "system_role",
+		Name:      "角色管理",
+		Privilege: "all",
+	}
+	AdminMenu := []Menu{
+		UserMenu, RoleMenu,
+	}
+
 	BuildRoles["admin"] = map[string]interface{}{
 		"id":          "admin",
-		"name":        "admin",
-		"permission":  Admin,
+		"name":        "管理员",
+		"permission":  AdminMenu,
 		"builtin":     true,
 		"description": "is admin",
 		"created":     time.Now(),
 	}
+
+	BuildRoles["user_admin"] = map[string]interface{}{
+		"id":          "user_admin",
+		"name":        "用户管理员",
+		"permission":  UserMenu,
+		"builtin":     true,
+		"description": "is user admin",
+		"created":     time.Now(),
+	}
+
 	//自定义角色=》 =》permissionKey
 	// userrole=> [cluster::all,clust] =>  permissionValue [cluster::read,cluster::write]
 	// login=> userrole=> cluster::all =>permissionList[]

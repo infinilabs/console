@@ -6,12 +6,12 @@ import (
 	"strings"
 	"time"
 
+	"infini.sh/console/config"
+	model2 "infini.sh/console/model"
 	"infini.sh/framework/core/api"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
-	"infini.sh/console/config"
-	model2 "infini.sh/console/model"
 )
 
 type APIHandler struct {
@@ -115,4 +115,44 @@ func (handler APIHandler) UpdateDictItemAction(w http.ResponseWriter, req *http.
 	resp["payload"] = dict
 	handler.WriteJSON(w, resp, http.StatusOK)
 
+}
+func (handler APIHandler) ListIndex(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	//	clusterIds := handler.GetParameterOrDefault(req, "cluster_id", "")
+	//	keyword := handler.GetParameterOrDefault(req, "keyword", "")
+	//	Ids := strings.Split(clusterIds, ",")
+	//	var dsl = `{
+	//  "_source": ["metadata.index_name"],
+	//  "collapse": {
+	//    "field": "metadata.index_name"
+	//  },
+	//  "size": 100,
+	//  "query": {
+	//    "bool": {
+	//      "must": [
+	//        {
+	//          "terms": {
+	//            "metadata.cluster_id": [%s]
+	//          }
+	//        },%s
+	//      ],
+	//      "must_not": [
+	//        {
+	//          "term": {
+	//            "metadata.labels.state": {
+	//              "value": "delete"
+	//            }
+	//          }
+	//        }
+	//      ]
+	//    }
+	//  }
+	//}`
+	//	var likeDsl = `{
+	//          "wildcard": {
+	//            "metadata.index_name": {
+	//              "value": "*inf*"
+	//            }
+	//          }
+	//        }`
+	return
 }

@@ -1,17 +1,12 @@
 package biz
 
-import (
-	"infini.sh/console/internal/biz/enum"
-)
-
 var ClusterApis = make(map[string][]string)
 var IndexApis = make([]string, 0)
 
 var RolePermission = make(map[string][]string)
 
 type ConsolePermisson struct {
-	Api  []string `json:"api"`
-	Menu []Menu   `json:"menu"`
+	Menu []Menu `json:"menu"`
 }
 type Menu struct {
 	Id        string   `json:"id"`
@@ -21,32 +16,24 @@ type Menu struct {
 }
 
 func (role ConsoleRole) ListPermission() interface{} {
-	menu := []Menu{
+	menu := []Menu{{
+		Id:        "cluster",
+		Name:      "平台管理",
+		Privilege: []string{"none", "read", "all"},
+	},
 		{
-			Id:   "cluster",
-			Name: "平台管理",
-			Children: []Menu{
-				{
-					Id:        "cluster_overview",
-					Name:      "平台概览",
-					Privilege: []string{"none", "write", "read"},
-				},
-				{
-
-					Id:        "cluster_elasticsearch",
-					Name:      "集群监控",
-					Privilege: []string{"none", "write", "read"},
-				}, {
-
-					Id:        "cluster_activities",
-					Name:      "集群动态",
-					Privilege: []string{"none", "write", "read"},
-				},
-			},
+			Id:        "role",
+			Name:      "角色管理",
+			Privilege: []string{"none", "read", "all"},
+		},
+		{
+			Id:        "user",
+			Name:      "用户管理",
+			Privilege: []string{"none", "read", "all"},
 		},
 	}
 	p := ConsolePermisson{
-		Api:  enum.All,
+
 		Menu: menu,
 	}
 

@@ -17,19 +17,19 @@ type Rbac struct {
 
 func registerRouter() {
 	r := Rbac{}
-	api.HandleAPIMethod(api.GET, "/permission/:type", m.PermissionRequired(r.ListPermission, enum.ListPermission))
-	api.HandleAPIMethod(api.POST, "/role/:type", m.PermissionRequired(r.CreateRole, enum.CreateRole))
-	api.HandleAPIMethod(api.GET, "/role/:id", m.PermissionRequired(r.GetRole, enum.GetRole))
-	api.HandleAPIMethod(api.DELETE, "/role/:id", m.PermissionRequired(r.DeleteRole, enum.DeleteRole))
-	api.HandleAPIMethod(api.PUT, "/role/:id", m.PermissionRequired(r.UpdateRole, enum.UpdateRole))
-	api.HandleAPIMethod(api.GET, "/role/_search", m.PermissionRequired(r.SearchRole, enum.SearchRole))
+	api.HandleAPIMethod(api.GET, "/permission/:type", m.PermissionRequired(r.ListPermission, enum.RoleRead...))
+	api.HandleAPIMethod(api.POST, "/role/:type", m.PermissionRequired(r.CreateRole, enum.RoleAll...))
+	api.HandleAPIMethod(api.GET, "/role/:id", m.PermissionRequired(r.GetRole, enum.RoleRead...))
+	api.HandleAPIMethod(api.DELETE, "/role/:id", m.PermissionRequired(r.DeleteRole, enum.RoleAll...))
+	api.HandleAPIMethod(api.PUT, "/role/:id", m.PermissionRequired(r.UpdateRole, enum.RoleAll...))
+	api.HandleAPIMethod(api.GET, "/role/_search", m.PermissionRequired(r.SearchRole, enum.RoleRead...))
 
-	api.HandleAPIMethod(api.POST, "/user", m.PermissionRequired(r.CreateUser, enum.CreateUser))
-	api.HandleAPIMethod(api.GET, "/user/:id", m.PermissionRequired(r.GetUser, enum.GetUser))
-	api.HandleAPIMethod(api.DELETE, "/user/:id", m.PermissionRequired(r.DeleteUser, enum.DeleteUser))
-	api.HandleAPIMethod(api.PUT, "/user/:id", m.PermissionRequired(r.UpdateUser, enum.UpdateUser))
-	api.HandleAPIMethod(api.PUT, "/user/:id/role", m.PermissionRequired(r.UpdateUserRole, enum.UpdateUser))
-	api.HandleAPIMethod(api.GET, "/user/_search", m.PermissionRequired(r.SearchUser, enum.SearchUser))
+	api.HandleAPIMethod(api.POST, "/user", m.PermissionRequired(r.CreateUser, enum.UserAll...))
+	api.HandleAPIMethod(api.GET, "/user/:id", m.PermissionRequired(r.GetUser, enum.UserRead...))
+	api.HandleAPIMethod(api.DELETE, "/user/:id", m.PermissionRequired(r.DeleteUser, enum.UserAll...))
+	api.HandleAPIMethod(api.PUT, "/user/:id", m.PermissionRequired(r.UpdateUser, enum.UserAll...))
+	api.HandleAPIMethod(api.PUT, "/user/:id/role", m.PermissionRequired(r.UpdateUserRole, enum.UserAll...))
+	api.HandleAPIMethod(api.GET, "/user/_search", m.PermissionRequired(r.SearchUser, enum.UserRead...))
 
 }
 

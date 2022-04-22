@@ -58,7 +58,7 @@ func loadRolePermission() {
 }
 func init() {
 	registerRouter()
-	loadJsonConfig()
+
 	loadRolePermission()
 
 }

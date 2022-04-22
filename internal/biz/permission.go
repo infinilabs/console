@@ -6,39 +6,18 @@ var IndexApis = make([]string, 0)
 var RolePermission = make(map[string][]string)
 
 type ConsolePermisson struct {
-	Menu []Menu `json:"menu"`
+	Platform []Platform `json:"platform"`
 }
-type Menu struct {
-	Id        string   `json:"id"`
-	Name      string   `json:"name"`
-	Privilege []string `json:"privilege,omitempty"`
-	Children  []Menu   `json:"children,omitempty"`
+type Platform struct {
+	Id string `json:"id"`
+
+	Privilege map[string]string `json:"privilege,omitempty"`
+	Children  []Platform        `json:"children,omitempty"`
 }
 
 func (role ConsoleRole) ListPermission() interface{} {
-	menu := []Menu{
-		{
-			Id:   "system",
-			Name: "系统管理",
-			Children: []Menu{
-				{
-					Id:        "system_user",
-					Name:      "用户管理",
-					Privilege: []string{"none", "read", "all"},
-				},
-				{
 
-					Id:        "system_role",
-					Name:      "角色管理",
-					Privilege: []string{"none", "read", "all"},
-				},
-			},
-		},
-	}
-	p := ConsolePermisson{
-
-		Menu: menu,
-	}
+	p := ConsolePermisson{}
 	return p
 }
 func (role ElasticsearchRole) ListPermission() interface{} {

@@ -31,12 +31,10 @@ type ConsoleRole struct {
 	Permission  Permission `json:"permission"`
 }
 type Permission struct {
-	Api  []string         `json:"api"`
 	Menu []MenuPermission `json:"menu"`
 }
 type MenuPermission struct {
 	Id        string `json:"id"`
-	Name      string `json:"name"`
 	Privilege string `json:"privilege"`
 }
 type ElasticsearchRole struct {

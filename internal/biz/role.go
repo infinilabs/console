@@ -21,6 +21,7 @@ const (
 )
 
 type IRole interface {
+	ListPermission() interface{}
 	Create(localUser *User) (id string, err error)
 	//Delete(localUser *User, id string) (err error)
 }

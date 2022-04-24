@@ -6,6 +6,7 @@ import (
 	"github.com/golang-jwt/jwt"
 	"github.com/mitchellh/mapstructure"
 	"golang.org/x/crypto/bcrypt"
+	"infini.sh/console/internal/biz/enum"
 	"infini.sh/console/internal/dto"
 	"infini.sh/console/model/rbac"
 	"infini.sh/framework/core/event"
@@ -98,10 +99,17 @@ func authorize(user Account) (m map[string]interface{}, err error) {
 		return
 	}
 	var roles, privilege []string
-	for _, v := range user.Roles {
-		roles = append(roles, v.Name)
-		r, _ := GetRole(v.Id)
-		privilege = append(privilege, r.Platform...)
+	if user.Username == "admin" {
+		roles = append(roles, "admin")
+		privilege = append(privilege, enum.AdminPrivilege...)
+	} else {
+		for _, v := range user.Roles {
+			roles = append(roles, v.Name)
+
+			r, _ := GetRole(v.Id)
+
+			privilege = append(privilege, r.Platform...)
+		}
 	}
 
 	m = util.MapStr{

@@ -7,7 +7,8 @@ var RolePermission = make(map[string][]string)
 var EsRolePermission = make(map[string]EsRole)
 
 type EsRole struct {
-	Cluster []struct {
+	Platform []string `json:"platform"`
+	Cluster  []struct {
 		Id   string `json:"id"`
 		Name string `json:"name"`
 	} `json:"cluster,omitempty"`

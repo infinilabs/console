@@ -13,7 +13,9 @@ var RuleAll = []string{"rule::read", "rule::write"}
 
 var InstanceRead = []string{"instance::read"}
 var InstanceAll = []string{"instance::read", "instance::write"}
-
+var AdminPrivilege = []string{
+	"role::read", "role::all", "user::read", "user::all",
+}
 var Admin []string
 var BuildRoles = make(map[string]map[string]interface{}, 0)
 

@@ -97,19 +97,20 @@ func authorize(user Account) (m map[string]interface{}, err error) {
 	if err != nil {
 		return
 	}
-	var roles []string
+	var roles, privilege []string
 	for _, v := range user.Roles {
 		roles = append(roles, v.Name)
+		r, _ := GetRole(v.Id)
+		privilege = append(privilege, r.Platform...)
 	}
+
 	m = util.MapStr{
 		"access_token": tokenString,
 		"username":     user.Username,
 		"id":           user.ID,
 		"expire_in":    86400,
 		"roles":        roles,
-		"privilege": []string{
-			"system.user:all", "system.role:all", "system.cluster:all", "system.command:all",
-		},
+		"privilege":    privilege,
 	}
 	return
 }

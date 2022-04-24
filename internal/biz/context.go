@@ -31,7 +31,13 @@ func NewEsContext(ctx context.Context, role EsRole) {
 	//get user es role
 
 }
-func ValidateEsPermission(req, userRole EsRole) (err error) {
+
+type EsRequest struct {
+	Cluster []string `json:"cluster"`
+	Index   []string `json:"index"`
+}
+
+func ValidateEsPermission(req EsRequest, userRole EsRole) (err error) {
 	userClusterMap := make(map[string]struct{})
 	userIndexMap := make(map[string]struct{})
 	for _, v := range userRole.Cluster {
@@ -43,12 +49,12 @@ func ValidateEsPermission(req, userRole EsRole) (err error) {
 		}
 
 	}
-	//for _, v := range req.Cluster {
-	//	if _, ok := userClusterMap[v]; !ok {
-	//		err = errors.New("no cluster permission")
-	//		return
-	//	}
-	//}
+	for _, v := range req.Cluster {
+		if _, ok := userClusterMap[v]; !ok {
+			err = errors.New("no cluster permission")
+			return
+		}
+	}
 	//for _, v := range req.Index {
 	//	if _, ok := userClusterMap[v]; !ok {
 	//		err = errors.New("no index permission")

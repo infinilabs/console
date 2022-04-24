@@ -44,7 +44,7 @@ func Init(cfg *config.AppConfig) {
 	api.HandleAPIMethod(api.PUT, path.Join(pathPrefix, "elasticsearch/command/:cid"), handler.HandleSaveCommonCommandAction)
 	api.HandleAPIMethod(api.GET, path.Join(pathPrefix, "elasticsearch/command"), handler.HandleQueryCommonCommandAction)
 	api.HandleAPIMethod(api.DELETE, path.Join(pathPrefix, "elasticsearch/command/:cid"), handler.HandleDeleteCommonCommandAction)
-	api.HandleAPIMethod(api.GET, path.Join(pathPrefix, "cluster/indices"), handler.ListIndex)
+	api.HandleAPIMethod(api.GET, path.Join(pathPrefix, "elasticsearch/indices"), handler.ListIndex)
 	//task.RegisterScheduleTask(task.ScheduleTask{
 	//	Description: "sync reindex task result",
 	//	Task: func() {

@@ -19,16 +19,16 @@ func LoginRequired(h httprouter.Handle) httprouter.Handle {
 		h(w, r, ps)
 	}
 }
-func EsPermissionReqired(h httprouter.Handle) httprouter.Handle {
+func EsPermissionRequired(h httprouter.Handle) httprouter.Handle {
 
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
-		claims, err := biz.ValidateLogin(r.Header.Get("Authorization"))
-		if err != nil {
-			w = handleError(w, http.StatusUnauthorized, err)
-			return
-		}
-		r = r.WithContext(biz.NewUserContext(r.Context(), claims))
+		//req := biz.NewEsRequest(r, ps)
+		//err := biz.ValidateEsPermission(req)
+		//if err != nil {
+		//	w = handleError(w, http.StatusForbidden, err)
+		//	return
+		//}
 		h(w, r, ps)
 	}
 }

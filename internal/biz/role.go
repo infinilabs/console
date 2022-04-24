@@ -23,6 +23,7 @@ const (
 type IRole interface {
 	ListPermission() interface{}
 	Create(localUser *User) (id string, err error)
+	Update(localUser *User, id string) (err error)
 	//Delete(localUser *User, id string) (err error)
 }
 type ConsoleRole struct {
@@ -59,7 +60,79 @@ func NewRole(typ string) (r IRole, err error) {
 	}
 	return
 }
+func (role ConsoleRole) Update(localUser *User, id string) (err error) {
+	model := rbac.Role{}
+	model.ID = id
+	_, err = orm.Get(&model)
+	if err != nil {
+		err = ErrNotFound
+		return
+	}
+	changeLog, _ := util.DiffTwoObject(model, role)
+	model.Description = role.Description
+	model.Platform = role.Platform
 
+	model.Updated = time.Now()
+	err = orm.Save(model)
+	if err != nil {
+		return
+	}
+	err = orm.Save(GenerateEvent(event.ActivityMetadata{
+		Category: "platform",
+		Group:    "rbac",
+		Name:     "role",
+		Type:     "update",
+		Labels: util.MapStr{
+			"id":          id,
+			"description": model.Description,
+			"platform":    model.Platform,
+			"updated":     model.Updated,
+		},
+		User: util.MapStr{
+			"userid":   localUser.UserId,
+			"username": localUser.Username,
+		},
+	}, nil, changeLog))
+
+	return
+}
+func (role ElasticsearchRole) Update(localUser *User, id string) (err error) {
+	model := rbac.Role{}
+	model.ID = id
+	_, err = orm.Get(&model)
+	if err != nil {
+		err = ErrNotFound
+		return
+	}
+	changeLog, _ := util.DiffTwoObject(model, role)
+	model.Description = role.Description
+	model.Cluster = role.Cluster
+	model.Index = role.Index
+	model.ClusterPrivilege = role.ClusterPrivilege
+	model.Updated = time.Now()
+	err = orm.Save(model)
+	if err != nil {
+		return
+	}
+	err = orm.Save(GenerateEvent(event.ActivityMetadata{
+		Category: "platform",
+		Group:    "rbac",
+		Name:     "role",
+		Type:     "update",
+		Labels: util.MapStr{
+			"id":          id,
+			"description": model.Description,
+			"platform":    model.Platform,
+			"updated":     model.Updated,
+		},
+		User: util.MapStr{
+			"userid":   localUser.UserId,
+			"username": localUser.Username,
+		},
+	}, nil, changeLog))
+
+	return
+}
 func (role ConsoleRole) Create(localUser *User) (id string, err error) {
 	if _, ok := enum.BuildRoles[role.Name]; ok {
 		err = fmt.Errorf("role name %s already exists", role.Name)
@@ -213,7 +286,7 @@ func DeleteRole(localUser *User, id string) (err error) {
 	return
 }
 
-func UpdateRole(localUser *User, id string, req dto.UpdateConsoleRole) (err error) {
+func UpdateRole(localUser *User, id string, req dto.UpdateRole) (err error) {
 	role := rbac.Role{}
 	role.ID = id
 	_, err = orm.Get(&role)
@@ -224,6 +297,7 @@ func UpdateRole(localUser *User, id string, req dto.UpdateConsoleRole) (err erro
 	changeLog, _ := util.DiffTwoObject(role, req)
 	role.Description = req.Description
 	role.Platform = req.Platform
+
 	role.Updated = time.Now()
 	err = orm.Save(role)
 	if err != nil {

@@ -9,16 +9,15 @@ type Menu struct {
 	Name      string `json:"name"`
 	Privilege string `json:"privilege"`
 }
-type UpdateConsoleRole struct {
-	Description string   `json:"description" `
-	Platform    []string `json:"platform"`
+type UpdateRole struct {
+	Description      string   `json:"description" `
+	Platform         []string `json:"platform"`
+	Cluster          []string `json:"cluster" `
+	Index            []string `json:"index" `
+	ClusterPrivilege []string `json:"cluster_privilege" `
+	IndexPrivilege   []string `json:"index_privilege" `
 }
-type CreateEsRole struct {
-	Name        string                  `json:"name"`
-	Description string                  `json:"description" `
-	RoleType    string                  `json:"type" `
-	Permission  ElasticsearchPermission `json:"permission"`
-}
+
 type ElasticsearchPermission struct {
 	Cluster          []string `json:"cluster" `
 	Index            []string `json:"index" `

@@ -49,10 +49,20 @@ func loadJsonConfig() {
 	biz.IndexApis = apis["indices"]
 	delete(apis, "indices")
 	biz.ClusterApis = apis
+	bytes, err = util.FileGetContent(path.Join(pwd, "/config/map.json"))
+	if err != nil {
+		panic("load json file err " + err.Error())
+
+	}
+
+	err = json.Unmarshal(bytes, &biz.EsApiMap)
+	if err != nil {
+		panic("json config unmarshal err " + err.Error())
+	}
 
 }
 func loadRolePermission() {
-	biz.RolePermission = make(map[string][]string)
+	biz.RolePermission = make(map[string]enum.Role)
 
 	biz.RolePermission["admin"] = enum.Admin
 

@@ -1,12 +1,14 @@
 package enum
 
-import "time"
+import (
+	"time"
+)
 
-var UserRead = []string{"user::read"}
-var UserAll = []string{"user::read", "user::write"}
+var UserRead = []string{"system.user:read"}
+var UserAll = []string{"system.user:all"}
 
-var RoleRead = []string{"role::read"}
-var RoleAll = []string{"role::read", "role::write"}
+var RoleRead = []string{"system.role:read"}
+var RoleAll = []string{"system.role:all"}
 
 var RuleRead = []string{"rule::read"}
 var RuleAll = []string{"rule::read", "rule::write"}
@@ -16,12 +18,27 @@ var InstanceAll = []string{"instance::read", "instance::write"}
 var AdminPrivilege = []string{
 	"system.role:read", "system.role:all", "system.user:read", "system.user:all",
 }
-var Admin []string
+
+type Role struct {
+	Platform []string `json:"platform,omitempty"`
+	Cluster  []struct {
+		Id   string `json:"id"`
+		Name string `json:"name"`
+	} `json:"cluster,omitempty"`
+	ClusterPrivilege []map[string][]string `json:"cluster_privilege,omitempty"`
+	Index            []struct {
+		Name      []string `json:"name"`
+		Privilege []string `json:"privilege"`
+	} `json:"index,omitempty"`
+}
+
+var Admin Role
 var BuildRoles = make(map[string]map[string]interface{}, 0)
 
 func init() {
-	Admin = append(Admin, UserAll...)
-	Admin = append(Admin, RoleAll...)
+	Admin = Role{
+		Platform: AdminPrivilege,
+	}
 
 	UserMenu := Menu{
 		Id:        "system_user",

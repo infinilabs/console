@@ -6,12 +6,12 @@ import (
 
 type Role struct {
 	orm.ORMObjectBase
-	Name        string      `json:"name" elastic_mapping:"name:{type:keyword}"`
-	Description string      `json:"description" elastic_mapping:"description:{type:text}"`
-	RoleType    string      `json:"type" elastic_mapping:"type:{type:keyword}"`
-	Permission  interface{} `json:"permission,omitempty" elastic_mapping:"permission:{type:object}"`
-	BuiltIn     bool        `json:"builtin" elastic_mapping:"builtin:{type:boolean}"` //是否内置
-	ElasticRole
+	Name        string   `json:"name" elastic_mapping:"name:{type:keyword}"`
+	Description string   `json:"description" elastic_mapping:"description:{type:text}"`
+	RoleType    string   `json:"type" elastic_mapping:"type:{type:keyword}"`
+	Platform    []string `json:"platform,omitempty" `
+	BuiltIn     bool     `json:"builtin" elastic_mapping:"builtin:{type:boolean}"` //是否内置
+
 }
 type ConsolePermission struct {
 	Api  []string `json:"api"`
@@ -25,7 +25,12 @@ type Menu struct {
 }
 
 type ElasticRole struct {
-	Cluster []struct {
+	orm.ORMObjectBase
+	Name        string `json:"name" elastic_mapping:"name:{type:keyword}"`
+	Description string `json:"description" elastic_mapping:"description:{type:text}"`
+	RoleType    string `json:"type" elastic_mapping:"type:{type:keyword}"`
+	BuiltIn     bool   `json:"builtin" elastic_mapping:"builtin:{type:boolean}"` //是否内置
+	Cluster     []struct {
 		Id   string `json:"id"`
 		Name string `json:"name"`
 	} `json:"cluster,omitempty"`

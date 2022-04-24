@@ -10,8 +10,8 @@ type Menu struct {
 	Privilege string `json:"privilege"`
 }
 type UpdateConsoleRole struct {
-	Description string         `json:"description" `
-	Permission  RolePermission `json:"permission"`
+	Description string   `json:"description" `
+	Platform    []string `json:"platform"`
 }
 type CreateEsRole struct {
 	Name        string                  `json:"name"`

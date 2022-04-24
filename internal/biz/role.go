@@ -21,18 +21,16 @@ const (
 )
 
 type IRole interface {
-	ListPermission() interface{}
 	Create(localUser *User) (id string, err error)
+	//Delete(localUser *User, id string) (err error)
 }
 type ConsoleRole struct {
-	Name        string     `json:"name"`
-	Description string     `json:"description" `
-	RoleType    string     `json:"type" `
-	Permission  Permission `json:"permission"`
+	Name        string   `json:"name"`
+	Description string   `json:"description" `
+	RoleType    string   `json:"type" `
+	Platform    []string `json:"platform,omitempty"`
 }
-type Permission struct {
-	Menu []MenuPermission `json:"menu"`
-}
+
 type MenuPermission struct {
 	Id        string `json:"id"`
 	Privilege string `json:"privilege"`
@@ -82,7 +80,7 @@ func (role ConsoleRole) Create(localUser *User) (id string, err error) {
 		Name:        role.Name,
 		Description: role.Description,
 		RoleType:    role.RoleType,
-		Permission:  role.Permission,
+		Platform:    role.Platform,
 	}
 	newRole.ID = util.GetUUID()
 	newRole.Created = time.Now()
@@ -101,7 +99,7 @@ func (role ConsoleRole) Create(localUser *User) (id string, err error) {
 			"id":          id,
 			"name":        role.Name,
 			"description": role.Description,
-			"permission":  role.Permission,
+			"platform":    role.Platform,
 			"type":        role.RoleType,
 			"created":     newRole.Created.Format("2006-01-02 15:04:05"),
 			"updated":     newRole.Updated.Format("2006-01-02 15:04:05"),
@@ -136,7 +134,7 @@ func (role ElasticsearchRole) Create(localUser *User) (id string, err error) {
 		return
 	}
 
-	newRole := rbac.Role{
+	newRole := rbac.ElasticRole{
 		Name:        role.Name,
 		Description: role.Description,
 		RoleType:    role.RoleType,
@@ -205,7 +203,7 @@ func DeleteRole(localUser *User, id string) (err error) {
 		"id":          id,
 		"name":        role.Name,
 		"description": role.Description,
-		"permission":  role.Permission,
+		"platform":    role.Platform,
 		"type":        role.RoleType,
 		"created":     role.Created.Format("2006-01-02 15:04:05"),
 		"updated":     role.Updated.Format("2006-01-02 15:04:05"),
@@ -224,7 +222,7 @@ func UpdateRole(localUser *User, id string, req dto.UpdateConsoleRole) (err erro
 	}
 	changeLog, _ := util.DiffTwoObject(role, req)
 	role.Description = req.Description
-	role.Permission = req.Permission
+	role.Platform = req.Platform
 	role.Updated = time.Now()
 	err = orm.Save(role)
 	if err != nil {
@@ -238,7 +236,7 @@ func UpdateRole(localUser *User, id string, req dto.UpdateConsoleRole) (err erro
 		Labels: util.MapStr{
 			"id":          id,
 			"description": role.Description,
-			"permission":  role.Permission,
+			"platform":    role.Platform,
 			"updated":     role.Updated,
 		},
 		User: util.MapStr{

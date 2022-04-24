@@ -22,9 +22,10 @@ type UserClaims struct {
 	*User
 }
 type User struct {
-	Username string   `json:"username"`
-	UserId   string   `json:"user_id"`
-	Roles    []string `json:"roles"`
+	Username  string   `json:"username"`
+	UserId    string   `json:"user_id"`
+	Roles     []string `json:"roles"`
+	Privilege []string `json:"privilege"`
 }
 type Account struct {
 	ID       string   `json:"id,omitempty"     `

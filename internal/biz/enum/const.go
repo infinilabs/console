@@ -24,12 +24,11 @@ func init() {
 
 	UserMenu := Menu{
 		Id:        "system_user",
-		Name:      "用户管理",
 		Privilege: "all",
 	}
 	RoleMenu := Menu{
-		Id:        "system_role",
-		Name:      "角色管理",
+		Id: "system_role",
+
 		Privilege: "all",
 	}
 	AdminMenu := []Menu{

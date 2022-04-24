@@ -123,7 +123,12 @@ func (h APIHandler) ListIndex(w http.ResponseWriter, req *http.Request, ps httpr
 	keyword := h.GetParameterOrDefault(req, "keyword", "")
 	ids := strings.Split(clusterIds, ",")
 	for i := range ids {
-		ids[i] = `"` + ids[i] + `"`
+		if i < len(ids)-1 {
+			ids[i] = `"` + ids[i] + `",`
+		} else {
+			ids[i] = `"` + ids[i] + `"`
+		}
+
 	}
 	if len(ids) == 0 {
 		h.Error400(w, "id is required")

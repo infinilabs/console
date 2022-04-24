@@ -28,15 +28,16 @@ type User struct {
 	Privilege []string `json:"privilege"`
 }
 type Account struct {
-	ID       string   `json:"id,omitempty"     `
-	Created  string   `json:"created,omitempty" `
-	Updated  string   `json:"updated,omitempty" `
-	Username string   `json:"username" elastic_mapping:"username:{type:keyword}"`
-	Password string   `json:"password" elastic_mapping:"password:{type:text}"`
-	Name     string   `json:"name" elastic_mapping:"name:{type:keyword}"`
-	Phone    string   `json:"phone" elastic_mapping:"phone:{type:keyword}"`
-	Email    string   `json:"email" elastic_mapping:"email:{type:keyword}"`
-	Tags     []string `json:"tags" elastic_mapping:"tags:{type:text}"`
+	ID       string          `json:"id,omitempty"     `
+	Created  string          `json:"created,omitempty" `
+	Updated  string          `json:"updated,omitempty" `
+	Username string          `json:"username" elastic_mapping:"username:{type:keyword}"`
+	Password string          `json:"password" elastic_mapping:"password:{type:text}"`
+	Name     string          `json:"name" elastic_mapping:"name:{type:keyword}"`
+	Phone    string          `json:"phone" elastic_mapping:"phone:{type:keyword}"`
+	Email    string          `json:"email" elastic_mapping:"email:{type:keyword}"`
+	Tags     []string        `json:"tags" elastic_mapping:"tags:{type:text}"`
+	Roles    []rbac.UserRole `json:"roles"`
 }
 
 const Secret = "console"
@@ -76,6 +77,9 @@ func authenticateAdmin(username string, password string) (user Account, err erro
 	}
 	user.ID = username
 	user.Username = username
+	user.Roles = []rbac.UserRole{{
+		Id: "admin", Name: "admin",
+	}}
 	return user, nil
 }
 func authorize(user Account) (m map[string]interface{}, err error) {
@@ -94,12 +98,13 @@ func authorize(user Account) (m map[string]interface{}, err error) {
 	if err != nil {
 		return
 	}
+
 	m = util.MapStr{
 		"access_token": tokenString,
 		"username":     user.Username,
 		"id":           user.ID,
 		"expire_in":    86400,
-		"roles":        []string{"admin"},
+		"roles":        user.Roles,
 		"privilege": []string{
 			"system.user:all", "system.role:all", "system.cluster:all", "system.command:all",
 		},

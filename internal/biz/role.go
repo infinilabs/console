@@ -135,7 +135,7 @@ func (role ElasticsearchRole) Create(localUser *User) (id string, err error) {
 		return
 	}
 
-	newRole := rbac.ElasticRole{
+	newRole := rbac.Role{
 		Name:        role.Name,
 		Description: role.Description,
 		RoleType:    role.RoleType,

@@ -17,7 +17,7 @@ type Rbac struct {
 
 func registerRouter() {
 	r := Rbac{}
-	api.HandleAPIMethod(api.GET, "/permission/:type", m.PermissionRequired(r.ListPermission, enum.RoleRead...))
+	api.HandleAPIMethod(api.GET, "/permission/:type", r.ListPermission)
 	api.HandleAPIMethod(api.POST, "/role/:type", m.PermissionRequired(r.CreateRole, enum.RoleAll...))
 	api.HandleAPIMethod(api.GET, "/role/:id", m.PermissionRequired(r.GetRole, enum.RoleRead...))
 	api.HandleAPIMethod(api.DELETE, "/role/:id", m.PermissionRequired(r.DeleteRole, enum.RoleAll...))
@@ -55,10 +55,11 @@ func loadRolePermission() {
 	biz.RolePermission = make(map[string][]string)
 
 	biz.RolePermission["admin"] = enum.Admin
+
 }
 func init() {
 	registerRouter()
-
+	loadJsonConfig()
 	loadRolePermission()
 
 }

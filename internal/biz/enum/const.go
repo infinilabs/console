@@ -16,7 +16,6 @@ var InstanceAll = []string{"instance::read", "instance::write"}
 
 var Admin []string
 var BuildRoles = make(map[string]map[string]interface{}, 0)
-var Permission = make(map[string][]string)
 
 func init() {
 	Admin = append(Admin, UserAll...)

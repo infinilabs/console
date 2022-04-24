@@ -103,20 +103,31 @@ func (h Account) Profile(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		h.Error(w, err)
 		return
 	}
-	//user, err := biz.GetUser(reqUser.UserId)
-	//if err != nil {
-	//	h.Error(w, err)
-	//	return
-	//}
-	//TODO get user from es
-	u := util.MapStr{
-		"user_id":  reqUser.UserId,
-		"username": reqUser.Username,
-		"email":    "hello@infini.ltd",
 
-		"name": "admin",
+	if reqUser.UserId == "admin" {
+
+		u := util.MapStr{
+			"user_id":  "admin",
+			"username": "admin",
+			"email":    "admin@infini.ltd",
+			"name":     "admin",
+		}
+		h.WriteOKJSON(w, core.FoundResponse(reqUser.UserId, u))
+	} else {
+		user, err := biz.GetUser(reqUser.UserId)
+		if err != nil {
+			h.Error(w, err)
+			return
+		}
+		u := util.MapStr{
+			"user_id":  user.ID,
+			"username": user.Username,
+			"email":    user.Email,
+			"name":     user.Name,
+		}
+		h.WriteOKJSON(w, core.FoundResponse(reqUser.UserId, u))
 	}
-	h.WriteOKJSON(w, core.FoundResponse(reqUser.UserId, u))
+
 	return
 }
 func (h Account) UpdatePassword(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

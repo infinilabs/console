@@ -22,10 +22,9 @@ type UserClaims struct {
 	*User
 }
 type User struct {
-	Username  string   `json:"username"`
-	UserId    string   `json:"user_id"`
-	Roles     []string `json:"roles"`
-	Privilege []string `json:"privilege"`
+	Username string   `json:"username"`
+	UserId   string   `json:"user_id"`
+	Roles    []string `json:"roles"`
 }
 type Account struct {
 	ID       string          `json:"id,omitempty"     `
@@ -227,6 +226,7 @@ func ValidatePermission(claims *UserClaims, permissions []string) (err error) {
 			}
 		}
 	}
+
 	var count int
 	for _, v := range permissions {
 		if _, ok := userPermissionMap[v]; ok {

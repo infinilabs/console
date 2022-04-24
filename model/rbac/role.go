@@ -12,6 +12,15 @@ type Role struct {
 	Platform    []string `json:"platform,omitempty" `
 	BuiltIn     bool     `json:"builtin" elastic_mapping:"builtin:{type:boolean}"` //是否内置
 
+	Cluster []struct {
+		Id   string `json:"id"`
+		Name string `json:"name"`
+	} `json:"cluster,omitempty"`
+	ClusterPrivilege []map[string][]string `json:"cluster_privilege,omitempty"`
+	Index            []struct {
+		Name      []string `json:"name"`
+		Privilege []string `json:"privilege"`
+	} `json:"index,omitempty"`
 }
 type ConsolePermission struct {
 	Api  []string `json:"api"`

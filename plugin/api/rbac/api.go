@@ -15,7 +15,7 @@ type Rbac struct {
 	api.Handler
 }
 
-func registerRouter() {
+func init() {
 	r := Rbac{}
 	api.HandleAPIMethod(api.GET, "/permission/:type", r.ListPermission)
 	api.HandleAPIMethod(api.POST, "/role/:type", m.PermissionRequired(r.CreateRole, enum.RoleAll...))
@@ -49,16 +49,16 @@ func loadJsonConfig() {
 	biz.IndexApis = apis["indices"]
 	delete(apis, "indices")
 	biz.ClusterApis = apis
-	bytes, err = util.FileGetContent(path.Join(pwd, "/config/map.json"))
-	if err != nil {
-		panic("load json file err " + err.Error())
-
-	}
-
-	err = json.Unmarshal(bytes, &biz.EsApiMap)
-	if err != nil {
-		panic("json config unmarshal err " + err.Error())
-	}
+	//bytes, err = util.FileGetContent(path.Join(pwd, "/config/map.json"))
+	//if err != nil {
+	//	panic("load json file err " + err.Error())
+	//
+	//}
+	//
+	//err = json.Unmarshal(bytes, &biz.EsApiMap)
+	//if err != nil {
+	//	panic("json config unmarshal err " + err.Error())
+	//}
 
 }
 func loadRolePermission() {
@@ -67,11 +67,9 @@ func loadRolePermission() {
 	biz.RolePermission["admin"] = enum.Admin
 
 }
-func init() {
-	registerRouter()
+func Init() {
 	loadJsonConfig()
 	loadRolePermission()
-
 }
 
 func existInternalUser() {

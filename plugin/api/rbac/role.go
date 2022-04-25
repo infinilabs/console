@@ -120,6 +120,12 @@ func (h Rbac) DeleteRole(w http.ResponseWriter, r *http.Request, ps httprouter.P
 
 func (h Rbac) UpdateRole(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	id := ps.MustGetParameter("id")
+	localUser, err := biz.FromUserContext(r.Context())
+	if err != nil {
+		log.Error(err.Error())
+		h.Error(w, err)
+		return
+	}
 	model, err := biz.GetRole(id)
 	if err != nil {
 		h.Error(w, err)
@@ -136,13 +142,8 @@ func (h Rbac) UpdateRole(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		h.Error400(w, err.Error())
 		return
 	}
-	localUser, err := biz.FromUserContext(r.Context())
-	if err != nil {
-		log.Error(err.Error())
-		h.Error(w, err)
-		return
-	}
-	err = irole.Update(localUser, id)
+
+	err = irole.Update(localUser, model)
 
 	if err != nil {
 		_ = log.Error(err.Error())

@@ -3,7 +3,6 @@ package biz
 import (
 	"fmt"
 	"infini.sh/console/internal/biz/enum"
-	"infini.sh/console/internal/dto"
 	"infini.sh/console/model/rbac"
 	"infini.sh/framework/core/event"
 	"infini.sh/framework/core/orm"
@@ -23,7 +22,7 @@ const (
 type IRole interface {
 	ListPermission() interface{}
 	Create(localUser *User) (id string, err error)
-	Update(localUser *User, id string) (err error)
+	Update(localUser *User, model rbac.Role) (err error)
 	//Delete(localUser *User, id string) (err error)
 }
 type ConsoleRole struct {
@@ -60,14 +59,8 @@ func NewRole(typ string) (r IRole, err error) {
 	}
 	return
 }
-func (role ConsoleRole) Update(localUser *User, id string) (err error) {
-	model := rbac.Role{}
-	model.ID = id
-	_, err = orm.Get(&model)
-	if err != nil {
-		err = ErrNotFound
-		return
-	}
+func (role ConsoleRole) Update(localUser *User, model rbac.Role) (err error) {
+
 	changeLog, _ := util.DiffTwoObject(model, role)
 	model.Description = role.Description
 	model.Platform = role.Platform
@@ -83,7 +76,7 @@ func (role ConsoleRole) Update(localUser *User, id string) (err error) {
 		Name:     "role",
 		Type:     "update",
 		Labels: util.MapStr{
-			"id":          id,
+			"id":          model.ID,
 			"description": model.Description,
 			"platform":    model.Platform,
 			"updated":     model.Updated,
@@ -96,14 +89,8 @@ func (role ConsoleRole) Update(localUser *User, id string) (err error) {
 
 	return
 }
-func (role ElasticsearchRole) Update(localUser *User, id string) (err error) {
-	model := rbac.Role{}
-	model.ID = id
-	_, err = orm.Get(&model)
-	if err != nil {
-		err = ErrNotFound
-		return
-	}
+func (role ElasticsearchRole) Update(localUser *User, model rbac.Role) (err error) {
+
 	changeLog, _ := util.DiffTwoObject(model, role)
 	model.Description = role.Description
 	model.Cluster = role.Cluster
@@ -120,7 +107,7 @@ func (role ElasticsearchRole) Update(localUser *User, id string) (err error) {
 		Name:     "role",
 		Type:     "update",
 		Labels: util.MapStr{
-			"id":          id,
+			"id":          model.ID,
 			"description": model.Description,
 			"platform":    model.Platform,
 			"updated":     model.Updated,
@@ -286,41 +273,6 @@ func DeleteRole(localUser *User, id string) (err error) {
 	return
 }
 
-func UpdateRole(localUser *User, id string, req dto.UpdateRole) (err error) {
-	role := rbac.Role{}
-	role.ID = id
-	_, err = orm.Get(&role)
-	if err != nil {
-		err = ErrNotFound
-		return
-	}
-	changeLog, _ := util.DiffTwoObject(role, req)
-	role.Description = req.Description
-	role.Platform = req.Platform
-
-	role.Updated = time.Now()
-	err = orm.Save(role)
-	if err != nil {
-		return
-	}
-	err = orm.Save(GenerateEvent(event.ActivityMetadata{
-		Category: "platform",
-		Group:    "rbac",
-		Name:     "role",
-		Type:     "update",
-		Labels: util.MapStr{
-			"id":          id,
-			"description": role.Description,
-			"platform":    role.Platform,
-			"updated":     role.Updated,
-		},
-		User: util.MapStr{
-			"userid":   localUser.UserId,
-			"username": localUser.Username,
-		},
-	}, nil, changeLog))
-	return
-}
 func GetRole(id string) (role rbac.Role, err error) {
 
 	role.ID = id

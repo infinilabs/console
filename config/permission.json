@@ -4,7 +4,7 @@
         "bulk"
     ],
     "cat": [
-        "*",
+        "cat.*",
         "cat.indices",
         "cat.help",
         "cat.repositories",
@@ -27,7 +27,7 @@
         "cat.master"
     ],
     "cluster": [
-        "*",
+        "cluster.*",
         "cluster.health",
         "cluster.get_settings",
         "cluster.pending_tasks",
@@ -43,14 +43,14 @@
         "count"
     ],
     "doc": [
-        "*",
+        "doc.*",
         "doc.update",
         "doc.put",
         "doc.create",
         "doc.delete"
     ],
     "exists": [
-        "*",
+
         "exists"
     ],
     "explain": [
@@ -63,6 +63,7 @@
         "get"
     ],
     "indices": [
+        "indices.*",
         "indices.exists_alias",
         "indices.get_alias",
         "indices.recovery",
@@ -108,6 +109,7 @@
         "info"
     ],
     "ingest": [
+        "ingest.*",
         "ingest.delete_pipeline",
         "ingest.put_pipeline",
         "ingest.simulate",
@@ -127,6 +129,7 @@
         "mtermvectors"
     ],
     "nodes": [
+        "nodes.*",
         "nodes.info",
         "nodes.stats",
         "nodes.reload_secure_settings",
@@ -149,6 +152,7 @@
         "render_search_template"
     ],
     "scripts": [
+        "scripts.*",
         "scripts.get",
         "scripts.put",
         "scripts.delete"
@@ -169,6 +173,7 @@
         "search_template"
     ],
     "snapshot": [
+        "snapshot.*",
         "snapshot.get_repository",
         "snapshot.create_repository",
         "snapshot.create",
@@ -180,6 +185,7 @@
         "snapshot.get"
     ],
     "source": [
+        "source.*",
         "source.head",
         "source.get"
     ],

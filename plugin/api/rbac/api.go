@@ -6,9 +6,13 @@ import (
 	"infini.sh/console/internal/biz/enum"
 	m "infini.sh/console/internal/middleware"
 	"infini.sh/framework/core/api"
+	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/util"
 	"os"
 	"path"
+	log "src/github.com/cihub/seelog"
+	"src/github.com/mitchellh/mapstructure"
+	"strings"
 )
 
 type Rbac struct {
@@ -49,47 +53,47 @@ func loadJsonConfig() {
 	biz.IndexApis = apis["indices"]
 	delete(apis, "indices")
 	biz.ClusterApis = apis
-	//bytes, err = util.FileGetContent(path.Join(pwd, "/config/map.json"))
-	//if err != nil {
-	//	panic("load json file err " + err.Error())
-	//
-	//}
-	//
-	//err = json.Unmarshal(bytes, &biz.EsApiMap)
-	//if err != nil {
-	//	panic("json config unmarshal err " + err.Error())
-	//}
+
+	bytes, err = util.FileGetContent(path.Join(pwd, "/config/map.json"))
+	if err != nil {
+		panic("load json file err " + err.Error())
+	}
+	esapiMap := make(map[string]string)
+	err = json.Unmarshal(bytes, &esapiMap)
+	if err != nil {
+		panic("json config unmarshal err " + err.Error())
+	}
+	for k, v := range esapiMap {
+		s := strings.Split(k, "-")
+		biz.EsApiRoutes.AddRoute(s[0], s[1], v)
+	}
 
 }
 func loadRolePermission() {
-	biz.RolePermission = make(map[string]enum.Role)
+	biz.RoleMap = make(map[string]biz.Role)
 
-	biz.RolePermission["admin"] = enum.Admin
+	biz.RoleMap["admin"] = biz.Role{
+		Platform: enum.AdminPrivilege,
+	}
+	res, err := biz.SearchRole("", 0, 100)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	response := elastic.SearchResponse{}
+	util.FromJSONBytes(res.Raw, &response)
+
+	for _, v := range response.Hits.Hits {
+		var role biz.Role
+		err = mapstructure.Decode(v.Source, &role)
+		if err != nil {
+			return
+		}
+		biz.RoleMap[role.Name] = role
+	}
 
 }
 func Init() {
 	loadJsonConfig()
 	loadRolePermission()
-}
-
-func existInternalUser() {
-	//user, err := biz.GetUser("admin")
-	//if errors.Is(err, elastic.ErrNotFound) {
-	//	user.ID = "admin"
-	//	user.Username = "admin"
-	//	hash, _ := bcrypt.GenerateFromPassword([]byte("admin"), bcrypt.DefaultCost)
-	//
-	//	user.Password = string(hash)
-	//	user.Email = ""
-	//	user.Phone = ""
-	//	user.Name = ""
-	//
-	//
-	//	user.Created = time.Now()
-	//	user.Updated = time.Now()
-	//
-	//}
-}
-func existInternalRole() {
-
 }

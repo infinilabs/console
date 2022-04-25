@@ -22,16 +22,22 @@ func LoginRequired(h httprouter.Handle) httprouter.Handle {
 func EsPermissionRequired(h httprouter.Handle) httprouter.Handle {
 
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-
-		//req := biz.NewEsRequest(r, ps)
-		//err := biz.ValidateEsPermission(req)
-		//if err != nil {
-		//	w = handleError(w, http.StatusForbidden, err)
-		//	return
-		//}
+		claims, err := biz.ValidateLogin(r.Header.Get("Authorization"))
+		if err != nil {
+			w = handleError(w, http.StatusUnauthorized, err)
+			return
+		}
+		req := biz.NewEsRequest(r, ps)
+		newRole := biz.CombineUserRoles(claims.Roles)
+		err = biz.ValidateEsPermission(req, newRole)
+		if err != nil {
+			w = handleError(w, http.StatusForbidden, err)
+			return
+		}
 		h(w, r, ps)
 	}
 }
+
 func PermissionRequired(h httprouter.Handle, permissions ...string) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		claims, err := biz.ValidateLogin(r.Header.Get("Authorization"))

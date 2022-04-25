@@ -1,14 +1,15 @@
 package biz
 
-import "infini.sh/console/internal/biz/enum"
+import "infini.sh/console/internal/core"
 
 var ClusterApis = make(map[string][]string)
 var IndexApis = make([]string, 0)
 
-var RolePermission = make(map[string]enum.Role)
-var EsApiMap = make(map[string]string)
+var RoleMap = make(map[string]Role)
+var EsApiRoutes = core.NewRouter()
 
 type Role struct {
+	Name     string   `json:"name"`
 	Platform []string `json:"platform,omitempty"`
 	Cluster  []struct {
 		Id   string `json:"id"`

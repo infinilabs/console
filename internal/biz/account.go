@@ -95,7 +95,7 @@ func authorize(user Account) (m map[string]interface{}, err error) {
 			r, _ := GetRole(v.Id)
 
 			privilege = append(privilege, r.Platform...)
-			RolePermission[v.Name] = enum.Role{
+			RoleMap[v.Name] = Role{
 				Platform:         r.Platform,
 				Cluster:          r.Cluster,
 				ClusterPrivilege: r.ClusterPrivilege,
@@ -231,12 +231,12 @@ func ValidatePermission(claims *UserClaims, permissions []string) (err error) {
 		err = errors.New("api permission is empty")
 		return
 	}
-	return nil
+
 	// 权限校验
 	userPermissionMap := make(map[string]struct{})
 	for _, role := range user.Roles {
-		if _, ok := RolePermission[role]; ok {
-			for _, v := range RolePermission[role].Platform {
+		if _, ok := RoleMap[role]; ok {
+			for _, v := range RoleMap[role].Platform {
 
 				userPermissionMap[v] = struct{}{}
 				//all include read

@@ -9,6 +9,7 @@ import (
 	"infini.sh/console/model/gateway"
 	"infini.sh/console/model/rbac"
 	_ "infini.sh/console/plugin"
+	rbacApi "infini.sh/console/plugin/api/rbac"
 	alerting2 "infini.sh/console/service/alerting"
 	"infini.sh/framework"
 	"infini.sh/framework/core/elastic"
@@ -137,7 +138,7 @@ func main() {
 			if err != nil {
 				log.Errorf("init alerting task error: %v", err)
 			}
-
+			rbacApi.Init()
 		}()
 
 	}, nil) {

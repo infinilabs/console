@@ -129,11 +129,19 @@ func UpdateUser(localUser *User, id string, req dto.UpdateUser) (err error) {
 		err = ErrNotFound
 		return
 	}
+	roles := make([]rbac.UserRole, 0)
+	for _, v := range req.Roles {
+		roles = append(roles, rbac.UserRole{
+			Id:   v.Id,
+			Name: v.Name,
+		})
+	}
 	changeLog, _ := util.DiffTwoObject(user, req)
 	user.Name = req.Name
 	user.Email = req.Email
 	user.Phone = req.Phone
 	user.Tags = req.Tags
+	user.Roles = roles
 	user.Updated = time.Now()
 	err = orm.Save(&user)
 	if err != nil {
@@ -150,6 +158,7 @@ func UpdateUser(localUser *User, id string, req dto.UpdateUser) (err error) {
 			"phone":   user.Phone,
 			"name":    user.Name,
 			"tags":    user.Tags,
+			"roles":   roles,
 			"updated": user.Updated,
 		},
 		User: util.MapStr{

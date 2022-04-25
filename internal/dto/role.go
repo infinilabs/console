@@ -1,14 +1,5 @@
 package dto
 
-type RolePermission struct {
-	Api  []string `json:"api"`
-	Menu []Menu   `json:"menu"`
-}
-type Menu struct {
-	Id        string `json:"id"`
-	Name      string `json:"name"`
-	Privilege string `json:"privilege"`
-}
 type UpdateRole struct {
 	Description      string   `json:"description" `
 	Platform         []string `json:"platform"`
@@ -42,6 +33,7 @@ type UpdateUser struct {
 	Email string   `json:"email"`
 	Phone string   `json:"phone"`
 	Tags  []string `json:"tags"`
+	Roles []Role   `json:"roles"`
 }
 type UpdateUserRole struct {
 	Roles []Role `json:"roles"`

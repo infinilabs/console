@@ -73,6 +73,7 @@ func init() {
 	loadRolePermission()
 
 }
+
 func existInternalUser() {
 	//user, err := biz.GetUser("admin")
 	//if errors.Is(err, elastic.ErrNotFound) {

@@ -83,21 +83,7 @@ func authenticateAdmin(username string, password string) (user Account, err erro
 	return user, nil
 }
 func authorize(user Account) (m map[string]interface{}, err error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, UserClaims{
-		User: &User{
-			Username: user.Username,
-			UserId:   user.ID,
-			Roles:    []string{"admin"},
-		},
-		RegisteredClaims: &jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
-		},
-	})
 
-	tokenString, err := token.SignedString([]byte(Secret))
-	if err != nil {
-		return
-	}
 	var roles, privilege []string
 	if user.Username == "admin" {
 		roles = append(roles, "admin")
@@ -109,9 +95,29 @@ func authorize(user Account) (m map[string]interface{}, err error) {
 			r, _ := GetRole(v.Id)
 
 			privilege = append(privilege, r.Platform...)
+			RolePermission[v.Name] = enum.Role{
+				Platform:         r.Platform,
+				Cluster:          r.Cluster,
+				ClusterPrivilege: r.ClusterPrivilege,
+				Index:            r.Index,
+			}
 		}
 	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, UserClaims{
+		User: &User{
+			Username: user.Username,
+			UserId:   user.ID,
+			Roles:    roles,
+		},
+		RegisteredClaims: &jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+		},
+	})
 
+	tokenString, err := token.SignedString([]byte(Secret))
+	if err != nil {
+		return
+	}
 	m = util.MapStr{
 		"access_token": tokenString,
 		"username":     user.Username,
@@ -215,27 +221,33 @@ func ValidateLogin(authorizationHeader string) (clams *UserClaims, err error) {
 }
 func ValidatePermission(claims *UserClaims, permissions []string) (err error) {
 
-	reqUser := claims.User
+	user := claims.User
 
-	if reqUser.UserId == "" {
+	if user.UserId == "" {
 		err = errors.New("user id is empty")
 		return
 	}
-	if reqUser.Roles == nil {
+	if user.Roles == nil {
 		err = errors.New("api permission is empty")
 		return
 	}
-	return nil
+
 	// 权限校验
 	userPermissionMap := make(map[string]struct{})
-	for _, role := range reqUser.Roles {
+	for _, role := range user.Roles {
 		if _, ok := RolePermission[role]; ok {
 			for _, v := range RolePermission[role].Platform {
+
 				userPermissionMap[v] = struct{}{}
+				//all include read
+				if strings.Contains(v, "all") {
+					key := v[:len(v)-3] + "read"
+					userPermissionMap[key] = struct{}{}
+				}
 			}
 		}
 	}
-	//all=>read
+
 	var count int
 	for _, v := range permissions {
 		if _, ok := userPermissionMap[v]; ok {

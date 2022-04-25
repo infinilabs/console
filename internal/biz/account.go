@@ -6,7 +6,6 @@ import (
 	"github.com/golang-jwt/jwt"
 	"github.com/mitchellh/mapstructure"
 	"golang.org/x/crypto/bcrypt"
-	"infini.sh/console/internal/biz/enum"
 	"infini.sh/console/internal/dto"
 	"infini.sh/console/model/rbac"
 	"infini.sh/framework/core/event"
@@ -85,23 +84,10 @@ func authenticateAdmin(username string, password string) (user Account, err erro
 func authorize(user Account) (m map[string]interface{}, err error) {
 
 	var roles, privilege []string
-	if user.Username == "admin" {
-		roles = append(roles, "admin")
-		privilege = append(privilege, enum.AdminPrivilege...)
-	} else {
-		for _, v := range user.Roles {
-			roles = append(roles, v.Name)
-
-			r, _ := GetRole(v.Id)
-
-			privilege = append(privilege, r.Platform...)
-			RoleMap[v.Name] = Role{
-				Platform:         r.Platform,
-				Cluster:          r.Cluster,
-				ClusterPrivilege: r.ClusterPrivilege,
-				Index:            r.Index,
-			}
-		}
+	for _, v := range user.Roles {
+		role := RoleMap[v.Name]
+		roles = append(roles, v.Name)
+		privilege = append(privilege, role.Platform...)
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, UserClaims{
 		User: &User{

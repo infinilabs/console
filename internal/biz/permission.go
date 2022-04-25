@@ -21,6 +21,13 @@ type Role struct {
 		Privilege []string `json:"privilege"`
 	} `json:"index,omitempty"`
 }
+type RolePermission struct {
+	Platform         []string `json:"platform,omitempty"`
+	Cluster          []string `json:"cluster"`
+	ClusterPrivilege []string `json:"cluster_privilege"`
+	Index            []string `json:"index"`
+	IndexPrivilege   []string `json:"index_privilege"`
+}
 type ConsolePermisson struct {
 	Platform []Platform `json:"platform"`
 }

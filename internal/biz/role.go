@@ -23,7 +23,6 @@ type IRole interface {
 	ListPermission() interface{}
 	Create(localUser *User) (id string, err error)
 	Update(localUser *User, model rbac.Role) (err error)
-	//Delete(localUser *User, id string) (err error)
 }
 type ConsoleRole struct {
 	Name        string   `json:"name"`
@@ -217,13 +216,15 @@ func (role ElasticsearchRole) Create(localUser *User) (id string, err error) {
 		Name:     "role",
 		Type:     "create",
 		Labels: util.MapStr{
-			"id":          id,
-			"name":        role.Name,
-			"description": role.Description,
-
-			"type":    role.RoleType,
-			"created": newRole.Created.Format("2006-01-02 15:04:05"),
-			"updated": newRole.Updated.Format("2006-01-02 15:04:05"),
+			"id":                id,
+			"name":              newRole.Name,
+			"description":       newRole.Description,
+			"cluster":           newRole.Cluster,
+			"index":             newRole.Index,
+			"cluster_privilege": newRole.ClusterPrivilege,
+			"type":              newRole.RoleType,
+			"created":           newRole.Created.Format("2006-01-02 15:04:05"),
+			"updated":           newRole.Updated.Format("2006-01-02 15:04:05"),
 		},
 		User: util.MapStr{
 			"userid":   localUser.UserId,
@@ -261,13 +262,16 @@ func DeleteRole(localUser *User, id string) (err error) {
 			"username": localUser.Username,
 		},
 	}, util.MapStr{
-		"id":          id,
-		"name":        role.Name,
-		"description": role.Description,
-		"platform":    role.Platform,
-		"type":        role.RoleType,
-		"created":     role.Created.Format("2006-01-02 15:04:05"),
-		"updated":     role.Updated.Format("2006-01-02 15:04:05"),
+		"id":                id,
+		"name":              role.Name,
+		"description":       role.Description,
+		"platform":          role.Platform,
+		"cluster":           role.Cluster,
+		"index":             role.Index,
+		"cluster_privilege": role.ClusterPrivilege,
+		"type":              role.RoleType,
+		"created":           role.Created.Format("2006-01-02 15:04:05"),
+		"updated":           role.Updated.Format("2006-01-02 15:04:05"),
 	}, nil))
 
 	return
@@ -281,6 +285,10 @@ func GetRole(id string) (role rbac.Role, err error) {
 		err = ErrNotFound
 		return
 	}
+	return
+}
+func ListRoleByName(names []string) (roles []rbac.Role, err error) {
+
 	return
 }
 func SearchRole(keyword string, from, size int) (roles orm.Result, err error) {

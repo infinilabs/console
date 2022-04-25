@@ -31,7 +31,7 @@ func NewEsRequest(r *http.Request, ps httprouter.Params) EsRequest {
 		Method:  r.Method,
 	}
 }
-func ValidateEsPermission(req EsRequest, userRole Role) (err error) {
+func ValidateEsPermission(req EsRequest, userRole RolePermission) (err error) {
 
 	route, err := EsApiRoutes.Handle(req.Method, req.Path)
 	if err != nil {
@@ -47,18 +47,16 @@ func ValidateEsPermission(req EsRequest, userRole Role) (err error) {
 	err = validateCluster(req, userRole, route)
 	return
 }
-func validateIndex(req EsRequest, userRole Role, route string) (err error) {
+func validateIndex(req EsRequest, userRole RolePermission, route string) (err error) {
 	userIndexMap := make(map[string]struct{})
 	privilegeMap := make(map[string]struct{})
-	for _, val := range userRole.Index {
-		for _, v := range val.Name {
-			userIndexMap[v] = struct{}{}
-		}
-		for _, v := range val.Privilege {
-			privilegeMap[v] = struct{}{}
-		}
-	}
+	for _, v := range userRole.Index {
+		userIndexMap[v] = struct{}{}
 
+	}
+	for _, v := range userRole.IndexPrivilege {
+		privilegeMap[v] = struct{}{}
+	}
 	for _, v := range req.Index {
 		if _, ok := userIndexMap[v]; !ok {
 			err = errors.New("no index permission")
@@ -73,10 +71,10 @@ func validateIndex(req EsRequest, userRole Role, route string) (err error) {
 
 	return
 }
-func validateCluster(req EsRequest, userRole Role, route string) (err error) {
+func validateCluster(req EsRequest, userRole RolePermission, route string) (err error) {
 	userClusterMap := make(map[string]struct{})
 	for _, v := range userRole.Cluster {
-		userClusterMap[v.Id] = struct{}{}
+		userClusterMap[v] = struct{}{}
 	}
 	for _, v := range req.Cluster {
 		if _, ok := userClusterMap[v]; !ok {
@@ -85,28 +83,28 @@ func validateCluster(req EsRequest, userRole Role, route string) (err error) {
 		}
 	}
 
-	tmp := make([]string, 0)
-	for _, val := range userRole.ClusterPrivilege {
-		for _, v := range val {
-			tmp = append(tmp, v...)
-		}
-
-	}
-	for _, v := range tmp {
+	for _, v := range userRole.ClusterPrivilege {
 		if v == route {
 			return nil
 		}
 	}
 	return errors.New("no cluster api permission")
 }
-func CombineUserRoles(roleNames []string) Role {
-	newRole := Role{}
+func CombineUserRoles(roleNames []string) RolePermission {
+	newRole := RolePermission{}
 	for _, v := range roleNames {
-		r := RoleMap[v]
-		newRole.Cluster = append(newRole.Cluster, r.Cluster...)
-		newRole.Platform = append(newRole.Platform, r.Platform...)
-		newRole.Index = append(newRole.Index, r.Index...)
-		newRole.ClusterPrivilege = append(newRole.ClusterPrivilege, r.ClusterPrivilege...)
+		role := RoleMap[v]
+		for _, v := range role.Cluster {
+			newRole.Cluster = append(newRole.Cluster, v.Id)
+		}
+		for _, v := range role.Platform {
+			newRole.Platform = append(newRole.Platform, v)
+		}
+
+		for _, v := range role.Index {
+			newRole.Index = append(newRole.Index, v.Name...)
+			newRole.IndexPrivilege = append(newRole.IndexPrivilege, v.Privilege...)
+		}
 	}
 	return newRole
 }

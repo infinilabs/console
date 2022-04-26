@@ -263,11 +263,8 @@ func (role ElasticsearchRole) Create(localUser *User) (id string, err error) {
 func DeleteRole(localUser *User, id string) (err error) {
 	role := rbac.Role{}
 	role.ID = id
-	_, err = orm.Get(&role)
-	if err != nil {
-		return
-	}
-	err = orm.Delete(role)
+
+	err = orm.Delete(&role)
 	if err != nil {
 		return
 	}

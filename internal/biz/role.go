@@ -265,7 +265,6 @@ func DeleteRole(localUser *User, id string) (err error) {
 	role.ID = id
 	_, err = orm.Get(&role)
 	if err != nil {
-		err = ErrNotFound
 		return
 	}
 	err = orm.Delete(role)
@@ -306,7 +305,6 @@ func GetRole(id string) (role rbac.Role, err error) {
 	role.ID = id
 	_, err = orm.Get(&role)
 	if err != nil {
-		err = ErrNotFound
 		return
 	}
 	return

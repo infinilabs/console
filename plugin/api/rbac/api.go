@@ -34,7 +34,7 @@ func init() {
 	api.HandleAPIMethod(api.PUT, "/user/:id", m.PermissionRequired(r.UpdateUser, enum.UserAll...))
 	api.HandleAPIMethod(api.PUT, "/user/:id/role", m.PermissionRequired(r.UpdateUserRole, enum.UserAll...))
 	api.HandleAPIMethod(api.GET, "/user/_search", m.PermissionRequired(r.SearchUser, enum.UserRead...))
-
+	api.HandleAPIMethod(api.PUT, "/user/:id/password", m.PermissionRequired(r.UpdateUserPassword, enum.UserAll...))
 }
 
 func loadJsonConfig() {

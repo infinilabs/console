@@ -21,7 +21,6 @@ func DeleteUser(localUser *User, id string) (err error) {
 	user.ID = id
 	_, err = orm.Get(&user)
 	if err != nil {
-		err = ErrNotFound
 		return
 	}
 	err = orm.Delete(user)
@@ -55,7 +54,7 @@ func DeleteUser(localUser *User, id string) (err error) {
 	}, nil))
 	return
 }
-func CreateUser(localUser *User, req dto.CreateUser) (id string, err error) {
+func CreateUser(localUser *User, req dto.CreateUser) (id string, password string, err error) {
 	q := orm.Query{Size: 1000}
 	q.Conds = orm.And(orm.Eq("username", req.Username))
 
@@ -75,10 +74,9 @@ func CreateUser(localUser *User, req dto.CreateUser) (id string, err error) {
 			Name: v.Name,
 		})
 	}
-
-	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	randStr := util.GenerateRandomString(8)
+	hash, err := bcrypt.GenerateFromPassword([]byte(randStr), bcrypt.DefaultCost)
 	if err != nil {
-
 		return
 	}
 	user := rbac.User{
@@ -99,6 +97,7 @@ func CreateUser(localUser *User, req dto.CreateUser) (id string, err error) {
 		return
 	}
 	id = user.ID
+	password = randStr
 	err = orm.Save(GenerateEvent(event.ActivityMetadata{
 		Category: "platform",
 		Group:    "rbac",
@@ -128,7 +127,6 @@ func UpdateUser(localUser *User, id string, req dto.UpdateUser) (err error) {
 	user.ID = id
 	_, err = orm.Get(&user)
 	if err != nil {
-		err = ErrNotFound
 		return
 	}
 	roles := make([]rbac.UserRole, 0)
@@ -175,7 +173,7 @@ func UpdateUserRole(localUser *User, id string, req dto.UpdateUserRole) (err err
 	user.ID = id
 	_, err = orm.Get(&user)
 	if err != nil {
-		err = ErrNotFound
+
 		return
 	}
 	changeLog, _ := util.DiffTwoObject(user, req)
@@ -239,5 +237,38 @@ func SearchUser(keyword string, from, size int) (users orm.Result, err error) {
 
 }
 func UpdateUserPassword(localUser *User, id string, password string) (err error) {
+	user := rbac.User{}
+	user.ID = id
+	_, err = orm.Get(&user)
+	if err != nil {
+
+		return
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return
+	}
+	user.Password = string(hash)
+	user.Updated = time.Now()
+	err = orm.Save(&user)
+	if err != nil {
+		return
+	}
+
+	err = orm.Save(GenerateEvent(event.ActivityMetadata{
+		Category: "platform",
+		Group:    "rbac",
+		Name:     "user",
+		Type:     "update",
+		Labels: util.MapStr{
+			"id":       id,
+			"password": password,
+			"updated":  user.Updated,
+		},
+		User: util.MapStr{
+			"userid":   localUser.UserId,
+			"username": localUser.Username,
+		},
+	}, nil, nil))
 	return
 }

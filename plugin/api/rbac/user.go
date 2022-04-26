@@ -6,6 +6,7 @@ import (
 	"infini.sh/console/internal/core"
 	"infini.sh/console/internal/dto"
 	httprouter "infini.sh/framework/core/api/router"
+	"infini.sh/framework/core/util"
 	"infini.sh/framework/modules/elastic"
 	"net/http"
 	log "src/github.com/cihub/seelog"
@@ -39,13 +40,17 @@ func (h Rbac) CreateUser(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		h.Error(w, err)
 		return
 	}
-	id, err := biz.CreateUser(localUser, req)
+	id, pass, err := biz.CreateUser(localUser, req)
 	if err != nil {
 		_ = log.Error(err.Error())
 		h.Error(w, err)
 		return
 	}
-	_ = h.WriteOKJSON(w, core.CreateResponse(id))
+	_ = h.WriteOKJSON(w, util.MapStr{
+		"_id":      id,
+		"password": pass,
+		"result":   "created",
+	})
 	return
 
 }
@@ -156,6 +161,32 @@ func (h Rbac) SearchUser(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	}
 
 	h.Write(w, res.Raw)
+	return
+
+}
+func (h Rbac) UpdateUserPassword(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	id := ps.MustGetParameter("id")
+	var req dto.UpdateUserPassword
+	err := h.DecodeJSON(r, &req)
+	if err != nil {
+		_ = log.Error(err.Error())
+		h.Error400(w, err.Error())
+		return
+	}
+	localUser, err := biz.FromUserContext(r.Context())
+	if err != nil {
+		log.Error(err.Error())
+		h.Error(w, err)
+		return
+	}
+	err = biz.UpdateUserPassword(localUser, id, req.Password)
+	if err != nil {
+		_ = log.Error(err.Error())
+		h.Error(w, err)
+		return
+	}
+
+	_ = h.WriteOKJSON(w, core.UpdateResponse(id))
 	return
 
 }

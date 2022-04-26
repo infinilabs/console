@@ -72,10 +72,12 @@ func (role ConsoleRole) Update(localUser *User, model rbac.Role) (err error) {
 	if err != nil {
 		return
 	}
-	RoleMap[role.Name] = Role{
+
+	RoleMap[model.Name] = Role{
 		Name:     model.Name,
 		Platform: model.Platform,
 	}
+
 	err = orm.Save(GenerateEvent(event.ActivityMetadata{
 		Category: "platform",
 		Group:    "rbac",
@@ -107,7 +109,7 @@ func (role ElasticsearchRole) Update(localUser *User, model rbac.Role) (err erro
 	if err != nil {
 		return
 	}
-	RoleMap[role.Name] = Role{
+	RoleMap[model.Name] = Role{
 		Name:             model.Name,
 		Cluster:          model.Cluster,
 		ClusterPrivilege: model.ClusterPrivilege,
@@ -227,7 +229,7 @@ func (role ElasticsearchRole) Create(localUser *User) (id string, err error) {
 		return
 	}
 	id = newRole.ID
-	RoleMap[role.Name] = Role{
+	RoleMap[newRole.Name] = Role{
 		Name:             newRole.Name,
 		Cluster:          newRole.Cluster,
 		ClusterPrivilege: newRole.ClusterPrivilege,

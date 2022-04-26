@@ -38,3 +38,6 @@ type UpdateUser struct {
 type UpdateUserRole struct {
 	Roles []Role `json:"roles"`
 }
+type UpdateUserPassword struct {
+	Password string `json:"password"`
+}

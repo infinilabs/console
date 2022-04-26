@@ -1,8 +1,5 @@
 {
 
-    "bulk": [
-        "bulk"
-    ],
     "cat": [
         "cat.*",
         "cat.indices",
@@ -36,32 +33,38 @@
         "cluster.allocation_explain",
         "cluster.put_settings",
         "cluster.reroute",
-        "cluster.state"
+        "cluster.count",
+        "cluster.state",
+        "cluster.info",
+        "cluster.bulk",
+        "cluster.mget",
+        "cluster.ping",
+        "cluster.msearch",
+        "cluster.msearch_template",
+        "cluster.mtermvectors",
+        "cluster.rank_eval",
+        "cluster.search"
     ],
-    "count": [
-        "*",
-        "count"
-    ],
+
     "doc": [
         "doc.*",
         "doc.update",
         "doc.put",
         "doc.create",
-        "doc.delete"
+        "doc.delete",
+        "doc.get",
+        "doc.exists",
+        "doc.count",
+        "doc.exists_source",
+        "doc.bulk",
+        "doc.explain",
+        "doc.mget",
+        "doc.msearch",
+        "doc.msearch_template",
+        "doc.mtermvectors",
+        "doc.search"
     ],
-    "exists": [
 
-        "exists"
-    ],
-    "explain": [
-        "explain"
-    ],
-    "field_caps": [
-        "field_caps"
-    ],
-    "get": [
-        "get"
-    ],
     "indices": [
         "indices.*",
         "indices.exists_alias",
@@ -103,11 +106,19 @@
         "indices.stats",
         "indices.delete_by_query",
         "indices.rollover",
-        "indices.shard_stores"
+        "indices.count",
+        "indices.shard_stores",
+        "indices.bulk",
+        "indices.mget",
+        "indices.msearch",
+        "indices.msearch_template",
+        "indices.mtermvectors",
+        "indices.rank_eval",
+        "indices.search",
+        "indices.search_shards",
+        "indices.field_caps"
     ],
-    "info": [
-        "info"
-    ],
+
     "ingest": [
         "ingest.*",
         "ingest.delete_pipeline",
@@ -116,18 +127,7 @@
         "ingest.get_pipeline",
         "ingest.processor_grok"
     ],
-    "mget": [
-        "mget"
-    ],
-    "msearch": [
-        "msearch"
-    ],
-    "msearch_template": [
-        "msearch_template"
-    ],
-    "mtermvectors": [
-        "mtermvectors"
-    ],
+
     "nodes": [
         "nodes.*",
         "nodes.info",
@@ -136,42 +136,27 @@
         "nodes.usage",
         "nodes.hot_threads"
     ],
-    "ping": [
-        "ping"
-    ],
-    "rank_eval": [
-        "rank_eval"
-    ],
+
     "reindex": [
-        "reindex"
+        "reindex.*",
+        "reindex.rethrottle"
     ],
-    "reindex_rethrottle": [
-        "reindex_rethrottle"
-    ],
+
     "render_search_template": [
-        "render_search_template"
+        "render_search_template.*"
     ],
     "scripts": [
         "scripts.*",
         "scripts.get",
         "scripts.put",
-        "scripts.delete"
+        "scripts.delete",
+        "scripts.painless_execute"
     ],
-    "scripts_painless_execute": [
-        "scripts_painless_execute"
-    ],
+
     "scroll": [
-        "scroll.delete"
+        "scroll.*"
     ],
-    "search": [
-        "search"
-    ],
-    "search_shards": [
-        "search_shards"
-    ],
-    "search_template": [
-        "search_template"
-    ],
+
     "snapshot": [
         "snapshot.*",
         "snapshot.get_repository",
@@ -184,12 +169,9 @@
         "snapshot.verify_repository",
         "snapshot.get"
     ],
-    "source": [
-        "source.*",
-        "source.head",
-        "source.get"
-    ],
+
     "tasks": [
+        "tasks.*",
         "tasks.list",
         "tasks.cancel",
         "tasks.get"

@@ -75,6 +75,7 @@ func CreateUser(localUser *User, req dto.CreateUser) (id string, err error) {
 			Name: v.Name,
 		})
 	}
+
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 
@@ -236,4 +237,7 @@ func SearchUser(keyword string, from, size int) (users orm.Result, err error) {
 
 	return
 
+}
+func UpdateUserPassword(localUser *User, id string, password string) (err error) {
+	return
 }

@@ -306,10 +306,7 @@ func GetRole(id string) (role rbac.Role, err error) {
 	}
 	return
 }
-func ListRoleByName(names []string) (roles []rbac.Role, err error) {
 
-	return
-}
 func SearchRole(keyword string, from, size int) (roles orm.Result, err error) {
 
 	query := orm.Query{}

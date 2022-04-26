@@ -90,17 +90,22 @@ func validateCluster(req EsRequest, userRole RolePermission, route string) (err 
 	}
 	return errors.New("no cluster api permission")
 }
+func FilterCluster() {
+
+}
 func CombineUserRoles(roleNames []string) RolePermission {
 	newRole := RolePermission{}
-	for _, v := range roleNames {
-		role := RoleMap[v]
+	for _, val := range roleNames {
+		role := RoleMap[val]
 		for _, v := range role.Cluster {
 			newRole.Cluster = append(newRole.Cluster, v.Id)
+		}
+		for _, v := range role.ClusterPrivilege {
+			newRole.ClusterPrivilege = append(newRole.ClusterPrivilege, v)
 		}
 		for _, v := range role.Platform {
 			newRole.Platform = append(newRole.Platform, v)
 		}
-
 		for _, v := range role.Index {
 			newRole.Index = append(newRole.Index, v.Name...)
 			newRole.IndexPrivilege = append(newRole.IndexPrivilege, v.Privilege...)

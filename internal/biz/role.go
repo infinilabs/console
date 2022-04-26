@@ -31,15 +31,19 @@ type ConsoleRole struct {
 	Platform    []string `json:"platform,omitempty"`
 }
 
-type MenuPermission struct {
-	Id        string `json:"id"`
-	Privilege string `json:"privilege"`
-}
 type ElasticsearchRole struct {
 	Name        string `json:"name"`
 	Description string `json:"description" `
 	RoleType    string `json:"type" `
-	rbac.ElasticRole
+	Cluster     []struct {
+		Id   string `json:"id"`
+		Name string `json:"name"`
+	} `json:"cluster,omitempty"`
+	ClusterPrivilege []string `json:"cluster_privilege,omitempty"`
+	Index            []struct {
+		Name      []string `json:"name"`
+		Privilege []string `json:"privilege"`
+	} `json:"index,omitempty"`
 }
 
 func NewRole(typ string) (r IRole, err error) {
@@ -63,11 +67,14 @@ func (role ConsoleRole) Update(localUser *User, model rbac.Role) (err error) {
 	changeLog, _ := util.DiffTwoObject(model, role)
 	model.Description = role.Description
 	model.Platform = role.Platform
-
 	model.Updated = time.Now()
 	err = orm.Save(model)
 	if err != nil {
 		return
+	}
+	RoleMap[role.Name] = Role{
+		Name:     model.Name,
+		Platform: model.Platform,
 	}
 	err = orm.Save(GenerateEvent(event.ActivityMetadata{
 		Category: "platform",
@@ -99,6 +106,12 @@ func (role ElasticsearchRole) Update(localUser *User, model rbac.Role) (err erro
 	err = orm.Save(model)
 	if err != nil {
 		return
+	}
+	RoleMap[role.Name] = Role{
+		Name:             model.Name,
+		Cluster:          model.Cluster,
+		ClusterPrivilege: model.ClusterPrivilege,
+		Index:            model.Index,
 	}
 	err = orm.Save(GenerateEvent(event.ActivityMetadata{
 		Category: "platform",
@@ -150,6 +163,10 @@ func (role ConsoleRole) Create(localUser *User) (id string, err error) {
 		return
 	}
 	id = newRole.ID
+	RoleMap[role.Name] = Role{
+		Name:     newRole.Name,
+		Platform: newRole.Platform,
+	}
 	err = orm.Save(GenerateEvent(event.ActivityMetadata{
 		Category: "platform",
 		Group:    "rbac",
@@ -210,6 +227,12 @@ func (role ElasticsearchRole) Create(localUser *User) (id string, err error) {
 		return
 	}
 	id = newRole.ID
+	RoleMap[role.Name] = Role{
+		Name:             newRole.Name,
+		Cluster:          newRole.Cluster,
+		ClusterPrivilege: newRole.ClusterPrivilege,
+		Index:            newRole.Index,
+	}
 	err = orm.Save(GenerateEvent(event.ActivityMetadata{
 		Category: "platform",
 		Group:    "rbac",
@@ -249,6 +272,7 @@ func DeleteRole(localUser *User, id string) (err error) {
 	if err != nil {
 		return
 	}
+	delete(RoleMap, role.Name)
 	err = orm.Save(GenerateEvent(event.ActivityMetadata{
 		Category: "platform",
 		Group:    "rbac",

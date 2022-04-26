@@ -15,7 +15,7 @@ type Role struct {
 		Id   string `json:"id"`
 		Name string `json:"name"`
 	} `json:"cluster,omitempty"`
-	ClusterPrivilege []map[string][]string `json:"cluster_privilege,omitempty"`
+	ClusterPrivilege []string `json:"cluster_privilege,omitempty"`
 	Index            []struct {
 		Name      []string `json:"name"`
 		Privilege []string `json:"privilege"`

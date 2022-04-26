@@ -28,6 +28,7 @@ func DeleteUser(localUser *User, id string) (err error) {
 	if err != nil {
 		return
 	}
+
 	err = orm.Save(GenerateEvent(event.ActivityMetadata{
 		Category: "platform",
 		Group:    "rbac",
@@ -190,6 +191,7 @@ func UpdateUserRole(localUser *User, id string, req dto.UpdateUserRole) (err err
 	if err != nil {
 		return
 	}
+
 	err = orm.Save(GenerateEvent(event.ActivityMetadata{
 		Category: "platform",
 		Group:    "rbac",

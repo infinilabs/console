@@ -408,7 +408,7 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule)(*alerting.ConditionRes
 					return conditionResult, err
 				}
 				if r, ok := result.(float64); ok {
-					if math.IsNaN(r){
+					if math.IsNaN(r) || math.IsInf(r, 0){
 						continue
 					}
 				}

@@ -265,12 +265,19 @@ func (role ElasticsearchRole) Create(localUser *User) (id string, err error) {
 func DeleteRole(localUser *User, id string) (err error) {
 	role := rbac.Role{}
 	role.ID = id
+	roleName := role.Name
+	_, err = orm.Get(&role)
+	if err != nil {
+		return
+	}
 
 	err = orm.Delete(&role)
 	if err != nil {
 		return
 	}
-	delete(RoleMap, role.Name)
+
+	delete(RoleMap, roleName)
+
 	err = orm.Save(GenerateEvent(event.ActivityMetadata{
 		Category: "platform",
 		Group:    "rbac",

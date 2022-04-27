@@ -355,6 +355,49 @@ func (alertAPI *AlertAPI) fetchAlertInfos(w http.ResponseWriter, req *http.Reque
 	alertAPI.WriteJSON(w, latestAlertInfos, http.StatusOK)
 }
 
+func (alertAPI *AlertAPI) enableRule(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	reqObj := alerting.Rule{}
+	err := alertAPI.DecodeJSON(req, &reqObj)
+	if err != nil {
+		alertAPI.WriteError(w, fmt.Sprintf("request format error:%v", err), http.StatusInternalServerError)
+		return
+	}
+	id := ps.MustGetParameter("rule_id")
+	obj := alerting.Rule{}
+	obj.ID = id
+
+	exists, err := orm.Get(&obj)
+	if !exists || err != nil {
+		alertAPI.WriteJSON(w, util.MapStr{
+			"_id":    id,
+			"result": "not_found",
+		}, http.StatusNotFound)
+		return
+	}
+	if reqObj.Enabled {
+		eng := alerting2.GetEngine(obj.Resource.Type)
+		ruleTask := task.ScheduleTask{
+			ID:          obj.ID,
+			Interval:    obj.Schedule.Interval,
+			Description: obj.Metrics.Expression,
+			Task:        eng.GenerateTask(&obj),
+		}
+		task.RegisterScheduleTask(ruleTask)
+		task.StartTask(ruleTask.ID)
+	}else{
+		task.DeleteTask(id)
+	}
+	obj.Enabled = reqObj.Enabled
+	err = orm.Save(obj)
+	if err != nil {
+		alertAPI.WriteError(w, fmt.Sprintf("save rule error:%v", err), http.StatusInternalServerError)
+		return
+	}
+	alertAPI.WriteJSON(w, util.MapStr{
+		"result": "updated",
+		"_id": id,
+	}, http.StatusOK)
+}
 func checkResourceExists(rule *alerting.Rule) (bool, error) {
 	if rule.Resource.ID == "" {
 		return false, fmt.Errorf("resource id can not be empty")

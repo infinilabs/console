@@ -22,6 +22,7 @@ func (alert *AlertAPI) Init() {
 	api.HandleAPIMethod(api.PUT, "/alerting/rule/:rule_id", alert.updateRule)
 	api.HandleAPIMethod(api.GET, "/alerting/rule/_search", alert.searchRule)
 	api.HandleAPIMethod(api.POST, "/alerting/rule/info", alert.fetchAlertInfos)
+	api.HandleAPIMethod(api.POST, "/alerting/rule/:rule_id/_enable", alert.enableRule)
 
 	api.HandleAPIMethod(api.GET, "/alerting/channel/:channel_id", alert.getChannel)
 	api.HandleAPIMethod(api.POST, "/alerting/channel", alert.createChannel)
@@ -32,6 +33,7 @@ func (alert *AlertAPI) Init() {
 	api.HandleAPIMethod(api.GET, "/alerting/alert/_search", alert.searchAlert)
 	api.HandleAPIMethod(api.GET, "/alerting/alert/:alert_id", alert.getAlert)
 	api.HandleAPIMethod(api.POST, "/alerting/alert/_acknowledge", alert.acknowledgeAlert)
+
 
 	//just for test
 	//api.HandleAPIMethod(api.GET, "/alerting/rule/test", alert.testRule)

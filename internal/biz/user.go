@@ -27,7 +27,8 @@ func DeleteUser(localUser *User, id string) (err error) {
 	if err != nil {
 		return
 	}
-
+	fmt.Println("tokenmap", TokenMap)
+	delete(TokenMap, id)
 	err = orm.Save(GenerateEvent(event.ActivityMetadata{
 		Category: "platform",
 		Group:    "rbac",

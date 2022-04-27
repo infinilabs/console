@@ -104,6 +104,7 @@ func authorize(user Account) (m map[string]interface{}, err error) {
 	if err != nil {
 		return
 	}
+
 	m = util.MapStr{
 		"access_token": tokenString,
 		"username":     user.Username,
@@ -133,6 +134,7 @@ func Login(username string, password string) (m map[string]interface{}, err erro
 	if err != nil {
 		return
 	}
+	TokenMap[user.ID] = Token{ExpireIn: time.Now().Unix() + 86400}
 	err = orm.Save(GenerateEvent(event.ActivityMetadata{
 		Category: "platform",
 		Group:    "rbac",
@@ -185,22 +187,35 @@ func ValidateLogin(authorizationHeader string) (clams *UserClaims, err error) {
 		return
 	}
 	tokenString := fields[1]
+
 	token, err := jwt.ParseWithClaims(tokenString, &UserClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-
 		return []byte(Secret), nil
 	})
 	if err != nil {
 		return
 	}
-	if clams, ok := token.Claims.(*UserClaims); ok && token.Valid {
-		return clams, nil
-	}
+	clams, ok := token.Claims.(*UserClaims)
+
 	if clams.UserId == "" {
 		err = errors.New("user id is empty")
 		return
+	}
+	fmt.Println("user token", clams.UserId, TokenMap[clams.UserId])
+	tokenVal, ok := TokenMap[clams.UserId]
+	if !ok {
+		err = errors.New("token is invalid")
+		return
+	}
+	if tokenVal.ExpireIn < time.Now().Unix() {
+		err = errors.New("token is expire in")
+		delete(TokenMap, clams.UserId)
+		return
+	}
+	if ok && token.Valid {
+		return clams, nil
 	}
 	return
 

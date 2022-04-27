@@ -6,6 +6,15 @@ var ClusterApis = make(map[string][]string)
 var IndexApis = make([]string, 50)
 
 var RoleMap = make(map[string]Role)
+
+type Token struct {
+	JwtStr   string `json:"jwt_str"`
+	Value    string `json:"value"`
+	ExpireIn int64  `json:"expire_in"`
+}
+
+var TokenMap = make(map[string]Token)
+
 var EsApiRoutes = core.NewRouter()
 
 type Role struct {

@@ -111,6 +111,7 @@ func (h Account) Profile(w http.ResponseWriter, r *http.Request, ps httprouter.P
 			"username": "admin",
 			"email":    "admin@infini.ltd",
 			"name":     "admin",
+			"phone":    "13011111111",
 		}
 		h.WriteOKJSON(w, core.FoundResponse(reqUser.UserId, u))
 	} else {
@@ -124,6 +125,7 @@ func (h Account) Profile(w http.ResponseWriter, r *http.Request, ps httprouter.P
 			"username": user.Username,
 			"email":    user.Email,
 			"name":     user.Name,
+			"phone":    user.Phone,
 		}
 		h.WriteOKJSON(w, core.FoundResponse(reqUser.UserId, u))
 	}

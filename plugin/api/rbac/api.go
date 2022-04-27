@@ -19,6 +19,7 @@ type Rbac struct {
 }
 
 func init() {
+
 	r := Rbac{}
 	api.HandleAPIMethod(api.GET, "/permission/:type", r.ListPermission)
 	api.HandleAPIMethod(api.POST, "/role/:type", m.PermissionRequired(r.CreateRole, enum.RoleAll))

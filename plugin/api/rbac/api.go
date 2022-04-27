@@ -12,7 +12,6 @@ import (
 	"path"
 	log "src/github.com/cihub/seelog"
 	"src/github.com/mitchellh/mapstructure"
-	"strings"
 )
 
 type Rbac struct {
@@ -22,19 +21,19 @@ type Rbac struct {
 func init() {
 	r := Rbac{}
 	api.HandleAPIMethod(api.GET, "/permission/:type", r.ListPermission)
-	api.HandleAPIMethod(api.POST, "/role/:type", m.PermissionRequired(r.CreateRole, enum.RoleAll...))
-	api.HandleAPIMethod(api.GET, "/role/:id", m.PermissionRequired(r.GetRole, enum.RoleRead...))
-	api.HandleAPIMethod(api.DELETE, "/role/:id", m.PermissionRequired(r.DeleteRole, enum.RoleAll...))
-	api.HandleAPIMethod(api.PUT, "/role/:id", m.PermissionRequired(r.UpdateRole, enum.RoleAll...))
-	api.HandleAPIMethod(api.GET, "/role/_search", m.PermissionRequired(r.SearchRole, enum.RoleRead...))
+	api.HandleAPIMethod(api.POST, "/role/:type", m.PermissionRequired(r.CreateRole, enum.RoleAll))
+	api.HandleAPIMethod(api.GET, "/role/:id", m.PermissionRequired(r.GetRole, enum.RoleRead))
+	api.HandleAPIMethod(api.DELETE, "/role/:id", m.PermissionRequired(r.DeleteRole, enum.RoleAll))
+	api.HandleAPIMethod(api.PUT, "/role/:id", m.PermissionRequired(r.UpdateRole, enum.RoleAll))
+	api.HandleAPIMethod(api.GET, "/role/_search", m.PermissionRequired(r.SearchRole, enum.RoleRead))
 
-	api.HandleAPIMethod(api.POST, "/user", m.PermissionRequired(r.CreateUser, enum.UserAll...))
-	api.HandleAPIMethod(api.GET, "/user/:id", m.PermissionRequired(r.GetUser, enum.UserRead...))
-	api.HandleAPIMethod(api.DELETE, "/user/:id", m.PermissionRequired(r.DeleteUser, enum.UserAll...))
-	api.HandleAPIMethod(api.PUT, "/user/:id", m.PermissionRequired(r.UpdateUser, enum.UserAll...))
-	api.HandleAPIMethod(api.PUT, "/user/:id/role", m.PermissionRequired(r.UpdateUserRole, enum.UserAll...))
-	api.HandleAPIMethod(api.GET, "/user/_search", m.PermissionRequired(r.SearchUser, enum.UserRead...))
-	api.HandleAPIMethod(api.PUT, "/user/:id/password", m.PermissionRequired(r.UpdateUserPassword, enum.UserAll...))
+	api.HandleAPIMethod(api.POST, "/user", m.PermissionRequired(r.CreateUser, enum.UserAll))
+	api.HandleAPIMethod(api.GET, "/user/:id", m.PermissionRequired(r.GetUser, enum.UserRead))
+	api.HandleAPIMethod(api.DELETE, "/user/:id", m.PermissionRequired(r.DeleteUser, enum.UserAll))
+	api.HandleAPIMethod(api.PUT, "/user/:id", m.PermissionRequired(r.UpdateUser, enum.UserAll))
+	api.HandleAPIMethod(api.PUT, "/user/:id/role", m.PermissionRequired(r.UpdateUserRole, enum.UserAll))
+	api.HandleAPIMethod(api.GET, "/user/_search", m.PermissionRequired(r.SearchUser, enum.UserRead))
+	api.HandleAPIMethod(api.PUT, "/user/:id/password", m.PermissionRequired(r.UpdateUserPassword, enum.UserAll))
 }
 
 func loadJsonConfig() {
@@ -54,19 +53,19 @@ func loadJsonConfig() {
 	delete(apis, "indices")
 	biz.ClusterApis = apis
 
-	bytes, err = util.FileGetContent(path.Join(pwd, "/config/map.json"))
-	if err != nil {
-		panic("load json file err " + err.Error())
-	}
-	esapiMap := make(map[string]string)
-	err = json.Unmarshal(bytes, &esapiMap)
-	if err != nil {
-		panic("json config unmarshal err " + err.Error())
-	}
-	for k, v := range esapiMap {
-		s := strings.Split(k, "-")
-		biz.EsApiRoutes.AddRoute(s[0], s[1], v)
-	}
+	//bytes, err = util.FileGetContent(path.Join(pwd, "/config/map.json"))
+	//if err != nil {
+	//	panic("load json file err " + err.Error())
+	//}
+	//esapiMap := make(map[string]string)
+	//err = json.Unmarshal(bytes, &esapiMap)
+	//if err != nil {
+	//	panic("json config unmarshal err " + err.Error())
+	//}
+	//for k, v := range esapiMap {
+	//	s := strings.Split(k, "-")
+	//	biz.EsApiRoutes.AddRoute(s[0], s[1], v)
+	//}
 
 }
 func loadRolePermission() {
@@ -98,7 +97,7 @@ func loadRolePermission() {
 			},
 		},
 	}
-	res, err := biz.SearchRole("", 0, 100)
+	res, err := biz.SearchRole("", 0, 1000)
 	if err != nil {
 		log.Error(err)
 		return

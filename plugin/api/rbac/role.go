@@ -17,12 +17,12 @@ func (h Rbac) CreateRole(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	localUser, err := biz.FromUserContext(r.Context())
 	if err != nil {
 		log.Error(err.Error())
-		h.Error(w, err)
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 	irole, err := biz.NewRole(roleType)
 	if err != nil {
-		h.Error(w, err)
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 
@@ -31,12 +31,13 @@ func (h Rbac) CreateRole(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		h.Error400(w, err.Error())
 		return
 	}
+
 	var id string
 	id, err = irole.Create(localUser)
 
 	if err != nil {
 		_ = log.Error(err.Error())
-		h.Error(w, err)
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 	_ = h.WriteOKJSON(w, core.CreateResponse(id))
@@ -55,7 +56,8 @@ func (h Rbac) SearchRole(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	res, err := biz.SearchRole(keyword, from, size)
 	if err != nil {
 		log.Error(err)
-		h.Error(w, err)
+
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 	response := elastic.SearchResponse{}
@@ -91,7 +93,7 @@ func (h Rbac) GetRole(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 
 	if err != nil {
 		_ = log.Error(err.Error())
-		h.Error(w, err)
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 	h.WriteOKJSON(w, core.Response{Hit: role})
@@ -104,14 +106,14 @@ func (h Rbac) DeleteRole(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	localUser, err := biz.FromUserContext(r.Context())
 	if err != nil {
 		log.Error(err.Error())
-		h.Error(w, err)
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 	err = biz.DeleteRole(localUser, id)
 
 	if err != nil {
 		_ = log.Error(err.Error())
-		h.Error(w, err)
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 	_ = h.WriteOKJSON(w, core.DeleteResponse(id))
@@ -123,17 +125,17 @@ func (h Rbac) UpdateRole(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	localUser, err := biz.FromUserContext(r.Context())
 	if err != nil {
 		log.Error(err.Error())
-		h.Error(w, err)
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 	model, err := biz.GetRole(id)
 	if err != nil {
-		h.Error(w, err)
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 	irole, err := biz.NewRole(model.RoleType)
 	if err != nil {
-		h.Error(w, err)
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 
@@ -147,7 +149,7 @@ func (h Rbac) UpdateRole(w http.ResponseWriter, r *http.Request, ps httprouter.P
 
 	if err != nil {
 		_ = log.Error(err.Error())
-		h.Error(w, err)
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 	_ = h.WriteOKJSON(w, core.UpdateResponse(id))

@@ -4,11 +4,11 @@ import (
 	"time"
 )
 
-var UserRead = []string{"system.user:read"}
-var UserAll = []string{"system.user:all"}
+const UserRead = "system.user:read"
+const UserAll = "system.user:all"
 
-var RoleRead = []string{"system.role:read"}
-var RoleAll = []string{"system.role:all"}
+const RoleRead = "system.role:read"
+const RoleAll = "system.role:all"
 
 var RuleRead = []string{"rule::read"}
 var RuleAll = []string{"rule::read", "rule::write"}

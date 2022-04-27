@@ -29,21 +29,21 @@ func (h Rbac) CreateUser(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		h.Error400(w, err.Error())
 		return
 	}
-	if req.Username == "" || req.Password == "" {
+	if req.Username == "" || req.Phone == "" || req.Email == "" {
 
-		h.Error400(w, "username or password require")
+		h.Error400(w, "username and phone and email is require")
 		return
 	}
 	localUser, err := biz.FromUserContext(r.Context())
 	if err != nil {
 		log.Error(err.Error())
-		h.Error(w, err)
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 	id, pass, err := biz.CreateUser(localUser, req)
 	if err != nil {
 		_ = log.Error(err.Error())
-		h.Error(w, err)
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 	_ = h.WriteOKJSON(w, util.MapStr{
@@ -65,7 +65,7 @@ func (h Rbac) GetUser(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 
 	if err != nil {
 		_ = log.Error(err.Error())
-		h.Error(w, err)
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 	h.WriteOKJSON(w, core.FoundResponse(id, user))
@@ -84,14 +84,14 @@ func (h Rbac) UpdateUser(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	localUser, err := biz.FromUserContext(r.Context())
 	if err != nil {
 		log.Error(err.Error())
-		h.Error(w, err)
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 	err = biz.UpdateUser(localUser, id, req)
 
 	if err != nil {
 		_ = log.Error(err.Error())
-		h.Error(w, err)
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 	_ = h.WriteOKJSON(w, core.UpdateResponse(id))
@@ -110,14 +110,14 @@ func (h Rbac) UpdateUserRole(w http.ResponseWriter, r *http.Request, ps httprout
 	localUser, err := biz.FromUserContext(r.Context())
 	if err != nil {
 		log.Error(err.Error())
-		h.Error(w, err)
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 	err = biz.UpdateUserRole(localUser, id, req)
 
 	if err != nil {
 		_ = log.Error(err.Error())
-		h.Error(w, err)
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 	_ = h.WriteOKJSON(w, core.UpdateResponse(id))
@@ -129,7 +129,7 @@ func (h Rbac) DeleteUser(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	localUser, err := biz.FromUserContext(r.Context())
 	if err != nil {
 		log.Error(err.Error())
-		h.Error(w, err)
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 	err = biz.DeleteUser(localUser, id)
@@ -139,7 +139,7 @@ func (h Rbac) DeleteUser(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	}
 	if err != nil {
 		_ = log.Error(err.Error())
-		h.Error(w, err)
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 	_ = h.WriteOKJSON(w, core.DeleteResponse(id))
@@ -156,7 +156,7 @@ func (h Rbac) SearchUser(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	res, err := biz.SearchUser(keyword, from, size)
 	if err != nil {
 		log.Error(err.Error())
-		h.Error(w, err)
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 
@@ -176,13 +176,13 @@ func (h Rbac) UpdateUserPassword(w http.ResponseWriter, r *http.Request, ps http
 	localUser, err := biz.FromUserContext(r.Context())
 	if err != nil {
 		log.Error(err.Error())
-		h.Error(w, err)
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 	err = biz.UpdateUserPassword(localUser, id, req.Password)
 	if err != nil {
 		_ = log.Error(err.Error())
-		h.Error(w, err)
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 

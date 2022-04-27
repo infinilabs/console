@@ -33,13 +33,13 @@ func (h Account) Login(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 	var req dto.Login
 	err := h.DecodeJSON(r, &req)
 	if err != nil {
-		h.Error(w, err)
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 
 	data, err := biz.Login(req.Username, req.Password)
 	if err != nil {
-		h.Error(w, err)
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 	data["status"] = "ok"
@@ -100,7 +100,7 @@ func (h Account) Logout(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 func (h Account) Profile(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	reqUser, err := biz.FromUserContext(r.Context())
 	if err != nil {
-		h.Error(w, err)
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 
@@ -116,7 +116,7 @@ func (h Account) Profile(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	} else {
 		user, err := biz.GetUser(reqUser.UserId)
 		if err != nil {
-			h.Error(w, err)
+			h.ErrorInternalServer(w, err.Error())
 			return
 		}
 		u := util.MapStr{
@@ -133,18 +133,18 @@ func (h Account) Profile(w http.ResponseWriter, r *http.Request, ps httprouter.P
 func (h Account) UpdatePassword(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	reqUser, err := biz.FromUserContext(r.Context())
 	if err != nil {
-		h.Error(w, err)
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 	var req dto.UpdatePassword
 	err = h.DecodeJSON(r, &req)
 	if err != nil {
-		h.Error(w, err)
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 	err = biz.UpdatePassword(reqUser, req)
 	if err != nil {
-		h.Error(w, err)
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 	h.WriteOKJSON(w, util.MapStr{

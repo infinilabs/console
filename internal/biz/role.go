@@ -1,6 +1,7 @@
 package biz
 
 import (
+	"errors"
 	"fmt"
 	"infini.sh/console/internal/biz/enum"
 	"infini.sh/console/model/rbac"
@@ -26,7 +27,7 @@ type IRole interface {
 }
 type ConsoleRole struct {
 	Name        string   `json:"name"`
-	Description string   `json:"description" `
+	Description string   `json:"description"`
 	RoleType    string   `json:"type" `
 	Platform    []string `json:"platform,omitempty"`
 }
@@ -135,6 +136,10 @@ func (role ElasticsearchRole) Update(localUser *User, model rbac.Role) (err erro
 	return
 }
 func (role ConsoleRole) Create(localUser *User) (id string, err error) {
+	if role.Name == "" {
+		err = errors.New("role name is require")
+		return
+	}
 	if _, ok := enum.BuildRoles[role.Name]; ok {
 		err = fmt.Errorf("role name %s already exists", role.Name)
 		return
@@ -196,7 +201,10 @@ func (role ConsoleRole) Create(localUser *User) (id string, err error) {
 
 }
 func (role ElasticsearchRole) Create(localUser *User) (id string, err error) {
-
+	if role.Name == "" {
+		err = errors.New("role name is require")
+		return
+	}
 	if _, ok := enum.BuildRoles[role.Name]; ok {
 		err = fmt.Errorf("role name %s already exists", role.Name)
 		return

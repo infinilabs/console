@@ -19,7 +19,7 @@ func (h Rbac) ListPermission(w http.ResponseWriter, r *http.Request, ps httprout
 
 	if err != nil {
 		_ = log.Error(err.Error())
-		h.Error(w, err)
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 	permissions := role.ListPermission()

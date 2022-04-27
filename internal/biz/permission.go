@@ -3,7 +3,7 @@ package biz
 import "infini.sh/console/internal/core"
 
 var ClusterApis = make(map[string][]string)
-var IndexApis = make([]string, 0)
+var IndexApis = make([]string, 50)
 
 var RoleMap = make(map[string]Role)
 var EsApiRoutes = core.NewRouter()
@@ -22,11 +22,11 @@ type Role struct {
 	} `json:"index,omitempty"`
 }
 type RolePermission struct {
-	Platform         []string            `json:"platform,omitempty"`
-	Cluster          []string            `json:"cluster"`
-	ClusterPrivilege []string            `json:"cluster_privilege"`
-	Index            []string            `json:"index"`
-	IndexPrivilege   map[string][]string `json:"index_privilege"`
+	Platform         []string `json:"platform,omitempty"`
+	Cluster          []string `json:"cluster"`
+	ClusterPrivilege []string `json:"cluster_privilege"`
+
+	IndexPrivilege map[string][]string `json:"index_privilege"`
 }
 type ConsolePermisson struct {
 	Platform []Platform `json:"platform"`

@@ -3,6 +3,7 @@ package biz
 import (
 	"errors"
 	httprouter "infini.sh/framework/core/api/router"
+	"infini.sh/framework/core/util"
 	"strings"
 )
 
@@ -39,24 +40,7 @@ func NewClusterRequest(ps httprouter.Params, privilege []string) ClusterRequest 
 	}
 }
 
-//func ValidateEsPermission(req EsRequest, userRole RolePermission) (err error) {
-//
-//	route, err := EsApiRoutes.Handle(req.Method, req.Path)
-//	if err != nil {
-//
-//		return
-//	}
-//	if len(req.Index) > 0 {
-//		err = ValidateIndex(req, userRole, route)
-//		if err != nil {
-//			return err
-//		}
-//	}
-//	err = ValidateCluster(req, userRole, route)
-//	return
-//}
 func ValidateIndex(req IndexRequest, userRole RolePermission) (err error) {
-	userIndexMap := make(map[string]struct{})
 
 	userClusterMap := make(map[string]struct{})
 	for _, v := range userRole.Cluster {
@@ -68,36 +52,31 @@ func ValidateIndex(req IndexRequest, userRole RolePermission) (err error) {
 			return
 		}
 	}
-	for _, v := range userRole.Index {
-		userIndexMap[v] = struct{}{}
-	}
 
-	for _, v := range req.Index {
-		if _, ok := userIndexMap[v]; !ok {
-			err = errors.New("no index permission")
-			return
-		}
-	}
 	for _, val := range req.Privilege {
-		prefix := val[:strings.Index(val, ".")]
+		position := strings.Index(val, ".")
+		if position == -1 {
+			err = errors.New("invalid privilege parmeter")
+			return err
+		}
+		prefix := val[:position]
 		for _, v := range req.Index {
 			privilege, ok := userRole.IndexPrivilege[v]
 			if !ok {
-				err = errors.New("no index api permission in user role")
+				err = errors.New("no index permission")
 				return err
 			}
-			for _, p := range privilege {
-				if p == prefix+".*" {
-					return nil
-				}
-				if p == val {
-					return nil
-				}
+			if util.StringInArray(privilege, prefix+".*") {
+				return nil
 			}
+			if util.StringInArray(privilege, val) {
+				return nil
+			}
+
 		}
 	}
 
-	return errors.New("no index api permission in user role")
+	return errors.New("no index api permission")
 }
 func ValidateCluster(req ClusterRequest, userRole RolePermission) (err error) {
 	userClusterMap := make(map[string]struct{})
@@ -110,17 +89,16 @@ func ValidateCluster(req ClusterRequest, userRole RolePermission) (err error) {
 			return
 		}
 	}
+
 	// if include api.*  for example: cat.* , return nil
 	for _, privilege := range req.Privilege {
 		prefix := privilege[:strings.Index(privilege, ".")]
-		for _, v := range userRole.ClusterPrivilege {
-			if v == prefix+".*" {
 
-				return nil
-			}
-			if v == privilege {
-				return nil
-			}
+		if util.StringInArray(userRole.ClusterPrivilege, prefix+".*") {
+			return nil
+		}
+		if util.StringInArray(userRole.ClusterPrivilege, privilege) {
+			return nil
 		}
 	}
 
@@ -142,7 +120,7 @@ func CombineUserRoles(roleNames []string) RolePermission {
 			newRole.Platform = append(newRole.Platform, v)
 		}
 		for _, v := range role.Index {
-			newRole.Index = append(newRole.Index, v.Name...)
+
 			for _, name := range v.Name {
 				if _, ok := m[name]; ok {
 					m[name] = append(m[name], v.Privilege...)

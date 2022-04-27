@@ -43,13 +43,14 @@
         "cluster.msearch_template",
         "cluster.mtermvectors",
         "cluster.rank_eval",
-        "cluster.search"
+        "cluster.search",
+        "cluster.search_shards"
     ],
 
     "doc": [
         "doc.*",
         "doc.update",
-        "doc.put",
+
         "doc.create",
         "doc.delete",
         "doc.get",
@@ -71,6 +72,7 @@
         "indices.get_alias",
         "indices.recovery",
         "indices.delete",
+        "indices.put",
         "indices.clear_cache",
         "indices.update_by_query",
         "indices.shrink",
@@ -143,6 +145,8 @@
     ],
 
     "render_search_template": [
+        "render_search_template.*",
+        "render_search_template.create",
         "render_search_template.*"
     ],
     "scripts": [
@@ -154,7 +158,10 @@
     ],
 
     "scroll": [
-        "scroll.*"
+        "scroll.*",
+        "scroll.delete",
+        "scroll.get",
+        "scroll.create"
     ],
 
     "snapshot": [

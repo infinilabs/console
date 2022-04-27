@@ -13,8 +13,10 @@ import (
 	log "github.com/cihub/seelog"
 	"github.com/valyala/fasttemplate"
 	"infini.sh/console/model/alerting"
+	alerting2 "infini.sh/console/service/alerting"
 	"infini.sh/console/service/alerting/action"
 	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/kv"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"io"
@@ -534,6 +536,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		Objects: rule.Resource.Objects,
 		ConditionResult: checkResults,
 		Conditions: rule.Conditions,
+		State: alerting.AlertStateNormal,
 	}
 	if err != nil {
 		return err
@@ -575,7 +578,18 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			alertItem.Error = err.Error()
 			return err
 		}
-		period := time.Now().Sub(rule.LastNotificationTime)
+		if rule.LastNotificationTime.IsZero() {
+			timeBytes, err := kv.GetValue(alerting2.KVLastNotificationTime, []byte(rule.ID))
+			if err != nil {
+				return fmt.Errorf("get last notification time from kv error: %w", err)
+			}
+			rule.LastNotificationTime, err = time.ParseInLocation(time.RFC3339, string(timeBytes), time.UTC)
+			if err != nil {
+				return fmt.Errorf("parse last notification time from kv error: %w", err)
+			}
+		}
+		period := time.Now().Sub(rule.LastNotificationTime.Local())
+
 		//log.Error(lastAlertItem.ID, period, periodDuration)
 
 		if lastAlertItem.ID == "" || period > periodDuration {
@@ -583,6 +597,8 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			alertItem.ActionExecutionResults = actionResults
 			//todo init last notification time when create task (by last alert item is notified)
 			rule.LastNotificationTime = time.Now()
+			strTime := time.Now().UTC().Format(time.RFC3339)
+			kv.AddValue(alerting2.KVLastNotificationTime, []byte(rule.ID), []byte(strTime))
 			alertItem.IsNotified = true
 			//kv.AddValue(alerting2.KVLastNotificationTime, []byte(rule.ID), []byte(rule.LastNotificationTime.Format(time.RFC3339)))
 		}

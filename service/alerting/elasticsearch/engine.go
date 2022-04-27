@@ -583,9 +583,12 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			if err != nil {
 				return fmt.Errorf("get last notification time from kv error: %w", err)
 			}
-			rule.LastNotificationTime, err = time.ParseInLocation(time.RFC3339, string(timeBytes), time.UTC)
-			if err != nil {
-				return fmt.Errorf("parse last notification time from kv error: %w", err)
+			timeStr :=  string(timeBytes)
+			if timeStr != ""{
+				rule.LastNotificationTime, err = time.ParseInLocation(time.RFC3339, string(timeBytes), time.UTC)
+				if err != nil {
+					return fmt.Errorf("parse last notification time from kv error: %w", err)
+				}
 			}
 		}
 		period := time.Now().Sub(rule.LastNotificationTime.Local())

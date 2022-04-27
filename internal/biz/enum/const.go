@@ -27,7 +27,8 @@ func init() {
 	BuildRoles["admin"] = map[string]interface{}{
 		"id":          "admin",
 		"name":        "管理员",
-		"platform":    []string{"system.role:all", "system.user:all"},
+		"type":        "console",
+		"platform":    AdminPrivilege,
 		"builtin":     true,
 		"description": "is admin",
 		"created":     time.Now(),

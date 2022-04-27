@@ -135,3 +135,27 @@ func CombineUserRoles(roleNames []string) RolePermission {
 	newRole.IndexPrivilege = m
 	return newRole
 }
+func FilterCluster(roles []string, cluster []string) []string {
+	newRole := CombineUserRoles(roles)
+	userClusterMap := make(map[string]struct{}, 0)
+	for _, v := range newRole.Cluster {
+		userClusterMap[v] = struct{}{}
+	}
+	realCluster := make([]string, 0)
+	for _, v := range cluster {
+		if _, ok := userClusterMap[v]; ok {
+			realCluster = append(realCluster, v)
+		}
+	}
+	return realCluster
+}
+func FilterIndex(roles []string, index []string) []string {
+	realIndex := make([]string, 0)
+	newRole := CombineUserRoles(roles)
+	for _, v := range index {
+		if _, ok := newRole.IndexPrivilege[v]; ok {
+			realIndex = append(realIndex, v)
+		}
+	}
+	return realIndex
+}

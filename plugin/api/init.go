@@ -27,7 +27,7 @@ func Init(cfg *config.AppConfig) {
 
 	api.HandleAPIMethod(api.POST, path.Join(esPrefix, "doc/:index/_search"), m.IndexRequired(handler.HandleSearchDocumentAction, "doc.search"))
 	api.HandleAPIMethod(api.POST, path.Join(esPrefix, "doc/:index"), m.IndexRequired(handler.HandleAddDocumentAction, "doc.create"))
-	api.HandleAPIMethod(api.PUT, path.Join(esPrefix, "doc/:index/:docId"), m.IndexRequired(handler.HandleUpdateDocumentAction, "doc.create"))
+	api.HandleAPIMethod(api.PUT, path.Join(esPrefix, "doc/:index/:docId"), m.IndexRequired(handler.HandleUpdateDocumentAction, "doc.update"))
 	api.HandleAPIMethod(api.DELETE, path.Join(esPrefix, "doc/:index/:docId"), m.ClusterRequired(handler.HandleDeleteDocumentAction, "doc.delete"))
 	api.HandleAPIMethod(api.GET, path.Join(esPrefix, "doc/_validate"), handler.ValidateDocIDAction)
 

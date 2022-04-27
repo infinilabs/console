@@ -138,8 +138,8 @@ func main() {
 			if err != nil {
 				log.Errorf("init alerting task error: %v", err)
 			}
-			rbacApi.Init()
 		}()
+		go rbacApi.Init()
 
 	}, nil) {
 		app.Run()

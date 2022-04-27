@@ -2,6 +2,7 @@ package rbac
 
 import (
 	"encoding/json"
+	"github.com/mitchellh/mapstructure"
 	"infini.sh/console/internal/biz"
 	"infini.sh/console/internal/biz/enum"
 	m "infini.sh/console/internal/middleware"
@@ -11,7 +12,6 @@ import (
 	"os"
 	"path"
 	log "src/github.com/cihub/seelog"
-	"src/github.com/mitchellh/mapstructure"
 )
 
 type Rbac struct {
@@ -73,30 +73,8 @@ func loadRolePermission() {
 
 	biz.RoleMap["admin"] = biz.Role{
 		Platform: enum.AdminPrivilege,
-		Cluster: []struct {
-			Id   string `json:"id"`
-			Name string `json:"name"`
-		}{
-			{
-				Id:   "c97rd2les10hml00pgh0",
-				Name: "docker-cluster",
-			},
-		},
-		ClusterPrivilege: []string{"cat.*"},
-		Index: []struct {
-			Name      []string `json:"name"`
-			Privilege []string `json:"privilege"`
-		}{
-			{
-				Name:      []string{".infini_rbac-role"},
-				Privilege: []string{"indices.get_mapping"},
-			},
-			{
-				Name:      []string{".infini_rbac-user", ".infini_rbac-role"},
-				Privilege: []string{"cat.*"},
-			},
-		},
 	}
+
 	res, err := biz.SearchRole("", 0, 1000)
 	if err != nil {
 		log.Error(err)

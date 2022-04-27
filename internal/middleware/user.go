@@ -26,7 +26,6 @@ func PermissionRequired(h httprouter.Handle, permissions ...string) httprouter.H
 		if err != nil {
 
 			w = handleError(w, http.StatusUnauthorized, err)
-
 			return
 		}
 		err = biz.ValidatePermission(claims, permissions)

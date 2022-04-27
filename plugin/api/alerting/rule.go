@@ -37,7 +37,7 @@ func (alertAPI *AlertAPI) createRule(w http.ResponseWriter, req *http.Request, p
 			}, http.StatusInternalServerError)
 			return
 		}
-		err = rule.Metrics.RefreshExpression()
+		rule.Metrics.Expression, err = rule.Metrics.GenerateExpression()
 		if err != nil {
 			alertAPI.WriteJSON(w, util.MapStr{
 				"error": err.Error(),
@@ -135,7 +135,7 @@ func (alertAPI *AlertAPI) updateRule(w http.ResponseWriter, req *http.Request, p
 	obj.ID = id
 	obj.Created = create
 	obj.Updated = time.Now()
-	err = obj.Metrics.RefreshExpression()
+	obj.Metrics.Expression, err = obj.Metrics.GenerateExpression()
 	if err != nil {
 		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)

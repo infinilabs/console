@@ -43,3 +43,12 @@ const (
 	AlertStateNormal = "normal"
 	AlertStateError = "error"
 )
+
+
+/*
+{
+	RuleID
+	ResourceID
+	ResourceName
+}
+*/

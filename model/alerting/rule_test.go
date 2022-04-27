@@ -25,7 +25,7 @@ func TestCreateRule( t *testing.T)  {
 			Type: "elasticsearch",
 			Objects: []string{".infini_metrics*"},
 			TimeField: "timestamp",
-			Filter: Filter{
+			Filter: FilterQuery{
 				And: []FilterQuery{
 					//{Field: "timestamp", Operator: "gte", Values: []string{"now-15m"}},
 					//{Field: "payload.elasticsearch.cluster_health.status", Operator: "equals", Values: []string{"red"}},
@@ -106,13 +106,17 @@ func TestCreateRule( t *testing.T)  {
 				EscalationThrottlePeriod: "30m",
 			},
 	}
-	//err := rule.Metrics.RefreshExpression()
+	//err := rule.Metrics.GenerateExpression()
 	//if err != nil {
 	//	t.Fatal(err)
 	//}
+	exp, err := rule.GetOrInitExpression()
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	fmt.Println(util.MustToJSON(rule))
-	//fmt.Println(rule.Metrics.Expression)
+	//fmt.Println(util.MustToJSON(rule))
+	fmt.Println(exp)
 }
 
 

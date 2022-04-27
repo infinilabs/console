@@ -5,6 +5,7 @@
 package alerting
 
 import (
+	"strings"
 	"time"
 )
 
@@ -23,6 +24,31 @@ type Rule struct {
 	LastTermStartTime time.Time `json:"-"` //标识最近一轮告警的开始时间
 	LastEscalationTime time.Time `json:"-"` //标识最近一次告警升级发送通知的时间
 	SearchText string `json:"-" elastic_mapping:"search_text:{type:text,index_prefixes:{},index_phrases:true, analyzer:suggest_text_search }"`
+	Expression string `json:"-"`
+}
+
+func (rule *Rule) GetOrInitExpression() (string, error){
+	if rule.Expression != ""{
+		return rule.Expression, nil
+	}
+	sb := strings.Builder{}
+	for i, cond := range rule.Conditions.Items {
+		condExp, err := cond.GenerateConditionExpression()
+		if err != nil {
+			return "", err
+		}
+		sb.WriteString(condExp)
+
+		if i < len(rule.Conditions.Items)-1 {
+			sb.WriteString(" or ")
+		}
+	}
+	metricExp, err := rule.Metrics.GenerateExpression()
+	if err != nil {
+		return "", err
+	}
+	rule.Expression = strings.ReplaceAll(sb.String(), "result", metricExp)
+	return rule.Expression, nil
 }
 
 type RuleChannel struct {

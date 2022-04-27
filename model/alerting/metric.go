@@ -16,13 +16,12 @@ type Metric struct {
 	Formula string `json:"formula,omitempty"`
 	Expression string `json:"expression" elastic_mapping:"expression:{type:keyword,copy_to:search_text}"` //告警表达式，自动生成 eg: avg(cpu) > 80
 }
-func (m *Metric) RefreshExpression() error{
+func (m *Metric) GenerateExpression() (string, error){
 	if len(m.Items) == 1 {
-		m.Expression = fmt.Sprintf("%s(%s)", m.Items[0].Statistic, m.Items[0].Field)
-		return nil
+		return fmt.Sprintf("%s(%s)", m.Items[0].Statistic, m.Items[0].Field), nil
 	}
 	if m.Formula == "" {
-		return fmt.Errorf("formula should not be empty since there are %d metrics", len(m.Items))
+		return "", fmt.Errorf("formula should not be empty since there are %d metrics", len(m.Items))
 	}
 	var (
 		expressionBytes = []byte(m.Formula)
@@ -32,13 +31,12 @@ func (m *Metric) RefreshExpression() error{
 		metricExpression = fmt.Sprintf("%s(%s)", item.Statistic, item.Field)
 		reg, err := regexp.Compile(item.Name+`([^\w]|$)`)
 		if err != nil {
-			return err
+			return "", err
 		}
 		expressionBytes = reg.ReplaceAll(expressionBytes, []byte(metricExpression+"$1"))
 	}
 
-	m.Expression = string(expressionBytes)
-	return nil
+	return string(expressionBytes), nil
 }
 
 type MetricItem struct {

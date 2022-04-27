@@ -424,29 +424,9 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule)(*alerting.ConditionRes
 		})
 		LoopCondition:
 		for _, cond := range rule.Conditions.Items {
-			conditionExpression := ""
-			valueLength := len(cond.Values)
-			if valueLength == 0 {
-				return conditionResult, fmt.Errorf("condition values: %v should not be empty", cond.Values)
-			}
-			switch cond.Operator {
-			case "equals":
-				conditionExpression = fmt.Sprintf("result == %v", cond.Values[0])
-			case "gte":
-				conditionExpression = fmt.Sprintf("result >= %v", cond.Values[0])
-			case "lte":
-				conditionExpression = fmt.Sprintf("result <= %v", cond.Values[0])
-			case "gt":
-				conditionExpression = fmt.Sprintf("result > %v", cond.Values[0])
-			case "lt":
-				conditionExpression = fmt.Sprintf("result < %v", cond.Values[0])
-			case "range":
-				if valueLength != 2 {
-					return conditionResult, fmt.Errorf("length of %s condition values should be 2", cond.Operator)
-				}
-				conditionExpression = fmt.Sprintf("result >= %v && result <= %v", cond.Values[0], cond.Values[1])
-			default:
-				return conditionResult, fmt.Errorf("unsupport condition operator: %s", cond.Operator)
+			conditionExpression, err := cond.GenerateConditionExpression()
+			if err != nil {
+				return conditionResult, err
 			}
 			expression, err := govaluate.NewEvaluableExpression(conditionExpression)
 			if err != nil {

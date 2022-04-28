@@ -68,7 +68,7 @@ func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req
 	if err != nil{
 		log.Error(err)
 	}
-	nodeCount, err := handler.getMetricCount(orm.GetIndexName(elastic.NodeConfig{}), "_id")
+	nodeCount, err := handler.getMetricCount(orm.GetIndexName(elastic.NodeConfig{}), "id")
 	if err != nil{
 		log.Error(err)
 	}

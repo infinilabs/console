@@ -12,8 +12,6 @@ import (
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/env"
 	"infini.sh/framework/core/util"
-	"io/ioutil"
-	"net/http"
 )
 
 func bootstrapRequirementCheck() error{
@@ -57,23 +55,17 @@ func checkElasticsearchRequire() error{
 	if targetEsConfig == nil {
 		return fmt.Errorf("elasticsearch config named %s not found", appConfig.Elasticsearch)
 	}
-	req, err := http.NewRequest(http.MethodGet, targetEsConfig.Endpoint, nil)
-	if err != nil {
-		return fmt.Errorf("new request error: %v", err)
-	}
+	var req = util.NewGetRequest(targetEsConfig.Endpoint, nil)
 	if targetEsConfig.BasicAuth != nil {
 		req.SetBasicAuth(targetEsConfig.BasicAuth.Username, targetEsConfig.BasicAuth.Password)
 	}
-	res, err := http.DefaultClient.Do(req)
+
+	result, err := util.ExecuteRequest(req)
 	if err != nil {
 		return fmt.Errorf("check elasticsearch requirement error: %v", err)
 	}
-	defer res.Body.Close()
-	resBytes, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return fmt.Errorf("check elasticsearch requirement error: %v", err)
-	}
-	versionNumber, err := jsonparser.GetString(resBytes, "version", "number")
+
+	versionNumber, err := jsonparser.GetString(result.Body, "version", "number")
 	if err != nil {
 		return fmt.Errorf("check elasticsearch requirement error: %v", err)
 	}

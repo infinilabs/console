@@ -53,10 +53,15 @@ func (engine *Engine) GenerateQuery(rule *alerting.Rule) (interface{}, error) {
 			return nil, err
 		}
 	}
+	targetESVersion := elastic.GetMetadata(rule.Resource.ID).Config.Version
+	intervalField, err := elastic.GetDateHistogramIntervalField(targetESVersion)
+	if err != nil {
+		return nil, fmt.Errorf("get interval field error: %w", err)
+	}
 	timeAggs := util.MapStr{
 		"date_histogram": util.MapStr{
 			"field":    rule.Resource.TimeField,
-			"interval": rule.Metrics.PeriodInterval,
+			intervalField: rule.Metrics.PeriodInterval,
 		},
 		"aggs": basicAggs,
 	}
@@ -327,6 +332,7 @@ func (engine *Engine) ExecuteQuery(rule *alerting.Rule)(*alerting.QueryResult, e
 	esClient := elastic.GetClient(rule.Resource.ID)
 	queryResult := &alerting.QueryResult{}
 	indexName := strings.Join(rule.Resource.Objects, ",")
+	//todo cache queryDsl
 	queryDsl, err := engine.GenerateQuery(rule)
 	if err != nil {
 		return nil, err

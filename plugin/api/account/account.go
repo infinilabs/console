@@ -92,7 +92,13 @@ func (h Account) CurrentUser(w http.ResponseWriter, req *http.Request, ps httpro
 	}
 }
 func (h Account) Logout(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	reqUser, err := biz.FromUserContext(r.Context())
+	if err != nil {
+		h.ErrorInternalServer(w, err.Error())
+		return
+	}
 
+	delete(biz.TokenMap, reqUser.UserId)
 	h.WriteOKJSON(w, util.MapStr{
 		"status": "ok",
 	})
@@ -149,8 +155,22 @@ func (h Account) UpdatePassword(w http.ResponseWriter, r *http.Request, ps httpr
 		h.ErrorInternalServer(w, err.Error())
 		return
 	}
-	h.WriteOKJSON(w, util.MapStr{
-		"status": "ok",
-	})
-
+	h.WriteOKJSON(w, core.UpdateResponse(reqUser.UserId))
+	return
+}
+func (h Account) UpdateProfile(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	reqUser, err := biz.FromUserContext(r.Context())
+	if err != nil {
+		h.ErrorInternalServer(w, err.Error())
+		return
+	}
+	var req dto.UpdateProfile
+	err = h.DecodeJSON(r, &req)
+	err = biz.UpdateProfile(reqUser, req)
+	if err != nil {
+		h.ErrorInternalServer(w, err.Error())
+		return
+	}
+	h.WriteOKJSON(w, core.UpdateResponse(reqUser.UserId))
+	return
 }

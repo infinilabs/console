@@ -2,9 +2,13 @@ package biz
 
 import (
 	"errors"
+	"fmt"
+	"infini.sh/console/internal/biz/enum"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/util"
+	"src/github.com/golang-jwt/jwt"
 	"strings"
+	"time"
 )
 
 type EsRequest struct {
@@ -158,4 +162,99 @@ func FilterIndex(roles []string, index []string) []string {
 		}
 	}
 	return realIndex
+}
+func ValidateLogin(authorizationHeader string) (clams *UserClaims, err error) {
+
+	if authorizationHeader == "" {
+		err = errors.New("authorization header is empty")
+		return
+	}
+	fields := strings.Fields(authorizationHeader)
+	if fields[0] != "Bearer" || len(fields) != 2 {
+		err = errors.New("authorization header is invalid")
+		return
+	}
+	tokenString := fields[1]
+
+	token, err := jwt.ParseWithClaims(tokenString, &UserClaims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(Secret), nil
+	})
+	if err != nil {
+		return
+	}
+	clams, ok := token.Claims.(*UserClaims)
+
+	if clams.UserId == "" {
+		err = errors.New("user id is empty")
+		return
+	}
+	fmt.Println("user token", clams.UserId, TokenMap[clams.UserId])
+	tokenVal, ok := TokenMap[clams.UserId]
+	if !ok {
+		err = errors.New("token is invalid")
+		return
+	}
+	if tokenVal.ExpireIn < time.Now().Unix() {
+		err = errors.New("token is expire in")
+		delete(TokenMap, clams.UserId)
+		return
+	}
+	if ok && token.Valid {
+		return clams, nil
+	}
+	return
+
+}
+func ValidatePermission(claims *UserClaims, permissions []string) (err error) {
+
+	user := claims.User
+
+	if user.UserId == "" {
+		err = errors.New("user id is empty")
+		return
+	}
+	if user.Roles == nil {
+		err = errors.New("api permission is empty")
+		return
+	}
+
+	// 权限校验
+	userPermissions := make([]string, 0)
+	for _, role := range user.Roles {
+		if _, ok := RoleMap[role]; ok {
+			for _, v := range RoleMap[role].Platform {
+				userPermissions = append(userPermissions, v)
+
+				//all include read
+				if strings.Contains(v, "all") {
+					key := v[:len(v)-3] + "read"
+					userPermissions = append(userPermissions, key)
+				}
+			}
+		}
+	}
+	userPermissionMap := make(map[string]struct{})
+	for _, val := range userPermissions {
+		for _, v := range enum.PermissionMap[val] {
+			userPermissionMap[v] = struct{}{}
+		}
+
+	}
+
+	var count int
+	for _, v := range permissions {
+		if _, ok := userPermissionMap[v]; ok {
+			count++
+			continue
+		}
+	}
+	if count == len(permissions) {
+		return nil
+	}
+	err = errors.New("permission denied")
+	return
+
 }

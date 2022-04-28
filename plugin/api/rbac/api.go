@@ -22,19 +22,19 @@ func init() {
 
 	r := Rbac{}
 	api.HandleAPIMethod(api.GET, "/permission/:type", r.ListPermission)
-	api.HandleAPIMethod(api.POST, "/role/:type", m.PermissionRequired(r.CreateRole, enum.RoleAll))
-	api.HandleAPIMethod(api.GET, "/role/:id", m.PermissionRequired(r.GetRole, enum.RoleRead))
-	api.HandleAPIMethod(api.DELETE, "/role/:id", m.PermissionRequired(r.DeleteRole, enum.RoleAll))
-	api.HandleAPIMethod(api.PUT, "/role/:id", m.PermissionRequired(r.UpdateRole, enum.RoleAll))
-	api.HandleAPIMethod(api.GET, "/role/_search", m.PermissionRequired(r.SearchRole, enum.RoleRead))
+	api.HandleAPIMethod(api.POST, "/role/:type", m.PermissionRequired(r.CreateRole, enum.RoleAllPermission...))
+	api.HandleAPIMethod(api.GET, "/role/:id", m.PermissionRequired(r.GetRole, enum.RoleReadPermission...))
+	api.HandleAPIMethod(api.DELETE, "/role/:id", m.PermissionRequired(r.DeleteRole, enum.RoleAllPermission...))
+	api.HandleAPIMethod(api.PUT, "/role/:id", m.PermissionRequired(r.UpdateRole, enum.RoleAllPermission...))
+	api.HandleAPIMethod(api.GET, "/role/_search", m.PermissionRequired(r.SearchRole, enum.RoleReadPermission...))
 
-	api.HandleAPIMethod(api.POST, "/user", m.PermissionRequired(r.CreateUser, enum.UserAll))
-	api.HandleAPIMethod(api.GET, "/user/:id", m.PermissionRequired(r.GetUser, enum.UserRead))
-	api.HandleAPIMethod(api.DELETE, "/user/:id", m.PermissionRequired(r.DeleteUser, enum.UserAll))
-	api.HandleAPIMethod(api.PUT, "/user/:id", m.PermissionRequired(r.UpdateUser, enum.UserAll))
-	api.HandleAPIMethod(api.PUT, "/user/:id/role", m.PermissionRequired(r.UpdateUserRole, enum.UserAll))
-	api.HandleAPIMethod(api.GET, "/user/_search", m.PermissionRequired(r.SearchUser, enum.UserRead))
-	api.HandleAPIMethod(api.PUT, "/user/:id/password", m.PermissionRequired(r.UpdateUserPassword, enum.UserAll))
+	api.HandleAPIMethod(api.POST, "/user", m.PermissionRequired(r.CreateUser, enum.UserAllPermission...))
+	api.HandleAPIMethod(api.GET, "/user/:id", m.PermissionRequired(r.GetUser, enum.UserReadPermission...))
+	api.HandleAPIMethod(api.DELETE, "/user/:id", m.PermissionRequired(r.DeleteUser, enum.UserAllPermission...))
+	api.HandleAPIMethod(api.PUT, "/user/:id", m.PermissionRequired(r.UpdateUser, enum.UserAllPermission...))
+	api.HandleAPIMethod(api.PUT, "/user/:id/role", m.PermissionRequired(r.UpdateUserRole, enum.UserAllPermission...))
+	api.HandleAPIMethod(api.GET, "/user/_search", m.PermissionRequired(r.SearchUser, enum.UserReadPermission...))
+	api.HandleAPIMethod(api.PUT, "/user/:id/password", m.PermissionRequired(r.UpdateUserPassword, enum.UserAllPermission...))
 }
 
 func loadJsonConfig() {

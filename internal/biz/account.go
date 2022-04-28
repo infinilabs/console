@@ -2,7 +2,6 @@ package biz
 
 import (
 	"errors"
-	"fmt"
 	"github.com/golang-jwt/jwt"
 	"github.com/mitchellh/mapstructure"
 	"golang.org/x/crypto/bcrypt"
@@ -13,7 +12,6 @@ import (
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 
-	"strings"
 	"time"
 )
 
@@ -156,7 +154,7 @@ func UpdatePassword(localUser *User, req dto.UpdatePassword) (err error) {
 	user.ID = localUser.UserId
 	_, err = orm.Get(&user)
 	if err != nil {
-		err = ErrNotFound
+
 		return
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.OldPassword))
@@ -173,93 +171,50 @@ func UpdatePassword(localUser *User, req dto.UpdatePassword) (err error) {
 	if err != nil {
 		return
 	}
+	err = orm.Save(GenerateEvent(event.ActivityMetadata{
+		Category: "platform",
+		Group:    "rbac",
+		Name:     "user",
+		Type:     "update",
+		Labels: util.MapStr{
+			"old_password": req.OldPassword,
+			"new_password": req.NewPassword,
+		},
+		User: util.MapStr{
+			"userid":   user.ID,
+			"username": user.Username,
+		},
+	}, nil, nil))
 	return
 }
-func ValidateLogin(authorizationHeader string) (clams *UserClaims, err error) {
-
-	if authorizationHeader == "" {
-		err = errors.New("authorization header is empty")
-		return
-	}
-	fields := strings.Fields(authorizationHeader)
-	if fields[0] != "Bearer" || len(fields) != 2 {
-		err = errors.New("authorization header is invalid")
-		return
-	}
-	tokenString := fields[1]
-
-	token, err := jwt.ParseWithClaims(tokenString, &UserClaims{}, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return []byte(Secret), nil
-	})
+func UpdateProfile(localUser *User, req dto.UpdateProfile) (err error) {
+	user := rbac.User{}
+	user.ID = localUser.UserId
+	_, err = orm.Get(&user)
 	if err != nil {
 		return
 	}
-	clams, ok := token.Claims.(*UserClaims)
-
-	if clams.UserId == "" {
-		err = errors.New("user id is empty")
+	user.Name = req.Name
+	user.Email = req.Email
+	user.Phone = req.Phone
+	err = orm.Save(&user)
+	if err != nil {
 		return
 	}
-	fmt.Println("user token", clams.UserId, TokenMap[clams.UserId])
-	tokenVal, ok := TokenMap[clams.UserId]
-	if !ok {
-		err = errors.New("token is invalid")
-		return
-	}
-	if tokenVal.ExpireIn < time.Now().Unix() {
-		err = errors.New("token is expire in")
-		delete(TokenMap, clams.UserId)
-		return
-	}
-	if ok && token.Valid {
-		return clams, nil
-	}
+	err = orm.Save(GenerateEvent(event.ActivityMetadata{
+		Category: "platform",
+		Group:    "rbac",
+		Name:     "user",
+		Type:     "update",
+		Labels: util.MapStr{
+			"name":  req.Name,
+			"email": req.Email,
+			"phone": req.Phone,
+		},
+		User: util.MapStr{
+			"userid":   user.ID,
+			"username": user.Username,
+		},
+	}, nil, nil))
 	return
-
-}
-func ValidatePermission(claims *UserClaims, permissions []string) (err error) {
-
-	user := claims.User
-
-	if user.UserId == "" {
-		err = errors.New("user id is empty")
-		return
-	}
-	if user.Roles == nil {
-		err = errors.New("api permission is empty")
-		return
-	}
-
-	// 权限校验
-	userPermissionMap := make(map[string]struct{})
-	for _, role := range user.Roles {
-		if _, ok := RoleMap[role]; ok {
-			for _, v := range RoleMap[role].Platform {
-
-				userPermissionMap[v] = struct{}{}
-				//all include read
-				if strings.Contains(v, "all") {
-					key := v[:len(v)-3] + "read"
-					userPermissionMap[key] = struct{}{}
-				}
-			}
-		}
-	}
-
-	var count int
-	for _, v := range permissions {
-		if _, ok := userPermissionMap[v]; ok {
-			count++
-			continue
-		}
-	}
-	if count == len(permissions) {
-		return nil
-	}
-	err = errors.New("permission denied")
-	return
-
 }

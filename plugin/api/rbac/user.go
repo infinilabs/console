@@ -185,7 +185,7 @@ func (h Rbac) UpdateUserPassword(w http.ResponseWriter, r *http.Request, ps http
 		h.ErrorInternalServer(w, err.Error())
 		return
 	}
-	delete(biz.TokenMap, localUser.UserId)
+
 	_ = h.WriteOKJSON(w, core.UpdateResponse(id))
 	return
 

@@ -27,7 +27,7 @@ func DeleteUser(localUser *User, id string) (err error) {
 	if err != nil {
 		return
 	}
-	fmt.Println("tokenmap", TokenMap)
+
 	delete(TokenMap, id)
 	err = orm.Save(GenerateEvent(event.ActivityMetadata{
 		Category: "platform",
@@ -148,6 +148,8 @@ func UpdateUser(localUser *User, id string, req dto.UpdateUser) (err error) {
 	if err != nil {
 		return
 	}
+	delete(TokenMap, id)
+
 	err = orm.Save(GenerateEvent(event.ActivityMetadata{
 		Category: "platform",
 		Group:    "rbac",
@@ -191,7 +193,7 @@ func UpdateUserRole(localUser *User, id string, req dto.UpdateUserRole) (err err
 	if err != nil {
 		return
 	}
-
+	delete(TokenMap, id)
 	err = orm.Save(GenerateEvent(event.ActivityMetadata{
 		Category: "platform",
 		Group:    "rbac",
@@ -255,7 +257,7 @@ func UpdateUserPassword(localUser *User, id string, password string) (err error)
 	if err != nil {
 		return
 	}
-
+	delete(TokenMap, localUser.UserId)
 	err = orm.Save(GenerateEvent(event.ActivityMetadata{
 		Category: "platform",
 		Group:    "rbac",

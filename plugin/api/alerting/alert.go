@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"infini.sh/console/model/alerting"
 	httprouter "infini.sh/framework/core/api/router"
+	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"net/http"
@@ -88,10 +89,28 @@ func (h *AlertAPI) searchAlert(w http.ResponseWriter, req *http.Request, ps http
 		queryDSL    = `{"sort":[{"created":{ "order": "desc"}}],"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d}`
 		strSize     = h.GetParameterOrDefault(req, "size", "20")
 		strFrom     = h.GetParameterOrDefault(req, "from", "0")
+		state = h.GetParameterOrDefault(req, "state", "")
+		severity = h.GetParameterOrDefault(req, "severity", "")
 		mustBuilder = &strings.Builder{}
 	)
+	hasFilter := false
 	if keyword != "" {
 		mustBuilder.WriteString(fmt.Sprintf(`{"query_string":{"default_field":"*","query": "%s"}}`, keyword))
+		hasFilter = true
+	}
+	if state != "" {
+		if hasFilter {
+			mustBuilder.WriteString(",")
+		}
+		mustBuilder.WriteString(fmt.Sprintf(`{"term":{"state":{"value":"%s"}}}`, state))
+		hasFilter = true
+	}
+	if severity != "" {
+		if hasFilter {
+			mustBuilder.WriteString(",")
+		}
+		mustBuilder.WriteString(fmt.Sprintf(`{"term":{"severity":{"value":"%s"}}}`, severity))
+		hasFilter = true
 	}
 	size, _ := strconv.Atoi(strSize)
 	if size <= 0 {
@@ -113,4 +132,60 @@ func (h *AlertAPI) searchAlert(w http.ResponseWriter, req *http.Request, ps http
 		return
 	}
 	h.Write(w, res.Raw)
+}
+
+func (h *AlertAPI) getAlertStats(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	esClient := elastic.GetClient(h.Config.Elasticsearch)
+	queryDsl := util.MapStr{
+		"size": 0,
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must_not": []util.MapStr{
+					{
+						"terms": util.MapStr{
+							"state": []string{
+								"acknowledged",
+								"normal",
+								"",
+							},
+						},
+					},
+				},
+			},
+		},
+		"aggs": util.MapStr{
+			"terms_by_state": util.MapStr{
+				"terms": util.MapStr{
+					"field": "severity",
+					"size": 5,
+				},
+			},
+		},
+	}
+
+	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetWildcardIndexName(alerting.Alert{}), util.MustToJSONBytes(queryDsl) )
+	if err != nil {
+		h.WriteJSON(w, util.MapStr{
+			"error": err.Error(),
+		}, http.StatusInternalServerError)
+		return
+	}
+	severityAlerts := map[string]interface{}{}
+	if termsAgg, ok := searchRes.Aggregations["terms_by_state"]; ok {
+		for _, bk := range termsAgg.Buckets {
+			if severity, ok := bk["key"].(string); ok {
+				severityAlerts[severity] = bk["doc_count"]
+			}
+		}
+	}
+	for severity, _ := range alerting.SeverityWeights {
+		if _, ok := severityAlerts[severity]; !ok {
+			severityAlerts[severity] = 0
+		}
+	}
+	h.WriteJSON(w, util.MapStr{
+		"alert": util.MapStr{
+			"current": severityAlerts,
+		},
+	}, http.StatusOK)
 }

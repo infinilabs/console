@@ -58,9 +58,7 @@ type ConditionResultItem struct {
 type Severity string
 
 var SeverityWeights = map[string]int{
-	"verbose": 1,
-	"info": 2,
-	"warning": 3,
-	"error": 4,
-	"critical": 5,
+	"warning": 1,
+	"error": 2,
+	"critical": 3,
 }

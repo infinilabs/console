@@ -21,6 +21,7 @@ func (alert *AlertAPI) Init() {
 	api.HandleAPIMethod(api.DELETE, "/alerting/rule/:rule_id", alert.deleteRule)
 	api.HandleAPIMethod(api.PUT, "/alerting/rule/:rule_id", alert.updateRule)
 	api.HandleAPIMethod(api.GET, "/alerting/rule/_search", alert.searchRule)
+	api.HandleAPIMethod(api.GET, "/alerting/stats", alert.getAlertStats)
 	api.HandleAPIMethod(api.POST, "/alerting/rule/info", alert.fetchAlertInfos)
 	api.HandleAPIMethod(api.POST, "/alerting/rule/:rule_id/_enable", alert.enableRule)
 

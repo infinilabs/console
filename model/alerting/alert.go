@@ -39,7 +39,7 @@ type ActionExecutionResult struct {
 
 const (
 	AlertStateActive string = "active"
-	AlertStateAcknowledge = "acknowledge"
+	AlertStateAcknowledge = "acknowledged"
 	AlertStateNormal = "normal"
 	AlertStateError = "error"
 )

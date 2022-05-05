@@ -86,13 +86,23 @@ func (h *AlertAPI) searchAlert(w http.ResponseWriter, req *http.Request, ps http
 
 	var (
 		keyword        = h.GetParameterOrDefault(req, "keyword", "")
-		queryDSL    = `{"sort":[{"created":{ "order": "desc"}}],"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d}`
+		queryDSL    = `{"sort":[%s],"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d}`
 		strSize     = h.GetParameterOrDefault(req, "size", "20")
 		strFrom     = h.GetParameterOrDefault(req, "from", "0")
 		state = h.GetParameterOrDefault(req, "state", "")
 		severity = h.GetParameterOrDefault(req, "severity", "")
+		sort = h.GetParameterOrDefault(req, "sort", "")
 		mustBuilder = &strings.Builder{}
+		sortBuilder = strings.Builder{}
 	)
+
+	if sort != "" {
+		sortParts := strings.Split(sort, ",")
+		if len(sortParts) == 2 && sortParts[1] != "created" {
+			sortBuilder.WriteString(fmt.Sprintf(`{"%s":{ "order": "%s"}},`, sortParts[0], sortParts[1]))
+		}
+	}
+	sortBuilder.WriteString(`{"created":{ "order": "desc"}}`)
 	hasFilter := false
 	if keyword != "" {
 		mustBuilder.WriteString(fmt.Sprintf(`{"query_string":{"default_field":"*","query": "%s"}}`, keyword))
@@ -122,7 +132,7 @@ func (h *AlertAPI) searchAlert(w http.ResponseWriter, req *http.Request, ps http
 	}
 
 	q := orm.Query{}
-	queryDSL = fmt.Sprintf(queryDSL, mustBuilder.String(), size, from)
+	queryDSL = fmt.Sprintf(queryDSL, sortBuilder.String(), mustBuilder.String(), size, from)
 	q.RawQuery = []byte(queryDSL)
 
 	err, res := orm.Search(&alerting.Alert{}, &q)

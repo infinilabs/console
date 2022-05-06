@@ -191,7 +191,7 @@ func ValidateLogin(authorizationHeader string) (clams *UserClaims, err error) {
 		err = errors.New("user id is empty")
 		return
 	}
-	fmt.Println("user token", clams.UserId, TokenMap[clams.UserId])
+	//fmt.Println("user token", clams.UserId, TokenMap[clams.UserId])
 	tokenVal, ok := TokenMap[clams.UserId]
 	if !ok {
 		err = errors.New("token is invalid")
@@ -227,12 +227,6 @@ func ValidatePermission(claims *UserClaims, permissions []string) (err error) {
 		if _, ok := RoleMap[role]; ok {
 			for _, v := range RoleMap[role].Privilege.Platform {
 				userPermissions = append(userPermissions, v)
-
-				//all include read
-				if strings.Contains(v, "all") {
-					key := v[:len(v)-3] + "read"
-					userPermissions = append(userPermissions, key)
-				}
 			}
 		}
 	}
@@ -244,17 +238,12 @@ func ValidatePermission(claims *UserClaims, permissions []string) (err error) {
 
 	}
 
-	var count int
 	for _, v := range permissions {
-		if _, ok := userPermissionMap[v]; ok {
-			count++
-			continue
+		if _, ok := userPermissionMap[v]; !ok {
+			err = errors.New("permission denied")
+			return
 		}
 	}
-	if count == len(permissions) {
-		return nil
-	}
-	err = errors.New("permission denied")
-	return
+	return nil
 
 }

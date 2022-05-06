@@ -29,7 +29,6 @@ type RolePermission struct {
 	IndexPrivilege map[string][]string `json:"index_privilege"`
 }
 
-
 func ListElasticsearchPermission() interface{} {
 	list := ElasticsearchPermission{
 		ClusterPrivileges: ClusterApis,

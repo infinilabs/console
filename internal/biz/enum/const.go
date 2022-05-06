@@ -41,59 +41,90 @@ const (
 
 	ClusterOverviewRead = "cluster.overview:read"
 	ClusterOverviewAll  = "cluster.overview:all"
-	ElasticsearchRead   = "cluster.elasticsearch:read"
-	ElasticsearchAll    = "cluster.elasticsearch:all"
+	MonitoringRead   = "cluster.monitoring:read"
+	MonitoringAll    = "cluster.monitoring:all"
 	ActivitiesRead      = "cluster.activities:read"
 	ActivitiesAll       = "cluster.activities:all"
 )
 
+const (
+	PermissionUserRead string = "user:read"
+	PermissionUserWrite = "user:write"
+	PermissionRoleRead = "role:read"
+	PermissionRoleWrite = "role:write"
+	PermissionCommandRead = "command:read"
+	PermissionCommandWrite = "command:write"
+	PermissionElasticsearchClusterRead = "es.cluster:read"
+	PermissionElasticsearchClusterWrite = "es.cluster:write" // es cluster
+	PermissionElasticsearchIndexRead = "es.index:read"
+	PermissionElasticsearchIndexWrite = "es.index:write" // es index metadata
+	PermissionElasticsearchNodeRead = "es.node:read" //es node metadata
+	PermissionActivityRead = "activity:read"
+	PermissionActivityWrite = "activity:write"
+	PermissionAlertRuleRead = "alert.rule:read"
+	PermissionAlertRuleWrite = "alert.rule:write"
+	PermissionAlertHistoryRead = "alert.history:read"
+	PermissionAlertHistoryWrite = "alert.history:write"
+	PermissionAlertChannelRead = "alert.channel:read"
+	PermissionAlertChannelWrite = "alert.channel:write"
+	PermissionViewRead = "view:read"
+	PermissionViewWrite = "view:write"
+	PermissionGatewayInstanceRead = "gateway.instance:read"
+	PermissionGatewayInstanceWrite = "gateway.instance:write"
+	PermissionGatewayEntryRead = "gateway.entry:read"
+	PermissionGatewayEntryWrite = "gateway.entry:write"
+	PermissionGatewayRouterRead = "gateway.router:read"
+	PermissionGatewayRouterWrite = "gateway.router:write"
+	PermissionGatewayFlowRead = "gateway.flow:read"
+	PermissionGatewayFlowWrite = "gateway.flow:write"
+	PermissionElasticsearchMetricRead = "es.metric:read"
+)
+
 var (
-	UserReadPermission = []string{"user:read"}
-	UserAllPermission  = []string{"user:read", "user:write"}
+	UserReadPermission = []string{PermissionUserRead}
+	UserAllPermission  = []string{PermissionUserRead, PermissionUserWrite,PermissionRoleRead}
 
-	RoleReadPermission = []string{"role:read"}
-	RoleAllPermission  = []string{"role:read", "role:write"}
+	RoleReadPermission = []string{PermissionRoleRead}
+	RoleAllPermission  = []string{PermissionRoleRead, PermissionRoleWrite}
 
-	ClusterReadPermission = []string{"cluster:read"}
-	ClusterAllPermission  = []string{"cluster:read", "cluster:write"}
+	ClusterReadPermission = []string{PermissionElasticsearchClusterRead}
+	ClusterAllPermission  = []string{PermissionElasticsearchClusterRead, PermissionElasticsearchClusterWrite}
 
-	CommandReadPermission = []string{"command:read"}
-	CommandAllPermission  = []string{"command:read", "command:write"}
+	CommandReadPermission = []string{PermissionCommandRead}
+	CommandAllPermission  = []string{PermissionCommandRead, PermissionCommandWrite}
 
-	InstanceReadPermission = []string{"instance:read"}
-	InstanceAllPermission  = []string{"instance:read", "instance:write"}
+	InstanceReadPermission = []string{PermissionGatewayInstanceRead}
+	InstanceAllPermission  = []string{PermissionGatewayInstanceRead,PermissionGatewayInstanceWrite}
 
-	EntryReadPermission = []string{"entry:read"}
-	EntryAllPermission  = []string{"entry:read", "entry:write"}
+	EntryReadPermission = []string{PermissionGatewayEntryRead}
+	EntryAllPermission  = []string{PermissionGatewayEntryRead, PermissionGatewayEntryWrite}
 
-	RouterReadPermission = []string{"router:read"}
-	RouterAllPermission  = []string{"router:read", "entry:write"}
+	RouterReadPermission = []string{PermissionGatewayRouterRead}
+	RouterAllPermission  = []string{PermissionGatewayRouterRead, PermissionGatewayRouterWrite}
 
-	FlowReadPermission = []string{"flow:read"}
-	FlowAllPermission  = []string{"flow:read", "flow:write"}
+	FlowReadPermission = []string{PermissionGatewayFlowRead}
+	FlowAllPermission  = []string{PermissionGatewayFlowRead, PermissionGatewayFlowWrite}
 
 	IndexAllPermission     = []string{"index:read"}
 	IndexReadPermission    = []string{"index:read", "index:write"}
-	ViewsAllPermission     = []string{"views:read"}
-	ViewsReadPermission    = []string{"views:read", "views:write"}
-	DiscoverReadPermission = []string{"discover:read"}
-	DiscoverAllPermission  = []string{"discover:read", "discover:write"}
+	ViewsAllPermission     = []string{PermissionViewRead}
+	ViewsReadPermission    = []string{PermissionViewRead, PermissionViewWrite}
+	DiscoverReadPermission = []string{PermissionViewRead}
+	DiscoverAllPermission  = []string{PermissionViewRead}
 
-	RuleReadPermission    = []string{"rule:read"}
-	RuleAllPermission     = []string{"rule:read", "rule:write"}
-	AlertReadPermission   = []string{"alert:read"}
-	AlertAllPermission    = []string{"alert:read", "alert:write"}
-	ChannelReadPermission = []string{"channel:read"}
-	ChannelAllPermission  = []string{"channel:read", "channel:write"}
+	RuleReadPermission    = []string{PermissionAlertRuleRead}
+	RuleAllPermission     = []string{PermissionAlertRuleRead, PermissionAlertRuleWrite}
+	AlertReadPermission   = []string{PermissionAlertHistoryRead}
+	AlertAllPermission    = []string{PermissionAlertHistoryRead, PermissionAlertHistoryWrite}
+	ChannelReadPermission = []string{PermissionAlertChannelRead}
+	ChannelAllPermission  = []string{PermissionAlertChannelRead, PermissionAlertChannelWrite}
 
-	ClusterOverviewReadPermission = []string{"clusterOverview:read"}
-	ClusterOverviewAllPermission  = []string{"clusterOverview:read", "clusterOverview:write"}
+	ClusterOverviewReadPermission = []string{PermissionElasticsearchClusterRead, PermissionElasticsearchIndexRead, PermissionElasticsearchNodeRead, PermissionElasticsearchMetricRead}
+	ClusterOverviewAllPermission  = ClusterOverviewReadPermission
+	MonitoringReadPermission = ClusterOverviewAllPermission
 
-	ElasticsearchReadPermission = []string{"elasticsearch:read"}
-	ElasticsearchAllPermission  = []string{"elasticsearch:read", "elasticsearch:write"}
-
-	ActivitiesReadPermission = []string{"activities:read"}
-	ActivitiesAllPermission  = []string{"activities:read", "activities:write"}
+	ActivitiesReadPermission = []string{PermissionActivityRead}
+	ActivitiesAllPermission  = []string{PermissionActivityRead, PermissionActivityWrite}
 )
 
 var AdminPrivilege = []string{
@@ -101,7 +132,7 @@ var AdminPrivilege = []string{
 	InstanceAll, EntryAll, RouterAll, FlowAll,
 	IndexAll, ViewsAll, DiscoverAll,
 	RuleAll, AlertAll, ChannelAll,
-	ClusterOverviewAll, ElasticsearchAll, ActivitiesAll,
+	ClusterOverviewAll, MonitoringAll, ActivitiesAll,
 }
 
 var BuildRoles = make(map[string]map[string]interface{}, 0)
@@ -111,7 +142,7 @@ func init() {
 	BuildRoles["admin"] = map[string]interface{}{
 		"id":          "admin",
 		"name":        "管理员",
-		"type":        "console",
+		"type":        "platform",
 		"platform":    AdminPrivilege,
 		"builtin":     true,
 		"description": "is admin",
@@ -152,8 +183,8 @@ func init() {
 
 		ClusterOverviewRead: ClusterOverviewReadPermission,
 		ClusterOverviewAll:  ClusterOverviewAllPermission,
-		ElasticsearchAll:    ElasticsearchAllPermission,
-		ElasticsearchRead:   ElasticsearchReadPermission,
+		MonitoringAll:    MonitoringReadPermission,
+		MonitoringRead:   MonitoringReadPermission,
 		ActivitiesAll:       ActivitiesAllPermission,
 		ActivitiesRead:      ActivitiesReadPermission,
 	}

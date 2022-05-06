@@ -43,11 +43,11 @@ func DeleteUser(localUser *User, id string) (err error) {
 		},
 	}, util.MapStr{
 		"id":       id,
-		"username": user.Username,
+		"name": user.Name,
 		"email":    user.Email,
 		"phone":    user.Phone,
 		"password": user.Password,
-		"name":     user.Name,
+		"nickname":     user.NickName,
 		"tags":     user.Tags,
 		"roles":    user.Roles,
 		"created":  user.Created,
@@ -57,7 +57,7 @@ func DeleteUser(localUser *User, id string) (err error) {
 }
 func CreateUser(localUser *User, req dto.CreateUser) (id string, password string, err error) {
 	q := orm.Query{Size: 1000}
-	q.Conds = orm.And(orm.Eq("username", req.Username))
+	q.Conds = orm.And(orm.Eq("name", req.Name))
 
 	err, result := orm.Search(rbac.User{}, &q)
 	if err != nil {
@@ -71,7 +71,7 @@ func CreateUser(localUser *User, req dto.CreateUser) (id string, password string
 	roles := make([]rbac.UserRole, 0)
 	for _, v := range req.Roles {
 		roles = append(roles, rbac.UserRole{
-			Id:   v.Id,
+			ID:   v.Id,
 			Name: v.Name,
 		})
 	}
@@ -82,7 +82,7 @@ func CreateUser(localUser *User, req dto.CreateUser) (id string, password string
 	}
 	user := rbac.User{
 		Name:     req.Name,
-		Username: req.Username,
+		NickName: req.NickName,
 		Password: string(hash),
 		Email:    req.Email,
 		Phone:    req.Phone,
@@ -106,11 +106,11 @@ func CreateUser(localUser *User, req dto.CreateUser) (id string, password string
 		Type:     "create",
 		Labels: util.MapStr{
 			"id":       id,
-			"username": user.Username,
+			"name": user.Name,
 			"email":    user.Email,
 			"phone":    user.Phone,
 			"password": user.Password,
-			"name":     user.Name,
+			"nick_name":     user.NickName,
 			"tags":     user.Tags,
 			"roles":    user.Roles,
 			"created":  user.Created,
@@ -133,7 +133,7 @@ func UpdateUser(localUser *User, id string, req dto.UpdateUser) (err error) {
 	roles := make([]rbac.UserRole, 0)
 	for _, v := range req.Roles {
 		roles = append(roles, rbac.UserRole{
-			Id:   v.Id,
+			ID:   v.Id,
 			Name: v.Name,
 		})
 	}
@@ -183,7 +183,7 @@ func UpdateUserRole(localUser *User, id string, req dto.UpdateUserRole) (err err
 	roles := make([]rbac.UserRole, 0)
 	for _, v := range req.Roles {
 		roles = append(roles, rbac.UserRole{
-			Id:   v.Id,
+			ID:   v.Id,
 			Name: v.Name,
 		})
 	}
@@ -257,7 +257,9 @@ func UpdateUserPassword(localUser *User, id string, password string) (err error)
 	if err != nil {
 		return
 	}
-	delete(TokenMap, localUser.UserId)
+	if localUser.UserId == id {
+		delete(TokenMap, localUser.UserId)
+	}
 	err = orm.Save(GenerateEvent(event.ActivityMetadata{
 		Category: "platform",
 		Group:    "rbac",

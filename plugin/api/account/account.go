@@ -114,9 +114,9 @@ func (h Account) Profile(w http.ResponseWriter, r *http.Request, ps httprouter.P
 
 		u := util.MapStr{
 			"user_id":  "admin",
-			"username": "admin",
+			"name": "admin",
 			"email":    "admin@infini.ltd",
-			"name":     "admin",
+			"nick_name":     "admin",
 			"phone":    "13011111111",
 		}
 		h.WriteOKJSON(w, core.FoundResponse(reqUser.UserId, u))
@@ -128,9 +128,9 @@ func (h Account) Profile(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		}
 		u := util.MapStr{
 			"user_id":  user.ID,
-			"username": user.Username,
+			"name": user.Name,
 			"email":    user.Email,
-			"name":     user.Name,
+			"nick_name":     user.NickName,
 			"phone":    user.Phone,
 		}
 		h.WriteOKJSON(w, core.FoundResponse(reqUser.UserId, u))

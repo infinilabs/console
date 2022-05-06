@@ -29,7 +29,7 @@ func (h Rbac) CreateUser(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		h.Error400(w, err.Error())
 		return
 	}
-	if req.Username == "" || req.Phone == "" || req.Email == "" {
+	if req.Name == ""  {
 
 		h.Error400(w, "username and phone and email is require")
 		return

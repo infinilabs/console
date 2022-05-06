@@ -1,51 +1,40 @@
 package rbac
 
 import (
-	"infini.sh/framework/core/orm"
+	"time"
 )
 
 type Role struct {
-	orm.ORMObjectBase
-	Name        string   `json:"name" elastic_mapping:"name:{type:keyword}"`
-	Description string   `json:"description" elastic_mapping:"description:{type:text}"`
-	RoleType    string   `json:"type" elastic_mapping:"type:{type:keyword}"`
-	Platform    []string `json:"platform,omitempty" `
-	BuiltIn     bool     `json:"builtin" elastic_mapping:"builtin:{type:boolean}"` //是否内置
-
-	Cluster []struct {
-		Id   string `json:"id"`
-		Name string `json:"name"`
-	} `json:"cluster,omitempty"`
-	ClusterPrivilege []string `json:"cluster_privilege,omitempty"`
-	Index            []struct {
-		Name      []string `json:"name"`
-		Privilege []string `json:"privilege"`
-	} `json:"index,omitempty"`
-}
-type ConsolePermission struct {
-	Api  []string `json:"api"`
-	Menu []Menu   `json:"menu"`
+	ID      string    `json:"id,omitempty"      elastic_meta:"_id" elastic_mapping:"id: { type: keyword }"`
+	Created time.Time `json:"created,omitempty" elastic_mapping:"created: { type: date }"`
+	Updated time.Time `json:"updated,omitempty" elastic_mapping:"updated: { type: date }"`
+	Name string `json:"name"  elastic_mapping:"name: { type: keyword }"`
+	Type string `json:"type" elastic_mapping:"type: { type: keyword }"`
+	Description string `json:"description"  elastic_mapping:"description: { type: text }"`
+	Builtin bool `json:"builtin" elastic_mapping:"builtin: { type: boolean }"`
+	Privilege RolePrivilege `json:"privilege" elastic_mapping:"privilege: { type: object }"`
 }
 
-type Menu struct {
-	Id        string `json:"id"`
-	Name      string `json:"name"`
-	Privilege string `json:"privilege"`
+type RolePrivilege struct {
+	Platform []string `json:"platform,omitempty" elastic_mapping:"platform: { type: keyword }"`
+	Elasticsearch ElasticsearchPrivilege `json:"elasticsearch,omitempty" elastic_mapping:"elasticsearch: { type: object }"`
 }
 
-type ElasticRole struct {
-	orm.ORMObjectBase
-	Name        string `json:"name" elastic_mapping:"name:{type:keyword}"`
-	Description string `json:"description" elastic_mapping:"description:{type:text}"`
-	RoleType    string `json:"type" elastic_mapping:"type:{type:keyword}"`
-	BuiltIn     bool   `json:"builtin" elastic_mapping:"builtin:{type:boolean}"` //是否内置
-	Cluster     []struct {
-		Id   string `json:"id"`
-		Name string `json:"name"`
-	} `json:"cluster,omitempty"`
-	ClusterPrivilege []map[string][]string `json:"cluster_privilege,omitempty"`
-	Index            []struct {
-		Name      []string `json:"name"`
-		Privilege []string `json:"privilege"`
-	} `json:"index,omitempty"`
+type ElasticsearchPrivilege struct {
+	Cluster ClusterPrivilege `json:"cluster,omitempty" elastic_mapping:"cluster: { type: object }"`
+	Index []IndexPrivilege `json:"index,omitempty" elastic_mapping:"index: { type: object }"`
+}
+
+type InnerCluster struct {
+	ID string `json:"id" elastic_mapping:"id: { type: keyword }"`
+	Name string `json:"name" elastic_mapping:"name: { type: keyword }"`
+}
+type ClusterPrivilege struct {
+	Resources []InnerCluster `json:"resources,omitempty" elastic_mapping:"resources: { type: object }"`
+	Permissions []string `json:"permissions,omitempty" elastic_mapping:"permissions: { type: keyword }"`
+}
+
+type IndexPrivilege struct {
+	Name []string `json:"name,omitempty" elastic_mapping:"name: { type: keyword }"`
+	Permissions []string `json:"permissions,omitempty" elastic_mapping:"permissions: { type: keyword }"`
 }

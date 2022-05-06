@@ -11,7 +11,6 @@ import (
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
-
 	"time"
 )
 
@@ -41,7 +40,7 @@ const Secret = "console"
 
 func authenticateUser(username string, password string) (user Account, err error) {
 
-	err, result := orm.GetBy("username", username, rbac.User{})
+	err, result := orm.GetBy("name", username, rbac.User{})
 	if err != nil {
 		err = ErrNotFound
 		return
@@ -75,7 +74,7 @@ func authenticateAdmin(username string, password string) (user Account, err erro
 	user.ID = username
 	user.Username = username
 	user.Roles = []rbac.UserRole{{
-		Id: "admin", Name: "admin",
+		ID: "admin", Name: "admin",
 	}}
 	return user, nil
 }
@@ -85,7 +84,7 @@ func authorize(user Account) (m map[string]interface{}, err error) {
 	for _, v := range user.Roles {
 		role := RoleMap[v.Name]
 		roles = append(roles, v.Name)
-		privilege = append(privilege, role.Platform...)
+		privilege = append(privilege, role.Privilege.Platform...)
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, UserClaims{
 		User: &User{
@@ -143,8 +142,8 @@ func Login(username string, password string) (m map[string]interface{}, err erro
 			"password": password,
 		},
 		User: util.MapStr{
-			"userid":   user.ID,
-			"username": user.Username,
+			"id":   user.ID,
+			"name": user.Username,
 		},
 	}, nil, nil))
 	return
@@ -181,8 +180,8 @@ func UpdatePassword(localUser *User, req dto.UpdatePassword) (err error) {
 			"new_password": req.NewPassword,
 		},
 		User: util.MapStr{
-			"userid":   user.ID,
-			"username": user.Username,
+			"id":   user.ID,
+			"name": user.Name,
 		},
 	}, nil, nil))
 	return
@@ -212,8 +211,8 @@ func UpdateProfile(localUser *User, req dto.UpdateProfile) (err error) {
 			"phone": req.Phone,
 		},
 		User: util.MapStr{
-			"userid":   user.ID,
-			"username": user.Username,
+			"id":   user.ID,
+			"name": user.Name,
 		},
 	}, nil, nil))
 	return

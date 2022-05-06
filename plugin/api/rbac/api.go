@@ -6,12 +6,13 @@ import (
 	"infini.sh/console/internal/biz"
 	"infini.sh/console/internal/biz/enum"
 	m "infini.sh/console/internal/middleware"
+	"infini.sh/console/model/rbac"
 	"infini.sh/framework/core/api"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/util"
 	"os"
 	"path"
-	log "src/github.com/cihub/seelog"
+	log "github.com/cihub/seelog"
 )
 
 type Rbac struct {
@@ -70,10 +71,12 @@ func loadJsonConfig() {
 
 }
 func loadRolePermission() {
-	biz.RoleMap = make(map[string]biz.Role)
+	biz.RoleMap = make(map[string]rbac.Role)
 
-	biz.RoleMap["admin"] = biz.Role{
-		Platform: enum.AdminPrivilege,
+	biz.RoleMap["admin"] = rbac.Role{
+		Privilege: rbac.RolePrivilege{
+			Platform: enum.AdminPrivilege,
+		},
 	}
 
 	res, err := biz.SearchRole("", 0, 1000)
@@ -85,9 +88,12 @@ func loadRolePermission() {
 	util.FromJSONBytes(res.Raw, &response)
 
 	for _, v := range response.Hits.Hits {
-		var role biz.Role
+		var role rbac.Role
+		delete(v.Source, "created")
+		delete(v.Source, "updated")
 		err = mapstructure.Decode(v.Source, &role)
 		if err != nil {
+			log.Error(err)
 			return
 		}
 		biz.RoleMap[role.Name] = role

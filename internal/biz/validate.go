@@ -114,22 +114,22 @@ func CombineUserRoles(roleNames []string) RolePermission {
 	m := make(map[string][]string)
 	for _, val := range roleNames {
 		role := RoleMap[val]
-		for _, v := range role.Cluster {
-			newRole.Cluster = append(newRole.Cluster, v.Id)
+		for _, v := range role.Privilege.Elasticsearch.Cluster.Resources {
+			newRole.Cluster = append(newRole.Cluster, v.ID)
 		}
-		for _, v := range role.ClusterPrivilege {
+		for _, v := range role.Privilege.Elasticsearch.Cluster.Permissions {
 			newRole.ClusterPrivilege = append(newRole.ClusterPrivilege, v)
 		}
-		for _, v := range role.Platform {
+		for _, v := range role.Privilege.Platform {
 			newRole.Platform = append(newRole.Platform, v)
 		}
-		for _, v := range role.Index {
+		for _, v := range role.Privilege.Elasticsearch.Index {
 
 			for _, name := range v.Name {
 				if _, ok := m[name]; ok {
-					m[name] = append(m[name], v.Privilege...)
+					m[name] = append(m[name], v.Permissions...)
 				} else {
-					m[name] = v.Privilege
+					m[name] = v.Permissions
 				}
 
 			}
@@ -225,7 +225,7 @@ func ValidatePermission(claims *UserClaims, permissions []string) (err error) {
 	userPermissions := make([]string, 0)
 	for _, role := range user.Roles {
 		if _, ok := RoleMap[role]; ok {
-			for _, v := range RoleMap[role].Platform {
+			for _, v := range RoleMap[role].Privilege.Platform {
 				userPermissions = append(userPermissions, v)
 
 				//all include read

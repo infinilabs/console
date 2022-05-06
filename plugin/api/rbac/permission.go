@@ -9,15 +9,16 @@ import (
 
 func (h Rbac) ListPermission(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	typ := ps.MustGetParameter("type")
-
-	role, err := biz.NewRole(typ)
-
+	err := biz.IsAllowRoleType(typ)
 	if err != nil {
 		_ = log.Error(err.Error())
 		h.ErrorInternalServer(w, err.Error())
 		return
 	}
-	permissions := role.ListPermission()
+	var permissions interface{}
+	if typ == biz.Elastisearch {
+		permissions = biz.ListElasticsearchPermission()
+	}
 	h.WriteOKJSON(w, permissions)
 	return
 }

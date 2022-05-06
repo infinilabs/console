@@ -5,6 +5,7 @@ import (
 	"infini.sh/console/internal/biz"
 	"infini.sh/console/internal/biz/enum"
 	"infini.sh/console/internal/core"
+	"infini.sh/console/model/rbac"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/util"
@@ -20,20 +21,22 @@ func (h Rbac) CreateRole(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		h.ErrorInternalServer(w, err.Error())
 		return
 	}
-	irole, err := biz.NewRole(roleType)
+	err = biz.IsAllowRoleType(roleType)
 	if err != nil {
 		h.ErrorInternalServer(w, err.Error())
 		return
 	}
-
-	err = h.DecodeJSON(r, &irole)
+	role := &rbac.Role{
+		Type: roleType,
+	}
+	err = h.DecodeJSON(r, role)
 	if err != nil {
 		h.Error400(w, err.Error())
 		return
 	}
 
 	var id string
-	id, err = irole.Create(localUser)
+	id, err = biz.CreateRole(localUser, role)
 
 	if err != nil {
 		_ = log.Error(err.Error())
@@ -128,24 +131,14 @@ func (h Rbac) UpdateRole(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		h.ErrorInternalServer(w, err.Error())
 		return
 	}
-	model, err := biz.GetRole(id)
-	if err != nil {
-		h.ErrorInternalServer(w, err.Error())
-		return
-	}
-	irole, err := biz.NewRole(model.RoleType)
-	if err != nil {
-		h.ErrorInternalServer(w, err.Error())
-		return
-	}
-
-	err = h.DecodeJSON(r, &irole)
+	role := &rbac.Role{}
+	err = h.DecodeJSON(r, role)
 	if err != nil {
 		h.Error400(w, err.Error())
 		return
 	}
-
-	err = irole.Update(localUser, model)
+	role.ID = id
+	err = biz.UpdateRole(localUser, role)
 
 	if err != nil {
 		_ = log.Error(err.Error())

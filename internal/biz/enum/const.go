@@ -27,8 +27,8 @@ const (
 
 	IndexAll     = "data.index:all"
 	IndexRead    = "data.index:read"
-	ViewsAll     = "data.views:all"
-	ViewsRead    = "data.views:read"
+	ViewsAll     = "data.view:all"
+	ViewsRead    = "data.view:read"
 	DiscoverAll  = "data.discover:all"
 	DiscoverRead = "data.discover:read"
 
@@ -83,8 +83,8 @@ var (
 	RuleAllPermission     = []string{"rule:read", "rule:write"}
 	AlertReadPermission   = []string{"alert:read"}
 	AlertAllPermission    = []string{"alert:read", "alert:write"}
-	ChannelReadPermssion  = []string{"channel:read"}
-	ChannnelAllPermission = []string{"channel:read", "channel:write"}
+	ChannelReadPermission = []string{"channel:read"}
+	ChannelAllPermission  = []string{"channel:read", "channel:write"}
 
 	ClusterOverviewReadPermission = []string{"clusterOverview:read"}
 	ClusterOverviewAllPermission  = []string{"clusterOverview:read", "clusterOverview:write"}
@@ -147,8 +147,8 @@ func init() {
 		RuleAll:     RuleAllPermission,
 		AlertRead:   AlertReadPermission,
 		AlertAll:    AlertAllPermission,
-		ChannelRead: ChannelReadPermssion,
-		ChannelAll:  ChannnelAllPermission,
+		ChannelRead: ChannelReadPermission,
+		ChannelAll:  ChannelAllPermission,
 
 		ClusterOverviewRead: ClusterOverviewReadPermission,
 		ClusterOverviewAll:  ClusterOverviewAllPermission,

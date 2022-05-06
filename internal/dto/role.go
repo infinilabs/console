@@ -16,7 +16,7 @@ type ElasticsearchPermission struct {
 	IndexPrivilege   []string `json:"index_privilege" `
 }
 type CreateUser struct {
-	Username string `json:"username"`
+	NickName string `json:"nick_name"`
 
 	Name  string   `json:"name"`
 	Email string   `json:"email"`

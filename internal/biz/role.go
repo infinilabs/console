@@ -16,68 +16,25 @@ import (
 type RoleType = string
 
 const (
-	Console      RoleType = "console"
+	Platform     RoleType = "platform"
 	Elastisearch RoleType = "elasticsearch"
 )
 
-type IRole interface {
-	ListPermission() interface{}
-	Create(localUser *User) (id string, err error)
-	Update(localUser *User, model rbac.Role) (err error)
-}
-type ConsoleRole struct {
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	RoleType    string   `json:"type" `
-	Platform    []string `json:"platform,omitempty"`
-}
-
-type ElasticsearchRole struct {
-	Name        string `json:"name"`
-	Description string `json:"description" `
-	RoleType    string `json:"type" `
-	Cluster     []struct {
-		Id   string `json:"id"`
-		Name string `json:"name"`
-	} `json:"cluster,omitempty"`
-	ClusterPrivilege []string `json:"cluster_privilege,omitempty"`
-	Index            []struct {
-		Name      []string `json:"name"`
-		Privilege []string `json:"privilege"`
-	} `json:"index,omitempty"`
-}
-
-func NewRole(typ string) (r IRole, err error) {
-	switch typ {
-	case Console:
-		r = &ConsoleRole{
-			RoleType: typ,
-		}
-
-	case Elastisearch:
-		r = &ElasticsearchRole{
-			RoleType: typ,
-		}
-	default:
-		err = fmt.Errorf("role type %s not support", typ)
+func UpdateRole(localUser *User, role *rbac.Role) (err error) {
+	model, err := GetRole(role.ID)
+	if err != nil {
+		return err
 	}
-	return
-}
-func (role ConsoleRole) Update(localUser *User, model rbac.Role) (err error) {
-
+	role.Type = model.Type
+	role.Created = model.Created
 	changeLog, _ := util.DiffTwoObject(model, role)
-	model.Description = role.Description
-	model.Platform = role.Platform
-	model.Updated = time.Now()
-	err = orm.Save(model)
+	role.Updated = time.Now()
+	err = orm.Save(role)
 	if err != nil {
 		return
 	}
 
-	RoleMap[model.Name] = Role{
-		Name:     model.Name,
-		Platform: model.Platform,
-	}
+	RoleMap[model.Name] = model
 
 	err = orm.Save(GenerateEvent(event.ActivityMetadata{
 		Category: "platform",
@@ -87,7 +44,7 @@ func (role ConsoleRole) Update(localUser *User, model rbac.Role) (err error) {
 		Labels: util.MapStr{
 			"id":          model.ID,
 			"description": model.Description,
-			"platform":    model.Platform,
+			"privilege":    role.Privilege,
 			"updated":     model.Updated,
 		},
 		User: util.MapStr{
@@ -98,44 +55,8 @@ func (role ConsoleRole) Update(localUser *User, model rbac.Role) (err error) {
 
 	return
 }
-func (role ElasticsearchRole) Update(localUser *User, model rbac.Role) (err error) {
 
-	changeLog, _ := util.DiffTwoObject(model, role)
-	model.Description = role.Description
-	model.Cluster = role.Cluster
-	model.Index = role.Index
-	model.ClusterPrivilege = role.ClusterPrivilege
-	model.Updated = time.Now()
-	err = orm.Save(model)
-	if err != nil {
-		return
-	}
-	RoleMap[model.Name] = Role{
-		Name:             model.Name,
-		Cluster:          model.Cluster,
-		ClusterPrivilege: model.ClusterPrivilege,
-		Index:            model.Index,
-	}
-	err = orm.Save(GenerateEvent(event.ActivityMetadata{
-		Category: "platform",
-		Group:    "rbac",
-		Name:     "role",
-		Type:     "update",
-		Labels: util.MapStr{
-			"id":          model.ID,
-			"description": model.Description,
-			"platform":    model.Platform,
-			"updated":     model.Updated,
-		},
-		User: util.MapStr{
-			"userid":   localUser.UserId,
-			"username": localUser.Username,
-		},
-	}, nil, changeLog))
-
-	return
-}
-func (role ConsoleRole) Create(localUser *User) (id string, err error) {
+func CreateRole(localUser *User, role *rbac.Role) (id string, err error) {
 	if role.Name == "" {
 		err = errors.New("role name is require")
 		return
@@ -156,24 +77,15 @@ func (role ConsoleRole) Create(localUser *User) (id string, err error) {
 		return
 	}
 
-	newRole := rbac.Role{
-		Name:        role.Name,
-		Description: role.Description,
-		RoleType:    role.RoleType,
-		Platform:    role.Platform,
-	}
-	newRole.ID = util.GetUUID()
-	newRole.Created = time.Now()
-	newRole.Updated = time.Now()
-	err = orm.Save(&newRole)
+	role.ID = util.GetUUID()
+	role.Created = time.Now()
+	role.Updated = time.Now()
+	err = orm.Save(role)
 	if err != nil {
 		return
 	}
-	id = newRole.ID
-	RoleMap[role.Name] = Role{
-		Name:     newRole.Name,
-		Platform: newRole.Platform,
-	}
+	id = role.ID
+	RoleMap[role.Name] = *role
 	err = orm.Save(GenerateEvent(event.ActivityMetadata{
 		Category: "platform",
 		Group:    "rbac",
@@ -183,10 +95,8 @@ func (role ConsoleRole) Create(localUser *User) (id string, err error) {
 			"id":          id,
 			"name":        role.Name,
 			"description": role.Description,
-			"platform":    role.Platform,
-			"type":        role.RoleType,
-			"created":     newRole.Created.Format("2006-01-02 15:04:05"),
-			"updated":     newRole.Updated.Format("2006-01-02 15:04:05"),
+			"privilege":    role.Privilege,
+			"type":        role.Type,
 		},
 		User: util.MapStr{
 			"userid":   localUser.UserId,
@@ -199,76 +109,6 @@ func (role ConsoleRole) Create(localUser *User) (id string, err error) {
 	}
 	return
 
-}
-func (role ElasticsearchRole) Create(localUser *User) (id string, err error) {
-	if role.Name == "" {
-		err = errors.New("role name is require")
-		return
-	}
-	if _, ok := enum.BuildRoles[role.Name]; ok {
-		err = fmt.Errorf("role name %s already exists", role.Name)
-		return
-	}
-	q := orm.Query{Size: 1}
-	q.Conds = orm.And(orm.Eq("name", role.Name))
-
-	err, result := orm.Search(rbac.Role{}, &q)
-	if err != nil {
-		return
-	}
-	if result.Total > 0 {
-		err = fmt.Errorf("role name %s already exists", role.Name)
-		return
-	}
-
-	newRole := rbac.Role{
-		Name:        role.Name,
-		Description: role.Description,
-		RoleType:    role.RoleType,
-	}
-	newRole.Cluster = role.Cluster
-	newRole.Index = role.Index
-	newRole.ClusterPrivilege = role.ClusterPrivilege
-	newRole.ID = util.GetUUID()
-	newRole.Created = time.Now()
-	newRole.Updated = time.Now()
-	err = orm.Save(&newRole)
-	if err != nil {
-		return
-	}
-	id = newRole.ID
-	RoleMap[newRole.Name] = Role{
-		Name:             newRole.Name,
-		Cluster:          newRole.Cluster,
-		ClusterPrivilege: newRole.ClusterPrivilege,
-		Index:            newRole.Index,
-	}
-	err = orm.Save(GenerateEvent(event.ActivityMetadata{
-		Category: "platform",
-		Group:    "rbac",
-		Name:     "role",
-		Type:     "create",
-		Labels: util.MapStr{
-			"id":                id,
-			"name":              newRole.Name,
-			"description":       newRole.Description,
-			"cluster":           newRole.Cluster,
-			"index":             newRole.Index,
-			"cluster_privilege": newRole.ClusterPrivilege,
-			"type":              newRole.RoleType,
-			"created":           newRole.Created.Format("2006-01-02 15:04:05"),
-			"updated":           newRole.Updated.Format("2006-01-02 15:04:05"),
-		},
-		User: util.MapStr{
-			"userid":   localUser.UserId,
-			"username": localUser.Username,
-		},
-	}, nil, nil))
-
-	if err != nil {
-		log.Error(err)
-	}
-	return
 }
 func DeleteRole(localUser *User, id string) (err error) {
 	role := rbac.Role{}
@@ -302,11 +142,7 @@ func DeleteRole(localUser *User, id string) (err error) {
 		"id":                id,
 		"name":              role.Name,
 		"description":       role.Description,
-		"platform":          role.Platform,
-		"cluster":           role.Cluster,
-		"index":             role.Index,
-		"cluster_privilege": role.ClusterPrivilege,
-		"type":              role.RoleType,
+		"type":              role.Type,
 		"created":           role.Created.Format("2006-01-02 15:04:05"),
 		"updated":           role.Updated.Format("2006-01-02 15:04:05"),
 	}, nil))
@@ -342,7 +178,7 @@ func SearchRole(keyword string, from, size int) (roles orm.Result, err error) {
 	return
 }
 func IsAllowRoleType(roleType string) (err error) {
-	if roleType != Console && roleType != Elastisearch {
+	if roleType != Platform && roleType != Elastisearch {
 		err = fmt.Errorf("invalid role type %s ", roleType)
 		return
 	}

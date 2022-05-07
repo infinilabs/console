@@ -1,20 +1,5 @@
 package dto
 
-type UpdateRole struct {
-	Description      string   `json:"description" `
-	Platform         []string `json:"platform"`
-	Cluster          []string `json:"cluster" `
-	Index            []string `json:"index" `
-	ClusterPrivilege []string `json:"cluster_privilege" `
-	IndexPrivilege   []string `json:"index_privilege" `
-}
-
-type ElasticsearchPermission struct {
-	Cluster          []string `json:"cluster" `
-	Index            []string `json:"index" `
-	ClusterPrivilege []string `json:"cluster_privilege" `
-	IndexPrivilege   []string `json:"index_privilege" `
-}
 type CreateUser struct {
 	NickName string `json:"nick_name"`
 

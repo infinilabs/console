@@ -34,10 +34,10 @@ func ClusterRequired(h httprouter.Handle, route ...string) httprouter.Handle {
 			w = handleError(w, http.StatusUnauthorized, err)
 			return
 		}
-		newRole := biz.CombineUserRoles(claims.Roles)
+		//newRole := biz.CombineUserRoles(claims.Roles)
 		clusterReq := biz.NewClusterRequest(ps, route)
 
-		err = biz.ValidateCluster(clusterReq, newRole)
+		err = biz.ValidateCluster(clusterReq, claims.Roles)
 		if err != nil {
 			w = handleError(w, http.StatusForbidden, err)
 			return

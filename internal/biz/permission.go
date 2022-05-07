@@ -1,7 +1,6 @@
 package biz
 
 import (
-	"infini.sh/console/internal/core"
 	"infini.sh/console/model/rbac"
 )
 
@@ -17,8 +16,6 @@ type Token struct {
 }
 
 var TokenMap = make(map[string]Token)
-
-var EsApiRoutes = core.NewRouter()
 
 
 type RolePermission struct {

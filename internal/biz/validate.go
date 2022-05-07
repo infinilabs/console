@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"infini.sh/console/internal/biz/enum"
+	"infini.sh/console/model/rbac"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/util"
 	"src/github.com/golang-jwt/jwt"
@@ -44,6 +45,11 @@ func NewClusterRequest(ps httprouter.Params, privilege []string) ClusterRequest 
 	}
 }
 
+func ValidateElasticsearch(req rbac.ElasticsearchPrivilege, roleNames []string) (err error) {
+
+	return nil
+}
+
 func ValidateIndex(req IndexRequest, userRole RolePermission) (err error) {
 
 	userClusterMap := make(map[string]struct{})
@@ -60,7 +66,7 @@ func ValidateIndex(req IndexRequest, userRole RolePermission) (err error) {
 	for _, val := range req.Privilege {
 		position := strings.Index(val, ".")
 		if position == -1 {
-			err = errors.New("invalid privilege parmeter")
+			err = errors.New("invalid privilege parameter")
 			return err
 		}
 		prefix := val[:position]
@@ -71,42 +77,43 @@ func ValidateIndex(req IndexRequest, userRole RolePermission) (err error) {
 				return err
 			}
 			if util.StringInArray(privilege, prefix+".*") {
-				return nil
+				continue
 			}
 			if util.StringInArray(privilege, val) {
-				return nil
+				continue
 			}
-
+			return fmt.Errorf("no index api permission: %s", val)
 		}
 	}
 
-	return errors.New("no index api permission")
+	return nil
 }
-func ValidateCluster(req ClusterRequest, userRole RolePermission) (err error) {
-	userClusterMap := make(map[string]struct{})
-	for _, v := range userRole.Cluster {
-		userClusterMap[v] = struct{}{}
-	}
+func ValidateCluster(req ClusterRequest, roleNames []string) (err error) {
+	userClusterMap := GetRoleClusterMap(roleNames)
 	for _, v := range req.Cluster {
-		if _, ok := userClusterMap[v]; !ok {
-			err = errors.New("no cluster permission")
+		userClusterPermissions, ok := userClusterMap[v]
+		if !ok && userClusterMap["*"] == nil{
+			err = fmt.Errorf("no cluster[%s] permission", v)
 			return
 		}
-	}
-
-	// if include api.*  for example: cat.* , return nil
-	for _, privilege := range req.Privilege {
-		prefix := privilege[:strings.Index(privilege, ".")]
-
-		if util.StringInArray(userRole.ClusterPrivilege, prefix+".*") {
-			return nil
+		if util.StringInArray(userClusterPermissions, "*") {
+			continue
 		}
-		if util.StringInArray(userRole.ClusterPrivilege, privilege) {
-			return nil
+		// if include api.*  for example: cat.* , return nil
+		for _, privilege := range req.Privilege {
+			prefix := privilege[:strings.Index(privilege, ".")]
+
+			if util.StringInArray(userClusterPermissions, prefix+".*") {
+				continue
+			}
+			if util.StringInArray(userClusterPermissions, privilege) {
+				continue
+			}
+			return fmt.Errorf("no cluster api permission: %s", privilege)
 		}
 	}
+	return nil
 
-	return errors.New("no cluster api permission")
 }
 
 func CombineUserRoles(roleNames []string) RolePermission {
@@ -139,26 +146,43 @@ func CombineUserRoles(roleNames []string) RolePermission {
 	newRole.IndexPrivilege = m
 	return newRole
 }
-func FilterCluster(roles []string, cluster []string) []string {
-	newRole := CombineUserRoles(roles)
-	userClusterMap := make(map[string]struct{}, 0)
-	for _, v := range newRole.Cluster {
-		userClusterMap[v] = struct{}{}
-	}
-	realCluster := make([]string, 0)
-	for _, v := range cluster {
-		if _, ok := userClusterMap[v]; ok {
-			realCluster = append(realCluster, v)
+func GetRoleClusterMap(roles []string) map[string][]string {
+	userClusterMap := make(map[string][]string, 0)
+	for _, roleName := range roles {
+		role, ok := RoleMap[roleName]
+		if ok {
+			for _, ic := range role.Privilege.Elasticsearch.Cluster.Resources {
+				userClusterMap[ic.ID] = append(userClusterMap[ic.ID], role.Privilege.Elasticsearch.Cluster.Permissions...)
+			}
 		}
+	}
+	return userClusterMap
+}
+func GetRoleCluster(roles []string) []string {
+	userClusterMap := GetRoleClusterMap(roles)
+	realCluster := make([]string, 0, len(userClusterMap))
+	for k, _ := range userClusterMap {
+		realCluster = append(realCluster, k)
 	}
 	return realCluster
 }
-func FilterIndex(roles []string, index []string) []string {
-	realIndex := make([]string, 0)
-	newRole := CombineUserRoles(roles)
-	for _, v := range index {
-		if _, ok := newRole.IndexPrivilege[v]; ok {
-			realIndex = append(realIndex, v)
+func GetRoleIndex(roles, clusterIDs []string) map[string][]string {
+	userClusterMap := make(map[string]struct{}, len(clusterIDs))
+	for _, clusterID := range clusterIDs {
+		userClusterMap[clusterID] = struct{}{}
+	}
+	realIndex := map[string][]string{}
+	for _, roleName := range roles {
+		role, ok := RoleMap[roleName]
+		if ok {
+			for _, ic := range role.Privilege.Elasticsearch.Cluster.Resources {
+				if _, ok = userClusterMap[ic.ID]; !ok {
+					continue
+				}
+				for _, ip := range role.Privilege.Elasticsearch.Index {
+					realIndex[ic.ID] = append(realIndex[ic.ID], ip.Name...)
+				}
+			}
 		}
 	}
 	return realIndex

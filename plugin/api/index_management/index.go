@@ -1,8 +1,6 @@
 package index_management
 
 import (
-	"fmt"
-	"infini.sh/framework/core/elastic"
 	"net/http"
 	"strconv"
 	"strings"
@@ -117,74 +115,4 @@ func (handler APIHandler) UpdateDictItemAction(w http.ResponseWriter, req *http.
 	resp["payload"] = dict
 	handler.WriteJSON(w, resp, http.StatusOK)
 
-}
-func (h APIHandler) ListIndex(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	clusterIds := h.GetParameterOrDefault(req, "ids", "")
-	keyword := h.GetParameterOrDefault(req, "keyword", "")
-	ids := strings.Split(clusterIds, ",")
-	for i := range ids {
-		if i < len(ids)-1 {
-			ids[i] = `"` + ids[i] + `",`
-		} else {
-			ids[i] = `"` + ids[i] + `"`
-		}
-
-	}
-	if len(ids) == 0 {
-		h.Error400(w, "id is required")
-		return
-	}
-	var dsl = `{
-	"_source": ["metadata.index_name"],
-	"collapse": {
-	 "field": "metadata.index_name"
-	},
-	"size": 100,
-	"query": {
-	 "bool": {
-	   "must": [
-	     {
-	       "terms": {
-	         "metadata.cluster_id": %s
-	       }
-	     }%s
-	   ],
-	   "must_not": [
-	     {
-	       "term": {
-	         "metadata.labels.state": {
-	           "value": "delete"
-	         }
-	       }
-	     }
-	   ]
-	 }
-	}
-	}`
-
-	str := &strings.Builder{}
-
-	if keyword != "" {
-		str.WriteString(fmt.Sprintf(`,{"wildcard":{"metadata.index_name":{"value":"*%s*"}}}`, keyword))
-	}
-	dsl = fmt.Sprintf(dsl, ids, str)
-
-	esClient := elastic.GetClient(h.Config.Elasticsearch)
-	resp, err := esClient.SearchWithRawQueryDSL(".infini_index", []byte(dsl))
-	if err != nil {
-
-		return
-	}
-	list := resp.Hits.Hits
-	var indexNames []string
-	for _, v := range list {
-		m := v.Source["metadata"].(map[string]interface{})
-		indexNames = append(indexNames, m["index_name"].(string))
-
-	}
-	m := make(map[string]interface{})
-	m["indexnames"] = indexNames
-	h.WriteOKJSON(w, m)
-
-	return
 }

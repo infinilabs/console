@@ -16,7 +16,7 @@ func (h Rbac) ListPermission(w http.ResponseWriter, r *http.Request, ps httprout
 		return
 	}
 	var permissions interface{}
-	if typ == biz.Elastisearch {
+	if typ == biz.Elasticsearch {
 		permissions = biz.ListElasticsearchPermission()
 	}
 	h.WriteOKJSON(w, permissions)

@@ -16,29 +16,17 @@ import (
 
 type UserClaims struct {
 	*jwt.RegisteredClaims
-	*User
+	*ShortUser
 }
-type User struct {
+type ShortUser struct {
 	Username string   `json:"username"`
 	UserId   string   `json:"user_id"`
 	Roles    []string `json:"roles"`
 }
-type Account struct {
-	ID       string          `json:"id,omitempty"     `
-	Created  string          `json:"created,omitempty" `
-	Updated  string          `json:"updated,omitempty" `
-	Username string          `json:"username" elastic_mapping:"username:{type:keyword}"`
-	Password string          `json:"password" elastic_mapping:"password:{type:text}"`
-	Name     string          `json:"name" elastic_mapping:"name:{type:keyword}"`
-	Phone    string          `json:"phone" elastic_mapping:"phone:{type:keyword}"`
-	Email    string          `json:"email" elastic_mapping:"email:{type:keyword}"`
-	Tags     []string        `json:"tags" elastic_mapping:"tags:{type:text}"`
-	Roles    []rbac.UserRole `json:"roles"`
-}
 
 const Secret = "console"
 
-func authenticateUser(username string, password string) (user Account, err error) {
+func authenticateUser(username string, password string) (user rbac.User, err error) {
 
 	err, result := orm.GetBy("name", username, rbac.User{})
 	if err != nil {
@@ -48,6 +36,10 @@ func authenticateUser(username string, password string) (user Account, err error
 	if result.Total == 0 {
 		err = errors.New("user not found")
 		return
+	}
+	if row, ok := result.Result[0].(map[string]interface{}); ok {
+		delete(row, "created")
+		delete(row, "updated")
 	}
 
 	err = mapstructure.Decode(result.Result[0], &user)
@@ -62,7 +54,7 @@ func authenticateUser(username string, password string) (user Account, err error
 
 	return
 }
-func authenticateAdmin(username string, password string) (user Account, err error) {
+func authenticateAdmin(username string, password string) (user rbac.User, err error) {
 
 	u, _ := global.Env().GetConfig("bootstrap.username", "admin")
 	p, _ := global.Env().GetConfig("bootstrap.password", "admin")
@@ -72,13 +64,13 @@ func authenticateAdmin(username string, password string) (user Account, err erro
 		return
 	}
 	user.ID = username
-	user.Username = username
+	user.Name = username
 	user.Roles = []rbac.UserRole{{
 		ID: "admin", Name: "admin",
 	}}
 	return user, nil
 }
-func authorize(user Account) (m map[string]interface{}, err error) {
+func authorize(user rbac.User) (m map[string]interface{}, err error) {
 
 	var roles, privilege []string
 	for _, v := range user.Roles {
@@ -87,8 +79,8 @@ func authorize(user Account) (m map[string]interface{}, err error) {
 		privilege = append(privilege, role.Privilege.Platform...)
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, UserClaims{
-		User: &User{
-			Username: user.Username,
+		ShortUser: &ShortUser{
+			Username: user.Name,
 			UserId:   user.ID,
 			Roles:    roles,
 		},
@@ -104,7 +96,7 @@ func authorize(user Account) (m map[string]interface{}, err error) {
 
 	m = util.MapStr{
 		"access_token": tokenString,
-		"username":     user.Username,
+		"username":     user.Name,
 		"id":           user.ID,
 		"expire_in":    86400,
 		"roles":        roles,
@@ -113,7 +105,7 @@ func authorize(user Account) (m map[string]interface{}, err error) {
 	return
 }
 func Login(username string, password string) (m map[string]interface{}, err error) {
-	var user Account
+	var user rbac.User
 	if username == "admin" {
 		user, err = authenticateAdmin(username, password)
 		if err != nil {
@@ -143,12 +135,12 @@ func Login(username string, password string) (m map[string]interface{}, err erro
 		},
 		User: util.MapStr{
 			"id":   user.ID,
-			"name": user.Username,
+			"name": user.Name,
 		},
 	}, nil, nil))
 	return
 }
-func UpdatePassword(localUser *User, req dto.UpdatePassword) (err error) {
+func UpdatePassword(localUser *ShortUser, req dto.UpdatePassword) (err error) {
 	user := rbac.User{}
 	user.ID = localUser.UserId
 	_, err = orm.Get(&user)
@@ -186,7 +178,7 @@ func UpdatePassword(localUser *User, req dto.UpdatePassword) (err error) {
 	}, nil, nil))
 	return
 }
-func UpdateProfile(localUser *User, req dto.UpdateProfile) (err error) {
+func UpdateProfile(localUser *ShortUser, req dto.UpdateProfile) (err error) {
 	user := rbac.User{}
 	user.ID = localUser.UserId
 	_, err = orm.Get(&user)

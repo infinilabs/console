@@ -16,47 +16,23 @@ import (
 type RoleType = string
 
 const (
-	Platform     RoleType = "platform"
-	Elastisearch RoleType = "elasticsearch"
+	Platform      RoleType = "platform"
+	Elasticsearch RoleType = "elasticsearch"
 )
 
-func UpdateRole(localUser *User, role *rbac.Role) (err error) {
+func UpdateRole(role *rbac.Role) (err error) {
 	model, err := GetRole(role.ID)
 	if err != nil {
 		return err
 	}
 	role.Type = model.Type
 	role.Created = model.Created
-	changeLog, _ := util.DiffTwoObject(model, role)
 	role.Updated = time.Now()
 	err = orm.Save(role)
-	if err != nil {
-		return
-	}
-
-	RoleMap[model.Name] = model
-
-	err = orm.Save(GenerateEvent(event.ActivityMetadata{
-		Category: "platform",
-		Group:    "rbac",
-		Name:     "role",
-		Type:     "update",
-		Labels: util.MapStr{
-			"id":          model.ID,
-			"description": model.Description,
-			"privilege":    role.Privilege,
-			"updated":     model.Updated,
-		},
-		User: util.MapStr{
-			"userid":   localUser.UserId,
-			"username": localUser.Username,
-		},
-	}, nil, changeLog))
-
 	return
 }
 
-func CreateRole(localUser *User, role *rbac.Role) (id string, err error) {
+func CreateRole(localUser *ShortUser, role *rbac.Role) (id string, err error) {
 	if role.Name == "" {
 		err = errors.New("role name is require")
 		return
@@ -110,7 +86,7 @@ func CreateRole(localUser *User, role *rbac.Role) (id string, err error) {
 	return
 
 }
-func DeleteRole(localUser *User, id string) (err error) {
+func DeleteRole(localUser *ShortUser, id string) (err error) {
 	role := rbac.Role{}
 	role.ID = id
 	roleName := role.Name
@@ -178,7 +154,7 @@ func SearchRole(keyword string, from, size int) (roles orm.Result, err error) {
 	return
 }
 func IsAllowRoleType(roleType string) (err error) {
-	if roleType != Platform && roleType != Elastisearch {
+	if roleType != Platform && roleType != Elasticsearch {
 		err = fmt.Errorf("invalid role type %s ", roleType)
 		return
 	}

@@ -15,7 +15,7 @@ import (
 
 var ErrNotFound = fmt.Errorf("not found")
 
-func DeleteUser(localUser *User, id string) (err error) {
+func DeleteUser(localUser *ShortUser, id string) (err error) {
 
 	user := rbac.User{}
 	user.ID = id
@@ -55,7 +55,7 @@ func DeleteUser(localUser *User, id string) (err error) {
 	}, nil))
 	return
 }
-func CreateUser(localUser *User, req dto.CreateUser) (id string, password string, err error) {
+func CreateUser(localUser *ShortUser, req dto.CreateUser) (id string, password string, err error) {
 	q := orm.Query{Size: 1000}
 	q.Conds = orm.And(orm.Eq("name", req.Name))
 
@@ -123,7 +123,7 @@ func CreateUser(localUser *User, req dto.CreateUser) (id string, password string
 	}, nil, nil))
 	return
 }
-func UpdateUser(localUser *User, id string, req dto.UpdateUser) (err error) {
+func UpdateUser(localUser *ShortUser, id string, req dto.UpdateUser) (err error) {
 	user := rbac.User{}
 	user.ID = id
 	_, err = orm.Get(&user)
@@ -171,7 +171,7 @@ func UpdateUser(localUser *User, id string, req dto.UpdateUser) (err error) {
 	}, nil, changeLog))
 	return
 }
-func UpdateUserRole(localUser *User, id string, req dto.UpdateUserRole) (err error) {
+func UpdateUserRole(localUser *ShortUser, id string, req dto.UpdateUserRole) (err error) {
 	user := rbac.User{}
 	user.ID = id
 	_, err = orm.Get(&user)
@@ -239,7 +239,7 @@ func SearchUser(keyword string, from, size int) (users orm.Result, err error) {
 	return
 
 }
-func UpdateUserPassword(localUser *User, id string, password string) (err error) {
+func UpdateUserPassword(localUser *ShortUser, id string, password string) (err error) {
 	user := rbac.User{}
 	user.ID = id
 	_, err = orm.Get(&user)

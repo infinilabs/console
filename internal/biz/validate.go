@@ -234,7 +234,7 @@ func ValidateLogin(authorizationHeader string) (clams *UserClaims, err error) {
 }
 func ValidatePermission(claims *UserClaims, permissions []string) (err error) {
 
-	user := claims.User
+	user := claims.ShortUser
 
 	if user.UserId == "" {
 		err = errors.New("user id is empty")

@@ -2,7 +2,7 @@ package api
 
 import (
 	"infini.sh/console/config"
-	m "infini.sh/console/internal/middleware"
+	m "infini.sh/framework/core/security/rbac/middleware"
 	"infini.sh/console/plugin/api/alerting"
 	"infini.sh/console/plugin/api/index_management"
 	"infini.sh/framework/core/api"

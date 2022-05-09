@@ -398,6 +398,29 @@ func (alertAPI *AlertAPI) enableRule(w http.ResponseWriter, req *http.Request, p
 		"_id": id,
 	}, http.StatusOK)
 }
+
+func (alertAPI *AlertAPI) sendTestMessage(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	rule :=  alerting.Rule{}
+	err := alertAPI.DecodeJSON(req, &rule)
+	if err != nil {
+		alertAPI.WriteJSON(w, util.MapStr{
+			"error": err.Error(),
+		}, http.StatusInternalServerError)
+		return
+	}
+	eng := alerting2.GetEngine(rule.Resource.Type)
+	actionResults, err :=  eng.Test(&rule)
+	if err != nil {
+		alertAPI.WriteJSON(w, util.MapStr{
+			"error": err.Error(),
+		}, http.StatusInternalServerError)
+		return
+	}
+	alertAPI.WriteJSON(w, util.MapStr{
+		"action_results": actionResults,
+	}, http.StatusOK)
+
+}
 func checkResourceExists(rule *alerting.Rule) (bool, error) {
 	if rule.Resource.ID == "" {
 		return false, fmt.Errorf("resource id can not be empty")

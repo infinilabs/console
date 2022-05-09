@@ -16,6 +16,7 @@ type Engine interface {
 	ExecuteQuery(rule *alerting.Rule)(*alerting.QueryResult, error)
 	CheckCondition(rule *alerting.Rule)(*alerting.ConditionResult, error)
 	GenerateTask(rule *alerting.Rule) func(ctx context.Context)
+	Test(rule *alerting.Rule) ([]alerting.ActionExecutionResult, error)
 }
 
 var (

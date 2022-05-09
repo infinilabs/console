@@ -67,6 +67,11 @@ func (engine *Engine) GenerateQuery(rule *alerting.Rule) (interface{}, error) {
 	}
 	var rootAggs util.MapStr
 	groups := rule.Metrics.Items[0].Group
+	limit := rule.Metrics.Items[0].Limit
+	//top group 10
+	if limit <= 0 {
+		limit = 10
+	}
 	if grpLength := len(groups); grpLength > 0 {
 		var lastGroupAgg util.MapStr
 
@@ -74,7 +79,7 @@ func (engine *Engine) GenerateQuery(rule *alerting.Rule) (interface{}, error) {
 			groupAgg := util.MapStr{
 				"terms": util.MapStr{
 					"field": groups[i],
-					"size": 500,
+					"size": limit,
 				},
 			}
 			groupID := util.GetUUID()
@@ -634,10 +639,30 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 	return nil
 }
 
+func (engine *Engine) Test(rule *alerting.Rule) ([]alerting.ActionExecutionResult, error) {
+	checkResults, err := engine.CheckCondition(rule)
+	if err != nil {
+		return nil, fmt.Errorf("check condition error:%w", err)
+	}
+	conditionResults := checkResults.ResultItems
+	var actionResults []alerting.ActionExecutionResult
+	if len(rule.Channels.Normal) > 0 {
+		actionResults = performChannels(rule.Channels.Normal, conditionResults)
+	}else if len(rule.Channels.Escalation) > 0{
+		actionResults = performChannels(rule.Channels.Escalation, conditionResults)
+	}else{
+		return nil, fmt.Errorf("no useable channel")
+	}
+	return actionResults, nil
+}
+
 func performChannels(channels []alerting.Channel, conditionResults []alerting.ConditionResultItem) []alerting.ActionExecutionResult {
 	var message string
 	for _, conditionResult := range conditionResults {
 		message += fmt.Sprintf("severity: %s\t message:%s\t groups:%v\t timestamp: %v;", conditionResult.ConditionItem.Severity, conditionResult.ConditionItem.Message, conditionResult.GroupValues, time.Now())
+	}
+	if message == ""{
+		message = "normal"
 	}
 	ctx := util.MapStr{
 		"ctx": util.MapStr{

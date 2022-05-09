@@ -7,9 +7,7 @@ import (
 	"infini.sh/console/model"
 	"infini.sh/console/model/alerting"
 	"infini.sh/console/model/gateway"
-	"infini.sh/console/model/rbac"
 	_ "infini.sh/console/plugin"
-	rbacApi "infini.sh/console/plugin/api/rbac"
 	alerting2 "infini.sh/console/service/alerting"
 	"infini.sh/framework"
 	"infini.sh/framework/core/elastic"
@@ -24,6 +22,7 @@ import (
 	"infini.sh/framework/modules/pipeline"
 	queue2 "infini.sh/framework/modules/queue/disk_queue"
 	"infini.sh/framework/modules/redis"
+	"infini.sh/framework/modules/security"
 	"infini.sh/framework/modules/stats"
 	"infini.sh/framework/modules/task"
 	"infini.sh/framework/modules/ui"
@@ -77,6 +76,7 @@ func main() {
 		module.RegisterSystemModule(&task.TaskModule{})
 
 		module.RegisterUserPlugin(&metrics.MetricsModule{})
+		module.RegisterUserPlugin(&security.SecurityModule{})
 		api.RegisterAPI("")
 
 		appConfig = &config.AppConfig{
@@ -129,8 +129,6 @@ func main() {
 		orm.RegisterSchemaWithIndexName(gateway.Instance{}, "gateway-instance")
 		orm.RegisterSchemaWithIndexName(alerting.Rule{}, "alert-rule")
 		orm.RegisterSchemaWithIndexName(alerting.Alert{}, "alert-history")
-		orm.RegisterSchemaWithIndexName(rbac.Role{}, "rbac-role")
-		orm.RegisterSchemaWithIndexName(rbac.User{}, "rbac-user")
 		api.RegisterSchema()
 
 		go func() {
@@ -139,7 +137,7 @@ func main() {
 				log.Errorf("init alerting task error: %v", err)
 			}
 		}()
-		go rbacApi.Init()
+		//go rbacApi.Init()
 
 	}, nil) {
 		app.Run()

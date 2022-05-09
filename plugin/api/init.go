@@ -2,7 +2,7 @@ package api
 
 import (
 	"infini.sh/console/config"
-	m "infini.sh/console/internal/middleware"
+	m "infini.sh/framework/core/security/rbac/middleware"
 	"infini.sh/console/plugin/api/alerting"
 	"infini.sh/console/plugin/api/index_management"
 	"infini.sh/framework/core/api"
@@ -46,7 +46,6 @@ func Init(cfg *config.AppConfig) {
 	api.HandleAPIMethod(api.PUT, path.Join(pathPrefix, "elasticsearch/command/:cid"), handler.HandleSaveCommonCommandAction)
 	api.HandleAPIMethod(api.GET, path.Join(pathPrefix, "elasticsearch/command"), handler.HandleQueryCommonCommandAction)
 	api.HandleAPIMethod(api.DELETE, path.Join(pathPrefix, "elasticsearch/command/:cid"), handler.HandleDeleteCommonCommandAction)
-	api.HandleAPIMethod(api.GET, path.Join(pathPrefix, "elasticsearch/indices"), handler.ListIndex)
 	//task.RegisterScheduleTask(task.ScheduleTask{
 	//	Description: "sync reindex task result",
 	//	Task: func() {

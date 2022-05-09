@@ -4,7 +4,6 @@ import (
 	"infini.sh/console/internal/biz"
 	"infini.sh/console/internal/core"
 	"infini.sh/console/internal/dto"
-	m "infini.sh/console/internal/middleware"
 	"infini.sh/framework/core/api"
 	"infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/util"
@@ -16,14 +15,14 @@ type Account struct {
 }
 
 func init() {
-	account := Account{}
-	api.HandleAPIMethod(api.POST, "/account/login", account.Login)
-
-	api.HandleAPIMethod(api.GET, "/account/current_user", account.CurrentUser)
-
-	api.HandleAPIMethod(api.DELETE, "/account/logout", account.Logout)
-	api.HandleAPIMethod(api.GET, "/account/profile", m.LoginRequired(account.Profile))
-	api.HandleAPIMethod(api.PUT, "/account/password", m.LoginRequired(account.UpdatePassword))
+	//account := Account{}
+	//api.HandleAPIMethod(api.POST, "/account/login", account.Login)
+	//
+	//api.HandleAPIMethod(api.GET, "/account/current_user", account.CurrentUser)
+	//
+	//api.HandleAPIMethod(api.DELETE, "/account/logout", account.Logout)
+	//api.HandleAPIMethod(api.GET, "/account/profile", m.LoginRequired(account.Profile))
+	//api.HandleAPIMethod(api.PUT, "/account/password", m.LoginRequired(account.UpdatePassword))
 }
 
 const userInSession = "user_session:"

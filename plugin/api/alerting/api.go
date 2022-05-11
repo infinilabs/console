@@ -35,6 +35,7 @@ func (alert *AlertAPI) Init() {
 	api.HandleAPIMethod(api.GET, "/alerting/alert/_search", alert.searchAlert)
 	api.HandleAPIMethod(api.GET, "/alerting/alert/:alert_id", alert.getAlert)
 	api.HandleAPIMethod(api.POST, "/alerting/alert/_acknowledge", alert.acknowledgeAlert)
+	api.HandleAPIMethod(api.GET, "/alerting/template/parameters", alert.getTemplateParams)
 
 
 	//just for test

@@ -442,6 +442,12 @@ func checkResourceExists(rule *alerting.Rule) (bool, error) {
 	}
 }
 
+func (alertAPI *AlertAPI) getTemplateParams(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	alertAPI.WriteJSON(w, util.MapStr{
+		"template_params": alerting2.GetTemplateParameters(),
+	}, http.StatusOK)
+}
+
 //func (alertAPI *AlertAPI) testRule(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 //	rule := alerting.Rule{
 //		ID: util.GetUUID(),

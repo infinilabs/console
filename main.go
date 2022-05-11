@@ -22,7 +22,6 @@ import (
 	"infini.sh/framework/modules/pipeline"
 	queue2 "infini.sh/framework/modules/queue/disk_queue"
 	"infini.sh/framework/modules/redis"
-	"infini.sh/framework/modules/security"
 	"infini.sh/framework/modules/stats"
 	"infini.sh/framework/modules/task"
 	"infini.sh/framework/modules/ui"
@@ -76,7 +75,7 @@ func main() {
 		module.RegisterSystemModule(&task.TaskModule{})
 
 		module.RegisterUserPlugin(&metrics.MetricsModule{})
-		module.RegisterUserPlugin(&security.SecurityModule{})
+
 		api.RegisterAPI("")
 
 		appConfig = &config.AppConfig{
@@ -100,22 +99,6 @@ func main() {
 		appUI = &UI{Config: appConfig}
 		appUI.InitUI()
 
-		//uiConfig := ui.UIConfig{}
-		//env.ParseConfig("web", &uiConfig)
-		//
-		//if len(global.Env().SystemConfig.APIConfig.CrossDomain.AllowedOrigins)==0{
-		//	global.Env().SystemConfig.APIConfig.CrossDomain.AllowedOrigins=
-		//		append(global.Env().SystemConfig.APIConfig.CrossDomain.AllowedOrigins,uiConfig.NetworkConfig.GetBindingAddr())
-		//}
-		//apiConfig := global.Env().SystemConfig.APIConfig
-		//if len(apiConfig.CrossDomain.AllowedOrigins) == 0 {
-		//	apiConfig.CrossDomain.AllowedOrigins = []string{
-		//		fmt.Sprintf("%s://%s", appConfig.GetSchema(), appConfig.Network.GetPublishAddr()),
-		//	}
-		//}
-
-		//start each module, with enabled provider
-
 	}, func() {
 
 		module.Start()
@@ -137,7 +120,6 @@ func main() {
 				log.Errorf("init alerting task error: %v", err)
 			}
 		}()
-		//go rbacApi.Init()
 
 	}, nil) {
 		app.Run()

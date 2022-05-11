@@ -12,6 +12,8 @@ elasticsearch:
 web:
   enabled: true
   embedding_api: true
+#  auth:
+#    enabled: true
   ui:
     enabled: true
     path: .public

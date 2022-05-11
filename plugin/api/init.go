@@ -2,7 +2,6 @@ package api
 
 import (
 	"infini.sh/console/config"
-	m "infini.sh/framework/core/security/rbac/middleware"
 	"infini.sh/console/plugin/api/alerting"
 	"infini.sh/console/plugin/api/index_management"
 	"infini.sh/framework/core/api"
@@ -25,27 +24,28 @@ func Init(cfg *config.AppConfig) {
 	api.HandleAPIMethod(api.DELETE, path.Join(pathPrefix, "dict/:id"), handler.DeleteDictItemAction)
 	api.HandleAPIMethod(api.PUT, path.Join(pathPrefix, "dict/:id"), handler.UpdateDictItemAction)
 
-	api.HandleAPIMethod(api.POST, path.Join(esPrefix, "doc/:index/_search"), m.IndexRequired(handler.HandleSearchDocumentAction, "doc.search"))
-	api.HandleAPIMethod(api.POST, path.Join(esPrefix, "doc/:index"), m.IndexRequired(handler.HandleAddDocumentAction, "doc.create"))
-	api.HandleAPIMethod(api.PUT, path.Join(esPrefix, "doc/:index/:docId"), m.IndexRequired(handler.HandleUpdateDocumentAction, "doc.update"))
-	api.HandleAPIMethod(api.DELETE, path.Join(esPrefix, "doc/:index/:docId"), m.IndexRequired(handler.HandleDeleteDocumentAction, "doc.delete"))
+	api.HandleAPIMethod(api.POST, path.Join(esPrefix, "doc/:index/_search"), handler.IndexRequired(handler.HandleSearchDocumentAction, "doc.search"))
+	api.HandleAPIMethod(api.POST, path.Join(esPrefix, "doc/:index"), handler.IndexRequired(handler.HandleAddDocumentAction, "doc.create"))
+	api.HandleAPIMethod(api.PUT, path.Join(esPrefix, "doc/:index/:docId"), handler.IndexRequired(handler.HandleUpdateDocumentAction, "doc.update"))
+	api.HandleAPIMethod(api.DELETE, path.Join(esPrefix, "doc/:index/:docId"), handler.IndexRequired(handler.HandleDeleteDocumentAction, "doc.delete"))
 	api.HandleAPIMethod(api.GET, path.Join(esPrefix, "doc/_validate"), handler.ValidateDocIDAction)
 
 	api.HandleAPIMethod(api.POST, path.Join(pathPrefix, "rebuild/*id"), handler.HandleReindexAction)
 	api.HandleAPIMethod(api.GET, path.Join(pathPrefix, "rebuild/_search"), handler.HandleGetRebuildListAction)
 	api.HandleAPIMethod(api.DELETE, path.Join(pathPrefix, "rebuild/:id"), handler.HandleDeleteRebuildAction)
 
-	api.HandleAPIMethod(api.GET, path.Join(esPrefix, "_cat/indices"), m.ClusterRequired(handler.HandleGetIndicesAction, "cat.indices"))
-	api.HandleAPIMethod(api.GET, path.Join(esPrefix, "index/:index/_mappings"), m.IndexRequired(handler.HandleGetMappingsAction, "indices.get_mapping"))
-	api.HandleAPIMethod(api.GET, path.Join(esPrefix, "index/:index/_settings"), m.IndexRequired(handler.HandleGetSettingsAction, "indices.get_settings"))
-	api.HandleAPIMethod(api.PUT, path.Join(esPrefix, "index/:index/_settings"), m.IndexRequired(handler.HandleUpdateSettingsAction, "indices.put_mapping"))
-	api.HandleAPIMethod(api.DELETE, path.Join(esPrefix, "index/:index"), m.IndexRequired(handler.HandleDeleteIndexAction, "indices.delete"))
-	api.HandleAPIMethod(api.POST, path.Join(esPrefix, "index/:index"), m.IndexRequired(handler.HandleCreateIndexAction, "indices.create"))
+	api.HandleAPIMethod(api.GET, path.Join(esPrefix, "_cat/indices"), handler.ClusterRequired(handler.HandleGetIndicesAction, "cat.indices"))
+	api.HandleAPIMethod(api.GET, path.Join(esPrefix, "index/:index/_mappings"), handler.IndexRequired(handler.HandleGetMappingsAction, "indices.get_mapping"))
+	api.HandleAPIMethod(api.GET, path.Join(esPrefix, "index/:index/_settings"), handler.IndexRequired(handler.HandleGetSettingsAction, "indices.get_settings"))
+	api.HandleAPIMethod(api.PUT, path.Join(esPrefix, "index/:index/_settings"), handler.IndexRequired(handler.HandleUpdateSettingsAction, "indices.put_mapping"))
+	api.HandleAPIMethod(api.DELETE, path.Join(esPrefix, "index/:index"), handler.IndexRequired(handler.HandleDeleteIndexAction, "indices.delete"))
+	api.HandleAPIMethod(api.POST, path.Join(esPrefix, "index/:index"), handler.IndexRequired(handler.HandleCreateIndexAction, "indices.create"))
 
 	api.HandleAPIMethod(api.POST, path.Join(pathPrefix, "elasticsearch/command"), handler.HandleAddCommonCommandAction)
 	api.HandleAPIMethod(api.PUT, path.Join(pathPrefix, "elasticsearch/command/:cid"), handler.HandleSaveCommonCommandAction)
 	api.HandleAPIMethod(api.GET, path.Join(pathPrefix, "elasticsearch/command"), handler.HandleQueryCommonCommandAction)
 	api.HandleAPIMethod(api.DELETE, path.Join(pathPrefix, "elasticsearch/command/:cid"), handler.HandleDeleteCommonCommandAction)
+
 	//task.RegisterScheduleTask(task.ScheduleTask{
 	//	Description: "sync reindex task result",
 	//	Task: func() {
@@ -55,9 +55,11 @@ func Init(cfg *config.AppConfig) {
 	//		}
 	//	},
 	//})
+
 	alertAPI := alerting.AlertAPI{
 		Config: cfg,
 	}
+
 	alertAPI.Init()
 
 }

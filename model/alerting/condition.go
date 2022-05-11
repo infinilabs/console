@@ -53,6 +53,9 @@ type ConditionResult struct {
 type ConditionResultItem struct {
 	GroupValues []string `json:"group_values"`
 	ConditionItem *ConditionItem `json:"condition_item"`
+	IssueTimestamp interface{} `json:"issue_timestamp"`
+	ResultValue interface{} `json:"result_value"` //满足条件最后一个值
+	RelationValues map[string]interface{} `json:"relation_values"`
 }
 
 type Severity string

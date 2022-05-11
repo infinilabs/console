@@ -18,6 +18,7 @@ type AlertAPI struct {
 func (alert *AlertAPI) Init() {
 	api.HandleAPIMethod(api.GET, "/alerting/rule/:rule_id", alert.getRule)
 	api.HandleAPIMethod(api.POST, "/alerting/rule", alert.createRule)
+	api.HandleAPIMethod(api.POST, "/alerting/rule/test", alert.sendTestMessage)
 	api.HandleAPIMethod(api.DELETE, "/alerting/rule/:rule_id", alert.deleteRule)
 	api.HandleAPIMethod(api.PUT, "/alerting/rule/:rule_id", alert.updateRule)
 	api.HandleAPIMethod(api.GET, "/alerting/rule/_search", alert.searchRule)
@@ -34,6 +35,7 @@ func (alert *AlertAPI) Init() {
 	api.HandleAPIMethod(api.GET, "/alerting/alert/_search", alert.searchAlert)
 	api.HandleAPIMethod(api.GET, "/alerting/alert/:alert_id", alert.getAlert)
 	api.HandleAPIMethod(api.POST, "/alerting/alert/_acknowledge", alert.acknowledgeAlert)
+	api.HandleAPIMethod(api.GET, "/alerting/template/parameters", alert.getTemplateParams)
 
 
 	//just for test

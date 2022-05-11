@@ -44,6 +44,7 @@ type MetricItem struct {
 	Field string `json:"field"`
 	Statistic string `json:"statistic"`
 	Group []string `json:"group"` //bucket group
+	Limit int `json:"limit"`
 }
 
 type QueryResult struct {

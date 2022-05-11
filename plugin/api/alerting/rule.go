@@ -6,16 +6,17 @@ package alerting
 
 import (
 	"fmt"
+	log "github.com/cihub/seelog"
 	"infini.sh/console/model/alerting"
 	alerting2 "infini.sh/console/service/alerting"
 	_ "infini.sh/console/service/alerting/elasticsearch"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/kv"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/task"
 	"infini.sh/framework/core/util"
 	"net/http"
-	log "src/github.com/cihub/seelog"
 	"time"
 )
 
@@ -23,6 +24,7 @@ func (alertAPI *AlertAPI) createRule(w http.ResponseWriter, req *http.Request, p
 	rules :=  []alerting.Rule{}
 	err := alertAPI.DecodeJSON(req, &rules)
 	if err != nil {
+		log.Error(err)
 		alertAPI.WriteJSON(w, util.MapStr{
 			"error": err.Error(),
 		}, http.StatusInternalServerError)
@@ -32,6 +34,7 @@ func (alertAPI *AlertAPI) createRule(w http.ResponseWriter, req *http.Request, p
 	for _, rule := range rules {
 		exists, err := checkResourceExists(&rule)
 		if err != nil || !exists {
+			log.Error(err)
 			alertAPI.WriteJSON(w, util.MapStr{
 				"error": err.Error(),
 			}, http.StatusInternalServerError)
@@ -39,6 +42,7 @@ func (alertAPI *AlertAPI) createRule(w http.ResponseWriter, req *http.Request, p
 		}
 		rule.Metrics.Expression, err = rule.Metrics.GenerateExpression()
 		if err != nil {
+			log.Error(err)
 			alertAPI.WriteJSON(w, util.MapStr{
 				"error": err.Error(),
 			}, http.StatusInternalServerError)
@@ -55,6 +59,7 @@ func (alertAPI *AlertAPI) createRule(w http.ResponseWriter, req *http.Request, p
 
 		err = orm.Save(rule)
 		if err != nil {
+			log.Error(err)
 			alertAPI.WriteJSON(w, util.MapStr{
 				"error": err.Error(),
 			}, http.StatusInternalServerError)
@@ -87,6 +92,7 @@ func (alertAPI *AlertAPI) getRule(w http.ResponseWriter, req *http.Request, ps h
 
 	exists, err := orm.Get(&obj)
 	if !exists || err != nil {
+		log.Error(err)
 		alertAPI.WriteJSON(w, util.MapStr{
 			"_id":   id,
 			"found": false,
@@ -94,6 +100,7 @@ func (alertAPI *AlertAPI) getRule(w http.ResponseWriter, req *http.Request, ps h
 		return
 	}
 	if err != nil {
+		log.Error(err)
 		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
 		return
@@ -114,6 +121,7 @@ func (alertAPI *AlertAPI) updateRule(w http.ResponseWriter, req *http.Request, p
 	obj.ID = id
 	exists, err := orm.Get(obj)
 	if !exists || err != nil {
+		log.Error(err)
 		alertAPI.WriteJSON(w, util.MapStr{
 			"_id":    id,
 			"result": "not_found",
@@ -151,6 +159,7 @@ func (alertAPI *AlertAPI) updateRule(w http.ResponseWriter, req *http.Request, p
 	if obj.Enabled {
 		exists, err = checkResourceExists(obj)
 		if err != nil || !exists {
+			log.Error(err)
 			alertAPI.WriteJSON(w, util.MapStr{
 				"error": err.Error(),
 			}, http.StatusInternalServerError)
@@ -170,11 +179,17 @@ func (alertAPI *AlertAPI) updateRule(w http.ResponseWriter, req *http.Request, p
 	}else{
 		task.DeleteTask(id)
 	}
+	clearKV(obj.ID)
 
 	alertAPI.WriteJSON(w, util.MapStr{
 		"_id":    obj.ID,
 		"result": "updated",
 	}, 200)
+}
+
+func clearKV(ruleID string){
+	_ = kv.DeleteKey(alerting2.KVLastNotificationTime, []byte(ruleID))
+	_ = kv.DeleteKey(alerting2.KVLastEscalationTime, []byte(ruleID))
 }
 
 func (alertAPI *AlertAPI) deleteRule(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -185,6 +200,7 @@ func (alertAPI *AlertAPI) deleteRule(w http.ResponseWriter, req *http.Request, p
 
 	exists, err := orm.Get(&obj)
 	if !exists || err != nil {
+		log.Error(err)
 		alertAPI.WriteJSON(w, util.MapStr{
 			"_id":    id,
 			"result": "not_found",
@@ -199,6 +215,7 @@ func (alertAPI *AlertAPI) deleteRule(w http.ResponseWriter, req *http.Request, p
 		return
 	}
 	task.DeleteTask(obj.ID)
+	clearKV(obj.ID)
 
 	alertAPI.WriteJSON(w, util.MapStr{
 		"_id":    obj.ID,
@@ -325,6 +342,7 @@ func (alertAPI *AlertAPI) fetchAlertInfos(w http.ResponseWriter, req *http.Reque
 
 	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetWildcardIndexName(alerting.Alert{}), util.MustToJSONBytes(queryDsl) )
 	if err != nil {
+		log.Error(err)
 		alertAPI.WriteJSON(w, util.MapStr{
 			"error": err.Error(),
 		}, http.StatusInternalServerError)
@@ -334,8 +352,9 @@ func (alertAPI *AlertAPI) fetchAlertInfos(w http.ResponseWriter, req *http.Reque
 		alertAPI.WriteJSON(w, util.MapStr{}, http.StatusOK)
 		return
 	}
-	aletNumbers, err  := alertAPI.getRuleAlertNumbers(ruleIDs)
+	alertNumbers, err  := alertAPI.getRuleAlertNumbers(ruleIDs)
 	if err != nil {
+		log.Error(err)
 		alertAPI.WriteJSON(w, util.MapStr{
 			"error": err.Error(),
 		}, http.StatusInternalServerError)
@@ -346,8 +365,8 @@ func (alertAPI *AlertAPI) fetchAlertInfos(w http.ResponseWriter, req *http.Reque
 	for _, hit := range searchRes.Hits.Hits {
 		if ruleID, ok := hit.Source["rule_id"].(string); ok {
 			latestAlertInfos[ruleID] = util.MapStr{
-				"status": hit.Source["state"],
-				"alert_count": aletNumbers[ruleID],
+				"status":      hit.Source["state"],
+				"alert_count": alertNumbers[ruleID],
 			}
 		}
 
@@ -359,6 +378,7 @@ func (alertAPI *AlertAPI) enableRule(w http.ResponseWriter, req *http.Request, p
 	reqObj := alerting.Rule{}
 	err := alertAPI.DecodeJSON(req, &reqObj)
 	if err != nil {
+		log.Error(err)
 		alertAPI.WriteError(w, fmt.Sprintf("request format error:%v", err), http.StatusInternalServerError)
 		return
 	}
@@ -368,6 +388,7 @@ func (alertAPI *AlertAPI) enableRule(w http.ResponseWriter, req *http.Request, p
 
 	exists, err := orm.Get(&obj)
 	if !exists || err != nil {
+		log.Error(err)
 		alertAPI.WriteJSON(w, util.MapStr{
 			"_id":    id,
 			"result": "not_found",
@@ -390,6 +411,7 @@ func (alertAPI *AlertAPI) enableRule(w http.ResponseWriter, req *http.Request, p
 	obj.Enabled = reqObj.Enabled
 	err = orm.Save(obj)
 	if err != nil {
+		log.Error(err)
 		alertAPI.WriteError(w, fmt.Sprintf("save rule error:%v", err), http.StatusInternalServerError)
 		return
 	}
@@ -403,6 +425,7 @@ func (alertAPI *AlertAPI) sendTestMessage(w http.ResponseWriter, req *http.Reque
 	rule :=  alerting.Rule{}
 	err := alertAPI.DecodeJSON(req, &rule)
 	if err != nil {
+		log.Error(err)
 		alertAPI.WriteJSON(w, util.MapStr{
 			"error": err.Error(),
 		}, http.StatusInternalServerError)
@@ -411,6 +434,7 @@ func (alertAPI *AlertAPI) sendTestMessage(w http.ResponseWriter, req *http.Reque
 	eng := alerting2.GetEngine(rule.Resource.Type)
 	actionResults, err :=  eng.Test(&rule)
 	if err != nil {
+		log.Error(err)
 		alertAPI.WriteJSON(w, util.MapStr{
 			"error": err.Error(),
 		}, http.StatusInternalServerError)
@@ -447,6 +471,38 @@ func (alertAPI *AlertAPI) getTemplateParams(w http.ResponseWriter, req *http.Req
 		"template_params": alerting2.GetTemplateParameters(),
 	}, http.StatusOK)
 }
+
+func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	rule :=  alerting.Rule{}
+	err := alertAPI.DecodeJSON(req, &rule)
+	if err != nil {
+		log.Error(err)
+		alertAPI.WriteJSON(w, util.MapStr{
+			"error": err.Error(),
+		}, http.StatusInternalServerError)
+		return
+	}
+	eng := alerting2.GetEngine(rule.Resource.Type)
+	metricData, err :=  eng.GetTargetMetricData(&rule, true)
+	if err != nil {
+		log.Error(err)
+		alertAPI.WriteJSON(w, util.MapStr{
+			"error": err.Error(),
+		}, http.StatusInternalServerError)
+		return
+	}
+	var filteredMetricData []alerting.MetricData
+	for _, md := range metricData {
+		if len(md.Data) == 0 {
+			continue
+		}
+		filteredMetricData = append(filteredMetricData, md)
+	}
+	alertAPI.WriteJSON(w, util.MapStr{
+		"metric": filteredMetricData,
+	}, http.StatusOK)
+}
+
 
 //func (alertAPI *AlertAPI) testRule(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 //	rule := alerting.Rule{

@@ -20,13 +20,13 @@ func GetTemplateParameters() []ParameterMeta {
 		{ParamEventID, "string", "identifier for check details", "c9f663tath2e5a0vksjx", nil},
 		{ParamResults, "array", "", "", []ParameterMeta{
 			{ParamMessage, "string", "", "disk used 90%", nil},
-			{ParamPresetValue, "float", "", "", nil},
-			{ParamStatus, "string", "", "error", nil},
+			{ParamPresetValue, "array", "", "[\"90\"]", nil},
+			{Severity, "string", "", "error", nil},
 			{ParamGroupValues, "array", "", "[\"cluster-xxx\", \"node-xxx\"]", nil},
-			{ParamIssueTimestamp, "date", "", "1652184211252", nil},
+			{ParamIssueTimestamp, "date", "", "2022-05-11T11:50:55+08:00", nil},
 			{ParamResultValue, "float", "", "91.2", nil},
 			{ParamRelationValues, "map", "", "{a:100, b:91.2}", nil},
 		}},
-		{ParamTimestamp, "date", "", "", nil},
+		{ParamTimestamp, "date", "", "2022-05-11T11:50:55+08:00", nil},
 	}
 }

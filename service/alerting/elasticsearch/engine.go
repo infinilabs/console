@@ -363,7 +363,7 @@ func (engine *Engine) ExecuteQuery(rule *alerting.Rule)(*alerting.QueryResult, e
 	queryResult.MetricData = metricData
 	return queryResult, nil
 }
-func (engine *Engine) GetTargetMetricData(rule *alerting.Rule)([]alerting.MetricData, error){
+func (engine *Engine) GetTargetMetricData(rule *alerting.Rule, isFilterNaN bool)([]alerting.MetricData, error){
 	queryResult, err := engine.ExecuteQuery(rule)
 	if err != nil {
 		return nil, err
@@ -411,7 +411,9 @@ func (engine *Engine) GetTargetMetricData(rule *alerting.Rule)([]alerting.Metric
 				}
 				if r, ok := result.(float64); ok {
 					if math.IsNaN(r) || math.IsInf(r, 0 ){
-						targetData.Data["result"] = append(targetData.Data["result"], []interface{}{timestamp, math.NaN()})
+						if !isFilterNaN {
+							targetData.Data["result"] = append(targetData.Data["result"], []interface{}{timestamp, math.NaN()})
+						}
 						continue
 					}
 				}
@@ -436,7 +438,7 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule)(*alerting.ConditionRes
 	}
 
 	var resultItems []alerting.ConditionResultItem
-	targetMetricData, err := engine.GetTargetMetricData(rule)
+	targetMetricData, err := engine.GetTargetMetricData(rule, false)
 	if err != nil {
 		return nil, err
 	}
@@ -611,13 +613,15 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		paramsCtx := newParameterCtx(rule, checkResults,alertItem.ID, alertItem.Created.Format(time.RFC3339))
 
 		if lastAlertItem.ID == "" || period > periodDuration {
-			actionResults := performChannels(rule.Channels.Normal, paramsCtx)
+			actionResults, errCount := performChannels(rule.Channels.Normal, paramsCtx)
 			alertItem.ActionExecutionResults = actionResults
-			//todo init last notification time when create task (by last alert item is notified)
-			rule.LastNotificationTime = time.Now()
-			strTime := time.Now().UTC().Format(time.RFC3339)
-			kv.AddValue(alerting2.KVLastNotificationTime, []byte(rule.ID), []byte(strTime))
-			alertItem.IsNotified = true
+			//change and save last notification time in local kv store when action error count equals zero
+			if errCount == 0 {
+				rule.LastNotificationTime = time.Now()
+				strTime := time.Now().UTC().Format(time.RFC3339)
+				kv.AddValue(alerting2.KVLastNotificationTime, []byte(rule.ID), []byte(strTime))
+				alertItem.IsNotified = true
+			}
 		}
 		isAck, err :=  hasAcknowledgedRule(rule.ID, rule.LastTermStartTime)
 		if err != nil {
@@ -629,7 +633,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			if err != nil {
 				return err
 			}
-			//todo init last term start time when create task (by last alert item of state normal)
+			//change and save last term start time in local kv store when action error count equals zero
 			if rule.LastTermStartTime.IsZero(){
 				tm, err := readTimeFromKV(alerting2.KVLastTermStartTime, []byte(rule.ID))
 				if err != nil {
@@ -650,13 +654,15 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 					}
 				}
 				if time.Now().Sub(rule.LastEscalationTime.Local()) > periodDuration {
-					actionResults := performChannels(rule.Channels.Escalation, paramsCtx)
-					alertItem.ActionExecutionResults = append(alertItem.ActionExecutionResults, actionResults...)
+					actionResults, errCount := performChannels(rule.Channels.Escalation, paramsCtx)
+					alertItem.ActionExecutionResults = actionResults
 					//todo init last escalation time when create task (by last alert item is escalated)
-					rule.LastEscalationTime = time.Now()
-					alertItem.IsEscalated = true
-					strTime := rule.LastEscalationTime.UTC().Format(time.RFC3339)
-					kv.AddValue(alerting2.KVLastEscalationTime, []byte(rule.ID), []byte(strTime))
+					if errCount == 0 {
+						rule.LastEscalationTime = time.Now()
+						alertItem.IsEscalated = true
+						strTime := rule.LastEscalationTime.UTC().Format(time.RFC3339)
+						kv.AddValue(alerting2.KVLastEscalationTime, []byte(rule.ID), []byte(strTime))
+					}
 				}
 
 			}
@@ -669,12 +675,12 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 	var conditionParams []util.MapStr
 	for _, resultItem := range checkResults.ResultItems {
 		conditionParams = append(conditionParams, util.MapStr{
-			alerting2.ParamMessage: resultItem.ConditionItem.Message,
-			alerting2.ParamPresetValue: resultItem.ConditionItem.Values,
-			alerting2.ParamStatus: resultItem.ConditionItem.Severity,
-			alerting2.ParamGroupValues: resultItem.GroupValues,
+			alerting2.ParamMessage:        resultItem.ConditionItem.Message,
+			alerting2.ParamPresetValue:    resultItem.ConditionItem.Values,
+			alerting2.Severity:            resultItem.ConditionItem.Severity,
+			alerting2.ParamGroupValues:    resultItem.GroupValues,
 			alerting2.ParamIssueTimestamp: resultItem.IssueTimestamp,
-			alerting2.ParamResultValue: resultItem.ResultValue,
+			alerting2.ParamResultValue:    resultItem.ResultValue,
 			alerting2.ParamRelationValues: resultItem.RelationValues,
 		})
 	}
@@ -697,22 +703,23 @@ func (engine *Engine) Test(rule *alerting.Rule) ([]alerting.ActionExecutionResul
 	var actionResults []alerting.ActionExecutionResult
 	paramsCtx := newParameterCtx(rule, checkResults, util.GetUUID(), time.Now().Format(time.RFC3339))
 	if len(rule.Channels.Normal) > 0 {
-		actionResults = performChannels(rule.Channels.Normal, paramsCtx)
+		actionResults, _ = performChannels(rule.Channels.Normal, paramsCtx)
 	}else if len(rule.Channels.Escalation) > 0{
-		actionResults = performChannels(rule.Channels.Escalation, paramsCtx)
+		actionResults, _ = performChannels(rule.Channels.Escalation, paramsCtx)
 	}else{
 		return nil, fmt.Errorf("no useable channel")
 	}
 	return actionResults, nil
 }
 
-func performChannels(channels []alerting.Channel, ctx map[string]interface{}) []alerting.ActionExecutionResult {
-
+func performChannels(channels []alerting.Channel, ctx map[string]interface{}) ([]alerting.ActionExecutionResult, int) {
+	var errCount int
 	var actionResults []alerting.ActionExecutionResult
 	for _, channel := range channels {
 		resBytes, err := performChannel(&channel, ctx)
 		var errStr string
 		if err != nil {
+			errCount++
 			errStr = err.Error()
 		}
 		actionResults = append(actionResults, alerting.ActionExecutionResult{
@@ -721,23 +728,14 @@ func performChannels(channels []alerting.Channel, ctx map[string]interface{}) []
 			LastExecutionTime: int(time.Now().UnixNano()/1e6),
 		})
 	}
-	return actionResults
+	return actionResults, errCount
 }
 
 func resolveMessage(messageTemplate string, ctx map[string]interface{}) ([]byte, error){
 	msg :=  messageTemplate
-	//tpl := fasttemplate.New(msg, "{{", "}}")
-	//msgBuffer := bytes.NewBuffer(nil)
-	//_, err := tpl.ExecuteFunc(msgBuffer, func(writer io.Writer, tag string)(int, error){
-	//	keyParts := strings.Split(tag,".")
-	//	value, _, _, err := jsonparser.Get(ctx, keyParts...)
-	//	if err != nil {
-	//		return 0, err
-	//	}
-	//	return writer.Write(value)
-	//})
-	//return msgBuffer.Bytes(), err
-	tmpl, err := template.New("alert-message").Parse(msg)
+	tmpl, err := template.New("alert-message").Funcs(template.FuncMap{
+		"format_bytes": func(precision int, bytes float64) string { return util.FormatBytes(bytes, precision)},
+	}).Parse(msg)
 	if err !=nil {
 		return nil, fmt.Errorf("parse message temlate error: %w", err)
 	}

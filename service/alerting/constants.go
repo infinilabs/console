@@ -16,11 +16,11 @@ const (
 	ParamResourceID     = "resource_id"   // 资源 UUID
 	ParamResourceName   = "resource_name" // 资源名称 如集群名称 es-v714
 	ParamEventID        = "event_id"      // 检查事件 ID
-	ParamResults        = "results"    //
+	ParamResults        = "results"       //
 	ParamMessage        = "message"       //检查消息 自定义
 	ParamPresetValue    = "preset_value"  //检查预设值 float64
 	ParamResultValue    = "result_value"  //检查结果 {group_tags:["cluster-xxx", "node-xxx"], check_values:[]}
-	ParamStatus         = "status"        //状态
+	Severity            = "severity"        //告警等级
 	ParamTimestamp      = "timestamp"     //事件产生时间戳
 	ParamGroupValues    = "group_values"
 	ParamIssueTimestamp = "issue_timestamp"

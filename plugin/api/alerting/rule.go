@@ -19,6 +19,7 @@ import (
 	"infini.sh/framework/modules/elastic/api"
 	"infini.sh/framework/modules/elastic/common"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -523,11 +524,15 @@ func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request
 				Ticks: 5},
 		},
 	}
+	var sampleData []alerting.TimeMetricData
 	for _, md := range metricData {
 		if len(md.Data) == 0 {
 			continue
 		}
 		//filteredMetricData = append(filteredMetricData, md)
+		if sampleData == nil {
+			sampleData = md.Data["result"]
+		}
 		metricItem.Lines = append(metricItem.Lines, &common.MetricLine{
 			Data: md.Data["result"],
 			BucketSize: filterParam.BucketSize,
@@ -538,6 +543,37 @@ func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request
 				FormatType: "num",
 			},
 		})
+	}
+	//add guidelines
+	for _, cond := range rule.Conditions.Items{
+		if len(cond.Values) > 0 {
+			val, err := strconv.ParseFloat(cond.Values[0], 64)
+			if err != nil {
+				log.Errorf("parse condition value error: %v", err)
+				continue
+			}
+			if sampleData != nil {
+				newData := make([]alerting.TimeMetricData,0, len(sampleData))
+				for _, td := range sampleData {
+					if len(td) < 2{
+						continue
+					}
+					newData = append(newData, alerting.TimeMetricData{
+						td[0], val,
+					})
+				}
+				metricItem.Lines = append(metricItem.Lines, &common.MetricLine{
+					Data: newData,
+					BucketSize: filterParam.BucketSize,
+					Metric: common.MetricSummary{
+						Label: "",
+						Group: rule.ID,
+						TickFormat: "0,0.[00]",
+						FormatType: "num",
+					},
+				})
+			}
+		}
 	}
 	alertAPI.WriteJSON(w, util.MapStr{
 		"metric": metricItem,

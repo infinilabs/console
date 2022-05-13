@@ -13,6 +13,7 @@ import (
 	"infini.sh/console/model/alerting"
 	alerting2 "infini.sh/console/service/alerting"
 	"infini.sh/console/service/alerting/action"
+	"infini.sh/console/service/alerting/funcs"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/kv"
 	"infini.sh/framework/core/orm"
@@ -758,9 +759,7 @@ func performChannels(channels []alerting.Channel, ctx map[string]interface{}) ([
 
 func resolveMessage(messageTemplate string, ctx map[string]interface{}) ([]byte, error){
 	msg :=  messageTemplate
-	tmpl, err := template.New("alert-message").Funcs(template.FuncMap{
-		"format_bytes": func(precision int, bytes float64) string { return util.FormatBytes(bytes, precision)},
-	}).Parse(msg)
+	tmpl, err := template.New("alert-message").Funcs(funcs.GenericFuncMap()).Parse(msg)
 	if err !=nil {
 		return nil, fmt.Errorf("parse message temlate error: %w", err)
 	}

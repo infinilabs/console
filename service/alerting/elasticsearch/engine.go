@@ -262,7 +262,8 @@ func (engine *Engine) GenerateRawFilter(rule *alerting.Rule, filterParam *alerti
 	query := map[string]interface{}{}
 	var err error
 	if rule.Resource.RawFilter != nil {
-		query = rule.Resource.RawFilter
+		query = util.DeepCopy(rule.Resource.RawFilter).(map[string]interface{})
+
 	}else{
 		if !rule.Resource.Filter.IsEmpty(){
 			query, err = engine.ConvertFilterQueryToDsl(&rule.Resource.Filter)

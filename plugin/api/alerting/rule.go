@@ -16,6 +16,7 @@ import (
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/task"
 	"infini.sh/framework/core/util"
+	"infini.sh/framework/modules/elastic/api"
 	"net/http"
 	"time"
 )
@@ -476,17 +477,29 @@ func (alertAPI *AlertAPI) getTemplateParams(w http.ResponseWriter, req *http.Req
 }
 
 func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	rule :=  alerting.Rule{}
-	err := alertAPI.DecodeJSON(req, &rule)
-	if err != nil {
-		log.Error(err)
+	rule :=  &alerting.Rule{
+		ID: ps.ByName("rule_id"),
+	}
+	exists, err := orm.Get(rule)
+	if !exists || err != nil {
 		alertAPI.WriteJSON(w, util.MapStr{
-			"error": err.Error(),
-		}, http.StatusInternalServerError)
+			"_id":   rule.ID,
+			"found": false,
+		}, http.StatusNotFound)
 		return
 	}
+	var (
+		minStr = alertAPI.Get(req, "min", "")
+		maxStr = alertAPI.Get(req, "max", "")
+	)
+	bucketSize, min, max, err := api.GetMetricRangeAndBucketSize(minStr, maxStr, 60, 15)
+	filterParam := &alerting.FilterParam{
+		Start: min,
+		End: max,
+		BucketSize: fmt.Sprintf("%ds", bucketSize),
+	}
 	eng := alerting2.GetEngine(rule.Resource.Type)
-	metricData, err :=  eng.GetTargetMetricData(&rule, true, nil)
+	metricData, err :=  eng.GetTargetMetricData(rule, true, filterParam)
 	if err != nil {
 		log.Error(err)
 		alertAPI.WriteJSON(w, util.MapStr{
@@ -502,7 +515,7 @@ func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request
 		filteredMetricData = append(filteredMetricData, md)
 	}
 	alertAPI.WriteJSON(w, util.MapStr{
-		"metric": filteredMetricData,
+		"metrics": filteredMetricData,
 	}, http.StatusOK)
 }
 

@@ -56,10 +56,14 @@ func (engine *Engine) GenerateQuery(rule *alerting.Rule, filterParam *alerting.F
 	if err != nil {
 		return nil, fmt.Errorf("get interval field error: %w", err)
 	}
+	var periodInterval = rule.Metrics.PeriodInterval
+	if filterParam != nil && filterParam.BucketSize != "" {
+		periodInterval =  filterParam.BucketSize
+	}
 	timeAggs := util.MapStr{
 		"date_histogram": util.MapStr{
 			"field":    rule.Resource.TimeField,
-			intervalField: rule.Metrics.PeriodInterval,
+			intervalField: periodInterval,
 		},
 		"aggs": basicAggs,
 	}
@@ -263,7 +267,6 @@ func (engine *Engine) GenerateRawFilter(rule *alerting.Rule, filterParam *alerti
 	var err error
 	if rule.Resource.RawFilter != nil {
 		query = util.DeepCopy(rule.Resource.RawFilter).(map[string]interface{})
-
 	}else{
 		if !rule.Resource.Filter.IsEmpty(){
 			query, err = engine.ConvertFilterQueryToDsl(&rule.Resource.Filter)
@@ -742,10 +745,12 @@ func performChannels(channels []alerting.Channel, ctx map[string]interface{}) ([
 			errStr = err.Error()
 		}
 		actionResults = append(actionResults, alerting.ActionExecutionResult{
-			Result: string(resBytes),
-			Error: errStr,
-			Message: string(messageBytes),
-			LastExecutionTime: int(time.Now().UnixNano()/1e6),
+			Result:        string(resBytes),
+			Error:         errStr,
+			Message:       string(messageBytes),
+			ExecutionTime: int(time.Now().UnixNano()/1e6),
+			ChannelType:   channel.Type,
+			ChannelName:   channel.Name,
 		})
 	}
 	return actionResults, errCount

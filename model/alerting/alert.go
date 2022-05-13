@@ -32,10 +32,12 @@ type Alert struct {
 }
 
 type ActionExecutionResult struct {
-	LastExecutionTime int    `json:"last_execution_time"`
-	Error             string `json:"error"`
+	ExecutionTime int    `json:"execution_time"`
+	Error         string `json:"error"`
 	Result            string `json:"result"`
 	Message string `json:"message"`
+	ChannelName string `json:"channel_name"`
+	ChannelType string `json:"channel_type"`
 }
 
 const (

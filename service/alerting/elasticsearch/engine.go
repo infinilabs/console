@@ -633,7 +633,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		period := time.Now().Sub(rule.LastNotificationTime.Local())
 
 		//log.Error(lastAlertItem.ID, period, periodDuration)
-		paramsCtx := newParameterCtx(rule, checkResults,alertItem.ID, alertItem.Created.Format(time.RFC3339))
+		paramsCtx := newParameterCtx(rule, checkResults,alertItem.ID, alertItem.Created.UnixNano()/1e6)
 
 		if lastAlertItem.ID == "" || period > periodDuration {
 			actionResults, errCount := performChannels(rule.Channels.Normal, paramsCtx)
@@ -724,7 +724,7 @@ func (engine *Engine) Test(rule *alerting.Rule) ([]alerting.ActionExecutionResul
 		return nil, fmt.Errorf("check condition error:%w", err)
 	}
 	var actionResults []alerting.ActionExecutionResult
-	paramsCtx := newParameterCtx(rule, checkResults, util.GetUUID(), time.Now().Format(time.RFC3339))
+	paramsCtx := newParameterCtx(rule, checkResults, util.GetUUID(), time.Now().UnixNano()/1e6)
 	if len(rule.Channels.Normal) > 0 {
 		actionResults, _ = performChannels(rule.Channels.Normal, paramsCtx)
 	}else if len(rule.Channels.Escalation) > 0{

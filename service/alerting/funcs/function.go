@@ -4,7 +4,10 @@
 
 package funcs
 
-import "text/template"
+import (
+	"strings"
+	"text/template"
+)
 
 func GenericFuncMap() template.FuncMap {
 	gfm := make(map[string]interface{}, len(genericMap))
@@ -20,4 +23,6 @@ var genericMap = map[string]interface{}{
 	"to_fixed": toFixed,
 	"date": date,
 	"date_in_zone": dateInZone,
+	"to_upper": strings.ToUpper,
+	"to_lower": strings.ToLower,
 }

@@ -36,6 +36,8 @@ func dateInZone(fmt string, date interface{}, zone string) string {
 		t = time.Unix(int64(date), 0)
 	case int32:
 		t = time.Unix(int64(date), 0)
+	case string:
+		return date
 	}
 
 	loc, err := time.LoadLocation(zone)

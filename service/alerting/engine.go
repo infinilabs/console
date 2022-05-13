@@ -12,12 +12,12 @@ import (
 )
 
 type Engine interface {
-	GenerateQuery(rule *alerting.Rule) (interface{}, error)
-	ExecuteQuery(rule *alerting.Rule)(*alerting.QueryResult, error)
+	GenerateQuery(rule *alerting.Rule, filterParam *alerting.FilterParam) (interface{}, error)
+	ExecuteQuery(rule *alerting.Rule, filterParam *alerting.FilterParam)(*alerting.QueryResult, error)
 	CheckCondition(rule *alerting.Rule)(*alerting.ConditionResult, error)
 	GenerateTask(rule *alerting.Rule) func(ctx context.Context)
 	Test(rule *alerting.Rule) ([]alerting.ActionExecutionResult, error)
-	GetTargetMetricData(rule *alerting.Rule, isFilterNaN bool)([]alerting.MetricData, error)
+	GetTargetMetricData(rule *alerting.Rule, isFilterNaN bool, filterParam *alerting.FilterParam)([]alerting.MetricData, error)
 }
 
 var (

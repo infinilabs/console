@@ -35,6 +35,7 @@ type ActionExecutionResult struct {
 	LastExecutionTime int    `json:"last_execution_time"`
 	Error             string `json:"error"`
 	Result            string `json:"result"`
+	Message string `json:"message"`
 }
 
 const (

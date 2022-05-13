@@ -6,13 +6,13 @@ package alerting
 
 import (
 	"fmt"
+	log "github.com/cihub/seelog"
 	"infini.sh/console/model/alerting"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"net/http"
-	log "src/github.com/cihub/seelog"
 	"strconv"
 	"strings"
 )

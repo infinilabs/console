@@ -431,6 +431,9 @@ func (alertAPI *AlertAPI) sendTestMessage(w http.ResponseWriter, req *http.Reque
 		}, http.StatusInternalServerError)
 		return
 	}
+	if rule.ID == "" {
+		rule.ID = util.GetUUID()
+	}
 	eng := alerting2.GetEngine(rule.Resource.Type)
 	actionResults, err :=  eng.Test(&rule)
 	if err != nil {
@@ -483,7 +486,7 @@ func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request
 		return
 	}
 	eng := alerting2.GetEngine(rule.Resource.Type)
-	metricData, err :=  eng.GetTargetMetricData(&rule, true)
+	metricData, err :=  eng.GetTargetMetricData(&rule, true, nil)
 	if err != nil {
 		log.Error(err)
 		alertAPI.WriteJSON(w, util.MapStr{

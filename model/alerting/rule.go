@@ -75,6 +75,10 @@ func (tr *TimeRange) Include( t time.Time) bool {
 	return tr.Start <= currentTimeStr && currentTimeStr <= tr.End
 }
 
+type FilterParam struct {
+	Start interface{} `json:"start"`
+	End interface{} `json:"end"`
+}
 //ctx
 //rule expression, rule_id, resource_id, resource_name, event_id, condition_name, preset_value,[group_tags, check_values],
 //check_status ,timestamp,

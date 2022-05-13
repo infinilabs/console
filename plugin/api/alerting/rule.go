@@ -17,7 +17,9 @@ import (
 	"infini.sh/framework/core/task"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/modules/elastic/api"
+	"infini.sh/framework/modules/elastic/common"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -507,15 +509,38 @@ func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request
 		}, http.StatusInternalServerError)
 		return
 	}
-	var filteredMetricData []alerting.MetricData
+	//var filteredMetricData []alerting.MetricData
+	title := rule.Metrics.Formula
+	if title == "" && len( rule.Conditions.Items) > 0{
+		title,_ = rule.Conditions.Items[0].GenerateConditionExpression()
+	}
+	var metricItem = common.MetricItem{
+		Group: rule.ID,
+		Key: rule.ID,
+		Axis: []*common.MetricAxis{
+			{ID: util.GetUUID(), Group: rule.ID, Title: title, FormatType: "num", Position: "left",ShowGridLines: true,
+				TickFormat: "0,0.[00]",
+				Ticks: 5},
+		},
+	}
 	for _, md := range metricData {
 		if len(md.Data) == 0 {
 			continue
 		}
-		filteredMetricData = append(filteredMetricData, md)
+		//filteredMetricData = append(filteredMetricData, md)
+		metricItem.Lines = append(metricItem.Lines, &common.MetricLine{
+			Data: md.Data["result"],
+			BucketSize: filterParam.BucketSize,
+			Metric: common.MetricSummary{
+				Label: strings.Join(md.GroupValues, "-"),
+				Group: rule.ID,
+				TickFormat: "0,0.[00]",
+				FormatType: "num",
+			},
+		})
 	}
 	alertAPI.WriteJSON(w, util.MapStr{
-		"metrics": filteredMetricData,
+		"metric": metricItem,
 	}, http.StatusOK)
 }
 

@@ -8,12 +8,14 @@ elasticsearch:
     basic_auth:
       username: elastic
       password: infinilabs
+    discovery:
+      enabled: true
 
 web:
   enabled: true
   embedding_api: true
   auth:
-    enabled: true
+    enabled: false
   ui:
     enabled: true
     path: .public
@@ -60,17 +62,35 @@ metrics:
     index_stats: true
 
 pipeline:
-  - name: metrics_ingest
+  - name: indexing_merge
     auto_start: true
     keep_running: true
     processor:
-      - json_indexing:
-          index_name: ".infini_metrics"
-          index_prefix: ".infini_"
-          elasticsearch: "default"
+      - indexing_merge:
           input_queue: "metrics"
+          elasticsearch: "default"
+          index_name: ".infini_metrics"
+          output_queue:
+            name: "metrics_requests"
+            label:
+              tag: "metrics"
           worker_size: 1
           bulk_size_in_mb: 10
+  - name: consume-metrics_requests
+    auto_start: true
+    keep_running: true
+    processor:
+      - bulk_indexing:
+          bulk:
+            compress: true
+            batch_size_in_mb: 10
+            batch_size_in_docs: 5000
+          consumer:
+            fetch_max_messages: 100
+          queues:
+            type: indexing_merge
+          when:
+            cluster_available: [ "default" ]
   - name: metadata_ingest
     auto_start: true
     keep_running: true

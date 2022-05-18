@@ -8,6 +8,7 @@ const (
 	KVLastNotificationTime = "alert_last_notification_time"
 	KVLastTermStartTime = "alert_last_term_start_time"
 	KVLastEscalationTime = "alert_last_escalation_time"
+	KVLastMessageState = "alert_last_message_state"
 )
 
 
@@ -17,7 +18,8 @@ const (
 	ParamResourceName   = "resource_name" // 资源名称 如集群名称 es-v714
 	ParamEventID        = "event_id"      // 检查事件 ID
 	ParamResults        = "results"       //
-	ParamMessage        = "message"       //检查消息 自定义
+	ParamMessage        = "message"       //检查消息 自定义(模版渲染)
+	ParamTitle = "title"
 	ParamPresetValue    = "preset_value"  //检查预设值 float64
 	ParamResultValue    = "result_value"  //检查结果 {group_tags:["cluster-xxx", "node-xxx"], check_values:[]}
 	Severity            = "severity"        //告警等级

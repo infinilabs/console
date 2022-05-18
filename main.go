@@ -112,6 +112,7 @@ func main() {
 		orm.RegisterSchemaWithIndexName(gateway.Instance{}, "gateway-instance")
 		orm.RegisterSchemaWithIndexName(alerting.Rule{}, "alert-rule")
 		orm.RegisterSchemaWithIndexName(alerting.Alert{}, "alert-history")
+		orm.RegisterSchemaWithIndexName(alerting.AlertMessage{}, "alert-message")
 		api.RegisterSchema()
 
 		go func() {

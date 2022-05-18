@@ -18,8 +18,9 @@ type Alert struct {
 	Expression string `json:"expression"  elastic_mapping:"expression: { type: keyword, copy_to:search_text }"`
 	Objects []string `json:"objects" elastic_mapping:"objects: { type:keyword,copy_to:search_text }"`
 	Severity string `json:"severity" elastic_mapping:"severity: { type: keyword }"`
-	Content string `json:"content" elastic_mapping:"context: { type: keyword, copy_to:search_text }"`
-	AcknowledgedTime       interface{}             `json:"acknowledged_time,omitempty"`
+	Title            string      `json:"title" elastic_mapping:"title: { type: keyword }"`
+	Message          string      `json:"message" elastic_mapping:"context: { type: keyword, copy_to:search_text }"`
+	AcknowledgedTime interface{} `json:"acknowledged_time,omitempty"`
 	ActionExecutionResults []ActionExecutionResult `json:"action_execution_results"`
 	Users []string `json:"users,omitempty"`
 	State string `json:"state"`
@@ -43,10 +44,28 @@ type ActionExecutionResult struct {
 const (
 	AlertStateActive string = "active"
 	AlertStateAcknowledge = "acknowledged"
-	AlertStateNormal = "normal"
-	AlertStateError = "error"
+	AlertStateOK          = "normal"
+	AlertStateError       = "error"
 )
 
+const (
+	MessageStateActive = "active"
+	MessageStateIgnored = "ignored"
+	MessageStateRecovered = "recovered"
+)
+
+type AlertMessage struct {
+	ID      string    `json:"id,omitempty"      elastic_meta:"_id" elastic_mapping:"id: { type: keyword }"`
+	Created time.Time `json:"created,omitempty" elastic_mapping:"created: { type: date }"`
+	Updated time.Time `json:"updated,omitempty" elastic_mapping:"updated: { type: date }"`
+	RuleID string `json:"rule_id"  elastic_mapping:"rule_id: { type: keyword,copy_to:search_text }"`
+	Title string `json:"title"  elastic_mapping:"title: { type: keyword,copy_to:search_text }"`
+	Message string `json:"message"  elastic_mapping:"content: { type: keyword,copy_to:search_text }"`
+	Status string `json:"status" elastic_mapping:"status: { type: keyword,copy_to:search_text }"`
+	IgnoredTime time.Time `json:"ignored_time,omitempty"  elastic_mapping:"ignored_time: { type: date }"`
+	Severity string `json:"severity" elastic_mapping:"severity: { type: keyword }"`
+	SearchText string `json:"-" elastic_mapping:"search_text:{type:text,index_prefixes:{},index_phrases:true, analyzer:suggest_text_search }"`
+}
 
 /*
 {
@@ -55,3 +74,6 @@ const (
 	ResourceName
 }
 */
+
+//message status  (Active, Ignore, Recover)
+//rule status (Active, Error, OK)

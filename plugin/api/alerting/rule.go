@@ -479,6 +479,39 @@ func (alertAPI *AlertAPI) getTemplateParams(w http.ResponseWriter, req *http.Req
 	}, http.StatusOK)
 }
 
+func (alertAPI *AlertAPI) getPreviewMetricData(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	rule := &alerting.Rule{}
+	err := alertAPI.DecodeJSON(req, rule)
+	if err != nil {
+		log.Error(err)
+		alertAPI.WriteJSON(w, util.MapStr{
+			"error": err.Error(),
+		}, http.StatusInternalServerError)
+		return
+	}
+	var (
+		minStr = alertAPI.Get(req, "min", "")
+		maxStr = alertAPI.Get(req, "max", "")
+	)
+	bucketSize, min, max, err := api.GetMetricRangeAndBucketSize(minStr, maxStr, 60, 15)
+	filterParam := &alerting.FilterParam{
+		Start: min,
+		End: max,
+		BucketSize: fmt.Sprintf("%ds", bucketSize),
+	}
+	metricItem, err := getRuleMetricData(rule,  filterParam)
+	if err != nil {
+		log.Error(err)
+		alertAPI.WriteJSON(w, util.MapStr{
+			"error": err.Error(),
+		}, http.StatusInternalServerError)
+		return
+	}
+	alertAPI.WriteJSON(w, util.MapStr{
+		"metric": metricItem,
+	}, http.StatusOK)
+}
+
 func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	rule :=  &alerting.Rule{
 		ID: ps.ByName("rule_id"),
@@ -501,8 +534,7 @@ func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request
 		End: max,
 		BucketSize: fmt.Sprintf("%ds", bucketSize),
 	}
-	eng := alerting2.GetEngine(rule.Resource.Type)
-	metricData, err :=  eng.GetTargetMetricData(rule, true, filterParam)
+	metricItem, err := getRuleMetricData(rule,  filterParam)
 	if err != nil {
 		log.Error(err)
 		alertAPI.WriteJSON(w, util.MapStr{
@@ -510,18 +542,29 @@ func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request
 		}, http.StatusInternalServerError)
 		return
 	}
-	//var filteredMetricData []alerting.MetricData
-	title := rule.Metrics.Formula
-	if title == "" && len( rule.Conditions.Items) > 0{
-		title,_ = rule.Conditions.Items[0].GenerateConditionExpression()
+	alertAPI.WriteJSON(w, util.MapStr{
+		"metric": metricItem,
+	}, http.StatusOK)
+}
+
+func getRuleMetricData( rule *alerting.Rule, filterParam *alerting.FilterParam) (*common.MetricItem, error) {
+	eng := alerting2.GetEngine(rule.Resource.Type)
+	metricData, err := eng.GetTargetMetricData(rule, true, filterParam)
+	if err != nil {
+		return nil, err
 	}
+	//var filteredMetricData []alerting.MetricData
+	//title := rule.Metrics.Formula
+	//if title == "" && len( rule.Conditions.Items) > 0{
+	//	title,_ = rule.Conditions.Items[0].GenerateConditionExpression()
+	//}
 	var metricItem = common.MetricItem{
 		Group: rule.ID,
-		Key: rule.ID,
+		Key:   rule.ID,
 		Axis: []*common.MetricAxis{
-			{ID: util.GetUUID(), Group: rule.ID, Title: title, FormatType: "num", Position: "left",ShowGridLines: true,
+			{ID: util.GetUUID(), Group: rule.ID, Title: "", FormatType: "num", Position: "left", ShowGridLines: true,
 				TickFormat: "0,0.[00]",
-				Ticks: 5},
+				Ticks:      5},
 		},
 	}
 	var sampleData []alerting.TimeMetricData
@@ -534,18 +577,18 @@ func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request
 			sampleData = md.Data["result"]
 		}
 		metricItem.Lines = append(metricItem.Lines, &common.MetricLine{
-			Data: md.Data["result"],
+			Data:       md.Data["result"],
 			BucketSize: filterParam.BucketSize,
 			Metric: common.MetricSummary{
-				Label: strings.Join(md.GroupValues, "-"),
-				Group: rule.ID,
+				Label:      strings.Join(md.GroupValues, "-"),
+				Group:      rule.ID,
 				TickFormat: "0,0.[00]",
 				FormatType: "num",
 			},
 		})
 	}
 	//add guidelines
-	for _, cond := range rule.Conditions.Items{
+	for _, cond := range rule.Conditions.Items {
 		if len(cond.Values) > 0 {
 			val, err := strconv.ParseFloat(cond.Values[0], 64)
 			if err != nil {
@@ -553,9 +596,9 @@ func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request
 				continue
 			}
 			if sampleData != nil {
-				newData := make([]alerting.TimeMetricData,0, len(sampleData))
+				newData := make([]alerting.TimeMetricData, 0, len(sampleData))
 				for _, td := range sampleData {
-					if len(td) < 2{
+					if len(td) < 2 {
 						continue
 					}
 					newData = append(newData, alerting.TimeMetricData{
@@ -563,11 +606,11 @@ func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request
 					})
 				}
 				metricItem.Lines = append(metricItem.Lines, &common.MetricLine{
-					Data: newData,
+					Data:       newData,
 					BucketSize: filterParam.BucketSize,
 					Metric: common.MetricSummary{
-						Label: "",
-						Group: rule.ID,
+						Label:      "",
+						Group:      rule.ID,
 						TickFormat: "0,0.[00]",
 						FormatType: "num",
 					},
@@ -575,9 +618,7 @@ func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request
 			}
 		}
 	}
-	alertAPI.WriteJSON(w, util.MapStr{
-		"metric": metricItem,
-	}, http.StatusOK)
+	return &metricItem, nil
 }
 
 
@@ -609,7 +650,7 @@ func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request
 //		Conditions: alerting.Condition{
 //			Operator: "any",
 //			Items: []alerting.ConditionItem{
-//				{MinimumPeriodMatch: 5, Operator: "gte", Values: []string{"90"}, Severity: "error", Message: "cpu使用率大于90%"},
+//				{MinimumPeriodMatch: 5, Operator: "gte", Values: []string{"90"}, Severity: "error", AlertMessage: "cpu使用率大于90%"},
 //			},
 //		},
 //
@@ -617,7 +658,7 @@ func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request
 //			Normal: []alerting.Channel{
 //				{Name: "钉钉", Type: alerting.ChannelWebhook, Webhook: &alerting.CustomWebhook{
 //					HeaderParams: map[string]string{
-//						"Content-Type": "application/json",
+//						"Message-Type": "application/json",
 //					},
 //					Body:   `{"msgtype": "text","text": {"content":"告警通知: {{ctx.message}}"}}`,
 //					Method: http.MethodPost,

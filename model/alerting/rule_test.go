@@ -55,7 +55,7 @@ func TestCreateRule( t *testing.T)  {
 				//Conditions: Condition{
 				//	Operator: "any",
 				//	Items: []ConditionItem{
-				//		{ MinimumPeriodMatch: 1, Operator: "gte", Values: []string{"1"}, Severity: "error", Message: "集群健康状态为 Red"},
+				//		{ MinimumPeriodMatch: 1, Operator: "gte", Values: []string{"1"}, Severity: "error", AlertMessage: "集群健康状态为 Red"},
 				//	},
 				//},
 
@@ -80,7 +80,7 @@ func TestCreateRule( t *testing.T)  {
 				Normal: []Channel{
 					{Name: "钉钉", Type: ChannelWebhook, Webhook: &CustomWebhook{
 						HeaderParams: map[string]string{
-							"Content-Type": "application/json",
+							"Message-Type": "application/json",
 						},
 						Body:   `{"msgtype": "text","text": {"content":"告警通知: {{ctx.message}}"}}`,
 						Method: http.MethodPost,
@@ -90,7 +90,7 @@ func TestCreateRule( t *testing.T)  {
 				Escalation: []Channel{
 					{Type: ChannelWebhook, Name: "微信", Webhook: &CustomWebhook{
 						HeaderParams: map[string]string{
-							"Content-Type": "application/json",
+							"Message-Type": "application/json",
 						},
 						Body:   `{"msgtype": "text","text": {"content":"告警通知: {{ctx.message}}"}}`,
 						Method: http.MethodPost,

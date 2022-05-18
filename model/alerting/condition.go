@@ -17,7 +17,6 @@ type ConditionItem struct {
 	Operator           string `json:"operator"`
 	Values []string `json:"values"`
 	Severity string `json:"severity"`
-	Message string `json:"message"`
 }
 func (cond *ConditionItem) GenerateConditionExpression()(conditionExpression string, err error){
 	valueLength := len(cond.Values)

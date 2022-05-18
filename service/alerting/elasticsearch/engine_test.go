@@ -75,7 +75,7 @@ func TestEngine( t *testing.T)  {
 			Normal: []alerting.Channel{
 				{Name: "钉钉", Type: alerting.ChannelWebhook, Webhook: &alerting.CustomWebhook{
 					HeaderParams: map[string]string{
-						"Content-Type": "application/json",
+						"Message-Type": "application/json",
 					},
 					Body:   `{"msgtype": "text","text": {"content":"告警通知: {{ctx.message}}"}}`,
 					Method: http.MethodPost,
@@ -85,7 +85,7 @@ func TestEngine( t *testing.T)  {
 			Escalation: []alerting.Channel{
 				{Type: alerting.ChannelWebhook, Name: "微信", Webhook: &alerting.CustomWebhook{
 					HeaderParams: map[string]string{
-						"Content-Type": "application/json",
+						"Message-Type": "application/json",
 					},
 					Body:   `{"msgtype": "text","text": {"content":"告警通知: {{ctx.message}}"}}`,
 					Method: http.MethodPost,
@@ -153,7 +153,7 @@ func TestGeneratePercentilesAggQuery(t *testing.T) {
 	//	Conditions: alerting.Condition{
 	//		Operator: "any",
 	//		Items: []alerting.ConditionItem{
-	//			{MinimumPeriodMatch: 5, Operator: "gte", Values: []string{"90"}, Severity: "error", Message: "cpu使用率大于90%"},
+	//			{MinimumPeriodMatch: 5, Operator: "gte", Values: []string{"90"}, Severity: "error", AlertMessage: "cpu使用率大于90%"},
 	//		},
 	//	},
 	//
@@ -161,7 +161,7 @@ func TestGeneratePercentilesAggQuery(t *testing.T) {
 	//		Normal: []alerting.Channel{
 	//			{Name: "钉钉", Type: alerting.ChannelWebhook, Webhook: &alerting.CustomWebhook{
 	//				HeaderParams: map[string]string{
-	//					"Content-Type": "application/json",
+	//					"Message-Type": "application/json",
 	//				},
 	//				Body:   `{"msgtype": "text","text": {"content":"告警通知: {{ctx.message}}"}}`,
 	//				Method: http.MethodPost,
@@ -222,7 +222,7 @@ func TestGeneratePercentilesAggQuery(t *testing.T) {
 			Normal: []alerting.Channel{
 				{Name: "钉钉", Type: alerting.ChannelWebhook, Webhook: &alerting.CustomWebhook{
 					HeaderParams: map[string]string{
-						"Content-Type": "application/json",
+						"Message-Type": "application/json",
 					},
 					Body:   `{"msgtype": "text","text": {"content":"告警通知: {{ctx.message}}"}}`,
 					Method: http.MethodPost,

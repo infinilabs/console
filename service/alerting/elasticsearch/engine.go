@@ -575,44 +575,93 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		Expression: rule.Metrics.Expression,
 		Objects: rule.Resource.Objects,
 		Conditions: rule.Conditions,
-		State: alerting.AlertStateNormal,
+		State: alerting.AlertStateOK,
 	}
 	checkResults, err := engine.CheckCondition(rule)
 	alertItem.ConditionResult = checkResults
 	if err != nil {
 		return err
 	}
-	lastAlertItem := alerting.Alert{}
-	err = getLastAlert(rule.ID, &lastAlertItem)
+	alertMessage, err := getLastAlertMessage(rule.ID, 2 * time.Minute)
 	if err != nil {
-		return err
+		return fmt.Errorf("get alert message error: %w", err)
 	}
 	conditionResults := checkResults.ResultItems
+	var paramsCtx map[string]interface{}
 	if len(conditionResults) == 0 {
 		alertItem.Severity = "info"
-		alertItem.Content = ""
-		alertItem.State =  alerting.AlertStateNormal
+		alertItem.State =  alerting.AlertStateOK
+		if alertMessage != nil  &&  alertMessage.Status != alerting.MessageStateRecovered {
+			alertMessage.Status = alerting.MessageStateRecovered
+			alertMessage.Updated = time.Now()
+			err = saveAlertMessage(alertMessage)
+			if err != nil {
+				return fmt.Errorf("save alert message error: %w", err)
+			}
+		}
 		return nil
 	}else{
-		if lastAlertItem.State == "" || lastAlertItem.State == alerting.AlertStateNormal {
-			rule.LastTermStartTime = time.Now()
-			strTime := rule.LastTermStartTime.UTC().Format(time.RFC3339)
-			kv.AddValue(alerting2.KVLastTermStartTime, []byte(rule.ID), []byte(strTime))
-		}
-		log.Debugf("check condition result of rule %s is %v", conditionResults, rule.ID )
+		paramsCtx = newParameterCtx(rule, checkResults,alertItem.ID, alertItem.Created.Unix())
 		var (
 			severity = conditionResults[0].ConditionItem.Severity
-			content string
+			tplBytes []byte
+			message string
+			title string
 		)
+		tplBytes, err = resolveMessage(rule.Metrics.Message, paramsCtx)
+		if err != nil {
+			return fmt.Errorf("resolve content template error: %w", err)
+		}
+		message = string(tplBytes)
+		paramsCtx[alerting2.ParamMessage] = message
+		tplBytes, err = resolveMessage(rule.Metrics.Title, paramsCtx)
+		if err != nil {
+			return fmt.Errorf("resolve title template error: %w", err)
+		}
+		title = string(tplBytes)
+		paramsCtx[alerting2.ParamTitle] = title
 		for _, conditionResult := range conditionResults {
 			if alerting.SeverityWeights[severity] < alerting.SeverityWeights[conditionResult.ConditionItem.Severity] {
 				severity = conditionResult.ConditionItem.Severity
-				content = conditionResult.ConditionItem.Message
 			}
 		}
+
 		alertItem.Severity = severity
-		alertItem.Content = content
+		alertItem.Message = message
+		alertItem.Title = title
 		alertItem.State = alerting.AlertStateActive
+		if alertMessage == nil || alertMessage.Status == alerting.MessageStateRecovered {
+			msg := &alerting.AlertMessage{
+				RuleID: rule.ID,
+				Created: time.Now(),
+				Updated: time.Now(),
+				ID: util.GetUUID(),
+				Status: alerting.MessageStateActive,
+				Severity: severity,
+				Title: title,
+				Message: message,
+			}
+			err = saveAlertMessage(msg)
+			if err != nil {
+				return fmt.Errorf("save alert message error: %w", err)
+			}
+		}else{
+			alertMessage.Title = title
+			alertMessage.Message = message
+			err = saveAlertMessage(alertMessage)
+			if err != nil {
+				return fmt.Errorf("save alert message error: %w", err)
+			}
+		}
+		log.Debugf("check condition result of rule %s is %v", conditionResults, rule.ID )
+	}
+	// if alert message status equals ignored , then skip sending message to channel
+	if alertMessage != nil && alertMessage.Status == alerting.MessageStateIgnored {
+		return nil
+	}
+	// if channel is not enabled return
+	if !rule.Channels.Enabled {
+		return nil
 	}
 
 	if rule.Channels.AcceptTimeRange.Include(time.Now()) {
@@ -633,9 +682,11 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		period := time.Now().Sub(rule.LastNotificationTime.Local())
 
 		//log.Error(lastAlertItem.ID, period, periodDuration)
-		paramsCtx := newParameterCtx(rule, checkResults,alertItem.ID, alertItem.Created.UnixNano()/1e6)
+		if paramsCtx == nil {
+			paramsCtx = newParameterCtx(rule, checkResults,alertItem.ID, alertItem.Created.Unix())
+		}
 
-		if lastAlertItem.ID == "" || period > periodDuration {
+		if alertMessage == nil || period > periodDuration {
 			actionResults, errCount := performChannels(rule.Channels.Normal, paramsCtx)
 			alertItem.ActionExecutionResults = actionResults
 			//change and save last notification time in local kv store when action error count equals zero
@@ -646,25 +697,16 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 				alertItem.IsNotified = true
 			}
 		}
-		isAck, err :=  hasAcknowledgedRule(rule.ID, rule.LastTermStartTime)
-		if err != nil {
-			alertItem.Error = err.Error()
-			return err
-		}
-		if rule.Channels.EscalationEnabled && lastAlertItem.ID !="" && !isAck {
+
+		if rule.Channels.EscalationEnabled {
 			throttlePeriod, err := time.ParseDuration(rule.Channels.EscalationThrottlePeriod)
 			if err != nil {
 				return err
 			}
-			//change and save last term start time in local kv store when action error count equals zero
-			if rule.LastTermStartTime.IsZero(){
-				tm, err := readTimeFromKV(alerting2.KVLastTermStartTime, []byte(rule.ID))
-				if err != nil {
-					return fmt.Errorf("get last term start time from kv error: %w", err)
-				}
-				if !tm.IsZero(){
-					rule.LastTermStartTime = tm
-				}
+
+			rule.LastTermStartTime = time.Now()
+			if alertMessage != nil {
+				rule.LastTermStartTime = alertMessage.Created
 			}
 			if time.Now().Sub(rule.LastTermStartTime.Local()) > throttlePeriod {
 				if rule.LastEscalationTime.IsZero(){
@@ -698,7 +740,6 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 	var conditionParams []util.MapStr
 	for _, resultItem := range checkResults.ResultItems {
 		conditionParams = append(conditionParams, util.MapStr{
-			alerting2.ParamMessage:        resultItem.ConditionItem.Message,
 			alerting2.ParamPresetValue:    resultItem.ConditionItem.Values,
 			alerting2.Severity:            resultItem.ConditionItem.Severity,
 			alerting2.ParamGroupValues:    resultItem.GroupValues,
@@ -724,7 +765,7 @@ func (engine *Engine) Test(rule *alerting.Rule) ([]alerting.ActionExecutionResul
 		return nil, fmt.Errorf("check condition error:%w", err)
 	}
 	var actionResults []alerting.ActionExecutionResult
-	paramsCtx := newParameterCtx(rule, checkResults, util.GetUUID(), time.Now().UnixNano()/1e6)
+	paramsCtx := newParameterCtx(rule, checkResults, util.GetUUID(), time.Now().Unix())
 	if len(rule.Channels.Normal) > 0 {
 		actionResults, _ = performChannels(rule.Channels.Normal, paramsCtx)
 	}else if len(rule.Channels.Escalation) > 0{
@@ -879,7 +920,7 @@ func collectMetricData(agg interface{}, groupValues string, metricData *[]alerti
 	}
 }
 
-func getLastAlert(ruleID string, alertItem *alerting.Alert) error {
+func getLastAlertMessageFromES(ruleID string, message *alerting.AlertMessage)  error {
 	queryDsl := util.MapStr{
 		"size": 1,
 		"sort": []util.MapStr{
@@ -900,15 +941,53 @@ func getLastAlert(ruleID string, alertItem *alerting.Alert) error {
 	q := orm.Query{
 		RawQuery: util.MustToJSONBytes(queryDsl),
 	}
-	err, searchResult := orm.Search(alertItem, &q )
+	err, searchResult := orm.Search(alerting.AlertMessage{}, &q )
+	if err != nil {
+		return  err
+	}
+	if len(searchResult.Result) == 0 {
+		return  nil
+	}
+	messageBytes := util.MustToJSONBytes(searchResult.Result[0])
+	return util.FromJSONBytes(messageBytes, message)
+}
+
+func getLastAlertMessage(ruleID string, duration time.Duration) (*alerting.AlertMessage, error ){
+	messageBytes, err := kv.GetValue(alerting2.KVLastMessageState, []byte(ruleID))
+	if err != nil {
+		return nil, err
+	}
+	if messageBytes == nil {
+		return nil, nil
+	}
+	message := &alerting.AlertMessage{}
+	err = util.FromJSONBytes(messageBytes, message)
+	if err != nil {
+		return nil, err
+	}
+	if time.Now().Sub(message.Updated) > duration {
+		err = getLastAlertMessageFromES(ruleID, message)
+		return message, err
+	}
+	return message, nil
+}
+
+func saveAlertMessageToES(message *alerting.AlertMessage) error {
+	return orm.Save(message)
+}
+
+func saveAlertMessage(message *alerting.AlertMessage) error {
+	err := saveAlertMessageToES(message)
 	if err != nil {
 		return err
 	}
-	if len(searchResult.Result) == 0 {
-		return nil
+
+	messageBytes, err := util.ToJSONBytes(message)
+	if err != nil {
+		return err
 	}
-	alertBytes := util.MustToJSONBytes(searchResult.Result[0])
-	return util.FromJSONBytes(alertBytes, alertItem)
+	err = kv.AddValue(alerting2.KVLastMessageState, []byte(message.RuleID), messageBytes)
+	return err
 }
 
 func hasAcknowledgedRule(ruleID string, startTime time.Time) (bool, error){

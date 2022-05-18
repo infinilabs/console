@@ -52,12 +52,13 @@ func (rule *Rule) GetOrInitExpression() (string, error){
 }
 
 type RuleChannel struct {
-	Normal []Channel      `json:"normal"`
+	Enabled bool `json:"enabled"`
+	Normal []Channel      `json:"normal,omitempty"`
 	Escalation []Channel  `json:"escalation,omitempty"`
-	ThrottlePeriod string `json:"throttle_period"` //沉默周期
-	AcceptTimeRange TimeRange   `json:"accept_time_range"`
+	ThrottlePeriod string `json:"throttle_period,omitempty"` //沉默周期
+	AcceptTimeRange TimeRange   `json:"accept_time_range,omitempty"`
 	EscalationThrottlePeriod string `json:"escalation_throttle_period,omitempty"`
-	EscalationEnabled bool `json:"escalation_enabled"`
+	EscalationEnabled bool `json:"escalation_enabled,omitempty"`
 }
 
 type MessageTemplate struct{
@@ -71,6 +72,9 @@ type TimeRange struct {
 }
 
 func (tr *TimeRange) Include( t time.Time) bool {
+	if tr.Start == "" || tr.End == "" {
+		return true
+	}
 	currentTimeStr := t.Format("15:04")
 	return tr.Start <= currentTimeStr && currentTimeStr <= tr.End
 }

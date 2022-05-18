@@ -92,9 +92,16 @@ func (h *AlertAPI) searchAlert(w http.ResponseWriter, req *http.Request, ps http
 		state = h.GetParameterOrDefault(req, "state", "")
 		severity = h.GetParameterOrDefault(req, "severity", "")
 		sort = h.GetParameterOrDefault(req, "sort", "")
+		ruleID        = h.GetParameterOrDefault(req, "rule_id", "")
+		min        = h.GetParameterOrDefault(req, "min", "")
+		max        = h.GetParameterOrDefault(req, "max", "")
 		mustBuilder = &strings.Builder{}
 		sortBuilder = strings.Builder{}
 	)
+	mustBuilder.WriteString(fmt.Sprintf(`{"range":{"created":{"gte":"%s", "lte": "%s"}}}`, min, max))
+	if ruleID != "" {
+		mustBuilder.WriteString(fmt.Sprintf(`,{"term":{"rule_id":{"value":"%s"}}}`, ruleID))
+	}
 
 	if sort != "" {
 		sortParts := strings.Split(sort, ",")
@@ -103,24 +110,17 @@ func (h *AlertAPI) searchAlert(w http.ResponseWriter, req *http.Request, ps http
 		}
 	}
 	sortBuilder.WriteString(`{"created":{ "order": "desc"}}`)
-	hasFilter := false
+
 	if keyword != "" {
 		mustBuilder.WriteString(fmt.Sprintf(`{"query_string":{"default_field":"*","query": "%s"}}`, keyword))
-		hasFilter = true
 	}
 	if state != "" {
-		if hasFilter {
-			mustBuilder.WriteString(",")
-		}
+		mustBuilder.WriteString(",")
 		mustBuilder.WriteString(fmt.Sprintf(`{"term":{"state":{"value":"%s"}}}`, state))
-		hasFilter = true
 	}
 	if severity != "" {
-		if hasFilter {
-			mustBuilder.WriteString(",")
-		}
+		mustBuilder.WriteString(",")
 		mustBuilder.WriteString(fmt.Sprintf(`{"term":{"severity":{"value":"%s"}}}`, severity))
-		hasFilter = true
 	}
 	size, _ := strconv.Atoi(strSize)
 	if size <= 0 {

@@ -372,6 +372,11 @@ func (alertAPI *AlertAPI) getRuleAlertMessageNumbers(ruleIDs []string) ( map[str
 							"rule_id": ruleIDs,
 						},
 					},
+					{
+						"terms": util.MapStr{
+							"status": []string{alerting.MessageStateAlerting, alerting.MessageStateIgnored},
+						},
+					},
 				},
 			},
 		},

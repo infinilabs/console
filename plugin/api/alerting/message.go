@@ -120,8 +120,8 @@ func (h *AlertAPI) searchAlertMessage(w http.ResponseWriter, req *http.Request, 
 		severity = h.GetParameterOrDefault(req, "severity", "")
 		sort = h.GetParameterOrDefault(req, "sort", "")
 		ruleID        = h.GetParameterOrDefault(req, "rule_id", "")
-		min        = h.GetParameterOrDefault(req, "min", "")
-		max        = h.GetParameterOrDefault(req, "max", "")
+		min        = h.GetParameterOrDefault(req, "min", "now-1d")
+		max        = h.GetParameterOrDefault(req, "max", "now")
 		mustBuilder = &strings.Builder{}
 		sortBuilder = strings.Builder{}
 	)
@@ -165,7 +165,35 @@ func (h *AlertAPI) searchAlertMessage(w http.ResponseWriter, req *http.Request, 
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	h.Write(w, res.Raw)
+	esRes := elastic.SearchResponse{}
+	err = util.FromJSONBytes(res.Raw, &esRes)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	for _, hit := range esRes.Hits.Hits {
+		created, _ := parseTime(hit.Source["created"], time.RFC3339)
+		updated, _ := parseTime(hit.Source["updated"], time.RFC3339)
+		if !created.IsZero() && !updated.IsZero() {
+			endTime := time.Now()
+			if hit.Source["status"] == alerting.MessageStateRecovered {
+				endTime = updated
+			}
+			hit.Source["duration"] = endTime.Sub(created).Milliseconds()
+		}
+
+	}
+	h.WriteJSON(w, esRes, http.StatusOK)
+}
+
+func parseTime( t interface{}, layout string) (time.Time, error){
+	switch t.(type) {
+	case string:
+		return time.Parse(layout, t.(string))
+	default:
+		return time.Time{}, fmt.Errorf("unsupport time type")
+	}
 }
 
 func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {

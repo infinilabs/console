@@ -13,6 +13,8 @@ import (
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -109,114 +111,59 @@ func (h *AlertAPI) getAlertMessageStats(w http.ResponseWriter, req *http.Request
 
 
 func (h *AlertAPI) searchAlertMessage(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	resBody:=util.MapStr{}
-	reqBody := struct{
-		Keyword string `json:"keyword"`
-		Size int `json:"size"`
-		From int `json:"from"`
-		Aggregations []elastic.SearchAggParam `json:"aggs"`
-		Highlight elastic.SearchHighlightParam `json:"highlight"`
-		Filter elastic.SearchFilterParam `json:"filter"`
-		Sort []string `json:"sort"`
-		SearchField string `json:"search_field"`
-	}{}
-	err := h.DecodeJSON(req, &reqBody)
-	if err != nil {
-		resBody["error"] = err.Error()
-		h.WriteJSON(w,resBody, http.StatusInternalServerError )
-		return
-	}
-	if reqBody.Size <= 0 {
-		reqBody.Size = 20
-	}
-	aggs := elastic.BuildSearchTermAggregations(reqBody.Aggregations)
-	filter := elastic.BuildSearchTermFilter(reqBody.Filter)
-	var should []util.MapStr
-	if reqBody.SearchField != ""{
-		should = []util.MapStr{
-			{
-				"prefix": util.MapStr{
-					reqBody.SearchField: util.MapStr{
-						"value": reqBody.Keyword,
-						"boost": 20,
-					},
-				},
-			},
-			{
-				"match": util.MapStr{
-					reqBody.SearchField: util.MapStr{
-						"query":                reqBody.Keyword,
-						"fuzziness":            "AUTO",
-						"max_expansions":       10,
-						"prefix_length":        2,
-						"fuzzy_transpositions": true,
-						"boost":                2,
-					},
-				},
-			},
-		}
-	}else{
-		if reqBody.Keyword != ""{
-			should = []util.MapStr{
-				{
-					"match": util.MapStr{
-						"search_text": util.MapStr{
-							"query":                reqBody.Keyword,
-							"fuzziness":            "AUTO",
-							"max_expansions":       10,
-							"prefix_length":        2,
-							"fuzzy_transpositions": true,
-							"boost":                2,
-						},
-					},
-				},
-				{
-					"query_string": util.MapStr{
-						"fields":                 []string{"*"},
-						"query":                  reqBody.Keyword,
-						"fuzziness":              "AUTO",
-						"fuzzy_prefix_length":    2,
-						"fuzzy_max_expansions":   10,
-						"fuzzy_transpositions":   true,
-						"allow_leading_wildcard": false,
-					},
-				},
-			}
-		}
-	}
-	boolQuery := util.MapStr{
-		"filter": filter,
-	}
-	if len(should) > 0 {
-		boolQuery["should"] = should
-		boolQuery["minimum_should_match"] = 1
-	}
-	query := util.MapStr{
-		"aggs":      aggs,
-		"size":      reqBody.Size,
-		"from": reqBody.From,
-		"highlight": elastic.BuildSearchHighlight(&reqBody.Highlight),
-		"query": util.MapStr{
-			"bool": boolQuery,
-		},
-	}
-	if len(reqBody.Sort) > 1 {
-		query["sort"] =  []util.MapStr{
-			{
-				reqBody.Sort[0]: util.MapStr{
-					"order": reqBody.Sort[1],
-				},
-			},
-		}
-	}
-	dsl := util.MustToJSONBytes(query)
-	response, err := elastic.GetClient(h.Config.Elasticsearch).SearchWithRawQueryDSL(orm.GetIndexName(alerting.AlertMessage{}), dsl)
-	if err != nil {
-		resBody["error"] = err.Error()
-		h.WriteJSON(w,resBody, http.StatusInternalServerError )
-		return
-	}
-	h.WriteJSONHeader(w)
-	w.Write(util.MustToJSONBytes(response))
 
+	var (
+		queryDSL    = `{"sort":[%s],"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d}`
+		strSize     = h.GetParameterOrDefault(req, "size", "20")
+		strFrom     = h.GetParameterOrDefault(req, "from", "0")
+		status = h.GetParameterOrDefault(req, "status", "")
+		severity = h.GetParameterOrDefault(req, "severity", "")
+		sort = h.GetParameterOrDefault(req, "sort", "")
+		ruleID        = h.GetParameterOrDefault(req, "rule_id", "")
+		min        = h.GetParameterOrDefault(req, "min", "")
+		max        = h.GetParameterOrDefault(req, "max", "")
+		mustBuilder = &strings.Builder{}
+		sortBuilder = strings.Builder{}
+	)
+	mustBuilder.WriteString(fmt.Sprintf(`{"range":{"created":{"gte":"%s", "lte": "%s"}}}`, min, max))
+	if ruleID != "" {
+		mustBuilder.WriteString(fmt.Sprintf(`,{"term":{"rule_id":{"value":"%s"}}}`, ruleID))
+	}
+
+	if sort != "" {
+		sortParts := strings.Split(sort, ",")
+		if len(sortParts) == 2 && sortParts[1] != "created" {
+			sortBuilder.WriteString(fmt.Sprintf(`{"%s":{ "order": "%s"}},`, sortParts[0], sortParts[1]))
+		}
+	}
+	sortBuilder.WriteString(`{"created":{ "order": "desc"}}`)
+
+	if status != "" {
+		mustBuilder.WriteString(",")
+		mustBuilder.WriteString(fmt.Sprintf(`{"term":{"status":{"value":"%s"}}}`, status))
+	}
+	if severity != "" {
+		mustBuilder.WriteString(",")
+		mustBuilder.WriteString(fmt.Sprintf(`{"term":{"severity":{"value":"%s"}}}`, severity))
+	}
+	size, _ := strconv.Atoi(strSize)
+	if size <= 0 {
+		size = 20
+	}
+	from, _ := strconv.Atoi(strFrom)
+	if from < 0 {
+		from = 0
+	}
+
+	q := orm.Query{}
+	queryDSL = fmt.Sprintf(queryDSL, sortBuilder.String(), mustBuilder.String(), size, from)
+	q.RawQuery = []byte(queryDSL)
+
+	err, res := orm.Search(&alerting.AlertMessage{}, &q)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	h.Write(w, res.Raw)
 }

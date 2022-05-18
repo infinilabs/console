@@ -973,10 +973,12 @@ func getLastAlertMessage(ruleID string, duration time.Duration) (*alerting.Alert
 }
 
 func saveAlertMessageToES(message *alerting.AlertMessage) error {
+	message.Updated = time.Now()
 	return orm.Save(message)
 }
 
 func saveAlertMessage(message *alerting.AlertMessage) error {
+	//todo diff message if not change , then skip save to es ?
 	err := saveAlertMessageToES(message)
 	if err != nil {
 		return err
@@ -990,49 +992,6 @@ func saveAlertMessage(message *alerting.AlertMessage) error {
 	return err
 }
 
-func hasAcknowledgedRule(ruleID string, startTime time.Time) (bool, error){
-	queryDsl := util.MapStr{
-		"size": 1,
-		"query": util.MapStr{
-			"bool": util.MapStr{
-				"must":[]util.MapStr{
-					{
-						"term": util.MapStr{
-							"rule_id": util.MapStr{
-								"value": ruleID,
-							},
-						},
-					},
-					{
-						"term": util.MapStr{
-							"state": alerting.AlertStateAcknowledge,
-						},
-					},
-					{
-						"range": util.MapStr{
-							"created": util.MapStr{
-								"gte": startTime,
-							},
-						},
-					},
-				},
-
-			},
-		},
-	}
-	q := orm.Query{
-		WildcardIndex: true,
-		RawQuery: util.MustToJSONBytes(queryDsl),
-	}
-	err, searchResult := orm.Search(alerting.Alert{}, &q )
-	if err != nil {
-		return false, err
-	}
-	if len(searchResult.Result) == 0 {
-		return false, nil
-	}
-	return true, nil
-}
 
 func readTimeFromKV(bucketKey string, key []byte)(time.Time, error){
 	timeBytes, err := kv.GetValue(bucketKey, key)

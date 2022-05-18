@@ -167,3 +167,51 @@ func (h *AlertAPI) searchAlertMessage(w http.ResponseWriter, req *http.Request, 
 	}
 	h.Write(w, res.Raw)
 }
+
+func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	message :=  &alerting.AlertMessage{
+		ID: ps.ByName("message_id"),
+	}
+	exists, err := orm.Get(message)
+	if !exists || err != nil {
+		log.Error(err)
+		h.WriteJSON(w, util.MapStr{
+			"_id":   message.ID,
+			"found": false,
+		}, http.StatusNotFound)
+		return
+	}
+	rule := &alerting.Rule{
+		ID: message.RuleID,
+	}
+	exists, err = orm.Get(rule)
+	if !exists || err != nil {
+		log.Error(err)
+		h.WriteError(w, fmt.Sprintf("rule[%s] not found", rule.ID), http.StatusInternalServerError)
+		return
+	}
+	conditionExpressions := make([]string, 0, len(rule.Conditions.Items))
+	metricExpression, _ := rule.Metrics.GenerateExpression()
+	for _, cond := range rule.Conditions.Items {
+		expression, _ := cond.GenerateConditionExpression()
+		conditionExpressions = append(conditionExpressions,  strings.ReplaceAll(expression, "result", metricExpression))
+	}
+	var duration time.Duration
+	if message.Status == alerting.MessageStateRecovered {
+		duration = message.Updated.Sub(message.Created)
+	}else{
+		duration = time.Now().Sub(message.Created)
+	}
+	detailObj := util.MapStr{
+		"title": message.Title,
+		"message": message.Message,
+		"severity": message.Severity,
+		"created": message.Created,
+		"updated": message.Updated,
+		"resource_name": rule.Resource.Name,
+		"resource_object": rule.Resource.Objects,
+		"condition_expressions": conditionExpressions,
+		"duration": duration.Milliseconds(),
+	}
+	h.WriteJSON(w, detailObj, http.StatusOK)
+}

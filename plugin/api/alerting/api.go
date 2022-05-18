@@ -40,6 +40,7 @@ func (alert *AlertAPI) Init() {
 	api.HandleAPIMethod(api.GET, "/alerting/message/_search", alert.searchAlertMessage)
 	api.HandleAPIMethod(api.POST, "/alerting/message/_ignore", alert.ignoreAlertMessage)
 	api.HandleAPIMethod(api.GET, "/alerting/message/_stats", alert.getAlertMessageStats)
+	api.HandleAPIMethod(api.GET, "/alerting/message/:message_id", alert.getAlertMessage)
 
 
 	//just for test

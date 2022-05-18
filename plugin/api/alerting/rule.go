@@ -221,6 +221,22 @@ func (alertAPI *AlertAPI) deleteRule(w http.ResponseWriter, req *http.Request, p
 	task.DeleteTask(obj.ID)
 	clearKV(obj.ID)
 
+	delDsl := util.MapStr{
+		"query": util.MapStr{
+			"term": util.MapStr{
+				"rule_id": id,
+			},
+		},
+	}
+	err = orm.DeleteBy(alerting.AlertMessage{}, util.MustToJSONBytes(delDsl))
+	if err != nil {
+		log.Error(err)
+	}
+	err = orm.DeleteBy(alerting.Alert{}, util.MustToJSONBytes(delDsl))
+	if err != nil {
+		log.Error(err)
+	}
+
 	alertAPI.WriteJSON(w, util.MapStr{
 		"_id":    obj.ID,
 		"result": "deleted",

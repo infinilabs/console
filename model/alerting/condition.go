@@ -18,6 +18,7 @@ type ConditionItem struct {
 	Values []string `json:"values"`
 	Severity string `json:"severity"`
 }
+
 func (cond *ConditionItem) GenerateConditionExpression()(conditionExpression string, err error){
 	valueLength := len(cond.Values)
 	if valueLength == 0 {

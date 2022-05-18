@@ -240,6 +240,7 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 		"resource_object": rule.Resource.Objects,
 		"condition_expressions": conditionExpressions,
 		"duration": duration.Milliseconds(),
+		"status": message.Status,
 	}
 	h.WriteJSON(w, detailObj, http.StatusOK)
 }

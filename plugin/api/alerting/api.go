@@ -26,6 +26,7 @@ func (alert *AlertAPI) Init() {
 	api.HandleAPIMethod(api.POST, "/alerting/rule/info", alert.fetchAlertInfos)
 	api.HandleAPIMethod(api.POST, "/alerting/rule/:rule_id/_enable", alert.enableRule)
 	api.HandleAPIMethod(api.GET, "/alerting/rule/:rule_id/metric", alert.getMetricData)
+	api.HandleAPIMethod(api.GET, "/alerting/rule/:rule_id/info", alert.getRuleDetail)
 
 	api.HandleAPIMethod(api.GET, "/alerting/channel/:channel_id", alert.getChannel)
 	api.HandleAPIMethod(api.POST, "/alerting/channel", alert.createChannel)

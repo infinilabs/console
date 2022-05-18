@@ -90,7 +90,6 @@ func (alertAPI *AlertAPI) createRule(w http.ResponseWriter, req *http.Request, p
 }
 func (alertAPI *AlertAPI) getRule(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	id := ps.MustGetParameter("rule_id")
-
 	obj := alerting.Rule{}
 	obj.ID = id
 
@@ -103,18 +102,91 @@ func (alertAPI *AlertAPI) getRule(w http.ResponseWriter, req *http.Request, ps h
 		}, http.StatusNotFound)
 		return
 	}
-	if err != nil {
-		log.Error(err)
-		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
-		return
-	}
 
 	alertAPI.WriteJSON(w, util.MapStr{
 		"found":   true,
 		"_id":     id,
 		"_source": obj,
 	}, 200)
+
+}
+
+func (alertAPI *AlertAPI) getRuleDetail(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	id := ps.MustGetParameter("rule_id")
+	obj := alerting.Rule{}
+	obj.ID = id
+
+	exists, err := orm.Get(&obj)
+	if !exists || err != nil {
+		log.Error(err)
+		alertAPI.WriteJSON(w, util.MapStr{
+			"_id":   id,
+			"found": false,
+		}, http.StatusNotFound)
+		return
+	}
+	conditionExpressions := make([]string, 0, len(obj.Conditions.Items))
+	metricExpression, _ := obj.Metrics.GenerateExpression()
+	for _, cond := range obj.Conditions.Items {
+		expression, _ := cond.GenerateConditionExpression()
+		conditionExpressions = append(conditionExpressions,  strings.ReplaceAll(expression, "result", metricExpression))
+	}
+	alertNumbers, err  := alertAPI.getRuleAlertMessageNumbers([]string{obj.ID})
+	if err != nil {
+		log.Error(err)
+		alertAPI.WriteJSON(w, util.MapStr{
+			"error": err.Error(),
+		}, http.StatusInternalServerError)
+		return
+	}
+	queryDSL := util.MapStr{
+		"_source": "state",
+		"size": 1,
+		"sort": []util.MapStr{
+			{
+				"created": util.MapStr{
+					"order": "desc",
+				},
+			},
+		},
+		"query": util.MapStr{
+			"term": util.MapStr{
+				"rule_id": util.MapStr{
+					"value": obj.ID,
+				},
+			},
+		},
+	}
+	q := &orm.Query{
+		WildcardIndex: true,
+		RawQuery: util.MustToJSONBytes(queryDSL),
+	}
+	err, result := orm.Search(alerting.Alert{}, q)
+	if err != nil {
+		log.Error(err)
+		alertAPI.WriteJSON(w, util.MapStr{
+			"error": err.Error(),
+		}, http.StatusInternalServerError)
+		return
+	}
+	var state interface{} = "N/A"
+	if len(result.Result) > 0 {
+		if resultM, ok := result.Result[0].(map[string]interface{}); ok {
+			state = resultM["state"]
+		}
+	}
+
+	detailObj := util.MapStr{
+		"resource_name": obj.Resource.Name,
+		"resource_objects": obj.Resource.Objects,
+		"period_interval": obj.Metrics.PeriodInterval,
+		"updated": obj.Updated,
+		"condition_expressions": conditionExpressions,
+		"message_count": alertNumbers[obj.ID],
+		"state": state,
+	}
+
+	alertAPI.WriteJSON(w, detailObj, 200)
 
 }
 
@@ -288,7 +360,7 @@ func (alertAPI *AlertAPI) searchRule(w http.ResponseWriter, req *http.Request, p
 	w.Write(searchResult.Raw)
 }
 
-func (alertAPI *AlertAPI) getRuleAlertNumbers(ruleIDs []string) ( map[string]interface{},error) {
+func (alertAPI *AlertAPI) getRuleAlertMessageNumbers(ruleIDs []string) ( map[string]interface{},error) {
 	esClient := elastic.GetClient(alertAPI.Config.Elasticsearch)
 	queryDsl := util.MapStr{
 		"size": 0,
@@ -298,11 +370,6 @@ func (alertAPI *AlertAPI) getRuleAlertNumbers(ruleIDs []string) ( map[string]int
 					{
 						"terms": util.MapStr{
 							"rule_id": ruleIDs,
-						},
-					},
-					{
-						"terms": util.MapStr{
-							"state": []string{alerting.AlertStateError, alerting.AlertStateActive},
 						},
 					},
 				},
@@ -317,7 +384,7 @@ func (alertAPI *AlertAPI) getRuleAlertNumbers(ruleIDs []string) ( map[string]int
 		},
 	}
 
-	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetWildcardIndexName(alerting.Alert{}), util.MustToJSONBytes(queryDsl) )
+	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetWildcardIndexName(alerting.AlertMessage{}), util.MustToJSONBytes(queryDsl) )
 	if err != nil {
 		return nil, err
 	}
@@ -372,7 +439,7 @@ func (alertAPI *AlertAPI) fetchAlertInfos(w http.ResponseWriter, req *http.Reque
 		alertAPI.WriteJSON(w, util.MapStr{}, http.StatusOK)
 		return
 	}
-	alertNumbers, err  := alertAPI.getRuleAlertNumbers(ruleIDs)
+	alertNumbers, err  := alertAPI.getRuleAlertMessageNumbers(ruleIDs)
 	if err != nil {
 		log.Error(err)
 		alertAPI.WriteJSON(w, util.MapStr{

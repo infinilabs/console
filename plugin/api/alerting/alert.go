@@ -44,44 +44,6 @@ func (h *AlertAPI) getAlert(w http.ResponseWriter, req *http.Request, ps httprou
 	}, 200)
 }
 
-func (h *AlertAPI) acknowledgeAlert(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	body := struct {
-		AlertIDs []string `json:"ids"`
-	}{}
-	err := h.DecodeJSON(req,  &body)
-	if err != nil {
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	if len(body.AlertIDs) == 0 {
-		h.WriteError(w, "alert ids should not be empty", http.StatusInternalServerError)
-		return
-	}
-	queryDsl := util.MapStr{
-		"query": util.MapStr{
-			"terms": util.MapStr{
-				"_id": body.AlertIDs,
-			},
-		},
-		"script": util.MapStr{
-			"source": fmt.Sprintf("ctx._source['state'] = '%s'", alerting.AlertStateAcknowledge),
-		},
-	}
-	err = orm.UpdateBy(alerting.Alert{}, util.MustToJSONBytes(queryDsl))
-	if err != nil {
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
-		return
-	}
-
-	h.WriteJSON(w, util.MapStr{
-		"ids": body.AlertIDs,
-		"result": "updated",
-	}, 200)
-}
-
-
 func (h *AlertAPI) searchAlert(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 
 	var (

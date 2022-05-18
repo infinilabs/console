@@ -629,14 +629,14 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		alertItem.Severity = severity
 		alertItem.Message = message
 		alertItem.Title = title
-		alertItem.State = alerting.AlertStateActive
+		alertItem.State = alerting.AlertStateAlerting
 		if alertMessage == nil || alertMessage.Status == alerting.MessageStateRecovered {
 			msg := &alerting.AlertMessage{
 				RuleID: rule.ID,
 				Created: time.Now(),
 				Updated: time.Now(),
 				ID: util.GetUUID(),
-				Status: alerting.MessageStateActive,
+				Status: alerting.MessageStateAlerting,
 				Severity: severity,
 				Title: title,
 				Message: message,

@@ -42,15 +42,14 @@ type ActionExecutionResult struct {
 }
 
 const (
-	AlertStateActive string = "active"
-	AlertStateAcknowledge = "acknowledged"
-	AlertStateOK          = "normal"
+	AlertStateAlerting string = "alerting"
+	AlertStateOK              = "ok"
 	AlertStateError       = "error"
 )
 
 const (
-	MessageStateActive = "active"
-	MessageStateIgnored = "ignored"
+	MessageStateAlerting = "alerting"
+	MessageStateIgnored  = "ignored"
 	MessageStateRecovered = "recovered"
 )
 

@@ -230,6 +230,8 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 		duration = time.Now().Sub(message.Created)
 	}
 	detailObj := util.MapStr{
+		"message_id": message.ID,
+		"rule_id": message.RuleID,
 		"title": message.Title,
 		"message": message.Message,
 		"severity": message.Severity,

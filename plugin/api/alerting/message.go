@@ -218,11 +218,10 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 		h.WriteError(w, fmt.Sprintf("rule[%s] not found", rule.ID), http.StatusInternalServerError)
 		return
 	}
-	conditionExpressions := make([]string, 0, len(rule.Conditions.Items))
 	metricExpression, _ := rule.Metrics.GenerateExpression()
-	for _, cond := range rule.Conditions.Items {
+	for i, cond := range rule.Conditions.Items {
 		expression, _ := cond.GenerateConditionExpression()
-		conditionExpressions = append(conditionExpressions,  strings.ReplaceAll(expression, "result", metricExpression))
+		rule.Conditions.Items[i].Expression = strings.ReplaceAll(expression, "result", metricExpression)
 	}
 	var duration time.Duration
 	if message.Status == alerting.MessageStateRecovered {
@@ -238,8 +237,9 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 		"updated": message.Updated,
 		"resource_name": rule.Resource.Name,
 		"resource_object": rule.Resource.Objects,
-		"condition_expressions": conditionExpressions,
+		"conditions": rule.Conditions,
 		"duration": duration.Milliseconds(),
+		"ignored_time": message.IgnoredTime,
 		"status": message.Status,
 	}
 	h.WriteJSON(w, detailObj, http.StatusOK)

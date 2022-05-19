@@ -17,6 +17,7 @@ type ConditionItem struct {
 	Operator           string `json:"operator"`
 	Values []string `json:"values"`
 	Severity string `json:"severity"`
+	Expression string `json:"expression,omitempty"`
 }
 
 func (cond *ConditionItem) GenerateConditionExpression()(conditionExpression string, err error){

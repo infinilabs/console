@@ -19,7 +19,6 @@ import (
 	"infini.sh/framework/modules/elastic/api"
 	"infini.sh/framework/modules/elastic/common"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -125,11 +124,10 @@ func (alertAPI *AlertAPI) getRuleDetail(w http.ResponseWriter, req *http.Request
 		}, http.StatusNotFound)
 		return
 	}
-	conditionExpressions := make([]string, 0, len(obj.Conditions.Items))
 	metricExpression, _ := obj.Metrics.GenerateExpression()
-	for _, cond := range obj.Conditions.Items {
+	for i, cond := range obj.Conditions.Items {
 		expression, _ := cond.GenerateConditionExpression()
-		conditionExpressions = append(conditionExpressions,  strings.ReplaceAll(expression, "result", metricExpression))
+		obj.Conditions.Items[i].Expression = strings.ReplaceAll(expression, "result", metricExpression)
 	}
 	alertNumbers, err  := alertAPI.getRuleAlertMessageNumbers([]string{obj.ID})
 	if err != nil {
@@ -179,11 +177,12 @@ func (alertAPI *AlertAPI) getRuleDetail(w http.ResponseWriter, req *http.Request
 	detailObj := util.MapStr{
 		"resource_name": obj.Resource.Name,
 		"resource_objects": obj.Resource.Objects,
-		"period_interval": obj.Metrics.PeriodInterval,
+		"period_interval": obj.Metrics.PeriodInterval, //统计周期
 		"updated": obj.Updated,
-		"condition_expressions": conditionExpressions,
-		"message_count": alertNumbers[obj.ID],
+		"conditions": obj.Conditions,
+		"message_count": alertNumbers[obj.ID], //所有关联告警消息数（包括已恢复的）
 		"state": state,
+		"enabled": obj.Enabled,
 	}
 
 	alertAPI.WriteJSON(w, detailObj, 200)
@@ -372,11 +371,11 @@ func (alertAPI *AlertAPI) getRuleAlertMessageNumbers(ruleIDs []string) ( map[str
 							"rule_id": ruleIDs,
 						},
 					},
-					{
-						"terms": util.MapStr{
-							"status": []string{alerting.MessageStateAlerting, alerting.MessageStateIgnored},
-						},
-					},
+					//{
+					//	"terms": util.MapStr{
+					//		"status": []string{alerting.MessageStateAlerting, alerting.MessageStateIgnored},
+					//	},
+					//},
 				},
 			},
 		},
@@ -444,21 +443,12 @@ func (alertAPI *AlertAPI) fetchAlertInfos(w http.ResponseWriter, req *http.Reque
 		alertAPI.WriteJSON(w, util.MapStr{}, http.StatusOK)
 		return
 	}
-	alertNumbers, err  := alertAPI.getRuleAlertMessageNumbers(ruleIDs)
-	if err != nil {
-		log.Error(err)
-		alertAPI.WriteJSON(w, util.MapStr{
-			"error": err.Error(),
-		}, http.StatusInternalServerError)
-		return
-	}
 
 	latestAlertInfos := map[string]util.MapStr{}
 	for _, hit := range searchRes.Hits.Hits {
 		if ruleID, ok := hit.Source["rule_id"].(string); ok {
 			latestAlertInfos[ruleID] = util.MapStr{
 				"status":      hit.Source["state"],
-				"alert_count": alertNumbers[ruleID],
 			}
 		}
 
@@ -676,36 +666,36 @@ func getRuleMetricData( rule *alerting.Rule, filterParam *alerting.FilterParam) 
 		})
 	}
 	//add guidelines
-	for _, cond := range rule.Conditions.Items {
-		if len(cond.Values) > 0 {
-			val, err := strconv.ParseFloat(cond.Values[0], 64)
-			if err != nil {
-				log.Errorf("parse condition value error: %v", err)
-				continue
-			}
-			if sampleData != nil {
-				newData := make([]alerting.TimeMetricData, 0, len(sampleData))
-				for _, td := range sampleData {
-					if len(td) < 2 {
-						continue
-					}
-					newData = append(newData, alerting.TimeMetricData{
-						td[0], val,
-					})
-				}
-				metricItem.Lines = append(metricItem.Lines, &common.MetricLine{
-					Data:       newData,
-					BucketSize: filterParam.BucketSize,
-					Metric: common.MetricSummary{
-						Label:      "",
-						Group:      rule.ID,
-						TickFormat: "0,0.[00]",
-						FormatType: "num",
-					},
-				})
-			}
-		}
-	}
+	//for _, cond := range rule.Conditions.Items {
+	//	if len(cond.Values) > 0 {
+	//		val, err := strconv.ParseFloat(cond.Values[0], 64)
+	//		if err != nil {
+	//			log.Errorf("parse condition value error: %v", err)
+	//			continue
+	//		}
+	//		if sampleData != nil {
+	//			newData := make([]alerting.TimeMetricData, 0, len(sampleData))
+	//			for _, td := range sampleData {
+	//				if len(td) < 2 {
+	//					continue
+	//				}
+	//				newData = append(newData, alerting.TimeMetricData{
+	//					td[0], val,
+	//				})
+	//			}
+	//			metricItem.Lines = append(metricItem.Lines, &common.MetricLine{
+	//				Data:       newData,
+	//				BucketSize: filterParam.BucketSize,
+	//				Metric: common.MetricSummary{
+	//					Label:      "",
+	//					Group:      rule.ID,
+	//					TickFormat: "0,0.[00]",
+	//					FormatType: "num",
+	//				},
+	//			})
+	//		}
+	//	}
+	//}
 	return &metricItem, nil
 }
 

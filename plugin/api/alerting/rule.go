@@ -655,11 +655,19 @@ func getRuleMetricData( rule *alerting.Rule, filterParam *alerting.FilterParam) 
 			continue
 		}
 		//filteredMetricData = append(filteredMetricData, md)
+
+		targetData := md.Data["result"]
+		if len(rule.Metrics.Items) == 1 {
+			for k, _ := range md.Data {
+				targetData = md.Data[k]
+				break
+			}
+		}
 		if sampleData == nil {
-			sampleData = md.Data["result"]
+			sampleData = targetData
 		}
 		metricItem.Lines = append(metricItem.Lines, &common.MetricLine{
-			Data:       md.Data["result"],
+			Data:  targetData,
 			BucketSize: filterParam.BucketSize,
 			Metric: common.MetricSummary{
 				Label:      strings.Join(md.GroupValues, "-"),

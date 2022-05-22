@@ -577,7 +577,7 @@ func (alertAPI *AlertAPI) getPreviewMetricData(w http.ResponseWriter, req *http.
 		End: max,
 		BucketSize: fmt.Sprintf("%ds", bucketSize),
 	}
-	metricItem, err := getRuleMetricData(rule,  filterParam)
+	metricItem, _, err := getRuleMetricData(rule,  filterParam)
 	if err != nil {
 		log.Error(err)
 		alertAPI.WriteJSON(w, util.MapStr{
@@ -612,7 +612,7 @@ func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request
 		End: max,
 		BucketSize: fmt.Sprintf("%ds", bucketSize),
 	}
-	metricItem, err := getRuleMetricData(rule,  filterParam)
+	metricItem, queryResult, err := getRuleMetricData(rule,  filterParam)
 	if err != nil {
 		log.Error(err)
 		alertAPI.WriteJSON(w, util.MapStr{
@@ -620,16 +620,20 @@ func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request
 		}, http.StatusInternalServerError)
 		return
 	}
-	alertAPI.WriteJSON(w, util.MapStr{
+	resBody :=  util.MapStr{
 		"metric": metricItem,
-	}, http.StatusOK)
+	}
+	if alertAPI.GetParameter(req, "debug") == "1" {
+		resBody["query"] = queryResult.Query
+	}
+	alertAPI.WriteJSON(w,resBody, http.StatusOK)
 }
 
-func getRuleMetricData( rule *alerting.Rule, filterParam *alerting.FilterParam) (*common.MetricItem, error) {
+func getRuleMetricData( rule *alerting.Rule, filterParam *alerting.FilterParam) (*common.MetricItem, *alerting.QueryResult, error) {
 	eng := alerting2.GetEngine(rule.Resource.Type)
-	metricData, err := eng.GetTargetMetricData(rule, true, filterParam)
+	metricData, queryResult, err := eng.GetTargetMetricData(rule, true, filterParam)
 	if err != nil {
-		return nil, err
+		return nil,queryResult, err
 	}
 	//var filteredMetricData []alerting.MetricData
 	//title := rule.Metrics.Formula
@@ -696,7 +700,7 @@ func getRuleMetricData( rule *alerting.Rule, filterParam *alerting.FilterParam) 
 	//		}
 	//	}
 	//}
-	return &metricItem, nil
+	return &metricItem,queryResult, nil
 }
 
 

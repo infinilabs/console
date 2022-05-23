@@ -55,7 +55,6 @@ func TestEngine( t *testing.T)  {
 
 		Metrics: alerting.Metric{
 			PeriodInterval: "1m",
-			MaxPeriods:     15,
 			Items: []alerting.MetricItem{
 				{Name: "a", Field: "payload.elasticsearch.node_stats.fs.total.free_in_bytes", Statistic: "min", Group: []string{"metadata.labels.cluster_id", "metadata.labels.node_id"}},
 				{Name: "b", Field: "payload.elasticsearch.node_stats.fs.total.total_in_bytes", Statistic: "max", Group: []string{"metadata.labels.cluster_id", "metadata.labels.node_id"}},
@@ -204,7 +203,6 @@ func TestGeneratePercentilesAggQuery(t *testing.T) {
 
 		Metrics: alerting.Metric{
 			PeriodInterval: "1m",
-			MaxPeriods:     15,
 			Items: []alerting.MetricItem{
 				{Name: "a", Field: "payload.elasticsearch.index_stats.total.search.query_total", Statistic: "rate", Group: []string{"metadata.labels.cluster_id"}},
 				{Name: "b", Field: "payload.elasticsearch.index_stats.total.search.query_time_in_millis", Statistic: "rate", Group: []string{"metadata.labels.cluster_id"}},

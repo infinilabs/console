@@ -61,7 +61,6 @@ func TestCreateRule( t *testing.T)  {
 
 				Metrics: Metric{
 					PeriodInterval: "1m",
-					MaxPeriods:     15,
 					Items: []MetricItem{
 						{Name: "a", Field: "payload.elasticsearch.node_stats.fs.total.free_in_bytes", Statistic: "min", Group: []string{"metadata.labels.cluster_id", "metadata.labels.node_id"}},
 						{Name: "b", Field: "payload.elasticsearch.node_stats.fs.total.total_in_bytes", Statistic: "max", Group: []string{"metadata.labels.cluster_id", "metadata.labels.node_id"}},

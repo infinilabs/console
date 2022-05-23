@@ -215,7 +215,7 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 	exists, err = orm.Get(rule)
 	if !exists || err != nil {
 		log.Error(err)
-		h.WriteError(w, fmt.Sprintf("rule[%s] not found", rule.ID), http.StatusInternalServerError)
+		h.WriteError(w, fmt.Sprintf("rule [%s] not found", rule.ID), http.StatusInternalServerError)
 		return
 	}
 	metricExpression, _ := rule.Metrics.GenerateExpression()

@@ -599,6 +599,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		}
 		return nil
 	}else{
+		alertItem.State = alerting.AlertStateAlerting
 		paramsCtx = newParameterCtx(rule, checkResults,alertItem.ID, alertItem.Created.Unix())
 		var (
 			severity = conditionResults[0].ConditionItem.Severity
@@ -616,7 +617,6 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		alertItem.Severity = severity
 		alertItem.Message = paramsCtx[alerting2.ParamMessage].(string)
 		alertItem.Title = paramsCtx[alerting2.ParamTitle].(string)
-		alertItem.State = alerting.AlertStateAlerting
 		if alertMessage == nil || alertMessage.Status == alerting.MessageStateRecovered {
 			msg := &alerting.AlertMessage{
 				RuleID: rule.ID,

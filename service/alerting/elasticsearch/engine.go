@@ -742,8 +742,16 @@ func attachTitleMessageToCtx(rule *alerting.Rule, paramsCtx map[string]interface
 }
 
 func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult, eventID string, eventTimestamp interface{} ) map[string]interface{}{
-	var conditionParams []util.MapStr
-	for _, resultItem := range checkResults.ResultItems {
+	var (
+		conditionParams []util.MapStr
+		firstGroupValue string
+		firstPresetValue string
+	)
+	for i, resultItem := range checkResults.ResultItems {
+		if i == 0 {
+			firstGroupValue = strings.Join(resultItem.GroupValues, ",")
+			firstPresetValue = strings.Join(resultItem.ConditionItem.Values, ",")
+		}
 		conditionParams = append(conditionParams, util.MapStr{
 			alerting2.ParamPresetValue:    resultItem.ConditionItem.Values,
 			alerting2.Severity:            resultItem.ConditionItem.Severity,
@@ -760,6 +768,8 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 		alerting2.ParamEventID:      eventID,
 		alerting2.ParamTimestamp:    eventTimestamp,
 		alerting2.ParamResults:      conditionParams,
+		"first_group_value": firstGroupValue,
+		"first_preset_value": firstPresetValue,
 	}
 	return paramsCtx
 }

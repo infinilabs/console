@@ -745,15 +745,15 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 	var (
 		conditionParams []util.MapStr
 		firstGroupValue string
-		firstPresetValue string
+		firstThreshold  string
 	)
 	for i, resultItem := range checkResults.ResultItems {
 		if i == 0 {
 			firstGroupValue = strings.Join(resultItem.GroupValues, ",")
-			firstPresetValue = strings.Join(resultItem.ConditionItem.Values, ",")
+			firstThreshold = strings.Join(resultItem.ConditionItem.Values, ",")
 		}
 		conditionParams = append(conditionParams, util.MapStr{
-			alerting2.ParamPresetValue:    resultItem.ConditionItem.Values,
+			alerting2.ParamThreshold:      resultItem.ConditionItem.Values,
 			alerting2.Severity:            resultItem.ConditionItem.Severity,
 			alerting2.ParamGroupValues:    resultItem.GroupValues,
 			alerting2.ParamIssueTimestamp: resultItem.IssueTimestamp,
@@ -768,8 +768,8 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 		alerting2.ParamEventID:      eventID,
 		alerting2.ParamTimestamp:    eventTimestamp,
 		alerting2.ParamResults:      conditionParams,
-		"first_group_value": firstGroupValue,
-		"first_preset_value": firstPresetValue,
+		"first_group_value":         firstGroupValue,
+		"first_threshold":           firstThreshold,
 	}
 	return paramsCtx
 }

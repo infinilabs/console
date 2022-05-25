@@ -67,9 +67,17 @@ func (h *AlertAPI) ignoreAlertMessage(w http.ResponseWriter, req *http.Request, 
 		log.Error(err)
 		return
 	}
-	//delete kv cache
+	//update kv cache
 	for _, msg := range body.Messages {
-		_ = kv.DeleteKey(alerting2.KVLastMessageState, []byte(msg.RuleID))
+		stateBytes, err := kv.GetValue(alerting2.KVLastMessageState, []byte(msg.RuleID))
+		if err != nil && stateBytes != nil {
+			message := &alerting.AlertMessage{}
+			util.MustFromJSONBytes(stateBytes, message)
+			if message.Status == alerting.MessageStateAlerting {
+				message.Status = alerting.MessageStateIgnored
+			}
+			kv.AddValue(alerting2.KVLastMessageState, []byte(msg.RuleID), util.MustToJSONBytes(message))
+		}
 	}
 
 

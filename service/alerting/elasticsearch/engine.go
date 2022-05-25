@@ -495,7 +495,7 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule)(*alerting.ConditionRes
 					"result": targetData.Data[dataKey][i][1],
 				})
 				if err != nil {
-					return nil, err
+					return nil, fmt.Errorf("evaluate rule [%s] error: %w", rule.ID, err)
 				}
 				if evaluateResult == true {
 					triggerCount += 1

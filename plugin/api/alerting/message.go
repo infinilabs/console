@@ -31,7 +31,7 @@ func (h *AlertAPI) ignoreAlertMessage(w http.ResponseWriter, req *http.Request, 
 	}
 
 	if len(body.Messages) == 0 {
-		h.WriteError(w, "alert ids should not be empty", http.StatusInternalServerError)
+		h.WriteError(w, "messages should not be empty", http.StatusInternalServerError)
 		return
 	}
 	messageIDs := make([]string, 0, len(body.Messages))
@@ -67,17 +67,9 @@ func (h *AlertAPI) ignoreAlertMessage(w http.ResponseWriter, req *http.Request, 
 		log.Error(err)
 		return
 	}
-	//update kv cache
+	//delete kv cache
 	for _, msg := range body.Messages {
-		stateBytes, err := kv.GetValue(alerting2.KVLastMessageState, []byte(msg.RuleID))
-		if err != nil && stateBytes != nil {
-			message := &alerting.AlertMessage{}
-			util.MustFromJSONBytes(stateBytes, message)
-			if message.Status == alerting.MessageStateAlerting {
-				message.Status = alerting.MessageStateIgnored
-				_ = kv.AddValue(alerting2.KVLastMessageState, []byte(msg.RuleID), util.MustToJSONBytes(message))
-			}
-		}
+		_ = kv.DeleteKey(alerting2.KVLastMessageState, []byte(msg.RuleID))
 	}
 
 

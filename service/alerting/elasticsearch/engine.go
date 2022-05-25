@@ -547,14 +547,18 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			}
 		}
 		if alertItem != nil {
-			for _, actionResult := range alertItem.ActionExecutionResults {
-				if actionResult.Error != "" {
-					alertItem.Error = actionResult.Error
+			if err != nil{
+				alertItem.State = alerting.AlertStateError
+				alertItem.Error = err.Error()
+			}else {
+				for _, actionResult := range alertItem.ActionExecutionResults {
+					if actionResult.Error != "" {
+						alertItem.Error = actionResult.Error
+						alertItem.State = alerting.AlertStateError
+					}
 				}
 			}
-			if alertItem.Error != ""{
-				alertItem.State = alerting.AlertStateError
-			}
+
 			err = orm.Save(alertItem)
 			if err != nil {
 				log.Error(err)
@@ -976,19 +980,19 @@ func getLastAlertMessage(ruleID string, duration time.Duration) (*alerting.Alert
 	if err != nil {
 		return nil, err
 	}
-	if messageBytes == nil {
-		return nil, nil
-	}
 	message := &alerting.AlertMessage{}
-	err = util.FromJSONBytes(messageBytes, message)
-	if err != nil {
-		return nil, err
+	if messageBytes != nil {
+
+		err = util.FromJSONBytes(messageBytes, message)
+		if err != nil {
+			return nil, err
+		}
+		if time.Now().Sub(message.Updated) <= duration {
+			return message, nil
+		}
 	}
-	if time.Now().Sub(message.Updated) > duration {
-		err = getLastAlertMessageFromES(ruleID, message)
-		return message, err
-	}
-	return message, nil
+	err = getLastAlertMessageFromES(ruleID, message)
+	return message, err
 }
 
 func saveAlertMessageToES(message *alerting.AlertMessage) error {

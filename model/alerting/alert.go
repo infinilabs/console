@@ -13,6 +13,7 @@ type Alert struct {
 	Created time.Time `json:"created,omitempty" elastic_mapping:"created: { type: date }"`
 	Updated time.Time `json:"updated,omitempty" elastic_mapping:"updated: { type: date }"`
 	RuleID string `json:"rule_id"  elastic_mapping:"rule_id: { type: keyword }"`
+	RuleName string `json:"rule_name"  elastic_mapping:"rule_name: { type: keyword }"`
 	ResourceID string `json:"resource_id"  elastic_mapping:"resource_id: { type: keyword }"`
 	ResourceName string `json:"resource_name"  elastic_mapping:"resource_name: { type: keyword }"`
 	Expression string `json:"expression"  elastic_mapping:"expression: { type: keyword, copy_to:search_text }"`

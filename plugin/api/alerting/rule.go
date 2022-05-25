@@ -182,6 +182,7 @@ func (alertAPI *AlertAPI) getRuleDetail(w http.ResponseWriter, req *http.Request
 	}
 
 	detailObj := util.MapStr{
+		"rule_name": obj.Name,
 		"resource_name": obj.Resource.Name,
 		"resource_objects": obj.Resource.Objects,
 		"period_interval": obj.Metrics.PeriodInterval, //统计周期

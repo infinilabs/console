@@ -256,6 +256,7 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 	detailObj := util.MapStr{
 		"message_id": message.ID,
 		"rule_id": message.RuleID,
+		"rule_name": rule.Name,
 		"title": message.Title,
 		"message": message.Message,
 		"severity": message.Severity,

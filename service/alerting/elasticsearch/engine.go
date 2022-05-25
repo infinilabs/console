@@ -486,6 +486,10 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule)(*alerting.ConditionRes
 			}
 			triggerCount := 0
 			for i := 0; i < dataLength; i++ {
+				//clear nil value
+				if targetData.Data[dataKey][i][1] == nil {
+					continue
+				}
 				if r, ok :=  targetData.Data[dataKey][i][1].(float64); ok {
 					if math.IsNaN(r){
 						continue

@@ -780,6 +780,7 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 		alerting2.ParamResults:      conditionParams,
 		"first_group_value":         firstGroupValue,
 		"first_threshold":           firstThreshold,
+		"rule_name": rule.Name,
 	}
 	return paramsCtx
 }

@@ -8,8 +8,10 @@ import (
 	"fmt"
 	log "github.com/cihub/seelog"
 	"infini.sh/console/model/alerting"
+	alerting2 "infini.sh/console/service/alerting"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/kv"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"net/http"
@@ -20,7 +22,7 @@ import (
 
 func (h *AlertAPI) ignoreAlertMessage(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	body := struct {
-		MessageIDs []string `json:"ids"`
+		Messages []alerting.AlertMessage `json:"messages"`
 	}{}
 	err := h.DecodeJSON(req,  &body)
 	if err != nil {
@@ -28,14 +30,31 @@ func (h *AlertAPI) ignoreAlertMessage(w http.ResponseWriter, req *http.Request, 
 		return
 	}
 
-	if len(body.MessageIDs) == 0 {
+	if len(body.Messages) == 0 {
 		h.WriteError(w, "alert ids should not be empty", http.StatusInternalServerError)
 		return
 	}
+	messageIDs := make([]string, 0, len(body.Messages))
+	for _, msg := range body.Messages {
+		messageIDs = append(messageIDs, msg.ID)
+	}
 	queryDsl := util.MapStr{
 		"query": util.MapStr{
-			"terms": util.MapStr{
-				"_id": body.MessageIDs,
+			"bool": util.MapStr{
+				"must": []util.MapStr{
+					{
+						"terms": util.MapStr{
+							"_id": messageIDs,
+						},
+					},
+					{
+						"term": util.MapStr{
+							"status": util.MapStr{
+								"value": alerting.MessageStateAlerting,
+							},
+						},
+					},
+				},
 			},
 		},
 		"script": util.MapStr{
@@ -48,9 +67,14 @@ func (h *AlertAPI) ignoreAlertMessage(w http.ResponseWriter, req *http.Request, 
 		log.Error(err)
 		return
 	}
+	//delete kv cache
+	for _, msg := range body.Messages {
+		_ = kv.DeleteKey(alerting2.KVLastMessageState, []byte(msg.RuleID))
+	}
+
 
 	h.WriteJSON(w, util.MapStr{
-		"ids": body.MessageIDs,
+		"ids": messageIDs,
 		"result": "updated",
 	}, 200)
 }

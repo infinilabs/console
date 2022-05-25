@@ -11,7 +11,6 @@ import (
 
 type Metric struct {
 	PeriodInterval string `json:"period_interval"`
-	MaxPeriods int `json:"max_periods"`
 	Items []MetricItem `json:"items"`
 	Formula string `json:"formula,omitempty"`
 	Expression string `json:"expression" elastic_mapping:"expression:{type:keyword,copy_to:search_text}"` //告警表达式，自动生成 eg: avg(cpu) > 80

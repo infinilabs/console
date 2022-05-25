@@ -17,7 +17,7 @@ type Engine interface {
 	CheckCondition(rule *alerting.Rule)(*alerting.ConditionResult, error)
 	GenerateTask(rule *alerting.Rule) func(ctx context.Context)
 	Test(rule *alerting.Rule) ([]alerting.ActionExecutionResult, error)
-	GetTargetMetricData(rule *alerting.Rule, isFilterNaN bool, filterParam *alerting.FilterParam)([]alerting.MetricData, error)
+	GetTargetMetricData(rule *alerting.Rule, isFilterNaN bool, filterParam *alerting.FilterParam)([]alerting.MetricData, *alerting.QueryResult, error)
 }
 
 var (

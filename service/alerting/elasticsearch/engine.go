@@ -943,7 +943,7 @@ func collectMetricData(agg interface{}, groupValues string, metricData *[]alerti
 	}
 }
 
-func getLastAlertMessageFromES(ruleID string, message *alerting.AlertMessage)  error {
+func getLastAlertMessageFromES(ruleID string) (*alerting.AlertMessage, error) {
 	queryDsl := util.MapStr{
 		"size": 1,
 		"sort": []util.MapStr{
@@ -966,13 +966,15 @@ func getLastAlertMessageFromES(ruleID string, message *alerting.AlertMessage)  e
 	}
 	err, searchResult := orm.Search(alerting.AlertMessage{}, &q )
 	if err != nil {
-		return  err
+		return  nil, err
 	}
 	if len(searchResult.Result) == 0 {
-		return  nil
+		return  nil, nil
 	}
 	messageBytes := util.MustToJSONBytes(searchResult.Result[0])
-	return util.FromJSONBytes(messageBytes, message)
+	message := &alerting.AlertMessage{}
+	err =  util.FromJSONBytes(messageBytes, message)
+	return message, err
 }
 
 func getLastAlertMessage(ruleID string, duration time.Duration) (*alerting.AlertMessage, error ){
@@ -991,7 +993,7 @@ func getLastAlertMessage(ruleID string, duration time.Duration) (*alerting.Alert
 			return message, nil
 		}
 	}
-	err = getLastAlertMessageFromES(ruleID, message)
+	message, err = getLastAlertMessageFromES(ruleID)
 	return message, err
 }
 

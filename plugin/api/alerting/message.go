@@ -75,8 +75,8 @@ func (h *AlertAPI) ignoreAlertMessage(w http.ResponseWriter, req *http.Request, 
 			util.MustFromJSONBytes(stateBytes, message)
 			if message.Status == alerting.MessageStateAlerting {
 				message.Status = alerting.MessageStateIgnored
+				_ = kv.AddValue(alerting2.KVLastMessageState, []byte(msg.RuleID), util.MustToJSONBytes(message))
 			}
-			kv.AddValue(alerting2.KVLastMessageState, []byte(msg.RuleID), util.MustToJSONBytes(message))
 		}
 	}
 

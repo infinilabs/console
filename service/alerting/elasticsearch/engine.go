@@ -609,50 +609,55 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			}
 		}
 		return nil
-	}else{
-		alertItem.State = alerting.AlertStateAlerting
-		paramsCtx = newParameterCtx(rule, checkResults,alertItem.ID, alertItem.Created.Unix())
-		var (
-			severity = conditionResults[0].ConditionItem.Severity
-		)
-		err = attachTitleMessageToCtx(rule, paramsCtx)
-		if err != nil {
-			return err
-		}
-		for _, conditionResult := range conditionResults {
-			if alerting.SeverityWeights[severity] < alerting.SeverityWeights[conditionResult.ConditionItem.Severity] {
-				severity = conditionResult.ConditionItem.Severity
-			}
-		}
-
-		alertItem.Severity = severity
-		alertItem.Message = paramsCtx[alerting2.ParamMessage].(string)
-		alertItem.Title = paramsCtx[alerting2.ParamTitle].(string)
-		if alertMessage == nil || alertMessage.Status == alerting.MessageStateRecovered {
-			msg := &alerting.AlertMessage{
-				RuleID: rule.ID,
-				Created: time.Now(),
-				Updated: time.Now(),
-				ID: util.GetUUID(),
-				Status: alerting.MessageStateAlerting,
-				Severity: severity,
-				Title: alertItem.Title,
-				Message: alertItem.Message,
-			}
-			err = saveAlertMessage(msg)
-			if err != nil {
-				return fmt.Errorf("save alert message error: %w", err)
-			}
-		}else{
-			alertMessage.Title = alertItem.Title
-			alertMessage.Message = alertItem.Message
-			err = saveAlertMessage(alertMessage)
-			if err != nil {
-				return fmt.Errorf("save alert message error: %w", err)
-			}
-		}
-		log.Debugf("check condition result of rule %s is %v", conditionResults, rule.ID )
 	}
+	alertItem.State = alerting.AlertStateAlerting
+
+	var (
+		severity = conditionResults[0].ConditionItem.Severity
+	)
+	for _, conditionResult := range conditionResults {
+		if alerting.SeverityWeights[severity] < alerting.SeverityWeights[conditionResult.ConditionItem.Severity] {
+			severity = conditionResult.ConditionItem.Severity
+		}
+	}
+	paramsCtx = newParameterCtx(rule, checkResults, util.MapStr{
+		alerting2.ParamEventID: alertItem.ID,
+		alerting2.ParamTimestamp:  alertItem.Created.Unix(),
+		"severity": severity,
+	})
+
+	alertItem.Severity = severity
+	err = attachTitleMessageToCtx(rule, paramsCtx)
+	if err != nil {
+		return err
+	}
+	alertItem.Message = paramsCtx[alerting2.ParamMessage].(string)
+	alertItem.Title = paramsCtx[alerting2.ParamTitle].(string)
+	if alertMessage == nil || alertMessage.Status == alerting.MessageStateRecovered {
+		msg := &alerting.AlertMessage{
+			RuleID: rule.ID,
+			Created: time.Now(),
+			Updated: time.Now(),
+			ID: util.GetUUID(),
+			Status: alerting.MessageStateAlerting,
+			Severity: severity,
+			Title: alertItem.Title,
+			Message: alertItem.Message,
+		}
+		err = saveAlertMessage(msg)
+		if err != nil {
+			return fmt.Errorf("save alert message error: %w", err)
+		}
+	}else{
+		alertMessage.Title = alertItem.Title
+		alertMessage.Message = alertItem.Message
+		err = saveAlertMessage(alertMessage)
+		if err != nil {
+			return fmt.Errorf("save alert message error: %w", err)
+		}
+	}
+	log.Debugf("check condition result of rule %s is %v", conditionResults, rule.ID )
+
 	// if alert message status equals ignored , then skip sending message to channel
 	if alertMessage != nil && alertMessage.Status == alerting.MessageStateIgnored {
 		return nil
@@ -681,7 +686,11 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 
 		//log.Error(lastAlertItem.ID, period, periodDuration)
 		if paramsCtx == nil {
-			paramsCtx = newParameterCtx(rule, checkResults,alertItem.ID, alertItem.Created.Unix())
+			paramsCtx = newParameterCtx(rule, checkResults, util.MapStr{
+				alerting2.ParamEventID: alertItem.ID,
+				alerting2.ParamTimestamp:  alertItem.Created.Unix(),
+				"severity": severity,
+			})
 		}
 
 		if alertMessage == nil || period > periodDuration {
@@ -752,7 +761,7 @@ func attachTitleMessageToCtx(rule *alerting.Rule, paramsCtx map[string]interface
 	return nil
 }
 
-func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult, eventID string, eventTimestamp interface{} ) map[string]interface{}{
+func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult, extraParams map[string]interface{} ) map[string]interface{}{
 	var (
 		conditionParams []util.MapStr
 		firstGroupValue string
@@ -776,12 +785,14 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 		alerting2.ParamRuleID:       rule.ID,
 		alerting2.ParamResourceID:   rule.Resource.ID,
 		alerting2.ParamResourceName: rule.Resource.Name,
-		alerting2.ParamEventID:      eventID,
-		alerting2.ParamTimestamp:    eventTimestamp,
 		alerting2.ParamResults:      conditionParams,
 		"first_group_value":         firstGroupValue,
 		"first_threshold":           firstThreshold,
 		"rule_name": rule.Name,
+	}
+	err := util.MergeFields(paramsCtx, extraParams, true)
+	if err != nil {
+		log.Errorf("merge template params error: %v", err)
 	}
 	return paramsCtx
 }
@@ -792,7 +803,22 @@ func (engine *Engine) Test(rule *alerting.Rule) ([]alerting.ActionExecutionResul
 		return nil, fmt.Errorf("check condition error:%w", err)
 	}
 	var actionResults []alerting.ActionExecutionResult
-	paramsCtx := newParameterCtx(rule, checkResults, util.GetUUID(), time.Now().Unix())
+	var (
+		severity  = "warning"
+	)
+	if len(checkResults.ResultItems) > 0 {
+		for _, conditionResult := range checkResults.ResultItems {
+			if alerting.SeverityWeights[severity] < alerting.SeverityWeights[conditionResult.ConditionItem.Severity] {
+				severity = conditionResult.ConditionItem.Severity
+			}
+		}
+	}
+
+	paramsCtx := newParameterCtx(rule, checkResults,util.MapStr{
+		alerting2.ParamEventID: util.GetUUID(),
+		alerting2.ParamTimestamp:  time.Now().Unix(),
+		"severity": severity,
+	} )
 	err = attachTitleMessageToCtx(rule, paramsCtx)
 	if err != nil {
 		return nil, err

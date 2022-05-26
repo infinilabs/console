@@ -623,7 +623,6 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 	paramsCtx = newParameterCtx(rule, checkResults, util.MapStr{
 		alerting2.ParamEventID: alertItem.ID,
 		alerting2.ParamTimestamp:  alertItem.Created.Unix(),
-		"severity": severity,
 	})
 
 	alertItem.Severity = severity
@@ -766,8 +765,28 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 		conditionParams []util.MapStr
 		firstGroupValue string
 		firstThreshold  string
+		severity string
 	)
+	if len(checkResults.ResultItems) > 0 {
+		severity = checkResults.ResultItems[0].ConditionItem.Severity
+		sort.Slice(checkResults.ResultItems, func(i, j int) bool {
+			if  alerting.SeverityWeights[checkResults.ResultItems[i].ConditionItem.Severity] > alerting.SeverityWeights[checkResults.ResultItems[j].ConditionItem.Severity] {
+				return true
+			}
+			return false
+		})
+		sort.Slice(checkResults.ResultItems, func(i, j int) bool {
+			if  vi, ok := checkResults.ResultItems[i].ResultValue.(float64); ok {
+				if vj, ok := checkResults.ResultItems[j].ResultValue.(float64); ok {
+					return vi > vj
+				}
+			}
+			return false
+		})
+	}
+
 	for i, resultItem := range checkResults.ResultItems {
+
 		if i == 0 {
 			firstGroupValue = strings.Join(resultItem.GroupValues, ",")
 			firstThreshold = strings.Join(resultItem.ConditionItem.Values, ",")
@@ -789,6 +808,7 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 		"first_group_value":         firstGroupValue,
 		"first_threshold":           firstThreshold,
 		"rule_name": rule.Name,
+		"severity": severity,
 	}
 	err := util.MergeFields(paramsCtx, extraParams, true)
 	if err != nil {
@@ -803,21 +823,10 @@ func (engine *Engine) Test(rule *alerting.Rule) ([]alerting.ActionExecutionResul
 		return nil, fmt.Errorf("check condition error:%w", err)
 	}
 	var actionResults []alerting.ActionExecutionResult
-	var (
-		severity  = "warning"
-	)
-	if len(checkResults.ResultItems) > 0 {
-		for _, conditionResult := range checkResults.ResultItems {
-			if alerting.SeverityWeights[severity] < alerting.SeverityWeights[conditionResult.ConditionItem.Severity] {
-				severity = conditionResult.ConditionItem.Severity
-			}
-		}
-	}
 
 	paramsCtx := newParameterCtx(rule, checkResults,util.MapStr{
 		alerting2.ParamEventID: util.GetUUID(),
 		alerting2.ParamTimestamp:  time.Now().Unix(),
-		"severity": severity,
 	} )
 	err = attachTitleMessageToCtx(rule, paramsCtx)
 	if err != nil {

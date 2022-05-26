@@ -35,7 +35,7 @@ func Init(cfg *config.AppConfig) {
 	api.HandleAPIMethod(api.GET, path.Join(pathPrefix, "rebuild/_search"), handler.HandleGetRebuildListAction)
 	api.HandleAPIMethod(api.DELETE, path.Join(pathPrefix, "rebuild/:id"), handler.HandleDeleteRebuildAction)
 
-	api.HandleAPIMethod(api.GET, path.Join(esPrefix, "_cat/indices"), handler.HandleGetIndicesAction)
+	api.HandleAPIMethod(api.GET, path.Join(esPrefix, "_cat/indices"), handler.RequireLogin(handler.HandleGetIndicesAction))
 	api.HandleAPIMethod(api.GET, path.Join(esPrefix, "index/:index/_mappings"), handler.HandleGetMappingsAction)
 	api.HandleAPIMethod(api.GET, path.Join(esPrefix, "index/:index/_settings"), handler.HandleGetSettingsAction)
 	api.HandleAPIMethod(api.PUT, path.Join(esPrefix, "index/:index/_settings"),handler.HandleUpdateSettingsAction)

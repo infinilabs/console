@@ -107,21 +107,32 @@ func (h *AlertAPI) updateChannel(w http.ResponseWriter, req *http.Request, ps ht
 }
 
 func (h *AlertAPI) deleteChannel(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	id := ps.MustGetParameter("channel_id")
-
-	obj := alerting.Channel{}
-	obj.ID = id
-
-	exists, err := orm.Get(&obj)
-	if !exists || err != nil {
-		h.WriteJSON(w, util.MapStr{
-			"_id":    id,
-			"result": "not_found",
-		}, http.StatusNotFound)
+	reqBody := struct {
+		ChannelIDs []string `json:"ids"`
+	}{}
+	err := h.DecodeJSON(req, &reqBody)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
 		return
 	}
+	if len(reqBody.ChannelIDs) == 0 {
+		if err != nil {
+			h.WriteError(w, "channel ids required", http.StatusInternalServerError)
+			log.Error(err)
+			return
+		}
+	}
 
-	err = orm.Delete(&obj)
+	queryDsl := util.MapStr{
+		"query": util.MapStr{
+			"terms": util.MapStr{
+				"id": reqBody.ChannelIDs,
+			},
+		},
+	}
+
+	err = orm.DeleteBy(alerting.Channel{}, util.MustToJSONBytes(queryDsl))
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -129,7 +140,7 @@ func (h *AlertAPI) deleteChannel(w http.ResponseWriter, req *http.Request, ps ht
 	}
 
 	h.WriteJSON(w, util.MapStr{
-		"_id":    obj.ID,
+		"ids":  reqBody.ChannelIDs  ,
 		"result": "deleted",
 	}, 200)
 }

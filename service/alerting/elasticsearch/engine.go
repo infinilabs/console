@@ -45,6 +45,7 @@ func (engine *Engine) GenerateQuery(rule *alerting.Rule, filterParam *alerting.F
 		return nil, fmt.Errorf("metric items should not be empty")
 	}
 	basicAggs := util.MapStr{}
+	//todo bucket sort (es 6.1) bucket script (es 2.0)
 	for _, metricItem  := range rule.Metrics.Items {
 		metricAggs := engine.generateAgg(&metricItem)
 		if err = util.MergeFields(basicAggs, metricAggs, true); err != nil {

@@ -46,6 +46,7 @@ const (
 	AlertStateAlerting string = "alerting"
 	AlertStateOK              = "ok"
 	AlertStateError       = "error"
+	AlertStateNodata = "nodata"
 )
 
 const (

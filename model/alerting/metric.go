@@ -52,6 +52,7 @@ type QueryResult struct {
 	Query string `json:"query"`
 	Raw string `json:"raw"`
 	MetricData []MetricData `json:"metric_data"`
+	Nodata bool `json:"nodata"`
 }
 
 type MetricData struct {

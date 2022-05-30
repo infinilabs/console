@@ -422,8 +422,26 @@ func (alertAPI *AlertAPI) searchRule(w http.ResponseWriter, req *http.Request, p
 		log.Error(err)
 		return
 	}
+	searchRes := elastic.SearchResponse{}
+	err = util.FromJSONBytes(searchResult.Raw, &searchRes)
+	if err != nil {
+		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
+	for _, hit := range searchRes.Hits.Hits {
+		hitRule := alerting.Rule{}
+		hitBytes, _ := util.ToJSONBytes(hit.Source)
+		util.FromJSONBytes(hitBytes, &hitRule)
+		metricExpression, _ := hitRule.Metrics.GenerateExpression()
+		for i, cond := range hitRule.Conditions.Items {
+			expression, _ := cond.GenerateConditionExpression()
+			hitRule.Conditions.Items[i].Expression = strings.ReplaceAll(expression, "result", metricExpression)
+		}
+		hit.Source["conditions"] = hitRule.Conditions
+	}
 
-	w.Write(searchResult.Raw)
+	alertAPI.WriteJSON(w, searchRes, http.StatusOK)
 }
 
 func (alertAPI *AlertAPI) getRuleAlertMessageNumbers(ruleIDs []string) ( map[string]interface{},error) {

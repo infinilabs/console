@@ -594,6 +594,12 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 	}()
 	log.Tracef("start check condition of rule %s", rule.ID)
 
+	//todo do only once when rule not change
+	metricExpression, _ := rule.Metrics.GenerateExpression()
+	for i, cond := range rule.Conditions.Items {
+		expression, _ := cond.GenerateConditionExpression()
+		rule.Conditions.Items[i].Expression = strings.ReplaceAll(expression, "result", metricExpression)
+	}
 	alertItem = &alerting.Alert{
 		ID: util.GetUUID(),
 		Created: time.Now(),

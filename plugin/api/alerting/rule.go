@@ -7,19 +7,21 @@ package alerting
 import (
 	"fmt"
 	log "github.com/cihub/seelog"
+	"github.com/r3labs/diff/v2"
 	"infini.sh/console/model/alerting"
 	alerting2 "infini.sh/console/service/alerting"
 	_ "infini.sh/console/service/alerting/elasticsearch"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/event"
 	"infini.sh/framework/core/kv"
 	"infini.sh/framework/core/orm"
+	"infini.sh/framework/core/queue"
 	"infini.sh/framework/core/task"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/modules/elastic/api"
 	"infini.sh/framework/modules/elastic/common"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -56,7 +58,6 @@ func (alertAPI *AlertAPI) createRule(w http.ResponseWriter, req *http.Request, p
 		ids = append(ids, rule.ID)
 		rule.Created = time.Now()
 		rule.Updated = time.Now()
-		rule.Metrics.MaxPeriods = 15
 		if rule.Schedule.Interval == ""{
 			rule.Schedule.Interval = "1m"
 		}
@@ -69,6 +70,11 @@ func (alertAPI *AlertAPI) createRule(w http.ResponseWriter, req *http.Request, p
 			}, http.StatusInternalServerError)
 			return
 		}
+		saveAlertActivity("alerting_rule_change", "create",  util.MapStr{
+			"cluster_id": rule.Resource.ID,
+			"rule_id": rule.ID,
+			"cluster_name": rule.Resource.Name,
+		},nil, &rule)
 		eng := alerting2.GetEngine(rule.Resource.Type)
 		if rule.Enabled {
 			ruleTask := task.ScheduleTask{
@@ -90,7 +96,6 @@ func (alertAPI *AlertAPI) createRule(w http.ResponseWriter, req *http.Request, p
 }
 func (alertAPI *AlertAPI) getRule(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	id := ps.MustGetParameter("rule_id")
-
 	obj := alerting.Rule{}
 	obj.ID = id
 
@@ -103,12 +108,6 @@ func (alertAPI *AlertAPI) getRule(w http.ResponseWriter, req *http.Request, ps h
 		}, http.StatusNotFound)
 		return
 	}
-	if err != nil {
-		log.Error(err)
-		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
-		return
-	}
 
 	alertAPI.WriteJSON(w, util.MapStr{
 		"found":   true,
@@ -118,12 +117,135 @@ func (alertAPI *AlertAPI) getRule(w http.ResponseWriter, req *http.Request, ps h
 
 }
 
+func (alertAPI *AlertAPI) getRuleDetail(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	id := ps.MustGetParameter("rule_id")
+	obj := alerting.Rule{}
+	obj.ID = id
+
+	exists, err := orm.Get(&obj)
+	if !exists || err != nil {
+		log.Error(err)
+		alertAPI.WriteJSON(w, util.MapStr{
+			"_id":   id,
+			"found": false,
+		}, http.StatusNotFound)
+		return
+	}
+	metricExpression, _ := obj.Metrics.GenerateExpression()
+	for i, cond := range obj.Conditions.Items {
+		expression, _ := cond.GenerateConditionExpression()
+		obj.Conditions.Items[i].Expression = strings.ReplaceAll(expression, "result", metricExpression)
+	}
+	alertNumbers, err  := alertAPI.getRuleAlertMessageNumbers([]string{obj.ID})
+	if err != nil {
+		log.Error(err)
+		alertAPI.WriteJSON(w, util.MapStr{
+			"error": err.Error(),
+		}, http.StatusInternalServerError)
+		return
+	}
+	queryDSL := util.MapStr{
+		"_source": "state",
+		"size": 1,
+		"sort": []util.MapStr{
+			{
+				"created": util.MapStr{
+					"order": "desc",
+				},
+			},
+		},
+		"query": util.MapStr{
+			"term": util.MapStr{
+				"rule_id": util.MapStr{
+					"value": obj.ID,
+				},
+			},
+		},
+	}
+	q := &orm.Query{
+		WildcardIndex: true,
+		RawQuery: util.MustToJSONBytes(queryDSL),
+	}
+	err, result := orm.Search(alerting.Alert{}, q)
+	if err != nil {
+		log.Error(err)
+		alertAPI.WriteJSON(w, util.MapStr{
+			"error": err.Error(),
+		}, http.StatusInternalServerError)
+		return
+	}
+	var state interface{} = "N/A"
+	if len(result.Result) > 0 {
+		if resultM, ok := result.Result[0].(map[string]interface{}); ok {
+			state = resultM["state"]
+		}
+	}
+
+	detailObj := util.MapStr{
+		"rule_name": obj.Name,
+		"resource_name": obj.Resource.Name,
+		"resource_objects": obj.Resource.Objects,
+		"period_interval": obj.Metrics.PeriodInterval, //统计周期
+		"updated": obj.Updated,
+		"conditions": obj.Conditions,
+		"message_count": alertNumbers[obj.ID], //所有关联告警消息数（包括已恢复的）
+		"state": state,
+		"enabled": obj.Enabled,
+	}
+
+	alertAPI.WriteJSON(w, detailObj, 200)
+
+}
+
+func saveActivity(activityInfo *event.Activity){
+	queueConfig := queue.GetOrInitConfig("platform##activities")
+	if queueConfig.Labels == nil {
+		queueConfig.Labels = map[string]interface{}{
+			"type":     "platform",
+			"name":     "activity",
+			"category": "elasticsearch",
+			"activity": true,
+		}
+	}
+	err := queue.Push(queueConfig, util.MustToJSONBytes(event.Event{
+		Timestamp: time.Now(),
+		Metadata: event.EventMetadata{
+			Category: "elasticsearch",
+			Name: "activity",
+		},
+		Fields: util.MapStr{
+			"activity": activityInfo,
+		}}))
+	if err != nil {
+		log.Error(err)
+	}
+}
+
+func saveAlertActivity(name, typ string, labels map[string]interface{}, changelog diff.Changelog, oldState interface{}){
+	activityInfo := &event.Activity{
+		ID: util.GetUUID(),
+		Timestamp: time.Now(),
+		Metadata: event.ActivityMetadata{
+			Category: "elasticsearch",
+			Group: "platform",
+			Name: name,
+			Type: typ,
+			Labels: labels,
+		},
+		Changelog: changelog,
+		Fields: util.MapStr{
+			"rule": oldState,
+		},
+	}
+	saveActivity(activityInfo)
+}
+
 func (alertAPI *AlertAPI) updateRule(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	id := ps.MustGetParameter("rule_id")
-	obj := &alerting.Rule{}
+	oldRule := &alerting.Rule{}
 
-	obj.ID = id
-	exists, err := orm.Get(obj)
+	oldRule.ID = id
+	exists, err := orm.Get(oldRule)
 	if !exists || err != nil {
 		log.Error(err)
 		alertAPI.WriteJSON(w, util.MapStr{
@@ -133,35 +255,46 @@ func (alertAPI *AlertAPI) updateRule(w http.ResponseWriter, req *http.Request, p
 		return
 	}
 
-	id = obj.ID
-	create := obj.Created
-	obj = &alerting.Rule{}
-	err = alertAPI.DecodeJSON(req, obj)
+	id = oldRule.ID
+	create := oldRule.Created
+	rule := &alerting.Rule{
+	}
+	err = alertAPI.DecodeJSON(req, rule)
 	if err != nil {
 		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
 		return
+	}
+	rule.Metrics.Expression, err = rule.Metrics.GenerateExpression()
+	if err != nil {
+		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
+	changeLog, err := util.DiffTwoObject(oldRule, rule)
+	if err != nil {
+		log.Error(err)
 	}
 
 	//protect
-	obj.ID = id
-	obj.Created = create
-	obj.Updated = time.Now()
-	obj.Metrics.Expression, err = obj.Metrics.GenerateExpression()
-	if err != nil {
-		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
-		return
-	}
-	err = orm.Update(obj)
-	if err != nil {
-		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
-		return
-	}
+	rule.ID = id
+	rule.Created = create
+	rule.Updated = time.Now()
 
-	if obj.Enabled {
-		exists, err = checkResourceExists(obj)
+	err = orm.Update(rule)
+	if err != nil {
+		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
+	saveAlertActivity("alerting_rule_change", "update",  util.MapStr{
+		"cluster_id": rule.Resource.ID,
+		"rule_id": rule.ID,
+		"cluster_name": rule.Resource.Name,
+	},changeLog, oldRule)
+
+	if rule.Enabled {
+		exists, err = checkResourceExists(rule)
 		if err != nil || !exists {
 			log.Error(err)
 			alertAPI.WriteJSON(w, util.MapStr{
@@ -171,22 +304,22 @@ func (alertAPI *AlertAPI) updateRule(w http.ResponseWriter, req *http.Request, p
 		}
 		//update task
 		task.StopTask(id)
-		eng := alerting2.GetEngine(obj.Resource.Type)
+		eng := alerting2.GetEngine(rule.Resource.Type)
 		ruleTask := task.ScheduleTask{
-			ID:          obj.ID,
-			Interval:    obj.Schedule.Interval,
-			Description: obj.Metrics.Expression,
-			Task:        eng.GenerateTask(obj),
+			ID:          rule.ID,
+			Interval:    rule.Schedule.Interval,
+			Description: rule.Metrics.Expression,
+			Task:        eng.GenerateTask(rule),
 		}
 		task.RegisterScheduleTask(ruleTask)
 		task.StartTask(ruleTask.ID)
 	}else{
 		task.DeleteTask(id)
 	}
-	clearKV(obj.ID)
+	clearKV(rule.ID)
 
 	alertAPI.WriteJSON(w, util.MapStr{
-		"_id":    obj.ID,
+		"_id":    rule.ID,
 		"result": "updated",
 	}, 200)
 }
@@ -218,8 +351,29 @@ func (alertAPI *AlertAPI) deleteRule(w http.ResponseWriter, req *http.Request, p
 		log.Error(err)
 		return
 	}
+	saveAlertActivity("alerting_rule_change", "delete",  util.MapStr{
+		"cluster_id": obj.Resource.ID,
+		"rule_id": obj.ID,
+		"cluster_name": obj.Resource.Name,
+	},nil, &obj)
 	task.DeleteTask(obj.ID)
 	clearKV(obj.ID)
+
+	delDsl := util.MapStr{
+		"query": util.MapStr{
+			"term": util.MapStr{
+				"rule_id": id,
+			},
+		},
+	}
+	err = orm.DeleteBy(alerting.AlertMessage{}, util.MustToJSONBytes(delDsl))
+	if err != nil {
+		log.Error(err)
+	}
+	err = orm.DeleteBy(alerting.Alert{}, util.MustToJSONBytes(delDsl))
+	if err != nil {
+		log.Error(err)
+	}
 
 	alertAPI.WriteJSON(w, util.MapStr{
 		"_id":    obj.ID,
@@ -268,11 +422,29 @@ func (alertAPI *AlertAPI) searchRule(w http.ResponseWriter, req *http.Request, p
 		log.Error(err)
 		return
 	}
+	searchRes := elastic.SearchResponse{}
+	err = util.FromJSONBytes(searchResult.Raw, &searchRes)
+	if err != nil {
+		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
+	for _, hit := range searchRes.Hits.Hits {
+		hitRule := alerting.Rule{}
+		hitBytes, _ := util.ToJSONBytes(hit.Source)
+		util.FromJSONBytes(hitBytes, &hitRule)
+		metricExpression, _ := hitRule.Metrics.GenerateExpression()
+		for i, cond := range hitRule.Conditions.Items {
+			expression, _ := cond.GenerateConditionExpression()
+			hitRule.Conditions.Items[i].Expression = strings.ReplaceAll(expression, "result", metricExpression)
+		}
+		hit.Source["conditions"] = hitRule.Conditions
+	}
 
-	w.Write(searchResult.Raw)
+	alertAPI.WriteJSON(w, searchRes, http.StatusOK)
 }
 
-func (alertAPI *AlertAPI) getRuleAlertNumbers(ruleIDs []string) ( map[string]interface{},error) {
+func (alertAPI *AlertAPI) getRuleAlertMessageNumbers(ruleIDs []string) ( map[string]interface{},error) {
 	esClient := elastic.GetClient(alertAPI.Config.Elasticsearch)
 	queryDsl := util.MapStr{
 		"size": 0,
@@ -284,11 +456,11 @@ func (alertAPI *AlertAPI) getRuleAlertNumbers(ruleIDs []string) ( map[string]int
 							"rule_id": ruleIDs,
 						},
 					},
-					{
-						"terms": util.MapStr{
-							"state": []string{alerting.AlertStateError, alerting.AlertStateActive},
-						},
-					},
+					//{
+					//	"terms": util.MapStr{
+					//		"status": []string{alerting.MessageStateAlerting, alerting.MessageStateIgnored},
+					//	},
+					//},
 				},
 			},
 		},
@@ -301,7 +473,7 @@ func (alertAPI *AlertAPI) getRuleAlertNumbers(ruleIDs []string) ( map[string]int
 		},
 	}
 
-	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetWildcardIndexName(alerting.Alert{}), util.MustToJSONBytes(queryDsl) )
+	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetWildcardIndexName(alerting.AlertMessage{}), util.MustToJSONBytes(queryDsl) )
 	if err != nil {
 		return nil, err
 	}
@@ -356,21 +528,12 @@ func (alertAPI *AlertAPI) fetchAlertInfos(w http.ResponseWriter, req *http.Reque
 		alertAPI.WriteJSON(w, util.MapStr{}, http.StatusOK)
 		return
 	}
-	alertNumbers, err  := alertAPI.getRuleAlertNumbers(ruleIDs)
-	if err != nil {
-		log.Error(err)
-		alertAPI.WriteJSON(w, util.MapStr{
-			"error": err.Error(),
-		}, http.StatusInternalServerError)
-		return
-	}
 
 	latestAlertInfos := map[string]util.MapStr{}
 	for _, hit := range searchRes.Hits.Hits {
 		if ruleID, ok := hit.Source["rule_id"].(string); ok {
 			latestAlertInfos[ruleID] = util.MapStr{
 				"status":      hit.Source["state"],
-				"alert_count": alertNumbers[ruleID],
 			}
 		}
 
@@ -479,6 +642,39 @@ func (alertAPI *AlertAPI) getTemplateParams(w http.ResponseWriter, req *http.Req
 	}, http.StatusOK)
 }
 
+func (alertAPI *AlertAPI) getPreviewMetricData(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	rule := &alerting.Rule{}
+	err := alertAPI.DecodeJSON(req, rule)
+	if err != nil {
+		log.Error(err)
+		alertAPI.WriteJSON(w, util.MapStr{
+			"error": err.Error(),
+		}, http.StatusInternalServerError)
+		return
+	}
+	var (
+		minStr = alertAPI.Get(req, "min", "")
+		maxStr = alertAPI.Get(req, "max", "")
+	)
+	bucketSize, min, max, err := api.GetMetricRangeAndBucketSize(minStr, maxStr, 60, 15)
+	filterParam := &alerting.FilterParam{
+		Start: min,
+		End: max,
+		BucketSize: fmt.Sprintf("%ds", bucketSize),
+	}
+	metricItem, _, err := getRuleMetricData(rule,  filterParam)
+	if err != nil {
+		log.Error(err)
+		alertAPI.WriteJSON(w, util.MapStr{
+			"error": err.Error(),
+		}, http.StatusInternalServerError)
+		return
+	}
+	alertAPI.WriteJSON(w, util.MapStr{
+		"metric": metricItem,
+	}, http.StatusOK)
+}
+
 func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	rule :=  &alerting.Rule{
 		ID: ps.ByName("rule_id"),
@@ -501,8 +697,7 @@ func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request
 		End: max,
 		BucketSize: fmt.Sprintf("%ds", bucketSize),
 	}
-	eng := alerting2.GetEngine(rule.Resource.Type)
-	metricData, err :=  eng.GetTargetMetricData(rule, true, filterParam)
+	metricItem, queryResult, err := getRuleMetricData(rule,  filterParam)
 	if err != nil {
 		log.Error(err)
 		alertAPI.WriteJSON(w, util.MapStr{
@@ -510,18 +705,33 @@ func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request
 		}, http.StatusInternalServerError)
 		return
 	}
-	//var filteredMetricData []alerting.MetricData
-	title := rule.Metrics.Formula
-	if title == "" && len( rule.Conditions.Items) > 0{
-		title,_ = rule.Conditions.Items[0].GenerateConditionExpression()
+	resBody :=  util.MapStr{
+		"metric": metricItem,
 	}
+	if alertAPI.GetParameter(req, "debug") == "1" {
+		resBody["query"] = queryResult.Query
+	}
+	alertAPI.WriteJSON(w,resBody, http.StatusOK)
+}
+
+func getRuleMetricData( rule *alerting.Rule, filterParam *alerting.FilterParam) (*common.MetricItem, *alerting.QueryResult, error) {
+	eng := alerting2.GetEngine(rule.Resource.Type)
+	metricData, queryResult, err := eng.GetTargetMetricData(rule, true, filterParam)
+	if err != nil {
+		return nil,queryResult, err
+	}
+	//var filteredMetricData []alerting.MetricData
+	//title := rule.Metrics.Formula
+	//if title == "" && len( rule.Conditions.Items) > 0{
+	//	title,_ = rule.Conditions.Items[0].GenerateConditionExpression()
+	//}
 	var metricItem = common.MetricItem{
 		Group: rule.ID,
-		Key: rule.ID,
+		Key:   rule.ID,
 		Axis: []*common.MetricAxis{
-			{ID: util.GetUUID(), Group: rule.ID, Title: title, FormatType: "num", Position: "left",ShowGridLines: true,
+			{ID: util.GetUUID(), Group: rule.ID, Title: "", FormatType: "num", Position: "left", ShowGridLines: true,
 				TickFormat: "0,0.[00]",
-				Ticks: 5},
+				Ticks:      5},
 		},
 	}
 	var sampleData []alerting.TimeMetricData
@@ -529,55 +739,59 @@ func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request
 		if len(md.Data) == 0 {
 			continue
 		}
-		//filteredMetricData = append(filteredMetricData, md)
+		targetData := md.Data["result"]
+		if len(rule.Metrics.Items) == 1 {
+			for k, _ := range md.Data {
+				targetData = md.Data[k]
+				break
+			}
+		}
 		if sampleData == nil {
-			sampleData = md.Data["result"]
+			sampleData = targetData
 		}
 		metricItem.Lines = append(metricItem.Lines, &common.MetricLine{
-			Data: md.Data["result"],
+			Data:  targetData,
 			BucketSize: filterParam.BucketSize,
 			Metric: common.MetricSummary{
-				Label: strings.Join(md.GroupValues, "-"),
-				Group: rule.ID,
+				Label:      strings.Join(md.GroupValues, "-"),
+				Group:      rule.ID,
 				TickFormat: "0,0.[00]",
 				FormatType: "num",
 			},
 		})
 	}
 	//add guidelines
-	for _, cond := range rule.Conditions.Items{
-		if len(cond.Values) > 0 {
-			val, err := strconv.ParseFloat(cond.Values[0], 64)
-			if err != nil {
-				log.Errorf("parse condition value error: %v", err)
-				continue
-			}
-			if sampleData != nil {
-				newData := make([]alerting.TimeMetricData,0, len(sampleData))
-				for _, td := range sampleData {
-					if len(td) < 2{
-						continue
-					}
-					newData = append(newData, alerting.TimeMetricData{
-						td[0], val,
-					})
-				}
-				metricItem.Lines = append(metricItem.Lines, &common.MetricLine{
-					Data: newData,
-					BucketSize: filterParam.BucketSize,
-					Metric: common.MetricSummary{
-						Label: "",
-						Group: rule.ID,
-						TickFormat: "0,0.[00]",
-						FormatType: "num",
-					},
-				})
-			}
-		}
-	}
-	alertAPI.WriteJSON(w, util.MapStr{
-		"metric": metricItem,
-	}, http.StatusOK)
+	//for _, cond := range rule.Conditions.Items {
+	//	if len(cond.Values) > 0 {
+	//		val, err := strconv.ParseFloat(cond.Values[0], 64)
+	//		if err != nil {
+	//			log.Errorf("parse condition value error: %v", err)
+	//			continue
+	//		}
+	//		if sampleData != nil {
+	//			newData := make([]alerting.TimeMetricData, 0, len(sampleData))
+	//			for _, td := range sampleData {
+	//				if len(td) < 2 {
+	//					continue
+	//				}
+	//				newData = append(newData, alerting.TimeMetricData{
+	//					td[0], val,
+	//				})
+	//			}
+	//			metricItem.Lines = append(metricItem.Lines, &common.MetricLine{
+	//				Data:       newData,
+	//				BucketSize: filterParam.BucketSize,
+	//				Metric: common.MetricSummary{
+	//					Label:      "",
+	//					Group:      rule.ID,
+	//					TickFormat: "0,0.[00]",
+	//					FormatType: "num",
+	//				},
+	//			})
+	//		}
+	//	}
+	//}
+	return &metricItem,queryResult, nil
 }
 
 
@@ -609,7 +823,7 @@ func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request
 //		Conditions: alerting.Condition{
 //			Operator: "any",
 //			Items: []alerting.ConditionItem{
-//				{MinimumPeriodMatch: 5, Operator: "gte", Values: []string{"90"}, Severity: "error", Message: "cpu使用率大于90%"},
+//				{MinimumPeriodMatch: 5, Operator: "gte", Values: []string{"90"}, Severity: "error", AlertMessage: "cpu使用率大于90%"},
 //			},
 //		},
 //
@@ -617,7 +831,7 @@ func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request
 //			Normal: []alerting.Channel{
 //				{Name: "钉钉", Type: alerting.ChannelWebhook, Webhook: &alerting.CustomWebhook{
 //					HeaderParams: map[string]string{
-//						"Content-Type": "application/json",
+//						"Message-Type": "application/json",
 //					},
 //					Body:   `{"msgtype": "text","text": {"content":"告警通知: {{ctx.message}}"}}`,
 //					Method: http.MethodPost,

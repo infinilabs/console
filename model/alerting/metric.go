@@ -11,10 +11,11 @@ import (
 
 type Metric struct {
 	PeriodInterval string `json:"period_interval"`
-	MaxPeriods int `json:"max_periods"`
 	Items []MetricItem `json:"items"`
 	Formula string `json:"formula,omitempty"`
 	Expression string `json:"expression" elastic_mapping:"expression:{type:keyword,copy_to:search_text}"` //告警表达式，自动生成 eg: avg(cpu) > 80
+	Title string `json:"title"` //text template
+	Message string `json:"message"` // text template
 }
 func (m *Metric) GenerateExpression() (string, error){
 	if len(m.Items) == 1 {
@@ -51,6 +52,7 @@ type QueryResult struct {
 	Query string `json:"query"`
 	Raw string `json:"raw"`
 	MetricData []MetricData `json:"metric_data"`
+	Nodata bool `json:"nodata"`
 }
 
 type MetricData struct {

@@ -10,6 +10,15 @@ type Condition struct {
 	Operator string `json:"operator"`
 	Items []ConditionItem `json:"items"`
 }
+func (cond *Condition) GetMinimumPeriodMatch() int{
+	var minPeriodMatch = 0
+	for _, citem := range cond.Items {
+		if citem.MinimumPeriodMatch > minPeriodMatch {
+			minPeriodMatch = citem.MinimumPeriodMatch
+		}
+	}
+	return minPeriodMatch
+}
 
 type ConditionItem struct {
 	//MetricName             string `json:"metric"`
@@ -17,8 +26,9 @@ type ConditionItem struct {
 	Operator           string `json:"operator"`
 	Values []string `json:"values"`
 	Severity string `json:"severity"`
-	Message string `json:"message"`
+	Expression string `json:"expression,omitempty"`
 }
+
 func (cond *ConditionItem) GenerateConditionExpression()(conditionExpression string, err error){
 	valueLength := len(cond.Values)
 	if valueLength == 0 {

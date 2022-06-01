@@ -25,8 +25,24 @@ func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req
 	//	return true
 	//})
 	esClient := elastic.GetClient(handler.Config.Elasticsearch)
+	queryDsl := util.MapStr{
+		"size": 100,
+	}
+	clusterFilter, hasAllPrivilege := handler.GetClusterFilter(req, "_id")
+	if !hasAllPrivilege && clusterFilter == nil{
+		handler.WriteJSON(w, util.MapStr{
+			"nodes_count": 0,
+			"cluster_count":0,
+			"total_used_store_in_bytes": 0,
+			"hosts_count": 0,
+		}, http.StatusOK)
+		return
+	}
+	if !hasAllPrivilege {
+		queryDsl["query"] = clusterFilter
+	}
 
-	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetIndexName(elastic.ElasticsearchConfig{}), nil)
+	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetIndexName(elastic.ElasticsearchConfig{}), util.MustToJSONBytes(queryDsl))
 	if err != nil {
 		log.Error(err)
 		handler.WriteJSON(w, util.MapStr{
@@ -64,11 +80,11 @@ func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req
 		}
 	}
 
-	hostCount, err := handler.getMetricCount(orm.GetIndexName(elastic.NodeConfig{}), "metadata.host")
+	hostCount, err := handler.getMetricCount(orm.GetIndexName(elastic.NodeConfig{}), "metadata.host", clusterIDs)
 	if err != nil{
 		log.Error(err)
 	}
-	nodeCount, err := handler.getMetricCount(orm.GetIndexName(elastic.NodeConfig{}), "id")
+	nodeCount, err := handler.getMetricCount(orm.GetIndexName(elastic.NodeConfig{}), "id", clusterIDs)
 	if err != nil{
 		log.Error(err)
 	}
@@ -130,20 +146,26 @@ func (handler APIHandler) getLatestClusterMonitorData(clusterIDs []interface{}) 
 
 }
 
-func (handler APIHandler) getMetricCount(indexName, field string) (interface{}, error){
+func (handler APIHandler) getMetricCount(indexName, field string, clusterIDs []interface{}) (interface{}, error){
 	client := elastic.GetClient(handler.Config.Elasticsearch)
-	queryDSL := `{
+	queryDSL := util.MapStr{
   "size": 0, 
-  "aggs": {
-    "field_count": {
-      "cardinality": {
-        "field": "%s"
-      }
-    }
-  }
-}`
-	queryDSL = fmt.Sprintf(queryDSL, field)
-	searchRes, err := client.SearchWithRawQueryDSL(indexName, []byte(queryDSL))
+  "aggs": util.MapStr{
+    "field_count": util.MapStr{
+      "cardinality": util.MapStr{
+        "field": field,
+      },
+    },
+  },
+}
+	if len(clusterIDs) > 0 {
+		queryDSL["query"] = util.MapStr{
+			"terms": util.MapStr{
+				"metadata.cluster_id": clusterIDs,
+			},
+		}
+	}
+	searchRes, err := client.SearchWithRawQueryDSL(indexName, util.MustToJSONBytes(queryDSL))
 	if err != nil {
 		log.Error(err)
 		return 0, err

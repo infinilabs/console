@@ -1,11 +1,12 @@
 package index_management
 
 import (
+	log "github.com/cihub/seelog"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/util"
 	"net/http"
-	log "github.com/cihub/seelog"
+	"strings"
 )
 
 func (handler APIHandler) HandleGetMappingsAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -39,7 +40,17 @@ func (handler APIHandler) HandleGetMappingsAction(w http.ResponseWriter, req *ht
 func (handler APIHandler) HandleGetIndicesAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	targetClusterID := ps.ByName("id")
 	client := elastic.GetClient(targetClusterID)
-	catIndices, err := client.GetIndices("")
+	//filter indices
+	allowedIndices, hasAllPrivilege := handler.GetAllowedIndices(req, targetClusterID)
+	if !hasAllPrivilege && len(allowedIndices) == 0 {
+		handler.WriteJSON(w, []interface{}{} , http.StatusOK)
+		return
+	}
+	strIndices := ""
+	if !hasAllPrivilege {
+		strIndices = strings.Join(allowedIndices, ",")
+	}
+	catIndices, err := client.GetIndices(strIndices)
 	resBody := util.MapStr{}
 	if err != nil {
 		log.Error(err)

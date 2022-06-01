@@ -44,44 +44,6 @@ func (h *AlertAPI) getAlert(w http.ResponseWriter, req *http.Request, ps httprou
 	}, 200)
 }
 
-func (h *AlertAPI) acknowledgeAlert(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	body := struct {
-		AlertIDs []string `json:"ids"`
-	}{}
-	err := h.DecodeJSON(req,  &body)
-	if err != nil {
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	if len(body.AlertIDs) == 0 {
-		h.WriteError(w, "alert ids should not be empty", http.StatusInternalServerError)
-		return
-	}
-	queryDsl := util.MapStr{
-		"query": util.MapStr{
-			"terms": util.MapStr{
-				"_id": body.AlertIDs,
-			},
-		},
-		"script": util.MapStr{
-			"source": fmt.Sprintf("ctx._source['state'] = '%s'", alerting.AlertStateAcknowledge),
-		},
-	}
-	err = orm.UpdateBy(alerting.Alert{}, util.MustToJSONBytes(queryDsl))
-	if err != nil {
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
-		return
-	}
-
-	h.WriteJSON(w, util.MapStr{
-		"ids": body.AlertIDs,
-		"result": "updated",
-	}, 200)
-}
-
-
 func (h *AlertAPI) searchAlert(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 
 	var (
@@ -92,9 +54,16 @@ func (h *AlertAPI) searchAlert(w http.ResponseWriter, req *http.Request, ps http
 		state = h.GetParameterOrDefault(req, "state", "")
 		severity = h.GetParameterOrDefault(req, "severity", "")
 		sort = h.GetParameterOrDefault(req, "sort", "")
+		ruleID        = h.GetParameterOrDefault(req, "rule_id", "")
+		min        = h.GetParameterOrDefault(req, "min", "")
+		max        = h.GetParameterOrDefault(req, "max", "")
 		mustBuilder = &strings.Builder{}
 		sortBuilder = strings.Builder{}
 	)
+	mustBuilder.WriteString(fmt.Sprintf(`{"range":{"created":{"gte":"%s", "lte": "%s"}}}`, min, max))
+	if ruleID != "" {
+		mustBuilder.WriteString(fmt.Sprintf(`,{"term":{"rule_id":{"value":"%s"}}}`, ruleID))
+	}
 
 	if sort != "" {
 		sortParts := strings.Split(sort, ",")
@@ -103,24 +72,17 @@ func (h *AlertAPI) searchAlert(w http.ResponseWriter, req *http.Request, ps http
 		}
 	}
 	sortBuilder.WriteString(`{"created":{ "order": "desc"}}`)
-	hasFilter := false
+
 	if keyword != "" {
 		mustBuilder.WriteString(fmt.Sprintf(`{"query_string":{"default_field":"*","query": "%s"}}`, keyword))
-		hasFilter = true
 	}
 	if state != "" {
-		if hasFilter {
-			mustBuilder.WriteString(",")
-		}
+		mustBuilder.WriteString(",")
 		mustBuilder.WriteString(fmt.Sprintf(`{"term":{"state":{"value":"%s"}}}`, state))
-		hasFilter = true
 	}
 	if severity != "" {
-		if hasFilter {
-			mustBuilder.WriteString(",")
-		}
+		mustBuilder.WriteString(",")
 		mustBuilder.WriteString(fmt.Sprintf(`{"term":{"severity":{"value":"%s"}}}`, severity))
-		hasFilter = true
 	}
 	size, _ := strconv.Atoi(strSize)
 	if size <= 0 {

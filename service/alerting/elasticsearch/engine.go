@@ -41,11 +41,15 @@ func (engine *Engine) GenerateQuery(rule *alerting.Rule, filterParam *alerting.F
 	if err != nil {
 		return nil, err
 	}
-	//todo generate agg
+	timeFilter, err := engine.generateTimeFilter(rule, filterParam)
+	if err != nil {
+		return nil, err
+	}
 	if len(rule.Metrics.Items) == 0 {
 		return nil, fmt.Errorf("metric items should not be empty")
 	}
 	basicAggs := util.MapStr{}
+	//todo bucket sort (es 6.1) bucket script (es 2.0)
 	for _, metricItem  := range rule.Metrics.Items {
 		metricAggs := engine.generateAgg(&metricItem)
 		if err = util.MergeFields(basicAggs, metricAggs, true); err != nil {
@@ -62,11 +66,22 @@ func (engine *Engine) GenerateQuery(rule *alerting.Rule, filterParam *alerting.F
 		periodInterval =  filterParam.BucketSize
 	}
 	timeAggs := util.MapStr{
-		"date_histogram": util.MapStr{
-			"field":    rule.Resource.TimeField,
-			intervalField: periodInterval,
+		"time_buckets": util.MapStr{
+			"date_histogram": util.MapStr{
+				"field":    rule.Resource.TimeField,
+				intervalField: periodInterval,
+			},
+			"aggs": basicAggs,
 		},
-		"aggs": basicAggs,
+	}
+
+	if len(filter) > 0 {
+		timeAggs = util.MapStr{
+			"filter_agg": util.MapStr{
+				"filter": filter,
+				"aggs": timeAggs,
+			},
+		}
 	}
 	var rootAggs util.MapStr
 	groups := rule.Metrics.Items[0].Group
@@ -91,26 +106,20 @@ func (engine *Engine) GenerateQuery(rule *alerting.Rule, filterParam *alerting.F
 					groupID: lastGroupAgg,
 				}
 			}else{
-				groupAgg["aggs"] = util.MapStr{
-					"time_buckets": timeAggs,
-				}
+				groupAgg["aggs"] = timeAggs
 			}
-
 			lastGroupAgg = groupAgg
-
 		}
 		rootAggs = util.MapStr{
 			util.GetUUID(): lastGroupAgg,
 		}
 	}else{
-		rootAggs = util.MapStr{
-			"time_buckets": timeAggs,
-		}
+		rootAggs = timeAggs
 	}
 
 	return util.MapStr{
 		"size": 0,
-		"query": filter,
+		"query": timeFilter,
 		"aggs": rootAggs,
 	}, nil
 }
@@ -133,7 +142,7 @@ func (engine *Engine) generateAgg(metricItem *alerting.MetricItem) map[string]in
 	case "rate":
 		aggType = "max"
 		isPipeline = true
-	case "medium":
+	case "medium": // from es version 6.6
 		aggType = "median_absolute_deviation"
 	case "p99", "p95","p90","p80","p50":
 		aggType = "percentiles"
@@ -263,19 +272,7 @@ func (engine *Engine) ConvertFilterQueryToDsl(fq *alerting.FilterQuery) (map[str
 	return resultQuery, nil
 }
 
-func (engine *Engine) GenerateRawFilter(rule *alerting.Rule, filterParam *alerting.FilterParam) (map[string]interface{}, error) {
-	query := map[string]interface{}{}
-	var err error
-	if rule.Resource.RawFilter != nil {
-		query = util.DeepCopy(rule.Resource.RawFilter).(map[string]interface{})
-	}else{
-		if !rule.Resource.Filter.IsEmpty(){
-			query, err = engine.ConvertFilterQueryToDsl(&rule.Resource.Filter)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
+func (engine *Engine) generateTimeFilter(rule *alerting.Rule, filterParam *alerting.FilterParam) (map[string]interface{}, error){
 	var (
 		timeStart interface{}
 		timeEnd interface{}
@@ -304,12 +301,16 @@ func (engine *Engine) GenerateRawFilter(rule *alerting.Rule, filterParam *alerti
 		}else{
 			return nil, fmt.Errorf("period interval: %s is too small", rule.Metrics.PeriodInterval)
 		}
-		duration, err := time.ParseDuration(fmt.Sprintf("%d%s", value * 15, units))
+		bucketCount := rule.Conditions.GetMinimumPeriodMatch() + 1
+		if bucketCount <= 0 {
+			bucketCount = 1
+		}
+		duration, err := time.ParseDuration(fmt.Sprintf("%d%s", value * bucketCount, units))
 		if err != nil {
 			return nil, err
 		}
-		timeStart = time.Now().Add(-duration).Format(time.RFC3339Nano)
-		timeEnd = time.Now().Format(time.RFC3339Nano)
+		timeStart = time.Now().Add(-duration).UnixMilli() //.Format(time.RFC3339Nano)
+		timeEnd = time.Now().UnixMilli()
 	}
 
 	timeQuery := util.MapStr{
@@ -320,36 +321,56 @@ func (engine *Engine) GenerateRawFilter(rule *alerting.Rule, filterParam *alerti
 			},
 		},
 	}
+	return timeQuery, nil
+}
 
-	if boolQ, ok := query["bool"].(map[string]interface{}); ok {
-		if mustQ, ok := boolQ["must"]; ok {
-
-			if mustArr, ok := mustQ.([]interface{}); ok {
-				boolQ["must"] = append(mustArr, timeQuery)
-
-			}else{
-				return nil, fmt.Errorf("must query: %v is not valid in filter", mustQ)
-			}
-		}else{
-			boolQ["must"] = []interface{}{
-				timeQuery,
-			}
-		}
+func (engine *Engine) GenerateRawFilter(rule *alerting.Rule, filterParam *alerting.FilterParam) (map[string]interface{}, error) {
+	query := map[string]interface{}{}
+	var err error
+	if rule.Resource.RawFilter != nil {
+		query = util.DeepCopy(rule.Resource.RawFilter).(map[string]interface{})
 	}else{
-		must := []interface{}{
-			timeQuery,
-		}
-		if len(query) > 0 {
-			if _, ok = query["match_all"]; !ok {
-				must = append(must, query)
+		if !rule.Resource.Filter.IsEmpty(){
+			query, err = engine.ConvertFilterQueryToDsl(&rule.Resource.Filter)
+			if err != nil {
+				return nil, err
 			}
-		}
-		query = util.MapStr{
-			"bool":  util.MapStr{
-				"must": must,
-			},
 		}
 	}
+	//timeQuery, err := engine.generateTimeFilter(rule, filterParam)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//if boolQ, ok := query["bool"].(map[string]interface{}); ok {
+	//	if mustQ, ok := boolQ["must"]; ok {
+	//
+	//		if mustArr, ok := mustQ.([]interface{}); ok {
+	//			boolQ["must"] = append(mustArr, timeQuery)
+	//
+	//		}else{
+	//			return nil, fmt.Errorf("must query: %v is not valid in filter", mustQ)
+	//		}
+	//	}else{
+	//		boolQ["must"] = []interface{}{
+	//			timeQuery,
+	//		}
+	//	}
+	//}else{
+	//	must := []interface{}{
+	//		timeQuery,
+	//	}
+	//	if len(query) > 0 {
+	//		if _, ok = query["match_all"]; !ok {
+	//			must = append(must, query)
+	//		}
+	//	}
+	//	query = util.MapStr{
+	//		"bool":  util.MapStr{
+	//			"must": must,
+	//		},
+	//	}
+	//}
 	return query, nil
 }
 
@@ -369,26 +390,55 @@ func (engine *Engine) ExecuteQuery(rule *alerting.Rule, filterParam *alerting.Fi
 	queryResult.Query = string(queryDslBytes)
 	searchRes, err := esClient.SearchWithRawQueryDSL(indexName, queryDslBytes)
 	if err != nil {
-		return nil, err
+		return queryResult, err
+	}
+	if searchRes.GetTotal() == 0 {
+		queryResult.Nodata = true
 	}
 	if searchRes.StatusCode != 200 {
-		return nil, fmt.Errorf("search error: %s", string(searchRes.RawResult.Body))
+		return queryResult, fmt.Errorf("search error: %s", string(searchRes.RawResult.Body))
 	}
 	queryResult.Raw = string(searchRes.RawResult.Body)
 	searchResult := map[string]interface{}{}
 	err = util.FromJSONBytes(searchRes.RawResult.Body, &searchResult)
 	if err != nil {
-		return nil, err
+		return queryResult, err
 	}
 	metricData := []alerting.MetricData{}
 	collectMetricData(searchResult["aggregations"], "", &metricData)
+	//将 rate 求导数据 除以 bucket size (单位 /s)
+	//statisticM := map[string] string{}
+	//for _, mi := range rule.Metrics.Items {
+	//	statisticM[mi.Name] = mi.Statistic
+	//}
+	//var periodInterval = rule.Metrics.PeriodInterval
+	//if filterParam != nil && filterParam.BucketSize != "" {
+	//	periodInterval =  filterParam.BucketSize
+	//}
+	//interval, err := time.ParseDuration(periodInterval)
+	//if err != nil {
+	//	log.Error(err)
+	//}
+	//for i, _ := range metricData {
+	//	for k, d := range metricData[i].Data {
+	//		if statisticM[k] == "rate" {
+	//			for _, td := range d {
+	//				if len(td) > 1 {
+	//					if v, ok := td[1].(float64); ok {
+	//						td[1] = v / interval.Seconds()
+	//					}
+	//				}
+	//			}
+	//		}
+	//	}
+	//}
 	queryResult.MetricData = metricData
 	return queryResult, nil
 }
-func (engine *Engine) GetTargetMetricData(rule *alerting.Rule, isFilterNaN bool, filterParam *alerting.FilterParam)([]alerting.MetricData, error){
+func (engine *Engine) GetTargetMetricData(rule *alerting.Rule, isFilterNaN bool, filterParam *alerting.FilterParam)([]alerting.MetricData, *alerting.QueryResult, error){
 	queryResult, err := engine.ExecuteQuery(rule, filterParam)
 	if err != nil {
-		return nil, err
+		return nil, queryResult, err
 	}
 	var targetMetricData []alerting.MetricData
 	for _, md := range queryResult.MetricData {
@@ -402,7 +452,7 @@ func (engine *Engine) GetTargetMetricData(rule *alerting.Rule, isFilterNaN bool,
 			}
 			expression, err := govaluate.NewEvaluableExpression(rule.Metrics.Formula)
 			if err != nil {
-				return nil, err
+				return nil, queryResult, err
 			}
 			dataLength := 0
 			for _, v := range md.Data {
@@ -429,7 +479,7 @@ func (engine *Engine) GetTargetMetricData(rule *alerting.Rule, isFilterNaN bool,
 				}
 				result, err := expression.Evaluate(parameters)
 				if err != nil {
-					return nil, err
+					return nil, queryResult, err
 				}
 				if r, ok := result.(float64); ok {
 					if math.IsNaN(r) || math.IsInf(r, 0 ){
@@ -445,24 +495,19 @@ func (engine *Engine) GetTargetMetricData(rule *alerting.Rule, isFilterNaN bool,
 		}
 		targetMetricData = append(targetMetricData, targetData)
 	}
-	return targetMetricData, nil
+	return targetMetricData, queryResult, nil
 }
 //CheckCondition check whether rule conditions triggered or not
-//if triggered returns an array of ConditionResult
+//if triggered returns an ConditionResult
 //sort conditions by severity desc  before check , and then if condition is true, then continue check another group
 func (engine *Engine) CheckCondition(rule *alerting.Rule)(*alerting.ConditionResult, error){
-	queryResult, err := engine.ExecuteQuery(rule, nil)
+	var resultItems []alerting.ConditionResultItem
+	targetMetricData, queryResult, err := engine.GetTargetMetricData(rule, false, nil)
 	conditionResult := &alerting.ConditionResult{
 		QueryResult: queryResult,
 	}
 	if err != nil {
 		return conditionResult, err
-	}
-
-	var resultItems []alerting.ConditionResultItem
-	targetMetricData, err := engine.GetTargetMetricData(rule, false, nil)
-	if err != nil {
-		return nil, err
 	}
 	for idx, targetData := range targetMetricData {
 		if idx == 0 {
@@ -488,6 +533,10 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule)(*alerting.ConditionRes
 			}
 			triggerCount := 0
 			for i := 0; i < dataLength; i++ {
+				//clear nil value
+				if targetData.Data[dataKey][i][1] == nil {
+					continue
+				}
 				if r, ok :=  targetData.Data[dataKey][i][1].(float64); ok {
 					if math.IsNaN(r){
 						continue
@@ -497,7 +546,7 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule)(*alerting.ConditionRes
 					"result": targetData.Data[dataKey][i][1],
 				})
 				if err != nil {
-					return nil, err
+					return conditionResult, fmt.Errorf("evaluate rule [%s] error: %w", rule.ID, err)
 				}
 				if evaluateResult == true {
 					triggerCount += 1
@@ -540,6 +589,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 				Created: time.Now(),
 				Updated: time.Now(),
 				RuleID: rule.ID,
+				RuleName: rule.Name,
 				ResourceID: rule.Resource.ID,
 				ResourceName: rule.Resource.Name,
 				Expression: rule.Metrics.Expression,
@@ -549,14 +599,18 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			}
 		}
 		if alertItem != nil {
-			for _, actionResult := range alertItem.ActionExecutionResults {
-				if actionResult.Error != "" {
-					alertItem.Error = actionResult.Error
+			if err != nil{
+				alertItem.State = alerting.AlertStateError
+				alertItem.Error = err.Error()
+			}else {
+				for _, actionResult := range alertItem.ActionExecutionResults {
+					if actionResult.Error != "" {
+						alertItem.Error = actionResult.Error
+						alertItem.State = alerting.AlertStateError
+					}
 				}
 			}
-			if alertItem.Error != ""{
-				alertItem.State = alerting.AlertStateError
-			}
+
 			err = orm.Save(alertItem)
 			if err != nil {
 				log.Error(err)
@@ -565,54 +619,106 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 	}()
 	log.Tracef("start check condition of rule %s", rule.ID)
 
+	//todo do only once when rule not change
+	metricExpression, _ := rule.Metrics.GenerateExpression()
+	for i, cond := range rule.Conditions.Items {
+		expression, _ := cond.GenerateConditionExpression()
+		rule.Conditions.Items[i].Expression = strings.ReplaceAll(expression, "result", metricExpression)
+	}
 	alertItem = &alerting.Alert{
 		ID: util.GetUUID(),
 		Created: time.Now(),
 		Updated: time.Now(),
 		RuleID: rule.ID,
+		RuleName: rule.Name,
 		ResourceID: rule.Resource.ID,
 		ResourceName: rule.Resource.Name,
 		Expression: rule.Metrics.Expression,
 		Objects: rule.Resource.Objects,
 		Conditions: rule.Conditions,
-		State: alerting.AlertStateNormal,
+		State: alerting.AlertStateOK,
 	}
 	checkResults, err := engine.CheckCondition(rule)
 	alertItem.ConditionResult = checkResults
 	if err != nil {
 		return err
 	}
-	lastAlertItem := alerting.Alert{}
-	err = getLastAlert(rule.ID, &lastAlertItem)
+	alertMessage, err := getLastAlertMessage(rule.ID, 2 * time.Minute)
+	if err != nil {
+		return fmt.Errorf("get alert message error: %w", err)
+	}
+	conditionResults := checkResults.ResultItems
+	var paramsCtx map[string]interface{}
+	if len(conditionResults) == 0 {
+		alertItem.Severity = "info"
+		if checkResults.QueryResult.Nodata {
+			alertItem.State =  alerting.AlertStateNodata
+		}
+
+		if alertMessage != nil  &&  alertMessage.Status != alerting.MessageStateRecovered && !checkResults.QueryResult.Nodata {
+			alertMessage.Status = alerting.MessageStateRecovered
+			alertMessage.Updated = time.Now()
+			err = saveAlertMessage(alertMessage)
+			if err != nil {
+				return fmt.Errorf("save alert message error: %w", err)
+			}
+		}
+		return nil
+	}
+	alertItem.State = alerting.AlertStateAlerting
+
+	var (
+		severity = conditionResults[0].ConditionItem.Severity
+	)
+	for _, conditionResult := range conditionResults {
+		if alerting.SeverityWeights[severity] < alerting.SeverityWeights[conditionResult.ConditionItem.Severity] {
+			severity = conditionResult.ConditionItem.Severity
+		}
+	}
+	paramsCtx = newParameterCtx(rule, checkResults, util.MapStr{
+		alerting2.ParamEventID: alertItem.ID,
+		alerting2.ParamTimestamp:  alertItem.Created.Unix(),
+	})
+
+	alertItem.Severity = severity
+	err = attachTitleMessageToCtx(rule, paramsCtx)
 	if err != nil {
 		return err
 	}
-	conditionResults := checkResults.ResultItems
-	if len(conditionResults) == 0 {
-		alertItem.Severity = "info"
-		alertItem.Content = ""
-		alertItem.State =  alerting.AlertStateNormal
-		return nil
+	alertItem.Message = paramsCtx[alerting2.ParamMessage].(string)
+	alertItem.Title = paramsCtx[alerting2.ParamTitle].(string)
+	if alertMessage == nil || alertMessage.Status == alerting.MessageStateRecovered {
+		msg := &alerting.AlertMessage{
+			RuleID: rule.ID,
+			Created: time.Now(),
+			Updated: time.Now(),
+			ID: util.GetUUID(),
+			Status: alerting.MessageStateAlerting,
+			Severity: severity,
+			Title: alertItem.Title,
+			Message: alertItem.Message,
+		}
+		err = saveAlertMessage(msg)
+		if err != nil {
+			return fmt.Errorf("save alert message error: %w", err)
+		}
 	}else{
-		if lastAlertItem.State == "" || lastAlertItem.State == alerting.AlertStateNormal {
-			rule.LastTermStartTime = time.Now()
-			strTime := rule.LastTermStartTime.UTC().Format(time.RFC3339)
-			kv.AddValue(alerting2.KVLastTermStartTime, []byte(rule.ID), []byte(strTime))
+		alertMessage.Title = alertItem.Title
+		alertMessage.Message = alertItem.Message
+		err = saveAlertMessage(alertMessage)
+		if err != nil {
+			return fmt.Errorf("save alert message error: %w", err)
 		}
-		log.Debugf("check condition result of rule %s is %v", conditionResults, rule.ID )
-		var (
-			severity = conditionResults[0].ConditionItem.Severity
-			content string
-		)
-		for _, conditionResult := range conditionResults {
-			if alerting.SeverityWeights[severity] < alerting.SeverityWeights[conditionResult.ConditionItem.Severity] {
-				severity = conditionResult.ConditionItem.Severity
-				content = conditionResult.ConditionItem.Message
-			}
-		}
-		alertItem.Severity = severity
-		alertItem.Content = content
-		alertItem.State = alerting.AlertStateActive
+	}
+	log.Debugf("check condition result of rule %s is %v", conditionResults, rule.ID )
+
+	// if alert message status equals ignored , then skip sending message to channel
+	if alertMessage != nil && alertMessage.Status == alerting.MessageStateIgnored {
+		return nil
+	}
+	// if channel is not enabled return
+	if !rule.Channels.Enabled {
+		return nil
 	}
 
 	if rule.Channels.AcceptTimeRange.Include(time.Now()) {
@@ -633,9 +739,15 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		period := time.Now().Sub(rule.LastNotificationTime.Local())
 
 		//log.Error(lastAlertItem.ID, period, periodDuration)
-		paramsCtx := newParameterCtx(rule, checkResults,alertItem.ID, alertItem.Created.UnixNano()/1e6)
+		if paramsCtx == nil {
+			paramsCtx = newParameterCtx(rule, checkResults, util.MapStr{
+				alerting2.ParamEventID: alertItem.ID,
+				alerting2.ParamTimestamp:  alertItem.Created.Unix(),
+				"severity": severity,
+			})
+		}
 
-		if lastAlertItem.ID == "" || period > periodDuration {
+		if alertMessage == nil || period > periodDuration {
 			actionResults, errCount := performChannels(rule.Channels.Normal, paramsCtx)
 			alertItem.ActionExecutionResults = actionResults
 			//change and save last notification time in local kv store when action error count equals zero
@@ -646,25 +758,16 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 				alertItem.IsNotified = true
 			}
 		}
-		isAck, err :=  hasAcknowledgedRule(rule.ID, rule.LastTermStartTime)
-		if err != nil {
-			alertItem.Error = err.Error()
-			return err
-		}
-		if rule.Channels.EscalationEnabled && lastAlertItem.ID !="" && !isAck {
+
+		if rule.Channels.EscalationEnabled {
 			throttlePeriod, err := time.ParseDuration(rule.Channels.EscalationThrottlePeriod)
 			if err != nil {
 				return err
 			}
-			//change and save last term start time in local kv store when action error count equals zero
-			if rule.LastTermStartTime.IsZero(){
-				tm, err := readTimeFromKV(alerting2.KVLastTermStartTime, []byte(rule.ID))
-				if err != nil {
-					return fmt.Errorf("get last term start time from kv error: %w", err)
-				}
-				if !tm.IsZero(){
-					rule.LastTermStartTime = tm
-				}
+
+			rule.LastTermStartTime = time.Now()
+			if alertMessage != nil {
+				rule.LastTermStartTime = alertMessage.Created
 			}
 			if time.Now().Sub(rule.LastTermStartTime.Local()) > throttlePeriod {
 				if rule.LastEscalationTime.IsZero(){
@@ -694,12 +797,57 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 	return nil
 }
 
-func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult, eventID string, eventTimestamp interface{} ) map[string]interface{}{
-	var conditionParams []util.MapStr
-	for _, resultItem := range checkResults.ResultItems {
+func attachTitleMessageToCtx(rule *alerting.Rule, paramsCtx map[string]interface{}) error{
+	var (
+		tplBytes []byte
+		err error
+	)
+	tplBytes, err = resolveMessage(rule.Metrics.Message, paramsCtx)
+	if err != nil {
+		return fmt.Errorf("resolve message template error: %w", err)
+	}
+	paramsCtx[alerting2.ParamMessage] = string(tplBytes)
+	tplBytes, err = resolveMessage(rule.Metrics.Title, paramsCtx)
+	if err != nil {
+		return fmt.Errorf("resolve title template error: %w", err)
+	}
+	paramsCtx[alerting2.ParamTitle] = string(tplBytes)
+	return nil
+}
+
+func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult, extraParams map[string]interface{} ) map[string]interface{}{
+	var (
+		conditionParams []util.MapStr
+		firstGroupValue string
+		firstThreshold  string
+		severity string
+	)
+	if len(checkResults.ResultItems) > 0 {
+		severity = checkResults.ResultItems[0].ConditionItem.Severity
+		sort.Slice(checkResults.ResultItems, func(i, j int) bool {
+			if  alerting.SeverityWeights[checkResults.ResultItems[i].ConditionItem.Severity] > alerting.SeverityWeights[checkResults.ResultItems[j].ConditionItem.Severity] {
+				return true
+			}
+			return false
+		})
+		sort.Slice(checkResults.ResultItems, func(i, j int) bool {
+			if  vi, ok := checkResults.ResultItems[i].ResultValue.(float64); ok {
+				if vj, ok := checkResults.ResultItems[j].ResultValue.(float64); ok {
+					return vi > vj
+				}
+			}
+			return false
+		})
+	}
+
+	for i, resultItem := range checkResults.ResultItems {
+
+		if i == 0 {
+			firstGroupValue = strings.Join(resultItem.GroupValues, ",")
+			firstThreshold = strings.Join(resultItem.ConditionItem.Values, ",")
+		}
 		conditionParams = append(conditionParams, util.MapStr{
-			alerting2.ParamMessage:        resultItem.ConditionItem.Message,
-			alerting2.ParamPresetValue:    resultItem.ConditionItem.Values,
+			alerting2.ParamThreshold:      resultItem.ConditionItem.Values,
 			alerting2.Severity:            resultItem.ConditionItem.Severity,
 			alerting2.ParamGroupValues:    resultItem.GroupValues,
 			alerting2.ParamIssueTimestamp: resultItem.IssueTimestamp,
@@ -711,9 +859,15 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 		alerting2.ParamRuleID:       rule.ID,
 		alerting2.ParamResourceID:   rule.Resource.ID,
 		alerting2.ParamResourceName: rule.Resource.Name,
-		alerting2.ParamEventID:      eventID,
-		alerting2.ParamTimestamp:    eventTimestamp,
 		alerting2.ParamResults:      conditionParams,
+		"first_group_value":         firstGroupValue,
+		"first_threshold":           firstThreshold,
+		"rule_name": rule.Name,
+		"severity": severity,
+	}
+	err := util.MergeFields(paramsCtx, extraParams, true)
+	if err != nil {
+		log.Errorf("merge template params error: %v", err)
 	}
 	return paramsCtx
 }
@@ -724,7 +878,15 @@ func (engine *Engine) Test(rule *alerting.Rule) ([]alerting.ActionExecutionResul
 		return nil, fmt.Errorf("check condition error:%w", err)
 	}
 	var actionResults []alerting.ActionExecutionResult
-	paramsCtx := newParameterCtx(rule, checkResults, util.GetUUID(), time.Now().UnixNano()/1e6)
+
+	paramsCtx := newParameterCtx(rule, checkResults,util.MapStr{
+		alerting2.ParamEventID: util.GetUUID(),
+		alerting2.ParamTimestamp:  time.Now().Unix(),
+	} )
+	err = attachTitleMessageToCtx(rule, paramsCtx)
+	if err != nil {
+		return nil, err
+	}
 	if len(rule.Channels.Normal) > 0 {
 		actionResults, _ = performChannels(rule.Channels.Normal, paramsCtx)
 	}else if len(rule.Channels.Escalation) > 0{
@@ -822,6 +984,40 @@ func collectMetricData(agg interface{}, groupValues string, metricData *[]alerti
 							if k == "key" || k == "key_as_string" || k== "doc_count"{
 								continue
 							}
+							//has filter
+							//if k == "filter_agg" {
+							//	if filterM, ok := v.(map[string]interface{}); ok {
+							//		for fk, fv := range filterM {
+							//			if fk == "doc_count" {
+							//				continue
+							//			}
+							//			if vm, ok := fv.(map[string]interface{}); ok {
+							//				if metricVal, ok := vm["value"]; ok {
+							//					md.Data[fk] = append(md.Data[fk], alerting.TimeMetricData{bkM["key"], metricVal})
+							//				}else{
+							//					//percentiles agg type
+							//					switch  vm["values"].(type) {
+							//					case []interface{}:
+							//						for _, val := range vm["values"].([]interface{}) {
+							//							if valM, ok := val.(map[string]interface{}); ok {
+							//								md.Data[fk] = append(md.Data[fk], alerting.TimeMetricData{bkM["key"], valM["value"]})
+							//							}
+							//							break
+							//						}
+							//					case map[string]interface{}:
+							//						for _, val := range vm["values"].(map[string]interface{}) {
+							//							md.Data[fk] = append(md.Data[fk], alerting.TimeMetricData{bkM["key"], val})
+							//							break
+							//						}
+							//					}
+							//
+							//				}
+							//
+							//			}
+							//		}
+							//	}
+							//	continue
+							//}
 							if vm, ok := v.(map[string]interface{}); ok {
 								if metricVal, ok := vm["value"]; ok {
 									md.Data[k] = append(md.Data[k], alerting.TimeMetricData{bkM["key"], metricVal})
@@ -867,7 +1063,12 @@ func collectMetricData(agg interface{}, groupValues string, metricData *[]alerti
 								if groupValues != "" {
 									newGroupValues = fmt.Sprintf("%s*%s", groupValues, currentGroup)
 								}
-								collectMetricData(bk, newGroupValues, metricData)
+								if filterAgg, ok := bkVal["filter_agg"].(map[string]interface{}); ok {
+									collectMetricData(filterAgg, newGroupValues, metricData)
+								}else{
+									collectMetricData(bk, newGroupValues, metricData)
+								}
+
 							}
 
 						}
@@ -879,7 +1080,7 @@ func collectMetricData(agg interface{}, groupValues string, metricData *[]alerti
 	}
 }
 
-func getLastAlert(ruleID string, alertItem *alerting.Alert) error {
+func getLastAlertMessageFromES(ruleID string) (*alerting.AlertMessage, error) {
 	queryDsl := util.MapStr{
 		"size": 1,
 		"sort": []util.MapStr{
@@ -900,60 +1101,59 @@ func getLastAlert(ruleID string, alertItem *alerting.Alert) error {
 	q := orm.Query{
 		RawQuery: util.MustToJSONBytes(queryDsl),
 	}
-	err, searchResult := orm.Search(alertItem, &q )
+	err, searchResult := orm.Search(alerting.AlertMessage{}, &q )
+	if err != nil {
+		return  nil, err
+	}
+	if len(searchResult.Result) == 0 {
+		return  nil, nil
+	}
+	messageBytes := util.MustToJSONBytes(searchResult.Result[0])
+	message := &alerting.AlertMessage{}
+	err =  util.FromJSONBytes(messageBytes, message)
+	return message, err
+}
+
+func getLastAlertMessage(ruleID string, duration time.Duration) (*alerting.AlertMessage, error ){
+	messageBytes, err := kv.GetValue(alerting2.KVLastMessageState, []byte(ruleID))
+	if err != nil {
+		return nil, err
+	}
+	message := &alerting.AlertMessage{}
+	if messageBytes != nil {
+
+		err = util.FromJSONBytes(messageBytes, message)
+		if err != nil {
+			return nil, err
+		}
+		if time.Now().Sub(message.Updated) <= duration {
+			return message, nil
+		}
+	}
+	message, err = getLastAlertMessageFromES(ruleID)
+	return message, err
+}
+
+func saveAlertMessageToES(message *alerting.AlertMessage) error {
+	message.Updated = time.Now()
+	return orm.Save(message)
+}
+
+func saveAlertMessage(message *alerting.AlertMessage) error {
+	//todo diff message if not change , then skip save to es ?
+	err := saveAlertMessageToES(message)
 	if err != nil {
 		return err
 	}
-	if len(searchResult.Result) == 0 {
-		return nil
-	}
-	alertBytes := util.MustToJSONBytes(searchResult.Result[0])
-	return util.FromJSONBytes(alertBytes, alertItem)
-}
 
-func hasAcknowledgedRule(ruleID string, startTime time.Time) (bool, error){
-	queryDsl := util.MapStr{
-		"size": 1,
-		"query": util.MapStr{
-			"bool": util.MapStr{
-				"must":[]util.MapStr{
-					{
-						"term": util.MapStr{
-							"rule_id": util.MapStr{
-								"value": ruleID,
-							},
-						},
-					},
-					{
-						"term": util.MapStr{
-							"state": alerting.AlertStateAcknowledge,
-						},
-					},
-					{
-						"range": util.MapStr{
-							"created": util.MapStr{
-								"gte": startTime,
-							},
-						},
-					},
-				},
-
-			},
-		},
-	}
-	q := orm.Query{
-		WildcardIndex: true,
-		RawQuery: util.MustToJSONBytes(queryDsl),
-	}
-	err, searchResult := orm.Search(alerting.Alert{}, &q )
+	messageBytes, err := util.ToJSONBytes(message)
 	if err != nil {
-		return false, err
+		return err
 	}
-	if len(searchResult.Result) == 0 {
-		return false, nil
-	}
-	return true, nil
+	err = kv.AddValue(alerting2.KVLastMessageState, []byte(message.RuleID), messageBytes)
+	return err
 }
+
 
 func readTimeFromKV(bucketKey string, key []byte)(time.Time, error){
 	timeBytes, err := kv.GetValue(bucketKey, key)

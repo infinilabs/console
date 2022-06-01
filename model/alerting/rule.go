@@ -13,7 +13,7 @@ type Rule struct {
 	ID      string    `json:"id,omitempty"      elastic_meta:"_id" elastic_mapping:"id: { type: keyword }"`
 	Created time.Time `json:"created,omitempty" elastic_mapping:"created: { type: date }"`
 	Updated time.Time `json:"updated,omitempty" elastic_mapping:"updated: { type: date }"`
-	//Name string `json:"name" elastic_mapping:"name:{type:keyword,copy_to:search_text}"`
+	Name string `json:"name" elastic_mapping:"name:{type:keyword,copy_to:search_text}"`
 	Enabled bool `json:"enabled" elastic_mapping:"enabled:{type:keyword}"`
 	Resource Resource `json:"resource" elastic_mapping:"resource:{type:object}"`
 	Metrics Metric `json:"metrics" elastic_mapping:"metrics:{type:object}"`
@@ -52,12 +52,13 @@ func (rule *Rule) GetOrInitExpression() (string, error){
 }
 
 type RuleChannel struct {
-	Normal []Channel      `json:"normal"`
+	Enabled bool `json:"enabled"`
+	Normal []Channel      `json:"normal,omitempty"`
 	Escalation []Channel  `json:"escalation,omitempty"`
-	ThrottlePeriod string `json:"throttle_period"` //沉默周期
-	AcceptTimeRange TimeRange   `json:"accept_time_range"`
+	ThrottlePeriod string `json:"throttle_period,omitempty"` //沉默周期
+	AcceptTimeRange TimeRange   `json:"accept_time_range,omitempty"`
 	EscalationThrottlePeriod string `json:"escalation_throttle_period,omitempty"`
-	EscalationEnabled bool `json:"escalation_enabled"`
+	EscalationEnabled bool `json:"escalation_enabled,omitempty"`
 }
 
 type MessageTemplate struct{
@@ -71,6 +72,9 @@ type TimeRange struct {
 }
 
 func (tr *TimeRange) Include( t time.Time) bool {
+	if tr.Start == "" || tr.End == "" {
+		return true
+	}
 	currentTimeStr := t.Format("15:04")
 	return tr.Start <= currentTimeStr && currentTimeStr <= tr.End
 }

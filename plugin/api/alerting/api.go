@@ -7,6 +7,7 @@ package alerting
 import (
 	"infini.sh/console/config"
 	"infini.sh/framework/core/api"
+	"infini.sh/framework/core/api/rbac/enum"
 )
 
 
@@ -16,27 +17,32 @@ type AlertAPI struct {
 }
 
 func (alert *AlertAPI) Init() {
-	api.HandleAPIMethod(api.GET, "/alerting/rule/:rule_id", alert.getRule)
-	api.HandleAPIMethod(api.POST, "/alerting/rule", alert.createRule)
+	api.HandleAPIMethod(api.GET, "/alerting/rule/:rule_id", alert.RequirePermission(alert.getRule,enum.PermissionAlertRuleRead))
+	api.HandleAPIMethod(api.POST, "/alerting/rule", alert.RequirePermission(alert.createRule, enum.PermissionAlertRuleWrite))
 	api.HandleAPIMethod(api.POST, "/alerting/rule/test", alert.sendTestMessage)
-	api.HandleAPIMethod(api.DELETE, "/alerting/rule/:rule_id", alert.deleteRule)
-	api.HandleAPIMethod(api.PUT, "/alerting/rule/:rule_id", alert.updateRule)
-	api.HandleAPIMethod(api.GET, "/alerting/rule/_search", alert.searchRule)
+	api.HandleAPIMethod(api.DELETE, "/alerting/rule/:rule_id", alert.RequirePermission(alert.deleteRule, enum.PermissionAlertRuleWrite))
+	api.HandleAPIMethod(api.PUT, "/alerting/rule/:rule_id", alert.RequirePermission(alert.updateRule, enum.PermissionAlertRuleWrite))
+	api.HandleAPIMethod(api.GET, "/alerting/rule/_search", alert.RequirePermission(alert.searchRule, enum.PermissionAlertRuleRead))
 	api.HandleAPIMethod(api.GET, "/alerting/stats", alert.getAlertStats)
 	api.HandleAPIMethod(api.POST, "/alerting/rule/info", alert.fetchAlertInfos)
-	api.HandleAPIMethod(api.POST, "/alerting/rule/:rule_id/_enable", alert.enableRule)
-	api.HandleAPIMethod(api.GET, "/alerting/rule/:rule_id/metric", alert.getMetricData)
+	api.HandleAPIMethod(api.POST, "/alerting/rule/:rule_id/_enable", alert.RequirePermission(alert.enableRule, enum.PermissionAlertRuleWrite))
+	api.HandleAPIMethod(api.GET, "/alerting/rule/:rule_id/metric", alert.RequirePermission(alert.getMetricData, enum.PermissionAlertRuleRead))
+	api.HandleAPIMethod(api.GET, "/alerting/rule/:rule_id/info", alert.RequirePermission(alert.getRuleDetail, enum.PermissionAlertRuleRead, enum.PermissionAlertMessageRead))
 
-	api.HandleAPIMethod(api.GET, "/alerting/channel/:channel_id", alert.getChannel)
-	api.HandleAPIMethod(api.POST, "/alerting/channel", alert.createChannel)
-	api.HandleAPIMethod(api.DELETE, "/alerting/channel/:channel_id", alert.deleteChannel)
-	api.HandleAPIMethod(api.PUT, "/alerting/channel/:channel_id", alert.updateChannel)
-	api.HandleAPIMethod(api.GET, "/alerting/channel/_search", alert.searchChannel)
+	api.HandleAPIMethod(api.GET, "/alerting/channel/:channel_id", alert.RequirePermission(alert.getChannel, enum.PermissionAlertChannelRead))
+	api.HandleAPIMethod(api.POST, "/alerting/channel", alert.RequirePermission(alert.createChannel, enum.PermissionAlertChannelWrite))
+	api.HandleAPIMethod(api.DELETE, "/alerting/channel", alert.RequirePermission(alert.deleteChannel, enum.PermissionAlertChannelWrite))
+	api.HandleAPIMethod(api.PUT, "/alerting/channel/:channel_id", alert.RequirePermission(alert.updateChannel, enum.PermissionAlertChannelWrite))
+	api.HandleAPIMethod(api.GET, "/alerting/channel/_search", alert.RequirePermission(alert.searchChannel, enum.PermissionAlertChannelRead))
 
-	api.HandleAPIMethod(api.GET, "/alerting/alert/_search", alert.searchAlert)
-	api.HandleAPIMethod(api.GET, "/alerting/alert/:alert_id", alert.getAlert)
-	api.HandleAPIMethod(api.POST, "/alerting/alert/_acknowledge", alert.acknowledgeAlert)
+	api.HandleAPIMethod(api.GET, "/alerting/alert/_search", alert.RequirePermission(alert.searchAlert, enum.PermissionAlertHistoryRead))
+	api.HandleAPIMethod(api.GET, "/alerting/alert/:alert_id", alert.RequirePermission(alert.getAlert, enum.PermissionAlertHistoryRead))
 	api.HandleAPIMethod(api.GET, "/alerting/template/parameters", alert.getTemplateParams)
+
+	api.HandleAPIMethod(api.GET, "/alerting/message/_search", alert.RequirePermission(alert.searchAlertMessage, enum.PermissionElasticsearchMetricRead))
+	api.HandleAPIMethod(api.POST, "/alerting/message/_ignore", alert.RequirePermission(alert.ignoreAlertMessage, enum.PermissionAlertMessageWrite))
+	api.HandleAPIMethod(api.GET, "/alerting/message/_stats",  alert.RequirePermission(alert.getAlertMessageStats, enum.PermissionAlertMessageRead))
+	api.HandleAPIMethod(api.GET, "/alerting/message/:message_id", alert.RequirePermission(alert.getAlertMessage, enum.PermissionAlertMessageRead))
 
 
 	//just for test

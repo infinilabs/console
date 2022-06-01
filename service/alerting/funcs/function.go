@@ -18,11 +18,13 @@ func GenericFuncMap() template.FuncMap {
 }
 
 var genericMap = map[string]interface{}{
-	"hello": func() string { return "Hello!" },
+	"hello":        func() string { return "Hello!" },
 	"format_bytes": formatBytes,
-	"to_fixed": toFixed,
-	"date": date,
+	"to_fixed":     toFixed,
+	"date":         date,
 	"date_in_zone": dateInZone,
-	"to_upper": strings.ToUpper,
-	"to_lower": strings.ToLower,
+	"datetime": datetime,
+	"datetime_in_zone": datetimeInZone,
+	"to_upper":     strings.ToUpper,
+	"to_lower":     strings.ToLower,
 }

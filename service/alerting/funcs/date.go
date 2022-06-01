@@ -9,19 +9,22 @@ import (
 	"time"
 )
 
-func date(fmt string, date interface{}) string {
-	return dateInZone(fmt, date, "Local")
+func datetimeInZone(zone string, date interface{}) string{
+	return _dateInZone("2006-01-02 15:04:05", date, zone)
+}
+func datetime(date interface{}) string{
+	return _dateInZone("2006-01-02 15:04:05", date, "Local")
 }
 
-func htmlDate(date interface{}) string {
-	return dateInZone("2006-01-02", date, "Local")
+func date(date interface{}) string {
+	return _dateInZone("2006-01-02", date, "Local")
 }
 
-func htmlDateInZone(date interface{}, zone string) string {
-	return dateInZone("2006-01-02", date, zone)
+func dateInZone(zone string, date interface{}) string {
+	return _dateInZone("2006-01-02", date, zone)
 }
 
-func dateInZone(fmt string, date interface{}, zone string) string {
+func _dateInZone(fmt string, date interface{}, zone string) string {
 	var t time.Time
 	switch date := date.(type) {
 	default:
@@ -34,6 +37,7 @@ func dateInZone(fmt string, date interface{}, zone string) string {
 		t = time.Unix(date, 0)
 	case int:
 		t = time.Unix(int64(date), 0)
+
 	case int32:
 		t = time.Unix(int64(date), 0)
 	case string:

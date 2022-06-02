@@ -85,11 +85,11 @@ func (h *AlertAPI) getAlertMessageStats(w http.ResponseWriter, req *http.Request
 		"size": 0,
 		"query": util.MapStr{
 			"bool": util.MapStr{
-				"must_not": []util.MapStr{
+				"must": []util.MapStr{
 					{
 						"terms": util.MapStr{
 							"status": []string{
-								alerting.MessageStateRecovered,
+								alerting.MessageStateAlerting,
 							},
 						},
 					},

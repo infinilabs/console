@@ -26,9 +26,9 @@ func Init(cfg *config.AppConfig) {
 	api.HandleAPIMethod(api.PUT, path.Join(pathPrefix, "dict/:id"), handler.UpdateDictItemAction)
 
 	api.HandleAPIMethod(api.POST, path.Join(esPrefix, "doc/:index/_search"), handler.HandleSearchDocumentAction)
-	api.HandleAPIMethod(api.POST, path.Join(esPrefix, "doc/:index"),handler.HandleAddDocumentAction)
-	api.HandleAPIMethod(api.PUT, path.Join(esPrefix, "doc/:index/:docId"), handler.HandleUpdateDocumentAction)
-	api.HandleAPIMethod(api.DELETE, path.Join(esPrefix, "doc/:index/:docId"), handler.HandleDeleteDocumentAction)
+	api.HandleAPIMethod(api.POST, path.Join(esPrefix, "doc/:index"), handler.ClusterRequired(handler.HandleAddDocumentAction, "doc.create"))
+	api.HandleAPIMethod(api.PUT, path.Join(esPrefix, "doc/:index/:docId"), handler.ClusterRequired(handler.HandleUpdateDocumentAction, "doc.update"))
+	api.HandleAPIMethod(api.DELETE, path.Join(esPrefix, "doc/:index/:docId"), handler.ClusterRequired(handler.HandleDeleteDocumentAction, "doc.delete"))
 	api.HandleAPIMethod(api.GET, path.Join(esPrefix, "doc/_validate"), handler.ValidateDocIDAction)
 
 	api.HandleAPIMethod(api.POST, path.Join(pathPrefix, "rebuild/*id"), handler.HandleReindexAction)

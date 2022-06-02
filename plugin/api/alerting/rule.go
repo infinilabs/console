@@ -766,7 +766,7 @@ func getRuleMetricData( rule *alerting.Rule, filterParam *alerting.FilterParam) 
 			Data:  targetData,
 			BucketSize: filterParam.BucketSize,
 			Metric: common.MetricSummary{
-				Label:      strings.Join(md.GroupValues, "-"),
+				Label:      label,
 				Group:      rule.ID,
 				TickFormat: "0,0.[00]",
 				FormatType: "num",

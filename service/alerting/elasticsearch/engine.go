@@ -693,6 +693,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			Created: time.Now(),
 			Updated: time.Now(),
 			ID: util.GetUUID(),
+			ResourceID: rule.Resource.ID,
 			Status: alerting.MessageStateAlerting,
 			Severity: severity,
 			Title: alertItem.Title,
@@ -953,7 +954,7 @@ func performChannel(channel *alerting.Channel, ctx map[string]interface{}) ([]by
 	executeResult, err := act.Execute()
 	return executeResult, err, message
 }
-func (engine *Engine) GenerateTask(rule *alerting.Rule) func(ctx context.Context) {
+func (engine *Engine) GenerateTask(rule alerting.Rule) func(ctx context.Context) {
 	return func(ctx context.Context) {
 		defer func() {
 			if err := recover(); err != nil {
@@ -961,7 +962,7 @@ func (engine *Engine) GenerateTask(rule *alerting.Rule) func(ctx context.Context
 				debug.PrintStack()
 			}
 		}()
-		err := engine.Do(rule)
+		err := engine.Do(&rule)
 		if err != nil {
 			log.Error(err)
 		}

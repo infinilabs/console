@@ -15,7 +15,7 @@ type Engine interface {
 	GenerateQuery(rule *alerting.Rule, filterParam *alerting.FilterParam) (interface{}, error)
 	ExecuteQuery(rule *alerting.Rule, filterParam *alerting.FilterParam)(*alerting.QueryResult, error)
 	CheckCondition(rule *alerting.Rule)(*alerting.ConditionResult, error)
-	GenerateTask(rule *alerting.Rule) func(ctx context.Context)
+	GenerateTask(rule alerting.Rule) func(ctx context.Context)
 	Test(rule *alerting.Rule) ([]alerting.ActionExecutionResult, error)
 	GetTargetMetricData(rule *alerting.Rule, isFilterNaN bool, filterParam *alerting.FilterParam)([]alerting.MetricData, *alerting.QueryResult, error)
 }

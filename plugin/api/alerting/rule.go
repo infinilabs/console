@@ -81,7 +81,7 @@ func (alertAPI *AlertAPI) createRule(w http.ResponseWriter, req *http.Request, p
 				ID: rule.ID,
 				Interval: rule.Schedule.Interval,
 				Description: rule.Metrics.Expression,
-				Task: eng.GenerateTask(&rule),
+				Task: eng.GenerateTask(rule),
 			}
 			task.RegisterScheduleTask(ruleTask)
 			task.StartTask(ruleTask.ID)
@@ -309,7 +309,7 @@ func (alertAPI *AlertAPI) updateRule(w http.ResponseWriter, req *http.Request, p
 			ID:          rule.ID,
 			Interval:    rule.Schedule.Interval,
 			Description: rule.Metrics.Expression,
-			Task:        eng.GenerateTask(rule),
+			Task:        eng.GenerateTask(*rule),
 		}
 		task.RegisterScheduleTask(ruleTask)
 		task.StartTask(ruleTask.ID)
@@ -389,6 +389,15 @@ func (alertAPI *AlertAPI) searchRule(w http.ResponseWriter, req *http.Request, p
 	)
 
 	mustQuery := []util.MapStr{
+	}
+	clusterFilter, hasAllPrivilege := alertAPI.GetClusterFilter(req, "resource.resource_id")
+	if !hasAllPrivilege && clusterFilter == nil {
+		alertAPI.WriteJSON(w, elastic.SearchResponse{
+		}, http.StatusOK)
+		return
+	}
+	if !hasAllPrivilege {
+		mustQuery = append(mustQuery, clusterFilter)
 	}
 	if keyword != "" {
 		mustQuery = append(mustQuery, util.MapStr{
@@ -568,7 +577,7 @@ func (alertAPI *AlertAPI) enableRule(w http.ResponseWriter, req *http.Request, p
 			ID:          obj.ID,
 			Interval:    obj.Schedule.Interval,
 			Description: obj.Metrics.Expression,
-			Task:        eng.GenerateTask(&obj),
+			Task:        eng.GenerateTask(obj),
 		}
 		task.RegisterScheduleTask(ruleTask)
 		task.StartTask(ruleTask.ID)
@@ -748,6 +757,10 @@ func getRuleMetricData( rule *alerting.Rule, filterParam *alerting.FilterParam) 
 		}
 		if sampleData == nil {
 			sampleData = targetData
+		}
+		var label = strings.Join(md.GroupValues, "-")
+		if label == "" {
+			label, _ = rule.GetOrInitExpression()
 		}
 		metricItem.Lines = append(metricItem.Lines, &common.MetricLine{
 			Data:  targetData,

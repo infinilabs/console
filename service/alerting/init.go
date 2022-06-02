@@ -39,7 +39,7 @@ func InitTasks() error {
 			ID: rule.ID,
 			Interval: rule.Schedule.Interval,
 			Description: rule.Metrics.Expression,
-			Task: eng.GenerateTask(rule),
+			Task: eng.GenerateTask(*rule),
 		})
 		task.StartTask(rule.ID)
 	}

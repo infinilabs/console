@@ -153,6 +153,15 @@ func (h *AlertAPI) searchAlertMessage(w http.ResponseWriter, req *http.Request, 
 	if ruleID != "" {
 		mustBuilder.WriteString(fmt.Sprintf(`,{"term":{"rule_id":{"value":"%s"}}}`, ruleID))
 	}
+	clusterFilter, hasAllPrivilege := h.GetClusterFilter(req, "resource_id")
+	if !hasAllPrivilege && clusterFilter == nil {
+		h.WriteJSON(w, elastic.SearchResponse{}, http.StatusOK)
+		return
+	}
+	if !hasAllPrivilege {
+		mustBuilder.WriteString(",")
+		mustBuilder.Write(util.MustToJSONBytes(clusterFilter))
+	}
 
 	if sort != "" {
 		sortParts := strings.Split(sort, ",")

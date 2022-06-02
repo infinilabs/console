@@ -117,6 +117,7 @@ func (handler APIHandler) HandleDeleteIndexAction(w http.ResponseWriter, req *ht
 }
 
 func (handler APIHandler) HandleCreateIndexAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	
 	targetClusterID := ps.ByName("id")
 	client := elastic.GetClient(targetClusterID)
 	indexName := ps.ByName("index")

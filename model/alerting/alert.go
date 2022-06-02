@@ -60,6 +60,7 @@ type AlertMessage struct {
 	Created time.Time `json:"created,omitempty" elastic_mapping:"created: { type: date }"`
 	Updated time.Time `json:"updated,omitempty" elastic_mapping:"updated: { type: date }"`
 	RuleID string `json:"rule_id"  elastic_mapping:"rule_id: { type: keyword,copy_to:search_text }"`
+	ResourceID string `json:"resource_id"  elastic_mapping:"resource_id: { type: keyword,copy_to:search_text }"`
 	Title string `json:"title"  elastic_mapping:"title: { type: keyword,copy_to:search_text }"`
 	Message string `json:"message"  elastic_mapping:"content: { type: keyword,copy_to:search_text }"`
 	Status string `json:"status" elastic_mapping:"status: { type: keyword,copy_to:search_text }"`

@@ -144,7 +144,7 @@ func (h *AlertAPI) searchAlertMessage(w http.ResponseWriter, req *http.Request, 
 		severity = h.GetParameterOrDefault(req, "severity", "")
 		sort = h.GetParameterOrDefault(req, "sort", "")
 		ruleID        = h.GetParameterOrDefault(req, "rule_id", "")
-		min        = h.GetParameterOrDefault(req, "min", "now-1d")
+		min        = h.GetParameterOrDefault(req, "min", "now-30d")
 		max        = h.GetParameterOrDefault(req, "max", "now")
 		mustBuilder = &strings.Builder{}
 		sortBuilder = strings.Builder{}

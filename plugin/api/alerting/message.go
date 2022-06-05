@@ -81,19 +81,28 @@ func (h *AlertAPI) ignoreAlertMessage(w http.ResponseWriter, req *http.Request, 
 
 func (h *AlertAPI) getAlertMessageStats(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	esClient := elastic.GetClient(h.Config.Elasticsearch)
+	must := []util.MapStr{
+		{
+			"terms": util.MapStr{
+				"status": []string{
+					alerting.MessageStateAlerting,
+				},
+			},
+		},
+	}
+	clusterFilter, hasAllPrivilege := h.GetClusterFilter(req, "resource_id")
+	if !hasAllPrivilege && clusterFilter == nil {
+		h.WriteJSON(w, elastic.SearchResponse{}, http.StatusOK)
+		return
+	}
+	if !hasAllPrivilege {
+		must = append(must,clusterFilter)
+	}
 	queryDsl := util.MapStr{
 		"size": 0,
 		"query": util.MapStr{
 			"bool": util.MapStr{
-				"must": []util.MapStr{
-					{
-						"terms": util.MapStr{
-							"status": []string{
-								alerting.MessageStateAlerting,
-							},
-						},
-					},
-				},
+				"must": must,
 			},
 		},
 		"aggs": util.MapStr{

@@ -414,6 +414,13 @@ func (alertAPI *AlertAPI) searchRule(w http.ResponseWriter, req *http.Request, p
 		})
 	}
 	queryDSL := util.MapStr{
+		"sort": []util.MapStr{
+			{
+				"created": util.MapStr{
+					"order": "desc",
+				},
+			},
+		},
 		"from": from,
 		"size": size,
 		"query": util.MapStr{

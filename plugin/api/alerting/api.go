@@ -39,7 +39,7 @@ func (alert *AlertAPI) Init() {
 	api.HandleAPIMethod(api.GET, "/alerting/alert/:alert_id", alert.RequirePermission(alert.getAlert, enum.PermissionAlertHistoryRead))
 	api.HandleAPIMethod(api.GET, "/alerting/template/parameters", alert.getTemplateParams)
 
-	api.HandleAPIMethod(api.GET, "/alerting/message/_search", alert.RequirePermission(alert.searchAlertMessage, enum.PermissionElasticsearchMetricRead))
+	api.HandleAPIMethod(api.GET, "/alerting/message/_search", alert.RequirePermission(alert.searchAlertMessage, enum.PermissionAlertMessageRead))
 	api.HandleAPIMethod(api.POST, "/alerting/message/_ignore", alert.RequirePermission(alert.ignoreAlertMessage, enum.PermissionAlertMessageWrite))
 	api.HandleAPIMethod(api.GET, "/alerting/message/_stats",  alert.RequirePermission(alert.getAlertMessageStats, enum.PermissionAlertMessageRead))
 	api.HandleAPIMethod(api.GET, "/alerting/message/:message_id", alert.RequirePermission(alert.getAlertMessage, enum.PermissionAlertMessageRead))

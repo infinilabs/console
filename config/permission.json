@@ -133,33 +133,6 @@
       "path": "_alias/:alias"
     }
   ],
-  "doc": [
-    {"name": "doc.*", "methods": ["*"],
-      "path": "/:index_name/:doctype"
-    },
-    {"name": "doc.update", "methods": ["put"],
-      "path": "/:index_name/:doctype/:doc_id"
-    },
-    {"name": "doc.create", "methods": ["post"],
-      "path": "/:index_name/:doctype"
-    },
-
-    {"name": "doc.delete", "methods": ["delete"],
-      "path": "/:index_name/:doctype/:doc_id"
-    },
-    {"name": "doc.get", "methods": ["get"],
-      "path": "/:index_name/:doctype/:doc_id"
-    },
-    {"name": "doc.exists", "methods": ["head"],
-      "path": "/:index_name/:doctype/:doc_id"
-    },
-    {"name": "doc.exists_source", "methods": ["head"],
-      "path": "/:index_name/_source/:doc_id"
-    },
-    {"name": "doc.explain", "methods": ["get"],
-      "path": "/:index_name/_explain/:doc_id"
-    }
-  ],
   "indices": [
     {"name": "indices.*", "methods": ["*"],
       "path": "/*"
@@ -295,6 +268,31 @@
     },
     {"name": "indices.field_caps", "methods":["get", "post"],
       "path": "/:index_name/_field_caps"
+    },
+    {"name": "doc.*", "methods": ["*"],
+      "path": "/:index_name/:doctype"
+    },
+    {"name": "doc.update", "methods": ["put"],
+      "path": "/:index_name/:doctype/:doc_id"
+    },
+    {"name": "doc.create", "methods": ["post"],
+      "path": "/:index_name/:doctype"
+    },
+
+    {"name": "doc.delete", "methods": ["delete"],
+      "path": "/:index_name/:doctype/:doc_id"
+    },
+    {"name": "doc.get", "methods": ["get"],
+      "path": "/:index_name/:doctype/:doc_id"
+    },
+    {"name": "doc.exists", "methods": ["head"],
+      "path": "/:index_name/:doctype/:doc_id"
+    },
+    {"name": "doc.exists_source", "methods": ["head"],
+      "path": "/:index_name/_source/:doc_id"
+    },
+    {"name": "doc.explain", "methods": ["get"],
+      "path": "/:index_name/_explain/:doc_id"
     }
   ],
 

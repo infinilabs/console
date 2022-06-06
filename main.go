@@ -103,12 +103,11 @@ func main() {
 
 		module.Start()
 
-		orm.RegisterSchemaWithIndexName(model.Dict{}, "dict")
-		orm.RegisterSchemaWithIndexName(model.Reindex{}, "reindex")
+		//orm.RegisterSchemaWithIndexName(model.Dict{}, "dict")
+		//orm.RegisterSchemaWithIndexName(model.Reindex{}, "reindex")
 		orm.RegisterSchemaWithIndexName(elastic.View{}, "view")
-		orm.RegisterSchemaWithIndexName(alerting.Alert{}, "alerting-alerts")
 		orm.RegisterSchemaWithIndexName(elastic.CommonCommand{}, "commands")
-		orm.RegisterSchemaWithIndexName(elastic.TraceTemplate{}, "trace-template")
+		//orm.RegisterSchemaWithIndexName(elastic.TraceTemplate{}, "trace-template")
 		orm.RegisterSchemaWithIndexName(gateway.Instance{}, "gateway-instance")
 		orm.RegisterSchemaWithIndexName(alerting.Rule{}, "alert-rule")
 		orm.RegisterSchemaWithIndexName(alerting.Alert{}, "alert-history")

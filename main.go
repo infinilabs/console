@@ -4,7 +4,6 @@ import (
 	"errors"
 	_ "expvar"
 	"infini.sh/console/config"
-	"infini.sh/console/model"
 	"infini.sh/console/model/alerting"
 	"infini.sh/console/model/gateway"
 	_ "infini.sh/console/plugin"

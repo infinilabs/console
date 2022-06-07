@@ -25,6 +25,7 @@ func (alert *AlertAPI) Init() {
 	api.HandleAPIMethod(api.GET, "/alerting/rule/_search", alert.RequirePermission(alert.searchRule, enum.PermissionAlertRuleRead))
 	api.HandleAPIMethod(api.GET, "/alerting/stats", alert.getAlertStats)
 	api.HandleAPIMethod(api.POST, "/alerting/rule/info", alert.fetchAlertInfos)
+	api.HandleAPIMethod(api.POST, "/alerting/rule/preview_metric", alert.getPreviewMetricData)
 	api.HandleAPIMethod(api.POST, "/alerting/rule/:rule_id/_enable", alert.RequirePermission(alert.enableRule, enum.PermissionAlertRuleWrite))
 	api.HandleAPIMethod(api.GET, "/alerting/rule/:rule_id/metric", alert.RequirePermission(alert.getMetricData, enum.PermissionAlertRuleRead))
 	api.HandleAPIMethod(api.GET, "/alerting/rule/:rule_id/info", alert.RequirePermission(alert.getRuleDetail, enum.PermissionAlertRuleRead, enum.PermissionAlertMessageRead))

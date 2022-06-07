@@ -672,6 +672,7 @@ func (alertAPI *AlertAPI) getPreviewMetricData(w http.ResponseWriter, req *http.
 		minStr = alertAPI.Get(req, "min", "")
 		maxStr = alertAPI.Get(req, "max", "")
 	)
+
 	bucketSize, min, max, err := api.GetMetricRangeAndBucketSize(minStr, maxStr, 60, 15)
 	filterParam := &alerting.FilterParam{
 		Start: min,

@@ -7,6 +7,9 @@
     {"name": "cat.indices", "methods": ["get"],
       "path": "_cat/indices"
     },
+    {"name": "cat.indices", "methods": ["get"],
+      "path": "_cat/indices/:target"
+    },
     {"name": "cat.help", "methods": ["get"],
       "path": "_cat/help"
     },
@@ -28,8 +31,14 @@
     {"name": "cat.shards", "methods": ["get"],
       "path": "_cat/shards"
     },
+    {"name": "cat.shards", "methods": ["get"],
+      "path": "_cat/shards/:target"
+    },
     {"name": "cat.aliases", "methods": ["get"],
       "path": "_cat/aliases"
+    },
+    {"name": "cat.aliases", "methods": ["get"],
+      "path": "_cat/aliases/:name"
     },
     {"name": "cat.nodeattrs", "methods": ["get"],
       "path": "_cat/nodeattrs"
@@ -268,6 +277,9 @@
     },
     {"name": "indices.field_caps", "methods":["get", "post"],
       "path": "/:index_name/_field_caps"
+    },
+    {"name": "indices.exists_template", "methods":["get"],
+      "path": "/_template/:name"
     },
     {"name": "doc.*", "methods": ["*"],
       "path": "/:index_name/:doctype"

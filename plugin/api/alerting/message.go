@@ -114,8 +114,8 @@ func (h *AlertAPI) getAlertMessageStats(w http.ResponseWriter, req *http.Request
 			},
 		},
 	}
-
-	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetWildcardIndexName(alerting.AlertMessage{}), util.MustToJSONBytes(queryDsl) )
+	indexName := orm.GetWildcardIndexName(alerting.AlertMessage{})
+	searchRes, err := esClient.SearchWithRawQueryDSL(indexName, util.MustToJSONBytes(queryDsl) )
 	if err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"error": err.Error(),
@@ -135,6 +135,28 @@ func (h *AlertAPI) getAlertMessageStats(w http.ResponseWriter, req *http.Request
 			statusCounts[status] = 0
 		}
 	}
+	must[0] = util.MapStr{
+		"term": util.MapStr{
+			"status": util.MapStr{
+				"value": alerting.MessageStateIgnored,
+			},
+		},
+	}
+	queryDsl = util.MapStr{
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": must,
+			},
+		},
+	}
+	countRes, err := esClient.Count(indexName, util.MustToJSONBytes(queryDsl))
+	if err != nil {
+		h.WriteJSON(w, util.MapStr{
+			"error": err.Error(),
+		}, http.StatusInternalServerError)
+		return
+	}
+	statusCounts[alerting.MessageStateIgnored] = countRes.Count
 	h.WriteJSON(w, util.MapStr{
 		"alert": util.MapStr{
 			"current": statusCounts,

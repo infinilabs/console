@@ -688,12 +688,14 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 	alertItem.Message = paramsCtx[alerting2.ParamMessage].(string)
 	alertItem.Title = paramsCtx[alerting2.ParamTitle].(string)
 	if alertMessage == nil || alertMessage.Status == alerting.MessageStateRecovered {
+		fmt.Println(rule.ID, alertMessage)
 		msg := &alerting.AlertMessage{
 			RuleID: rule.ID,
 			Created: time.Now(),
 			Updated: time.Now(),
 			ID: util.GetUUID(),
 			ResourceID: rule.Resource.ID,
+			ResourceName: rule.Resource.Name,
 			Status: alerting.MessageStateAlerting,
 			Severity: severity,
 			Title: alertItem.Title,

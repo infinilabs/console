@@ -304,6 +304,7 @@ func (alertAPI *AlertAPI) updateRule(w http.ResponseWriter, req *http.Request, p
 		}
 		//update task
 		task.StopTask(id)
+		clearKV(rule.ID)
 		eng := alerting2.GetEngine(rule.Resource.Type)
 		ruleTask := task.ScheduleTask{
 			ID:          rule.ID,
@@ -316,7 +317,6 @@ func (alertAPI *AlertAPI) updateRule(w http.ResponseWriter, req *http.Request, p
 	}else{
 		task.DeleteTask(id)
 	}
-	clearKV(rule.ID)
 
 	alertAPI.WriteJSON(w, util.MapStr{
 		"_id":    rule.ID,
@@ -327,6 +327,7 @@ func (alertAPI *AlertAPI) updateRule(w http.ResponseWriter, req *http.Request, p
 func clearKV(ruleID string){
 	_ = kv.DeleteKey(alerting2.KVLastNotificationTime, []byte(ruleID))
 	_ = kv.DeleteKey(alerting2.KVLastEscalationTime, []byte(ruleID))
+	_ = kv.DeleteKey(alerting2.KVLastMessageState,[]byte(ruleID))
 }
 
 func (alertAPI *AlertAPI) deleteRule(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -586,10 +587,13 @@ func (alertAPI *AlertAPI) enableRule(w http.ResponseWriter, req *http.Request, p
 			Description: obj.Metrics.Expression,
 			Task:        eng.GenerateTask(obj),
 		}
+		task.DeleteTask(ruleTask.ID)
+		clearKV(ruleTask.ID)
 		task.RegisterScheduleTask(ruleTask)
 		task.StartTask(ruleTask.ID)
 	}else{
 		task.DeleteTask(id)
+		clearKV(id)
 	}
 	obj.Enabled = reqObj.Enabled
 	err = orm.Save(obj)

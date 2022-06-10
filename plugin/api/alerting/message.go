@@ -23,6 +23,7 @@ import (
 func (h *AlertAPI) ignoreAlertMessage(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	body := struct {
 		Messages []alerting.AlertMessage `json:"messages"`
+		IgnoredReason string `json:"ignored_reason"`
 	}{}
 	err := h.DecodeJSON(req,  &body)
 	if err != nil {
@@ -38,6 +39,7 @@ func (h *AlertAPI) ignoreAlertMessage(w http.ResponseWriter, req *http.Request, 
 	for _, msg := range body.Messages {
 		messageIDs = append(messageIDs, msg.ID)
 	}
+	currentUser := h.GetCurrentUser(req)
 	queryDsl := util.MapStr{
 		"query": util.MapStr{
 			"bool": util.MapStr{
@@ -58,7 +60,7 @@ func (h *AlertAPI) ignoreAlertMessage(w http.ResponseWriter, req *http.Request, 
 			},
 		},
 		"script": util.MapStr{
-			"source": fmt.Sprintf("ctx._source['status'] = '%s';ctx._source['ignored_time']='%s'", alerting.MessageStateIgnored, time.Now().Format(time.RFC3339Nano)),
+			"source": fmt.Sprintf("ctx._source['status'] = '%s';ctx._source['ignored_time']='%s';ctx._source['ignored_reason']='%s';ctx._source['ignored_user']='%s'", alerting.MessageStateIgnored, time.Now().Format(time.RFC3339Nano), body.IgnoredReason, currentUser),
 		},
 	}
 	err = orm.UpdateBy(alerting.AlertMessage{}, util.MustToJSONBytes(queryDsl))

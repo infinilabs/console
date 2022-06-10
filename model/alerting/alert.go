@@ -61,10 +61,13 @@ type AlertMessage struct {
 	Updated time.Time `json:"updated,omitempty" elastic_mapping:"updated: { type: date }"`
 	RuleID string `json:"rule_id"  elastic_mapping:"rule_id: { type: keyword,copy_to:search_text }"`
 	ResourceID string `json:"resource_id"  elastic_mapping:"resource_id: { type: keyword,copy_to:search_text }"`
+	ResourceName string `json:"resource_name"  elastic_mapping:"resource_name: { type: keyword,copy_to:search_text }"`
 	Title string `json:"title"  elastic_mapping:"title: { type: keyword,copy_to:search_text }"`
 	Message string `json:"message"  elastic_mapping:"content: { type: keyword,copy_to:search_text }"`
 	Status string `json:"status" elastic_mapping:"status: { type: keyword,copy_to:search_text }"`
 	IgnoredTime time.Time `json:"ignored_time,omitempty"  elastic_mapping:"ignored_time: { type: date }"`
+	IgnoredReason string `json:"ignored_reason,omitempty" elastic_mapping:"ignored_reason: { type: keyword,copy_to:search_text }"`
+	IgnoredUser string `json:"ignored_user,omitempty" elastic_mapping:"ignored_user: { type: keyword,copy_to:search_text }"`
 	Severity string `json:"severity" elastic_mapping:"severity: { type: keyword }"`
 	SearchText string `json:"-" elastic_mapping:"search_text:{type:text,index_prefixes:{},index_phrases:true, analyzer:suggest_text_search }"`
 }

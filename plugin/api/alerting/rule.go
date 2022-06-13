@@ -676,8 +676,21 @@ func (alertAPI *AlertAPI) getPreviewMetricData(w http.ResponseWriter, req *http.
 		minStr = alertAPI.Get(req, "min", "")
 		maxStr = alertAPI.Get(req, "max", "")
 	)
+	var bkSize float64 = 60
+	if rule.Metrics.PeriodInterval != "" {
+		duration, err := time.ParseDuration(rule.Metrics.PeriodInterval)
+		if err != nil {
+			log.Error(err)
+			alertAPI.WriteJSON(w, util.MapStr{
+				"error": err.Error(),
+			}, http.StatusInternalServerError)
+			return
+		}
+		bkSize = duration.Seconds()
+	}
 
-	bucketSize, min, max, err := api.GetMetricRangeAndBucketSize(minStr, maxStr, 60, 15)
+
+	bucketSize, min, max, err := api.GetMetricRangeAndBucketSize(minStr, maxStr, int(bkSize), 15)
 	filterParam := &alerting.FilterParam{
 		Start: min,
 		End: max,

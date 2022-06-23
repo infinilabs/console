@@ -27,4 +27,8 @@ var genericMap = map[string]interface{}{
 	"datetime_in_zone": datetimeInZone,
 	"to_upper":     strings.ToUpper,
 	"to_lower":     strings.ToLower,
+	"add": add,
+	"sub": sub,
+	"div": div,
+	"mul": mul,
 }

@@ -794,7 +794,7 @@ func getRuleMetricData( rule *alerting.Rule, filterParam *alerting.FilterParam) 
 				Label:      label,
 				Group:      rule.ID,
 				TickFormat: "0,0.[00]",
-				FormatType: "num",
+				FormatType: rule.Metrics.FormatType,
 			},
 		})
 	}

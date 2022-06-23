@@ -16,6 +16,7 @@ type Metric struct {
 	Expression string `json:"expression" elastic_mapping:"expression:{type:keyword,copy_to:search_text}"` //告警表达式，自动生成 eg: avg(cpu) > 80
 	Title string `json:"title"` //text template
 	Message string `json:"message"` // text template
+	FormatType string `json:"format_type,omitempty"`
 }
 func (m *Metric) GenerateExpression() (string, error){
 	if len(m.Items) == 1 {

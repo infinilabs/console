@@ -309,6 +309,8 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 		"conditions": rule.Conditions,
 		"duration": duration.Milliseconds(),
 		"ignored_time": message.IgnoredTime,
+		"ignored_reason": message.IgnoredReason,
+		"ignored_user": message.IgnoredUser,
 		"status": message.Status,
 	}
 	h.WriteJSON(w, detailObj, http.StatusOK)

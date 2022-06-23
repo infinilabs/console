@@ -299,6 +299,7 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 		"message_id": message.ID,
 		"rule_id": message.RuleID,
 		"rule_name": rule.Name,
+		"rule_enabled": rule.Enabled,
 		"title": message.Title,
 		"message": message.Message,
 		"severity": message.Severity,

@@ -759,11 +759,15 @@ func getRuleMetricData( rule *alerting.Rule, filterParam *alerting.FilterParam) 
 	//if title == "" && len( rule.Conditions.Items) > 0{
 	//	title,_ = rule.Conditions.Items[0].GenerateConditionExpression()
 	//}
+	formatType := "num"
+	if rule.Metrics.FormatType != "" {
+		formatType = rule.Metrics.FormatType
+	}
 	var metricItem = common.MetricItem{
 		Group: rule.ID,
 		Key:   rule.ID,
 		Axis: []*common.MetricAxis{
-			{ID: util.GetUUID(), Group: rule.ID, Title: "", FormatType: "num", Position: "left", ShowGridLines: true,
+			{ID: util.GetUUID(), Group: rule.ID, Title: "", FormatType: formatType, Position: "left", ShowGridLines: true,
 				TickFormat: "0,0.[00]",
 				Ticks:      5},
 		},
@@ -794,7 +798,7 @@ func getRuleMetricData( rule *alerting.Rule, filterParam *alerting.FilterParam) 
 				Label:      label,
 				Group:      rule.ID,
 				TickFormat: "0,0.[00]",
-				FormatType: rule.Metrics.FormatType,
+				FormatType: formatType,
 			},
 		})
 	}

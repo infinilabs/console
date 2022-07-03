@@ -200,7 +200,7 @@ func (alertAPI *AlertAPI) getRuleDetail(w http.ResponseWriter, req *http.Request
 func saveActivity(activityInfo *event.Activity){
 	queueConfig := queue.GetOrInitConfig("platform##activities")
 	if queueConfig.Labels == nil {
-		queueConfig.Labels = map[string]interface{}{
+		queueConfig.Labels = util.MapStr{
 			"type":     "platform",
 			"name":     "activity",
 			"category": "elasticsearch",

@@ -111,6 +111,9 @@ func main() {
 		orm.RegisterSchemaWithIndexName(alerting.Rule{}, "alert-rule")
 		orm.RegisterSchemaWithIndexName(alerting.Alert{}, "alert-history")
 		orm.RegisterSchemaWithIndexName(alerting.AlertMessage{}, "alert-message")
+		orm.RegisterSchemaWithIndexName(alerting.Channel{}, "channel")
+		//orm.RegisterSchemaWithIndexName(insight.Visualization{}, "visualization")
+		//orm.RegisterSchemaWithIndexName(insight.Dashboard{}, "dashboard")
 		api.RegisterSchema()
 
 		go func() {

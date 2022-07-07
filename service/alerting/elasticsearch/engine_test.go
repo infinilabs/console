@@ -65,8 +65,8 @@ func TestEngine( t *testing.T)  {
 		Conditions: alerting.Condition{
 			Operator: "any",
 			Items: []alerting.ConditionItem{
-				{MinimumPeriodMatch: 1, Operator: "lte", Values: []string{"10"}, Severity: "error", Message: "磁盘可用率小于10%"},
-				{MinimumPeriodMatch: 1, Operator: "lte", Values: []string{"20"}, Severity: "warning", Message: "磁盘可用率小于20%"},
+				{MinimumPeriodMatch: 1, Operator: "lte", Values: []string{"10"}, Severity: "error"},
+				{MinimumPeriodMatch: 1, Operator: "lte", Values: []string{"20"}, Severity: "warning"},
 			},
 		},
 
@@ -212,7 +212,7 @@ func TestGeneratePercentilesAggQuery(t *testing.T) {
 		Conditions: alerting.Condition{
 			Operator: "any",
 			Items: []alerting.ConditionItem{
-				{MinimumPeriodMatch: 1, Operator: "gte", Values: []string{"10"}, Severity: "warning", Message: "搜索延迟大于10ms"},
+				{MinimumPeriodMatch: 1, Operator: "gte", Values: []string{"10"}, Severity: "warning"},
 			},
 		},
 
@@ -237,7 +237,7 @@ func TestGeneratePercentilesAggQuery(t *testing.T) {
 		},
 	}
 	eng := &Engine{}
-	q, err := eng.GenerateQuery(&rule)
+	q, err := eng.GenerateQuery(&rule, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

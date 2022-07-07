@@ -15,7 +15,7 @@ type GatewayAPI struct {
 
 func init() {
 	gateway:=GatewayAPI{}
-	api.HandleAPIMethod(api.POST, "/gateway/instance/try_connect", gateway.tryConnect)
+	api.HandleAPIMethod(api.POST, "/gateway/instance/try_connect", gateway.RequireLogin(gateway.tryConnect))
 	api.HandleAPIMethod(api.GET, "/gateway/instance/:instance_id", gateway.RequirePermission(gateway.getInstance, enum.PermissionGatewayInstanceRead))
 	api.HandleAPIMethod(api.POST, "/gateway/instance", gateway.RequirePermission(gateway.createInstance, enum.PermissionGatewayInstanceWrite))
 	api.HandleAPIMethod(api.PUT, "/gateway/instance/:instance_id", gateway.RequirePermission(gateway.updateInstance, enum.PermissionGatewayInstanceWrite))

@@ -93,7 +93,9 @@ func (h *AlertAPI) searchAlert(w http.ResponseWriter, req *http.Request, ps http
 		from = 0
 	}
 
-	q := orm.Query{}
+	q := orm.Query{
+		WildcardIndex: true,
+	}
 	queryDSL = fmt.Sprintf(queryDSL, sortBuilder.String(), mustBuilder.String(), size, from)
 	q.RawQuery = []byte(queryDSL)
 

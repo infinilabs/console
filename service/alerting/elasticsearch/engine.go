@@ -75,14 +75,6 @@ func (engine *Engine) GenerateQuery(rule *alerting.Rule, filterParam *alerting.F
 		},
 	}
 
-	if len(filter) > 0 {
-		timeAggs = util.MapStr{
-			"filter_agg": util.MapStr{
-				"filter": filter,
-				"aggs": timeAggs,
-			},
-		}
-	}
 	var rootAggs util.MapStr
 	groups := rule.Metrics.Items[0].Group
 	limit := rule.Metrics.Items[0].Limit
@@ -115,6 +107,14 @@ func (engine *Engine) GenerateQuery(rule *alerting.Rule, filterParam *alerting.F
 		}
 	}else{
 		rootAggs = timeAggs
+	}
+	if len(filter) > 0 {
+		rootAggs = util.MapStr{
+			"filter_agg": util.MapStr{
+				"filter": filter,
+				"aggs": rootAggs,
+			},
+		}
 	}
 
 	return util.MapStr{
@@ -405,7 +405,7 @@ func (engine *Engine) ExecuteQuery(rule *alerting.Rule, filterParam *alerting.Fi
 		return queryResult, err
 	}
 	metricData := []alerting.MetricData{}
-	collectMetricData(searchResult["aggregations"], "", &metricData)
+	CollectMetricData(searchResult["aggregations"], "", &metricData)
 	//将 rate 求导数据 除以 bucket size (单位 /s)
 	//statisticM := map[string] string{}
 	//for _, mi := range rule.Metrics.Items {
@@ -502,7 +502,7 @@ func (engine *Engine) GetTargetMetricData(rule *alerting.Rule, isFilterNaN bool,
 //sort conditions by severity desc  before check , and then if condition is true, then continue check another group
 func (engine *Engine) CheckCondition(rule *alerting.Rule)(*alerting.ConditionResult, error){
 	var resultItems []alerting.ConditionResultItem
-	targetMetricData, queryResult, err := engine.GetTargetMetricData(rule, false, nil)
+	targetMetricData, queryResult, err := engine.GetTargetMetricData(rule, true, nil)
 	conditionResult := &alerting.ConditionResult{
 		QueryResult: queryResult,
 	}
@@ -970,6 +970,15 @@ func (engine *Engine) GenerateTask(rule alerting.Rule) func(ctx context.Context)
 	}
 }
 
+func CollectMetricData(agg interface{}, groupValues string, metricData *[]alerting.MetricData){
+	if aggM, ok := agg.(map[string]interface{}); ok {
+		if targetAgg, ok := aggM["filter_agg"]; ok {
+			collectMetricData(targetAgg, groupValues, metricData)
+		}else{
+			collectMetricData(aggM, groupValues, metricData)
+		}
+	}
+}
 
 func collectMetricData(agg interface{}, groupValues string, metricData *[]alerting.MetricData){
 	if aggM, ok := agg.(map[string]interface{}); ok {
@@ -986,40 +995,6 @@ func collectMetricData(agg interface{}, groupValues string, metricData *[]alerti
 							if k == "key" || k == "key_as_string" || k== "doc_count"{
 								continue
 							}
-							//has filter
-							//if k == "filter_agg" {
-							//	if filterM, ok := v.(map[string]interface{}); ok {
-							//		for fk, fv := range filterM {
-							//			if fk == "doc_count" {
-							//				continue
-							//			}
-							//			if vm, ok := fv.(map[string]interface{}); ok {
-							//				if metricVal, ok := vm["value"]; ok {
-							//					md.Data[fk] = append(md.Data[fk], alerting.TimeMetricData{bkM["key"], metricVal})
-							//				}else{
-							//					//percentiles agg type
-							//					switch  vm["values"].(type) {
-							//					case []interface{}:
-							//						for _, val := range vm["values"].([]interface{}) {
-							//							if valM, ok := val.(map[string]interface{}); ok {
-							//								md.Data[fk] = append(md.Data[fk], alerting.TimeMetricData{bkM["key"], valM["value"]})
-							//							}
-							//							break
-							//						}
-							//					case map[string]interface{}:
-							//						for _, val := range vm["values"].(map[string]interface{}) {
-							//							md.Data[fk] = append(md.Data[fk], alerting.TimeMetricData{bkM["key"], val})
-							//							break
-							//						}
-							//					}
-							//
-							//				}
-							//
-							//			}
-							//		}
-							//	}
-							//	continue
-							//}
 							if vm, ok := v.(map[string]interface{}); ok {
 								if metricVal, ok := vm["value"]; ok {
 									md.Data[k] = append(md.Data[k], alerting.TimeMetricData{bkM["key"], metricVal})
@@ -1065,12 +1040,8 @@ func collectMetricData(agg interface{}, groupValues string, metricData *[]alerti
 								if groupValues != "" {
 									newGroupValues = fmt.Sprintf("%s*%s", groupValues, currentGroup)
 								}
-								if filterAgg, ok := bkVal["filter_agg"].(map[string]interface{}); ok {
-									collectMetricData(filterAgg, newGroupValues, metricData)
-								}else{
-									collectMetricData(bk, newGroupValues, metricData)
-								}
 
+								collectMetricData(bk, newGroupValues, metricData)
 							}
 
 						}

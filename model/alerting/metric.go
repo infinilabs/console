@@ -17,6 +17,12 @@ type Metric struct {
 	Title string `json:"title"` //text template
 	Message string `json:"message"` // text template
 	FormatType string `json:"format_type,omitempty"`
+	Groups []MetricGroupItem `json:"groups"` //bucket group
+}
+
+type MetricGroupItem struct {
+	Field string `json:"field"`
+	Limit int `json:"limit"`
 }
 func (m *Metric) GenerateExpression() (string, error){
 	if len(m.Items) == 1 {
@@ -45,8 +51,6 @@ type MetricItem struct {
 	Name string `json:"name"`
 	Field string `json:"field"`
 	Statistic string `json:"statistic"`
-	Group []string `json:"group"` //bucket group
-	Limit int `json:"limit"`
 }
 
 type QueryResult struct {

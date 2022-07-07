@@ -76,19 +76,19 @@ func (engine *Engine) GenerateQuery(rule *alerting.Rule, filterParam *alerting.F
 	}
 
 	var rootAggs util.MapStr
-	groups := rule.Metrics.Items[0].Group
-	limit := rule.Metrics.Items[0].Limit
-	//top group 10
-	if limit <= 0 {
-		limit = 10
-	}
+	groups := rule.Metrics.Groups
 	if grpLength := len(groups); grpLength > 0 {
 		var lastGroupAgg util.MapStr
 
 		for i := grpLength-1; i>=0; i-- {
+			limit := groups[i].Limit
+			//top group 10
+			if limit <= 0 {
+				limit = 10
+			}
 			groupAgg := util.MapStr{
 				"terms": util.MapStr{
-					"field": groups[i],
+					"field": groups[i].Field,
 					"size": limit,
 				},
 			}

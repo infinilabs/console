@@ -6,24 +6,18 @@ package alerting
 
 import (
 	"fmt"
+	"infini.sh/framework/core/insight"
 	"regexp"
 )
 
 type Metric struct {
-	PeriodInterval string `json:"period_interval"`
-	Items []MetricItem `json:"items"`
-	Formula string `json:"formula,omitempty"`
+	insight.Metric
 	Expression string `json:"expression" elastic_mapping:"expression:{type:keyword,copy_to:search_text}"` //告警表达式，自动生成 eg: avg(cpu) > 80
 	Title string `json:"title"` //text template
 	Message string `json:"message"` // text template
-	FormatType string `json:"format_type,omitempty"`
-	Groups []MetricGroupItem `json:"groups"` //bucket group
 }
 
-type MetricGroupItem struct {
-	Field string `json:"field"`
-	Limit int `json:"limit"`
-}
+
 func (m *Metric) GenerateExpression() (string, error){
 	if len(m.Items) == 1 {
 		return fmt.Sprintf("%s(%s)", m.Items[0].Statistic, m.Items[0].Field), nil

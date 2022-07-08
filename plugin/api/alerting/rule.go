@@ -185,7 +185,7 @@ func (alertAPI *AlertAPI) getRuleDetail(w http.ResponseWriter, req *http.Request
 		"rule_name": obj.Name,
 		"resource_name": obj.Resource.Name,
 		"resource_objects": obj.Resource.Objects,
-		"period_interval": obj.Metrics.PeriodInterval, //统计周期
+		"bucket_size": obj.Metrics.BucketSize, //统计周期
 		"updated": obj.Updated,
 		"conditions": obj.Conditions,
 		"message_count": alertNumbers[obj.ID], //所有关联告警消息数（包括已恢复的）
@@ -677,8 +677,8 @@ func (alertAPI *AlertAPI) getPreviewMetricData(w http.ResponseWriter, req *http.
 		maxStr = alertAPI.Get(req, "max", "")
 	)
 	var bkSize float64 = 60
-	if rule.Metrics.PeriodInterval != "" {
-		duration, err := time.ParseDuration(rule.Metrics.PeriodInterval)
+	if rule.Metrics.BucketSize != "" {
+		duration, err := time.ParseDuration(rule.Metrics.BucketSize)
 		if err != nil {
 			log.Error(err)
 			alertAPI.WriteJSON(w, util.MapStr{

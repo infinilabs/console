@@ -15,6 +15,7 @@ import (
 	"infini.sh/console/service/alerting/action"
 	"infini.sh/console/service/alerting/funcs"
 	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/insight"
 	"infini.sh/framework/core/kv"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
@@ -61,7 +62,7 @@ func (engine *Engine) GenerateQuery(rule *alerting.Rule, filterParam *alerting.F
 	if err != nil {
 		return nil, fmt.Errorf("get interval field error: %w", err)
 	}
-	var periodInterval = rule.Metrics.PeriodInterval
+	var periodInterval = rule.Metrics.BucketSize
 	if filterParam != nil && filterParam.BucketSize != "" {
 		periodInterval =  filterParam.BucketSize
 	}
@@ -124,7 +125,7 @@ func (engine *Engine) GenerateQuery(rule *alerting.Rule, filterParam *alerting.F
 	}, nil
 }
 //generateAgg convert statistic of metric item to elasticsearch aggregation
-func (engine *Engine) generateAgg(metricItem *alerting.MetricItem) map[string]interface{}{
+func (engine *Engine) generateAgg(metricItem *insight.MetricItem) map[string]interface{}{
 	var (
 		aggType = "value_count"
 		field = metricItem.Field
@@ -285,7 +286,7 @@ func (engine *Engine) generateTimeFilter(rule *alerting.Rule, filterParam *alert
 			units string
 			value int
 		)
-		intervalDuration, err := time.ParseDuration(rule.Metrics.PeriodInterval)
+		intervalDuration, err := time.ParseDuration(rule.Metrics.BucketSize)
 		if err != nil {
 			return nil, err
 		}
@@ -299,7 +300,7 @@ func (engine *Engine) generateTimeFilter(rule *alerting.Rule, filterParam *alert
 			units = "s"
 			value = int(intervalDuration / time.Second)
 		}else{
-			return nil, fmt.Errorf("period interval: %s is too small", rule.Metrics.PeriodInterval)
+			return nil, fmt.Errorf("period interval: %s is too small", rule.Metrics.BucketSize)
 		}
 		bucketCount := rule.Conditions.GetMinimumPeriodMatch() + 1
 		if bucketCount <= 0 {

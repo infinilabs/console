@@ -132,7 +132,7 @@ func (h *AlertAPI) getAlertMessageStats(w http.ResponseWriter, req *http.Request
 			}
 		}
 	}
-	for _, status := range []string{"warning", "error", "critical"} {
+	for _, status := range []string{"info", "low","medium","high", "critical"} {
 		if _, ok := statusCounts[status]; !ok {
 			statusCounts[status] = 0
 		}

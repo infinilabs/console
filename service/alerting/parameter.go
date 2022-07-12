@@ -22,7 +22,7 @@ func GetTemplateParameters() []ParameterMeta {
 		{ParamMessage, "string", "", "disk used 90%", nil},
 		{ParamResults, "array", "", "", []ParameterMeta{
 			{ParamThreshold, "array", "", "[\"90\"]", nil},
-			{Severity, "string", "", "error", nil},
+			{Priority, "string", "", "error", nil},
 			{ParamGroupValues, "array", "", "[\"cluster-xxx\", \"node-xxx\"]", nil},
 			{ParamIssueTimestamp, "date", "", "2022-05-11T11:50:55+08:00", nil},
 			{ParamResultValue, "float", "", "91.2", nil},

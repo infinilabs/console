@@ -20,9 +20,9 @@ const (
 	ParamResults        = "results"       //
 	ParamMessage        = "message"       //检查消息 自定义(模版渲染)
 	ParamTitle          = "title"
-	ParamThreshold      = "threshold" //检查预设值 []string
+	ParamThreshold      = "threshold"    //检查预设值 []string
 	ParamResultValue    = "result_value" //检查结果 {group_tags:["cluster-xxx", "node-xxx"], check_values:[]}
-	Severity            = "severity"     //告警等级
+	Priority            = "priority"     //告警等级
 	ParamTimestamp      = "timestamp"    //事件产生时间戳
 	ParamGroupValues    = "group_values"
 	ParamIssueTimestamp = "issue_timestamp"

@@ -51,9 +51,9 @@ func (h *AlertAPI) searchAlert(w http.ResponseWriter, req *http.Request, ps http
 		queryDSL    = `{"sort":[%s],"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d}`
 		strSize     = h.GetParameterOrDefault(req, "size", "20")
 		strFrom     = h.GetParameterOrDefault(req, "from", "0")
-		state = h.GetParameterOrDefault(req, "state", "")
-		severity = h.GetParameterOrDefault(req, "severity", "")
-		sort = h.GetParameterOrDefault(req, "sort", "")
+		state    = h.GetParameterOrDefault(req, "state", "")
+		priority = h.GetParameterOrDefault(req, "priority", "")
+		sort     = h.GetParameterOrDefault(req, "sort", "")
 		ruleID        = h.GetParameterOrDefault(req, "rule_id", "")
 		min        = h.GetParameterOrDefault(req, "min", "")
 		max        = h.GetParameterOrDefault(req, "max", "")
@@ -80,9 +80,9 @@ func (h *AlertAPI) searchAlert(w http.ResponseWriter, req *http.Request, ps http
 		mustBuilder.WriteString(",")
 		mustBuilder.WriteString(fmt.Sprintf(`{"term":{"state":{"value":"%s"}}}`, state))
 	}
-	if severity != "" {
+	if priority != "" {
 		mustBuilder.WriteString(",")
-		mustBuilder.WriteString(fmt.Sprintf(`{"term":{"severity":{"value":"%s"}}}`, severity))
+		mustBuilder.WriteString(fmt.Sprintf(`{"term":{"priority":{"value":"%s"}}}`, priority))
 	}
 	size, _ := strconv.Atoi(strSize)
 	if size <= 0 {
@@ -130,7 +130,7 @@ func (h *AlertAPI) getAlertStats(w http.ResponseWriter, req *http.Request, ps ht
 		"aggs": util.MapStr{
 			"terms_by_state": util.MapStr{
 				"terms": util.MapStr{
-					"field": "severity",
+					"field": "priority",
 					"size": 5,
 				},
 			},
@@ -144,22 +144,22 @@ func (h *AlertAPI) getAlertStats(w http.ResponseWriter, req *http.Request, ps ht
 		}, http.StatusInternalServerError)
 		return
 	}
-	severityAlerts := map[string]interface{}{}
+	priorityAlerts := map[string]interface{}{}
 	if termsAgg, ok := searchRes.Aggregations["terms_by_state"]; ok {
 		for _, bk := range termsAgg.Buckets {
-			if severity, ok := bk["key"].(string); ok {
-				severityAlerts[severity] = bk["doc_count"]
+			if priority, ok := bk["key"].(string); ok {
+				priorityAlerts[priority] = bk["doc_count"]
 			}
 		}
 	}
-	for severity, _ := range alerting.PriorityWeights {
-		if _, ok := severityAlerts[severity]; !ok {
-			severityAlerts[severity] = 0
+	for priority, _ := range alerting.PriorityWeights {
+		if _, ok := priorityAlerts[priority]; !ok {
+			priorityAlerts[priority] = 0
 		}
 	}
 	h.WriteJSON(w, util.MapStr{
 		"alert": util.MapStr{
-			"current": severityAlerts,
+			"current": priorityAlerts,
 		},
 	}, http.StatusOK)
 }

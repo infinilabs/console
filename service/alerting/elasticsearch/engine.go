@@ -500,7 +500,7 @@ func (engine *Engine) GetTargetMetricData(rule *alerting.Rule, isFilterNaN bool,
 }
 //CheckCondition check whether rule conditions triggered or not
 //if triggered returns an ConditionResult
-//sort conditions by severity desc  before check , and then if condition is true, then continue check another group
+//sort conditions by priority desc  before check , and then if condition is true, then continue check another group
 func (engine *Engine) CheckCondition(rule *alerting.Rule)(*alerting.ConditionResult, error){
 	var resultItems []alerting.ConditionResultItem
 	targetMetricData, queryResult, err := engine.GetTargetMetricData(rule, true, nil)
@@ -651,7 +651,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 	conditionResults := checkResults.ResultItems
 	var paramsCtx map[string]interface{}
 	if len(conditionResults) == 0 {
-		alertItem.Severity = "info"
+		alertItem.Priority = "info"
 		if checkResults.QueryResult.Nodata {
 			alertItem.State =  alerting.AlertStateNodata
 		}
@@ -669,11 +669,11 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 	alertItem.State = alerting.AlertStateAlerting
 
 	var (
-		severity = conditionResults[0].ConditionItem.Priority
+		priority = conditionResults[0].ConditionItem.Priority
 	)
 	for _, conditionResult := range conditionResults {
-		if alerting.PriorityWeights[severity] < alerting.PriorityWeights[conditionResult.ConditionItem.Priority] {
-			severity = conditionResult.ConditionItem.Priority
+		if alerting.PriorityWeights[priority] < alerting.PriorityWeights[conditionResult.ConditionItem.Priority] {
+			priority = conditionResult.ConditionItem.Priority
 		}
 	}
 	paramsCtx = newParameterCtx(rule, checkResults, util.MapStr{
@@ -681,7 +681,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		alerting2.ParamTimestamp:  alertItem.Created.Unix(),
 	})
 
-	alertItem.Severity = severity
+	alertItem.Priority = priority
 	err = attachTitleMessageToCtx(rule, paramsCtx)
 	if err != nil {
 		return err
@@ -690,16 +690,16 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 	alertItem.Title = paramsCtx[alerting2.ParamTitle].(string)
 	if alertMessage == nil || alertMessage.Status == alerting.MessageStateRecovered {
 		msg := &alerting.AlertMessage{
-			RuleID: rule.ID,
-			Created: time.Now(),
-			Updated: time.Now(),
-			ID: util.GetUUID(),
-			ResourceID: rule.Resource.ID,
+			RuleID:       rule.ID,
+			Created:      time.Now(),
+			Updated:      time.Now(),
+			ID:           util.GetUUID(),
+			ResourceID:   rule.Resource.ID,
 			ResourceName: rule.Resource.Name,
-			Status: alerting.MessageStateAlerting,
-			Severity: severity,
-			Title: alertItem.Title,
-			Message: alertItem.Message,
+			Status:       alerting.MessageStateAlerting,
+			Priority:     priority,
+			Title:        alertItem.Title,
+			Message:      alertItem.Message,
 		}
 		err = saveAlertMessage(msg)
 		if err != nil {
@@ -744,9 +744,9 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		//log.Error(lastAlertItem.ID, period, periodDuration)
 		if paramsCtx == nil {
 			paramsCtx = newParameterCtx(rule, checkResults, util.MapStr{
-				alerting2.ParamEventID: alertItem.ID,
-				alerting2.ParamTimestamp:  alertItem.Created.Unix(),
-				"severity": severity,
+				alerting2.ParamEventID:   alertItem.ID,
+				alerting2.ParamTimestamp: alertItem.Created.Unix(),
+				"priority":               priority,
 			})
 		}
 
@@ -822,11 +822,11 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 	var (
 		conditionParams []util.MapStr
 		firstGroupValue string
-		firstThreshold  string
-		severity string
+		firstThreshold string
+		priority       string
 	)
 	if len(checkResults.ResultItems) > 0 {
-		severity = checkResults.ResultItems[0].ConditionItem.Priority
+		priority = checkResults.ResultItems[0].ConditionItem.Priority
 		sort.Slice(checkResults.ResultItems, func(i, j int) bool {
 			if  alerting.PriorityWeights[checkResults.ResultItems[i].ConditionItem.Priority] > alerting.PriorityWeights[checkResults.ResultItems[j].ConditionItem.Priority] {
 				return true
@@ -851,7 +851,7 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 		}
 		conditionParams = append(conditionParams, util.MapStr{
 			alerting2.ParamThreshold:      resultItem.ConditionItem.Values,
-			alerting2.Severity:            resultItem.ConditionItem.Priority,
+			alerting2.Priority:            resultItem.ConditionItem.Priority,
 			alerting2.ParamGroupValues:    resultItem.GroupValues,
 			alerting2.ParamIssueTimestamp: resultItem.IssueTimestamp,
 			alerting2.ParamResultValue:    resultItem.ResultValue,
@@ -865,8 +865,8 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 		alerting2.ParamResults:      conditionParams,
 		"first_group_value":         firstGroupValue,
 		"first_threshold":           firstThreshold,
-		"rule_name": rule.Name,
-		"severity": severity,
+		"rule_name":                 rule.Name,
+		"priority":                  priority,
 	}
 	err := util.MergeFields(paramsCtx, extraParams, true)
 	if err != nil {

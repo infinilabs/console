@@ -302,7 +302,7 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 		"rule_enabled": rule.Enabled,
 		"title": message.Title,
 		"message": message.Message,
-		"severity": message.Severity,
+		"severity": message.Priority,
 		"created": message.Created,
 		"updated": message.Updated,
 		"resource_name": rule.Resource.Name,

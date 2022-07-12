@@ -17,9 +17,9 @@ type Alert struct {
 	ResourceID string `json:"resource_id"  elastic_mapping:"resource_id: { type: keyword }"`
 	ResourceName string `json:"resource_name"  elastic_mapping:"resource_name: { type: keyword }"`
 	Expression string `json:"expression"  elastic_mapping:"expression: { type: keyword, copy_to:search_text }"`
-	Objects []string `json:"objects" elastic_mapping:"objects: { type:keyword,copy_to:search_text }"`
-	Severity string `json:"severity" elastic_mapping:"severity: { type: keyword }"`
-	Title            string      `json:"title" elastic_mapping:"title: { type: keyword }"`
+	Objects  []string `json:"objects" elastic_mapping:"objects: { type:keyword,copy_to:search_text }"`
+	Priority string   `json:"priority" elastic_mapping:"priority: { type: keyword }"`
+	Title    string   `json:"title" elastic_mapping:"title: { type: keyword }"`
 	Message          string      `json:"message" elastic_mapping:"context: { type: keyword, copy_to:search_text }"`
 	AcknowledgedTime interface{} `json:"acknowledged_time,omitempty"`
 	ActionExecutionResults []ActionExecutionResult `json:"action_execution_results"`
@@ -68,8 +68,8 @@ type AlertMessage struct {
 	IgnoredTime time.Time `json:"ignored_time,omitempty"  elastic_mapping:"ignored_time: { type: date }"`
 	IgnoredReason string `json:"ignored_reason,omitempty" elastic_mapping:"ignored_reason: { type: keyword,copy_to:search_text }"`
 	IgnoredUser string `json:"ignored_user,omitempty" elastic_mapping:"ignored_user: { type: keyword,copy_to:search_text }"`
-	Severity string `json:"severity" elastic_mapping:"severity: { type: keyword }"`
-	SearchText string `json:"-" elastic_mapping:"search_text:{type:text,index_prefixes:{},index_phrases:true, analyzer:suggest_text_search }"`
+	Priority    string `json:"priority" elastic_mapping:"priority: { type: keyword }"`
+	SearchText  string `json:"-" elastic_mapping:"search_text:{type:text,index_prefixes:{},index_phrases:true, analyzer:suggest_text_search }"`
 }
 
 /*

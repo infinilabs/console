@@ -513,7 +513,7 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule)(*alerting.ConditionRes
 	for idx, targetData := range targetMetricData {
 		if idx == 0 {
 			sort.Slice(rule.Conditions.Items, func(i, j int) bool {
-				return alerting.SeverityWeights[rule.Conditions.Items[i].Severity] > alerting.SeverityWeights[rule.Conditions.Items[j].Severity]
+				return alerting.PriorityWeights[rule.Conditions.Items[i].Priority] > alerting.PriorityWeights[rule.Conditions.Items[j].Priority]
 			})
 		}
 		LoopCondition:
@@ -669,11 +669,11 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 	alertItem.State = alerting.AlertStateAlerting
 
 	var (
-		severity = conditionResults[0].ConditionItem.Severity
+		severity = conditionResults[0].ConditionItem.Priority
 	)
 	for _, conditionResult := range conditionResults {
-		if alerting.SeverityWeights[severity] < alerting.SeverityWeights[conditionResult.ConditionItem.Severity] {
-			severity = conditionResult.ConditionItem.Severity
+		if alerting.PriorityWeights[severity] < alerting.PriorityWeights[conditionResult.ConditionItem.Priority] {
+			severity = conditionResult.ConditionItem.Priority
 		}
 	}
 	paramsCtx = newParameterCtx(rule, checkResults, util.MapStr{
@@ -826,9 +826,9 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 		severity string
 	)
 	if len(checkResults.ResultItems) > 0 {
-		severity = checkResults.ResultItems[0].ConditionItem.Severity
+		severity = checkResults.ResultItems[0].ConditionItem.Priority
 		sort.Slice(checkResults.ResultItems, func(i, j int) bool {
-			if  alerting.SeverityWeights[checkResults.ResultItems[i].ConditionItem.Severity] > alerting.SeverityWeights[checkResults.ResultItems[j].ConditionItem.Severity] {
+			if  alerting.PriorityWeights[checkResults.ResultItems[i].ConditionItem.Priority] > alerting.PriorityWeights[checkResults.ResultItems[j].ConditionItem.Priority] {
 				return true
 			}
 			return false
@@ -851,7 +851,7 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 		}
 		conditionParams = append(conditionParams, util.MapStr{
 			alerting2.ParamThreshold:      resultItem.ConditionItem.Values,
-			alerting2.Severity:            resultItem.ConditionItem.Severity,
+			alerting2.Severity:            resultItem.ConditionItem.Priority,
 			alerting2.ParamGroupValues:    resultItem.GroupValues,
 			alerting2.ParamIssueTimestamp: resultItem.IssueTimestamp,
 			alerting2.ParamResultValue:    resultItem.ResultValue,

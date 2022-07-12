@@ -865,7 +865,7 @@ func getRuleMetricData( rule *alerting.Rule, filterParam *alerting.FilterParam) 
 //		Conditions: alerting.Condition{
 //			Operator: "any",
 //			Items: []alerting.ConditionItem{
-//				{MinimumPeriodMatch: 5, Operator: "gte", Values: []string{"90"}, Severity: "error", AlertMessage: "cpu使用率大于90%"},
+//				{MinimumPeriodMatch: 5, Operator: "gte", Values: []string{"90"}, Priority: "error", AlertMessage: "cpu使用率大于90%"},
 //			},
 //		},
 //

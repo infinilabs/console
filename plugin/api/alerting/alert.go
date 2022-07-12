@@ -152,7 +152,7 @@ func (h *AlertAPI) getAlertStats(w http.ResponseWriter, req *http.Request, ps ht
 			}
 		}
 	}
-	for severity, _ := range alerting.SeverityWeights {
+	for severity, _ := range alerting.PriorityWeights {
 		if _, ok := severityAlerts[severity]; !ok {
 			severityAlerts[severity] = 0
 		}

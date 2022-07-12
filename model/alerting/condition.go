@@ -24,9 +24,9 @@ type ConditionItem struct {
 	//MetricName             string `json:"metric"`
 	MinimumPeriodMatch int    `json:"minimum_period_match"`
 	Operator           string `json:"operator"`
-	Values []string `json:"values"`
-	Severity string `json:"severity"`
-	Expression string `json:"expression,omitempty"`
+	Values     []string `json:"values"`
+	Priority   string   `json:"priority"`
+	Expression string   `json:"expression,omitempty"`
 }
 
 func (cond *ConditionItem) GenerateConditionExpression()(conditionExpression string, err error){
@@ -68,9 +68,7 @@ type ConditionResultItem struct {
 	RelationValues map[string]interface{} `json:"relation_values"`
 }
 
-type Severity string
-
-var SeverityWeights = map[string]int{
+var PriorityWeights = map[string]int{
 	"info": 1,
 	"low": 2,
 	"medium": 3,

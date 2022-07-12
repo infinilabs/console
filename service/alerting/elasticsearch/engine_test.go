@@ -65,8 +65,8 @@ func TestEngine( t *testing.T)  {
 		Conditions: alerting.Condition{
 			Operator: "any",
 			Items: []alerting.ConditionItem{
-				{MinimumPeriodMatch: 1, Operator: "lte", Values: []string{"10"}, Severity: "error"},
-				{MinimumPeriodMatch: 1, Operator: "lte", Values: []string{"20"}, Severity: "warning"},
+				{MinimumPeriodMatch: 1, Operator: "lte", Values: []string{"10"}, Priority: "error"},
+				{MinimumPeriodMatch: 1, Operator: "lte", Values: []string{"20"}, Priority: "warning"},
 			},
 		},
 
@@ -107,7 +107,7 @@ func TestEngine( t *testing.T)  {
 	//	t.Fatal(err)
 	//}
 	sort.Slice(rule.Conditions.Items, func(i, j int) bool {
-		return alerting.SeverityWeights[rule.Conditions.Items[i].Severity] > alerting.SeverityWeights[rule.Conditions.Items[j].Severity]
+		return alerting.PriorityWeights[rule.Conditions.Items[i].Priority] > alerting.PriorityWeights[rule.Conditions.Items[j].Priority]
 	})
 	fmt.Println(rule.Conditions.Items)
 
@@ -152,7 +152,7 @@ func TestGeneratePercentilesAggQuery(t *testing.T) {
 	//	Conditions: alerting.Condition{
 	//		Operator: "any",
 	//		Items: []alerting.ConditionItem{
-	//			{MinimumPeriodMatch: 5, Operator: "gte", Values: []string{"90"}, Severity: "error", AlertMessage: "cpu使用率大于90%"},
+	//			{MinimumPeriodMatch: 5, Operator: "gte", Values: []string{"90"}, Priority: "error", AlertMessage: "cpu使用率大于90%"},
 	//		},
 	//	},
 	//
@@ -212,7 +212,7 @@ func TestGeneratePercentilesAggQuery(t *testing.T) {
 		Conditions: alerting.Condition{
 			Operator: "any",
 			Items: []alerting.ConditionItem{
-				{MinimumPeriodMatch: 1, Operator: "gte", Values: []string{"10"}, Severity: "warning"},
+				{MinimumPeriodMatch: 1, Operator: "gte", Values: []string{"10"}, Priority: "warning"},
 			},
 		},
 

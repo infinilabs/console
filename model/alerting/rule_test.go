@@ -55,7 +55,7 @@ func TestCreateRule( t *testing.T)  {
 				//Conditions: Condition{
 				//	Operator: "any",
 				//	Items: []ConditionItem{
-				//		{ MinimumPeriodMatch: 1, Operator: "gte", Values: []string{"1"}, Severity: "error", AlertMessage: "集群健康状态为 Red"},
+				//		{ MinimumPeriodMatch: 1, Operator: "gte", Values: []string{"1"}, Priority: "error", AlertMessage: "集群健康状态为 Red"},
 				//	},
 				//},
 
@@ -71,7 +71,7 @@ func TestCreateRule( t *testing.T)  {
 				Conditions: Condition{
 					Operator: "any",
 					Items: []ConditionItem{
-						{MinimumPeriodMatch: 1, Operator: "lte", Values: []string{"76"}, Severity: "error", Message: "磁盘可用率小于10%"},
+						{MinimumPeriodMatch: 1, Operator: "lte", Values: []string{"76"}, Priority: "error", Message: "磁盘可用率小于10%"},
 					},
 				},
 

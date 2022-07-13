@@ -17,7 +17,7 @@ func InitTasks() error {
 	//fetch alerting rules from es
 	q := orm.Query{
 		Size: 10000,
-		WildcardIndex: true,
+		//WildcardIndex: true,
 	}
 	q.Conds = orm.And(orm.Eq("enabled", true))
 	err, result := orm.Search(alerting.Rule{}, &q)

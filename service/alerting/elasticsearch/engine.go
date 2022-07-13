@@ -288,7 +288,7 @@ func (engine *Engine) generateTimeFilter(rule *alerting.Rule, filterParam *alert
 		)
 		intervalDuration, err := time.ParseDuration(rule.Metrics.BucketSize)
 		if err != nil {
-			return nil, fmt.Errorf("parse bucket size [%s] of rule [%s] error: %v", rule.Metrics.BucketSize, rule.Name, err)
+			return nil, fmt.Errorf("parse bucket size of rule [%s] error: %v", rule.Name, err)
 		}
 		if intervalDuration / time.Hour >= 1 {
 			units = "h"
@@ -596,6 +596,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 				Expression: rule.Metrics.Expression,
 				Objects: rule.Resource.Objects,
 				State: alerting.AlertStateError,
+				//Priority: "undefine",
 				Error: err.Error(),
 			}
 		}

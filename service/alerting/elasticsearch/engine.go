@@ -659,7 +659,8 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 
 		if alertMessage != nil  &&  alertMessage.Status != alerting.MessageStateRecovered && !checkResults.QueryResult.Nodata {
 			alertMessage.Status = alerting.MessageStateRecovered
-			alertMessage.Updated = time.Now()
+			alertMessage.ResourceID =  rule.Resource.ID
+			alertMessage.ResourceName= rule.Resource.Name
 			err = saveAlertMessage(alertMessage)
 			if err != nil {
 				return fmt.Errorf("save alert message error: %w", err)
@@ -709,6 +710,9 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 	}else{
 		alertMessage.Title = alertItem.Title
 		alertMessage.Message = alertItem.Message
+		alertMessage.ResourceID =  rule.Resource.ID
+		alertMessage.ResourceName= rule.Resource.Name
+		alertMessage.Priority = priority
 		err = saveAlertMessage(alertMessage)
 		if err != nil {
 			return fmt.Errorf("save alert message error: %w", err)

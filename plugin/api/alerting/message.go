@@ -108,9 +108,9 @@ func (h *AlertAPI) getAlertMessageStats(w http.ResponseWriter, req *http.Request
 			},
 		},
 		"aggs": util.MapStr{
-			"terms_by_severity": util.MapStr{
+			"terms_by_priority": util.MapStr{
 				"terms": util.MapStr{
-					"field": "severity",
+					"field": "priority",
 					"size": 5,
 				},
 			},
@@ -125,7 +125,7 @@ func (h *AlertAPI) getAlertMessageStats(w http.ResponseWriter, req *http.Request
 		return
 	}
 	statusCounts := map[string]interface{}{}
-	if termsAgg, ok := searchRes.Aggregations["terms_by_severity"]; ok {
+	if termsAgg, ok := searchRes.Aggregations["terms_by_priority"]; ok {
 		for _, bk := range termsAgg.Buckets {
 			if status, ok := bk["key"].(string); ok {
 				statusCounts[status] = bk["doc_count"]
@@ -173,9 +173,9 @@ func (h *AlertAPI) searchAlertMessage(w http.ResponseWriter, req *http.Request, 
 		queryDSL    = `{"sort":[%s],"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d}`
 		strSize     = h.GetParameterOrDefault(req, "size", "20")
 		strFrom     = h.GetParameterOrDefault(req, "from", "0")
-		status = h.GetParameterOrDefault(req, "status", "")
-		severity = h.GetParameterOrDefault(req, "severity", "")
-		sort = h.GetParameterOrDefault(req, "sort", "")
+		status   = h.GetParameterOrDefault(req, "status", "")
+		priority = h.GetParameterOrDefault(req, "priority", "")
+		sort     = h.GetParameterOrDefault(req, "sort", "")
 		ruleID        = h.GetParameterOrDefault(req, "rule_id", "")
 		min        = h.GetParameterOrDefault(req, "min", "now-30d")
 		max        = h.GetParameterOrDefault(req, "max", "now")
@@ -208,9 +208,9 @@ func (h *AlertAPI) searchAlertMessage(w http.ResponseWriter, req *http.Request, 
 		mustBuilder.WriteString(",")
 		mustBuilder.WriteString(fmt.Sprintf(`{"term":{"status":{"value":"%s"}}}`, status))
 	}
-	if severity != "" {
+	if priority != "" {
 		mustBuilder.WriteString(",")
-		mustBuilder.WriteString(fmt.Sprintf(`{"term":{"severity":{"value":"%s"}}}`, severity))
+		mustBuilder.WriteString(fmt.Sprintf(`{"term":{"priority":{"value":"%s"}}}`, priority))
 	}
 	size, _ := strconv.Atoi(strSize)
 	if size <= 0 {
@@ -302,7 +302,7 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 		"rule_enabled": rule.Enabled,
 		"title": message.Title,
 		"message": message.Message,
-		"severity": message.Priority,
+		"priority": message.Priority,
 		"created": message.Created,
 		"updated": message.Updated,
 		"resource_name": rule.Resource.Name,

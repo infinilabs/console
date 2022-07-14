@@ -4,9 +4,9 @@ import (
 	log "github.com/cihub/seelog"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/radix"
 	"infini.sh/framework/core/util"
 	"net/http"
-	"strings"
 )
 
 func (handler APIHandler) HandleGetMappingsAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -46,17 +46,23 @@ func (handler APIHandler) HandleGetIndicesAction(w http.ResponseWriter, req *htt
 		handler.WriteJSON(w, []interface{}{} , http.StatusOK)
 		return
 	}
-	strIndices := ""
-	if !hasAllPrivilege {
-		strIndices = strings.Join(allowedIndices, ",")
-	}
-	catIndices, err := client.GetIndices(strIndices)
+	catIndices, err := client.GetIndices("")
 	resBody := util.MapStr{}
 	if err != nil {
 		log.Error(err)
 		resBody["error"] = err.Error()
 		handler.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
+	}
+	if !hasAllPrivilege {
+		filterIndices := map[string]elastic.IndexInfo{}
+		pattern := radix.Compile(allowedIndices...)
+		for indexName, indexInfo := range *catIndices {
+			if pattern.Match(indexName){
+				filterIndices[indexName] = indexInfo
+			}
+		}
+		catIndices = &filterIndices
 	}
 	handler.WriteJSON(w, catIndices, http.StatusOK)
 }

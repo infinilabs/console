@@ -64,8 +64,8 @@ func main() {
 		}
 
 		//load core modules first
-		module.RegisterSystemModule(&elastic2.ElasticModule{})
 		module.RegisterSystemModule(&filter.FilterModule{})
+		module.RegisterSystemModule(&elastic2.ElasticModule{})
 		module.RegisterSystemModule(&stats.SimpleStatsModule{})
 		module.RegisterSystemModule(&queue2.DiskQueue{})
 		module.RegisterSystemModule(&redis.RedisModule{})

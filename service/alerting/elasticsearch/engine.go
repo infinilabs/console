@@ -468,8 +468,12 @@ func (engine *Engine) GetTargetMetricData(rule *alerting.Rule, isFilterNaN bool,
 					if len(k) == 20 {
 						continue
 					}
+					if len(v) < dataLength {
+						continue
+					}
+
 					//drop nil value bucket
-					if len(v[i]) < 2 {
+					if v == nil || len(v[i]) < 2 {
 						continue DataLoop
 					}
 					if _, ok := v[i][1].(float64); !ok {
@@ -477,6 +481,9 @@ func (engine *Engine) GetTargetMetricData(rule *alerting.Rule, isFilterNaN bool,
 					}
 					parameters[k] = v[i][1]
 					timestamp = v[i][0]
+				}
+				if len(parameters) == 0 {
+					continue
 				}
 				result, err := expression.Evaluate(parameters)
 				if err != nil {

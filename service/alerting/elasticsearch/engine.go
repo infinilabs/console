@@ -485,6 +485,7 @@ func (engine *Engine) GetTargetMetricData(rule *alerting.Rule, isFilterNaN bool,
 				if len(parameters) == 0 {
 					continue
 				}
+
 				result, err := expression.Evaluate(parameters)
 				if err != nil {
 					return nil, queryResult, err
@@ -1006,6 +1007,9 @@ func collectMetricData(agg interface{}, groupValues string, metricData *[]alerti
 
 						for k, v := range bkM {
 							if k == "key" || k == "key_as_string" || k== "doc_count"{
+								continue
+							}
+							if len(k) > 5 { //just store a,b,c
 								continue
 							}
 							if vm, ok := v.(map[string]interface{}); ok {

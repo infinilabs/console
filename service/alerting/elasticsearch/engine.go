@@ -140,7 +140,7 @@ func (engine *Engine) generateAgg(metricItem *insight.MetricItem) map[string]int
 		aggType = metricItem.Statistic
 	case "count", "value_count":
 		aggType = "value_count"
-	case "rate":
+	case "derivative":
 		aggType = "max"
 		isPipeline = true
 	case "medium": // from es version 6.6
@@ -407,7 +407,7 @@ func (engine *Engine) ExecuteQuery(rule *alerting.Rule, filterParam *alerting.Fi
 	}
 	metricData := []alerting.MetricData{}
 	CollectMetricData(searchResult["aggregations"], "", &metricData)
-	//将 rate 求导数据 除以 bucket size (单位 /s)
+	//将 derivative 求导数据 除以 bucket size (单位 /s)
 	//statisticM := map[string] string{}
 	//for _, mi := range rule.Metrics.Items {
 	//	statisticM[mi.Name] = mi.Statistic
@@ -422,7 +422,7 @@ func (engine *Engine) ExecuteQuery(rule *alerting.Rule, filterParam *alerting.Fi
 	//}
 	//for i, _ := range metricData {
 	//	for k, d := range metricData[i].Data {
-	//		if statisticM[k] == "rate" {
+	//		if statisticM[k] == "derivative" {
 	//			for _, td := range d {
 	//				if len(td) > 1 {
 	//					if v, ok := td[1].(float64); ok {

@@ -204,7 +204,7 @@
       "path": "/:index_name/_close"
     },
     {"name": "indices.get_field_mapping", "methods": ["get"],
-      "path": "/:index_name/_mapping/field"
+      "path": "/:index_name/_mapping/:fields"
     },
     {"name": "indices.delete_alias", "methods": ["delete"],
       "path": "/:index_name/_alias/:alias"
@@ -354,6 +354,9 @@
     {"name": "reindex.*", "methods": ["*"],
       "path": "/_reindex/*"
     },
+    {"name": "reindex", "methods": ["post"],
+      "path": "/_reindex"
+    },
     {"name": "reindex.rethrottle", "methods": ["post"],
       "path": "/_reindex/:rid/_rethrottle"
     }
@@ -363,8 +366,11 @@
     {"name": "render_search_template.*", "methods": ["*"],
       "path": "/_render/template"
     },
-    {"name": "render_search_template.create", "methods": ["post"],
+    {"name": "render_search_template", "methods": ["post", "get"],
       "path": "/_render/template"
+    },
+    {"name": "render_search_template_by_id", "methods": ["post", "get"],
+      "path": "/_render/template/:tid"
     }
   ],
   "scripts": [

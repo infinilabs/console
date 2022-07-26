@@ -11,6 +11,7 @@ import (
 	"infini.sh/framework"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/env"
+	"infini.sh/framework/core/insight"
 	_ "infini.sh/framework/core/log"
 	"infini.sh/framework/core/module"
 	"infini.sh/framework/core/orm"
@@ -112,8 +113,8 @@ func main() {
 		orm.RegisterSchemaWithIndexName(alerting.Alert{}, "alert-history")
 		orm.RegisterSchemaWithIndexName(alerting.AlertMessage{}, "alert-message")
 		orm.RegisterSchemaWithIndexName(alerting.Channel{}, "channel")
-		//orm.RegisterSchemaWithIndexName(insight.Visualization{}, "visualization")
-		//orm.RegisterSchemaWithIndexName(insight.Dashboard{}, "dashboard")
+		orm.RegisterSchemaWithIndexName(insight.Visualization{}, "visualization")
+		orm.RegisterSchemaWithIndexName(insight.Dashboard{}, "dashboard")
 		api.RegisterSchema()
 
 		go func() {

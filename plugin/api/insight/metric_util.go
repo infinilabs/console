@@ -76,7 +76,7 @@ func GenerateQuery(metric *insight.Metric) (interface{}, error) {
 		}
 	}
 	targetESVersion := elastic.GetMetadata(metric.ClusterId).Config.Version
-	intervalField, err := elastic.GetDateHistogramIntervalField(targetESVersion)
+	intervalField, err := elastic.GetDateHistogramIntervalField(targetESVersion, metric.BucketSize)
 	if err != nil {
 		return nil, fmt.Errorf("get interval field error: %w", err)
 	}

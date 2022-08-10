@@ -58,13 +58,13 @@ func (engine *Engine) GenerateQuery(rule *alerting.Rule, filterParam *alerting.F
 		}
 	}
 	targetESVersion := elastic.GetMetadata(rule.Resource.ID).Config.Version
-	intervalField, err := elastic.GetDateHistogramIntervalField(targetESVersion)
-	if err != nil {
-		return nil, fmt.Errorf("get interval field error: %w", err)
-	}
 	var periodInterval = rule.Metrics.BucketSize
 	if filterParam != nil && filterParam.BucketSize != "" {
 		periodInterval =  filterParam.BucketSize
+	}
+	intervalField, err := elastic.GetDateHistogramIntervalField(targetESVersion, periodInterval )
+	if err != nil {
+		return nil, fmt.Errorf("get interval field error: %w", err)
 	}
 	timeAggs := util.MapStr{
 		"time_buckets": util.MapStr{

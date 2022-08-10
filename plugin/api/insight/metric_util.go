@@ -224,7 +224,7 @@ func collectMetricData(agg interface{}, groupValues string, metricData *[]insigh
 					if bks, ok := vm["buckets"].([]interface{}); ok {
 						for _, bk := range bks {
 							if bkVal, ok :=  bk.(map[string]interface{}); ok {
-								currentGroup := bkVal["key"].(string)
+								var currentGroup = fmt.Sprintf("%v", bkVal["key"])
 								newGroupValues := currentGroup
 								if groupValues != "" {
 									newGroupValues = fmt.Sprintf("%s-%s", groupValues, currentGroup)

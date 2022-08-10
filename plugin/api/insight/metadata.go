@@ -220,6 +220,7 @@ func getMetadataByIndexPattern(clusterID, indexPattern, timeField string, filter
 			return nil, err
 		}
 		for fieldName, count := range counts {
+			delete(options, "seriesField")
 			if count <= 1 {
 				continue
 			}
@@ -229,10 +230,10 @@ func getMetadataByIndexPattern(clusterID, indexPattern, timeField string, filter
 				if timeField == "" {
 					seriesType = "pie"
 				}else {
-					if aggField.Type == "string"{
+					//if aggField.Type == "string"{
 						seriesType = "column"
 						options["seriesField"] = "group"
-					}
+					//}
 				}
 			}
 			var defaultAggType string
@@ -240,8 +241,11 @@ func getMetadataByIndexPattern(clusterID, indexPattern, timeField string, filter
 				aggTypes = []string{"count", "terms"}
 				defaultAggType = "count"
 			} else {
-				aggTypes = []string{"min", "max", "avg", "sum", "medium", "rate"}
+				aggTypes = []string{"min", "max", "avg", "sum", "medium","count", "rate"}
 				defaultAggType = "avg"
+				if options["seriesField"] == "group" {
+					defaultAggType = "count"
+				}
 			}
 
 			if fieldsFormat != nil {
@@ -266,7 +270,7 @@ func getMetadataByIndexPattern(clusterID, indexPattern, timeField string, filter
 				},
 				AggTypes:  aggTypes,
 			}}
-			if seriesType == "column" {
+			if seriesType == "column" || seriesType == "pie" {
 				seriesItem.Metric.Groups = []insight.MetricGroupItem{
 					{aggField.Name, 10},
 				}
@@ -294,7 +298,14 @@ func countFieldValue(fields []string, clusterID, indexPattern string, filter int
 	}
 	queryDsl := util.MapStr{
 		"size": 0,
-		"aggs": aggs,
+		"aggs": util.MapStr{
+			"sample": util.MapStr{
+				"sampler": util.MapStr{
+					"shard_size": 200,
+				},
+				"aggs": aggs,
+			},
+		} ,
 	}
 	if filter != nil {
 		queryDsl["query"] = filter
@@ -305,11 +316,22 @@ func countFieldValue(fields []string, clusterID, indexPattern string, filter int
 		return nil, err
 	}
 	fieldsCount := map[string] float64{}
-	for key, agg := range searchRes.Aggregations {
-		if count, ok := agg.Value.(float64); ok {
-			fieldsCount[key] = count
+	res := map[string]interface{}{}
+	util.MustFromJSONBytes(searchRes.RawResult.Body, &res)
+	if aggsM, ok := res["aggregations"].(map[string]interface{}); ok {
+		if sampleAgg, ok := aggsM["sample"].(map[string]interface{}); ok {
+			for key, agg := range sampleAgg {
+				if key == "doc_count"{
+					continue
+				}
+				if mAgg, ok := agg.(map[string]interface{});ok{
+					fieldsCount[key] = mAgg["value"].(float64)
+				}
+			}
 		}
+
 	}
+
 	return fieldsCount, nil
 }
 

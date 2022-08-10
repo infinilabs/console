@@ -336,6 +336,9 @@
     {"name": "nodes.info", "methods": ["get"],
       "path": "/_nodes"
     },
+    {"name": "nodes.info", "methods": ["get"],
+      "path": "/_nodes/:node_id"
+    },
     {"name": "nodes.stats", "methods": ["get"],
       "path": "/_nodes/stats"
     },

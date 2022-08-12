@@ -298,17 +298,9 @@ func getMetadataByIndexPattern(clusterID, indexPattern, timeField string, filter
 	var (
 		metas []insight.Visualization
 		seriesType string
-		options = map[string]interface{}{
-			"yField": "value",
-		}
+
 		aggTypes []string
 	)
-	if timeField != "" {
-		options["xAxis"] = util.MapStr{
-			"type": "time",
-		}
-		options["xField"] = "timestamp"
-	}
 	var fieldNames []string
 	for fieldName := range fieldsMeta.Aggregatable {
 		fieldNames = append(fieldNames, fieldName)
@@ -325,7 +317,15 @@ func getMetadataByIndexPattern(clusterID, indexPattern, timeField string, filter
 			return nil, err
 		}
 		for fieldName, count := range counts {
-			delete(options, "seriesField")
+			options := map[string]interface{}{
+				"yField": "value",
+			}
+			if timeField != "" {
+				options["xAxis"] = util.MapStr{
+					"type": "time",
+				}
+				options["xField"] = "timestamp"
+			}
 			if count <= 1 {
 				continue
 			}

@@ -14,8 +14,113 @@ import (
 	"infini.sh/framework/core/util"
 	"math"
 	"net/http"
+	"strings"
 )
 
+func (h *InsightAPI) HandleGetPreview(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	clusterID := ps.MustGetParameter("id")
+	reqBody := struct {
+		IndexPattern string      `json:"index_pattern"`
+		ViewID       string      `json:"view_id"`
+		TimeField    string      `json:"time_field"`
+		Filter       interface{} `json:"filter"`
+	}{}
+	err := h.DecodeJSON(req, &reqBody)
+	if err != nil {
+		log.Error(err)
+		h.WriteJSON(w, util.MapStr{
+			"error": err.Error(),
+		}, http.StatusInternalServerError)
+		return
+	}
+	if reqBody.ViewID != "" {
+		view := elastic.View{
+			ID: reqBody.ViewID,
+		}
+		exists, err := orm.Get(&view)
+		if err != nil || !exists {
+			h.WriteJSON(w, util.MapStr{
+				"error": err.Error(),
+			}, http.StatusNotFound)
+			return
+		}
+		reqBody.IndexPattern = view.Title
+		reqBody.TimeField = view.TimeFieldName
+
+	}
+	var timeFields []string
+	if reqBody.TimeField == "" {
+		fieldsMeta, err := getFieldsMetadata(reqBody.IndexPattern, clusterID)
+		if err != nil {
+			log.Error(err)
+			h.WriteJSON(w, util.MapStr{
+				"error": err.Error(),
+			}, http.StatusInternalServerError)
+			return
+		}
+		for fieldName := range fieldsMeta.Dates {
+			timeFields = append(timeFields, fieldName)
+		}
+	}else{
+		timeFields = []string{reqBody.TimeField}
+	}
+
+	aggs := util.MapStr{
+		"doc_count": util.MapStr{
+			"value_count": util.MapStr{"field": "_id"},
+		},
+	}
+
+	for _, tfield := range timeFields {
+		aggs["maxTime_"+tfield] = util.MapStr{
+			 "max": util.MapStr{ "field": tfield },
+		}
+		aggs["minTime_"+tfield] = util.MapStr{
+			"min": util.MapStr{ "field": tfield },
+		}
+	}
+	query := util.MapStr{
+		"aggs": aggs,
+	}
+	if reqBody.Filter != nil {
+		query["query"] = reqBody.Filter
+	}
+
+	esClient := elastic.GetClient(clusterID)
+	searchRes, err := esClient.SearchWithRawQueryDSL(reqBody.IndexPattern, util.MustToJSONBytes(query))
+	if err != nil {
+		log.Error(err)
+		h.WriteJSON(w, util.MapStr{
+			"error": err.Error(),
+		}, http.StatusInternalServerError)
+		return
+	}
+	result := util.MapStr{
+		"doc_count": searchRes.Aggregations["doc_count"].Value,
+	}
+	tfieldsM := map[string]util.MapStr{}
+	for ak, av := range searchRes.Aggregations {
+		if strings.HasPrefix(ak,"maxTime_") {
+			tfield := ak[8:]
+			if _, ok := tfieldsM[tfield]; !ok {
+				tfieldsM[tfield] = util.MapStr{}
+			}
+			tfieldsM[tfield]["max"] = av.Value
+			continue
+		}
+		if strings.HasPrefix(ak,"minTime_") {
+			tfield := ak[8:]
+			if _, ok := tfieldsM[tfield]; !ok {
+				tfieldsM[tfield] = util.MapStr{}
+			}
+			tfieldsM[tfield]["min"] = av.Value
+			continue
+		}
+	}
+	result["time_fields"] = tfieldsM
+	h.WriteJSON(w, result, http.StatusOK)
+
+}
 func (h *InsightAPI) HandleGetMetadata(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
 	clusterID := ps.MustGetParameter("id")
 	reqBody := struct {

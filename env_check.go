@@ -67,7 +67,7 @@ func checkElasticsearchRequire() error{
 
 	versionNumber, err := jsonparser.GetString(result.Body, "version", "number")
 	if err != nil {
-		return fmt.Errorf("check elasticsearch requirement error: %v", err)
+		return fmt.Errorf("check elasticsearch requirement error: %v, got response: %s", err, string(result.Body))
 	}
 	cr, err := util.VersionCompare(versionNumber, "7.3")
 	if  err !=nil {

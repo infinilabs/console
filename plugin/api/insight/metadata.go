@@ -335,10 +335,10 @@ func getMetadataByIndexPattern(clusterID, indexPattern, timeField string, filter
 				if timeField == "" {
 					seriesType = "pie"
 				}else {
-					//if aggField.Type == "string"{
+					if aggField.Type == "string"{
 						seriesType = "column"
 						options["seriesField"] = "group"
-					//}
+					}
 				}
 			}
 			var defaultAggType string
@@ -414,6 +414,7 @@ func countFieldValue(fields []string, clusterID, indexPattern string, filter int
 	}
 	if filter != nil {
 		queryDsl["query"] = filter
+		queryDsl["aggs"] = aggs
 	}
 	esClient := elastic.GetClient(clusterID)
 	searchRes, err := esClient.SearchWithRawQueryDSL(indexPattern, util.MustToJSONBytes(queryDsl))
@@ -429,6 +430,12 @@ func countFieldValue(fields []string, clusterID, indexPattern string, filter int
 				if key == "doc_count"{
 					continue
 				}
+				if mAgg, ok := agg.(map[string]interface{});ok{
+					fieldsCount[key] = mAgg["value"].(float64)
+				}
+			}
+		}else{
+			for key, agg := range aggsM {
 				if mAgg, ok := agg.(map[string]interface{});ok{
 					fieldsCount[key] = mAgg["value"].(float64)
 				}

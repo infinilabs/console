@@ -15,6 +15,7 @@ import (
 	_ "infini.sh/framework/core/log"
 	"infini.sh/framework/core/module"
 	"infini.sh/framework/core/orm"
+	"infini.sh/framework/modules/agent"
 	_ "infini.sh/framework/modules/api"
 	elastic2 "infini.sh/framework/modules/elastic"
 	"infini.sh/framework/modules/filter"
@@ -73,6 +74,7 @@ func main() {
 		module.RegisterSystemModule(&ui.UIModule{})
 		module.RegisterSystemModule(&pipeline.PipeModule{})
 		module.RegisterSystemModule(&task.TaskModule{})
+		module.RegisterSystemModule(&agent.AgentModule{})
 
 		module.RegisterUserPlugin(&metrics.MetricsModule{})
 

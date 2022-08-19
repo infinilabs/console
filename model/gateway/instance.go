@@ -5,6 +5,7 @@
 package gateway
 
 import (
+	"infini.sh/framework/core/agent"
 	"infini.sh/framework/core/orm"
 )
 
@@ -16,13 +17,8 @@ type Instance struct {
 	Name        string `json:"name,omitempty" elastic_mapping:"name:{type:keyword,fields:{text: {type: text}}}"`
 	Endpoint string `json:"endpoint,omitempty" elastic_mapping:"endpoint: { type: keyword }"`
 	Version map[string]interface{} `json:"version,omitempty" elastic_mapping:"version: { type: object }"`
-	BasicAuth BasicAuth `config:"basic_auth" json:"basic_auth,omitempty" elastic_mapping:"basic_auth:{type:object}"`
+	BasicAuth agent.BasicAuth `config:"basic_auth" json:"basic_auth,omitempty" elastic_mapping:"basic_auth:{type:object}"`
 	Owner string `json:"owner,omitempty" config:"owner" elastic_mapping:"owner:{type:keyword}"`
 	Tags [] string `json:"tags,omitempty"`
 	Description string `json:"description,omitempty" config:"description" elastic_mapping:"description:{type:keyword}"`
-}
-
-type BasicAuth struct {
-	Username string `json:"username,omitempty" config:"username" elastic_mapping:"username:{type:keyword}"`
-	Password string `json:"password,omitempty" config:"password" elastic_mapping:"password:{type:keyword}"`
 }

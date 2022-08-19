@@ -9,8 +9,10 @@ import (
 	log "github.com/cihub/seelog"
 	"github.com/segmentio/encoding/json"
 	"infini.sh/console/model/gateway"
+	"infini.sh/framework/core/agent"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/orm"
+	"infini.sh/framework/core/proxy"
 	"infini.sh/framework/core/util"
 	"net/http"
 	"strconv"
@@ -214,11 +216,11 @@ func (h *GatewayAPI) getInstanceStatus(w http.ResponseWriter, req *http.Request,
 			password = ""
 		}
 		gid, _ := instance.GetValue("id")
-		res, err := doGatewayRequest(&ProxyRequest{
+		res, err :=  proxy.DoProxyRequest(&proxy.Request{
 			Endpoint: endpoint.(string),
 			Method: http.MethodGet,
 			Path: "/stats",
-			BasicAuth: gateway.BasicAuth{
+			BasicAuth: agent.BasicAuth{
 				Username: username.(string),
 				Password: password.(string),
 			},
@@ -262,12 +264,13 @@ func (h *GatewayAPI) proxy(w http.ResponseWriter, req *http.Request, ps httprout
 		}, http.StatusNotFound)
 		return
 	}
-	res, err := doGatewayRequest(&ProxyRequest{
+	res, err :=  proxy.DoProxyRequest(&proxy.Request{
 		Method: method,
 		Endpoint: obj.Endpoint,
 		Path: path,
 		Body: req.Body,
 		BasicAuth: obj.BasicAuth,
+		ContentLength: int(req.ContentLength),
 	})
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -290,8 +293,8 @@ type GatewayConnectResponse struct {
 	} `json:"version"`
 
 }
-func (h *GatewayAPI) doConnect(endpoint string, basicAuth gateway.BasicAuth) (*GatewayConnectResponse, error) {
-	res, err := doGatewayRequest(&ProxyRequest{
+func (h *GatewayAPI) doConnect(endpoint string, basicAuth agent.BasicAuth) (*GatewayConnectResponse, error) {
+	res, err := proxy.DoProxyRequest(&proxy.Request{
 		Method: http.MethodGet,
 		Endpoint: endpoint,
 		Path: "/_framework/api/_info",
@@ -313,7 +316,7 @@ func (h *GatewayAPI) doConnect(endpoint string, basicAuth gateway.BasicAuth) (*G
 func (h *GatewayAPI) tryConnect(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	var reqBody = struct {
 		Endpoint string `json:"endpoint"`
-		BasicAuth gateway.BasicAuth
+		BasicAuth agent.BasicAuth
 	}{}
 	err := h.DecodeJSON(req, &reqBody)
 	if err != nil {

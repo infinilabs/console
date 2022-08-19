@@ -1,4 +1,3 @@
-
 # for the system cluster, please use Elasticsearch v7.3+
 elasticsearch:
   - name: default
@@ -28,28 +27,28 @@ web:
     enabled: true
 
 elastic:
-    elasticsearch: default
+  elasticsearch: default
+  enabled: true
+  remote_configs: true
+  health_check:
     enabled: true
-    remote_configs: true
-    health_check:
-      enabled: true
-      interval: 30s
-    availability_check:
-      enabled: true
-      interval: 60s
-    metadata_refresh:
-      enabled: true
-      interval: 30s
-    cluster_settings_check:
-      enabled: true
-      interval: 20s
-    store:
-      enabled: true
-    orm:
-      enabled: true
-      init_template: true
-      template_name: ".infini"
-      index_prefix: ".infini_"
+    interval: 30s
+  availability_check:
+    enabled: true
+    interval: 60s
+  metadata_refresh:
+    enabled: true
+    interval: 30s
+  cluster_settings_check:
+    enabled: true
+    interval: 20s
+  store:
+    enabled: false
+  orm:
+    enabled: true
+    init_template: true
+    template_name: ".infini"
+    index_prefix: ".infini_"
 
 metrics:
   enabled: true
@@ -90,7 +89,7 @@ pipeline:
           queues:
             type: indexing_merge
           when:
-            cluster_available: [ "default" ]
+            cluster_available: ["default"]
   - name: metadata_ingest
     auto_start: true
     keep_running: true
@@ -106,7 +105,7 @@ pipeline:
           consumer:
             group: metadata
           when:
-            cluster_available: [ "default" ]
+            cluster_available: ["default"]
   - name: activity_ingest
     auto_start: true
     keep_running: true
@@ -122,4 +121,4 @@ pipeline:
           consumer:
             group: activity
           when:
-            cluster_available: [ "default" ]
+            cluster_available: ["default"]

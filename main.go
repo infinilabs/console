@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	_ "expvar"
+	log "github.com/cihub/seelog"
 	"infini.sh/console/config"
 	"infini.sh/console/model/alerting"
 	"infini.sh/console/model/gateway"
@@ -29,7 +30,7 @@ import (
 	_ "infini.sh/framework/plugins"
 	api2 "infini.sh/gateway/api"
 	_ "infini.sh/gateway/proxy"
-	log "src/github.com/cihub/seelog"
+	_ "time/tzdata"
 )
 
 var appConfig *config.AppConfig

@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	_ "expvar"
+	log "github.com/cihub/seelog"
 	"infini.sh/console/config"
 	"infini.sh/console/model/alerting"
 	"infini.sh/console/model/gateway"
@@ -15,6 +16,7 @@ import (
 	_ "infini.sh/framework/core/log"
 	"infini.sh/framework/core/module"
 	"infini.sh/framework/core/orm"
+	"infini.sh/framework/modules/agent"
 	_ "infini.sh/framework/modules/api"
 	elastic2 "infini.sh/framework/modules/elastic"
 	"infini.sh/framework/modules/filter"
@@ -28,7 +30,7 @@ import (
 	_ "infini.sh/framework/plugins"
 	api2 "infini.sh/gateway/api"
 	_ "infini.sh/gateway/proxy"
-	log "src/github.com/cihub/seelog"
+	_ "time/tzdata"
 )
 
 var appConfig *config.AppConfig
@@ -73,6 +75,7 @@ func main() {
 		module.RegisterSystemModule(&ui.UIModule{})
 		module.RegisterSystemModule(&pipeline.PipeModule{})
 		module.RegisterSystemModule(&task.TaskModule{})
+		module.RegisterSystemModule(&agent.AgentModule{})
 
 		module.RegisterUserPlugin(&metrics.MetricsModule{})
 

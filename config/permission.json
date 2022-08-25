@@ -281,6 +281,9 @@
     {"name": "indices.exists_template", "methods":["get"],
       "path": "/_template/:name"
     },
+    {"name": "indices.field_usage_stats", "methods":["get"],
+      "path": "/:index_name/_field_usage_stats"
+    },
     {"name": "doc.*", "methods": ["*"],
       "path": "/:index_name/:doctype"
     },

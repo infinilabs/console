@@ -22,7 +22,7 @@ func (handler APIHandler) HandleGetMappingsAction(w http.ResponseWriter, req *ht
 	_, _, idxs, err := client.GetMapping(copyAll, indexName)
 	if err != nil {
 		log.Error(err)
-		resBody["error"] = err
+		resBody["error"] = err.Error()
 		handler.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
 	}
@@ -91,14 +91,14 @@ func (handler APIHandler) HandleUpdateSettingsAction(w http.ResponseWriter, req 
 	err := handler.DecodeJSON(req, &settings)
 	if err != nil {
 		log.Error(err)
-		resBody["error"] = err
+		resBody["error"] = err.Error()
 		handler.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
 	}
 	err = client.UpdateIndexSettings(indexName, settings)
 	if err != nil {
 		log.Error(err)
-		resBody["error"] = err
+		resBody["error"] = err.Error()
 		handler.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
 	}
@@ -114,7 +114,7 @@ func (handler APIHandler) HandleDeleteIndexAction(w http.ResponseWriter, req *ht
 	err := client.DeleteIndex(indexName)
 	if err != nil {
 		log.Error(err)
-		resBody["error"] = err
+		resBody["error"] = err.Error()
 		handler.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
 	}
@@ -132,14 +132,14 @@ func (handler APIHandler) HandleCreateIndexAction(w http.ResponseWriter, req *ht
 	err := handler.DecodeJSON(req, &config)
 	if err != nil {
 		log.Error(err)
-		resBody["error"] = err
+		resBody["error"] = err.Error()
 		handler.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
 	}
 	err = client.CreateIndex(indexName, config)
 	if err != nil {
 		log.Error(err)
-		resBody["error"] = err
+		resBody["error"] = err.Error()
 		handler.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
 	}

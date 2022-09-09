@@ -6,6 +6,7 @@ import (
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/event"
+	"infini.sh/framework/core/host"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"net/http"
@@ -80,10 +81,19 @@ func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req
 		}
 	}
 
-	hostCount, err := handler.getMetricCount(orm.GetIndexName(elastic.NodeConfig{}), "metadata.host", clusterIDs)
+	hostCount, err := handler.getMetricCount(orm.GetIndexName(host.HostInfo{}), "ip", nil)
 	if err != nil{
 		log.Error(err)
 	}
+	log.Info(hostCount)
+	if v, ok := hostCount.(float64); ok && v == 0 {
+		log.Error("sss")
+		hostCount, err = handler.getMetricCount(orm.GetIndexName(elastic.NodeConfig{}), "metadata.host", clusterIDs)
+		if err != nil{
+			log.Error(err)
+		}
+	}
+
 	nodeCount, err := handler.getMetricCount(orm.GetIndexName(elastic.NodeConfig{}), "id", clusterIDs)
 	if err != nil{
 		log.Error(err)

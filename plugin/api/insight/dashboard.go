@@ -5,7 +5,6 @@
 package insight
 
 import (
-	"fmt"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/insight"
 	"infini.sh/framework/core/orm"
@@ -13,7 +12,6 @@ import (
 	"net/http"
 	log "src/github.com/cihub/seelog"
 	"strconv"
-	"strings"
 )
 
 func (h *InsightAPI) createDashboard(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -146,17 +144,12 @@ func (h *InsightAPI) deleteDashboard(w http.ResponseWriter, req *http.Request, p
 }
 
 func (h *InsightAPI) searchDashboard(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-
 	var (
 		keyword        = h.GetParameterOrDefault(req, "keyword", "")
-		queryDSL    = `{"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d}`
 		strSize     = h.GetParameterOrDefault(req, "size", "20")
 		strFrom     = h.GetParameterOrDefault(req, "from", "0")
-		mustBuilder = &strings.Builder{}
+		clusterID        = h.GetParameter(req, "cluster_id")
 	)
-	if keyword != "" {
-		mustBuilder.WriteString(fmt.Sprintf(`{"query_string":{"default_field":"*","query": "%s"}}`, keyword))
-	}
 	size, _ := strconv.Atoi(strSize)
 	if size <= 0 {
 		size = 20
@@ -166,9 +159,38 @@ func (h *InsightAPI) searchDashboard(w http.ResponseWriter, req *http.Request, p
 		from = 0
 	}
 
-	q := orm.Query{}
-	queryDSL = fmt.Sprintf(queryDSL, mustBuilder.String(), size, from)
-	q.RawQuery = []byte(queryDSL)
+	must := []util.MapStr{}
+	if keyword != "" {
+		must = append(must, util.MapStr{
+			"query_string": util.MapStr{
+				"default_field":"*",
+				"query": keyword,
+			},
+		})
+	}
+
+	if clusterID != "" {
+		must = append(must, util.MapStr{
+			"term": util.MapStr{
+				"cluster_id": util.MapStr{
+					"value": clusterID,
+				},
+			},
+		})
+	}
+
+	queryDSL := util.MapStr{
+		"size": size,
+		"from": from,
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": must,
+			},
+		},
+	}
+	q := orm.Query{
+		RawQuery: util.MustToJSONBytes(queryDSL),
+	}
 
 	err, res := orm.Search(&insight.Dashboard{}, &q)
 	if err != nil {

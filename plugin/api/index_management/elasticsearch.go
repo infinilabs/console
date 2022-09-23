@@ -86,7 +86,6 @@ func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req
 		log.Error(err)
 	}
 	if v, ok := hostCount.(float64); ok && v == 0 {
-		log.Error("sss")
 		hostCount, err = handler.getMetricCount(orm.GetIndexName(elastic.NodeConfig{}), "metadata.host", clusterIDs)
 		if err != nil{
 			log.Error(err)

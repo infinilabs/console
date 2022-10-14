@@ -14,6 +14,7 @@ import (
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/proxy"
 	"infini.sh/framework/core/util"
+	"infini.sh/framework/modules/elastic"
 	"net/http"
 	"strconv"
 	"strings"
@@ -28,6 +29,24 @@ func (h *GatewayAPI) createInstance(w http.ResponseWriter, req *http.Request, ps
 		return
 	}
 
+	res, err := h.doConnect(obj.Endpoint, obj.BasicAuth)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
+	obj.ID = res.ID
+
+	exists, err := orm.Get(obj)
+	if err != nil && err != elastic.ErrNotFound {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
+	if exists {
+		h.WriteError(w, "gateway instance already registered", http.StatusInternalServerError)
+		return
+	}
 	err = orm.Create(obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -329,4 +348,73 @@ func (h *GatewayAPI) tryConnect(w http.ResponseWriter, req *http.Request, ps htt
 		return
 	}
 	h.WriteJSON(w, connectRes, http.StatusOK)
+}
+
+func (h *GatewayAPI) getExecutionNodes(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
+	query := util.MapStr{
+		"size": 1000,
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": []util.MapStr{
+					{
+						"term": util.MapStr{
+							"enrolled": util.MapStr{
+								"value": true,
+							},
+						},
+					},
+					{
+						"term": util.MapStr{
+							"status": util.MapStr{
+								"value": "online",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	q := orm.Query{
+		RawQuery: util.MustToJSONBytes(query),
+	}
+	err, result := orm.Search(agent.Instance{}, &q)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var nodes []util.MapStr
+	//nodes from agent
+	for _, row := range result.Result {
+		if rowM, ok := row.(map[string]interface{}); ok {
+			nodes = append(nodes, util.MapStr{
+				"id": rowM["id"],
+				"name": rowM["name"],
+				"type": "agent",
+			})
+		}
+	}
+
+	q = orm.Query{
+		Size: 1000,
+	}
+	err, result = orm.Search(gateway.Instance{}, &q)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	//nodes from gateway
+	for _, row := range result.Result {
+		if rowM, ok := row.(map[string]interface{}); ok {
+			nodes = append(nodes, util.MapStr{
+				"id": rowM["id"],
+				"name": rowM["name"],
+				"type": "gateway",
+			})
+		}
+	}
+	h.WriteJSON(w, nodes, http.StatusOK)
 }

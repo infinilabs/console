@@ -16,11 +16,12 @@ import (
 	_ "infini.sh/framework/core/log"
 	"infini.sh/framework/core/module"
 	"infini.sh/framework/core/orm"
+	task2 "infini.sh/framework/core/task"
 	"infini.sh/framework/modules/agent"
 	_ "infini.sh/framework/modules/api"
 	elastic2 "infini.sh/framework/modules/elastic"
-	"infini.sh/framework/modules/filter"
 	"infini.sh/framework/modules/metrics"
+	"infini.sh/framework/modules/migration"
 	"infini.sh/framework/modules/pipeline"
 	queue2 "infini.sh/framework/modules/queue/disk_queue"
 	"infini.sh/framework/modules/redis"
@@ -67,7 +68,6 @@ func main() {
 		}
 
 		//load core modules first
-		module.RegisterSystemModule(&filter.FilterModule{})
 		module.RegisterSystemModule(&elastic2.ElasticModule{})
 		module.RegisterSystemModule(&stats.SimpleStatsModule{})
 		module.RegisterSystemModule(&queue2.DiskQueue{})
@@ -76,6 +76,7 @@ func main() {
 		module.RegisterSystemModule(&pipeline.PipeModule{})
 		module.RegisterSystemModule(&task.TaskModule{})
 		module.RegisterSystemModule(&agent.AgentModule{})
+		module.RegisterSystemModule(&migration.MigrationModule{})
 
 		module.RegisterUserPlugin(&metrics.MetricsModule{})
 
@@ -118,6 +119,8 @@ func main() {
 		orm.RegisterSchemaWithIndexName(alerting.Channel{}, "channel")
 		orm.RegisterSchemaWithIndexName(insight.Visualization{}, "visualization")
 		orm.RegisterSchemaWithIndexName(insight.Dashboard{}, "dashboard")
+		orm.RegisterSchemaWithIndexName(task2.Task{}, "task")
+		orm.RegisterSchemaWithIndexName(task2.Log{}, "task-log")
 		api.RegisterSchema()
 
 		go func() {

@@ -13,7 +13,7 @@ import (
 type Instance struct {
 	orm.ORMObjectBase
 
-	InstanceID string `json:"instance_id,omitempty" elastic_mapping:"instance_id: { type: keyword }"`
+	//InstanceID string `json:"instance_id,omitempty" elastic_mapping:"instance_id: { type: keyword }"`
 	Name        string `json:"name,omitempty" elastic_mapping:"name:{type:keyword,fields:{text: {type: text}}}"`
 	Endpoint string `json:"endpoint,omitempty" elastic_mapping:"endpoint: { type: keyword }"`
 	Version map[string]interface{} `json:"version,omitempty" elastic_mapping:"version: { type: object }"`

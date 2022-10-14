@@ -19,7 +19,6 @@ import (
 	"infini.sh/framework/modules/agent"
 	_ "infini.sh/framework/modules/api"
 	elastic2 "infini.sh/framework/modules/elastic"
-	"infini.sh/framework/modules/filter"
 	"infini.sh/framework/modules/metrics"
 	"infini.sh/framework/modules/pipeline"
 	queue2 "infini.sh/framework/modules/queue/disk_queue"
@@ -67,7 +66,6 @@ func main() {
 		}
 
 		//load core modules first
-		module.RegisterSystemModule(&filter.FilterModule{})
 		module.RegisterSystemModule(&elastic2.ElasticModule{})
 		module.RegisterSystemModule(&stats.SimpleStatsModule{})
 		module.RegisterSystemModule(&queue2.DiskQueue{})

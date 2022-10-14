@@ -151,7 +151,7 @@ func (h *AlertAPI) getAlertMessageStats(w http.ResponseWriter, req *http.Request
 			},
 		},
 	}
-	countRes, err := esClient.Count(indexName, util.MustToJSONBytes(queryDsl))
+	countRes, err := esClient.Count(nil, indexName, util.MustToJSONBytes(queryDsl))
 	if err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"error": err.Error(),

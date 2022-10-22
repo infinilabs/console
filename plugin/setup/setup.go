@@ -3,6 +3,7 @@ package task
 import (
 	"bytes"
 	"fmt"
+	"golang.org/x/crypto/bcrypt"
 	"infini.sh/framework/core/api"
 	"infini.sh/framework/core/api/rbac"
 	httprouter "infini.sh/framework/core/api/router"
@@ -13,13 +14,12 @@ import (
 	"infini.sh/framework/core/module"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
-	elastic1 "infini.sh/framework/modules/elastic/common"
 	elastic2 "infini.sh/framework/modules/elastic"
+	elastic1 "infini.sh/framework/modules/elastic/common"
 	"infini.sh/framework/modules/security"
 	"net/http"
 	"path"
 	"runtime"
-	"golang.org/x/crypto/bcrypt"
 	"time"
 )
 
@@ -127,7 +127,7 @@ func (module *Module) validate(w http.ResponseWriter, r *http.Request, ps httpro
 	}()
 
 
-	err, client,request := module.initTempClient(r)
+	err, client,_ := module.initTempClient(r)
 	if err!=nil{
 		panic(err)
 	}
@@ -199,7 +199,7 @@ func (module *Module) initTempClient(r *http.Request) (error, elastic.API,SetupR
 	if err != nil {
 		return err,nil,request
 	}
-	
+
 	if request.Cluster.Endpoint==""{
 		panic("invalid configuration")
 	}

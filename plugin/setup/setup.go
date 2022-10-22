@@ -16,10 +16,14 @@ import (
 	"infini.sh/framework/core/util"
 	elastic2 "infini.sh/framework/modules/elastic"
 	elastic1 "infini.sh/framework/modules/elastic/common"
+	elastic3 "infini.sh/framework/modules/elastic/api"
 	"infini.sh/framework/modules/security"
+	"io"
 	"net/http"
+	uri2 "net/url"
 	"path"
 	"runtime"
+	"github.com/valyala/fasttemplate"
 	"time"
 )
 
@@ -43,6 +47,7 @@ func (module *Module) Setup() {
 
 	api.HandleAPIMethod(api.POST, "/setup/_validate", module.validate)
 	api.HandleAPIMethod(api.POST, "/setup/_initialize", module.initialize)
+	elastic3.InitTestAPI()
 }
 
 var setupFinishedCallback= []func() {}
@@ -65,6 +70,8 @@ func (module *Module) Stop() error {
 
 type SetupRequest struct {
 	Cluster struct {
+		Host string `json:"host"`
+		Schema string `json:"schema"`
 		Endpoint string `json:"endpoint"`
 		Username string `json:"username"`
 		Password string `json:"password"`
@@ -96,6 +103,9 @@ func (module *Module) validate(w http.ResponseWriter, r *http.Request, ps httpro
 	var code int
 	code=200
 	defer func() {
+
+		global.Env().CheckSetup()
+
 		result := util.MapStr{}
 		result["success"]=success
 
@@ -171,12 +181,17 @@ func (module *Module) validate(w http.ResponseWriter, r *http.Request, ps httpro
 
 	if indices != nil && len(*indices) > 0 {
 		buff := bytes.Buffer{}
+		tipBuff := bytes.Buffer{}
 		for k, _ := range *indices {
 			buff.WriteString(k)
 			buff.WriteString("\n")
+
+			tipBuff.WriteString("DELETE ")
+			tipBuff.WriteString(k)
+			tipBuff.WriteString("\n")
 		}
 		errType = IndicesExists
-		fixTips="DELETE "+util.TrimSpaces(cfg1.IndexPrefix) + "*"
+		fixTips=tipBuff.String()
 		panic(errors.Errorf("there are following indices exists in target elasticsearch: \n%v", buff.String()))
 	}
 
@@ -200,8 +215,14 @@ func (module *Module) initTempClient(r *http.Request) (error, elastic.API,SetupR
 		return err,nil,request
 	}
 
-	if request.Cluster.Endpoint==""{
+	if request.Cluster.Endpoint==""&&request.Cluster.Host==""{
 		panic("invalid configuration")
+	}
+
+	if request.Cluster.Endpoint==""{
+		if request.Cluster.Host!=""&&request.Cluster.Schema!=""{
+			request.Cluster.Endpoint=fmt.Sprintf("%v://%v",request.Cluster.Schema,request.Cluster.Host)
+		}
 	}
 
 	cfg = elastic.ElasticsearchConfig{
@@ -212,6 +233,15 @@ func (module *Module) initTempClient(r *http.Request) (error, elastic.API,SetupR
 			Username: request.Cluster.Username,
 			Password: request.Cluster.Password,
 		},
+	}
+
+	if cfg.Endpoint!=""&&cfg.Host==""{
+		uri,err:=uri2.Parse(cfg.Endpoint)
+		if err!=nil{
+			panic(err)
+		}
+		cfg.Host=uri.Host
+		cfg.Schema=uri.Scheme
 	}
 
 	cfg.ID = tempID
@@ -243,6 +273,9 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	var code int
 	code=200
 	defer func() {
+
+		global.Env().CheckSetup()
+
 		result := util.MapStr{}
 		result["success"]=success
 
@@ -297,7 +330,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 
 	//处理ORM
 	handler := elastic2.ElasticORM{Client: client, Config:cfg1 }
-	orm.Register("elastic_setup", handler)
+	orm.Register("elastic_setup_"+util.GetUUID(), handler)
 
 	//处理模版
 	elastic2.InitTemplate(true)
@@ -305,6 +338,39 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	//处理生命周期
 	//TEMPLATE_NAME
 	//INDEX_PREFIX
+
+	dslTplFile:=path.Join(global.Env().GetConfigDir(),"initialization.tpl")
+	dslFile:=path.Join(global.Env().GetConfigDir(),"initialization.dsl")
+
+	var dsl []byte
+	dsl,err=util.FileGetContent(dslTplFile)
+	if err!=nil{
+		panic(err)
+	}
+
+	if len(dsl)>0{
+		var tpl *fasttemplate.Template
+		tpl,err=fasttemplate.NewTemplate(string(dsl), "$[[", "]]")
+		if err!=nil{
+			panic(err)
+		}
+		if tpl!=nil{
+			output:=tpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
+				switch tag {
+				case "TEMPLATE_NAME":
+					return w.Write([]byte(cfg1.TemplateName))
+				case "INDEX_PREFIX":
+					return w.Write([]byte(cfg1.IndexPrefix))
+				}
+				panic(errors.Errorf("unknown tag: %v",tag))
+			})
+			_,err=util.FilePutContent(dslFile,output)
+			if err!=nil{
+				panic(err)
+			}
+		}
+	}
+
 
 	//处理索引
 	elastic2.InitSchema()

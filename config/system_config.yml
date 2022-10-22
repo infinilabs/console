@@ -1,9 +1,0 @@
-configs.template:
-  - name: "system"
-    path: ./config/system_config.tpl
-    variable:
-      CLUSTER_ID: _setup_clustercd9s5brq50k75kji57tg
-      CLUSTER_ENDPINT: "http://192.168.3.188:9206"
-      CLUSTER_USER: "admin"
-      CLUSTER_PASS: "pass"
-      INDEX_PREFIX: ".infini_"

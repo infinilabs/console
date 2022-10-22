@@ -3,7 +3,7 @@ elasticsearch:
   - id: $[[CLUSTER_ID]]
     name: $[[CLUSTER_ID]]
     enabled: true
-    monitored: false
+    monitored: true
     reserved: true
     endpoint: $[[CLUSTER_ENDPINT]]
     basic_auth:

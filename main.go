@@ -69,13 +69,15 @@ func main() {
 	modules=append(modules,&task.TaskModule{})
 	modules=append(modules,&agent.AgentModule{})
 	modules=append(modules,&metrics.MetricsModule{})
+	modules=append(modules,&security.Module{})
 
+	uiModule:=&ui.UIModule{}
 
 	if app.Setup(func() {
 
 		//load core modules first
 		module.RegisterSystemModule(&setup1.Module{})
-		module.RegisterSystemModule(&ui.UIModule{})
+		module.RegisterSystemModule(uiModule)
 
 		var initFunc= func() {
 			module.RegisterSystemModule(&stats.SimpleStatsModule{})
@@ -85,13 +87,16 @@ func main() {
 			module.RegisterSystemModule(&pipeline.PipeModule{})
 			module.RegisterSystemModule(&task.TaskModule{})
 			module.RegisterSystemModule(&agent.AgentModule{})
-			module.RegisterUserPlugin(&metrics.MetricsModule{})
-			module.RegisterUserPlugin(&security.Module{})
+			module.RegisterSystemModule(&metrics.MetricsModule{})
+			module.RegisterSystemModule(&security.Module{})
 		}
 
 		if !global.Env().SetupRequired(){
 			initFunc()
 		}else{
+			for _, v := range modules {
+				v.Setup()
+			}
 			setup1.RegisterSetupCallback(initFunc)
 		}
 
@@ -123,9 +128,7 @@ func main() {
 
 		var initFunc= func() {
 			if global.Env().SetupRequired() {
-
 				for _, v := range modules {
-					v.Setup()
 					v.Start()
 				}
 			}

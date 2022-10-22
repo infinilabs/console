@@ -1,8 +1,8 @@
-PUT _template/.infini
+PUT _template/$[[TEMPLATE_NAME]]
 {
     "order": 0,
     "index_patterns": [
-      ".infini_*"
+      "$[[INDEX_PREFIX]]*"
     ],
     "settings": {
       "index": {
@@ -41,7 +41,7 @@ PUT _template/.infini
     "aliases": {}
 }
 
-PUT _ilm/policy/infini_metrics-30days-retention
+PUT _ilm/policy/ilm_$[[INDEX_PREFIX]]metrics-30days-retention
 {
   "policy": {
     "phases": {
@@ -69,18 +69,18 @@ PUT _ilm/policy/infini_metrics-30days-retention
   }
 }
 
-PUT _template/.infini_metrics-rollover
+PUT _template/$[[INDEX_PREFIX]]metrics-rollover
 {
     "order" : 100000,
     "index_patterns" : [
-      ".infini_metrics*"
+      "$[[INDEX_PREFIX]]metrics*"
     ],
     "settings" : {
       "index" : {
         "format" : "7",
         "lifecycle" : {
-          "name" : "infini_metrics-30days-retention",
-          "rollover_alias" : ".infini_metrics"
+          "name" : "ilm_$[[INDEX_PREFIX]]metrics-30days-retention",
+          "rollover_alias" : "$[[INDEX_PREFIX]]metrics"
         },
         "codec" : "best_compression",
         "number_of_shards" : "1",
@@ -104,16 +104,14 @@ PUT _template/.infini_metrics-rollover
   }
 
 
-# DELETE .infini_metrics
-# DELETE .infini_metrics-00001
-PUT .infini_metrics-00001
+PUT $[[INDEX_PREFIX]]metrics-00001
 {
   "settings": {
-    "index.lifecycle.rollover_alias":".infini_metrics"
+    "index.lifecycle.rollover_alias":"$[[INDEX_PREFIX]]metrics"
     , "refresh_interval": "5s"
   },
   "aliases":{
-    ".infini_metrics":{
+    "$[[INDEX_PREFIX]]metrics":{
       "is_write_index":true
     }
   }
@@ -121,18 +119,18 @@ PUT .infini_metrics-00001
 
 
 
-PUT _template/.infini_alert-history-rollover
+PUT _template/$[[INDEX_PREFIX]]alert-history-rollover
 {
     "order" : 100000,
     "index_patterns" : [
-      ".infini_alert-history*"
+      "$[[INDEX_PREFIX]]alert-history*"
     ],
     "settings" : {
       "index" : {
         "format" : "7",
         "lifecycle" : {
-          "name" : "infini_metrics-30days-retention",
-          "rollover_alias" : ".infini_alert-history"
+          "name" : "ilm_$[[INDEX_PREFIX]]metrics-30days-retention",
+          "rollover_alias" : "$[[INDEX_PREFIX]]alert-history"
         },
         "codec" : "best_compression",
         "number_of_shards" : "1",
@@ -155,16 +153,15 @@ PUT _template/.infini_alert-history-rollover
     "aliases" : { }
   }
 
-# DELETE .infini_alert-history
-# DELETE .infini_alert-history-00001
-PUT .infini_alert-history-00001
+
+PUT $[[INDEX_PREFIX]]alert-history-00001
 {
   "settings": {
-    "index.lifecycle.rollover_alias":".infini_alert-history"
+    "index.lifecycle.rollover_alias":"$[[INDEX_PREFIX]]alert-history"
     , "refresh_interval": "5s"
   },
   "aliases":{
-    ".infini_alert-history":{
+    "$[[INDEX_PREFIX]]alert-history":{
       "is_write_index":true
     }
   },
@@ -278,20 +275,18 @@ PUT .infini_alert-history-00001
 }
 
 
-
-
-PUT _template/.infini_activities-rollover
+PUT _template/$[[INDEX_PREFIX]]activities-rollover
 {
     "order" : 100000,
     "index_patterns" : [
-      ".infini_activities*"
+      "$[[INDEX_PREFIX]]activities*"
     ],
     "settings" : {
       "index" : {
         "format" : "7",
         "lifecycle" : {
-          "name" : "infini_metrics-30days-retention",
-          "rollover_alias" : ".infini_activities"
+          "name" : "ilm_$[[INDEX_PREFIX]]metrics-30days-retention",
+          "rollover_alias" : "$[[INDEX_PREFIX]]activities"
         },
         "codec" : "best_compression",
         "number_of_shards" : "1",
@@ -314,17 +309,15 @@ PUT _template/.infini_activities-rollover
     "aliases" : { }
   }
 
-#DELETE .infini_activities
-#DELETE .infini_activities-00001
 
-PUT .infini_activities-00001
+PUT $[[INDEX_PREFIX]]activities-00001
 {
 "settings": {
-  "index.lifecycle.rollover_alias":".infini_activities"
+  "index.lifecycle.rollover_alias":"$[[INDEX_PREFIX]]activities"
   , "refresh_interval": "5s"
 },
 "aliases":{
-  ".infini_activities":{
+  "$[[INDEX_PREFIX]]activities":{
     "is_write_index":true
   }
 }

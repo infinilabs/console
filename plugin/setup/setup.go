@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"infini.sh/framework/core/api"
+	"infini.sh/framework/core/api/rbac"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/env"
@@ -14,9 +15,11 @@ import (
 	"infini.sh/framework/core/util"
 	elastic1 "infini.sh/framework/modules/elastic/common"
 	elastic2 "infini.sh/framework/modules/elastic"
+	"infini.sh/framework/modules/security"
 	"net/http"
 	"path"
 	"runtime"
+	"golang.org/x/crypto/bcrypt"
 	"time"
 )
 
@@ -71,7 +74,7 @@ type SetupRequest struct {
 	BootstrapPassword string `json:"bootstrap_password"`
 }
 
-var tempID="_setup_cluster"+util.GetUUID()
+var tempID="infini_system_cluster_"+util.GetUUID()
 
 const VersionTooOld ="elasticsearch_version_too_old"
 const IndicesExists ="elasticsearch_indices_exists"
@@ -123,7 +126,8 @@ func (module *Module) validate(w http.ResponseWriter, r *http.Request, ps httpro
 		module.WriteJSON(w, result, code)
 	}()
 
-	err, client := module.initTempClient(r)
+
+	err, client,request := module.initTempClient(r)
 	if err!=nil{
 		panic(err)
 	}
@@ -189,11 +193,15 @@ func (module *Module) validate(w http.ResponseWriter, r *http.Request, ps httpro
 	success = true
 }
 var cfg elastic.ElasticsearchConfig
-func (module *Module) initTempClient(r *http.Request) (error, elastic.API) {
+func (module *Module) initTempClient(r *http.Request) (error, elastic.API,SetupRequest) {
 	request := SetupRequest{}
 	err := module.DecodeJSON(r, &request)
 	if err != nil {
-		return err,nil
+		return err,nil,request
+	}
+	
+	if request.Cluster.Endpoint==""{
+		panic("invalid configuration")
 	}
 
 	cfg = elastic.ElasticsearchConfig{
@@ -211,7 +219,7 @@ func (module *Module) initTempClient(r *http.Request) (error, elastic.API) {
 	elastic.InitMetadata(&cfg, true)
 	client, err := elastic1.InitClientWithConfig(cfg)
 	if err != nil {
-		return err,nil
+		return err,nil,request
 	}
 
 	elastic.UpdateConfig(cfg)
@@ -219,7 +227,7 @@ func (module *Module) initTempClient(r *http.Request) (error, elastic.API) {
 
 	global.Register(elastic.GlobalSystemElasticsearchID,tempID)
 
-	return err, client
+	return err, client,request
 }
 
 func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -265,7 +273,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		module.WriteJSON(w, result, code)
 	}()
 
-	err, client := module.initTempClient(r)
+	err, client,request := module.initTempClient(r)
 	if err!=nil{
 		panic(err)
 	}
@@ -293,7 +301,15 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 
 	//处理模版
 	elastic2.InitTemplate(true)
+
+	//处理生命周期
+	//TEMPLATE_NAME
+	//INDEX_PREFIX
+
+	//处理索引
 	elastic2.InitSchema()
+	//init security
+	security.InitSecurity()
 
 	//保存默认集群
 	err=orm.Save(&cfg)
@@ -301,12 +317,41 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		panic(err)
 	}
 
+	if request.BootstrapUsername!=""&&request.BootstrapPassword!=""{
+		//Save bootstrap user
+		user:=rbac.User{}
+		user.ID="default_user_"+util.GetUUID()
+		user.Name=request.BootstrapUsername
+		user.NickName=request.BootstrapUsername
+		var hash []byte
+		hash, err = bcrypt.GenerateFromPassword([]byte(request.BootstrapPassword), bcrypt.DefaultCost)
+		if err!=nil{
+			panic(err)
+		}
+
+		user.Password=string(hash)
+		role:=[]rbac.UserRole{}
+		role=append(role,rbac.UserRole{
+			ID: rbac.RoleAdminName,
+			Name: rbac.RoleAdminName,
+		})
+		user.Roles=role
+		err=orm.Save(&user)
+		if err!=nil{
+			panic(err)
+		}
+	}
+
+
 	//save to local file
 	file:=path.Join(global.Env().GetConfigDir(),"system_config.yml")
-	util.FilePutContent(file,fmt.Sprintf("configs.template:\n  - name: \"system\"\n    path: ./config/system_config.tpl\n    variable:\n      " +
+	_,err=util.FilePutContent(file,fmt.Sprintf("configs.template:\n  - name: \"system\"\n    path: ./config/system_config.tpl\n    variable:\n      " +
 		"CLUSTER_ID: %v\n      CLUSTER_ENDPINT: \"%v\"\n      " +
 		"CLUSTER_USER: \"%v\"\n      CLUSTER_PASS: \"%v\"\n      INDEX_PREFIX: \"%v\"",
 	tempID,cfg.Endpoint,cfg.BasicAuth.Username,cfg.BasicAuth.Password,cfg1.IndexPrefix	))
+	if err!=nil{
+		panic(err)
+	}
 
 	//处理 ILM
 	//处理默认用户信息

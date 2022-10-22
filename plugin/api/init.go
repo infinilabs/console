@@ -58,7 +58,6 @@ func Init(cfg *config.AppConfig) {
 	//})
 
 	alertAPI := alerting.AlertAPI{
-		Config: cfg,
 	}
 
 	alertAPI.Init()

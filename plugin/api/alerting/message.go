@@ -11,6 +11,7 @@ import (
 	alerting2 "infini.sh/console/service/alerting"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/kv"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
@@ -82,7 +83,7 @@ func (h *AlertAPI) ignoreAlertMessage(w http.ResponseWriter, req *http.Request, 
 }
 
 func (h *AlertAPI) getAlertMessageStats(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	esClient := elastic.GetClient(h.Config.Elasticsearch)
+	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 	must := []util.MapStr{
 		{
 			"terms": util.MapStr{

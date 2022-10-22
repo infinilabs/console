@@ -5,6 +5,7 @@ import (
 	log "github.com/cihub/seelog"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"net/http"
@@ -28,7 +29,7 @@ func (h *APIHandler) HandleAddCommonCommandAction(w http.ResponseWriter, req *ht
 
 	reqParams.Created = time.Now()
 	reqParams.ID = util.GetUUID()
-	esClient := elastic.GetClient(h.Config.Elasticsearch)
+	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 
 	queryDSL :=[]byte(fmt.Sprintf(`{"size":1, "query":{"bool":{"must":{"match":{"title.keyword":"%s"}}}}}`, reqParams.Title))
 	var indexName  = orm.GetIndexName(reqParams)
@@ -73,7 +74,7 @@ func (h *APIHandler) HandleSaveCommonCommandAction(w http.ResponseWriter, req *h
 		return
 	}
 	reqParams.ID = ps.ByName("cid")
-	esClient := elastic.GetClient(h.Config.Elasticsearch)
+	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 
 	queryDSL :=[]byte(fmt.Sprintf(`{"size":1, "query":{"bool":{"must":{"match":{"title.keyword":"%s"}}}}}`, reqParams.Title))
 	var indexName  = orm.GetIndexName(reqParams)
@@ -133,7 +134,7 @@ func (h *APIHandler) HandleQueryCommonCommandAction(w http.ResponseWriter, req *
 	}
 
 	queryDSL = fmt.Sprintf(queryDSL, filterBuilder.String(), size, from)
-	esClient := elastic.GetClient(h.Config.Elasticsearch)
+	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 
 	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetIndexName(elastic.CommonCommand{}), []byte(queryDSL))
 	if err != nil {
@@ -149,7 +150,7 @@ func (h *APIHandler) HandleQueryCommonCommandAction(w http.ResponseWriter, req *
 func (h *APIHandler) HandleDeleteCommonCommandAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	resBody := map[string]interface{}{}
 	id := ps.ByName("cid")
-	esClient := elastic.GetClient(h.Config.Elasticsearch)
+	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 	delRes, err := esClient.Delete(orm.GetIndexName(elastic.CommonCommand{}), "", id, "wait_for")
 	if err != nil {
 		log.Error(err)

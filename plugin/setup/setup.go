@@ -387,7 +387,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	if request.BootstrapUsername!=""&&request.BootstrapPassword!=""{
 		//Save bootstrap user
 		user:=rbac.User{}
-		user.ID="default_user_"+util.GetUUID()
+		user.ID="default_user_"+request.BootstrapUsername
 		user.Name=request.BootstrapUsername
 		user.NickName=request.BootstrapUsername
 		var hash []byte
@@ -421,7 +421,6 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	}
 
 	//处理 ILM
-	//处理默认用户信息
 
 	//callback
 	InvokeSetupCallback()

@@ -61,7 +61,6 @@ PUT _ilm/policy/ilm_$[[INDEX_PREFIX]]metrics-30days-retention
         "min_age": "30d",
         "actions": {
           "delete": {
-            "delete_searchable_snapshot": true
           }
         }
       }

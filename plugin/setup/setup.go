@@ -254,7 +254,7 @@ func (module *Module) initTempClient(r *http.Request) (error, elastic.API,SetupR
 
 	elastic.UpdateConfig(cfg)
 	elastic.UpdateClient(cfg, client)
-
+	cfg.Version=client.GetVersion()
 	global.Register(elastic.GlobalSystemElasticsearchID,tempID)
 
 	return err, client,request
@@ -424,6 +424,12 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 
 	//callback
 	InvokeSetupCallback()
+
+	//disable builtin auth
+	err=api.DisableBuiltinUserAdmin()
+	if err!=nil{
+		panic(err)
+	}
 
 	//place setup lock file
 	setupLock:=path.Join(global.Env().GetDataDir(),".setup_lock")

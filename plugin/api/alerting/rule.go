@@ -14,6 +14,7 @@ import (
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/event"
+	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/kv"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/queue"
@@ -462,7 +463,8 @@ func (alertAPI *AlertAPI) searchRule(w http.ResponseWriter, req *http.Request, p
 }
 
 func (alertAPI *AlertAPI) getRuleAlertMessageNumbers(ruleIDs []string) ( map[string]interface{},error) {
-	esClient := elastic.GetClient(alertAPI.Config.Elasticsearch)
+
+	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 	queryDsl := util.MapStr{
 		"size": 0,
 		"query": util.MapStr{
@@ -513,7 +515,7 @@ func (alertAPI *AlertAPI) fetchAlertInfos(w http.ResponseWriter, req *http.Reque
 		alertAPI.WriteJSON(w, util.MapStr{}, http.StatusOK)
 		return
 	}
-	esClient := elastic.GetClient(alertAPI.Config.Elasticsearch)
+	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 	queryDsl := util.MapStr{
 		"_source": []string{"state", "rule_id"},
 		"sort": []util.MapStr{

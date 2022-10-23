@@ -1,6 +1,8 @@
 package index_management
 
 import (
+	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/global"
 	"net/http"
 	"strconv"
 	"strings"
@@ -33,7 +35,7 @@ func (handler APIHandler) GetDictListAction(w http.ResponseWriter, req *http.Req
 	if len(tags) > 3 {
 		tags = tags[0:3]
 	}
-	rel, err := model2.GetDictList(from, size, name, tags, handler.Config.Elasticsearch)
+	rel, err := model2.GetDictList(from, size, name, tags, global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 	if err != nil {
 		resp["error"] = err
 		resp["status"] = false

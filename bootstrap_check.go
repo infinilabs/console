@@ -8,14 +8,14 @@ import (
 	"fmt"
 	"github.com/buger/jsonparser"
 	log "github.com/cihub/seelog"
-	"infini.sh/console/config"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/env"
+	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/util"
 )
 
 func bootstrapRequirementCheck() error{
-	err := checkElasticsearchRequire()
+	err := checkElasticsearchRequirements()
 	if err != nil {
 		return err
 	}
@@ -23,7 +23,7 @@ func bootstrapRequirementCheck() error{
 }
 
 
-func checkElasticsearchRequire() error{
+func checkElasticsearchRequirements() error{
 	log.Trace("start to check elasticsearch requirement")
 	var esConfigs = []elastic.ElasticsearchConfig{}
 	ok, err := env.ParseConfig("elasticsearch", &esConfigs)
@@ -33,27 +33,24 @@ func checkElasticsearchRequire() error{
 	if !ok {
 		return fmt.Errorf("elasticsearch config section not found")
 	}
-	appConfig = &config.AppConfig{
-		Elasticsearch: "default",
+
+	elasticsearchID:=global.Lookup(elastic.GlobalSystemElasticsearchID)
+
+	if  elasticsearchID == nil||elasticsearchID=="" {
+		return fmt.Errorf("elasticsearch config in web section can not be empty")
 	}
-	ok, err = env.ParseConfig("web", appConfig)
-	if err != nil {
-		return fmt.Errorf("parse web config section error: %v", err)
-	}
-	if !ok {
-		return fmt.Errorf("web config section not found")
-	}
-	if  appConfig.Elasticsearch == "" {
-		return fmt.Errorf("elasticsearch config of web section can not be empty")
-	}
+
+	esID:=elasticsearchID.(string)
+
 	var targetEsConfig *elastic.ElasticsearchConfig
 	for _, esConfig := range esConfigs {
-		if esConfig.Name == appConfig.Elasticsearch {
+		if esConfig.ID == esID||(esConfig.ID==""&&esConfig.Name==esID) {
 			targetEsConfig = &esConfig
 		}
 	}
+
 	if targetEsConfig == nil {
-		return fmt.Errorf("elasticsearch config named %s not found", appConfig.Elasticsearch)
+		return fmt.Errorf("elasticsearch config %s was not found", esID)
 	}
 	var req = util.NewGetRequest(targetEsConfig.Endpoint, nil)
 	if targetEsConfig.BasicAuth != nil {
@@ -63,6 +60,10 @@ func checkElasticsearchRequire() error{
 	result, err := util.ExecuteRequest(req)
 	if err != nil {
 		return fmt.Errorf("check elasticsearch requirement error: %v", err)
+	}
+
+	if result==nil||result.Body==nil||len(result.Body)==0{
+		return fmt.Errorf("failed to retrive elasticsearch version info")
 	}
 
 	versionNumber, err := jsonparser.GetString(result.Body, "version", "number")

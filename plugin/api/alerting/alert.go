@@ -10,6 +10,7 @@ import (
 	"infini.sh/console/model/alerting"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"net/http"
@@ -109,7 +110,7 @@ func (h *AlertAPI) searchAlert(w http.ResponseWriter, req *http.Request, ps http
 }
 
 func (h *AlertAPI) getAlertStats(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	esClient := elastic.GetClient(h.Config.Elasticsearch)
+	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 	queryDsl := util.MapStr{
 		"size": 0,
 		"query": util.MapStr{

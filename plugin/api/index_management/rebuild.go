@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/cihub/seelog"
+	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/orm"
 	"net/http"
 	"strings"
@@ -33,7 +34,7 @@ func (handler APIHandler) HandleReindexAction(w http.ResponseWriter, req *http.R
 
 	//fmt.Println(reindexItem)
 	typ := handler.GetParameter(req, "_type")
-	ID, err := reindex(handler.Config.Elasticsearch, reindexItem, typ)
+	ID, err := reindex(global.MustLookupString(elastic.GlobalSystemElasticsearchID), reindexItem, typ)
 	if err != nil {
 		log.Error(err)
 		resResult["error"] = err
@@ -94,7 +95,7 @@ func (handler APIHandler) HandleDeleteRebuildAction(w http.ResponseWriter, req *
 	id := ps.ByName("id")
 	var ids = []string{id}
 	resBody := newResponseBody()
-	err := deleteTasksByIds(handler.Config.Elasticsearch, ids)
+	err := deleteTasksByIds(global.MustLookupString(elastic.GlobalSystemElasticsearchID), ids)
 	if err != nil {
 		log.Error(err)
 		resBody["error"] = err
@@ -111,7 +112,7 @@ func (handler APIHandler) HandleGetRebuildListAction(w http.ResponseWriter, req 
 		size    = handler.GetIntOrDefault(req, "size", 10)
 		name    = handler.GetParameter(req, "name")
 		resBody = newResponseBody()
-		esName  = handler.Config.Elasticsearch
+		esName  = global.MustLookupString(elastic.GlobalSystemElasticsearchID)
 	)
 	esResp, err := model.GetRebuildList(esName, from, size, name)
 	if err != nil {

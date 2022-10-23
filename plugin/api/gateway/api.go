@@ -13,7 +13,7 @@ type GatewayAPI struct {
 	api.Handler
 }
 
-func init() {
+func InitAPI() {
 	gateway:=GatewayAPI{}
 	api.HandleAPIMethod(api.POST, "/gateway/instance/try_connect", gateway.RequireLogin(gateway.tryConnect))
 	api.HandleAPIMethod(api.GET, "/gateway/instance/:instance_id", gateway.RequirePermission(gateway.getInstance, enum.PermissionGatewayInstanceRead))

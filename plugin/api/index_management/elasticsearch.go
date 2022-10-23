@@ -6,6 +6,7 @@ import (
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/event"
+	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/host"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
@@ -25,7 +26,7 @@ func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req
 	//	clusterIDs = append(clusterIDs, key)
 	//	return true
 	//})
-	esClient := elastic.GetClient(handler.Config.Elasticsearch)
+	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 	queryDsl := util.MapStr{
 		"size": 100,
 	}
@@ -110,7 +111,7 @@ func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req
 }
 
 func (handler APIHandler) getLatestClusterMonitorData(clusterIDs []interface{}) (*elastic.SearchResponse, error){
-	client := elastic.GetClient(handler.Config.Elasticsearch)
+	client := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 	queryDSLTpl := `{
   "size": %d, 
    "query": {
@@ -155,7 +156,7 @@ func (handler APIHandler) getLatestClusterMonitorData(clusterIDs []interface{}) 
 }
 
 func (handler APIHandler) getMetricCount(indexName, field string, clusterIDs []interface{}) (interface{}, error){
-	client := elastic.GetClient(handler.Config.Elasticsearch)
+	client := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 	queryDSL := util.MapStr{
   "size": 0, 
   "aggs": util.MapStr{
@@ -182,7 +183,7 @@ func (handler APIHandler) getMetricCount(indexName, field string, clusterIDs []i
 }
 
 func (handler APIHandler) getLastActiveHostCount() (int, error){
-	client := elastic.GetClient(handler.Config.Elasticsearch)
+	client := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 	queryDSL := `{
   "size": 0, 
   "query": {

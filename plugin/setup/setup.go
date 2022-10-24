@@ -13,17 +13,20 @@ import (
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/module"
 	"infini.sh/framework/core/orm"
+	"infini.sh/framework/core/pipeline"
 	"infini.sh/framework/core/util"
 	elastic2 "infini.sh/framework/modules/elastic"
 	elastic1 "infini.sh/framework/modules/elastic/common"
 	elastic3 "infini.sh/framework/modules/elastic/api"
 	"infini.sh/framework/modules/security"
+	"infini.sh/framework/plugins/replay"
 	"io"
 	"net/http"
 	uri2 "net/url"
 	"path"
 	"runtime"
 	"github.com/valyala/fasttemplate"
+	log "github.com/cihub/seelog"
 	"time"
 )
 
@@ -339,7 +342,6 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	//处理生命周期
 	//TEMPLATE_NAME
 	//INDEX_PREFIX
-
 	dslTplFile:=path.Join(global.Env().GetConfigDir(),"initialization.tpl")
 	dslFile:=path.Join(global.Env().GetConfigDir(),"initialization.dsl")
 
@@ -349,6 +351,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		panic(err)
 	}
 
+	var dslWriteSuccess=false
 	if len(dsl)>0{
 		var tpl *fasttemplate.Template
 		tpl,err=fasttemplate.NewTemplate(string(dsl), "$[[", "]]")
@@ -369,6 +372,15 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 			if err!=nil{
 				panic(err)
 			}
+			dslWriteSuccess=true
+		}
+	}
+
+	if dslWriteSuccess{
+		lines := util.FileGetLines(dslFile)
+		_,err,_:=replay.ReplayLines(pipeline.AcquireContext(),lines,cfg.Schema,cfg.Host)
+		if err!=nil{
+			log.Error(err)
 		}
 	}
 

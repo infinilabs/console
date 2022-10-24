@@ -80,6 +80,7 @@ type SetupRequest struct {
 		Password string `json:"password"`
 	} `json:"cluster"`
 
+	Skip bool `json:"skip"`
 	BootstrapUsername string `json:"bootstrap_username"`
 	BootstrapPassword string `json:"bootstrap_password"`
 }
@@ -336,93 +337,102 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	handler := elastic2.ElasticORM{Client: client, Config:cfg1 }
 	orm.Register("elastic_setup_"+util.GetUUID(), handler)
 
-	//处理模版
-	elastic2.InitTemplate(true)
+	if !request.Skip{
+		//处理模版
+		elastic2.InitTemplate(true)
 
-	//处理生命周期
-	//TEMPLATE_NAME
-	//INDEX_PREFIX
-	dslTplFile:=path.Join(global.Env().GetConfigDir(),"initialization.tpl")
-	dslFile:=path.Join(global.Env().GetConfigDir(),"initialization.dsl")
+		//处理生命周期
+		//TEMPLATE_NAME
+		//INDEX_PREFIX
+		dslTplFile:=path.Join(global.Env().GetConfigDir(),"initialization.tpl")
+		dslFile:=path.Join(global.Env().GetConfigDir(),"initialization.dsl")
 
-	var dsl []byte
-	dsl,err=util.FileGetContent(dslTplFile)
-	if err!=nil{
-		panic(err)
-	}
-
-	var dslWriteSuccess=false
-	if len(dsl)>0{
-		var tpl *fasttemplate.Template
-		tpl,err=fasttemplate.NewTemplate(string(dsl), "$[[", "]]")
+		var dsl []byte
+		dsl,err=util.FileGetContent(dslTplFile)
 		if err!=nil{
 			panic(err)
 		}
-		if tpl!=nil{
-			output:=tpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
-				switch tag {
-				case "TEMPLATE_NAME":
-					return w.Write([]byte(cfg1.TemplateName))
-				case "INDEX_PREFIX":
-					return w.Write([]byte(cfg1.IndexPrefix))
-				case "RESOURCE_ID":
-					return w.Write([]byte(cfg.ID))
-				case "RESOURCE_NAME":
-					return w.Write([]byte(cfg.Name))
-				}
-				panic(errors.Errorf("unknown tag: %v",tag))
-			})
-			_,err=util.FilePutContent(dslFile,output)
+
+		var dslWriteSuccess=false
+		if len(dsl)>0{
+			var tpl *fasttemplate.Template
+			tpl,err=fasttemplate.NewTemplate(string(dsl), "$[[", "]]")
 			if err!=nil{
 				panic(err)
 			}
-			dslWriteSuccess=true
+			if tpl!=nil{
+				output:=tpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
+					switch tag {
+					case "TEMPLATE_NAME":
+						return w.Write([]byte(cfg1.TemplateName))
+					case "INDEX_PREFIX":
+						return w.Write([]byte(cfg1.IndexPrefix))
+					case "RESOURCE_ID":
+						return w.Write([]byte(cfg.ID))
+					case "RESOURCE_NAME":
+						return w.Write([]byte(cfg.Name))
+					}
+					panic(errors.Errorf("unknown tag: %v",tag))
+				})
+				_,err=util.FilePutContent(dslFile,output)
+				if err!=nil{
+					panic(err)
+				}
+				dslWriteSuccess=true
+			}
 		}
-	}
 
-	if dslWriteSuccess{
-		lines := util.FileGetLines(dslFile)
-		_,err,_:=replay.ReplayLines(pipeline.AcquireContext(),lines,cfg.Schema,cfg.Host)
+		if dslWriteSuccess{
+			lines := util.FileGetLines(dslFile)
+			_,err,_:=replay.ReplayLines(pipeline.AcquireContext(),lines,cfg.Schema,cfg.Host)
+			if err!=nil{
+				log.Error(err)
+			}
+		}
+
+		//处理索引
+		elastic2.InitSchema()
+		//init security
+		security.InitSecurity()
+
+		//保存默认集群
+		err=orm.Save(&cfg)
 		if err!=nil{
-			log.Error(err)
+			panic(err)
 		}
-	}
+
+		if request.BootstrapUsername!=""&&request.BootstrapPassword!=""{
+			//Save bootstrap user
+			user:=rbac.User{}
+			user.ID="default_user_"+request.BootstrapUsername
+			user.Name=request.BootstrapUsername
+			user.NickName=request.BootstrapUsername
+			var hash []byte
+			hash, err = bcrypt.GenerateFromPassword([]byte(request.BootstrapPassword), bcrypt.DefaultCost)
+			if err!=nil{
+				panic(err)
+			}
+
+			user.Password=string(hash)
+			role:=[]rbac.UserRole{}
+			role=append(role,rbac.UserRole{
+				ID: rbac.RoleAdminName,
+				Name: rbac.RoleAdminName,
+			})
+			user.Roles=role
+			err=orm.Save(&user)
+			if err!=nil{
+				panic(err)
+			}
+		}
 
 
-	//处理索引
-	elastic2.InitSchema()
-	//init security
-	security.InitSecurity()
-
-	//保存默认集群
-	err=orm.Save(&cfg)
-	if err!=nil{
-		panic(err)
-	}
-
-	if request.BootstrapUsername!=""&&request.BootstrapPassword!=""{
-		//Save bootstrap user
-		user:=rbac.User{}
-		user.ID="default_user_"+request.BootstrapUsername
-		user.Name=request.BootstrapUsername
-		user.NickName=request.BootstrapUsername
-		var hash []byte
-		hash, err = bcrypt.GenerateFromPassword([]byte(request.BootstrapPassword), bcrypt.DefaultCost)
+		//disable builtin auth
+		err=api.DisableBuiltinUserAdmin()
 		if err!=nil{
 			panic(err)
 		}
 
-		user.Password=string(hash)
-		role:=[]rbac.UserRole{}
-		role=append(role,rbac.UserRole{
-			ID: rbac.RoleAdminName,
-			Name: rbac.RoleAdminName,
-		})
-		user.Roles=role
-		err=orm.Save(&user)
-		if err!=nil{
-			panic(err)
-		}
 	}
 
 
@@ -436,16 +446,8 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		panic(err)
 	}
 
-	//处理 ILM
-
 	//callback
 	InvokeSetupCallback()
-
-	//disable builtin auth
-	err=api.DisableBuiltinUserAdmin()
-	if err!=nil{
-		panic(err)
-	}
 
 	//place setup lock file
 	setupLock:=path.Join(global.Env().GetDataDir(),".setup_lock")

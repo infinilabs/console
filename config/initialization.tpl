@@ -113,7 +113,77 @@ PUT $[[INDEX_PREFIX]]metrics-00001
     "$[[INDEX_PREFIX]]metrics":{
       "is_write_index":true
     }
-  }
+  },
+    "mappings": {
+      "dynamic_templates": [
+        {
+          "strings": {
+            "match_mapping_type": "string",
+            "mapping": {
+              "ignore_above": 256,
+              "type": "keyword"
+            }
+          }
+        }
+      ],
+      "properties": {
+        "metadata": {
+          "properties": {
+            "category": {
+              "type": "keyword",
+              "ignore_above": 256
+            },
+            "datatype": {
+              "type": "keyword",
+              "ignore_above": 256
+            },
+            "labels": {
+              "properties": {
+                "cluster_id": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                },
+                "index_id": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                },
+                "index_name": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                },
+                "index_uuid": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                },
+                "ip": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                },
+                "node_id": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                },
+                "node_name": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                },
+                "transport_address": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "name": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "timestamp": {
+          "type": "date"
+        }
+      }
+    }
 }
 
 
@@ -311,15 +381,86 @@ PUT _template/$[[INDEX_PREFIX]]activities-rollover
 
 PUT $[[INDEX_PREFIX]]activities-00001
 {
-"settings": {
-  "index.lifecycle.rollover_alias":"$[[INDEX_PREFIX]]activities"
-  , "refresh_interval": "5s"
-},
-"aliases":{
-  "$[[INDEX_PREFIX]]activities":{
-    "is_write_index":true
+  "mappings": {
+    "dynamic_templates": [
+      {
+        "strings": {
+          "match_mapping_type": "string",
+          "mapping": {
+            "ignore_above": 256,
+            "type": "keyword"
+          }
+        }
+      }
+    ],
+    "properties": {
+      "changelog": {
+        "type": "flattened"
+      },
+      "id": {
+        "type": "keyword"
+      },
+      "metadata": {
+        "properties": {
+          "category": {
+            "type": "keyword",
+            "ignore_above": 256
+          },
+          "group": {
+            "type": "keyword",
+            "ignore_above": 256
+          },
+          "labels": {
+            "type": "flattened"
+          },
+          "name": {
+            "type": "keyword",
+            "ignore_above": 256
+          },
+          "type": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "payload": {
+        "type": "object",
+        "enabled": false
+      },
+      "timestamp": {
+        "type": "date"
+      }
+    }
+  },
+  "settings": {
+    "index": {
+      "lifecycle.rollover_alias": "$[[INDEX_PREFIX]]activities",
+      "refresh_interval": "5s",
+      "mapping": {
+        "total_fields": {
+          "limit": "20000"
+        }
+      },
+      "max_result_window": "10000000",
+      "analysis": {
+        "analyzer": {
+          "suggest_text_search": {
+            "filter": [
+              "word_delimiter"
+            ],
+            "tokenizer": "classic"
+          }
+        }
+      }
+    }
+  },
+  "aliases": {
+    "$[[INDEX_PREFIX]]activities": {
+      "is_write_index": true
+    }
   }
 }
-}
+
+GET /
 
 

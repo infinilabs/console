@@ -84,7 +84,7 @@ type SetupRequest struct {
 	BootstrapPassword string `json:"bootstrap_password"`
 }
 
-var tempID="infini_system_cluster_"+util.GetUUID()
+var tempID="infini_default_system_cluster"
 
 const VersionTooOld ="elasticsearch_version_too_old"
 const IndicesExists ="elasticsearch_indices_exists"
@@ -365,6 +365,10 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 					return w.Write([]byte(cfg1.TemplateName))
 				case "INDEX_PREFIX":
 					return w.Write([]byte(cfg1.IndexPrefix))
+				case "RESOURCE_ID":
+					return w.Write([]byte(cfg.ID))
+				case "RESOURCE_NAME":
+					return w.Write([]byte(cfg.Name))
 				}
 				panic(errors.Errorf("unknown tag: %v",tag))
 			})

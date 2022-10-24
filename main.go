@@ -79,7 +79,7 @@ func main() {
 		module.RegisterSystemModule(&setup1.Module{})
 		module.RegisterSystemModule(uiModule)
 
-		var initFunc= func() {
+		if !global.Env().SetupRequired(){
 			module.RegisterSystemModule(&stats.SimpleStatsModule{})
 			module.RegisterSystemModule(&elastic2.ElasticModule{})
 			module.RegisterSystemModule(&queue2.DiskQueue{})
@@ -89,15 +89,10 @@ func main() {
 			module.RegisterSystemModule(&agent.AgentModule{})
 			module.RegisterSystemModule(&metrics.MetricsModule{})
 			module.RegisterSystemModule(&security.Module{})
-		}
-
-		if !global.Env().SetupRequired(){
-			initFunc()
 		}else{
 			for _, v := range modules {
 				v.Setup()
 			}
-			setup1.RegisterSetupCallback(initFunc)
 		}
 
 		api.RegisterAPI("")
@@ -127,11 +122,7 @@ func main() {
 		module.Start()
 
 		var initFunc= func() {
-			if global.Env().SetupRequired() {
-				for _, v := range modules {
-					v.Start()
-				}
-			}
+
 
 			elastic2.InitTemplate(false)
 
@@ -147,6 +138,12 @@ func main() {
 			orm.RegisterSchemaWithIndexName(insight.Visualization{}, "visualization")
 			orm.RegisterSchemaWithIndexName(insight.Dashboard{}, "dashboard")
 			api.RegisterSchema()
+
+			if global.Env().SetupRequired() {
+				for _, v := range modules {
+					v.Start()
+				}
+			}
 
 			task1.RunWithinGroup("initialize_alerting",func(ctx context.Context) error {
 				err := alerting2.InitTasks()

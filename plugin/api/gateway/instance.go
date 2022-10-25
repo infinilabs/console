@@ -418,3 +418,53 @@ func (h *GatewayAPI) getExecutionNodes(w http.ResponseWriter, req *http.Request,
 	}
 	h.WriteJSON(w, nodes, http.StatusOK)
 }
+
+func (h *GatewayAPI) getExecutionNodesNew(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
+	var (
+		keyword        = h.GetParameterOrDefault(req, "keyword", "")
+		strSize     = h.GetParameterOrDefault(req, "size", "10")
+		strFrom     = h.GetParameterOrDefault(req, "from", "0")
+	)
+	size, _ := strconv.Atoi(strSize)
+	if size <= 0 {
+		size = 10
+	}
+	from, _ := strconv.Atoi(strFrom)
+	if from < 0 {
+		from = 0
+	}
+	query := util.MapStr{
+		"size": size,
+		"sort": []util.MapStr{
+			{
+				"created": util.MapStr{
+					"order": "desc",
+				},
+			},
+		},
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": []util.MapStr{
+					{
+						"term": util.MapStr{
+							"enrolled": util.MapStr{
+								"value": true,
+							},
+						},
+					},
+					{
+						"term": util.MapStr{
+							"status": util.MapStr{
+								"value": "online",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	q := orm.Query{
+		RawQuery: util.MustToJSONBytes(query),
+	}
+	_ = q
+}

@@ -1,4 +1,5 @@
 path.configs: "config"
+configs.auto_reload: true
 
 web:
   enabled: true

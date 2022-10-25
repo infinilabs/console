@@ -6,11 +6,11 @@ import (
 	"net/http"
 
 	log "github.com/cihub/seelog"
+	"infini.sh/console/config"
+	uiapi "infini.sh/console/plugin/api"
 	"infini.sh/framework/core/api"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/core/vfs"
-	"infini.sh/console/config"
-	uiapi "infini.sh/console/plugin/api"
 )
 
 type UI struct {
@@ -31,7 +31,7 @@ func (h UI) InitUI() {
 	//
 	//api.HandleUIFunc("/config", func(w http.ResponseWriter, req *http.Request){
 	//	if(strings.TrimSpace(apiEndpoint) == ""){
-	//		hostParts := strings.Split(req.Host, ":")
+	//		hostParts := strings.Split(req.RemoteIP, ":")
 	//		apiEndpoint = fmt.Sprintf("%s//%s:%s", apiConfig.GetSchema(), hostParts[0], apiConfig.NetworkConfig.GetBindingPort())
 	//	}
 	//	buf, _ := json.Marshal(util.MapStr{

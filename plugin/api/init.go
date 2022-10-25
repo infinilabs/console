@@ -3,7 +3,9 @@ package api
 import (
 	"infini.sh/console/config"
 	"infini.sh/console/plugin/api/alerting"
+	"infini.sh/console/plugin/api/gateway"
 	"infini.sh/console/plugin/api/index_management"
+	"infini.sh/console/plugin/api/insight"
 	"infini.sh/framework/core/api"
 	"infini.sh/framework/core/api/rbac/enum"
 	"path"
@@ -58,9 +60,10 @@ func Init(cfg *config.AppConfig) {
 	//})
 
 	alertAPI := alerting.AlertAPI{
-		Config: cfg,
 	}
 
 	alertAPI.Init()
 
+	gateway.InitAPI()
+	insight.InitAPI()
 }

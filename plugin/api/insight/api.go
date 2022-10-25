@@ -10,7 +10,7 @@ type InsightAPI struct {
 	api.Handler
 }
 
-func init() {
+func InitAPI() {
 	insight := InsightAPI{}
 	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/visualization/metadata", insight.HandleGetMetadata)
 	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/visualization/data", insight.HandleGetMetricData)

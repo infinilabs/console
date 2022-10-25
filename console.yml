@@ -1,20 +1,10 @@
-# for the system cluster, please use Elasticsearch v7.3+
-elasticsearch:
-  - name: default
-    enabled: true
-    monitored: false
-    endpoint: http://localhost:9200
-    basic_auth:
-      username: elastic
-      password: infinilabs
-    discovery:
-      enabled: true
+path.configs: "config"
 
 web:
   enabled: true
   embedding_api: true
   auth:
-    enabled: false
+    enabled: true
   ui:
     enabled: true
     path: .public
@@ -27,7 +17,6 @@ web:
     enabled: true
 
 elastic:
-  elasticsearch: default
   enabled: true
   remote_configs: true
   health_check:
@@ -59,66 +48,3 @@ metrics:
     cluster_stats: true
     node_stats: true
     index_stats: true
-
-pipeline:
-  - name: indexing_merge
-    auto_start: true
-    keep_running: true
-    processor:
-      - indexing_merge:
-          input_queue: "metrics"
-          elasticsearch: "default"
-          index_name: ".infini_metrics"
-          output_queue:
-            name: "metrics_requests"
-            label:
-              tag: "metrics"
-          worker_size: 1
-          bulk_size_in_mb: 10
-  - name: consume-metrics_requests
-    auto_start: true
-    keep_running: true
-    processor:
-      - bulk_indexing:
-          bulk:
-            compress: true
-            batch_size_in_mb: 10
-            batch_size_in_docs: 5000
-          consumer:
-            fetch_max_messages: 100
-          queues:
-            type: indexing_merge
-          when:
-            cluster_available: ["default"]
-  - name: metadata_ingest
-    auto_start: true
-    keep_running: true
-    processor:
-      - metadata:
-          bulk_size_in_mb: 10
-          bulk_max_docs_count: 5000
-          fetch_max_messages: 1000
-          elasticsearch: "default"
-          queues:
-            type: metadata
-            category: elasticsearch
-          consumer:
-            group: metadata
-          when:
-            cluster_available: ["default"]
-  - name: activity_ingest
-    auto_start: true
-    keep_running: true
-    processor:
-      - activity:
-          bulk_size_in_mb: 10
-          bulk_max_docs_count: 5000
-          fetch_max_messages: 1000
-          elasticsearch: "default"
-          queues:
-            category: elasticsearch
-            activity: true
-          consumer:
-            group: activity
-          when:
-            cluster_available: ["default"]

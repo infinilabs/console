@@ -3,7 +3,6 @@ package config
 import "infini.sh/framework/core/config"
 
 type AppConfig struct {
-	Elasticsearch string `config:"elasticsearch"`
 	UI UIConfig `config:"ui"`
 	Network config.NetworkConfig `config:"network"`
 	TLSConfig   config.TLSConfig     `config:"tls"`

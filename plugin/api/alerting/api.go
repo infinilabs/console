@@ -5,7 +5,6 @@
 package alerting
 
 import (
-	"infini.sh/console/config"
 	"infini.sh/framework/core/api"
 	"infini.sh/framework/core/api/rbac/enum"
 )
@@ -13,7 +12,6 @@ import (
 
 type AlertAPI struct {
 	api.Handler
-	Config *config.AppConfig
 }
 
 func (alert *AlertAPI) Init() {

@@ -250,17 +250,15 @@ func (module *Module) initTempClient(r *http.Request) (error, elastic.API,SetupR
 
 	cfg.ID = tempID
 	cfg.Name = "INFINI_SYSTEM ("+util.PickRandomName()+")"
-
+	elastic.InitMetadata(&cfg, true)
 	client, err := elastic1.InitClientWithConfig(cfg)
 	if err != nil {
 		return err,nil,request
 	}
-	cfg.Version=client.GetVersion()
-	meta:=elastic.InitMetadata(&cfg, true)
-	meta.Config.Version=cfg.Version
-	elastic.SetMetadata(tempID,meta)
+
 	elastic.UpdateConfig(cfg)
 	elastic.UpdateClient(cfg, client)
+	cfg.Version=client.GetVersion()
 	global.Register(elastic.GlobalSystemElasticsearchID,tempID)
 
 	return err, client,request

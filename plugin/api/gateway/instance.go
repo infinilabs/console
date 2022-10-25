@@ -454,7 +454,7 @@ func (h *GatewayAPI) getExecutionNodes(w http.ResponseWriter, req *http.Request,
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	var nodes []util.MapStr
+	var nodes = []util.MapStr{}
 	for _, hit := range searchRes.Hits.Hits {
 		var (
 			endpoint string

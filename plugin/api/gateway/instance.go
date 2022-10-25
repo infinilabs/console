@@ -18,6 +18,7 @@ import (
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/modules/elastic"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -413,9 +414,10 @@ func (h *GatewayAPI) getExecutionNodes(w http.ResponseWriter, req *http.Request,
 	if keyword != "" {
 		boolQ["must"] = []util.MapStr{
 			{
-				"query_string": util.MapStr{
-					"default_field":"*",
-					"query": keyword,
+				"prefix": util.MapStr{
+					"name": util.MapStr{
+						"value": keyword,
+					},
 				},
 			},
 		}
@@ -474,6 +476,13 @@ func (h *GatewayAPI) getExecutionNodes(w http.ResponseWriter, req *http.Request,
 			node["type"] = "agent"
 			endpoint = fmt.Sprintf("%s://%s:%v", hit.Source["schema"], hit.Source["remote_ip"], hit.Source["port"])
 		}
+		ul, err := url.Parse(endpoint)
+		if err != nil {
+			log.Error(err)
+		}else{
+			node["host"] = ul.Host
+		}
+
 		if !hasErr {
 			available, err := isNodeAvailable(endpoint)
 			if err != nil {

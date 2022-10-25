@@ -2,6 +2,7 @@
 elasticsearch:
   - id: $[[CLUSTER_ID]]
     name: $[[CLUSTER_ID]]
+    version: $[[CLUSTER_VER]]
     enabled: true
     monitored: true
     reserved: true

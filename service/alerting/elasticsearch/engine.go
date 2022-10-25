@@ -62,6 +62,11 @@ func (engine *Engine) GenerateQuery(rule *alerting.Rule, filterParam *alerting.F
 	if filterParam != nil && filterParam.BucketSize != "" {
 		periodInterval =  filterParam.BucketSize
 	}
+
+	if targetESVersion==""{
+		panic("invalid version")
+	}
+
 	intervalField, err := elastic.GetDateHistogramIntervalField(targetESVersion, periodInterval )
 	if err != nil {
 		return nil, fmt.Errorf("get interval field error: %w", err)

@@ -250,15 +250,17 @@ func (module *Module) initTempClient(r *http.Request) (error, elastic.API,SetupR
 
 	cfg.ID = tempID
 	cfg.Name = "INFINI_SYSTEM ("+util.PickRandomName()+")"
-	elastic.InitMetadata(&cfg, true)
+
 	client, err := elastic1.InitClientWithConfig(cfg)
 	if err != nil {
 		return err,nil,request
 	}
-
+	cfg.Version=client.GetVersion()
+	meta:=elastic.InitMetadata(&cfg, true)
+	meta.Config.Version=cfg.Version
+	elastic.SetMetadata(tempID,meta)
 	elastic.UpdateConfig(cfg)
 	elastic.UpdateClient(cfg, client)
-	cfg.Version=client.GetVersion()
 	global.Register(elastic.GlobalSystemElasticsearchID,tempID)
 
 	return err, client,request
@@ -440,8 +442,8 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	file:=path.Join(global.Env().GetConfigDir(),"system_config.yml")
 	_,err=util.FilePutContent(file,fmt.Sprintf("configs.template:\n  - name: \"system\"\n    path: ./config/system_config.tpl\n    variable:\n      " +
 		"CLUSTER_ID: %v\n      CLUSTER_ENDPINT: \"%v\"\n      " +
-		"CLUSTER_USER: \"%v\"\n      CLUSTER_PASS: \"%v\"\n      INDEX_PREFIX: \"%v\"",
-	tempID,cfg.Endpoint,cfg.BasicAuth.Username,cfg.BasicAuth.Password,cfg1.IndexPrefix	))
+		"CLUSTER_USER: \"%v\"\n      CLUSTER_PASS: \"%v\"\n      CLUSTER_VER: \"%v\"\n      INDEX_PREFIX: \"%v\"",
+	tempID,cfg.Endpoint,cfg.BasicAuth.Username,cfg.BasicAuth.Password,cfg.Version,cfg1.IndexPrefix	))
 	if err!=nil{
 		panic(err)
 	}

@@ -24,4 +24,6 @@ func InitAPI() {
 	api.HandleAPIMethod(api.POST, "/gateway/instance/status", gateway.RequirePermission(gateway.getInstanceStatus, enum.PermissionGatewayInstanceRead))
 
 	api.HandleAPIMethod(api.POST, "/gateway/instance/:instance_id/_proxy", gateway.RequirePermission(gateway.proxy, enum.PermissionGatewayInstanceRead))
+
+	api.HandleAPIMethod(api.GET, "/_platform/nodes", gateway.getExecutionNodes)
 }

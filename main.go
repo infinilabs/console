@@ -23,6 +23,7 @@ import (
 	_ "infini.sh/framework/modules/api"
 	elastic2 "infini.sh/framework/modules/elastic"
 	"infini.sh/framework/modules/metrics"
+	"infini.sh/framework/modules/migration"
 	"infini.sh/framework/modules/pipeline"
 	queue2 "infini.sh/framework/modules/queue/disk_queue"
 	"infini.sh/framework/modules/redis"
@@ -70,6 +71,7 @@ func main() {
 	modules=append(modules,&agent.AgentModule{})
 	modules=append(modules,&metrics.MetricsModule{})
 	modules=append(modules,&security.Module{})
+	modules=append(modules,&migration.MigrationModule{})
 
 	uiModule:=&ui.UIModule{}
 
@@ -89,6 +91,7 @@ func main() {
 			module.RegisterSystemModule(&agent.AgentModule{})
 			module.RegisterSystemModule(&metrics.MetricsModule{})
 			module.RegisterSystemModule(&security.Module{})
+			module.RegisterSystemModule(&migration.MigrationModule{})
 		}else{
 			for _, v := range modules {
 				v.Setup()
@@ -137,6 +140,8 @@ func main() {
 			orm.RegisterSchemaWithIndexName(alerting.Channel{}, "channel")
 			orm.RegisterSchemaWithIndexName(insight.Visualization{}, "visualization")
 			orm.RegisterSchemaWithIndexName(insight.Dashboard{}, "dashboard")
+			orm.RegisterSchemaWithIndexName(task1.Task{}, "task")
+			orm.RegisterSchemaWithIndexName(task1.Log{}, "task-log")
 			api.RegisterSchema()
 
 			if global.Env().SetupRequired() {

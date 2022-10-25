@@ -75,3 +75,11 @@ pipeline:
             group: activity
           when:
             cluster_available: ["$[[CLUSTER_ID]]"]
+  - name: cluster_migration_split
+    auto_start: true
+    keep_running: true
+    processor:
+      - cluster_migration:
+          elasticsearch: "$[[CLUSTER_ID]]"
+          when:
+            cluster_available: ["$[[CLUSTER_ID]]"]

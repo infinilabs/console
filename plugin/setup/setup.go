@@ -248,6 +248,7 @@ func (module *Module) initTempClient(r *http.Request) (error, elastic.API,SetupR
 		cfg.Schema=uri.Scheme
 	}
 
+
 	cfg.ID = tempID
 	cfg.Name = "INFINI_SYSTEM ("+util.PickRandomName()+")"
 	elastic.InitMetadata(&cfg, true)
@@ -256,10 +257,18 @@ func (module *Module) initTempClient(r *http.Request) (error, elastic.API,SetupR
 		return err,nil,request
 	}
 
+	global.Register(elastic.GlobalSystemElasticsearchID,tempID)
+
 	elastic.UpdateConfig(cfg)
 	elastic.UpdateClient(cfg, client)
+	health, err := client.ClusterHealth()
+	if err != nil {
+		return err,nil,request
+	}
+	if health != nil {
+		cfg.RawName = health.Name
+	}
 	cfg.Version=client.GetVersion()
-	global.Register(elastic.GlobalSystemElasticsearchID,tempID)
 
 	return err, client,request
 }

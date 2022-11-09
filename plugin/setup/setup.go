@@ -24,6 +24,7 @@ import (
 	"net/http"
 	uri2 "net/url"
 	"path"
+	"path/filepath"
 	"runtime"
 	"github.com/valyala/fasttemplate"
 	log "github.com/cihub/seelog"
@@ -355,6 +356,11 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		//INDEX_PREFIX
 		dslTplFile:=path.Join(global.Env().GetConfigDir(),"initialization.tpl")
 		dslFile:=path.Join(global.Env().GetConfigDir(),"initialization.dsl")
+
+		if !util.FileExists(dslTplFile){
+			log.Error(filepath.Abs(dslTplFile))
+			panic("template file for setup was missing")
+		}
 
 		var dsl []byte
 		dsl,err=util.FileGetContent(dslTplFile)

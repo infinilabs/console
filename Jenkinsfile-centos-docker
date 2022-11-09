@@ -29,7 +29,7 @@ pipeline {
                             sh 'cd /home/jenkins/go/src/infini.sh/console/web && cnpm run build'
                             sh 'cd /home/jenkins/go/src/infini.sh/console && git pull origin master && make config build  && chmod a+x bin/console'
 
-                            sh label: 'copy-configs', script: 'cd /home/jenkins/go/src/infini.sh/console && mkdir -p bin/config && cp config/*.json bin/config'
+                            sh label: 'copy-configs', script: 'cd /home/jenkins/go/src/infini.sh/console && mkdir -p bin/config && cp config/*.json bin/config  && cp config/*.tpl bin/config'
                             sh label: 'docker-build', script: 'cd /home/jenkins/go/src/infini.sh/console/bin && docker build -t infini-centos-console  -f ../docker/centos-Dockerfile .'
                             sh label: 'docker-tagging', script: 'docker tag infini-centos-console infinilabs/console:centos-$VERSION-$BUILD_NUMBER'
                             sh label: 'docker-push', script: 'docker push infinilabs/console:centos-$VERSION-$BUILD_NUMBER'

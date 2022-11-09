@@ -34,3 +34,5 @@ log/
 .env
 /web/
 generated_*.go
+config/initialization.dsl
+config/system_config.yml

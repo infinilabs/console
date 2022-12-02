@@ -186,7 +186,62 @@ PUT $[[INDEX_PREFIX]]metrics-00001
     }
 }
 
+PUT _template/$[[INDEX_PREFIX]]logs-rollover
+{
+  "order": 100000,
+  "index_patterns": [
+    "$[[INDEX_PREFIX]]logs*"
+  ],
+  "settings": {
+    "index": {
+      "format": "7",
+      "lifecycle": {
+          "name" : "ilm_$[[INDEX_PREFIX]]metrics-30days-retention",
+          "rollover_alias" : "$[[INDEX_PREFIX]]logs"
+      },
+      "codec": "best_compression",
+      "number_of_shards": "1",
+      "translog": {
+        "durability": "async"
+      }
+    }
+  },
+  "mappings": {
+    "dynamic_templates": [
+      {
+        "strings": {
+          "mapping": {
+            "ignore_above": 256,
+            "type": "keyword"
+          },
+          "match_mapping_type": "string"
+        }
+      }
+    ],
+    "properties": {
+      "payload.message": {
+        "type": "text"
+      },
+      "timestamp": {
+        "type": "date"
+      }
+    }
+  },
+  "aliases": {}
+}
 
+PUT $[[INDEX_PREFIX]]logs-00001
+{
+  "settings": {
+    "index.lifecycle.rollover_alias":"$[[INDEX_PREFIX]]logs"
+    , "refresh_interval": "5s"
+  },
+  "aliases":{
+    "$[[INDEX_PREFIX]]logs":{
+      "is_write_index":true
+    }
+  }
+}
 
 PUT _template/$[[INDEX_PREFIX]]alert-history-rollover
 {

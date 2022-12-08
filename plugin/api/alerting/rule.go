@@ -63,7 +63,7 @@ func (alertAPI *AlertAPI) createRule(w http.ResponseWriter, req *http.Request, p
 			rule.Schedule.Interval = "1m"
 		}
 
-		err = orm.Save(rule)
+		err = orm.Save(rule, "")
 		if err != nil {
 			log.Error(err)
 			alertAPI.WriteJSON(w, util.MapStr{
@@ -282,7 +282,7 @@ func (alertAPI *AlertAPI) updateRule(w http.ResponseWriter, req *http.Request, p
 	rule.Created = create
 	rule.Updated = time.Now()
 
-	err = orm.Update(rule)
+	err = orm.Update(rule, "")
 	if err != nil {
 		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -598,7 +598,7 @@ func (alertAPI *AlertAPI) enableRule(w http.ResponseWriter, req *http.Request, p
 		clearKV(id)
 	}
 	obj.Enabled = reqObj.Enabled
-	err = orm.Save(obj)
+	err = orm.Save(obj, "")
 	if err != nil {
 		log.Error(err)
 		alertAPI.WriteError(w, fmt.Sprintf("save rule error:%v", err), http.StatusInternalServerError)

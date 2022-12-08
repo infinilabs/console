@@ -67,7 +67,7 @@ func (handler APIHandler) CreateDictItemAction(w http.ResponseWriter, req *http.
 		return
 	}
 
-	err = orm.Create(&dict)
+	err = orm.Create(&dict, "")
 	if err != nil {
 		resp["status"] = false
 		resp["error"] = err
@@ -107,7 +107,7 @@ func (handler APIHandler) UpdateDictItemAction(w http.ResponseWriter, req *http.
 	}
 	dict.UpdatedAt = time.Now()
 
-	err = orm.Update(dict)
+	err = orm.Update(dict, "")
 	if err != nil {
 		resp["status"] = false
 		resp["error"] = err

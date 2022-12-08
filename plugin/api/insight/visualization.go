@@ -6,8 +6,8 @@ package insight
 
 import (
 	"fmt"
-	"infini.sh/framework/core/insight"
 	httprouter "infini.sh/framework/core/api/router"
+	"infini.sh/framework/core/insight"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"net/http"
@@ -24,7 +24,7 @@ func (h *InsightAPI) createVisualization(w http.ResponseWriter, req *http.Reques
 		log.Error(err)
 		return
 	}
-	err = orm.Create(obj)
+	err = orm.Create(obj, "")
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -87,7 +87,7 @@ func (h *InsightAPI) updateVisualization(w http.ResponseWriter, req *http.Reques
 	//protect
 	obj.ID = id
 	obj.Created = create
-	err = orm.Update(&obj)
+	err = orm.Update(&obj, "")
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)

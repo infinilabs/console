@@ -25,7 +25,7 @@ func (h *AlertAPI) createChannel(w http.ResponseWriter, req *http.Request, ps ht
 		return
 	}
 
-	err = orm.Create(obj)
+	err = orm.Create(obj, "")
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -93,7 +93,7 @@ func (h *AlertAPI) updateChannel(w http.ResponseWriter, req *http.Request, ps ht
 	//protect
 	obj.ID = id
 	obj.Created = create
-	err = orm.Update(&obj)
+	err = orm.Update(&obj, "")
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)

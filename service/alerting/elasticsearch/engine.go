@@ -626,7 +626,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 				}
 			}
 
-			err = orm.Save(alertItem)
+			err = orm.Save(nil, alertItem)
 			if err != nil {
 				log.Error(err)
 			}
@@ -1131,7 +1131,7 @@ func getLastAlertMessage(ruleID string, duration time.Duration) (*alerting.Alert
 
 func saveAlertMessageToES(message *alerting.AlertMessage) error {
 	message.Updated = time.Now()
-	return orm.Save(message)
+	return orm.Save(nil, message)
 }
 
 func saveAlertMessage(message *alerting.AlertMessage) error {

@@ -22,7 +22,7 @@ func (h *InsightAPI) createDashboard(w http.ResponseWriter, req *http.Request, p
 		log.Error(err)
 		return
 	}
-	err = orm.Create(obj, "")
+	err = orm.Create(nil, obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -102,7 +102,7 @@ func (h *InsightAPI) updateDashboard(w http.ResponseWriter, req *http.Request, p
 	//protect
 	obj.ID = id
 	obj.Created = create
-	err = orm.Update(&obj, "")
+	err = orm.Update(nil, &obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)

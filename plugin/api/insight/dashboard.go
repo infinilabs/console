@@ -130,7 +130,7 @@ func (h *InsightAPI) deleteDashboard(w http.ResponseWriter, req *http.Request, p
 		return
 	}
 
-	err = orm.Delete(&obj)
+	err = orm.Delete(nil, &obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)

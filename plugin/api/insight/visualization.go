@@ -115,7 +115,7 @@ func (h *InsightAPI) deleteVisualization(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	err = orm.Delete(&obj)
+	err = orm.Delete(nil, &obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)

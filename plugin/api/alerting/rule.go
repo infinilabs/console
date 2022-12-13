@@ -347,7 +347,7 @@ func (alertAPI *AlertAPI) deleteRule(w http.ResponseWriter, req *http.Request, p
 		return
 	}
 
-	err = orm.Delete(&obj)
+	err = orm.Delete(nil, &obj)
 	if err != nil {
 		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)

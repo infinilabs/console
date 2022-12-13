@@ -84,7 +84,7 @@ func (handler APIHandler) DeleteDictItemAction(w http.ResponseWriter, req *http.
 	dict.ID = id
 	resp := newResponseBody()
 
-	err := orm.Delete(dict)
+	err := orm.Delete(nil, dict)
 	if err != nil {
 		resp["status"] = false
 		resp["error"] = err

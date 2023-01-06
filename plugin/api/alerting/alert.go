@@ -24,24 +24,29 @@ func (h *AlertAPI) getAlert(w http.ResponseWriter, req *http.Request, ps httprou
 	obj := alerting.Alert{}
 	obj.ID = id
 
-	exists, err := orm.Get(&obj)
-	if !exists || err != nil {
+	q := orm.Query{
+		WildcardIndex: true,
+		Size: 1,
+	}
+	q.Conds = orm.And(orm.Eq("id", id))
+	err, result := orm.Search(obj, &q)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
+	if len(result.Result) == 0 {
 		h.WriteJSON(w, util.MapStr{
 			"_id":   id,
 			"found": false,
 		}, http.StatusNotFound)
 		return
 	}
-	if err != nil {
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
-		return
-	}
 
 	h.WriteJSON(w, util.MapStr{
 		"found":   true,
 		"_id":     id,
-		"_source": obj,
+		"_source": result.Result[0],
 	}, 200)
 }
 

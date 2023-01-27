@@ -127,58 +127,6 @@ PUT $[[INDEX_PREFIX]]metrics-00001
         }
       ],
       "properties": {
-        "metadata": {
-          "properties": {
-            "category": {
-              "type": "keyword",
-              "ignore_above": 256
-            },
-            "datatype": {
-              "type": "keyword",
-              "ignore_above": 256
-            },
-            "labels": {
-              "properties": {
-                "cluster_id": {
-                  "type": "keyword",
-                  "ignore_above": 256
-                },
-                "index_id": {
-                  "type": "keyword",
-                  "ignore_above": 256
-                },
-                "index_name": {
-                  "type": "keyword",
-                  "ignore_above": 256
-                },
-                "index_uuid": {
-                  "type": "keyword",
-                  "ignore_above": 256
-                },
-                "ip": {
-                  "type": "keyword",
-                  "ignore_above": 256
-                },
-                "node_id": {
-                  "type": "keyword",
-                  "ignore_above": 256
-                },
-                "node_name": {
-                  "type": "keyword",
-                  "ignore_above": 256
-                },
-                "transport_address": {
-                  "type": "keyword",
-                  "ignore_above": 256
-                }
-              }
-            },
-            "name": {
-              "type": "keyword",
-              "ignore_above": 256
-            }
-          }
-        },
         "timestamp": {
           "type": "date"
         }
@@ -242,6 +190,145 @@ PUT $[[INDEX_PREFIX]]logs-00001
     }
   }
 }
+
+
+PUT _template/$[[INDEX_PREFIX]]requests_logging-rollover
+{
+  "order": 100000,
+  "index_patterns": [
+    "$[[INDEX_PREFIX]]requests_logging*"
+  ],
+  "settings": {
+    "index": {
+      "format": "7",
+      "lifecycle": {
+          "name" : "ilm_$[[INDEX_PREFIX]]metrics-30days-retention",
+          "rollover_alias" : "$[[INDEX_PREFIX]]requests_logging"
+      },
+      "codec": "best_compression",
+      "number_of_shards": "1",
+      "translog": {
+        "durability": "async"
+      }
+    }
+  },
+  "mappings": {
+    "dynamic_templates": [
+      {
+        "strings": {
+          "mapping": {
+            "ignore_above": 256,
+            "type": "keyword"
+          },
+          "match_mapping_type": "string"
+        }
+      }
+    ],
+    "properties": {
+      "request": {
+           "properties": {
+             "body": {
+               "type": "text"
+             }
+           }
+         },
+     "response": {
+       "properties": {
+         "body": {
+           "type": "text"
+         }
+       }
+     },
+      "timestamp": {
+        "type": "date"
+      }
+    }
+  },
+  "aliases": {}
+}
+
+PUT $[[INDEX_PREFIX]]requests_logging-00001
+{
+  "settings": {
+    "index.lifecycle.rollover_alias":"$[[INDEX_PREFIX]]requests_logging"
+    , "refresh_interval": "5s"
+  },
+  "aliases":{
+    "$[[INDEX_PREFIX]]requests_logging":{
+      "is_write_index":true
+    }
+  }
+}
+
+
+PUT _template/$[[INDEX_PREFIX]]async_bulk_results-rollover
+{
+  "order": 100000,
+  "index_patterns": [
+    "$[[INDEX_PREFIX]]async_bulk_results*"
+  ],
+  "settings": {
+    "index": {
+      "format": "7",
+      "lifecycle": {
+          "name" : "ilm_$[[INDEX_PREFIX]]metrics-30days-retention",
+          "rollover_alias" : "$[[INDEX_PREFIX]]async_bulk_results"
+      },
+      "codec": "best_compression",
+      "number_of_shards": "1",
+      "translog": {
+        "durability": "async"
+      }
+    }
+  },
+  "mappings": {
+    "dynamic_templates": [
+      {
+        "strings": {
+          "mapping": {
+            "ignore_above": 256,
+            "type": "keyword"
+          },
+          "match_mapping_type": "string"
+        }
+      }
+    ],
+    "properties": {
+      "request": {
+                "properties": {
+                  "body": {
+                    "type": "text"
+                  }
+                }
+      },
+      "response": {
+            "properties": {
+              "body": {
+                "type": "text"
+              }
+            }
+       },
+      "timestamp": {
+        "type": "date"
+      }
+    }
+  },
+  "aliases": {}
+}
+
+PUT $[[INDEX_PREFIX]]async_bulk_results-00001
+{
+  "settings": {
+    "index.lifecycle.rollover_alias":"$[[INDEX_PREFIX]]async_bulk_results"
+    , "refresh_interval": "5s"
+  },
+  "aliases":{
+    "$[[INDEX_PREFIX]]async_bulk_results":{
+      "is_write_index":true
+    }
+  }
+}
+
 
 PUT _template/$[[INDEX_PREFIX]]alert-history-rollover
 {
@@ -450,7 +537,8 @@ PUT $[[INDEX_PREFIX]]activities-00001
     ],
     "properties": {
       "changelog": {
-        "type": "flattened"
+         "type": "object",
+         "enabled": false
       },
       "id": {
         "type": "keyword"
@@ -464,9 +552,6 @@ PUT $[[INDEX_PREFIX]]activities-00001
           "group": {
             "type": "keyword",
             "ignore_above": 256
-          },
-          "labels": {
-            "type": "flattened"
           },
           "name": {
             "type": "keyword",

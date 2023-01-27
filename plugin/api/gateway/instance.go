@@ -9,7 +9,7 @@ import (
 	"fmt"
 	log "github.com/cihub/seelog"
 	"github.com/segmentio/encoding/json"
-	"infini.sh/console/model/gateway"
+	"infini.sh/console/model"
 	"infini.sh/framework/core/agent"
 	httprouter "infini.sh/framework/core/api/router"
 	elastic2 "infini.sh/framework/core/elastic"
@@ -25,7 +25,7 @@ import (
 )
 
 func (h *GatewayAPI) createInstance(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	var obj = &gateway.Instance{}
+	var obj = &model.Instance{}
 	err := h.DecodeJSON(req, obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -68,7 +68,7 @@ func (h *GatewayAPI) createInstance(w http.ResponseWriter, req *http.Request, ps
 func (h *GatewayAPI) getInstance(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	id := ps.MustGetParameter("instance_id")
 
-	obj := gateway.Instance{}
+	obj := model.Instance{}
 	obj.ID = id
 
 	exists, err := orm.Get(&obj)
@@ -94,7 +94,7 @@ func (h *GatewayAPI) getInstance(w http.ResponseWriter, req *http.Request, ps ht
 
 func (h *GatewayAPI) updateInstance(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	id := ps.MustGetParameter("instance_id")
-	obj := gateway.Instance{}
+	obj := model.Instance{}
 
 	obj.ID = id
 	exists, err := orm.Get(&obj)
@@ -108,7 +108,7 @@ func (h *GatewayAPI) updateInstance(w http.ResponseWriter, req *http.Request, ps
 
 	id = obj.ID
 	create := obj.Created
-	obj = gateway.Instance{}
+	obj = model.Instance{}
 	err = h.DecodeJSON(req, &obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -135,7 +135,7 @@ func (h *GatewayAPI) updateInstance(w http.ResponseWriter, req *http.Request, ps
 func (h *GatewayAPI) deleteInstance(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	id := ps.MustGetParameter("instance_id")
 
-	obj := gateway.Instance{}
+	obj := model.Instance{}
 	obj.ID = id
 
 	exists, err := orm.Get(&obj)
@@ -185,7 +185,7 @@ func (h *GatewayAPI) searchInstance(w http.ResponseWriter, req *http.Request, ps
 	queryDSL = fmt.Sprintf(queryDSL, mustBuilder.String(), size, from)
 	q.RawQuery = []byte(queryDSL)
 
-	err, res := orm.Search(&gateway.Instance{}, &q)
+	err, res := orm.Search(&model.Instance{}, &q)
 	if err != nil {
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -216,7 +216,7 @@ func (h *GatewayAPI) getInstanceStatus(w http.ResponseWriter, req *http.Request,
 	}
 	q.RawQuery = util.MustToJSONBytes(queryDSL)
 
-	err, res := orm.Search(&gateway.Instance{}, &q)
+	err, res := orm.Search(&model.Instance{}, &q)
 	if err != nil {
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -272,7 +272,7 @@ func (h *GatewayAPI) proxy(w http.ResponseWriter, req *http.Request, ps httprout
 	)
 	instanceID := ps.MustGetParameter("instance_id")
 
-	obj := gateway.Instance{}
+	obj := model.Instance{}
 	obj.ID = instanceID
 
 	exists, err := orm.Get(&obj)
@@ -369,7 +369,7 @@ func (h *GatewayAPI) getExecutionNodes(w http.ResponseWriter, req *http.Request,
 		from = 0
 	}
 	agentIndexName := orm.GetIndexName(agent.Instance{})
-	gatewayIndexName := orm.GetIndexName(gateway.Instance{})
+	gatewayIndexName := orm.GetIndexName(model.Instance{})
 	agentMust := []util.MapStr{
 		{
 			"term": util.MapStr{
@@ -443,18 +443,19 @@ func (h *GatewayAPI) getExecutionNodes(w http.ResponseWriter, req *http.Request,
 	}
 	err, result := orm.Search(nil, &q)
 	if err != nil {
-		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	searchRes := elastic2.SearchResponse{}
 	err = util.FromJSONBytes(result.Raw, &searchRes)
-	if err != nil {
-		log.Error(err)
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+	if err != nil||searchRes.ESError!=nil {
+		msg:=fmt.Sprintf("%v,%v",err,searchRes.ESError)
+		h.WriteError(w, msg, http.StatusInternalServerError)
 		return
 	}
 	var nodes = []util.MapStr{}
+
 	for _, hit := range searchRes.Hits.Hits {
 		var (
 			endpoint string
@@ -484,7 +485,7 @@ func (h *GatewayAPI) getExecutionNodes(w http.ResponseWriter, req *http.Request,
 		}
 
 		if !hasErr {
-			available, err := isNodeAvailable(endpoint)
+			available, err := isNodeAvailable(endpoint) //TODO remove
 			if err != nil {
 				log.Error(err)
 			}

@@ -2,7 +2,7 @@
  * web: https://infinilabs.com
  * mail: hello#infini.ltd */
 
-package gateway
+package model
 
 import (
 	"infini.sh/framework/core/agent"

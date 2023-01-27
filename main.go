@@ -6,8 +6,8 @@ import (
 	_ "expvar"
 	log "github.com/cihub/seelog"
 	"infini.sh/console/config"
+	"infini.sh/console/model"
 	"infini.sh/console/model/alerting"
-	"infini.sh/console/model/gateway"
 	_ "infini.sh/console/plugin"
 	alerting2 "infini.sh/console/service/alerting"
 	"infini.sh/framework"
@@ -23,7 +23,6 @@ import (
 	_ "infini.sh/framework/modules/api"
 	elastic2 "infini.sh/framework/modules/elastic"
 	"infini.sh/framework/modules/metrics"
-	"infini.sh/framework/modules/migration"
 	"infini.sh/framework/modules/pipeline"
 	queue2 "infini.sh/framework/modules/queue/disk_queue"
 	"infini.sh/framework/modules/redis"
@@ -71,7 +70,6 @@ func main() {
 	modules=append(modules,&agent.AgentModule{})
 	modules=append(modules,&metrics.MetricsModule{})
 	modules=append(modules,&security.Module{})
-	modules=append(modules,&migration.MigrationModule{})
 
 	uiModule:=&ui.UIModule{}
 
@@ -91,7 +89,6 @@ func main() {
 			module.RegisterSystemModule(&agent.AgentModule{})
 			module.RegisterSystemModule(&metrics.MetricsModule{})
 			module.RegisterSystemModule(&security.Module{})
-			module.RegisterSystemModule(&migration.MigrationModule{})
 		}else{
 			for _, v := range modules {
 				v.Setup()
@@ -133,7 +130,7 @@ func main() {
 			orm.RegisterSchemaWithIndexName(elastic.View{}, "view")
 			orm.RegisterSchemaWithIndexName(elastic.CommonCommand{}, "commands")
 			//orm.RegisterSchemaWithIndexName(elastic.TraceTemplate{}, "trace-template")
-			orm.RegisterSchemaWithIndexName(gateway.Instance{}, "gateway-instance")
+			orm.RegisterSchemaWithIndexName(model.Instance{}, "instance")
 			orm.RegisterSchemaWithIndexName(alerting.Rule{}, "alert-rule")
 			orm.RegisterSchemaWithIndexName(alerting.Alert{}, "alert-history")
 			orm.RegisterSchemaWithIndexName(alerting.AlertMessage{}, "alert-message")

@@ -80,15 +80,9 @@ func main() {
 		module.RegisterSystemModule(uiModule)
 
 		if !global.Env().SetupRequired(){
-			module.RegisterSystemModule(&stats.SimpleStatsModule{})
-			module.RegisterSystemModule(&elastic2.ElasticModule{})
-			module.RegisterSystemModule(&queue2.DiskQueue{})
-			module.RegisterSystemModule(&redis.RedisModule{})
-			module.RegisterSystemModule(&pipeline.PipeModule{})
-			module.RegisterSystemModule(&task.TaskModule{})
-			module.RegisterSystemModule(&agent.AgentModule{})
-			module.RegisterSystemModule(&metrics.MetricsModule{})
-			module.RegisterSystemModule(&security.Module{})
+			for _, v := range modules {
+				module.RegisterSystemModule(v)
+			}
 		}else{
 			for _, v := range modules {
 				v.Setup()

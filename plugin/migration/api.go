@@ -13,6 +13,7 @@ import (
 	"infini.sh/framework/core/api/rbac"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/proxy"
 	task2 "infini.sh/framework/core/task"
@@ -57,14 +58,15 @@ func (h *APIHandler) createDataMigrationTask(w http.ResponseWriter, req *http.Re
 		h.WriteError(w, "indices must not be empty", http.StatusInternalServerError)
 		return
 	}
-	clusterTaskConfig.Creator = struct {
-		Name string `json:"name"`
-		Id   string `json:"id"`
-	}{}
-	claims, ok := req.Context().Value("user").(*rbac.UserClaims)
-	if ok {
-		clusterTaskConfig.Creator.Name = claims.Username
-		clusterTaskConfig.Creator.Id = claims.ID
+	user, err  := rbac.FromUserContext(req.Context())
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if user != nil {
+		clusterTaskConfig.Creator.Name = user.Username
+		clusterTaskConfig.Creator.Id = user.UserId
 	}
 
 	var totalDocs int64
@@ -87,23 +89,18 @@ func (h *APIHandler) createDataMigrationTask(w http.ResponseWriter, req *http.Re
 		Status: task2.StatusInit,
 		Parameters: map[string]interface{}{
 			"pipeline": util.MapStr{
-				"id":     "cluster_migration",
 				"config": clusterTaskConfig,
 			},
 		},
 	}
+	t.ID = util.GetUUID()
 	err = orm.Create(nil, &t)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
 		return
 	}
-
-	h.WriteJSON(w, util.MapStr{
-		"_id":    t.ID,
-		"result": "created",
-	}, 200)
-
+	h.WriteCreatedOKJSON(w, t.ID)
 }
 
 func (h *APIHandler) searchDataMigrationTask(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -172,7 +169,7 @@ func (h *APIHandler) searchDataMigrationTask(w http.ResponseWriter, req *http.Re
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	mainLoop:
+mainLoop:
 	for _, hit := range searchRes.Hits.Hits {
 		sourceM := util.MapStr(hit.Source)
 		config, err := sourceM.GetValue("parameters.pipeline.config")
@@ -188,8 +185,7 @@ func (h *APIHandler) searchDataMigrationTask(w http.ResponseWriter, req *http.Re
 			continue
 		}
 		var targetTotalDocs int64
-		targetTotal, _ := sourceM.GetValue("metadata.labels.target_total_docs")
-		if _, ok := targetTotal.(float64); !ok || hit.Source["status"] != task2.StatusComplete {
+		if hit.Source["status"] == task2.StatusRunning {
 			esClient := elastic.GetClientNoPanic(dataConfig.Cluster.Target.Id)
 			if esClient == nil {
 				log.Warnf("cluster [%s] was not found", dataConfig.Cluster.Target.Id)
@@ -255,7 +251,7 @@ func (h *APIHandler) startDataMigration(w http.ResponseWriter, req *http.Request
 		//root task
 		obj.Status = task2.StatusReady
 	}else if obj.Status == task2.StatusStopped {
-		if obj.Metadata.Labels["level"] == "partition" {
+		if obj.Metadata.Labels != nil && obj.Metadata.Labels["level"] == "partition" {
 			obj.Status = task2.StatusReady
 			//update parent task status
 			if len(obj.ParentId) == 0 {
@@ -386,34 +382,6 @@ func getNodeEndpoint(nodeID string) (string, error){
 	return "", fmt.Errorf("got unexpect node info: %s", util.MustToJSON(result.Result[0]))
 }
 
-func stopTask(nodeID, taskID string) error {
-	endpoint, err := getNodeEndpoint(nodeID)
-	if err != nil {
-		return err
-	}
-	res, err := proxy.DoProxyRequest(&proxy.Request{
-		Method: http.MethodPost,
-		Endpoint: endpoint,
-		Path: fmt.Sprintf("/pipeline/task/%s/_stop", taskID),
-	})
-
-	if err != nil {
-		return fmt.Errorf("call stop task api error: %w", err)
-	}
-	resBody := struct {
-		Acknowledged bool `json:"acknowledged"`
-		Error string `json:"error"`
-	}{}
-	err = util.FromJSONBytes(res.Body, &resBody)
-	if err != nil {
-		return err
-	}
-	if resBody.Acknowledged {
-		return nil
-	}
-	return fmt.Errorf(resBody.Error)
-}
-
 func (h *APIHandler) stopDataMigrationTask(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	id := ps.MustGetParameter("task_id")
 	obj := task2.Task{}
@@ -451,37 +419,30 @@ func (h *APIHandler) stopDataMigrationTask(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	err = stopTask(executionConfig.Nodes.Permit[0].ID, id)
-	if err != nil {
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
-		return
-	}
-
 	query := util.MapStr{
-			"bool": util.MapStr{
-				"must": []util.MapStr{
-					{
-						"term": util.MapStr{
-							"parent_id": util.MapStr{
-								"value": id,
-							},
-						},
-					},
-					{
-						"term": util.MapStr{
-							"metadata.labels.pipeline_id": util.MapStr{
-								"value": "index_migration",
-							},
-						},
-					},
-					{
-						"terms": util.MapStr{
-							"status": []string{task2.StatusRunning, task2.StatusInit},
+		"bool": util.MapStr{
+			"must": []util.MapStr{
+				{
+					"term": util.MapStr{
+						"parent_id": util.MapStr{
+							"value": id,
 						},
 					},
 				},
+				{
+					"term": util.MapStr{
+						"metadata.labels.pipeline_id": util.MapStr{
+							"value": "index_migration",
+						},
+					},
+				},
+				{
+					"terms": util.MapStr{
+						"status": []string{task2.StatusRunning, task2.StatusInit},
+					},
+				},
 			},
+		},
 	}
 	//todo reset stat_time?
 	queryDsl := util.MapStr{
@@ -530,6 +491,82 @@ func getTaskConfig(task *task2.Task, config interface{}) error{
 	return util.FromJSONBytes(configBytes, config)
 }
 
+func getIndexRefreshInterval(indexNames []string, targetESClient elastic.API)(map[string]string, error){
+	const step = 50
+	var (
+		length = len(indexNames)
+		end int
+	)
+	refreshIntervals := map[string]string{}
+	for i := 0; i < length; i += step {
+		end = i + step
+		if end > length - 1 {
+			end = length
+		}
+		tempNames := indexNames[i:end]
+		strNames := strings.Join(tempNames, ",")
+		resultM, err := targetESClient.GetIndexSettings(strNames)
+		if err != nil {
+			return refreshIntervals, nil
+		}
+		for indexName, v := range *resultM {
+			if m, ok := v.(map[string]interface{}); ok {
+				refreshInterval, _ := util.GetMapValueByKeys([]string{"settings", "index", "refresh_interval"}, m)
+				if ri, ok := refreshInterval.(string); ok {
+					refreshIntervals[indexName] = ri
+					continue
+				}
+				refreshInterval, _ = util.GetMapValueByKeys([]string{"defaults", "index", "refresh_interval"}, m)
+				if ri, ok := refreshInterval.(string); ok {
+					refreshIntervals[indexName] = ri
+					continue
+				}
+			}
+
+		}
+	}
+	return refreshIntervals, nil
+
+}
+
+func (h *APIHandler) getIndexRefreshIntervals(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
+	id := ps.MustGetParameter("task_id")
+
+	obj := task2.Task{}
+	obj.ID = id
+
+	exists, err := orm.Get(&obj)
+	if !exists || err != nil {
+		h.WriteJSON(w, util.MapStr{
+			"_id":   id,
+			"found": false,
+		}, http.StatusNotFound)
+		return
+	}
+	taskConfig := &ElasticDataConfig{}
+	err = getTaskConfig(&obj, taskConfig)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	var indexNames []string
+	for _, index := range taskConfig.Indices {
+		indexNames = append(indexNames, index.Target.Name)
+	}
+	targetESClient := elastic.GetClientNoPanic(taskConfig.Cluster.Target.Id)
+	if targetESClient == nil {
+		h.WriteJSON(w, util.MapStr{}, http.StatusOK)
+	}
+	vals, err := getIndexRefreshInterval(indexNames, targetESClient)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	h.WriteJSON(w, vals, http.StatusOK)
+}
+
 func (h *APIHandler) getDataMigrationTaskInfo(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
 	id := ps.MustGetParameter("task_id")
 
@@ -559,6 +596,7 @@ func (h *APIHandler) getDataMigrationTaskInfo(w http.ResponseWriter, req *http.R
 		return
 	}
 	//get status of sub task
+	//todo size config?
 	query :=  util.MapStr{
 		"size": 1000,
 		"query": util.MapStr{
@@ -606,18 +644,17 @@ func (h *APIHandler) getDataMigrationTaskInfo(w http.ResponseWriter, req *http.R
 		}
 	}
 
-
 	var completedIndices int
+	targetESClient := elastic.GetClientNoPanic(taskConfig.Cluster.Target.Id)
 	for i, index := range taskConfig.Indices {
 		if st, ok := statusM[index.TaskID]; ok {
 			taskConfig.Indices[i].Status = st.(string)
 		}
 		var count = index.Target.Docs
 		if taskConfig.Indices[i].Status != task2.StatusComplete || count == 0 {
-			targetESClient := elastic.GetClientNoPanic(taskConfig.Cluster.Target.Id)
 			if targetESClient == nil {
 				log.Warnf("cluster [%s] was not found", taskConfig.Cluster.Target.Id)
-				continue
+				break
 			}
 			count, err = getIndexTaskDocCount(&index, targetESClient)
 			if err != nil {
@@ -627,11 +664,24 @@ func (h *APIHandler) getDataMigrationTaskInfo(w http.ResponseWriter, req *http.R
 			taskConfig.Indices[i].Target.Docs = count
 		}
 		percent := float64(count * 100) / float64(index.Source.Docs)
+		if percent > 100 {
+			percent = 100
+		}
 		taskConfig.Indices[i].Percent = util.ToFixed(percent, 2)
 		taskConfig.Indices[i].ErrorPartitions = taskErrors[index.TaskID]
 		if count == index.Source.Docs {
 			completedIndices ++
 			taskConfig.Indices[i].Status = task2.StatusComplete
+		}
+	}
+	cfg := global.MustLookup("cluster_migration_config")
+	if migrationConfig, ok := cfg.(*ClusterMigrationConfig); ok {
+		if obj.Metadata.Labels == nil {
+			obj.Metadata.Labels = util.MapStr{}
+		}
+		obj.Metadata.Labels["log_info"] = util.MapStr{
+			"cluster_id": migrationConfig.Elasticsearch,
+			"index_name": migrationConfig.LogIndexName,
 		}
 	}
 	util.MapStr(obj.Parameters).Put("pipeline.config", taskConfig)
@@ -790,20 +840,14 @@ func getTaskStats(nodeID string) (map[string]interface{}, error){
 func (h *APIHandler) getDataMigrationTaskOfIndex(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
 	id := ps.MustGetParameter("task_id")
 	indexTask := task2.Task{}
-	indexTask.ID=id
+	indexTask.ID = id
 	exists, err := orm.Get(&indexTask)
 	if !exists || err != nil {
 		h.WriteError(w, fmt.Sprintf("task [%s] not found", id), http.StatusInternalServerError)
 		return
 	}
 
-	var durationInMS int64
-	if indexTask.StartTimeInMillis > 0 {
-		durationInMS = time.Now().UnixMilli() - indexTask.StartTimeInMillis
-		if indexTask.CompletedTime != nil && indexTask.Status == task2.StatusComplete {
-			durationInMS = indexTask.CompletedTime.UnixMilli() - indexTask.StartTimeInMillis
-		}
-	}
+	var durationInMS = indexTask.GetDurationInMS()
 	var completedTime int64
 	if indexTask.CompletedTime != nil {
 		completedTime = indexTask.CompletedTime.UnixMilli()
@@ -892,13 +936,7 @@ func (h *APIHandler) getDataMigrationTaskOfIndex(w http.ResponseWriter, req *htt
 			step, _ := util.MapStr(ptask.Parameters).GetValue("pipeline.config.source.step")
 			taskInfo["step"] = step
 		}
-		durationInMS = 0
-		if ptask.StartTimeInMillis > 0 {
-			durationInMS = time.Now().UnixMilli() - ptask.StartTimeInMillis
-			if ptask.CompletedTime != nil && (ptask.Status == task2.StatusComplete || ptask.Status == task2.StatusError) {
-				durationInMS = ptask.CompletedTime.UnixMilli() - ptask.StartTimeInMillis
-			}
-		}
+		durationInMS = ptask.GetDurationInMS()
 		var (
 			scrollDocs float64
 			indexDocs float64

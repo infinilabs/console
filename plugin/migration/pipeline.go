@@ -11,6 +11,7 @@ import (
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/env"
 	"infini.sh/framework/core/global"
+	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/pipeline"
 	task2 "infini.sh/framework/core/task"
 	"infini.sh/framework/core/util"
@@ -60,6 +61,7 @@ func newClusterMigrationProcessor(c *config.Config) (pipeline.Processor, error) 
 			return nil, err
 		}
 	}
+	global.Register("cluster_migration_config", &cfg)
 
 	processor := ClusterMigrationProcessor{
 		id:     util.GetUUID(),
@@ -120,7 +122,7 @@ func (p *ClusterMigrationProcessor) Process(ctx *pipeline.Context) error {
 				Action: task2.LogAction{
 					Parameters: t.Parameters,
 				},
-				Content: fmt.Sprintf("starting to execute task [%s]", t.ID),
+				Message: fmt.Sprintf("starting to execute task [%s]", t.ID),
 				Timestamp: time.Now().UTC(),
 			})
 			err = p.SplitMigrationTask(&t)
@@ -135,12 +137,12 @@ func (p *ClusterMigrationProcessor) Process(ctx *pipeline.Context) error {
 						Success: true,
 					},
 				},
-				Content: fmt.Sprintf("success to split task [%s]", t.ID),
+				Message: fmt.Sprintf("success to split task [%s]", t.ID),
 				Timestamp: time.Now().UTC(),
 			}
 			if err != nil {
 				taskLog.Status = task2.StatusError
-				taskLog.Content = fmt.Sprintf("failed to split task [%s]: %v", t.ID, err)
+				taskLog.Message = fmt.Sprintf("failed to split task [%s]: %v", t.ID, err)
 				taskLog.Action.Result = &task2.LogResult{
 					Success: false,
 					Error: err.Error(),
@@ -182,15 +184,15 @@ func (p *ClusterMigrationProcessor) SplitMigrationTask(taskItem *task2.Task) err
 	}()
 	esSourceClient := elastic.GetClient(clusterMigrationTask.Cluster.Source.Id)
 	esTargetClient := elastic.GetClient(clusterMigrationTask.Cluster.Target.Id)
-	esClient := elastic.GetClient(p.config.Elasticsearch)
+	//esClient := elastic.GetClient(p.config.Elasticsearch)
 
 	for i, index := range clusterMigrationTask.Indices {
 		source := util.MapStr{
 			"cluster_id": clusterMigrationTask.Cluster.Source.Id,
 			"indices": index.Source.Name,
-			//"slice_size": 10,
-			"batch_size": clusterMigrationTask.Settings.ScrollSize.Docs,
-			"scroll_time": clusterMigrationTask.Settings.ScrollSize.Timeout,
+			"slice_size": clusterMigrationTask.Settings.Scroll.SliceSize,
+			"batch_size": clusterMigrationTask.Settings.Scroll.Docs,
+			"scroll_time": clusterMigrationTask.Settings.Scroll.Timeout,
 		}
 		if index.IndexRename != nil {
 			source["index_rename"] = index.IndexRename
@@ -251,11 +253,9 @@ func (p *ClusterMigrationProcessor) SplitMigrationTask(taskItem *task2.Task) err
 
 		target := util.MapStr{
 			"cluster_id": clusterMigrationTask.Cluster.Target.Id,
-			//"max_worker_size": 10,
-			//"detect_interval": 100,
 			"bulk": util.MapStr{
-				"batch_size_in_mb": clusterMigrationTask.Settings.BulkSize.StoreSizeInMB,
-				"batch_size_in_docs":  clusterMigrationTask.Settings.BulkSize.Docs,
+				"batch_size_in_mb": clusterMigrationTask.Settings.Bulk.StoreSizeInMB,
+				"batch_size_in_docs":  clusterMigrationTask.Settings.Bulk.Docs,
 			},
 		}
 		indexParameters := map[string]interface{}{
@@ -287,7 +287,7 @@ func (p *ClusterMigrationProcessor) SplitMigrationTask(taskItem *task2.Task) err
 			Parameters: indexParameters,
 		}
 
-		indexMigrationTask.ID=util.GetUUID()
+		indexMigrationTask.ID = util.GetUUID()
 
 		clusterMigrationTask.Indices[i].TaskID = indexMigrationTask.ID
 		if index.Partition != nil {
@@ -386,9 +386,9 @@ func (p *ClusterMigrationProcessor) SplitMigrationTask(taskItem *task2.Task) err
 						},
 					},
 				}
-				partitionMigrationTask.ID=util.GetUUID()
-
-				_, err = esClient.Index(p.config.IndexName, "", partitionMigrationTask.ID, partitionMigrationTask, "")
+				partitionMigrationTask.ID = util.GetUUID()
+				err = orm.Create(nil, &partitionMigrationTask)
+				//_, err = esClient.Index(p.config.IndexName, "", partitionMigrationTask.ID, partitionMigrationTask, "")
 				delete(target, "query_dsl")
 				if err != nil {
 					return fmt.Errorf("store index migration task(partition) error: %w", err)
@@ -427,15 +427,15 @@ func (p *ClusterMigrationProcessor) SplitMigrationTask(taskItem *task2.Task) err
 				},
 				Parameters: indexParameters,
 			}
-			partitionMigrationTask.ID=util.GetUUID()
-
-			_, err = esClient.Index(p.config.IndexName, "", partitionMigrationTask.ID, partitionMigrationTask, "")
+			orm.Create(nil, &partitionMigrationTask)
+			//_, err = esClient.Index(p.config.IndexName, "", partitionMigrationTask.ID, partitionMigrationTask, "")
 			delete(target, "query_dsl")
 			if err != nil {
 				return fmt.Errorf("store index migration task(partition) error: %w", err)
 			}
 		}
-		_, err = esClient.Index(p.config.IndexName, "", indexMigrationTask.ID, indexMigrationTask, "")
+		err = orm.Create(nil, &indexMigrationTask)
+		//_, err = esClient.Index(p.config.IndexName, "", indexMigrationTask.ID, indexMigrationTask, "")
 		if err != nil {
 			return fmt.Errorf("store index migration task error: %w", err)
 		}

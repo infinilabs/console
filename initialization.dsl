@@ -127,58 +127,6 @@ PUT .infini_metrics-00001
         }
       ],
       "properties": {
-        "metadata": {
-          "properties": {
-            "category": {
-              "type": "keyword",
-              "ignore_above": 256
-            },
-            "datatype": {
-              "type": "keyword",
-              "ignore_above": 256
-            },
-            "labels": {
-              "properties": {
-                "cluster_id": {
-                  "type": "keyword",
-                  "ignore_above": 256
-                },
-                "index_id": {
-                  "type": "keyword",
-                  "ignore_above": 256
-                },
-                "index_name": {
-                  "type": "keyword",
-                  "ignore_above": 256
-                },
-                "index_uuid": {
-                  "type": "keyword",
-                  "ignore_above": 256
-                },
-                "ip": {
-                  "type": "keyword",
-                  "ignore_above": 256
-                },
-                "node_id": {
-                  "type": "keyword",
-                  "ignore_above": 256
-                },
-                "node_name": {
-                  "type": "keyword",
-                  "ignore_above": 256
-                },
-                "transport_address": {
-                  "type": "keyword",
-                  "ignore_above": 256
-                }
-              }
-            },
-            "name": {
-              "type": "keyword",
-              "ignore_above": 256
-            }
-          }
-        },
         "timestamp": {
           "type": "date"
         }

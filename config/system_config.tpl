@@ -7,6 +7,8 @@ elasticsearch:
     monitored: true
     reserved: true
     endpoint: $[[CLUSTER_ENDPINT]]
+    discovery:
+      enabled: false
     basic_auth:
       username: $[[CLUSTER_USER]]
       password: $[[CLUSTER_PASS]]

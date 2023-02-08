@@ -16,8 +16,8 @@ func (module *Module) Name() string {
 
 func (module *Module) Setup() {
 	module.BulkResultIndexName = ".infini_async_bulk_results"
-	_, err := env.ParseConfig("migration", module)
-	if err != nil {
+	exists, err := env.ParseConfig("migration", module)
+	if exists && err != nil {
 		log.Error(err)
 	}
 	InitAPI(module.BulkResultIndexName)

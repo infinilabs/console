@@ -5,9 +5,9 @@
 package migration
 
 import (
+	log "github.com/cihub/seelog"
 	"infini.sh/framework/core/env"
 	"infini.sh/framework/core/module"
-	log "src/github.com/cihub/seelog"
 )
 
 func (module *Module) Name() string {

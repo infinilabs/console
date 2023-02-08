@@ -7,6 +7,7 @@ package migration
 import (
 	"context"
 	"fmt"
+	"github.com/buger/jsonparser"
 	log "github.com/cihub/seelog"
 	"infini.sh/framework/core/agent"
 	"infini.sh/framework/core/api"
@@ -19,7 +20,6 @@ import (
 	task2 "infini.sh/framework/core/task"
 	"infini.sh/framework/core/util"
 	"net/http"
-	"src/github.com/buger/jsonparser"
 	"strconv"
 	"strings"
 	"time"

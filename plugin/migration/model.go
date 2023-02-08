@@ -13,14 +13,15 @@ type ElasticDataConfig struct {
 	Settings struct {
 		ParallelIndices      int `json:"parallel_indices"`
 		ParallelTaskPerIndex int `json:"parallel_task_per_index"`
-		ScrollSize           struct {
+		Scroll           struct {
+			SliceSize int `json:"slice_size"`
 			Docs int    `json:"docs"`
 			Timeout   string `json:"timeout"`
-		} `json:"scroll_size"`
-		BulkSize struct {
+		} `json:"scroll"`
+		Bulk struct {
 			Docs        int `json:"docs"`
 			StoreSizeInMB int `json:"store_size_in_mb"`
-		} `json:"bulk_size"`
+		} `json:"bulk"`
 		Execution ExecutionConfig `json:"execution"`
 	} `json:"settings"`
 	Creator struct {

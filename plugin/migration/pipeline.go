@@ -122,7 +122,7 @@ func (p *ClusterMigrationProcessor) Process(ctx *pipeline.Context) error {
 				Action: task2.LogAction{
 					Parameters: t.Parameters,
 				},
-				Message: fmt.Sprintf("starting to execute task [%s]", t.ID),
+				Content: fmt.Sprintf("starting to execute task [%s]", t.ID),
 				Timestamp: time.Now().UTC(),
 			})
 			err = p.SplitMigrationTask(&t)
@@ -137,12 +137,12 @@ func (p *ClusterMigrationProcessor) Process(ctx *pipeline.Context) error {
 						Success: true,
 					},
 				},
-				Message: fmt.Sprintf("success to split task [%s]", t.ID),
+				Content: fmt.Sprintf("success to split task [%s]", t.ID),
 				Timestamp: time.Now().UTC(),
 			}
 			if err != nil {
 				taskLog.Status = task2.StatusError
-				taskLog.Message = fmt.Sprintf("failed to split task [%s]: %v", t.ID, err)
+				taskLog.Content = fmt.Sprintf("failed to split task [%s]: %v", t.ID, err)
 				taskLog.Action.Result = &task2.LogResult{
 					Success: false,
 					Error: err.Error(),

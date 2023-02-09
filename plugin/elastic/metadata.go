@@ -26,7 +26,6 @@ import (
 type MetadataProcessor struct {
 	config               *Config
 	runningConfigs       map[string]*queue.QueueConfig
-	bulkSizeInByte       int
 	wg                   sync.WaitGroup
 	inFlightQueueConfigs sync.Map
 	detectorRunning      bool
@@ -38,10 +37,6 @@ type Config struct {
 
 	IdleTimeoutInSecond  int `config:"idle_timeout_in_seconds"`
 	MaxConnectionPerHost int `config:"max_connection_per_node"`
-
-	BulkSizeInKb     int `config:"bulk_size_in_kb,omitempty"`
-	BulkSizeInMb     int `config:"bulk_size_in_mb,omitempty"`
-	BulkMaxDocsCount int `config:"bulk_max_docs_count,omitempty"`
 
 	Queues map[string]interface{} `config:"queues,omitempty"`
 
@@ -74,7 +69,6 @@ func New(c *config.Config) (pipeline.Processor, error) {
 		MaxWorkers:           10,
 		MaxConnectionPerHost: 1,
 		IdleTimeoutInSecond:  5,
-		BulkSizeInMb:         10,
 		DetectIntervalInMs:   10000,
 		Queues:               map[string]interface{}{},
 
@@ -106,11 +100,6 @@ func New(c *config.Config) (pipeline.Processor, error) {
 		config:               &cfg,
 		runningConfigs:       map[string]*queue.QueueConfig{},
 		inFlightQueueConfigs: sync.Map{},
-	}
-
-	runner.bulkSizeInByte = 1048576 * runner.config.BulkSizeInMb
-	if runner.config.BulkSizeInKb > 0 {
-		runner.bulkSizeInByte = 1024 * runner.config.BulkSizeInKb
 	}
 
 	runner.wg = sync.WaitGroup{}

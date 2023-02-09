@@ -27,7 +27,6 @@ import (
 type ActivityProcessor struct {
 	config               *Config
 	runningConfigs       map[string]*queue.QueueConfig
-	bulkSizeInByte       int
 	wg                   sync.WaitGroup
 	inFlightQueueConfigs sync.Map
 	detectorRunning      bool
@@ -44,7 +43,6 @@ func NewActivityProcessor(c *config.Config) (pipeline.Processor, error) {
 		MaxWorkers:           10,
 		MaxConnectionPerHost: 1,
 		IdleTimeoutInSecond:  5,
-		BulkSizeInMb:         10,
 		DetectIntervalInMs:   10000,
 		Queues:               map[string]interface{}{},
 
@@ -76,11 +74,6 @@ func NewActivityProcessor(c *config.Config) (pipeline.Processor, error) {
 		config:               &cfg,
 		runningConfigs:       map[string]*queue.QueueConfig{},
 		inFlightQueueConfigs: sync.Map{},
-	}
-
-	runner.bulkSizeInByte = 1048576 * runner.config.BulkSizeInMb
-	if runner.config.BulkSizeInKb > 0 {
-		runner.bulkSizeInByte = 1024 * runner.config.BulkSizeInKb
 	}
 
 	runner.wg = sync.WaitGroup{}

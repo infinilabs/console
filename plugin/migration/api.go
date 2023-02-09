@@ -7,6 +7,7 @@ package migration
 import (
 	"context"
 	"fmt"
+	"github.com/buger/jsonparser"
 	log "github.com/cihub/seelog"
 	"infini.sh/framework/core/agent"
 	"infini.sh/framework/core/api"
@@ -25,8 +26,10 @@ import (
 )
 
 
-func InitAPI() {
-	handler := APIHandler{}
+func InitAPI(bulkResultIndexName string) {
+	handler := APIHandler{
+		bulkResultIndexName: bulkResultIndexName,
+	}
 	api.HandleAPIMethod(api.GET, "/migration/data/_search",  handler.RequireLogin(handler.searchDataMigrationTask))
 	api.HandleAPIMethod(api.POST, "/migration/data", handler.RequireLogin(handler.createDataMigrationTask))
 	api.HandleAPIMethod(api.POST, "/migration/data/_validate",  handler.RequireLogin(handler.validateDataMigration))
@@ -44,6 +47,7 @@ func InitAPI() {
 
 type APIHandler struct {
 	api.Handler
+	bulkResultIndexName string
 }
 
 func (h *APIHandler) createDataMigrationTask(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
@@ -342,7 +346,7 @@ func (h *APIHandler) startDataMigration(w http.ResponseWriter, req *http.Request
 }
 
 func getNodeEndpoint(nodeID string) (string, error){
-	indexName := ".infini_agent,.infini_gateway-instance"
+	indexName := ".infini_agent,.infini_instance"
 	query := util.MapStr{
 		"size": 1,
 		"query": util.MapStr{
@@ -847,7 +851,13 @@ func (h *APIHandler) getDataMigrationTaskOfIndex(w http.ResponseWriter, req *htt
 		return
 	}
 
-	var durationInMS = indexTask.GetDurationInMS()
+	var durationInMS int64
+	if indexTask.StartTimeInMillis > 0 {
+		durationInMS = time.Now().UnixMilli() - indexTask.StartTimeInMillis
+		if indexTask.CompletedTime != nil && indexTask.Status == task2.StatusComplete {
+			durationInMS = indexTask.CompletedTime.UnixMilli() - indexTask.StartTimeInMillis
+		}
+	}
 	var completedTime int64
 	if indexTask.CompletedTime != nil {
 		completedTime = indexTask.CompletedTime.UnixMilli()
@@ -917,12 +927,9 @@ func (h *APIHandler) getDataMigrationTaskOfIndex(w http.ResponseWriter, req *htt
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	var (
-		partitionTaskInfos []util.MapStr
-		completedPartitions int
-	)
-	for i, row := range result.Result {
+	var ptasks = make([]task2.Task, 0, len(result.Result))
+	var ptaskIds = make([]string, 0, len(result.Result))
+	for _, row := range result.Result {
 		buf := util.MustToJSONBytes(row)
 		ptask := task2.Task{}
 		err = util.FromJSONBytes(buf, &ptask)
@@ -930,29 +937,48 @@ func (h *APIHandler) getDataMigrationTaskOfIndex(w http.ResponseWriter, req *htt
 			log.Error(err)
 			continue
 		}
+		ptasks = append(ptasks, ptask)
+		ptaskIds = append(ptaskIds, ptask.ID)
+	}
+	indexingStats, err := getIndexingStats(ptaskIds, h.bulkResultIndexName)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var (
+		partitionTaskInfos []util.MapStr
+		completedPartitions int
+	)
+	for i, ptask := range ptasks {
 		start, _ := util.MapStr(ptask.Parameters).GetValue("pipeline.config.source.start")
 		end, _ := util.MapStr(ptask.Parameters).GetValue("pipeline.config.source.end")
 		if i == 0 {
 			step, _ := util.MapStr(ptask.Parameters).GetValue("pipeline.config.source.step")
 			taskInfo["step"] = step
 		}
-		durationInMS = ptask.GetDurationInMS()
+		durationInMS = 0
+		if ptask.StartTimeInMillis > 0 {
+			durationInMS = time.Now().UnixMilli() - ptask.StartTimeInMillis
+			if ptask.CompletedTime != nil && (ptask.Status == task2.StatusComplete || ptask.Status == task2.StatusError) {
+				durationInMS = ptask.CompletedTime.UnixMilli() - ptask.StartTimeInMillis
+			}
+		}
 		var (
 			scrollDocs float64
 			indexDocs float64
 		)
-		if pt, ok := stats[ptask.ID]; ok {
+		var stKey = fmt.Sprintf("scrolling_processing.%s", ptask.ID)
+		if pt, ok := stats[stKey]; ok {
 			if ptv, ok := pt.(map[string]interface{}); ok {
-				if v, ok := ptv["scroll_docs"].(float64); ok {
+				if v, ok := ptv["docs"].(float64); ok {
 					scrollDocs = v
 				}
-				if v, ok := ptv["bulk_docs.200"].(float64); ok {
-					indexDocs = v
-				}
-				if v, ok := ptv["bulk_docs.201"].(float64); ok {
-					indexDocs += v
-				}
 			}
+		}
+		if v, ok := indexingStats[ptask.ID]; ok {
+			indexDocs = v
 		}
 		var subCompletedTime int64
 		if ptask.CompletedTime != nil {
@@ -1151,4 +1177,51 @@ func (h *APIHandler) validateMultiType(w http.ResponseWriter, req *http.Request,
 	h.WriteJSON(w, util.MapStr{
 		"result": typeInfo,
 	} , http.StatusOK)
+}
+
+func getIndexingStats(taskIDs []string, indexName string) (map[string]float64, error){
+	if len(taskIDs) == 0 {
+		return nil, fmt.Errorf("taskIDs should not be empty")
+	}
+	q := util.MapStr{
+		"size": 0,
+		"query": util.MapStr{
+			"terms": util.MapStr{
+				"labels.queue": taskIDs,
+			},
+		},
+		"aggs": util.MapStr{
+			"gp_task": util.MapStr{
+				"terms": util.MapStr{
+					"field": "labels.queue",
+					"size": len(taskIDs),
+				},
+				"aggs": util.MapStr{
+					"success_count": util.MapStr{
+						"sum": util.MapStr{
+							"field": "bulk_results.summary.success.count",
+						},
+					},
+				},
+			},
+		},
+	}
+	query := orm.Query{
+		RawQuery: util.MustToJSONBytes(q),
+		IndexName: indexName,
+	}
+	err, result := orm.Search(nil, &query)
+	if err != nil {
+		return nil, fmt.Errorf("query indexing stats error: %w", err)
+	}
+	statsM := map[string]float64{}
+	jsonparser.ArrayEach(result.Raw, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+		key, _ := jsonparser.GetString(value, "key")
+		successCount, err := jsonparser.GetFloat(value, "success_count", "value")
+		if err != nil {
+			log.Error(err)
+		}
+		statsM[key] = successCount
+	}, "aggregations", "gp_task", "buckets")
+	return statsM, nil
 }

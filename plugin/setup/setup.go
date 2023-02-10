@@ -399,7 +399,15 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 
 		if dslWriteSuccess{
 			lines := util.FileGetLines(dslFile)
-			_,err,_:=replay.ReplayLines(pipeline.AcquireContext(),lines,cfg.Schema,cfg.Host)
+			var (
+				username string
+				password string
+			)
+			if cfg.BasicAuth != nil {
+				username = cfg.BasicAuth.Username
+				password = cfg.BasicAuth.Password
+			}
+			_,err,_:=replay.ReplayLines(pipeline.AcquireContext(),lines,cfg.Schema,cfg.Host,username,password)
 			if err!=nil{
 				log.Error(err)
 			}

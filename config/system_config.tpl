@@ -11,7 +11,7 @@ elasticsearch:
       enabled: false
     basic_auth:
       username: $[[CLUSTER_USER]]
-      password: $[[CLUSTER_PASS]]
+      password: $[[keystore.SYSTEM_CLUSTER_PASS]]
 
 elastic.elasticsearch: $[[CLUSTER_ID]]
 

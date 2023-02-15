@@ -503,7 +503,10 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		}
 
 	}
-	keystore.SetValue("SYSTEM_CLUSTER_PASS", []byte(cfg.BasicAuth.Password))
+	err = keystore.SetValue("SYSTEM_CLUSTER_PASS", []byte(cfg.BasicAuth.Password))
+	if err!=nil{
+		panic(err)
+	}
 
 
 	//save to local file

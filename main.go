@@ -11,12 +11,10 @@ import (
 	_ "infini.sh/console/plugin"
 	alerting2 "infini.sh/console/service/alerting"
 	"infini.sh/framework"
-	config2 "infini.sh/framework/core/config"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/env"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/insight"
-	"infini.sh/framework/core/keystore"
 	_ "infini.sh/framework/core/log"
 	"infini.sh/framework/core/module"
 	"infini.sh/framework/core/orm"
@@ -56,12 +54,6 @@ func main() {
 
 	app := framework.NewApp("console", "The easiest way to operate your own search platform.",
 		config.Version, config.BuildNumber, config.LastCommitLog, config.BuildDate, config.EOLDate, terminalHeader, terminalFooter)
-
-	ksResolver, err := keystore.GetVariableResolver()
-	if err != nil {
-		panic(err)
-	}
-	config2.RegisterOption("keystore", ksResolver)
 
 	app.Init(nil)
 	defer app.Shutdown()

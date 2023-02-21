@@ -70,6 +70,27 @@ func InvokeSetupCallback()  {
 }
 
 func (module *Module) Start() error {
+	credential.RegisterChangeEvent(func(cred *credential.Credential) {
+		if cred == nil {
+			return
+		}
+		sysClusterID := global.MustLookupString(elastic.GlobalSystemElasticsearchID)
+		conf := elastic.GetConfig(sysClusterID)
+		if conf.CredentialID != cred.ID {
+			return
+		}
+		bv, err := cred.Decode()
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		if basicAuth, ok := bv.(elastic.BasicAuth); ok {
+			err = keystore.SetValue("SYSTEM_CLUSTER_PASS", []byte(basicAuth.Password))
+			if err != nil {
+				log.Error(err)
+			}
+		}
+	})
 	return nil
 }
 func (module *Module) Stop() error {

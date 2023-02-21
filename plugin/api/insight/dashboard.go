@@ -5,13 +5,14 @@
 package insight
 
 import (
+	"net/http"
+	"strconv"
+
+	log "github.com/cihub/seelog"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/insight"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
-	"net/http"
-	log "src/github.com/cihub/seelog"
-	"strconv"
 )
 
 func (h *InsightAPI) createDashboard(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -145,10 +146,10 @@ func (h *InsightAPI) deleteDashboard(w http.ResponseWriter, req *http.Request, p
 
 func (h *InsightAPI) searchDashboard(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	var (
-		keyword        = h.GetParameterOrDefault(req, "keyword", "")
-		strSize     = h.GetParameterOrDefault(req, "size", "20")
-		strFrom     = h.GetParameterOrDefault(req, "from", "0")
-		clusterID        = h.GetParameter(req, "cluster_id")
+		keyword   = h.GetParameterOrDefault(req, "keyword", "")
+		strSize   = h.GetParameterOrDefault(req, "size", "20")
+		strFrom   = h.GetParameterOrDefault(req, "from", "0")
+		clusterID = h.GetParameter(req, "cluster_id")
 	)
 	size, _ := strconv.Atoi(strSize)
 	if size <= 0 {
@@ -163,8 +164,8 @@ func (h *InsightAPI) searchDashboard(w http.ResponseWriter, req *http.Request, p
 	if keyword != "" {
 		must = append(must, util.MapStr{
 			"query_string": util.MapStr{
-				"default_field":"*",
-				"query": keyword,
+				"default_field": "*",
+				"query":         keyword,
 			},
 		})
 	}

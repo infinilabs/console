@@ -6,14 +6,15 @@ package insight
 
 import (
 	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
+
+	log "github.com/cihub/seelog"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/insight"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
-	"net/http"
-	log "src/github.com/cihub/seelog"
-	"strconv"
-	"strings"
 )
 
 func (h *InsightAPI) createVisualization(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -131,7 +132,7 @@ func (h *InsightAPI) deleteVisualization(w http.ResponseWriter, req *http.Reques
 func (h *InsightAPI) searchVisualization(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 
 	var (
-		keyword        = h.GetParameterOrDefault(req, "keyword", "")
+		keyword     = h.GetParameterOrDefault(req, "keyword", "")
 		queryDSL    = `{"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d}`
 		strSize     = h.GetParameterOrDefault(req, "size", "20")
 		strFrom     = h.GetParameterOrDefault(req, "from", "0")

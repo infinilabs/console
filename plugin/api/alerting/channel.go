@@ -6,14 +6,15 @@ package alerting
 
 import (
 	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
+
+	log "github.com/cihub/seelog"
 	"infini.sh/console/model/alerting"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
-	"net/http"
-	log "src/github.com/cihub/seelog"
-	"strconv"
-	"strings"
 )
 
 func (h *AlertAPI) createChannel(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -140,7 +141,7 @@ func (h *AlertAPI) deleteChannel(w http.ResponseWriter, req *http.Request, ps ht
 	}
 
 	h.WriteJSON(w, util.MapStr{
-		"ids":  reqBody.ChannelIDs  ,
+		"ids":    reqBody.ChannelIDs,
 		"result": "deleted",
 	}, 200)
 }
@@ -148,7 +149,7 @@ func (h *AlertAPI) deleteChannel(w http.ResponseWriter, req *http.Request, ps ht
 func (h *AlertAPI) searchChannel(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 
 	var (
-		keyword        = h.GetParameterOrDefault(req, "keyword", "")
+		keyword     = h.GetParameterOrDefault(req, "keyword", "")
 		queryDSL    = `{"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d}`
 		strSize     = h.GetParameterOrDefault(req, "size", "20")
 		strFrom     = h.GetParameterOrDefault(req, "from", "0")

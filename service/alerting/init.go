@@ -5,12 +5,13 @@
 package alerting
 
 import (
+	"time"
+
+	log "github.com/cihub/seelog"
 	"infini.sh/console/model/alerting"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/task"
 	"infini.sh/framework/core/util"
-	log "src/github.com/cihub/seelog"
-	"time"
 )
 
 func InitTasks() error {
@@ -36,10 +37,10 @@ func InitTasks() error {
 		}
 		eng := GetEngine(rule.Resource.Type)
 		task.RegisterScheduleTask(task.ScheduleTask{
-			ID: rule.ID,
-			Interval: rule.Schedule.Interval,
+			ID:          rule.ID,
+			Interval:    rule.Schedule.Interval,
 			Description: rule.Metrics.Expression,
-			Task: eng.GenerateTask(*rule),
+			Task:        eng.GenerateTask(*rule),
 		})
 		task.StartTask(rule.ID)
 	}
@@ -68,8 +69,8 @@ func getRuleLastTermTime() (map[string]time.Time, error) {
 		},
 	}
 	q := &orm.Query{
-		RawQuery: util.MustToJSONBytes(query),
-		Size: 1000,
+		RawQuery:      util.MustToJSONBytes(query),
+		Size:          1000,
 		WildcardIndex: true,
 	}
 	err, result := orm.Search(alerting.Alert{}, q)
@@ -93,5 +94,5 @@ func getRuleLastTermTime() (map[string]time.Time, error) {
 
 type ruleTime struct {
 	Created time.Time `json:"created"`
-	RuleID string `json:"rule_id"`
+	RuleID  string    `json:"rule_id"`
 }

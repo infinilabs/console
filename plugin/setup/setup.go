@@ -112,7 +112,7 @@ type SetupRequest struct {
 	CredentialSecret string `json:"credential_secret"`
 }
 
-var tempID="infini_default_system_cluster"
+var GlobalSystemElasticsearchID="infini_default_system_cluster"
 
 const VersionTooOld ="elasticsearch_version_too_old"
 const IndicesExists ="elasticsearch_indices_exists"
@@ -276,7 +276,7 @@ func (module *Module) initTempClient(r *http.Request) (error, elastic.API,SetupR
 	}
 
 
-	cfg.ID = tempID
+	cfg.ID = GlobalSystemElasticsearchID
 	cfg.Name = "INFINI_SYSTEM ("+util.PickRandomName()+")"
 	elastic.InitMetadata(&cfg, true)
 	client, err := elastic1.InitClientWithConfig(cfg)
@@ -284,7 +284,7 @@ func (module *Module) initTempClient(r *http.Request) (error, elastic.API,SetupR
 		return err,nil,request
 	}
 
-	global.Register(elastic.GlobalSystemElasticsearchID,tempID)
+	global.Register(elastic.GlobalSystemElasticsearchID,GlobalSystemElasticsearchID)
 
 	elastic.UpdateConfig(cfg)
 	elastic.UpdateClient(cfg, client)
@@ -535,7 +535,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	_,err=util.FilePutContent(file,fmt.Sprintf("configs.template:\n  - name: \"system\"\n    path: ./config/system_config.tpl\n    variable:\n      " +
 		"CLUSTER_ID: %v\n      CLUSTER_ENDPINT: \"%v\"\n      " +
 		"CLUSTER_USER: \"%v\"\n      CLUSTER_VER: \"%v\"\n      INDEX_PREFIX: \"%v\"",
-	tempID,cfg.Endpoint,cfg.BasicAuth.Username,cfg.Version,cfg1.IndexPrefix	))
+		GlobalSystemElasticsearchID,cfg.Endpoint,cfg.BasicAuth.Username,cfg.Version,cfg1.IndexPrefix	))
 	if err!=nil{
 		panic(err)
 	}

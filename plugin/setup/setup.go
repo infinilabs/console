@@ -486,7 +486,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		}
 
 		//保存默认集群
-		err=orm.Save(nil, &toSaveCfg)
+		err=orm.Create(nil, &toSaveCfg)
 		if err!=nil{
 			panic(err)
 		}
@@ -510,7 +510,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 				Name: rbac.RoleAdminName,
 			})
 			user.Roles=role
-			err=orm.Save(nil, &user)
+			err=orm.Create(nil, &user)
 			if err!=nil{
 				panic(err)
 			}

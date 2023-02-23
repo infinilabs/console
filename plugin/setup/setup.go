@@ -2,15 +2,19 @@ package task
 
 import (
 	"bytes"
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"golang.org/x/crypto/bcrypt"
 	"infini.sh/framework/core/api"
 	"infini.sh/framework/core/api/rbac"
 	httprouter "infini.sh/framework/core/api/router"
+	"infini.sh/framework/core/credential"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/env"
 	"infini.sh/framework/core/errors"
 	"infini.sh/framework/core/global"
+	"infini.sh/framework/core/keystore"
 	"infini.sh/framework/core/module"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/pipeline"
@@ -66,6 +70,27 @@ func InvokeSetupCallback()  {
 }
 
 func (module *Module) Start() error {
+	credential.RegisterChangeEvent(func(cred *credential.Credential) {
+		if cred == nil {
+			return
+		}
+		sysClusterID := global.MustLookupString(elastic.GlobalSystemElasticsearchID)
+		conf := elastic.GetConfig(sysClusterID)
+		if conf.CredentialID != cred.ID {
+			return
+		}
+		bv, err := cred.Decode()
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		if basicAuth, ok := bv.(elastic.BasicAuth); ok {
+			err = keystore.SetValue("SYSTEM_CLUSTER_PASS", []byte(basicAuth.Password))
+			if err != nil {
+				log.Error(err)
+			}
+		}
+	})
 	return nil
 }
 func (module *Module) Stop() error {
@@ -84,9 +109,10 @@ type SetupRequest struct {
 	Skip bool `json:"skip"`
 	BootstrapUsername string `json:"bootstrap_username"`
 	BootstrapPassword string `json:"bootstrap_password"`
+	CredentialSecret string `json:"credential_secret"`
 }
 
-var tempID="infini_default_system_cluster"
+var GlobalSystemElasticsearchID="infini_default_system_cluster"
 
 const VersionTooOld ="elasticsearch_version_too_old"
 const IndicesExists ="elasticsearch_indices_exists"
@@ -250,7 +276,7 @@ func (module *Module) initTempClient(r *http.Request) (error, elastic.API,SetupR
 	}
 
 
-	cfg.ID = tempID
+	cfg.ID = GlobalSystemElasticsearchID
 	cfg.Name = "INFINI_SYSTEM ("+util.PickRandomName()+")"
 	elastic.InitMetadata(&cfg, true)
 	client, err := elastic1.InitClientWithConfig(cfg)
@@ -258,7 +284,7 @@ func (module *Module) initTempClient(r *http.Request) (error, elastic.API,SetupR
 		return err,nil,request
 	}
 
-	global.Register(elastic.GlobalSystemElasticsearchID,tempID)
+	global.Register(elastic.GlobalSystemElasticsearchID,GlobalSystemElasticsearchID)
 
 	elastic.UpdateConfig(cfg)
 	elastic.UpdateClient(cfg, client)
@@ -324,6 +350,9 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	if err!=nil{
 		panic(err)
 	}
+	if request.CredentialSecret == "" {
+		panic("invalid credential secret")
+	}
 
 	if cfg1.IndexPrefix==""{
 		cfg1.IndexPrefix=".infini_"
@@ -346,6 +375,16 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	//处理ORM
 	handler := elastic2.ElasticORM{Client: client, Config:cfg1 }
 	orm.Register("elastic_setup_"+util.GetUUID(), handler)
+	//生成凭据并保存
+	h := md5.New()
+	rawSecret := []byte(request.CredentialSecret)
+	h.Write(rawSecret)
+	secret := make([]byte, 32)
+	hex.Encode(secret, h.Sum(nil))
+	err = credential.InitSecret(nil, secret)
+	if err != nil {
+		panic(err)
+	}
 
 	if !request.Skip{
 		//处理模版
@@ -418,8 +457,36 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		//init security
 		security.InitSecurity()
 
+
+		toSaveCfg := cfg
+		if request.Cluster.Username != "" || request.Cluster.Password != "" {
+			cred := credential.Credential{
+				Name: "INFINI_SYSTEM",
+				Type: credential.BasicAuth,
+				Tags: []string{"infini", "system"},
+				Payload: map[string]interface{}{
+					"basic_auth": map[string]interface{}{
+						"username": request.Cluster.Username,
+						"password": request.Cluster.Password,
+					},
+				},
+			}
+			cred.ID = util.GetUUID()
+			err = cred.Encode()
+			if err != nil {
+				panic(err)
+			}
+			toSaveCfg.CredentialID = cred.ID
+			cfg.CredentialID = cred.ID
+			err = orm.Save(nil, &cred)
+			if err!=nil{
+				panic(err)
+			}
+			toSaveCfg.BasicAuth = nil
+		}
+
 		//保存默认集群
-		err=orm.Save(nil, &cfg)
+		err=orm.Create(nil, &toSaveCfg)
 		if err!=nil{
 			panic(err)
 		}
@@ -443,7 +510,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 				Name: rbac.RoleAdminName,
 			})
 			user.Roles=role
-			err=orm.Save(nil, &user)
+			err=orm.Create(nil, &user)
 			if err!=nil{
 				panic(err)
 			}
@@ -457,14 +524,18 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		}
 
 	}
+	err = keystore.SetValue("SYSTEM_CLUSTER_PASS", []byte(cfg.BasicAuth.Password))
+	if err!=nil{
+		panic(err)
+	}
 
 
 	//save to local file
 	file:=path.Join(global.Env().GetConfigDir(),"system_config.yml")
 	_,err=util.FilePutContent(file,fmt.Sprintf("configs.template:\n  - name: \"system\"\n    path: ./config/system_config.tpl\n    variable:\n      " +
 		"CLUSTER_ID: %v\n      CLUSTER_ENDPINT: \"%v\"\n      " +
-		"CLUSTER_USER: \"%v\"\n      CLUSTER_PASS: \"%v\"\n      CLUSTER_VER: \"%v\"\n      INDEX_PREFIX: \"%v\"",
-	tempID,cfg.Endpoint,cfg.BasicAuth.Username,cfg.BasicAuth.Password,cfg.Version,cfg1.IndexPrefix	))
+		"CLUSTER_USER: \"%v\"\n      CLUSTER_VER: \"%v\"\n      INDEX_PREFIX: \"%v\"",
+		GlobalSystemElasticsearchID,cfg.Endpoint,cfg.BasicAuth.Username,cfg.Version,cfg1.IndexPrefix	))
 	if err!=nil{
 		panic(err)
 	}

@@ -6,6 +6,7 @@ import (
 	"infini.sh/console/plugin/api/gateway"
 	"infini.sh/console/plugin/api/index_management"
 	"infini.sh/console/plugin/api/insight"
+	"infini.sh/console/plugin/api/layout"
 	"infini.sh/framework/core/api"
 	"infini.sh/framework/core/api/rbac/enum"
 	"path"
@@ -66,4 +67,5 @@ func Init(cfg *config.AppConfig) {
 
 	gateway.InitAPI()
 	insight.InitAPI()
+	layout.InitAPI()
 }

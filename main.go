@@ -133,6 +133,7 @@ func main() {
 			orm.RegisterSchemaWithIndexName(insight.Dashboard{}, "dashboard")
 			orm.RegisterSchemaWithIndexName(task1.Task{}, "task")
 			orm.RegisterSchemaWithIndexName(task1.Log{}, "task-log")
+			orm.RegisterSchemaWithIndexName(model.Layout{}, "layout")
 			api.RegisterSchema()
 
 			if global.Env().SetupRequired() {

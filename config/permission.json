@@ -401,6 +401,9 @@
     {"name": "scroll.*", "methods": ["*"],
       "path": "/_search/scroll*"
     },
+    {"name": "scroll.search", "methods": ["get", "post"],
+      "path": "/_search/scroll"
+    },
     {"name": "scroll.delete", "methods": ["delete"],
       "path": "/_search/scroll/:scroll_id"
     },

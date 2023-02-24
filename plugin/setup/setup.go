@@ -516,13 +516,6 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 			}
 		}
 
-
-		//disable builtin auth
-		err=api.DisableBuiltinUserAdmin()
-		if err!=nil{
-			panic(err)
-		}
-
 	}
 	err = keystore.SetValue("SYSTEM_CLUSTER_PASS", []byte(cfg.BasicAuth.Password))
 	if err!=nil{

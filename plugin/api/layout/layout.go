@@ -148,9 +148,16 @@ func (h *LayoutAPI) searchLayout(w http.ResponseWriter, req *http.Request, ps ht
 		queryDSL    = `{"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d}`
 		strSize     = h.GetParameterOrDefault(req, "size", "20")
 		strFrom     = h.GetParameterOrDefault(req, "from", "0")
+		viewID     = h.GetParameterOrDefault(req, "view_id", "")
 		mustBuilder = &strings.Builder{}
 	)
+	if viewID != "" {
+		mustBuilder.WriteString(fmt.Sprintf(`{"term":{"view_id":{"value":"%s"}}}`, viewID))
+	}
 	if keyword != "" {
+		if mustBuilder.Len() > 0 {
+			mustBuilder.WriteString(",")
+		}
 		mustBuilder.WriteString(fmt.Sprintf(`{"query_string":{"default_field":"*","query": "%s"}}`, keyword))
 	}
 	size, _ := strconv.Atoi(strSize)

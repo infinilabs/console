@@ -6,6 +6,7 @@ package layout
 
 import (
 	"infini.sh/framework/core/api"
+	"infini.sh/framework/core/api/rbac/enum"
 )
 
 type LayoutAPI struct {
@@ -14,9 +15,9 @@ type LayoutAPI struct {
 
 func InitAPI() {
 	layoutAPI := LayoutAPI{}
-	api.HandleAPIMethod(api.GET, "/layout/:layout_id", layoutAPI.getLayout)
-	api.HandleAPIMethod(api.POST, "/layout", layoutAPI.RequireLogin(layoutAPI.createLayout))
-	api.HandleAPIMethod(api.PUT, "/layout/:layout_id", layoutAPI.updateLayout)
-	api.HandleAPIMethod(api.DELETE, "/layout/:layout_id", layoutAPI.deleteLayout)
-	api.HandleAPIMethod(api.GET, "/layout/_search", layoutAPI.searchLayout)
+	api.HandleAPIMethod(api.GET, "/layout/:layout_id", layoutAPI.RequirePermission(layoutAPI.getLayout, enum.PermissionLayoutRead))
+	api.HandleAPIMethod(api.POST, "/layout", layoutAPI.RequirePermission(layoutAPI.createLayout, enum.PermissionLayoutWrite))
+	api.HandleAPIMethod(api.PUT, "/layout/:layout_id", layoutAPI.RequirePermission(layoutAPI.updateLayout, enum.PermissionLayoutWrite))
+	api.HandleAPIMethod(api.DELETE, "/layout/:layout_id", layoutAPI.RequirePermission(layoutAPI.deleteLayout, enum.PermissionLayoutWrite))
+	api.HandleAPIMethod(api.GET, "/layout/_search", layoutAPI.RequirePermission(layoutAPI.searchLayout, enum.PermissionLayoutRead))
 }

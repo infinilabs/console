@@ -72,7 +72,7 @@ func checkElasticsearchRequirements() error{
 		return fmt.Errorf("check system cluster requirement error: %v, got response: %s", err, string(result.Body))
 	}
 	distribution, _ := jsonparser.GetString(result.Body, "version", "distribution")
-	if distribution == "easysearch" || distribution == "opensearch" {
+	if distribution == elastic.Easysearch || distribution == elastic.Opensearch {
 		return nil
 	} else if distribution != "" {
 		return fmt.Errorf("unkonw cluster distribution: %v", distribution)

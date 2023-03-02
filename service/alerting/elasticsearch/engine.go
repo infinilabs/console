@@ -57,17 +57,17 @@ func (engine *Engine) GenerateQuery(rule *alerting.Rule, filterParam *alerting.F
 			return nil, err
 		}
 	}
-	targetESVersion := elastic.GetMetadata(rule.Resource.ID).Config.Version
+	verInfo := elastic.GetClient(rule.Resource.ID).GetVersion()
 	var periodInterval = rule.Metrics.BucketSize
 	if filterParam != nil && filterParam.BucketSize != "" {
 		periodInterval =  filterParam.BucketSize
 	}
 
-	if targetESVersion==""{
+	if verInfo.Number==""{
 		panic("invalid version")
 	}
 
-	intervalField, err := elastic.GetDateHistogramIntervalField(targetESVersion, periodInterval )
+	intervalField, err := elastic.GetDateHistogramIntervalField(verInfo.Distribution,verInfo.Number, periodInterval )
 	if err != nil {
 		return nil, fmt.Errorf("get interval field error: %w", err)
 	}

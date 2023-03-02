@@ -118,6 +118,7 @@ var GlobalSystemElasticsearchID="infini_default_system_cluster"
 const VersionTooOld ="elasticsearch_version_too_old"
 const IndicesExists ="elasticsearch_indices_exists"
 const TemplateExists ="elasticsearch_template_exists"
+const VersionNotSupport ="unknown_cluster_version"
 
 var cfg1 elastic1.ORMConfig
 
@@ -193,9 +194,9 @@ func (module *Module) validate(w http.ResponseWriter, r *http.Request, ps httpro
 				panic(errors.Errorf("elasticsearch version(%v) should greater than v7.3", verInfo.Version.Number))
 			}
 		}
-	}else if verInfo.Version.Distribution != "easysearch" && verInfo.Version.Distribution != "opensearch" {
-		errType = VersionTooOld
-		panic(errors.Errorf("unsupport distribution (%v)", verInfo.Version.Distribution))
+	}else if verInfo.Version.Distribution != elastic.Easysearch && verInfo.Version.Distribution != elastic.Opensearch {
+		errType = VersionNotSupport
+		panic(errors.Errorf("unknown distribution (%v)", verInfo.Version.Distribution))
 	}
 	cfg1 = elastic1.ORMConfig{}
 	exist, err := env.ParseConfig("elastic.orm", &cfg1)

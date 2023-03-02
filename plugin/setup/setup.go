@@ -20,6 +20,7 @@ import (
 	"infini.sh/framework/core/pipeline"
 	"infini.sh/framework/core/util"
 	elastic2 "infini.sh/framework/modules/elastic"
+	"infini.sh/framework/modules/elastic/adapter"
 	elastic1 "infini.sh/framework/modules/elastic/common"
 	elastic3 "infini.sh/framework/modules/elastic/api"
 	"infini.sh/framework/modules/security"
@@ -174,22 +175,27 @@ func (module *Module) validate(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 
 	//validate version
-	version := client.GetVersion()
-	if version != "" {
-		ver := &util.Version{}
-		ver, err = util.ParseSemantic(version)
-		if err != nil {
-			panic(err)
-		}
-		if ver.Major() >= 7 {
-			if ver.Major() == 7 && ver.Minor() < 3 {
-				errType = VersionTooOld
-				panic(errors.Errorf("elasticsearch version(%v) should greater than v7.3", version))
+	verInfo, err := adapter.ClusterVersion(elastic.GetMetadata(cfg.ID))
+	if verInfo.Version.Distribution == "" {
+		if verInfo.Version.Number != "" {
+			ver := &util.Version{}
+			ver, err = util.ParseSemantic(verInfo.Version.Number)
+			if err != nil {
+				panic(err)
 			}
-		} else {
-			errType = VersionTooOld
-			panic(errors.Errorf("elasticsearch version(%v) should greater than v7.3", version))
+			if ver.Major() >= 7 {
+				if ver.Major() == 7 && ver.Minor() < 3 {
+					errType = VersionTooOld
+					panic(errors.Errorf("elasticsearch version(%v) should greater than v7.3", verInfo.Version.Number))
+				}
+			} else {
+				errType = VersionTooOld
+				panic(errors.Errorf("elasticsearch version(%v) should greater than v7.3", verInfo.Version.Number))
+			}
 		}
+	}else if verInfo.Version.Distribution != "easysearch" && verInfo.Version.Distribution != "opensearch" {
+		errType = VersionTooOld
+		panic(errors.Errorf("unsupport distribution (%v)", verInfo.Version.Distribution))
 	}
 	cfg1 = elastic1.ORMConfig{}
 	exist, err := env.ParseConfig("elastic.orm", &cfg1)
@@ -295,7 +301,9 @@ func (module *Module) initTempClient(r *http.Request) (error, elastic.API,SetupR
 	if health != nil {
 		cfg.RawName = health.Name
 	}
-	cfg.Version=client.GetVersion()
+	ver := client.GetVersion()
+	cfg.Version = ver.Number
+	cfg.Distribution = ver.Distribution
 
 	return err, client,request
 }

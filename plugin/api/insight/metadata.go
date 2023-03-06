@@ -65,11 +65,7 @@ func (h *InsightAPI) HandleGetPreview(w http.ResponseWriter, req *http.Request, 
 		timeFields = []string{reqBody.TimeField}
 	}
 
-	aggs := util.MapStr{
-		"doc_count": util.MapStr{
-			"value_count": util.MapStr{"field": "_id"},
-		},
-	}
+	aggs := util.MapStr{}
 
 	for _, tfield := range timeFields {
 		aggs["maxTime_"+tfield] = util.MapStr{
@@ -80,6 +76,7 @@ func (h *InsightAPI) HandleGetPreview(w http.ResponseWriter, req *http.Request, 
 		}
 	}
 	query := util.MapStr{
+		"size": 0,
 		"aggs": aggs,
 	}
 	if reqBody.Filter != nil {
@@ -96,7 +93,7 @@ func (h *InsightAPI) HandleGetPreview(w http.ResponseWriter, req *http.Request, 
 		return
 	}
 	result := util.MapStr{
-		"doc_count": searchRes.Aggregations["doc_count"].Value,
+		"doc_count": searchRes.GetTotal(),
 	}
 	tfieldsM := map[string]util.MapStr{}
 	for ak, av := range searchRes.Aggregations {

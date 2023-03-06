@@ -77,12 +77,12 @@ func checkElasticsearchRequirements() error{
 	} else if distribution != "" {
 		return fmt.Errorf("unkonw cluster distribution: %v", distribution)
 	}
-	cr, err := util.VersionCompare(versionNumber, "7.3")
+	cr, err := util.VersionCompare(versionNumber, "5.3")
 	if  err !=nil {
 		return fmt.Errorf("check system cluster requirement error: %v", err)
 	}
 	if cr == -1 {
-		return fmt.Errorf("system cluster version with distribution elasticsearch required to be version 7.3 and above, but got %s", versionNumber)
+		return fmt.Errorf("system cluster version with distribution elasticsearch required to be version 5.3 and above, but got %s", versionNumber)
 	}
 	return nil
 }

@@ -5,6 +5,8 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	log "github.com/cihub/seelog"
+	"github.com/valyala/fasttemplate"
 	"golang.org/x/crypto/bcrypt"
 	"infini.sh/framework/core/api"
 	"infini.sh/framework/core/api/rbac"
@@ -21,8 +23,8 @@ import (
 	"infini.sh/framework/core/util"
 	elastic2 "infini.sh/framework/modules/elastic"
 	"infini.sh/framework/modules/elastic/adapter"
-	elastic1 "infini.sh/framework/modules/elastic/common"
 	elastic3 "infini.sh/framework/modules/elastic/api"
+	elastic1 "infini.sh/framework/modules/elastic/common"
 	"infini.sh/framework/modules/security"
 	"infini.sh/framework/plugins/replay"
 	"io"
@@ -31,8 +33,6 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
-	"github.com/valyala/fasttemplate"
-	log "github.com/cihub/seelog"
 	"time"
 )
 
@@ -184,14 +184,12 @@ func (module *Module) validate(w http.ResponseWriter, r *http.Request, ps httpro
 			if err != nil {
 				panic(err)
 			}
-			if ver.Major() >= 7 {
-				if ver.Major() == 7 && ver.Minor() < 3 {
-					errType = VersionTooOld
-					panic(errors.Errorf("elasticsearch version(%v) should greater than v7.3", verInfo.Version.Number))
-				}
-			} else {
+			if ver.Major() == 5 && ver.Minor() < 3 {
 				errType = VersionTooOld
-				panic(errors.Errorf("elasticsearch version(%v) should greater than v7.3", verInfo.Version.Number))
+				panic(errors.Errorf("elasticsearch version(%v) should greater than v5.3", verInfo.Version.Number))
+			} else if ver.Major() < 5 {
+				errType = VersionTooOld
+				panic(errors.Errorf("elasticsearch version(%v) should greater than v5.3", verInfo.Version.Number))
 			}
 		}
 	}else if verInfo.Version.Distribution != elastic.Easysearch && verInfo.Version.Distribution != elastic.Opensearch {
@@ -402,7 +400,19 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		//处理生命周期
 		//TEMPLATE_NAME
 		//INDEX_PREFIX
-		dslTplFile:=path.Join(global.Env().GetConfigDir(),"initialization.tpl")
+		ver := elastic.GetClient(GlobalSystemElasticsearchID).GetVersion()
+		dslTplFileName := "initialization.tpl"
+		if ver.Distribution == "" {
+			majorVersion := elastic.GetClient(GlobalSystemElasticsearchID).GetMajorVersion()
+			if majorVersion == 6 {
+				dslTplFileName = "initialization_v6.tpl"
+			}else if majorVersion <= 5 {
+				dslTplFileName = "initialization_v5.tpl"
+			}
+		}
+
+
+		dslTplFile:=path.Join(global.Env().GetConfigDir(), dslTplFileName)
 		dslFile:=path.Join(global.Env().GetConfigDir(),"initialization.dsl")
 
 		if !util.FileExists(dslTplFile){
@@ -459,6 +469,10 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 			if err!=nil{
 				log.Error(err)
 			}
+		}
+
+		if err != nil {
+			panic(err)
 		}
 
 		//处理索引

@@ -177,7 +177,7 @@ func (module *Module) validate(w http.ResponseWriter, r *http.Request, ps httpro
 
 	//validate version
 	verInfo, err := adapter.ClusterVersion(elastic.GetMetadata(cfg.ID))
-	if verInfo.Version.Distribution == "" {
+	if verInfo.Version.Distribution == elastic.Elasticsarch {
 		if verInfo.Version.Number != "" {
 			ver := &util.Version{}
 			ver, err = util.ParseSemantic(verInfo.Version.Number)

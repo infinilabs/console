@@ -24,7 +24,7 @@ func bootstrapRequirementCheck() error{
 
 
 func checkElasticsearchRequirements() error{
-	log.Trace("start to check elasticsearch requirement")
+	log.Trace("start to check system cluster requirement")
 	var esConfigs = []elastic.ElasticsearchConfig{}
 	ok, err := env.ParseConfig("elasticsearch", &esConfigs)
 	if err != nil {
@@ -37,7 +37,7 @@ func checkElasticsearchRequirements() error{
 	elasticsearchID:=global.Lookup(elastic.GlobalSystemElasticsearchID)
 
 	if  elasticsearchID == nil||elasticsearchID=="" {
-		return fmt.Errorf("elasticsearch config in web section can not be empty")
+		return fmt.Errorf("cluster config in web section can not be empty")
 	}
 
 	esID:=elasticsearchID.(string)
@@ -50,7 +50,7 @@ func checkElasticsearchRequirements() error{
 	}
 
 	if targetEsConfig == nil {
-		return fmt.Errorf("elasticsearch config %s was not found", esID)
+		return fmt.Errorf("cluster config %s was not found", esID)
 	}
 	var req = util.NewGetRequest(targetEsConfig.Endpoint, nil)
 	if targetEsConfig.BasicAuth != nil {
@@ -59,23 +59,30 @@ func checkElasticsearchRequirements() error{
 
 	result, err := util.ExecuteRequest(req)
 	if err != nil {
-		return fmt.Errorf("check elasticsearch requirement error: %v", err)
+		return fmt.Errorf("check system cluster requirement error: %v", err)
 	}
 
 	if result==nil||result.Body==nil||len(result.Body)==0{
-		return fmt.Errorf("failed to retrive elasticsearch version info")
+		return fmt.Errorf("failed to retrive cluster version info")
 	}
+
 
 	versionNumber, err := jsonparser.GetString(result.Body, "version", "number")
 	if err != nil {
-		return fmt.Errorf("check elasticsearch requirement error: %v, got response: %s", err, string(result.Body))
+		return fmt.Errorf("check system cluster requirement error: %v, got response: %s", err, string(result.Body))
 	}
-	cr, err := util.VersionCompare(versionNumber, "7.3")
+	distribution, _ := jsonparser.GetString(result.Body, "version", "distribution")
+	if distribution == elastic.Easysearch || distribution == elastic.Opensearch {
+		return nil
+	} else if distribution != "" {
+		return fmt.Errorf("unkonw cluster distribution: %v", distribution)
+	}
+	cr, err := util.VersionCompare(versionNumber, "5.3")
 	if  err !=nil {
-		return fmt.Errorf("check elasticsearch requirement error: %v", err)
+		return fmt.Errorf("check system cluster requirement error: %v", err)
 	}
 	if cr == -1 {
-		return fmt.Errorf("elasticsearch cluster version of store data required to be version 7.3 and above, but got %s", versionNumber)
+		return fmt.Errorf("system cluster version with distribution elasticsearch required to be version 5.3 and above, but got %s", versionNumber)
 	}
 	return nil
 }

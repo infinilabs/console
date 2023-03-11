@@ -5,6 +5,8 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	log "github.com/cihub/seelog"
+	"github.com/valyala/fasttemplate"
 	"golang.org/x/crypto/bcrypt"
 	"infini.sh/framework/core/api"
 	"infini.sh/framework/core/api/rbac"
@@ -20,8 +22,9 @@ import (
 	"infini.sh/framework/core/pipeline"
 	"infini.sh/framework/core/util"
 	elastic2 "infini.sh/framework/modules/elastic"
-	elastic1 "infini.sh/framework/modules/elastic/common"
+	"infini.sh/framework/modules/elastic/adapter"
 	elastic3 "infini.sh/framework/modules/elastic/api"
+	elastic1 "infini.sh/framework/modules/elastic/common"
 	"infini.sh/framework/modules/security"
 	"infini.sh/framework/plugins/replay"
 	"io"
@@ -30,8 +33,6 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
-	"github.com/valyala/fasttemplate"
-	log "github.com/cihub/seelog"
 	"time"
 )
 
@@ -117,6 +118,7 @@ var GlobalSystemElasticsearchID="infini_default_system_cluster"
 const VersionTooOld ="elasticsearch_version_too_old"
 const IndicesExists ="elasticsearch_indices_exists"
 const TemplateExists ="elasticsearch_template_exists"
+const VersionNotSupport ="unknown_cluster_version"
 
 var cfg1 elastic1.ORMConfig
 
@@ -174,22 +176,25 @@ func (module *Module) validate(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 
 	//validate version
-	version := client.GetVersion()
-	if version != "" {
-		ver := &util.Version{}
-		ver, err = util.ParseSemantic(version)
-		if err != nil {
-			panic(err)
-		}
-		if ver.Major() >= 7 {
-			if ver.Major() == 7 && ver.Minor() < 3 {
-				errType = VersionTooOld
-				panic(errors.Errorf("elasticsearch version(%v) should greater than v7.3", version))
+	verInfo, err := adapter.ClusterVersion(elastic.GetMetadata(cfg.ID))
+	if verInfo.Version.Distribution == elastic.Elasticsarch {
+		if verInfo.Version.Number != "" {
+			ver := &util.Version{}
+			ver, err = util.ParseSemantic(verInfo.Version.Number)
+			if err != nil {
+				panic(err)
 			}
-		} else {
-			errType = VersionTooOld
-			panic(errors.Errorf("elasticsearch version(%v) should greater than v7.3", version))
+			if ver.Major() == 5 && ver.Minor() < 3 {
+				errType = VersionTooOld
+				panic(errors.Errorf("elasticsearch version(%v) should greater than v5.3", verInfo.Version.Number))
+			} else if ver.Major() < 5 {
+				errType = VersionTooOld
+				panic(errors.Errorf("elasticsearch version(%v) should greater than v5.3", verInfo.Version.Number))
+			}
 		}
+	}else if verInfo.Version.Distribution != elastic.Easysearch && verInfo.Version.Distribution != elastic.Opensearch {
+		errType = VersionNotSupport
+		panic(errors.Errorf("unknown distribution (%v)", verInfo.Version.Distribution))
 	}
 	cfg1 = elastic1.ORMConfig{}
 	exist, err := env.ParseConfig("elastic.orm", &cfg1)
@@ -295,7 +300,9 @@ func (module *Module) initTempClient(r *http.Request) (error, elastic.API,SetupR
 	if health != nil {
 		cfg.RawName = health.Name
 	}
-	cfg.Version=client.GetVersion()
+	ver := client.GetVersion()
+	cfg.Version = ver.Number
+	cfg.Distribution = ver.Distribution
 
 	return err, client,request
 }
@@ -393,7 +400,19 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		//处理生命周期
 		//TEMPLATE_NAME
 		//INDEX_PREFIX
-		dslTplFile:=path.Join(global.Env().GetConfigDir(),"initialization.tpl")
+		ver := elastic.GetClient(GlobalSystemElasticsearchID).GetVersion()
+		dslTplFileName := "initialization.tpl"
+		if ver.Distribution == "" || ver.Distribution == elastic.Elasticsarch { //elasticsearch distribution
+			majorVersion := elastic.GetClient(GlobalSystemElasticsearchID).GetMajorVersion()
+			if majorVersion == 6 {
+				dslTplFileName = "initialization_v6.tpl"
+			}else if majorVersion <= 5 {
+				dslTplFileName = "initialization_v5.tpl"
+			}
+		}
+
+
+		dslTplFile:=path.Join(global.Env().GetConfigDir(), dslTplFileName)
 		dslFile:=path.Join(global.Env().GetConfigDir(),"initialization.dsl")
 
 		if !util.FileExists(dslTplFile){
@@ -450,6 +469,10 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 			if err!=nil{
 				log.Error(err)
 			}
+		}
+
+		if err != nil {
+			panic(err)
 		}
 
 		//处理索引
@@ -527,8 +550,8 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	file:=path.Join(global.Env().GetConfigDir(),"system_config.yml")
 	_,err=util.FilePutContent(file,fmt.Sprintf("configs.template:\n  - name: \"system\"\n    path: ./config/system_config.tpl\n    variable:\n      " +
 		"CLUSTER_ID: %v\n      CLUSTER_ENDPINT: \"%v\"\n      " +
-		"CLUSTER_USER: \"%v\"\n      CLUSTER_VER: \"%v\"\n      INDEX_PREFIX: \"%v\"",
-		GlobalSystemElasticsearchID,cfg.Endpoint,cfg.BasicAuth.Username,cfg.Version,cfg1.IndexPrefix	))
+		"CLUSTER_USER: \"%v\"\n      CLUSTER_VER: \"%v\"\n      CLUSTER_DISTRIBUTION: \"%v\"\n      INDEX_PREFIX: \"%v\"",
+		GlobalSystemElasticsearchID,cfg.Endpoint,cfg.BasicAuth.Username,cfg.Version,cfg.Distribution,cfg1.IndexPrefix	))
 	if err!=nil{
 		panic(err)
 	}

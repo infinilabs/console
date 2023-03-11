@@ -402,7 +402,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		//INDEX_PREFIX
 		ver := elastic.GetClient(GlobalSystemElasticsearchID).GetVersion()
 		dslTplFileName := "initialization.tpl"
-		if ver.Distribution == "" {
+		if ver.Distribution == "" || ver.Distribution == elastic.Elasticsarch {
 			majorVersion := elastic.GetClient(GlobalSystemElasticsearchID).GetMajorVersion()
 			if majorVersion == 6 {
 				dslTplFileName = "initialization_v6.tpl"

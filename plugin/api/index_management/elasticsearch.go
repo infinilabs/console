@@ -233,3 +233,56 @@ func (handler APIHandler) getLastActiveHostCount() (int, error){
 	return len(searchRes.Aggregations["week_active_host"].Buckets), nil
 }
 
+func (handler APIHandler) ElasticsearchStatusSummaryAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
+	clusterGrp, err := handler.getGroupMetric(orm.GetIndexName(elastic.ElasticsearchConfig{}), "labels.health_status")
+	if err != nil {
+		log.Error(err)
+		handler.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	nodeGrp, err := handler.getGroupMetric(orm.GetIndexName(elastic.NodeConfig{}), "metadata.labels.status")
+	if err != nil {
+		log.Error(err)
+		handler.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	hostCount, err := handler.getMetricCount(orm.GetIndexName(elastic.NodeConfig{}), "metadata.host", nil)
+	if err != nil {
+		log.Error(err)
+		handler.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	handler.WriteJSON(w, util.MapStr{
+		"cluster": clusterGrp,
+		"node": nodeGrp,
+		"host": util.MapStr{
+			"online": hostCount,
+		},
+	}, http.StatusOK)
+}
+
+func (handler APIHandler) getGroupMetric(indexName, field string) (interface{}, error){
+	client := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
+	queryDSL := util.MapStr{
+		"size": 0,
+		"aggs": util.MapStr{
+			"group": util.MapStr{
+				"terms": util.MapStr{
+					"field": field,
+				},
+			},
+		},
+	}
+	searchRes, err := client.SearchWithRawQueryDSL(indexName, util.MustToJSONBytes(queryDSL))
+	if err != nil {
+		log.Error(err)
+		return 0, err
+	}
+	groups := map[string]interface{}{}
+	for _, bk := range searchRes.Aggregations["group"].Buckets {
+		if key, ok := bk["key"].(string); ok {
+			groups[key] = bk["doc_count"]
+		}
+	}
+	return groups, nil
+}

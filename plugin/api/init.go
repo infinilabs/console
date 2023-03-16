@@ -49,6 +49,7 @@ func Init(cfg *config.AppConfig) {
 	api.HandleAPIMethod(api.PUT, path.Join(pathPrefix, "elasticsearch/command/:cid"), handler.RequirePermission(handler.HandleSaveCommonCommandAction, enum.PermissionCommandWrite))
 	api.HandleAPIMethod(api.GET, path.Join(pathPrefix, "elasticsearch/command"), handler.RequirePermission(handler.HandleQueryCommonCommandAction, enum.PermissionCommandRead))
 	api.HandleAPIMethod(api.DELETE, path.Join(pathPrefix, "elasticsearch/command/:cid"), handler.RequirePermission(handler.HandleDeleteCommonCommandAction,enum.PermissionCommandWrite))
+	api.HandleAPIMethod(api.GET,  "/elasticsearch/overview/status", handler.RequireLogin(handler.ElasticsearchStatusSummaryAction))
 
 	//task.RegisterScheduleTask(task.ScheduleTask{
 	//	Description: "sync reindex task result",

@@ -15,6 +15,7 @@ import (
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/event"
 	"infini.sh/framework/core/global"
+	"infini.sh/framework/core/insight"
 	"infini.sh/framework/core/kv"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/queue"
@@ -62,6 +63,14 @@ func (alertAPI *AlertAPI) createRule(w http.ResponseWriter, req *http.Request, p
 		if rule.Schedule.Interval == ""{
 			rule.Schedule.Interval = "1m"
 		}
+		//filter empty metric group
+		var groups []insight.MetricGroupItem
+		for _, grp := range rule.Metrics.Groups {
+			if grp.Field != "" {
+				groups = append(groups, grp)
+			}
+		}
+		rule.Metrics.Groups = groups
 
 		err = orm.Save(nil, rule)
 		if err != nil {
@@ -281,6 +290,15 @@ func (alertAPI *AlertAPI) updateRule(w http.ResponseWriter, req *http.Request, p
 	rule.ID = id
 	rule.Created = create
 	rule.Updated = time.Now()
+
+	//filter empty metric group
+	var groups []insight.MetricGroupItem
+	for _, grp := range rule.Metrics.Groups {
+		if grp.Field != "" {
+			groups = append(groups, grp)
+		}
+	}
+	rule.Metrics.Groups = groups
 
 	err = orm.Update(nil, rule)
 	if err != nil {

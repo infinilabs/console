@@ -385,6 +385,7 @@ func extractSomeValue(v interface{}) interface{} {
 		for _, v := range vm {
 			return extractSomeValue(v)
 		}
+		return nil
 	}
 	return v
 }

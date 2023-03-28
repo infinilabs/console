@@ -465,7 +465,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 				username = cfg.BasicAuth.Username
 				password = cfg.BasicAuth.Password
 			}
-			_,err,_:=replay.ReplayLines(pipeline.AcquireContext(),lines,cfg.Schema,cfg.Host,username,password)
+			_,err,_:=replay.ReplayLines(pipeline.AcquireContext(pipeline.PipelineConfigV2{}),lines,cfg.Schema,cfg.Host,username,password)
 			if err!=nil{
 				log.Error(err)
 			}

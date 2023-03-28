@@ -5,7 +5,6 @@
 package gateway
 
 import (
-	"context"
 	"fmt"
 	log "github.com/cihub/seelog"
 	"github.com/segmentio/encoding/json"
@@ -368,60 +367,7 @@ func (h *GatewayAPI) getExecutionNodes(w http.ResponseWriter, req *http.Request,
 	if from < 0 {
 		from = 0
 	}
-	agentIndexName := orm.GetIndexName(agent.Instance{})
 	gatewayIndexName := orm.GetIndexName(model.Instance{})
-	agentMust := []util.MapStr{
-		{
-			"term": util.MapStr{
-				"enrolled": util.MapStr{
-					"value": true,
-				},
-			},
-		},
-		{
-			"term": util.MapStr{
-				"status": util.MapStr{
-					"value": "online",
-				},
-			},
-		},
-		{
-			"term": util.MapStr{
-				"_index": util.MapStr{
-					"value": agentIndexName,
-				},
-			},
-		},
-	}
-
-	boolQ := util.MapStr{
-		"minimum_should_match": 1,
-		"should": []util.MapStr{
-			{
-				"bool": util.MapStr{
-					"must": agentMust,
-				},
-			},
-			{
-				"term": util.MapStr{
-					"_index": util.MapStr{
-						"value": gatewayIndexName,
-					},
-				},
-			},
-		},
-	}
-	if keyword != "" {
-		boolQ["must"] = []util.MapStr{
-			{
-				"prefix": util.MapStr{
-					"name": util.MapStr{
-						"value": keyword,
-					},
-				},
-			},
-		}
-	}
 
 	query := util.MapStr{
 		"size": size,
@@ -433,12 +379,24 @@ func (h *GatewayAPI) getExecutionNodes(w http.ResponseWriter, req *http.Request,
 				},
 			},
 		},
-		"query": util.MapStr{
-			"bool": boolQ,
-		},
+	}
+	if keyword != "" {
+		query["query"] = util.MapStr{
+			"bool": util.MapStr{
+				"must": []util.MapStr{
+					{
+						"prefix": util.MapStr{
+							"name": util.MapStr{
+								"value": keyword,
+							},
+						},
+					},
+				},
+			},
+		}
 	}
 	q := orm.Query{
-		IndexName: fmt.Sprintf("%s,%s", gatewayIndexName, agentIndexName),
+		IndexName: gatewayIndexName,
 		RawQuery: util.MustToJSONBytes(query),
 	}
 	err, result := orm.Search(nil, &q)
@@ -457,63 +415,33 @@ func (h *GatewayAPI) getExecutionNodes(w http.ResponseWriter, req *http.Request,
 	var nodes = []util.MapStr{}
 
 	for _, hit := range searchRes.Hits.Hits {
-		var (
-			endpoint string
-			ok bool
-		)
+		buf := util.MustToJSONBytes(hit.Source)
+		inst := model.Instance{}
+		err = util.FromJSONBytes(buf, &inst)
+		if err != nil {
+			log.Error(err)
+			continue
+		}
 		node := util.MapStr{
-			"id": hit.Source["id"],
-			"name": hit.Source["name"],
+			"id": inst.ID,
+			"name": inst.Name,
 			"available": false,
+			"type": "gateway",
 		}
-		hasErr := false
-		if hit.Index == gatewayIndexName {
-			node["type"] = "gateway"
-			if endpoint, ok = hit.Source["endpoint"].(string); !ok {
-				log.Warnf("got unexpect endpoint type of gateway instance [%s]: %s", hit.ID, hit.Source["endpoint"])
-				hasErr = true
-			}
-		}else if hit.Index == agentIndexName {
-			node["type"] = "agent"
-			endpoint = fmt.Sprintf("%s://%s:%v", hit.Source["schema"], hit.Source["remote_ip"], hit.Source["port"])
+		ul, err := url.Parse(inst.Endpoint)
+		if err != nil {
+			log.Error(err)
+			continue
 		}
-		ul, err := url.Parse(endpoint)
+		node["host"] = ul.Host
+		err = inst.TryConnectWithTimeout(time.Second)
 		if err != nil {
 			log.Error(err)
 		}else{
-			node["host"] = ul.Host
+			node["available"] = true
 		}
 
-		if !hasErr {
-			available, err := isNodeAvailable(endpoint) //TODO remove
-			if err != nil {
-				log.Error(err)
-			}
-			node["available"] = available
-		}
 		nodes = append(nodes, node)
 	}
 	h.WriteJSON(w, nodes, http.StatusOK)
-}
-
-func isNodeAvailable(endpoint string) (bool, error){
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-	rq := &util.Request{
-		Method: http.MethodGet,
-		Url: fmt.Sprintf("%s%s", endpoint, "/pipeline/tasks/_dynamic"),
-		Context: ctx,
-	}
-	resp, err := util.ExecuteRequest(rq)
-	if err != nil {
-		return false, err
-	}
-	resBody := struct {
-		Success bool `json:"success"`
-	}{}
-	err = util.FromJSONBytes(resp.Body, &resBody)
-	if err != nil {
-		return false, err
-	}
-	return resBody.Success, nil
 }

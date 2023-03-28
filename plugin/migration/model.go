@@ -4,6 +4,8 @@
 
 package migration
 
+import "fmt"
+
 type ElasticDataConfig struct {
 	Cluster struct {
 		Source ClusterInfo `json:"source"`
@@ -21,6 +23,9 @@ type ElasticDataConfig struct {
 		Bulk struct {
 			Docs        int `json:"docs"`
 			StoreSizeInMB int `json:"store_size_in_mb"`
+			MaxWorkerSize int `json:"max_worker_size"`
+			IdleTimeoutInSeconds  int `json:"idle_timeout_in_seconds"`
+			SliceSize int `json:"slice_size"`
 		} `json:"bulk"`
 		Execution ExecutionConfig `json:"execution"`
 	} `json:"settings"`
@@ -54,8 +59,8 @@ type IndexConfig struct {
 	IndexRename map[string]interface{} `json:"index_rename"`
 	TypeRename map[string]interface{} `json:"type_rename"`
 	Partition *IndexPartition `json:"partition,omitempty"`
-	TaskID string `json:"task_id,omitempty"`
-	Status string `json:"status,omitempty"`
+	//TaskID string `json:"task_id,omitempty"`
+	//Status string `json:"status,omitempty"`
 	Percent float64 `json:"percent,omitempty"`
 	ErrorPartitions int `json:"error_partitions,omitempty"`
 }
@@ -72,7 +77,33 @@ type IndexInfo struct {
 	StoreSizeInBytes int    `json:"store_size_in_bytes"`
 }
 
+func (ii *IndexInfo) GetUniqueIndexName() string{
+	return fmt.Sprintf("%s:%s", ii.Name, ii.DocType)
+}
+
 type ClusterInfo struct {
 	Id   string `json:"id"`
 	Name string `json:"name"`
+}
+
+type TaskCompleteState struct {
+	IsComplete bool
+	Error string
+	ClearPipeline bool
+	PipelineIds []string
+	SuccessDocs float64
+	ScrolledDocs float64
+	RunningPhase int
+	TotalDocs interface{}
+}
+
+type MajorTaskState struct{
+	ScrolledDocs float64
+	IndexDocs float64
+	Status string
+}
+
+type IndexStateInfo struct {
+	ErrorPartitions int
+	IndexDocs       float64
 }

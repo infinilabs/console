@@ -44,6 +44,7 @@ pipeline:
             fetch_max_messages: 100
           queues:
             type: indexing_merge
+            tag: "metrics"
           when:
             cluster_available: ["$[[CLUSTER_ID]]"]
   - name: metadata_ingest
@@ -78,11 +79,46 @@ pipeline:
             group: activity
           when:
             cluster_available: ["$[[CLUSTER_ID]]"]
-  - name: cluster_migration_split
+  - name: migration_task_dispatcher
     auto_start: true
     keep_running: true
     processor:
-      - cluster_migration:
+      - migration_dispatcher:
           elasticsearch: "$[[CLUSTER_ID]]"
+          check_instance_available: true
+          max_tasks_per_instance: 10
+          task_batch_size: 50
+          when:
+            cluster_available: ["$[[CLUSTER_ID]]"]
+
+  - name: logging_indexing_merge
+    auto_start: true
+    keep_running: true
+    processor:
+      - indexing_merge:
+          input_queue: "logging"
+          idle_timeout_in_seconds: 1
+          elasticsearch: "$[[CLUSTER_ID]]"
+          index_name: "$[[INDEX_PREFIX]]logs"
+          output_queue:
+            name: "pipeline-logs"
+            label:
+              tag: "request_logging"
+          worker_size: 1
+          bulk_size_in_kb: 1
+  - name: consume-logging_requests
+    auto_start: true
+    keep_running: true
+    processor:
+      - bulk_indexing:
+          bulk:
+            compress: true
+            batch_size_in_mb: 1
+            batch_size_in_docs: 1
+          consumer:
+            fetch_max_messages: 100
+          queues:
+            type: indexing_merge
+            tag: "request_logging"
           when:
             cluster_available: ["$[[CLUSTER_ID]]"]

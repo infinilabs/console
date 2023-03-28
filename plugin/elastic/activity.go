@@ -263,7 +263,7 @@ func (processor *ActivityProcessor) HandleMessage(ctx *pipeline.Context, qConfig
 
 		if timeout {
 			log.Tracef("timeout on queue:[%v]", qConfig.Name)
-			ctx.Failed()
+			ctx.Failed(fmt.Errorf("timeout on queue:[%v]", qConfig.Name))
 			return
 		}
 

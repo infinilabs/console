@@ -15,12 +15,11 @@ func (module *Module) Name() string {
 }
 
 func (module *Module) Setup() {
-	module.BulkResultIndexName = ".infini_async_bulk_results"
 	exists, err := env.ParseConfig("migration", module)
 	if exists && err != nil {
 		log.Error(err)
 	}
-	InitAPI(module.BulkResultIndexName)
+	InitAPI()
 }
 func (module *Module) Start() error {
 	return nil
@@ -31,7 +30,6 @@ func (module *Module) Stop() error {
 }
 
 type Module struct {
-	BulkResultIndexName string `config:"bulk_result_index_name"`
 }
 
 func init()  {

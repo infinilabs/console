@@ -52,3 +52,16 @@ metrics:
 badger:
   value_log_max_entries: 1000000
   value_log_file_size: 104857600
+
+#security:
+#  oauth:
+#    enabled: true
+#    client_id: "850d747174ace88ce889"
+#    client_secret: "3d437b64e06371d6f62769320438d3dfc95a8d8e"
+#    default_roles: ["ReadonlyUI","DATA"] #default for all sso users if no specify roles was defined
+#    role_mapping:
+#      medcl: ["Administrator"]
+#    authorize_url: "https://github.com/login/oauth/authorize"
+#    token_url: "https://github.com/login/oauth/access_token"
+#    redirect_url: ""
+#    scopes: ["repo"]

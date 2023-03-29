@@ -5,7 +5,6 @@
 package layout
 
 import (
-	"fmt"
 	log "github.com/cihub/seelog"
 	"infini.sh/console/model"
 	"infini.sh/framework/core/api/rbac"
@@ -127,6 +126,10 @@ func (h *LayoutAPI) deleteLayout(w http.ResponseWriter, req *http.Request, ps ht
 		}, http.StatusNotFound)
 		return
 	}
+	if obj.Reserved {
+		h.WriteError(w, "this layout is reserved", http.StatusInternalServerError)
+		return
+	}
 
 	ctx := &orm.Context{
 		Refresh: "wait_for",
@@ -145,20 +148,37 @@ func (h *LayoutAPI) searchLayout(w http.ResponseWriter, req *http.Request, ps ht
 
 	var (
 		keyword        = h.GetParameterOrDefault(req, "keyword", "")
-		queryDSL    = `{"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d}`
 		strSize     = h.GetParameterOrDefault(req, "size", "20")
 		strFrom     = h.GetParameterOrDefault(req, "from", "0")
-		viewID     = h.GetParameterOrDefault(req, "view_id", "")
-		mustBuilder = &strings.Builder{}
+		viewID     = strings.TrimSpace(h.GetParameterOrDefault(req, "view_id", ""))
+		typ     = strings.TrimSpace(h.GetParameterOrDefault(req, "type", ""))
+		mustQ []util.MapStr
 	)
 	if viewID != "" {
-		mustBuilder.WriteString(fmt.Sprintf(`{"term":{"view_id":{"value":"%s"}}}`, viewID))
+		mustQ = append(mustQ, util.MapStr{
+			"term": util.MapStr{
+				"view_id": util.MapStr{
+					"value": viewID,
+				},
+			},
+		})
+	}
+	if typ != "" {
+		mustQ = append(mustQ, util.MapStr{
+			"term": util.MapStr{
+				"type": util.MapStr{
+					"value": typ,
+				},
+			},
+		})
 	}
 	if keyword != "" {
-		if mustBuilder.Len() > 0 {
-			mustBuilder.WriteString(",")
-		}
-		mustBuilder.WriteString(fmt.Sprintf(`{"query_string":{"default_field":"*","query": "%s"}}`, keyword))
+		mustQ = append(mustQ, util.MapStr{
+			"query_string": util.MapStr{
+				"default_field":"*",
+				"query": keyword,
+			},
+		})
 	}
 	size, _ := strconv.Atoi(strSize)
 	if size <= 0 {
@@ -168,10 +188,21 @@ func (h *LayoutAPI) searchLayout(w http.ResponseWriter, req *http.Request, ps ht
 	if from < 0 {
 		from = 0
 	}
+	query := util.MapStr{
+		"size": size,
+		"from": from,
+	}
+	if len(mustQ) > 0 {
+		query["query"] = util.MapStr{
+			"bool": util.MapStr{
+				"must": mustQ,
+			},
+		}
+	}
 
-	q := orm.Query{}
-	queryDSL = fmt.Sprintf(queryDSL, mustBuilder.String(), size, from)
-	q.RawQuery = []byte(queryDSL)
+	q := orm.Query{
+		RawQuery: util.MustToJSONBytes(query),
+	}
 
 	err, res := orm.Search(&model.Layout{}, &q)
 	if err != nil {

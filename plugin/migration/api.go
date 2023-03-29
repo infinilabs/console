@@ -37,7 +37,7 @@ func InitAPI() {
 	api.HandleAPIMethod(api.POST, "/migration/data/:task_id/_stop",  handler.RequireLogin(handler.stopDataMigrationTask))
 	//api.HandleAPIMethod(api.GET, "/migration/data/:task_id", handler.getMigrationTask)
 	api.HandleAPIMethod(api.GET, "/migration/data/:task_id/info",  handler.RequireLogin(handler.getDataMigrationTaskInfo))
-	api.HandleAPIMethod(api.GET, "/migration/data/:task_id/info/:index/:doc_type",  handler.RequireLogin(handler.getDataMigrationTaskOfIndex))
+	api.HandleAPIMethod(api.GET, "/migration/data/:task_id/info/:index",  handler.RequireLogin(handler.getDataMigrationTaskOfIndex))
 	api.HandleAPIMethod(api.PUT, "/migration/data/:task_id/status",  handler.RequireLogin(handler.updateDataMigrationTaskStatus))
 
 }
@@ -632,8 +632,7 @@ func getIndexTaskDocCount(index *IndexConfig, targetESClient elastic.API) (int64
 
 func (h *APIHandler) getDataMigrationTaskOfIndex(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
 	id := ps.MustGetParameter("task_id")
-	indexName := ps.MustGetParameter("index")
-	docType := ps.MustGetParameter("doc_type")
+	uniqueIndexName := ps.MustGetParameter("index")
 	majorTask := task2.Task{}
 	majorTask.ID = id
 	exists, err := orm.Get(&majorTask)
@@ -670,7 +669,7 @@ func (h *APIHandler) getDataMigrationTaskOfIndex(w http.ResponseWriter, req *htt
 					{
 						"term": util.MapStr{
 							"metadata.labels.unique_index_name": util.MapStr{
-								"value": fmt.Sprintf("%s:%s", indexName, docType),
+								"value": uniqueIndexName,
 							},
 						},
 					},

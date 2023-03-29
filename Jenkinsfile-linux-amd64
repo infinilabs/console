@@ -1,0 +1,41 @@
+pipeline {
+    agent none
+
+    environment {
+        CI = 'true'
+    }
+
+    stages {
+
+
+            stage('Prepare Web Packages') {
+
+                        agent {
+                            label 'linux'
+                        }
+
+                        steps {
+                            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
+                                sh 'cd /home/jenkins/go/src/infini.sh/console && git stash && git pull origin master && make clean'
+                                sh 'cd /home/jenkins/go/src/infini.sh/console/ && true|| rm -rif web'
+                                sh 'cd /home/jenkins/go/src/infini.sh/console/ && true || git clone ssh://git@git.infini.ltd:64221/infini/console-ui.git web'
+                                sh 'cd /home/jenkins/go/src/infini.sh/console/web && git pull origin master'
+                                sh 'cd /home/jenkins/go/src/infini.sh/console/web && git stash'
+                                sh 'cd /home/jenkins/go/src/infini.sh/console/web && cnpm install'
+                                sh 'cd /home/jenkins/go/src/infini.sh/console/web && cnpm run build'
+                                sh 'cd /home/jenkins/go/src/infini.sh/console &&  git pull origin master && make config build-linux-amd64'
+                                sh label: 'copy-license', script: 'cd /home/jenkins/go/src/infini.sh/console && cp ../framework/LICENSE bin && cat ../framework/NOTICE NOTICE > bin/NOTICE'
+                                sh label: 'copy-configs', script: 'cd /home/jenkins/go/src/infini.sh/console && mkdir -p bin/config && cp config/*.json bin/config && cp config/*.tpl bin/config'
+
+                                sh label: 'package-linux-amd64', script: 'cd /home/jenkins/go/src/infini.sh/console/bin && tar cfz ${WORKSPACE}/console-$VERSION-$BUILD_NUMBER-linux-amd64.tar.gz console-linux-amd64 console.yml  LICENSE NOTICE config'
+                                archiveArtifacts artifacts: 'console-$VERSION-$BUILD_NUMBER-*.*', fingerprint: true, followSymlinks: true, onlyIfSuccessful: false
+                            }
+                        }
+            }
+
+
+
+
+}
+
+}

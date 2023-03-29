@@ -16,4 +16,11 @@ type Layout struct {
 	} `json:"creator"`
 	ViewID string `json:"view_id" elastic_mapping:"view_id: { type: keyword }"`
 	Config interface{} `json:"config" elastic_mapping:"config: { type: object, enabled:false }"`
+	Reserved bool  `json:"reserved,omitempty" elastic_mapping:"reserved:{type:boolean}"`
+	Type LayoutType `json:"type" elastic_mapping:"type: { type: keyword }"`
 }
+
+type LayoutType string
+const (
+	LayoutTypeWorkspace LayoutType = "workspace"
+)

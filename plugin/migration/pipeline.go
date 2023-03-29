@@ -955,34 +955,32 @@ func (p *DispatcherProcessor) splitMajorMigrationTask(taskItem *task2.Task) erro
 		if v, ok := index.RawFilter.(string); ok {
 			source["query_string"] = v
 		} else {
-			source["query_dsl"] = index.RawFilter
+			var must []interface{}
+			if index.RawFilter != nil {
+				must = append(must, index.RawFilter)
+			}
 			if index.Source.DocType != "" {
 				if index.Target.DocType != "" {
 					source["type_rename"] = util.MapStr{
 						index.Source.DocType: index.Target.DocType,
 					}
 				}
-				must := []interface{}{
-					util.MapStr{
-						"terms": util.MapStr{
-							"_type": []string{index.Source.DocType},
-						},
+				must = append(must, util.MapStr{
+					"terms": util.MapStr{
+						"_type": []string{index.Source.DocType},
 					},
-				}
-				if index.RawFilter != nil {
-					must = append(must, index.RawFilter)
-				}
-				source["query_dsl"] = util.MapStr{
-					"bool": util.MapStr{
-						"must": must,
-					},
-				}
+				})
 			} else {
 				if esSourceClient.GetMajorVersion() >= 8 {
 					source["type_rename"] = util.MapStr{
 						"*": index.Target.DocType,
 					}
 				}
+			}
+			source["query_dsl"] = util.MapStr{
+				"bool": util.MapStr{
+					"must": must,
+				},
 			}
 		}
 		var targetMust []interface{}

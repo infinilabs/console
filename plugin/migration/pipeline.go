@@ -630,7 +630,7 @@ func (p *DispatcherProcessor) handleReadySubTask(taskItem *task2.Task) error {
 									"migration_task_id": taskItem.ID,
 								},
 							},
-							"partition_size": 20,
+							"partition_size": 1,
 							"scroll_time":    getMapValue(cfgm, "source.scroll_time"),
 							"query_dsl":      scrollQueryDsl,
 							"index_rename":   getMapValue(cfgm, "source.index_rename"),

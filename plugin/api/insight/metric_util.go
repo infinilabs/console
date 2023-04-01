@@ -25,7 +25,7 @@ func generateAgg(metricItem *insight.MetricItem, timeField string) map[string]in
 	var percent = 0.0
 	var isPipeline = false
 	switch metricItem.Statistic {
-	case "max", "min", "sum", "avg":
+	case "max", "min", "sum", "avg", "cardinality":
 		aggType = metricItem.Statistic
 	case "count", "value_count":
 		aggType = "value_count"

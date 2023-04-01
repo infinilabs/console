@@ -75,6 +75,10 @@ func (h *APIHandler) createDataMigrationTask(w http.ResponseWriter, req *http.Re
 		totalDocs += index.Source.Docs
 	}
 
+	srcClusterCfg := elastic.GetConfig(clusterTaskConfig.Cluster.Source.Id)
+	clusterTaskConfig.Cluster.Source.Distribution = srcClusterCfg.Distribution
+	dstClusterCfg := elastic.GetConfig(clusterTaskConfig.Cluster.Target.Id)
+	clusterTaskConfig.Cluster.Target.Distribution = dstClusterCfg.Distribution
 	t := task2.Task{
 		Metadata: task2.Metadata{
 			Type: "pipeline",

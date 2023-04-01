@@ -84,6 +84,7 @@ func (ii *IndexInfo) GetUniqueIndexName() string{
 type ClusterInfo struct {
 	Id   string `json:"id"`
 	Name string `json:"name"`
+	Distribution string `json:"distribution,omitempty"`
 }
 
 type TaskCompleteState struct {

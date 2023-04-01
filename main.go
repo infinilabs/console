@@ -4,11 +4,14 @@ import (
 	"context"
 	"errors"
 	_ "expvar"
+	_ "time/tzdata"
+
 	log "github.com/cihub/seelog"
 	"infini.sh/console/config"
 	"infini.sh/console/model"
 	"infini.sh/console/model/alerting"
 	_ "infini.sh/console/plugin"
+	setup1 "infini.sh/console/plugin/setup"
 	alerting2 "infini.sh/console/service/alerting"
 	"infini.sh/framework"
 	"infini.sh/framework/core/elastic"
@@ -31,11 +34,8 @@ import (
 	"infini.sh/framework/modules/task"
 	"infini.sh/framework/modules/ui"
 	_ "infini.sh/framework/plugins"
-	setup1 "infini.sh/console/plugin/setup"
-	_ "infini.sh/console/plugin"
 	api2 "infini.sh/gateway/api"
 	_ "infini.sh/gateway/proxy"
-	_ "time/tzdata"
 )
 
 var appConfig *config.AppConfig
@@ -60,18 +60,18 @@ func main() {
 
 	api := api2.GatewayAPI{}
 
-	modules:=[]module.Module{}
-	modules=append(modules,&stats.SimpleStatsModule{})
-	modules=append(modules,&elastic2.ElasticModule{})
-	modules=append(modules,&queue2.DiskQueue{})
-	modules=append(modules,&redis.RedisModule{})
-	modules=append(modules,&pipeline.PipeModule{})
-	modules=append(modules,&task.TaskModule{})
-	modules=append(modules,&agent.AgentModule{})
-	modules=append(modules,&metrics.MetricsModule{})
-	modules=append(modules,&security.Module{})
+	modules := []module.Module{}
+	modules = append(modules, &stats.SimpleStatsModule{})
+	modules = append(modules, &elastic2.ElasticModule{})
+	modules = append(modules, &queue2.DiskQueue{})
+	modules = append(modules, &redis.RedisModule{})
+	modules = append(modules, &pipeline.PipeModule{})
+	modules = append(modules, &task.TaskModule{})
+	modules = append(modules, &agent.AgentModule{})
+	modules = append(modules, &metrics.MetricsModule{})
+	modules = append(modules, &security.Module{})
 
-	uiModule:=&ui.UIModule{}
+	uiModule := &ui.UIModule{}
 
 	if app.Setup(func() {
 
@@ -79,11 +79,11 @@ func main() {
 		module.RegisterSystemModule(&setup1.Module{})
 		module.RegisterSystemModule(uiModule)
 
-		if !global.Env().SetupRequired(){
+		if !global.Env().SetupRequired() {
 			for _, v := range modules {
 				module.RegisterSystemModule(v)
 			}
-		}else{
+		} else {
 			for _, v := range modules {
 				v.Setup()
 			}
@@ -115,8 +115,7 @@ func main() {
 
 		module.Start()
 
-		var initFunc= func() {
-
+		var initFunc = func() {
 
 			elastic2.InitTemplate(false)
 
@@ -134,6 +133,7 @@ func main() {
 			orm.RegisterSchemaWithIndexName(task1.Task{}, "task")
 			orm.RegisterSchemaWithIndexName(task1.Log{}, "task-log")
 			orm.RegisterSchemaWithIndexName(model.Layout{}, "layout")
+			orm.RegisterSchemaWithIndexName(model.Notification{}, "notification")
 			api.RegisterSchema()
 
 			if global.Env().SetupRequired() {
@@ -142,7 +142,7 @@ func main() {
 				}
 			}
 
-			task1.RunWithinGroup("initialize_alerting",func(ctx context.Context) error {
+			task1.RunWithinGroup("initialize_alerting", func(ctx context.Context) error {
 				err := alerting2.InitTasks()
 				if err != nil {
 					log.Errorf("init alerting task error: %v", err)
@@ -151,13 +151,13 @@ func main() {
 			})
 		}
 
-		if !global.Env().SetupRequired(){
+		if !global.Env().SetupRequired() {
 			initFunc()
-		}else{
+		} else {
 			setup1.RegisterSetupCallback(initFunc)
 		}
 
-		if !global.Env().SetupRequired(){
+		if !global.Env().SetupRequired() {
 			err := bootstrapRequirementCheck()
 			if err != nil {
 				panic(err)

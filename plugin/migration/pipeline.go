@@ -13,6 +13,8 @@ import (
 	"time"
 
 	log "github.com/cihub/seelog"
+	"github.com/mitchellh/mapstructure"
+
 	"infini.sh/console/model"
 	"infini.sh/framework/core/config"
 	"infini.sh/framework/core/elastic"
@@ -236,6 +238,7 @@ func (p *DispatcherProcessor) handleReadyMajorTask(taskItem *task2.Task) error {
 		Timestamp: time.Now().UTC(),
 	}
 	taskItem.Status = task2.StatusRunning
+	p.sendMajorTaskNotification(taskItem)
 	p.saveTaskAndWriteLog(taskItem, taskLog, "")
 	return nil
 }
@@ -268,6 +271,7 @@ func (p *DispatcherProcessor) handlePendingStopMajorTask(taskItem *task2.Task) e
 	// all subtask stopped or error or complete
 	if len(tasks) == 0 {
 		taskItem.Status = task2.StatusStopped
+		p.sendMajorTaskNotification(taskItem)
 		p.saveTaskAndWriteLog(taskItem, &task2.Log{
 			ID:        util.GetUUID(),
 			TaskId:    taskItem.ID,
@@ -290,6 +294,7 @@ func (p *DispatcherProcessor) handleRunningMajorTask(taskItem *task2.Task) error
 		taskItem.Status = ts.Status
 		tn := time.Now()
 		taskItem.CompletedTime = &tn
+		p.sendMajorTaskNotification(taskItem)
 		p.saveTaskAndWriteLog(taskItem, &task2.Log{
 			ID:        util.GetUUID(),
 			TaskId:    taskItem.ID,
@@ -1466,4 +1471,66 @@ func (p *DispatcherProcessor) getInstanceTaskState() (map[string]DispatcherState
 		}
 	}
 	return state, nil
+}
+
+func (p *DispatcherProcessor) sendMajorTaskNotification(taskItem *task2.Task) {
+	config, err := p.extractTaskConfig(taskItem)
+	if err != nil {
+		log.Errorf("failed to parse config info from major task, id: %s, err: %v", taskItem.ID, err)
+		return
+	}
+
+	creatorID := config.Creator.Id
+
+	var title, body string
+	body = fmt.Sprintf("From Cluster: [%s (%s)], To Cluster: [%s (%s)]", config.Cluster.Source.Id, config.Cluster.Source.Name, config.Cluster.Target.Id, config.Cluster.Target.Name)
+	link := fmt.Sprintf("/#/migration/data/%s/detail", taskItem.ID)
+	switch taskItem.Status {
+	case task2.StatusReady:
+		log.Debugf("skip sending notification for ready task, id: %s", taskItem.ID)
+		return
+	case task2.StatusStopped:
+		title = fmt.Sprintf("Data Migration Stopped")
+	case task2.StatusComplete:
+		title = fmt.Sprintf("Data Migration Completed")
+	case task2.StatusError:
+		title = fmt.Sprintf("Data Migration Failed")
+	case task2.StatusRunning:
+		title = fmt.Sprintf("Data Migration Started")
+	default:
+		log.Warnf("skip sending notification for invalid task status, id: %s", taskItem.ID)
+		return
+	}
+	notification := &model.Notification{
+		UserId:           util.ToString(creatorID),
+		NotificationType: model.NotificationTypeDataMigration,
+		Status:           model.NotificationStatusNew,
+		Title:            title,
+		Body:             body,
+		Link:             link,
+	}
+	err = orm.Create(nil, notification)
+	if err != nil {
+		log.Errorf("failed to create notification, err: %v", err)
+		return
+	}
+	return
+}
+
+func (p *DispatcherProcessor) extractTaskConfig(taskItem *task2.Task) (*ElasticDataConfig, error) {
+	origConfig, ok := taskItem.Config.(ElasticDataConfig)
+	if ok {
+		return &origConfig, nil
+	}
+	rawConfig, ok := taskItem.Config.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("failed to extract configuration from major task, id: %s, type: %T", taskItem.ID, taskItem.Config)
+	}
+
+	config := &ElasticDataConfig{}
+	err := mapstructure.Decode(rawConfig, config)
+	if err != nil {
+		return nil, err
+	}
+	return config, nil
 }

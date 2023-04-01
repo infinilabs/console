@@ -1,15 +1,17 @@
 package api
 
 import (
+	"path"
+
 	"infini.sh/console/config"
 	"infini.sh/console/plugin/api/alerting"
 	"infini.sh/console/plugin/api/gateway"
 	"infini.sh/console/plugin/api/index_management"
 	"infini.sh/console/plugin/api/insight"
 	"infini.sh/console/plugin/api/layout"
+	"infini.sh/console/plugin/api/notification"
 	"infini.sh/framework/core/api"
 	"infini.sh/framework/core/api/rbac/enum"
-	"path"
 )
 
 func Init(cfg *config.AppConfig) {
@@ -48,8 +50,8 @@ func Init(cfg *config.AppConfig) {
 	api.HandleAPIMethod(api.POST, path.Join(pathPrefix, "elasticsearch/command"), handler.RequirePermission(handler.HandleAddCommonCommandAction, enum.PermissionCommandWrite))
 	api.HandleAPIMethod(api.PUT, path.Join(pathPrefix, "elasticsearch/command/:cid"), handler.RequirePermission(handler.HandleSaveCommonCommandAction, enum.PermissionCommandWrite))
 	api.HandleAPIMethod(api.GET, path.Join(pathPrefix, "elasticsearch/command"), handler.RequirePermission(handler.HandleQueryCommonCommandAction, enum.PermissionCommandRead))
-	api.HandleAPIMethod(api.DELETE, path.Join(pathPrefix, "elasticsearch/command/:cid"), handler.RequirePermission(handler.HandleDeleteCommonCommandAction,enum.PermissionCommandWrite))
-	api.HandleAPIMethod(api.GET,  "/elasticsearch/overview/status", handler.RequireLogin(handler.ElasticsearchStatusSummaryAction))
+	api.HandleAPIMethod(api.DELETE, path.Join(pathPrefix, "elasticsearch/command/:cid"), handler.RequirePermission(handler.HandleDeleteCommonCommandAction, enum.PermissionCommandWrite))
+	api.HandleAPIMethod(api.GET, "/elasticsearch/overview/status", handler.RequireLogin(handler.ElasticsearchStatusSummaryAction))
 
 	//task.RegisterScheduleTask(task.ScheduleTask{
 	//	Description: "sync reindex task result",
@@ -61,12 +63,12 @@ func Init(cfg *config.AppConfig) {
 	//	},
 	//})
 
-	alertAPI := alerting.AlertAPI{
-	}
+	alertAPI := alerting.AlertAPI{}
 
 	alertAPI.Init()
 
 	gateway.InitAPI()
 	insight.InitAPI()
 	layout.InitAPI()
+	notification.InitAPI()
 }

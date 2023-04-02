@@ -10,6 +10,6 @@ type NotificationAPI struct {
 
 func InitAPI() {
 	notification := NotificationAPI{}
-	api.HandleAPIMethod(api.GET, "/notification", notification.RequireLogin(notification.listNotifications))
+	api.HandleAPIMethod(api.GET, "/notification/_search", notification.RequireLogin(notification.listNotifications))
 	api.HandleAPIMethod(api.POST, "/notification/read", notification.RequireLogin(notification.setNotificationsRead))
 }

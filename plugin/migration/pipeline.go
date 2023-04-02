@@ -1503,7 +1503,8 @@ func (p *DispatcherProcessor) sendMajorTaskNotification(taskItem *task2.Task) {
 	}
 	notification := &model.Notification{
 		UserId:           util.ToString(creatorID),
-		NotificationType: model.NotificationTypeDataMigration,
+		NotificationType: model.NotificationTypeNotification,
+		MessageType:      model.MessageTypeMigration,
 		Status:           model.NotificationStatusNew,
 		Title:            title,
 		Body:             body,

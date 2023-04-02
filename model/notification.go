@@ -7,9 +7,16 @@ import (
 type NotificationType string
 
 const (
-	NotificationTypeProductNews    NotificationType = "PRODUCT_NEWS"
-	NotificationTypeAlertTriggered NotificationType = "ALERT_TRIGGERED"
-	NotificationTypeDataMigration  NotificationType = "DATA_MIGRATION"
+	NotificationTypeNotification NotificationType = "NOTIFICATION"
+	NotificationTypeTodo         NotificationType = "TODO"
+)
+
+type MessageType string
+
+const (
+	MessageTypeNews      MessageType = "NEWS"
+	MessageTypeAlerting  MessageType = "ALERTING"
+	MessageTypeMigration MessageType = "MIGRATION"
 )
 
 type NotificationStatus string
@@ -24,6 +31,7 @@ type Notification struct {
 
 	UserId           string             `json:"user_id,omitempty" elastic_mapping:"user_id: { type: keyword }"`
 	NotificationType NotificationType   `json:"notification_type,omitempty" elastic_mapping:"notification_type:{type:keyword,fields:{text: {type: text}}}"`
+	MessageType      MessageType        `json:"message_type,omitempty" elastic_mapping:"message_type:{type:keyword,fields:{text: {type: text}}}"`
 	Status           NotificationStatus `json:"status,omitempty" elastic_mapping:"status: { type: keyword }"`
 	Title            string             `json:"title,omitempty" elastic_mapping:"title: { type: keyword }"`
 	Body             string             `json:"body,omitempty" elastic_mapping:"body: { type: keyword }"`

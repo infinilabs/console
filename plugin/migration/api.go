@@ -227,6 +227,10 @@ func (h *APIHandler) startDataMigration(w http.ResponseWriter, req *http.Request
 		h.WriteError(w, fmt.Sprintf("task [%s] not found", taskID), http.StatusInternalServerError)
 		return
 	}
+	if obj.Status == task2.StatusComplete {
+		h.WriteError(w, fmt.Sprintf("task [%s] completed, can't start anymore", taskID), http.StatusInternalServerError)
+		return
+	}
 	obj.Status = task2.StatusReady
 
 	err = orm.Update(nil, &obj)
@@ -282,6 +286,12 @@ func (h *APIHandler) stopDataMigrationTask(w http.ResponseWriter, req *http.Requ
 			"_id":   id,
 			"found": false,
 		}, http.StatusNotFound)
+		return
+	}
+	if task2.IsEnded(obj.Status) {
+		h.WriteJSON(w, util.MapStr{
+			"success": true,
+		}, 200)
 		return
 	}
 	//query all pipeline task(scroll/bulk_indexing) and then stop it

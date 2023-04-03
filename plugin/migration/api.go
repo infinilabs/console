@@ -81,7 +81,7 @@ func (h *APIHandler) createDataMigrationTask(w http.ResponseWriter, req *http.Re
 	clusterTaskConfig.Cluster.Target.Distribution = dstClusterCfg.Distribution
 	t := task2.Task{
 		Metadata: task2.Metadata{
-			Type: "pipeline",
+			Type: "cluster_migration",
 			Labels: util.MapStr{
 				"business_id":       "cluster_migration",
 				"source_cluster_id": clusterTaskConfig.Cluster.Source.Id,
@@ -910,48 +910,6 @@ func (h *APIHandler) countDocuments(w http.ResponseWriter, req *http.Request, ps
 		return
 	}
 	h.WriteJSON(w, countRes, http.StatusOK)
-}
-
-func (h *APIHandler) getMigrationTaskLog(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	id := ps.MustGetParameter("task_id")
-	query := util.MapStr{
-		"sort": []util.MapStr{
-			{
-				"timestamp": util.MapStr{
-					"order": "asc",
-				},
-			},
-		},
-		"query": util.MapStr{
-			"bool": util.MapStr{
-				"minimum_should_match": 1,
-				"should": []util.MapStr{
-					{
-						"term": util.MapStr{
-							"parent_id": util.MapStr{
-								"value": id,
-							},
-						},
-					}, {
-						"term": util.MapStr{
-							"id": util.MapStr{
-								"value": id,
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	q := &orm.Query{
-		RawQuery: util.MustToJSONBytes(query),
-	}
-	err, _ := orm.Search(task2.Log{}, q)
-	if err != nil {
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
-	}
 }
 
 func (h *APIHandler) updateDataMigrationTaskStatus(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {

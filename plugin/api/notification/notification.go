@@ -69,7 +69,8 @@ func (h *NotificationAPI) listNotifications(w http.ResponseWriter, req *http.Req
 }
 
 type SetNotificationsReadRequest struct {
-	Ids []string `json:"ids"`
+	Ids   []string                 `json:"ids"`
+	Types []model.NotificationType `json:"types"`
 }
 
 func (h *NotificationAPI) setNotificationsRead(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -98,20 +99,45 @@ func (h *NotificationAPI) setNotificationsRead(w http.ResponseWriter, req *http.
 	queryDsl := util.MapStr{
 		"query": util.MapStr{
 			"bool": util.MapStr{
-				"must": []util.MapStr{
-					{
-						"terms": util.MapStr{
-							"_id": reqData.Ids,
+				"should": []util.MapStr{
+					util.MapStr{
+						"bool": util.MapStr{
+							"must": []util.MapStr{
+								{
+									"terms": util.MapStr{
+										"_id": reqData.Ids,
+									},
+								},
+								{
+									"term": util.MapStr{
+										"status": util.MapStr{
+											"value": model.NotificationStatusNew,
+										},
+									},
+								},
+							},
 						},
 					},
-					{
-						"term": util.MapStr{
-							"status": util.MapStr{
-								"value": model.NotificationStatusNew,
+					util.MapStr{
+						"bool": util.MapStr{
+							"must": []util.MapStr{
+								{
+									"terms": util.MapStr{
+										"notification_type": reqData.Types,
+									},
+								},
+								{
+									"term": util.MapStr{
+										"status": util.MapStr{
+											"value": model.NotificationStatusNew,
+										},
+									},
+								},
 							},
 						},
 					},
 				},
+				"minimum_should_match": 1,
 			},
 		},
 		"script": util.MapStr{

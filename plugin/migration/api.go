@@ -7,6 +7,7 @@ package migration
 import (
 	"context"
 	"fmt"
+	"infini.sh/framework/core/api/rbac/enum"
 	"net/http"
 	"strconv"
 	"strings"
@@ -26,18 +27,18 @@ import (
 
 func InitAPI() {
 	handler := APIHandler{}
-	api.HandleAPIMethod(api.GET, "/migration/data/_search", handler.RequireLogin(handler.searchDataMigrationTask))
-	api.HandleAPIMethod(api.POST, "/migration/data", handler.RequireLogin(handler.createDataMigrationTask))
+	api.HandleAPIMethod(api.GET, "/migration/data/_search", handler.RequirePermission(handler.searchDataMigrationTask, enum.PermissionTaskRead))
+	api.HandleAPIMethod(api.POST, "/migration/data", handler.RequirePermission(handler.createDataMigrationTask, enum.PermissionTaskWrite))
 	api.HandleAPIMethod(api.POST, "/migration/data/_validate", handler.RequireLogin(handler.validateDataMigration))
 
 	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/index/:index/_partition", handler.getIndexPartitionInfo)
 	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/index/:index/_count", handler.countDocuments)
-	api.HandleAPIMethod(api.POST, "/migration/data/:task_id/_start", handler.RequireLogin(handler.startDataMigration))
-	api.HandleAPIMethod(api.POST, "/migration/data/:task_id/_stop", handler.RequireLogin(handler.stopDataMigrationTask))
+	api.HandleAPIMethod(api.POST, "/migration/data/:task_id/_start", handler.RequirePermission(handler.startDataMigration, enum.PermissionTaskWrite))
+	api.HandleAPIMethod(api.POST, "/migration/data/:task_id/_stop", handler.RequirePermission(handler.stopDataMigrationTask, enum.PermissionTaskWrite))
 	//api.HandleAPIMethod(api.GET, "/migration/data/:task_id", handler.getMigrationTask)
-	api.HandleAPIMethod(api.GET, "/migration/data/:task_id/info", handler.RequireLogin(handler.getDataMigrationTaskInfo))
-	api.HandleAPIMethod(api.GET, "/migration/data/:task_id/info/:index", handler.RequireLogin(handler.getDataMigrationTaskOfIndex))
-	api.HandleAPIMethod(api.PUT, "/migration/data/:task_id/status", handler.RequireLogin(handler.updateDataMigrationTaskStatus))
+	api.HandleAPIMethod(api.GET, "/migration/data/:task_id/info", handler.RequirePermission(handler.getDataMigrationTaskInfo, enum.PermissionTaskRead))
+	api.HandleAPIMethod(api.GET, "/migration/data/:task_id/info/:index", handler.RequirePermission(handler.getDataMigrationTaskOfIndex, enum.PermissionTaskRead))
+	api.HandleAPIMethod(api.PUT, "/migration/data/:task_id/status", handler.RequirePermission(handler.updateDataMigrationTaskStatus, enum.PermissionTaskRead))
 
 }
 

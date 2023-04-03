@@ -5,6 +5,7 @@
 package alerting
 
 import (
+	"errors"
 	"fmt"
 	log "github.com/cihub/seelog"
 	"github.com/r3labs/diff/v2"
@@ -21,6 +22,7 @@ import (
 	"infini.sh/framework/core/queue"
 	"infini.sh/framework/core/task"
 	"infini.sh/framework/core/util"
+	elastic2 "infini.sh/framework/modules/elastic"
 	"infini.sh/framework/modules/elastic/api"
 	"infini.sh/framework/modules/elastic/common"
 	"net/http"
@@ -109,13 +111,17 @@ func (alertAPI *AlertAPI) getRule(w http.ResponseWriter, req *http.Request, ps h
 	obj := alerting.Rule{}
 	obj.ID = id
 
-	exists, err := orm.Get(&obj)
-	if !exists || err != nil {
+	_, err := orm.Get(&obj)
+	if err != nil {
+		if errors.Is(err, elastic2.ErrNotFound){
+			alertAPI.WriteJSON(w, util.MapStr{
+				"_id":   id,
+				"found": false,
+			}, http.StatusNotFound)
+			return
+		}
 		log.Error(err)
-		alertAPI.WriteJSON(w, util.MapStr{
-			"_id":   id,
-			"found": false,
-		}, http.StatusNotFound)
+		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -134,11 +140,15 @@ func (alertAPI *AlertAPI) getRuleDetail(w http.ResponseWriter, req *http.Request
 
 	exists, err := orm.Get(&obj)
 	if !exists || err != nil {
+		if errors.Is(err, elastic2.ErrNotFound){
+			alertAPI.WriteJSON(w, util.MapStr{
+				"_id":   id,
+				"found": false,
+			}, http.StatusNotFound)
+			return
+		}
 		log.Error(err)
-		alertAPI.WriteJSON(w, util.MapStr{
-			"_id":   id,
-			"found": false,
-		}, http.StatusNotFound)
+		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	metricExpression, _ := obj.Metrics.GenerateExpression()

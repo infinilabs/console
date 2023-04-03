@@ -289,12 +289,12 @@ func (h *APIHandler) stopDataMigrationTask(w http.ResponseWriter, req *http.Requ
 		}, http.StatusNotFound)
 		return
 	}
-	if task2.IsEnded(obj.Status) {
-		h.WriteJSON(w, util.MapStr{
-			"success": true,
-		}, 200)
-		return
-	}
+	//if task2.IsEnded(obj.Status) {
+	//	h.WriteJSON(w, util.MapStr{
+	//		"success": true,
+	//	}, 200)
+	//	return
+	//}
 	//query all pipeline task(scroll/bulk_indexing) and then stop it
 	err = stopPipelineTasks(id)
 	if err != nil {

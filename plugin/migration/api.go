@@ -7,11 +7,12 @@ package migration
 import (
 	"context"
 	"fmt"
-	"infini.sh/framework/core/api/rbac/enum"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"infini.sh/framework/core/api/rbac/enum"
 
 	log "github.com/cihub/seelog"
 	"infini.sh/console/model"
@@ -289,61 +290,11 @@ func (h *APIHandler) stopDataMigrationTask(w http.ResponseWriter, req *http.Requ
 		}, http.StatusNotFound)
 		return
 	}
-	//if task2.IsEnded(obj.Status) {
-	//	h.WriteJSON(w, util.MapStr{
-	//		"success": true,
-	//	}, 200)
-	//	return
-	//}
-	//query all pipeline task(scroll/bulk_indexing) and then stop it
-	err = stopPipelineTasks(id)
-	if err != nil {
-		log.Error(err)
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+	if task2.IsEnded(obj.Status) {
+		h.WriteJSON(w, util.MapStr{
+			"success": true,
+		}, 200)
 		return
-	}
-	if obj.Metadata.Labels != nil && obj.Metadata.Labels["business_id"] == "cluster_migration" {
-		//update status of subtask to pending stop
-		query := util.MapStr{
-			"bool": util.MapStr{
-				"must": []util.MapStr{
-					{
-						"term": util.MapStr{
-							"parent_id": util.MapStr{
-								"value": obj.ID,
-							},
-						},
-					},
-					{
-						"term": util.MapStr{
-							"status": util.MapStr{
-								"value": task2.StatusRunning,
-							},
-						},
-					},
-					{
-						"term": util.MapStr{
-							"metadata.labels.business_id": util.MapStr{
-								"value": "index_migration",
-							},
-						},
-					},
-				},
-			},
-		}
-		queryDsl := util.MapStr{
-			"query": query,
-			"script": util.MapStr{
-				"source": fmt.Sprintf("ctx._source['status'] = '%s'", task2.StatusPendingStop),
-			},
-		}
-
-		err = orm.UpdateBy(obj, util.MustToJSONBytes(queryDsl))
-		if err != nil {
-			log.Error(err)
-			h.WriteError(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
 	}
 	obj.Status = task2.StatusPendingStop
 	err = orm.Update(nil, &obj)
@@ -985,65 +936,6 @@ func (h *APIHandler) validateMultiType(w http.ResponseWriter, req *http.Request,
 	h.WriteJSON(w, util.MapStr{
 		"result": typeInfo,
 	}, http.StatusOK)
-}
-
-func stopPipelineTasks(parentID string) error {
-	queryDsl := util.MapStr{
-		"size": 1000,
-		"query": util.MapStr{
-			"bool": util.MapStr{
-				"must": []util.MapStr{
-					{
-						"term": util.MapStr{
-							"parent_id": util.MapStr{
-								"value": parentID,
-							},
-						},
-					},
-					{
-						"terms": util.MapStr{
-							"metadata.labels.pipeline_id": []string{"es_scroll", "bulk_indexing"},
-						},
-					},
-				},
-			},
-		},
-	}
-	q := orm.Query{
-		RawQuery: util.MustToJSONBytes(queryDsl),
-	}
-	err, result := orm.Search(task2.Task{}, &q)
-	if err != nil {
-		return err
-	}
-
-	for _, hit := range result.Result {
-		buf, err := util.ToJSONBytes(hit)
-		if err != nil {
-			return err
-		}
-		tk := task2.Task{}
-		err = util.FromJSONBytes(buf, &tk)
-		if err != nil {
-			return err
-		}
-		if tk.Metadata.Labels != nil {
-			if instID, ok := tk.Metadata.Labels["execution_instance_id"].(string); ok {
-				inst := model.Instance{}
-				inst.ID = instID
-				_, err = orm.Get(&inst)
-				if err != nil {
-					return err
-				}
-				err = inst.StopPipeline(context.Background(), tk.ID)
-				if err != nil {
-					log.Error(err)
-					continue
-				}
-			}
-		}
-	}
-	return nil
 }
 
 func getMajorTaskStatsFromInstances(majorTaskID string) (taskStats MajorTaskState, err error) {

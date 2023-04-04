@@ -307,6 +307,7 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 		"created": message.Created,
 		"updated": message.Updated,
 		"resource_name": rule.Resource.Name,
+		"resource_id": rule.Resource.ID,
 		"resource_objects": rule.Resource.Objects,
 		"conditions": rule.Conditions,
 		"duration": duration.Milliseconds(),

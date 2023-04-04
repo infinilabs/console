@@ -1472,13 +1472,13 @@ func (p *DispatcherProcessor) sendMajorTaskNotification(taskItem *task2.Task) {
 		return
 	}
 	notification := &model.Notification{
-		UserId:           util.ToString(creatorID),
-		NotificationType: model.NotificationTypeNotification,
-		MessageType:      model.MessageTypeMigration,
-		Status:           model.NotificationStatusNew,
-		Title:            title,
-		Body:             body,
-		Link:             link,
+		UserId:      util.ToString(creatorID),
+		Type:        model.NotificationTypeNotification,
+		MessageType: model.MessageTypeMigration,
+		Status:      model.NotificationStatusNew,
+		Title:       title,
+		Body:        body,
+		Link:        link,
 	}
 	err = orm.Create(nil, notification)
 	if err != nil {

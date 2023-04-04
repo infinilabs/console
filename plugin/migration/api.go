@@ -242,6 +242,10 @@ func (h *APIHandler) startDataMigration(w http.ResponseWriter, req *http.Request
 		return
 	}
 
+	writeLog(&obj, &task2.TaskResult{
+		Success: true,
+	}, "task status manually set to ready")
+
 	if obj.Metadata.Labels != nil && obj.Metadata.Labels["business_id"] == "index_migration" && len(obj.ParentId) > 0 {
 		//update status of major task to running
 		query := util.MapStr{
@@ -303,6 +307,9 @@ func (h *APIHandler) stopDataMigrationTask(w http.ResponseWriter, req *http.Requ
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	writeLog(&obj, &task2.TaskResult{
+		Success: true,
+	}, "task status manually set to pending stop")
 
 	h.WriteJSON(w, util.MapStr{
 		"success": true,

@@ -14,14 +14,14 @@ import (
 	"infini.sh/framework/core/util"
 )
 
-type ListNotificationsRequest struct {
+type SearchNotificationsRequest struct {
 	From   int                        `json:"from"`
 	Size   int                        `json:"size"`
 	Status []model.NotificationStatus `json:"status"`
 	Types  []model.NotificationType   `json:"types"`
 }
 
-func (h *NotificationAPI) listNotifications(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+func (h *NotificationAPI) searchNotifications(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	user, err := rbac.FromUserContext(req.Context())
 	if err != nil {
 		log.Error("failed to get user from context, err: %v", err)
@@ -35,17 +35,25 @@ func (h *NotificationAPI) listNotifications(w http.ResponseWriter, req *http.Req
 		return
 	}
 
-	var reqData = ListNotificationsRequest{
-		From:   0,
-		Size:   20,
-		Status: []model.NotificationStatus{model.NotificationStatusNew},
-		Types:  []model.NotificationType{model.NotificationTypeNotification},
+	var reqData = SearchNotificationsRequest{
+		From: 0,
+		Size: 20,
 	}
 	err = h.DecodeJSON(req, &reqData)
 	if err != nil {
 		log.Error("failed to parse request: ", err)
 		h.WriteError(w, err.Error(), http.StatusBadRequest)
 		return
+	}
+
+	musts := []util.MapStr{
+		{"term": util.MapStr{"user_id": util.MapStr{"value": user.UserId}}},
+	}
+	if len(reqData.Status) > 0 {
+		musts = append(musts, util.MapStr{"terms": util.MapStr{"status": reqData.Status}})
+	}
+	if len(reqData.Types) > 0 {
+		musts = append(musts, util.MapStr{"terms": util.MapStr{"type": reqData.Types}})
 	}
 
 	var (
@@ -55,11 +63,7 @@ func (h *NotificationAPI) listNotifications(w http.ResponseWriter, req *http.Req
 			},
 			"query": util.MapStr{
 				"bool": util.MapStr{
-					"must": []util.MapStr{
-						{"term": util.MapStr{"user_id": util.MapStr{"value": user.UserId}}},
-						{"terms": util.MapStr{"status": reqData.Status}},
-						{"terms": util.MapStr{"type": reqData.Types}},
-					},
+					"must": musts,
 				},
 			},
 			"size": reqData.Size, "from": reqData.From,
@@ -67,7 +71,6 @@ func (h *NotificationAPI) listNotifications(w http.ResponseWriter, req *http.Req
 	)
 
 	q := orm.Query{}
-	log.Infof(util.MustToJSON(queryDSL))
 	q.RawQuery = util.MustToJSONBytes(queryDSL)
 
 	err, res := orm.Search(&model.Notification{}, &q)
@@ -99,7 +102,10 @@ func (h *NotificationAPI) setNotificationsRead(w http.ResponseWriter, req *http.
 		return
 	}
 
-	var reqData = SetNotificationsReadRequest{}
+	var reqData = SetNotificationsReadRequest{
+		Ids:   []string{},
+		Types: []model.NotificationType{},
+	}
 	err = h.DecodeJSON(req, &reqData)
 	if err != nil {
 		log.Error("failed to parse request: ", err)
@@ -115,6 +121,7 @@ func (h *NotificationAPI) setNotificationsRead(w http.ResponseWriter, req *http.
 					util.MapStr{
 						"bool": util.MapStr{
 							"must": []util.MapStr{
+								{"term": util.MapStr{"user_id": util.MapStr{"value": user.UserId}}},
 								{
 									"terms": util.MapStr{
 										"_id": reqData.Ids,
@@ -133,9 +140,10 @@ func (h *NotificationAPI) setNotificationsRead(w http.ResponseWriter, req *http.
 					util.MapStr{
 						"bool": util.MapStr{
 							"must": []util.MapStr{
+								{"term": util.MapStr{"user_id": util.MapStr{"value": user.UserId}}},
 								{
 									"terms": util.MapStr{
-										"notification_type": reqData.Types,
+										"type": reqData.Types,
 									},
 								},
 								{

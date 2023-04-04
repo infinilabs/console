@@ -276,6 +276,13 @@ func (p *DispatcherProcessor) handlePendingStopMajorTask(taskItem *task2.Task) e
 				"must": []util.MapStr{
 					{
 						"term": util.MapStr{
+							"parent_id": util.MapStr{
+								"value": taskItem.ID,
+							},
+						},
+					},
+					{
+						"term": util.MapStr{
 							"metadata.labels.business_id": "index_migration",
 						},
 					},

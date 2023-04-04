@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
 	log "github.com/cihub/seelog"
@@ -14,6 +13,13 @@ import (
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 )
+
+type ListNotificationsRequest struct {
+	From   int                        `json:"from"`
+	Size   int                        `json:"size"`
+	Status []model.NotificationStatus `json:"status"`
+	Types  []model.NotificationType   `json:"types"`
+}
 
 func (h *NotificationAPI) listNotifications(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	user, err := rbac.FromUserContext(req.Context())
@@ -29,34 +35,40 @@ func (h *NotificationAPI) listNotifications(w http.ResponseWriter, req *http.Req
 		return
 	}
 
-	var (
-		queryDSL = `{
-			"sort": [
-				{ "created": {"order": "desc"} }
-			],
-			"query": {
-				"bool": { "must": [
-					{ "term": {"user_id": { "value": "%s" } } },
-					{ "term": {"status": { "value": "%s" } } }
-				] }
-			},
-			"size": %d, "from": %d
-		}`
-		strSize = h.GetParameterOrDefault(req, "size", "20")
-		strFrom = h.GetParameterOrDefault(req, "from", "0")
-	)
-	size, _ := strconv.Atoi(strSize)
-	if size <= 0 {
-		size = 20
+	var reqData = ListNotificationsRequest{
+		From:   0,
+		Size:   20,
+		Status: []model.NotificationStatus{model.NotificationStatusNew},
+		Types:  []model.NotificationType{model.NotificationTypeNotification},
 	}
-	from, _ := strconv.Atoi(strFrom)
-	if from < 0 {
-		from = 0
+	err = h.DecodeJSON(req, &reqData)
+	if err != nil {
+		log.Error("failed to parse request: ", err)
+		h.WriteError(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
+	var (
+		queryDSL = util.MapStr{
+			"sort": []util.MapStr{
+				{"created": util.MapStr{"order": "desc"}},
+			},
+			"query": util.MapStr{
+				"bool": util.MapStr{
+					"must": []util.MapStr{
+						{"term": util.MapStr{"user_id": util.MapStr{"value": user.UserId}}},
+						{"terms": util.MapStr{"status": reqData.Status}},
+						{"terms": util.MapStr{"type": reqData.Types}},
+					},
+				},
+			},
+			"size": reqData.Size, "from": reqData.From,
+		}
+	)
+
 	q := orm.Query{}
-	queryDSL = fmt.Sprintf(queryDSL, user.UserId, model.NotificationStatusNew, size, from)
-	q.RawQuery = util.UnsafeStringToBytes(queryDSL)
+	log.Infof(util.MustToJSON(queryDSL))
+	q.RawQuery = util.MustToJSONBytes(queryDSL)
 
 	err, res := orm.Search(&model.Notification{}, &q)
 	if err != nil {
@@ -69,7 +81,8 @@ func (h *NotificationAPI) listNotifications(w http.ResponseWriter, req *http.Req
 }
 
 type SetNotificationsReadRequest struct {
-	Ids []string `json:"ids"`
+	Ids   []string                 `json:"ids"`
+	Types []model.NotificationType `json:"types"`
 }
 
 func (h *NotificationAPI) setNotificationsRead(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -98,20 +111,45 @@ func (h *NotificationAPI) setNotificationsRead(w http.ResponseWriter, req *http.
 	queryDsl := util.MapStr{
 		"query": util.MapStr{
 			"bool": util.MapStr{
-				"must": []util.MapStr{
-					{
-						"terms": util.MapStr{
-							"_id": reqData.Ids,
+				"should": []util.MapStr{
+					util.MapStr{
+						"bool": util.MapStr{
+							"must": []util.MapStr{
+								{
+									"terms": util.MapStr{
+										"_id": reqData.Ids,
+									},
+								},
+								{
+									"term": util.MapStr{
+										"status": util.MapStr{
+											"value": model.NotificationStatusNew,
+										},
+									},
+								},
+							},
 						},
 					},
-					{
-						"term": util.MapStr{
-							"status": util.MapStr{
-								"value": model.NotificationStatusNew,
+					util.MapStr{
+						"bool": util.MapStr{
+							"must": []util.MapStr{
+								{
+									"terms": util.MapStr{
+										"notification_type": reqData.Types,
+									},
+								},
+								{
+									"term": util.MapStr{
+										"status": util.MapStr{
+											"value": model.NotificationStatusNew,
+										},
+									},
+								},
 							},
 						},
 					},
 				},
+				"minimum_should_match": 1,
 			},
 		},
 		"script": util.MapStr{

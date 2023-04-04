@@ -154,19 +154,10 @@ func (p *DispatcherProcessor) Process(ctx *pipeline.Context) error {
 				t.Status = task2.StatusError
 				tn := time.Now()
 				t.CompletedTime = &tn
-				p.saveTaskAndWriteLog(&t, &task2.Log{
-					ID:     util.GetUUID(),
-					TaskId: t.ID,
-					Status: task2.StatusError,
-					Type:   t.Metadata.Type,
-					Config: t.Config,
-					Result: &task2.LogResult{
-						Success: false,
-						Error:   err.Error(),
-					},
-					Message:   fmt.Sprintf("failed to handling task [%s]: [%v]", t.ID, err),
-					Timestamp: time.Now().UTC(),
-				}, "")
+				p.saveTaskAndWriteLog(&t, "", &task2.TaskResult{
+					Success: false,
+					Error:   err.Error(),
+				}, fmt.Sprintf("failed to handling task [%s]: [%v]", t.ID, err))
 			}
 		}
 		//es index refresh
@@ -220,30 +211,63 @@ func (p *DispatcherProcessor) handleReadyMajorTask(taskItem *task2.Task) error {
 		},
 	}
 
+	// saved is_split if the following steps failed
+	defer func() {
+		p.sendMajorTaskNotification(taskItem)
+		p.saveTaskAndWriteLog(taskItem, "", &task2.TaskResult{
+			Success: true,
+		}, fmt.Sprintf("success to start task [%s]", taskItem.ID))
+	}()
+
 	esClient := elastic.GetClient(p.config.Elasticsearch)
 	_, err := esClient.UpdateByQuery(p.config.IndexName, util.MustToJSONBytes(queryDsl))
 	if err != nil {
-		return err
-	}
-	taskLog := &task2.Log{
-		ID:     util.GetUUID(),
-		TaskId: taskItem.ID,
-		Status: task2.StatusRunning,
-		Type:   taskItem.Metadata.Type,
-		Config: taskItem.Config,
-		Result: &task2.LogResult{
-			Success: true,
-		},
-		Message:   fmt.Sprintf("success to start task [%s]", taskItem.ID),
-		Timestamp: time.Now().UTC(),
+		log.Errorf("failed to update sub task status, err: %v", err)
+		return nil
 	}
 	taskItem.Status = task2.StatusRunning
-	p.sendMajorTaskNotification(taskItem)
-	p.saveTaskAndWriteLog(taskItem, taskLog, "")
 	return nil
 }
 
 func (p *DispatcherProcessor) handlePendingStopMajorTask(taskItem *task2.Task) error {
+	//update status of subtask to pending stop
+	query := util.MapStr{
+		"bool": util.MapStr{
+			"must": []util.MapStr{
+				{
+					"term": util.MapStr{
+						"parent_id": util.MapStr{
+							"value": taskItem.ID,
+						},
+					},
+				},
+				{
+					"terms": util.MapStr{
+						"status": []string{task2.StatusRunning, task2.StatusReady},
+					},
+				},
+				{
+					"term": util.MapStr{
+						"metadata.labels.business_id": util.MapStr{
+							"value": "index_migration",
+						},
+					},
+				},
+			},
+		},
+	}
+	queryDsl := util.MapStr{
+		"query": query,
+		"script": util.MapStr{
+			"source": fmt.Sprintf("ctx._source['status'] = '%s'", task2.StatusPendingStop),
+		},
+	}
+
+	err := orm.UpdateBy(taskItem, util.MustToJSONBytes(queryDsl))
+	if err != nil {
+		log.Errorf("failed to update sub task status, err: %v", err)
+		return nil
+	}
 	//check whether all pipeline task is stopped or not, then update task status
 	q := util.MapStr{
 		"size": 200,
@@ -257,7 +281,7 @@ func (p *DispatcherProcessor) handlePendingStopMajorTask(taskItem *task2.Task) e
 					},
 					{
 						"terms": util.MapStr{
-							"status": []string{task2.StatusRunning, task2.StatusPendingStop},
+							"status": []string{task2.StatusRunning, task2.StatusPendingStop, task2.StatusReady},
 						},
 					},
 				},
@@ -266,21 +290,14 @@ func (p *DispatcherProcessor) handlePendingStopMajorTask(taskItem *task2.Task) e
 	}
 	tasks, err := p.getTasks(q)
 	if err != nil {
-		return err
+		log.Errorf("failed to get sub tasks, err: %v", err)
+		return nil
 	}
 	// all subtask stopped or error or complete
 	if len(tasks) == 0 {
 		taskItem.Status = task2.StatusStopped
 		p.sendMajorTaskNotification(taskItem)
-		p.saveTaskAndWriteLog(taskItem, &task2.Log{
-			ID:        util.GetUUID(),
-			TaskId:    taskItem.ID,
-			Status:    task2.StatusStopped,
-			Type:      taskItem.Metadata.Type,
-			Config:    taskItem.Config,
-			Message:   fmt.Sprintf("task [%s] is stopped", taskItem.ID),
-			Timestamp: time.Now().UTC(),
-		}, "")
+		p.saveTaskAndWriteLog(taskItem, "", nil, fmt.Sprintf("task [%s] is stopped", taskItem.ID))
 	}
 	return nil
 }
@@ -295,15 +312,7 @@ func (p *DispatcherProcessor) handleRunningMajorTask(taskItem *task2.Task) error
 		tn := time.Now()
 		taskItem.CompletedTime = &tn
 		p.sendMajorTaskNotification(taskItem)
-		p.saveTaskAndWriteLog(taskItem, &task2.Log{
-			ID:        util.GetUUID(),
-			TaskId:    taskItem.ID,
-			Status:    taskItem.Status,
-			Type:      taskItem.Metadata.Type,
-			Config:    taskItem.Config,
-			Message:   fmt.Sprintf("task [%s] is complete", taskItem.ID),
-			Timestamp: time.Now().UTC(),
-		}, "")
+		p.saveTaskAndWriteLog(taskItem, "", nil, fmt.Sprintf("task [%s] is complete", taskItem.ID))
 	}
 	return nil
 }
@@ -355,24 +364,16 @@ func (p *DispatcherProcessor) handleRunningSubTask(taskItem *task2.Task) error {
 
 		tn := time.Now()
 		taskItem.CompletedTime = &tn
-		p.saveTaskAndWriteLog(taskItem, &task2.Log{
-			ID:     util.GetUUID(),
-			TaskId: taskItem.ID,
-			Status: taskItem.Status,
-			Type:   taskItem.Metadata.Type,
-			Config: taskItem.Config,
-			Result: &task2.LogResult{
-				Success: state.Error == "",
-				Error:   state.Error,
-			},
-			Message:   fmt.Sprintf("task [%s] is complete", taskItem.ID),
-			Timestamp: time.Now().UTC(),
-		}, "")
+		p.saveTaskAndWriteLog(taskItem, "", &task2.TaskResult{
+			Success: state.Error == "",
+			Error:   state.Error,
+		}, fmt.Sprintf("task [%s] is complete", taskItem.ID))
 	} else {
 		if state.RunningPhase == 1 && taskItem.Metadata.Labels["running_phase"] == float64(1) {
 			ptasks, err := p.getPipelineTasks(taskItem.ID)
 			if err != nil {
-				return err
+				log.Errorf("failed to get pipeline tasks, err: %v", err)
+				return nil
 			}
 			var bulkTask *task2.Task
 			for i, t := range ptasks {
@@ -391,16 +392,18 @@ func (p *DispatcherProcessor) handleRunningSubTask(taskItem *task2.Task) error {
 					inst.ID = instID
 					_, err = orm.Get(inst)
 					if err != nil {
+						log.Errorf("failed to get instance, err: %v", err)
 						return err
 					}
 					err = inst.CreatePipeline(util.MustToJSONBytes(bulkTask.Config))
 					if err != nil {
+						log.Errorf("failed to create bulk_indexing pipeline, err: %v", err)
 						return err
 					}
 					taskItem.Metadata.Labels["running_phase"] = 2
 				}
 			}
-			p.saveTaskAndWriteLog(taskItem, nil, "wait_for")
+			p.saveTaskAndWriteLog(taskItem, "wait_for", nil, "")
 		}
 	}
 	return nil
@@ -410,6 +413,7 @@ func (p *DispatcherProcessor) handlePendingStopSubTask(taskItem *task2.Task) err
 	//check whether all pipeline task is stopped or not, then update task status
 	ptasks, err := p.getPipelineTasks(taskItem.ID)
 	if err != nil {
+		log.Errorf("failed to get pipeline tasks, err: %v", err)
 		return err
 	}
 	var taskIDs []string
@@ -437,24 +441,7 @@ func (p *DispatcherProcessor) handlePendingStopSubTask(taskItem *task2.Task) err
 	}
 	searchRes, err := esClient.SearchWithRawQueryDSL(p.config.LogIndexName, util.MustToJSONBytes(q))
 	if err != nil {
-		return err
-	}
-	if len(searchRes.Hits.Hits) == 0 {
-		//check instance available
-		if instID, ok := taskItem.Metadata.Labels["execution_instance_id"].(string); ok {
-			inst := model.Instance{}
-			inst.ID = instID
-			_, err = orm.Get(&inst)
-			if err != nil {
-				return err
-			}
-			err = inst.TryConnectWithTimeout(time.Second)
-			if err != nil {
-				if errors.Is(err, syscall.ECONNREFUSED) {
-					return fmt.Errorf("stoping task [%s] error: %w", taskItem.ID, err)
-				}
-			}
-		}
+		log.Errorf("failed to get latest pipeline status, err: %v", err)
 		return nil
 	}
 MainLoop:
@@ -467,7 +454,8 @@ MainLoop:
 				inst.ID = instID
 				_, err = orm.Get(&inst)
 				if err != nil {
-					return err
+					log.Errorf("failed to get instance, err: %v", err)
+					return nil
 				}
 				hasStopped := true
 				for _, pipelineID := range taskIDs {
@@ -519,15 +507,7 @@ MainLoop:
 			p.state[instanceID] = st
 		}
 	}
-	p.saveTaskAndWriteLog(taskItem, &task2.Log{
-		ID:        util.GetUUID(),
-		TaskId:    taskItem.ID,
-		Status:    task2.StatusStopped,
-		Type:      taskItem.Metadata.Type,
-		Config:    taskItem.Config,
-		Message:   fmt.Sprintf("task [%s] is stopped", taskItem.ID),
-		Timestamp: time.Now().UTC(),
-	}, "")
+	p.saveTaskAndWriteLog(taskItem, "", nil, fmt.Sprintf("task [%s] is stopped", taskItem.ID))
 	return nil
 }
 
@@ -544,7 +524,7 @@ func (p *DispatcherProcessor) handleReadySubTask(taskItem *task2.Task) error {
 		ptasks, err := p.getPipelineTasks(taskItem.ID)
 		if err != nil {
 			log.Errorf("getPipelineTasks failed, err: %+v", err)
-			return err
+			return nil
 		}
 		for i, t := range ptasks {
 			if t.Metadata.Labels != nil {
@@ -779,19 +759,9 @@ func (p *DispatcherProcessor) handleReadySubTask(taskItem *task2.Task) error {
 	taskItem.Status = task2.StatusRunning
 	taskItem.StartTimeInMillis = time.Now().UnixMilli()
 
-	taskLog := &task2.Log{
-		ID:     util.GetUUID(),
-		TaskId: taskItem.ID,
-		Status: task2.StatusRunning,
-		Type:   taskItem.Metadata.Type,
-		Config: taskItem.Config,
-		Result: &task2.LogResult{
-			Success: true,
-		},
-		Message:   fmt.Sprintf("dispatch task [%s] to instance ", taskItem.ID),
-		Timestamp: time.Now().UTC(),
-	}
-	p.saveTaskAndWriteLog(taskItem, taskLog, "wait_for")
+	p.saveTaskAndWriteLog(taskItem, "wait_for", &task2.TaskResult{
+		Success: true,
+	}, fmt.Sprintf("dispatch task [%s] to instance [%s]", taskItem.ID, instance.ID))
 	return nil
 }
 
@@ -903,32 +873,32 @@ func (p *DispatcherProcessor) getMigrationTasks(size int) ([]task2.Task, error) 
 	return p.getTasks(queryDsl)
 }
 
-func (p *DispatcherProcessor) saveTaskAndWriteLog(taskItem *task2.Task, logItem *task2.Log, refresh string) {
+func (p *DispatcherProcessor) saveTaskAndWriteLog(taskItem *task2.Task, refresh string, taskResult *task2.TaskResult, message string) {
 	esClient := elastic.GetClient(p.config.Elasticsearch)
 	_, err := esClient.Index(p.config.IndexName, "", taskItem.ID, taskItem, refresh)
 	if err != nil {
 		log.Errorf("failed to update task, err: %v", err)
 	}
-	if logItem != nil {
+	if message != "" {
 		event.SaveLog(event.Event{
 			Metadata: event.EventMetadata{
-				Category: "migration",
+				Category: "task",
 				Name:     "logging",
 				Datatype: "event",
 				Labels: util.MapStr{
-					"task_id":        logItem.TaskId,
+					"task_type":      taskItem.Metadata.Type,
+					"task_id":        taskItem.ID,
 					"parent_task_id": taskItem.ParentId,
 					"retry_no":       taskItem.RetryTimes,
 				},
 			},
 			Fields: util.MapStr{
-				"migration": util.MapStr{
+				"task": util.MapStr{
 					"logging": util.MapStr{
-						"config":  logItem.Config,
-						"context": logItem.Context,
-						"status":  logItem.Status,
-						"message": logItem.Message,
-						"result":  logItem.Result,
+						"config":  util.MustToJSON(taskItem.Config),
+						"status":  taskItem.Status,
+						"message": message,
+						"result":  taskResult,
 					},
 				},
 			},
@@ -1046,7 +1016,7 @@ func (p *DispatcherProcessor) splitMajorMigrationTask(taskItem *task2.Task) erro
 			Status:            task2.StatusReady,
 			StartTimeInMillis: time.Now().UnixMilli(),
 			Metadata: task2.Metadata{
-				Type: "pipeline",
+				Type: "index_migration",
 				Labels: util.MapStr{
 					"business_id":       "index_migration",
 					"source_cluster_id": clusterMigrationTask.Cluster.Source.Id,
@@ -1134,7 +1104,7 @@ func (p *DispatcherProcessor) splitMajorMigrationTask(taskItem *task2.Task) erro
 					Runnable:    true,
 					Status:      task2.StatusReady,
 					Metadata: task2.Metadata{
-						Type: "pipeline",
+						Type: "index_migration",
 						Labels: util.MapStr{
 							"business_id":       "index_migration",
 							"source_cluster_id": clusterMigrationTask.Cluster.Source.Id,
@@ -1397,7 +1367,7 @@ func (p *DispatcherProcessor) getMajorTaskState(majorTask *task2.Task) (taskStat
 	res, err := esClient.SearchWithRawQueryDSL(p.config.IndexName, util.MustToJSONBytes(query))
 	if err != nil {
 		log.Errorf("search es failed, err: %v", err)
-		return taskState, err
+		return taskState, nil
 	}
 	if v, ok := res.Aggregations["total_docs"].Value.(float64); ok {
 		taskState.IndexDocs = v
@@ -1502,13 +1472,13 @@ func (p *DispatcherProcessor) sendMajorTaskNotification(taskItem *task2.Task) {
 		return
 	}
 	notification := &model.Notification{
-		UserId:           util.ToString(creatorID),
-		NotificationType: model.NotificationTypeNotification,
-		MessageType:      model.MessageTypeMigration,
-		Status:           model.NotificationStatusNew,
-		Title:            title,
-		Body:             body,
-		Link:             link,
+		UserId:      util.ToString(creatorID),
+		Type:        model.NotificationTypeNotification,
+		MessageType: model.MessageTypeMigration,
+		Status:      model.NotificationStatusNew,
+		Title:       title,
+		Body:        body,
+		Link:        link,
 	}
 	err = orm.Create(nil, notification)
 	if err != nil {

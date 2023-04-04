@@ -131,7 +131,6 @@ func main() {
 			orm.RegisterSchemaWithIndexName(insight.Visualization{}, "visualization")
 			orm.RegisterSchemaWithIndexName(insight.Dashboard{}, "dashboard")
 			orm.RegisterSchemaWithIndexName(task1.Task{}, "task")
-			orm.RegisterSchemaWithIndexName(task1.Log{}, "task-log")
 			orm.RegisterSchemaWithIndexName(model.Layout{}, "layout")
 			orm.RegisterSchemaWithIndexName(model.Notification{}, "notification")
 			api.RegisterSchema()

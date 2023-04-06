@@ -25,6 +25,10 @@ type Rule struct {
 	LastEscalationTime time.Time `json:"-"` //标识最近一次告警升级发送通知的时间
 	SearchText string `json:"-" elastic_mapping:"search_text:{type:text,index_prefixes:{},index_phrases:true, analyzer:suggest_text_search }"`
 	Expression string `json:"-"`
+	Creator struct {
+		Name string `json:"name" elastic_mapping:"name: { type: keyword }"`
+		Id   string `json:"id" elastic_mapping:"id: { type: keyword }"`
+	} `json:"creator" elastic_mapping:"creator:{type:object}"`
 }
 
 func (rule *Rule) GetOrInitExpression() (string, error){

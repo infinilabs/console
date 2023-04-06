@@ -15,10 +15,11 @@ import (
 )
 
 type SearchNotificationsRequest struct {
-	From   int                        `json:"from"`
-	Size   int                        `json:"size"`
-	Status []model.NotificationStatus `json:"status"`
-	Types  []model.NotificationType   `json:"types"`
+	From    int                        `json:"from"`
+	Size    int                        `json:"size"`
+	Keyword string                     `json:"keyword"`
+	Status  []model.NotificationStatus `json:"status"`
+	Types   []model.NotificationType   `json:"types"`
 }
 
 func (h *NotificationAPI) searchNotifications(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -54,6 +55,9 @@ func (h *NotificationAPI) searchNotifications(w http.ResponseWriter, req *http.R
 	}
 	if len(reqData.Types) > 0 {
 		musts = append(musts, util.MapStr{"terms": util.MapStr{"type": reqData.Types}})
+	}
+	if len(reqData.Keyword) > 0 {
+		musts = append(musts, util.MapStr{"query_string": util.MapStr{"default_field": "*", "query": reqData.Keyword}})
 	}
 
 	var (

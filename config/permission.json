@@ -78,6 +78,9 @@
     {"name": "cluster.*", "methods": ["*"],
       "path": "_cluster/*"
     },
+    {"name": "cluster.info", "methods": ["get"],
+      "path": "/"
+    },
     {"name": "cluster.health", "methods": ["get"],
       "path": "_cluster/health"
     },

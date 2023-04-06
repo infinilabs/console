@@ -608,6 +608,10 @@ POST $[[INDEX_PREFIX]]alert-rule/_doc/builtin-calakp97h710dpnp1fa2
     "id": "builtin-calakp97h710dpnp1fa2",
     "created": "2022-06-16T03:58:29.437447113Z",
     "updated": "2022-07-21T23:12:51.111569117Z",
+    "creator": {
+       "name": "$[[USERNAME]]",
+       "id": "$[[USER_ID]]"
+     },
     "name": "CPU utilization is Too High",
     "enabled": false,
     "resource": {
@@ -734,6 +738,10 @@ POST $[[INDEX_PREFIX]]alert-rule/_doc/builtin-cal8n7p7h710dpnoaps0
     "updated": "2022-07-13T04:00:06.181994982Z",
     "name": "Cluster Health Change to Red",
     "enabled": false,
+    "creator": {
+       "name": "$[[USERNAME]]",
+       "id": "$[[USER_ID]]"
+     },
     "resource": {
         "resource_id": "$[[RESOURCE_ID]]",
         "resource_name": "$[[RESOURCE_NAME]]",
@@ -851,6 +859,10 @@ POST $[[INDEX_PREFIX]]alert-rule/_doc/builtin-cal8n7p7h710dpnogps1
     "updated": "2022-07-22T00:06:26.498903821Z",
     "name": "Disk utilization is Too High",
     "enabled": false,
+    "creator": {
+       "name": "$[[USERNAME]]",
+       "id": "$[[USER_ID]]"
+     },
     "resource": {
          "resource_id": "$[[RESOURCE_ID]]",
         "resource_name": "$[[RESOURCE_NAME]]",
@@ -980,6 +992,10 @@ POST $[[INDEX_PREFIX]]alert-rule/_doc/builtin-cbp20n2anisjmu4gehc5
     "updated": "2022-08-09T08:52:44.633455664Z",
     "name": "Elasticsearch node left cluster",
     "enabled": false,
+    "creator": {
+       "name": "$[[USERNAME]]",
+       "id": "$[[USER_ID]]"
+     },
     "resource": {
         "resource_id": "$[[RESOURCE_ID]]",
         "resource_name": "$[[RESOURCE_NAME]]",
@@ -1074,6 +1090,10 @@ POST $[[INDEX_PREFIX]]alert-rule/_doc/builtin-calavvp7h710dpnp32r3
     "updated": "2022-07-21T23:10:36.70696738Z",
     "name": "Index Health Change to Red",
     "enabled": false,
+    "creator": {
+       "name": "$[[USERNAME]]",
+       "id": "$[[USER_ID]]"
+     },
     "resource": {
         "resource_id": "$[[RESOURCE_ID]]",
         "resource_name": "$[[RESOURCE_NAME]]",
@@ -1168,6 +1188,10 @@ POST $[[INDEX_PREFIX]]alert-rule/_doc/builtin-calaqnh7h710dpnp2bm8
     "updated": "2022-07-21T23:12:07.142532243Z",
     "name": "JVM utilization is Too High",
     "enabled": false,
+    "creator": {
+       "name": "$[[USERNAME]]",
+       "id": "$[[USER_ID]]"
+     },
     "resource": {
         "resource_id": "$[[RESOURCE_ID]]",
         "resource_name": "$[[RESOURCE_NAME]]",
@@ -1292,6 +1316,10 @@ POST $[[INDEX_PREFIX]]alert-rule/_doc/builtin-cbp2e4ianisjmu4giqs7
     "updated": "2022-08-09T09:39:29.604751601Z",
     "name": "Search latency is great than 500ms",
     "enabled": false,
+    "creator": {
+       "name": "$[[USERNAME]]",
+       "id": "$[[USER_ID]]"
+     },
     "resource": {
         "resource_id": "$[[RESOURCE_ID]]",
         "resource_name": "$[[RESOURCE_NAME]]",
@@ -1414,6 +1442,10 @@ POST $[[INDEX_PREFIX]]alert-rule/_doc/builtin-calgapp7h710dpnpbeb6
     "updated": "2022-07-22T00:03:34.044562893Z",
     "name": "Shard Storage >= 55G",
     "enabled": false,
+    "creator": {
+       "name": "$[[USERNAME]]",
+       "id": "$[[USER_ID]]"
+     },
     "resource": {
         "resource_id": "$[[RESOURCE_ID]]",
         "resource_name": "$[[RESOURCE_NAME]]",
@@ -1509,6 +1541,10 @@ POST $[[INDEX_PREFIX]]alert-rule/_doc/cb34sfl6psfiqtovhpt4
     "updated": "2022-08-09T08:40:05.323148338Z",
     "name": "Too Many Deleted Documents",
     "enabled": false,
+    "creator": {
+       "name": "$[[USERNAME]]",
+       "id": "$[[USER_ID]]"
+     },
     "resource": {
         "resource_id": "$[[RESOURCE_ID]]",
         "resource_name": "$[[RESOURCE_NAME]]",
@@ -1632,8 +1668,8 @@ POST $[[INDEX_PREFIX]]view/_doc/cb34sfl6psfiqtovhpt4
      "name": "Gateway Metrics",
      "description": "",
      "creator": {
-       "name": "admin",
-       "id": "default_user_admin"
+       "name": "$[[USERNAME]]",
+       "id": "$[[USER_ID]]"
      },
      "view_id": "cb34sfl6psfiqtovhpt4",
      "config":{

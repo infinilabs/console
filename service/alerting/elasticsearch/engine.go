@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/Knetic/govaluate"
 	log "github.com/cihub/seelog"
+	"infini.sh/console/model"
 	"infini.sh/console/model/alerting"
 	alerting2 "infini.sh/console/service/alerting"
 	"infini.sh/console/service/alerting/action"
@@ -719,6 +720,23 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		err = saveAlertMessage(msg)
 		if err != nil {
 			return fmt.Errorf("save alert message error: %w", err)
+		}
+		userID := rule.Creator.Id
+		if userID == "" {
+			userID = "*"
+		}
+		notification := &model.Notification{
+			UserId:      util.ToString(userID),
+			Type:        model.NotificationTypeNotification,
+			MessageType: model.MessageTypeAlerting,
+			Status:      model.NotificationStatusNew,
+			Title:       alertItem.Title,
+			Body:        alertItem.Message,
+			Link:        "/alerting/message",
+		}
+		err = orm.Create(nil, notification)
+		if err != nil {
+			return fmt.Errorf("failed to create notification, err: %w", err)
 		}
 	}else{
 		alertMessage.Title = alertItem.Title

@@ -445,6 +445,10 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 						return w.Write([]byte(cfg.ID))
 					case "RESOURCE_NAME":
 						return w.Write([]byte(cfg.Name))
+					case "USER_ID":
+						return w.Write([]byte("default_user_" + request.BootstrapUsername))
+					case "USERNAME":
+						return w.Write([]byte(request.BootstrapUsername))
 					}
 					panic(errors.Errorf("unknown tag: %v", tag))
 				})

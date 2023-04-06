@@ -12,6 +12,7 @@ import (
 	"infini.sh/console/model/alerting"
 	alerting2 "infini.sh/console/service/alerting"
 	_ "infini.sh/console/service/alerting/elasticsearch"
+	"infini.sh/framework/core/api/rbac"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/event"
@@ -38,6 +39,12 @@ func (alertAPI *AlertAPI) createRule(w http.ResponseWriter, req *http.Request, p
 		alertAPI.WriteJSON(w, util.MapStr{
 			"error": err.Error(),
 		}, http.StatusInternalServerError)
+		return
+	}
+	user, err := rbac.FromUserContext(req.Context())
+	if err != nil {
+		log.Error(err)
+		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	var ids []string
@@ -73,6 +80,10 @@ func (alertAPI *AlertAPI) createRule(w http.ResponseWriter, req *http.Request, p
 			}
 		}
 		rule.Metrics.Groups = groups
+		if user != nil {
+			rule.Creator.Name = user.Username
+			rule.Creator.Id = user.UserId
+		}
 
 		err = orm.Save(nil, rule)
 		if err != nil {

@@ -48,7 +48,7 @@ func (h *NotificationAPI) searchNotifications(w http.ResponseWriter, req *http.R
 	}
 
 	musts := []util.MapStr{
-		{"term": util.MapStr{"user_id": util.MapStr{"value": user.UserId}}},
+		{"terms": util.MapStr{"user_id": []string{user.UserId, "*"}}},
 	}
 	if len(reqData.Status) > 0 {
 		musts = append(musts, util.MapStr{"terms": util.MapStr{"status": reqData.Status}})
@@ -121,43 +121,25 @@ func (h *NotificationAPI) setNotificationsRead(w http.ResponseWriter, req *http.
 	queryDsl := util.MapStr{
 		"query": util.MapStr{
 			"bool": util.MapStr{
-				"should": []util.MapStr{
-					util.MapStr{
-						"bool": util.MapStr{
-							"must": []util.MapStr{
-								{"term": util.MapStr{"user_id": util.MapStr{"value": user.UserId}}},
-								{
-									"terms": util.MapStr{
-										"_id": reqData.Ids,
-									},
-								},
-								{
-									"term": util.MapStr{
-										"status": util.MapStr{
-											"value": model.NotificationStatusNew,
-										},
-									},
-								},
+				"must": []util.MapStr{
+					//{"term": util.MapStr{"user_id": util.MapStr{"value": user.UserId}}},
+					{
+						"term": util.MapStr{
+							"status": util.MapStr{
+								"value": model.NotificationStatusNew,
 							},
 						},
 					},
-					util.MapStr{
-						"bool": util.MapStr{
-							"must": []util.MapStr{
-								{"term": util.MapStr{"user_id": util.MapStr{"value": user.UserId}}},
-								{
-									"terms": util.MapStr{
-										"type": reqData.Types,
-									},
-								},
-								{
-									"term": util.MapStr{
-										"status": util.MapStr{
-											"value": model.NotificationStatusNew,
-										},
-									},
-								},
-							},
+				},
+				"should": []util.MapStr{
+					{
+						"terms": util.MapStr{
+							"_id": reqData.Ids,
+						},
+					},
+					{
+						"terms": util.MapStr{
+							"type": reqData.Types,
 						},
 					},
 				},

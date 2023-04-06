@@ -1465,7 +1465,7 @@ func (p *DispatcherProcessor) sendMajorTaskNotification(taskItem *task2.Task) {
 
 	var title, body string
 	body = fmt.Sprintf("From Cluster: [%s (%s)], To Cluster: [%s (%s)]", config.Cluster.Source.Id, config.Cluster.Source.Name, config.Cluster.Target.Id, config.Cluster.Target.Name)
-	link := fmt.Sprintf("/#/migration/data/%s/detail", taskItem.ID)
+	link := fmt.Sprintf("/#/data_tools/migration/%s/detail", taskItem.ID)
 	switch taskItem.Status {
 	case task2.StatusReady:
 		log.Debugf("skip sending notification for ready task, id: %s", taskItem.ID)

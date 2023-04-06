@@ -31,4 +31,5 @@ var genericMap = map[string]interface{}{
 	"sub": sub,
 	"div": div,
 	"mul": mul,
+	"lookup": lookup,
 }

@@ -276,6 +276,13 @@ func (p *DispatcherProcessor) handlePendingStopMajorTask(taskItem *task2.Task) e
 				"must": []util.MapStr{
 					{
 						"term": util.MapStr{
+							"parent_id": util.MapStr{
+								"value": taskItem.ID,
+							},
+						},
+					},
+					{
+						"term": util.MapStr{
 							"metadata.labels.business_id": "index_migration",
 						},
 					},
@@ -880,30 +887,34 @@ func (p *DispatcherProcessor) saveTaskAndWriteLog(taskItem *task2.Task, refresh 
 		log.Errorf("failed to update task, err: %v", err)
 	}
 	if message != "" {
-		event.SaveLog(event.Event{
-			Metadata: event.EventMetadata{
-				Category: "task",
-				Name:     "logging",
-				Datatype: "event",
-				Labels: util.MapStr{
-					"task_type":      taskItem.Metadata.Type,
-					"task_id":        taskItem.ID,
-					"parent_task_id": taskItem.ParentId,
-					"retry_no":       taskItem.RetryTimes,
-				},
-			},
-			Fields: util.MapStr{
-				"task": util.MapStr{
-					"logging": util.MapStr{
-						"config":  util.MustToJSON(taskItem.Config),
-						"status":  taskItem.Status,
-						"message": message,
-						"result":  taskResult,
-					},
-				},
-			},
-		})
+		writeLog(taskItem, taskResult, message)
 	}
+}
+
+func writeLog(taskItem *task2.Task, taskResult *task2.TaskResult, message string) {
+	event.SaveLog(event.Event{
+		Metadata: event.EventMetadata{
+			Category: "task",
+			Name:     "logging",
+			Datatype: "event",
+			Labels: util.MapStr{
+				"task_type":      taskItem.Metadata.Type,
+				"task_id":        taskItem.ID,
+				"parent_task_id": taskItem.ParentId,
+				"retry_no":       taskItem.RetryTimes,
+			},
+		},
+		Fields: util.MapStr{
+			"task": util.MapStr{
+				"logging": util.MapStr{
+					"config":  util.MustToJSON(taskItem.Config),
+					"status":  taskItem.Status,
+					"message": message,
+					"result":  taskResult,
+				},
+			},
+		},
+	})
 }
 
 func (p *DispatcherProcessor) splitMajorMigrationTask(taskItem *task2.Task) error {

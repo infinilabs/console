@@ -33,7 +33,7 @@ type Notification struct {
 	Type        NotificationType   `json:"type,omitempty" elastic_mapping:"type:{type:keyword,fields:{text: {type: text}}}"`
 	MessageType MessageType        `json:"message_type,omitempty" elastic_mapping:"message_type:{type:keyword,fields:{text: {type: text}}}"`
 	Status      NotificationStatus `json:"status,omitempty" elastic_mapping:"status: { type: keyword }"`
-	Title       string             `json:"title,omitempty" elastic_mapping:"title: { type: keyword }"`
-	Body        string             `json:"body,omitempty" elastic_mapping:"body: { type: keyword }"`
+	Title       string             `json:"title,omitempty" elastic_mapping:"title: { type: text }"`
+	Body        string             `json:"body,omitempty" elastic_mapping:"body: { type: text }"`
 	Link        string             `json:"link,omitempty" elastic_mapping:"link: { type: keyword }"`
 }

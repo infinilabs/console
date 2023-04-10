@@ -675,6 +675,7 @@ func (p *DispatcherProcessor) handleReadySubTask(taskItem *task2.Task) error {
 								"batch_size_in_mb":   getMapValue(cfgm, "target.bulk.batch_size_in_mb"),
 								"batch_size_in_docs": getMapValue(cfgm, "target.bulk.batch_size_in_docs"),
 								"invalid_queue":      "bulk_indexing_400",
+								"compress": getMapValue(cfgm, "target.bulk.compress"),
 								//"retry_rules": util.MapStr{
 								//	"default": false,
 								//	"retry_4xx": false,
@@ -1014,6 +1015,7 @@ func (p *DispatcherProcessor) splitMajorMigrationTask(taskItem *task2.Task) erro
 				"max_worker_size":         clusterMigrationTask.Settings.Bulk.MaxWorkerSize,
 				"idle_timeout_in_seconds": clusterMigrationTask.Settings.Bulk.IdleTimeoutInSeconds,
 				"slice_size":              clusterMigrationTask.Settings.Bulk.SliceSize,
+				"compress": clusterMigrationTask.Settings.Bulk.Compress,
 			},
 		}
 		indexParameters := util.MapStr{

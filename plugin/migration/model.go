@@ -26,6 +26,7 @@ type ElasticDataConfig struct {
 			MaxWorkerSize int `json:"max_worker_size"`
 			IdleTimeoutInSeconds  int `json:"idle_timeout_in_seconds"`
 			SliceSize int `json:"slice_size"`
+			Compress bool `json:"compress"`
 		} `json:"bulk"`
 		Execution ExecutionConfig `json:"execution"`
 	} `json:"settings"`

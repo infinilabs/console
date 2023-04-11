@@ -1262,46 +1262,64 @@ func (p *DispatcherProcessor) getTaskCompleteState(subTask *task2.Task) (*TaskCo
 	if cfg, ok = subTask.Config.(map[string]interface{}); !ok {
 		return nil, fmt.Errorf("got wrong config of task %v", *subTask)
 	}
-	totalDocs, err := util.MapStr(cfg).GetValue("source.doc_count")
+	totalDocsVal, err := util.MapStr(cfg).GetValue("source.doc_count")
 	if err != nil {
 		log.Errorf("failed to get source.doc_count, err: %v", err)
 		return nil, err
 	}
+	totalDocs, err := util.ExtractInt(totalDocsVal)
+	if err != nil {
+		log.Errorf("failed to extract source.doc_count, err: %v", err)
+		return nil, err
+	}
 
 	var (
-		indexDocs    float64
-		successDocs  float64
-		scrolledDocs interface{}
+		indexDocs    int64
+		successDocs  int64
+		scrolledDocs int64
 		state        TaskCompleteState
 	)
 	state.TotalDocs = totalDocs
 	state.PipelineIds = pids
+	var bulked, scrolled bool
 	for _, hit := range res.Hits.Hits {
+		if bulked && scrolled {
+			break
+		}
 		resultErr, _ := util.MapStr(hit.Source).GetValue("payload.pipeline.logging.result.error")
 		if errStr, ok := resultErr.(string); ok && errStr != "" {
 			state.Error = errStr
 			state.IsComplete = true
 			state.ClearPipeline = true
 		}
-		for _, key := range []string{"payload.pipeline.logging.context.bulk_indexing.success.count", "payload.pipeline.logging.context.bulk_indexing.failure.count", "payload.pipeline.logging.context.bulk_indexing.invalid.count"} {
-			v, err := util.MapStr(hit.Source).GetValue(key)
-			if err == nil {
-				if fv, ok := v.(float64); ok {
-					indexDocs += fv
-					if key == "payload.pipeline.logging.context.bulk_indexing.success.count" {
-						successDocs = fv
-						state.SuccessDocs = successDocs
+		if !bulked {
+			for _, key := range []string{"payload.pipeline.logging.context.bulk_indexing.success.count", "payload.pipeline.logging.context.bulk_indexing.failure.count", "payload.pipeline.logging.context.bulk_indexing.invalid.count"} {
+				v, err := util.MapStr(hit.Source).GetValue(key)
+				if err == nil {
+					bulked = true
+					if fv, err := util.ExtractInt(v); err == nil {
+						indexDocs += fv
+						if key == "payload.pipeline.logging.context.bulk_indexing.success.count" {
+							successDocs = fv
+							state.SuccessDocs = successDocs
+						}
+					} else {
+						log.Errorf("got %s but failed to extract, err: %v", key, err)
 					}
 				}
-			} else {
-				break
 			}
 		}
-		v, err := util.MapStr(hit.Source).GetValue("payload.pipeline.logging.context.es_scroll.scrolled_docs")
-		if err == nil {
-			scrolledDocs = v
-			if vv, ok := v.(float64); ok {
-				state.ScrolledDocs = vv
+
+		if !scrolled {
+			v, err := util.MapStr(hit.Source).GetValue("payload.pipeline.logging.context.es_scroll.scrolled_docs")
+			if err == nil {
+				scrolled = true
+				if vv, err := util.ExtractInt(v); err == nil {
+					scrolledDocs = vv
+					state.ScrolledDocs = vv
+				} else {
+					log.Errorf("got payload.pipeline.logging.context.es_scroll.scrolled_docs but failed to extract, err: %v", err)
+				}
 			}
 		}
 	}

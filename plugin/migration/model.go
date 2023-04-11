@@ -89,14 +89,13 @@ type ClusterInfo struct {
 }
 
 type TaskCompleteState struct {
-	IsComplete    bool
-	Error         string
-	ClearPipeline bool
-	PipelineIds   []string
-	RunningPhase  int
-	TotalDocs     int64
-	SuccessDocs   int64
-	ScrolledDocs  int64
+	IsComplete   bool
+	Error        string
+	PipelineIds  []string
+	RunningPhase int
+	TotalDocs    int64
+	SuccessDocs  int64
+	ScrolledDocs int64
 }
 
 type MajorTaskState struct {

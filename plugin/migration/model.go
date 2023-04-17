@@ -136,7 +136,6 @@ type IndexMigrationSourceConfig struct {
 	// Parition configs
 	Start       float64     `json:"start"`
 	End         float64     `json:"end"`
-	Docs        int64       `json:"docs"`
 	DocCount    int64       `json:"doc_count"`
 	Step        interface{} `json:"step"`
 	PartitionId int         `json:"partition_id"`
@@ -154,7 +153,6 @@ type IndexMigrationBulkConfig struct {
 type IndexMigrationTargetConfig struct {
 	ClusterId string                   `json:"cluster_id"`
 	Bulk      IndexMigrationBulkConfig `json:"bulk"`
-	QueryDSL  util.MapStr              `json:"query_dsl,omitempty"`
 }
 
 type PipelineTaskLoggingConfig struct {

@@ -153,7 +153,6 @@ type IndexMigrationBulkConfig struct {
 type IndexMigrationTargetConfig struct {
 	ClusterId string                   `json:"cluster_id"`
 	Bulk      IndexMigrationBulkConfig `json:"bulk"`
-	QueryDSL  util.MapStr              `json:"query_dsl,omitempty"`
 }
 
 type PipelineTaskLoggingConfig struct {

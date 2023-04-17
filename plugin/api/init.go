@@ -40,12 +40,13 @@ func Init(cfg *config.AppConfig) {
 	api.HandleAPIMethod(api.GET, path.Join(pathPrefix, "rebuild/_search"), handler.HandleGetRebuildListAction)
 	api.HandleAPIMethod(api.DELETE, path.Join(pathPrefix, "rebuild/:id"), handler.HandleDeleteRebuildAction)
 
-	api.HandleAPIMethod(api.GET, path.Join(esPrefix, "_cat/indices"), handler.RequireLogin(handler.HandleGetIndicesAction))
+	api.HandleAPIMethod(api.GET, path.Join(esPrefix, "_cat/indices"), handler.RequireLogin(handler.HandleCatIndicesAction))
 	api.HandleAPIMethod(api.GET, path.Join(esPrefix, "index/:index/_mappings"), handler.IndexRequired(handler.HandleGetMappingsAction, "indices.get_mapping"))
 	api.HandleAPIMethod(api.GET, path.Join(esPrefix, "index/:index/_settings"), handler.IndexRequired(handler.HandleGetSettingsAction, "indices.get_settings"))
 	api.HandleAPIMethod(api.PUT, path.Join(esPrefix, "index/:index/_settings"), handler.IndexRequired(handler.HandleUpdateSettingsAction, "indices.put_settings"))
 	api.HandleAPIMethod(api.DELETE, path.Join(esPrefix, "index/:index"), handler.IndexRequired(handler.HandleDeleteIndexAction, "indices.delete"))
 	api.HandleAPIMethod(api.POST, path.Join(esPrefix, "index/:index"), handler.IndexRequired(handler.HandleCreateIndexAction, "indices.create"))
+	api.HandleAPIMethod(api.GET, path.Join(esPrefix, "index/:index"), handler.IndexRequired(handler.HandleGetIndexAction, "indices.get"))
 
 	api.HandleAPIMethod(api.POST, path.Join(pathPrefix, "elasticsearch/command"), handler.RequirePermission(handler.HandleAddCommonCommandAction, enum.PermissionCommandWrite))
 	api.HandleAPIMethod(api.PUT, path.Join(pathPrefix, "elasticsearch/command/:cid"), handler.RequirePermission(handler.HandleSaveCommonCommandAction, enum.PermissionCommandWrite))

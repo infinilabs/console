@@ -116,6 +116,11 @@ type IndexStateInfo struct {
 	IndexDocs       float64
 }
 
+type InitIndexRequest struct {
+	Mappings map[string]interface{} `json:"mappings"`
+	Settings map[string]interface{} `json:"settings"`
+}
+
 type IndexMigrationTaskConfig struct {
 	Source    IndexMigrationSourceConfig `json:"source"`
 	Target    IndexMigrationTargetConfig `json:"target"`

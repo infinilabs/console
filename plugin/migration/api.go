@@ -40,6 +40,7 @@ func InitAPI() {
 	api.HandleAPIMethod(api.GET, "/migration/data/:task_id/info", handler.RequirePermission(handler.getDataMigrationTaskInfo, enum.PermissionTaskRead))
 	api.HandleAPIMethod(api.GET, "/migration/data/:task_id/info/:index", handler.RequirePermission(handler.getDataMigrationTaskOfIndex, enum.PermissionTaskRead))
 	api.HandleAPIMethod(api.PUT, "/migration/data/:task_id/status", handler.RequirePermission(handler.updateDataMigrationTaskStatus, enum.PermissionTaskRead))
+	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/index/:index/_init", handler.initIndex)
 
 }
 
@@ -943,6 +944,61 @@ func (h *APIHandler) validateMultiType(w http.ResponseWriter, req *http.Request,
 
 	h.WriteJSON(w, util.MapStr{
 		"result": typeInfo,
+	}, http.StatusOK)
+}
+
+func (h *APIHandler) initIndex(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	targetClusterID := ps.MustGetParameter("id")
+	indexName := ps.MustGetParameter("index")
+	reqBody := &InitIndexRequest{}
+	err := h.DecodeJSON(req, reqBody)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	client := elastic.GetClient(targetClusterID)
+	exists, err := client.Exists(indexName)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if exists {
+		if len(reqBody.Settings) > 0 {
+			err = client.UpdateIndexSettings(indexName, reqBody.Settings)
+			if err != nil {
+				log.Error(err)
+				h.WriteError(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+		if len(reqBody.Mappings) > 0 {
+			mappingBytes :=  util.MustToJSONBytes(reqBody.Mappings)
+			_, err = client.UpdateMapping(indexName, mappingBytes)
+			if err != nil {
+				log.Error(err)
+				h.WriteError(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+	}else{
+		indexSettings := map[string]interface{}{}
+		if len(reqBody.Settings) > 0 {
+			indexSettings["settings"] = reqBody.Settings
+		}
+		if len(reqBody.Mappings) > 0 {
+			indexSettings["mappings"] = reqBody.Mappings
+		}
+		err = client.CreateIndex(indexName, indexSettings)
+		if err != nil {
+			log.Error(err)
+			h.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+	h.WriteJSON(w, util.MapStr{
+		"success": true,
 	}, http.StatusOK)
 }
 

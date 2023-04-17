@@ -50,7 +50,7 @@ type APIHandler struct {
 }
 
 func (h *APIHandler) createDataMigrationTask(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	clusterTaskConfig := &ElasticDataConfig{}
+	clusterTaskConfig := &ClusterMigrationTaskConfig{}
 	err := h.DecodeJSON(req, clusterTaskConfig)
 	if err != nil {
 		log.Error(err)
@@ -91,10 +91,10 @@ func (h *APIHandler) createDataMigrationTask(w http.ResponseWriter, req *http.Re
 				"source_total_docs": totalDocs,
 			},
 		},
-		Cancellable: true,
-		Runnable:    false,
-		Status:      task2.StatusInit,
-		Config:      clusterTaskConfig,
+		Cancellable:  true,
+		Runnable:     false,
+		Status:       task2.StatusInit,
+		ConfigString: util.MustToJSON(clusterTaskConfig),
 	}
 	t.ID = util.GetUUID()
 	err = orm.Create(nil, &t)
@@ -175,7 +175,7 @@ func (h *APIHandler) searchDataMigrationTask(w http.ResponseWriter, req *http.Re
 	for _, hit := range searchRes.Hits.Hits {
 		sourceM := util.MapStr(hit.Source)
 		buf := util.MustToJSONBytes(sourceM["config"])
-		dataConfig := ElasticDataConfig{}
+		dataConfig := ClusterMigrationTaskConfig{}
 		err = util.FromJSONBytes(buf, &dataConfig)
 		if err != nil {
 			log.Error(err)
@@ -318,12 +318,14 @@ func (h *APIHandler) stopDataMigrationTask(w http.ResponseWriter, req *http.Requ
 }
 
 func getTaskConfig(task *task2.Task, config interface{}) error {
-	configBytes, err := util.ToJSONBytes(task.Config)
+	if task.Config_ == nil {
+		return util.FromJSONBytes([]byte(task.ConfigString), config)
+	}
+	buf, err := util.ToJSONBytes(task.Config_)
 	if err != nil {
 		return err
 	}
-
-	return util.FromJSONBytes(configBytes, config)
+	return util.FromJSONBytes(buf, config)
 }
 
 func getIndexRefreshInterval(indexNames []string, targetESClient elastic.API) (map[string]string, error) {
@@ -378,7 +380,7 @@ func (h *APIHandler) getIndexRefreshIntervals(w http.ResponseWriter, req *http.R
 		}, http.StatusNotFound)
 		return
 	}
-	taskConfig := &ElasticDataConfig{}
+	taskConfig := &ClusterMigrationTaskConfig{}
 	err = getTaskConfig(&obj, taskConfig)
 	if err != nil {
 		log.Error(err)
@@ -416,7 +418,7 @@ func (h *APIHandler) getDataMigrationTaskInfo(w http.ResponseWriter, req *http.R
 		}, http.StatusNotFound)
 		return
 	}
-	taskConfig := &ElasticDataConfig{}
+	taskConfig := &ClusterMigrationTaskConfig{}
 	err = getTaskConfig(&obj, taskConfig)
 	if err != nil {
 		log.Error(err)
@@ -462,7 +464,7 @@ func (h *APIHandler) getDataMigrationTaskInfo(w http.ResponseWriter, req *http.R
 			"index_name": migrationConfig.LogIndexName,
 		}
 	}
-	obj.Config = taskConfig
+	obj.ConfigString = util.MustToJSON(taskConfig)
 	obj.Metadata.Labels["completed_indices"] = completedIndices
 	h.WriteJSON(w, obj, http.StatusOK)
 }
@@ -736,17 +738,16 @@ func (h *APIHandler) getDataMigrationTaskOfIndex(w http.ResponseWriter, req *htt
 		startTime = subTasks[0].StartTimeInMillis
 	}
 	for i, ptask := range subTasks {
-		var (
-			cfg map[string]interface{}
-			ok  bool
-		)
-		if cfg, ok = ptask.Config.(map[string]interface{}); !ok {
+		cfg := IndexMigrationTaskConfig{}
+		err := getTaskConfig(&ptask, &cfg)
+		if err != nil {
+			log.Errorf("failed to get task config, err: %v", err)
 			continue
 		}
-		start, _ := util.MapStr(cfg).GetValue("source.start")
-		end, _ := util.MapStr(cfg).GetValue("source.end")
+		start := cfg.Source.Start
+		end := cfg.Source.End
 		if i == 0 {
-			step, _ := util.MapStr(cfg).GetValue("source.step")
+			step := cfg.Source.Step
 			taskInfo["step"] = step
 		}
 		var durationInMS int64 = 0
@@ -787,7 +788,7 @@ func (h *APIHandler) getDataMigrationTaskOfIndex(w http.ResponseWriter, req *htt
 			}
 		}
 
-		partitionTotalDocs, _ := util.MapStr(cfg).GetValue("source.doc_count")
+		partitionTotalDocs := cfg.Source.DocCount
 		partitionTaskInfos = append(partitionTaskInfos, util.MapStr{
 			"task_id":        ptask.ID,
 			"status":         ptask.Status,

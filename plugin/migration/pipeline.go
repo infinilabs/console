@@ -13,7 +13,6 @@ import (
 	"time"
 
 	log "github.com/cihub/seelog"
-	"github.com/mitchellh/mapstructure"
 
 	"infini.sh/console/model"
 	"infini.sh/framework/core/config"
@@ -319,7 +318,7 @@ func (p *DispatcherProcessor) handleRunningMajorTask(taskItem *task2.Task) error
 		tn := time.Now()
 		taskItem.CompletedTime = &tn
 		p.sendMajorTaskNotification(taskItem)
-		p.saveTaskAndWriteLog(taskItem, "", nil, fmt.Sprintf("task [%s] completed", taskItem.ID))
+		p.saveTaskAndWriteLog(taskItem, "", nil, fmt.Sprintf("task [%s] finished with status [%s]", taskItem.ID, ts.Status))
 	}
 	return nil
 }
@@ -333,35 +332,6 @@ func (p *DispatcherProcessor) handleRunningSubTask(taskItem *task2.Task) error {
 		if taskItem.Metadata.Labels != nil {
 			taskItem.Metadata.Labels["index_docs"] = state.SuccessDocs
 			taskItem.Metadata.Labels["scrolled_docs"] = state.ScrolledDocs
-			if instanceID, ok := taskItem.Metadata.Labels["execution_instance_id"].(string); ok {
-				inst := model.Instance{}
-				inst.ID = instanceID
-				_, err = orm.Get(&inst)
-				if err == nil {
-					for _, pipelineID := range state.PipelineIds {
-						err = inst.DeletePipeline(pipelineID)
-						if err != nil {
-							log.Errorf("delete pipeline failed, err: %v", err)
-							continue
-						}
-						selector := util.MapStr{
-							"labels": util.MapStr{
-								"migration_task_id": taskItem.ID,
-							},
-						}
-						//clear queue
-						err = inst.DeleteQueueBySelector(selector)
-						if err != nil {
-							log.Errorf("delete queue failed, err: %v", err)
-						}
-					}
-				}
-				if st, ok := p.state[instanceID]; ok {
-					st.Total -= 1
-					p.state[instanceID] = st
-				}
-			}
-
 		}
 		if state.Error != "" && state.TotalDocs != state.SuccessDocs {
 			taskItem.Status = task2.StatusError
@@ -374,7 +344,8 @@ func (p *DispatcherProcessor) handleRunningSubTask(taskItem *task2.Task) error {
 		p.saveTaskAndWriteLog(taskItem, "", &task2.TaskResult{
 			Success: state.Error == "",
 			Error:   state.Error,
-		}, fmt.Sprintf("task [%s] completed", taskItem.ID))
+		}, fmt.Sprintf("task [%s] finished with status [%s]", taskItem.ID, taskItem.Status))
+		p.cleanGatewayPipelines(taskItem, state.PipelineIds)
 	} else {
 		if state.RunningPhase == 1 && taskItem.Metadata.Labels["running_phase"] == float64(1) {
 			ptasks, err := p.getPipelineTasks(taskItem.ID)
@@ -402,7 +373,7 @@ func (p *DispatcherProcessor) handleRunningSubTask(taskItem *task2.Task) error {
 						log.Errorf("failed to get instance, err: %v", err)
 						return err
 					}
-					err = inst.CreatePipeline(util.MustToJSONBytes(bulkTask.Config))
+					err = inst.CreatePipeline([]byte(bulkTask.ConfigString))
 					if err != nil {
 						log.Errorf("failed to create bulk_indexing pipeline, err: %v", err)
 						return err
@@ -484,38 +455,48 @@ MainLoop:
 	}
 	taskItem.Status = task2.StatusStopped
 
+	p.saveTaskAndWriteLog(taskItem, "", nil, fmt.Sprintf("task [%s] stopped", taskItem.ID))
+	p.cleanGatewayPipelines(taskItem, taskIDs)
+	return nil
+}
+
+func (p *DispatcherProcessor) cleanGatewayPipelines(taskItem *task2.Task, pipelineIDs []string) {
+	var err error
 	//delete pipeline and clear queue
-	if instanceID, ok := taskItem.Metadata.Labels["execution_instance_id"].(string); ok {
-		inst := model.Instance{}
-		inst.ID = instanceID
-		_, err = orm.Get(&inst)
+	instanceID, ok := taskItem.Metadata.Labels["execution_instance_id"].(string)
+	if !ok {
+		log.Debugf("task %s not scheduled, skip cleaning gateway stuffs", taskItem.ID)
+		return
+	}
+
+	inst := model.Instance{}
+	inst.ID = instanceID
+	_, err = orm.Get(&inst)
+	if err != nil {
+		log.Errorf("failed to get instance, err: %v", err)
+		return
+	}
+
+	for _, pipelineID := range pipelineIDs {
+		err = inst.DeletePipeline(pipelineID)
 		if err != nil {
-			return err
+			log.Errorf("delete pipeline failed, err: %v", err)
 		}
-		for _, pipelineID := range taskIDs {
-			err = inst.DeletePipeline(pipelineID)
-			if err != nil {
-				log.Errorf("failed to delete pipeline, err: %v", err)
-				continue
-			}
-			selector := util.MapStr{
-				"labels": util.MapStr{
-					"migration_task_id": taskItem.ID,
-				},
-			}
-			//clear queue
-			err = inst.DeleteQueueBySelector(selector)
-			if err != nil {
-				log.Errorf("failed to delete queue, err: %v", err)
-			}
+		selector := util.MapStr{
+			"labels": util.MapStr{
+				"migration_task_id": taskItem.ID,
+			},
 		}
-		if st, ok := p.state[instanceID]; ok {
-			st.Total -= 1
-			p.state[instanceID] = st
+		//clear queue
+		err = inst.DeleteQueueBySelector(selector)
+		if err != nil {
+			log.Errorf("failed to delete queue, err: %v", err)
 		}
 	}
-	p.saveTaskAndWriteLog(taskItem, "", nil, fmt.Sprintf("task [%s] stopped", taskItem.ID))
-	return nil
+	if st, ok := p.state[instanceID]; ok {
+		st.Total -= 1
+		p.state[instanceID] = st
+	}
 }
 
 func (p *DispatcherProcessor) handleReadySubTask(taskItem *task2.Task) error {
@@ -534,10 +515,8 @@ func (p *DispatcherProcessor) handleReadySubTask(taskItem *task2.Task) error {
 			return nil
 		}
 		for i, t := range ptasks {
+			ptasks[i].RetryTimes = taskItem.RetryTimes + 1
 			if t.Metadata.Labels != nil {
-				if cfg, ok := ptasks[i].Config.(map[string]interface{}); ok {
-					util.MapStr(cfg).Put("labels.retry_no", taskItem.RetryTimes+1)
-				}
 				if t.Metadata.Labels["pipeline_id"] == "es_scroll" {
 					scrollTask = &ptasks[i]
 				} else if t.Metadata.Labels["pipeline_id"] == "bulk_indexing" {
@@ -555,35 +534,24 @@ func (p *DispatcherProcessor) handleReadySubTask(taskItem *task2.Task) error {
 		pids = append(pids, taskItem.ParentId...)
 		pids = append(pids, taskItem.ID)
 		scrollID := util.GetUUID()
-		var (
-			cfg map[string]interface{}
-			ok  bool
-		)
-		if cfg, ok = taskItem.Config.(map[string]interface{}); !ok {
-			return fmt.Errorf("got wrong config [%v] with task [%s]", taskItem.Config, taskItem.ID)
+		cfg := IndexMigrationTaskConfig{}
+		err := getTaskConfig(taskItem, &cfg)
+		if err != nil {
+			return fmt.Errorf("got wrong config [%v] with task [%s], err: %v", taskItem.ConfigString, taskItem.ID, err)
 		}
-		cfgm := util.MapStr(cfg)
-		var (
-			sourceClusterID string
-			targetClusterID string
-		)
-		if sourceClusterID, ok = getMapValue(cfgm, "source.cluster_id").(string); !ok {
-			return fmt.Errorf("got wrong source cluster id of task [%v]", *taskItem)
-		}
-		if targetClusterID, ok = getMapValue(cfgm, "target.cluster_id").(string); !ok {
-			return fmt.Errorf("got wrong target cluster id of task [%v]", *taskItem)
-		}
+		sourceClusterID := cfg.Source.ClusterId
+		targetClusterID := cfg.Target.ClusterId
 		esConfig := elastic.GetConfig(sourceClusterID)
 		esTargetConfig := elastic.GetConfig(targetClusterID)
 		docType := common.GetClusterDocType(targetClusterID)
 		if len(taskItem.ParentId) == 0 {
 			return fmt.Errorf("got wrong parent id of task [%v]", *taskItem)
 		}
-		queryDsl := getMapValue(cfgm, "source.query_dsl")
+		queryDsl := cfg.Source.QueryDSL
 		scrollQueryDsl := util.MustToJSON(util.MapStr{
 			"query": queryDsl,
 		})
-		indexName := getMapValue(cfgm, "source.indices")
+		indexName := cfg.Source.Indices
 		scrollTask = &task2.Task{
 			ParentId:    pids,
 			Runnable:    true,
@@ -597,24 +565,24 @@ func (p *DispatcherProcessor) handleReadySubTask(taskItem *task2.Task) error {
 					"unique_index_name": taskItem.Metadata.Labels["unique_index_name"],
 				},
 			},
-			Config: util.MapStr{
-				"name": scrollID,
-				"logging": util.MapStr{
-					"enabled": true,
+			RetryTimes: taskItem.RetryTimes,
+			ConfigString: util.MustToJSON(PipelineTaskConfig{
+				Name: scrollID,
+				Logging: PipelineTaskLoggingConfig{
+					Enabled: true,
 				},
-				"labels": util.MapStr{
+				Labels: util.MapStr{
 					"parent_task_id":    pids,
 					"unique_index_name": taskItem.Metadata.Labels["unique_index_name"],
-					"retry_no":          taskItem.RetryTimes,
 				},
-				"auto_start":   true,
-				"keep_running": false,
-				"processor": []util.MapStr{
+				AutoStart:   true,
+				KeepRunning: false,
+				Processor: []util.MapStr{
 					{
 						"es_scroll": util.MapStr{
 							"remove_type":   docType == "",
-							"slice_size":    getMapValue(cfgm, "source.slice_size"),
-							"batch_size":    getMapValue(cfgm, "source.batch_size"),
+							"slice_size":    cfg.Source.SliceSize,
+							"batch_size":    cfg.Source.BatchSize,
 							"indices":       indexName,
 							"elasticsearch": sourceClusterID,
 							"elasticsearch_config": util.MapStr{
@@ -630,14 +598,14 @@ func (p *DispatcherProcessor) handleReadySubTask(taskItem *task2.Task) error {
 								},
 							},
 							"partition_size": 1,
-							"scroll_time":    getMapValue(cfgm, "source.scroll_time"),
+							"scroll_time":    cfg.Source.ScrollTime,
 							"query_dsl":      scrollQueryDsl,
-							"index_rename":   getMapValue(cfgm, "source.index_rename"),
-							"type_rename":    getMapValue(cfgm, "source.type_rename"),
+							"index_rename":   cfg.Source.IndexRename,
+							"type_rename":    cfg.Source.TypeRename,
 						},
 					},
 				},
-			},
+			}),
 		}
 		scrollTask.ID = scrollID
 
@@ -655,36 +623,31 @@ func (p *DispatcherProcessor) handleReadySubTask(taskItem *task2.Task) error {
 					"unique_index_name": taskItem.Metadata.Labels["unique_index_name"],
 				},
 			},
-			Config: util.MapStr{
-				"name": bulkID,
-				"logging": util.MapStr{
-					"enabled": true,
+			RetryTimes: taskItem.RetryTimes,
+			ConfigString: util.MustToJSON(PipelineTaskConfig{
+				Name: bulkID,
+				Logging: PipelineTaskLoggingConfig{
+					Enabled: true,
 				},
-				"labels": util.MapStr{
+				Labels: util.MapStr{
 					"parent_task_id":    pids,
 					"unique_index_name": taskItem.Metadata.Labels["unique_index_name"],
-					"retry_no":          taskItem.RetryTimes,
 				},
-				"auto_start":   true,
-				"keep_running": false,
-				"processor": []util.MapStr{
+				AutoStart:   true,
+				KeepRunning: false,
+				Processor: []util.MapStr{
 					{
 						"bulk_indexing": util.MapStr{
 							"detect_active_queue": false,
 							"bulk": util.MapStr{
-								"batch_size_in_mb":   getMapValue(cfgm, "target.bulk.batch_size_in_mb"),
-								"batch_size_in_docs": getMapValue(cfgm, "target.bulk.batch_size_in_docs"),
+								"batch_size_in_mb":   cfg.Target.Bulk.BatchSizeInMB,
+								"batch_size_in_docs": cfg.Target.Bulk.BatchSizeInDocs,
 								"invalid_queue":      "bulk_indexing_400",
-								"compress":           getMapValue(cfgm, "target.bulk.compress"),
-								//"retry_rules": util.MapStr{
-								//	"default": false,
-								//	"retry_4xx": false,
-								//	"retry_429": true,
-								//},
+								"compress":           cfg.Target.Bulk.Compress,
 							},
-							"max_worker_size":         getMapValue(cfgm, "target.bulk.max_worker_size"),
-							"num_of_slices":           getMapValue(cfgm, "target.bulk.slice_size"),
-							"idle_timeout_in_seconds": getMapValue(cfgm, "target.bulk.idle_timeout_in_seconds"),
+							"max_worker_size":         cfg.Target.Bulk.MaxWorkerSize,
+							"num_of_slices":           cfg.Target.Bulk.SliceSize,
+							"idle_timeout_in_seconds": cfg.Target.Bulk.IdleTimeoutInSeconds,
 							"elasticsearch":           targetClusterID,
 							"elasticsearch_config": util.MapStr{
 								"name":       targetClusterID,
@@ -699,7 +662,7 @@ func (p *DispatcherProcessor) handleReadySubTask(taskItem *task2.Task) error {
 						},
 					},
 				},
-			},
+			}),
 		}
 		bulkTask.ID = bulkID
 	}
@@ -725,7 +688,7 @@ func (p *DispatcherProcessor) handleReadySubTask(taskItem *task2.Task) error {
 	}
 
 	//call instance api to create pipeline task
-	err = instance.CreatePipeline(util.MustToJSONBytes(scrollTask.Config))
+	err = instance.CreatePipeline([]byte(scrollTask.ConfigString))
 	if err != nil {
 		log.Errorf("create scroll pipeline failed, err: %+v", err)
 		return err
@@ -783,15 +746,13 @@ func (p *DispatcherProcessor) getPreferenceInstance(majorTaskID string) (instanc
 	majorTask.ID = majorTaskID
 	_, err = orm.Get(&majorTask)
 	if err != nil {
+		log.Errorf("failed to get major task, err: %v", err)
 		return
 	}
-	cfg := ElasticDataConfig{}
-	buf, err := util.ToJSONBytes(majorTask.Config)
+	cfg := ClusterMigrationTaskConfig{}
+	err = getTaskConfig(&majorTask, &cfg)
 	if err != nil {
-		return
-	}
-	err = util.FromJSONBytes(buf, &cfg)
-	if err != nil {
+		log.Errorf("failed to get task config, err: %v", err)
 		return
 	}
 	var (
@@ -909,7 +870,7 @@ func writeLog(taskItem *task2.Task, taskResult *task2.TaskResult, message string
 		Fields: util.MapStr{
 			"task": util.MapStr{
 				"logging": util.MapStr{
-					"config":  util.MustToJSON(taskItem.Config),
+					"config":  taskItem.ConfigString,
 					"status":  taskItem.Status,
 					"message": message,
 					"result":  taskResult,
@@ -931,40 +892,40 @@ func (p *DispatcherProcessor) splitMajorMigrationTask(taskItem *task2.Task) erro
 		return nil
 	}
 
-	buf := util.MustToJSONBytes(taskItem.Config)
-	clusterMigrationTask := ElasticDataConfig{}
-	err := util.FromJSONBytes(buf, &clusterMigrationTask)
+	clusterMigrationTask := ClusterMigrationTaskConfig{}
+	err := getTaskConfig(taskItem, &clusterMigrationTask)
 	if err != nil {
+		log.Errorf("failed to get task config, err: %v", err)
 		return err
 	}
 	defer func() {
-		taskItem.Config = clusterMigrationTask
+		taskItem.ConfigString = util.MustToJSON(clusterMigrationTask)
 	}()
 	esSourceClient := elastic.GetClient(clusterMigrationTask.Cluster.Source.Id)
 	targetType := common.GetClusterDocType(clusterMigrationTask.Cluster.Target.Id)
 
 	for _, index := range clusterMigrationTask.Indices {
-		source := util.MapStr{
-			"cluster_id":  clusterMigrationTask.Cluster.Source.Id,
-			"indices":     index.Source.Name,
-			"slice_size":  clusterMigrationTask.Settings.Scroll.SliceSize,
-			"batch_size":  clusterMigrationTask.Settings.Scroll.Docs,
-			"scroll_time": clusterMigrationTask.Settings.Scroll.Timeout,
+		source := IndexMigrationSourceConfig{
+			ClusterId:  clusterMigrationTask.Cluster.Source.Id,
+			Indices:    index.Source.Name,
+			SliceSize:  clusterMigrationTask.Settings.Scroll.SliceSize,
+			BatchSize:  clusterMigrationTask.Settings.Scroll.Docs,
+			ScrollTime: clusterMigrationTask.Settings.Scroll.Timeout,
 		}
 		if index.IndexRename != nil {
-			source["index_rename"] = index.IndexRename
+			source.IndexRename = index.IndexRename
 		}
 		if index.Target.Name != "" {
-			source["index_rename"] = util.MapStr{
+			source.IndexRename = util.MapStr{
 				index.Source.Name: index.Target.Name,
 			}
 		}
 		if index.TypeRename != nil {
-			source["type_rename"] = index.TypeRename
+			source.TypeRename = index.TypeRename
 		}
 
 		if v, ok := index.RawFilter.(string); ok {
-			source["query_string"] = v
+			source.QueryString = v
 		} else {
 			var must []interface{}
 			if index.RawFilter != nil {
@@ -972,7 +933,7 @@ func (p *DispatcherProcessor) splitMajorMigrationTask(taskItem *task2.Task) erro
 			}
 			if index.Source.DocType != "" {
 				if index.Target.DocType != "" {
-					source["type_rename"] = util.MapStr{
+					source.TypeRename = util.MapStr{
 						index.Source.DocType: index.Target.DocType,
 					}
 				}
@@ -983,13 +944,13 @@ func (p *DispatcherProcessor) splitMajorMigrationTask(taskItem *task2.Task) erro
 				})
 			} else {
 				if targetType != "" {
-					source["type_rename"] = util.MapStr{
+					source.TypeRename = util.MapStr{
 						"*": index.Target.DocType,
 					}
 				}
 			}
 			if len(must) > 0 {
-				source["query_dsl"] = util.MapStr{
+				source.QueryDSL = util.MapStr{
 					"bool": util.MapStr{
 						"must": must,
 					},
@@ -1008,20 +969,20 @@ func (p *DispatcherProcessor) splitMajorMigrationTask(taskItem *task2.Task) erro
 			})
 		}
 
-		target := util.MapStr{
-			"cluster_id": clusterMigrationTask.Cluster.Target.Id,
-			"bulk": util.MapStr{
-				"batch_size_in_mb":        clusterMigrationTask.Settings.Bulk.StoreSizeInMB,
-				"batch_size_in_docs":      clusterMigrationTask.Settings.Bulk.Docs,
-				"max_worker_size":         clusterMigrationTask.Settings.Bulk.MaxWorkerSize,
-				"idle_timeout_in_seconds": clusterMigrationTask.Settings.Bulk.IdleTimeoutInSeconds,
-				"slice_size":              clusterMigrationTask.Settings.Bulk.SliceSize,
-				"compress":                clusterMigrationTask.Settings.Bulk.Compress,
+		target := IndexMigrationTargetConfig{
+			ClusterId: clusterMigrationTask.Cluster.Target.Id,
+			Bulk: IndexMigrationBulkConfig{
+				BatchSizeInMB:        clusterMigrationTask.Settings.Bulk.StoreSizeInMB,
+				BatchSizeInDocs:      clusterMigrationTask.Settings.Bulk.Docs,
+				MaxWorkerSize:        clusterMigrationTask.Settings.Bulk.MaxWorkerSize,
+				IdleTimeoutInSeconds: clusterMigrationTask.Settings.Bulk.IdleTimeoutInSeconds,
+				SliceSize:            clusterMigrationTask.Settings.Bulk.SliceSize,
+				Compress:             clusterMigrationTask.Settings.Bulk.Compress,
 			},
 		}
-		indexParameters := util.MapStr{
-			"source": source,
-			"target": target,
+		indexParameters := IndexMigrationTaskConfig{
+			Source: source,
+			Target: target,
 		}
 		indexMigrationTask := task2.Task{
 			ParentId:          []string{taskItem.ID},
@@ -1040,7 +1001,7 @@ func (p *DispatcherProcessor) splitMajorMigrationTask(taskItem *task2.Task) erro
 					"unique_index_name": index.Source.GetUniqueIndexName(),
 				},
 			},
-			Config: indexParameters,
+			ConfigString: util.MustToJSON(indexParameters),
 		}
 
 		indexMigrationTask.ID = util.GetUUID()
@@ -1052,7 +1013,7 @@ func (p *DispatcherProcessor) splitMajorMigrationTask(taskItem *task2.Task) erro
 				FieldType: index.Partition.FieldType,
 				Step:      index.Partition.Step,
 				//Filter: index.RawFilter,
-				Filter: source["query_dsl"],
+				Filter: source.QueryDSL,
 			}
 			partitions, err := elastic.GetPartitions(partitionQ, esSourceClient)
 			if err != nil {
@@ -1070,20 +1031,14 @@ func (p *DispatcherProcessor) splitMajorMigrationTask(taskItem *task2.Task) erro
 					continue
 				}
 				partitionID++
-				partitionSource := util.MapStr{
-					"start":        partition.Start,
-					"end":          partition.End,
-					"doc_count":    partition.Docs,
-					"step":         index.Partition.Step,
-					"partition_id": partitionID,
-				}
-				for k, v := range source {
-					if k == "query_string" {
-						continue
-					}
-					partitionSource[k] = v
-				}
-				partitionSource["query_dsl"] = partition.Filter
+				partitionSource := source
+				partitionSource.Start = partition.Start
+				partitionSource.End = partition.End
+				partitionSource.DocCount = partition.Docs
+				partitionSource.Step = index.Partition.Step
+				partitionSource.PartitionId = partitionID
+				partitionSource.QueryDSL = partition.Filter
+				partitionSource.QueryString = ""
 				var must []interface{}
 
 				if partition.Other {
@@ -1102,8 +1057,9 @@ func (p *DispatcherProcessor) splitMajorMigrationTask(taskItem *task2.Task) erro
 				if targetMust != nil {
 					must = append(must, targetMust...)
 				}
+				partitionTarget := target
 				if len(must) > 0 {
-					target["query_dsl"] = util.MapStr{
+					partitionTarget.QueryDSL = util.MapStr{
 						"query": util.MapStr{
 							"bool": util.MapStr{
 								"must": must,
@@ -1127,22 +1083,22 @@ func (p *DispatcherProcessor) splitMajorMigrationTask(taskItem *task2.Task) erro
 							"unique_index_name": index.Source.GetUniqueIndexName(),
 						},
 					},
-					Config: util.MapStr{
-						"source":    partitionSource,
-						"target":    target,
-						"execution": clusterMigrationTask.Settings.Execution,
-					},
+					ConfigString: util.MustToJSON(IndexMigrationTaskConfig{
+						Source:    partitionSource,
+						Target:    partitionTarget,
+						Execution: clusterMigrationTask.Settings.Execution,
+					}),
 				}
 				partitionMigrationTask.ID = util.GetUUID()
 				err = orm.Create(nil, &partitionMigrationTask)
-				delete(target, "query_dsl")
+				target.QueryDSL = nil
 				if err != nil {
 					return fmt.Errorf("store index migration task(partition) error: %w", err)
 				}
 
 			}
 		} else {
-			source["doc_count"] = index.Source.Docs
+			source.DocCount = index.Source.Docs
 			err = orm.Create(nil, &indexMigrationTask)
 			if err != nil {
 				return fmt.Errorf("store index migration task error: %w", err)
@@ -1255,23 +1211,13 @@ func (p *DispatcherProcessor) getTaskCompleteState(subTask *task2.Task) (*TaskCo
 		log.Errorf("search task log from es failed, err: %v", err)
 		return nil, err
 	}
-	var (
-		cfg map[string]interface{}
-		ok  bool
-	)
-	if cfg, ok = subTask.Config.(map[string]interface{}); !ok {
+	cfg := IndexMigrationTaskConfig{}
+	err = getTaskConfig(subTask, &cfg)
+	if err != nil {
+		log.Errorf("failed to get task config, err: %v", err)
 		return nil, fmt.Errorf("got wrong config of task %v", *subTask)
 	}
-	totalDocsVal, err := util.MapStr(cfg).GetValue("source.doc_count")
-	if err != nil {
-		log.Errorf("failed to get source.doc_count, err: %v", err)
-		return nil, err
-	}
-	totalDocs, err := util.ExtractInt(totalDocsVal)
-	if err != nil {
-		log.Errorf("failed to extract source.doc_count, err: %v", err)
-		return nil, err
-	}
+	totalDocs := cfg.Source.DocCount
 
 	var (
 		indexDocs    int64
@@ -1290,7 +1236,6 @@ func (p *DispatcherProcessor) getTaskCompleteState(subTask *task2.Task) (*TaskCo
 		if errStr, ok := resultErr.(string); ok && errStr != "" {
 			state.Error = errStr
 			state.IsComplete = true
-			state.ClearPipeline = true
 		}
 		if !bulked {
 			for _, key := range []string{"payload.pipeline.logging.context.bulk_indexing.success.count", "payload.pipeline.logging.context.bulk_indexing.failure.count", "payload.pipeline.logging.context.bulk_indexing.invalid.count"} {
@@ -1476,7 +1421,8 @@ func (p *DispatcherProcessor) getInstanceTaskState() (map[string]DispatcherState
 }
 
 func (p *DispatcherProcessor) sendMajorTaskNotification(taskItem *task2.Task) {
-	config, err := p.extractTaskConfig(taskItem)
+	config := ClusterMigrationTaskConfig{}
+	err := getTaskConfig(taskItem, &config)
 	if err != nil {
 		log.Errorf("failed to parse config info from major task, id: %s, err: %v", taskItem.ID, err)
 		return
@@ -1518,22 +1464,4 @@ func (p *DispatcherProcessor) sendMajorTaskNotification(taskItem *task2.Task) {
 		return
 	}
 	return
-}
-
-func (p *DispatcherProcessor) extractTaskConfig(taskItem *task2.Task) (*ElasticDataConfig, error) {
-	origConfig, ok := taskItem.Config.(ElasticDataConfig)
-	if ok {
-		return &origConfig, nil
-	}
-	rawConfig, ok := taskItem.Config.(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("failed to extract configuration from major task, id: %s, type: %T", taskItem.ID, taskItem.Config)
-	}
-
-	config := &ElasticDataConfig{}
-	err := mapstructure.Decode(rawConfig, config)
-	if err != nil {
-		return nil, err
-	}
-	return config, nil
 }

@@ -4,9 +4,13 @@
 
 package migration
 
-import "fmt"
+import (
+	"fmt"
 
-type ElasticDataConfig struct {
+	"infini.sh/framework/core/util"
+)
+
+type ClusterMigrationTaskConfig struct {
 	Cluster struct {
 		Source ClusterInfo `json:"source"`
 		Target ClusterInfo `json:"target"`
@@ -20,20 +24,22 @@ type ElasticDataConfig struct {
 			Docs      int    `json:"docs"`
 			Timeout   string `json:"timeout"`
 		} `json:"scroll"`
-		Bulk struct {
-			Docs                 int  `json:"docs"`
-			StoreSizeInMB        int  `json:"store_size_in_mb"`
-			MaxWorkerSize        int  `json:"max_worker_size"`
-			IdleTimeoutInSeconds int  `json:"idle_timeout_in_seconds"`
-			SliceSize            int  `json:"slice_size"`
-			Compress             bool `json:"compress"`
-		} `json:"bulk"`
-		Execution ExecutionConfig `json:"execution"`
+		Bulk      ClusterMigrationBulkConfig `json:"bulk"`
+		Execution ExecutionConfig            `json:"execution"`
 	} `json:"settings"`
 	Creator struct {
 		Name string `json:"name"`
 		Id   string `json:"id"`
 	} `json:"creator"`
+}
+
+type ClusterMigrationBulkConfig struct {
+	Docs                 int  `json:"docs"`
+	StoreSizeInMB        int  `json:"store_size_in_mb"`
+	MaxWorkerSize        int  `json:"max_worker_size"`
+	IdleTimeoutInSeconds int  `json:"idle_timeout_in_seconds"`
+	SliceSize            int  `json:"slice_size"`
+	Compress             bool `json:"compress"`
 }
 
 type ExecutionConfig struct {
@@ -65,6 +71,7 @@ type IndexConfig struct {
 	Percent         float64 `json:"percent,omitempty"`
 	ErrorPartitions int     `json:"error_partitions,omitempty"`
 }
+
 type IndexPartition struct {
 	FieldType string      `json:"field_type"`
 	FieldName string      `json:"field_name"`
@@ -89,14 +96,13 @@ type ClusterInfo struct {
 }
 
 type TaskCompleteState struct {
-	IsComplete    bool
-	Error         string
-	ClearPipeline bool
-	PipelineIds   []string
-	RunningPhase  int
-	TotalDocs     int64
-	SuccessDocs   int64
-	ScrolledDocs  int64
+	IsComplete   bool
+	Error        string
+	PipelineIds  []string
+	RunningPhase int
+	TotalDocs    int64
+	SuccessDocs  int64
+	ScrolledDocs int64
 }
 
 type MajorTaskState struct {
@@ -113,4 +119,58 @@ type IndexStateInfo struct {
 type InitIndexRequest struct {
 	Mappings map[string]interface{} `json:"mappings"`
 	Settings map[string]interface{} `json:"settings"`
+}
+
+type IndexMigrationTaskConfig struct {
+	Source    IndexMigrationSourceConfig `json:"source"`
+	Target    IndexMigrationTargetConfig `json:"target"`
+	Execution ExecutionConfig            `json:"execution"`
+}
+
+type IndexMigrationSourceConfig struct {
+	ClusterId   string      `json:"cluster_id"`
+	Indices     string      `json:"indices"`
+	SliceSize   int         `json:"slice_size"`
+	BatchSize   int         `json:"batch_size"`
+	ScrollTime  string      `json:"scroll_time"`
+	IndexRename util.MapStr `json:"index_rename,omitempty"`
+	TypeRename  util.MapStr `json:"type_rename,omitempty"`
+	QueryString string      `json:"query_string,omitempty'`
+	QueryDSL    util.MapStr `json:"query_dsl,omitempty"`
+
+	// Parition configs
+	Start       float64     `json:"start"`
+	End         float64     `json:"end"`
+	Docs        int64       `json:"docs"`
+	DocCount    int64       `json:"doc_count"`
+	Step        interface{} `json:"step"`
+	PartitionId int         `json:"partition_id"`
+}
+
+type IndexMigrationBulkConfig struct {
+	BatchSizeInDocs      int  `json:"batch_size_in_docs"`
+	BatchSizeInMB        int  `json:"batch_size_in_mb"`
+	MaxWorkerSize        int  `json:"max_worker_size"`
+	IdleTimeoutInSeconds int  `json:"idle_timeout_in_seconds"`
+	SliceSize            int  `json:"slice_size"`
+	Compress             bool `json:"compress"`
+}
+
+type IndexMigrationTargetConfig struct {
+	ClusterId string                   `json:"cluster_id"`
+	Bulk      IndexMigrationBulkConfig `json:"bulk"`
+	QueryDSL  util.MapStr              `json:"query_dsl,omitempty"`
+}
+
+type PipelineTaskLoggingConfig struct {
+	Enabled bool `json:"enabled"`
+}
+
+type PipelineTaskConfig struct {
+	Name        string                    `json:"name"`
+	Logging     PipelineTaskLoggingConfig `json:"logging"`
+	Labels      util.MapStr               `json:"labels"`
+	AutoStart   bool                      `json:"auto_start"`
+	KeepRunning bool                      `json:"keep_running"`
+	Processor   []util.MapStr             `json:"processor"`
 }

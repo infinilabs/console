@@ -136,7 +136,6 @@ type IndexMigrationSourceConfig struct {
 	// Parition configs
 	Start       float64     `json:"start"`
 	End         float64     `json:"end"`
-	Docs        int64       `json:"docs"`
 	DocCount    int64       `json:"doc_count"`
 	Step        interface{} `json:"step"`
 	PartitionId int         `json:"partition_id"`

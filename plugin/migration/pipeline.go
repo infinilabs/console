@@ -980,31 +980,6 @@ func (p *DispatcherProcessor) splitMajorMigrationTask(taskItem *task2.Task) erro
 				Compress:             clusterMigrationTask.Settings.Bulk.Compress,
 			},
 		}
-		indexParameters := IndexMigrationTaskConfig{
-			Source: source,
-			Target: target,
-		}
-		indexMigrationTask := task2.Task{
-			ParentId:          []string{taskItem.ID},
-			Cancellable:       true,
-			Runnable:          false,
-			Status:            task2.StatusReady,
-			StartTimeInMillis: time.Now().UnixMilli(),
-			Metadata: task2.Metadata{
-				Type: "index_migration",
-				Labels: util.MapStr{
-					"business_id":       "index_migration",
-					"source_cluster_id": clusterMigrationTask.Cluster.Source.Id,
-					"target_cluster_id": clusterMigrationTask.Cluster.Target.Id,
-					"partition_count":   1,
-					"index_name":        index.Source.Name,
-					"unique_index_name": index.Source.GetUniqueIndexName(),
-				},
-			},
-			ConfigString: util.MustToJSON(indexParameters),
-		}
-
-		indexMigrationTask.ID = util.GetUUID()
 
 		if index.Partition != nil {
 			partitionQ := &elastic.PartitionQuery{
@@ -1099,6 +1074,33 @@ func (p *DispatcherProcessor) splitMajorMigrationTask(taskItem *task2.Task) erro
 			}
 		} else {
 			source.DocCount = index.Source.Docs
+
+			indexParameters := IndexMigrationTaskConfig{
+				Source: source,
+				Target: target,
+			}
+			indexMigrationTask := task2.Task{
+				ParentId:          []string{taskItem.ID},
+				Cancellable:       true,
+				Runnable:          false,
+				Status:            task2.StatusReady,
+				StartTimeInMillis: time.Now().UnixMilli(),
+				Metadata: task2.Metadata{
+					Type: "index_migration",
+					Labels: util.MapStr{
+						"business_id":       "index_migration",
+						"source_cluster_id": clusterMigrationTask.Cluster.Source.Id,
+						"target_cluster_id": clusterMigrationTask.Cluster.Target.Id,
+						"partition_count":   1,
+						"index_name":        index.Source.Name,
+						"unique_index_name": index.Source.GetUniqueIndexName(),
+					},
+				},
+				ConfigString: util.MustToJSON(indexParameters),
+			}
+
+			indexMigrationTask.ID = util.GetUUID()
+
 			err = orm.Create(nil, &indexMigrationTask)
 			if err != nil {
 				return fmt.Errorf("store index migration task error: %w", err)

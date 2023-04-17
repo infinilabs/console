@@ -109,3 +109,8 @@ type IndexStateInfo struct {
 	ErrorPartitions int
 	IndexDocs       float64
 }
+
+type InitIndexRequest struct {
+	Mappings map[string]interface{} `json:"mappings"`
+	Settings map[string]interface{} `json:"settings"`
+}

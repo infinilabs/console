@@ -37,7 +37,7 @@ func (handler APIHandler) HandleGetMappingsAction(w http.ResponseWriter, req *ht
 	handler.WriteJSON(w, idxs, http.StatusOK)
 }
 
-func (handler APIHandler) HandleGetIndicesAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+func (handler APIHandler) HandleCatIndicesAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	targetClusterID := ps.ByName("id")
 	client := elastic.GetClient(targetClusterID)
 	//filter indices
@@ -145,4 +145,18 @@ func (handler APIHandler) HandleCreateIndexAction(w http.ResponseWriter, req *ht
 	}
 	resBody["result"] = "created"
 	handler.WriteJSON(w, resBody, http.StatusCreated)
+}
+
+func (handler APIHandler) HandleGetIndexAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	targetClusterID := ps.ByName("id")
+	client := elastic.GetClient(targetClusterID)
+	indexName := ps.ByName("index")
+	indexRes, err := client.GetIndex(indexName)
+	if err != nil {
+		log.Error(err)
+		handler.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	handler.WriteJSON(w, indexRes, http.StatusOK)
+
 }

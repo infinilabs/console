@@ -976,9 +976,21 @@ func (h *APIHandler) initIndex(w http.ResponseWriter, req *http.Request, ps http
 				return
 			}
 		}
-		if len(reqBody.Mappings) > 0 {
-			mappingBytes :=  util.MustToJSONBytes(reqBody.Mappings)
-			_, err = client.UpdateMapping(indexName, mappingBytes)
+		if ml := len(reqBody.Mappings); ml > 0 {
+			var (
+				docType = ""
+				mapping interface{} = reqBody.Mappings
+			)
+			if ml == 1 {
+				for key, _ := range reqBody.Mappings {
+					if key != "properties" {
+						docType = key
+						mapping = reqBody.Mappings[key]
+					}
+				}
+			}
+			mappingBytes :=  util.MustToJSONBytes(mapping)
+			_, err = client.UpdateMapping(indexName, docType, mappingBytes)
 			if err != nil {
 				log.Error(err)
 				h.WriteError(w, err.Error(), http.StatusInternalServerError)

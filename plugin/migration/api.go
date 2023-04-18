@@ -8,24 +8,27 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	elastic2 "infini.sh/framework/modules/elastic"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
-	"infini.sh/framework/core/api/rbac/enum"
-
 	log "github.com/cihub/seelog"
+
 	"infini.sh/console/model"
+	migration_model "infini.sh/console/plugin/migration/model"
+	migration_util "infini.sh/console/plugin/migration/util"
+
 	"infini.sh/framework/core/api"
 	"infini.sh/framework/core/api/rbac"
+	"infini.sh/framework/core/api/rbac/enum"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/orm"
 	task2 "infini.sh/framework/core/task"
 	"infini.sh/framework/core/util"
+	elastic2 "infini.sh/framework/modules/elastic"
 )
 
 func InitAPI() {
@@ -53,7 +56,7 @@ type APIHandler struct {
 }
 
 func (h *APIHandler) createDataMigrationTask(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	clusterTaskConfig := &ClusterMigrationTaskConfig{}
+	clusterTaskConfig := &migration_model.ClusterMigrationTaskConfig{}
 	err := h.DecodeJSON(req, clusterTaskConfig)
 	if err != nil {
 		log.Error(err)
@@ -178,7 +181,7 @@ func (h *APIHandler) searchDataMigrationTask(w http.ResponseWriter, req *http.Re
 	for _, hit := range searchRes.Hits.Hits {
 		sourceM := util.MapStr(hit.Source)
 		buf := util.MustToJSONBytes(sourceM["config"])
-		dataConfig := ClusterMigrationTaskConfig{}
+		dataConfig := migration_model.ClusterMigrationTaskConfig{}
 		err = util.FromJSONBytes(buf, &dataConfig)
 		if err != nil {
 			log.Error(err)
@@ -246,7 +249,7 @@ func (h *APIHandler) startDataMigration(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	writeLog(&obj, &task2.TaskResult{
+	migration_util.WriteLog(&obj, &task2.TaskResult{
 		Success: true,
 	}, "task status manually set to ready")
 
@@ -311,24 +314,13 @@ func (h *APIHandler) stopDataMigrationTask(w http.ResponseWriter, req *http.Requ
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	writeLog(&obj, &task2.TaskResult{
+	migration_util.WriteLog(&obj, &task2.TaskResult{
 		Success: true,
 	}, "task status manually set to pending stop")
 
 	h.WriteJSON(w, util.MapStr{
 		"success": true,
 	}, 200)
-}
-
-func getTaskConfig(task *task2.Task, config interface{}) error {
-	if task.Config_ == nil {
-		return util.FromJSONBytes([]byte(task.ConfigString), config)
-	}
-	buf, err := util.ToJSONBytes(task.Config_)
-	if err != nil {
-		return err
-	}
-	return util.FromJSONBytes(buf, config)
 }
 
 func getIndexRefreshInterval(indexNames []string, targetESClient elastic.API) (map[string]string, error) {
@@ -383,8 +375,8 @@ func (h *APIHandler) getIndexRefreshIntervals(w http.ResponseWriter, req *http.R
 		}, http.StatusNotFound)
 		return
 	}
-	taskConfig := &ClusterMigrationTaskConfig{}
-	err = getTaskConfig(&obj, taskConfig)
+	taskConfig := &migration_model.ClusterMigrationTaskConfig{}
+	err = migration_util.GetTaskConfig(&obj, taskConfig)
 	if err != nil {
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -421,8 +413,8 @@ func (h *APIHandler) getDataMigrationTaskInfo(w http.ResponseWriter, req *http.R
 		}, http.StatusNotFound)
 		return
 	}
-	taskConfig := &ClusterMigrationTaskConfig{}
-	err = getTaskConfig(&obj, taskConfig)
+	taskConfig := &migration_model.ClusterMigrationTaskConfig{}
+	err = migration_util.GetTaskConfig(&obj, taskConfig)
 	if err != nil {
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -471,7 +463,7 @@ func (h *APIHandler) getDataMigrationTaskInfo(w http.ResponseWriter, req *http.R
 	obj.Metadata.Labels["completed_indices"] = completedIndices
 	h.WriteJSON(w, obj, http.StatusOK)
 }
-func getMajorTaskInfoByIndex(taskID string) (map[string]IndexStateInfo, error) {
+func getMajorTaskInfoByIndex(taskID string) (map[string]migration_model.IndexStateInfo, error) {
 	query := util.MapStr{
 		"size": 0,
 		"aggs": util.MapStr{
@@ -529,13 +521,13 @@ func getMajorTaskInfoByIndex(taskID string) (map[string]IndexStateInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	resBody := map[string]IndexStateInfo{}
+	resBody := map[string]migration_model.IndexStateInfo{}
 
 	if taskAgg, ok := searchRes.Aggregations["group_by_task"]; ok {
 		for _, bk := range taskAgg.Buckets {
 			if key, ok := bk["key"].(string); ok {
 				//resBody[key] = int(bk["doc_count"].(float64))
-				resBody[key] = IndexStateInfo{}
+				resBody[key] = migration_model.IndexStateInfo{}
 				if statusAgg, ok := bk["group_by_status"].(map[string]interface{}); ok {
 					if sbks, ok := statusAgg["buckets"].([]interface{}); ok {
 						for _, sbk := range sbks {
@@ -565,7 +557,7 @@ func getMajorTaskInfoByIndex(taskID string) (map[string]IndexStateInfo, error) {
 	return resBody, nil
 }
 
-func getIndexTaskDocCount(ctx context.Context, index *IndexConfig, targetESClient elastic.API) (int64, error) {
+func getIndexTaskDocCount(ctx context.Context, index *migration_model.IndexConfig, targetESClient elastic.API) (int64, error) {
 	targetIndexName := index.Target.Name
 	if targetIndexName == "" {
 		if v, ok := index.IndexRename[index.Source.Name].(string); ok {
@@ -741,8 +733,8 @@ func (h *APIHandler) getDataMigrationTaskOfIndex(w http.ResponseWriter, req *htt
 		startTime = subTasks[0].StartTimeInMillis
 	}
 	for i, ptask := range subTasks {
-		cfg := IndexMigrationTaskConfig{}
-		err := getTaskConfig(&ptask, &cfg)
+		cfg := migration_model.IndexMigrationTaskConfig{}
+		err := migration_util.GetTaskConfig(&ptask, &cfg)
 		if err != nil {
 			log.Errorf("failed to get task config, err: %v", err)
 			continue
@@ -950,6 +942,11 @@ func (h *APIHandler) validateMultiType(w http.ResponseWriter, req *http.Request,
 	}, http.StatusOK)
 }
 
+type InitIndexRequest struct {
+	Mappings map[string]interface{} `json:"mappings"`
+	Settings map[string]interface{} `json:"settings"`
+}
+
 func (h *APIHandler) initIndex(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	targetClusterID := ps.MustGetParameter("id")
 	indexName := ps.MustGetParameter("index")
@@ -978,7 +975,7 @@ func (h *APIHandler) initIndex(w http.ResponseWriter, req *http.Request, ps http
 		}
 		if ml := len(reqBody.Mappings); ml > 0 {
 			var (
-				docType = ""
+				docType             = ""
 				mapping interface{} = reqBody.Mappings
 			)
 			if ml == 1 {
@@ -989,7 +986,7 @@ func (h *APIHandler) initIndex(w http.ResponseWriter, req *http.Request, ps http
 					}
 				}
 			}
-			mappingBytes :=  util.MustToJSONBytes(mapping)
+			mappingBytes := util.MustToJSONBytes(mapping)
 			_, err = client.UpdateMapping(indexName, docType, mappingBytes)
 			if err != nil {
 				log.Error(err)
@@ -997,7 +994,7 @@ func (h *APIHandler) initIndex(w http.ResponseWriter, req *http.Request, ps http
 				return
 			}
 		}
-	}else{
+	} else {
 		indexSettings := map[string]interface{}{}
 		if len(reqBody.Settings) > 0 {
 			indexSettings["settings"] = reqBody.Settings
@@ -1063,7 +1060,7 @@ func (h *APIHandler) deleteDataMigrationTask(w http.ResponseWriter, req *http.Re
 			},
 		},
 	}
-	err = orm.DeleteBy( &obj, util.MustToJSONBytes(q))
+	err = orm.DeleteBy(&obj, util.MustToJSONBytes(q))
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -1076,7 +1073,7 @@ func (h *APIHandler) deleteDataMigrationTask(w http.ResponseWriter, req *http.Re
 	}, 200)
 }
 
-func getMajorTaskStatsFromInstances(majorTaskID string) (taskStats MajorTaskState, err error) {
+func getMajorTaskStatsFromInstances(majorTaskID string) (taskStats migration_model.MajorTaskState, err error) {
 	taskQuery := util.MapStr{
 		"size": 500,
 		"query": util.MapStr{
@@ -1179,7 +1176,7 @@ func getMajorTaskStatsFromInstances(majorTaskID string) (taskStats MajorTaskStat
 	return taskStats, nil
 }
 
-func getMajorTaskByIndexFromES(majorTaskID string) (map[string]IndexStateInfo, error) {
+func getMajorTaskByIndexFromES(majorTaskID string) (map[string]migration_model.IndexStateInfo, error) {
 	taskQuery := util.MapStr{
 		"size": 500,
 		"query": util.MapStr{
@@ -1229,7 +1226,7 @@ func getMajorTaskByIndexFromES(majorTaskID string) (map[string]IndexStateInfo, e
 			}
 		}
 	}
-	state := map[string]IndexStateInfo{}
+	state := map[string]migration_model.IndexStateInfo{}
 	for instID, taskIDs := range pipelineTaskIDs {
 		inst := &model.Instance{}
 		inst.ID = instID

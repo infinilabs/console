@@ -135,7 +135,7 @@ type IndexMigrationSourceConfig struct {
 	ScrollTime  string      `json:"scroll_time"`
 	IndexRename util.MapStr `json:"index_rename,omitempty"`
 	TypeRename  util.MapStr `json:"type_rename,omitempty"`
-	QueryString string      `json:"query_string,omitempty'`
+	QueryString string      `json:"query_string,omitempty"`
 	QueryDSL    util.MapStr `json:"query_dsl,omitempty"`
 
 	// Parition configs

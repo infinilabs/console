@@ -18,6 +18,7 @@ type Layout struct {
 	Config interface{} `json:"config" elastic_mapping:"config: { type: object, enabled:false }"`
 	Reserved bool  `json:"reserved,omitempty" elastic_mapping:"reserved:{type:boolean}"`
 	Type LayoutType `json:"type" elastic_mapping:"type: { type: keyword }"`
+	IsFixed bool `json:"is_fixed" elastic_mapping:"is_fixed: { type: boolean }"`
 }
 
 type LayoutType string

@@ -328,7 +328,10 @@ func (p *DispatcherProcessor) handleRunningSubTask(taskItem *task2.Task) error {
 		return nil
 	}
 
-	scrolledDocs := migration_util.GetMapIntValue(util.MapStr(scrollTask.Metadata.Labels), "scrolled_docs")
+	var (
+		scrollLabels = util.MapStr(scrollTask.Metadata.Labels)
+		scrolledDocs = migration_util.GetMapIntValue(scrollLabels, "scrolled_docs")
+	)
 	if scrolledDocs != totalDocs {
 		return fmt.Errorf("scroll complete but docs count unmatch: %d / %d", scrolledDocs, totalDocs)
 	}
@@ -346,9 +349,16 @@ func (p *DispatcherProcessor) handleRunningSubTask(taskItem *task2.Task) error {
 		return nil
 	}
 
-	successDocs := migration_util.GetMapIntValue(util.MapStr(bulkTask.Metadata.Labels), "success_docs")
+	var (
+		bulkLabels     = util.MapStr(bulkTask.Metadata.Labels)
+		successDocs    = migration_util.GetMapIntValue(bulkLabels, "success_docs")
+		invalidDocs    = migration_util.GetMapStringValue(bulkLabels, "invalid_docs")
+		invalidReasons = migration_util.GetMapStringValue(bulkLabels, "invalid_reasons")
+		failureDocs    = migration_util.GetMapStringValue(bulkLabels, "failure_docs")
+		failureReasons = migration_util.GetMapStringValue(bulkLabels, "failure_reasons")
+	)
 	if successDocs != totalDocs {
-		return fmt.Errorf("bulk complete but docs count unmatch: %d / %d", successDocs, totalDocs)
+		return fmt.Errorf("bulk complete but docs count unmatch: %d / %d, invalid docs: [%s] (reasons: [%s]), failure docs: [%s] (reasons: [%s])", successDocs, totalDocs, invalidDocs, invalidReasons, failureDocs, failureReasons)
 	}
 
 	taskItem.Status = task2.StatusComplete

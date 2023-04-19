@@ -64,3 +64,43 @@ func GetMapIntValue(m util.MapStr, key string) int64 {
 	}
 	return vv
 }
+
+func GetMapStringValue(m util.MapStr, key string) string {
+	v, err := m.GetValue(key)
+	if err != nil {
+		return ""
+	}
+	vv, err := util.ExtractString(v)
+	if err != nil {
+		log.Errorf("got %s but failed to extract, err: %v", key, err)
+		return ""
+	}
+	return vv
+}
+
+func GetMapStringSliceValue(m util.MapStr, key string) []string {
+	v, err := m.GetValue(key)
+	if err != nil {
+		return nil
+	}
+	vv, ok := v.([]string)
+	if !ok {
+		vv, ok := v.([]interface{})
+		if !ok {
+			log.Errorf("got %s but failed to extract, type: %T", key, v)
+			return nil
+		}
+		log.Info(key, vv)
+		ret := make([]string, len(vv))
+		var err error
+		for i := range vv {
+			ret[i], err = util.ExtractString(vv[i])
+			if err != nil {
+				log.Errorf("got %s but failed to extract, err: %v", key, err)
+				return nil
+			}
+		}
+		return ret
+	}
+	return vv
+}

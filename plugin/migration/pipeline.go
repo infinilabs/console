@@ -987,8 +987,9 @@ func (p *DispatcherProcessor) splitMajorMigrationTask(taskItem *task2.Task) erro
 				FieldName: index.Partition.FieldName,
 				FieldType: index.Partition.FieldType,
 				Step:      index.Partition.Step,
-				//Filter: index.RawFilter,
-				Filter: source.QueryDSL,
+			}
+			if source.QueryDSL != nil {
+				partitionQ.Filter = source.QueryDSL
 			}
 			partitions, err := elastic.GetPartitions(partitionQ, esSourceClient)
 			if err != nil {

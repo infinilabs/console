@@ -83,6 +83,15 @@ func (p *processor) handleReadyPipelineTask(taskItem *task.Task) error {
 		return err
 	}
 
+	// TODO: find a better way to handle this
+	taskItem.Metadata.Labels["index_docs"] = 0
+	taskItem.Metadata.Labels["success_docs"] = 0
+	taskItem.Metadata.Labels["invalid_docs"] = ""
+	taskItem.Metadata.Labels["invalid_reasons"] = ""
+	taskItem.Metadata.Labels["failure_docs"] = ""
+	taskItem.Metadata.Labels["failure_reasons"] = ""
+	taskItem.Metadata.Labels["scrolled_docs"] = 0
+
 	taskItem.Status = task.StatusRunning
 	taskItem.StartTimeInMillis = time.Now().UnixMilli()
 	p.saveTaskAndWriteLog(taskItem, "wait_for", &task.TaskResult{

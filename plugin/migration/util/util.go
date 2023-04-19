@@ -35,7 +35,7 @@ func WriteLog(taskItem *task.Task, taskResult *task.TaskResult, message string) 
 	})
 }
 
-var runningTaskStatus = []string{task.StatusRunning, task.StatusReady, task.StatusReady1}
+var runningTaskStatus = []string{task.StatusRunning, task.StatusReady}
 
 func IsRunningState(status string) bool {
 	return util.StringInArray(runningTaskStatus, status)

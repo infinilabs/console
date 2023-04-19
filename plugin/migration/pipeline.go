@@ -361,7 +361,7 @@ func (p *DispatcherProcessor) handleRunningSubTask(taskItem *task2.Task) error {
 func (p *DispatcherProcessor) checkScrollPipelineTaskStatus(scrollTask *task2.Task, totalDocs int64) (scrolled bool, scrolledDocs int64, err error) {
 	// NOTE: old-version pipeline tasks has empty status
 	if scrollTask.Status == task2.StatusError || scrollTask.Status == "" {
-		return false, 0, errors.New("scroll pipeline failed")
+		return true, 0, errors.New("scroll pipeline failed")
 	}
 
 	// scroll not finished yet
@@ -383,7 +383,7 @@ func (p *DispatcherProcessor) checkScrollPipelineTaskStatus(scrollTask *task2.Ta
 
 func (p *DispatcherProcessor) checkBulkPipelineTaskStatus(bulkTask *task2.Task, totalDocs int64) (bulked bool, successDocs int64, err error) {
 	if bulkTask.Status == task2.StatusError || bulkTask.Status == "" {
-		return false, 0, errors.New("bulk pipeline failed")
+		return true, 0, errors.New("bulk pipeline failed")
 	}
 
 	// start bulk as needed

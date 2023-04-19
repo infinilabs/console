@@ -14,7 +14,7 @@ func WriteLog(taskItem *task.Task, taskResult *task.TaskResult, message string) 
 	labels["task_type"] = taskItem.Metadata.Type
 	labels["task_id"] = taskItem.ID
 	labels["parent_task_id"] = taskItem.ParentId
-	labels["retry_no"] = taskItem.RetryTimes
+	labels["retry_times"] = taskItem.RetryTimes
 	event.SaveLog(event.Event{
 		Metadata: event.EventMetadata{
 			Category: "task",

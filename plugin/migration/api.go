@@ -121,7 +121,7 @@ func (h *APIHandler) searchDataMigrationTask(w http.ResponseWriter, req *http.Re
 	)
 	mustQ = append(mustQ, util.MapStr{
 		"term": util.MapStr{
-			"metadata.labels.business_id": util.MapStr{
+			"metadata.type": util.MapStr{
 				"value": "cluster_migration",
 			},
 		},
@@ -253,7 +253,7 @@ func (h *APIHandler) startDataMigration(w http.ResponseWriter, req *http.Request
 		Success: true,
 	}, "task status manually set to ready")
 
-	if obj.Metadata.Labels != nil && obj.Metadata.Labels["business_id"] == "index_migration" && len(obj.ParentId) > 0 {
+	if obj.Metadata.Labels != nil && obj.Metadata.Type == "index_migration" && len(obj.ParentId) > 0 {
 		//update status of major task to running
 		query := util.MapStr{
 			"bool": util.MapStr{
@@ -492,7 +492,7 @@ func getMajorTaskInfoByIndex(taskID string) (map[string]migration_model.IndexSta
 				"must": []util.MapStr{
 					{
 						"term": util.MapStr{
-							"metadata.labels.business_id": util.MapStr{
+							"metadata.type": util.MapStr{
 								"value": "index_migration",
 							},
 						},
@@ -668,7 +668,7 @@ func (h *APIHandler) getDataMigrationTaskOfIndex(w http.ResponseWriter, req *htt
 			continue
 		}
 		if subTask.Metadata.Labels != nil {
-			if subTask.Metadata.Labels["business_id"] == "index_migration" {
+			if subTask.Metadata.Type == "index_migration" {
 				subTasks = append(subTasks, subTask)
 				subTaskStatus[subTask.ID] = subTask.Status
 				continue
@@ -1102,7 +1102,7 @@ func getMajorTaskStatsFromInstances(majorTaskID string) (taskStats migration_mod
 										"must": []util.MapStr{
 											{
 												"term": util.MapStr{
-													"metadata.labels.business_id": util.MapStr{
+													"metadata.type": util.MapStr{
 														"value": "index_migration",
 													},
 												},
@@ -1140,7 +1140,7 @@ func getMajorTaskStatsFromInstances(majorTaskID string) (taskStats migration_mod
 		}
 		if subTask.Metadata.Labels != nil {
 			//add indexDocs of already complete
-			if subTask.Metadata.Labels["business_id"] == "index_migration" {
+			if subTask.Metadata.Type == "index_migration" {
 				if v, ok := subTask.Metadata.Labels["index_docs"].(float64); ok {
 					taskStats.IndexDocs += v
 				}

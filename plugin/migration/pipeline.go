@@ -209,7 +209,7 @@ func (p *DispatcherProcessor) handleReadyMajorTask(taskItem *task2.Task) error {
 				},
 				{
 					"term": util.MapStr{
-						"metadata.labels.business_id": util.MapStr{
+						"metadata.type": util.MapStr{
 							"value": "index_migration",
 						},
 					},
@@ -700,10 +700,6 @@ func (p *DispatcherProcessor) splitMajorMigrationTask(taskItem *task2.Task) erro
 	if taskItem.Metadata.Labels["is_split"] == true {
 		return nil
 	}
-	if taskItem.Metadata.Labels["business_id"] != "cluster_migration" {
-		log.Tracef("got unexpect task type of %s with task id [%s] in cluster migration processor", taskItem.Metadata.Type, taskItem.ID)
-		return nil
-	}
 
 	clusterMigrationTask := migration_model.ClusterMigrationTaskConfig{}
 	err := migration_util.GetTaskConfig(taskItem, &clusterMigrationTask)
@@ -1026,7 +1022,7 @@ func (p *DispatcherProcessor) getInstanceTaskState() (map[string]DispatcherState
 				"must": []util.MapStr{
 					{
 						"term": util.MapStr{
-							"metadata.labels.business_id": util.MapStr{
+							"metadata.type": util.MapStr{
 								"value": "index_migration",
 							},
 						},

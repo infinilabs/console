@@ -1032,7 +1032,7 @@ func (p *DispatcherProcessor) getMajorTaskState(majorTask *task2.Task) (taskStat
 		log.Errorf("search es failed, err: %v", err)
 		return taskState, nil
 	}
-	if v, ok := res.Aggregations["total_docs"].Value.(float64); ok {
+	if v, err := util.ExtractInt(res.Aggregations["total_docs"].Value); err == nil {
 		taskState.IndexDocs = v
 	}
 	var (

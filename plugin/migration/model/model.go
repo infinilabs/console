@@ -96,9 +96,8 @@ type ClusterInfo struct {
 }
 
 type MajorTaskState struct {
-	ScrolledDocs float64
-	IndexDocs    float64
-	Status       string
+	IndexDocs int64
+	Status    string
 }
 
 type IndexStateInfo struct {

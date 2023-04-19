@@ -1124,15 +1124,14 @@ func getMajorTaskStatsFromInstances(majorTaskID string) (taskStats migration_mod
 			log.Error(err)
 			continue
 		}
+		taskLabels := util.MapStr(subTask.Metadata.Labels)
 		if subTask.Metadata.Labels != nil {
 			//add indexDocs of already complete
 			if subTask.Metadata.Type == "index_migration" {
-				if v, ok := subTask.Metadata.Labels["index_docs"].(float64); ok {
-					taskStats.IndexDocs += v
-				}
+				taskStats.IndexDocs += migration_util.GetMapIntValue(taskLabels, "index_docs")
 				continue
 			}
-			if instID, ok := subTask.Metadata.Labels["execution_instance_id"].(string); ok {
+			if instID := migration_util.GetMapStringValue(taskLabels, "execution_instance_id"); instID != "" {
 				pipelineTaskIDs[instID] = append(pipelineTaskIDs[instID], subTask.ID)
 			}
 		}
@@ -1152,11 +1151,7 @@ func getMajorTaskStatsFromInstances(majorTaskID string) (taskStats migration_mod
 		}
 
 		for _, status := range pipelines {
-			if v, err := status.Context.GetValue("bulk_indexing.success.count"); err == nil {
-				if vv, ok := v.(float64); ok {
-					taskStats.IndexDocs += vv
-				}
-			}
+			taskStats.IndexDocs += migration_util.GetMapIntValue(status.Context, "bulk_indexing.success.count")
 		}
 	}
 	return taskStats, nil

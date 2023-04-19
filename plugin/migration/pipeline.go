@@ -1035,6 +1035,9 @@ func (p *DispatcherProcessor) getMajorTaskState(majorTask *task2.Task) (taskStat
 	if v, ok := res.Aggregations["total_docs"].Value.(float64); ok {
 		taskState.IndexDocs = v
 	}
+	var (
+		hasError bool
+	)
 	for _, bk := range res.Aggregations["grp"].Buckets {
 		status, _ := util.ExtractString(bk["key"])
 		if migration_util.IsRunningState(status) {
@@ -1042,11 +1045,14 @@ func (p *DispatcherProcessor) getMajorTaskState(majorTask *task2.Task) (taskStat
 			return taskState, nil
 		}
 		if status == task2.StatusError {
-			taskState.Status = task2.StatusError
-			return taskState, nil
+			hasError = true
 		}
 	}
-	taskState.Status = task2.StatusComplete
+	if hasError {
+		taskState.Status = task2.StatusError
+	} else {
+		taskState.Status = task2.StatusComplete
+	}
 	return taskState, nil
 }
 

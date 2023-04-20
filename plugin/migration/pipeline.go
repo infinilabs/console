@@ -320,6 +320,7 @@ func (p *DispatcherProcessor) handleRunningSubTask(taskItem *task2.Task) error {
 		p.saveTaskAndWriteLog(taskItem, "wait_for", &task2.TaskResult{
 			Success: true,
 		}, "empty index migration completed")
+		p.cleanGatewayQueue(taskItem)
 		p.decrInstanceJobs(instanceID)
 		return nil
 	}
@@ -346,6 +347,8 @@ func (p *DispatcherProcessor) handleRunningSubTask(taskItem *task2.Task) error {
 			Error:   err.Error(),
 		}, "index scroll failed")
 		p.decrInstanceJobs(instanceID)
+		// clean disk queue if scroll failed
+		p.cleanGatewayQueue(taskItem)
 		return nil
 	}
 
@@ -374,6 +377,8 @@ func (p *DispatcherProcessor) handleRunningSubTask(taskItem *task2.Task) error {
 			Success: true,
 		}, "index migration completed")
 	}
+	// clean disk queue if bulk failed/completed
+	p.cleanGatewayQueue(taskItem)
 	p.decrInstanceJobs(instanceID)
 	return nil
 
@@ -455,6 +460,8 @@ func (p *DispatcherProcessor) handlePendingStopSubTask(taskItem *task2.Task) err
 		taskItem.Status = task2.StatusStopped
 		p.sendMajorTaskNotification(taskItem)
 		p.saveTaskAndWriteLog(taskItem, "", nil, fmt.Sprintf("task [%s] stopped", taskItem.ID))
+		// clean disk queue if manually stopped
+		p.cleanGatewayQueue(taskItem)
 	}
 	return nil
 }
@@ -645,6 +652,9 @@ func (p *DispatcherProcessor) handleScheduleSubTask(taskItem *task2.Task) error 
 		log.Infof("hit max tasks per instance with %d, skip dispatch", p.config.MaxTasksPerInstance)
 		return nil
 	}
+
+	// try to clear disk queue before running es_scroll
+	p.cleanGatewayQueue(taskItem)
 
 	// update scroll task to ready
 	scrollTask.Metadata.Labels["execution_instance_id"] = instance.ID
@@ -1274,4 +1284,26 @@ func (p *DispatcherProcessor) incrInstanceJobs(instanceID string) {
 	instanceState := p.state[instanceID]
 	instanceState.Total = instanceState.Total + 1
 	p.state[instanceID] = instanceState
+}
+
+func (p *DispatcherProcessor) cleanGatewayQueue(taskItem *task2.Task) {
+	var err error
+	instance := model.Instance{}
+	instanceID := taskItem.Metadata.Labels["execution_instance_id"]
+	instance.ID, _ = util.ExtractString(instanceID)
+	_, err = orm.Get(&instance)
+	if err != nil {
+		log.Errorf("failed to get instance, err: %v", err)
+		return
+	}
+
+	selector := util.MapStr{
+		"labels": util.MapStr{
+			"migration_task_id": taskItem.ID,
+		},
+	}
+	err = instance.DeleteQueueBySelector(selector)
+	if err != nil {
+		log.Errorf("failed to delete queue, err: %v", err)
+	}
 }

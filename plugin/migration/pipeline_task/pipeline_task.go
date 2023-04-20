@@ -48,18 +48,14 @@ func (p *processor) Process(t *task.Task) (err error) {
 }
 
 func (p *processor) handleReadyPipelineTask(taskItem *task.Task) error {
-	cleanPipeline, cleanQueue := true, false
-
 	switch taskItem.Metadata.Labels["pipeline_id"] {
 	case "es_scroll":
-		// try to clear queue before running es_scroll
-		cleanQueue = true
 	case "bulk_indexing":
 	default:
 		return fmt.Errorf("task [%s] has unknown pipeline_id [%s]", taskItem.ID, taskItem.Metadata.Labels["pipeline_id"])
 	}
 
-	instance, err := p.cleanGatewayPipeline(taskItem, cleanPipeline, cleanQueue)
+	instance, err := p.cleanGatewayPipeline(taskItem)
 	if err != nil {
 		log.Errorf("failed to prepare instance before running pipeline, err: %v", err)
 		return nil
@@ -143,8 +139,7 @@ func (p *processor) handleRunningEsScrollPipelineTask(taskItem *task.Task) error
 		Success: errMsg == "",
 		Error:   errMsg,
 	}, fmt.Sprintf("pipeline task [%s] completed", taskItem.ID))
-	// clean queue if scroll failed
-	p.cleanGatewayPipeline(taskItem, true, taskItem.Status == task.StatusError)
+	p.cleanGatewayPipeline(taskItem)
 	return nil
 }
 
@@ -177,8 +172,7 @@ func (p *processor) handleRunningBulkIndexingPipelineTask(taskItem *task.Task) e
 		Success: errMsg == "",
 		Error:   errMsg,
 	}, fmt.Sprintf("pipeline task [%s] completed", taskItem.ID))
-	// clean queue if bulk completed
-	p.cleanGatewayPipeline(taskItem, true, taskItem.Status == task.StatusComplete)
+	p.cleanGatewayPipeline(taskItem)
 	return nil
 }
 
@@ -201,12 +195,11 @@ func (p *processor) handlePendingStopPipelineTask(taskItem *task.Task) error {
 	if stopped {
 		taskItem.Status = task.StatusStopped
 		p.saveTaskAndWriteLog(taskItem, "", nil, fmt.Sprintf("task [%s] stopped", taskItem.ID))
-		// clean all stuffs if manually stopped
-		p.cleanGatewayPipeline(taskItem, true, true)
+		p.cleanGatewayPipeline(taskItem)
 		return nil
 	}
 
-	_, instance, err := p.getPipelineExecutionInstance(taskItem)
+	instance, err := p.getPipelineExecutionInstance(taskItem)
 	if err != nil {
 		log.Errorf("failed to get execution instance for task [%s], err: %v", taskItem.ID, err)
 		return nil
@@ -219,34 +212,21 @@ func (p *processor) handlePendingStopPipelineTask(taskItem *task.Task) error {
 	return nil
 }
 
-func (p *processor) cleanGatewayPipeline(taskItem *task.Task, pipeline, queue bool) (instance model.Instance, err error) {
-	parentTask, instance, err := p.getPipelineExecutionInstance(taskItem)
+func (p *processor) cleanGatewayPipeline(taskItem *task.Task) (instance model.Instance, err error) {
+	instance, err = p.getPipelineExecutionInstance(taskItem)
 	if err != nil {
 		return
 	}
-	if pipeline {
-		err = instance.DeletePipeline(taskItem.ID)
-		if err != nil {
-			log.Errorf("delete pipeline failed, err: %v", err)
-		}
+	err = instance.DeletePipeline(taskItem.ID)
+	if err != nil {
+		log.Errorf("delete pipeline failed, err: %v", err)
 	}
 
-	if queue {
-		selector := util.MapStr{
-			"labels": util.MapStr{
-				"migration_task_id": parentTask.ID,
-			},
-		}
-		err = instance.DeleteQueueBySelector(selector)
-		if err != nil {
-			log.Errorf("failed to delete queue, err: %v", err)
-		}
-	}
 	return instance, nil
 }
 
-func (p *processor) getPipelineExecutionInstance(taskItem *task.Task) (parentTask *task.Task, instance model.Instance, err error) {
-	parentTask, err = p.getParentTask(taskItem, "index_migration")
+func (p *processor) getPipelineExecutionInstance(taskItem *task.Task) (instance model.Instance, err error) {
+	parentTask, err := p.getParentTask(taskItem, "index_migration")
 	if err != nil {
 		return
 	}

@@ -458,8 +458,7 @@ func (p *DispatcherProcessor) handlePendingStopSubTask(taskItem *task2.Task) err
 	// all subtask stopped or error or complete
 	if len(tasks) == 0 {
 		taskItem.Status = task2.StatusStopped
-		p.sendMajorTaskNotification(taskItem)
-		p.saveTaskAndWriteLog(taskItem, "", nil, fmt.Sprintf("task [%s] stopped", taskItem.ID))
+		p.saveTaskAndWriteLog(taskItem, "", nil, fmt.Sprintf("index migration task [%s] stopped", taskItem.ID))
 		// clean disk queue if manually stopped
 		p.cleanGatewayQueue(taskItem)
 	}

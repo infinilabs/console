@@ -356,9 +356,9 @@ func (p *DispatcherProcessor) handleRunningSubTask(taskItem *task2.Task) error {
 		p.saveTaskAndWriteLog(taskItem, &task2.TaskResult{
 			Success: true,
 		}, "index migration completed")
+		// clean disk queue if bulk completed
+		p.cleanGatewayQueue(taskItem)
 	}
-	// clean disk queue if bulk failed/completed
-	p.cleanGatewayQueue(taskItem)
 	p.decrInstanceJobs(instanceID)
 	return nil
 
@@ -446,8 +446,6 @@ func (p *DispatcherProcessor) handlePendingStopSubTask(taskItem *task2.Task) err
 	if len(tasks) == 0 {
 		taskItem.Status = task2.StatusStopped
 		p.saveTaskAndWriteLog(taskItem, nil, fmt.Sprintf("index migration task [%s] stopped", taskItem.ID))
-		// clean disk queue if manually stopped
-		p.cleanGatewayQueue(taskItem)
 	}
 	return nil
 }
@@ -619,6 +617,13 @@ func (p *DispatcherProcessor) handleSplitSubTask(taskItem *task2.Task) error {
 }
 
 func (p *DispatcherProcessor) handleScheduleSubTask(taskItem *task2.Task) error {
+	cfg := migration_model.IndexMigrationTaskConfig{}
+	err := migration_util.GetTaskConfig(taskItem, &cfg)
+	if err != nil {
+		log.Errorf("failed to get task config, err: %v", err)
+		return fmt.Errorf("got wrong config of task [%s]", taskItem.ID)
+	}
+
 	scrollTask, bulkTask, err := p.getScrollBulkPipelineTasks(taskItem)
 	if err != nil {
 		log.Errorf("failed to get pipeline tasks, err: %v", err)
@@ -630,28 +635,62 @@ func (p *DispatcherProcessor) handleScheduleSubTask(taskItem *task2.Task) error 
 		return nil
 	}
 
-	instance, err := p.getPreferenceInstance(taskItem.ParentId[0])
-	if err != nil {
-		return fmt.Errorf("get preference intance error: %w", err)
-	}
-	if p.getInstanceState(instance.ID).Total >= p.config.MaxTasksPerInstance {
-		log.Debugf("hit max tasks per instance with %d, skip dispatch", p.config.MaxTasksPerInstance)
-		return nil
+	instanceID, _ := util.ExtractString(taskItem.Metadata.Labels["execution_instance_id"])
+	totalDocs := cfg.Source.DocCount
+	scrolled, _, err := p.checkScrollPipelineTaskStatus(scrollTask, totalDocs)
+
+	redoScroll := true
+	if cfg.Version >= migration_model.IndexMigrationV1 {
+		// skip scroll if possible
+		if scrolled && err == nil {
+			redoScroll = false
+			// reset queue consumer offset
+			err = p.resetGatewayQueue(taskItem)
+			if err != nil {
+				log.Infof("task [%s] failed to reset gateway queue, redo scroll", taskItem.ID)
+				redoScroll = true
+			}
+		}
 	}
 
-	// try to clear disk queue before running es_scroll
-	p.cleanGatewayQueue(taskItem)
+	if !redoScroll {
+		migration_util.WriteLog(taskItem, nil, fmt.Sprintf("task [%s] skiping scroll", taskItem.ID))
+	} else {
+		var executionConfig migration_model.ExecutionConfig
+		if cfg.Version >= migration_model.IndexMigrationV1 {
+			executionConfig = cfg.Execution
+		} else {
+			executionConfig, err = p.getExecutionConfigFromMajorTask(taskItem)
+			if err != nil {
+				return fmt.Errorf("get execution config from parent task failed, err: %v", err)
+			}
+		}
 
-	// update scroll task to ready
-	scrollTask.Metadata.Labels["execution_instance_id"] = instance.ID
-	scrollTask.Status = task2.StatusReady
-	err = orm.Update(nil, scrollTask)
-	if err != nil {
-		return fmt.Errorf("update scroll pipeline task error: %w", err)
+		// get a new instanceID
+		instance, err := p.getPreferenceInstance(executionConfig)
+		if err != nil {
+			return fmt.Errorf("get preference intance error: %w", err)
+		}
+		if p.getInstanceState(instance.ID).Total >= p.config.MaxTasksPerInstance {
+			log.Debugf("hit max tasks per instance with %d, skip dispatch", p.config.MaxTasksPerInstance)
+			return nil
+		}
+		instanceID = instance.ID
+
+		// update instance info first
+		scrollTask.Metadata.Labels["execution_instance_id"] = instanceID
+		// try to clear disk queue before running es_scroll
+		p.cleanGatewayQueue(taskItem)
+		// update scroll task to ready
+		scrollTask.Status = task2.StatusReady
+		err = orm.Update(nil, scrollTask)
+		if err != nil {
+			return fmt.Errorf("update scroll pipeline task error: %w", err)
+		}
 	}
 
 	// update bulk task to init
-	bulkTask.Metadata.Labels["execution_instance_id"] = instance.ID
+	bulkTask.Metadata.Labels["execution_instance_id"] = instanceID
 	bulkTask.Status = task2.StatusInit
 	err = orm.Update(nil, bulkTask)
 	if err != nil {
@@ -660,7 +699,7 @@ func (p *DispatcherProcessor) handleScheduleSubTask(taskItem *task2.Task) error 
 
 	// update sub migration task status to running and save task log
 	taskItem.RetryTimes++
-	taskItem.Metadata.Labels["execution_instance_id"] = instance.ID
+	taskItem.Metadata.Labels["execution_instance_id"] = instanceID
 	taskItem.Metadata.Labels["index_docs"] = 0
 	taskItem.Metadata.Labels["scrolled_docs"] = 0
 	taskItem.Status = task2.StatusRunning
@@ -670,11 +709,12 @@ func (p *DispatcherProcessor) handleScheduleSubTask(taskItem *task2.Task) error 
 		Success: true,
 	}, fmt.Sprintf("task [%s] started", taskItem.ID))
 	// update dispatcher state
-	p.incrInstanceJobs(instance.ID)
+	p.incrInstanceJobs(instanceID)
 	return nil
 }
 
-func (p *DispatcherProcessor) getPreferenceInstance(majorTaskID string) (instance model.Instance, err error) {
+func (p *DispatcherProcessor) getExecutionConfigFromMajorTask(taskItem *task2.Task) (config migration_model.ExecutionConfig, err error) {
+	majorTaskID := taskItem.ParentId[0]
 	majorTask := task2.Task{}
 	majorTask.ID = majorTaskID
 	_, err = orm.Get(&majorTask)
@@ -688,11 +728,16 @@ func (p *DispatcherProcessor) getPreferenceInstance(majorTaskID string) (instanc
 		log.Errorf("failed to get task config, err: %v", err)
 		return
 	}
+	config = cfg.Settings.Execution
+	return
+}
+
+func (p *DispatcherProcessor) getPreferenceInstance(config migration_model.ExecutionConfig) (instance model.Instance, err error) {
 	var (
 		total    = math.MaxInt
 		tempInst = model.Instance{}
 	)
-	for _, node := range cfg.Settings.Execution.Nodes.Permit {
+	for _, node := range config.Nodes.Permit {
 		instanceTotal := p.getInstanceState(node.ID).Total
 		if instanceTotal < total {
 			if p.config.CheckInstanceAvailable {
@@ -917,6 +962,7 @@ func (p *DispatcherProcessor) splitMajorMigrationTask(taskItem *task2.Task) erro
 						Source:    partitionSource,
 						Target:    target,
 						Execution: clusterMigrationTask.Settings.Execution,
+						Version:   migration_model.IndexMigrationV1,
 					}),
 				}
 				partitionMigrationTask.ID = util.GetUUID()
@@ -930,8 +976,10 @@ func (p *DispatcherProcessor) splitMajorMigrationTask(taskItem *task2.Task) erro
 			source.DocCount = index.Source.Docs
 
 			indexParameters := migration_model.IndexMigrationTaskConfig{
-				Source: source,
-				Target: target,
+				Source:    source,
+				Target:    target,
+				Execution: clusterMigrationTask.Settings.Execution,
+				Version:   migration_model.IndexMigrationV1,
 			}
 			indexMigrationTask := task2.Task{
 				ParentId:          []string{taskItem.ID},
@@ -1315,6 +1363,8 @@ func (p *DispatcherProcessor) refreshInstanceJobsFromES() error {
 }
 
 func (p *DispatcherProcessor) cleanGatewayQueue(taskItem *task2.Task) {
+	log.Debugf("cleaning gateway queue for task [%s]", taskItem.ID)
+
 	var err error
 	instance := model.Instance{}
 	instance.ID, _ = util.ExtractString(taskItem.Metadata.Labels["execution_instance_id"])
@@ -1337,4 +1387,30 @@ func (p *DispatcherProcessor) cleanGatewayQueue(taskItem *task2.Task) {
 	if err != nil {
 		log.Errorf("failed to delete queue, err: %v", err)
 	}
+}
+
+func (p *DispatcherProcessor) resetGatewayQueue(taskItem *task2.Task) error {
+	log.Debugf("resetting gateway queue offset for task [%s]", taskItem.ID)
+
+	var err error
+	instance := model.Instance{}
+	instance.ID, _ = util.ExtractString(taskItem.Metadata.Labels["execution_instance_id"])
+	_, err = orm.Get(&instance)
+	if err != nil {
+		log.Errorf("failed to get instance, err: %v", err)
+		return err
+	}
+
+	selector := util.MapStr{
+		"labels": util.MapStr{
+			"migration_task_id": taskItem.ID,
+		},
+	}
+	err = instance.DeleteQueueConsumersBySelector(selector)
+	if err != nil {
+		log.Errorf("failed to delete queue consumers, err: %v", err)
+		return err
+	}
+
+	return nil
 }

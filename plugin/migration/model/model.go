@@ -2,7 +2,7 @@
  * Web: https://infinilabs.com
  * Email: hello#infini.ltd */
 
-package migration
+package model
 
 import (
 	"fmt"
@@ -95,30 +95,14 @@ type ClusterInfo struct {
 	Distribution string `json:"distribution,omitempty"`
 }
 
-type TaskCompleteState struct {
-	IsComplete   bool
-	Error        string
-	PipelineIds  []string
-	RunningPhase int
-	TotalDocs    int64
-	SuccessDocs  int64
-	ScrolledDocs int64
-}
-
 type MajorTaskState struct {
-	ScrolledDocs float64
-	IndexDocs    float64
-	Status       string
+	IndexDocs int64
+	Status    string
 }
 
 type IndexStateInfo struct {
 	ErrorPartitions int
 	IndexDocs       float64
-}
-
-type InitIndexRequest struct {
-	Mappings map[string]interface{} `json:"mappings"`
-	Settings map[string]interface{} `json:"settings"`
 }
 
 type IndexMigrationTaskConfig struct {

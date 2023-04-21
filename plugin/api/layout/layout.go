@@ -152,8 +152,21 @@ func (h *LayoutAPI) searchLayout(w http.ResponseWriter, req *http.Request, ps ht
 		strFrom     = h.GetParameterOrDefault(req, "from", "0")
 		viewID     = strings.TrimSpace(h.GetParameterOrDefault(req, "view_id", ""))
 		typ     = strings.TrimSpace(h.GetParameterOrDefault(req, "type", ""))
+		isFixed =  strings.TrimSpace(h.GetParameterOrDefault(req, "is_fixed", ""))
 		mustQ []util.MapStr
 	)
+	if isFixed != "" {
+		fixed, err := strconv.ParseBool(isFixed)
+		if err == nil {
+			mustQ = append(mustQ, util.MapStr{
+				"term": util.MapStr{
+					"is_fixed": util.MapStr{
+						"value": fixed,
+					},
+				},
+			})
+		}
+	}
 	if viewID != "" {
 		mustQ = append(mustQ, util.MapStr{
 			"term": util.MapStr{

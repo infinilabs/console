@@ -90,7 +90,6 @@ func GetMapStringSliceValue(m util.MapStr, key string) []string {
 			log.Errorf("got %s but failed to extract, type: %T", key, v)
 			return nil
 		}
-		log.Info(key, vv)
 		ret := make([]string, len(vv))
 		var err error
 		for i := range vv {

@@ -657,7 +657,7 @@ func (p *DispatcherProcessor) handleScheduleSubTask(taskItem *task2.Task) error 
 		return fmt.Errorf("get preference intance error: %w", err)
 	}
 	if p.state[instance.ID].Total >= p.config.MaxTasksPerInstance {
-		log.Infof("hit max tasks per instance with %d, skip dispatch", p.config.MaxTasksPerInstance)
+		log.Debugf("hit max tasks per instance with %d, skip dispatch", p.config.MaxTasksPerInstance)
 		return nil
 	}
 

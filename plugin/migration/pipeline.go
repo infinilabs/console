@@ -91,8 +91,12 @@ func newMigrationDispatcherProcessor(c *config.Config) (pipeline.Processor, erro
 	processor := DispatcherProcessor{
 		id:     util.GetUUID(),
 		config: &cfg,
+		state:  map[string]DispatcherState{},
 	}
-	processor.refreshInstanceJobsFromES()
+	err := processor.refreshInstanceJobsFromES()
+	if err != nil {
+		return nil, err
+	}
 	processor.pipelineTaskProcessor = pipeline_task.NewProcessor(cfg.Elasticsearch, cfg.IndexName, cfg.LogIndexName)
 
 	return &processor, nil
@@ -1311,7 +1315,7 @@ func (p *DispatcherProcessor) getInstanceState(instanceID string) DispatcherStat
 	return p.state[instanceID]
 }
 
-func (p *DispatcherProcessor) refreshInstanceJobsFromES() {
+func (p *DispatcherProcessor) refreshInstanceJobsFromES() error {
 	log.Debug("refreshing instance state from ES")
 	p.stateLock.Lock()
 	defer p.stateLock.Unlock()
@@ -1319,9 +1323,11 @@ func (p *DispatcherProcessor) refreshInstanceJobsFromES() {
 	state, err := p.getInstanceTaskState()
 	if err != nil {
 		log.Errorf("failed to get instance task state, err: %v", err)
-		return
+		return err
 	}
 	p.state = state
+
+	return nil
 }
 
 func (p *DispatcherProcessor) cleanGatewayQueue(taskItem *task2.Task) {

@@ -1336,6 +1336,7 @@ func (p *DispatcherProcessor) cleanGatewayQueue(taskItem *task2.Task) {
 	instanceID := taskItem.Metadata.Labels["execution_instance_id"]
 	if instanceID == "" {
 		log.Debugf("task [%s] not scheduled yet, skip cleaning queue", taskItem.ID)
+		return
 	}
 	instance.ID, _ = util.ExtractString(instanceID)
 	_, err = orm.Get(&instance)

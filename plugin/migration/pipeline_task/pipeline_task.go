@@ -218,8 +218,9 @@ func (p *processor) cleanGatewayPipeline(taskItem *task.Task) (instance model.In
 		return
 	}
 	err = instance.DeletePipeline(taskItem.ID)
-	if err != nil {
+	if err != nil && !strings.Contains(err.Error(), "task not found") {
 		log.Errorf("delete pipeline failed, err: %v", err)
+		return
 	}
 
 	return instance, nil

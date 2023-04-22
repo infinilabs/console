@@ -1333,12 +1333,11 @@ func (p *DispatcherProcessor) refreshInstanceJobsFromES() error {
 func (p *DispatcherProcessor) cleanGatewayQueue(taskItem *task2.Task) {
 	var err error
 	instance := model.Instance{}
-	instanceID := taskItem.Metadata.Labels["execution_instance_id"]
-	if instanceID == "" {
+	instance.ID, _ = util.ExtractString(taskItem.Metadata.Labels["execution_instance_id"])
+	if instance.ID == "" {
 		log.Debugf("task [%s] not scheduled yet, skip cleaning queue", taskItem.ID)
 		return
 	}
-	instance.ID, _ = util.ExtractString(instanceID)
 	_, err = orm.Get(&instance)
 	if err != nil {
 		log.Errorf("failed to get instance, err: %v", err)

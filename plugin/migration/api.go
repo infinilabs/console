@@ -39,6 +39,7 @@ func InitAPI() {
 
 	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/index/:index/_partition", handler.getIndexPartitionInfo)
 	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/index/:index/_count", handler.countDocuments)
+	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/index/:index/_refresh", handler.refreshIndex)
 	api.HandleAPIMethod(api.POST, "/migration/data/:task_id/_start", handler.RequirePermission(handler.startDataMigration, enum.PermissionTaskWrite))
 	api.HandleAPIMethod(api.POST, "/migration/data/:task_id/_stop", handler.RequirePermission(handler.stopDataMigrationTask, enum.PermissionTaskWrite))
 	//api.HandleAPIMethod(api.GET, "/migration/data/:task_id", handler.getMigrationTask)
@@ -1062,6 +1063,23 @@ func (h *APIHandler) deleteDataMigrationTask(w http.ResponseWriter, req *http.Re
 	h.WriteJSON(w, util.MapStr{
 		"_id":    obj.ID,
 		"result": "deleted",
+	}, 200)
+}
+
+func (h *APIHandler) refreshIndex(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
+	var (
+		index     = ps.MustGetParameter("index")
+		clusterID = ps.MustGetParameter("id")
+	)
+	client := elastic.GetClient(clusterID)
+	err := client.Refresh(index)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
+	h.WriteJSON(w, util.MapStr{
+		"success": true,
 	}, 200)
 }
 

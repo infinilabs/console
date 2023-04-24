@@ -61,8 +61,6 @@ func (p *processor) handleReadyPipelineTask(taskItem *task.Task) error {
 		return nil
 	}
 
-	taskItem.RetryTimes++
-
 	cfg := migration_model.PipelineTaskConfig{}
 	err = migration_util.GetTaskConfig(taskItem, &cfg)
 	if err != nil {
@@ -144,14 +142,14 @@ func (p *processor) handleRunningEsScrollPipelineTask(taskItem *task.Task) error
 }
 
 func (p *processor) handleRunningBulkIndexingPipelineTask(taskItem *task.Task) error {
-	successDocs, indexDocs, bulked, totalInvalidDocs, totalInvalidReasons, totalFailureDocs, totalFailureReasons, err := p.getBulkIndexingTaskState(taskItem)
+	successDocs, indexDocs, bulked, totalInvalidDocs, totalInvalidReasons, totalFailureDocs, totalFailureReasons, errs := p.getBulkIndexingTaskState(taskItem)
 	if !bulked {
 		return nil
 	}
 
 	var errMsg string
-	if err != nil {
-		errMsg = err.Error()
+	if len(errs) > 0 {
+		errMsg = fmt.Sprintf("bulk finished with error(s): %v", errs)
 	}
 	// TODO: handle multiple run bulk_indexing pipeline tasks and total_docs from index_migration
 	now := time.Now()
@@ -317,11 +315,10 @@ func (p *processor) getEsScrollTaskState(taskItem *task.Task) (scrolledDocs int6
 	return
 }
 
-func (p *processor) getBulkIndexingTaskState(taskItem *task.Task) (successDocs int64, indexDocs int64, bulked bool, totalInvalidDocs []string, totalInvalidReasons []string, totalFailureDocs []string, totalFailureReasons []string, err error) {
+func (p *processor) getBulkIndexingTaskState(taskItem *task.Task) (successDocs int64, indexDocs int64, bulked bool, totalInvalidDocs []string, totalInvalidReasons []string, totalFailureDocs []string, totalFailureReasons []string, errs []string) {
 	hits, err := p.getPipelineLogs(taskItem, []string{"FINISHED", "FAILED"})
 	if err != nil {
 		log.Errorf("failed to get pipeline logs for task [%s], err: %v", taskItem.ID, err)
-		err = nil
 		return
 	}
 
@@ -331,8 +328,7 @@ func (p *processor) getBulkIndexingTaskState(taskItem *task.Task) (successDocs i
 
 		errStr := migration_util.GetMapStringValue(m, "payload.pipeline.logging.result.error")
 		if errStr != "" {
-			err = errors.New(errStr)
-			return
+			errs = append(errs, errStr)
 		}
 
 		var (

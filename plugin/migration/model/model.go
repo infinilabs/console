@@ -105,10 +105,16 @@ type IndexStateInfo struct {
 	IndexDocs       float64
 }
 
+const (
+	IndexMigrationV0 = 0
+	IndexMigrationV1 = 1
+)
+
 type IndexMigrationTaskConfig struct {
 	Source    IndexMigrationSourceConfig `json:"source"`
 	Target    IndexMigrationTargetConfig `json:"target"`
 	Execution ExecutionConfig            `json:"execution"`
+	Version   int                        `json:"version"`
 }
 
 type IndexMigrationSourceConfig struct {

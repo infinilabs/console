@@ -92,7 +92,7 @@ func (p *processor) handleReadyPipelineTask(taskItem *task.Task) error {
 	taskItem.StartTimeInMillis = time.Now().UnixMilli()
 	p.saveTaskAndWriteLog(taskItem, &task.TaskResult{
 		Success: true,
-	}, fmt.Sprintf("pipeline task [%s] started", taskItem.ID))
+	}, fmt.Sprintf("[%v] pipeline task [%s] started", taskItem.Metadata.Labels["pipeline_id"], taskItem.ID))
 
 	return nil
 }
@@ -138,7 +138,7 @@ func (p *processor) handleRunningEsScrollPipelineTask(taskItem *task.Task) error
 	p.saveTaskAndWriteLog(taskItem, &task.TaskResult{
 		Success: errMsg == "",
 		Error:   errMsg,
-	}, fmt.Sprintf("pipeline task [%s] completed", taskItem.ID))
+	}, fmt.Sprintf("[es_scroll] pipeline task [%s] completed", taskItem.ID))
 	p.cleanGatewayPipeline(taskItem)
 	return nil
 }
@@ -171,7 +171,7 @@ func (p *processor) handleRunningBulkIndexingPipelineTask(taskItem *task.Task) e
 	p.saveTaskAndWriteLog(taskItem, &task.TaskResult{
 		Success: errMsg == "",
 		Error:   errMsg,
-	}, fmt.Sprintf("pipeline task [%s] completed", taskItem.ID))
+	}, fmt.Sprintf("[bulk_indexing] pipeline task [%s] completed", taskItem.ID))
 	p.cleanGatewayPipeline(taskItem)
 	return nil
 }
@@ -194,7 +194,7 @@ func (p *processor) handlePendingStopPipelineTask(taskItem *task.Task) error {
 
 	if stopped {
 		taskItem.Status = task.StatusStopped
-		p.saveTaskAndWriteLog(taskItem, nil, fmt.Sprintf("task [%s] stopped", taskItem.ID))
+		p.saveTaskAndWriteLog(taskItem, nil, fmt.Sprintf("[%v] task [%s] stopped", taskItem.Metadata.Labels["pipeline_id"], taskItem.ID))
 		p.cleanGatewayPipeline(taskItem)
 		return nil
 	}

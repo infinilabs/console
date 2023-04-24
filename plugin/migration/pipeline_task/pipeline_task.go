@@ -90,7 +90,7 @@ func (p *processor) handleReadyPipelineTask(taskItem *task.Task) error {
 
 	taskItem.Status = task.StatusRunning
 	taskItem.StartTimeInMillis = time.Now().UnixMilli()
-	p.saveTaskAndWriteLog(taskItem, "wait_for", &task.TaskResult{
+	p.saveTaskAndWriteLog(taskItem, &task.TaskResult{
 		Success: true,
 	}, fmt.Sprintf("pipeline task [%s] started", taskItem.ID))
 
@@ -135,7 +135,7 @@ func (p *processor) handleRunningEsScrollPipelineTask(taskItem *task.Task) error
 		taskItem.Status = task.StatusComplete
 	}
 
-	p.saveTaskAndWriteLog(taskItem, "", &task.TaskResult{
+	p.saveTaskAndWriteLog(taskItem, &task.TaskResult{
 		Success: errMsg == "",
 		Error:   errMsg,
 	}, fmt.Sprintf("pipeline task [%s] completed", taskItem.ID))
@@ -168,7 +168,7 @@ func (p *processor) handleRunningBulkIndexingPipelineTask(taskItem *task.Task) e
 		taskItem.Status = task.StatusComplete
 	}
 
-	p.saveTaskAndWriteLog(taskItem, "", &task.TaskResult{
+	p.saveTaskAndWriteLog(taskItem, &task.TaskResult{
 		Success: errMsg == "",
 		Error:   errMsg,
 	}, fmt.Sprintf("pipeline task [%s] completed", taskItem.ID))
@@ -194,7 +194,7 @@ func (p *processor) handlePendingStopPipelineTask(taskItem *task.Task) error {
 
 	if stopped {
 		taskItem.Status = task.StatusStopped
-		p.saveTaskAndWriteLog(taskItem, "", nil, fmt.Sprintf("task [%s] stopped", taskItem.ID))
+		p.saveTaskAndWriteLog(taskItem, nil, fmt.Sprintf("task [%s] stopped", taskItem.ID))
 		p.cleanGatewayPipeline(taskItem)
 		return nil
 	}
@@ -407,9 +407,9 @@ func (p *processor) getPipelineLogs(taskItem *task.Task, status []string) ([]ela
 	return res.Hits.Hits, nil
 }
 
-func (p *processor) saveTaskAndWriteLog(taskItem *task.Task, refresh string, taskResult *task.TaskResult, message string) {
+func (p *processor) saveTaskAndWriteLog(taskItem *task.Task, taskResult *task.TaskResult, message string) {
 	esClient := elastic.GetClient(p.Elasticsearch)
-	_, err := esClient.Index(p.IndexName, "", taskItem.ID, taskItem, refresh)
+	_, err := esClient.Index(p.IndexName, "", taskItem.ID, taskItem, "")
 	if err != nil {
 		log.Errorf("failed to update task, err: %v", err)
 	}

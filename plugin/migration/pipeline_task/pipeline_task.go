@@ -61,8 +61,6 @@ func (p *processor) handleReadyPipelineTask(taskItem *task.Task) error {
 		return nil
 	}
 
-	taskItem.RetryTimes++
-
 	cfg := migration_model.PipelineTaskConfig{}
 	err = migration_util.GetTaskConfig(taskItem, &cfg)
 	if err != nil {
@@ -144,14 +142,14 @@ func (p *processor) handleRunningEsScrollPipelineTask(taskItem *task.Task) error
 }
 
 func (p *processor) handleRunningBulkIndexingPipelineTask(taskItem *task.Task) error {
-	successDocs, indexDocs, bulked, totalInvalidDocs, totalInvalidReasons, totalFailureDocs, totalFailureReasons, err := p.getBulkIndexingTaskState(taskItem)
+	successDocs, indexDocs, bulked, totalInvalidDocs, totalInvalidReasons, totalFailureDocs, totalFailureReasons, errs := p.getBulkIndexingTaskState(taskItem)
 	if !bulked {
 		return nil
 	}
 
 	var errMsg string
-	if err != nil {
-		errMsg = err.Error()
+	if len(errs) > 0 {
+		errMsg = fmt.Sprintf("bulk finished with error(s): %v", errs)
 	}
 	// TODO: handle multiple run bulk_indexing pipeline tasks and total_docs from index_migration
 	now := time.Now()
@@ -184,7 +182,8 @@ func (p *processor) handlePendingStopPipelineTask(taskItem *task.Task) error {
 		return fmt.Errorf("task [%s] has unknown pipeline_id [%s]", taskItem.ID, taskItem.Metadata.Labels["pipeline_id"])
 	}
 
-	hits, err := p.getPipelineLogs(taskItem, []string{"STOPPED"})
+	// we only check STOPPED log after the last task status update
+	hits, err := p.getPipelineLogs(taskItem, []string{"STOPPED"}, taskItem.Updated.UnixMilli())
 	if err != nil {
 		log.Errorf("failed to get pipeline logs for task [%s], err: %v", taskItem.ID, err)
 		return nil
@@ -290,12 +289,17 @@ func (p *processor) getParentTask(taskItem *task.Task, taskType string) (*task.T
 }
 
 func (p *processor) getEsScrollTaskState(taskItem *task.Task) (scrolledDocs int64, totalHits int64, scrolled bool, err error) {
-	hits, err := p.getPipelineLogs(taskItem, []string{"FINISHED", "FAILED"})
+	hits, err := p.getPipelineLogs(taskItem, []string{"FINISHED", "FAILED"}, taskItem.Updated.UnixMilli())
 	if err != nil {
 		log.Errorf("failed to get pipeline logs for task [%s], err: %v", taskItem.ID, err)
 		err = nil
 		return
 	}
+	if len(hits) == 0 {
+		log.Debugf("scroll task [%s] not finished yet since last start", taskItem.ID)
+		return
+	}
+	// NOTE: we only check the last run of es_scroll
 	for _, hit := range hits {
 		scrolled = true
 		m := util.MapStr(hit.Source)
@@ -317,11 +321,20 @@ func (p *processor) getEsScrollTaskState(taskItem *task.Task) (scrolledDocs int6
 	return
 }
 
-func (p *processor) getBulkIndexingTaskState(taskItem *task.Task) (successDocs int64, indexDocs int64, bulked bool, totalInvalidDocs []string, totalInvalidReasons []string, totalFailureDocs []string, totalFailureReasons []string, err error) {
-	hits, err := p.getPipelineLogs(taskItem, []string{"FINISHED", "FAILED"})
+func (p *processor) getBulkIndexingTaskState(taskItem *task.Task) (successDocs int64, indexDocs int64, bulked bool, totalInvalidDocs []string, totalInvalidReasons []string, totalFailureDocs []string, totalFailureReasons []string, errs []string) {
+	newHits, err := p.getPipelineLogs(taskItem, []string{"FINISHED", "FAILED"}, taskItem.Updated.UnixMilli())
 	if err != nil {
-		log.Errorf("failed to get pipeline logs for task [%s], err: %v", taskItem.ID, err)
-		err = nil
+		log.Errorf("failed to get latest pipeline logs for task [%s], err: %v", taskItem.ID, err)
+		return
+	}
+	if len(newHits) == 0 {
+		log.Debugf("bulk task [%s] not finished yet since last start", taskItem.ID)
+		return
+	}
+
+	hits, err := p.getPipelineLogs(taskItem, []string{"FINISHED", "FAILED"}, 0)
+	if err != nil {
+		log.Errorf("failed to get all pipeline logs for task [%s], err: %v", taskItem.ID, err)
 		return
 	}
 
@@ -331,8 +344,7 @@ func (p *processor) getBulkIndexingTaskState(taskItem *task.Task) (successDocs i
 
 		errStr := migration_util.GetMapStringValue(m, "payload.pipeline.logging.result.error")
 		if errStr != "" {
-			err = errors.New(errStr)
-			return
+			errs = append(errs, errStr)
 		}
 
 		var (
@@ -357,8 +369,9 @@ func (p *processor) getBulkIndexingTaskState(taskItem *task.Task) (successDocs i
 	return
 }
 
-func (p *processor) getPipelineLogs(taskItem *task.Task, status []string) ([]elastic.IndexDocument, error) {
+func (p *processor) getPipelineLogs(taskItem *task.Task, status []string, timestampGte int64) ([]elastic.IndexDocument, error) {
 	query := util.MapStr{
+		"size": 999,
 		"sort": []util.MapStr{
 			{
 				"timestamp": util.MapStr{
@@ -370,9 +383,6 @@ func (p *processor) getPipelineLogs(taskItem *task.Task, status []string) ([]ela
 					"order": "desc",
 				},
 			},
-		},
-		"collapse": util.MapStr{
-			"field": "metadata.labels.task_id",
 		},
 		"query": util.MapStr{
 			"bool": util.MapStr{
@@ -391,6 +401,13 @@ func (p *processor) getPipelineLogs(taskItem *task.Task, status []string) ([]ela
 						"range": util.MapStr{
 							"metadata.labels.retry_times": util.MapStr{
 								"gte": taskItem.RetryTimes,
+							},
+						},
+					},
+					{
+						"range": util.MapStr{
+							"timestamp": util.MapStr{
+								"gte": timestampGte,
 							},
 						},
 					},

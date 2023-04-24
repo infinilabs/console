@@ -391,9 +391,6 @@ func (p *DispatcherProcessor) checkScrollPipelineTaskStatus(scrollTask *task2.Ta
 }
 
 func (p *DispatcherProcessor) checkBulkPipelineTaskStatus(bulkTask *task2.Task, totalDocs int64) (bulked bool, successDocs int64, err error) {
-	if bulkTask.Status == task2.StatusError {
-		return true, 0, errors.New("bulk pipeline failed")
-	}
 	// NOTE: old-version pipeline tasks has empty status
 	if bulkTask.Status == "" {
 		return true, 0, errors.New("task was started by an old-version console, need to manually restart it")
@@ -409,7 +406,7 @@ func (p *DispatcherProcessor) checkBulkPipelineTaskStatus(bulkTask *task2.Task, 
 	}
 
 	// bulk not finished yet
-	if bulkTask.Status != task2.StatusComplete {
+	if bulkTask.Status != task2.StatusComplete && bulkTask.Status != task2.StatusError {
 		return false, 0, nil
 	}
 
@@ -424,6 +421,11 @@ func (p *DispatcherProcessor) checkBulkPipelineTaskStatus(bulkTask *task2.Task, 
 
 	if successDocs != totalDocs {
 		return true, successDocs, fmt.Errorf("bulk complete but docs count unmatch: %d / %d, invalid docs: [%s] (reasons: [%s]), failure docs: [%s] (reasons: [%s])", successDocs, totalDocs, invalidDocs, invalidReasons, failureDocs, failureReasons)
+	}
+
+	// successDocs matched but has errors
+	if bulkTask.Status == task2.StatusError {
+		return true, successDocs, nil
 	}
 
 	return true, successDocs, nil
@@ -635,6 +637,8 @@ func (p *DispatcherProcessor) handleScheduleSubTask(taskItem *task2.Task) error 
 		return nil
 	}
 
+	taskItem.RetryTimes++
+
 	instanceID, _ := util.ExtractString(taskItem.Metadata.Labels["execution_instance_id"])
 	totalDocs := cfg.Source.DocCount
 	scrolled, _, err := p.checkScrollPipelineTaskStatus(scrollTask, totalDocs)
@@ -645,6 +649,8 @@ func (p *DispatcherProcessor) handleScheduleSubTask(taskItem *task2.Task) error 
 		if scrolled && err == nil {
 			redoScroll = false
 			// reset queue consumer offset
+			// NOTE: we only trigger this flow when restart index_migration
+			// Restart bulk task will not reset queue offset
 			err = p.resetGatewayQueue(taskItem)
 			if err != nil {
 				log.Infof("task [%s] failed to reset gateway queue, redo scroll", taskItem.ID)
@@ -677,6 +683,7 @@ func (p *DispatcherProcessor) handleScheduleSubTask(taskItem *task2.Task) error 
 		}
 		instanceID = instance.ID
 
+		scrollTask.RetryTimes = taskItem.RetryTimes
 		// update instance info first
 		scrollTask.Metadata.Labels["execution_instance_id"] = instanceID
 		// try to clear disk queue before running es_scroll
@@ -690,6 +697,7 @@ func (p *DispatcherProcessor) handleScheduleSubTask(taskItem *task2.Task) error 
 	}
 
 	// update bulk task to init
+	bulkTask.RetryTimes = taskItem.RetryTimes
 	bulkTask.Metadata.Labels["execution_instance_id"] = instanceID
 	bulkTask.Status = task2.StatusInit
 	err = orm.Update(nil, bulkTask)
@@ -698,7 +706,6 @@ func (p *DispatcherProcessor) handleScheduleSubTask(taskItem *task2.Task) error 
 	}
 
 	// update sub migration task status to running and save task log
-	taskItem.RetryTimes++
 	taskItem.Metadata.Labels["execution_instance_id"] = instanceID
 	taskItem.Metadata.Labels["index_docs"] = 0
 	taskItem.Metadata.Labels["scrolled_docs"] = 0

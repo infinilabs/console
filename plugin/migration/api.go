@@ -236,8 +236,8 @@ func (h *APIHandler) startDataMigration(w http.ResponseWriter, req *http.Request
 		h.WriteError(w, fmt.Sprintf("task [%s] not found", taskID), http.StatusInternalServerError)
 		return
 	}
-	if obj.Status == task2.StatusComplete {
-		h.WriteError(w, fmt.Sprintf("task [%s] completed, can't start anymore", taskID), http.StatusInternalServerError)
+	if obj.Metadata.Type != "pipeline" && obj.Status == task2.StatusComplete {
+		h.WriteError(w, fmt.Sprintf("[%s] task [%s] completed, can't start anymore", obj.Metadata.Type, taskID), http.StatusInternalServerError)
 		return
 	}
 	obj.Status = task2.StatusReady
@@ -253,34 +253,23 @@ func (h *APIHandler) startDataMigration(w http.ResponseWriter, req *http.Request
 		Success: true,
 	}, "task status manually set to ready")
 
-	if obj.Metadata.Labels != nil && obj.Metadata.Type == "index_migration" && len(obj.ParentId) > 0 {
-		//update status of major task to running
-		query := util.MapStr{
-			"bool": util.MapStr{
-				"must": []util.MapStr{
-					{
-						"term": util.MapStr{
-							"id": util.MapStr{
-								"value": obj.ParentId[0],
-							},
-						},
-					},
-				},
-			},
+	// update status of parent task to running
+	for _, parentTaskID := range obj.ParentId {
+		parentTask := task2.Task{}
+		parentTask.ID = parentTaskID
+		exists, err := orm.Get(&parentTask)
+		if !exists || err != nil {
+			h.WriteError(w, fmt.Sprintf("parent task [%s] not found", parentTaskID), http.StatusInternalServerError)
+			return
 		}
-		queryDsl := util.MapStr{
-			"query": query,
-			"script": util.MapStr{
-				"source": fmt.Sprintf("ctx._source['status'] = '%s'", task2.StatusRunning),
-			},
-		}
-
-		err = orm.UpdateBy(obj, util.MustToJSONBytes(queryDsl))
+		parentTask.Status = task2.StatusRunning
+		err = orm.Update(nil, &parentTask)
 		if err != nil {
 			log.Error(err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		migration_util.WriteLog(&parentTask, nil, fmt.Sprintf("child [%s] task [%s] manually started", obj.Metadata.Type, taskID))
 	}
 
 	h.WriteJSON(w, util.MapStr{
@@ -788,12 +777,12 @@ func (h *APIHandler) getDataMigrationTaskOfIndex(w http.ResponseWriter, req *htt
 		for _, pipelineTask := range parentIDPipelineTasks[ptask.ID] {
 			if pipelineTask.Metadata.Labels["pipeline_id"] == "es_scroll" {
 				partitionTaskInfo["scroll_task"] = util.MapStr{
-					"id": pipelineTask.ID,
+					"id":     pipelineTask.ID,
 					"status": pipelineTask.Status,
 				}
-			}else if pipelineTask.Metadata.Labels["pipeline_id"] == "bulk_indexing" {
+			} else if pipelineTask.Metadata.Labels["pipeline_id"] == "bulk_indexing" {
 				partitionTaskInfo["bulk_task"] = util.MapStr{
-					"id": pipelineTask.ID,
+					"id":     pipelineTask.ID,
 					"status": pipelineTask.Status,
 				}
 			}

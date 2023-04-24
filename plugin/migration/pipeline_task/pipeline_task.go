@@ -289,12 +289,17 @@ func (p *processor) getParentTask(taskItem *task.Task, taskType string) (*task.T
 }
 
 func (p *processor) getEsScrollTaskState(taskItem *task.Task) (scrolledDocs int64, totalHits int64, scrolled bool, err error) {
-	hits, err := p.getPipelineLogs(taskItem, []string{"FINISHED", "FAILED"}, 0)
+	hits, err := p.getPipelineLogs(taskItem, []string{"FINISHED", "FAILED"}, taskItem.Updated.UnixMilli())
 	if err != nil {
 		log.Errorf("failed to get pipeline logs for task [%s], err: %v", taskItem.ID, err)
 		err = nil
 		return
 	}
+	if len(hits) == 0 {
+		log.Debugf("scroll task [%s] not finished yet since last start", taskItem.ID)
+		return
+	}
+	// NOTE: we only check the last run of es_scroll
 	for _, hit := range hits {
 		scrolled = true
 		m := util.MapStr(hit.Source)
@@ -323,7 +328,7 @@ func (p *processor) getBulkIndexingTaskState(taskItem *task.Task) (successDocs i
 		return
 	}
 	if len(newHits) == 0 {
-		log.Debugf("task [%s] not finished yet since last start", taskItem.ID)
+		log.Debugf("bulk task [%s] not finished yet since last start", taskItem.ID)
 		return
 	}
 

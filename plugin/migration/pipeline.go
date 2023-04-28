@@ -473,8 +473,6 @@ func (p *DispatcherProcessor) handleSplitSubTask(taskItem *task2.Task) error {
 	}
 	sourceClusterID := cfg.Source.ClusterId
 	targetClusterID := cfg.Target.ClusterId
-	esConfig := elastic.GetConfig(sourceClusterID)
-	esTargetConfig := elastic.GetConfig(targetClusterID)
 	docType := common.GetClusterDocType(targetClusterID)
 	if len(taskItem.ParentId) == 0 {
 		return fmt.Errorf("got wrong parent id of task [%v]", *taskItem)
@@ -518,12 +516,6 @@ func (p *DispatcherProcessor) handleSplitSubTask(taskItem *task2.Task) error {
 						"batch_size":    cfg.Source.BatchSize,
 						"indices":       indexName,
 						"elasticsearch": sourceClusterID,
-						"elasticsearch_config": util.MapStr{
-							"name":       sourceClusterID,
-							"enabled":    true,
-							"endpoint":   esConfig.Endpoint,
-							"basic_auth": esConfig.BasicAuth,
-						},
 						"queue": util.MapStr{
 							"name": scrollID,
 							"labels": util.MapStr{
@@ -583,12 +575,6 @@ func (p *DispatcherProcessor) handleSplitSubTask(taskItem *task2.Task) error {
 						"num_of_slices":           cfg.Target.Bulk.SliceSize,
 						"idle_timeout_in_seconds": cfg.Target.Bulk.IdleTimeoutInSeconds,
 						"elasticsearch":           targetClusterID,
-						"elasticsearch_config": util.MapStr{
-							"name":       targetClusterID,
-							"enabled":    true,
-							"endpoint":   esTargetConfig.Endpoint,
-							"basic_auth": esTargetConfig.BasicAuth,
-						},
 						"queues": util.MapStr{
 							"type":              "scroll_docs",
 							"migration_task_id": taskItem.ID,

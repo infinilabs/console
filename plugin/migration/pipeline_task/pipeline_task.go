@@ -68,6 +68,12 @@ func (p *processor) handleReadyPipelineTask(taskItem *task.Task) error {
 		return err
 	}
 
+	err = p.fillDynamicESConfig(taskItem, &cfg)
+	if err != nil {
+		log.Errorf("failed to update task config, err: %v", err)
+		return err
+	}
+
 	cfg.Labels["retry_times"] = taskItem.RetryTimes
 
 	// call instance api to create pipeline task
@@ -433,4 +439,34 @@ func (p *processor) saveTaskAndWriteLog(taskItem *task.Task, taskResult *task.Ta
 	if message != "" {
 		migration_util.WriteLog(taskItem, taskResult, message)
 	}
+}
+
+// TODO: remove after implementing dynamic register elasticsearch configs at gateway
+func (p *processor) fillDynamicESConfig(taskItem *task.Task, pipelineTaskConfig *migration_model.PipelineTaskConfig) error {
+	for _, p := range pipelineTaskConfig.Processor {
+		for k, v := range p {
+			v, ok := v.(map[string]interface{})
+			if !ok {
+				return errors.New("invalid processor config")
+			}
+			processorConfig := util.MapStr(v)
+			if k == "bulk_indexing" || k == "es_scroll" {
+				elasticsearchID := migration_util.GetMapStringValue(processorConfig, "elasticsearch")
+				if elasticsearchID == "" {
+					return fmt.Errorf("invalid task config found for task [%s]", taskItem.ID)
+				}
+				esConfig := elastic.GetConfigNoPanic(elasticsearchID)
+				if esConfig == nil {
+					return fmt.Errorf("can't load elasticsearch config of [%s] for task task [%s]", elasticsearchID, taskItem.ID)
+				}
+				processorConfig["elasticsearch_config"] = util.MapStr{
+					"name":       elasticsearchID,
+					"enabled":    true,
+					"endpoint":   esConfig.Endpoint,
+					"basic_auth": esConfig.BasicAuth,
+				}
+			}
+		}
+	}
+	return nil
 }

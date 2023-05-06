@@ -5,8 +5,14 @@
 package gateway
 
 import (
+	"crypto/tls"
 	"infini.sh/framework/core/api"
 	"infini.sh/framework/core/api/rbac/enum"
+	"net"
+	"net/http"
+	"net/url"
+	log "github.com/cihub/seelog"
+	"time"
 )
 
 type GatewayAPI struct {
@@ -26,4 +32,35 @@ func InitAPI() {
 	api.HandleAPIMethod(api.POST, "/gateway/instance/:instance_id/_proxy", gateway.RequirePermission(gateway.proxy, enum.PermissionGatewayInstanceRead))
 
 	api.HandleAPIMethod(api.GET, "/_platform/nodes", gateway.getExecutionNodes)
+	api.HandleAPIFunc("/ws_proxy", func(w http.ResponseWriter, req *http.Request) {
+		log.Debug(req.RequestURI)
+		endpoint := req.URL.Query().Get("endpoint")
+		path := req.URL.Query().Get("path")
+		var tlsConfig = &tls.Config{
+			InsecureSkipVerify: true,
+		}
+		target, err := url.Parse(endpoint)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		newURL, err := url.Parse(path)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		req.URL.Path = newURL.Path
+		req.URL.RawPath = newURL.RawPath
+		req.URL.RawQuery = ""
+		req.RequestURI = req.URL.RequestURI()
+		req.Header.Set("HOST", target.Host)
+		req.Host = target.Host
+		wsProxy := NewSingleHostReverseProxy(target)
+		wsProxy.Dial = (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).Dial
+		wsProxy.TLSClientConfig = tlsConfig
+		wsProxy.ServeHTTP(w, req)
+	})
 }

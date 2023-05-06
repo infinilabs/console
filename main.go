@@ -73,6 +73,8 @@ func main() {
 
 	uiModule := &ui.UIModule{}
 
+	global.Env().EnableSetup(true)
+
 	if app.Setup(func() {
 
 		//load core modules first

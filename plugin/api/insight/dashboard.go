@@ -7,16 +7,15 @@ package insight
 import (
 	"net/http"
 	"strconv"
-
 	log "github.com/cihub/seelog"
+	insight2 "infini.sh/console/model/insight"
 	httprouter "infini.sh/framework/core/api/router"
-	"infini.sh/framework/core/insight"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 )
 
 func (h *InsightAPI) createDashboard(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	var obj = &insight.Dashboard{}
+	var obj = &insight2.Dashboard{}
 	err := h.DecodeJSON(req, obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -40,7 +39,7 @@ func (h *InsightAPI) createDashboard(w http.ResponseWriter, req *http.Request, p
 func (h *InsightAPI) getDashboard(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	id := ps.MustGetParameter("dashboard_id")
 
-	obj := insight.Dashboard{}
+	obj := insight2.Dashboard{}
 	obj.ID = id
 
 	exists, err := orm.Get(&obj)
@@ -61,7 +60,7 @@ func (h *InsightAPI) getDashboard(w http.ResponseWriter, req *http.Request, ps h
 	q := &orm.Query{
 		RawQuery: util.MustToJSONBytes(query),
 	}
-	err, result := orm.Search(insight.Visualization{}, q)
+	err, result := orm.Search(insight2.Visualization{}, q)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -78,7 +77,7 @@ func (h *InsightAPI) getDashboard(w http.ResponseWriter, req *http.Request, ps h
 
 func (h *InsightAPI) updateDashboard(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	id := ps.MustGetParameter("dashboard_id")
-	obj := insight.Dashboard{}
+	obj := insight2.Dashboard{}
 
 	obj.ID = id
 	exists, err := orm.Get(&obj)
@@ -92,7 +91,7 @@ func (h *InsightAPI) updateDashboard(w http.ResponseWriter, req *http.Request, p
 
 	id = obj.ID
 	create := obj.Created
-	obj = insight.Dashboard{}
+	obj = insight2.Dashboard{}
 	err = h.DecodeJSON(req, &obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -119,7 +118,7 @@ func (h *InsightAPI) updateDashboard(w http.ResponseWriter, req *http.Request, p
 func (h *InsightAPI) deleteDashboard(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	id := ps.MustGetParameter("dashboard_id")
 
-	obj := insight.Dashboard{}
+	obj := insight2.Dashboard{}
 	obj.ID = id
 
 	exists, err := orm.Get(&obj)
@@ -193,7 +192,7 @@ func (h *InsightAPI) searchDashboard(w http.ResponseWriter, req *http.Request, p
 		RawQuery: util.MustToJSONBytes(queryDSL),
 	}
 
-	err, res := orm.Search(&insight.Dashboard{}, &q)
+	err, res := orm.Search(&insight2.Dashboard{}, &q)
 	if err != nil {
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)

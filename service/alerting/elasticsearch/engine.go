@@ -16,7 +16,7 @@ import (
 	"infini.sh/console/service/alerting/action"
 	"infini.sh/console/service/alerting/funcs"
 	"infini.sh/framework/core/elastic"
-	"infini.sh/framework/core/insight"
+	"infini.sh/console/model/insight"
 	"infini.sh/framework/core/kv"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"

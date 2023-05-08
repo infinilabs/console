@@ -6,7 +6,7 @@ package alerting
 
 import (
 	"fmt"
-	"infini.sh/framework/core/insight"
+	"infini.sh/console/model/insight"
 	"regexp"
 )
 

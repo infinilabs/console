@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"infini.sh/framework/core/elastic"
-	"infini.sh/framework/core/insight"
+	"infini.sh/console/model/insight"
 	"infini.sh/framework/core/util"
 )
 

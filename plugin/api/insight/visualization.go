@@ -12,7 +12,7 @@ import (
 
 	log "github.com/cihub/seelog"
 	httprouter "infini.sh/framework/core/api/router"
-	"infini.sh/framework/core/insight"
+	"infini.sh/console/model/insight"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 )

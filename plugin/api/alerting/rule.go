@@ -17,7 +17,7 @@ import (
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/event"
 	"infini.sh/framework/core/global"
-	"infini.sh/framework/core/insight"
+	"infini.sh/console/model/insight"
 	"infini.sh/framework/core/kv"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/queue"

@@ -53,7 +53,7 @@ func Init(cfg *config.AppConfig) {
 	api.HandleAPIMethod(api.GET, path.Join(pathPrefix, "elasticsearch/command"), handler.RequirePermission(handler.HandleQueryCommonCommandAction, enum.PermissionCommandRead))
 	api.HandleAPIMethod(api.DELETE, path.Join(pathPrefix, "elasticsearch/command/:cid"), handler.RequirePermission(handler.HandleDeleteCommonCommandAction, enum.PermissionCommandWrite))
 	api.HandleAPIMethod(api.GET, "/elasticsearch/overview/status", handler.RequireLogin(handler.ElasticsearchStatusSummaryAction))
-
+	api.HandleAPIMethod(api.GET, "/elasticsearch/:id/overview/treemap", handler.RequireClusterPermission(handler.RequirePermission(handler.ClusterOverTreeMap, enum.PermissionElasticsearchMetricRead)))
 	//task.RegisterScheduleTask(task.ScheduleTask{
 	//	Description: "sync reindex task result",
 	//	Task: func() {

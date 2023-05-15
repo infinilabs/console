@@ -212,6 +212,12 @@ func (p *processor) handlePendingStopPipelineTask(taskItem *task.Task) error {
 
 	err = instance.StopPipelineWithTimeout(taskItem.ID, time.Second)
 	if err != nil {
+		if strings.Contains(err.Error(), "task not found") {
+			taskItem.Status = task.StatusStopped
+			p.saveTaskAndWriteLog(taskItem, nil, fmt.Sprintf("[%v] task [%s] not found on remote node, mark as stopped", taskItem.Metadata.Labels["pipeline_id"], taskItem.ID))
+			p.cleanGatewayPipeline(taskItem)
+			return nil
+		}
 		log.Errorf("failed to stop pipeline, err: %v", err)
 	}
 	return nil

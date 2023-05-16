@@ -21,15 +21,13 @@ import (
 type processor struct {
 	Elasticsearch string
 	IndexName     string
-	LogIndexName  string
 	scheduler     migration_model.Scheduler
 }
 
-func NewProcessor(elasticsearch, indexName, logIndexName string, scheduler migration_model.Scheduler) migration_model.Processor {
+func NewProcessor(elasticsearch, indexName string, scheduler migration_model.Scheduler) migration_model.Processor {
 	return &processor{
 		Elasticsearch: elasticsearch,
 		IndexName:     indexName,
-		LogIndexName:  logIndexName,
 		scheduler:     scheduler,
 	}
 }

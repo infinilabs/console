@@ -453,6 +453,7 @@ func (h *APIHandler) getDataMigrationTaskInfo(w http.ResponseWriter, req *http.R
 	obj.Metadata.Labels["completed_indices"] = completedIndices
 	h.WriteJSON(w, obj, http.StatusOK)
 }
+
 func getMajorTaskInfoByIndex(taskID string) (map[string]migration_model.IndexStateInfo, error) {
 	query := util.MapStr{
 		"size": 0,
@@ -547,7 +548,7 @@ func getMajorTaskInfoByIndex(taskID string) (map[string]migration_model.IndexSta
 	return resBody, nil
 }
 
-func getIndexTaskDocCount(ctx context.Context, index *migration_model.IndexConfig, targetESClient elastic.API) (int64, error) {
+func getIndexTaskDocCount(ctx context.Context, index *migration_model.ClusterMigrationIndexConfig, targetESClient elastic.API) (int64, error) {
 	targetIndexName := index.Target.Name
 	if targetIndexName == "" {
 		if v, ok := index.IndexRename[index.Source.Name].(string); ok {
@@ -1066,7 +1067,7 @@ func (h *APIHandler) deleteDataMigrationTask(w http.ResponseWriter, req *http.Re
 	}, 200)
 }
 
-func (h *APIHandler) refreshIndex(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
+func (h *APIHandler) refreshIndex(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	var (
 		index     = ps.MustGetParameter("index")
 		clusterID = ps.MustGetParameter("id")

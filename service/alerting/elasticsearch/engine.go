@@ -894,6 +894,10 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 			alerting2.ParamRelationValues: resultItem.RelationValues,
 		})
 	}
+	envVariables, err := alerting2.GetEnvVariables()
+	if err != nil {
+		log.Errorf("get env variables error: %v", err)
+	}
 	paramsCtx := util.MapStr{
 		alerting2.ParamRuleID:       rule.ID,
 		alerting2.ParamResourceID:   rule.Resource.ID,
@@ -903,8 +907,9 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 		"first_threshold":           firstThreshold,
 		"rule_name":                 rule.Name,
 		"priority":                  priority,
+		"env": envVariables,
 	}
-	err := util.MergeFields(paramsCtx, extraParams, true)
+	err = util.MergeFields(paramsCtx, extraParams, true)
 	if err != nil {
 		log.Errorf("merge template params error: %v", err)
 	}
@@ -982,8 +987,14 @@ func performChannel(channel *alerting.Channel, ctx map[string]interface{}) ([]by
 		if err != nil {
 			return nil, err, message
 		}
+		wh := *channel.Webhook
+		urlBytes, err := resolveMessage(wh.URL, ctx)
+		if err != nil {
+			return nil, err, message
+		}
+		wh.URL = string(urlBytes)
 		act = &action.WebhookAction{
-			Data:    channel.Webhook,
+			Data:    &wh,
 			Message: string(message),
 		}
 	default:

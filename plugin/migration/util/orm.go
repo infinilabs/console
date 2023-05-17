@@ -115,3 +115,44 @@ func UpdatePendingChildTasksToPendingStop(taskItem *task.Task, taskType string) 
 	}
 	return nil
 }
+
+// update status of subtask to ready
+func UpdateStoppedChildTasksToReady(taskItem *task.Task, taskType string) error {
+	query := util.MapStr{
+		"bool": util.MapStr{
+			"must": []util.MapStr{
+				{
+					"term": util.MapStr{
+						"parent_id": util.MapStr{
+							"value": taskItem.ID,
+						},
+					},
+				},
+				{
+					"terms": util.MapStr{
+						"status": []string{task.StatusError, task.StatusStopped},
+					},
+				},
+				{
+					"term": util.MapStr{
+						"metadata.type": util.MapStr{
+							"value": taskType,
+						},
+					},
+				},
+			},
+		},
+	}
+	queryDsl := util.MapStr{
+		"query": query,
+		"script": util.MapStr{
+			"source": fmt.Sprintf("ctx._source['status'] = '%s'", task.StatusReady),
+		},
+	}
+
+	err := orm.UpdateBy(taskItem, util.MustToJSONBytes(queryDsl))
+	if err != nil {
+		return err
+	}
+	return nil
+}

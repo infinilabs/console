@@ -48,41 +48,8 @@ func (p *processor) handleReadyMajorTask(taskItem *task.Task) error {
 	if ok, _ := util.ExtractBool(taskItem.Metadata.Labels["is_split"]); !ok {
 		return p.splitMajorTask(taskItem)
 	}
-	//update status of subtask to ready
-	query := util.MapStr{
-		"bool": util.MapStr{
-			"must": []util.MapStr{
-				{
-					"term": util.MapStr{
-						"parent_id": util.MapStr{
-							"value": taskItem.ID,
-						},
-					},
-				},
-				{
-					"terms": util.MapStr{
-						"status": []string{task.StatusError, task.StatusStopped},
-					},
-				},
-				{
-					"term": util.MapStr{
-						"metadata.type": util.MapStr{
-							"value": "index_comparison",
-						},
-					},
-				},
-			},
-		},
-	}
-	queryDsl := util.MapStr{
-		"query": query,
-		"script": util.MapStr{
-			"source": fmt.Sprintf("ctx._source['status'] = '%s'", task.StatusReady),
-		},
-	}
-
-	esClient := elastic.GetClient(p.Elasticsearch)
-	_, err := esClient.UpdateByQuery(p.IndexName, util.MustToJSONBytes(queryDsl))
+	// update status of subtask to ready
+	err := migration_util.UpdateStoppedChildTasksToReady(taskItem, "index_comparison")
 	if err != nil {
 		log.Errorf("failed to update sub task status, err: %v", err)
 		return nil

@@ -25,6 +25,11 @@ type processor struct {
 	LogIndexName  string
 }
 
+var (
+	// task types with pipline as children
+	parentTaskTypes = []string{"index_migration", "index_comparison"}
+)
+
 func NewProcessor(elasticsearch, indexName, logIndexName string) migration_model.Processor {
 	return &processor{
 		Elasticsearch: elasticsearch,
@@ -52,6 +57,8 @@ func (p *processor) handleReadyPipelineTask(taskItem *task.Task) error {
 	switch taskItem.Metadata.Labels["pipeline_id"] {
 	case "es_scroll":
 	case "bulk_indexing":
+	case "dump_hash":
+	case "index_diff":
 	default:
 		return fmt.Errorf("task [%s] has unknown pipeline_id [%s]", taskItem.ID, taskItem.Metadata.Labels["pipeline_id"])
 	}
@@ -108,6 +115,10 @@ func (p *processor) handleRunningPipelineTask(taskItem *task.Task) error {
 		return p.handleRunningEsScrollPipelineTask(taskItem)
 	case "bulk_indexing":
 		return p.handleRunningBulkIndexingPipelineTask(taskItem)
+	case "dump_hash":
+		return p.handleRunningDumpHashPipelineTask(taskItem)
+	case "index_diff":
+		return p.handleRunningIndexDiffPipelineTask(taskItem)
 	default:
 		return fmt.Errorf("task [%s] has unknown pipeline_id [%s]", taskItem.ID, taskItem.Metadata.Labels["pipeline_id"])
 	}
@@ -158,7 +169,6 @@ func (p *processor) handleRunningBulkIndexingPipelineTask(taskItem *task.Task) e
 	if len(errs) > 0 {
 		errMsg = fmt.Sprintf("bulk finished with error(s): %v", errs)
 	}
-	// TODO: handle multiple run bulk_indexing pipeline tasks and total_docs from index_migration
 	now := time.Now()
 	taskItem.CompletedTime = &now
 	taskItem.Metadata.Labels["index_docs"] = indexDocs
@@ -185,6 +195,8 @@ func (p *processor) handlePendingStopPipelineTask(taskItem *task.Task) error {
 	switch taskItem.Metadata.Labels["pipeline_id"] {
 	case "es_scroll":
 	case "bulk_indexing":
+	case "dump_hash":
+	case "index_diff":
 	default:
 		return fmt.Errorf("task [%s] has unknown pipeline_id [%s]", taskItem.ID, taskItem.Metadata.Labels["pipeline_id"])
 	}
@@ -239,7 +251,7 @@ func (p *processor) cleanGatewayPipeline(taskItem *task.Task) (instance model.In
 }
 
 func (p *processor) getPipelineExecutionInstance(taskItem *task.Task) (instance model.Instance, err error) {
-	parentTask, err := p.getParentTask(taskItem, "index_migration")
+	parentTask, err := p.getParentTask(taskItem)
 	if err != nil {
 		return
 	}
@@ -254,7 +266,7 @@ func (p *processor) getPipelineExecutionInstance(taskItem *task.Task) (instance 
 	return
 }
 
-func (p *processor) getParentTask(taskItem *task.Task, taskType string) (*task.Task, error) {
+func (p *processor) getParentTask(taskItem *task.Task) (*task.Task, error) {
 	queryDsl := util.MapStr{
 		"size": 1,
 		"query": util.MapStr{
@@ -266,8 +278,8 @@ func (p *processor) getParentTask(taskItem *task.Task, taskType string) (*task.T
 						},
 					},
 					{
-						"term": util.MapStr{
-							"metadata.type": taskType,
+						"terms": util.MapStr{
+							"metadata.type": parentTaskTypes,
 						},
 					},
 				},
@@ -471,7 +483,7 @@ func (p *processor) fillDynamicESConfig(taskItem *task.Task, pipelineTaskConfig 
 				return errors.New("invalid processor config")
 			}
 			processorConfig := util.MapStr(v)
-			if k == "bulk_indexing" || k == "es_scroll" {
+			if k == "bulk_indexing" || k == "es_scroll" || k == "dump_hash" {
 				elasticsearchID := migration_util.GetMapStringValue(processorConfig, "elasticsearch")
 				if elasticsearchID == "" {
 					return fmt.Errorf("invalid task config found for task [%s]", taskItem.ID)

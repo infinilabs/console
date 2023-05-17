@@ -11,38 +11,43 @@ import (
 )
 
 func GetPendingChildTasks(elasticsearch, indexName string, taskID string, taskType string) ([]task.Task, error) {
+	return GetChildTasks(elasticsearch, indexName, taskID, taskType, []string{task.StatusRunning, task.StatusPendingStop, task.StatusReady})
+}
 
-	//check whether all pipeline task is stopped or not, then update task status
-	q := util.MapStr{
-		"size": 200,
-		"query": util.MapStr{
-			"bool": util.MapStr{
-				"must": []util.MapStr{
-					{
-						"term": util.MapStr{
-							"parent_id": util.MapStr{
-								"value": taskID,
-							},
-						},
-					},
-					{
-						"term": util.MapStr{
-							"metadata.type": taskType,
-						},
-					},
-					{
-						"terms": util.MapStr{
-							"status": []string{task.StatusRunning, task.StatusPendingStop, task.StatusReady},
-						},
-					},
+func GetChildTasks(elasticsearch, indexName string, taskID string, taskType string, status []string) ([]task.Task, error) {
+	musts := []util.MapStr{
+		{
+			"term": util.MapStr{
+				"parent_id": util.MapStr{
+					"value": taskID,
 				},
 			},
 		},
+		{
+			"term": util.MapStr{
+				"metadata.type": taskType,
+			},
+		},
 	}
-	return GetTasks(elasticsearch, indexName, q)
+	if len(status) > 0 {
+		musts = append(musts, util.MapStr{
+			"terms": util.MapStr{
+				"status": status,
+			},
+		})
+	}
+	queryDsl := util.MapStr{
+		"size": 999,
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": musts,
+			},
+		},
+	}
+	return GetTasks(elasticsearch, indexName, queryDsl)
 }
 
-func GetTasks(elasticsearch, indexName string, query interface{}) ([]task.Task, error) {
+func GetTasks(elasticsearch, indexName string, query util.MapStr) ([]task.Task, error) {
 	esClient := elastic.GetClient(elasticsearch)
 	res, err := esClient.SearchWithRawQueryDSL(indexName, util.MustToJSONBytes(query))
 	if err != nil {
@@ -101,6 +106,47 @@ func UpdatePendingChildTasksToPendingStop(taskItem *task.Task, taskType string) 
 		"query": query,
 		"script": util.MapStr{
 			"source": fmt.Sprintf("ctx._source['status'] = '%s'", task.StatusPendingStop),
+		},
+	}
+
+	err := orm.UpdateBy(taskItem, util.MustToJSONBytes(queryDsl))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// update status of subtask to ready
+func UpdateStoppedChildTasksToReady(taskItem *task.Task, taskType string) error {
+	query := util.MapStr{
+		"bool": util.MapStr{
+			"must": []util.MapStr{
+				{
+					"term": util.MapStr{
+						"parent_id": util.MapStr{
+							"value": taskItem.ID,
+						},
+					},
+				},
+				{
+					"terms": util.MapStr{
+						"status": []string{task.StatusError, task.StatusStopped},
+					},
+				},
+				{
+					"term": util.MapStr{
+						"metadata.type": util.MapStr{
+							"value": taskType,
+						},
+					},
+				},
+			},
+		},
+	}
+	queryDsl := util.MapStr{
+		"query": query,
+		"script": util.MapStr{
+			"source": fmt.Sprintf("ctx._source['status'] = '%s'", task.StatusReady),
 		},
 	}
 

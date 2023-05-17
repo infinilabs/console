@@ -15,15 +15,9 @@ type ClusterMigrationTaskConfig struct {
 	} `json:"cluster"`
 	Indices  []ClusterMigrationIndexConfig `json:"indices"`
 	Settings struct {
-		ParallelIndices      int `json:"parallel_indices"`
-		ParallelTaskPerIndex int `json:"parallel_task_per_index"`
-		Scroll               struct {
-			SliceSize int    `json:"slice_size"`
-			Docs      int    `json:"docs"`
-			Timeout   string `json:"timeout"`
-		} `json:"scroll"`
-		Bulk      ClusterMigrationBulkConfig `json:"bulk"`
-		Execution ExecutionConfig            `json:"execution"`
+		Scroll    EsScrollConfig     `json:"scroll"`
+		Bulk      BulkIndexingConfig `json:"bulk"`
+		Execution ExecutionConfig    `json:"execution"`
 	} `json:"settings"`
 	Creator struct {
 		Name string `json:"name"`
@@ -31,24 +25,17 @@ type ClusterMigrationTaskConfig struct {
 	} `json:"creator"`
 }
 
-type ClusterMigrationBulkConfig struct {
-	Docs                 int  `json:"docs"`
-	StoreSizeInMB        int  `json:"store_size_in_mb"`
-	MaxWorkerSize        int  `json:"max_worker_size"`
-	IdleTimeoutInSeconds int  `json:"idle_timeout_in_seconds"`
-	SliceSize            int  `json:"slice_size"`
-	Compress             bool `json:"compress"`
-}
-
 type ClusterMigrationIndexConfig struct {
-	Source          IndexInfo              `json:"source"`
-	Target          IndexInfo              `json:"target"`
-	RawFilter       interface{}            `json:"raw_filter"`
-	IndexRename     map[string]interface{} `json:"index_rename"`
-	TypeRename      map[string]interface{} `json:"type_rename"`
-	Partition       *IndexPartition        `json:"partition,omitempty"`
-	Percent         float64                `json:"percent,omitempty"`
-	ErrorPartitions int                    `json:"error_partitions,omitempty"`
+	Source      IndexInfo              `json:"source"`
+	Target      IndexInfo              `json:"target"`
+	RawFilter   interface{}            `json:"raw_filter"`
+	IndexRename map[string]interface{} `json:"index_rename"`
+	TypeRename  map[string]interface{} `json:"type_rename"`
+	Partition   *IndexPartition        `json:"partition,omitempty"`
+
+	// only used in API
+	Percent         float64 `json:"percent,omitempty"`
+	ErrorPartitions int     `json:"error_partitions,omitempty"`
 }
 
 type MajorTaskState struct {

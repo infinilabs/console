@@ -55,6 +55,9 @@ func (p *processor) handleReadyMajorTask(taskItem *task.Task) error {
 		return nil
 	}
 	taskItem.RetryTimes++
+	if taskItem.StartTimeInMillis == 0 {
+		taskItem.StartTimeInMillis = time.Now().UnixMilli()
+	}
 	taskItem.Status = task.StatusRunning
 	p.saveTaskAndWriteLog(taskItem, &task.TaskResult{
 		Success: true,
@@ -102,6 +105,9 @@ func (p *processor) splitMajorTask(taskItem *task.Task) error {
 			}
 		}
 
+		// TODO: parition twice for source & target, then merge
+		// if there's a partition missing from source but present in target
+		// ideally we can capture it in docs count, but this won't always work
 		if index.Partition != nil {
 			partitionQ := &elastic.PartitionQuery{
 				IndexName: index.Source.Name,
@@ -119,18 +125,20 @@ func (p *processor) splitMajorTask(taskItem *task.Task) error {
 			if partitions == nil || len(partitions) == 0 {
 				return fmt.Errorf("empty data with filter: %s", util.MustToJSON(index.RawFilter))
 			}
+			var (
+				partitionID int
+			)
 			for _, partition := range partitions {
-				//skip empty partition
-				if partition.Docs <= 0 {
-					continue
-				}
+				partitionID++
 				partitionSourceDump := sourceDump
-				partitionSourceDump.QueryDSL = partition.Filter
+				partitionSourceDump.Start = partition.Start
+				partitionSourceDump.End = partition.End
 				partitionSourceDump.DocCount = partition.Docs
+				partitionSourceDump.Step = index.Partition.Step
+				partitionSourceDump.PartitionId = partitionID
+				partitionSourceDump.QueryDSL = partition.Filter
 				partitionSourceDump.QueryString = ""
 
-				// TODO: if there's a partition missing from source but present in target
-				// ideally we can capture it in docs count, but this won't always work
 				partitionTargetDump := partitionSourceDump
 				partitionTargetDump.Indices = index.Target.Name
 
@@ -166,6 +174,7 @@ func (p *processor) splitMajorTask(taskItem *task.Task) error {
 			sourceDump.DocCount = index.Source.Docs
 			targetDump := sourceDump
 			targetDump.Indices = index.Target.Name
+			targetDump.DocCount = index.Target.Docs
 
 			indexComparisonTask := task.Task{
 				ParentId:    []string{taskItem.ID},

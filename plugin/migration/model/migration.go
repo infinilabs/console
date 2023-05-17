@@ -38,14 +38,9 @@ type ClusterMigrationIndexConfig struct {
 	ErrorPartitions int     `json:"error_partitions,omitempty"`
 }
 
-type MajorTaskState struct {
+type ClusterMigrationTaskState struct {
 	IndexDocs int64
 	Status    string
-}
-
-type IndexStateInfo struct {
-	ErrorPartitions int
-	IndexDocs       float64
 }
 
 const (
@@ -70,11 +65,11 @@ type IndexMigrationSourceConfig struct {
 	TypeRename  util.MapStr `json:"type_rename,omitempty"`
 	QueryString string      `json:"query_string,omitempty"`
 	QueryDSL    util.MapStr `json:"query_dsl,omitempty"`
+	DocCount    int64       `json:"doc_count"`
 
 	// Parition configs
 	Start       float64     `json:"start"`
 	End         float64     `json:"end"`
-	DocCount    int64       `json:"doc_count"`
 	Step        interface{} `json:"step"`
 	PartitionId int         `json:"partition_id"`
 }

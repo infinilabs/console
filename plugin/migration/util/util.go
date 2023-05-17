@@ -41,6 +41,12 @@ func IsRunningState(status string) bool {
 	return util.StringInArray(runningTaskStatus, status)
 }
 
+var pendingTaskStatus = []string{task.StatusRunning, task.StatusReady, task.StatusPendingStop}
+
+func IsPendingState(status string) bool {
+	return util.StringInArray(pendingTaskStatus, status)
+}
+
 func GetTaskConfig(task *task.Task, config interface{}) error {
 	if task.Config_ == nil {
 		return util.FromJSONBytes([]byte(task.ConfigString), config)

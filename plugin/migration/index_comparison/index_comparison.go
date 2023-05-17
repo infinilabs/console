@@ -293,6 +293,7 @@ func (p *processor) handleScheduleSubTask(taskItem *task.Task) error {
 
 	// update sub migration task status to running and save task log
 	taskItem.Metadata.Labels["execution_instance_id"] = instanceID
+	p.clearTaskState(taskItem)
 	taskItem.Status = task.StatusRunning
 	taskItem.StartTimeInMillis = time.Now().UnixMilli()
 
@@ -330,6 +331,9 @@ func (p *processor) handleRunningSubTask(taskItem *task.Task) error {
 	if sourceDumpTask.Status == task.StatusComplete && targetDumpTask.Status == task.StatusComplete {
 		sourceDocs := migration_util.GetMapIntValue(util.MapStr(sourceDumpTask.Metadata.Labels), "scrolled_docs")
 		targetDocs := migration_util.GetMapIntValue(util.MapStr(targetDumpTask.Metadata.Labels), "scrolled_docs")
+
+		taskItem.Metadata.Labels["source_scrolled"] = sourceDocs
+		taskItem.Metadata.Labels["target_scrolled"] = targetDocs
 		if sourceDocs != targetDocs {
 			now := time.Now()
 			taskItem.CompletedTime = &now
@@ -424,19 +428,7 @@ func (p *processor) getPipelineTasks(taskItem *task.Task, cfg *migration_model.I
 		err = fmt.Errorf("invalid pipeline task count: %d", len(ptasks))
 		return
 	}
-	for i, ptask := range ptasks {
-		if ptask.Metadata.Labels["pipeline_id"] == "dump_hash" {
-			// TODO: we can't handle when compare the same cluster & same index
-			// catch it earlier when creating the task
-			if ptask.Metadata.Labels["cluster_id"] == cfg.Source.ClusterId && ptask.Metadata.Labels["index_name"] == cfg.Source.Indices {
-				sourceDumpTask = &ptasks[i]
-			} else {
-				targetDumpTask = &ptasks[i]
-			}
-		} else if ptask.Metadata.Labels["pipeline_id"] == "index_diff" {
-			diffTask = &ptasks[i]
-		}
-	}
+	sourceDumpTask, targetDumpTask, diffTask = migration_util.SplitIndexComparisonTasks(ptasks, cfg)
 	return
 }
 
@@ -477,4 +469,9 @@ func (p *processor) saveTaskAndWriteLog(taskItem *task.Task, taskResult *task.Ta
 	if message != "" {
 		migration_util.WriteLog(taskItem, taskResult, message)
 	}
+}
+
+func (p *processor) clearTaskState(taskItem *task.Task) {
+	delete(taskItem.Metadata.Labels, "source_scrolled")
+	delete(taskItem.Metadata.Labels, "target_scrolled")
 }

@@ -93,10 +93,6 @@ func (p *processor) handleSplitSubTask(taskItem *task.Task) error {
 	if len(taskItem.ParentId) == 0 {
 		return fmt.Errorf("got wrong parent id of task [%v]", *taskItem)
 	}
-	queryDsl := cfg.Source.QueryDSL
-	scrollQueryDsl := util.MustToJSON(util.MapStr{
-		"query": queryDsl,
-	})
 	indexName := cfg.Source.Indices
 	scrollTask := &task.Task{
 		ParentId:    pids,
@@ -140,9 +136,11 @@ func (p *processor) handleSplitSubTask(taskItem *task.Task) error {
 						},
 						"partition_size": 1,
 						"scroll_time":    cfg.Source.ScrollTime,
-						"query_dsl":      scrollQueryDsl,
-						"index_rename":   cfg.Source.IndexRename,
-						"type_rename":    cfg.Source.TypeRename,
+						"query_dsl": util.MustToJSON(util.MapStr{
+							"query": cfg.Source.QueryDSL,
+						}),
+						"index_rename": cfg.Source.IndexRename,
+						"type_rename":  cfg.Source.TypeRename,
 					},
 				},
 			},
@@ -279,7 +277,6 @@ func (p *processor) handleScheduleSubTask(taskItem *task.Task) error {
 			if err == migration_model.ErrHitMax {
 				log.Debug("hit max tasks per instance, skip dispatch")
 				return nil
-
 			}
 			return fmt.Errorf("get preference intance error: %w", err)
 		}
@@ -492,9 +489,13 @@ func (p *processor) getExecutionConfigFromMajorTask(taskItem *task.Task) (config
 }
 
 func (p *processor) getScrollBulkPipelineTasks(taskItem *task.Task) (scrollTask *task.Task, bulkTask *task.Task, err error) {
-	ptasks, err := p.getPipelineTasks(taskItem.ID)
+	ptasks, err := migration_util.GetChildTasks(p.Elasticsearch, p.IndexName, taskItem.ID, "pipeline", nil)
 	if err != nil {
 		log.Errorf("failed to get pipeline tasks, err: %v", err)
+		return
+	}
+	if len(ptasks) != 2 {
+		err = fmt.Errorf("invalid pipeline task count: %d", len(ptasks))
 		return
 	}
 	for i, ptask := range ptasks {
@@ -505,33 +506,6 @@ func (p *processor) getScrollBulkPipelineTasks(taskItem *task.Task) (scrollTask 
 		}
 	}
 	return
-}
-
-func (p *processor) getPipelineTasks(subTaskID string) ([]task.Task, error) {
-	queryDsl := util.MapStr{
-		"size": 2,
-		"query": util.MapStr{
-			"bool": util.MapStr{
-				"must": []util.MapStr{
-					{
-						"term": util.MapStr{
-							"parent_id": util.MapStr{
-								"value": subTaskID,
-							},
-						},
-					},
-					{
-						"term": util.MapStr{
-							"metadata.type": util.MapStr{
-								"value": "pipeline",
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-	return migration_util.GetTasks(p.Elasticsearch, p.IndexName, queryDsl)
 }
 
 func (p *processor) cleanGatewayQueue(taskItem *task.Task) {

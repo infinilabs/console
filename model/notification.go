@@ -14,9 +14,10 @@ const (
 type MessageType string
 
 const (
-	MessageTypeNews      MessageType = "news"
-	MessageTypeAlerting  MessageType = "alerting"
-	MessageTypeMigration MessageType = "migration"
+	MessageTypeNews       MessageType = "news"
+	MessageTypeAlerting   MessageType = "alerting"
+	MessageTypeMigration  MessageType = "migration"
+	MessageTypeComparison MessageType = "comparison"
 )
 
 type NotificationStatus string

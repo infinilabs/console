@@ -11,7 +11,9 @@ import (
 
 	log "github.com/cihub/seelog"
 
+	"infini.sh/console/plugin/migration/cluster_comparison"
 	"infini.sh/console/plugin/migration/cluster_migration"
+	"infini.sh/console/plugin/migration/index_comparison"
 	"infini.sh/console/plugin/migration/index_migration"
 	migration_model "infini.sh/console/plugin/migration/model"
 	"infini.sh/console/plugin/migration/pipeline_task"
@@ -32,10 +34,12 @@ type DispatcherProcessor struct {
 	id     string
 	config *DispatcherConfig
 
-	scheduler                     migration_model.Scheduler
-	pipelineTaskProcessor         migration_model.Processor
-	clusterMigrationTaskProcessor migration_model.Processor
-	indexMigrationTaskProcessor   migration_model.Processor
+	scheduler                      migration_model.Scheduler
+	pipelineTaskProcessor          migration_model.Processor
+	clusterMigrationTaskProcessor  migration_model.Processor
+	indexMigrationTaskProcessor    migration_model.Processor
+	clusterComparisonTaskProcessor migration_model.Processor
+	indexComparisonTaskProcessor   migration_model.Processor
 }
 
 type DispatcherConfig struct {
@@ -95,6 +99,8 @@ func newMigrationDispatcherProcessor(c *config.Config) (pipeline.Processor, erro
 	processor.pipelineTaskProcessor = pipeline_task.NewProcessor(cfg.Elasticsearch, cfg.IndexName, cfg.LogIndexName)
 	processor.indexMigrationTaskProcessor = index_migration.NewProcessor(cfg.Elasticsearch, cfg.IndexName, processor.scheduler)
 	processor.clusterMigrationTaskProcessor = cluster_migration.NewProcessor(cfg.Elasticsearch, cfg.IndexName, processor.scheduler)
+	processor.indexComparisonTaskProcessor = index_comparison.NewProcessor(cfg.Elasticsearch, cfg.IndexName, processor.scheduler)
+	processor.clusterComparisonTaskProcessor = cluster_comparison.NewProcessor(cfg.Elasticsearch, cfg.IndexName, processor.scheduler)
 
 	return &processor, nil
 }
@@ -106,17 +112,21 @@ func (p *DispatcherProcessor) Name() string {
 func (p *DispatcherProcessor) Process(ctx *pipeline.Context) error {
 	// handle pipeline task
 	p.handleTasks(ctx, "pipeline", []string{task2.StatusReady, task2.StatusRunning, task2.StatusPendingStop}, p.pipelineTaskProcessor.Process)
-	// mark index_migrations as pending_stop
+
+	// handle comparison tasks
+	p.handleTasks(ctx, "cluster_comparison", []string{task2.StatusPendingStop}, p.clusterComparisonTaskProcessor.Process)
+	p.handleTasks(ctx, "index_comparison", []string{task2.StatusPendingStop}, p.indexComparisonTaskProcessor.Process)
+	p.handleTasks(ctx, "index_comparison", []string{task2.StatusRunning}, p.indexComparisonTaskProcessor.Process)
+	p.handleTasks(ctx, "index_comparison", []string{task2.StatusReady}, p.indexComparisonTaskProcessor.Process)
+	p.handleTasks(ctx, "cluster_comparison", []string{task2.StatusRunning}, p.clusterComparisonTaskProcessor.Process)
+	p.handleTasks(ctx, "cluster_comparison", []string{task2.StatusReady}, p.clusterComparisonTaskProcessor.Process)
+
+	// handle migration tasks
 	p.handleTasks(ctx, "cluster_migration", []string{task2.StatusPendingStop}, p.clusterMigrationTaskProcessor.Process)
-	// mark pipeline tasks as pending_stop
 	p.handleTasks(ctx, "index_migration", []string{task2.StatusPendingStop}, p.indexMigrationTaskProcessor.Process)
-	// check pipeline tasks status
 	p.handleTasks(ctx, "index_migration", []string{task2.StatusRunning}, p.indexMigrationTaskProcessor.Process)
-	// split & schedule pipline tasks
 	p.handleTasks(ctx, "index_migration", []string{task2.StatusReady}, p.indexMigrationTaskProcessor.Process)
-	// check index_migration tasks status
 	p.handleTasks(ctx, "cluster_migration", []string{task2.StatusRunning}, p.clusterMigrationTaskProcessor.Process)
-	// split & schedule index_migration tasks
 	p.handleTasks(ctx, "cluster_migration", []string{task2.StatusReady}, p.clusterMigrationTaskProcessor.Process)
 	return nil
 }

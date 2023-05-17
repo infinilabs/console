@@ -11,35 +11,40 @@ import (
 )
 
 func GetPendingChildTasks(elasticsearch, indexName string, taskID string, taskType string) ([]task.Task, error) {
+	return GetChildTasks(elasticsearch, indexName, taskID, taskType, []string{task.StatusRunning, task.StatusPendingStop, task.StatusReady})
+}
 
-	//check whether all pipeline task is stopped or not, then update task status
-	q := util.MapStr{
-		"size": 200,
-		"query": util.MapStr{
-			"bool": util.MapStr{
-				"must": []util.MapStr{
-					{
-						"term": util.MapStr{
-							"parent_id": util.MapStr{
-								"value": taskID,
-							},
-						},
-					},
-					{
-						"term": util.MapStr{
-							"metadata.type": taskType,
-						},
-					},
-					{
-						"terms": util.MapStr{
-							"status": []string{task.StatusRunning, task.StatusPendingStop, task.StatusReady},
-						},
-					},
+func GetChildTasks(elasticsearch, indexName string, taskID string, taskType string, status []string) ([]task.Task, error) {
+	musts := []util.MapStr{
+		{
+			"term": util.MapStr{
+				"parent_id": util.MapStr{
+					"value": taskID,
 				},
 			},
 		},
+		{
+			"term": util.MapStr{
+				"metadata.type": taskType,
+			},
+		},
 	}
-	return GetTasks(elasticsearch, indexName, q)
+	if len(status) > 0 {
+		musts = append(musts, util.MapStr{
+			"terms": util.MapStr{
+				"status": []string{task.StatusRunning, task.StatusPendingStop, task.StatusReady},
+			},
+		})
+	}
+	queryDsl := util.MapStr{
+		"size": 999,
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": musts,
+			},
+		},
+	}
+	return GetTasks(elasticsearch, indexName, queryDsl)
 }
 
 func GetTasks(elasticsearch, indexName string, query interface{}) ([]task.Task, error) {

@@ -380,6 +380,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 
 	cfg.Reserved = true
 	cfg.Monitored = true
+	cfg.Source = elastic.ElasticsearchConfigSourceElasticsearch
 
 	//处理ORM
 	handler := elastic2.ElasticORM{Client: client, Config: cfg1}

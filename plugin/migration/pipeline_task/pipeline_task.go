@@ -195,6 +195,8 @@ func (p *processor) handlePendingStopPipelineTask(taskItem *task.Task) error {
 	switch taskItem.Metadata.Labels["pipeline_id"] {
 	case "es_scroll":
 	case "bulk_indexing":
+	case "dump_hash":
+	case "index_diff":
 	default:
 		return fmt.Errorf("task [%s] has unknown pipeline_id [%s]", taskItem.ID, taskItem.Metadata.Labels["pipeline_id"])
 	}

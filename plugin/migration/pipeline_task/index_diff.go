@@ -91,3 +91,12 @@ func (p *processor) getIndexDiffTaskState(taskItem *task.Task) (diffed bool, onl
 	}
 	return
 }
+
+func (p *processor) clearIndexDiffLabels(labels map[string]interface{}) {
+	delete(labels, "only_in_source_count")
+	delete(labels, "only_in_source_keys")
+	delete(labels, "only_in_target_count")
+	delete(labels, "only_in_target_keys")
+	delete(labels, "diff_both_count")
+	delete(labels, "diff_both_keys")
+}

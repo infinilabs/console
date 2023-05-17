@@ -91,14 +91,16 @@ func (p *processor) handleReadyPipelineTask(taskItem *task.Task) error {
 		return err
 	}
 
-	// TODO: find a better way to handle this
-	taskItem.Metadata.Labels["index_docs"] = 0
-	taskItem.Metadata.Labels["success_docs"] = 0
-	taskItem.Metadata.Labels["invalid_docs"] = ""
-	taskItem.Metadata.Labels["invalid_reasons"] = ""
-	taskItem.Metadata.Labels["failure_docs"] = ""
-	taskItem.Metadata.Labels["failure_reasons"] = ""
-	taskItem.Metadata.Labels["scrolled_docs"] = 0
+	switch taskItem.Metadata.Labels["pipeline_id"] {
+	case "es_scroll":
+		p.clearEsScrollLabels(taskItem.Metadata.Labels)
+	case "bulk_indexing":
+		p.clearBulkIndexLabels(taskItem.Metadata.Labels)
+	case "dump_hash":
+		p.clearDumpHashLabels(taskItem.Metadata.Labels)
+	case "index_diff":
+		p.clearIndexDiffLabels(taskItem.Metadata.Labels)
+	}
 
 	taskItem.Status = task.StatusRunning
 	taskItem.StartTimeInMillis = time.Now().UnixMilli()
@@ -122,72 +124,6 @@ func (p *processor) handleRunningPipelineTask(taskItem *task.Task) error {
 	default:
 		return fmt.Errorf("task [%s] has unknown pipeline_id [%s]", taskItem.ID, taskItem.Metadata.Labels["pipeline_id"])
 	}
-	return nil
-}
-
-func (p *processor) handleRunningEsScrollPipelineTask(taskItem *task.Task) error {
-	scrolledDocs, totalHits, scrolled, err := p.getEsScrollTaskState(taskItem)
-
-	if !scrolled {
-		return nil
-	}
-
-	var errMsg string
-	if err != nil {
-		errMsg = err.Error()
-	}
-	if errMsg == "" {
-		if scrolledDocs < totalHits {
-			errMsg = fmt.Sprintf("scrolled finished but docs count unmatch: %d / %d", scrolledDocs, totalHits)
-		}
-	}
-
-	now := time.Now()
-	taskItem.CompletedTime = &now
-	taskItem.Metadata.Labels["scrolled_docs"] = scrolledDocs
-	if errMsg != "" {
-		taskItem.Status = task.StatusError
-	} else {
-		taskItem.Status = task.StatusComplete
-	}
-
-	p.saveTaskAndWriteLog(taskItem, &task.TaskResult{
-		Success: errMsg == "",
-		Error:   errMsg,
-	}, fmt.Sprintf("[es_scroll] pipeline task [%s] completed", taskItem.ID))
-	p.cleanGatewayPipeline(taskItem)
-	return nil
-}
-
-func (p *processor) handleRunningBulkIndexingPipelineTask(taskItem *task.Task) error {
-	successDocs, indexDocs, bulked, totalInvalidDocs, totalInvalidReasons, totalFailureDocs, totalFailureReasons, errs := p.getBulkIndexingTaskState(taskItem)
-	if !bulked {
-		return nil
-	}
-
-	var errMsg string
-	if len(errs) > 0 {
-		errMsg = fmt.Sprintf("bulk finished with error(s): %v", errs)
-	}
-	now := time.Now()
-	taskItem.CompletedTime = &now
-	taskItem.Metadata.Labels["index_docs"] = indexDocs
-	taskItem.Metadata.Labels["success_docs"] = successDocs
-	taskItem.Metadata.Labels["invalid_docs"] = strings.Join(totalInvalidDocs, ",")
-	taskItem.Metadata.Labels["invalid_reasons"] = strings.Join(totalInvalidReasons, ",")
-	taskItem.Metadata.Labels["failure_docs"] = strings.Join(totalFailureDocs, ",")
-	taskItem.Metadata.Labels["failure_reasons"] = strings.Join(totalFailureReasons, ",")
-	if errMsg != "" {
-		taskItem.Status = task.StatusError
-	} else {
-		taskItem.Status = task.StatusComplete
-	}
-
-	p.saveTaskAndWriteLog(taskItem, &task.TaskResult{
-		Success: errMsg == "",
-		Error:   errMsg,
-	}, fmt.Sprintf("[bulk_indexing] pipeline task [%s] completed", taskItem.ID))
-	p.cleanGatewayPipeline(taskItem)
 	return nil
 }
 
@@ -311,85 +247,6 @@ func (p *processor) getParentTask(taskItem *task.Task) (*task.Task, error) {
 		return &tk, nil
 	}
 	return nil, errors.New("not reachable")
-}
-
-func (p *processor) getEsScrollTaskState(taskItem *task.Task) (scrolledDocs int64, totalHits int64, scrolled bool, err error) {
-	hits, err := p.getPipelineLogs(taskItem, []string{"FINISHED", "FAILED"}, taskItem.Updated.UnixMilli())
-	if err != nil {
-		log.Errorf("failed to get pipeline logs for task [%s], err: %v", taskItem.ID, err)
-		err = nil
-		return
-	}
-	if len(hits) == 0 {
-		log.Debugf("scroll task [%s] not finished yet since last start", taskItem.ID)
-		return
-	}
-	// NOTE: we only check the last run of es_scroll
-	for _, m := range hits {
-		scrolled = true
-
-		errStr := migration_util.GetMapStringValue(m, "payload.pipeline.logging.result.error")
-		if errStr != "" {
-			err = errors.New(errStr)
-			return
-		}
-
-		var (
-			scroll = migration_util.GetMapIntValue(m, "payload.pipeline.logging.context.es_scroll.scrolled_docs")
-			total  = migration_util.GetMapIntValue(m, "payload.pipeline.logging.context.es_scroll.total_hits")
-		)
-
-		scrolledDocs += scroll
-		totalHits += total
-	}
-	return
-}
-
-func (p *processor) getBulkIndexingTaskState(taskItem *task.Task) (successDocs int64, indexDocs int64, bulked bool, totalInvalidDocs []string, totalInvalidReasons []string, totalFailureDocs []string, totalFailureReasons []string, errs []string) {
-	newHits, err := p.getPipelineLogs(taskItem, []string{"FINISHED", "FAILED"}, taskItem.Updated.UnixMilli())
-	if err != nil {
-		log.Errorf("failed to get latest pipeline logs for task [%s], err: %v", taskItem.ID, err)
-		return
-	}
-	if len(newHits) == 0 {
-		log.Debugf("bulk task [%s] not finished yet since last start", taskItem.ID)
-		return
-	}
-
-	hits, err := p.getPipelineLogs(taskItem, []string{"FINISHED", "FAILED"}, 0)
-	if err != nil {
-		log.Errorf("failed to get all pipeline logs for task [%s], err: %v", taskItem.ID, err)
-		return
-	}
-
-	for _, m := range hits {
-		bulked = true
-
-		errStr := migration_util.GetMapStringValue(m, "payload.pipeline.logging.result.error")
-		if errStr != "" {
-			errs = append(errs, errStr)
-		}
-
-		var (
-			success = migration_util.GetMapIntValue(m, "payload.pipeline.logging.context.bulk_indexing.success.count")
-			failure = migration_util.GetMapIntValue(m, "payload.pipeline.logging.context.bulk_indexing.failure.count")
-			invalid = migration_util.GetMapIntValue(m, "payload.pipeline.logging.context.bulk_indexing.invalid.count")
-		)
-		successDocs += success
-		indexDocs += success + invalid + failure
-
-		var (
-			invalidDocs    = migration_util.GetMapStringSliceValue(m, "payload.pipeline.logging.context.bulk_indexing.detail.invalid.documents")
-			invalidReasons = migration_util.GetMapStringSliceValue(m, "payload.pipeline.logging.context.bulk_indexing.detail.invalid.reasons")
-			failureDocs    = migration_util.GetMapStringSliceValue(m, "payload.pipeline.logging.context.bulk_indexing.detail.failure.documents")
-			failureReasons = migration_util.GetMapStringSliceValue(m, "payload.pipeline.logging.context.bulk_indexing.detail.failure.reasons")
-		)
-		totalInvalidDocs = append(totalInvalidDocs, invalidDocs...)
-		totalInvalidReasons = append(invalidReasons, invalidReasons...)
-		totalFailureDocs = append(totalFailureDocs, failureDocs...)
-		totalFailureReasons = append(totalFailureReasons, failureReasons...)
-	}
-	return
 }
 
 func (p *processor) getPipelineLogs(taskItem *task.Task, status []string, timestampGte int64) ([]util.MapStr, error) {

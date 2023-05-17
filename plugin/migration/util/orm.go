@@ -32,7 +32,7 @@ func GetChildTasks(elasticsearch, indexName string, taskID string, taskType stri
 	if len(status) > 0 {
 		musts = append(musts, util.MapStr{
 			"terms": util.MapStr{
-				"status": []string{task.StatusRunning, task.StatusPendingStop, task.StatusReady},
+				"status": status,
 			},
 		})
 	}
@@ -47,7 +47,7 @@ func GetChildTasks(elasticsearch, indexName string, taskID string, taskType stri
 	return GetTasks(elasticsearch, indexName, queryDsl)
 }
 
-func GetTasks(elasticsearch, indexName string, query interface{}) ([]task.Task, error) {
+func GetTasks(elasticsearch, indexName string, query util.MapStr) ([]task.Task, error) {
 	esClient := elastic.GetClient(elasticsearch)
 	res, err := esClient.SearchWithRawQueryDSL(indexName, util.MustToJSONBytes(query))
 	if err != nil {

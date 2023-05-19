@@ -15,9 +15,11 @@ type ClusterMigrationTaskConfig struct {
 	} `json:"cluster"`
 	Indices  []ClusterMigrationIndexConfig `json:"indices"`
 	Settings struct {
-		Scroll    EsScrollConfig     `json:"scroll"`
-		Bulk      BulkIndexingConfig `json:"bulk"`
-		Execution ExecutionConfig    `json:"execution"`
+		Scroll               EsScrollConfig     `json:"scroll"`
+		Bulk                 BulkIndexingConfig `json:"bulk"`
+		SkipScrollCountCheck bool               `json:"skip_scroll_count_check"`
+		SkipBulkCountCheck   bool               `json:"skip_bulk_count_check"`
+		Execution            ExecutionConfig    `json:"execution"`
 	} `json:"settings"`
 	Creator struct {
 		Name string `json:"name"`
@@ -56,6 +58,8 @@ type IndexMigrationTaskConfig struct {
 }
 
 type IndexMigrationSourceConfig struct {
+	SkipCountCheck bool `json:"skip_count_check"`
+
 	ClusterId   string      `json:"cluster_id"`
 	Indices     string      `json:"indices"`
 	SliceSize   int         `json:"slice_size"`
@@ -84,6 +88,8 @@ type IndexMigrationBulkConfig struct {
 }
 
 type IndexMigrationTargetConfig struct {
+	SkipCountCheck bool `json:"skip_count_check"`
+
 	ClusterId string                   `json:"cluster_id"`
 	Bulk      IndexMigrationBulkConfig `json:"bulk"`
 }

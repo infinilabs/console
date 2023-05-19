@@ -80,11 +80,12 @@ func (p *processor) splitMajorMigrationTask(taskItem *task.Task) error {
 
 	for _, index := range clusterMigrationTask.Indices {
 		source := migration_model.IndexMigrationSourceConfig{
-			ClusterId:  clusterMigrationTask.Cluster.Source.Id,
-			Indices:    index.Source.Name,
-			SliceSize:  clusterMigrationTask.Settings.Scroll.SliceSize,
-			BatchSize:  clusterMigrationTask.Settings.Scroll.Docs,
-			ScrollTime: clusterMigrationTask.Settings.Scroll.Timeout,
+			ClusterId:      clusterMigrationTask.Cluster.Source.Id,
+			Indices:        index.Source.Name,
+			SliceSize:      clusterMigrationTask.Settings.Scroll.SliceSize,
+			BatchSize:      clusterMigrationTask.Settings.Scroll.Docs,
+			ScrollTime:     clusterMigrationTask.Settings.Scroll.Timeout,
+			SkipCountCheck: clusterMigrationTask.Settings.SkipScrollCountCheck,
 		}
 		if index.IndexRename != nil {
 			source.IndexRename = index.IndexRename
@@ -133,7 +134,8 @@ func (p *processor) splitMajorMigrationTask(taskItem *task.Task) error {
 		}
 
 		target := migration_model.IndexMigrationTargetConfig{
-			ClusterId: clusterMigrationTask.Cluster.Target.Id,
+			ClusterId:      clusterMigrationTask.Cluster.Target.Id,
+			SkipCountCheck: clusterMigrationTask.Settings.SkipBulkCountCheck,
 			Bulk: migration_model.IndexMigrationBulkConfig{
 				BatchSizeInMB:        clusterMigrationTask.Settings.Bulk.StoreSizeInMB,
 				BatchSizeInDocs:      clusterMigrationTask.Settings.Bulk.Docs,

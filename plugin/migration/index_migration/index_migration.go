@@ -241,7 +241,7 @@ func (p *processor) handleScheduleSubTask(taskItem *task.Task) error {
 
 	instanceID, _ := util.ExtractString(taskItem.Metadata.Labels["execution_instance_id"])
 	totalDocs := cfg.Source.DocCount
-	scrolled, _, err := p.checkScrollPipelineTaskStatus(scrollTask, totalDocs)
+	scrolled, _, err := p.checkScrollPipelineTaskStatus(scrollTask, &cfg, totalDocs)
 
 	redoScroll := true
 	if cfg.Version >= migration_model.IndexMigrationV1 {
@@ -351,7 +351,7 @@ func (p *processor) handleRunningSubTask(taskItem *task.Task) error {
 		return errors.New("scroll/bulk pipeline task missing")
 	}
 
-	scrolled, scrolledDocs, err := p.checkScrollPipelineTaskStatus(scrollTask, totalDocs)
+	scrolled, scrolledDocs, err := p.checkScrollPipelineTaskStatus(scrollTask, &cfg, totalDocs)
 	if !scrolled {
 		return nil
 	}
@@ -374,7 +374,7 @@ func (p *processor) handleRunningSubTask(taskItem *task.Task) error {
 		p.saveTaskAndWriteLog(taskItem, nil, "")
 	}
 
-	bulked, successDocs, err := p.checkBulkPipelineTaskStatus(bulkTask, totalDocs)
+	bulked, successDocs, err := p.checkBulkPipelineTaskStatus(bulkTask, &cfg, totalDocs)
 	if !bulked {
 		return nil
 	}
@@ -400,7 +400,7 @@ func (p *processor) handleRunningSubTask(taskItem *task.Task) error {
 	return nil
 }
 
-func (p *processor) checkScrollPipelineTaskStatus(scrollTask *task.Task, totalDocs int64) (scrolled bool, scrolledDocs int64, err error) {
+func (p *processor) checkScrollPipelineTaskStatus(scrollTask *task.Task, cfg *migration_model.IndexMigrationTaskConfig, totalDocs int64) (scrolled bool, scrolledDocs int64, err error) {
 	if scrollTask.Status == task.StatusError {
 		return true, 0, errors.New("scroll pipeline failed")
 	}
@@ -419,14 +419,14 @@ func (p *processor) checkScrollPipelineTaskStatus(scrollTask *task.Task, totalDo
 	)
 	scrolledDocs = migration_util.GetMapIntValue(scrollLabels, "scrolled_docs")
 
-	if scrolledDocs != totalDocs {
+	if !cfg.Source.SkipCountCheck && scrolledDocs != totalDocs {
 		return true, scrolledDocs, fmt.Errorf("scroll complete but docs count unmatch: %d / %d", scrolledDocs, totalDocs)
 	}
 
 	return true, scrolledDocs, nil
 }
 
-func (p *processor) checkBulkPipelineTaskStatus(bulkTask *task.Task, totalDocs int64) (bulked bool, successDocs int64, err error) {
+func (p *processor) checkBulkPipelineTaskStatus(bulkTask *task.Task, cfg *migration_model.IndexMigrationTaskConfig, totalDocs int64) (bulked bool, successDocs int64, err error) {
 	// NOTE: old-version pipeline tasks has empty status
 	if bulkTask.Status == "" {
 		return true, 0, errors.New("task was started by an old-version console, need to manually restart it")
@@ -455,7 +455,7 @@ func (p *processor) checkBulkPipelineTaskStatus(bulkTask *task.Task, totalDocs i
 	)
 	successDocs = migration_util.GetMapIntValue(bulkLabels, "success_docs")
 
-	if successDocs != totalDocs {
+	if !cfg.Target.SkipCountCheck && successDocs != totalDocs {
 		return true, successDocs, fmt.Errorf("bulk complete but docs count unmatch: %d / %d, invalid docs: [%s] (reasons: [%s]), failure docs: [%s] (reasons: [%s])", successDocs, totalDocs, invalidDocs, invalidReasons, failureDocs, failureReasons)
 	}
 

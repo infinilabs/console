@@ -89,6 +89,9 @@ func GetMapStringSliceValue(m util.MapStr, key string) []string {
 	if err != nil {
 		return nil
 	}
+	if v == nil {
+		return nil
+	}
 	vv, ok := v.([]string)
 	if !ok {
 		vv, ok := v.([]interface{})

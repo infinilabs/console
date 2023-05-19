@@ -273,18 +273,21 @@ func (p *processor) handleScheduleSubTask(taskItem *task.Task) error {
 	p.cleanGatewayQueue(taskItem)
 
 	sourceDumpTask.RetryTimes = taskItem.RetryTimes
+	sourceDumpTask.Metadata.Labels["execution_instance_id"] = instanceID
 	sourceDumpTask.Status = task.StatusReady
 	err = orm.Update(nil, sourceDumpTask)
 	if err != nil {
 		return fmt.Errorf("update source dump pipeline task error: %w", err)
 	}
 	targetDumpTask.RetryTimes = taskItem.RetryTimes
+	targetDumpTask.Metadata.Labels["execution_instance_id"] = instanceID
 	targetDumpTask.Status = task.StatusReady
 	err = orm.Update(nil, targetDumpTask)
 	if err != nil {
 		return fmt.Errorf("update target dump pipeline task error: %w", err)
 	}
 	diffTask.RetryTimes = taskItem.RetryTimes
+	diffTask.Metadata.Labels["execution_instance_id"] = instanceID
 	diffTask.Status = task.StatusInit
 	err = orm.Update(nil, diffTask)
 	if err != nil {

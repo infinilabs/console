@@ -57,6 +57,9 @@ func (p *processor) handleReadyMajorTask(taskItem *task.Task) error {
 		return nil
 	}
 	taskItem.RetryTimes++
+	if taskItem.StartTimeInMillis == 0 {
+		taskItem.StartTimeInMillis = time.Now().UnixMilli()
+	}
 	taskItem.Status = task.StatusRunning
 	p.saveTaskAndWriteLog(taskItem, &task.TaskResult{
 		Success: true,
@@ -284,7 +287,7 @@ func (p *processor) handleRunningMajorTask(taskItem *task.Task) error {
 	return nil
 }
 
-func (p *processor) getMajorTaskState(majorTask *task.Task) (taskState migration_model.MajorTaskState, err error) {
+func (p *processor) getMajorTaskState(majorTask *task.Task) (taskState migration_model.ClusterMigrationTaskState, err error) {
 	query := util.MapStr{
 		"size": 0,
 		"aggs": util.MapStr{

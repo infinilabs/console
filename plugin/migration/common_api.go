@@ -8,7 +8,6 @@ import (
 
 	log "github.com/cihub/seelog"
 
-	migration_model "infini.sh/console/plugin/migration/model"
 	migration_util "infini.sh/console/plugin/migration/util"
 
 	httprouter "infini.sh/framework/core/api/router"
@@ -88,26 +87,37 @@ func (h *APIHandler) searchTask(taskType string) func(w http.ResponseWriter, req
 		}
 		for _, hit := range searchRes.Hits.Hits {
 			sourceM := util.MapStr(hit.Source)
-			buf := util.MustToJSONBytes(sourceM["config"])
-			dataConfig := migration_model.ClusterMigrationTaskConfig{}
-			err = util.FromJSONBytes(buf, &dataConfig)
-			if err != nil {
-				log.Error(err)
-				continue
-			}
-			//var targetTotalDocs int64
-			if hit.Source["status"] == task.StatusRunning {
-				ts, err := getMajorTaskStatsFromInstances(hit.ID)
-				if err != nil {
-					log.Warnf("fetch progress info of task error: %v", err)
-					continue
-				}
-				sourceM.Put("metadata.labels.target_total_docs", ts.IndexDocs)
-			}
-
+			h.populateMajorTaskInfo(hit.ID, sourceM)
 		}
 
 		h.WriteJSON(w, searchRes, http.StatusOK)
+	}
+}
+
+func (h *APIHandler) populateMajorTaskInfo(taskID string, sourceM util.MapStr) {
+	buf := util.MustToJSONBytes(sourceM)
+	majorTask := task.Task{}
+	err := util.FromJSONBytes(buf, &majorTask)
+	if err != nil {
+		log.Errorf("failed to unmarshal major task info, err: %v", err)
+		return
+	}
+	switch majorTask.Metadata.Type {
+	case "cluster_migration":
+		ts, _, err := h.getMigrationMajorTaskInfo(taskID)
+		if err != nil {
+			log.Warnf("fetch progress info of task error: %v", err)
+			return
+		}
+		sourceM.Put("metadata.labels.target_total_docs", ts.IndexDocs)
+	case "cluster_comparison":
+		ts, _, err := h.getComparisonMajorTaskInfo(taskID)
+		if err != nil {
+			log.Warnf("fetch progress info of task error: %v", err)
+			return
+		}
+		sourceM.Put("metadata.labels.source_scroll_docs", ts.SourceScrollDocs)
+		sourceM.Put("metadata.labels.target_scroll_docs", ts.TargetScrollDocs)
 	}
 }
 

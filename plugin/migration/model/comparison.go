@@ -26,8 +26,14 @@ type ClusterComparisonIndexConfig struct {
 	Partition *IndexPartition `json:"partition,omitempty"`
 
 	// only used in API
-	Percent         float64 `json:"percent,omitempty"`
+	ScrollPercent   float64 `json:"scroll_percent,omitempty"`
 	ErrorPartitions int     `json:"error_partitions,omitempty"`
+}
+
+type ClusterComparisonTaskState struct {
+	SourceScrollDocs int64
+	TargetScrollDocs int64
+	Status           string
 }
 
 type IndexComparisonTaskConfig struct {
@@ -47,8 +53,13 @@ type IndexComparisonDumpConfig struct {
 	ScrollTime    string      `json:"scroll_time"`
 	QueryString   string      `json:"query_string,omitempty"`
 	QueryDSL      util.MapStr `json:"query_dsl,omitempty"`
+	DocCount      int64       `json:"doc_count"`
 
-	DocCount int64 `json:"doc_count"`
+	// Only populated for partitioned tasks
+	Start       float64     `json:"start"`
+	End         float64     `json:"end"`
+	Step        interface{} `jsno:"step"`
+	PartitionId int         `json:"partition_id"`
 }
 
 type IndexComparisonDiffConfig struct {

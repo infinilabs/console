@@ -306,8 +306,7 @@ func (p *processor) handleScheduleSubTask(taskItem *task.Task) error {
 
 	// update sub migration task status to running and save task log
 	taskItem.Metadata.Labels["execution_instance_id"] = instanceID
-	taskItem.Metadata.Labels["index_docs"] = 0
-	taskItem.Metadata.Labels["scrolled_docs"] = 0
+	p.clearTaskState(taskItem)
 	taskItem.Status = task.StatusRunning
 	taskItem.StartTimeInMillis = time.Now().UnixMilli()
 
@@ -331,8 +330,7 @@ func (p *processor) handleRunningSubTask(taskItem *task.Task) error {
 
 	if totalDocs == 0 {
 		taskItem.Status = task.StatusComplete
-		taskItem.Metadata.Labels["scrolled_docs"] = 0
-		taskItem.Metadata.Labels["index_docs"] = 0
+		p.clearTaskState(taskItem)
 		now := time.Now()
 		taskItem.CompletedTime = &now
 
@@ -498,13 +496,7 @@ func (p *processor) getScrollBulkPipelineTasks(taskItem *task.Task) (scrollTask 
 		err = fmt.Errorf("invalid pipeline task count: %d", len(ptasks))
 		return
 	}
-	for i, ptask := range ptasks {
-		if ptask.Metadata.Labels["pipeline_id"] == "bulk_indexing" {
-			bulkTask = &ptasks[i]
-		} else if ptask.Metadata.Labels["pipeline_id"] == "es_scroll" {
-			scrollTask = &ptasks[i]
-		}
-	}
+	scrollTask, bulkTask = migration_util.SplitIndexMigrationTasks(ptasks)
 	return
 }
 
@@ -570,4 +562,9 @@ func (p *processor) saveTaskAndWriteLog(taskItem *task.Task, taskResult *task.Ta
 	if message != "" {
 		migration_util.WriteLog(taskItem, taskResult, message)
 	}
+}
+
+func (p *processor) clearTaskState(taskItem *task.Task) {
+	delete(taskItem.Metadata.Labels, "index_docs")
+	delete(taskItem.Metadata.Labels, "scrolled_docs")
 }

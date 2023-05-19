@@ -266,9 +266,7 @@ func (h *APIHandler) getDataMigrationTaskOfIndex(w http.ResponseWriter, req *htt
 		if ptask.StartTimeInMillis > 0 {
 			if migration_util.IsPendingState(ptask.Status) {
 				durationInMS = time.Now().UnixMilli() - ptask.StartTimeInMillis
-				continue
-			}
-			if ptask.CompletedTime != nil {
+			} else if ptask.CompletedTime != nil {
 				subCompletedTime = ptask.CompletedTime.UnixMilli()
 				durationInMS = subCompletedTime - ptask.StartTimeInMillis
 			}
@@ -576,7 +574,7 @@ func (h *APIHandler) getChildPipelineInfosFromGateway(pipelineTaskIDs map[string
 		inst.ID = instID
 		_, err = orm.Get(inst)
 		if err != nil {
-			log.Error("failed to get instance info, err: %v", err)
+			log.Errorf("failed to get instance info, id: %s, err: %v", instID, err)
 			continue
 		}
 		pipelines, err := inst.GetPipelinesByIDs(taskIDs)

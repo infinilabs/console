@@ -287,9 +287,7 @@ func (h *APIHandler) getDataComparisonTaskOfIndex(w http.ResponseWriter, req *ht
 		if subTask.StartTimeInMillis > 0 {
 			if migration_util.IsPendingState(subTask.Status) {
 				durationInMS = time.Now().UnixMilli() - subTask.StartTimeInMillis
-				continue
-			}
-			if subTask.CompletedTime != nil {
+			} else if subTask.CompletedTime != nil {
 				subCompletedTime = subTask.CompletedTime.UnixMilli()
 				durationInMS = subCompletedTime - subTask.StartTimeInMillis
 			}

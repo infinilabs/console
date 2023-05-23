@@ -73,6 +73,7 @@ func (h *APIHandler) createInstance(w http.ResponseWriter, req *http.Request, ps
 		obj.IPS = res.IPS
 	}
 
+	obj.Status = common2.StatusOnline
 	err = orm.Create(nil, obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -113,13 +114,6 @@ func bindAgentToHostByIP(ag *agent.Instance) error{
 		hostInfo.AgentStatus = ag.Status
 		hostInfo.AgentID = ag.ID
 		err = orm.Update(nil, hostInfo)
-		if err != nil {
-			return  err
-		}
-
-		err = sm.GetAgentClient().DiscoveredHost(nil, ag.GetEndpoint(), util.MapStr{
-			"host_id": hostInfo.ID,
-		})
 		if err != nil {
 			return  err
 		}

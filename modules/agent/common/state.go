@@ -70,6 +70,7 @@ func (sm *StateManager) checkAgentStatus() {
 	for agentID, status := range sm.agentIds {
 		if _, ok := onlineAgentIDs[agentID]; ok {
 			sm.syncSettings(agentID)
+			host.UpdateHostAgentStatus(agentID, StatusOnline)
 			if status == StatusOnline {
 				continue
 			}

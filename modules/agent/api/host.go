@@ -82,17 +82,6 @@ func (h *APIHandler) enrollHost(w http.ResponseWriter, req *http.Request, ps htt
 			log.Error(err)
 			continue
 		}
-		if hi.Source == "agent" {
-			sm := common2.GetStateManager()
-			ag, _  := sm.GetAgent(hostInfo.AgentID)
-			err = sm.GetAgentClient().DiscoveredHost(nil, ag.GetEndpoint(), util.MapStr{
-				"host_id": hostInfo.ID,
-			})
-			if err != nil {
-				log.Error(err)
-			}
-		}
-
 	}
 	resBody :=  util.MapStr{
 		"success": true,

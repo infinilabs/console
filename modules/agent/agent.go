@@ -37,7 +37,7 @@ func (module *AgentModule) Start() error {
 	orm.RegisterSchemaWithIndexName(agent.Instance{}, "agent")
 	orm.RegisterSchemaWithIndexName(agent.ESNodeInfo{}, "agent-node")
 	orm.RegisterSchemaWithIndexName(host.HostInfo{}, "host")
-	orm.RegisterSchemaWithIndexName(agent.Setting{}, "setting")
+	orm.RegisterSchemaWithIndexName(agent.Setting{}, "agent-setting")
 	common.RegisterClient(&common.Client{})
 
 	if module.AgentConfig.StateManager.Enabled {

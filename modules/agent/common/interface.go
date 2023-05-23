@@ -25,7 +25,6 @@ func RegisterClient(client ClientAPI) {
 }
 type ClientAPI interface {
 	GetHostInfo(ctx context.Context, agentBaseURL string) (*host.HostInfo, error)
-	DiscoveredHost(ctx context.Context, agentBaseURL string, body interface{}) error
 	GetElasticProcess(ctx context.Context, agentBaseURL string, agentID string)(interface{}, error)
 	GetElasticLogFiles(ctx context.Context, agentBaseURL string, logsPath string)(interface{}, error)
 	GetElasticLogFileContent(ctx context.Context, agentBaseURL string, body interface{})(interface{}, error)

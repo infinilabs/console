@@ -38,28 +38,6 @@ func (client *Client) GetHostInfo(ctx context.Context, agentBaseURL string) (*ho
 	return resBody.HostInfo, nil
 }
 
-func (client *Client) DiscoveredHost(ctx context.Context, agentBaseURL string, body interface{}) error {
-	req := &util.Request{
-		Method:  http.MethodPut,
-		Url:     fmt.Sprintf("%s/host/discover", agentBaseURL),
-		Context: ctx,
-	}
-	reqBody, err := util.ToJSONBytes(body)
-	if err != nil {
-		return err
-	}
-	req.Body = reqBody
-	resBody := map[string]interface{}{}
-	err = client.doRequest(req, &resBody)
-	if err != nil {
-		return err
-	}
-	if resBody["success"] != true {
-		return fmt.Errorf("discover host callback error: %v", resBody["error"])
-	}
-	return nil
-}
-
 func (client *Client) GetElasticProcess(ctx context.Context, agentBaseURL string, agentID string)(interface{}, error) {
 	req := &util.Request{
 		Method:  http.MethodGet,

@@ -24,9 +24,11 @@ pipeline {
                                 sh 'cd /home/jenkins/go/src/infini.sh/console/web && cnpm install'
                                 sh 'cd /home/jenkins/go/src/infini.sh/console/web && cnpm run build'
                                 sh 'cd /home/jenkins/go/src/infini.sh/console &&  git pull origin master && make config build-linux'
+                                sh 'cd /home/jenkins/go/src/infini.sh/console &&  git pull origin master && GOPATH="/infini/go-pkgs/go-loongarch/" make config build-loong64'
                                 sh 'cd /home/jenkins/go/src/infini.sh/console &&  git pull origin master && make config build-arm'
                                 sh 'cd /home/jenkins/go/src/infini.sh/console &&  git pull origin master && make config build-darwin'
                                 sh 'cd /home/jenkins/go/src/infini.sh/console &&  git pull origin master && make config build-win'
+				sh 'cd /home/jenkins/go/src/infini.sh/agent && git stash && git pull origin master && GOROOT="/infini/go-pkgs/go-loongarch" GOPATH="/home/jenkins/go" make build-linux-loong64'
                                 sh "cd /home/jenkins/go/src/infini.sh/console/docker && chmod a+x *.sh && perl -pi -e 's/\r\n/\n/g' *.sh && \
                                                 cd /home/jenkins/go/src/infini.sh/console/web/docker && chmod a+x *.sh && perl -pi -e 's/\r\n/\n/g' *.sh"
 

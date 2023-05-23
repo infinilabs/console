@@ -178,6 +178,10 @@ func (module *Module) validate(w http.ResponseWriter, r *http.Request, ps httpro
 
 	//validate version
 	verInfo, err := adapter.ClusterVersion(elastic.GetMetadata(cfg.ID))
+	if err != nil {
+		panic(err)
+	}
+	cfg.ClusterUUID = verInfo.ClusterUUID
 	if verInfo.Version.Distribution == elastic.Elasticsearch {
 		if verInfo.Version.Number != "" {
 			ver := &util.Version{}

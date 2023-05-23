@@ -18,6 +18,7 @@ import (
 	"infini.sh/framework/core/util"
 	common2 "infini.sh/console/modules/agent/common"
 	elastic2 "infini.sh/framework/modules/elastic"
+	"infini.sh/framework/modules/elastic/adapter"
 	"infini.sh/framework/modules/elastic/common"
 	"net/http"
 	"strconv"
@@ -579,8 +580,16 @@ func getClusterConfigs() map[string]*elastic.ElasticsearchConfig {
 	cfgs := map[string]*elastic.ElasticsearchConfig{}
 	elastic.WalkConfigs(func(key, value interface{}) bool {
 		if cfg, ok := value.(*elastic.ElasticsearchConfig); ok {
-			//todo handle clusterUUID is empty
-			cfgs[cfg.ClusterUUID] = cfg
+			clusterUUID := cfg.ClusterUUID
+			if cfg.ClusterUUID == "" {
+				verInfo, err := adapter.ClusterVersion(elastic.GetMetadata(cfg.ID))
+				if err != nil {
+					log.Error(err)
+					return true
+				}
+				clusterUUID = verInfo.ClusterUUID
+			}
+			cfgs[clusterUUID] = cfg
 		}
 		return true
 	})

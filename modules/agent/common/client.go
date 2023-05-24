@@ -196,5 +196,8 @@ func (client *Client) doRequest(req *util.Request, respObj interface{}) error {
 	if result.StatusCode != 200 {
 		return fmt.Errorf(string(result.Body))
 	}
+	if respObj == nil {
+		return nil
+	}
 	return util.FromJSONBytes(result.Body, respObj)
 }

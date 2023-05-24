@@ -418,27 +418,6 @@ func (h *APIHandler) authESNode(w http.ResponseWriter, req *http.Request, ps htt
 	}
 	nodeInfo.ID = oldNodeInfo.ID
 	nodeInfo.AgentID = inst.ID
-	clusterCfgs := getClusterConfigs()
-	if nodeInfo.ClusterUuid != "" && clusterCfgs[nodeInfo.ClusterUuid] != nil {
-		nodeInfo.ClusterID = clusterCfgs[nodeInfo.ClusterUuid].ID
-		settings, err := common2.GetAgentSettings(inst.ID, 0)
-		if err != nil {
-			log.Error(err)
-			h.WriteError(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		setting := pickAgentSettings(settings, *nodeInfo)
-		if setting == nil {
-			setting, err = getAgentTaskSetting(inst.ID, *nodeInfo)
-			if err != nil {
-				log.Error("get agent task setting error: ", err)
-			}
-			err = orm.Create(nil, setting)
-			if err != nil {
-				log.Error("save agent task setting error: ", err)
-			}
-		}
-	}
 	err = orm.Save(nil, nodeInfo)
 	if err != nil {
 		log.Error(err)
@@ -446,6 +425,102 @@ func (h *APIHandler) authESNode(w http.ResponseWriter, req *http.Request, ps htt
 		return
 	}
 	h.WriteJSON(w, nodeInfo, http.StatusOK)
+}
+
+func (h *APIHandler) associateESNode(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	instID := ps.MustGetParameter("instance_id")
+	reqBody := struct {
+		ID string `json:"id"`
+		ClusterID string `json:"cluster_id"`
+	}{}
+	err := h.DecodeJSON(req, &reqBody)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	node := agent.ESNodeInfo{
+		ID: reqBody.ID,
+	}
+	_, err = orm.Get(&node)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if node.AgentID != instID {
+		errStr :=  fmt.Sprintf("agent id not match: %s, %s", node.AgentID, instID)
+		log.Error(errStr)
+		h.WriteError(w, errStr, http.StatusInternalServerError)
+		return
+	}
+	node.ClusterID = reqBody.ClusterID
+	err = orm.Save(&orm.Context{
+		Refresh: "wait_for",
+	}, node)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	settings, err := common2.GetAgentSettings(instID, 0)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	setting := pickAgentSettings(settings, node)
+	if setting == nil {
+		setting, err = getAgentTaskSetting(instID, node)
+		if err != nil {
+			log.Error("get agent task setting error: ", err)
+		}
+		err = orm.Create(nil, setting)
+		if err != nil {
+			log.Error("save agent task setting error: ", err)
+		}
+	}
+	h.WriteAckOKJSON(w)
+}
+
+func (h *APIHandler) deleteESNode(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	id := ps.MustGetParameter("instance_id")
+	nodeIDs := []string{}
+	err := h.DecodeJSON(req, &nodeIDs)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if len(nodeIDs) > 0 {
+		q := util.MapStr{
+			"query": util.MapStr{
+				"bool": util.MapStr{
+					"must": []util.MapStr{
+						{
+							"terms": util.MapStr{
+								"id": nodeIDs,
+							},
+						},
+						{
+							"term": util.MapStr{
+								"agent_id": util.MapStr{
+									"value": id,
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		err = orm.DeleteBy(agent.ESNodeInfo{}, util.MustToJSONBytes(q))
+		if err != nil {
+			log.Error(err)
+			h.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+	h.WriteAckOKJSON(w)
 }
 
 func refreshNodesInfo(inst *agent.Instance) ([]agent.ESNodeInfo, error) {
@@ -457,10 +532,9 @@ func refreshNodesInfo(inst *agent.Instance) ([]agent.ESNodeInfo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get elasticsearch nodes info from es error: %w", err)
 	}
-	clusterCfgs := getClusterConfigs()
 	oldPids := map[int]struct{}{}
 	var resultNodes []agent.ESNodeInfo
-	settings, err := common2.GetAgentSettings(inst.ID, 0)
+	//settings, err := common2.GetAgentSettings(inst.ID, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -480,24 +554,25 @@ func refreshNodesInfo(inst *agent.Instance) ([]agent.ESNodeInfo, error) {
 		if node.ClusterUuid != "" {
 			if oldNode != nil && oldNode.ClusterID != "" {
 				node.ClusterID = oldNode.ClusterID
-			}else{
-				if cfg := clusterCfgs[node.ClusterUuid]; cfg != nil {
-					node.ClusterID = cfg.ID
-					setting := pickAgentSettings(settings, node)
-					if setting == nil {
-						setting, err = getAgentTaskSetting(inst.ID, node)
-						if err != nil {
-							log.Error()
-						}
-						err = orm.Create(nil, setting)
-						if err != nil {
-							log.Error("save agent task setting error: ", err)
-						}
-					}
-				}else{
-					//cluster not registered in console
-				}
 			}
+			//else{
+			//	if cfg := clusterCfgs[node.ClusterUuid]; cfg != nil {
+			//		node.ClusterID = cfg.ID
+			//		setting := pickAgentSettings(settings, node)
+			//		if setting == nil {
+			//			setting, err = getAgentTaskSetting(inst.ID, node)
+			//			if err != nil {
+			//				log.Error()
+			//			}
+			//			err = orm.Create(nil, setting)
+			//			if err != nil {
+			//				log.Error("save agent task setting error: ", err)
+			//			}
+			//		}
+			//	}else{
+			//		//cluster not registered in console
+			//	}
+			//}
 		}
 
 		node.Status = "online"

@@ -18,6 +18,7 @@ import (
 	"infini.sh/framework/core/util"
 	"runtime"
 	"runtime/debug"
+	"strings"
 	"sync"
 	"time"
 )
@@ -87,6 +88,7 @@ func (sm *StateManager) checkAgentStatus() {
 			}
 		}
 		// status change to offline
+		// todo validate whether agent is offline
 		sm.agentIds[agentID] = StatusOffline
 		sm.workerChan <- struct{}{}
 		go func(agentID string) {
@@ -148,9 +150,12 @@ func (sm *StateManager) syncSettings(agentID string) {
 	for _, pipelineID := range parseResult.ToDeletePipelineNames {
 		err = agClient.DeletePipeline(context.Background(), ag.GetEndpoint(), pipelineID)
 		if err != nil {
-			log.Errorf("delete pipeline error: %v", err)
-			continue
+			if !strings.Contains(err.Error(), "not found") {
+				log.Errorf("delete pipeline error: %v", err)
+				continue
+			}
 		}
+		//todo update delete pipeline state
 	}
 	for _, pipeline := range parseResult.Pipelines {
 		err = agClient.CreatePipeline(context.Background(), ag.GetEndpoint(), util.MustToJSONBytes(pipeline))

@@ -116,10 +116,9 @@ func (h *APIHandler) getDataComparisonTaskInfo(w http.ResponseWriter, req *http.
 		if percent > 100 {
 			percent = 100
 		}
-		taskConfig.Indices[i].Target.Docs = count
 		taskConfig.Indices[i].ScrollPercent = util.ToFixed(percent, 2)
 		taskConfig.Indices[i].ErrorPartitions = indexState[indexName].ErrorPartitions
-		if count == index.Source.Docs {
+		if count == index.Source.Docs+index.Target.Docs {
 			completedIndices++
 		}
 	}

@@ -487,7 +487,7 @@ func (h *APIHandler) refreshIndex(w http.ResponseWriter, req *http.Request, ps h
 	}, 200)
 }
 
-func (h *APIHandler) getChildTaskInfosByIndex(taskItem *task2.Task, uniqueIndexName string) (subTasks []task2.Task, pipelineTaskIDs map[string][]string, pipelineSubParentIDs map[string]string, parentIDPipelineTasks map[string][]task2.Task, err error) {
+func (h *APIHandler) getChildTaskInfosByIndex(taskItem *task2.Task, uniqueIndexName string) (subTasks []task2.Task, runningPipelineTaskIDs map[string][]string, pipelineSubParentIDs map[string]string, parentIDPipelineTasks map[string][]task2.Task, err error) {
 	queryDsl := util.MapStr{
 		"size": 9999,
 		"sort": []util.MapStr{
@@ -526,7 +526,7 @@ func (h *APIHandler) getChildTaskInfosByIndex(taskItem *task2.Task, uniqueIndexN
 		return
 	}
 
-	pipelineTaskIDs = map[string][]string{}
+	runningPipelineTaskIDs = map[string][]string{}
 	pipelineSubParentIDs = map[string]string{}
 	parentIDPipelineTasks = map[string][]task2.Task{}
 
@@ -543,9 +543,6 @@ func (h *APIHandler) getChildTaskInfosByIndex(taskItem *task2.Task, uniqueIndexN
 			subTasks = append(subTasks, subTask)
 			continue
 		}
-		if subTask.Status != task2.StatusRunning {
-			continue
-		}
 
 		// TODO: use more robust logic
 		if pl := len(subTask.ParentId); pl != 2 {
@@ -558,7 +555,9 @@ func (h *APIHandler) getChildTaskInfosByIndex(taskItem *task2.Task, uniqueIndexN
 		if instID == "" {
 			continue
 		}
-		pipelineTaskIDs[instID] = append(pipelineTaskIDs[instID], subTask.ID)
+		if subTask.Status == task2.StatusRunning {
+			runningPipelineTaskIDs[instID] = append(runningPipelineTaskIDs[instID], subTask.ID)
+		}
 		parentIDPipelineTasks[parentID] = append(parentIDPipelineTasks[parentID], subTask)
 	}
 

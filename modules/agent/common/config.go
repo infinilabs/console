@@ -4,6 +4,11 @@
 
 package common
 
+import (
+	"infini.sh/framework/core/env"
+	"sync"
+)
+
 type AgentConfig struct {
 	Enabled bool `config:"enabled"`
 	StateManager struct{
@@ -18,4 +23,18 @@ type SetupConfig struct {
 	CACertFile string `config:"ca_cert"`
 	CAKeyFile string `config:"ca_key"`
 	ScriptEndpoint string `config:"script_endpoint"`
+}
+
+var agentCfg *AgentConfig
+var onceCfg = sync.Once{}
+
+func GetAgentConfig() *AgentConfig {
+	onceCfg.Do(func() {
+		agentCfg = &AgentConfig{}
+		_, err := env.ParseConfig("agent", agentCfg )
+		if err != nil {
+			panic(err)
+		}
+	})
+	return agentCfg
 }

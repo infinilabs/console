@@ -88,6 +88,13 @@ func getAgentByNodeID(nodeID string) (*agent.Instance, *agent.ESNodeInfo, error)
 				},
 			},
 		},
+		"sort": []util.MapStr{
+			{
+				"timestamp": util.MapStr{
+					"order": "desc",
+				},
+			},
+		},
 	}
 	q := &orm.Query{
 		RawQuery: util.MustToJSONBytes(queryDsl),

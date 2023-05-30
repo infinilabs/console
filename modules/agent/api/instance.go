@@ -8,17 +8,15 @@ import (
 	"context"
 	"fmt"
 	log "github.com/cihub/seelog"
+	common2 "infini.sh/console/modules/agent/common"
 	"infini.sh/framework/core/agent"
 	"infini.sh/framework/core/api"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/event"
-	"infini.sh/framework/core/host"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
-	common2 "infini.sh/console/modules/agent/common"
 	elastic2 "infini.sh/framework/modules/elastic"
-	"infini.sh/framework/modules/elastic/adapter"
 	"infini.sh/framework/modules/elastic/common"
 	"net/http"
 	"strconv"
@@ -89,38 +87,6 @@ func (h *APIHandler) createInstance(w http.ResponseWriter, req *http.Request, ps
 
 }
 
-func bindAgentToHostByIP(ag *agent.Instance) error{
-	err, result := orm.GetBy("ip", ag.MajorIP, host.HostInfo{})
-	if err != nil {
-		return err
-	}
-	if len(result.Result) > 0 {
-		buf := util.MustToJSONBytes(result.Result[0])
-		hostInfo := &host.HostInfo{}
-		err = util.FromJSONBytes(buf, hostInfo)
-		if err != nil {
-			return err
-		}
-		sm := common2.GetStateManager()
-		if ag.Status == "" {
-			_, err1 := sm.GetAgentClient().GetHostInfo(nil, ag.GetEndpoint())
-			if err1 == nil {
-				ag.Status = "online"
-			}else{
-				ag.Status = "offline"
-			}
-		}
-
-		hostInfo.AgentStatus = ag.Status
-		hostInfo.AgentID = ag.ID
-		err = orm.Update(nil, hostInfo)
-		if err != nil {
-			return  err
-		}
-	}
-	return nil
-}
-
 func (h *APIHandler) getInstance(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	id := ps.MustGetParameter("instance_id")
 
@@ -172,11 +138,23 @@ func (h *APIHandler) deleteInstance(w http.ResponseWriter, req *http.Request, ps
 	if sm := common2.GetStateManager(); sm != nil {
 		sm.DeleteAgent(obj.ID)
 	}
+	queryDsl := util.MapStr{
+		"query": util.MapStr{
+			"term": util.MapStr{
+				"agent_id": util.MapStr{
+					"value": id,
+				},
+			},
+		},
+	}
+	err = orm.DeleteBy(agent.ESNodeInfo{}, util.MustToJSONBytes(queryDsl))
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error("delete node info error: ", err)
+		return
+	}
 
-	h.WriteJSON(w, util.MapStr{
-		"_id":    obj.ID,
-		"result": "deleted",
-	}, 200)
+	h.WriteDeletedOKJSON(w, id)
 }
 
 func (h *APIHandler) getInstanceStats(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -523,6 +501,24 @@ func (h *APIHandler) deleteESNode(w http.ResponseWriter, req *http.Request, ps h
 	h.WriteAckOKJSON(w)
 }
 
+func (h *APIHandler) tryConnect(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	var reqBody = struct {
+		Endpoint string `json:"endpoint"`
+		BasicAuth agent.BasicAuth
+	}{}
+	err := h.DecodeJSON(req, &reqBody)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	connectRes, err := common2.GetClient().GetInstanceBasicInfo(context.Background(), reqBody.Endpoint)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	h.WriteJSON(w, connectRes, http.StatusOK)
+}
+
 func refreshNodesInfo(inst *agent.Instance) ([]agent.ESNodeInfo, error) {
 	nodesInfo, err := common2.GetClient().GetElasticsearchNodes(context.Background(), inst.GetEndpoint())
 	if err != nil {
@@ -534,7 +530,6 @@ func refreshNodesInfo(inst *agent.Instance) ([]agent.ESNodeInfo, error) {
 	}
 	oldPids := map[int]struct{}{}
 	var resultNodes []agent.ESNodeInfo
-	//settings, err := common2.GetAgentSettings(inst.ID, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -555,24 +550,6 @@ func refreshNodesInfo(inst *agent.Instance) ([]agent.ESNodeInfo, error) {
 			if oldNode != nil && oldNode.ClusterID != "" {
 				node.ClusterID = oldNode.ClusterID
 			}
-			//else{
-			//	if cfg := clusterCfgs[node.ClusterUuid]; cfg != nil {
-			//		node.ClusterID = cfg.ID
-			//		setting := pickAgentSettings(settings, node)
-			//		if setting == nil {
-			//			setting, err = getAgentTaskSetting(inst.ID, node)
-			//			if err != nil {
-			//				log.Error()
-			//			}
-			//			err = orm.Create(nil, setting)
-			//			if err != nil {
-			//				log.Error("save agent task setting error: ", err)
-			//			}
-			//		}
-			//	}else{
-			//		//cluster not registered in console
-			//	}
-			//}
 		}
 
 		node.Status = "online"
@@ -626,6 +603,7 @@ func getNodesInfoFromES(agentID string) (map[int]*agent.ESNodeInfo, error){
 				},
 			},
 		},
+
 	}
 	q := orm.Query{
 		RawQuery: util.MustToJSONBytes(query),
@@ -643,26 +621,6 @@ func getNodesInfoFromES(agentID string) (map[int]*agent.ESNodeInfo, error){
 		nodesInfo[node.ProcessInfo.PID] = &node
 	}
 	return nodesInfo, nil
-}
-
-func getClusterConfigs() map[string]*elastic.ElasticsearchConfig {
-	cfgs := map[string]*elastic.ElasticsearchConfig{}
-	elastic.WalkConfigs(func(key, value interface{}) bool {
-		if cfg, ok := value.(*elastic.ElasticsearchConfig); ok {
-			clusterUUID := cfg.ClusterUUID
-			if cfg.ClusterUUID == "" {
-				verInfo, err := adapter.ClusterVersion(elastic.GetMetadata(cfg.ID))
-				if err != nil {
-					log.Error(err)
-					return true
-				}
-				clusterUUID = verInfo.ClusterUUID
-			}
-			cfgs[clusterUUID] = cfg
-		}
-		return true
-	})
-	return cfgs
 }
 
 func pickAgentSettings(settings []agent.Setting, nodeInfo agent.ESNodeInfo) *agent.Setting {

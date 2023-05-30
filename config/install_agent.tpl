@@ -1,0 +1,337 @@
+#!/bin/bash
+# Agent install script for UNIX-like OS
+# Author: INFINI
+# BASE_URL : need, download server address，eg: https://release.infinilabs.com/agent/stable
+# AGENT_VER : need, Agent version, eg: 0.4.0-126
+# INSTALL_PATH : option, download path. eg: /home/user/infini  default: /opt
+# ES_NAME
+# ES_PWD
+
+printf "\n*    _      ___   __    __  _____ "
+printf "\n*   /_\\    / _ \\ /__\\/\\ \\ \\/__   \\"
+printf "\n*  //_\\\\  / /_\\//_\\ /  \\/ /  / /\\/"
+printf "\n* /  _  \\/ /_\\\\//__/ /\\  /  / /   "
+printf "\n* \\_/ \\_/\\____/\\__/\\_\\ \\/  \\/    \n\n"
+# detect root user
+if [ "$(echo "$UID")" = "0" ]; then
+	sudo_cmd=''
+else
+	sudo_cmd='sudo'
+fi
+
+##################
+# colors
+##################
+RED="\033[31m"
+CLR="\033[0m"
+GREEN="\033[32m"
+
+##################
+# validate os & arch
+##################
+
+arch=
+case $(uname -m) in
+
+	"x86_64")
+		arch="amd64"
+		;;
+
+	"i386" | "i686")
+		arch="386"
+		;;
+
+	"aarch64")
+		arch="arm64"
+		;;
+
+	"arm" | "armv7l")
+		arch="arm"
+		;;
+
+	"arm64")
+		arch="arm64"
+		;;
+
+	*)
+		# shellcheck disable=SC2059
+		printf "${RED}[E] Unsupport arch $(uname -m) ${CLR}\n"
+		exit 1
+		;;
+esac
+
+os="linux"
+
+if [[ "$OSTYPE" == "darwin"* ]]; then
+	if [[ $arch != "amd64" ]] && [[ $arch != "arm64" ]]; then # Darwin only support amd64 and arm64
+		# shellcheck disable=SC2059
+		printf "${RED}[E] Darwin only support amd64/arm64.${CLR}\n"
+		exit 1;
+	fi
+
+	os="mac"
+
+	# # NOTE: under darwin, for arm64 and amd64, both use amd64
+	# arch="arm"
+fi
+
+##################
+# validate params
+##################
+
+base_url="{{base_url}}"
+if [ -n "$BASE_URL" ]; then
+	base_url=$BASE_URL
+fi
+
+agent_ver="{{agent_version}}"
+if [ -n "$AGENT_VER" ]; then
+	agent_ver=$AGENT_VER
+fi
+
+ca_crt="{{ca_crt}}"
+client_crt="{{client_crt}}"
+client_key="{{client_key}}"
+
+##################
+# download agent
+##################
+
+suffix="tar.gz"
+if [[ "$os" == "mac" ]]; then
+	suffix="zip"
+fi
+
+download_url="${base_url}/agent-${agent_ver}-${os}-${arch}.${suffix}"
+
+install_path="/opt"
+if [ -n "$INSTALL_PATH" ]; then
+	install_path=$INSTALL_PATH
+fi
+
+file_name="agent-${agent_ver}-${os}-${arch}.${suffix}" #agent在服务器上的文件名
+agent="${install_path}/agent/${file_name}" #agent下载后保存的文件
+agent_exc="${install_path}/agent/agent-${os}-${arch}" #agent可执行文件
+
+agent_exsit="true"
+if [ ! -d "${install_path}/agent" ]; then
+	printf "\n* mkdir ${install_path}/agent"
+	$sudo_cmd mkdir "${install_path}/agent"
+	agent_exsit="false"
+fi
+
+if [ $? -ne 0 ]; then
+	exit 1
+fi
+
+printf "\n* downloading ${download_url}\n"
+
+printf "\n* save to : ${agent}\n"
+
+cd "$install_path/agent"
+
+sudo curl -O --progress-bar $download_url
+
+if [ $? -ne 0 ]; then
+	exit 1
+fi
+
+printf "\n* downloaded: ${agent}"
+
+##################
+# install agent
+##################
+
+printf "\n* start install"
+
+if [[ "${suffix}" == "zip" ]]; then
+	printf "\n* uzip ${agent}\n"
+	$sudo_cmd unzip $agent
+else
+	printf "\n* tar -xzvf ${agent}\n"
+	$sudo_cmd tar -xzvf $agent
+fi
+
+if [ $? -ne 0 ]; then
+	exit 1
+fi
+
+##################
+# save cert
+##################
+$sudo_cmd mkdir config
+$sudo_cmd sh -c "echo '${ca_crt}' > ./config/ca.crt"
+$sudo_cmd sh -c "echo '${client_crt}' > ./config/client.crt"
+$sudo_cmd sh -c "echo '${client_key}' > ./config/client.key"
+if [ $? -ne 0 ]; then
+  exit 1
+fi
+
+## generate agent.yml
+agent_config="path.configs: "config"
+configs.auto_reload: true
+env:
+  LOGGING_ES_ENDPOINT: {{logging_es_endpoint}}
+  LOGGING_ES_USER: {{logging_es_user}}
+  LOGGING_ES_PASS: {{logging_es_password}}
+  API_BINDING: "0.0.0.0:8080"
+
+path.data: data
+path.logs: log
+
+api:
+  enabled: true
+  tls:
+    enabled: true
+    cert_file: "${install_path}/agent/config/client.crt"
+    key_file: "${install_path}/agent/config/client.key"
+    ca_file: "${install_path}/agent/config/ca.crt"
+    skip_insecure_verify: false
+  network:
+    binding: \$[[env.API_BINDING]]
+
+badger:
+  value_log_max_entries: 1000000
+  value_log_file_size: 104857600
+  value_threshold: 1024
+
+metrics:
+  enabled: true
+  queue: metrics
+  network:
+    enabled: true
+    summary: true
+    details: true
+  memory:
+    metrics:
+      - swap
+      - memory
+  disk:
+    metrics:
+      - iops
+      - usage
+  cpu:
+    metrics:
+      - idle
+      - system
+      - user
+      - iowait
+      - load
+  instance:
+    enabled: true
+
+elasticsearch:
+  - name: default
+    enabled: true
+    endpoint: \$[[env.LOGGING_ES_ENDPOINT]]
+    discovery:
+      enabled: true
+    basic_auth:
+      username: \$[[env.LOGGING_ES_USER]]
+      password: \$[[env.LOGGING_ES_PASS]]
+
+pipeline:
+  - name: logs_indexing_merge
+    auto_start: true
+    keep_running: true
+    processor:
+      - indexing_merge:
+          index_name: ".infini_logs"
+          elasticsearch: "default"
+          input_queue: "logs"
+          idle_timeout_in_seconds: 10
+          output_queue:
+            name: "logs_requests"
+            label:
+              tag: "logs"
+          worker_size: 1
+          bulk_size_in_mb: 10
+  - name: ingest_logs
+    auto_start: true
+    keep_running: true
+    processor:
+      - bulk_indexing:
+          bulk:
+            compress: true
+            batch_size_in_mb: 5
+            batch_size_in_docs: 5000
+          consumer:
+            fetch_max_messages: 100
+          queues:
+            type: indexing_merge
+            tag: "logs"
+          when:
+            cluster_available: ["default"]
+  - name: metrics_indexing_merge
+    auto_start: true
+    keep_running: true
+    processor:
+      - indexing_merge:
+          elasticsearch: "default"
+          index_name: ".infini_metrics"
+          input_queue: "metrics"
+          output_queue:
+            name: "metrics_requests"
+            label:
+              tag: "metrics"
+          worker_size: 1
+          bulk_size_in_mb: 5
+  - name: ingest_metrics
+    auto_start: true
+    keep_running: true
+    processor:
+      - bulk_indexing:
+          bulk:
+            compress: true
+            batch_size_in_mb: 5
+            batch_size_in_docs: 5000
+          consumer:
+            fetch_max_messages: 100
+          queues:
+            type: indexing_merge
+            tag: "metrics"
+          when:
+            cluster_available: ["default"]
+agent:
+  major_ip_pattern: "192.*"
+"
+
+agent_yml_path="${install_path}/agent/agent.yml"
+
+$sudo_cmd rm $agent_yml_path
+$sudo_cmd touch $agent_yml_path
+$sudo_cmd sh -c "echo '${agent_config}' > $agent_yml_path"
+
+if [ $? -ne 0 ]; then
+	exit 1
+fi
+
+$sudo_cmd chmod +x $agent_exc
+
+#try to stop and uninstall service
+if [[ "$agent_exsit" == "true" ]]; then
+	printf "\n* stop && uninstall service\n"
+	$sudo_cmd $agent_exc -service stop
+	$sudo_cmd $agent_exc -service uninstall
+fi
+
+printf "\n* start install service\n"
+$sudo_cmd $agent_exc -service install
+
+if [ $? -ne 0 ]; then
+	exit 1
+fi
+
+printf "\n* service installed\n"
+printf "\n* service starting >>>>>>\n"
+$sudo_cmd $agent_exc -service start
+
+if [ $? -ne 0 ]; then
+	exit 1
+fi
+
+printf "\n* agent service started"
+
+printf "\n* ${GREEN}Congratulations, install success!${CLR}\n\n"
+
+

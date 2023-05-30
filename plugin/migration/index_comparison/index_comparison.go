@@ -5,7 +5,6 @@ import (
 	"time"
 
 	log "github.com/cihub/seelog"
-	"infini.sh/console/model"
 	migration_model "infini.sh/console/plugin/migration/model"
 	migration_util "infini.sh/console/plugin/migration/util"
 
@@ -443,14 +442,12 @@ func (p *processor) getPipelineTasks(taskItem *task.Task, cfg *migration_model.I
 func (p *processor) cleanGatewayQueue(taskItem *task.Task) {
 	log.Debugf("cleaning gateway queue for task [%s]", taskItem.ID)
 
-	var err error
-	instance := model.Instance{}
-	instance.ID, _ = util.ExtractString(taskItem.Metadata.Labels["execution_instance_id"])
-	if instance.ID == "" {
+	instanceID, _ := util.ExtractString(taskItem.Metadata.Labels["execution_instance_id"])
+	if instanceID == "" {
 		log.Debugf("task [%s] not scheduled yet, skip cleaning queue", taskItem.ID)
 		return
 	}
-	_, err = orm.Get(&instance)
+	instance, err := p.scheduler.GetInstance(instanceID)
 	if err != nil {
 		log.Errorf("failed to get instance, err: %v", err)
 		return

@@ -5,32 +5,17 @@
 package common
 
 import (
+	"infini.sh/console/modules/agent/model"
 	"infini.sh/framework/core/env"
 	"sync"
 )
 
-type AgentConfig struct {
-	Enabled bool `config:"enabled"`
-	StateManager struct{
-		Enabled bool `config:"enabled"`
-	} `config:"state_manager"`
-	Setup SetupConfig `config:"setup"`
-}
-
-type SetupConfig struct {
-	DownloadURL string `config:"download_url"`
-	Version string `config:"version"`
-	CACertFile string `config:"ca_cert"`
-	CAKeyFile string `config:"ca_key"`
-	ScriptEndpoint string `config:"script_endpoint"`
-}
-
-var agentCfg *AgentConfig
+var agentCfg *model.AgentConfig
 var onceCfg = sync.Once{}
 
-func GetAgentConfig() *AgentConfig {
+func GetAgentConfig() *model.AgentConfig {
 	onceCfg.Do(func() {
-		agentCfg = &AgentConfig{}
+		agentCfg = &model.AgentConfig{}
 		_, err := env.ParseConfig("agent", agentCfg )
 		if err != nil {
 			panic(err)

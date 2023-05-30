@@ -8,7 +8,10 @@ import (
 	"context"
 	"fmt"
 	log "github.com/cihub/seelog"
+	"infini.sh/console/modules/agent/client"
 	common2 "infini.sh/console/modules/agent/common"
+	"infini.sh/console/modules/agent/model"
+	"infini.sh/console/modules/agent/state"
 	"infini.sh/framework/core/agent"
 	"infini.sh/framework/core/api"
 	httprouter "infini.sh/framework/core/api/router"
@@ -51,7 +54,7 @@ func (h *APIHandler) createInstance(w http.ResponseWriter, req *http.Request, ps
 		return
 	}
 	//fetch more information of agent instance
-	res, err := common2.GetClient().GetInstanceBasicInfo(context.Background(), obj.GetEndpoint())
+	res, err := client.GetClient().GetInstanceBasicInfo(context.Background(), obj.GetEndpoint())
 	if err != nil {
 		errStr := fmt.Sprintf("get agent instance basic info error: %s", err.Error())
 		h.WriteError(w,errStr , http.StatusInternalServerError)
@@ -71,7 +74,7 @@ func (h *APIHandler) createInstance(w http.ResponseWriter, req *http.Request, ps
 		obj.IPS = res.IPS
 	}
 
-	obj.Status = common2.StatusOnline
+	obj.Status = model.StatusOnline
 	err = orm.Create(nil, obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -135,7 +138,7 @@ func (h *APIHandler) deleteInstance(w http.ResponseWriter, req *http.Request, ps
 		log.Error(err)
 		return
 	}
-	if sm := common2.GetStateManager(); sm != nil {
+	if sm := state.GetStateManager(); sm != nil {
 		sm.DeleteAgent(obj.ID)
 	}
 	queryDsl := util.MapStr{
@@ -388,7 +391,7 @@ func (h *APIHandler) authESNode(w http.ResponseWriter, req *http.Request, ps htt
 		return
 	}
 	cfg.BasicAuth = &basicAuth
-	nodeInfo, err := common2.GetClient().AuthESNode(context.Background(), inst.GetEndpoint(), *cfg)
+	nodeInfo, err := client.GetClient().AuthESNode(context.Background(), inst.GetEndpoint(), *cfg)
 	if err != nil {
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -511,7 +514,7 @@ func (h *APIHandler) tryConnect(w http.ResponseWriter, req *http.Request, ps htt
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	connectRes, err := common2.GetClient().GetInstanceBasicInfo(context.Background(), reqBody.Endpoint)
+	connectRes, err := client.GetClient().GetInstanceBasicInfo(context.Background(), reqBody.Endpoint)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -520,7 +523,7 @@ func (h *APIHandler) tryConnect(w http.ResponseWriter, req *http.Request, ps htt
 }
 
 func refreshNodesInfo(inst *agent.Instance) ([]agent.ESNodeInfo, error) {
-	nodesInfo, err := common2.GetClient().GetElasticsearchNodes(context.Background(), inst.GetEndpoint())
+	nodesInfo, err := client.GetClient().GetElasticsearchNodes(context.Background(), inst.GetEndpoint())
 	if err != nil {
 		return nil, fmt.Errorf("get elasticsearch nodes error: %w", err)
 	}
@@ -656,7 +659,7 @@ func getAgentTaskSetting(agentID string, node agent.ESNodeInfo) (*agent.Setting,
 }
 
 // getSettingsByClusterID query agent task settings with cluster id
-func getSettingsByClusterID(clusterID string) (*common2.TaskSetting, error) {
+func getSettingsByClusterID(clusterID string) (*model.TaskSetting, error) {
 	queryDsl := util.MapStr{
 		"size": 200,
 		"query": util.MapStr{
@@ -704,8 +707,8 @@ func getSettingsByClusterID(clusterID string) (*common2.TaskSetting, error) {
 		return nil, err
 	}
 
-	setting := &common2.TaskSetting{
-		NodeStats: &common2.NodeStatsTask{
+	setting := &model.TaskSetting{
+		NodeStats: &model.NodeStatsTask{
 			Enabled: true,
 		},
 	}
@@ -734,17 +737,17 @@ func getSettingsByClusterID(clusterID string) (*common2.TaskSetting, error) {
 		}
 	}
 	if clusterStats {
-		setting.ClusterStats = &common2.ClusterStatsTask{
+		setting.ClusterStats = &model.ClusterStatsTask{
 			Enabled: true,
 		}
 	}
 	if indexStats {
-		setting.IndexStats = &common2.IndexStatsTask{
+		setting.IndexStats = &model.IndexStatsTask{
 			Enabled: true,
 		}
 	}
 	if clusterHealth {
-		setting.ClusterHealth = &common2.ClusterHealthTask{
+		setting.ClusterHealth = &model.ClusterHealthTask{
 			Enabled: true,
 		}
 	}

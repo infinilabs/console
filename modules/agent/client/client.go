@@ -2,12 +2,13 @@
  * Web: https://infinilabs.com
  * Email: hello#infini.ltd */
 
-package common
+package client
 
 import (
 	"bytes"
 	"context"
 	"fmt"
+	"infini.sh/console/modules/agent/common"
 	"infini.sh/framework/core/agent"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/global"
@@ -19,6 +20,31 @@ import (
 	"path"
 	"sync"
 )
+
+var defaultClient ClientAPI
+
+func GetClient() ClientAPI {
+	if defaultClient == nil {
+		panic("agent client not init")
+	}
+	return defaultClient
+}
+
+func RegisterClient(client ClientAPI) {
+	defaultClient = client
+}
+type ClientAPI interface {
+	GetHostInfo(ctx context.Context, agentBaseURL string) (*host.HostInfo, error)
+	GetElasticProcess(ctx context.Context, agentBaseURL string, agentID string)(interface{}, error)
+	GetElasticLogFiles(ctx context.Context, agentBaseURL string, logsPath string)(interface{}, error)
+	GetElasticLogFileContent(ctx context.Context, agentBaseURL string, body interface{})(interface{}, error)
+	GetInstanceBasicInfo(ctx context.Context, agentBaseURL string) (*agent.Instance, error)
+	RegisterElasticsearch(ctx context.Context, agentBaseURL string, cfgs []elastic.ElasticsearchConfig) error
+	GetElasticsearchNodes(ctx context.Context, agentBaseURL string) ([]agent.ESNodeInfo, error)
+	AuthESNode(ctx context.Context, agentBaseURL string, cfg elastic.ElasticsearchConfig) (*agent.ESNodeInfo, error)
+	CreatePipeline(ctx context.Context, agentBaseURL string, body []byte) error
+	DeletePipeline(ctx context.Context, agentBaseURL, pipelineID string) error
+}
 
 type Client struct {
 }
@@ -213,7 +239,7 @@ var(
 	hClientOnce = sync.Once{}
 )
 func (client *Client) doRequest(req *util.Request, respObj interface{}) error {
-	agCfg := GetAgentConfig()
+	agCfg := common.GetAgentConfig()
 	var err error
 	hClientOnce.Do(func() {
 		var (
@@ -270,7 +296,7 @@ func getAgentInstanceCerts(caFile, caKey string) (string, string, error) {
 	if util.FileExists(instanceCrt) && util.FileExists(instanceKey) {
 		return instanceCrt, instanceKey, nil
 	}
-	_, clientCertPEM, clientKeyPEM, err = GenerateClientCert(caFile, caKey)
+	_, clientCertPEM, clientKeyPEM, err = common.GenerateClientCert(caFile, caKey)
 	if err != nil {
 		return "", "", err
 	}

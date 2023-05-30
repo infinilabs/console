@@ -6,13 +6,16 @@ package common
 
 import (
 	"fmt"
+	"infini.sh/console/modules/agent/model"
 	"infini.sh/framework/core/agent"
 	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/event"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
+	log "src/github.com/cihub/seelog"
 )
 
-func ParseAgentSettings(settings []agent.Setting)(*ParseAgentSettingsResult, error){
+func ParseAgentSettings(settings []agent.Setting)(*model.ParseAgentSettingsResult, error){
 	var clusterCfgs []elastic.ElasticsearchConfig
 	var (
 		pipelines []util.MapStr
@@ -49,7 +52,7 @@ func ParseAgentSettings(settings []agent.Setting)(*ParseAgentSettingsResult, err
 		if err != nil {
 			return nil, err
 		}
-		taskSetting := TaskSetting{}
+		taskSetting := model.TaskSetting{}
 		err = util.FromJSONBytes(vBytes, &taskSetting)
 		if err != nil {
 			return nil, err
@@ -61,7 +64,7 @@ func ParseAgentSettings(settings []agent.Setting)(*ParseAgentSettingsResult, err
 		pipelines = append(pipelines, partPipelines...)
 		toDeletePipelineNames = append(toDeletePipelineNames, partDeletePipelineNames...)
 	}
-	return &ParseAgentSettingsResult{
+	return &model.ParseAgentSettingsResult{
 		ClusterConfigs: clusterCfgs,
 		Pipelines: pipelines,
 		ToDeletePipelineNames: toDeletePipelineNames,
@@ -132,7 +135,7 @@ func GetAgentSettings(agentID string, timestamp int64) ([]agent.Setting, error) 
 	return settings, nil
 }
 
-func TransformSettingsToConfig(setting *TaskSetting, clusterID, nodeUUID string) ([]util.MapStr, []string, error) {
+func TransformSettingsToConfig(setting *model.TaskSetting, clusterID, nodeUUID string) ([]util.MapStr, []string, error) {
 	if setting == nil {
 		return nil, nil, fmt.Errorf("empty setting")
 	}
@@ -227,3 +230,109 @@ func getMetricPipelineName(clusterID, processorName string) string{
 	return fmt.Sprintf("collect_%s_%s", clusterID, processorName)
 }
 
+
+func LoadAgentsFromES(clusterID string) ([]agent.Instance, error) {
+	q := orm.Query{
+		Size: 1000,
+	}
+	if clusterID != "" {
+		q.Conds = orm.And(orm.Eq("id", clusterID))
+	}
+	err, result := orm.Search(agent.Instance{}, &q)
+	if err != nil {
+		return nil, fmt.Errorf("query agent error: %w", err)
+	}
+
+	if len(result.Result) > 0 {
+		var agents = make([]agent.Instance, 0, len(result.Result))
+		for _, row := range result.Result {
+			ag := agent.Instance{}
+			bytes := util.MustToJSONBytes(row)
+			err = util.FromJSONBytes(bytes, &ag)
+			if err != nil {
+				log.Errorf("got unexpected agent: %s, error: %v", string(bytes), err)
+				continue
+			}
+			agents = append(agents, ag)
+		}
+		return agents, nil
+	}
+	return nil, nil
+}
+
+func GetLatestOnlineAgentIDs(agentIds []string, lastSeconds int) (map[string]struct{}, error) {
+	q := orm.Query{
+		WildcardIndex: true,
+	}
+	mustQ := []util.MapStr{
+		{
+			"term": util.MapStr{
+				"metadata.name": util.MapStr{
+					"value": "agent",
+				},
+			},
+		},
+		{
+			"term": util.MapStr{
+				"metadata.category": util.MapStr{
+					"value": "instance",
+				},
+			},
+		},
+	}
+	if len(agentIds) > 0 {
+		mustQ = append(mustQ, util.MapStr{
+			"terms": util.MapStr{
+				"agent.id": agentIds,
+			},
+		})
+	}
+	queryDSL := util.MapStr{
+		"_source": "agent.id",
+		"sort": []util.MapStr{
+			{
+				"timestamp": util.MapStr{
+					"order": "desc",
+				},
+			},
+		},
+		"collapse": util.MapStr{
+			"field": "agent.id",
+		},
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"filter": []util.MapStr{
+					{
+						"range": util.MapStr{
+							"timestamp": util.MapStr{
+								"gte": fmt.Sprintf("now-%ds", lastSeconds),
+							},
+						},
+					},
+				},
+				"must": mustQ,
+			},
+		},
+	}
+	q.RawQuery = util.MustToJSONBytes(queryDSL)
+	err, result := orm.Search(event.Event{}, &q)
+	if err != nil {
+		return nil, fmt.Errorf("query agent instance metric error: %w", err)
+	}
+	agentIDs := map[string]struct{}{}
+	if len(result.Result) > 0 {
+		searchRes := elastic.SearchResponse{}
+		err = util.FromJSONBytes(result.Raw, &searchRes)
+		if err != nil {
+			return nil, err
+		}
+		agentIDKeyPath := []string{"agent", "id"}
+		for _, hit := range searchRes.Hits.Hits {
+			agentID, _ := util.GetMapValueByKeys(agentIDKeyPath, hit.Source)
+			if v, ok := agentID.(string); ok {
+				agentIDs[v] = struct{}{}
+			}
+		}
+	}
+	return agentIDs, nil
+}

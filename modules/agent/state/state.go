@@ -2,16 +2,17 @@
  * Web: https://infinilabs.com
  * Email: hello#infini.ltd */
 
-package common
+package state
 
 import (
 	"context"
 	"fmt"
 	"github.com/buger/jsonparser"
 	log "github.com/cihub/seelog"
+	"infini.sh/console/modules/agent/client"
+	"infini.sh/console/modules/agent/common"
+	"infini.sh/console/modules/agent/model"
 	"infini.sh/framework/core/agent"
-	"infini.sh/framework/core/elastic"
-	"infini.sh/framework/core/event"
 	"infini.sh/framework/core/host"
 	"infini.sh/framework/core/kv"
 	"infini.sh/framework/core/orm"
@@ -23,17 +24,39 @@ import (
 	"time"
 )
 
-const (
-	StatusOnline string = "online"
-	StatusOffline = "offline"
-)
+var stateManager IStateManager
+
+func GetStateManager() IStateManager {
+	if stateManager == nil {
+		panic("agent state manager not init")
+	}
+	return stateManager
+}
+
+func RegisterStateManager(sm IStateManager) {
+	stateManager = sm
+}
+
+func IsEnabled() bool {
+	return stateManager != nil
+}
+
+type IStateManager interface {
+	GetAgent(ID string) (*agent.Instance, error)
+	UpdateAgent(inst *agent.Instance, syncToES bool) (*agent.Instance, error)
+	GetTaskAgent(clusterID string) (*agent.Instance, error)
+	DeleteAgent(agentID string) error
+	LoopState()
+	Stop()
+	GetAgentClient() client.ClientAPI
+}
 
 type StateManager struct {
 	TTL           time.Duration // kv ttl
 	KVKey         string
 	stopC         chan struct{}
 	stopCompleteC chan struct{}
-	agentClient   *Client
+	agentClient   *client.Client
 	agentIds      map[string]string
 	agentMutex    sync.Mutex
 	workerChan    chan struct{}
@@ -46,7 +69,7 @@ func NewStateManager(TTL time.Duration, kvKey string, agentIds map[string]string
 		KVKey:         kvKey,
 		stopC:         make(chan struct{}),
 		stopCompleteC: make(chan struct{}),
-		agentClient:   &Client{},
+		agentClient:   &client.Client{},
 		agentIds:      agentIds,
 		workerChan:    make(chan struct{}, runtime.NumCPU()),
 		timestamps: map[string]int64{},
@@ -54,7 +77,7 @@ func NewStateManager(TTL time.Duration, kvKey string, agentIds map[string]string
 }
 
 func (sm *StateManager) checkAgentStatus() {
-	onlineAgentIDs, err := GetLatestOnlineAgentIDs(nil, int(sm.TTL.Seconds()))
+	onlineAgentIDs, err := common.GetLatestOnlineAgentIDs(nil, int(sm.TTL.Seconds()))
 	if err != nil {
 		log.Error(err)
 		return
@@ -64,32 +87,32 @@ func (sm *StateManager) checkAgentStatus() {
 	for agentID := range onlineAgentIDs {
 		if _, ok := sm.agentIds[agentID]; !ok {
 			log.Infof("status of agent [%s] changed to online", agentID)
-			sm.agentIds[agentID] = StatusOnline
+			sm.agentIds[agentID] = model.StatusOnline
 		}
 	}
 	sm.agentMutex.Unlock()
 	for agentID, status := range sm.agentIds {
 		if _, ok := onlineAgentIDs[agentID]; ok {
 			sm.syncSettings(agentID)
-			host.UpdateHostAgentStatus(agentID, StatusOnline)
-			if status == StatusOnline {
+			host.UpdateHostAgentStatus(agentID, model.StatusOnline)
+			if status == model.StatusOnline {
 				continue
 			}
 			// status change to online
-			sm.agentIds[agentID] = StatusOnline
+			sm.agentIds[agentID] = model.StatusOnline
 			log.Infof("status of agent [%s] changed to online", agentID)
 			//set timestamp equals 0 to create pipeline
 			sm.timestamps[agentID] = 0
 			continue
 		}else{
 			// already offline
-			if status == StatusOffline {
+			if status == model.StatusOffline {
 				continue
 			}
 		}
 		// status change to offline
 		// todo validate whether agent is offline
-		sm.agentIds[agentID] = StatusOffline
+		sm.agentIds[agentID] = model.StatusOffline
 		sm.workerChan <- struct{}{}
 		go func(agentID string) {
 			defer func() {
@@ -104,7 +127,7 @@ func (sm *StateManager) checkAgentStatus() {
 				log.Error(err)
 				return
 			}
-			ag.Status = StatusOffline
+			ag.Status = model.StatusOffline
 			log.Infof("agent [%s] is offline", ag.Endpoint)
 			_, err = sm.UpdateAgent(ag, true)
 			if err != nil {
@@ -112,7 +135,7 @@ func (sm *StateManager) checkAgentStatus() {
 				return
 			}
 			//update host agent status
-			host.UpdateHostAgentStatus(ag.ID, StatusOffline)
+			host.UpdateHostAgentStatus(ag.ID, model.StatusOffline)
 		}(agentID)
 
 	}
@@ -120,7 +143,7 @@ func (sm *StateManager) checkAgentStatus() {
 
 func (sm *StateManager) syncSettings(agentID string) {
 	newTimestamp := time.Now().UnixMilli()
-	settings, err := GetAgentSettings(agentID, sm.timestamps[agentID])
+	settings, err := common.GetAgentSettings(agentID, sm.timestamps[agentID])
 	if err != nil {
 		log.Errorf("query agent settings error: %v", err)
 		return
@@ -129,7 +152,7 @@ func (sm *StateManager) syncSettings(agentID string) {
 		log.Debugf("got no settings of agent [%s]", agentID)
 		return
 	}
-	parseResult, err := ParseAgentSettings(settings)
+	parseResult, err := common.ParseAgentSettings(settings)
 	if err != nil {
 		log.Errorf("parse agent settings error: %v", err)
 		return
@@ -168,7 +191,7 @@ func (sm *StateManager) syncSettings(agentID string) {
 }
 
 func (sm *StateManager) getAvailableAgent(clusterID string) (*agent.Instance, error) {
-	agents, err := LoadAgentsFromES(clusterID)
+	agents, err := common.LoadAgentsFromES(clusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -261,112 +284,6 @@ func (sm *StateManager) DeleteAgent(agentID string) error {
 	return kv.DeleteKey(sm.KVKey, []byte(agentID))
 }
 
-func (sm *StateManager) GetAgentClient() ClientAPI {
+func (sm *StateManager) GetAgentClient() client.ClientAPI {
 	return sm.agentClient
-}
-
-func LoadAgentsFromES(clusterID string) ([]agent.Instance, error) {
-	q := orm.Query{
-		Size: 1000,
-	}
-	if clusterID != "" {
-		q.Conds = orm.And(orm.Eq("id", clusterID))
-	}
-	err, result := orm.Search(agent.Instance{}, &q)
-	if err != nil {
-		return nil, fmt.Errorf("query agent error: %w", err)
-	}
-
-	if len(result.Result) > 0 {
-		var agents = make([]agent.Instance, 0, len(result.Result))
-		for _, row := range result.Result {
-			ag := agent.Instance{}
-			bytes := util.MustToJSONBytes(row)
-			err = util.FromJSONBytes(bytes, &ag)
-			if err != nil {
-				log.Errorf("got unexpected agent: %s, error: %v", string(bytes), err)
-				continue
-			}
-			agents = append(agents, ag)
-		}
-		return agents, nil
-	}
-	return nil, nil
-}
-
-func GetLatestOnlineAgentIDs(agentIds []string, lastSeconds int) (map[string]struct{}, error) {
-	q := orm.Query{
-		WildcardIndex: true,
-	}
-	mustQ := []util.MapStr{
-		{
-			"term": util.MapStr{
-				"metadata.name": util.MapStr{
-					"value": "agent",
-				},
-			},
-		},
-		{
-			"term": util.MapStr{
-				"metadata.category": util.MapStr{
-					"value": "instance",
-				},
-			},
-		},
-	}
-	if len(agentIds) > 0 {
-		mustQ = append(mustQ, util.MapStr{
-			"terms": util.MapStr{
-				"agent.id": agentIds,
-			},
-		})
-	}
-	queryDSL := util.MapStr{
-		"_source": "agent.id",
-		"sort": []util.MapStr{
-			{
-				"timestamp": util.MapStr{
-					"order": "desc",
-				},
-			},
-		},
-		"collapse": util.MapStr{
-			"field": "agent.id",
-		},
-		"query": util.MapStr{
-			"bool": util.MapStr{
-				"filter": []util.MapStr{
-					{
-						"range": util.MapStr{
-							"timestamp": util.MapStr{
-								"gte": fmt.Sprintf("now-%ds", lastSeconds),
-							},
-						},
-					},
-				},
-				"must": mustQ,
-			},
-		},
-	}
-	q.RawQuery = util.MustToJSONBytes(queryDSL)
-	err, result := orm.Search(event.Event{}, &q)
-	if err != nil {
-		return nil, fmt.Errorf("query agent instance metric error: %w", err)
-	}
-	agentIDs := map[string]struct{}{}
-	if len(result.Result) > 0 {
-		searchRes := elastic.SearchResponse{}
-		err = util.FromJSONBytes(result.Raw, &searchRes)
-		if err != nil {
-			return nil, err
-		}
-		agentIDKeyPath := []string{"agent", "id"}
-		for _, hit := range searchRes.Hits.Hits {
-			agentID, _ := util.GetMapValueByKeys(agentIDKeyPath, hit.Source)
-			if v, ok := agentID.(string); ok {
-				agentIDs[v] = struct{}{}
-			}
-		}
-	}
-	return agentIDs, nil
 }

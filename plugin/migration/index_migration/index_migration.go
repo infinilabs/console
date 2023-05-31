@@ -92,6 +92,13 @@ func (p *processor) handleSplitSubTask(taskItem *task.Task) error {
 	if len(taskItem.ParentId) == 0 {
 		return fmt.Errorf("got wrong parent id of task [%v]", *taskItem)
 	}
+
+	err = migration_util.DeleteChildTasks(taskItem.ID)
+	if err != nil {
+		log.Warnf("failed to clear child tasks, err: %v", err)
+		return nil
+	}
+
 	indexName := cfg.Source.Indices
 	scrollTask := &task.Task{
 		ParentId:    pids,

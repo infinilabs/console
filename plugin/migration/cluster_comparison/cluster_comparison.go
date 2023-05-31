@@ -76,6 +76,12 @@ func (p *processor) splitMajorTask(taskItem *task.Task) error {
 	esSourceClient := elastic.GetClient(clusterComparisonTask.Cluster.Source.Id)
 	esTargetClient := elastic.GetClient(clusterComparisonTask.Cluster.Target.Id)
 
+	err = migration_util.DeleteChildTasks(taskItem.ID)
+	if err != nil {
+		log.Warnf("failed to clear child tasks, err: %v", err)
+		return nil
+	}
+
 	for _, index := range clusterComparisonTask.Indices {
 		sourceDump := migration_model.IndexComparisonDumpConfig{
 			ClusterId:     clusterComparisonTask.Cluster.Source.Id,

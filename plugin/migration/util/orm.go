@@ -10,6 +10,29 @@ import (
 	"infini.sh/framework/core/util"
 )
 
+func DeleteChildTasks(taskID string) error {
+	q := util.MapStr{
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": []util.MapStr{
+					{
+						"term": util.MapStr{
+							"parent_id": util.MapStr{
+								"value": taskID,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	err := orm.DeleteBy(&task.Task{}, util.MustToJSONBytes(q))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func GetPendingChildTasks(elasticsearch, indexName string, taskID string, taskType string) ([]task.Task, error) {
 	return GetChildTasks(elasticsearch, indexName, taskID, taskType, []string{task.StatusRunning, task.StatusPendingStop, task.StatusReady})
 }

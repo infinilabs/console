@@ -63,6 +63,12 @@ func (p *processor) handleSplitSubTask(taskItem *task.Task) error {
 		return fmt.Errorf("got wrong parent id of task [%v]", *taskItem)
 	}
 
+	err = migration_util.DeleteChildTasks(taskItem.ID)
+	if err != nil {
+		log.Warnf("failed to clear child tasks, err: %v", err)
+		return nil
+	}
+
 	var pids []string
 	pids = append(pids, taskItem.ParentId...)
 	pids = append(pids, taskItem.ID)

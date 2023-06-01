@@ -220,8 +220,34 @@ func TransformSettingsToConfig(setting *model.TaskSetting, clusterID, nodeUUID s
 			toDeletePipelineNames = append(toDeletePipelineNames, getMetricPipelineName(nodeUUID, processorName))
 		}
 	}
+	if setting.Logs != nil {
+		var processorName = "es_logs_processor"
+		if setting.Logs.Enabled {
+			params := util.MapStr{
+				"elasticsearch": clusterID,
+				"queue_name": "logs",
+			}
+			if setting.Logs.LogsPath != "" {
+				params["logs_path"] = setting.Logs.LogsPath
+			}
+			cfg := util.MapStr{
+				processorName: params,
+			}
+			enabled := true
+			pipelineCfg := util.MapStr{
+				"enabled":           &enabled,
+				"name":              fmt.Sprintf("collect_%s_es_logs", nodeUUID),
+				"auto_start":        true,
+				"keep_running":      true,
+				"retry_delay_in_ms": 3000,
+				"processor":         []util.MapStr{cfg},
+			}
+			pipelines = append(pipelines, pipelineCfg)
+		}
+	}
 	return pipelines, toDeletePipelineNames, nil
 }
+
 
 func newClusterMetricPipeline(processorName string, clusterID string)(util.MapStr, error){
 	cfg := util.MapStr{

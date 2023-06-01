@@ -1,19 +1,11 @@
 path.configs: "config"
 configs.auto_reload: true
 
-env:
-#  INFINI_CONSOLE_ENDPOINT: "https://play.infinilabs.com:64443"
-  WECHAT_WEBHOOK_ENDPOINT: "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=9f5989ae-e82f-4e39-b4f9-cab0638d0229"
-  SLACK_WEBHOOK_ENDPOINT: "https://hooks.slack.com/services/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"
-  DINGTALK_WEBHOOK_ENDPOINT: "https://oapi.dingtalk.com/robot/send?access_token=6a5c7c9454ff74537a6de493153b1da68860942d4b0aeb33797cb68b5111b077"
 web:
   enabled: true
   embedding_api: true
   auth:
     enabled: true
-  websocket:
-    skip_host_verify: true
-    permitted_hosts: ["localhost:8000"]
   ui:
     enabled: true
     path: .public
@@ -73,11 +65,3 @@ badger:
 #    token_url: "https://github.com/login/oauth/access_token"
 #    redirect_url: ""
 #    scopes: []
-
-agent:
-  setup:
-    download_url: "https://release.infinilabs.com/agent/snapshot"
-    version: 0.5.0_NIGHTLY-151
-    ca_cert: "/Users/liugq/go/src/infini.sh/console/config/certs/ca.crt"
-    ca_key: "/Users/liugq/go/src/infini.sh/console/config/certs/ca.key"
-    script_endpoint: "http://localhost:9000"

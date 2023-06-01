@@ -7,13 +7,13 @@ package api
 import (
 	"context"
 	"fmt"
-	common2 "infini.sh/console/modules/agent/common"
+	log "github.com/cihub/seelog"
+	"infini.sh/console/modules/agent/state"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/host"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"net/http"
-	log "github.com/cihub/seelog"
 	"time"
 )
 
@@ -107,7 +107,7 @@ func (h *APIHandler) GetHostAgentInfo(w http.ResponseWriter, req *http.Request, 
 		return
 	}
 
-	sm := common2.GetStateManager()
+	sm := state.GetStateManager()
 	ag, err := sm.GetAgent(hostInfo.AgentID)
 	if err != nil {
 		log.Error(err)
@@ -159,7 +159,7 @@ func (h *APIHandler) GetHostElasticProcess(w http.ResponseWriter, req *http.Requ
 		h.WriteJSON(w, util.MapStr{}, http.StatusOK)
 		return
 	}
-	sm := common2.GetStateManager()
+	sm := state.GetStateManager()
 	ag, err := sm.GetAgent(hostInfo.AgentID)
 	if err != nil {
 		log.Error(err)
@@ -193,7 +193,7 @@ func (h *APIHandler) GetHostElasticProcess(w http.ResponseWriter, req *http.Requ
 }
 
 func enrollHostFromAgent(agentID string) (*host.HostInfo, error){
-	sm := common2.GetStateManager()
+	sm := state.GetStateManager()
 	ag, err := sm.GetAgent(agentID)
 	if err != nil {
 		return nil, err

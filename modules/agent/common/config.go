@@ -4,18 +4,17 @@
 
 package common
 
-type AgentConfig struct {
-	Enabled bool `config:"enabled"`
-	StateManager struct{
-		Enabled bool `config:"enabled"`
-	} `config:"state_manager"`
-	Setup SetupConfig `config:"setup"`
-}
+import (
+	"infini.sh/console/modules/agent/model"
+	"infini.sh/framework/core/env"
+)
 
-type SetupConfig struct {
-	DownloadURL string `config:"download_url"`
-	Version string `config:"version"`
-	CACertFile string `config:"ca_cert"`
-	CAKeyFile string `config:"ca_key"`
-	ScriptEndpoint string `config:"script_endpoint"`
+
+func GetAgentConfig() *model.AgentConfig {
+	agentCfg := &model.AgentConfig{}
+	_, err := env.ParseConfig("agent", agentCfg )
+	if err != nil {
+		panic(err)
+	}
+	return agentCfg
 }

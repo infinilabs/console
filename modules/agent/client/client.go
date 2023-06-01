@@ -2,7 +2,7 @@
  * Web: https://infinilabs.com
  * Email: hello#infini.ltd */
 
-package common
+package client
 
 import (
 	"context"
@@ -14,8 +14,37 @@ import (
 	"net/http"
 )
 
-type Client struct {
+var defaultClient ClientAPI
+
+func GetClient() ClientAPI {
+	if defaultClient == nil {
+		panic("agent client not init")
+	}
+	return defaultClient
 }
+
+func RegisterClient(client ClientAPI) {
+	defaultClient = client
+}
+type ClientAPI interface {
+	GetHostInfo(ctx context.Context, agentBaseURL string) (*host.HostInfo, error)
+	GetElasticProcess(ctx context.Context, agentBaseURL string, agentID string)(interface{}, error)
+	GetElasticLogFiles(ctx context.Context, agentBaseURL string, logsPath string)(interface{}, error)
+	GetElasticLogFileContent(ctx context.Context, agentBaseURL string, body interface{})(interface{}, error)
+	GetInstanceBasicInfo(ctx context.Context, agentBaseURL string) (*agent.Instance, error)
+	RegisterElasticsearch(ctx context.Context, agentBaseURL string, cfgs []elastic.ElasticsearchConfig) error
+	GetElasticsearchNodes(ctx context.Context, agentBaseURL string) ([]agent.ESNodeInfo, error)
+	AuthESNode(ctx context.Context, agentBaseURL string, cfg elastic.ElasticsearchConfig) (*agent.ESNodeInfo, error)
+	CreatePipeline(ctx context.Context, agentBaseURL string, body []byte) error
+	DeletePipeline(ctx context.Context, agentBaseURL, pipelineID string) error
+	SetKeystoreValue(ctx context.Context, agentBaseURL string, key, value string) error
+	SaveDynamicConfig(ctx context.Context, agentBaseURL string, name, content string) error
+}
+
+type Client struct {
+	Executor Executor
+}
+
 
 func (client *Client) GetHostInfo(ctx context.Context, agentBaseURL string) (*host.HostInfo, error) {
 	req := &util.Request{
@@ -188,16 +217,37 @@ func (client *Client) DeletePipeline(ctx context.Context, agentBaseURL, pipeline
 	return client.doRequest(req, nil)
 }
 
-func (client *Client) doRequest(req *util.Request, respObj interface{}) error {
-	result, err := util.ExecuteRequest(req)
-	if err != nil {
-		return err
+func (client *Client) SetKeystoreValue(ctx context.Context, agentBaseURL string, key, value string) error{
+	body := util.MapStr{
+		"key": key,
+		"value": value,
 	}
-	if result.StatusCode != 200 {
-		return fmt.Errorf(string(result.Body))
+	req := &util.Request{
+		Method: http.MethodPost,
+		Url:     fmt.Sprintf("%s/_framework/keystore", agentBaseURL),
+		Context: ctx,
+		Body: util.MustToJSONBytes(body),
 	}
-	if respObj == nil {
-		return nil
-	}
-	return util.FromJSONBytes(result.Body, respObj)
+	return client.doRequest(req, nil)
 }
+
+func (client *Client) SaveDynamicConfig(ctx context.Context, agentBaseURL string, name, content string) error{
+	body := util.MapStr{
+		"configs": util.MapStr{
+			name: content,
+		},
+	}
+	req := &util.Request{
+		Method: http.MethodPost,
+		Url:     fmt.Sprintf("%s/agent/config", agentBaseURL),
+		Context: ctx,
+		Body: util.MustToJSONBytes(body),
+	}
+	return client.doRequest(req, nil)
+}
+
+
+func (client *Client) doRequest(req *util.Request, respObj interface{}) error {
+	return client.Executor.DoRequest(req, respObj)
+}
+

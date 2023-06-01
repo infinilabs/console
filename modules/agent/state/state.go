@@ -203,22 +203,6 @@ func (sm *StateManager) syncSettings(agentID string) {
 		return
 	}
 	err = agClient.SaveDynamicConfig(context.Background(), ag.GetEndpoint(), "dynamic_task", string(cfgBytes))
-	//for _, pipelineID := range parseResult.ToDeletePipelineNames {
-	//	err = agClient.DeletePipeline(context.Background(), ag.GetEndpoint(), pipelineID)
-	//	if err != nil {
-	//		if !strings.Contains(err.Error(), "not found") {
-	//			log.Errorf("delete pipeline error: %v", err)
-	//			continue
-	//		}
-	//	}
-	//}
-	//for _, pipeline := range parseResult.Pipelines {
-	//	err = agClient.CreatePipeline(context.Background(), ag.GetEndpoint(), util.MustToJSONBytes(pipeline))
-	//	if err != nil {
-	//		log.Errorf("create pipeline error: %v", err)
-	//		return
-	//	}
-	//}
 	sm.timestamps[agentID] = newTimestamp
 }
 

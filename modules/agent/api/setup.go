@@ -119,20 +119,11 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 	if downloadURL == "" {
 		downloadURL = "https://release.infinilabs.com/agent/stable/"
 	}
-	//esCfg := elastic.GetConfig(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
-	//var (
-	//	loggingESUser string
-	//	loggingESPassword string
-	//)
-	//if esCfg.BasicAuth != nil {
-	//	loggingESUser = esCfg.BasicAuth.Username
-	//	loggingESPassword = esCfg.BasicAuth.Password
-	//}
 	port := agCfg.Setup.Port
 	if port == "" {
 		port = "8080"
 	}
-	tpl.Execute(w, map[string]interface{}{
+	_, err = tpl.Execute(w, map[string]interface{}{
 		"base_url":  agCfg.Setup.DownloadURL,
 		"agent_version": agCfg.Setup.Version,
 		"console_endpoint": agCfg.Setup.ConsoleEndpoint,
@@ -141,9 +132,9 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 		"ca_crt": caCert,
 		"port": port,
 		"token": tokenStr,
-		//"logging_es_endpoint": esCfg.Endpoint,
-		//"logging_es_user": loggingESUser,
-		//"logging_es_password": loggingESPassword,
 	})
+	if err != nil {
+		log.Error(err)
+	}
 }
 

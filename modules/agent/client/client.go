@@ -5,20 +5,13 @@
 package client
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"infini.sh/console/modules/agent/common"
 	"infini.sh/framework/core/agent"
 	"infini.sh/framework/core/elastic"
-	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/host"
 	"infini.sh/framework/core/util"
-	"io"
 	"net/http"
-	"os"
-	"path"
-	"sync"
 )
 
 var defaultClient ClientAPI
@@ -44,10 +37,14 @@ type ClientAPI interface {
 	AuthESNode(ctx context.Context, agentBaseURL string, cfg elastic.ElasticsearchConfig) (*agent.ESNodeInfo, error)
 	CreatePipeline(ctx context.Context, agentBaseURL string, body []byte) error
 	DeletePipeline(ctx context.Context, agentBaseURL, pipelineID string) error
+	SetKeystoreValue(ctx context.Context, agentBaseURL string, key, value string) error
+	SaveDynamicConfig(ctx context.Context, agentBaseURL string, name, content string) error
 }
 
 type Client struct {
+	Executor Executor
 }
+
 
 func (client *Client) GetHostInfo(ctx context.Context, agentBaseURL string) (*host.HostInfo, error) {
 	req := &util.Request{
@@ -220,100 +217,37 @@ func (client *Client) DeletePipeline(ctx context.Context, agentBaseURL, pipeline
 	return client.doRequest(req, nil)
 }
 
-//func (client *Client) doRequest(req *util.Request, respObj interface{}) error {
-//	result, err := util.ExecuteRequest(req)
-//	if err != nil {
-//		return err
-//	}
-//	if result.StatusCode != 200 {
-//		return fmt.Errorf(string(result.Body))
-//	}
-//	if respObj == nil {
-//		return nil
-//	}
-//	return util.FromJSONBytes(result.Body, respObj)
-//}
+func (client *Client) SetKeystoreValue(ctx context.Context, agentBaseURL string, key, value string) error{
+	body := util.MapStr{
+		"key": key,
+		"value": value,
+	}
+	req := &util.Request{
+		Method: http.MethodPost,
+		Url:     fmt.Sprintf("%s/_framework/keystore", agentBaseURL),
+		Context: ctx,
+		Body: util.MustToJSONBytes(body),
+	}
+	return client.doRequest(req, nil)
+}
 
-var(
-	hClient *http.Client
-	hClientOnce = sync.Once{}
-)
+func (client *Client) SaveDynamicConfig(ctx context.Context, agentBaseURL string, name, content string) error{
+	body := util.MapStr{
+		"configs": util.MapStr{
+			name: content,
+		},
+	}
+	req := &util.Request{
+		Method: http.MethodPost,
+		Url:     fmt.Sprintf("%s/agent/config", agentBaseURL),
+		Context: ctx,
+		Body: util.MustToJSONBytes(body),
+	}
+	return client.doRequest(req, nil)
+}
+
+
 func (client *Client) doRequest(req *util.Request, respObj interface{}) error {
-	agCfg := common.GetAgentConfig()
-	var err error
-	hClientOnce.Do(func() {
-		var (
-			instanceCrt string
-			instanceKey string
-		)
-		instanceCrt, instanceKey, err = getAgentInstanceCerts(agCfg.Setup.CACertFile, agCfg.Setup.CAKeyFile)
-		hClient, err = util.NewMTLSClient(agCfg.Setup.CACertFile, instanceCrt, instanceKey)
-	})
-	if err != nil {
-		return err
-	}
-	var reader io.Reader
-	if len(req.Body) > 0 {
-		reader = bytes.NewReader(req.Body)
-	}
-
-	var hr *http.Request
-	if req.Context == nil {
-		hr, err = http.NewRequest(req.Method, req.Url, reader)
-	}else{
-		hr, err = http.NewRequestWithContext(req.Context, req.Method, req.Url, reader)
-	}
-	if err != nil {
-		return err
-	}
-	res, err := hClient.Do(hr)
-	if err != nil {
-		return err
-	}
-	if respObj != nil {
-		defer res.Body.Close()
-		buf, err := io.ReadAll(res.Body)
-		if err != nil {
-			return err
-		}
-		err = util.FromJSONBytes(buf, respObj)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return client.Executor.DoRequest(req, respObj)
 }
 
-func getAgentInstanceCerts(caFile, caKey string) (string, string, error) {
-	dataDir := global.Env().GetDataDir()
-	instanceCrt := path.Join(dataDir, "certs/agent/instance.crt")
-	instanceKey := path.Join(dataDir, "certs/agent/instance.key")
-	var (
-		err error
-		clientCertPEM []byte
-		clientKeyPEM []byte
-	)
-	if util.FileExists(instanceCrt) && util.FileExists(instanceKey) {
-		return instanceCrt, instanceKey, nil
-	}
-	_, clientCertPEM, clientKeyPEM, err = common.GenerateClientCert(caFile, caKey)
-	if err != nil {
-		return "", "", err
-	}
-	baseDir := path.Join(dataDir, "certs/agent")
-	if !util.IsExist(baseDir){
-		err = os.MkdirAll(baseDir, 0775)
-		if err != nil {
-			return "", "", err
-		}
-	}
-	_, err = util.FilePutContentWithByte(instanceCrt, clientCertPEM)
-	if err != nil {
-		return "", "", err
-	}
-	_, err = util.FilePutContentWithByte(instanceKey, clientKeyPEM)
-	if err != nil {
-		return "", "", err
-	}
-	return instanceCrt, instanceKey, nil
-}

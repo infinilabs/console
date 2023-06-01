@@ -17,9 +17,10 @@ import (
 	"infini.sh/framework/core/kv"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
+	"infini.sh/framework/modules/elastic"
 	"runtime"
 	"runtime/debug"
-	"strings"
+	"src/gopkg.in/yaml.v2"
 	"sync"
 	"time"
 )
@@ -63,13 +64,13 @@ type StateManager struct {
 	timestamps map[string]int64
 }
 
-func NewStateManager(TTL time.Duration, kvKey string, agentIds map[string]string) *StateManager {
+func NewStateManager(TTL time.Duration, kvKey string, agentIds map[string]string, agentClient *client.Client) *StateManager {
 	return &StateManager{
 		TTL:           TTL,
 		KVKey:         kvKey,
 		stopC:         make(chan struct{}),
 		stopCompleteC: make(chan struct{}),
-		agentClient:   &client.Client{},
+		agentClient:  agentClient,
 		agentIds:      agentIds,
 		workerChan:    make(chan struct{}, runtime.NumCPU()),
 		timestamps: map[string]int64{},
@@ -124,7 +125,9 @@ func (sm *StateManager) checkAgentStatus() {
 			}()
 			ag, err := sm.GetAgent(agentID)
 			if err != nil {
-				log.Error(err)
+				if err != elastic.ErrNotFound {
+					log.Error(err)
+				}
 				return
 			}
 			ag.Status = model.StatusOffline
@@ -142,6 +145,13 @@ func (sm *StateManager) checkAgentStatus() {
 }
 
 func (sm *StateManager) syncSettings(agentID string) {
+	ag, err := sm.GetAgent(agentID)
+	if err != nil {
+		if err != elastic.ErrNotFound {
+			log.Errorf("get agent error: %v", err)
+		}
+		return
+	}
 	newTimestamp := time.Now().UnixMilli()
 	settings, err := common.GetAgentSettings(agentID, sm.timestamps[agentID])
 	if err != nil {
@@ -157,36 +167,58 @@ func (sm *StateManager) syncSettings(agentID string) {
 		log.Errorf("parse agent settings error: %v", err)
 		return
 	}
-	ag, err := sm.GetAgent(agentID)
+	agClient := sm.GetAgentClient()
+	var clusterCfgs []util.MapStr
+	if len(parseResult.ClusterConfigs) > 0 {
+		for _, cfg := range parseResult.ClusterConfigs {
+			clusterCfg := util.MapStr{
+				"name": cfg.ID,
+				"enabled": true,
+				"endpoint": cfg.Endpoint,
+			}
+			if cfg.BasicAuth != nil && cfg.BasicAuth.Password != ""{
+				err = agClient.SetKeystoreValue(context.Background(), ag.GetEndpoint(), fmt.Sprintf("%s_password", cfg.ID), cfg.BasicAuth.Password)
+				if err != nil {
+					log.Errorf("set keystore value error: %v", err)
+					continue
+				}
+				clusterCfg["basic_auth"] = util.MapStr{
+					"username": cfg.BasicAuth.Username,
+					"password": fmt.Sprintf("$[[keystore.%s_password]]", cfg.ID),
+				}
+			}
+			clusterCfgs = append(clusterCfgs, clusterCfg)
+		}
+	}
+	var dynamicCfg = util.MapStr{}
+	if len(clusterCfgs) > 0 {
+		dynamicCfg["elasticsearch"] = clusterCfgs
+	}
+	if len(parseResult.Pipelines) > 0 {
+		dynamicCfg["pipeline"] = parseResult.Pipelines
+	}
+	cfgBytes, err := yaml.Marshal(dynamicCfg)
 	if err != nil {
-		log.Errorf("get agent error: %v", err)
+		log.Error("serialize config to yaml error: ", err)
 		return
 	}
-	agClient := sm.GetAgentClient()
-	if len(parseResult.ClusterConfigs) > 0 {
-		err = agClient.RegisterElasticsearch(nil, ag.GetEndpoint(), parseResult.ClusterConfigs)
-		if err != nil {
-			log.Errorf("register elasticsearch config error: %v", err)
-			return
-		}
-	}
-	for _, pipelineID := range parseResult.ToDeletePipelineNames {
-		err = agClient.DeletePipeline(context.Background(), ag.GetEndpoint(), pipelineID)
-		if err != nil {
-			if !strings.Contains(err.Error(), "not found") {
-				log.Errorf("delete pipeline error: %v", err)
-				continue
-			}
-		}
-		//todo update delete pipeline state
-	}
-	for _, pipeline := range parseResult.Pipelines {
-		err = agClient.CreatePipeline(context.Background(), ag.GetEndpoint(), util.MustToJSONBytes(pipeline))
-		if err != nil {
-			log.Errorf("create pipeline error: %v", err)
-			return
-		}
-	}
+	err = agClient.SaveDynamicConfig(context.Background(), ag.GetEndpoint(), "dynamic_task", string(cfgBytes))
+	//for _, pipelineID := range parseResult.ToDeletePipelineNames {
+	//	err = agClient.DeletePipeline(context.Background(), ag.GetEndpoint(), pipelineID)
+	//	if err != nil {
+	//		if !strings.Contains(err.Error(), "not found") {
+	//			log.Errorf("delete pipeline error: %v", err)
+	//			continue
+	//		}
+	//	}
+	//}
+	//for _, pipeline := range parseResult.Pipelines {
+	//	err = agClient.CreatePipeline(context.Background(), ag.GetEndpoint(), util.MustToJSONBytes(pipeline))
+	//	if err != nil {
+	//		log.Errorf("create pipeline error: %v", err)
+	//		return
+	//	}
+	//}
 	sm.timestamps[agentID] = newTimestamp
 }
 
@@ -239,7 +271,7 @@ func (sm *StateManager) GetAgent(ID string) (*agent.Instance, error) {
 	if time.Since(timestamp) > sm.TTL {
 		exists, err := orm.Get(inst)
 		if err != nil {
-			return nil, fmt.Errorf("get agent [%s] error: %w", ID, err)
+			return nil, err
 		}
 		if !exists {
 			return nil, fmt.Errorf("can not found agent [%s]", ID)

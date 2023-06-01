@@ -9,7 +9,7 @@ type AgentConfig struct {
 	StateManager struct{
 		Enabled bool `config:"enabled"`
 	} `config:"state_manager"`
-	Setup SetupConfig `config:"setup"`
+	Setup *SetupConfig `config:"setup"`
 }
 
 type SetupConfig struct {
@@ -17,5 +17,8 @@ type SetupConfig struct {
 	Version string `config:"version"`
 	CACertFile string `config:"ca_cert"`
 	CAKeyFile string `config:"ca_key"`
-	ScriptEndpoint string `config:"script_endpoint"`
+	ConsoleEndpoint string `config:"console_endpoint"`
+	IngestClusterEndpoint interface{} `config:"ingest_cluster_endpoint"`
+	IngestClusterCredentialID string `config:"ingest_cluster_credential_id"`
+	Port string `config:"port"`
 }

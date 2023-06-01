@@ -23,6 +23,7 @@ import (
 	"infini.sh/framework/modules/elastic/common"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 type APIHandler struct {
@@ -37,22 +38,30 @@ func (h *APIHandler) createInstance(w http.ResponseWriter, req *http.Request, ps
 		log.Error(err)
 		return
 	}
-
-	oldInst := &agent.Instance{}
-	oldInst.ID = obj.ID
-	exists, err := orm.Get(oldInst)
-
-	if err != nil && err != elastic2.ErrNotFound {
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
-		return
+	//validate token for auto register
+	token := h.GetParameter(req, "token")
+	if token != "" {
+		if v, ok := tokens.Load(token); !ok {
+			h.WriteError(w, "token is invalid", http.StatusUnauthorized)
+			return
+		}else{
+			if t, ok := v.(*Token); !ok || t.CreatedAt.Add(ExpiredIn).Before(time.Now()) {
+				tokens.Delete(token)
+				h.WriteError(w, "token was expired", http.StatusUnauthorized)
+				return
+			}
+		}
+		remoteIP := util.ClientIP(req)
+		agCfg := common2.GetAgentConfig()
+		port := agCfg.Setup.Port
+		if port == "" {
+			port = "8080"
+		}
+		obj.Endpoint = fmt.Sprintf("https://%s:%s", remoteIP, port)
+		obj.Tags = append(obj.Tags, "mtls")
+		obj.Tags = append(obj.Tags, "auto")
 	}
-	if exists {
-		errMsg := fmt.Sprintf("agent [%s] already exists", obj.ID)
-		h.WriteError(w, errMsg, http.StatusInternalServerError)
-		log.Error(errMsg)
-		return
-	}
+
 	//fetch more information of agent instance
 	res, err := client.GetClient().GetInstanceBasicInfo(context.Background(), obj.GetEndpoint())
 	if err != nil {
@@ -72,6 +81,24 @@ func (h *APIHandler) createInstance(w http.ResponseWriter, req *http.Request, ps
 		obj.MajorIP = res.MajorIP
 		obj.Host = res.Host
 		obj.IPS = res.IPS
+		if obj.Name == "" {
+			obj.Name = res.Name
+		}
+	}
+	oldInst := &agent.Instance{}
+	oldInst.ID = obj.ID
+	exists, err := orm.Get(oldInst)
+
+	if err != nil && err != elastic2.ErrNotFound {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
+	if exists {
+		errMsg := fmt.Sprintf("agent [%s] already exists", obj.ID)
+		h.WriteError(w, errMsg, http.StatusInternalServerError)
+		log.Error(errMsg)
+		return
 	}
 
 	obj.Status = model.StatusOnline
@@ -85,9 +112,31 @@ func (h *APIHandler) createInstance(w http.ResponseWriter, req *http.Request, ps
 	if err != nil {
 		log.Error(err)
 	}
+	err = pushIngestConfigToAgent(obj)
+	if err != nil {
+		log.Error(err)
+	}
 
 	h.WriteCreatedOKJSON(w, obj.ID)
 
+}
+
+func pushIngestConfigToAgent(inst *agent.Instance) error{
+	ingestCfg, basicAuth, err := common2.GetAgentIngestConfig()
+	if err != nil {
+		return err
+	}
+	if basicAuth != nil && basicAuth.Password != "" {
+		err = client.GetClient().SetKeystoreValue(context.Background(), inst.GetEndpoint(), "ingest_cluster_password", basicAuth.Password)
+		if err != nil {
+			return fmt.Errorf("set keystore value to agent error: %w", err)
+		}
+	}
+	err = client.GetClient().SaveDynamicConfig(context.Background(), inst.GetEndpoint(), "ingest", ingestCfg )
+	if err != nil {
+		fmt.Errorf("save dynamic config to agent error: %w", err)
+	}
+	return nil
 }
 
 func (h *APIHandler) getInstance(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -154,6 +203,22 @@ func (h *APIHandler) deleteInstance(w http.ResponseWriter, req *http.Request, ps
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error("delete node info error: ", err)
+		return
+	}
+
+	queryDsl = util.MapStr{
+		"query": util.MapStr{
+			"term": util.MapStr{
+				"metadata.labels.agent_id": util.MapStr{
+					"value": id,
+				},
+			},
+		},
+	}
+	err = orm.DeleteBy(agent.Setting{}, util.MustToJSONBytes(queryDsl))
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error("delete agent settings error: ", err)
 		return
 	}
 
@@ -499,6 +564,26 @@ func (h *APIHandler) deleteESNode(w http.ResponseWriter, req *http.Request, ps h
 			log.Error(err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
+		}
+		q = util.MapStr{
+			"query": util.MapStr{
+				"bool": util.MapStr{
+					"must": []util.MapStr{
+						{
+							"terms": util.MapStr{
+								"metadata.labels.node_uuid": nodeIDs,
+							},
+						},
+						{
+							"term": util.MapStr{
+								"metadata.labels.agent_id": util.MapStr{
+									"value": id,
+								},
+							},
+						},
+					},
+				},
+			},
 		}
 	}
 	h.WriteAckOKJSON(w)

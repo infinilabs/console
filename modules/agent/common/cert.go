@@ -61,3 +61,37 @@ func generateCert(caFile, caKey string, isServer bool)(caCert, instanceCertPEM, 
 	}
 	return caCert, instanceCertPEM, instanceKeyPEM, nil
 }
+
+func GetAgentInstanceCerts(caFile, caKey string) (string, string, error) {
+	dataDir := global.Env().GetDataDir()
+	instanceCrt := path.Join(dataDir, "certs/agent/instance.crt")
+	instanceKey := path.Join(dataDir, "certs/agent/instance.key")
+	var (
+		err error
+		clientCertPEM []byte
+		clientKeyPEM []byte
+	)
+	if util.FileExists(instanceCrt) && util.FileExists(instanceKey) {
+		return instanceCrt, instanceKey, nil
+	}
+	_, clientCertPEM, clientKeyPEM, err = GenerateClientCert(caFile, caKey)
+	if err != nil {
+		return "", "", err
+	}
+	baseDir := path.Join(dataDir, "certs/agent")
+	if !util.IsExist(baseDir){
+		err = os.MkdirAll(baseDir, 0775)
+		if err != nil {
+			return "", "", err
+		}
+	}
+	_, err = util.FilePutContentWithByte(instanceCrt, clientCertPEM)
+	if err != nil {
+		return "", "", err
+	}
+	_, err = util.FilePutContentWithByte(instanceKey, clientKeyPEM)
+	if err != nil {
+		return "", "", err
+	}
+	return instanceCrt, instanceKey, nil
+}

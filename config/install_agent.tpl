@@ -156,6 +156,8 @@ if [ $? -ne 0 ]; then
 	exit 1
 fi
 
+rm -f ${agent}
+
 ##################
 # save cert
 ##################
@@ -167,14 +169,13 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+port="{{port}}"
+
 ## generate agent.yml
 agent_config="path.configs: "config"
 configs.auto_reload: true
 env:
-  LOGGING_ES_ENDPOINT: {{logging_es_endpoint}}
-  LOGGING_ES_USER: {{logging_es_user}}
-  LOGGING_ES_PASS: {{logging_es_password}}
-  API_BINDING: "0.0.0.0:8080"
+  API_BINDING: "0.0.0.0:${port}"
 
 path.data: data
 path.logs: log
@@ -194,104 +195,6 @@ badger:
   value_log_max_entries: 1000000
   value_log_file_size: 104857600
   value_threshold: 1024
-
-metrics:
-  enabled: true
-  queue: metrics
-  network:
-    enabled: true
-    summary: true
-    details: true
-  memory:
-    metrics:
-      - swap
-      - memory
-  disk:
-    metrics:
-      - iops
-      - usage
-  cpu:
-    metrics:
-      - idle
-      - system
-      - user
-      - iowait
-      - load
-  instance:
-    enabled: true
-
-elasticsearch:
-  - name: default
-    enabled: true
-    endpoint: \$[[env.LOGGING_ES_ENDPOINT]]
-    discovery:
-      enabled: true
-    basic_auth:
-      username: \$[[env.LOGGING_ES_USER]]
-      password: \$[[env.LOGGING_ES_PASS]]
-
-pipeline:
-  - name: logs_indexing_merge
-    auto_start: true
-    keep_running: true
-    processor:
-      - indexing_merge:
-          index_name: ".infini_logs"
-          elasticsearch: "default"
-          input_queue: "logs"
-          idle_timeout_in_seconds: 10
-          output_queue:
-            name: "logs_requests"
-            label:
-              tag: "logs"
-          worker_size: 1
-          bulk_size_in_mb: 10
-  - name: ingest_logs
-    auto_start: true
-    keep_running: true
-    processor:
-      - bulk_indexing:
-          bulk:
-            compress: true
-            batch_size_in_mb: 5
-            batch_size_in_docs: 5000
-          consumer:
-            fetch_max_messages: 100
-          queues:
-            type: indexing_merge
-            tag: "logs"
-          when:
-            cluster_available: ["default"]
-  - name: metrics_indexing_merge
-    auto_start: true
-    keep_running: true
-    processor:
-      - indexing_merge:
-          elasticsearch: "default"
-          index_name: ".infini_metrics"
-          input_queue: "metrics"
-          output_queue:
-            name: "metrics_requests"
-            label:
-              tag: "metrics"
-          worker_size: 1
-          bulk_size_in_mb: 5
-  - name: ingest_metrics
-    auto_start: true
-    keep_running: true
-    processor:
-      - bulk_indexing:
-          bulk:
-            compress: true
-            batch_size_in_mb: 5
-            batch_size_in_docs: 5000
-          consumer:
-            fetch_max_messages: 100
-          queues:
-            type: indexing_merge
-            tag: "metrics"
-          when:
-            cluster_available: ["default"]
 agent:
   major_ip_pattern: "192.*"
 "
@@ -331,6 +234,16 @@ if [ $? -ne 0 ]; then
 fi
 
 printf "\n* agent service started"
+console_endpoint="{{console_endpoint}}"
+sleep 3
+printf "\n* start register\n"
+token={{token}}
+curl -X POST ${console_endpoint}/agent/instance?token=${token}
+
+if [ $? -ne 0 ]; then
+	exit 1
+fi
+printf "\n* agent registered\n"
 
 printf "\n* ${GREEN}Congratulations, install success!${CLR}\n\n"
 

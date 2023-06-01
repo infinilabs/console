@@ -41,7 +41,22 @@ func (module *AgentModule) Start() error {
 	orm.RegisterSchemaWithIndexName(agent.ESNodeInfo{}, "agent-node")
 	orm.RegisterSchemaWithIndexName(host.HostInfo{}, "host")
 	orm.RegisterSchemaWithIndexName(agent.Setting{}, "agent-setting")
-	client.RegisterClient(&client.Client{})
+	var (
+		executor client.Executor
+		err error
+	)
+	if module.AgentConfig.Setup == nil {
+		executor = &client.HttpExecutor{}
+	}else{
+		executor, err = client.NewMTLSExecutor(module.AgentConfig.Setup.CACertFile, module.AgentConfig.Setup.CAKeyFile)
+		if err != nil {
+			panic(err)
+		}
+	}
+	agClient := &client.Client{
+		Executor: executor,
+	}
+	client.RegisterClient(agClient)
 
 	if module.AgentConfig.StateManager.Enabled {
 		onlineAgentIDs, err := common.GetLatestOnlineAgentIDs(nil, 60)
@@ -59,7 +74,7 @@ func (module *AgentModule) Start() error {
 			}
 		}
 
-		sm := state.NewStateManager(time.Second*30, "agent_state", agentIds)
+		sm := state.NewStateManager(time.Second*30, "agent_state", agentIds, agClient)
 		state.RegisterStateManager(sm)
 		go sm.LoopState()
 	}

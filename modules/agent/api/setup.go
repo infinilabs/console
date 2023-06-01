@@ -11,7 +11,6 @@ import (
 	"infini.sh/console/modules/agent/common"
 	"infini.sh/framework/core/api/rbac"
 	httprouter "infini.sh/framework/core/api/router"
-	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/util"
 	"os"
@@ -69,16 +68,16 @@ func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Req
 	}
 	tokens.Store(tokenStr, t)
 	agCfg := common.GetAgentConfig()
-	scriptEndpoint :=  agCfg.Setup.ScriptEndpoint
-	if scriptEndpoint == "" {
+	consoleEndpoint :=  agCfg.Setup.ConsoleEndpoint
+	if consoleEndpoint == "" {
 		scheme := "http"
 		if req.TLS != nil {
 			scheme = "https"
 		}
-		scriptEndpoint = fmt.Sprintf("%s://%s", scheme, req.Host)
+		consoleEndpoint = fmt.Sprintf("%s://%s", scheme, req.Host)
 	}
 	h.WriteJSON(w, util.MapStr{
-		"script": fmt.Sprintf(`sudo bash -c "$(curl -L '%s/agent/install.sh?token=%s')"`, scriptEndpoint, tokenStr),
+		"script": fmt.Sprintf(`sudo bash -c "$(curl -L '%s/agent/install.sh?token=%s')"`, consoleEndpoint, tokenStr),
 		"token": tokenStr,
 		"expired_at": t.CreatedAt.Add(ExpiredIn),
 	}, http.StatusOK)
@@ -120,25 +119,31 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 	if downloadURL == "" {
 		downloadURL = "https://release.infinilabs.com/agent/stable/"
 	}
-	esCfg := elastic.GetConfig(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
-	var (
-		loggingESUser string
-		loggingESPassword string
-	)
-	if esCfg.BasicAuth != nil {
-		loggingESUser = esCfg.BasicAuth.Username
-		loggingESPassword = esCfg.BasicAuth.Password
+	//esCfg := elastic.GetConfig(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
+	//var (
+	//	loggingESUser string
+	//	loggingESPassword string
+	//)
+	//if esCfg.BasicAuth != nil {
+	//	loggingESUser = esCfg.BasicAuth.Username
+	//	loggingESPassword = esCfg.BasicAuth.Password
+	//}
+	port := agCfg.Setup.Port
+	if port == "" {
+		port = "8080"
 	}
 	tpl.Execute(w, map[string]interface{}{
 		"base_url":  agCfg.Setup.DownloadURL,
 		"agent_version": agCfg.Setup.Version,
-		//"console_endpoint": util.MustToJSON(util.MustToJSON(gatewayEndpoints)),
+		"console_endpoint": agCfg.Setup.ConsoleEndpoint,
 		"client_crt": clientCertPEM,
 		"client_key": clientKeyPEM,
 		"ca_crt": caCert,
-		"logging_es_endpoint": esCfg.Endpoint,
-		"logging_es_user": loggingESUser,
-		"logging_es_password": loggingESPassword,
+		"port": port,
+		"token": tokenStr,
+		//"logging_es_endpoint": esCfg.Endpoint,
+		//"logging_es_user": loggingESUser,
+		//"logging_es_password": loggingESPassword,
 	})
 }
 

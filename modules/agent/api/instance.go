@@ -725,6 +725,10 @@ func getAgentTaskSetting(agentID string, node agent.ESNodeInfo) (*agent.Setting,
 	if err != nil {
 		return  nil, err
 	}
+	taskSetting.Logs = &model.LogsTask{
+		Enabled:true,
+		LogsPath: node.Path.Logs,
+	}
 	return &agent.Setting{
 		Metadata: agent.SettingsMetadata{
 			Category: "agent",

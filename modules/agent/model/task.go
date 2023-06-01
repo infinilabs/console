@@ -36,6 +36,7 @@ type NodeStatsTask struct {
 
 type LogsTask struct {
 	Enabled bool `json:"enabled"`
+	LogsPath string `json:"logs_path"`
 }
 
 type ParseAgentSettingsResult struct {

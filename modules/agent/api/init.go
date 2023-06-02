@@ -14,6 +14,7 @@ func Init() {
 	api.HandleAPIMethod(api.POST, "/agent/instance", handler.createInstance)
 	api.HandleAPIMethod(api.GET, "/agent/instance/_search", handler.RequirePermission(handler.searchInstance, enum.PermissionAgentInstanceRead))
 	api.HandleAPIMethod(api.GET, "/agent/instance/:instance_id", handler.getInstance)
+	api.HandleAPIMethod(api.PUT, "/agent/instance/:instance_id", handler.updateInstance)
 	api.HandleAPIMethod(api.DELETE, "/agent/instance/:instance_id", handler.RequirePermission(handler.deleteInstance, enum.PermissionAgentInstanceWrite))
 	api.HandleAPIMethod(api.POST, "/agent/instance/_stats", handler.RequirePermission(handler.getInstanceStats, enum.PermissionAgentInstanceRead))
 	api.HandleAPIMethod(api.GET, "/agent/log/node/:node_id/files", handler.RequirePermission(handler.getLogFilesByNode, enum.PermissionAgentInstanceRead))

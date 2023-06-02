@@ -312,6 +312,52 @@ func (h *APIHandler) getInstanceStats(w http.ResponseWriter, req *http.Request, 
 	h.WriteJSON(w, result, http.StatusOK)
 }
 
+func (h *APIHandler) updateInstance(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	id := ps.MustGetParameter("instance_id")
+	oldInst := agent.Instance{}
+	oldInst.ID = id
+	_, err := orm.Get(&oldInst)
+	if err != nil {
+		if err == elastic2.ErrNotFound {
+			h.WriteJSON(w, util.MapStr{
+				"_id":    id,
+				"result": "not_found",
+			}, http.StatusNotFound)
+			return
+		}
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
+
+	obj := agent.Instance{}
+	err = h.DecodeJSON(req, &obj)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
+
+	oldInst.Name = obj.Name
+	oldInst.Endpoint = obj.Endpoint
+	oldInst.Description = obj.Description
+	oldInst.Tags = obj.Tags
+	oldInst.BasicAuth = obj.BasicAuth
+	err = orm.Update(&orm.Context{
+		Refresh: "wait_for",
+	}, &oldInst)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
+
+	h.WriteJSON(w, util.MapStr{
+		"_id":    obj.ID,
+		"result": "updated",
+	}, 200)
+}
+
 
 func (h *APIHandler) searchInstance(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 

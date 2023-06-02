@@ -37,6 +37,7 @@ func ParseAgentSettings(settings []agent.Setting)(*model.ParseAgentSettingsResul
 				Enabled: true,
 				Name: cfg.Name,
 				BasicAuth: cfg.BasicAuth,
+				//todo get endpoint from agent node info
 				Endpoint: setting.Metadata.Labels["endpoint"].(string),
 			}
 			newCfg.ID = clusterID

@@ -8,12 +8,6 @@ WORKDIR=$WORKBASE/$PNAME
 if [[ $VERSION =~ NIGHTLY ]]; then
   BUILD_NUMBER=$BUILD_DAY
 fi
-if [[ -d $WORKBASE/.public ]]; then
-  rm -rf $WORKBASE/.public
-fi
-if [[ -d $WORKDIR/.public ]]; then
-  mv $WORKDIR/.public $WORKBASE
-fi
 export DOCKER_CLI_EXPERIMENTAL=enabled
 
 #clean all
@@ -35,18 +29,15 @@ cp -rf $WORKBASE/framework/LICENSE $WORKDIR/bin && cat $WORKBASE/framework/NOTIC
 
 cd $WORKDIR/bin
 for t in 386 amd64 arm64 armv5 armv6 armv7 loong64 mips mips64 mips64le mipsle riscv64 ; do
-  echo "package-linux-$t"
   tar zcf ${WORKSPACE}/$PNAME-$VERSION-$BUILD_NUMBER-linux-$t.tar.gz "${PNAME}-linux-$t" $PNAME.yml LICENSE NOTICE 
 done
 
 for t in mac-amd64 mac-arm64 windows-amd64 windows-386 ; do
-  echo "package-$t"
   cd $WORKDIR/bin && zip -qr ${WORKSPACE}/$PNAME-$VERSION-$BUILD_NUMBER-$t.zip $PNAME-$t $PNAME.yml LICENSE NOTICE
 done
 
 #build image & push
 for t in amd64 arm64 ; do
-
   cat <<EOF>Dockerfile
 FROM --platform=linux/$t alpine:3.16.5
 MAINTAINER "hardy <luohoufu@gmail.com>"
@@ -61,9 +52,8 @@ CMD ["/opt/$PNAME/${PNAME}-linux-$t"]
 EOF
 
   docker buildx build -t infinilabs/$PNAME-$t:latest --platform=linux/$t -o type=docker .
-
-  docker tag infinilabs/$PNAME-$t:latest infinilabs/$PNAME-$t:$VERSION-$BUILD_NUMBER
   docker push infinilabs/$PNAME-$t:latest
+  docker tag infinilabs/$PNAME-$t:latest infinilabs/$PNAME-$t:$VERSION-$BUILD_NUMBER
   docker push infinilabs/$PNAME-$t:$VERSION-$BUILD_NUMBER
 done
 

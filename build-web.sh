@@ -15,4 +15,6 @@ git pull origin master
 
 cnpm install
 
-cnpm run build
+cnpm run build >/dev/null
+
+mv $WORKBASE/web/.public $WORKBASE

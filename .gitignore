@@ -1,7 +1,6 @@
 /logs/
-.public
 .public/
-web
+.public/static
 npm-debug.log
 yarn-error.log
 node_modules

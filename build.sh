@@ -8,6 +8,12 @@ WORKDIR=$WORKBASE/$PNAME
 if [[ $VERSION =~ NIGHTLY ]]; then
   BUILD_NUMBER=$BUILD_DAY
 fi
+if [[ -d $WORKBASE/.public ]]; then
+  rm -rf $WORKBASE/.public
+fi
+if [[ -d $WORKDIR/.public ]]; then
+  mv $WORKDIR/.public $WORKBASE
+fi
 export DOCKER_CLI_EXPERIMENTAL=enabled
 
 #clean all

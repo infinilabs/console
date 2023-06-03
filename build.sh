@@ -14,7 +14,7 @@ export DOCKER_CLI_EXPERIMENTAL=enabled
 cd $WORKSPACE && git clean -fxd
 
 #pull code
-cd $WORKDIR && git clean -fxd
+cd $WORKDIR && git clean -fxd -e ".public"
 git stash && git pull origin master
 
  #build

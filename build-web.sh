@@ -16,4 +16,4 @@ git pull origin master
 
 cnpm install --quiet --no-progress
 
-cnpm run build --quiet 
+cnpm run build --quiet &>/dev/null

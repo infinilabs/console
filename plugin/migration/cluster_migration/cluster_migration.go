@@ -78,6 +78,12 @@ func (p *processor) splitMajorMigrationTask(taskItem *task.Task) error {
 	esSourceClient := elastic.GetClient(clusterMigrationTask.Cluster.Source.Id)
 	targetType := common.GetClusterDocType(clusterMigrationTask.Cluster.Target.Id)
 
+	err = migration_util.DeleteChildTasks(taskItem.ID)
+	if err != nil {
+		log.Warnf("failed to clear child tasks, err: %v", err)
+		return nil
+	}
+
 	for _, index := range clusterMigrationTask.Indices {
 		source := migration_model.IndexMigrationSourceConfig{
 			ClusterId:      clusterMigrationTask.Cluster.Source.Id,

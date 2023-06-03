@@ -7,7 +7,8 @@ package api
 import (
 	"fmt"
 	log "github.com/cihub/seelog"
-	"infini.sh/console/modules/agent/common"
+	"infini.sh/console/modules/agent/client"
+	"infini.sh/console/modules/agent/state"
 	"infini.sh/framework/core/agent"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/orm"
@@ -31,7 +32,7 @@ func (h *APIHandler) getLogFilesByNode(w http.ResponseWriter, req *http.Request,
 		}, http.StatusOK)
 		return
 	}
-	logFiles, err := common.GetClient().GetElasticLogFiles(nil, inst.GetEndpoint(), node.Path.Logs)
+	logFiles, err := client.GetClient().GetElasticLogFiles(nil, inst.GetEndpoint(), node.Path.Logs)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -68,7 +69,7 @@ func (h *APIHandler) getLogFileContent(w http.ResponseWriter, req *http.Request,
 		return
 	}
 	reqBody.LogsPath = node.Path.Logs
-	sm := common.GetStateManager()
+	sm := state.GetStateManager()
 	res, err := sm.GetAgentClient().GetElasticLogFileContent(nil, inst.GetEndpoint(), reqBody)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -85,6 +86,13 @@ func getAgentByNodeID(nodeID string) (*agent.Instance, *agent.ESNodeInfo, error)
 			"term": util.MapStr{
 				"node_uuid": util.MapStr{
 					"value": nodeID,
+				},
+			},
+		},
+		"sort": []util.MapStr{
+			{
+				"timestamp": util.MapStr{
+					"order": "desc",
 				},
 			},
 		},

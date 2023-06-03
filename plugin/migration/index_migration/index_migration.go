@@ -7,7 +7,6 @@ import (
 
 	log "github.com/cihub/seelog"
 
-	"infini.sh/console/model"
 	migration_model "infini.sh/console/plugin/migration/model"
 	migration_util "infini.sh/console/plugin/migration/util"
 
@@ -93,6 +92,13 @@ func (p *processor) handleSplitSubTask(taskItem *task.Task) error {
 	if len(taskItem.ParentId) == 0 {
 		return fmt.Errorf("got wrong parent id of task [%v]", *taskItem)
 	}
+
+	err = migration_util.DeleteChildTasks(taskItem.ID)
+	if err != nil {
+		log.Warnf("failed to clear child tasks, err: %v", err)
+		return nil
+	}
+
 	indexName := cfg.Source.Indices
 	scrollTask := &task.Task{
 		ParentId:    pids,
@@ -503,14 +509,12 @@ func (p *processor) getScrollBulkPipelineTasks(taskItem *task.Task) (scrollTask 
 func (p *processor) cleanGatewayQueue(taskItem *task.Task) {
 	log.Debugf("cleaning gateway queue for task [%s]", taskItem.ID)
 
-	var err error
-	instance := model.Instance{}
-	instance.ID, _ = util.ExtractString(taskItem.Metadata.Labels["execution_instance_id"])
-	if instance.ID == "" {
+	instanceID, _ := util.ExtractString(taskItem.Metadata.Labels["execution_instance_id"])
+	if instanceID == "" {
 		log.Debugf("task [%s] not scheduled yet, skip cleaning queue", taskItem.ID)
 		return
 	}
-	_, err = orm.Get(&instance)
+	instance, err := p.scheduler.GetInstance(instanceID)
 	if err != nil {
 		log.Errorf("failed to get instance, err: %v", err)
 		return
@@ -530,10 +534,8 @@ func (p *processor) cleanGatewayQueue(taskItem *task.Task) {
 func (p *processor) resetGatewayQueue(taskItem *task.Task) error {
 	log.Debugf("resetting gateway queue offset for task [%s]", taskItem.ID)
 
-	var err error
-	instance := model.Instance{}
-	instance.ID, _ = util.ExtractString(taskItem.Metadata.Labels["execution_instance_id"])
-	_, err = orm.Get(&instance)
+	instanceID, _ := util.ExtractString(taskItem.Metadata.Labels["execution_instance_id"])
+	instance, err := p.scheduler.GetInstance(instanceID)
 	if err != nil {
 		log.Errorf("failed to get instance, err: %v", err)
 		return err

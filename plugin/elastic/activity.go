@@ -261,6 +261,10 @@ func (processor *ActivityProcessor) HandleMessage(ctx *pipeline.Context, qConfig
 
 		ctx1, messages, timeout, err := queue.Consume(qConfig, consumer, offset)
 
+		if len(messages)==0{
+			time.Sleep(time.Millisecond * time.Duration(500))
+		}
+
 		if timeout {
 			log.Tracef("timeout on queue:[%v]", qConfig.Name)
 			ctx.Failed(fmt.Errorf("timeout on queue:[%v]", qConfig.Name))

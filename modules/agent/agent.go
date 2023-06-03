@@ -7,7 +7,10 @@ package agent
 import (
 	log "github.com/cihub/seelog"
 	"infini.sh/console/modules/agent/api"
+	"infini.sh/console/modules/agent/client"
 	"infini.sh/console/modules/agent/common"
+	"infini.sh/console/modules/agent/model"
+	"infini.sh/console/modules/agent/state"
 	"infini.sh/framework/core/agent"
 	"infini.sh/framework/core/env"
 	"infini.sh/framework/core/host"
@@ -38,7 +41,22 @@ func (module *AgentModule) Start() error {
 	orm.RegisterSchemaWithIndexName(agent.ESNodeInfo{}, "agent-node")
 	orm.RegisterSchemaWithIndexName(host.HostInfo{}, "host")
 	orm.RegisterSchemaWithIndexName(agent.Setting{}, "agent-setting")
-	common.RegisterClient(&common.Client{})
+	var (
+		executor client.Executor
+		err error
+	)
+	if module.AgentConfig.Setup == nil {
+		executor = &client.HttpExecutor{}
+	}else{
+		executor, err = client.NewMTLSExecutor(module.AgentConfig.Setup.CACertFile, module.AgentConfig.Setup.CAKeyFile)
+		if err != nil {
+			panic(err)
+		}
+	}
+	agClient := &client.Client{
+		Executor: executor,
+	}
+	client.RegisterClient(agClient)
 
 	if module.AgentConfig.StateManager.Enabled {
 		onlineAgentIDs, err := common.GetLatestOnlineAgentIDs(nil, 60)
@@ -56,8 +74,8 @@ func (module *AgentModule) Start() error {
 			}
 		}
 
-		sm := common.NewStateManager(time.Second*30, "agent_state", agentIds)
-		common.RegisterStateManager(sm)
+		sm := state.NewStateManager(time.Second*30, "agent_state", agentIds, agClient)
+		state.RegisterStateManager(sm)
 		go sm.LoopState()
 	}
 	return nil
@@ -69,12 +87,12 @@ func (module *AgentModule) Stop() error {
 	}
 	log.Info("start to stop agent module")
 	if module.AgentConfig.StateManager.Enabled {
-		common.GetStateManager().Stop()
+		state.GetStateManager().Stop()
 	}
 	log.Info("agent module was stopped")
 	return nil
 }
 
 type AgentModule struct {
-	common.AgentConfig
+	model.AgentConfig
 }

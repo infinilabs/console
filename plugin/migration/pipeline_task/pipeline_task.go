@@ -14,7 +14,6 @@ import (
 	migration_util "infini.sh/console/plugin/migration/util"
 
 	"infini.sh/framework/core/elastic"
-	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/task"
 	"infini.sh/framework/core/util"
 )
@@ -23,13 +22,16 @@ type processor struct {
 	Elasticsearch string
 	IndexName     string
 	LogIndexName  string
+
+	scheduler migration_model.Scheduler
 }
 
-func NewProcessor(elasticsearch, indexName, logIndexName string) migration_model.Processor {
+func NewProcessor(elasticsearch, indexName, logIndexName string, scheduler migration_model.Scheduler) migration_model.Processor {
 	return &processor{
 		Elasticsearch: elasticsearch,
 		IndexName:     indexName,
 		LogIndexName:  logIndexName,
+		scheduler:     scheduler,
 	}
 }
 
@@ -167,9 +169,10 @@ func (p *processor) handlePendingStopPipelineTask(taskItem *task.Task) error {
 	return nil
 }
 
-func (p *processor) cleanGatewayPipeline(taskItem *task.Task) (instance model.Instance, err error) {
+func (p *processor) cleanGatewayPipeline(taskItem *task.Task) (instance *model.Instance, err error) {
 	instance, err = p.getPipelineExecutionInstance(taskItem)
 	if err != nil {
+		log.Errorf("failed to get execution instance for task [%s], err: %v", taskItem.ID, err)
 		return
 	}
 	err = instance.DeletePipeline(taskItem.ID)
@@ -181,19 +184,13 @@ func (p *processor) cleanGatewayPipeline(taskItem *task.Task) (instance model.In
 	return instance, nil
 }
 
-func (p *processor) getPipelineExecutionInstance(taskItem *task.Task) (instance model.Instance, err error) {
-	instanceID := taskItem.Metadata.Labels["execution_instance_id"]
-	instance.ID, err = util.ExtractString(instanceID)
+func (p *processor) getPipelineExecutionInstance(taskItem *task.Task) (*model.Instance, error) {
+	instanceID, _ := util.ExtractString(taskItem.Metadata.Labels["execution_instance_id"])
+	instance, err := p.scheduler.GetInstance(instanceID)
 	if err != nil {
-		log.Error("failed to get execution_instance_id")
-		return
+		return nil, err
 	}
-	_, err = orm.Get(&instance)
-	if err != nil {
-		log.Errorf("failed to get instance, err: %v", err)
-		return
-	}
-	return
+	return instance, nil
 }
 
 func (p *processor) getPipelineLogs(taskItem *task.Task, status []string, timestampGte int64) ([]util.MapStr, error) {

@@ -6,6 +6,7 @@ package model
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -67,6 +68,25 @@ func (inst *Instance) DeletePipeline(pipelineID string) error {
 		Url:    fmt.Sprintf("%s/pipeline/task/%s", inst.Endpoint, pipelineID),
 	}
 	return inst.doRequest(req, nil)
+}
+
+func (inst *Instance) GetPipeline(pipelineID string) (*pipeline.PipelineStatus, error) {
+	if pipelineID == "" {
+		return nil, errors.New("invalid pipelineID")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	req := &util.Request{
+		Method:  http.MethodGet,
+		Url:     fmt.Sprintf("%s/pipeline/task/%s", inst.Endpoint, pipelineID),
+		Context: ctx,
+	}
+	res := pipeline.PipelineStatus{}
+	err := inst.doRequest(req, &res)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
 }
 
 func (inst *Instance) GetPipelinesByIDs(pipelineIDs []string) (pipeline.GetPipelinesResponse, error) {

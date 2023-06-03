@@ -15,6 +15,6 @@ git pull origin master
 
 cnpm install
 
-cnpm run build >/dev/null
+cnpm run --silent build
 
 mv $WORKBASE/web/.public $WORKBASE

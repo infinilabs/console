@@ -15,8 +15,11 @@ cd $WORKBASE/web
 echo "build console ui to .public."
 git pull origin master
 
-cnpm install --quiet
+echo "loglevel=silent" > .npmrc
 
-cnpm run build --silent
+cnpm install --quiet --no-progress
 
+cnpm run -s build 
+
+echo "move .public to $WORKBAS"
 mv $WORKBASE/web/.public $WORKBASE

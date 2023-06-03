@@ -1,5 +1,6 @@
 /logs/
 .public
+.public/
 web
 npm-debug.log
 yarn-error.log

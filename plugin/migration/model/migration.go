@@ -33,6 +33,7 @@ type ClusterMigrationIndexConfig struct {
 	RawFilter   interface{}            `json:"raw_filter"`
 	IndexRename map[string]interface{} `json:"index_rename"`
 	TypeRename  map[string]interface{} `json:"type_rename"`
+	Incremental *IndexIncremental      `json:"incremental"`
 	Partition   *IndexPartition        `json:"partition,omitempty"`
 
 	// only used in API
@@ -41,8 +42,10 @@ type ClusterMigrationIndexConfig struct {
 }
 
 type ClusterMigrationTaskState struct {
-	IndexDocs int64
-	Status    string
+	IndexDocs       int64
+	SourceDocs      int64
+	ErrorPartitions int64
+	Status          string
 }
 
 const (

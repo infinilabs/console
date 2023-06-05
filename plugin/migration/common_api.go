@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	log "github.com/cihub/seelog"
 
@@ -64,6 +65,11 @@ func (h *APIHandler) searchTask(taskType string) func(w http.ResponseWriter, req
 			"query": util.MapStr{
 				"bool": util.MapStr{
 					"must": mustQ,
+					"must_not": util.MapStr{
+						"exists": util.MapStr{
+							"field": "parent_id",
+						},
+					},
 				},
 			},
 		}
@@ -110,6 +116,14 @@ func (h *APIHandler) populateMajorTaskInfo(taskID string, sourceM util.MapStr) {
 			return
 		}
 		sourceM.Put("metadata.labels.target_total_docs", ts.IndexDocs)
+		sourceM.Put("metadata.labels.source_total_docs", ts.SourceDocs)
+		sourceM.Put("metadata.labels.error_partitions", ts.ErrorPartitions)
+		count, err := migration_util.CountRunningChildren(taskID, "index_migration")
+		if err != nil {
+			log.Warnf("failed to count running children, err: %v", err)
+			return
+		}
+		sourceM.Put("running_children", count)
 	case "cluster_comparison":
 		ts, _, err := h.getComparisonMajorTaskInfo(taskID)
 		if err != nil {
@@ -117,8 +131,23 @@ func (h *APIHandler) populateMajorTaskInfo(taskID string, sourceM util.MapStr) {
 			return
 		}
 		sourceM.Put("metadata.labels.source_scroll_docs", ts.SourceScrollDocs)
+		sourceM.Put("metadata.labels.source_total_docs", ts.SourceTotalDocs)
+		sourceM.Put("metadata.labels.target_total_docs", ts.TargetTotalDocs)
 		sourceM.Put("metadata.labels.target_scroll_docs", ts.TargetScrollDocs)
+		sourceM.Put("metadata.labels.total_diff_docs", ts.TotalDiffDocs)
+		count, err := migration_util.CountRunningChildren(taskID, "index_comparison")
+		if err != nil {
+			log.Warnf("failed to count running children, err: %v", err)
+			return
+		}
+		sourceM.Put("running_children", count)
 	}
+	_, repeatStatus, err := h.calcRepeatingStatus(&majorTask)
+	if err != nil {
+		log.Warnf("failed to calc repeat info, err: %v", err)
+		return
+	}
+	sourceM.Put("repeat", repeatStatus)
 }
 
 func (h *APIHandler) startTask(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -136,6 +165,13 @@ func (h *APIHandler) startTask(w http.ResponseWriter, req *http.Request, ps http
 		return
 	}
 	obj.Status = task.StatusReady
+	if _, ok := obj.Metadata.Labels["next_run_time"]; !ok {
+		startTime := time.Now().UnixMilli()
+		// only set for initial cluster-level tasks
+		if len(obj.ParentId) == 0 {
+			obj.Metadata.Labels["next_run_time"] = startTime
+		}
+	}
 
 	err = orm.Update(nil, &obj)
 	if err != nil {
@@ -166,41 +202,6 @@ func (h *APIHandler) startTask(w http.ResponseWriter, req *http.Request, ps http
 		}
 		migration_util.WriteLog(&parentTask, nil, fmt.Sprintf("child [%s] task [%s] manually started", obj.Metadata.Type, taskID))
 	}
-
-	h.WriteJSON(w, util.MapStr{
-		"success": true,
-	}, 200)
-}
-
-func (h *APIHandler) stopTask(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	id := ps.MustGetParameter("task_id")
-	obj := task.Task{}
-	obj.ID = id
-
-	exists, err := orm.Get(&obj)
-	if !exists || err != nil {
-		h.WriteJSON(w, util.MapStr{
-			"_id":   id,
-			"found": false,
-		}, http.StatusNotFound)
-		return
-	}
-	if task.IsEnded(obj.Status) {
-		h.WriteJSON(w, util.MapStr{
-			"success": true,
-		}, 200)
-		return
-	}
-	obj.Status = task.StatusPendingStop
-	err = orm.Update(nil, &obj)
-	if err != nil {
-		log.Error(err)
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	migration_util.WriteLog(&obj, &task.TaskResult{
-		Success: true,
-	}, "task status manually set to pending stop")
 
 	h.WriteJSON(w, util.MapStr{
 		"success": true,
@@ -265,4 +266,173 @@ func (h *APIHandler) deleteTask(w http.ResponseWriter, req *http.Request, ps htt
 		"_id":    obj.ID,
 		"result": "deleted",
 	}, 200)
+}
+
+// resume an repeating task
+func (h *APIHandler) resumeTask(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	taskID := ps.MustGetParameter("task_id")
+	obj := task.Task{}
+
+	obj.ID = taskID
+	exists, err := orm.Get(&obj)
+	if !exists || err != nil {
+		h.WriteError(w, fmt.Sprintf("task [%s] not found", taskID), http.StatusInternalServerError)
+		return
+	}
+	if len(obj.ParentId) > 0 {
+		h.WriteError(w, fmt.Sprintf("can't resume on a child task", taskID), http.StatusInternalServerError)
+		return
+	}
+	lastRepeatingChild, repeatStatus, err := h.calcRepeatingStatus(&obj)
+	if err != nil {
+		h.WriteError(w, fmt.Sprintf("failed to get repeating status", taskID), http.StatusInternalServerError)
+		return
+	}
+	if !repeatStatus.IsRepeat {
+		h.WriteError(w, fmt.Sprintf("not a repeating task", taskID), http.StatusInternalServerError)
+		return
+	}
+	if repeatStatus.Done {
+		h.WriteError(w, fmt.Sprintf("repeat task done", taskID), http.StatusInternalServerError)
+		return
+	}
+	if repeatStatus.Repeating {
+		h.WriteJSON(w, util.MapStr{
+			"success": true,
+		}, 200)
+		return
+	}
+
+	lastRepeatingChild.Metadata.Labels["repeat_triggered"] = false
+	err = orm.Update(nil, lastRepeatingChild)
+	if err != nil {
+		log.Errorf("failed to update last child, err: %v", err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	migration_util.WriteLog(&obj, nil, fmt.Sprintf("repeating task [%s] manually resumed", obj.Metadata.Type, taskID))
+	h.WriteJSON(w, util.MapStr{
+		"success": true,
+	}, 200)
+	return
+}
+
+type RepeatStatus struct {
+	IsRepeat  bool `json:"is_repeat"`
+	Done      bool `json:"done"`
+	Repeating bool `json:"repeating"`
+}
+
+func (h *APIHandler) calcRepeatingStatus(taskItem *task.Task) (*task.Task, *RepeatStatus, error) {
+	ret := &RepeatStatus{}
+	lastRepeatingChild, err := migration_util.GetLastRepeatingChildTask(taskItem.ID, taskItem.Metadata.Type)
+	if err != nil {
+		return nil, nil, err
+	}
+	if lastRepeatingChild == nil {
+		lastRepeatingChild = taskItem
+	}
+
+	isRepeat := migration_util.GetMapBoolValue(lastRepeatingChild.Metadata.Labels, "is_repeat")
+	if !isRepeat {
+		return lastRepeatingChild, ret, nil
+	}
+	ret.IsRepeat = isRepeat
+
+	repeatDone := migration_util.GetMapBoolValue(lastRepeatingChild.Metadata.Labels, "repeat_done")
+	if repeatDone {
+		ret.Done = true
+		return lastRepeatingChild, ret, nil
+	}
+	repeatTriggered := migration_util.GetMapBoolValue(lastRepeatingChild.Metadata.Labels, "repeat_triggered")
+	if !repeatTriggered {
+		ret.Repeating = true
+	}
+	return lastRepeatingChild, ret, nil
+}
+
+func (h *APIHandler) stopTask(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	id := ps.MustGetParameter("task_id")
+	obj := task.Task{}
+	obj.ID = id
+
+	exists, err := orm.Get(&obj)
+	if !exists || err != nil {
+		h.WriteJSON(w, util.MapStr{
+			"_id":   id,
+			"found": false,
+		}, http.StatusNotFound)
+		return
+	}
+	if task.IsEnded(obj.Status) {
+		h.WriteJSON(w, util.MapStr{
+			"success": true,
+		}, 200)
+		return
+	}
+	obj.Status = task.StatusPendingStop
+	err = orm.Update(nil, &obj)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	migration_util.WriteLog(&obj, &task.TaskResult{
+		Success: true,
+	}, "task status manually set to pending stop")
+
+	h.WriteJSON(w, util.MapStr{
+		"success": true,
+	}, 200)
+}
+
+// pause an repeating task
+func (h *APIHandler) pauseTask(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	taskID := ps.MustGetParameter("task_id")
+	obj := task.Task{}
+
+	obj.ID = taskID
+	exists, err := orm.Get(&obj)
+	if !exists || err != nil {
+		h.WriteError(w, fmt.Sprintf("task [%s] not found", taskID), http.StatusInternalServerError)
+		return
+	}
+	if len(obj.ParentId) > 0 {
+		h.WriteError(w, fmt.Sprintf("can't pause on a child task", taskID), http.StatusInternalServerError)
+		return
+	}
+	lastRepeatingChild, repeatStatus, err := h.calcRepeatingStatus(&obj)
+	if err != nil {
+		h.WriteError(w, fmt.Sprintf("failed to get repeating status", taskID), http.StatusInternalServerError)
+		return
+	}
+	if !repeatStatus.IsRepeat {
+		h.WriteError(w, fmt.Sprintf("not a repeating task", taskID), http.StatusInternalServerError)
+		return
+	}
+	if repeatStatus.Done {
+		h.WriteError(w, fmt.Sprintf("repeat task done", taskID), http.StatusInternalServerError)
+		return
+	}
+	if !repeatStatus.Repeating {
+		h.WriteJSON(w, util.MapStr{
+			"success": true,
+		}, 200)
+		return
+	}
+
+	lastRepeatingChild.Metadata.Labels["repeat_triggered"] = true
+	err = orm.Update(nil, lastRepeatingChild)
+	if err != nil {
+		log.Errorf("failed to update last child, err: %v", err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	migration_util.WriteLog(&obj, nil, fmt.Sprintf("repeating task [%s] manually paused", taskID))
+	h.WriteJSON(w, util.MapStr{
+		"success": true,
+	}, 200)
+	return
 }

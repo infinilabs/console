@@ -53,7 +53,7 @@ func (p *processor) handlePendingStopSubTask(taskItem *task.Task) error {
 		return nil
 	}
 
-	tasks, err := migration_util.GetPendingChildTasks(p.Elasticsearch, p.IndexName, taskItem.ID, "pipeline")
+	tasks, err := migration_util.GetPendingChildTasks(taskItem.ID, "pipeline")
 	if err != nil {
 		log.Errorf("failed to get sub tasks, err: %v", err)
 		return nil
@@ -93,7 +93,7 @@ func (p *processor) handleSplitSubTask(taskItem *task.Task) error {
 		return fmt.Errorf("got wrong parent id of task [%v]", *taskItem)
 	}
 
-	err = migration_util.DeleteChildTasks(taskItem.ID)
+	err = migration_util.DeleteChildTasks(taskItem.ID, "pipeline")
 	if err != nil {
 		log.Warnf("failed to clear child tasks, err: %v", err)
 		return nil
@@ -474,7 +474,7 @@ func (p *processor) checkBulkPipelineTaskStatus(bulkTask *task.Task, cfg *migrat
 }
 
 func (p *processor) getExecutionConfigFromMajorTask(taskItem *task.Task) (config migration_model.ExecutionConfig, err error) {
-	majorTaskID := taskItem.ParentId[0]
+	majorTaskID := migration_util.GetDirectParentId(taskItem.ParentId)
 	majorTask := task.Task{}
 	majorTask.ID = majorTaskID
 	_, err = orm.Get(&majorTask)
@@ -493,7 +493,7 @@ func (p *processor) getExecutionConfigFromMajorTask(taskItem *task.Task) (config
 }
 
 func (p *processor) getScrollBulkPipelineTasks(taskItem *task.Task) (scrollTask *task.Task, bulkTask *task.Task, err error) {
-	ptasks, err := migration_util.GetChildTasks(p.Elasticsearch, p.IndexName, taskItem.ID, "pipeline", nil)
+	ptasks, err := migration_util.GetChildTasks(taskItem.ID, "pipeline", nil)
 	if err != nil {
 		log.Errorf("failed to get pipeline tasks, err: %v", err)
 		return

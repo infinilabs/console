@@ -4,13 +4,13 @@ import (
 	"fmt"
 
 	log "github.com/cihub/seelog"
-	"infini.sh/framework/core/elastic"
+
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/task"
 	"infini.sh/framework/core/util"
 )
 
-func DeleteChildTasks(taskID string) error {
+func DeleteChildTasks(taskID string, taskType string) error {
 	q := util.MapStr{
 		"query": util.MapStr{
 			"bool": util.MapStr{
@@ -20,6 +20,11 @@ func DeleteChildTasks(taskID string) error {
 							"parent_id": util.MapStr{
 								"value": taskID,
 							},
+						},
+					},
+					{
+						"term": util.MapStr{
+							"metadata.type": taskType,
 						},
 					},
 				},
@@ -33,11 +38,78 @@ func DeleteChildTasks(taskID string) error {
 	return nil
 }
 
-func GetPendingChildTasks(elasticsearch, indexName string, taskID string, taskType string) ([]task.Task, error) {
-	return GetChildTasks(elasticsearch, indexName, taskID, taskType, []string{task.StatusRunning, task.StatusPendingStop, task.StatusReady})
+func GetLastRepeatingChildTask(taskID string, taskType string) (*task.Task, error) {
+	queryDsl := util.MapStr{
+		"size": 1,
+		"sort": []util.MapStr{
+			{
+				"metadata.labels.next_run_time": util.MapStr{
+					"order": "desc",
+				},
+			},
+		},
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": []util.MapStr{
+					{
+						"term": util.MapStr{
+							"metadata.type": taskType,
+						},
+					},
+					{
+						"term": util.MapStr{
+							"parent_id": util.MapStr{
+								"value": taskID,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	tasks, err := GetTasks(queryDsl)
+	if err != nil {
+		return nil, err
+	}
+	if len(tasks) == 0 {
+		return nil, nil
+	}
+	return &tasks[0], nil
 }
 
-func GetChildTasks(elasticsearch, indexName string, taskID string, taskType string, status []string) ([]task.Task, error) {
+func GetPendingChildTasks(taskID string, taskType string) ([]task.Task, error) {
+	return GetChildTasks(taskID, taskType, []string{task.StatusRunning, task.StatusPendingStop, task.StatusReady})
+}
+
+func CountRunningChildren(taskID string, taskType string) (int64, error) {
+	return CountTasks(util.MapStr{
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": []util.MapStr{
+					{
+						"term": util.MapStr{
+							"metadata.type": taskType,
+						},
+					},
+					{
+						"term": util.MapStr{
+							"parent_id": util.MapStr{
+								"value": taskID,
+							},
+						},
+					},
+					{
+						"terms": util.MapStr{
+							"status": []string{task.StatusRunning, task.StatusPendingStop, task.StatusReady},
+						},
+					},
+				},
+			},
+		},
+	})
+}
+
+func GetChildTasks(taskID string, taskType string, status []string) ([]task.Task, error) {
 	musts := []util.MapStr{
 		{
 			"term": util.MapStr{
@@ -67,22 +139,27 @@ func GetChildTasks(elasticsearch, indexName string, taskID string, taskType stri
 			},
 		},
 	}
-	return GetTasks(elasticsearch, indexName, queryDsl)
+	return GetTasks(queryDsl)
 }
 
-func GetTasks(elasticsearch, indexName string, query util.MapStr) ([]task.Task, error) {
-	esClient := elastic.GetClient(elasticsearch)
-	res, err := esClient.SearchWithRawQueryDSL(indexName, util.MustToJSONBytes(query))
+func CountTasks(query util.MapStr) (int64, error) {
+	return orm.Count(task.Task{}, util.MustToJSONBytes(query))
+}
+
+func GetTasks(query util.MapStr) ([]task.Task, error) {
+	err, res := orm.Search(task.Task{}, &orm.Query{
+		RawQuery: util.MustToJSONBytes(query),
+	})
 	if err != nil {
 		log.Errorf("query tasks from es failed, err: %v", err)
 		return nil, err
 	}
-	if res.GetTotal() == 0 {
+	if res.Total == 0 {
 		return nil, nil
 	}
 	var tasks []task.Task
-	for _, hit := range res.Hits.Hits {
-		buf, err := util.ToJSONBytes(hit.Source)
+	for _, row := range res.Result {
+		buf, err := util.ToJSONBytes(row)
 		if err != nil {
 			log.Errorf("marshal task json failed, err: %v", err)
 			return nil, err
@@ -92,6 +169,9 @@ func GetTasks(elasticsearch, indexName string, query util.MapStr) ([]task.Task, 
 		if err != nil {
 			log.Errorf("unmarshal task json failed, err: %v", err)
 			return nil, err
+		}
+		if tk.Metadata.Labels == nil {
+			continue
 		}
 		tasks = append(tasks, tk)
 	}

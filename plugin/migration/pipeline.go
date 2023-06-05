@@ -110,6 +110,10 @@ func (p *DispatcherProcessor) Name() string {
 }
 
 func (p *DispatcherProcessor) Process(ctx *pipeline.Context) error {
+	// handle repeating tasks
+	p.handleRepeatingTasks(ctx, "cluster_comparison")
+	p.handleRepeatingTasks(ctx, "cluster_migration")
+
 	// handle pipeline task
 	p.handleTasks(ctx, "pipeline", []string{task2.StatusReady, task2.StatusRunning, task2.StatusPendingStop}, p.pipelineTaskProcessor.Process)
 
@@ -203,7 +207,7 @@ func (p *DispatcherProcessor) getMigrationTasks(taskType string, taskStatus []st
 			},
 		},
 	}
-	return migration_util.GetTasks(p.config.Elasticsearch, p.config.IndexName, queryDsl)
+	return migration_util.GetTasks(queryDsl)
 }
 
 func (p *DispatcherProcessor) saveTaskAndWriteLog(taskItem *task2.Task, taskResult *task2.TaskResult, message string) {

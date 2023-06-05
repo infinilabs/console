@@ -63,7 +63,7 @@ func (p *processor) handleSplitSubTask(taskItem *task.Task) error {
 		return fmt.Errorf("got wrong parent id of task [%v]", *taskItem)
 	}
 
-	err = migration_util.DeleteChildTasks(taskItem.ID)
+	err = migration_util.DeleteChildTasks(taskItem.ID, "pipeline")
 	if err != nil {
 		log.Warnf("failed to clear child tasks, err: %v", err)
 		return nil
@@ -344,6 +344,7 @@ func (p *processor) handleRunningSubTask(taskItem *task.Task) error {
 		taskItem.Metadata.Labels["target_scrolled"] = targetDocs
 		if sourceDocs != targetDocs {
 			now := time.Now()
+			taskItem.Metadata.Labels["total_diff_docs"] = sourceDocs
 			taskItem.CompletedTime = &now
 			taskItem.Status = task.StatusError
 			p.saveTaskAndWriteLog(taskItem, &task.TaskResult{
@@ -372,6 +373,7 @@ func (p *processor) handleRunningSubTask(taskItem *task.Task) error {
 			)
 			if onlyInSource > 0 || onlyInTarget > 0 || diffBoth > 0 {
 				now := time.Now()
+				taskItem.Metadata.Labels["total_diff_docs"] = onlyInSource + onlyInTarget + diffBoth
 				taskItem.CompletedTime = &now
 				taskItem.Status = task.StatusError
 				p.saveTaskAndWriteLog(taskItem, &task.TaskResult{
@@ -416,7 +418,7 @@ func (p *processor) handlePendingStopSubTask(taskItem *task.Task) error {
 		return nil
 	}
 
-	tasks, err := migration_util.GetPendingChildTasks(p.Elasticsearch, p.IndexName, taskItem.ID, "pipeline")
+	tasks, err := migration_util.GetPendingChildTasks(taskItem.ID, "pipeline")
 	if err != nil {
 		log.Errorf("failed to get sub tasks, err: %v", err)
 		return nil
@@ -431,7 +433,7 @@ func (p *processor) handlePendingStopSubTask(taskItem *task.Task) error {
 }
 
 func (p *processor) getPipelineTasks(taskItem *task.Task, cfg *migration_model.IndexComparisonTaskConfig) (sourceDumpTask *task.Task, targetDumpTask *task.Task, diffTask *task.Task, err error) {
-	ptasks, err := migration_util.GetChildTasks(p.Elasticsearch, p.IndexName, taskItem.ID, "pipeline", nil)
+	ptasks, err := migration_util.GetChildTasks(taskItem.ID, "pipeline", nil)
 	if err != nil {
 		log.Errorf("failed to get pipeline tasks, err: %v", err)
 		return

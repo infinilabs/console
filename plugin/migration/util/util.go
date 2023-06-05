@@ -47,6 +47,13 @@ func IsPendingState(status string) bool {
 	return util.StringInArray(pendingTaskStatus, status)
 }
 
+func GetDirectParentId(parentIDs []string) string {
+	if len(parentIDs) == 0 {
+		return ""
+	}
+	return parentIDs[len(parentIDs)-1]
+}
+
 func GetTaskConfig(task *task.Task, config interface{}) error {
 	if task.Config_ == nil {
 		return util.FromJSONBytes([]byte(task.ConfigString), config)
@@ -67,6 +74,19 @@ func GetMapIntValue(m util.MapStr, key string) int64 {
 	if err != nil {
 		log.Errorf("got %s but failed to extract, err: %v", key, err)
 		return 0
+	}
+	return vv
+}
+
+func GetMapBoolValue(m util.MapStr, key string) bool {
+	v, err := m.GetValue(key)
+	if err != nil {
+		return false
+	}
+	vv, err := util.ExtractBool(v)
+	if err != nil {
+		log.Errorf("got %s but failed to extract, err: %v", key, err)
+		return false
 	}
 	return vv
 }

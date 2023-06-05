@@ -1,6 +1,7 @@
 package cluster_comparison
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -76,13 +77,27 @@ func (p *processor) splitMajorTask(taskItem *task.Task) error {
 	esSourceClient := elastic.GetClient(clusterComparisonTask.Cluster.Source.Id)
 	esTargetClient := elastic.GetClient(clusterComparisonTask.Cluster.Target.Id)
 
-	err = migration_util.DeleteChildTasks(taskItem.ID)
+	err = migration_util.DeleteChildTasks(taskItem.ID, "index_comparison")
 	if err != nil {
 		log.Warnf("failed to clear child tasks, err: %v", err)
 		return nil
 	}
 
-	for _, index := range clusterComparisonTask.Indices {
+	current := migration_util.GetMapIntValue(taskItem.Metadata.Labels, "next_run_time")
+	var step time.Duration
+	if clusterComparisonTask.Settings.Execution.Repeat != nil {
+		step = clusterComparisonTask.Settings.Execution.Repeat.Interval
+	}
+
+	var pids []string
+	pids = append(pids, taskItem.ParentId...)
+	pids = append(pids, taskItem.ID)
+
+	var sourceTotalDocs int64
+	var targetTotalDocs int64
+	ctx := context.Background()
+
+	for i, index := range clusterComparisonTask.Indices {
 		sourceDump := migration_model.IndexComparisonDumpConfig{
 			ClusterId:     clusterComparisonTask.Cluster.Source.Id,
 			Indices:       index.Source.Name,
@@ -105,6 +120,13 @@ func (p *processor) splitMajorTask(taskItem *task.Task) error {
 			if index.RawFilter != nil {
 				must = append(must, index.RawFilter)
 			}
+			if index.Incremental != nil {
+				incrementalFilter, err := index.Incremental.BuildFilter(current, step)
+				if err != nil {
+					return err
+				}
+				must = append(must, incrementalFilter)
+			}
 			if len(must) > 0 {
 				sourceDump.QueryDSL = util.MapStr{
 					"bool": util.MapStr{
@@ -119,9 +141,31 @@ func (p *processor) splitMajorTask(taskItem *task.Task) error {
 		targetDump.Indices = index.Target.Name
 		targetDump.DocCount = index.Target.Docs
 
+		var countQuery = util.MapStr{}
+		if sourceDump.QueryDSL != nil {
+			countQuery = util.MapStr{
+				"query": sourceDump.QueryDSL,
+			}
+		}
+		sourceCount, err := esSourceClient.Count(ctx, index.Source.Name, util.MustToJSONBytes(countQuery))
+		if err != nil {
+			return err
+		}
+		clusterComparisonTask.Indices[i].Source.Docs = sourceCount.Count
+		sourceTotalDocs += sourceCount.Count
+		sourceDump.DocCount = sourceCount.Count
+
+		targetCount, err := esTargetClient.Count(ctx, index.Target.Name, util.MustToJSONBytes(countQuery))
+		if err != nil {
+			return err
+		}
+		clusterComparisonTask.Indices[i].Target.Docs = targetCount.Count
+		targetTotalDocs += targetCount.Count
+		targetDump.DocCount = targetCount.Count
+
 		if index.Partition == nil {
 			indexComparisonTask := task.Task{
-				ParentId:    []string{taskItem.ID},
+				ParentId:    pids,
 				Cancellable: true,
 				Runnable:    false,
 				Status:      task.StatusReady,
@@ -182,7 +226,7 @@ func (p *processor) splitMajorTask(taskItem *task.Task) error {
 		partitions := elastic.MergePartitions(sourcePartitions, targetPartitions, index.Partition.FieldName, index.Partition.FieldType, targetPartitionQ.Filter)
 
 		if len(partitions) == 0 {
-			return fmt.Errorf("empty partitions")
+			continue
 		}
 
 		var (
@@ -204,7 +248,7 @@ func (p *processor) splitMajorTask(taskItem *task.Task) error {
 			partitionTargetDump.Indices = index.Target.Name
 
 			partitionComparisonTask := task.Task{
-				ParentId:    []string{taskItem.ID},
+				ParentId:    pids,
 				Cancellable: false,
 				Runnable:    true,
 				Status:      task.StatusReady,
@@ -232,7 +276,10 @@ func (p *processor) splitMajorTask(taskItem *task.Task) error {
 		}
 	}
 
+	taskItem.ConfigString = util.MustToJSON(clusterComparisonTask)
 	taskItem.Metadata.Labels["is_split"] = true
+	taskItem.Metadata.Labels["source_total_docs"] = sourceTotalDocs
+	taskItem.Metadata.Labels["target_total_docs"] = targetTotalDocs
 	p.saveTaskAndWriteLog(taskItem, &task.TaskResult{
 		Success: true,
 	}, fmt.Sprintf("major task [%s] splitted", taskItem.ID))
@@ -336,7 +383,7 @@ func (p *processor) handlePendingStopMajorTask(taskItem *task.Task) error {
 		return nil
 	}
 
-	tasks, err := migration_util.GetPendingChildTasks(p.Elasticsearch, p.IndexName, taskItem.ID, "index_comparison")
+	tasks, err := migration_util.GetPendingChildTasks(taskItem.ID, "index_comparison")
 	if err != nil {
 		log.Errorf("failed to get sub tasks, err: %v", err)
 		return nil

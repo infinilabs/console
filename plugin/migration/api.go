@@ -17,7 +17,6 @@ import (
 	migration_util "infini.sh/console/plugin/migration/util"
 
 	"infini.sh/framework/core/api"
-	"infini.sh/framework/core/api/rbac"
 	"infini.sh/framework/core/api/rbac/enum"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
@@ -34,6 +33,8 @@ func InitAPI() {
 	api.HandleAPIMethod(api.DELETE, "/migration/data/:task_id", handler.RequirePermission(handler.deleteTask, enum.PermissionMigrationTaskWrite))
 	api.HandleAPIMethod(api.POST, "/migration/data/:task_id/_start", handler.RequirePermission(handler.startTask, enum.PermissionMigrationTaskWrite))
 	api.HandleAPIMethod(api.POST, "/migration/data/:task_id/_stop", handler.RequirePermission(handler.stopTask, enum.PermissionMigrationTaskWrite))
+	api.HandleAPIMethod(api.POST, "/migration/data/:task_id/_pause", handler.RequirePermission(handler.pauseTask, enum.PermissionMigrationTaskWrite))
+	api.HandleAPIMethod(api.POST, "/migration/data/:task_id/_resume", handler.RequirePermission(handler.resumeTask, enum.PermissionMigrationTaskWrite))
 	api.HandleAPIMethod(api.GET, "/migration/data/:task_id/info", handler.RequirePermission(handler.getDataMigrationTaskInfo, enum.PermissionMigrationTaskRead))
 	api.HandleAPIMethod(api.GET, "/migration/data/:task_id/info/:index", handler.RequirePermission(handler.getDataMigrationTaskOfIndex, enum.PermissionMigrationTaskRead))
 
@@ -44,6 +45,8 @@ func InitAPI() {
 	api.HandleAPIMethod(api.GET, "/comparison/data/:task_id/info/:index", handler.RequirePermission(handler.getDataComparisonTaskOfIndex, enum.PermissionComparisonTaskRead))
 	api.HandleAPIMethod(api.POST, "/comparison/data/:task_id/_start", handler.RequirePermission(handler.startTask, enum.PermissionComparisonTaskWrite))
 	api.HandleAPIMethod(api.POST, "/comparison/data/:task_id/_stop", handler.RequirePermission(handler.stopTask, enum.PermissionComparisonTaskWrite))
+	api.HandleAPIMethod(api.POST, "/comparison/data/:task_id/_pause", handler.RequirePermission(handler.pauseTask, enum.PermissionComparisonTaskWrite))
+	api.HandleAPIMethod(api.POST, "/comparison/data/:task_id/_resume", handler.RequirePermission(handler.resumeTask, enum.PermissionComparisonTaskWrite))
 
 	api.HandleAPIMethod(api.POST, "/migration/data/_validate", handler.RequireLogin(handler.validateDataMigration))
 	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/index/:index/_partition", handler.getIndexPartitionInfo)
@@ -55,63 +58,6 @@ func InitAPI() {
 
 type APIHandler struct {
 	api.Handler
-}
-
-func (h *APIHandler) createDataMigrationTask(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	clusterTaskConfig := &migration_model.ClusterMigrationTaskConfig{}
-	err := h.DecodeJSON(req, clusterTaskConfig)
-	if err != nil {
-		log.Error(err)
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if len(clusterTaskConfig.Indices) == 0 {
-		h.WriteError(w, "indices must not be empty", http.StatusInternalServerError)
-		return
-	}
-	user, err := rbac.FromUserContext(req.Context())
-	if err != nil {
-		log.Error(err)
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if user != nil {
-		clusterTaskConfig.Creator.Name = user.Username
-		clusterTaskConfig.Creator.Id = user.UserId
-	}
-
-	var totalDocs int64
-	for _, index := range clusterTaskConfig.Indices {
-		totalDocs += index.Source.Docs
-	}
-
-	srcClusterCfg := elastic.GetConfig(clusterTaskConfig.Cluster.Source.Id)
-	clusterTaskConfig.Cluster.Source.Distribution = srcClusterCfg.Distribution
-	dstClusterCfg := elastic.GetConfig(clusterTaskConfig.Cluster.Target.Id)
-	clusterTaskConfig.Cluster.Target.Distribution = dstClusterCfg.Distribution
-	t := task2.Task{
-		Metadata: task2.Metadata{
-			Type: "cluster_migration",
-			Labels: util.MapStr{
-				"business_id":       "cluster_migration",
-				"source_cluster_id": clusterTaskConfig.Cluster.Source.Id,
-				"target_cluster_id": clusterTaskConfig.Cluster.Target.Id,
-				"source_total_docs": totalDocs,
-			},
-		},
-		Cancellable:  true,
-		Runnable:     false,
-		Status:       task2.StatusInit,
-		ConfigString: util.MustToJSON(clusterTaskConfig),
-	}
-	t.ID = util.GetUUID()
-	err = orm.Create(nil, &t)
-	if err != nil {
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
-		return
-	}
-	h.WriteCreatedOKJSON(w, t.ID)
 }
 
 func (h *APIHandler) getIndexPartitionInfo(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -175,6 +121,7 @@ func (h *APIHandler) getDataMigrationTaskInfo(w http.ResponseWriter, req *http.R
 		if percent > 100 {
 			percent = 100
 		}
+		taskConfig.Indices[i].Source.Docs = indexState[indexName].SourceDocs
 		taskConfig.Indices[i].Target.Docs = count
 		taskConfig.Indices[i].Percent = util.ToFixed(percent, 2)
 		taskConfig.Indices[i].ErrorPartitions = indexState[indexName].ErrorPartitions
@@ -206,6 +153,7 @@ type TaskInfoResponse struct {
 	DataPartition       int           `json:"data_partition"`
 	CompletedPartitions int           `json:"completed_partitions"`
 	Partitions          []util.MapStr `json:"partitions"`
+	Repeating           bool          `json:"repeating"`
 }
 
 func (h *APIHandler) getDataMigrationTaskOfIndex(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -219,12 +167,21 @@ func (h *APIHandler) getDataMigrationTaskOfIndex(w http.ResponseWriter, req *htt
 		return
 	}
 
+	taskConfig := &migration_model.ClusterMigrationTaskConfig{}
+	err = migration_util.GetTaskConfig(&majorTask, taskConfig)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	taskInfo := &TaskInfoResponse{
 		TaskID:    id,
 		StartTime: majorTask.StartTimeInMillis,
+		Repeating: migration_util.IsRepeating(taskConfig.Settings.Execution.Repeat, majorTask.Metadata.Labels),
 	}
 
-	subTasks, pipelineTaskIDs, pipelineSubParentIDs, parentIDPipelineTasks, err := h.getChildTaskInfosByIndex(&majorTask, uniqueIndexName)
+	subTasks, pipelineTaskIDs, pipelineSubParentIDs, parentIDPipelineTasks, err := h.getChildTaskInfosByIndex(id, uniqueIndexName)
 
 	taskInfo.DataPartition = len(subTasks)
 	if len(subTasks) == 0 {
@@ -246,7 +203,7 @@ func (h *APIHandler) getDataMigrationTaskOfIndex(w http.ResponseWriter, req *htt
 		}
 	}
 
-	startTime, completedTime, duration, completedPartitions := h.calcMajorTaskInfo(subTasks)
+	startTime, completedTime, duration, completedPartitions := h.calcMajorTaskInfo(subTasks, taskInfo.Repeating)
 
 	var partitionTaskInfos []util.MapStr
 
@@ -487,7 +444,7 @@ func (h *APIHandler) refreshIndex(w http.ResponseWriter, req *http.Request, ps h
 	}, 200)
 }
 
-func (h *APIHandler) getChildTaskInfosByIndex(taskItem *task2.Task, uniqueIndexName string) (subTasks []task2.Task, runningPipelineTaskIDs map[string][]string, pipelineSubParentIDs map[string]string, parentIDPipelineTasks map[string][]task2.Task, err error) {
+func (h *APIHandler) getChildTaskInfosByIndex(id string, uniqueIndexName string) (subTasks []task2.Task, runningPipelineTaskIDs map[string][]string, pipelineSubParentIDs map[string]string, parentIDPipelineTasks map[string][]task2.Task, err error) {
 	queryDsl := util.MapStr{
 		"size": 9999,
 		"sort": []util.MapStr{
@@ -503,7 +460,7 @@ func (h *APIHandler) getChildTaskInfosByIndex(taskItem *task2.Task, uniqueIndexN
 					{
 						"term": util.MapStr{
 							"parent_id": util.MapStr{
-								"value": taskItem.ID,
+								"value": id,
 							},
 						},
 					},
@@ -518,10 +475,7 @@ func (h *APIHandler) getChildTaskInfosByIndex(taskItem *task2.Task, uniqueIndexN
 			},
 		},
 	}
-	q := &orm.Query{
-		RawQuery: util.MustToJSONBytes(queryDsl),
-	}
-	err, result := orm.Search(task2.Task{}, q)
+	allTasks, err := migration_util.GetTasks(queryDsl)
 	if err != nil {
 		return
 	}
@@ -530,25 +484,16 @@ func (h *APIHandler) getChildTaskInfosByIndex(taskItem *task2.Task, uniqueIndexN
 	pipelineSubParentIDs = map[string]string{}
 	parentIDPipelineTasks = map[string][]task2.Task{}
 
-	for _, row := range result.Result {
-		buf := util.MustToJSONBytes(row)
-		subTask := task2.Task{}
-		err = util.FromJSONBytes(buf, &subTask)
-		if err != nil {
-			log.Error(err)
-			continue
-		}
-
+	for _, subTask := range allTasks {
 		if subTask.Metadata.Type != "pipeline" {
 			subTasks = append(subTasks, subTask)
 			continue
 		}
 
-		// TODO: use more robust logic
 		if pl := len(subTask.ParentId); pl != 2 {
 			continue
 		}
-		parentID := subTask.ParentId[1]
+		parentID := migration_util.GetDirectParentId(subTask.ParentId)
 
 		pipelineSubParentIDs[subTask.ID] = parentID
 		instID := migration_util.GetMapStringValue(util.MapStr(subTask.Metadata.Labels), "execution_instance_id")
@@ -590,7 +535,7 @@ func (h *APIHandler) getChildPipelineInfosFromGateway(pipelineTaskIDs map[string
 	return
 }
 
-func (h *APIHandler) calcMajorTaskInfo(subTasks []task2.Task) (startTime int64, completedTime int64, duration int64, completedPartitions int) {
+func (h *APIHandler) calcMajorTaskInfo(subTasks []task2.Task, repeating bool) (startTime int64, completedTime int64, duration int64, completedPartitions int) {
 	if len(subTasks) == 0 {
 		return
 	}
@@ -615,7 +560,7 @@ func (h *APIHandler) calcMajorTaskInfo(subTasks []task2.Task) (startTime int64, 
 			completedPartitions++
 		}
 	}
-	if len(subTasks) != completedPartitions {
+	if len(subTasks) != completedPartitions || repeating {
 		completedTime = 0
 		duration = time.Now().UnixMilli() - startTime
 	} else {

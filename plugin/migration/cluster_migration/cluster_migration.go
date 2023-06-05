@@ -1,6 +1,7 @@
 package cluster_migration
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -78,21 +79,36 @@ func (p *processor) splitMajorMigrationTask(taskItem *task.Task) error {
 	esSourceClient := elastic.GetClient(clusterMigrationTask.Cluster.Source.Id)
 	targetType := common.GetClusterDocType(clusterMigrationTask.Cluster.Target.Id)
 
-	err = migration_util.DeleteChildTasks(taskItem.ID)
+	err = migration_util.DeleteChildTasks(taskItem.ID, "index_migration")
 	if err != nil {
 		log.Warnf("failed to clear child tasks, err: %v", err)
 		return nil
 	}
 
-	for _, index := range clusterMigrationTask.Indices {
+	current := migration_util.GetMapIntValue(taskItem.Metadata.Labels, "next_run_time")
+	var step time.Duration
+	if clusterMigrationTask.Settings.Execution.Repeat != nil {
+		step = clusterMigrationTask.Settings.Execution.Repeat.Interval
+	}
+
+	var pids []string
+	pids = append(pids, taskItem.ParentId...)
+	pids = append(pids, taskItem.ID)
+
+	var totalDocs int64
+	ctx := context.Background()
+
+	for i, index := range clusterMigrationTask.Indices {
 		source := migration_model.IndexMigrationSourceConfig{
 			ClusterId:      clusterMigrationTask.Cluster.Source.Id,
 			Indices:        index.Source.Name,
+			DocCount:       index.Source.Docs,
 			SliceSize:      clusterMigrationTask.Settings.Scroll.SliceSize,
 			BatchSize:      clusterMigrationTask.Settings.Scroll.Docs,
 			ScrollTime:     clusterMigrationTask.Settings.Scroll.Timeout,
 			SkipCountCheck: clusterMigrationTask.Settings.SkipScrollCountCheck,
 		}
+
 		if index.IndexRename != nil {
 			source.IndexRename = index.IndexRename
 		}
@@ -111,6 +127,13 @@ func (p *processor) splitMajorMigrationTask(taskItem *task.Task) error {
 			var must []interface{}
 			if index.RawFilter != nil {
 				must = append(must, index.RawFilter)
+			}
+			if index.Incremental != nil {
+				incrementalFilter, err := index.Incremental.BuildFilter(current, step)
+				if err != nil {
+					return err
+				}
+				must = append(must, incrementalFilter)
 			}
 			if index.Source.DocType != "" {
 				if index.Target.DocType != "" {
@@ -139,6 +162,25 @@ func (p *processor) splitMajorMigrationTask(taskItem *task.Task) error {
 			}
 		}
 
+		// NOTE: for repeating tasks, frontend can't get the accurate doc count
+		// update here before we split the task, if the index has incremental config and correct delay value,
+		// the doc count will not change and will be stable
+		var countQuery = util.MapStr{}
+		if source.QueryDSL != nil {
+			countQuery = util.MapStr{
+				"query": source.QueryDSL,
+			}
+		}
+		sourceCount, err := esSourceClient.Count(ctx, index.Source.Name, util.MustToJSONBytes(countQuery))
+		if err != nil {
+			log.Errorf("failed to count docs, err: %v", err)
+			return err
+		}
+
+		clusterMigrationTask.Indices[i].Source.Docs = sourceCount.Count
+		source.DocCount = sourceCount.Count
+		totalDocs += sourceCount.Count
+
 		target := migration_model.IndexMigrationTargetConfig{
 			ClusterId:      clusterMigrationTask.Cluster.Target.Id,
 			SkipCountCheck: clusterMigrationTask.Settings.SkipBulkCountCheck,
@@ -166,8 +208,8 @@ func (p *processor) splitMajorMigrationTask(taskItem *task.Task) error {
 			if err != nil {
 				return err
 			}
-			if partitions == nil || len(partitions) == 0 {
-				return fmt.Errorf("empty data with filter: %s", util.MustToJSON(index.RawFilter))
+			if len(partitions) == 0 {
+				continue
 			}
 			var (
 				partitionID int
@@ -188,7 +230,7 @@ func (p *processor) splitMajorMigrationTask(taskItem *task.Task) error {
 				partitionSource.QueryString = ""
 
 				partitionMigrationTask := task.Task{
-					ParentId:    []string{taskItem.ID},
+					ParentId:    pids,
 					Cancellable: false,
 					Runnable:    true,
 					Status:      task.StatusReady,
@@ -217,10 +259,8 @@ func (p *processor) splitMajorMigrationTask(taskItem *task.Task) error {
 
 			}
 		} else {
-			source.DocCount = index.Source.Docs
-
 			indexMigrationTask := task.Task{
-				ParentId:    []string{taskItem.ID},
+				ParentId:    pids,
 				Cancellable: true,
 				Runnable:    false,
 				Status:      task.StatusReady,
@@ -251,7 +291,9 @@ func (p *processor) splitMajorMigrationTask(taskItem *task.Task) error {
 			}
 		}
 	}
+	taskItem.ConfigString = util.MustToJSON(clusterMigrationTask)
 	taskItem.Metadata.Labels["is_split"] = true
+	taskItem.Metadata.Labels["source_total_docs"] = totalDocs
 	p.saveTaskAndWriteLog(taskItem, &task.TaskResult{
 		Success: true,
 	}, fmt.Sprintf("major task [%s] splitted", taskItem.ID))
@@ -368,7 +410,7 @@ func (p *processor) handlePendingStopMajorTask(taskItem *task.Task) error {
 		return nil
 	}
 
-	tasks, err := migration_util.GetPendingChildTasks(p.Elasticsearch, p.IndexName, taskItem.ID, "index_migration")
+	tasks, err := migration_util.GetPendingChildTasks(taskItem.ID, "index_migration")
 	if err != nil {
 		log.Errorf("failed to get sub tasks, err: %v", err)
 		return nil

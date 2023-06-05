@@ -1,9 +1,15 @@
 package model
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+
+	"infini.sh/framework/core/util"
+)
 
 type ExecutionConfig struct {
 	TimeWindow []TimeWindowItem `json:"time_window"`
+	Repeat     *Repeat          `json:"repeat"`
 	Nodes      struct {
 		Permit []ExecutionNode `json:"permit"`
 	} `json:"nodes"`
@@ -12,6 +18,12 @@ type ExecutionConfig struct {
 type ExecutionNode struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
+}
+
+type Repeat struct {
+	NextRunTime *time.Time    `json:"next_run_time"`
+	Interval    time.Duration `json:"interval"`
+	TotalRun    int64         `json:"total_run"`
 }
 
 type TimeWindowItem struct {
@@ -23,6 +35,14 @@ type IndexPartition struct {
 	FieldType string      `json:"field_type"`
 	FieldName string      `json:"field_name"`
 	Step      interface{} `json:"step"`
+}
+
+type IndexIncremental struct {
+	FieldName string `json:"field_name"`
+	// Optional, data ingest delay
+	Delay time.Duration `json:"delay"`
+	// If full, run the data from -inf, else from current - step
+	Full bool `json:"full"`
 }
 
 type IndexInfo struct {
@@ -41,4 +61,24 @@ type ClusterInfo struct {
 	Id           string `json:"id"`
 	Name         string `json:"name"`
 	Distribution string `json:"distribution,omitempty"`
+}
+
+// BuildFilter generate a query filter, used by split task
+func (incremental *IndexIncremental) BuildFilter(current int64, step time.Duration) (util.MapStr, error) {
+	if incremental == nil {
+		return util.MapStr{}, nil
+	}
+
+	rv := util.MapStr{
+		"lt":     int64(current) - incremental.Delay.Milliseconds(),
+		"format": "epoch_millis",
+	}
+	if !incremental.Full {
+		rv["gte"] = int64(current) - step.Milliseconds() - incremental.Delay.Milliseconds()
+	}
+	return util.MapStr{
+		"range": util.MapStr{
+			incremental.FieldName: rv,
+		},
+	}, nil
 }

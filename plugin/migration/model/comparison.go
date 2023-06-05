@@ -1,6 +1,8 @@
 package model
 
-import "infini.sh/framework/core/util"
+import (
+	"infini.sh/framework/core/util"
+)
 
 type ClusterComparisonTaskConfig struct {
 	Cluster struct {
@@ -20,20 +22,15 @@ type ClusterComparisonTaskConfig struct {
 }
 
 type ClusterComparisonIndexConfig struct {
-	Source    IndexInfo       `json:"source"`
-	Target    IndexInfo       `json:"target"`
-	RawFilter interface{}     `json:"raw_filter"`
-	Partition *IndexPartition `json:"partition,omitempty"`
+	Source      IndexInfo         `json:"source"`
+	Target      IndexInfo         `json:"target"`
+	RawFilter   interface{}       `json:"raw_filter"`
+	Incremental *IndexIncremental `json:"incremental"`
+	Partition   *IndexPartition   `json:"partition,omitempty"`
 
 	// only used in API
 	ScrollPercent   float64 `json:"scroll_percent,omitempty"`
 	ErrorPartitions int     `json:"error_partitions,omitempty"`
-}
-
-type ClusterComparisonTaskState struct {
-	SourceScrollDocs int64
-	TargetScrollDocs int64
-	Status           string
 }
 
 type IndexComparisonTaskConfig struct {

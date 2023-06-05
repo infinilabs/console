@@ -27,14 +27,15 @@ GOROOT="/infini/go-pkgs/go-loongarch" PATH=$GOROOT/bin:$PATH make build-linux-lo
 
 #copy-configs
 cp -rf $WORKBASE/framework/LICENSE $WORKDIR/bin && cat $WORKBASE/framework/NOTICE $WORKDIR/NOTICE > $WORKDIR/bin/NOTICE
+mkdir -p $WORKDIR/bin/config && cp $WORKDIR/config/*.json $WORKDIR/bin/config && cp -rf $WORKDIR/config/*.tpl $WORKDIR/bin/config
 
 cd $WORKDIR/bin
 for t in 386 amd64 arm64 armv5 armv6 armv7 loong64 mips mips64 mips64le mipsle riscv64 ; do
-  tar zcf ${WORKSPACE}/$PNAME-$VERSION-$BUILD_NUMBER-linux-$t.tar.gz "${PNAME}-linux-$t" $PNAME.yml LICENSE NOTICE 
+  tar zcf ${WORKSPACE}/$PNAME-$VERSION-$BUILD_NUMBER-linux-$t.tar.gz "${PNAME}-linux-$t" $PNAME.yml LICENSE NOTICE config
 done
 
 for t in mac-amd64 mac-arm64 windows-amd64 windows-386 ; do
-  cd $WORKDIR/bin && zip -qr ${WORKSPACE}/$PNAME-$VERSION-$BUILD_NUMBER-$t.zip $PNAME-$t $PNAME.yml LICENSE NOTICE
+  cd $WORKDIR/bin && zip -qr ${WORKSPACE}/$PNAME-$VERSION-$BUILD_NUMBER-$t.zip $PNAME-$t $PNAME.yml LICENSE NOTICE config
 done
 
 #build image & push

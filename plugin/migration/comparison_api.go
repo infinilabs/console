@@ -142,11 +142,6 @@ func (h *APIHandler) getComparisonMajorTaskInfo(taskID string) (taskStats Cluste
 							},
 						},
 					},
-					{
-						"terms": util.MapStr{
-							"status": []string{task.StatusComplete, task.StatusError},
-						},
-					},
 				},
 			},
 		},

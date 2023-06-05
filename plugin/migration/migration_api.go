@@ -89,23 +89,26 @@ func (h *APIHandler) getMigrationMajorTaskInfo(id string) (taskStats migration_m
 			continue
 		}
 
-		if subTask.Status == task.StatusRunning {
-			indexMigrationTaskIDs = append(indexMigrationTaskIDs, subTask.ID)
-			continue
-		}
-
 		cfg := migration_model.IndexMigrationTaskConfig{}
 		err = migration_util.GetTaskConfig(&subTask, &cfg)
 		if err != nil {
 			log.Errorf("failed to get task config, err: %v", err)
 			continue
 		}
-		indexDocs := migration_util.GetMapIntValue(taskLabels, "index_docs")
-		taskStats.IndexDocs += indexDocs
+
 		taskStats.SourceDocs += cfg.Source.DocCount
 		st := indexState[indexName]
-		st.IndexDocs += indexDocs
 		st.SourceDocs += cfg.Source.DocCount
+		indexState[indexName] = st
+
+		if subTask.Status == task.StatusRunning {
+			indexMigrationTaskIDs = append(indexMigrationTaskIDs, subTask.ID)
+			continue
+		}
+
+		indexDocs := migration_util.GetMapIntValue(taskLabels, "index_docs")
+		taskStats.IndexDocs += indexDocs
+		st.IndexDocs += indexDocs
 		if subTask.Status == task.StatusError {
 			st.ErrorPartitions += 1
 			taskStats.ErrorPartitions += 1

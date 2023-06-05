@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/buger/jsonparser"
 	log "github.com/cihub/seelog"
+	"gopkg.in/yaml.v2"
 	"infini.sh/console/modules/agent/client"
 	"infini.sh/console/modules/agent/common"
 	"infini.sh/console/modules/agent/model"
@@ -20,7 +21,6 @@ import (
 	"infini.sh/framework/modules/elastic"
 	"runtime"
 	"runtime/debug"
-	"src/gopkg.in/yaml.v2"
 	"sync"
 	"time"
 )
@@ -102,8 +102,6 @@ func (sm *StateManager) checkAgentStatus() {
 			// status change to online
 			sm.agentIds[agentID] = model.StatusOnline
 			log.Infof("status of agent [%s] changed to online", agentID)
-			//set timestamp equals 0 to create pipeline
-			sm.timestamps[agentID] = 0
 			continue
 		}else{
 			// already offline

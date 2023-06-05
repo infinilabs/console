@@ -412,6 +412,11 @@ func (p *processor) saveTaskAndWriteLog(taskItem *task.Task, taskResult *task.Ta
 }
 
 func (p *processor) sendMajorTaskNotification(taskItem *task.Task) {
+	// don't send notification for repeating child tasks
+	if len(taskItem.ParentId) > 0 {
+		return
+	}
+
 	config := migration_model.ClusterComparisonTaskConfig{}
 	err := migration_util.GetTaskConfig(taskItem, &config)
 	if err != nil {

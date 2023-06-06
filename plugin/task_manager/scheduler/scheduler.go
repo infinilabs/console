@@ -11,7 +11,7 @@ import (
 	log "github.com/cihub/seelog"
 
 	"infini.sh/console/model"
-	migration_model "infini.sh/console/plugin/migration/model"
+	migration_model "infini.sh/console/plugin/task_manager/model"
 
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/orm"

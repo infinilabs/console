@@ -6,12 +6,12 @@ import (
 	"time"
 
 	log "github.com/cihub/seelog"
-	migration_util "infini.sh/console/plugin/migration/util"
+	migration_util "infini.sh/console/plugin/task_manager/util"
 	"infini.sh/framework/core/task"
 )
 
-func (p *processor) handleRunningEsScrollPipelineTask(taskItem *task.Task) error {
-	scrolledDocs, totalHits, scrolled, err := p.getEsScrollTaskState(taskItem)
+func (p *processor) handleRunningDumpHashPipelineTask(taskItem *task.Task) error {
+	scrolledDocs, totalHits, scrolled, err := p.getDumpHashTaskState(taskItem)
 
 	if !scrolled {
 		return nil
@@ -39,12 +39,12 @@ func (p *processor) handleRunningEsScrollPipelineTask(taskItem *task.Task) error
 	p.saveTaskAndWriteLog(taskItem, &task.TaskResult{
 		Success: errMsg == "",
 		Error:   errMsg,
-	}, fmt.Sprintf("[es_scroll] pipeline task [%s] completed", taskItem.ID))
+	}, fmt.Sprintf("[dump_hash] pipeline task [%s] completed", taskItem.ID))
 	p.cleanGatewayPipeline(taskItem)
 	return nil
 }
 
-func (p *processor) getEsScrollTaskState(taskItem *task.Task) (scrolledDocs int64, totalHits int64, scrolled bool, err error) {
+func (p *processor) getDumpHashTaskState(taskItem *task.Task) (scrolledDocs int64, totalHits int64, scrolled bool, err error) {
 	hits, err := p.getPipelineLogs(taskItem, []string{"FINISHED", "FAILED"}, taskItem.Updated.UnixMilli())
 	if err != nil {
 		log.Errorf("failed to get pipeline logs for task [%s], err: %v", taskItem.ID, err)
@@ -55,7 +55,6 @@ func (p *processor) getEsScrollTaskState(taskItem *task.Task) (scrolledDocs int6
 		log.Debugf("scroll task [%s] not finished yet since last start", taskItem.ID)
 		return
 	}
-	// NOTE: we only check the last run of es_scroll
 	for _, m := range hits {
 		scrolled = true
 
@@ -66,8 +65,8 @@ func (p *processor) getEsScrollTaskState(taskItem *task.Task) (scrolledDocs int6
 		}
 
 		var (
-			scroll = migration_util.GetMapIntValue(m, "payload.pipeline.logging.context.es_scroll.scrolled_docs")
-			total  = migration_util.GetMapIntValue(m, "payload.pipeline.logging.context.es_scroll.total_hits")
+			scroll = migration_util.GetMapIntValue(m, "payload.pipeline.logging.context.dump_hash.scrolled_docs")
+			total  = migration_util.GetMapIntValue(m, "payload.pipeline.logging.context.dump_hash.total_hits")
 		)
 
 		scrolledDocs += scroll
@@ -76,6 +75,6 @@ func (p *processor) getEsScrollTaskState(taskItem *task.Task) (scrolledDocs int6
 	return
 }
 
-func (p *processor) clearEsScrollLabels(labels map[string]interface{}) {
+func (p *processor) clearDumpHashLabels(labels map[string]interface{}) {
 	delete(labels, "scrolled_docs")
 }

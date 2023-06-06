@@ -1,15 +1,17 @@
-package migration
+package task_manager
 
 import (
 	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	log "github.com/cihub/seelog"
 
-	migration_util "infini.sh/console/plugin/migration/util"
+	"infini.sh/console/model"
+	migration_util "infini.sh/console/plugin/task_manager/util"
 
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
@@ -18,6 +20,18 @@ import (
 	"infini.sh/framework/core/util"
 	elastic2 "infini.sh/framework/modules/elastic"
 )
+
+type TaskInfoResponse struct {
+	TaskID              string        `json:"task_id"`
+	Step                interface{}   `json:"step"`
+	StartTime           int64         `json:"start_time"`
+	CompletedTime       int64         `json:"completed_time"`
+	Duration            int64         `json:"duration"`
+	DataPartition       int           `json:"data_partition"`
+	CompletedPartitions int           `json:"completed_partitions"`
+	Partitions          []util.MapStr `json:"partitions"`
+	Repeating           bool          `json:"repeating"`
+}
 
 func (h *APIHandler) searchTask(taskType string) func(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	return func(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -434,5 +448,170 @@ func (h *APIHandler) pauseTask(w http.ResponseWriter, req *http.Request, ps http
 	h.WriteJSON(w, util.MapStr{
 		"success": true,
 	}, 200)
+	return
+}
+
+func (h *APIHandler) validateDataMigration(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	typ := h.GetParameter(req, "type")
+	switch typ {
+	case "multi_type":
+		h.validateMultiType(w, req, ps)
+		return
+	}
+	h.WriteError(w, "unknown parameter type", http.StatusOK)
+}
+
+func (h *APIHandler) validateMultiType(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	var reqBody = struct {
+		Cluster struct {
+			SourceID string `json:"source_id"`
+			TargetID string `json:"target_id"`
+		} `json:"cluster"`
+		Indices []string
+	}{}
+	err := h.DecodeJSON(req, &reqBody)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	sourceClient := elastic.GetClient(reqBody.Cluster.SourceID)
+	// get source type
+	indexNames := strings.Join(reqBody.Indices, ",")
+	typeInfo, err := elastic.GetIndexTypes(sourceClient, indexNames)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	h.WriteJSON(w, util.MapStr{
+		"result": typeInfo,
+	}, http.StatusOK)
+}
+
+func (h *APIHandler) getChildTaskInfosByIndex(id string, uniqueIndexName string) (subTasks []task.Task, runningPipelineTaskIDs map[string][]string, pipelineSubParentIDs map[string]string, parentIDPipelineTasks map[string][]task.Task, err error) {
+	queryDsl := util.MapStr{
+		"size": 9999,
+		"sort": []util.MapStr{
+			{
+				"created": util.MapStr{
+					"order": "asc",
+				},
+			},
+		},
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": []util.MapStr{
+					{
+						"term": util.MapStr{
+							"parent_id": util.MapStr{
+								"value": id,
+							},
+						},
+					},
+					{
+						"term": util.MapStr{
+							"metadata.labels.unique_index_name": util.MapStr{
+								"value": uniqueIndexName,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	allTasks, err := migration_util.GetTasks(queryDsl)
+	if err != nil {
+		return
+	}
+
+	runningPipelineTaskIDs = map[string][]string{}
+	pipelineSubParentIDs = map[string]string{}
+	parentIDPipelineTasks = map[string][]task.Task{}
+
+	for _, subTask := range allTasks {
+		if subTask.Metadata.Type != "pipeline" {
+			subTasks = append(subTasks, subTask)
+			continue
+		}
+
+		if pl := len(subTask.ParentId); pl != 2 {
+			continue
+		}
+		parentID := migration_util.GetDirectParentId(subTask.ParentId)
+
+		pipelineSubParentIDs[subTask.ID] = parentID
+		instID := migration_util.GetMapStringValue(util.MapStr(subTask.Metadata.Labels), "execution_instance_id")
+		if instID == "" {
+			continue
+		}
+		if subTask.Status == task.StatusRunning {
+			runningPipelineTaskIDs[instID] = append(runningPipelineTaskIDs[instID], subTask.ID)
+		}
+		parentIDPipelineTasks[parentID] = append(parentIDPipelineTasks[parentID], subTask)
+	}
+
+	return
+}
+
+func (h *APIHandler) getChildPipelineInfosFromGateway(pipelineTaskIDs map[string][]string) (pipelineContexts map[string]util.MapStr) {
+	pipelineContexts = map[string]util.MapStr{}
+	var err error
+
+	for instID, taskIDs := range pipelineTaskIDs {
+		inst := &model.Instance{}
+		inst.ID = instID
+		_, err = orm.Get(inst)
+		if err != nil {
+			log.Errorf("failed to get instance info, id: %s, err: %v", instID, err)
+			continue
+		}
+		pipelines, err := inst.GetPipelinesByIDs(taskIDs)
+		if err != nil {
+			log.Errorf("failed to get pipelines info, err: %v", err)
+			continue
+		}
+
+		for pipelineID, status := range pipelines {
+			pipelineContexts[pipelineID] = status.Context
+		}
+	}
+
+	return
+}
+
+func (h *APIHandler) calcMajorTaskInfo(subTasks []task.Task, repeating bool) (startTime int64, completedTime int64, duration int64, completedPartitions int) {
+	if len(subTasks) == 0 {
+		return
+	}
+
+	for _, subTask := range subTasks {
+		if subTask.StartTimeInMillis > 0 {
+			if startTime == 0 {
+				startTime = subTask.StartTimeInMillis
+			}
+			if subTask.StartTimeInMillis < startTime {
+				startTime = subTask.StartTimeInMillis
+			}
+		}
+		if subTask.CompletedTime != nil {
+			subCompletedTime := subTask.CompletedTime.UnixMilli()
+			if subCompletedTime > completedTime {
+				completedTime = subCompletedTime
+			}
+		}
+
+		if subTask.Status == task.StatusComplete || subTask.Status == task.StatusError {
+			completedPartitions++
+		}
+	}
+	if len(subTasks) != completedPartitions || repeating {
+		completedTime = 0
+		duration = time.Now().UnixMilli() - startTime
+	} else {
+		duration = completedTime - startTime
+	}
+
 	return
 }

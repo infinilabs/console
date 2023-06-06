@@ -1,4 +1,4 @@
-package migration
+package task_manager
 
 import (
 	"fmt"
@@ -7,9 +7,9 @@ import (
 
 	log "github.com/cihub/seelog"
 
-	"infini.sh/console/plugin/migration/cluster_comparison"
-	migration_model "infini.sh/console/plugin/migration/model"
-	migration_util "infini.sh/console/plugin/migration/util"
+	"infini.sh/console/plugin/task_manager/cluster_comparison"
+	migration_model "infini.sh/console/plugin/task_manager/model"
+	migration_util "infini.sh/console/plugin/task_manager/util"
 
 	"infini.sh/framework/core/api/rbac"
 	httprouter "infini.sh/framework/core/api/router"

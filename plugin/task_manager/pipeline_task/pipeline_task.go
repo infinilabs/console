@@ -10,8 +10,8 @@ import (
 	log "github.com/cihub/seelog"
 
 	"infini.sh/console/model"
-	migration_model "infini.sh/console/plugin/migration/model"
-	migration_util "infini.sh/console/plugin/migration/util"
+	migration_model "infini.sh/console/plugin/task_manager/model"
+	migration_util "infini.sh/console/plugin/task_manager/util"
 
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/task"

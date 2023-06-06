@@ -2,7 +2,7 @@
  * Web: https://infinilabs.com
  * Email: hello#infini.ltd */
 
-package migration
+package task_manager
 
 import (
 	"errors"
@@ -11,21 +11,21 @@ import (
 
 	log "github.com/cihub/seelog"
 
-	"infini.sh/console/plugin/migration/cluster_comparison"
-	"infini.sh/console/plugin/migration/cluster_migration"
-	"infini.sh/console/plugin/migration/index_comparison"
-	"infini.sh/console/plugin/migration/index_migration"
-	migration_model "infini.sh/console/plugin/migration/model"
-	"infini.sh/console/plugin/migration/pipeline_task"
-	"infini.sh/console/plugin/migration/scheduler"
-	migration_util "infini.sh/console/plugin/migration/util"
+	"infini.sh/console/plugin/task_manager/cluster_comparison"
+	"infini.sh/console/plugin/task_manager/cluster_migration"
+	"infini.sh/console/plugin/task_manager/index_comparison"
+	"infini.sh/console/plugin/task_manager/index_migration"
+	migration_model "infini.sh/console/plugin/task_manager/model"
+	"infini.sh/console/plugin/task_manager/pipeline_task"
+	"infini.sh/console/plugin/task_manager/scheduler"
+	migration_util "infini.sh/console/plugin/task_manager/util"
 
 	"infini.sh/framework/core/config"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/env"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/pipeline"
-	task2 "infini.sh/framework/core/task"
+	"infini.sh/framework/core/task"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/modules/elastic/common"
 )
@@ -115,27 +115,27 @@ func (p *DispatcherProcessor) Process(ctx *pipeline.Context) error {
 	p.handleRepeatingTasks(ctx, "cluster_migration")
 
 	// handle pipeline task
-	p.handleTasks(ctx, "pipeline", []string{task2.StatusReady, task2.StatusRunning, task2.StatusPendingStop}, p.pipelineTaskProcessor.Process)
+	p.handleTasks(ctx, "pipeline", []string{task.StatusReady, task.StatusRunning, task.StatusPendingStop}, p.pipelineTaskProcessor.Process)
 
 	// handle comparison tasks
-	p.handleTasks(ctx, "cluster_comparison", []string{task2.StatusPendingStop}, p.clusterComparisonTaskProcessor.Process)
-	p.handleTasks(ctx, "index_comparison", []string{task2.StatusPendingStop}, p.indexComparisonTaskProcessor.Process)
-	p.handleTasks(ctx, "index_comparison", []string{task2.StatusRunning}, p.indexComparisonTaskProcessor.Process)
-	p.handleTasks(ctx, "index_comparison", []string{task2.StatusReady}, p.indexComparisonTaskProcessor.Process)
-	p.handleTasks(ctx, "cluster_comparison", []string{task2.StatusRunning}, p.clusterComparisonTaskProcessor.Process)
-	p.handleTasks(ctx, "cluster_comparison", []string{task2.StatusReady}, p.clusterComparisonTaskProcessor.Process)
+	p.handleTasks(ctx, "cluster_comparison", []string{task.StatusPendingStop}, p.clusterComparisonTaskProcessor.Process)
+	p.handleTasks(ctx, "index_comparison", []string{task.StatusPendingStop}, p.indexComparisonTaskProcessor.Process)
+	p.handleTasks(ctx, "index_comparison", []string{task.StatusRunning}, p.indexComparisonTaskProcessor.Process)
+	p.handleTasks(ctx, "index_comparison", []string{task.StatusReady}, p.indexComparisonTaskProcessor.Process)
+	p.handleTasks(ctx, "cluster_comparison", []string{task.StatusRunning}, p.clusterComparisonTaskProcessor.Process)
+	p.handleTasks(ctx, "cluster_comparison", []string{task.StatusReady}, p.clusterComparisonTaskProcessor.Process)
 
 	// handle migration tasks
-	p.handleTasks(ctx, "cluster_migration", []string{task2.StatusPendingStop}, p.clusterMigrationTaskProcessor.Process)
-	p.handleTasks(ctx, "index_migration", []string{task2.StatusPendingStop}, p.indexMigrationTaskProcessor.Process)
-	p.handleTasks(ctx, "index_migration", []string{task2.StatusRunning}, p.indexMigrationTaskProcessor.Process)
-	p.handleTasks(ctx, "index_migration", []string{task2.StatusReady}, p.indexMigrationTaskProcessor.Process)
-	p.handleTasks(ctx, "cluster_migration", []string{task2.StatusRunning}, p.clusterMigrationTaskProcessor.Process)
-	p.handleTasks(ctx, "cluster_migration", []string{task2.StatusReady}, p.clusterMigrationTaskProcessor.Process)
+	p.handleTasks(ctx, "cluster_migration", []string{task.StatusPendingStop}, p.clusterMigrationTaskProcessor.Process)
+	p.handleTasks(ctx, "index_migration", []string{task.StatusPendingStop}, p.indexMigrationTaskProcessor.Process)
+	p.handleTasks(ctx, "index_migration", []string{task.StatusRunning}, p.indexMigrationTaskProcessor.Process)
+	p.handleTasks(ctx, "index_migration", []string{task.StatusReady}, p.indexMigrationTaskProcessor.Process)
+	p.handleTasks(ctx, "cluster_migration", []string{task.StatusRunning}, p.clusterMigrationTaskProcessor.Process)
+	p.handleTasks(ctx, "cluster_migration", []string{task.StatusReady}, p.clusterMigrationTaskProcessor.Process)
 	return nil
 }
 
-func (p *DispatcherProcessor) handleTasks(ctx *pipeline.Context, taskType string, taskStatus []string, taskHandler func(taskItem *task2.Task) error) {
+func (p *DispatcherProcessor) handleTasks(ctx *pipeline.Context, taskType string, taskStatus []string, taskHandler func(taskItem *task.Task) error) {
 	tasks, err := p.getMigrationTasks(taskType, taskStatus, p.config.TaskBatchSize)
 	if err != nil {
 		log.Errorf("failed to get [%s] with status %s, err: %v", taskType, taskStatus, err)
@@ -158,10 +158,10 @@ func (p *DispatcherProcessor) handleTasks(ctx *pipeline.Context, taskType string
 		if err != nil {
 			log.Errorf("failed to handle task [%s]: [%v]", taskItem.ID, err)
 
-			taskItem.Status = task2.StatusError
+			taskItem.Status = task.StatusError
 			tn := time.Now()
 			taskItem.CompletedTime = &tn
-			p.saveTaskAndWriteLog(taskItem, &task2.TaskResult{
+			p.saveTaskAndWriteLog(taskItem, &task.TaskResult{
 				Success: false,
 				Error:   err.Error(),
 			}, fmt.Sprintf("failed to handle task [%s]", taskItem.ID))
@@ -170,7 +170,7 @@ func (p *DispatcherProcessor) handleTasks(ctx *pipeline.Context, taskType string
 	return
 }
 
-func (p *DispatcherProcessor) handleTask(taskItem *task2.Task, taskHandler func(taskItem *task2.Task) error) error {
+func (p *DispatcherProcessor) handleTask(taskItem *task.Task, taskHandler func(taskItem *task.Task) error) error {
 	if taskItem.Metadata.Labels == nil {
 		log.Errorf("got migration task [%s] with empty labels, skip handling", taskItem.ID)
 		return errors.New("missing labels")
@@ -178,7 +178,7 @@ func (p *DispatcherProcessor) handleTask(taskItem *task2.Task, taskHandler func(
 	return taskHandler(taskItem)
 }
 
-func (p *DispatcherProcessor) getMigrationTasks(taskType string, taskStatus []string, size int) ([]task2.Task, error) {
+func (p *DispatcherProcessor) getMigrationTasks(taskType string, taskStatus []string, size int) ([]task.Task, error) {
 	queryDsl := util.MapStr{
 		"size": size,
 		"sort": []util.MapStr{
@@ -210,7 +210,7 @@ func (p *DispatcherProcessor) getMigrationTasks(taskType string, taskStatus []st
 	return migration_util.GetTasks(queryDsl)
 }
 
-func (p *DispatcherProcessor) saveTaskAndWriteLog(taskItem *task2.Task, taskResult *task2.TaskResult, message string) {
+func (p *DispatcherProcessor) saveTaskAndWriteLog(taskItem *task.Task, taskResult *task.TaskResult, message string) {
 	esClient := elastic.GetClient(p.config.Elasticsearch)
 	_, err := esClient.Index(p.config.IndexName, "", taskItem.ID, taskItem, "")
 	if err != nil {

@@ -3,7 +3,7 @@ package util
 import (
 	"time"
 
-	migration_model "infini.sh/console/plugin/migration/model"
+	migration_model "infini.sh/console/plugin/task_manager/model"
 	"infini.sh/framework/core/util"
 )
 

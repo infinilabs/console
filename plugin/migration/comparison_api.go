@@ -97,6 +97,13 @@ func (h *APIHandler) getDataComparisonTaskInfo(w http.ResponseWriter, req *http.
 			"index_name": migrationConfig.LogIndexName,
 		}
 	}
+
+	_, repeatStatus, err := h.calcRepeatingStatus(&obj)
+	if err != nil {
+		log.Warnf("failed to calc repeat info, err: %v", err)
+	}
+	obj.Metadata.Labels["repeat"] = repeatStatus
+
 	obj.ConfigString = util.MustToJSON(taskConfig)
 	obj.Metadata.Labels["completed_indices"] = completedIndices
 	h.WriteJSON(w, obj, http.StatusOK)

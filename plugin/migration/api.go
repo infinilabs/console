@@ -129,6 +129,7 @@ func (h *APIHandler) getDataMigrationTaskInfo(w http.ResponseWriter, req *http.R
 			completedIndices++
 		}
 	}
+
 	cfg := global.MustLookup("cluster_migration_config")
 	if migrationConfig, ok := cfg.(*DispatcherConfig); ok {
 		if obj.Metadata.Labels == nil {
@@ -139,6 +140,13 @@ func (h *APIHandler) getDataMigrationTaskInfo(w http.ResponseWriter, req *http.R
 			"index_name": migrationConfig.LogIndexName,
 		}
 	}
+
+	_, repeatStatus, err := h.calcRepeatingStatus(&obj)
+	if err != nil {
+		log.Warnf("failed to calc repeat info, err: %v", err)
+	}
+	obj.Metadata.Labels["repeat"] = repeatStatus
+
 	obj.ConfigString = util.MustToJSON(taskConfig)
 	obj.Metadata.Labels["completed_indices"] = completedIndices
 	h.WriteJSON(w, obj, http.StatusOK)

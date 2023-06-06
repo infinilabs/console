@@ -7,6 +7,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"infini.sh/console/modules/agent/common"
 	"infini.sh/framework/core/agent"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/host"
@@ -39,6 +40,7 @@ type ClientAPI interface {
 	DeletePipeline(ctx context.Context, agentBaseURL, pipelineID string) error
 	SetKeystoreValue(ctx context.Context, agentBaseURL string, key, value string) error
 	SaveDynamicConfig(ctx context.Context, agentBaseURL string, name, content string) error
+	SaveIngestConfig(ctx context.Context, agentBaseURL string) error
 }
 
 type Client struct {
@@ -244,6 +246,24 @@ func (client *Client) SaveDynamicConfig(ctx context.Context, agentBaseURL string
 		Body: util.MustToJSONBytes(body),
 	}
 	return client.doRequest(req, nil)
+}
+
+func (client *Client) SaveIngestConfig(ctx context.Context, agentBaseURL string) error {
+	ingestCfg, basicAuth, err := common.GetAgentIngestConfig()
+	if err != nil {
+		return err
+	}
+	if basicAuth != nil && basicAuth.Password != "" {
+		err = client.SetKeystoreValue(ctx, agentBaseURL, "ingest_cluster_password", basicAuth.Password)
+		if err != nil {
+			return fmt.Errorf("set keystore value to agent error: %w", err)
+		}
+	}
+	err = client.SaveDynamicConfig(context.Background(), agentBaseURL, "ingest", ingestCfg )
+	if err != nil {
+		return fmt.Errorf("save dynamic config to agent error: %w", err)
+	}
+	return nil
 }
 
 

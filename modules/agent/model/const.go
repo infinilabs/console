@@ -8,3 +8,8 @@ const (
 	StatusOnline string = "online"
 	StatusOffline = "offline"
 )
+
+const (
+	KVAgentIngestConfigChanged = "agent_ingest_config_changed"
+	KVSyncDynamicTaskSettings = "agent_sync_dynamic_task_settings"
+)

@@ -118,7 +118,7 @@ func (module *AgentModule) Start() error {
 					return
 				}
 				for _, ag := range agents {
-					err = kv.AddValue("agent_ingest_config_change", []byte(ag.ID), []byte("1"))
+					err = kv.AddValue(model.KVAgentIngestConfigChanged, []byte(ag.ID), []byte("1"))
 					if err != nil {
 						log.Error(err)
 					}

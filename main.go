@@ -67,9 +67,9 @@ func main() {
 	modules = append(modules, &redis.RedisModule{})
 	modules = append(modules, &pipeline.PipeModule{})
 	modules = append(modules, &task.TaskModule{})
-	modules = append(modules, &agent.AgentModule{})
 	modules = append(modules, &metrics.MetricsModule{})
 	modules = append(modules, &security.Module{})
+	modules = append(modules, &agent.AgentModule{})
 
 	uiModule := &ui.UIModule{}
 

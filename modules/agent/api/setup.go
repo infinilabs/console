@@ -35,6 +35,11 @@ func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Req
 		h.WriteError(w, "user not found", http.StatusInternalServerError)
 		return
 	}
+	agCfg := common.GetAgentConfig()
+	if agCfg == nil || agCfg.Setup == nil {
+		h.WriteError(w, "agent setup config was not found, please configure in the configuration file first", http.StatusInternalServerError)
+		return
+	}
 	var (
 		t *Token
 		tokenStr string
@@ -67,7 +72,6 @@ func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Req
 		}
 	}
 	tokens.Store(tokenStr, t)
-	agCfg := common.GetAgentConfig()
 	consoleEndpoint :=  agCfg.Setup.ConsoleEndpoint
 	if consoleEndpoint == "" {
 		scheme := "http"
@@ -77,7 +81,7 @@ func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Req
 		consoleEndpoint = fmt.Sprintf("%s://%s", scheme, req.Host)
 	}
 	h.WriteJSON(w, util.MapStr{
-		"script": fmt.Sprintf(`sudo bash -c "$(curl -L '%s/agent/install.sh?token=%s')"`, consoleEndpoint, tokenStr),
+		"script": fmt.Sprintf(`sudo BASE_URL="%s" AGENT_VER="%s" INSTALL_PATH="/opt" bash -c "$(curl -L '%s/agent/install.sh?token=%s')"`, agCfg.Setup.DownloadURL, agCfg.Setup.Version, consoleEndpoint, tokenStr),
 		"token": tokenStr,
 		"expired_at": t.CreatedAt.Add(ExpiredIn),
 	}, http.StatusOK)

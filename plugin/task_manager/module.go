@@ -2,7 +2,7 @@
  * Web: https://infinilabs.com
  * Email: hello#infini.ltd */
 
-package migration
+package task_manager
 
 import (
 	log "github.com/cihub/seelog"

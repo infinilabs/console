@@ -1,4 +1,4 @@
-package migration
+package task_manager
 
 import (
 	"fmt"
@@ -7,9 +7,9 @@ import (
 
 	log "github.com/cihub/seelog"
 
-	"infini.sh/console/plugin/migration/cluster_comparison"
-	migration_model "infini.sh/console/plugin/migration/model"
-	migration_util "infini.sh/console/plugin/migration/util"
+	"infini.sh/console/plugin/task_manager/cluster_comparison"
+	migration_model "infini.sh/console/plugin/task_manager/model"
+	migration_util "infini.sh/console/plugin/task_manager/util"
 
 	"infini.sh/framework/core/api/rbac"
 	httprouter "infini.sh/framework/core/api/router"
@@ -97,6 +97,13 @@ func (h *APIHandler) getDataComparisonTaskInfo(w http.ResponseWriter, req *http.
 			"index_name": migrationConfig.LogIndexName,
 		}
 	}
+
+	_, repeatStatus, err := h.calcRepeatingStatus(&obj)
+	if err != nil {
+		log.Warnf("failed to calc repeat info, err: %v", err)
+	}
+	obj.Metadata.Labels["repeat"] = repeatStatus
+
 	obj.ConfigString = util.MustToJSON(taskConfig)
 	obj.Metadata.Labels["completed_indices"] = completedIndices
 	h.WriteJSON(w, obj, http.StatusOK)

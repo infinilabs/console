@@ -6,7 +6,7 @@ import (
 	"time"
 
 	log "github.com/cihub/seelog"
-	migration_util "infini.sh/console/plugin/migration/util"
+	migration_util "infini.sh/console/plugin/task_manager/util"
 	"infini.sh/framework/core/task"
 )
 

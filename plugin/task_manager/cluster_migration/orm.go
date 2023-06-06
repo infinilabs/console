@@ -1,11 +1,11 @@
-package cluster_comparison
+package cluster_migration
 
 import (
 	"errors"
 	"fmt"
 
-	migration_model "infini.sh/console/plugin/migration/model"
-	migration_util "infini.sh/console/plugin/migration/util"
+	migration_model "infini.sh/console/plugin/task_manager/model"
+	migration_util "infini.sh/console/plugin/task_manager/util"
 	"infini.sh/framework/core/api/rbac"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/orm"
@@ -14,7 +14,7 @@ import (
 )
 
 func RepeatTask(oldTask *task.Task) (*task.Task, error) {
-	config := migration_model.ClusterComparisonTaskConfig{}
+	config := migration_model.ClusterMigrationTaskConfig{}
 	err := migration_util.GetTaskConfig(oldTask, &config)
 	if err != nil {
 		return nil, err
@@ -45,7 +45,7 @@ func RepeatTask(oldTask *task.Task) (*task.Task, error) {
 	return t, nil
 }
 
-func CreateTask(config *migration_model.ClusterComparisonTaskConfig, creator *rbac.ShortUser) (*task.Task, error) {
+func CreateTask(config *migration_model.ClusterMigrationTaskConfig, creator *rbac.ShortUser) (*task.Task, error) {
 	t, err := buildTask(config, creator, false)
 	if err != nil {
 		return nil, err
@@ -63,13 +63,14 @@ func CreateTask(config *migration_model.ClusterComparisonTaskConfig, creator *rb
 	return t, nil
 }
 
-func buildTask(config *migration_model.ClusterComparisonTaskConfig, creator *rbac.ShortUser, repeat bool) (*task.Task, error) {
+func buildTask(config *migration_model.ClusterMigrationTaskConfig, creator *rbac.ShortUser, repeat bool) (*task.Task, error) {
 	if len(config.Indices) == 0 {
 		return nil, errors.New("indices must not be empty")
 	}
 	if creator == nil {
 		return nil, errors.New("missing creator info")
 	}
+
 	config.Creator.Name = creator.Username
 	config.Creator.Id = creator.UserId
 
@@ -80,9 +81,7 @@ func buildTask(config *migration_model.ClusterComparisonTaskConfig, creator *rba
 
 	clearTaskConfig(config)
 
-	var sourceTotalDocs int64
-	var targetTotalDocs int64
-
+	var totalDocs int64
 	for _, index := range config.Indices {
 		if index.Incremental != nil {
 			if repeat {
@@ -91,19 +90,17 @@ func buildTask(config *migration_model.ClusterComparisonTaskConfig, creator *rba
 				index.Incremental.Full = true
 			}
 		}
-		sourceTotalDocs += index.Source.Docs
-		targetTotalDocs += index.Target.Docs
+		totalDocs += index.Source.Docs
 	}
 
 	t := task.Task{
 		Metadata: task.Metadata{
-			Type: "cluster_comparison",
+			Type: "cluster_migration",
 			Labels: util.MapStr{
-				"business_id":       "cluster_comparison",
+				"business_id":       "cluster_migration",
 				"source_cluster_id": config.Cluster.Source.Id,
 				"target_cluster_id": config.Cluster.Target.Id,
-				"source_total_docs": sourceTotalDocs,
-				"target_total_docs": targetTotalDocs,
+				"source_total_docs": totalDocs,
 			},
 		},
 		Cancellable:  true,
@@ -115,10 +112,11 @@ func buildTask(config *migration_model.ClusterComparisonTaskConfig, creator *rba
 	return &t, nil
 }
 
-// sync with getDataComparisonTaskInfo
-func clearTaskConfig(config *migration_model.ClusterComparisonTaskConfig) {
+// sync with getDataMigrationTaskInfo
+func clearTaskConfig(config *migration_model.ClusterMigrationTaskConfig) {
 	for i := range config.Indices {
-		config.Indices[i].ScrollPercent = 0
+		config.Indices[i].Target.Docs = 0
+		config.Indices[i].Percent = 0
 		config.Indices[i].ErrorPartitions = 0
 	}
 }

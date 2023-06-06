@@ -1,4 +1,4 @@
-package migration
+package task_manager
 
 import (
 	"errors"
@@ -6,9 +6,9 @@ import (
 	"time"
 
 	log "github.com/cihub/seelog"
-	"infini.sh/console/plugin/migration/cluster_comparison"
-	"infini.sh/console/plugin/migration/cluster_migration"
-	migration_util "infini.sh/console/plugin/migration/util"
+	"infini.sh/console/plugin/task_manager/cluster_comparison"
+	"infini.sh/console/plugin/task_manager/cluster_migration"
+	migration_util "infini.sh/console/plugin/task_manager/util"
 	"infini.sh/framework/core/pipeline"
 	"infini.sh/framework/core/task"
 	"infini.sh/framework/core/util"

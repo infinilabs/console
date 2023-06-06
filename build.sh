@@ -48,7 +48,8 @@ ARG APP_HOME=/opt/\${APP_NAME}
 ENV APP=\${APP_NAME}
 WORKDIR \${APP_HOME}
 
-COPY ["$PNAME-linux-$t", "$PNAME.yml", "config", "\${APP_HOME}/"]
+COPY ["$PNAME-linux-$t", "$PNAME.yml", "\${APP_HOME}/"]
+COPY ["config", "\${APP_HOME}/config"]
 
 CMD ["/opt/$PNAME/${PNAME}-linux-$t"]
 EOF

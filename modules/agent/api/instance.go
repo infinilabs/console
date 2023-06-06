@@ -112,7 +112,7 @@ func (h *APIHandler) createInstance(w http.ResponseWriter, req *http.Request, ps
 	if err != nil {
 		log.Error(err)
 	}
-	err = pushIngestConfigToAgent(obj)
+	err = client.GetClient().SaveIngestConfig(context.Background(), obj.GetEndpoint())
 	if err != nil {
 		log.Error(err)
 	}
@@ -121,23 +121,6 @@ func (h *APIHandler) createInstance(w http.ResponseWriter, req *http.Request, ps
 
 }
 
-func pushIngestConfigToAgent(inst *agent.Instance) error{
-	ingestCfg, basicAuth, err := common2.GetAgentIngestConfig()
-	if err != nil {
-		return err
-	}
-	if basicAuth != nil && basicAuth.Password != "" {
-		err = client.GetClient().SetKeystoreValue(context.Background(), inst.GetEndpoint(), "ingest_cluster_password", basicAuth.Password)
-		if err != nil {
-			return fmt.Errorf("set keystore value to agent error: %w", err)
-		}
-	}
-	err = client.GetClient().SaveDynamicConfig(context.Background(), inst.GetEndpoint(), "ingest", ingestCfg )
-	if err != nil {
-		fmt.Errorf("save dynamic config to agent error: %w", err)
-	}
-	return nil
-}
 
 func (h *APIHandler) getInstance(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	id := ps.MustGetParameter("instance_id")

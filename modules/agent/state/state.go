@@ -92,25 +92,6 @@ func (sm *StateManager) checkAgentStatus() {
 	}
 	sm.agentMutex.Unlock()
 	for agentID, status := range sm.agentIds {
-		if _, ok := onlineAgentIDs[agentID]; ok {
-			sm.syncSettings(agentID)
-			host.UpdateHostAgentStatus(agentID, model.StatusOnline)
-			if status == model.StatusOnline {
-				continue
-			}
-			// status change to online
-			sm.agentIds[agentID] = model.StatusOnline
-			log.Infof("status of agent [%s] changed to online", agentID)
-			continue
-		}else{
-			// already offline
-			if status == model.StatusOffline {
-				continue
-			}
-		}
-		// status change to offline
-		// todo validate whether agent is offline
-		sm.agentIds[agentID] = model.StatusOffline
 		sm.workerChan <- struct{}{}
 		go func(agentID string) {
 			defer func() {
@@ -120,6 +101,25 @@ func (sm *StateManager) checkAgentStatus() {
 				}
 				<-sm.workerChan
 			}()
+			sm.syncSettings(agentID)
+			sm.syncIngestSettings(agentID)
+			if _, ok := onlineAgentIDs[agentID]; ok {
+				host.UpdateHostAgentStatus(agentID, model.StatusOnline)
+				if status == model.StatusOnline {
+					return
+				}
+				// status change to online
+				sm.agentIds[agentID] = model.StatusOnline
+				log.Infof("status of agent [%s] changed to online", agentID)
+				return
+			}else{
+				// already offline
+				if status == model.StatusOffline {
+					return
+				}
+			}
+			// status change to offline
+			sm.agentIds[agentID] = model.StatusOffline
 			ag, err := sm.GetAgent(agentID)
 			if err != nil {
 				if err != elastic.ErrNotFound {
@@ -140,9 +140,8 @@ func (sm *StateManager) checkAgentStatus() {
 
 	}
 }
-const KVSyncSettings = "agent_sync_settings"
 func (sm *StateManager) getLastSyncSettingsTimestamp(agentID string) int64{
-	vbytes, err := kv.GetValue(KVSyncSettings, []byte(agentID))
+	vbytes, err := kv.GetValue(model.KVSyncDynamicTaskSettings, []byte(agentID))
 	if err != nil {
 		log.Error(err)
 	}
@@ -219,9 +218,29 @@ func (sm *StateManager) syncSettings(agentID string) {
 	err = agClient.SaveDynamicConfig(context.Background(), ag.GetEndpoint(), "dynamic_task", string(cfgBytes))
 
 	newTimestampStr := strconv.FormatInt(newTimestamp, 10)
-	err = kv.AddValue(KVSyncSettings, []byte(agentID), []byte(newTimestampStr))
+	err = kv.AddValue(model.KVSyncDynamicTaskSettings, []byte(agentID), []byte(newTimestampStr))
 	if err != nil {
 		log.Error(err)
+	}
+}
+func (sm *StateManager) syncIngestSettings(agentID string) {
+	v, err := kv.GetValue(model.KVAgentIngestConfigChanged, []byte(agentID))
+	if err != nil {
+		log.Error(err)
+	}
+	if string(v) != "1" {
+		return
+	}
+	ag, err := sm.GetAgent(agentID)
+	if err != nil {
+		if err != elastic.ErrNotFound {
+			log.Errorf("get agent error: %v", err)
+		}
+		return
+	}
+	err = sm.agentClient.SaveIngestConfig(context.Background(), ag.GetEndpoint())
+	if err == nil {
+		kv.AddValue(model.KVAgentIngestConfigChanged,[]byte(agentID), []byte("0"))
 	}
 }
 

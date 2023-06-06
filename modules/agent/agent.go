@@ -5,6 +5,7 @@
 package agent
 
 import (
+	"fmt"
 	log "github.com/cihub/seelog"
 	"infini.sh/console/modules/agent/api"
 	"infini.sh/console/modules/agent/client"
@@ -12,9 +13,13 @@ import (
 	"infini.sh/console/modules/agent/model"
 	"infini.sh/console/modules/agent/state"
 	"infini.sh/framework/core/agent"
+	"infini.sh/framework/core/credential"
+	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/env"
 	"infini.sh/framework/core/host"
+	"infini.sh/framework/core/kv"
 	"infini.sh/framework/core/orm"
+	"infini.sh/framework/core/util"
 	"time"
 )
 
@@ -73,6 +78,53 @@ func (module *AgentModule) Start() error {
 				agentIds[ag.ID] = "online"
 			}
 		}
+		credential.RegisterChangeEvent(func(cred *credential.Credential) {
+			var effectsClusterIDs []string
+			elastic.WalkConfigs(func(key, value interface{}) bool {
+				if cfg, ok := value.(*elastic.ElasticsearchConfig); ok {
+					if cfg.CredentialID == cred.ID {
+						effectsClusterIDs = append(effectsClusterIDs, cfg.ID)
+					}
+				}
+				return true
+			})
+			if len(effectsClusterIDs) > 0 {
+				queryDsl := util.MapStr{
+					"query": util.MapStr{
+						"bool": util.MapStr{
+							"must": []util.MapStr{
+								{
+									"terms": util.MapStr{
+										"metadata.labels.cluster_id": effectsClusterIDs,
+									},
+								},
+							},
+						},
+					},
+					"script": util.MapStr{
+						"source": fmt.Sprintf("ctx._source['updated'] = '%s'", time.Now().Format(time.RFC3339Nano)),
+					},
+				}
+				err = orm.UpdateBy(agent.Setting{}, util.MustToJSONBytes(queryDsl))
+				if err != nil {
+					log.Error(err)
+				}
+			}
+			//check ingest cluster credential
+			if module.AgentConfig.Setup != nil && module.AgentConfig.Setup.IngestClusterCredentialID == cred.ID {
+				agents, err = common.LoadAgentsFromES("")
+				if err != nil {
+					log.Error(err)
+					return
+				}
+				for _, ag := range agents {
+					err = kv.AddValue(model.KVAgentIngestConfigChanged, []byte(ag.ID), []byte("1"))
+					if err != nil {
+						log.Error(err)
+					}
+				}
+			}
+		})
 
 		sm := state.NewStateManager(time.Second*30, "agent_state", agentIds, agClient)
 		state.RegisterStateManager(sm)

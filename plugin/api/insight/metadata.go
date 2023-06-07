@@ -7,9 +7,9 @@ package insight
 import (
 	"github.com/Knetic/govaluate"
 	log "github.com/cihub/seelog"
+	"infini.sh/console/model/insight"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
-	"infini.sh/console/model/insight"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"math"
@@ -217,7 +217,8 @@ func getMetricData(metric *insight.Metric) (interface{}, error) {
 	metricData := CollectMetricData(agg, metric.TimeBeforeGroup)
 
 	var targetMetricData []insight.MetricData
-	if len(metric.Items) == 1 {
+	formula := strings.TrimSpace(metric.Formula)
+	if len(metric.Items) == 1 && formula == "" {
 		targetMetricData =  metricData
 	}else {
 		for _, md := range metricData {
@@ -225,7 +226,7 @@ func getMetricData(metric *insight.Metric) (interface{}, error) {
 				Group: md.Group,
 				Data:  map[string][]insight.MetricDataItem{},
 			}
-			expression, err := govaluate.NewEvaluableExpression(metric.Formula)
+			expression, err := govaluate.NewEvaluableExpression(formula)
 			if err != nil {
 				return nil, err
 			}

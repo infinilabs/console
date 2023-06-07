@@ -181,7 +181,6 @@ func (module *Module) validate(w http.ResponseWriter, r *http.Request, ps httpro
 	if err != nil {
 		panic(err)
 	}
-	cfg.ClusterUUID = verInfo.ClusterUUID
 	if verInfo.Version.Distribution == elastic.Elasticsearch {
 		if verInfo.Version.Number != "" {
 			ver := &util.Version{}
@@ -290,6 +289,12 @@ func (module *Module) initTempClient(r *http.Request) (error, elastic.API, Setup
 	cfg.ID = GlobalSystemElasticsearchID
 	cfg.Name = "INFINI_SYSTEM (" + util.PickRandomName() + ")"
 	elastic.InitMetadata(&cfg, true)
+	verInfo, err := adapter.ClusterVersion(elastic.GetMetadata(cfg.ID))
+	if err != nil {
+		panic(err)
+	}
+	cfg.ClusterUUID = verInfo.ClusterUUID
+
 	client, err := elastic1.InitClientWithConfig(cfg)
 	if err != nil {
 		return err, nil, request

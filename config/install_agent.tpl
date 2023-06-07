@@ -195,8 +195,6 @@ badger:
   value_log_max_entries: 1000000
   value_log_file_size: 104857600
   value_threshold: 1024
-agent:
-  major_ip_pattern: "192.*"
 "
 
 agent_yml_path="${install_path}/agent/agent.yml"

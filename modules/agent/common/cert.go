@@ -24,9 +24,6 @@ func GenerateServerCert(caFile, caKey string) (caCert, serverCertPEM, serverKeyP
 
 func generateCert(caFile, caKey string, isServer bool)(caCert, instanceCertPEM, instanceKeyPEM []byte, err error){
 	pool := x509.NewCertPool()
-	if caFile == "" {
-		caFile = path.Join(global.Env().GetConfigDir(), "certs", "ca.crt")
-	}
 	caCert, err = os.ReadFile(caFile)
 	if err != nil {
 		return
@@ -38,9 +35,6 @@ func generateCert(caFile, caKey string, isServer bool)(caCert, instanceCertPEM, 
 	rootCert, err = x509.ParseCertificate(b.Bytes)
 	if err != nil {
 		return
-	}
-	if caKey == "" {
-		caKey = path.Join(global.Env().GetConfigDir(), "certs", "ca.key")
 	}
 	var keyBytes []byte
 	keyBytes, err = os.ReadFile(caKey)

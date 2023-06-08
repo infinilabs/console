@@ -11,6 +11,7 @@ import (
 	"infini.sh/framework/core/credential"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/event"
+	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	log "src/github.com/cihub/seelog"
@@ -385,11 +386,20 @@ func GetAgentIngestConfig() (string, *elastic.BasicAuth, error) {
 		endpoint string
 		ok bool
 	)
+	emptyIngestClusterEndpoint := false
+	if agCfg.Setup.IngestClusterEndpoint == nil {
+		emptyIngestClusterEndpoint = true
+	}
 	if endpoint, ok = agCfg.Setup.IngestClusterEndpoint.(string);ok {
 		if endpoint = strings.TrimSpace(endpoint); endpoint == "" {
-			return "", nil, fmt.Errorf("config ingest_cluster_endpoint must not be empty")
+			emptyIngestClusterEndpoint = true
 		}
 	}
+	if emptyIngestClusterEndpoint {
+		cfg := elastic.GetConfig(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
+		endpoint = cfg.Endpoint
+	}
+
 	var (
 		basicAuth elastic.BasicAuth
 	)
@@ -407,6 +417,9 @@ func GetAgentIngestConfig() (string, *elastic.BasicAuth, error) {
 		if basicAuth, ok = info.(elastic.BasicAuth); !ok {
 			log.Debug("invalid credential: ", cred)
 		}
+	}else{
+		cfg := elastic.GetConfig(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
+		basicAuth = *cfg.BasicAuth
 	}
 	tpl := `elasticsearch:
   - name: default

@@ -21,6 +21,7 @@ import (
 	"infini.sh/framework/core/util"
 	elastic2 "infini.sh/framework/modules/elastic"
 	"infini.sh/framework/modules/elastic/common"
+	"net"
 	"net/http"
 	"strconv"
 	"time"
@@ -489,6 +490,16 @@ func (h *APIHandler) authESNode(w http.ResponseWriter, req *http.Request, ps htt
 	if err != nil {
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	host, _, err := net.SplitHostPort(nodeInfo.PublishAddress)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if !util.StringInArray(inst.IPS, host) {
+		h.WriteError(w, fmt.Sprintf("got node host %s not match any ip of %v", host, inst.IPS), http.StatusInternalServerError)
 		return
 	}
 	nodeInfo.ID = oldNodeInfo.ID

@@ -305,7 +305,7 @@ func collectMetricDataOther(agg interface{}, groupValues string, metricData *[]i
 			if bks, ok := aggM["buckets"].([]interface{}); ok {
 				for _, bk := range bks {
 					if bkVal, ok := bk.(map[string]interface{}); ok {
-						currentGroup := bkVal["key"].(string)
+						currentGroup := util.ToString(bkVal["key"])
 						newGroupValues := currentGroup
 						if groupValues != "" {
 							newGroupValues = fmt.Sprintf("%s-%s", groupValues, currentGroup)

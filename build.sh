@@ -27,7 +27,10 @@ GOROOT="/infini/go-pkgs/go-loongarch" PATH=$GOROOT/bin:$PATH make build-linux-lo
 
 #copy-configs
 cp -rf $WORKBASE/framework/LICENSE $WORKDIR/bin && cat $WORKBASE/framework/NOTICE $WORKDIR/NOTICE > $WORKDIR/bin/NOTICE
-mkdir -p $WORKDIR/bin/config && cp $WORKDIR/config/*.json $WORKDIR/bin/config && cp -rf $WORKDIR/config/*.tpl $WORKDIR/bin/config
+mkdir -p $WORKDIR/bin/config
+cp $WORKDIR/config/*.json $WORKDIR/bin/config 
+cp -rf $WORKDIR/config/*.tpl $WORKDIR/bin/config
+cp -rf $WORKDIR/config/certs $WORKDIR/bin/config
 
 cd $WORKDIR/bin
 for t in 386 amd64 arm64 armv5 armv6 armv7 loong64 mips mips64 mips64le mipsle riscv64 ; do
@@ -50,6 +53,7 @@ WORKDIR \${APP_HOME}
 
 COPY ["$PNAME-linux-$t", "$PNAME.yml", "\${APP_HOME}/"]
 COPY ["config", "\${APP_HOME}/config"]
+COPY ["config/certs", "\${APP_HOME}/config/certs"]
 
 CMD ["/opt/$PNAME/${PNAME}-linux-$t"]
 EOF

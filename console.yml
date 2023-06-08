@@ -1,10 +1,10 @@
 path.configs: "config"
 configs.auto_reload: true
 
-#env:
-#  INFINI_CONSOLE_ENDPOINT: "http://192.168.3.9:9000"
-#  INGEST_CLUSTER_ENDPOINT: "http://192.168.3.9:9210"
-#  INGEST_CLUSTER_CREDENTIAL_ID: chjkp9dath21f1ae9tq0
+env:
+  INFINI_CONSOLE_ENDPOINT: "http://127.0.0.1:9000"
+  INGEST_CLUSTER_ENDPOINT: "https://127.0.0.1:9200"
+  INGEST_CLUSTER_CREDENTIAL_ID: chjkp9dath21f1ae9tq0
 
 web:
   enabled: true
@@ -71,12 +71,12 @@ badger:
 #    redirect_url: ""
 #    scopes: []
 
-#agent:
-#  setup:
-#    download_url: "https://release.infinilabs.com/agent/snapshot"
-#    version: 0.5.0_NIGHTLY-157
-#    ca_cert: "/opt/config/certs/ca.crt"
-#    ca_key: "/opt/config/certs/ca.key"
-#    console_endpoint: $[[env.INFINI_CONSOLE_ENDPOINT]]
-#    ingest_cluster_endpoint: $[[env.INGEST_CLUSTER_ENDPOINT]]
-#    ingest_cluster_credential_id: $[[env.INGEST_CLUSTER_CREDENTIAL_ID]]
+agent:
+  setup:
+    download_url: "https://release.infinilabs.com/agent/stable"
+    version: 0.5.0-214
+    ca_cert: "config/certs/ca.crt"
+    ca_key: "config/certs/ca.key"
+    console_endpoint: $[[env.INFINI_CONSOLE_ENDPOINT]]
+    ingest_cluster_endpoint: $[[env.INGEST_CLUSTER_ENDPOINT]]
+    ingest_cluster_credential_id: $[[env.INGEST_CLUSTER_CREDENTIAL_ID]]

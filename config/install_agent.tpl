@@ -115,8 +115,8 @@ agent_exc="${install_path}/agent/agent-${os}-${arch}" #agent可执行文件
 
 agent_exsit="true"
 if [ ! -d "${install_path}/agent" ]; then
-	printf "\n* mkdir ${install_path}/agent"
-	$sudo_cmd mkdir "${install_path}/agent"
+	printf "\n* mkdir -p ${install_path}/agent"
+	$sudo_cmd mkdir -p "${install_path}/agent"
 	agent_exsit="false"
 fi
 
@@ -161,7 +161,7 @@ rm -f ${agent}
 ##################
 # save cert
 ##################
-$sudo_cmd mkdir config
+$sudo_cmd mkdir -p config
 $sudo_cmd sh -c "echo '${ca_crt}' > ./config/ca.crt"
 $sudo_cmd sh -c "echo '${client_crt}' > ./config/client.crt"
 $sudo_cmd sh -c "echo '${client_key}' > ./config/client.key"
@@ -184,9 +184,9 @@ api:
   enabled: true
   tls:
     enabled: true
-    cert_file: "${install_path}/agent/config/client.crt"
-    key_file: "${install_path}/agent/config/client.key"
-    ca_file: "${install_path}/agent/config/ca.crt"
+    cert_file: "config/client.crt"
+    key_file: "config/client.key"
+    ca_file: "config/ca.crt"
     skip_insecure_verify: false
   network:
     binding: \$[[env.API_BINDING]]
@@ -213,10 +213,10 @@ fi
 $sudo_cmd chmod +x $agent_exc
 
 #try to stop and uninstall service
-if [[ "$agent_exsit" == "true" ]]; then
+if [[ -e /etc/systemd/system/agent.service ]]; then
 	printf "\n* stop && uninstall service\n"
-	$sudo_cmd $agent_exc -service stop
-	$sudo_cmd $agent_exc -service uninstall
+	$sudo_cmd $agent_exc -service stop &>/dev/null
+	$sudo_cmd $agent_exc -service uninstall &>/dev/null
 fi
 
 printf "\n* start install service\n"

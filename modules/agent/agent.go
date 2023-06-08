@@ -49,14 +49,22 @@ func (module *AgentModule) Start() error {
 	var (
 		executor client.Executor
 		err error
+		caFile string
+		caKey string
 	)
-	if module.AgentConfig.Setup == nil {
-		executor = &client.HttpExecutor{}
-	}else{
-		executor, err = client.NewMTLSExecutor(module.AgentConfig.Setup.CACertFile, module.AgentConfig.Setup.CAKeyFile)
+	if module.AgentConfig.Setup != nil {
+		caFile = module.AgentConfig.Setup.CACertFile
+		caKey = module.AgentConfig.Setup.CAKeyFile
+	}
+	if caFile == "" && caKey == "" {
+		caFile, caKey, err = common.GetOrInitDefaultCaCerts()
 		if err != nil {
 			panic(err)
 		}
+	}
+	executor, err = client.NewMTLSExecutor(caFile, caKey)
+	if err != nil {
+		panic(err)
 	}
 	agClient := &client.Client{
 		Executor: executor,

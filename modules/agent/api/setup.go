@@ -74,17 +74,21 @@ func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Req
 	tokens.Store(tokenStr, t)
 	consoleEndpoint :=  agCfg.Setup.ConsoleEndpoint
 	if consoleEndpoint == "" {
-		scheme := "http"
-		if req.TLS != nil {
-			scheme = "https"
-		}
-		consoleEndpoint = fmt.Sprintf("%s://%s", scheme, req.Host)
+		consoleEndpoint = getDefaultConsoleEndpoint(req)
 	}
 	h.WriteJSON(w, util.MapStr{
 		"script": fmt.Sprintf(`sudo BASE_URL="%s" AGENT_VER="%s" INSTALL_PATH="/opt" bash -c "$(curl -L '%s/agent/install.sh?token=%s')"`, agCfg.Setup.DownloadURL, agCfg.Setup.Version, consoleEndpoint, tokenStr),
 		"token": tokenStr,
 		"expired_at": t.CreatedAt.Add(ExpiredIn),
 	}, http.StatusOK)
+}
+
+func getDefaultConsoleEndpoint(req *http.Request) string{
+	scheme := "http"
+	if req.TLS != nil {
+		scheme = "https"
+	}
+	return fmt.Sprintf("%s://%s", scheme, req.Host)
 }
 
 func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -127,10 +131,14 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 	if port == "" {
 		port = "8080"
 	}
+	consoleEndpoint := agCfg.Setup.ConsoleEndpoint
+	if consoleEndpoint == "" {
+		consoleEndpoint = getDefaultConsoleEndpoint(req)
+	}
 	_, err = tpl.Execute(w, map[string]interface{}{
 		"base_url":  agCfg.Setup.DownloadURL,
 		"agent_version": agCfg.Setup.Version,
-		"console_endpoint": agCfg.Setup.ConsoleEndpoint,
+		"console_endpoint": consoleEndpoint,
 		"client_crt": clientCertPEM,
 		"client_key": clientKeyPEM,
 		"ca_crt": caCert,

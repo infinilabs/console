@@ -51,6 +51,14 @@ func (m *Metric) GenerateExpression() (string, error){
 
 	return string(expressionBytes), nil
 }
+func (m *Metric) AutoTimeBeforeGroup() bool {
+	for _, item := range m.Items {
+		if item.Statistic == "derivative" {
+			return false
+		}
+	}
+	return true
+}
 
 type MetricItem struct {
 	Name string `json:"name,omitempty"`

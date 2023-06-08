@@ -461,15 +461,18 @@ func (p *processor) checkBulkPipelineTaskStatus(bulkTask *task.Task, cfg *migrat
 	)
 	successDocs = migration_util.GetMapIntValue(bulkLabels, "success_docs")
 
-	if !cfg.Target.SkipCountCheck && successDocs != totalDocs {
-		return true, successDocs, fmt.Errorf("bulk complete but docs count unmatch: %d / %d, invalid docs: [%s] (reasons: [%s]), failure docs: [%s] (reasons: [%s])", successDocs, totalDocs, invalidDocs, invalidReasons, failureDocs, failureReasons)
+	if successDocs != totalDocs {
+		// check count
+		if !cfg.Target.SkipCountCheck {
+			return true, successDocs, fmt.Errorf("bulk complete but docs count unmatch: %d / %d, invalid docs: [%s] (reasons: [%s]), failure docs: [%s] (reasons: [%s])", successDocs, totalDocs, invalidDocs, invalidReasons, failureDocs, failureReasons)
+		}
+		// has errors
+		if bulkTask.Status == task.StatusError {
+			return true, successDocs, fmt.Errorf("bulk pipeline failed")
+		}
 	}
 
-	// successDocs matched but has errors
-	if bulkTask.Status == task.StatusError {
-		return true, successDocs, nil
-	}
-
+	// successDocs matched, return ok
 	return true, successDocs, nil
 }
 

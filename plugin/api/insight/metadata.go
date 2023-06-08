@@ -214,7 +214,8 @@ func getMetricData(metric *insight.Metric) (interface{}, error) {
 			agg = aggM["filter_agg"]
 		}
 	}
-	metricData := CollectMetricData(agg, true)
+	timeBeforeGroup :=  metric.AutoTimeBeforeGroup()
+	metricData := CollectMetricData(agg, timeBeforeGroup)
 
 	var targetMetricData []insight.MetricData
 	formula := strings.TrimSpace(metric.Formula)

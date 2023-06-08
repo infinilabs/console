@@ -79,7 +79,7 @@ func generateAgg(metricItem *insight.MetricItem, timeField string) map[string]in
 }
 
 func GenerateQuery(metric *insight.Metric) (interface{}, error) {
-	var timeBeforeGroup = metric.TimeBeforeGroup
+	var timeBeforeGroup = true
 	basicAggs := util.MapStr{}
 	i := 0
 	for _, metricItem := range metric.Items {

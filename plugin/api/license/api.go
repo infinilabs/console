@@ -28,7 +28,11 @@ func (handler *LicenseAPI) RequestTrialLicense(w http.ResponseWriter, req *http.
 	}
 
 	v := license.TrialRequest{}
-	util.FromJSONBytes(body, &v)
+	err=util.FromJSONBytes(body, &v)
+	if err != nil {
+		handler.Error500(w, err.Error())
+		return
+	}
 
 	//TODO implement config for the api endpoint
 	request:=util.NewPostRequest("https://api.infini.sh/_license/request_trial", util.MustToJSONBytes(v))
@@ -37,6 +41,23 @@ func (handler *LicenseAPI) RequestTrialLicense(w http.ResponseWriter, req *http.
 		handler.WriteError(w,err.Error(),response.StatusCode)
 		return
 	}
+
+	r:=license.TrialResponse{}
+	err=util.FromJSONBytes(response.Body, &r)
+	if err != nil {
+		handler.Error500(w, err.Error())
+		return
+	}
+
+	if r.License!=""{
+		ok := license.ApplyLicense(r.License)
+		if ok {
+			license.PersistLicense(r.License)
+		}else{
+			r.License=""
+		}
+	}
+
 	w.WriteHeader(response.StatusCode)
-	w.Write(response.Body)
+	w.Write(util.MustToJSONBytes(r))
 }

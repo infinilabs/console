@@ -1,6 +1,7 @@
 package api
 
 import (
+	"infini.sh/console/plugin/api/license"
 	"path"
 
 	"infini.sh/console/config"
@@ -72,4 +73,6 @@ func Init(cfg *config.AppConfig) {
 	insight.InitAPI()
 	layout.InitAPI()
 	notification.InitAPI()
+
+	license.InitAPI()
 }

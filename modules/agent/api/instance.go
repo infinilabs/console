@@ -7,6 +7,11 @@ package api
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/http"
+	"strconv"
+	"time"
+
 	log "github.com/cihub/seelog"
 	"infini.sh/console/modules/agent/client"
 	common2 "infini.sh/console/modules/agent/common"
@@ -21,10 +26,6 @@ import (
 	"infini.sh/framework/core/util"
 	elastic2 "infini.sh/framework/modules/elastic"
 	"infini.sh/framework/modules/elastic/common"
-	"net"
-	"net/http"
-	"strconv"
-	"time"
 )
 
 type APIHandler struct {
@@ -45,7 +46,7 @@ func (h *APIHandler) createInstance(w http.ResponseWriter, req *http.Request, ps
 		if v, ok := tokens.Load(token); !ok {
 			h.WriteError(w, "token is invalid", http.StatusUnauthorized)
 			return
-		}else{
+		} else {
 			if t, ok := v.(*Token); !ok || t.CreatedAt.Add(ExpiredIn).Before(time.Now()) {
 				tokens.Delete(token)
 				h.WriteError(w, "token was expired", http.StatusUnauthorized)
@@ -67,16 +68,16 @@ func (h *APIHandler) createInstance(w http.ResponseWriter, req *http.Request, ps
 	res, err := client.GetClient().GetInstanceBasicInfo(context.Background(), obj.GetEndpoint())
 	if err != nil {
 		errStr := fmt.Sprintf("get agent instance basic info error: %s", err.Error())
-		h.WriteError(w,errStr , http.StatusInternalServerError)
+		h.WriteError(w, errStr, http.StatusInternalServerError)
 		log.Error(errStr)
 		return
 	}
 	if res.ID == "" {
-		errStr :=fmt.Sprintf("got unexpected response of agent instance basic info: %s", util.MustToJSON(res))
-		h.WriteError(w, errStr , http.StatusInternalServerError)
+		errStr := fmt.Sprintf("got unexpected response of agent instance basic info: %s", util.MustToJSON(res))
+		h.WriteError(w, errStr, http.StatusInternalServerError)
 		log.Error(errStr)
 		return
-	}else{
+	} else {
 		obj.ID = res.ID
 		obj.Version = res.Version
 		obj.MajorIP = res.MajorIP
@@ -121,7 +122,6 @@ func (h *APIHandler) createInstance(w http.ResponseWriter, req *http.Request, ps
 	h.WriteCreatedOKJSON(w, obj.ID)
 
 }
-
 
 func (h *APIHandler) getInstance(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	id := ps.MustGetParameter("instance_id")
@@ -275,15 +275,15 @@ func (h *APIHandler) getInstanceStats(w http.ResponseWriter, req *http.Request, 
 		if itemV, ok := item.(map[string]interface{}); ok {
 			if agentID, ok := util.GetMapValueByKeys([]string{"agent", "id"}, itemV); ok {
 				if v, ok := agentID.(string); ok {
-					if ab, ok := util.GetMapValueByKeys([]string{"payload","instance", "system"}, itemV); ok{
+					if ab, ok := util.GetMapValueByKeys([]string{"payload", "instance", "system"}, itemV); ok {
 						if abV, ok := ab.(map[string]interface{}); ok {
 							result[v] = util.MapStr{
 								"timestamp": itemV["timestamp"],
 								"system": util.MapStr{
-									"cpu": abV["cpu"],
-									"mem": abV["mem"],
+									"cpu":          abV["cpu"],
+									"mem":          abV["mem"],
 									"uptime_in_ms": abV["uptime_in_ms"],
-									"status": "online",
+									"status":       "online",
 								},
 							}
 						}
@@ -342,18 +342,17 @@ func (h *APIHandler) updateInstance(w http.ResponseWriter, req *http.Request, ps
 	}, 200)
 }
 
-
 func (h *APIHandler) searchInstance(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 
 	var (
 		keyword = h.GetParameterOrDefault(req, "keyword", "")
 		//queryDSL    = `{"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d}`
-		strSize      = h.GetParameterOrDefault(req, "size", "20")
-		strFrom      = h.GetParameterOrDefault(req, "from", "0")
+		strSize = h.GetParameterOrDefault(req, "size", "20")
+		strFrom = h.GetParameterOrDefault(req, "from", "0")
 	)
 
 	var (
-		mustQ       []interface{}
+		mustQ []interface{}
 	)
 
 	if keyword != "" {
@@ -423,7 +422,7 @@ func (h *APIHandler) getESNodesInfo(w http.ResponseWriter, req *http.Request, ps
 	h.WriteJSON(w, nodes, http.StatusOK)
 }
 
-func (h *APIHandler) refreshESNodesInfo(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
+func (h *APIHandler) refreshESNodesInfo(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	id := ps.MustGetParameter("instance_id")
 	obj := agent.Instance{}
 	obj.ID = id
@@ -457,7 +456,7 @@ func (h *APIHandler) authESNode(w http.ResponseWriter, req *http.Request, ps htt
 		return
 	}
 	reqBody := struct {
-		NodeID string `json:"node_id"`
+		NodeID   string                       `json:"node_id"`
 		ESConfig *elastic.ElasticsearchConfig `json:"es_config"`
 	}{}
 	err = h.DecodeJSON(req, &reqBody)
@@ -498,7 +497,7 @@ func (h *APIHandler) authESNode(w http.ResponseWriter, req *http.Request, ps htt
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if !util.StringInArray(inst.IPS, host) {
+	if !util.StringInArray(inst.IPS, host) && !net.ParseIP(host).IsLoopback() {
 		h.WriteError(w, fmt.Sprintf("got node host %s not match any ip of %v", host, inst.IPS), http.StatusInternalServerError)
 		return
 	}
@@ -516,7 +515,7 @@ func (h *APIHandler) authESNode(w http.ResponseWriter, req *http.Request, ps htt
 func (h *APIHandler) associateESNode(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	instID := ps.MustGetParameter("instance_id")
 	reqBody := struct {
-		ID string `json:"id"`
+		ID        string `json:"id"`
 		ClusterID string `json:"cluster_id"`
 	}{}
 	err := h.DecodeJSON(req, &reqBody)
@@ -535,7 +534,7 @@ func (h *APIHandler) associateESNode(w http.ResponseWriter, req *http.Request, p
 		return
 	}
 	if node.AgentID != instID {
-		errStr :=  fmt.Sprintf("agent id not match: %s, %s", node.AgentID, instID)
+		errStr := fmt.Sprintf("agent id not match: %s, %s", node.AgentID, instID)
 		log.Error(errStr)
 		h.WriteError(w, errStr, http.StatusInternalServerError)
 		return
@@ -631,7 +630,7 @@ func (h *APIHandler) deleteESNode(w http.ResponseWriter, req *http.Request, ps h
 
 func (h *APIHandler) tryConnect(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	var reqBody = struct {
-		Endpoint string `json:"endpoint"`
+		Endpoint  string `json:"endpoint"`
 		BasicAuth agent.BasicAuth
 	}{}
 	err := h.DecodeJSON(req, &reqBody)
@@ -671,7 +670,7 @@ func refreshNodesInfo(inst *agent.Instance) ([]agent.ESNodeInfo, error) {
 				node = *oldNode
 			}
 			oldPids[oldNode.ProcessInfo.PID] = struct{}{}
-		}else{
+		} else {
 			node.ID = util.GetUUID()
 		}
 		if node.ClusterUuid != "" {
@@ -709,7 +708,7 @@ func refreshNodesInfo(inst *agent.Instance) ([]agent.ESNodeInfo, error) {
 	return resultNodes, nil
 }
 
-func getNodeByPidOrUUID(nodes map[int]*agent.ESNodeInfo, pid int, uuid string) *agent.ESNodeInfo{
+func getNodeByPidOrUUID(nodes map[int]*agent.ESNodeInfo, pid int, uuid string) *agent.ESNodeInfo {
 	if nodes[pid] != nil {
 		return nodes[pid]
 	}
@@ -721,7 +720,7 @@ func getNodeByPidOrUUID(nodes map[int]*agent.ESNodeInfo, pid int, uuid string) *
 	return nil
 }
 
-func getNodesInfoFromES(agentID string) (map[int]*agent.ESNodeInfo, error){
+func getNodesInfoFromES(agentID string) (map[int]*agent.ESNodeInfo, error) {
 	query := util.MapStr{
 		"size": 100,
 		"query": util.MapStr{
@@ -731,7 +730,6 @@ func getNodesInfoFromES(agentID string) (map[int]*agent.ESNodeInfo, error){
 				},
 			},
 		},
-
 	}
 	q := orm.Query{
 		RawQuery: util.MustToJSONBytes(query),
@@ -760,25 +758,25 @@ func pickAgentSettings(settings []agent.Setting, nodeInfo agent.ESNodeInfo) *age
 	return nil
 }
 
-func getAgentTaskSetting(agentID string, node agent.ESNodeInfo) (*agent.Setting, error){
+func getAgentTaskSetting(agentID string, node agent.ESNodeInfo) (*agent.Setting, error) {
 	taskSetting, err := getSettingsByClusterID(node.ClusterID)
 	if err != nil {
-		return  nil, err
+		return nil, err
 	}
 	taskSetting.Logs = &model.LogsTask{
-		Enabled:true,
+		Enabled:  true,
 		LogsPath: node.Path.Logs,
 	}
 	return &agent.Setting{
 		Metadata: agent.SettingsMetadata{
 			Category: "agent",
-			Name: "task",
+			Name:     "task",
 			Labels: util.MapStr{
-				"agent_id": agentID,
+				"agent_id":     agentID,
 				"cluster_uuid": node.ClusterUuid,
-				"cluster_id": node.ClusterID,
-				"node_uuid": node.NodeUUID,
-				"endpoint": fmt.Sprintf("%s://%s", node.Schema, node.PublishAddress),
+				"cluster_id":   node.ClusterID,
+				"node_uuid":    node.NodeUUID,
+				"endpoint":     fmt.Sprintf("%s://%s", node.Schema, node.PublishAddress),
 			},
 		},
 		Payload: util.MapStr{
@@ -842,8 +840,8 @@ func getSettingsByClusterID(clusterID string) (*model.TaskSetting, error) {
 		},
 	}
 	var (
-		clusterStats = true
-		indexStats = true
+		clusterStats  = true
+		indexStats    = true
 		clusterHealth = true
 	)
 	keys := []string{"payload.task.cluster_stats", "payload.task.cluster_health", "payload.task.index_stats"}
@@ -852,7 +850,7 @@ func getSettingsByClusterID(clusterID string) (*model.TaskSetting, error) {
 			vm := util.MapStr(v)
 			for _, key := range keys {
 				tv, _ := vm.GetValue(key)
-				if tv  == true {
+				if tv == true {
 					switch key {
 					case "payload.task.cluster_stats":
 						clusterStats = false

@@ -1659,8 +1659,8 @@ POST $[[INDEX_PREFIX]]view/_doc/cb34sfl6psfiqtovhpt4
     "default_layout_id": "cg2qqh28go5jqa6vvk70"
  }
 
- #The `id` value is consistent with the `_id` value
- POST $[[INDEX_PREFIX]]layout/_doc/cg2qqh28go5jqa6vvk70
+#The `id` value is consistent with the `_id` value
+POST $[[INDEX_PREFIX]]layout/_doc/cg2qqh28go5jqa6vvk70
  {
      "id": "cg2qqh28go5jqa6vvk70",
      "created": "2023-03-06T17:07:16.1879266+08:00",
@@ -2189,1753 +2189,1943 @@ POST $[[INDEX_PREFIX]]view/_doc/cb34sfl6psfiqtovhpt4
            "title": "Network Dropped (Out)"
          }]
    }
+}
 
- }
-
-POST $[[INDEX_PREFIX]]layout/_doc/cgjoqud3q95rinbbe1l0
+POST $[[INDEX_PREFIX]]layout/_doc/ch0u5d53q95poj13629g
 {
-     "id": "cgjoqud3q95rinbbe1l0",
-     "created": "2023-04-01T01:48:41.54255458Z",
-     "updated": "2023-05-11T03:15:45.877680081Z",
-     "name": "Platform Overview",
-     "description": "",
-     "creator": {
-       "name": "admin",
-       "id": "cft0jdtath25bt7npsgg"
-     },
-     "view_id": "",
-     "config": {
-       "cols": 12,
-       "globalQueries": {
-         "cluster_id": "$[[RESOURCE_ID]]",
-         "indices": ".infini_metrics*",
-         "time_field": "timestamp",
-         "time_range": {
-           "from": "now-30m",
-           "to": "now"
-         }
-       },
-       "global_queries": {},
-       "row_height": 60,
-       "widgets": [
-         {
-           "formatter": "number",
-           "position": {
-             "h": 4,
-             "w": 3,
-             "x": 9,
-             "y": 5
-           },
-           "series": [
-             {
-               "metric": {
-                 "bucket_size": "1m",
-                 "format_type": "num",
-                 "formula": "a",
-                 "groups": [
-                   {
-                     "field": "payload.elasticsearch.cluster_stats.nodes.jvm.versions.version",
-                     "limit": 5
-                   }
-                 ],
-                 "items": [
-                   {
-                     "field": "*",
-                     "name": "a",
-                     "statistic": "count"
-                   }
-                 ]
-               },
-               "queries": {
-                 "cluster_id": "$[[RESOURCE_ID]]",
-                 "indices": [
-                   ".infini_metrics"
-                 ],
-                 "time_field": "timestamp"
-               },
-               "type": "pie"
-             }
-           ],
-           "title": "JDK Version Distribution"
-         },
-         {
-           "formatter": "number",
-           "position": {
-             "h": 4,
-             "w": 3,
-             "x": 6,
-             "y": 5
-           },
-           "series": [
-             {
-               "metric": {
-                 "bucket_size": "1m",
-                 "format_type": "num",
-                 "formula": "a",
-                 "groups": [
-                   {
-                     "field": "payload.elasticsearch.cluster_health.status",
-                     "limit": 5
-                   }
-                 ],
-                 "items": [
-                   {
-                     "field": "metadata.labels.cluster_id",
-                     "name": "a",
-                     "statistic": "cardinality"
-                   }
-                 ]
-               },
-               "queries": {
-                 "cluster_id": "$[[RESOURCE_ID]]",
-                 "indices": [
-                   ".infini_metrics"
-                 ],
-                 "time_field": "timestamp"
-               },
-               "type": "pie"
-             }
-           ],
-           "title": "Health Status"
-         },
-         {
-           "formatter": "number",
-           "position": {
-             "h": 4,
-             "w": 3,
-             "x": 0,
-             "y": 5
-           },
-           "series": [
-             {
-               "metric": {
-                 "bucket_size": "1m",
-                 "format_type": "num",
-                 "formula": "a",
-                 "groups": [
-                   {
-                     "field": "location.provider",
-                     "limit": 5
-                   }
-                 ],
-                 "items": [
-                   {
-                     "field": "*",
-                     "name": "a",
-                     "statistic": "count"
-                   }
-                 ]
-               },
-               "queries": {
-                 "cluster_id": "$[[RESOURCE_ID]]",
-                 "indices": [
-                   ".infini_cluster"
-                 ]
-               },
-               "type": "pie"
-             }
-           ],
-           "title": "Service Provider"
-         },
-         {
-           "formatter": "number",
-           "position": {
-             "h": 4,
-             "w": 3,
-             "x": 3,
-             "y": 5
-           },
-           "series": [
-             {
-               "metric": {
-                 "bucket_size": "1m",
-                 "format_type": "num",
-                 "formula": "a",
-                 "groups": [
-                   {
-                     "field": "distribution",
-                     "limit": 5
-                   }
-                 ],
-                 "items": [
-                   {
-                     "field": "*",
-                     "name": "a",
-                     "statistic": "count"
-                   }
-                 ]
-               },
-               "queries": {
-                 "cluster_id": "$[[RESOURCE_ID]]",
-                 "indices": [
-                   ".infini_cluster"
-                 ]
-               },
-               "type": "pie"
-             }
-           ],
-           "title": "Search Engine Distribution"
-         },
-         {
-           "data_type": "normal",
-           "formatter": "number",
-           "order": "desc",
-           "position": {
-             "h": 5,
-             "w": 6,
-             "x": 6,
-             "y": 14
-           },
-           "series": [
-             {
-               "metric": {
-                 "bucket_size": "1m",
-                 "format_type": "num",
-                 "formula": "a",
-                 "groups": [
-                   {
-                     "field": "metadata.labels.node_id",
-                     "limit": 50
-                   }
-                 ],
-                 "items": [
-                   {
-                     "field": "payload.elasticsearch.node_stats.os.cpu.load_average.15m",
-                     "name": "a",
-                     "statistic": "max"
-                   }
-                 ]
-               },
-               "queries": {
-                 "cluster_id": "$[[RESOURCE_ID]]",
-                 "indices": [
-                   ".infini_metrics*"
-                 ],
-                 "query": "{\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"metadata.name\": {\n              \"value\": \"node_stats\"\n            }\n          }\n        }\n      ]\n    }\n  }",
-                 "time_field": "timestamp"
-               },
-               "type": "column"
-             }
-           ],
-           "size": 10,
-           "title": "Node CPU Load TOP10"
-         },
-         {
-           "data_type": "normal",
-           "formatter": "percent",
-           "order": "desc",
-           "position": {
-             "h": 5,
-             "w": 6,
-             "x": 0,
-             "y": 9
-           },
-           "series": [
-             {
-               "metric": {
-                 "bucket_size": "1m",
-                 "format_type": "num",
-                 "formula": "(b-a)/b*100",
-                 "groups": [
-                   {
-                     "field": "metadata.labels.cluster_id",
-                     "limit": 50
-                   },
-                   {
-                     "field": "metadata.labels.node_name",
-                     "limit": 500
-                   }
-                 ],
-                 "items": [
-                   {
-                     "field": "payload.elasticsearch.node_stats.fs.total.available_in_bytes",
-                     "name": "a",
-                     "statistic": "max"
-                   },
-                   {
-                     "field": "payload.elasticsearch.node_stats.fs.total.total_in_bytes",
-                     "name": "b",
-                     "statistic": "max"
-                   }
-                 ]
-               },
-               "queries": {
-                 "cluster_id": "$[[RESOURCE_ID]]",
-                 "indices": [
-                   ".infini_metrics*"
-                 ],
-                 "time_field": "timestamp"
-               },
-               "type": "column"
-             }
-           ],
-           "size": 10,
-           "title": "Node Disk Usage TOP10"
-         },
-         {
-           "data_type": "timeseries",
-           "formatter": "percent",
-           "position": {
-             "h": 5,
-             "w": 6,
-             "x": 6,
-             "y": 9
-           },
-           "series": [
-             {
-               "metric": {
-                 "bucket_size": "auto",
-                 "formula": "a",
-                 "groups": [
-                   {
-                     "field": "metadata.labels.cluster_id",
-                     "limit": 50
-                   },
-                   {
-                     "field": "metadata.labels.node_name",
-                     "limit": 500
-                   }
-                 ],
-                 "items": [
-                   {
-                     "field": "metadata.datatype",
-                     "name": "a",
-                     "statistic": "count"
-                   }
-                 ]
-               },
-               "queries": {
-                 "cluster_id": "$[[RESOURCE_ID]]",
-                 "indices": [
-                   ".infini_metrics*"
-                 ],
-                 "time_field": "timestamp"
-               },
-               "type": "column"
-             }
-           ],
-           "title": "Node JVM Heap Usage TOP10"
-         },
-         {
-           "data_type": "normal",
-           "formatter": "bytes",
-           "order": "desc",
-           "position": {
-             "h": 5,
-             "w": 6,
-             "x": 0,
-             "y": 14
-           },
-           "series": [
-             {
-               "metric": {
-                 "bucket_size": "1m",
-                 "format_type": "num",
-                 "formula": "a",
-                 "groups": [
-                   {
-                     "field": "metadata.labels.cluster_id",
-                     "limit": 50
-                   },
-                   {
-                     "field": "metadata.labels.index_name",
-                     "limit": 1000
-                   }
-                 ],
-                 "items": [
-                   {
-                     "field": "payload.elasticsearch.index_stats.shard_info.store_in_bytes",
-                     "name": "a",
-                     "statistic": "max"
-                   }
-                 ]
-               },
-               "queries": {
-                 "cluster_id": "$[[RESOURCE_ID]]",
-                 "indices": [
-                   ".infini_metrics*"
-                 ],
-                 "time_field": "timestamp"
-               },
-               "type": "column"
-             }
-           ],
-           "size": 10,
-           "title": "Index Shard Size TOP10"
-         }
-       ]
-     },
-     "type": "workspace",
-     "is_fixed": true
+    "id": "ch0u5d53q95poj13629g",
+    "created": "2023-04-21T01:11:16.129965374Z",
+    "updated": "2023-06-09T04:23:16.108702216Z",
+    "name": "🎯 Cluster Overview",
+    "description": "",
+    "creator": {
+        "name": "$[[USERNAME]]",
+        "id": "$[[USER_ID]]"
+    },
+    "view_id": "",
+    "config": {
+        "cols": 12,
+        "global_queries": {},
+        "row_height": 60,
+        "widgets": [
+            {
+                "bucket_size": "auto",
+                "drilling": {},
+                "formatter": "number",
+                "position": {
+                    "h": 3,
+                    "w": 3,
+                    "x": 0,
+                    "y": 0
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "items": [
+                                {
+                                    "field": "metadata.labels.node_id",
+                                    "name": "a",
+                                    "statistic": "cardinality"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_metrics*"
+                            ],
+                            "time_field": "timestamp"
+                        },
+                        "type": "number"
+                    }
+                ],
+                "title": "Num of Nodes"
+            },
+            {
+                "bucket_size": "auto",
+                "drilling": {},
+                "formatter": "number",
+                "position": {
+                    "h": 3,
+                    "w": 3,
+                    "x": 3,
+                    "y": 0
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "items": [
+                                {
+                                    "field": "agent.major_ip",
+                                    "name": "a",
+                                    "statistic": "cardinality"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_metrics*"
+                            ],
+                            "time_field": "timestamp"
+                        },
+                        "type": "number"
+                    }
+                ],
+                "title": "Num of Hosts"
+            },
+            {
+                "drilling": {},
+                "page_size": 10,
+                "position": {
+                    "h": 5,
+                    "w": 12,
+                    "x": 0,
+                    "y": 4
+                },
+                "series": [
+                    {
+                        "columns": [
+                            {
+                                "display": "ClusterName",
+                                "name": "name",
+                                "type": "string"
+                            },
+                            {
+                                "name": "distribution",
+                                "type": "string"
+                            },
+                            {
+                                "name": "endpoint",
+                                "type": "string"
+                            },
+                            {
+                                "display": "Time",
+                                "formatter": "time",
+                                "name": "created",
+                                "type": "date"
+                            }
+                        ],
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_cluster"
+                            ]
+                        },
+                        "type": "table"
+                    }
+                ],
+                "title": "Cluster List"
+            },
+            {
+                "bucket_size": "auto",
+                "drilling": {},
+                "formatter": "number",
+                "position": {
+                    "h": 3,
+                    "w": 3,
+                    "x": 6,
+                    "y": 0
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "items": [
+                                {
+                                    "field": "metadata.labels.node_id",
+                                    "name": "a",
+                                    "statistic": "cardinality"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_metrics*"
+                            ],
+                            "time_field": "timestamp"
+                        },
+                        "type": "number"
+                    }
+                ],
+                "title": "Num of Nodes"
+            },
+            {
+                "bucket_size": "auto",
+                "drilling": {},
+                "formatter": "number",
+                "position": {
+                    "h": 3,
+                    "w": 3,
+                    "x": 9,
+                    "y": 1
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "items": [
+                                {
+                                    "field": "metadata.labels.index_name",
+                                    "name": "a",
+                                    "statistic": "cardinality"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_metrics*"
+                            ],
+                            "time_field": "timestamp"
+                        },
+                        "type": "number"
+                    }
+                ],
+                "title": "Num of Indices"
+            }
+        ]
+    },
+    "type": "workspace",
+    "is_fixed": true
+}
+
+POST $[[INDEX_PREFIX]]layout/_doc/cgjqcg53q95r17vbfo10
+{
+    "id": "cgjqcg53q95r17vbfo10",
+    "created": "2023-04-01T03:34:24.919282378Z",
+    "updated": "2023-06-09T04:22:26.203616458Z",
+    "name": "🌈 INFINI Gateway",
+    "description": "",
+    "creator": {
+        "name": "$[[USERNAME]]",
+        "id": "$[[USER_ID]]"
+    },
+    "view_id": "",
+    "config": {
+        "cols": 12,
+        "globalQueries": {
+            "cluster_id": "$[[RESOURCE_ID]]",
+            "indices": ".infini_metrics*",
+            "time_field": "timestamp",
+            "time_range": {
+                "from": "now-30m",
+                "to": "now"
+            }
+        },
+        "global_queries": {},
+        "row_height": 60,
+        "widgets": [
+            {
+                "bucket_size": "auto",
+                "drilling": {},
+                "formatter": "number",
+                "position": {
+                    "h": 4,
+                    "w": 4,
+                    "x": 0,
+                    "y": 0
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "groups": [
+                                {
+                                    "field": "metadata.labels.name",
+                                    "limit": 50
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "payload.instance.entry.my_es_entry.open_connections",
+                                    "name": "a",
+                                    "statistic": "max"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_metrics*"
+                            ],
+                            "query": "{\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"metadata.category\": {\n              \"value\": \"instance\"\n            }\n          }\n        },{\n          \"term\": {\n            \"metadata.name\": {\n              \"value\": \"gateway\"\n            }\n          }\n        }\n      ]\n    }\n  }",
+                            "time_field": "timestamp"
+                        },
+                        "type": "line"
+                    }
+                ],
+                "title": "Num of Connections"
+            },
+            {
+                "bucket_size": "auto",
+                "drilling": {},
+                "formatter": "percent",
+                "position": {
+                    "h": 4,
+                    "w": 4,
+                    "x": 4,
+                    "y": 0
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "groups": [
+                                {
+                                    "field": "metadata.labels.name",
+                                    "limit": 50
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "payload.instance.system.cpu",
+                                    "name": "a",
+                                    "statistic": "max"
+                                }
+                            ],
+                            "name": "Overall CPU"
+                        },
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_metrics*"
+                            ],
+                            "query": "{\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"metadata.category\": {\n              \"value\": \"instance\"\n            }\n          }\n        },{\n          \"term\": {\n            \"metadata.name\": {\n              \"value\": \"gateway\"\n            }\n          }\n        }\n      ]\n    }\n  }",
+                            "time_field": "timestamp"
+                        },
+                        "type": "line"
+                    },
+                    {
+                        "metric": {
+                            "formula": "(a + b) / c * 100",
+                            "groups": [
+                                {
+                                    "field": "metadata.labels.name",
+                                    "limit": 50
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "payload.instance.system.sys_in_ms",
+                                    "name": "a",
+                                    "statistic": "derivative"
+                                },
+                                {
+                                    "field": "payload.instance.system.user_in_ms",
+                                    "name": "b",
+                                    "statistic": "derivative"
+                                },
+                                {
+                                    "field": "timestamp",
+                                    "name": "c",
+                                    "statistic": "derivative"
+                                }
+                            ],
+                            "name": "Real-Time CPU"
+                        },
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_metrics*"
+                            ],
+                            "query": "{\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"metadata.category\": {\n              \"value\": \"instance\"\n            }\n          }\n        },{\n          \"term\": {\n            \"metadata.name\": {\n              \"value\": \"gateway\"\n            }\n          }\n        }\n      ]\n    }\n  }",
+                            "time_field": "timestamp"
+                        },
+                        "type": "line"
+                    }
+                ],
+                "title": "CPU Usage"
+            },
+            {
+                "bucket_size": "auto",
+                "drilling": {},
+                "formatter": "bytes",
+                "position": {
+                    "h": 4,
+                    "w": 4,
+                    "x": 8,
+                    "y": 0
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "groups": [
+                                {
+                                    "field": "metadata.labels.name",
+                                    "limit": 50
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "payload.instance.system.mem",
+                                    "name": "a",
+                                    "statistic": "max"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_metrics*"
+                            ],
+                            "query": "{\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"metadata.category\": {\n              \"value\": \"instance\"\n            }\n          }\n        },{\n          \"term\": {\n            \"metadata.name\": {\n              \"value\": \"gateway\"\n            }\n          }\n        }\n      ]\n    }\n  }",
+                            "time_field": "timestamp"
+                        },
+                        "type": "line"
+                    }
+                ],
+                "title": "Memory Usage"
+            },
+            {
+                "bucket_size": "auto",
+                "drilling": {},
+                "formatter": "number",
+                "position": {
+                    "h": 5,
+                    "w": 12,
+                    "x": 0,
+                    "y": 4
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "groups": [
+                                {
+                                    "field": "metadata.labels.name",
+                                    "limit": 50
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "payload.instance.system.goroutines",
+                                    "name": "a",
+                                    "statistic": "max"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_metrics*"
+                            ],
+                            "query": "{\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"metadata.category\": {\n              \"value\": \"instance\"\n            }\n          }\n        },{\n          \"term\": {\n            \"metadata.name\": {\n              \"value\": \"gateway\"\n            }\n          }\n        }\n      ]\n    }\n  }",
+                            "time_field": "timestamp"
+                        },
+                        "type": "line"
+                    }
+                ],
+                "title": "Num of Goroutines"
+            },
+            {
+                "bucket_size": "auto",
+                "drilling": {},
+                "formatter": "number",
+                "position": {
+                    "h": 5,
+                    "w": 12,
+                    "x": 0,
+                    "y": 9
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "groups": [
+                                {
+                                    "field": "metadata.labels.name",
+                                    "limit": 50
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "payload.instance.system.objects",
+                                    "name": "a",
+                                    "statistic": "max"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_metrics*"
+                            ],
+                            "query": "{\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"metadata.category\": {\n              \"value\": \"instance\"\n            }\n          }\n        },{\n          \"term\": {\n            \"metadata.name\": {\n              \"value\": \"gateway\"\n            }\n          }\n        }\n      ]\n    }\n  }",
+                            "time_field": "timestamp"
+                        },
+                        "type": "line"
+                    }
+                ],
+                "title": "Num of Objects"
+            }
+        ]
+    },
+    "type": "workspace",
+    "is_fixed": true
 }
 
 POST $[[INDEX_PREFIX]]layout/_doc/cgjpvt53q95r17vbdteg
 {
     "id": "cgjpvt53q95r17vbdteg",
     "created": "2023-04-01T03:07:32.165611988Z",
-    "updated": "2023-05-25T07:57:44.860138405Z",
-    "name": "Metrics&Logging Overview",
+    "updated": "2023-06-09T04:24:25.571565005Z",
+    "name": "🧭 Metrics&Logging Overview ",
     "description": "",
     "creator": {
-      "name": "$[[USERNAME]]",
-      "id": "$[[USER_ID]]"
+        "name": "$[[USERNAME]]",
+        "id": "$[[USER_ID]]"
     },
     "view_id": "",
     "config": {
-      "cols": 12,
-      "globalQueries": {
-        "cluster_id": "$[[RESOURCE_ID]]",
-        "indices": ".infini_metrics*",
-        "time_field": "timestamp"
-      },
-      "global_queries": {},
-      "row_height": 60,
-      "widgets": [
-        {
-          "drilling": {
-            "new_tab_switch": false,
-            "url": ""
-          },
-          "formatter": "number",
-          "position": {
-            "h": 4,
-            "w": 12,
-            "x": 0,
-            "y": 0
-          },
-          "series": [
+        "cols": 12,
+        "globalQueries": {
+            "cluster_id": "$[[RESOURCE_ID]]",
+            "indices": ".infini_metrics*",
+            "time_field": "timestamp"
+        },
+        "global_queries": {},
+        "row_height": 60,
+        "widgets": [
             {
-              "metric": {
                 "bucket_size": "auto",
-                "formula": "a",
-                "items": [
-                  {
-                    "field": "payload.elasticsearch.cluster_stats.indices.docs.deleted",
-                    "name": "a",
-                    "statistic": "count"
-                  }
-                ]
-              },
-              "queries": {
-                "cluster_id": "$[[RESOURCE_ID]]",
-                "indices": [
-                  ".infini_metrics*"
+                "drilling": {},
+                "formatter": "bytes",
+                "position": {
+                    "h": 4,
+                    "w": 6,
+                    "x": 0,
+                    "y": 8
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "groups": [
+                                {
+                                    "field": "agent.major_ip",
+                                    "limit": 50
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "payload.host.network_summary.in.bytes",
+                                    "name": "a",
+                                    "statistic": "derivative"
+                                }
+                            ],
+                            "name": "In"
+                        },
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_metrics*"
+                            ],
+                            "query": "{\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"metadata.category\": {\n              \"value\": \"host\"\n            }\n          }\n        },{\n          \"term\": {\n            \"metadata.name\": {\n              \"value\": \"network_summary\"\n            }\n          }\n        }\n      ]\n    }\n  }",
+                            "time_field": "timestamp"
+                        },
+                        "type": "area"
+                    },
+                    {
+                        "metric": {
+                            "formula": "a*(-1)",
+                            "groups": [
+                                {
+                                    "field": "agent.major_ip",
+                                    "limit": 50
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "payload.host.network_summary.out.bytes",
+                                    "name": "a",
+                                    "statistic": "derivative"
+                                }
+                            ],
+                            "name": "Out"
+                        },
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_metrics*"
+                            ],
+                            "query": "{\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"metadata.category\": {\n              \"value\": \"host\"\n            }\n          }\n        },{\n          \"term\": {\n            \"metadata.name\": {\n              \"value\": \"network_summary\"\n            }\n          }\n        }\n      ]\n    }\n  }",
+                            "time_field": "timestamp"
+                        },
+                        "type": "area"
+                    }
                 ],
-                "time_field": "timestamp"
-              },
-              "type": "line"
-            }
-          ],
-          "title": "Log Collection"
-        },
-        {
-          "formatter": "number",
-          "position": {
-            "h": 4,
-            "w": 6,
-            "x": 6,
-            "y": 8
-          },
-          "series": [
-            {
-              "metric": {
-                "bucket_size": "1m",
-                "format_type": "num",
-                "formula": "a",
-                "groups": [
-                  {
-                    "field": "agent.major_ip",
-                    "limit": 5
-                  }
-                ],
-                "items": [
-                  {
-                    "field": "payload.host.network_sockets.all.established",
-                    "name": "a",
-                    "statistic": "p99"
-                  }
-                ]
-              },
-              "queries": {
-                "cluster_id": "$[[RESOURCE_ID]]",
-                "indices": [
-                  ".infini_metrics*"
-                ],
-                "time_field": "timestamp"
-              },
-              "type": "line"
-            }
-          ],
-          "title": "TCP Connection"
-        },
-        {
-          "formatter": "number",
-          "position": {
-            "h": 4,
-            "w": 6,
-            "x": 0,
-            "y": 12
-          },
-          "series": [
-            {
-              "metric": {
-                "bucket_size": "30s",
-                "format_type": "num",
-                "formula": "a",
-                "groups": [
-                  {
-                    "field": "agent.major_ip",
-                    "limit": 5
-                  }
-                ],
-                "items": [
-                  {
-                    "field": "payload.host.network_sockets.all.connections",
-                    "name": "a",
-                    "statistic": "min"
-                  }
-                ]
-              },
-              "queries": {
-                "cluster_id": "$[[RESOURCE_ID]]",
-                "indices": [
-                  ".infini_metrics*"
-                ],
-                "time_field": "timestamp"
-              },
-              "type": "area"
-            }
-          ],
-          "title": "TCP Connections"
-        },
-        {
-          "data_type": "timeseries",
-          "formatter": "number",
-          "position": {
-            "h": 4,
-            "w": 12,
-            "x": 0,
-            "y": 4
-          },
-          "series": [
-            {
-              "metric": {
-                "bucket_size": "1m",
-                "format_type": "num",
-                "formula": "a",
-                "groups": [
-                  {
-                    "field": "metadata.category",
-                    "limit": 50
-                  },
-                  {
-                    "field": "metadata.name",
-                    "limit": 50
-                  }
-                ],
-                "items": [
-                  {
-                    "field": "*",
-                    "name": "a",
-                    "statistic": "count"
-                  }
-                ]
-              },
-              "queries": {
-                "cluster_id": "$[[RESOURCE_ID]]",
-                "indices": [
-                  ".infini_metrics*"
-                ],
-                "time_field": "timestamp"
-              },
-              "type": "column"
-            }
-          ],
-          "title": "Log Data Distribution"
-        },
-        {
-          "formatter": "bytes",
-          "position": {
-            "h": 4,
-            "w": 6,
-            "x": 0,
-            "y": 8
-          },
-          "series": [
-            {
-              "metric": {
-                "bucket_size": "1m",
-                "format_type": "num",
-                "formula": "a",
-                "groups": [
-                  {
-                    "field": "agent.major_ip",
-                    "limit": 50
-                  }
-                ],
-                "items": [
-                  {
-                    "field": "payload.host.network_summary.in.bytes",
-                    "name": "a",
-                    "statistic": "derivative"
-                  }
-                ]
-              },
-              "queries": {
-                "cluster_id": "$[[RESOURCE_ID]]",
-                "indices": [
-                  ".infini_metrics*"
-                ],
-                "query": "{\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"metadata.category\": {\n              \"value\": \"host\"\n            }\n          }\n        },{\n          \"term\": {\n            \"metadata.name\": {\n              \"value\": \"network_summary\"\n            }\n          }\n        }\n      ]\n    }\n  }",
-                "time_field": "timestamp"
-              },
-              "type": "area"
-            }
-          ],
-          "title": "Network Traffic (In)"
-        },
-        {
-          "formatter": "bytes",
-          "position": {
-            "h": 4,
-            "w": 6,
-            "x": 6,
-            "y": 12
-          },
-          "series": [
-            {
-              "metric": {
-                "bucket_size": "1m",
-                "format_type": "num",
-                "formula": "a",
-                "groups": [
-                  {
-                    "field": "agent.major_ip",
-                    "limit": 50
-                  }
-                ],
-                "items": [
-                  {
-                    "field": "payload.host.network_summary.out.bytes",
-                    "name": "a",
-                    "statistic": "derivative"
-                  }
-                ]
-              },
-              "queries": {
-                "cluster_id": "$[[RESOURCE_ID]]",
-                "indices": [
-                  ".infini_metrics*"
-                ],
-                "query": "{\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"metadata.category\": {\n              \"value\": \"host\"\n            }\n          }\n        },{\n          \"term\": {\n            \"metadata.name\": {\n              \"value\": \"network_summary\"\n            }\n          }\n        }\n      ]\n    }\n  }",
-                "time_field": "timestamp"
-              },
-              "type": "line"
-            }
-          ],
-          "title": "Network Traffic (Out)"
-        }
-      ]
-    },
-    "type": "workspace",
-    "is_fixed": true
-  }
-
-POST $[[INDEX_PREFIX]]layout/_doc/cgjqcg53q95r17vbfo10
-{
-    "id": "cgjqcg53q95r17vbfo10",
-    "created": "2023-04-01T03:34:24.919282378Z",
-    "updated": "2023-06-07T07:54:46.991959699Z",
-    "name": "INFINI Gateway",
-    "description": "",
-    "creator": {
-      "name": "$[[USERNAME]]",
-      "id": "$[[USER_ID]]"
-    },
-    "view_id": "",
-    "config": {
-      "cols": 12,
-      "globalQueries": {
-        "cluster_id": "$[[RESOURCE_ID]]",
-        "indices": ".infini_metrics*",
-        "time_field": "timestamp",
-        "time_range": {
-          "from": "now-30m",
-          "to": "now"
-        }
-      },
-      "global_queries": {},
-      "row_height": 60,
-      "widgets": [
-        {
-          "formatter": "number",
-          "position": {
-            "h": 4,
-            "w": 4,
-            "x": 0,
-            "y": 0
-          },
-          "series": [
-            {
-              "metric": {
-                "bucket_size": "10s",
-                "format_type": "num",
-                "formula": "a",
-                "groups": [
-                  {
-                    "field": "metadata.labels.name",
-                    "limit": 50
-                  }
-                ],
-                "items": [
-                  {
-                    "field": "payload.instance.entry.my_es_entry.open_connections",
-                    "name": "a",
-                    "statistic": "max"
-                  }
-                ]
-              },
-              "queries": {
-                "cluster_id": "$[[RESOURCE_ID]]",
-                "indices": [
-                  ".infini_metrics*"
-                ],
-                "query": "{\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"metadata.category\": {\n              \"value\": \"instance\"\n            }\n          }\n        },{\n          \"term\": {\n            \"metadata.name\": {\n              \"value\": \"gateway\"\n            }\n          }\n        }\n      ]\n    }\n  }",
-                "time_field": "timestamp"
-              },
-              "type": "line"
-            }
-          ],
-          "title": "Gateway Client Connections"
-        },
-        {
-          "bucket_size": "auto",
-          "drilling": {},
-          "formatter": "percent",
-          "position": {
-            "h": 4,
-            "w": 4,
-            "x": 4,
-            "y": 0
-          },
-          "series": [
-            {
-              "metric": {
-                "formula": "a",
-                "groups": [
-                  {
-                    "field": "metadata.labels.name",
-                    "limit": 50
-                  }
-                ],
-                "items": [
-                  {
-                    "field": "payload.instance.system.cpu",
-                    "name": "a",
-                    "statistic": "max"
-                  }
-                ],
-                "name": "Overall CPU"
-              },
-              "queries": {
-                "cluster_id": "$[[RESOURCE_ID]]",
-                "indices": [
-                  ".infini_metrics*"
-                ],
-                "query": "{\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"metadata.category\": {\n              \"value\": \"instance\"\n            }\n          }\n        },{\n          \"term\": {\n            \"metadata.name\": {\n              \"value\": \"gateway\"\n            }\n          }\n        }\n      ]\n    }\n  }",
-                "time_field": "timestamp"
-              },
-              "type": "line"
+                "title": "Network Traffics"
             },
             {
-              "metric": {
-                "formula": "(a + b) / c * 100",
-                "groups": [
-                  {
-                    "field": "metadata.labels.name",
-                    "limit": 50
-                  }
-                ],
-                "items": [
-                  {
-                    "field": "payload.instance.system.sys_in_ms",
-                    "name": "a",
-                    "statistic": "derivative"
-                  },
-                  {
-                    "field": "payload.instance.system.user_in_ms",
-                    "name": "b",
-                    "statistic": "derivative"
-                  },
-                  {
-                    "field": "timestamp",
-                    "name": "c",
-                    "statistic": "derivative"
-                  }
-                ],
-                "name": "Real-Time CPU"
-              },
-              "queries": {
-                "cluster_id": "$[[RESOURCE_ID]]",
-                "indices": [
-                  ".infini_metrics*"
-                ],
-                "query": "{\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"metadata.category\": {\n              \"value\": \"instance\"\n            }\n          }\n        },{\n          \"term\": {\n            \"metadata.name\": {\n              \"value\": \"gateway\"\n            }\n          }\n        }\n      ]\n    }\n  }",
-                "time_field": "timestamp"
-              },
-              "type": "line"
-            }
-          ],
-          "title": "Gateway CPU Utilization"
-        },
-        {
-          "formatter": "bytes",
-          "position": {
-            "h": 4,
-            "w": 4,
-            "x": 8,
-            "y": 0
-          },
-          "series": [
-            {
-              "metric": {
-                "bucket_size": "10s",
-                "format_type": "num",
-                "formula": "a",
-                "groups": [
-                  {
-                    "field": "metadata.labels.name",
-                    "limit": 50
-                  }
-                ],
-                "items": [
-                  {
-                    "field": "payload.instance.system.mem",
-                    "name": "a",
-                    "statistic": "max"
-                  }
-                ]
-              },
-              "queries": {
-                "cluster_id": "$[[RESOURCE_ID]]",
-                "indices": [
-                  ".infini_metrics*"
-                ],
-                "query": "{\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"metadata.category\": {\n              \"value\": \"instance\"\n            }\n          }\n        },{\n          \"term\": {\n            \"metadata.name\": {\n              \"value\": \"gateway\"\n            }\n          }\n        }\n      ]\n    }\n  }",
-                "time_field": "timestamp"
-              },
-              "type": "line"
-            }
-          ],
-          "title": "Gateway Memory Usage"
-        },
-        {
-          "drilling": {},
-          "formatter": "number",
-          "position": {
-            "h": 5,
-            "w": 12,
-            "x": 0,
-            "y": 4
-          },
-          "series": [
-            {
-              "metric": {
-                "bucket_size": "10s",
-                "formula": "a",
-                "groups": [
-                  {
-                    "field": "metadata.labels.name",
-                    "limit": 50
-                  }
-                ],
-                "items": [
-                  {
-                    "field": "payload.instance.system.goroutines",
-                    "name": "a",
-                    "statistic": "max"
-                  }
-                ]
-              },
-              "queries": {
-                "cluster_id": "$[[RESOURCE_ID]]",
-                "indices": [
-                  ".infini_metrics*"
-                ],
-                "query": "{\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"metadata.category\": {\n              \"value\": \"instance\"\n            }\n          }\n        },{\n          \"term\": {\n            \"metadata.name\": {\n              \"value\": \"gateway\"\n            }\n          }\n        }\n      ]\n    }\n  }",
-                "time_field": "timestamp"
-              },
-              "type": "line"
-            }
-          ],
-          "title": "Gateway Goroutine"
-        },
-        {
-          "formatter": "number",
-          "position": {
-            "h": 5,
-            "w": 12,
-            "x": 0,
-            "y": 9
-          },
-          "series": [
-            {
-              "metric": {
-                "bucket_size": "10s",
-                "format_type": "num",
-                "formula": "a",
-                "groups": [
-                  {
-                    "field": "metadata.labels.name",
-                    "limit": 50
-                  }
-                ],
-                "items": [
-                  {
-                    "field": "payload.instance.system.objects",
-                    "name": "a",
-                    "statistic": "max"
-                  }
-                ]
-              },
-              "queries": {
-                "cluster_id": "$[[RESOURCE_ID]]",
-                "indices": [
-                  ".infini_metrics*"
-                ],
-                "query": "{\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"metadata.category\": {\n              \"value\": \"instance\"\n            }\n          }\n        },{\n          \"term\": {\n            \"metadata.name\": {\n              \"value\": \"gateway\"\n            }\n          }\n        }\n      ]\n    }\n  }",
-                "time_field": "timestamp"
-              },
-              "type": "line"
-            }
-          ],
-          "title": "Gateway Active Objects"
-        }
-      ]
-    },
-    "type": "workspace",
-    "is_fixed": true
- }
-POST $[[INDEX_PREFIX]]layout/_doc/ch0u5d53q95poj13629g
-{
-    "id": "ch0u5d53q95poj13629g",
-    "created": "2023-04-21T01:11:16.129965374Z",
-    "updated": "2023-05-25T12:23:10.993444364Z",
-    "name": "Clusters Overview",
-    "description": "",
-    "creator": {
-      "name": "$[[USERNAME]]",
-      "id": "$[[USER_ID]]"
-    },
-    "view_id": "",
-    "config": {
-      "cols": 12,
-      "global_queries": {},
-      "row_height": 60,
-      "widgets": [
-        {
-          "formatter": "number",
-          "position": {
-            "h": 3,
-            "w": 3,
-            "x": 3,
-            "y": 0
-          },
-          "series": [
-            {
-              "metric": {
-                "bucket_size": "1m",
-                "format_type": "num",
-                "formula": "a",
-                "items": [
-                  {
-                    "field": "agent.major_ip",
-                    "name": "a",
-                    "statistic": "cardinality"
-                  }
-                ]
-              },
-              "queries": {
-                "cluster_id": "$[[RESOURCE_ID]]",
-                "indices": [
-                  ".infini_metrics*"
-                ],
-                "time_field": "timestamp"
-              },
-              "type": "number"
-            }
-          ],
-          "title": "Number Of Hosts"
-        },
-        {
-          "drilling": {},
-          "page_size": 10,
-          "position": {
-            "h": 5,
-            "w": 12,
-            "x": 0,
-            "y": 4
-          },
-          "series": [
-            {
-              "columns": [
-                {
-                  "display": "ClusterName",
-                  "name": "name",
-                  "type": "string"
-                },
-                {
-                  "name": "distribution",
-                  "type": "string"
-                },
-                {
-                  "name": "endpoint",
-                  "type": "string"
-                },
-                {
-                  "display": "Time",
-                  "formatter": "time",
-                  "name": "created",
-                  "type": "date"
-                }
-              ],
-              "queries": {
-                "cluster_id": "$[[RESOURCE_ID]]",
-                "indices": [
-                  ".infini_cluster"
-                ]
-              },
-              "type": "table"
-            }
-          ],
-          "title": "Cluster List"
-        },
-        {
-          "formatter": "number",
-          "position": {
-            "h": 3,
-            "w": 3,
-            "x": 6,
-            "y": 1
-          },
-          "series": [
-            {
-              "metric": {
-                "bucket_size": "1m",
-                "format_type": "num",
-                "formula": "a",
-                "items": [
-                  {
-                    "field": "metadata.labels.node_id",
-                    "name": "a",
-                    "statistic": "cardinality"
-                  }
-                ]
-              },
-              "queries": {
-                "cluster_id": "$[[RESOURCE_ID]]",
-                "indices": [
-                  ".infini_metrics*"
-                ],
-                "time_field": "timestamp"
-              },
-              "type": "number"
-            }
-          ],
-          "title": "Number Of Nodes"
-        },
-        {
-          "drilling": {},
-          "formatter": "number",
-          "position": {
-            "h": 3,
-            "w": 3,
-            "x": 0,
-            "y": 0
-          },
-          "series": [
-            {
-              "metric": {
                 "bucket_size": "auto",
-                "formula": "a",
-                "items": [
-                  {
-                    "field": "metadata.labels.cluster_id",
-                    "name": "a",
-                    "statistic": "cardinality"
-                  }
-                ]
-              },
-              "queries": {
-                "cluster_id": "$[[RESOURCE_ID]]",
-                "indices": [
-                  ".infini_metrics*"
+                "drilling": {
+                    "new_tab_switch": false,
+                    "url": ""
+                },
+                "formatter": "number",
+                "position": {
+                    "h": 4,
+                    "w": 12,
+                    "x": 0,
+                    "y": 0
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "items": [
+                                {
+                                    "field": "*",
+                                    "name": "a",
+                                    "statistic": "count"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_metrics*"
+                            ],
+                            "time_field": "timestamp"
+                        },
+                        "type": "line"
+                    }
                 ],
-                "time_field": "timestamp"
-              },
-              "type": "number"
+                "title": "Event Rates"
+            },
+            {
+                "bucket_size": "auto",
+                "drilling": {},
+                "formatter": "number",
+                "position": {
+                    "h": 4,
+                    "w": 6,
+                    "x": 6,
+                    "y": 13
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "groups": [
+                                {
+                                    "field": "agent.major_ip",
+                                    "limit": 5
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "payload.host.network_sockets.all.established",
+                                    "name": "a",
+                                    "statistic": "p99"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_metrics*"
+                            ],
+                            "time_field": "timestamp"
+                        },
+                        "type": "line"
+                    }
+                ],
+                "title": "Num of TCP Connections (Established)"
+            },
+            {
+                "bucket_size": "auto",
+                "drilling": {},
+                "formatter": "number",
+                "position": {
+                    "h": 4,
+                    "w": 6,
+                    "x": 0,
+                    "y": 12
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "groups": [
+                                {
+                                    "field": "agent.major_ip",
+                                    "limit": 5
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "payload.host.network_sockets.all.connections",
+                                    "name": "a",
+                                    "statistic": "min"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_metrics*"
+                            ],
+                            "time_field": "timestamp"
+                        },
+                        "type": "area"
+                    }
+                ],
+                "title": "Num of TCP Connections (All)"
+            },
+            {
+                "bucket_size": "auto",
+                "data_type": "timeseries",
+                "drilling": {},
+                "formatter": "number",
+                "is_stack": true,
+                "position": {
+                    "h": 4,
+                    "w": 12,
+                    "x": 0,
+                    "y": 4
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "groups": [
+                                {
+                                    "field": "metadata.category",
+                                    "limit": 50
+                                },
+                                {
+                                    "field": "metadata.name",
+                                    "limit": 50
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "*",
+                                    "name": "a",
+                                    "statistic": "count"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_metrics*"
+                            ],
+                            "time_field": "timestamp"
+                        },
+                        "type": "column"
+                    }
+                ],
+                "title": "Event Distribution"
+            },
+            {
+                "bucket_size": "auto",
+                "drilling": {},
+                "formatter": "bytes",
+                "position": {
+                    "h": 4,
+                    "w": 6,
+                    "x": 6,
+                    "y": 9
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "groups": [
+                                {
+                                    "field": "agent.major_ip",
+                                    "limit": 50
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "payload.host.network_summary.in.dropped",
+                                    "name": "a",
+                                    "statistic": "derivative"
+                                }
+                            ],
+                            "name": "Dropped (In)"
+                        },
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_metrics*"
+                            ],
+                            "query": "{\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"metadata.category\": {\n              \"value\": \"host\"\n            }\n          }\n        },{\n          \"term\": {\n            \"metadata.name\": {\n              \"value\": \"network_summary\"\n            }\n          }\n        }\n      ]\n    }\n  }",
+                            "time_field": "timestamp"
+                        },
+                        "type": "area"
+                    },
+                    {
+                        "metric": {
+                            "formula": "a*(-1)",
+                            "groups": [
+                                {
+                                    "field": "agent.major_ip",
+                                    "limit": 50
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "payload.host.network_summary.out.dropped",
+                                    "name": "a",
+                                    "statistic": "derivative"
+                                }
+                            ],
+                            "name": "Dropped (Out)"
+                        },
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_metrics*"
+                            ],
+                            "query": "{\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"metadata.category\": {\n              \"value\": \"host\"\n            }\n          }\n        },{\n          \"term\": {\n            \"metadata.name\": {\n              \"value\": \"network_summary\"\n            }\n          }\n        }\n      ]\n    }\n  }",
+                            "time_field": "timestamp"
+                        },
+                        "type": "area"
+                    },
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "groups": [
+                                {
+                                    "field": "agent.major_ip",
+                                    "limit": 50
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "payload.host.network_summary.in.errors",
+                                    "name": "a",
+                                    "statistic": "derivative"
+                                }
+                            ],
+                            "name": "Error (In)"
+                        },
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_metrics*"
+                            ],
+                            "query": "{\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"metadata.category\": {\n              \"value\": \"host\"\n            }\n          }\n        },{\n          \"term\": {\n            \"metadata.name\": {\n              \"value\": \"network_summary\"\n            }\n          }\n        }\n      ]\n    }\n  }",
+                            "time_field": "timestamp"
+                        },
+                        "type": "area"
+                    },
+                    {
+                        "metric": {
+                            "formula": "a*(-1)",
+                            "groups": [
+                                {
+                                    "field": "agent.major_ip",
+                                    "limit": 50
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "payload.host.network_summary.out.errors",
+                                    "name": "a",
+                                    "statistic": "derivative"
+                                }
+                            ],
+                            "name": "Error (Out)"
+                        },
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_metrics*"
+                            ],
+                            "query": "{\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"metadata.category\": {\n              \"value\": \"host\"\n            }\n          }\n        },{\n          \"term\": {\n            \"metadata.name\": {\n              \"value\": \"network_summary\"\n            }\n          }\n        }\n      ]\n    }\n  }",
+                            "time_field": "timestamp"
+                        },
+                        "type": "area"
+                    }
+                ],
+                "title": "Network Errors"
             }
-          ],
-          "title": "Number of Clusters"
-        }
-      ]
+        ]
     },
     "type": "workspace",
     "is_fixed": true
 }
-POST $[[INDEX_PREFIX]]layout/_doc/cgjqcg53q95r17vbfo10
+
+POST $[[INDEX_PREFIX]]layout/_doc/cgjoqud3q95rinbbe1l0
+{
+    "id": "cgjoqud3q95rinbbe1l0",
+    "created": "2023-04-01T01:48:41.54255458Z",
+    "updated": "2023-06-09T04:51:40.929754643Z",
+    "name": "🚦 Platform Overview",
+    "description": "",
+    "creator": {
+        "name": "$[[USERNAME]]",
+        "id": "$[[USER_ID]]"
+    },
+    "view_id": "",
+    "config": {
+        "cols": 12,
+        "globalQueries": {
+            "cluster_id": "$[[RESOURCE_ID]]",
+            "indices": ".infini_metrics*",
+            "time_field": "timestamp",
+            "time_range": {
+                "from": "now-30m",
+                "to": "now"
+            }
+        },
+        "global_queries": {},
+        "row_height": 60,
+        "widgets": [
+            {
+                "bucket_size": "auto",
+                "drilling": {},
+                "formatter": "number",
+                "position": {
+                    "h": 4,
+                    "w": 3,
+                    "x": 9,
+                    "y": 5
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "groups": [
+                                {
+                                    "field": "payload.elasticsearch.cluster_stats.nodes.jvm.versions.version",
+                                    "limit": 5
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "*",
+                                    "name": "a",
+                                    "statistic": "count"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_metrics"
+                            ],
+                            "time_field": "timestamp"
+                        },
+                        "type": "pie"
+                    }
+                ],
+                "title": "JDK"
+            },
+            {
+                "bucket_size": "auto",
+                "drilling": {},
+                "formatter": "number",
+                "position": {
+                    "h": 4,
+                    "w": 3,
+                    "x": 6,
+                    "y": 5
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "groups": [
+                                {
+                                    "field": "payload.elasticsearch.cluster_health.status",
+                                    "limit": 5
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "metadata.labels.cluster_id",
+                                    "name": "a",
+                                    "statistic": "cardinality"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_metrics"
+                            ],
+                            "time_field": "timestamp"
+                        },
+                        "type": "pie"
+                    }
+                ],
+                "title": "Health"
+            },
+            {
+                "bucket_size": "auto",
+                "drilling": {},
+                "formatter": "number",
+                "position": {
+                    "h": 4,
+                    "w": 3,
+                    "x": 0,
+                    "y": 5
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "groups": [
+                                {
+                                    "field": "location.provider",
+                                    "limit": 5
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "*",
+                                    "name": "a",
+                                    "statistic": "count"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_cluster"
+                            ]
+                        },
+                        "type": "pie"
+                    }
+                ],
+                "title": "Providers"
+            },
+            {
+                "bucket_size": "auto",
+                "drilling": {},
+                "formatter": "number",
+                "position": {
+                    "h": 4,
+                    "w": 3,
+                    "x": 3,
+                    "y": 5
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "groups": [
+                                {
+                                    "field": "distribution",
+                                    "limit": 5
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "*",
+                                    "name": "a",
+                                    "statistic": "count"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_cluster"
+                            ]
+                        },
+                        "type": "pie"
+                    }
+                ],
+                "title": "Engines"
+            },
+            {
+                "bucket_size": "auto",
+                "data_type": "normal",
+                "drilling": {},
+                "formatter": "number",
+                "is_stack": false,
+                "order": "desc",
+                "position": {
+                    "h": 5,
+                    "w": 6,
+                    "x": 6,
+                    "y": 14
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "groups": [
+                                {
+                                    "field": "metadata.labels.node_id",
+                                    "limit": 50
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "payload.elasticsearch.node_stats.os.cpu.load_average.15m",
+                                    "name": "a",
+                                    "statistic": "max"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_metrics*"
+                            ],
+                            "query": "{\n    \"bool\": {\n      \"must\": [\n        {\n          \"term\": {\n            \"metadata.name\": {\n              \"value\": \"node_stats\"\n            }\n          }\n        }\n      ]\n    }\n  }",
+                            "time_field": "timestamp"
+                        },
+                        "type": "column"
+                    }
+                ],
+                "size": 10,
+                "title": "CPU Load (Top10)"
+            },
+            {
+                "bucket_size": "auto",
+                "data_type": "normal",
+                "drilling": {},
+                "formatter": "percent",
+                "is_stack": false,
+                "order": "desc",
+                "position": {
+                    "h": 5,
+                    "w": 6,
+                    "x": 0,
+                    "y": 9
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "(b-a)/b*100",
+                            "groups": [
+                                {
+                                    "field": "metadata.labels.cluster_id",
+                                    "limit": 50
+                                },
+                                {
+                                    "field": "metadata.labels.node_name",
+                                    "limit": 500
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "payload.elasticsearch.node_stats.fs.total.available_in_bytes",
+                                    "name": "a",
+                                    "statistic": "max"
+                                },
+                                {
+                                    "field": "payload.elasticsearch.node_stats.fs.total.total_in_bytes",
+                                    "name": "b",
+                                    "statistic": "max"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_metrics*"
+                            ],
+                            "time_field": "timestamp"
+                        },
+                        "type": "column"
+                    }
+                ],
+                "size": 10,
+                "title": "Disk Utilization (Top10)"
+            },
+            {
+                "bucket_size": "auto",
+                "data_type": "timeseries",
+                "drilling": {},
+                "formatter": "percent",
+                "is_stack": false,
+                "position": {
+                    "h": 5,
+                    "w": 6,
+                    "x": 6,
+                    "y": 9
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "groups": [
+                                {
+                                    "field": "metadata.labels.cluster_id",
+                                    "limit": 50
+                                },
+                                {
+                                    "field": "metadata.labels.node_name",
+                                    "limit": 500
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "metadata.datatype",
+                                    "name": "a",
+                                    "statistic": "count"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_metrics*"
+                            ],
+                            "time_field": "timestamp"
+                        },
+                        "type": "column"
+                    }
+                ],
+                "title": "JVM Utilization (Top10)"
+            },
+            {
+                "bucket_size": "auto",
+                "data_type": "normal",
+                "drilling": {},
+                "formatter": "bytes",
+                "is_stack": false,
+                "order": "desc",
+                "position": {
+                    "h": 5,
+                    "w": 6,
+                    "x": 0,
+                    "y": 14
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "groups": [
+                                {
+                                    "field": "metadata.labels.cluster_id",
+                                    "limit": 50
+                                },
+                                {
+                                    "field": "metadata.labels.index_name",
+                                    "limit": 1000
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "payload.elasticsearch.index_stats.shard_info.store_in_bytes",
+                                    "name": "a",
+                                    "statistic": "max"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_metrics*"
+                            ],
+                            "time_field": "timestamp"
+                        },
+                        "type": "column"
+                    }
+                ],
+                "size": 10,
+                "title": "Index Size (Top10)"
+            }
+        ]
+    },
+    "type": "workspace",
+    "is_fixed": true
+}
+
+POST $[[INDEX_PREFIX]]layout/_doc/chnmaht3q95ph02nfpsg
 {
     "id": "chnmaht3q95ph02nfpsg",
     "created": "2023-05-25T13:40:23.821091313Z",
-    "updated": "2023-06-08T03:49:09.247667399Z",
-    "name": "Requests-analysis",
+    "updated": "2023-06-09T04:24:11.554550142Z",
+    "name": "⛺️ Request Analysis",
     "description": "",
     "creator": {
-      "name": "$[[USERNAME]]",
-      "id": "$[[USER_ID]]"
+        "name": "$[[USERNAME]]",
+        "id": "$[[USER_ID]]"
     },
     "view_id": "",
     "config": {
-      "cols": 12,
-      "global_queries": {
-        "cluster_id": "$[[RESOURCE_ID]]",
-        "indices": [
-          ".infini_requests_logging*"
-        ],
-        "time_field": "timestamp"
-      },
-      "row_height": 60,
-      "widgets": [
-        {
-          "drilling": {},
-          "formatter": "number",
-          "position": {
-            "h": 2,
-            "w": 2,
-            "x": 0,
-            "y": 0
-          },
-          "series": [
-            {
-              "metric": {
-                "bucket_size": "auto",
-                "formula": "a",
-                "items": [
-                  {
-                    "field": "*",
-                    "name": "a",
-                    "statistic": "count"
-                  }
-                ]
-              },
-              "queries": {
-                "indices": []
-              },
-              "type": "number"
-            }
-          ],
-          "title": "Total Requests"
+        "cols": 12,
+        "global_queries": {
+            "cluster_id": "$[[RESOURCE_ID]]",
+            "indices": [
+                ".infini_requests_logging*"
+            ],
+            "time_field": "timestamp"
         },
-        {
-          "bucket_size": "auto",
-          "drilling": {},
-          "formatter": "number",
-          "position": {
-            "h": 4,
-            "w": 12,
-            "x": 0,
-            "y": 5
-          },
-          "series": [
+        "row_height": 60,
+        "widgets": [
             {
-              "metric": {
-                "formula": "a",
-                "items": [
-                  {
-                    "field": "response.elapsed",
-                    "name": "a",
-                    "statistic": "p99"
-                  }
+                "drilling": {},
+                "formatter": "number",
+                "position": {
+                    "h": 2,
+                    "w": 2,
+                    "x": 0,
+                    "y": 0
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "bucket_size": "auto",
+                            "formula": "a",
+                            "items": [
+                                {
+                                    "field": "*",
+                                    "name": "a",
+                                    "statistic": "count"
+                                }
+                            ]
+                        },
+                        "queries": {
+                            "indices": []
+                        },
+                        "type": "number"
+                    }
                 ],
-                "name": "P99"
-              },
-              "queries": {
-                "indices": []
-              },
-              "type": "line"
+                "title": "Total Requests"
             },
             {
-              "metric": {
-                "formula": "a",
-                "items": [
-                  {
-                    "field": "response.elapsed",
-                    "name": "a",
-                    "statistic": "avg"
-                  }
+                "bucket_size": "auto",
+                "drilling": {},
+                "formatter": "number",
+                "position": {
+                    "h": 4,
+                    "w": 12,
+                    "x": 0,
+                    "y": 5
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "items": [
+                                {
+                                    "field": "response.elapsed",
+                                    "name": "a",
+                                    "statistic": "p99"
+                                }
+                            ],
+                            "name": "P99"
+                        },
+                        "queries": {
+                            "indices": []
+                        },
+                        "type": "line"
+                    },
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "items": [
+                                {
+                                    "field": "response.elapsed",
+                                    "name": "a",
+                                    "statistic": "avg"
+                                }
+                            ],
+                            "name": "AVG"
+                        },
+                        "queries": {
+                            "indices": []
+                        },
+                        "type": "line"
+                    },
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "items": [
+                                {
+                                    "field": "response.elapsed",
+                                    "name": "a",
+                                    "statistic": "p50"
+                                }
+                            ],
+                            "name": "P50"
+                        },
+                        "queries": {
+                            "indices": []
+                        },
+                        "type": "line"
+                    }
                 ],
-                "name": "AVG"
-              },
-              "queries": {
-                "indices": []
-              },
-              "type": "line"
+                "title": "Request Latency (ms)"
             },
             {
-              "metric": {
-                "formula": "a",
-                "items": [
-                  {
-                    "field": "response.elapsed",
-                    "name": "a",
-                    "statistic": "p50"
-                  }
-                ],
-                "name": "P50"
-              },
-              "queries": {
-                "indices": []
-              },
-              "type": "line"
-            }
-          ],
-          "title": "Request Latency"
-        },
-        {
-          "drilling": {},
-          "formatter": "number",
-          "position": {
-            "h": 3,
-            "w": 12,
-            "x": 0,
-            "y": 2
-          },
-          "series": [
-            {
-              "metric": {
                 "bucket_size": "auto",
-                "formula": "a",
-                "items": [
-                  {
-                    "field": "*",
-                    "name": "a",
-                    "statistic": "count"
-                  }
-                ]
-              },
-              "queries": {
-                "indices": []
-              },
-              "type": "area"
-            }
-          ],
-          "title": "Request rate"
-        },
-        {
-          "data_type": "timeseries",
-          "drilling": {},
-          "formatter": "number",
-          "position": {
-            "h": 5,
-            "w": 12,
-            "x": 0,
-            "y": 14
-          },
-          "series": [
-            {
-              "metric": {
-                "bucket_size": "auto",
-                "formula": "a",
-                "groups": [
-                  {
-                    "field": "request.path",
-                    "limit": 5
-                  }
-                ],
-                "items": [
-                  {
-                    "field": "response.elapsed",
-                    "name": "a",
-                    "statistic": "p95"
-                  }
-                ]
-              },
-              "queries": {
-                "indices": []
-              },
-              "type": "column"
-            }
-          ],
-          "title": "wrong"
-        },
-        {
-          "bucket_size": "auto",
-          "data_type": "timeseries",
-          "drilling": {},
-          "formatter": "number",
-          "position": {
-            "h": 5,
-            "w": 12,
-            "x": 0,
-            "y": 9
-          },
-          "series": [
-            {
-              "metric": {
-                "formula": "a",
-                "groups": [
-                  {
-                    "field": "request.path",
-                    "limit": 6
-                  }
-                ],
-                "items": [
-                  {
-                    "field": "request.path",
-                    "name": "a",
-                    "statistic": "count"
-                  }
-                ],
-                "name": ""
-              },
-              "queries": {
-                "indices": []
-              },
-              "type": "column"
-            }
-          ],
-          "title": "Request rate group by path"
-        },
-        {
-          "drilling": {},
-          "formatter": "number",
-          "position": {
-            "h": 2,
-            "w": 2,
-            "x": 2,
-            "y": 0
-          },
-          "series": [
-            {
-              "metric": {
-                "bucket_size": "auto",
-                "formula": "a",
-                "items": [
-                  {
-                    "field": "*",
-                    "name": "a",
-                    "statistic": "count"
-                  }
-                ]
-              },
-              "queries": {
-                "cluster_id": "$[[RESOURCE_ID]]",
-                "indices": [
-                  ".infini_requests_logging*"
-                ],
-                "query": "{\n    \"bool\": {\n      \"filter\": [\n        {\"term\": {\"response.cached\": {\"value\": \"true\" } }}\n\n      ]\n    }\n  }",
-                "time_field": "timestamp"
-              },
-              "type": "number"
-            }
-          ],
-          "title": "Cached Requests"
-        },
-        {
-          "drilling": {},
-          "formatter": "number",
-          "position": {
-            "h": 4,
-            "w": 2,
-            "x": 0,
-            "y": 23
-          },
-          "series": [
-            {
-              "metric": {
-                "bucket_size": "auto",
-                "formula": "a",
-                "groups": [
-                  {
-                    "field": "response.status_code",
-                    "limit": 5
-                  }
-                ],
-                "items": [
-                  {
-                    "field": "*",
-                    "name": "a",
-                    "statistic": "count"
-                  }
-                ]
-              },
-              "queries": {
-                "indices": []
-              },
-              "type": "pie"
-            }
-          ],
-          "title": "Response code"
-        },
-        {
-          "drilling": {},
-          "formatter": "number",
-          "position": {
-            "h": 2,
-            "w": 2,
-            "x": 10,
-            "y": 0
-          },
-          "series": [
-            {
-              "metric": {
-                "bucket_size": "auto",
-                "formula": "a",
-                "items": [
-                  {
-                    "field": "*",
-                    "name": "a",
-                    "statistic": "count"
-                  }
-                ]
-              },
-              "queries": {
-                "cluster_id": "$[[RESOURCE_ID]]",
-                "indices": [
-                  ".infini_requests_logging*"
-                ],
-                "query": "{\n    \"range\": {\n      \"response.elapsed\": {\n        \"gte\": 1000\n      }\n    }\n  }",
-                "time_field": "timestamp"
-              },
-              "type": "number"
-            }
-          ],
-          "title": "Slow Queries"
-        },
-        {
-          "drilling": {},
-          "page_size": 10,
-          "position": {
-            "h": 5,
-            "w": 12,
-            "x": 0,
-            "y": 27
-          },
-          "series": [
-            {
-              "columns": [
-                {
-                  "name": "flow.from",
-                  "type": "string"
+                "drilling": {},
+                "formatter": "number",
+                "position": {
+                    "h": 3,
+                    "w": 12,
+                    "x": 0,
+                    "y": 2
                 },
-                {
-                  "name": "flow.relay",
-                  "type": "string"
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "items": [
+                                {
+                                    "field": "*",
+                                    "name": "a",
+                                    "statistic": "count"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "indices": []
+                        },
+                        "type": "area"
+                    }
+                ],
+                "title": "Request Rate"
+            },
+            {
+                "bucket_size": "auto",
+                "data_type": "timeseries",
+                "drilling": {},
+                "formatter": "number",
+                "is_stack": false,
+                "position": {
+                    "h": 5,
+                    "w": 12,
+                    "x": 0,
+                    "y": 14
                 },
-                {
-                  "name": "flow.to",
-                  "type": "string"
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "groups": [
+                                {
+                                    "field": "request.path",
+                                    "limit": 5
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "response.elapsed",
+                                    "name": "a",
+                                    "statistic": "avg"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "indices": []
+                        },
+                        "type": "column"
+                    }
+                ],
+                "title": "Request Latency (group by path in ms)"
+            },
+            {
+                "bucket_size": "auto",
+                "drilling": {},
+                "formatter": "number",
+                "position": {
+                    "h": 5,
+                    "w": 12,
+                    "x": 0,
+                    "y": 9
                 },
-                {
-                  "name": "request.method",
-                  "type": "string"
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "groups": [
+                                {
+                                    "field": "request.path",
+                                    "limit": 8
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "request.path",
+                                    "name": "a",
+                                    "statistic": "count"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "indices": []
+                        },
+                        "type": "area"
+                    }
+                ],
+                "title": "Request Rate (group by path)"
+            },
+            {
+                "drilling": {},
+                "formatter": "number",
+                "position": {
+                    "h": 2,
+                    "w": 2,
+                    "x": 2,
+                    "y": 0
                 },
-                {
-                  "name": "request.path",
-                  "type": "string"
+                "series": [
+                    {
+                        "metric": {
+                            "bucket_size": "auto",
+                            "formula": "a",
+                            "items": [
+                                {
+                                    "field": "*",
+                                    "name": "a",
+                                    "statistic": "count"
+                                }
+                            ]
+                        },
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_requests_logging*"
+                            ],
+                            "query": "{\n    \"bool\": {\n      \"filter\": [\n        {\"term\": {\"response.cached\": {\"value\": \"true\" } }}\n\n      ]\n    }\n  }",
+                            "time_field": "timestamp"
+                        },
+                        "type": "number"
+                    }
+                ],
+                "title": "Cached Requests"
+            },
+            {
+                "bucket_size": "auto",
+                "drilling": {},
+                "formatter": "number",
+                "position": {
+                    "h": 4,
+                    "w": 2,
+                    "x": 0,
+                    "y": 23
                 },
-                {
-                  "name": "response.status_code",
-                  "type": "number"
-                }
-              ],
-              "queries": {
-                "indices": []
-              },
-              "type": "table"
-            }
-          ],
-          "title": "Request detail"
-        },
-        {
-          "data_type": "timeseries",
-          "drilling": {},
-          "formatter": "bytes",
-          "position": {
-            "h": 4,
-            "w": 5,
-            "x": 7,
-            "y": 19
-          },
-          "series": [
-            {
-              "metric": {
-                "bucket_size": "auto",
-                "formula": "a",
-                "groups": [
-                  {
-                    "field": "remote_ip",
-                    "limit": 5
-                  }
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "groups": [
+                                {
+                                    "field": "response.status_code",
+                                    "limit": 5
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "*",
+                                    "name": "a",
+                                    "statistic": "count"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "indices": []
+                        },
+                        "type": "pie"
+                    }
                 ],
-                "items": [
-                  {
-                    "field": "response.body_length",
-                    "name": "a",
-                    "statistic": "sum"
-                  }
-                ]
-              },
-              "queries": {
-                "indices": []
-              },
-              "type": "column"
-            }
-          ],
-          "title": "Response size"
-        },
-        {
-          "data_type": "timeseries",
-          "drilling": {},
-          "formatter": "bytes",
-          "position": {
-            "h": 4,
-            "w": 5,
-            "x": 2,
-            "y": 19
-          },
-          "series": [
+                "title": "Response Code"
+            },
             {
-              "metric": {
-                "bucket_size": "auto",
-                "formula": "a",
-                "groups": [
-                  {
-                    "field": "remote_ip",
-                    "limit": 5
-                  }
+                "drilling": {},
+                "formatter": "number",
+                "position": {
+                    "h": 2,
+                    "w": 2,
+                    "x": 10,
+                    "y": 0
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "bucket_size": "auto",
+                            "formula": "a",
+                            "items": [
+                                {
+                                    "field": "*",
+                                    "name": "a",
+                                    "statistic": "count"
+                                }
+                            ]
+                        },
+                        "queries": {
+                            "cluster_id": "$[[RESOURCE_ID]]",
+                            "indices": [
+                                ".infini_requests_logging*"
+                            ],
+                            "query": "{\n    \"range\": {\n      \"response.elapsed\": {\n        \"gte\": 1000\n      }\n    }\n  }",
+                            "time_field": "timestamp"
+                        },
+                        "type": "number"
+                    }
                 ],
-                "items": [
-                  {
-                    "field": "request.body_length",
-                    "name": "a",
-                    "statistic": "sum"
-                  }
-                ]
-              },
-              "queries": {
-                "indices": []
-              },
-              "type": "column"
-            }
-          ],
-          "title": "Request size"
-        },
-        {
-          "data_type": "timeseries",
-          "drilling": {},
-          "formatter": "number",
-          "position": {
-            "h": 4,
-            "w": 5,
-            "x": 2,
-            "y": 23
-          },
-          "series": [
+                "title": "Slow Queries"
+            },
             {
-              "metric": {
-                "bucket_size": "auto",
-                "formula": "a",
-                "groups": [
-                  {
-                    "field": "flow.to",
-                    "limit": 5
-                  }
+                "drilling": {},
+                "page_size": 10,
+                "position": {
+                    "h": 5,
+                    "w": 12,
+                    "x": 0,
+                    "y": 27
+                },
+                "series": [
+                    {
+                        "columns": [
+                            {
+                                "name": "flow.from",
+                                "type": "string"
+                            },
+                            {
+                                "name": "flow.relay",
+                                "type": "string"
+                            },
+                            {
+                                "name": "flow.to",
+                                "type": "string"
+                            },
+                            {
+                                "name": "request.method",
+                                "type": "string"
+                            },
+                            {
+                                "name": "request.path",
+                                "type": "string"
+                            },
+                            {
+                                "name": "response.status_code",
+                                "type": "number"
+                            }
+                        ],
+                        "queries": {
+                            "indices": []
+                        },
+                        "type": "table"
+                    }
                 ],
-                "items": [
-                  {
-                    "field": "*",
-                    "name": "a",
-                    "statistic": "count"
-                  }
-                ]
-              },
-              "queries": {
-                "indices": []
-              },
-              "type": "column"
-            }
-          ],
-          "title": "Request upstreams"
-        },
-        {
-          "data_type": "timeseries",
-          "drilling": {},
-          "formatter": "number",
-          "position": {
-            "h": 4,
-            "w": 5,
-            "x": 7,
-            "y": 23
-          },
-          "series": [
+                "title": "Request Detail"
+            },
             {
-              "metric": {
                 "bucket_size": "auto",
-                "formula": "a",
-                "groups": [
-                  {
-                    "field": "request.method",
-                    "limit": 5
-                  }
+                "data_type": "timeseries",
+                "drilling": {},
+                "formatter": "bytes",
+                "is_stack": false,
+                "position": {
+                    "h": 4,
+                    "w": 5,
+                    "x": 7,
+                    "y": 19
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "groups": [
+                                {
+                                    "field": "remote_ip",
+                                    "limit": 5
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "response.body_length",
+                                    "name": "a",
+                                    "statistic": "sum"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "indices": []
+                        },
+                        "type": "column"
+                    }
                 ],
-                "items": [
-                  {
-                    "field": "*",
-                    "name": "a",
-                    "statistic": "count"
-                  }
-                ]
-              },
-              "queries": {
-                "indices": []
-              },
-              "type": "column"
-            }
-          ],
-          "title": "Request methods"
-        },
-        {
-          "drilling": {},
-          "formatter": "number",
-          "position": {
-            "h": 4,
-            "w": 2,
-            "x": 0,
-            "y": 19
-          },
-          "series": [
+                "title": "Response Size"
+            },
             {
-              "metric": {
                 "bucket_size": "auto",
-                "formula": "a",
-                "groups": [
-                  {
-                    "field": "flow.from",
-                    "limit": 5
-                  }
+                "data_type": "timeseries",
+                "drilling": {},
+                "formatter": "bytes",
+                "is_stack": false,
+                "position": {
+                    "h": 4,
+                    "w": 5,
+                    "x": 2,
+                    "y": 19
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "groups": [
+                                {
+                                    "field": "remote_ip",
+                                    "limit": 5
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "request.body_length",
+                                    "name": "a",
+                                    "statistic": "sum"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "indices": []
+                        },
+                        "type": "column"
+                    }
                 ],
-                "items": [
-                  {
-                    "field": "*",
-                    "name": "a",
-                    "statistic": "count"
-                  }
-                ]
-              },
-              "queries": {
-                "indices": []
-              },
-              "type": "pie"
-            }
-          ],
-          "title": "Clients ip"
-        },
-        {
-          "drilling": {},
-          "formatter": "bytes",
-          "position": {
-            "h": 2,
-            "w": 2,
-            "x": 8,
-            "y": 0
-          },
-          "series": [
+                "title": "Request Size"
+            },
             {
-              "metric": {
                 "bucket_size": "auto",
-                "formula": "a",
-                "items": [
-                  {
-                    "field": "response.body_length",
-                    "name": "a",
-                    "statistic": "sum"
-                  }
-                ]
-              },
-              "queries": {
-                "indices": []
-              },
-              "type": "number"
-            }
-          ],
-          "title": "Response traffic"
-        },
-        {
-          "drilling": {},
-          "formatter": "bytes",
-          "position": {
-            "h": 2,
-            "w": 2,
-            "x": 6,
-            "y": 0
-          },
-          "series": [
+                "data_type": "timeseries",
+                "drilling": {},
+                "formatter": "number",
+                "is_stack": false,
+                "position": {
+                    "h": 4,
+                    "w": 5,
+                    "x": 2,
+                    "y": 23
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "groups": [
+                                {
+                                    "field": "flow.to",
+                                    "limit": 5
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "*",
+                                    "name": "a",
+                                    "statistic": "count"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "indices": []
+                        },
+                        "type": "column"
+                    }
+                ],
+                "title": "Request Upstreams"
+            },
             {
-              "metric": {
                 "bucket_size": "auto",
-                "formula": "a",
-                "items": [
-                  {
-                    "field": "request.body_length",
-                    "name": "a",
-                    "statistic": "sum"
-                  }
-                ]
-              },
-              "queries": {
-                "indices": []
-              },
-              "type": "number"
-            }
-          ],
-          "title": "Request traffic"
-        },
-        {
-          "drilling": {},
-          "formatter": "number",
-          "position": {
-            "h": 2,
-            "w": 2,
-            "x": 4,
-            "y": 0
-          },
-          "series": [
+                "data_type": "timeseries",
+                "drilling": {},
+                "formatter": "number",
+                "is_stack": false,
+                "position": {
+                    "h": 4,
+                    "w": 5,
+                    "x": 7,
+                    "y": 23
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "groups": [
+                                {
+                                    "field": "request.method",
+                                    "limit": 5
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "*",
+                                    "name": "a",
+                                    "statistic": "count"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "indices": []
+                        },
+                        "type": "column"
+                    }
+                ],
+                "title": "Request Methods"
+            },
             {
-              "metric": {
                 "bucket_size": "auto",
-                "formula": "a",
-                "items": [
-                  {
-                    "field": "remote_ip",
-                    "name": "a",
-                    "statistic": "cardinality"
-                  }
-                ]
-              },
-              "queries": {
-                "indices": []
-              },
-              "type": "number"
+                "drilling": {},
+                "formatter": "number",
+                "position": {
+                    "h": 4,
+                    "w": 2,
+                    "x": 0,
+                    "y": 19
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "groups": [
+                                {
+                                    "field": "flow.from",
+                                    "limit": 5
+                                }
+                            ],
+                            "items": [
+                                {
+                                    "field": "*",
+                                    "name": "a",
+                                    "statistic": "count"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "indices": []
+                        },
+                        "type": "pie"
+                    }
+                ],
+                "title": "Clients IP"
+            },
+            {
+                "bucket_size": "auto",
+                "drilling": {},
+                "formatter": "bytes",
+                "position": {
+                    "h": 2,
+                    "w": 2,
+                    "x": 8,
+                    "y": 0
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "items": [
+                                {
+                                    "field": "response.body_length",
+                                    "name": "a",
+                                    "statistic": "sum"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "indices": []
+                        },
+                        "type": "number"
+                    }
+                ],
+                "title": "Response Traffic"
+            },
+            {
+                "bucket_size": "auto",
+                "drilling": {},
+                "formatter": "bytes",
+                "position": {
+                    "h": 2,
+                    "w": 2,
+                    "x": 6,
+                    "y": 0
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "formula": "a",
+                            "items": [
+                                {
+                                    "field": "request.body_length",
+                                    "name": "a",
+                                    "statistic": "sum"
+                                }
+                            ],
+                            "name": ""
+                        },
+                        "queries": {
+                            "indices": []
+                        },
+                        "type": "number"
+                    }
+                ],
+                "title": "Request Traffic"
+            },
+            {
+                "drilling": {},
+                "formatter": "number",
+                "position": {
+                    "h": 2,
+                    "w": 2,
+                    "x": 4,
+                    "y": 0
+                },
+                "series": [
+                    {
+                        "metric": {
+                            "bucket_size": "auto",
+                            "formula": "a",
+                            "items": [
+                                {
+                                    "field": "remote_ip",
+                                    "name": "a",
+                                    "statistic": "cardinality"
+                                }
+                            ]
+                        },
+                        "queries": {
+                            "indices": []
+                        },
+                        "type": "number"
+                    }
+                ],
+                "title": "Clients"
             }
-          ],
-          "title": "Clients"
-        }
-      ]
+        ]
     },
     "type": "workspace",
     "is_fixed": true
 }
+
 GET /
 
 

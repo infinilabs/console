@@ -14,6 +14,8 @@ fi
 cd $WORKBASE/web
 git pull origin master
 
+git log --pretty=oneline -5
+
 #--quiet
 cnpm install --no-progress
 

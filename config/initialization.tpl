@@ -2191,212 +2191,6 @@ POST $[[INDEX_PREFIX]]layout/_doc/cg2qqh28go5jqa6vvk70
    }
 }
 
-POST $[[INDEX_PREFIX]]layout/_doc/ch0u5d53q95poj13629g
-{
-    "id": "ch0u5d53q95poj13629g",
-    "created": "2023-04-21T01:11:16.129965374Z",
-    "updated": "2023-06-09T04:23:16.108702216Z",
-    "name": "🎯 Cluster Overview",
-    "description": "",
-    "creator": {
-        "name": "$[[USERNAME]]",
-        "id": "$[[USER_ID]]"
-    },
-    "view_id": "",
-    "config": {
-        "cols": 12,
-        "global_queries": {},
-        "row_height": 60,
-        "widgets": [
-            {
-                "bucket_size": "auto",
-                "drilling": {},
-                "formatter": "number",
-                "position": {
-                    "h": 3,
-                    "w": 3,
-                    "x": 0,
-                    "y": 0
-                },
-                "series": [
-                    {
-                        "metric": {
-                            "formula": "a",
-                            "items": [
-                                {
-                                    "field": "metadata.labels.node_id",
-                                    "name": "a",
-                                    "statistic": "cardinality"
-                                }
-                            ],
-                            "name": ""
-                        },
-                        "queries": {
-                            "cluster_id": "$[[RESOURCE_ID]]",
-                            "indices": [
-                                ".infini_metrics*"
-                            ],
-                            "time_field": "timestamp"
-                        },
-                        "type": "number"
-                    }
-                ],
-                "title": "Num of Nodes"
-            },
-            {
-                "bucket_size": "auto",
-                "drilling": {},
-                "formatter": "number",
-                "position": {
-                    "h": 3,
-                    "w": 3,
-                    "x": 3,
-                    "y": 0
-                },
-                "series": [
-                    {
-                        "metric": {
-                            "formula": "a",
-                            "items": [
-                                {
-                                    "field": "agent.major_ip",
-                                    "name": "a",
-                                    "statistic": "cardinality"
-                                }
-                            ],
-                            "name": ""
-                        },
-                        "queries": {
-                            "cluster_id": "$[[RESOURCE_ID]]",
-                            "indices": [
-                                ".infini_metrics*"
-                            ],
-                            "time_field": "timestamp"
-                        },
-                        "type": "number"
-                    }
-                ],
-                "title": "Num of Hosts"
-            },
-            {
-                "drilling": {},
-                "page_size": 10,
-                "position": {
-                    "h": 5,
-                    "w": 12,
-                    "x": 0,
-                    "y": 4
-                },
-                "series": [
-                    {
-                        "columns": [
-                            {
-                                "display": "ClusterName",
-                                "name": "name",
-                                "type": "string"
-                            },
-                            {
-                                "name": "distribution",
-                                "type": "string"
-                            },
-                            {
-                                "name": "endpoint",
-                                "type": "string"
-                            },
-                            {
-                                "display": "Time",
-                                "formatter": "time",
-                                "name": "created",
-                                "type": "date"
-                            }
-                        ],
-                        "queries": {
-                            "cluster_id": "$[[RESOURCE_ID]]",
-                            "indices": [
-                                ".infini_cluster"
-                            ]
-                        },
-                        "type": "table"
-                    }
-                ],
-                "title": "Cluster List"
-            },
-            {
-                "bucket_size": "auto",
-                "drilling": {},
-                "formatter": "number",
-                "position": {
-                    "h": 3,
-                    "w": 3,
-                    "x": 6,
-                    "y": 0
-                },
-                "series": [
-                    {
-                        "metric": {
-                            "formula": "a",
-                            "items": [
-                                {
-                                    "field": "metadata.labels.node_id",
-                                    "name": "a",
-                                    "statistic": "cardinality"
-                                }
-                            ],
-                            "name": ""
-                        },
-                        "queries": {
-                            "cluster_id": "$[[RESOURCE_ID]]",
-                            "indices": [
-                                ".infini_metrics*"
-                            ],
-                            "time_field": "timestamp"
-                        },
-                        "type": "number"
-                    }
-                ],
-                "title": "Num of Nodes"
-            },
-            {
-                "bucket_size": "auto",
-                "drilling": {},
-                "formatter": "number",
-                "position": {
-                    "h": 3,
-                    "w": 3,
-                    "x": 9,
-                    "y": 1
-                },
-                "series": [
-                    {
-                        "metric": {
-                            "formula": "a",
-                            "items": [
-                                {
-                                    "field": "metadata.labels.index_name",
-                                    "name": "a",
-                                    "statistic": "cardinality"
-                                }
-                            ],
-                            "name": ""
-                        },
-                        "queries": {
-                            "cluster_id": "$[[RESOURCE_ID]]",
-                            "indices": [
-                                ".infini_metrics*"
-                            ],
-                            "time_field": "timestamp"
-                        },
-                        "type": "number"
-                    }
-                ],
-                "title": "Num of Indices"
-            }
-        ]
-    },
-    "type": "workspace",
-    "is_fixed": true
-}
-
 POST $[[INDEX_PREFIX]]layout/_doc/cgjqcg53q95r17vbfo10
 {
     "id": "cgjqcg53q95r17vbfo10",
@@ -3072,7 +2866,7 @@ POST $[[INDEX_PREFIX]]layout/_doc/cgjoqud3q95rinbbe1l0
 {
     "id": "cgjoqud3q95rinbbe1l0",
     "created": "2023-04-01T01:48:41.54255458Z",
-    "updated": "2023-06-09T04:51:40.929754643Z",
+    "updated": "2023-06-09T10:29:40.625629191Z",
     "name": "🚦 Platform Overview",
     "description": "",
     "creator": {
@@ -3102,7 +2896,7 @@ POST $[[INDEX_PREFIX]]layout/_doc/cgjoqud3q95rinbbe1l0
                     "h": 4,
                     "w": 3,
                     "x": 9,
-                    "y": 5
+                    "y": 0
                 },
                 "series": [
                     {
@@ -3142,8 +2936,8 @@ POST $[[INDEX_PREFIX]]layout/_doc/cgjoqud3q95rinbbe1l0
                 "position": {
                     "h": 4,
                     "w": 3,
-                    "x": 6,
-                    "y": 5
+                    "x": 0,
+                    "y": 0
                 },
                 "series": [
                     {
@@ -3183,8 +2977,8 @@ POST $[[INDEX_PREFIX]]layout/_doc/cgjoqud3q95rinbbe1l0
                 "position": {
                     "h": 4,
                     "w": 3,
-                    "x": 0,
-                    "y": 5
+                    "x": 6,
+                    "y": 0
                 },
                 "series": [
                     {
@@ -3224,7 +3018,7 @@ POST $[[INDEX_PREFIX]]layout/_doc/cgjoqud3q95rinbbe1l0
                     "h": 4,
                     "w": 3,
                     "x": 3,
-                    "y": 5
+                    "y": 0
                 },
                 "series": [
                     {
@@ -3267,7 +3061,7 @@ POST $[[INDEX_PREFIX]]layout/_doc/cgjoqud3q95rinbbe1l0
                     "h": 5,
                     "w": 6,
                     "x": 6,
-                    "y": 14
+                    "y": 9
                 },
                 "series": [
                     {
@@ -3313,7 +3107,7 @@ POST $[[INDEX_PREFIX]]layout/_doc/cgjoqud3q95rinbbe1l0
                     "h": 5,
                     "w": 6,
                     "x": 0,
-                    "y": 9
+                    "y": 4
                 },
                 "series": [
                     {
@@ -3366,7 +3160,7 @@ POST $[[INDEX_PREFIX]]layout/_doc/cgjoqud3q95rinbbe1l0
                     "h": 5,
                     "w": 6,
                     "x": 6,
-                    "y": 9
+                    "y": 4
                 },
                 "series": [
                     {
@@ -3414,7 +3208,7 @@ POST $[[INDEX_PREFIX]]layout/_doc/cgjoqud3q95rinbbe1l0
                     "h": 5,
                     "w": 6,
                     "x": 0,
-                    "y": 14
+                    "y": 9
                 },
                 "series": [
                     {

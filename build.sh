@@ -38,7 +38,11 @@ for t in 386 amd64 arm64 armv5 armv6 armv7 loong64 mips mips64 mips64le mipsle r
 done
 
 for t in mac-amd64 mac-arm64 windows-amd64 windows-386 ; do
-  cd $WORKDIR/bin && zip -qr ${WORKSPACE}/$PNAME-$VERSION-$BUILD_NUMBER-$t.zip $PNAME-$t $PNAME.yml LICENSE NOTICE config
+  zip -qr ${WORKSPACE}/$PNAME-$VERSION-$BUILD_NUMBER-$t.zip $PNAME-$t $PNAME.yml LICENSE NOTICE config
+done
+
+for t in windows-amd64 windows-386 ; do
+  zip -qr ${WORKSPACE}/$PNAME-$VERSION-$BUILD_NUMBER-$t.zip $PNAME-$t.exe $PNAME.yml LICENSE NOTICE config
 done
 
 #build image & push

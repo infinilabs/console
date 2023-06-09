@@ -5,9 +5,8 @@ configs.auto_reload: true
 #  INFINI_CONSOLE_ENDPOINT: "http://127.0.0.1:9000"
 #  INGEST_CLUSTER_ENDPOINT: "https://127.0.0.1:9200"
 #  INGEST_CLUSTER_CREDENTIAL_ID: chjkp9dath21f1ae9tq0
-#  DINGTALK_WEBHOOK_ENDPOINT:
-#  INFINI_CONSOLE_ENDPOINT:
 #  SLACK_WEBHOOK_ENDPOINT:
+#  DINGTALK_WEBHOOK_ENDPOINT:
 #  WECHAT_WEBHOOK_ENDPOINT:
 
 web:
@@ -61,7 +60,6 @@ metrics:
 badger:
   value_log_max_entries: 1000000
   value_log_file_size: 104857600
-
 #security:
 #  oauth:
 #    enabled: true

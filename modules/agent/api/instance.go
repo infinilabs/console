@@ -506,7 +506,7 @@ func (h *APIHandler) authESNode(w http.ResponseWriter, req *http.Request, ps htt
 		return
 	}
 	if oldNodeInfo.ProcessInfo.PID != nodeInfo.ProcessInfo.PID {
-		h.WriteError(w, fmt.Sprintf("process id mismatch, got: %s，expected: %s", nodeInfo.ProcessInfo.PID, oldNodeInfo.ProcessInfo.PID), http.StatusInternalServerError)
+		h.WriteError(w, fmt.Sprintf("process id mismatch, got: %d，expected: %d", nodeInfo.ProcessInfo.PID, oldNodeInfo.ProcessInfo.PID), http.StatusInternalServerError)
 		return
 	}
 

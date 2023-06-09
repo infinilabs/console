@@ -213,7 +213,9 @@ fi
 $sudo_cmd chmod +x $agent_exc
 
 #try to stop and uninstall service
-if [[ -e /etc/systemd/system/agent.service ]]; then
+macos=/Library/LaunchDaemons/agent.plist
+linux=/etc/systemd/system/agent.service
+if [[ -f "$linux" || -f "$macos" ]]; then
 	printf "\n* stop && uninstall service\n"
 	$sudo_cmd $agent_exc -service stop &>/dev/null
 	$sudo_cmd $agent_exc -service uninstall &>/dev/null

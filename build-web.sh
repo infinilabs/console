@@ -19,4 +19,4 @@ git log --pretty=oneline -5
 #--quiet
 cnpm install --quiet --no-progress
 
-cnpm run build --quiet >/dev/null
+cnpm run build --quiet &>/dev/null

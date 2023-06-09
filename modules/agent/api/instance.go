@@ -491,16 +491,25 @@ func (h *APIHandler) authESNode(w http.ResponseWriter, req *http.Request, ps htt
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	host, _, err := net.SplitHostPort(nodeInfo.PublishAddress)
+	host, port, err := net.SplitHostPort(nodeInfo.PublishAddress)
 	if err != nil {
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if !util.StringInArray(inst.IPS, host) && !net.ParseIP(host).IsLoopback() {
+	if !util.StringInArray(inst.IPS, host) && !net.ParseIP(host).IsLoopback()  {
 		h.WriteError(w, fmt.Sprintf("got node host %s not match any ip of %v", host, inst.IPS), http.StatusInternalServerError)
 		return
 	}
+	if oldNodeInfo.HttpPort != port {
+		h.WriteError(w, fmt.Sprintf("port mismatch, got: %s，expected: %s", port, oldNodeInfo.HttpPort), http.StatusInternalServerError)
+		return
+	}
+	if oldNodeInfo.ProcessInfo.PID != nodeInfo.ProcessInfo.PID {
+		h.WriteError(w, fmt.Sprintf("process id mismatch, got: %s，expected: %s", nodeInfo.ProcessInfo.PID, oldNodeInfo.ProcessInfo.PID), http.StatusInternalServerError)
+		return
+	}
+
 	nodeInfo.ID = oldNodeInfo.ID
 	nodeInfo.AgentID = inst.ID
 	err = orm.Save(nil, nodeInfo)

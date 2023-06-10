@@ -21,7 +21,6 @@ import (
 	"infini.sh/framework/core/api"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
-	"infini.sh/framework/core/event"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	elastic2 "infini.sh/framework/modules/elastic"
@@ -109,10 +108,6 @@ func (h *APIHandler) createInstance(w http.ResponseWriter, req *http.Request, ps
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
 		return
-	}
-	_, err = refreshNodesInfo(obj)
-	if err != nil {
-		log.Error(err)
 	}
 	err = client.GetClient().SaveIngestConfig(context.Background(), obj.GetEndpoint())
 	if err != nil {
@@ -221,50 +216,17 @@ func (h *APIHandler) getInstanceStats(w http.ResponseWriter, req *http.Request, 
 		h.WriteJSON(w, util.MapStr{}, http.StatusOK)
 		return
 	}
-	q := orm.Query{
-		WildcardIndex: true,
-	}
+	q := orm.Query{}
 	queryDSL := util.MapStr{
-		"sort": []util.MapStr{
-			{
-				"timestamp": util.MapStr{
-					"order": "desc",
-				},
-			},
-		},
-		"collapse": util.MapStr{
-			"field": "agent.id",
-		},
 		"query": util.MapStr{
-			"bool": util.MapStr{
-				"filter": []util.MapStr{
-					{
-						"range": util.MapStr{
-							"timestamp": util.MapStr{
-								"gte": "now-1m",
-							},
-						},
-					},
-				},
-				"must": []util.MapStr{
-					{
-						"term": util.MapStr{
-							"metadata.name": util.MapStr{
-								"value": "agent",
-							},
-						},
-					}, {
-						"terms": util.MapStr{
-							"agent.id": instanceIDs,
-						},
-					},
-				},
+			"terms": util.MapStr{
+				"_id": instanceIDs,
 			},
 		},
 	}
 	q.RawQuery = util.MustToJSONBytes(queryDSL)
 
-	err, res := orm.Search(event.Event{}, &q)
+	err, res := orm.Search(&agent.Instance{}, &q)
 	if err != nil {
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -272,26 +234,31 @@ func (h *APIHandler) getInstanceStats(w http.ResponseWriter, req *http.Request, 
 	}
 	result := util.MapStr{}
 	for _, item := range res.Result {
-		if itemV, ok := item.(map[string]interface{}); ok {
-			if agentID, ok := util.GetMapValueByKeys([]string{"agent", "id"}, itemV); ok {
-				if v, ok := agentID.(string); ok {
-					if ab, ok := util.GetMapValueByKeys([]string{"payload", "instance", "system"}, itemV); ok {
-						if abV, ok := ab.(map[string]interface{}); ok {
-							result[v] = util.MapStr{
-								"timestamp": itemV["timestamp"],
-								"system": util.MapStr{
-									"cpu":          abV["cpu"],
-									"mem":          abV["mem"],
-									"uptime_in_ms": abV["uptime_in_ms"],
-									"status":       "online",
-								},
-							}
-						}
-					}
-				}
-			}
+		instBytes, err := util.ToJSONBytes(item)
+		if err != nil {
+			log.Error(err)
+			continue
 		}
+		instance := agent.Instance{}
+		err = util.FromJSONBytes(instBytes, &instance)
+		if err != nil {
+			log.Error(err)
+			continue
+		}
+		agReq := &util.Request{
+			Method:  http.MethodGet,
+			Url:     fmt.Sprintf("%s/stats", instance.GetEndpoint()),
 
+		}
+		var resMap = util.MapStr{}
+		err = client.GetClient().DoRequest(agReq, &resMap)
+
+		if err != nil {
+			log.Error(err)
+			result[instance.ID] = util.MapStr{}
+			continue
+		}
+		result[instance.ID] = resMap
 	}
 	h.WriteJSON(w, result, http.StatusOK)
 }
@@ -409,15 +376,11 @@ func (h *APIHandler) getESNodesInfo(w http.ResponseWriter, req *http.Request, ps
 		}, http.StatusNotFound)
 		return
 	}
-	nodesM, err := getNodesInfoFromES(obj.ID)
+	nodes, err := refreshNodesInfo(&obj)
 	if err != nil {
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
-	}
-	var nodes []*agent.ESNodeInfo
-	for _, node := range nodesM {
-		nodes = append(nodes, node)
 	}
 	h.WriteJSON(w, nodes, http.StatusOK)
 }
@@ -656,14 +619,21 @@ func (h *APIHandler) tryConnect(w http.ResponseWriter, req *http.Request, ps htt
 }
 
 func refreshNodesInfo(inst *agent.Instance) ([]agent.ESNodeInfo, error) {
-	nodesInfo, err := client.GetClient().GetElasticsearchNodes(context.Background(), inst.GetEndpoint())
-	if err != nil {
-		return nil, fmt.Errorf("get elasticsearch nodes error: %w", err)
-	}
 	oldNodesInfo, err := getNodesInfoFromES(inst.ID)
 	if err != nil {
 		return nil, fmt.Errorf("get elasticsearch nodes info from es error: %w", err)
 	}
+	nodesInfo, err := client.GetClient().GetElasticsearchNodes(context.Background(), inst.GetEndpoint())
+	if err != nil {
+		log.Errorf("get elasticsearch nodes error: %v", err)
+		//return nodes info from es after failed to get nodes info from agent
+		var nodes = []agent.ESNodeInfo{}
+		for _, nodeInfo := range oldNodesInfo {
+			nodes = append(nodes, *nodeInfo)
+		}
+		return nodes, nil
+	}
+
 	oldPids := map[int]struct{}{}
 	var resultNodes []agent.ESNodeInfo
 	if err != nil {

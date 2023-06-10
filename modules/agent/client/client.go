@@ -41,6 +41,7 @@ type ClientAPI interface {
 	SetKeystoreValue(ctx context.Context, agentBaseURL string, key, value string) error
 	SaveDynamicConfig(ctx context.Context, agentBaseURL string, name, content string) error
 	SaveIngestConfig(ctx context.Context, agentBaseURL string) error
+	DoRequest(req *util.Request, respObj interface{}) error
 }
 
 type Client struct {
@@ -59,7 +60,7 @@ func (client *Client) GetHostInfo(ctx context.Context, agentBaseURL string) (*ho
 		Error string `json:"error"`
 		HostInfo *host.HostInfo `json:"result"`
 	}{}
-	err := client.doRequest(req, &resBody)
+	err := client.DoRequest(req, &resBody)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +77,7 @@ func (client *Client) GetElasticProcess(ctx context.Context, agentBaseURL string
 		Context: ctx,
 	}
 	resBody := map[string]interface{}{}
-	err := client.doRequest(req, &resBody)
+	err := client.DoRequest(req, &resBody)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +98,7 @@ func (client *Client) GetElasticLogFiles(ctx context.Context, agentBaseURL strin
 		Body: reqBody,
 	}
 	resBody := map[string]interface{}{}
-	err := client.doRequest(req, &resBody)
+	err := client.DoRequest(req, &resBody)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +116,7 @@ func (client *Client) GetElasticLogFileContent(ctx context.Context, agentBaseURL
 		Body: util.MustToJSONBytes(body),
 	}
 	resBody := map[string]interface{}{}
-	err := client.doRequest(req, &resBody)
+	err := client.DoRequest(req, &resBody)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +140,7 @@ func (client *Client) GetInstanceBasicInfo(ctx context.Context, agentBaseURL str
 		Context: ctx,
 	}
 	resBody := &agent.Instance{}
-	err := client.doRequest(req, &resBody)
+	err := client.DoRequest(req, &resBody)
 	return resBody, err
 }
 
@@ -155,7 +156,7 @@ func (client *Client) RegisterElasticsearch(ctx context.Context, agentBaseURL st
 		Body: reqBody,
 	}
 	resBody := util.MapStr{}
-	err = client.doRequest(req, &resBody)
+	err = client.DoRequest(req, &resBody)
 	if err != nil {
 		return err
 	}
@@ -172,7 +173,7 @@ func (client *Client) GetElasticsearchNodes(ctx context.Context, agentBaseURL st
 		Context: ctx,
 	}
 	resBody := []agent.ESNodeInfo{}
-	err := client.doRequest(req, &resBody)
+	err := client.DoRequest(req, &resBody)
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +193,7 @@ func (client *Client) AuthESNode(ctx context.Context, agentBaseURL string, cfg e
 		Body: reqBody,
 	}
 	resBody := &agent.ESNodeInfo{}
-	err = client.doRequest(req, resBody)
+	err = client.DoRequest(req, resBody)
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +208,7 @@ func (client *Client) CreatePipeline(ctx context.Context, agentBaseURL string, b
 		Context: ctx,
 	}
 	resBody := util.MapStr{}
-	return client.doRequest(req, &resBody)
+	return client.DoRequest(req, &resBody)
 }
 
 func (client *Client) DeletePipeline(ctx context.Context, agentBaseURL, pipelineID string) error{
@@ -216,7 +217,7 @@ func (client *Client) DeletePipeline(ctx context.Context, agentBaseURL, pipeline
 		Url:     fmt.Sprintf("%s/pipeline/task/%s", agentBaseURL, pipelineID),
 		Context: ctx,
 	}
-	return client.doRequest(req, nil)
+	return client.DoRequest(req, nil)
 }
 
 func (client *Client) SetKeystoreValue(ctx context.Context, agentBaseURL string, key, value string) error{
@@ -230,7 +231,7 @@ func (client *Client) SetKeystoreValue(ctx context.Context, agentBaseURL string,
 		Context: ctx,
 		Body: util.MustToJSONBytes(body),
 	}
-	return client.doRequest(req, nil)
+	return client.DoRequest(req, nil)
 }
 
 func (client *Client) SaveDynamicConfig(ctx context.Context, agentBaseURL string, name, content string) error{
@@ -245,7 +246,7 @@ func (client *Client) SaveDynamicConfig(ctx context.Context, agentBaseURL string
 		Context: ctx,
 		Body: util.MustToJSONBytes(body),
 	}
-	return client.doRequest(req, nil)
+	return client.DoRequest(req, nil)
 }
 
 func (client *Client) SaveIngestConfig(ctx context.Context, agentBaseURL string) error {
@@ -267,7 +268,7 @@ func (client *Client) SaveIngestConfig(ctx context.Context, agentBaseURL string)
 }
 
 
-func (client *Client) doRequest(req *util.Request, respObj interface{}) error {
+func (client *Client) DoRequest(req *util.Request, respObj interface{}) error {
 	return client.Executor.DoRequest(req, respObj)
 }
 

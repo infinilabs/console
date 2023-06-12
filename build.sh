@@ -1,13 +1,15 @@
  #!/bin/bash
 
 #init
-PNAME=console
 WORKBASE=/home/jenkins/go/src/infini.sh
 WORKDIR=$WORKBASE/$PNAME
+DEST=/infini/Sync/Release/$PNAME/stable
 
 if [[ $VERSION =~ NIGHTLY ]]; then
   BUILD_NUMBER=$BUILD_DAY
+  DEST=/infini/Sync/Release/$PNAME/snapshot
 fi
+
 export DOCKER_CLI_EXPERIMENTAL=enabled
 
 #clean all
@@ -76,6 +78,15 @@ docker buildx imagetools create -t infinilabs/$PNAME:latest \
 docker buildx imagetools create -t infinilabs/$PNAME:$VERSION-$BUILD_NUMBER \
     infinilabs/$PNAME-arm64:$VERSION-$BUILD_NUMBER \
     infinilabs/$PNAME-amd64:$VERSION-$BUILD_NUMBER
+
+#publish
+for t in 386 amd64 arm64 armv5 armv6 armv7 loong64 mips mips64 mips64le mipsle riscv64 ; do
+  [ -f ${WORKSPACE}/$PNAME-$VERSION-$BUILD_NUMBER-linux-$t.tar.gz ] && cp -rf ${WORKSPACE}/$PNAME-$VERSION-$BUILD_NUMBER-linux-$t.tar.gz $DEST
+done
+
+for t in mac-amd64 mac-arm64 windows-amd64 windows-386 ; do
+  [ -f ${WORKSPACE}/$PNAME-$VERSION-$BUILD_NUMBER-$t.zip ] && cp -rf ${WORKSPACE}/$PNAME-$VERSION-$BUILD_NUMBER-$t.zip $DEST
+done
 
 #git reset
 cd $WORKSPACE && git reset --hard

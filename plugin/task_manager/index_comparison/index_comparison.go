@@ -342,18 +342,6 @@ func (p *processor) handleRunningSubTask(taskItem *task.Task) error {
 
 		taskItem.Metadata.Labels["source_scrolled"] = sourceDocs
 		taskItem.Metadata.Labels["target_scrolled"] = targetDocs
-		if sourceDocs != targetDocs {
-			now := time.Now()
-			taskItem.Metadata.Labels["total_diff_docs"] = sourceDocs
-			taskItem.CompletedTime = &now
-			taskItem.Status = task.StatusError
-			p.saveTaskAndWriteLog(taskItem, &task.TaskResult{
-				Success: false,
-			}, fmt.Sprintf("index comparison failed, source/target doc count unmatch: %d / %d", sourceDocs, targetDocs))
-			p.cleanGatewayQueue(taskItem)
-			p.scheduler.DecrInstanceJobs(instanceID)
-			return nil
-		}
 		if diffTask.Status == task.StatusInit {
 			diffTask.Status = task.StatusReady
 			p.saveTaskAndWriteLog(diffTask, &task.TaskResult{

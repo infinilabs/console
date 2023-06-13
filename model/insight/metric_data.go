@@ -70,11 +70,11 @@ type MetricItem struct {
 type MetricDataItem struct {
 	Timestamp interface{}  `json:"timestamp,omitempty"`
 	Value     interface{}    `json:"value"`
-	Group     string `json:"group,omitempty"`
+	Groups []string `json:"groups,omitempty"`
 }
 
 type MetricData struct {
-	Group     string `json:"group,omitempty"`
+	Groups []string `json:"groups,omitempty"`
 	Data map[string][]MetricDataItem
 }
 

@@ -224,7 +224,7 @@ func getMetricData(metric *insight.Metric) (interface{}, error) {
 	}else {
 		for _, md := range metricData {
 			targetData := insight.MetricData{
-				Group: md.Group,
+				Groups: md.Groups,
 				Data:  map[string][]insight.MetricDataItem{},
 			}
 			expression, err := govaluate.NewEvaluableExpression(formula)
@@ -281,7 +281,7 @@ func getMetricData(metric *insight.Metric) (interface{}, error) {
 	for _, md := range targetMetricData {
 		for _, v := range md.Data {
 			for _, mitem := range v {
-				mitem.Group = md.Group
+				mitem.Groups = md.Groups
 				result = append(result, mitem)
 			}
 		}

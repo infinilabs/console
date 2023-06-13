@@ -196,21 +196,21 @@ func GenerateQuery(metric *insight.Metric) (interface{}, error) {
 func CollectMetricData(agg interface{}, timeBeforeGroup bool) []insight.MetricData {
 	metricData := []insight.MetricData{}
 	if timeBeforeGroup {
-		collectMetricDataOther(agg, "", &metricData, nil)
+		collectMetricDataOther(agg, nil, &metricData, nil)
 	} else {
-		collectMetricData(agg, "", &metricData)
+		collectMetricData(agg, nil, &metricData)
 	}
 	return metricData
 }
 
 // timeBeforeGroup => false
-func collectMetricData(agg interface{}, groupValues string, metricData *[]insight.MetricData) {
+func collectMetricData(agg interface{}, groupValues []string, metricData *[]insight.MetricData) {
 	if aggM, ok := agg.(map[string]interface{}); ok {
 		if timeBks, ok := aggM["time_buckets"].(map[string]interface{}); ok {
 			if bks, ok := timeBks["buckets"].([]interface{}); ok {
 				md := insight.MetricData{
 					Data:  map[string][]insight.MetricDataItem{},
-					Group: groupValues,
+					Groups: groupValues,
 				}
 				for _, bk := range bks {
 					if bkM, ok := bk.(map[string]interface{}); ok {
@@ -234,7 +234,7 @@ func collectMetricData(agg interface{}, groupValues string, metricData *[]insigh
 		} else {
 			md := insight.MetricData{
 				Data:  map[string][]insight.MetricDataItem{},
-				Group: groupValues,
+				Groups: groupValues,
 			}
 			for k, v := range aggM {
 				if k == "key" || k == "doc_count" {
@@ -245,10 +245,9 @@ func collectMetricData(agg interface{}, groupValues string, metricData *[]insigh
 						for _, bk := range bks {
 							if bkVal, ok := bk.(map[string]interface{}); ok {
 								var currentGroup = fmt.Sprintf("%v", bkVal["key"])
-								newGroupValues := currentGroup
-								if groupValues != "" {
-									newGroupValues = fmt.Sprintf("%s-%s", groupValues, currentGroup)
-								}
+								newGroupValues := make([]string, 0, len(groupValues)+1)
+								newGroupValues = append(newGroupValues, groupValues...)
+								newGroupValues = append(newGroupValues, currentGroup)
 								collectMetricData(bk, newGroupValues, metricData)
 							}
 						}
@@ -268,13 +267,13 @@ func collectMetricData(agg interface{}, groupValues string, metricData *[]insigh
 }
 
 // timeBeforeGroup => true
-func collectMetricDataOther(agg interface{}, groupValues string, metricData *[]insight.MetricData, timeKey interface{}) {
+func collectMetricDataOther(agg interface{}, groupValues []string, metricData *[]insight.MetricData, timeKey interface{}) {
 	if aggM, ok := agg.(map[string]interface{}); ok {
 		if timeBks, ok := aggM["time_buckets"].(map[string]interface{}); ok {
 			if bks, ok := timeBks["buckets"].([]interface{}); ok {
 				md := insight.MetricData{
 					Data:  map[string][]insight.MetricDataItem{},
-					Group: groupValues,
+					Groups: groupValues,
 				}
 				for _, bk := range bks {
 					if bkM, ok := bk.(map[string]interface{}); ok {
@@ -299,17 +298,16 @@ func collectMetricDataOther(agg interface{}, groupValues string, metricData *[]i
 		} else {
 			md := insight.MetricData{
 				Data:  map[string][]insight.MetricDataItem{},
-				Group: groupValues,
+				Groups: groupValues,
 			}
 
 			if bks, ok := aggM["buckets"].([]interface{}); ok {
 				for _, bk := range bks {
 					if bkVal, ok := bk.(map[string]interface{}); ok {
 						currentGroup := util.ToString(bkVal["key"])
-						newGroupValues := currentGroup
-						if groupValues != "" {
-							newGroupValues = fmt.Sprintf("%s-%s", groupValues, currentGroup)
-						}
+						newGroupValues := make([]string, 0, len(groupValues)+1)
+						newGroupValues = append(newGroupValues, groupValues...)
+						newGroupValues = append(newGroupValues, currentGroup)
 						collectMetricDataOther(bk, newGroupValues, metricData, timeKey)
 					}
 				}

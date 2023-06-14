@@ -7,6 +7,7 @@ package insight
 import (
 	"github.com/Knetic/govaluate"
 	log "github.com/cihub/seelog"
+	common2 "infini.sh/console/common"
 	"infini.sh/console/model/insight"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
@@ -278,7 +279,59 @@ func getMetricData(metric *insight.Metric) (interface{}, error) {
 		}
 	}
 	result := []insight.MetricDataItem{}
+	//transform cluster_id, node_id to name
+	var (
+		clusterIDsM = map[string]struct{}{}
+		nodeIDsM = map[string]struct{}{}
+	)
 	for _, md := range targetMetricData {
+		for i, gv := range  md.Groups {
+			switch metric.Groups[i].Field {
+			case "metadata.labels.cluster_id", "metadata.cluster_id":
+				clusterIDsM[gv] = struct{}{}
+			case "metadata.node_id", "metadata.labels.node_id":
+				nodeIDsM[gv] = struct{}{}
+			default:
+			}
+		}
+	}
+	var (
+		clusterIDs []string
+		nodeIDs []string
+		clusterIDToNames = map[string]string{}
+		nodeIDToNames = map[string]string{}
+	)
+	if len(clusterIDsM) > 0 {
+		for k, _ := range clusterIDsM {
+			clusterIDs = append(clusterIDs, k)
+		}
+		clusterIDToNames, err = common2.GetClusterNames(clusterIDs)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if len(nodeIDsM) > 0 {
+		for k, _ := range nodeIDsM {
+			nodeIDs = append(nodeIDs, k)
+		}
+		nodeIDToNames, err = common2.GetNodeNames(nodeIDs)
+		if err != nil {
+			return nil, err
+		}
+	}
+	for _, md := range targetMetricData {
+		for i, gv := range  md.Groups {
+			switch metric.Groups[i].Field {
+			case "metadata.labels.cluster_id", "metadata.cluster_id":
+				if name, ok := clusterIDToNames[gv]; ok && name != "" {
+					md.Groups[i] = name
+				}
+			case "metadata.node_id", "metadata.labels.node_id":
+				if name, ok := nodeIDToNames[gv]; ok && name != "" {
+					md.Groups[i] = name
+				}
+			}
+		}
 		for _, v := range md.Data {
 			for _, mitem := range v {
 				mitem.Groups = md.Groups

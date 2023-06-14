@@ -9,7 +9,9 @@ import (
 	"fmt"
 	log "github.com/cihub/seelog"
 	"github.com/r3labs/diff/v2"
+	common2 "infini.sh/console/common"
 	"infini.sh/console/model/alerting"
+	"infini.sh/console/model/insight"
 	alerting2 "infini.sh/console/service/alerting"
 	_ "infini.sh/console/service/alerting/elasticsearch"
 	"infini.sh/framework/core/api/rbac"
@@ -17,7 +19,6 @@ import (
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/event"
 	"infini.sh/framework/core/global"
-	"infini.sh/console/model/insight"
 	"infini.sh/framework/core/kv"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/queue"
@@ -796,11 +797,7 @@ func getRuleMetricData( rule *alerting.Rule, filterParam *alerting.FilterParam) 
 	if err != nil {
 		return nil,queryResult, err
 	}
-	//var filteredMetricData []alerting.MetricData
-	//title := rule.Metrics.Formula
-	//if title == "" && len( rule.Conditions.Items) > 0{
-	//	title,_ = rule.Conditions.Items[0].GenerateConditionExpression()
-	//}
+
 	formatType := "num"
 	if rule.Metrics.FormatType != "" {
 		formatType = rule.Metrics.FormatType
@@ -814,7 +811,46 @@ func getRuleMetricData( rule *alerting.Rule, filterParam *alerting.FilterParam) 
 				Ticks:      5},
 		},
 	}
-	var sampleData []alerting.TimeMetricData
+	var (
+		clusterIDsM = map[string]struct{}{}
+		nodeIDsM = map[string]struct{}{}
+	)
+	for _, md := range metricData {
+		for i, gv := range  md.GroupValues {
+			switch rule.Metrics.Groups[i].Field {
+			case "metadata.labels.cluster_id", "metadata.cluster_id":
+				clusterIDsM[gv] = struct{}{}
+			case "metadata.node_id", "metadata.labels.node_id":
+				nodeIDsM[gv] = struct{}{}
+			default:
+			}
+		}
+	}
+	var (
+		clusterIDs []string
+		nodeIDs []string
+		clusterIDToNames = map[string]string{}
+		nodeIDToNames = map[string]string{}
+	)
+	if len(clusterIDsM) > 0 {
+		for k, _ := range clusterIDsM {
+			clusterIDs = append(clusterIDs, k)
+		}
+		clusterIDToNames, err = common2.GetClusterNames(clusterIDs)
+		if err != nil {
+			return nil,queryResult, err
+		}
+	}
+	if len(nodeIDsM) > 0 {
+		for k, _ := range nodeIDsM {
+			nodeIDs = append(nodeIDs, k)
+		}
+		nodeIDToNames, err = common2.GetNodeNames(nodeIDs)
+		if err != nil {
+			return nil,queryResult, err
+		}
+	}
+
 	for _, md := range metricData {
 		if len(md.Data) == 0 {
 			continue
@@ -826,10 +862,28 @@ func getRuleMetricData( rule *alerting.Rule, filterParam *alerting.FilterParam) 
 				break
 			}
 		}
-		if sampleData == nil {
-			sampleData = targetData
+
+		displayGroupValues := make([]string, len(md.GroupValues))
+		for i, gv := range  md.GroupValues {
+			switch rule.Metrics.Groups[i].Field {
+			case "metadata.labels.cluster_id", "metadata.cluster_id":
+				if name, ok := clusterIDToNames[gv]; ok && name != "" {
+					displayGroupValues[i] = name
+				}else{
+					displayGroupValues[i] = gv
+				}
+			case "metadata.node_id", "metadata.labels.node_id":
+				if name, ok := nodeIDToNames[gv]; ok && name != "" {
+					displayGroupValues[i] = name
+				}else{
+					displayGroupValues[i] = gv
+				}
+			default:
+				displayGroupValues[i] = gv
+			}
 		}
-		var label = strings.Join(md.GroupValues, "-")
+
+		var label = strings.Join(displayGroupValues, "-")
 		if label == "" {
 			label, _ = rule.GetOrInitExpression()
 		}
@@ -844,97 +898,5 @@ func getRuleMetricData( rule *alerting.Rule, filterParam *alerting.FilterParam) 
 			},
 		})
 	}
-	//add guidelines
-	//for _, cond := range rule.Conditions.Items {
-	//	if len(cond.Values) > 0 {
-	//		val, err := strconv.ParseFloat(cond.Values[0], 64)
-	//		if err != nil {
-	//			log.Errorf("parse condition value error: %v", err)
-	//			continue
-	//		}
-	//		if sampleData != nil {
-	//			newData := make([]alerting.TimeMetricData, 0, len(sampleData))
-	//			for _, td := range sampleData {
-	//				if len(td) < 2 {
-	//					continue
-	//				}
-	//				newData = append(newData, alerting.TimeMetricData{
-	//					td[0], val,
-	//				})
-	//			}
-	//			metricItem.Lines = append(metricItem.Lines, &common.MetricLine{
-	//				Data:       newData,
-	//				BucketSize: filterParam.BucketSize,
-	//				Metric: common.MetricSummary{
-	//					Label:      "",
-	//					Group:      rule.ID,
-	//					TickFormat: "0,0.[00]",
-	//					FormatType: "num",
-	//				},
-	//			})
-	//		}
-	//	}
-	//}
 	return &metricItem,queryResult, nil
 }
-
-
-//func (alertAPI *AlertAPI) testRule(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-//	rule := alerting.Rule{
-//		ID: util.GetUUID(),
-//		Created: time.Now(),
-//		Updated: time.Now(),
-//		Enabled: true,
-//		Resource: alerting.Resource{
-//			ID: "c8i18llath2blrusdjng",
-//			Type: "elasticsearch",
-//			Objects: []string{".infini_metrics*"},
-//			TimeField: "timestamp",
-//			RawFilter: map[string]interface{}{
-//				"bool": util.MapStr{
-//					"must": []util.MapStr{},
-//				},
-//			},
-//		},
-//
-//		Metrics: alerting.Metric{
-//			PeriodInterval: "1m",
-//			MaxPeriods:     15,
-//			Items: []alerting.MetricItem{
-//				{Name: "a", Field: "payload.elasticsearch.node_stats.os.cpu.percent", Statistic: "p99", Group: []string{"metadata.labels.cluster_id", "metadata.labels.node_id"}},
-//			},
-//		},
-//		Conditions: alerting.Condition{
-//			Operator: "any",
-//			Items: []alerting.ConditionItem{
-//				{MinimumPeriodMatch: 5, Operator: "gte", Values: []string{"90"}, Priority: "error", AlertMessage: "cpu使用率大于90%"},
-//			},
-//		},
-//
-//		Channels: alerting.RuleChannel{
-//			Normal: []alerting.Channel{
-//				{Name: "钉钉", Type: alerting.ChannelWebhook, Webhook: &alerting.CustomWebhook{
-//					HeaderParams: map[string]string{
-//						"Message-Type": "application/json",
-//					},
-//					Body:   `{"msgtype": "text","text": {"content":"告警通知: {{ctx.message}}"}}`,
-//					Method: http.MethodPost,
-//					URL:    "https://oapi.dingtalk.com/robot/send?access_token=XXXXXX",
-//				}},
-//			},
-//			ThrottlePeriod: "1h",
-//			AcceptTimeRange: alerting.TimeRange{
-//				Start: "8:00",
-//				End: "21:00",
-//			},
-//			EscalationEnabled: true,
-//			EscalationThrottlePeriod: "30m",
-//		},
-//	}
-//	eng := alerting2.GetEngine(rule.Resource.Type)
-//	data, err := eng.ExecuteQuery(&rule)
-//	if err != nil {
-//		log.Error(err)
-//	}
-//	alertAPI.WriteJSON(w, data, http.StatusOK)
-//}

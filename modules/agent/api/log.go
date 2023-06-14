@@ -61,6 +61,7 @@ func (h *APIHandler) getLogFileContent(w http.ResponseWriter, req *http.Request,
 		LogsPath string `json:"logs_path"`
 		Offset int `json:"offset"`
 		Lines int `json:"lines"`
+		StartLineNumber int64 `json:"start_line_number"`
 	}{}
 	err = h.DecodeJSON(req, &reqBody)
 	if err != nil {

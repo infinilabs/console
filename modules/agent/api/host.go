@@ -34,7 +34,7 @@ func (h *APIHandler) enrollHost(w http.ResponseWriter, req *http.Request, ps htt
 		return
 	}
 	errors := util.MapStr{}
-	for _, hi := range reqBody {
+	for i, hi := range reqBody {
 		var (
 			hostInfo *host.HostInfo
 		)
@@ -74,7 +74,13 @@ func (h *APIHandler) enrollHost(w http.ResponseWriter, req *http.Request, ps htt
 			continue
 		}
 		hostInfo.Timestamp = time.Now()
-		err = orm.Create(nil, hostInfo)
+		var ctx *orm.Context
+		if i == len(reqBody) - 1 {
+			ctx = &orm.Context{
+				Refresh: "wait_for",
+			}
+		}
+		err = orm.Create(ctx, hostInfo)
 		if err != nil {
 			errors[hi.IP] = util.MapStr{
 				"error": err.Error(),
@@ -92,6 +98,26 @@ func (h *APIHandler) enrollHost(w http.ResponseWriter, req *http.Request, ps htt
 	}
 
 	h.WriteJSON(w, resBody, http.StatusOK)
+}
+
+func (h *APIHandler) deleteHost(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	hostID := ps.MustGetParameter("host_id")
+	hostInfo, err := getHost(hostID)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	ctx := orm.Context{
+		Refresh: "wait_for",
+	}
+	err = orm.Delete(&ctx, hostInfo)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	h.WriteDeletedOKJSON(w, hostID)
 }
 
 func (h *APIHandler) GetHostAgentInfo(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -123,7 +149,7 @@ func (h *APIHandler) GetHostAgentInfo(w http.ResponseWriter, req *http.Request, 
 		"host_id": hostID,
 		"agent_id": ag.ID,
 		"version": ag.Version,
-		"status": ag.Status,
+		"status": hostInfo.AgentStatus,
 		"endpoint": ag.GetEndpoint(),
 	}, http.StatusOK)
 }

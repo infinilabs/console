@@ -29,6 +29,7 @@ func Init() {
 	api.HandleAPIMethod(api.POST, "/host/_enroll", handler.enrollHost)
 	api.HandleAPIMethod(api.GET, "/host/:host_id/agent/info",handler.GetHostAgentInfo)
 	api.HandleAPIMethod(api.GET, "/host/:host_id/processes",handler.GetHostElasticProcess)
+	api.HandleAPIMethod(api.DELETE, "/host/:host_id",handler.deleteHost)
 
 
 	api.HandleAPIMethod(api.POST, "/agent/install_command", handler.RequireLogin(handler.generateInstallCommand))

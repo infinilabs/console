@@ -7,16 +7,27 @@ import (
 	"infini.sh/framework/core/util"
 )
 
+/*
+is_repeat: task will repeat for more than 1 time
+run_times: the total number of runs of a repeating task
+repeat_done: task has reached the last repeat
+next_run_time: the time this task will get picked by scheduler to start
+repeat_triggered: the task has been picked by scheduler and started
+*/
 func UpdateRepeatState(repeat *migration_model.Repeat, labels util.MapStr) error {
 	if labels == nil {
 		return nil
 	}
-
-	if !isValidRepeat(repeat) {
+	if repeat == nil {
 		labels["repeat_done"] = true
 		return nil
 	}
-	labels["is_repeat"] = true
+
+	if repeat.Interval >= time.Minute {
+		labels["is_repeat"] = true
+	} else {
+		labels["repeat_done"] = true
+	}
 
 	runTimes := GetMapIntValue(labels, "run_times")
 	runTimes += 1
@@ -43,7 +54,10 @@ func CopyRepeatState(oldLabels, newLabels util.MapStr) {
 }
 
 func IsRepeating(repeat *migration_model.Repeat, labels map[string]interface{}) bool {
-	if !isValidRepeat(repeat) {
+	if repeat == nil {
+		return false
+	}
+	if repeat.Interval < time.Minute {
 		return false
 	}
 	if repeat.TotalRun < 1 {
@@ -62,14 +76,4 @@ func IsRepeating(repeat *migration_model.Repeat, labels map[string]interface{}) 
 		return true
 	}
 	return false
-}
-
-func isValidRepeat(repeat *migration_model.Repeat) bool {
-	if repeat == nil {
-		return false
-	}
-	if repeat.Interval < time.Minute {
-		return false
-	}
-	return true
 }

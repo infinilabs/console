@@ -316,6 +316,10 @@ func (h *APIHandler) getMigrationMajorTaskInfo(id string) (taskStats migration_m
 		indexMigrationTaskIDs = append(indexMigrationTaskIDs, subTask.ID)
 	}
 
+	if len(indexMigrationTaskIDs) == 0 {
+		return taskStats, indexState, nil
+	}
+
 	taskQuery = util.MapStr{
 		"size": 500,
 		"query": util.MapStr{

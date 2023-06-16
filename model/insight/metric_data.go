@@ -22,6 +22,7 @@ type Metric struct {
 	FormatType string `json:"format_type,omitempty"`
 	TimeFilter interface{} `json:"time_filter,omitempty"`
 	TimeBeforeGroup bool `json:"time_before_group,omitempty"`
+	BucketLabel *BucketLabel `json:"bucket_label,omitempty"`
 }
 
 type MetricGroupItem struct {
@@ -71,10 +72,16 @@ type MetricDataItem struct {
 	Timestamp interface{}  `json:"timestamp,omitempty"`
 	Value     interface{}    `json:"value"`
 	Groups []string `json:"groups,omitempty"`
+	GroupLabel string `json:"group_label,omitempty"`
 }
 
 type MetricData struct {
 	Groups []string `json:"groups,omitempty"`
 	Data map[string][]MetricDataItem
+	GroupLabel string `json:"group_label,omitempty"`
 }
 
+type BucketLabel struct {
+	Enabled bool `json:"enabled"`
+	Template string `json:"template,omitempty"`
+}

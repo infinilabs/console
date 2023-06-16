@@ -13,8 +13,8 @@ type Visualization struct {
 	Title        string `json:"title,omitempty" elastic_mapping:"title: { type: keyword }"`
 	IndexPattern string `json:"index_pattern,omitempty" elastic_mapping:"index_pattern: { type: keyword }"`
 	ClusterId    string `json:"cluster_id,omitempty" elastic_mapping:"cluster_id: { type: keyword }"`
-	Series []SeriesItem `json:"series"  elastic_mapping:"series: { type: object }"`
-	Position *Position `json:"position,omitempty" elastic_mapping:"position: { type: object }"`
+	Series []SeriesItem `json:"series"  elastic_mapping:"series: { type: object,enabled:false }"`
+	Position *Position `json:"position,omitempty" elastic_mapping:"position: { type: object,enabled:false }"`
 	Description string `json:"description,omitempty" elastic_mapping:"description: { type: keyword }"`
 }
 

@@ -9,7 +9,6 @@ import (
 	"fmt"
 	log "github.com/cihub/seelog"
 	"github.com/r3labs/diff/v2"
-	common2 "infini.sh/console/common"
 	"infini.sh/console/model/alerting"
 	"infini.sh/console/model/insight"
 	alerting2 "infini.sh/console/service/alerting"
@@ -784,6 +783,7 @@ func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request
 	}
 	resBody :=  util.MapStr{
 		"metric": metricItem,
+		"bucket_label": rule.Metrics.BucketLabel,
 	}
 	if alertAPI.GetParameter(req, "debug") == "1" {
 		resBody["query"] = queryResult.Query
@@ -791,7 +791,7 @@ func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request
 	alertAPI.WriteJSON(w,resBody, http.StatusOK)
 }
 
-func getRuleMetricData( rule *alerting.Rule, filterParam *alerting.FilterParam) (*common.MetricItem, *alerting.QueryResult, error) {
+func getRuleMetricData( rule *alerting.Rule, filterParam *alerting.FilterParam) (*alerting.AlertMetricItem, *alerting.QueryResult, error) {
 	eng := alerting2.GetEngine(rule.Resource.Type)
 	metricData, queryResult, err := eng.GetTargetMetricData(rule, true, filterParam)
 	if err != nil {
@@ -802,54 +802,56 @@ func getRuleMetricData( rule *alerting.Rule, filterParam *alerting.FilterParam) 
 	if rule.Metrics.FormatType != "" {
 		formatType = rule.Metrics.FormatType
 	}
-	var metricItem = common.MetricItem{
-		Group: rule.ID,
-		Key:   rule.ID,
-		Axis: []*common.MetricAxis{
-			{ID: util.GetUUID(), Group: rule.ID, Title: "", FormatType: formatType, Position: "left", ShowGridLines: true,
-				TickFormat: "0,0.[00]",
-				Ticks:      5},
+	var metricItem = alerting.AlertMetricItem{
+		MetricItem: common.MetricItem{
+			Group: rule.ID,
+			Key:   rule.ID,
+			Axis: []*common.MetricAxis{
+				{ID: util.GetUUID(), Group: rule.ID, Title: "", FormatType: formatType, Position: "left", ShowGridLines: true,
+					TickFormat: "0,0.[00]",
+					Ticks:      5},
+			},
 		},
 	}
-	var (
-		clusterIDsM = map[string]struct{}{}
-		nodeIDsM = map[string]struct{}{}
-	)
-	for _, md := range metricData {
-		for i, gv := range  md.GroupValues {
-			switch rule.Metrics.Groups[i].Field {
-			case "metadata.labels.cluster_id", "metadata.cluster_id":
-				clusterIDsM[gv] = struct{}{}
-			case "metadata.node_id", "metadata.labels.node_id":
-				nodeIDsM[gv] = struct{}{}
-			default:
-			}
-		}
-	}
-	var (
-		clusterIDs []string
-		nodeIDs []string
-		clusterIDToNames = map[string]string{}
-		nodeIDToNames = map[string]string{}
-	)
-	if len(clusterIDsM) > 0 {
-		for k, _ := range clusterIDsM {
-			clusterIDs = append(clusterIDs, k)
-		}
-		clusterIDToNames, err = common2.GetClusterNames(clusterIDs)
-		if err != nil {
-			return nil,queryResult, err
-		}
-	}
-	if len(nodeIDsM) > 0 {
-		for k, _ := range nodeIDsM {
-			nodeIDs = append(nodeIDs, k)
-		}
-		nodeIDToNames, err = common2.GetNodeNames(nodeIDs)
-		if err != nil {
-			return nil,queryResult, err
-		}
-	}
+	//var (
+	//	clusterIDsM = map[string]struct{}{}
+	//	nodeIDsM = map[string]struct{}{}
+	//)
+	//for _, md := range metricData {
+	//	for i, gv := range  md.GroupValues {
+	//		switch rule.Metrics.Groups[i].Field {
+	//		case "metadata.labels.cluster_id", "metadata.cluster_id":
+	//			clusterIDsM[gv] = struct{}{}
+	//		case "metadata.node_id", "metadata.labels.node_id":
+	//			nodeIDsM[gv] = struct{}{}
+	//		default:
+	//		}
+	//	}
+	//}
+	//var (
+	//	clusterIDs []string
+	//	nodeIDs []string
+	//	clusterIDToNames = map[string]string{}
+	//	nodeIDToNames = map[string]string{}
+	//)
+	//if len(clusterIDsM) > 0 {
+	//	for k, _ := range clusterIDsM {
+	//		clusterIDs = append(clusterIDs, k)
+	//	}
+	//	clusterIDToNames, err = common2.GetClusterNames(clusterIDs)
+	//	if err != nil {
+	//		return nil,queryResult, err
+	//	}
+	//}
+	//if len(nodeIDsM) > 0 {
+	//	for k, _ := range nodeIDsM {
+	//		nodeIDs = append(nodeIDs, k)
+	//	}
+	//	nodeIDToNames, err = common2.GetNodeNames(nodeIDs)
+	//	if err != nil {
+	//		return nil,queryResult, err
+	//	}
+	//}
 
 	for _, md := range metricData {
 		if len(md.Data) == 0 {
@@ -863,30 +865,31 @@ func getRuleMetricData( rule *alerting.Rule, filterParam *alerting.FilterParam) 
 			}
 		}
 
-		displayGroupValues := make([]string, len(md.GroupValues))
-		for i, gv := range  md.GroupValues {
-			switch rule.Metrics.Groups[i].Field {
-			case "metadata.labels.cluster_id", "metadata.cluster_id":
-				if name, ok := clusterIDToNames[gv]; ok && name != "" {
-					displayGroupValues[i] = name
-				}else{
-					displayGroupValues[i] = gv
-				}
-			case "metadata.node_id", "metadata.labels.node_id":
-				if name, ok := nodeIDToNames[gv]; ok && name != "" {
-					displayGroupValues[i] = name
-				}else{
-					displayGroupValues[i] = gv
-				}
-			default:
-				displayGroupValues[i] = gv
-			}
-		}
+		//displayGroupValues := make([]string, len(md.GroupValues))
+		//for i, gv := range  md.GroupValues {
+		//	switch rule.Metrics.Groups[i].Field {
+		//	case "metadata.labels.cluster_id", "metadata.cluster_id":
+		//		if name, ok := clusterIDToNames[gv]; ok && name != "" {
+		//			displayGroupValues[i] = name
+		//		}else{
+		//			displayGroupValues[i] = gv
+		//		}
+		//	case "metadata.node_id", "metadata.labels.node_id":
+		//		if name, ok := nodeIDToNames[gv]; ok && name != "" {
+		//			displayGroupValues[i] = name
+		//		}else{
+		//			displayGroupValues[i] = gv
+		//		}
+		//	default:
+		//		displayGroupValues[i] = gv
+		//	}
+		//}
 
-		var label = strings.Join(displayGroupValues, "-")
+		var label = strings.Join(md.GroupValues, "-")
 		if label == "" {
 			label, _ = rule.GetOrInitExpression()
 		}
+		metricItem.BucketGroups = append(metricItem.BucketGroups, md.GroupValues)
 		metricItem.Lines = append(metricItem.Lines, &common.MetricLine{
 			Data:  targetData,
 			BucketSize: filterParam.BucketSize,

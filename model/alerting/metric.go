@@ -7,6 +7,7 @@ package alerting
 import (
 	"fmt"
 	"infini.sh/console/model/insight"
+	"infini.sh/framework/modules/elastic/common"
 	"regexp"
 )
 
@@ -60,3 +61,8 @@ type MetricData struct {
 }
 
 type TimeMetricData []interface{}
+
+type AlertMetricItem struct {
+	common.MetricItem
+	BucketGroups [][]string `json:"bucket_groups,omitempty"`
+}

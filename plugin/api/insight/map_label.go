@@ -79,7 +79,8 @@ func (h *InsightAPI) renderMapLabelTemplate(w http.ResponseWriter, req *http.Req
 		label, err := common2.ExecuteTemplate(tpl, ctx.Value)
 		if err != nil {
 			log.Error(err)
-			continue
+			h.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 		resultLabels[ctx.Key] = string(label)
 	}

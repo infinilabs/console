@@ -10,8 +10,10 @@ import (
 	common2 "infini.sh/console/common"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"net/http"
+	"strings"
 	"text/template"
 )
 
@@ -33,7 +35,45 @@ func (h *InsightAPI) renderMapLabelTemplate(w http.ResponseWriter, req *http.Req
 	cacheLabelsMap := map[string]map[string]string{}
 	keyFieldValuesM := map[string]map[string]struct{}{}
 	tpl, err := template.New("template_render").Funcs(map[string]any{
-		"map_label": func(indexName, keyField, valueField, labelName string) string {
+		"lookup": func(directory, labelName string) string {
+			var indexName, keyField, valueField string
+			directory = strings.TrimSpace(directory)
+			if directory == "" {
+				return "N/A"
+			}
+			parts := strings.Split(directory, ",")
+			kvs := map[string]string{}
+			for _, part := range parts {
+				kv := strings.Split(part, "=")
+				if len(kv) == 2 {
+					k := strings.TrimSpace(kv[0])
+					kvs[k]= strings.TrimSpace(kv[1])
+				}else{
+					log.Debugf("got unexpected directory part: %s", part)
+				}
+			}
+			indexName = kvs["object"]
+			keyField = kvs["key_property"]
+			switch kvs["category"] {
+			case "metadata":
+				switch kvs["object"] {
+				case "cluster":
+					indexName = orm.GetIndexName(elastic.ElasticsearchConfig{})
+					if keyField == "" {
+						keyField = "id"
+					}
+				case "node":
+					indexName = orm.GetIndexName(elastic.NodeConfig{})
+					if keyField == "" {
+						keyField = "metadata.node_id"
+					}
+				}
+
+			}
+			valueField =  kvs["property"]
+			if indexName == "" || keyField == "" || valueField == "" {
+				return kvs["default"]
+			}
 			cacheKey := fmt.Sprintf("%s_%s_%s", indexName, keyField, valueField)
 			if isFakeRender {
 				if keyFieldValuesM[cacheKey] == nil {
@@ -62,6 +102,7 @@ func (h *InsightAPI) renderMapLabelTemplate(w http.ResponseWriter, req *http.Req
 				}
 			}
 			return common2.MapLabel(labelName, indexName, keyField, valueField, client, cacheLabels)
+
 		},
 	}).Parse(body.Template)
 	if err != nil {

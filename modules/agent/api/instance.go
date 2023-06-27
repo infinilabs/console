@@ -59,8 +59,7 @@ func (h *APIHandler) createInstance(w http.ResponseWriter, req *http.Request, ps
 			port = "8080"
 		}
 		obj.Endpoint = fmt.Sprintf("https://%s:%s", remoteIP, port)
-		obj.Tags = append(obj.Tags, "mtls")
-		obj.Tags = append(obj.Tags, "auto")
+		obj.Tags = append(obj.Tags, "mtls", "auto")
 	}
 
 	//fetch more information of agent instance
@@ -100,6 +99,25 @@ func (h *APIHandler) createInstance(w http.ResponseWriter, req *http.Request, ps
 		h.WriteError(w, errMsg, http.StatusInternalServerError)
 		log.Error(errMsg)
 		return
+	}
+	if token != "" {
+		err, result := orm.GetBy("endpoint", obj.Endpoint, oldInst)
+		if err != nil {
+			log.Error(err)
+			h.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if len(result.Result) > 0 {
+			if m, ok := result.Result[0].(map[string]interface{}); ok {
+				if id, ok := m["id"].(string); ok {
+					oldInst.ID = id
+					err = orm.Delete(nil, oldInst)
+					if err != nil {
+						log.Error(err)
+					}
+				}
+			}
+		}
 	}
 
 	obj.Status = model.StatusOnline

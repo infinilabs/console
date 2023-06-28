@@ -393,7 +393,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 
 	//处理ORM
 	handler := elastic2.ElasticORM{Client: client, Config: cfg1}
-	orm.Register("elastic_setup_"+util.GetUUID(), handler)
+	orm.Register("elastic_setup_"+util.GetUUID(), &handler)
 	//生成凭据并保存
 	h := md5.New()
 	rawSecret := []byte(request.CredentialSecret)
@@ -493,7 +493,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		//处理索引
 		elastic2.InitSchema()
 		//init security
-		security.InitSecurity()
+		security.InitSchema()
 
 		toSaveCfg := cfg
 		if request.Cluster.Username != "" || request.Cluster.Password != "" {
@@ -532,8 +532,8 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 			//Save bootstrap user
 			user := rbac.User{}
 			user.ID = "default_user_" + request.BootstrapUsername
-			user.Name = request.BootstrapUsername
-			user.NickName = request.BootstrapUsername
+			user.Username = request.BootstrapUsername
+			user.Nickname = request.BootstrapUsername
 			var hash []byte
 			hash, err = bcrypt.GenerateFromPassword([]byte(request.BootstrapPassword), bcrypt.DefaultCost)
 			if err != nil {

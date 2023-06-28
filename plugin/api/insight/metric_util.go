@@ -305,6 +305,9 @@ func collectMetricDataOther(agg interface{}, groupValues []string, metricData *[
 				for _, bk := range bks {
 					if bkVal, ok := bk.(map[string]interface{}); ok {
 						currentGroup := util.ToString(bkVal["key"])
+						if v := util.ToString(bkVal["key_as_string"]); v == "true" || v == "false" {
+							currentGroup = v
+						}
 						newGroupValues := make([]string, 0, len(groupValues)+1)
 						newGroupValues = append(newGroupValues, groupValues...)
 						newGroupValues = append(newGroupValues, currentGroup)

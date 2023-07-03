@@ -32,5 +32,5 @@ var genericMap = map[string]interface{}{
 	"div": div,
 	"mul": mul,
 	"lookup": lookup,
-	"get_keystore_secret": getKeystoreSecret,
+	//"get_keystore_secret": getKeystoreSecret,
 }

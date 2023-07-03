@@ -12,9 +12,9 @@ type InsightAPI struct {
 
 func InitAPI() {
 	insight := InsightAPI{}
-	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/visualization/metadata", insight.HandleGetMetadata)
-	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/visualization/data", insight.HandleGetMetricData)
-	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/visualization/preview", insight.HandleGetPreview)
+	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/visualization/metadata", insight.RequireLogin(insight.HandleGetMetadata))
+	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/visualization/data", insight.RequireLogin(insight.HandleGetMetricData))
+	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/visualization/preview", insight.RequireLogin(insight.HandleGetPreview))
 
 	api.HandleAPIMethod(api.GET, "/insight/visualization/:visualization_id", insight.getVisualization)
 	api.HandleAPIMethod(api.POST, "/insight/visualization", insight.createVisualization)

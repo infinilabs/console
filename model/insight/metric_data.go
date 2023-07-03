@@ -16,6 +16,7 @@ type Metric struct {
 	BucketSize   string `json:"bucket_size,omitempty"`
 	Filter interface{}      `json:"filter,omitempty"`
 	Groups []MetricGroupItem `json:"groups,omitempty"` //bucket group
+	Sort []GroupSort `json:"sort,omitempty"`
 	ClusterId string   `json:"cluster_id,omitempty"`
 	Formula string `json:"formula,omitempty"`
 	Items []MetricItem `json:"items"`
@@ -23,6 +24,11 @@ type Metric struct {
 	TimeFilter interface{} `json:"time_filter,omitempty"`
 	TimeBeforeGroup bool `json:"time_before_group,omitempty"`
 	BucketLabel *BucketLabel `json:"bucket_label,omitempty"`
+}
+
+type GroupSort struct {
+	Key string `json:"key"`
+	Direction string `json:"direction"`
 }
 
 type MetricGroupItem struct {

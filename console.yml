@@ -61,8 +61,8 @@ badger:
   value_log_max_entries: 1000000
   value_log_file_size: 104857600
 
-#security:
-#  enabled: true
+security:
+  enabled: true
 #  authc:
 #    realms:
 #      ldap:

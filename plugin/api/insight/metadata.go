@@ -33,6 +33,10 @@ func (h *InsightAPI) HandleGetPreview(w http.ResponseWriter, req *http.Request, 
 		}, http.StatusInternalServerError)
 		return
 	}
+	if reqBody.IndexPattern != "" && !h.IsIndexAllowed(req, clusterID, reqBody.IndexPattern){
+		h.WriteError(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+		return
+	}
 	if reqBody.ViewID != "" {
 		view := elastic.View{
 			ID: reqBody.ViewID,
@@ -129,9 +133,11 @@ func (h *InsightAPI) HandleGetMetadata(w http.ResponseWriter, req *http.Request,
 	err := h.DecodeJSON(req, &reqBody)
 	if err != nil {
 		log.Error(err)
-		h.WriteJSON(w, util.MapStr{
-			"error": err.Error(),
-		}, http.StatusInternalServerError)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if reqBody.IndexPattern != "" && !h.IsIndexAllowed(req, clusterID, reqBody.IndexPattern){
+		h.WriteError(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
 	var fieldsFormat map[string]string
@@ -141,9 +147,7 @@ func (h *InsightAPI) HandleGetMetadata(w http.ResponseWriter, req *http.Request,
 		}
 		exists, err := orm.Get(&view)
 		if err != nil || !exists {
-			h.WriteJSON(w, util.MapStr{
-				"error": err.Error(),
-			}, http.StatusNotFound)
+			h.WriteError(w,  err.Error(), http.StatusNotFound)
 			return
 		}
 		reqBody.IndexPattern = view.Title
@@ -159,9 +163,7 @@ func (h *InsightAPI) HandleGetMetadata(w http.ResponseWriter, req *http.Request,
 	fieldsMeta, err := getMetadataByIndexPattern(clusterID, reqBody.IndexPattern, reqBody.TimeField, reqBody.Filter, fieldsFormat)
 	if err != nil {
 		log.Error(err)
-		h.WriteJSON(w, util.MapStr{
-			"error": err.Error(),
-		}, http.StatusInternalServerError)
+		h.WriteError(w,  err.Error(), http.StatusInternalServerError)
 		return
 	}
 	h.WriteJSON(w, fieldsMeta, http.StatusOK)
@@ -172,19 +174,19 @@ func (h *InsightAPI) HandleGetMetricData(w http.ResponseWriter, req *http.Reques
 	err := h.DecodeJSON(req, &reqBody)
 	if err != nil {
 		log.Error(err)
-		h.WriteJSON(w, util.MapStr{
-			"error": err.Error(),
-		}, http.StatusInternalServerError)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	clusterID := ps.MustGetParameter("id")
+	if !h.IsIndexAllowed(req, clusterID, reqBody.IndexPattern){
+		h.WriteError(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+		return
+	}
 	reqBody.ClusterId = clusterID
 	metricData, err := getMetricData(&reqBody)
 	if err != nil {
 		log.Error(err)
-		h.WriteJSON(w, util.MapStr{
-			"error": err.Error(),
-		}, http.StatusInternalServerError)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

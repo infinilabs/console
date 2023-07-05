@@ -115,6 +115,10 @@ func GenerateQuery(metric *insight.Metric) (interface{}, error) {
 
 	var rootAggs util.MapStr
 	groups := metric.Groups
+	err = metric.ValidateSortKey()
+	if err != nil {
+		return nil, err
+	}
 
 	if grpLength := len(groups); grpLength > 0 {
 		var lastGroupAgg util.MapStr

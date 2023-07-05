@@ -6,6 +6,7 @@ package insight
 
 import (
 	"fmt"
+	"infini.sh/framework/core/util"
 	"regexp"
 )
 
@@ -16,6 +17,7 @@ type Metric struct {
 	BucketSize   string `json:"bucket_size,omitempty"`
 	Filter interface{}      `json:"filter,omitempty"`
 	Groups []MetricGroupItem `json:"groups,omitempty"` //bucket group
+	Sort []GroupSort `json:"sort,omitempty"`
 	ClusterId string   `json:"cluster_id,omitempty"`
 	Formula string `json:"formula,omitempty"`
 	Items []MetricItem `json:"items"`
@@ -23,6 +25,11 @@ type Metric struct {
 	TimeFilter interface{} `json:"time_filter,omitempty"`
 	TimeBeforeGroup bool `json:"time_before_group,omitempty"`
 	BucketLabel *BucketLabel `json:"bucket_label,omitempty"`
+}
+
+type GroupSort struct {
+	Key string `json:"key"`
+	Direction string `json:"direction"`
 }
 
 type MetricGroupItem struct {
@@ -59,6 +66,31 @@ func (m *Metric) AutoTimeBeforeGroup() bool {
 		}
 	}
 	return true
+}
+func (m *Metric) ValidateSortKey() error {
+	if len(m.Sort) == 0 {
+		return nil
+	}
+	if len(m.Items) == 0 {
+		return nil
+	}
+	var mm = map[string]*MetricItem{}
+	for _, item := range m.Items {
+		mm[item.Name] = &item
+	}
+	for _, sortItem := range m.Sort {
+		if !util.StringInArray([]string{"desc", "asc"}, sortItem.Direction){
+			return fmt.Errorf("unknown sort direction [%s]", sortItem.Direction)
+		}
+		if v, ok := mm[sortItem.Key]; !ok && !util.StringInArray([]string{"_key", "_count"}, sortItem.Key){
+			return fmt.Errorf("unknown sort key [%s]", sortItem.Key)
+		}else{
+			if v.Statistic == "derivative" {
+				return fmt.Errorf("can not sort by pipeline agg [%s]", v.Statistic)
+			}
+		}
+	}
+	return nil
 }
 
 type MetricItem struct {

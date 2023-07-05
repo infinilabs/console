@@ -115,6 +115,10 @@ func GenerateQuery(metric *insight.Metric) (interface{}, error) {
 
 	var rootAggs util.MapStr
 	groups := metric.Groups
+	err = metric.ValidateSortKey()
+	if err != nil {
+		return nil, err
+	}
 
 	if grpLength := len(groups); grpLength > 0 {
 		var lastGroupAgg util.MapStr
@@ -125,11 +129,19 @@ func GenerateQuery(metric *insight.Metric) (interface{}, error) {
 			if limit <= 0 {
 				limit = 10
 			}
+			termsCfg := util.MapStr{
+				"field": groups[i].Field,
+				"size":  limit,
+			}
+			if i == grpLength - 1 && len(metric.Sort) > 0 {
+				var termsOrder []interface{}
+				for _, sortItem := range metric.Sort {
+					termsOrder = append(termsOrder, util.MapStr{sortItem.Key: sortItem.Direction})
+				}
+				termsCfg["order"] = termsOrder
+			}
 			groupAgg := util.MapStr{
-				"terms": util.MapStr{
-					"field": groups[i].Field,
-					"size":  limit,
-				},
+				"terms": termsCfg,
 			}
 			groupID := util.GetUUID()
 			if lastGroupAgg != nil {

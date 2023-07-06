@@ -13,9 +13,9 @@ import (
 
 type Metric struct {
 	insight.Metric
-	Expression string `json:"expression" elastic_mapping:"expression:{type:keyword,copy_to:search_text}"` //告警表达式，自动生成 eg: avg(cpu) > 80
-	Title string `json:"title"` //text template
-	Message string `json:"message"` // text template
+	Title string `json:"title,omitempty"` //text template
+	Message string `json:"message,omitempty"` // text template
+	Expression string `json:"expression,omitempty" elastic_mapping:"expression:{type:keyword,copy_to:search_text}"` //告警表达式，自动生成 eg: avg(cpu) > 80
 }
 
 

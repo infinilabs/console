@@ -75,7 +75,7 @@ func TestCreateRule( t *testing.T)  {
 					},
 				},
 
-			Channels: RuleChannel{
+			Channels: NotificationConfig{
 				Normal: []Channel{
 					{Name: "钉钉", Type: ChannelWebhook, Webhook: &CustomWebhook{
 						HeaderParams: map[string]string{

@@ -679,6 +679,22 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			if err != nil {
 				return fmt.Errorf("save alert message error: %w", err)
 			}
+			// send recover message to channel
+			recoverCfg := rule.RecoveryNotificationConfig
+			if  recoverCfg != nil && recoverCfg.Enabled {
+				if recoverCfg.AcceptTimeRange.Include(time.Now()) {
+					paramsCtx = newParameterCtx(rule, checkResults, util.MapStr{
+						alerting2.ParamEventID: alertItem.ID,
+						alerting2.ParamTimestamp:  alertItem.Created.Unix(),
+					})
+					err = attachTitleMessageToCtx(recoverCfg.Title, recoverCfg.Message, paramsCtx)
+					if err != nil {
+						return err
+					}
+					actionResults, _ := performChannels(recoverCfg.Channels, paramsCtx)
+					alertItem.ActionExecutionResults = actionResults
+				}
+			}
 		}
 		return nil
 	}
@@ -698,7 +714,8 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 	})
 
 	alertItem.Priority = priority
-	err = attachTitleMessageToCtx(rule, paramsCtx)
+	title, message := rule.GetNotificationTitleAndMessage()
+	err = attachTitleMessageToCtx(title, message, paramsCtx)
 	if err != nil {
 		return err
 	}
@@ -707,7 +724,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 	if alertMessage == nil || alertMessage.Status == alerting.MessageStateRecovered {
 		msg := &alerting.AlertMessage{
 			RuleID:       rule.ID,
-			Created:      time.Now(),
+			Created:      alertItem.Created,
 			Updated:      time.Now(),
 			ID:           util.GetUUID(),
 			ResourceID:   rule.Resource.ID,
@@ -756,12 +773,13 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		return nil
 	}
 	// if channel is not enabled return
-	if !rule.Channels.Enabled {
+	notifyCfg := rule.GetNotificationConfig()
+	if notifyCfg == nil || !notifyCfg.Enabled {
 		return nil
 	}
 
-	if rule.Channels.AcceptTimeRange.Include(time.Now()) {
-		periodDuration, err := time.ParseDuration(rule.Channels.ThrottlePeriod)
+	if notifyCfg.AcceptTimeRange.Include(time.Now()) {
+		periodDuration, err := time.ParseDuration(notifyCfg.ThrottlePeriod)
 		if err != nil {
 			alertItem.Error = err.Error()
 			return err
@@ -787,7 +805,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		}
 
 		if alertMessage == nil || period > periodDuration {
-			actionResults, errCount := performChannels(rule.Channels.Normal, paramsCtx)
+			actionResults, errCount := performChannels(notifyCfg.Normal, paramsCtx)
 			alertItem.ActionExecutionResults = actionResults
 			//change and save last notification time in local kv store when action error count equals zero
 			if errCount == 0 {
@@ -798,8 +816,8 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			}
 		}
 
-		if rule.Channels.EscalationEnabled {
-			throttlePeriod, err := time.ParseDuration(rule.Channels.EscalationThrottlePeriod)
+		if notifyCfg.EscalationEnabled {
+			throttlePeriod, err := time.ParseDuration(notifyCfg.EscalationThrottlePeriod)
 			if err != nil {
 				return err
 			}
@@ -819,7 +837,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 					}
 				}
 				if time.Now().Sub(rule.LastEscalationTime.Local()) > periodDuration {
-					actionResults, errCount := performChannels(rule.Channels.Escalation, paramsCtx)
+					actionResults, errCount := performChannels(notifyCfg.Escalation, paramsCtx)
 					alertItem.ActionExecutionResults = actionResults
 					//todo init last escalation time when create task (by last alert item is escalated)
 					if errCount == 0 {
@@ -836,17 +854,17 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 	return nil
 }
 
-func attachTitleMessageToCtx(rule *alerting.Rule, paramsCtx map[string]interface{}) error{
+func attachTitleMessageToCtx(title, message string, paramsCtx map[string]interface{}) error{
 	var (
 		tplBytes []byte
 		err error
 	)
-	tplBytes, err = resolveMessage(rule.Metrics.Message, paramsCtx)
+	tplBytes, err = resolveMessage(message, paramsCtx)
 	if err != nil {
 		return fmt.Errorf("resolve message template error: %w", err)
 	}
 	paramsCtx[alerting2.ParamMessage] = string(tplBytes)
-	tplBytes, err = resolveMessage(rule.Metrics.Title, paramsCtx)
+	tplBytes, err = resolveMessage(title, paramsCtx)
 	if err != nil {
 		return fmt.Errorf("resolve title template error: %w", err)
 	}
@@ -927,7 +945,8 @@ func (engine *Engine) Test(rule *alerting.Rule) ([]alerting.ActionExecutionResul
 		alerting2.ParamEventID: util.GetUUID(),
 		alerting2.ParamTimestamp:  time.Now().Unix(),
 	} )
-	err = attachTitleMessageToCtx(rule, paramsCtx)
+	title, message := rule.GetNotificationTitleAndMessage()
+	err = attachTitleMessageToCtx(title, message, paramsCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -996,6 +1015,20 @@ func performChannel(channel *alerting.Channel, ctx map[string]interface{}) ([]by
 		act = &action.WebhookAction{
 			Data:    &wh,
 			Message: string(message),
+		}
+	case alerting.ChannelEmail:
+		message, err = resolveMessage(channel.Email.Body, ctx)
+		if err != nil {
+			return nil, err, message
+		}
+		subjectBytes, err := resolveMessage(channel.Email.Subject, ctx)
+		if err != nil {
+			return nil, err, nil
+		}
+		act = &action.EmailAction{
+			Data:    channel.Email,
+			Subject: string(subjectBytes),
+			Body: string(message),
 		}
 	default:
 		return nil, fmt.Errorf("unsupported action type: %s", channel.Type), message

@@ -1,0 +1,255 @@
+/* Copyright © INFINI Ltd. All rights reserved.
+ * Web: https://infinilabs.com
+ * Email: hello#infini.ltd */
+
+package email
+
+import (
+	"crypto/tls"
+	"fmt"
+	log "github.com/cihub/seelog"
+	"infini.sh/console/model"
+	"infini.sh/console/plugin/api/email/common"
+	httprouter "infini.sh/framework/core/api/router"
+	"infini.sh/framework/core/orm"
+	"infini.sh/framework/core/util"
+	"net/http"
+	"src/github.com/gopkg.in/gomail.v2"
+	"strconv"
+	"time"
+)
+
+func (h *EmailAPI) createEmailServer(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	var obj = &model.EmailServer{}
+	err := h.DecodeJSON(req, obj)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
+	q := util.MapStr{
+		"size": 1,
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": []util.MapStr{
+					{
+						"term": util.MapStr{
+							"host": util.MapStr{
+								"value": obj.Host,
+							},
+						},
+					},
+					{
+						"term": util.MapStr{
+							"port": util.MapStr{
+								"value": obj.Port,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	query := orm.Query{
+		RawQuery: util.MustToJSONBytes(q),
+	}
+	err, result := orm.Search(obj, &query)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
+	if len(result.Result) > 0 {
+		h.WriteError(w, fmt.Sprintf("email server [%s:%d] already exists", obj.Host, obj.Port), http.StatusInternalServerError)
+		return
+	}
+
+	err = orm.Create(nil, obj)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
+	if obj.Enabled {
+		err = common.StartEmailServer(obj)
+		if err != nil {
+			log.Error(err)
+		}
+	}
+
+	h.WriteJSON(w, util.MapStr{
+		"_id":    obj.ID,
+		"result": "created",
+	}, 200)
+
+}
+
+func (h *EmailAPI) getEmailServer(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	id := ps.MustGetParameter("email_server_id")
+
+	obj := model.EmailServer{}
+	obj.ID = id
+
+	exists, err := orm.Get(&obj)
+	if !exists || err != nil {
+		h.WriteJSON(w, util.MapStr{
+			"_id":   id,
+			"found": false,
+		}, http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
+
+	h.WriteJSON(w, util.MapStr{
+		"found":   true,
+		"_id":     id,
+		"_source": obj,
+	}, 200)
+}
+
+func (h *EmailAPI) updateEmailServer(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	id := ps.MustGetParameter("email_server_id")
+	obj := model.EmailServer{}
+
+	obj.ID = id
+	exists, err := orm.Get(&obj)
+	if !exists || err != nil {
+		h.WriteJSON(w, util.MapStr{
+			"_id":    id,
+			"result": "not_found",
+		}, http.StatusNotFound)
+		return
+	}
+
+	id = obj.ID
+	create := obj.Created
+	obj = model.EmailServer{}
+	err = h.DecodeJSON(req, &obj)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
+
+	//protect
+	obj.ID = id
+	obj.Created = create
+	err = orm.Update(nil, &obj)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
+
+	h.WriteJSON(w, util.MapStr{
+		"_id":    obj.ID,
+		"result": "updated",
+	}, 200)
+}
+
+func (h *EmailAPI) deleteEmailServer(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	id := ps.MustGetParameter("email_server_id")
+
+	obj := model.EmailServer{}
+	obj.ID = id
+
+	exists, err := orm.Get(&obj)
+	if !exists || err != nil {
+		h.WriteJSON(w, util.MapStr{
+			"_id":    id,
+			"result": "not_found",
+		}, http.StatusNotFound)
+		return
+	}
+	//todo check whether referenced
+	if obj.Enabled {
+		err = common.StopEmailServer(&obj)
+		if err != nil {
+			log.Error(err)
+		}
+	}
+
+	err = orm.Delete(nil, &obj)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
+
+	h.WriteJSON(w, util.MapStr{
+		"_id":    obj.ID,
+		"result": "deleted",
+	}, 200)
+}
+
+func (h *EmailAPI) searchEmailServer(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+
+	var (
+		strSize     = h.GetParameterOrDefault(req, "size", "20")
+		strFrom     = h.GetParameterOrDefault(req, "from", "0")
+	)
+	size, _ := strconv.Atoi(strSize)
+	if size <= 0 {
+		size = 20
+	}
+	from, _ := strconv.Atoi(strFrom)
+	if from < 0 {
+		from = 0
+	}
+
+	q := orm.Query{
+		From: from,
+		Size: size,
+	}
+	q.Conds = orm.And(orm.Eq("enabled", true))
+
+	err, res := orm.Search(&model.EmailServer{}, &q)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	h.Write(w, res.Raw)
+}
+
+func (h *EmailAPI) testEmailServer(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	reqBody := &struct {
+		SendTo []string `json:"send_to"`
+		model.EmailServer
+	}{}
+	err := h.DecodeJSON(req, reqBody)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if len(reqBody.SendTo) == 0 {
+		h.WriteError(w, "receiver email address can not be empty", http.StatusInternalServerError)
+		return
+	}
+	if err = reqBody.Validate(false); err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	message := gomail.NewMessage()
+	message.SetHeader("From", reqBody.Auth.Username)
+	message.SetHeader("To", reqBody.SendTo...)
+	message.SetHeader("Subject", "test email")
+
+	message.SetBody("text/plain", "This is just a test email, do not reply!")
+	d := gomail.NewDialerWithTimeout(reqBody.Host, reqBody.Port, reqBody.Auth.Username, reqBody.Auth.Password, 3*time.Second)
+	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
+	d.SSL = reqBody.TLS
+
+	err = d.DialAndSend(message)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	h.WriteAckOKJSON(w)
+}

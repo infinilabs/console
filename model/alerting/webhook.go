@@ -12,11 +12,11 @@ type CustomWebhook struct {
 }
 
 type Email struct {
-	ServerID string `json:"server_id"`
+	ServerID string `json:"server_id" elastic_mapping:"server_id:{type:keyword}"`
 	Recipients struct {
-		To  []string `json:"to" elastic_mapping:"to:{type:keyword}"`
-		CC  []string `json:"cc" elastic_mapping:"cc:{type:keyword}"`
-		BCC []string `json:"bcc" elastic_mapping:"bcc:{type:keyword}"`
+		To  []string `json:"to,omitempty" elastic_mapping:"to:{type:keyword}"`
+		CC  []string `json:"cc,omitempty" elastic_mapping:"cc:{type:keyword}"`
+		BCC []string `json:"bcc,omitempty" elastic_mapping:"bcc:{type:keyword}"`
 	} `json:"recipients" elastic_mapping:"recipients:{type:object}"`
 	Subject string `json:"subject" elastic_mapping:"subject:{type:text}"`
 	Body string `json:"body" elastic_mapping:"body:{type:text}"`

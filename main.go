@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	_ "expvar"
+	"infini.sh/console/plugin/api/email"
 	_ "time/tzdata"
 
 	log "github.com/cihub/seelog"
@@ -65,7 +66,9 @@ func main() {
 	modules = append(modules, &elastic2.ElasticModule{})
 	modules = append(modules, &queue2.DiskQueue{})
 	modules = append(modules, &redis.RedisModule{})
-	modules = append(modules, &pipeline.PipeModule{})
+	pipeM := &pipeline.PipeModule{}
+	global.Register("pipeline_module", pipeM)
+	modules = append(modules, pipeM)
 	modules = append(modules, &task.TaskModule{})
 	modules = append(modules, &metrics.MetricsModule{})
 	modules = append(modules, &security.Module{})
@@ -135,6 +138,7 @@ func main() {
 			orm.RegisterSchemaWithIndexName(task1.Task{}, "task")
 			orm.RegisterSchemaWithIndexName(model.Layout{}, "layout")
 			orm.RegisterSchemaWithIndexName(model.Notification{}, "notification")
+			orm.RegisterSchemaWithIndexName(model.EmailServer{}, "email-server")
 			api.RegisterSchema()
 
 			if global.Env().SetupRequired() {
@@ -147,6 +151,13 @@ func main() {
 				err := alerting2.InitTasks()
 				if err != nil {
 					log.Errorf("init alerting task error: %v", err)
+				}
+				return err
+			})
+			task1.RunWithinGroup("initialize_email_server", func(ctx context.Context) error {
+				err := email.InitEmailServer()
+				if err != nil {
+					log.Errorf("init email server error: %v", err)
 				}
 				return err
 			})

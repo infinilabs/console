@@ -236,6 +236,7 @@ func (h *APIHandler) getInstanceStats(w http.ResponseWriter, req *http.Request, 
 	}
 	q := orm.Query{}
 	queryDSL := util.MapStr{
+		"size": len(instanceIDs),
 		"query": util.MapStr{
 			"terms": util.MapStr{
 				"_id": instanceIDs,
@@ -797,24 +798,25 @@ func getSettingsByClusterID(clusterID string) (*model.TaskSetting, error) {
 						},
 					},
 				},
+				"minimum_should_match": 1,
 				"should": []util.MapStr{
 					{
 						"term": util.MapStr{
-							"payload.task.cluster_health": util.MapStr{
+							"payload.task.cluster_health.enabled": util.MapStr{
 								"value": true,
 							},
 						},
 					},
 					{
 						"term": util.MapStr{
-							"payload.task.cluster_stats": util.MapStr{
+							"payload.task.cluster_stats.enabled": util.MapStr{
 								"value": true,
 							},
 						},
 					},
 					{
 						"term": util.MapStr{
-							"payload.task.index_stats": util.MapStr{
+							"payload.task.index_stats.enabled": util.MapStr{
 								"value": true,
 							},
 						},
@@ -841,7 +843,7 @@ func getSettingsByClusterID(clusterID string) (*model.TaskSetting, error) {
 		indexStats    = true
 		clusterHealth = true
 	)
-	keys := []string{"payload.task.cluster_stats", "payload.task.cluster_health", "payload.task.index_stats"}
+	keys := []string{"payload.task.cluster_stats.enabled", "payload.task.cluster_health.enabled", "payload.task.index_stats.enabled"}
 	for _, row := range result.Result {
 		if v, ok := row.(map[string]interface{}); ok {
 			vm := util.MapStr(v)
@@ -849,11 +851,11 @@ func getSettingsByClusterID(clusterID string) (*model.TaskSetting, error) {
 				tv, _ := vm.GetValue(key)
 				if tv == true {
 					switch key {
-					case "payload.task.cluster_stats":
+					case "payload.task.cluster_stats.enabled":
 						clusterStats = false
-					case "payload.task.index_stats":
+					case "payload.task.index_stats.enabled":
 						indexStats = false
-					case "payload.task.cluster_health":
+					case "payload.task.cluster_health.enabled":
 						clusterHealth = false
 					}
 				}

@@ -133,6 +133,10 @@ func (h *APIHandler) createInstance(w http.ResponseWriter, req *http.Request, ps
 	if err != nil {
 		log.Error(err)
 	}
+	_, err = refreshNodesInfo(obj)
+	if err != nil {
+		log.Error(err)
+	}
 
 	h.WriteCreatedOKJSON(w, obj.ID)
 
@@ -833,7 +837,7 @@ func refreshNodesInfo(inst *agent.Instance) ([]agent.ESNodeInfo, error) {
 		return nil, err
 	}
 	for _, node := range nodesInfo {
-		oldNode := getNodeByPidOrUUID(oldNodesInfo, node.ProcessInfo.PID, node.NodeUUID)
+		oldNode := getNodeByPidOrUUID(oldNodesInfo, node.ProcessInfo.PID, node.NodeUUID, node.HttpPort)
 		node.AgentID = inst.ID
 		if oldNode != nil {
 			node.ID = oldNode.ID
@@ -880,12 +884,16 @@ func refreshNodesInfo(inst *agent.Instance) ([]agent.ESNodeInfo, error) {
 	return resultNodes, nil
 }
 
-func getNodeByPidOrUUID(nodes map[int]*agent.ESNodeInfo, pid int, uuid string) *agent.ESNodeInfo {
+func getNodeByPidOrUUID(nodes map[int]*agent.ESNodeInfo, pid int, uuid string, port string) *agent.ESNodeInfo {
 	if nodes[pid] != nil {
 		return nodes[pid]
 	}
 	for _, node := range nodes {
 		if node.NodeUUID != "" && node.NodeUUID == uuid {
+			return node
+		}
+		//todo validate
+		if node.HttpPort != "" && node.HttpPort == port {
 			return node
 		}
 	}

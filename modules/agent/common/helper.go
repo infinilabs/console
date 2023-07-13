@@ -32,21 +32,23 @@ func ParseAgentSettings(settings []agent.Setting)(*model.ParseAgentSettingsResul
 			clusterID string
 			ok bool
 		)
+		nodeUUID := util.ToString(setting.Metadata.Labels["node_uuid"])
 		if clusterID, ok = setting.Metadata.Labels["cluster_id"].(string); ok && clusterID != ""{
 			cfg := elastic.GetConfig(clusterID)
+			newID := getClusterConfigReferenceName(clusterID, nodeUUID)
 			newCfg := elastic.ElasticsearchConfig{
 				Enabled: true,
-				Name: cfg.Name,
+				Name: newID,
 				BasicAuth: cfg.BasicAuth,
 				//todo get endpoint from agent node info
 				Endpoint: setting.Metadata.Labels["endpoint"].(string),
+				ClusterUUID: cfg.ClusterUUID,
 			}
-			newCfg.ID = clusterID
+			newCfg.ID = newID
 			clusterCfgs = append(clusterCfgs, newCfg)
 		}else{
 			return nil, fmt.Errorf("got wrong cluster id [%v] from metadata labels", setting.Metadata.Labels["cluster_id"])
 		}
-		nodeUUID := util.ToString(setting.Metadata.Labels["node_uuid"])
 
 		taskCfg, err := util.MapStr(setting.Payload).GetValue("task")
 		if err != nil {
@@ -152,6 +154,10 @@ func GetAgentSettings(agentID string, timestamp int64) ([]agent.Setting, error) 
 	return settings, nil
 }
 
+func getClusterConfigReferenceName(clusterID, nodeUUID string) string {
+	return fmt.Sprintf("%s_%s", clusterID, nodeUUID)
+}
+
 func TransformSettingsToConfig(setting *model.TaskSetting, clusterID, nodeUUID string) ([]util.MapStr, []string, error) {
 	if setting == nil {
 		return nil, nil, fmt.Errorf("empty setting")
@@ -163,7 +169,7 @@ func TransformSettingsToConfig(setting *model.TaskSetting, clusterID, nodeUUID s
 	if setting.ClusterStats != nil {
 		var processorName = "es_cluster_stats"
 		if setting.ClusterStats.Enabled {
-			pipelineCfg, err := newClusterMetricPipeline(processorName, clusterID)
+			pipelineCfg, err := newClusterMetricPipeline(processorName, clusterID, nodeUUID)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -175,7 +181,7 @@ func TransformSettingsToConfig(setting *model.TaskSetting, clusterID, nodeUUID s
 	if setting.IndexStats != nil {
 		var processorName = "es_index_stats"
 		if setting.IndexStats.Enabled {
-			pipelineCfg, err := newClusterMetricPipeline(processorName, clusterID)
+			pipelineCfg, err := newClusterMetricPipeline(processorName, clusterID, nodeUUID)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -187,7 +193,7 @@ func TransformSettingsToConfig(setting *model.TaskSetting, clusterID, nodeUUID s
 	if setting.ClusterHealth != nil {
 		var processorName = "es_cluster_health"
 		if setting.ClusterHealth.Enabled {
-			pipelineCfg, err := newClusterMetricPipeline(processorName, clusterID)
+			pipelineCfg, err := newClusterMetricPipeline(processorName, clusterID, nodeUUID)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -200,7 +206,10 @@ func TransformSettingsToConfig(setting *model.TaskSetting, clusterID, nodeUUID s
 		var processorName = "es_node_stats"
 		if setting.NodeStats.Enabled {
 			params := util.MapStr{
-				"elasticsearch": clusterID,
+				"elasticsearch": getClusterConfigReferenceName(clusterID, nodeUUID),
+				"labels": util.MapStr{
+					"cluster_id": clusterID,
+				},
 			}
 			if len(setting.NodeStats.NodeIDs) > 0{
 				params["node_uuids"] = setting.NodeStats.NodeIDs
@@ -226,8 +235,11 @@ func TransformSettingsToConfig(setting *model.TaskSetting, clusterID, nodeUUID s
 		var processorName = "es_logs_processor"
 		if setting.Logs.Enabled {
 			params := util.MapStr{
-				"elasticsearch": clusterID,
+				"elasticsearch": getClusterConfigReferenceName(clusterID, nodeUUID),
 				"queue_name": "logs",
+				"labels": util.MapStr{
+					"cluster_id": clusterID,
+				},
 			}
 			if setting.Logs.LogsPath != "" {
 				params["logs_path"] = setting.Logs.LogsPath
@@ -251,10 +263,14 @@ func TransformSettingsToConfig(setting *model.TaskSetting, clusterID, nodeUUID s
 }
 
 
-func newClusterMetricPipeline(processorName string, clusterID string)(util.MapStr, error){
+func newClusterMetricPipeline(processorName string, clusterID string, nodeUUID string)(util.MapStr, error){
+	referName := getClusterConfigReferenceName(clusterID, nodeUUID)
 	cfg := util.MapStr{
 		processorName: util.MapStr{
-			"elasticsearch": clusterID,
+			"elasticsearch": referName,
+			"labels": util.MapStr{
+				"cluster_id": clusterID,
+			},
 		},
 	}
 	enabled := true

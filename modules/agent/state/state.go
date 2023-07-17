@@ -109,7 +109,9 @@ func (sm *StateManager) checkAgentStatus() {
 					return
 				}
 				// status change to online
+				sm.agentMutex.Lock()
 				sm.agentIds[agentID] = model.StatusOnline
+				sm.agentMutex.Unlock()
 				log.Infof("status of agent [%s] changed to online", agentID)
 				return
 			}else{
@@ -119,7 +121,9 @@ func (sm *StateManager) checkAgentStatus() {
 				}
 			}
 			// status change to offline
+			sm.agentMutex.Lock()
 			sm.agentIds[agentID] = model.StatusOffline
+			sm.agentMutex.Unlock()
 			ag, err := sm.GetAgent(agentID)
 			if err != nil {
 				if err != elastic.ErrNotFound {

@@ -373,6 +373,9 @@ func GetLatestOnlineAgentIDs(agentIds []string, lastSeconds int) (map[string]str
 			},
 		},
 	}
+	if len(agentIds) == 0 {
+		queryDSL["size"] = 2000
+	}
 	q.RawQuery = util.MustToJSONBytes(queryDSL)
 	err, result := orm.Search(event.Event{}, &q)
 	if err != nil {

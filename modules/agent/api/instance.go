@@ -407,7 +407,65 @@ func (h *APIHandler) getESNodesInfo(w http.ResponseWriter, req *http.Request, ps
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	h.WriteJSON(w, nodes, http.StatusOK)
+	var nodeUUIDs []string
+	for _, node := range nodes {
+		if node.NodeUUID != "" {
+			nodeUUIDs = append(nodeUUIDs, node.NodeUUID)
+		}
+	}
+	if len(nodeUUIDs) == 0 {
+		h.WriteJSON(w, nodes, http.StatusOK)
+		return
+	}
+	query := util.MapStr{
+		"size": len(nodeUUIDs),
+		"query": util.MapStr{
+			"terms": util.MapStr{
+				"metadata.node_id": nodeUUIDs,
+			},
+		},
+		"collapse": util.MapStr{
+			"field": "metadata.node_id",
+		},
+	}
+	q := orm.Query{
+		RawQuery: util.MustToJSONBytes(query),
+	}
+	err, result := orm.Search(elastic.NodeConfig{}, &q)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	idToAddresses := map[string]string{}
+	for _, row := range result.Result {
+		if rowM, ok := row.(map[string]interface{}); ok {
+			nodeUUID, _ := util.MapStr(rowM).GetValue("metadata.node_id")
+			transportAddr, _ := util.MapStr(rowM).GetValue("metadata.labels.transport_address")
+			if v, ok := nodeUUID.(string); ok {
+				idToAddresses[v] = transportAddr.(string)
+			}
+		}
+	}
+	var nNodes []tempNode
+	for _, node := range nodes {
+		nNode := tempNode{
+			ESNodeInfo: node,
+		}
+		if node.NodeUUID != "" {
+			if addr, ok := idToAddresses[node.NodeUUID]; ok {
+				nNode.TransportAddress = addr
+			}
+		}
+		nNodes = append(nNodes, nNode)
+	}
+
+
+	h.WriteJSON(w, nNodes, http.StatusOK)
+}
+type tempNode struct {
+	agent.ESNodeInfo
+	TransportAddress string `json:"transport_address"`
 }
 
 func (h *APIHandler) refreshESNodesInfo(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -890,10 +948,6 @@ func getNodeByPidOrUUID(nodes map[int]*agent.ESNodeInfo, pid int, uuid string, p
 	}
 	for _, node := range nodes {
 		if node.NodeUUID != "" && node.NodeUUID == uuid {
-			return node
-		}
-		//todo validate
-		if node.HttpPort != "" && node.HttpPort == port {
 			return node
 		}
 	}

@@ -66,9 +66,7 @@ func main() {
 	modules = append(modules, &elastic2.ElasticModule{})
 	modules = append(modules, &queue2.DiskQueue{})
 	modules = append(modules, &redis.RedisModule{})
-	pipeM := &pipeline.PipeModule{}
-	global.Register("pipeline_module", pipeM)
-	modules = append(modules, pipeM)
+	modules = append(modules, &pipeline.PipeModule{})
 	modules = append(modules, &task.TaskModule{})
 	modules = append(modules, &metrics.MetricsModule{})
 	modules = append(modules, &security.Module{})

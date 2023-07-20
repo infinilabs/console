@@ -8,52 +8,45 @@ import (
 	"fmt"
 	"infini.sh/console/model"
 	"infini.sh/framework/core/global"
-	"infini.sh/framework/core/pipeline"
-	"infini.sh/framework/lib/go-ucfg/yaml"
-	pipeline2 "infini.sh/framework/modules/pipeline"
+	"infini.sh/framework/core/util"
+	"os"
+	"path"
 )
 
 func StartEmailServer(serv *model.EmailServer) error {
 	pipeCfgStr := GeneratePipelineConfig(serv)
-	cfg, err := yaml.NewConfig([]byte(pipeCfgStr))
-	if err != nil {
-		return fmt.Errorf("new config error: %w", err)
-	}
-	pipeCfg := pipeline.PipelineConfigV2{}
-	err = cfg.Unpack(&pipeCfg)
-	if err != nil {
-		return fmt.Errorf("unpack pipeline config error: %w", err)
-	}
-	v := global.Lookup("pipeline_module")
-	var (
-		pipeM *pipeline2.PipeModule
-		ok bool
-	)
-	if pipeM, ok = v.(*pipeline2.PipeModule); !ok {
-		return fmt.Errorf("can not find pipeline module")
-	}
-	err = pipeM.CreatePipeline(pipeCfg, true)
-	if err != nil {
-		return fmt.Errorf("create email server pipeline error: %w", err)
-	}
+	//cfg, err := yaml.NewConfig([]byte(pipeCfgStr))
+	//if err != nil {
+	//	return fmt.Errorf("new config error: %w", err)
+	//}
+	cfgDir := global.Env().GetConfigDir()
+	sendEmailCfgFile := path.Join(cfgDir, "send_email.yml")
+	_, err := util.FilePutContent(sendEmailCfgFile, pipeCfgStr)
+	return err
+	//pipeCfg := pipeline.PipelineConfigV2{}
+	//err = cfg.Unpack(&pipeCfg)
+	//if err != nil {
+	//	return fmt.Errorf("unpack pipeline config error: %w", err)
+	//}
+	//v := global.Lookup("pipeline_module")
+	//var (
+	//	pipeM *pipeline2.PipeModule
+	//	ok bool
+	//)
+	//if pipeM, ok = v.(*pipeline2.PipeModule); !ok {
+	//	return fmt.Errorf("can not find pipeline module")
+	//}
+	//err = pipeM.CreatePipeline(pipeCfg, true)
+	//if err != nil {
+	//	return fmt.Errorf("create email server pipeline error: %w", err)
+	//}
 	return nil
 }
 
 func StopEmailServer(serv *model.EmailServer) error {
-	v := global.Lookup("pipeline_module")
-	var (
-		pipeM *pipeline2.PipeModule
-		ok bool
-	)
-	if pipeM, ok = v.(*pipeline2.PipeModule); !ok {
-		return fmt.Errorf("can not find pipeline module")
-	}
-	emailServerTaskID := getEmailServerTaskID(serv)
-	exists := pipeM.StopTask(emailServerTaskID)
-	if exists {
-		pipeM.DeleteTask(emailServerTaskID)
-	}
-	return nil
+	cfgDir := global.Env().GetConfigDir()
+	sendEmailCfgFile := path.Join(cfgDir, "send_email.yml")
+	return os.RemoveAll(sendEmailCfgFile)
 }
 
 func getEmailServerTaskID(serv *model.EmailServer) string {

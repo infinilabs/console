@@ -14,14 +14,14 @@ import (
 	"infini.sh/framework/core/util"
 )
 
-func (p *DispatcherProcessor) handleRepeatingTasks(ctx *pipeline.Context, taskType string) {
+func (p *DispatcherProcessor) handleRepeatingTasks(ctx *pipeline.Context, taskType string) int {
 	tasks, err := p.getPendingExecutionTasks(taskType, p.config.TaskBatchSize)
 	if err != nil {
 		log.Errorf("failed to get pending [%s] tasks, err: %v", taskType, err)
-		return
+		return 0
 	}
 	if len(tasks) == 0 {
-		return
+		return 0
 	}
 	log.Debugf("handling pending [%s] tasks, count: %d", taskType, len(tasks))
 	// refresh index after each batch
@@ -30,7 +30,7 @@ func (p *DispatcherProcessor) handleRepeatingTasks(ctx *pipeline.Context, taskTy
 	}()
 	for i := range tasks {
 		if ctx.IsCanceled() {
-			return
+			return 0
 		}
 		taskItem := &tasks[i]
 		err := p.handleTask(taskItem, p.handleRepeatingTask)
@@ -46,7 +46,7 @@ func (p *DispatcherProcessor) handleRepeatingTasks(ctx *pipeline.Context, taskTy
 			}, fmt.Sprintf("failed to handle task [%s]", taskItem.ID))
 		}
 	}
-	return
+	return len(tasks)
 }
 
 func (p *DispatcherProcessor) getPendingExecutionTasks(taskType string, size int) ([]task.Task, error) {

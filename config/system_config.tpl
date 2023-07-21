@@ -51,11 +51,7 @@ pipeline:
     auto_start: true
     keep_running: true
     processor:
-      - metadata:
-          bulk_size_in_mb: 5
-          bulk_max_docs_count: 5000
-          fetch_max_messages: 100
-          elasticsearch: "$[[CLUSTER_ID]]"
+      - consumer:
           queues:
             type: metadata
             category: elasticsearch
@@ -63,15 +59,15 @@ pipeline:
             group: metadata
           when:
             cluster_available: ["$[[CLUSTER_ID]]"]
+          processor:
+          - metadata:
+              elasticsearch: "$[[CLUSTER_ID]]"
+
   - name: activity_ingest
     auto_start: true
     keep_running: true
     processor:
-      - activity:
-          bulk_size_in_mb: 5
-          bulk_max_docs_count: 5000
-          fetch_max_messages: 100
-          elasticsearch: "$[[CLUSTER_ID]]"
+      - consumer:
           queues:
             category: elasticsearch
             activity: true
@@ -79,6 +75,9 @@ pipeline:
             group: activity
           when:
             cluster_available: ["$[[CLUSTER_ID]]"]
+          processor:
+          - activity:
+              elasticsearch: "$[[CLUSTER_ID]]"
   - name: migration_task_dispatcher
     auto_start: true
     keep_running: true

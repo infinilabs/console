@@ -16,11 +16,12 @@ type EmailAction struct {
 	Body string
 }
 
-//const EmailQueueName = "alert_email_messages"
+const EmailQueueName = "email_messages"
 
 func (act *EmailAction) Execute()([]byte, error){
-	queueCfg := queue.GetOrInitConfig(act.Data.ServerID)
+	queueCfg := queue.GetOrInitConfig(EmailQueueName)
 	emailMsg := util.MapStr{
+		"server_id": act.Data.ServerID,
 		"email": act.Data.Recipients.To,
 		"template": "raw",
 		"variables": util.MapStr{

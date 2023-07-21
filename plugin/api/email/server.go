@@ -73,7 +73,7 @@ func (h *EmailAPI) createEmailServer(w http.ResponseWriter, req *http.Request, p
 		return
 	}
 	if obj.Enabled {
-		err = common.StartEmailServer(obj)
+		err = common.RefreshEmailServer()
 		if err != nil {
 			log.Error(err)
 		}
@@ -140,11 +140,19 @@ func (h *EmailAPI) updateEmailServer(w http.ResponseWriter, req *http.Request, p
 	//protect
 	obj.ID = id
 	obj.Created = create
-	err = orm.Update(nil, &obj)
+	err = orm.Update(&orm.Context{
+		Refresh: "wait_for",
+	}, &obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
 		return
+	}
+	if obj.Enabled {
+		err = common.RefreshEmailServer()
+		if err != nil {
+			log.Error(err)
+		}
 	}
 
 	h.WriteJSON(w, util.MapStr{
@@ -168,18 +176,20 @@ func (h *EmailAPI) deleteEmailServer(w http.ResponseWriter, req *http.Request, p
 		return
 	}
 	//todo check whether referenced
-	if obj.Enabled {
-		err = common.StopEmailServer(&obj)
-		if err != nil {
-			log.Error(err)
-		}
-	}
 
-	err = orm.Delete(nil, &obj)
+	err = orm.Delete(&orm.Context{
+		Refresh: "wait_for",
+	}, &obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
 		return
+	}
+	if obj.Enabled {
+		err = common.RefreshEmailServer()
+		if err != nil {
+			log.Error(err)
+		}
 	}
 
 	h.WriteJSON(w, util.MapStr{

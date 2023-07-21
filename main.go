@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	_ "expvar"
-	"infini.sh/console/plugin/api/email"
 	_ "time/tzdata"
 
 	log "github.com/cihub/seelog"
@@ -149,13 +148,6 @@ func main() {
 				err := alerting2.InitTasks()
 				if err != nil {
 					log.Errorf("init alerting task error: %v", err)
-				}
-				return err
-			})
-			task1.RunWithinGroup("initialize_email_server", func(ctx context.Context) error {
-				err := email.InitEmailServer()
-				if err != nil {
-					log.Errorf("init email server error: %v", err)
 				}
 				return err
 			})

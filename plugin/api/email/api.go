@@ -5,12 +5,7 @@
 package email
 
 import (
-	"infini.sh/console/model"
-	"infini.sh/console/plugin/api/email/common"
 	"infini.sh/framework/core/api"
-	"infini.sh/framework/core/orm"
-	"infini.sh/framework/core/util"
-	log "src/github.com/cihub/seelog"
 )
 
 type EmailAPI struct {
@@ -26,31 +21,31 @@ func InitAPI() {
 	api.HandleAPIMethod(api.GET, "/email/server/_search", email.searchEmailServer)
 }
 
-func InitEmailServer() error {
-	q := orm.Query{
-		Size: 10,
-	}
-	q.Conds = orm.And(orm.Eq("enabled", true))
-	err, result := orm.Search(model.EmailServer{}, &q )
-	if err != nil {
-		return err
-	}
-	if len(result.Result) == 0 {
-		return nil
-	}
-	for _, row := range result.Result {
-		emailServer := model.EmailServer{}
-		buf := util.MustToJSONBytes(row)
-		util.MustFromJSONBytes(buf, &emailServer)
-		err = emailServer.Validate(false)
-		if err != nil {
-			log.Error(err)
-			continue
-		}
-		err = common.StartEmailServer(&emailServer)
-		if err != nil {
-			log.Error(err)
-		}
-	}
-	return nil
-}
+//func InitEmailServer() error {
+//	q := orm.Query{
+//		Size: 10,
+//	}
+//	q.Conds = orm.And(orm.Eq("enabled", true))
+//	err, result := orm.Search(model.EmailServer{}, &q )
+//	if err != nil {
+//		return err
+//	}
+//	if len(result.Result) == 0 {
+//		return nil
+//	}
+//	for _, row := range result.Result {
+//		emailServer := model.EmailServer{}
+//		buf := util.MustToJSONBytes(row)
+//		util.MustFromJSONBytes(buf, &emailServer)
+//		err = emailServer.Validate(false)
+//		if err != nil {
+//			log.Error(err)
+//			continue
+//		}
+//		err = common.StartEmailServer(&emailServer)
+//		if err != nil {
+//			log.Error(err)
+//		}
+//	}
+//	return nil
+//}

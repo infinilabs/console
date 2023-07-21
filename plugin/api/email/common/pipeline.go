@@ -8,19 +8,44 @@ import (
 	"fmt"
 	"infini.sh/console/model"
 	"infini.sh/framework/core/global"
+	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"os"
 	"path"
 )
 
-func StartEmailServer(serv *model.EmailServer) error {
+const emailServerConfigFile = "send_email.yml"
+func RefreshEmailServer() error {
+	q := orm.Query{
+		Size: 10,
+	}
+	q.Conds = orm.And(orm.Eq("enabled", true))
+	err, result := orm.Search(model.EmailServer{}, &q )
+	if err != nil {
+		return err
+	}
+	if len(result.Result) == 0 {
+		//todo delete email server config file
+		return nil
+	}
+	servers := map[string]model.EmailServer{}
+	for _, row := range result.Result {
+		emailServer := model.EmailServer{}
+		buf := util.MustToJSONBytes(row)
+		util.MustFromJSONBytes(buf, &emailServer)
+		err = emailServer.Validate(false)
+		if err != nil {
+			return err
+		}
+		servers[emailServer.ID] = emailServer
+	}
 	pipeCfgStr := GeneratePipelineConfig(serv)
 	//cfg, err := yaml.NewConfig([]byte(pipeCfgStr))
 	//if err != nil {
 	//	return fmt.Errorf("new config error: %w", err)
 	//}
 	cfgDir := global.Env().GetConfigDir()
-	sendEmailCfgFile := path.Join(cfgDir, "send_email.yml")
+	sendEmailCfgFile := path.Join(cfgDir, emailServerConfigFile)
 	_, err := util.FilePutContent(sendEmailCfgFile, pipeCfgStr)
 	return err
 	//pipeCfg := pipeline.PipelineConfigV2{}

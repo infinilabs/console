@@ -64,7 +64,9 @@ func (h *EmailAPI) createEmailServer(w http.ResponseWriter, req *http.Request, p
 		return
 	}
 
-	err = orm.Create(nil, obj)
+	err = orm.Create(&orm.Context{
+		Refresh: "wait_for",
+	}, obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)

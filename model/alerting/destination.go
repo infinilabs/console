@@ -4,7 +4,9 @@
 
 package alerting
 
-import "infini.sh/framework/core/orm"
+import (
+	"infini.sh/framework/core/orm"
+)
 
 type Channel struct {
 	orm.ORMObjectBase

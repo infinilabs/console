@@ -999,6 +999,10 @@ func performChannel(channel *alerting.Channel, ctx map[string]interface{}) ([]by
 		message []byte
 		err error
 	)
+	channel, err = RetrieveChannel(channel)
+	if err != nil {
+		return nil, err, nil
+	}
 	switch channel.Type {
 
 	case alerting.ChannelWebhook:

@@ -203,6 +203,7 @@ func (h *EmailAPI) searchEmailServer(w http.ResponseWriter, req *http.Request, p
 	var (
 		strSize     = h.GetParameterOrDefault(req, "size", "20")
 		strFrom     = h.GetParameterOrDefault(req, "from", "0")
+		strEnabled = h.GetParameterOrDefault(req, "enabled", "true")
 	)
 	size, _ := strconv.Atoi(strSize)
 	if size <= 0 {
@@ -217,7 +218,11 @@ func (h *EmailAPI) searchEmailServer(w http.ResponseWriter, req *http.Request, p
 		From: from,
 		Size: size,
 	}
-	q.Conds = orm.And(orm.Eq("enabled", true))
+	if strEnabled == "true" {
+		q.Conds = orm.And(orm.Eq("enabled", true))
+	}else if strEnabled == "false" {
+		q.Conds = orm.And(orm.Eq("enabled", false))
+	}
 
 	err, res := orm.Search(&model.EmailServer{}, &q)
 	if err != nil {

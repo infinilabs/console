@@ -12,6 +12,7 @@ import (
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"net/http"
+	"strings"
 )
 
 func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -35,9 +36,10 @@ func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req
 	if !hasAllPrivilege && clusterFilter == nil{
 		handler.WriteJSON(w, util.MapStr{
 			"nodes_count": 0,
-			"cluster_count":0,
+			"clusters_count":0,
 			"total_used_store_in_bytes": 0,
 			"hosts_count": 0,
+			"indices_count": 0,
 		}, http.StatusOK)
 		return
 	}
@@ -101,12 +103,17 @@ func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req
 	if v, ok := nodeCount.(float64); ok {
 		totalNode = int(v)
 	}
+	indicesCount, err := handler.getIndexCount(req)
+	if err != nil{
+		log.Error(err)
+	}
+
 	resBody := util.MapStr{
 		"nodes_count": totalNode,
-		"cluster_count": len(clusterIDs),
+		"clusters_count": len(clusterIDs),
 		"total_used_store_in_bytes": totalStoreSize,
 		"hosts_count": hostCount,
-		//"hosts": hosts,
+		"indices_count": indicesCount,
 	}
 	handler.WriteJSON(w, resBody, http.StatusOK)
 }
@@ -154,6 +161,79 @@ func (handler APIHandler) getLatestClusterMonitorData(clusterIDs []interface{}) 
 	queryDSL := fmt.Sprintf(queryDSLTpl, len(clusterIDs), util.MustToJSONBytes(clusterIDs))
 	return client.SearchWithRawQueryDSL(orm.GetWildcardIndexName(event.Event{}), []byte(queryDSL))
 
+}
+
+func (handler APIHandler) getIndexCount(req *http.Request) (int64, error) {
+	hasAllPrivilege, indexPrivilege := handler.GetCurrentUserIndex(req)
+	if !hasAllPrivilege && len(indexPrivilege) == 0 {
+		return 0, nil
+	}
+	var indexFilter util.MapStr
+	if !hasAllPrivilege {
+		indexShould := make([]interface{}, 0, len(indexPrivilege))
+		for clusterID, indices := range indexPrivilege {
+			var (
+				wildcardIndices []string
+				normalIndices   []string
+			)
+			for _, index := range indices {
+				if strings.Contains(index, "*") {
+					wildcardIndices = append(wildcardIndices, index)
+					continue
+				}
+				normalIndices = append(normalIndices, index)
+			}
+			subShould := []util.MapStr{}
+			if len(wildcardIndices) > 0 {
+				subShould = append(subShould, util.MapStr{
+					"query_string": util.MapStr{
+						"query":            strings.Join(wildcardIndices, " "),
+						"fields":           []string{"metadata.index_name"},
+						"default_operator": "OR",
+					},
+				})
+			}
+			if len(normalIndices) > 0 {
+				subShould = append(subShould, util.MapStr{
+					"terms": util.MapStr{
+						"metadata.index_name": normalIndices,
+					},
+				})
+			}
+			indexShould = append(indexShould, util.MapStr{
+				"bool": util.MapStr{
+					"must": []util.MapStr{
+						{
+							"wildcard": util.MapStr{
+								"metadata.cluster_id": util.MapStr{
+									"value": clusterID,
+								},
+							},
+						},
+						{
+							"bool": util.MapStr{
+								"minimum_should_match": 1,
+								"should":               subShould,
+							},
+						},
+					},
+				},
+			})
+		}
+		indexFilter = util.MapStr{
+			"bool": util.MapStr{
+				"minimum_should_match": 1,
+				"should":               indexShould,
+			},
+		}
+	}
+	var body []byte
+	if len(indexFilter) > 0 {
+		body = util.MustToJSONBytes(util.MapStr{
+			"query": indexFilter,
+		})
+	}
+	return orm.Count(elastic.IndexConfig{}, body)
 }
 
 func (handler APIHandler) getMetricCount(indexName, field string, clusterIDs []interface{}) (interface{}, error){

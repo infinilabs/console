@@ -9,6 +9,7 @@ import (
 	"fmt"
 	log "github.com/cihub/seelog"
 	"infini.sh/console/model"
+	"infini.sh/console/model/alerting"
 	"infini.sh/console/plugin/api/email/common"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/orm"
@@ -129,20 +130,27 @@ func (h *EmailAPI) updateEmailServer(w http.ResponseWriter, req *http.Request, p
 
 	id = obj.ID
 	create := obj.Created
-	obj = model.EmailServer{}
-	err = h.DecodeJSON(req, &obj)
+	newObj := model.EmailServer{}
+	err = h.DecodeJSON(req, &newObj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
 		return
 	}
+	if !newObj.Enabled && obj.Enabled {
+		if err = checkEmailServerReferenced(&obj); err != nil {
+			h.WriteError(w, err.Error(), http.StatusInternalServerError)
+			log.Error(err)
+			return
+		}
+	}
 
 	//protect
-	obj.ID = id
-	obj.Created = create
+	newObj.ID = id
+	newObj.Created = create
 	err = orm.Update(&orm.Context{
 		Refresh: "wait_for",
-	}, &obj)
+	}, &newObj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -173,7 +181,11 @@ func (h *EmailAPI) deleteEmailServer(w http.ResponseWriter, req *http.Request, p
 		}, http.StatusNotFound)
 		return
 	}
-	//todo check whether referenced
+	if err = checkEmailServerReferenced(&obj); err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
 
 	err = orm.Delete(&orm.Context{
 		Refresh: "wait_for",
@@ -194,6 +206,25 @@ func (h *EmailAPI) deleteEmailServer(w http.ResponseWriter, req *http.Request, p
 		"_id":    obj.ID,
 		"result": "deleted",
 	}, 200)
+}
+
+func checkEmailServerReferenced(srv *model.EmailServer) error {
+	q := &orm.Query{
+		Size: 1,
+	}
+	q.Conds = orm.And(orm.Eq("email.server_id", srv.ID))
+	err, result := orm.Search(alerting.Channel{}, q)
+	if err != nil {
+		return err
+	}
+	if len(result.Result) > 0 {
+		var chName interface{} = ""
+		if m, ok := result.Result[0].(map[string]interface{}); ok {
+			chName = m["name"]
+		}
+		return fmt.Errorf("email server used by channel [%s]", chName)
+	}
+	return nil
 }
 
 func (h *EmailAPI) searchEmailServer(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {

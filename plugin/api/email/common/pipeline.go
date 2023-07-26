@@ -25,8 +25,7 @@ func RefreshEmailServer() error {
 		return err
 	}
 	if len(result.Result) == 0 {
-		//todo delete email server config file
-		return nil
+		return StopEmailServer()
 	}
 	servers := make([]model.EmailServer,0, len(result.Result))
 	for _, row := range result.Result {
@@ -44,13 +43,21 @@ func RefreshEmailServer() error {
 	sendEmailCfgFile := path.Join(cfgDir, emailServerConfigFile)
 	_, err = util.FilePutContent(sendEmailCfgFile, pipeCfgStr)
 	return err
-	return nil
 }
 
 func StopEmailServer() error {
 	cfgDir := global.Env().GetConfigDir()
 	sendEmailCfgFile := path.Join(cfgDir, emailServerConfigFile)
-	return os.RemoveAll(sendEmailCfgFile)
+	if util.FilesExists(sendEmailCfgFile) {
+		return os.RemoveAll(sendEmailCfgFile)
+	}
+	return nil
+}
+
+func CheckEmailPipelineExists() bool {
+	cfgDir := global.Env().GetConfigDir()
+	sendEmailCfgFile := path.Join(cfgDir, emailServerConfigFile)
+	return util.FilesExists(sendEmailCfgFile)
 }
 
 

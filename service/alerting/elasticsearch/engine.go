@@ -5,7 +5,6 @@
 package elasticsearch
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"github.com/Knetic/govaluate"
@@ -13,8 +12,7 @@ import (
 	"infini.sh/console/model"
 	"infini.sh/console/model/alerting"
 	alerting2 "infini.sh/console/service/alerting"
-	"infini.sh/console/service/alerting/action"
-	"infini.sh/console/service/alerting/funcs"
+	"infini.sh/console/service/alerting/common"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/console/model/insight"
 	"infini.sh/framework/core/kv"
@@ -25,7 +23,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"text/template"
 	"time"
 )
 
@@ -857,12 +854,12 @@ func attachTitleMessageToCtx(title, message string, paramsCtx map[string]interfa
 		tplBytes []byte
 		err error
 	)
-	tplBytes, err = resolveMessage(message, paramsCtx)
+	tplBytes, err = common.ResolveMessage(message, paramsCtx)
 	if err != nil {
 		return fmt.Errorf("resolve message template error: %w", err)
 	}
 	paramsCtx[alerting2.ParamMessage] = string(tplBytes)
-	tplBytes, err = resolveMessage(title, paramsCtx)
+	tplBytes, err = common.ResolveMessage(title, paramsCtx)
 	if err != nil {
 		return fmt.Errorf("resolve title template error: %w", err)
 	}
@@ -962,7 +959,7 @@ func performChannels(channels []alerting.Channel, ctx map[string]interface{}) ([
 	var errCount int
 	var actionResults []alerting.ActionExecutionResult
 	for _, channel := range channels {
-		resBytes, err, messageBytes := performChannel(&channel, ctx)
+		resBytes, err, messageBytes := common.PerformChannel(&channel, ctx)
 		var errStr string
 		if err != nil {
 			errCount++
@@ -980,64 +977,8 @@ func performChannels(channels []alerting.Channel, ctx map[string]interface{}) ([
 	return actionResults, errCount
 }
 
-func resolveMessage(messageTemplate string, ctx map[string]interface{}) ([]byte, error){
-	msg :=  messageTemplate
-	tmpl, err := template.New("alert-message").Funcs(funcs.GenericFuncMap()).Parse(msg)
-	if err !=nil {
-		return nil, fmt.Errorf("parse message temlate error: %w", err)
-	}
-	msgBuffer := &bytes.Buffer{}
-	err = tmpl.Execute(msgBuffer, ctx)
-	return msgBuffer.Bytes(), err
-}
 
-func performChannel(channel *alerting.Channel, ctx map[string]interface{}) ([]byte, error, []byte) {
-	var (
-		act action.Action
-		message []byte
-		err error
-	)
-	channel, err = RetrieveChannel(channel)
-	if err != nil {
-		return nil, err, nil
-	}
-	switch channel.Type {
 
-	case alerting.ChannelWebhook:
-		message, err = resolveMessage(channel.Webhook.Body, ctx)
-		if err != nil {
-			return nil, err, message
-		}
-		wh := *channel.Webhook
-		urlBytes, err := resolveMessage(wh.URL, ctx)
-		if err != nil {
-			return nil, err, message
-		}
-		wh.URL = string(urlBytes)
-		act = &action.WebhookAction{
-			Data:    &wh,
-			Message: string(message),
-		}
-	case alerting.ChannelEmail:
-		message, err = resolveMessage(channel.Email.Body, ctx)
-		if err != nil {
-			return nil, err, message
-		}
-		subjectBytes, err := resolveMessage(channel.Email.Subject, ctx)
-		if err != nil {
-			return nil, err, nil
-		}
-		act = &action.EmailAction{
-			Data:    channel.Email,
-			Subject: string(subjectBytes),
-			Body: string(message),
-		}
-	default:
-		return nil, fmt.Errorf("unsupported action type: %s", channel.Type), message
-	}
-	executeResult, err := act.Execute()
-	return executeResult, err, message
-}
 func (engine *Engine) GenerateTask(rule alerting.Rule) func(ctx context.Context) {
 	return func(ctx context.Context) {
 		defer func() {

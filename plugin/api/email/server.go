@@ -80,10 +80,7 @@ func (h *EmailAPI) createEmailServer(w http.ResponseWriter, req *http.Request, p
 		}
 	}
 
-	h.WriteJSON(w, util.MapStr{
-		"_id":    obj.ID,
-		"result": "created",
-	}, 200)
+	h.WriteCreatedOKJSON(w, obj.ID)
 
 }
 
@@ -107,11 +104,7 @@ func (h *EmailAPI) getEmailServer(w http.ResponseWriter, req *http.Request, ps h
 		return
 	}
 
-	h.WriteJSON(w, util.MapStr{
-		"found":   true,
-		"_id":     id,
-		"_source": obj,
-	}, 200)
+	h.WriteGetOKJSON(w, id, obj)
 }
 
 func (h *EmailAPI) updateEmailServer(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -161,10 +154,7 @@ func (h *EmailAPI) updateEmailServer(w http.ResponseWriter, req *http.Request, p
 		log.Error(err)
 	}
 
-	h.WriteJSON(w, util.MapStr{
-		"_id":    obj.ID,
-		"result": "updated",
-	}, 200)
+	h.WriteUpdatedOKJSON(w, obj.ID)
 }
 
 func (h *EmailAPI) deleteEmailServer(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -202,10 +192,7 @@ func (h *EmailAPI) deleteEmailServer(w http.ResponseWriter, req *http.Request, p
 		}
 	}
 
-	h.WriteJSON(w, util.MapStr{
-		"_id":    obj.ID,
-		"result": "deleted",
-	}, 200)
+	h.WriteDeletedOKJSON(w, obj.ID)
 }
 
 func checkEmailServerReferenced(srv *model.EmailServer) error {

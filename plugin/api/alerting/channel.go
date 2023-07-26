@@ -6,9 +6,11 @@ package alerting
 
 import (
 	"fmt"
+	"infini.sh/console/service/alerting/common"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	log "github.com/cihub/seelog"
 	"infini.sh/console/model/alerting"
@@ -33,10 +35,7 @@ func (h *AlertAPI) createChannel(w http.ResponseWriter, req *http.Request, ps ht
 		return
 	}
 
-	h.WriteJSON(w, util.MapStr{
-		"_id":    obj.ID,
-		"result": "created",
-	}, 200)
+	h.WriteCreatedOKJSON(w, obj.ID)
 
 }
 
@@ -60,11 +59,7 @@ func (h *AlertAPI) getChannel(w http.ResponseWriter, req *http.Request, ps httpr
 		return
 	}
 
-	h.WriteJSON(w, util.MapStr{
-		"found":   true,
-		"_id":     id,
-		"_source": obj,
-	}, 200)
+	h.WriteGetOKJSON(w, id, obj)
 }
 
 func (h *AlertAPI) updateChannel(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -101,10 +96,7 @@ func (h *AlertAPI) updateChannel(w http.ResponseWriter, req *http.Request, ps ht
 		return
 	}
 
-	h.WriteJSON(w, util.MapStr{
-		"_id":    obj.ID,
-		"result": "updated",
-	}, 200)
+	h.WriteUpdatedOKJSON(w, id)
 }
 
 func (h *AlertAPI) deleteChannel(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -178,4 +170,44 @@ func (h *AlertAPI) searchChannel(w http.ResponseWriter, req *http.Request, ps ht
 		return
 	}
 	h.Write(w, res.Raw)
+}
+
+func (h *AlertAPI) testChannel(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	obj := alerting.Channel{}
+	err := h.DecodeJSON(req, &obj)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
+	ctx := map[string]interface{}{
+		"title": "test title",
+		"message": "test message",
+		"rule_id": util.GetUUID(),
+		"rule_name": "test rule",
+		"resource_id": util.GetUUID(),
+		"resource_name": "test resource",
+		"event_id": util.GetUUID(),
+		"timestamp": time.Now().UnixMilli(),
+		"first_group_value": "first group value",
+		"first_threshold": "90",
+		"priority": "critical",
+		"results": []util.MapStr{
+			{"threshold": "90",
+				"priority": "critical",
+				"group_values": []string{"first group value", "second group value"},
+				"issue_timestamp": time.Now().UnixMilli()-500,
+				"result_value": 90,
+				"relation_values": util.MapStr{"a": 100, "b": 90},
+			},
+		},
+
+	}
+	_, err, _ = common.PerformChannel(&obj, ctx)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
+	h.WriteAckOKJSON(w)
 }

@@ -682,18 +682,16 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			// send recover message to channel
 			recoverCfg := rule.RecoveryNotificationConfig
 			if  recoverCfg != nil && recoverCfg.Enabled {
-				if recoverCfg.AcceptTimeRange.Include(time.Now()) {
-					paramsCtx = newParameterCtx(rule, checkResults, util.MapStr{
-						alerting2.ParamEventID: alertItem.ID,
-						alerting2.ParamTimestamp:  alertItem.Created.Unix(),
-					})
-					err = attachTitleMessageToCtx(recoverCfg.Title, recoverCfg.Message, paramsCtx)
-					if err != nil {
-						return err
-					}
-					actionResults, _ := performChannels(recoverCfg.Channels, paramsCtx)
-					alertItem.ActionExecutionResults = actionResults
+				paramsCtx = newParameterCtx(rule, checkResults, util.MapStr{
+					alerting2.ParamEventID: alertItem.ID,
+					alerting2.ParamTimestamp:  alertItem.Created.Unix(),
+				})
+				err = attachTitleMessageToCtx(recoverCfg.Title, recoverCfg.Message, paramsCtx)
+				if err != nil {
+					return err
 				}
+				actionResults, _ := performChannels(recoverCfg.Channels, paramsCtx)
+				alertItem.ActionExecutionResults = actionResults
 			}
 		}
 		return nil

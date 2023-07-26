@@ -148,11 +148,9 @@ func (h *EmailAPI) updateEmailServer(w http.ResponseWriter, req *http.Request, p
 		log.Error(err)
 		return
 	}
-	if obj.Enabled {
-		err = common.RefreshEmailServer()
-		if err != nil {
-			log.Error(err)
-		}
+	err = common.RefreshEmailServer()
+	if err != nil {
+		log.Error(err)
 	}
 
 	h.WriteJSON(w, util.MapStr{

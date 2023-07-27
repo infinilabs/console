@@ -676,9 +676,10 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			if err != nil {
 				return fmt.Errorf("save alert message error: %w", err)
 			}
+			// todo add recover notification to inner system message
 			// send recover message to channel
 			recoverCfg := rule.RecoveryNotificationConfig
-			if  recoverCfg != nil && recoverCfg.Enabled {
+			if  recoverCfg != nil && recoverCfg.EventEnabled && recoverCfg.Enabled {
 				paramsCtx = newParameterCtx(rule, checkResults, util.MapStr{
 					alerting2.ParamEventID: alertItem.ID,
 					alerting2.ParamTimestamp:  alertItem.Created.Unix(),

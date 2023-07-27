@@ -81,6 +81,7 @@ pipeline:
   - name: migration_task_dispatcher
     auto_start: true
     keep_running: true
+    retry_delay_in_ms: 1000
     processor:
       - migration_dispatcher:
           elasticsearch: "$[[CLUSTER_ID]]"

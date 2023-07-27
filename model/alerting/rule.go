@@ -18,7 +18,7 @@ type Rule struct {
 	Resource Resource `json:"resource" elastic_mapping:"resource:{type:object}"`
 	Metrics Metric `json:"metrics" elastic_mapping:"metrics:{type:object}"`
 	Conditions         Condition          `json:"conditions" elastic_mapping:"conditions:{type:object}"`
-	Channels           NotificationConfig `json:"channels,omitempty" elastic_mapping:"channels:{type:object}"`
+	Channels           *NotificationConfig `json:"channels,omitempty" elastic_mapping:"channels:{type:object}"`
 	NotificationConfig *NotificationConfig `json:"notification_config,omitempty" elastic_mapping:"notification_config:{type:object}"`
 	RecoveryNotificationConfig *RecoveryNotificationConfig `json:"recovery_notification_config,omitempty" elastic_mapping:"recovery_notification_config:{type:object}"`
 	Schedule           Schedule           `json:"schedule" elastic_mapping:"schedule:{type:object}"`
@@ -61,7 +61,7 @@ func (rule *Rule) GetNotificationConfig() *NotificationConfig {
 	if rule.NotificationConfig != nil {
 		return rule.NotificationConfig
 	}
-	return &rule.Channels
+	return rule.Channels
 }
 func (rule *Rule) GetNotificationTitleAndMessage() (string, string) {
 	if rule.NotificationConfig != nil {
@@ -87,7 +87,7 @@ type RecoveryNotificationConfig struct {
 	Title string `json:"title"` //text template
 	Message string `json:"message"` // text template
 	AcceptTimeRange TimeRange   `json:"accept_time_range,omitempty"`
-	Channels []Channel      `json:"channels,omitempty"`
+	Normal []Channel      `json:"normal,omitempty"`
 }
 
 type MessageTemplate struct{

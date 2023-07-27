@@ -687,7 +687,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 				if err != nil {
 					return err
 				}
-				actionResults, _ := performChannels(recoverCfg.Channels, paramsCtx)
+				actionResults, _ := performChannels(recoverCfg.Normal, paramsCtx)
 				alertItem.ActionExecutionResults = actionResults
 			}
 		}

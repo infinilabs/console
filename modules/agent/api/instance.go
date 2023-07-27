@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	log "github.com/cihub/seelog"
@@ -131,6 +133,10 @@ func (h *APIHandler) createInstance(w http.ResponseWriter, req *http.Request, ps
 	if err != nil {
 		log.Error(err)
 	}
+	_, err = refreshNodesInfo(obj)
+	if err != nil {
+		log.Error(err)
+	}
 
 	h.WriteCreatedOKJSON(w, obj.ID)
 
@@ -236,6 +242,7 @@ func (h *APIHandler) getInstanceStats(w http.ResponseWriter, req *http.Request, 
 	}
 	q := orm.Query{}
 	queryDSL := util.MapStr{
+		"size": len(instanceIDs),
 		"query": util.MapStr{
 			"terms": util.MapStr{
 				"_id": instanceIDs,
@@ -400,7 +407,65 @@ func (h *APIHandler) getESNodesInfo(w http.ResponseWriter, req *http.Request, ps
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	h.WriteJSON(w, nodes, http.StatusOK)
+	var nodeUUIDs []string
+	for _, node := range nodes {
+		if node.NodeUUID != "" {
+			nodeUUIDs = append(nodeUUIDs, node.NodeUUID)
+		}
+	}
+	if len(nodeUUIDs) == 0 {
+		h.WriteJSON(w, nodes, http.StatusOK)
+		return
+	}
+	query := util.MapStr{
+		"size": len(nodeUUIDs),
+		"query": util.MapStr{
+			"terms": util.MapStr{
+				"metadata.node_id": nodeUUIDs,
+			},
+		},
+		"collapse": util.MapStr{
+			"field": "metadata.node_id",
+		},
+	}
+	q := orm.Query{
+		RawQuery: util.MustToJSONBytes(query),
+	}
+	err, result := orm.Search(elastic.NodeConfig{}, &q)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	idToAddresses := map[string]string{}
+	for _, row := range result.Result {
+		if rowM, ok := row.(map[string]interface{}); ok {
+			nodeUUID, _ := util.MapStr(rowM).GetValue("metadata.node_id")
+			transportAddr, _ := util.MapStr(rowM).GetValue("metadata.labels.transport_address")
+			if v, ok := nodeUUID.(string); ok {
+				idToAddresses[v] = transportAddr.(string)
+			}
+		}
+	}
+	var nNodes []tempNode
+	for _, node := range nodes {
+		nNode := tempNode{
+			ESNodeInfo: node,
+		}
+		if node.NodeUUID != "" {
+			if addr, ok := idToAddresses[node.NodeUUID]; ok {
+				nNode.TransportAddress = addr
+			}
+		}
+		nNodes = append(nNodes, nNode)
+	}
+
+
+	h.WriteJSON(w, nNodes, http.StatusOK)
+}
+type tempNode struct {
+	agent.ESNodeInfo
+	TransportAddress string `json:"transport_address"`
 }
 
 func (h *APIHandler) refreshESNodesInfo(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -558,6 +623,180 @@ func (h *APIHandler) associateESNode(w http.ResponseWriter, req *http.Request, p
 	h.WriteAckOKJSON(w)
 }
 
+func (h *APIHandler) autoAssociateESNode(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	reqBody := struct {
+		ClusterIDs []string `json:"cluster_ids"`
+	}{}
+	err := h.DecodeJSON(req, &reqBody)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	// query not associated nodes info
+	nodesM, err := getUnAssociateNodes()
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if len(nodesM) == 0 {
+		h.WriteAckOKJSON(w)
+		return
+	}
+	agentIds := make([]string, 0, len(nodesM))
+	for agentID := range nodesM {
+		agentIds = append(agentIds, agentID)
+	}
+	agents, err := getAgentByIds(agentIds)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	for _, clusterID := range reqBody.ClusterIDs {
+		// query cluster basicauth
+		cfg := elastic.GetConfig(clusterID)
+		basicAuth, err := common.GetBasicAuth(cfg)
+		if err != nil {
+			log.Error(err)
+			h.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		taskSetting, err := getSettingsByClusterID(cfg.ID)
+		if err != nil {
+			log.Error(err)
+			h.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		for agentID, nodes := range nodesM {
+			var (
+				inst *agent.Instance
+				ok   bool
+			)
+			if inst, ok = agents[agentID]; !ok {
+				log.Warnf("agent [%v] was not found", agentID)
+				continue
+			}
+			settings, err := common2.GetAgentSettings(agentID, 0)
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+			for _, node := range nodes {
+				host := node.PublishAddress
+				var endpoint string
+				if strings.HasPrefix(host, "::") {
+					instURL, err := url.Parse(inst.Endpoint)
+					if err != nil {
+						log.Error(err)
+						continue
+					}
+					host = instURL.Hostname()
+					endpoint = fmt.Sprintf("%s://%s:%s", node.Schema, host, node.HttpPort)
+				} else {
+					endpoint = fmt.Sprintf("%s://%s", node.Schema, host)
+				}
+				escfg := elastic.ElasticsearchConfig{
+					Endpoint:  endpoint,
+					BasicAuth: &basicAuth,
+				}
+				nodeInfo, err := client.GetClient().AuthESNode(context.Background(), inst.GetEndpoint(), escfg)
+				if err != nil {
+					log.Warn(err)
+					continue
+				}
+				//matched
+				if nodeInfo.ClusterUuid == cfg.ClusterUUID {
+					//update node info
+					nodeInfo.ID = node.ID
+					nodeInfo.AgentID = inst.ID
+					nodeInfo.ClusterID = cfg.ID
+					err = orm.Save(nil, nodeInfo)
+					if err != nil {
+						log.Error(err)
+						continue
+					}
+					setting := pickAgentSettings(settings, node)
+					if setting == nil {
+						tsetting := model.TaskSetting{
+							NodeStats: &model.NodeStatsTask{
+								Enabled: true,
+							},
+							Logs: &model.LogsTask{
+								Enabled:  true,
+								LogsPath: nodeInfo.Path.Logs,
+							},
+						}
+						if taskSetting.IndexStats != nil {
+							tsetting.IndexStats = taskSetting.IndexStats
+							taskSetting.IndexStats = nil
+						}
+						if taskSetting.ClusterHealth != nil {
+							tsetting.ClusterHealth = taskSetting.ClusterHealth
+							taskSetting.ClusterHealth = nil
+						}
+						if taskSetting.ClusterStats != nil {
+							tsetting.ClusterStats = taskSetting.ClusterStats
+							taskSetting.ClusterStats = nil
+						}
+						setting = &agent.Setting{
+							Metadata: agent.SettingsMetadata{
+								Category: "agent",
+								Name:     "task",
+								Labels: util.MapStr{
+									"agent_id":     agentID,
+									"cluster_uuid": nodeInfo.ClusterUuid,
+									"cluster_id":   nodeInfo.ClusterID,
+									"node_uuid":    nodeInfo.NodeUUID,
+									"endpoint":     fmt.Sprintf("%s://%s", nodeInfo.Schema, nodeInfo.PublishAddress),
+								},
+							},
+							Payload: util.MapStr{
+								"task": tsetting,
+							},
+						}
+						err = orm.Create(nil, setting)
+						if err != nil {
+							log.Error("save agent task setting error: ", err)
+							h.WriteError(w, err.Error(), http.StatusInternalServerError)
+							return
+						}
+					}
+				}
+			}
+
+		}
+	}
+	h.WriteAckOKJSON(w)
+}
+
+func getAgentByIds(agentIDs []string)(map[string]*agent.Instance, error){
+	query := util.MapStr{
+		"size": len(agentIDs),
+		"query": util.MapStr{
+			"terms": util.MapStr{
+				"id": agentIDs,
+			},
+		},
+	}
+	q := orm.Query{
+		RawQuery: util.MustToJSONBytes(query),
+	}
+	err, result := orm.Search(agent.Instance{}, &q)
+	if err != nil {
+		return nil, err
+	}
+	agents := map[string]*agent.Instance{}
+	for _, row := range result.Result {
+		inst := agent.Instance{}
+		buf := util.MustToJSONBytes(row)
+		util.MustFromJSONBytes(buf, &inst)
+		agents[inst.ID] = &inst
+	}
+	return agents, nil
+}
+
 func (h *APIHandler) deleteESNode(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	id := ps.MustGetParameter("instance_id")
 	nodeIDs := []string{}
@@ -658,7 +897,7 @@ func refreshNodesInfo(inst *agent.Instance) ([]agent.ESNodeInfo, error) {
 		return nil, err
 	}
 	for _, node := range nodesInfo {
-		oldNode := getNodeByPidOrUUID(oldNodesInfo, node.ProcessInfo.PID, node.NodeUUID)
+		oldNode := getNodeByPidOrUUID(oldNodesInfo, node.ProcessInfo.PID, node.NodeUUID, node.HttpPort)
 		node.AgentID = inst.ID
 		if oldNode != nil {
 			node.ID = oldNode.ID
@@ -705,7 +944,7 @@ func refreshNodesInfo(inst *agent.Instance) ([]agent.ESNodeInfo, error) {
 	return resultNodes, nil
 }
 
-func getNodeByPidOrUUID(nodes map[int]*agent.ESNodeInfo, pid int, uuid string) *agent.ESNodeInfo {
+func getNodeByPidOrUUID(nodes map[int]*agent.ESNodeInfo, pid int, uuid string, port string) *agent.ESNodeInfo {
 	if nodes[pid] != nil {
 		return nodes[pid]
 	}
@@ -719,7 +958,7 @@ func getNodeByPidOrUUID(nodes map[int]*agent.ESNodeInfo, pid int, uuid string) *
 
 func getNodesInfoFromES(agentID string) (map[int]*agent.ESNodeInfo, error) {
 	query := util.MapStr{
-		"size": 100,
+		"size": 1000,
 		"query": util.MapStr{
 			"term": util.MapStr{
 				"agent_id": util.MapStr{
@@ -742,6 +981,39 @@ func getNodesInfoFromES(agentID string) (map[int]*agent.ESNodeInfo, error) {
 		buf := util.MustToJSONBytes(row)
 		util.MustFromJSONBytes(buf, &node)
 		nodesInfo[node.ProcessInfo.PID] = &node
+	}
+	return nodesInfo, nil
+}
+
+func getUnAssociateNodes() (map[string][]agent.ESNodeInfo, error){
+	query := util.MapStr{
+		"size": 3000,
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must_not": []util.MapStr{
+					{
+						"exists": util.MapStr{
+							"field": "cluster_id",
+						},
+					},
+				},
+			},
+		},
+	}
+	q := orm.Query{
+		RawQuery: util.MustToJSONBytes(query),
+	}
+
+	err, result := orm.Search(agent.ESNodeInfo{}, &q)
+	if err != nil {
+		return nil, err
+	}
+	nodesInfo := map[string][]agent.ESNodeInfo{}
+	for _, row := range result.Result {
+		node := agent.ESNodeInfo{}
+		buf := util.MustToJSONBytes(row)
+		util.MustFromJSONBytes(buf, &node)
+		nodesInfo[node.AgentID] = append(nodesInfo[node.AgentID], node)
 	}
 	return nodesInfo, nil
 }
@@ -784,49 +1056,7 @@ func getAgentTaskSetting(agentID string, node agent.ESNodeInfo) (*agent.Setting,
 
 // getSettingsByClusterID query agent task settings with cluster id
 func getSettingsByClusterID(clusterID string) (*model.TaskSetting, error) {
-	queryDsl := util.MapStr{
-		"size": 200,
-		"query": util.MapStr{
-			"bool": util.MapStr{
-				"must": []util.MapStr{
-					{
-						"term": util.MapStr{
-							"metadata.labels.cluster_id": util.MapStr{
-								"value": clusterID,
-							},
-						},
-					},
-				},
-				"should": []util.MapStr{
-					{
-						"term": util.MapStr{
-							"payload.task.cluster_health": util.MapStr{
-								"value": true,
-							},
-						},
-					},
-					{
-						"term": util.MapStr{
-							"payload.task.cluster_stats": util.MapStr{
-								"value": true,
-							},
-						},
-					},
-					{
-						"term": util.MapStr{
-							"payload.task.index_stats": util.MapStr{
-								"value": true,
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-	q := orm.Query{
-		RawQuery: util.MustToJSONBytes(queryDsl),
-	}
-	err, result := orm.Search(agent.Setting{}, &q)
+	err, result := querySettingsByClusterID(clusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -841,7 +1071,7 @@ func getSettingsByClusterID(clusterID string) (*model.TaskSetting, error) {
 		indexStats    = true
 		clusterHealth = true
 	)
-	keys := []string{"payload.task.cluster_stats", "payload.task.cluster_health", "payload.task.index_stats"}
+	keys := []string{"payload.task.cluster_stats.enabled", "payload.task.cluster_health.enabled", "payload.task.index_stats.enabled"}
 	for _, row := range result.Result {
 		if v, ok := row.(map[string]interface{}); ok {
 			vm := util.MapStr(v)
@@ -849,11 +1079,11 @@ func getSettingsByClusterID(clusterID string) (*model.TaskSetting, error) {
 				tv, _ := vm.GetValue(key)
 				if tv == true {
 					switch key {
-					case "payload.task.cluster_stats":
+					case "payload.task.cluster_stats.enabled":
 						clusterStats = false
-					case "payload.task.index_stats":
+					case "payload.task.index_stats.enabled":
 						indexStats = false
-					case "payload.task.cluster_health":
+					case "payload.task.cluster_health.enabled":
 						clusterHealth = false
 					}
 				}
@@ -876,4 +1106,51 @@ func getSettingsByClusterID(clusterID string) (*model.TaskSetting, error) {
 		}
 	}
 	return setting, nil
+}
+
+func querySettingsByClusterID(clusterID string)(error, orm.Result){
+	queryDsl := util.MapStr{
+		"size": 500,
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": []util.MapStr{
+					{
+						"term": util.MapStr{
+							"metadata.labels.cluster_id": util.MapStr{
+								"value": clusterID,
+							},
+						},
+					},
+				},
+				"minimum_should_match": 1,
+				"should": []util.MapStr{
+					{
+						"term": util.MapStr{
+							"payload.task.cluster_health.enabled": util.MapStr{
+								"value": true,
+							},
+						},
+					},
+					{
+						"term": util.MapStr{
+							"payload.task.cluster_stats.enabled": util.MapStr{
+								"value": true,
+							},
+						},
+					},
+					{
+						"term": util.MapStr{
+							"payload.task.index_stats.enabled": util.MapStr{
+								"value": true,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	q := orm.Query{
+		RawQuery: util.MustToJSONBytes(queryDsl),
+	}
+	return orm.Search(agent.Setting{}, &q)
 }

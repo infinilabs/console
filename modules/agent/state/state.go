@@ -109,7 +109,9 @@ func (sm *StateManager) checkAgentStatus() {
 					return
 				}
 				// status change to online
+				sm.agentMutex.Lock()
 				sm.agentIds[agentID] = model.StatusOnline
+				sm.agentMutex.Unlock()
 				log.Infof("status of agent [%s] changed to online", agentID)
 				return
 			}else{
@@ -119,7 +121,9 @@ func (sm *StateManager) checkAgentStatus() {
 				}
 			}
 			// status change to offline
+			sm.agentMutex.Lock()
 			sm.agentIds[agentID] = model.StatusOffline
+			sm.agentMutex.Unlock()
 			ag, err := sm.GetAgent(agentID)
 			if err != nil {
 				if err != elastic.ErrNotFound {
@@ -190,14 +194,18 @@ func (sm *StateManager) syncSettings(agentID string) {
 				"endpoint": cfg.Endpoint,
 			}
 			if cfg.BasicAuth != nil && cfg.BasicAuth.Password != ""{
-				err = agClient.SetKeystoreValue(context.Background(), ag.GetEndpoint(), fmt.Sprintf("%s_password", cfg.ID), cfg.BasicAuth.Password)
+				cid := cfg.ID
+				if cfg.ClusterUUID != "" {
+					cid = cfg.ClusterUUID
+				}
+				err = agClient.SetKeystoreValue(context.Background(), ag.GetEndpoint(), fmt.Sprintf("%s_password", cid), cfg.BasicAuth.Password)
 				if err != nil {
 					log.Errorf("set keystore value error: %v", err)
 					continue
 				}
 				clusterCfg["basic_auth"] = util.MapStr{
 					"username": cfg.BasicAuth.Username,
-					"password": fmt.Sprintf("$[[keystore.%s_password]]", cfg.ID),
+					"password": fmt.Sprintf("$[[keystore.%s_password]]", cid),
 				}
 			}
 			clusterCfgs = append(clusterCfgs, clusterCfg)

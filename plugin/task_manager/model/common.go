@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"infini.sh/framework/core/task"
 	"time"
 
 	"infini.sh/framework/core/util"
@@ -81,4 +82,10 @@ func (incremental *IndexIncremental) BuildFilter(current int64, step time.Durati
 			incremental.FieldName: rv,
 		},
 	}, nil
+}
+
+type QueryTask struct {
+	Type string
+	Status []string
+	TaskHandler func(taskItem *task.Task) error
 }

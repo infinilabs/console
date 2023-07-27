@@ -76,11 +76,17 @@ func (h *APIHandler) getDataMigrationTaskInfo(w http.ResponseWriter, req *http.R
 	for i, index := range taskConfig.Indices {
 		indexName := index.Source.GetUniqueIndexName()
 		count := indexState[indexName].IndexDocs
-		percent := float64(count) / float64(index.Source.Docs) * 100
-		if percent > 100 {
+		sourceDocs := indexState[indexName].SourceDocs
+		var percent float64
+		if sourceDocs <= 0 {
 			percent = 100
+		}else{
+			percent = float64(count) / float64(sourceDocs) * 100
+			if percent > 100 {
+				percent = 100
+			}
 		}
-		taskConfig.Indices[i].Source.Docs = indexState[indexName].SourceDocs
+		taskConfig.Indices[i].Source.Docs = sourceDocs
 		taskConfig.Indices[i].Target.Docs = count
 		taskConfig.Indices[i].Percent = util.ToFixed(percent, 2)
 		taskConfig.Indices[i].ErrorPartitions = indexState[indexName].ErrorPartitions

@@ -17,6 +17,7 @@ type Channel struct {
 	SearchText string `json:"-" elastic_mapping:"search_text:{type:text,index_prefixes:{},index_phrases:true, analyzer:suggest_text_search }"`
 	SubType string `json:"sub_type" elastic_mapping:"sub_type:{type:keyword,copy_to:search_text}"`
 	Email *Email `json:"email,omitempty" elastic_mapping:"email:{type:object}"`
+	Enabled bool `json:"enabled" elastic_mapping:"enabled:{type:boolean}"`
 }
 
 

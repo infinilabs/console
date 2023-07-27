@@ -959,6 +959,9 @@ func performChannels(channels []alerting.Channel, ctx map[string]interface{}) ([
 	var errCount int
 	var actionResults []alerting.ActionExecutionResult
 	for _, channel := range channels {
+		if !channel.Enabled {
+			continue
+		}
 		resBytes, err, messageBytes := common.PerformChannel(&channel, ctx)
 		var errStr string
 		if err != nil {

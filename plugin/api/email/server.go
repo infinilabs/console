@@ -5,6 +5,7 @@
 package email
 
 import (
+	"bytes"
 	"crypto/tls"
 	"fmt"
 	log "github.com/cihub/seelog"
@@ -15,6 +16,7 @@ import (
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"net/http"
+	"src/github.com/buger/jsonparser"
 	"src/github.com/gopkg.in/gomail.v2"
 	"strconv"
 	"time"
@@ -137,6 +139,9 @@ func (h *EmailAPI) updateEmailServer(w http.ResponseWriter, req *http.Request, p
 			return
 		}
 	}
+	if obj.Auth.Password != "" && newObj.Auth.Password == "" && obj.Auth.Username == newObj.Auth.Username {
+		newObj.Auth.Password = obj.Auth.Password
+	}
 
 	//protect
 	newObj.ID = id
@@ -244,6 +249,26 @@ func (h *EmailAPI) searchEmailServer(w http.ResponseWriter, req *http.Request, p
 	if err != nil {
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	//remove password field
+	hitsBuf := bytes.Buffer{}
+	hitsBuf.Write([]byte("["))
+	jsonparser.ArrayEach(res.Raw, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+		value = jsonparser.Delete(value, "_source", "auth", "password")
+		hitsBuf.Write(value)
+		hitsBuf.Write([]byte(","))
+	}, "hits", "hits")
+	buf := hitsBuf.Bytes()
+	if buf[len(buf)-1] == ',' {
+		buf[len(buf)-1] = ']'
+	}else{
+		hitsBuf.Write([]byte("]"))
+	}
+	res.Raw, err = jsonparser.Set(res.Raw, hitsBuf.Bytes(), "hits", "hits")
+	if err != nil {
+		log.Error(err.Error())
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 	h.Write(w, res.Raw)

@@ -138,6 +138,12 @@ func (alertAPI *AlertAPI) getRule(w http.ResponseWriter, req *http.Request, ps h
 	// adapter version smaller than 1.6.0
 	if obj.Channels != nil && obj.NotificationConfig == nil {
 		obj.NotificationConfig = obj.Channels
+		for i := range obj.NotificationConfig.Normal {
+			obj.NotificationConfig.Normal[i].Enabled = true
+		}
+		for i := range obj.NotificationConfig.Escalation {
+			obj.NotificationConfig.Escalation[i].Enabled = true
+		}
 	}
 	if obj.NotificationConfig != nil && obj.NotificationConfig.Message == "" && obj.Metrics.Message != "" {
 		obj.NotificationConfig.Message = obj.Metrics.Message

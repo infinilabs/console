@@ -15,15 +15,14 @@ import (
 )
 
 func PerformChannel(channel *alerting.Channel, ctx map[string]interface{}) ([]byte, error, []byte) {
+	if channel == nil {
+		return nil, fmt.Errorf("empty channel"), nil
+	}
 	var (
 		act action.Action
 		message []byte
 		err error
 	)
-	channel, err = RetrieveChannel(channel)
-	if err != nil {
-		return nil, err, nil
-	}
 	switch channel.Type {
 
 	case alerting.ChannelWebhook:
@@ -77,11 +76,13 @@ func RetrieveChannel(ch *alerting.Channel) (*alerting.Channel, error) {
 	if ch == nil {
 		return nil, fmt.Errorf("empty channel")
 	}
+	enabled := ch.Enabled
 	if ch.ID != "" {
 		_, err := orm.Get(ch)
 		if err != nil {
 			return nil, err
 		}
+		ch.Enabled = enabled
 	}
 	return ch, nil
 }

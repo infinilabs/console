@@ -963,6 +963,11 @@ func performChannels(channels []alerting.Channel, ctx map[string]interface{}) ([
 		if !channel.Enabled {
 			continue
 		}
+		_, err := common.RetrieveChannel(&channel)
+		if err != nil {
+			log.Error(err)
+			continue
+		}
 		resBytes, err, messageBytes := common.PerformChannel(&channel, ctx)
 		var errStr string
 		if err != nil {

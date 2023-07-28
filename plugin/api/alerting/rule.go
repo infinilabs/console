@@ -135,6 +135,14 @@ func (alertAPI *AlertAPI) getRule(w http.ResponseWriter, req *http.Request, ps h
 		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	// adapter version smaller than 1.6.0
+	if obj.Channels != nil && obj.NotificationConfig == nil {
+		obj.NotificationConfig = obj.Channels
+	}
+	if obj.NotificationConfig != nil && obj.NotificationConfig.Message == "" && obj.Metrics.Message != "" {
+		obj.NotificationConfig.Message = obj.Metrics.Message
+		obj.NotificationConfig.Title = obj.Metrics.Title
+	}
 
 	alertAPI.WriteJSON(w, util.MapStr{
 		"found":   true,

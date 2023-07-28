@@ -293,6 +293,18 @@ func (h *EmailAPI) testEmailServer(w http.ResponseWriter, req *http.Request, ps 
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	if reqBody.Auth.Password == "" && reqBody.ID != "" {
+		obj := model.EmailServer{}
+		obj.ID = reqBody.ID
+		_, err := orm.Get(&obj)
+		if  err != nil {
+			h.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if reqBody.Auth.Username == obj.Auth.Username {
+			reqBody.Auth.Password = obj.Auth.Password
+		}
+	}
 	message := gomail.NewMessage()
 	message.SetHeader("From", reqBody.Auth.Username)
 	message.SetHeader("To", reqBody.SendTo...)

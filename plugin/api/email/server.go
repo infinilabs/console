@@ -13,6 +13,7 @@ import (
 	"infini.sh/console/model/alerting"
 	"infini.sh/console/plugin/api/email/common"
 	httprouter "infini.sh/framework/core/api/router"
+	"infini.sh/framework/core/credential"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"net/http"
@@ -66,6 +67,16 @@ func (h *EmailAPI) createEmailServer(w http.ResponseWriter, req *http.Request, p
 		h.WriteError(w, fmt.Sprintf("email server [%s:%d] already exists", obj.Host, obj.Port), http.StatusInternalServerError)
 		return
 	}
+	if obj.CredentialID == "" && obj.Auth != nil && obj.Auth.Username != ""{
+		credentialID, err := saveBasicAuthToCredential(obj)
+		if err != nil {
+			log.Error(err)
+			h.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		obj.CredentialID = credentialID
+	}
+	obj.Auth = nil
 
 	err = orm.Create(&orm.Context{
 		Refresh: "wait_for",
@@ -84,6 +95,33 @@ func (h *EmailAPI) createEmailServer(w http.ResponseWriter, req *http.Request, p
 
 	h.WriteCreatedOKJSON(w, obj.ID)
 
+}
+
+func saveBasicAuthToCredential(srv *model.EmailServer)(string, error){
+	if srv == nil {
+		return "", fmt.Errorf("param email config can not be empty")
+	}
+	cred := credential.Credential{
+		Name: srv.Name,
+		Type: credential.BasicAuth,
+		Tags: []string{"Email"},
+		Payload: map[string]interface{}{
+			"basic_auth": map[string]interface{}{
+				"username": srv.Auth.Username,
+				"password": srv.Auth.Password,
+			},
+		},
+	}
+	cred.ID = util.GetUUID()
+	err := cred.Encode()
+	if err != nil {
+		return "", err
+	}
+	err = orm.Create(nil, &cred)
+	if err != nil {
+		return "", err
+	}
+	return cred.ID, nil
 }
 
 func (h *EmailAPI) getEmailServer(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -139,8 +177,15 @@ func (h *EmailAPI) updateEmailServer(w http.ResponseWriter, req *http.Request, p
 			return
 		}
 	}
-	if obj.Auth.Password != "" && newObj.Auth.Password == "" && obj.Auth.Username == newObj.Auth.Username {
-		newObj.Auth.Password = obj.Auth.Password
+	if newObj.Auth != nil && newObj.CredentialID == "" {
+		credentialID, err := saveBasicAuthToCredential(&newObj)
+		if err != nil {
+			log.Error(err)
+			h.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		newObj.CredentialID = credentialID
+		newObj.Auth = nil
 	}
 
 	//protect

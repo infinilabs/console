@@ -338,13 +338,17 @@ func (h *EmailAPI) testEmailServer(w http.ResponseWriter, req *http.Request, ps 
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if reqBody.Auth.Password == "" && reqBody.CredentialID != "" {
+	if reqBody.CredentialID != "" {
 		auth, err := common.GetBasicAuth(&reqBody.EmailServer)
 		if  err != nil {
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		reqBody.Auth = &auth
+	}
+	if reqBody.Auth == nil {
+		h.WriteError(w, "auth info required", http.StatusInternalServerError)
+		return
 	}
 	message := gomail.NewMessage()
 	message.SetHeader("From", reqBody.Auth.Username)

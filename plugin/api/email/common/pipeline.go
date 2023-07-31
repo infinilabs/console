@@ -36,6 +36,11 @@ func RefreshEmailServer() error {
 		if err != nil {
 			return err
 		}
+		auth, err := GetBasicAuth(&emailServer)
+		if err != nil {
+			return err
+		}
+		emailServer.Auth = &auth
 		servers = append(servers, emailServer)
 	}
 	pipeCfgStr := GeneratePipelineConfig(servers)

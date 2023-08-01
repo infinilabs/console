@@ -621,7 +621,6 @@ PUT $[[INDEX_PREFIX]]activities-00001
   }
 }
 
-
 #alerting
 POST $[[INDEX_PREFIX]]alert-rule/doc/builtin-calakp97h710dpnp1fa2
 {
@@ -688,9 +687,7 @@ POST $[[INDEX_PREFIX]]alert-rule/doc/builtin-calakp97h710dpnp1fa2
             }
         ],
         "format_type": "ratio",
-        "expression": "avg(payload.elasticsearch.node_stats.process.cpu.percent)",
-         "title": "CPU Usage of Node[s] ({{.first_group_value}} ..., {{len .results}} nodes in total) >= {{.first_threshold}}%",
-         "message": "Timestamp:{{.timestamp | datetime}}\nRuleID:{{.rule_id}}\nEventID:{{.event_id}}\n{{range .results}}\nClusterID:{{index .group_values 0}};\nClusterName:{{lookup \"category=metadata, object=cluster, property=name, default=N/A\" (index .group_values 0) }}\nNodeID:{{index .group_values 1}}; \nCPU:{{.result_value | to_fixed 2}}%;\n{{end}}"
+        "expression": "avg(payload.elasticsearch.node_stats.process.cpu.percent)"
     },
     "conditions": {
         "operator": "any",
@@ -721,14 +718,17 @@ POST $[[INDEX_PREFIX]]alert-rule/doc/builtin-calakp97h710dpnp1fa2
             }
         ]
     },
-    "channels": {
+    "notification_config": {
         "enabled": false,
+         "title": "CPU Usage of Node[s] ({{.first_group_value}} ..., {{len .results}} nodes in total) >= {{.first_threshold}}%",
+         "message": "Timestamp:{{.timestamp | datetime}}\nRuleID:{{.rule_id}}\nEventID:{{.event_id}}\n{{range .results}}\nClusterID:{{index .group_values 0}};\nClusterName:{{lookup \"category=metadata, object=cluster, property=name, default=N/A\" (index .group_values 0) }}\nNodeID:{{index .group_values 1}}; \nCPU:{{.result_value | to_fixed 2}}%;\n{{end}}",
         "normal": [
             {
                 "created": "2022-06-16T04:11:10.242061032Z",
                 "updated": "2022-06-16T04:11:10.242061032Z",
                 "name": "Slack",
                 "type": "webhook",
+                 "enabled": true,
                 "webhook": {
                     "header_params": {
                         "Content-Type": "application/json"
@@ -810,9 +810,7 @@ POST $[[INDEX_PREFIX]]alert-rule/doc/builtin-cal8n7p7h710dpnoaps0
             }
         ],
         "format_type": "num",
-        "expression": "count(payload.elasticsearch.cluster_health.status)",
-        "title": "Health of Cluster[s] ({{.first_group_value}} ..., {{len .results}} clusters in total) Changed to Red",
-        "message": "Severity:{{.priority}}\nTimestamp:{{.timestamp | datetime}}\nRuleID:{{.rule_id}}\nEventID:{{.event_id}}\n{{range .results}}\nClusterID:{{index .group_values 0}}, Name:{{lookup \"category=metadata, object=cluster, property=name, default=N/A\" (index .group_values 0) }} is RED now;\n{{end}}"
+        "expression": "count(payload.elasticsearch.cluster_health.status)"
     },
     "conditions": {
         "operator": "any",
@@ -827,14 +825,17 @@ POST $[[INDEX_PREFIX]]alert-rule/doc/builtin-cal8n7p7h710dpnoaps0
             }
         ]
     },
-    "channels": {
+    "notification_config": {
         "enabled": false,
+        "title": "Health of Cluster[s] ({{.first_group_value}} ..., {{len .results}} clusters in total) Changed to Red",
+        "message": "Severity:{{.priority}}\nTimestamp:{{.timestamp | datetime}}\nRuleID:{{.rule_id}}\nEventID:{{.event_id}}\n{{range .results}}\nClusterID:{{index .group_values 0}}, Name:{{lookup \"category=metadata, object=cluster, property=name, default=N/A\" (index .group_values 0) }} is RED now;\n{{end}}",
         "normal": [
             {
                 "created": "2022-06-16T01:47:11.326727124Z",
                 "updated": "2022-06-16T01:47:11.326727124Z",
                 "name": "Slack webhook",
                 "type": "webhook",
+                "enabled": true,
                 "webhook": {
                     "header_params": {
                         "Content-Type": "application/json"
@@ -849,6 +850,7 @@ POST $[[INDEX_PREFIX]]alert-rule/doc/builtin-cal8n7p7h710dpnoaps0
                 "updated": "2022-06-16T01:47:11.326727124Z",
                 "name": "DingTalk",
                 "type": "webhook",
+                "enabled": true,
                 "webhook": {
                     "header_params": {
                         "Content-type": "application/json"
@@ -942,9 +944,7 @@ POST $[[INDEX_PREFIX]]alert-rule/doc/builtin-cal8n7p7h710dpnogps1
             }
         ],
         "format_type": "ratio",
-        "expression": "((max(payload.elasticsearch.node_stats.fs.data.total_in_bytes)-max(payload.elasticsearch.node_stats.fs.data.free_in_bytes))/max(payload.elasticsearch.node_stats.fs.data.total_in_bytes))*100",
-        "title": "Disk Utilization is Too High",
-        "message": "Severity:{{.priority}}\nTimestamp:{{.timestamp | datetime}}\nRuleID:{{.rule_id}}\nEventID:{{.event_id}}\n{{range .results}}\nClusterID：{{index .group_values 0}} ;\nClusterName:{{lookup \"category=metadata, object=cluster, property=name, default=N/A\" (index .group_values 0) }}\nNodeID：{{index .group_values 1}} ;\nDisk Usage:{{.result_value | to_fixed 2}}%；Free  Storage:{{.relation_values.b | format_bytes 2}}；\n{{end}}"
+        "expression": "((max(payload.elasticsearch.node_stats.fs.data.total_in_bytes)-max(payload.elasticsearch.node_stats.fs.data.free_in_bytes))/max(payload.elasticsearch.node_stats.fs.data.total_in_bytes))*100"
     },
     "conditions": {
         "operator": "any",
@@ -975,14 +975,17 @@ POST $[[INDEX_PREFIX]]alert-rule/doc/builtin-cal8n7p7h710dpnogps1
             }
         ]
     },
-    "channels": {
+    "notification_config": {
         "enabled": false,
+        "title": "Disk Utilization is Too High",
+        "message": "Severity:{{.priority}}\nTimestamp:{{.timestamp | datetime}}\nRuleID:{{.rule_id}}\nEventID:{{.event_id}}\n{{range .results}}\nClusterID：{{index .group_values 0}} ;\nClusterName:{{lookup \"category=metadata, object=cluster, property=name, default=N/A\" (index .group_values 0) }}\nNodeID：{{index .group_values 1}} ;\nDisk Usage:{{.result_value | to_fixed 2}}%；Free  Storage:{{.relation_values.b | format_bytes 2}}；\n{{end}}",
         "normal": [
             {
                 "created": "0001-01-01T00:00:00Z",
                 "updated": "0001-01-01T00:00:00Z",
                 "name": "Slack",
                 "type": "webhook",
+                "enabled": true,
                 "webhook": {
                     "header_params": {
                         "Content-Type": "application/json"
@@ -1055,9 +1058,7 @@ POST $[[INDEX_PREFIX]]alert-rule/doc/builtin-cbp20n2anisjmu4gehc5
             }
         ],
         "format_type": "num",
-        "expression": "count(metadata.labels.status)",
-        "title": "Elasticsearch node left cluster",
-        "message": "Priority:{{.priority}}\nTimestamp:{{.timestamp | datetime_in_zone \"Asia/Shanghai\"}}\nRuleID:{{.rule_id}}\nEventID:{{.event_id}}\n{{range .results}}\nClusterID:{{index .group_values 0}}; \nClusterName: {{lookup \"category=metadata, object=cluster, property=name, default=N/A\" (index .group_values 0) }}\nNodeID:{{index .group_values 1}}; \n{{end}}"
+        "expression": "count(metadata.labels.status)"
     },
     "conditions": {
         "operator": "any",
@@ -1072,14 +1073,17 @@ POST $[[INDEX_PREFIX]]alert-rule/doc/builtin-cbp20n2anisjmu4gehc5
             }
         ]
     },
-    "channels": {
+    "notification_config": {
         "enabled": false,
+        "title": "Elasticsearch node left cluster",
+        "message": "Priority:{{.priority}}\nTimestamp:{{.timestamp | datetime_in_zone \"Asia/Shanghai\"}}\nRuleID:{{.rule_id}}\nEventID:{{.event_id}}\n{{range .results}}\nClusterID:{{index .group_values 0}}; \nClusterName: {{lookup \"category=metadata, object=cluster, property=name, default=N/A\" (index .group_values 0) }}\nNodeID:{{index .group_values 1}}; \n{{end}}",
         "normal": [
               {
                 "created": "2022-08-09T08:52:44.63345561Z",
                 "updated": "2022-08-09T08:52:44.63345561Z",
                 "name": "Wechat",
                 "type": "webhook",
+                "enabled": true,
                 "webhook": {
                   "header_params": {
                     "Content-Type": "application/json"
@@ -1153,9 +1157,7 @@ POST $[[INDEX_PREFIX]]alert-rule/doc/builtin-calavvp7h710dpnp32r3
             }
         ],
         "format_type": "num",
-        "expression": "count(metadata.index_name)",
-        "title": "Health of Indices ({{.first_group_value}} ..., {{len .results}} indices in total) Changed to Red",
-        "message": "Timestamp:{{.timestamp | datetime}}\nRuleID:{{.rule_id}}\nEventID:{{.event_id}}\n{{range .results}}\nClusterID:{{index .group_values 0}}; \nClusterName:{{lookup \"category=metadata, object=cluster, property=name, default=N/A\" (index .group_values 0) }}\nIndex name:{{index .group_values 1}}; {{end}}"
+        "expression": "count(metadata.index_name)"
     },
     "conditions": {
         "operator": "any",
@@ -1170,14 +1172,17 @@ POST $[[INDEX_PREFIX]]alert-rule/doc/builtin-calavvp7h710dpnp32r3
             }
         ]
     },
-    "channels": {
+    "notification_config": {
         "enabled": false,
+         "title": "Health of Indices ({{.first_group_value}} ..., {{len .results}} indices in total) Changed to Red",
+         "message": "Timestamp:{{.timestamp | datetime}}\nRuleID:{{.rule_id}}\nEventID:{{.event_id}}\n{{range .results}}\nClusterID:{{index .group_values 0}}; \nClusterName:{{lookup \"category=metadata, object=cluster, property=name, default=N/A\" (index .group_values 0) }}\nIndex name:{{index .group_values 1}}; {{end}}",
         "normal": [
             {
                 "created": "2022-06-16T04:11:10.242061032Z",
                 "updated": "2022-06-16T04:11:10.242061032Z",
                 "name": "Slack",
                 "type": "webhook",
+                "enabled": true,
                 "webhook": {
                     "header_params": {
                         "Content-Type": "application/json"
@@ -1266,9 +1271,7 @@ POST $[[INDEX_PREFIX]]alert-rule/doc/builtin-calaqnh7h710dpnp2bm8
             }
         ],
         "format_type": "ratio",
-        "expression": "p90(payload.elasticsearch.node_stats.jvm.mem.heap_used_percent)",
-        "title": "JVM Usage of Node[s] ({{.first_group_value}} ..., {{len .results}} nodes in total) >= {{.first_threshold}}%",
-        "message": "Timestamp:{{.timestamp | datetime}}\nRuleID:{{.rule_id}}\nEventID:{{.event_id}}\n{{range .results}}\nClusterID:{{index .group_values 0}}; \nClusterName:{{lookup \"category=metadata, object=cluster, property=name, default=N/A\" (index .group_values 0) }}\nNode name:{{index .group_values 1}};  memory used percent：{{.result_value | to_fixed 2}}%;{{end}}"
+        "expression": "p90(payload.elasticsearch.node_stats.jvm.mem.heap_used_percent)"
     },
     "conditions": {
         "operator": "any",
@@ -1299,14 +1302,17 @@ POST $[[INDEX_PREFIX]]alert-rule/doc/builtin-calaqnh7h710dpnp2bm8
             }
         ]
     },
-    "channels": {
+    "notification_config": {
         "enabled": false,
+        "title": "JVM Usage of Node[s] ({{.first_group_value}} ..., {{len .results}} nodes in total) >= {{.first_threshold}}%",
+        "message": "Timestamp:{{.timestamp | datetime}}\nRuleID:{{.rule_id}}\nEventID:{{.event_id}}\n{{range .results}}\nClusterID:{{index .group_values 0}}; \nClusterName:{{lookup \"category=metadata, object=cluster, property=name, default=N/A\" (index .group_values 0) }}\nNode name:{{index .group_values 1}};  memory used percent：{{.result_value | to_fixed 2}}%;{{end}}",
         "normal": [
             {
                 "created": "2022-06-16T04:11:10.242061032Z",
                 "updated": "2022-06-16T04:11:10.242061032Z",
                 "name": "Slack",
                 "type": "webhook",
+                "enabled": true,
                 "webhook": {
                     "header_params": {
                         "Content-Type": "application/json"
@@ -1408,9 +1414,7 @@ POST $[[INDEX_PREFIX]]alert-rule/doc/builtin-cbp2e4ianisjmu4giqs7
             }
         ],
         "format_type": "num",
-        "expression": "rate(payload.elasticsearch.index_stats.total.search.query_time_in_millis)/rate(payload.elasticsearch.index_stats.primaries.search.query_total)",
-        "title": "Search latency is great than 500ms",
-        "message": "Priority:{{.priority}}\nTimestamp:{{.timestamp | datetime_in_zone \"Asia/Shanghai\"}}\nRuleID:{{.rule_id}}\nEventID:{{.event_id}}\n{{range .results}}\nClusterID:{{index .group_values 0}}; \nClusterName: {{lookup \"category=metadata, object=cluster, property=name, default=N/A\" (index .group_values 0) }}\nIndex Name:{{index .group_values 1}}; \nCurrent Value:{{.result_value | to_fixed 2}}ms;\n{{end}}"
+        "expression": "rate(payload.elasticsearch.index_stats.total.search.query_time_in_millis)/rate(payload.elasticsearch.index_stats.primaries.search.query_total)"
     },
     "conditions": {
         "operator": "any",
@@ -1425,14 +1429,17 @@ POST $[[INDEX_PREFIX]]alert-rule/doc/builtin-cbp2e4ianisjmu4giqs7
             }
         ]
     },
-    "channels": {
+    "notification_config": {
         "enabled": false,
+        "title": "Search latency is great than 500ms",
+        "message": "Priority:{{.priority}}\nTimestamp:{{.timestamp | datetime_in_zone \"Asia/Shanghai\"}}\nRuleID:{{.rule_id}}\nEventID:{{.event_id}}\n{{range .results}}\nClusterID:{{index .group_values 0}}; \nClusterName: {{lookup \"category=metadata, object=cluster, property=name, default=N/A\" (index .group_values 0) }}\nIndex Name:{{index .group_values 1}}; \nCurrent Value:{{.result_value | to_fixed 2}}ms;\n{{end}}",
         "normal": [
             {
                 "created": "2022-06-16T04:11:10.242061032Z",
                 "updated": "2022-06-16T04:11:10.242061032Z",
                 "name": "Slack",
                 "type": "webhook",
+                "enabled": true,
                 "webhook": {
                     "header_params": {
                         "Content-Type": "application/json"
@@ -1507,9 +1514,7 @@ POST $[[INDEX_PREFIX]]alert-rule/doc/builtin-calgapp7h710dpnpbeb6
             }
         ],
         "format_type": "bytes",
-        "expression": "max(payload.elasticsearch.index_stats.shard_info.store_in_bytes)",
-        "title": "Shard Storage >55GB in ({{.first_group_value}} ..., {{len .results}} indices in total)",
-        "message": "Timestamp:{{.timestamp | datetime}}\nRuleID:{{.rule_id}}\nEventID:{{.event_id}}\n{{range .results}}\nClusterID:{{index .group_values 0}};\nClusterName:{{lookup \"category=metadata, object=cluster, property=name, default=N/A\" (index .group_values 0) }};\nIndex: [{{index .group_values 1}}]({{$.env.INFINI_CONSOLE_ENDPOINT}}/#/cluster/overview/{{ index .group_values 0}}/indices/{{ index .group_values 1}}?_g={%22cluster_name%22:%22{{ index .group_values 0}}%22});\nMax Shard Storage：{{.result_value | format_bytes 2}};\n{{end}}"
+        "expression": "max(payload.elasticsearch.index_stats.shard_info.store_in_bytes)"
     },
     "conditions": {
         "operator": "any",
@@ -1524,14 +1529,17 @@ POST $[[INDEX_PREFIX]]alert-rule/doc/builtin-calgapp7h710dpnpbeb6
             }
         ]
     },
-    "channels": {
+    "notification_config": {
         "enabled": false,
+        "title": "Shard Storage >55GB in ({{.first_group_value}} ..., {{len .results}} indices in total)",
+        "message": "Timestamp:{{.timestamp | datetime}}\nRuleID:{{.rule_id}}\nEventID:{{.event_id}}\n{{range .results}}\nClusterID:{{index .group_values 0}};\nClusterName:{{lookup \"category=metadata, object=cluster, property=name, default=N/A\" (index .group_values 0) }};\nIndex: [{{index .group_values 1}}]({{$.env.INFINI_CONSOLE_ENDPOINT}}/#/cluster/overview/{{ index .group_values 0}}/indices/{{ index .group_values 1}}?_g={%22cluster_name%22:%22{{ index .group_values 0}}%22});\nMax Shard Storage：{{.result_value | format_bytes 2}};\n{{end}}",
         "normal": [
             {
                 "created": "2022-06-16T04:11:10.242061032Z",
                 "updated": "2022-06-16T04:11:10.242061032Z",
                 "name": "Slack",
                 "type": "webhook",
+                "enabled": true,
                 "webhook": {
                     "header_params": {
                         "Content-Type": "application/json"
@@ -1611,9 +1619,7 @@ POST $[[INDEX_PREFIX]]alert-rule/doc/cb34sfl6psfiqtovhpt4
             }
         ],
         "format_type": "ratio",
-        "expression": "(max(payload.elasticsearch.index_stats.primaries.docs.deleted)/(max(payload.elasticsearch.index_stats.primaries.docs.deleted)+max(payload.elasticsearch.index_stats.primaries.docs.count)))*100",
-        "title": "Too Many Deleted Documents (>30%)",
-        "message": "Priority:{{.priority}}\nTimestamp:{{.timestamp | datetime_in_zone \"Asia/Shanghai\"}}\nRuleID:{{.rule_id}}\nEventID:{{.event_id}}\n{{range .results}}\nClusterID:{{index .group_values 0}}; \nClusterName:{{lookup \"category=metadata, object=cluster, property=name, default=N/A\" (index .group_values 0) }}\nIndex:{{index .group_values 0}}; \nRatio of Deleted Documents:{{.result_value}};\n{{end}}"
+        "expression": "(max(payload.elasticsearch.index_stats.primaries.docs.deleted)/(max(payload.elasticsearch.index_stats.primaries.docs.deleted)+max(payload.elasticsearch.index_stats.primaries.docs.count)))*100"
     },
     "conditions": {
         "operator": "any",
@@ -1636,14 +1642,17 @@ POST $[[INDEX_PREFIX]]alert-rule/doc/cb34sfl6psfiqtovhpt4
             }
         ]
     },
-    "channels": {
+    "notification_config": {
         "enabled": false,
+         "title": "Too Many Deleted Documents (>30%)",
+         "message": "Priority:{{.priority}}\nTimestamp:{{.timestamp | datetime_in_zone \"Asia/Shanghai\"}}\nRuleID:{{.rule_id}}\nEventID:{{.event_id}}\n{{range .results}}\nClusterID:{{index .group_values 0}}; \nClusterName:{{lookup \"category=metadata, object=cluster, property=name, default=N/A\" (index .group_values 0) }}\nIndex:{{index .group_values 0}}; \nRatio of Deleted Documents:{{.result_value}};\n{{end}}",
         "normal": [
             {
                 "created": "2022-06-16T04:11:10.242061032Z",
                 "updated": "2022-06-16T04:11:10.242061032Z",
                 "name": "Slack",
                 "type": "webhook",
+                "enabled": true,
                 "webhook": {
                     "header_params": {
                         "Content-Type": "application/json"
@@ -1664,6 +1673,7 @@ POST $[[INDEX_PREFIX]]alert-rule/doc/cb34sfl6psfiqtovhpt4
         "interval": "1m"
     }
 }
+
 POST $[[INDEX_PREFIX]]layout/doc/cgjoqud3q95rinbbe1l0
 {
      "id": "cgjoqud3q95rinbbe1l0",

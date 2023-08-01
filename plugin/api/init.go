@@ -1,6 +1,7 @@
 package api
 
 import (
+	"infini.sh/console/plugin/api/data"
 	"infini.sh/console/plugin/api/email"
 	"infini.sh/console/plugin/api/license"
 	"path"
@@ -77,4 +78,5 @@ func Init(cfg *config.AppConfig) {
 
 	license.InitAPI()
 	email.InitAPI()
+	data.InitAPI()
 }

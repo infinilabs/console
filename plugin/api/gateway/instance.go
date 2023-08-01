@@ -14,6 +14,7 @@ import (
 	elastic2 "infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/proxy"
+	"infini.sh/framework/core/task"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/modules/elastic"
 	"net/http"
@@ -143,6 +144,53 @@ func (h *GatewayAPI) deleteInstance(w http.ResponseWriter, req *http.Request, ps
 			"_id":    id,
 			"result": "not_found",
 		}, http.StatusNotFound)
+		return
+	}
+
+	//check reference
+	query := util.MapStr{
+		"size": 1,
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": []util.MapStr{
+					{
+						"term": util.MapStr{
+							"metadata.labels.permit_nodes.id": util.MapStr{
+								"value": id,
+							},
+						},
+					},
+					{
+						"terms": util.MapStr{
+							"metadata.type": []string{"cluster_migration", "cluster_comparison"},
+						},
+					},
+				},
+				"must_not": []util.MapStr{
+					{
+						"terms": util.MapStr{
+							"status": []string{task.StatusError, task.StatusComplete},
+						},
+					},
+				},
+			},
+		},
+	}
+	q := &orm.Query{
+		RawQuery: util.MustToJSONBytes(query),
+	}
+	err, result := orm.Search(task.Task{}, q)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
+	if len(result.Result) > 0 {
+		var taskId interface{}
+		if m, ok := result.Result[0].(map[string]interface{}); ok {
+			taskId = m["id"]
+		}
+		h.WriteError(w, fmt.Sprintf("failed to delete gateway instance [%s] since it is used by task [%v]", id, taskId), http.StatusInternalServerError)
 		return
 	}
 

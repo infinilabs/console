@@ -104,6 +104,7 @@ func buildTask(config *migration_model.ClusterComparisonTaskConfig, creator *rba
 				"target_cluster_id": config.Cluster.Target.Id,
 				"source_total_docs": sourceTotalDocs,
 				"target_total_docs": targetTotalDocs,
+				"permit_nodes": config.Settings.Execution.Nodes.Permit,
 			},
 		},
 		Cancellable:  true,

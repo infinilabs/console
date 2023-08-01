@@ -101,6 +101,7 @@ func buildTask(config *migration_model.ClusterMigrationTaskConfig, creator *rbac
 				"source_cluster_id": config.Cluster.Source.Id,
 				"target_cluster_id": config.Cluster.Target.Id,
 				"source_total_docs": totalDocs,
+				"permit_nodes": config.Settings.Execution.Nodes.Permit,
 			},
 		},
 		Cancellable:  true,

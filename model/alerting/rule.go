@@ -17,9 +17,11 @@ type Rule struct {
 	Enabled bool `json:"enabled" elastic_mapping:"enabled:{type:keyword}"`
 	Resource Resource `json:"resource" elastic_mapping:"resource:{type:object}"`
 	Metrics Metric `json:"metrics" elastic_mapping:"metrics:{type:object}"`
-	Conditions       Condition   `json:"conditions" elastic_mapping:"conditions:{type:object}"`
-	Channels     RuleChannel `json:"channels" elastic_mapping:"channels:{type:object}"`
-	Schedule Schedule `json:"schedule" elastic_mapping:"schedule:{type:object}"`
+	Conditions         Condition          `json:"conditions" elastic_mapping:"conditions:{type:object}"`
+	Channels           *NotificationConfig `json:"channels,omitempty" elastic_mapping:"channels:{type:object}"`
+	NotificationConfig *NotificationConfig `json:"notification_config,omitempty" elastic_mapping:"notification_config:{type:object}"`
+	RecoveryNotificationConfig *RecoveryNotificationConfig `json:"recovery_notification_config,omitempty" elastic_mapping:"recovery_notification_config:{type:object}"`
+	Schedule           Schedule           `json:"schedule" elastic_mapping:"schedule:{type:object}"`
 	LastNotificationTime time.Time `json:"-" elastic_mapping:"last_notification_time:{type:date}"`
 	LastTermStartTime time.Time `json:"-"` //标识最近一轮告警的开始时间
 	LastEscalationTime time.Time `json:"-"` //标识最近一次告警升级发送通知的时间
@@ -54,15 +56,39 @@ func (rule *Rule) GetOrInitExpression() (string, error){
 	rule.Expression = strings.ReplaceAll(sb.String(), "result", metricExp)
 	return rule.Expression, nil
 }
+//GetNotificationConfig for adapter old version config
+func (rule *Rule) GetNotificationConfig() *NotificationConfig {
+	if rule.NotificationConfig != nil {
+		return rule.NotificationConfig
+	}
+	return rule.Channels
+}
+func (rule *Rule) GetNotificationTitleAndMessage() (string, string) {
+	if rule.NotificationConfig != nil {
+		return rule.NotificationConfig.Title, rule.NotificationConfig.Message
+	}
+	return rule.Metrics.Title, rule.Metrics.Message
+}
 
-type RuleChannel struct {
+type NotificationConfig struct {
 	Enabled bool `json:"enabled"`
+	Title string `json:"title,omitempty"` //text template
+	Message string `json:"message,omitempty"` // text template
 	Normal []Channel      `json:"normal,omitempty"`
 	Escalation []Channel  `json:"escalation,omitempty"`
 	ThrottlePeriod string `json:"throttle_period,omitempty"` //沉默周期
 	AcceptTimeRange TimeRange   `json:"accept_time_range,omitempty"`
 	EscalationThrottlePeriod string `json:"escalation_throttle_period,omitempty"`
 	EscalationEnabled bool `json:"escalation_enabled,omitempty"`
+}
+
+type RecoveryNotificationConfig struct {
+	Enabled bool `json:"enabled"` // channel enabled
+	Title string `json:"title"` //text template
+	Message string `json:"message"` // text template
+	AcceptTimeRange TimeRange   `json:"accept_time_range,omitempty"`
+	Normal []Channel      `json:"normal,omitempty"`
+	EventEnabled bool `json:"event_enabled"`
 }
 
 type MessageTemplate struct{

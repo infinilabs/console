@@ -6,6 +6,7 @@ package alerting
 
 import (
 	"fmt"
+	"infini.sh/console/model/insight"
 	"infini.sh/framework/core/util"
 	"net/http"
 	"testing"
@@ -60,22 +61,25 @@ func TestCreateRule( t *testing.T)  {
 				//},
 
 				Metrics: Metric{
-					PeriodInterval: "1m",
-					Items: []MetricItem{
-						{Name: "a", Field: "payload.elasticsearch.node_stats.fs.total.free_in_bytes", Statistic: "min", Group: []string{"metadata.labels.cluster_id", "metadata.labels.node_id"}},
-						{Name: "b", Field: "payload.elasticsearch.node_stats.fs.total.total_in_bytes", Statistic: "max", Group: []string{"metadata.labels.cluster_id", "metadata.labels.node_id"}},
+					Metric: insight.Metric{
+						Groups: []insight.MetricGroupItem{{"metadata.labels.cluster_id", 10}, {"metadata.labels.node_id", 10}},
+						Items: []insight.MetricItem{
+							{Name: "a", Field: "payload.elasticsearch.node_stats.fs.total.free_in_bytes", Statistic: "min" },
+							{Name: "b", Field: "payload.elasticsearch.node_stats.fs.total.total_in_bytes", Statistic: "max"},
+						},
+						BucketSize: "1m",
+						Formula: "a/b*100",
 					},
-					Formula: "a/b*100",
 					//Expression: "min(fs.free_in_bytes)/max(fs.total_in_bytes)*100",
 				},
 				Conditions: Condition{
 					Operator: "any",
 					Items: []ConditionItem{
-						{MinimumPeriodMatch: 1, Operator: "lte", Values: []string{"76"}, Priority: "error", Message: "磁盘可用率小于10%"},
+						{MinimumPeriodMatch: 1, Operator: "lte", Values: []string{"76"}, Priority: "error"},
 					},
 				},
 
-			Channels: RuleChannel{
+			Channels: NotificationConfig{
 				Normal: []Channel{
 					{Name: "钉钉", Type: ChannelWebhook, Webhook: &CustomWebhook{
 						HeaderParams: map[string]string{

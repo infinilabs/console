@@ -70,7 +70,7 @@ func TestEngine( t *testing.T)  {
 			},
 		},
 
-		Channels: alerting.RuleChannel{
+		Channels: alerting.NotificationConfig{
 			Normal: []alerting.Channel{
 				{Name: "钉钉", Type: alerting.ChannelWebhook, Webhook: &alerting.CustomWebhook{
 					HeaderParams: map[string]string{
@@ -156,7 +156,7 @@ func TestGeneratePercentilesAggQuery(t *testing.T) {
 	//		},
 	//	},
 	//
-	//	Channels: alerting.RuleChannel{
+	//	Channels: alerting.NotificationConfig{
 	//		Normal: []alerting.Channel{
 	//			{Name: "钉钉", Type: alerting.ChannelWebhook, Webhook: &alerting.CustomWebhook{
 	//				HeaderParams: map[string]string{
@@ -216,7 +216,7 @@ func TestGeneratePercentilesAggQuery(t *testing.T) {
 			},
 		},
 
-		Channels: alerting.RuleChannel{
+		Channels: alerting.NotificationConfig{
 			Normal: []alerting.Channel{
 				{Name: "钉钉", Type: alerting.ChannelWebhook, Webhook: &alerting.CustomWebhook{
 					HeaderParams: map[string]string{

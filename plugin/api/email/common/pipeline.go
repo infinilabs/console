@@ -5,13 +5,15 @@
 package common
 
 import (
+	"fmt"
+	"gopkg.in/yaml.v2"
 	"infini.sh/console/model"
 	"infini.sh/framework/core/global"
+	"infini.sh/framework/core/keystore"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"os"
 	"path"
-	"gopkg.in/yaml.v2"
 )
 
 const emailServerConfigFile = "send_email.yml"
@@ -43,7 +45,10 @@ func RefreshEmailServer() error {
 		emailServer.Auth = &auth
 		servers = append(servers, emailServer)
 	}
-	pipeCfgStr := GeneratePipelineConfig(servers)
+	pipeCfgStr, err := GeneratePipelineConfig(servers)
+	if err != nil {
+		return err
+	}
 	cfgDir := global.Env().GetConfigDir()
 	sendEmailCfgFile := path.Join(cfgDir, emailServerConfigFile)
 	_, err = util.FilePutContent(sendEmailCfgFile, pipeCfgStr)
@@ -65,13 +70,21 @@ func CheckEmailPipelineExists() bool {
 	return util.FilesExists(sendEmailCfgFile)
 }
 
+func getEmailPasswordKey(srv model.EmailServer) string{
+	return fmt.Sprintf("%s_password", srv.ID)
+}
 
-func GeneratePipelineConfig(servers []model.EmailServer) string {
+func GeneratePipelineConfig(servers []model.EmailServer) (string, error) {
 	if len(servers) == 0 {
-		return ""
+		return "", nil
 	}
 	smtpServers := map[string]util.MapStr{}
 	for _, srv := range servers {
+		key := getEmailPasswordKey(srv)
+		err := keystore.SetValue(key, []byte(srv.Auth.Password))
+		if err != nil {
+			return "", err
+		}
 		smtpServers[srv.ID] = util.MapStr{
 			"server": util.MapStr{
 				"host": srv.Host,
@@ -80,7 +93,7 @@ func GeneratePipelineConfig(servers []model.EmailServer) string {
 			},
 			"auth": util.MapStr{
 				"username": srv.Auth.Username,
-				"password": srv.Auth.Password,
+				"password": fmt.Sprintf("$[[keystore.%s]]", key),
 			},
 		}
 	}
@@ -128,7 +141,7 @@ func GeneratePipelineConfig(servers []model.EmailServer) string {
 
 	buf, err := yaml.Marshal(pipelineCfg)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	return string(buf)
+	return string(buf), nil
 }

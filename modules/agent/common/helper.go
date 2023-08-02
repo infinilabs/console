@@ -347,7 +347,6 @@ func GetLatestOnlineAgentIDs(agentIds []string, lastSeconds int) (map[string]str
 		})
 	}
 	queryDSL := util.MapStr{
-		"_source": "agent.id",
 		"sort": []util.MapStr{
 			{
 				"timestamp": util.MapStr{
@@ -375,6 +374,8 @@ func GetLatestOnlineAgentIDs(agentIds []string, lastSeconds int) (map[string]str
 	}
 	if len(agentIds) == 0 {
 		queryDSL["size"] = 2000
+	}else{
+		queryDSL["size"] = len(agentIds)
 	}
 	q.RawQuery = util.MustToJSONBytes(queryDSL)
 	err, result := orm.Search(event.Event{}, &q)

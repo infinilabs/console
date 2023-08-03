@@ -14,6 +14,7 @@ import (
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -80,6 +81,7 @@ func (h *APIHandler) enrollHost(w http.ResponseWriter, req *http.Request, ps htt
 				Refresh: "wait_for",
 			}
 		}
+		hostInfo.OSInfo.Platform = strings.ToLower(hostInfo.OSInfo.Platform)
 		err = orm.Create(ctx, hostInfo)
 		if err != nil {
 			errors[hi.IP] = util.MapStr{

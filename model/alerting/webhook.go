@@ -20,4 +20,5 @@ type Email struct {
 	} `json:"recipients" elastic_mapping:"recipients:{type:object}"`
 	Subject string `json:"subject" elastic_mapping:"subject:{type:text}"`
 	Body string `json:"body" elastic_mapping:"body:{type:text}"`
+	ContentType string `json:"content_type" elastic_mapping:"content_type:{type:keyword}"`
 }

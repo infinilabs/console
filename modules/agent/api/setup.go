@@ -28,7 +28,7 @@ type Token struct {
 	UserID string
 }
 
-const ExpiredIn = time.Millisecond * 1000 * 60 * 20
+const ExpiredIn = time.Millisecond * 1000 * 60 * 60
 func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	claims, ok := req.Context().Value("user").(*rbac.UserClaims)
 	if !ok {

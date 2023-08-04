@@ -709,6 +709,7 @@ POST $[[INDEX_PREFIX]]alert-rule/_doc/builtin-calakp97h710dpnp1fa2
                 "updated": "2022-06-16T04:11:10.242061032Z",
                 "name": "Slack",
                 "type": "webhook",
+                "sub_type": "slack",
                  "enabled": true,
                 "webhook": {
                     "header_params": {
@@ -816,6 +817,7 @@ POST $[[INDEX_PREFIX]]alert-rule/_doc/builtin-cal8n7p7h710dpnoaps0
                 "updated": "2022-06-16T01:47:11.326727124Z",
                 "name": "Slack webhook",
                 "type": "webhook",
+                "sub_type": "slack",
                 "enabled": true,
                 "webhook": {
                     "header_params": {
@@ -831,6 +833,7 @@ POST $[[INDEX_PREFIX]]alert-rule/_doc/builtin-cal8n7p7h710dpnoaps0
                 "updated": "2022-06-16T01:47:11.326727124Z",
                 "name": "DingTalk",
                 "type": "webhook",
+                "sub_type": "dingtalk",
                 "enabled": true,
                 "webhook": {
                     "header_params": {
@@ -966,6 +969,7 @@ POST $[[INDEX_PREFIX]]alert-rule/_doc/builtin-cal8n7p7h710dpnogps1
                 "updated": "0001-01-01T00:00:00Z",
                 "name": "Slack",
                 "type": "webhook",
+                "sub_type": "slack",
                 "enabled": true,
                 "webhook": {
                     "header_params": {
@@ -1064,6 +1068,7 @@ POST $[[INDEX_PREFIX]]alert-rule/_doc/builtin-cbp20n2anisjmu4gehc5
                 "updated": "2022-08-09T08:52:44.63345561Z",
                 "name": "Wechat",
                 "type": "webhook",
+                "sub_type": "wechat",
                 "enabled": true,
                 "webhook": {
                   "header_params": {
@@ -1163,6 +1168,7 @@ POST $[[INDEX_PREFIX]]alert-rule/_doc/builtin-calavvp7h710dpnp32r3
                 "updated": "2022-06-16T04:11:10.242061032Z",
                 "name": "Slack",
                 "type": "webhook",
+                "sub_type": "slack",
                 "enabled": true,
                 "webhook": {
                     "header_params": {
@@ -1293,6 +1299,7 @@ POST $[[INDEX_PREFIX]]alert-rule/_doc/builtin-calaqnh7h710dpnp2bm8
                 "updated": "2022-06-16T04:11:10.242061032Z",
                 "name": "Slack",
                 "type": "webhook",
+                "sub_type": "slack",
                 "enabled": true,
                 "webhook": {
                     "header_params": {
@@ -1420,6 +1427,7 @@ POST $[[INDEX_PREFIX]]alert-rule/_doc/builtin-cbp2e4ianisjmu4giqs7
                 "updated": "2022-06-16T04:11:10.242061032Z",
                 "name": "Slack",
                 "type": "webhook",
+                "sub_type": "slack",
                 "enabled": true,
                 "webhook": {
                     "header_params": {
@@ -1520,6 +1528,7 @@ POST $[[INDEX_PREFIX]]alert-rule/_doc/builtin-calgapp7h710dpnpbeb6
                 "updated": "2022-06-16T04:11:10.242061032Z",
                 "name": "Slack",
                 "type": "webhook",
+                "sub_type": "slack",
                 "enabled": true,
                 "webhook": {
                     "header_params": {
@@ -1633,6 +1642,7 @@ POST $[[INDEX_PREFIX]]alert-rule/_doc/cb34sfl6psfiqtovhpt4
                 "updated": "2022-06-16T04:11:10.242061032Z",
                 "name": "Slack",
                 "type": "webhook",
+                "sub_type": "slack",
                 "enabled": true,
                 "webhook": {
                     "header_params": {
@@ -1653,6 +1663,96 @@ POST $[[INDEX_PREFIX]]alert-rule/_doc/cb34sfl6psfiqtovhpt4
     "schedule": {
         "interval": "1m"
     }
+}
+
+#The `id` value is consistent with the `_id` value
+POST $[[INDEX_PREFIX]]channel/_doc/builtin-cgnb2nt3q95nmusjl65g
+{
+  "id": "builtin-cgnb2nt3q95nmusjl65g",
+  "created": "2023-04-06T11:47:43.104108279Z",
+  "updated": "2023-08-04T10:34:29.112776+08:00",
+  "name": "Slack Notification",
+  "type": "webhook",
+  "webhook": {
+    "header_params": {
+      "Content-Type": "application/json",
+      "Content-type": "application/json"
+    },
+    "method": "POST",
+    "url": "{{$.env.SLACK_WEBHOOK_ENDPOINT}}",
+    "body": "{\n    \"blocks\": [\n        {\n            \"type\": \"section\",\n            \"text\": {\n                \"type\": \"mrkdwn\",\n                \"text\": \"【Demo】Incident <{{$.env.INFINI_CONSOLE_ENDPOINT}}/#/alerting/alert/{{.event_id}}|#{{.event_id}}> is ongoing\\n{{.title}}\"\n            }\n        }\n    ],\n    \"attachments\": [\n        {{range .results}}\n        {\n            \"color\": {{if eq .priority \"critical\"}} \"#C91010\" {{else if eq .priority \"high\"}} \"#EB4C21\" {{else if eq .priority \"medium\"}} \"#FFB449\" {{else if eq .priority \"low\"}} \"#87d068\" {{else}} \"#2db7f5\" {{end}},\n            \"blocks\": [\n                {\n                    \"type\": \"section\",\n                    \"fields\": [\n                        {\n                            \"type\": \"mrkdwn\",\n                            \"text\": \"*ClusterName:* {{index .group_values 0 | lookup \"category=metadata, object=cluster, property=name, default=N/A\"}}\"\n                        },\n                        {\n                            \"type\": \"mrkdwn\",\n                            \"text\": \"*Priority:* {{.priority}}\"\n                        },\n                        {\n                            \"type\": \"mrkdwn\",\n                            \"text\": \"*Link:* <{{$.env.INFINI_CONSOLE_ENDPOINT}}/#/cluster/monitor/elasticsearch/{{ index .group_values 0}}|View Cluster Monitoring>\"\n                        }\n                    ]\n                }\n            ]\n        },\n        {{end}}\n    ]\n}"
+  },
+  "sub_type": "slack"
+}
+POST $[[INDEX_PREFIX]]channel/_doc/builtin-cgiospt3q95q49k3u00g
+{
+  "id": "builtin-cgiospt3q95q49k3u00g",
+  "created": "2023-03-30T13:28:07.531263747Z",
+  "updated": "2023-08-04T11:13:51.608186+08:00",
+  "name": "DingTalk",
+  "type": "webhook",
+  "webhook": {
+    "header_params": {
+      "Content-Type": "application/json",
+      "Content-type": "application/json"
+    },
+    "method": "POST",
+    "url": "{{$.env.DINGTALK_WEBHOOK_ENDPOINT}}",
+    "body": "{\"msgtype\": \"text\",\"text\": {\"content\":\"------------------------------------\\n【 INFINI Platform Alerting 】\\n{{.title}}\\n------------------------------------\\n{{.message}}\\nLink:{{$.env.INFINI_CONSOLE_ENDPOINT}}/#/alerting/alert/{{.event_id}}\"}}"
+  },
+  "sub_type": "dingtalk"
+}
+POST $[[INDEX_PREFIX]]channel/_doc/builtin-ch1os6t3q95lk6lepkq0
+{
+  "id": "builtin-ch1os6t3q95lk6lepkq0",
+  "created": "2023-04-22T07:34:51.848540351Z",
+  "updated": "2023-08-04T10:34:13.937983+08:00",
+  "name": "Feishu Notification",
+  "type": "webhook",
+  "webhook": {
+    "header_params": {
+      "Content-Type": "application/json",
+      "Content-type": "application/json"
+    },
+    "method": "POST",
+    "url": "{{$.env.FEISHU_WEBHOOK_ENDPOINT}}",
+    "body": "{\n    \"msg_type\": \"text\",\n    \"content\": \"{\\\"text\\\":\\\"Alerting: {{.title}} \\\\n Link:{{$.env.INFINI_CONSOLE_ENDPOINT}}/#/alerting/alert/{{.event_id}}\\\"}\"\n}"
+  },
+  "sub_type": "feishu"
+}
+POST $[[INDEX_PREFIX]]channel/_doc/builtin-cgnb2kt3q95nmusjl64g
+{
+  "id": "builtin-cgnb2kt3q95nmusjl64g",
+  "created": "2023-04-06T11:47:31.161587662Z",
+  "updated": "2023-08-04T10:33:54.594583+08:00",
+  "name": "Wechat Notification",
+  "type": "webhook",
+  "webhook": {
+    "header_params": {
+      "Content-Type": "application/json"
+    },
+    "method": "POST",
+    "url": "{{$.env.WECHAT_WEBHOOK_ENDPOINT}}",
+    "body": "{\n    \"msgtype\": \"markdown\",\n    \"markdown\": {\n        \"content\": \"Incident [#{{.event_id}}]({{$.env.INFINI_CONSOLE_ENDPOINT}}/#/alerting/alert/{{.event_id}}) is ongoing\\n{{.title}}\\n{{.message}}\"\n    }\n}"
+  },
+  "sub_type": "wechat"
+}
+POST $[[INDEX_PREFIX]]channel/_doc/builtin-cgnb2r53q95nmusjl6vg
+{
+  "id": "builtin-cgnb2r53q95nmusjl6vg",
+  "created": "2023-04-06T11:47:56.652637309Z",
+  "updated": "2023-08-04T10:12:44.675016+08:00",
+  "name": "SMS Notification",
+  "type": "email",
+  "sub_type": "email",
+  "email": {
+    "server_id": "",
+    "recipients": {
+      "to": []
+    },
+    "subject": "{{.title}}",
+    "body": "Incident [#{{.event_id}}]({{$.env.INFINI_CONSOLE_ENDPOINT}}/#/alerting/alert/{{.event_id}}) is ongoing\n{{.message}}"
+  }
 }
 
 #The `id` value is consistent with the `_id` value

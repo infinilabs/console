@@ -353,7 +353,7 @@ func (h *EmailAPI) testEmailServer(w http.ResponseWriter, req *http.Request, ps 
 	message := gomail.NewMessage()
 	message.SetHeader("From", reqBody.Auth.Username)
 	message.SetHeader("To", reqBody.SendTo...)
-	message.SetHeader("Subject", "test email")
+	message.SetHeader("Subject", "INFINI platform test email")
 
 	message.SetBody("text/plain", "This is just a test email, do not reply!")
 	d := gomail.NewDialerWithTimeout(reqBody.Host, reqBody.Port, reqBody.Auth.Username, reqBody.Auth.Password, 3*time.Second)

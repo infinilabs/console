@@ -181,8 +181,8 @@ func (h *AlertAPI) testChannel(w http.ResponseWriter, req *http.Request, ps http
 		return
 	}
 	ctx := map[string]interface{}{
-		"title": "test title",
-		"message": "test message",
+		"title": "INFINI platform test alert message",
+		"message": "This is just a test email, do not reply!",
 		"rule_id": util.GetUUID(),
 		"rule_name": "test rule",
 		"resource_id": util.GetUUID(),

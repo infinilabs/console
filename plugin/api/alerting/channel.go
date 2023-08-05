@@ -116,8 +116,50 @@ func (h *AlertAPI) deleteChannel(w http.ResponseWriter, req *http.Request, ps ht
 			return
 		}
 	}
-
 	queryDsl := util.MapStr{
+		"size": 1,
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"minimum_should_match": 1,
+				"should": []util.MapStr{
+					{
+						"terms": util.MapStr{
+							"notification_config.normal.id": reqBody.ChannelIDs,
+						},
+					},
+					{
+						"terms": util.MapStr{
+							"notification_config.escalation.id": reqBody.ChannelIDs,
+						},
+					},
+					{
+						"terms": util.MapStr{
+							"recovery_notification_config.normal.id": reqBody.ChannelIDs,
+						},
+					},
+				},
+			},
+		},
+	}
+	q := orm.Query{
+		RawQuery: util.MustToJSONBytes(queryDsl),
+	}
+	err, result := orm.Search(alerting.Rule{}, &q)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
+	if len(result.Result) > 0 {
+		var ruleName interface{} = ""
+		if m, ok := result.Result[0].(map[string]interface{}); ok {
+			ruleName = m["name"]
+		}
+		h.WriteError(w, fmt.Sprintf("failed to delete channel since it is used by rule [%s]", ruleName), http.StatusInternalServerError)
+		return
+	}
+
+	queryDsl = util.MapStr{
 		"query": util.MapStr{
 			"terms": util.MapStr{
 				"id": reqBody.ChannelIDs,

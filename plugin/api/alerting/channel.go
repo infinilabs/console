@@ -12,7 +12,6 @@ import (
 	"infini.sh/framework/core/global"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	log "github.com/cihub/seelog"
@@ -187,13 +186,34 @@ func (h *AlertAPI) searchChannel(w http.ResponseWriter, req *http.Request, ps ht
 
 	var (
 		keyword     = h.GetParameterOrDefault(req, "keyword", "")
-		queryDSL    = `{"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d}`
 		strSize     = h.GetParameterOrDefault(req, "size", "20")
 		strFrom     = h.GetParameterOrDefault(req, "from", "0")
-		mustBuilder = &strings.Builder{}
+		subType     = h.GetParameterOrDefault(req, "sub_type", "")
+		typ     = h.GetParameterOrDefault(req, "type", "")
 	)
+	mustQ := []interface{}{}
 	if keyword != "" {
-		mustBuilder.WriteString(fmt.Sprintf(`{"query_string":{"default_field":"*","query": "%s"}}`, keyword))
+		mustQ = append(mustQ, util.MapStr{
+			"query_string": util.MapStr{"default_field":"*","query": keyword},
+		})
+	}
+	if typ != "" {
+		mustQ = append(mustQ, util.MapStr{
+			"term": util.MapStr{
+				"type": util.MapStr{
+					"value": typ,
+				},
+			},
+		})
+	}
+	if subType != "" {
+		mustQ = append(mustQ, util.MapStr{
+			"term": util.MapStr{
+				"sub_type": util.MapStr{
+					"value": subType,
+				},
+			},
+		})
 	}
 	size, _ := strconv.Atoi(strSize)
 	if size <= 0 {
@@ -203,10 +223,19 @@ func (h *AlertAPI) searchChannel(w http.ResponseWriter, req *http.Request, ps ht
 	if from < 0 {
 		from = 0
 	}
+	query := util.MapStr{
+		"size": size,
+		"from": from,
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": mustQ,
+			},
+		},
+	}
 
-	q := orm.Query{}
-	queryDSL = fmt.Sprintf(queryDSL, mustBuilder.String(), size, from)
-	q.RawQuery = []byte(queryDSL)
+	q := orm.Query{
+		RawQuery: util.MustToJSONBytes(query),
+	}
 
 	err, res := orm.Search(&alerting.Channel{}, &q)
 	if err != nil {

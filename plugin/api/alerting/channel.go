@@ -6,7 +6,10 @@ package alerting
 
 import (
 	"fmt"
+	alerting2 "infini.sh/console/service/alerting"
 	"infini.sh/console/service/alerting/common"
+	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/global"
 	"net/http"
 	"strconv"
 	"strings"
@@ -222,6 +225,13 @@ func (h *AlertAPI) testChannel(w http.ResponseWriter, req *http.Request, ps http
 		log.Error(err)
 		return
 	}
+	envVariables, err := alerting2.GetEnvVariables()
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	firstGrpValue := global.MustLookupString(elastic.GlobalSystemElasticsearchID)
 	ctx := map[string]interface{}{
 		"title": "INFINI platform test alert message",
 		"message": "This is just a test email, do not reply!",
@@ -231,19 +241,19 @@ func (h *AlertAPI) testChannel(w http.ResponseWriter, req *http.Request, ps http
 		"resource_name": "test resource",
 		"event_id": util.GetUUID(),
 		"timestamp": time.Now().UnixMilli(),
-		"first_group_value": "first group value",
+		"first_group_value": firstGrpValue,
 		"first_threshold": "90",
 		"priority": "critical",
 		"results": []util.MapStr{
 			{"threshold": "90",
 				"priority": "critical",
-				"group_values": []string{"first group value", "second group value"},
+				"group_values": []string{firstGrpValue, "group_value2" },
 				"issue_timestamp": time.Now().UnixMilli()-500,
 				"result_value": 90,
 				"relation_values": util.MapStr{"a": 100, "b": 90},
 			},
 		},
-
+		"env": envVariables,
 	}
 	_, err, _ = common.PerformChannel(&obj, ctx)
 	if err != nil {

@@ -43,6 +43,10 @@ func lookupMetadata(object string, property string, defaultValue string, id stri
 	)
 	switch object {
 	case "cluster":
+		meta := elastic.GetMetadata(id)
+		if meta == nil {
+			return defaultValue
+		}
 		cfg := elastic.GetConfig(id)
 		buf = util.MustToJSONBytes(cfg)
 		err := util.FromJSONBytes(buf, &cfgM)

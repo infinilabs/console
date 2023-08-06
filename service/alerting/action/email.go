@@ -5,6 +5,7 @@
 package action
 
 import (
+	"fmt"
 	"infini.sh/console/model/alerting"
 	"infini.sh/framework/core/queue"
 	"infini.sh/framework/core/util"
@@ -20,6 +21,9 @@ const EmailQueueName = "email_messages"
 
 func (act *EmailAction) Execute()([]byte, error){
 	queueCfg := queue.GetOrInitConfig(EmailQueueName)
+	if act.Data.ServerID == "" {
+		return nil, fmt.Errorf("parameter server_id must not be empty")
+	}
 	emailMsg := util.MapStr{
 		"server_id": act.Data.ServerID,
 		"email": act.Data.Recipients.To,

@@ -76,13 +76,28 @@ func RetrieveChannel(ch *alerting.Channel) (*alerting.Channel, error) {
 	if ch == nil {
 		return nil, fmt.Errorf("empty channel")
 	}
-	enabled := ch.Enabled
 	if ch.ID != "" {
-		_, err := orm.Get(ch)
+		refCh := &alerting.Channel{}
+		_, err := orm.Get(refCh)
 		if err != nil {
 			return nil, err
 		}
-		ch.Enabled = enabled
+		ch.Type = refCh.Type
+		ch.Name = refCh.Name
+		ch.SubType = refCh.SubType
+		switch ch.Type {
+		case alerting.ChannelEmail:
+			if ch.Email == nil {
+				ch.Email = refCh.Email
+			}else{
+				ch.Email.ServerID = refCh.Email.ServerID
+				ch.Email.Recipients = refCh.Email.Recipients
+			}
+		case alerting.ChannelWebhook:
+			if ch.Webhook == nil {
+				ch.Webhook = refCh.Webhook
+			}
+		}
 	}
 	return ch, nil
 }

@@ -78,6 +78,7 @@ func RetrieveChannel(ch *alerting.Channel) (*alerting.Channel, error) {
 	}
 	if ch.ID != "" {
 		refCh := &alerting.Channel{}
+		refCh.ID = ch.ID
 		_, err := orm.Get(refCh)
 		if err != nil {
 			return nil, err

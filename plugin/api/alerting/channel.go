@@ -263,7 +263,7 @@ func (h *AlertAPI) testChannel(w http.ResponseWriter, req *http.Request, ps http
 	firstGrpValue := global.MustLookupString(elastic.GlobalSystemElasticsearchID)
 	ctx := map[string]interface{}{
 		"title": "INFINI platform test alert message",
-		"message": "This is just a test email, do not reply!",
+		"message": "This is just a test message, do not reply!",
 		"rule_id": util.GetUUID(),
 		"rule_name": "test rule",
 		"resource_id": util.GetUUID(),

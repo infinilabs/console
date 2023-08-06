@@ -28,6 +28,7 @@ func (act *EmailAction) Execute()([]byte, error){
 			"subject": act.Subject,
 			"body": act.Body,
 			"content_type": act.Data.ContentType,
+			"cc": act.Data.Recipients.CC,
 		},
 	}
 	emailMsgBytes := util.MustToJSONBytes(emailMsg)

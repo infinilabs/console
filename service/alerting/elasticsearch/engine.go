@@ -941,11 +941,24 @@ func (engine *Engine) Test(rule *alerting.Rule, msgType string) ([]alerting.Acti
 		alerting2.ParamEventID: util.GetUUID(),
 		alerting2.ParamTimestamp:  time.Now().Unix(),
 	} )
-	title, message := rule.GetNotificationTitleAndMessage()
-	err = attachTitleMessageToCtx(title, message, paramsCtx)
-	if err != nil {
-		return nil, err
+	if msgType == "escalation" || msgType == "notification" {
+		title, message := rule.GetNotificationTitleAndMessage()
+		err = attachTitleMessageToCtx(title, message, paramsCtx)
+		if err != nil {
+			return nil, err
+		}
+	}else if msgType == "recover_notification" {
+		if rule.RecoveryNotificationConfig == nil {
+			return nil, fmt.Errorf("recovery notification must not be empty")
+		}
+		err = attachTitleMessageToCtx(rule.RecoveryNotificationConfig.Title, rule.RecoveryNotificationConfig.Message, paramsCtx)
+		if err != nil {
+			return nil, err
+		}
+	}else{
+		return nil, fmt.Errorf("unkonwn parameter msg type")
 	}
+
 	var channels []alerting.Channel
 	switch msgType {
 	case "escalation":

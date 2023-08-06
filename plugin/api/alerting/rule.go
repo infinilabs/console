@@ -665,6 +665,7 @@ func (alertAPI *AlertAPI) enableRule(w http.ResponseWriter, req *http.Request, p
 }
 
 func (alertAPI *AlertAPI) sendTestMessage(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	typ := alertAPI.GetParameterOrDefault(req, "type", "notification")
 	rule :=  alerting.Rule{}
 	err := alertAPI.DecodeJSON(req, &rule)
 	if err != nil {
@@ -678,7 +679,7 @@ func (alertAPI *AlertAPI) sendTestMessage(w http.ResponseWriter, req *http.Reque
 		rule.ID = util.GetUUID()
 	}
 	eng := alerting2.GetEngine(rule.Resource.Type)
-	actionResults, err :=  eng.Test(&rule)
+	actionResults, err :=  eng.Test(&rule, typ)
 	if err != nil {
 		log.Error(err)
 		alertAPI.WriteJSON(w, util.MapStr{

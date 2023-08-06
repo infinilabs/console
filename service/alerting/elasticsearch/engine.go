@@ -930,7 +930,7 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 	return paramsCtx
 }
 
-func (engine *Engine) Test(rule *alerting.Rule) ([]alerting.ActionExecutionResult, error) {
+func (engine *Engine) Test(rule *alerting.Rule, msgType string) ([]alerting.ActionExecutionResult, error) {
 	checkResults, err := engine.CheckCondition(rule)
 	if err != nil {
 		return nil, fmt.Errorf("check condition error:%w", err)
@@ -946,10 +946,27 @@ func (engine *Engine) Test(rule *alerting.Rule) ([]alerting.ActionExecutionResul
 	if err != nil {
 		return nil, err
 	}
-	if len(rule.Channels.Normal) > 0 {
-		actionResults, _ = performChannels(rule.Channels.Normal, paramsCtx)
-	}else if len(rule.Channels.Escalation) > 0{
-		actionResults, _ = performChannels(rule.Channels.Escalation, paramsCtx)
+	var channels []alerting.Channel
+	switch msgType {
+	case "escalation":
+		notifyCfg := rule.GetNotificationConfig()
+		if notifyCfg == nil {
+			return nil, nil
+		}
+		channels = notifyCfg.Escalation
+	case "recover_notification":
+		if rule.RecoveryNotificationConfig != nil {
+			channels = rule.RecoveryNotificationConfig.Normal
+		}
+	case "notification":
+		notifyCfg := rule.GetNotificationConfig()
+		if notifyCfg == nil {
+			return nil, nil
+		}
+		channels = notifyCfg.Normal
+	}
+	if len(channels) > 0 {
+		actionResults, _ = performChannels(channels, paramsCtx)
 	}else{
 		return nil, fmt.Errorf("no useable channel")
 	}

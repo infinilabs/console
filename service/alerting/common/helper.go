@@ -85,7 +85,7 @@ func RetrieveChannel(ch *alerting.Channel) (*alerting.Channel, error) {
 		}
 		if !refCh.Enabled {
 			ch.Enabled = false
-			return ch, nil
+			return ch, fmt.Errorf("global channel is not enabled")
 		}
 		ch.Type = refCh.Type
 		ch.Name = refCh.Name

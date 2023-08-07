@@ -683,6 +683,8 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 				paramsCtx = newParameterCtx(rule, checkResults, util.MapStr{
 					alerting2.ParamEventID: alertItem.ID,
 					alerting2.ParamTimestamp:  alertItem.Created.Unix(),
+					"duration": alertItem.Created.Sub(alertMessage.Created).String(),
+					"trigger_at": alertMessage.Created.Unix(),
 				})
 				err = attachTitleMessageToCtx(recoverCfg.Title, recoverCfg.Message, paramsCtx)
 				if err != nil {
@@ -707,6 +709,8 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 	paramsCtx = newParameterCtx(rule, checkResults, util.MapStr{
 		alerting2.ParamEventID: alertItem.ID,
 		alerting2.ParamTimestamp:  alertItem.Created.Unix(),
+		"duration": alertItem.Created.Sub(alertMessage.Created).String(),
+		"trigger_at": alertMessage.Created.Unix(),
 	})
 
 	alertItem.Priority = priority
@@ -797,6 +801,8 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 				alerting2.ParamEventID:   alertItem.ID,
 				alerting2.ParamTimestamp: alertItem.Created.Unix(),
 				"priority":               priority,
+				"duration": alertItem.Created.Sub(alertMessage.Created).String(),
+				"trigger_at": alertMessage.Created.Unix(),
 			})
 		}
 
@@ -934,11 +940,22 @@ func (engine *Engine) Test(rule *alerting.Rule, msgType string) ([]alerting.Acti
 	if err != nil {
 		return nil, fmt.Errorf("check condition error:%w", err)
 	}
+	alertMessage, err := getLastAlertMessage(rule.ID, 2 * time.Minute)
+	if err != nil {
+		return nil, fmt.Errorf("get alert message error: %w", err)
+	}
 	var actionResults []alerting.ActionExecutionResult
 
+	now :=  time.Now()
+	triggerAt := now
+	if alertMessage != nil {
+		triggerAt = alertMessage.Created
+	}
 	paramsCtx := newParameterCtx(rule, checkResults,util.MapStr{
 		alerting2.ParamEventID: util.GetUUID(),
-		alerting2.ParamTimestamp:  time.Now().Unix(),
+		alerting2.ParamTimestamp:  now.Unix(),
+		"duration": now.Sub(triggerAt).String(),
+		"trigger_at": triggerAt.Unix(),
 	} )
 	if msgType == "escalation" || msgType == "notification" {
 		title, message := rule.GetNotificationTitleAndMessage()
@@ -989,19 +1006,25 @@ func performChannels(channels []alerting.Channel, ctx map[string]interface{}) ([
 	var errCount int
 	var actionResults []alerting.ActionExecutionResult
 	for _, channel := range channels {
+		var (
+			errStr string
+			resBytes []byte
+			messageBytes []byte
+		)
 		_, err := common.RetrieveChannel(&channel)
 		if err != nil {
 			log.Error(err)
-			continue
-		}
-		if !channel.Enabled {
-			continue
-		}
-		resBytes, err, messageBytes := common.PerformChannel(&channel, ctx)
-		var errStr string
-		if err != nil {
 			errCount++
 			errStr = err.Error()
+		}else{
+			if !channel.Enabled {
+				continue
+			}
+			resBytes, err, messageBytes = common.PerformChannel(&channel, ctx)
+			if err != nil {
+				errCount++
+				errStr = err.Error()
+			}
 		}
 		actionResults = append(actionResults, alerting.ActionExecutionResult{
 			Result:        string(resBytes),

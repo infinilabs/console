@@ -97,6 +97,8 @@ func RetrieveChannel(ch *alerting.Channel) (*alerting.Channel, error) {
 		case alerting.ChannelWebhook:
 			if ch.Webhook == nil {
 				ch.Webhook = refCh.Webhook
+			}else {
+				ch.Webhook.URL = refCh.Webhook.URL
 			}
 		}
 	}

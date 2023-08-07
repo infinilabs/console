@@ -83,6 +83,10 @@ func RetrieveChannel(ch *alerting.Channel) (*alerting.Channel, error) {
 		if err != nil {
 			return nil, err
 		}
+		if !refCh.Enabled {
+			ch.Enabled = false
+			return ch, nil
+		}
 		ch.Type = refCh.Type
 		ch.Name = refCh.Name
 		ch.SubType = refCh.SubType

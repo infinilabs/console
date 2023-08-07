@@ -671,7 +671,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		if alertMessage != nil  &&  alertMessage.Status != alerting.MessageStateRecovered && !checkResults.QueryResult.Nodata {
 			alertMessage.Status = alerting.MessageStateRecovered
 			alertMessage.ResourceID =  rule.Resource.ID
-			alertMessage.ResourceName= rule.Resource.Name
+			alertMessage.ResourceName = rule.Resource.Name
 			err = saveAlertMessage(alertMessage)
 			if err != nil {
 				return fmt.Errorf("save alert message error: %w", err)
@@ -801,15 +801,13 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		}
 
 		if alertMessage == nil || period > periodDuration {
-			actionResults, errCount := performChannels(notifyCfg.Normal, paramsCtx)
+			actionResults, _ := performChannels(notifyCfg.Normal, paramsCtx)
 			alertItem.ActionExecutionResults = actionResults
 			//change and save last notification time in local kv store when action error count equals zero
-			if errCount == 0 {
-				rule.LastNotificationTime = time.Now()
-				strTime := time.Now().UTC().Format(time.RFC3339)
-				kv.AddValue(alerting2.KVLastNotificationTime, []byte(rule.ID), []byte(strTime))
-				alertItem.IsNotified = true
-			}
+			rule.LastNotificationTime = time.Now()
+			strTime := time.Now().UTC().Format(time.RFC3339)
+			kv.AddValue(alerting2.KVLastNotificationTime, []byte(rule.ID), []byte(strTime))
+			alertItem.IsNotified = true
 		}
 
 		if notifyCfg.EscalationEnabled {
@@ -917,6 +915,7 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 		alerting2.ParamResourceID:   rule.Resource.ID,
 		alerting2.ParamResourceName: rule.Resource.Name,
 		alerting2.ParamResults:      conditionParams,
+		"objects": rule.Resource.Objects,
 		"first_group_value":         firstGroupValue,
 		"first_threshold":           firstThreshold,
 		"rule_name":                 rule.Name,
@@ -990,12 +989,12 @@ func performChannels(channels []alerting.Channel, ctx map[string]interface{}) ([
 	var errCount int
 	var actionResults []alerting.ActionExecutionResult
 	for _, channel := range channels {
-		if !channel.Enabled {
-			continue
-		}
 		_, err := common.RetrieveChannel(&channel)
 		if err != nil {
 			log.Error(err)
+			continue
+		}
+		if !channel.Enabled {
 			continue
 		}
 		resBytes, err, messageBytes := common.PerformChannel(&channel, ctx)

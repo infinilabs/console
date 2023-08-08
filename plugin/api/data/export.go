@@ -59,18 +59,18 @@ func (h *DataAPI) importData(w http.ResponseWriter, req *http.Request, ps httpro
 
 func indexExportData(eds []ExportData) error {
 	for _, ed := range eds {
-		var obj interface{}
-		switch ed.Type {
-		case DataTypeAlertChannel:
-			obj = &alerting.Channel{}
-		case DataTypeAlertRule:
-			obj = &alerting.Rule{}
-		case DataTypeAlertEmailServer:
-			obj = &model.EmailServer{}
-		default:
-			return fmt.Errorf("unkonw data type: %s", ed.Type)
-		}
 		for _, row := range ed.Data {
+			var obj interface{}
+			switch ed.Type {
+			case DataTypeAlertChannel:
+				obj = &alerting.Channel{}
+			case DataTypeAlertRule:
+				obj = &alerting.Rule{}
+			case DataTypeAlertEmailServer:
+				obj = &model.EmailServer{}
+			default:
+				return fmt.Errorf("unkonw data type: %s", ed.Type)
+			}
 			buf := util.MustToJSONBytes(row)
 			err := util.FromJSONBytes(buf, obj)
 			if err != nil {

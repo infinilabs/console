@@ -706,11 +706,15 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			priority = conditionResult.ConditionItem.Priority
 		}
 	}
+	triggerAt := alertItem.Created
+	if alertMessage != nil {
+		triggerAt = alertMessage.Created
+	}
 	paramsCtx = newParameterCtx(rule, checkResults, util.MapStr{
 		alerting2.ParamEventID: alertItem.ID,
 		alerting2.ParamTimestamp:  alertItem.Created.Unix(),
-		"duration": alertItem.Created.Sub(alertMessage.Created).String(),
-		"trigger_at": alertMessage.Created.Unix(),
+		"duration": alertItem.Created.Sub(triggerAt).String(),
+		"trigger_at": triggerAt.Unix(),
 	})
 
 	alertItem.Priority = priority

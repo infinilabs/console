@@ -12,6 +12,7 @@ import (
 	"infini.sh/framework/core/global"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	log "github.com/cihub/seelog"
@@ -190,6 +191,7 @@ func (h *AlertAPI) searchChannel(w http.ResponseWriter, req *http.Request, ps ht
 		strFrom     = h.GetParameterOrDefault(req, "from", "0")
 		subType     = h.GetParameterOrDefault(req, "sub_type", "")
 		typ     = h.GetParameterOrDefault(req, "type", "")
+		sort = h.GetParameterOrDefault(req, "sort", "updated:desc")
 	)
 	mustQ := []interface{}{}
 	if keyword != "" {
@@ -223,12 +225,31 @@ func (h *AlertAPI) searchChannel(w http.ResponseWriter, req *http.Request, ps ht
 	if from < 0 {
 		from = 0
 	}
+	var (
+		sortField string
+		sortDirection string
+	)
+	sortParts := strings.Split(sort, ":")
+	sortField = sortParts[0]
+	if len(sortParts) >= 2 {
+		sortDirection = sortParts[1]
+	}
+	if sortDirection == "" {
+		sortDirection = "asc"
+	}
 	query := util.MapStr{
 		"size": size,
 		"from": from,
 		"query": util.MapStr{
 			"bool": util.MapStr{
 				"must": mustQ,
+			},
+		},
+		"sort": []util.MapStr{
+			{
+				sortField: util.MapStr{
+					"order": sortDirection,
+				},
 			},
 		},
 	}

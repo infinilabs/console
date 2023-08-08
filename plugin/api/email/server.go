@@ -17,8 +17,8 @@ import (
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"net/http"
-	"src/github.com/buger/jsonparser"
-	"src/github.com/gopkg.in/gomail.v2"
+	"github.com/buger/jsonparser"
+	"github.com/gopkg.in/gomail.v2"
 	"strconv"
 	"time"
 )

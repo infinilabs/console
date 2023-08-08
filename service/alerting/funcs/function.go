@@ -33,5 +33,6 @@ var genericMap = map[string]interface{}{
 	"mul": mul,
 	"lookup": lookup,
 	"str_replace": replace,
+	"md_to_html": mdToHTML,
 	//"get_keystore_secret": getKeystoreSecret,
 }

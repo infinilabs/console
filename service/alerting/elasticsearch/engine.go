@@ -902,7 +902,9 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 	}
 
 	for i, resultItem := range checkResults.ResultItems {
-
+		if i >= 10 {
+			break
+		}
 		if i == 0 {
 			firstGroupValue = strings.Join(resultItem.GroupValues, ",")
 			firstThreshold = strings.Join(resultItem.ConditionItem.Values, ",")

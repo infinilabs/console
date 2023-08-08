@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"infini.sh/framework/core/kv"
 	"io"
 	"net/http"
 	uri2 "net/url"
@@ -323,9 +324,17 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		module.WriteError(w, "setup not permitted", 500)
 		return
 	}
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
+	consoleEndpoint := fmt.Sprintf("%s://%s", scheme, r.Host)
+	err := kv.AddValue("system", []byte("INFINI_CONSOLE_ENDPOINT"), []byte(consoleEndpoint))
+	if err != nil {
+		log.Error(err)
+	}
 
 	success := false
-	var err error
 	var errType string
 	var fixTips string
 	var code int

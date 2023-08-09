@@ -255,6 +255,7 @@ function install_service() {
   echo "seriver install & start"
   $agent_svc -service install
   $agent_svc -service start
+  sleep 5
 }
 
 function register_agent() {

@@ -1,184 +1,222 @@
-#!/bin/bash
-# Agent install script for UNIX-like OS
-# Author: INFINI
-# BASE_URL : need, download server address，eg: https://release.infinilabs.com/agent/stable
-# AGENT_VER : need, Agent version, eg: 0.4.0-126
-# INSTALL_PATH : option, download path. eg: /home/user/infini  default: /opt
-# ES_NAME
-# ES_PWD
+#!/usr/bin/env bash
 
-printf "\n*    _      ___   __    __  _____ "
-printf "\n*   /_\\    / _ \\ /__\\/\\ \\ \\/__   \\"
-printf "\n*  //_\\\\  / /_\\//_\\ /  \\/ /  / /\\/"
-printf "\n* /  _  \\/ /_\\\\//__/ /\\  /  / /   "
-printf "\n* \\_/ \\_/\\____/\\__/\\_\\ \\/  \\/    \n\n"
-# detect root user
-if [ "$(echo "$UID")" = "0" ]; then
-	sudo_cmd=''
-else
-	sudo_cmd='sudo'
-fi
+set -eo pipefail
 
-##################
-# colors
-##################
-RED="\033[31m"
-CLR="\033[0m"
-GREEN="\033[32m"
-
-##################
-# validate os & arch
-##################
-
-arch=
-case $(uname -m) in
-
-	"x86_64")
-		arch="amd64"
-		;;
-
-	"i386" | "i686")
-		arch="386"
-		;;
-
-	"aarch64")
-		arch="arm64"
-		;;
-
-	"arm" | "armv7l")
-		arch="arm"
-		;;
-
-	"arm64")
-		arch="arm64"
-		;;
-
-	*)
-		# shellcheck disable=SC2059
-		printf "${RED}[E] Unsupport arch $(uname -m) ${CLR}\n"
-		exit 1
-		;;
-esac
-
-os="linux"
-
-if [[ "$OSTYPE" == "darwin"* ]]; then
-	if [[ $arch != "amd64" ]] && [[ $arch != "arm64" ]]; then # Darwin only support amd64 and arm64
-		# shellcheck disable=SC2059
-		printf "${RED}[E] Darwin only support amd64/arm64.${CLR}\n"
-		exit 1;
-	fi
-
-	os="mac"
-
-	# # NOTE: under darwin, for arm64 and amd64, both use amd64
-	# arch="arm"
-fi
-
-##################
-# validate params
-##################
-
-base_url="{{base_url}}"
-if [ -n "$BASE_URL" ]; then
-	base_url=$BASE_URL
-fi
-
-agent_ver="{{agent_version}}"
-if [ -n "$AGENT_VER" ]; then
-	agent_ver=$AGENT_VER
-fi
-
-ca_crt="{{ca_crt}}"
-client_crt="{{client_crt}}"
-client_key="{{client_key}}"
-
-##################
-# download agent
-##################
-
-suffix="tar.gz"
-if [[ "$os" == "mac" ]]; then
-	suffix="zip"
-fi
-
-download_url="${base_url}/agent-${agent_ver}-${os}-${arch}.${suffix}"
-
-install_path="/opt"
-if [ -n "$INSTALL_PATH" ]; then
-	install_path=$INSTALL_PATH
-fi
-
-file_name="agent-${agent_ver}-${os}-${arch}.${suffix}" #agent在服务器上的文件名
-agent="${install_path}/agent/${file_name}" #agent下载后保存的文件
-agent_exc="${install_path}/agent/agent-${os}-${arch}" #agent可执行文件
-
-agent_exsit="true"
-if [ ! -d "${install_path}/agent" ]; then
-	printf "\n* mkdir -p ${install_path}/agent"
-	$sudo_cmd mkdir -p "${install_path}/agent"
-	agent_exsit="false"
-fi
-
-if [ $? -ne 0 ]; then
-	exit 1
-fi
-
-printf "\n* downloading ${download_url}\n"
-
-printf "\n* save to : ${agent}\n"
-
-cd "$install_path/agent"
-
-sudo curl -O --progress-bar $download_url
-
-if [ $? -ne 0 ]; then
-	exit 1
-fi
-
-printf "\n* downloaded: ${agent}"
-
-##################
-# install agent
-##################
-
-printf "\n* start install"
-
-if [[ "${suffix}" == "zip" ]]; then
-	printf "\n* uzip ${agent}\n"
-	$sudo_cmd unzip $agent
-else
-	printf "\n* tar -xzvf ${agent}\n"
-	$sudo_cmd tar -xzvf $agent
-fi
-
-if [ $? -ne 0 ]; then
-	exit 1
-fi
-
-rm -f ${agent}
-
-##################
-# save cert
-##################
-$sudo_cmd mkdir -p config
-$sudo_cmd sh -c "echo '${ca_crt}' > ./config/ca.crt"
-$sudo_cmd sh -c "echo '${client_crt}' > ./config/client.crt"
-$sudo_cmd sh -c "echo '${client_key}' > ./config/client.key"
-if [ $? -ne 0 ]; then
+function print_usage() {
+  echo "Usage: curl -sSL http://get.infini.sh/agent.html | sudo bash -s -- [-u url_for_download_program] [-v version_for_program ] [-t taget_install_dir] [-p prot_for_program]"
+  echo "Options:"
+  echo "  -u, --url <url>             Download url of the program to install which default is http://localhost"
+  echo "  -v, --version <version>     Version of the program to install which default is latest from "
+  echo "  -t, --target <dir>          Target directory of the program install which default is /opt/agent"
   exit 1
-fi
+}
 
-port="{{port}}"
+function print_header() {
+    echo "                                            "
+    echo "                                 @@@@@@@@@@@"
+    echo "                                @@@@@@@@@@@@"
+    echo "                                @@@@@@@@@@@@"
+    echo "                               @@@@@@@@@&@@@"
+    echo "                              #@@@@@@@@@@@@@"
+    echo "        @@@                   @@@@@@@@@@@@@ "
+    echo "       &@@@@@@@              &@@@@@@@@@@@@@ "
+    echo "       @&@@@@@@@&@           @@@&@@@@@@@&@  "
+    echo "      @@@@@@@@@@@@@@@@      @@@@@@@@@@@@@@  "
+    echo "      @@@@@@@@@@@@@@@@@@&   @@@@@@@@@@@@@   "
+    echo "        %@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   "
+    echo "            @@@@@@@@@@@@&@@@@@@@@@@@@@@@    "
+    echo "    @@         ,@@@@@@@@@@@@@@@@@@@@@@@&    "
+    echo "    @@@@@.         @@@@@&@@@@@@@@@@@@@@     "
+    echo "   @@@@@@@@@@          @@@@@@@@@@@@@@@#     "
+    echo "   @&@@@&@@@&@@@          &@&@@@&@@@&@      "
+    echo "  @@@@@@@@@@@@@.              @@@@@@@*      "
+    echo "  @@@@@@@@@@@@@                  %@@@       "
+    echo " @@@@@@@@@@@@@                              "
+    echo "/@@@@@@@&@@@@@                              "
+    echo "@@@@@@@@@@@@@                               "
+    echo "@@@@@@@@@@@@@                               "
+    echo "@@@@@@@@@@@@        Welcome to INFINI Labs!"
+    echo ""
+    echo ""
+    echo "Now attempting the installation... "
+    echo ""
+}
 
-## generate agent.yml
-agent_config="path.configs: "config"
+function print_footprint() {
+		echo "   __ _  __ ____ __ _  __ __     "
+		echo "  / // |/ // __// // |/ // /    "
+		echo " / // || // _/ / // || // /    "
+		echo "/_//_/|_//_/  /_//_/|_//_/   "
+		echo ""
+		echo "©INFINI.LTD, All Rights Reserved."
+		echo ""
+}
+
+__try() {
+  if [[ $try_status -eq 0 ]]; then
+    ! exception=$( $@ 2>&1 >/dev/null )
+    try_status=${PIPESTATUS[0]}
+  fi
+}
+
+__catch() {
+  _old_try=$try_status
+  try_status=0
+  [[ $_old_try -ne 0 ]]
+}
+
+function get_latest_version() {
+  echo $(curl -m3 -s "https://release.infinilabs.com/.latest" |sed 's/",/"/;s/"//g;s/://1' |grep -Ev '^[{}]' |grep "$program_name" |awk '{print $NF}')
+}
+
+function check_dir() {
+  if [[ ! -d "${install_dir}" ]]; then
+    __try mkdir -p "${install_dir}"
+    if __catch e; then
+      echo -e "Error: Unable to create installation directory, please manually create and reinstall.\nsudo mkdir -p ${install_dir} && sudo chown -R \$(whoami) ${install_dir}" >&2; exit 1;
+    fi
+  fi
+
+  owner=$(ls -ld "${install_dir}" |awk '{print $3}')
+  if [[ "${owner}" != "$(whoami)" ]]; then
+    echo -e "Error: The installation directory ${install_dir} should be owner by current user.\nsudo chown -R \$(whoami) ${install_dir}" >&2; exit 1;
+  fi
+
+  #if [[ "$(ls -A ${install_dir})" ]]; then
+  #  echo "Error: The installation directory ${install_dir} should be clean." >&2; exit 1;
+  #fi
+}
+
+function check_platform() {
+    local platform=$(uname)
+    local arch=$(uname -m)
+
+    case $platform in
+        "Linux")
+            case $arch in
+                "i386"|"i686"|"x86")
+                    file_ext="linux-386.tar.gz"
+                    ;;
+                "x86_64"|"amd64")
+                    file_ext="linux-amd64.tar.gz"
+                    ;;
+                "aarch64"|"arm64")
+                    file_ext="linux-arm64.tar.gz"
+                    ;;
+                "armv5tel")
+                    file_ext="linux-armv5.tar.gz"
+                    ;;
+                "armv6l")
+                    file_ext="linux-armv6.tar.gz"
+                    ;;
+                "armv7"|"armv7l")
+                    file_ext="linux-armv7.tar.gz"
+                    ;;
+                "mips"|"mipsel")
+                    file_ext="linux-mips.tar.gz"
+                    ;;
+                "mips64")
+                    file_ext="linux-mips64.tar.gz"
+                    ;;
+                "mips64el")
+                    file_ext="linux-mips64le.tar.gz"
+                    ;;
+                "loong64")
+                    file_ext="linux-loong64.tar.gz"
+                    ;;
+                "sw_64")
+                    file_ext="linux-sw64.tar.gz"
+                    ;;
+                "riscv64")
+                    file_ext="linux-riscv64.tar.gz"
+                    ;;
+                *)
+                    echo "Unsupported architecture: ${arch}" >&2
+                    exit 1
+                    ;;
+            esac
+            ;;
+        "Darwin")
+            case $arch in
+                "x86_64"|"amd64")
+                    file_ext="mac-amd64.zip"
+                    ;;
+                "arm64")
+                    file_ext="mac-arm64.zip"
+                    ;;
+                *)
+                    echo "Unsupported architecture: ${arch}" >&2
+                    exit 1
+                    ;;
+            esac
+            ;;
+        "MINGW"*|"WSL"*|"Cygwin")
+            case $arch in
+                "i386"|"i686")
+                    file_ext="windows-386.zip"
+                    ;;
+                "x86_64"|"amd64")
+                    file_ext="windows-amd64.zip"
+                    ;;
+                *)
+                    echo "Unsupported architecture: ${arch}" >&2
+                    exit 1
+                    ;;
+            esac
+            ;;
+        *)
+            echo "Unsupported platform: ${platform}" >&2
+            exit 1
+            ;;
+    esac
+}
+
+function install_binary() {
+  local download_url="$location/${program_name}-${version}-${file_ext}"
+  echo "File: [$download_url]"
+
+  tmp_dir="$(mktemp -d)"
+  cd "$tmp_dir"
+
+  if command -v curl >/dev/null 2>&1; then
+    curl -# -LO "$download_url"
+  elif command -v wget >/dev/null 2>&1; then
+    wget -q -nc --show-progress --progress=bar:force:noscroll "$download_url"
+  else
+    echo "Error: Could not find curl or wget, Please install wget or curl in advance." >&2; exit 1;
+  fi
+
+  if [[ "${file_ext}" == *".tar.gz" ]]; then
+      tar -xzf "${program_name}-${version}-${file_ext}" -C "$install_dir"
+  else
+      unzip -q "${program_name}-${version}-${file_ext}" -d "$install_dir"
+  fi
+
+  cd "${install_dir}" && rm -rf "${tmp_dir}"
+}
+
+function install_certs() {
+  ca_crt="{{ca_crt}}"
+  client_crt="{{client_crt}}"
+  client_key="{{client_key}}"
+
+  mkdir -p ${install_dir}/config
+  echo -e "${ca_crt}" > ${install_dir}/config/ca.crt
+  echo -e "${client_crt}" > ${install_dir}/config/client.crt
+  echo -e "${client_key}" > ${install_dir}/config/client.key
+}
+
+function install_config() {
+  port={{port}}
+  cat <<EOF > ${install_dir}/agent.yml
 configs.auto_reload: true
+
 env:
   API_BINDING: "0.0.0.0:${port}"
 
 path.data: data
 path.logs: log
+path.configs: config
 
 api:
   enabled: true
@@ -198,56 +236,76 @@ badger:
 
 agent:
   major_ip_pattern: ".*"
-"
+EOF
+}
 
-agent_yml_path="${install_path}/agent/agent.yml"
+function install_service() {
+  agent_svc=${install_dir}/${program_name}-${file_ext%%.*}
+  chmod 755 $agent_svc
 
-$sudo_cmd rm $agent_yml_path
-$sudo_cmd touch $agent_yml_path
-$sudo_cmd sh -c "echo '${agent_config}' > $agent_yml_path"
+  macos_svc=/Library/LaunchDaemons/agent.plist
+  linux_svc=/etc/systemd/system/agent.service
 
-if [ $? -ne 0 ]; then
-	exit 1
-fi
+  if [[ -f "$linux_svc" || -f "$macos_svc" ]]; then
+    echo "[agent] waiting service stop & uninstall for existing agent"
+    $agent_svc -service stop &>/dev/null
+    $agent_svc -service uninstall &>/dev/null
+  fi
 
-$sudo_cmd chmod +x $agent_exc
+  echo "[agent] waiting service install & start"
+  $agent_svc -service install &>/dev/null
+  $agent_svc -service start &>/dev/null
 
-#try to stop and uninstall service
-macos=/Library/LaunchDaemons/agent.plist
-linux=/etc/systemd/system/agent.service
-if [[ -f "$linux" || -f "$macos" ]]; then
-	printf "\n* stop && uninstall service\n"
-	$sudo_cmd $agent_exc -service stop &>/dev/null
-	$sudo_cmd $agent_exc -service uninstall &>/dev/null
-fi
+}
 
-printf "\n* start install service\n"
-$sudo_cmd $agent_exc -service install
+function register_agent() {
+  token={{token}}
+  console_endpoint="{{console_endpoint}}"
+  echo "[agent] waiting registering to INFINI Console"
+  __try curl -s --retry 5 --retry-delay 3 -m30 -XPOST -o /dev/null ${console_endpoint}/agent/instance?token=${token}
+}
 
-if [ $? -ne 0 ]; then
-	exit 1
-fi
+function main() {
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -u|--url) location="$2"; shift 2 ;;
+      -v|--version) version="$2"; shift 2 ;;
+      -t|--target) target_dir="$2"; shift 2 ;;
+      *) print_usage ;;
+    esac
+  done
 
-printf "\n* service installed\n"
-printf "\n* service starting >>>>>>\n"
-$sudo_cmd $agent_exc -service start
+  program_name=agent
+  install_dir=${target_dir:-/opt/$program_name}
+  latest_version=$(get_latest_version)
+  version=${version:-$latest_version}
+  file_ext=""
 
-if [ $? -ne 0 ]; then
-	exit 1
-fi
+  if [[ -z "${version}" ]]; then
+    echo "Error: Could not obtain the latest version number. Please check the network and try again.">&2; exit 1;
+  else
+    echo "Name: [${program_name}], Version: [${version}], Path: [${install_dir}]]"
+  fi
 
-printf "\n* agent service started"
-console_endpoint="{{console_endpoint}}"
-sleep 3
-printf "\n* start register\n"
-token={{token}}
-curl -X POST ${console_endpoint}/agent/instance?token=${token}
+  check_dir
+  check_platform
+  install_binary
+  install_certs
+  install_config
+  install_service
+  register_agent
 
-if [ $? -ne 0 ]; then
-	exit 1
-fi
-printf "\n* agent registered\n"
+  echo ""
+  echo ""
+  echo "----------------------------------------------------------------"
+  echo "Congratulations, agent install success!"
+  echo "----------------------------------------------------------------"
+  echo ""
+  echo ""
+  
+  print_footprint
+}
 
-printf "\n* ${GREEN}Congratulations, install success!${CLR}\n\n"
+print_header
 
-
+main "$@"

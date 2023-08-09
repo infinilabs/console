@@ -201,9 +201,9 @@ function install_certs() {
   client_key="{{client_key}}"
 
   mkdir -p ${install_dir}/config
-  sh -c "echo '${ca_crt}' > ${install_dir}/config/ca.crt"
-  sh -c "echo '${client_crt}' > ${install_dir}/config/client.crt"
-  sh -c "echo '${client_key}' > ${install_dir}/config/client.key"
+  echo -e "${ca_crt}" > ${install_dir}/config/ca.crt
+  echo -e "${client_crt}" > ${install_dir}/config/client.crt
+  echo -e "${client_key}" > ${install_dir}/config/client.key
 }
 
 function install_config() {
@@ -247,22 +247,22 @@ function install_service() {
   linux_svc=/etc/systemd/system/agent.service
 
   if [[ -f "$linux_svc" || -f "$macos_svc" ]]; then
-    echo "service stop & uninstall for existing agent"
+    echo "[agent] waiting service stop & uninstall for existing agent"
     $agent_svc -service stop &>/dev/null
     $agent_svc -service uninstall &>/dev/null
   fi
 
-  echo "seriver install & start"
-  $agent_svc -service install
-  $agent_svc -service start
-  sleep 5
+  echo "[agent] waiting service install & start"
+  $agent_svc -service install &>/dev/null
+  $agent_svc -service start &>/dev/null
+
 }
 
 function register_agent() {
-  echo "Registration to INFINI Console"
-  console_endpoint="{{console_endpoint}}"
   token={{token}}
-  curl -XPOST -m9 -s ${console_endpoint}/agent/instance?token=${token}
+  console_endpoint="{{console_endpoint}}"
+  echo "[agent] waiting registering to INFINI Console"
+  __try curl -s --retry 5 --retry-delay 3 -m30 -XPOST -o /dev/null ${console_endpoint}/agent/instance?token=${token}
 }
 
 function main() {
@@ -271,7 +271,6 @@ function main() {
       -u|--url) location="$2"; shift 2 ;;
       -v|--version) version="$2"; shift 2 ;;
       -t|--target) target_dir="$2"; shift 2 ;;
-      -p|--port) port="$2"; shift 2 ;;
       *) print_usage ;;
     esac
   done

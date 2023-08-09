@@ -53,6 +53,8 @@ type QueryResult struct {
 	Raw string `json:"raw"`
 	MetricData []MetricData `json:"metric_data"`
 	Nodata bool `json:"nodata"`
+	Min interface{} `json:"-"`
+	Max interface{} `json:"-"`
 }
 
 type MetricData struct {

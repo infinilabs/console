@@ -276,7 +276,7 @@ func (engine *Engine) ConvertFilterQueryToDsl(fq *alerting.FilterQuery) (map[str
 	return resultQuery, nil
 }
 
-func (engine *Engine) generateTimeFilter(rule *alerting.Rule, filterParam *alerting.FilterParam) (map[string]interface{}, error){
+func getQueryTimeRange(rule *alerting.Rule, filterParam *alerting.FilterParam) (start, end interface{}){
 	var (
 		timeStart interface{}
 		timeEnd interface{}
@@ -316,7 +316,11 @@ func (engine *Engine) generateTimeFilter(rule *alerting.Rule, filterParam *alert
 		timeStart = time.Now().Add(-duration).UnixMilli() //.Format(time.RFC3339Nano)
 		timeEnd = time.Now().UnixMilli()
 	}
+	return timeStart, timeEnd
+}
 
+func (engine *Engine) generateTimeFilter(rule *alerting.Rule, filterParam *alerting.FilterParam) (map[string]interface{}, error){
+	timeStart, timeEnd := getQueryTimeRange(rule, filterParam)
 	timeQuery := util.MapStr{
 		"range": util.MapStr{
 			rule.Resource.TimeField: util.MapStr{
@@ -386,6 +390,10 @@ func (engine *Engine) ExecuteQuery(rule *alerting.Rule, filterParam *alerting.Fi
 	queryDsl, err := engine.GenerateQuery(rule, filterParam)
 	if err != nil {
 		return nil, err
+	}
+	if vm, ok := queryDsl.(util.MapStr); ok {
+		queryResult.Min, err = vm.GetValue(fmt.Sprintf("query.range.%s.gte", rule.Resource.TimeField))
+		queryResult.Max, _ = vm.GetValue(fmt.Sprintf("query.range.%s.lte", rule.Resource.TimeField))
 	}
 	queryDslBytes, err := util.ToJSONBytes(queryDsl)
 	if err != nil {
@@ -922,6 +930,14 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 	if err != nil {
 		log.Errorf("get env variables error: %v", err)
 	}
+	var (
+		min interface{}
+		max interface{}
+	)
+	if checkResults.QueryResult != nil {
+		min = checkResults.QueryResult.Min
+		max = checkResults.QueryResult.Max
+	}
 	paramsCtx := util.MapStr{
 		alerting2.ParamRuleID:       rule.ID,
 		alerting2.ParamResourceID:   rule.Resource.ID,
@@ -932,6 +948,8 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 		"first_threshold":           firstThreshold,
 		"rule_name":                 rule.Name,
 		"priority":                  priority,
+		"min":  min,
+		"max": max,
 		"env": envVariables,
 	}
 	err = util.MergeFields(paramsCtx, extraParams, true)

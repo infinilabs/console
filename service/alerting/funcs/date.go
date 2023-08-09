@@ -34,6 +34,9 @@ func _dateInZone(fmt string, date interface{}, zone string) string {
 	case *time.Time:
 		t = *date
 	case int64:
+		if date > 1e12 {
+			date = date/1000
+		}
 		t = time.Unix(date, 0)
 	case int:
 		t = time.Unix(int64(date), 0)

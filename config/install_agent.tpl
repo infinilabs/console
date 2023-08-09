@@ -192,7 +192,7 @@ function install_binary() {
       unzip -q "${program_name}-${version}-${file_ext}" -d "$install_dir"
   fi
 
-  cd "${install_dir}" && rm -rf "${tmp_dir}"
+  cd "${install_dir}" && rm -rf "${tmp_dir}" && echo ""
 }
 
 function install_certs() {
@@ -201,12 +201,14 @@ function install_certs() {
   client_key="{{client_key}}"
 
   mkdir -p ${install_dir}/config
+  echo "[agent] waiting generate certs"
   echo -e "${ca_crt}" > ${install_dir}/config/ca.crt
   echo -e "${client_crt}" > ${install_dir}/config/client.crt
   echo -e "${client_key}" > ${install_dir}/config/client.key
 }
 
 function install_config() {
+  echo "[agent] waiting generate config"
   port={{port}}
   cat <<EOF > ${install_dir}/agent.yml
 configs.auto_reload: true
@@ -284,7 +286,7 @@ function main() {
   if [[ -z "${version}" ]]; then
     echo "Error: Could not obtain the latest version number. Please check the network and try again.">&2; exit 1;
   else
-    echo "Name: [${program_name}], Version: [${version}], Path: [${install_dir}]]"
+    echo "Name: [${program_name}], Version: [${version}], Path: [${install_dir}]"
   fi
 
   check_dir

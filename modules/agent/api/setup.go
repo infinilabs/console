@@ -76,8 +76,11 @@ func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Req
 	if consoleEndpoint == "" {
 		consoleEndpoint = getDefaultConsoleEndpoint(req)
 	}
+
+
 	h.WriteJSON(w, util.MapStr{
-		"script": fmt.Sprintf(`sudo BASE_URL="%s" AGENT_VER="%s" INSTALL_PATH="/opt" bash -c "$(curl -L '%s/agent/install.sh?token=%s')"`, agCfg.Setup.DownloadURL, agCfg.Setup.Version, consoleEndpoint, tokenStr),
+		"script": fmt.Sprintf(`curl -sSL %s/agent/install.sh?token=%s |sudo bash -s -- -u %s -v %s -t /opt/agent`, consoleEndpoint, tokenStr, agCfg.Setup.DownloadURL, agCfg.Setup.Version),
+		//"script": fmt.Sprintf(`sudo BASE_URL="%s" AGENT_VER="%s" INSTALL_PATH="/opt" bash -c "$(curl -L '%s/agent/install.sh?token=%s')"`, agCfg.Setup.DownloadURL, agCfg.Setup.Version, consoleEndpoint, tokenStr),
 		"token": tokenStr,
 		"expired_at": t.CreatedAt.Add(ExpiredIn),
 	}, http.StatusOK)

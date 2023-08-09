@@ -14,6 +14,7 @@ import (
 	"infini.sh/framework/core/util"
 	"os"
 	"path"
+	"time"
 )
 
 const emailServerConfigFile = "send_email.yml"
@@ -90,6 +91,7 @@ func GeneratePipelineConfig(servers []model.EmailServer) (string, error) {
 				"host": srv.Host,
 				"port": srv.Port,
 				"tls": srv.TLS,
+				"refresh_timestamp": time.Now().UnixMilli(),
 			},
 			"auth": util.MapStr{
 				"username": srv.Auth.Username,

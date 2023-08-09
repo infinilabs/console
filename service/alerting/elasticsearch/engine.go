@@ -937,6 +937,12 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 	if checkResults.QueryResult != nil {
 		min = checkResults.QueryResult.Min
 		max = checkResults.QueryResult.Max
+		if v, ok := min.(int64); ok {
+			min = time.Unix(v/1000, v%1000 * 1e5).UTC().Format("2006-01-02T15:04:05.999Z")
+		}
+		if v, ok := max.(int64); ok {
+			max = time.Unix(v/1000, v%1000 * 1e5).UTC().Format("2006-01-02T15:04:05.999Z")
+		}
 	}
 	paramsCtx := util.MapStr{
 		alerting2.ParamRuleID:       rule.ID,

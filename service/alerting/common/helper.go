@@ -72,7 +72,7 @@ func ResolveMessage(messageTemplate string, ctx map[string]interface{}) ([]byte,
 	return msgBuffer.Bytes(), err
 }
 
-func RetrieveChannel(ch *alerting.Channel) (*alerting.Channel, error) {
+func RetrieveChannel(ch *alerting.Channel, raiseChannelEnabledErr bool) (*alerting.Channel, error) {
 	if ch == nil {
 		return nil, fmt.Errorf("empty channel")
 	}
@@ -85,7 +85,10 @@ func RetrieveChannel(ch *alerting.Channel) (*alerting.Channel, error) {
 		}
 		if !refCh.Enabled {
 			ch.Enabled = false
-			return ch, fmt.Errorf("global channel is not enabled")
+			if raiseChannelEnabledErr {
+				return ch, fmt.Errorf("global channel is not enabled")
+			}
+			return ch, nil
 		}
 		ch.Type = refCh.Type
 		ch.Name = refCh.Name

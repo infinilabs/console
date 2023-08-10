@@ -698,7 +698,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 				if err != nil {
 					return err
 				}
-				actionResults, _ := performChannels(recoverCfg.Normal, paramsCtx)
+				actionResults, _ := performChannels(recoverCfg.Normal, paramsCtx, false)
 				alertItem.ActionExecutionResults = actionResults
 			}
 		}
@@ -819,7 +819,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		}
 
 		if alertMessage == nil || period > periodDuration {
-			actionResults, _ := performChannels(notifyCfg.Normal, paramsCtx)
+			actionResults, _ := performChannels(notifyCfg.Normal, paramsCtx, false)
 			alertItem.ActionExecutionResults = actionResults
 			//change and save last notification time in local kv store when action error count equals zero
 			rule.LastNotificationTime = time.Now()
@@ -849,7 +849,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 					}
 				}
 				if time.Now().Sub(rule.LastEscalationTime.Local()) > periodDuration {
-					actionResults, errCount := performChannels(notifyCfg.Escalation, paramsCtx)
+					actionResults, errCount := performChannels(notifyCfg.Escalation, paramsCtx, false)
 					alertItem.ActionExecutionResults = actionResults
 					//todo init last escalation time when create task (by last alert item is escalated)
 					if errCount == 0 {
@@ -1025,14 +1025,14 @@ func (engine *Engine) Test(rule *alerting.Rule, msgType string) ([]alerting.Acti
 		channels = notifyCfg.Normal
 	}
 	if len(channels) > 0 {
-		actionResults, _ = performChannels(channels, paramsCtx)
+		actionResults, _ = performChannels(channels, paramsCtx, true)
 	}else{
 		return nil, fmt.Errorf("no useable channel")
 	}
 	return actionResults, nil
 }
 
-func performChannels(channels []alerting.Channel, ctx map[string]interface{}) ([]alerting.ActionExecutionResult, int) {
+func performChannels(channels []alerting.Channel, ctx map[string]interface{}, raiseChannelEnabledErr bool) ([]alerting.ActionExecutionResult, int) {
 	var errCount int
 	var actionResults []alerting.ActionExecutionResult
 	for _, channel := range channels {
@@ -1041,7 +1041,7 @@ func performChannels(channels []alerting.Channel, ctx map[string]interface{}) ([
 			resBytes []byte
 			messageBytes []byte
 		)
-		_, err := common.RetrieveChannel(&channel)
+		_, err := common.RetrieveChannel(&channel, raiseChannelEnabledErr)
 		if err != nil {
 			log.Error(err)
 			errCount++

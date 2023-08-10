@@ -257,14 +257,14 @@ function install_service() {
   echo "[agent] waiting service install & start"
   $agent_svc -service install &>/dev/null
   $agent_svc -service start &>/dev/null
-
+  sleep 5
 }
 
 function register_agent() {
   token={{token}}
   console_endpoint="{{console_endpoint}}"
   echo "[agent] waiting registering to INFINI Console"
-  __try curl -s --retry 5 --retry-delay 3 -m30 -XPOST -o /dev/null ${console_endpoint}/agent/instance?token=${token}
+  __try curl -s --retry 5 --retry-delay 3 -m30 -XPOST -o ${install_dir}/setup.log "${console_endpoint}/agent/instance?token=${token}"
 }
 
 function main() {

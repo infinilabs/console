@@ -249,7 +249,7 @@ function install_service() {
   linux_svc=/etc/systemd/system/agent.service
 
   if [[ -f "$linux_svc" || -f "$macos_svc" ]]; then
-    echo "[agent] waiting service stop & uninstall for existing agent"
+    echo "[agent] waiting service stop & uninstall for exist agent"
     $agent_svc -service stop &>/dev/null
     $agent_svc -service uninstall &>/dev/null
   fi
@@ -264,13 +264,13 @@ function register_agent() {
   token={{token}}
   console_endpoint="{{console_endpoint}}"
   echo "[agent] waiting registering to INFINI Console"
-  __try curl -s --retry 5 --retry-delay 3 -m30 -XPOST -o ${install_dir}/setup.log "${console_endpoint}/agent/instance?token=${token}"
+  __try curl -s --retry 1 --retry-delay 3 -m30 -XPOST -o ${install_dir}/setup.log "${console_endpoint}/agent/instance?token=${token}"
 }
 
 function main() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      -u|--url) location="$2"; shift 2 ;;
+      -u|--url) url_download="$2"; shift 2 ;;
       -v|--version) version="$2"; shift 2 ;;
       -t|--target) target_dir="$2"; shift 2 ;;
       *) print_usage ;;
@@ -278,6 +278,7 @@ function main() {
   done
 
   program_name=agent
+  location=${url_download:-https://release.infinilabs.com/agent/stable}
   install_dir=${target_dir:-/opt/$program_name}
   latest_version=$(get_latest_version)
   version=${version:-$latest_version}

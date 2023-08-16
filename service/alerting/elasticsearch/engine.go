@@ -745,6 +745,8 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			Priority:     priority,
 			Title:        alertItem.Title,
 			Message:      alertItem.Message,
+			Tags: rule.Tags,
+			Category: rule.Category,
 		}
 		err = saveAlertMessage(msg)
 		if err != nil {

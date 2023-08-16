@@ -70,6 +70,8 @@ type AlertMessage struct {
 	IgnoredUser string `json:"ignored_user,omitempty" elastic_mapping:"ignored_user: { type: keyword,copy_to:search_text }"`
 	Priority    string `json:"priority" elastic_mapping:"priority: { type: keyword }"`
 	SearchText  string `json:"-" elastic_mapping:"search_text:{type:text,index_prefixes:{},index_phrases:true, analyzer:suggest_text_search }"`
+	Category string `json:"category,omitempty"  elastic_mapping:"category: { type: keyword,copy_to:search_text }"`
+	Tags []string `json:"tags,omitempty"  elastic_mapping:"tags: { type: keyword,copy_to:search_text }"`
 }
 
 /*

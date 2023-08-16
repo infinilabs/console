@@ -25,6 +25,7 @@ func (h *AlertAPI) ignoreAlertMessage(w http.ResponseWriter, req *http.Request, 
 	body := struct {
 		Messages []alerting.AlertMessage `json:"messages"`
 		IgnoredReason string `json:"ignored_reason"`
+		IsReset bool `json:"is_reset"`
 	}{}
 	err := h.DecodeJSON(req,  &body)
 	if err != nil {
@@ -41,29 +42,44 @@ func (h *AlertAPI) ignoreAlertMessage(w http.ResponseWriter, req *http.Request, 
 		messageIDs = append(messageIDs, msg.ID)
 	}
 	currentUser := h.GetCurrentUser(req)
+	must := []util.MapStr{
+		{
+			"terms": util.MapStr{
+				"_id": messageIDs,
+			},
+		},
+	}
+	var source string
+	if body.IsReset {
+		must = append(must, util.MapStr{
+			"term": util.MapStr{
+				"status": util.MapStr{
+					"value": alerting.MessageStateIgnored,
+				},
+			},
+		})
+		source = fmt.Sprintf("ctx._source['status'] = '%s'", alerting.MessageStateAlerting)
+	}else {
+		must = append(must, util.MapStr{
+			"term": util.MapStr{
+				"status": util.MapStr{
+					"value": alerting.MessageStateAlerting,
+				},
+			},
+		})
+		source = fmt.Sprintf("ctx._source['status'] = '%s';ctx._source['ignored_time']='%s';ctx._source['ignored_reason']='%s';ctx._source['ignored_user']='%s'", alerting.MessageStateIgnored, time.Now().Format(time.RFC3339Nano), body.IgnoredReason, currentUser)
+	}
 	queryDsl := util.MapStr{
 		"query": util.MapStr{
 			"bool": util.MapStr{
-				"must": []util.MapStr{
-					{
-						"terms": util.MapStr{
-							"_id": messageIDs,
-						},
-					},
-					{
-						"term": util.MapStr{
-							"status": util.MapStr{
-								"value": alerting.MessageStateAlerting,
-							},
-						},
-					},
-				},
+				"must": must,
 			},
 		},
 		"script": util.MapStr{
-			"source": fmt.Sprintf("ctx._source['status'] = '%s';ctx._source['ignored_time']='%s';ctx._source['ignored_reason']='%s';ctx._source['ignored_user']='%s'", alerting.MessageStateIgnored, time.Now().Format(time.RFC3339Nano), body.IgnoredReason, currentUser),
+			"source": source,
 		},
 	}
+	log.Info(util.MustToJSON(queryDsl))
 	err = orm.UpdateBy(alerting.AlertMessage{}, util.MustToJSONBytes(queryDsl))
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -160,10 +176,53 @@ func (h *AlertAPI) getAlertMessageStats(w http.ResponseWriter, req *http.Request
 		return
 	}
 	statusCounts[alerting.MessageStateIgnored] = countRes.Count
+
+	queryDsl = util.MapStr{
+		"size": 0,
+		"aggs": util.MapStr{
+			"terms_by_category": util.MapStr{
+				"terms": util.MapStr{
+					"field": "category",
+					"size": 100,
+				},
+			},
+			"terms_by_tags": util.MapStr{
+				"terms": util.MapStr{
+					"field": "tags",
+					"size": 100,
+				},
+			},
+		},
+	}
+	searchRes, err = esClient.SearchWithRawQueryDSL(indexName, util.MustToJSONBytes(queryDsl) )
+	if err != nil {
+		h.WriteJSON(w, util.MapStr{
+			"error": err.Error(),
+		}, http.StatusInternalServerError)
+		return
+	}
+	categories := []string{}
+	if termsAgg, ok := searchRes.Aggregations["terms_by_category"]; ok {
+		for _, bk := range termsAgg.Buckets {
+			if cate, ok := bk["key"].(string); ok {
+				categories = append(categories, cate)
+			}
+		}
+	}
+	tags := []string{}
+	if termsAgg, ok := searchRes.Aggregations["terms_by_tags"]; ok {
+		for _, bk := range termsAgg.Buckets {
+			if tag, ok := bk["key"].(string); ok {
+				tags = append(tags, tag)
+			}
+		}
+	}
 	h.WriteJSON(w, util.MapStr{
 		"alert": util.MapStr{
 			"current": statusCounts,
 		},
+		"categories": categories,
+		"tags": tags,
 	}, http.StatusOK)
 }
 
@@ -182,6 +241,8 @@ func (h *AlertAPI) searchAlertMessage(w http.ResponseWriter, req *http.Request, 
 		max        = h.GetParameterOrDefault(req, "max", "now")
 		mustBuilder = &strings.Builder{}
 		sortBuilder = strings.Builder{}
+		category = h.GetParameterOrDefault(req, "category", "")
+		tags = h.GetParameterOrDefault(req, "tags", "")
 	)
 	mustBuilder.WriteString(fmt.Sprintf(`{"range":{"created":{"gte":"%s", "lte": "%s"}}}`, min, max))
 	if ruleID != "" {
@@ -212,6 +273,14 @@ func (h *AlertAPI) searchAlertMessage(w http.ResponseWriter, req *http.Request, 
 	if priority != "" {
 		mustBuilder.WriteString(",")
 		mustBuilder.WriteString(fmt.Sprintf(`{"term":{"priority":{"value":"%s"}}}`, priority))
+	}
+	if category != "" {
+		mustBuilder.WriteString(",")
+		mustBuilder.WriteString(fmt.Sprintf(`{"term":{"category":{"value":"%s"}}}`, category))
+	}
+	if tags != "" {
+		mustBuilder.WriteString(",")
+		mustBuilder.WriteString(fmt.Sprintf(`{"term":{"tags":{"value":"%s"}}}`, tags))
 	}
 	size, _ := strconv.Atoi(strSize)
 	if size <= 0 {

@@ -133,6 +133,7 @@ func main() {
 			orm.RegisterSchemaWithIndexName(alerting.Channel{}, "channel")
 			orm.RegisterSchemaWithIndexName(insight.Visualization{}, "visualization")
 			orm.RegisterSchemaWithIndexName(insight.Dashboard{}, "dashboard")
+			orm.RegisterSchemaWithIndexName(insight.Widget{}, "widget")
 			orm.RegisterSchemaWithIndexName(task1.Task{}, "task")
 			orm.RegisterSchemaWithIndexName(model.Layout{}, "layout")
 			orm.RegisterSchemaWithIndexName(model.Notification{}, "notification")

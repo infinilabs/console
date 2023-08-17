@@ -28,4 +28,5 @@ func InitAPI() {
 	api.HandleAPIMethod(api.DELETE, "/insight/dashboard/:dashboard_id", insight.deleteDashboard)
 	api.HandleAPIMethod(api.GET, "/insight/dashboard/_search", insight.searchDashboard)
 	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/map_label/_render", insight.renderMapLabelTemplate)
+	api.HandleAPIMethod(api.GET, "/insight/widget/:widget_id", insight.getWidget)
 }

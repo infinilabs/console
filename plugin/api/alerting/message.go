@@ -79,7 +79,6 @@ func (h *AlertAPI) ignoreAlertMessage(w http.ResponseWriter, req *http.Request, 
 			"source": source,
 		},
 	}
-	log.Info(util.MustToJSON(queryDsl))
 	err = orm.UpdateBy(alerting.AlertMessage{}, util.MustToJSONBytes(queryDsl))
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -355,8 +354,12 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 		return
 	}
 	metricExpression, _ := rule.Metrics.GenerateExpression()
+	var hitCondition string
 	for i, cond := range rule.Conditions.Items {
 		expression, _ := cond.GenerateConditionExpression()
+		if cond.Priority == message.Priority {
+			hitCondition = strings.ReplaceAll(expression, "result", "")
+		}
 		rule.Conditions.Items[i].Expression = strings.ReplaceAll(expression, "result", metricExpression)
 	}
 	var duration time.Duration
@@ -384,6 +387,8 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 		"ignored_reason": message.IgnoredReason,
 		"ignored_user": message.IgnoredUser,
 		"status": message.Status,
+		"expression": rule.Metrics.Expression,
+		"hit_condition": hitCondition,
 	}
 	h.WriteJSON(w, detailObj, http.StatusOK)
 }

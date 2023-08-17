@@ -29,4 +29,5 @@ func InitAPI() {
 	api.HandleAPIMethod(api.GET, "/insight/dashboard/_search", insight.searchDashboard)
 	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/map_label/_render", insight.renderMapLabelTemplate)
 	api.HandleAPIMethod(api.GET, "/insight/widget/:widget_id", insight.getWidget)
+	api.HandleAPIMethod(api.POST, "/insight/widget", insight.RequireLogin(insight.createWidget))
 }

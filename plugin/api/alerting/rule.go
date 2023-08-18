@@ -418,7 +418,9 @@ func (alertAPI *AlertAPI) deleteRule(w http.ResponseWriter, req *http.Request, p
 	delDsl := util.MapStr{
 		"query": util.MapStr{
 			"term": util.MapStr{
-				"rule_id": id,
+				"rule_id": util.MapStr{
+					"value": id,
+				},
 			},
 		},
 	}
@@ -435,6 +437,69 @@ func (alertAPI *AlertAPI) deleteRule(w http.ResponseWriter, req *http.Request, p
 		"_id":    obj.ID,
 		"result": "deleted",
 	}, 200)
+}
+
+func (alertAPI *AlertAPI) batchDeleteRule(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	var ruleIDs = []string{}
+	err := alertAPI.DecodeJSON(req, &ruleIDs)
+	if err != nil {
+		log.Error(err)
+		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if len(ruleIDs) == 0 {
+		alertAPI.WriteJSON(w, util.MapStr{}, http.StatusOK)
+		return
+	}
+	rules, err := getRulesByID(ruleIDs)
+	if err != nil {
+		log.Error(err)
+		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	var newIDs []string
+	for _, rule := range rules {
+		saveAlertActivity("alerting_rule_change", "delete",  util.MapStr{
+			"cluster_id": rule.Resource.ID,
+			"rule_id": rule.ID,
+			"cluster_name": rule.Resource.Name,
+		},nil, &rule)
+		task.DeleteTask(rule.ID)
+		clearKV(rule.ID)
+		newIDs = append(newIDs, rule.ID)
+	}
+	if len(newIDs) > 0 {
+		q := util.MapStr{
+			"query": util.MapStr{
+				"terms": util.MapStr{
+					"id": newIDs,
+				},
+			},
+		}
+		err = orm.DeleteBy(alerting.Rule{}, util.MustToJSONBytes(q))
+		if err != nil {
+			log.Error(err)
+			alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		delDsl := util.MapStr{
+			"query": util.MapStr{
+				"terms": util.MapStr{
+					"rule_id": newIDs,
+				},
+			},
+		}
+		err = orm.DeleteBy(alerting.AlertMessage{}, util.MustToJSONBytes(delDsl))
+		if err != nil {
+			log.Error(err)
+		}
+		err = orm.DeleteBy(alerting.Alert{}, util.MustToJSONBytes(delDsl))
+		if err != nil {
+			log.Error(err)
+		}
+	}
+	alertAPI.WriteAckOKJSON(w)
 }
 
 func (alertAPI *AlertAPI) searchRule(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {

@@ -699,7 +699,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 					return err
 				}
 				actionResults, _ := performChannels(recoverCfg.Normal, paramsCtx, false)
-				alertItem.ActionExecutionResults = actionResults
+				alertItem.RecoverActionResults = actionResults
 			}
 		}
 		return nil
@@ -852,7 +852,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 				}
 				if time.Now().Sub(rule.LastEscalationTime.Local()) > periodDuration {
 					actionResults, errCount := performChannels(notifyCfg.Escalation, paramsCtx, false)
-					alertItem.ActionExecutionResults = actionResults
+					alertItem.EscalationActionResults = actionResults
 					//todo init last escalation time when create task (by last alert item is escalated)
 					if errCount == 0 {
 						rule.LastEscalationTime = time.Now()
@@ -1063,7 +1063,7 @@ func performChannels(channels []alerting.Channel, ctx map[string]interface{}, ra
 			Error:         errStr,
 			Message:       string(messageBytes),
 			ExecutionTime: int(time.Now().UnixNano()/1e6),
-			ChannelType:   channel.Type,
+			ChannelType:   channel.SubType,
 			ChannelName:   channel.Name,
 		})
 	}

@@ -22,7 +22,9 @@ type Alert struct {
 	Title    string   `json:"title" elastic_mapping:"title: { type: keyword }"`
 	Message          string      `json:"message" elastic_mapping:"context: { type: keyword, copy_to:search_text }"`
 	AcknowledgedTime interface{} `json:"acknowledged_time,omitempty"`
-	ActionExecutionResults []ActionExecutionResult `json:"action_execution_results"`
+	ActionExecutionResults []ActionExecutionResult `json:"action_execution_results,omitempty"`
+	RecoverActionResults []ActionExecutionResult `json:"recover_action_results,omitempty"`
+	EscalationActionResults []ActionExecutionResult `json:"escalation_action_results,omitempty"`
 	Users []string `json:"users,omitempty"`
 	State string `json:"state"`
 	Error string `json:"error,omitempty"`

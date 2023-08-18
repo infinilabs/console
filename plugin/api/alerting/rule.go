@@ -592,9 +592,7 @@ func (alertAPI *AlertAPI) fetchAlertInfos(w http.ResponseWriter, req *http.Reque
 	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetWildcardIndexName(alerting.Alert{}), util.MustToJSONBytes(queryDsl) )
 	if err != nil {
 		log.Error(err)
-		alertAPI.WriteJSON(w, util.MapStr{
-			"error": err.Error(),
-		}, http.StatusInternalServerError)
+		alertAPI.WriteError(w,  err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if len(searchRes.Hits.Hits) == 0 {
@@ -607,6 +605,50 @@ func (alertAPI *AlertAPI) fetchAlertInfos(w http.ResponseWriter, req *http.Reque
 		if ruleID, ok := hit.Source["rule_id"].(string); ok {
 			latestAlertInfos[ruleID] = util.MapStr{
 				"status":      hit.Source["state"],
+			}
+		}
+	}
+	queryDsl = util.MapStr{
+		"_source": []string{"created", "rule_id"},
+		"sort": []util.MapStr{
+			{
+				"created": util.MapStr{
+					"order": "desc",
+				},
+			},
+		},
+		"collapse": util.MapStr{
+			"field": "rule_id",
+		},
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": []util.MapStr{
+					{
+						"terms": util.MapStr{
+							"rule_id": ruleIDs,
+						},
+					},
+					{
+						"term": util.MapStr{
+							"state": util.MapStr{
+								"value": alerting.AlertStateAlerting,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	searchRes, err = esClient.SearchWithRawQueryDSL(orm.GetWildcardIndexName(alerting.Alert{}), util.MustToJSONBytes(queryDsl) )
+	if err != nil {
+		log.Error(err)
+		alertAPI.WriteError(w,  err.Error(), http.StatusInternalServerError)
+		return
+	}
+	for _, hit := range searchRes.Hits.Hits {
+		if ruleID, ok := hit.Source["rule_id"].(string); ok {
+			if _, ok = latestAlertInfos[ruleID]; ok {
+				latestAlertInfos[ruleID]["last_notification_time"] = hit.Source["created"]
 			}
 		}
 
@@ -636,20 +678,9 @@ func (alertAPI *AlertAPI) enableRule(w http.ResponseWriter, req *http.Request, p
 		return
 	}
 	if reqObj.Enabled {
-		eng := alerting2.GetEngine(obj.Resource.Type)
-		ruleTask := task.ScheduleTask{
-			ID:          obj.ID,
-			Interval:    obj.Schedule.Interval,
-			Description: obj.Metrics.Expression,
-			Task:        eng.GenerateTask(obj),
-		}
-		task.DeleteTask(ruleTask.ID)
-		clearKV(ruleTask.ID)
-		task.RegisterScheduleTask(ruleTask)
-		task.StartTask(ruleTask.ID)
-	}else{
-		task.DeleteTask(id)
-		clearKV(id)
+		enableRule(&obj)
+	} else {
+		disableRule(&obj)
 	}
 	obj.Enabled = reqObj.Enabled
 	err = orm.Save(nil, obj)
@@ -660,8 +691,26 @@ func (alertAPI *AlertAPI) enableRule(w http.ResponseWriter, req *http.Request, p
 	}
 	alertAPI.WriteJSON(w, util.MapStr{
 		"result": "updated",
-		"_id": id,
+		"_id":    id,
 	}, http.StatusOK)
+}
+
+func enableRule(obj *alerting.Rule) {
+	eng := alerting2.GetEngine(obj.Resource.Type)
+	ruleTask := task.ScheduleTask{
+		ID:          obj.ID,
+		Interval:    obj.Schedule.Interval,
+		Description: obj.Metrics.Expression,
+		Task:        eng.GenerateTask(*obj),
+	}
+	task.DeleteTask(ruleTask.ID)
+	clearKV(ruleTask.ID)
+	task.RegisterScheduleTask(ruleTask)
+	task.StartTask(ruleTask.ID)
+}
+func disableRule(obj *alerting.Rule) {
+	task.DeleteTask(obj.ID)
+	clearKV(obj.ID)
 }
 
 func (alertAPI *AlertAPI) sendTestMessage(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -917,4 +966,129 @@ func getRuleMetricData( rule *alerting.Rule, filterParam *alerting.FilterParam) 
 		})
 	}
 	return &metricItem,queryResult, nil
+}
+
+func (alertAPI *AlertAPI) batchEnableRule(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	var ruleIDs = []string{}
+	err := alertAPI.DecodeJSON(req, &ruleIDs)
+	if err != nil {
+		log.Error(err)
+		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if len(ruleIDs) == 0 {
+		alertAPI.WriteJSON(w, util.MapStr{}, http.StatusOK)
+		return
+	}
+	rules, err := getRulesByID(ruleIDs)
+	if err != nil {
+		log.Error(err)
+		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	var newIDs []string
+	for _, rule := range rules {
+		if !rule.Enabled {
+			enableRule(&rule)
+			newIDs = append(newIDs, rule.ID)
+		}
+	}
+	if len(newIDs) > 0 {
+		q := util.MapStr{
+			"query": util.MapStr{
+				"terms": util.MapStr{
+					"id": newIDs,
+				},
+			},
+			"script": util.MapStr{
+				"source": fmt.Sprintf("ctx._source['enabled'] = %v", true),
+			},
+		}
+		err = orm.UpdateBy(alerting.Rule{}, util.MustToJSONBytes(q))
+		if err != nil {
+			log.Error(err)
+			alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+	alertAPI.WriteAckOKJSON(w)
+}
+
+func (alertAPI *AlertAPI) batchDisableRule(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	var ruleIDs = []string{}
+	err := alertAPI.DecodeJSON(req, &ruleIDs)
+	if err != nil {
+		log.Error(err)
+		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if len(ruleIDs) == 0 {
+		alertAPI.WriteJSON(w, util.MapStr{}, http.StatusOK)
+		return
+	}
+	rules, err := getRulesByID(ruleIDs)
+	if err != nil {
+		log.Error(err)
+		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	log.Info(rules)
+	var newIDs []string
+	for _, rule := range rules {
+		if rule.Enabled {
+			disableRule(&rule)
+			newIDs = append(newIDs, rule.ID)
+		}
+	}
+	if len(newIDs) > 0 {
+		q := util.MapStr{
+			"query": util.MapStr{
+				"terms": util.MapStr{
+					"id": newIDs,
+				},
+			},
+			"script": util.MapStr{
+				"source": fmt.Sprintf("ctx._source['enabled'] = %v", false),
+			},
+		}
+		log.Info(util.MustToJSON(q))
+		err = orm.UpdateBy(alerting.Rule{}, util.MustToJSONBytes(q))
+		if err != nil {
+			log.Error(err)
+			alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+	alertAPI.WriteAckOKJSON(w)
+}
+
+func getRulesByID(ruleIDs []string) ([]alerting.Rule, error){
+	if len(ruleIDs) == 0 {
+		return nil, nil
+	}
+	query := util.MapStr{
+		"size": len(ruleIDs),
+		"query": util.MapStr{
+			"terms": util.MapStr{
+				"id": ruleIDs,
+			},
+		},
+	}
+	q := &orm.Query{
+		RawQuery: util.MustToJSONBytes(query),
+	}
+	err, result := orm.Search(alerting.Rule{}, q)
+	if err != nil {
+		return nil, err
+	}
+	var rules []alerting.Rule
+	for _, row := range result.Result {
+		buf := util.MustToJSONBytes(row)
+		rule := alerting.Rule{}
+		util.MustFromJSONBytes(buf, &rule)
+		rules = append(rules, rule)
+	}
+	return rules, nil
 }

@@ -6,6 +6,7 @@ package alerting
 
 import (
 	"fmt"
+	"github.com/buger/jsonparser"
 	log "github.com/cihub/seelog"
 	"infini.sh/console/model/alerting"
 	alerting2 "infini.sh/console/service/alerting"
@@ -391,4 +392,192 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 		"hit_condition": hitCondition,
 	}
 	h.WriteJSON(w, detailObj, http.StatusOK)
+}
+
+func (h *AlertAPI) getMessageNotificationInfo(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	message :=  &alerting.AlertMessage{
+		ID: ps.ByName("message_id"),
+	}
+	exists, err := orm.Get(message)
+	if !exists || err != nil {
+		log.Error(err)
+		h.WriteJSON(w, util.MapStr{
+			"_id":   message.ID,
+			"found": false,
+		}, http.StatusNotFound)
+		return
+	}
+	rule := &alerting.Rule{
+		ID: message.RuleID,
+	}
+	exists, err = orm.Get(rule)
+	if !exists || err != nil {
+		log.Error(err)
+		h.WriteError(w, fmt.Sprintf("rule [%s] not found", rule.ID), http.StatusInternalServerError)
+		return
+	}
+	notificationInfo := util.MapStr{}
+	if rule.NotificationConfig == nil && rule.RecoveryNotificationConfig == nil {
+		notificationInfo["is_empty"] = true
+		h.WriteJSON(w, notificationInfo, http.StatusOK)
+		return
+	}
+	stats, err := getMessageNotificationStats(message)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if rule.NotificationConfig != nil {
+		notificationInfo["alerting"] = util.MapStr{
+			"accept_time_range": rule.NotificationConfig.AcceptTimeRange,
+			"throttle_period": rule.NotificationConfig.ThrottlePeriod,
+			"escalation_enabled":  rule.NotificationConfig.EscalationEnabled,
+			"escalation_throttle_period": rule.NotificationConfig.EscalationThrottlePeriod,
+			"normal_stats": stats["normal"],
+			"escalation_stats": stats["escalation"],
+		}
+	}
+	if rule.RecoveryNotificationConfig != nil {
+		notificationInfo["recovery"] = util.MapStr{
+			"stats": stats["recovery"],
+		}
+	}
+	h.WriteJSON(w, notificationInfo, http.StatusOK)
+}
+
+func getMessageNotificationStats(msg *alerting.AlertMessage )(util.MapStr, error){
+	rangeQ := util.MapStr{
+		"gte": msg.Created.UnixMilli(),
+	}
+	if msg.Status == alerting.MessageStateRecovered {
+		rangeQ["lte"] = msg.Updated.UnixMilli()
+	}
+	aggs := util.MapStr{
+		"grp_normal_channel": util.MapStr{
+			"terms": util.MapStr{
+				"field": "action_execution_results.channel_type",
+				"size": 20,
+			},
+			"aggs": util.MapStr{
+				"top": util.MapStr{
+					"top_hits": util.MapStr{
+						"sort": []util.MapStr{
+							{
+								"created": util.MapStr{
+									"order": "desc",
+								},
+							},
+						},
+						"_source": util.MapStr{
+							"includes": []string{"created", "action_execution_results.channel_name"},
+						},
+						"size": 1,
+					},
+				},
+			},
+		},
+		"grp_escalation_channel": util.MapStr{
+			"terms": util.MapStr{
+				"field": "escalation_action_results.channel_type",
+				"size": 20,
+			},
+			"aggs": util.MapStr{
+				"top": util.MapStr{
+					"top_hits": util.MapStr{
+						"sort": []util.MapStr{
+							{
+								"created": util.MapStr{
+									"order": "desc",
+								},
+							},
+						},
+						"_source": util.MapStr{
+							"includes": []string{"created", "escalation_action_results.channel_name"},
+						},
+						"size": 1,
+					},
+				},
+			},
+		},
+	}
+	if msg.Status == alerting.MessageStateRecovered {
+		aggs["grp_recover_channel"] = util.MapStr{
+			"terms": util.MapStr{
+				"field": "recover_action_results.channel_type",
+				"size": 20,
+			},
+			"aggs": util.MapStr{
+				"top": util.MapStr{
+					"top_hits": util.MapStr{
+						"sort": []util.MapStr{
+							{
+								"created": util.MapStr{
+									"order": "desc",
+								},
+							},
+						},
+						"_source": util.MapStr{
+							"includes": []string{"created", "recover_action_results.channel_name"},
+						},
+						"size": 1,
+					},
+				},
+			},
+		}
+	}
+	query := util.MapStr{
+		"size": 0,
+		"aggs": aggs,
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": []util.MapStr{
+					{
+						"range": util.MapStr{
+							"created": rangeQ,
+						},
+					},
+					{
+						"term": util.MapStr{
+							"rule_id": util.MapStr{
+								"value": msg.RuleID,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	q := orm.Query{
+		RawQuery: util.MustToJSONBytes(query),
+	}
+	err, result := orm.Search(alerting.Alert{}, &q)
+	if err != nil {
+		return nil, err
+	}
+
+	var normalStats = extractStatsFromRaw(result.Raw, "grp_normal_channel", "action_execution_results")
+	var escalationStats = extractStatsFromRaw(result.Raw, "grp_escalation_channel", "escalation_action_results")
+	stats := util.MapStr{
+		"normal": normalStats,
+		"escalation": escalationStats,
+	}
+	if msg.Status == alerting.MessageStateRecovered {
+		recoverStats := extractStatsFromRaw(result.Raw, "grp_recover_channel", "recover_action_results")
+		stats["recovery"] = recoverStats
+	}
+
+	return stats, nil
+}
+func extractStatsFromRaw(searchRawRes []byte, grpKey string, actionKey string) []util.MapStr {
+	var stats []util.MapStr
+	jsonparser.ArrayEach(searchRawRes, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+		statsItem := util.MapStr{}
+		statsItem["channel_type"], _ = jsonparser.GetString(value, "key")
+		statsItem["count"], _ = jsonparser.GetInt(value, "doc_count")
+		statsItem["channel_name"], _ = jsonparser.GetString(value, "top", "hits","hits", "[0]", "_source",actionKey, "[0]", "channel_name")
+		statsItem["last_time"], _ =  jsonparser.GetString(value, "top", "hits","hits", "[0]", "_source","created")
+		stats = append(stats, statsItem)
+	}, "aggregations", grpKey, "buckets")
+	return stats
 }

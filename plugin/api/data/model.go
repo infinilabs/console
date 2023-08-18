@@ -10,6 +10,7 @@ type ExportDataRequest struct {
 
 type ExportMetadata struct {
 	Type string `json:"type"`
+	Filter interface{} `json:"filter,omitempty"`
 }
 
 type ExportData struct {

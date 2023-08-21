@@ -470,7 +470,7 @@ func getMessageNotificationStats(msg *alerting.AlertMessage )(util.MapStr, error
 							},
 						},
 						"_source": util.MapStr{
-							"includes": []string{"created", "action_execution_results.channel_name"},
+							"includes": []string{"created", "action_execution_results.channel_name", "action_execution_results.channel_type"},
 						},
 						"size": 1,
 					},
@@ -493,7 +493,7 @@ func getMessageNotificationStats(msg *alerting.AlertMessage )(util.MapStr, error
 							},
 						},
 						"_source": util.MapStr{
-							"includes": []string{"created", "escalation_action_results.channel_name"},
+							"includes": []string{"created", "escalation_action_results.channel_name", "escalation_action_results.channel_type"},
 						},
 						"size": 1,
 					},
@@ -518,7 +518,7 @@ func getMessageNotificationStats(msg *alerting.AlertMessage )(util.MapStr, error
 							},
 						},
 						"_source": util.MapStr{
-							"includes": []string{"created", "recover_action_results.channel_name"},
+							"includes": []string{"created", "recover_action_results.channel_name", "recover_action_results.channel_type"},
 						},
 						"size": 1,
 					},
@@ -575,7 +575,13 @@ func extractStatsFromRaw(searchRawRes []byte, grpKey string, actionKey string) [
 		statsItem := util.MapStr{}
 		statsItem["channel_type"], _ = jsonparser.GetString(value, "key")
 		statsItem["count"], _ = jsonparser.GetInt(value, "doc_count")
-		statsItem["channel_name"], _ = jsonparser.GetString(value, "top", "hits","hits", "[0]", "_source",actionKey, "[0]", "channel_name")
+		jsonparser.ArrayEach(value, func(v []byte, dataType jsonparser.ValueType, offset int, err error) {
+			ck, _ := jsonparser.GetString(v,  "channel_type")
+			cn, _ := jsonparser.GetString(v,  "channel_name")
+			if ck == statsItem["channel_type"] {
+				statsItem["channel_name"] = cn
+			}
+		}, "top", "hits","hits", "[0]", "_source",actionKey)
 		statsItem["last_time"], _ =  jsonparser.GetString(value, "top", "hits","hits", "[0]", "_source","created")
 		stats = append(stats, statsItem)
 	}, "aggregations", grpKey, "buckets")

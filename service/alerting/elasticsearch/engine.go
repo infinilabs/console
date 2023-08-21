@@ -822,6 +822,9 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 
 		if alertMessage == nil || period > periodDuration {
 			actionResults, _ := performChannels(notifyCfg.Normal, paramsCtx, false)
+			if rule.ID == "builtin-calaqnh7h710dpnp2bm8" {
+				log.Info(actionResults)
+			}
 			alertItem.ActionExecutionResults = actionResults
 			//change and save last notification time in local kv store when action error count equals zero
 			rule.LastNotificationTime = time.Now()
@@ -851,15 +854,13 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 					}
 				}
 				if time.Now().Sub(rule.LastEscalationTime.Local()) > periodDuration {
-					actionResults, errCount := performChannels(notifyCfg.Escalation, paramsCtx, false)
+					actionResults, _ := performChannels(notifyCfg.Escalation, paramsCtx, false)
 					alertItem.EscalationActionResults = actionResults
 					//todo init last escalation time when create task (by last alert item is escalated)
-					if errCount == 0 {
-						rule.LastEscalationTime = time.Now()
-						alertItem.IsEscalated = true
-						strTime := rule.LastEscalationTime.UTC().Format(time.RFC3339)
-						kv.AddValue(alerting2.KVLastEscalationTime, []byte(rule.ID), []byte(strTime))
-					}
+					rule.LastEscalationTime = time.Now()
+					alertItem.IsEscalated = true
+					strTime := rule.LastEscalationTime.UTC().Format(time.RFC3339)
+					kv.AddValue(alerting2.KVLastEscalationTime, []byte(rule.ID), []byte(strTime))
 				}
 
 			}

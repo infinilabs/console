@@ -125,6 +125,13 @@ func (handler APIHandler) getLatestClusterMonitorData(clusterIDs []interface{}) 
    "query": {
     "bool": {
       "must": [
+		 {
+          "range": {
+            "timestamp": {
+              "gte": "now-1d"
+            }
+          }
+        },
         {
           "terms": {
             "metadata.labels.cluster_id": %s

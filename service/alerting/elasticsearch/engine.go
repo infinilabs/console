@@ -822,9 +822,6 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 
 		if alertMessage == nil || period > periodDuration {
 			actionResults, _ := performChannels(notifyCfg.Normal, paramsCtx, false)
-			if rule.ID == "builtin-calaqnh7h710dpnp2bm8" {
-				log.Info(actionResults)
-			}
 			alertItem.ActionExecutionResults = actionResults
 			//change and save last notification time in local kv store when action error count equals zero
 			rule.LastNotificationTime = time.Now()
@@ -1066,6 +1063,7 @@ func performChannels(channels []alerting.Channel, ctx map[string]interface{}, ra
 			ExecutionTime: int(time.Now().UnixNano()/1e6),
 			ChannelType:   channel.SubType,
 			ChannelName:   channel.Name,
+			ChannelID: channel.ID,
 		})
 	}
 	return actionResults, errCount

@@ -42,6 +42,7 @@ type ActionExecutionResult struct {
 	Message string `json:"message"`
 	ChannelName string `json:"channel_name"`
 	ChannelType string `json:"channel_type"`
+	ChannelID string `json:"channel_id"`
 }
 
 const (

@@ -190,7 +190,6 @@ func (alertAPI *AlertAPI) getRuleDetail(w http.ResponseWriter, req *http.Request
 		return
 	}
 	queryDSL := util.MapStr{
-		"_source": "state",
 		"size": 1,
 		"sort": []util.MapStr{
 			{
@@ -200,9 +199,22 @@ func (alertAPI *AlertAPI) getRuleDetail(w http.ResponseWriter, req *http.Request
 			},
 		},
 		"query": util.MapStr{
-			"term": util.MapStr{
-				"rule_id": util.MapStr{
-					"value": obj.ID,
+			"bool": util.MapStr{
+				"must": []util.MapStr{
+					{
+						"term": util.MapStr{
+							"rule_id": util.MapStr{
+								"value": obj.ID,
+							},
+						},
+					},
+					{
+						"term": util.MapStr{
+							"status": util.MapStr{
+								"value": alerting.MessageStateAlerting,
+							},
+						},
+					},
 				},
 			},
 		},
@@ -211,18 +223,74 @@ func (alertAPI *AlertAPI) getRuleDetail(w http.ResponseWriter, req *http.Request
 		WildcardIndex: true,
 		RawQuery: util.MustToJSONBytes(queryDSL),
 	}
-	err, result := orm.Search(alerting.Alert{}, q)
+	err, result := orm.Search(alerting.AlertMessage{}, q)
 	if err != nil {
 		log.Error(err)
-		alertAPI.WriteJSON(w, util.MapStr{
-			"error": err.Error(),
-		}, http.StatusInternalServerError)
+		alertAPI.WriteError(w,  err.Error(), http.StatusInternalServerError)
 		return
 	}
 	var state interface{} = "N/A"
+	var alertingMessageItem interface{}
 	if len(result.Result) > 0 {
+		alertingMessageItem = result.Result[0]
 		if resultM, ok := result.Result[0].(map[string]interface{}); ok {
-			state = resultM["state"]
+			state = resultM["status"]
+		}
+	}
+	var channelIDs []interface{}
+	if obj.NotificationConfig != nil {
+		for _, ch := range obj.NotificationConfig.Normal {
+			channelIDs = append(channelIDs, ch.ID)
+		}
+		for _, ch := range obj.NotificationConfig.Escalation {
+			channelIDs = append(channelIDs, ch.ID)
+		}
+	}
+	if obj.RecoveryNotificationConfig != nil {
+		for _, ch := range obj.RecoveryNotificationConfig.Normal {
+			channelIDs = append(channelIDs, ch.ID)
+		}
+	}
+	q = &orm.Query{
+		Size: len(channelIDs),
+	}
+	q.Conds = append(q.Conds, orm.In("id", channelIDs))
+	err, result = orm.Search(alerting.Channel{}, q)
+	if err != nil {
+		log.Error(err)
+		alertAPI.WriteError(w,  err.Error(), http.StatusInternalServerError)
+		return
+	}
+	chm := map[string]alerting.Channel{}
+	for _, row := range result.Result {
+		buf := util.MustToJSONBytes(row)
+		ch := alerting.Channel{}
+		util.MustFromJSONBytes(buf, &ch)
+		chm[ch.ID] = ch
+	}
+	if obj.NotificationConfig != nil {
+		for i, ch := range obj.NotificationConfig.Normal {
+			if v, ok := chm[ch.ID]; ok {
+				obj.NotificationConfig.Normal[i].Enabled = v.Enabled && ch.Enabled
+				obj.NotificationConfig.Normal[i].Type = v.SubType
+				obj.NotificationConfig.Normal[i].Name = v.Name
+			}
+		}
+		for i, ch := range obj.NotificationConfig.Escalation {
+			if v, ok := chm[ch.ID]; ok {
+				obj.NotificationConfig.Escalation[i].Enabled = v.Enabled && ch.Enabled
+				obj.NotificationConfig.Escalation[i].Type = v.SubType
+				obj.NotificationConfig.Escalation[i].Name = v.Name
+			}
+		}
+	}
+	if obj.RecoveryNotificationConfig != nil {
+		for i, ch := range obj.RecoveryNotificationConfig.Normal {
+			if v, ok := chm[ch.ID]; ok {
+				obj.RecoveryNotificationConfig.Normal[i].Enabled = v.Enabled && ch.Enabled
+				obj.RecoveryNotificationConfig.Normal[i].Type = v.SubType
+				obj.RecoveryNotificationConfig.Normal[i].Name = v.Name
+			}
 		}
 	}
 
@@ -231,12 +299,22 @@ func (alertAPI *AlertAPI) getRuleDetail(w http.ResponseWriter, req *http.Request
 		"resource_name": obj.Resource.Name,
 		"resource_id": obj.Resource.ID,
 		"resource_objects": obj.Resource.Objects,
+		"resource_time_field": obj.Resource.TimeField,
+		"resource_raw_filter": obj.Resource.RawFilter,
+		"metrics": obj.Metrics,
 		"bucket_size": obj.Metrics.BucketSize, //统计周期
 		"updated": obj.Updated,
 		"conditions": obj.Conditions,
 		"message_count": alertNumbers[obj.ID], //所有关联告警消息数（包括已恢复的）
 		"state": state,
 		"enabled": obj.Enabled,
+		"created": obj.Created,
+		"creator": obj.Creator,
+		"tags": obj.Tags,
+		"alerting_message": alertingMessageItem,
+		"expression": obj.Metrics.Expression,
+		"notification_config": obj.NotificationConfig,
+		"recovery_notification_config": obj.RecoveryNotificationConfig,
 	}
 
 	alertAPI.WriteJSON(w, detailObj, 200)

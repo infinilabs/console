@@ -699,7 +699,10 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 					return err
 				}
 				actionResults, _ := performChannels(recoverCfg.Normal, paramsCtx, false)
-				alertItem.ActionExecutionResults = actionResults
+				alertItem.RecoverActionResults = actionResults
+				//clear history notification time
+				_ = kv.DeleteKey(alerting2.KVLastNotificationTime, []byte(rule.ID))
+				_ = kv.DeleteKey(alerting2.KVLastEscalationTime, []byte(rule.ID))
 			}
 		}
 		return nil
@@ -745,6 +748,8 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			Priority:     priority,
 			Title:        alertItem.Title,
 			Message:      alertItem.Message,
+			Tags: rule.Tags,
+			Category: rule.Category,
 		}
 		err = saveAlertMessage(msg)
 		if err != nil {
@@ -849,15 +854,13 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 					}
 				}
 				if time.Now().Sub(rule.LastEscalationTime.Local()) > periodDuration {
-					actionResults, errCount := performChannels(notifyCfg.Escalation, paramsCtx, false)
-					alertItem.ActionExecutionResults = actionResults
+					actionResults, _ := performChannels(notifyCfg.Escalation, paramsCtx, false)
+					alertItem.EscalationActionResults = actionResults
 					//todo init last escalation time when create task (by last alert item is escalated)
-					if errCount == 0 {
-						rule.LastEscalationTime = time.Now()
-						alertItem.IsEscalated = true
-						strTime := rule.LastEscalationTime.UTC().Format(time.RFC3339)
-						kv.AddValue(alerting2.KVLastEscalationTime, []byte(rule.ID), []byte(strTime))
-					}
+					rule.LastEscalationTime = time.Now()
+					alertItem.IsEscalated = true
+					strTime := rule.LastEscalationTime.UTC().Format(time.RFC3339)
+					kv.AddValue(alerting2.KVLastEscalationTime, []byte(rule.ID), []byte(strTime))
 				}
 
 			}
@@ -1061,8 +1064,9 @@ func performChannels(channels []alerting.Channel, ctx map[string]interface{}, ra
 			Error:         errStr,
 			Message:       string(messageBytes),
 			ExecutionTime: int(time.Now().UnixNano()/1e6),
-			ChannelType:   channel.Type,
+			ChannelType:   channel.SubType,
 			ChannelName:   channel.Name,
+			ChannelID: channel.ID,
 		})
 	}
 	return actionResults, errCount

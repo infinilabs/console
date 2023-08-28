@@ -22,7 +22,9 @@ type Alert struct {
 	Title    string   `json:"title" elastic_mapping:"title: { type: keyword }"`
 	Message          string      `json:"message" elastic_mapping:"context: { type: keyword, copy_to:search_text }"`
 	AcknowledgedTime interface{} `json:"acknowledged_time,omitempty"`
-	ActionExecutionResults []ActionExecutionResult `json:"action_execution_results"`
+	ActionExecutionResults []ActionExecutionResult `json:"action_execution_results,omitempty"`
+	RecoverActionResults []ActionExecutionResult `json:"recover_action_results,omitempty"`
+	EscalationActionResults []ActionExecutionResult `json:"escalation_action_results,omitempty"`
 	Users []string `json:"users,omitempty"`
 	State string `json:"state"`
 	Error string `json:"error,omitempty"`
@@ -40,6 +42,7 @@ type ActionExecutionResult struct {
 	Message string `json:"message"`
 	ChannelName string `json:"channel_name"`
 	ChannelType string `json:"channel_type"`
+	ChannelID string `json:"channel_id"`
 }
 
 const (
@@ -70,6 +73,8 @@ type AlertMessage struct {
 	IgnoredUser string `json:"ignored_user,omitempty" elastic_mapping:"ignored_user: { type: keyword,copy_to:search_text }"`
 	Priority    string `json:"priority" elastic_mapping:"priority: { type: keyword }"`
 	SearchText  string `json:"-" elastic_mapping:"search_text:{type:text,index_prefixes:{},index_phrases:true, analyzer:suggest_text_search }"`
+	Category string `json:"category,omitempty"  elastic_mapping:"category: { type: keyword,copy_to:search_text }"`
+	Tags []string `json:"tags,omitempty"  elastic_mapping:"tags: { type: keyword,copy_to:search_text }"`
 }
 
 /*

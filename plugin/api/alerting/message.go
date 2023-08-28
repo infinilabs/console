@@ -6,6 +6,7 @@ package alerting
 
 import (
 	"fmt"
+	"github.com/buger/jsonparser"
 	log "github.com/cihub/seelog"
 	"infini.sh/console/model/alerting"
 	alerting2 "infini.sh/console/service/alerting"
@@ -25,6 +26,7 @@ func (h *AlertAPI) ignoreAlertMessage(w http.ResponseWriter, req *http.Request, 
 	body := struct {
 		Messages []alerting.AlertMessage `json:"messages"`
 		IgnoredReason string `json:"ignored_reason"`
+		IsReset bool `json:"is_reset"`
 	}{}
 	err := h.DecodeJSON(req,  &body)
 	if err != nil {
@@ -41,27 +43,41 @@ func (h *AlertAPI) ignoreAlertMessage(w http.ResponseWriter, req *http.Request, 
 		messageIDs = append(messageIDs, msg.ID)
 	}
 	currentUser := h.GetCurrentUser(req)
+	must := []util.MapStr{
+		{
+			"terms": util.MapStr{
+				"_id": messageIDs,
+			},
+		},
+	}
+	var source string
+	if body.IsReset {
+		must = append(must, util.MapStr{
+			"term": util.MapStr{
+				"status": util.MapStr{
+					"value": alerting.MessageStateIgnored,
+				},
+			},
+		})
+		source = fmt.Sprintf("ctx._source['status'] = '%s'", alerting.MessageStateAlerting)
+	}else {
+		must = append(must, util.MapStr{
+			"term": util.MapStr{
+				"status": util.MapStr{
+					"value": alerting.MessageStateAlerting,
+				},
+			},
+		})
+		source = fmt.Sprintf("ctx._source['status'] = '%s';ctx._source['ignored_time']='%s';ctx._source['ignored_reason']='%s';ctx._source['ignored_user']='%s'", alerting.MessageStateIgnored, time.Now().Format(time.RFC3339Nano), body.IgnoredReason, currentUser)
+	}
 	queryDsl := util.MapStr{
 		"query": util.MapStr{
 			"bool": util.MapStr{
-				"must": []util.MapStr{
-					{
-						"terms": util.MapStr{
-							"_id": messageIDs,
-						},
-					},
-					{
-						"term": util.MapStr{
-							"status": util.MapStr{
-								"value": alerting.MessageStateAlerting,
-							},
-						},
-					},
-				},
+				"must": must,
 			},
 		},
 		"script": util.MapStr{
-			"source": fmt.Sprintf("ctx._source['status'] = '%s';ctx._source['ignored_time']='%s';ctx._source['ignored_reason']='%s';ctx._source['ignored_user']='%s'", alerting.MessageStateIgnored, time.Now().Format(time.RFC3339Nano), body.IgnoredReason, currentUser),
+			"source": source,
 		},
 	}
 	err = orm.UpdateBy(alerting.AlertMessage{}, util.MustToJSONBytes(queryDsl))
@@ -160,10 +176,53 @@ func (h *AlertAPI) getAlertMessageStats(w http.ResponseWriter, req *http.Request
 		return
 	}
 	statusCounts[alerting.MessageStateIgnored] = countRes.Count
+
+	queryDsl = util.MapStr{
+		"size": 0,
+		"aggs": util.MapStr{
+			"terms_by_category": util.MapStr{
+				"terms": util.MapStr{
+					"field": "category",
+					"size": 100,
+				},
+			},
+			"terms_by_tags": util.MapStr{
+				"terms": util.MapStr{
+					"field": "tags",
+					"size": 100,
+				},
+			},
+		},
+	}
+	searchRes, err = esClient.SearchWithRawQueryDSL(indexName, util.MustToJSONBytes(queryDsl) )
+	if err != nil {
+		h.WriteJSON(w, util.MapStr{
+			"error": err.Error(),
+		}, http.StatusInternalServerError)
+		return
+	}
+	categories := []string{}
+	if termsAgg, ok := searchRes.Aggregations["terms_by_category"]; ok {
+		for _, bk := range termsAgg.Buckets {
+			if cate, ok := bk["key"].(string); ok {
+				categories = append(categories, cate)
+			}
+		}
+	}
+	tags := []string{}
+	if termsAgg, ok := searchRes.Aggregations["terms_by_tags"]; ok {
+		for _, bk := range termsAgg.Buckets {
+			if tag, ok := bk["key"].(string); ok {
+				tags = append(tags, tag)
+			}
+		}
+	}
 	h.WriteJSON(w, util.MapStr{
 		"alert": util.MapStr{
 			"current": statusCounts,
 		},
+		"categories": categories,
+		"tags": tags,
 	}, http.StatusOK)
 }
 
@@ -182,6 +241,8 @@ func (h *AlertAPI) searchAlertMessage(w http.ResponseWriter, req *http.Request, 
 		max        = h.GetParameterOrDefault(req, "max", "now")
 		mustBuilder = &strings.Builder{}
 		sortBuilder = strings.Builder{}
+		category = h.GetParameterOrDefault(req, "category", "")
+		tags = h.GetParameterOrDefault(req, "tags", "")
 	)
 	mustBuilder.WriteString(fmt.Sprintf(`{"range":{"created":{"gte":"%s", "lte": "%s"}}}`, min, max))
 	if ruleID != "" {
@@ -212,6 +273,14 @@ func (h *AlertAPI) searchAlertMessage(w http.ResponseWriter, req *http.Request, 
 	if priority != "" {
 		mustBuilder.WriteString(",")
 		mustBuilder.WriteString(fmt.Sprintf(`{"term":{"priority":{"value":"%s"}}}`, priority))
+	}
+	if category != "" {
+		mustBuilder.WriteString(",")
+		mustBuilder.WriteString(fmt.Sprintf(`{"term":{"category":{"value":"%s"}}}`, category))
+	}
+	if tags != "" {
+		mustBuilder.WriteString(",")
+		mustBuilder.WriteString(fmt.Sprintf(`{"term":{"tags":{"value":"%s"}}}`, tags))
 	}
 	size, _ := strconv.Atoi(strSize)
 	if size <= 0 {
@@ -286,8 +355,12 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 		return
 	}
 	metricExpression, _ := rule.Metrics.GenerateExpression()
+	var hitCondition string
 	for i, cond := range rule.Conditions.Items {
 		expression, _ := cond.GenerateConditionExpression()
+		if cond.Priority == message.Priority {
+			hitCondition = strings.ReplaceAll(expression, "result", "")
+		}
 		rule.Conditions.Items[i].Expression = strings.ReplaceAll(expression, "result", metricExpression)
 	}
 	var duration time.Duration
@@ -315,6 +388,202 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 		"ignored_reason": message.IgnoredReason,
 		"ignored_user": message.IgnoredUser,
 		"status": message.Status,
+		"expression": rule.Metrics.Expression,
+		"hit_condition": hitCondition,
 	}
 	h.WriteJSON(w, detailObj, http.StatusOK)
+}
+
+func (h *AlertAPI) getMessageNotificationInfo(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	message :=  &alerting.AlertMessage{
+		ID: ps.ByName("message_id"),
+	}
+	exists, err := orm.Get(message)
+	if !exists || err != nil {
+		log.Error(err)
+		h.WriteJSON(w, util.MapStr{
+			"_id":   message.ID,
+			"found": false,
+		}, http.StatusNotFound)
+		return
+	}
+	rule := &alerting.Rule{
+		ID: message.RuleID,
+	}
+	exists, err = orm.Get(rule)
+	if !exists || err != nil {
+		log.Error(err)
+		h.WriteError(w, fmt.Sprintf("rule [%s] not found", rule.ID), http.StatusInternalServerError)
+		return
+	}
+	notificationInfo := util.MapStr{}
+	if rule.NotificationConfig == nil && rule.RecoveryNotificationConfig == nil {
+		notificationInfo["is_empty"] = true
+		h.WriteJSON(w, notificationInfo, http.StatusOK)
+		return
+	}
+	stats, err := getMessageNotificationStats(message)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if rule.NotificationConfig != nil {
+		notificationInfo["alerting"] = util.MapStr{
+			"accept_time_range": rule.NotificationConfig.AcceptTimeRange,
+			"throttle_period": rule.NotificationConfig.ThrottlePeriod,
+			"escalation_enabled":  rule.NotificationConfig.EscalationEnabled,
+			"escalation_throttle_period": rule.NotificationConfig.EscalationThrottlePeriod,
+			"normal_stats": stats["normal"],
+			"escalation_stats": stats["escalation"],
+		}
+	}
+	if rule.RecoveryNotificationConfig != nil {
+		notificationInfo["recovery"] = util.MapStr{
+			"stats": stats["recovery"],
+		}
+	}
+	h.WriteJSON(w, notificationInfo, http.StatusOK)
+}
+
+func getMessageNotificationStats(msg *alerting.AlertMessage )(util.MapStr, error){
+	rangeQ := util.MapStr{
+		"gte": msg.Created.UnixMilli(),
+	}
+	if msg.Status == alerting.MessageStateRecovered {
+		rangeQ["lte"] = msg.Updated.UnixMilli()
+	}
+	aggs := util.MapStr{
+		"grp_normal_channel": util.MapStr{
+			"terms": util.MapStr{
+				"field": "action_execution_results.channel_type",
+				"size": 20,
+			},
+			"aggs": util.MapStr{
+				"top": util.MapStr{
+					"top_hits": util.MapStr{
+						"sort": []util.MapStr{
+							{
+								"created": util.MapStr{
+									"order": "desc",
+								},
+							},
+						},
+						"_source": util.MapStr{
+							"includes": []string{"created", "action_execution_results.channel_name", "action_execution_results.channel_type"},
+						},
+						"size": 1,
+					},
+				},
+			},
+		},
+		"grp_escalation_channel": util.MapStr{
+			"terms": util.MapStr{
+				"field": "escalation_action_results.channel_type",
+				"size": 20,
+			},
+			"aggs": util.MapStr{
+				"top": util.MapStr{
+					"top_hits": util.MapStr{
+						"sort": []util.MapStr{
+							{
+								"created": util.MapStr{
+									"order": "desc",
+								},
+							},
+						},
+						"_source": util.MapStr{
+							"includes": []string{"created", "escalation_action_results.channel_name", "escalation_action_results.channel_type"},
+						},
+						"size": 1,
+					},
+				},
+			},
+		},
+	}
+	if msg.Status == alerting.MessageStateRecovered {
+		aggs["grp_recover_channel"] = util.MapStr{
+			"terms": util.MapStr{
+				"field": "recover_action_results.channel_type",
+				"size": 20,
+			},
+			"aggs": util.MapStr{
+				"top": util.MapStr{
+					"top_hits": util.MapStr{
+						"sort": []util.MapStr{
+							{
+								"created": util.MapStr{
+									"order": "desc",
+								},
+							},
+						},
+						"_source": util.MapStr{
+							"includes": []string{"created", "recover_action_results.channel_name", "recover_action_results.channel_type"},
+						},
+						"size": 1,
+					},
+				},
+			},
+		}
+	}
+	query := util.MapStr{
+		"size": 0,
+		"aggs": aggs,
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": []util.MapStr{
+					{
+						"range": util.MapStr{
+							"created": rangeQ,
+						},
+					},
+					{
+						"term": util.MapStr{
+							"rule_id": util.MapStr{
+								"value": msg.RuleID,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	q := orm.Query{
+		RawQuery: util.MustToJSONBytes(query),
+	}
+	err, result := orm.Search(alerting.Alert{}, &q)
+	if err != nil {
+		return nil, err
+	}
+
+	var normalStats = extractStatsFromRaw(result.Raw, "grp_normal_channel", "action_execution_results")
+	var escalationStats = extractStatsFromRaw(result.Raw, "grp_escalation_channel", "escalation_action_results")
+	stats := util.MapStr{
+		"normal": normalStats,
+		"escalation": escalationStats,
+	}
+	if msg.Status == alerting.MessageStateRecovered {
+		recoverStats := extractStatsFromRaw(result.Raw, "grp_recover_channel", "recover_action_results")
+		stats["recovery"] = recoverStats
+	}
+
+	return stats, nil
+}
+func extractStatsFromRaw(searchRawRes []byte, grpKey string, actionKey string) []util.MapStr {
+	var stats []util.MapStr
+	jsonparser.ArrayEach(searchRawRes, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+		statsItem := util.MapStr{}
+		statsItem["channel_type"], _ = jsonparser.GetString(value, "key")
+		statsItem["count"], _ = jsonparser.GetInt(value, "doc_count")
+		jsonparser.ArrayEach(value, func(v []byte, dataType jsonparser.ValueType, offset int, err error) {
+			ck, _ := jsonparser.GetString(v,  "channel_type")
+			cn, _ := jsonparser.GetString(v,  "channel_name")
+			if ck == statsItem["channel_type"] {
+				statsItem["channel_name"] = cn
+			}
+		}, "top", "hits","hits", "[0]", "_source",actionKey)
+		statsItem["last_time"], _ =  jsonparser.GetString(value, "top", "hits","hits", "[0]", "_source","created")
+		stats = append(stats, statsItem)
+	}, "aggregations", grpKey, "buckets")
+	return stats
 }

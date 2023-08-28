@@ -316,3 +316,64 @@ func (h *AlertAPI) testChannel(w http.ResponseWriter, req *http.Request, ps http
 	}
 	h.WriteAckOKJSON(w)
 }
+
+func (alertAPI *AlertAPI) batchEnableChannel(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	var channelIDs = []string{}
+	err := alertAPI.DecodeJSON(req, &channelIDs)
+	if err != nil {
+		log.Error(err)
+		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if len(channelIDs) == 0 {
+		alertAPI.WriteJSON(w, util.MapStr{}, http.StatusOK)
+		return
+	}
+	if len(channelIDs) > 0 {
+		err = setChannelEnabled(true, channelIDs)
+		if err != nil {
+			log.Error(err)
+			alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+	alertAPI.WriteAckOKJSON(w)
+}
+
+func (alertAPI *AlertAPI) batchDisableChannel(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	var channelIDs = []string{}
+	err := alertAPI.DecodeJSON(req, &channelIDs)
+	if err != nil {
+		log.Error(err)
+		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if len(channelIDs) == 0 {
+		alertAPI.WriteJSON(w, util.MapStr{}, http.StatusOK)
+		return
+	}
+	if len(channelIDs) > 0 {
+		err = setChannelEnabled(false, channelIDs)
+		if err != nil {
+			log.Error(err)
+			alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+	alertAPI.WriteAckOKJSON(w)
+}
+
+func setChannelEnabled(enabled bool, channelIDs []string) error {
+	q := util.MapStr{
+		"query": util.MapStr{
+			"terms": util.MapStr{
+				"id": channelIDs,
+			},
+		},
+		"script": util.MapStr{
+			"source": fmt.Sprintf("ctx._source['enabled'] = %v", enabled),
+		},
+	}
+	err := orm.UpdateBy(alerting.Channel{}, util.MustToJSONBytes(q))
+	return err
+}

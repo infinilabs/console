@@ -25,7 +25,7 @@ func (h *DataAPI) exportData(w http.ResponseWriter, req *http.Request, ps httpro
 	}
 	var resBody []ExportData
 	for _, meta := range reqBody.Metadatas {
-		result, err := getExportData(meta.Type)
+		result, err := getExportData(meta)
 		if err != nil {
 			log.Error(err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -86,9 +86,9 @@ func indexExportData(eds []ExportData) error {
 	return nil
 }
 
-func getExportData(typ string) (*orm.Result, error) {
+func getExportData(meta ExportMetadata) (*orm.Result, error) {
 	var obj interface{}
-	switch typ {
+	switch meta.Type {
 	case DataTypeAlertChannel:
 		obj = alerting.Channel{}
 	case DataTypeAlertRule:
@@ -96,11 +96,19 @@ func getExportData(typ string) (*orm.Result, error) {
 	case DataTypeAlertEmailServer:
 		obj = model.EmailServer{}
 	default:
-		return nil, fmt.Errorf("unkonw data type: %s", typ)
+		return nil, fmt.Errorf("unkonw data type: %s", meta.Type)
 	}
-	err, result := orm.Search(obj, &orm.Query{
+	q := &orm.Query{
 		Size: 1000,
-	})
+	}
+	if meta.Filter != nil {
+		query := util.MapStr{
+			"size": 1000,
+			"query": meta.Filter,
+		}
+		q.RawQuery = util.MustToJSONBytes(query)
+	}
+	err, result := orm.Search(obj, q)
 	if err != nil {
 		return nil, err
 	}

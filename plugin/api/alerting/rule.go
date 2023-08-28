@@ -1177,7 +1177,6 @@ func (alertAPI *AlertAPI) batchDisableRule(w http.ResponseWriter, req *http.Requ
 		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	log.Info(rules)
 	var newIDs []string
 	for _, rule := range rules {
 		if rule.Enabled {
@@ -1205,6 +1204,61 @@ func (alertAPI *AlertAPI) batchDisableRule(w http.ResponseWriter, req *http.Requ
 		}
 	}
 	alertAPI.WriteAckOKJSON(w)
+}
+
+func (alertAPI *AlertAPI) searchFieldValues(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	var keyword = alertAPI.GetParameterOrDefault(req, "keyword", "")
+	var field = alertAPI.GetParameterOrDefault(req, "field", "category")
+	items , err := searchListItems(field, keyword, 20)
+	if err != nil {
+		log.Error(err)
+		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	alertAPI.WriteJSON(w, items, http.StatusOK)
+}
+
+func searchListItems(field, keyword string, size int) ([]string, error){
+	query := util.MapStr{
+		"size": 0,
+		"aggs": util.MapStr{
+			"items": util.MapStr{
+				"terms": util.MapStr{
+					"field": field,
+					"size":  size,
+				},
+			},
+		},
+	}
+	if v := strings.TrimSpace(keyword); v != ""{
+		query["query"]= util.MapStr{
+			"query_string": util.MapStr{
+				"default_field": field,
+				"query":         fmt.Sprintf("*%s*", v),
+			},
+		}
+	}
+	q := orm.Query{
+		RawQuery: util.MustToJSONBytes(query),
+	}
+	err, result := orm.Search(alerting.Rule{}, &q)
+	if err != nil {
+		return nil, err
+	}
+	searchRes := elastic.SearchResponse{}
+	err = util.FromJSONBytes(result.Raw, &searchRes)
+	if err != nil {
+		return nil, err
+	}
+	items := []string{}
+	for _, bk := range searchRes.Aggregations["items"].Buckets {
+		if v, ok := bk["key"].(string); ok {
+			if strings.Contains(v, keyword){
+				items = append(items, v)
+			}
+		}
+	}
+	return items, nil
 }
 
 func getRulesByID(ruleIDs []string) ([]alerting.Rule, error){

@@ -30,6 +30,7 @@ func (alert *AlertAPI) Init() {
 	api.HandleAPIMethod(api.GET, "/alerting/rule/:rule_id/info", alert.RequirePermission(alert.getRuleDetail, enum.PermissionAlertRuleRead, enum.PermissionAlertMessageRead))
 	api.HandleAPIMethod(api.POST, "/alerting/rule/_enable", alert.RequirePermission(alert.batchEnableRule, enum.PermissionAlertRuleWrite))
 	api.HandleAPIMethod(api.POST, "/alerting/rule/_disable", alert.RequirePermission(alert.batchDisableRule, enum.PermissionAlertRuleWrite))
+	api.HandleAPIMethod(api.GET, "/alerting/rule/_search_values", alert.RequirePermission(alert.searchFieldValues, enum.PermissionAlertRuleRead))
 
 	api.HandleAPIMethod(api.GET, "/alerting/channel/:channel_id", alert.RequirePermission(alert.getChannel, enum.PermissionAlertChannelRead))
 	api.HandleAPIMethod(api.POST, "/alerting/channel", alert.RequirePermission(alert.createChannel, enum.PermissionAlertChannelWrite))
@@ -37,6 +38,8 @@ func (alert *AlertAPI) Init() {
 	api.HandleAPIMethod(api.PUT, "/alerting/channel/:channel_id", alert.RequirePermission(alert.updateChannel, enum.PermissionAlertChannelWrite))
 	api.HandleAPIMethod(api.GET, "/alerting/channel/_search", alert.RequirePermission(alert.searchChannel, enum.PermissionAlertChannelRead))
 	api.HandleAPIMethod(api.POST, "/alerting/channel/test", alert.RequirePermission(alert.testChannel, enum.PermissionAlertChannelWrite))
+	api.HandleAPIMethod(api.POST, "/alerting/channel/_enable", alert.RequirePermission(alert.batchEnableChannel, enum.PermissionAlertChannelWrite))
+	api.HandleAPIMethod(api.POST, "/alerting/channel/_disable", alert.RequirePermission(alert.batchDisableChannel, enum.PermissionAlertChannelWrite))
 
 	api.HandleAPIMethod(api.GET, "/alerting/alert/_search", alert.RequirePermission(alert.searchAlert, enum.PermissionAlertHistoryRead))
 	api.HandleAPIMethod(api.GET, "/alerting/alert/:alert_id", alert.RequirePermission(alert.getAlert, enum.PermissionAlertHistoryRead))

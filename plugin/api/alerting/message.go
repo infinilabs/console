@@ -260,11 +260,11 @@ func (h *AlertAPI) searchAlertMessage(w http.ResponseWriter, req *http.Request, 
 
 	if sort != "" {
 		sortParts := strings.Split(sort, ",")
-		if len(sortParts) == 2 && sortParts[1] != "created" {
+		if len(sortParts) == 2 && sortParts[1] != "updated" {
 			sortBuilder.WriteString(fmt.Sprintf(`{"%s":{ "order": "%s"}},`, sortParts[0], sortParts[1]))
 		}
 	}
-	sortBuilder.WriteString(`{"created":{ "order": "desc"}}`)
+	sortBuilder.WriteString(`{"updated":{ "order": "desc"}}`)
 
 	if status != "" {
 		mustBuilder.WriteString(",")

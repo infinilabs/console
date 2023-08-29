@@ -671,7 +671,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 	conditionResults := checkResults.ResultItems
 	var paramsCtx map[string]interface{}
 	if len(conditionResults) == 0 {
-		alertItem.Priority = "info"
+		alertItem.Priority = ""
 		if checkResults.QueryResult.Nodata {
 			alertItem.State =  alerting.AlertStateNodata
 		}

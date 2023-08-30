@@ -470,7 +470,7 @@ func getMessageNotificationStats(msg *alerting.AlertMessage )(util.MapStr, error
 							},
 						},
 						"_source": util.MapStr{
-							"includes": []string{"created", "action_execution_results.channel_name", "action_execution_results.channel_type"},
+							"includes": []string{"created", "action_execution_results.channel_name", "action_execution_results.channel_type", "action_execution_results.error"},
 						},
 						"size": 1,
 					},
@@ -493,7 +493,7 @@ func getMessageNotificationStats(msg *alerting.AlertMessage )(util.MapStr, error
 							},
 						},
 						"_source": util.MapStr{
-							"includes": []string{"created", "escalation_action_results.channel_name", "escalation_action_results.channel_type"},
+							"includes": []string{"created", "escalation_action_results.channel_name", "escalation_action_results.channel_type", "escalation_action_results.error"},
 						},
 						"size": 1,
 					},
@@ -518,7 +518,7 @@ func getMessageNotificationStats(msg *alerting.AlertMessage )(util.MapStr, error
 							},
 						},
 						"_source": util.MapStr{
-							"includes": []string{"created", "recover_action_results.channel_name", "recover_action_results.channel_type"},
+							"includes": []string{"created", "recover_action_results.channel_name", "recover_action_results.channel_type", "recover_action_results.error"},
 						},
 						"size": 1,
 					},
@@ -580,6 +580,7 @@ func extractStatsFromRaw(searchRawRes []byte, grpKey string, actionKey string) [
 			cn, _ := jsonparser.GetString(v,  "channel_name")
 			if ck == statsItem["channel_type"] {
 				statsItem["channel_name"] = cn
+				statsItem["error"], _ = jsonparser.GetString(v,  "error")
 			}
 		}, "top", "hits","hits", "[0]", "_source",actionKey)
 		statsItem["last_time"], _ =  jsonparser.GetString(value, "top", "hits","hits", "[0]", "_source","created")

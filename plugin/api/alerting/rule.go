@@ -97,6 +97,7 @@ func (alertAPI *AlertAPI) createRule(w http.ResponseWriter, req *http.Request, p
 			"cluster_id": rule.Resource.ID,
 			"rule_id": rule.ID,
 			"cluster_name": rule.Resource.Name,
+			"rule_name": rule.Name,
 		},nil, &rule)
 		eng := alerting2.GetEngine(rule.Resource.Type)
 		if rule.Enabled {
@@ -423,6 +424,7 @@ func (alertAPI *AlertAPI) updateRule(w http.ResponseWriter, req *http.Request, p
 	saveAlertActivity("alerting_rule_change", "update",  util.MapStr{
 		"cluster_id": rule.Resource.ID,
 		"rule_id": rule.ID,
+		"rule_name": rule.Name,
 		"cluster_name": rule.Resource.Name,
 	},changeLog, oldRule)
 
@@ -489,6 +491,7 @@ func (alertAPI *AlertAPI) deleteRule(w http.ResponseWriter, req *http.Request, p
 		"cluster_id": obj.Resource.ID,
 		"rule_id": obj.ID,
 		"cluster_name": obj.Resource.Name,
+		"rule_name": obj.Name,
 	},nil, &obj)
 	task.DeleteTask(obj.ID)
 	clearKV(obj.ID)
@@ -542,6 +545,7 @@ func (alertAPI *AlertAPI) batchDeleteRule(w http.ResponseWriter, req *http.Reque
 			"cluster_id": rule.Resource.ID,
 			"rule_id": rule.ID,
 			"cluster_name": rule.Resource.Name,
+			"rule_name": rule.Name,
 		},nil, &rule)
 		task.DeleteTask(rule.ID)
 		clearKV(rule.ID)

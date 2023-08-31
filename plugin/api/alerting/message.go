@@ -230,21 +230,49 @@ func (h *AlertAPI) getAlertMessageStats(w http.ResponseWriter, req *http.Request
 func (h *AlertAPI) searchAlertMessage(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 
 	var (
-		queryDSL    = `{"sort":[%s],"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d}`
+		queryDSL    = `{"sort":[%s],"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d,"aggs": {
+    "max_updated": {
+      "max": {
+        "field": "updated"
+      }
+    },
+    "min_updated": {
+      "min": {
+        "field": "updated"
+      }
+    }
+  }}`
 		strSize     = h.GetParameterOrDefault(req, "size", "20")
 		strFrom     = h.GetParameterOrDefault(req, "from", "0")
 		status   = h.GetParameterOrDefault(req, "status", "")
 		priority = h.GetParameterOrDefault(req, "priority", "")
 		sort     = h.GetParameterOrDefault(req, "sort", "")
 		ruleID        = h.GetParameterOrDefault(req, "rule_id", "")
-		min        = h.GetParameterOrDefault(req, "min", "now-30d")
-		max        = h.GetParameterOrDefault(req, "max", "now")
+		min        = h.GetParameterOrDefault(req, "min", "")
+		max        = h.GetParameterOrDefault(req, "max", "")
 		mustBuilder = &strings.Builder{}
 		sortBuilder = strings.Builder{}
 		category = h.GetParameterOrDefault(req, "category", "")
 		tags = h.GetParameterOrDefault(req, "tags", "")
 	)
-	mustBuilder.WriteString(fmt.Sprintf(`{"range":{"created":{"gte":"%s", "lte": "%s"}}}`, min, max))
+	timeRange := util.MapStr{}
+	if min != "" {
+		timeRange["gte"] = min
+	}
+	if max != "" {
+		timeRange["lte"] = max
+	}
+	if len(timeRange) > 0 {
+		timeFilter := util.MapStr{
+			"range": util.MapStr{
+				"updated": timeRange,
+			},
+		}
+		mustBuilder.Write(util.MustToJSONBytes(timeFilter))
+	}else{
+		mustBuilder.WriteString(`{"match_all":{}}`)
+	}
+
 	if ruleID != "" {
 		mustBuilder.WriteString(fmt.Sprintf(`,{"term":{"rule_id":{"value":"%s"}}}`, ruleID))
 	}

@@ -967,6 +967,7 @@ POST $[[INDEX_PREFIX]]alert-rule/doc/builtin-cal8n7p7h710dpnoaps0
       "end": "23:59"
     }
   },
+  "category": "Platform",
   "recovery_notification_config": {
     "enabled": true,
     "title": "🌈 [{{.rule_name}}] Resolved",
@@ -1119,6 +1120,7 @@ POST $[[INDEX_PREFIX]]alert-rule/doc/builtin-calavvp7h710dpnp32r3
       "end": "23:59"
     }
   },
+  "category": "Platform",
   "recovery_notification_config": {
     "enabled": true,
     "title": "🌈 [{{.rule_name}}] Resolved",
@@ -1271,6 +1273,7 @@ POST $[[INDEX_PREFIX]]alert-rule/doc/builtin-cbp20n2anisjmu4gehc5
       "end": "23:59"
     }
   },
+  "category": "Platform",
   "recovery_notification_config": {
     "enabled": true,
     "title": "🌈 [{{.rule_name}}] Resolved",
@@ -1444,6 +1447,7 @@ POST $[[INDEX_PREFIX]]alert-rule/doc/builtin-cb34sfl6psfiqtovhpt4
       "end": "23:59"
     }
   },
+  "category": "Platform",
   "recovery_notification_config": {
     "enabled": true,
     "title": "🌈 [{{.rule_name}}] Resolved",
@@ -1633,6 +1637,7 @@ POST $[[INDEX_PREFIX]]alert-rule/doc/builtin-cbp2e4ianisjmu4giqs7
       "end": "23:59"
     }
   },
+  "category": "Platform",
   "recovery_notification_config": {
     "enabled": true,
     "title": "🌈 [{{.rule_name}}] Resolved",
@@ -1816,6 +1821,7 @@ POST $[[INDEX_PREFIX]]alert-rule/doc/builtin-calaqnh7h710dpnp2bm8
       "end": "23:59"
     }
   },
+  "category": "Platform",
   "recovery_notification_config": {
     "enabled": true,
     "title": "🌈 [{{.rule_name}}] Resolved",
@@ -1999,6 +2005,7 @@ POST $[[INDEX_PREFIX]]alert-rule/doc/builtin-calakp97h710dpnp1fa2
       "end": "23:59"
     }
   },
+  "category": "Platform",
   "recovery_notification_config": {
     "enabled": true,
     "title": "🌈 [{{.rule_name}}] Resolved",
@@ -2153,6 +2160,7 @@ POST $[[INDEX_PREFIX]]alert-rule/doc/builtin-calgapp7h710dpnpbeb6
       "end": "23:59"
     }
   },
+  "category": "Platform",
   "recovery_notification_config": {
     "enabled": true,
     "title": "🌈 [{{.rule_name}}] Resolved",
@@ -2339,6 +2347,7 @@ POST $[[INDEX_PREFIX]]alert-rule/doc/builtin-cal8n7p7h710dpnogps1
       "end": "23:59"
     }
   },
+  "category": "Platform",
   "recovery_notification_config": {
     "enabled": true,
     "title": "🌈 [{{.rule_name}}] Resolved",
@@ -3300,7 +3309,7 @@ POST $[[INDEX_PREFIX]]layout/doc/cjo2taju2gvbh7bbsa1g
                 "series": [
                     {
                         "metric": {
-                            "formula": "(b-a)/b",
+                            "formula": "(b-a)/b*100",
                             "groups": [
                                 {
                                     "field": "metadata.labels.cluster_id",
@@ -4212,7 +4221,7 @@ POST $[[INDEX_PREFIX]]layout/doc/cicmgqt3q95ich72lppg
                 "series": [
                     {
                         "metric": {
-                            "formula": "a / 100",
+                            "formula": "a",
                             "groups": [
                                 {
                                     "field": "metadata.labels.name",

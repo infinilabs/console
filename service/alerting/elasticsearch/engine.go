@@ -689,7 +689,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			recoverCfg := rule.RecoveryNotificationConfig
 			if  recoverCfg != nil && recoverCfg.EventEnabled && recoverCfg.Enabled {
 				paramsCtx = newParameterCtx(rule, checkResults, util.MapStr{
-					alerting2.ParamEventID: alertItem.ID,
+					alerting2.ParamEventID: alertMessage.ID,
 					alerting2.ParamTimestamp:  alertItem.Created.Unix(),
 					"duration": alertItem.Created.Sub(alertMessage.Created).String(),
 					"trigger_at": alertMessage.Created.Unix(),
@@ -722,7 +722,6 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		triggerAt = alertMessage.Created
 	}
 	paramsCtx = newParameterCtx(rule, checkResults, util.MapStr{
-		alerting2.ParamEventID: alertItem.ID,
 		alerting2.ParamTimestamp:  alertItem.Created.Unix(),
 		"duration": alertItem.Created.Sub(triggerAt).String(),
 		"trigger_at": triggerAt.Unix(),
@@ -789,6 +788,9 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 	if alertMessage != nil && alertMessage.Status == alerting.MessageStateIgnored {
 		return nil
 	}
+	if alertMessage != nil && paramsCtx != nil {
+		paramsCtx[alerting2.ParamEventID] = alertMessage.ID
+	}
 	// if channel is not enabled return
 	notifyCfg := rule.GetNotificationConfig()
 	if notifyCfg == nil || !notifyCfg.Enabled {
@@ -815,12 +817,14 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		//log.Error(lastAlertItem.ID, period, periodDuration)
 		if paramsCtx == nil {
 			paramsCtx = newParameterCtx(rule, checkResults, util.MapStr{
-				alerting2.ParamEventID:   alertItem.ID,
 				alerting2.ParamTimestamp: alertItem.Created.Unix(),
 				"priority":               priority,
 				"duration": alertItem.Created.Sub(alertMessage.Created).String(),
 				"trigger_at": alertMessage.Created.Unix(),
 			})
+			if alertMessage != nil {
+				paramsCtx[alerting2.ParamEventID] = alertMessage.ID
+			}
 		}
 
 		if alertMessage == nil || period > periodDuration {

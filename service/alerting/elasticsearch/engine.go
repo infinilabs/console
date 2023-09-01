@@ -750,6 +750,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			Tags: rule.Tags,
 			Category: rule.Category,
 		}
+		alertMessage = msg
 		err = saveAlertMessage(msg)
 		if err != nil {
 			return fmt.Errorf("save alert message error: %w", err)

@@ -61,16 +61,16 @@ func main() {
 
 	api := api2.GatewayAPI{}
 
-	modules := []module.Module{}
-	modules = append(modules, &stats.SimpleStatsModule{})
-	modules = append(modules, &elastic2.ElasticModule{})
-	modules = append(modules, &queue2.DiskQueue{})
-	modules = append(modules, &redis.RedisModule{})
-	modules = append(modules, &pipeline.PipeModule{})
-	modules = append(modules, &task.TaskModule{})
-	modules = append(modules, &metrics.MetricsModule{})
-	modules = append(modules, &security.Module{})
-	modules = append(modules, &agent.AgentModule{})
+	modules := []module.ModuleItem{}
+	modules = append(modules, module.ModuleItem{Value: &stats.SimpleStatsModule{}, Priority: 1})
+	modules = append(modules, module.ModuleItem{Value: &elastic2.ElasticModule{}, Priority: 1})
+	modules = append(modules, module.ModuleItem{Value: &queue2.DiskQueue{}, Priority: 1})
+	modules = append(modules, module.ModuleItem{Value: &redis.RedisModule{}, Priority: 1})
+	modules = append(modules, module.ModuleItem{Value: &pipeline.PipeModule{}, Priority: 1})
+	modules = append(modules, module.ModuleItem{Value: &task.TaskModule{}, Priority: 1})
+	modules = append(modules, module.ModuleItem{Value: &metrics.MetricsModule{}, Priority: 1})
+	modules = append(modules, module.ModuleItem{Value: &security.Module{}, Priority: 1})
+	modules = append(modules, module.ModuleItem{Value: &agent.AgentModule{}, Priority: 100})
 
 	uiModule := &ui.UIModule{}
 
@@ -84,11 +84,11 @@ func main() {
 
 		if !global.Env().SetupRequired() {
 			for _, v := range modules {
-				module.RegisterSystemModule(v)
+				module.RegisterModuleWithPriority(v.Value,v.Priority)
 			}
 		} else {
 			for _, v := range modules {
-				v.Setup()
+				v.Value.Setup()
 			}
 		}
 
@@ -142,7 +142,7 @@ func main() {
 
 			if global.Env().SetupRequired() {
 				for _, v := range modules {
-					v.Start()
+					v.Value.Start()
 				}
 			}
 

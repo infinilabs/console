@@ -53,15 +53,15 @@ for t in amd64 arm64 ; do
 FROM --platform=linux/$t alpine:3.16.5
 MAINTAINER "hardy <luohf@infinilabs.com>"
 ARG APP_NAME=$PNAME
-ARG APP_HOME=/opt/\${APP_NAME}
+ARG APP_HOME=/
 ENV APP=\${APP_NAME}
-WORKDIR \${APP_HOME}
+WORKDIR /
 
 COPY ["$PNAME-linux-$t", "$PNAME.yml", "\${APP_HOME}/"]
 COPY ["config", "\${APP_HOME}/config"]
 COPY ["config/certs", "\${APP_HOME}/config/certs"]
 
-CMD ["/opt/$PNAME/${PNAME}-linux-$t"]
+CMD ["/${PNAME}-linux-$t"]
 EOF
 
   docker buildx build -t infinilabs/$PNAME-$t:latest --platform=linux/$t -o type=docker .

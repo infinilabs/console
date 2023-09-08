@@ -11,7 +11,15 @@ if [ ! -d $WORKBASE/web ]; then
   git clone ssh://git@git.infini.ltd:64221/infini/console-ui.git web
 fi
 
+if [ ! -d $WORKBASE/web/src/common ]; then
+  cd $WORKBASE/web/src
+  git clone ssh://git@git.infini.ltd:64221/infini/common-ui.git common
+fi
+
 cd $WORKBASE/web
+git pull origin master
+
+cd $WORKBASE/web/common
 git pull origin master
 
 git log --pretty=oneline -5

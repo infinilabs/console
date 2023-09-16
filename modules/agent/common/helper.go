@@ -6,19 +6,19 @@ package common
 
 import (
 	"fmt"
-	"infini.sh/console/modules/agent/model"
-	"infini.sh/framework/core/agent"
+	log "github.com/cihub/seelog"
+	model2 "infini.sh/console/modules/agent/model"
 	"infini.sh/framework/core/credential"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/event"
 	"infini.sh/framework/core/global"
+	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
-	log "src/github.com/cihub/seelog"
 	"strings"
 )
 
-func ParseAgentSettings(settings []agent.Setting)(*model.ParseAgentSettingsResult, error){
+func ParseAgentSettings(settings []model.Setting)(*model2.ParseAgentSettingsResult, error){
 	var clusterCfgs []elastic.ElasticsearchConfig
 	var (
 		pipelines []util.MapStr
@@ -58,7 +58,7 @@ func ParseAgentSettings(settings []agent.Setting)(*model.ParseAgentSettingsResul
 		if err != nil {
 			return nil, err
 		}
-		taskSetting := model.TaskSetting{}
+		taskSetting := model2.TaskSetting{}
 		err = util.FromJSONBytes(vBytes, &taskSetting)
 		if err != nil {
 			return nil, err
@@ -70,7 +70,7 @@ func ParseAgentSettings(settings []agent.Setting)(*model.ParseAgentSettingsResul
 		pipelines = append(pipelines, partPipelines...)
 		toDeletePipelineNames = append(toDeletePipelineNames, partDeletePipelineNames...)
 	}
-	return &model.ParseAgentSettingsResult{
+	return &model2.ParseAgentSettingsResult{
 		ClusterConfigs: clusterCfgs,
 		Pipelines: pipelines,
 		ToDeletePipelineNames: toDeletePipelineNames,
@@ -80,7 +80,7 @@ func ParseAgentSettings(settings []agent.Setting)(*model.ParseAgentSettingsResul
 // GetAgentSettings query agent setting by agent id and updated timestamp,
 // if there has any setting was updated, then return setting list includes settings not changed,
 // otherwise return empty setting list
-func GetAgentSettings(agentID string, timestamp int64) ([]agent.Setting, error) {
+func GetAgentSettings(agentID string, timestamp int64) ([]model.Setting, error) {
 	query := util.MapStr{
 		"bool": util.MapStr{
 			"must": []util.MapStr{
@@ -116,13 +116,13 @@ func GetAgentSettings(agentID string, timestamp int64) ([]agent.Setting, error) 
 		},
 	}
 	queryDsl := util.MapStr{
-		"size": 500,
+		"size": 1000,
 		"query": query,
 	}
 	q := orm.Query{
 		RawQuery: util.MustToJSONBytes(queryDsl),
 	}
-	err, result := orm.Search(agent.Setting{}, &q)
+	err, result := orm.Search(model.Setting{}, &q)
 	if err != nil {
 		return nil, fmt.Errorf("search settings error: %w", err)
 	}
@@ -130,11 +130,11 @@ func GetAgentSettings(agentID string, timestamp int64) ([]agent.Setting, error) 
 		return nil, nil
 	}
 	var (
-		settings []agent.Setting
+		settings []model.Setting
 		hasUpdated bool
 	)
 	for _, row := range result.Result {
-		setting := agent.Setting{}
+		setting := model.Setting{}
 		buf, err := util.ToJSONBytes(row)
 		if err != nil {
 			return nil, err
@@ -158,7 +158,7 @@ func getClusterConfigReferenceName(clusterID, nodeUUID string) string {
 	return fmt.Sprintf("%s_%s", clusterID, nodeUUID)
 }
 
-func TransformSettingsToConfig(setting *model.TaskSetting, clusterID, nodeUUID string) ([]util.MapStr, []string, error) {
+func TransformSettingsToConfig(setting *model2.TaskSetting, clusterID, nodeUUID string) ([]util.MapStr, []string, error) {
 	if setting == nil {
 		return nil, nil, fmt.Errorf("empty setting")
 	}
@@ -279,6 +279,7 @@ func newClusterMetricPipeline(processorName string, clusterID string, nodeUUID s
 		"name": getMetricPipelineName(clusterID, processorName),
 		"auto_start": true,
 		"keep_running": true,
+		"singleton": true,
 		"retry_delay_in_ms": 10000,
 		"processor": []util.MapStr{cfg},
 	}
@@ -290,22 +291,22 @@ func getMetricPipelineName(clusterID, processorName string) string{
 }
 
 
-func LoadAgentsFromES(clusterID string) ([]agent.Instance, error) {
+func LoadAgentsFromES(clusterID string) ([]model.Instance, error) {
 	q := orm.Query{
 		Size: 1000,
 	}
 	if clusterID != "" {
 		q.Conds = orm.And(orm.Eq("id", clusterID))
 	}
-	err, result := orm.Search(agent.Instance{}, &q)
+	err, result := orm.Search(model.Instance{}, &q)
 	if err != nil {
 		return nil, fmt.Errorf("query agent error: %w", err)
 	}
 
 	if len(result.Result) > 0 {
-		var agents = make([]agent.Instance, 0, len(result.Result))
+		var agents = make([]model.Instance, 0, len(result.Result))
 		for _, row := range result.Result {
-			ag := agent.Instance{}
+			ag := model.Instance{}
 			bytes := util.MustToJSONBytes(row)
 			err = util.FromJSONBytes(bytes, &ag)
 			if err != nil {
@@ -417,7 +418,7 @@ func GetAgentIngestConfig() (string, *elastic.BasicAuth, error) {
 	}
 	if emptyIngestClusterEndpoint {
 		cfg := elastic.GetConfig(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
-		endpoint = cfg.Endpoint
+		endpoint = cfg.GetAnyEndpoint()
 	}
 
 	var (
@@ -441,101 +442,14 @@ func GetAgentIngestConfig() (string, *elastic.BasicAuth, error) {
 		cfg := elastic.GetConfig(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 		basicAuth = *cfg.BasicAuth
 	}
-	tpl := `elasticsearch:
-  - name: default
-    enabled: true
-    endpoint: %s
-    discovery:
-      enabled: true
-    basic_auth:
-      username: %s
-      password: $[[keystore.ingest_cluster_password]]
-metrics:
-  enabled: true
-  queue: metrics
-  network:
-    enabled: true
-    summary: true
-    details: true
-  memory:
-    metrics:
-      - swap
-      - memory
-  disk:
-    metrics:
-      - iops
-      - usage
-  cpu:
-    metrics:
-      - idle
-      - system
-      - user
-      - iowait
-      - load
-  instance:
-    enabled: true
-pipeline:
-  - name: logs_indexing_merge
-    auto_start: true
-    keep_running: true
-    processor:
-      - indexing_merge:
-          index_name: ".infini_logs"
-          elasticsearch: "default"
-          input_queue: "logs"
-          idle_timeout_in_seconds: 10
-          output_queue:
-            name: "logs_requests"
-            label:
-              tag: "logs"
-          worker_size: 1
-          bulk_size_in_mb: 10
-  - name: ingest_logs
-    auto_start: true
-    keep_running: true
-    processor:
-      - bulk_indexing:
-          bulk:
-            compress: true
-            batch_size_in_mb: 5
-            batch_size_in_docs: 5000
-          consumer:
-            fetch_max_messages: 100
-          queues:
-            type: indexing_merge
-            tag: "logs"
-          when:
-            cluster_available: ["default"]
-  - name: metrics_indexing_merge
-    auto_start: true
-    keep_running: true
-    processor:
-      - indexing_merge:
-          elasticsearch: "default"
-          index_name: ".infini_metrics"
-          input_queue: "metrics"
-          output_queue:
-            name: "metrics_requests"
-            label:
-              tag: "metrics"
-          worker_size: 1
-          bulk_size_in_mb: 5
-  - name: ingest_metrics
-    auto_start: true
-    keep_running: true
-    processor:
-      - bulk_indexing:
-          bulk:
-            compress: true
-            batch_size_in_mb: 5
-            batch_size_in_docs: 5000
-          consumer:
-            fetch_max_messages: 100
-          queues:
-            type: indexing_merge
-            tag: "metrics"
-          when:
-            cluster_available: ["default"]`
+	tpl := `configs.template:
+  - name: "ingest"
+    path: ./config/ingest_config.tpl
+    variable:
+      INGEST_CLUSTER_ID: "default_ingest_cluster"
+      INGEST_CLUSTER_ENDPOINT: ["%s"]
+      INGEST_CLUSTER_USERNAME: "%s"
+`
 	tpl = fmt.Sprintf(tpl, endpoint, basicAuth.Username)
 	return tpl, &basicAuth, nil
 }

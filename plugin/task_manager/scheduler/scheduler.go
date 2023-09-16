@@ -53,7 +53,7 @@ func NewScheduler(elasticsearch, indexName string, checkInstanceAvailable bool, 
 	return scheduler, nil
 }
 
-func (p *scheduler) GetPreferenceInstance(config migration_model.ExecutionConfig) (*model.Instance, error) {
+func (p *scheduler) GetPreferenceInstance(config migration_model.ExecutionConfig) (*model.TaskWorker, error) {
 	var (
 		err      error
 		minID    string
@@ -64,7 +64,7 @@ func (p *scheduler) GetPreferenceInstance(config migration_model.ExecutionConfig
 		instanceTotal := p.getInstanceState(node.ID).Total
 		if instanceTotal < minTotal {
 			if p.CheckInstanceAvailable {
-				tempInst := model.Instance{}
+				tempInst := model.TaskWorker{}
 				tempInst.ID = node.ID
 				_, err = orm.Get(&tempInst)
 				if err != nil {
@@ -95,11 +95,11 @@ func (p *scheduler) GetPreferenceInstance(config migration_model.ExecutionConfig
 	return instance, nil
 }
 
-func (p *scheduler) GetInstance(instanceID string) (*model.Instance, error) {
+func (p *scheduler) GetInstance(instanceID string) (*model.TaskWorker, error) {
 	if instanceID == "" {
 		return nil, errors.New("invalid instanceID")
 	}
-	instance := model.Instance{}
+	instance := model.TaskWorker{}
 	instance.ID = instanceID
 
 	_, err := orm.Get(&instance)
@@ -114,7 +114,7 @@ func (p *scheduler) GetInstance(instanceID string) (*model.Instance, error) {
 	return &instance, nil
 }
 
-func (p *scheduler) initializeInstance(instance *model.Instance) error {
+func (p *scheduler) initializeInstance(instance *model.TaskWorker) error {
 	lastInitializedAt := p.getLastInitializedAt(instance.ID)
 	if time.Now().Sub(lastInitializedAt) < initializeInterval {
 		return nil
@@ -162,7 +162,7 @@ func (p *scheduler) initializeInstance(instance *model.Instance) error {
 // user could change the following configurations manually:
 // - input_queue (metrics.logging_queue)
 // - elasticsearch (elasticsearch.name)
-func (p *scheduler) createPipelineLoggingMerge(instance *model.Instance) error {
+func (p *scheduler) createPipelineLoggingMerge(instance *model.TaskWorker) error {
 	cfg := &migration_model.PipelineTaskConfig{
 		Name:        "pipeline_logging_merge",
 		AutoStart:   true,
@@ -194,7 +194,7 @@ func (p *scheduler) createPipelineLoggingMerge(instance *model.Instance) error {
 	return nil
 }
 
-func (p *scheduler) createIngestPipelineLogging(instance *model.Instance) error {
+func (p *scheduler) createIngestPipelineLogging(instance *model.TaskWorker) error {
 	cfg := &migration_model.PipelineTaskConfig{
 		Name:        "ingest_pipeline_logging",
 		AutoStart:   true,

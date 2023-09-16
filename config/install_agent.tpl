@@ -220,6 +220,23 @@ path.data: data
 path.logs: log
 path.configs: config
 
+resource_limit.cpu.max_num_of_cpus: 1
+resource_limit.memory.max_in_bytes: 533708800
+
+stats:
+  include_storage_stats_in_api: false
+
+disk_queue:
+  max_msg_size: 20485760
+  max_bytes_per_file: 20485760
+  max_used_bytes: 524288000
+  retention.max_num_of_local_files: 1
+  compress:
+    idle_threshold: 0
+    num_of_files_decompress_ahead: 0
+    segment:
+      enabled: true
+
 api:
   enabled: true
   tls:
@@ -232,11 +249,12 @@ api:
     binding: \$[[env.API_BINDING]]
 
 badger:
+  value_threshold: 1024
+  mem_table_size: 1048576
   value_log_max_entries: 1000000
   value_log_file_size: 104857600
-  value_threshold: 1024
 
-agent:
+node:
   major_ip_pattern: ".*"
 EOF
 }

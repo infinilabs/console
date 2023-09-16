@@ -9,8 +9,8 @@ import (
 	log "github.com/cihub/seelog"
 	"infini.sh/console/modules/agent/client"
 	"infini.sh/console/modules/agent/state"
-	"infini.sh/framework/core/agent"
 	httprouter "infini.sh/framework/core/api/router"
+	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"net/http"
@@ -80,7 +80,7 @@ func (h *APIHandler) getLogFileContent(w http.ResponseWriter, req *http.Request,
 	h.WriteJSON(w, res, http.StatusOK)
 }
 
-func getAgentByNodeID(nodeID string) (*agent.Instance, *agent.ESNodeInfo, error){
+func getAgentByNodeID(nodeID string) (*model.Instance, *model.ESNodeInfo, error){
 	queryDsl := util.MapStr{
 		"size":1,
 		"query": util.MapStr{
@@ -101,24 +101,24 @@ func getAgentByNodeID(nodeID string) (*agent.Instance, *agent.ESNodeInfo, error)
 	q := &orm.Query{
 		RawQuery: util.MustToJSONBytes(queryDsl),
 	}
-	err, result := orm.Search(agent.ESNodeInfo{}, q)
+	err, result := orm.Search(model.ESNodeInfo{}, q)
 	if err != nil {
 		return nil,nil, err
 	}
 	if len(result.Result) > 0 {
 		buf := util.MustToJSONBytes(result.Result[0])
-		node := &agent.ESNodeInfo{}
-		err = util.FromJSONBytes(buf, node)
-		inst := &agent.Instance{}
-		inst.ID = node.AgentID
+		v := &model.ESNodeInfo{}
+		err = util.FromJSONBytes(buf, v)
+		inst := &model.Instance{}
+		inst.ID = v.AgentID
 		_, err = orm.Get(inst)
 		if err != nil {
-			return nil, node, err
+			return nil, v, err
 		}
 		if inst.Name == "" {
-			return nil, node, nil
+			return nil, v, nil
 		}
-		return inst, node, nil
+		return inst, v, nil
 	}
 	return nil, nil, nil
 }

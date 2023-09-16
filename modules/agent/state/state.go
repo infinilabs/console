@@ -12,8 +12,8 @@ import (
 	"gopkg.in/yaml.v2"
 	"infini.sh/console/modules/agent/client"
 	"infini.sh/console/modules/agent/common"
-	"infini.sh/console/modules/agent/model"
-	"infini.sh/framework/core/agent"
+	model2 "infini.sh/console/modules/agent/model"
+	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/host"
 	"infini.sh/framework/core/kv"
 	"infini.sh/framework/core/orm"
@@ -44,9 +44,9 @@ func IsEnabled() bool {
 }
 
 type IStateManager interface {
-	GetAgent(ID string) (*agent.Instance, error)
-	UpdateAgent(inst *agent.Instance, syncToES bool) (*agent.Instance, error)
-	GetTaskAgent(clusterID string) (*agent.Instance, error)
+	GetAgent(ID string) (*model.Instance, error)
+	UpdateAgent(inst *model.Instance, syncToES bool) (*model.Instance, error)
+	GetTaskAgent(clusterID string) (*model.Instance, error)
 	DeleteAgent(agentID string) error
 	LoopState()
 	Stop()
@@ -87,7 +87,7 @@ func (sm *StateManager) checkAgentStatus() {
 	for agentID := range onlineAgentIDs {
 		if _, ok := sm.agentIds[agentID]; !ok {
 			log.Infof("status of agent [%s] changed to online", agentID)
-			sm.agentIds[agentID] = model.StatusOnline
+			sm.agentIds[agentID] = model2.StatusOnline
 		}
 	}
 	sm.agentMutex.Unlock()
@@ -104,25 +104,25 @@ func (sm *StateManager) checkAgentStatus() {
 			sm.syncSettings(agentID)
 			sm.syncIngestSettings(agentID)
 			if _, ok := onlineAgentIDs[agentID]; ok {
-				host.UpdateHostAgentStatus(agentID, model.StatusOnline)
-				if status == model.StatusOnline {
+				host.UpdateHostAgentStatus(agentID, model2.StatusOnline)
+				if status == model2.StatusOnline {
 					return
 				}
 				// status change to online
 				sm.agentMutex.Lock()
-				sm.agentIds[agentID] = model.StatusOnline
+				sm.agentIds[agentID] = model2.StatusOnline
 				sm.agentMutex.Unlock()
 				log.Infof("status of agent [%s] changed to online", agentID)
 				return
 			}else{
 				// already offline
-				if status == model.StatusOffline {
+				if status == model2.StatusOffline {
 					return
 				}
 			}
 			// status change to offline
 			sm.agentMutex.Lock()
-			sm.agentIds[agentID] = model.StatusOffline
+			sm.agentIds[agentID] = model2.StatusOffline
 			sm.agentMutex.Unlock()
 			ag, err := sm.GetAgent(agentID)
 			if err != nil {
@@ -131,7 +131,7 @@ func (sm *StateManager) checkAgentStatus() {
 				}
 				return
 			}
-			ag.Status = model.StatusOffline
+			ag.Status = model2.StatusOffline
 			log.Infof("agent [%s] is offline", ag.Endpoint)
 			_, err = sm.UpdateAgent(ag, true)
 			if err != nil {
@@ -139,13 +139,13 @@ func (sm *StateManager) checkAgentStatus() {
 				return
 			}
 			//update host agent status
-			host.UpdateHostAgentStatus(ag.ID, model.StatusOffline)
+			host.UpdateHostAgentStatus(ag.ID, model2.StatusOffline)
 		}(agentID)
 
 	}
 }
 func (sm *StateManager) getLastSyncSettingsTimestamp(agentID string) int64{
-	vbytes, err := kv.GetValue(model.KVSyncDynamicTaskSettings, []byte(agentID))
+	vbytes, err := kv.GetValue(model2.KVSyncDynamicTaskSettings, []byte(agentID))
 	if err != nil {
 		log.Error(err)
 	}
@@ -191,7 +191,7 @@ func (sm *StateManager) syncSettings(agentID string) {
 			clusterCfg := util.MapStr{
 				"name": cfg.ID,
 				"enabled": true,
-				"endpoint": cfg.Endpoint,
+				"endpoint": cfg.GetAnyEndpoint(),
 			}
 			if cfg.BasicAuth != nil && cfg.BasicAuth.Password != ""{
 				cid := cfg.ID
@@ -223,16 +223,17 @@ func (sm *StateManager) syncSettings(agentID string) {
 		log.Error("serialize config to yaml error: ", err)
 		return
 	}
-	err = agClient.SaveDynamicConfig(context.Background(), ag.GetEndpoint(), "dynamic_task", string(cfgBytes))
+	//TODO
+	err = agClient.SaveDynamicConfig(context.Background(), ag.GetEndpoint(), "dynamic_task.yml", string(cfgBytes))
 
 	newTimestampStr := strconv.FormatInt(newTimestamp, 10)
-	err = kv.AddValue(model.KVSyncDynamicTaskSettings, []byte(agentID), []byte(newTimestampStr))
+	err = kv.AddValue(model2.KVSyncDynamicTaskSettings, []byte(agentID), []byte(newTimestampStr))
 	if err != nil {
 		log.Error(err)
 	}
 }
 func (sm *StateManager) syncIngestSettings(agentID string) {
-	v, err := kv.GetValue(model.KVAgentIngestConfigChanged, []byte(agentID))
+	v, err := kv.GetValue(model2.KVAgentIngestConfigChanged, []byte(agentID))
 	if err != nil {
 		log.Error(err)
 	}
@@ -248,11 +249,11 @@ func (sm *StateManager) syncIngestSettings(agentID string) {
 	}
 	err = sm.agentClient.SaveIngestConfig(context.Background(), ag.GetEndpoint())
 	if err == nil {
-		kv.AddValue(model.KVAgentIngestConfigChanged,[]byte(agentID), []byte("0"))
+		kv.AddValue(model2.KVAgentIngestConfigChanged,[]byte(agentID), []byte("0"))
 	}
 }
 
-func (sm *StateManager) getAvailableAgent(clusterID string) (*agent.Instance, error) {
+func (sm *StateManager) getAvailableAgent(clusterID string) (*model.Instance, error) {
 	agents, err := common.LoadAgentsFromES(clusterID)
 	if err != nil {
 		return nil, err
@@ -289,14 +290,14 @@ func (sm *StateManager) Stop() {
 	<-sm.stopCompleteC
 }
 
-func (sm *StateManager) GetAgent(ID string) (*agent.Instance, error) {
+func (sm *StateManager) GetAgent(ID string) (*model.Instance, error) {
 	buf, err := kv.GetValue(sm.KVKey, []byte(ID))
 	if err != nil {
 		return nil, err
 	}
 	strTime, _ := jsonparser.GetString(buf, "timestamp")
 	timestamp, _ := time.Parse(time.RFC3339, strTime)
-	inst := &agent.Instance{}
+	inst := &model.Instance{}
 	inst.ID = ID
 	if time.Since(timestamp) > sm.TTL {
 		exists, err := orm.Get(inst)
@@ -317,7 +318,7 @@ func (sm *StateManager) GetAgent(ID string) (*agent.Instance, error) {
 	return inst, err
 }
 
-func (sm *StateManager) UpdateAgent(inst *agent.Instance, syncToES bool) (*agent.Instance, error) {
+func (sm *StateManager) UpdateAgent(inst *model.Instance, syncToES bool) (*model.Instance, error) {
 	//inst.Timestamp = time.Now()
 	err := kv.AddValue(sm.KVKey, []byte(inst.ID), util.MustToJSONBytes(inst))
 	if syncToES {
@@ -332,7 +333,7 @@ func (sm *StateManager) UpdateAgent(inst *agent.Instance, syncToES bool) (*agent
 	return inst, err
 }
 
-func (sm *StateManager) GetTaskAgent(clusterID string) (*agent.Instance, error) {
+func (sm *StateManager) GetTaskAgent(clusterID string) (*model.Instance, error) {
 	return nil, nil
 }
 

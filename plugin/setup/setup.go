@@ -495,10 +495,6 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 			}
 		}
 
-		if err != nil {
-			panic(err)
-		}
-
 		//处理索引
 		elastic2.InitSchema()
 		//init security
@@ -573,7 +569,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	_, err = util.FilePutContent(file, fmt.Sprintf("configs.template:\n  - name: \"system\"\n    path: ./config/system_config.tpl\n    variable:\n      "+
 		"CLUSTER_ID: %v\n      CLUSTER_ENDPINT: \"%v\"\n      "+
 		"CLUSTER_USER: \"%v\"\n      CLUSTER_VER: \"%v\"\n      CLUSTER_DISTRIBUTION: \"%v\"\n      INDEX_PREFIX: \"%v\"",
-		GlobalSystemElasticsearchID, cfg.Endpoint, cfg.BasicAuth.Username, cfg.Version, cfg.Distribution, cfg1.IndexPrefix))
+		GlobalSystemElasticsearchID, cfg.GetAnyEndpoint(), cfg.BasicAuth.Username, cfg.Version, cfg.Distribution, cfg1.IndexPrefix))
 	if err != nil {
 		panic(err)
 	}

@@ -52,7 +52,6 @@ elastic:
 
 metrics:
   enabled: true
-  major_ip_pattern: "192.*"
   queue: metrics
   elasticsearch:
     enabled: true

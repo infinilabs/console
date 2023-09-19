@@ -3,6 +3,7 @@ package task_manager
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	log "github.com/cihub/seelog"
@@ -78,18 +79,26 @@ func (h *APIHandler) getDataMigrationTaskInfo(w http.ResponseWriter, req *http.R
 		count := indexState[indexName].IndexDocs
 		sourceDocs := index.Source.Docs
 		var percent float64
+		var exportedPercent float64
 		if sourceDocs <= 0 {
 			percent = 100
+			exportedPercent = 100
 		}else{
 			percent = float64(count) / float64(sourceDocs) * 100
 			if percent > 100 {
 				percent = 100
+			}
+			exportedPercent = float64(indexState[indexName].ScrollDocs)/float64(sourceDocs) * 100
+			if exportedPercent > 100 {
+				exportedPercent = 100
 			}
 		}
 		//taskConfig.Indices[i].Source.Docs = sourceDocs
 		taskConfig.Indices[i].Target.Docs = count
 		taskConfig.Indices[i].Percent = util.ToFixed(percent, 2)
 		taskConfig.Indices[i].ErrorPartitions = indexState[indexName].ErrorPartitions
+		taskConfig.Indices[i].RunningChildren = indexState[indexName].RunningChildren
+		taskConfig.Indices[i].ExportedPercent = util.ToFixed(exportedPercent, 2)
 		if count == index.Source.Docs {
 			completedIndices++
 		}
@@ -141,6 +150,21 @@ func (h *APIHandler) getDataMigrationTaskOfIndex(w http.ResponseWriter, req *htt
 		StartTime: majorTask.StartTimeInMillis,
 		Repeating: migration_util.IsRepeating(taskConfig.Settings.Execution.Repeat, majorTask.Metadata.Labels),
 	}
+	if taskInfo.Repeating {
+		_, repeatStatus, err := h.calcRepeatingStatus(&majorTask)
+		if err != nil {
+			log.Error(err)
+			h.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		taskInfo.NextRunTime = repeatStatus.NextRunTime
+	}
+	indexParts := strings.Split(uniqueIndexName, ":")
+	for _, index := range taskConfig.Indices {
+		if index.Source.Name == indexParts[0] {
+			taskInfo.Incremental = index.Incremental
+		}
+	}
 
 	subTasks, pipelineTaskIDs, pipelineSubParentIDs, parentIDPipelineTasks, err := h.getChildTaskInfosByIndex(id, uniqueIndexName)
 
@@ -167,6 +191,7 @@ func (h *APIHandler) getDataMigrationTaskOfIndex(w http.ResponseWriter, req *htt
 	startTime, completedTime, duration, completedPartitions := h.calcMajorTaskInfo(subTasks, taskInfo.Repeating)
 
 	var partitionTaskInfos []util.MapStr
+	var workers = map[string]struct{}{}
 
 	for i, ptask := range subTasks {
 		cfg := migration_model.IndexMigrationTaskConfig{}
@@ -178,7 +203,10 @@ func (h *APIHandler) getDataMigrationTaskOfIndex(w http.ResponseWriter, req *htt
 		if i == 0 {
 			taskInfo.Step = cfg.Source.Step
 		}
-
+		instID := migration_util.GetMapStringValue(ptask.Metadata.Labels, "execution_instance_id")
+		if instID != "" {
+			workers[instID] = struct{}{}
+		}
 		var durationInMS int64
 		var subCompletedTime int64
 		if ptask.StartTimeInMillis > 0 {
@@ -241,6 +269,14 @@ func (h *APIHandler) getDataMigrationTaskOfIndex(w http.ResponseWriter, req *htt
 	}
 	taskInfo.Partitions = partitionTaskInfos
 	taskInfo.CompletedPartitions = completedPartitions
+	for _, node := range taskConfig.Settings.Execution.Nodes.Permit {
+		if _, ok := workers[node.ID]; ok {
+			taskInfo.Workers = append(taskInfo.Workers, util.MapStr{
+				"id": node.ID,
+				"name": node.Name,
+			})
+		}
+	}
 	h.WriteJSON(w, taskInfo, http.StatusOK)
 }
 
@@ -248,6 +284,8 @@ type MigrationIndexStateInfo struct {
 	ErrorPartitions int
 	IndexDocs       int64
 	SourceDocs      int64
+	RunningChildren int
+	ScrollDocs int64
 }
 
 /*
@@ -324,9 +362,12 @@ func (h *APIHandler) getMigrationMajorTaskInfo(id string) (taskStats migration_m
 			taskStats.SourceDocs += cfg.Source.DocCount
 			st := indexState[indexName]
 			st.SourceDocs += cfg.Source.DocCount
-			indexState[indexName] = st
+			scrollDocs := migration_util.GetMapIntValue(taskLabels, "scrolled_docs")
+			st.ScrollDocs += scrollDocs
 
 			if subTask.Status == task.StatusRunning {
+				st.RunningChildren++
+				indexState[indexName] = st
 				indexMigrationTaskIDs = append(indexMigrationTaskIDs, subTask.ID)
 				continue
 			}
@@ -334,6 +375,7 @@ func (h *APIHandler) getMigrationMajorTaskInfo(id string) (taskStats migration_m
 			indexDocs := migration_util.GetMapIntValue(taskLabels, "index_docs")
 			taskStats.IndexDocs += indexDocs
 			st.IndexDocs += indexDocs
+
 			if subTask.Status == task.StatusError {
 				st.ErrorPartitions += 1
 				taskStats.ErrorPartitions += 1
@@ -347,7 +389,7 @@ func (h *APIHandler) getMigrationMajorTaskInfo(id string) (taskStats migration_m
 		}
 
 		taskQuery = util.MapStr{
-			"size": len(indexMigrationTaskIDs),
+			"size": len(indexMigrationTaskIDs) * 2,
 			"query": util.MapStr{
 				"bool": util.MapStr{
 					"must": []util.MapStr{
@@ -356,13 +398,13 @@ func (h *APIHandler) getMigrationMajorTaskInfo(id string) (taskStats migration_m
 								"parent_id": indexMigrationTaskIDs,
 							},
 						},
-						{
-							"term": util.MapStr{
-								"metadata.labels.pipeline_id": util.MapStr{
-									"value": "bulk_indexing",
-								},
-							},
-						},
+						//{
+						//	"term": util.MapStr{
+						//		"metadata.labels.pipeline_id": util.MapStr{
+						//			"value": "bulk_indexing",
+						//		},
+						//	},
+						//},
 					},
 				},
 			},
@@ -391,10 +433,12 @@ func (h *APIHandler) getMigrationMajorTaskInfo(id string) (taskStats migration_m
 	for pipelineID, pipelineContext := range pipelineContexts {
 		// add indexDocs of running tasks
 		indexDocs := migration_util.GetMapIntValue(pipelineContext, "bulk_indexing.success.count")
+		scrollDocs := migration_util.GetMapIntValue(pipelineContext, "es_scroll.scrolled_docs")
 		taskStats.IndexDocs += indexDocs
 		indexName := pipelineIndexNames[pipelineID]
 		st := indexState[indexName]
 		st.IndexDocs += indexDocs
+		st.ScrollDocs += scrollDocs
 		indexState[indexName] = st
 	}
 	return taskStats, indexState, nil

@@ -130,6 +130,13 @@ func (p *processor) splitMajorMigrationTask(taskItem *task.Task) error {
 			}
 			if index.Incremental != nil {
 				incrementalFilter, err := index.Incremental.BuildFilter(current, step)
+				if source.Step == nil {
+					source.Step = step.String()
+					source.End = float64(current - index.Incremental.Delay.Milliseconds())
+					if !index.Incremental.Full {
+						source.Start = source.End - float64(step.Milliseconds())
+					}
+				}
 				if err != nil {
 					return err
 				}

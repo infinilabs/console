@@ -78,7 +78,6 @@ func buildTask(config *migration_model.ClusterMigrationTaskConfig, creator *rbac
 	config.Cluster.Source.Distribution = srcClusterCfg.Distribution
 	dstClusterCfg := elastic.GetConfig(config.Cluster.Target.Id)
 	config.Cluster.Target.Distribution = dstClusterCfg.Distribution
-
 	clearTaskConfig(config)
 
 	var totalDocs int64
@@ -102,12 +101,16 @@ func buildTask(config *migration_model.ClusterMigrationTaskConfig, creator *rbac
 				"target_cluster_id": config.Cluster.Target.Id,
 				"source_total_docs": totalDocs,
 				"permit_nodes": config.Settings.Execution.Nodes.Permit,
+				"name": config.Name,
 			},
 		},
 		Cancellable:  true,
 		Runnable:     false,
 		Status:       task.StatusInit,
 		ConfigString: util.MustToJSON(config),
+	}
+	if len(config.Tags) > 0 {
+		t.Metadata.Labels["tags"] = config.Tags
 	}
 	t.ID = util.GetUUID()
 	return &t, nil

@@ -38,9 +38,9 @@ func DeleteChildTasks(taskID string, taskType string) error {
 	return nil
 }
 
-func GetLastRepeatingChildTask(taskID string, taskType string) (*task.Task, error) {
+func GetLastRepeatingChildTask(taskID string, taskType string) (*task.Task, *task.Task, error) {
 	queryDsl := util.MapStr{
-		"size": 1,
+		"size": 2,
 		"sort": []util.MapStr{
 			{
 				"metadata.labels.next_run_time": util.MapStr{
@@ -69,12 +69,21 @@ func GetLastRepeatingChildTask(taskID string, taskType string) (*task.Task, erro
 	}
 	tasks, err := GetTasks(queryDsl)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if len(tasks) == 0 {
-		return nil, nil
+		return nil, nil, nil
 	}
-	return &tasks[0], nil
+	var lastRunChildTask *task.Task
+	if tasks[0].StartTimeInMillis > 0 {
+		lastRunChildTask = &tasks[0]
+	}else{
+		if len(tasks) == 2 {
+			lastRunChildTask = &tasks[1]
+		}
+	}
+
+	return &tasks[0], lastRunChildTask, nil
 }
 
 func GetPendingChildTasks(taskID string, taskType string) ([]task.Task, error) {

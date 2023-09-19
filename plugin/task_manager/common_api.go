@@ -3,6 +3,8 @@ package task_manager
 import (
 	"errors"
 	"fmt"
+	migration_model "infini.sh/console/plugin/task_manager/model"
+	"infini.sh/framework/core/global"
 	"net/http"
 	"strconv"
 	"strings"
@@ -31,6 +33,9 @@ type TaskInfoResponse struct {
 	CompletedPartitions int           `json:"completed_partitions"`
 	Partitions          []util.MapStr `json:"partitions"`
 	Repeating           bool          `json:"repeating"`
+	Workers []util.MapStr `json:"workers"`
+	Incremental *migration_model.IndexIncremental `json:"incremental"`
+	NextRunTime int64 `json:"next_run_time"`
 }
 
 func (h *APIHandler) searchTask(taskType string) func(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -105,6 +110,7 @@ func (h *APIHandler) searchTask(taskType string) func(w http.ResponseWriter, req
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
 		for _, hit := range searchRes.Hits.Hits {
 			sourceM := util.MapStr(hit.Source)
 			h.populateMajorTaskInfo(hit.ID, sourceM)
@@ -122,6 +128,12 @@ func (h *APIHandler) populateMajorTaskInfo(taskID string, sourceM util.MapStr) {
 		log.Errorf("failed to unmarshal major task info, err: %v", err)
 		return
 	}
+	_, repeatStatus, err := h.calcRepeatingStatus(&majorTask)
+	if err != nil {
+		log.Warnf("failed to calc repeat info, err: %v", err)
+		return
+	}
+	sourceM.Put("repeat", repeatStatus)
 	switch majorTask.Metadata.Type {
 	case "cluster_migration":
 		ts, _, err := h.getMigrationMajorTaskInfo(taskID)
@@ -138,6 +150,15 @@ func (h *APIHandler) populateMajorTaskInfo(taskID string, sourceM util.MapStr) {
 			return
 		}
 		sourceM.Put("running_children", count)
+		if repeatStatus.IsRepeat && repeatStatus.LastRunChildTaskID != "" {
+			ts, _, err = h.getMigrationMajorTaskInfo(repeatStatus.LastRunChildTaskID)
+			if err != nil {
+				log.Warnf("fetch progress info of task error: %v", err)
+				return
+			}
+			sourceM.Put("metadata.labels.target_total_docs", ts.IndexDocs)
+			sourceM.Put("metadata.labels.source_total_docs", ts.SourceDocs)
+		}
 	case "cluster_comparison":
 		ts, _, err := h.getComparisonMajorTaskInfo(taskID)
 		if err != nil {
@@ -156,12 +177,6 @@ func (h *APIHandler) populateMajorTaskInfo(taskID string, sourceM util.MapStr) {
 		}
 		sourceM.Put("running_children", count)
 	}
-	_, repeatStatus, err := h.calcRepeatingStatus(&majorTask)
-	if err != nil {
-		log.Warnf("failed to calc repeat info, err: %v", err)
-		return
-	}
-	sourceM.Put("repeat", repeatStatus)
 }
 
 func (h *APIHandler) startTask(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -332,15 +347,103 @@ func (h *APIHandler) resumeTask(w http.ResponseWriter, req *http.Request, ps htt
 	return
 }
 
+// query index level task logging
+func (h *APIHandler) searchIndexLevelTaskLogging(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	id := ps.MustGetParameter("task_id")
+	uniqueIndexName := ps.MustGetParameter("index")
+	cfg := global.MustLookup("cluster_migration_config")
+	var (
+		migrationConfig *DispatcherConfig
+		ok bool
+	)
+	if migrationConfig, ok = cfg.(*DispatcherConfig); !ok {
+		h.WriteJSON(w, elastic.SearchResponse{}, http.StatusOK)
+		return
+	}
+	client := elastic.GetClient(migrationConfig.Elasticsearch)
+	var (
+		strSize = h.GetParameterOrDefault(req, "size", "500")
+		min =  h.GetParameterOrDefault(req, "min", "")
+		max = h.GetParameterOrDefault(req, "max", "")
+	)
+	size, _ := strconv.Atoi(strSize)
+	if size <= 0 {
+		size = 500
+	}
+	rangeObj := util.MapStr{}
+	if min != "" {
+		rangeObj["gte"] = min
+	}
+	if max != "" {
+		rangeObj["lt"] = max
+	}
+	mustQ := []util.MapStr{
+		{
+			"term": util.MapStr{
+				"metadata.category": util.MapStr{
+					"value": "task",
+				},
+			},
+		},
+		{
+			"term": util.MapStr{
+				"metadata.labels.parent_task_id": util.MapStr{
+					"value": id,
+				},
+			},
+		},
+		{
+			"term": util.MapStr{
+				"metadata.labels.unique_index_name": util.MapStr{
+					"value": uniqueIndexName,
+				},
+			},
+		},
+	}
+	if len(rangeObj) > 0 {
+		mustQ = append(mustQ, util.MapStr{
+			"range": util.MapStr{
+				"timestamp": rangeObj,
+			},
+		})
+	}
+	query := util.MapStr{
+		"size": size,
+		"_source": []string{"payload.task.logging.message", "timestamp"},
+		"sort": []util.MapStr{
+			{
+				"timestamp": util.MapStr{
+					"order": "desc",
+				},
+			},
+		},
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": mustQ,
+			},
+		},
+	}
+	searchRes, err := client.SearchWithRawQueryDSL(migrationConfig.LogIndexName, util.MustToJSONBytes(query))
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	h.WriteJSON(w, searchRes, http.StatusOK)
+}
+
 type RepeatStatus struct {
 	IsRepeat  bool `json:"is_repeat"`
 	Done      bool `json:"done"`
 	Repeating bool `json:"repeating"`
+	LastRunTime int64 `json:"last_run_time"`
+	NextRunTime int64 `json:"next_run_time"`
+	LastRunChildTaskID string `json:"last_run_child_task_id"`
 }
 
 func (h *APIHandler) calcRepeatingStatus(taskItem *task.Task) (*task.Task, *RepeatStatus, error) {
 	ret := &RepeatStatus{}
-	lastRepeatingChild, err := migration_util.GetLastRepeatingChildTask(taskItem.ID, taskItem.Metadata.Type)
+	lastRepeatingChild, lastRunChild, err := migration_util.GetLastRepeatingChildTask(taskItem.ID, taskItem.Metadata.Type)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -362,6 +465,14 @@ func (h *APIHandler) calcRepeatingStatus(taskItem *task.Task) (*task.Task, *Repe
 	repeatTriggered := migration_util.GetMapBoolValue(lastRepeatingChild.Metadata.Labels, "repeat_triggered")
 	if !repeatTriggered {
 		ret.Repeating = true
+	}
+	ret.NextRunTime = migration_util.GetMapIntValue(lastRepeatingChild.Metadata.Labels, "next_run_time")
+	ret.LastRunTime = lastRepeatingChild.StartTimeInMillis
+	if ret.LastRunTime == 0 && lastRunChild != nil {
+		ret.LastRunTime = lastRunChild.StartTimeInMillis
+	}
+	if lastRunChild != nil {
+		ret.LastRunChildTaskID = lastRunChild.ID
 	}
 	return lastRepeatingChild, ret, nil
 }
@@ -615,3 +726,71 @@ func (h *APIHandler) calcMajorTaskInfo(subTasks []task.Task, repeating bool) (st
 
 	return
 }
+
+func (h *APIHandler) searchTaskFieldValues(taskType string) func(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	return func(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+		var (
+			field = h.GetParameterOrDefault(req, "field", "")
+			keyword = h.GetParameterOrDefault(req, "keyword", "")
+			mustQ   []interface{}
+		)
+		mustQ = append(mustQ, util.MapStr{
+			"term": util.MapStr{
+				"metadata.type": util.MapStr{
+					"value": taskType,
+				},
+			},
+		})
+
+		if v := strings.TrimSpace(keyword); v != ""{
+			mustQ = append(mustQ, util.MapStr{
+				"query_string": util.MapStr{
+					"default_field": field,
+					"query":         fmt.Sprintf("*%s*", v),
+				},
+			})
+		}
+		queryDSL := util.MapStr{
+			"aggs": util.MapStr{
+				"items": util.MapStr{
+					"terms": util.MapStr{
+						"field": field,
+						"size":  20,
+					},
+				},
+			},
+			"size": 0,
+			"query": util.MapStr{
+				"bool": util.MapStr{
+					"must": mustQ,
+				},
+			},
+		}
+		q := orm.Query{
+			RawQuery: util.MustToJSONBytes(queryDSL),
+		}
+		err, result := orm.Search(task.Task{}, &q)
+		if err != nil {
+			log.Error(err)
+			h.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		searchRes := elastic.SearchResponse{}
+		err = util.FromJSONBytes(result.Raw, &searchRes)
+		if err != nil {
+			log.Error(err)
+			h.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		items := []string{}
+		for _, bk := range searchRes.Aggregations["items"].Buckets {
+			if v, ok := bk["key"].(string); ok {
+				if strings.Contains(v, keyword){
+					items = append(items, v)
+				}
+			}
+		}
+		h.WriteJSON(w, items, http.StatusOK)
+	}
+}
+

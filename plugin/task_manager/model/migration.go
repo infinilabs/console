@@ -9,6 +9,8 @@ import (
 )
 
 type ClusterMigrationTaskConfig struct {
+	Name string `json:"name"`
+	Tags []string `json:"tags"`
 	Cluster struct {
 		Source ClusterInfo `json:"source"`
 		Target ClusterInfo `json:"target"`
@@ -39,6 +41,8 @@ type ClusterMigrationIndexConfig struct {
 	// only used in API
 	Percent         float64 `json:"percent,omitempty"`
 	ErrorPartitions int     `json:"error_partitions,omitempty"`
+	RunningChildren int     `json:"running_children,omitempty"`
+	ExportedPercent         float64 `json:"exported_percent,omitempty"`
 }
 
 type ClusterMigrationTaskState struct {

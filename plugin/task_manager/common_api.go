@@ -439,6 +439,7 @@ type RepeatStatus struct {
 	LastRunTime int64 `json:"last_run_time"`
 	NextRunTime int64 `json:"next_run_time"`
 	LastRunChildTaskID string `json:"last_run_child_task_id"`
+	LastCompleteTime int64 `json:"last_complete_time"`
 }
 
 func (h *APIHandler) calcRepeatingStatus(taskItem *task.Task) (*task.Task, *RepeatStatus, error) {
@@ -470,6 +471,9 @@ func (h *APIHandler) calcRepeatingStatus(taskItem *task.Task) (*task.Task, *Repe
 	ret.LastRunTime = lastRepeatingChild.StartTimeInMillis
 	if ret.LastRunTime == 0 && lastRunChild != nil {
 		ret.LastRunTime = lastRunChild.StartTimeInMillis
+		if !lastRunChild.CompletedTime.IsZero(){
+			ret.LastCompleteTime = lastRunChild.CompletedTime.UnixMilli()
+		}
 	}
 	if lastRunChild != nil {
 		ret.LastRunChildTaskID = lastRunChild.ID

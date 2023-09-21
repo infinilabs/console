@@ -2545,6 +2545,251 @@ POST $[[INDEX_PREFIX]]widget/_doc/cji1ttq8go5i051pl1t0
     ]
   }
 }
+PUT $[[INDEX_PREFIX]]widget/_doc/cji1sc28go5i051pl1i1
+{
+  "id": "cji1sc28go5i051pl1i1",
+  "created": "2023-09-20T10:32:16.8356774+08:00",
+  "updated": "2023-08-20T10:32:16.8356774+08:00",
+  "title": "Source Cluster Query QPS",
+  "config": {
+    "bucket_size": "auto",
+    "format": {
+      "pattern": "0.00",
+      "type": "number"
+    },
+    "series": [
+      {
+        "metric": {
+          "formula": "a/{{.bucket_size_in_second}}",
+          "name": "Total Query",
+          "items": [
+            {
+              "field": "payload.elasticsearch.index_stats.total.search.query_total",
+              "name": "a",
+              "statistic": "derivative"
+            }
+          ],
+          "sort": [
+            {
+              "direction": "desc",
+              "key": "_count"
+            }
+          ]
+        },
+        "queries": {
+          "cluster_id": "infini_default_system_cluster",
+          "indices": [
+            ".infini_metrics"
+          ],
+          "time_field": "timestamp"
+        },
+        "type": "line"
+      }
+    ]
+  }
+}
+
+
+PUT $[[INDEX_PREFIX]]widget/_doc/cji1sc28go5i051pl1i2
+{
+  "id": "cji1sc28go5i051pl1i2",
+  "created": "2023-09-20T10:32:16.8356774+08:00",
+  "updated": "2023-08-20T10:32:16.8356774+08:00",
+  "title": "Source Cluster Search Latency",
+  "config": {
+    "bucket_size": "auto",
+    "format": {
+      "pattern": "0.00",
+      "type": "number"
+    },
+    "series": [
+      {
+        "metric": {
+          "formula": "a/b",
+          "name": "Query Latency",
+          "items": [
+            {
+              "field": "payload.elasticsearch.index_stats.total.search.query_time_in_millis",
+              "name": "a",
+              "statistic": "derivative"
+            },
+            {
+              "field": "payload.elasticsearch.index_stats.total.search.query_total",
+              "name": "b",
+              "statistic": "derivative"
+            }
+          ],
+          "sort": [
+            {
+              "direction": "desc",
+              "key": "_count"
+            }
+          ]
+        },
+        "queries": {
+          "cluster_id": "infini_default_system_cluster",
+          "indices": [
+            ".infini_metrics"
+          ],
+          "time_field": "timestamp"
+        },
+        "type": "line"
+      },
+      {
+        "metric": {
+          "formula": "a/b",
+          "items": [
+            {
+              "field": "payload.elasticsearch.index_stats.total.search.scroll_time_in_millis",
+              "name": "a",
+              "statistic": "derivative"
+            },
+            {
+              "field": "payload.elasticsearch.index_stats.total.search.scroll_total",
+              "name": "b",
+              "statistic": "derivative"
+            }
+          ],
+          "name": "Scroll Latency",
+          "sort": [
+            {
+              "direction": "desc",
+              "key": "_count"
+            }
+          ]
+        },
+        "queries": {
+          "cluster_id": "infini_default_system_cluster",
+          "indices": [
+            ".infini_metrics"
+          ],
+          "time_field": "timestamp"
+        },
+        "type": "line"
+      }
+    ]
+  }
+}
+
+PUT $[[INDEX_PREFIX]]widget/_doc/cji1sc28go5i051pl1i3
+{
+  "id": "cji1sc28go5i051pl1i3",
+  "created": "2023-09-20T10:32:16.8356774+08:00",
+  "updated": "2023-08-20T10:32:16.8356774+08:00",
+  "title": "Target Cluster Index QPS",
+  "config": {
+    "bucket_size": "auto",
+    "format": {
+      "pattern": "0.00",
+      "type": "number"
+    },
+    "series": [
+      {
+        "metric": {
+          "formula": "a/{{.bucket_size_in_second}}",
+          "name": "Total Indexing",
+          "items": [
+            {
+              "field": "payload.elasticsearch.index_stats.total.indexing.index_total",
+              "name": "a",
+              "statistic": "derivative"
+            }
+          ],
+          "sort": [
+            {
+              "direction": "desc",
+              "key": "_count"
+            }
+          ]
+        },
+        "queries": {
+          "cluster_id": "infini_default_system_cluster",
+          "indices": [
+            ".infini_metrics"
+          ],
+          "time_field": "timestamp"
+        },
+        "type": "line"
+      },
+      {
+        "metric": {
+          "formula": "a/{{.bucket_size_in_second}}",
+          "name": "Primary Indexing",
+          "items": [
+            {
+              "field": "payload.elasticsearch.index_stats.primaries.indexing.index_total",
+              "name": "a",
+              "statistic": "derivative"
+            }
+          ],
+          "sort": [
+            {
+              "direction": "desc",
+              "key": "_count"
+            }
+          ]
+        },
+        "queries": {
+          "cluster_id": "infini_default_system_cluster",
+          "indices": [
+            ".infini_metrics"
+          ],
+          "time_field": "timestamp"
+        },
+        "type": "line"
+      }
+    ]
+  }
+}
+
+PUT $[[INDEX_PREFIX]]widget/_doc/cji1sc28go5i051pl1i4
+{
+  "id": "cji1sc28go5i051pl1i4",
+  "created": "2023-09-20T10:32:16.8356774+08:00",
+  "updated": "2023-08-20T10:32:16.8356774+08:00",
+  "title": "Target Cluster Index Latency",
+  "config": {
+    "bucket_size": "auto",
+    "format": {
+      "pattern": "0.00",
+      "type": "number"
+    },
+    "series": [
+      {
+        "metric": {
+          "formula": "a/b",
+          "name": "Indexing Latency",
+          "items": [
+            {
+              "field": "payload.elasticsearch.index_stats.primaries.indexing.index_time_in_millis",
+              "name": "a",
+              "statistic": "derivative"
+            },
+            {
+              "field": "payload.elasticsearch.index_stats.primaries.indexing.index_total",
+              "name": "b",
+              "statistic": "derivative"
+            }
+          ],
+          "sort": [
+            {
+              "direction": "desc",
+              "key": "_count"
+            }
+          ]
+        },
+        "queries": {
+          "cluster_id": "infini_default_system_cluster",
+          "indices": [
+            ".infini_metrics"
+          ],
+          "time_field": "timestamp"
+        },
+        "type": "line"
+      }
+    ]
+  }
+}
 
 #The `id` value is consistent with the `_id` value
 POST $[[INDEX_PREFIX]]layout/_doc/cg2qqh28go5jqa6vvk70

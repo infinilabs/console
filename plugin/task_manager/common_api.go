@@ -471,7 +471,7 @@ func (h *APIHandler) calcRepeatingStatus(taskItem *task.Task) (*task.Task, *Repe
 	ret.LastRunTime = lastRepeatingChild.StartTimeInMillis
 	if ret.LastRunTime == 0 && lastRunChild != nil {
 		ret.LastRunTime = lastRunChild.StartTimeInMillis
-		if !lastRunChild.CompletedTime.IsZero(){
+		if lastRunChild.CompletedTime != nil && !lastRunChild.CompletedTime.IsZero(){
 			ret.LastCompleteTime = lastRunChild.CompletedTime.UnixMilli()
 		}
 	}

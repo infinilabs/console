@@ -19,7 +19,7 @@ fi
 cd $WORKBASE/web
 git pull origin master
 
-cd $WORKBASE/web/common
+cd $WORKBASE/web/src/common
 git pull origin master
 
 git log --pretty=oneline -5

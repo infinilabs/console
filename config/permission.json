@@ -293,8 +293,14 @@
     {"name": "doc.update", "methods": ["put"],
       "path": "/:index_name/:doctype/:doc_id"
     },
+    {"name": "doc.update", "methods": ["post"],
+      "path": "/:index_name/_update/:doc_id"
+    },
     {"name": "doc.create", "methods": ["post"],
       "path": "/:index_name/:doctype"
+    },
+    {"name": "doc.create", "methods": ["post", "put"],
+      "path": "/:index_name/_create/:doc_id"
     },
 
     {"name": "doc.delete", "methods": ["delete"],
@@ -302,6 +308,9 @@
     },
     {"name": "doc.get", "methods": ["get"],
       "path": "/:index_name/:doctype/:doc_id"
+    },
+    {"name": "doc.get", "methods": ["get"],
+      "path": "/:index_name/_source/:doc_id"
     },
     {"name": "doc.exists", "methods": ["head"],
       "path": "/:index_name/:doctype/:doc_id"

@@ -5,6 +5,8 @@ import (
 )
 
 type ClusterComparisonTaskConfig struct {
+	Name string `json:"name"`
+	Tags []string `json:"tags"`
 	Cluster struct {
 		Source ClusterInfo `json:"source"`
 		Target ClusterInfo `json:"target"`
@@ -31,6 +33,7 @@ type ClusterComparisonIndexConfig struct {
 	// only used in API
 	ScrollPercent   float64 `json:"scroll_percent,omitempty"`
 	ErrorPartitions int     `json:"error_partitions,omitempty"`
+	RunningChildren int `json:"running_children,omitempty"`
 }
 
 type IndexComparisonTaskConfig struct {

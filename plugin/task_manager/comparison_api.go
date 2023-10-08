@@ -83,6 +83,7 @@ func (h *APIHandler) getDataComparisonTaskInfo(w http.ResponseWriter, req *http.
 		taskConfig.Indices[i].Target.Docs = indexState[indexName].TargetTotalDocs
 		taskConfig.Indices[i].ScrollPercent = util.ToFixed(percent, 2)
 		taskConfig.Indices[i].ErrorPartitions = indexState[indexName].ErrorPartitions
+		taskConfig.Indices[i].RunningChildren = indexState[indexName].RunningChildren
 		if count == index.Source.Docs+index.Target.Docs {
 			completedIndices++
 		}
@@ -115,6 +116,7 @@ type ClusterComparisonTaskState struct {
 	TargetTotalDocs  int64
 	TargetScrollDocs int64
 	TotalDiffDocs    int64
+	RunningChildren int
 }
 
 type ComparisonIndexStateInfo struct {
@@ -124,6 +126,7 @@ type ComparisonIndexStateInfo struct {
 	TargetTotalDocs  int64
 	TargetScrollDocs int64
 	TotalDiffDocs    int64
+	RunningChildren int
 }
 
 // TODO: calc realtime info from instance
@@ -187,6 +190,9 @@ func (h *APIHandler) getComparisonMajorTaskInfo(taskID string) (taskStats Cluste
 		st.TotalDiffDocs += totalDiffDocs
 		if subTask.Status == task.StatusError {
 			st.ErrorPartitions += 1
+		}
+		if subTask.Status == task.StatusRunning {
+			st.RunningChildren++
 		}
 		indexState[indexName] = st
 	}
@@ -256,6 +262,9 @@ func (h *APIHandler) getDataComparisonTaskOfIndex(w http.ResponseWriter, req *ht
 		subTaskLabels := util.MapStr(subTask.Metadata.Labels)
 		sourceScrollDocs := migration_util.GetMapIntValue(subTaskLabels, "source_scrolled")
 		targetScrollDocs := migration_util.GetMapIntValue(subTaskLabels, "target_scrolled")
+		onlyInSource := migration_util.GetMapIntValue(subTaskLabels, "only_in_source")
+		onlyInTarget := migration_util.GetMapIntValue(subTaskLabels, "only_in_target")
+		diffBoth := migration_util.GetMapIntValue(subTaskLabels, "diff_both")
 
 		partitionTaskInfo := util.MapStr{
 			"task_id":           subTask.ID,
@@ -267,6 +276,9 @@ func (h *APIHandler) getDataComparisonTaskOfIndex(w http.ResponseWriter, req *ht
 			"duration":          durationInMS,
 			"source_total_docs": cfg.Source.DocCount,
 			"target_total_docs": cfg.Target.DocCount,
+			"only_in_source": onlyInSource,
+			"only_in_target": onlyInTarget,
+			"diff_both": diffBoth,
 		}
 		sourceDumpTask, targetDumpTask, _ := migration_util.SplitIndexComparisonTasks(parentIDPipelineTasks[subTask.ID], &cfg)
 		if sourceDumpTask != nil {

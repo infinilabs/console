@@ -31,7 +31,8 @@ type ClusterComparisonIndexConfig struct {
 	Partition   *IndexPartition   `json:"partition,omitempty"`
 
 	// only used in API
-	ScrollPercent   float64 `json:"scroll_percent,omitempty"`
+	ScrollPercent float64 `json:"scroll_percent,omitempty"`
+	TotalScrollDocs   int64 `json:"total_scroll_docs,omitempty"`
 	ErrorPartitions int     `json:"error_partitions,omitempty"`
 	RunningChildren int `json:"running_children,omitempty"`
 }

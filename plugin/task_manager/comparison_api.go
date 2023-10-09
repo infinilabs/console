@@ -301,6 +301,7 @@ func (h *APIHandler) getDataComparisonTaskOfIndex(w http.ResponseWriter, req *ht
 	startTime, completedTime, duration, completedPartitions := h.calcMajorTaskInfo(subTasks, taskInfo.Repeating)
 
 	var partitionTaskInfos []util.MapStr
+	var workers = map[string]struct{}{}
 
 	for i, subTask := range subTasks {
 		cfg := migration_model.IndexComparisonTaskConfig{}
@@ -311,6 +312,10 @@ func (h *APIHandler) getDataComparisonTaskOfIndex(w http.ResponseWriter, req *ht
 		}
 		if i == 0 {
 			taskInfo.Step = cfg.Source.Step
+		}
+		instID := migration_util.GetMapStringValue(subTask.Metadata.Labels, "execution_instance_id")
+		if instID != "" {
+			workers[instID] = struct{}{}
 		}
 
 		var durationInMS int64
@@ -380,6 +385,14 @@ func (h *APIHandler) getDataComparisonTaskOfIndex(w http.ResponseWriter, req *ht
 	// NOTE: overwrite major task start time with the first started sub task
 	if taskInfo.StartTime == 0 {
 		taskInfo.StartTime = startTime
+	}
+	for _, node := range taskConfig.Settings.Execution.Nodes.Permit {
+		if _, ok := workers[node.ID]; ok {
+			taskInfo.Workers = append(taskInfo.Workers, util.MapStr{
+				"id": node.ID,
+				"name": node.Name,
+			})
+		}
 	}
 	taskInfo.Partitions = partitionTaskInfos
 	taskInfo.CompletedPartitions = completedPartitions

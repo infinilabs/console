@@ -189,7 +189,7 @@ func (h *APIHandler) startTask(w http.ResponseWriter, req *http.Request, ps http
 		h.WriteError(w, fmt.Sprintf("task [%s] not found", taskID), http.StatusInternalServerError)
 		return
 	}
-	if obj.Metadata.Type != "pipeline" && obj.Status == task.StatusComplete {
+	if obj.Metadata.Type != "pipeline" && (obj.Status == task.StatusComplete && obj.Metadata.Type != "cluster_comparison") {
 		h.WriteError(w, fmt.Sprintf("[%s] task [%s] completed, can't start anymore", obj.Metadata.Type, taskID), http.StatusInternalServerError)
 		return
 	}

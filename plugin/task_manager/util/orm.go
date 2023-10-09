@@ -242,7 +242,7 @@ func UpdateStoppedChildTasksToReady(taskItem *task.Task, taskType string) error 
 				},
 				{
 					"terms": util.MapStr{
-						"status": []string{task.StatusError, task.StatusStopped},
+						"status": []string{task.StatusError, task.StatusStopped, task.StatusComplete},
 					},
 				},
 				{

@@ -56,9 +56,7 @@ func (p *processor) handleReadyMajorTask(taskItem *task.Task) error {
 		return nil
 	}
 	taskItem.RetryTimes++
-	if taskItem.StartTimeInMillis == 0 {
-		taskItem.StartTimeInMillis = time.Now().UnixMilli()
-	}
+	taskItem.StartTimeInMillis = time.Now().UnixMilli()
 	taskItem.Status = task.StatusRunning
 	taskItem.Metadata.Labels["total_diff_docs"] = 0
 	taskItem.Metadata.Labels["only_in_source"] = 0

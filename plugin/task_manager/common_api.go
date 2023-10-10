@@ -160,7 +160,11 @@ func (h *APIHandler) populateMajorTaskInfo(taskID string, sourceM util.MapStr) {
 			sourceM.Put("metadata.labels.source_total_docs", ts.SourceDocs)
 		}
 	case "cluster_comparison":
-		ts, _, err := h.getComparisonMajorTaskInfo(taskID)
+		targetTaskId := taskID
+		if repeatStatus.IsRepeat && repeatStatus.LastRunChildTaskID != "" {
+			targetTaskId = repeatStatus.LastRunChildTaskID
+		}
+		ts, _, err := h.getComparisonMajorTaskInfo(targetTaskId)
 		if err != nil {
 			log.Warnf("fetch progress info of task error: %v", err)
 			return

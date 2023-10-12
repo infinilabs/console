@@ -208,16 +208,17 @@ func (h *GatewayAPI) deleteInstance(w http.ResponseWriter, req *http.Request, ps
 }
 
 func (h *GatewayAPI) searchInstance(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-
 	var (
-		keyword        = h.GetParameterOrDefault(req, "keyword", "")
-		queryDSL    = `{"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d}`
+		keyword     = h.GetParameterOrDefault(req, "keyword", "")
 		strSize     = h.GetParameterOrDefault(req, "size", "20")
 		strFrom     = h.GetParameterOrDefault(req, "from", "0")
-		mustBuilder = &strings.Builder{}
+		sort = h.GetParameterOrDefault(req, "sort", "created:desc")
 	)
+	mustQ := []interface{}{}
 	if keyword != "" {
-		mustBuilder.WriteString(fmt.Sprintf(`{"query_string":{"default_field":"*","query": "%s"}}`, keyword))
+		mustQ = append(mustQ, util.MapStr{
+			"query_string": util.MapStr{"default_field":"*","query": fmt.Sprintf("*%s*", keyword)},
+		})
 	}
 	size, _ := strconv.Atoi(strSize)
 	if size <= 0 {
@@ -227,10 +228,38 @@ func (h *GatewayAPI) searchInstance(w http.ResponseWriter, req *http.Request, ps
 	if from < 0 {
 		from = 0
 	}
+	var (
+		sortField string
+		sortDirection string
+	)
+	sortParts := strings.Split(sort, ":")
+	sortField = sortParts[0]
+	if len(sortParts) >= 2 {
+		sortDirection = sortParts[1]
+	}
+	if sortDirection == "" {
+		sortDirection = "asc"
+	}
+	query := util.MapStr{
+		"size": size,
+		"from": from,
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": mustQ,
+			},
+		},
+		"sort": []util.MapStr{
+			{
+				sortField: util.MapStr{
+					"order": sortDirection,
+				},
+			},
+		},
+	}
 
-	q := orm.Query{}
-	queryDSL = fmt.Sprintf(queryDSL, mustBuilder.String(), size, from)
-	q.RawQuery = []byte(queryDSL)
+	q := orm.Query{
+		RawQuery: util.MustToJSONBytes(query),
+	}
 
 	err, res := orm.Search(&model.Instance{}, &q)
 	if err != nil {

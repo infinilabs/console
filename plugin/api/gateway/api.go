@@ -6,12 +6,12 @@ package gateway
 
 import (
 	"crypto/tls"
+	log "github.com/cihub/seelog"
 	"infini.sh/framework/core/api"
 	"infini.sh/framework/core/api/rbac/enum"
 	"net"
 	"net/http"
 	"net/url"
-	log "github.com/cihub/seelog"
 	"time"
 )
 
@@ -30,8 +30,7 @@ func InitAPI() {
 	api.HandleAPIMethod(api.POST, "/gateway/instance/status", gateway.RequirePermission(gateway.getInstanceStatus, enum.PermissionGatewayInstanceRead))
 
 	api.HandleAPIMethod(api.POST, "/gateway/instance/:instance_id/_proxy", gateway.RequirePermission(gateway.proxy, enum.PermissionGatewayInstanceRead))
-
-	api.HandleAPIMethod(api.GET, "/_platform/nodes", gateway.getExecutionNodes)
+	
 	api.HandleAPIFunc("/ws_proxy", func(w http.ResponseWriter, req *http.Request) {
 		log.Debug(req.RequestURI)
 		endpoint := req.URL.Query().Get("endpoint")

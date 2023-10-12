@@ -11,17 +11,14 @@ import (
 	"infini.sh/console/model"
 	"infini.sh/framework/core/agent"
 	httprouter "infini.sh/framework/core/api/router"
-	elastic2 "infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/proxy"
 	"infini.sh/framework/core/task"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/modules/elastic"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
-	"time"
 )
 
 func (h *GatewayAPI) createInstance(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -428,97 +425,4 @@ func (h *GatewayAPI) tryConnect(w http.ResponseWriter, req *http.Request, ps htt
 		return
 	}
 	h.WriteJSON(w, connectRes, http.StatusOK)
-}
-
-func (h *GatewayAPI) getExecutionNodes(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
-	var (
-		keyword        = h.GetParameterOrDefault(req, "keyword", "")
-		strSize     = h.GetParameterOrDefault(req, "size", "10")
-		strFrom     = h.GetParameterOrDefault(req, "from", "0")
-	)
-	size, _ := strconv.Atoi(strSize)
-	if size <= 0 {
-		size = 10
-	}
-	from, _ := strconv.Atoi(strFrom)
-	if from < 0 {
-		from = 0
-	}
-	gatewayIndexName := orm.GetIndexName(model.Instance{})
-
-	query := util.MapStr{
-		"size": size,
-		"from": from,
-		"sort": []util.MapStr{
-			{
-				"created": util.MapStr{
-					"order": "desc",
-				},
-			},
-		},
-	}
-	if keyword != "" {
-		query["query"] = util.MapStr{
-			"bool": util.MapStr{
-				"must": []util.MapStr{
-					{
-						"prefix": util.MapStr{
-							"name": util.MapStr{
-								"value": keyword,
-							},
-						},
-					},
-				},
-			},
-		}
-	}
-	q := orm.Query{
-		IndexName: gatewayIndexName,
-		RawQuery: util.MustToJSONBytes(query),
-	}
-	err, result := orm.Search(nil, &q)
-	if err != nil {
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	searchRes := elastic2.SearchResponse{}
-	err = util.FromJSONBytes(result.Raw, &searchRes)
-	if err != nil||searchRes.ESError!=nil {
-		msg:=fmt.Sprintf("%v,%v",err,searchRes.ESError)
-		h.WriteError(w, msg, http.StatusInternalServerError)
-		return
-	}
-	var nodes = []util.MapStr{}
-
-	for _, hit := range searchRes.Hits.Hits {
-		buf := util.MustToJSONBytes(hit.Source)
-		inst := model.Instance{}
-		err = util.FromJSONBytes(buf, &inst)
-		if err != nil {
-			log.Error(err)
-			continue
-		}
-		node := util.MapStr{
-			"id": inst.ID,
-			"name": inst.Name,
-			"available": false,
-			"type": "gateway",
-		}
-		ul, err := url.Parse(inst.Endpoint)
-		if err != nil {
-			log.Error(err)
-			continue
-		}
-		node["host"] = ul.Host
-		err = inst.TryConnectWithTimeout(time.Second)
-		if err != nil {
-			log.Error(err)
-		}else{
-			node["available"] = true
-		}
-
-		nodes = append(nodes, node)
-	}
-	h.WriteJSON(w, nodes, http.StatusOK)
 }

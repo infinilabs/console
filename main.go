@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	_ "expvar"
+	api3 "infini.sh/console/modules/agent/api"
 	"infini.sh/console/plugin/api/email"
 	model2 "infini.sh/framework/core/model"
 	_ "time/tzdata"
@@ -35,9 +36,9 @@ import (
 	"infini.sh/framework/modules/task"
 	"infini.sh/framework/modules/ui"
 	_ "infini.sh/framework/plugins"
+	_ "infini.sh/framework/plugins/managed"
 	api2 "infini.sh/gateway/api"
 	_ "infini.sh/gateway/proxy"
-	_ "infini.sh/framework/plugins/managed"
 )
 
 var appConfig *config.AppConfig
@@ -84,7 +85,7 @@ func main() {
 
 		if !global.Env().SetupRequired() {
 			for _, v := range modules {
-				module.RegisterModuleWithPriority(v.Value,v.Priority)
+				module.RegisterModuleWithPriority(v.Value, v.Priority)
 			}
 		} else {
 			for _, v := range modules {
@@ -93,6 +94,8 @@ func main() {
 		}
 
 		api.RegisterAPI("")
+
+		api3.Init()
 
 		appConfig = &config.AppConfig{
 			UI: config.UIConfig{
@@ -103,7 +106,7 @@ func main() {
 		}
 
 		ok, err := env.ParseConfig("web", appConfig)
-		if err != nil {
+		if err != nil && global.Env().SystemConfig.Configs.PanicOnConfigError {
 			panic(err)
 		}
 		if !ok {

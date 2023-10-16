@@ -1,0 +1,17 @@
+configs.template:
+  - name: "cluster_a_node_b_task_config"
+    path: ./config/task_config.tpl
+    variable:
+      CLUSTER_ID: infini_default_ingest_cluster
+      CLUSTER_ENDPOINT: ["https://localhost:9200"]
+      CLUSTER_USERNAME: "admin"
+      CLUSTER_VER: "1.6.0"
+      CLUSTER_DISTRIBUTION: "easysearch"
+      INDEX_PREFIX: ".infini_"
+      CLUSTER_LEVEL_TASKS_ENABLED: false
+      NODE_LEVEL_TASKS_ENABLED: true
+      NODE_LOGS_PATH: "/opt/easysearch/logs/"
+
+
+#MANAGED_CONFIG_VERSION: 19
+#MANAGED: true

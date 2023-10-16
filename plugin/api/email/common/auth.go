@@ -7,11 +7,11 @@ package common
 import (
 	"infini.sh/console/model"
 	"infini.sh/framework/core/credential"
-	"infini.sh/framework/core/elastic"
+	model2 "infini.sh/framework/core/model"
 	"infini.sh/framework/core/orm"
 )
 
-func GetBasicAuth(srv *model.EmailServer) (basicAuth elastic.BasicAuth, err error) {
+func GetBasicAuth(srv *model.EmailServer) (basicAuth model2.BasicAuth, err error) {
 	if srv.Auth != nil && srv.Auth.Username != "" {
 		basicAuth = *srv.Auth
 		return
@@ -28,7 +28,7 @@ func GetBasicAuth(srv *model.EmailServer) (basicAuth elastic.BasicAuth, err erro
 		if err != nil {
 			return
 		}
-		if auth, ok := dv.(elastic.BasicAuth); ok {
+		if auth, ok := dv.(model2.BasicAuth); ok {
 			basicAuth = auth
 		}
 	}

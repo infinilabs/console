@@ -401,7 +401,7 @@ func GetLatestOnlineAgentIDs(agentIds []string, lastSeconds int) (map[string]str
 	return agentIDs, nil
 }
 
-func GetAgentIngestConfig() (string, *elastic.BasicAuth, error) {
+func GetAgentIngestConfig() (string, *model.BasicAuth, error) {
 	agCfg := GetAgentConfig()
 	var (
 		endpoint string
@@ -422,7 +422,7 @@ func GetAgentIngestConfig() (string, *elastic.BasicAuth, error) {
 	}
 
 	var (
-		basicAuth elastic.BasicAuth
+		basicAuth model.BasicAuth
 	)
 	if agCfg.Setup.IngestClusterCredentialID != "" {
 		cred := credential.Credential{}
@@ -435,7 +435,7 @@ func GetAgentIngestConfig() (string, *elastic.BasicAuth, error) {
 		if err != nil {
 			return "", nil, fmt.Errorf("decode credential [%s] error: %w", cred.ID, err)
 		}
-		if basicAuth, ok = info.(elastic.BasicAuth); !ok {
+		if basicAuth, ok = info.(model.BasicAuth); !ok {
 			log.Debug("invalid credential: ", cred)
 		}
 	}else{

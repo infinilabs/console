@@ -1,0 +1,14 @@
+configs.template:
+  - name: "default_ingest_config"
+    path: ./config/ingest_config.tpl
+    variable:
+      INGEST_CLUSTER_ID: infini_default_ingest_cluster
+      INGEST_CLUSTER_ENDPOINT: [ "https://localhost:9200" ]
+      INGEST_CLUSTER_USERNAME: "admin"
+      CLUSTER_VER: "1.6.0"
+      CLUSTER_DISTRIBUTION: "easysearch"
+      INDEX_PREFIX: ".infini_"
+
+
+#MANAGED_CONFIG_VERSION: 2
+#MANAGED: true

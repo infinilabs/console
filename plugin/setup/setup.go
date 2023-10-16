@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"infini.sh/framework/core/kv"
+	"infini.sh/framework/core/model"
 	"io"
 	"net/http"
 	uri2 "net/url"
@@ -88,7 +89,7 @@ func (module *Module) Start() error {
 			log.Error(err)
 			return
 		}
-		if basicAuth, ok := bv.(elastic.BasicAuth); ok {
+		if basicAuth, ok := bv.(model.BasicAuth); ok {
 			err = keystore.SetValue("SYSTEM_CLUSTER_PASS", []byte(basicAuth.Password))
 			if err != nil {
 				log.Error(err)
@@ -203,7 +204,7 @@ func (module *Module) validate(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 	cfg1 = elastic1.ORMConfig{}
 	exist, err := env.ParseConfig("elastic.orm", &cfg1)
-	if exist && err != nil {
+	if exist && err != nil  &&global.Env().SystemConfig.Configs.PanicOnConfigError{
 		panic(err)
 	}
 
@@ -272,7 +273,7 @@ func (module *Module) initTempClient(r *http.Request) (error, elastic.API, Setup
 		Enabled:  true,
 		Reserved: true,
 		Endpoint: request.Cluster.Endpoint,
-		BasicAuth: &elastic.BasicAuth{
+		BasicAuth: &model.BasicAuth{
 			Username: request.Cluster.Username,
 			Password: request.Cluster.Password,
 		},

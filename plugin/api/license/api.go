@@ -35,7 +35,7 @@ func (handler *LicenseAPI) RequestTrialLicense(w http.ResponseWriter, req *http.
 	}
 
 	//TODO implement config for the api endpoint
-	request:=util.NewPostRequest("https://api.infini.sh/_license/request_trial", util.MustToJSONBytes(v))
+	request:=util.NewPostRequest("https://api.infini.cloud/_license/request_trial", util.MustToJSONBytes(v))
 	response,err:=util.ExecuteRequest(request)
 	if err!=nil{
 		handler.WriteError(w,err.Error(),response.StatusCode)

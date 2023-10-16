@@ -321,19 +321,32 @@ func (module *Module) initTempClient(r *http.Request) (error, elastic.API, Setup
 
 func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if !global.Env().SetupRequired() {
-		module.WriteError(w, "setup not permitted", 500)
+		//handle setup timeout
+		rkey, err := keystore.GetValue(credential.SecretKey)
+		if err != nil {
+			module.WriteError(w, err.Error(), 500)
+			return
+		}
+		request := SetupRequest{}
+		err = module.DecodeJSON(r, &request)
+		if err != nil {
+			module.WriteError(w, err.Error(), 500)
+			return
+		}
+		h := md5.New()
+		rawSecret := []byte(request.CredentialSecret)
+		h.Write(rawSecret)
+		secret := make([]byte, 32)
+		hex.Encode(secret, h.Sum(nil))
+		if bytes.Compare(rkey, secret) == 0 {
+			module.WriteJSON(w, util.MapStr{
+				"success": true,
+			}, 200)
+		}else{
+			module.WriteError(w, "invalid credential secret", 500)
+		}
 		return
 	}
-	scheme := "http"
-	if r.TLS != nil {
-		scheme = "https"
-	}
-	consoleEndpoint := fmt.Sprintf("%s://%s", scheme, r.Host)
-	err := kv.AddValue("system", []byte("INFINI_CONSOLE_ENDPOINT"), []byte(consoleEndpoint))
-	if err != nil {
-		log.Error(err)
-	}
-
 	success := false
 	var errType string
 	var fixTips string
@@ -372,13 +385,21 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		}
 		module.WriteJSON(w, result, code)
 	}()
-
 	err, client, request := module.initTempClient(r)
 	if err != nil {
 		panic(err)
 	}
 	if request.CredentialSecret == "" {
 		panic("invalid credential secret")
+	}
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
+	consoleEndpoint := fmt.Sprintf("%s://%s", scheme, r.Host)
+	err = kv.AddValue("system", []byte("INFINI_CONSOLE_ENDPOINT"), []byte(consoleEndpoint))
+	if err != nil {
+		log.Error(err)
 	}
 
 	if cfg1.IndexPrefix == "" {
@@ -589,5 +610,4 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	}
 
 	success = true
-
 }

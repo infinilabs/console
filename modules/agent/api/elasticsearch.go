@@ -17,34 +17,11 @@ import (
 	"time"
 )
 
-//func (h *APIHandler) refreshESNodesInfo(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-//	id := ps.MustGetParameter("instance_id")
-//	obj := model.Instance{}
-//	obj.ID = id
-//	exists, err := orm.Get(&obj)
-//	if !exists || err != nil {
-//		h.WriteJSON(w, util.MapStr{
-//			"_id":   id,
-//			"found": false,
-//		}, http.StatusNotFound)
-//		return
-//	}
-//	_, err = refreshNodesInfo(&obj)
-//	if err != nil {
-//		log.Error(err)
-//		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-//		return
-//	}
-//	h.WriteAckOKJSON(w)
-//}
-
-func refreshNodesInfo(inst *model.Instance) ([]*model.ESNodeInfo, error) {
-	oldNodesInfo, err := getNodesBindingToAgent(inst)
+func refreshNodesInfo(inst *model.Instance) (*elastic.DiscoveryResult, error) {
+	oldNodesInfo, err := getEnrolledNodesByAgent(inst)
 	if err != nil {
 		return nil, fmt.Errorf("error on get binding nodes info: %w", err)
 	}
-
-	log.Error("oldNodesInfo:",util.MustToJSON(oldNodesInfo))
 
 	ctxTimeout, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
@@ -54,32 +31,65 @@ func refreshNodesInfo(inst *model.Instance) ([]*model.ESNodeInfo, error) {
 		return nil, fmt.Errorf("error on get nodes info from agent: %w", err)
 	}
 
-	log.Error("nodesInfo:",util.MustToJSON(nodesInfo))
-
-	for _, node := range nodesInfo {
-		v,ok:=oldNodesInfo[node.NodeUUID]
-		if ok{
-			node.ClusterID=v.ClusterID
-		}
+	for nodeID, node := range nodesInfo.Nodes {
+			v, ok := oldNodesInfo[nodeID]
+			if ok {
+				node.ClusterID = v.ClusterID
+				node.Enrolled = true
+			}
 	}
+
+	////not recognized by agent, need auth?
+	//for _, node := range nodesInfo.UnknownProcess{
+	//	for _, v := range node.ListenAddresses {
+	//		//ask user to manual enroll this node
+	//		//check local credentials, if it works, get node info
+	//	}
+	//}
+
+	// {
+	//	//node was not recognized by agent, need auth?
+	//	if node.HttpPort != "" {
+	//		for _, v := range oldNodesInfo {
+	//			if v.PublishAddress != "" {
+	//				if util.UnifyLocalAddress(v.PublishAddress) == util.UnifyLocalAddress(node.PublishAddress) {
+	//					node.ClusterID = v.ClusterID
+	//					node.ClusterName = v.ClusterName
+	//					node.NodeUUID = v.NodeUUID
+	//					node.ClusterUuid = v.ClusterUUID
+	//					node.NodeName = v.NodeName
+	//					node.Path.Home = v.PathHome
+	//					node.Path.Logs = v.PathLogs
+	//					node.AgentID = inst.ID
+	//					//TODO verify node info if the node id really match, need to fetch the credentials for agent
+	//					//or let manager sync configs to this agent, verify the node info after receiving the configs
+	//					//report any error along with this agent and node info
+	//					break
+	//				}
+	//			}
+	//		}
+	//	}
+	//
+	//}
 
 	return nodesInfo, nil
 }
 
 //get nodes info via agent
-func GetElasticsearchNodesViaAgent(ctx context.Context, instance *model.Instance) ([]*model.ESNodeInfo, error) {
+func GetElasticsearchNodesViaAgent(ctx context.Context, instance *model.Instance) (*elastic.DiscoveryResult, error) {
 	req := &util.Request{
 		Method:  http.MethodGet,
 		Path:    "/elasticsearch/nodes/_discovery",
 		Context: ctx,
 	}
-	resBody := []*model.ESNodeInfo{}
-	err := doRequest(instance, req, &resBody)
+
+	obj := elastic.DiscoveryResult{}
+	err := doRequest(instance, req, &obj)
 	if err != nil {
 		return nil, err
 	}
 
-	return resBody, nil
+	return &obj, nil
 }
 
 func AuthESNode(ctx context.Context, agentBaseURL string, cfg elastic.ElasticsearchConfig) (*model.ESNodeInfo, error) {
@@ -114,13 +124,20 @@ func getNodeByPidOrUUID(nodes map[int]*model.ESNodeInfo, pid int, uuid string, p
 }
 
 type BindingItem struct {
-	ClusterID   string `json:"cluster_id"`
-	ClusterUUID string `json:"cluster_uuid"`
-	NodeUUID    string `json:"node_uuid"`
+	ClusterName    string `json:"cluster_name"`
+	ClusterUUID    string `json:"cluster_uuid"`
+	NodeUUID       string `json:"node_uuid"`
+	PublishAddress string `json:"publish_address"`
+	NodeName       string `json:"node_name"`
+	PathLogs       string `json:"path_logs"`
+	PathHome       string `json:"path_home"`
+
+	//infini system assigned id
+	ClusterID string `json:"cluster_id"`
 }
 
 //node -> binding item
-func getNodesBindingToAgent(instance *model.Instance) (map[string]BindingItem, error) {
+func getEnrolledNodesByAgent(instance *model.Instance) (map[string]BindingItem, error) {
 
 	//get nodes settings where agent id = instance id
 	q := orm.Query{
@@ -141,23 +158,22 @@ func getNodesBindingToAgent(instance *model.Instance) (map[string]BindingItem, e
 	for _, row := range result.Result {
 		v, ok := row.(map[string]interface{})
 		if ok {
-			x, ok := v["metadata"]
+			x, ok := v["payload"]
 			if ok {
-				y, ok := x.(map[string]interface{})
+				f, ok := x.(map[string]interface{})
 				if ok {
-					e, ok := y["labels"]
+					nodeID, ok := f["node_uuid"].(string)
 					if ok {
-						f, ok := e.(map[string]interface{})
-						if ok {
-							nodeID, ok := f["node_uuid"].(string)
-							if ok {
-								item := BindingItem{}
-								item.ClusterID = f["cluster_id"].(string)
-								item.ClusterUUID = f["cluster_uuid"].(string)
-								item.NodeUUID = nodeID
-								ids[item.NodeUUID] = item
-							}
-						}
+						item := BindingItem{}
+						item.ClusterID = util.ToString(f["cluster_id"])
+						item.ClusterName = util.ToString(f["cluster_name"])
+						item.ClusterUUID = util.ToString(f["cluster_uuid"])
+						item.PublishAddress = util.ToString(f["publish_address"])
+						item.NodeName = util.ToString(f["node_name"])
+						item.PathHome = util.ToString(f["path_home"])
+						item.PathLogs = util.ToString(f["path_logs"])
+						item.NodeUUID = nodeID
+						ids[item.NodeUUID] = item
 					}
 				}
 			}
@@ -248,7 +264,7 @@ func GetElasticLogFileContent(ctx context.Context, instance *model.Instance, bod
 
 func (h *APIHandler) getLogFilesByNode(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	nodeID := ps.MustGetParameter("node_id")
-	inst, node, err := getAgentByNodeID(nodeID)
+	inst, pathLogs, err := getAgentByNodeID(nodeID)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -262,7 +278,7 @@ func (h *APIHandler) getLogFilesByNode(w http.ResponseWriter, req *http.Request,
 		}, http.StatusOK)
 		return
 	}
-	logFiles, err := GetElasticLogFiles(nil, inst, node.Path.Logs)
+	logFiles, err := GetElasticLogFiles(nil, inst, pathLogs)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -276,7 +292,7 @@ func (h *APIHandler) getLogFilesByNode(w http.ResponseWriter, req *http.Request,
 
 func (h *APIHandler) getLogFileContent(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	nodeID := ps.MustGetParameter("node_id")
-	inst, node, err := getAgentByNodeID(nodeID)
+	inst, pathLogs, err := getAgentByNodeID(nodeID)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -299,7 +315,7 @@ func (h *APIHandler) getLogFileContent(w http.ResponseWriter, req *http.Request,
 		log.Error(err)
 		return
 	}
-	reqBody.LogsPath = node.Path.Logs
+	reqBody.LogsPath = pathLogs
 	res, err := GetElasticLogFileContent(nil, inst, reqBody)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -309,45 +325,57 @@ func (h *APIHandler) getLogFileContent(w http.ResponseWriter, req *http.Request,
 	h.WriteJSON(w, res, http.StatusOK)
 }
 
-func getAgentByNodeID(nodeID string) (*model.Instance, *model.ESNodeInfo, error) {
-	queryDsl := util.MapStr{
-		"size": 1,
-		"query": util.MapStr{
-			"term": util.MapStr{
-				"node_uuid": util.MapStr{
-					"value": nodeID,
-				},
-			},
-		},
-		"sort": []util.MapStr{
-			{
-				"timestamp": util.MapStr{
-					"order": "desc",
-				},
-			},
-		},
+//instance, pathLogs
+func getAgentByNodeID(nodeID string) (*model.Instance, string, error) {
+
+	q := orm.Query{
+		Size: 1000,
+		Conds: orm.And(orm.Eq("metadata.category", "node_settings"),
+			orm.Eq("metadata.name", "agent"),
+			orm.Eq("payload.node_uuid", nodeID),
+		),
 	}
-	q := &orm.Query{
-		RawQuery: util.MustToJSONBytes(queryDsl),
-	}
-	err, result := orm.Search(model.ESNodeInfo{}, q)
+
+	err, result := orm.Search(model.Setting{}, &q)
 	if err != nil {
-		return nil, nil, err
+		return nil, "", err
 	}
-	if len(result.Result) > 0 {
-		buf := util.MustToJSONBytes(result.Result[0])
-		v := &model.ESNodeInfo{}
-		err = util.FromJSONBytes(buf, v)
-		inst := &model.Instance{}
-		inst.ID = v.AgentID
-		_, err = orm.Get(inst)
-		if err != nil {
-			return nil, v, err
+
+	for _, row := range result.Result {
+		v, ok := row.(map[string]interface{})
+		if ok {
+			pathLogs := ""
+			payload, ok := v["payload"]
+			if ok {
+				payloadMap, ok := payload.(map[string]interface{})
+				if ok {
+					pathLogs = util.ToString(payloadMap["path_logs"])
+				}
+			}
+
+			x, ok := v["metadata"]
+			if ok {
+				f, ok := x.(map[string]interface{})
+				if ok {
+					labels, ok := f["labels"].(map[string]interface{})
+					if ok {
+						id, ok := labels["agent_id"]
+						if ok {
+							inst := &model.Instance{}
+							inst.ID = util.ToString(id)
+							_, err = orm.Get(inst)
+							if err != nil {
+								return nil, pathLogs, err
+							}
+							if inst.Name == "" {
+								return nil, pathLogs, nil
+							}
+							return inst, pathLogs, nil
+						}
+					}
+				}
+			}
 		}
-		if inst.Name == "" {
-			return nil, v, nil
-		}
-		return inst, v, nil
 	}
-	return nil, nil, nil
+	return nil, "", nil
 }

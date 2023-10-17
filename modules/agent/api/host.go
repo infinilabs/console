@@ -5,7 +5,6 @@
 package api
 
 import (
-	"context"
 	"fmt"
 	log "github.com/cihub/seelog"
 	httprouter "infini.sh/framework/core/api/router"
@@ -197,26 +196,26 @@ func (h *APIHandler) GetHostElasticProcess(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	esNodesInfo, err := GetElasticsearchNodesViaAgent(context.Background(), &obj)
-	if err != nil {
-		log.Error(err)
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	var processes []util.MapStr
-	for _, node := range esNodesInfo {
-		processes = append(processes, util.MapStr{
-			"pid":          node.ProcessInfo.PID,
-			"pid_status":   node.ProcessInfo.Status,
-			"cluster_name": node.ClusterName,
-			"cluster_uuid": node.ClusterUuid,
-			"cluster_id":  node.ClusterID,
-			"node_id":      node.NodeUUID,
-			"node_name":    node.NodeName,
-			"uptime_in_ms": time.Now().UnixMilli() - node.ProcessInfo.CreateTime,
-		})
-	}
+	//esNodesInfo, err := GetElasticsearchNodesViaAgent(context.Background(), &obj)
+	//if err != nil {
+	//	log.Error(err)
+	//	h.WriteError(w, err.Error(), http.StatusInternalServerError)
+	//	return
+	//}
+	//var processes []util.MapStr
+	//for _, node := range esNodesInfo {
+	//	processes = append(processes, util.MapStr{
+	//		"pid":          node.ProcessInfo.PID,
+	//		"pid_status":   node.ProcessInfo.Status,
+	//		"cluster_name": node.ClusterName,
+	//		"cluster_uuid": node.ClusterUuid,
+	//		"cluster_id":  node.ClusterID,
+	//		"node_id":      node.NodeUUID,
+	//		"node_name":    node.NodeName,
+	//		"uptime_in_ms": time.Now().UnixMilli() - node.ProcessInfo.CreateTime,
+	//	})
+	//}
 	h.WriteJSON(w, util.MapStr{
-		"elastic_processes": processes,
+		//"elastic_processes": processes,
 	}, http.StatusOK)
 }

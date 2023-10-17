@@ -183,7 +183,7 @@ func (h *APIHandler) authESNode(w http.ResponseWriter, req *http.Request, ps htt
 			h.WriteJSON(w, fmt.Sprintf("node [%s] of agent [%s] was not found", oldNodeInfo.ID, inst.Name), http.StatusInternalServerError)
 			return
 		}
-	}else{
+	} else {
 		//find out the node id with credentials
 		cfg := reqBody.ESConfig
 		if cfg.Endpoint == "" {
@@ -222,9 +222,8 @@ func (h *APIHandler) authESNode(w http.ResponseWriter, req *http.Request, ps htt
 		//	return
 		//}
 
-		reqBody.NodeID=nodeInfo.NodeUUID
+		reqBody.NodeID = nodeInfo.NodeUUID
 	}
-
 
 	//nodeInfo:=elastic.NodeConfig{}
 	//nodeInfo.ID = reqBody.NodeID
@@ -253,7 +252,7 @@ func NewClusterSettings(clusterID string) *model.Setting {
 	return &settings
 }
 
-func NewNodeAgentSettings(clusterID, clusterUUID, nodeUUID, agentID, agentCredential string) *model.Setting {
+func NewNodeAgentSettings(instanceID string, item *BindingItem) *model.Setting {
 
 	settings := model.Setting{
 		Metadata: model.SettingsMetadata{
@@ -261,14 +260,21 @@ func NewNodeAgentSettings(clusterID, clusterUUID, nodeUUID, agentID, agentCreden
 			Name:     "agent",
 		},
 	}
-	settings.ID = fmt.Sprintf("%v_%v_%v", settings.Metadata.Category, settings.Metadata.Name, nodeUUID)
+	settings.ID = fmt.Sprintf("%v_%v_%v", settings.Metadata.Category, settings.Metadata.Name, item.NodeUUID)
 
 	settings.Metadata.Labels = util.MapStr{
-		"cluster_id":       clusterID,
-		"cluster_uuid":     clusterUUID,
-		"node_uuid":        nodeUUID,
-		"agent_id":         agentID,
-		"agent_credential": agentCredential,
+		"agent_id": instanceID,
+	}
+
+	settings.Payload = util.MapStr{
+		"cluster_id":      item.ClusterID,
+		"cluster_name":    item.ClusterName,
+		"cluster_uuid":    item.ClusterUUID,
+		"node_uuid":       item.NodeUUID,
+		"publish_address": item.PublishAddress,
+		"node_name": item.NodeName,
+		"path_home": item.PathHome,
+		"path_logs": item.PathLogs,
 	}
 
 	return &settings
@@ -298,33 +304,45 @@ const Cluster = "cluster_settings"
 const Node = "node_settings"
 const Index = "index_settings"
 
-func (h *APIHandler) associateESNode(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+func (h *APIHandler) revokeESNode(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	//agent id
+	instID := ps.MustGetParameter("instance_id")
+	item := BindingItem{}
+	err := h.DecodeJSON(req, &item)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	settings := NewNodeAgentSettings(instID, &item)
+	err = orm.Delete(&orm.Context{
+		Refresh: "wait_for",
+	}, settings)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (h *APIHandler) enrollESNode(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 
 	//agent id
 	instID := ps.MustGetParameter("instance_id")
 
 	//node id and cluster id
-	reqBody := struct {
-		ClusterUUID string `json:"cluster_uuid"`
-		NodeUUID    string `json:"node_uuid"`
-
-		//infini system assigned id
-		ClusterID string `json:"cluster_id"`
-	}{}
-	err := h.DecodeJSON(req, &reqBody)
+	item := BindingItem{}
+	err := h.DecodeJSON(req, &item)
 	if err != nil {
-		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	//update node's setting
-	settings := NewNodeAgentSettings(reqBody.ClusterID, reqBody.ClusterUUID, reqBody.NodeUUID, instID, "node.AgentCredential")
+	settings := NewNodeAgentSettings(instID, &item)
 	err = orm.Update(&orm.Context{
 		Refresh: "wait_for",
 	}, settings)
 	if err != nil {
-		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -52,17 +52,29 @@ function print_footprint() {
 		echo ""
 }
 
-__try() {
+function __try() {
   if [[ $try_status -eq 0 ]]; then
     ! exception=$( $@ 2>&1 >/dev/null )
     try_status=${PIPESTATUS[0]}
   fi
 }
 
-__catch() {
+function __catch() {
   _old_try=$try_status
   try_status=0
   [[ $_old_try -ne 0 ]]
+}
+
+function confirm() {
+  display_str=$1
+  default_ans=$2
+  if [[ $default_ans == 'y/N' ]]; then
+     must_match='[yY]'
+  else
+     must_match='[nN]'
+  fi
+  read -p"${display_str} [${default_ans}]:" ans
+  [[ $ans == $must_match ]]
 }
 
 function get_latest_version() {
@@ -82,9 +94,11 @@ function check_dir() {
     echo -e "Error: The installation directory ${install_dir} should be owner by current user.\nsudo chown -R \$(whoami) ${install_dir}" >&2; exit 1;
   fi
 
-  #if [[ "$(ls -A ${install_dir})" ]]; then
-  #  echo "Error: The installation directory ${install_dir} should be clean." >&2; exit 1;
-  #fi
+  if [[ "$(ls -A ${install_dir})" ]]; then
+    confirm "RISK WARN: Replace or upgrade exists agent version, Proceed?" 'y/N' && echo || exit 1;
+    uninstall_service
+    rm -rf ${install_dir}/*
+  fi
 }
 
 function check_platform() {
@@ -241,7 +255,7 @@ agent:
 EOF
 }
 
-function install_service() {
+function uninstall_service() {
   agent_svc=${install_dir}/${program_name}-${file_ext%%.*}
   chmod 755 $agent_svc
 
@@ -253,18 +267,28 @@ function install_service() {
     $agent_svc -service stop &>/dev/null
     $agent_svc -service uninstall &>/dev/null
   fi
+  sleep 3
+}
 
+function install_service() {
+  agent_svc=${install_dir}/${program_name}-${file_ext%%.*}
+  chmod 755 $agent_svc
   echo "[agent] waiting service install & start"
   $agent_svc -service install &>/dev/null
   $agent_svc -service start &>/dev/null
-  sleep 5
+  sleep 3
 }
 
 function register_agent() {
-  token={{token}}
   console_endpoint="{{console_endpoint}}"
-  echo "[agent] waiting registering to INFINI Console"
-  __try curl -s --retry 1 --retry-delay 3 -m30 -XPOST -o ${install_dir}/setup.log "${console_endpoint}/agent/instance?token=${token}"
+  token={{token}}
+  echo '[agent] waiting registering to INFINI Console'
+  until curl -s -m30 -XPOST "${console_endpoint}/agent/instance?token=${token}";
+  do
+    echo -n '.'; sleep 3;
+  done;
+  echo
+  #__try curl -s --retry 1 --retry-delay 3 -m30 -XPOST -o ${install_dir}/setup.log "${console_endpoint}/agent/instance?token=${token}"
 }
 
 function main() {
@@ -295,6 +319,7 @@ function main() {
   install_binary
   install_certs
   install_config
+  uninstall_service
   install_service
   register_agent
 

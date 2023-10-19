@@ -18,7 +18,7 @@ import (
 )
 
 func refreshNodesInfo(inst *model.Instance) (*elastic.DiscoveryResult, error) {
-	oldNodesInfo, err := getEnrolledNodesByAgent(inst)
+	enrolledNodesByAgent, err := getEnrolledNodesByAgent(inst)
 	if err != nil {
 		return nil, fmt.Errorf("error on get binding nodes info: %w", err)
 	}
@@ -30,9 +30,9 @@ func refreshNodesInfo(inst *model.Instance) (*elastic.DiscoveryResult, error) {
 		//TODO return already biding nodes info ??
 		return nil, fmt.Errorf("error on get nodes info from agent: %w", err)
 	}
-
 	for nodeID, node := range nodesInfo.Nodes {
-			v, ok := oldNodesInfo[nodeID]
+
+			v, ok := enrolledNodesByAgent[nodeID]
 			if ok {
 				node.ClusterID = v.ClusterID
 				node.Enrolled = true
@@ -50,7 +50,7 @@ func refreshNodesInfo(inst *model.Instance) (*elastic.DiscoveryResult, error) {
 	// {
 	//	//node was not recognized by agent, need auth?
 	//	if node.HttpPort != "" {
-	//		for _, v := range oldNodesInfo {
+	//		for _, v := range enrolledNodesByAgent {
 	//			if v.PublishAddress != "" {
 	//				if util.UnifyLocalAddress(v.PublishAddress) == util.UnifyLocalAddress(node.PublishAddress) {
 	//					node.ClusterID = v.ClusterID

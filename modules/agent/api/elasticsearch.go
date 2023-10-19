@@ -192,8 +192,6 @@ func remoteConfigProvider(instance model.Instance) []*common.ConfigFile {
 		}
 	}
 
-	log.Error("remoteConfigProvider", "result", result)
-
 	return result
 }
 

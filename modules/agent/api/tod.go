@@ -322,6 +322,7 @@ func (h *APIHandler) revokeESNode(w http.ResponseWriter, req *http.Request, ps h
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	h.WriteAckOKJSON(w)
 }
 
 func (h *APIHandler) enrollESNode(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {

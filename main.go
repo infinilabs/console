@@ -129,7 +129,6 @@ func main() {
 			orm.RegisterSchemaWithIndexName(elastic.View{}, "view")
 			orm.RegisterSchemaWithIndexName(elastic.CommonCommand{}, "commands")
 			//orm.RegisterSchema(elastic.TraceTemplate{}, "trace-template")
-			//orm.RegisterSchema(model.Instance{}, "instance")
 			orm.RegisterSchemaWithIndexName(alerting.Rule{}, "alert-rule")
 			orm.RegisterSchemaWithIndexName(alerting.Alert{}, "alert-history")
 			orm.RegisterSchemaWithIndexName(alerting.AlertMessage{}, "alert-message")
@@ -142,6 +141,7 @@ func main() {
 			orm.RegisterSchemaWithIndexName(model.Notification{}, "notification")
 			orm.RegisterSchemaWithIndexName(model.EmailServer{}, "email-server")
 			orm.RegisterSchemaWithIndexName(model2.Instance{}, "instance")
+			orm.RegisterSchemaWithIndexName(api3.RemoteConfig{}, "configs")
 
 			api.RegisterSchema()
 

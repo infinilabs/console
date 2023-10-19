@@ -4,14 +4,13 @@ configs: #define configs group
       - ./templates/ingest_config.tpl
       - ./templates/task_config.tpl
       - ./configs/ingest_config.yml
-      - ./configs/cluster_xx_node_xx.yml
 instances: #define which config instance should fetch
-    infini_default_system_cluster: #instance group
-      plugins:
-        - ingest
-      instances:
-        - ck0mkk805f5virpsejp0
-        - ckjrpdg05f5lrfp8qlng
+    _all: #instance group
+#      plugins:
+#        - ingest
+#      instances:
+#        - ck0mkk805f5virpsejp0
+#        - ckjrpdg05f5lrfp8qlng
       configs:
         - general_ingest_template
       secrets:
@@ -23,9 +22,3 @@ secrets:
         ingest_cluster_password:
           type: plaintext
           value: "d7cc48e69a41dac719fb"
-        infini_default_ingest_cluster_password:
-          type: plaintext
-          value: "d7cc48e69a41dac719fb"
-#        infini_default_ingest_cluster_password:
-#          type: credential
-#          value: "ckghspo05f5q7pr20ct0" #credential_id

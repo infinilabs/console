@@ -5,6 +5,7 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	log "github.com/cihub/seelog"
@@ -13,12 +14,70 @@ import (
 	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
+	common2 "infini.sh/framework/modules/elastic/common"
+	"infini.sh/framework/plugins/managed/common"
 	"net/http"
 	"time"
 )
 
+//node -> binding item
+func GetEnrolledNodesByAgent(instance *model.Instance) (map[string]BindingItem, error) {
+
+	//get nodes settings where agent id = instance id
+	q := orm.Query{
+		Size: 1000,
+		Conds: orm.And(orm.Eq("metadata.category", "node_settings"),
+			orm.Eq("metadata.name", "agent"),
+			orm.Eq("metadata.labels.agent_id", instance.ID),
+		),
+	}
+
+	err, result := orm.Search(model.Setting{}, &q)
+
+	if err != nil {
+		return nil, err
+	}
+
+	ids := map[string]BindingItem{}
+	for _, row := range result.Result {
+		v, ok := row.(map[string]interface{})
+		if ok {
+			x, ok := v["payload"]
+			if ok {
+				f, ok := x.(map[string]interface{})
+				if ok {
+					nodeID, ok := f["node_uuid"].(string)
+					if ok {
+						item := BindingItem{}
+						item.ClusterID = util.ToString(f["cluster_id"])
+						item.ClusterName = util.ToString(f["cluster_name"])
+						item.ClusterUUID = util.ToString(f["cluster_uuid"])
+						item.PublishAddress = util.ToString(f["publish_address"])
+						item.NodeName = util.ToString(f["node_name"])
+						item.PathHome = util.ToString(f["path_home"])
+						item.PathLogs = util.ToString(f["path_logs"])
+						item.NodeUUID = nodeID
+
+						t, ok := v["updated"]
+						if ok {
+							layout := "2006-01-02T15:04:05.999999-07:00"
+							t1, err := time.Parse(layout, util.ToString(t))
+							if err == nil {
+								item.Updated = t1.Unix()
+							}
+						}
+						ids[item.NodeUUID] = item
+
+					}
+				}
+			}
+		}
+	}
+	return ids, nil
+}
+
 func refreshNodesInfo(inst *model.Instance) (*elastic.DiscoveryResult, error) {
-	enrolledNodesByAgent, err := getEnrolledNodesByAgent(inst)
+	enrolledNodesByAgent, err := GetEnrolledNodesByAgent(inst)
 	if err != nil {
 		return nil, fmt.Errorf("error on get binding nodes info: %w", err)
 	}
@@ -30,13 +89,14 @@ func refreshNodesInfo(inst *model.Instance) (*elastic.DiscoveryResult, error) {
 		//TODO return already biding nodes info ??
 		return nil, fmt.Errorf("error on get nodes info from agent: %w", err)
 	}
+
 	for nodeID, node := range nodesInfo.Nodes {
 
-			v, ok := enrolledNodesByAgent[nodeID]
-			if ok {
-				node.ClusterID = v.ClusterID
-				node.Enrolled = true
-			}
+		v, ok := enrolledNodesByAgent[nodeID]
+		if ok {
+			node.ClusterID = v.ClusterID
+			node.Enrolled = true
+		}
 	}
 
 	////not recognized by agent, need auth?
@@ -73,6 +133,149 @@ func refreshNodesInfo(inst *model.Instance) (*elastic.DiscoveryResult, error) {
 	//}
 
 	return nodesInfo, nil
+}
+
+type RemoteConfig struct {
+	orm.ORMObjectBase
+	Metadata model.Metadata    `json:"metadata" elastic_mapping:"metadata: { type: object }"`
+	Payload  common.ConfigFile `json:"payload" elastic_mapping:"payload: { type: object}"`
+}
+
+func remoteConfigProvider(instance model.Instance) []*common.ConfigFile {
+
+	//fetch configs from remote db
+	//fetch configs assigned to (instance=_all OR instance=$instance_id ) AND application.name=$application.name
+
+	q := orm.Query{
+		Size: 1000,
+		Conds: orm.And(orm.Eq("metadata.category", "app_settings"),
+			orm.Eq("metadata.name", instance.Application.Name),
+			orm.Eq("metadata.labels.instance", "_all"),
+		),
+	}
+
+	err, searchResult := orm.Search(RemoteConfig{}, &q)
+	if err != nil {
+		panic(err)
+	}
+
+	result := []*common.ConfigFile{}
+
+	for _, row := range searchResult.Result {
+		v, ok := row.(map[string]interface{})
+		if ok {
+			x, ok := v["payload"]
+			if ok {
+				f, ok := x.(map[string]interface{})
+				if ok {
+					name, ok := f["name"].(string)
+					if ok {
+						item := common.ConfigFile{}
+						item.Name = util.ToString(name)
+						item.Location = util.ToString(f["location"])
+						item.Content = util.ToString(f["content"])
+						item.Version,_ = util.ToInt64(util.ToString(f["version"]))
+						item.Size = int64(len(item.Content))
+						item.Managed = true
+						t, ok := v["updated"]
+						if ok {
+							layout := "2006-01-02T15:04:05.999999-07:00"
+							t1, err := time.Parse(layout, util.ToString(t))
+							if err == nil {
+								item.Updated = t1.Unix()
+							}
+						}
+						result=append(result,&item)
+					}
+				}
+			}
+		}
+	}
+
+	log.Error("remoteConfigProvider", "result", result)
+
+	return result
+}
+
+func dynamicAgentConfigProvider(instance model.Instance) []*common.ConfigFile {
+
+	//get config files from remote db
+	//get settings with this agent id
+	result := []*common.ConfigFile{}
+	ids, err := GetEnrolledNodesByAgent(&instance)
+	if err != nil {
+		panic(err)
+	}
+
+	var latestTimestamp int64
+	for _, v := range ids {
+		if v.Updated > latestTimestamp {
+			latestTimestamp = v.Updated
+		}
+	}
+
+	if len(ids) > 0 {
+
+		cfg := common.ConfigFile{}
+		cfg.Name = "generated_metrics_tasks.yml"
+		cfg.Location = "generated_metrics_tasks.yml"
+		cfg.Content = getConfigs(ids)
+		cfg.Size = int64(len(cfg.Content))
+		cfg.Version = latestTimestamp
+		cfg.Managed = true
+		cfg.Updated = latestTimestamp
+		result = append(result, &cfg)
+	}
+
+	return result
+}
+
+func getConfigs(items map[string]BindingItem) string {
+	buffer := bytes.NewBuffer([]byte("configs.template:\n  "))
+
+	for _, v := range items {
+
+		if v.ClusterID == "" {
+			panic("cluster id is empty")
+		}
+		metadata := elastic.GetMetadata(v.ClusterID)
+		var clusterLevelEnabled = false
+		var nodeLevelEnabled = true
+		var clusterEndPoint = metadata.Config.GetAnyEndpoint()
+		credential, err := common2.GetCredential(metadata.Config.CredentialID)
+		if err != nil {
+			panic(err)
+		}
+		var dv interface{}
+		dv, err = credential.Decode()
+		if err != nil {
+			panic(err)
+		}
+		var username = ""
+		var password = ""
+
+		if auth, ok := dv.(model.BasicAuth); ok {
+			username = auth.Username
+			password = auth.Password
+		}
+
+		buffer.Write([]byte(fmt.Sprintf("- name: \"%v\"\n    path: ./config/task_config.tpl\n    "+
+			"variable:\n      "+
+			"CLUSTER_ID: %v\n      "+
+			"CLUSTER_ENDPOINT: [\"%v\"]\n      "+
+			"CLUSTER_USERNAME: \"%v\"\n      "+
+			"CLUSTER_PASSWORD: \"%v\"\n      "+
+			"CLUSTER_LEVEL_TASKS_ENABLED: %v\n      "+
+			"NODE_LEVEL_TASKS_ENABLED: %v\n      "+
+			"NODE_LOGS_PATH: \"%v\"\n\n\n"+
+			"#MANAGED_CONFIG_VERSION: %v\n"+
+			"#MANAGED: true",
+			v.NodeUUID, v.ClusterID, clusterEndPoint, username, password, clusterLevelEnabled, nodeLevelEnabled, v.PathLogs, v.Updated)))
+	}
+
+	//password: $[[keystore.$[[CLUSTER_ID]]_password]]
+
+	return buffer.String()
 }
 
 //get nodes info via agent
@@ -134,52 +337,7 @@ type BindingItem struct {
 
 	//infini system assigned id
 	ClusterID string `json:"cluster_id"`
-}
-
-//node -> binding item
-func getEnrolledNodesByAgent(instance *model.Instance) (map[string]BindingItem, error) {
-
-	//get nodes settings where agent id = instance id
-	q := orm.Query{
-		Size: 1000,
-		Conds: orm.And(orm.Eq("metadata.category", "node_settings"),
-			orm.Eq("metadata.name", "agent"),
-			orm.Eq("metadata.labels.agent_id", instance.ID),
-		),
-	}
-
-	err, result := orm.Search(model.Setting{}, &q)
-
-	if err != nil {
-		return nil, err
-	}
-
-	ids := map[string]BindingItem{}
-	for _, row := range result.Result {
-		v, ok := row.(map[string]interface{})
-		if ok {
-			x, ok := v["payload"]
-			if ok {
-				f, ok := x.(map[string]interface{})
-				if ok {
-					nodeID, ok := f["node_uuid"].(string)
-					if ok {
-						item := BindingItem{}
-						item.ClusterID = util.ToString(f["cluster_id"])
-						item.ClusterName = util.ToString(f["cluster_name"])
-						item.ClusterUUID = util.ToString(f["cluster_uuid"])
-						item.PublishAddress = util.ToString(f["publish_address"])
-						item.NodeName = util.ToString(f["node_name"])
-						item.PathHome = util.ToString(f["path_home"])
-						item.PathLogs = util.ToString(f["path_logs"])
-						item.NodeUUID = nodeID
-						ids[item.NodeUUID] = item
-					}
-				}
-			}
-		}
-	}
-	return ids, nil
+	Updated   int64  `json:"updated"`
 }
 
 func getUnAssociateNodes() (map[string][]model.ESNodeInfo, error) {

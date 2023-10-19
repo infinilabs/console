@@ -239,7 +239,7 @@ func (h *APIHandler) authESNode(w http.ResponseWriter, req *http.Request, ps htt
 
 func NewClusterSettings(clusterID string) *model.Setting {
 	settings := model.Setting{
-		Metadata: model.SettingsMetadata{
+		Metadata: model.Metadata{
 			Category: Cluster,
 		},
 	}
@@ -255,7 +255,7 @@ func NewClusterSettings(clusterID string) *model.Setting {
 func NewNodeAgentSettings(instanceID string, item *BindingItem) *model.Setting {
 
 	settings := model.Setting{
-		Metadata: model.SettingsMetadata{
+		Metadata: model.Metadata{
 			Category: Node,
 			Name:     "agent",
 		},
@@ -283,7 +283,7 @@ func NewNodeAgentSettings(instanceID string, item *BindingItem) *model.Setting {
 func NewIndexSettings(clusterID, nodeID, agentID, indexName, indexID string) *model.Setting {
 
 	settings := model.Setting{
-		Metadata: model.SettingsMetadata{
+		Metadata: model.Metadata{
 			Category: Index,
 		},
 	}
@@ -469,7 +469,7 @@ func (h *APIHandler) autoAssociateESNode(w http.ResponseWriter, req *http.Reques
 							taskSetting.ClusterStats = nil
 						}
 						setting = &model.Setting{
-							Metadata: model.SettingsMetadata{
+							Metadata: model.Metadata{
 								Category: "agent",
 								Name:     "task",
 								Labels: util.MapStr{
@@ -623,7 +623,7 @@ func getAgentTaskSetting(agentID string, v model.ESNodeInfo) (*model.Setting, er
 		LogsPath: v.Path.Logs,
 	}
 	return &model.Setting{
-		Metadata: model.SettingsMetadata{
+		Metadata: model.Metadata{
 			Category: "agent",
 			Name:     "task",
 			Labels: util.MapStr{

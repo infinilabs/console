@@ -1,3 +1,6 @@
+env:
+   CLUSTER_PASSWORD: $[[keystore.$[[CLUSTER_ID]]_password]]
+
 elasticsearch:
   - id: $[[CLUSTER_ID]]
     name: $[[CLUSTER_ID]]
@@ -7,7 +10,7 @@ elasticsearch:
       enabled: false
     basic_auth:
       username: $[[CLUSTER_USERNAME]]
-      password: $[[keystore.$[[CLUSTER_ID]]_password]]
+      password: $[[CLUSTER_PASSWORD]]
 
 pipeline:
 #clsuter level metrics

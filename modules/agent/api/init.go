@@ -7,6 +7,7 @@ package api
 import (
 	"infini.sh/framework/core/api"
 	"infini.sh/framework/core/api/rbac/enum"
+	"infini.sh/framework/plugins/managed/server"
 )
 
 func Init() {
@@ -32,4 +33,8 @@ func Init() {
 
 	//api.HandleAPIMethod(api.POST, "/agent/install_command", handler.RequireLogin(handler.generateInstallCommand))
 	//api.HandleAPIMethod(api.GET, "/agent/install.sh", handler.getInstallScript)
+
+
+	server.RegisterConfigProvider(remoteConfigProvider)
+	server.RegisterConfigProvider(dynamicAgentConfigProvider)
 }

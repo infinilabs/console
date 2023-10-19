@@ -347,24 +347,6 @@ func (h *APIHandler) enrollESNode(w http.ResponseWriter, req *http.Request, ps h
 		return
 	}
 
-	//settings, err := common2.GetAgentSettings(instID, 0)
-	//if err != nil {
-	//	log.Error(err)
-	//	h.WriteError(w, err.Error(), http.StatusInternalServerError)
-	//	return
-	//}
-	//setting := pickAgentSettings(settings, node)
-	//if setting == nil {
-	//	setting, err = getAgentTaskSetting(instID, node)
-	//	if err != nil {
-	//		log.Error("get agent task setting error: ", err)
-	//	}
-	//	err = orm.Create(nil, setting)
-	//	if err != nil {
-	//		log.Error("save agent task setting error: ", err)
-	//	}
-	//}
-
 	h.WriteAckOKJSON(w)
 }
 

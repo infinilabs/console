@@ -568,7 +568,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	//save to local file
 	file := path.Join(global.Env().GetConfigDir(), "system_config.yml")
 	_, err = util.FilePutContent(file, fmt.Sprintf("configs.template:\n  - name: \"system\"\n    path: ./config/system_config.tpl\n    variable:\n      "+
-		"CLUSTER_ID: %v\n      CLUSTER_ENDPINT: \"%v\"\n      "+
+		"CLUSTER_ID: %v\n      CLUSTER_ENDPOINT: \"%v\"\n      "+
 		"CLUSTER_USER: \"%v\"\n      CLUSTER_VER: \"%v\"\n      CLUSTER_DISTRIBUTION: \"%v\"\n      INDEX_PREFIX: \"%v\"",
 		GlobalSystemElasticsearchID, cfg.GetAnyEndpoint(), cfg.BasicAuth.Username, cfg.Version, cfg.Distribution, cfg1.IndexPrefix))
 	if err != nil {

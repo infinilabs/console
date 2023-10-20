@@ -112,8 +112,9 @@ func dynamicAgentConfigProvider(instance model.Instance) []*common.ConfigFile {
 
 func getAgentIngestConfigs(items map[string]BindingItem) string {
 
-	buffer := bytes.NewBuffer([]byte("configs.template:\n  "))
+	buffer := bytes.NewBuffer([]byte("configs.template:  "))
 
+	var latestVersion int64
 	for _, v := range items {
 
 		if v.ClusterID == "" {
@@ -144,7 +145,11 @@ func getAgentIngestConfigs(items map[string]BindingItem) string {
 			}
 		}
 
-		buffer.Write([]byte(fmt.Sprintf("- name: \"%v\"\n    path: ./config/task_config.tpl\n    "+
+		if v.Updated > latestVersion {
+			latestVersion = v.Updated
+		}
+
+		buffer.Write([]byte(fmt.Sprintf("\n  - name: \"%v\"\n    path: ./config/task_config.tpl\n    "+
 			"variable:\n      "+
 			"CLUSTER_ID: %v\n      "+
 			"CLUSTER_ENDPOINT: [\"%v\"]\n      "+
@@ -152,11 +157,12 @@ func getAgentIngestConfigs(items map[string]BindingItem) string {
 			"CLUSTER_PASSWORD: \"%v\"\n      "+
 			"CLUSTER_LEVEL_TASKS_ENABLED: %v\n      "+
 			"NODE_LEVEL_TASKS_ENABLED: %v\n      "+
-			"NODE_LOGS_PATH: \"%v\"\n\n\n"+
-			"#MANAGED_CONFIG_VERSION: %v\n"+
-			"#MANAGED: true",
-			v.NodeUUID, v.ClusterID, clusterEndPoint, username, password, clusterLevelEnabled, nodeLevelEnabled, v.PathLogs, v.Updated)))
+			"NODE_LOGS_PATH: \"%v\"\n\n\n", v.NodeUUID, v.ClusterID, clusterEndPoint, username, password, clusterLevelEnabled, nodeLevelEnabled, v.PathLogs)))
 	}
+
+
+	buffer.WriteString("\n")
+	buffer.WriteString(fmt.Sprintf("#MANAGED_CONFIG_VERSION: %v\n#MANAGED: true\n",latestVersion))
 
 	//password: $[[keystore.$[[CLUSTER_ID]]_password]]
 

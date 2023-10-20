@@ -267,7 +267,7 @@ configs:
   #for managed client's setting
   managed: true # managed by remote servers
   panic_on_config_error: false #ignore config error
-  interval: "1s"
+  interval: "10s"
   servers: # config servers
     - "http://localhost:9000"
   max_backup_files: 5

@@ -5,7 +5,6 @@
 package api
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -16,8 +15,7 @@ import (
 	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
-	common2 "infini.sh/framework/modules/elastic/common"
-	"infini.sh/framework/plugins/managed/common"
+	"infini.sh/framework/modules/elastic/common"
 	"infini.sh/framework/plugins/managed/server"
 	"net/http"
 	"net/url"
@@ -347,7 +345,7 @@ func (h *APIHandler) discoveryESNodesInfo(w http.ResponseWriter, req *http.Reque
 						meta := elastic.GetMetadata(clusterID)
 						if meta != nil {
 							if meta.Config.AgentCredentialID != "" {
-								auth, err := common2.GetAgentBasicAuth(meta.Config)
+								auth, err := common.GetAgentBasicAuth(meta.Config)
 								if err != nil {
 									panic(err)
 								}

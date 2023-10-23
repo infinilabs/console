@@ -8,11 +8,14 @@ import (
 	"bytes"
 	"fmt"
 	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/global"
+	"infini.sh/framework/core/kv"
 	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	common2 "infini.sh/framework/modules/elastic/common"
 	"infini.sh/framework/plugins/managed/common"
+	log "github.com/cihub/seelog"
 	"time"
 )
 
@@ -94,18 +97,36 @@ func dynamicAgentConfigProvider(instance model.Instance) []*common.ConfigFile {
 		}
 	}
 
+
+
+
 	if len(ids) > 0 {
 
 		cfg := common.ConfigFile{}
 		cfg.Name = "generated_metrics_tasks.yml"
 		cfg.Location = "generated_metrics_tasks.yml"
 		cfg.Content = getAgentIngestConfigs(ids)
+
+		hash:=util.MD5digest(cfg.Content)
+		//if local's hash is different from remote's hash, then update local's hash, update version to current timestamp
+		v,err:=kv.GetValue(LastAgentHash, []byte(global.Env().SystemConfig.NodeConfig.ID))
+		if err!=nil||v==nil||string(v)!=hash{
+			err:=kv.AddValue(LastAgentHash, []byte(global.Env().SystemConfig.NodeConfig.ID), []byte(hash))
+			if err!=nil{
+				panic(err)
+			}
+			latestTimestamp=time.Now().Unix()
+			log.Error("local hash is different from remote's hash, update local's hash, update version to current timestamp")
+		}
+
 		cfg.Size = int64(len(cfg.Content))
 		cfg.Version = latestTimestamp
 		cfg.Managed = true
 		cfg.Updated = latestTimestamp
 		result = append(result, &cfg)
 	}
+
+
 
 	return result
 }
@@ -161,11 +182,12 @@ func getAgentIngestConfigs(items map[string]BindingItem) string {
 	}
 
 
+	//password: $[[keystore.$[[CLUSTER_ID]]_password]]
 	buffer.WriteString("\n")
 	buffer.WriteString(fmt.Sprintf("#MANAGED_CONFIG_VERSION: %v\n#MANAGED: true\n",latestVersion))
 
-	//password: $[[keystore.$[[CLUSTER_ID]]_password]]
-
 	return buffer.String()
 }
+
+const LastAgentHash ="last_agent_hash"
 

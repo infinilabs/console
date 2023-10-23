@@ -83,7 +83,9 @@ PUT _template/$[[INDEX_PREFIX]]metrics-rollover
         },
         "codec" : "best_compression",
         "number_of_shards" : "1",
-        "translog.durability":"async"
+        "translog.durability":"async",
+        "index.mapping.coerce": false,
+        "index.mapping.ignore_malformed": true
       }
     },
     "mappings" : {

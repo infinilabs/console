@@ -7,6 +7,7 @@ package api
 import (
 	"bytes"
 	"fmt"
+	log "github.com/cihub/seelog"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/kv"
@@ -15,7 +16,6 @@ import (
 	"infini.sh/framework/core/util"
 	common2 "infini.sh/framework/modules/elastic/common"
 	"infini.sh/framework/plugins/managed/common"
-	log "github.com/cihub/seelog"
 	"time"
 )
 
@@ -97,9 +97,6 @@ func dynamicAgentConfigProvider(instance model.Instance) []*common.ConfigFile {
 		}
 	}
 
-
-
-
 	if len(ids) > 0 {
 
 		cfg := common.ConfigFile{}
@@ -107,16 +104,16 @@ func dynamicAgentConfigProvider(instance model.Instance) []*common.ConfigFile {
 		cfg.Location = "generated_metrics_tasks.yml"
 		cfg.Content = getAgentIngestConfigs(ids)
 
-		hash:=util.MD5digest(cfg.Content)
+		hash := util.MD5digest(cfg.Content)
 		//if local's hash is different from remote's hash, then update local's hash, update version to current timestamp
-		v,err:=kv.GetValue(LastAgentHash, []byte(global.Env().SystemConfig.NodeConfig.ID))
-		if err!=nil||v==nil||string(v)!=hash{
-			err:=kv.AddValue(LastAgentHash, []byte(global.Env().SystemConfig.NodeConfig.ID), []byte(hash))
-			if err!=nil{
+		v, err := kv.GetValue(LastAgentHash, []byte(global.Env().SystemConfig.NodeConfig.ID))
+		if err != nil || v == nil || string(v) != hash {
+			err := kv.AddValue(LastAgentHash, []byte(global.Env().SystemConfig.NodeConfig.ID), []byte(hash))
+			if err != nil {
 				panic(err)
 			}
-			latestTimestamp=time.Now().Unix()
-			log.Error("local hash is different from remote's hash, update local's hash, update version to current timestamp")
+			latestTimestamp = time.Now().Unix()
+			log.Info("local hash is different from remote's hash, update local's hash, update version to current timestamp")
 		}
 
 		cfg.Size = int64(len(cfg.Content))
@@ -126,8 +123,6 @@ func dynamicAgentConfigProvider(instance model.Instance) []*common.ConfigFile {
 		result = append(result, &cfg)
 	}
 
-
-
 	return result
 }
 
@@ -135,8 +130,20 @@ func getAgentIngestConfigs(items map[string]BindingItem) string {
 
 	buffer := bytes.NewBuffer([]byte("configs.template:  "))
 
+	//sort items
+	newItems := []util.KeyValue{}
+
+	for k, v := range items {
+		newItems = append(newItems, util.KeyValue{Key: k, Value: v.Updated,Payload: v})
+	}
+
+	newItems=util.SortKeyValueArray(newItems,false)
+
 	var latestVersion int64
-	for _, v := range items {
+	for _, x := range newItems {
+
+		v,ok:=x.Payload.(BindingItem)
+		if !ok{continue}
 
 		if v.ClusterID == "" {
 			panic("cluster id is empty")
@@ -181,13 +188,11 @@ func getAgentIngestConfigs(items map[string]BindingItem) string {
 			"NODE_LOGS_PATH: \"%v\"\n\n\n", v.NodeUUID, v.ClusterID, clusterEndPoint, username, password, clusterLevelEnabled, nodeLevelEnabled, v.PathLogs)))
 	}
 
-
 	//password: $[[keystore.$[[CLUSTER_ID]]_password]]
 	buffer.WriteString("\n")
-	buffer.WriteString(fmt.Sprintf("#MANAGED_CONFIG_VERSION: %v\n#MANAGED: true\n",latestVersion))
+	buffer.WriteString(fmt.Sprintf("#MANAGED_CONFIG_VERSION: %v\n#MANAGED: true\n", latestVersion))
 
 	return buffer.String()
 }
 
-const LastAgentHash ="last_agent_hash"
-
+const LastAgentHash = "last_agent_hash"

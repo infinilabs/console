@@ -284,6 +284,7 @@ configs:
   interval: "10s"
   servers: # config servers
     - "http://localhost:9000"
+  soft_delete: false
   max_backup_files: 5
   tls: #for mTLS connection with config servers
     enabled: true

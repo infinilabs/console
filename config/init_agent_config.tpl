@@ -27,6 +27,11 @@ elasticsearch:
     basic_auth:
       username: $[[CLUSTER_USERNAME]]
       password: $[[CLUSTER_PASSWORD]]
+    traffic_control:
+      enabled: true
+      max_qps_per_node: 100
+      max_bytes_per_node: 10485760
+      max_connection_per_node: 5
 
 pipeline:
 #clsuter level metrics
@@ -129,6 +134,11 @@ POST .infini_configs/_doc/ingest_config_tpl
     basic_auth:
       username: $[[INGEST_CLUSTER_USERNAME]]
       password: $[[INGEST_CLUSTER_PASSWORD]]
+    traffic_control:
+      enabled: true
+      max_qps_per_node: 1000
+      max_bytes_per_node: 10485760
+      max_connection_per_node: 10
 
 metrics:
   enabled: true
@@ -240,7 +250,7 @@ POST .infini_configs/_doc/system_ingest_config_yml
     path: ./config/ingest_config.tpl
     variable:
       INGEST_CLUSTER_ID: infini_default_ingest_cluster
-      INGEST_CLUSTER_ENDPOINT: [ "http://10.0.0.3:7102" ]
+      INGEST_CLUSTER_ENDPOINT: [ "http://192.168.3.185:9209" ]
       INGEST_CLUSTER_USERNAME: "admin"
       INGEST_CLUSTER_PASSWORD: "admin"
       CLUSTER_VER: "1.6.0"

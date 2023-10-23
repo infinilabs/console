@@ -4,17 +4,17 @@ configs: #define configs group
       - ./templates/ingest_config.tpl
       - ./templates/task_config.tpl
       - ./configs/ingest_config.yml
-instances: #define which config instance should fetch
-    _all: #instance group
+#instances: #define which config instance should fetch
+#    _all: #instance group
 #      plugins:
 #        - ingest
 #      instances:
 #        - ck0mkk805f5virpsejp0
 #        - ckjrpdg05f5lrfp8qlng
-      configs:
-        - general_ingest_template
-      secrets:
-        - ingest_cluster_password
+#      configs:
+#        - general_ingest_template
+#      secrets:
+#        - ingest_cluster_password
 
 secrets:
     ingest_cluster_password: #group name

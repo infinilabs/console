@@ -108,10 +108,17 @@ func refreshNodesInfo(inst *model.Instance) (*elastic.DiscoveryResult, error) {
 		}
 	}
 
+	var findPIDS=map[int]*elastic.NodesInfo{}
+
 	//TODO, merge requests to one
 	for k, v := range enrolledNodesByAgent {
+
 		if _, ok := newNodes[k]; !ok {
-			client := elastic.GetClient(v.ClusterID)
+			client := elastic.GetClientNoPanic(v.ClusterID)
+			if client == nil {
+				log.Error("client not found:", v.ClusterID)
+				continue
+			}
 			status := "online"
 			nodeInfo, err := client.GetNodeInfo(v.NodeUUID)
 			var clusterInfo *elastic.ClusterInformation
@@ -133,8 +140,6 @@ func refreshNodesInfo(inst *model.Instance) (*elastic.DiscoveryResult, error) {
 					log.Error("cluster info not found:",v.ClusterID,",",err,clusterInfo==nil)
 					continue
 				}
-
-
 			}else{
 				clusterInfo, err = adapter.ClusterVersion(elastic.GetMetadata(v.ClusterID))
 				if err != nil || clusterInfo == nil{
@@ -142,6 +147,8 @@ func refreshNodesInfo(inst *model.Instance) (*elastic.DiscoveryResult, error) {
 					continue
 				}
 			}
+
+			findPIDS[nodeInfo.Process.Id]=nodeInfo
 
 			newNodes[k] = &elastic.LocalNodeInfo{
 				Status:      status,
@@ -155,7 +162,14 @@ func refreshNodesInfo(inst *model.Instance) (*elastic.DiscoveryResult, error) {
 	}
 
 	nodesInfo.Nodes = newNodes
+	newUnknows:=[]model.ProcessInfo{}
+	for _,v:=range nodesInfo.UnknownProcess{
 
+		if _,ok:=findPIDS[v.PID];!ok{
+			newUnknows=append(newUnknows,v)
+		}
+	}
+	nodesInfo.UnknownProcess=newUnknows
 	return nodesInfo, nil
 }
 
@@ -362,6 +376,10 @@ type ClusterInfo struct {
 	ClusterIDs []string `json:"cluster_id"`
 }
 
+func (h *APIHandler) autoEnrollESNode(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	//TODO
+}
+
 func (h *APIHandler) discoveryESNodesInfo(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 
 	id := ps.MustGetParameter("instance_id")
@@ -385,12 +403,12 @@ func (h *APIHandler) discoveryESNodesInfo(w http.ResponseWriter, req *http.Reque
 	if len(nodes.UnknownProcess) > 0 {
 
 		var discoveredPIDs map[int]*elastic.LocalNodeInfo = make(map[int]*elastic.LocalNodeInfo)
-
 		if req.Method == "POST" {
 			bytes, err := h.GetRawBody(req)
 			if err != nil {
 				panic(err)
 			}
+
 			if len(bytes) > 0 {
 				clusterInfo := ClusterInfo{}
 				util.FromJSONBytes(bytes, &clusterInfo)
@@ -418,8 +436,9 @@ func (h *APIHandler) discoveryESNodesInfo(w http.ResponseWriter, req *http.Reque
 												//try https again
 												success, tryAgain, nodeInfo = h.getESNodeInfoViaProxy(nodeHost, "https", auth, &instance)
 											}
+
 											if success {
-												log.Error("connect to es node success:", nodeHost)
+												log.Debug("connect to es node success:", nodeHost,", pid: ",node.PID)
 												discoveredPIDs[node.PID] = nodeInfo
 												break
 											}

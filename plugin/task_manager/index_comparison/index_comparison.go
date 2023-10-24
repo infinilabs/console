@@ -362,6 +362,9 @@ func (p *processor) handleRunningSubTask(taskItem *task.Task) error {
 			if onlyInSource > 0 || onlyInTarget > 0 || diffBoth > 0 {
 				now := time.Now()
 				taskItem.Metadata.Labels["total_diff_docs"] = onlyInSource + onlyInTarget + diffBoth
+				taskItem.Metadata.Labels["only_in_source"] = onlyInSource
+				taskItem.Metadata.Labels["only_in_target"] = onlyInTarget
+				taskItem.Metadata.Labels["diff_both"] = diffBoth
 				taskItem.CompletedTime = &now
 				taskItem.Status = task.StatusError
 				p.saveTaskAndWriteLog(taskItem, &task.TaskResult{
@@ -390,6 +393,7 @@ func (p *processor) handleRunningSubTask(taskItem *task.Task) error {
 	now := time.Now()
 	taskItem.CompletedTime = &now
 	taskItem.Status = task.StatusComplete
+	taskItem.Metadata.Labels["total_diff_docs"] = 0
 	p.saveTaskAndWriteLog(taskItem, &task.TaskResult{
 		Success: true,
 	}, "index comparison completed")

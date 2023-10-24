@@ -105,12 +105,16 @@ func buildTask(config *migration_model.ClusterComparisonTaskConfig, creator *rba
 				"source_total_docs": sourceTotalDocs,
 				"target_total_docs": targetTotalDocs,
 				"permit_nodes": config.Settings.Execution.Nodes.Permit,
+				"name": config.Name,
 			},
 		},
 		Cancellable:  true,
 		Runnable:     false,
 		Status:       task.StatusInit,
 		ConfigString: util.MustToJSON(config),
+	}
+	if len(config.Tags) > 0 {
+		t.Metadata.Labels["tags"] = config.Tags
 	}
 	t.ID = util.GetUUID()
 	return &t, nil

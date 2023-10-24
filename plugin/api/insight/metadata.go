@@ -5,8 +5,10 @@
 package insight
 
 import (
+	"bytes"
 	"github.com/Knetic/govaluate"
 	log "github.com/cihub/seelog"
+	"text/template"
 	"infini.sh/console/model/insight"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
@@ -224,6 +226,24 @@ func getMetricData(metric *insight.Metric) (interface{}, error) {
 	if len(metric.Items) == 1 && formula == "" {
 		targetMetricData =  metricData
 	}else {
+		tpl, err := template.New("insight_formula").Parse(formula)
+		if err != nil {
+			return nil, err
+		}
+		msgBuffer := &bytes.Buffer{}
+		params := map[string]interface{}{}
+		if metric.BucketSize != "" {
+			du, err := util.ParseDuration(metric.BucketSize)
+			if err != nil {
+				return nil, err
+			}
+			params["bucket_size_in_second"] = du.Seconds()
+		}
+		err = tpl.Execute(msgBuffer, params)
+		if err != nil {
+			return nil, err
+		}
+		formula = msgBuffer.String()
 		for _, md := range metricData {
 			targetData := insight.MetricData{
 				Groups: md.Groups,

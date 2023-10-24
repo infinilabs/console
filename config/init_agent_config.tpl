@@ -146,6 +146,8 @@ metrics:
   network:
     enabled: true
     summary: true
+    sockets: true
+    throughput: true
     details: true
   memory:
     metrics:
@@ -250,7 +252,7 @@ POST .infini_configs/_doc/system_ingest_config_yml
     path: ./config/ingest_config.tpl
     variable:
       INGEST_CLUSTER_ID: infini_default_ingest_cluster
-      INGEST_CLUSTER_ENDPOINT: [ "http://192.168.3.185:9209" ]
+      INGEST_CLUSTER_ENDPOINT: [ "http://10.0.0.3:7102" ]
       INGEST_CLUSTER_USERNAME: "admin"
       INGEST_CLUSTER_PASSWORD: "admin"
       CLUSTER_VER: "1.6.0"
@@ -258,7 +260,7 @@ POST .infini_configs/_doc/system_ingest_config_yml
       INDEX_PREFIX: ".infini_"
 
 """,
-    "version": 2
+    "version": 3
   }
 }
 

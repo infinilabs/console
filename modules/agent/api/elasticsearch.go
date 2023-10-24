@@ -14,7 +14,9 @@ import (
 	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
+	"infini.sh/framework/modules/elastic/adapter"
 	"infini.sh/framework/modules/elastic/common"
+	"infini.sh/framework/modules/elastic/metadata"
 	"infini.sh/framework/plugins/managed/server"
 	"net/http"
 	"time"
@@ -90,13 +92,69 @@ func refreshNodesInfo(inst *model.Instance) (*elastic.DiscoveryResult, error) {
 		return nil, fmt.Errorf("error on get nodes info from agent: %w", err)
 	}
 
+	newNodes := map[string]*elastic.LocalNodeInfo{}
+	//binding nodes info with agent
 	for nodeID, node := range nodesInfo.Nodes {
 		v, ok := enrolledNodesByAgent[nodeID]
+		node.Status = "online"
 		if ok {
 			node.ClusterID = v.ClusterID
 			node.Enrolled = true
+
+			//output
+			newNodes[nodeID] = node
+		} else {
+			newNodes[nodeID] = node
 		}
 	}
+
+	//TODO, merge requests to one
+	for k, v := range enrolledNodesByAgent {
+		if _, ok := newNodes[k]; !ok {
+			client := elastic.GetClient(v.ClusterID)
+			status := "online"
+			nodeInfo, err := client.GetNodeInfo(v.NodeUUID)
+			var clusterInfo *elastic.ClusterInformation
+			if err != nil ||nodeInfo == nil {
+				status= "offline"
+
+				//get nodes information
+				nodeInfos, err := metadata.GetNodeInformation(v.ClusterID,[]string{v.NodeUUID})
+				if err!=nil||len(nodeInfos)==0{
+					log.Error("node info not found:",v.ClusterID,",",[]string{v.NodeUUID},",",err,err!=nil,len(nodeInfos)==0)
+					continue
+				}
+
+				nodeInfo=nodeInfos[0]
+
+				//get cluster information
+				clusterInfo,err=metadata.GetClusterInformation(v.ClusterID)
+				if err!=nil||clusterInfo==nil{
+					log.Error("cluster info not found:",v.ClusterID,",",err,clusterInfo==nil)
+					continue
+				}
+
+
+			}else{
+				clusterInfo, err = adapter.ClusterVersion(elastic.GetMetadata(v.ClusterID))
+				if err != nil || clusterInfo == nil{
+					log.Error(err)
+					continue
+				}
+			}
+
+			newNodes[k] = &elastic.LocalNodeInfo{
+				Status:      status,
+				ClusterID:   v.ClusterID,
+				NodeUUID:    v.NodeUUID,
+				Enrolled:    true,
+				NodeInfo:    nodeInfo,
+				ClusterInfo: clusterInfo,
+			}
+		}
+	}
+
+	nodesInfo.Nodes = newNodes
 
 	return nodesInfo, nil
 }

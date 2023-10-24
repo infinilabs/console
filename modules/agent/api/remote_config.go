@@ -102,18 +102,21 @@ func dynamicAgentConfigProvider(instance model.Instance) []*common.ConfigFile {
 		cfg := common.ConfigFile{}
 		cfg.Name = "generated_metrics_tasks.yml"
 		cfg.Location = "generated_metrics_tasks.yml"
-		cfg.Content = getAgentIngestConfigs(ids)
+		cfg.Content, cfg.Hash = getAgentIngestConfigs(instance.ID, ids)
 
-		hash := util.MD5digest(cfg.Content)
+		hash := cfg.Hash
+		if cfg.Hash == "" {
+			hash = util.MD5digest(cfg.Content)
+		}
 		//if local's hash is different from remote's hash, then update local's hash, update version to current timestamp
-		v, err := kv.GetValue(LastAgentHash, []byte(global.Env().SystemConfig.NodeConfig.ID))
+		v, err := kv.GetValue(LastAgentHash, []byte(global.Env().SystemConfig.NodeConfig.ID+":"+instance.ID))
 		if err != nil || v == nil || string(v) != hash {
-			err := kv.AddValue(LastAgentHash, []byte(global.Env().SystemConfig.NodeConfig.ID), []byte(hash))
+			err := kv.AddValue(LastAgentHash, []byte(global.Env().SystemConfig.NodeConfig.ID+":"+instance.ID), []byte(hash))
 			if err != nil {
 				panic(err)
 			}
 			latestTimestamp = time.Now().Unix()
-			log.Info("local hash is different from remote's hash, update local's hash, update version to current timestamp")
+			log.Infof("hash: %v vs %v, update version to current timestamp: %v", string(v), hash, latestTimestamp)
 		}
 
 		cfg.Size = int64(len(cfg.Content))
@@ -126,7 +129,11 @@ func dynamicAgentConfigProvider(instance model.Instance) []*common.ConfigFile {
 	return result
 }
 
-func getAgentIngestConfigs(items map[string]BindingItem) string {
+func getAgentIngestConfigs(instance string, items map[string]BindingItem) (string, string) {
+
+	if instance == "" {
+		panic("instance id is empty")
+	}
 
 	buffer := bytes.NewBuffer([]byte("configs.template:  "))
 
@@ -134,16 +141,18 @@ func getAgentIngestConfigs(items map[string]BindingItem) string {
 	newItems := []util.KeyValue{}
 
 	for k, v := range items {
-		newItems = append(newItems, util.KeyValue{Key: k, Value: v.Updated,Payload: v})
+		newItems = append(newItems, util.KeyValue{Key: k, Value: v.Updated, Payload: v})
 	}
 
-	newItems=util.SortKeyValueArray(newItems,false)
+	newItems = util.SortKeyValueArray(newItems, false)
 
 	var latestVersion int64
 	for _, x := range newItems {
 
-		v,ok:=x.Payload.(BindingItem)
-		if !ok{continue}
+		v, ok := x.Payload.(BindingItem)
+		if !ok {
+			continue
+		}
 
 		if v.ClusterID == "" {
 			panic("cluster id is empty")
@@ -188,11 +197,13 @@ func getAgentIngestConfigs(items map[string]BindingItem) string {
 			"NODE_LOGS_PATH: \"%v\"\n\n\n", v.NodeUUID, v.ClusterID, clusterEndPoint, username, password, clusterLevelEnabled, nodeLevelEnabled, v.PathLogs)))
 	}
 
+	hash := util.MD5digest(buffer.String())
+
 	//password: $[[keystore.$[[CLUSTER_ID]]_password]]
 	buffer.WriteString("\n")
 	buffer.WriteString(fmt.Sprintf("#MANAGED_CONFIG_VERSION: %v\n#MANAGED: true\n", latestVersion))
 
-	return buffer.String()
+	return buffer.String(), hash
 }
 
 const LastAgentHash = "last_agent_hash"

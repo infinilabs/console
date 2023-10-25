@@ -205,6 +205,7 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 			"variable:\n      "+
 			"TASK_ID: %v\n      "+
 			"CLUSTER_ID: %v\n      "+
+			"CLUSTER_UUID: %v\n      "+
 			"NODE_UUID: %v\n      "+
 			"CLUSTER_ENDPOINT: [\"%v\"]\n      "+
 			"CLUSTER_USERNAME: \"%v\"\n      "+
@@ -212,7 +213,7 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 			"CLUSTER_LEVEL_TASKS_ENABLED: %v\n      "+
 			"NODE_LEVEL_TASKS_ENABLED: %v\n      "+
 			"NODE_LOGS_PATH: \"%v\"\n\n\n", taskID, taskID,
-			v.ClusterID,v.NodeUUID, nodeEndPoint, username, password, clusterLevelEnabled, nodeLevelEnabled, v.PathLogs)))
+			v.ClusterID,v.ClusterUUID,v.NodeUUID, nodeEndPoint, username, password, clusterLevelEnabled, nodeLevelEnabled, v.PathLogs)))
 	}
 
 	hash := util.MD5digest(buffer.String())

@@ -20,6 +20,7 @@ POST .infini_configs/_doc/task_config_tpl
 elasticsearch:
   - id: $[[TASK_ID]]
     name: $[[TASK_ID]]
+    cluster_uuid: $[[CLUSTER_UUID]]
     enabled: true
     endpoints: $[[CLUSTER_ENDPOINT]]
     discovery:

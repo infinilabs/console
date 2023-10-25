@@ -252,7 +252,7 @@ elastic:
 disk_queue:
   max_msg_size: 20485760
   max_bytes_per_file: 20485760
-  max_used_bytes: 524288000
+  max_used_bytes: 1024288000
   retention.max_num_of_local_files: 1
   compress:
     idle_threshold: 0

@@ -111,7 +111,7 @@ metrics:
     enabled: true
     summary: true
     sockets: true
-    throughput: true
+    #throughput: true
     details: true
   memory:
     metrics:
@@ -139,6 +139,7 @@ pipeline:
   - name: merge_logs
     auto_start: true
     keep_running: true
+    retry_delay_in_ms: 10000
     processor:
       - indexing_merge:
           elasticsearch: "$[[INGEST_CLUSTER_ID]]"
@@ -153,6 +154,7 @@ pipeline:
   - name: merge_metrics
     auto_start: true
     keep_running: true
+    retry_delay_in_ms: 10000
     processor:
       - indexing_merge:
           elasticsearch: "$[[INGEST_CLUSTER_ID]]"
@@ -167,6 +169,7 @@ pipeline:
     enabled: true
     auto_start: true
     keep_running: true
+    retry_delay_in_ms: 10000
     processor:
       - bulk_indexing:
           max_worker_size: 1

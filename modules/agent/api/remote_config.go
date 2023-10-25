@@ -159,6 +159,10 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 		}
 
 		metadata := elastic.GetMetadata(v.ClusterID)
+		if metadata == nil || metadata.Config == nil{
+			log.Errorf("metadata is nil: %v",v.ClusterID)
+			continue
+		}
 		var clusterLevelEnabled = false
 		var nodeLevelEnabled = true
 		var clusterEndPoint = metadata.Config.GetAnyEndpoint()

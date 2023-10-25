@@ -14,7 +14,9 @@ POST .infini_configs/_doc/task_config_tpl
   "payload": {
     "name": "task_config.tpl",
     "location": "task_config.tpl",
-    "content": """env:
+    "content": """
+
+env:
    CLUSTER_PASSWORD: $[[keystore.$[[CLUSTER_ID]]_password]]
 
 elasticsearch:
@@ -85,7 +87,9 @@ POST .infini_configs/_doc/ingest_config_tpl
   "payload": {
     "name": "ingest_config.tpl",
     "location": "ingest_config.tpl",
-    "content": """elasticsearch:
+    "content": """
+
+elasticsearch:
   - name: $[[INGEST_CLUSTER_ID]]
     enabled: true
     endpoints: $[[INGEST_CLUSTER_ENDPOINT]]
@@ -188,39 +192,6 @@ pipeline:
             cluster_available: ["$[[INGEST_CLUSTER_ID]]"]
 """,
     "version": 1
-  }
-}
-
-
-#TODO, need to replace cleartext password to keystore, and ingest endpoint
-POST .infini_configs/_doc/system_ingest_config_yml
-{
-  "id": "system_ingest_config_yml",
-  "updated": "2023-10-18T14:49:56.768754+08:00",
-  "metadata": {
-    "category": "app_settings",
-    "name": "agent",
-    "labels": {
-      "instance": "_all"
-    }
-  },
-  "payload": {
-    "name": "system_ingest_config.yml",
-    "location": "system_ingest_config.yml",
-    "content": """configs.template:
-  - name: "default_ingest_config"
-    path: ./config/ingest_config.tpl
-    variable:
-      INGEST_CLUSTER_ID: infini_default_ingest_cluster
-      INGEST_CLUSTER_ENDPOINT: [ "http://10.0.0.3:7102" ]
-      INGEST_CLUSTER_USERNAME: "admin"
-      INGEST_CLUSTER_PASSWORD: "admin"
-      CLUSTER_VER: "1.6.0"
-      CLUSTER_DISTRIBUTION: "easysearch"
-      INDEX_PREFIX: ".infini_"
-
-""",
-    "version": 3
   }
 }
 

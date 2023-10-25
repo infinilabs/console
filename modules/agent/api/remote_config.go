@@ -81,6 +81,10 @@ func remoteConfigProvider(instance model.Instance) []*common.ConfigFile {
 
 func dynamicAgentConfigProvider(instance model.Instance) []*common.ConfigFile {
 
+	if instance.Application.Name != "agent" {
+		return nil
+	}
+
 	//get config files from remote db
 	//get settings with this agent id
 

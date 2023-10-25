@@ -18,8 +18,8 @@ POST .infini_configs/_doc/task_config_tpl
    CLUSTER_PASSWORD: $[[keystore.$[[CLUSTER_ID]]_password]]
 
 elasticsearch:
-  - id: $[[CLUSTER_ID]]
-    name: $[[CLUSTER_ID]]
+  - id: $[[TASK_ID]]
+    name: $[[TASK_ID]]
     enabled: true
     endpoints: $[[CLUSTER_ENDPOINT]]
     discovery:
@@ -34,83 +34,42 @@ elasticsearch:
       max_connection_per_node: 5
 
 pipeline:
-#clsuter level metrics
-- auto_start: $[[CLUSTER_LEVEL_TASKS_ENABLED]]
-  enabled: $[[CLUSTER_LEVEL_TASKS_ENABLED]]
-  keep_running: true
-  singleton: true
-  name: collect_$[[CLUSTER_ID]]_es_cluster_stats
-  retry_delay_in_ms: 10000
-  processor:
-  - es_cluster_stats:
-      elasticsearch: $[[CLUSTER_ID]]
-      labels:
-        cluster_id: $[[CLUSTER_ID]]
-      when:
-        cluster_available: ["$[[CLUSTER_ID]]"]
-
-- auto_start: $[[CLUSTER_LEVEL_TASKS_ENABLED]]
-  enabled: $[[CLUSTER_LEVEL_TASKS_ENABLED]]
-  keep_running: true
-  singleton: true
-  name: collect_$[[CLUSTER_ID]]_es_index_stats
-  retry_delay_in_ms: 10000
-  processor:
-  - es_index_stats:
-      elasticsearch: $[[CLUSTER_ID]]
-      labels:
-        cluster_id: $[[CLUSTER_ID]]
-      when:
-        cluster_available: ["$[[CLUSTER_ID]]"]
-
-- auto_start: $[[CLUSTER_LEVEL_TASKS_ENABLED]]
-  enabled: $[[CLUSTER_LEVEL_TASKS_ENABLED]]
-  keep_running: true
-  singleton: true
-  name: collect_$[[CLUSTER_ID]]_es_cluster_health
-  retry_delay_in_ms: 10000
-  processor:
-  - es_cluster_health:
-      elasticsearch: $[[CLUSTER_ID]]
-      labels:
-        cluster_id: $[[CLUSTER_ID]]
-      when:
-        cluster_available: ["$[[CLUSTER_ID]]"]
 
 #node level metrics
 - auto_start: $[[NODE_LEVEL_TASKS_ENABLED]]
   enabled: $[[NODE_LEVEL_TASKS_ENABLED]]
   keep_running: true
-  name: collect_$[[CLUSTER_ID]]_es_node_stats
+  name: collect_$[[TASK_ID]]_es_node_stats
   retry_delay_in_ms: 10000
   processor:
   - es_node_stats:
-      elasticsearch: $[[CLUSTER_ID]]
+      elasticsearch: $[[TASK_ID]]
       labels:
         cluster_id: $[[CLUSTER_ID]]
       when:
-        cluster_available: ["$[[CLUSTER_ID]]"]
+        cluster_available: ["$[[TASK_ID]]"]
 
 #node logs
 - auto_start: $[[NODE_LEVEL_TASKS_ENABLED]]
   enabled: $[[NODE_LEVEL_TASKS_ENABLED]]
   keep_running: true
-  name: collect_$[[CLUSTER_ID]]_es_logs
+  name: collect_$[[TASK_ID]]_es_logs
   retry_delay_in_ms: 10000
   processor:
   - es_logs_processor:
-      elasticsearch: $[[CLUSTER_ID]]
+      elasticsearch: $[[TASK_ID]]
       labels:
         cluster_id: $[[CLUSTER_ID]]
       logs_path: $[[NODE_LOGS_PATH]]
       queue_name: logs
       when:
-        cluster_available: ["$[[CLUSTER_ID]]"]
+        cluster_available: ["$[[TASK_ID]]"]
 """,
     "version": 1
   }
 }
 
+#system ingest template
 POST .infini_configs/_doc/ingest_config_tpl
 {
   "id": "ingest_config_tpl",

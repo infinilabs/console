@@ -15,6 +15,7 @@ import (
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	common2 "infini.sh/framework/modules/elastic/common"
+	metadata2 "infini.sh/framework/modules/elastic/metadata"
 	"infini.sh/framework/plugins/managed/common"
 	"time"
 )
@@ -192,12 +193,22 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 			}
 		}
 
-		if v.PublishAddress==""{
+		nodeInfo,err:=metadata2.GetNodeConfig(v.ClusterID,v.NodeUUID)
+		if err!=nil{
+			log.Error(err)
+			continue
+		}
+
+		publishAddress:=nodeInfo.Payload.NodeInfo.GetHttpPublishHost()
+
+		if publishAddress==""{
 			log.Errorf("publish address is empty: %v",v.NodeUUID)
 			continue
 		}
 
-		nodeEndPoint := metadata.PrepareEndpoint(v.PublishAddress)
+		nodeEndPoint := metadata.PrepareEndpoint(publishAddress)
+
+		pathLogs:=nodeInfo.Payload.NodeInfo.GetPathLogs()
 
 		if v.Updated > latestVersion {
 			latestVersion = v.Updated
@@ -217,7 +228,7 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 			"CLUSTER_LEVEL_TASKS_ENABLED: %v\n      "+
 			"NODE_LEVEL_TASKS_ENABLED: %v\n      "+
 			"NODE_LOGS_PATH: \"%v\"\n\n\n", taskID, taskID,
-			v.ClusterID,v.ClusterUUID,v.NodeUUID, nodeEndPoint, username, password, clusterLevelEnabled, nodeLevelEnabled, v.PathLogs)))
+			v.ClusterID,v.ClusterUUID,v.NodeUUID, nodeEndPoint, username, password, clusterLevelEnabled, nodeLevelEnabled, pathLogs)))
 	}
 
 	hash := util.MD5digest(buffer.String())

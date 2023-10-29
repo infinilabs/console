@@ -6,8 +6,8 @@ package alerting
 
 import (
 	"fmt"
-	"infini.sh/framework/core/config"
 	config2 "infini.sh/console/config"
+	"infini.sh/framework/core/config"
 	"infini.sh/framework/core/env"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/kv"
@@ -53,6 +53,6 @@ func GetInnerConsoleEndpoint() (string, error){
 	if !ok {
 		return "", fmt.Errorf("web config not exists")
 	}
-	endpoint := fmt.Sprintf("%s://%s", appConfig.GetSchema(), appConfig.Network.GetPublishAddr())
+	endpoint := appConfig.GetEndpoint()
 	return endpoint, nil
 }

@@ -7,7 +7,7 @@ elasticsearch:
     enabled: true
     monitored: true
     reserved: true
-    endpoint: $[[CLUSTER_ENDPINT]]
+    endpoint: $[[CLUSTER_ENDPOINT]]
     discovery:
       enabled: false
     basic_auth:
@@ -17,7 +17,7 @@ elasticsearch:
 elastic.elasticsearch: $[[CLUSTER_ID]]
 
 pipeline:
-  - name: indexing_merge
+  - name: merge_metrics
     auto_start: true
     keep_running: true
     processor:
@@ -31,22 +31,7 @@ pipeline:
               tag: "metrics"
           worker_size: 1
           bulk_size_in_mb: 5
-  - name: consume-metrics_requests
-    auto_start: true
-    keep_running: true
-    processor:
-      - bulk_indexing:
-          bulk:
-            compress: true
-            batch_size_in_mb: 5
-            batch_size_in_docs: 5000
-          consumer:
-            fetch_max_messages: 100
-          queues:
-            type: indexing_merge
-            tag: "metrics"
-          when:
-            cluster_available: ["$[[CLUSTER_ID]]"]
+
   - name: metadata_ingest
     auto_start: true
     keep_running: true
@@ -91,7 +76,7 @@ pipeline:
           when:
             cluster_available: ["$[[CLUSTER_ID]]"]
 
-  - name: logging_indexing_merge
+  - name: merge_logging
     auto_start: true
     keep_running: true
     processor:
@@ -106,19 +91,22 @@ pipeline:
               tag: "request_logging"
           worker_size: 1
           bulk_size_in_kb: 1
-  - name: consume-logging_requests
+
+  - name: ingest_merged_requests
     auto_start: true
     keep_running: true
+    retry_delay_in_ms: 5000
+    max_running_in_ms: 30000
     processor:
       - bulk_indexing:
+          idle_timeout_in_seconds: 5
           bulk:
             compress: true
-            batch_size_in_mb: 1
-            batch_size_in_docs: 1
+            batch_size_in_mb: 10
+            batch_size_in_docs: 1000
           consumer:
             fetch_max_messages: 100
           queues:
             type: indexing_merge
-            tag: "request_logging"
           when:
             cluster_available: ["$[[CLUSTER_ID]]"]

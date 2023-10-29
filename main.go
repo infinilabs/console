@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	_ "expvar"
+	api3 "infini.sh/console/modules/agent/api"
 	"infini.sh/console/plugin/api/email"
+	model2 "infini.sh/framework/core/model"
 	_ "time/tzdata"
 
 	log "github.com/cihub/seelog"
@@ -12,7 +14,6 @@ import (
 	"infini.sh/console/model"
 	"infini.sh/console/model/alerting"
 	"infini.sh/console/model/insight"
-	"infini.sh/console/modules/agent"
 	_ "infini.sh/console/plugin"
 	setup1 "infini.sh/console/plugin/setup"
 	alerting2 "infini.sh/console/service/alerting"
@@ -35,6 +36,7 @@ import (
 	"infini.sh/framework/modules/task"
 	"infini.sh/framework/modules/ui"
 	_ "infini.sh/framework/plugins"
+	_ "infini.sh/framework/plugins/managed"
 	api2 "infini.sh/gateway/api"
 	_ "infini.sh/gateway/proxy"
 )
@@ -70,7 +72,6 @@ func main() {
 	modules = append(modules, module.ModuleItem{Value: &task.TaskModule{}, Priority: 1})
 	modules = append(modules, module.ModuleItem{Value: &metrics.MetricsModule{}, Priority: 1})
 	modules = append(modules, module.ModuleItem{Value: &security.Module{}, Priority: 1})
-	modules = append(modules, module.ModuleItem{Value: &agent.AgentModule{}, Priority: 100})
 
 	uiModule := &ui.UIModule{}
 
@@ -84,7 +85,7 @@ func main() {
 
 		if !global.Env().SetupRequired() {
 			for _, v := range modules {
-				module.RegisterModuleWithPriority(v.Value,v.Priority)
+				module.RegisterModuleWithPriority(v.Value, v.Priority)
 			}
 		} else {
 			for _, v := range modules {
@@ -93,6 +94,8 @@ func main() {
 		}
 
 		api.RegisterAPI("")
+
+		api3.Init()
 
 		appConfig = &config.AppConfig{
 			UI: config.UIConfig{
@@ -103,7 +106,7 @@ func main() {
 		}
 
 		ok, err := env.ParseConfig("web", appConfig)
-		if err != nil {
+		if err != nil && global.Env().SystemConfig.Configs.PanicOnConfigError {
 			panic(err)
 		}
 		if !ok {
@@ -122,11 +125,10 @@ func main() {
 
 			elastic2.InitTemplate(false)
 
-			//orm.RegisterSchemaWithIndexName(model.Dict{}, "dict")
+			//orm.RegisterSchema(model.Dict{}, "dict")
 			orm.RegisterSchemaWithIndexName(elastic.View{}, "view")
 			orm.RegisterSchemaWithIndexName(elastic.CommonCommand{}, "commands")
-			//orm.RegisterSchemaWithIndexName(elastic.TraceTemplate{}, "trace-template")
-			orm.RegisterSchemaWithIndexName(model.Instance{}, "instance")
+			//orm.RegisterSchema(elastic.TraceTemplate{}, "trace-template")
 			orm.RegisterSchemaWithIndexName(alerting.Rule{}, "alert-rule")
 			orm.RegisterSchemaWithIndexName(alerting.Alert{}, "alert-history")
 			orm.RegisterSchemaWithIndexName(alerting.AlertMessage{}, "alert-message")
@@ -138,6 +140,9 @@ func main() {
 			orm.RegisterSchemaWithIndexName(model.Layout{}, "layout")
 			orm.RegisterSchemaWithIndexName(model.Notification{}, "notification")
 			orm.RegisterSchemaWithIndexName(model.EmailServer{}, "email-server")
+			orm.RegisterSchemaWithIndexName(model2.Instance{}, "instance")
+			orm.RegisterSchemaWithIndexName(api3.RemoteConfig{}, "configs")
+
 			api.RegisterSchema()
 
 			if global.Env().SetupRequired() {

@@ -11,26 +11,15 @@ import (
 	"net/http"
 	"time"
 
-	"infini.sh/framework/core/agent"
-	"infini.sh/framework/core/orm"
+	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/modules/pipeline"
 )
-
-type Instance struct {
-	orm.ORMObjectBase
-
-	//InstanceID string `json:"instance_id,omitempty" elastic_mapping:"instance_id: { type: keyword }"`
-	Name        string                 `json:"name,omitempty" elastic_mapping:"name:{type:keyword,fields:{text: {type: text}}}"`
-	Endpoint    string                 `json:"endpoint,omitempty" elastic_mapping:"endpoint: { type: keyword }"`
-	Version     map[string]interface{} `json:"version,omitempty" elastic_mapping:"version: { type: object }"`
-	BasicAuth   agent.BasicAuth        `config:"basic_auth" json:"basic_auth,omitempty" elastic_mapping:"basic_auth:{type:object}"`
-	Owner       string                 `json:"owner,omitempty" config:"owner" elastic_mapping:"owner:{type:keyword}"`
-	Tags        []string               `json:"tags,omitempty"`
-	Description string                 `json:"description,omitempty" config:"description" elastic_mapping:"description:{type:keyword}"`
+type TaskWorker struct {
+	model.Instance
 }
 
-func (inst *Instance) CreatePipeline(body []byte) error {
+func (inst *TaskWorker) CreatePipeline(body []byte) error {
 	req := &util.Request{
 		Method: http.MethodPost,
 		Body:   body,
@@ -39,7 +28,7 @@ func (inst *Instance) CreatePipeline(body []byte) error {
 	return inst.doRequest(req, nil)
 }
 
-func (inst *Instance) StopPipeline(ctx context.Context, pipelineID string) error {
+func (inst *TaskWorker) StopPipeline(ctx context.Context, pipelineID string) error {
 	req := &util.Request{
 		Method:  http.MethodPost,
 		Url:     fmt.Sprintf("%s/pipeline/task/%s/_stop", inst.Endpoint, pipelineID),
@@ -48,13 +37,13 @@ func (inst *Instance) StopPipeline(ctx context.Context, pipelineID string) error
 	return inst.doRequest(req, nil)
 }
 
-func (inst *Instance) StopPipelineWithTimeout(pipelineID string, duration time.Duration) error {
+func (inst *TaskWorker) StopPipelineWithTimeout(pipelineID string, duration time.Duration) error {
 	ctx, cancel := context.WithTimeout(context.Background(), duration)
 	defer cancel()
 	return inst.StopPipeline(ctx, pipelineID)
 }
 
-func (inst *Instance) StartPipeline(pipelineID string) error {
+func (inst *TaskWorker) StartPipeline(pipelineID string) error {
 	req := &util.Request{
 		Method: http.MethodPost,
 		Url:    fmt.Sprintf("%s/pipeline/task/%s/_start", inst.Endpoint, pipelineID),
@@ -62,7 +51,7 @@ func (inst *Instance) StartPipeline(pipelineID string) error {
 	return inst.doRequest(req, nil)
 }
 
-func (inst *Instance) DeletePipeline(pipelineID string) error {
+func (inst *TaskWorker) DeletePipeline(pipelineID string) error {
 	req := &util.Request{
 		Method: http.MethodDelete,
 		Url:    fmt.Sprintf("%s/pipeline/task/%s", inst.Endpoint, pipelineID),
@@ -70,7 +59,7 @@ func (inst *Instance) DeletePipeline(pipelineID string) error {
 	return inst.doRequest(req, nil)
 }
 
-func (inst *Instance) GetPipeline(pipelineID string) (*pipeline.PipelineStatus, error) {
+func (inst *TaskWorker) GetPipeline(pipelineID string) (*pipeline.PipelineStatus, error) {
 	if pipelineID == "" {
 		return nil, errors.New("invalid pipelineID")
 	}
@@ -89,7 +78,7 @@ func (inst *Instance) GetPipeline(pipelineID string) (*pipeline.PipelineStatus, 
 	return &res, nil
 }
 
-func (inst *Instance) GetPipelinesByIDs(pipelineIDs []string) (pipeline.GetPipelinesResponse, error) {
+func (inst *TaskWorker) GetPipelinesByIDs(pipelineIDs []string) (pipeline.GetPipelinesResponse, error) {
 	body := util.MustToJSONBytes(util.MapStr{
 		"ids": pipelineIDs,
 	})
@@ -106,7 +95,7 @@ func (inst *Instance) GetPipelinesByIDs(pipelineIDs []string) (pipeline.GetPipel
 	return res, err
 }
 
-func (inst *Instance) DeleteQueueBySelector(selector util.MapStr) error {
+func (inst *TaskWorker) DeleteQueueBySelector(selector util.MapStr) error {
 	req := &util.Request{
 		Method: http.MethodDelete,
 		Url:    fmt.Sprintf("%s/queue/_search", inst.Endpoint),
@@ -117,7 +106,7 @@ func (inst *Instance) DeleteQueueBySelector(selector util.MapStr) error {
 	return inst.doRequest(req, nil)
 }
 
-func (inst *Instance) DeleteQueueConsumersBySelector(selector util.MapStr) error {
+func (inst *TaskWorker) DeleteQueueConsumersBySelector(selector util.MapStr) error {
 	req := &util.Request{
 		Method: http.MethodDelete,
 		Url:    fmt.Sprintf("%s/queue/consumer/_search", inst.Endpoint),
@@ -128,21 +117,22 @@ func (inst *Instance) DeleteQueueConsumersBySelector(selector util.MapStr) error
 	return inst.doRequest(req, nil)
 }
 
-func (inst *Instance) TryConnect(ctx context.Context) error {
+func (inst *TaskWorker) TryConnect(ctx context.Context) error {
 	req := &util.Request{
 		Method:  http.MethodGet,
-		Url:     fmt.Sprintf("%s/_framework/api/_info", inst.Endpoint),
+		Url:     fmt.Sprintf("%s/_info", inst.Endpoint),
 		Context: ctx,
 	}
 	return inst.doRequest(req, nil)
 }
-func (inst *Instance) TryConnectWithTimeout(duration time.Duration) error {
+
+func (inst *TaskWorker) TryConnectWithTimeout(duration time.Duration) error {
 	ctx, cancel := context.WithTimeout(context.Background(), duration)
 	defer cancel()
 	return inst.TryConnect(ctx)
 }
 
-func (inst *Instance) doRequest(req *util.Request, resBody interface{}) error {
+func (inst *TaskWorker) doRequest(req *util.Request, resBody interface{}) error {
 	req.SetBasicAuth(inst.BasicAuth.Username, inst.BasicAuth.Password)
 	result, err := util.ExecuteRequest(req)
 	if err != nil {

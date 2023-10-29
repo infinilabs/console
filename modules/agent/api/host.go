@@ -5,12 +5,11 @@
 package api
 
 import (
-	"context"
 	"fmt"
 	log "github.com/cihub/seelog"
-	"infini.sh/console/modules/agent/state"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/host"
+	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"net/http"
@@ -41,14 +40,13 @@ func (h *APIHandler) enrollHost(w http.ResponseWriter, req *http.Request, ps htt
 		)
 		switch hi.Source {
 		case "agent":
-			hostInfo, err = enrollHostFromAgent(hi.AgentID)
-			if err != nil {
-				errors[hi.IP] = util.MapStr{
-					"error": err.Error(),
-				}
-				log.Error(err)
+			obj := model.Instance{}
+			obj.ID = hi.AgentID
+			exists, err := orm.Get(&obj)
+			if !exists || err != nil {
 				continue
 			}
+			hostInfo = &host.HostInfo{}
 			hostInfo.IP = hi.IP
 			hostInfo.AgentID = hi.AgentID
 			err = orm.Create(nil, hostInfo)
@@ -135,24 +133,23 @@ func (h *APIHandler) GetHostAgentInfo(w http.ResponseWriter, req *http.Request, 
 		return
 	}
 
-	sm := state.GetStateManager()
-	ag, err := sm.GetAgent(hostInfo.AgentID)
-	if err != nil {
-		log.Error(err)
-		h.WriteJSON(w, util.MapStr{}, http.StatusOK)
+	obj := model.Instance{}
+	obj.ID = hostInfo.AgentID
+	exists, err := orm.Get(&obj)
+	if !exists || err != nil {
+		h.WriteJSON(w, util.MapStr{
+			"_id":   hostInfo.AgentID,
+			"found": false,
+		}, http.StatusNotFound)
 		return
 	}
-	aversion, err := ag.GetVersion()
-	if err == nil {
-		ag.Version = aversion
-		orm.Save(nil, ag)
-	}
+
 	h.WriteJSON(w, util.MapStr{
 		"host_id": hostID,
-		"agent_id": ag.ID,
-		"version": ag.Version,
+		"agent_id": obj.ID,
+		"version": obj.Application.Version,
 		"status": hostInfo.AgentStatus,
-		"endpoint": ag.GetEndpoint(),
+		"endpoint": obj.GetEndpoint(),
 	}, http.StatusOK)
 }
 
@@ -187,53 +184,38 @@ func (h *APIHandler) GetHostElasticProcess(w http.ResponseWriter, req *http.Requ
 		h.WriteJSON(w, util.MapStr{}, http.StatusOK)
 		return
 	}
-	sm := state.GetStateManager()
-	ag, err := sm.GetAgent(hostInfo.AgentID)
-	if err != nil {
-		log.Error(err)
-		h.WriteJSON(w, util.MapStr{}, http.StatusOK)
-		return
-	}
-	ctx,cancel := context.WithTimeout(context.Background(), time.Second * 10)
-	defer cancel()
-	esNodesInfo, err := sm.GetAgentClient().GetElasticsearchNodes(ctx, ag.GetEndpoint())
-	if err != nil {
-		log.Error(err)
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	var processes []util.MapStr
-	for _, node := range esNodesInfo {
-		processes = append(processes, util.MapStr{
-			"pid":          node.ProcessInfo.PID,
-			"pid_status":   node.ProcessInfo.Status,
-			"cluster_name": node.ClusterName,
-			"cluster_uuid": node.ClusterUuid,
-			"cluster_id":  node.ClusterID,
-			"node_id":      node.NodeUUID,
-			"node_name":    node.NodeName,
-			"uptime_in_ms": time.Now().UnixMilli() - node.ProcessInfo.CreateTime,
-		})
-	}
-	h.WriteJSON(w, util.MapStr{
-		"elastic_processes": processes,
-	}, http.StatusOK)
-}
 
-func enrollHostFromAgent(agentID string) (*host.HostInfo, error){
-	sm := state.GetStateManager()
-	ag, err := sm.GetAgent(agentID)
-	if err != nil {
-		return nil, err
+	obj := model.Instance{}
+	obj.ID = hostInfo.AgentID
+	exists, err = orm.Get(&obj)
+	if !exists || err != nil {
+		h.WriteJSON(w, util.MapStr{
+			"_id":   hostInfo.AgentID,
+			"found": false,
+		}, http.StatusNotFound)
+		return
 	}
-	if ag == nil {
-		return nil, fmt.Errorf("can not found agent [%s]", agentID)
-	}
-	agentClient := sm.GetAgentClient()
-	hostInfo, err :=  agentClient.GetHostInfo(nil, ag.GetEndpoint())
-	if err != nil {
-		return nil, err
-	}
-	hostInfo.AgentStatus = ag.Status
-	return hostInfo, nil
+
+	//esNodesInfo, err := GetElasticsearchNodesViaAgent(context.Background(), &obj)
+	//if err != nil {
+	//	log.Error(err)
+	//	h.WriteError(w, err.Error(), http.StatusInternalServerError)
+	//	return
+	//}
+	//var processes []util.MapStr
+	//for _, node := range esNodesInfo {
+	//	processes = append(processes, util.MapStr{
+	//		"pid":          node.ProcessInfo.PID,
+	//		"pid_status":   node.ProcessInfo.Status,
+	//		"cluster_name": node.ClusterName,
+	//		"cluster_uuid": node.ClusterUuid,
+	//		"cluster_id":  node.ClusterID,
+	//		"node_id":      node.NodeUUID,
+	//		"node_name":    node.NodeName,
+	//		"uptime_in_ms": time.Now().UnixMilli() - node.ProcessInfo.CreateTime,
+	//	})
+	//}
+	h.WriteJSON(w, util.MapStr{
+		//"elastic_processes": processes,
+	}, http.StatusOK)
 }

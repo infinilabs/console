@@ -3,13 +3,13 @@ package pipeline_task
 import (
 	"errors"
 	"fmt"
+	"infini.sh/console/model"
 	"strconv"
 	"strings"
 	"time"
 
 	log "github.com/cihub/seelog"
 
-	"infini.sh/console/model"
 	migration_model "infini.sh/console/plugin/task_manager/model"
 	migration_util "infini.sh/console/plugin/task_manager/util"
 
@@ -169,7 +169,7 @@ func (p *processor) handlePendingStopPipelineTask(taskItem *task.Task) error {
 	return nil
 }
 
-func (p *processor) cleanGatewayPipeline(taskItem *task.Task) (instance *model.Instance, err error) {
+func (p *processor) cleanGatewayPipeline(taskItem *task.Task) (instance *model.TaskWorker, err error) {
 	instance, err = p.getPipelineExecutionInstance(taskItem)
 	if err != nil {
 		log.Errorf("failed to get execution instance for task [%s], err: %v", taskItem.ID, err)
@@ -184,7 +184,7 @@ func (p *processor) cleanGatewayPipeline(taskItem *task.Task) (instance *model.I
 	return instance, nil
 }
 
-func (p *processor) getPipelineExecutionInstance(taskItem *task.Task) (*model.Instance, error) {
+func (p *processor) getPipelineExecutionInstance(taskItem *task.Task) (*model.TaskWorker, error) {
 	instanceID, _ := util.ExtractString(taskItem.Metadata.Labels["execution_instance_id"])
 	instance, err := p.scheduler.GetInstance(instanceID)
 	if err != nil {

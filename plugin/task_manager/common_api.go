@@ -3,6 +3,7 @@ package task_manager
 import (
 	"errors"
 	"fmt"
+	model2 "infini.sh/console/model"
 	migration_model "infini.sh/console/plugin/task_manager/model"
 	"infini.sh/framework/core/global"
 	"net/http"
@@ -12,7 +13,6 @@ import (
 
 	log "github.com/cihub/seelog"
 
-	"infini.sh/console/model"
 	migration_util "infini.sh/console/plugin/task_manager/util"
 
 	httprouter "infini.sh/framework/core/api/router"
@@ -679,7 +679,7 @@ func (h *APIHandler) getChildPipelineInfosFromGateway(pipelineTaskIDs map[string
 	var err error
 
 	for instID, taskIDs := range pipelineTaskIDs {
-		inst := &model.Instance{}
+		inst := &model2.TaskWorker{}
 		inst.ID = instID
 		_, err = orm.Get(inst)
 		if err != nil {

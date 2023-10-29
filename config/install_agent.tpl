@@ -3,7 +3,7 @@
 set -eo pipefail
 
 function print_usage() {
-  echo "Usage: curl -sSL http://get.infini.sh/agent.html | sudo bash -s -- [-u url_for_download_program] [-v version_for_program ] [-t taget_install_dir] [-p prot_for_program]"
+  echo "Usage: curl -sSL http://get.infini.cloud/ | sudo bash -s -- [-u url_for_download_program] [-v version_for_program ] [-t target_install_dir] [-p port_for_program]"
   echo "Options:"
   echo "  -u, --url <url>             Download url of the program to install which default is http://localhost"
   echo "  -v, --version <version>     Version of the program to install which default is latest from "
@@ -234,6 +234,32 @@ path.data: data
 path.logs: log
 path.configs: config
 
+resource_limit.cpu.max_num_of_cpus: 1
+resource_limit.memory.max_in_bytes: 533708800
+
+stats:
+  include_storage_stats_in_api: false
+
+elastic:
+  skip_init_metadata_on_start: true
+  health_check:
+    enabled: true
+    interval: 60s
+  availability_check:
+    enabled: false
+    interval: 60s
+
+disk_queue:
+  max_msg_size: 20485760
+  max_bytes_per_file: 20485760
+  max_used_bytes: 1024288000
+  retention.max_num_of_local_files: 1
+  compress:
+    idle_threshold: 0
+    num_of_files_decompress_ahead: 0
+    segment:
+      enabled: true
+
 api:
   enabled: true
   tls:
@@ -246,11 +272,28 @@ api:
     binding: \$[[env.API_BINDING]]
 
 badger:
+  value_threshold: 1024
+  mem_table_size: 1048576
   value_log_max_entries: 1000000
   value_log_file_size: 104857600
-  value_threshold: 1024
 
-agent:
+configs:
+  #for managed client's setting
+  managed: true # managed by remote servers
+  panic_on_config_error: false #ignore config error
+  interval: "10s"
+  servers: # config servers
+    - "http://localhost:9000"
+  soft_delete: false
+  max_backup_files: 5
+  tls: #for mTLS connection with config servers
+    enabled: true
+    cert_file: "config/client.crt"
+    key_file: "config/client.key"
+    ca_file: "config/ca.crt"
+    skip_insecure_verify: false
+
+node:
   major_ip_pattern: ".*"
 EOF
 }

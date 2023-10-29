@@ -52,7 +52,7 @@ func checkElasticsearchRequirements() error{
 	if targetEsConfig == nil {
 		return fmt.Errorf("cluster config %s was not found", esID)
 	}
-	var req = util.NewGetRequest(targetEsConfig.Endpoint, nil)
+	var req = util.NewGetRequest(targetEsConfig.GetAnyEndpoint(), nil)
 	if targetEsConfig.BasicAuth != nil {
 		req.SetBasicAuth(targetEsConfig.BasicAuth.Username, targetEsConfig.BasicAuth.Password)
 	}

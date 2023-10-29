@@ -52,12 +52,8 @@ func GetEnrolledNodesByAgent(instance *model.Instance) (map[string]BindingItem, 
 					if ok {
 						item := BindingItem{}
 						item.ClusterID = util.ToString(f["cluster_id"])
-						//item.ClusterName = util.ToString(f["cluster_name"])
+
 						item.ClusterUUID = util.ToString(f["cluster_uuid"])
-						//item.PublishAddress = util.ToString(f["publish_address"])
-						//item.NodeName = util.ToString(f["node_name"])
-						//item.PathHome = util.ToString(f["path_home"])
-						//item.PathLogs = util.ToString(f["path_logs"])
 						item.NodeUUID = nodeID
 
 						t, ok := v["updated"]
@@ -196,17 +192,12 @@ func GetElasticsearchNodesViaAgent(ctx context.Context, instance *model.Instance
 }
 
 type BindingItem struct {
+	//infini system assigned id
 	ClusterID   string `json:"cluster_id"`
+
 	ClusterUUID string `json:"cluster_uuid"`
 	NodeUUID    string `json:"node_uuid"`
 
-	//PublishAddress string `json:"publish_address"`
-	//NodeName       string `json:"node_name"`
-	//PathLogs       string `json:"path_logs"`
-	//PathHome       string `json:"path_home"`
-	//ClusterName    string `json:"cluster_name"`
-
-	//infini system assigned id
 	Updated int64 `json:"updated"`
 }
 
@@ -353,14 +344,6 @@ func getAgentByNodeID(clusterID, nodeID string) (*model.Instance, string, error)
 	for _, row := range result.Result {
 		v, ok := row.(map[string]interface{})
 		if ok {
-			//payload, ok := v["payload"]
-			//if ok {
-			//	payloadMap, ok := payload.(map[string]interface{})
-			//	if ok {
-			//		pathLogs = util.ToString(payloadMap["path_logs"])
-			//	}
-			//}
-
 
 			x, ok := v["metadata"]
 			if ok {
@@ -394,7 +377,17 @@ type ClusterInfo struct {
 }
 
 func (h *APIHandler) autoEnrollESNode(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	//TODO
+
+	//{"cluster_id":["infini_default_system_cluster"]}
+
+	//get instances
+	//get all unknown nodes
+	//check each process with cluster id
+
+	//send this to background task
+
+
+	h.WriteAckOKJSON(w)
 }
 
 func (h *APIHandler) discoveryESNodesInfo(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -477,10 +470,7 @@ func (h *APIHandler) discoveryESNodesInfo(w http.ResponseWriter, req *http.Reque
 												item := BindingItem{
 													ClusterID:   clusterID,
 													ClusterUUID: nodeInfo.ClusterInfo.ClusterUUID,
-													//ClusterName: nodeInfo.ClusterInfo.ClusterName,
-													//NodeName: nodeInfo.NodeInfo.Name,
 													NodeUUID: nodeInfo.NodeUUID,
-													//PathHome: nodeInfo.NodeInfo.,
 												}
 
 												settings := NewNodeAgentSettings(instance.ID, &item)
@@ -597,12 +587,6 @@ func NewNodeAgentSettings(instanceID string, item *BindingItem) *model.Setting {
 		"cluster_id":   item.ClusterID,
 		"cluster_uuid": item.ClusterUUID,
 		"node_uuid":    item.NodeUUID,
-
-		//"cluster_name":    item.ClusterName,
-		//"publish_address": item.PublishAddress,
-		//"node_name":       item.NodeName,
-		//"path_home":       item.PathHome,
-		//"path_logs":       item.PathLogs,
 	}
 
 	return &settings

@@ -681,7 +681,7 @@ func (h *APIHandler) getChildPipelineInfosFromGateway(pipelineTaskIDs map[string
 	for instID, taskIDs := range pipelineTaskIDs {
 		inst := &model2.TaskWorker{}
 		inst.ID = instID
-		_, err = orm.Get(inst)
+		_, err = orm.Get(&inst.Instance)
 		if err != nil {
 			log.Errorf("failed to get instance info, id: %s, err: %v", instID, err)
 			continue

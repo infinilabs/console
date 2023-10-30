@@ -66,7 +66,7 @@ func (p *scheduler) GetPreferenceInstance(config migration_model.ExecutionConfig
 			if p.CheckInstanceAvailable {
 				tempInst := model.TaskWorker{}
 				tempInst.ID = node.ID
-				_, err = orm.Get(&tempInst)
+				_, err = orm.Get(&tempInst.Instance)
 				if err != nil {
 					log.Errorf("failed to get instance, err: %v", err)
 					continue
@@ -102,7 +102,7 @@ func (p *scheduler) GetInstance(instanceID string) (*model.TaskWorker, error) {
 	instance := model.TaskWorker{}
 	instance.ID = instanceID
 
-	_, err := orm.Get(&instance)
+	_, err := orm.Get(&instance.Instance)
 	if err != nil {
 		log.Errorf("failed to get instance [%s] from orm, err: %v", instance.ID, err)
 		return nil, err

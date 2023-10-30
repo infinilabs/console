@@ -3,11 +3,13 @@
 set -eo pipefail
 
 function print_usage() {
-  echo "Usage: curl -sSL http://get.infini.cloud/ | sudo bash -s -- [-u url_for_download_program] [-v version_for_program ] [-t target_install_dir] [-p port_for_program]"
+  echo "Usage: curl -sSL http://console_endpoint/instance/_get_install_script?token | sudo bash -s -- [-u url_for_download_program] [-v version_for_program ] [-t target_install_dir] [-o overwite_flag] [-s url_console_lan_adress]"
   echo "Options:"
-  echo "  -u, --url <url>             Download url of the program to install which default is http://localhost"
-  echo "  -v, --version <version>     Version of the program to install which default is latest from "
-  echo "  -t, --target <dir>          Target directory of the program install which default is /opt/agent"
+  echo "  -u, --url <url>             Install Agent download URL, format is schema://domain:port/stable/agent-platform-version.ext, can be manually specified"
+  echo "  -v, --version <version>     Install Agent version, default is to get latest version online, can be manually specified"  
+  echo "  -t, --target <dir>          Install Agent target path, default is /opt/agent, can be manually specified"
+  echo "  -o, --overwrite <bool>      Whether to overwrite existing files during Agent install, default is true, can be manually specified" 
+  echo "  -s, --server <url>          Server address for Agent to communicate with INFINI Console after install, default is current Console address, can be manually specified"
   exit 1
 }
 
@@ -65,18 +67,6 @@ function __catch() {
   [[ $_old_try -ne 0 ]]
 }
 
-function confirm() {
-  display_str=$1
-  default_ans=$2
-  if [[ $default_ans == 'y/N' ]]; then
-     must_match='[yY]'
-  else
-     must_match='[nN]'
-  fi
-  read -p"${display_str} [${default_ans}]:" ans
-  [[ $ans == $must_match ]]
-}
-
 function get_latest_version() {
   echo $(curl -m3 -s "https://release.infinilabs.com/.latest" |sed 's/",/"/;s/"//g;s/://1' |grep -Ev '^[{}]' |grep "$program_name" |awk '{print $NF}')
 }
@@ -95,9 +85,14 @@ function check_dir() {
   fi
 
   if [[ "$(ls -A ${install_dir})" ]]; then
-    confirm "RISK WARN: Replace or upgrade exists agent version, Proceed?" 'y/N' && echo || exit 1;
-    uninstall_service
-    rm -rf ${install_dir}/*
+    if [ "$o" == "true" ]; then
+      echo "WARN: Auto replace or upgrade exists agent files."
+      uninstall_service
+      rm -rf ${install_dir}/*
+    else
+      echo "Error: Please manual clean exists agent files at ${install_dir}, reinstall again."
+      exit 1
+    fi
   fi
 }
 
@@ -224,6 +219,11 @@ function install_certs() {
 function install_config() {
   echo "[agent] waiting generate config"
   port={{port}}
+  console_endpoint="{{console_endpoint}}"
+  
+  location_ep=$(echo "$console_endpoint" | sed -nE 's/(.*):\/\/([^/:]*):?([0-9]*).*/\1:\/\/\2:\3/p')
+  server=${register_server:-$location_ep}
+  echo "[agent] agent listening port $port, will register to console endpoint [ $server ]"
   cat <<EOF > ${install_dir}/agent.yml
 configs.auto_reload: true
 
@@ -252,7 +252,7 @@ elastic:
 disk_queue:
   max_msg_size: 20485760
   max_bytes_per_file: 20485760
-  max_used_bytes: 1024288000
+  max_used_bytes: 524288000
   retention.max_num_of_local_files: 1
   compress:
     idle_threshold: 0
@@ -283,7 +283,7 @@ configs:
   panic_on_config_error: false #ignore config error
   interval: "10s"
   servers: # config servers
-    - "http://localhost:9000"
+    - "${server}"
   soft_delete: false
   max_backup_files: 5
   tls: #for mTLS connection with config servers
@@ -310,7 +310,6 @@ function uninstall_service() {
     $agent_svc -service stop &>/dev/null
     $agent_svc -service uninstall &>/dev/null
   fi
-  sleep 3
 }
 
 function install_service() {
@@ -319,19 +318,6 @@ function install_service() {
   echo "[agent] waiting service install & start"
   $agent_svc -service install &>/dev/null
   $agent_svc -service start &>/dev/null
-  sleep 3
-}
-
-function register_agent() {
-  console_endpoint="{{console_endpoint}}"
-  token={{token}}
-  echo '[agent] waiting registering to INFINI Console'
-  until curl -s -m30 -XPOST "${console_endpoint}/agent/instance?token=${token}";
-  do
-    echo -n '.'; sleep 3;
-  done;
-  echo
-  #__try curl -s --retry 1 --retry-delay 3 -m30 -XPOST -o ${install_dir}/setup.log "${console_endpoint}/agent/instance?token=${token}"
 }
 
 function main() {
@@ -340,6 +326,8 @@ function main() {
       -u|--url) url_download="$2"; shift 2 ;;
       -v|--version) version="$2"; shift 2 ;;
       -t|--target) target_dir="$2"; shift 2 ;;
+      -o|--overwrite) overwrite="$2"; shift 2 ;;
+      -s|--server) register_server="$2"; shift 2 ;;
       *) print_usage ;;
     esac
   done
@@ -349,6 +337,7 @@ function main() {
   install_dir=${target_dir:-/opt/$program_name}
   latest_version=$(get_latest_version)
   version=${version:-$latest_version}
+  o=${overwrite:-true}
   file_ext=""
 
   if [[ -z "${version}" ]]; then
@@ -357,14 +346,13 @@ function main() {
     echo "Name: [${program_name}], Version: [${version}], Path: [${install_dir}]"
   fi
 
-  check_dir
   check_platform
+  check_dir
   install_binary
   install_certs
   install_config
   uninstall_service
   install_service
-  register_agent
 
   echo ""
   echo ""

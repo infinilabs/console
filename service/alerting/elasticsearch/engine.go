@@ -947,7 +947,7 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 		max = checkResults.QueryResult.Max
 		if v, ok := min.(int64); ok {
 			//expand 60s
-			v = v + int64(time.Second * 60)
+			v = v - int64(time.Second * 60)
 			min = time.Unix(v/1000, v%1000 * 1e5).UTC().Format("2006-01-02T15:04:05.999Z")
 		}
 		if v, ok := max.(int64); ok {

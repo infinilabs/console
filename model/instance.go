@@ -133,7 +133,9 @@ func (inst *TaskWorker) TryConnectWithTimeout(duration time.Duration) error {
 }
 
 func (inst *TaskWorker) doRequest(req *util.Request, resBody interface{}) error {
-	req.SetBasicAuth(inst.BasicAuth.Username, inst.BasicAuth.Password)
+	if inst.BasicAuth != nil && inst.BasicAuth.Username != "" {
+		req.SetBasicAuth(inst.BasicAuth.Username, inst.BasicAuth.Password)
+	}
 	result, err := util.ExecuteRequest(req)
 	if err != nil {
 		return err

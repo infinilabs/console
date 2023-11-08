@@ -462,16 +462,26 @@
 
   "tasks": [
     {"name": "tasks.*", "methods":  ["*"],
-      "path": "/tasks/*"
+      "path": "/_tasks/*"
     },
     {"name": "tasks.list", "methods":  ["get"],
-      "path": "/tasks"
+      "path": "/_tasks"
     },
     {"name": "tasks.cancel", "methods":  ["post"],
-      "path": "/tasks/:task_id/_cancel"
+      "path": "/_tasks/:task_id/_cancel"
     },
     {"name": "tasks.get", "methods":  ["get"],
-      "path": "/tasks/:task_id"
+      "path": "/_tasks/:task_id"
     }
+  ],
+  "sql": [
+    {"name": "sql.*", "methods":  ["*"], "path": "/_sql/*"},
+    {"name": "sql.clear", "methods": ["post"], "path": "/_sql/close"},
+    {"name": "sql.get_async", "methods": ["get"], "path": "/_sql/async/:search_id"},
+    {"name": "sql.delete_async", "methods": ["delete"], "path": "/_sql/async/delete/:search_id"},
+    {"name": "sql.get_async_status", "methods": ["get"], "path": "/_sql/async/status/:search_id"},
+    {"name": "sql.search", "methods":  ["get", "post"], "path": "/_sql"},
+    {"name": "sql.search", "methods":  ["post"], "path": "/_plugins/_sql"},
+    {"name": "sql.translate", "methods":  ["get", "post"], "path": "/_sql/translate"}
   ]
 }

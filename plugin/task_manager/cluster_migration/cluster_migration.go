@@ -96,7 +96,9 @@ func (p *processor) splitMajorMigrationTask(taskItem *task.Task) error {
 	pids = append(pids, taskItem.ID)
 
 	var totalDocs int64
-	ctx := context.Background()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*60))
+	defer cancel()
 
 	for i, index := range clusterMigrationTask.Indices {
 		source := migration_model.IndexMigrationSourceConfig{

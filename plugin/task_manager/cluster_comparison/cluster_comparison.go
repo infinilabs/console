@@ -97,7 +97,9 @@ func (p *processor) splitMajorTask(taskItem *task.Task) error {
 
 	var sourceTotalDocs int64
 	var targetTotalDocs int64
-	ctx := context.Background()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Second*60))
+	defer cancel()
 
 	for i, index := range clusterComparisonTask.Indices {
 		sourceDump := migration_model.IndexComparisonDumpConfig{

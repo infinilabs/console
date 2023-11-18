@@ -13,13 +13,12 @@ POST .infini_configs/_doc/agent_relay_gateway_config_yml
     "name": "agent_relay_gateway_config.yml",
     "location": "agent_relay_gateway_config.yml",
     "content": """
-env:
-  CLUSTER_ENDPOINTS: ["http://10.0.0.3:7102"]
-  CLUSTER_USERNAME: admin
-  CLUSTER_PASSWORD: admin
 
 path.data: data
 path.logs: log
+
+allow_multi_instance: true
+configs.auto_reload: false
 
 entry:
   - name: my_es_entry
@@ -27,66 +26,64 @@ entry:
     router: my_router
     max_concurrency: 200000
     network:
-      binding: 0.0.0.0:8000
+      binding: 0.0.0.0:8888
+#    tls: #for mTLS connection with config servers
+#      enabled: true
+#      ca_file: /Users/medcl/Desktop/ca.crt
+#      cert_file: /Users/medcl/Desktop/server.crt
+#      key_file: /Users/medcl/Desktop/server.key
+#      skip_insecure_verify: false
 
 flow:
-  - name: async_bulk
+  - name: deny_flow
+    filter:
+      - set_response:
+          body: "request not allowed"
+          status: 500
+  - name: ingest_flow
     filter:
       - basic_auth:
           valid_users:
             ingest: password
+      - rewrite_to_bulk:
+          type_removed: false
+      - bulk_request_mutate:
+          fix_null_id: true
+          generate_enhanced_id: true
+#          fix_null_type: true
+#          default_type: m-type
+#          default_index: m-index
+          index_rename:
+            metrics: ".infini_metrics"
+            logs: ".infini_logs"
       - bulk_reshuffle:
           when:
             contains:
               _ctx.request.path: /_bulk
           elasticsearch: prod
-          level: cluster
-          partition_size: 3
+          level: node
+          partition_size: 1
           fix_null_id: true
-      - elasticsearch:
-          elasticsearch: prod  #elasticsearch configure reference name
-          max_connection_per_node: 1000 #max tcp connection to upstream, default for all nodes
-          max_response_size: -1 #default for all nodes
-          balancer: weight
-          refresh: # refresh upstream nodes list, need to enable this feature to use elasticsearch nodes auto discovery
-            enabled: true
-            interval: 60s
-          filter:
-            roles:
-              exclude:
-                - master
 
 router:
   - name: my_router
-    default_flow: async_bulk
-
+    default_flow: deny_flow
+    rules:
+      - method:
+          - "POST"
+        enabled: true
+        pattern:
+          - "/{any_index}/_doc/"
+        flow:
+          - ingest_flow
 elasticsearch:
   - name: prod
     enabled: true
-    endpoints: $[[env.CLUSTER_ENDPOINTS]]
-    discovery:
-      enabled: false
     basic_auth:
-      username: $[[env.CLUSTER_USERNAME]]
-      password: $[[env.CLUSTER_PASSWORD]]
-    traffic_control:
-      enabled: true
-      max_qps_per_node: 100
-      max_bytes_per_node: 10485760
-      max_connection_per_node: 5
-
-elastic:
-  enabled: true
-  remote_configs: false
-  elasticsearch: prod
-  metadata_refresh:
-    enabled: true
-    interval: 30s
-  discovery:
-    enabled: true
-    refresh:
-      enabled: true
-      interval: 30s
+      username: admin
+      password: admin
+    endpoints:
+     - https://10.0.0.3:9200
 
 pipeline:
   - name: bulk_request_ingest

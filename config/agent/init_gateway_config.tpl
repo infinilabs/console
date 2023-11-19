@@ -17,7 +17,6 @@ POST .infini_configs/_doc/agent_relay_gateway_config_yml
 path.data: data
 path.logs: log
 
-allow_multi_instance: true
 configs.auto_reload: false
 
 entry:

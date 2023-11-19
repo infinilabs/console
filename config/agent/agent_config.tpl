@@ -54,7 +54,7 @@ pipeline:
     keep_running: true
     processor:
       - consumer:
-          max_worker_size: 1
+          max_worker_size: 3
           queue_selector:
             keys:
               - metrics

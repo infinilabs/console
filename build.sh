@@ -1,4 +1,5 @@
  #!/bin/bash
+set -eo pipefail
 
 #init
 WORKBASE=/home/jenkins/go/src/infini.sh

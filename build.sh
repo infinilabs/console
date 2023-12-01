@@ -1,5 +1,5 @@
- #!/bin/bash
-set -eo pipefail
+#!/bin/bash
+#set -eo pipefail
 
 #init
 WORKBASE=/home/jenkins/go/src/infini.sh
@@ -36,6 +36,9 @@ cp -rf $WORKDIR/config/*.tpl $WORKDIR/bin/config
 cp -rf $WORKDIR/config/certs $WORKDIR/bin/config
 
 cd $WORKDIR/bin
+#编译出错后，根据文件是否存在判断是否进行下一步骤
+[ -f "$WORKDIR/bin/${PNAME}-linux-amd64" ] || exit
+
 for t in 386 amd64 arm64 armv5 armv6 armv7 loong64 mips mips64 mips64le mipsle riscv64 ; do
   tar zcf ${WORKSPACE}/$PNAME-$VERSION-$BUILD_NUMBER-linux-$t.tar.gz "${PNAME}-linux-$t" $PNAME.yml LICENSE NOTICE config
 done

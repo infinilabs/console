@@ -28,5 +28,5 @@ cd $WORKBASE/web
 
 #--quiet
 cnpm install --quiet --no-progress
-
+cnpm run clean 
 cnpm run build --quiet &>/dev/null

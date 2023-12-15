@@ -41,6 +41,7 @@ PUT _template/$[[SETUP_TEMPLATE_NAME]]
     "aliases": {}
 }
 
+DELETE _ilm/policy/ilm_$[[SETUP_INDEX_PREFIX]]metrics-30days-retention
 PUT _ilm/policy/ilm_$[[SETUP_INDEX_PREFIX]]metrics-30days-retention
 {
   "policy": {

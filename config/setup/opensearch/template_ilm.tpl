@@ -1,9 +1,9 @@
 PUT _template/$[[SETUP_TEMPLATE_NAME]]
 {
-    "order": 0,
     "index_patterns": [
       "$[[SETUP_INDEX_PREFIX]]*"
     ],
+    "order": 0,
     "settings": {
       "index": {
         "max_result_window": "10000000",
@@ -47,7 +47,7 @@ PUT _plugins/_ism/policies/ilm_$[[SETUP_INDEX_PREFIX]]metrics-30days-retention
     "description": "infini metrics hot delete workflow",
     "default_state": "hot",
     "ism_template": {
-      "index_patterns": ["$[[SETUP_INDEX_PREFIX]]metrics*"],
+      "index_patterns": ["$[[SETUP_INDEX_PREFIX]]metrics*", "$[[SETUP_INDEX_PREFIX]]logs*","$[[SETUP_INDEX_PREFIX]]requests_logging*","$[[SETUP_INDEX_PREFIX]]async_bulk_results*","$[[SETUP_INDEX_PREFIX]]alert-history*","$[[SETUP_INDEX_PREFIX]]activities*"],
       "priority": 100
     },
     "states": [
@@ -89,35 +89,17 @@ PUT _plugins/_ism/policies/ilm_$[[SETUP_INDEX_PREFIX]]metrics-30days-retention
 
 PUT _template/$[[SETUP_INDEX_PREFIX]]metrics-rollover
 {
-    "order" : 100000,
-    "index_patterns" : [
-      "$[[SETUP_INDEX_PREFIX]]metrics*"
-    ],
-    "settings" : {
-      "index" : {
-        "format" : "7",
-        "plugins.index_state_management.rollover_alias": "$[[SETUP_INDEX_PREFIX]]metrics",
+  "order": 100,
+  "index_patterns": ["$[[SETUP_INDEX_PREFIX]]metrics*"],
+   "settings": {
+    "index":{
         "codec" : "best_compression",
         "number_of_shards" : "1",
         "translog.durability":"async"
-      }
     },
-    "mappings" : {
-      "dynamic_templates" : [
-        {
-          "strings" : {
-            "mapping" : {
-              "ignore_above" : 256,
-              "type" : "keyword"
-            },
-            "match_mapping_type" : "string"
-          }
-        }
-      ]
-    },
-    "aliases" : { }
-  }
-
+    "plugins.index_state_management.rollover_alias": "$[[SETUP_INDEX_PREFIX]]metrics"
+   }
+}
 
 PUT $[[SETUP_INDEX_PREFIX]]metrics-00001
 {
@@ -148,92 +130,47 @@ PUT $[[SETUP_INDEX_PREFIX]]metrics-00001
       }
     }
 }
-DELETE _plugins/_ism/policies/ilm_$[[SETUP_INDEX_PREFIX]]logs-30days-retention
-PUT _plugins/_ism/policies/ilm_$[[SETUP_INDEX_PREFIX]]logs-30days-retention
+POST _plugins/_ism/add/$[[SETUP_INDEX_PREFIX]]metrics-00001
 {
-  "policy": {
-    "description": "infini logs hot delete workflow",
-    "default_state": "hot",
-    "ism_template": {
-      "index_patterns": ["$[[SETUP_INDEX_PREFIX]]logs*"],
-      "priority": 100
-    },
-    "states": [
-      {
-        "name": "hot",
-        "actions": [
-          {
-            "rollover": {
-              "min_index_age": "30d",
-              "min_size": "50gb"
-            }
-          },
-          {
-            "index_priority": {
-              "priority": 100
-            }
-          }
-        ],
-        "transitions": [
-          {
-            "state_name": "delete",
-            "conditions": {
-              "min_index_age": "30d"
-            }
-          }
-        ]
-      },
-      {
-        "name": "delete",
-        "actions": [
-          {
-            "delete": {}
-          }
-        ]
-      }
-    ]
-  }
+  "policy_id": "ilm_$[[SETUP_INDEX_PREFIX]]metrics-30days-retention"
 }
 
-PUT _template/$[[SETUP_INDEX_PREFIX]]logs-rollover
+PUT /_template/$[[SETUP_INDEX_PREFIX]]logs-rollover
 {
   "order": 100000,
   "index_patterns": [
     "$[[SETUP_INDEX_PREFIX]]logs*"
   ],
-  "settings": {
-    "index": {
-      "format": "7",
+    "settings": {
       "plugins.index_state_management.rollover_alias": "$[[SETUP_INDEX_PREFIX]]logs",
       "codec": "best_compression",
       "number_of_shards": "1",
       "translog": {
         "durability": "async"
       }
-    }
-  },
-  "mappings": {
-    "dynamic_templates": [
-      {
-        "strings": {
-          "mapping": {
-            "ignore_above": 256,
-            "type": "keyword"
-          },
-          "match_mapping_type": "string"
-        }
-      }
-    ],
-    "properties": {
-      "payload.message": {
-        "type": "text"
-      },
-      "timestamp": {
-        "type": "date"
-      }
-    }
-  },
-  "aliases": {}
+     },
+     "mappings": {
+         "dynamic_templates": [
+           {
+             "strings": {
+               "mapping": {
+                 "ignore_above": 256,
+                 "type": "keyword"
+               },
+               "match_mapping_type": "string"
+             }
+           }
+         ],
+         "properties": {
+           "payload.message": {
+             "type": "text"
+           },
+           "timestamp": {
+             "type": "date"
+           }
+         }
+       },
+       "aliases": {}
 }
 
 PUT $[[SETUP_INDEX_PREFIX]]logs-00001
@@ -247,53 +184,11 @@ PUT $[[SETUP_INDEX_PREFIX]]logs-00001
     }
   }
 }
-
-DELETE _plugins/_ism/policies/ilm_$[[SETUP_INDEX_PREFIX]]requests_logging-30days-retention
-PUT _plugins/_ism/policies/ilm_$[[SETUP_INDEX_PREFIX]]requests_logging-30days-retention
+POST _plugins/_ism/add/$[[SETUP_INDEX_PREFIX]]logs-00001
 {
-  "policy": {
-    "description": "infini requests logging hot delete workflow",
-    "default_state": "hot",
-    "ism_template": {
-      "index_patterns": ["$[[SETUP_INDEX_PREFIX]]requests_logging*"],
-      "priority": 100
-    },
-    "states": [
-      {
-        "name": "hot",
-        "actions": [
-          {
-            "rollover": {
-              "min_index_age": "30d",
-              "min_size": "50gb"
-            }
-          },
-          {
-            "index_priority": {
-              "priority": 100
-            }
-          }
-        ],
-        "transitions": [
-          {
-            "state_name": "delete",
-            "conditions": {
-              "min_index_age": "30d"
-            }
-          }
-        ]
-      },
-      {
-        "name": "delete",
-        "actions": [
-          {
-            "delete": {}
-          }
-        ]
-      }
-    ]
-  }
+  "policy_id": "ilm_$[[SETUP_INDEX_PREFIX]]metrics-30days-retention"
 }
+
 
 PUT _template/$[[SETUP_INDEX_PREFIX]]requests_logging-rollover
 {
@@ -301,17 +196,14 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]requests_logging-rollover
   "index_patterns": [
     "$[[SETUP_INDEX_PREFIX]]requests_logging*"
   ],
-  "settings": {
-    "index": {
-      "format": "7",
+    "settings": {
       "plugins.index_state_management.rollover_alias": "$[[SETUP_INDEX_PREFIX]]requests_logging",
       "codec": "best_compression",
       "number_of_shards": "1",
       "translog": {
         "durability": "async"
       }
-    }
-  },
+    },
   "mappings": {
     "dynamic_templates": [
       {
@@ -359,70 +251,25 @@ PUT $[[SETUP_INDEX_PREFIX]]requests_logging-00001
   }
 }
 
-DELETE _plugins/_ism/policies/ilm_$[[SETUP_INDEX_PREFIX]]async_bulk_results-30days-retention
-PUT _plugins/_ism/policies/ilm_$[[SETUP_INDEX_PREFIX]]async_bulk_results-30days-retention
+POST _plugins/_ism/add/$[[SETUP_INDEX_PREFIX]]requests_logging-00001
 {
-  "policy": {
-    "description": "infini async bulk results hot delete workflow",
-    "default_state": "hot",
-    "ism_template": {
-      "index_patterns": ["$[[SETUP_INDEX_PREFIX]]async_bulk_results*"],
-      "priority": 100
-    },
-    "states": [
-      {
-        "name": "hot",
-        "actions": [
-          {
-            "rollover": {
-              "min_index_age": "30d",
-              "min_size": "50gb"
-            }
-          },
-          {
-            "index_priority": {
-              "priority": 100
-            }
-          }
-        ],
-        "transitions": [
-          {
-            "state_name": "delete",
-            "conditions": {
-              "min_index_age": "30d"
-            }
-          }
-        ]
-      },
-      {
-        "name": "delete",
-        "actions": [
-          {
-            "delete": {}
-          }
-        ]
-      }
-    ]
-  }
+  "policy_id": "ilm_$[[SETUP_INDEX_PREFIX]]metrics-30days-retention"
 }
 
-PUT _template/$[[SETUP_INDEX_PREFIX]]async_bulk_results-rollover
+PUT /_template/$[[SETUP_INDEX_PREFIX]]async_bulk_results-rollover
 {
-  "order": 100000,
+   "order": 100000,
   "index_patterns": [
     "$[[SETUP_INDEX_PREFIX]]async_bulk_results*"
   ],
-  "settings": {
-    "index": {
-      "format": "7",
-      "plugins.index_state_management.rollover_alias": "$[[SETUP_INDEX_PREFIX]]async_bulk_results",
-      "codec": "best_compression",
-      "number_of_shards": "1",
-      "translog": {
-        "durability": "async"
-      }
-    }
-  },
+      "settings": {
+        "plugins.index_state_management.rollover_alias": "$[[SETUP_INDEX_PREFIX]]async_bulk_results",
+        "codec": "best_compression",
+        "number_of_shards": "1",
+        "translog": {
+          "durability": "async"
+        }
+      },
   "mappings": {
     "dynamic_templates": [
       {
@@ -469,69 +316,25 @@ PUT $[[SETUP_INDEX_PREFIX]]async_bulk_results-00001
     }
   }
 }
-
-DELETE _plugins/_ism/policies/ilm_$[[SETUP_INDEX_PREFIX]]alert-history-30days-retention
-PUT _plugins/_ism/policies/ilm_$[[SETUP_INDEX_PREFIX]]alert-history-30days-retention
+POST _plugins/_ism/add/$[[SETUP_INDEX_PREFIX]]async_bulk_results-00001
 {
-  "policy": {
-    "description": "infini alert history hot delete workflow",
-    "default_state": "hot",
-    "ism_template": {
-      "index_patterns": ["$[[SETUP_INDEX_PREFIX]]alert-history*"],
-      "priority": 100
-    },
-    "states": [
-      {
-        "name": "hot",
-        "actions": [
-          {
-            "rollover": {
-              "min_index_age": "30d",
-              "min_size": "50gb"
-            }
-          },
-          {
-            "index_priority": {
-              "priority": 100
-            }
-          }
-        ],
-        "transitions": [
-          {
-            "state_name": "delete",
-            "conditions": {
-              "min_index_age": "30d"
-            }
-          }
-        ]
-      },
-      {
-        "name": "delete",
-        "actions": [
-          {
-            "delete": {}
-          }
-        ]
-      }
-    ]
-  }
+  "policy_id": "ilm_$[[SETUP_INDEX_PREFIX]]metrics-30days-retention"
 }
 
-PUT _template/$[[SETUP_INDEX_PREFIX]]alert-history-rollover
+PUT /_template/$[[SETUP_INDEX_PREFIX]]alert-history-rollover
 {
-    "order" : 100000,
+    "order": 100000,
     "index_patterns" : [
       "$[[SETUP_INDEX_PREFIX]]alert-history*"
     ],
-    "settings" : {
-      "index" : {
-        "format" : "7",
+      "settings": {
         "plugins.index_state_management.rollover_alias": "$[[SETUP_INDEX_PREFIX]]alert-history",
-        "codec" : "best_compression",
-        "number_of_shards" : "1",
-        "translog.durability":"async"
-      }
-    },
+        "codec": "best_compression",
+        "number_of_shards": "1",
+        "translog": {
+          "durability": "async"
+        }
+      },
     "mappings" : {
       "dynamic_templates" : [
         {
@@ -546,7 +349,7 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]alert-history-rollover
       ]
     },
     "aliases" : { }
-  }
+ }
 
 
 PUT $[[SETUP_INDEX_PREFIX]]alert-history-00001
@@ -667,68 +470,24 @@ PUT $[[SETUP_INDEX_PREFIX]]alert-history-00001
       }
     }
 }
-
-DELETE _plugins/_ism/policies/ilm_$[[SETUP_INDEX_PREFIX]]activities-30days-retention
-PUT _plugins/_ism/policies/ilm_$[[SETUP_INDEX_PREFIX]]activities-30days-retention
+POST _plugins/_ism/add/$[[SETUP_INDEX_PREFIX]]alert-history-00001
 {
-  "policy": {
-    "description": "infini activities hot delete workflow",
-    "default_state": "hot",
-    "ism_template": {
-      "index_patterns": ["$[[SETUP_INDEX_PREFIX]]activities*"],
-      "priority": 100
-    },
-    "states": [
-      {
-        "name": "hot",
-        "actions": [
-          {
-            "rollover": {
-              "min_index_age": "30d",
-              "min_size": "50gb"
-            }
-          },
-          {
-            "index_priority": {
-              "priority": 100
-            }
-          }
-        ],
-        "transitions": [
-          {
-            "state_name": "delete",
-            "conditions": {
-              "min_index_age": "30d"
-            }
-          }
-        ]
-      },
-      {
-        "name": "delete",
-        "actions": [
-          {
-            "delete": {}
-          }
-        ]
-      }
-    ]
-  }
+  "policy_id": "ilm_$[[SETUP_INDEX_PREFIX]]metrics-30days-retention"
 }
 
-PUT _template/$[[SETUP_INDEX_PREFIX]]activities-rollover
+PUT /_template/$[[SETUP_INDEX_PREFIX]]activities-rollover
 {
-    "order" : 100000,
+    "order": 100000,
     "index_patterns" : [
       "$[[SETUP_INDEX_PREFIX]]activities*"
     ],
-    "settings" : {
-      "index" : {
-        "format" : "7",
+      "settings": {
         "plugins.index_state_management.rollover_alias": "$[[SETUP_INDEX_PREFIX]]activities",
-        "codec" : "best_compression",
-        "number_of_shards" : "1",
-        "translog.durability":"async"
-      }
+        "codec": "best_compression",
+        "number_of_shards": "1",
+        "translog": {
+          "durability": "async"
+        }
     },
     "mappings" : {
       "dynamic_templates" : [
@@ -744,7 +503,7 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]activities-rollover
       ]
     },
     "aliases" : { }
-  }
+}
 
 
 PUT $[[SETUP_INDEX_PREFIX]]activities-00001
@@ -824,4 +583,9 @@ PUT $[[SETUP_INDEX_PREFIX]]activities-00001
       "is_write_index": true
     }
   }
+}
+
+POST _plugins/_ism/add/$[[SETUP_INDEX_PREFIX]]activities-00001
+{
+  "policy_id": "ilm_$[[SETUP_INDEX_PREFIX]]metrics-30days-retention"
 }

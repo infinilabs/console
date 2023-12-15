@@ -33,6 +33,7 @@ cp -rf $WORKBASE/framework/LICENSE $WORKDIR/bin && cat $WORKBASE/framework/NOTIC
 mkdir -p $WORKDIR/bin/config
 cp $WORKDIR/config/*.json $WORKDIR/bin/config 
 cp -rf $WORKDIR/config/*.tpl $WORKDIR/bin/config
+[ -d $WORKDIR/config/setup ] && cp -rf $WORKDIR/config/setup $WORKDIR/bin/config
 
 cd $WORKDIR/bin
 #编译出错后，根据文件是否存在判断是否进行下一步骤

@@ -1,20 +1,16 @@
 package task
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
 	"infini.sh/framework/core/kv"
 	"infini.sh/framework/core/model"
-	"io"
-	"net/http"
-	uri2 "net/url"
-	"path"
-	"path/filepath"
-	"runtime"
-	"time"
-
+	keystore2 "infini.sh/framework/lib/keystore"
+	"infini.sh/framework/modules/security"
+	"strings"
 	log "github.com/cihub/seelog"
 	"github.com/valyala/fasttemplate"
 	"golang.org/x/crypto/bcrypt"
@@ -35,8 +31,14 @@ import (
 	"infini.sh/framework/modules/elastic/adapter"
 	elastic3 "infini.sh/framework/modules/elastic/api"
 	elastic1 "infini.sh/framework/modules/elastic/common"
-	"infini.sh/framework/modules/security"
+	_ "infini.sh/framework/modules/security"
 	"infini.sh/framework/plugins/replay"
+	"io"
+	"net/http"
+	uri2 "net/url"
+	"path"
+	"runtime"
+	"time"
 )
 
 type Module struct {
@@ -59,6 +61,8 @@ func (module *Module) Setup() {
 
 	api.HandleAPIMethod(api.POST, "/setup/_validate", module.validate)
 	api.HandleAPIMethod(api.POST, "/setup/_initialize", module.initialize)
+	api.HandleAPIMethod(api.POST, "/setup/_validate_secret", module.validateSecret)
+	api.HandleAPIMethod(api.POST, "/setup/_initialize_template", module.initializeTemplate)
 	elastic3.InitTestAPI()
 }
 
@@ -115,6 +119,7 @@ type SetupRequest struct {
 	BootstrapUsername string `json:"bootstrap_username"`
 	BootstrapPassword string `json:"bootstrap_password"`
 	CredentialSecret  string `json:"credential_secret"`
+	InitializeTemplate string `json:"initialize_template"`
 }
 
 var GlobalSystemElasticsearchID = "infini_default_system_cluster"
@@ -322,42 +327,23 @@ func (module *Module) initTempClient(r *http.Request) (error, elastic.API, Setup
 
 func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if !global.Env().SetupRequired() {
-		//handle setup timeout
-		rkey, err := keystore.GetValue(credential.SecretKey)
-		if err != nil {
-			module.WriteError(w, err.Error(), 500)
-			return
-		}
-		request := SetupRequest{}
-		err = module.DecodeJSON(r, &request)
-		if err != nil {
-			module.WriteError(w, err.Error(), 500)
-			return
-		}
-		h := md5.New()
-		rawSecret := []byte(request.CredentialSecret)
-		h.Write(rawSecret)
-		secret := make([]byte, 32)
-		hex.Encode(secret, h.Sum(nil))
-		if bytes.Compare(rkey, secret) == 0 {
-			module.WriteJSON(w, util.MapStr{
-				"success": true,
-			}, 200)
-		}else{
-			module.WriteError(w, "invalid credential secret", 500)
-		}
+		module.WriteError(w, "setup not permitted", 500)
 		return
 	}
-	success := false
-	var errType string
-	var fixTips string
-	var code int
-	code = 200
+	var (
+		success = false
+		errType string
+		fixTips string
+		code = 200
+		secretMismatch = false
+	)
 	defer func() {
 
 		global.Env().CheckSetup()
 
-		result := util.MapStr{}
+		result := util.MapStr{
+			"secret_mismatch": secretMismatch,
+		}
 		result["success"] = success
 
 		if r := recover(); r != nil {
@@ -390,8 +376,9 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	if err != nil {
 		panic(err)
 	}
+	request.CredentialSecret = strings.TrimSpace(request.CredentialSecret)
 	if request.CredentialSecret == "" {
-		panic("invalid credential secret")
+		panic("miss credential secret")
 	}
 	scheme := "http"
 	if r.TLS != nil {
@@ -424,106 +411,58 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 
 	//处理ORM
 	handler := elastic2.ElasticORM{Client: client, Config: cfg1}
+
 	orm.Register("elastic_setup_"+util.GetUUID(), &handler)
-	//生成凭据并保存
-	h := md5.New()
-	rawSecret := []byte(request.CredentialSecret)
-	h.Write(rawSecret)
-	secret := make([]byte, 32)
-	hex.Encode(secret, h.Sum(nil))
-	err = credential.InitSecret(nil, secret)
-	if err != nil {
+	//validate secret key
+	exists, err := validateCredentialSecret(&handler, request.CredentialSecret)
+	if err != nil && err != errSecretMismatch {
 		panic(err)
 	}
-
-	if !request.Skip {
-		//处理模版
-		elastic2.InitTemplate(true)
-
-		//处理生命周期
-		//TEMPLATE_NAME
-		//INDEX_PREFIX
-		ver := elastic.GetClient(GlobalSystemElasticsearchID).GetVersion()
-		dslTplFileName := "initialization.tpl"
-		if ver.Distribution == "" || ver.Distribution == elastic.Elasticsearch { //elasticsearch distribution
-			majorVersion := elastic.GetClient(GlobalSystemElasticsearchID).GetMajorVersion()
-			if majorVersion == 6 {
-				dslTplFileName = "initialization_v6.tpl"
-			} else if majorVersion <= 5 {
-				dslTplFileName = "initialization_v5.tpl"
-			}
-		}
-
-		dslTplFile := path.Join(global.Env().GetConfigDir(), dslTplFileName)
-		dslFile := path.Join(global.Env().GetConfigDir(), "initialization.dsl")
-
-		if !util.FileExists(dslTplFile) {
-			log.Error(filepath.Abs(dslTplFile))
-			panic("template file for setup was missing")
-		}
-
-		var dsl []byte
-		dsl, err = util.FileGetContent(dslTplFile)
+	if err == errSecretMismatch {
+		secretMismatch = true
+	}
+	//不存在或者密钥不匹配时保存凭据密钥
+	if err == errSecretMismatch || !exists{
+		h := md5.New()
+		rawSecret := []byte(request.CredentialSecret)
+		h.Write(rawSecret)
+		secret := make([]byte, 32)
+		hex.Encode(secret, h.Sum(nil))
+		err = credential.InitSecret(nil, secret)
 		if err != nil {
 			panic(err)
 		}
-
-		var dslWriteSuccess = false
-		if len(dsl) > 0 {
-			var tpl *fasttemplate.Template
-			tpl, err = fasttemplate.NewTemplate(string(dsl), "$[[", "]]")
-			if err != nil {
-				panic(err)
-			}
-			if tpl != nil {
-				output := tpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
-					switch tag {
-					case "TEMPLATE_NAME":
-						return w.Write([]byte(cfg1.TemplateName))
-					case "INDEX_PREFIX":
-						return w.Write([]byte(cfg1.IndexPrefix))
-					case "RESOURCE_ID":
-						return w.Write([]byte(cfg.ID))
-					case "RESOURCE_NAME":
-						return w.Write([]byte(cfg.Name))
-					case "USER_ID":
-						return w.Write([]byte("default_user_" + request.BootstrapUsername))
-					case "USERNAME":
-						return w.Write([]byte(request.BootstrapUsername))
-					}
-					panic(errors.Errorf("unknown tag: %v", tag))
-				})
-				_, err = util.FilePutContent(dslFile, output)
-				if err != nil {
-					panic(err)
+	}
+	//处理索引
+	security.InitSchema() //register user index
+	elastic2.InitSchema()
+	toSaveCfg := cfg
+	oldCfg := elastic.ElasticsearchConfig{}
+	oldCfg.ID = toSaveCfg.ID
+	_, _ = orm.Get(&oldCfg)
+	//当原系统集群存在时更新配置
+	if oldCfg.Name != "" {
+		toSaveCfg = oldCfg
+		toSaveCfg.Endpoint = cfg.Endpoint
+		toSaveCfg.Schema = cfg.Schema
+		toSaveCfg.Host = cfg.Host
+		toSaveCfg.Source = cfg.Source
+		toSaveCfg.Version = cfg.Version
+		toSaveCfg.Distribution = cfg.Distribution
+	}
+	if request.Cluster.Username != "" || request.Cluster.Password != "" {
+		var reuseOldCred = false
+		if oldCfg.CredentialID != "" && !secretMismatch {
+			basicAuth, _ := elastic1.GetBasicAuth(&oldCfg)
+			if basicAuth != nil {
+				if basicAuth.Username == request.Cluster.Username && basicAuth.Password == request.Cluster.Password {
+					reuseOldCred = true
 				}
-				dslWriteSuccess = true
 			}
 		}
-
-		if dslWriteSuccess {
-			lines := util.FileGetLines(dslFile)
-			var (
-				username string
-				password string
-			)
-			if cfg.BasicAuth != nil {
-				username = cfg.BasicAuth.Username
-				password = cfg.BasicAuth.Password
-			}
-			_, err, _ := replay.ReplayLines(pipeline.AcquireContext(pipeline.PipelineConfigV2{}), lines, cfg.Schema, cfg.Host, username, password)
-			if err != nil {
-				log.Error(err)
-			}
-		}
-
-		//处理索引
-		elastic2.InitSchema()
-		//init security
-		security.InitSchema()
-
-		toSaveCfg := cfg
-		if request.Cluster.Username != "" || request.Cluster.Password != "" {
+		if reuseOldCred {
+			toSaveCfg.CredentialID = oldCfg.CredentialID
+		}else{
 			cred := credential.Credential{
 				Name: "INFINI_SYSTEM",
 				Type: credential.BasicAuth,
@@ -542,44 +481,49 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 			}
 			toSaveCfg.CredentialID = cred.ID
 			cfg.CredentialID = cred.ID
+			now := time.Now()
+			cred.Created = &now
 			err = orm.Save(nil, &cred)
 			if err != nil {
 				panic(err)
 			}
 			toSaveCfg.BasicAuth = nil
 		}
+	}
 
-		//保存默认集群
-		err = orm.Create(nil, &toSaveCfg)
+	//保存默认集群
+	t:=time.Now()
+	toSaveCfg.Created=&t
+	err = orm.Save(nil, &toSaveCfg)
+	if err != nil {
+		panic(err)
+	}
+
+	if request.BootstrapUsername != "" && request.BootstrapPassword != "" {
+		//Save bootstrap user
+		user := rbac.User{}
+		user.ID = "default_user_" + request.BootstrapUsername
+		user.Username = request.BootstrapUsername
+		user.Nickname = request.BootstrapUsername
+		var hash []byte
+		hash, err = bcrypt.GenerateFromPassword([]byte(request.BootstrapPassword), bcrypt.DefaultCost)
 		if err != nil {
 			panic(err)
 		}
 
-		if request.BootstrapUsername != "" && request.BootstrapPassword != "" {
-			//Save bootstrap user
-			user := rbac.User{}
-			user.ID = "default_user_" + request.BootstrapUsername
-			user.Username = request.BootstrapUsername
-			user.Nickname = request.BootstrapUsername
-			var hash []byte
-			hash, err = bcrypt.GenerateFromPassword([]byte(request.BootstrapPassword), bcrypt.DefaultCost)
-			if err != nil {
-				panic(err)
-			}
-
-			user.Password = string(hash)
-			role := []rbac.UserRole{}
-			role = append(role, rbac.UserRole{
-				ID:   rbac.RoleAdminName,
-				Name: rbac.RoleAdminName,
-			})
-			user.Roles = role
-			err = orm.Create(nil, &user)
-			if err != nil {
-				panic(err)
-			}
+		user.Password = string(hash)
+		role := []rbac.UserRole{}
+		role = append(role, rbac.UserRole{
+			ID:   rbac.RoleAdminName,
+			Name: rbac.RoleAdminName,
+		})
+		user.Roles = role
+		now := time.Now()
+		user.Created = &now
+		err = orm.Save(nil, &user)
+		if err != nil {
+			panic(err)
 		}
-
 	}
 	err = keystore.SetValue("SYSTEM_CLUSTER_PASS", []byte(cfg.BasicAuth.Password))
 	if err != nil {
@@ -605,6 +549,227 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	if err != nil {
 		panic(err)
 	}
+	//update credential state
+	q := util.MapStr{
+		"query": util.MapStr{
+			"range": util.MapStr{
+				"created": util.MapStr{
+					"lte": "now-30s",
+				},
+			},
+		},
+		"script": util.MapStr{
+			"source": fmt.Sprintf("ctx._source['invalid'] = %v", secretMismatch),
+		},
+	}
+	err = orm.UpdateBy(credential.Credential{}, util.MustToJSONBytes(q))
+	if err != nil {
+		log.Error(err)
+	}
 
 	success = true
+}
+func (module *Module) validateSecret(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	err, client, request := module.initTempClient(r)
+	if err != nil {
+		module.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	handler := elastic2.ElasticORM{Client: client, Config: cfg1}
+
+	_, err = validateCredentialSecret(&handler, request.CredentialSecret)
+	if err != nil && err != errSecretMismatch {
+		module.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	module.WriteJSON(w, util.MapStr{
+		"success": err == nil,
+	}, http.StatusOK)
+
+}
+
+var errSecretMismatch = fmt.Errorf("invalid credential secret")
+func validateCredentialSecret(ormHandler orm.ORM, credentialSecret string) (bool, error) {
+	rkey, err := keystore.GetValue(credential.SecretKey)
+	var exists bool
+	if err != nil && err != keystore2.ErrKeyDoesntExists {
+		return exists, err
+	}
+	h := md5.New()
+	rawSecret := []byte(credentialSecret)
+	h.Write(rawSecret)
+	secret := make([]byte, 32)
+	hex.Encode(secret, h.Sum(nil))
+	if err == nil {
+		exists = true
+		if bytes.Compare(rkey, secret) != 0 {
+			return exists, errSecretMismatch
+		}
+	}else {
+		exists = false
+		tempCred := credential.Credential{}
+		var result orm.Result
+		err, result = ormHandler.Search(&tempCred, &orm.Query{
+			Size: 1,
+		})
+		if err != nil {
+			return exists, err
+		}
+		if len(result.Result) > 0 {
+			buf := util.MustToJSONBytes(result.Result[0])
+			util.MustFromJSONBytes(buf, &tempCred)
+			tempCred.SetSecret(secret)
+			_, err = tempCred.Decode()
+			if err != nil {
+				return exists, errSecretMismatch
+			}
+		}
+	}
+	return exists, nil
+}
+
+func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	if !global.Env().SetupRequired() {
+		module.WriteError(w, "setup not permitted", 500)
+		return
+	}
+	defer func() {
+		if v := recover(); v != nil {
+			module.WriteJSON(w, util.MapStr{
+				"success": false,
+				"log": fmt.Sprintf("%v", v),
+			}, http.StatusOK)
+		}
+	}()
+	request := SetupRequest{}
+	err := module.DecodeJSON(r, &request)
+	if err != nil {
+		panic(err)
+	}
+
+	ver := elastic.GetClient(GlobalSystemElasticsearchID).GetVersion()
+	if ver.Distribution == ""{
+		ver.Distribution=elastic.Elasticsearch
+	}
+	baseDir := path.Join(global.Env().GetConfigDir(),"setup")
+	var (
+		dslTplFileName = ""
+		useCommon = true
+	)
+	switch request.InitializeTemplate {
+	case "template_ilm":
+		useCommon = false
+		dslTplFileName = "template_ilm.tpl"
+		elastic2.InitTemplate(true)
+	case "alerting":
+		dslTplFileName = "alerting.tpl"
+	case "insight":
+		dslTplFileName = "insight.tpl"
+	case "view":
+		dslTplFileName = "view.tpl"
+	case "agent":
+		dslTplFileName = "agent.tpl"
+	default:
+		panic(fmt.Sprintf("unsupport template name [%s]", request.InitializeTemplate))
+	}
+	if useCommon {
+		baseDir = path.Join(baseDir, "common")
+	}else{
+		baseDir = path.Join(baseDir, ver.Distribution)
+	}
+
+	docType := "_doc"
+	switch ver.Distribution {
+	case elastic.Elasticsearch:
+		majorVersion := elastic.GetClient(GlobalSystemElasticsearchID).GetMajorVersion()
+		if !useCommon{
+			if majorVersion == 6 {
+				baseDir = path.Join(baseDir, "v6")
+			} else if majorVersion <= 5 {
+				baseDir = path.Join(baseDir, "v5")
+			}
+		}
+		if majorVersion < 7 {
+			docType = "doc"
+		}
+		break
+	case elastic.Easysearch:
+		break
+	case elastic.Opensearch:
+		break
+	}
+
+	dslTplFile := path.Join(baseDir ,dslTplFileName)
+	if !util.FileExists(dslTplFile) {
+		panic(errors.Errorf("template file %v for setup was missing",dslTplFile))
+	}
+
+	var dsl []byte
+	dsl, err = util.FileGetContent(dslTplFile)
+	if err != nil {
+		panic(err)
+	}
+	if len(dsl) == 0 {
+		panic(fmt.Sprintf("got empty template [%s]", dslTplFile))
+	}
+
+	var tpl *fasttemplate.Template
+	tpl, err = fasttemplate.NewTemplate(string(dsl), "$[[", "]]")
+	if err != nil {
+		module.WriteJSON(w, util.MapStr{
+			"success": false,
+			"log": fmt.Sprintf("new fasttemplate [%s] error: ", err.Error()),
+		}, http.StatusOK)
+		return
+	}
+	output := tpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
+		switch tag {
+		case "SETUP_TEMPLATE_NAME":
+			return w.Write([]byte(cfg1.TemplateName))
+		case "SETUP_INDEX_PREFIX":
+			return w.Write([]byte(cfg1.IndexPrefix))
+		case "SETUP_RESOURCE_ID":
+			return w.Write([]byte(cfg.ID))
+		case "SETUP_RESOURCE_NAME":
+			return w.Write([]byte(cfg.Name))
+		case "SETUP_USER_ID":
+			return w.Write([]byte("default_user_" + request.BootstrapUsername))
+		case "SETUP_USERNAME":
+			return w.Write([]byte(request.BootstrapUsername))
+		case "SETUP_DOC_TYPE":
+			return w.Write([]byte(docType))
+		}
+		//ignore unresolved variable
+		return w.Write([]byte("$[["+tag+"]]"))
+	})
+	br := bytes.NewReader([]byte(output))
+	scanner := bufio.NewScanner(br)
+	scanner.Buffer(make([]byte, 10*1024*1024), 10*1024*1024)
+	scanner.Split(bufio.ScanLines)
+	var lines []string
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	if request.Cluster.Endpoint != "" && request.Cluster.Host == "" {
+		uri, err := uri2.Parse(request.Cluster.Endpoint)
+		if err != nil {
+			panic(err)
+		}
+		request.Cluster.Host = uri.Host
+		request.Cluster.Schema = uri.Scheme
+	}
+	_, err, _ = replay.ReplayLines(pipeline.AcquireContext(pipeline.PipelineConfigV2{}), lines, request.Cluster.Schema, request.Cluster.Host, request.Cluster.Username, request.Cluster.Password)
+	if err != nil {
+		module.WriteJSON(w, util.MapStr{
+			"success": false,
+			"log": fmt.Sprintf("initalize template [%s] error: ", err.Error()),
+		}, http.StatusOK)
+		return
+	}
+	module.WriteJSON(w, util.MapStr{
+		"success": true,
+		"log": fmt.Sprintf("initalize template [%s] succeed", request.InitializeTemplate),
+	}, http.StatusOK)
+
 }

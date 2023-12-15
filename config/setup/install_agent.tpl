@@ -3,7 +3,7 @@
 set -eo pipefail
 
 function print_usage() {
-  echo "Usage: curl -sSL http://console_endpoint/instance/_get_install_script?token | sudo bash -s -- [-u url_for_download_program] [-v version_for_program ] [-t target_install_dir] [-o overwite_flag] [-s url_console_lan_adress]"
+  echo "Usage: curl -sSL http://$[[CLOUD_ENDPOINT]]/instance/_get_install_script?token | sudo bash -s -- [-u url_for_download_program] [-v version_for_program ] [-t target_install_dir] [-o overwite_flag] [-s url_console_lan_adress]"
   echo "Options:"
   echo "  -u, --url <url>             Install Agent download URL, format is schema://domain:port/stable/agent-platform-version.ext, can be manually specified"
   echo "  -v, --version <version>     Install Agent version, default is to get latest version online, can be manually specified"  
@@ -263,7 +263,7 @@ disk_queue:
 api:
   enabled: true
   tls:
-    enabled: true
+    enabled: false
     cert_file: "config/client.crt"
     key_file: "config/client.key"
     ca_file: "config/ca.crt"
@@ -287,7 +287,7 @@ configs:
   soft_delete: false
   max_backup_files: 5
   tls: #for mTLS connection with config servers
-    enabled: true
+    enabled: false
     cert_file: "config/client.crt"
     key_file: "config/client.key"
     ca_file: "config/ca.crt"

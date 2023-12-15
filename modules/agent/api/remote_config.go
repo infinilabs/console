@@ -90,7 +90,7 @@ func dynamicAgentConfigProvider(instance model.Instance) []*common.ConfigFile {
 	//get settings with this agent id
 
 	result := []*common.ConfigFile{}
-	ids, err := GetEnrolledNodesByAgent(&instance)
+	ids, err := GetEnrolledNodesByAgent(instance.ID)
 	if err != nil {
 		panic(err)
 	}

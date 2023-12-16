@@ -22,7 +22,7 @@ func GetAgentConfig() *model.AgentConfig {
 	}
 	_, err := env.ParseConfig("agent", agentCfg )
 	if err != nil {
-		log.Debug("agent config not found: %v", err)
+		log.Errorf("agent config not found: %v", err)
 	}
 	if agentCfg.Setup.CACertFile == "" && agentCfg.Setup.CAKeyFile == "" {
 		agentCfg.Setup.CACertFile, agentCfg.Setup.CAKeyFile, err = common.GetOrInitDefaultCaCerts()

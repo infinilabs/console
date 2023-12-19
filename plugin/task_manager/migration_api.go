@@ -443,3 +443,63 @@ func (h *APIHandler) getMigrationMajorTaskInfo(id string) (taskStats migration_m
 	}
 	return taskStats, indexState, nil
 }
+
+func (h *APIHandler) restartAllFailedPartitions(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	mustQ := []util.MapStr{
+		{
+			"term": util.MapStr{
+				"metadata.type": util.MapStr{
+					"value": "cluster_migration",
+				},
+			},
+		},
+		{
+			"term": util.MapStr{
+				"status": util.MapStr{
+					"value": "error",
+				},
+			},
+		},
+	}
+
+	queryDSL := util.MapStr{
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": mustQ,
+			},
+		},
+		"script": util.MapStr{
+			"source": fmt.Sprintf("ctx._source['status'] = '%s'", task.StatusRunning),
+		},
+	}
+
+	body := util.MustToJSONBytes(queryDSL)
+
+	err := orm.UpdateBy(&task.Task{}, body)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	//update status of sub task
+	mustQ[0] =  util.MapStr{
+		"term": util.MapStr{
+			"metadata.type": util.MapStr{
+				"value": "index_migration",
+			},
+		},
+	}
+	queryDSL["script"] = util.MapStr{
+		"source": fmt.Sprintf("ctx._source['status'] = '%s'", task.StatusReady),
+	}
+	body = util.MustToJSONBytes(queryDSL)
+	err = orm.UpdateBy(&task.Task{}, body)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	h.WriteAckOKJSON(w)
+}

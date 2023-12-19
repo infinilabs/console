@@ -209,6 +209,7 @@ func (p *processor) splitMajorMigrationTask(taskItem *task.Task) error {
 				FieldName: index.Partition.FieldName,
 				FieldType: index.Partition.FieldType,
 				Step:      index.Partition.Step,
+				UseEvenStrategy: index.Partition.UseEvenStrategy,
 			}
 			if source.QueryDSL != nil {
 				partitionQ.Filter = source.QueryDSL

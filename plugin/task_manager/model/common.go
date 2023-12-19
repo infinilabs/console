@@ -36,6 +36,8 @@ type IndexPartition struct {
 	FieldType string      `json:"field_type"`
 	FieldName string      `json:"field_name"`
 	Step      interface{} `json:"step"`
+	//only worked when field type equals number
+	UseEvenStrategy bool `json:"use_even_strategy"`
 }
 
 type IndexIncremental struct {

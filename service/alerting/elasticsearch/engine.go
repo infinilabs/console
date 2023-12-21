@@ -701,6 +701,8 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 				actionResults, _ := performChannels(recoverCfg.Normal, paramsCtx, false)
 				alertItem.RecoverActionResults = actionResults
 				//clear history notification time
+				rule.LastNotificationTime = time.Time{}
+				rule.LastEscalationTime = time.Time{}
 				_ = kv.DeleteKey(alerting2.KVLastNotificationTime, []byte(rule.ID))
 				_ = kv.DeleteKey(alerting2.KVLastEscalationTime, []byte(rule.ID))
 			}

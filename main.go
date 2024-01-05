@@ -37,8 +37,6 @@ import (
 	"infini.sh/framework/modules/ui"
 	_ "infini.sh/framework/plugins"
 	_ "infini.sh/framework/plugins/managed"
-	api2 "infini.sh/gateway/api"
-	_ "infini.sh/gateway/proxy"
 )
 
 var appConfig *config.AppConfig
@@ -61,7 +59,6 @@ func main() {
 	app.Init(nil)
 	defer app.Shutdown()
 
-	api := api2.GatewayAPI{}
 
 	modules := []module.ModuleItem{}
 	modules = append(modules, module.ModuleItem{Value: &stats.SimpleStatsModule{}, Priority: 1})
@@ -93,7 +90,6 @@ func main() {
 			}
 		}
 
-		api.RegisterAPI("")
 
 		api3.Init()
 
@@ -143,7 +139,6 @@ func main() {
 			orm.RegisterSchemaWithIndexName(model2.Instance{}, "instance")
 			orm.RegisterSchemaWithIndexName(api3.RemoteConfig{}, "configs")
 
-			api.RegisterSchema()
 
 			if global.Env().SetupRequired() {
 				for _, v := range modules {

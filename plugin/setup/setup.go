@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"infini.sh/framework/core/kv"
 	"infini.sh/framework/core/model"
+	"infini.sh/framework/lib/fasthttp"
 	keystore2 "infini.sh/framework/lib/keystore"
 	"infini.sh/framework/modules/security"
 	"strings"
@@ -759,7 +760,14 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 		request.Cluster.Host = uri.Host
 		request.Cluster.Schema = uri.Scheme
 	}
-	_, err, _ = replay.ReplayLines(pipeline.AcquireContext(pipeline.PipelineConfigV2{}), lines, request.Cluster.Schema, request.Cluster.Host, request.Cluster.Username, request.Cluster.Password)
+
+	req := fasthttp.AcquireRequest()
+	res := fasthttp.AcquireResponse()
+
+	defer fasthttp.ReleaseRequest(req)
+	defer fasthttp.ReleaseResponse(res)
+
+	_, err, _ = replay.ReplayLines(req,res,pipeline.AcquireContext(pipeline.PipelineConfigV2{}), lines, request.Cluster.Schema, request.Cluster.Host, request.Cluster.Username, request.Cluster.Password)
 	if err != nil {
 		module.WriteJSON(w, util.MapStr{
 			"success": false,

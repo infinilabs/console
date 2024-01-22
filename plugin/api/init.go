@@ -9,7 +9,6 @@ import (
 
 	"infini.sh/console/config"
 	"infini.sh/console/plugin/api/alerting"
-	"infini.sh/console/plugin/api/gateway"
 	"infini.sh/console/plugin/api/index_management"
 	"infini.sh/console/plugin/api/insight"
 	"infini.sh/console/plugin/api/layout"
@@ -72,7 +71,6 @@ func Init(cfg *config.AppConfig) {
 
 	alertAPI.Init()
 
-	gateway.InitAPI()
 	insight.InitAPI()
 	layout.InitAPI()
 	notification.InitAPI()

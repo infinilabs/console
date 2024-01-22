@@ -767,7 +767,7 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 	defer fasthttp.ReleaseRequest(req)
 	defer fasthttp.ReleaseResponse(res)
 
-	_, err, _ = replay.ReplayLines(req,res,pipeline.AcquireContext(pipeline.PipelineConfigV2{}), lines, request.Cluster.Schema, request.Cluster.Host, request.Cluster.Username, request.Cluster.Password)
+	_, err, _ = replay.ReplayLines(pipeline.AcquireContext(pipeline.PipelineConfigV2{}), lines, request.Cluster.Schema, request.Cluster.Host, request.Cluster.Username, request.Cluster.Password)
 	if err != nil {
 		module.WriteJSON(w, util.MapStr{
 			"success": false,

@@ -1,76 +1,84 @@
 PUT _template/$[[SETUP_TEMPLATE_NAME]]
 {
-    "order": 0,
-    "template": "$[[SETUP_INDEX_PREFIX]]*",
-    "settings": {
-      "index": {
-        "max_result_window": "10000000",
-        "mapping": {
-          "total_fields": {
-            "limit": "20000"
+  "order": 0,
+  "template": "$[[SETUP_INDEX_PREFIX]]*",
+  "settings": {
+    "index": {
+      "max_result_window": "10000000",
+      "mapping": {
+        "total_fields": {
+          "limit": "20000"
+        }
+      },
+      "analysis": {
+        "analyzer": {
+          "suggest_text_search": {
+            "filter": [
+              "word_delimiter"
+            ],
+            "tokenizer": "classic"
+          }
+        }
+      },
+      "number_of_shards": "1"
+    }
+  },
+  "mappings": {
+    "doc": {
+      "dynamic_templates": [
+        {
+          "strings": {
+            "mapping": {
+              "ignore_above": 256,
+              "type": "keyword"
+            },
+            "match_mapping_type": "string"
           }
         },
-        "analysis": {
-          "analyzer": {
-            "suggest_text_search": {
-              "filter": [
-                "word_delimiter"
-              ],
-              "tokenizer": "classic"
+        {
+          "disable_payload_instance_stats": {
+            "path_match": "payload.instance.stats.*",
+            "mapping": {
+              "type": "object",
+              "enabled": false
             }
           }
-        },
-        "number_of_shards": "1"
-      }
-    },
-    "mappings": {
-      "doc": {
-          "dynamic_templates": [
-            {
-              "strings": {
-                "mapping": {
-                  "ignore_above": 256,
-                  "type": "keyword"
-                },
-                "match_mapping_type": "string"
-              }
-            }
-          ]
-      }
-    },
-    "aliases": {}
+        }
+      ]
+    }
+  },
+  "aliases": {}
 }
 
 PUT _template/$[[SETUP_INDEX_PREFIX]]metrics-rollover
 {
-    "order" : 100000,
-    "template" : "$[[SETUP_INDEX_PREFIX]]metrics*",
-    "settings" : {
-      "index" : {
-        "format" : "7",
-        "codec" : "best_compression",
-        "number_of_shards" : "1",
-        "translog.durability":"async"
-      }
-    },
-    "mappings" : {
-      "doc": {
-          "dynamic_templates" : [
-            {
-              "strings" : {
-                "mapping" : {
-                  "ignore_above" : 256,
-                  "type" : "keyword"
-                },
-                "match_mapping_type" : "string"
-              }
+  "order" : 100000,
+  "template" : "$[[SETUP_INDEX_PREFIX]]metrics*",
+  "settings" : {
+    "index" : {
+      "format" : "7",
+      "codec" : "best_compression",
+      "number_of_shards" : "1",
+      "translog.durability":"async"
+    }
+  },
+  "mappings" : {
+    "doc": {
+        "dynamic_templates" : [
+          {
+            "strings" : {
+              "mapping" : {
+                "ignore_above" : 256,
+                "type" : "keyword"
+              },
+              "match_mapping_type" : "string"
             }
-          ]
-      }
-    },
-    "aliases" : { }
-  }
-
+          }
+        ]
+    }
+  },
+  "aliases" : { }
+}
 
 PUT $[[SETUP_INDEX_PREFIX]]metrics-00001
 {
@@ -82,26 +90,26 @@ PUT $[[SETUP_INDEX_PREFIX]]metrics-00001
       "is_write_index":true
     }
   },
-    "mappings": {
+  "mappings": {
     "doc":{
-          "dynamic_templates": [
-            {
-              "strings": {
-                "match_mapping_type": "string",
-                "mapping": {
-                  "ignore_above": 256,
-                  "type": "keyword"
-                }
+        "dynamic_templates": [
+          {
+            "strings": {
+              "match_mapping_type": "string",
+              "mapping": {
+                "ignore_above": 256,
+                "type": "keyword"
               }
             }
-          ],
-          "properties": {
-            "timestamp": {
-              "type": "date"
-            }
           }
-      }
+        ],
+        "properties": {
+          "timestamp": {
+            "type": "date"
+          }
+        }
     }
+  }
 }
 
 PUT _template/$[[SETUP_INDEX_PREFIX]]logs-rollover

@@ -1,44 +1,53 @@
 PUT _template/$[[SETUP_TEMPLATE_NAME]]
 {
-    "index_patterns": [
-      "$[[SETUP_INDEX_PREFIX]]*"
-    ],
-    "order": 0,
-    "settings": {
-      "index": {
-        "max_result_window": "10000000",
-        "mapping": {
-          "total_fields": {
-            "limit": "20000"
-          }
-        },
-        "analysis": {
-          "analyzer": {
-            "suggest_text_search": {
-              "filter": [
-                "word_delimiter"
-              ],
-              "tokenizer": "classic"
-            }
-          }
-        },
-        "number_of_shards": "1"
-      }
-    },
-    "mappings": {
-      "dynamic_templates": [
-        {
-          "strings": {
-            "mapping": {
-              "ignore_above": 256,
-              "type": "keyword"
-            },
-            "match_mapping_type": "string"
+  "index_patterns": [
+    "$[[SETUP_INDEX_PREFIX]]*"
+  ],
+  "order": 0,
+  "settings": {
+    "index": {
+      "max_result_window": "10000000",
+      "mapping": {
+        "total_fields": {
+          "limit": "20000"
+        }
+      },
+      "analysis": {
+        "analyzer": {
+          "suggest_text_search": {
+            "filter": [
+              "word_delimiter"
+            ],
+            "tokenizer": "classic"
           }
         }
-      ]
-    },
-    "aliases": {}
+      },
+      "number_of_shards": "1"
+    }
+  },
+  "mappings": {
+    "dynamic_templates": [
+      {
+        "strings": {
+          "mapping": {
+            "ignore_above": 256,
+            "type": "keyword"
+          },
+          "match_mapping_type": "string"
+        }
+      },
+      {
+        "disable_payload_instance_stats": {
+          "path_match": "payload.instance.stats.*",
+          "mapping": {
+            "type": "object",
+            "enabled": false
+          }
+        }
+      }
+    ]
+  },
+  "aliases": {}
 }
 DELETE _plugins/_ism/policies/ilm_$[[SETUP_INDEX_PREFIX]]metrics-30days-retention
 PUT _plugins/_ism/policies/ilm_$[[SETUP_INDEX_PREFIX]]metrics-30days-retention

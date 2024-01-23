@@ -35,6 +35,15 @@ PUT _template/$[[SETUP_TEMPLATE_NAME]]
             },
             "match_mapping_type": "string"
           }
+        },
+        {
+          "disable_payload_instance_stats": {
+            "path_match": "payload.instance.stats.*",
+            "mapping": {
+              "type": "object",
+              "enabled": false
+            }
+          }
         }
       ]
     },

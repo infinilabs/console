@@ -1,46 +1,55 @@
 PUT _template/$[[SETUP_TEMPLATE_NAME]]
 {
-    "order": 0,
-    "index_patterns": [
-      "$[[SETUP_INDEX_PREFIX]]*"
-    ],
-    "settings": {
-      "index": {
-        "max_result_window": "10000000",
-        "mapping": {
-          "total_fields": {
-            "limit": "20000"
+  "order": 0,
+  "index_patterns": [
+    "$[[SETUP_INDEX_PREFIX]]*"
+  ],
+  "settings": {
+    "index": {
+      "max_result_window": "10000000",
+      "mapping": {
+        "total_fields": {
+          "limit": "20000"
+        }
+      },
+      "analysis": {
+        "analyzer": {
+          "suggest_text_search": {
+            "filter": [
+              "word_delimiter"
+            ],
+            "tokenizer": "classic"
+          }
+        }
+      },
+      "number_of_shards": "1"
+    }
+  },
+  "mappings": {
+    "doc": {
+      "dynamic_templates": [
+        {
+          "strings": {
+            "mapping": {
+              "ignore_above": 256,
+              "type": "keyword"
+            },
+            "match_mapping_type": "string"
           }
         },
-        "analysis": {
-          "analyzer": {
-            "suggest_text_search": {
-              "filter": [
-                "word_delimiter"
-              ],
-              "tokenizer": "classic"
+        {
+          "disable_payload_instance_stats": {
+            "path_match": "payload.instance.stats.*",
+            "mapping": {
+              "type": "object",
+              "enabled": false
             }
           }
-        },
-        "number_of_shards": "1"
-      }
-    },
-    "mappings": {
-      "doc": {
-          "dynamic_templates": [
-            {
-              "strings": {
-                "mapping": {
-                  "ignore_above": 256,
-                  "type": "keyword"
-                },
-                "match_mapping_type": "string"
-              }
-            }
-          ]
-      }
-    },
-    "aliases": {}
+        }
+      ]
+    }
+  },
+  "aliases": {}
 }
 
 PUT _ilm/policy/ilm_$[[SETUP_INDEX_PREFIX]]metrics-30days-retention

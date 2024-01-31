@@ -9,8 +9,8 @@ import (
 )
 
 type ClusterMigrationTaskConfig struct {
-	Name string `json:"name"`
-	Tags []string `json:"tags"`
+	Name    string   `json:"name"`
+	Tags    []string `json:"tags"`
 	Cluster struct {
 		Source ClusterInfo `json:"source"`
 		Target ClusterInfo `json:"target"`
@@ -42,7 +42,7 @@ type ClusterMigrationIndexConfig struct {
 	Percent         float64 `json:"percent,omitempty"`
 	ErrorPartitions int     `json:"error_partitions,omitempty"`
 	RunningChildren int     `json:"running_children,omitempty"`
-	ExportedPercent         float64 `json:"exported_percent,omitempty"`
+	ExportedPercent float64 `json:"exported_percent,omitempty"`
 }
 
 type ClusterMigrationTaskState struct {
@@ -92,6 +92,7 @@ type IndexMigrationBulkConfig struct {
 	IdleTimeoutInSeconds int  `json:"idle_timeout_in_seconds"`
 	SliceSize            int  `json:"slice_size"`
 	Compress             bool `json:"compress"`
+	SkipExistDocuments   bool `json:"skip_exist_documents"`
 }
 
 type IndexMigrationTargetConfig struct {

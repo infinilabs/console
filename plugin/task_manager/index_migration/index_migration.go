@@ -129,11 +129,12 @@ func (p *processor) handleSplitSubTask(taskItem *task.Task) error {
 			Processor: []util.MapStr{
 				{
 					"es_scroll": util.MapStr{
-						"remove_type":   docType == "",
-						"slice_size":    cfg.Source.SliceSize,
-						"batch_size":    cfg.Source.BatchSize,
-						"indices":       indexName,
-						"elasticsearch": sourceClusterID,
+						"remove_type":          docType == "",
+						"slice_size":           cfg.Source.SliceSize,
+						"batch_size":           cfg.Source.BatchSize,
+						"indices":              indexName,
+						"elasticsearch":        sourceClusterID,
+						"skip_exist_documents": cfg.Target.Bulk.SkipExistDocuments,
 						"queue": util.MapStr{
 							"name": scrollID,
 							"labels": util.MapStr{
@@ -186,10 +187,11 @@ func (p *processor) handleSplitSubTask(taskItem *task.Task) error {
 					"bulk_indexing": util.MapStr{
 						"detect_active_queue": false,
 						"bulk": util.MapStr{
-							"batch_size_in_mb":   cfg.Target.Bulk.BatchSizeInMB,
-							"batch_size_in_docs": cfg.Target.Bulk.BatchSizeInDocs,
-							"invalid_queue":      "bulk_indexing_400",
-							"compress":           cfg.Target.Bulk.Compress,
+							"batch_size_in_mb":     cfg.Target.Bulk.BatchSizeInMB,
+							"batch_size_in_docs":   cfg.Target.Bulk.BatchSizeInDocs,
+							"invalid_queue":        "bulk_indexing_400",
+							"compress":             cfg.Target.Bulk.Compress,
+							"skip_exist_documents": cfg.Target.Bulk.SkipExistDocuments,
 						},
 						"max_worker_size":         cfg.Target.Bulk.MaxWorkerSize,
 						"num_of_slices":           cfg.Target.Bulk.SliceSize,

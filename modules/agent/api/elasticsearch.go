@@ -186,7 +186,7 @@ func GetElasticsearchNodesViaAgent(ctx context.Context, endpoint string) (*elast
 	}
 
 	obj := elastic.DiscoveryResult{}
-	_, err := server.ProxyAgentRequest(endpoint, req, &obj)
+	_, err := server.ProxyAgentRequest("elasticsearch",endpoint, req, &obj)
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +218,7 @@ func GetElasticLogFiles(ctx context.Context, instance *model.Instance, logsPath 
 	}
 
 	resBody := map[string]interface{}{}
-	_, err := server.ProxyAgentRequest(instance.GetEndpoint(), req, &resBody)
+	_, err := server.ProxyAgentRequest("elasticsearch",instance.GetEndpoint(), req, &resBody)
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +237,7 @@ func GetElasticLogFileContent(ctx context.Context, instance *model.Instance, bod
 		Body:    util.MustToJSONBytes(body),
 	}
 	resBody := map[string]interface{}{}
-	_, err := server.ProxyAgentRequest(instance.GetEndpoint(), req, &resBody)
+	_, err := server.ProxyAgentRequest("elasticsearch",instance.GetEndpoint(), req, &resBody)
 	if err != nil {
 		return nil, err
 	}
@@ -651,7 +651,7 @@ func (h *APIHandler) getESNodeInfoViaProxyWithConfig(cfg *elastic.ElasticsearchC
 	}
 
 	obj := elastic.LocalNodeInfo{}
-	res, err := server.ProxyAgentRequest(endpoint, req, &obj)
+	res, err := server.ProxyAgentRequest("elasticsearch",endpoint, req, &obj)
 	if err != nil {
 		if global.Env().IsDebug {
 			log.Error(err)

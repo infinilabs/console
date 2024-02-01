@@ -17,7 +17,6 @@ func GetAgentConfig() *model.AgentConfig {
 		Enabled: true,
 		Setup: &model.SetupConfig{
 			DownloadURL: "https://release.infinilabs.com/agent/stable",
-			Version: "0.7.0-364",
 		},
 	}
 	_, err := env.ParseConfig("agent", agentCfg )

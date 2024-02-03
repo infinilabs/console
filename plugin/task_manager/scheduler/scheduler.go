@@ -89,7 +89,7 @@ func (p *scheduler) GetPreferenceInstance(config migration_model.ExecutionConfig
 	if err != nil {
 		return nil, err
 	}
-	if p.getInstanceState(minID).Total > p.MaxTasksPerInstance {
+	if p.getInstanceState(minID).Total >= p.MaxTasksPerInstance {
 		return nil, migration_model.ErrHitMax
 	}
 	return instance, nil

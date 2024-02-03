@@ -92,7 +92,7 @@ type IndexMigrationBulkConfig struct {
 	IdleTimeoutInSeconds int  `json:"idle_timeout_in_seconds"`
 	SliceSize            int  `json:"slice_size"`
 	Compress             bool `json:"compress"`
-	SkipExistDocuments   bool `json:"skip_exist_documents"`
+	CreateOperation      bool `json:"bulk_create_operation"`
 }
 
 type IndexMigrationTargetConfig struct {

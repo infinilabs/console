@@ -86,13 +86,13 @@ type IndexMigrationSourceConfig struct {
 }
 
 type IndexMigrationBulkConfig struct {
-	BatchSizeInDocs      int  `json:"batch_size_in_docs"`
-	BatchSizeInMB        int  `json:"batch_size_in_mb"`
-	MaxWorkerSize        int  `json:"max_worker_size"`
-	IdleTimeoutInSeconds int  `json:"idle_timeout_in_seconds"`
-	SliceSize            int  `json:"slice_size"`
-	Compress             bool `json:"compress"`
-	CreateOperation      bool `json:"bulk_create_operation"`
+	BatchSizeInDocs      int    `json:"batch_size_in_docs"`
+	BatchSizeInMB        int    `json:"batch_size_in_mb"`
+	MaxWorkerSize        int    `json:"max_worker_size"`
+	IdleTimeoutInSeconds int    `json:"idle_timeout_in_seconds"`
+	SliceSize            int    `json:"slice_size"`
+	Compress             bool   `json:"compress"`
+	Operation            string `json:"operation"`
 }
 
 type IndexMigrationTargetConfig struct {

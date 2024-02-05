@@ -23,12 +23,13 @@ type IndexDiffConfig struct {
 
 // tunable `bulk_indexing` configurations
 type BulkIndexingConfig struct {
-	Docs                 int  `json:"docs"`
-	StoreSizeInMB        int  `json:"store_size_in_mb"`
-	MaxWorkerSize        int  `json:"max_worker_size"`
-	IdleTimeoutInSeconds int  `json:"idle_timeout_in_seconds"`
-	SliceSize            int  `json:"slice_size"`
-	Compress             bool `json:"compress"`
+	Docs                 int    `json:"docs"`
+	StoreSizeInMB        int    `json:"store_size_in_mb"`
+	MaxWorkerSize        int    `json:"max_worker_size"`
+	IdleTimeoutInSeconds int    `json:"idle_timeout_in_seconds"`
+	SliceSize            int    `json:"slice_size"`
+	Compress             bool   `json:"compress"`
+	Operation            string `json:"operation"`
 }
 
 type PipelineTaskLoggingConfig struct {

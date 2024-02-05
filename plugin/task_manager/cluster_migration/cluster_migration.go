@@ -200,15 +200,16 @@ func (p *processor) splitMajorMigrationTask(taskItem *task.Task) error {
 				IdleTimeoutInSeconds: clusterMigrationTask.Settings.Bulk.IdleTimeoutInSeconds,
 				SliceSize:            clusterMigrationTask.Settings.Bulk.SliceSize,
 				Compress:             clusterMigrationTask.Settings.Bulk.Compress,
+				Operation:            clusterMigrationTask.Settings.Bulk.Operation,
 			},
 		}
 
 		if index.Partition != nil {
 			partitionQ := &elastic.PartitionQuery{
-				IndexName: index.Source.Name,
-				FieldName: index.Partition.FieldName,
-				FieldType: index.Partition.FieldType,
-				Step:      index.Partition.Step,
+				IndexName:       index.Source.Name,
+				FieldName:       index.Partition.FieldName,
+				FieldType:       index.Partition.FieldType,
+				Step:            index.Partition.Step,
 				UseEvenStrategy: index.Partition.UseEvenStrategy,
 			}
 			if source.QueryDSL != nil {

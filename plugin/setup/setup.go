@@ -6,12 +6,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	"infini.sh/framework/core/kv"
-	"infini.sh/framework/core/model"
-	"infini.sh/framework/lib/fasthttp"
-	keystore2 "infini.sh/framework/lib/keystore"
-	"infini.sh/framework/modules/security"
-	"strings"
 	log "github.com/cihub/seelog"
 	"github.com/valyala/fasttemplate"
 	"golang.org/x/crypto/bcrypt"
@@ -24,21 +18,28 @@ import (
 	"infini.sh/framework/core/errors"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/keystore"
+	"infini.sh/framework/core/kv"
+	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/module"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/pipeline"
 	"infini.sh/framework/core/util"
+	"infini.sh/framework/lib/fasthttp"
+	keystore2 "infini.sh/framework/lib/keystore"
 	elastic2 "infini.sh/framework/modules/elastic"
 	"infini.sh/framework/modules/elastic/adapter"
 	elastic3 "infini.sh/framework/modules/elastic/api"
 	elastic1 "infini.sh/framework/modules/elastic/common"
+	"infini.sh/framework/modules/security"
 	_ "infini.sh/framework/modules/security"
 	"infini.sh/framework/plugins/replay"
 	"io"
+	"io/ioutil"
 	"net/http"
 	uri2 "net/url"
 	"path"
 	"runtime"
+	"strings"
 	"time"
 )
 
@@ -116,10 +117,10 @@ type SetupRequest struct {
 		Password string `json:"password"`
 	} `json:"cluster"`
 
-	Skip              bool   `json:"skip"`
-	BootstrapUsername string `json:"bootstrap_username"`
-	BootstrapPassword string `json:"bootstrap_password"`
-	CredentialSecret  string `json:"credential_secret"`
+	Skip               bool   `json:"skip"`
+	BootstrapUsername  string `json:"bootstrap_username"`
+	BootstrapPassword  string `json:"bootstrap_password"`
+	CredentialSecret   string `json:"credential_secret"`
 	InitializeTemplate string `json:"initialize_template"`
 }
 
@@ -210,7 +211,7 @@ func (module *Module) validate(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 	cfg1 = elastic1.ORMConfig{}
 	exist, err := env.ParseConfig("elastic.orm", &cfg1)
-	if exist && err != nil  &&global.Env().SystemConfig.Configs.PanicOnConfigError{
+	if exist && err != nil && global.Env().SystemConfig.Configs.PanicOnConfigError {
 		panic(err)
 	}
 
@@ -332,10 +333,10 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		return
 	}
 	var (
-		success = false
-		errType string
-		fixTips string
-		code = 200
+		success        = false
+		errType        string
+		fixTips        string
+		code           = 200
 		secretMismatch = false
 	)
 	defer func() {
@@ -423,7 +424,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		secretMismatch = true
 	}
 	//不存在或者密钥不匹配时保存凭据密钥
-	if err == errSecretMismatch || !exists{
+	if err == errSecretMismatch || !exists {
 		h := md5.New()
 		rawSecret := []byte(request.CredentialSecret)
 		h.Write(rawSecret)
@@ -463,7 +464,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		}
 		if reuseOldCred {
 			toSaveCfg.CredentialID = oldCfg.CredentialID
-		}else{
+		} else {
 			cred := credential.Credential{
 				Name: "INFINI_SYSTEM",
 				Type: credential.BasicAuth,
@@ -493,8 +494,8 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	}
 
 	//保存默认集群
-	t:=time.Now()
-	toSaveCfg.Created=&t
+	t := time.Now()
+	toSaveCfg.Created = &t
 	err = orm.Save(nil, &toSaveCfg)
 	if err != nil {
 		panic(err)
@@ -591,6 +592,7 @@ func (module *Module) validateSecret(w http.ResponseWriter, r *http.Request, ps 
 }
 
 var errSecretMismatch = fmt.Errorf("invalid credential secret")
+
 func validateCredentialSecret(ormHandler orm.ORM, credentialSecret string) (bool, error) {
 	rkey, err := keystore.GetValue(credential.SecretKey)
 	var exists bool
@@ -607,7 +609,7 @@ func validateCredentialSecret(ormHandler orm.ORM, credentialSecret string) (bool
 		if bytes.Compare(rkey, secret) != 0 {
 			return exists, errSecretMismatch
 		}
-	}else {
+	} else {
 		exists = false
 		tempCred := credential.Credential{}
 		var result orm.Result
@@ -630,6 +632,20 @@ func validateCredentialSecret(ormHandler orm.ORM, credentialSecret string) (bool
 	return exists, nil
 }
 
+func getYamlData(filename string) []byte {
+	baseDir := path.Join(global.Env().GetConfigDir(), "setup")
+	filePath := path.Join(baseDir, "common", "data", filename)
+	content, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		log.Errorf("Error reading YAML file:", err)
+		return nil
+	}
+	// 转义换行符
+	escapedContent := bytes.ReplaceAll(content, []byte("\n"), []byte("\\n"))
+	// 转义双引号
+	escapedContent = bytes.ReplaceAll(escapedContent, []byte("\""), []byte("\\\""))
+	return escapedContent
+}
 func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if !global.Env().SetupRequired() {
 		module.WriteError(w, "setup not permitted", 500)
@@ -639,7 +655,7 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 		if v := recover(); v != nil {
 			module.WriteJSON(w, util.MapStr{
 				"success": false,
-				"log": fmt.Sprintf("%v", v),
+				"log":     fmt.Sprintf("%v", v),
 			}, http.StatusOK)
 		}
 	}()
@@ -650,13 +666,13 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 	}
 
 	ver := elastic.GetClient(GlobalSystemElasticsearchID).GetVersion()
-	if ver.Distribution == ""{
-		ver.Distribution=elastic.Elasticsearch
+	if ver.Distribution == "" {
+		ver.Distribution = elastic.Elasticsearch
 	}
-	baseDir := path.Join(global.Env().GetConfigDir(),"setup")
+	baseDir := path.Join(global.Env().GetConfigDir(), "setup")
 	var (
 		dslTplFileName = ""
-		useCommon = true
+		useCommon      = true
 	)
 	switch request.InitializeTemplate {
 	case "template_ilm":
@@ -676,7 +692,7 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 	}
 	if useCommon {
 		baseDir = path.Join(baseDir, "common")
-	}else{
+	} else {
 		baseDir = path.Join(baseDir, ver.Distribution)
 	}
 
@@ -684,7 +700,7 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 	switch ver.Distribution {
 	case elastic.Elasticsearch:
 		majorVersion := elastic.GetClient(GlobalSystemElasticsearchID).GetMajorVersion()
-		if !useCommon{
+		if !useCommon {
 			if majorVersion == 6 {
 				baseDir = path.Join(baseDir, "v6")
 			} else if majorVersion <= 5 {
@@ -701,9 +717,9 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 		break
 	}
 
-	dslTplFile := path.Join(baseDir ,dslTplFileName)
+	dslTplFile := path.Join(baseDir, dslTplFileName)
 	if !util.FileExists(dslTplFile) {
-		panic(errors.Errorf("template file %v for setup was missing",dslTplFile))
+		panic(errors.Errorf("template file %v for setup was missing", dslTplFile))
 	}
 
 	var dsl []byte
@@ -720,12 +736,28 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		module.WriteJSON(w, util.MapStr{
 			"success": false,
-			"log": fmt.Sprintf("new fasttemplate [%s] error: ", err.Error()),
+			"log":     fmt.Sprintf("new fasttemplate [%s] error: ", err.Error()),
 		}, http.StatusOK)
 		return
 	}
 	output := tpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
 		switch tag {
+		case "SETUP_SYSTEM_INGEST_CONFIG":
+			return w.Write(getYamlData("system_ingest_config.dat"))
+		case "SETUP_TASK_CONFIG_TPL":
+			return w.Write(getYamlData("task_config_tpl.dat"))
+		case "SETUP_AGENT_RELAY_GATEWAY_CONFIG":
+			return w.Write(getYamlData("agent_relay_gateway_config.dat"))
+		}
+		//ignore unresolved variable
+		return w.Write([]byte("$[[" + tag + "]]"))
+	})
+
+	tpl, err = fasttemplate.NewTemplate(output, "$[[", "]]")
+	output = tpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
+		switch tag {
+		case "SETUP_ENDPOINT":
+			return w.Write([]byte(request.Cluster.Endpoint))
 		case "SETUP_TEMPLATE_NAME":
 			return w.Write([]byte(cfg1.TemplateName))
 		case "SETUP_INDEX_PREFIX":
@@ -742,7 +774,7 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 			return w.Write([]byte(docType))
 		}
 		//ignore unresolved variable
-		return w.Write([]byte("$[["+tag+"]]"))
+		return w.Write([]byte("$[[" + tag + "]]"))
 	})
 	br := bytes.NewReader([]byte(output))
 	scanner := bufio.NewScanner(br)
@@ -771,13 +803,13 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		module.WriteJSON(w, util.MapStr{
 			"success": false,
-			"log": fmt.Sprintf("initalize template [%s] error: ", err.Error()),
+			"log":     fmt.Sprintf("initalize template [%s] error: ", err.Error()),
 		}, http.StatusOK)
 		return
 	}
 	module.WriteJSON(w, util.MapStr{
 		"success": true,
-		"log": fmt.Sprintf("initalize template [%s] succeed", request.InitializeTemplate),
+		"log":     fmt.Sprintf("initalize template [%s] succeed", request.InitializeTemplate),
 	}, http.StatusOK)
 
 }

@@ -1,0 +1,92 @@
+path.data: data
+path.logs: log
+
+allow_multi_instance: true
+configs.auto_reload: false
+
+entry:
+  - name: my_es_entry
+    enabled: true
+    router: my_router
+    max_concurrency: 200000
+    network:
+      binding: 0.0.0.0:8081
+#    tls: #for mTLS connection with config servers
+#      enabled: true
+#      ca_file: /xxx/ca.crt
+#      cert_file: /xxx/server.crt
+#      key_file: /xxx/server.key
+#      skip_insecure_verify: false
+
+flow:
+  - name: deny_flow
+    filter:
+      - set_response:
+          body: "request not allowed"
+          status: 500
+  - name: ingest_flow
+    filter:
+      - basic_auth:
+          valid_users:
+            ingest: n
+      - rewrite_to_bulk:
+          type_removed: false
+      - bulk_request_mutate:
+          fix_null_id: true
+          generate_enhanced_id: true
+#          fix_null_type: true
+#          default_type: m-type
+#          default_index: m-index
+          index_rename:
+            metrics: "$[[SETUP_INDEX_PREFIX]]metrics"
+            logs: "$[[SETUP_INDEX_PREFIX]]logs"
+      - bulk_reshuffle:
+          when:
+            contains:
+              _ctx.request.path: /_bulk
+          elasticsearch: prod
+          level: node
+          partition_size: 1
+          fix_null_id: true
+
+router:
+  - name: my_router
+    default_flow: deny_flow
+    rules:
+      - method:
+          - "POST"
+        enabled: true
+        pattern:
+          - "/{any_index}/_doc/"
+        flow:
+          - ingest_flow
+
+elasticsearch:
+  - name: prod
+    enabled: true
+    basic_auth:
+      username: ingest
+      password: password
+    endpoints:
+     - $[[SETUP_ENDPOINT]]
+
+pipeline:
+  - name: bulk_request_ingest
+    auto_start: true
+    keep_running: true
+    retry_delay_in_ms: 1000
+    processor:
+      - bulk_indexing:
+          max_connection_per_node: 100
+          num_of_slices: 3
+          max_worker_size: 30
+          idle_timeout_in_seconds: 10
+          bulk:
+            compress: false
+            batch_size_in_mb: 10
+            batch_size_in_docs: 10000
+          consumer:
+            fetch_max_messages: 100
+          queue_selector:
+            labels:
+              type: bulk_reshuffle

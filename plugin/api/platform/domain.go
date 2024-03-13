@@ -5,6 +5,7 @@
 package platform
 
 import (
+	"infini.sh/console/model/alerting"
 	"infini.sh/framework/core/api/rbac/enum"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/event"
@@ -82,6 +83,15 @@ func GetCollectionMetas() map[string]CollectionMeta{
 					},
 				},
 				MatchObject: &event.Activity{},
+			},
+			"alerting_rule": {
+				Name: "alerting_rule",
+				RequirePermission: map[string][]string{
+					"read": {
+						enum.PermissionAlertRuleRead,
+					},
+				},
+				MatchObject: &alerting.Rule{},
 			},
 		}
 	})

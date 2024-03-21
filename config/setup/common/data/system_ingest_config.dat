@@ -52,15 +52,15 @@ pipeline:
                     Content-Type: application/json
                 body: $[[message]]
                 basic_auth:
-                  username: ingest
-                  password: password
+                  username: $[[SETUP_ES_USERNAME]]
+                  password: $[[SETUP_ES_PASSWORD]]
 #                tls: #for mTLS connection with config servers
 #                  enabled: true
 #                  ca_file: /xxx/ca.crt
 #                  cert_file: /xxx/client.crt
 #                  key_file: /xxx/client.key
 #                  skip_insecure_verify: false
-                schema: "http"
+                schema: "$[[SETUP_SCHEME]]"
                 hosts: # receiver endpoint, fallback in order
                   - "$[[SETUP_ENDPOINT]]"
                 valid_status_code: [200,201] #panic on other status code

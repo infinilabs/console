@@ -6,6 +6,15 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
+	uri2 "net/url"
+	"path"
+	"runtime"
+	"strings"
+	"time"
+
 	log "github.com/cihub/seelog"
 	"github.com/valyala/fasttemplate"
 	"golang.org/x/crypto/bcrypt"
@@ -33,14 +42,6 @@ import (
 	"infini.sh/framework/modules/security"
 	_ "infini.sh/framework/modules/security"
 	"infini.sh/framework/plugins/replay"
-	"io"
-	"io/ioutil"
-	"net/http"
-	uri2 "net/url"
-	"path"
-	"runtime"
-	"strings"
-	"time"
 )
 
 type Module struct {
@@ -756,8 +757,14 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 	tpl, err = fasttemplate.NewTemplate(output, "$[[", "]]")
 	output = tpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
 		switch tag {
+		case "SETUP_ES_USERNAME":
+			return w.Write([]byte(request.Cluster.Username))
+		case "SETUP_ES_PASSWORD":
+			return w.Write([]byte(request.Cluster.Password))
+		case "SETUP_SCHEME":
+			return w.Write([]byte(strings.Split(request.Cluster.Endpoint, "://")[0]))
 		case "SETUP_ENDPOINT":
-			return w.Write([]byte(request.Cluster.Endpoint))
+			return w.Write([]byte(strings.Split(request.Cluster.Endpoint, "://")[1]))
 		case "SETUP_TEMPLATE_NAME":
 			return w.Write([]byte(cfg1.TemplateName))
 		case "SETUP_INDEX_PREFIX":

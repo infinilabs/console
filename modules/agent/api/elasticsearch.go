@@ -399,6 +399,7 @@ func (h *APIHandler) autoEnrollESNode(w http.ResponseWriter, req *http.Request, 
 	}
 
 	if autoEnrollRunning.Load() {
+		panic(errors.New("auto_enroll is already running in background"))
 		return
 	}
 

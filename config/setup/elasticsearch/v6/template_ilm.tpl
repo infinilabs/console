@@ -16,6 +16,7 @@ PUT _template/$[[SETUP_TEMPLATE_NAME]]
         "analyzer": {
           "suggest_text_search": {
             "filter": [
+             "lowercase",
               "word_delimiter"
             ],
             "tokenizer": "classic"
@@ -615,6 +616,7 @@ PUT $[[SETUP_INDEX_PREFIX]]activities-00001
         "analyzer": {
           "suggest_text_search": {
             "filter": [
+             "lowercase",
               "word_delimiter"
             ],
             "tokenizer": "classic"

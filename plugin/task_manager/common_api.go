@@ -206,7 +206,10 @@ func (h *APIHandler) startTask(w http.ResponseWriter, req *http.Request, ps http
 		}
 	}
 
-	err = orm.Update(nil, &obj)
+	ctx := &orm.Context{
+		Refresh: "wait_for",
+	}
+	err = orm.Update(ctx, &obj)
 	if err != nil {
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -264,22 +267,22 @@ func (h *APIHandler) deleteTask(w http.ResponseWriter, req *http.Request, ps htt
 		h.WriteError(w, fmt.Sprintf("can not delete task [%s] with status [%s]", obj.ID, obj.Status), http.StatusInternalServerError)
 		return
 	}
-
+	ctx := &orm.Context{
+		Refresh: "wait_for",
+	}
+	err = orm.Delete(ctx, &obj)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	q := util.MapStr{
 		"query": util.MapStr{
 			"bool": util.MapStr{
-				"minimum_should_match": 1,
-				"should": []util.MapStr{
+				"must": []util.MapStr{
 					{
 						"term": util.MapStr{
 							"parent_id": util.MapStr{
-								"value": id,
-							},
-						},
-					},
-					{
-						"term": util.MapStr{
-							"id": util.MapStr{
 								"value": id,
 							},
 						},
@@ -290,9 +293,7 @@ func (h *APIHandler) deleteTask(w http.ResponseWriter, req *http.Request, ps htt
 	}
 	err = orm.DeleteBy(&obj, util.MustToJSONBytes(q))
 	if err != nil {
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
-		return
 	}
 
 	h.WriteJSON(w, util.MapStr{
@@ -337,7 +338,10 @@ func (h *APIHandler) resumeTask(w http.ResponseWriter, req *http.Request, ps htt
 	}
 
 	lastRepeatingChild.Metadata.Labels["repeat_triggered"] = false
-	err = orm.Update(nil, lastRepeatingChild)
+	ctx := &orm.Context{
+		Refresh: "wait_for",
+	}
+	err = orm.Update(ctx, lastRepeatingChild)
 	if err != nil {
 		log.Errorf("failed to update last child, err: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)

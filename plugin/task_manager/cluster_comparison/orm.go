@@ -56,7 +56,10 @@ func CreateTask(config *migration_model.ClusterComparisonTaskConfig, creator *rb
 		return nil, fmt.Errorf("repeat invalid: %v", err)
 	}
 
-	err = orm.Create(nil, t)
+	ctx := &orm.Context{
+		Refresh: "wait_for",
+	}
+	err = orm.Create(ctx, t)
 	if err != nil {
 		return nil, err
 	}

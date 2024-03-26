@@ -8,15 +8,20 @@ import (
 	"bytes"
 	"github.com/Knetic/govaluate"
 	log "github.com/cihub/seelog"
-	"text/template"
+	"infini.sh/console/model/alerting"
 	"infini.sh/console/model/insight"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/event"
+	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/orm"
+	"infini.sh/framework/core/radix"
 	"infini.sh/framework/core/util"
 	"math"
 	"net/http"
 	"strings"
+	"sync"
+	"text/template"
 )
 
 func (h *InsightAPI) HandleGetPreview(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -181,8 +186,11 @@ func (h *InsightAPI) HandleGetMetricData(w http.ResponseWriter, req *http.Reques
 	}
 	clusterID := ps.MustGetParameter("id")
 	if !h.IsIndexAllowed(req, clusterID, reqBody.IndexPattern){
-		h.WriteError(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
-		return
+		allowedSystemIndices := getAllowedSystemIndices()
+		if clusterID != global.MustLookupString(elastic.GlobalSystemElasticsearchID) || !radix.Compile(allowedSystemIndices...).Match(reqBody.IndexPattern){
+			h.WriteError(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+			return
+		}
 	}
 	reqBody.ClusterId = clusterID
 	metricData, err := getMetricData(&reqBody)
@@ -193,6 +201,21 @@ func (h *InsightAPI) HandleGetMetricData(w http.ResponseWriter, req *http.Reques
 	}
 
 	h.WriteJSON(w, metricData, http.StatusOK)
+}
+
+var (
+	allowedSystemIndicesOnce sync.Once
+	allowedSystemIndices []string
+)
+func getAllowedSystemIndices() []string {
+	allowedSystemIndicesOnce.Do(func() {
+		metricIndexName := orm.GetWildcardIndexName(event.Event{})
+		activityIndexName := orm.GetIndexName(event.Activity{})
+		clusterIndexName := orm.GetIndexName(elastic.ElasticsearchConfig{})
+		alertMessageIndexName := orm.GetIndexName(alerting.AlertMessage{})
+		allowedSystemIndices = []string{metricIndexName, activityIndexName, clusterIndexName, alertMessageIndexName}
+	})
+	return allowedSystemIndices
 }
 
 func getMetricData(metric *insight.Metric) (interface{}, error) {

@@ -58,48 +58,23 @@ func (h *PlatformAPI) searchCollection(w http.ResponseWriter, req *http.Request,
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if collName == "cluster" {
-		clusterFilter, hasAllPrivilege := h.GetClusterFilter(req, "id")
-		if !hasAllPrivilege && clusterFilter == nil {
+	if meta.GetSearchRequestBodyFilter != nil {
+		filter, hasAllPrivilege := meta.GetSearchRequestBodyFilter(h, req)
+		if !hasAllPrivilege && filter == nil {
 			h.WriteJSON(w, elastic.SearchResponse{
 			}, http.StatusOK)
 			return
 		}
-		mapObj := util.MapStr{}
-		err = util.FromJSONBytes(queryDsl, &mapObj)
-		if err != nil {
-			log.Error(err)
-			h.WriteError(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
 		if !hasAllPrivilege {
-			must := []util.MapStr{
-				clusterFilter,
+			queryDsl, err = h.rewriteQueryWithFilter(queryDsl, filter)
+			if err != nil {
+				log.Error(err)
+				h.WriteError(w, err.Error(), http.StatusInternalServerError)
+				return
 			}
-			filterQ := util.MapStr{
-				"bool": util.MapStr{
-					"must": must,
-				},
-			}
-			v, ok := mapObj["query"].(map[string]interface{})
-			if ok { //exists query
-				newQuery := util.MapStr{
-					"bool": util.MapStr{
-						"filter": filterQ,
-						"must":   []interface{}{v},
-					},
-				}
-				mapObj["query"] = newQuery
-			} else {
-				mapObj["query"] = util.MapStr{
-					"bool": util.MapStr{
-						"filter": filterQ,
-					},
-				}
-			}
-			queryDsl = util.MustToJSONBytes(mapObj)
 		}
 	}
+
 	searchRes, err := client.SearchWithRawQueryDSL(orm.GetIndexName(meta.MatchObject), queryDsl)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -110,6 +85,41 @@ func (h *PlatformAPI) searchCollection(w http.ResponseWriter, req *http.Request,
 		return
 	}
 	h.WriteJSON(w, searchRes,http.StatusOK)
+}
+
+func (h *PlatformAPI) rewriteQueryWithFilter(queryDsl []byte, filter util.MapStr) ([]byte, error){
+
+	mapObj := util.MapStr{}
+	err := util.FromJSONBytes(queryDsl, &mapObj)
+	if err != nil {
+		return nil, err
+	}
+	must := []util.MapStr{
+		filter,
+	}
+	filterQ := util.MapStr{
+		"bool": util.MapStr{
+			"must": must,
+		},
+	}
+	v, ok := mapObj["query"].(map[string]interface{})
+	if ok { //exists query
+		newQuery := util.MapStr{
+			"bool": util.MapStr{
+				"filter": filterQ,
+				"must":   []interface{}{v},
+			},
+		}
+		mapObj["query"] = newQuery
+	} else {
+		mapObj["query"] = util.MapStr{
+			"bool": util.MapStr{
+				"filter": filterQ,
+			},
+		}
+	}
+	queryDsl = util.MustToJSONBytes(mapObj)
+	return queryDsl, nil
 }
 
 //getCollectionMeta returns metadata of target collection, includes backend index name

@@ -6,16 +6,16 @@ package platform
 
 import (
 	"fmt"
+	log "github.com/cihub/seelog"
 	"infini.sh/framework/core/api"
 	"infini.sh/framework/core/api/rbac"
+	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"io"
 	"net/http"
-	httprouter "infini.sh/framework/core/api/router"
-	log "github.com/cihub/seelog"
 )
 
 type PlatformAPI struct {
@@ -24,7 +24,7 @@ type PlatformAPI struct {
 
 func InitAPI() {
 	papi := PlatformAPI{}
-	api.HandleAPIMethod(api.POST, "/collection/:collection_name/_search", papi.searchCollection)
+	api.HandleAPIMethod(api.POST, "/collection/:collection_name/_search", papi.RequireLogin(papi.searchCollection))
 	api.HandleAPIMethod(api.GET, "/collection/:collection_name/metadata", papi.RequireLogin(papi.getCollectionMeta))
 }
 
@@ -57,6 +57,48 @@ func (h *PlatformAPI) searchCollection(w http.ResponseWriter, req *http.Request,
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+	if collName == "cluster" {
+		clusterFilter, hasAllPrivilege := h.GetClusterFilter(req, "id")
+		if !hasAllPrivilege && clusterFilter == nil {
+			h.WriteJSON(w, elastic.SearchResponse{
+			}, http.StatusOK)
+			return
+		}
+		mapObj := util.MapStr{}
+		err = util.FromJSONBytes(queryDsl, &mapObj)
+		if err != nil {
+			log.Error(err)
+			h.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if !hasAllPrivilege {
+			must := []util.MapStr{
+				clusterFilter,
+			}
+			filterQ := util.MapStr{
+				"bool": util.MapStr{
+					"must": must,
+				},
+			}
+			v, ok := mapObj["query"].(map[string]interface{})
+			if ok { //exists query
+				newQuery := util.MapStr{
+					"bool": util.MapStr{
+						"filter": filterQ,
+						"must":   []interface{}{v},
+					},
+				}
+				mapObj["query"] = newQuery
+			} else {
+				mapObj["query"] = util.MapStr{
+					"bool": util.MapStr{
+						"filter": filterQ,
+					},
+				}
+			}
+			queryDsl = util.MustToJSONBytes(mapObj)
+		}
 	}
 	searchRes, err := client.SearchWithRawQueryDSL(orm.GetIndexName(meta.MatchObject), queryDsl)
 	if err != nil {

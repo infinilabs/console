@@ -5,6 +5,7 @@
 package platform
 
 import (
+	consoleModel "infini.sh/console/model"
 	"infini.sh/console/model/alerting"
 	"infini.sh/framework/core/api/rbac/enum"
 	"infini.sh/framework/core/elastic"
@@ -18,10 +19,10 @@ import (
 
 var (
 	collectionMetas map[string]CollectionMeta
-	metasInitOnce sync.Once
+	metasInitOnce   sync.Once
 )
 
-func GetCollectionMetas() map[string]CollectionMeta{
+func GetCollectionMetas() map[string]CollectionMeta {
 	metasInitOnce.Do(func() {
 		collectionMetas = map[string]CollectionMeta{
 			"gateway": {
@@ -108,10 +109,10 @@ func GetCollectionMetas() map[string]CollectionMeta{
 						for clusterID, indices := range indexPrivilege {
 							var (
 								wildcardIndices []string
-								normalIndices []string
+								normalIndices   []string
 							)
 							for _, index := range indices {
-								if strings.Contains(index,"*") {
+								if strings.Contains(index, "*") {
 									wildcardIndices = append(wildcardIndices, index)
 									continue
 								}
@@ -121,8 +122,8 @@ func GetCollectionMetas() map[string]CollectionMeta{
 							if len(wildcardIndices) > 0 {
 								subShould = append(subShould, util.MapStr{
 									"query_string": util.MapStr{
-										"query": strings.Join(wildcardIndices, " "),
-										"fields": []string{"metadata.labels.index_name"},
+										"query":            strings.Join(wildcardIndices, " "),
+										"fields":           []string{"metadata.labels.index_name"},
 										"default_operator": "OR",
 									},
 								})
@@ -147,7 +148,7 @@ func GetCollectionMetas() map[string]CollectionMeta{
 										{
 											"bool": util.MapStr{
 												"minimum_should_match": 1,
-												"should": subShould,
+												"should":               subShould,
 											},
 										},
 									},
@@ -157,7 +158,7 @@ func GetCollectionMetas() map[string]CollectionMeta{
 						indexFilter := util.MapStr{
 							"bool": util.MapStr{
 								"minimum_should_match": 1,
-								"should": indexShould,
+								"should":               indexShould,
 							},
 						}
 						filter = append(filter, indexFilter)
@@ -168,6 +169,15 @@ func GetCollectionMetas() map[string]CollectionMeta{
 						},
 					}, hasAllPrivilege
 				},
+			},
+			"audit_log": {
+				Name: "audit_log",
+				RequirePermission: map[string][]string{
+					"read": {
+						enum.PermissionAuditLogRead,
+					},
+				},
+				MatchObject: &consoleModel.AuditLog{},
 			},
 			"alerting_rule": {
 				Name: "alerting_rule",
@@ -182,7 +192,8 @@ func GetCollectionMetas() map[string]CollectionMeta{
 	})
 	return collectionMetas
 }
-//CollectionMeta includes information about how to visit backend index
+
+// CollectionMeta includes information about how to visit backend index
 type CollectionMeta struct {
 	//collection name
 	Name string `json:"name"`

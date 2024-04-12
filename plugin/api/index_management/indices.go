@@ -2,6 +2,10 @@ package index_management
 
 import (
 	log "github.com/cihub/seelog"
+	"infini.sh/console/common"
+	"infini.sh/console/model"
+	"infini.sh/console/service"
+	"infini.sh/framework/core/api/rbac"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/radix"
@@ -39,11 +43,19 @@ func (handler APIHandler) HandleGetMappingsAction(w http.ResponseWriter, req *ht
 
 func (handler APIHandler) HandleCatIndicesAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	targetClusterID := ps.ByName("id")
+	user, auditLogErr := rbac.FromUserContext(req.Context())
+	if auditLogErr == nil && handler.GetHeader(req, "Referer", "") != "" {
+		auditLog, _ := model.NewAuditLogBuilderWithDefault().WithOperator(user.Username).
+			WithLogTypeAccess().WithResourceTypeClusterManagement().
+			WithEventName("get indices").WithEventSourceIP(common.GetClientIP(req)).
+			WithResourceName(targetClusterID).WithOperationTypeAccess().WithEventRecord("").Build()
+		_ = service.LogAuditLog(auditLog)
+	}
 	client := elastic.GetClient(targetClusterID)
 	//filter indices
 	allowedIndices, hasAllPrivilege := handler.GetAllowedIndices(req, targetClusterID)
 	if !hasAllPrivilege && len(allowedIndices) == 0 {
-		handler.WriteJSON(w, []interface{}{} , http.StatusOK)
+		handler.WriteJSON(w, []interface{}{}, http.StatusOK)
 		return
 	}
 	catIndices, err := client.GetIndices("")
@@ -58,7 +70,7 @@ func (handler APIHandler) HandleCatIndicesAction(w http.ResponseWriter, req *htt
 		filterIndices := map[string]elastic.IndexInfo{}
 		pattern := radix.Compile(allowedIndices...)
 		for indexName, indexInfo := range *catIndices {
-			if pattern.Match(indexName){
+			if pattern.Match(indexName) {
 				filterIndices[indexName] = indexInfo
 			}
 		}
@@ -123,10 +135,18 @@ func (handler APIHandler) HandleDeleteIndexAction(w http.ResponseWriter, req *ht
 }
 
 func (handler APIHandler) HandleCreateIndexAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	
+
 	targetClusterID := ps.ByName("id")
 	client := elastic.GetClient(targetClusterID)
 	indexName := ps.ByName("index")
+	claims, auditLogErr := rbac.ValidateLogin(req.Header.Get("Authorization"))
+	if auditLogErr == nil && handler.GetHeader(req, "Referer", "") != "" {
+		auditLog, _ := model.NewAuditLogBuilderWithDefault().WithOperator(claims.Username).
+			WithLogTypeOperation().WithResourceTypeClusterManagement().
+			WithEventName("create index").WithEventSourceIP(common.GetClientIP(req)).
+			WithResourceName(targetClusterID).WithOperationTypeNew().WithEventRecord(indexName).Build()
+		auditLogErr = service.LogAuditLog(auditLog)
+	}
 	resBody := newResponseBody()
 	config := map[string]interface{}{}
 	err := handler.DecodeJSON(req, &config)

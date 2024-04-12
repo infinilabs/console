@@ -1,20 +1,19 @@
 package api
 
 import (
-	"infini.sh/console/plugin/api/data"
-	"infini.sh/console/plugin/api/email"
-	"infini.sh/console/plugin/api/license"
-	"infini.sh/console/plugin/api/platform"
-	"path"
-
 	"infini.sh/console/config"
 	"infini.sh/console/plugin/api/alerting"
+	"infini.sh/console/plugin/api/data"
+	"infini.sh/console/plugin/api/email"
 	"infini.sh/console/plugin/api/index_management"
 	"infini.sh/console/plugin/api/insight"
 	"infini.sh/console/plugin/api/layout"
+	"infini.sh/console/plugin/api/license"
 	"infini.sh/console/plugin/api/notification"
+	"infini.sh/console/plugin/api/platform"
 	"infini.sh/framework/core/api"
 	"infini.sh/framework/core/api/rbac/enum"
+	"path"
 )
 
 func Init(cfg *config.AppConfig) {

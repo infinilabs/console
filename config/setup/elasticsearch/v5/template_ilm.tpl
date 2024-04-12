@@ -554,3 +554,105 @@ PUT $[[SETUP_INDEX_PREFIX]]activities-00001
     }
   }
 }
+
+
+PUT _template/$[[SETUP_INDEX_PREFIX]]audit-logs-rollover
+{
+    "order" : 100000,
+    "template" : "$[[SETUP_INDEX_PREFIX]]audit-logs*",
+    "settings" : {
+      "index" : {
+        "format" : "7",
+        "codec" : "best_compression",
+        "number_of_shards" : "1",
+        "translog.durability":"async"
+      }
+    },
+    "mappings" : {
+      "doc":{
+          "dynamic_templates" : [
+            {
+              "strings" : {
+                "mapping" : {
+                  "ignore_above" : 256,
+                  "type" : "keyword"
+                },
+                "match_mapping_type" : "string"
+              }
+            }
+          ]
+      }
+    },
+    "aliases" : { }
+  }
+
+
+PUT $[[SETUP_INDEX_PREFIX]]audit-logs-00001
+{
+  "mappings": {
+  "doc":{
+    "dynamic_templates": [
+      {
+        "strings": {
+          "match_mapping_type": "string",
+          "mapping": {
+            "ignore_above": 256,
+            "type": "keyword"
+          }
+        }
+      }
+    ],
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "metadata": {
+        "properties": {
+          "operator": {
+            "type": "keyword",
+            "ignore_above": 256
+          },
+          "log_type": {
+            "type": "keyword",
+            "ignore_above": 256
+          },
+          "resource_type": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "timestamp": {
+        "type": "date"
+      }
+    }
+    }
+  },
+  "settings": {
+    "index": {
+      "refresh_interval": "5s",
+      "mapping": {
+        "total_fields": {
+          "limit": "20000"
+        }
+      },
+      "max_result_window": "10000000",
+      "analysis": {
+        "analyzer": {
+          "suggest_text_search": {
+            "filter": [
+             "lowercase",
+              "word_delimiter"
+            ],
+            "tokenizer": "classic"
+          }
+        }
+      }
+    }
+  },
+  "aliases": {
+    "$[[SETUP_INDEX_PREFIX]]audit-logs": {
+      "is_write_index": true
+    }
+  }
+}

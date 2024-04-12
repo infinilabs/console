@@ -7,6 +7,9 @@ package platform
 import (
 	"fmt"
 	log "github.com/cihub/seelog"
+	"infini.sh/console/common"
+	"infini.sh/console/model"
+	"infini.sh/console/service"
 	"infini.sh/framework/core/api"
 	"infini.sh/framework/core/api/rbac"
 	httprouter "infini.sh/framework/core/api/router"
@@ -33,13 +36,13 @@ func (h *PlatformAPI) searchCollection(w http.ResponseWriter, req *http.Request,
 	collMetas := GetCollectionMetas()
 	var (
 		meta CollectionMeta
-		ok bool
+		ok   bool
 	)
 	if meta, ok = collMetas[collName]; !ok {
 		h.WriteError(w, fmt.Sprintf("metadata of collection [%s] not found", collName), http.StatusInternalServerError)
 		return
 	}
-	if api.IsAuthEnable(){
+	if api.IsAuthEnable() {
 		claims, err := rbac.ValidateLogin(req.Header.Get("Authorization"))
 		if err != nil {
 			h.WriteError(w, err.Error(), http.StatusUnauthorized)
@@ -61,8 +64,7 @@ func (h *PlatformAPI) searchCollection(w http.ResponseWriter, req *http.Request,
 	if meta.GetSearchRequestBodyFilter != nil {
 		filter, hasAllPrivilege := meta.GetSearchRequestBodyFilter(h, req)
 		if !hasAllPrivilege && filter == nil {
-			h.WriteJSON(w, elastic.SearchResponse{
-			}, http.StatusOK)
+			h.WriteJSON(w, elastic.SearchResponse{}, http.StatusOK)
 			return
 		}
 		if !hasAllPrivilege {
@@ -84,10 +86,10 @@ func (h *PlatformAPI) searchCollection(w http.ResponseWriter, req *http.Request,
 		h.WriteError(w, string(searchRes.RawResult.Body), http.StatusInternalServerError)
 		return
 	}
-	h.WriteJSON(w, searchRes,http.StatusOK)
+	h.WriteJSON(w, searchRes, http.StatusOK)
 }
 
-func (h *PlatformAPI) rewriteQueryWithFilter(queryDsl []byte, filter util.MapStr) ([]byte, error){
+func (h *PlatformAPI) rewriteQueryWithFilter(queryDsl []byte, filter util.MapStr) ([]byte, error) {
 
 	mapObj := util.MapStr{}
 	err := util.FromJSONBytes(queryDsl, &mapObj)
@@ -122,13 +124,23 @@ func (h *PlatformAPI) rewriteQueryWithFilter(queryDsl []byte, filter util.MapStr
 	return queryDsl, nil
 }
 
-//getCollectionMeta returns metadata of target collection, includes backend index name
+// getCollectionMeta returns metadata of target collection, includes backend index name
 func (h *PlatformAPI) getCollectionMeta(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	collName := ps.MustGetParameter("collection_name")
+	if collName == "activity" {
+		user, auditLogErr := rbac.FromUserContext(req.Context())
+		if auditLogErr == nil && h.GetHeader(req, "Referer", "") != "" {
+			auditLog, _ := model.NewAuditLogBuilderWithDefault().WithOperator(user.Username).
+				WithLogTypeAccess().WithResourceTypeAccountCenter().
+				WithEventName("get activity meta").WithEventSourceIP(common.GetClientIP(req)).
+				WithResourceName("activity").WithOperationTypeAccess().WithEventRecord("").Build()
+			_ = service.LogAuditLog(auditLog)
+		}
+	}
 	collMetas := GetCollectionMetas()
 	var (
 		meta CollectionMeta
-		ok bool
+		ok   bool
 	)
 	if meta, ok = collMetas[collName]; !ok {
 		h.WriteError(w, fmt.Sprintf("metadata of collection [%s] not found", collName), http.StatusInternalServerError)

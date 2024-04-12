@@ -92,6 +92,22 @@ pipeline:
           worker_size: 1
           bulk_size_in_kb: 1
 
+  - name: merge_audit_log
+    auto_start: true
+    keep_running: true
+    processor:
+      - indexing_merge:
+          input_queue: "logging-audit-log-queue"
+          idle_timeout_in_seconds: 1
+          elasticsearch: "$[[CLUSTER_ID]]"
+          index_name: "$[[INDEX_PREFIX]]audit-logs"
+          output_queue:
+            name: "pipeline-audit-logs"
+            label:
+              tag: "audit_log_logging"
+          worker_size: 1
+          bulk_size_in_kb: 1
+
   - name: ingest_merged_requests
     auto_start: true
     keep_running: true

@@ -6,6 +6,8 @@ import (
 	_ "expvar"
 	api3 "infini.sh/console/modules/agent/api"
 	"infini.sh/console/plugin/api/email"
+	"infini.sh/console/plugin/audit_log"
+	"infini.sh/framework/core/api"
 	model2 "infini.sh/framework/core/model"
 	_ "time/tzdata"
 
@@ -59,7 +61,6 @@ func main() {
 	app.Init(nil)
 	defer app.Shutdown()
 
-
 	modules := []module.ModuleItem{}
 	modules = append(modules, module.ModuleItem{Value: &stats.SimpleStatsModule{}, Priority: 1})
 	modules = append(modules, module.ModuleItem{Value: &elastic2.ElasticModule{}, Priority: 1})
@@ -90,7 +91,6 @@ func main() {
 			}
 		}
 
-
 		api3.Init()
 
 		appConfig = &config.AppConfig{
@@ -112,6 +112,8 @@ func main() {
 		//load web UI files
 		appUI = &UI{Config: appConfig}
 		appUI.InitUI()
+
+		api.AddGlobalInterceptors(new(audit_log.MonitoringInterceptor))
 
 	}, func() {
 
@@ -138,7 +140,7 @@ func main() {
 			orm.RegisterSchemaWithIndexName(model.EmailServer{}, "email-server")
 			orm.RegisterSchemaWithIndexName(model2.Instance{}, "instance")
 			orm.RegisterSchemaWithIndexName(api3.RemoteConfig{}, "configs")
-
+			orm.RegisterSchemaWithIndexName(model.AuditLog{}, "audit-logs")
 
 			if global.Env().SetupRequired() {
 				for _, v := range modules {

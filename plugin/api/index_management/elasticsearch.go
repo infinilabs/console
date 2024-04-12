@@ -3,6 +3,10 @@ package index_management
 import (
 	"fmt"
 	log "github.com/cihub/seelog"
+	"infini.sh/console/common"
+	"infini.sh/console/model"
+	"infini.sh/console/service"
+	"infini.sh/framework/core/api/rbac"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/event"
@@ -17,9 +21,9 @@ import (
 
 func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	var (
-		totalNode int
+		totalNode      int
 		totalStoreSize int
-		clusterIDs []interface{}
+		clusterIDs     []interface{}
 	)
 	//elastic.WalkConfigs(func(key, value interface{})bool{
 	//	if handler.Config.Elasticsearch == key {
@@ -33,18 +37,28 @@ func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req
 		"size": 100,
 	}
 	clusterFilter, hasAllPrivilege := handler.GetClusterFilter(req, "_id")
-	if !hasAllPrivilege && clusterFilter == nil{
+	if !hasAllPrivilege && clusterFilter == nil {
 		handler.WriteJSON(w, util.MapStr{
-			"nodes_count": 0,
-			"clusters_count":0,
+			"nodes_count":               0,
+			"clusters_count":            0,
 			"total_used_store_in_bytes": 0,
-			"hosts_count": 0,
-			"indices_count": 0,
+			"hosts_count":               0,
+			"indices_count":             0,
 		}, http.StatusOK)
 		return
 	}
 	if !hasAllPrivilege {
 		queryDsl["query"] = clusterFilter
+	}
+
+	user, auditLogErr := rbac.FromUserContext(req.Context())
+	if auditLogErr == nil && handler.GetHeader(req, "Referer", "") != "" {
+		auditLog, _ := model.NewAuditLogBuilderWithDefault().WithOperator(user.Username).
+			WithLogTypeAccess().WithResourceTypeClusterManagement().
+			WithEventName("get elasticsearch overview").WithEventSourceIP(common.GetClientIP(req)).
+			WithResourceName("elasticsearch").WithOperationTypeAccess().
+			WithEventRecord(util.MustToJSON(queryDsl)).Build()
+		_ = service.LogAuditLog(auditLog)
 	}
 
 	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetIndexName(elastic.ElasticsearchConfig{}), util.MustToJSONBytes(queryDsl))
@@ -86,39 +100,39 @@ func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req
 	}
 
 	hostCount, err := handler.getMetricCount(orm.GetIndexName(host.HostInfo{}), "ip", nil)
-	if err != nil{
+	if err != nil {
 		log.Error(err)
 	}
 	if v, ok := hostCount.(float64); (ok && v == 0) || hostCount == nil {
 		hostCount, err = handler.getMetricCount(orm.GetIndexName(elastic.NodeConfig{}), "metadata.host", clusterIDs)
-		if err != nil{
+		if err != nil {
 			log.Error(err)
 		}
 	}
 
 	nodeCount, err := handler.getMetricCount(orm.GetIndexName(elastic.NodeConfig{}), "id", clusterIDs)
-	if err != nil{
+	if err != nil {
 		log.Error(err)
 	}
 	if v, ok := nodeCount.(float64); ok {
 		totalNode = int(v)
 	}
 	indicesCount, err := handler.getIndexCount(req)
-	if err != nil{
+	if err != nil {
 		log.Error(err)
 	}
 
 	resBody := util.MapStr{
-		"nodes_count": totalNode,
-		"clusters_count": len(clusterIDs),
+		"nodes_count":               totalNode,
+		"clusters_count":            len(clusterIDs),
 		"total_used_store_in_bytes": totalStoreSize,
-		"hosts_count": hostCount,
-		"indices_count": indicesCount,
+		"hosts_count":               hostCount,
+		"indices_count":             indicesCount,
 	}
 	handler.WriteJSON(w, resBody, http.StatusOK)
 }
 
-func (handler APIHandler) getLatestClusterMonitorData(clusterIDs []interface{}) (*elastic.SearchResponse, error){
+func (handler APIHandler) getLatestClusterMonitorData(clusterIDs []interface{}) (*elastic.SearchResponse, error) {
 	client := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 	queryDSLTpl := `{
   "size": %d, 
@@ -243,18 +257,18 @@ func (handler APIHandler) getIndexCount(req *http.Request) (int64, error) {
 	return orm.Count(elastic.IndexConfig{}, body)
 }
 
-func (handler APIHandler) getMetricCount(indexName, field string, clusterIDs []interface{}) (interface{}, error){
+func (handler APIHandler) getMetricCount(indexName, field string, clusterIDs []interface{}) (interface{}, error) {
 	client := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 	queryDSL := util.MapStr{
-  "size": 0, 
-  "aggs": util.MapStr{
-    "field_count": util.MapStr{
-      "cardinality": util.MapStr{
-        "field": field,
-      },
-    },
-  },
-}
+		"size": 0,
+		"aggs": util.MapStr{
+			"field_count": util.MapStr{
+				"cardinality": util.MapStr{
+					"field": field,
+				},
+			},
+		},
+	}
 	if len(clusterIDs) > 0 {
 		queryDSL["query"] = util.MapStr{
 			"terms": util.MapStr{
@@ -270,7 +284,7 @@ func (handler APIHandler) getMetricCount(indexName, field string, clusterIDs []i
 	return searchRes.Aggregations["field_count"].Value, nil
 }
 
-func (handler APIHandler) getLastActiveHostCount() (int, error){
+func (handler APIHandler) getLastActiveHostCount() (int, error) {
 	client := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 	queryDSL := `{
   "size": 0, 
@@ -321,12 +335,12 @@ func (handler APIHandler) getLastActiveHostCount() (int, error){
 	return len(searchRes.Aggregations["week_active_host"].Buckets), nil
 }
 
-func (handler APIHandler) ElasticsearchStatusSummaryAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
+func (handler APIHandler) ElasticsearchStatusSummaryAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	clusterIDs, hasAllPrivilege := handler.GetAllowedClusters(req)
-	if !hasAllPrivilege && len(clusterIDs) == 0{
+	if !hasAllPrivilege && len(clusterIDs) == 0 {
 		handler.WriteJSON(w, util.MapStr{
 			"cluster": util.MapStr{},
-			"node": util.MapStr{},
+			"node":    util.MapStr{},
 			"host": util.MapStr{
 				"online": 0,
 			},
@@ -375,14 +389,14 @@ func (handler APIHandler) ElasticsearchStatusSummaryAction(w http.ResponseWriter
 	}
 	handler.WriteJSON(w, util.MapStr{
 		"cluster": clusterGrp,
-		"node": nodeGrp,
+		"node":    nodeGrp,
 		"host": util.MapStr{
 			"online": hostCount,
 		},
 	}, http.StatusOK)
 }
 
-func (handler APIHandler) getGroupMetric(indexName, field string, filter interface{}) (interface{}, error){
+func (handler APIHandler) getGroupMetric(indexName, field string, filter interface{}) (interface{}, error) {
 	client := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 	queryDSL := util.MapStr{
 		"size": 0,

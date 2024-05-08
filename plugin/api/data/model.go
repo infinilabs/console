@@ -9,17 +9,18 @@ type ExportDataRequest struct {
 }
 
 type ExportMetadata struct {
-	Type string `json:"type"`
+	Type   string      `json:"type"`
 	Filter interface{} `json:"filter,omitempty"`
 }
 
 type ExportData struct {
-	Type string `json:"type"`
-	Data []interface{} `json:"data"`
+	Version string        `json:"version,omitempty"`
+	Type    string        `json:"type"`
+	Data    []interface{} `json:"data"`
 }
 
 const (
-	DataTypeAlertRule = "AlertRule"
-	DataTypeAlertChannel = "AlertChannel"
+	DataTypeAlertRule        = "AlertRule"
+	DataTypeAlertChannel     = "AlertChannel"
 	DataTypeAlertEmailServer = "EmailServer"
 )

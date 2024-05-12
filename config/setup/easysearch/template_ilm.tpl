@@ -22,6 +22,8 @@ PUT _template/$[[SETUP_TEMPLATE_NAME]]
             }
           }
         },
+        "codec": "ZSTD",
+        "source_reuse": "true",
         "number_of_shards": "1"
       }
     },
@@ -91,7 +93,8 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]metrics-rollover
           "name" : "ilm_$[[SETUP_INDEX_PREFIX]]metrics-30days-retention",
           "rollover_alias" : "$[[SETUP_INDEX_PREFIX]]metrics"
         },
-        "codec" : "best_compression",
+        "codec" : "ZSTD",
+        "source_reuse": "true",
         "number_of_shards" : "1",
         "translog.durability":"async",
         "mapping.coerce": false,
@@ -159,7 +162,8 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]logs-rollover
           "name" : "ilm_$[[SETUP_INDEX_PREFIX]]metrics-30days-retention",
           "rollover_alias" : "$[[SETUP_INDEX_PREFIX]]logs"
       },
-      "codec": "best_compression",
+      "codec": "ZSTD",
+      "source_reuse": "true",
       "number_of_shards": "1",
       "translog": {
         "durability": "async"
@@ -217,7 +221,8 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]requests_logging-rollover
           "name" : "ilm_$[[SETUP_INDEX_PREFIX]]metrics-30days-retention",
           "rollover_alias" : "$[[SETUP_INDEX_PREFIX]]requests_logging"
       },
-      "codec": "best_compression",
+      "codec": "ZSTD",
+      "source_reuse": "true",
       "number_of_shards": "1",
       "translog": {
         "durability": "async"
@@ -286,7 +291,8 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]async_bulk_results-rollover
           "name" : "ilm_$[[SETUP_INDEX_PREFIX]]metrics-30days-retention",
           "rollover_alias" : "$[[SETUP_INDEX_PREFIX]]async_bulk_results"
       },
-      "codec": "best_compression",
+      "codec": "ZSTD",
+      "source_reuse": "true",
       "number_of_shards": "1",
       "translog": {
         "durability": "async"
@@ -355,7 +361,8 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]alert-history-rollover
           "name" : "ilm_$[[SETUP_INDEX_PREFIX]]metrics-30days-retention",
           "rollover_alias" : "$[[SETUP_INDEX_PREFIX]]alert-history"
         },
-        "codec" : "best_compression",
+        "codec" : "ZSTD",
+        "source_reuse": "true",
         "number_of_shards" : "1",
         "translog.durability":"async"
       }
@@ -511,7 +518,8 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]activities-rollover
           "name" : "ilm_$[[SETUP_INDEX_PREFIX]]metrics-30days-retention",
           "rollover_alias" : "$[[SETUP_INDEX_PREFIX]]activities"
         },
-        "codec" : "best_compression",
+        "codec" : "ZSTD",
+        "source_reuse": "true",
         "number_of_shards" : "1",
         "translog.durability":"async"
       }
@@ -628,7 +636,8 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]audit-logs-rollover
           "name" : "ilm_$[[SETUP_INDEX_PREFIX]]metrics-30days-retention",
           "rollover_alias" : "$[[SETUP_INDEX_PREFIX]]audit-logs"
         },
-        "codec" : "best_compression",
+        "codec" : "ZSTD",
+        "source_reuse": "true",
         "number_of_shards" : "1",
         "translog.durability":"async"
       }

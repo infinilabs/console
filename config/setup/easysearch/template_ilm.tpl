@@ -23,7 +23,7 @@ PUT _template/$[[SETUP_TEMPLATE_NAME]]
           }
         },
         "codec": "ZSTD",
-        "source_reuse": "true",
+        "source_reuse": false,
         "number_of_shards": "1"
       }
     },
@@ -94,7 +94,7 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]metrics-rollover
           "rollover_alias" : "$[[SETUP_INDEX_PREFIX]]metrics"
         },
         "codec" : "ZSTD",
-        "source_reuse": "true",
+        "source_reuse": true,
         "number_of_shards" : "1",
         "translog.durability":"async",
         "mapping.coerce": false,
@@ -163,7 +163,7 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]logs-rollover
           "rollover_alias" : "$[[SETUP_INDEX_PREFIX]]logs"
       },
       "codec": "ZSTD",
-      "source_reuse": "true",
+      "source_reuse": false,
       "number_of_shards": "1",
       "translog": {
         "durability": "async"
@@ -222,7 +222,7 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]requests_logging-rollover
           "rollover_alias" : "$[[SETUP_INDEX_PREFIX]]requests_logging"
       },
       "codec": "ZSTD",
-      "source_reuse": "true",
+      "source_reuse": true,
       "number_of_shards": "1",
       "translog": {
         "durability": "async"
@@ -292,7 +292,7 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]async_bulk_results-rollover
           "rollover_alias" : "$[[SETUP_INDEX_PREFIX]]async_bulk_results"
       },
       "codec": "ZSTD",
-      "source_reuse": "true",
+      "source_reuse": false,
       "number_of_shards": "1",
       "translog": {
         "durability": "async"
@@ -362,7 +362,7 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]alert-history-rollover
           "rollover_alias" : "$[[SETUP_INDEX_PREFIX]]alert-history"
         },
         "codec" : "ZSTD",
-        "source_reuse": "true",
+        "source_reuse": false,
         "number_of_shards" : "1",
         "translog.durability":"async"
       }
@@ -519,7 +519,7 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]activities-rollover
           "rollover_alias" : "$[[SETUP_INDEX_PREFIX]]activities"
         },
         "codec" : "ZSTD",
-        "source_reuse": "true",
+        "source_reuse": false,
         "number_of_shards" : "1",
         "translog.durability":"async"
       }
@@ -637,7 +637,7 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]audit-logs-rollover
           "rollover_alias" : "$[[SETUP_INDEX_PREFIX]]audit-logs"
         },
         "codec" : "ZSTD",
-        "source_reuse": "true",
+        "source_reuse": false,
         "number_of_shards" : "1",
         "translog.durability":"async"
       }

@@ -114,19 +114,19 @@ func GetMapStringSliceValue(m util.MapStr, key string) []string {
 	}
 	vv, ok := v.([]string)
 	if !ok {
-		vv, ok := v.([]interface{})
+		vv, ok := v.(map[string]interface{})
 		if !ok {
 			log.Errorf("got %s but failed to extract, type: %T", key, v)
 			return nil
 		}
-		ret := make([]string, len(vv))
-		var err error
-		for i := range vv {
-			ret[i], err = util.ExtractString(vv[i])
+		ret := make([]string, 0, len(vv))
+		for _, item := range vv {
+			itemV, err := util.ExtractString(item)
 			if err != nil {
 				log.Errorf("got %s but failed to extract, err: %v", key, err)
 				return nil
 			}
+			ret = append(ret, itemV)
 		}
 		return ret
 	}

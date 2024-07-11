@@ -64,11 +64,15 @@ elastic:
 metrics:
   enabled: true
   queue: metrics
+#  event_queue:
+#    cluster_health: "cluster_metrics"
   elasticsearch:
     enabled: true
     cluster_stats: true
     node_stats: true
     index_stats: true
+
+
 badger:
   value_log_max_entries: 1000000
   value_log_file_size: 104857600

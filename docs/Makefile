@@ -37,5 +37,8 @@ docs-build: docs-config
         --baseURL="/$(PRODUCT)/$(VERSION)"
 	@$(MAKE) docs-restore-generated-file
 
+docs-place-redirect:
+	echo "<!DOCTYPE html> <html> <head> <meta http-equiv=refresh content=0;url=latest /> </head> <body> <p><a href=latest />REDIRECT TO THE LATEST_VERSION</a>.</p> </body> </html>" > $(OUTPUT)/$(PRODUCT)/index.html
+
 docs-restore-generated-file:
 	mv config.bak config.yaml

@@ -7,10 +7,16 @@ VERSION?= $(shell [[ "$(BRANCH)" == "main" ]] && echo "main" || echo "$(BRANCH)"
 CURRENT_VERSION?= $(VERSION)
 VERSIONS?= "main"
 OUTPUT?= "/tmp/docs"
+THEME_FOLDER?= "themes/book"
+THEME_REPO?= "https://github.com/infinilabs/docs-theme.git"
+THEME_BRANCH?= "main"
 
 .PHONY: docs-build
 
 default: docs-build
+
+docs-init:
+	@if [ ! -d $(THEME_FOLDER) ]; then echo "theme does not exist";(git clone -b $(THEME_BRANCH) $(THEME_REPO) $(THEME_FOLDER) ) fi
 
 docs-env:
 	@echo "Debugging Variables:"
@@ -21,7 +27,7 @@ docs-env:
 	@echo "VERSIONS: $(VERSIONS)"
 	@echo "OUTPUT: $(OUTPUT)"
 
-docs-config:
+docs-config: docs-init
 	cp config.yaml config.bak
 	# Detect OS and apply the appropriate sed command
 	@if [ "$$(uname)" = "Darwin" ]; then \

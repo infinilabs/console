@@ -22,15 +22,17 @@ jobs:
         id: vars
         run: |
           CURRENT_REF=${GITHUB_REF##*/}
-          if [[ "$CURRENT_REF" == "main" ]]; then
-            echo "VERSION=latest" >> $GITHUB_ENV
-            echo "BRANCH=main" >> $GITHUB_ENV
-          elif [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+          if [[ "${GITHUB_REF_TYPE}" == "branch" ]]; then
+            if [[ "$CURRENT_REF" == "main" ]]; then
+              echo "VERSION=latest" >> $GITHUB_ENV
+              echo "BRANCH=main" >> $GITHUB_ENV
+            else
+              echo "VERSION=$CURRENT_REF" >> $GITHUB_ENV
+              echo "BRANCH=$CURRENT_REF" >> $GITHUB_ENV
+            fi
+          elif [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             echo "VERSION=$CURRENT_REF" >> $GITHUB_ENV
-            echo "BRANCH=$CURRENT_REF" >> $GITHUB_ENV
-          else
-            echo "VERSION=$CURRENT_REF" >> $GITHUB_ENV
-            echo "BRANCH=$CURRENT_REF" >> $GITHUB_ENV
+            echo "BRANCH=main" >> $GITHUB_ENV  # Set BRANCH to 'main' for tags
           fi
 
           # Gather branches and tags, sort, remove duplicates

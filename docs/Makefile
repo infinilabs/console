@@ -3,9 +3,9 @@ SHELL=/bin/bash
 # Basic info
 PRODUCT?= $(shell basename "$(shell cd .. && pwd)")
 BRANCH?= main
-VERSION?= $(shell [[ "$(BRANCH)" == "main" ]] && echo "latest" || echo "$(BRANCH)")
+VERSION?= $(shell [[ "$(BRANCH)" == "main" ]] && echo "main" || echo "$(BRANCH)")
 CURRENT_VERSION?= $(VERSION)
-VERSIONS?= "latest"
+VERSIONS?= "main"
 OUTPUT?= "/tmp/docs"
 
 .PHONY: docs-build
@@ -38,7 +38,7 @@ docs-build: docs-config
 	@$(MAKE) docs-restore-generated-file
 
 docs-place-redirect:
-	echo "<!DOCTYPE html> <html> <head> <meta http-equiv=refresh content=0;url=latest /> </head> <body> <p><a href=latest />REDIRECT TO THE LATEST_VERSION</a>.</p> </body> </html>" > $(OUTPUT)/$(PRODUCT)/index.html
+	echo "<!DOCTYPE html> <html> <head> <meta http-equiv=refresh content=0;url=main /> </head> <body> <p><a href=main />REDIRECT TO THE LATEST_VERSION</a>.</p> </body> </html>" > $(OUTPUT)/$(PRODUCT)/index.html
 
 docs-restore-generated-file:
 	mv config.bak config.yaml

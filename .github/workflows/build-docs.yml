@@ -24,7 +24,7 @@ jobs:
           CURRENT_REF=${GITHUB_REF##*/}
           if [[ "${GITHUB_REF_TYPE}" == "branch" ]]; then
             if [[ "$CURRENT_REF" == "main" ]]; then
-              echo "VERSION=latest" >> $GITHUB_ENV
+              echo "VERSION=main" >> $GITHUB_ENV
               echo "BRANCH=main" >> $GITHUB_ENV
             else
               echo "VERSION=$CURRENT_REF" >> $GITHUB_ENV
@@ -38,7 +38,7 @@ jobs:
           # Gather branches and tags, sort, remove duplicates
           VERSIONS=$(git for-each-ref refs/remotes/origin refs/tags --format="%(refname:short)" | \
             grep -E "^v[0-9.]+$" | sort -Vr | uniq | tr '\n' ',' | sed 's/,$//')
-          echo "VERSIONS=latest,$VERSIONS" >> $GITHUB_ENV
+          echo "VERSIONS=main,$VERSIONS" >> $GITHUB_ENV
 
       - name: Install Hugo
         run: |
@@ -84,7 +84,7 @@ jobs:
             git pull origin main
             
             # Build Docs for Main Branch (latest)
-            (cd docs && OUTPUT=$(pwd)/../docs-output VERSION="latest" BRANCH="main" make docs-build docs-place-redirect)
+            (cd docs && OUTPUT=$(pwd)/../docs-output VERSION="main" BRANCH="main" make docs-build docs-place-redirect)
 
             # Commit and Push Latest Docs to Main
             cd docs-output

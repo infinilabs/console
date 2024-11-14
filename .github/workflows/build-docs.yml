@@ -44,9 +44,6 @@ jobs:
           tar -xzvf hugo_extended_0.79.1_Linux-64bit.tar.gz
           sudo mv hugo /usr/local/bin/
 
-      - name: Prepare Config File
-        run: (cd docs && make config)
-
       - name: Checkout Docs Repo
         uses: actions/checkout@v2
         with:
@@ -56,7 +53,7 @@ jobs:
 
       - name: Build Documentation
         run: |
-          (cd docs && OUTPUT=$(pwd)/docs-output make build)
+          (cd docs && OUTPUT=$(pwd)/docs-output make docs-build)
 
       - name: Commit and Push Changes to Docs Repo
         working-directory: docs-output
@@ -83,12 +80,9 @@ jobs:
 
             # Ensure the latest changes are pulled
             git pull origin main
-
-            # Prepare Config for Main Branch Docs
-            (cd docs && make config)
             
             # Build Docs for Main Branch (latest)
-            (cd docs && OUTPUT=$(pwd)/docs-output VERSION="latest" BRANCH="main" make build)
+            (cd docs && OUTPUT=$(pwd)/docs-output VERSION="latest" BRANCH="main" make docs-build)
 
             # Commit and Push Latest Docs to Main
             cd docs-output

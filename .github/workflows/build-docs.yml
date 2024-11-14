@@ -53,7 +53,7 @@ jobs:
 
       - name: Build Documentation
         run: |
-          (cd docs && OUTPUT=$(pwd)/docs-output make docs-build)
+          (cd docs && OUTPUT=$(pwd)/../docs-output make docs-build)
 
       - name: Commit and Push Changes to Docs Repo
         working-directory: docs-output
@@ -82,7 +82,7 @@ jobs:
             git pull origin main
             
             # Build Docs for Main Branch (latest)
-            (cd docs && OUTPUT=$(pwd)/docs-output VERSION="latest" BRANCH="main" make docs-build)
+            (cd docs && OUTPUT=$(pwd)/../docs-output VERSION="latest" BRANCH="main" make docs-build)
 
             # Commit and Push Latest Docs to Main
             cd docs-output

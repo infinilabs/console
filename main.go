@@ -36,7 +36,7 @@ import (
 	"infini.sh/framework/modules/security"
 	"infini.sh/framework/modules/stats"
 	"infini.sh/framework/modules/task"
-	"infini.sh/framework/modules/ui"
+	"infini.sh/framework/modules/web"
 	_ "infini.sh/framework/plugins"
 	_ "infini.sh/framework/plugins/managed"
 )
@@ -71,7 +71,7 @@ func main() {
 	modules = append(modules, module.ModuleItem{Value: &metrics.MetricsModule{}, Priority: 1})
 	modules = append(modules, module.ModuleItem{Value: &security.Module{}, Priority: 1})
 
-	uiModule := &ui.UIModule{}
+	uiModule := &web.WebModule{}
 
 	global.Env().EnableSetup(true)
 

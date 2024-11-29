@@ -15,6 +15,7 @@ import (
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/modules/pipeline"
 )
+
 type TaskWorker struct {
 	model.Instance
 }
@@ -134,7 +135,7 @@ func (inst *TaskWorker) TryConnectWithTimeout(duration time.Duration) error {
 
 func (inst *TaskWorker) doRequest(req *util.Request, resBody interface{}) error {
 	if inst.BasicAuth != nil && inst.BasicAuth.Username != "" {
-		req.SetBasicAuth(inst.BasicAuth.Username, inst.BasicAuth.Password)
+		req.SetBasicAuth(inst.BasicAuth.Username, inst.BasicAuth.Password.Get())
 	}
 	result, err := util.ExecuteRequest(req)
 	if err != nil {

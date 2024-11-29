@@ -8,7 +8,9 @@ import (
 	"bytes"
 	"crypto/tls"
 	"fmt"
+	"github.com/buger/jsonparser"
 	log "github.com/cihub/seelog"
+	"github.com/gopkg.in/gomail.v2"
 	"infini.sh/console/model"
 	"infini.sh/console/model/alerting"
 	"infini.sh/console/plugin/api/email/common"
@@ -17,8 +19,6 @@ import (
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"net/http"
-	"github.com/buger/jsonparser"
-	"github.com/gopkg.in/gomail.v2"
 	"strconv"
 	"time"
 )
@@ -67,7 +67,7 @@ func (h *EmailAPI) createEmailServer(w http.ResponseWriter, req *http.Request, p
 		h.WriteError(w, fmt.Sprintf("email server [%s:%d] already exists", obj.Host, obj.Port), http.StatusInternalServerError)
 		return
 	}
-	if obj.CredentialID == "" && obj.Auth != nil && obj.Auth.Username != ""{
+	if obj.CredentialID == "" && obj.Auth != nil && obj.Auth.Username != "" {
 		credentialID, err := saveBasicAuthToCredential(obj)
 		if err != nil {
 			log.Error(err)
@@ -97,7 +97,7 @@ func (h *EmailAPI) createEmailServer(w http.ResponseWriter, req *http.Request, p
 
 }
 
-func saveBasicAuthToCredential(srv *model.EmailServer)(string, error){
+func saveBasicAuthToCredential(srv *model.EmailServer) (string, error) {
 	if srv == nil {
 		return "", fmt.Errorf("param email config can not be empty")
 	}
@@ -108,7 +108,7 @@ func saveBasicAuthToCredential(srv *model.EmailServer)(string, error){
 		Payload: map[string]interface{}{
 			"basic_auth": map[string]interface{}{
 				"username": srv.Auth.Username,
-				"password": srv.Auth.Password,
+				"password": srv.Auth.Password.Get(),
 			},
 		},
 	}
@@ -267,8 +267,8 @@ func checkEmailServerReferenced(srv *model.EmailServer) error {
 func (h *EmailAPI) searchEmailServer(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 
 	var (
-		strSize     = h.GetParameterOrDefault(req, "size", "20")
-		strFrom     = h.GetParameterOrDefault(req, "from", "0")
+		strSize    = h.GetParameterOrDefault(req, "size", "20")
+		strFrom    = h.GetParameterOrDefault(req, "from", "0")
 		strEnabled = h.GetParameterOrDefault(req, "enabled", "true")
 	)
 	size, _ := strconv.Atoi(strSize)
@@ -286,7 +286,7 @@ func (h *EmailAPI) searchEmailServer(w http.ResponseWriter, req *http.Request, p
 	}
 	if strEnabled == "true" {
 		q.Conds = orm.And(orm.Eq("enabled", true))
-	}else if strEnabled == "false" {
+	} else if strEnabled == "false" {
 		q.Conds = orm.And(orm.Eq("enabled", false))
 	}
 
@@ -307,7 +307,7 @@ func (h *EmailAPI) searchEmailServer(w http.ResponseWriter, req *http.Request, p
 	buf := hitsBuf.Bytes()
 	if buf[len(buf)-1] == ',' {
 		buf[len(buf)-1] = ']'
-	}else{
+	} else {
 		hitsBuf.Write([]byte("]"))
 	}
 	res.Raw, err = jsonparser.Set(res.Raw, hitsBuf.Bytes(), "hits", "hits")
@@ -340,7 +340,7 @@ func (h *EmailAPI) testEmailServer(w http.ResponseWriter, req *http.Request, ps 
 	}
 	if reqBody.CredentialID != "" {
 		auth, err := common.GetBasicAuth(&reqBody.EmailServer)
-		if  err != nil {
+		if err != nil {
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -356,7 +356,7 @@ func (h *EmailAPI) testEmailServer(w http.ResponseWriter, req *http.Request, ps 
 	message.SetHeader("Subject", "INFINI platform test email")
 
 	message.SetBody("text/plain", "This is just a test email, do not reply!")
-	d := gomail.NewDialerWithTimeout(reqBody.Host, reqBody.Port, reqBody.Auth.Username, reqBody.Auth.Password, 3*time.Second)
+	d := gomail.NewDialerWithTimeout(reqBody.Host, reqBody.Port, reqBody.Auth.Username, reqBody.Auth.Password.Get(), 3*time.Second)
 	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 	d.SSL = reqBody.TLS
 

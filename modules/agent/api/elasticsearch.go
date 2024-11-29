@@ -25,7 +25,7 @@ import (
 	"time"
 )
 
-//node -> binding item
+// node -> binding item
 func GetEnrolledNodesByAgent(instanceID string) (map[string]BindingItem, error) {
 
 	//get nodes settings where agent id = instance id
@@ -177,7 +177,7 @@ func refreshNodesInfo(instanceID, instanceEndpoint string) (*elastic.DiscoveryRe
 	return nodesInfo, nil
 }
 
-//get nodes info via agent
+// get nodes info via agent
 func GetElasticsearchNodesViaAgent(ctx context.Context, endpoint string) (*elastic.DiscoveryResult, error) {
 	req := &util.Request{
 		Method:  http.MethodGet,
@@ -186,7 +186,7 @@ func GetElasticsearchNodesViaAgent(ctx context.Context, endpoint string) (*elast
 	}
 
 	obj := elastic.DiscoveryResult{}
-	_, err := server.ProxyAgentRequest("elasticsearch",endpoint, req, &obj)
+	_, err := server.ProxyAgentRequest("elasticsearch", endpoint, req, &obj)
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +218,7 @@ func GetElasticLogFiles(ctx context.Context, instance *model.Instance, logsPath 
 	}
 
 	resBody := map[string]interface{}{}
-	_, err := server.ProxyAgentRequest("elasticsearch",instance.GetEndpoint(), req, &resBody)
+	_, err := server.ProxyAgentRequest("elasticsearch", instance.GetEndpoint(), req, &resBody)
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +237,7 @@ func GetElasticLogFileContent(ctx context.Context, instance *model.Instance, bod
 		Body:    util.MustToJSONBytes(body),
 	}
 	resBody := map[string]interface{}{}
-	_, err := server.ProxyAgentRequest("elasticsearch",instance.GetEndpoint(), req, &resBody)
+	_, err := server.ProxyAgentRequest("elasticsearch", instance.GetEndpoint(), req, &resBody)
 	if err != nil {
 		return nil, err
 	}
@@ -319,7 +319,7 @@ func (h *APIHandler) getLogFileContent(w http.ResponseWriter, req *http.Request,
 	h.WriteJSON(w, res, http.StatusOK)
 }
 
-//instance, pathLogs
+// instance, pathLogs
 func getAgentByNodeID(clusterID, nodeID string) (*model.Instance, string, error) {
 
 	q := orm.Query{
@@ -457,10 +457,10 @@ func (h *APIHandler) autoEnrollESNode(w http.ResponseWriter, req *http.Request, 
 							log.Infof("instance:%v,%v, success enroll %v nodes", instanceID, instanceEndpoint, len(pids))
 						}
 
-						if len(nodes.Nodes)>0{
-							for k,v:=range nodes.Nodes{
-								log.Debug(k,v.Status,v.Enrolled)
-								if !v.Enrolled{
+						if len(nodes.Nodes) > 0 {
+							for k, v := range nodes.Nodes {
+								log.Debug(k, v.Status, v.Enrolled)
+								if !v.Enrolled {
 									pids := h.bindInstanceToCluster(clusterInfo, nodes, instanceID, instanceEndpoint)
 									log.Infof("instance:%v,%v, success enroll %v nodes", instanceID, instanceEndpoint, len(pids))
 								}
@@ -554,13 +554,13 @@ func (h *APIHandler) bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elast
 						panic(err)
 					}
 
-					for _,v:=range nodes.Nodes{
-						if !v.Enrolled{
-							if v.NodeInfo!=nil{
-								pid:=v.NodeInfo.Process.Id
-								nodeHost:=v.NodeInfo.GetHttpPublishHost()
-								nodeInfo:=h.internalProcessBind(clusterID,clusterUUID,instanceID,instanceEndpoint,pid,nodeHost,auth)
-								if nodeInfo!=nil{
+					for _, v := range nodes.Nodes {
+						if !v.Enrolled {
+							if v.NodeInfo != nil {
+								pid := v.NodeInfo.Process.Id
+								nodeHost := v.NodeInfo.GetHttpPublishHost()
+								nodeInfo := h.internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint, pid, nodeHost, auth)
+								if nodeInfo != nil {
 									discoveredPIDs[pid] = nodeInfo
 								}
 							}
@@ -570,19 +570,19 @@ func (h *APIHandler) bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elast
 					//try connect
 					for _, node := range nodes.UnknownProcess {
 
-						pid:=node.PID
+						pid := node.PID
 
 						for _, v := range node.ListenAddresses {
 
 							ip := v.IP
-							port:=v.Port
+							port := v.Port
 
 							if util.ContainStr(ip, "::") {
 								ip = fmt.Sprintf("[%s]", ip)
 							}
 							nodeHost := fmt.Sprintf("%s:%d", ip, port)
-							nodeInfo:=h.internalProcessBind(clusterID,clusterUUID,instanceID,instanceEndpoint,pid,nodeHost,auth)
-							if nodeInfo!=nil{
+							nodeInfo := h.internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint, pid, nodeHost, auth)
+							if nodeInfo != nil {
 								discoveredPIDs[pid] = nodeInfo
 							}
 						}
@@ -594,14 +594,14 @@ func (h *APIHandler) bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elast
 	return discoveredPIDs
 }
 
-func (h *APIHandler) internalProcessBind(clusterID,clusterUUID,instanceID,instanceEndpoint string,pid int,nodeHost string,auth *model.BasicAuth) *elastic.LocalNodeInfo{
+func (h *APIHandler) internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint string, pid int, nodeHost string, auth *model.BasicAuth) *elastic.LocalNodeInfo {
 	success, tryAgain, nodeInfo := h.getESNodeInfoViaProxy(nodeHost, "http", auth, instanceEndpoint)
 	if !success && tryAgain {
 		//try https again
 		success, tryAgain, nodeInfo = h.getESNodeInfoViaProxy(nodeHost, "https", auth, instanceEndpoint)
 	}
 
-	log.Debug(clusterUUID,nodeHost,instanceEndpoint,success, tryAgain, nodeInfo)
+	log.Debug(clusterUUID, nodeHost, instanceEndpoint, success, tryAgain, nodeInfo)
 
 	if success {
 		log.Debug("connect to es node success:", nodeHost, ", pid: ", pid)
@@ -631,7 +631,6 @@ func (h *APIHandler) internalProcessBind(clusterID,clusterUUID,instanceID,instan
 	return nil
 }
 
-
 func (h *APIHandler) getESNodeInfoViaProxy(esHost string, esSchema string, auth *model.BasicAuth, endpoint string) (success, tryAgain bool, info *elastic.LocalNodeInfo) {
 	esConfig := elastic.ElasticsearchConfig{Host: esHost, Schema: esSchema, BasicAuth: auth}
 	return h.getESNodeInfoViaProxyWithConfig(&esConfig, auth, endpoint)
@@ -648,11 +647,11 @@ func (h *APIHandler) getESNodeInfoViaProxyWithConfig(cfg *elastic.ElasticsearchC
 		Body:    body,
 	}
 	if auth != nil {
-		req.SetBasicAuth(auth.Username, auth.Password)
+		req.SetBasicAuth(auth.Username, auth.Password.Get())
 	}
 
 	obj := elastic.LocalNodeInfo{}
-	res, err := server.ProxyAgentRequest("elasticsearch",endpoint, req, &obj)
+	res, err := server.ProxyAgentRequest("elasticsearch", endpoint, req, &obj)
 	if err != nil {
 		if global.Env().IsDebug {
 			log.Error(err)

@@ -165,8 +165,8 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 		}
 
 		metadata := elastic.GetMetadata(v.ClusterID)
-		if metadata == nil || metadata.Config == nil{
-			log.Errorf("metadata is nil: %v",v.ClusterID)
+		if metadata == nil || metadata.Config == nil {
+			log.Errorf("metadata is nil: %v", v.ClusterID)
 			continue
 		}
 		var clusterLevelEnabled = false
@@ -189,32 +189,32 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 			}
 			if auth, ok := dv.(model.BasicAuth); ok {
 				username = auth.Username
-				password = auth.Password
+				password = auth.Password.Get()
 			}
 		}
 
-		nodeInfo,err:=metadata2.GetNodeConfig(v.ClusterID,v.NodeUUID)
-		if err!=nil{
+		nodeInfo, err := metadata2.GetNodeConfig(v.ClusterID, v.NodeUUID)
+		if err != nil {
 			log.Error(err)
 			continue
 		}
 
-		publishAddress:=nodeInfo.Payload.NodeInfo.GetHttpPublishHost()
+		publishAddress := nodeInfo.Payload.NodeInfo.GetHttpPublishHost()
 
-		if publishAddress==""{
-			log.Errorf("publish address is empty: %v",v.NodeUUID)
+		if publishAddress == "" {
+			log.Errorf("publish address is empty: %v", v.NodeUUID)
 			continue
 		}
 
 		nodeEndPoint := metadata.PrepareEndpoint(publishAddress)
 
-		pathLogs:=nodeInfo.Payload.NodeInfo.GetPathLogs()
+		pathLogs := nodeInfo.Payload.NodeInfo.GetPathLogs()
 
 		if v.Updated > latestVersion {
 			latestVersion = v.Updated
 		}
 
-		taskID:=v.ClusterID+"_"+v.NodeUUID
+		taskID := v.ClusterID + "_" + v.NodeUUID
 
 		buffer.Write([]byte(fmt.Sprintf("\n  - name: \"%v\"\n    path: ./config/task_config.tpl\n    "+
 			"variable:\n      "+
@@ -228,7 +228,7 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 			"CLUSTER_LEVEL_TASKS_ENABLED: %v\n      "+
 			"NODE_LEVEL_TASKS_ENABLED: %v\n      "+
 			"NODE_LOGS_PATH: \"%v\"\n\n\n", taskID, taskID,
-			v.ClusterID,v.ClusterUUID,v.NodeUUID, nodeEndPoint, username, password, clusterLevelEnabled, nodeLevelEnabled, pathLogs)))
+			v.ClusterID, v.ClusterUUID, v.NodeUUID, nodeEndPoint, username, password, clusterLevelEnabled, nodeLevelEnabled, pathLogs)))
 	}
 
 	hash := util.MD5digest(buffer.String())

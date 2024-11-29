@@ -6,6 +6,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"infini.sh/framework/lib/go-ucfg"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -97,7 +98,7 @@ func (module *Module) Start() error {
 			return
 		}
 		if basicAuth, ok := bv.(model.BasicAuth); ok {
-			err = keystore.SetValue("SYSTEM_CLUSTER_PASS", []byte(basicAuth.Password))
+			err = keystore.SetValue("SYSTEM_CLUSTER_PASS", []byte(basicAuth.Password.Get()))
 			if err != nil {
 				log.Error(err)
 			}
@@ -283,7 +284,7 @@ func (module *Module) initTempClient(r *http.Request) (error, elastic.API, Setup
 		Endpoint: request.Cluster.Endpoint,
 		BasicAuth: &model.BasicAuth{
 			Username: request.Cluster.Username,
-			Password: request.Cluster.Password,
+			Password: ucfg.SecretString(request.Cluster.Password),
 		},
 	}
 
@@ -458,7 +459,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		if oldCfg.CredentialID != "" && !secretMismatch {
 			basicAuth, _ := elastic1.GetBasicAuth(&oldCfg)
 			if basicAuth != nil {
-				if basicAuth.Username == request.Cluster.Username && basicAuth.Password == request.Cluster.Password {
+				if basicAuth.Username == request.Cluster.Username && basicAuth.Password.Get() == request.Cluster.Password {
 					reuseOldCred = true
 				}
 			}
@@ -528,7 +529,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 			panic(err)
 		}
 	}
-	err = keystore.SetValue("SYSTEM_CLUSTER_PASS", []byte(cfg.BasicAuth.Password))
+	err = keystore.SetValue("SYSTEM_CLUSTER_PASS", []byte(cfg.BasicAuth.Password.Get()))
 	if err != nil {
 		panic(err)
 	}

@@ -2,6 +2,7 @@ package api
 
 import (
 	"infini.sh/console/config"
+	"infini.sh/console/core/security/enum"
 	"infini.sh/console/plugin/api/alerting"
 	"infini.sh/console/plugin/api/data"
 	"infini.sh/console/plugin/api/email"
@@ -12,7 +13,6 @@ import (
 	"infini.sh/console/plugin/api/notification"
 	"infini.sh/console/plugin/api/platform"
 	"infini.sh/framework/core/api"
-	"infini.sh/framework/core/api/rbac/enum"
 	"path"
 )
 

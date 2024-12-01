@@ -7,10 +7,9 @@ package common
 import (
 	log "github.com/cihub/seelog"
 	"infini.sh/console/modules/agent/model"
+	"infini.sh/console/plugin/managed/common"
 	"infini.sh/framework/core/env"
-	"infini.sh/framework/plugins/managed/common"
 )
-
 
 func GetAgentConfig() *model.AgentConfig {
 	agentCfg := &model.AgentConfig{
@@ -19,7 +18,7 @@ func GetAgentConfig() *model.AgentConfig {
 			DownloadURL: "https://release.infinilabs.com/agent/stable",
 		},
 	}
-	_, err := env.ParseConfig("agent", agentCfg )
+	_, err := env.ParseConfig("agent", agentCfg)
 	if err != nil {
 		log.Errorf("agent config not found: %v", err)
 	}

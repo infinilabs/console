@@ -1,6 +1,0 @@
-.git/
-node_modules
-/web
-docker/
-db/
-bin/

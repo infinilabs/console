@@ -5,12 +5,13 @@
 package layout
 
 import (
+	"infini.sh/console/core"
+	"infini.sh/console/core/security/enum"
 	"infini.sh/framework/core/api"
-	"infini.sh/framework/core/api/rbac/enum"
 )
 
 type LayoutAPI struct {
-	api.Handler
+	core.Handler
 }
 
 func InitAPI() {

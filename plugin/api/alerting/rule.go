@@ -9,11 +9,12 @@ import (
 	"fmt"
 	log "github.com/cihub/seelog"
 	"github.com/r3labs/diff/v2"
+	"infini.sh/console/core/security"
 	"infini.sh/console/model/alerting"
 	"infini.sh/console/model/insight"
+	"infini.sh/console/modules/elastic/api"
 	alerting2 "infini.sh/console/service/alerting"
 	_ "infini.sh/console/service/alerting/elasticsearch"
-	"infini.sh/framework/core/api/rbac"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/event"
@@ -24,7 +25,6 @@ import (
 	"infini.sh/framework/core/task"
 	"infini.sh/framework/core/util"
 	elastic2 "infini.sh/framework/modules/elastic"
-	"infini.sh/framework/modules/elastic/api"
 	"infini.sh/framework/modules/elastic/common"
 	"net/http"
 	"strings"
@@ -32,7 +32,7 @@ import (
 )
 
 func (alertAPI *AlertAPI) createRule(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	rules :=  []alerting.Rule{}
+	rules := []alerting.Rule{}
 	err := alertAPI.DecodeJSON(req, &rules)
 	if err != nil {
 		log.Error(err)
@@ -41,7 +41,7 @@ func (alertAPI *AlertAPI) createRule(w http.ResponseWriter, req *http.Request, p
 		}, http.StatusInternalServerError)
 		return
 	}
-	user, err := rbac.FromUserContext(req.Context())
+	user, err := security.FromUserContext(req.Context())
 	if err != nil {
 		log.Error(err)
 		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -69,7 +69,7 @@ func (alertAPI *AlertAPI) createRule(w http.ResponseWriter, req *http.Request, p
 		ids = append(ids, rule.ID)
 		rule.Created = time.Now()
 		rule.Updated = time.Now()
-		if rule.Schedule.Interval == ""{
+		if rule.Schedule.Interval == "" {
 			rule.Schedule.Interval = "1m"
 		}
 		//filter empty metric group
@@ -93,19 +93,19 @@ func (alertAPI *AlertAPI) createRule(w http.ResponseWriter, req *http.Request, p
 			}, http.StatusInternalServerError)
 			return
 		}
-		saveAlertActivity("alerting_rule_change", "create",  util.MapStr{
-			"cluster_id": rule.Resource.ID,
-			"rule_id": rule.ID,
+		saveAlertActivity("alerting_rule_change", "create", util.MapStr{
+			"cluster_id":   rule.Resource.ID,
+			"rule_id":      rule.ID,
 			"cluster_name": rule.Resource.Name,
-			"rule_name": rule.Name,
-		},nil, &rule)
+			"rule_name":    rule.Name,
+		}, nil, &rule)
 		eng := alerting2.GetEngine(rule.Resource.Type)
 		if rule.Enabled {
 			ruleTask := task.ScheduleTask{
-				ID: rule.ID,
-				Interval: rule.Schedule.Interval,
+				ID:          rule.ID,
+				Interval:    rule.Schedule.Interval,
 				Description: rule.Metrics.Expression,
-				Task: eng.GenerateTask(rule),
+				Task:        eng.GenerateTask(rule),
 			}
 			task.RegisterScheduleTask(ruleTask)
 			task.StartTask(ruleTask.ID)
@@ -115,7 +115,7 @@ func (alertAPI *AlertAPI) createRule(w http.ResponseWriter, req *http.Request, p
 
 	alertAPI.WriteJSON(w, util.MapStr{
 		"result": "created",
-		"ids": ids,
+		"ids":    ids,
 	}, http.StatusOK)
 }
 func (alertAPI *AlertAPI) getRule(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -125,7 +125,7 @@ func (alertAPI *AlertAPI) getRule(w http.ResponseWriter, req *http.Request, ps h
 
 	_, err := orm.Get(&obj)
 	if err != nil {
-		if errors.Is(err, elastic2.ErrNotFound){
+		if errors.Is(err, elastic2.ErrNotFound) {
 			alertAPI.WriteJSON(w, util.MapStr{
 				"_id":   id,
 				"found": false,
@@ -166,7 +166,7 @@ func (alertAPI *AlertAPI) getRuleDetail(w http.ResponseWriter, req *http.Request
 
 	exists, err := orm.Get(&obj)
 	if !exists || err != nil {
-		if errors.Is(err, elastic2.ErrNotFound){
+		if errors.Is(err, elastic2.ErrNotFound) {
 			alertAPI.WriteJSON(w, util.MapStr{
 				"_id":   id,
 				"found": false,
@@ -182,7 +182,7 @@ func (alertAPI *AlertAPI) getRuleDetail(w http.ResponseWriter, req *http.Request
 		expression, _ := cond.GenerateConditionExpression()
 		obj.Conditions.Items[i].Expression = strings.ReplaceAll(expression, "result", metricExpression)
 	}
-	alertNumbers, err  := alertAPI.getRuleAlertMessageNumbers([]string{obj.ID})
+	alertNumbers, err := alertAPI.getRuleAlertMessageNumbers([]string{obj.ID})
 	if err != nil {
 		log.Error(err)
 		alertAPI.WriteJSON(w, util.MapStr{
@@ -222,12 +222,12 @@ func (alertAPI *AlertAPI) getRuleDetail(w http.ResponseWriter, req *http.Request
 	}
 	q := &orm.Query{
 		WildcardIndex: true,
-		RawQuery: util.MustToJSONBytes(queryDSL),
+		RawQuery:      util.MustToJSONBytes(queryDSL),
 	}
 	err, result := orm.Search(alerting.AlertMessage{}, q)
 	if err != nil {
 		log.Error(err)
-		alertAPI.WriteError(w,  err.Error(), http.StatusInternalServerError)
+		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	var state interface{} = "N/A"
@@ -259,7 +259,7 @@ func (alertAPI *AlertAPI) getRuleDetail(w http.ResponseWriter, req *http.Request
 	err, result = orm.Search(alerting.Channel{}, q)
 	if err != nil {
 		log.Error(err)
-		alertAPI.WriteError(w,  err.Error(), http.StatusInternalServerError)
+		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	chm := map[string]alerting.Channel{}
@@ -296,25 +296,25 @@ func (alertAPI *AlertAPI) getRuleDetail(w http.ResponseWriter, req *http.Request
 	}
 
 	detailObj := util.MapStr{
-		"rule_name": obj.Name,
-		"resource_name": obj.Resource.Name,
-		"resource_id": obj.Resource.ID,
-		"resource_objects": obj.Resource.Objects,
-		"resource_time_field": obj.Resource.TimeField,
-		"resource_raw_filter": obj.Resource.RawFilter,
-		"metrics": obj.Metrics,
-		"bucket_size": obj.Metrics.BucketSize, //统计周期
-		"updated": obj.Updated,
-		"conditions": obj.Conditions,
-		"message_count": alertNumbers[obj.ID], //所有关联告警消息数（包括已恢复的）
-		"state": state,
-		"enabled": obj.Enabled,
-		"created": obj.Created,
-		"creator": obj.Creator,
-		"tags": obj.Tags,
-		"alerting_message": alertingMessageItem,
-		"expression": obj.Metrics.Expression,
-		"notification_config": obj.NotificationConfig,
+		"rule_name":                    obj.Name,
+		"resource_name":                obj.Resource.Name,
+		"resource_id":                  obj.Resource.ID,
+		"resource_objects":             obj.Resource.Objects,
+		"resource_time_field":          obj.Resource.TimeField,
+		"resource_raw_filter":          obj.Resource.RawFilter,
+		"metrics":                      obj.Metrics,
+		"bucket_size":                  obj.Metrics.BucketSize, //统计周期
+		"updated":                      obj.Updated,
+		"conditions":                   obj.Conditions,
+		"message_count":                alertNumbers[obj.ID], //所有关联告警消息数（包括已恢复的）
+		"state":                        state,
+		"enabled":                      obj.Enabled,
+		"created":                      obj.Created,
+		"creator":                      obj.Creator,
+		"tags":                         obj.Tags,
+		"alerting_message":             alertingMessageItem,
+		"expression":                   obj.Metrics.Expression,
+		"notification_config":          obj.NotificationConfig,
 		"recovery_notification_config": obj.RecoveryNotificationConfig,
 	}
 
@@ -322,7 +322,7 @@ func (alertAPI *AlertAPI) getRuleDetail(w http.ResponseWriter, req *http.Request
 
 }
 
-func saveActivity(activityInfo *event.Activity){
+func saveActivity(activityInfo *event.Activity) {
 	queueConfig := queue.GetOrInitConfig("platform##activities")
 	if queueConfig.Labels == nil {
 		queueConfig.ReplaceLabels(util.MapStr{
@@ -336,7 +336,7 @@ func saveActivity(activityInfo *event.Activity){
 		Timestamp: time.Now(),
 		Metadata: event.EventMetadata{
 			Category: "elasticsearch",
-			Name: "activity",
+			Name:     "activity",
 		},
 		Fields: util.MapStr{
 			"activity": activityInfo,
@@ -346,16 +346,16 @@ func saveActivity(activityInfo *event.Activity){
 	}
 }
 
-func saveAlertActivity(name, typ string, labels map[string]interface{}, changelog diff.Changelog, oldState interface{}){
+func saveAlertActivity(name, typ string, labels map[string]interface{}, changelog diff.Changelog, oldState interface{}) {
 	activityInfo := &event.Activity{
-		ID: util.GetUUID(),
+		ID:        util.GetUUID(),
 		Timestamp: time.Now(),
 		Metadata: event.ActivityMetadata{
 			Category: "elasticsearch",
-			Group: "platform",
-			Name: name,
-			Type: typ,
-			Labels: labels,
+			Group:    "platform",
+			Name:     name,
+			Type:     typ,
+			Labels:   labels,
 		},
 		Changelog: changelog,
 		Fields: util.MapStr{
@@ -382,8 +382,7 @@ func (alertAPI *AlertAPI) updateRule(w http.ResponseWriter, req *http.Request, p
 
 	id = oldRule.ID
 	create := oldRule.Created
-	rule := &alerting.Rule{
-	}
+	rule := &alerting.Rule{}
 	err = alertAPI.DecodeJSON(req, rule)
 	if err != nil {
 		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -421,12 +420,12 @@ func (alertAPI *AlertAPI) updateRule(w http.ResponseWriter, req *http.Request, p
 		log.Error(err)
 		return
 	}
-	saveAlertActivity("alerting_rule_change", "update",  util.MapStr{
-		"cluster_id": rule.Resource.ID,
-		"rule_id": rule.ID,
-		"rule_name": rule.Name,
+	saveAlertActivity("alerting_rule_change", "update", util.MapStr{
+		"cluster_id":   rule.Resource.ID,
+		"rule_id":      rule.ID,
+		"rule_name":    rule.Name,
 		"cluster_name": rule.Resource.Name,
-	},changeLog, oldRule)
+	}, changeLog, oldRule)
 
 	if rule.Enabled {
 		exists, err = checkResourceExists(rule)
@@ -449,7 +448,7 @@ func (alertAPI *AlertAPI) updateRule(w http.ResponseWriter, req *http.Request, p
 		}
 		task.RegisterScheduleTask(ruleTask)
 		task.StartTask(ruleTask.ID)
-	}else{
+	} else {
 		task.DeleteTask(id)
 	}
 
@@ -459,10 +458,10 @@ func (alertAPI *AlertAPI) updateRule(w http.ResponseWriter, req *http.Request, p
 	}, 200)
 }
 
-func clearKV(ruleID string){
+func clearKV(ruleID string) {
 	_ = kv.DeleteKey(alerting2.KVLastNotificationTime, []byte(ruleID))
 	_ = kv.DeleteKey(alerting2.KVLastEscalationTime, []byte(ruleID))
-	_ = kv.DeleteKey(alerting2.KVLastMessageState,[]byte(ruleID))
+	_ = kv.DeleteKey(alerting2.KVLastMessageState, []byte(ruleID))
 }
 
 func (alertAPI *AlertAPI) deleteRule(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -487,12 +486,12 @@ func (alertAPI *AlertAPI) deleteRule(w http.ResponseWriter, req *http.Request, p
 		log.Error(err)
 		return
 	}
-	saveAlertActivity("alerting_rule_change", "delete",  util.MapStr{
-		"cluster_id": obj.Resource.ID,
-		"rule_id": obj.ID,
+	saveAlertActivity("alerting_rule_change", "delete", util.MapStr{
+		"cluster_id":   obj.Resource.ID,
+		"rule_id":      obj.ID,
 		"cluster_name": obj.Resource.Name,
-		"rule_name": obj.Name,
-	},nil, &obj)
+		"rule_name":    obj.Name,
+	}, nil, &obj)
 	task.DeleteTask(obj.ID)
 	clearKV(obj.ID)
 
@@ -541,12 +540,12 @@ func (alertAPI *AlertAPI) batchDeleteRule(w http.ResponseWriter, req *http.Reque
 	}
 	var newIDs []string
 	for _, rule := range rules {
-		saveAlertActivity("alerting_rule_change", "delete",  util.MapStr{
-			"cluster_id": rule.Resource.ID,
-			"rule_id": rule.ID,
+		saveAlertActivity("alerting_rule_change", "delete", util.MapStr{
+			"cluster_id":   rule.Resource.ID,
+			"rule_id":      rule.ID,
 			"cluster_name": rule.Resource.Name,
-			"rule_name": rule.Name,
-		},nil, &rule)
+			"rule_name":    rule.Name,
+		}, nil, &rule)
 		task.DeleteTask(rule.ID)
 		clearKV(rule.ID)
 		newIDs = append(newIDs, rule.ID)
@@ -587,16 +586,14 @@ func (alertAPI *AlertAPI) batchDeleteRule(w http.ResponseWriter, req *http.Reque
 func (alertAPI *AlertAPI) searchRule(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	var (
 		keyword = alertAPI.GetParameterOrDefault(req, "keyword", "")
-		from = alertAPI.GetIntOrDefault(req, "from", 0)
-		size = alertAPI.GetIntOrDefault(req, "size", 20)
+		from    = alertAPI.GetIntOrDefault(req, "from", 0)
+		size    = alertAPI.GetIntOrDefault(req, "size", 20)
 	)
 
-	mustQuery := []util.MapStr{
-	}
+	mustQuery := []util.MapStr{}
 	clusterFilter, hasAllPrivilege := alertAPI.GetClusterFilter(req, "resource.resource_id")
 	if !hasAllPrivilege && clusterFilter == nil {
-		alertAPI.WriteJSON(w, elastic.SearchResponse{
-		}, http.StatusOK)
+		alertAPI.WriteJSON(w, elastic.SearchResponse{}, http.StatusOK)
 		return
 	}
 	if !hasAllPrivilege {
@@ -663,7 +660,7 @@ func (alertAPI *AlertAPI) searchRule(w http.ResponseWriter, req *http.Request, p
 	alertAPI.WriteJSON(w, searchRes, http.StatusOK)
 }
 
-func (alertAPI *AlertAPI) getRuleAlertMessageNumbers(ruleIDs []string) ( map[string]interface{},error) {
+func (alertAPI *AlertAPI) getRuleAlertMessageNumbers(ruleIDs []string) (map[string]interface{}, error) {
 
 	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 	queryDsl := util.MapStr{
@@ -693,7 +690,7 @@ func (alertAPI *AlertAPI) getRuleAlertMessageNumbers(ruleIDs []string) ( map[str
 		},
 	}
 
-	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetWildcardIndexName(alerting.AlertMessage{}), util.MustToJSONBytes(queryDsl) )
+	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetWildcardIndexName(alerting.AlertMessage{}), util.MustToJSONBytes(queryDsl))
 	if err != nil {
 		return nil, err
 	}
@@ -736,10 +733,10 @@ func (alertAPI *AlertAPI) fetchAlertInfos(w http.ResponseWriter, req *http.Reque
 		},
 	}
 
-	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetWildcardIndexName(alerting.Alert{}), util.MustToJSONBytes(queryDsl) )
+	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetWildcardIndexName(alerting.Alert{}), util.MustToJSONBytes(queryDsl))
 	if err != nil {
 		log.Error(err)
-		alertAPI.WriteError(w,  err.Error(), http.StatusInternalServerError)
+		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if len(searchRes.Hits.Hits) == 0 {
@@ -751,7 +748,7 @@ func (alertAPI *AlertAPI) fetchAlertInfos(w http.ResponseWriter, req *http.Reque
 	for _, hit := range searchRes.Hits.Hits {
 		if ruleID, ok := hit.Source["rule_id"].(string); ok {
 			latestAlertInfos[ruleID] = util.MapStr{
-				"status":      hit.Source["state"],
+				"status": hit.Source["state"],
 			}
 		}
 	}
@@ -786,10 +783,10 @@ func (alertAPI *AlertAPI) fetchAlertInfos(w http.ResponseWriter, req *http.Reque
 			},
 		},
 	}
-	searchRes, err = esClient.SearchWithRawQueryDSL(orm.GetWildcardIndexName(alerting.Alert{}), util.MustToJSONBytes(queryDsl) )
+	searchRes, err = esClient.SearchWithRawQueryDSL(orm.GetWildcardIndexName(alerting.Alert{}), util.MustToJSONBytes(queryDsl))
 	if err != nil {
 		log.Error(err)
-		alertAPI.WriteError(w,  err.Error(), http.StatusInternalServerError)
+		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	for _, hit := range searchRes.Hits.Hits {
@@ -862,7 +859,7 @@ func disableRule(obj *alerting.Rule) {
 
 func (alertAPI *AlertAPI) sendTestMessage(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	typ := alertAPI.GetParameterOrDefault(req, "type", "notification")
-	rule :=  alerting.Rule{}
+	rule := alerting.Rule{}
 	err := alertAPI.DecodeJSON(req, &rule)
 	if err != nil {
 		log.Error(err)
@@ -875,7 +872,7 @@ func (alertAPI *AlertAPI) sendTestMessage(w http.ResponseWriter, req *http.Reque
 		rule.ID = util.GetUUID()
 	}
 	eng := alerting2.GetEngine(rule.Resource.Type)
-	actionResults, err :=  eng.Test(&rule, typ)
+	actionResults, err := eng.Test(&rule, typ)
 	if err != nil {
 		log.Error(err)
 		alertAPI.WriteJSON(w, util.MapStr{
@@ -942,14 +939,13 @@ func (alertAPI *AlertAPI) getPreviewMetricData(w http.ResponseWriter, req *http.
 		bkSize = duration.Seconds()
 	}
 
-
 	bucketSize, min, max, err := api.GetMetricRangeAndBucketSize(minStr, maxStr, int(bkSize), 15)
 	filterParam := &alerting.FilterParam{
-		Start: min,
-		End: max,
+		Start:      min,
+		End:        max,
 		BucketSize: fmt.Sprintf("%ds", bucketSize),
 	}
-	metricItem, _, err := getRuleMetricData(rule,  filterParam)
+	metricItem, _, err := getRuleMetricData(rule, filterParam)
 	if err != nil {
 		log.Error(err)
 		alertAPI.WriteJSON(w, util.MapStr{
@@ -963,7 +959,7 @@ func (alertAPI *AlertAPI) getPreviewMetricData(w http.ResponseWriter, req *http.
 }
 
 func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	rule :=  &alerting.Rule{
+	rule := &alerting.Rule{
 		ID: ps.ByName("rule_id"),
 	}
 	exists, err := orm.Get(rule)
@@ -980,11 +976,11 @@ func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request
 	)
 	bucketSize, min, max, err := api.GetMetricRangeAndBucketSize(minStr, maxStr, 60, 15)
 	filterParam := &alerting.FilterParam{
-		Start: min,
-		End: max,
+		Start:      min,
+		End:        max,
 		BucketSize: fmt.Sprintf("%ds", bucketSize),
 	}
-	metricItem, queryResult, err := getRuleMetricData(rule,  filterParam)
+	metricItem, queryResult, err := getRuleMetricData(rule, filterParam)
 	if err != nil {
 		log.Error(err)
 		alertAPI.WriteJSON(w, util.MapStr{
@@ -992,21 +988,21 @@ func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request
 		}, http.StatusInternalServerError)
 		return
 	}
-	resBody :=  util.MapStr{
-		"metric": metricItem,
+	resBody := util.MapStr{
+		"metric":       metricItem,
 		"bucket_label": rule.Metrics.BucketLabel,
 	}
 	if alertAPI.GetParameter(req, "debug") == "1" {
 		resBody["query"] = queryResult.Query
 	}
-	alertAPI.WriteJSON(w,resBody, http.StatusOK)
+	alertAPI.WriteJSON(w, resBody, http.StatusOK)
 }
 
-func getRuleMetricData( rule *alerting.Rule, filterParam *alerting.FilterParam) (*alerting.AlertMetricItem, *alerting.QueryResult, error) {
+func getRuleMetricData(rule *alerting.Rule, filterParam *alerting.FilterParam) (*alerting.AlertMetricItem, *alerting.QueryResult, error) {
 	eng := alerting2.GetEngine(rule.Resource.Type)
 	metricData, queryResult, err := eng.GetTargetMetricData(rule, true, filterParam)
 	if err != nil {
-		return nil,queryResult, err
+		return nil, queryResult, err
 	}
 
 	formatType := "num"
@@ -1102,7 +1098,7 @@ func getRuleMetricData( rule *alerting.Rule, filterParam *alerting.FilterParam) 
 		}
 		metricItem.BucketGroups = append(metricItem.BucketGroups, md.GroupValues)
 		metricItem.Lines = append(metricItem.Lines, &common.MetricLine{
-			Data:  targetData,
+			Data:       targetData,
 			BucketSize: filterParam.BucketSize,
 			Metric: common.MetricSummary{
 				Label:      label,
@@ -1112,7 +1108,7 @@ func getRuleMetricData( rule *alerting.Rule, filterParam *alerting.FilterParam) 
 			},
 		})
 	}
-	return &metricItem,queryResult, nil
+	return &metricItem, queryResult, nil
 }
 
 func (alertAPI *AlertAPI) batchEnableRule(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -1213,7 +1209,7 @@ func (alertAPI *AlertAPI) batchDisableRule(w http.ResponseWriter, req *http.Requ
 func (alertAPI *AlertAPI) searchFieldValues(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	var keyword = alertAPI.GetParameterOrDefault(req, "keyword", "")
 	var field = alertAPI.GetParameterOrDefault(req, "field", "category")
-	items , err := searchListItems(field, keyword, 20)
+	items, err := searchListItems(field, keyword, 20)
 	if err != nil {
 		log.Error(err)
 		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -1222,7 +1218,7 @@ func (alertAPI *AlertAPI) searchFieldValues(w http.ResponseWriter, req *http.Req
 	alertAPI.WriteJSON(w, items, http.StatusOK)
 }
 
-func searchListItems(field, keyword string, size int) ([]string, error){
+func searchListItems(field, keyword string, size int) ([]string, error) {
 	query := util.MapStr{
 		"size": 0,
 		"aggs": util.MapStr{
@@ -1234,8 +1230,8 @@ func searchListItems(field, keyword string, size int) ([]string, error){
 			},
 		},
 	}
-	if v := strings.TrimSpace(keyword); v != ""{
-		query["query"]= util.MapStr{
+	if v := strings.TrimSpace(keyword); v != "" {
+		query["query"] = util.MapStr{
 			"query_string": util.MapStr{
 				"default_field": field,
 				"query":         fmt.Sprintf("*%s*", v),
@@ -1257,7 +1253,7 @@ func searchListItems(field, keyword string, size int) ([]string, error){
 	items := []string{}
 	for _, bk := range searchRes.Aggregations["items"].Buckets {
 		if v, ok := bk["key"].(string); ok {
-			if strings.Contains(v, keyword){
+			if strings.Contains(v, keyword) {
 				items = append(items, v)
 			}
 		}
@@ -1265,7 +1261,7 @@ func searchListItems(field, keyword string, size int) ([]string, error){
 	return items, nil
 }
 
-func getRulesByID(ruleIDs []string) ([]alerting.Rule, error){
+func getRulesByID(ruleIDs []string) ([]alerting.Rule, error) {
 	if len(ruleIDs) == 0 {
 		return nil, nil
 	}

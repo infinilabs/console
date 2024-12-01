@@ -8,10 +8,11 @@ import (
 	"fmt"
 	log "github.com/cihub/seelog"
 	"infini.sh/console/common"
+	"infini.sh/console/core"
+	"infini.sh/console/core/security"
 	"infini.sh/console/model"
 	"infini.sh/console/service"
 	"infini.sh/framework/core/api"
-	"infini.sh/framework/core/api/rbac"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/global"
@@ -22,7 +23,7 @@ import (
 )
 
 type PlatformAPI struct {
-	api.Handler
+	core.Handler
 }
 
 func InitAPI() {
@@ -43,12 +44,12 @@ func (h *PlatformAPI) searchCollection(w http.ResponseWriter, req *http.Request,
 		return
 	}
 	if api.IsAuthEnable() {
-		claims, err := rbac.ValidateLogin(req.Header.Get("Authorization"))
+		claims, err := security.ValidateLogin(req.Header.Get("Authorization"))
 		if err != nil {
 			h.WriteError(w, err.Error(), http.StatusUnauthorized)
 			return
 		}
-		err = rbac.ValidatePermission(claims, meta.RequirePermission["read"])
+		err = security.ValidatePermission(claims, meta.RequirePermission["read"])
 		if err != nil {
 			h.WriteError(w, err.Error(), http.StatusForbidden)
 			return
@@ -128,7 +129,7 @@ func (h *PlatformAPI) rewriteQueryWithFilter(queryDsl []byte, filter util.MapStr
 func (h *PlatformAPI) getCollectionMeta(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	collName := ps.MustGetParameter("collection_name")
 	if collName == "activity" {
-		user, auditLogErr := rbac.FromUserContext(req.Context())
+		user, auditLogErr := security.FromUserContext(req.Context())
 		if auditLogErr == nil && h.GetHeader(req, "Referer", "") != "" {
 			auditLog, _ := model.NewAuditLogBuilderWithDefault().WithOperator(user.Username).
 				WithLogTypeAccess().WithResourceTypeAccountCenter().

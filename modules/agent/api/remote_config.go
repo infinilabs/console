@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"fmt"
 	log "github.com/cihub/seelog"
+	"infini.sh/console/plugin/managed/common"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/kv"
@@ -16,7 +17,6 @@ import (
 	"infini.sh/framework/core/util"
 	common2 "infini.sh/framework/modules/elastic/common"
 	metadata2 "infini.sh/framework/modules/elastic/metadata"
-	"infini.sh/framework/plugins/managed/common"
 	"time"
 )
 

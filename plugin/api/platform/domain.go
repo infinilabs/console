@@ -5,9 +5,9 @@
 package platform
 
 import (
+	"infini.sh/console/core/security/enum"
 	consoleModel "infini.sh/console/model"
 	"infini.sh/console/model/alerting"
-	"infini.sh/framework/core/api/rbac/enum"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/event"
 	"infini.sh/framework/core/model"

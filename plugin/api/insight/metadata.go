@@ -40,7 +40,7 @@ func (h *InsightAPI) HandleGetPreview(w http.ResponseWriter, req *http.Request, 
 		}, http.StatusInternalServerError)
 		return
 	}
-	if reqBody.IndexPattern != "" && !h.IsIndexAllowed(req, clusterID, reqBody.IndexPattern){
+	if reqBody.IndexPattern != "" && !h.IsIndexAllowed(req, clusterID, reqBody.IndexPattern) {
 		h.WriteError(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
@@ -72,7 +72,7 @@ func (h *InsightAPI) HandleGetPreview(w http.ResponseWriter, req *http.Request, 
 		for fieldName := range fieldsMeta.Dates {
 			timeFields = append(timeFields, fieldName)
 		}
-	}else{
+	} else {
 		timeFields = []string{reqBody.TimeField}
 	}
 
@@ -80,10 +80,10 @@ func (h *InsightAPI) HandleGetPreview(w http.ResponseWriter, req *http.Request, 
 
 	for _, tfield := range timeFields {
 		aggs["maxTime_"+tfield] = util.MapStr{
-			 "max": util.MapStr{ "field": tfield },
+			"max": util.MapStr{"field": tfield},
 		}
 		aggs["minTime_"+tfield] = util.MapStr{
-			"min": util.MapStr{ "field": tfield },
+			"min": util.MapStr{"field": tfield},
 		}
 	}
 	query := util.MapStr{
@@ -108,7 +108,7 @@ func (h *InsightAPI) HandleGetPreview(w http.ResponseWriter, req *http.Request, 
 	}
 	tfieldsM := map[string]util.MapStr{}
 	for ak, av := range searchRes.Aggregations {
-		if strings.HasPrefix(ak,"maxTime_") {
+		if strings.HasPrefix(ak, "maxTime_") {
 			tfield := ak[8:]
 			if _, ok := tfieldsM[tfield]; !ok {
 				tfieldsM[tfield] = util.MapStr{}
@@ -116,7 +116,7 @@ func (h *InsightAPI) HandleGetPreview(w http.ResponseWriter, req *http.Request, 
 			tfieldsM[tfield]["max"] = av.Value
 			continue
 		}
-		if strings.HasPrefix(ak,"minTime_") {
+		if strings.HasPrefix(ak, "minTime_") {
 			tfield := ak[8:]
 			if _, ok := tfieldsM[tfield]; !ok {
 				tfieldsM[tfield] = util.MapStr{}
@@ -129,13 +129,13 @@ func (h *InsightAPI) HandleGetPreview(w http.ResponseWriter, req *http.Request, 
 	h.WriteJSON(w, result, http.StatusOK)
 
 }
-func (h *InsightAPI) HandleGetMetadata(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
+func (h *InsightAPI) HandleGetMetadata(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	clusterID := ps.MustGetParameter("id")
 	reqBody := struct {
-		IndexPattern string `json:"index_pattern"`
-		ViewID string `json:"view_id"`
-		TimeField string `json:"time_field"`
-		Filter interface{} `json:"filter"`
+		IndexPattern string      `json:"index_pattern"`
+		ViewID       string      `json:"view_id"`
+		TimeField    string      `json:"time_field"`
+		Filter       interface{} `json:"filter"`
 	}{}
 	err := h.DecodeJSON(req, &reqBody)
 	if err != nil {
@@ -143,7 +143,7 @@ func (h *InsightAPI) HandleGetMetadata(w http.ResponseWriter, req *http.Request,
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if reqBody.IndexPattern != "" && !h.IsIndexAllowed(req, clusterID, reqBody.IndexPattern){
+	if reqBody.IndexPattern != "" && !h.IsIndexAllowed(req, clusterID, reqBody.IndexPattern) {
 		h.WriteError(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
@@ -154,7 +154,7 @@ func (h *InsightAPI) HandleGetMetadata(w http.ResponseWriter, req *http.Request,
 		}
 		exists, err := orm.Get(&view)
 		if err != nil || !exists {
-			h.WriteError(w,  err.Error(), http.StatusNotFound)
+			h.WriteError(w, err.Error(), http.StatusNotFound)
 			return
 		}
 		reqBody.IndexPattern = view.Title
@@ -170,13 +170,13 @@ func (h *InsightAPI) HandleGetMetadata(w http.ResponseWriter, req *http.Request,
 	fieldsMeta, err := getMetadataByIndexPattern(clusterID, reqBody.IndexPattern, reqBody.TimeField, reqBody.Filter, fieldsFormat)
 	if err != nil {
 		log.Error(err)
-		h.WriteError(w,  err.Error(), http.StatusInternalServerError)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	h.WriteJSON(w, fieldsMeta, http.StatusOK)
 }
 
-func (h *InsightAPI) HandleGetMetricData(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
+func (h *InsightAPI) HandleGetMetricData(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	reqBody := insight.Metric{}
 	err := h.DecodeJSON(req, &reqBody)
 	if err != nil {
@@ -185,9 +185,9 @@ func (h *InsightAPI) HandleGetMetricData(w http.ResponseWriter, req *http.Reques
 		return
 	}
 	clusterID := ps.MustGetParameter("id")
-	if !h.IsIndexAllowed(req, clusterID, reqBody.IndexPattern){
+	if !h.IsIndexAllowed(req, clusterID, reqBody.IndexPattern) {
 		allowedSystemIndices := getAllowedSystemIndices()
-		if clusterID != global.MustLookupString(elastic.GlobalSystemElasticsearchID) || !radix.Compile(allowedSystemIndices...).Match(reqBody.IndexPattern){
+		if clusterID != global.MustLookupString(elastic.GlobalSystemElasticsearchID) || !radix.Compile(allowedSystemIndices...).Match(reqBody.IndexPattern) {
 			h.WriteError(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 			return
 		}
@@ -205,8 +205,9 @@ func (h *InsightAPI) HandleGetMetricData(w http.ResponseWriter, req *http.Reques
 
 var (
 	allowedSystemIndicesOnce sync.Once
-	allowedSystemIndices []string
+	allowedSystemIndices     []string
 )
+
 func getAllowedSystemIndices() []string {
 	allowedSystemIndicesOnce.Do(func() {
 		metricIndexName := orm.GetWildcardIndexName(event.Event{})
@@ -235,20 +236,20 @@ func getMetricData(metric *insight.Metric) (interface{}, error) {
 		return nil, err
 	}
 
-	var agg  = searchResult["aggregations"]
+	var agg = searchResult["aggregations"]
 	if metric.Filter != nil {
 		if aggM, ok := agg.(map[string]interface{}); ok {
 			agg = aggM["filter_agg"]
 		}
 	}
-	timeBeforeGroup :=  metric.AutoTimeBeforeGroup()
+	timeBeforeGroup := metric.AutoTimeBeforeGroup()
 	metricData := CollectMetricData(agg, timeBeforeGroup)
 
 	var targetMetricData []insight.MetricData
 	formula := strings.TrimSpace(metric.Formula)
 	if len(metric.Items) == 1 && formula == "" {
-		targetMetricData =  metricData
-	}else {
+		targetMetricData = metricData
+	} else {
 		tpl, err := template.New("insight_formula").Parse(formula)
 		if err != nil {
 			return nil, err
@@ -270,7 +271,7 @@ func getMetricData(metric *insight.Metric) (interface{}, error) {
 		for _, md := range metricData {
 			targetData := insight.MetricData{
 				Groups: md.Groups,
-				Data:  map[string][]insight.MetricDataItem{},
+				Data:   map[string][]insight.MetricDataItem{},
 			}
 			expression, err := govaluate.NewEvaluableExpression(formula)
 			if err != nil {
@@ -335,13 +336,13 @@ func getMetricData(metric *insight.Metric) (interface{}, error) {
 	return result, nil
 }
 
-func getMetadataByIndexPattern(clusterID, indexPattern, timeField string, filter interface{}, fieldsFormat map[string]string) (interface{}, error){
+func getMetadataByIndexPattern(clusterID, indexPattern, timeField string, filter interface{}, fieldsFormat map[string]string) (interface{}, error) {
 	fieldsMeta, err := getFieldsMetadata(indexPattern, clusterID)
 	if err != nil {
 		return nil, err
 	}
 	var (
-		metas []insight.Visualization
+		metas      []insight.Visualization
 		seriesType string
 
 		aggTypes []string
@@ -352,8 +353,8 @@ func getMetadataByIndexPattern(clusterID, indexPattern, timeField string, filter
 	}
 	length := len(fieldNames)
 	step := 50
-	for i := 0; i<length; i=i+step {
-		end := i+step
+	for i := 0; i < length; i = i + step {
+		end := i + step
 		if end > length {
 			end = length
 		}
@@ -379,8 +380,8 @@ func getMetadataByIndexPattern(clusterID, indexPattern, timeField string, filter
 			if count <= 10 {
 				if timeField == "" {
 					seriesType = "pie"
-				}else {
-					if aggField.Type == "string"{
+				} else {
+					if aggField.Type == "string" {
 						seriesType = "column"
 						options["seriesField"] = "group"
 					}
@@ -391,7 +392,7 @@ func getMetadataByIndexPattern(clusterID, indexPattern, timeField string, filter
 				aggTypes = []string{"count", "terms"}
 				defaultAggType = "count"
 			} else {
-				aggTypes = []string{"min", "max", "avg", "sum", "medium","count", "rate"}
+				aggTypes = []string{"min", "max", "avg", "sum", "medium", "count", "rate"}
 				defaultAggType = "avg"
 				if options["seriesField"] == "group" {
 					defaultAggType = "count"
@@ -406,20 +407,19 @@ func getMetadataByIndexPattern(clusterID, indexPattern, timeField string, filter
 				}
 			}
 			seriesItem := insight.SeriesItem{
-				Type: seriesType,
+				Type:    seriesType,
 				Options: options,
 				Metric: insight.Metric{
-				Items: []insight.MetricItem{
-					{
-						Name: "a",
-						Field:     aggField.Name,
-						FieldType: aggField.Type,
-						Statistic: defaultAggType,
-
+					Items: []insight.MetricItem{
+						{
+							Name:      "a",
+							Field:     aggField.Name,
+							FieldType: aggField.Type,
+							Statistic: defaultAggType,
+						},
 					},
-				},
-				AggTypes:  aggTypes,
-			}}
+					AggTypes: aggTypes,
+				}}
 			if seriesType == "column" || seriesType == "pie" {
 				seriesItem.Metric.Groups = []insight.MetricGroupItem{
 					{aggField.Name, 10},
@@ -437,10 +437,10 @@ func getMetadataByIndexPattern(clusterID, indexPattern, timeField string, filter
 	return metas, nil
 }
 
-func countFieldValue(fields []string, clusterID, indexPattern string, filter interface{}) (map[string]float64, error){
+func countFieldValue(fields []string, clusterID, indexPattern string, filter interface{}) (map[string]float64, error) {
 	aggs := util.MapStr{}
 	for _, field := range fields {
-		aggs[field] =  util.MapStr{
+		aggs[field] = util.MapStr{
 			"cardinality": util.MapStr{
 				"field": field,
 			},
@@ -455,7 +455,7 @@ func countFieldValue(fields []string, clusterID, indexPattern string, filter int
 				},
 				"aggs": aggs,
 			},
-		} ,
+		},
 	}
 	if filter != nil {
 		queryDsl["query"] = filter
@@ -466,22 +466,22 @@ func countFieldValue(fields []string, clusterID, indexPattern string, filter int
 	if err != nil {
 		return nil, err
 	}
-	fieldsCount := map[string] float64{}
+	fieldsCount := map[string]float64{}
 	res := map[string]interface{}{}
 	util.MustFromJSONBytes(searchRes.RawResult.Body, &res)
 	if aggsM, ok := res["aggregations"].(map[string]interface{}); ok {
 		if sampleAgg, ok := aggsM["sample"].(map[string]interface{}); ok {
 			for key, agg := range sampleAgg {
-				if key == "doc_count"{
+				if key == "doc_count" {
 					continue
 				}
-				if mAgg, ok := agg.(map[string]interface{});ok{
+				if mAgg, ok := agg.(map[string]interface{}); ok {
 					fieldsCount[key] = mAgg["value"].(float64)
 				}
 			}
-		}else{
+		} else {
 			for key, agg := range aggsM {
-				if mAgg, ok := agg.(map[string]interface{});ok{
+				if mAgg, ok := agg.(map[string]interface{}); ok {
 					fieldsCount[key] = mAgg["value"].(float64)
 				}
 			}
@@ -494,17 +494,18 @@ func countFieldValue(fields []string, clusterID, indexPattern string, filter int
 
 type FieldsMetadata struct {
 	Aggregatable map[string]elastic.ElasticField
-	Dates map[string]elastic.ElasticField
+	Dates        map[string]elastic.ElasticField
 }
 
-func getFieldsMetadata(indexPattern string, clusterID string) (*FieldsMetadata, error){
-	fields, err := elastic.GetFieldCaps(clusterID, indexPattern, nil)
+func getFieldsMetadata(indexPattern string, clusterID string) (*FieldsMetadata, error) {
+	esClient := elastic.GetClient(clusterID)
+	fields, err := elastic.GetFieldCaps(esClient, indexPattern, nil)
 	if err != nil {
 		return nil, err
 	}
 	var fieldsMeta = &FieldsMetadata{
 		Aggregatable: map[string]elastic.ElasticField{},
-		Dates: map[string]elastic.ElasticField{},
+		Dates:        map[string]elastic.ElasticField{},
 	}
 	for _, field := range fields {
 		if field.Type == "date" {

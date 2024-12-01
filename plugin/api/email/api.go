@@ -17,6 +17,7 @@ import (
 type EmailAPI struct {
 	api.Handler
 }
+
 func InitAPI() {
 	email := EmailAPI{}
 	api.HandleAPIMethod(api.POST, "/email/server/_test", email.testEmailServer)

@@ -3,12 +3,12 @@ package notification
 import (
 	"errors"
 	"fmt"
+	"infini.sh/console/core/security"
 	"net/http"
 	"time"
 
 	log "github.com/cihub/seelog"
 	"infini.sh/console/model"
-	"infini.sh/framework/core/api/rbac"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
@@ -23,7 +23,7 @@ type SearchNotificationsRequest struct {
 }
 
 func (h *NotificationAPI) searchNotifications(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	user, err := rbac.FromUserContext(req.Context())
+	user, err := security.FromUserContext(req.Context())
 	if err != nil {
 		log.Error("failed to get user from context, err: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -93,7 +93,7 @@ type SetNotificationsReadRequest struct {
 }
 
 func (h *NotificationAPI) setNotificationsRead(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	user, err := rbac.FromUserContext(req.Context())
+	user, err := security.FromUserContext(req.Context())
 	if err != nil {
 		log.Error("failed to get user from context, err: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)

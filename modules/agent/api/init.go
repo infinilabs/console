@@ -5,13 +5,14 @@
 package api
 
 import (
+	"infini.sh/console/core"
+	"infini.sh/console/core/security/enum"
+	"infini.sh/console/plugin/managed/server"
 	"infini.sh/framework/core/api"
-	"infini.sh/framework/core/api/rbac/enum"
-	"infini.sh/framework/plugins/managed/server"
 )
 
 type APIHandler struct {
-	api.Handler
+	core.Handler
 }
 
 func Init() {

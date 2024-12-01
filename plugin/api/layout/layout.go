@@ -6,8 +6,8 @@ package layout
 
 import (
 	log "github.com/cihub/seelog"
+	"infini.sh/console/core/security"
 	"infini.sh/console/model"
-	"infini.sh/framework/core/api/rbac"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
@@ -25,7 +25,7 @@ func (h *LayoutAPI) createLayout(w http.ResponseWriter, req *http.Request, ps ht
 		return
 	}
 	obj.ID = util.GetUUID()
-	user, err  := rbac.FromUserContext(req.Context())
+	user, err := security.FromUserContext(req.Context())
 	if err != nil {
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -147,13 +147,13 @@ func (h *LayoutAPI) deleteLayout(w http.ResponseWriter, req *http.Request, ps ht
 func (h *LayoutAPI) searchLayout(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 
 	var (
-		keyword        = h.GetParameterOrDefault(req, "keyword", "")
-		strSize     = h.GetParameterOrDefault(req, "size", "20")
-		strFrom     = h.GetParameterOrDefault(req, "from", "0")
-		viewID     = strings.TrimSpace(h.GetParameterOrDefault(req, "view_id", ""))
+		keyword = h.GetParameterOrDefault(req, "keyword", "")
+		strSize = h.GetParameterOrDefault(req, "size", "20")
+		strFrom = h.GetParameterOrDefault(req, "from", "0")
+		viewID  = strings.TrimSpace(h.GetParameterOrDefault(req, "view_id", ""))
 		typ     = strings.TrimSpace(h.GetParameterOrDefault(req, "type", ""))
-		isFixed =  strings.TrimSpace(h.GetParameterOrDefault(req, "is_fixed", ""))
-		mustQ []util.MapStr
+		isFixed = strings.TrimSpace(h.GetParameterOrDefault(req, "is_fixed", ""))
+		mustQ   []util.MapStr
 	)
 	if isFixed != "" {
 		fixed, err := strconv.ParseBool(isFixed)
@@ -188,8 +188,8 @@ func (h *LayoutAPI) searchLayout(w http.ResponseWriter, req *http.Request, ps ht
 	if keyword != "" {
 		mustQ = append(mustQ, util.MapStr{
 			"query_string": util.MapStr{
-				"default_field":"*",
-				"query": keyword,
+				"default_field": "*",
+				"query":         keyword,
 			},
 		})
 	}

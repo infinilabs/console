@@ -9,6 +9,7 @@ import (
 	"infini.sh/console/plugin/audit_log"
 	"infini.sh/framework/core/api"
 	model2 "infini.sh/framework/core/model"
+	elastic2 "infini.sh/framework/modules/elastic"
 	_ "time/tzdata"
 
 	log "github.com/cihub/seelog"
@@ -16,29 +17,27 @@ import (
 	"infini.sh/console/model"
 	"infini.sh/console/model/alerting"
 	"infini.sh/console/model/insight"
+	"infini.sh/console/modules/security"
 	_ "infini.sh/console/plugin"
+	_ "infini.sh/console/plugin/managed"
 	setup1 "infini.sh/console/plugin/setup"
 	alerting2 "infini.sh/console/service/alerting"
 	"infini.sh/framework"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/env"
 	"infini.sh/framework/core/global"
-	_ "infini.sh/framework/core/log"
 	"infini.sh/framework/core/module"
 	"infini.sh/framework/core/orm"
 	task1 "infini.sh/framework/core/task"
 	_ "infini.sh/framework/modules/api"
-	elastic2 "infini.sh/framework/modules/elastic"
 	"infini.sh/framework/modules/metrics"
 	"infini.sh/framework/modules/pipeline"
 	queue2 "infini.sh/framework/modules/queue/disk_queue"
 	"infini.sh/framework/modules/redis"
-	"infini.sh/framework/modules/security"
 	"infini.sh/framework/modules/stats"
 	"infini.sh/framework/modules/task"
 	"infini.sh/framework/modules/web"
 	_ "infini.sh/framework/plugins"
-	_ "infini.sh/framework/plugins/managed"
 )
 
 var appConfig *config.AppConfig
@@ -120,7 +119,6 @@ func main() {
 		module.Start()
 
 		var initFunc = func() {
-
 			elastic2.InitTemplate(false)
 
 			//orm.RegisterSchema(model.Dict{}, "dict")

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	log "github.com/cihub/seelog"
 	"infini.sh/console/common"
+	"infini.sh/console/core/security"
 	"infini.sh/console/model"
 	"infini.sh/console/service"
-	"infini.sh/framework/core/api/rbac"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/event"
@@ -51,7 +51,7 @@ func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req
 		queryDsl["query"] = clusterFilter
 	}
 
-	user, auditLogErr := rbac.FromUserContext(req.Context())
+	user, auditLogErr := security.FromUserContext(req.Context())
 	if auditLogErr == nil && handler.GetHeader(req, "Referer", "") != "" {
 		auditLog, _ := model.NewAuditLogBuilderWithDefault().WithOperator(user.Username).
 			WithLogTypeAccess().WithResourceTypeClusterManagement().

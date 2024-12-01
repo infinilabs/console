@@ -4,10 +4,13 @@
 
 package insight
 
-import "infini.sh/framework/core/api"
+import (
+	"infini.sh/console/core"
+	"infini.sh/framework/core/api"
+)
 
 type InsightAPI struct {
-	api.Handler
+	core.Handler
 }
 
 func InitAPI() {

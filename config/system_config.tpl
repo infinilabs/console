@@ -63,18 +63,6 @@ pipeline:
           processor:
           - activity:
               elasticsearch: "$[[CLUSTER_ID]]"
-  - name: migration_task_dispatcher
-    auto_start: true
-    keep_running: true
-    retry_delay_in_ms: 1000
-    processor:
-      - migration_dispatcher:
-          elasticsearch: "$[[CLUSTER_ID]]"
-          check_instance_available: true
-          max_tasks_per_instance: 10
-          task_batch_size: 50
-          when:
-            cluster_available: ["$[[CLUSTER_ID]]"]
 
   - name: merge_logging
     auto_start: true

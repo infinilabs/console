@@ -1,11 +1,12 @@
 package notification
 
 import (
+	"infini.sh/console/core"
 	"infini.sh/framework/core/api"
 )
 
 type NotificationAPI struct {
-	api.Handler
+	core.Handler
 }
 
 func InitAPI() {

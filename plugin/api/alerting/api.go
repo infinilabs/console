@@ -5,17 +5,17 @@
 package alerting
 
 import (
+	"infini.sh/console/core"
+	"infini.sh/console/core/security/enum"
 	"infini.sh/framework/core/api"
-	"infini.sh/framework/core/api/rbac/enum"
 )
 
-
 type AlertAPI struct {
-	api.Handler
+	core.Handler
 }
 
 func (alert *AlertAPI) Init() {
-	api.HandleAPIMethod(api.GET, "/alerting/rule/:rule_id", alert.RequirePermission(alert.getRule,enum.PermissionAlertRuleRead))
+	api.HandleAPIMethod(api.GET, "/alerting/rule/:rule_id", alert.RequirePermission(alert.getRule, enum.PermissionAlertRuleRead))
 	api.HandleAPIMethod(api.POST, "/alerting/rule", alert.RequirePermission(alert.createRule, enum.PermissionAlertRuleWrite))
 	api.HandleAPIMethod(api.POST, "/alerting/rule/test", alert.RequireLogin(alert.sendTestMessage))
 	api.HandleAPIMethod(api.DELETE, "/alerting/rule/:rule_id", alert.RequirePermission(alert.deleteRule, enum.PermissionAlertRuleWrite))
@@ -47,13 +47,11 @@ func (alert *AlertAPI) Init() {
 
 	api.HandleAPIMethod(api.GET, "/alerting/message/_search", alert.RequirePermission(alert.searchAlertMessage, enum.PermissionAlertMessageRead))
 	api.HandleAPIMethod(api.POST, "/alerting/message/_ignore", alert.RequirePermission(alert.ignoreAlertMessage, enum.PermissionAlertMessageWrite))
-	api.HandleAPIMethod(api.GET, "/alerting/message/_stats",  alert.RequirePermission(alert.getAlertMessageStats, enum.PermissionAlertMessageRead))
+	api.HandleAPIMethod(api.GET, "/alerting/message/_stats", alert.RequirePermission(alert.getAlertMessageStats, enum.PermissionAlertMessageRead))
 	api.HandleAPIMethod(api.GET, "/alerting/message/:message_id", alert.RequirePermission(alert.getAlertMessage, enum.PermissionAlertMessageRead))
 	api.HandleAPIMethod(api.GET, "/alerting/message/:message_id/notification", alert.getMessageNotificationInfo)
-
 
 	//just for test
 	//api.HandleAPIMethod(api.GET, "/alerting/rule/test", alert.testRule)
 
 }
-

@@ -3,9 +3,9 @@ package index_management
 import (
 	log "github.com/cihub/seelog"
 	"infini.sh/console/common"
+	"infini.sh/console/core/security"
 	"infini.sh/console/model"
 	"infini.sh/console/service"
-	"infini.sh/framework/core/api/rbac"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/radix"
@@ -43,7 +43,7 @@ func (handler APIHandler) HandleGetMappingsAction(w http.ResponseWriter, req *ht
 
 func (handler APIHandler) HandleCatIndicesAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	targetClusterID := ps.ByName("id")
-	user, auditLogErr := rbac.FromUserContext(req.Context())
+	user, auditLogErr := security.FromUserContext(req.Context())
 	if auditLogErr == nil && handler.GetHeader(req, "Referer", "") != "" {
 		auditLog, _ := model.NewAuditLogBuilderWithDefault().WithOperator(user.Username).
 			WithLogTypeAccess().WithResourceTypeClusterManagement().
@@ -139,7 +139,7 @@ func (handler APIHandler) HandleCreateIndexAction(w http.ResponseWriter, req *ht
 	targetClusterID := ps.ByName("id")
 	client := elastic.GetClient(targetClusterID)
 	indexName := ps.ByName("index")
-	claims, auditLogErr := rbac.ValidateLogin(req.Header.Get("Authorization"))
+	claims, auditLogErr := security.ValidateLogin(req.Header.Get("Authorization"))
 	if auditLogErr == nil && handler.GetHeader(req, "Referer", "") != "" {
 		auditLog, _ := model.NewAuditLogBuilderWithDefault().WithOperator(claims.Username).
 			WithLogTypeOperation().WithResourceTypeClusterManagement().

@@ -3,10 +3,13 @@ package task
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"infini.sh/console/core/security"
 	"infini.sh/framework/lib/go-ucfg"
+	elastic2 "infini.sh/framework/modules/elastic"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -19,8 +22,9 @@ import (
 	log "github.com/cihub/seelog"
 	"github.com/valyala/fasttemplate"
 	"golang.org/x/crypto/bcrypt"
+	elastic3 "infini.sh/console/modules/elastic/api"
+	security2 "infini.sh/console/modules/security"
 	"infini.sh/framework/core/api"
-	"infini.sh/framework/core/api/rbac"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/credential"
 	"infini.sh/framework/core/elastic"
@@ -36,12 +40,8 @@ import (
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/lib/fasthttp"
 	keystore2 "infini.sh/framework/lib/keystore"
-	elastic2 "infini.sh/framework/modules/elastic"
 	"infini.sh/framework/modules/elastic/adapter"
-	elastic3 "infini.sh/framework/modules/elastic/api"
 	elastic1 "infini.sh/framework/modules/elastic/common"
-	"infini.sh/framework/modules/security"
-	_ "infini.sh/framework/modules/security"
 	"infini.sh/framework/plugins/replay"
 )
 
@@ -315,7 +315,7 @@ func (module *Module) initTempClient(r *http.Request) (error, elastic.API, Setup
 
 	elastic.UpdateConfig(cfg)
 	elastic.UpdateClient(cfg, client)
-	health, err := client.ClusterHealth()
+	health, err := client.ClusterHealth(context.Background())
 	if err != nil {
 		return err, nil, request
 	}
@@ -438,7 +438,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		}
 	}
 	//处理索引
-	security.InitSchema() //register user index
+	security2.InitSchema() //register user index
 	elastic2.InitSchema()
 	toSaveCfg := cfg
 	oldCfg := elastic.ElasticsearchConfig{}
@@ -505,7 +505,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 
 	if request.BootstrapUsername != "" && request.BootstrapPassword != "" {
 		//Save bootstrap user
-		user := rbac.User{}
+		user := security.User{}
 		user.ID = "default_user_" + request.BootstrapUsername
 		user.Username = request.BootstrapUsername
 		user.Nickname = request.BootstrapUsername
@@ -516,10 +516,10 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		}
 
 		user.Password = string(hash)
-		role := []rbac.UserRole{}
-		role = append(role, rbac.UserRole{
-			ID:   rbac.RoleAdminName,
-			Name: rbac.RoleAdminName,
+		role := []security.UserRole{}
+		role = append(role, security.UserRole{
+			ID:   security.RoleAdminName,
+			Name: security.RoleAdminName,
 		})
 		user.Roles = role
 		now := time.Now()
@@ -800,14 +800,14 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 		request.Cluster.Host = uri.Host
 		request.Cluster.Schema = uri.Scheme
 	}
+	var setupHTTPPool = fasthttp.NewRequestResponsePool("setup")
+	req := setupHTTPPool.AcquireRequest()
+	res := setupHTTPPool.AcquireResponse()
 
-	req := fasthttp.AcquireRequest()
-	res := fasthttp.AcquireResponse()
+	defer setupHTTPPool.ReleaseRequest(req)
+	defer setupHTTPPool.ReleaseResponse(res)
 
-	defer fasthttp.ReleaseRequest(req)
-	defer fasthttp.ReleaseResponse(res)
-
-	_, err, _ = replay.ReplayLines(pipeline.AcquireContext(pipeline.PipelineConfigV2{}), lines, request.Cluster.Schema, request.Cluster.Host, request.Cluster.Username, request.Cluster.Password)
+	_, err, _ = replay.ReplayLines(req, res, pipeline.AcquireContext(pipeline.PipelineConfigV2{}), lines, request.Cluster.Schema, request.Cluster.Host, request.Cluster.Username, request.Cluster.Password)
 	if err != nil {
 		module.WriteJSON(w, util.MapStr{
 			"success": false,

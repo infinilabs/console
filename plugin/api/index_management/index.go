@@ -1,6 +1,7 @@
 package index_management
 
 import (
+	"infini.sh/console/core"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/global"
 	"net/http"
@@ -10,7 +11,6 @@ import (
 
 	"infini.sh/console/config"
 	model2 "infini.sh/console/model"
-	"infini.sh/framework/core/api"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
@@ -18,7 +18,7 @@ import (
 
 type APIHandler struct {
 	Config *config.AppConfig
-	api.Handler
+	core.Handler
 }
 
 func (handler APIHandler) GetDictListAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {

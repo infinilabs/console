@@ -1,7 +1,0 @@
-FROM amd64/centos:7.9.2009
-
-COPY ./console /console
-COPY ./config/ /config/
-COPY ./console.yml /console.yml
-
-CMD ["/console"]

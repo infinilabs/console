@@ -7,10 +7,10 @@ package audit_log
 import (
 	"context"
 	"infini.sh/console/common"
+	"infini.sh/console/core/security"
 	"infini.sh/console/model"
 	"infini.sh/console/service"
 	"infini.sh/framework/core/api"
-	"infini.sh/framework/core/api/rbac"
 	"net/http"
 	"regexp"
 	"strings"
@@ -36,7 +36,7 @@ func (m *MonitoringInterceptor) PreHandle(c context.Context, _ http.ResponseWrit
 		targetClusterID = matches[1]
 		eventName = strings.Replace(matches[2], "/", " ", -1)
 	}
-	claims, auditLogErr := rbac.ValidateLogin(request.Header.Get("Authorization"))
+	claims, auditLogErr := security.ValidateLogin(request.Header.Get("Authorization"))
 	if auditLogErr == nil && handler.GetHeader(request, "Referer", "") != "" {
 		auditLog, _ := model.NewAuditLogBuilderWithDefault().WithOperator(claims.Username).
 			WithLogTypeAccess().WithResourceTypeClusterManagement().

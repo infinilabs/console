@@ -1,6 +1,6 @@
 export default {
   "license.menu.label": "关于",
-  "license.tab.version.title": "版本信息",
+  "license.tab.version.title": "授权信息",
   "license.tab.tips.title": "授权提示",
   "license.tab.license.title": "授权信息",
   "license.label.version": "版本",

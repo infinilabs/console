@@ -1,6 +1,6 @@
 export default {
   "license.menu.label": "About",
-  "license.tab.version.title": "Version",
+  "license.tab.version.title": "License",
   "license.tab.tips.title": "License Tips",
   "license.tab.license.title": "License",
   "license.label.version": "Version",

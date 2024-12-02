@@ -1,4 +1,4 @@
-import { Descriptions, Icon, Typography } from "antd";
+import { Descriptions, Icon, Typography, Divider } from "antd";
 import moment from "moment";
 import styles from "./Version.less";
 import { DATE_FORMAT } from ".";
@@ -26,9 +26,10 @@ export default ({ application, licence }) => {
           <Descriptions.Item label="Hash">{build_hash}</Descriptions.Item>
         </Descriptions>
       </div>
-      <div style={{ margin: '10px 0', height: 217, overflow: 'hidden' }}>
-        <Icon style={{ transform: 'scale(0.6)', position: 'relative', top: -70, left: -172 }} component={AGPL}/>
+      <div style={{ margin: '10px 0', height: 97, overflow: 'hidden' }}>
+        <Icon style={{ transform: 'scale(0.2)', position: 'relative', top: -120, left: -172 }} component={AGPL}/>
       </div>
+      <Divider />
       <div className={styles.licence}>
         <Paragraph>
           Copyright (C) INFINI Labs & INFINI LIMITED.

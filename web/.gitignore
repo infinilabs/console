@@ -35,4 +35,3 @@ log/
 .env
 /web/
 .github
-src/common*/

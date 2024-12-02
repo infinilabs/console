@@ -1,6 +1,8 @@
 package api
 
 import (
+	"path"
+
 	"infini.sh/console/config"
 	"infini.sh/console/core/security/enum"
 	"infini.sh/console/plugin/api/alerting"
@@ -9,11 +11,9 @@ import (
 	"infini.sh/console/plugin/api/index_management"
 	"infini.sh/console/plugin/api/insight"
 	"infini.sh/console/plugin/api/layout"
-	"infini.sh/console/plugin/api/license"
 	"infini.sh/console/plugin/api/notification"
 	"infini.sh/console/plugin/api/platform"
 	"infini.sh/framework/core/api"
-	"path"
 )
 
 func Init(cfg *config.AppConfig) {
@@ -74,7 +74,6 @@ func Init(cfg *config.AppConfig) {
 	layout.InitAPI()
 	notification.InitAPI()
 
-	license.InitAPI()
 	email.InitAPI()
 	data.InitAPI()
 	platform.InitAPI()

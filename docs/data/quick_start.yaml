@@ -1,0 +1,28 @@
+console: {
+  shells: [
+    {
+      type: 'Linux',
+      shell: 'curl -sSL http://get.infini.cloud | bash -s -- -p console',
+      contacts: ' -v ',
+    },
+    {
+      type: 'Docker',
+      shell: 'docker run -p 9000:9000 infinilabs/console',
+      contacts: ':',
+    }
+  ],
+  version: '1.26.1-1604',
+  doc: "/docs/latest/console/getting-started/install/"
+}
+
+agent: {
+  shells: [
+    {
+      type: 'Linux',
+      shell: 'curl -sSL http://get.infini.cloud | bash -s -- -p agent',
+      contacts: ' -v ',
+    }
+  ],
+  version: '1.26.1-675',
+  doc: "/docs/latest/agent/getting-started/install/"
+}

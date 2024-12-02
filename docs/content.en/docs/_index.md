@@ -1,13 +1,19 @@
-INFINI Console
-==================================
+---
+title: INFINI Console
+type: docs
+bookCollapseSection: true
+weight: 2
+---
 
-![](./docs/static/img/banner.png)
+# INFINI Console
+
+## Introduction
 
 **INFINI Console** is a very lightweight multi-cluster, cross-version unified Elasticsearch governance platform. Through the centralized management of Elasticsearch, you can quickly and conveniently manage multiple sets of Elasticsearch clusters within the enterprise.
 
 ## Architecture
 
-![](./docs/static/img/architecture.png)
+{{% load-img "/img/architecture.png" "Architecture Overview" %}}
 
 ## Features
 
@@ -31,18 +37,20 @@ INFINI Console
 
 INFINI Console is written in Golang, the installation package is very small, only about 11MB, there is no external environment dependency, deployment and installation are very simple, just need to download the binary executable file of the corresponding platform, start the application and then you are good to go.
 
-To learn more about Console, please visit: https://docs.infinilabs.com/console/
+{{< button relref="./getting-started/install" >}}Getting Started Now{{< /button >}}
 
+## Screenshot
 
+{{% load-img "/img//screenshot/screenshot2023/overview.png" "Elasticsearch Cluster Overview" %}}
+{{% load-img "/img//screenshot/20220330-devtool_tab.jpg" "multiple workspaces" %}}
+{{% load-img "/img//screenshot/20220330-cluster_manage.jpg" "Elasticsearch Cluster Manage" %}}
+
+{{< button relref="./screenshot" >}}View More{{< /button >}}
 
 ## Community
 
-Fell free to join the Discord server to discuss anything around this project:
+[Join Our Discord Server](https://discord.gg/4tKTMkkvVX)
 
-[https://discord.gg/4tKTMkkvVX](https://discord.gg/4tKTMkkvVX)
+## Who Is Using?
 
-## License
-
-INFINI Gateway is a truly open-source project, licensed under the [GNU Affero General Public License v3.0](https://opensource.org/licenses/AGPL-3.0).
-We also offer a commercially supported, enterprise-ready version of the software.
-For more details, please refer to our [license information](./LICENSE).
+If you are using INFINI Console and feel it pretty good, please [let us know](https://discord.gg/4tKTMkkvVX). All our user cases are located [here](./user-cases/). Thank you for your support.

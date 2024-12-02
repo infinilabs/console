@@ -208,10 +208,10 @@ export default class GlobalHeaderRight extends PureComponent {
                 </Menu.Item>
                 <Menu.Item key="ticket">
                   <a
-                    href={`${getWebsitePathByLang()}/company/contact/`}
+                    href={`https://github.com/infinilabs/console/issues/new`}
                     target="_blank"
                   >
-                    <Icon type="mobile" />
+                    <Icon type="github" />
                     <FormattedMessage id="menu.header.help.ticket" />
                   </a>
                 </Menu.Item>

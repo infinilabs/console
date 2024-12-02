@@ -166,8 +166,6 @@ class BasicLayout extends React.PureComponent {
       type: "global/fetchConsoleInfo",
     });
 
-    this.fetchConsoleLicence();
-
     this.renderRef = requestAnimationFrame(() => {
       this.setState({
         rendering: false,
@@ -339,13 +337,6 @@ class BasicLayout extends React.PureComponent {
     return <SettingDrawer />;
   }
 
-  fetchConsoleLicence = () => {
-    const { dispatch } = this.props;
-    dispatch({
-      type: "global/fetchConsoleLicence",
-    });
-  };
-
   render() {
     this.init();
 
@@ -437,7 +428,6 @@ class BasicLayout extends React.PureComponent {
           version={this.props.global.consoleInfo?.application}
           licence={this.props.global.consoleLicence}
           location={this.props.location}
-          onLicenceUpdate={this.fetchConsoleLicence}
         />
       </React.Fragment>
     );

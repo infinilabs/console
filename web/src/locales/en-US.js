@@ -310,7 +310,7 @@ export default {
   "menu.header.help.official_website": "Official website",
   "menu.header.help.release_notes": "Release notes",
   "menu.header.help.document": "Documentation",
-  "menu.header.help.ticket": "Request support",
+  "menu.header.help.ticket": "Report issue",
 
   "app.message.operate.success": "Operate successfully",
   "app.message.operate.failed": "Operate failure",

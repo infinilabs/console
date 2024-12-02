@@ -3,6 +3,7 @@ import { Menu, Icon } from 'antd';
 import styles from './BottomMenu.less';
 import Debounce from "lodash-decorators/debounce";
 import Licence from "@/components/Licence";
+import { formatMessage } from "umi/locale";
 
 export default class BottomMenu extends PureComponent {
 
@@ -23,7 +24,7 @@ export default class BottomMenu extends PureComponent {
 
     const { theme, collapsed, global: { consoleInfo = {}, consoleLicence = {} }, onLicenceShow } = this.props;
 
-    const text = `${consoleLicence.license_type} (${consoleInfo?.application?.version?.number})`
+    const text = `${formatMessage({ id: "license.menu.label" })} (${consoleInfo?.application?.version?.number})`
 
     return (
       <div className={styles.bottomMenu}>

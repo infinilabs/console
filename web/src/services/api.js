@@ -5,10 +5,6 @@ export async function queryConsoleInfo() {
   return request("/_info");
 }
 
-export async function queryConsoleLicence() {
-  return request("/_license/info");
-}
-
 export async function queryProjectNotice() {
   return request("/api/project/notice");
 }

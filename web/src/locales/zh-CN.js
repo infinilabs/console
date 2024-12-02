@@ -315,7 +315,7 @@ export default {
   "menu.header.help.official_website": "官方网站",
   "menu.header.help.release_notes": "更新日志",
   "menu.header.help.document": "产品文档",
-  "menu.header.help.ticket": "提交工单",
+  "menu.header.help.ticket": "提交问题",
 
   "app.message.operate.success": "操作成功",
   "app.message.operate.failed": "操作失败",

@@ -2,7 +2,6 @@ import {
   queryNotices,
   clearNotices,
   queryConsoleInfo,
-  queryConsoleLicence,
 } from "@/services/api";
 import { message } from "antd";
 import { searchClusterConfig, getClusterStatus } from "@/services/cluster";
@@ -289,14 +288,6 @@ export default {
       yield put({
         type: "saveConsoleInfo",
         payload: data,
-      });
-    },
-
-    *fetchConsoleLicence(_, { call, put }) {
-      const data = yield call(queryConsoleLicence);
-      yield put({
-        type: "saveConsoleLicence",
-        payload: data || {},
       });
     },
   },

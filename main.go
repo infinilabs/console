@@ -115,30 +115,29 @@ func main() {
 		api.AddGlobalInterceptors(new(audit_log.MonitoringInterceptor))
 
 	}, func() {
+		//orm.RegisterSchema(model.Dict{}, "dict")
+		orm.RegisterSchemaWithIndexName(elastic.View{}, "view")
+		orm.RegisterSchemaWithIndexName(elastic.CommonCommand{}, "commands")
+		//orm.RegisterSchema(elastic.TraceTemplate{}, "trace-template")
+		orm.RegisterSchemaWithIndexName(alerting.Rule{}, "alert-rule")
+		orm.RegisterSchemaWithIndexName(alerting.Alert{}, "alert-history")
+		orm.RegisterSchemaWithIndexName(alerting.AlertMessage{}, "alert-message")
+		orm.RegisterSchemaWithIndexName(alerting.Channel{}, "channel")
+		orm.RegisterSchemaWithIndexName(insight.Visualization{}, "visualization")
+		orm.RegisterSchemaWithIndexName(insight.Dashboard{}, "dashboard")
+		orm.RegisterSchemaWithIndexName(insight.Widget{}, "widget")
+		orm.RegisterSchemaWithIndexName(task1.Task{}, "task")
+		orm.RegisterSchemaWithIndexName(model.Layout{}, "layout")
+		orm.RegisterSchemaWithIndexName(model.Notification{}, "notification")
+		orm.RegisterSchemaWithIndexName(model.EmailServer{}, "email-server")
+		orm.RegisterSchemaWithIndexName(model2.Instance{}, "instance")
+		orm.RegisterSchemaWithIndexName(api3.RemoteConfig{}, "configs")
+		orm.RegisterSchemaWithIndexName(model.AuditLog{}, "audit-logs")
 
 		module.Start()
 
 		var initFunc = func() {
 			elastic2.InitTemplate(false)
-
-			//orm.RegisterSchema(model.Dict{}, "dict")
-			orm.RegisterSchemaWithIndexName(elastic.View{}, "view")
-			orm.RegisterSchemaWithIndexName(elastic.CommonCommand{}, "commands")
-			//orm.RegisterSchema(elastic.TraceTemplate{}, "trace-template")
-			orm.RegisterSchemaWithIndexName(alerting.Rule{}, "alert-rule")
-			orm.RegisterSchemaWithIndexName(alerting.Alert{}, "alert-history")
-			orm.RegisterSchemaWithIndexName(alerting.AlertMessage{}, "alert-message")
-			orm.RegisterSchemaWithIndexName(alerting.Channel{}, "channel")
-			orm.RegisterSchemaWithIndexName(insight.Visualization{}, "visualization")
-			orm.RegisterSchemaWithIndexName(insight.Dashboard{}, "dashboard")
-			orm.RegisterSchemaWithIndexName(insight.Widget{}, "widget")
-			orm.RegisterSchemaWithIndexName(task1.Task{}, "task")
-			orm.RegisterSchemaWithIndexName(model.Layout{}, "layout")
-			orm.RegisterSchemaWithIndexName(model.Notification{}, "notification")
-			orm.RegisterSchemaWithIndexName(model.EmailServer{}, "email-server")
-			orm.RegisterSchemaWithIndexName(model2.Instance{}, "instance")
-			orm.RegisterSchemaWithIndexName(api3.RemoteConfig{}, "configs")
-			orm.RegisterSchemaWithIndexName(model.AuditLog{}, "audit-logs")
 
 			if global.Env().SetupRequired() {
 				for _, v := range modules {

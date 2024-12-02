@@ -1,54 +1,69 @@
-#INFINI Console
+IK Analysis for Elasticsearch and OpenSearch
+==================================
 
-INFINI Console for Elasticsearch/OpenSearch/Easysearch
+![](./assets/banner.png)
 
-## 前端开发说明
+INFINI Console is Multi-cluster, corss-version unified Elasticsearch/OpenSearch/Easysearch governance platform.
 
-前端采用 React 开发，最终输出为 `.public` 目录的纯静态资源，可以独立部署无需依赖 Node 环境。
+## Backend Development Guide
 
-### 本地开发环境准备
+```sh
+make build
+cd bin
+./console
+```
 
-确保已经安装好`nodejs`（版本大于等于 8.5.0）环境：
+Setup wizard please vistor https://docs.infinilabs.com/console/main/docs/reference/setup/
+
+## Frontend Development Guide
+
+The frontend is developed using React and outputs pure static resources into the `.public` directory. These resources can be deployed independently without relying on a Node environment.
+
+### Local Development Environment Setup
+
+Ensure you have Node.js (version 16.17 ) installed:
+
 ```sh
 node -v
 npm -v
 ```
 
-在国内，你可以安装 `cnpm` 获得更快速、更安全的包管理体验。使用如下命令安装：
+you can install cnpm for a faster and more reliable package management experience. Use the following command to install it:
+
 ```sh
+# clone console-ui
+git clone https://github.com/infinilabs/console-ui.git
+# clone common-ui
+cd src
+git clone https://github.com/infinilabs/common-ui.git common
+# install cnpm@9.2.0
 npm install -g cnpm@9.2.0 --registry=https://registry.npm.taobao.org
 ```
+### Download Project Dependencies
 
-### 下载项目依赖包
-```
+```sh
+# install dependencies
 cnpm install
-cnpm install -g  cross-env
 ```
 
-### 启动开发模式
+### Start Development Mode
 
 ```sh
 cnpm run dev
 ```
 
-
-### 编译静态资源
+### Compile Static Resources
 
 ```sh
 cnpm run build
 ```
 
-执行该命令后会生成最终的 HTML、CSS 和 JS 到 `/.public` 目录下。它们是浏览器可以直接识别并运行的代码，这样你就可以将它们部署到你想要的服务器上了。
+Running this command will generate the final HTML, CSS, and JS files in the `.public` directory. These are browser-ready files that can be deployed to your desired server.
 
+### Useful Links for Frontend Development
 
-### 新增项目依赖包
-```
-cnpm install --save md5
-```
-
-### 前端开发常用链接
-
-- 当前所用组件：https://3x.ant.design/components/button-cn/
+- Current UI components used: https://3x.ant.design/components/button/
 - ProComponents: https://procomponents.ant.design/
-- 图表组件：https://charts.ant.design/guide
-- Ant Design Pro 预览: https://preview.pro.ant.design
+- Chart components: https://charts.ant.design/guide
+- Ant Design Pro Preview: https://preview.pro.ant.design
+

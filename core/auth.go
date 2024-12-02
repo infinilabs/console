@@ -14,37 +14,10 @@ type Handler struct {
 	api.Handler
 }
 
-var authEnabled = false
-
-// BasicAuth register api with basic auth
-func BasicAuth(h httprouter.Handle, requiredUser, requiredPassword string) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-		// Get the Basic Authentication credentials
-		user, password, hasAuth := r.BasicAuth()
-
-		if hasAuth && user == requiredUser && password == requiredPassword {
-			// Delegate request to the given handle
-			h(w, r, ps)
-		} else {
-			// Request Basic Authentication otherwise
-			w.Header().Set("WWW-Authenticate", "Basic realm=Restricted")
-			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-		}
-	}
-}
-
-func EnableAuth(enable bool) {
-	authEnabled = enable
-}
-
-func IsAuthEnable() bool {
-	return authEnabled
-}
-
 func (handler Handler) RequireLogin(h httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
-		if authEnabled {
+		if api.IsAuthEnable() {
 			claims, err := security.ValidateLogin(r.Header.Get("Authorization"))
 			if err != nil {
 				handler.WriteError(w, err.Error(), http.StatusUnauthorized)
@@ -64,7 +37,7 @@ func (handler Handler) RequirePermission(h httprouter.Handle, permissions ...str
 			return
 		}
 
-		if authEnabled {
+		if api.IsAuthEnable() {
 			claims, err := security.ValidateLogin(r.Header.Get("Authorization"))
 			if err != nil {
 				handler.WriteError(w, err.Error(), http.StatusUnauthorized)
@@ -85,7 +58,7 @@ func (handler Handler) RequirePermission(h httprouter.Handle, permissions ...str
 func (handler Handler) RequireClusterPermission(h httprouter.Handle, permissions ...string) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
-		if authEnabled {
+		if api.IsAuthEnable() {
 			id := ps.ByName("id")
 			claims, err := security.ValidateLogin(r.Header.Get("Authorization"))
 			if err != nil {
@@ -106,7 +79,7 @@ func (handler Handler) RequireClusterPermission(h httprouter.Handle, permissions
 }
 
 func (handler Handler) GetCurrentUser(req *http.Request) string {
-	if authEnabled {
+	if api.IsAuthEnable() {
 		claims, ok := req.Context().Value("user").(*security.UserClaims)
 		if ok {
 			return claims.Username

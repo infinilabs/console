@@ -6,6 +6,7 @@ package api
 
 import (
 	"fmt"
+	log "github.com/cihub/seelog"
 	"golang.org/x/crypto/bcrypt"
 	rbac "infini.sh/console/core/security"
 	"infini.sh/console/modules/security/realm"
@@ -45,6 +46,7 @@ func (h APIHandler) Profile(w http.ResponseWriter, r *http.Request, ps httproute
 	if reqUser.Provider == NativeProvider {
 		user, err := h.User.Get(reqUser.UserId)
 		if err != nil {
+			log.Error(err)
 			h.ErrorInternalServer(w, err.Error())
 			return
 		}

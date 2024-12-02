@@ -49,6 +49,7 @@ func (module *Module) Setup() {
 	if !module.cfg.Enabled {
 		return
 	}
+	InitSchema()
 
 	credapi.Init()
 
@@ -69,8 +70,6 @@ func (module *Module) Start() error {
 	if !module.cfg.Enabled {
 		return nil
 	}
-
-	InitSchema()
 
 	realm.Init(module.cfg)
 

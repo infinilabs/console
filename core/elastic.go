@@ -2,6 +2,7 @@ package core
 
 import (
 	rbac "infini.sh/console/core/security"
+	"infini.sh/framework/core/api"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/radix"
 	"infini.sh/framework/core/util"
@@ -11,7 +12,7 @@ import (
 func (handler Handler) IndexRequired(h httprouter.Handle, route ...string) httprouter.Handle {
 
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-		if authEnabled {
+		if api.IsAuthEnable() {
 			claims, err := rbac.ValidateLogin(r.Header.Get("Authorization"))
 			if err != nil {
 				handler.WriteError(w, err.Error(), http.StatusUnauthorized)
@@ -36,7 +37,7 @@ func (handler Handler) ClusterRequired(h httprouter.Handle, route ...string) htt
 
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
-		if authEnabled {
+		if api.IsAuthEnable() {
 			claims, err := rbac.ValidateLogin(r.Header.Get("Authorization"))
 			if err != nil {
 				handler.WriteError(w, err.Error(), http.StatusUnauthorized)
@@ -57,7 +58,7 @@ func (handler Handler) ClusterRequired(h httprouter.Handle, route ...string) htt
 }
 
 func (handler Handler) GetClusterFilter(r *http.Request, field string) (util.MapStr, bool) {
-	if !IsAuthEnable() {
+	if !api.IsAuthEnable() {
 		return nil, true
 	}
 	hasAllPrivilege, clusterIds := rbac.GetCurrentUserCluster(r)
@@ -74,7 +75,7 @@ func (handler Handler) GetClusterFilter(r *http.Request, field string) (util.Map
 	}, false
 }
 func (handler Handler) GetAllowedClusters(r *http.Request) ([]string, bool) {
-	if !IsAuthEnable() {
+	if !api.IsAuthEnable() {
 		return nil, true
 	}
 	hasAllPrivilege, clusterIds := rbac.GetCurrentUserCluster(r)
@@ -82,7 +83,7 @@ func (handler Handler) GetAllowedClusters(r *http.Request) ([]string, bool) {
 }
 
 func (handler Handler) GetAllowedIndices(r *http.Request, clusterID string) ([]string, bool) {
-	if !IsAuthEnable() {
+	if !api.IsAuthEnable() {
 		return nil, true
 	}
 	hasAllPrivilege, indices := handler.GetCurrentUserClusterIndex(r, clusterID)
@@ -93,7 +94,7 @@ func (handler Handler) GetAllowedIndices(r *http.Request, clusterID string) ([]s
 }
 
 func (handler Handler) IsIndexAllowed(r *http.Request, clusterID string, indexName string) bool {
-	if !IsAuthEnable() {
+	if !api.IsAuthEnable() {
 		return true
 	}
 	hasAllPrivilege, indices := handler.GetCurrentUserClusterIndex(r, clusterID)
@@ -107,7 +108,7 @@ func (handler Handler) IsIndexAllowed(r *http.Request, clusterID string, indexNa
 }
 
 func (handler Handler) ValidateProxyRequest(req *http.Request, clusterID string) (bool, string, error) {
-	if !IsAuthEnable() {
+	if !api.IsAuthEnable() {
 		return false, "", nil
 	}
 	claims, err := rbac.ValidateLogin(req.Header.Get("Authorization"))
@@ -149,7 +150,7 @@ func (handler Handler) ValidateProxyRequest(req *http.Request, clusterID string)
 }
 
 func (handler Handler) GetCurrentUserIndex(req *http.Request) (bool, map[string][]string) {
-	if !IsAuthEnable() {
+	if !api.IsAuthEnable() {
 		return true, nil
 	}
 	ctxVal := req.Context().Value("user")

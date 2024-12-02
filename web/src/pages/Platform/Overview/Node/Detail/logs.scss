@@ -1,0 +1,108 @@
+.logs {
+  .form-line {
+    display: flex;
+    align-items: center;
+    gap: 1em;
+    .form-item {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      .offset {
+        width: 100px;
+      }
+    }
+  }
+  .viewer {
+    margin-top: 10px;
+  }
+  .log-viewer {
+    height: 100%;
+    width: 100%;
+    background-color: #fff;
+    .v-header {
+      border: 1px solid #d9d9d9;
+      display: flex;
+      .icon-list {
+        margin-left: auto;
+        margin-right: 1em;
+        .icon {
+          cursor: pointer;
+        }
+      }
+    }
+    .body {
+      background-color: black;
+      color: #fff;
+      font-size: 12px;
+      padding-right: 0;
+      .log-row {
+        display: flex;
+        gap: 1em;
+        .number {
+          text-align: right;
+        }
+        .log-text {
+          display: flex;
+          overflow: hidden;
+
+          .more {
+            cursor: pointer;
+            margin-right: 4px ;
+          }
+          .text {
+            margin-bottom: 0;
+            word-break: break-all;
+            word-wrap: break-word;
+            &.collapsed {
+              white-space: nowrap;
+              text-overflow: ellipsis;
+              overflow: hidden;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+.install-agent {
+  .tips {
+    border: 1px solid rgb(233, 233, 233);
+    border-radius: 3px;
+    font-size: 14px;
+    height: 86px;
+    line-height: 86px;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+
+    .left {
+      .icon {
+        fill: rgb(0, 127, 255);
+        vertical-align: -6px;
+        margin-right: 8px;
+      }
+      .text {
+        color: #565656;
+        font-weight: 400;
+      }
+    }
+
+    .right {
+      .ant-btn {
+        width: 80px;
+      }
+    }
+  }
+
+  .content {
+
+    .title {
+      color: #262626;
+      font-weight: 700;
+      font-size: 18px;
+      margin: 36px 0;
+    }
+
+  }
+}

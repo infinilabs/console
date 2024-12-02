@@ -1,0 +1,62 @@
+.filters {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  .euiSuperDatePicker__flexWrapper--noUpdateButton {
+    width: 320px;
+    .euiFormControlLayout {
+      height: 32px;
+      .euiDatePickerRange__delimeter {
+        display: flex;
+        align-items: center;
+      }
+    }
+    .euiDatePopoverButton {
+      background-color: white;
+    }
+  }
+}
+
+.rowSpace {
+  margin-bottom: 20px;
+}
+.clusterMeta {
+  .title {
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eef1f4;
+  }
+  .total {
+    font-size: 40px;
+    cursor: pointer;
+  }
+  .unit {
+    color: #767676;
+    font-size: 12px;
+    font-weight: normal;
+  }
+}
+.alert-msg-detail-cnt{
+  .message-content{
+    >div{
+      flex-direction: column;
+      >span:last-child{
+        flex: 1 1 auto;
+      }
+    }
+  }
+}
+
+.alert-heatmap {
+  .ant-card-head {
+    min-height: auto;
+    height: 32px;
+    .ant-card-head-title {
+      padding: 6px 0px !important;
+    }
+  }
+  .ant-card-body {
+    padding: 1px 0 0 0;
+    height: 147px;
+  }
+}

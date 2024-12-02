@@ -1,0 +1,29 @@
+.searchEngineBox {
+  display: flex;
+  flex: 1;
+}
+.searchEngineBoxActive {
+  box-sizing: content-box;
+  border: 1px solid #007fff;
+  padding: 2px 10px 3px 10px;
+  border-radius: 3px;
+  margin-right: 10px;
+  align-items: center;
+  display: flex;
+  cursor: pointer;
+}
+.searchEngineBoxDisable {
+  box-sizing: content-box;
+  border: 1px solid #eee;
+  padding: 2px 10px 3px 10px;
+  border-radius: 3px;
+  margin-right: 10px;
+  align-items: center;
+  display: flex;
+  background-color: #ffffff;
+  cursor: pointer;
+}
+.searchEngineBox > div > span {
+  margin-left: 9px;
+  font-size: 14px;
+}

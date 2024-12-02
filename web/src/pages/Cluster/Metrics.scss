@@ -1,0 +1,80 @@
+.metricList {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.vizChartContainer {
+  flex: 0 0 calc(50% - 5px);
+  border: 1px solid #e8e8e8;
+  margin: 5px 0px;
+}
+
+.vizChartItemTitle {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 5px 10px 0 10px;
+  font-weight: 600;
+}
+
+.vizChartItem {
+  background: white !important;
+
+  .echLegend--top .echLegendList,
+  .echLegend--bottom .echLegendList {
+    display: flex;
+    flex-wrap: wrap;
+  }
+}
+
+.vizChartTitle {
+  color: red;
+  position: absolute;
+  font-size: 14px;
+  fill-opacity: 50%;
+  padding-left: 5px;
+}
+
+.summary {
+  padding: 15px;
+  border-top: 1px solid rgb(232, 232, 232);
+  border-bottom: 1px solid rgb(232, 232, 232);
+  position: relative;
+  .mask {
+    position: absolute;
+    inset: 0;
+    background: rgba(96, 96, 96, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: red;
+    font-size: 20px;
+    z-index: 1;
+    flex-direction: column;
+    .time {
+      color: #666;
+    }
+  }
+  .metricMask {
+    filter: blur(4px);
+    -o-filter: blur(4px);
+    -ms-filter: blur(4px);
+    -moz-filter: blur(4px);
+    -webkit-filter: blur(4px);
+  }
+}
+.datepicker {
+  :global(.euiSuperUpdateButton.euiButton--primary) {
+    background-color: #1890ff !important;
+    border-color: #1890ff !important;
+    color: #fff;
+    border-radius: 0;
+  }
+  :global(.euiSuperUpdateButton.euiButton--secondary) {
+    border-radius: 0 !important;
+  }
+  :global(.euiFormControlLayout--group) {
+    border-radius: 0;
+  }
+}

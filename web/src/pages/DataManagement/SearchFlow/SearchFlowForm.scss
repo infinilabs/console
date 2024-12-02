@@ -1,0 +1,13 @@
+.steps-action {
+  text-align: center;
+}
+.steps-content {
+  margin: 20px 0;
+}
+
+.dependcy-step {
+  display: flex;
+  .col {
+    flex: 50% 1 1;
+  }
+}

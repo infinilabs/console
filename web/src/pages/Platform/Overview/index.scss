@@ -1,0 +1,29 @@
+.overview {
+    padding: 15px;
+    background: "#fff"
+}
+
+.tabsCard {
+    :global {
+        .ant-card-head {
+            padding: 0 16px;
+        }
+    }
+}
+.rowSpace {
+    margin-bottom: 20px;
+}
+.clusterMeta {
+    .title {
+        padding-bottom: 10px;
+        border-bottom: 1px solid #eef1f4;
+    }
+    .total {
+        font-size: 40px;
+    }
+    .unit {
+        color: #767676;
+        font-size: 12px;
+        font-weight: normal;
+    }
+}

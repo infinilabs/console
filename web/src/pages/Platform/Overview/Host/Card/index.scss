@@ -1,0 +1,32 @@
+@import "@/components/Overview/common.scss";
+
+.card-host {
+  .card-item {
+    .card-metadata {
+      width: 44% !important;
+      min-width: 400px !important;
+      .card-metadata-info {
+        min-width: 380px !important;
+        .info {
+          > :first-child {
+            margin-right: 0%;
+          }
+          .metric {
+            min-width: 80px;
+            .host-name {
+              max-width: 120px;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+              display: inline-block;
+            }
+          }
+        }
+      }
+    }
+    .card-chart {
+      width: 56% !important;
+      padding-left: 1%;
+    }
+  }
+}

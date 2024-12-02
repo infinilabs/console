@@ -1,0 +1,20 @@
+.condition-editor {
+  // min-width: 450px;
+  display: flex;
+  flex-direction: column;
+  .condition-group {
+    margin-left: 15px;
+  }
+  > div > .condition-group {
+    margin-left: 0;
+  }
+  .bottom {
+    margin-top: auto;
+    text-align: center;
+  }
+}
+.condition-type-dropdown {
+  height: 300px;
+  overflow-y: scroll;
+  border: 1px solid #ccc;
+}

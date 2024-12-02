@@ -1,0 +1,25 @@
+version: "3.5"
+
+services:
+  infini-search-center-ui-build:
+    # option 1: pull image from infini docker registry
+    image: docker.infini.ltd:64443/nodejs-dev:latest
+
+    # # option 2: build image locally
+    # build: 
+    #   context: ./
+    #   dockerfile: ./Dockerfile
+      
+    ports:
+      - 3010:3000
+      - 8010:8000
+    container_name: "infini-search-center-ui-build"
+    volumes:
+      - ../src:/usr/src/app/src
+      - ../config:/usr/src/app/config
+      - ../mock:/usr/src/app/mock
+      - ../package.json:/usr/src/app/package.json
+      - ./entrypoint-dev.sh:/entrypoint.sh
+
+volumes:
+  dist:

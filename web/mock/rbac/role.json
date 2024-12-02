@@ -1,0 +1,140 @@
+{
+    "role": [
+        {
+            "name": "system.role:all",
+            "desctiption": "系统角色写入"
+        },
+        {
+            "name": "system.role:read",
+            "desctiption": "系统角色读取"
+        },
+        {
+            "name": "system.user:all",
+            "desctiption": "系统用户模块写入"
+        },
+        {
+            "name": "system.user:read",
+            "desctiption": "系统用户模块读取"
+        },
+        {
+            "name": "system.cluster:all",
+            "desctiption": "系统集群写入"
+        },
+        {
+            "name": "system.cluster:read",
+            "desctiption": "系统集群读取"
+        },
+        {
+            "name": "system.command:all",
+            "desctiption": "系统命令模块写入"
+        },
+        {
+            "name": "system.command:read",
+            "desctiption": "系统命令模块读取"
+        },
+        {
+            "name": "gateway.instance:all",
+            "desctiption": "网关实例写入"
+        },
+        {
+            "name": "gateway.instance:read",
+            "desctiption": "网关实例读取"
+        },
+        {
+            "name": "gateway.entry:all",
+            "desctiption": "网关入口写入"
+        },
+        {
+            "name": "gateway.entry:read",
+            "desctiption": "网关入口读取"
+        },
+        {
+            "name": "gateway.router:all",
+            "desctiption": "网关路由写入"
+        },
+        {
+            "name": "gateway.router:read",
+            "desctiption": "网关路由读取"
+        },
+        {
+            "name": "gateway.flow:all",
+            "desctiption": "网关流程写入"
+        },
+        {
+            "name": "gateway.flow:read",
+            "desctiption": "网关流程读取"
+        },
+        {
+            "name": "data.index:all",
+            "desctiption": "数据索引写入"
+        },
+        {
+            "name": "data.index:read",
+            "desctiption": "数据索引读取"
+        },
+        {
+            "name": "data.views:all",
+            "desctiption": "数据视图写入"
+        },
+        {
+            "name": "data.views:read",
+            "desctiption": "数据视图读取"
+        },
+        {
+            "name": "data.discover:all",
+            "desctiption": "数据发现写入"
+        },
+        {
+            "name": "data.discover:read",
+            "desctiption": "数据发现读取"
+        },
+        {
+            "name": "alerting.rule:all",
+            "desctiption": "告警规则写入"
+        },
+        {
+            "name": "alerting.rule:read",
+            "desctiption": "告警规则读取"
+        },
+        {
+            "name": "alerting.alert:all",
+            "desctiption": "告警中心写入"
+        },
+        {
+            "name": "alerting.alert:read",
+            "desctiption": "告警中心读取"
+        },
+        {
+            "name": "alerting.channel:all",
+            "desctiption": "告警渠道写入"
+        },
+        {
+            "name": "alerting.channel:read",
+            "desctiption": "告警渠道读取"
+        },
+        {
+            "name": "cluster.overview:all",
+            "desctiption": "平台概览写入"
+        },
+        {
+            "name": "cluster.overview:read",
+            "desctiption": "平台概览读取"
+        },
+        {
+            "name": "cluster.elasticsearch:all",
+            "desctiption": "集群监控写入"
+        },
+        {
+            "name": "cluster.elasticsearch:read",
+            "desctiption": "集群监控读取"
+        },
+        {
+            "name": "cluster.activities:all",
+            "desctiption": "集群动态写入"
+        },
+        {
+            "name": "cluster.activities:read",
+            "desctiption": "集群动态读取"
+        }
+    ]
+}

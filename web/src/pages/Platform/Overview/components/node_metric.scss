@@ -1,0 +1,39 @@
+.metric-control {
+  display: flex;
+  margin-bottom: 15px;
+  .selector {
+    margin-left: auto;
+    display: flex;
+    .value-selector {
+      margin-left: 5px;
+    }
+  }
+}
+.px {
+  padding: 0;
+}
+
+#node-metric,
+#index-metric {
+  .metric-inner-cnt {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    .metric-item {
+      flex: 0 0 calc(50% - 5px);
+      border: 1px solid #e8e8e8;
+      margin: 5px 0;
+    }
+  }
+}
+
+@media (max-width: 940px) {
+  #node-metric,
+  #index-metric {
+    .metric-inner-cnt {
+      .metric-item {
+        flex: 0 0 100%;
+      }
+    }
+  }
+}

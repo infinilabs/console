@@ -1,0 +1,260 @@
+.dscPage {
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+
+  .dscPageBody {
+    overflow: hidden;
+  }
+}
+
+.dscPageBody__inner {
+  overflow: hidden;
+  height: 100%;
+}
+
+.dscPageBody__contents {
+  overflow: hidden;
+  padding-top: 3; // A little breathing room for the index pattern button
+}
+
+.dscPageContent__wrapper {
+  padding: 0 5 5 0;
+  overflow: hidden; // Ensures horizontal scroll of table
+  box-shadow: 0 2px 2px -1px rgb(152 162 179 / 30%),
+    0 1px 5px -2px rgb(152 162 179 / 30%);
+  //  border: 1px solid #D3DAE6;
+  border-radius: 4px;
+  flex-grow: 1;
+}
+
+.dscPageContent {
+  //border: $euiBorderThin;
+  // text-align: center;
+  box-shadow: none !important;
+  .euiDataGrid--fullScreen {
+    z-index: 801;
+  }
+  position: relative;
+}
+
+// .dscPageContent,
+// .dscPageContent__inner {
+//   height: 100%;
+// }
+
+.dscPageContent--centered {
+  height: auto;
+}
+
+.dscTimechart {
+  display: block;
+  position: relative;
+
+  // SASSTODO: the visualizing component should have an option or a modifier
+  .series > rect {
+    fill-opacity: 0.5;
+    stroke-width: 1;
+  }
+}
+
+// .dscHistogram {
+//   display: flex;
+//   height: 10 * 12.5;
+//   padding: 5;
+// }
+
+// // new slimmer layout for data grid
+// .dscHistogramGrid {
+//   display: flex;
+//   height: 10 * 8;
+//   padding: 5 5 0 5;
+// }
+.euiDataGrid--headerUnderline .euiDataGridHeaderCell {
+  border-bottom: 1px solid #d3dae6 !important;
+  border-top: none !important;
+}
+.dscSidebar {
+  .euiButton--text,
+  .euiButton--text:hover {
+    background-color: #fff;
+  }
+}
+
+.sidebar-list {
+  max-width: 200px;
+}
+
+.euiSuperUpdateButton.euiButton--success {
+  background-color: #017d73 !important;
+  border-color: #017d73 !important;
+  color: #fff !important;
+  border-radius: 0 !important;
+}
+
+.dscOverlay {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 20;
+  padding-top: 80px;
+
+  opacity: 0.75;
+  text-align: center;
+  background-color: transparent;
+}
+
+.kbnQueryBar__wrap {
+  box-shadow: none;
+  background-color: #fff !important;
+}
+.kbnQueryBar {
+  .euiSuperUpdateButton.euiButton--primary {
+    background-color: #1890ff !important;
+    border-color: #1890ff !important;
+    color: #fff;
+    border-radius: 0;
+  }
+  .euiSuperUpdateButton.euiButton--secondary {
+    background-color: #07c !important;
+    border-color: #07c !important;
+    color: #fff;
+    border-radius: 0;
+  }
+}
+.dscSetting {
+  position: absolute;
+  right: 0px;
+  top: 0;
+  z-index: 1;
+  &.setting-icon {
+    cursor: pointer;
+    padding: 0 4px;
+    &:hover {
+      background-color: #d3dae6;
+    }
+  }
+  &.setting-content {
+    background-color: #fff;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
+    width: 300px;
+    max-height: 200px;
+    overflow-y: scroll;
+    z-index: 99;
+    .setting-wrapper {
+      padding: 10px;
+    }
+    .setting-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      &:last-child {
+        margin-bottom: 0;
+      }
+      .label {
+        // font-size: 12px;
+        width: 90px;
+        flex: none;
+        text-align: right;
+        margin-right: 5px;
+      }
+    }
+  }
+}
+
+.fake-chart {
+  position: relative;
+  .fake-mask {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 1;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #fff;
+    font-size: 24px;
+    font-weight: 600;
+    background-color: rgba($color: #000000, $alpha: 0.15);
+  }
+}
+
+.trace-setting {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  padding: 15px 0;
+  .trace-col {
+    display: flex;
+    align-items: center;
+    flex: 32% 1 1;
+    min-width: 300px;
+    .label {
+      flex: auto 0 0;
+      text-align: right;
+      padding-right: 5px;
+    }
+  }
+}
+
+
+.kbnSuggestionItem__text{
+    width:auto!important;
+}
+
+.kbnDocViewer .kbnDocViewer__field{
+  max-width: 300px !important;
+}
+
+.kbnDocViewer .eui-textTruncate{
+  text-align: left;
+}
+
+.truncate-by-height{
+  max-height: 70px !important;
+}
+
+.kbnDocTableHeader th{
+  overflow: hidden!important;
+  text-overflow: ellipsis!important;
+  white-space: nowrap!important;
+  word-wrap: normal!important;
+  max-width: 150px;
+  text-align: left;
+}
+
+.search_bar {
+  .ant-select-selection {
+    border-radius: 0;
+  }
+}
+
+.kbn-table .euiButtonIcon{
+  min-height: auto;
+  min-width: auto;
+}
+.kbn-table mark{
+  background: yellow;
+}
+
+.kbnDocViewer .euiTab{
+  font-size: 14px;
+  padding: 5px 15px;
+  height:auto;
+}
+.kbnDocTableDetails__row > td {
+  padding: 12px !important;
+}
+
+.dscFieldSearch__toggleButton{
+  padding:unset;
+  padding-left: 0px!important; 
+}
+
+.kbnDocTable__row span{
+  line-height: auto !important;
+}

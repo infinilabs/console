@@ -1,0 +1,60 @@
+.alert-statistic{
+  display: flex;
+  height: 100%;
+  align-items: center;
+  .st-item{
+    &.total{
+      height: 100%;
+      background: rgb(255, 81, 1);
+      color: #fff;
+      width: 33%;
+      display: flex;
+      align-items: center;
+      border-radius: 3px;
+      >dl{
+        text-align: center;
+        width: 100%;
+      }
+      .num{
+        font-weight: 400;
+        font-size: 64px;
+        line-height: 77px;
+        cursor: pointer;
+      }
+      .text{
+        font-weight: 400;
+        font-size: 14px;
+        line-height: 20px;
+      }
+    }
+    &.detail{
+      display: flex;
+      width: 67%;
+      .list-w{
+        width: 50%;
+      }
+      .d-list{
+        .d-item{
+          margin: 30px auto;
+          width: 105px;
+          .num{
+            float: right;
+            margin-left: 5px;
+            font-weight: 400;
+            font-size: 16px;
+            color: rgb(16, 16, 16);
+            cursor: pointer;
+          }
+          .text{
+            font-weight: 400;
+            font-size: 12px;
+            color: rgb(102, 102, 102);
+            >span{
+              margin-left: 5px;
+            }
+          }
+        }
+      }
+    }
+  }
+}

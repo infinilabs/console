@@ -1,0 +1,104 @@
+.btn-ds,
+.btn-ds:hover {
+  min-width: 150px;
+  padding: 0;
+  border: none;
+  border-bottom: 1px solid #333;
+  text-align: left;
+  transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+  border-radius: 0;
+  margin-left: 15px;
+  position: relative;
+  // bottom: 8px;
+  height: 32px;
+  line-height: 32px;
+  span {
+    color: #333;
+  }
+}
+
+.dropmenu {
+  box-shadow: 0 0 15px 0 rgba(0, 0, 0, 0.15);
+  padding: 0px;
+  padding-bottom: 4px;
+  width: 500px;
+  background: #fff;
+  .item {
+    display: block;
+    float: left;
+  }
+  .btnitem {
+    border-radius: 0px;
+    margin-right: 8px;
+    margin-bottom: 8px;
+  }
+  .selected {
+    color: #1890ff;
+    border-color: #1890ff;
+  }
+}
+
+.infiniteContainer {
+  overflow: auto;
+  overflow-x: hidden;
+  max-height: 300px;
+  position: relative;
+  .filter {
+    position: sticky;
+    background-color: #fff;
+    top: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+  }
+}
+.loadingContainer {
+  position: absolute;
+  bottom: 40px;
+  width: 100%;
+  text-align: center;
+}
+
+@media screen and (max-width: 500px) {
+  .dropmenu {
+    width: 100%;
+  }
+}
+
+.dslist {
+  display: inline-block;
+  width: 100%;
+}
+
+.dropdown-item {
+  box-shadow: 0 0 1px 0 rgba(196, 191, 191, 0.15);
+  .wrapper {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    padding-left: 15px;
+    .name {
+      margin-left: 5px;
+      margin-right: 10px;
+      width: calc(100% - 55px - 5px - 10px - 14px);
+      text-overflow:ellipsis;
+      overflow:hidden;
+      white-space:nowrap;
+    }
+    .version {
+      width: 55px;
+      text-align: right;
+      text-overflow:ellipsis;
+      overflow:hidden;
+      white-space:nowrap;
+    }
+  }
+  :hover {
+    background-color: #939ea0;
+    color: #fff;
+    cursor: pointer;
+  }
+  &.selected {
+    background-color: #eee;
+  }
+}

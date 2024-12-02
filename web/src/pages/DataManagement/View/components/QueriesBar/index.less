@@ -1,0 +1,77 @@
+.queriesBar {
+  margin-bottom: 20px;
+
+  .top {
+    display: flex;
+    gap: 10px;
+
+    .cluster {
+      width: 200px;
+    }
+
+    .indices {
+      width: 200px;
+
+      :global {
+        .ant-select-selection--multiple .ant-select-selection__rendered {
+          overflow: hidden;
+        }
+        .ant-select-selection--multiple .ant-select-selection__rendered ul {
+          display: flex;
+          flex-wrap: nowrap;
+          overflow: hidden;
+          float: left;
+        }
+        .ant-select-selection--multiple .ant-select-selection__choice {
+          float: none;
+          overflow: visible;
+        }
+        .ant-select-selection--multiple .ant-select-search--inline {
+          float: none;
+          position: absolute;
+        }
+        .ant-select-selection--multiple {
+          max-height: 32px;
+          overflow: hidden;
+        }
+      }
+    }
+
+    .query {
+      flex: 1;
+
+      :global {
+        .kbnQueryBar__textareaWrap {
+          z-index: 0;
+        }
+      }
+    }
+
+    .datePicker {
+      height: 32px;
+
+      :global {
+        .common-ui-datepicker-backward,
+        .common-ui-datepicker-Forward {
+          width: 32px !important;
+        }
+
+        .common-ui-datepicker-range {
+          width: auto !important;
+          max-width: 510px;
+        }
+      }
+    }
+
+    .refresh {
+      width: 120px;
+    }
+  }
+
+  .filters {
+    margin-top: 10px;
+  }
+  .euiButtonRefresh {
+    height: 32px !important;
+  }
+}

@@ -1,0 +1,10 @@
+.form-col-group {
+  display: flex;
+  > .ant-form-item {
+    flex: 1 1 auto;
+  }
+}
+.field-group {
+  border: 1px dashed #dedede;
+  padding: 0 15px;
+}

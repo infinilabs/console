@@ -1,0 +1,56 @@
+.flex-tabbar {
+  .ant-tabs-top-bar {
+    display: flex;
+  }
+  .ant-tabs-extra-left {
+    order: 1;
+    flex: 0 0 auto;
+  }
+  .ant-tabs-nav-container {
+    order: 2;
+    flex: 0 0 auto;
+  }
+  .ant-tabs-top-bar .ant-tabs-nav-container {
+    max-width: calc(100% - 140px);
+  }
+  .tabbar-icon {
+    padding: 0 10px;
+    cursor: pointer;
+  }
+  .tabbar-icon:hover {
+    background-color: #efefef;
+  }
+}
+.ant-tabs-extra-append {
+  order: 3;
+}
+.ant-tabs-extra-right {
+  order: 4;
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+#console {
+  .ant-tabs.ant-tabs-card .ant-tabs-card-bar .ant-tabs-tab-active {
+    font-weight: 400;
+    background-color: #939ea0;
+    color: #fff;
+    border-color: #939ea0;
+  }
+
+  .ant-tabs.ant-tabs-card .ant-tabs-card-bar .ant-tabs-tab {
+    border-radius: 0;
+    height: 32px;
+  }
+  .ant-tabs.ant-tabs-card .ant-tabs-extra-content {
+    line-height: 30px;
+    display: flex;
+  }
+  .ant-tabs.ant-tabs-card .ant-tabs-card-bar .ant-tabs-nav-container {
+    height: 30px;
+    max-width: calc(100% - 156px);
+  }
+  .ant-tabs.ant-tabs-card .ant-tabs-card-bar .ant-tabs-tab .ant-tabs-close-x {
+    margin-bottom: 18px;
+  }
+}

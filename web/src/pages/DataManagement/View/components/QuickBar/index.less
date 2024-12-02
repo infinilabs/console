@@ -1,0 +1,76 @@
+.quickBar {
+    position: relative;
+    padding: 10px;
+
+    .iconWrapper {
+        position: absolute;
+        right: 10px;
+        top: 10px;
+        box-shadow: rgba(0, 0, 0, 0.16) 0px 0px 5px 0px;
+        background: #fff;
+    }
+
+    .icon {
+        width: 30px;
+        height: 30px;
+        line-height: 30px;
+        text-align: center;
+        cursor: pointer;  
+        font-size: 16px;
+    }
+
+    .content {
+        display: flex;
+        width: 100%;
+        justify-content: space-between;
+        align-items: center;
+        height: 30px;
+        box-shadow: rgba(0, 0, 0, 0.16) 0px 0px 5px 0px;
+        background: #fff;
+
+        .form {
+            display: flex;
+            width: calc(100% - 30px);
+            height: 30px;
+            gap: 2px;
+
+            .select {
+
+                display: flex;
+                align-items: center;
+                
+                :global {
+                    .ant-select-selection {
+                        border: 0;
+                        border-radius: 0;
+                        height: 30px;
+                    }
+
+                    .euiToken {
+                        position: relative;
+                        top: 3px;
+                        margin-right: 6px;
+                    }
+
+                }
+                
+                .prefix {
+                    width: 30px;
+                    font-size: 16px;
+                    color: rgb(16, 16, 16)
+                }
+            }
+        }
+
+    }
+}
+
+.quickBarMetrics {
+    :global {
+        .euiToken {
+            position: relative;
+            top: 3px;
+            margin-right: 6px;
+        }
+    }
+}

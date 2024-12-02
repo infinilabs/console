@@ -1,0 +1,48 @@
+//公用样式
+.font-bold {
+  font-weight: bold;
+}
+$white: white;
+$black: black;
+$gray: lightgray;
+$green: #39b362;
+$yellow: yellow;
+$red: red;
+
+.bg-online {
+  background-color: $green;
+  color: $white;
+}
+.bg-offline {
+  background-color: $gray;
+  color: $black;
+}
+.bg-unavailable {
+  background-color: $gray;
+  color: $black;
+}
+.bg-green {
+  background-color: $green;
+  color: $white;
+}
+.bg-yellow {
+  background-color: $yellow;
+  color: $black;
+}
+.bg-red {
+  background-color: $red;
+  color: $white;
+}
+
+.card-item {
+  .a-item {
+    cursor: pointer;
+    border: 5px solid transparent;
+    &.active {
+      border-right-color: rgb(24 144 255) !important;
+    }
+  }
+  div.a-item:hover {
+    border-color: #e8e8e8;
+  }
+}

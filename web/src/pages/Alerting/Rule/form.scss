@@ -1,0 +1,44 @@
+.dynamic-delete-button {
+  cursor: pointer;
+  position: relative;
+  top: 10px;
+  font-size: 18px;
+  margin-left: 10px;
+  margin-right: 10px;
+}
+.dynamic-delete-button:hover {
+  color: #777;
+}
+.dynamic-delete-button[disabled] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.channels-tabs {
+  .ant-tabs-top-bar {
+    display: block !important;
+  }
+}
+.formCompact {
+  .form-text {
+    padding-left: 20px;
+    padding-top: 5px;
+  }
+  .dropdownStyleWidth {
+    width: 100% !important;
+    max-width: 600px;
+  }
+
+  .ant-form-item {
+    margin-bottom: 5px !important;
+  }
+  .ant-form-item-with-help {
+    margin-bottom: 1px !important;
+  }
+  .has-error .ant-form-explain {
+    min-height: 10px !important;
+  }
+  .ant-tabs-tabpane .ant-form-item-label {
+    line-height: 30px !important;
+  }
+}

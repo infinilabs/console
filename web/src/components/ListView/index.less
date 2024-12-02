@@ -1,0 +1,121 @@
+.listWrap {
+  display: flex;
+  gap: 10px;
+  .sideWrap {
+    min-height: calc(100vh - 130px);
+    padding: 24px 15px;
+    background-color: #ffffff;
+  }
+  .contentWrap {
+    position: relative;
+    .content {
+      position: relative;
+      .searchActions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 15px;
+        .searchBox {
+          max-width: 500px;
+          flex: 1;
+          margin-right: 10px;
+        }
+        .extraBox {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+      }
+      .searchResult {
+        position: relative;
+        :global {
+          mark {
+            background-color: yellow;
+          }
+        }
+      }
+    }
+    .expandAndCollapse {
+      cursor: pointer;
+      z-index: 10;
+      position: absolute;
+      top: 50%;
+      margin-top: -15px;
+      width: 12px;
+      height: 30px;
+      line-height: 30px;
+      border-radius: 2px;
+      background-color: rgba(234, 244, 255, 1);
+      text-align: center;
+    }
+  }
+  &.sideLeft {
+    flex-direction: row;
+    .contentWrap {
+      .expandAndCollapse {
+        left: 0;
+      }
+    }
+  }
+  &.sideRight {
+    flex-direction: row-reverse;
+    .contentWrap {
+      .expandAndCollapse {
+        right: 0;
+      }
+    }
+  }
+  &.expand {
+    .sideWrap {
+      display: block;
+      width: 220px;
+    }
+    .contentWrap {
+      width: calc(100% - 220px);
+    }
+  }
+  &.collapse {
+    .sideWrap {
+      display: none;
+    }
+    .contentWrap {
+      width: 100%;
+    }
+  }
+
+  .toolbarWrap {
+    padding-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    .toolbar {
+      display: flex;
+      justify-content: right;
+      gap: 15px;
+      .toolbarItem {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        .sortCount {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 14px;
+          width: 14px;
+          height: 14px;
+          background-color: rgba(240, 34, 34, 1);
+          color: #ffffff;
+        }
+      }
+    }
+  }
+
+  .histogramWrap {
+    position: relative;
+    width: 100%;
+    height: 140px;
+    border: 1px solid rgb(232, 232, 232);
+    border-radius: 2px;
+    margin-bottom: 15px;
+  }
+}

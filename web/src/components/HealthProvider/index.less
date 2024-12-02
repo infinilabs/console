@@ -1,0 +1,50 @@
+.systemHealth {
+    .title {
+        font-weight: 400;
+        font-size: 24px;
+        color: #000;
+        text-align: center;
+        position: relative;
+
+        .refresh {
+            position: absolute;
+            right: 0;
+            top: -10px;
+            font-size: 16px;
+        }
+    }
+
+    .desc {
+        text-align: center;
+        margin-top: 12px;
+        font-weight: 400;
+        font-size: 14px;
+        color: #575757;
+        text-align: center;
+    }
+
+    .services {
+        margin-top: 24px;
+        padding: 24px;
+        background-color: #f7f9fc;
+
+        :global {
+            .ant-descriptions-title {
+                text-align: center;
+            }
+
+            .ant-descriptions-item {
+                padding-left: 24px;
+            }
+        }
+
+        .greenIcon {
+            width: 14px;
+            height: 14px;
+            background-color: #27b148;
+            display: inline-block;
+            border-radius: 50%;
+            vertical-align: -3px;
+        }
+    }
+}

@@ -1,0 +1,33 @@
+.widget {
+  width: 100%;
+  height: 100%;
+  border: 1px solid rgb(187, 187, 187);
+  border-radius: 5px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+
+  .empty {
+    font-weight: 400;
+    font-size: 14px;
+    color: rgb(16, 16, 16);
+  }
+
+  :global {
+    .ant-spin-nested-loading, .ant-spin-container {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+  } 
+}
+
+.widgetConfig {
+  :global {
+    .ant-drawer-content-wrapper {
+      width: 50% !important;
+      min-width: 960px;
+    }
+  }
+}

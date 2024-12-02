@@ -1,0 +1,66 @@
+.view {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.viewConent {
+  padding: 15px 0;
+  .title {
+    font-weight: bold;
+    padding-left: 15px;
+    padding-bottom: 5px;
+  }
+  .menu {
+    min-width: 140px;
+    .item {
+      height: 32px;
+      color: #666;
+      padding: 0 10px 0 15px;
+      cursor: pointer;
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+
+      &.selected,
+      &:hover {
+        background-color: #e8f6fe;
+      }
+
+      &.disabled {
+        color: #dbdbdb;
+        background-color: #fff;
+        pointer-events: none;
+      }
+      &.rightMore {
+        justify-content: space-between;
+      }
+
+      .icon {
+        margin-right: 4px;
+        color: #101010;
+      }
+
+      .left {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .right {
+        font-size: 10px;
+      }
+    }
+  }
+}
+
+.popover {
+  :global {
+    .ant-popover-arrow {
+      display: none;
+    }
+    .ant-popover-inner-content {
+      padding: 0;
+    }
+  }
+}

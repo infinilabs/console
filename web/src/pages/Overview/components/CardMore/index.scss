@@ -1,0 +1,13 @@
+.ant-card-body {
+  .card-more {
+    z-index: 999;
+    display: flex;
+    right: 15px;
+    top: 20px;
+    position: absolute;
+    margin-top: -12px;
+    .right {
+      margin-left: auto;
+    }
+  }
+}

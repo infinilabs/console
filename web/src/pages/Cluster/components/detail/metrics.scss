@@ -1,0 +1,83 @@
+.metrics {
+  display: flex;
+  flex-direction: column;
+  .monitorDatePickerWrapper {
+    margin-bottom: 20px;
+    .euiSuperUpdateButton {
+      min-width: auto;
+      background-color: #1890ff;
+      border-color: #1890ff;
+      &:hover,
+      &:focus {
+        background-color: #42a0f8;
+        border-color: #42a0f8;
+      }
+
+      .euiSuperUpdateButton__text {
+        display: none;
+      }
+    }
+    .euiSuperDatePicker__flexWrapper {
+      width: 100%;
+    }
+  }
+
+  .metricWrapper {
+    margin: 10px 0;
+    .metricChart {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      .lineWrapper {
+        height: 150px;
+        width: 48.8%;
+        border: 1px solid #e8e8e8;
+        border-radius: 2px;
+        .chartTitle {
+          padding: 2px 5px;
+          font-weight: 600;
+          border-bottom: 1px solid #e8e8e8;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .chartBody {
+          height: 120px;
+          padding: 0 2px 2px 2px;
+        }
+      }
+    }
+  }
+
+  .tableSmall {
+    .ant-table-small > .ant-table-content > .ant-table-body {
+      margin: 0;
+    }
+
+    .ant-table-small
+      > .ant-table-content
+      > .ant-table-body
+      > table
+      > .ant-table-thead
+      > tr
+      > th {
+      padding: 5px 8px;
+    }
+    .ant-table-small
+      > .ant-table-content
+      > .ant-table-body
+      > table
+      > .ant-table-tbody
+      > tr
+      > td {
+      padding: 5px 8px;
+    }
+  }
+
+  .detailMore {
+    padding-top: 20px;
+    text-align: center;
+    clear: both;
+  }
+}

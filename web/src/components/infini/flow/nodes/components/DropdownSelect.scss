@@ -1,0 +1,25 @@
+.ds-wrapper {
+  border: 1px solid #cecece;
+  background: #fff;
+  .filter {
+    border: none;
+    border-bottom: 1px solid #cecece;
+    border-radius: 0;
+    outline: none;
+    &:focus {
+      outline: none;
+    }
+  }
+  .ds-list {
+    max-height: 400px;
+    overflow-y: scroll;
+    .ds-item {
+      padding: 5px 10px;
+      cursor: pointer;
+      &:hover {
+        color: #fff;
+        background: #939ea0;
+      }
+    }
+  }
+}

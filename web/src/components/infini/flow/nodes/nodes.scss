@@ -1,0 +1,94 @@
+.flow-node {
+  background-color: #fff;
+  padding: 0px 10px;
+  box-shadow: 0 0 24px rgba(23, 49, 65, 0.13);
+  border: 1px solid #ddd;
+  // min-width: 248px;
+  position: relative;
+  .when-icon {
+    position: absolute;
+    right: 2px;
+    top: 0;
+    font-size: 10px;
+    color: #1890ff;
+  }
+  &.sub-flow {
+    .wrapper {
+      width: 100%;
+    }
+    min-width: 300px;
+    border: 1px dashed #ccc;
+    box-shadow: none;
+    background: transparent;
+  }
+  .wrapper {
+    // min-width: 200px;
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      .title {
+        display: flex;
+        align-items: center;
+        padding: 8px 5px;
+        .node-icon {
+          font-size: 24px;
+          color: #1890ff;
+        }
+        .label {
+          margin-left: 5px;
+        }
+      }
+      .icon-group {
+        display: flex;
+        margin-left: auto;
+        .icon {
+          cursor: pointer;
+          padding: 10px 5px;
+          &:hover {
+            color: #1890ff;
+            background: #efefef;
+          }
+        }
+      }
+    }
+    .content {
+      padding: 10px 0;
+      .row {
+        .label {
+          flex: 50px 0 0;
+          margin-bottom: 5px;
+        }
+        .value {
+          flex: auto 1 1;
+        }
+      }
+      .condition-cnt {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1em;
+        border: 1px solid #efefef;
+        padding: 5px 1em;
+        border-radius: 3px;
+      }
+    }
+  }
+}
+.react-flow__node-condition {
+  z-index: 1 !important;
+}
+
+// .react-flow__edge-path-selector:hover {
+//   cursor: pointer;
+// }
+// .react-flow__edge-path-selector:hover + .react-flow__edge-path,
+// .react-flow__edge-path:hover {
+//   stroke: #555;
+//   cursor: pointer;
+// }
+// .react-flow__edge-path-selector {
+//   fill: none;
+//   stroke: transparent;
+//   stroke-width: 2;
+// }

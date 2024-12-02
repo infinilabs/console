@@ -1,0 +1,30 @@
+.channelTabs {
+  margin-top: 10px;
+  :global {
+    .ant-empty {
+      height: 285px;
+      background: rgb(247, 247, 247);
+      margin: 0;
+      padding: 50px 10px;
+    }
+
+    .ant-tabs-top-bar {
+      display: block;
+      margin-bottom: 0;
+    }
+
+    .ant-tabs-tab {
+        min-width: 105px;
+        text-align: center;
+        margin-right: 6px !important;
+
+        &:last-child {
+            padding: 0;
+        }
+    }
+
+    .ant-tabs-tab-active {
+        border-bottom: 1px solid #e8e8e8 !important
+    }
+  }
+}

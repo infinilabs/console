@@ -1,0 +1,17 @@
+@import "@/components/Overview/common.scss";
+
+.card-index {
+  .card-item {
+    .card-metadata {
+      width: 70% !important;
+      min-width: 628px !important;
+      .card-metadata-info {
+        min-width: 608px !important;
+      }
+    }
+    .card-chart {
+      width: 30% !important;
+      min-width: 240px !important;
+    }
+  }
+}

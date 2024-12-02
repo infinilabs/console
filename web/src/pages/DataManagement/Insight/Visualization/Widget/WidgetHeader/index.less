@@ -1,0 +1,28 @@
+.header {
+  text-overflow: ellipsis;
+  display: flex;
+  width: 100%;
+  padding: 8px;
+  overflow: hidden;
+  .title {
+    font-size: 14px;
+    flex: 1 1 auto;
+    max-width: 100%;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    word-wrap: normal !important;
+    cursor: move;
+  }
+  .actions {
+    :global {
+      .anticon {
+        color: #006BB4;
+        padding: 4px;
+        font-size: 16px; 
+        margin-left: 4px;
+        cursor: pointer;
+      }
+    }
+  }
+}

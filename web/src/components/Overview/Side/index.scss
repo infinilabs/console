@@ -1,0 +1,9 @@
+.search-filter {
+  margin-top: 56px;
+  padding: 0 10px;
+  .facet-cnt {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+  }
+}

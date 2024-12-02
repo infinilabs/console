@@ -1,0 +1,66 @@
+.mask {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(244, 244, 244, 0.25);
+}
+
+.contextMenu {
+    padding: 4px 0;
+    position: absolute;
+    // z-index: 10;
+    text-align: left;
+    list-style-type: none;
+    background-color: #fff;
+    background-clip: padding-box;
+    border-radius: 4px;
+    outline: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+
+    width: auto;
+
+    .close {
+        position: absolute;
+        right: -8px;
+        top: -8px;
+        font-size: 18px;
+        background: #fff;
+        border-radius: 50%;
+        cursor: pointer;
+    }
+
+    .item {
+        margin: 0;
+        padding: 5px 12px;
+        color: rgba(0,0,0,.65);
+        font-weight: 400;
+        font-size: 14px;
+        line-height: 22px;
+        white-space: nowrap;
+        cursor: pointer;
+        display: flex;
+        gap: 6px;
+        align-items: center;
+
+        &:hover {
+            background-color: #e6f7ff;
+        }
+
+        &.disabled {
+            cursor: not-allowed; 
+            color: rgba(0, 0, 0, 0.25);
+        }
+    }
+}

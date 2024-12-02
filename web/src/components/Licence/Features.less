@@ -1,0 +1,58 @@
+.features {
+    margin-top: 12px;
+    margin-bottom: 12px;
+    padding: 12px;
+    background-color: #f7f9fc;
+
+    :global {
+        .ant-descriptions-title {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .ant-descriptions-row > th, .ant-descriptions-row > td  {
+            padding-bottom: 8px;
+            vertical-align: top;
+
+            .ant-descriptions-item-content {
+                word-break: break-all;
+            }
+        }
+    }
+
+    .default {
+
+        :global {
+            .ant-descriptions-item-content {
+                font-weight: 400;
+                font-size: 14px;
+                color: #bbb;
+                padding-right: 4px;
+            }
+
+        }
+
+        &.allow {
+            :global {
+                .ant-descriptions-item-content {
+                    color: #575757;
+                }
+            }
+
+            .icon {
+                background-color: #27b148;
+            }
+        }
+
+    }
+
+    .icon {
+        width: 6px;
+        height: 6px;
+        background-color: #bbb;
+        display: inline-block;
+        border-radius: 50%;
+        vertical-align: 2px;
+        margin-right: 4px;
+    }
+}

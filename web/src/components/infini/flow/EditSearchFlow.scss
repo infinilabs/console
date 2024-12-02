@@ -1,0 +1,102 @@
+.search-flow-edit-cnt {
+  &.maxmize {
+    position: fixed;
+    height: 100vh;
+    width: 100vw;
+    inset: 0;
+    z-index: 100;
+  }
+  background-color: #fff;
+  height: calc(100vh - 72px);
+  flex: 1 1 80%;
+  .flow {
+    height: 100%;
+  }
+  .save__controls {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    z-index: 4;
+    font-size: 12px;
+  }
+
+  .save__controls button {
+    margin-left: 5px;
+  }
+  .variable-cnt {
+    display: flex;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    .variable {
+      // background-color: #939ea0;
+      // color: #fff;
+      border: 1px solid #ccc;
+      padding: 5px 10px;
+    }
+  }
+}
+
+.edit-flow-ui {
+  position: relative;
+  background: #fff;
+  > .header {
+    border-bottom: 1px solid #dedede;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    .flow-name {
+      font-size: 16px;
+      padding-left: 10px;
+    }
+    .right {
+      margin-left: auto;
+      display: flex;
+      padding-right: 15px;
+    }
+    .views {
+      flex: 1 1 auto;
+      display: flex;
+      justify-content: center;
+    }
+  }
+  .graph-flow {
+    display: flex;
+  }
+  .editor-wrapper {
+    // position: absolute;
+    // right: 0;
+    // top: 0;
+    // z-index: 1000;
+    // bottom: 0;
+    // min-width: 300px;
+    min-width: 450px;
+    font-size: 12px;
+    .ant-card-actions {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+    }
+    .ant-card-body {
+      height: calc(100% - 90px);
+      overflow-y: scroll;
+    }
+    .when-cnt {
+      margin-top: 15px;
+    }
+  }
+}
+
+.yaml-viewer-cnt {
+  // position: fixed;
+  // bottom: 0;
+  // right: 10px;
+  // z-index: 100;
+  background: #fff;
+  padding-top: 5px;
+}

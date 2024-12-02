@@ -1,0 +1,14 @@
+@import "@/components/Overview/common.scss";
+
+.card-wrap {
+  .card-item {
+    .card-metadata {
+      .card-metadata-info {
+        min-width: 480px;
+      }
+    }
+    .card-chart {
+      min-width: 398px;
+    }
+  }
+}

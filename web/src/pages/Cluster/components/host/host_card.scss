@@ -1,0 +1,148 @@
+//公用样式
+@import "../overview_common";
+
+.host-item {
+  position: relative;
+  border: 1px solid $gray;
+  width: 100%;
+  min-height: 120px;
+  max-height: 300px;
+  display: flex;
+  font-size: 12px;
+  flex-direction: column;
+
+  &.border-unavailable {
+    border: 1px solid $gray;
+  }
+  &.border-green {
+    border: 1px solid $green;
+  }
+  &.border-yellow {
+    border: 1px solid $yellow;
+  }
+  &.border-red {
+    border: 1px solid $red;
+  }
+  
+  .meta-label {
+    margin-right: 5px;
+    margin-bottom: 3px;
+    border: 1px solid rgb(24, 144, 255);
+    padding: 0 2px;
+  }
+  .meta-general-label {
+    margin-right: 5px;
+    margin-bottom: 5px;
+    display: flex;
+    .meta-label-text {
+        max-width: 280px;
+        display: inline-block;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+  }
+  .host-basic {
+    padding: 2px 5px;
+    display: flex;
+    justify-content: space-between;
+    background-color: rgb(241,242,245,1);
+    .cbl {
+      display: flex;
+      .host-name {
+        min-width: 150px;
+        max-width: 300px;
+        display: inline-block;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
+        padding-left: 2px;
+      }
+    }
+    .host-location-provider {
+      padding-left: 5px;
+    }
+    .host-location-region {
+      padding-right: 5px;
+    }
+    .host-owner-department {
+      padding-left: 5px;
+    }
+  }
+  .host-info {
+    display: flex;
+    flex-direction: row;
+    .info-meta {
+      width: 100%;
+      padding-top: 2px;
+      padding-left: 5px;
+      display: flex;
+      flex-wrap: wrap;
+    }
+    .info-left {
+      width: 46%;
+      .info-region {
+        margin: 5px 0 5px 5px;
+        .text {
+          height: 24px;
+          line-height: 24px;
+          font-weight: bold;
+          font-size: 12px;
+          padding-left: 5px;
+        }
+      }
+      .info-status {
+        display: flex;
+        padding-left: 3px;
+        padding-top: 2px;
+        flex-direction: column;
+        .info-status-label {
+          background-color: rgb(241,242,245,0.8);
+          font-size: 12px;
+          padding-left: 5px;
+        }
+      }
+    }
+    .info-right {
+      width: 54%;
+      padding-left: 5px;
+      .info-chart {
+        min-height: 80px;
+        width: 100%;
+        display: flex;
+        .pie-chart {
+          width: 40%;
+          display: flex;
+          justify-content: space-between;
+          .pie-item {
+            width: 50%;
+            .pie-label {
+              text-align: center;
+              margin-top: -10px;
+              overflow: hidden;
+              color: rgba(0,0,0,.45);
+            }
+          }
+        }
+        .line-chart {
+          width: 60%;
+          display: flex;
+          flex-direction: column;
+          .line-item {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            .line-label {
+              min-width: 60px;
+              text-align: right;
+              color: rgba(0,0,0,.45);
+            }
+            .line-value {
+              width: 100%;
+            }
+          }
+        }
+      }
+    }
+  }
+}

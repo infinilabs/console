@@ -1,0 +1,17 @@
+.gridContainer {
+    &.locked {
+        .widget-drag-handle {
+          display: none;
+        }
+      }
+    
+      &.unlocked {
+        .react-draggable {
+          cursor: move;
+        }
+      }
+    
+      .actions {
+        cursor: default;
+      }
+}

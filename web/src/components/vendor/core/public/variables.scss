@@ -1,0 +1,271 @@
+$euiFontSizeXS: 12px;
+$euiColorEmptyShade: #fff;
+$euiBorderColor:#D3DAE6;
+$euiColorPrimary: #006BB4 !default;
+$euiColorSecondary: #017D73 !default;
+$euiColorAccent: #DD0A73 !default;
+$euiZContentMenu: 2000;
+$euiSizeXL: 32px;
+$euiBorderRadius: 4px;
+$euiBorderWidthThin: 1px !default;
+$euiBorderThin: $euiBorderWidthThin solid $euiBorderColor !default;
+$euiColorLightestShade: #F5F7FA;
+$euiColorFullShade: #343741;
+$euiCodeFontFamily: "Roboto Mono", Consolas, Menlo, Courier, monospace;
+$euiBorderColor: #D3DAE6;
+$euiTextColor: #343741;
+$euiColorLightShade: #fef6e6;
+$euiSizeXS: 4px;
+$euiSizeS: 8px;
+$euiColorDarkShade: #69707D;
+$euiColorMediumShade: #98A2B3 !default;
+$euiColorDanger: #BD271E !default;
+$euiColorWarning: #F5A700 !default;
+$euiSize:     16px !default;
+$euiSizeXS:   $euiSize * .25 !default;
+$euiSizeS:    $euiSize * .5 !default;
+$euiSizeM:    $euiSize * .75 !default;
+$euiSizeL:    $euiSize * 1.5 !default;
+$euiSizeXL:   $euiSize * 2 !default;
+$euiSizeXXL:  $euiSize * 2.5 !default;
+$euiFormMaxWidth: $euiSizeXXL * 10 !default;
+$euiScrollBar: $euiSize !default;
+$euiColorPrimaryText: makeHighContrastColor($euiColorPrimary) !default;
+$euiLinkColor: $euiColorPrimaryText !default;
+$euiFormControlHeight: $euiSizeXXL !default;
+
+$euiTextScale:      2.25, 1.75, 1.25, 1.125, 1, .875, .75 !default;
+
+$euiFontSize:       $euiSize !default; // 5th position in scale
+$euiFontSizeXS:     $euiFontSize * nth($euiTextScale, 7) !default; // 12px
+$euiFontSizeS:      $euiFontSize * nth($euiTextScale, 6) !default; // 14px
+$euiFontSizeM:      $euiFontSize * nth($euiTextScale, 4) !default; // 18px
+$euiFontSizeL:      $euiFontSize * nth($euiTextScale, 3) !default; // 20px
+$euiFontSizeXL:     $euiFontSize * nth($euiTextScale, 2) !default; // 28px
+$euiFontSizeXXL:    $euiFontSize * nth($euiTextScale, 1) !default; // 36px
+
+$euiFontWeightRegular:      400 !default;
+$euiFontWeightBold:         700 !default;
+
+$euiColorDangerText: makeHighContrastColor($euiColorDanger) !default;
+$euiColorWarningText: makeHighContrastColor($euiColorWarning) !default;
+//animate
+
+$euiAnimSlightBounce: cubic-bezier(.34, 1.61, .7, 1) !default;
+$euiAnimSlightResistance: cubic-bezier(.694, .0482, .335, 1) !default;
+
+// Backgrounds
+$euiPageBackgroundColor: tint($euiColorLightestShade, 50%) !default;
+$euiColorHighlight: #FFFCDD !default;
+
+$euiAnimSpeedExtraFast: 90ms !default;
+$euiAnimSpeedFast: 150ms !default;
+$euiAnimSpeedNormal: 250ms !default;
+$euiAnimSpeedSlow: 350ms !default;
+$euiAnimSpeedExtraSlow: 500ms !default;
+$euiFormBackgroundColor: tintOrShade($euiColorLightestShade, 60%, 40%) !default;
+$euiShadowColor: $euiColorMediumShade !default;
+$euiShadowColorLarge: shade(saturate($euiColorMediumShade, 25%), 50%) !default;
+$euiFormBorderOpaqueColor: shadeOrTint(desaturate(adjust-hue($euiColorPrimary, 22), 22.95), 26%, 100%) !default;
+$euiFormBorderColor: transparentize($euiColorPrimary, .9) !default;
+$euiFormControlBoxShadow: 0 1px 1px -1px transparentize($euiShadowColor, .8), 0 3px 2px -2px transparentize($euiShadowColor, .8) !default;
+
+//responsive
+$euiBreakpoints: (
+  'xs': 0,
+  's':  575px,
+  'm':  768px,
+  'l':  992px,
+  'xl': 1200px
+) !default;
+$euiBreakpointKeys: map-keys($euiBreakpoints);
+
+@mixin euiBreakpoint($sizes...) {
+  // Loop through each size parameter
+  @each $size in $sizes {
+    // Store the location of the size in the list to check against
+    $index: index($euiBreakpointKeys, $size);
+
+    // Check to make sure it exists in the allowed breakpoint names
+    @if ( $index ) {
+
+      // Set the min size to the value of the size
+      $minSize: map-get($euiBreakpoints, $size);
+
+      // If it is the last item, don't give it a max-width
+      @if ( $index == length($euiBreakpointKeys) ) {
+        @media only screen and (min-width: $minSize) {
+          @content;
+        }
+      // If it's not the last item, add a max-width
+      } @else {
+
+        // Set the max size to the value of the next size (-1px as to not overlap)
+        $maxSize: map-get($euiBreakpoints, nth($euiBreakpointKeys, $index + 1)) - 1px;
+
+        // If it's the the first item, don't set a min-width
+        @if ( $index == 1 ) {
+          @media only screen and (max-width: $maxSize) {
+            @content;
+          }
+        // Otherwise it should have a min and max width
+        } @else {
+          @media only screen and (min-width: $minSize) and (max-width: $maxSize) {
+            @content;
+          }
+        }
+      }
+    // If it's not a known breakpoint, throw a warning
+    } @else {
+      @warn "euiBreakpoint(): '#{$size}' is not a valid size in $euiBreakpoints. Accepted values are '#{$euiBreakpointKeys}'";
+    }
+  }
+}
+
+@mixin euiFormControlDefaultShadow($borderOnly: false) {
+  // sass-lint:disable-block indentation
+  background-color: $euiFormBackgroundColor;
+  background-repeat: no-repeat;
+  background-size: 0% 100%; // 1
+
+  @if ($borderOnly) {
+    box-shadow: inset 0 0 0 1px $euiFormBorderColor;
+  } @else {
+    box-shadow:
+      #{$euiFormControlBoxShadow},
+      inset 0 0 0 1px $euiFormBorderColor;
+  }
+
+  transition:
+    box-shadow $euiAnimSpeedFast ease-in,
+    background-image $euiAnimSpeedFast ease-in,
+    background-size $euiAnimSpeedFast ease-in,
+    background-color $euiAnimSpeedFast ease-in;
+
+  // Fixes bug in Firefox where adding a transition to the background-color
+  // caused a flash of differently styled dropdown.
+  @supports (-moz-appearance: none) { // sass-lint:disable-line no-vendor-prefixes
+    // List *must* be in the same order as the above.
+    transition-property: box-shadow, background-image, background-size;
+  }
+}
+
+$kbnGlobalFilterItemBorderColor: tintOrShade($euiColorMediumShade, 35%, 20%);
+$kbnGlobalFilterItemBorderColorExcluded: tintOrShade($euiColorDanger, 70%, 50%);
+$kbnGlobalFilterItemPinnedColorExcluded: tintOrShade($euiColorDanger, 30%, 20%);
+
+// @mixin euiBottomShadow($color: $euiShadowColorLarge, $opacity: .1, $adjustBorders: false) {
+//   box-shadow:
+//     0 12px 24px 0 rgba($color, $opacity),
+//     0 6px 12px 0 rgba($color, $opacity),
+//     0 4px 4px 0 rgba($color, $opacity),
+//     0 2px 2px 0 rgba($color, $opacity);
+
+//   // Never adjust borders if the border color is already on the dark side (dark theme)
+//   @if ($adjustBorders and not (lightness($euiBorderColor) < 50)) {
+//     border-color: tint($color, 75%);
+//     border-top-color: tint($color, 80%);
+//     border-bottom-color: tint($color, 55%);
+//   }
+// }
+
+@mixin euiFocusRing($size: 'small', $amsterdamOnlyProp: null) {
+  @if $size == 'large' {
+    // It's always OK to use the focus animation. This will take precedence over times we turn it off individually like EuiButtonEmpty
+    // sass-lint:disable-block no-important
+    animation: $euiAnimSpeedSlow $euiAnimSlightResistance 1 normal forwards focusRingAnimateLarge !important;
+  } @else {
+    // sass-lint:disable-block no-important
+    animation: $euiAnimSpeedSlow $euiAnimSlightResistance 1 normal forwards focusRingAnimate !important;
+  }
+}
+
+@mixin euiBottomShadowMedium($color: $euiShadowColor, $opacity: .2) {
+  box-shadow:
+    0 6px 12px -1px rgba($color, $opacity),
+    0 4px 4px -1px rgba($color, $opacity),
+    0 2px 2px 0 rgba($color, $opacity);
+}
+
+@mixin euiScrollBar($thumbColor: $euiColorDarkShade, $trackBackgroundColor: transparent) {
+  // Firefox's scrollbar coloring cascades, but the sizing does not,
+  // so it's being added to this mixin for allowing support wherever custom scrollbars are
+  // sass-lint:disable-block no-misspelled-properties
+  scrollbar-width: thin;
+
+  // sass-lint:disable-block no-vendor-prefixes
+  &::-webkit-scrollbar {
+    width: $euiScrollBar;
+    height: $euiScrollBar;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: transparentize($thumbColor, .5);
+    // border: $euiScrollBarCorner solid $trackBackgroundColor;
+    background-clip: content-box;
+  }
+
+  &::-webkit-scrollbar-corner,
+  &::-webkit-scrollbar-track {
+    background-color: $trackBackgroundColor;
+  }
+}
+@mixin euiYScroll {
+  @include euiScrollBar;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  &:focus {
+    outline: none; /* 1 */
+  }
+
+  &[tabindex='0']:focus:focus-visible {
+    outline-style: auto; /* 2 */
+  }
+}
+// @mixin euiOverflowShadow($direction: 'y', $side: 'both') {
+//   $hideHeight: $euiScrollBarCorner * 1.25;
+//   $gradient: null;
+//   $gradientStart:
+//   transparentize(red, .9) 0%,
+//   transparentize(red, 0) $hideHeight;
+//   $gradientEnd:
+//   transparentize(red, 0) calc(100% - #{$hideHeight}),
+//   transparentize(red, .9) 100%;
+//   @if ($side == 'both' or $side == 'start' or $side == 'end') {
+//     @if ($side == 'both') {
+//       $gradient: $gradientStart, $gradientEnd;
+//     } @else if ($side == 'start') {
+//       $gradient: $gradientStart;
+//     } @else {
+//       $gradient: $gradientEnd;
+//     }
+//   } @else {
+//     @warn "euiOverflowShadow() expects side to be 'both', 'start' or 'end' but got '#{$side}'";
+//   }
+// }
+@mixin euiYScrollWithShadows {
+  @include euiYScroll;
+  // @include euiOverflowShadow('y');
+}
+
+
+.euiButtonEmpty.euiButtonEmpty--xSmall {
+  font-size: 14px;
+}
+
+.euiTitle--medium {
+  color: #1a1c21;
+  font-size: 1.75rem;
+  line-height: 2.5rem;
+  font-weight: 300;
+  letter-spacing: -0.04em;
+}
+.euiTitle--small {
+  color: #1a1c21;
+  font-size: 1.25rem;
+  line-height: 2rem;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+}

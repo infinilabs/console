@@ -1,0 +1,47 @@
+.header {
+  text-overflow: ellipsis;
+  display: flex;
+  width: 100%;
+  padding: 4px 8px;
+  overflow: hidden;
+  border-bottom: 1px solid #e8e8e8;
+  .title {
+    font-size: 14px;
+    flex: 1 1 auto;
+    max-width: 100%;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    word-wrap: normal !important;
+    font-weight: 400;
+    font-size: 14px;
+    color: rgb(16, 16, 16);
+  }
+  .actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 3px;
+    color: rgb(16, 16, 16);
+    :global {
+      .anticon {
+        padding: 4px;
+        font-size: 16px; 
+        cursor: pointer;
+
+        
+      }
+      
+      .ant-divider {
+        height: 16px;
+        margin: 0;
+        background: #b9b9b9;
+        top: 0;
+      }
+    }
+
+    .disabled {
+      color: #b9b9b9;
+    }
+  }
+}

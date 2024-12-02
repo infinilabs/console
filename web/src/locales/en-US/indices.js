@@ -1,0 +1,22 @@
+export default {
+  "indices.new.title": "Create Index",
+  "indices.field.name": "Index Name",
+  "indices.field.settings": "Index Settings",
+  "indices.field.docs_count": "Docs Count",
+  "indices.field.shards": "Primary Shards",
+  "indices.field.replicas": "Replica Shards",
+  "indices.field.health": "Health",
+  "indices.field.status": "Status",
+  "indices.field.docs_deleted": "Docs Deleted",
+  "indices.field.store_size": "Store Size",
+  "indices.field.primary_store_size": "Primary Store Size",
+  "indices.show_special_index": "Show special index",
+  "indices.overview": "Overview",
+  "indices.show_realtime": "Show realtime",
+  "indices.show_unavailable_index": "Show unavailable",
+  "indices.show_unavailable_node": "Show unavailable",
+  "indices.button.filters": "Filters",
+  "indices.field.name.placeholder": "Please input index name",
+  "indices.field.name.required_message":
+    "Please input a name of at least five characters!",
+};

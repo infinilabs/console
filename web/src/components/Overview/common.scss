@@ -1,0 +1,158 @@
+@import "@/components/infini/color.scss";
+//公用样式
+.font-bold {
+  font-weight: bold;
+}
+
+.bg-online {
+  background-color: $green;
+  color: $white;
+}
+.bg-offline {
+  background-color: $gray;
+  color: $black;
+}
+.bg-available {
+  background-color: $green;
+  color: $white;
+}
+.bg-unavailable {
+  background-color: $gray;
+  color: $black;
+}
+.bg-green {
+  background-color: $green;
+  color: $white;
+}
+.bg-yellow {
+  background-color: $yellow;
+  color: $black;
+}
+.bg-red {
+  background-color: $red;
+  color: $white;
+}
+
+.card-wrap {
+  .card-item {
+    cursor: pointer;
+    border: 1px solid #d9d9d9;
+    position: relative;
+    width: 100%;
+    height: 112px;
+    display: flex;
+    font-size: 12px;
+    flex-direction: row;
+    justify-content: space-between;
+    border-radius: 3px;
+
+    &.active {
+      border-right-color: rgb(24 144 255) !important;
+    }
+    .card-metadata {
+      width: 54%;
+      display: flex;
+      flex-direction: row;
+      min-width: 500px;
+      padding: 10px 0;
+      gap: 10px;
+      .card-status {
+        width: 10px;
+        height: 88px;
+      }
+      .card-metadata-info {
+        width: 100%;
+        .title {
+          height: 26px;
+          margin-bottom: 18px;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          .text {
+            font-size: 18px;
+            color: #333333;
+            max-width: 468px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+        }
+        .info {
+          display: flex;
+          flex-direction: row;
+          justify-content: space-between;
+          .metric {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            min-width: 70px;
+            .value {
+              width: 100%;
+              height: 20px;
+              display: flex;
+              align-items: center;
+              justify-content: left;
+              text-align: left;
+              font-size: 14px;
+              color: #333333;
+            }
+            .lable {
+              width: 100%;
+              text-align: left;
+              color: #999999;
+            }
+          }
+          > :first-child {
+            margin-right: 20px;
+          }
+        }
+      }
+    }
+    .card-chart {
+      width: 46%;
+      padding: 10px 0;
+      display: flex;
+      justify-content: space-around;
+      .pie-chart {
+        width: 80px;
+        .pie-label {
+          text-align: center;
+          margin-top: -10px;
+          overflow: hidden;
+          color: rgba(0, 0, 0, 0.45);
+        }
+      }
+      .line-chart {
+        margin-top: 5px;
+        height: 80px;
+        min-width: 212px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 3px;
+        .line-item {
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          .line-label {
+            text-align: center;
+            overflow: hidden;
+            color: rgba(0, 0, 0, 0.45);
+            line-height: 100%;
+          }
+          .line-value {
+            height: 30px;
+            width: 100%;
+          }
+        }
+        > :first-child {
+          margin-top: -5px;
+        }
+      }
+    }
+  }
+  div.card-item:hover {
+    // border-color: rgb(24 144 255);
+  }
+}

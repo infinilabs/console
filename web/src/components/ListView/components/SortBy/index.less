@@ -1,0 +1,55 @@
+.sortBy {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  .sortCount {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    width: 14px;
+    height: 14px;
+    background-color: rgba(240, 34, 34, 1);
+    color: #ffffff;
+  }
+}
+.sortContent {
+  width: 300px;
+  padding-bottom: 5px;
+  .title {
+    font-weight: bold;
+  }
+  .select {
+    padding: 15px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    .type {
+      width: 100px;
+    }
+    .field {
+      width: calc(100% - 100px);
+    }
+  }
+  .actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    width: 36px;
+  }
+  .footer {
+    display: flex;
+    justify-content: right;
+    gap: 5px;
+  }
+}
+
+.popover {
+  :global {
+    .ant-popover-arrow {
+      display: none;
+    }
+  }
+}

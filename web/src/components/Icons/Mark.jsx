@@ -1,0 +1,5 @@
+export default () => {
+    return (
+        <svg t="1684676767711" fill="currentColor" width="1em" height="1em" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="5552" ><path d="M354 255h316v514H354z" p-id="5553"></path><path d="M101 176h100v-76H101v76z m181 0h100v-76H282v76z m181 0h100v-76H463v76z m180 0h100v-76H643v76z m181 0h100v-76H824v76zM101 924h100v-76H101v76z m181 0h100v-76H282v76z m181 0h100v-76H463v76z m180 0h100v-76H643v76z m181 0h100v-76H824v76z" p-id="5554"></path><path d="M823 100v100h101V100H823z m25 181v100h76V281h-76z m0 181v100h76V462h-76z m0 181v100h76V643h-76z m-24 181v100h100V824H824zM100 100v100h101V100H100z m2 181v100h76V281h-76z m0 181v100h76V462h-76z m0 181v100h76V643h-76z m-1 181v100h100V824H101z" p-id="5555"></path></svg>
+    )
+}

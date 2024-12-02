@@ -1,0 +1,19 @@
+.keyvalue-editor {
+  margin: 5px 0;
+  .kv-line {
+    display: flex;
+    gap: 10px;
+    .kv-line-item {
+      flex: calc(50% - 5px) 1 1;
+    }
+  }
+}
+.keyvalues-editor {
+  .kv-line-w {
+    display: flex;
+    align-items: center;
+    .icon {
+      margin-left: 10px;
+    }
+  }
+}

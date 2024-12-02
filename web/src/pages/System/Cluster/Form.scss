@@ -1,0 +1,15 @@
+:global(.ant-form-item) {
+  margin-bottom: 10px !important;
+}
+.compactForm {
+  .ant-form-item {
+    margin-bottom: 16px !important;
+    .ant-form-item-label {
+      line-height: 30px !important;
+      margin-right: 12px;
+    }
+    .ant-form-item-control {
+      line-height: 30px !important;
+    }
+  }
+}

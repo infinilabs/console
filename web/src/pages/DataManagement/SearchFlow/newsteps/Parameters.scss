@@ -1,0 +1,13 @@
+.parameters-cnt {
+  .edit-cnt {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 15px;
+    align-items: center;
+    .input-cnt {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+  }
+}

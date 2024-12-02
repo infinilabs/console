@@ -1,0 +1,26 @@
+.overview-wrapper {
+  .content {
+    display: flex;
+    gap: 1em;
+    margin-top: 10px;
+    .ant-list-item {
+      border-bottom: none !important;
+    }
+    .left {
+      flex: 1 1 auto;
+      .search-result {
+        min-width: 900px;
+        margin-top: 15px;
+        .table-wrap {
+          margin-top: 24px;
+          .ant-progress-inner {
+            border-radius: 0;
+          }
+          .ant-table-small {
+            border-color: #d9d9d9 !important;
+          }
+        }
+      }
+    }
+  }
+}

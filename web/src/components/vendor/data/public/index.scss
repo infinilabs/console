@@ -1,0 +1,83 @@
+@import "../../core/public/variables.scss";
+@import "./ui/index";
+
+.kbnQueryBar__textarea {
+  border-radius: 4px !important;
+  // padding: 8px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  line-height: 32px !important;
+  padding-left: 8px !important;
+}
+
+.kbnQueryBar--withDatePicker .euiFormControlLayout--group {
+  border-radius: 0px;
+  background-color: #fbfcfd;
+}
+.kbnQueryBar--withDatePicker {
+  .euiFormControlLayout--group .euiButtonEmpty {
+    border-right: 1px solid #e4e8ee;
+  }
+  .euiButton--primary.euiButton--fill {
+    border-radius: 0;
+  }
+}
+.kbnQueryBar {
+  .euiButton--secondary.euiButton--fill,
+  .euiButton--secondary.euiButton--fill:hover {
+    background-color: #017d73;
+    border-color: #017d73;
+    color: #fff;
+    border-radius: 0 !important;
+  }
+}
+
+.euiPopover__panel:not([class*="euiPanel--padding"])
+  .euiPopoverTitle:not([class*="euiPopoverTitle--padding"]) {
+  padding: 12px !important;
+}
+
+.euiPopover__panel:not([class*="euiPanel--padding"])
+  .euiPopoverFooter:not([class*="euiPopoverFooter--padding"]) {
+  padding: 12px !important;
+}
+.euiFormRow__labelWrapper .euiFormLabel {
+  font-size: 12px !important;
+  color: #1a1c21;
+}
+.dscNoResults {
+  .euiText--medium {
+    font-size: 1rem;
+    line-height: 1.5rem;
+    h2 {
+      font-size: 1.75rem;
+      line-height: 2.5rem;
+      font-weight: 300;
+    }
+  }
+}
+
+.sidebar-list {
+  .euiTitle--xxxsmall {
+    font-size: 0.75rem;
+    line-height: 1.5rem;
+    font-weight: 500;
+  }
+}
+
+.dscResuntCount__title {
+  padding-top: 10px;
+  .euiText--medium {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+}
+
+.kbnQueryBar__wrap {
+  z-index: 10 !important;
+  max-width: 100% !important;
+}
+
+.globalFilterGroup__filterBar {
+  margin-top: 4px !important;
+}

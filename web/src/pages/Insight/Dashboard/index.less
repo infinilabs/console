@@ -1,0 +1,46 @@
+.container {
+    height: 100%;
+    background-color: #fff;
+
+    &.fullscreen {
+        padding: 20px;
+        position: relative;
+        overflow-y: auto;
+        overflow-x: hidden;
+
+        .watermark {
+            position: fixed;
+            z-index: 999;
+            pointer-events: none;
+
+            .wrapper {
+                background-color: rgba(0,0,0, 0.5);
+                height: 70px;
+                line-height: 70px;
+                padding: 0px 20px;
+            }
+
+            .name {
+                height: 100%;
+                font-size: 40px;
+                color: #fff;
+            }
+
+            .logo {
+                height: 100%;
+                width: 200px;
+                cursor: pointer;
+                img {
+                    width: 100%;
+                    position: relative;
+                    top: -64px;
+                }
+            }
+        }
+    }
+
+    :global {
+        // .ant-carousel, .slick-slider, .slick-list, .slick-track, .slick-slide > div {
+        // }
+    }
+}

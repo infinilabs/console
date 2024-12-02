@@ -1,0 +1,21 @@
+.form-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 15px;
+  .col {
+    flex: auto;
+    &.input-col {
+      max-width: 450px;
+    }
+  }
+  .label-col {
+    flex: auto 0 0;
+  }
+  .new {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+}

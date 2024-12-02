@@ -1,0 +1,58 @@
+.addWidgetDrawer {
+    padding: 0 20px;
+    .list {
+        .title {
+            font-weight: 400;
+            font-size: 14px;
+            color: rgb(16, 16, 16);
+            margin-bottom: 20px;
+        }
+    
+        .content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            .item {
+                width: 100px;
+                height: 100px;
+                padding: 4px;
+                border: 1px solid rgb(187, 187, 187);
+                cursor: pointer;
+                text-align: center;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                flex-direction: column;
+
+                .icon {
+                    font-size: 66px;
+                }
+
+                .name {
+                    text-align: center;
+                    font-weight: 700;
+                    font-size: 14px;
+                    color: rgb(16, 16, 16);
+                }
+
+                &.selected, &:hover {
+                    border-color: rgba(0,127,255,1);
+                    .name {
+                        color: rgba(0,127,255,1);
+                    }
+                }
+            }
+        }
+    }
+    
+    .actions {
+        text-align: right;
+        margin-top: 50px;
+
+        :global {
+            .ant-btn {
+                width: 72px;
+            }
+        }
+    }
+}

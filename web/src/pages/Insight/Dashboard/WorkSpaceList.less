@@ -1,0 +1,89 @@
+.list {
+    width: 250px;
+    padding-top: 4px;
+
+    :global {
+        .ant-popover-inner {
+            padding: 16px;
+        }
+
+        .ant-popover-arrow {
+            display: none;
+        }
+
+        .ant-popover-title {
+            border: 0;
+            font-weight: 700;
+            font-size: 14px;
+            color: rgb(16, 16, 16);
+            padding: 0;
+            margin-bottom: 12px;
+            height: auto;
+            min-height: auto;
+            width: 100%;
+            min-width: 100%;
+        }
+
+        .ant-popover-inner-content {
+            padding: 0;
+        }
+    }
+
+    .search {
+        margin-bottom: 12px;
+    }
+
+    .item {
+        position: relative;
+        padding: 0 18px;
+        height: 24px;
+        line-height: 24px;
+        cursor: pointer;
+        margin-bottom: 12px;
+
+        .left {
+            position: absolute;
+            left: 0;
+            font-size: 12px;
+            top: 5px;
+            color: rgb(187, 187, 187);
+        }
+
+        .name {
+            font-weight: 400;
+            font-size: 14px;
+            color: rgb(16, 16, 16);
+            line-height: 20px;
+        }
+
+        .right {
+            position: absolute;
+            right: 0;
+            top: 5px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .active {
+            color: rgb(2, 127, 254);
+        }
+
+        &:last-child {
+            margin: 0;
+        }
+
+        &.new {
+            padding-right: 0;
+            color: rgb(2, 127, 254);
+        }
+    }
+
+    .pager {
+
+        :global {
+            .ant-pagination-prev, .ant-pagination-next {
+                min-width: auto;
+            }
+        }
+    }
+}

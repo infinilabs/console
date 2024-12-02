@@ -1,0 +1,46 @@
+.trace-cnt {
+  margin: 0 10px;
+  margin-top: 15px;
+  .trace-list {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    row-gap: 10px;
+    .trace-item {
+      border: 1px solid #e8e8e8;
+      padding: 5px 10px;
+      text-align: center;
+      cursor: pointer;
+      &:hover,
+      &.selected {
+        background-color: #939ea0;
+        border-color: #939ea0;
+        color: #fff;
+        .time {
+          color: #c5c5c5;
+        }
+      }
+      .time {
+        font-size: 12px;
+        color: #999;
+      }
+    }
+    .arrow {
+      height: 1px;
+      background-color: #ccc;
+      width: 50px;
+      display: flex;
+      align-items: center;
+      position: relative;
+      .arrow-icon {
+        color: #ccc;
+        margin-left: auto;
+        position: absolute;
+        right: -2px;
+      }
+    }
+    .arrow:last-child {
+      display: none;
+    }
+  }
+}

@@ -1,0 +1,67 @@
+@import '~antd/lib/style/themes/default.less';
+
+@pro-header-hover-bg: rgba(0, 0, 0, 0.025);
+
+.container {
+  display: block;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #f7f9fc;
+
+  .header {
+    height: 64px;
+    padding: 0;
+    background: #fff;
+    box-shadow: 0px 2px 10px 0px rgba(0, 0, 0, 0.1);
+    position: relative;
+    text-align: center;
+    display: flex;
+    justify-content: space-around;
+
+    .logo {
+      width: 200px;
+      height: 64px;
+    }
+    .desc {
+      font-weight: 700;
+      font-size: 24px;
+      color: rgb(16, 16, 16);
+    }
+
+    .action {
+      position: absolute;
+      right: 0;
+      cursor: pointer;
+      padding: 0 12px;
+      display: inline-block;
+      transition: all 0.3s;
+      height: 100%;
+      > i {
+        vertical-align: middle;
+        color: @text-color;
+      }
+      &:hover {
+        background: @pro-header-hover-bg;
+      }
+      :global(&.ant-popover-open) {
+        background: @pro-header-hover-bg;
+      }
+    }
+  }
+  
+  .content {
+  }
+
+  .footer {
+    padding: 0 16px;
+    margin: 48px 0 24px 0;
+    text-align: center;
+    background-color: #f7f9fc;
+
+    .copyright {
+      color: @text-color-secondary;
+      font-size: @font-size-base;
+      background-color: transparent;
+    }
+  }
+}

@@ -1,0 +1,27 @@
+div[data-metric-container] {
+  border: 1px solid #e8e8e8;
+  box-shadow: rgba(0, 0, 0, 0.15) 0px 2px 8px;
+  &.collapsed {
+    border-bottom: none;
+  }
+  .header {
+    background-color: #fafafa;
+    display: flex;
+    border-bottom: 1px solid #e8e8e8;
+    align-items: center;
+    .h-item {
+      padding: 6px 10px;
+    }
+    .collapse-icon {
+      display: flex;
+      flex: none;
+      align-self: stretch;
+      align-items: center;
+      cursor: pointer;
+      padding-left: 10px;
+    }
+  }
+  .body {
+    padding: 6px 10px;
+  }
+}

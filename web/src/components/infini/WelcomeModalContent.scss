@@ -1,0 +1,39 @@
+.StartupPopoverItems {
+  border: 1px solid rgba(238, 240, 243, 1);
+  width: 100%;
+  height: 110px;
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.StartupPopoverActive {
+  border: 1px solid #027ffe;
+  width: 100%;
+  height: 110px;
+  margin-right: 10px;
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.StartupPopoverDisable {
+  border: 1px solid rgba(238, 240, 243, 1);
+  width: 100%;
+  height: 110px;
+  margin-right: 10px;
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 6px;
+  color: rgba(238, 240, 243, 1);
+}
+.StartupPopoverItems:hover {
+  border: 1px solid #027ffe;
+}

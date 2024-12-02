@@ -1,0 +1,15 @@
+.object-editor {
+  > .wrapper {
+    // margin: 1rem;
+    margin-top: 0.5rem;
+    .field-line {
+      margin-top: 0.5rem;
+      .label {
+        line-height: 1.6rem;
+      }
+      &:first-child {
+        margin-top: 0;
+      }
+    }
+  }
+}

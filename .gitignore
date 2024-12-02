@@ -28,11 +28,8 @@ appveyor.yml
 /vendor
 /bin
 *.exe
-web/.github/
-web/report*
 log/
 .env
-/web/
 generated_*.go
 config/initialization.dsl
 config/system_config.yml

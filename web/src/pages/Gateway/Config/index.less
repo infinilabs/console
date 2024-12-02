@@ -1,0 +1,45 @@
+.config {
+  display: flex;
+  gap: 10px;
+  .menu {
+    min-height: calc(100vh - 130px);
+    width: 220px;
+    .items {
+      .item {
+        cursor: pointer;
+        color: rgba(0, 0, 0, 0.65);
+        width: 100%;
+        text-align: left;
+        padding-left: 10px;
+        padding-top: 6px;
+        padding-bottom: 6px;
+        &:hover {
+          color: #1890ff;
+        }
+        &.selected {
+          color: #1890ff;
+          background-color: #e6f7ff;
+          border-right: 2px solid #1890ff;
+        }
+      }
+    }
+    .fileName {
+      word-break: break-all;
+      white-space: break-spaces;
+    }
+  }
+  .view {
+    width: calc(100% - 220px);
+    .label {
+      padding-bottom: 10px;
+    }
+    .editor {
+      min-height: calc(100vh - 130px);
+    }
+  }
+  .hr {
+    margin: 5px 0;
+    height: 0;
+    border-bottom: 1px solid #e8e8e8;
+  }
+}

@@ -1,0 +1,70 @@
+.layoutGrid {
+    padding: 20px;
+
+    :global {
+        .ant-spin-nested-loading, .ant-spin-container {
+            width: 100%;
+            height: 100%;
+        }
+    }
+
+    .grid {
+        width: 100%;
+        height: 100%;
+        position: relative;
+    }
+
+    .widget {
+        width: 100%;
+        height: 100%;
+        &:hover {
+            z-index: 3;
+        }
+    }
+
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+
+        .left {
+            :global {
+                .ant-btn {
+                    margin-right: 8px;
+                    width: 110px;
+                }
+
+            }
+        }
+
+        .right {
+            display: flex;
+            gap: 16px;
+
+            .action {
+                font-size: 14px;
+                font-weight: 400;
+                color: rgb(16, 16, 16);
+                cursor: pointer;
+
+                :global {
+                    .anticon {
+                        margin-right: 6px;
+                    }
+                }
+            }
+        }
+    }
+
+    .actions {
+        text-align: right;
+        margin-top: 20px;
+        
+        :global {
+            .ant-btn {
+                width: 72px;
+            }
+        }
+    }
+}

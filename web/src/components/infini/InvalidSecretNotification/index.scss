@@ -1,0 +1,18 @@
+.invalid-secret-tip{
+  height: 40px;
+  background-color: rgba(0, 126, 255, 0.95);
+  color: white;
+  position: relative;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  &>a{
+    color: #fff;
+    text-decoration: underline;
+  }
+  .icon-warn{
+    color: #fff;
+    margin-right: 5px;
+  }
+}

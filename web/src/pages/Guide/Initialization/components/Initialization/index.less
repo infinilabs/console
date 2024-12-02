@@ -1,0 +1,76 @@
+.initialization {
+    
+    .warning {
+        font-size: 46px;
+        color: rgb(255, 215, 0);
+    }
+    
+    .title {
+        font-weight: 400;
+        font-size: 14px;
+        color: rgb(16, 16, 16);
+    }
+
+    .shell {
+        max-height: 150px;
+        overflow: auto;
+        border-radius: 5px;
+        font-size: 14px;
+        padding: 12px 30px 0 12px;
+        background: rgb(241, 242, 245);
+        position: relative;
+        word-break: break-all;
+
+        .copy {
+            position: absolute;
+            right: 12px;
+            top: 15px;
+            color: #007fff;
+            cursor: pointer;
+        }
+    }
+
+    .skipDesc {
+        color: rgba(0, 0, 0, 0.45);
+        font-size: 14px;
+        line-height: 1.6;
+        text-align: center;
+        margin-top: 36px;
+        margin-bottom: -24px;
+    }
+
+    .credential {
+        :global {
+    
+            .ant-form-item-children-icon {
+                right: 36px;
+            }
+        }
+    }
+
+    .refresh {
+        cursor: pointer;
+    }
+
+    :global {
+        .ant-result {
+            padding: 0;
+
+            .ant-result-icon {
+                margin-bottom: 0
+            }
+
+            .ant-result-content {
+                padding: 0 20%;
+                background-color: #fff;
+            }
+
+            .ant-result-extra {
+                .ant-btn {
+                    width: 130px;
+                }
+            }
+
+        }
+    }
+}

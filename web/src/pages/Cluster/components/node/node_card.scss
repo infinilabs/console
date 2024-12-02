@@ -1,0 +1,158 @@
+//公用样式
+@import '../overview_common.scss';
+
+.node-item {
+  position: relative;
+  border: 1px solid $gray;
+  width: 100%;
+  min-height: 120px;
+  max-height: 300px;
+  display: flex;
+  font-size: 12px;
+  flex-direction: column;
+
+  &.border-unavailable {
+    border: 1px solid $gray;
+  }
+  &.border-green {
+    border: 1px solid $green;
+  }
+  &.border-yellow {
+    border: 1px solid $yellow;
+  }
+  &.border-red {
+    border: 1px solid $red;
+  }
+  
+  .meta-label {
+    margin-right: 5px;
+    margin-bottom: 3px;
+    border: 1px solid rgb(24, 144, 255);
+    padding: 0 2px;
+  }
+  .meta-general-label {
+    margin-right: 5px;
+    margin-bottom: 5px;
+    display: flex;
+    .meta-label-text {
+        max-width: 400px;
+        display: inline-block;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+  }
+  .node-basic {
+    padding: 2px 5px;
+    display: flex;
+    justify-content: space-between;
+    background-color: rgb(241,242,245,1);
+    .cbl {
+      display: flex;
+      .node-name {
+        min-width: 150px;
+        max-width: 300px;
+        display: inline-block;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
+        padding-left: 2px;
+        padding-right: 30px;
+      }
+    }
+    .node-location-provider {
+      padding-left: 5px;
+    }
+    .node-location-region {
+      padding-right: 5px;
+    }
+    .node-owner-department {
+      padding-left: 5px;
+    }
+  }
+  .node-info {
+    display: flex;
+    flex-direction: row;
+    .info-meta {
+      width: 100%;
+      padding-top: 2px;
+      padding-left: 5px;
+      display: flex;
+      flex-wrap: wrap;
+    }
+    .info-left {
+      width: 54%;
+      .info-region {
+        margin: 5px 0 5px 5px;
+        .text {
+          height: 24px;
+          line-height: 24px;
+          font-weight: bold;
+          font-size: 12px;
+          padding-left: 5px;
+        }
+      }
+      .info-status {
+        display: flex;
+        padding-left: 3px;
+        padding-top: 2px;
+        flex-direction: column;
+        .info-status-label {
+          background-color: rgb(241,242,245,0.8);
+          font-size: 12px;
+          padding-left: 5px;
+        }
+      }
+    }
+    .info-right {
+      width: 46%;
+      padding-left: 5px;
+      .info-chart {
+        min-height: 80px;
+        width: 100%;
+        display: flex;
+        margin-top: 5px;
+        margin-bottom: 3px;
+        .pie-chart {
+          width: 50%;
+          display: flex;
+          justify-content: space-between;
+          .pie-item {
+            width: 50%;
+            .pie-label {
+              text-align: center;
+              margin-top: -10px;
+              overflow: hidden;
+              color: rgba(0,0,0,.45);
+            }
+          }
+        }
+        .line-chart {
+          margin-top: 5px;
+          height: 80px;
+          width: 50%;
+          display: flex;
+          flex-direction: column;
+          .line-item {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            .line-label {
+              text-align: center;
+              overflow: hidden;
+              color: rgba(0,0,0,.45);
+              line-height: 100%;
+            }
+            .line-value {
+              height: 30px;
+              width: 100%;
+            }
+          }
+          >:first-child {
+            margin-top: -5px;
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,87 @@
+.bottomMenu {
+    position: relative;
+    height: 80px;
+    overflow: hidden;
+
+    :global {
+
+        .ant-menu-item {
+            margin: 0 !important;
+
+            &:first-child {
+                padding-right: 34px;
+                box-shadow: 0px -1px 0px #d9d9d9 inset;
+                position: relative;
+
+                &:hover {
+                    .arrow {
+                        &::before {
+                            background: linear-gradient(to right, #007fff, #007fff) rgb(255, 255, 255);
+                        }
+                        &::after {
+                            background: linear-gradient(to right, #007fff, #007fff) rgb(255, 255, 255);
+                        }
+                    }
+                }
+            }
+        }
+       
+    }
+
+    .version {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        .sketch {
+            color: #007fff;
+        }
+
+        .arrow {
+            position: absolute;
+            top: 50%;
+            right: 16px;
+            width: 10px;
+            transition: transform 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+            &::before {
+                position: absolute;
+                width: 6px;
+                height: 1.5px;
+                background: linear-gradient(to right, rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.65)) rgb(255, 255, 255);
+                border-radius: 2px;
+                transition: background 0.3s cubic-bezier(0.645, 0.045, 0.355, 1) 0s, transform 0.3s cubic-bezier(0.645, 0.045, 0.355, 1) 0s, top 0.3s cubic-bezier(0.645, 0.045, 0.355, 1) 0s;
+                content: "";
+                transform: rotate(-45deg) translateX(-2px);
+            }
+            &::after {
+                position: absolute;
+                width: 6px;
+                height: 1.5px;
+                background: linear-gradient(to right, rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.65)) rgb(255, 255, 255);
+                border-radius: 2px;
+                transition: background 0.3s cubic-bezier(0.645, 0.045, 0.355, 1) 0s, transform 0.3s cubic-bezier(0.645, 0.045, 0.355, 1) 0s, top 0.3s cubic-bezier(0.645, 0.045, 0.355, 1) 0s;
+                content: "";
+                transform: rotate(45deg) translateX(-2px);
+            }
+        }
+        
+    }
+
+    .collapse {
+        position: relative;
+        text-align: right;
+    
+        :global {
+
+            .ant-menu-item {
+                margin-bottom: 4px !important;
+            }
+
+            .anticon {
+                font-size: 20px;
+                margin-right: 0;
+                vertical-align: -6px;
+            }
+        }
+    }
+
+}

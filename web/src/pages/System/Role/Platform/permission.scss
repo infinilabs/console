@@ -1,0 +1,13 @@
+.ant-tree-treenode-switcher-close {
+  display: flex;
+  .ant-tree-node-content-wrapper {
+    flex: 1 1 auto;
+    .permission-title {
+      display: flex;
+      align-items: center;
+      .values {
+        margin-left: auto;
+      }
+    }
+  }
+}

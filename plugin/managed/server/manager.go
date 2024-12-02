@@ -9,7 +9,7 @@ import (
 	"fmt"
 	log "github.com/cihub/seelog"
 	"infini.sh/console/core"
-	"infini.sh/console/plugin/managed/common"
+	"infini.sh/framework/modules/configs/common"
 	"infini.sh/framework/core/api"
 	"infini.sh/framework/core/errors"
 	"infini.sh/framework/core/global"

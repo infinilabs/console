@@ -14,7 +14,7 @@ import (
 
 	log "github.com/cihub/seelog"
 	"infini.sh/console/core/security/enum"
-	"infini.sh/console/plugin/managed/common"
+	"infini.sh/framework/modules/configs/common"
 	"infini.sh/framework/core/api"
 	httprouter "infini.sh/framework/core/api/router"
 	elastic2 "infini.sh/framework/core/elastic"
@@ -33,7 +33,7 @@ func init() {
 	api.HandleAPIMethod(api.POST, common.REGISTER_API, handler.registerInstance) //client register self to config servers
 
 	//for public usage, get install script
-	api.HandleAPIMethod(api.GET, common.GET_INSTALL_SCRIPT_API, handler.getInstallScript)
+	api.HandleAPIMethod(api.GET, GET_INSTALL_SCRIPT_API, handler.getInstallScript)
 
 	api.HandleAPIMethod(api.POST, "/instance/_generate_install_script", handler.RequireLogin(handler.generateInstallCommand))
 

@@ -7,7 +7,7 @@ package common
 import (
 	log "github.com/cihub/seelog"
 	"infini.sh/console/modules/agent/model"
-	"infini.sh/console/plugin/managed/common"
+	"infini.sh/framework/modules/configs/common"
 	"infini.sh/framework/core/env"
 )
 

@@ -8,7 +8,7 @@ import (
 	"bytes"
 	"fmt"
 	log "github.com/cihub/seelog"
-	"infini.sh/console/plugin/managed/common"
+	"infini.sh/framework/modules/configs/common"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/kv"

@@ -10,7 +10,6 @@ import (
 	"github.com/valyala/fasttemplate"
 	"infini.sh/console/core/security"
 	"infini.sh/console/modules/agent/common"
-	common2 "infini.sh/console/plugin/managed/common"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/util"
@@ -29,6 +28,7 @@ type Token struct {
 }
 
 const ExpiredIn = time.Millisecond * 1000 * 60 * 60
+const GET_INSTALL_SCRIPT_API = "/instance/_get_install_script"
 
 var expiredTokenCache = util.NewCacheWithExpireOnAdd(ExpiredIn, 100)
 
@@ -63,7 +63,7 @@ func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Req
 		consoleEndpoint = getDefaultEndpoint(req)
 	}
 
-	endpoint, err := url.JoinPath(consoleEndpoint, common2.GET_INSTALL_SCRIPT_API)
+	endpoint, err := url.JoinPath(consoleEndpoint, GET_INSTALL_SCRIPT_API)
 	if err != nil {
 		panic(err)
 	}

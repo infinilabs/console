@@ -6,8 +6,8 @@ package server
 
 import (
 	log "github.com/cihub/seelog"
-	"infini.sh/console/plugin/managed/common"
-	"infini.sh/console/plugin/managed/config"
+	"infini.sh/framework/modules/configs/common"
+	"infini.sh/framework/modules/configs/config"
 	httprouter "infini.sh/framework/core/api/router"
 	config3 "infini.sh/framework/core/config"
 	"infini.sh/framework/core/global"

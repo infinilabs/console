@@ -12,7 +12,7 @@
 # must in major config file
 path.configs: "config"
 configs:
-  managed: true
+  managed: false
   auto_reload: true
   manager:
     local_configs_repo_path: ./config_repo/

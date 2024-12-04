@@ -1,21 +1,19 @@
-## 运行环境
+## Running Env
 
 ```
-nvm install 16.17
-cnpm install npm@6.14.13  
+nvm install 16.20.2
+npm install cnpm@9.2.0
 ```
 
-## 公共组件
+## Running
 
 ```shell
-cd src
-git clone https://git.infini.ltd:64443/infini/common-ui.git common
-```
-
-## 运行
-
-```shell
-npm install
-npm run build
+cnpm install
 npm run dev
+```
+
+## Build
+
+```sh
+npm run build
 ```

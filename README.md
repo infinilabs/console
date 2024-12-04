@@ -34,6 +34,19 @@ INFINI Console is written in Golang, the installation package is very small, onl
 To learn more about Console, please visit: https://docs.infinilabs.com/console/
 
 
+## Quickstart
+
+- Build [web](web/README.md) first.
+  
+```sh
+# init code base path
+mkdir -p $HOME/go/src/infini.sh && cd $_
+# build console
+make build
+cd bin && mkdir -p config && cp -rf ../config/{setup,*.tpl,*.json} .
+# run console
+./console
+```
 
 ## Community
 

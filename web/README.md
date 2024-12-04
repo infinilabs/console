@@ -1,4 +1,4 @@
-## Running Env
+## Env
 
 ```
 nvm install 16.20.2
@@ -9,11 +9,11 @@ npm install cnpm@9.2.0
 
 ```shell
 cnpm install
-npm run dev
+cnpm run dev
 ```
 
 ## Build
 
 ```sh
-npm run build
+cnpm run build
 ```

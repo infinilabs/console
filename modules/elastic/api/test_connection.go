@@ -30,7 +30,6 @@ package api
 import (
 	"fmt"
 	"github.com/segmentio/encoding/json"
-	util2 "infini.sh/agent/lib/util"
 	"infini.sh/console/core"
 	"infini.sh/framework/core/api"
 	httprouter "infini.sh/framework/core/api/router"
@@ -164,21 +163,6 @@ func (h TestAPI) HandleTestConnectionAction(w http.ResponseWriter, req *http.Req
 	resBody["number_of_nodes"] = healthInfo.NumberOfNodes
 	resBody["number_of_data_nodes"] = healthInfo.NumberOf_data_nodes
 	resBody["active_shards"] = healthInfo.ActiveShards
-
-	//fetch local node's info
-	nodeID, nodeInfo, err := util2.GetLocalNodeInfo(config.GetAnyEndpoint(), config.BasicAuth)
-	if err != nil {
-		resBody["error"] = fmt.Sprintf("error on decode cluster health info : %v", err)
-		h.WriteJSON(w, resBody, http.StatusInternalServerError)
-		return
-	}
-
-	resBody["status"] = healthInfo.Status
-	resBody["number_of_nodes"] = healthInfo.NumberOfNodes
-	resBody["number_of_data_nodes"] = healthInfo.NumberOf_data_nodes
-	resBody["active_shards"] = healthInfo.ActiveShards
-	resBody["node_uuid"] = nodeID
-	resBody["node_info"] = nodeInfo
 
 	h.WriteJSON(w, resBody, http.StatusOK)
 

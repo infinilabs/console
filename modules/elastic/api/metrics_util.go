@@ -111,7 +111,8 @@ func generateGroupAggs(nodeMetricItems []GroupMetricItem) map[string]interface{}
 
 func (h *APIHandler) getMetrics(query map[string]interface{}, grpMetricItems []GroupMetricItem, bucketSize int) map[string]*common.MetricItem {
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
-	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).SearchWithRawQueryDSL(getAllMetricsIndex(), util.MustToJSONBytes(query))
+	queryDSL := util.MustToJSONBytes(query)
+	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).SearchWithRawQueryDSL(getAllMetricsIndex(), queryDSL)
 	if err != nil {
 		log.Error(err)
 		panic(err)
@@ -214,6 +215,7 @@ func (h *APIHandler) getMetrics(query map[string]interface{}, grpMetricItems []G
 				line.Data = temp
 			}
 		}
+		metricItem.MetricItem.Request = string(queryDSL)
 		result[metricItem.Key] = metricItem.MetricItem
 	}
 	return result
@@ -396,7 +398,8 @@ func (h *APIHandler) getSingleMetrics(metricItems []*common.MetricItem, query ma
 			"aggs": aggs,
 		},
 	}
-	response, err := elastic.GetClient(clusterID).SearchWithRawQueryDSL(getAllMetricsIndex(), util.MustToJSONBytes(query))
+	queryDSL := util.MustToJSONBytes(query)
+	response, err := elastic.GetClient(clusterID).SearchWithRawQueryDSL(getAllMetricsIndex(), queryDSL)
 	if err != nil {
 		log.Error(err)
 		panic(err)
@@ -467,6 +470,7 @@ func (h *APIHandler) getSingleMetrics(metricItems []*common.MetricItem, query ma
 				line.Data = temp
 			}
 		}
+		metricItem.Request = string(queryDSL)
 		result[metricItem.Key] = metricItem
 	}
 
@@ -1150,6 +1154,7 @@ func (h *APIHandler) getSingleIndexMetrics(metricItems []*common.MetricItem, que
 }
 
 func parseSingleIndexMetrics(clusterID string, metricItems []*common.MetricItem, query map[string]interface{}, bucketSize int, metricData map[string][][]interface{}, metricItemsMap map[string]*common.MetricLine) map[string]*common.MetricItem {
+	queryDSL := util.MustToJSONBytes(query)
 	response, err := elastic.GetClient(clusterID).SearchWithRawQueryDSL(getAllMetricsIndex(), util.MustToJSONBytes(query))
 	if err != nil {
 		panic(err)
@@ -1220,6 +1225,7 @@ func parseSingleIndexMetrics(clusterID string, metricItems []*common.MetricItem,
 				line.Data = temp
 			}
 		}
+		metricItem.Request = string(queryDSL)
 		result[metricItem.Key] = metricItem
 	}
 

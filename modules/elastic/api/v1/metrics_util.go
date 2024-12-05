@@ -111,7 +111,8 @@ func generateGroupAggs(nodeMetricItems []GroupMetricItem) map[string]interface{}
 
 func (h *APIHandler) getMetrics(query map[string]interface{}, grpMetricItems []GroupMetricItem, bucketSize int) map[string]*common.MetricItem {
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
-	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).SearchWithRawQueryDSL(getAllMetricsIndex(), util.MustToJSONBytes(query))
+	queryDSL := util.MustToJSONBytes(query)
+	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).SearchWithRawQueryDSL(getAllMetricsIndex(), queryDSL)
 	if err != nil {
 		log.Error(err)
 		panic(err)
@@ -205,6 +206,7 @@ func (h *APIHandler) getMetrics(query map[string]interface{}, grpMetricItems []G
 			}
 			line.Data = grpMetricData[dataKey][line.Metric.Label]
 		}
+		metricItem.MetricItem.Request = string(queryDSL)
 		result[metricItem.Key] = metricItem.MetricItem
 	}
 	return result
@@ -387,7 +389,8 @@ func (h *APIHandler) getSingleMetrics(metricItems []*common.MetricItem, query ma
 			"aggs": aggs,
 		},
 	}
-	response, err := elastic.GetClient(clusterID).SearchWithRawQueryDSL(getAllMetricsIndex(), util.MustToJSONBytes(query))
+	queryDSL := util.MustToJSONBytes(query)
+	response, err := elastic.GetClient(clusterID).SearchWithRawQueryDSL(getAllMetricsIndex(), queryDSL)
 	if err != nil {
 		log.Error(err)
 		panic(err)
@@ -449,6 +452,7 @@ func (h *APIHandler) getSingleMetrics(metricItems []*common.MetricItem, query ma
 			line.TimeRange = common.TimeRange{Min: minDate, Max: maxDate}
 			line.Data = metricData[line.Metric.GetDataKey()]
 		}
+		metricItem.Request = string(queryDSL)
 		result[metricItem.Key] = metricItem
 	}
 

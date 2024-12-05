@@ -45,7 +45,7 @@ const TimeSetting = props => {
   const timeoutObject = useMemo(() => {
     if (!timeout) {
       return {
-        value: 60,
+        value: 120,
         unit: 's',
       }
     }

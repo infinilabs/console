@@ -36,7 +36,7 @@ To learn more about Console, please visit: https://docs.infinilabs.com/console/
 
 ## Quickstart
 
-- Build [web](web/README.md) first.
+- Build [web](web/README.md) before you run INFINI Console.
   
 ```sh
 # init code base path

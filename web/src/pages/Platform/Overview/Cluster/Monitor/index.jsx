@@ -27,6 +27,7 @@ const Page = (props) => {
 
   return (
     <Monitor
+      selectedCluster={selectedCluster}
       formatState={(state) => {
         let clusterID = props.match.params?.cluster_id;
         if (

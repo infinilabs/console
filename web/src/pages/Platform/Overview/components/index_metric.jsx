@@ -77,7 +77,6 @@ export default ({
       min: bounds.min.valueOf(),
       max: bounds.max.valueOf(),
     };
-    console.log(shardID)
     if(shardID){
       newParams.shard_id = shardID;
     }

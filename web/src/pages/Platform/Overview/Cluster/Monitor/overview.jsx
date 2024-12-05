@@ -17,6 +17,7 @@ export default ({
       overview={1}
       fetchUrl={`${ESPrefix}/${clusterID}/cluster_metrics`}
       bucketSize={bucketSize}
+      metrics={['index_throughput', 'search_throughput', 'index_latency', 'search_latency']}
     />
   );
 }

@@ -31,6 +31,7 @@ const formatTimeInterval = (timeInterval) => {
 
 const Monitor = (props) => {
   const {
+    selectedCluster,
     formatState,
     getBreadcrumbList,
     StatisticBar,
@@ -124,16 +125,6 @@ const Monitor = (props) => {
                 recentlyUsedRangesKey={'monitor'}
               />
             </div>
-            <Button 
-              loading={spinning} 
-              icon={"reload"} 
-              type="primary"
-              onClick={() => {
-                handleTimeChange({ start: state.timeRange.min, end: state.timeRange.max, timeInterval: state.timeInterval})
-              }}
-            >
-              {formatMessage({ id: "form.button.refresh"})}
-            </Button>
           </div>
         </div>
 
@@ -163,6 +154,7 @@ const Monitor = (props) => {
                     pane.component
                   ) : (
                     <pane.component
+                      selectedCluster={selectedCluster}
                       {...state}
                       handleTimeChange={handleTimeChange}
                       setSpinning={setSpinning}

@@ -332,4 +332,7 @@ export default {
   "cluster.providers.aliyun": "阿里云",
   "cluster.providers.tencent-cloud": "腾讯云",
   "cluster.providers.ecloud": "移动云",
+
+  "cluster.metrics.dsl.copy": "复制 DSL",
+  "cluster.metrics.dsl.copy.success": "复制 DSL 成功"
 };

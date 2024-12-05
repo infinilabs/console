@@ -24,6 +24,13 @@ export default ({
       overview={1}
       fetchUrl={url}
       bucketSize={bucketSize}
+      metrics={[
+        "index_health",
+        "index_throughput",
+        "search_throughput",
+        "index_latency",
+        "search_latency"
+      ]}
     />
   );
 }

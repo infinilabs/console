@@ -23,6 +23,7 @@ const StatisticBar = ({
   setSpinning,
   clusterAvailable,
   clusterMonitored,
+  onInfoChange
 }) => {
   const { loading, error, value } = useFetch(
     `${ESPrefix}/${clusterID}/metrics`,
@@ -33,6 +34,12 @@ const StatisticBar = ({
   React.useEffect(() => {
     setSpinning(loading);
   }, [loading]);
+
+  React.useEffect(() => {
+    if (onInfoChange) {
+      onInfoChange(value)
+    }
+  }, [JSON.stringify(value)]);
 
   let overviewStatistic = [];
   if (value?.summary) {

@@ -19,6 +19,17 @@ export default ({
       overview={1}
       fetchUrl={`${ESPrefix}/${clusterID}/node/${nodeID}/metrics`}
       bucketSize={bucketSize}
+      metrics={[
+        "node_health",
+        "shard_state",
+        "cpu",
+        "jvm",
+        "index_throughput",
+        "search_throughput",
+        "index_latency",
+        "search_latency",
+        "parent_breaker"
+      ]}
     />
   );
 }

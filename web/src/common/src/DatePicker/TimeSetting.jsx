@@ -14,16 +14,22 @@ const timeIntervals = [
   { label: 'Year', value: 'y' },
 ];
 
+const timeOuts = [
+  { label: 'Second', value: 's' },
+  { label: 'Minute', value: 'm' },
+];
+
 const TimeSetting = props => {
-  const { currentLocales, timeFields = [], showTimeField, showTimeInterval, onTimeSettingChange, onCancel } = props;
+  const { currentLocales, timeFields = [], showTimeField, showTimeInterval, showTimeout, onTimeSettingChange, onCancel } = props;
 
   const [isAuto, setIsAuto] = useState(!props.timeInterval)
   const [timeField, setTimeField] = useState(props.timeField);
   const [timeInterval, setTimeInterval] = useState(props.timeInterval);
+  const [timeout, setTimeout] =  useState(props.timeout);
   const timeIntervalCache = useRef('');
 
   const handleApply = () => {
-    onTimeSettingChange({ timeField, timeInterval });
+    onTimeSettingChange({ timeField, timeInterval, timeout });
     onCancel()
   };
 
@@ -36,6 +42,20 @@ const TimeSetting = props => {
     }
   }, [timeInterval])
 
+  const timeoutObject = useMemo(() => {
+    if (!timeout) {
+      return {
+        value: 60,
+        unit: 's',
+      }
+    }
+    const value = parseInt(timeout);
+    return {
+      value,
+      unit: timeout.replace(`${value}`, ''),
+    }
+  }, [timeout])
+  
   return (
     <div className={styles.timeSetting}>
       <div className={styles.title}>{currentLocales[`datepicker.time_setting`]}</div>
@@ -87,6 +107,40 @@ const TimeSetting = props => {
                   />
                   <Select value={timeIntervalObject.unit} onChange={(value) => setTimeInterval(`${timeIntervalObject.value}${value}`)} style={{ width: '100%' }}>
                     {timeIntervals.map((item) => (
+                        <Select.Option key={item.value} value={item.value}>
+                          {currentLocales[`datepicker.time_setting.time_interval.${item.value}`]}
+                        </Select.Option>
+                      ))}
+                  </Select>
+                </>
+              )
+            }  
+          </div>
+        </div>
+      )}
+      {showTimeout && (
+        <div className={styles.formItem}>
+          <div className={styles.label}>
+            {currentLocales[`datepicker.time_setting.timeout`]}
+          </div>
+          <div className={styles.form}>
+            {
+              timeoutObject && (
+                <>
+                  <InputNumber
+                    min={60}
+                    value={timeoutObject.value}
+                    style={{ width: '100%' }}
+                    step={10}
+                    precision={0}
+                    onChange={(value) => {
+                      if (Number.isInteger(value)) {
+                        setTimeout(`${value}${timeoutObject.unit}`)
+                      }
+                    }}
+                  />
+                  <Select value={timeoutObject.unit} onChange={(value) => setTimeout(`${timeoutObject.value}${value}`)} style={{ width: '100%' }}>
+                    {timeOuts.map((item) => (
                         <Select.Option key={item.value} value={item.value}>
                           {currentLocales[`datepicker.time_setting.time_interval.${item.value}`]}
                         </Select.Option>

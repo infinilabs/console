@@ -26,20 +26,43 @@ import request from "@/utils/request";
 
 export default (props) => {
 
-  const { fetchUrl, metrics = [], renderExtra } = props
+  const { fetchUrl, metrics = [], renderExtra, timeRange, timezone, bucketSize, handleTimeChange } = props
 
-  if (!fetchUrl || Object.keys(metrics).length === 0) {
+  if (!fetchUrl || metrics.length === 0) {
     return null;
   }
+
+  const queryParams = React.useMemo(() => {
+    const bounds = calculateBounds({
+      from: timeRange.min,
+      to: timeRange.max,
+    });
+    let params = {
+      min: bounds.min.valueOf(),
+      max: bounds.max.valueOf(),
+    };
+    if (bucketSize) {
+      params.bucket_size = bucketSize
+    }
+    return params;
+  }, [timeRange, bucketSize]);
   
   const extra = renderExtra ? renderExtra() : null;
 
   return (
     <div id="cluster-metric">
       <div className={styles.metricList}>
-        {metrics.map((key, i) => {
-          return <MetricChart key={key} {...props} metricKey={key} />;
-        })}
+        {metrics.map((metricKey, i) => (
+          <MetricChart 
+            key={metricKey} 
+            timezone={timezone} 
+            timeRange={timeRange} 
+            handleTimeChange={handleTimeChange} 
+            fetchUrl={fetchUrl}
+            metricKey={metricKey} 
+            queryParams={queryParams}
+          />
+        ))}
         {
           extra && (
             <div key={"metric_extra"} className={styles.vizChartContainer}>
@@ -59,8 +82,8 @@ const MetricChart = (props) => {
     timeRange,
     handleTimeChange,
     fetchUrl,
-    bucketSize,
-    metricKey
+    metricKey,
+    queryParams
    } = props;
 
    const [loading, setLoading] = React.useState(false)
@@ -72,21 +95,6 @@ const MetricChart = (props) => {
   const observerRef = React.useRef({ isInView: false })
 
   const containerRef = React.useRef(null)
-
-  const queryParams = React.useMemo(() => {
-    const bounds = calculateBounds({
-      from: timeRange.min,
-      to: timeRange.max,
-    });
-    let params = {
-      min: bounds.min.valueOf(),
-      max: bounds.max.valueOf(),
-    };
-    if (bucketSize) {
-      params.bucket_size = bucketSize
-    }
-    return params;
-  }, [timeRange, bucketSize]);
 
   const fetchData = async (queryParams, fetchUrl, metricKey) => {
     if (!observerRef.current.isInView) return;
@@ -181,7 +189,6 @@ const MetricChart = (props) => {
   const axis = metric?.axis || [];
   const lines = metric?.lines || [];
   let disableHeaderFormat = false;
-  let headerUnit = "";
   let chartTitle = {};
   if (metricKey == "cluster_health") {
     chartTitle.units = "%";
@@ -207,9 +214,9 @@ const MetricChart = (props) => {
           {chartTitle.units ? `(${chartTitle.units})` : ""}
         </span>
         {
-          metric?.dsl && (
+          metric?.request && (
             <span>
-              <CopyToClipboard text={metric.dsl}>
+              <CopyToClipboard text={metric.request}>
                 <Tooltip title={formatMessage({id: "cluster.metrics.dsl.copy"})}>
                   <Icon 
                     className={styles.copy}
@@ -242,9 +249,7 @@ const MetricChart = (props) => {
             headerFormatter: disableHeaderFormat
               ? undefined
               : ({ value }) =>
-                  `${formatter.full_dates(value)}${
-                    headerUnit ? ` ${headerUnit}` : ""
-                  }`,
+                  `${formatter.full_dates(value)}`,
           }}
           debug={false}
         />

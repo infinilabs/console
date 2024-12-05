@@ -29,6 +29,16 @@ const formatTimeInterval = (timeInterval) => {
   return timeInterval
 }
 
+const formatTimeout = (timeout) => {
+  if (!timeout) return timeout
+  const value = parseInt(timeout)
+  if (!value) return undefined
+  if (!Number.isInteger(value)) return undefined
+  const unit = timeout.replace(`${value}`, '');
+  if (!['s', 'm'].includes(unit)) return undefined
+  return timeout
+}
+
 const Monitor = (props) => {
   const {
     formatState,
@@ -51,6 +61,7 @@ const Monitor = (props) => {
         timeFormatter: formatter.dates(1),
       },
       timeInterval: formatTimeInterval(param?.timeInterval),
+      timeout: formatTimeout(param?.timeout),
       param: param,
     })
   );
@@ -59,10 +70,10 @@ const Monitor = (props) => {
   const [timeZone, setTimeZone] = useState(() => getTimezone());
 
   useEffect(() => {
-    setParam({ ...param, timeRange: state.timeRange, timeInterval: state.timeInterval });
-  }, [state.timeRange, state.timeInterval]);
+    setParam({ ...param, timeRange: state.timeRange, timeInterval: state.timeInterval, timeout: state.timeout });
+  }, [state.timeRange, state.timeInterval, state.timeout]);
 
-  const handleTimeChange = useCallback(({ start, end, timeInterval }) => {
+  const handleTimeChange = useCallback(({ start, end, timeInterval, timeout }) => {
     const bounds = calculateBounds({
       from: start,
       to: end,
@@ -78,7 +89,8 @@ const Monitor = (props) => {
         max: end,
         timeFormatter: formatter.dates(intDay),
       },
-      timeInterval: timeInterval || state.timeInterval
+      timeInterval: timeInterval || state.timeInterval,
+      timeout: timeout || state.timeout
     });
     setSpinning(true);
   }, [state]) 
@@ -113,10 +125,13 @@ const Monitor = (props) => {
                 showTimeSetting={true}
                 showTimeInterval={true}
                 timeInterval={state.timeInterval}
+                showTimeout={true}
+                timeout={state.timeout}
                 onTimeSettingChange={(timeSetting) => {
                   setState({
                     ...state,
-                    timeInterval: timeSetting.timeInterval
+                    timeInterval: timeSetting.timeInterval,
+                    timeout: timeSetting.timeout
                   });
                 }}
                 timeZone={timeZone}
@@ -129,7 +144,7 @@ const Monitor = (props) => {
               icon={"reload"} 
               type="primary"
               onClick={() => {
-                handleTimeChange({ start: state.timeRange.min, end: state.timeRange.max, timeInterval: state.timeInterval})
+                handleTimeChange({ start: state.timeRange.min, end: state.timeRange.max, timeInterval: state.timeInterval, timeout: state.timeout})
               }}
             >
               {formatMessage({ id: "form.button.refresh"})}
@@ -168,6 +183,7 @@ const Monitor = (props) => {
                       setSpinning={setSpinning}
                       {...extraParams}
                       bucketSize={state.timeInterval}
+                      timeout={state.timeout}
                     />
                   )
                 ) : null}

@@ -29,6 +29,7 @@ export default {
   "datepicker.time_setting.time_interval.w": "周",
   "datepicker.time_setting.time_interval.M": "月",
   "datepicker.time_setting.time_interval.y": "年",
+  "datepicker.time_setting.timeout": "超时时间",
   "datepicker.time_zone": "时区",
   "datepicker.time_zone.current": "当前时区",
   "datepicker.refresh_every": "刷新间隔",

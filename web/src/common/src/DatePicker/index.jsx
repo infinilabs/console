@@ -87,6 +87,8 @@ const DatePicker = (props) => {
     timeFields = [],
     showTimeInterval = false,
     timeInterval,
+    showTimeout = false,
+    timeout,
     autoFitLoading = false,
     timeZone = "Asia/Shanghai",
     commonlyUsedRanges = DEFAULT_COMMONLY_USED_RANGES,
@@ -234,6 +236,8 @@ const DatePicker = (props) => {
           timeFields={timeFields}
           showTimeInterval={showTimeInterval}
           timeInterval={timeInterval}
+          showTimeout={showTimeout}
+          timeout={timeout}
           autoFitLoading={autoFitLoading}
           timeZone={timeZone}
           commonlyUsedRanges={commonlyUsedRanges}

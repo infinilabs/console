@@ -29,6 +29,7 @@ export default {
   "datepicker.time_setting.time_interval.w": "Week",
   "datepicker.time_setting.time_interval.M": "Month",
   "datepicker.time_setting.time_interval.y": "Year",
+  "datepicker.time_setting.timeout": "Timeout",
   "datepicker.time_zone": "Time zone",
   "datepicker.time_zone.current": "Current time zone",
   "datepicker.refresh_every": "Refresh every",

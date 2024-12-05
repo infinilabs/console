@@ -36,11 +36,13 @@ To learn more about Console, please visit: https://docs.infinilabs.com/console/
 
 ## Quickstart
 
-- Build [web](web/README.md) first.
+- Build [web](web/README.md) before you run INFINI Console.
   
 ```sh
 # init code base path
 mkdir -p $HOME/go/src/infini.sh && cd $_
+# clone code
+git clone https://github.com/infinilabs/console.git
 # build console
 make build
 cd bin && mkdir -p config && cp -rf ../config/{setup,*.tpl,*.json} .

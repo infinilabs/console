@@ -51,6 +51,8 @@ export default (props) => {
     timeFields: timeFields,
     showTimeInterval: true,
     timeInterval: "15s",
+    showTimeout: true,
+    timeout: "120s",
   });
 
   const [currentTimeZone, setCurrentTimeZone] = useState(timeZone);

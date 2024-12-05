@@ -27,22 +27,6 @@ import Anchor from "@/components/Anchor";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import request from "@/utils/request";
 
-const gorupOrder = [
-  "operations",
-  "latency",
-  "system",
-  "circuit_breaker",
-  "io",
-  "transport",
-
-  "storage",
-  "document",
-  "http",
-  "JVM",
-  "memory",
-  "cache",
-];
-
 export default (props) => {
 
   const { 
@@ -191,7 +175,7 @@ export default (props) => {
               );
             })}
         </div>
-        <Anchor links={gorupOrder}></Anchor>
+        <Anchor links={metrics.map((item) => item[0])}></Anchor>
       </div>
     </div>
   );

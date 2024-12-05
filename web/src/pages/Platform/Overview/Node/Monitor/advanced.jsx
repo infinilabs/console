@@ -1,4 +1,4 @@
-import { useState,useEffect } from "react";
+import { useState,useEffect, useMemo } from "react";
 import { Tabs } from "antd";
 import NodeMetric from "../../components/node_metric";
 import QueueMetric from "../../components/queue_metric";

@@ -34,22 +34,6 @@ INFINI Console is written in Golang, the installation package is very small, onl
 To learn more about Console, please visit: https://docs.infinilabs.com/console/
 
 
-## Quickstart
-
-- Build [web](web/README.md) before you run INFINI Console.
-  
-```sh
-# init code base path
-mkdir -p $HOME/go/src/infini.sh && cd $_
-# clone code
-git clone https://github.com/infinilabs/console.git
-# build console
-make build
-cd bin && mkdir -p config && cp -rf ../config/{setup,*.tpl,*.json} .
-# run console
-./console
-```
-
 ## Community
 
 Fell free to join the Discord server to discuss anything around this project:
@@ -58,6 +42,6 @@ Fell free to join the Discord server to discuss anything around this project:
 
 ## License
 
-INFINI Gateway is a truly open-source project, licensed under the [GNU Affero General Public License v3.0](https://opensource.org/licenses/AGPL-3.0).
+INFINI Console is a truly open-source project, licensed under the [GNU Affero General Public License v3.0](https://opensource.org/licenses/AGPL-3.0).
 We also offer a commercially supported, enterprise-ready version of the software.
 For more details, please refer to our [license information](./LICENSE).

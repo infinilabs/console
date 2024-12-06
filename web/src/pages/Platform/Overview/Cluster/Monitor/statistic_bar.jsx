@@ -25,6 +25,9 @@ const StatisticBar = ({
   clusterMonitored,
   onInfoChange
 }) => {
+
+  if (!clusterID) return null
+
   const { loading, error, value } = useFetch(
     `${ESPrefix}/${clusterID}/metrics`,
     {},

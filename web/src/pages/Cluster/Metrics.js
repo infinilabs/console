@@ -189,13 +189,10 @@ class ClusterMonitor extends PureComponent {
   };
 
   componentDidUpdate(prevProps, prevState, snapshot) {
-    // console.log(this.props.selectedCluster)
-    // console.log(this.state.clusterID)
-
-    if (this.props.selectedCluster.id !== this.state.clusterID) {
+    if (this.props.selectedCluster?.id !== this.state.clusterID) {
       console.log("cluster changed");
 
-      this.setState({ clusterID: this.props.selectedCluster.id }, () => {
+      this.setState({ clusterID: this.props.selectedCluster?.id }, () => {
         //TODO 处理 cancel 事件，先把当前还在执行中的请求结束，避免更新完成之后，被晚到的之前的请求给覆盖了。
         this.fetchData();
       });
@@ -225,10 +222,10 @@ class ClusterMonitor extends PureComponent {
         },
       });
     } else if (
-      this.props.selectedCluster.id !== undefined &&
-      this.props.selectedCluster.id !== null
+      this.props.selectedCluster?.id !== undefined &&
+      this.props.selectedCluster?.id !== null
     ) {
-      this.setState({ clusterID: this.props.selectedCluster.id }, () => {});
+      this.setState({ clusterID: this.props.selectedCluster?.id }, () => {});
     } else {
       //alert("cluster ID is not set");
       return;
@@ -537,7 +534,7 @@ class ClusterMonitor extends PureComponent {
               })}
             >
               <ClusterMetric
-                clusterID={this.props.selectedCluster.id}
+                clusterID={this.props.selectedCluster?.id}
                 timezone={timezone}
                 timeRange={this.state.timeRange}
                 handleTimeChange={this.handleTimeChange}
@@ -550,7 +547,7 @@ class ClusterMonitor extends PureComponent {
               })}
             >
               <NodeMetric
-                clusterID={this.props.selectedCluster.id}
+                clusterID={this.props.selectedCluster?.id}
                 timezone={timezone}
                 timeRange={this.state.timeRange}
                 handleTimeChange={this.handleTimeChange}
@@ -565,7 +562,7 @@ class ClusterMonitor extends PureComponent {
               })}
             >
               <IndexMetric
-                clusterID={this.props.selectedCluster.id}
+                clusterID={this.props.selectedCluster?.id}
                 timezone={timezone}
                 timeRange={this.state.timeRange}
                 handleTimeChange={this.handleTimeChange}
@@ -580,7 +577,7 @@ class ClusterMonitor extends PureComponent {
               })}
             >
               <QueueMetric
-                clusterID={this.props.selectedCluster.id}
+                clusterID={this.props.selectedCluster?.id}
                 timezone={timezone}
                 timeRange={this.state.timeRange}
                 handleTimeChange={this.handleTimeChange}
@@ -595,7 +592,7 @@ class ClusterMonitor extends PureComponent {
               })}
             >
               <StorageMetric
-                clusterID={this.props.selectedCluster.id}
+                clusterID={this.props.selectedCluster?.id}
                 timezone={timezone}
                 timeRange={this.state.timeRange}
               />

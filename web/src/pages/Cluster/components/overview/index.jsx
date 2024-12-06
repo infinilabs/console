@@ -49,13 +49,13 @@ const Index = (props) => {
   }, [state.timeRange]);
 
   const [selectedClusterID] = React.useMemo(() => {
-    let selectedClusterID = props.selectedCluster.id;
+    let selectedClusterID = props.selectedCluster?.id;
     if (selectedClusterID && selectedClusterID != state.clusterID) {
       setState({ ...state, clusterID: selectedClusterID });
     }
 
     return [selectedClusterID];
-  }, [props.selectedCluster.id]);
+  }, [props.selectedCluster?.id]);
 
   const handleTimeChange = ({ start, end }) => {
     const bounds = calculateBounds({

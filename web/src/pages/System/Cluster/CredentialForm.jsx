@@ -4,6 +4,7 @@ import { formatMessage } from "umi/locale";
 import useFetch from "@/lib/hooks/use_fetch";
 import { formatESSearchResult } from "@/lib/elasticsearch/util";
 import { MANUAL_VALUE } from "./steps";
+import { hasAuthority } from "@/utils/authority";
 
 export default (props) => {
   const {
@@ -27,7 +28,8 @@ export default (props) => {
         size: 1000,
       },
     },
-    []
+    [],
+    false
   );
 
   const onCredentialChange = (value) => {
@@ -45,6 +47,12 @@ export default (props) => {
   useEffect(() => {
     setIsManual(props.isManual);
   }, [props.isManual]);
+
+  useEffect(() => {
+    if (hasAuthority('system.credential:all') || hasAuthority('system.credential:read')) {
+      run()
+    }
+  }, [])
 
   if (!needAuth) {
     return null;

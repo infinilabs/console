@@ -3,6 +3,7 @@ import { Button, Divider, Form, Input, Select } from "antd";
 import { formatMessage } from "umi/locale";
 import useFetch from "@/lib/hooks/use_fetch";
 import { formatESSearchResult } from "@/lib/elasticsearch/util";
+import { hasAuthority } from "@/utils/authority";
 
 const MANUAL_VALUE = 'manual'
 
@@ -20,7 +21,8 @@ export default (props) => {
             size: 1000,
           },
         },
-        []
+        [],
+        false
       );
 
     const onCredentialChange = (value) => {
@@ -38,6 +40,12 @@ export default (props) => {
     useEffect(() => {
         setIsManual(initialValue.credential_id === MANUAL_VALUE)
     }, [initialValue.credential_id])
+
+    useEffect(() => {
+        if (hasAuthority('system.credential:all') || hasAuthority('system.credential:read')) {
+          run()
+        }
+    }, [])
 
     return (
         <>

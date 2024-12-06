@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
-import { Card, Tabs, Breadcrumb, Button, BackTop } from "antd";
+import { Card, Tabs, Breadcrumb, Button, BackTop, Empty } from "antd";
 import { calculateBounds } from "@/components/vendor/data/common/query/timefilter";
 import { formatter } from "@/utils/format";
 import moment from "moment";
@@ -117,81 +117,88 @@ const Monitor = (props) => {
       <BreadcrumbList data={breadcrumbList} />
 
       <Card bodyStyle={{ padding: 15 }}>
-        <div style={{ marginBottom: 5 }}>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <div style={{ flexGrow: 0 }}>
-              <DatePicker
-                locale={getLocale()}
-                start={state.timeRange.min}
-                end={state.timeRange.max}
-                onRangeChange={({ start, end }) => {
-                  handleTimeChange({ start, end })
-                }}
-                {...refresh}
-                onRefreshChange={setRefresh}
-                onRefresh={handleTimeChange}
-                showTimeSetting={true}
-                showTimeInterval={true}
-                timeInterval={state.timeInterval}
-                showTimeout={true}
-                timeout={state.timeout}
-                onTimeSettingChange={(timeSetting) => {
-                  localStorage.setItem(TIMEOUT_CACHE_KEY, timeSetting.timeout)
-                  setState({
-                    ...state,
-                    timeInterval: timeSetting.timeInterval,
-                    timeout: timeSetting.timeout
-                  });
-                }}
-                timeZone={timeZone}
-                onTimeZoneChange={setTimeZone}
-                recentlyUsedRangesKey={'monitor'}
-              />
-            </div>
-          </div>
-        </div>
-
-        <Tabs
-          activeKey={param?.tab || panes[0]?.key}
-          onChange={(key) => {
-            setParam({ ...param, tab: key });
-          }}
-          tabBarGutter={10}
-          destroyInactiveTabPane
-          animated={false}
-        >
-          {panes.map((pane) => (
-            <TabPane tab={pane.title} key={pane.key}>
-              <StatisticBar
-                setSpinning={setSpinning}
-                onInfoChange={onInfoChange}
-                {...state}
-                {...extraParams}
-              />
-              <div style={{ marginTop: 15 }}>
-                {checkPaneParams({
-                  ...state,
-                  ...extraParams,
-                }) ? (
-                  typeof pane.component == "string" ? (
-                    pane.component
-                  ) : (
-                    <pane.component
-                      selectedCluster={selectedCluster}
-                      isAgent={isAgent}
-                      {...state}
-                      handleTimeChange={handleTimeChange}
-                      setSpinning={setSpinning}
-                      {...extraParams}
-                      bucketSize={state.timeInterval}
+        {
+          selectedCluster ? (
+            <>
+              <div style={{ marginBottom: 5 }}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <div style={{ flexGrow: 0 }}>
+                    <DatePicker
+                      locale={getLocale()}
+                      start={state.timeRange.min}
+                      end={state.timeRange.max}
+                      onRangeChange={({ start, end }) => {
+                        handleTimeChange({ start, end })
+                      }}
+                      {...refresh}
+                      onRefreshChange={setRefresh}
+                      onRefresh={handleTimeChange}
+                      showTimeSetting={true}
+                      showTimeInterval={true}
+                      timeInterval={state.timeInterval}
+                      showTimeout={true}
                       timeout={state.timeout}
+                      onTimeSettingChange={(timeSetting) => {
+                        localStorage.setItem(TIMEOUT_CACHE_KEY, timeSetting.timeout)
+                        setState({
+                          ...state,
+                          timeInterval: timeSetting.timeInterval,
+                          timeout: timeSetting.timeout
+                        });
+                      }}
+                      timeZone={timeZone}
+                      onTimeZoneChange={setTimeZone}
+                      recentlyUsedRangesKey={'monitor'}
                     />
-                  )
-                ) : null}
+                  </div>
+                </div>
               </div>
-            </TabPane>
-          ))}
-        </Tabs>
+
+              <Tabs
+                activeKey={param?.tab || panes[0]?.key}
+                onChange={(key) => {
+                  setParam({ ...param, tab: key });
+                }}
+                tabBarGutter={10}
+                destroyInactiveTabPane
+                animated={false}
+              >
+                {panes.map((pane) => (
+                  <TabPane tab={pane.title} key={pane.key}>
+                    <StatisticBar
+                      setSpinning={setSpinning}
+                      onInfoChange={onInfoChange}
+                      {...state}
+                      {...extraParams}
+                    />
+                    <div style={{ marginTop: 15 }}>
+                      {checkPaneParams({
+                        ...state,
+                        ...extraParams,
+                      }) ? (
+                        typeof pane.component == "string" ? (
+                          pane.component
+                        ) : (
+                          <pane.component
+                            selectedCluster={selectedCluster}
+                            isAgent={isAgent}
+                            {...state}
+                            handleTimeChange={handleTimeChange}
+                            setSpinning={setSpinning}
+                            {...extraParams}
+                            bucketSize={state.timeInterval}
+                            timeout={state.timeout}
+                          />
+                        )
+                      ) : null}
+                    </div>
+                  </TabPane>
+                ))}
+              </Tabs>
+            </>
+          ) : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        }
+        
       </Card>
 
       <BackTop />

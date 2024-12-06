@@ -333,7 +333,7 @@ export default class GlobalHeaderRight extends PureComponent {
               topLeft: false,
             }}> */}
             {this.props.clusterList.length > 0 &&
-              this.props.selectedCluster.id != "" && (
+              this.props.selectedCluster?.id && (
                 <ConsoleUI
                   selectedCluster={this.props.selectedCluster}
                   clusterList={this.props.clusterList}

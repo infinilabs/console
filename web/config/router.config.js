@@ -100,7 +100,14 @@ export default [
         path: "/data",
         name: "data",
         icon: "database",
-        authority: ["data"],
+        authority: [
+          "data.index:all",
+          "data.index:read",
+          "data.alias:all",
+          "data.alias:read",
+          "data.view:all",
+          "data.view:read",
+        ],
         routes: [
           {
             path: "/data/index",

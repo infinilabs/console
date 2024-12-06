@@ -1,6 +1,6 @@
 import * as React from "react";
 
-export default function useAsync(callback, dependencies = []) {
+export default function useAsync(callback, dependencies = [], runInInit = true) {
   const loadingRef = React.useRef(false);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState();
@@ -24,8 +24,10 @@ export default function useAsync(callback, dependencies = []) {
   }, dependencies);
 
   React.useEffect(() => {
-    callbackMemoized();
-  }, [callbackMemoized]);
+    if (runInInit) {
+      callbackMemoized();
+    }
+  }, [callbackMemoized, runInInit]);
 
   return { run: callbackMemoized, loading, error, value };
 }

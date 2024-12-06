@@ -7,6 +7,7 @@ import { connect } from "dva";
 import { formatMessage } from "umi/locale";
 import Monitor from "@/components/Overview/Monitor";
 import StatisticBar from "./statistic_bar";
+import { Empty } from "antd";
 
 const panes = [
   { title: "Overview", component: Overview, key: "overview" },
@@ -31,10 +32,10 @@ const Page = (props) => {
       formatState={(state) => {
         let clusterID = props.match.params?.cluster_id;
         if (
-          props.selectedCluster.id &&
-          props.selectedCluster.id !== clusterID
+          props.selectedCluster?.id &&
+          props.selectedCluster?.id !== clusterID
         ) {
-          clusterID = props.selectedCluster.id;
+          clusterID = props.selectedCluster?.id;
         }
         return {
           ...state,
@@ -62,9 +63,9 @@ const Page = (props) => {
         clusterMonitored,
         clusterName: selectedCluster?.name,
         clusterID:
-          props.selectedCluster.id &&
-          props.selectedCluster.id !== props.match.params?.cluster_id
-            ? props.selectedCluster.id
+          props.selectedCluster?.id &&
+          props.selectedCluster?.id !== props.match.params?.cluster_id
+            ? props.selectedCluster?.id
             : props.match.params?.cluster_id,
       }}
       panes={panes}

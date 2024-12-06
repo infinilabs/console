@@ -28,6 +28,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	log "github.com/cihub/seelog"
 	httprouter "infini.sh/framework/core/api/router"
@@ -410,7 +411,7 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 			},
 		},
 	}
-	metrics := h.getMetrics(query, nodeMetricItems, bucketSize)
+	metrics := h.getMetrics(context.Background(), query, nodeMetricItems, bucketSize)
 	indexMetrics := map[string]util.MapStr{}
 	for key, item := range metrics {
 		for _, line := range item.Lines {
@@ -562,6 +563,12 @@ func (h *APIHandler) GetNodeInfo(w http.ResponseWriter, req *http.Request, ps ht
 	h.WriteJSON(w, kvs, http.StatusOK)
 }
 
+const (
+	NodeCPUJVMMetricKey = "jvm"
+	NodeHealthMetricKey = "node_health"
+	ShardStateMetricKey = "shard_state"
+)
+
 func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	clusterID := ps.MustGetParameter("id")
 	clusterUUID, err := adapter.GetClusterUUID(clusterID)
@@ -628,127 +635,155 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 
 	bucketSizeStr:=fmt.Sprintf("%vs",bucketSize)
 	metricItems:=[]*common.MetricItem{}
-	metricItem:=newMetricItem("cpu", 1, SystemGroupKey)
-	metricItem.AddAxi("cpu","group1",common.PositionLeft,"ratio","0.[0]","0.[0]",5,true)
-	metricItem.AddLine("Process CPU","Process CPU","process cpu used percent of node.","group1","payload.elasticsearch.node_stats.process.cpu.percent","max",bucketSizeStr,"%","num","0,0.[00]","0,0.[00]",false,false)
-	metricItem.AddLine("OS CPU","OS CPU","process cpu used percent of node.","group1","payload.elasticsearch.node_stats.os.cpu.percent","max",bucketSizeStr,"%","num","0,0.[00]","0,0.[00]",false,false)
-	metricItems=append(metricItems,metricItem)
-	metricItem =newMetricItem("jvm", 2, SystemGroupKey)
-	metricItem.AddAxi("JVM Heap","group1",common.PositionLeft,"bytes","0.[0]","0.[0]",5,true)
-	metricItem.AddLine("Max Heap","Max Heap","JVM max Heap of node.","group1","payload.elasticsearch.node_stats.jvm.mem.heap_max_in_bytes","max",bucketSizeStr,"","bytes","0,0.[00]","0,0.[00]",false,false)
-	metricItem.AddLine("Used Heap","Used Heap","JVM used Heap of node.","group1","payload.elasticsearch.node_stats.jvm.mem.heap_used_in_bytes","max",bucketSizeStr,"","bytes","0,0.[00]","0,0.[00]",false,false)
-	metricItems=append(metricItems,metricItem)
-	metricItem=newMetricItem("index_throughput", 3, OperationGroupKey)
-	metricItem.AddAxi("indexing","group1",common.PositionLeft,"num","0,0","0,0.[00]",5,true)
-	metricItem.AddLine("Indexing Rate","Total Shards","Number of documents being indexed for node.","group1","payload.elasticsearch.node_stats.indices.indexing.index_total","max",bucketSizeStr,"doc/s","num","0,0.[00]","0,0.[00]",false,true)
-	metricItems=append(metricItems,metricItem)
-	metricItem=newMetricItem("search_throughput", 4, OperationGroupKey)
-	metricItem.AddAxi("searching","group1",common.PositionLeft,"num","0,0","0,0.[00]",5,false)
-	metricItem.AddLine("Search Rate","Total Shards",
-		"Number of search requests being executed.",
-		"group1","payload.elasticsearch.node_stats.indices.search.query_total","max",bucketSizeStr,"query/s","num","0,0.[00]","0,0.[00]",false,true)
-	metricItems=append(metricItems,metricItem)
-
-	metricItem=newMetricItem("index_latency", 5, LatencyGroupKey)
-	metricItem.AddAxi("indexing","group1",common.PositionLeft,"num","0,0","0,0.[00]",5,true)
-
-	metricItem.AddLine("Indexing","Indexing Latency","Average latency for indexing documents.","group1","payload.elasticsearch.node_stats.indices.indexing.index_time_in_millis","max",bucketSizeStr,"ms","num","0,0.[00]","0,0.[00]",false,true)
-	metricItem.Lines[0].Metric.Field2 = "payload.elasticsearch.node_stats.indices.indexing.index_total"
-	metricItem.Lines[0].Metric.Calc = func(value, value2 float64) float64 {
-		return value/value2
-	}
-	metricItem.AddLine("Indexing","Delete Latency","Average latency for delete documents.","group1","payload.elasticsearch.node_stats.indices.indexing.delete_time_in_millis","max",bucketSizeStr,"ms","num","0,0.[00]","0,0.[00]",false,true)
-	metricItem.Lines[1].Metric.Field2 = "payload.elasticsearch.node_stats.indices.indexing.delete_total"
-	metricItem.Lines[1].Metric.Calc = func(value, value2 float64) float64 {
-		return value/value2
-	}
-	metricItems=append(metricItems,metricItem)
-
-	metricItem=newMetricItem("search_latency", 6, LatencyGroupKey)
-	metricItem.AddAxi("searching","group2",common.PositionLeft,"num","0,0","0,0.[00]",5,false)
-
-	metricItem.AddLine("Searching","Query Latency","Average latency for searching query.","group2","payload.elasticsearch.node_stats.indices.search.query_time_in_millis","max",bucketSizeStr,"ms","num","0,0.[00]","0,0.[00]",false,true)
-	metricItem.Lines[0].Metric.Field2 = "payload.elasticsearch.node_stats.indices.search.query_total"
-	metricItem.Lines[0].Metric.Calc = func(value, value2 float64) float64 {
-		return value/value2
-	}
-	metricItem.AddLine("Searching","Fetch Latency","Average latency for searching fetch.","group2","payload.elasticsearch.node_stats.indices.search.fetch_time_in_millis","max",bucketSizeStr,"ms","num","0,0.[00]","0,0.[00]",false,true)
-	metricItem.Lines[1].Metric.Field2 = "payload.elasticsearch.node_stats.indices.search.fetch_total"
-	metricItem.Lines[1].Metric.Calc = func(value, value2 float64) float64 {
-		return value/value2
-	}
-	metricItem.AddLine("Searching","Scroll Latency","Average latency for searching fetch.","group2","payload.elasticsearch.node_stats.indices.search.scroll_time_in_millis","max",bucketSizeStr,"ms","num","0,0.[00]","0,0.[00]",false,true)
-	metricItem.Lines[2].Metric.Field2 = "payload.elasticsearch.node_stats.indices.search.scroll_total"
-	metricItem.Lines[2].Metric.Calc = func(value, value2 float64) float64 {
-		return value/value2
-	}
-	metricItems=append(metricItems,metricItem)
-	metricItem =newMetricItem("parent_breaker", 8, SystemGroupKey)
-	metricItem.AddLine("Parent Breaker Tripped","Parent Breaker Tripped","Rate of the circuit breaker has been triggered and prevented an out of memory error.","group1","payload.elasticsearch.node_stats.breakers.parent.tripped","max",bucketSizeStr,"times/s","num","0,0.[00]","0,0.[00]",false,true)
-	metricItems=append(metricItems,metricItem)
-	metrics := h.getSingleMetrics(metricItems,query, bucketSize)
-	healthMetric, err := getNodeHealthMetric(query, bucketSize)
+	metricKey := h.GetParameter(req, "key")
+	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
+	du, err := time.ParseDuration(timeout)
 	if err != nil {
 		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
-	query = util.MapStr{
-		"size": 0,
-		"query": util.MapStr{
-			"bool": util.MapStr{
-				"must": []util.MapStr{
-					{
-						"term":util.MapStr{
-							"metadata.labels.cluster_uuid":util.MapStr{
-								"value": clusterUUID,
+	ctx, cancel := context.WithTimeout(context.Background(), du)
+	defer cancel()
+	metrics := map[string]*common.MetricItem{}
+	if metricKey == NodeHealthMetricKey {
+		healthMetric, err := getNodeHealthMetric(ctx, query, bucketSize)
+		if err != nil {
+			log.Error(err)
+			h.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		metrics["node_health"] = healthMetric
+	}else if metricKey == ShardStateMetricKey {
+		query = util.MapStr{
+			"size": 0,
+			"query": util.MapStr{
+				"bool": util.MapStr{
+					"must": []util.MapStr{
+						{
+							"term":util.MapStr{
+								"metadata.labels.cluster_uuid":util.MapStr{
+									"value": clusterUUID,
+								},
+							},
+						},
+						{
+							"term": util.MapStr{
+								"metadata.category": util.MapStr{
+									"value": "elasticsearch",
+								},
+							},
+						},
+						{
+							"term": util.MapStr{
+								"metadata.name": util.MapStr{
+									"value": "shard_stats",
+								},
+							},
+						},
+						{
+							"term": util.MapStr{
+								"metadata.labels.node_id": util.MapStr{
+									"value": nodeID,
+								},
 							},
 						},
 					},
-					{
-						"term": util.MapStr{
-							"metadata.category": util.MapStr{
-								"value": "elasticsearch",
-							},
-						},
-					},
-					{
-						"term": util.MapStr{
-							"metadata.name": util.MapStr{
-								"value": "shard_stats",
-							},
-						},
-					},
-					{
-						"term": util.MapStr{
-							"metadata.labels.node_id": util.MapStr{
-								"value": nodeID,
-							},
-						},
-					},
-				},
-				"filter": []util.MapStr{
-					{
-						"range": util.MapStr{
-							"timestamp": util.MapStr{
-								"gte": min,
-								"lte": max,
+					"filter": []util.MapStr{
+						{
+							"range": util.MapStr{
+								"timestamp": util.MapStr{
+									"gte": min,
+									"lte": max,
+								},
 							},
 						},
 					},
 				},
 			},
-		},
+		}
+		shardStateMetric, err := getNodeShardStateMetric(ctx, query, bucketSize)
+		if err != nil {
+			log.Error(err)
+			h.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		metrics["shard_state"] = shardStateMetric
+	}else{
+		switch metricKey {
+		case NodeProcessCPUMetricKey:
+			metricItem:=newMetricItem("cpu", 1, SystemGroupKey)
+			metricItem.AddAxi("cpu","group1",common.PositionLeft,"ratio","0.[0]","0.[0]",5,true)
+			metricItem.AddLine("Process CPU","Process CPU","process cpu used percent of node.","group1","payload.elasticsearch.node_stats.process.cpu.percent","max",bucketSizeStr,"%","num","0,0.[00]","0,0.[00]",false,false)
+			metricItem.AddLine("OS CPU","OS CPU","process cpu used percent of node.","group1","payload.elasticsearch.node_stats.os.cpu.percent","max",bucketSizeStr,"%","num","0,0.[00]","0,0.[00]",false,false)
+			metricItems=append(metricItems,metricItem)
+		case NodeCPUJVMMetricKey:
+			metricItem := newMetricItem("jvm", 2, SystemGroupKey)
+			metricItem.AddAxi("JVM Heap","group1",common.PositionLeft,"bytes","0.[0]","0.[0]",5,true)
+			metricItem.AddLine("Max Heap","Max Heap","JVM max Heap of node.","group1","payload.elasticsearch.node_stats.jvm.mem.heap_max_in_bytes","max",bucketSizeStr,"","bytes","0,0.[00]","0,0.[00]",false,false)
+			metricItem.AddLine("Used Heap","Used Heap","JVM used Heap of node.","group1","payload.elasticsearch.node_stats.jvm.mem.heap_used_in_bytes","max",bucketSizeStr,"","bytes","0,0.[00]","0,0.[00]",false,false)
+			metricItems=append(metricItems,metricItem)
+		case IndexThroughputMetricKey:
+			metricItem := newMetricItem("index_throughput", 3, OperationGroupKey)
+			metricItem.AddAxi("indexing","group1",common.PositionLeft,"num","0,0","0,0.[00]",5,true)
+			metricItem.AddLine("Indexing Rate","Total Shards","Number of documents being indexed for node.","group1","payload.elasticsearch.node_stats.indices.indexing.index_total","max",bucketSizeStr,"doc/s","num","0,0.[00]","0,0.[00]",false,true)
+			metricItems=append(metricItems,metricItem)
+		case SearchThroughputMetricKey:
+			metricItem := newMetricItem("search_throughput", 4, OperationGroupKey)
+			metricItem.AddAxi("searching","group1",common.PositionLeft,"num","0,0","0,0.[00]",5,false)
+			metricItem.AddLine("Search Rate","Total Shards",
+				"Number of search requests being executed.",
+				"group1","payload.elasticsearch.node_stats.indices.search.query_total","max",bucketSizeStr,"query/s","num","0,0.[00]","0,0.[00]",false,true)
+			metricItems=append(metricItems,metricItem)
+		case IndexLatencyMetricKey:
+			metricItem := newMetricItem("index_latency", 5, LatencyGroupKey)
+			metricItem.AddAxi("indexing","group1",common.PositionLeft,"num","0,0","0,0.[00]",5,true)
+
+			metricItem.AddLine("Indexing","Indexing Latency","Average latency for indexing documents.","group1","payload.elasticsearch.node_stats.indices.indexing.index_time_in_millis","max",bucketSizeStr,"ms","num","0,0.[00]","0,0.[00]",false,true)
+			metricItem.Lines[0].Metric.Field2 = "payload.elasticsearch.node_stats.indices.indexing.index_total"
+			metricItem.Lines[0].Metric.Calc = func(value, value2 float64) float64 {
+				return value/value2
+			}
+			metricItem.AddLine("Indexing","Delete Latency","Average latency for delete documents.","group1","payload.elasticsearch.node_stats.indices.indexing.delete_time_in_millis","max",bucketSizeStr,"ms","num","0,0.[00]","0,0.[00]",false,true)
+			metricItem.Lines[1].Metric.Field2 = "payload.elasticsearch.node_stats.indices.indexing.delete_total"
+			metricItem.Lines[1].Metric.Calc = func(value, value2 float64) float64 {
+				return value/value2
+			}
+			metricItems=append(metricItems,metricItem)
+		case SearchLatencyMetricKey:
+			metricItem := newMetricItem("search_latency", 6, LatencyGroupKey)
+			metricItem.AddAxi("searching","group2",common.PositionLeft,"num","0,0","0,0.[00]",5,false)
+
+			metricItem.AddLine("Searching","Query Latency","Average latency for searching query.","group2","payload.elasticsearch.node_stats.indices.search.query_time_in_millis","max",bucketSizeStr,"ms","num","0,0.[00]","0,0.[00]",false,true)
+			metricItem.Lines[0].Metric.Field2 = "payload.elasticsearch.node_stats.indices.search.query_total"
+			metricItem.Lines[0].Metric.Calc = func(value, value2 float64) float64 {
+				return value/value2
+			}
+			metricItem.AddLine("Searching","Fetch Latency","Average latency for searching fetch.","group2","payload.elasticsearch.node_stats.indices.search.fetch_time_in_millis","max",bucketSizeStr,"ms","num","0,0.[00]","0,0.[00]",false,true)
+			metricItem.Lines[1].Metric.Field2 = "payload.elasticsearch.node_stats.indices.search.fetch_total"
+			metricItem.Lines[1].Metric.Calc = func(value, value2 float64) float64 {
+				return value/value2
+			}
+			metricItem.AddLine("Searching","Scroll Latency","Average latency for searching fetch.","group2","payload.elasticsearch.node_stats.indices.search.scroll_time_in_millis","max",bucketSizeStr,"ms","num","0,0.[00]","0,0.[00]",false,true)
+			metricItem.Lines[2].Metric.Field2 = "payload.elasticsearch.node_stats.indices.search.scroll_total"
+			metricItem.Lines[2].Metric.Calc = func(value, value2 float64) float64 {
+				return value/value2
+			}
+			metricItems=append(metricItems,metricItem)
+		case ParentBreakerMetricKey:
+			metricItem := newMetricItem("parent_breaker", 8, SystemGroupKey)
+			metricItem.AddLine("Parent Breaker Tripped","Parent Breaker Tripped","Rate of the circuit breaker has been triggered and prevented an out of memory error.","group1","payload.elasticsearch.node_stats.breakers.parent.tripped","max",bucketSizeStr,"times/s","num","0,0.[00]","0,0.[00]",false,true)
+			metricItems=append(metricItems,metricItem)
+		}
+
+		metrics = h.getSingleMetrics(ctx, metricItems,query, bucketSize)
 	}
-	shardStateMetric, err := getNodeShardStateMetric(query, bucketSize)
-	if err != nil {
-		log.Error(err)
-	}
-	metrics["node_health"] = healthMetric
-	metrics["shard_state"] = shardStateMetric
+
 	resBody["metrics"] = metrics
 	h.WriteJSON(w, resBody, http.StatusOK)
 }
 
-func getNodeShardStateMetric(query util.MapStr, bucketSize int)(*common.MetricItem, error){
+func getNodeShardStateMetric(ctx context.Context, query util.MapStr, bucketSize int)(*common.MetricItem, error){
 	bucketSizeStr:=fmt.Sprintf("%vs",bucketSize)
 	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
 	if err != nil {
@@ -771,7 +806,8 @@ func getNodeShardStateMetric(query util.MapStr, bucketSize int)(*common.MetricIt
 			},
 		},
 	}
-	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).SearchWithRawQueryDSL(getAllMetricsIndex(), util.MustToJSONBytes(query))
+	queryDSL := util.MustToJSONBytes(query)
+	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).QueryDSL(ctx, getAllMetricsIndex(), nil, queryDSL)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -789,10 +825,11 @@ func getNodeShardStateMetric(query util.MapStr, bucketSize int)(*common.MetricIt
 	}
 	metricItem.Lines[0].Data = metricData
 	metricItem.Lines[0].Type = common.GraphTypeBar
+	metricItem.Request = string(queryDSL)
 	return metricItem, nil
 }
 
-func getNodeHealthMetric(query util.MapStr, bucketSize int)(*common.MetricItem, error){
+func getNodeHealthMetric(ctx context.Context, query util.MapStr, bucketSize int)(*common.MetricItem, error){
 	bucketSizeStr:=fmt.Sprintf("%vs",bucketSize)
 	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
 	if err != nil {
@@ -813,7 +850,8 @@ func getNodeHealthMetric(query util.MapStr, bucketSize int)(*common.MetricItem, 
 			},
 		},
 	}
-	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).SearchWithRawQueryDSL(getAllMetricsIndex(), util.MustToJSONBytes(query))
+	queryDSL := util.MustToJSONBytes(query)
+	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).QueryDSL(ctx, getAllMetricsIndex(), nil,  queryDSL)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -844,6 +882,7 @@ func getNodeHealthMetric(query util.MapStr, bucketSize int)(*common.MetricItem, 
 			}
 		}
 	}
+	metricItem.Request = string(queryDSL)
 	metricItem.Lines[0].Data = metricData
 	metricItem.Lines[0].Type = common.GraphTypeBar
 	return metricItem, nil

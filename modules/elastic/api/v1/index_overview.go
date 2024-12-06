@@ -28,6 +28,7 @@
 package v1
 
 import (
+	"context"
 	"fmt"
 	log "github.com/cihub/seelog"
 	httprouter "infini.sh/framework/core/api/router"
@@ -440,7 +441,7 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter,  req *http.Request, p
 			},
 		},
 	}
-	metrics := h.getMetrics(query, nodeMetricItems, bucketSize)
+	metrics := h.getMetrics(context.Background(), query, nodeMetricItems, bucketSize)
 	indexMetrics := map[string]util.MapStr{}
 	for key, item := range metrics {
 		for _, line := range item.Lines {
@@ -626,6 +627,8 @@ func (h *APIHandler) GetIndexShards(w http.ResponseWriter, req *http.Request, ps
 	h.WriteJSON(w, shardInfo, http.StatusOK)
 }
 
+const IndexHealthMetricKey = "index_health"
+
 func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	clusterID := ps.MustGetParameter("id")
 	indexName := ps.MustGetParameter("index")
@@ -699,63 +702,81 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 	metricItems := []*common.MetricItem{}
-	metricItem:=newMetricItem("index_throughput", 1, OperationGroupKey)
-	metricItem.AddAxi("indexing","group1",common.PositionLeft,"num","0,0","0,0.[00]",5,true)
-	metricItem.AddLine("Indexing Rate","Primary Indexing","Number of documents being indexed for node.","group1","payload.elasticsearch.index_stats.primaries.indexing.index_total","max",bucketSizeStr,"doc/s","num","0,0.[00]","0,0.[00]",false,true)
-	metricItem.AddLine("Deleting Rate","Primary Deleting","Number of documents being deleted for node.","group1","payload.elasticsearch.index_stats.primaries.indexing.delete_total","max",bucketSizeStr,"doc/s","num","0,0.[00]","0,0.[00]",false,true)
-	metricItems=append(metricItems,metricItem)
-	metricItem=newMetricItem("search_throughput", 2, OperationGroupKey)
-	metricItem.AddAxi("searching","group1",common.PositionLeft,"num","0,0","0,0.[00]",5,false)
-	metricItem.AddLine("Search Rate","Search Rate",
-		"Number of search requests being executed.",
-		"group1","payload.elasticsearch.index_stats.total.search.query_total","max",bucketSizeStr,"query/s","num","0,0.[00]","0,0.[00]",false,true)
-	metricItems=append(metricItems,metricItem)
-
-	metricItem=newMetricItem("index_latency", 3, LatencyGroupKey)
-	metricItem.AddAxi("indexing","group1",common.PositionLeft,"num","0,0","0,0.[00]",5,true)
-
-	metricItem.AddLine("Indexing Latency","Primary Indexing Latency","Average latency for indexing documents.","group1","payload.elasticsearch.index_stats.primaries.indexing.index_time_in_millis","max",bucketSizeStr,"ms","num","0,0.[00]","0,0.[00]",false,true)
-	metricItem.Lines[0].Metric.Field2 = "payload.elasticsearch.index_stats.primaries.indexing.index_total"
-	metricItem.Lines[0].Metric.Calc = func(value, value2 float64) float64 {
-		return value/value2
-	}
-	metricItem.AddLine("Deleting Latency","Primary Deleting Latency","Average latency for delete documents.","group1","payload.elasticsearch.index_stats.primaries.indexing.delete_time_in_millis","max",bucketSizeStr,"ms","num","0,0.[00]","0,0.[00]",false,true)
-	metricItem.Lines[1].Metric.Field2 = "payload.elasticsearch.index_stats.primaries.indexing.delete_total"
-	metricItem.Lines[1].Metric.Calc = func(value, value2 float64) float64 {
-		return value/value2
-	}
-	metricItems=append(metricItems,metricItem)
-
-	metricItem=newMetricItem("search_latency", 4, LatencyGroupKey)
-	metricItem.AddAxi("searching","group2",common.PositionLeft,"num","0,0","0,0.[00]",5,false)
-
-	metricItem.AddLine("Searching","Query Latency","Average latency for searching query.","group2","payload.elasticsearch.index_stats.total.search.query_time_in_millis","max",bucketSizeStr,"ms","num","0,0.[00]","0,0.[00]",false,true)
-	metricItem.Lines[0].Metric.Field2 = "payload.elasticsearch.index_stats.total.search.query_total"
-	metricItem.Lines[0].Metric.Calc = func(value, value2 float64) float64 {
-		return value/value2
-	}
-	metricItem.AddLine("Searching","Fetch Latency","Average latency for searching fetch.","group2","payload.elasticsearch.index_stats.total.search.fetch_time_in_millis","max",bucketSizeStr,"ms","num","0,0.[00]","0,0.[00]",false,true)
-	metricItem.Lines[1].Metric.Field2 = "payload.elasticsearch.index_stats.total.search.fetch_total"
-	metricItem.Lines[1].Metric.Calc = func(value, value2 float64) float64 {
-		return value/value2
-	}
-	metricItem.AddLine("Searching","Scroll Latency","Average latency for searching fetch.","group2","payload.elasticsearch.index_stats.total.search.scroll_time_in_millis","max",bucketSizeStr,"ms","num","0,0.[00]","0,0.[00]",false,true)
-	metricItem.Lines[2].Metric.Field2 = "payload.elasticsearch.index_stats.total.search.scroll_total"
-	metricItem.Lines[2].Metric.Calc = func(value, value2 float64) float64 {
-		return value/value2
-	}
-	metricItems=append(metricItems,metricItem)
-	metrics := h.getSingleMetrics(metricItems,query, bucketSize)
-	healthMetric, err := h.getIndexHealthMetric(clusterID, indexName, min, max, bucketSize)
+	metricKey := h.GetParameter(req, "key")
+	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
+	du, err := time.ParseDuration(timeout)
 	if err != nil {
 		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
-	metrics["index_health"] = healthMetric
+	ctx, cancel := context.WithTimeout(context.Background(), du)
+	defer cancel()
+	metrics := map[string]*common.MetricItem{}
+	if metricKey == IndexHealthMetricKey {
+		healthMetric, err := h.getIndexHealthMetric(ctx, clusterID, indexName, min, max, bucketSize)
+		if err != nil {
+			log.Error(err)
+		}
+		metrics["index_health"] = healthMetric
+	}else {
+		switch metricKey {
+		case IndexThroughputMetricKey:
+			metricItem := newMetricItem("index_throughput", 1, OperationGroupKey)
+			metricItem.AddAxi("indexing", "group1", common.PositionLeft, "num", "0,0", "0,0.[00]", 5, true)
+			metricItem.AddLine("Indexing Rate", "Primary Indexing", "Number of documents being indexed for node.", "group1", "payload.elasticsearch.index_stats.primaries.indexing.index_total", "max", bucketSizeStr, "doc/s", "num", "0,0.[00]", "0,0.[00]", false, true)
+			metricItem.AddLine("Deleting Rate", "Primary Deleting", "Number of documents being deleted for node.", "group1", "payload.elasticsearch.index_stats.primaries.indexing.delete_total", "max", bucketSizeStr, "doc/s", "num", "0,0.[00]", "0,0.[00]", false, true)
+			metricItems = append(metricItems, metricItem)
+		case SearchThroughputMetricKey:
+			metricItem := newMetricItem("search_throughput", 2, OperationGroupKey)
+			metricItem.AddAxi("searching", "group1", common.PositionLeft, "num", "0,0", "0,0.[00]", 5, false)
+			metricItem.AddLine("Search Rate", "Search Rate",
+				"Number of search requests being executed.",
+				"group1", "payload.elasticsearch.index_stats.total.search.query_total", "max", bucketSizeStr, "query/s", "num", "0,0.[00]", "0,0.[00]", false, true)
+			metricItems = append(metricItems, metricItem)
+		case IndexLatencyMetricKey:
+			metricItem := newMetricItem("index_latency", 3, LatencyGroupKey)
+			metricItem.AddAxi("indexing", "group1", common.PositionLeft, "num", "0,0", "0,0.[00]", 5, true)
+
+			metricItem.AddLine("Indexing Latency", "Primary Indexing Latency", "Average latency for indexing documents.", "group1", "payload.elasticsearch.index_stats.primaries.indexing.index_time_in_millis", "max", bucketSizeStr, "ms", "num", "0,0.[00]", "0,0.[00]", false, true)
+			metricItem.Lines[0].Metric.Field2 = "payload.elasticsearch.index_stats.primaries.indexing.index_total"
+			metricItem.Lines[0].Metric.Calc = func(value, value2 float64) float64 {
+				return value / value2
+			}
+			metricItem.AddLine("Deleting Latency", "Primary Deleting Latency", "Average latency for delete documents.", "group1", "payload.elasticsearch.index_stats.primaries.indexing.delete_time_in_millis", "max", bucketSizeStr, "ms", "num", "0,0.[00]", "0,0.[00]", false, true)
+			metricItem.Lines[1].Metric.Field2 = "payload.elasticsearch.index_stats.primaries.indexing.delete_total"
+			metricItem.Lines[1].Metric.Calc = func(value, value2 float64) float64 {
+				return value / value2
+			}
+			metricItems = append(metricItems, metricItem)
+		case SearchLatencyMetricKey:
+			metricItem := newMetricItem("search_latency", 4, LatencyGroupKey)
+			metricItem.AddAxi("searching", "group2", common.PositionLeft, "num", "0,0", "0,0.[00]", 5, false)
+
+			metricItem.AddLine("Searching", "Query Latency", "Average latency for searching query.", "group2", "payload.elasticsearch.index_stats.total.search.query_time_in_millis", "max", bucketSizeStr, "ms", "num", "0,0.[00]", "0,0.[00]", false, true)
+			metricItem.Lines[0].Metric.Field2 = "payload.elasticsearch.index_stats.total.search.query_total"
+			metricItem.Lines[0].Metric.Calc = func(value, value2 float64) float64 {
+				return value / value2
+			}
+			metricItem.AddLine("Searching", "Fetch Latency", "Average latency for searching fetch.", "group2", "payload.elasticsearch.index_stats.total.search.fetch_time_in_millis", "max", bucketSizeStr, "ms", "num", "0,0.[00]", "0,0.[00]", false, true)
+			metricItem.Lines[1].Metric.Field2 = "payload.elasticsearch.index_stats.total.search.fetch_total"
+			metricItem.Lines[1].Metric.Calc = func(value, value2 float64) float64 {
+				return value / value2
+			}
+			metricItem.AddLine("Searching", "Scroll Latency", "Average latency for searching fetch.", "group2", "payload.elasticsearch.index_stats.total.search.scroll_time_in_millis", "max", bucketSizeStr, "ms", "num", "0,0.[00]", "0,0.[00]", false, true)
+			metricItem.Lines[2].Metric.Field2 = "payload.elasticsearch.index_stats.total.search.scroll_total"
+			metricItem.Lines[2].Metric.Calc = func(value, value2 float64) float64 {
+				return value / value2
+			}
+			metricItems = append(metricItems, metricItem)
+		}
+		metrics = h.getSingleMetrics(ctx, metricItems, query, bucketSize)
+	}
 	resBody["metrics"] = metrics
 	h.WriteJSON(w, resBody, http.StatusOK)
 }
 
-func (h *APIHandler) getIndexHealthMetric(id, indexName string, min, max int64, bucketSize int)(*common.MetricItem, error){
+func (h *APIHandler) getIndexHealthMetric(ctx context.Context, id, indexName string, min, max int64, bucketSize int)(*common.MetricItem, error){
 	bucketSizeStr:=fmt.Sprintf("%vs",bucketSize)
 	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
 	if err != nil {
@@ -823,7 +844,8 @@ func (h *APIHandler) getIndexHealthMetric(id, indexName string, min, max int64, 
 			},
 		},
 	}
-	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).SearchWithRawQueryDSL(getAllMetricsIndex(), util.MustToJSONBytes(query))
+	queryDSL := util.MustToJSONBytes(query)
+	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).QueryDSL(ctx, getAllMetricsIndex(), nil, queryDSL)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -841,6 +863,7 @@ func (h *APIHandler) getIndexHealthMetric(id, indexName string, min, max int64, 
 	}
 	metricItem.Lines[0].Data = metricData
 	metricItem.Lines[0].Type = common.GraphTypeBar
+	metricItem.Request = string(queryDSL)
 	return metricItem, nil
 }
 

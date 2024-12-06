@@ -24,6 +24,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"infini.sh/framework/core/env"
 	"net/http"
@@ -109,9 +110,10 @@ func generateGroupAggs(nodeMetricItems []GroupMetricItem) map[string]interface{}
 	return aggs
 }
 
-func (h *APIHandler) getMetrics(query map[string]interface{}, grpMetricItems []GroupMetricItem, bucketSize int) map[string]*common.MetricItem {
+func (h *APIHandler) getMetrics(ctx context.Context, query map[string]interface{}, grpMetricItems []GroupMetricItem, bucketSize int) map[string]*common.MetricItem {
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
-	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).SearchWithRawQueryDSL(getAllMetricsIndex(), util.MustToJSONBytes(query))
+	queryDSL := util.MustToJSONBytes(query)
+	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).QueryDSL(ctx, getAllMetricsIndex(),nil, queryDSL)
 	if err != nil {
 		log.Error(err)
 		panic(err)
@@ -214,6 +216,7 @@ func (h *APIHandler) getMetrics(query map[string]interface{}, grpMetricItems []G
 				line.Data = temp
 			}
 		}
+		metricItem.MetricItem.Request = string(queryDSL)
 		result[metricItem.Key] = metricItem.MetricItem
 	}
 	return result
@@ -337,7 +340,7 @@ func GetMetricRangeAndBucketSize(minStr string, maxStr string, bucketSize int, m
 }
 
 // 获取单个指标，可以包含多条曲线
-func (h *APIHandler) getSingleMetrics(metricItems []*common.MetricItem, query map[string]interface{}, bucketSize int) map[string]*common.MetricItem {
+func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common.MetricItem, query map[string]interface{}, bucketSize int) map[string]*common.MetricItem {
 	metricData := map[string][][]interface{}{}
 
 	aggs := map[string]interface{}{}
@@ -396,7 +399,8 @@ func (h *APIHandler) getSingleMetrics(metricItems []*common.MetricItem, query ma
 			"aggs": aggs,
 		},
 	}
-	response, err := elastic.GetClient(clusterID).SearchWithRawQueryDSL(getAllMetricsIndex(), util.MustToJSONBytes(query))
+	queryDSL := util.MustToJSONBytes(query)
+	response, err := elastic.GetClient(clusterID).QueryDSL(ctx, getAllMetricsIndex(), nil,  queryDSL)
 	if err != nil {
 		log.Error(err)
 		panic(err)
@@ -467,6 +471,7 @@ func (h *APIHandler) getSingleMetrics(metricItems []*common.MetricItem, query ma
 				line.Data = temp
 			}
 		}
+		metricItem.Request = string(queryDSL)
 		result[metricItem.Key] = metricItem
 	}
 
@@ -959,7 +964,7 @@ func parseGroupMetricData(buckets []elastic.BucketBase, isPercent bool) ([]inter
 	return metricData, nil
 }
 
-func (h *APIHandler) getSingleIndexMetricsByNodeStats(metricItems []*common.MetricItem, query map[string]interface{}, bucketSize int) map[string]*common.MetricItem {
+func (h *APIHandler) getSingleIndexMetricsByNodeStats(ctx context.Context, metricItems []*common.MetricItem, query map[string]interface{}, bucketSize int) map[string]*common.MetricItem {
 	metricData := map[string][][]interface{}{}
 
 	aggs := util.MapStr{}
@@ -1041,10 +1046,10 @@ func (h *APIHandler) getSingleIndexMetricsByNodeStats(metricItems []*common.Metr
 			"aggs": sumAggs,
 		},
 	}
-	return parseSingleIndexMetrics(clusterID, metricItems, query, bucketSize,metricData, metricItemsMap)
+	return parseSingleIndexMetrics(ctx, clusterID, metricItems, query, bucketSize,metricData, metricItemsMap)
 }
 
-func (h *APIHandler) getSingleIndexMetrics(metricItems []*common.MetricItem, query map[string]interface{}, bucketSize int) map[string]*common.MetricItem {
+func (h *APIHandler) getSingleIndexMetrics(ctx context.Context, metricItems []*common.MetricItem, query map[string]interface{}, bucketSize int) map[string]*common.MetricItem {
 	metricData := map[string][][]interface{}{}
 
 	aggs := util.MapStr{}
@@ -1146,11 +1151,12 @@ func (h *APIHandler) getSingleIndexMetrics(metricItems []*common.MetricItem, que
 			"aggs": sumAggs,
 		},
 	}
-	return parseSingleIndexMetrics(clusterID, metricItems, query, bucketSize,metricData, metricItemsMap)
+	return parseSingleIndexMetrics(ctx, clusterID, metricItems, query, bucketSize,metricData, metricItemsMap)
 }
 
-func parseSingleIndexMetrics(clusterID string, metricItems []*common.MetricItem, query map[string]interface{}, bucketSize int, metricData map[string][][]interface{}, metricItemsMap map[string]*common.MetricLine) map[string]*common.MetricItem {
-	response, err := elastic.GetClient(clusterID).SearchWithRawQueryDSL(getAllMetricsIndex(), util.MustToJSONBytes(query))
+func parseSingleIndexMetrics(ctx context.Context, clusterID string, metricItems []*common.MetricItem, query map[string]interface{}, bucketSize int, metricData map[string][][]interface{}, metricItemsMap map[string]*common.MetricLine) map[string]*common.MetricItem {
+	queryDSL := util.MustToJSONBytes(query)
+	response, err := elastic.GetClient(clusterID).QueryDSL(ctx, getAllMetricsIndex(), nil, util.MustToJSONBytes(query))
 	if err != nil {
 		panic(err)
 	}
@@ -1220,6 +1226,7 @@ func parseSingleIndexMetrics(clusterID string, metricItems []*common.MetricItem,
 				line.Data = temp
 			}
 		}
+		metricItem.Request = string(queryDSL)
 		result[metricItem.Key] = metricItem
 	}
 

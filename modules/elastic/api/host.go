@@ -28,6 +28,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	log "github.com/cihub/seelog"
 	httprouter "infini.sh/framework/core/api/router"
@@ -604,10 +605,10 @@ func (h *APIHandler) getSingleHostMetric(agentID string, min, max int64, bucketS
 			},
 		},
 	}
-	return h.getSingleMetrics(metricItems, query, bucketSize)
+	return h.getSingleMetrics(context.Background(), metricItems, query, bucketSize)
 }
 
-func (h *APIHandler) getSingleHostMetricFromNode(nodeID string, min, max int64, bucketSize int) map[string]*common.MetricItem {
+func (h *APIHandler) getSingleHostMetricFromNode(ctx context.Context, nodeID string, min, max int64, bucketSize int) map[string]*common.MetricItem {
 	var must = []util.MapStr{
 		{
 			"term": util.MapStr{
@@ -669,7 +670,7 @@ func (h *APIHandler) getSingleHostMetricFromNode(nodeID string, min, max int64, 
 		return 100 - value*100/value2
 	}
 	metricItems = append(metricItems, metricItem)
-	return h.getSingleMetrics(metricItems, query, bucketSize)
+	return h.getSingleMetrics(ctx, metricItems, query, bucketSize)
 }
 
 func (h *APIHandler) GetSingleHostMetrics(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -696,7 +697,7 @@ func (h *APIHandler) GetSingleHostMetrics(w http.ResponseWriter, req *http.Reque
 		return
 	}
 	if hostInfo.AgentID == "" {
-		resBody["metrics"] = h.getSingleHostMetricFromNode(hostInfo.NodeID, min, max, bucketSize)
+		resBody["metrics"] = h.getSingleHostMetricFromNode(context.Background(), hostInfo.NodeID, min, max, bucketSize)
 		h.WriteJSON(w, resBody, http.StatusOK)
 		return
 	}
@@ -866,7 +867,7 @@ func (h *APIHandler) getGroupHostMetric(agentIDs []string, min, max int64, bucke
 			},
 		},
 	}
-	return h.getMetrics(query, hostMetricItems, bucketSize)
+	return h.getMetrics(context.Background(), query, hostMetricItems, bucketSize)
 }
 
 func getHost(hostID string) (*host.HostInfo, error) {

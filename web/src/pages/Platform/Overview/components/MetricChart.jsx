@@ -3,7 +3,7 @@ import { cloneDeep } from "lodash";
 import { useEffect, useRef, useState } from "react";
 import { formatMessage } from "umi/locale";
 import styles from "./Metrics.scss";
-import { Empty, Icon, message, Spin, Tooltip } from "antd";
+import { Alert, Empty, Icon, message, Spin, Tooltip } from "antd";
 import {
     Axis,
     Chart,
@@ -26,6 +26,7 @@ export default (props) => {
     const { 
       timezone,
       timeRange,
+      timeout,
       handleTimeChange,
       fetchUrl,
       metricKey,
@@ -41,6 +42,8 @@ export default (props) => {
     const [metric, setMetric] = useState()
   
     const [isInView, setIsInView] = useState(false);
+
+    const [error, setError] = useState();
   
     const observerRef = useRef({ isInView: false })
   
@@ -48,24 +51,29 @@ export default (props) => {
   
     const firstFetchRef = useRef(true)
   
-    const fetchData = async (queryParams, fetchUrl, metricKey) => {
-      if (!observerRef.current.isInView) return;
-      if (firstFetchRef.current) {
+    const fetchData = async (queryParams, fetchUrl, metricKey, showLoading) => {
+      if (!observerRef.current.isInView || !fetchUrl) return;
+      setError()
+      if (firstFetchRef.current || showLoading) {
         setLoading(true)
       }
       const res = await request(fetchUrl, {
         method: 'GET',
         queryParams: {
           ...queryParams,
-          key: metricKey
+          key: metricKey,
+          timeout
         },
-      })
-      if (res && !res.error) {
+        ignoreTimeout: true
+      }, false, false)
+      if (res?.error?.reason) {
+        setError(res.error.reason)
+      } else if (res && !res.error) {
         const { metrics = {} } = res || {};
         const metric = metrics[metricKey]
         setMetric(formatMetric ? formatMetric(metric) : metric);
       }
-      if (firstFetchRef.current) {
+      if (firstFetchRef.current || showLoading) {
         setLoading(false)
         firstFetchRef.current = false
       }
@@ -132,11 +140,137 @@ export default (props) => {
         });
       }
     };
+
+    const renderChart = () => {
+      if (loading) return <div style={{ height: 200 }}></div>
+      if (error) {
+        return (
+          <div style={{ height: 200, padding: 10 }}>
+            <Alert style={{ maxHeight: '100%', overflow: 'auto', wordBreak: 'break-all'}} message={error} type="error"/>
+          </div>
+        )
+      }
+      const axis = metric?.axis || [];
+      const lines = metric?.lines || [];
+      if (lines.every((item) => !item.data || item.data.length === 0)) {
+        return <Empty style={{ height: 200, margin: 0, paddingTop: 64 }} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+      }
+      return (
+        <Chart
+          size={[, 200]}
+          className={styles.vizChartItem}
+          ref={chartRef}
+        >
+          <Settings
+            pointerUpdateDebounce={0}
+            pointerUpdateTrigger="x"
+            onPointerUpdate={pointerUpdate}
+            showLegend
+            legendPosition={Position.Bottom}
+            onBrushEnd={handleChartBrush}
+            tooltip={{
+              headerFormatter: ({ value }) =>
+                    `${formatter.full_dates(value)}`,
+            }}
+            debug={false}
+          />
+          <Axis
+            id={`${metricKey}-bottom`}
+            position={Position.Bottom}
+            showOverlappingTicks
+            labelFormat={timeRange.timeFormatter}
+            tickFormat={timeRange.timeFormatter}
+          />
+          {metricKey == "cluster_health" ? (
+            <Axis
+              id="cluster_health"
+              position={Position.Left}
+              tickFormat={(d) => Number(d).toFixed(0) + "%"}
+            />
+          ) : null}
   
-    const axis = metric?.axis || [];
-    const lines = metric?.lines || [];
-    let disableHeaderFormat = false;
+          {axis.map((item) => {
+            return (
+              <Axis
+                key={metricKey + "-" + item.id}
+                id={metricKey + "-" + item.id}
+                showGridLines={item.showGridLines}
+                groupId={item.group}
+                position={item.position}
+                ticks={item.ticks}
+                labelFormat={getFormatter(
+                  item.formatType,
+                  item.labelFormat
+                )}
+                tickFormat={getFormatter(
+                  item.formatType,
+                  item.tickFormat
+                )}
+              />
+            );
+          })}
+  
+          {lines.map((item) => {
+            if (item.type == "Bar") {
+              return (
+                <BarSeries
+                  key={item.metric.label}
+                  xScaleType={ScaleType.Time}
+                  yScaleType={ScaleType.Linear}
+                  xAccessor="x"
+                  yAccessors={["y"]}
+                  stackAccessors={["x"]}
+                  splitSeriesAccessors={["g"]}
+                  data={item.data}
+                  color={({ specId, yAccessor, splitAccessors }) => {
+                    const g = splitAccessors.get("g");
+                    if (
+                      yAccessor === "y"
+                    
+                    ) {
+                      if( ["red", "yellow", "green"].includes(g)){
+                        return g;
+                      }
+                      if(g == "online" || g == "available"){
+                        return "green";
+                      }
+                      if(g == "offline" || g == "unavailable" || g == "N/A"){
+                        return "gray";
+                      }
+                      
+                    }
+                    return null;
+                  }}
+                />
+              );
+            }
+            return (
+              <LineSeries
+                key={item.metric.label}
+                id={item.metric.label}
+                groupId={item.metric.group}
+                timeZone={timezone}
+                color={item.color}
+                xScaleType={ScaleType.Time}
+                yScaleType={ScaleType.Linear}
+                xAccessor={0}
+                tickFormat={getFormatter(
+                  item.metric.formatType,
+                  item.metric.tickFormat,
+                  item.metric.units
+                )}
+                yAccessors={[1]}
+                data={item.data}
+                curve={CurveType.CURVE_MONOTONE_X}
+              />
+            );
+          })}
+        </Chart>
+      )
+    }
+
     const chartTitle = { title };
+    const lines = metric?.lines || [];
     if (metricKey == "cluster_health") {
       chartTitle.units = "%";
     } else {
@@ -158,143 +292,27 @@ export default (props) => {
             {chartTitle.units ? `(${chartTitle.units})` : ""}
           </span>
           {
-            metric?.request && (
-              <span>
-                <CopyToClipboard text={metric.request}>
-                  <Tooltip title={formatMessage({id: "cluster.metrics.dsl.copy"})}>
-                    <Icon 
-                      className={styles.copy}
-                      type="copy" 
-                      onClick={() => message.success(formatMessage({id: "cluster.metrics.dsl.copy.success"}))}
-                    />
-                  </Tooltip>
-                </CopyToClipboard>
-              </span>
-            )
+            <span>
+              {
+                metric?.request && (
+                  <CopyToClipboard text={metric.request}>
+                    <Tooltip title={formatMessage({id: "cluster.metrics.dsl.copy"})}>
+                      <Icon 
+                        className={styles.copy}
+                        type="copy" 
+                        onClick={() => message.success(formatMessage({id: "cluster.metrics.dsl.copy.success"}))}
+                      />
+                    </Tooltip>
+                  </CopyToClipboard>
+                )
+              }
+              <Tooltip title={formatMessage({id: "form.button.refresh"})}>
+                <Icon className={styles.copy} style={{ marginLeft: 12 }} type="reload" onClick={() => fetchData(...observerRef.current.deps, true)}/>
+              </Tooltip>
+            </span>
           }
         </div>
-        {
-          lines.every((item) => !item.data || item.data.length === 0) ? (
-            <Empty style={{ height: 200, margin: 0, paddingTop: 64 }} image={Empty.PRESENTED_IMAGE_SIMPLE} />
-          ) : (
-            <Chart
-              size={[, 200]}
-              className={styles.vizChartItem}
-              ref={chartRef}
-            >
-              <Settings
-                pointerUpdateDebounce={0}
-                pointerUpdateTrigger="x"
-                // externalPointerEvents={{
-                //   tooltip: { visible: true },
-                // }}
-                onPointerUpdate={pointerUpdate}
-                // theme={theme}
-                showLegend
-                legendPosition={Position.Bottom}
-                onBrushEnd={handleChartBrush}
-                tooltip={{
-                  headerFormatter: disableHeaderFormat
-                    ? undefined
-                    : ({ value }) =>
-                        `${formatter.full_dates(value)}`,
-                }}
-                debug={false}
-              />
-              <Axis
-                id={`${metricKey}-bottom`}
-                position={Position.Bottom}
-                showOverlappingTicks
-                labelFormat={timeRange.timeFormatter}
-                tickFormat={timeRange.timeFormatter}
-              />
-              {metricKey == "cluster_health" ? (
-                <Axis
-                  id="cluster_health"
-                  position={Position.Left}
-                  tickFormat={(d) => Number(d).toFixed(0) + "%"}
-                />
-              ) : null}
-      
-              {axis.map((item) => {
-                return (
-                  <Axis
-                    key={metricKey + "-" + item.id}
-                    id={metricKey + "-" + item.id}
-                    showGridLines={item.showGridLines}
-                    groupId={item.group}
-                    position={item.position}
-                    ticks={item.ticks}
-                    labelFormat={getFormatter(
-                      item.formatType,
-                      item.labelFormat
-                    )}
-                    tickFormat={getFormatter(
-                      item.formatType,
-                      item.tickFormat
-                    )}
-                  />
-                );
-              })}
-      
-              {lines.map((item) => {
-                if (item.type == "Bar") {
-                  return (
-                    <BarSeries
-                      key={item.metric.label}
-                      xScaleType={ScaleType.Time}
-                      yScaleType={ScaleType.Linear}
-                      xAccessor="x"
-                      yAccessors={["y"]}
-                      stackAccessors={["x"]}
-                      splitSeriesAccessors={["g"]}
-                      data={item.data}
-                      color={({ specId, yAccessor, splitAccessors }) => {
-                        const g = splitAccessors.get("g");
-                        if (
-                          yAccessor === "y"
-                        
-                        ) {
-                          if( ["red", "yellow", "green"].includes(g)){
-                            return g;
-                          }
-                          if(g == "online" || g == "available"){
-                            return "green";
-                          }
-                          if(g == "offline" || g == "unavailable" || g == "N/A"){
-                            return "gray";
-                          }
-                          
-                        }
-                        return null;
-                      }}
-                    />
-                  );
-                }
-                return (
-                  <LineSeries
-                    key={item.metric.label}
-                    id={item.metric.label}
-                    groupId={item.metric.group}
-                    timeZone={timezone}
-                    color={item.color}
-                    xScaleType={ScaleType.Time}
-                    yScaleType={ScaleType.Linear}
-                    xAccessor={0}
-                    tickFormat={getFormatter(
-                      item.metric.formatType,
-                      item.metric.tickFormat,
-                      item.metric.units
-                    )}
-                    yAccessors={[1]}
-                    data={item.data}
-                    curve={CurveType.CURVE_MONOTONE_X}
-                  />
-                );
-              })}
-            </Chart>
-          )
-        }
+        {renderChart()}
         </Spin>
       </div>
     );

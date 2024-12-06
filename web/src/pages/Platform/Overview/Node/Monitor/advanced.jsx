@@ -13,6 +13,7 @@ export default ({
   timeRange,
   handleTimeChange,
   bucketSize,
+  timeout,
 }) => {
 
   const isVersionGTE6 = useMemo(() => {
@@ -63,6 +64,7 @@ export default ({
           param={param}
           setParam={setParam}
           bucketSize={bucketSize}
+          timeout={timeout}
           metrics={[
             [
                 "operations",
@@ -209,6 +211,7 @@ export default ({
           param={param}
           setParam={setParam}
           bucketSize={bucketSize}
+          timeout={timeout}
           metrics={[
             isVersionGTE6 ? [
                 "thread_pool_write",

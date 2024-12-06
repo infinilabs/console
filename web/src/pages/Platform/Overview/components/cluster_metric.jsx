@@ -8,7 +8,7 @@ import { formatTimeRange } from "@/lib/elasticsearch/util";
 
 export default (props) => {
 
-  const { fetchUrl, metrics = [], renderExtra, timeRange, timezone, bucketSize, handleTimeChange } = props
+  const { fetchUrl, overview, metrics = [], renderExtra, timeRange, timeout, timezone, bucketSize, handleTimeChange } = props
 
   if (!fetchUrl || metrics.length === 0) {
     return null;
@@ -16,6 +16,9 @@ export default (props) => {
 
   const queryParams = useMemo(() => {
     const newParams = formatTimeRange(timeRange);
+    if (overview) {
+      newParams.overview = overview;
+    }
     if (bucketSize) {
       newParams.bucket_size = bucketSize
     }
@@ -32,6 +35,7 @@ export default (props) => {
             key={metricKey} 
             timezone={timezone} 
             timeRange={timeRange} 
+            timeout={timeout}
             handleTimeChange={handleTimeChange} 
             fetchUrl={fetchUrl}
             metricKey={metricKey}

@@ -22,7 +22,8 @@ export default (props) => {
     setParam,
     shardID,
     bucketSize,
-    metrics = []
+    metrics = [],
+    timeout
   } = props
   
   if (!clusterID || metrics.length == 0) {
@@ -128,6 +129,7 @@ export default (props) => {
                             title={formatMessage({id: "cluster.metrics.index.axis." + metricKey + ".title"})} 
                             queryParams={queryParams}
                             className={"metric-item"}
+                            timeout={timeout}
                           />
                         ))
                       }

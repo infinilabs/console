@@ -39,6 +39,8 @@ const formatTimeout = (timeout) => {
   return timeout
 }
 
+const TIMEOUT_CACHE_KEY = "monitor-timeout"
+
 const Monitor = (props) => {
   const {
     selectedCluster,
@@ -62,7 +64,7 @@ const Monitor = (props) => {
         timeFormatter: formatter.dates(1),
       },
       timeInterval: formatTimeInterval(param?.timeInterval),
-      timeout: formatTimeout(param?.timeout),
+      timeout: formatTimeout(param?.timeout) || localStorage.getItem(TIMEOUT_CACHE_KEY) || '120s',
       param: param,
     })
   );
@@ -105,6 +107,11 @@ const Monitor = (props) => {
 
   const breadcrumbList = getBreadcrumbList(state);
 
+  const isAgent = useMemo(() => {
+    const { monitor_configs = {} } = selectedCluster || {}
+    return monitor_configs?.node_stats?.enabled === false && monitor_configs?.index_stats?.enabled === false
+  }, [JSON.stringify(selectedCluster?.monitor_configs)])
+
   return (
     <div>
       <BreadcrumbList data={breadcrumbList} />
@@ -112,7 +119,7 @@ const Monitor = (props) => {
       <Card bodyStyle={{ padding: 15 }}>
         <div style={{ marginBottom: 5 }}>
           <div style={{ display: 'flex', gap: 8 }}>
-            <div style={{ flexGrow: 0, minWidth: 400 }}>
+            <div style={{ flexGrow: 0 }}>
               <DatePicker
                 locale={getLocale()}
                 start={state.timeRange.min}
@@ -129,6 +136,7 @@ const Monitor = (props) => {
                 showTimeout={true}
                 timeout={state.timeout}
                 onTimeSettingChange={(timeSetting) => {
+                  localStorage.setItem(TIMEOUT_CACHE_KEY, timeSetting.timeout)
                   setState({
                     ...state,
                     timeInterval: timeSetting.timeInterval,
@@ -170,6 +178,7 @@ const Monitor = (props) => {
                   ) : (
                     <pane.component
                       selectedCluster={selectedCluster}
+                      isAgent={isAgent}
                       {...state}
                       handleTimeChange={handleTimeChange}
                       setSpinning={setSpinning}

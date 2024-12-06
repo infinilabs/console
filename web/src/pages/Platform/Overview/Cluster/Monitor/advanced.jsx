@@ -15,6 +15,7 @@ export default ({
   timeRange,
   handleTimeChange,
   bucketSize,
+  timeout,
 }) => {
 
   const isVersionGTE6 = useMemo(() => {
@@ -58,6 +59,7 @@ export default ({
           handleTimeChange={handleTimeChange}
           fetchUrl={`${ESPrefix}/${clusterID}/cluster_metrics`}
           bucketSize={bucketSize}
+          timeout={timeout}
           metrics={[
             'cluster_health',
             'index_throughput', 
@@ -87,6 +89,7 @@ export default ({
           param={param}
           setParam={setParam}
           bucketSize={bucketSize}
+          timeout={timeout}
           metrics={[
               [
                   "operations",
@@ -233,6 +236,7 @@ export default ({
           param={param}
           setParam={setParam}
           bucketSize={bucketSize}
+          timeout={timeout}
           metrics={[
             [
                 "operations",
@@ -315,6 +319,7 @@ export default ({
           param={param}
           setParam={setParam}
           bucketSize={bucketSize}
+          timeout={timeout}
           metrics={[
             isVersionGTE6 ? [
                 "thread_pool_write",

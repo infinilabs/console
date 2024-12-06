@@ -5,12 +5,14 @@ import ClusterMetric from "../../components/cluster_metric";
 const timezone = "local";
 
 export default ({
+  isAgent,
   clusterID,
   indexName,
   timeRange,
   handleTimeChange,
   shardID,
   bucketSize,
+  timeout
 }) => {
   let url = `${ESPrefix}/${clusterID}/index/${indexName}/metrics`;
   if(shardID){
@@ -24,13 +26,15 @@ export default ({
       overview={1}
       fetchUrl={url}
       bucketSize={bucketSize}
+      timeout={timeout}
       metrics={[
         "index_health",
         "index_throughput",
         "search_throughput",
         "index_latency",
-        "search_latency"
-      ]}
+        "search_latency",
+        isAgent ? "shard_state" : undefined,
+      ].filter((item) => !!item)}
     />
   );
 }

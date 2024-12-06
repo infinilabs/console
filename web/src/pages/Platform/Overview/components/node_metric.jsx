@@ -20,6 +20,7 @@ export default (props) => {
     param,
     setParam,
     bucketSize,
+    timeout,
     metrics = []
   } = props
 
@@ -151,6 +152,7 @@ export default (props) => {
                             title={formatMessage({id:"cluster.metrics.node.axis." + metricKey + ".title"})} 
                             queryParams={queryParams}
                             className={"metric-item"}
+                            timeout={timeout}
                           />
                         ))
                       }

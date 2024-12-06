@@ -8,11 +8,13 @@ export default ({
   timeRange,
   handleTimeChange,
   bucketSize,
+  timeout,
 }) => {
   return (
     <ClusterMetric
       timezone={timezone}
       timeRange={timeRange}
+      timeout={timeout}
       handleTimeChange={handleTimeChange}
       overview={1}
       fetchUrl={`${ESPrefix}/${clusterID}/cluster_metrics`}

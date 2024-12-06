@@ -5,16 +5,18 @@ import Shards from "./shards";
 import { formatMessage } from "umi/locale";
 import Monitor from "@/components/Overview/Monitor";
 import StatisticBar from "./statistic_bar";
+import { connect } from "dva";
 
 const panes = [
   { title: "Overview", component: Overview, key: "overview" },
   { title: "Advanced", component: Advanced, key: "advanced" },
   { title: "Shards", component: Shards, key: "shards" },
 ];
-
-export default (props) => {
+const Page = (props) => {
+  const { clusterStatus, selectedCluster } = props;
   return (
     <Monitor
+      selectedCluster={selectedCluster}
       formatState={(state) => {
         return {
           ...state,
@@ -54,3 +56,8 @@ export default (props) => {
     />
   );
 };
+
+export default connect(({ global }) => ({
+  selectedCluster: global.selectedCluster,
+  clusterStatus: global.clusterStatus,
+}))(Page);

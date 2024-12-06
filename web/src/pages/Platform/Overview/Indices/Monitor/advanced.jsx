@@ -10,7 +10,8 @@ export default ({
   timeRange,
   handleTimeChange,
   shardID,
-  bucketSize
+  bucketSize,
+  timeout
 }) => {
   const [param, setParam] = useState({
     show_top: false,
@@ -26,6 +27,7 @@ export default ({
       setParam={setParam}
       shardID={shardID}
       bucketSize={bucketSize}
+      timeout={timeout}
       metrics={[
         [
             "operations",

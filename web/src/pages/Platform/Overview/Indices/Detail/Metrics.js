@@ -26,6 +26,12 @@ export default (props) => {
       params={{ clusterID, clusterName }}
       linkMore={`/cluster/monitor/${clusterID}/indices/${indexName}?_g={"cluster_name":"${clusterName}"}`}
       overviews={overviews}
+      metrics={[
+        "index_throughput",
+        "search_throughput",
+        "index_latency",
+        "search_latency",
+      ]}
     />
   )
 };

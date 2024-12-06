@@ -34,7 +34,9 @@ export default (props) => {
       queryParams,
       className,
       style,
-      formatMetric
+      formatMetric,
+      height = 200,
+      customRenderChart
     } = props;
   
     const [loading, setLoading] = useState(false)
@@ -71,7 +73,7 @@ export default (props) => {
       } else if (res && !res.error) {
         const { metrics = {} } = res || {};
         const metric = metrics[metricKey]
-        setMetric(formatMetric ? formatMetric(metric) : metric);
+        setMetric(formatMetric && metric ? formatMetric(metric) : metric);
       }
       if (firstFetchRef.current || showLoading) {
         setLoading(false)
@@ -142,10 +144,10 @@ export default (props) => {
     };
 
     const renderChart = () => {
-      if (loading) return <div style={{ height: 200 }}></div>
+      if (loading) return <div style={{ height }}></div>
       if (error) {
         return (
-          <div style={{ height: 200, padding: 10 }}>
+          <div style={{ height, padding: 10 }}>
             <Alert style={{ maxHeight: '100%', overflow: 'auto', wordBreak: 'break-all'}} message={error} type="error"/>
           </div>
         )
@@ -153,11 +155,11 @@ export default (props) => {
       const axis = metric?.axis || [];
       const lines = metric?.lines || [];
       if (lines.every((item) => !item.data || item.data.length === 0)) {
-        return <Empty style={{ height: 200, margin: 0, paddingTop: 64 }} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        return <Empty style={{ height, margin: 0, paddingTop: 64 }} image={Empty.PRESENTED_IMAGE_SIMPLE} />
       }
       return (
         <Chart
-          size={[, 200]}
+          size={[, height]}
           className={styles.vizChartItem}
           ref={chartRef}
         >
@@ -312,7 +314,7 @@ export default (props) => {
             </span>
           }
         </div>
-        {renderChart()}
+        {customRenderChart ? customRenderChart(metric) : renderChart()}
         </Spin>
       </div>
     );

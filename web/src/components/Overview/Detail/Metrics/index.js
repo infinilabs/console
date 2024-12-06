@@ -15,6 +15,7 @@ import { formatMessage } from "umi/locale";
 import DatePicker from "@/common/src/DatePicker";
 import { getLocale } from "umi/locale";
 import { getTimezone } from "@/utils/utils";
+import { TIMEOUT_CACHE_KEY } from "../../Monitor";
 
 const { TabPane } = Tabs;
 
@@ -26,6 +27,7 @@ export default (props) => {
     linkMore,
     overviews,
     extra,
+    metrics = [],
   } = props;
 
   const [spinning, setSpinning] = useState(false);
@@ -35,12 +37,14 @@ export default (props) => {
       max: "now",
       timeFormatter: formatter.dates(1),
     },
+    timeInterval: '',
+    timeout: localStorage.getItem(TIMEOUT_CACHE_KEY) || '120s',
   });
 
   const [refresh, setRefresh] = useState({ isRefreshPaused: false });
   const [timeZone, setTimeZone] = useState(() => getTimezone());
 
-  const handleTimeChange = ({ start, end }) => {
+  const handleTimeChange = ({ start, end, timeInterval, timeout }) => {
     const bounds = calculateBounds({
       from: start,
       to: end,
@@ -55,6 +59,8 @@ export default (props) => {
         max: end,
         timeFormatter: formatter.dates(intDay),
       },
+      timeInterval: timeInterval || state.timeInterval,
+      timeout: timeout || state.timeout
     });
     setSpinning(true);
   };
@@ -90,23 +96,35 @@ export default (props) => {
             {...refresh}
             onRefreshChange={setRefresh}
             onRefresh={handleTimeChange}
+            showTimeSetting={true}
+            showTimeInterval={true}
+            showTimeout={true}
+            timeout={state.timeout}
+            onTimeSettingChange={(timeSetting) => {
+              localStorage.setItem(TIMEOUT_CACHE_KEY, timeSetting.timeout)
+              setState({
+                ...state,
+                timeInterval: timeSetting.timeInterval,
+                timeout: timeSetting.timeout
+              });
+            }}
             timeZone={timeZone}
             onTimeZoneChange={setTimeZone}
             recentlyUsedRangesKey={'overview-detail'}
           />
         </div>
-        <Button onClick={() => {
-          handleTimeChange({ start: state.timeRange.min, end: state.timeRange.max})
-        }} loading={spinning} icon={"reload"} type="primary" />
       </div>
 
       <div className={styles.metricWrapper}>
         <MetricSeries
           action={metricAction}
-          timeRange={state.timeRange}
+          timeZone={timeZone}
           overview={1}
           setSpinning={setSpinning}
           renderExtraMetric={renderExtraMetric}
+          metrics={metrics}
+          {...state}
+          bucketSize={state.timeInterval}
         />
       </div>
 

@@ -1,38 +1,21 @@
 import React, { useMemo, useEffect } from "react";
-import { ESPrefix } from "@/services/common";
-import useFetch from "@/lib/hooks/use_fetch";
-import { calculateBounds } from "@/components/vendor/data/common/query/timefilter";
 import MetricLineList from "./MetricLineList";
+import { formatTimeRange } from "@/lib/elasticsearch/util";
 
-export default ({ action, timeRange, overview, setSpinning, renderExtraMetric }) => {
+export default (props) => {
+
+  const { action, bucketSize, timeRange, overview, setSpinning, renderExtraMetric, metrics = [] } = props
 
   const queryParams = useMemo(() => {
-    const bounds = calculateBounds({
-      from: timeRange.min,
-      to: timeRange.max,
-    });
-    let params = {
-      min: bounds.min.valueOf(),
-      max: bounds.max.valueOf(),
-    };
-    params.overview = overview;
-    return params;
-  }, [timeRange]);
+    const newParams = formatTimeRange(timeRange);
+    if (overview) {
+      newParams.overview = overview;
+    }
+    if (bucketSize) {
+      newParams.bucket_size = bucketSize
+    }
+    return newParams;
+  }, [timeRange, bucketSize]);
 
-  const { loading, error, value } = useFetch(
-    action,
-    { queryParams },
-    [action, queryParams]
-  );
-  
-  useEffect(() => {
-    setSpinning(loading);
-  }, [loading]);
-
-  const metrics = useMemo(() => {
-    const { metrics = {} } = value || {};
-    return metrics;
-  }, [value]);
-
-  return <MetricLineList metrics={metrics} renderExtraMetric={renderExtraMetric}/>;
+  return <MetricLineList {...props} queryParams={queryParams} />;
 };

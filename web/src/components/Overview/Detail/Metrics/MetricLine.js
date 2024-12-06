@@ -48,11 +48,8 @@ export default (props) => {
     },
   };
   return (
-    <div className={styles.lineWrapper}>
-      <div className={styles.chartTitle}>{props.title}</div>
-      <div className={styles.chartBody}>
-        <Line {...config} />
-      </div>
+    <div className={styles.chartBody}>
+      <Line {...config} />
     </div>
   );
 };

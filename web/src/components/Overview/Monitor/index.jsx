@@ -39,7 +39,7 @@ const formatTimeout = (timeout) => {
   return timeout
 }
 
-const TIMEOUT_CACHE_KEY = "monitor-timeout"
+export const TIMEOUT_CACHE_KEY = "monitor-timeout"
 
 const Monitor = (props) => {
   const {
@@ -187,7 +187,6 @@ const Monitor = (props) => {
                             setSpinning={setSpinning}
                             {...extraParams}
                             bucketSize={state.timeInterval}
-                            timeout={state.timeout}
                           />
                         )
                       ) : null}

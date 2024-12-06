@@ -27,6 +27,14 @@ export default (props) => {
       params={{ clusterID, clusterName }}
       linkMore={`/cluster/monitor/${clusterID}/nodes/${nodeID}?_g={"cluster_name":"${clusterName}","node_name":"${nodeName}"}`}
       overviews={overviews}
+      metrics={[
+        "cpu",
+        "jvm",
+        "index_throughput",
+        "search_throughput",
+        "index_latency",
+        "search_latency",
+      ]}
     />
   );
 };

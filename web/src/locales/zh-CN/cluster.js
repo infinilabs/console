@@ -333,6 +333,6 @@ export default {
   "cluster.providers.tencent-cloud": "腾讯云",
   "cluster.providers.ecloud": "移动云",
 
-  "cluster.metrics.dsl.copy": "复制 DSL",
-  "cluster.metrics.dsl.copy.success": "复制 DSL 成功"
+  "cluster.metrics.request.copy": "复制请求",
+  "cluster.metrics.request.copy.success": "复制请求成功"
 };

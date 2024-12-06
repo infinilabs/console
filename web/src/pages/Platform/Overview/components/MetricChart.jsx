@@ -295,12 +295,12 @@ export default (props) => {
             <span>
               {
                 metric?.request && (
-                  <CopyToClipboard text={metric.request}>
-                    <Tooltip title={formatMessage({id: "cluster.metrics.dsl.copy"})}>
+                  <CopyToClipboard text={`GET .infini_metrics/_search\n${metric.request}`}>
+                    <Tooltip title={formatMessage({id: "cluster.metrics.request.copy"})}>
                       <Icon 
                         className={styles.copy}
                         type="copy" 
-                        onClick={() => message.success(formatMessage({id: "cluster.metrics.dsl.copy.success"}))}
+                        onClick={() => message.success(formatMessage({id: "cluster.metrics.request.copy.success"}))}
                       />
                     </Tooltip>
                   </CopyToClipboard>

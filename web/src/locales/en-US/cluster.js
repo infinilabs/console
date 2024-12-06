@@ -348,6 +348,6 @@ export default {
   "cluster.providers.tencent-cloud": "Tencent-cloud",
   "cluster.providers.ecloud": "Ecloud",
   
-  "cluster.metrics.dsl.copy": "Copy DSL",
-  "cluster.metrics.dsl.copy.success": "Copy DSL successfully"
+  "cluster.metrics.request.copy": "Copy request",
+  "cluster.metrics.request.copy.success": "Copy request successfully"
 };

@@ -213,7 +213,7 @@ const Discover = (props) => {
     const IP = await services.indexPatternService.get(
       id,
       typ,
-      props.selectedCluster.id
+      props.selectedCluster?.id
     );
     subscriptions.unsubscribe();
     props.changeIndexPattern(IP);
@@ -247,7 +247,7 @@ const Discover = (props) => {
     const IP = await services.indexPatternService.get(
       indexPattern.id,
       indexPattern.type,
-      props.selectedCluster.id
+      props.selectedCluster?.id
     );
     subscriptions.unsubscribe();
     IP.timeFieldName = timeField;
@@ -286,7 +286,7 @@ const Discover = (props) => {
     async (_payload) => {
       if (mode === "insight" && indexPattern.timeFieldName) {
         visRef?.current?.refreshMeta(
-          props.selectedCluster.id,
+          props.selectedCluster?.id,
           indexPattern.title,
           indexPattern.timeFieldName,
           getFilters()
@@ -356,7 +356,7 @@ const Discover = (props) => {
 
       const res = await fetchESRequest(
         params,
-        props.selectedCluster.id,
+        props.selectedCluster?.id,
         { 
           searchTimeout: localStorage.getItem('search_time_out') || '60s', 
           ignoreTimeout: true 
@@ -404,7 +404,7 @@ const Discover = (props) => {
     const IP = await services.indexPatternService.get(
       record.index_pattern,
       "index",
-      props.selectedCluster.id
+      props.selectedCluster?.id
     );
     IP.timeFieldName = record.time_field;
     subscriptions.unsubscribe();
@@ -702,7 +702,7 @@ const Discover = (props) => {
     async ({ _index, _id, _type, _source, is_new }) => {
       const { http } = getContext();
       const res = await http.put(
-        `/elasticsearch/${props.selectedCluster.id}/doc/${_index}/${_id}`,
+        `/elasticsearch/${props.selectedCluster?.id}/doc/${_index}/${_id}`,
         {
           prependBasePath: false,
           query: {
@@ -729,7 +729,7 @@ const Discover = (props) => {
     async ({ _index, _id, _type }) => {
       const { http } = getContext();
       const res = await http.delete(
-        `/elasticsearch/${props.selectedCluster.id}/doc/${_index}/${_id}`,
+        `/elasticsearch/${props.selectedCluster?.id}/doc/${_index}/${_id}`,
         {
           prependBasePath: false,
           query: {
@@ -850,7 +850,7 @@ const Discover = (props) => {
         }
       }
       const res = await getDataTips({
-        clusterId: props.selectedCluster.id,
+        clusterId: props.selectedCluster?.id,
         indexPattern: indexPattern.title,
         timeField: indexPattern.timeFieldName,
         filter,
@@ -980,7 +980,7 @@ const Discover = (props) => {
       }
     }
 
-    const res = await fetchESRequest(params, props.selectedCluster.id);
+    const res = await fetchESRequest(params, props.selectedCluster?.id);
     if (afterFuc) {
       const buckets = sampleRecords === 'all'
         ? res?.aggregations?.['top5']?.buckets
@@ -994,11 +994,11 @@ const Discover = (props) => {
 
   useEffect(() => {
     if (indexPattern?.type === "view") {
-      fetchViewDefaultLayout(props.selectedCluster.id, indexPattern?.id);
+      fetchViewDefaultLayout(props.selectedCluster?.id, indexPattern?.id);
     } else {
       setViewLayout();
     }
-  }, [indexPattern, props.selectedCluster.id]);
+  }, [indexPattern, props.selectedCluster?.id]);
 
   useEffect(() => {
     setMode(viewLayout ? "layout" : "table");
@@ -1091,7 +1091,7 @@ const Discover = (props) => {
             ref={insightBarRef}
             loading={resultState === "loading"}
             queries={{
-              clusterId: props.selectedCluster.id,
+              clusterId: props.selectedCluster?.id,
               indexPattern: indexPattern,
               query: {
                 language: "kuery",
@@ -1194,7 +1194,7 @@ const Discover = (props) => {
               <Visualization
                 ref={visRef}
                 indexPattern={indexPattern.title}
-                clusterId={props.selectedCluster.id}
+                clusterId={props.selectedCluster?.id}
                 timeField={indexPattern.timeFieldName}
                 getFilters={getSearchFilters}
                 getBucketSize={getBucketSize}
@@ -1205,7 +1205,7 @@ const Discover = (props) => {
             ) : mode === "layout" ? (
               <Layout
                 ref={layoutRef}
-                clusterId={props.selectedCluster.id}
+                clusterId={props.selectedCluster?.id}
                 indexPattern={indexPattern}
                 timeRange={timefilter?.getTime()}
                 query={getSearchFilters()}
@@ -1354,7 +1354,7 @@ const Discover = (props) => {
 };
 
 const DiscoverUI = (props) => {
-  if (!props.selectedCluster.id) {
+  if (!props.selectedCluster?.id) {
     return null;
   }
   const [loading, setLoading] = useState(false);
@@ -1369,7 +1369,7 @@ const DiscoverUI = (props) => {
   useMemo(() => {
     const { http } = getContext();
     http.getServerBasePath = () => {
-      return `${ESPrefix}/` + props.selectedCluster.id;
+      return `${ESPrefix}/` + props.selectedCluster?.id;
     };
   }, [props.selectedCluster]);
 
@@ -1432,7 +1432,7 @@ const DiscoverUI = (props) => {
           defaultIP = await services.indexPatternService.get(
             index,
             "index",
-            props.selectedCluster.id
+            props.selectedCluster?.id
           );
         } else {
           if (ils.length > 0) {
@@ -1455,7 +1455,7 @@ const DiscoverUI = (props) => {
             defaultIP = await services.indexPatternService.get(
               targetIndex,
               "index",
-              props.selectedCluster.id
+              props.selectedCluster?.id
             );
             setIndex(targetIndex);
           }
@@ -1569,8 +1569,8 @@ const DiscoverUI = (props) => {
 };
 
 const DiscoverContainer = (props) => {
-  if (props.selectedCluster.id == "") {
-    return null;
+  if (!props.selectedCluster?.id) {
+    return <Card ><Empty image={Empty.PRESENTED_IMAGE_SIMPLE} /></Card>;
   }
   return (
     <QueryParamProvider ReactRouterRoute={Route}>

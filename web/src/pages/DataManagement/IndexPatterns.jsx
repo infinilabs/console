@@ -20,7 +20,7 @@ import { getAuthority, hasAuthority } from "@/utils/authority";
 import EditLayout from "./View/EditLayout";
 
 const IndexPatterns = (props) => {
-  if (!props.selectedCluster.id) {
+  if (!props.selectedCluster?.id) {
     return null;
   }
   const history = useMemo(() => {
@@ -30,7 +30,7 @@ const IndexPatterns = (props) => {
   const createComponentKey = useMemo(() => {
     const { http, uiSettings } = useGlobalContext();
     http.getServerBasePath = () => {
-      return `${ESPrefix}/` + props.selectedCluster.id;
+      return `${ESPrefix}/` + props.selectedCluster?.id;
     };
     return "CreateIndexPatternWizard_" + Math.random();
   }, [props.selectedCluster]);

@@ -133,13 +133,10 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 	var top = len(clusterIDs) + 1
 
 	bucketSize := GetMinBucketSize()
-	if bucketSize < 20 {
-		bucketSize = 20
+	if bucketSize < 60 {
+		bucketSize = 60
 	}
 	var metricLen = 15
-	if bucketSize <= 60 {
-		metricLen += 2
-	}
 	var bucketSizeStr = fmt.Sprintf("%vs", bucketSize)
 	indexMetricItems := []GroupMetricItem{}
 	metricItem := newMetricItem("cluster_indexing", 2, "cluster")
@@ -260,7 +257,7 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 	for _, line := range indexMetrics["cluster_indexing"].Lines {
 		// remove first metric dot
 		data := line.Data
-		if v, ok := data.([][]interface{}); ok && len(v)> 0 && bucketSize <= 60 {
+		if v, ok := data.([][]interface{}); ok && len(v)> 0 {
 			// remove first metric dot
 			temp := v[1:]
 			// // remove first last dot
@@ -274,7 +271,7 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 	searchMetricData := util.MapStr{}
 	for _, line := range indexMetrics["cluster_search"].Lines {
 		data := line.Data
-		if v, ok := data.([][]interface{}); ok && len(v)> 0 && bucketSize <= 60 {
+		if v, ok := data.([][]interface{}); ok && len(v)> 0 {
 			// remove first metric dot
 			temp := v[1:]
 			// // remove first last dot
@@ -285,12 +282,6 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 		}
 		searchMetricData[line.Metric.Label] = data
 	}
-
-	searchR1, err := elastic.GetClient(clusterID).SearchWithRawQueryDSL(getAllMetricsIndex(), util.MustToJSONBytes(query))
-	if err != nil {
-		panic(err)
-	}
-
 
 	//fetch recent cluster health status
 	bucketItem := common.NewBucketItem(
@@ -409,7 +400,7 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 
 	util.MergeFields(query, aggs, true)
 
-	searchR1, err = elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).SearchWithRawQueryDSL(getAllMetricsIndex(), util.MustToJSONBytes(query))
+	searchR1, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).SearchWithRawQueryDSL(getAllMetricsIndex(), util.MustToJSONBytes(query))
 	if err != nil {
 		panic(err)
 	}

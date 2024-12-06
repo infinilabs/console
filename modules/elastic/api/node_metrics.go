@@ -24,6 +24,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	log "github.com/cihub/seelog"
 	"infini.sh/framework/core/elastic"
@@ -107,7 +108,7 @@ const (
 	ModelInferenceBreakerMetricKey = "model_inference_breaker"
 )
 
-func (h *APIHandler) getNodeMetrics(clusterID string, bucketSize int, min, max int64, nodeName string, top int, metricKey string) (map[string]*common.MetricItem, error){
+func (h *APIHandler) getNodeMetrics(ctx context.Context, clusterID string, bucketSize int, min, max int64, nodeName string, top int, metricKey string) (map[string]*common.MetricItem, error){
 	bucketSizeStr:=fmt.Sprintf("%vs",bucketSize)
 	clusterUUID, err := adapter.GetClusterUUID(clusterID)
 	if err != nil {
@@ -1120,7 +1121,7 @@ func (h *APIHandler) getNodeMetrics(clusterID string, bucketSize int, min, max i
 			},
 		},
 	}
-	return h.getMetrics(query, nodeMetricItems, bucketSize), nil
+	return h.getMetrics(ctx, query, nodeMetricItems, bucketSize), nil
 
 }
 

@@ -24,6 +24,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	log "github.com/cihub/seelog"
 	"infini.sh/framework/core/elastic"
@@ -80,7 +81,7 @@ const (
 	ForceMergeQueueMetricKey = "force_merge_queue"
 )
 
-func (h *APIHandler) getThreadPoolMetrics(clusterID string, bucketSize int, min, max int64, nodeName string, top int, metricKey string) (map[string]*common.MetricItem, error){
+func (h *APIHandler) getThreadPoolMetrics(ctx context.Context, clusterID string, bucketSize int, min, max int64, nodeName string, top int, metricKey string) (map[string]*common.MetricItem, error){
 	clusterUUID, err := adapter.GetClusterUUID(clusterID)
 	if err != nil {
 		return nil, err
@@ -635,5 +636,5 @@ func (h *APIHandler) getThreadPoolMetrics(clusterID string, bucketSize int, min,
 			},
 		},
 	}
-	return h.getMetrics(query, queueMetricItems, bucketSize), nil
+	return h.getMetrics(ctx, query, queueMetricItems, bucketSize), nil
 }

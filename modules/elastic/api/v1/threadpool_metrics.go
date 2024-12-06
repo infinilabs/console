@@ -24,6 +24,7 @@
 package v1
 
 import (
+	"context"
 	"fmt"
 	log "github.com/cihub/seelog"
 	"infini.sh/framework/core/elastic"
@@ -558,5 +559,5 @@ func (h *APIHandler) getThreadPoolMetrics(clusterID string, bucketSize int, min,
 			},
 		},
 	}
-	return h.getMetrics(query, queueMetricItems, bucketSize)
+	return h.getMetrics(context.Background(), query, queueMetricItems, bucketSize)
 }

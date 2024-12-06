@@ -28,6 +28,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	log "github.com/cihub/seelog"
 	httprouter "infini.sh/framework/core/api/router"
@@ -503,7 +504,7 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter,  req *http.Request, p
 			},
 		},
 	}
-	metrics := h.getMetrics(query, nodeMetricItems, bucketSize)
+	metrics := h.getMetrics(context.Background(), query, nodeMetricItems, bucketSize)
 	indexMetrics := map[string]util.MapStr{}
 	for key, item := range metrics {
 		for _, line := range item.Lines {
@@ -929,7 +930,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 		return value/value2
 	}
 	metricItems=append(metricItems,metricItem)
-	metrics := h.getSingleIndexMetrics(metricItems,query, bucketSize)
+	metrics := h.getSingleIndexMetrics(context.Background(), metricItems,query, bucketSize)
 	shardStateMetric, err := h.getIndexShardsMetric(clusterID, indexName, min, max, bucketSize)
 	if err != nil {
 		log.Error(err)

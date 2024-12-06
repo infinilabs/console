@@ -551,10 +551,19 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 	if bucketSize <= 60 {
 		min = min - int64(2*bucketSize*1000)
 	}
+	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
+	du, err := time.ParseDuration(timeout)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), du)
+	defer cancel()
 	if util.StringInArray([]string{IndexThroughputMetricKey, SearchThroughputMetricKey, IndexLatencyMetricKey, SearchLatencyMetricKey}, key) {
-		metrics = h.GetClusterIndexMetrics(id, bucketSize, min, max, key)
+		metrics = h.GetClusterIndexMetrics(ctx, id, bucketSize, min, max, key)
 	}else{
-		metrics = h.GetClusterMetrics(id, bucketSize, min, max, key)
+		metrics = h.GetClusterMetrics(ctx, id, bucketSize, min, max, key)
 	}
 
 	resBody["metrics"] = metrics
@@ -582,7 +591,16 @@ func (h *APIHandler) HandleNodeMetricsAction(w http.ResponseWriter, req *http.Re
 		min = min - int64(2*bucketSize*1000)
 	}
 	key := h.GetParameter(req, "key")
-	resBody["metrics"], err = h.getNodeMetrics(id, bucketSize, min, max, nodeName, top, key)
+	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
+	du, err := time.ParseDuration(timeout)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), du)
+	defer cancel()
+	resBody["metrics"], err = h.getNodeMetrics(ctx, id, bucketSize, min, max, nodeName, top, key)
 	if err != nil {
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -626,15 +644,24 @@ func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.R
 		min = min - int64(2*bucketSize*1000)
 	}
 	key := h.GetParameter(req, "key")
+	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
+	du, err := time.ParseDuration(timeout)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), du)
+	defer cancel()
 	var metrics map[string]*common.MetricItem
 	if key == v1.DocPercentMetricKey {
-		metrics, err = h.getIndexMetrics(req, id, bucketSize, min, max, indexName, top, shardID, v1.DocCountMetricKey)
+		metrics, err = h.getIndexMetrics(ctx, req, id, bucketSize, min, max, indexName, top, shardID, v1.DocCountMetricKey)
 		if err != nil {
 			log.Error(err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		docsDeletedMetrics, err := h.getIndexMetrics(req, id, bucketSize, min, max, indexName, top, shardID, v1.DocsDeletedMetricKey)
+		docsDeletedMetrics, err := h.getIndexMetrics(ctx, req, id, bucketSize, min, max, indexName, top, shardID, v1.DocsDeletedMetricKey)
 		if err != nil {
 			log.Error(err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -691,7 +718,7 @@ func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.R
 
 		}
 	}else{
-		metrics, err = h.getIndexMetrics(req, id, bucketSize, min, max, indexName, top, shardID, key)
+		metrics, err = h.getIndexMetrics(ctx, req, id, bucketSize, min, max, indexName, top, shardID, key)
 		if err != nil {
 			log.Error(err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -731,7 +758,16 @@ func (h *APIHandler) HandleQueueMetricsAction(w http.ResponseWriter, req *http.R
 		min = min - int64(2*bucketSize*1000)
 	}
 	key := h.GetParameter(req, "key")
-	resBody["metrics"], err = h.getThreadPoolMetrics(id, bucketSize, min, max, nodeName, top, key)
+	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
+	du, err := time.ParseDuration(timeout)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), du)
+	defer cancel()
+	resBody["metrics"], err = h.getThreadPoolMetrics(ctx, id, bucketSize, min, max, nodeName, top, key)
 	if err != nil {
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -867,7 +903,7 @@ const (
 	CircuitBreakerMetricKey = "circuit_breaker"
 )
 
-func (h *APIHandler) GetClusterMetrics(id string, bucketSize int, min, max int64, metricKey string) map[string]*common.MetricItem {
+func (h *APIHandler) GetClusterMetrics(ctx context.Context, id string, bucketSize int, min, max int64, metricKey string) map[string]*common.MetricItem {
 
 	var clusterMetricsResult = map[string]*common.MetricItem {}
 	switch metricKey {
@@ -875,27 +911,27 @@ func (h *APIHandler) GetClusterMetrics(id string, bucketSize int, min, max int64
 		ClusterStorageMetricKey,
 		ClusterIndicesMetricKey,
 		ClusterNodeCountMetricKey:
-		clusterMetricsResult = h.getClusterMetricsByKey(id, bucketSize, min, max, metricKey)
+		clusterMetricsResult = h.getClusterMetricsByKey(ctx, id, bucketSize, min, max, metricKey)
 	case IndexLatencyMetricKey, IndexThroughputMetricKey, SearchThroughputMetricKey, SearchLatencyMetricKey:
-		clusterMetricsResult = h.GetClusterIndexMetrics(id, bucketSize, min, max, metricKey)
+		clusterMetricsResult = h.GetClusterIndexMetrics(ctx, id, bucketSize, min, max, metricKey)
 	case ClusterHealthMetricKey:
-		statusMetric, err := h.getClusterStatusMetric(id, min, max, bucketSize)
+		statusMetric, err := h.getClusterStatusMetric(ctx, id, min, max, bucketSize)
 		if err == nil {
 			clusterMetricsResult[ClusterHealthMetricKey] = statusMetric
 		} else {
 			log.Error("get cluster status metric error: ", err)
 		}
 	case ShardCountMetricKey:
-		clusterMetricsResult = h.getShardsMetric(id, min, max, bucketSize)
+		clusterMetricsResult = h.getShardsMetric(ctx, id, min, max, bucketSize)
 
 	case CircuitBreakerMetricKey:
-		clusterMetricsResult = h.getCircuitBreakerMetric(id, min, max, bucketSize)
+		clusterMetricsResult = h.getCircuitBreakerMetric(ctx, id, min, max, bucketSize)
 	}
 
 	return clusterMetricsResult
 }
 
-func (h *APIHandler) getClusterMetricsByKey(id string, bucketSize int, min, max int64, metricKey string) map[string]*common.MetricItem {
+func (h *APIHandler) getClusterMetricsByKey(ctx context.Context, id string, bucketSize int, min, max int64, metricKey string) map[string]*common.MetricItem {
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 
 	clusterMetricItems := []*common.MetricItem{}
@@ -985,7 +1021,7 @@ func (h *APIHandler) getClusterMetricsByKey(id string, bucketSize int, min, max 
 			},
 		},
 	}
-	return h.getSingleMetrics(clusterMetricItems, query, bucketSize)
+	return h.getSingleMetrics(ctx, clusterMetricItems, query, bucketSize)
 }
 
 const (
@@ -995,7 +1031,7 @@ const (
 	SearchLatencyMetricKey   = "search_latency"
 )
 
-func (h *APIHandler) GetClusterIndexMetrics(id string, bucketSize int, min, max int64, metricKey string) map[string]*common.MetricItem {
+func (h *APIHandler) GetClusterIndexMetrics(ctx context.Context, id string, bucketSize int, min, max int64, metricKey string) map[string]*common.MetricItem {
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 	metricItems := []*common.MetricItem{}
 	switch metricKey {
@@ -1091,10 +1127,10 @@ func (h *APIHandler) GetClusterIndexMetrics(id string, bucketSize int, min, max 
 			},
 		},
 	}
-	return h.getSingleIndexMetricsByNodeStats(metricItems, query, bucketSize)
+	return h.getSingleIndexMetricsByNodeStats(ctx, metricItems, query, bucketSize)
 }
 
-func (h *APIHandler) getShardsMetric(id string, min, max int64, bucketSize int) map[string]*common.MetricItem {
+func (h *APIHandler) getShardsMetric(ctx context.Context, id string, min, max int64, bucketSize int) map[string]*common.MetricItem {
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 	query := util.MapStr{
 		"query": util.MapStr{
@@ -1153,10 +1189,10 @@ func (h *APIHandler) getShardsMetric(id string, min, max int64, bucketSize int) 
 	metricItem.AddLine("Delayed Unassigned Shards", "Delayed Unassigned Shards", "", "group1", "payload.elasticsearch.cluster_health.delayed_unassigned_shards", "max", bucketSizeStr, "", "num", "0,0.[00]", "0,0.[00]", false, false)
 	var clusterHealthMetrics []*common.MetricItem
 	clusterHealthMetrics = append(clusterHealthMetrics, metricItem)
-	return h.getSingleMetrics(clusterHealthMetrics, query, bucketSize)
+	return h.getSingleMetrics(ctx, clusterHealthMetrics, query, bucketSize)
 }
 
-func (h *APIHandler) getCircuitBreakerMetric(id string, min, max int64, bucketSize int) map[string]*common.MetricItem {
+func (h *APIHandler) getCircuitBreakerMetric(ctx context.Context, id string, min, max int64, bucketSize int) map[string]*common.MetricItem {
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 	query := util.MapStr{
 		"query": util.MapStr{
@@ -1214,10 +1250,10 @@ func (h *APIHandler) getCircuitBreakerMetric(id string, min, max int64, bucketSi
 	metricItem.AddLine("In Flight Requests Breaker Tripped", "In Flight Requests Tripped", "", "group1", "payload.elasticsearch.node_stats.breakers.in_flight_requests.tripped", "sum", bucketSizeStr, "times/s", "num", "0,0.[00]", "0,0.[00]", false, true)
 	var circuitBreakerMetrics []*common.MetricItem
 	circuitBreakerMetrics = append(circuitBreakerMetrics, metricItem)
-	return h.getSingleMetrics(circuitBreakerMetrics, query, bucketSize)
+	return h.getSingleMetrics(ctx, circuitBreakerMetrics, query, bucketSize)
 }
 
-func (h *APIHandler) getClusterStatusMetric(id string, min, max int64, bucketSize int) (*common.MetricItem, error) {
+func (h *APIHandler) getClusterStatusMetric(ctx context.Context, id string, min, max int64, bucketSize int) (*common.MetricItem, error) {
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
 	if err != nil {
@@ -1278,7 +1314,8 @@ func (h *APIHandler) getClusterStatusMetric(id string, min, max int64, bucketSiz
 			},
 		},
 	}
-	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).SearchWithRawQueryDSL(getAllMetricsIndex(), util.MustToJSONBytes(query))
+	queryDSL := util.MustToJSONBytes(query)
+	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).QueryDSL(ctx, getAllMetricsIndex(), nil, queryDSL)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -1295,6 +1332,7 @@ func (h *APIHandler) getClusterStatusMetric(id string, min, max int64, bucketSiz
 	}
 	metricItem.Lines[0].Data = metricData
 	metricItem.Lines[0].Type = common.GraphTypeBar
+	metricItem.Request = string(queryDSL)
 	return metricItem, nil
 }
 

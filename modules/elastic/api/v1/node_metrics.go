@@ -24,6 +24,7 @@
 package v1
 
 import (
+	"context"
 	"fmt"
 	log "github.com/cihub/seelog"
 	"infini.sh/framework/core/elastic"
@@ -1027,7 +1028,7 @@ func (h *APIHandler) getNodeMetrics(clusterID string, bucketSize int, min, max i
 			},
 		},
 	}
-	return h.getMetrics(query, nodeMetricItems, bucketSize), nil
+	return h.getMetrics(context.Background(), query, nodeMetricItems, bucketSize), nil
 
 }
 

@@ -24,6 +24,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	log "github.com/cihub/seelog"
 	v1 "infini.sh/console/modules/elastic/api/v1"
@@ -39,7 +40,7 @@ import (
 	"time"
 )
 
-func (h *APIHandler) getIndexMetrics(req *http.Request, clusterID string, bucketSize int, min, max int64, indexName string, top int, shardID string, metricKey string) (map[string]*common.MetricItem, error){
+func (h *APIHandler) getIndexMetrics(ctx context.Context, req *http.Request, clusterID string, bucketSize int, min, max int64, indexName string, top int, shardID string, metricKey string) (map[string]*common.MetricItem, error){
 	bucketSizeStr:=fmt.Sprintf("%vs",bucketSize)
 	clusterUUID, err := adapter.GetClusterUUID(clusterID)
 	if err != nil {
@@ -741,7 +742,7 @@ func (h *APIHandler) getIndexMetrics(req *http.Request, clusterID string, bucket
 			},
 		},
 	}
-	return h.getMetrics(query, indexMetricItems, bucketSize), nil
+	return h.getMetrics(ctx, query, indexMetricItems, bucketSize), nil
 
 }
 

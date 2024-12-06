@@ -24,6 +24,7 @@
 package v1
 
 import (
+	"context"
 	"fmt"
 	log "github.com/cihub/seelog"
 	"infini.sh/framework/core/elastic"
@@ -74,7 +75,7 @@ const (
 	DocPercentMetricKey = "doc_percent"
 )
 
-func (h *APIHandler) getIndexMetrics(req *http.Request, clusterID string, bucketSize int, min, max int64, indexName string, top int, metricKey string) map[string]*common.MetricItem{
+func (h *APIHandler) getIndexMetrics(ctx context.Context, req *http.Request, clusterID string, bucketSize int, min, max int64, indexName string, top int, metricKey string) map[string]*common.MetricItem{
 	bucketSizeStr:=fmt.Sprintf("%vs",bucketSize)
 
 	var must = []util.MapStr{
@@ -694,7 +695,7 @@ func (h *APIHandler) getIndexMetrics(req *http.Request, clusterID string, bucket
 			},
 		},
 	}
-	return h.getMetrics(query, indexMetricItems, bucketSize)
+	return h.getMetrics(ctx, query, indexMetricItems, bucketSize)
 
 }
 

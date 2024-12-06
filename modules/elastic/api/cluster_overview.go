@@ -24,6 +24,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"infini.sh/framework/modules/elastic/adapter"
 	"net/http"
@@ -254,7 +255,7 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 			},
 		},
 	}
-	indexMetrics := h.getMetrics(query, indexMetricItems, bucketSize)
+	indexMetrics := h.getMetrics(context.Background(), query, indexMetricItems, bucketSize)
 	indexingMetricData := util.MapStr{}
 	for _, line := range indexMetrics["cluster_indexing"].Lines {
 		// remove first metric dot

@@ -28,6 +28,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	log "github.com/cihub/seelog"
 	httprouter "infini.sh/framework/core/api/router"
@@ -410,7 +411,7 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 			},
 		},
 	}
-	metrics := h.getMetrics(query, nodeMetricItems, bucketSize)
+	metrics := h.getMetrics(context.Background(), query, nodeMetricItems, bucketSize)
 	indexMetrics := map[string]util.MapStr{}
 	for key, item := range metrics {
 		for _, line := range item.Lines {
@@ -686,7 +687,7 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 	metricItem =newMetricItem("parent_breaker", 8, SystemGroupKey)
 	metricItem.AddLine("Parent Breaker Tripped","Parent Breaker Tripped","Rate of the circuit breaker has been triggered and prevented an out of memory error.","group1","payload.elasticsearch.node_stats.breakers.parent.tripped","max",bucketSizeStr,"times/s","num","0,0.[00]","0,0.[00]",false,true)
 	metricItems=append(metricItems,metricItem)
-	metrics := h.getSingleMetrics(metricItems,query, bucketSize)
+	metrics := h.getSingleMetrics(context.Background(), metricItems,query, bucketSize)
 	healthMetric, err := getNodeHealthMetric(query, bucketSize)
 	if err != nil {
 		log.Error(err)

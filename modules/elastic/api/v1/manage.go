@@ -552,48 +552,6 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 
 }
 
-func (h *APIHandler) HandleNodeMetricsAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	resBody := map[string]interface{}{}
-	id := ps.ByName("id")
-	bucketSize, min, max, err := h.getMetricRangeAndBucketSize(req, 10, 90)
-	if err != nil {
-		log.Error(err)
-		resBody["error"] = err
-		h.WriteJSON(w, resBody, http.StatusInternalServerError)
-		return
-	}
-	meta := elastic.GetMetadata(id)
-	if meta != nil && meta.Config.MonitorConfigs != nil && meta.Config.MonitorConfigs.NodeStats.Interval != "" {
-		du, _ := time.ParseDuration(meta.Config.MonitorConfigs.NodeStats.Interval)
-		if bucketSize < int(du.Seconds()) {
-			bucketSize = int(du.Seconds())
-		}
-	}
-	nodeName := h.Get(req, "node_name", "")
-	top := h.GetIntOrDefault(req, "top", 5)
-	resBody["metrics"], err = h.getNodeMetrics(id, bucketSize, min, max, nodeName, top)
-	if err != nil {
-		log.Error(err)
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	ver := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).GetVersion()
-	if ver.Distribution == "" {
-		cr, err := util.VersionCompare(ver.Number, "6.1")
-		if err != nil {
-			log.Error(err)
-		}
-		if cr < 0 {
-			resBody["tips"] = "The system cluster version is lower than 6.1, the top node may be inaccurate"
-		}
-	}
-
-	err = h.WriteJSON(w, resBody, http.StatusOK)
-	if err != nil {
-		log.Error(err)
-	}
-}
-
 func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	resBody := map[string]interface{}{}
 	id := ps.ByName("id")
@@ -689,42 +647,6 @@ func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.R
 		}
 		if cr < 0 {
 			resBody["tips"] = "The system cluster version is lower than 6.1, the top index may be inaccurate"
-		}
-	}
-
-	err = h.WriteJSON(w, resBody, http.StatusOK)
-	if err != nil {
-		log.Error(err)
-	}
-}
-func (h *APIHandler) HandleQueueMetricsAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	resBody := map[string]interface{}{}
-	id := ps.ByName("id")
-	bucketSize, min, max, err := h.getMetricRangeAndBucketSize(req, 10, 90)
-	if err != nil {
-		log.Error(err)
-		resBody["error"] = err
-		h.WriteJSON(w, resBody, http.StatusInternalServerError)
-		return
-	}
-	nodeName := h.Get(req, "node_name", "")
-	top := h.GetIntOrDefault(req, "top", 5)
-	meta := elastic.GetMetadata(id)
-	if meta != nil && meta.Config.MonitorConfigs != nil && meta.Config.MonitorConfigs.NodeStats.Interval != "" {
-		du, _ := time.ParseDuration(meta.Config.MonitorConfigs.NodeStats.Interval)
-		if bucketSize < int(du.Seconds()) {
-			bucketSize = int(du.Seconds())
-		}
-	}
-	resBody["metrics"] = h.getThreadPoolMetrics(id, bucketSize, min, max, nodeName, top)
-	ver := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).GetVersion()
-	if ver.Distribution == "" {
-		cr, err := util.VersionCompare(ver.Number, "6.1")
-		if err != nil {
-			log.Error(err)
-		}
-		if cr < 0 {
-			resBody["tips"] = "The system cluster version is lower than 6.1, the top node may be inaccurate"
 		}
 	}
 

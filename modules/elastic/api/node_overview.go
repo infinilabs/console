@@ -305,11 +305,6 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	bucketSize, min, max, err := h.getMetricRangeAndBucketSize(req, 60, (15))
-	if err != nil {
-		panic(err)
-		return
-	}
 	// 索引速率
 	indexMetric:=newMetricItem("indexing", 1, OperationGroupKey)
 	indexMetric.AddAxi("indexing rate","group1",common.PositionLeft,"num","0,0","0,0.[00]",5,true)
@@ -335,6 +330,11 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 		Units: "Search/s",
 	})
 
+	bucketSize := GetMinBucketSize()
+	if bucketSize < 60 {
+		bucketSize = 60
+	}
+	var metricLen = 15
 	aggs:=map[string]interface{}{}
 	query=map[string]interface{}{}
 	query["query"]=util.MapStr{
@@ -364,8 +364,7 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 				{
 					"range": util.MapStr{
 						"timestamp": util.MapStr{
-							"gte": min,
-							"lte": max,
+							"gte": fmt.Sprintf("now-%ds", metricLen * bucketSize),
 						},
 					},
 				},

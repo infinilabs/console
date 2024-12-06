@@ -365,11 +365,11 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter,  req *http.Request, p
 		return
 	}
 
-	bucketSize, min, max, err := h.getMetricRangeAndBucketSize(req, 60, (15))
-	if err != nil {
-		panic(err)
-		return
+	bucketSize := GetMinBucketSize()
+	if bucketSize < 60 {
+		bucketSize = 60
 	}
+	var metricLen = 15
 	// 索引速率
 	indexMetric:=newMetricItem("indexing", 1, OperationGroupKey)
 	indexMetric.OnlyPrimary = true
@@ -425,8 +425,7 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter,  req *http.Request, p
 				{
 					"range": util.MapStr{
 						"timestamp": util.MapStr{
-							"gte": min,
-							"lte": max,
+							"gte": fmt.Sprintf("now-%ds", metricLen * bucketSize),
 						},
 					},
 				},

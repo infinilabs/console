@@ -14,7 +14,7 @@ jobs:
           excludeDescription: 'true' # optional: this excludes the description body of a pull request
           excludeTitle: 'true' # optional: this excludes the title of a pull request
           accessToken: ${{ secrets.GITHUB_TOKEN }}
-          pattern: '^(change:|feat:|improve:|perf:|dep:|docs:|test:|ci:|style:|refactor:|fix:|fixdoc:|fixup:|merge|bumpver:|chore:|build:) .+$'
+          pattern: '^(change:|feat:|improve:|perf:|dep:|docs:|test:|ci:|style:|refactor:|fix:|fixdoc:|fixup:|merge|Merge|bumpver:|chore:|build:) .+$'
           flags: 'gm'
           error: |
             Subject line has to contain a commit type, e.g.: "chore: blabla" or a merge commit e.g.: "merge xxx".

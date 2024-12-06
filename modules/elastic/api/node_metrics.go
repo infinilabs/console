@@ -103,9 +103,9 @@ const (
 	ParentBreakerMetricKey = "parent_breaker"
 	AccountingBreakerMetricKey = "accounting_breaker"
 	FielddataBreakerMetricKey =  "fielddata_breaker"
-	RequestBreakerMetricKey = "request_breaker"
-	InFlightRequestBreakerMetricKey = "in_flight_request_breaker"
-	ModelInferenceBreakerMetricKey = "model_inference_breaker"
+	RequestBreakerMetricKey          = "request_breaker"
+	InFlightRequestsBreakerMetricKey = "in_flight_requests_breaker"
+	ModelInferenceBreakerMetricKey   = "model_inference_breaker"
 )
 
 func (h *APIHandler) getNodeMetrics(ctx context.Context, clusterID string, bucketSize int, min, max int64, nodeName string, top int, metricKey string) (map[string]*common.MetricItem, error){
@@ -1070,8 +1070,8 @@ func (h *APIHandler) getNodeMetrics(ctx context.Context, clusterID string, bucke
 			FormatType:   "num",
 			Units:        "times/s",
 		})
-	case InFlightRequestBreakerMetricKey:
-		inFlightRequestBreakerMetric := newMetricItem(InFlightRequestBreakerMetricKey, 5, CircuitBreakerGroupKey)
+	case InFlightRequestsBreakerMetricKey:
+		inFlightRequestBreakerMetric := newMetricItem(InFlightRequestsBreakerMetricKey, 5, CircuitBreakerGroupKey)
 		inFlightRequestBreakerMetric.AddAxi("In Flight Requests Breaker","group1",common.PositionLeft,"num","0.[0]","0.[0]",5,true)
 		nodeMetricItems = append(nodeMetricItems, GroupMetricItem{
 			Key:          "in_flight_requests_breaker",

@@ -67,7 +67,7 @@ const (
 	QueryCacheMissMetricKey = "query_cache_miss"
 	FielddataCacheMetricKey = "fielddata_cache"
 	SegmentMemoryMetricKey = "segment_memory"
-	SegmentDocValuesMemoryMetricKey = "segment_docvalues_memory"
+	SegmentDocValuesMemoryMetricKey = "segment_doc_values_memory"
 	SegmentTermsMemoryMetricKey = "segment_terms_memory"
 	SegmentFieldsMemoryMetricKey = "segment_fields_memory"
 	SegmentIndexWriterMemoryMetricKey = "segment_index_writer_memory"

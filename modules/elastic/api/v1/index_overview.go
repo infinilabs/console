@@ -727,7 +727,8 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 			metricItem.AddLine("Indexing Rate", "Primary Indexing", "Number of documents being indexed for node.", "group1", "payload.elasticsearch.index_stats.primaries.indexing.index_total", "max", bucketSizeStr, "doc/s", "num", "0,0.[00]", "0,0.[00]", false, true)
 			metricItem.AddLine("Deleting Rate", "Primary Deleting", "Number of documents being deleted for node.", "group1", "payload.elasticsearch.index_stats.primaries.indexing.delete_total", "max", bucketSizeStr, "doc/s", "num", "0,0.[00]", "0,0.[00]", false, true)
 			metricItems = append(metricItems, metricItem)
-			metricItem = newMetricItem("search_throughput", 2, OperationGroupKey)
+		case SearchThroughputMetricKey:
+			metricItem := newMetricItem("search_throughput", 2, OperationGroupKey)
 			metricItem.AddAxi("searching", "group1", common.PositionLeft, "num", "0,0", "0,0.[00]", 5, false)
 			metricItem.AddLine("Search Rate", "Search Rate",
 				"Number of search requests being executed.",

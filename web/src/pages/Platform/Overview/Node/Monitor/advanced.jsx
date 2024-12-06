@@ -3,6 +3,7 @@ import { Tabs } from "antd";
 import NodeMetric from "../../components/node_metric";
 import QueueMetric from "../../components/queue_metric";
 import { formatMessage } from "umi/locale";
+import { SearchEngines } from "@/lib/search_engines";
 
 const timezone = "local";
 
@@ -17,12 +18,13 @@ export default ({
 }) => {
 
   const isVersionGTE6 = useMemo(() => {
+    if ([SearchEngines.Easysearch, SearchEngines.Opensearch].includes(selectedCluster?.distribution)) return true;
     const main = selectedCluster?.version?.split('.')[0]
     if (main && parseInt(main) >= 6) {
       return true
     }
     return false
-  }, [selectedCluster?.version])
+  }, [selectedCluster])
 
   const [param, setParam] = useState({
     show_top: false,

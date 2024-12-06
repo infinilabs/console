@@ -6,6 +6,7 @@ import IndexMetric from "../../components/index_metric";
 import ClusterMetric from "../../components/cluster_metric";
 import QueueMetric from "../../components/queue_metric";
 import { ESPrefix } from "@/services/common";
+import { SearchEngines } from "@/lib/search_engines";
 
 const timezone = "local";
 
@@ -19,6 +20,7 @@ export default ({
 }) => {
 
   const isVersionGTE6 = useMemo(() => {
+    if ([SearchEngines.Easysearch, SearchEngines.Opensearch].includes(selectedCluster?.distribution)) return true;
     const main = selectedCluster?.version?.split('.')[0]
     if (main && parseInt(main) >= 6) {
       return true

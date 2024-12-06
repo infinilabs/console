@@ -6,8 +6,10 @@ import { formatMessage } from "umi/locale";
 import Monitor from "@/components/Overview/Monitor";
 import StatisticBar from "./statistic_bar";
 import ShardStatisticBar from "./shard_statistic_bar";
+import { connect } from "dva";
 
-export default (props) => {
+const Page = (props) => {
+  const { clusterStatus, selectedCluster } = props;
   const {shard_id} = props.location.query;
   const panes = React.useMemo(()=>{
     const panes = [
@@ -26,6 +28,7 @@ export default (props) => {
   }
   return (
     <Monitor
+      selectedCluster={selectedCluster}
       formatState={(state) => {
         return {
           ...state,
@@ -80,3 +83,8 @@ export default (props) => {
     />
   );
 };
+
+export default connect(({ global }) => ({
+  selectedCluster: global.selectedCluster,
+  clusterStatus: global.clusterStatus,
+}))(Page);

@@ -18,6 +18,13 @@
   font-weight: 600;
 }
 
+.copy {
+  cursor: pointer;
+  &:hover {
+    color: #1890ff;
+  }
+}
+
 .vizChartItem {
   background: white !important;
 

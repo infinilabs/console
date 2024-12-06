@@ -347,4 +347,7 @@ export default {
   "cluster.providers.aliyun": "Aliyun",
   "cluster.providers.tencent-cloud": "Tencent-cloud",
   "cluster.providers.ecloud": "Ecloud",
+  
+  "cluster.metrics.request.copy": "Copy request",
+  "cluster.metrics.request.copy.success": "Copy request successfully"
 };

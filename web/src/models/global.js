@@ -99,11 +99,7 @@ export default {
         .filter((item) => item.enabled)
         .map((item) => {
           return {
-            name: item.name,
-            id: item.id,
-            endpoint: item.endpoint,
-            host: item.host,
-            version: item.version,
+            ...item,
             distribution: item.distribution || "elasticsearch",
             cluster_uuid: item.cluster_uuid || "",
           };

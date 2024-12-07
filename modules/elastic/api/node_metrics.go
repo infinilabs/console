@@ -1083,6 +1083,7 @@ func (h *APIHandler) getNodeMetrics(ctx context.Context, clusterID string, bucke
 			Units:        "times/s",
 		})
 	case ModelInferenceBreakerMetricKey:
+		//Elasticsearch 8.6+ Model Inference Breaker
 		modelInferenceBreakerMetric := newMetricItem(ModelInferenceBreakerMetricKey, 6, CircuitBreakerGroupKey)
 		modelInferenceBreakerMetric.AddAxi("Model Inference Breaker","group1",common.PositionLeft,"num","0.[0]","0.[0]",5,true)
 		nodeMetricItems = append(nodeMetricItems, GroupMetricItem{

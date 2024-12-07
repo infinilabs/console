@@ -31,6 +31,7 @@ import (
 	"infini.sh/console/plugin/api/email"
 	"infini.sh/console/plugin/audit_log"
 	"infini.sh/framework/core/api"
+	"infini.sh/framework/core/host"
 	model2 "infini.sh/framework/core/model"
 	elastic2 "infini.sh/framework/modules/elastic"
 	_ "time/tzdata"
@@ -156,6 +157,7 @@ func main() {
 		orm.RegisterSchemaWithIndexName(model2.Instance{}, "instance")
 		orm.RegisterSchemaWithIndexName(api3.RemoteConfig{}, "configs")
 		orm.RegisterSchemaWithIndexName(model.AuditLog{}, "audit-logs")
+		orm.RegisterSchemaWithIndexName(host.HostInfo{}, "host")
 
 		module.Start()
 

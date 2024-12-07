@@ -5,6 +5,7 @@ import { getLocale, formatMessage } from "umi/locale";
 import { useEffect, useState } from 'react';
 import request from '@/utils/request';
 import CardMore from '../CardMore';
+import { getWebsitePathByLang } from '@/utils/utils';
 
 export default () => {
 
@@ -39,7 +40,7 @@ export default () => {
                 {formatMessage({ id: "overview.title.product_activities"})}
             </div>
             <Card className={styles.content} size="small">
-                <CardMore linkTo="https://www.infinilabs.com/blog/" external={true}/>
+                <CardMore linkTo={`${getWebsitePathByLang()}/blog/`} external={true}/>
                 {
                   loading ?  <div style={{ height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center'}}><Spin spinning={true} /></div> : (
                     activities.map((item, index) => (

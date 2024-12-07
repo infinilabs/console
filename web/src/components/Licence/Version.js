@@ -4,6 +4,7 @@ import styles from "./Version.less";
 import { DATE_FORMAT } from ".";
 import { formatMessage } from "umi/locale";
 import AGPL from "./AGPL";
+import { getWebsitePathByLang } from "@/utils/utils";
 const { Paragraph, Text } = Typography;
 
 export default ({ application, licence }) => {
@@ -39,7 +40,7 @@ export default ({ application, licence }) => {
           For commercial licensing, contact us at:
           <ul>
             <li>Email: hello@infini.ltd</li>
-            <li>Website: <a href="http://www.infinilabs.com" target="_blank">infinilabs.com</a></li>
+            <li>Website: <a href={`${getWebsitePathByLang()}`} target="_blank">infinilabs.com</a></li>
           </ul>
         </Paragraph>
         <Paragraph>

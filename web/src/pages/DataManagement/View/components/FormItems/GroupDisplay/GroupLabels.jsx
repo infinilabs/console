@@ -1,5 +1,6 @@
 import Group from "@/components/Icons/Group";
 import GroupBy from "@/components/Icons/GroupBy";
+import { getWebsitePathByLang } from "@/utils/utils";
 import { Button, Icon, Input, Switch } from "antd"
 import { cloneDeep } from "lodash";
 import { useMemo } from "react";
@@ -84,7 +85,7 @@ export default (props) => {
                                 lineHeight: '32px',
                                 border: '1px solid #d9d9d9'
                             }}>
-                                {formatMessage({ id: "dashboard.widget.config.group.labels.template" })} <a href="https://www.infinilabs.com/en/docs/latest/console/reference/alerting/variables/" target="_blank"><Icon type="question-circle" /></a>
+                                {formatMessage({ id: "dashboard.widget.config.group.labels.template" })} <a href={`${getWebsitePathByLang()}/docs/latest/console/reference/alerting/variables/`} target="_blank"><Icon type="question-circle" /></a>
                             </div>
                             <Input 
                                 style={{ 

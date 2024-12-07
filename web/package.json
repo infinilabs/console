@@ -6,8 +6,8 @@
   "description": "Pursuing Excellence, Infinite Possibilities!",
   "author": "INFINI.LTD",
   "license": "INFINI-EULA",
-  "official_website": "https://www.infinilabs.com",
-  "docs_website": "https://www.infinilabs.com",
+  "official_website": "https://infinilabs.com",
+  "docs_website": "https://infinilabs.com",
   "dependencies": {
     "@ant-design/charts": "1.4.2",
     "@ant-design/icons": "^4.0.0",

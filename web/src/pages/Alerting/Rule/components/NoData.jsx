@@ -2,7 +2,7 @@ import { Button, Card, Icon, message } from "antd";
 import MessageIcon from "../../../Overview/components/Quick/icons/MessageIcon";
 import { formatMessage } from "umi/locale";
 import { Link } from "umi";
-import { getWebsitePathByLang } from "@/utils/utils";
+import { getDocPathByLang, getWebsitePathByLang } from "@/utils/utils";
 import ExportAndImport from "../../components/ExportAndImport";
 import Import from "../../components/Import";
 import { useState } from "react";
@@ -63,7 +63,7 @@ export default ({ onSuccess }) => {
         ) : null}
 
         <a
-          href={`${getWebsitePathByLang()}/docs/latest/console/reference/alerting/rule/`}
+          href={`${getDocPathByLang()}/reference/alerting/rule/`}
           target="_blank"
         >
           <Icon type="file-text" theme="twoTone" />{" "}

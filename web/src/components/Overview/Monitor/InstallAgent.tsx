@@ -1,6 +1,6 @@
 import { Button } from "antd";
 import { formatMessage } from "umi/locale";
-import { getWebsitePathByLang } from "@/utils/utils";
+import { getDocPathByLang, getWebsitePathByLang } from "@/utils/utils";
 
 interface IProps {
   height?: string | number;
@@ -26,7 +26,7 @@ export default (props: IProps) => {
         type="primary"
         onClick={() =>
           window.open(
-            `${getWebsitePathByLang()}/docs/latest/console/reference/agent/install/`
+            `${getDocPathByLang()}/reference/agent/install/`
           )
         }
       >

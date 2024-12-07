@@ -1,6 +1,6 @@
 import React, { PureComponent } from "react";
 import { FormattedMessage, formatMessage } from "umi/locale";
-import { getWebsitePathByLang } from "@/utils/utils";
+import { getDocPathByLang, getWebsitePathByLang } from "@/utils/utils";
 import { Spin, Tag, Menu, Icon, Dropdown, Avatar, Tooltip } from "antd";
 import moment from "moment";
 import groupBy from "lodash/groupBy";
@@ -190,7 +190,7 @@ export default class GlobalHeaderRight extends PureComponent {
                 </Menu.Item>
                 <Menu.Item key="release_notes">
                   <a
-                    href={`${getWebsitePathByLang()}/docs/latest/console/release-notes`}
+                    href={`${getDocPathByLang()}/release-notes`}
                     target="_blank"
                   >
                     <Icon type="sync" />
@@ -199,7 +199,7 @@ export default class GlobalHeaderRight extends PureComponent {
                 </Menu.Item>
                 <Menu.Item key="document">
                   <a
-                    href={`${getWebsitePathByLang()}/docs/latest/console/`}
+                    href={`${getDocPathByLang()}/`}
                     target="_blank"
                   >
                     <Icon type="read" />

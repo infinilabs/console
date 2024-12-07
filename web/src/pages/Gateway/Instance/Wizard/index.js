@@ -4,6 +4,7 @@ import { Link } from "umi";
 import gatewayBg from "@/assets/gateway_install_bg.svg";
 import styles from "./index.less";
 import { formatMessage } from "umi/locale";
+import { getDocPathByLang, getWebsitePathByLang } from "@/utils/utils";
 
 const shell = `curl -sSL https://get.infini.cloud | bash -s -- -p gateway`;
 
@@ -42,7 +43,7 @@ export default () => {
             · {formatMessage({ id: "gateway.guide.tips.content" })}
             {` `}
             <a
-              href="https://www.infinilabs.com/docs/latest/gateway/getting-started/install/"
+              href={`${getDocPathByLang('gateway')}/getting-started/install/`}
               target={"_blank"}
             >
               {`${formatMessage({

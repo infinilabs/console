@@ -4,6 +4,7 @@ import NodeMetric from "../../components/node_metric";
 import QueueMetric from "../../components/queue_metric";
 import { formatMessage } from "umi/locale";
 import { SearchEngines } from "@/lib/search_engines";
+import { isVersionGTE6, shouldHaveModelInferenceBreaker } from "../../Cluster/Monitor/advanced";
 
 export default ({
   selectedCluster,
@@ -27,13 +28,12 @@ export default ({
     refresh
   }
 
-  const isVersionGTE6 = useMemo(() => {
-    if ([SearchEngines.Easysearch, SearchEngines.Opensearch].includes(selectedCluster?.distribution)) return true;
-    const main = selectedCluster?.version?.split('.')[0]
-    if (main && parseInt(main) >= 6) {
-      return true
-    }
-    return false
+  const isVersionGTE8_6 = useMemo(() => {
+    return shouldHaveModelInferenceBreaker(selectedCluster)
+  }, [selectedCluster])
+
+  const versionGTE6 = useMemo(() => {
+    return isVersionGTE6(selectedCluster)
   }, [selectedCluster])
 
   const [param, setParam] = useState({
@@ -120,8 +120,8 @@ export default ({
                     "fielddata_breaker",
                     "request_breaker",
                     "in_flight_requests_breaker",
-                    "model_inference_breaker"
-                ]
+                    isVersionGTE8_6 ? "model_inference_breaker" : undefined
+                ].filter((item) => !!item)
             ],
             [
                 "io",
@@ -215,7 +215,7 @@ export default ({
           param={param}
           setParam={setParam}
           metrics={[
-            isVersionGTE6 ? [
+            versionGTE6 ? [
                 "thread_pool_write",
                 [
                     "write_active",
@@ -241,7 +241,7 @@ export default ({
                     "search_threads"
                 ]
             ],
-            !isVersionGTE6 ? [
+            !versionGTE6 ? [
                 "thread_pool_bulk",
                 [
                   "bulk_active",
@@ -286,7 +286,7 @@ export default ({
                     "force_merge_threads"
                 ]
             ]
-        ].filter((item) => !!item)}
+        ]}
         />
       </Tabs.TabPane>
     </Tabs>

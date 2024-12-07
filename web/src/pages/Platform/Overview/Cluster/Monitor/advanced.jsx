@@ -8,6 +8,24 @@ import QueueMetric from "../../components/queue_metric";
 import { ESPrefix } from "@/services/common";
 import { SearchEngines } from "@/lib/search_engines";
 
+export const shouldHaveModelInferenceBreaker = (cluster) => {
+  if ([SearchEngines.Easysearch, SearchEngines.Opensearch].includes(cluster?.distribution)) return false;
+  const versions = cluster?.version?.split('.') || []
+  if (parseInt(versions[0]) > 8 || (parseInt(versions[0]) === 8 && parseInt(versions[1]) >= 6 )) {
+    return true
+  }
+  return false
+}
+
+export const isVersionGTE6 = (cluster) => {
+  if ([SearchEngines.Easysearch, SearchEngines.Opensearch].includes(cluster?.distribution)) return true;
+  const main = cluster?.version?.split('.')[0]
+  if (main && parseInt(main) >= 6) {
+    return true
+  }
+  return false
+}
+
 export default ({
   selectedCluster,
   clusterID,
@@ -29,14 +47,13 @@ export default ({
     refresh
   }
 
-  const isVersionGTE6 = useMemo(() => {
-    if ([SearchEngines.Easysearch, SearchEngines.Opensearch].includes(selectedCluster?.distribution)) return true;
-    const main = selectedCluster?.version?.split('.')[0]
-    if (main && parseInt(main) >= 6) {
-      return true
-    }
-    return false
-  }, [selectedCluster?.version]) 
+  const isVersionGTE8_6 = useMemo(() => {
+    return shouldHaveModelInferenceBreaker(selectedCluster)
+  }, [selectedCluster])
+
+  const versionGTE6 = useMemo(() => {
+    return isVersionGTE6(selectedCluster)
+  }, [selectedCluster]) 
 
   const [param, setParam] = useState({
     tab: "cluster",
@@ -141,8 +158,8 @@ export default ({
                       "fielddata_breaker",
                       "request_breaker",
                       "in_flight_requests_breaker",
-                      "model_inference_breaker"
-                  ]
+                      isVersionGTE8_6 ? "model_inference_breaker" : undefined
+                  ].filter((item) => !!item)
               ],
               [
                   "io",
@@ -314,7 +331,7 @@ export default ({
           param={param}
           setParam={setParam}
           metrics={[
-            isVersionGTE6 ? [
+            versionGTE6 ? [
                 "thread_pool_write",
                 [
                     "write_active",
@@ -340,7 +357,7 @@ export default ({
                     "search_threads"
                 ]
             ],
-            !isVersionGTE6 ? [
+            !versionGTE6 ? [
                 "thread_pool_bulk",
                 [
                   "bulk_active",

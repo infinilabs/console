@@ -3,8 +3,6 @@ import StatisticBar from "./statistic_bar";
 import ClusterMetric from "../../components/cluster_metric";
 import { useMemo } from "react";
 
-const timezone = "local";
-
 export default ({
   isAgent,
   clusterID,
@@ -12,7 +10,9 @@ export default ({
   timeRange,
   handleTimeChange,
   bucketSize,
+  timezone,
   timeout,
+  refresh
 }) => {
 
   return (
@@ -20,6 +20,7 @@ export default ({
       timezone={timezone}
       timeRange={timeRange}
       timeout={timeout}
+      refresh={refresh}
       handleTimeChange={handleTimeChange}
       overview={1}
       fetchUrl={`${ESPrefix}/${clusterID}/node/${nodeID}/metrics`}

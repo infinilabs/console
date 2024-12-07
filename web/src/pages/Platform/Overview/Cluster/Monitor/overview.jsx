@@ -1,20 +1,21 @@
 import ClusterMetric from "../../components/cluster_metric";
 import { ESPrefix } from "@/services/common";
 
-const timezone = "local";
-
 export default ({
   clusterID,
   timeRange,
   handleTimeChange,
   bucketSize,
   timeout,
+  timezone,
+  refresh
 }) => {
   return (
     <ClusterMetric
       timezone={timezone}
       timeRange={timeRange}
       timeout={timeout}
+      refresh={refresh}
       handleTimeChange={handleTimeChange}
       overview={1}
       fetchUrl={`${ESPrefix}/${clusterID}/cluster_metrics`}

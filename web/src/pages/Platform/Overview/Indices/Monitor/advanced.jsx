@@ -2,8 +2,6 @@ import { useState } from "react";
 import StatisticBar from "./statistic_bar";
 import IndexMetric from "../../components/index_metric";
 
-const timezone = "local";
-
 export default ({
   clusterID,
   indexName,
@@ -11,7 +9,9 @@ export default ({
   handleTimeChange,
   shardID,
   bucketSize,
-  timeout
+  timezone,
+  timeout,
+  refresh,
 }) => {
   const [param, setParam] = useState({
     show_top: false,
@@ -28,6 +28,7 @@ export default ({
       shardID={shardID}
       bucketSize={bucketSize}
       timeout={timeout}
+      refresh={refresh}
       metrics={[
         [
             "operations",

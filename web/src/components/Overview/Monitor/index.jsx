@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
-import { Card, Tabs, Breadcrumb, Button, BackTop, Empty } from "antd";
+import { Card, Tabs, Breadcrumb, Button, BackTop, Empty, Spin } from "antd";
 import { calculateBounds } from "@/components/vendor/data/common/query/timefilter";
 import { formatter } from "@/utils/format";
 import moment from "moment";
@@ -66,6 +66,7 @@ const Monitor = (props) => {
       timeInterval: formatTimeInterval(param?.timeInterval),
       timeout: formatTimeout(param?.timeout) || localStorage.getItem(TIMEOUT_CACHE_KEY) || '120s',
       param: param,
+      refresh: true
     })
   );
 
@@ -76,7 +77,7 @@ const Monitor = (props) => {
     setParam({ ...param, timeRange: state.timeRange, timeInterval: state.timeInterval, timeout: state.timeout });
   }, [state.timeRange, state.timeInterval, state.timeout]);
 
-  const handleTimeChange = useCallback(({ start, end, timeInterval, timeout }) => {
+  const handleTimeChange = useCallback(({ start, end, timeInterval, timeout, refresh }) => {
     const bounds = calculateBounds({
       from: start,
       to: end,
@@ -93,9 +94,9 @@ const Monitor = (props) => {
         timeFormatter: formatter.dates(intDay),
       },
       timeInterval: timeInterval || state.timeInterval,
-      timeout: timeout || state.timeout
+      timeout: timeout || state.timeout,
+      refresh
     });
-    setSpinning(true);
   }, [state]) 
 
   const onInfoChange = (info) => {
@@ -111,6 +112,12 @@ const Monitor = (props) => {
     const { monitor_configs = {} } = selectedCluster || {}
     return monitor_configs?.node_stats?.enabled === false && monitor_configs?.index_stats?.enabled === false
   }, [JSON.stringify(selectedCluster?.monitor_configs)])
+
+  console.log("spinning")
+  console.log(spinning)
+  console.log("state.refresh")
+  console.log(state.refresh)
+
 
   return (
     <div>
@@ -165,12 +172,14 @@ const Monitor = (props) => {
               >
                 {panes.map((pane) => (
                   <TabPane tab={pane.title} key={pane.key}>
-                    <StatisticBar
-                      setSpinning={setSpinning}
-                      onInfoChange={onInfoChange}
-                      {...state}
-                      {...extraParams}
-                    />
+                    <Spin spinning={spinning && !!state.refresh}>
+                      <StatisticBar
+                        setSpinning={setSpinning}
+                        onInfoChange={onInfoChange}
+                        {...state}
+                        {...extraParams}
+                      />
+                    </Spin>
                     <div style={{ marginTop: 15 }}>
                       {checkPaneParams({
                         ...state,

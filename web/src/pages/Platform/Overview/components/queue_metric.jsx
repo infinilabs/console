@@ -21,7 +21,8 @@ export default (props) => {
     setParam,
     bucketSize,
     metrics = [],
-    timeout
+    timeout,
+    refresh
   } = props
 
   if (!clusterID || metrics.length == 0) {
@@ -153,6 +154,7 @@ export default (props) => {
                             queryParams={queryParams}
                             className={"metric-item"}
                             timeout={timeout}
+                            refresh={refresh}
                           />
                         ))
                       }

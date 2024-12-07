@@ -58,7 +58,6 @@ export default {
     APP_TITLE: packageJson.title,
     APP_AUTHOR: packageJson.author,
     APP_OFFICIAL_WEBSITE: packageJson.official_website || "",
-    APP_DOCS_WEBSITE: packageJson.docs_website || "",
   },
   // 路由配置
   routes: pageRoutes,

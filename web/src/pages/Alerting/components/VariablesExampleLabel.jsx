@@ -1,15 +1,12 @@
 import { Table, Drawer } from "antd";
 import { formatMessage } from "umi/locale";
-import { getWebsitePathByLang } from "@/utils/utils";
+import { getDocPathByLang, getWebsitePathByLang } from "@/utils/utils";
 import { useState } from "react";
 import TemplateVariables from "./Template/Variables";
 
 const VariablesExampleLabel = (props) => {
   const [varVisible, setVarVisible] = useState(false);
-  const docsLink =
-    APP_DOCS_WEBSITE && APP_DOCS_WEBSITE.indexOf("infinilabs") > -1
-      ? `${getWebsitePathByLang()}/docs/latest/console/reference/alerting/variables`
-      : APP_DOCS_WEBSITE;
+  const docsLink = `${getDocPathByLang()}/reference/alerting/variables`;
 
   return (
     <>

@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import request from "@/utils/request";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import { formatMessage } from "umi/locale"; 
-import { getWebsitePathByLang } from "@/utils/utils";
+import { getDocPathByLang, getWebsitePathByLang } from "@/utils/utils";
 
 export default ({autoInit = false}) => {
     const { loading, value } = useFetch(`/instance/_search`);
@@ -117,7 +117,7 @@ export default ({autoInit = false}) => {
                                         ·  {formatMessage({
                                                 id:"agent.install.tips.desc"
                                             })}
-                                        <a href={`${getWebsitePathByLang()}/docs/latest/console/reference/agent/install/`} target="_blank">{formatMessage({
+                                        <a href={`${getDocPathByLang()}/reference/agent/install/`} target="_blank">{formatMessage({
                                                 id:"agent.install.link.manual_install"
                                             })}&gt;</a>
                                     </p>

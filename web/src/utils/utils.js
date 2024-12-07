@@ -15,12 +15,11 @@ export function getWebsitePathByLang() {
   }
 }
 
-export function getDocPathByLang() {
-  if (!APP_OFFICIAL_WEBSITE) return;
+export function getDocPathByLang(product = 'console') {
   if (getLocale() === "zh-CN") {
-    return APP_OFFICIAL_WEBSITE.replace('.com', '.cn')
+    return `https://infinilabs.cn/docs/latest/${product}`
   } else {
-    return APP_OFFICIAL_WEBSITE + '/en'
+    return `https://docs.infinilabs.com/${product}/main/docs`
   }
 }
 

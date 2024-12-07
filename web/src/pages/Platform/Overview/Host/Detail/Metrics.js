@@ -7,7 +7,7 @@ import { formatter } from "@/utils/format";
 import Table from "@/components/Overview/Detail/Infos/Table";
 import { Button } from "antd";
 import { formatMessage } from "umi/locale";
-import { getWebsitePathByLang } from "@/utils/utils";
+import { getDocPathByLang, getWebsitePathByLang } from "@/utils/utils";
 
 export default (props) => {
   const id = props.data?._id;
@@ -46,7 +46,7 @@ export default (props) => {
                 type="primary"
                 onClick={() =>
                   window.open(
-                    `${getWebsitePathByLang()}/docs/latest/console/reference/agent/install/`
+                    `${getDocPathByLang()}/reference/agent/install/`
                   )
                 }
               >

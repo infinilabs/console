@@ -2,8 +2,6 @@ import { ESPrefix } from "@/services/common";
 import StatisticBar from "./statistic_bar";
 import ClusterMetric from "../../components/cluster_metric";
 
-const timezone = "local";
-
 export default ({
   isAgent,
   clusterID,
@@ -12,7 +10,9 @@ export default ({
   handleTimeChange,
   shardID,
   bucketSize,
-  timeout
+  timezone,
+  timeout,
+  refresh
 }) => {
   let url = `${ESPrefix}/${clusterID}/index/${indexName}/metrics`;
   if(shardID){
@@ -27,6 +27,7 @@ export default ({
       fetchUrl={url}
       bucketSize={bucketSize}
       timeout={timeout}
+      refresh={refresh}
       metrics={[
         "index_health",
         "index_throughput",

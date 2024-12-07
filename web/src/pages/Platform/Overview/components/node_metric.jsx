@@ -21,6 +21,7 @@ export default (props) => {
     setParam,
     bucketSize,
     timeout,
+    refresh,
     metrics = []
   } = props
 
@@ -153,6 +154,7 @@ export default (props) => {
                             queryParams={queryParams}
                             className={"metric-item"}
                             timeout={timeout}
+                            refresh={refresh}
                           />
                         ))
                       }

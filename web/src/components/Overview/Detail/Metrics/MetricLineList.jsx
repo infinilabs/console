@@ -24,6 +24,7 @@ export default (props) => {
             queryParams={queryParams}
             timeout={timeout}
             className={styles.lineWrapper}
+            height={150}
             formatMetric={(metric) => {
               if (!metric) return metric;
               let units = "";

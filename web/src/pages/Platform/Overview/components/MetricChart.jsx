@@ -27,6 +27,7 @@ export default (props) => {
       timezone,
       timeRange,
       timeout,
+      refresh,
       handleTimeChange,
       fetchUrl,
       metricKey,
@@ -82,9 +83,9 @@ export default (props) => {
     }
   
     useEffect(() => {
-      observerRef.current.deps = cloneDeep([queryParams, fetchUrl, metricKey])
-      fetchData(queryParams, fetchUrl, metricKey)
-    }, [JSON.stringify(queryParams), fetchUrl, metricKey])
+      observerRef.current.deps = cloneDeep([queryParams, fetchUrl, metricKey, refresh])
+      fetchData(queryParams, fetchUrl, metricKey, refresh)
+    }, [JSON.stringify(queryParams), fetchUrl, metricKey, refresh])
   
     useEffect(() => {
       const observer = new IntersectionObserver(
@@ -144,7 +145,6 @@ export default (props) => {
     };
 
     const renderChart = () => {
-      if (loading) return <div style={{ height }}></div>
       if (error) {
         return (
           <div style={{ height, padding: 10 }}>
@@ -155,7 +155,14 @@ export default (props) => {
       const axis = metric?.axis || [];
       const lines = metric?.lines || [];
       if (lines.every((item) => !item.data || item.data.length === 0)) {
-        return <Empty style={{ height, margin: 0, paddingTop: 64 }} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        return (
+          <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Empty style={{ margin: 0}} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+          </div>
+        )
+      }
+      if (customRenderChart) {
+        return customRenderChart(metric)
       }
       return (
         <Chart
@@ -314,7 +321,7 @@ export default (props) => {
             </span>
           }
         </div>
-        {customRenderChart ? customRenderChart(metric) : renderChart()}
+        {renderChart()}
         </Spin>
       </div>
     );

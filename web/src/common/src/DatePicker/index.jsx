@@ -202,7 +202,7 @@ const DatePicker = (props) => {
   const [reloadLoading, setReloadLoading] = useState(false) 
   const onRefreshClick = () => {
     setReloadLoading(true)
-    onRefresh && onRefresh({ start, end });
+    onRefresh && onRefresh({ start, end, refresh: true });
     setTimeout(()=>{
       setReloadLoading(false)
     }, 1000)

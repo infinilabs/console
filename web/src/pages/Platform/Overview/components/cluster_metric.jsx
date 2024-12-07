@@ -8,7 +8,7 @@ import { formatTimeRange } from "@/lib/elasticsearch/util";
 
 export default (props) => {
 
-  const { fetchUrl, overview, metrics = [], renderExtra, timeRange, timeout, timezone, bucketSize, handleTimeChange } = props
+  const { fetchUrl, overview, metrics = [], renderExtra, timeRange, timeout, timezone, refresh, bucketSize, handleTimeChange } = props
 
   if (!fetchUrl || metrics.length === 0) {
     return null;
@@ -36,6 +36,7 @@ export default (props) => {
             timezone={timezone} 
             timeRange={timeRange} 
             timeout={timeout}
+            refresh={refresh}
             handleTimeChange={handleTimeChange} 
             fetchUrl={fetchUrl}
             metricKey={metricKey}

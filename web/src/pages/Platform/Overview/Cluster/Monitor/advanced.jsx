@@ -8,16 +8,26 @@ import QueueMetric from "../../components/queue_metric";
 import { ESPrefix } from "@/services/common";
 import { SearchEngines } from "@/lib/search_engines";
 
-const timezone = "local";
-
 export default ({
   selectedCluster,
   clusterID,
   timeRange,
   handleTimeChange,
+  timezone,
   bucketSize,
   timeout,
+  refresh,
 }) => {
+
+  const tabProps = {
+    clusterID,
+    timeRange,
+    handleTimeChange,
+    timezone,
+    bucketSize,
+    timeout,
+    refresh
+  }
 
   const isVersionGTE6 = useMemo(() => {
     if ([SearchEngines.Easysearch, SearchEngines.Opensearch].includes(selectedCluster?.distribution)) return true;
@@ -56,12 +66,8 @@ export default ({
         })}
       >
         <ClusterMetric
-          timezone={timezone}
-          timeRange={timeRange}
-          handleTimeChange={handleTimeChange}
+          {...tabProps}
           fetchUrl={`${ESPrefix}/${clusterID}/cluster_metrics`}
-          bucketSize={bucketSize}
-          timeout={timeout}
           metrics={[
             'cluster_health',
             'index_throughput', 
@@ -84,14 +90,9 @@ export default ({
         })}
       >
         <NodeMetric
-          clusterID={clusterID}
-          timezone={timezone}
-          timeRange={timeRange}
-          handleTimeChange={handleTimeChange}
+          {...tabProps}
           param={param}
           setParam={setParam}
-          bucketSize={bucketSize}
-          timeout={timeout}
           metrics={[
               [
                   "operations",
@@ -231,14 +232,9 @@ export default ({
         })}
       >
         <IndexMetric
-          clusterID={clusterID}
-          timezone={timezone}
-          timeRange={timeRange}
-          handleTimeChange={handleTimeChange}
+          {...tabProps}
           param={param}
           setParam={setParam}
-          bucketSize={bucketSize}
-          timeout={timeout}
           metrics={[
             [
                 "operations",
@@ -314,14 +310,9 @@ export default ({
         })}
       >
         <QueueMetric
-          clusterID={clusterID}
-          timezone={timezone}
-          timeRange={timeRange}
-          handleTimeChange={handleTimeChange}
+          {...tabProps}
           param={param}
           setParam={setParam}
-          bucketSize={bucketSize}
-          timeout={timeout}
           metrics={[
             isVersionGTE6 ? [
                 "thread_pool_write",
@@ -397,18 +388,6 @@ export default ({
         ].filter((item) => !!item)}
         />
       </Tabs.TabPane>
-      {/* <Tabs.TabPane
-          key="storage"
-          tab={formatMessage({
-            id: "cluster.monitor.queue.storage",
-          })}
-        >
-          <StorageMetric
-            clusterID={clusterID}
-            timezone={timezone}
-            timeRange={timeRange}
-          />
-        </Tabs.TabPane> */}
     </Tabs>
   );
 }

@@ -356,7 +356,6 @@ export function getCurrentMethodAndTokenPaths(
     // mark the url as completed.
     ret.urlTokenPath.push(URL_PATH_END_MARKER);
   }
-  debugger
 
   if (t && t.type === "method") {
     ret.method = t.value;
@@ -593,7 +592,6 @@ export default function({ coreEditor: editor }: { coreEditor: CoreEditor }) {
           switch ((t || ({} as Token)).type) {
             case "method":
               // we moved one back
-              debugger
               return "path";
             default:
               if (isUrlPathToken(t)) {
@@ -1110,7 +1108,6 @@ export default function({ coreEditor: editor }: { coreEditor: CoreEditor }) {
     } else {
       components = getUnmatchedEndpointComponents();
     }
-    debugger
     populateContext(ret.bodyTokenPath, context, editor, true, components);
 
     return context;

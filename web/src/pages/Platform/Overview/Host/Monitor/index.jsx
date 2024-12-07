@@ -15,6 +15,7 @@ const panes = [
 export default (props) => {
   return (
     <Monitor
+      selectedCluster={{}}
       formatState={(state) => {
         return {
           ...state,

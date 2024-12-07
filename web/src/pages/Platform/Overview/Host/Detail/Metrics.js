@@ -16,14 +16,22 @@ export default (props) => {
     return null;
   }
 
-  const hasAgent = !!props.data?._source?.agent_id;
+  const isAgent = !!props.data?._source?.agent_id;
 
   return (
     <>
       <Metrics
         metricAction={`/host/${id}/metrics`}
+        metrics={[
+          'cpu_used_percent', 
+          'memory_used_percent', 
+          'disk_used_percent', 
+          isAgent ? 'network_summary' : undefined, 
+          isAgent ? 'disk_read_rate' : undefined, 
+          isAgent ? 'disk_write_rate' : undefined
+        ].filter((item) => !!item)}
         renderExtraMetric={() =>
-          !hasAgent && (
+          !isAgent && (
             <div
               style={{
                 height: 150,
@@ -56,7 +64,7 @@ export default (props) => {
           )
         }
         extra={
-          hasAgent && (
+          isAgent && (
             <>
               <Agent id={id} />
               <Process id={id} />

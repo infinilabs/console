@@ -113,12 +113,6 @@ const Monitor = (props) => {
     return monitor_configs?.node_stats?.enabled === false && monitor_configs?.index_stats?.enabled === false
   }, [JSON.stringify(selectedCluster?.monitor_configs)])
 
-  console.log("spinning")
-  console.log(spinning)
-  console.log("state.refresh")
-  console.log(state.refresh)
-
-
   return (
     <div>
       <BreadcrumbList data={breadcrumbList} />

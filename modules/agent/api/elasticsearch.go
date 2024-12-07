@@ -31,6 +31,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/buger/jsonparser"
 	log "github.com/cihub/seelog"
 	"infini.sh/console/plugin/managed/server"
 	httprouter "infini.sh/framework/core/api/router"
@@ -661,6 +662,9 @@ func (h *APIHandler) getESNodeInfoViaProxy(esHost string, esSchema string, auth 
 
 func (h *APIHandler) getESNodeInfoViaProxyWithConfig(cfg *elastic.ElasticsearchConfig, auth *model.BasicAuth, endpoint string) (success, tryAgain bool, info *elastic.LocalNodeInfo) {
 	body := util.MustToJSONBytes(cfg)
+	if cfg.BasicAuth != nil {
+		body, _ = jsonparser.Set(body, []byte(`"`+cfg.BasicAuth.Password.Get()+`"`), "basic_auth", "password")
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 	req := &util.Request{

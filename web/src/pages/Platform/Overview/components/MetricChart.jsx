@@ -37,7 +37,9 @@ export default (props) => {
       style,
       formatMetric,
       height = 200,
-      customRenderChart
+      customRenderChart,
+      instance,
+      pointerUpdate
     } = props;
   
     const [loading, setLoading] = useState(false)
@@ -119,14 +121,6 @@ export default (props) => {
       };
     }, [isInView]);
   
-    const chartRef = useRef();
-  
-    const pointerUpdate = (event) => {
-      if (chartRef.current) {
-        chartRef.current.dispatchExternalPointerEvent(event);
-      }
-    };
-  
     const handleChartBrush = ({ x }) => {
       if (!x) {
         return;
@@ -168,7 +162,7 @@ export default (props) => {
         <Chart
           size={[, height]}
           className={styles.vizChartItem}
-          ref={chartRef}
+          ref={instance}
         >
           <Settings
             pointerUpdateDebounce={0}

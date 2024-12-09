@@ -201,7 +201,7 @@ export default ({
                     "request_cache_miss"
                 ]
             ]
-        ]}
+        ].filter((item) => !!item && !!item[1])}
         />
       </Tabs.TabPane>
       <Tabs.TabPane
@@ -286,7 +286,7 @@ export default ({
                     "force_merge_threads"
                 ]
             ]
-        ]}
+        ].filter((item) => !!item && !!item[1])}
         />
       </Tabs.TabPane>
     </Tabs>

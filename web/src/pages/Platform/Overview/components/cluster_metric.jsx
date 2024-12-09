@@ -2,7 +2,7 @@ import styles from "./Metrics.scss";
 import "./node_metric.scss";
 import { calculateBounds } from "@/components/vendor/data/common/query/timefilter";
 import MetricChart from "./MetricChart";
-import { useMemo } from "react";
+import { createRef, useEffect, useMemo, useRef, useState } from "react";
 import { formatMessage } from "umi/locale";
 import { formatTimeRange } from "@/lib/elasticsearch/util";
 
@@ -27,12 +27,34 @@ export default (props) => {
   
   const extra = renderExtra ? renderExtra() : null;
 
+  const [charts, setCharts] = useState([])
+
+  useEffect(() => {
+    setCharts(() => {
+      const cs = {}
+      metrics.forEach((metricKey) => {
+        cs[metricKey] = createRef()
+      })
+      return cs
+    })
+  }, [JSON.stringify(metrics)])
+
+  const pointerUpdate = (event) => {
+    Object.keys(charts).forEach((key) => {
+      if (charts[key].current) {
+        charts[key].current.dispatchExternalPointerEvent(event);
+      }
+    });
+  };
+
   return (
     <div id="cluster-metric">
       <div className={styles.metricList}>
-        {metrics.map((metricKey, i) => (
+        {metrics.filter((item) => !!item).map((metricKey) => (
           <MetricChart 
-            key={metricKey} 
+            key={metricKey}
+            instance={charts[metricKey]} 
+            pointerUpdate={pointerUpdate}
             timezone={timezone} 
             timeRange={timeRange} 
             timeout={timeout}

@@ -6,6 +6,7 @@ import DevToolIcon from "./icons/DevToolIcon";
 import ClusterIcon from "./icons/ClusterIcon";
 import SecurityIcon from "./icons/SecurityIcon";
 import DiscoverIcon from "./icons/DiscoverIcon";
+import MonitorIcon from "./icons/MonitorIcon";
 import { formatMessage } from "umi/locale";
 
 const ROUTES = [
@@ -15,24 +16,29 @@ const ROUTES = [
     icon: ClusterIcon,
   },
   {
-    path: "/insight/discover",
-    name: "discover",
-    icon: DiscoverIcon,
-  },
-  {
     path: "/alerting/message",
     name: "alert",
     icon: MessageIcon,
   },
   {
-    path: "/devtool/console",
-    name: "dev_tools",
-    icon: DevToolIcon,
+    path: "/insight/discover",
+    name: "discover",
+    icon: DiscoverIcon,
+  },
+  {
+    path: "/cluster/monitor",
+    name: "monitor",
+    icon: MonitorIcon,
   },
   {
     path: "/system/security",
     name: "security",
     icon: SecurityIcon,
+  },
+  {
+    path: "/devtool/console",
+    name: "dev_tools",
+    icon: DevToolIcon,
   },
 ];
 

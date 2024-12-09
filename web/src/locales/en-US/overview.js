@@ -22,4 +22,5 @@ export default {
   "overview.quick.cluster_regist": "Register A Cluster",
   "overview.quick.security": "Configure Security",
   "overview.quick.discover": "Discover Your Data",
+  "overview.quick.monitor": "Cluster Metrics Ops",
 };

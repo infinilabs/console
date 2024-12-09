@@ -8,7 +8,7 @@ import { formatTimeRange } from "@/lib/elasticsearch/util";
 import NodeSelect from "@/components/NodeSelect";
 import Anchor from "@/components/Anchor";
 import MetricChart from "./MetricChart";
-import { useCallback, useMemo } from "react";
+import { createRef, useCallback, useEffect, useMemo, useState } from "react";
 
 export default (props) => {
 
@@ -94,6 +94,30 @@ export default (props) => {
     });
   }, [nodes]);
 
+  const [charts, setCharts] = useState([])
+
+  useEffect(() => {
+    setCharts(() => {
+      const cs = {}
+      metrics.forEach((item) => {
+        if (item[1]?.length > 0) {
+          item[1].forEach((metricKey) => {
+            cs[metricKey] = createRef()
+          })
+        }
+      })
+      return cs
+    })
+  }, [JSON.stringify(metrics)])
+
+  const pointerUpdate = (event) => {
+    Object.keys(charts).forEach((key) => {
+      if (charts[key].current) {
+        charts[key].current.dispatchExternalPointerEvent(event);
+      }
+    });
+  };
+
   return (
     <div id="node-metric">
       {showTop ? (
@@ -132,7 +156,7 @@ export default (props) => {
 
       <div className="px-box">
         <div className="px">
-            {metrics.map((item, i) => {
+            {metrics.filter((item) => !!item && !!item[1]).map((item) => {
               return (
                 <div key={item[0]} style={{ margin: "8px 0" }}>
                   <MetricContainer
@@ -145,6 +169,8 @@ export default (props) => {
                         item[1].map((metricKey) => (
                           <MetricChart 
                             key={metricKey} 
+                            instance={charts[metricKey]} 
+                            pointerUpdate={pointerUpdate}
                             timezone={timezone} 
                             timeRange={timeRange} 
                             handleTimeChange={handleTimeChange} 

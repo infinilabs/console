@@ -21,5 +21,6 @@ export default {
   "overview.quick.cluster_regist": "集群注册",
   "overview.quick.security": "安全管理",
   "overview.quick.discover": "数据探索",
+  "overview.quick.monitor": "监控指标",
 
 };

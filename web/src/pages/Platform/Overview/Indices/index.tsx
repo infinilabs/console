@@ -6,13 +6,13 @@ import Table from "./Table";
 import Overview from "@/components/Overview";
 
 const facetLabels = {
-  "metadata.cluster_name": "cluster",
+  "metadata.index_name": "index",
   "metadata.labels.health_status": "health",
   "metadata.labels.state": "state",
 };
 
 const aggsParams = [
-  { field: "metadata.cluster_name", params: { size: 500 } },
+  { field: "metadata.index_name", params: { size: 500 } },
   { field: "metadata.labels.state", params: { size: 100 } },
   { field: "metadata.labels.health_status", params: { size: 150 } },
 ];

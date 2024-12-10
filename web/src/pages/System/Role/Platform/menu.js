@@ -96,7 +96,7 @@ export const menuData = [
     key: "system",
     children: [
       {
-        key: "system.command",
+        key: "system.smtp_server",
       },
       {
         key: "system.security",

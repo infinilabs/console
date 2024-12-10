@@ -259,7 +259,7 @@ export default {
   "menu.system.security.users": "用户管理",
   "menu.system.security.certs": "证书管理",
 
-  "menu.system.audit": "审计日志",
+  "menu.system.audit_logs": "审计日志",
 
   "menu.system.logs": "系统日志",
   "menu.system.logs.overview": "日志概要",

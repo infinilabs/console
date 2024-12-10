@@ -212,6 +212,7 @@ export default forwardRef((props: IProps, ref: any) => {
         filters,
       });
     }
+    dispatch({ type: "pagination", value: 1 })
   };
 
   useEffect(() => {

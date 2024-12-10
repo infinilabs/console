@@ -29,6 +29,8 @@ package email
 
 import (
 	log "github.com/cihub/seelog"
+	"infini.sh/console/core"
+	"infini.sh/console/core/security/enum"
 	"infini.sh/console/model"
 	"infini.sh/console/plugin/api/email/common"
 	"infini.sh/framework/core/api"
@@ -38,17 +40,17 @@ import (
 )
 
 type EmailAPI struct {
-	api.Handler
+	core.Handler
 }
 
 func InitAPI() {
 	email := EmailAPI{}
-	api.HandleAPIMethod(api.POST, "/email/server/_test", email.testEmailServer)
-	api.HandleAPIMethod(api.GET, "/email/server/:email_server_id", email.getEmailServer)
-	api.HandleAPIMethod(api.POST, "/email/server", email.createEmailServer)
-	api.HandleAPIMethod(api.PUT, "/email/server/:email_server_id", email.updateEmailServer)
-	api.HandleAPIMethod(api.DELETE, "/email/server/:email_server_id", email.deleteEmailServer)
-	api.HandleAPIMethod(api.GET, "/email/server/_search", email.searchEmailServer)
+	api.HandleAPIMethod(api.POST, "/email/server/_test", email.RequirePermission(email.testEmailServer, enum.PermissionSmtpServerRead))
+	api.HandleAPIMethod(api.GET, "/email/server/:email_server_id", email.RequirePermission(email.getEmailServer, enum.PermissionAlertRuleRead))
+	api.HandleAPIMethod(api.POST, "/email/server", email.RequirePermission(email.createEmailServer, enum.PermissionSmtpServerWrite))
+	api.HandleAPIMethod(api.PUT, "/email/server/:email_server_id",  email.RequirePermission(email.updateEmailServer, enum.PermissionSmtpServerWrite))
+	api.HandleAPIMethod(api.DELETE, "/email/server/:email_server_id",  email.RequirePermission(email.deleteEmailServer, enum.PermissionSmtpServerWrite))
+	api.HandleAPIMethod(api.GET, "/email/server/_search",  email.RequirePermission(email.searchEmailServer, enum.PermissionSmtpServerRead))
 
 	credential.RegisterChangeEvent(func(cred *credential.Credential) {
 		query := util.MapStr{

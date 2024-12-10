@@ -276,7 +276,7 @@ export default {
   "menu.system.reset_password": "重置密码",
 
   "menu.system.credential": "凭据管理",
-  "menu.system.email_server": "邮件服务器",
+  "menu.system.smtp_server": "邮件服务器",
 
   "menu.form": "表单页",
   "menu.form.basicform": "基础表单",

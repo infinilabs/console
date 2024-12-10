@@ -18,10 +18,11 @@ import { ESPrefix } from "@/services/common";
 import { formatMessage } from "umi/locale";
 import { getAuthority, hasAuthority } from "@/utils/authority";
 import EditLayout from "./View/EditLayout";
+import { Card, Empty } from "antd";
 
 const IndexPatterns = (props) => {
   if (!props.selectedCluster?.id) {
-    return null;
+    return <Card ><Empty image={Empty.PRESENTED_IMAGE_SIMPLE} /></Card>;
   }
   const history = useMemo(() => {
     return new ScopedHistory(props.history, "/data/views");
@@ -45,9 +46,6 @@ const IndexPatterns = (props) => {
     };
     initFetch();
   }, [props.selectedCluster]);
-  if (!props.selectedCluster?.id) {
-    return null;
-  }
 
   return (
     <Router history={history}>

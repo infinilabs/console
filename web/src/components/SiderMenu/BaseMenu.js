@@ -7,7 +7,6 @@ import { formatMessage } from 'umi/locale';
 import pathToRegexp from 'path-to-regexp';
 import { urlToList } from '../_utils/pathTools';
 import styles from './index.less';
-import Pro from '../Icons/Pro';
 
 const { SubMenu } = Menu;
 
@@ -89,7 +88,6 @@ export default class BaseMenu extends PureComponent {
               <span style={{ display: 'flex', alignItems: 'center'}}>
                 {getIcon(item.icon)}
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis'}}>{name}</span>
-                {this.renderProIcon(item)}
               </span>
             ) : (
               name
@@ -140,7 +138,6 @@ export default class BaseMenu extends PureComponent {
         <span style={{ display: 'flex', alignItems: 'center'}}>
           {icon}
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis'}}>{name}</span>
-          {this.renderProIcon(item)}
         </span>
       </Link>
     );
@@ -162,13 +159,6 @@ export default class BaseMenu extends PureComponent {
     }
     return `/${path || ''}`.replace(/\/+/g, '/');
   };
-
-  renderProIcon = (item) => {
-    if (this.props.collapsed || !item.isPro) return null
-    return (
-      <Icon style={{ fontSize: 32, marginLeft: 6 }} component={Pro}/>
-    )
-  } 
 
   render() {
     const {

@@ -84,6 +84,7 @@ import Layout from "./View/Layout";
 import request from "@/utils/request";
 import { cloneDeep } from "lodash";
 import { getTimezone } from "@/utils/utils";
+import { hasAuthority } from "@/utils/authority";
 
 const SidebarMemoized = React.memo(DiscoverSidebar);
 
@@ -1553,10 +1554,13 @@ const DiscoverUI = (props) => {
               The current cluster has no indices or views
             </span>
           }
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
         >
-          <Link to={"/data/index"}>
-            <Button type="primary">Create Now</Button>
-          </Link>
+          {hasAuthority("data.index:all") && (
+            <Link to={"/data/index"}>
+              <Button type="primary">Create Now</Button>
+            </Link> 
+          )}
         </Empty>
       </Card>
     )

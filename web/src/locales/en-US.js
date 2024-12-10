@@ -271,7 +271,7 @@ export default {
   "menu.system.reset_password": "RESET",
 
   "menu.system.credential": "CREDENTIAL",
-  "menu.system.email_server": "SMTP SERVER",
+  "menu.system.smtp_server": "SMTP SERVER",
 
   "menu.form": "Form",
   "menu.form.basicform": "Basic Form",

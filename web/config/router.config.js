@@ -162,7 +162,6 @@ export default [
         name: "alerting",
         icon: "alert",
         authority: ["alerting"],
-        isPro: true,
         routes: [
           {
             path: "/alerting/message/:message_id",
@@ -386,12 +385,17 @@ export default [
           "system.credential:read",
           "system.security:all",
           "system.security:read",
+          "system.audit_logs:all",
+          "system.audit_logs:read",
+          "system.smtp_server:all",
+          "system.smtp_server:read"
         ],
         routes: [
           {
             path: "/system/email_server",
-            name: "email_server",
+            name: "smtp_server",
             component: "./System/Email/Server",
+            authority: ["system.smtp_server:all", "system.smtp_server:read"],
           },
           {
             path: "/system/credential",

@@ -1,6 +1,7 @@
 import { Empty, Button } from "antd";
 import EmailServer from "@/components/Icons/EmailServer";
 import { formatMessage } from "umi/locale";
+import { hasAuthority } from "@/utils/authority";
 
 export default ({ onAddClick }) => {
   const onClick = () => {
@@ -23,9 +24,13 @@ export default ({ onAddClick }) => {
         </div>
       }
     >
-      <Button type="primary" onClick={onClick}>
-        {formatMessage({ id: "settings.email.server.empty.button.new" })}
-      </Button>
+      {
+        hasAuthority("system.smtp_server:all") && (
+          <Button type="primary" onClick={onClick}>
+            {formatMessage({ id: "settings.email.server.empty.button.new" })}
+          </Button>
+        )
+      }
     </Empty>
   );
 };

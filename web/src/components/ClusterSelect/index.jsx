@@ -1,11 +1,17 @@
 import { useState } from "react";
-import { getLocale } from "umi/locale";
+import { getLocale, formatMessage } from "umi/locale";
 
 import DropdownList from "@/common/src/DropdownList";
 import { SearchEngineIcon } from "@/lib/search_engines";
 import { HealthStatusRect } from "../infini/health_status_rect";
+import { connect } from "dva";
+import { hasAuthority } from "@/utils/authority";
 
-export default (props) => {
+export default connect(({ global, loading }) => ({
+  clusterList: global.clusterList,
+  clusterLoading: loading.effects["global/fetchClusterList"],
+  clusterStatus: global.clusterStatus,
+}))((props) => {
   const {
     className,
     popoverClassName,
@@ -17,7 +23,12 @@ export default (props) => {
     clusterStatus,
     onChange,
     mode = "",
+    onRefresh,
+    clusterLoading,
+    dispatch,
+    showCreate = true
   } = props;
+
   const [sorter, setSorter] = useState([]);
   const [filters, setFilters] = useState({
     status: ["green", "yellow", "red"],
@@ -44,6 +55,16 @@ export default (props) => {
         : "unavailable",
     };
   };
+
+  const actions = [];
+  if (hasAuthority("system.cluster:all") && showCreate) {
+    actions.push(
+      <a onClick={() => window.open(`/#/resource/cluster/regist`,"_blank")}>
+        {formatMessage({ id: "cluster.manage.btn.regist" })}
+      </a>
+    );
+  }
+
   return (
     <DropdownList
       getPopupContainer={(triggerNode) => triggerNode.parentNode}
@@ -146,8 +167,22 @@ export default (props) => {
           value: "opensearch",
         },
       ]}
+      onRefresh={() => {
+        dispatch({
+          type: "global/fetchClusterList",
+          payload: {
+            size: 200,
+            name: "",
+          },
+        });
+        dispatch({
+          type: "global/fetchClusterStatus",
+        })
+      }}
+      loading={clusterLoading}
+      actions={actions}
     >
       {children}
     </DropdownList>
   );
-};
+});

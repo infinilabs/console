@@ -32,8 +32,6 @@ export default ({ onEnroll, loading }) => {
           width={"100%"}
           dropdownWidth={400}
           selectedCluster={selectedCluster}
-          clusterList={clusterList}
-          clusterStatus={clusterStatus}
           onChange={(item) => {
             setSelectedCluster(item);
           }}

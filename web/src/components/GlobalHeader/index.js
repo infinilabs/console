@@ -63,8 +63,6 @@ export default class GlobalHeader extends PureComponent {
               width={300}
               dropdownWidth={400}
               selectedCluster={selectedCluster} 
-              clusterList={clusterList}
-              clusterStatus={clusterStatus}
               onChange={(item) => {
                 const rel = this.props
                   .handleSaveGlobalState({

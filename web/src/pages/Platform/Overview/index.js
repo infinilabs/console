@@ -46,15 +46,15 @@ const panes = [
       return <Icon type="table" />;
     },
   },
-  {
-    title: "Hosts",
-    component: Host,
-    key: "hosts",
-    count: 0,
-    icon: () => {
-      return <Icon component={HostsSvg} />;
-    },
-  },
+  // {
+  //   title: "Hosts",
+  //   component: Host,
+  //   key: "hosts",
+  //   count: 0,
+  //   icon: () => {
+  //     return <Icon component={HostsSvg} />;
+  //   },
+  // },
 ];
 
 const NewOverview = (props) => {

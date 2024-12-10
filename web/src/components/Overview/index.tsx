@@ -212,6 +212,7 @@ export default forwardRef((props: IProps, ref: any) => {
         filters,
       });
     }
+    dispatch({ type: "pagination", value: 1 })
   };
 
   useEffect(() => {
@@ -262,7 +263,7 @@ export default forwardRef((props: IProps, ref: any) => {
               {dispalyTypeObj[currentTab] == "card" ? (
                 <List
                   dataSource={hits}
-                  total={result?.total?.value || 0}
+                  total={1000}
                   from={queryParams.from}
                   pageSize={queryParams.size}
                   loading={loading}

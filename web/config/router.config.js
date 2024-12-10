@@ -57,12 +57,12 @@ export default [
             component: "./Platform/Overview/Cluster/Monitor/index",
             hideInMenu: true,
           },
-          {
-            path: "/cluster/monitor/hosts/:host_id",
-            name: "monitoring_overview_hosts",
-            component: "./Platform/Overview/Host/Monitor/index",
-            hideInMenu: true,
-          },
+          // {
+          //   path: "/cluster/monitor/hosts/:host_id",
+          //   name: "monitoring_overview_hosts",
+          //   component: "./Platform/Overview/Host/Monitor/index",
+          //   hideInMenu: true,
+          // },
           {
             path: "/cluster/monitor/:cluster_id/nodes/:node_id",
             name: "monitoring_overview_nodes",
@@ -456,7 +456,7 @@ export default [
           },
           {
             path: "/system/audit",
-            name: "audit",
+            name: "audit_logs",
             component: "./System/Audit/index",
             authority: ["system.audit_logs:all", "system.audit_logs:read"],
           },

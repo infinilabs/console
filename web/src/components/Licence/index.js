@@ -45,7 +45,7 @@ export default forwardRef((props, ref) => {
 
   const onClose = () => {
     setVisible();
-    if (tabRef.current.resetCode) tabRef.current.resetCode();
+    if (tabRef.current?.resetCode) tabRef.current.resetCode();
   };
 
   return (

@@ -254,7 +254,7 @@ export default {
   "menu.system.security.users": "USERS",
   "menu.system.security.certs": "CERTS",
 
-  "menu.system.audit": "AUDIT",
+  "menu.system.audit_logs": "AUDIT",
 
   "menu.system.logs": "LOGS",
   "menu.system.logs.overview": "OVERVIEW",

@@ -11,24 +11,31 @@ class NewTabMenu extends React.Component {
   };
   constructor(props) {
     super(props);
-    this.state = {
-      data: this.props.data || [],
-    };
   }
 
   componentDidMount() {}
 
 
   render() {
-    const { clusterStatus } = this.props;
+    const { clusterList, clusterStatus, clusterLoading, dispatch } = this.props;
     return (
       <div>
         <ClusterSelect 
           width={34}
           dropdownWidth={400}
-          clusterList={this.state.data}
+          clusterList={clusterList}
           clusterStatus={clusterStatus}
           onChange={(item) => this.handleItemClick(item)}
+          loading={clusterLoading}
+          onRefresh={() => {
+            dispatch({
+              type: "global/fetchClusterList",
+              payload: {
+                size: 200,
+                name: "",
+              },
+            });
+          }}
         >
           {this.props.children}
         </ClusterSelect>  

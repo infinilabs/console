@@ -32,8 +32,6 @@ export default ({ onBatchEnroll, loading }) => {
           width={"100%"}
           dropdownWidth={400}
           selectedCluster={selectedCluster}
-          clusterList={clusterList}
-          clusterStatus={clusterStatus}
           onChange={(item) => {
             console.log("onChange item:", item);
             setSelectedCluster(item);

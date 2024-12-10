@@ -477,8 +477,6 @@ const RuleForm = (props) => {
                 width={300}
                 dropdownWidth={400}
                 selectedCluster={selectedCluster} 
-                clusterList={props.clusterList}
-                clusterStatus={props.clusterStatus}
                 onChange={(item) => {
                   setSelectedCluster(item);
                 }}

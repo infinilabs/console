@@ -18,10 +18,10 @@ import { TabTitle } from "./console_tab_title";
 import "@/assets/utility.scss";
 import { Resizable } from "re-resizable";
 import { ResizeBar } from "@/components/infini/resize_bar";
-import NewTabMenu from "./NewTabMenu";
 
 import maximizeSvg from "@/assets/window-maximize.svg";
 import restoreSvg from "@/assets/window-restore.svg";
+import ClusterSelect from "@/components/ClusterSelect";
 
 const MaximizeIcon = (props = {}) => {
   return <img height="14px" width="14px" {...props} src={maximizeSvg} />;
@@ -282,19 +282,6 @@ export const ConsoleUI = ({
     [clusterList]
   );
 
-  // const menu = (
-  //   // <Menu onClick={newTabClick}>
-  //   //   {(clusterList||[]).map((cluster:any)=>{
-  //   //     return <Menu.Item key={cluster.id}>{cluster.name}</Menu.Item>
-  //   //   })}
-  //   // </Menu>
-  //   <NewTabMenu data={clusterList}
-  //   onItemClick={newTabClick}
-  //   clusterStatus={clusterStatus}
-  //   size={10}
-  //   width="300px"/>
-  // );
-
   const rootRef = useRef(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const fullscreenClick = () => {
@@ -340,17 +327,15 @@ export const ConsoleUI = ({
       </>
     ),
     append: (
-      <NewTabMenu
-        data={clusterList}
-        onItemClick={newTabClick}
-        clusterStatus={clusterStatus}
-        size={10}
-        width="500px"
+      <ClusterSelect 
+        width={34}
+        dropdownWidth={400}
+        onChange={(item) => newTabClick(item)}
       >
         <div className="tabbar-icon">
           <Icon type="plus" />
         </div>
-      </NewTabMenu>
+      </ClusterSelect>  
     ),
   };
 
@@ -487,7 +472,7 @@ export const ConsoleUI = ({
   );
 };
 
-export default connect(({ global }) => ({
+export default connect(({ global, loading }) => ({
   selectedCluster: global.selectedCluster,
   clusterList: global.clusterList,
   clusterStatus: global.clusterStatus,

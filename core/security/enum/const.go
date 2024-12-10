@@ -38,6 +38,8 @@ const (
 	CommandRead    = "system.command:read"
 	CredentialAll  = "system.credential:all"
 	CredentialRead = "system.credential:read"
+	SmtpServerAll  = "system.smtp_server:all"
+	SmtpServerRead = "system.smtp_server:read"
 
 	InstanceRead = "gateway.instance:read"
 	InstanceAll  = "gateway.instance:all"
@@ -142,6 +144,8 @@ const (
 	PermissionMigrationTaskWrite  = "task:write"
 	PermissionComparisonTaskRead  = "comparison_task:read"
 	PermissionComparisonTaskWrite = "comparison_task:write"
+	PermissionSmtpServerRead = "smtp_server:read"
+	PermissionSmtpServerWrite = "smtp_server:write"
 )
 
 var (
@@ -217,6 +221,8 @@ var (
 	DashboardAllPermission       = []string{PermissionLayoutRead, PermissionLayoutWrite}
 	WorkbenchReadPermission      = []string{PermissionElasticsearchClusterRead, PermissionActivityRead, PermissionAlertMessageRead, PermissionElasticsearchMetricRead}
 	WorkbenchAllPermission       = WorkbenchReadPermission
+	SmtpServerReadPermission      = []string{PermissionSmtpServerRead}
+	SmtpServerAllPermission       = []string{PermissionSmtpServerRead, PermissionSmtpServerWrite}
 )
 
 var AdminPrivilege = []string{
@@ -228,7 +234,7 @@ var AdminPrivilege = []string{
 	ClusterOverviewAll, MonitoringAll, ActivitiesAll,
 	AliasAll, AgentInstanceAll, CredentialAll,
 	DataMigrationAll, DataComparisonAll, DashboardAll, DevtoolConsoleAll,
-	WorkbenchAll, TenantCustomerAll, SubscriptionAll, AuditLogsAll,
+	WorkbenchAll, TenantCustomerAll, SubscriptionAll, AuditLogsAll, SmtpServerAll,
 }
 
 func init() {
@@ -298,6 +304,8 @@ func init() {
 
 		SubscriptionRead: SubscriptionReadPermission,
 		SubscriptionAll:  SubscriptionAllPermission,
+		SmtpServerRead:    SmtpServerReadPermission,
+		SmtpServerAll:      SmtpServerAllPermission,
 	}
 
 }

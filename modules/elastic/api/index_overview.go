@@ -31,6 +31,7 @@ import (
 	"context"
 	"fmt"
 	log "github.com/cihub/seelog"
+	v1 "infini.sh/console/modules/elastic/api/v1"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/event"
@@ -911,9 +912,15 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 			return
 		}
 		metrics["shard_state"] = shardStateMetric
-	}else {
+	}else if metricKey == v1.IndexHealthMetricKey {
+			healthMetric, err := h.GetIndexHealthMetric(ctx, clusterID, indexName, min, max, bucketSize)
+			if err != nil {
+				log.Error(err)
+			}
+			metrics["index_health"] = healthMetric
+	} else {
 		switch metricKey {
-		case IndexThroughputMetricKey:
+		case v1.IndexThroughputMetricKey:
 			metricItem := newMetricItem("index_throughput", 1, OperationGroupKey)
 			metricItem.AddAxi("indexing", "group1", common.PositionLeft, "num", "0,0", "0,0.[00]", 5, true)
 			if shardID == "" {
@@ -926,14 +933,14 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 				metricItem.AddLine("Deleting Rate", "Deleting Rate", "Number of documents being deleted for node.", "group1", "payload.elasticsearch.shard_stats.indexing.delete_total", "max", bucketSizeStr, "doc/s", "num", "0,0.[00]", "0,0.[00]", false, true)
 			}
 			metricItems = append(metricItems, metricItem)
-		case SearchThroughputMetricKey:
+		case v1.SearchThroughputMetricKey:
 			metricItem := newMetricItem("search_throughput", 2, OperationGroupKey)
 			metricItem.AddAxi("searching", "group1", common.PositionLeft, "num", "0,0", "0,0.[00]", 5, false)
 			metricItem.AddLine("Search Rate", "Search Rate",
 				"Number of search requests being executed.",
 				"group1", "payload.elasticsearch.shard_stats.search.query_total", "max", bucketSizeStr, "query/s", "num", "0,0.[00]", "0,0.[00]", false, true)
 			metricItems = append(metricItems, metricItem)
-		case IndexLatencyMetricKey:
+		case v1.IndexLatencyMetricKey:
 			metricItem := newMetricItem("index_latency", 3, LatencyGroupKey)
 			metricItem.AddAxi("indexing", "group1", common.PositionLeft, "num", "0,0", "0,0.[00]", 5, true)
 			if shardID == "" { //index level
@@ -954,7 +961,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 				return value / value2
 			}
 			metricItems = append(metricItems, metricItem)
-		case SearchLatencyMetricKey:
+		case v1.SearchLatencyMetricKey:
 			metricItem := newMetricItem("search_latency", 4, LatencyGroupKey)
 			metricItem.AddAxi("searching", "group2", common.PositionLeft, "num", "0,0", "0,0.[00]", 5, false)
 
@@ -1070,95 +1077,6 @@ func (h *APIHandler) getIndexShardsMetric(ctx context.Context, id, indexName str
 	metricItem.Lines[0].Data = metricData
 	metricItem.Lines[0].Type = common.GraphTypeBar
 	metricItem.Request = string(queryDSL)
-	return metricItem, nil
-}
-
-func (h *APIHandler) getIndexHealthMetric(id, indexName string, min, max int64, bucketSize int)(*common.MetricItem, error){
-	bucketSizeStr:=fmt.Sprintf("%vs",bucketSize)
-	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
-	if err != nil {
-		return nil, err
-	}
-	query := util.MapStr{
-		"query": util.MapStr{
-			"bool": util.MapStr{
-				"must": []util.MapStr{
-					{
-						"term": util.MapStr{
-							"metadata.labels.cluster_id": util.MapStr{
-								"value": id,
-							},
-						},
-					},
-					{
-						"term": util.MapStr{
-							"metadata.category": util.MapStr{
-								"value": "elasticsearch",
-							},
-						},
-					},
-					{
-						"term": util.MapStr{
-							"metadata.name": util.MapStr{
-								"value": "index_stats",
-							},
-						},
-					},
-					{
-						"term": util.MapStr{
-							"metadata.labels.index_name": util.MapStr{
-								"value": indexName,
-							},
-						},
-					},
-				},
-				"filter": []util.MapStr{
-					{
-						"range": util.MapStr{
-							"timestamp": util.MapStr{
-								"gte": min,
-								"lte": max,
-							},
-						},
-					},
-				},
-			},
-		},
-		"aggs": util.MapStr{
-			"dates": util.MapStr{
-				"date_histogram": util.MapStr{
-					"field": "timestamp",
-					intervalField: bucketSizeStr,
-				},
-				"aggs": util.MapStr{
-					"groups": util.MapStr{
-						"terms": util.MapStr{
-							"field": "payload.elasticsearch.index_stats.index_info.health",
-							"size": 5,
-						},
-					},
-				},
-			},
-		},
-	}
-	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).SearchWithRawQueryDSL(getAllMetricsIndex(), util.MustToJSONBytes(query))
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-
-	metricItem:=newMetricItem("index_health", 1, "")
-	metricItem.AddLine("health","Health","","group1","payload.elasticsearch.index_stats.index_info.health","max",bucketSizeStr,"%","ratio","0.[00]","0.[00]",false,false)
-
-	metricData := []interface{}{}
-	if response.StatusCode == 200 {
-		metricData, err = parseGroupMetricData(response.Aggregations["dates"].Buckets, true)
-		if err != nil {
-			return nil, err
-		}
-	}
-	metricItem.Lines[0].Data = metricData
-	metricItem.Lines[0].Type = common.GraphTypeBar
 	return metricItem, nil
 }
 

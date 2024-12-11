@@ -31,6 +31,7 @@ import (
 	"context"
 	"fmt"
 	log "github.com/cihub/seelog"
+	v1 "infini.sh/console/modules/elastic/api/v1"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/event"
@@ -724,19 +725,19 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 			metricItem.AddLine("Max Heap","Max Heap","JVM max Heap of node.","group1","payload.elasticsearch.node_stats.jvm.mem.heap_max_in_bytes","max",bucketSizeStr,"","bytes","0,0.[00]","0,0.[00]",false,false)
 			metricItem.AddLine("Used Heap","Used Heap","JVM used Heap of node.","group1","payload.elasticsearch.node_stats.jvm.mem.heap_used_in_bytes","max",bucketSizeStr,"","bytes","0,0.[00]","0,0.[00]",false,false)
 			metricItems=append(metricItems,metricItem)
-		case IndexThroughputMetricKey:
+		case v1.IndexThroughputMetricKey:
 			metricItem := newMetricItem("index_throughput", 3, OperationGroupKey)
 			metricItem.AddAxi("indexing","group1",common.PositionLeft,"num","0,0","0,0.[00]",5,true)
 			metricItem.AddLine("Indexing Rate","Total Shards","Number of documents being indexed for node.","group1","payload.elasticsearch.node_stats.indices.indexing.index_total","max",bucketSizeStr,"doc/s","num","0,0.[00]","0,0.[00]",false,true)
 			metricItems=append(metricItems,metricItem)
-		case SearchThroughputMetricKey:
+		case v1.SearchThroughputMetricKey:
 			metricItem := newMetricItem("search_throughput", 4, OperationGroupKey)
 			metricItem.AddAxi("searching","group1",common.PositionLeft,"num","0,0","0,0.[00]",5,false)
 			metricItem.AddLine("Search Rate","Total Shards",
 				"Number of search requests being executed.",
 				"group1","payload.elasticsearch.node_stats.indices.search.query_total","max",bucketSizeStr,"query/s","num","0,0.[00]","0,0.[00]",false,true)
 			metricItems=append(metricItems,metricItem)
-		case IndexLatencyMetricKey:
+		case v1.IndexLatencyMetricKey:
 			metricItem := newMetricItem("index_latency", 5, LatencyGroupKey)
 			metricItem.AddAxi("indexing","group1",common.PositionLeft,"num","0,0","0,0.[00]",5,true)
 
@@ -751,7 +752,7 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 				return value/value2
 			}
 			metricItems=append(metricItems,metricItem)
-		case SearchLatencyMetricKey:
+		case v1.SearchLatencyMetricKey:
 			metricItem := newMetricItem("search_latency", 6, LatencyGroupKey)
 			metricItem.AddAxi("searching","group2",common.PositionLeft,"num","0,0","0,0.[00]",5,false)
 

@@ -496,7 +496,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 	defer cancel()
 	metrics := map[string]*common.MetricItem{}
 	if metricKey == IndexHealthMetricKey {
-		healthMetric, err := h.getIndexHealthMetric(ctx, clusterID, indexName, min, max, bucketSize)
+		healthMetric, err := h.GetIndexHealthMetric(ctx, clusterID, indexName, min, max, bucketSize)
 		if err != nil {
 			log.Error(err)
 		}
@@ -558,7 +558,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 	h.WriteJSON(w, resBody, http.StatusOK)
 }
 
-func (h *APIHandler) getIndexHealthMetric(ctx context.Context, id, indexName string, min, max int64, bucketSize int)(*common.MetricItem, error){
+func (h *APIHandler) GetIndexHealthMetric(ctx context.Context, id, indexName string, min, max int64, bucketSize int)(*common.MetricItem, error){
 	bucketSizeStr:=fmt.Sprintf("%vs",bucketSize)
 	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
 	if err != nil {
@@ -585,7 +585,7 @@ func (h *APIHandler) getIndexHealthMetric(ctx context.Context, id, indexName str
 					{
 						"term": util.MapStr{
 							"metadata.name": util.MapStr{
-								"value": "index_stats",
+								"value": "index_health",
 							},
 						},
 					},
@@ -618,7 +618,7 @@ func (h *APIHandler) getIndexHealthMetric(ctx context.Context, id, indexName str
 				"aggs": util.MapStr{
 					"group_status": util.MapStr{
 						"terms": util.MapStr{
-							"field": "payload.elasticsearch.index_stats.index_info.health",
+							"field": "payload.elasticsearch.index_health.status",
 							"size": 5,
 						},
 					},
@@ -634,7 +634,7 @@ func (h *APIHandler) getIndexHealthMetric(ctx context.Context, id, indexName str
 	}
 
 	metricItem:=newMetricItem("index_health", 1, "")
-	metricItem.AddLine("health","Health","","group1","payload.elasticsearch.index_stats.index_info.health","max",bucketSizeStr,"%","ratio","0.[00]","0.[00]",false,false)
+	metricItem.AddLine("health","Health","","group1","payload.elasticsearch.index_health.status","max",bucketSizeStr,"%","ratio","0.[00]","0.[00]",false,false)
 
 	metricData := []interface{}{}
 	if response.StatusCode == 200 {

@@ -1,7 +1,7 @@
 import { HealthStatusCircle } from "@/components/infini/health_status_circle";
 import request from "@/utils/request";
 import { AutoComplete, Input, Select, Button, Radio, Icon } from "antd";
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import Filters from "./Filters";
 import styles from "./index.scss";
 import CardViewSvg from "@/components/Icons/CardView";
@@ -53,8 +53,10 @@ export default (props: IProps) => {
       showStatus = false,
       showTags = false,
       getOptionMeta,
+      getSearch
     },
     getExtra,
+    defaultSearchValue,
   } = props;
 
   const [searchValue, setSearchValue] = useState("");
@@ -63,10 +65,18 @@ export default (props: IProps) => {
 
   const [searchOpen, setSearchOpen] = useState(false);
 
+  const firstInitRef = useRef(true)
+
+  useEffect(() => {
+    if (defaultSearchValue) {
+      setSearchValue(defaultSearchValue)
+    }
+  }, [defaultSearchValue])
+
   function renderOption(item) {
-    const { title, desc, right, tags, status } = getOptionMeta(item);
+    const { title, desc, right, tags, status, text } = getOptionMeta(item);
     return (
-      <Select.Option key={item._id} text={item._source?.name}>
+      <Select.Option key={item._id} text={text} item={item}>
         <div className="suggest-item">
           <div className="suggest-line">
             <div>
@@ -132,6 +142,14 @@ export default (props: IProps) => {
 
   const activeColor = "#1890ff";
 
+  const autoCompleteProps = useMemo(() => {
+    if (defaultSearchValue && firstInitRef.current) {
+      firstInitRef.current = false
+      return { value: defaultSearchValue }
+    }
+    return {}
+  }, [defaultSearchValue, searchValue])
+
   return (
     <>
       <div className={styles.searchLine}>
@@ -180,12 +198,24 @@ export default (props: IProps) => {
             <AutoComplete
               style={{ width: `calc(100% - ${filterWidth}px)` }}
               dataSource={dataSource.map(renderOption)}
-              onSelect={(value, option) => onSearchChange(option.props.text)}
+              onSelect={(value, option) => {
+                if (getSearch) {
+                  const search = getSearch(option.props.item)
+                  if (search) {
+                    setSearchValue(search.keyword)
+                    onSearchChange(search.keyword)
+                    if (search.filter) {
+                      onFacetChange(search.filter)
+                    }
+                  }
+                }
+              }}
               onSearch={handleSearch}
               optionLabelProp="text"
               getPopupContainer={(trigger) => trigger.parentElement}
               open={searchOpen}
               onDropdownVisibleChange={setSearchOpen}
+              {...autoCompleteProps}
             >
               <Input.Search
                 placeholder="Type keyword to search"

@@ -41,15 +41,20 @@ export default () => {
       searchAutoCompleteConfig={{
         showStatus: true,
         showTags: true,
+        defaultSearchField: 'name',
+        getSearch: (item) => ({
+          keyword: item?._source?.name,
+        }),
         getOptionMeta: (item) => ({
           title: item.highlight?.name || item._source?.name,
           desc: item.highlight?.version || item._source?.version,
           right: item.highlight?.host || item._source?.host,
           tags: item._source?.tags,
           status: item._source.labels?.health_status,
+          text: item?._source?.name
         }),
       }}
-      infoAction={`${ESPrefix}/cluster/info`}
+      infoAction={`${ESPrefix}/cluster/info?timeout=120s`}
       facetLabels={facetLabels}
       aggsParams={aggsParams}
       sideSorterOptions={sideSorterOptions}

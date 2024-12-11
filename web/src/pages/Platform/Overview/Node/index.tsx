@@ -48,6 +48,11 @@ export default () => {
         "metadata.cluster_name",
       ]}
       searchAutoCompleteConfig={{
+        defaultSearchField: 'metadata.node_name',
+        getSearch: (item) => ({
+          keyword: item?._source?.metadata?.node_name,
+          filter: { value: [item?._source?.metadata?.cluster_name], field: 'metadata.cluster_name' }
+        }),
         getOptionMeta: (item) => ({
           title:
             item?.highlight?.node_name || item?._source?.metadata?.node_name,
@@ -55,9 +60,10 @@ export default () => {
             item?.highlight?.cluster_name ||
             item?._source?.metadata?.cluster_name,
           right: item?.highlight?.host || item?._source?.metadata?.host,
+          text: item?._source?.metadata?.node_name
         }),
       }}
-      infoAction={`${ESPrefix}/node/info`}
+      infoAction={`${ESPrefix}/node/info?timeout=120s`}
       facetLabels={facetLabels}
       selectFilterLabels={selectFilterLabels}
       aggsParams={aggsParams}

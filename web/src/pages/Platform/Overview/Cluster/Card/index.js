@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Icon, Tooltip } from "antd";
+import { Icon, Spin, Tooltip } from "antd";
 import TinyArea from "@/components/infini/TinyArea";
 import { Pie } from "@/components/Charts";
 import { formatter } from "@/utils/format";
@@ -10,12 +10,39 @@ import "./index.scss";
 import { Providers, ProviderIcon } from "@/lib/providers";
 import { formatMessage } from "umi/locale";
 import { SearchEngineIcon } from "@/lib/search_engines";
+import request from "@/utils/request";
 
 export default (props) => {
+  const { infoAction, id, parentLoading } = props;
   const clusterID = props.data?._id;
   const metadata = props.data._source || {};
-  const summary = props.info.summary || {};
-  const metrics = props.info.metrics || {};
+
+  const [info, setInfo] = useState({});
+  const [loading, setLoading] = useState(false)
+
+  const fetchListInfo = async (id) => {
+    if (!id) return
+    setLoading(true)
+    const res = await request(infoAction, {
+      method: "POST",
+      body: [id],
+      ignoreTimeout: true
+    }, false, false);
+    if (res) {
+      setInfo(res[id] || {});
+    }
+    setLoading(false)
+  };
+
+  useEffect(() => {
+    if (!parentLoading) {
+      fetchListInfo(id)
+    }
+  }, [id, parentLoading])
+
+  const summary = info?.summary || {};
+  const metrics = info?.metrics || {};
+
   const fs_total_in_bytes = summary?.fs?.total_in_bytes || 0;
   const fs_available_in_bytes = summary?.fs?.available_in_bytes || 0;
   const fs_used_in_bytes = fs_total_in_bytes - fs_available_in_bytes;
@@ -84,7 +111,9 @@ export default (props) => {
   const healthStatus = metadata.labels?.health_status;
 
   return (
-    <div className="card-wrap">
+    <Spin spinning={!parentLoading && loading}>
+
+<div className="card-wrap">
       <div
         className={`card-item ${props.isActive ? "active" : ""}`}
         onClick={() => props.onSelect()}
@@ -243,5 +272,6 @@ export default (props) => {
         </div>
       </div>
     </div>
+    </Spin>
   );
 };

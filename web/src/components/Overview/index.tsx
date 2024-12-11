@@ -150,7 +150,11 @@ export default forwardRef((props: IProps, ref: any) => {
         throw new Error();
     }
   }
-  const [queryParams, dispatch] = useReducer(reducer, initialQueryParams);
+  const [queryParams, dispatch] = useReducer(reducer, { 
+    from: param?.from || initialQueryParams.from,
+    size: param?.size || initialQueryParams.size ,
+    keyword: param?.keyword || initialQueryParams.keyword
+  });
 
   const { run, loading, value } = useFetch(
     searchAction,
@@ -166,10 +170,10 @@ export default forwardRef((props: IProps, ref: any) => {
         },
         filter: param?.filters || {},
         sort: param?.sort || [],
-        search_field: searchField,
+        search_field: searchField || searchAutoCompleteConfig?.defaultSearchField,
       },
     },
-    [queryParams, param?.filters, param?.sort]
+    [queryParams, param?.filters, param?.sort, aggsParams, searchHighlightFields, searchField, searchAutoCompleteConfig?.defaultSearchField]
   );
 
   const result = (value as any)?.hits || {};
@@ -220,7 +224,7 @@ export default forwardRef((props: IProps, ref: any) => {
       return;
     }
 
-    fetchListInfo();
+    // fetchListInfo();
   }, [value]);
 
   useEffect(() => {
@@ -248,7 +252,10 @@ export default forwardRef((props: IProps, ref: any) => {
                 setSearchField(value);
                 setParam({ ...param, search_field: value });
               }}
-              onSearchChange={(value) => dispatch({ type: "search", value })}
+              defaultSearchValue={queryParams?.keyword}
+              onSearchChange={(value) => {
+                dispatch({ type: "search", value })
+              }}
               onFacetChange={onFacetChange}
               dispalyType={dispalyTypeObj[currentTab]}
               onDisplayTypeChange={onDisplayTypeChange}
@@ -278,6 +285,7 @@ export default forwardRef((props: IProps, ref: any) => {
                     return (
                       <listItemConfig.component
                         data={item}
+                        id={infoField}
                         info={
                           infoField && infos[infoField] ? infos[infoField] : {}
                         }
@@ -287,6 +295,8 @@ export default forwardRef((props: IProps, ref: any) => {
                           drawRef.current?.open();
                         }}
                         onChangeFacet={onFacetChange}
+                        infoAction={infoAction}
+                        parentLoading={loading}
                       />
                     );
                   }}

@@ -6,13 +6,13 @@ import Table from "./Table";
 import Overview from "@/components/Overview";
 
 const facetLabels = {
-  "metadata.index_name": "index",
+  "metadata.cluster_name": "cluster",
   "metadata.labels.health_status": "health",
   "metadata.labels.state": "state",
 };
 
 const aggsParams = [
-  { field: "metadata.index_name", params: { size: 500 } },
+  { field: "metadata.cluster_name", params: { size: 150 } },
   { field: "metadata.labels.state", params: { size: 100 } },
   { field: "metadata.labels.health_status", params: { size: 150 } },
 ];
@@ -39,6 +39,11 @@ export default () => {
       ]}
       searchAutoCompleteConfig={{
         showStatus: true,
+        defaultSearchField: 'metadata.index_name',
+        getSearch: (item) => ({
+          keyword: item?._source?.metadata?.index_name,
+          filter: { value: [item?._source?.metadata?.cluster_name], field: 'metadata.cluster_name' }
+        }),
         getOptionMeta: (item) => ({
           title:
             item?.highlight?.index_name || item?._source?.metadata?.index_name,
@@ -46,9 +51,10 @@ export default () => {
             item?.highlight?.cluster_name ||
             item?._source?.metadata?.cluster_name,
           status: item?._source?.metadata?.labels?.health_status,
+          text: item?._source?.metadata?.index_name
         }),
       }}
-      infoAction={`${ESPrefix}/index/info`}
+      infoAction={`${ESPrefix}/index/info?timeout=120s`}
       facetLabels={facetLabels}
       aggsParams={aggsParams}
       sideSorterOptions={sideSorterOptions}

@@ -29,7 +29,6 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/cihub/seelog"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/event"
@@ -569,71 +568,6 @@ func (h *APIHandler) GetClusterNodes(w http.ResponseWriter, req *http.Request, p
 	h.WriteJSON(w, nodes, http.StatusOK)
 }
 
-func (h *APIHandler) GetRealtimeClusterNodes(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	id := ps.ByName("id")
-	meta := elastic.GetMetadata(id)
-	if meta == nil || !meta.IsAvailable() {
-		log.Debugf("cluster [%s] is not available", id)
-		h.WriteJSON(w, []interface{}{}, http.StatusOK)
-		return
-	}
-	esClient := elastic.GetClient(id)
-	if esClient == nil {
-		h.WriteJSON(w, util.MapStr{
-			"error": "cluster not found",
-		}, http.StatusNotFound)
-		return
-	}
-	catNodesInfo, err := esClient.CatNodes("id,name,ip,port,master,heap.percent,disk.avail,cpu,load_1m,uptime")
-	if err != nil {
-		h.WriteJSON(w, util.MapStr{
-			"error": err.Error(),
-		}, http.StatusInternalServerError)
-		return
-	}
-	catShardsInfo, err := esClient.CatShards()
-	if err != nil {
-		log.Error(err)
-	}
-	shardCounts := map[string]int{}
-	nodeM := map[string]string{}
-	for _, shardInfo := range catShardsInfo {
-		nodeM[shardInfo.NodeName] = shardInfo.NodeID
-		if c, ok := shardCounts[shardInfo.NodeName]; ok {
-			shardCounts[shardInfo.NodeName] = c + 1
-		} else {
-			shardCounts[shardInfo.NodeName] = 1
-		}
-	}
-	qps, err := h.getNodeQPS(id, 20)
-	if err != nil {
-		h.WriteJSON(w, util.MapStr{
-			"error": err.Error(),
-		}, http.StatusInternalServerError)
-		return
-	}
-
-	nodeInfos := []RealtimeNodeInfo{}
-	for _, nodeInfo := range catNodesInfo {
-		if len(nodeInfo.Id) == 4 { //node short id, use nodeId from shard info isnstead
-			nodeInfo.Id = nodeM[nodeInfo.Name]
-		}
-		if c, ok := shardCounts[nodeInfo.Name]; ok {
-			nodeInfo.Shards = c
-		}
-		info := RealtimeNodeInfo{
-			CatNodeResponse: CatNodeResponse(nodeInfo),
-		}
-		if _, ok := qps[nodeInfo.Id]; ok {
-			info.IndexQPS = qps[nodeInfo.Id]["index"]
-			info.QueryQPS = qps[nodeInfo.Id]["query"]
-			info.IndexBytesQPS = qps[nodeInfo.Id]["index_bytes"]
-		}
-		nodeInfos = append(nodeInfos, info)
-	}
-	h.WriteJSON(w, nodeInfos, http.StatusOK)
-}
-
 func (h *APIHandler) GetClusterIndices(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	var (
 		//size        = h.GetIntOrDefault(req, "size", 20)
@@ -824,97 +758,6 @@ func (h *APIHandler) getIndexQPS(clusterID string, bucketSizeInSeconds int) (map
 	return h.QueryQPS(query, bucketSizeInSeconds)
 }
 
-func (h *APIHandler) getNodeQPS(clusterID string, bucketSizeInSeconds int) (map[string]util.MapStr, error) {
-	ver := h.Client().GetVersion()
-	bucketSizeStr :=  fmt.Sprintf("%ds", bucketSizeInSeconds)
-	intervalField, err  := elastic.GetDateHistogramIntervalField(ver.Distribution, ver.Number, bucketSizeStr)
-	if err != nil {
-		return nil, err
-	}
-	query := util.MapStr{
-		"size": 0,
-		"aggs": util.MapStr{
-			"term_node": util.MapStr{
-				"terms": util.MapStr{
-					"field": "metadata.labels.node_id",
-					"size":  1000,
-				},
-				"aggs": util.MapStr{
-					"date": util.MapStr{
-						"date_histogram": util.MapStr{
-							"field":    "timestamp",
-							intervalField: "10s",
-						},
-						"aggs": util.MapStr{
-							"index_total": util.MapStr{
-								"max": util.MapStr{
-									"field": "payload.elasticsearch.node_stats.indices.indexing.index_total",
-								},
-							},
-							"index_bytes_total": util.MapStr{
-								"max": util.MapStr{
-									"field": "payload.elasticsearch.node_stats.indices.store.size_in_bytes",
-								},
-							},
-							"query_total": util.MapStr{
-								"max": util.MapStr{
-									"field": "payload.elasticsearch.node_stats.indices.search.query_total",
-								},
-							},
-							"index_rate": util.MapStr{
-								"derivative": util.MapStr{
-									"buckets_path": "index_total",
-								},
-							},
-							"index_bytes_rate": util.MapStr{
-								"derivative": util.MapStr{
-									"buckets_path": "index_bytes_total",
-								},
-							},
-							"query_rate": util.MapStr{
-								"derivative": util.MapStr{
-									"buckets_path": "query_total",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		"query": util.MapStr{
-			"bool": util.MapStr{
-				"filter": []util.MapStr{
-					{
-						"range": util.MapStr{
-							"timestamp": util.MapStr{
-								"gte": "now-1m",
-								"lte": "now",
-							},
-						},
-					},
-				},
-				"must": []util.MapStr{
-					{
-						"term": util.MapStr{
-							"metadata.labels.cluster_id": util.MapStr{
-								"value": clusterID,
-							},
-						},
-					},
-					{
-						"term": util.MapStr{
-							"metadata.name": util.MapStr{
-								"value": "node_stats",
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-	return h.QueryQPS(query, bucketSizeInSeconds)
-}
-
 func (h *APIHandler) QueryQPS(query util.MapStr, bucketSizeInSeconds int) (map[string]util.MapStr, error) {
 	esClient := h.Client()
 	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetWildcardIndexName(event.Event{}), util.MustToJSONBytes(query))
@@ -934,6 +777,7 @@ func (h *APIHandler) QueryQPS(query util.MapStr, bucketSizeInSeconds int) (map[s
 							maxIndexBytesRate float64
 							preIndexTotal float64
 							dropNext bool
+							maxTimestamp float64
 						)
 						for _, dateBk := range bks {
 							if dateBkVal, ok := dateBk.(map[string]interface{}); ok {
@@ -971,11 +815,17 @@ func (h *APIHandler) QueryQPS(query util.MapStr, bucketSizeInSeconds int) (map[s
 										maxIndexBytesRate = indexBytesRateVal
 									}
 								}
+								if latestTime, ok := dateBkVal["latest_timestamp"].(map[string]interface{}); ok {
+									if latestTimeVal, ok := latestTime["value"].(float64); ok && latestTimeVal > maxTimestamp {
+										maxTimestamp = latestTimeVal
+									}
+								}
 							}
 						}
 						indexQPS[k]["index"] = maxIndexRate / float64(bucketSizeInSeconds)
 						indexQPS[k]["query"] = maxQueryRate / float64(bucketSizeInSeconds)
 						indexQPS[k]["index_bytes"] = maxIndexBytesRate / float64(bucketSizeInSeconds)
+						indexQPS[k]["latest_timestamp"] = maxTimestamp
 					}
 				}
 			}

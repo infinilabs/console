@@ -274,21 +274,42 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter,  req *http.Request, p
 		h.WriteJSON(w, util.MapStr{}, http.StatusOK)
 		return
 	}
+	indexIDs = indexIDs[0:1]
 	// map indexIDs(cluster_id:index_name => cluster_uuid:indexName)
 	var (
 		indexIDM = map[string]string{}
 		newIndexIDs []interface{}
 		clusterIndexNames = map[string][]string{}
 	)
-	for _, indexID := range indexIDs {
-		if v, ok := indexID.(string); ok {
-			parts := strings.Split(v, ":")
-			if len(parts) != 2 {
-				log.Warnf("got wrong index_id: %s", v)
-				continue
-			}
-			clusterIndexNames[parts[0]] = append(clusterIndexNames[parts[0]], parts[1])
+	indexID := indexIDs[0]
+	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
+	du, err := time.ParseDuration(timeout)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), du)
+	defer cancel()
+	var (
+		firstClusterID string
+		firstIndexName string
+	)
+	if v, ok := indexID.(string); ok {
+		parts := strings.Split(v, ":")
+		if len(parts) != 2 {
+			h.WriteError(w, fmt.Sprintf("invalid index_id: %s", indexID), http.StatusInternalServerError)
+			return
 		}
+		firstClusterID, firstIndexName = parts[0], parts[1]
+		if GetMonitorState(firstClusterID) == Console {
+			h.APIHandler.FetchIndexInfo(w, ctx, indexIDs)
+			return
+		}
+		clusterIndexNames[firstClusterID] = append(clusterIndexNames[firstClusterID], firstIndexName)
+	}else{
+		h.WriteError(w, fmt.Sprintf("invalid index_id: %v", indexID), http.StatusInternalServerError)
+		return
 	}
 	for clusterID, indexNames := range clusterIndexNames {
 		clusterUUID, err  := adapter.GetClusterUUID(clusterID)
@@ -306,7 +327,7 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter,  req *http.Request, p
 	q1.Conds = orm.And(
 		orm.Eq("metadata.category", "elasticsearch"),
 		orm.Eq("metadata.name", "shard_stats"),
-		orm.In("metadata.labels.index_id", newIndexIDs),
+		orm.Eq("metadata.labels.index_id", newIndexIDs[0]),
 	)
 	q1.Collapse("metadata.labels.shard_id")
 	q1.AddSort("timestamp", orm.DESC)
@@ -358,7 +379,7 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter,  req *http.Request, p
 		}
 	}
 
-	statusMetric, err := getIndexStatusOfRecentDay(indexIDs)
+	statusMetric, err := h.GetIndexStatusOfRecentDay(firstClusterID, firstIndexName)
 	if err != nil {
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -416,8 +437,8 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter,  req *http.Request, p
 					},
 				},
 				{
-					"terms": util.MapStr{
-						"metadata.labels.index_id": newIndexIDs,
+					"term": util.MapStr{
+						"metadata.labels.index_id": newIndexIDs[0],
 					},
 				},
 			},
@@ -504,7 +525,7 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter,  req *http.Request, p
 			},
 		},
 	}
-	metrics := h.getMetrics(context.Background(), query, nodeMetricItems, bucketSize)
+	metrics := h.getMetrics(ctx, query, nodeMetricItems, bucketSize)
 	indexMetrics := map[string]util.MapStr{}
 	for key, item := range metrics {
 		for _, line := range item.Lines {
@@ -1139,172 +1160,6 @@ func (h *APIHandler) getIndexHealthMetric(id, indexName string, min, max int64, 
 	metricItem.Lines[0].Data = metricData
 	metricItem.Lines[0].Type = common.GraphTypeBar
 	return metricItem, nil
-}
-
-
-func getIndexStatusOfRecentDay(indexIDs []interface{})(map[string][]interface{}, error){
-	q := orm.Query{
-		WildcardIndex: true,
-	}
-	query := util.MapStr{
-		"aggs": util.MapStr{
-			"group_by_index_id": util.MapStr{
-				"terms": util.MapStr{
-					"field": "metadata.labels.index_id",
-					"size": 100,
-				},
-				"aggs": util.MapStr{
-					"time_histogram": util.MapStr{
-						"date_range": util.MapStr{
-							"field":     "timestamp",
-							"format":    "yyyy-MM-dd",
-							"time_zone": "+08:00",
-							"ranges": []util.MapStr{
-								{
-									"from": "now-13d/d",
-									"to": "now-12d/d",
-								}, {
-									"from": "now-12d/d",
-									"to": "now-11d/d",
-								},
-								{
-									"from": "now-11d/d",
-									"to": "now-10d/d",
-								},
-								{
-									"from": "now-10d/d",
-									"to": "now-9d/d",
-								}, {
-									"from": "now-9d/d",
-									"to": "now-8d/d",
-								},
-								{
-									"from": "now-8d/d",
-									"to": "now-7d/d",
-								},
-								{
-									"from": "now-7d/d",
-									"to": "now-6d/d",
-								},
-								{
-									"from": "now-6d/d",
-									"to": "now-5d/d",
-								}, {
-									"from": "now-5d/d",
-									"to": "now-4d/d",
-								},
-								{
-									"from": "now-4d/d",
-									"to": "now-3d/d",
-								},{
-									"from": "now-3d/d",
-									"to": "now-2d/d",
-								}, {
-									"from": "now-2d/d",
-									"to": "now-1d/d",
-								}, {
-									"from": "now-1d/d",
-									"to": "now/d",
-								},
-								{
-									"from": "now/d",
-									"to": "now",
-								},
-							},
-						},
-						"aggs": util.MapStr{
-							"term_health": util.MapStr{
-								"terms": util.MapStr{
-									"field": "payload.elasticsearch.index_stats.index_info.health",
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		"sort": []util.MapStr{
-			{
-				"timestamp": util.MapStr{
-					"order": "desc",
-				},
-			},
-		},
-		"size": 0,
-		"query": util.MapStr{
-			"bool": util.MapStr{
-				"filter": []util.MapStr{
-					{
-						"range": util.MapStr{
-							"timestamp": util.MapStr{
-								"gte": "now-15d",
-								"lte": "now",
-							},
-						},
-					},
-				},
-				"must": []util.MapStr{
-					{
-						"term": util.MapStr{
-							"metadata.name": util.MapStr{
-								"value": "index_stats",
-							},
-						},
-					},
-					{
-						"terms": util.MapStr{
-							"metadata.labels.index_id": indexIDs,
-						},
-					},
-				},
-			},
-		},
-	}
-	q.RawQuery = util.MustToJSONBytes(query)
-
-	err, res := orm.Search(&event.Event{}, &q)
-	if err != nil {
-		return nil, err
-	}
-
-	response := elastic.SearchResponse{}
-	util.FromJSONBytes(res.Raw, &response)
-	recentStatus := map[string][]interface{}{}
-	for _, bk := range response.Aggregations["group_by_index_id"].Buckets {
-		indexKey := bk["key"].(string)
-		recentStatus[indexKey] = []interface{}{}
-		if histogramAgg, ok := bk["time_histogram"].(map[string]interface{}); ok {
-			if bks, ok := histogramAgg["buckets"].([]interface{}); ok {
-				for _, bkItem := range  bks {
-					if bkVal, ok := bkItem.(map[string]interface{}); ok {
-						if termHealth, ok := bkVal["term_health"].(map[string]interface{}); ok {
-							if healthBks, ok := termHealth["buckets"].([]interface{}); ok {
-								if len(healthBks) == 0 {
-									continue
-								}
-								healthMap := map[string]int{}
-								status := "unknown"
-								for _, hbkItem := range  healthBks {
-									if hitem, ok := hbkItem.(map[string]interface{}); ok {
-										healthMap[hitem["key"].(string)] = 1
-									}
-								}
-								if _, ok = healthMap["red"]; ok {
-									status = "red"
-								}else if _, ok = healthMap["yellow"]; ok {
-									status = "yellow"
-								}else if _, ok = healthMap["green"]; ok {
-									status = "green"
-								}
-								recentStatus[indexKey] = append(recentStatus[indexKey], []interface{}{bkVal["key"], status})
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	return recentStatus, nil
 }
 
 func (h *APIHandler) getIndexNodes(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {

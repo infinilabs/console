@@ -204,6 +204,8 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 		h.WriteJSON(w, util.MapStr{}, http.StatusOK)
 		return
 	}
+	//only query one node info for fast response
+	nodeIDs = nodeIDs[0:1]
 
 	q1 := orm.Query{WildcardIndex: true}
 	query := util.MapStr{
@@ -235,8 +237,8 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 						},
 					},
 					{
-						"terms": util.MapStr{
-							"metadata.labels.node_id": nodeIDs,
+						"term": util.MapStr{
+							"metadata.labels.node_id": nodeIDs[0],
 						},
 					},
 				},
@@ -355,8 +357,8 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 					},
 				},
 				{
-					"terms": util.MapStr{
-						"metadata.labels.node_id": nodeIDs,
+					"term": util.MapStr{
+						"metadata.labels.node_id": nodeIDs[0],
 					},
 				},
 			},

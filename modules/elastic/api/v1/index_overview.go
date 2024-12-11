@@ -75,10 +75,23 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, ctx context.Context, 
 			if indexID, ok :=  util.GetMapValueByKeys([]string{"metadata", "labels", "index_id"}, result); ok {
 				summary := map[string]interface{}{}
 				if docs, ok := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "index_stats", "total", "docs"}, result); ok {
-					summary["docs"] = docs
+					if docsM, ok := docs.(map[string]interface{}); ok {
+						summary["docs_deleted"] = docsM["docs_deleted"]
+						summary["docs_count"] = docsM["count"]
+					}
 				}
 				if indexInfo, ok := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "index_stats", "index_info"}, result); ok {
-					summary["index_info"] = indexInfo
+					if indexInfoM, ok := indexInfo.(map[string]interface{}); ok {
+						summary["index"] = indexInfoM["index"]
+						summary["status"] = indexInfoM["status"]
+						summary["shards"] = indexInfoM["shards"]
+						summary["replicas"] = indexInfoM["replicas"]
+						storeInBytes, _ := util.ToBytes(indexInfoM["store_size"].(string))
+						summary["store_in_bytes"] = storeInBytes
+						priStoreInBytes, _ := util.ToBytes(indexInfoM["pri_store_size"].(string))
+						summary["pri_store_in_bytes"] = priStoreInBytes
+						summary["timestamp"] = result["timestamp"]
+					}
 				}
 				if shardInfo, ok := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "index_stats", "shard_info"}, result); ok {
 					if sinfo, ok := shardInfo.([]interface{}); ok {

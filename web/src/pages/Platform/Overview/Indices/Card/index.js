@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Icon, Tooltip } from "antd";
+import { Icon, Spin, Tooltip } from "antd";
 import TinyArea from "@/components/infini/TinyArea";
 import { Pie } from "@/components/Charts";
 import { formatter } from "@/utils/format";
@@ -9,11 +9,11 @@ import moment from "moment";
 import { formatUtcTimeToLocal } from "@/utils/utils";
 import { FieldFilterFacet } from "@/components/Overview/List/FieldFilterFacet";
 import "./index.scss";
+import request from "@/utils/request";
 
 export default (props) => {
+  const { infoAction, id, parentLoading } = props;
   const metadata = props.data._source?.metadata || {};
-  const summary = props.info?.summary || {};
-  const metrics = props.info?.metrics || {};
   const timestamp = props.data._source?.timestamp
     ? formatUtcTimeToLocal(props.data._source?.timestamp)
     : "N/A";
@@ -26,6 +26,32 @@ export default (props) => {
     }
     return items;
   };
+
+  const [info, setInfo] = useState({});
+  const [loading, setLoading] = useState(false)
+
+  const fetchListInfo = async (id) => {
+    if (!id) return
+    setLoading(true)
+    const res = await request(infoAction, {
+      method: "POST",
+      body: [id],
+      ignoreTimeout: true
+    }, false, false);
+    if (res) {
+      setInfo(res[id] || {});
+    }
+    setLoading(false)
+  };
+
+  useEffect(() => {
+    if (!parentLoading) {
+      fetchListInfo(id)
+    }
+  }, [id, parentLoading])
+
+  const summary = info?.summary || {};
+  const metrics = info?.metrics || {};
 
   let metricsSearch = metrics?.search || {};
   let metricsSearchData = metricsSearch?.data || defaultEmptyMetricsData();
@@ -81,6 +107,7 @@ export default (props) => {
   const unassignedShards = (numReplicas+1)*numShards-summary?.shards - summary?.replicas || 0
 
   return (
+    <Spin spinning={!parentLoading && loading}>
     <div className="card-wrap card-index">
       <div
         className={`card-item ${props.isActive ? "active" : ""}`}
@@ -201,5 +228,6 @@ export default (props) => {
         </div>
       </div>
     </div>
+    </Spin>
   );
 };

@@ -254,7 +254,16 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 			},
 		},
 	}
-	indexMetrics := h.getMetrics(context.Background(), query, indexMetricItems, bucketSize)
+	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
+	du, err := time.ParseDuration(timeout)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), du)
+	defer cancel()
+	indexMetrics := h.getMetrics(ctx, query, indexMetricItems, bucketSize)
 	indexingMetricData := util.MapStr{}
 	for _, line := range indexMetrics["cluster_indexing"].Lines {
 		// remove first metric dot

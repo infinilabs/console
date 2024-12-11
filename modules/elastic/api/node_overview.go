@@ -207,6 +207,15 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 	}
 	//only query one node info for fast response
 	nodeIDs = nodeIDs[0:1]
+	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
+	du, err := time.ParseDuration(timeout)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), du)
+	defer cancel()
 
 	q1 := orm.Query{WildcardIndex: true}
 	query := util.MapStr{
@@ -413,7 +422,7 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 			},
 		},
 	}
-	metrics := h.getMetrics(context.Background(), query, nodeMetricItems, bucketSize)
+	metrics := h.getMetrics(ctx, query, nodeMetricItems, bucketSize)
 	indexMetrics := map[string]util.MapStr{}
 	for key, item := range metrics {
 		for _, line := range item.Lines {

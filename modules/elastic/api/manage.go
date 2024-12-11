@@ -560,7 +560,7 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), du)
 	defer cancel()
-	if util.StringInArray([]string{IndexThroughputMetricKey, SearchThroughputMetricKey, IndexLatencyMetricKey, SearchLatencyMetricKey}, key) {
+	if util.StringInArray([]string{v1.IndexThroughputMetricKey, v1.SearchThroughputMetricKey, v1.IndexLatencyMetricKey, v1.SearchLatencyMetricKey}, key) {
 		metrics = h.GetClusterIndexMetrics(ctx, id, bucketSize, min, max, key)
 	}else{
 		metrics = h.GetClusterMetrics(ctx, id, bucketSize, min, max, key)
@@ -912,7 +912,7 @@ func (h *APIHandler) GetClusterMetrics(ctx context.Context, id string, bucketSiz
 		ClusterIndicesMetricKey,
 		ClusterNodeCountMetricKey:
 		clusterMetricsResult = h.getClusterMetricsByKey(ctx, id, bucketSize, min, max, metricKey)
-	case IndexLatencyMetricKey, IndexThroughputMetricKey, SearchThroughputMetricKey, SearchLatencyMetricKey:
+	case v1.IndexLatencyMetricKey, v1.IndexThroughputMetricKey, v1.SearchThroughputMetricKey, v1.SearchLatencyMetricKey:
 		clusterMetricsResult = h.GetClusterIndexMetrics(ctx, id, bucketSize, min, max, metricKey)
 	case ClusterHealthMetricKey:
 		statusMetric, err := h.getClusterStatusMetric(ctx, id, min, max, bucketSize)
@@ -1024,31 +1024,24 @@ func (h *APIHandler) getClusterMetricsByKey(ctx context.Context, id string, buck
 	return h.getSingleMetrics(ctx, clusterMetricItems, query, bucketSize)
 }
 
-const (
-	IndexThroughputMetricKey = "index_throughput"
-	SearchThroughputMetricKey = "search_throughput"
-	IndexLatencyMetricKey    = "index_latency"
-	SearchLatencyMetricKey   = "search_latency"
-)
-
 func (h *APIHandler) GetClusterIndexMetrics(ctx context.Context, id string, bucketSize int, min, max int64, metricKey string) map[string]*common.MetricItem {
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 	metricItems := []*common.MetricItem{}
 	switch metricKey {
-	case IndexThroughputMetricKey:
-		metricItem := newMetricItem(IndexThroughputMetricKey, 2, OperationGroupKey)
+	case v1.IndexThroughputMetricKey:
+		metricItem := newMetricItem(v1.IndexThroughputMetricKey, 2, OperationGroupKey)
 		metricItem.AddAxi("indexing", "group1", common.PositionLeft, "num", "0,0", "0,0.[00]", 5, true)
 		metricItem.AddLine("Indexing Rate", "Total Indexing", "Number of documents being indexed for primary and replica shards.", "group1", "payload.elasticsearch.node_stats.indices.indexing.index_total", "max", bucketSizeStr, "doc/s", "num", "0,0.[00]", "0,0.[00]", false, true)
 		metricItems = append(metricItems, metricItem)
-	case SearchThroughputMetricKey:
-		metricItem := newMetricItem(SearchThroughputMetricKey, 2, OperationGroupKey)
+	case v1.SearchThroughputMetricKey:
+		metricItem := newMetricItem(v1.SearchThroughputMetricKey, 2, OperationGroupKey)
 		metricItem.AddAxi("searching", "group1", common.PositionLeft, "num", "0,0", "0,0.[00]", 5, false)
 		metricItem.AddLine("Search Rate", "Total Query",
 			"Number of search requests being executed across primary and replica shards. A single search can run against multiple shards!",
 			"group1", "payload.elasticsearch.node_stats.indices.search.query_total", "max", bucketSizeStr, "query/s", "num", "0,0.[00]", "0,0.[00]", false, true)
 		metricItems = append(metricItems, metricItem)
-	case IndexLatencyMetricKey:
-		metricItem := newMetricItem(IndexLatencyMetricKey, 3, LatencyGroupKey)
+	case v1.IndexLatencyMetricKey:
+		metricItem := newMetricItem(v1.IndexLatencyMetricKey, 3, LatencyGroupKey)
 		metricItem.AddAxi("indexing", "group1", common.PositionLeft, "num", "0,0", "0,0.[00]", 5, true)
 
 		metricItem.AddLine("Indexing", "Indexing Latency", "Average latency for indexing documents.", "group1", "payload.elasticsearch.node_stats.indices.indexing.index_time_in_millis", "max", bucketSizeStr, "ms", "num", "0,0.[00]", "0,0.[00]", false, true)
@@ -1062,8 +1055,8 @@ func (h *APIHandler) GetClusterIndexMetrics(ctx context.Context, id string, buck
 			return value / value2
 		}
 		metricItems = append(metricItems, metricItem)
-	case SearchLatencyMetricKey:
-		metricItem := newMetricItem(SearchLatencyMetricKey, 3, LatencyGroupKey)
+	case v1.SearchLatencyMetricKey:
+		metricItem := newMetricItem(v1.SearchLatencyMetricKey, 3, LatencyGroupKey)
 		metricItem.AddAxi("searching", "group2", common.PositionLeft, "num", "0,0", "0,0.[00]", 5, false)
 
 		metricItem.AddLine("Searching", "Query Latency", "Average latency for searching query.", "group2", "payload.elasticsearch.node_stats.indices.search.query_time_in_millis", "max", bucketSizeStr, "ms", "num", "0,0.[00]", "0,0.[00]", false, true)

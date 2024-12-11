@@ -50,6 +50,8 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 		h.WriteJSON(w, util.MapStr{}, http.StatusOK)
 		return
 	}
+	//only query the first cluster info
+	clusterIDs = clusterIDs[0:1]
 
 	cids := make([]interface{}, 0, len(clusterIDs))
 	for _, clusterID := range clusterIDs {
@@ -62,7 +64,7 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 	q1.Conds = orm.And(
 		orm.Eq("metadata.category", "elasticsearch"),
 		orm.Eq("metadata.name", "cluster_stats"),
-		orm.In("metadata.labels.cluster_id", cids),
+		orm.Eq("metadata.labels.cluster_id", cids[0]),
 	)
 	q1.Collapse("metadata.labels.cluster_id")
 	q1.AddSort("timestamp", orm.DESC)
@@ -173,8 +175,8 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 		"bool": util.MapStr{
 			"must": []util.MapStr{
 				{
-					"terms": util.MapStr{
-						"metadata.labels.cluster_uuid": clusterUUIDs,
+					"term": util.MapStr{
+						"metadata.labels.cluster_uuid": clusterUUIDs[0],
 					},
 				},
 				{
@@ -252,7 +254,16 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 			},
 		},
 	}
-	indexMetrics := h.getMetrics(context.Background(), query, indexMetricItems, bucketSize)
+	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
+	du, err := time.ParseDuration(timeout)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), du)
+	defer cancel()
+	indexMetrics := h.getMetrics(ctx, query, indexMetricItems, bucketSize)
 	indexingMetricData := util.MapStr{}
 	for _, line := range indexMetrics["cluster_indexing"].Lines {
 		// remove first metric dot
@@ -716,6 +727,9 @@ func (h *APIHandler) GetRealtimeClusterNodes(w http.ResponseWriter, req *http.Re
 			info.IndexQPS = qps[nodeInfo.Id]["index"]
 			info.QueryQPS = qps[nodeInfo.Id]["query"]
 			info.IndexBytesQPS = qps[nodeInfo.Id]["index_bytes"]
+			if v, ok := qps[nodeInfo.Id]["latest_timestamp"].(float64); ok {
+				info.Timestamp = uint64(v)
+			}
 		}
 		nodeInfos = append(nodeInfos, info)
 	}
@@ -826,6 +840,7 @@ type RealtimeNodeInfo struct {
 	IndexQPS      interface{} `json:"index_qps"`
 	QueryQPS      interface{} `json:"query_qps"`
 	IndexBytesQPS interface{} `json:"index_bytes_qps"`
+	Timestamp   uint64      `json:"timestamp"`
 	CatNodeResponse
 }
 
@@ -1120,6 +1135,11 @@ func (h *APIHandler) getNodeQPS(clusterID string, bucketSizeInSeconds int) (map[
 							"query_rate": util.MapStr{
 								"derivative": util.MapStr{
 									"buckets_path": "query_total",
+								},
+							},
+							"latest_timestamp": util.MapStr{
+								"max": util.MapStr{
+									"field": "timestamp",
 								},
 							},
 						},

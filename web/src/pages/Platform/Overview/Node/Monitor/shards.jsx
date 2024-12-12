@@ -97,7 +97,7 @@ export default ({ clusterID, clusterName, nodeID, timeRange, bucketSize }) => {
                     timeRange
                   ))},"timeInterval":"${bucketSize}","cluster_name":"${clusterName}"}`}
                 >
-                  {text}
+                  <AutoTextEllipsis >{text}</AutoTextEllipsis>
                 </Link>
               }
             />

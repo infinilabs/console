@@ -8,7 +8,7 @@ export default ({ icon, text }) => {
       }}
     >
       <span>{icon}</span>
-      <span>{text}</span>
+      <span style={{ width: "calc(100% - 20px)"}}>{text}</span>
     </span>
   );
 };

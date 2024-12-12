@@ -147,7 +147,7 @@ export default ({
                     record?.node
                   }"}`}
                 >
-                  {text}
+                  <AutoTextEllipsis >{text}</AutoTextEllipsis>
                 </Link>
               }
             />

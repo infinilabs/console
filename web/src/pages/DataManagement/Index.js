@@ -34,6 +34,7 @@ import { isMatch, sorter } from "@/utils/utils";
 import { hasAuthority } from "@/utils/authority";
 import DeleteIndexModal from "./components/DeleteIndexModal";
 import IconText from "@/components/infini/IconText";
+import AutoTextEllipsis from "@/components/AutoTextEllipsis";
 
 const { Search } = Input;
 
@@ -185,7 +186,9 @@ class Index extends PureComponent {
       render: (text, record) => (
         <IconText
           icon={<Icon type="table" />}
-          text={<Link to={`/insight/discover?index=${text}`}>{text}</Link>}
+          text={<Link to={`/insight/discover?index=${text}`}>
+            <AutoTextEllipsis >{text}</AutoTextEllipsis>
+          </Link>}
         />
       ),
       sorter: (a, b) => sorter.string(a, b, "index"),
@@ -227,6 +230,7 @@ class Index extends PureComponent {
     },
     {
       title: formatMessage({ id: "table.field.actions" }),
+      width: 116,
       render: (text, record) => (
         <Fragment>
           <a

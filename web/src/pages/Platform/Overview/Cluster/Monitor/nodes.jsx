@@ -12,6 +12,7 @@ import { formatter } from "@/utils/format";
 import { formatTimeRange } from "@/lib/elasticsearch/util";
 import moment from "moment";
 import IconText from "@/components/infini/IconText";
+import AutoTextEllipsis from "@/components/AutoTextEllipsis";
 
 const { Search } = Input;
 const InputGroup = Input.Group;
@@ -117,7 +118,7 @@ export default ({
                     record?.name
                   }"}`}
                 >
-                  {text}
+                  <AutoTextEllipsis >{text}</AutoTextEllipsis>
                 </Link>
               }
             />

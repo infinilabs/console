@@ -256,7 +256,6 @@ export default {
 
     *fetchConsoleInfo(_, { call, put }) {
       const data = yield call(queryConsoleInfo);
-      console.log(data?.application);
       if (data && data.hasOwnProperty("application")&& data?.application.hasOwnProperty("version")) {
         const localVersionInfoVal = localStorage.getItem(COUSOLE_VERSION_KEY);
         localStorage.setItem(COUSOLE_VERSION_KEY, JSON.stringify(data?.application?.version));

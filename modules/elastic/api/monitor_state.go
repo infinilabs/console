@@ -32,18 +32,13 @@ import (
 	"infini.sh/framework/core/elastic"
 )
 
-type MonitorState int
-const (
-	Console MonitorState = iota
-	Agent
-)
-func GetMonitorState(clusterID string) MonitorState {
+func GetMonitorState(clusterID string) string {
 	conf := elastic.GetConfig(clusterID)
 	if conf == nil {
 		panic(fmt.Errorf("config of cluster [%s] is not found", clusterID))
 	}
 	if conf.MonitorConfigs != nil && !conf.MonitorConfigs.NodeStats.Enabled && !conf.MonitorConfigs.IndexStats.Enabled {
-		return Agent
+		return elastic.ModeAgent
 	}
-	return Console
+	return elastic.ModeAgentless
 }

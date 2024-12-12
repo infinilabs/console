@@ -303,7 +303,7 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter,  req *http.Request, p
 			return
 		}
 		firstClusterID, firstIndexName = parts[0], parts[1]
-		if GetMonitorState(firstClusterID) == Console {
+		if GetMonitorState(firstClusterID) == elastic.ModeAgentless {
 			h.APIHandler.FetchIndexInfo(w, ctx, indexIDs)
 			return
 		}
@@ -580,7 +580,7 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter,  req *http.Request, p
 
 func (h *APIHandler) GetIndexInfo(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	clusterID := ps.MustGetParameter("id")
-	if GetMonitorState(clusterID) == Console {
+	if GetMonitorState(clusterID) == elastic.ModeAgentless {
 		h.APIHandler.GetIndexInfo(w, req, ps)
 		return
 	}
@@ -701,7 +701,7 @@ func (h *APIHandler) GetIndexInfo(w http.ResponseWriter, req *http.Request, ps h
 
 func (h *APIHandler) GetIndexShards(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	clusterID := ps.MustGetParameter("id")
-	if GetMonitorState(clusterID) == Console {
+	if GetMonitorState(clusterID) == elastic.ModeAgentless {
 		h.APIHandler.GetIndexShards(w, req, ps)
 		return
 	}
@@ -810,7 +810,7 @@ func (h *APIHandler) GetIndexShards(w http.ResponseWriter, req *http.Request, ps
 
 func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	clusterID := ps.MustGetParameter("id")
-	if GetMonitorState(clusterID) == Console {
+	if GetMonitorState(clusterID) == elastic.ModeAgentless {
 		h.APIHandler.GetSingleIndexMetrics(w, req, ps)
 		return
 	}

@@ -1276,7 +1276,7 @@ func (h *APIHandler) getLatestIndices(req *http.Request, min string, max string,
 
 func (h *APIHandler) GetNodeShards(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	clusterID := ps.MustGetParameter("id")
-	if GetMonitorState(clusterID) == Console {
+	if GetMonitorState(clusterID) == elastic.ModeAgentless {
 		h.APIHandler.GetNodeShards(w, req, ps)
 		return
 	}

@@ -738,7 +738,7 @@ func (h *APIHandler) GetRealtimeClusterNodes(w http.ResponseWriter, req *http.Re
 
 func (h *APIHandler) GetClusterIndices(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	id := ps.ByName("id")
-	if GetMonitorState(id) == Console {
+	if GetMonitorState(id) == elastic.ModeAgentless {
 		h.APIHandler.GetClusterIndices(w, req, ps)
 		return
 	}
@@ -774,7 +774,7 @@ func (h *APIHandler) GetClusterIndices(w http.ResponseWriter, req *http.Request,
 func (h *APIHandler) GetRealtimeClusterIndices(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	resBody := map[string]interface{}{}
 	id := ps.ByName("id")
-	if GetMonitorState(id) == Console {
+	if GetMonitorState(id) == elastic.ModeAgentless {
 		h.APIHandler.GetRealtimeClusterIndices(w, req, ps)
 		return
 	}
@@ -1326,4 +1326,72 @@ func (h *APIHandler) SearchClusterMetadata(w http.ResponseWriter, req *http.Requ
 		return
 	}
 	w.Write(util.MustToJSONBytes(response))
+}
+
+func (h *APIHandler) getClusterMonitorState(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	id := ps.ByName("id")
+	collectionMode := GetMonitorState(id)
+	ret := util.MapStr{
+		"cluster_id": id,
+		"metric_collection_mode": collectionMode,
+	}
+	queryDSL := util.MapStr{
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": []util.MapStr{
+					{
+						"term": util.MapStr{
+							"metadata.labels.cluster_id": id,
+						},
+					},
+					{
+						"term": util.MapStr{
+							"metadata.category": "elasticsearch",
+						},
+					},
+				},
+			},
+		},
+		"size": 0,
+		"aggs": util.MapStr{
+			"grp_name": util.MapStr{
+				"terms": util.MapStr{
+					"field": "metadata.name",
+					"size": 10,
+				},
+				"aggs": util.MapStr{
+					"max_timestamp": util.MapStr{
+						"max": util.MapStr{
+							"field": "timestamp",
+						},
+					},
+				},
+			},
+		},
+	}
+	dsl := util.MustToJSONBytes(queryDSL)
+	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).SearchWithRawQueryDSL(getAllMetricsIndex(), dsl)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	lastActiveAt := util.MapStr{}
+	for _, bk := range response.Aggregations["grp_name"].Buckets {
+		key := bk["key"].(string)
+		if tv, ok := bk["max_timestamp"].(map[string]interface{}); ok {
+			if collectionMode == elastic.ModeAgentless {
+				if util.StringInArray([]string{ "index_stats", "cluster_health", "cluster_stats", "node_stats"}, key) {
+					lastActiveAt[key] = tv["value"]
+				}
+			}else{
+				if util.StringInArray([]string{ "shard_stats", "cluster_health", "cluster_stats", "node_stats"}, key) {
+					lastActiveAt[key] = tv["value"]
+				}
+			}
+		}
+
+	}
+	ret["last_active_at"] = lastActiveAt
+	h.WriteJSON(w, ret, http.StatusOK)
 }

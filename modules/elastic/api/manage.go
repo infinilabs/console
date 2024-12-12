@@ -528,7 +528,7 @@ func (h *APIHandler) HandleMetricsSummaryAction(w http.ResponseWriter, req *http
 func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	resBody := map[string]interface{}{}
 	id := ps.ByName("id")
-	if GetMonitorState(id) == Console {
+	if GetMonitorState(id) == elastic.ModeAgentless {
 		h.APIHandler.HandleClusterMetricsAction(w, req, ps)
 		return
 	}
@@ -626,7 +626,7 @@ func (h *APIHandler) HandleNodeMetricsAction(w http.ResponseWriter, req *http.Re
 func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	resBody := map[string]interface{}{}
 	id := ps.ByName("id")
-	if GetMonitorState(id) == Console {
+	if GetMonitorState(id) == elastic.ModeAgentless {
 		h.APIHandler.HandleIndexMetricsAction(w, req, ps)
 		return
 	}

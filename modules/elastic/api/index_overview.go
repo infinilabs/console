@@ -439,7 +439,12 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter,  req *http.Request, p
 				},
 				{
 					"term": util.MapStr{
-						"metadata.labels.index_id": newIndexIDs[0],
+						"metadata.labels.cluster_id": firstClusterID,
+					},
+				},
+				{
+					"term": util.MapStr{
+						"metadata.labels.index_name": firstIndexName,
 					},
 				},
 			},

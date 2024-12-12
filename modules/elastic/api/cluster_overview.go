@@ -1376,22 +1376,36 @@ func (h *APIHandler) getClusterMonitorState(w http.ResponseWriter, req *http.Req
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	lastActiveAt := util.MapStr{}
 	for _, bk := range response.Aggregations["grp_name"].Buckets {
 		key := bk["key"].(string)
 		if tv, ok := bk["max_timestamp"].(map[string]interface{}); ok {
 			if collectionMode == elastic.ModeAgentless {
 				if util.StringInArray([]string{ "index_stats", "cluster_health", "cluster_stats", "node_stats"}, key) {
-					lastActiveAt[key] = tv["value"]
+					ret[key] = getCollectionStats(tv["value"])
 				}
 			}else{
 				if util.StringInArray([]string{ "shard_stats", "cluster_health", "cluster_stats", "node_stats"}, key) {
-					lastActiveAt[key] = tv["value"]
+					ret[key] = getCollectionStats(tv["value"])
 				}
 			}
 		}
 
 	}
-	ret["last_active_at"] = lastActiveAt
 	h.WriteJSON(w, ret, http.StatusOK)
+}
+
+func getCollectionStats(lastActiveAt interface{}) util.MapStr {
+	stats := util.MapStr{
+		"last_active_at": lastActiveAt,
+		"status": "active",
+	}
+	if timestamp, ok := lastActiveAt.(float64); ok {
+		t := time.Unix(int64(timestamp/1000), 0)
+		if time.Now().Sub(t) > 5 * time.Minute {
+			stats["status"] = "warning"
+		}else{
+			stats["status"] = "ok"
+		}
+	}
+	return stats
 }

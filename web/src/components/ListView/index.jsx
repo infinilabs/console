@@ -475,7 +475,6 @@ const Index = forwardRef((props, ref) => {
                     timeRange={queryParams?.timeRange || {}}
                     onTimeRangeChange={onTimeRangeChange}
                     isRefreshPaused={isRefreshPaused}
-                    onRefresh={onRefresh}
                     recentlyUsedRangesKey={collectionName}
                   />
                 ) : null}

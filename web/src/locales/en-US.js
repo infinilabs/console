@@ -16,6 +16,7 @@ import host from "./en-US/host";
 import settings from "./en-US/settings";
 import listview from "./en-US/listview";
 import audit from "./en-US/audit";
+import error from "./en-US/error";
 
 export default {
   "navBar.lang": "Languages",
@@ -622,5 +623,6 @@ export default {
   ...host,
   ...settings,
   ...listview,
-  ...audit
+  ...audit,
+  ...error
 };

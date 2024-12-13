@@ -11,6 +11,8 @@ import DatePicker from "@/common/src/DatePicker";
 import { getLocale } from "umi/locale";
 import { getTimezone } from "@/utils/utils";
 import { getContext } from "@/pages/DataManagement/context";
+import { ESPrefix } from "@/services/common";
+import CollectStatus from "@/components/CollectStatus";
 
 const { TabPane } = Tabs;
 
@@ -122,36 +124,35 @@ const Monitor = (props) => {
           selectedCluster ? (
             <>
               <div style={{ marginBottom: 5 }}>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <div style={{ flexGrow: 0 }}>
-                    <DatePicker
-                      locale={getLocale()}
-                      start={state.timeRange.min}
-                      end={state.timeRange.max}
-                      onRangeChange={({ start, end }) => {
-                        handleTimeChange({ start, end })
-                      }}
-                      {...refresh}
-                      onRefreshChange={setRefresh}
-                      onRefresh={handleTimeChange}
-                      showTimeSetting={true}
-                      showTimeInterval={true}
-                      timeInterval={state.timeInterval}
-                      showTimeout={true}
-                      timeout={state.timeout}
-                      onTimeSettingChange={(timeSetting) => {
-                        localStorage.setItem(TIMEOUT_CACHE_KEY, timeSetting.timeout)
-                        setState({
-                          ...state,
-                          timeInterval: timeSetting.timeInterval,
-                          timeout: timeSetting.timeout
-                        });
-                      }}
-                      timeZone={timeZone}
-                      onTimeZoneChange={setTimeZone}
-                      recentlyUsedRangesKey={'monitor'}
-                    />
-                  </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <DatePicker
+                    locale={getLocale()}
+                    start={state.timeRange.min}
+                    end={state.timeRange.max}
+                    onRangeChange={({ start, end }) => {
+                      handleTimeChange({ start, end })
+                    }}
+                    {...refresh}
+                    onRefreshChange={setRefresh}
+                    onRefresh={handleTimeChange}
+                    showTimeSetting={true}
+                    showTimeInterval={true}
+                    timeInterval={state.timeInterval}
+                    showTimeout={true}
+                    timeout={state.timeout}
+                    onTimeSettingChange={(timeSetting) => {
+                      localStorage.setItem(TIMEOUT_CACHE_KEY, timeSetting.timeout)
+                      setState({
+                        ...state,
+                        timeInterval: timeSetting.timeInterval,
+                        timeout: timeSetting.timeout
+                      });
+                    }}
+                    timeZone={timeZone}
+                    onTimeZoneChange={setTimeZone}
+                    recentlyUsedRangesKey={'monitor'}
+                  />
+                  <CollectStatus fetchUrl={`${ESPrefix}/${selectedCluster?.id}/_collection_stats`}/>
                 </div>
               </div>
 

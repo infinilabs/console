@@ -422,3 +422,8 @@ export const firstUpperCase = (val) => {
   }
   return val;
 };
+
+export const formatToUniversalTime = (time, format, timezone) => {
+  if (!time) return '-';
+  return moment(time).tz(timezone || getTimezone()).format(format || "YYYY-MM-DD HH:mm:ss (G[M]TZ)")
+}

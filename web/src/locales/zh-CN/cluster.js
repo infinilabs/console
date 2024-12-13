@@ -39,6 +39,7 @@ export default {
   "cluster.manage.monitor_configs.cluster_stats": "集群指标",
   "cluster.manage.monitor_configs.node_stats": "节点指标",
   "cluster.manage.monitor_configs.index_stats": "索引指标",
+  "cluster.manage.monitor_configs.shard_stats": "分片指标",
   "cluster.manage.metadata_configs.health_check": "健康检查",
   "cluster.manage.metadata_configs.node_availability_check": "节点可用性检查",
   "cluster.manage.metadata_configs.metadata_refresh": "元数据同步",
@@ -334,5 +335,8 @@ export default {
   "cluster.providers.ecloud": "移动云",
 
   "cluster.metrics.request.copy": "复制请求",
-  "cluster.metrics.request.copy.success": "复制请求成功"
+  "cluster.metrics.request.copy.success": "复制请求成功",
+
+  "cluster.collect.last_active_at": "最后活动时间",
+
 };

@@ -10,6 +10,7 @@ import { formatter } from "@/utils/format";
 import { filterSearchValue, sorter, formatUtcTimeToLocal } from "@/utils/utils";
 import { formatTimeRange } from "@/lib/elasticsearch/util";
 import IconText from "@/components/infini/IconText";
+import AutoTextEllipsis from "@/components/AutoTextEllipsis";
 
 const { Search } = Input;
 

@@ -531,7 +531,11 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter,  req *http.Request, p
 			},
 		},
 	}
-	metrics := h.getMetrics(ctx, query, nodeMetricItems, bucketSize)
+	metrics, err := h.getMetrics(ctx, query, nodeMetricItems, bucketSize)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err, http.StatusInternalServerError)
+	}
 	indexMetrics := map[string]util.MapStr{}
 	for key, item := range metrics {
 		for _, line := range item.Lines {
@@ -921,6 +925,8 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 			healthMetric, err := h.GetIndexHealthMetric(ctx, clusterID, indexName, min, max, bucketSize)
 			if err != nil {
 				log.Error(err)
+				h.WriteError(w, err, http.StatusInternalServerError)
+				return
 			}
 			metrics["index_health"] = healthMetric
 	} else {
@@ -987,7 +993,11 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 			}
 			metricItems = append(metricItems, metricItem)
 		}
-		metrics = h.getSingleIndexMetrics(context.Background(), metricItems, query, bucketSize)
+		metrics, err = h.getSingleIndexMetrics(context.Background(), metricItems, query, bucketSize)
+		if err != nil {
+			log.Error(err)
+			h.WriteError(w, err, http.StatusInternalServerError)
+		}
 	}
 
 	resBody["metrics"] = metrics

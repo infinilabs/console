@@ -411,7 +411,12 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 			},
 		},
 	}
-	metrics := h.getMetrics(context.Background(), query, nodeMetricItems, bucketSize)
+	metrics, err := h.getMetrics(context.Background(), query, nodeMetricItems, bucketSize)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err, http.StatusInternalServerError)
+		return
+	}
 	indexMetrics := map[string]util.MapStr{}
 	for key, item := range metrics {
 		for _, line := range item.Lines {
@@ -693,10 +698,17 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 	metricItem =newMetricItem("parent_breaker", 8, SystemGroupKey)
 	metricItem.AddLine("Parent Breaker Tripped","Parent Breaker Tripped","Rate of the circuit breaker has been triggered and prevented an out of memory error.","group1","payload.elasticsearch.node_stats.breakers.parent.tripped","max",bucketSizeStr,"times/s","num","0,0.[00]","0,0.[00]",false,true)
 	metricItems=append(metricItems,metricItem)
-	metrics := h.getSingleMetrics(context.Background(), metricItems,query, bucketSize)
+	metrics, err := h.getSingleMetrics(context.Background(), metricItems,query, bucketSize)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err, http.StatusInternalServerError)
+		return
+	}
 	healthMetric, err := getNodeHealthMetric(query, bucketSize)
 	if err != nil {
 		log.Error(err)
+		h.WriteError(w, err, http.StatusInternalServerError)
+		return
 	}
 	metrics["node_health"] = healthMetric
 	resBody["metrics"] = metrics

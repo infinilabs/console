@@ -1122,7 +1122,7 @@ func (h *APIHandler) getNodeMetrics(ctx context.Context, clusterID string, bucke
 			},
 		},
 	}
-	return h.getMetrics(ctx, query, nodeMetricItems, bucketSize), nil
+	return h.getMetrics(ctx, query, nodeMetricItems, bucketSize)
 
 }
 

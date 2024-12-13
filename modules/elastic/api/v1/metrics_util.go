@@ -110,13 +110,12 @@ func generateGroupAggs(nodeMetricItems []GroupMetricItem) map[string]interface{}
 	return aggs
 }
 
-func (h *APIHandler) getMetrics(ctx context.Context, query map[string]interface{}, grpMetricItems []GroupMetricItem, bucketSize int) map[string]*common.MetricItem {
+func (h *APIHandler) getMetrics(ctx context.Context, query map[string]interface{}, grpMetricItems []GroupMetricItem, bucketSize int) (map[string]*common.MetricItem, error) {
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 	queryDSL := util.MustToJSONBytes(query)
 	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).QueryDSL(ctx, getAllMetricsIndex(), nil,  queryDSL)
 	if err != nil {
-		log.Error(err)
-		panic(err)
+		return nil, err
 	}
 	grpMetricItemsIndex := map[string]int{}
 	for i, item := range grpMetricItems {
@@ -210,7 +209,7 @@ func (h *APIHandler) getMetrics(ctx context.Context, query map[string]interface{
 		metricItem.MetricItem.Request = string(queryDSL)
 		result[metricItem.Key] = metricItem.MetricItem
 	}
-	return result
+	return result, nil
 }
 
 func GetMinBucketSize() int {
@@ -331,7 +330,7 @@ func GetMetricRangeAndBucketSize(minStr string, maxStr string, bucketSize int, m
 }
 
 // 获取单个指标，可以包含多条曲线
-func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common.MetricItem, query map[string]interface{}, bucketSize int) map[string]*common.MetricItem {
+func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common.MetricItem, query map[string]interface{}, bucketSize int) (map[string]*common.MetricItem, error) {
 	metricData := map[string][][]interface{}{}
 
 	aggs := map[string]interface{}{}
@@ -377,8 +376,7 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 	clusterID := global.MustLookupString(elastic.GlobalSystemElasticsearchID)
 	intervalField, err := getDateHistogramIntervalField(clusterID, bucketSizeStr)
 	if err != nil {
-		log.Error(err)
-		panic(err)
+		return nil, err
 	}
 	query["size"] = 0
 	query["aggs"] = util.MapStr{
@@ -393,8 +391,7 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 	queryDSL := util.MustToJSONBytes(query)
 	response, err := elastic.GetClient(clusterID).QueryDSL(ctx, getAllMetricsIndex(), nil, queryDSL)
 	if err != nil {
-		log.Error(err)
-		panic(err)
+		return nil, err
 	}
 
 	var minDate, maxDate int64
@@ -457,7 +454,7 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 		result[metricItem.Key] = metricItem
 	}
 
-	return result
+	return result, nil
 }
 
 //func (h *APIHandler) executeQuery(query map[string]interface{}, bucketItems *[]common.BucketItem, bucketSize int) map[string]*common.MetricItem {

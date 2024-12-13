@@ -25,7 +25,9 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	cerr "infini.sh/console/core/errors"
 	"infini.sh/framework/modules/elastic/adapter"
 	"net/http"
 	"strings"
@@ -263,7 +265,16 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), du)
 	defer cancel()
-	indexMetrics := h.getMetrics(ctx, query, indexMetricItems, bucketSize)
+	indexMetrics, err := h.getMetrics(ctx, query, indexMetricItems, bucketSize)
+	if err != nil {
+		log.Error(err)
+		if errors.Is(err, context.DeadlineExceeded) {
+			h.WriteError(w, cerr.New(cerr.ErrTypeRequestTimeout, "", err).Error(), http.StatusRequestTimeout)
+			return
+		}
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	indexingMetricData := util.MapStr{}
 	for _, line := range indexMetrics["cluster_indexing"].Lines {
 		// remove first metric dot

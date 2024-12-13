@@ -117,9 +117,23 @@ func (h *APIHandler) getNodeMetrics(ctx context.Context, clusterID string, bucke
 
 	var must = []util.MapStr{
 		{
-			"term":util.MapStr{
-				"metadata.labels.cluster_uuid":util.MapStr{
-					"value": clusterUUID,
+			"bool": util.MapStr{
+				"minimum_should_match": 1,
+				"should": []util.MapStr{
+					{
+						"term": util.MapStr{
+							"metadata.labels.cluster_id": util.MapStr{
+								"value": clusterID,
+							},
+						},
+					},
+					{
+						"term": util.MapStr{
+							"metadata.labels.cluster_uuid": util.MapStr{
+								"value": clusterUUID,
+							},
+						},
+					},
 				},
 			},
 		},

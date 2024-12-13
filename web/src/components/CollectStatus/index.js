@@ -1,9 +1,8 @@
 import request from "@/utils/request"
 import { firstUpperCase, formatToUniversalTime } from "@/utils/utils";
-import { Descriptions, Icon, Tooltip } from "antd";
+import { Descriptions, Icon, Spin, Tooltip } from "antd";
 import moment from "moment";
 import { useEffect, useMemo, useRef, useState } from "react";
-import styles from "./index.less";
 import { formatMessage } from "umi/locale";
 
 const STATUS_ICONS = {
@@ -48,14 +47,18 @@ export default (props) => {
     const [data, setData] = useState();
     const intervalRef = useRef()
 
-    const fetchData = async (fetchUrl) => {
+    const fetchData = async (fetchUrl, showLoading = true) => {
         if (!fetchUrl) return
-        setLoading(true)
+        if (showLoading) {
+            setLoading(true)
+        }
         const res = await request(fetchUrl)
         if (res && !res?.error) {
             setData(res)
         }
-        setLoading(false)
+        if (showLoading) {
+            setLoading(false)
+        }
     }
 
     useEffect(() => {
@@ -64,7 +67,7 @@ export default (props) => {
             clearInterval(intervalRef.current)
         }
         intervalRef.current = setInterval(() => {
-            fetchData(fetchUrl)
+            fetchData(fetchUrl, false)
         }, 300000)
         return () => {
             if (intervalRef.current) {
@@ -91,24 +94,35 @@ export default (props) => {
         <Tooltip
             placement="bottomRight"
             title={(
-                <Descriptions className={styles.content} title={formatMessage({ id: 'cluster.collect.last_active_at'})} column={1}>
-                    {
-                        stats.map((key) => (
-                            <Descriptions.Item key={key} label={formatMessage({ id: `cluster.manage.monitor_configs.${key}`})}>
-                                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                                    {STATUS_ICONS[data?.[key]?.status || 'unknown']}{formatToUniversalTime(data?.[key]?.last_active_at)}
+                <Spin spinning={loading}>
+                    <div>
+                        <div style={{ marginBottom: 12 }} >
+                            <span style={{ fontWeight: 'bold' }}>
+                                {formatMessage({ id: 'cluster.collect.last_active_at'})}
+                            </span>
+                            <a style={{ marginLeft: 8 }} onClick={() => !loading && fetchData(fetchUrl)} ><Icon type="reload"/></a>
+                        </div>
+                        {
+                            stats.map((key, i) => (
+                                <div key={key} style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: i === stats.length - 1 ? 0 : 12 }}>
+                                    <div style={{ width: 130 }}>{formatMessage({ id: `cluster.manage.monitor_configs.${key}`})}</div>
+                                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                                        {STATUS_ICONS[data?.[key]?.status || 'unknown']}{data?.[key]?.last_active_at ? moment.duration(data?.[key]?.last_active_at - new Date().valueOf()).humanize(true) : '-'}
+                                    </div>
                                 </div>
-                            </Descriptions.Item>
-                        ))
-                    }
-                </Descriptions>
+                            ))
+                        } 
+                    </div>
+                </Spin>
             )}
-            overlayStyle={{ maxWidth: 360 }}
+            overlayStyle={{ maxWidth: 'none', width: 'auto' }}
         >
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                {renderIcon()}
-                {firstUpperCase(data?.metric_collection_mode) || "Unknown"}
-            </div>
+            <Spin spinning={loading}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, cursor: 'pointer' }}>
+                    {renderIcon()}
+                    {firstUpperCase(data?.metric_collection_mode) || "Unknown"}
+                </div>
+            </Spin>
         </Tooltip>
     );
 }

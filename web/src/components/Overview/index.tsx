@@ -103,7 +103,6 @@ export default forwardRef((props: IProps, ref: any) => {
   const drawRef = useRef<IDrawerRef>(null);
 
   const [searchField, setSearchField] = useState<string>();
-  const [infos, setInfos] = useState({});
   const [selectedItem, setSelectedItem] = useState<IRecord>({});
 
   const [dispalyTypeObj, setDispalyTypeObj] = useLocalStorage(
@@ -185,20 +184,6 @@ export default forwardRef((props: IProps, ref: any) => {
         initialQueryParams[item] = param?.[item];
       }
     });
-  };
-
-  const fetchListInfo = async () => {
-    const ids = hits?.map((hit: { _id: string }) => listItemConfig.getId(hit));
-    if (!ids || ids.length == 0) {
-      return;
-    }
-    const res = await request(infoAction, {
-      method: "POST",
-      body: ids,
-    });
-    if (res) {
-      setInfos(res);
-    }
   };
 
   const onFacetChange = (v: { value: string[]; field: string }) => {
@@ -286,9 +271,6 @@ export default forwardRef((props: IProps, ref: any) => {
                       <listItemConfig.component
                         data={item}
                         id={infoField}
-                        info={
-                          infoField && infos[infoField] ? infos[infoField] : {}
-                        }
                         isActive={selectedItem?._id == item?._id}
                         onSelect={() => {
                           setSelectedItem(item);
@@ -303,8 +285,8 @@ export default forwardRef((props: IProps, ref: any) => {
                 />
               ) : (
                 <tableConfig.component
-                  infos={infos}
-                  dataSource={hits}
+                  infoAction={infoAction}
+                  dataSource={hits.map((item) => ({...item, id: listItemConfig.getId(item)}))}
                   total={result?.total?.value || 0}
                   from={queryParams.from}
                   pageSize={queryParams.size}

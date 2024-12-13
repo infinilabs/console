@@ -121,7 +121,7 @@ const Monitor = (props) => {
 
       <Card bodyStyle={{ padding: 15 }}>
         {
-          selectedCluster ? (
+          selectedCluster?.id ? (
             <>
               <div style={{ marginBottom: 5 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>

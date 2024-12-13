@@ -29,12 +29,12 @@ export default ({
       timeout={timeout}
       refresh={refresh}
       metrics={[
-        "index_health",
+        isAgent && shardID ? 'shard_state' : "index_health",
         "index_throughput",
         "search_throughput",
         "index_latency",
         "search_latency",
-        isAgent ? "shard_state" : undefined,
+        isAgent && !shardID ? "shard_state" : undefined,
       ].filter((item) => !!item)}
     />
   );

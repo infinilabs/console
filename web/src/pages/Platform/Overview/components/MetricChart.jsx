@@ -1,4 +1,4 @@
-import request from "@/utils/request";
+import request, { formatResponse } from "@/utils/request";
 import { cloneDeep } from "lodash";
 import { useEffect, useRef, useState } from "react";
 import { formatMessage } from "umi/locale";
@@ -71,8 +71,9 @@ export default (props) => {
         },
         ignoreTimeout: true
       }, false, false)
-      if (res?.error?.reason) {
-        setError(res.error.reason)
+      if (res?.error) {
+        const error = formatResponse(res.error);
+        setError(error?.errorObject?.key ? formatMessage({ id: `${error?.errorObject?.key}` }) : res?.error?.reason)
       } else if (res && !res.error) {
         const { metrics = {} } = res || {};
         const metric = metrics[metricKey]

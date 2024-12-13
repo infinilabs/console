@@ -7,10 +7,11 @@ import { SearchEngineIcon } from "@/lib/search_engines";
 import { HealthStatusView } from "@/components/infini/health_status_view";
 import { StatusBlockGroup } from "@/components/infini/status_block";
 import { Providers, ProviderIcon } from "@/lib/providers";
+import request from "@/utils/request";
+import styles from "./index.less"
 
 export default (props) => {
   const {
-    infos,
     dataSource,
     total,
     from,
@@ -19,7 +20,33 @@ export default (props) => {
     onPageChange,
     onPageSizeChange,
     onRowClick,
+    infoAction
   } = props;
+
+  const [infos, setInfos] = useState({});
+
+  const fetchListInfo = async (data) => {
+    const res = await Promise.all(data?.map((item) => request(infoAction, {
+      method: "POST",
+      body: [item.id],
+    }, false, false)));
+    if (res) {
+      let newInfos = {}
+      res.forEach((item) => {
+        if (item && !item.error) {
+          newInfos = {
+            ...newInfos,
+            ...item
+          }
+        }
+      })
+      setInfos(newInfos);
+    }
+  };
+
+  useEffect(() => {
+    fetchListInfo(dataSource);
+  }, [JSON.stringify(dataSource)])
 
   const [tableData] = useMemo(() => {
     let tableData = dataSource?.map((item) => {
@@ -269,6 +296,7 @@ export default (props) => {
             },
           };
         }}
+        rowClassName={() => styles.rowPointer}
       />
     </div>
   );

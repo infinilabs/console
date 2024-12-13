@@ -57,13 +57,6 @@ export default (props) => {
       visible: false,
     },
     {
-      title: "TEAM",
-      key: "metadata.labels.team",
-      aggregable: true,
-      searchable: true,
-      visible: false,
-    },
-    {
       title: "OPERATION",
       key: "metadata.labels.operation",
       aggregable: true,
@@ -205,10 +198,6 @@ export default (props) => {
             <div className={styles.item}>
               <div className={styles.label}>操作者</div>
               <div className={styles.value}>{selectedItem.metadata.operator  || '-'}</div>
-            </div>
-            <div className={styles.item}>
-              <div className={styles.label}>团队</div>
-              <div className={styles.value}>{selectedItem.metadata.labels.team  || '-'}</div>
             </div>
           </div>
         </div>

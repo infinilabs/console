@@ -16,6 +16,7 @@ import host from "./zh-CN/host";
 import settings from "./zh-CN/settings";
 import listview from "./zh-CN/listview";
 import audit from "./zh-CN/audit";
+import error from "./zh-CN/error";
 
 export default {
   "navBar.lang": "语言",
@@ -613,5 +614,6 @@ export default {
   ...host,
   ...settings,
   ...listview,
-  ...audit
+  ...audit,
+  ...error
 };

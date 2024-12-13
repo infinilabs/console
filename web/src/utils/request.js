@@ -5,6 +5,31 @@ import hash from "hash.js";
 import { isAntdPro } from "./utils";
 import { formatMessage } from "umi/locale";
 import { getAuthorizationHeader } from "./authority";
+import * as uuid from 'uuid';
+
+export const formatResponse = (response) => {
+  if (!response || !response.error) return response;
+  let key;
+  let msg;
+  if (response.error.reason === 'context deadline exceeded') {
+    key = 'error.timeout'
+  } else {
+    const errors = response.error.reason?.split(':');
+    const errorKey = errors[0]?.endsWith('_error') ? errors[0] : 'unknown';
+    const field = errors[1]
+    key = errorKey !== 'unknown' && errors[1] ? `error.${errorKey}.${errors[1]}` : `error.${errorKey}`;
+    msg = errors.slice(2).join(':')
+  }
+
+  return {
+    ...response,
+    errorObject: {
+      id: uuid.v4(),
+      key,
+      msg
+    }
+  }
+}
 
 const checkStatus = async (response, noticeable, option={}) => {
   const codeMessage = {

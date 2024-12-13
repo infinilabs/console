@@ -566,9 +566,23 @@ func (h *APIHandler) GetClusterNodes(w http.ResponseWriter, req *http.Request, p
 						},
 					},
 					{
-						"term": util.MapStr{
-							"metadata.labels.cluster_uuid": util.MapStr{
-								"value": clusterUUID,
+						"bool": util.MapStr{
+							"minimum_should_match": 1,
+							"should": []util.MapStr{
+								{
+									"term": util.MapStr{
+										"metadata.labels.cluster_id": util.MapStr{
+											"value": id,
+										},
+									},
+								},
+								{
+									"term": util.MapStr{
+										"metadata.labels.cluster_uuid": util.MapStr{
+											"value": clusterUUID,
+										},
+									},
+								},
 							},
 						},
 					},

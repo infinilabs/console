@@ -236,7 +236,12 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, ctx context.Context, 
 			},
 		},
 	}
-	metrics := h.getMetrics(ctx, query, nodeMetricItems, bucketSize)
+	metrics, err := h.getMetrics(ctx, query, nodeMetricItems, bucketSize)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err, http.StatusInternalServerError)
+		return
+	}
 	indexMetrics := map[string]util.MapStr{}
 	for key, item := range metrics {
 		for _, line := range item.Lines {
@@ -565,7 +570,12 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 			}
 			metricItems = append(metricItems, metricItem)
 		}
-		metrics = h.getSingleMetrics(ctx, metricItems, query, bucketSize)
+		metrics, err = h.getSingleMetrics(ctx, metricItems, query, bucketSize)
+		if err != nil {
+			log.Error(err)
+			h.WriteError(w, err, http.StatusInternalServerError)
+			return
+		}
 	}
 	resBody["metrics"] = metrics
 	h.WriteJSON(w, resBody, http.StatusOK)

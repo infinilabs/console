@@ -75,7 +75,7 @@ const (
 	DocPercentMetricKey = "doc_percent"
 )
 
-func (h *APIHandler) getIndexMetrics(ctx context.Context, req *http.Request, clusterID string, bucketSize int, min, max int64, indexName string, top int, metricKey string) map[string]*common.MetricItem{
+func (h *APIHandler) getIndexMetrics(ctx context.Context, req *http.Request, clusterID string, bucketSize int, min, max int64, indexName string, top int, metricKey string) (map[string]*common.MetricItem, error){
 	bucketSizeStr:=fmt.Sprintf("%vs",bucketSize)
 
 	var must = []util.MapStr{
@@ -109,7 +109,7 @@ func (h *APIHandler) getIndexMetrics(ctx context.Context, req *http.Request, clu
 		indexNames = strings.Split(indexName, ",")
 		allowedIndices, hasAllPrivilege := h.GetAllowedIndices(req, clusterID)
 		if !hasAllPrivilege && len(allowedIndices) == 0 {
-			return nil
+			return nil, nil
 		}
 		if !hasAllPrivilege{
 			namePattern := radix.Compile(allowedIndices...)
@@ -120,7 +120,7 @@ func (h *APIHandler) getIndexMetrics(ctx context.Context, req *http.Request, clu
 				}
 			}
 			if len(filterNames) == 0 {
-				return nil
+				return nil, nil
 			}
 			indexNames = filterNames
 		}
@@ -665,8 +665,7 @@ func (h *APIHandler) getIndexMetrics(ctx context.Context, req *http.Request, clu
 	}
 	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
 	if err != nil {
-		log.Error(err)
-		panic(err)
+		return nil, err
 	}
 
 	query["size"]=0

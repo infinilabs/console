@@ -742,7 +742,7 @@ func (h *APIHandler) getIndexMetrics(ctx context.Context, req *http.Request, clu
 			},
 		},
 	}
-	return h.getMetrics(ctx, query, indexMetricItems, bucketSize), nil
+	return h.getMetrics(ctx, query, indexMetricItems, bucketSize)
 
 }
 

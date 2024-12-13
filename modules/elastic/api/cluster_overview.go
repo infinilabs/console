@@ -25,7 +25,9 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	cerr "infini.sh/console/core/errors"
 	"infini.sh/framework/modules/elastic/adapter"
 	"net/http"
 	"strings"
@@ -263,7 +265,16 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), du)
 	defer cancel()
-	indexMetrics := h.getMetrics(ctx, query, indexMetricItems, bucketSize)
+	indexMetrics, err := h.getMetrics(ctx, query, indexMetricItems, bucketSize)
+	if err != nil {
+		log.Error(err)
+		if errors.Is(err, context.DeadlineExceeded) {
+			h.WriteError(w, cerr.New(cerr.ErrTypeRequestTimeout, "", err).Error(), http.StatusRequestTimeout)
+			return
+		}
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	indexingMetricData := util.MapStr{}
 	for _, line := range indexMetrics["cluster_indexing"].Lines {
 		// remove first metric dot
@@ -738,7 +749,7 @@ func (h *APIHandler) GetRealtimeClusterNodes(w http.ResponseWriter, req *http.Re
 
 func (h *APIHandler) GetClusterIndices(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	id := ps.ByName("id")
-	if GetMonitorState(id) == Console {
+	if GetMonitorState(id) == elastic.ModeAgentless {
 		h.APIHandler.GetClusterIndices(w, req, ps)
 		return
 	}
@@ -774,7 +785,7 @@ func (h *APIHandler) GetClusterIndices(w http.ResponseWriter, req *http.Request,
 func (h *APIHandler) GetRealtimeClusterIndices(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	resBody := map[string]interface{}{}
 	id := ps.ByName("id")
-	if GetMonitorState(id) == Console {
+	if GetMonitorState(id) == elastic.ModeAgentless {
 		h.APIHandler.GetRealtimeClusterIndices(w, req, ps)
 		return
 	}
@@ -1326,4 +1337,86 @@ func (h *APIHandler) SearchClusterMetadata(w http.ResponseWriter, req *http.Requ
 		return
 	}
 	w.Write(util.MustToJSONBytes(response))
+}
+
+func (h *APIHandler) getClusterMonitorState(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	id := ps.ByName("id")
+	collectionMode := GetMonitorState(id)
+	ret := util.MapStr{
+		"cluster_id": id,
+		"metric_collection_mode": collectionMode,
+	}
+	queryDSL := util.MapStr{
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": []util.MapStr{
+					{
+						"term": util.MapStr{
+							"metadata.labels.cluster_id": id,
+						},
+					},
+					{
+						"term": util.MapStr{
+							"metadata.category": "elasticsearch",
+						},
+					},
+				},
+			},
+		},
+		"size": 0,
+		"aggs": util.MapStr{
+			"grp_name": util.MapStr{
+				"terms": util.MapStr{
+					"field": "metadata.name",
+					"size": 10,
+				},
+				"aggs": util.MapStr{
+					"max_timestamp": util.MapStr{
+						"max": util.MapStr{
+							"field": "timestamp",
+						},
+					},
+				},
+			},
+		},
+	}
+	dsl := util.MustToJSONBytes(queryDSL)
+	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).SearchWithRawQueryDSL(getAllMetricsIndex(), dsl)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	for _, bk := range response.Aggregations["grp_name"].Buckets {
+		key := bk["key"].(string)
+		if tv, ok := bk["max_timestamp"].(map[string]interface{}); ok {
+			if collectionMode == elastic.ModeAgentless {
+				if util.StringInArray([]string{ "index_stats", "cluster_health", "cluster_stats", "node_stats"}, key) {
+					ret[key] = getCollectionStats(tv["value"])
+				}
+			}else{
+				if util.StringInArray([]string{ "shard_stats", "cluster_health", "cluster_stats", "node_stats"}, key) {
+					ret[key] = getCollectionStats(tv["value"])
+				}
+			}
+		}
+
+	}
+	h.WriteJSON(w, ret, http.StatusOK)
+}
+
+func getCollectionStats(lastActiveAt interface{}) util.MapStr {
+	stats := util.MapStr{
+		"last_active_at": lastActiveAt,
+		"status": "active",
+	}
+	if timestamp, ok := lastActiveAt.(float64); ok {
+		t := time.Unix(int64(timestamp/1000), 0)
+		if time.Now().Sub(t) > 5 * time.Minute {
+			stats["status"] = "warning"
+		}else{
+			stats["status"] = "ok"
+		}
+	}
+	return stats
 }

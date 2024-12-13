@@ -528,7 +528,7 @@ func (h *APIHandler) HandleMetricsSummaryAction(w http.ResponseWriter, req *http
 func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	resBody := map[string]interface{}{}
 	id := ps.ByName("id")
-	if GetMonitorState(id) == Console {
+	if GetMonitorState(id) == elastic.ModeAgentless {
 		h.APIHandler.HandleClusterMetricsAction(w, req, ps)
 		return
 	}
@@ -561,9 +561,14 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 	ctx, cancel := context.WithTimeout(context.Background(), du)
 	defer cancel()
 	if util.StringInArray([]string{v1.IndexThroughputMetricKey, v1.SearchThroughputMetricKey, v1.IndexLatencyMetricKey, v1.SearchLatencyMetricKey}, key) {
-		metrics = h.GetClusterIndexMetrics(ctx, id, bucketSize, min, max, key)
+		metrics, err = h.GetClusterIndexMetrics(ctx, id, bucketSize, min, max, key)
 	}else{
-		metrics = h.GetClusterMetrics(ctx, id, bucketSize, min, max, key)
+		metrics, err = h.GetClusterMetrics(ctx, id, bucketSize, min, max, key)
+	}
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err, http.StatusInternalServerError)
+		return
 	}
 
 	resBody["metrics"] = metrics
@@ -603,7 +608,7 @@ func (h *APIHandler) HandleNodeMetricsAction(w http.ResponseWriter, req *http.Re
 	resBody["metrics"], err = h.getNodeMetrics(ctx, id, bucketSize, min, max, nodeName, top, key)
 	if err != nil {
 		log.Error(err)
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		h.WriteError(w, err, http.StatusInternalServerError)
 		return
 	}
 	ver := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).GetVersion()
@@ -626,7 +631,7 @@ func (h *APIHandler) HandleNodeMetricsAction(w http.ResponseWriter, req *http.Re
 func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	resBody := map[string]interface{}{}
 	id := ps.ByName("id")
-	if GetMonitorState(id) == Console {
+	if GetMonitorState(id) == elastic.ModeAgentless {
 		h.APIHandler.HandleIndexMetricsAction(w, req, ps)
 		return
 	}
@@ -903,35 +908,36 @@ const (
 	CircuitBreakerMetricKey = "circuit_breaker"
 )
 
-func (h *APIHandler) GetClusterMetrics(ctx context.Context, id string, bucketSize int, min, max int64, metricKey string) map[string]*common.MetricItem {
+func (h *APIHandler) GetClusterMetrics(ctx context.Context, id string, bucketSize int, min, max int64, metricKey string) (map[string]*common.MetricItem, error) {
 
-	var clusterMetricsResult = map[string]*common.MetricItem {}
+	var (
+		clusterMetricsResult = map[string]*common.MetricItem {}
+		err error
+	)
 	switch metricKey {
 	case ClusterDocumentsMetricKey,
 		ClusterStorageMetricKey,
 		ClusterIndicesMetricKey,
 		ClusterNodeCountMetricKey:
-		clusterMetricsResult = h.getClusterMetricsByKey(ctx, id, bucketSize, min, max, metricKey)
+		clusterMetricsResult, err = h.getClusterMetricsByKey(ctx, id, bucketSize, min, max, metricKey)
 	case v1.IndexLatencyMetricKey, v1.IndexThroughputMetricKey, v1.SearchThroughputMetricKey, v1.SearchLatencyMetricKey:
-		clusterMetricsResult = h.GetClusterIndexMetrics(ctx, id, bucketSize, min, max, metricKey)
+		clusterMetricsResult, err = h.GetClusterIndexMetrics(ctx, id, bucketSize, min, max, metricKey)
 	case ClusterHealthMetricKey:
-		statusMetric, err := h.getClusterStatusMetric(ctx, id, min, max, bucketSize)
+		var statusMetric *common.MetricItem
+		statusMetric, err = h.getClusterStatusMetric(ctx, id, min, max, bucketSize)
 		if err == nil {
 			clusterMetricsResult[ClusterHealthMetricKey] = statusMetric
-		} else {
-			log.Error("get cluster status metric error: ", err)
 		}
 	case ShardCountMetricKey:
-		clusterMetricsResult = h.getShardsMetric(ctx, id, min, max, bucketSize)
+		clusterMetricsResult, err = h.getShardsMetric(ctx, id, min, max, bucketSize)
 
 	case CircuitBreakerMetricKey:
-		clusterMetricsResult = h.getCircuitBreakerMetric(ctx, id, min, max, bucketSize)
+		clusterMetricsResult, err = h.getCircuitBreakerMetric(ctx, id, min, max, bucketSize)
 	}
-
-	return clusterMetricsResult
+	return clusterMetricsResult, err
 }
 
-func (h *APIHandler) getClusterMetricsByKey(ctx context.Context, id string, bucketSize int, min, max int64, metricKey string) map[string]*common.MetricItem {
+func (h *APIHandler) getClusterMetricsByKey(ctx context.Context, id string, bucketSize int, min, max int64, metricKey string) (map[string]*common.MetricItem, error) {
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 
 	clusterMetricItems := []*common.MetricItem{}
@@ -964,7 +970,7 @@ func (h *APIHandler) getClusterMetricsByKey(ctx context.Context, id string, buck
 		meta := elastic.GetMetadata(id)
 		if meta == nil {
 			err := fmt.Errorf("metadata of cluster [%s] is not found", id)
-			panic(err)
+			return nil, err
 		}
 		majorVersion := meta.GetMajorVersion()
 
@@ -1024,7 +1030,7 @@ func (h *APIHandler) getClusterMetricsByKey(ctx context.Context, id string, buck
 	return h.getSingleMetrics(ctx, clusterMetricItems, query, bucketSize)
 }
 
-func (h *APIHandler) GetClusterIndexMetrics(ctx context.Context, id string, bucketSize int, min, max int64, metricKey string) map[string]*common.MetricItem {
+func (h *APIHandler) GetClusterIndexMetrics(ctx context.Context, id string, bucketSize int, min, max int64, metricKey string) (map[string]*common.MetricItem, error) {
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 	metricItems := []*common.MetricItem{}
 	switch metricKey {
@@ -1081,7 +1087,7 @@ func (h *APIHandler) GetClusterIndexMetrics(ctx context.Context, id string, buck
 	query := map[string]interface{}{}
 	clusterUUID, err := adapter.GetClusterUUID(id)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	query["query"] = util.MapStr{
 		"bool": util.MapStr{
@@ -1123,7 +1129,7 @@ func (h *APIHandler) GetClusterIndexMetrics(ctx context.Context, id string, buck
 	return h.getSingleIndexMetricsByNodeStats(ctx, metricItems, query, bucketSize)
 }
 
-func (h *APIHandler) getShardsMetric(ctx context.Context, id string, min, max int64, bucketSize int) map[string]*common.MetricItem {
+func (h *APIHandler) getShardsMetric(ctx context.Context, id string, min, max int64, bucketSize int) (map[string]*common.MetricItem, error) {
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 	query := util.MapStr{
 		"query": util.MapStr{
@@ -1185,7 +1191,7 @@ func (h *APIHandler) getShardsMetric(ctx context.Context, id string, min, max in
 	return h.getSingleMetrics(ctx, clusterHealthMetrics, query, bucketSize)
 }
 
-func (h *APIHandler) getCircuitBreakerMetric(ctx context.Context, id string, min, max int64, bucketSize int) map[string]*common.MetricItem {
+func (h *APIHandler) getCircuitBreakerMetric(ctx context.Context, id string, min, max int64, bucketSize int) (map[string]*common.MetricItem, error) {
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 	query := util.MapStr{
 		"query": util.MapStr{

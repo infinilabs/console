@@ -24,6 +24,10 @@
 package core
 
 import (
+	"context"
+	"errors"
+	"fmt"
+	cerr "infini.sh/console/core/errors"
 	"infini.sh/console/core/security"
 	"infini.sh/framework/core/api"
 	httprouter "infini.sh/framework/core/api/router"
@@ -35,6 +39,18 @@ import (
 // Handler is the object of http handler
 type Handler struct {
 	api.Handler
+}
+
+func (handler Handler) WriteError(w http.ResponseWriter, err interface{}, status int) {
+	if v, ok := err.(error); ok {
+		if errors.Is(v, context.DeadlineExceeded) {
+			handler.Handler.WriteError(w, cerr.New(cerr.ErrTypeRequestTimeout, "", err).Error(), status)
+			return
+		}
+		handler.Handler.WriteError(w, v.Error(), status)
+		return
+	}
+	handler.Handler.WriteError(w, fmt.Sprintf("%v", err), status)
 }
 
 func (handler Handler) RequireLogin(h httprouter.Handle) httprouter.Handle {

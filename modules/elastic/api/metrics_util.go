@@ -110,13 +110,12 @@ func generateGroupAggs(nodeMetricItems []GroupMetricItem) map[string]interface{}
 	return aggs
 }
 
-func (h *APIHandler) getMetrics(ctx context.Context, query map[string]interface{}, grpMetricItems []GroupMetricItem, bucketSize int) map[string]*common.MetricItem {
+func (h *APIHandler) getMetrics(ctx context.Context, query map[string]interface{}, grpMetricItems []GroupMetricItem, bucketSize int) (map[string]*common.MetricItem, error) {
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 	queryDSL := util.MustToJSONBytes(query)
 	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).QueryDSL(ctx, getAllMetricsIndex(),nil, queryDSL)
 	if err != nil {
-		log.Error(err)
-		panic(err)
+		return nil, err
 	}
 	grpMetricItemsIndex := map[string]int{}
 	for i, item := range grpMetricItems {
@@ -146,9 +145,9 @@ func (h *APIHandler) getMetrics(ctx context.Context, query map[string]interface{
 							if bucketMap, ok := dateBucket.(map[string]interface{}); ok {
 								v, ok := bucketMap["key"].(float64)
 								if !ok {
-									panic("invalid bucket key")
+									return nil, fmt.Errorf("invalid bucket key type: %T", bucketMap["key"])
 								}
-								dateTime := (int64(v))
+								dateTime := int64(v)
 								minDate = util.MinInt64(minDate, dateTime)
 								maxDate = util.MaxInt64(maxDate, dateTime)
 
@@ -219,7 +218,7 @@ func (h *APIHandler) getMetrics(ctx context.Context, query map[string]interface{
 		metricItem.MetricItem.Request = string(queryDSL)
 		result[metricItem.Key] = metricItem.MetricItem
 	}
-	return result
+	return result, nil
 }
 
 func GetMinBucketSize() int {
@@ -340,7 +339,7 @@ func GetMetricRangeAndBucketSize(minStr string, maxStr string, bucketSize int, m
 }
 
 // 获取单个指标，可以包含多条曲线
-func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common.MetricItem, query map[string]interface{}, bucketSize int) map[string]*common.MetricItem {
+func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common.MetricItem, query map[string]interface{}, bucketSize int) (map[string]*common.MetricItem, error) {
 	metricData := map[string][][]interface{}{}
 
 	aggs := map[string]interface{}{}
@@ -386,8 +385,7 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 	clusterID := global.MustLookupString(elastic.GlobalSystemElasticsearchID)
 	intervalField, err := getDateHistogramIntervalField(clusterID, bucketSizeStr)
 	if err != nil {
-		log.Error(err)
-		panic(err)
+		return nil, err
 	}
 	query["size"] = 0
 	query["aggs"] = util.MapStr{
@@ -402,8 +400,7 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 	queryDSL := util.MustToJSONBytes(query)
 	response, err := elastic.GetClient(clusterID).QueryDSL(ctx, getAllMetricsIndex(), nil,  queryDSL)
 	if err != nil {
-		log.Error(err)
-		panic(err)
+		return  nil, err
 	}
 
 	var minDate, maxDate int64
@@ -475,7 +472,7 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 		result[metricItem.Key] = metricItem
 	}
 
-	return result
+	return result, nil
 }
 
 //func (h *APIHandler) executeQuery(query map[string]interface{}, bucketItems *[]common.BucketItem, bucketSize int) map[string]*common.MetricItem {
@@ -964,7 +961,7 @@ func parseGroupMetricData(buckets []elastic.BucketBase, isPercent bool) ([]inter
 	return metricData, nil
 }
 
-func (h *APIHandler) getSingleIndexMetricsByNodeStats(ctx context.Context, metricItems []*common.MetricItem, query map[string]interface{}, bucketSize int) map[string]*common.MetricItem {
+func (h *APIHandler) getSingleIndexMetricsByNodeStats(ctx context.Context, metricItems []*common.MetricItem, query map[string]interface{}, bucketSize int) (map[string]*common.MetricItem, error) {
 	metricData := map[string][][]interface{}{}
 
 	aggs := util.MapStr{}
@@ -1034,7 +1031,7 @@ func (h *APIHandler) getSingleIndexMetricsByNodeStats(ctx context.Context, metri
 	clusterID := global.MustLookupString(elastic.GlobalSystemElasticsearchID)
 	intervalField, err := getDateHistogramIntervalField(clusterID, bucketSizeStr)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	query["size"] = 0
 	query["aggs"] = util.MapStr{
@@ -1049,7 +1046,7 @@ func (h *APIHandler) getSingleIndexMetricsByNodeStats(ctx context.Context, metri
 	return parseSingleIndexMetrics(ctx, clusterID, metricItems, query, bucketSize,metricData, metricItemsMap)
 }
 
-func (h *APIHandler) getSingleIndexMetrics(ctx context.Context, metricItems []*common.MetricItem, query map[string]interface{}, bucketSize int) map[string]*common.MetricItem {
+func (h *APIHandler) getSingleIndexMetrics(ctx context.Context, metricItems []*common.MetricItem, query map[string]interface{}, bucketSize int) (map[string]*common.MetricItem, error) {
 	metricData := map[string][][]interface{}{}
 
 	aggs := util.MapStr{}
@@ -1154,11 +1151,11 @@ func (h *APIHandler) getSingleIndexMetrics(ctx context.Context, metricItems []*c
 	return parseSingleIndexMetrics(ctx, clusterID, metricItems, query, bucketSize,metricData, metricItemsMap)
 }
 
-func parseSingleIndexMetrics(ctx context.Context, clusterID string, metricItems []*common.MetricItem, query map[string]interface{}, bucketSize int, metricData map[string][][]interface{}, metricItemsMap map[string]*common.MetricLine) map[string]*common.MetricItem {
+func parseSingleIndexMetrics(ctx context.Context, clusterID string, metricItems []*common.MetricItem, query map[string]interface{}, bucketSize int, metricData map[string][][]interface{}, metricItemsMap map[string]*common.MetricLine) (map[string]*common.MetricItem, error) {
 	queryDSL := util.MustToJSONBytes(query)
 	response, err := elastic.GetClient(clusterID).QueryDSL(ctx, getAllMetricsIndex(), nil, util.MustToJSONBytes(query))
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	var minDate, maxDate int64
@@ -1167,9 +1164,9 @@ func parseSingleIndexMetrics(ctx context.Context, clusterID string, metricItems 
 			for _, bucket := range v.Buckets {
 				v, ok := bucket["key"].(float64)
 				if !ok {
-					panic("invalid bucket key")
+					return nil, fmt.Errorf("invalid bucket key type: %T", bucket["key"])
 				}
-				dateTime := (int64(v))
+				dateTime := int64(v)
 				minDate = util.MinInt64(minDate, dateTime)
 				maxDate = util.MaxInt64(maxDate, dateTime)
 				for mk1, mv1 := range metricData {
@@ -1230,5 +1227,5 @@ func parseSingleIndexMetrics(ctx context.Context, clusterID string, metricItems 
 		result[metricItem.Key] = metricItem
 	}
 
-	return result
+	return result, nil
 }

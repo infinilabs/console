@@ -151,12 +151,70 @@ func (h *APIHandler) SearchIndexMetadata(w http.ResponseWriter, req *http.Reques
 
 	must := []interface{}{
 	}
-	hasAllPrivilege, indexPrivilege := h.GetCurrentUserIndex(req)
-	if !hasAllPrivilege && len(indexPrivilege) == 0 {
+	if indexFilter, hasIndexPri :=  h.getAllowedIndexFilter(req); hasIndexPri {
+		if indexFilter != nil{
+			must = append(must, indexFilter)
+		}
+	}else{
 		h.WriteJSON(w, elastic.SearchResponse{
-
 		}, http.StatusOK)
 		return
+	}
+	boolQuery := util.MapStr{
+		"must_not": []util.MapStr{
+			{
+				"term": util.MapStr{
+					"metadata.labels.index_status": "deleted",
+				},
+			},
+		},
+		"filter": filter,
+		"must": must,
+	}
+	if len(should) > 0 {
+		boolQuery["should"] = should
+		boolQuery["minimum_should_match"] = 1
+	}
+	query := util.MapStr{
+		"aggs":      aggs,
+		"size":      reqBody.Size,
+		"from": reqBody.From,
+		"highlight": elastic.BuildSearchHighlight(&reqBody.Highlight),
+		"query": util.MapStr{
+			"bool": boolQuery,
+		},
+		"sort": []util.MapStr{
+			{
+				"timestamp": util.MapStr{
+					"order": "desc",
+				},
+			},
+		},
+	}
+	if len(reqBody.Sort) > 1 {
+		query["sort"] =  []util.MapStr{
+			{
+				reqBody.Sort[0]: util.MapStr{
+					"order": reqBody.Sort[1],
+				},
+			},
+		}
+	}
+	dsl := util.MustToJSONBytes(query)
+	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).SearchWithRawQueryDSL(orm.GetIndexName(elastic.IndexConfig{}), dsl)
+	if err != nil {
+		resBody["error"] = err.Error()
+		h.WriteJSON(w,resBody, http.StatusInternalServerError )
+		return
+	}
+	w.Write(util.MustToJSONBytes(response))
+
+}
+
+func (h *APIHandler) getAllowedIndexFilter(req *http.Request) (util.MapStr, bool){
+	hasAllPrivilege, indexPrivilege := h.GetCurrentUserIndex(req)
+	if !hasAllPrivilege && len(indexPrivilege) == 0 {
+		return nil, false
 	}
 	if !hasAllPrivilege {
 		indexShould := make([]interface{}, 0, len(indexPrivilege))
@@ -215,57 +273,9 @@ func (h *APIHandler) SearchIndexMetadata(w http.ResponseWriter, req *http.Reques
 				"should": indexShould,
 			},
 		}
-		must = append(must, indexFilter)
+		return indexFilter, true
 	}
-	boolQuery := util.MapStr{
-		"must_not": []util.MapStr{
-			{
-				"term": util.MapStr{
-					"metadata.labels.index_status": "deleted",
-				},
-			},
-		},
-		"filter": filter,
-		"must": must,
-	}
-	if len(should) > 0 {
-		boolQuery["should"] = should
-		boolQuery["minimum_should_match"] = 1
-	}
-	query := util.MapStr{
-		"aggs":      aggs,
-		"size":      reqBody.Size,
-		"from": reqBody.From,
-		"highlight": elastic.BuildSearchHighlight(&reqBody.Highlight),
-		"query": util.MapStr{
-			"bool": boolQuery,
-		},
-		"sort": []util.MapStr{
-			{
-				"timestamp": util.MapStr{
-					"order": "desc",
-				},
-			},
-		},
-	}
-	if len(reqBody.Sort) > 1 {
-		query["sort"] =  []util.MapStr{
-			{
-				reqBody.Sort[0]: util.MapStr{
-					"order": reqBody.Sort[1],
-				},
-			},
-		}
-	}
-	dsl := util.MustToJSONBytes(query)
-	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).SearchWithRawQueryDSL(orm.GetIndexName(elastic.IndexConfig{}), dsl)
-	if err != nil {
-		resBody["error"] = err.Error()
-		h.WriteJSON(w,resBody, http.StatusInternalServerError )
-		return
-	}
-	w.Write(util.MustToJSONBytes(response))
-
+	return nil, true
 }
 func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter,  req *http.Request, ps httprouter.Params) {
 	var indexIDs []interface{}
@@ -1264,4 +1274,38 @@ func (h APIHandler) ListIndex(w http.ResponseWriter, req *http.Request, ps httpr
 	h.WriteOKJSON(w, m)
 
 	return
+}
+
+//deleteIndexMetadata used to delete index metadata after index is deleted from cluster
+func (h APIHandler) deleteIndexMetadata(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
+	indexName := orm.GetIndexName(elastic.IndexConfig{})
+	must :=  []util.MapStr{
+		{
+			"term": util.MapStr{
+				"metadata.labels.state": "delete",
+			},
+		},
+	}
+	if indexFilter, hasIndexPri :=  h.getAllowedIndexFilter(req); hasIndexPri {
+		if indexFilter != nil {
+			must = append(must, indexFilter)
+		}
+	}else{
+		//has no any index permission, just return
+		h.WriteAckOKJSON(w)
+		return
+	}
+	dsl := util.MapStr{
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": must,
+			},
+		},
+	}
+	_, err := esClient.DeleteByQuery(indexName, util.MustToJSONBytes(dsl))
+	if err != nil {
+		h.WriteError(w, err, http.StatusInternalServerError)
+	}
+	h.WriteAckOKJSON(w)
 }

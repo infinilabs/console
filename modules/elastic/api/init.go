@@ -131,5 +131,7 @@ func init() {
 
 	api.HandleAPIMethod(api.GET, "/elasticsearch/metadata", clusterAPI.RequireLogin(clusterAPI.GetMetadata))
 	api.HandleAPIMethod(api.GET, "/elasticsearch/hosts", clusterAPI.RequireLogin(clusterAPI.GetHosts))
+	api.HandleAPIMethod(api.DELETE, "/elasticsearch/metadata/index", clusterAPI.RequireLogin(clusterAPI.deleteIndexMetadata))
+	api.HandleAPIMethod(api.DELETE, "/elasticsearch/metadata/node", clusterAPI.RequireLogin(clusterAPI.deleteNodeMetadata))
 
 }

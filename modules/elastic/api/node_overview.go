@@ -1365,3 +1365,34 @@ func (h *APIHandler) GetNodeShards(w http.ResponseWriter, req *http.Request, ps 
 
 	h.WriteJSON(w, shards, http.StatusOK)
 }
+
+//deleteNodeMetadata used to clean node metadata after node is offline and not active within 7 days
+func (h APIHandler) deleteNodeMetadata(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
+	indexName := orm.GetIndexName(elastic.NodeConfig{})
+	dsl := util.MapStr{
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": []util.MapStr{
+					{
+						"term": util.MapStr{
+							"metadata.labels.status": "unavailable",
+						},
+					},
+					{
+						"range": util.MapStr{
+							"timestamp": util.MapStr{
+								"lt": "now-7d",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	_, err := esClient.DeleteByQuery(indexName, util.MustToJSONBytes(dsl))
+	if err != nil {
+		h.WriteError(w, err, http.StatusInternalServerError)
+	}
+	h.WriteAckOKJSON(w)
+}

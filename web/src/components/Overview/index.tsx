@@ -301,6 +301,7 @@ export default forwardRef((props: IProps, ref: any) => {
                     setSelectedItem(item);
                     drawRef.current?.open();
                   }}
+                  parentLoading={loading}
                 />
               )}
             </div>

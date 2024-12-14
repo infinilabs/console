@@ -45,6 +45,7 @@ import { saveCommonCommand } from "../modules/es";
 import { pushCommand } from "../modules/mappings/mappings";
 import { formatMessage } from "umi/locale";
 import { hasAuthority } from "@/utils/authority";
+import { CopyToClipboard } from "react-copy-to-clipboard";
 
 interface Props {
   getCurl: () => Promise<string>;
@@ -177,21 +178,22 @@ export default class ConsoleMenu extends Component<Props, State> {
         {formatMessage({ id: "console.menu.save_as_command" })}
       </EuiContextMenuItem>)
     }
-    if (window.navigator?.clipboard) {
-      items.unshift(
+    items.unshift(
+      <CopyToClipboard key="Copy as cURL" text={this.state.curlCode}>
         <EuiContextMenuItem
-          key="Copy as cURL"
           id="ConCopyAsCurl"
-          disabled={!window.navigator?.clipboard}
           onClick={() => {
             this.closePopover();
-            this.copyAsCurl();
+            notification.open({
+              message: "Request copied as cURL",
+              placement: "bottomRight",
+            });
           }}
         >
           {formatMessage({ id: "console.menu.copy_as_curl" })}
         </EuiContextMenuItem>
-      );
-    }
+      </CopyToClipboard>
+    );
 
     return (
       <span onMouseEnter={this.mouseEnter}>

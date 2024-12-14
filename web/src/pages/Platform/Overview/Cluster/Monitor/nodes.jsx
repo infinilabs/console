@@ -153,7 +153,16 @@ export default ({
       {
         title: "CPU Usage",
         dataIndex: "cpu",
-        render: (text, record) => <span>{text ? `${text}%` : "N/A"}</span>,
+        render: (text, record) => {
+          const number = parseFloat(text);
+          if (Number.isNaN(number)) {
+            return "N/A"
+          }
+          if (number === 0) {
+            return "1%"
+          }
+          return `${text}%`
+        },
         sorter: (a, b) => a?.cpu - b?.cpu,
         className: "verticalAlign",
       },
@@ -171,7 +180,16 @@ export default ({
       {
         title: "JVM Heap",
         dataIndex: "heap.percent",
-        render: (text, record) => <span>{text ? `${text}%` : "N/A"}</span>,
+        render: (text, record) => {
+          const number = parseFloat(text);
+          if (Number.isNaN(number)) {
+            return "N/A"
+          }
+          if (number === 0) {
+            return "1%"
+          }
+          return `${text}%`
+        },
         sorter: (a, b) => a?.["heap.percent"] - b?.["heap.percent"],
         className: "verticalAlign",
       },

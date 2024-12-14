@@ -119,6 +119,8 @@ export default {
   "form.button.resume": "Resume",
   "form.button.restart": "Restart",
   "form.button.verify": "Verify",
+  "form.button.clean": "Clean",
+  "form.button.clean.confim.desc": "Are you sure to clean data that is {status}?",
   "component.refreshGroup.label.title": "Auto Refresh",
   "component.refreshGroup.label.every": "Every",
 

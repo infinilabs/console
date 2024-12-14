@@ -250,6 +250,9 @@ export default forwardRef((props: IProps, ref: any) => {
                 ...searchAutoCompleteConfig,
               }}
               {...headerConfig}
+              onCleanSuccess={() => {
+                dispatch({ type: "pagination", value: 1 })
+              }}
             />
             <div className="search-result">
               {dispalyTypeObj[currentTab] == "card" ? (

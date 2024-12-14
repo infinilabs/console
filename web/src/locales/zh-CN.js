@@ -124,6 +124,8 @@ export default {
   "form.button.resume": "恢复",
   "form.button.restart": "重启",
   "form.button.verify": "校验",
+  "form.button.clean": "清除",
+  "form.button.clean.confim.desc": "确定删除状态为 {status} 的数据吗？",
   "component.refreshGroup.label.title": "自动刷新",
   "component.refreshGroup.label.every": "每隔",
 

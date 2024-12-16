@@ -74,7 +74,7 @@ func init() {
 	api.HandleAPIMethod(api.GET, "/elasticsearch/:id/saved_objects/view/:view_id", clusterAPI.RequireClusterPermission(clusterAPI.HandleGetViewAction))
 	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/view/:view_id/_set_default_layout", clusterAPI.RequireClusterPermission(clusterAPI.SetDefaultLayout))
 
-	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/search/ese", clusterAPI.RequireClusterPermission(clusterAPI.HandleEseSearchAction))
+	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/search/ese", clusterAPI.RequireLogin(clusterAPI.HandleEseSearchAction))
 	api.HandleAPIMethod(api.GET, "/elasticsearch/:id/search/trace_id", clusterAPI.HandleTraceIDSearchAction)
 	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/suggestions/values/:index", clusterAPI.RequireClusterPermission(clusterAPI.HandleValueSuggestionAction))
 	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/setting", clusterAPI.RequireClusterPermission(clusterAPI.HandleSettingAction))

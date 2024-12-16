@@ -397,14 +397,10 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-calavvp7h710d
     "resource_name": "$[[SETUP_RESOURCE_NAME]]",
     "type": "elasticsearch",
     "objects": [
-      ".infini_index"
+      ".infini_metrics"
     ],
     "filter": {},
-    "raw_filter": {
-      "match": {
-        "metadata.labels.health_status": "red"
-      }
-    },
+    "raw_filter": {"bool":{"must":[{"match":{"payload.elasticsearch.index_health.status":"red"}},{"term":{"metadata.name":{"value":"index_health"}}}]}},
     "time_field": "timestamp",
     "context": {
       "fields": null

@@ -46,10 +46,13 @@ const MessageDetail = (props) => {
     if (messageDetail?.status == "recovered") {
       endTimestamp = moment(messageDetail.updated).valueOf();
     }
+
+    const duration = moment(messageDetail.updated).valueOf() - moment(messageDetail.created).valueOf()
+
     setTimeRange({
       ...timeRange,
-      min: moment(startTimestamp).format(),
-      max: moment(endTimestamp).format("YYYY-MM-DDTHH:mm:ss.SSS"),
+      min: moment(startTimestamp).subtract(duration, 'ms').format("YYYY-MM-DDTHH:mm:ss.SSS"),
+      max: moment(endTimestamp).add(duration, 'ms').format("YYYY-MM-DDTHH:mm:ss.SSS"),
     });
   }
 
@@ -70,7 +73,10 @@ const MessageDetail = (props) => {
         <Tabs.TabPane tab={formatMessage({ id: "alert.message.detail.title.summary" })} key="summary">
           {messageDetail?.status ? <EventDetailCard msgItem={messageDetail}/>: null}
           <div style={{marginTop: 15}}>
-            {<AlertChartCard msgItem={messageDetail}/>}
+            {<AlertChartCard msgItem={messageDetail} range={{ 
+              from: timeRange.min, 
+              to: timeRange.max
+            }}/>}
           </div>
         </Tabs.TabPane>
         <Tabs.TabPane tab={formatMessage({ id: "alert.message.detail.title.notification" })} key="notification">

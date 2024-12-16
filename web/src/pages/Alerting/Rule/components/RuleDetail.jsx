@@ -37,11 +37,13 @@ import { hasAuthority } from "@/utils/authority";
 import DatePicker from "@/common/src/DatePicker";
 import { getLocale } from "umi/locale";
 import { getTimezone } from "@/utils/utils";
+import moment from "moment";
 
 const { Title } = Typography;
 
-export const buildWidgetByRule = (rule, queries) => {
+export const buildWidgetByRule = (rule, queries, created, updated) => {
   if (!rule) return;
+
   const { metrics = {} } = rule;
   const { format_type = "num" } = metrics;
   const formatMapping = {
@@ -62,8 +64,20 @@ export const buildWidgetByRule = (rule, queries) => {
   try {
     query = JSON.stringify(queries.raw_filter);
   } catch (error) {}
+
+  const number = parseInt(metrics.bucket_size);
+  const unit = metrics.bucket_size?.replace(`${number}`, '')
+  let bucketSize = metrics.bucket_size
+  if (unit) {
+    const duration = moment(updated).valueOf() - moment(created).valueOf()
+    const ms = moment.duration(number, unit).asMilliseconds()
+    if (duration <= 2 * ms) {
+      bucketSize = `${ms / 1000 / 2}s`
+    }
+  }
+
   const config = {
-    bucket_size: metrics.bucket_size,
+    bucket_size: bucketSize,
     format: formatMapping[format_type],
     group_labels: metrics.bucket_label ? [metrics.bucket_label] : undefined,
     series: [
@@ -183,7 +197,7 @@ const RuleDetail = (props) => {
       indices: ruleDetail.resource_objects,
       time_field: ruleDetail.resource_time_field,
       raw_filter: ruleDetail.resource_raw_filter,
-    });
+    }, ruleDetail?.created, ruleDetail?.updated);
   }, [ruleDetail]);
 
   return (

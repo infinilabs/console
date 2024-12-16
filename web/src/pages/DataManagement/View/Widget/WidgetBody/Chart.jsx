@@ -102,6 +102,7 @@ export default (props) => {
       }
 
       if (isTimeSeries && !range) {
+        setLoading(false)
         return;
       }
       let newRange;

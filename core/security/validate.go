@@ -153,7 +153,10 @@ func ValidateIndex(req IndexRequest, userRole RolePermission) (err error) {
 		}
 	}
 	if _, ok := userRole.ElasticPrivilege.Index[req.Cluster]; !ok {
-		return fmt.Errorf("no permission of cluster [%s]", req.Cluster)
+		if !hasAllCluster {
+			return fmt.Errorf("no permission of cluster [%s]", req.Cluster)
+		}
+		return fmt.Errorf("no index permission %s of cluster [%s]", req.Privilege, req.Cluster)
 	}
 	allowed = validateIndexPermission(req.Index, apiPrivileges, userRole.ElasticPrivilege.Index[req.Cluster])
 	if allowed {

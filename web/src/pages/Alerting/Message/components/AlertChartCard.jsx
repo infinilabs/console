@@ -37,8 +37,8 @@ export default ({msgItem, range})=>{
       "indices": resource.objects,
       "time_field": resource.time_field,
       "raw_filter": resource.raw_filter,
-  })
-  }, [JSON.stringify(rule)])
+    }, created, updated)
+  }, [JSON.stringify(rule), updated, created])
 
   const highlightRange = useMemo(() => {
     if (!created || created === updated) return undefined;

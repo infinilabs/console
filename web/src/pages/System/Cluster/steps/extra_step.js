@@ -6,6 +6,7 @@ import {
   InputNumber,
   Divider,
   Descriptions,
+  message,
 } from "antd";
 import { HealthStatusView } from "@/components/infini/health_status_view";
 import { formatMessage } from "umi/locale";
@@ -13,18 +14,91 @@ import TagEditor from "@/components/infini/TagEditor";
 import MonitorConfigsForm from "../MonitorConfigsForm";
 import MetadataConfigsForm from "../MetadataConfigsForm";
 import "../Form.scss";
+import AgentCredentialForm from "../AgentCredentialForm";
+import { MANUAL_VALUE } from "./initial_step";
 
 @Form.create()
 export class ExtraStep extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { monitored: true };
+    this.state = { 
+      monitored: true,
+      btnLoadingAgent: false, 
+      agentCredentialRequired: false,
+      isManual: false,
+      needAuth: false,
+    };
   }
   componentDidMount() {
+    const { initialValue } = this.props
+    const needAuth = initialValue?.credential_id ? true : false
     this.setState({
-      monitored: this.props?.initialValue?.monitored ?? true,
+      monitored: initialValue?.monitored ?? true,
+      needAuth,
+      isManual: needAuth ? !!initialValue?.username : false
     });
   }
+
+  tryConnect = async () => {
+    const { dispatch, form, initialValue } = this.props;
+    if (this.state.needAuth) {
+      this.setState({
+        ...this.state,
+        agentCredentialRequired: true,
+      });
+    }
+    const fieldNames = [
+      "agent_credential_id",
+      "agent_username",
+      "agent_password",
+    ];
+    setTimeout(() => {
+      form.validateFields(
+        fieldNames,
+        { force: true },
+        async (errors, values) => {
+          if (errors) {
+            return false;
+          }
+          if (!initialValue) {
+            return;
+          }
+          let newVals = {
+            host: initialValue.host,
+            schema: initialValue.isTLS === true ? "https" : "http",
+          };
+          newVals = {
+            ...newVals,
+            ...{
+              credential_id:
+                values.agent_credential_id !== MANUAL_VALUE
+                  ? values.agent_credential_id
+                  : undefined,
+              basic_auth: {
+                username: values.agent_username,
+                password: values.agent_password,
+              },
+            },
+          };
+          this.setState({ btnLoadingAgent: true });
+
+          const res = await dispatch({
+            type: "clusterConfig/doTryConnect",
+            payload: newVals,
+          });
+          if (res) {
+            message.success(
+              formatMessage({
+                id: "app.message.connect.success",
+              })
+            );
+          }
+          this.setState({ btnLoadingAgent: false });
+        }
+      );
+    }, 200);
+  };
+
   render() {
     const {
       form: { getFieldDecorator },
@@ -141,15 +215,21 @@ export class ExtraStep extends React.Component {
               initialValue: "",
             })(<Input.TextArea placeholder="Cluster description" />)}
           </Form.Item>
-          {/* <Form.Item label="是否启用">
-            {getFieldDecorator('enabled', {
-              valuePropName: 'checked',
-              initialValue: true,
-            })(<Switch
-              checkedChildren={<Icon type="check" />}
-              unCheckedChildren={<Icon type="close" />}
-            />)}
-          </Form.Item> */}
+          <AgentCredentialForm
+            btnLoading={this.state.btnLoadingAgent}
+            needAuth={this.state.needAuth}
+            form={this.props.form}
+            initialValue={{
+              ...(initialValue || {}),
+              agent_credential_id: initialValue?.credential_id,
+              username: initialValue?.username,
+              password: initialValue?.password,
+            }}
+            isManual={this.state.isManual}
+            isEdit={true}
+            tryConnect={this.tryConnect}
+            credentialRequired={this.state.agentCredentialRequired}
+          />
           <Form.Item
             label={formatMessage({
               id: "cluster.manage.table.column.discovery.enabled",

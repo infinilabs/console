@@ -151,6 +151,14 @@ const ClusterStep = ({ dispatch, history, query }) => {
               username: clusterConfig.username || "",
               password: clusterConfig.password || "",
             },
+            agent_credential_id:
+              values.agent_credential_id !== MANUAL_VALUE
+                ? values.agent_credential_id
+                : undefined,
+            agent_basic_auth: {
+              username: values.agent_username,
+              password: values.agent_password,
+            },
             description: values.description,
             enabled: true,
             monitored: values.monitored,
@@ -196,7 +204,7 @@ const ClusterStep = ({ dispatch, history, query }) => {
     if (current === 0) {
       return <InitialStep ref={formRef} initialValue={clusterConfig} />;
     } else if (current === 1) {
-      return <ExtraStep initialValue={clusterConfig} ref={formRef} />;
+      return <ExtraStep initialValue={clusterConfig} ref={formRef} dispatch={dispatch}/>;
     } else if (current === 2) {
       return (
         <ResultStep

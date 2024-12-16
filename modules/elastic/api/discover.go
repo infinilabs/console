@@ -28,6 +28,7 @@ import (
 	"fmt"
 	"github.com/buger/jsonparser"
 	log "github.com/cihub/seelog"
+	"infini.sh/console/core/security"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/orm"
@@ -63,6 +64,26 @@ func (h *APIHandler) HandleEseSearchAction(w http.ResponseWriter, req *http.Requ
 	if err != nil {
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	//validate index search api permission
+	reqUser, err := security.FromUserContext(req.Context())
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	newRole := security.CombineUserRoles(reqUser.Roles)
+	indexReq := security.IndexRequest{
+		Cluster:   targetClusterID,
+		Index:     reqParams.Index,
+		Privilege: []string{"indices.search"},
+	}
+
+	err = security.ValidateIndex(indexReq, newRole)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusForbidden)
 		return
 	}
 

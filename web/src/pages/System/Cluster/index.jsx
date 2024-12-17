@@ -18,6 +18,7 @@ import Link from "umi/link";
 import request from "@/utils/request";
 import { hasAuthority } from "@/utils/authority";
 import { useGlobal } from "@/layouts/GlobalContext";
+import { ESPrefix } from "@/services/common";
 
 export default (props) => {
   const ref = useRef(null);
@@ -91,6 +92,32 @@ export default (props) => {
       },
     });
   }, []);
+
+  const onClean = async (type) => {
+    setIsLoading(true)
+    const res = await request(`${ESPrefix}/metadata/${type}`, {
+        method: 'DELETE'
+    })
+    if (res?.acknowledged) {
+        message.success(formatMessage({ id: "app.message.operate.success"}))
+    }
+    setIsLoading(false)
+  }
+
+  const showCleanConfirm = (type) => {
+    let title
+    if (type === 'node') {
+      title = formatMessage({ id: "form.button.clean.unavailable.nodes.desc" })
+    } else  if (type === 'index') {
+      title = formatMessage({ id: "form.button.clean.unavailable.indices.desc" })
+    }
+    Modal.confirm({
+      title,
+      onOk() {
+        onClean(type)
+      },
+    });
+  };
 
   const formatTableData = async (value) => {
     let dataNew = formatESSearchResult(value);
@@ -212,6 +239,12 @@ export default (props) => {
       render: (text, record) => {
         const onMenuClick = ({ key }) => {
           switch (key) {
+            case "clean_nodes":
+              showCleanConfirm('node');
+              break;
+            case "clean_indices":
+              showCleanConfirm('index');
+              break;
             case "delete":
               showDeleteConfirm(record);
               break;
@@ -232,6 +265,14 @@ export default (props) => {
                 {formatMessage({ id: "form.button.edit" })}
               </Link>
             ),
+          });
+          menuItems.push({
+            key: "clean_nodes",
+            content: formatMessage({ id: "form.button.clean.unavailable.nodes" }),
+          });
+          menuItems.push({
+            key: "clean_indices",
+            content: formatMessage({ id: "form.button.clean.deleted.indices" }),
           });
           if (!record.reserved) {
             menuItems.push({

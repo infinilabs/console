@@ -5,7 +5,6 @@ import Card from "./Card";
 import Table from "./Table";
 import Overview from "@/components/Overview";
 import Logs from "./Detail/Logs";
-import CleanData from "../components/CleanData";
 
 const facetLabels = {
   "metadata.cluster_name": "cluster",
@@ -84,11 +83,6 @@ export default () => {
         ],
         getStatus: (item) =>
           item._source?.metadata?.labels?.status || "unavailable",
-      }}
-      headerConfig={{
-        getExtra: (props) => [
-          <CleanData status="unavailable" type="node"  onSuccess={props.onCleanSuccess}/>,
-        ],
       }}
     />
   );

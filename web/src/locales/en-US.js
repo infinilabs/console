@@ -121,6 +121,10 @@ export default {
   "form.button.verify": "Verify",
   "form.button.clean": "Clean",
   "form.button.clean.confim.desc": "Are you sure to clean data that is {status}?",
+  "form.button.clean.unavailable.nodes": "Clean unavailable nodes",
+  "form.button.clean.unavailable.nodes.desc": "Are you sure to clean nodes that are unavailable within seven days?",
+  "form.button.clean.deleted.indices": "Clean deleted indices",
+  "form.button.clean.deleted.indices.desc": "Are you sure to clean indices that are deleted?",
   "component.refreshGroup.label.title": "Auto Refresh",
   "component.refreshGroup.label.every": "Every",
 

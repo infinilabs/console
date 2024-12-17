@@ -4,7 +4,6 @@ import Infos from "./Detail/Infos";
 import Card from "./Card";
 import Table from "./Table";
 import Overview from "@/components/Overview";
-import CleanData from "../components/CleanData";
 
 const facetLabels = {
   "metadata.cluster_name": "cluster",
@@ -74,11 +73,6 @@ export default () => {
         ],
         getStatus: (item) =>
           item._source?.metadata?.labels.health_status || "unavailable",
-      }}
-      headerConfig={{
-        getExtra: (props) => [
-          <CleanData status="deleted" type="index" onSuccess={props.onCleanSuccess}/>,
-        ],
       }}
     />
   );

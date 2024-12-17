@@ -11,6 +11,7 @@ import { filterSearchValue, sorter, formatUtcTimeToLocal } from "@/utils/utils";
 import { formatTimeRange } from "@/lib/elasticsearch/util";
 import IconText from "@/components/infini/IconText";
 import AutoTextEllipsis from "@/components/AutoTextEllipsis";
+import commonStyles from "@/common.less"
 
 const { Search } = Input;
 
@@ -105,6 +106,7 @@ export default ({ clusterID, clusterName, nodeID, timeRange, bucketSize }) => {
           );
         },
         sorter: (a, b) => sorter.string(a, b, "index"),
+        className: commonStyles.maxColumnWidth
       },
       {
         title: "Shard",
@@ -257,6 +259,7 @@ export default ({ clusterID, clusterName, nodeID, timeRange, bucketSize }) => {
             dispatch({ type: "pageSizeChange", value: size });
           },
         }}
+        scroll={{x: 'max-content' }}
       />
     </>
   );

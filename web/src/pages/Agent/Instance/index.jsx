@@ -474,7 +474,7 @@ const AgentList = (props) => {
           columns={columns}
           onChange={handleTableChange}
           expandedRowRender={expandedRowRender}
-          scroll={{x: 1100 }}
+          scroll={{x: 'max-content' }}
         />
         <Drawer
           title={`Task Settings(${editState.editItem?.remote_ip})`}

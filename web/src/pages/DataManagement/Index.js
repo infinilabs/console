@@ -35,6 +35,7 @@ import { hasAuthority } from "@/utils/authority";
 import DeleteIndexModal from "./components/DeleteIndexModal";
 import IconText from "@/components/infini/IconText";
 import AutoTextEllipsis from "@/components/AutoTextEllipsis";
+import commonStyles from "@/common.less"
 
 const { Search } = Input;
 
@@ -192,6 +193,7 @@ class Index extends PureComponent {
         />
       ),
       sorter: (a, b) => sorter.string(a, b, "index"),
+      className: commonStyles.maxColumnWidth
     },
     {
       title: formatMessage({ id: "indices.field.health" }),

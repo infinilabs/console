@@ -18,6 +18,8 @@ import ReestOffsetModal from "./ResetOffsetModal";
 import { encodeProxyPath } from "@/lib/util";
 import { filterSearchValue, sorter } from "@/utils/utils";
 import { hasAuthority } from "@/utils/authority";
+import AutoTextEllipsis from "@/components/AutoTextEllipsis";
+import commonStyles from "@/common.less"
 
 const { Search } = Input;
 
@@ -42,7 +44,12 @@ export default (props) => {
   };
 
   const columns = [
-    { title: "Group", dataIndex: "group" },
+    { 
+      title: "Group", 
+      dataIndex: "group", 
+      render: (text) => <AutoTextEllipsis >{text}</AutoTextEllipsis>,
+      className: commonStyles.maxColumnWidth
+    },
     { 
       title: "LastActive", 
       dataIndex: "last_active",

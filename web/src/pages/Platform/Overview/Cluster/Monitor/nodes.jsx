@@ -13,6 +13,7 @@ import { formatTimeRange } from "@/lib/elasticsearch/util";
 import moment from "moment";
 import IconText from "@/components/infini/IconText";
 import AutoTextEllipsis from "@/components/AutoTextEllipsis";
+import commonStyles from "@/common.less"
 
 const { Search } = Input;
 const InputGroup = Input.Group;
@@ -128,7 +129,7 @@ export default ({
           </span>
         ),
         sorter: (a, b) => sorter.string(a, b, "name"),
-        className: "verticalAlign",
+        className: `verticalAlign ${commonStyles.maxColumnWidth}`,
       },
     ];
     if (showRealtime) {
@@ -325,6 +326,7 @@ export default ({
             dispatch({ type: "pageSizeChange", value: size });
           },
         }}
+        scroll={{x: 'max-content' }}
       />
     </>
   );

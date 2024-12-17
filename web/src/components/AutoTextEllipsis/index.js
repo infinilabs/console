@@ -20,16 +20,22 @@ export default (props) => {
             });
         });
     
-        if (textRef.current && showTooltip) {
+        if (textRef.current) {
             resizeObserver.observe(textRef.current);
         }
     
         return () => {
-            if (textRef.current && showTooltip) {
+            if (textRef.current) {
                 resizeObserver.unobserve(textRef.current);
             }
         };
-    }, [showTooltip]);
+    }, []);
+
+    const ellipsisDom = (
+        <div style={{ position: 'absolute', left: 0, top: 0, overflow: 'hidden', height, width: '100%', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {children}
+        </div>
+    )
 
     return (
         <div style={{ position: 'relative', width, height }} onClick={(e) => e.stopPropagation()}>
@@ -37,12 +43,12 @@ export default (props) => {
                 {children}
             </div>
             {
-                showTooltip && textHeight > height ? (
-                    <Tooltip title={children} overlayStyle={{ maxWidth: 'unset !important'}}>
-                        <div style={{ position: 'absolute', left: 0, top: 0, overflow: 'hidden', height, width: '100%', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {children}
-                        </div>
-                    </Tooltip>
+                textHeight > height ? (
+                    showTooltip ? (
+                        <Tooltip title={children} overlayStyle={{ maxWidth: 'unset !important'}}>
+                            {ellipsisDom}
+                        </Tooltip>
+                    ) : ellipsisDom
                 ) : (
                     <div style={{ position: 'absolute', left: 0, top: 0 }}>
                         {children}

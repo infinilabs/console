@@ -11,6 +11,7 @@ import { filterSearchValue, sorter, formatUtcTimeToLocal } from "@/utils/utils";
 import { formatTimeRange } from "@/lib/elasticsearch/util";
 import IconText from "@/components/infini/IconText";
 import AutoTextEllipsis from "@/components/AutoTextEllipsis";
+import commonStyles from "@/common.less"
 
 const { Search } = Input;
 
@@ -155,6 +156,7 @@ export default ({
           );
         },
         sorter: (a, b) => sorter.string(a, b, "node"),
+        className: commonStyles.maxColumnWidth
       },
       {
         title: "State",
@@ -255,6 +257,7 @@ export default ({
             dispatch({ type: "pageSizeChange", value: size });
           },
         }}
+        scroll={{x: 'max-content' }}
       />
     </>
   );

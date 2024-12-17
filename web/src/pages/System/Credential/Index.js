@@ -18,6 +18,8 @@ import { formatESSearchResult } from "@/lib/elasticsearch/util";
 import useFetch from "@/lib/hooks/use_fetch";
 import CredentialForm from "./CredentialForm";
 import { hasAuthority } from "@/utils/authority";
+import AutoTextEllipsis from "@/components/AutoTextEllipsis";
+import commonStyles from "@/common.less"
 
 const { Search } = Input;
 
@@ -182,6 +184,8 @@ export default () => {
       }),
       dataIndex: "name",
       key: "name",
+      render: (text) => <AutoTextEllipsis >{text}</AutoTextEllipsis>,
+      className: commonStyles.maxColumnWidth
     },
     {
       title: formatMessage({

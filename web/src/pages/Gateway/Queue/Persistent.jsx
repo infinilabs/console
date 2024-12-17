@@ -23,6 +23,8 @@ import { hasAuthority } from "@/utils/authority";
 import IconText from "@/components/infini/IconText";
 import Consumer from "./Consumer";
 import QueueTypeIcon from "./QueueTypeIcon";
+import AutoTextEllipsis from "@/components/AutoTextEllipsis";
+import commonStyles from "@/common.less"
 
 const { Search } = Input;
 
@@ -107,7 +109,12 @@ export default (props) => {
             text={
               <Popover
                 content={consumerLabelRender(row?.metadata?.label)}
-                title={`ID:${row?.metadata?.id}`}
+                title={(
+                  <>
+                    <div>{`ID: ${row?.metadata?.id}`}</div>
+                    <div>{`Name: ${name}`}</div>
+                  </>
+                )}
               >
                 <a
                   onClick={() => {
@@ -117,7 +124,7 @@ export default (props) => {
                     );
                   }}
                 >
-                  {name}
+                  <AutoTextEllipsis showTooltip={false}>{name}</AutoTextEllipsis>
                 </a>
               </Popover>
             }
@@ -126,6 +133,7 @@ export default (props) => {
         </>
       ),
       sorter: (a, b) => sorter.string(a, b, "name"),
+      className: commonStyles.maxColumnWidth
     },
     {
       title: "Local Storage",
@@ -422,6 +430,7 @@ export default (props) => {
             ? "offset-normal"
             : "";
         }}
+        scroll={{ x: 'max-content' }}
       />
     </div>
   );

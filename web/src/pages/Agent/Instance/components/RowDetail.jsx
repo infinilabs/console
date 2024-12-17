@@ -25,6 +25,8 @@ import Logs from "@/pages/Platform/Overview/Node/Detail/Logs";
 import IconText from "@/components/infini/IconText";
 import { SearchEngineIcon } from "@/lib/search_engines";
 import { hasAuthority } from "@/utils/authority";
+import AutoTextEllipsis from "@/components/AutoTextEllipsis";
+import commonStyles from "@/common.less"
 
 const { TabPane } = Tabs;
 
@@ -190,6 +192,8 @@ export const AgentRowDetail = ({ agentID, t }) => {
       {
         title: "Home",
         dataIndex: "node_info.settings.path.home",
+        render: (text) => <AutoTextEllipsis >{text}</AutoTextEllipsis>,
+        className: commonStyles.maxColumnWidth
       },
       {
         title: "Status",

@@ -7,6 +7,17 @@ title: "Release Notes"
 
 Information about release notes of INFINI Console is provided here.
 
+## 1.27.1 (2024-12-18)
+### Bug fix
+- fix: query thread pool metrics when cluster uuid is empty
+
+## 1.27.0 (2024-12-09)
+
+### Improvements
+- Split monitoring metric requests to optimize monitoring metric query response speed.
+- Fixed node and index metadata ID to prevent metadata record duplication.
+- Optimizing ES metric collecting
+
 ## 1.26.1 (2024-08-13)
 
 ### Improvements

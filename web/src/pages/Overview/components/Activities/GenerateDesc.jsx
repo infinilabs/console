@@ -1,5 +1,7 @@
 import moment from "moment";
 import { Link } from "umi";
+import { Icon } from "antd";
+import { useMemo, useState } from "react";
 
 export default (props) => {
   const { hit, opers } = props;
@@ -90,18 +92,7 @@ export default (props) => {
         </>
       );
     case "cluster_health_change":
-      return (
-        <>
-          health status of cluster{" "}
-          <Link
-            to={`/cluster/monitor/elasticsearch/${hit._source.metadata.labels.cluster_id}?_g={"timeRange":${timeRangeStr}}`}
-          >
-            {hit._source.metadata.labels.cluster_name}
-          </Link>{" "}
-          <b>{opers[type]}</b> from <b>{hit._source.metadata.labels.from}</b> to{" "}
-          <b>{hit._source.metadata.labels.to}</b>
-        </>
-      );
+      return <ClusterHealthChange hit={hit} type={opers[type]} timeRangeStr={timeRangeStr}/>
     case "node_health_change":
       return (
         <>
@@ -222,3 +213,60 @@ export default (props) => {
   }
   return <></>;
 };
+
+const ClusterHealthChange = (props) => {
+  const { hit, type, timeRangeStr } = props;
+  const status = hit._source.metadata.labels.to
+  const hasAllocationExplain = status === 'red'
+
+  const [active, setActive] = useState(false)
+
+  const content = (
+    <span 
+      style={{ cursor: hasAllocationExplain ? 'pointer' : 'default'}} 
+      onClick={() => {
+        if (hasAllocationExplain) {
+          setActive(!active)
+        }
+      }}
+    >
+      health status of cluster{" "}
+      <Link
+        to={`/cluster/monitor/elasticsearch/${hit._source.metadata.labels.cluster_id}?_g={"timeRange":${timeRangeStr}}`}
+      >
+        {hit._source.metadata.labels.cluster_name}
+      </Link>{" "}
+      <b>{type}</b> from <b>{hit._source.metadata.labels.from}</b> to{" "}
+      <b>{status}</b>{hasAllocationExplain ? (
+        <Icon 
+          style={{ marginLeft: 6, fontSize: 12 }} 
+          type={active ? "up" : "down"}
+          onClick={() => {
+            if (hasAllocationExplain) {
+              setActive(!active)
+            }
+          }}
+        />
+      ) : null}
+    </span>
+  )
+
+  const allocationExplain = useMemo(() => {
+    if (!hit._source.payload?.cluster_health?.allocation_explain) return {}
+    try { 
+      const object = JSON.parse(hit._source.payload?.cluster_health?.allocation_explain)
+      return object
+    } catch (error) {
+      return {}
+    }
+  }, [hit._source.payload?.cluster_health?.allocation_explain])
+
+  return active ? (
+    <div>
+      <div>{content}</div>
+      <pre style={{ margin: 0 }}>
+        {JSON.stringify(allocationExplain, null, 4)}
+      </pre>
+    </div>
+  ) : content
+}

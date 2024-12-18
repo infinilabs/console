@@ -15,8 +15,21 @@ Information about release notes of INFINI Console is provided here.
 
 ### Improvements
 - Split monitoring metric requests to optimize monitoring metric query response speed.
-- Fixed node and index metadata ID to prevent metadata record duplication.
 - Optimizing ES metric collecting
+- The code is open source and the Github repository is used for development
+- Added timeout setting to general time component
+- Cluster selection component adds registration and refresh feature
+- Adding metrics collection status
+- Optimizing layout of table component
+
+### Bug fix
+- Fixed the issue of untimely update of cluster metadata
+- Fixed the issue of incorrect links in help documents, etc.
+- Fixed node and index metadata ID to prevent metadata record duplication.
+- Fixed the issue of errors in Runtime and Agent instance editing pages
+- Fixed the issue of no loading of cluster, node, index, and shard metadata
+- Fixed the issue of failure to collect index health status indicators
+- Fixed the issue of some menu columns not being internationalized
 
 ## 1.26.1 (2024-08-13)
 

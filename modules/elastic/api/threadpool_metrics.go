@@ -89,13 +89,6 @@ func (h *APIHandler) getThreadPoolMetrics(ctx context.Context, clusterID string,
 	bucketSizeStr:=fmt.Sprintf("%vs",bucketSize)
 	var must = []util.MapStr{
 		{
-			"term":util.MapStr{
-				"metadata.labels.cluster_uuid":util.MapStr{
-					"value": clusterUUID,
-				},
-			},
-		},
-		{
 			"term": util.MapStr{
 				"metadata.category": util.MapStr{
 					"value": "elasticsearch",
@@ -147,6 +140,23 @@ func (h *APIHandler) getThreadPoolMetrics(ctx context.Context, clusterID string,
 	query["query"]=util.MapStr{
 		"bool": util.MapStr{
 			"must": must,
+			"minimum_should_match": 1,
+			"should": []util.MapStr{
+				{
+					"term":util.MapStr{
+						"metadata.labels.cluster_id":util.MapStr{
+							"value": clusterID,
+						},
+					},
+				},
+				{
+					"term":util.MapStr{
+						"metadata.labels.cluster_uuid":util.MapStr{
+							"value": clusterUUID,
+						},
+					},
+				},
+			},
 			"filter": []util.MapStr{
 				{
 					"range": util.MapStr{

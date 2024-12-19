@@ -131,7 +131,6 @@ export const AgentRowDetail = ({ agentID, t }) => {
       {
         title: "PID",
         dataIndex: "node_info.process.id",
-        width: 150,
       },
       {
         title: "Port",
@@ -139,12 +138,10 @@ export const AgentRowDetail = ({ agentID, t }) => {
         render: (text, record) => {
           return text?.split(":")?.[1];
         },
-        width: 150,
       },
       {
         title: "Cluster",
         dataIndex: "cluster_info.cluster_name",
-        width: 180,
         render: (text, record) => {
           return <>
             <div style={{

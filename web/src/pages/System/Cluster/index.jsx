@@ -109,7 +109,7 @@ export default (props) => {
     if (type === 'node') {
       title = formatMessage({ id: "form.button.clean.unavailable.nodes.desc" })
     } else  if (type === 'index') {
-      title = formatMessage({ id: "form.button.clean.unavailable.indices.desc" })
+      title = formatMessage({ id: "form.button.clean.deleted.indices.desc" })
     }
     Modal.confirm({
       title,

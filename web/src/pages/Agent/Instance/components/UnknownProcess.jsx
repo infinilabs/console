@@ -20,14 +20,10 @@ export default (props) => {
     {
       title: "PID",
       dataIndex: "pid",
-      ellipsis: true,
-      width: 150,
     },
     {
       title: "Name",
       dataIndex: "name",
-      ellipsis: true,
-      width: 150,
     },
     {
       title: "Cmdline",
@@ -57,7 +53,6 @@ export default (props) => {
           </>
         );
       },
-      ellipsis: true,
     },
     {
       title: "Listen addresses",
@@ -75,8 +70,6 @@ export default (props) => {
             })}
         </>
       ),
-      ellipsis: true,
-      width: 300,
     },
     {
       title: formatMessage({ id: "table.field.actions" }),
@@ -93,7 +86,6 @@ export default (props) => {
           </a>
         </div>
       ),
-      ellipsis: true,
       width: 100,
     },
   ];

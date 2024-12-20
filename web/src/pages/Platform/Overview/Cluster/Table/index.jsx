@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Table, Tooltip, Progress } from "antd";
+import { Table, Tooltip, Progress, Spin } from "antd";
 import { formatter } from "@/utils/format";
 import { formatMessage } from "umi/locale";
 import { SearchEngineIcon } from "@/lib/search_engines";
@@ -18,36 +18,39 @@ export default (props) => {
           dataIndex: "name",
           render: (text, record) => {
             return (
-              <Tooltip
-                placement="topLeft"
-                title={
-                  <span>
-                    Host: {record.metadata?.host}
-                    <br />
-                    Provider:{" "}
-                    {formatMessage({
-                      id: `cluster.providers.${record.metadata?.location
-                        ?.provider ?? Providers.OnPremises}`,
-                    })}
-                    <br />
-                    Region: {record.metadata?.location?.region ?? ""}
-                    <br />
-                    Version: {record.metadata?.version ?? ""}
-                    <br />
-                    Tags:{" "}
-                    {record.metadata?.tags ? record.metadata.tags.toString() : ""}
-                  </span>
-                }
-              >
-                <div style={{ display: "flex", alignContent: "center", gap: 5 }}>
-                  <SearchEngineIcon
-                    distribution={record.metadata?.distribution}
-                    width="20px"
-                    height="20px"
-                  />
-                  <span>{record.metadata?.name}</span>
-                </div>
-              </Tooltip>
+              <>
+                <Tooltip
+                  placement="topLeft"
+                  title={
+                    <span>
+                      Host: {record.metadata?.host}
+                      <br />
+                      Provider:{" "}
+                      {formatMessage({
+                        id: `cluster.providers.${record.metadata?.location
+                          ?.provider ?? Providers.OnPremises}`,
+                      })}
+                      <br />
+                      Region: {record.metadata?.location?.region ?? ""}
+                      <br />
+                      Version: {record.metadata?.version ?? ""}
+                      <br />
+                      Tags:{" "}
+                      {record.metadata?.tags ? record.metadata.tags.toString() : ""}
+                    </span>
+                  }
+                >
+                  <div style={{ display: "flex", alignContent: "center", gap: 5 }}>
+                    <SearchEngineIcon
+                      distribution={record.metadata?.distribution}
+                      width="20px"
+                      height="20px"
+                    />
+                    <span>{record.metadata?.name}</span>
+                  </div>
+                </Tooltip>
+                <Spin />
+              </>
             );
           },
         },

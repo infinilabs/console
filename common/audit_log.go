@@ -33,20 +33,20 @@ import (
 	"strings"
 )
 
-// GetClientIP 获取客户端 IP 地址
+// GetClientIP retrieves the client's IP address
 func GetClientIP(req *http.Request) string {
 	h := new(api.Handler)
-	// 1. 尝试从 XFF 头获取
+	// 1. Try to get the client IP from the X-Forwarded-For header and return the first IP address in the list
 	xff := h.GetHeader(req, "X-Forwarded-For", "")
 	clientIP := strings.Split(xff, ",")[0]
 	if len(clientIP) > 0 {
 		return clientIP
 	}
-	// 2. 尝试从 X-Real-IP 头获取
+	// 2. Try to get the client IP from the X-Real-IP header
 	clientIP = h.GetHeader(req, "X-Real-IP", "")
 	if len(clientIP) > 0 {
 		return clientIP
 	}
-	// 3. 从 RemoteAddr 获取
+	// 3. retrieve IP from request RemoteAddr
 	return strings.Split(req.RemoteAddr, ":")[0]
 }

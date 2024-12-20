@@ -27,24 +27,31 @@ export default (props) => {
   } = props;
 
   const [infos, setInfos] = useState({});
+  const [loadings, setLoadings] = useState({});
 
   const fetchListInfo = async (data) => {
-    const res = await Promise.all(data?.map((item) => request(infoAction, {
-      method: "POST",
-      body: [item.id],
-    }, false, false)));
-    if (res) {
-      let newInfos = {}
-      res.forEach((item) => {
-        if (item && !item.error) {
-          newInfos = {
-            ...newInfos,
-            ...item
-          }
+    data?.forEach((item) => {
+      setLoadings((loadings) => ({
+        ...loadings,
+        [item.id]: true
+      }))
+      request(infoAction, {
+        method: "POST",
+        body: [item.id],
+      }, false, false).then((res) => {
+        if (res && !res.error) {
+          setInfos((infos) => ({
+            ...infos,
+            ...res
+          }));
         }
+      }).finally(() => {
+        setLoadings((loadings) => ({
+          ...loadings,
+          [item.id]: false
+        }))
       })
-      setInfos(newInfos);
-    }
+    })
   };
 
   useEffect(() => {
@@ -84,7 +91,7 @@ export default (props) => {
             },
           };
         }}
-        rowClassName={() => styles.rowPointer}
+        rowClassName={(record) => `${styles.rowPointer} ${loadings[record.id] && !parentLoading ? styles.loading : ''}`}
       />
     </div>
   );

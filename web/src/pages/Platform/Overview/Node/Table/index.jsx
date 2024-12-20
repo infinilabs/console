@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Tooltip, Progress, Icon } from "antd";
+import { Tooltip, Progress, Icon, Spin } from "antd";
 import { formatter } from "@/utils/format";
 import { HealthStatusView } from "@/components/infini/health_status_view";
 import { StatusBlockGroup } from "@/components/infini/status_block";
@@ -15,35 +15,38 @@ export default (props) => {
           dataIndex: "name",
           render: (text, record) => {
             return (
-              <Tooltip
-                placement="topLeft"
-                title={
-                  <span>
-                    Transport Address:{" "}
-                    {record.metadata?.labels?.transport_address}
-                    <br />
-                    Cluster: {record.metadata?.cluster_name ?? ""}
-                    <br />
-                    Version: {record.metadata?.labels?.version ?? ""}
-                    <br />
-                    Roles:{" "}
-                    {record.metadata?.labels?.roles
-                      ? record.metadata?.labels?.roles?.toString()
-                      : ""}
-                  </span>
-                }
-              >
-                <div style={{ display: "flex", alignContent: "center", gap: 5 }}>
-                  <span>
-                    {record.summary?.is_master_node ? (
-                      <Icon type="star" theme="filled" />
-                    ) : (
-                      <Icon type="database" />
-                    )}
-                  </span>
-                  <span>{record.metadata?.node_name}</span>
-                </div>
-              </Tooltip>
+              <>
+                <Tooltip
+                  placement="topLeft"
+                  title={
+                    <span>
+                      Transport Address:{" "}
+                      {record.metadata?.labels?.transport_address}
+                      <br />
+                      Cluster: {record.metadata?.cluster_name ?? ""}
+                      <br />
+                      Version: {record.metadata?.labels?.version ?? ""}
+                      <br />
+                      Roles:{" "}
+                      {record.metadata?.labels?.roles
+                        ? record.metadata?.labels?.roles?.toString()
+                        : ""}
+                    </span>
+                  }
+                >
+                  <div style={{ display: "flex", alignContent: "center", gap: 5 }}>
+                    <span>
+                      {record.summary?.is_master_node ? (
+                        <Icon type="star" theme="filled" />
+                      ) : (
+                        <Icon type="database" />
+                      )}
+                    </span>
+                    <span>{record.metadata?.node_name}</span>
+                  </div>
+                </Tooltip>
+                <Spin />
+              </>
             );
           },
         },

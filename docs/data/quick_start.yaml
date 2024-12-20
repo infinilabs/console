@@ -11,7 +11,7 @@ console: {
       contacts: ':',
     }
   ],
-  version: '1.26.1-1604',
+  version: '1.27.0-1936',
   doc: "/docs/latest/console/getting-started/install/"
 }
 
@@ -23,6 +23,6 @@ agent: {
       contacts: ' -v ',
     }
   ],
-  version: '1.26.1-675',
+  version: '1.27.0-1936',
   doc: "/docs/latest/agent/getting-started/install/"
 }

@@ -7,9 +7,19 @@ title: "Release Notes"
 
 Information about release notes of INFINI Console is provided here.
 
-## 1.27.1 (2024-12-18)
+## Latest (In development)
+
+### Breaking changes
+
+### Features
+- add allocation to activities if is cluster health change and changed to red.
+
 ### Bug fix
 - fix: query thread pool metrics when cluster uuid is empty
+
+### Improvements
+- Optimize UI of agent list when its columns are overflow.
+- add loading to each row in overview table.
 
 ## 1.27.0 (2024-12-09)
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Tooltip, Progress, Icon } from "antd";
+import { Tooltip, Progress, Icon, Spin } from "antd";
 import { formatter } from "@/utils/format";
 import { formatUtcTimeToLocal } from "@/utils/utils";
 import { formatMessage } from "umi/locale";
@@ -18,25 +18,28 @@ export default (props) => {
           dataIndex: "name",
           render: (text, record) => {
             return (
-              <Tooltip
-                placement="topLeft"
-                title={
-                  <span>
-                    Cluster: {record.metadata?.cluster_name}
-                    <br />
-                    Aliases: {record.metadata?.aliases?.join(",")}
-                    <br />
-                    Timestamp: {record.timestamp}
-                  </span>
-                }
-              >
-                <div style={{ display: "flex", alignContent: "center", gap: 5 }}>
-                  <span>
-                    <Icon type="table" />
-                  </span>
-                  <span>{record.metadata?.index_name}</span>
-                </div>
-              </Tooltip>
+              <>
+                <Tooltip
+                  placement="topLeft"
+                  title={
+                    <span>
+                      Cluster: {record.metadata?.cluster_name}
+                      <br />
+                      Aliases: {record.metadata?.aliases?.join(",")}
+                      <br />
+                      Timestamp: {record.timestamp}
+                    </span>
+                  }
+                >
+                  <div style={{ display: "flex", alignContent: "center", gap: 5 }}>
+                    <span>
+                      <Icon type="table" />
+                    </span>
+                    <span>{record.metadata?.index_name}</span>
+                  </div>
+                </Tooltip>
+                <Spin />
+              </>
             );
           },
         },

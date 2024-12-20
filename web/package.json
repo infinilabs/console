@@ -5,7 +5,7 @@
   "title": "INFINI Console",
   "description": "Pursuing Excellence, Infinite Possibilities!",
   "author": "INFINI.LTD",
-  "license": "INFINI-EULA",
+  "license": "AGPL-3.0-or-later",
   "official_website": "https://infinilabs.com",
   "dependencies": {
     "@ant-design/charts": "1.4.2",

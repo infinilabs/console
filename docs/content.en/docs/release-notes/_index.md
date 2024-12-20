@@ -20,6 +20,7 @@ Information about release notes of INFINI Console is provided here.
 ### Improvements
 - Optimize UI of agent list when its columns are overflow.
 - add loading to each row in overview table.
+- Update comments of audit log from chinese to english.
 
 ## 1.27.0 (2024-12-09)
 

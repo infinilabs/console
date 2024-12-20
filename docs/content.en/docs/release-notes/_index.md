@@ -7,9 +7,16 @@ title: "Release Notes"
 
 Information about release notes of INFINI Console is provided here.
 
-## 1.27.1 (2024-12-18)
+## Latest (In development)
+
+### Breaking changes
+
+### Features
+
 ### Bug fix
 - fix: query thread pool metrics when cluster uuid is empty
+
+### Improvements
 
 ## 1.27.0 (2024-12-09)
 

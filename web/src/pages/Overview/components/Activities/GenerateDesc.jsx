@@ -1,7 +1,8 @@
 import moment from "moment";
 import { Link } from "umi";
-import { Icon } from "antd";
+import { Button, Icon, Tag } from "antd";
 import { useMemo, useState } from "react";
+import { formatMessage } from "umi/locale";
 
 export default (props) => {
   const { hit, opers } = props;
@@ -238,15 +239,17 @@ const ClusterHealthChange = (props) => {
       </Link>{" "}
       <b>{type}</b> from <b>{hit._source.metadata.labels.from}</b> to{" "}
       <b>{status}</b>{hasAllocationExplain ? (
-        <Icon 
-          style={{ marginLeft: 6, fontSize: 12 }} 
-          type={active ? "up" : "down"}
+        <a
+          size="small"
+          style={{ marginLeft: 12, cursor: 'pointer' }} 
           onClick={() => {
             if (hasAllocationExplain) {
               setActive(!active)
             }
           }}
-        />
+        >
+          <Icon type={active ? "up-square" : "down-square"}/> {formatMessage({ id: "form.button.detail" })} 
+        </a>
       ) : null}
     </span>
   )
@@ -264,7 +267,7 @@ const ClusterHealthChange = (props) => {
   return active ? (
     <div>
       <div>{content}</div>
-      <pre style={{ margin: 0 }}>
+      <pre style={{ margin: 0, fontFamily: `-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'` }}>
         {JSON.stringify(allocationExplain, null, 4)}
       </pre>
     </div>

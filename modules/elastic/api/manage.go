@@ -38,7 +38,6 @@ import (
 	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
-	"infini.sh/framework/modules/elastic/adapter"
 	"infini.sh/framework/modules/elastic/common"
 	"math"
 	"net/http"
@@ -1085,13 +1084,21 @@ func (h *APIHandler) GetClusterIndexMetrics(ctx context.Context, id string, buck
 		panic("unknown metric key: " + metricKey)
 	}
 	query := map[string]interface{}{}
-	clusterUUID, err := adapter.GetClusterUUID(id)
+	clusterUUID, err := h.getClusterUUID(id)
 	if err != nil {
 		return nil, err
 	}
 	query["query"] = util.MapStr{
 		"bool": util.MapStr{
-			"must": []util.MapStr{
+			"minimum_should_match": 1,
+			"should": []util.MapStr{
+				{
+					"term": util.MapStr{
+						"metadata.labels.cluster_id": util.MapStr{
+							"value": id,
+						},
+					},
+				},
 				{
 					"term": util.MapStr{
 						"metadata.labels.cluster_uuid": util.MapStr{
@@ -1099,6 +1106,8 @@ func (h *APIHandler) GetClusterIndexMetrics(ctx context.Context, id string, buck
 						},
 					},
 				},
+			},
+			"must": []util.MapStr{
 				{
 					"term": util.MapStr{
 						"metadata.category": util.MapStr{
@@ -1192,18 +1201,33 @@ func (h *APIHandler) getShardsMetric(ctx context.Context, id string, min, max in
 }
 
 func (h *APIHandler) getCircuitBreakerMetric(ctx context.Context, id string, min, max int64, bucketSize int) (map[string]*common.MetricItem, error) {
+	clusterUUID, err := h.getClusterUUID(id)
+	if err != nil {
+		return nil, err
+	}
+	should := []util.MapStr{
+		{
+			"term": util.MapStr{
+				"metadata.labels.cluster_id": util.MapStr{
+					"value": id,
+				},
+			},
+		},
+		{
+			"term": util.MapStr{
+				"metadata.labels.cluster_uuid": util.MapStr{
+					"value": clusterUUID,
+				},
+			},
+		},
+	}
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 	query := util.MapStr{
 		"query": util.MapStr{
 			"bool": util.MapStr{
+				"minimum_should_match": 1,
+				"should": should,
 				"must": []util.MapStr{
-					{
-						"term": util.MapStr{
-							"metadata.labels.cluster_id": util.MapStr{
-								"value": id,
-							},
-						},
-					},
 					{
 						"term": util.MapStr{
 							"metadata.category": util.MapStr{

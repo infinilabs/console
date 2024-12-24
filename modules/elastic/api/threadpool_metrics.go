@@ -30,7 +30,6 @@ import (
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/util"
-	"infini.sh/framework/modules/elastic/adapter"
 	"infini.sh/framework/modules/elastic/common"
 	"strings"
 )
@@ -82,7 +81,7 @@ const (
 )
 
 func (h *APIHandler) getThreadPoolMetrics(ctx context.Context, clusterID string, bucketSize int, min, max int64, nodeName string, top int, metricKey string) (map[string]*common.MetricItem, error){
-	clusterUUID, err := adapter.GetClusterUUID(clusterID)
+	clusterUUID, err := h.getClusterUUID(clusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -135,28 +134,29 @@ func (h *APIHandler) getThreadPoolMetrics(ctx context.Context, clusterID string,
 
 		})
 	}
+	should :=  []util.MapStr{
+		{
+			"term": util.MapStr{
+				"metadata.labels.cluster_id": util.MapStr{
+					"value": clusterID,
+				},
+			},
+		},
+		{
+			"term":util.MapStr{
+				"metadata.labels.cluster_uuid":util.MapStr{
+					"value": clusterUUID,
+				},
+			},
+		},
+	}
 
 	query:=map[string]interface{}{}
 	query["query"]=util.MapStr{
 		"bool": util.MapStr{
 			"must": must,
 			"minimum_should_match": 1,
-			"should": []util.MapStr{
-				{
-					"term":util.MapStr{
-						"metadata.labels.cluster_id":util.MapStr{
-							"value": clusterID,
-						},
-					},
-				},
-				{
-					"term":util.MapStr{
-						"metadata.labels.cluster_uuid":util.MapStr{
-							"value": clusterUUID,
-						},
-					},
-				},
-			},
+			"should": should,
 			"filter": []util.MapStr{
 				{
 					"range": util.MapStr{

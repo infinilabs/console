@@ -32,7 +32,6 @@ import (
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/radix"
 	"infini.sh/framework/core/util"
-	"infini.sh/framework/modules/elastic/adapter"
 	"infini.sh/framework/modules/elastic/common"
 	"net/http"
 	"sort"
@@ -40,21 +39,41 @@ import (
 	"time"
 )
 
+//getClusterUUID reads the cluster uuid from metadata
+func (h *APIHandler) getClusterUUID(clusterID string) (string, error){
+	meta := elastic.GetMetadata(clusterID)
+	if meta == nil {
+		return "", fmt.Errorf("metadata of cluster [%s] was not found", clusterID)
+	}
+	return meta.Config.ClusterUUID, nil
+}
+
 func (h *APIHandler) getIndexMetrics(ctx context.Context, req *http.Request, clusterID string, bucketSize int, min, max int64, indexName string, top int, shardID string, metricKey string) (map[string]*common.MetricItem, error){
 	bucketSizeStr:=fmt.Sprintf("%vs",bucketSize)
-	clusterUUID, err := adapter.GetClusterUUID(clusterID)
+	clusterUUID, err := h.getClusterUUID(clusterID)
 	if err != nil {
 		return nil, err
 	}
-
-	var must = []util.MapStr{
+	should := []util.MapStr{
 		{
+			"term":util.MapStr{
+				"metadata.labels.cluster_id":util.MapStr{
+					"value": clusterID,
+				},
+			},
+		},
+	}
+	if clusterUUID != "" {
+		should = append(should, util.MapStr{
 			"term":util.MapStr{
 				"metadata.labels.cluster_uuid":util.MapStr{
 					"value": clusterUUID,
 				},
 			},
-		},
+		})
+	}
+
+	var must = []util.MapStr{
 		{
 			"term": util.MapStr{
 				"metadata.category": util.MapStr{
@@ -664,6 +683,8 @@ func (h *APIHandler) getIndexMetrics(ctx context.Context, req *http.Request, clu
 	query["query"]=util.MapStr{
 		"bool": util.MapStr{
 			"must": must,
+			"minimum_should_match": 1,
+			"should": should,
 			"must_not": []util.MapStr{
 				{
 					"term": util.MapStr{
@@ -747,7 +768,7 @@ func (h *APIHandler) getTopIndexName(req *http.Request, clusterID string, top in
 		max = now.UnixNano()/1e6
 		min = now.Add(-time.Duration(lastMinutes) * time.Minute).UnixNano()/1e6
 	)
-	clusterUUID, err := adapter.GetClusterUUID(clusterID)
+	clusterUUID, err := h.getClusterUUID(clusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -763,6 +784,15 @@ func (h *APIHandler) getTopIndexName(req *http.Request, clusterID string, top in
 			"term": util.MapStr{
 				"metadata.name": util.MapStr{
 					"value": "shard_stats",
+				},
+			},
+		},
+	}
+	should := []util.MapStr{
+		{
+			"term": util.MapStr{
+				"metadata.labels.cluster_uuid": util.MapStr{
+					"value": clusterID,
 				},
 			},
 		},
@@ -807,6 +837,8 @@ func (h *APIHandler) getTopIndexName(req *http.Request, clusterID string, top in
 					},
 				},
 				"must": must,
+				"should": should,
+				"minimum_should_match": 1,
 				"filter": []util.MapStr{
 					{
 						"range": util.MapStr{

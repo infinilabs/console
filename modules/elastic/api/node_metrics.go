@@ -30,7 +30,6 @@ import (
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/util"
-	"infini.sh/framework/modules/elastic/adapter"
 	"infini.sh/framework/modules/elastic/common"
 	"sort"
 	"strings"
@@ -110,31 +109,32 @@ const (
 
 func (h *APIHandler) getNodeMetrics(ctx context.Context, clusterID string, bucketSize int, min, max int64, nodeName string, top int, metricKey string) (map[string]*common.MetricItem, error){
 	bucketSizeStr:=fmt.Sprintf("%vs",bucketSize)
-	clusterUUID, err := adapter.GetClusterUUID(clusterID)
+	clusterUUID, err := h.getClusterUUID(clusterID)
 	if err != nil {
 		return nil, err
 	}
 
+	should := []util.MapStr{
+		{
+			"term": util.MapStr{
+				"metadata.labels.cluster_id": util.MapStr{
+					"value": clusterID,
+				},
+			},
+		},
+		{
+			"term": util.MapStr{
+				"metadata.labels.cluster_uuid": util.MapStr{
+					"value": clusterUUID,
+				},
+			},
+		},
+	}
 	var must = []util.MapStr{
 		{
 			"bool": util.MapStr{
 				"minimum_should_match": 1,
-				"should": []util.MapStr{
-					{
-						"term": util.MapStr{
-							"metadata.labels.cluster_id": util.MapStr{
-								"value": clusterID,
-							},
-						},
-					},
-					{
-						"term": util.MapStr{
-							"metadata.labels.cluster_uuid": util.MapStr{
-								"value": clusterUUID,
-							},
-						},
-					},
-				},
+				"should": should,
 			},
 		},
 		{

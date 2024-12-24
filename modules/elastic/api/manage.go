@@ -1091,7 +1091,15 @@ func (h *APIHandler) GetClusterIndexMetrics(ctx context.Context, id string, buck
 	}
 	query["query"] = util.MapStr{
 		"bool": util.MapStr{
-			"must": []util.MapStr{
+			"minimum_should_match": 1,
+			"should": []util.MapStr{
+				{
+					"term": util.MapStr{
+						"metadata.labels.cluster_id": util.MapStr{
+							"value": id,
+						},
+					},
+				},
 				{
 					"term": util.MapStr{
 						"metadata.labels.cluster_uuid": util.MapStr{
@@ -1099,6 +1107,8 @@ func (h *APIHandler) GetClusterIndexMetrics(ctx context.Context, id string, buck
 						},
 					},
 				},
+			},
+			"must": []util.MapStr{
 				{
 					"term": util.MapStr{
 						"metadata.category": util.MapStr{
@@ -1192,18 +1202,35 @@ func (h *APIHandler) getShardsMetric(ctx context.Context, id string, min, max in
 }
 
 func (h *APIHandler) getCircuitBreakerMetric(ctx context.Context, id string, min, max int64, bucketSize int) (map[string]*common.MetricItem, error) {
+	clusterUUID, err := adapter.GetClusterUUID(id)
+	if err != nil {
+		log.Warnf("get cluster uuid with cluster [%s] error: %v", id, err)
+	}
+	should := []util.MapStr{
+		{
+			"term": util.MapStr{
+				"metadata.labels.cluster_id": util.MapStr{
+					"value": id,
+				},
+			},
+		},
+	}
+	if clusterUUID != "" {
+		should = append(should, util.MapStr{
+			"term": util.MapStr{
+				"metadata.labels.cluster_uuid": util.MapStr{
+					"value": clusterUUID,
+				},
+			},
+		})
+	}
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 	query := util.MapStr{
 		"query": util.MapStr{
 			"bool": util.MapStr{
+				"minimum_should_match": 1,
+				"should": should,
 				"must": []util.MapStr{
-					{
-						"term": util.MapStr{
-							"metadata.labels.cluster_id": util.MapStr{
-								"value": id,
-							},
-						},
-					},
 					{
 						"term": util.MapStr{
 							"metadata.category": util.MapStr{

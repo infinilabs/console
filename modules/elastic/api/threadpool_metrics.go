@@ -84,7 +84,7 @@ const (
 func (h *APIHandler) getThreadPoolMetrics(ctx context.Context, clusterID string, bucketSize int, min, max int64, nodeName string, top int, metricKey string) (map[string]*common.MetricItem, error){
 	clusterUUID, err := adapter.GetClusterUUID(clusterID)
 	if err != nil {
-		return nil, err
+		log.Warnf("get cluster uuid with cluster [%s] error: %v", clusterID, err)
 	}
 	bucketSizeStr:=fmt.Sprintf("%vs",bucketSize)
 	var must = []util.MapStr{
@@ -135,28 +135,31 @@ func (h *APIHandler) getThreadPoolMetrics(ctx context.Context, clusterID string,
 
 		})
 	}
+	should :=  []util.MapStr{
+		{
+			"term": util.MapStr{
+				"metadata.labels.cluster_id": util.MapStr{
+					"value": clusterID,
+				},
+			},
+		},
+	}
+	if clusterUUID != "" {
+		should = append(should, util.MapStr{
+			"term":util.MapStr{
+				"metadata.labels.cluster_uuid":util.MapStr{
+					"value": clusterUUID,
+				},
+			},
+		})
+	}
 
 	query:=map[string]interface{}{}
 	query["query"]=util.MapStr{
 		"bool": util.MapStr{
 			"must": must,
 			"minimum_should_match": 1,
-			"should": []util.MapStr{
-				{
-					"term":util.MapStr{
-						"metadata.labels.cluster_id":util.MapStr{
-							"value": clusterID,
-						},
-					},
-				},
-				{
-					"term":util.MapStr{
-						"metadata.labels.cluster_uuid":util.MapStr{
-							"value": clusterUUID,
-						},
-					},
-				},
-			},
+			"should": should,
 			"filter": []util.MapStr{
 				{
 					"range": util.MapStr{

@@ -112,29 +112,32 @@ func (h *APIHandler) getNodeMetrics(ctx context.Context, clusterID string, bucke
 	bucketSizeStr:=fmt.Sprintf("%vs",bucketSize)
 	clusterUUID, err := adapter.GetClusterUUID(clusterID)
 	if err != nil {
-		return nil, err
+		log.Warnf("get cluster uuid with cluster [%s] error:%v", clusterID, err)
 	}
 
+	should := []util.MapStr{
+		{
+			"term": util.MapStr{
+				"metadata.labels.cluster_id": util.MapStr{
+					"value": clusterID,
+				},
+			},
+		},
+	}
+	if clusterUUID != "" {
+		should = append(should, util.MapStr{
+			"term": util.MapStr{
+				"metadata.labels.cluster_uuid": util.MapStr{
+					"value": clusterUUID,
+				},
+			},
+		})
+	}
 	var must = []util.MapStr{
 		{
 			"bool": util.MapStr{
 				"minimum_should_match": 1,
-				"should": []util.MapStr{
-					{
-						"term": util.MapStr{
-							"metadata.labels.cluster_id": util.MapStr{
-								"value": clusterID,
-							},
-						},
-					},
-					{
-						"term": util.MapStr{
-							"metadata.labels.cluster_uuid": util.MapStr{
-								"value": clusterUUID,
-							},
-						},
-					},
-				},
+				"should": should,
 			},
 		},
 		{

@@ -44,17 +44,28 @@ func (h *APIHandler) getIndexMetrics(ctx context.Context, req *http.Request, clu
 	bucketSizeStr:=fmt.Sprintf("%vs",bucketSize)
 	clusterUUID, err := adapter.GetClusterUUID(clusterID)
 	if err != nil {
-		return nil, err
+		log.Warnf("get cluster uuid with cluster [%s] error:%v", clusterID, err)
 	}
-
-	var must = []util.MapStr{
+	should := []util.MapStr{
 		{
+			"term":util.MapStr{
+				"metadata.labels.cluster_id":util.MapStr{
+					"value": clusterID,
+				},
+			},
+		},
+	}
+	if clusterUUID != "" {
+		should = append(should, util.MapStr{
 			"term":util.MapStr{
 				"metadata.labels.cluster_uuid":util.MapStr{
 					"value": clusterUUID,
 				},
 			},
-		},
+		})
+	}
+
+	var must = []util.MapStr{
 		{
 			"term": util.MapStr{
 				"metadata.category": util.MapStr{
@@ -664,6 +675,8 @@ func (h *APIHandler) getIndexMetrics(ctx context.Context, req *http.Request, clu
 	query["query"]=util.MapStr{
 		"bool": util.MapStr{
 			"must": must,
+			"minimum_should_match": 1,
+			"should": should,
 			"must_not": []util.MapStr{
 				{
 					"term": util.MapStr{

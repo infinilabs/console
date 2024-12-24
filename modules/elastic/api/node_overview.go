@@ -589,19 +589,28 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 	clusterID := ps.MustGetParameter("id")
 	clusterUUID, err := adapter.GetClusterUUID(clusterID)
 	if err != nil {
-		log.Error(err)
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		return
+		log.Warnf("get cluster uuid with cluster [%s] error:%v", clusterID, err)
 	}
-	nodeID := ps.MustGetParameter("node_id")
-	var must = []util.MapStr{
+	should := []util.MapStr{
 		{
+			"term":util.MapStr{
+				"metadata.labels.cluster_id":util.MapStr{
+					"value": clusterID,
+				},
+			},
+		},
+	}
+	if clusterUUID != "" {
+		should = append(should, util.MapStr{
 			"term":util.MapStr{
 				"metadata.labels.cluster_uuid":util.MapStr{
 					"value": clusterUUID,
 				},
 			},
-		},
+		})
+	}
+	nodeID := ps.MustGetParameter("node_id")
+	var must = []util.MapStr{
 		{
 			"term": util.MapStr{
 				"metadata.category": util.MapStr{
@@ -636,6 +645,8 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 	query["query"]=util.MapStr{
 		"bool": util.MapStr{
 			"must": must,
+			"minimum_should_match": 1,
+			"should": should,
 			"filter": []util.MapStr{
 				{
 					"range": util.MapStr{
@@ -675,14 +686,9 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 			"size": 0,
 			"query": util.MapStr{
 				"bool": util.MapStr{
+					"minimum_should_match": 1,
+					"should": should,
 					"must": []util.MapStr{
-						{
-							"term":util.MapStr{
-								"metadata.labels.cluster_uuid":util.MapStr{
-									"value": clusterUUID,
-								},
-							},
-						},
 						{
 							"term": util.MapStr{
 								"metadata.category": util.MapStr{

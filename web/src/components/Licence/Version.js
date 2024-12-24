@@ -8,7 +8,7 @@ import { getWebsitePathByLang } from "@/utils/utils";
 const { Paragraph, Text } = Typography;
 
 export default ({ application, licence }) => {
-  const { number, build_date, build_hash } = application?.version || {};
+  const { number, build_number, build_date, build_hash } = application?.version || {};
 
   return (
     <div className={styles.version}>
@@ -23,6 +23,11 @@ export default ({ application, licence }) => {
             label={formatMessage({ id: "license.label.build_time" })}
           >
             {moment(build_date).format(DATE_FORMAT)}
+          </Descriptions.Item>
+          <Descriptions.Item
+            label={formatMessage({ id: "license.label.build_number" })}
+          >
+            {build_number}
           </Descriptions.Item>
           <Descriptions.Item label="Hash">{build_hash}</Descriptions.Item>
         </Descriptions>

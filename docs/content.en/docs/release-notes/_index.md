@@ -15,7 +15,7 @@ Information about release notes of INFINI Console is provided here.
 - Add allocation to activities if is cluster health change and changed to red.
 
 ### Bug fix
-- Fix: query thread pool metrics when cluster uuid is empty
+- Fix query thread pool metrics when cluster uuid is empty
 
 ### Improvements
 - Optimize UI of agent list when its columns are overflow.

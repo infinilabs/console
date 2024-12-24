@@ -39,7 +39,6 @@ import (
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/radix"
 	"infini.sh/framework/core/util"
-	"infini.sh/framework/modules/elastic/adapter"
 	"infini.sh/framework/modules/elastic/common"
 	"net/http"
 	"time"
@@ -587,9 +586,10 @@ const (
 
 func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	clusterID := ps.MustGetParameter("id")
-	clusterUUID, err := adapter.GetClusterUUID(clusterID)
+	clusterUUID, err := h.getClusterUUID(clusterID)
 	if err != nil {
-		log.Warnf("get cluster uuid with cluster [%s] error:%v", clusterID, err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	should := []util.MapStr{
 		{
@@ -599,15 +599,13 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 				},
 			},
 		},
-	}
-	if clusterUUID != "" {
-		should = append(should, util.MapStr{
+		{
 			"term":util.MapStr{
 				"metadata.labels.cluster_uuid":util.MapStr{
 					"value": clusterUUID,
 				},
 			},
-		})
+		},
 	}
 	nodeID := ps.MustGetParameter("node_id")
 	var must = []util.MapStr{
@@ -1150,7 +1148,7 @@ func (h *APIHandler) getLatestIndices(req *http.Request, min string, max string,
 	if !hasAllPrivilege && len(allowedIndices) == 0 {
 		return []interface{}{}, nil
 	}
-	clusterUUID, err := adapter.GetClusterUUID(clusterID)
+	clusterUUID, err := h.getClusterUUID(clusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -1302,7 +1300,7 @@ func (h *APIHandler) GetNodeShards(w http.ResponseWriter, req *http.Request, ps 
 		WildcardIndex: true,
 		CollapseField: "metadata.labels.shard_id",
 	}
-	clusterUUID, err := adapter.GetClusterUUID(clusterID)
+	clusterUUID, err := h.getClusterUUID(clusterID)
 	if err != nil {
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)

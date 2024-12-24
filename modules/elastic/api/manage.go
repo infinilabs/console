@@ -38,7 +38,6 @@ import (
 	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
-	"infini.sh/framework/modules/elastic/adapter"
 	"infini.sh/framework/modules/elastic/common"
 	"math"
 	"net/http"
@@ -1085,7 +1084,7 @@ func (h *APIHandler) GetClusterIndexMetrics(ctx context.Context, id string, buck
 		panic("unknown metric key: " + metricKey)
 	}
 	query := map[string]interface{}{}
-	clusterUUID, err := adapter.GetClusterUUID(id)
+	clusterUUID, err := h.getClusterUUID(id)
 	if err != nil {
 		return nil, err
 	}
@@ -1202,9 +1201,9 @@ func (h *APIHandler) getShardsMetric(ctx context.Context, id string, min, max in
 }
 
 func (h *APIHandler) getCircuitBreakerMetric(ctx context.Context, id string, min, max int64, bucketSize int) (map[string]*common.MetricItem, error) {
-	clusterUUID, err := adapter.GetClusterUUID(id)
+	clusterUUID, err := h.getClusterUUID(id)
 	if err != nil {
-		log.Warnf("get cluster uuid with cluster [%s] error: %v", id, err)
+		return nil, err
 	}
 	should := []util.MapStr{
 		{
@@ -1214,15 +1213,13 @@ func (h *APIHandler) getCircuitBreakerMetric(ctx context.Context, id string, min
 				},
 			},
 		},
-	}
-	if clusterUUID != "" {
-		should = append(should, util.MapStr{
+		{
 			"term": util.MapStr{
 				"metadata.labels.cluster_uuid": util.MapStr{
 					"value": clusterUUID,
 				},
 			},
-		})
+		},
 	}
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 	query := util.MapStr{

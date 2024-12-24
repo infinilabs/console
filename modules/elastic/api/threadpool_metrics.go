@@ -30,7 +30,6 @@ import (
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/util"
-	"infini.sh/framework/modules/elastic/adapter"
 	"infini.sh/framework/modules/elastic/common"
 	"strings"
 )
@@ -82,9 +81,9 @@ const (
 )
 
 func (h *APIHandler) getThreadPoolMetrics(ctx context.Context, clusterID string, bucketSize int, min, max int64, nodeName string, top int, metricKey string) (map[string]*common.MetricItem, error){
-	clusterUUID, err := adapter.GetClusterUUID(clusterID)
+	clusterUUID, err := h.getClusterUUID(clusterID)
 	if err != nil {
-		log.Warnf("get cluster uuid with cluster [%s] error: %v", clusterID, err)
+		return nil, err
 	}
 	bucketSizeStr:=fmt.Sprintf("%vs",bucketSize)
 	var must = []util.MapStr{
@@ -143,15 +142,13 @@ func (h *APIHandler) getThreadPoolMetrics(ctx context.Context, clusterID string,
 				},
 			},
 		},
-	}
-	if clusterUUID != "" {
-		should = append(should, util.MapStr{
+		{
 			"term":util.MapStr{
 				"metadata.labels.cluster_uuid":util.MapStr{
 					"value": clusterUUID,
 				},
 			},
-		})
+		},
 	}
 
 	query:=map[string]interface{}{}

@@ -469,19 +469,12 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 		},
 	}
 	resBody := map[string]interface{}{}
-	bucketSize, min, max, err := h.getMetricRangeAndBucketSize(req, 10, 60)
+	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, clusterID, MetricTypeIndexStats, 60)
 	if err != nil {
 		log.Error(err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
-	}
-	meta := elastic.GetMetadata(clusterID)
-	if meta != nil && meta.Config.MonitorConfigs != nil && meta.Config.MonitorConfigs.IndexStats.Interval != "" {
-		du, _ := time.ParseDuration(meta.Config.MonitorConfigs.IndexStats.Interval)
-		if bucketSize < int(du.Seconds()) {
-			bucketSize = int(du.Seconds())
-		}
 	}
 	query := map[string]interface{}{}
 	query["query"] = util.MapStr{

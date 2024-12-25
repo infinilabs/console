@@ -883,7 +883,15 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 		})
 	}
 	resBody := map[string]interface{}{}
-	bucketSize, min, max, err := h.getMetricRangeAndBucketSize(req, 10, 60)
+	metricKey := h.GetParameter(req, "key")
+	var metricType string
+	if metricKey == v1.IndexHealthMetricKey {
+		metricType = v1.MetricTypeClusterHealth
+	}else{
+		//for agent mode
+		metricType = v1.MetricTypeNodeStats
+	}
+	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, clusterID, metricType,60)
 	if err != nil {
 		log.Error(err)
 		resBody["error"] = err
@@ -893,7 +901,6 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 	if bucketSize <= 60 {
 		min = min - int64(2 * bucketSize * 1000)
 	}
-	metricKey := h.GetParameter(req, "key")
 	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
 	du, err := time.ParseDuration(timeout)
 	if err != nil {

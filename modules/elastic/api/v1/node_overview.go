@@ -251,6 +251,11 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	if len(results.Result) == 0 {
+		h.WriteJSON(w, util.MapStr{}, http.StatusOK)
+		return
+	}
+	var clusterID string
 	statusMap := map[string]interface{}{}
 	for _, v := range results.Result {
 		result, ok := v.(map[string]interface{})
@@ -288,7 +293,7 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 					source["shard_info"] = shardInfo
 				}
 				if tempClusterID, ok := util.GetMapValueByKeys([]string{"metadata", "labels", "cluster_id"}, result); ok {
-					if clusterID, ok :=  tempClusterID.(string); ok {
+					if clusterID, ok =  tempClusterID.(string); ok {
 						if meta := elastic.GetMetadata(clusterID); meta != nil && meta.ClusterState != nil {
 							source["is_master_node"] = meta.ClusterState.MasterNode == nodeID
 						}
@@ -305,7 +310,7 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	bucketSize, min, max, err := h.getMetricRangeAndBucketSize(req, 60, (15))
+	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, clusterID, MetricTypeNodeStats, 15)
 	if err != nil {
 		panic(err)
 		return
@@ -607,7 +612,7 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 		},
 	}
 	resBody := map[string]interface{}{}
-	bucketSize, min, max, err := h.getMetricRangeAndBucketSize(req,10,60)
+	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req,clusterID, MetricTypeNodeStats,60)
 	if err != nil {
 		log.Error(err)
 		resBody["error"] = err

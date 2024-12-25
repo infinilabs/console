@@ -501,18 +501,28 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 	resBody := map[string]interface{}{}
 	id := ps.ByName("id")
 	key := h.GetParameter(req, "key")
+	var metricType string
+	switch key {
+	case IndexThroughputMetricKey, SearchThroughputMetricKey, IndexLatencyMetricKey, SearchLatencyMetricKey:
+		metricType = MetricTypeIndexStats
+	case ClusterDocumentsMetricKey,
+		ClusterStorageMetricKey,
+		ClusterIndicesMetricKey,
+		ClusterNodeCountMetricKey, ClusterHealthMetricKey:
+		metricType = MetricTypeClusterStats
+	case ShardCountMetricKey:
+		metricType = MetricTypeClusterHealth
+	case CircuitBreakerMetricKey:
+		metricType = MetricTypeNodeStats
+	default:
+		h.WriteError(w, "invalid metric key", http.StatusBadRequest)
+		return
+	}
 
-	bucketSize, min, max, err := h.getMetricRangeAndBucketSize(req, 10, 90)
+	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, id, metricType, 90)
 	if err != nil {
 		panic(err)
 		return
-	}
-	meta := elastic.GetMetadata(id)
-	if meta != nil && meta.Config.MonitorConfigs != nil && meta.Config.MonitorConfigs.IndexStats.Enabled && meta.Config.MonitorConfigs.IndexStats.Interval != "" {
-		du, _ := time.ParseDuration(meta.Config.MonitorConfigs.IndexStats.Interval)
-		if bucketSize < int(du.Seconds()) {
-			bucketSize = int(du.Seconds())
-		}
 	}
 
 	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
@@ -528,18 +538,6 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 	if util.StringInArray([]string{IndexThroughputMetricKey, SearchThroughputMetricKey, IndexLatencyMetricKey, SearchLatencyMetricKey}, key) {
 		metrics, err = h.GetClusterIndexMetrics(ctx, id, bucketSize, min, max, key)
 	} else {
-		if meta != nil && meta.Config.MonitorConfigs != nil && meta.Config.MonitorConfigs.ClusterStats.Enabled && meta.Config.MonitorConfigs.ClusterStats.Interval != "" {
-			du, _ := time.ParseDuration(meta.Config.MonitorConfigs.ClusterStats.Interval)
-			if bucketSize < int(du.Seconds()) {
-				bucketSize = int(du.Seconds())
-			}
-		}
-		if meta != nil && meta.Config.MonitorConfigs != nil && meta.Config.MonitorConfigs.ClusterHealth.Enabled && meta.Config.MonitorConfigs.ClusterHealth.Interval != "" {
-			du, _ := time.ParseDuration(meta.Config.MonitorConfigs.ClusterStats.Interval)
-			if bucketSize < int(du.Seconds()) {
-				bucketSize = int(du.Seconds())
-			}
-		}
 		metrics, err = h.GetClusterMetrics(ctx, id, bucketSize, min, max, key)
 	}
 	if err != nil {
@@ -560,7 +558,7 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	resBody := map[string]interface{}{}
 	id := ps.ByName("id")
-	bucketSize, min, max, err := h.getMetricRangeAndBucketSize(req, 10, 90)
+	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, id, MetricTypeIndexStats, 90)
 	if err != nil {
 		log.Error(err)
 		resBody["error"] = err

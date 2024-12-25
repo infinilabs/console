@@ -225,16 +225,56 @@ func GetMinBucketSize() int {
 	return metricsCfg.MinBucketSizeInSeconds
 }
 
-// defaultBucketSize 也就是每次聚合的时间间隔
-func (h *APIHandler) getMetricRangeAndBucketSize(req *http.Request, defaultBucketSize, defaultMetricCount int) (int, int64, int64, error) {
-	minBucketSizeInSeconds := GetMinBucketSize()
-	if defaultBucketSize <= 0 {
-		defaultBucketSize = minBucketSizeInSeconds
+const (
+	MetricTypeClusterHealth = "cluster_health"
+	MetricTypeClusterStats = "cluster_stats"
+	MetricTypeNodeStats      = "node_stats"
+	MetricTypeIndexStats     = "index_stats"
+)
+//GetMetricMinBucketSize returns the metrics collection interval based on the cluster ID and metric type
+func GetMetricMinBucketSize(clusterID, metricType string) (int, error) {
+	meta := elastic.GetMetadata(clusterID)
+	if meta == nil {
+		return 0, fmt.Errorf("got empty metadata for cluster: %s", clusterID)
 	}
+	var interval string
+	switch metricType {
+	case MetricTypeClusterHealth:
+		if meta.Config.MonitorConfigs != nil {
+			interval =  meta.Config.MonitorConfigs.ClusterHealth.Interval
+		}
+	case MetricTypeClusterStats:
+		if meta.Config.MonitorConfigs != nil {
+			interval =  meta.Config.MonitorConfigs.ClusterStats.Interval
+		}
+	case MetricTypeNodeStats:
+		if meta.Config.MonitorConfigs != nil {
+			interval =  meta.Config.MonitorConfigs.NodeStats.Interval
+		}
+	case MetricTypeIndexStats:
+		if meta.Config.MonitorConfigs != nil {
+			interval =  meta.Config.MonitorConfigs.IndexStats.Interval
+		}
+	default:
+		return 0, fmt.Errorf("invalid metric name: %s", metricType)
+	}
+	if interval != "" {
+		du, err := util.ParseDuration(interval)
+		if err != nil {
+			return 0, err
+		}
+		return int(du.Seconds()) * 2, nil
+	}
+	// default to 20 seconds
+	return 20, nil
+}
+
+// defaultBucketSize 也就是每次聚合的时间间隔
+func (h *APIHandler) GetMetricRangeAndBucketSize(req *http.Request, clusterID, metricType string, defaultMetricCount int) (int, int64, int64, error) {
 	if defaultMetricCount <= 0 {
 		defaultMetricCount = 15 * 60
 	}
-	bucketSize := defaultBucketSize
+	bucketSize := 0
 
 	bucketSizeStr := h.GetParameterOrDefault(req, "bucket_size", "")    //默认 10，每个 bucket 的时间范围，单位秒
 	if bucketSizeStr != "" {
@@ -243,19 +283,31 @@ func (h *APIHandler) getMetricRangeAndBucketSize(req *http.Request, defaultBucke
 			return 0, 0, 0, err
 		}
 		bucketSize = int(du.Seconds())
-	}else {
-		bucketSize = 0
 	}
 	metricCount := h.GetIntOrDefault(req, "metric_count", defaultMetricCount) //默认 15分钟的区间，每分钟15个指标，也就是 15*6 个 bucket //90
 	//min,max are unix nanoseconds
 
 	minStr := h.Get(req, "min", "")
 	maxStr := h.Get(req, "max", "")
+	var (
+		minBucketSize = 0
+		err error
+	)
+	//clusterID may be empty when querying host metrics
+	if clusterID != "" {
+		minBucketSize, err = GetMetricMinBucketSize(clusterID, metricType)
+		if err != nil {
+			return 0, 0, 0, fmt.Errorf("failed to get min bucket size for cluster [%s]:%w", clusterID, err)
+		}
+	}else{
+		//default to 20
+		minBucketSize = 20
+	}
 
-	return GetMetricRangeAndBucketSize(minStr, maxStr, bucketSize, metricCount)
+	return GetMetricRangeAndBucketSize(minStr, maxStr, bucketSize, metricCount, minBucketSize)
 }
 
-func GetMetricRangeAndBucketSize(minStr string, maxStr string, bucketSize int, metricCount int) (int, int64, int64, error) {
+func GetMetricRangeAndBucketSize(minStr string, maxStr string, bucketSize int, metricCount int, minBucketSize int) (int, int64, int64, error) {
 	var min, max int64
 	var rangeFrom, rangeTo time.Time
 	var err error
@@ -323,6 +375,9 @@ func GetMetricRangeAndBucketSize(minStr string, maxStr string, bucketSize int, m
 			bucketSize = 12 * 60 * 60 //half daily
 		} else if hours >= 30*24+1 { //>30days
 			bucketSize = 60 * 60 * 24 //daily bucket
+		}
+		if bucketSize < minBucketSize {
+			bucketSize = minBucketSize
 		}
 	}
 

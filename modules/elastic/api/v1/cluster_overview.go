@@ -110,7 +110,7 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 	}
 
 	//fetch cluster metrics
-	bucketSize, min, max, err := h.getMetricRangeAndBucketSize(req, 60, (15))
+	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, clusterIDs[0], MetricTypeIndexStats, 15)
 	if err != nil {
 		panic(err)
 		return

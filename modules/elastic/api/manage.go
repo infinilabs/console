@@ -532,20 +532,29 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 		return
 	}
 	key := h.GetParameter(req, "key")
+	var metricType string
+	switch key {
+	case v1.IndexThroughputMetricKey, v1.SearchThroughputMetricKey, v1.IndexLatencyMetricKey, v1.SearchLatencyMetricKey, CircuitBreakerMetricKey:
+		metricType = v1.MetricTypeNodeStats
+	case ClusterDocumentsMetricKey,
+		ClusterStorageMetricKey,
+		ClusterIndicesMetricKey,
+		ClusterNodeCountMetricKey:
+			metricType = v1.MetricTypeClusterStats
+	case ClusterHealthMetricKey:
+		metricType = v1.MetricTypeClusterStats
+	case ShardCountMetricKey:
+		metricType = v1.MetricTypeClusterHealth
+	default:
+		h.WriteError(w, "invalid metric key", http.StatusBadRequest)
+		return
+	}
 
-	bucketSize, min, max, err := h.getMetricRangeAndBucketSize(req, 10, 90)
+	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, id, metricType, 90)
 	if err != nil {
 		panic(err)
 		return
 	}
-	meta := elastic.GetMetadata(id)
-	if meta != nil && meta.Config.MonitorConfigs != nil && meta.Config.MonitorConfigs.IndexStats.Enabled && meta.Config.MonitorConfigs.IndexStats.Interval != "" {
-		du, _ := time.ParseDuration(meta.Config.MonitorConfigs.IndexStats.Interval)
-		if bucketSize < int(du.Seconds()) {
-			bucketSize = int(du.Seconds())
-		}
-	}
-
 	var metrics interface{}
 	if bucketSize <= 60 {
 		min = min - int64(2*bucketSize*1000)
@@ -582,7 +591,7 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 func (h *APIHandler) HandleNodeMetricsAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	resBody := map[string]interface{}{}
 	id := ps.ByName("id")
-	bucketSize, min, max, err := h.getMetricRangeAndBucketSize(req, 10, 90)
+	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, id, v1.MetricTypeNodeStats, 90)
 	if err != nil {
 		log.Error(err)
 		resBody["error"] = err
@@ -634,7 +643,7 @@ func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.R
 		h.APIHandler.HandleIndexMetricsAction(w, req, ps)
 		return
 	}
-	bucketSize, min, max, err := h.getMetricRangeAndBucketSize(req, 10, 90)
+	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, id, v1.MetricTypeNodeStats, 90)
 	if err != nil {
 		log.Error(err)
 		resBody["error"] = err
@@ -749,7 +758,7 @@ func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.R
 func (h *APIHandler) HandleQueueMetricsAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	resBody := map[string]interface{}{}
 	id := ps.ByName("id")
-	bucketSize, min, max, err := h.getMetricRangeAndBucketSize(req, 10, 90)
+	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, id, v1.MetricTypeNodeStats, 90)
 	if err != nil {
 		log.Error(err)
 		resBody["error"] = err

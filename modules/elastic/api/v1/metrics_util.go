@@ -197,6 +197,7 @@ func (h *APIHandler) getMetrics(ctx context.Context, query map[string]interface{
 
 	result := map[string]*common.MetricItem{}
 
+	hitsTotal := response.GetTotal()
 	for _, metricItem := range grpMetricItems {
 		for _, line := range metricItem.MetricItem.Lines {
 			line.TimeRange = common.TimeRange{Min: minDate, Max: maxDate}
@@ -207,6 +208,7 @@ func (h *APIHandler) getMetrics(ctx context.Context, query map[string]interface{
 			line.Data = grpMetricData[dataKey][line.Metric.Label]
 		}
 		metricItem.MetricItem.Request = string(queryDSL)
+		metricItem.MetricItem.HitsTotal = hitsTotal
 		result[metricItem.Key] = metricItem.MetricItem
 	}
 	return result, nil
@@ -231,7 +233,7 @@ const (
 	MetricTypeNodeStats      = "node_stats"
 	MetricTypeIndexStats     = "index_stats"
 )
-//GetMetricMinBucketSize returns the metrics collection interval based on the cluster ID and metric type
+//GetMetricMinBucketSize returns twice the metrics collection interval based on the cluster ID and metric type
 func GetMetricMinBucketSize(clusterID, metricType string) (int, error) {
 	meta := elastic.GetMetadata(clusterID)
 	if meta == nil {
@@ -500,12 +502,14 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 
 	result := map[string]*common.MetricItem{}
 
+	hitsTotal := response.GetTotal()
 	for _, metricItem := range metricItems {
 		for _, line := range metricItem.Lines {
 			line.TimeRange = common.TimeRange{Min: minDate, Max: maxDate}
 			line.Data = metricData[line.Metric.GetDataKey()]
 		}
 		metricItem.Request = string(queryDSL)
+		metricItem.HitsTotal = hitsTotal
 		result[metricItem.Key] = metricItem
 	}
 

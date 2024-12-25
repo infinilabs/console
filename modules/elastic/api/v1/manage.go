@@ -534,11 +534,21 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), du)
 	defer cancel()
-	var metrics interface{}
+	var metrics map[string]*common.MetricItem
 	if util.StringInArray([]string{IndexThroughputMetricKey, SearchThroughputMetricKey, IndexLatencyMetricKey, SearchLatencyMetricKey}, key) {
 		metrics, err = h.GetClusterIndexMetrics(ctx, id, bucketSize, min, max, key)
 	} else {
 		metrics, err = h.GetClusterMetrics(ctx, id, bucketSize, min, max, key)
+	}
+	if _, ok := metrics[key]; ok {
+		if metrics[key].HitsTotal > 0 {
+			minBucketSize, err := GetMetricMinBucketSize(id, metricType)
+			if err != nil {
+				log.Error(err)
+			}else{
+				metrics[key].MinBucketSize = int64(minBucketSize)
+			}
+		}
 	}
 	if err != nil {
 		log.Error(err)
@@ -564,13 +574,6 @@ func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.R
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
-	}
-	meta := elastic.GetMetadata(id)
-	if meta != nil && meta.Config.MonitorConfigs != nil && meta.Config.MonitorConfigs.IndexStats.Interval != "" {
-		du, _ := time.ParseDuration(meta.Config.MonitorConfigs.IndexStats.Interval)
-		if bucketSize < int(du.Seconds()) {
-			bucketSize = int(du.Seconds())
-		}
 	}
 	indexName := h.Get(req, "index_name", "")
 	top := h.GetIntOrDefault(req, "top", 5)
@@ -650,6 +653,16 @@ func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.R
 		if err != nil {
 			h.WriteError(w, err, http.StatusInternalServerError)
 			return
+		}
+	}
+	if _, ok := metrics[key]; ok {
+		if metrics[key].HitsTotal > 0 {
+			minBucketSize, err := GetMetricMinBucketSize(id, MetricTypeNodeStats)
+			if err != nil {
+				log.Error(err)
+			}else{
+				metrics[key].MinBucketSize = int64(minBucketSize)
+			}
 		}
 	}
 
@@ -1215,6 +1228,7 @@ func (h *APIHandler) getClusterStatusMetric(ctx context.Context, id string, min,
 	metricItem.Lines[0].Data = metricData
 	metricItem.Lines[0].Type = common.GraphTypeBar
 	metricItem.Request = string(queryDSL)
+	metricItem.HitsTotal = response.GetTotal()
 	return metricItem, nil
 }
 

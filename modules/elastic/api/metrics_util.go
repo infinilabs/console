@@ -196,6 +196,7 @@ func (h *APIHandler) getMetrics(ctx context.Context, query map[string]interface{
 
 	result := map[string]*common.MetricItem{}
 
+	hitsTotal := response.GetTotal()
 	for _, metricItem := range grpMetricItems {
 		for _, line := range metricItem.MetricItem.Lines {
 			line.TimeRange = common.TimeRange{Min: minDate, Max: maxDate}
@@ -215,6 +216,7 @@ func (h *APIHandler) getMetrics(ctx context.Context, query map[string]interface{
 			}
 		}
 		metricItem.MetricItem.Request = string(queryDSL)
+		metricItem.MetricItem.HitsTotal = hitsTotal
 		result[metricItem.Key] = metricItem.MetricItem
 	}
 	return result, nil
@@ -438,6 +440,7 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 			}
 		}
 		metricItem.Request = string(queryDSL)
+		metricItem.HitsTotal = response.GetTotal()
 		result[metricItem.Key] = metricItem
 	}
 
@@ -1182,6 +1185,7 @@ func parseSingleIndexMetrics(ctx context.Context, clusterID string, metricItems 
 			}
 		}
 		metricItem.Request = string(queryDSL)
+		metricItem.HitsTotal = response.GetTotal()
 		result[metricItem.Key] = metricItem
 	}
 

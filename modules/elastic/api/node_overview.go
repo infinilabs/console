@@ -803,6 +803,16 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 			return
 		}
 	}
+	if _, ok := metrics[metricKey]; ok {
+		if metrics[metricKey].HitsTotal > 0 {
+			minBucketSize, err := v1.GetMetricMinBucketSize(clusterID, v1.MetricTypeNodeStats)
+			if err != nil {
+				log.Error(err)
+			}else{
+				metrics[metricKey].MinBucketSize = int64(minBucketSize)
+			}
+		}
+	}
 
 	resBody["metrics"] = metrics
 	h.WriteJSON(w, resBody, http.StatusOK)

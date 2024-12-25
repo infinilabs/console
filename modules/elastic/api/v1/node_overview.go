@@ -619,13 +619,6 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
 	}
-	meta := elastic.GetMetadata(clusterID)
-	if meta != nil && meta.Config.MonitorConfigs != nil && meta.Config.MonitorConfigs.NodeStats.Interval != "" {
-		du, _ := time.ParseDuration(meta.Config.MonitorConfigs.NodeStats.Interval)
-		if bucketSize < int(du.Seconds()) {
-			bucketSize = int(du.Seconds())
-		}
-	}
 	query:=map[string]interface{}{}
 	query["query"]=util.MapStr{
 		"bool": util.MapStr{

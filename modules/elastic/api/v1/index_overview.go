@@ -570,6 +570,16 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 			return
 		}
 	}
+	if _, ok := metrics[metricKey]; ok {
+		if metrics[metricKey].HitsTotal > 0 {
+			minBucketSize, err := GetMetricMinBucketSize(clusterID, MetricTypeIndexStats)
+			if err != nil {
+				log.Error(err)
+			}else{
+				metrics[metricKey].MinBucketSize = int64(minBucketSize)
+			}
+		}
+	}
 	resBody["metrics"] = metrics
 	h.WriteJSON(w, resBody, http.StatusOK)
 }
@@ -662,6 +672,7 @@ func (h *APIHandler) GetIndexHealthMetric(ctx context.Context, id, indexName str
 	metricItem.Lines[0].Data = metricData
 	metricItem.Lines[0].Type = common.GraphTypeBar
 	metricItem.Request = string(queryDSL)
+	metricItem.HitsTotal = response.GetTotal()
 	return metricItem, nil
 }
 

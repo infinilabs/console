@@ -8,35 +8,41 @@ import QueueMetric from "../../components/queue_metric";
 import { ESPrefix } from "@/services/common";
 import { SearchEngines } from "@/lib/search_engines";
 
-export const shouldHaveModelInferenceBreaker = (cluster) => {
-  if ([SearchEngines.Easysearch, SearchEngines.Opensearch].includes(cluster?.distribution)) return false;
-  const versions = cluster?.version?.split('.') || []
-  if (parseInt(versions[0]) > 8 || (parseInt(versions[0]) === 8 && parseInt(versions[1]) >= 6 )) {
+export const checkMetric = (key, cluster) => {
+  if (key === 'thread_pool_write') {
+    if ([SearchEngines.Easysearch, SearchEngines.Opensearch].includes(cluster?.distribution)) return true;
+    const main = cluster?.version?.split('.')[0]
+    if (main && parseInt(main) >= 6) {
+      return true
+    }
+    return false
+  } else if (key === 'thread_pool_bulk') {
+    if ([SearchEngines.Easysearch, SearchEngines.Opensearch].includes(cluster?.distribution)) return false;
+    const main = cluster?.version?.split('.')[0]
+    if (main && parseInt(main) >= 6) {
+      return false
+    }
     return true
+  } else if (key === 'model_inference_breaker') {
+    if ([SearchEngines.Easysearch, SearchEngines.Opensearch].includes(cluster?.distribution)) return false;
+    const versions = cluster?.version?.split('.') || []
+    if (parseInt(versions[0]) > 8 || (parseInt(versions[0]) === 8 && parseInt(versions[1]) >= 6 )) {
+      return true
+    }
+    return false
+  } else if (key === 'transport_outbound_connections') {
+    if ([SearchEngines.Easysearch, SearchEngines.Opensearch].includes(cluster?.distribution)) return true;
+    const versions = cluster?.version?.split('.') || []
+    if (parseInt(versions[0]) > 7 || (parseInt(versions[0]) === 7 && parseInt(versions[1]) >= 1 )) {
+      return true
+    }
+    return false
   }
-  return false
-}
-
-export const isVersionGTE6 = (cluster) => {
-  if ([SearchEngines.Easysearch, SearchEngines.Opensearch].includes(cluster?.distribution)) return true;
-  const main = cluster?.version?.split('.')[0]
-  if (main && parseInt(main) >= 6) {
-    return true
-  }
-  return false
 }
 
 export default (props) => {
 
   const { selectedCluster, clusterID } = props
-
-  const isVersionGTE8_6 = useMemo(() => {
-    return shouldHaveModelInferenceBreaker(selectedCluster)
-  }, [selectedCluster])
-
-  const versionGTE6 = useMemo(() => {
-    return isVersionGTE6(selectedCluster)
-  }, [selectedCluster]) 
 
   const [param, setParam] = useState({
     tab: "cluster",
@@ -141,7 +147,7 @@ export default (props) => {
                       "fielddata_breaker",
                       "request_breaker",
                       "in_flight_requests_breaker",
-                      isVersionGTE8_6 ? "model_inference_breaker" : undefined
+                      checkMetric("model_inference_breaker", selectedCluster) ? "model_inference_breaker" : undefined
                   ].filter((item) => !!item)
               ],
               [
@@ -159,8 +165,8 @@ export default (props) => {
                       "transport_rx_rate",
                       "transport_tx_bytes",
                       "transport_tx_rate",
-                      "transport_outbound_connections"
-                  ]
+                      checkMetric("transport_outbound_connections", selectedCluster) ? "transport_outbound_connections" : undefined
+                  ].filter((item) => !!item)
               ],
               [
                   "storage",
@@ -314,7 +320,7 @@ export default (props) => {
           param={param}
           setParam={setParam}
           metrics={[
-            versionGTE6 ? [
+            checkMetric("thread_pool_write", selectedCluster) ? [
                 "thread_pool_write",
                 [
                     "write_active",
@@ -340,7 +346,7 @@ export default (props) => {
                     "search_threads"
                 ]
             ],
-            !versionGTE6 ? [
+            checkMetric("thread_pool_bulk", selectedCluster) ? [
                 "thread_pool_bulk",
                 [
                   "bulk_active",

@@ -632,7 +632,7 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 		},
 	}
 	resBody := map[string]interface{}{}
-	bucketSize, min, max, err := h.getMetricRangeAndBucketSize(req,10,60)
+	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req,clusterID, v1.MetricTypeNodeStats,60)
 	if err != nil {
 		log.Error(err)
 		resBody["error"] = err
@@ -801,6 +801,16 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 			log.Error(err)
 			h.WriteError(w, err, http.StatusInternalServerError)
 			return
+		}
+	}
+	if _, ok := metrics[metricKey]; ok {
+		if metrics[metricKey].HitsTotal > 0 {
+			minBucketSize, err := v1.GetMetricMinBucketSize(clusterID, v1.MetricTypeNodeStats)
+			if err != nil {
+				log.Error(err)
+			}else{
+				metrics[metricKey].MinBucketSize = int64(minBucketSize)
+			}
 		}
 	}
 

@@ -21,6 +21,7 @@ Information about release notes of INFINI Console is provided here.
 - Optimize UI of agent list when its columns are overflow.
 - Add loading to each row in overview table.
 - Adapter metrics query with cluster id and cluster uuid
+- Optimize metric query bucket size (#59)
 - Add suggestion to chart in monitor if is no data because the time interval is less than the collection interval.
 
 

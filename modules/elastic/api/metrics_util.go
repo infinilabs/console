@@ -27,7 +27,6 @@ import (
 	"context"
 	"fmt"
 	"infini.sh/framework/core/env"
-	"net/http"
 	"strings"
 	"time"
 
@@ -197,6 +196,7 @@ func (h *APIHandler) getMetrics(ctx context.Context, query map[string]interface{
 
 	result := map[string]*common.MetricItem{}
 
+	hitsTotal := response.GetTotal()
 	for _, metricItem := range grpMetricItems {
 		for _, line := range metricItem.MetricItem.Lines {
 			line.TimeRange = common.TimeRange{Min: minDate, Max: maxDate}
@@ -216,6 +216,7 @@ func (h *APIHandler) getMetrics(ctx context.Context, query map[string]interface{
 			}
 		}
 		metricItem.MetricItem.Request = string(queryDSL)
+		metricItem.MetricItem.HitsTotal = hitsTotal
 		result[metricItem.Key] = metricItem.MetricItem
 	}
 	return result, nil
@@ -232,36 +233,6 @@ func GetMinBucketSize() int {
 		metricsCfg.MinBucketSizeInSeconds = 20
 	}
 	return metricsCfg.MinBucketSizeInSeconds
-}
-
-// defaultBucketSize 也就是每次聚合的时间间隔
-func (h *APIHandler) getMetricRangeAndBucketSize(req *http.Request, defaultBucketSize, defaultMetricCount int) (int, int64, int64, error) {
-	minBucketSizeInSeconds := GetMinBucketSize()
-	if defaultBucketSize <= 0 {
-		defaultBucketSize = minBucketSizeInSeconds
-	}
-	if defaultMetricCount <= 0 {
-		defaultMetricCount = 15 * 60
-	}
-	bucketSize := defaultBucketSize
-
-	bucketSizeStr := h.GetParameterOrDefault(req, "bucket_size", "")    //默认 10，每个 bucket 的时间范围，单位秒
-	if bucketSizeStr != "" {
-		du, err := util.ParseDuration(bucketSizeStr)
-		if err != nil {
-			return 0, 0, 0, err
-		}
-		bucketSize = int(du.Seconds())
-	}else {
-		bucketSize = 0
-	}
-	metricCount := h.GetIntOrDefault(req, "metric_count", defaultMetricCount) //默认 15分钟的区间，每分钟15个指标，也就是 15*6 个 bucket //90
-	//min,max are unix nanoseconds
-
-	minStr := h.Get(req, "min", "")
-	maxStr := h.Get(req, "max", "")
-
-	return GetMetricRangeAndBucketSize(minStr, maxStr, bucketSize, metricCount)
 }
 
 func GetMetricRangeAndBucketSize(minStr string, maxStr string, bucketSize int, metricCount int) (int, int64, int64, error) {
@@ -469,6 +440,7 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 			}
 		}
 		metricItem.Request = string(queryDSL)
+		metricItem.HitsTotal = response.GetTotal()
 		result[metricItem.Key] = metricItem
 	}
 
@@ -1213,6 +1185,7 @@ func parseSingleIndexMetrics(ctx context.Context, clusterID string, metricItems 
 			}
 		}
 		metricItem.Request = string(queryDSL)
+		metricItem.HitsTotal = response.GetTotal()
 		result[metricItem.Key] = metricItem
 	}
 

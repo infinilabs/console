@@ -469,19 +469,12 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 		},
 	}
 	resBody := map[string]interface{}{}
-	bucketSize, min, max, err := h.getMetricRangeAndBucketSize(req, 10, 60)
+	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, clusterID, MetricTypeIndexStats, 60)
 	if err != nil {
 		log.Error(err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
-	}
-	meta := elastic.GetMetadata(clusterID)
-	if meta != nil && meta.Config.MonitorConfigs != nil && meta.Config.MonitorConfigs.IndexStats.Interval != "" {
-		du, _ := time.ParseDuration(meta.Config.MonitorConfigs.IndexStats.Interval)
-		if bucketSize < int(du.Seconds()) {
-			bucketSize = int(du.Seconds())
-		}
 	}
 	query := map[string]interface{}{}
 	query["query"] = util.MapStr{
@@ -577,6 +570,16 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 			return
 		}
 	}
+	if _, ok := metrics[metricKey]; ok {
+		if metrics[metricKey].HitsTotal > 0 {
+			minBucketSize, err := GetMetricMinBucketSize(clusterID, MetricTypeIndexStats)
+			if err != nil {
+				log.Error(err)
+			}else{
+				metrics[metricKey].MinBucketSize = int64(minBucketSize)
+			}
+		}
+	}
 	resBody["metrics"] = metrics
 	h.WriteJSON(w, resBody, http.StatusOK)
 }
@@ -669,6 +672,7 @@ func (h *APIHandler) GetIndexHealthMetric(ctx context.Context, id, indexName str
 	metricItem.Lines[0].Data = metricData
 	metricItem.Lines[0].Type = common.GraphTypeBar
 	metricItem.Request = string(queryDSL)
+	metricItem.HitsTotal = response.GetTotal()
 	return metricItem, nil
 }
 

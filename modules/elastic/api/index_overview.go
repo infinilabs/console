@@ -835,7 +835,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 		}, http.StatusForbidden)
 		return
 	}
-	clusterUUID, err := adapter.GetClusterUUID(clusterID)
+	clusterUUID, err := h.getClusterUUID(clusterID)
 	if err != nil {
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -844,13 +844,6 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 	shardID := h.GetParameterOrDefault(req, "shard_id", "")
 
 	var must = []util.MapStr{
-		{
-			"term": util.MapStr{
-				"metadata.labels.cluster_uuid": util.MapStr{
-					"value": clusterUUID,
-				},
-			},
-		},
 		{
 			"term": util.MapStr{
 				"metadata.category": util.MapStr{
@@ -883,7 +876,15 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 		})
 	}
 	resBody := map[string]interface{}{}
-	bucketSize, min, max, err := h.getMetricRangeAndBucketSize(req, 10, 60)
+	metricKey := h.GetParameter(req, "key")
+	var metricType string
+	if metricKey == v1.IndexHealthMetricKey {
+		metricType = v1.MetricTypeClusterHealth
+	}else{
+		//for agent mode
+		metricType = v1.MetricTypeNodeStats
+	}
+	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, clusterID, metricType,60)
 	if err != nil {
 		log.Error(err)
 		resBody["error"] = err
@@ -893,7 +894,6 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 	if bucketSize <= 60 {
 		min = min - int64(2 * bucketSize * 1000)
 	}
-	metricKey := h.GetParameter(req, "key")
 	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
 	du, err := time.ParseDuration(timeout)
 	if err != nil {
@@ -907,6 +907,22 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 	query["query"] = util.MapStr{
 		"bool": util.MapStr{
 			"must": must,
+			"should": []util.MapStr{
+				{
+					"term": util.MapStr{
+						"metadata.labels.cluster_uuid": util.MapStr{
+							"value": clusterUUID,
+						},
+					},
+				},
+				{
+					"term": util.MapStr{
+						"metadata.labels.cluster_id": util.MapStr{
+							"value": clusterID,
+						},
+					},
+				},
+			},
 			"filter": []util.MapStr{
 				{
 					"range": util.MapStr{
@@ -1009,6 +1025,16 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 			h.WriteError(w, err, http.StatusInternalServerError)
 		}
 	}
+	if _, ok := metrics[metricKey]; ok {
+		if metrics[metricKey].HitsTotal > 0 {
+			minBucketSize, err := v1.GetMetricMinBucketSize(clusterID, metricType)
+			if err != nil {
+				log.Error(err)
+			}else{
+				metrics[metricKey].MinBucketSize = int64(minBucketSize)
+			}
+		}
+	}
 
 	resBody["metrics"] = metrics
 	h.WriteJSON(w, resBody, http.StatusOK)
@@ -1102,6 +1128,7 @@ func (h *APIHandler) getIndexShardsMetric(ctx context.Context, id, indexName str
 	metricItem.Lines[0].Data = metricData
 	metricItem.Lines[0].Type = common.GraphTypeBar
 	metricItem.Request = string(queryDSL)
+	metricItem.HitsTotal = response.GetTotal()
 	return metricItem, nil
 }
 

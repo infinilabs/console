@@ -532,21 +532,30 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 		return
 	}
 	key := h.GetParameter(req, "key")
+	var metricType string
+	switch key {
+	case v1.IndexThroughputMetricKey, v1.SearchThroughputMetricKey, v1.IndexLatencyMetricKey, v1.SearchLatencyMetricKey, CircuitBreakerMetricKey:
+		metricType = v1.MetricTypeNodeStats
+	case ClusterDocumentsMetricKey,
+		ClusterStorageMetricKey,
+		ClusterIndicesMetricKey,
+		ClusterNodeCountMetricKey:
+			metricType = v1.MetricTypeClusterStats
+	case ClusterHealthMetricKey:
+		metricType = v1.MetricTypeClusterStats
+	case ShardCountMetricKey:
+		metricType = v1.MetricTypeClusterHealth
+	default:
+		h.WriteError(w, "invalid metric key", http.StatusBadRequest)
+		return
+	}
 
-	bucketSize, min, max, err := h.getMetricRangeAndBucketSize(req, 10, 90)
+	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, id, metricType, 90)
 	if err != nil {
 		panic(err)
 		return
 	}
-	meta := elastic.GetMetadata(id)
-	if meta != nil && meta.Config.MonitorConfigs != nil && meta.Config.MonitorConfigs.IndexStats.Enabled && meta.Config.MonitorConfigs.IndexStats.Interval != "" {
-		du, _ := time.ParseDuration(meta.Config.MonitorConfigs.IndexStats.Interval)
-		if bucketSize < int(du.Seconds()) {
-			bucketSize = int(du.Seconds())
-		}
-	}
-
-	var metrics interface{}
+	var metrics map[string]*common.MetricItem
 	if bucketSize <= 60 {
 		min = min - int64(2*bucketSize*1000)
 	}
@@ -569,6 +578,16 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 		h.WriteError(w, err, http.StatusInternalServerError)
 		return
 	}
+	if _, ok := metrics[key]; ok {
+		if metrics[key].HitsTotal > 0 {
+			minBucketSize, err := v1.GetMetricMinBucketSize(id, metricType)
+			if err != nil {
+				log.Error(err)
+			}else{
+				metrics[key].MinBucketSize = int64(minBucketSize)
+			}
+		}
+	}
 
 	resBody["metrics"] = metrics
 
@@ -582,7 +601,7 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 func (h *APIHandler) HandleNodeMetricsAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	resBody := map[string]interface{}{}
 	id := ps.ByName("id")
-	bucketSize, min, max, err := h.getMetricRangeAndBucketSize(req, 10, 90)
+	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, id, v1.MetricTypeNodeStats, 90)
 	if err != nil {
 		log.Error(err)
 		resBody["error"] = err
@@ -604,12 +623,23 @@ func (h *APIHandler) HandleNodeMetricsAction(w http.ResponseWriter, req *http.Re
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), du)
 	defer cancel()
-	resBody["metrics"], err = h.getNodeMetrics(ctx, id, bucketSize, min, max, nodeName, top, key)
+	metrics, err := h.getNodeMetrics(ctx, id, bucketSize, min, max, nodeName, top, key)
 	if err != nil {
 		log.Error(err)
 		h.WriteError(w, err, http.StatusInternalServerError)
 		return
 	}
+	if _, ok := metrics[key]; ok {
+		if metrics[key].HitsTotal > 0 {
+			minBucketSize, err := v1.GetMetricMinBucketSize(id, v1.MetricTypeNodeStats)
+			if err != nil {
+				log.Error(err)
+			}else{
+				metrics[key].MinBucketSize = int64(minBucketSize)
+			}
+		}
+	}
+	resBody["metrics"] = metrics
 	ver := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).GetVersion()
 	if ver.Distribution == "" {
 		cr, err := util.VersionCompare(ver.Number, "6.1")
@@ -634,7 +664,7 @@ func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.R
 		h.APIHandler.HandleIndexMetricsAction(w, req, ps)
 		return
 	}
-	bucketSize, min, max, err := h.getMetricRangeAndBucketSize(req, 10, 90)
+	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, id, v1.MetricTypeNodeStats, 90)
 	if err != nil {
 		log.Error(err)
 		resBody["error"] = err
@@ -729,6 +759,16 @@ func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.R
 			return
 		}
 	}
+	if _, ok := metrics[key]; ok {
+		if metrics[key].HitsTotal > 0 {
+			minBucketSize, err := v1.GetMetricMinBucketSize(id, v1.MetricTypeNodeStats)
+			if err != nil {
+				log.Error(err)
+			}else{
+				metrics[key].MinBucketSize = int64(minBucketSize)
+			}
+		}
+	}
 	resBody["metrics"] = metrics
 	ver := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).GetVersion()
 	if ver.Distribution == "" {
@@ -749,7 +789,7 @@ func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.R
 func (h *APIHandler) HandleQueueMetricsAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	resBody := map[string]interface{}{}
 	id := ps.ByName("id")
-	bucketSize, min, max, err := h.getMetricRangeAndBucketSize(req, 10, 90)
+	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, id, v1.MetricTypeNodeStats, 90)
 	if err != nil {
 		log.Error(err)
 		resBody["error"] = err
@@ -771,12 +811,23 @@ func (h *APIHandler) HandleQueueMetricsAction(w http.ResponseWriter, req *http.R
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), du)
 	defer cancel()
-	resBody["metrics"], err = h.getThreadPoolMetrics(ctx, id, bucketSize, min, max, nodeName, top, key)
+	metrics, err := h.getThreadPoolMetrics(ctx, id, bucketSize, min, max, nodeName, top, key)
 	if err != nil {
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	if _, ok := metrics[key]; ok {
+		if metrics[key].HitsTotal > 0 {
+			minBucketSize, err := v1.GetMetricMinBucketSize(id, v1.MetricTypeNodeStats)
+			if err != nil {
+				log.Error(err)
+			}else{
+				metrics[key].MinBucketSize = int64(minBucketSize)
+			}
+		}
+	}
+	resBody["metrics"] = metrics
 	ver := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).GetVersion()
 	if ver.Distribution == "" {
 		cr, err := util.VersionCompare(ver.Number, "6.1")
@@ -1356,6 +1407,7 @@ func (h *APIHandler) getClusterStatusMetric(ctx context.Context, id string, min,
 	metricItem.Lines[0].Data = metricData
 	metricItem.Lines[0].Type = common.GraphTypeBar
 	metricItem.Request = string(queryDSL)
+	metricItem.HitsTotal = response.GetTotal()
 	return metricItem, nil
 }
 

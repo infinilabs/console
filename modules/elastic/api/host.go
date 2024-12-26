@@ -466,7 +466,7 @@ func (h *APIHandler) FetchHostInfo(w http.ResponseWriter, req *http.Request, ps 
 		return
 	}
 
-	bucketSize, min, max, err := h.getMetricRangeAndBucketSize(req, 60, 15)
+	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, "", "", 15)
 	if err != nil {
 		panic(err)
 		return
@@ -712,7 +712,7 @@ func (h *APIHandler) GetSingleHostMetrics(w http.ResponseWriter, req *http.Reque
 	}
 
 	resBody := map[string]interface{}{}
-	bucketSize, min, max, err := h.getMetricRangeAndBucketSize(req, 10, 60)
+	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, "", "", 60)
 	if err != nil {
 		log.Error(err)
 		resBody["error"] = err

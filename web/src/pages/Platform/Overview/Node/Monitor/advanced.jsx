@@ -4,7 +4,7 @@ import NodeMetric from "../../components/node_metric";
 import QueueMetric from "../../components/queue_metric";
 import { formatMessage } from "umi/locale";
 import { SearchEngines } from "@/lib/search_engines";
-import { isVersionGTE6, shouldHaveModelInferenceBreaker } from "../../Cluster/Monitor/advanced";
+import { checkMetric } from "../../Cluster/Monitor/advanced";
 
 export default (props) => {
 
@@ -13,14 +13,6 @@ export default (props) => {
     clusterID,
     nodeID,
   } = props
-
-  const isVersionGTE8_6 = useMemo(() => {
-    return shouldHaveModelInferenceBreaker(selectedCluster)
-  }, [selectedCluster])
-
-  const versionGTE6 = useMemo(() => {
-    return isVersionGTE6(selectedCluster)
-  }, [selectedCluster])
 
   const [param, setParam] = useState({
     show_top: false,
@@ -106,7 +98,7 @@ export default (props) => {
                     "fielddata_breaker",
                     "request_breaker",
                     "in_flight_requests_breaker",
-                    isVersionGTE8_6 ? "model_inference_breaker" : undefined
+                    checkMetric("model_inference_breaker", selectedCluster) ? "model_inference_breaker" : undefined
                 ].filter((item) => !!item)
             ],
             [
@@ -124,8 +116,8 @@ export default (props) => {
                     "transport_rx_rate",
                     "transport_tx_bytes",
                     "transport_tx_rate",
-                    "transport_outbound_connections"
-                ]
+                    checkMetric("transport_outbound_connections", selectedCluster) ? "transport_outbound_connections" : undefined
+                ].filter((item) => !!item)
             ],
             [
                 "storage",
@@ -201,7 +193,7 @@ export default (props) => {
           param={param}
           setParam={setParam}
           metrics={[
-            versionGTE6 ? [
+            checkMetric("thread_pool_write", selectedCluster) ? [
                 "thread_pool_write",
                 [
                     "write_active",
@@ -227,7 +219,7 @@ export default (props) => {
                     "search_threads"
                 ]
             ],
-            !versionGTE6 ? [
+            checkMetric("thread_pool_bulk", selectedCluster) ? [
                 "thread_pool_bulk",
                 [
                   "bulk_active",

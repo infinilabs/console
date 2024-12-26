@@ -84,7 +84,7 @@ const Monitor = (props) => {
     })
   );
 
-  const [refresh, setRefresh] = useState({ isRefreshPaused: allTimeSettingsCache.isRefreshPaused || false, refreshInterval: allTimeSettingsCache.refreshInterval || 30000 });
+  const [refresh, setRefresh] = useState({ isRefreshPaused: typeof allTimeSettingsCache.isRefreshPaused !== 'undefined' ? allTimeSettingsCache.isRefreshPaused : true, refreshInterval: allTimeSettingsCache.refreshInterval || 30000 });
   const [timeZone, setTimeZone] = useState(() => allTimeSettingsCache.timeZone || getTimezone());
 
   useEffect(() => {

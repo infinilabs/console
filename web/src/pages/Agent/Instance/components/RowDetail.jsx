@@ -366,7 +366,7 @@ export const AgentRowDetail = ({ agentID, t }) => {
         }}
         tabBarExtraContent={
           <div style={{ display: "flex", gap: 10 }}>
-            {state.processesTab == "unknown" ? (
+            {hasAuthority("agent.instance:all") && state.processesTab === "unknown" ? (
               <Button
                 type="primary"
                 onClick={() => {

@@ -22,6 +22,7 @@ Information about release notes of INFINI Console is provided here.
 - Add loading to each row in overview table.
 - Adapter metrics query with cluster id and cluster uuid
 - Add suggestion to chart in monitor if is no data because the time interval is less than the collection interval.
+- check if the cluster version supports metric transport_outbound_comnections in monitor.
 
 
 ## 1.27.0 (2024-12-09)

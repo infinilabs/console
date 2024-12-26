@@ -80,6 +80,7 @@ export default {
   "cluster.monitor.node.title": "节点",
   "cluster.monitor.index.title": "索引",
   "cluster.monitor.queue.title": "线程池",
+  "cluster.monitor.shard.title": "分片",
   "cluster.monitor.summary.name": "集群名称",
   "cluster.monitor.summary.online_time": "在线时长",
   "cluster.monitor.summary.version": "集群版本",
@@ -336,6 +337,12 @@ export default {
 
   "cluster.metrics.request.copy": "复制请求",
   "cluster.metrics.request.copy.success": "复制请求成功",
+
+  "cluster.metrics.time_interval.reload": "设置为全局时间间隔({time_interval})",
+  "cluster.metrics.time_interval.set.global": "全局",
+  "cluster.metrics.time_interval.set.current": "当前",
+  "cluster.metrics.time_interval.empty": "暂无数据，当前时间间隔小于采集间隔，建议设置时间间隔为{min_bucket_size}秒",
+  "cluster.metrics.time_interval.apply": "应用建议",
 
   "cluster.collect.last_active_at": "最后活动时间",
 

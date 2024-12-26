@@ -6,27 +6,13 @@ import { formatMessage } from "umi/locale";
 import { SearchEngines } from "@/lib/search_engines";
 import { isVersionGTE6, shouldHaveModelInferenceBreaker } from "../../Cluster/Monitor/advanced";
 
-export default ({
-  selectedCluster,
-  clusterID,
-  nodeID,
-  timeRange,
-  handleTimeChange,
-  timezone,
-  bucketSize,
-  timeout,
-  refresh,
-}) => {
+export default (props) => {
 
-  const tabProps = {
+  const {
+    selectedCluster,
     clusterID,
-    timeRange,
-    handleTimeChange,
-    timezone,
-    bucketSize,
-    timeout,
-    refresh
-  }
+    nodeID,
+  } = props
 
   const isVersionGTE8_6 = useMemo(() => {
     return shouldHaveModelInferenceBreaker(selectedCluster)
@@ -69,7 +55,7 @@ export default ({
         })}
       >
         <NodeMetric
-          {...tabProps}
+          {...props}
           param={param}
           setParam={setParam}
           metrics={[
@@ -211,7 +197,7 @@ export default ({
         })}
       >
         <QueueMetric
-          {...tabProps}
+          {...props}
           param={param}
           setParam={setParam}
           metrics={[

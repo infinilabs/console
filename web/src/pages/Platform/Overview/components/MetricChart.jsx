@@ -3,7 +3,7 @@ import { cloneDeep } from "lodash";
 import { useEffect, useRef, useState } from "react";
 import { formatMessage } from "umi/locale";
 import styles from "./Metrics.scss";
-import { Alert, Empty, Icon, message, Spin, Tooltip } from "antd";
+import { Alert, Dropdown, Empty, Icon, Menu, message, Spin, Tooltip } from "antd";
 import {
     Axis,
     Chart,
@@ -39,7 +39,8 @@ export default (props) => {
       height = 200,
       customRenderChart,
       instance,
-      pointerUpdate
+      pointerUpdate,
+      handleTimeIntervalChange
     } = props;
   
     const [loading, setLoading] = useState(false)
@@ -55,20 +56,26 @@ export default (props) => {
     const containerRef = useRef(null)
   
     const firstFetchRef = useRef(true)
+
+    const [timeInterval, setTimeInterval] = useState()
   
-    const fetchData = async (queryParams, fetchUrl, metricKey, showLoading) => {
+    const fetchData = async (queryParams, fetchUrl, metricKey, timeInterval, showLoading) => {
       if (!observerRef.current.isInView || !fetchUrl) return;
       setError()
       if (firstFetchRef.current || showLoading) {
         setLoading(true)
       }
+      const newQueryParams = {
+        ...queryParams,
+        key: metricKey,
+        timeout
+      }
+      if (timeInterval) {
+        newQueryParams.bucket_size = timeInterval
+      }
       const res = await request(fetchUrl, {
         method: 'GET',
-        queryParams: {
-          ...queryParams,
-          key: metricKey,
-          timeout
-        },
+        queryParams: newQueryParams,
         ignoreTimeout: true
       }, false, false)
       if (res?.error) {
@@ -86,9 +93,9 @@ export default (props) => {
     }
   
     useEffect(() => {
-      observerRef.current.deps = cloneDeep([queryParams, fetchUrl, metricKey, refresh])
-      fetchData(queryParams, fetchUrl, metricKey, refresh)
-    }, [JSON.stringify(queryParams), fetchUrl, metricKey, refresh])
+      observerRef.current.deps = cloneDeep([queryParams, fetchUrl, metricKey, timeInterval, refresh])
+      fetchData(queryParams, fetchUrl, metricKey, timeInterval, refresh)
+    }, [JSON.stringify(queryParams), fetchUrl, metricKey, timeInterval, refresh])
   
     useEffect(() => {
       const observer = new IntersectionObserver(
@@ -150,9 +157,33 @@ export default (props) => {
       const axis = metric?.axis || [];
       const lines = metric?.lines || [];
       if (lines.every((item) => !item.data || item.data.length === 0)) {
+        const emptyProps = {}
+        if (metric?.min_bucket_size > 0 && metric?.hits_total > 0) {
+          emptyProps.description = (
+            <>
+              <div style={{ wordBreak: 'break-all', textAlign: 'left', marginBotton: 2 }} >
+                {formatMessage({ id: "cluster.metrics.time_interval.empty" }, { min_bucket_size: metric.min_bucket_size})}
+              </div>
+              <Dropdown overlay={(
+                <Menu>
+                  <Menu.Item onClick={() => handleTimeIntervalChange(`${metric?.min_bucket_size}s`)}>
+                    {formatMessage({ id: `cluster.metrics.time_interval.set.global`})}
+                  </Menu.Item>
+                  <Menu.Item onClick={() => setTimeInterval(`${metric?.min_bucket_size}s`)}>
+                    {formatMessage({ id: `cluster.metrics.time_interval.set.current`})}
+                  </Menu.Item>
+                </Menu>
+              )}>
+                <a onClick={e => e.preventDefault()}>
+                  {formatMessage({ id: `cluster.metrics.time_interval.apply`})} <Icon type="down" />
+                </a>
+              </Dropdown>
+            </>
+          )
+        }
         return (
           <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Empty style={{ margin: 0}} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            <Empty style={{ margin: 0}} image={Empty.PRESENTED_IMAGE_SIMPLE} {...emptyProps} />
           </div>
         )
       }
@@ -298,11 +329,19 @@ export default (props) => {
           {
             <span>
               {
+                timeInterval && (
+                  <Tooltip title={formatMessage({id: "cluster.metrics.time_interval.reload"}, { time_interval: queryParams.bucket_size })}>
+                    <Icon className={styles.copy} style={{ marginRight: 12 }} type="history" onClick={() => setTimeInterval()}/>
+                  </Tooltip>
+                )
+              }
+              {
                 metric?.request && (
                   <CopyToClipboard text={`GET .infini_metrics/_search\n${metric.request}`}>
                     <Tooltip title={formatMessage({id: "cluster.metrics.request.copy"})}>
                       <Icon 
                         className={styles.copy}
+                        style={{ marginRight: 12 }} 
                         type="copy" 
                         onClick={() => message.success(formatMessage({id: "cluster.metrics.request.copy.success"}))}
                       />
@@ -311,7 +350,7 @@ export default (props) => {
                 )
               }
               <Tooltip title={formatMessage({id: "form.button.refresh"})}>
-                <Icon className={styles.copy} style={{ marginLeft: 12 }} type="reload" onClick={() => fetchData(...observerRef.current.deps, true)}/>
+                <Icon className={styles.copy} type="sync" onClick={() => fetchData(...observerRef.current.deps, true)}/>
               </Tooltip>
             </span>
           }

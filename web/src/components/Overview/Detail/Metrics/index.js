@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Tabs, Button } from "antd";
 import { ESPrefix } from "@/services/common";
 import useFetch from "@/lib/hooks/use_fetch";
@@ -15,7 +15,7 @@ import { formatMessage } from "umi/locale";
 import DatePicker from "@/common/src/DatePicker";
 import { getLocale } from "umi/locale";
 import { getTimezone } from "@/utils/utils";
-import { TIMEOUT_CACHE_KEY } from "../../Monitor";
+import { getAllTimeSettingsCache, TIME_SETTINGS_KEY } from "../../Monitor";
 
 const { TabPane } = Tabs;
 
@@ -30,6 +30,8 @@ export default (props) => {
     metrics = [],
   } = props;
 
+  const allTimeSettingsCache = getAllTimeSettingsCache() || {}
+
   const [spinning, setSpinning] = useState(false);
   const [state, setState] = useState({
     timeRange: {
@@ -37,12 +39,12 @@ export default (props) => {
       max: "now",
       timeFormatter: formatter.dates(1),
     },
-    timeInterval: '',
-    timeout: localStorage.getItem(TIMEOUT_CACHE_KEY) || '120s',
+    timeInterval: allTimeSettingsCache.timeInterval,
+    timeout: allTimeSettingsCache.timeout || '120s',
   });
 
-  const [refresh, setRefresh] = useState({ isRefreshPaused: false });
-  const [timeZone, setTimeZone] = useState(() => getTimezone());
+  const [refresh, setRefresh] = useState({ isRefreshPaused: allTimeSettingsCache.isRefreshPaused || false, refreshInterval: allTimeSettingsCache.refreshInterval || 30000 });
+  const [timeZone, setTimeZone] = useState(() => allTimeSettingsCache.timeZone || getTimezone());
 
   const handleTimeChange = ({ start, end, timeInterval, timeout }) => {
     const bounds = calculateBounds({
@@ -64,6 +66,15 @@ export default (props) => {
     });
     setSpinning(true);
   };
+
+  const onTimeSettingsChange = (timeSettings) => {
+    let allTimeSettings = getAllTimeSettingsCache();
+    allTimeSettings = {
+      ...(allTimeSettings || {}),
+      ...(timeSettings || {})
+    }
+    localStorage.setItem(TIME_SETTINGS_KEY, JSON.stringify(allTimeSettings))
+  }
 
   const [linkMoreNew] = useMemo(() => {
     let urlObj = parseUrl(linkMore);
@@ -94,14 +105,21 @@ export default (props) => {
             end={state.timeRange.max}
             onRangeChange={handleTimeChange}
             {...refresh}
-            onRefreshChange={setRefresh}
+            onRefreshChange={(newRefresh) => {
+              onTimeSettingsChange(newRefresh)
+              setRefresh(newRefresh)
+            }}
             onRefresh={handleTimeChange}
             showTimeSetting={true}
             showTimeInterval={true}
             showTimeout={true}
             timeout={state.timeout}
+            timeInterval={state.timeInterval}
             onTimeSettingChange={(timeSetting) => {
-              localStorage.setItem(TIMEOUT_CACHE_KEY, timeSetting.timeout)
+              onTimeSettingsChange({
+                timeInterval: timeSetting.timeInterval,
+                timeout: timeSetting.timeout
+              })
               setState({
                 ...state,
                 timeInterval: timeSetting.timeInterval,
@@ -109,7 +127,12 @@ export default (props) => {
               });
             }}
             timeZone={timeZone}
-            onTimeZoneChange={setTimeZone}
+            onTimeZoneChange={(timeZone) => {
+              onTimeSettingsChange({
+                timeZone,
+              })
+              setTimeZone(timeZone)
+            }}
             recentlyUsedRangesKey={'overview-detail'}
           />
         </div>
@@ -124,6 +147,15 @@ export default (props) => {
           renderExtraMetric={renderExtraMetric}
           metrics={metrics}
           {...state}
+          handleTimeIntervalChange={(timeInterval) => {
+            onTimeSettingsChange({
+              timeInterval,
+            })
+            setState({
+              ...state,
+              timeInterval,
+            });
+          }}
           bucketSize={state.timeInterval}
         />
       </div>

@@ -2,32 +2,24 @@ import { ESPrefix } from "@/services/common";
 import StatisticBar from "./statistic_bar";
 import ClusterMetric from "../../components/cluster_metric";
 
-export default ({
-  isAgent,
-  clusterID,
-  indexName,
-  timeRange,
-  handleTimeChange,
-  shardID,
-  bucketSize,
-  timezone,
-  timeout,
-  refresh
-}) => {
+export default (props) => {
+
+  const {
+    isAgent,
+    clusterID,
+    indexName,
+    shardID,
+  } = props
+
   let url = `${ESPrefix}/${clusterID}/index/${indexName}/metrics`;
   if(shardID){
     url += `?shard_id=${shardID}`
   }
   return (
     <ClusterMetric
-      timezone={timezone}
-      timeRange={timeRange}
-      handleTimeChange={handleTimeChange}
+      {...props}
       overview={1}
       fetchUrl={url}
-      bucketSize={bucketSize}
-      timeout={timeout}
-      refresh={refresh}
       metrics={[
         isAgent && shardID ? 'shard_state' : "index_health",
         "index_throughput",

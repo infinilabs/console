@@ -2,33 +2,19 @@ import { useState } from "react";
 import StatisticBar from "./statistic_bar";
 import IndexMetric from "../../components/index_metric";
 
-export default ({
-  clusterID,
-  indexName,
-  timeRange,
-  handleTimeChange,
-  shardID,
-  bucketSize,
-  timezone,
-  timeout,
-  refresh,
-}) => {
+export default (props) => {
+
+  const { indexName } = props
+
   const [param, setParam] = useState({
     show_top: false,
     index_name: indexName,
   });
   return (
     <IndexMetric
-      clusterID={clusterID}
-      timezone={timezone}
-      timeRange={timeRange}
-      handleTimeChange={handleTimeChange}
+      {...props}
       param={param}
       setParam={setParam}
-      shardID={shardID}
-      bucketSize={bucketSize}
-      timeout={timeout}
-      refresh={refresh}
       metrics={[
         [
             "operations",

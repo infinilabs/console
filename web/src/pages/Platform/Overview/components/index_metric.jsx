@@ -25,6 +25,7 @@ export default (props) => {
     metrics = [],
     timeout,
     refresh,
+    handleTimeIntervalChange
   } = props
   
   if (!clusterID || metrics.length == 0) {
@@ -158,6 +159,7 @@ export default (props) => {
                             className={"metric-item"}
                             timeout={timeout}
                             refresh={refresh}
+                            handleTimeIntervalChange={handleTimeIntervalChange}
                           />
                         ))
                       }

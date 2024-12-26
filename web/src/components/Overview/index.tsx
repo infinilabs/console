@@ -274,7 +274,7 @@ export default forwardRef((props: IProps, ref: any) => {
                       <listItemConfig.component
                         data={item}
                         id={infoField}
-                        isActive={selectedItem?._id == item?._id}
+                        isActive={listItemConfig.getId(selectedItem?._id) == infoField}
                         onSelect={() => {
                           setSelectedItem(item);
                           drawRef.current?.open();

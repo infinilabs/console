@@ -89,6 +89,7 @@ export default {
   "cluster.monitor.node.title": "Node",
   "cluster.monitor.index.title": "Index",
   "cluster.monitor.queue.title": "Thread Pool",
+  "cluster.monitor.shard.title": "Shard",
   "cluster.monitor.summary.name": "Cluster Name",
   "cluster.monitor.summary.online_time": "Uptime",
   "cluster.monitor.summary.version": "Version",
@@ -351,6 +352,12 @@ export default {
   
   "cluster.metrics.request.copy": "Copy request",
   "cluster.metrics.request.copy.success": "Copy request successfully",
+
+  "cluster.metrics.time_interval.reload": "Apply global time interval({time_interval})",
+  "cluster.metrics.time_interval.set.global": "Global",
+  "cluster.metrics.time_interval.set.current": "Current",
+  "cluster.metrics.time_interval.empty": "No data, the time interval is less than the collection interval, suggest to set the time interval to {min_bucket_size} seconds.",
+  "cluster.metrics.time_interval.apply": "Apply suggestion",
 
   "cluster.collect.last_active_at": "Last Active At",
 

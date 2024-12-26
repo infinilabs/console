@@ -5,6 +5,7 @@ export default {
   "license.tab.license.title": "授权信息",
   "license.label.version": "版本",
   "license.label.build_time": "编译时间",
+  "license.label.build_number": "编译版本号",
   "license.label.license_type": "授权类型",
   "license.label.max_nodes": "最大节点数",
   "license.label.issue_to": "授权对象",

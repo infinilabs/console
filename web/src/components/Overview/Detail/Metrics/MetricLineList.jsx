@@ -8,7 +8,7 @@ import request from "@/utils/request";
 import MetricChart from "@/pages/Platform/Overview/components/MetricChart";
 
 export default (props) => {
-  const { action, timeRange, timezone, timeout, overview, renderExtraMetric, metrics = [], queryParams } = props
+  const { action, timeRange, timezone, timeout, overview, renderExtraMetric, metrics = [], queryParams, handleTimeIntervalChange } = props
 
   return (
     <div className={styles.metricChart}>
@@ -60,6 +60,7 @@ export default (props) => {
               };
               return <MetricLine {...config} key={metric.key} />
             }}
+            handleTimeIntervalChange={handleTimeIntervalChange}
           />
         )
       })}

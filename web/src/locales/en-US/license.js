@@ -5,6 +5,7 @@ export default {
   "license.tab.license.title": "License",
   "license.label.version": "Version",
   "license.label.build_time": "Build Time",
+  "license.label.build_number": "Build Number",
   "license.label.license_type": "License Type",
   "license.label.max_nodes": "Maximum Nodes",
   "license.label.issue_to": "Issue To",

@@ -26,26 +26,9 @@ export const isVersionGTE6 = (cluster) => {
   return false
 }
 
-export default ({
-  selectedCluster,
-  clusterID,
-  timeRange,
-  handleTimeChange,
-  timezone,
-  bucketSize,
-  timeout,
-  refresh,
-}) => {
+export default (props) => {
 
-  const tabProps = {
-    clusterID,
-    timeRange,
-    handleTimeChange,
-    timezone,
-    bucketSize,
-    timeout,
-    refresh
-  }
+  const { selectedCluster, clusterID } = props
 
   const isVersionGTE8_6 = useMemo(() => {
     return shouldHaveModelInferenceBreaker(selectedCluster)
@@ -83,7 +66,7 @@ export default ({
         })}
       >
         <ClusterMetric
-          {...tabProps}
+          {...props}
           fetchUrl={`${ESPrefix}/${clusterID}/cluster_metrics`}
           metrics={[
             'cluster_health',
@@ -107,7 +90,7 @@ export default ({
         })}
       >
         <NodeMetric
-          {...tabProps}
+          {...props}
           param={param}
           setParam={setParam}
           metrics={[
@@ -249,7 +232,7 @@ export default ({
         })}
       >
         <IndexMetric
-          {...tabProps}
+          {...props}
           param={param}
           setParam={setParam}
           metrics={[
@@ -327,7 +310,7 @@ export default ({
         })}
       >
         <QueueMetric
-          {...tabProps}
+          {...props}
           param={param}
           setParam={setParam}
           metrics={[

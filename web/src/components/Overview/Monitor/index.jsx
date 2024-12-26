@@ -41,7 +41,17 @@ const formatTimeout = (timeout) => {
   return timeout
 }
 
-export const TIMEOUT_CACHE_KEY = "monitor-timeout"
+export const TIME_SETTINGS_KEY = "monitor-time-settings"
+
+export const getAllTimeSettingsCache = () => {
+  const allTimeSettings = localStorage.getItem(TIME_SETTINGS_KEY) || `{}`
+  try {
+    const object = JSON.parse(allTimeSettings);
+    return object || {}
+  } catch (error) {
+    return {}
+  }
+}
 
 const Monitor = (props) => {
   const {
@@ -54,6 +64,8 @@ const Monitor = (props) => {
     checkPaneParams,
   } = props;
 
+  const allTimeSettingsCache = getAllTimeSettingsCache()
+
   const [param, setParam] = useQueryParam("_g", JsonParam);
 
   const [spinning, setSpinning] = useState(false);
@@ -65,15 +77,15 @@ const Monitor = (props) => {
         max: param?.timeRange?.max || "now",
         timeFormatter: formatter.dates(1),
       },
-      timeInterval: formatTimeInterval(param?.timeInterval),
-      timeout: formatTimeout(param?.timeout) || localStorage.getItem(TIMEOUT_CACHE_KEY) || '120s',
+      timeInterval: formatTimeInterval(param?.timeInterval) || allTimeSettingsCache.timeInterval,
+      timeout: formatTimeout(param?.timeout)  || allTimeSettingsCache.timeout || '120s',
       param: param,
-      refresh: true
+      refresh: true,
     })
   );
 
-  const [refresh, setRefresh] = useState({ isRefreshPaused: false, refreshInterval: 30000 });
-  const [timeZone, setTimeZone] = useState(() => getTimezone());
+  const [refresh, setRefresh] = useState({ isRefreshPaused: allTimeSettingsCache.isRefreshPaused || false, refreshInterval: allTimeSettingsCache.refreshInterval || 30000 });
+  const [timeZone, setTimeZone] = useState(() => allTimeSettingsCache.timeZone || getTimezone());
 
   useEffect(() => {
     setParam({ ...param, timeRange: state.timeRange, timeInterval: state.timeInterval, timeout: state.timeout });
@@ -108,6 +120,15 @@ const Monitor = (props) => {
     });
   };
 
+  const onTimeSettingsChange = (timeSettings) => {
+    let allTimeSettings = getAllTimeSettingsCache();
+    allTimeSettings = {
+      ...(allTimeSettings || {}),
+      ...(timeSettings || {})
+    }
+    localStorage.setItem(TIME_SETTINGS_KEY, JSON.stringify(allTimeSettings))
+  }
+
   const breadcrumbList = getBreadcrumbList(state);
 
   const isAgent = useMemo(() => {
@@ -133,7 +154,10 @@ const Monitor = (props) => {
                       handleTimeChange({ start, end })
                     }}
                     {...refresh}
-                    onRefreshChange={setRefresh}
+                    onRefreshChange={(newRefresh) => {
+                      onTimeSettingsChange(newRefresh)
+                      setRefresh(newRefresh)
+                    }}
                     onRefresh={handleTimeChange}
                     showTimeSetting={true}
                     showTimeInterval={true}
@@ -141,7 +165,10 @@ const Monitor = (props) => {
                     showTimeout={true}
                     timeout={state.timeout}
                     onTimeSettingChange={(timeSetting) => {
-                      localStorage.setItem(TIMEOUT_CACHE_KEY, timeSetting.timeout)
+                      onTimeSettingsChange({
+                        timeInterval: timeSetting.timeInterval,
+                        timeout: timeSetting.timeout
+                      })
                       setState({
                         ...state,
                         timeInterval: timeSetting.timeInterval,
@@ -149,7 +176,12 @@ const Monitor = (props) => {
                       });
                     }}
                     timeZone={timeZone}
-                    onTimeZoneChange={setTimeZone}
+                    onTimeZoneChange={(timeZone) => {
+                      onTimeSettingsChange({
+                        timeZone,
+                      })
+                      setTimeZone(timeZone)
+                    }}
                     recentlyUsedRangesKey={'monitor'}
                   />
                   <CollectStatus fetchUrl={`${ESPrefix}/${selectedCluster?.id}/_collection_stats`}/>
@@ -188,6 +220,15 @@ const Monitor = (props) => {
                             isAgent={isAgent}
                             {...state}
                             handleTimeChange={handleTimeChange}
+                            handleTimeIntervalChange={(timeInterval) => {
+                              onTimeSettingsChange({
+                                timeInterval,
+                              })
+                              setState({
+                                ...state,
+                                timeInterval,
+                              });
+                            }}
                             setSpinning={setSpinning}
                             {...extraParams}
                             bucketSize={state.timeInterval}

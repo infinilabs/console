@@ -4,6 +4,7 @@ import Infos from "./Detail/Infos";
 import Card from "./Card";
 import Table from "./Table";
 import Overview from "@/components/Overview";
+import { getAllTimeSettingsCache } from "@/components/Overview/Monitor";
 
 const facetLabels = {
   "metadata.cluster_name": "cluster",
@@ -28,6 +29,9 @@ const sideSorterOptions = [
 ];
 
 export default () => {
+
+  const allTimeSettingsCache = getAllTimeSettingsCache()
+
   return (
     <Overview
       extraQueryFields={["index_id"]}
@@ -54,7 +58,7 @@ export default () => {
           text: item?._source?.metadata?.index_name
         }),
       }}
-      infoAction={`${ESPrefix}/index/info?timeout=120s`}
+      infoAction={`${ESPrefix}/index/info?timeout=${allTimeSettingsCache.timeout || '10s'}`}
       facetLabels={facetLabels}
       aggsParams={aggsParams}
       sideSorterOptions={sideSorterOptions}

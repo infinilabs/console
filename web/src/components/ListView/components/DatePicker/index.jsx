@@ -52,7 +52,7 @@ export default (props) => {
     showTimeInterval: true,
     timeInterval: "15s",
     showTimeout: true,
-    timeout: "120s",
+    timeout: "10s",
   });
 
   const [currentTimeZone, setCurrentTimeZone] = useState(timeZone);

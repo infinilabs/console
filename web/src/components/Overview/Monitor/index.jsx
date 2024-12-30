@@ -78,7 +78,7 @@ const Monitor = (props) => {
         timeFormatter: formatter.dates(1),
       },
       timeInterval: formatTimeInterval(param?.timeInterval) || allTimeSettingsCache.timeInterval,
-      timeout: formatTimeout(param?.timeout)  || allTimeSettingsCache.timeout || '120s',
+      timeout: formatTimeout(param?.timeout)  || allTimeSettingsCache.timeout || '10s',
       param: param,
       refresh: true,
     })

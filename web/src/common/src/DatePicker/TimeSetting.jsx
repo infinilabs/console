@@ -45,7 +45,7 @@ const TimeSetting = props => {
   const timeoutObject = useMemo(() => {
     if (!timeout) {
       return {
-        value: 120,
+        value: 10,
         unit: 's',
       }
     }
@@ -128,10 +128,10 @@ const TimeSetting = props => {
               timeoutObject && (
                 <>
                   <InputNumber
-                    min={60}
+                    min={10}
                     value={timeoutObject.value}
                     style={{ width: '100%' }}
-                    step={10}
+                    step={1}
                     precision={0}
                     onChange={(value) => {
                       if (Number.isInteger(value)) {

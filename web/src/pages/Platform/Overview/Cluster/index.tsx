@@ -5,6 +5,7 @@ import Infos from "./Detail/Infos";
 import Card from "./Card";
 import Table from "./Table";
 import Overview from "@/components/Overview";
+import { getAllTimeSettingsCache } from "@/components/Overview/Monitor";
 
 const facetLabels = {
   "labels.health_status": "health status",
@@ -34,6 +35,9 @@ const sideSorterOptions = [
 ];
 
 export default () => {
+
+  const allTimeSettingsCache = getAllTimeSettingsCache()
+
   return (
     <Overview
       searchAction={`${ESPrefix}/cluster/_search`}
@@ -54,7 +58,7 @@ export default () => {
           text: item?._source?.name
         }),
       }}
-      infoAction={`${ESPrefix}/cluster/info?timeout=120s`}
+      infoAction={`${ESPrefix}/cluster/info?timeout=${allTimeSettingsCache.timeout || '10s'}`}
       facetLabels={facetLabels}
       aggsParams={aggsParams}
       sideSorterOptions={sideSorterOptions}

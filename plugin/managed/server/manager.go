@@ -96,7 +96,7 @@ func ProxyAgentRequest(tag, endpoint string, req *util.Request, responseObjectTo
 	var res *util.Result
 
 	initOnce.Do(func() {
-		cfg := global.Env().GetClientConfigByEndpoint(tag, endpoint)
+		cfg := global.Env().GetHTTPClientConfig(tag, endpoint)
 		if cfg != nil {
 			hClient, err := api.NewHTTPClient(cfg)
 			if err != nil {

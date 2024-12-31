@@ -40,7 +40,7 @@ export default (props) => {
       timeFormatter: formatter.dates(1),
     },
     timeInterval: allTimeSettingsCache.timeInterval,
-    timeout: allTimeSettingsCache.timeout || '120s',
+    timeout: allTimeSettingsCache.timeout || '10s',
   });
 
   const [refresh, setRefresh] = useState({ isRefreshPaused: allTimeSettingsCache.isRefreshPaused || false, refreshInterval: allTimeSettingsCache.refreshInterval || 30000 });

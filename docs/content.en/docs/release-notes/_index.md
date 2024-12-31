@@ -24,6 +24,8 @@ Information about release notes of INFINI Console is provided here.
 - Optimize metric query bucket size (#59)
 - Add suggestion to chart in monitor if is no data because the time interval is less than the collection interval.
 - Check if the cluster version supports metric transport_outbound_comnections in monitor.
+- Set timeout to 10s by default in DatePicker's time settings.
+- Check if the cluster version supports metric transport_outbound_comnections in monitor.
 - Enhanced http_client to support customizable configurations.
 
 

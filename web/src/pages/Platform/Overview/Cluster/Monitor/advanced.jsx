@@ -290,7 +290,11 @@ export default (props) => {
                     "segment_memory",
                     "segment_terms_memory",
                     "segment_index_writer_memory",
-                    "segment_term_vectors_memory"
+                    "segment_term_vectors_memory",
+                    "segment_norms_memory",
+                    "segment_points_memory",
+                    "segment_version_map",
+                    "segment_fixed_bit_set",
                 ]
             ],
             [

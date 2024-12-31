@@ -26,7 +26,7 @@ export default (props) => {
         "search_throughput",
         "index_latency",
         "search_latency",
-        isAgent && !shardID ? "shard_state" : undefined,
+        isAgent ? (shardID ? undefined : "shard_state") : "segment_memory",
       ].filter((item) => !!item)}
     />
   );

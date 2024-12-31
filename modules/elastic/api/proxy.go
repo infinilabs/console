@@ -26,7 +26,6 @@ package api
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"fmt"
 	"github.com/buger/jsonparser"
 	log "github.com/cihub/seelog"
@@ -34,15 +33,12 @@ import (
 	"infini.sh/framework/core/api"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
-	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/lib/fasthttp"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
-	"sync"
-	"time"
 )
 
 var httpPool = fasthttp.NewRequestResponsePool("proxy_search")
@@ -211,7 +207,7 @@ func (h *APIHandler) HandleProxyAction(w http.ResponseWriter, req *http.Request,
 	}
 	defer req.Body.Close()
 
-	err = getHttpClient().Do(freq, fres)
+	err = api.GetFastHttpClient("elasticsearch_proxy").Do(freq, fres)
 	if err != nil {
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
@@ -283,24 +279,4 @@ func rewriteTableNamesOfSqlRequest(req *http.Request, distribution string) (stri
 	return strings.Join(unescapedTableNames, ","), nil
 }
 
-var (
-	client     *fasthttp.Client
-	clientOnce sync.Once
-)
 
-func getHttpClient() *fasthttp.Client {
-	clientOnce.Do(func() {
-		clientCfg := global.Env().SystemConfig.HTTPClientConfig
-		client = &fasthttp.Client{
-			MaxConnsPerHost: clientCfg.MaxConnectionPerHost,
-			TLSConfig:       &tls.Config{InsecureSkipVerify: clientCfg.TLSConfig.TLSInsecureSkipVerify},
-			ReadTimeout:     util.GetDurationOrDefault(clientCfg.ReadTimeout, 60*time.Second),
-			WriteTimeout:    util.GetDurationOrDefault(clientCfg.ReadTimeout, 60*time.Second),
-			DialDualStack:   true,
-			ReadBufferSize:  clientCfg.ReadBufferSize,
-			WriteBufferSize: clientCfg.WriteBufferSize,
-			//Dial:            fasthttpproxy.FasthttpProxyHTTPDialerTimeout(time.Second * 2),
-		}
-	})
-	return client
-}

@@ -152,6 +152,7 @@ export default {
   "cluster.metrics.axis.node_health.title": "Node Health",
   "cluster.metrics.axis.parent_breaker.title": "Circuit Breaker",
   "cluster.metrics.axis.circuit_breaker.title": "Circuit Breaker",
+  "cluster.metrics.axis.segment_memory.title": "Segment",
 
   "cluster.metrics.node.axis.cpu.title": "Process CPU Usage",
   "cluster.metrics.node.axis.disk.title": "Disk Available",
@@ -253,6 +254,10 @@ export default {
   "cluster.metrics.index.axis.segment_term_vectors_memory.title":
     "Term Vectors",
   "cluster.metrics.index.axis.segment_index_writer_memory.title": "IndexWriter",
+  "cluster.metrics.index.axis.segment_norms_memory.title": "Segment Norms Memory",
+  "cluster.metrics.index.axis.segment_points_memory.title": "Segment Points Memory",
+  "cluster.metrics.index.axis.segment_version_map.title": "Segment Version Map",
+  "cluster.metrics.index.axis.segment_fixed_bit_set.title": "Segment Fixed Bit Set",
   "cluster.metrics.node.axis.total_io_operations.title":
     "Total I/O  Operations Rate",
   "cluster.metrics.node.axis.total_read_io_operations.title":

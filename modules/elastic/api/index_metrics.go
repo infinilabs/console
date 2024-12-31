@@ -607,6 +607,54 @@ func (h *APIHandler) getIndexMetrics(ctx context.Context, req *http.Request, clu
 			FormatType: "bytes",
 			Units: "",
 		})
+	case v1.SegmentNormsMetricKey:
+		segmentNormsMetric := newMetricItem(v1.SegmentNormsMetricKey, 17, MemoryGroupKey)
+		segmentNormsMetric.AddAxi("Segment norms memory","group1",common.PositionLeft,"bytes","0.[0]","0.[0]",5,true)
+		indexMetricItems = append(indexMetricItems, GroupMetricItem{
+			Key: v1.SegmentNormsMetricKey,
+			Field: "payload.elasticsearch.shard_stats.segments.norms_memory_in_bytes",
+			ID: util.GetUUID(),
+			IsDerivative: false,
+			MetricItem: segmentNormsMetric,
+			FormatType: "bytes",
+			Units: "",
+		})
+	case v1.SegmentPointsMetricKey:
+		segmentPointsMetric := newMetricItem(v1.SegmentPointsMetricKey, 18, MemoryGroupKey)
+		segmentPointsMetric.AddAxi("Segment points memory","group1",common.PositionLeft,"bytes","0.[0]","0.[0]",5,true)
+		indexMetricItems = append(indexMetricItems, GroupMetricItem{
+			Key: v1.SegmentPointsMetricKey,
+			Field: "payload.elasticsearch.shard_stats.segments.points_memory_in_bytes",
+			ID: util.GetUUID(),
+			IsDerivative: false,
+			MetricItem: segmentPointsMetric,
+			FormatType: "bytes",
+			Units: "",
+		})
+	case v1.VersionMapMetricKey:
+		segmentVersionMapMetric := newMetricItem(v1.VersionMapMetricKey, 18, MemoryGroupKey)
+		segmentVersionMapMetric.AddAxi("Segment version map memory","group1",common.PositionLeft,"bytes","0.[0]","0.[0]",5,true)
+		indexMetricItems = append(indexMetricItems, GroupMetricItem{
+			Key: v1.VersionMapMetricKey,
+			Field: "payload.elasticsearch.shard_stats.segments.version_map_memory_in_bytes",
+			ID: util.GetUUID(),
+			IsDerivative: false,
+			MetricItem: segmentVersionMapMetric,
+			FormatType: "bytes",
+			Units: "",
+		})
+	case v1.FixedBitSetMetricKey:
+		segmentFixedBitSetMetric := newMetricItem(v1.FixedBitSetMetricKey, 18, MemoryGroupKey)
+		segmentFixedBitSetMetric.AddAxi("Segment fixed bit set memory","group1",common.PositionLeft,"bytes","0.[0]","0.[0]",5,true)
+		indexMetricItems = append(indexMetricItems, GroupMetricItem{
+			Key: v1.FixedBitSetMetricKey,
+			Field: "payload.elasticsearch.shard_stats.segments.fixed_bit_set_memory_in_bytes",
+			ID: util.GetUUID(),
+			IsDerivative: false,
+			MetricItem: segmentFixedBitSetMetric,
+			FormatType: "bytes",
+			Units: "",
+		})
 	}
 
 

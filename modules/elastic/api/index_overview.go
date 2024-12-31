@@ -1018,6 +1018,13 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 				return value / value2
 			}
 			metricItems = append(metricItems, metricItem)
+		case v1.SegmentMemoryMetricKey:
+			metricItem := newMetricItem(v1.SegmentMemoryMetricKey, 2, MemoryGroupKey)
+			metricItem.AddAxi("Segment Memory", "group1", common.PositionLeft, "bytes", "0,0", "0,0.[00]", 5, false)
+			metricItem.AddLine("Segment Memory", "Segment Memory",
+				"Memory use of all open segments.",
+				"group1", "payload.elasticsearch.shard_stats.segments.memory_in_bytes", "max", bucketSizeStr, "", "bytes", "0,0.[00]", "0,0.[00]", false, false)
+			metricItems = append(metricItems, metricItem)
 		}
 		metrics, err = h.getSingleIndexMetrics(context.Background(), metricItems, query, bucketSize)
 		if err != nil {

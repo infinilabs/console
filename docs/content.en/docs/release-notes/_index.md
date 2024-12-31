@@ -13,6 +13,7 @@ Information about release notes of INFINI Console is provided here.
 
 ### Features
 - Add allocation to activities if is cluster health change and changed to red.
+- Add index metrics for segment memory (norms, points, version map, fixed bit set).
 
 ### Bug fix
 - Fixed query thread pool metrics when cluster uuid is empty

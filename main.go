@@ -73,12 +73,12 @@ func main() {
 	terminalHeader += ("  / __\\/___\\/\\ \\ \\/ _\\  /___\\/ /  /__\\\n")
 	terminalHeader += (" / /  //  //  \\/ /\\ \\  //  // /  /_\\  \n")
 	terminalHeader += ("/ /__/ \\_// /\\  / _\\ \\/ \\_// /__//__  \n")
-	terminalHeader += ("\\____|___/\\_\\ \\/  \\__/\\___/\\____|__/  \n")
-	terminalHeader += ("                                      \n\n")
+	terminalHeader += ("\\____|___/\\_\\ \\/  \\__/\\___/\\____|__/  \n\n")
+	terminalHeader += ("HOME: https://github.com/infinilabs/console/\n\n")
 
 	terminalFooter := ""
 
-	app := framework.NewApp("console", "The easiest way to operate your own search platform.",
+	app := framework.NewApp("console", "The easiest way to operate your own search platform, open-sourced under the GNU AGPLv3.",
 		config.Version, config.BuildNumber, config.LastCommitLog, config.BuildDate, config.EOLDate, terminalHeader, terminalFooter)
 
 	app.Init(nil)

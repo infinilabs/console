@@ -57,15 +57,15 @@ jobs:
             - name: Check go toolchain
               run: go version
 
-            - name: Compile console code
-              working-directory: 'console'
+            - name: Test console code
               run: |
                 echo Home path is $HOME
                 # for console web
-                cd $WORK_BASE/console/web && cnpm install --quiet --no-progress && cnpm run build --quiet
+                cd $GITHUB_WORKSPACE/console/web && cnpm install --quiet --no-progress && cnpm run build --quiet
                 # for unit
                 mkdir -p $HOME/go/src/
                 ln -s $GITHUB_WORKSPACE $HOME/go/src/infini.sh
                 ls -lrt $HOME/go/src/infini.sh/
                 echo Testing code at $PWD ...
+                cd $GITHUB_WORKSPACE/console
                 make config test

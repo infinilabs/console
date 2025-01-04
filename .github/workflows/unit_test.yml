@@ -1,0 +1,71 @@
+name: Console Go Test
+
+on:
+    pull_request:
+        branches: [ "main" ]
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            GO_VERSION: 1.23.4
+            NODEJS_VERSION: 16.20.2
+        steps:
+            - name: Checkout current repository
+              uses: actions/checkout@v4
+              with:
+                fetch-depth: 0
+                path: console
+
+            - name: Checkout framework repository
+              uses: actions/checkout@v4
+              with:
+                fetch-depth: 0
+                repository: infinilabs/framework
+                path: framework
+
+
+            - name: Checkout framework-vendor
+              uses: actions/checkout@v4
+              with:
+                ref: main
+                fetch-depth: 0
+                repository: infinilabs/framework-vendor
+                path: vendor
+
+            - name: Set up nodejs toolchain
+              uses: actions/setup-node@v4
+              with:
+                node-version: ${{ env.NODEJS_VERSION }}
+
+            - name: Check nodejs toolchain
+              run: |
+                if ! command -v cnpm >/dev/null 2>&1; then
+                  npm install -g rimraf
+                  npm install -g cnpm@9.2.0
+                fi
+                node -v && npm -v && cnpm -v
+
+            - name: Set up go toolchain
+              uses: actions/setup-go@v5
+              with:
+                go-version: ${{ env.GO_VERSION }}
+                check-latest: false
+                cache: true
+
+            - name: Check go toolchain
+              run: go version
+
+            - name: Compile console code
+              working-directory: 'console'
+              run: |
+                echo Home path is $HOME
+                # for console web
+                cd $WORK_BASE/console/web && cnpm install --quiet --no-progress && cnpm run build --quiet
+                # for unit
+                mkdir -p $HOME/go/src/
+                ln -s $GITHUB_WORKSPACE $HOME/go/src/infini.sh
+                ls -lrt $HOME/go/src/infini.sh/
+                echo Testing code at $PWD ...
+                make config test

@@ -30,7 +30,10 @@ package elasticsearch
 import (
 	"fmt"
 	"infini.sh/console/model/alerting"
+	"infini.sh/console/model/insight"
+	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/util"
+	"infini.sh/framework/modules/elastic/adapter/elasticsearch"
 	"net/http"
 	"sort"
 	"testing"
@@ -77,12 +80,15 @@ func TestEngine( t *testing.T)  {
 		},
 
 		Metrics: alerting.Metric{
-			PeriodInterval: "1m",
-			Items: []alerting.MetricItem{
-				{Name: "a", Field: "payload.elasticsearch.node_stats.fs.total.free_in_bytes", Statistic: "min", Group: []string{"metadata.labels.cluster_id", "metadata.labels.node_id"}},
-				{Name: "b", Field: "payload.elasticsearch.node_stats.fs.total.total_in_bytes", Statistic: "max", Group: []string{"metadata.labels.cluster_id", "metadata.labels.node_id"}},
+			Metric: insight.Metric{
+				BucketSize: "1m",
+				Items: []insight.MetricItem{
+					{Name: "a", Field: "payload.elasticsearch.node_stats.fs.total.free_in_bytes", Statistic: "min"},
+					{Name: "b", Field: "payload.elasticsearch.node_stats.fs.total.total_in_bytes", Statistic: "max"},
+				},
+				Formula: "a/b*100",
 			},
-			Formula: "a/b*100",
+
 			//Expression: "min(fs.free_in_bytes)/max(fs.total_in_bytes)*100",
 		},
 		Conditions: alerting.Condition{
@@ -93,7 +99,7 @@ func TestEngine( t *testing.T)  {
 			},
 		},
 
-		Channels: alerting.NotificationConfig{
+		Channels: &alerting.NotificationConfig{
 			Normal: []alerting.Channel{
 				{Name: "钉钉", Type: alerting.ChannelWebhook, Webhook: &alerting.CustomWebhook{
 					HeaderParams: map[string]string{
@@ -139,7 +145,7 @@ func TestEngine( t *testing.T)  {
 
 func TestGenerateAgg(t *testing.T)  {
 	eng := &Engine{}
-	agg := eng.generateAgg(&alerting.MetricItem{
+	agg := eng.generateAgg(&insight.MetricItem{
 		Name: "a",
 		Field: "cpu.percent",
 		Statistic: "p99",
@@ -199,13 +205,23 @@ func TestGeneratePercentilesAggQuery(t *testing.T) {
 	//		EscalationThrottlePeriod: "30m",
 	//	},
 	//}
+	cfg := elastic.ElasticsearchConfig{}
+	cfg.ID = "test"
+	esClient := elasticsearch.ESAPIV7{}
+	esClient.Elasticsearch = cfg.ID
+	esClient.Version = elastic.Version{
+		Number: "7.10.2",
+		Major: 7,
+		Distribution: elastic.Elasticsearch,
+	}
+	elastic.UpdateClient(cfg, &esClient)
 	rule := alerting.Rule{
 		ID: util.GetUUID(),
 		Created: time.Now(),
 		Updated: time.Now(),
 		Enabled: true,
 		Resource: alerting.Resource{
-			ID: "c8i18llath2blrusdjng",
+			ID: cfg.ID,
 			Type: "elasticsearch",
 			Objects: []string{".infini_metrics*"},
 			TimeField: "timestamp",
@@ -225,12 +241,14 @@ func TestGeneratePercentilesAggQuery(t *testing.T) {
 		},
 
 		Metrics: alerting.Metric{
-			PeriodInterval: "1m",
-			Items: []alerting.MetricItem{
-				{Name: "a", Field: "payload.elasticsearch.index_stats.total.search.query_total", Statistic: "rate", Group: []string{"metadata.labels.cluster_id"}},
-				{Name: "b", Field: "payload.elasticsearch.index_stats.total.search.query_time_in_millis", Statistic: "rate", Group: []string{"metadata.labels.cluster_id"}},
+			Metric: insight.Metric{
+				BucketSize: "1m",
+				Items: []insight.MetricItem{
+					{Name: "a", Field: "payload.elasticsearch.index_stats.total.search.query_total", Statistic: "rate"},
+					{Name: "b", Field: "payload.elasticsearch.index_stats.total.search.query_time_in_millis", Statistic: "rate"},
+				},
+				Formula: "b/a",
 			},
-			Formula: "b/a",
 		},
 		Conditions: alerting.Condition{
 			Operator: "any",
@@ -239,7 +257,7 @@ func TestGeneratePercentilesAggQuery(t *testing.T) {
 			},
 		},
 
-		Channels: alerting.NotificationConfig{
+		Channels: &alerting.NotificationConfig{
 			Normal: []alerting.Channel{
 				{Name: "钉钉", Type: alerting.ChannelWebhook, Webhook: &alerting.CustomWebhook{
 					HeaderParams: map[string]string{

@@ -43,11 +43,16 @@ type Metric struct {
 	Sort []GroupSort `json:"sort,omitempty"`
 	ClusterId string   `json:"cluster_id,omitempty"`
 	Formula string `json:"formula,omitempty"`
+	//array of formula for new version
+	Formulas []string `json:"formulas,omitempty"`
 	Items []MetricItem `json:"items"`
-	FormatType string `json:"format_type,omitempty"`
+	FormatType string `json:"format,omitempty"`
 	TimeFilter interface{} `json:"time_filter,omitempty"`
 	TimeBeforeGroup bool `json:"time_before_group,omitempty"`
 	BucketLabel *BucketLabel `json:"bucket_label,omitempty"`
+	// number of buckets to return, used for aggregation auto_date_histogram when bucket size equals 'auto'
+	Buckets uint `json:"buckets,omitempty"`
+	Unit string `json:"unit,omitempty"`
 }
 
 type GroupSort struct {

@@ -72,7 +72,7 @@ func generateAgg(metricItem *insight.MetricItem, timeField string) map[string]in
 			"includes": []string{field},
 		}
 		aggValue["sort"] = []util.MapStr{
-			util.MapStr{
+			{
 				timeField: util.MapStr{
 					"order": "desc",
 				},
@@ -107,30 +107,53 @@ func GenerateQuery(metric *insight.Metric) (interface{}, error) {
 	i := 0
 	for _, metricItem := range metric.Items {
 		if metricItem.Name == "" {
-			metricItem.Name = string('a' + i)
+			metricItem.Name = string(rune('a' + i))
 		}
 		metricAggs := generateAgg(&metricItem, metric.TimeField)
 		if err := util.MergeFields(basicAggs, metricAggs, true); err != nil {
 			return nil, err
 		}
 	}
-	verInfo := elastic.GetClient(metric.ClusterId).GetVersion()
+	var (
+		useDateHistogram = false
+		dateHistogramAgg util.MapStr
+		dateHistogramAggName string
+	)
+	if metric.BucketSize != "" && metric.TimeField != "" {
+		useDateHistogram = true
+		if metric.BucketSize == "auto" {
+			dateHistogramAggName = "auto_date_histogram"
+			buckets := metric.Buckets
+			if buckets == 0 {
+				buckets = 2
+			}
+			dateHistogramAgg = util.MapStr{
+				"field": metric.TimeField,
+				"buckets": buckets,
+			}
+		}else{
+			dateHistogramAggName = "date_histogram"
+			verInfo := elastic.GetClient(metric.ClusterId).GetVersion()
 
-	if verInfo.Number == "" {
-		panic("invalid version")
+			if verInfo.Number == "" {
+				panic("invalid version")
+			}
+
+			intervalField, err := elastic.GetDateHistogramIntervalField(verInfo.Distribution, verInfo.Number, metric.BucketSize)
+			if err != nil {
+				return nil, fmt.Errorf("get interval field error: %w", err)
+			}
+			dateHistogramAgg = util.MapStr{
+				"field": metric.TimeField,
+				intervalField: metric.BucketSize,
+			}
+		}
 	}
 
-	intervalField, err := elastic.GetDateHistogramIntervalField(verInfo.Distribution, verInfo.Number, metric.BucketSize)
-	if err != nil {
-		return nil, fmt.Errorf("get interval field error: %w", err)
-	}
-	if metric.BucketSize != "" && !timeBeforeGroup {
+	if useDateHistogram && !timeBeforeGroup {
 		basicAggs = util.MapStr{
 			"time_buckets": util.MapStr{
-				"date_histogram": util.MapStr{
-					"field":       metric.TimeField,
-					intervalField: metric.BucketSize,
-				},
+				dateHistogramAggName: dateHistogramAgg,
 				"aggs": basicAggs,
 			},
 		}
@@ -138,7 +161,7 @@ func GenerateQuery(metric *insight.Metric) (interface{}, error) {
 
 	var rootAggs util.MapStr
 	groups := metric.Groups
-	err = metric.ValidateSortKey()
+	err := metric.ValidateSortKey()
 	if err != nil {
 		return nil, err
 	}
@@ -176,21 +199,18 @@ func GenerateQuery(metric *insight.Metric) (interface{}, error) {
 			}
 			lastGroupAgg = groupAgg
 		}
-		if metric.BucketSize == "" || (metric.BucketSize != "" && !timeBeforeGroup) {
-			rootAggs = util.MapStr{
-				util.GetUUID(): lastGroupAgg,
-			}
-		} else {
+		if useDateHistogram && timeBeforeGroup {
 			rootAggs = util.MapStr{
 				"time_buckets": util.MapStr{
-					"date_histogram": util.MapStr{
-						"field":       metric.TimeField,
-						intervalField: metric.BucketSize,
-					},
+					dateHistogramAggName: dateHistogramAgg,
 					"aggs": util.MapStr{
 						util.GetUUID(): lastGroupAgg,
 					},
 				},
+			}
+		} else {
+			rootAggs = util.MapStr{
+				util.GetUUID(): lastGroupAgg,
 			}
 		}
 
@@ -198,10 +218,7 @@ func GenerateQuery(metric *insight.Metric) (interface{}, error) {
 		if metric.BucketSize != "" && timeBeforeGroup {
 			basicAggs = util.MapStr{
 				"time_buckets": util.MapStr{
-					"date_histogram": util.MapStr{
-						"field":       metric.TimeField,
-						intervalField: metric.BucketSize,
-					},
+					dateHistogramAggName: dateHistogramAgg,
 					"aggs": basicAggs,
 				},
 			}

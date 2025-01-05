@@ -82,7 +82,9 @@ jobs:
             - name: Test console code
               run: |
                 echo Home path is $HOME
-                
+                export WORKBASE=$HOME/go/src/infini.sh
+                export WORK=$WORKBASE/console
+
                 # for console web
                 cd $GITHUB_WORKSPACE/console/web
                 cnpm install --quiet --no-progress
@@ -90,10 +92,16 @@ jobs:
 
                 # for test workspace
                 mkdir -p $HOME/go/src/
-                ln -s $GITHUB_WORKSPACE $HOME/go/src/infini.sh
-                ls -lrt $HOME/go/src/infini.sh/
+                ln -s $GITHUB_WORKSPACE $WORKBASE
+                if [ ! -d $WORK/.public ] && [ -d $WORK/web/.public ]; then
+                  ln -s $WORK/web/.public $WORK/.public
+                fi
+
+                # check work folder
+                ls -lrt $WORKBASE/
+                ls -alrt $WORK
 
                 # for unit test
-                cd $HOME/go/src/infini.sh/console
+                cd $WORKBASE/console
                 echo Testing code at $PWD ...
                 make test

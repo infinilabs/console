@@ -42,6 +42,15 @@ jobs:
               with:
                 node-version: ${{ env.NODEJS_VERSION }}
 
+            - name: Cache dependencies
+              uses: actions/cache@v4
+              with:
+                path: |
+                  node_modules
+                key: ${{ runner.os }}-cnpm-${{ hashFiles('**/package.json') }}
+                restore-keys: |
+                  ${{ runner.os }}-cnpm-
+
             - name: Check nodejs toolchain
               run: |
                 if ! command -v cnpm >/dev/null 2>&1; then
@@ -60,14 +69,24 @@ jobs:
             - name: Check go toolchain
               run: go version
 
+            - name: Cache Build Output
+              uses: actions/cache@v4
+              with:
+                path: |
+                 .public
+                key: ${{ runner.os }}-build-${{ hashFiles('**/package.json') }}-${{ github.sha }}
+                restore-keys: |
+                 ${{ runner.os }}-build-${{ hashFiles('**/package.json') }}-
+                 ${{ runner.os }}-build-
+
             - name: Test console code
               run: |
                 echo Home path is $HOME
                 
                 # for console web
                 cd $GITHUB_WORKSPACE/console/web
-                cnpm install --by=npm --silent --no-progress
-                cnpm run build --quiet
+                cnpm install --silent --no-progress
+                cnpm run build --silent
 
                 # for test workspace
                 mkdir -p $HOME/go/src/

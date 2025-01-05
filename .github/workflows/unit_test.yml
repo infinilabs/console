@@ -45,8 +45,8 @@ jobs:
             - name: Check nodejs toolchain
               run: |
                 if ! command -v cnpm >/dev/null 2>&1; then
-                  npm install -g rimraf --quiet --no-progress --no-engine-strict
-                  npm install -g cnpm@9.2.0 --quiet --no-progress --no-engine-strict
+                  npm install -g rimraf --silent --no-progress
+                  npm install -g cnpm@9.2.0 --silent --no-progress
                 fi
                 node -v && npm -v && cnpm -v
 
@@ -66,7 +66,7 @@ jobs:
                 
                 # for console web
                 cd $GITHUB_WORKSPACE/console/web
-                cnpm install --quiet --no-progress  --loglevel=error
+                cnpm install --by=npm --silent --no-progress
                 cnpm run build --quiet
 
                 # for test workspace

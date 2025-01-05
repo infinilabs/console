@@ -104,4 +104,4 @@ jobs:
                 # for unit test
                 cd $WORKBASE/console
                 echo Testing code at $PWD ...
-                make test
+                make config test

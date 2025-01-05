@@ -42,8 +42,8 @@ jobs:
             - name: Check nodejs toolchain
               run: |
                 if ! command -v cnpm >/dev/null 2>&1; then
-                  npm install -g rimraf
-                  npm install -g cnpm@9.2.0
+                  npm install -g rimraf --quiet --no-progress
+                  npm install -g cnpm@9.2.0 --quiet --no-progress
                 fi
                 node -v && npm -v && cnpm -v
 
@@ -66,6 +66,6 @@ jobs:
                 mkdir -p $HOME/go/src/
                 ln -s $GITHUB_WORKSPACE $HOME/go/src/infini.sh
                 ls -lrt $HOME/go/src/infini.sh/
+                cd $HOME/go/src/infini.sh/console
                 echo Testing code at $PWD ...
-                cd $GITHUB_WORKSPACE/console
                 make config test

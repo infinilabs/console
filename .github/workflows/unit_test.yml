@@ -96,4 +96,4 @@ jobs:
                 # for unit test
                 cd $HOME/go/src/infini.sh/console
                 echo Testing code at $PWD ...
-                make config test
+                make test

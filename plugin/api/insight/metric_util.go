@@ -32,8 +32,8 @@ import (
 	"strconv"
 	"strings"
 
-	"infini.sh/framework/core/elastic"
 	"infini.sh/console/model/insight"
+	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/util"
 )
 
@@ -107,7 +107,7 @@ func GenerateQuery(metric *insight.Metric) (interface{}, error) {
 	i := 0
 	for _, metricItem := range metric.Items {
 		if metricItem.Name == "" {
-			metricItem.Name = string('a' + i)
+			metricItem.Name = "a" + strconv.Itoa(i)
 		}
 		metricAggs := generateAgg(&metricItem, metric.TimeField)
 		if err := util.MergeFields(basicAggs, metricAggs, true); err != nil {
@@ -156,7 +156,7 @@ func GenerateQuery(metric *insight.Metric) (interface{}, error) {
 				"field": groups[i].Field,
 				"size":  limit,
 			}
-			if i == grpLength - 1 && len(metric.Sort) > 0 {
+			if i == grpLength-1 && len(metric.Sort) > 0 {
 				var termsOrder []interface{}
 				for _, sortItem := range metric.Sort {
 					termsOrder = append(termsOrder, util.MapStr{sortItem.Key: sortItem.Direction})
@@ -244,7 +244,7 @@ func collectMetricData(agg interface{}, groupValues []string, metricData *[]insi
 		if timeBks, ok := aggM["time_buckets"].(map[string]interface{}); ok {
 			if bks, ok := timeBks["buckets"].([]interface{}); ok {
 				md := insight.MetricData{
-					Data:  map[string][]insight.MetricDataItem{},
+					Data:   map[string][]insight.MetricDataItem{},
 					Groups: groupValues,
 				}
 				for _, bk := range bks {
@@ -268,7 +268,7 @@ func collectMetricData(agg interface{}, groupValues []string, metricData *[]insi
 
 		} else {
 			md := insight.MetricData{
-				Data:  map[string][]insight.MetricDataItem{},
+				Data:   map[string][]insight.MetricDataItem{},
 				Groups: groupValues,
 			}
 			for k, v := range aggM {
@@ -307,7 +307,7 @@ func collectMetricDataOther(agg interface{}, groupValues []string, metricData *[
 		if timeBks, ok := aggM["time_buckets"].(map[string]interface{}); ok {
 			if bks, ok := timeBks["buckets"].([]interface{}); ok {
 				md := insight.MetricData{
-					Data:  map[string][]insight.MetricDataItem{},
+					Data:   map[string][]insight.MetricDataItem{},
 					Groups: groupValues,
 				}
 				for _, bk := range bks {
@@ -332,7 +332,7 @@ func collectMetricDataOther(agg interface{}, groupValues []string, metricData *[
 			}
 		} else {
 			md := insight.MetricData{
-				Data:  map[string][]insight.MetricDataItem{},
+				Data:   map[string][]insight.MetricDataItem{},
 				Groups: groupValues,
 			}
 

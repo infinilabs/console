@@ -1,4 +1,4 @@
-name: Console Go Test
+name: Unit Test
 
 on:
     pull_request:
@@ -79,26 +79,27 @@ jobs:
                  ${{ runner.os }}-build-${{ hashFiles('**/package.json') }}-
                  ${{ runner.os }}-build-
 
-            - name: Test console code
+            - name: Unit test
               run: |
                 echo Home path is $HOME
                 export WORKBASE=$HOME/go/src/infini.sh
                 export WORK=$WORKBASE/console
 
-                # for console web
-                cd $GITHUB_WORKSPACE/console/web
-                cnpm install --quiet --no-progress
-                cnpm run build --quiet
-
                 # for test workspace
                 mkdir -p $HOME/go/src/
                 ln -s $GITHUB_WORKSPACE $WORKBASE
+
+                # for web build
+                cd $WORK/web
+                cnpm install --quiet --no-progress
+                cnpm run build --quiet
+
                 
                 # check work folder
                 ls -lrt $WORKBASE/
                 ls -alrt $WORK
 
                 # for unit test
-                cd $WORKBASE/console
+                cd $WORK
                 echo Testing code at $PWD ...
                 make config test

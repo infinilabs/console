@@ -101,4 +101,4 @@ jobs:
                 # for unit test
                 cd $WORKBASE/console
                 echo Testing code at $PWD ...
-                make update-vfs test
+                make update-vfs update-plugins test

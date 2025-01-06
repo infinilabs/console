@@ -107,7 +107,7 @@ func GenerateQuery(metric *insight.Metric) (interface{}, error) {
 	i := 0
 	for _, metricItem := range metric.Items {
 		if metricItem.Name == "" {
-			metricItem.Name = "a" + strconv.Itoa(i)
+			metricItem.Name = string(rune('a' + i))
 		}
 		metricAggs := generateAgg(&metricItem, metric.TimeField)
 		if err := util.MergeFields(basicAggs, metricAggs, true); err != nil {

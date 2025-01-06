@@ -79,6 +79,8 @@ jobs:
                  ${{ runner.os }}-build-
 
             - name: Unit test
+              env:
+                GOFLAGS: -tags=ci
               run: |
                 echo Home path is $HOME
                 export WORKBASE=$HOME/go/src/infini.sh
@@ -100,4 +102,4 @@ jobs:
                 # for unit test
                 cd $WORK
                 echo Testing code at $PWD ...
-                make config test
+                make test

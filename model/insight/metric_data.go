@@ -29,6 +29,7 @@ package insight
 
 import (
 	"fmt"
+	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"regexp"
 )
@@ -53,6 +54,25 @@ type Metric struct {
 	// number of buckets to return, used for aggregation auto_date_histogram when bucket size equals 'auto'
 	Buckets uint `json:"buckets,omitempty"`
 	Unit string `json:"unit,omitempty"`
+}
+
+type MetricBase struct {
+	orm.ORMObjectBase
+	//display name of the metric
+	Name  string `json:"name"`
+	//metric identifier
+	Key   string `json:"key"`
+	//optional values : "node", "indices", "shard"
+	Level string `json:"level"`
+	//metric calculation formula
+	Formula    string       `json:"formula,omitempty"`
+	Items      []MetricItem `json:"items"`
+	FormatType string       `json:"format,omitempty"`
+	Unit       string       `json:"unit,omitempty"`
+	//determine if this metric is built-in
+	Builtin bool `json:"builtin"`
+	//array of supported calculation statistic, eg: "avg", "sum", "min", "max"
+	Statistics []string `json:"statistics,omitempty"`
 }
 
 type GroupSort struct {

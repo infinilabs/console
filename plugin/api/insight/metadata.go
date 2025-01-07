@@ -266,7 +266,7 @@ func getMetricData(metric *insight.Metric) (interface{}, error) {
 		}
 	}
 	timeBeforeGroup := metric.AutoTimeBeforeGroup()
-	metricData := CollectMetricData(agg, timeBeforeGroup)
+	metricData, interval := CollectMetricData(agg, timeBeforeGroup)
 	formula := strings.TrimSpace(metric.Formula)
 	//support older versions for a single formula.
 	if metric.Formula != "" && len(metric.Formulas) == 0 {
@@ -278,12 +278,18 @@ func getMetricData(metric *insight.Metric) (interface{}, error) {
 		targetMetricData = metricData
 	} else {
 		params := map[string]interface{}{}
-		if metric.BucketSize != "" && metric.BucketSize != "auto" {
-			du, err := util.ParseDuration(metric.BucketSize)
-			if err != nil {
-				return nil, err
+		if metric.BucketSize != "" {
+			bucketSize := metric.BucketSize
+			if  metric.BucketSize == "auto" && interval != "" {
+				bucketSize = interval
 			}
-			params["bucket_size_in_second"] = du.Seconds()
+			if interval != "" || bucketSize != "auto" {
+				du, err := util.ParseDuration(bucketSize)
+				if err != nil {
+					return nil, err
+				}
+				params["bucket_size_in_second"] = du.Seconds()
+			}
 		}
 		for _, md := range metricData {
 			targetData := insight.MetricData{
@@ -301,8 +307,8 @@ func getMetricData(metric *insight.Metric) (interface{}, error) {
 				if err != nil {
 					return nil, err
 				}
-				formula = msgBuffer.String()
-				expression, err := govaluate.NewEvaluableExpression(formula)
+				resolvedFormula := msgBuffer.String()
+				expression, err := govaluate.NewEvaluableExpression(resolvedFormula)
 				if err != nil {
 					return nil, err
 				}
@@ -336,7 +342,8 @@ func getMetricData(metric *insight.Metric) (interface{}, error) {
 					}
 					result, err := expression.Evaluate(parameters)
 					if err != nil {
-						return nil, err
+						log.Debugf("evaluate formula error: %v", err)
+						continue
 					}
 					if r, ok := result.(float64); ok {
 						if math.IsNaN(r) || math.IsInf(r, 0) {

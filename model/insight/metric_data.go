@@ -110,12 +110,8 @@ func (m *Metric) ValidateSortKey() error {
 		if !util.StringInArray([]string{"desc", "asc"}, sortItem.Direction){
 			return fmt.Errorf("unknown sort direction [%s]", sortItem.Direction)
 		}
-		if v, ok := mm[sortItem.Key]; !ok && !util.StringInArray([]string{"_key", "_count"}, sortItem.Key){
+		if _, ok := mm[sortItem.Key]; !ok && !util.StringInArray([]string{"_key", "_count"}, sortItem.Key){
 			return fmt.Errorf("unknown sort key [%s]", sortItem.Key)
-		}else{
-			if v != nil && v.Statistic == "derivative" {
-				return fmt.Errorf("can not sort by pipeline agg [%s]", v.Statistic)
-			}
 		}
 	}
 	return nil

@@ -290,7 +290,7 @@ func collectMetricData(agg interface{}, groupValues []string, metricData *[]insi
 								continue
 							}
 
-							if vm, ok := v.(map[string]interface{}); ok && len(k) < 20 {
+							if vm, ok := v.(map[string]interface{}); ok {
 								collectMetricDataItem(k, vm, &md, bkM["key"])
 							}
 
@@ -323,9 +323,7 @@ func collectMetricData(agg interface{}, groupValues []string, metricData *[]insi
 						}
 					} else {
 						//non time series metric data
-						if len(k) < 20 {
-							collectMetricDataItem(k, vm, &md, nil)
-						}
+						collectMetricDataItem(k, vm, &md, nil)
 					}
 				}
 			}

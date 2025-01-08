@@ -323,12 +323,6 @@ func getMetricData(metric *insight.Metric) (interface{}, error) {
 					var timestamp interface{}
 					hasValidData := false
 					for k, v := range md.Data {
-						if len(k) == 20 {
-							continue
-						}
-						if len(v) < dataLength {
-							continue
-						}
 						if _, ok := v[i].Value.(float64); !ok {
 							continue DataLoop
 						}

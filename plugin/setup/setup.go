@@ -30,9 +30,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	"infini.sh/console/core/security"
-	"infini.sh/framework/lib/go-ucfg"
-	elastic2 "infini.sh/framework/modules/elastic"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -41,6 +38,10 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"infini.sh/console/core/security"
+	"infini.sh/framework/lib/go-ucfg"
+	elastic2 "infini.sh/framework/modules/elastic"
 
 	log "github.com/cihub/seelog"
 	"github.com/valyala/fasttemplate"
@@ -703,6 +704,10 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 	case "template_ilm":
 		useCommon = false
 		dslTplFileName = "template_ilm.tpl"
+		elastic2.InitTemplate(true)
+	case "rollup":
+		useCommon = false
+		dslTplFileName = "template_rollup.tpl"
 		elastic2.InitTemplate(true)
 	case "alerting":
 		dslTplFileName = "alerting.tpl"

@@ -281,9 +281,6 @@
     {"name": "indices.field_caps", "methods":["get", "post"],
       "path": "/:index_name/_field_caps"
     },
-    {"name": "indices.exists_template", "methods":["get"],
-      "path": "/_template/:name"
-    },
     {"name": "indices.field_usage_stats", "methods":["get"],
       "path": "/:index_name/_field_usage_stats"
     },
@@ -367,7 +364,6 @@
       "path": "/_nodes/hot_threads"
     }
   ],
-
   "reindex": [
     {"name": "reindex.*", "methods": ["*"],
       "path": "/_reindex/*"
@@ -379,7 +375,22 @@
       "path": "/_reindex/:rid/_rethrottle"
     }
   ],
-
+  "template": [
+    {"name": "template.*", "methods": ["*"],
+      "path": "/_template/*"
+    },
+    {"name": "template", "methods": ["put", "get", "delete"],
+      "path": "/_template/:name"
+    }
+  ],
+  "rollup": [
+    { "name": "rollup.*","methods": ["*"],
+      "path": "/_rollup/*"
+    },
+    { "name": "rollup","methods": ["put", "get", "delete"],
+      "path": "/_rollup/jobs/:name/_explain"
+    }
+  ],
   "render_search_template": [
     {"name": "render_search_template.*", "methods": ["*"],
       "path": "/_render/template"

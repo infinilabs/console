@@ -187,8 +187,11 @@ func GenerateQuery(metric *insight.Metric) (interface{}, error) {
 							"buckets_path": fmt.Sprintf("time_buckets>%s", metric.Sort[0].Key),
 						},
 					}
+					//using 10000 as a workaround for the terms aggregation limit; the actual limit is enforced in the bucket sort step
+					termsCfg["size"] = 10000
 					basicAggs["bucket_sorter"] = util.MapStr{
 						"bucket_sort": util.MapStr{
+							"size": limit,
 							"sort": []util.MapStr{
 								{"sort_field": util.MapStr{"order": metric.Sort[0].Direction}},
 							},

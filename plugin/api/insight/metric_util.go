@@ -199,8 +199,20 @@ func GenerateQuery(metric *insight.Metric) (interface{}, error) {
 					}
 				}else{
 					var termsOrder []interface{}
+					percentAggs := []string{"p99", "p95", "p90", "p80", "p50"}
 					for _, sortItem := range metric.Sort {
-						termsOrder = append(termsOrder, util.MapStr{sortItem.Key: sortItem.Direction})
+						var percent string
+						for _, item := range metric.Items {
+							lowerCaseStatistic := strings.ToLower(item.Statistic)
+							if item.Name == sortItem.Key && util.StringInArray(percentAggs, lowerCaseStatistic) {
+								percent = lowerCaseStatistic[1:]
+							}
+						}
+						sortKey := sortItem.Key
+						if percent != "" {
+							sortKey = fmt.Sprintf("%s[%s]", sortItem.Key, percent)
+						}
+						termsOrder = append(termsOrder, util.MapStr{sortKey: sortItem.Direction})
 					}
 					termsCfg["order"] = termsOrder
 				}

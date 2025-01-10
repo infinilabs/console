@@ -10,6 +10,7 @@ coverage/
 .idea/
 run/
 .DS_Store
+__debug_bin*
 *.sw*
 *.un~
 

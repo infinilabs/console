@@ -36,7 +36,6 @@ import (
 	uri2 "net/url"
 	"path"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
 
@@ -707,9 +706,11 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 		dslTplFileName = "template_ilm.tpl"
 		elastic2.InitTemplate(true)
 	case "rollup":
-		if ver.Distribution == elastic.Easysearch && compareVersions(ver.Number, "1.9.2") > 0 {
-			useCommon = false
-			dslTplFileName = "template_rollup.tpl"
+		if ver.Distribution == elastic.Easysearch {
+			if large, _ := util.VersionCompare(ver.Number, "1.9.2"); large > 0 {
+				useCommon = false
+				dslTplFileName = "template_rollup.tpl"
+			}
 		}
 	case "alerting":
 		dslTplFileName = "alerting.tpl"
@@ -851,25 +852,4 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 		"log":     fmt.Sprintf("initalize template [%s] succeed", request.InitializeTemplate),
 	}, http.StatusOK)
 
-}
-
-func compareVersions(v1, v2 string) int {
-	parts1 := strings.Split(v1, ".")
-	parts2 := strings.Split(v2, ".")
-
-	for i := 0; i < len(parts1) || i < len(parts2); i++ {
-		var num1, num2 int
-		if i < len(parts1) {
-			num1, _ = strconv.Atoi(parts1[i])
-		}
-		if i < len(parts2) {
-			num2, _ = strconv.Atoi(parts2[i])
-		}
-		if num1 > num2 {
-			return 1
-		} else if num1 < num2 {
-			return -1
-		}
-	}
-	return 0
 }

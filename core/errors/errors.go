@@ -29,24 +29,24 @@ import (
 )
 
 const (
-	ErrTypeRequestParams = "request_params_error"
-	ErrTypeApplication = "application_error"
-	ErrTypeAlreadyExists = "already_exists_error"
-	ErrTypeNotExists = "not_exists_error"
-	ErrTypeIncorrectPassword = "incorrect_password_error"
+	ErrTypeRequestParams        = "request_params_error"
+	ErrTypeApplication          = "application_error"
+	ErrTypeAlreadyExists        = "already_exists_error"
+	ErrTypeNotExists            = "not_exists_error"
+	ErrTypeIncorrectPassword    = "incorrect_password_error"
 	ErrTypeDomainPrefixMismatch = "domain_prefix_mismatch_error"
-	ErrTypeDisabled = "disabled_error"
-	ErrTypeRequestTimeout = "request_timeout_error"
+	ErrTypeDisabled             = "disabled_error"
+	ErrTypeRequestTimeout       = "request_timeout_error"
 )
 
 var (
 	ErrPasswordIncorrect = errors.New("incorrect password")
-	ErrNotExistsErr = errors.New("not exists")
+	ErrNotExistsErr      = errors.New("not exists")
 )
 
 type Error struct {
-	typ string
-	msg interface{}
+	typ   string
+	msg   interface{}
 	field string
 }
 
@@ -54,22 +54,22 @@ func (err Error) Error() string {
 	return fmt.Sprintf("%s:%v: %v", err.typ, err.field, err.msg)
 }
 
-//NewAppError returns an application error
+// NewAppError returns an application error
 func NewAppError(msg any) *Error {
 	return New(ErrTypeApplication, "", msg)
 }
 
-//NewParamsError returns a request params error
+// NewParamsError returns a request params error
 func NewParamsError(field string, msg any) *Error {
 	return New(ErrTypeRequestParams, field, msg)
 }
 
-//NewAlreadyExistsError returns an already exists error
+// NewAlreadyExistsError returns an already exists error
 func NewAlreadyExistsError(field string, msg any) *Error {
 	return New(ErrTypeAlreadyExists, field, msg)
 }
 
-//NewNotExistsError returns a not exists error
+// NewNotExistsError returns a not exists error
 func NewNotExistsError(field string, msg any) *Error {
 	return New(ErrTypeNotExists, field, msg)
 }

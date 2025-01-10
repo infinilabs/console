@@ -27,9 +27,8 @@
 
 package insight
 
-
 type SeriesItem struct {
-	Type   string `json:"type"`
+	Type    string                 `json:"type"`
 	Options map[string]interface{} `json:"options"`
-	Metric Metric `json:"metric"`
+	Metric  Metric                 `json:"metric"`
 }

@@ -35,7 +35,7 @@ import (
 	"strings"
 )
 
-func lookup(directory string, id string) interface{}{
+func lookup(directory string, id string) interface{} {
 	directory = strings.TrimSpace(directory)
 	if directory == "" {
 		return "empty_directory"
@@ -46,8 +46,8 @@ func lookup(directory string, id string) interface{}{
 		kv := strings.Split(part, "=")
 		if len(kv) == 2 {
 			k := strings.TrimSpace(kv[0])
-			kvs[k]= strings.TrimSpace(kv[1])
-		}else{
+			kvs[k] = strings.TrimSpace(kv[1])
+		} else {
 			log.Debugf("got unexpected directory part: %s", part)
 		}
 	}
@@ -59,10 +59,10 @@ func lookup(directory string, id string) interface{}{
 	return kvs["default"]
 }
 
-func lookupMetadata(object string, property string, defaultValue string, id string) interface{}{
+func lookupMetadata(object string, property string, defaultValue string, id string) interface{} {
 	var (
 		cfgM = util.MapStr{}
-		buf []byte
+		buf  []byte
 	)
 	switch object {
 	case "cluster":

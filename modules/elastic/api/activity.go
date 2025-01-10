@@ -38,36 +38,36 @@ import (
 	"strings"
 )
 
-func (h *APIHandler) HandleSearchActivityAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
-	resBody:=util.MapStr{}
-	reqBody := struct{
-		Keyword string `json:"keyword"`
-		Size int `json:"size"`
-		From int `json:"from"`
-		Aggregations []elastic.SearchAggParam `json:"aggs"`
-		Highlight elastic.SearchHighlightParam `json:"highlight"`
-		Filter elastic.SearchFilterParam `json:"filter"`
-		Sort []string `json:"sort"`
-		StartTime interface{} `json:"start_time"`
-		EndTime interface{} `json:"end_time"`
+func (h *APIHandler) HandleSearchActivityAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	resBody := util.MapStr{}
+	reqBody := struct {
+		Keyword      string                       `json:"keyword"`
+		Size         int                          `json:"size"`
+		From         int                          `json:"from"`
+		Aggregations []elastic.SearchAggParam     `json:"aggs"`
+		Highlight    elastic.SearchHighlightParam `json:"highlight"`
+		Filter       elastic.SearchFilterParam    `json:"filter"`
+		Sort         []string                     `json:"sort"`
+		StartTime    interface{}                  `json:"start_time"`
+		EndTime      interface{}                  `json:"end_time"`
 	}{}
 	err := h.DecodeJSON(req, &reqBody)
 	if err != nil {
 		resBody["error"] = err.Error()
-		h.WriteJSON(w,resBody, http.StatusInternalServerError )
+		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
 	}
 	aggs := elastic.BuildSearchTermAggregations(reqBody.Aggregations)
 	aggs["term_cluster_id"] = util.MapStr{
 		"terms": util.MapStr{
 			"field": "metadata.labels.cluster_id",
-			"size": 1000,
+			"size":  1000,
 		},
 		"aggs": util.MapStr{
 			"term_cluster_name": util.MapStr{
 				"terms": util.MapStr{
 					"field": "metadata.labels.cluster_name",
-					"size": 1,
+					"size":  1,
 				},
 			},
 		},
@@ -86,9 +86,7 @@ func (h *APIHandler) HandleSearchActivityAction(w http.ResponseWriter, req *http
 
 	clusterFilter, hasAllPrivilege := h.GetClusterFilter(req, "metadata.labels.cluster_id")
 	if !hasAllPrivilege && clusterFilter == nil {
-		h.WriteJSON(w, elastic.SearchResponse{
-
-		}, http.StatusOK)
+		h.WriteJSON(w, elastic.SearchResponse{}, http.StatusOK)
 		return
 	}
 	if !hasAllPrivilege && clusterFilter != nil {
@@ -97,9 +95,7 @@ func (h *APIHandler) HandleSearchActivityAction(w http.ResponseWriter, req *http
 
 	hasAllPrivilege, indexPrivilege := h.GetCurrentUserIndex(req)
 	if !hasAllPrivilege && len(indexPrivilege) == 0 {
-		h.WriteJSON(w, elastic.SearchResponse{
-
-		}, http.StatusOK)
+		h.WriteJSON(w, elastic.SearchResponse{}, http.StatusOK)
 		return
 	}
 	if !hasAllPrivilege {
@@ -107,10 +103,10 @@ func (h *APIHandler) HandleSearchActivityAction(w http.ResponseWriter, req *http
 		for clusterID, indices := range indexPrivilege {
 			var (
 				wildcardIndices []string
-				normalIndices []string
+				normalIndices   []string
 			)
 			for _, index := range indices {
-				if strings.Contains(index,"*") {
+				if strings.Contains(index, "*") {
 					wildcardIndices = append(wildcardIndices, index)
 					continue
 				}
@@ -120,8 +116,8 @@ func (h *APIHandler) HandleSearchActivityAction(w http.ResponseWriter, req *http
 			if len(wildcardIndices) > 0 {
 				subShould = append(subShould, util.MapStr{
 					"query_string": util.MapStr{
-						"query": strings.Join(wildcardIndices, " "),
-						"fields": []string{"metadata.labels.index_name"},
+						"query":            strings.Join(wildcardIndices, " "),
+						"fields":           []string{"metadata.labels.index_name"},
 						"default_operator": "OR",
 					},
 				})
@@ -146,7 +142,7 @@ func (h *APIHandler) HandleSearchActivityAction(w http.ResponseWriter, req *http
 						{
 							"bool": util.MapStr{
 								"minimum_should_match": 1,
-								"should": subShould,
+								"should":               subShould,
 							},
 						},
 					},
@@ -156,7 +152,7 @@ func (h *APIHandler) HandleSearchActivityAction(w http.ResponseWriter, req *http
 		indexFilter := util.MapStr{
 			"bool": util.MapStr{
 				"minimum_should_match": 1,
-				"should": indexShould,
+				"should":               indexShould,
 			},
 		}
 		filter = append(filter, indexFilter)
@@ -168,7 +164,7 @@ func (h *APIHandler) HandleSearchActivityAction(w http.ResponseWriter, req *http
 			{
 				"query_string": util.MapStr{
 					"default_field": "*",
-					"query": reqBody.Keyword,
+					"query":         reqBody.Keyword,
 				},
 			},
 		}
@@ -176,15 +172,15 @@ func (h *APIHandler) HandleSearchActivityAction(w http.ResponseWriter, req *http
 	var boolQuery = util.MapStr{
 		"filter": filter,
 	}
-	if len(should) >0 {
+	if len(should) > 0 {
 		boolQuery["should"] = should
 		boolQuery["minimum_should_match"] = 1
 	}
 	query := util.MapStr{
 		"aggs":      aggs,
 		"size":      reqBody.Size,
-		"from": reqBody.From,
-		"_source": []string{"changelog", "id", "metadata", "timestamp"},
+		"from":      reqBody.From,
+		"_source":   []string{"changelog", "id", "metadata", "timestamp"},
 		"highlight": elastic.BuildSearchHighlight(&reqBody.Highlight),
 		"query": util.MapStr{
 			"bool": boolQuery,
@@ -194,7 +190,7 @@ func (h *APIHandler) HandleSearchActivityAction(w http.ResponseWriter, req *http
 		reqBody.Sort = []string{"timestamp", "desc"}
 	}
 
-	query["sort"] =  []util.MapStr{
+	query["sort"] = []util.MapStr{
 		{
 			reqBody.Sort[0]: util.MapStr{
 				"order": reqBody.Sort[1],
@@ -206,7 +202,7 @@ func (h *APIHandler) HandleSearchActivityAction(w http.ResponseWriter, req *http
 	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).SearchWithRawQueryDSL(orm.GetWildcardIndexName(event.Activity{}), dsl)
 	if err != nil {
 		resBody["error"] = err.Error()
-		h.WriteJSON(w,resBody, http.StatusInternalServerError )
+		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
 	}
 	w.Write(response.RawResult.Body)

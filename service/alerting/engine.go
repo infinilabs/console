@@ -36,17 +36,18 @@ import (
 
 type Engine interface {
 	GenerateQuery(rule *alerting.Rule, filterParam *alerting.FilterParam) (interface{}, error)
-	ExecuteQuery(rule *alerting.Rule, filterParam *alerting.FilterParam)(*alerting.QueryResult, error)
-	CheckCondition(rule *alerting.Rule)(*alerting.ConditionResult, error)
+	ExecuteQuery(rule *alerting.Rule, filterParam *alerting.FilterParam) (*alerting.QueryResult, error)
+	CheckCondition(rule *alerting.Rule) (*alerting.ConditionResult, error)
 	GenerateTask(rule alerting.Rule) func(ctx context.Context)
 	Test(rule *alerting.Rule, msgType string) ([]alerting.ActionExecutionResult, error)
-	GetTargetMetricData(rule *alerting.Rule, isFilterNaN bool, filterParam *alerting.FilterParam)([]alerting.MetricData, *alerting.QueryResult, error)
+	GetTargetMetricData(rule *alerting.Rule, isFilterNaN bool, filterParam *alerting.FilterParam) ([]alerting.MetricData, *alerting.QueryResult, error)
 }
 
 var (
-	alertEngines = map[string] Engine{}
+	alertEngines      = map[string]Engine{}
 	alertEnginesMutex = sync.RWMutex{}
 )
+
 func RegistEngine(typ string, engine Engine) {
 	alertEnginesMutex.Lock()
 	defer alertEnginesMutex.Unlock()

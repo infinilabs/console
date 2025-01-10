@@ -36,7 +36,7 @@ import (
 	"src/github.com/buger/jsonparser"
 )
 
-func (h *APIHandler) HandleGetTemplateAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
+func (h *APIHandler) HandleGetTemplateAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	clusterID := ps.MustGetParameter("id")
 	esClient := elastic.GetClient(clusterID)
 	templates, err := esClient.GetTemplate("")
@@ -48,7 +48,7 @@ func (h *APIHandler) HandleGetTemplateAction(w http.ResponseWriter, req *http.Re
 	h.WriteJSON(w, templates, http.StatusOK)
 }
 
-func (h *APIHandler) HandleSaveTemplateAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
+func (h *APIHandler) HandleSaveTemplateAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	clusterID := ps.MustGetParameter("id")
 	templateName := ps.MustGetParameter("template_name")
 	esClient := elastic.GetClient(clusterID)
@@ -66,7 +66,7 @@ func (h *APIHandler) HandleSaveTemplateAction(w http.ResponseWriter, req *http.R
 	}
 	resErr, _, _, _ := jsonparser.Get(esResBody, "error")
 	if resErr != nil {
-		errStr :=  string(resErr)
+		errStr := string(resErr)
 		log.Errorf("put template error: %s", errStr)
 		h.WriteError(w, errStr, http.StatusInternalServerError)
 		return

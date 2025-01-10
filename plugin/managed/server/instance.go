@@ -37,13 +37,13 @@ import (
 
 	log "github.com/cihub/seelog"
 	"infini.sh/console/core/security/enum"
-	"infini.sh/framework/modules/configs/common"
 	"infini.sh/framework/core/api"
 	httprouter "infini.sh/framework/core/api/router"
 	elastic2 "infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
+	"infini.sh/framework/modules/configs/common"
 	"infini.sh/framework/modules/elastic"
 	common2 "infini.sh/framework/modules/elastic/common"
 )

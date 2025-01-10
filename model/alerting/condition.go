@@ -30,10 +30,11 @@ package alerting
 import "fmt"
 
 type Condition struct {
-	Operator string `json:"operator"`
-	Items []ConditionItem `json:"items"`
+	Operator string          `json:"operator"`
+	Items    []ConditionItem `json:"items"`
 }
-func (cond *Condition) GetMinimumPeriodMatch() int{
+
+func (cond *Condition) GetMinimumPeriodMatch() int {
 	var minPeriodMatch = 0
 	for _, citem := range cond.Items {
 		if citem.MinimumPeriodMatch > minPeriodMatch {
@@ -45,14 +46,14 @@ func (cond *Condition) GetMinimumPeriodMatch() int{
 
 type ConditionItem struct {
 	//MetricName             string `json:"metric"`
-	MinimumPeriodMatch int    `json:"minimum_period_match"`
-	Operator           string `json:"operator"`
-	Values     []string `json:"values"`
-	Priority   string   `json:"priority"`
-	Expression string   `json:"expression,omitempty"`
+	MinimumPeriodMatch int      `json:"minimum_period_match"`
+	Operator           string   `json:"operator"`
+	Values             []string `json:"values"`
+	Priority           string   `json:"priority"`
+	Expression         string   `json:"expression,omitempty"`
 }
 
-func (cond *ConditionItem) GenerateConditionExpression()(conditionExpression string, err error){
+func (cond *ConditionItem) GenerateConditionExpression() (conditionExpression string, err error) {
 	valueLength := len(cond.Values)
 	if valueLength == 0 {
 		return conditionExpression, fmt.Errorf("condition values: %v should not be empty", cond.Values)
@@ -81,20 +82,20 @@ func (cond *ConditionItem) GenerateConditionExpression()(conditionExpression str
 
 type ConditionResult struct {
 	ResultItems []ConditionResultItem `json:"result_items"`
-	QueryResult *QueryResult `json:"query_result"`
+	QueryResult *QueryResult          `json:"query_result"`
 }
 type ConditionResultItem struct {
-	GroupValues []string `json:"group_values"`
-	ConditionItem *ConditionItem `json:"condition_item"`
-	IssueTimestamp interface{} `json:"issue_timestamp"`
-	ResultValue interface{} `json:"result_value"` //满足条件最后一个值
+	GroupValues    []string               `json:"group_values"`
+	ConditionItem  *ConditionItem         `json:"condition_item"`
+	IssueTimestamp interface{}            `json:"issue_timestamp"`
+	ResultValue    interface{}            `json:"result_value"` //满足条件最后一个值
 	RelationValues map[string]interface{} `json:"relation_values"`
 }
 
 var PriorityWeights = map[string]int{
-	"info": 1,
-	"low": 2,
-	"medium": 3,
-	"high": 4,
+	"info":     1,
+	"low":      2,
+	"medium":   3,
+	"high":     4,
 	"critical": 5,
 }

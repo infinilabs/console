@@ -40,7 +40,7 @@ type Action interface {
 }
 
 type WebhookAction struct {
-	Data *alerting.CustomWebhook
+	Data    *alerting.CustomWebhook
 	Message string
 }
 
@@ -50,7 +50,7 @@ var actionClient = http.Client{
 	},
 }
 
-func (act *WebhookAction) Execute()([]byte, error){
+func (act *WebhookAction) Execute() ([]byte, error) {
 	var reqURL = act.Data.URL
 	reqBody := strings.NewReader(act.Message)
 	req, err := http.NewRequest(http.MethodPost, reqURL, reqBody)
@@ -67,4 +67,3 @@ func (act *WebhookAction) Execute()([]byte, error){
 	defer res.Body.Close()
 	return ioutil.ReadAll(res.Body)
 }
-

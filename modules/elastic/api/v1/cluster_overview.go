@@ -178,7 +178,7 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 	}
 	histgram := common.NewBucketItem(
 		common.DateHistogramBucket, util.MapStr{
-			"field":          "timestamp",
+			"field":       "timestamp",
 			intervalField: bucketSizeStr,
 		})
 	histgram.AddMetricItems(metricItems...)
@@ -669,8 +669,8 @@ type RealtimeNodeInfo struct {
 
 func (h *APIHandler) getIndexQPS(clusterID string, bucketSizeInSeconds int) (map[string]util.MapStr, error) {
 	ver := h.Client().GetVersion()
-	bucketSizeStr :=  fmt.Sprintf("%ds", bucketSizeInSeconds)
-	intervalField, err  := elastic.GetDateHistogramIntervalField(ver.Distribution, ver.Number, bucketSizeStr)
+	bucketSizeStr := fmt.Sprintf("%ds", bucketSizeInSeconds)
+	intervalField, err := elastic.GetDateHistogramIntervalField(ver.Distribution, ver.Number, bucketSizeStr)
 	if err != nil {
 		return nil, err
 	}
@@ -685,7 +685,7 @@ func (h *APIHandler) getIndexQPS(clusterID string, bucketSizeInSeconds int) (map
 				"aggs": util.MapStr{
 					"date": util.MapStr{
 						"date_histogram": util.MapStr{
-							"field":    "timestamp",
+							"field":       "timestamp",
 							intervalField: "10s",
 						},
 						"aggs": util.MapStr{
@@ -775,9 +775,9 @@ func (h *APIHandler) QueryQPS(query util.MapStr, bucketSizeInSeconds int) (map[s
 							maxIndexRate      float64
 							maxQueryRate      float64
 							maxIndexBytesRate float64
-							preIndexTotal float64
-							dropNext bool
-							maxTimestamp float64
+							preIndexTotal     float64
+							dropNext          bool
+							maxTimestamp      float64
 						)
 						for _, dateBk := range bks {
 							if dateBkVal, ok := dateBk.(map[string]interface{}); ok {
@@ -786,11 +786,11 @@ func (h *APIHandler) QueryQPS(query util.MapStr, bucketSizeInSeconds int) (map[s
 										if preIndexTotal > 0 {
 											//if value of indexTotal is decreasing, drop the next value,
 											//and we will drop current and next qps value
-											if indexTotalVal - preIndexTotal < 0 {
+											if indexTotalVal-preIndexTotal < 0 {
 												dropNext = true
 												preIndexTotal = indexTotalVal
 												continue
-											}else{
+											} else {
 												dropNext = false
 											}
 										}
@@ -866,11 +866,11 @@ func (h *APIHandler) SearchClusterMetadata(w http.ResponseWriter, req *http.Requ
 			{
 				"match": util.MapStr{
 					reqBody.SearchField: util.MapStr{
-						"query":                reqBody.Keyword,
-						"fuzziness":            "AUTO",
-						"max_expansions":       10,
-						"prefix_length":        2,
-						"boost":                2,
+						"query":          reqBody.Keyword,
+						"fuzziness":      "AUTO",
+						"max_expansions": 10,
+						"prefix_length":  2,
+						"boost":          2,
 					},
 				},
 			},
@@ -912,11 +912,11 @@ func (h *APIHandler) SearchClusterMetadata(w http.ResponseWriter, req *http.Requ
 			{
 				"match": util.MapStr{
 					"search_text": util.MapStr{
-						"query":                reqBody.Keyword,
-						"fuzziness":            "AUTO",
-						"max_expansions":       10,
-						"prefix_length":        2,
-						"boost":                2,
+						"query":          reqBody.Keyword,
+						"fuzziness":      "AUTO",
+						"max_expansions": 10,
+						"prefix_length":  2,
+						"boost":          2,
 					},
 				},
 			},

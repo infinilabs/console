@@ -46,7 +46,7 @@ func GetMapStringValue(m util.MapStr, key string) string {
 
 func MapLabel(labelName, indexName, keyField, valueField string, client elastic.API, cacheLabels map[string]string) string {
 	if len(cacheLabels) > 0 {
-		if v, ok := cacheLabels[labelName]; ok{
+		if v, ok := cacheLabels[labelName]; ok {
 			return v
 		}
 	}
@@ -58,7 +58,7 @@ func MapLabel(labelName, indexName, keyField, valueField string, client elastic.
 	return labelMaps[labelName]
 }
 
-func GetLabelMaps( indexName, keyField, valueField string, client elastic.API, keyFieldValues []string, cacheSize int) (map[string]string, error){
+func GetLabelMaps(indexName, keyField, valueField string, client elastic.API, keyFieldValues []string, cacheSize int) (map[string]string, error) {
 	if client == nil {
 		return nil, fmt.Errorf("cluster client must not be empty")
 	}
@@ -89,7 +89,7 @@ func GetLabelMaps( indexName, keyField, valueField string, client elastic.API, k
 		var key string
 		if keyField == "_id" {
 			key = hit.ID
-		}else{
+		} else {
 			key = GetMapStringValue(sourceM, keyField)
 		}
 		if key != "" {
@@ -99,7 +99,7 @@ func GetLabelMaps( indexName, keyField, valueField string, client elastic.API, k
 	return labelMaps, nil
 }
 
-func ExecuteTemplate( tpl *template.Template, ctx map[string]interface{}) ([]byte, error){
+func ExecuteTemplate(tpl *template.Template, ctx map[string]interface{}) ([]byte, error) {
 	msgBuffer := &bytes.Buffer{}
 	err := tpl.Execute(msgBuffer, ctx)
 	return msgBuffer.Bytes(), err

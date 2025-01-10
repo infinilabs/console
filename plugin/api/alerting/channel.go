@@ -209,17 +209,17 @@ func (h *AlertAPI) deleteChannel(w http.ResponseWriter, req *http.Request, ps ht
 func (h *AlertAPI) searchChannel(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 
 	var (
-		keyword     = h.GetParameterOrDefault(req, "keyword", "")
-		strSize     = h.GetParameterOrDefault(req, "size", "20")
-		strFrom     = h.GetParameterOrDefault(req, "from", "0")
-		subType     = h.GetParameterOrDefault(req, "sub_type", "")
+		keyword = h.GetParameterOrDefault(req, "keyword", "")
+		strSize = h.GetParameterOrDefault(req, "size", "20")
+		strFrom = h.GetParameterOrDefault(req, "from", "0")
+		subType = h.GetParameterOrDefault(req, "sub_type", "")
 		typ     = h.GetParameterOrDefault(req, "type", "")
-		sort = h.GetParameterOrDefault(req, "sort", "updated:desc")
+		sort    = h.GetParameterOrDefault(req, "sort", "updated:desc")
 	)
 	mustQ := []interface{}{}
 	if keyword != "" {
 		mustQ = append(mustQ, util.MapStr{
-			"query_string": util.MapStr{"default_field":"*","query": keyword},
+			"query_string": util.MapStr{"default_field": "*", "query": keyword},
 		})
 	}
 	if typ != "" {
@@ -249,7 +249,7 @@ func (h *AlertAPI) searchChannel(w http.ResponseWriter, req *http.Request, ps ht
 		from = 0
 	}
 	var (
-		sortField string
+		sortField     string
 		sortDirection string
 	)
 	sortParts := strings.Split(sort, ":")
@@ -306,26 +306,26 @@ func (h *AlertAPI) testChannel(w http.ResponseWriter, req *http.Request, ps http
 	}
 	firstGrpValue := global.MustLookupString(elastic.GlobalSystemElasticsearchID)
 	ctx := map[string]interface{}{
-		"title": "INFINI platform test alert message",
-		"message": "This is just a test message, do not reply!",
-		"objects": []string{".infini_metrics"},
-		"trigger_at": time.Now().UnixMilli(),
-		"duration": "5m10s",
-		"rule_id": util.GetUUID(),
-		"rule_name": "test rule",
-		"resource_id": util.GetUUID(),
-		"resource_name": "test resource",
-		"event_id": util.GetUUID(),
-		"timestamp": time.Now().UnixMilli(),
+		"title":             "INFINI platform test alert message",
+		"message":           "This is just a test message, do not reply!",
+		"objects":           []string{".infini_metrics"},
+		"trigger_at":        time.Now().UnixMilli(),
+		"duration":          "5m10s",
+		"rule_id":           util.GetUUID(),
+		"rule_name":         "test rule",
+		"resource_id":       util.GetUUID(),
+		"resource_name":     "test resource",
+		"event_id":          util.GetUUID(),
+		"timestamp":         time.Now().UnixMilli(),
 		"first_group_value": firstGrpValue,
-		"first_threshold": "90",
-		"priority": "critical",
+		"first_threshold":   "90",
+		"priority":          "critical",
 		"results": []util.MapStr{
 			{"threshold": "90",
-				"priority": "critical",
-				"group_values": []string{firstGrpValue, "group_value2" },
-				"issue_timestamp": time.Now().UnixMilli()-500,
-				"result_value": 90,
+				"priority":        "critical",
+				"group_values":    []string{firstGrpValue, "group_value2"},
+				"issue_timestamp": time.Now().UnixMilli() - 500,
+				"result_value":    90,
 				"relation_values": util.MapStr{"a": 100, "b": 90},
 			},
 		},

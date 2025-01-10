@@ -28,12 +28,12 @@
 package api
 
 import (
+	log "github.com/cihub/seelog"
+	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/event"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/modules/elastic/adapter"
 	"net/http"
-	log "github.com/cihub/seelog"
-	httprouter "infini.sh/framework/core/api/router"
 )
 
 func (h *APIHandler) GetShardInfo(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {

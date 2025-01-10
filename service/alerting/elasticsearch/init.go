@@ -29,7 +29,7 @@ package elasticsearch
 
 import "infini.sh/console/service/alerting"
 
-func init(){
+func init() {
 	eng := Engine{}
 	alerting.RegistEngine("elasticsearch", &eng)
 }

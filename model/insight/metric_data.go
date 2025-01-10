@@ -34,33 +34,33 @@ import (
 )
 
 type Metric struct {
-	AggTypes  []string `json:"agg_types,omitempty"`
-	IndexPattern string `json:"index_pattern,omitempty"`
-	TimeField    string `json:"time_field,omitempty"`
-	BucketSize   string `json:"bucket_size,omitempty"`
-	Filter interface{}      `json:"filter,omitempty"`
-	Groups []MetricGroupItem `json:"groups,omitempty"` //bucket group
-	Sort []GroupSort `json:"sort,omitempty"`
-	ClusterId string   `json:"cluster_id,omitempty"`
-	Formula string `json:"formula,omitempty"`
-	Items []MetricItem `json:"items"`
-	FormatType string `json:"format_type,omitempty"`
-	TimeFilter interface{} `json:"time_filter,omitempty"`
-	TimeBeforeGroup bool `json:"time_before_group,omitempty"`
-	BucketLabel *BucketLabel `json:"bucket_label,omitempty"`
+	AggTypes        []string          `json:"agg_types,omitempty"`
+	IndexPattern    string            `json:"index_pattern,omitempty"`
+	TimeField       string            `json:"time_field,omitempty"`
+	BucketSize      string            `json:"bucket_size,omitempty"`
+	Filter          interface{}       `json:"filter,omitempty"`
+	Groups          []MetricGroupItem `json:"groups,omitempty"` //bucket group
+	Sort            []GroupSort       `json:"sort,omitempty"`
+	ClusterId       string            `json:"cluster_id,omitempty"`
+	Formula         string            `json:"formula,omitempty"`
+	Items           []MetricItem      `json:"items"`
+	FormatType      string            `json:"format_type,omitempty"`
+	TimeFilter      interface{}       `json:"time_filter,omitempty"`
+	TimeBeforeGroup bool              `json:"time_before_group,omitempty"`
+	BucketLabel     *BucketLabel      `json:"bucket_label,omitempty"`
 }
 
 type GroupSort struct {
-	Key string `json:"key"`
+	Key       string `json:"key"`
 	Direction string `json:"direction"`
 }
 
 type MetricGroupItem struct {
 	Field string `json:"field"`
-	Limit int `json:"limit"`
+	Limit int    `json:"limit"`
 }
 
-func (m *Metric) GenerateExpression() (string, error){
+func (m *Metric) GenerateExpression() (string, error) {
 	if len(m.Items) == 1 {
 		return fmt.Sprintf("%s(%s)", m.Items[0].Statistic, m.Items[0].Field), nil
 	}
@@ -68,12 +68,12 @@ func (m *Metric) GenerateExpression() (string, error){
 		return "", fmt.Errorf("formula should not be empty since there are %d metrics", len(m.Items))
 	}
 	var (
-		expressionBytes = []byte(m.Formula)
+		expressionBytes  = []byte(m.Formula)
 		metricExpression string
 	)
 	for _, item := range m.Items {
 		metricExpression = fmt.Sprintf("%s(%s)", item.Statistic, item.Field)
-		reg, err := regexp.Compile(item.Name+`([^\w]|$)`)
+		reg, err := regexp.Compile(item.Name + `([^\w]|$)`)
 		if err != nil {
 			return "", err
 		}
@@ -102,12 +102,12 @@ func (m *Metric) ValidateSortKey() error {
 		mm[item.Name] = &item
 	}
 	for _, sortItem := range m.Sort {
-		if !util.StringInArray([]string{"desc", "asc"}, sortItem.Direction){
+		if !util.StringInArray([]string{"desc", "asc"}, sortItem.Direction) {
 			return fmt.Errorf("unknown sort direction [%s]", sortItem.Direction)
 		}
-		if v, ok := mm[sortItem.Key]; !ok && !util.StringInArray([]string{"_key", "_count"}, sortItem.Key){
+		if v, ok := mm[sortItem.Key]; !ok && !util.StringInArray([]string{"_key", "_count"}, sortItem.Key) {
 			return fmt.Errorf("unknown sort key [%s]", sortItem.Key)
-		}else{
+		} else {
 			if v != nil && v.Statistic == "derivative" {
 				return fmt.Errorf("can not sort by pipeline agg [%s]", v.Statistic)
 			}
@@ -117,26 +117,26 @@ func (m *Metric) ValidateSortKey() error {
 }
 
 type MetricItem struct {
-	Name string `json:"name,omitempty"`
-	Field     string   `json:"field"`
-	FieldType string   `json:"field_type,omitempty"`
-	Statistic      string `json:"statistic,omitempty"`
+	Name      string `json:"name,omitempty"`
+	Field     string `json:"field"`
+	FieldType string `json:"field_type,omitempty"`
+	Statistic string `json:"statistic,omitempty"`
 }
 
 type MetricDataItem struct {
-	Timestamp interface{}  `json:"timestamp,omitempty"`
-	Value     interface{}    `json:"value"`
-	Groups []string `json:"groups,omitempty"`
-	GroupLabel string `json:"group_label,omitempty"`
+	Timestamp  interface{} `json:"timestamp,omitempty"`
+	Value      interface{} `json:"value"`
+	Groups     []string    `json:"groups,omitempty"`
+	GroupLabel string      `json:"group_label,omitempty"`
 }
 
 type MetricData struct {
-	Groups []string `json:"groups,omitempty"`
-	Data map[string][]MetricDataItem
+	Groups     []string `json:"groups,omitempty"`
+	Data       map[string][]MetricDataItem
 	GroupLabel string `json:"group_label,omitempty"`
 }
 
 type BucketLabel struct {
-	Enabled bool `json:"enabled"`
+	Enabled  bool   `json:"enabled"`
 	Template string `json:"template,omitempty"`
 }

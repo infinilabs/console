@@ -38,11 +38,10 @@ import (
 	"time"
 )
 
-func (h *APIHandler) HandleCreateSearchTemplateAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
-	resBody := map[string] interface{}{
-	}
+func (h *APIHandler) HandleCreateSearchTemplateAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	resBody := map[string]interface{}{}
 	targetClusterID := ps.ByName("id")
-	exists,client,err:=h.GetClusterClient(targetClusterID)
+	exists, client, err := h.GetClusterClient(targetClusterID)
 
 	if err != nil {
 		log.Error(err)
@@ -51,8 +50,8 @@ func (h *APIHandler) HandleCreateSearchTemplateAction(w http.ResponseWriter, req
 		return
 	}
 
-	if !exists{
-		resBody["error"] = fmt.Sprintf("cluster [%s] not found",targetClusterID)
+	if !exists {
+		resBody["error"] = fmt.Sprintf("cluster [%s] not found", targetClusterID)
 		log.Error(resBody["error"])
 		h.WriteJSON(w, resBody, http.StatusNotFound)
 		return
@@ -69,7 +68,7 @@ func (h *APIHandler) HandleCreateSearchTemplateAction(w http.ResponseWriter, req
 	}
 	var body = map[string]interface{}{
 		"script": map[string]interface{}{
-			"lang": "mustache",
+			"lang":   "mustache",
 			"source": template.Source,
 		},
 	}
@@ -89,7 +88,7 @@ func (h *APIHandler) HandleCreateSearchTemplateAction(w http.ResponseWriter, req
 	template.Created = time.Now()
 	template.Updated = template.Created
 	template.ClusterID = targetClusterID
-	index:=orm.GetIndexName(elastic.SearchTemplate{})
+	index := orm.GetIndexName(elastic.SearchTemplate{})
 	insertRes, err := esClient.Index(index, "", id, template, "wait_for")
 	if err != nil {
 		log.Error(err)
@@ -102,14 +101,13 @@ func (h *APIHandler) HandleCreateSearchTemplateAction(w http.ResponseWriter, req
 	resBody["_id"] = id
 	resBody["result"] = insertRes.Result
 
-	h.WriteJSON(w, resBody,http.StatusOK)
+	h.WriteJSON(w, resBody, http.StatusOK)
 }
 
-func (h *APIHandler) HandleUpdateSearchTemplateAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
-	resBody := map[string] interface{}{
-	}
+func (h *APIHandler) HandleUpdateSearchTemplateAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	resBody := map[string]interface{}{}
 	targetClusterID := ps.ByName("id")
-	exists,client,err:=h.GetClusterClient(targetClusterID)
+	exists, client, err := h.GetClusterClient(targetClusterID)
 
 	if err != nil {
 		log.Error(err)
@@ -118,8 +116,8 @@ func (h *APIHandler) HandleUpdateSearchTemplateAction(w http.ResponseWriter, req
 		return
 	}
 
-	if !exists{
-		resBody["error"] = fmt.Sprintf("cluster [%s] not found",targetClusterID)
+	if !exists {
+		resBody["error"] = fmt.Sprintf("cluster [%s] not found", targetClusterID)
 		log.Error(resBody["error"])
 		h.WriteJSON(w, resBody, http.StatusNotFound)
 		return
@@ -136,8 +134,8 @@ func (h *APIHandler) HandleUpdateSearchTemplateAction(w http.ResponseWriter, req
 	}
 	templateID := ps.ByName("template_id")
 	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
-	index:=orm.GetIndexName(elastic.SearchTemplate{})
-	getRes, err := esClient.Get(index, "",templateID)
+	index := orm.GetIndexName(elastic.SearchTemplate{})
+	getRes, err := esClient.Get(index, "", templateID)
 	if err != nil {
 		log.Error(err)
 		resBody["error"] = err.Error()
@@ -197,9 +195,9 @@ func (h *APIHandler) HandleUpdateSearchTemplateAction(w http.ResponseWriter, req
 
 	ht := &elastic.SearchTemplateHistory{
 		TemplateID: templateID,
-		Action: "update",
-		Content: originTemplate,
-		Created: time.Now(),
+		Action:     "update",
+		Content:    originTemplate,
+		Created:    time.Now(),
 	}
 	esClient.Index(orm.GetIndexName(ht), "", util.GetUUID(), ht, "")
 
@@ -207,14 +205,13 @@ func (h *APIHandler) HandleUpdateSearchTemplateAction(w http.ResponseWriter, req
 	resBody["_id"] = templateID
 	resBody["result"] = insertRes.Result
 
-	h.WriteJSON(w, resBody,http.StatusOK)
+	h.WriteJSON(w, resBody, http.StatusOK)
 }
 
-func (h *APIHandler) HandleDeleteSearchTemplateAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
-	resBody := map[string] interface{}{
-	}
+func (h *APIHandler) HandleDeleteSearchTemplateAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	resBody := map[string]interface{}{}
 	targetClusterID := ps.ByName("id")
-	exists,client,err:=h.GetClusterClient(targetClusterID)
+	exists, client, err := h.GetClusterClient(targetClusterID)
 	if err != nil {
 		log.Error(err)
 		resBody["error"] = err.Error()
@@ -222,8 +219,8 @@ func (h *APIHandler) HandleDeleteSearchTemplateAction(w http.ResponseWriter, req
 		return
 	}
 
-	if !exists{
-		resBody["error"] = fmt.Sprintf("cluster [%s] not found",targetClusterID)
+	if !exists {
+		resBody["error"] = fmt.Sprintf("cluster [%s] not found", targetClusterID)
 		log.Error(resBody["error"])
 		h.WriteJSON(w, resBody, http.StatusNotFound)
 		return
@@ -231,7 +228,7 @@ func (h *APIHandler) HandleDeleteSearchTemplateAction(w http.ResponseWriter, req
 
 	templateID := ps.ByName("template_id")
 
-	index:=orm.GetIndexName(elastic.SearchTemplate{})
+	index := orm.GetIndexName(elastic.SearchTemplate{})
 	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 	res, err := esClient.Get(index, "", templateID)
 	if err != nil {
@@ -258,9 +255,9 @@ func (h *APIHandler) HandleDeleteSearchTemplateAction(w http.ResponseWriter, req
 
 	ht := &elastic.SearchTemplateHistory{
 		TemplateID: templateID,
-		Action: "delete",
-		Content: res.Source,
-		Created: time.Now(),
+		Action:     "delete",
+		Content:    res.Source,
+		Created:    time.Now(),
 	}
 	_, err = esClient.Index(orm.GetIndexName(ht), "", util.GetUUID(), ht, "wait_for")
 	if err != nil {
@@ -273,21 +270,20 @@ func (h *APIHandler) HandleDeleteSearchTemplateAction(w http.ResponseWriter, req
 
 }
 
-func (h *APIHandler) HandleSearchSearchTemplateAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
-	resBody := map[string] interface{}{
-	}
+func (h *APIHandler) HandleSearchSearchTemplateAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	resBody := map[string]interface{}{}
 	var (
-		name = h.GetParameterOrDefault(req, "name", "")
-		strFrom = h.GetParameterOrDefault(req, "from", "0")
-		strSize = h.GetParameterOrDefault(req, "size", "20")
-		queryDSL = `{"query":{"bool":{"must":[%s]}},"from": %d, "size": %d}`
+		name        = h.GetParameterOrDefault(req, "name", "")
+		strFrom     = h.GetParameterOrDefault(req, "from", "0")
+		strSize     = h.GetParameterOrDefault(req, "size", "20")
+		queryDSL    = `{"query":{"bool":{"must":[%s]}},"from": %d, "size": %d}`
 		mustBuilder = &strings.Builder{}
 	)
 	from, _ := strconv.Atoi(strFrom)
 	size, _ := strconv.Atoi(strSize)
 	targetClusterID := ps.ByName("id")
 	mustBuilder.WriteString(fmt.Sprintf(`{"match":{"cluster_id": "%s"}}`, targetClusterID))
-	if name != ""{
+	if name != "" {
 		mustBuilder.WriteString(fmt.Sprintf(`,{"match":{"name": "%s"}}`, name))
 	}
 
@@ -305,8 +301,8 @@ func (h *APIHandler) HandleSearchSearchTemplateAction(w http.ResponseWriter, req
 	h.WriteJSON(w, res, http.StatusOK)
 }
 
-func (h *APIHandler) HandleGetSearchTemplateAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
-	resBody := map[string] interface{}{}
+func (h *APIHandler) HandleGetSearchTemplateAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	resBody := map[string]interface{}{}
 
 	id := ps.ByName("template_id")
 	indexName := orm.GetIndexName(elastic.SearchTemplate{})
@@ -314,31 +310,30 @@ func (h *APIHandler) HandleGetSearchTemplateAction(w http.ResponseWriter, req *h
 	if err != nil {
 		log.Error(err)
 		resBody["error"] = err.Error()
-		if getResponse!=nil{
+		if getResponse != nil {
 			h.WriteJSON(w, resBody, getResponse.StatusCode)
-		}else{
+		} else {
 			h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		}
 		return
 	}
-	h.WriteJSON(w,getResponse,200)
+	h.WriteJSON(w, getResponse, 200)
 }
 
-func (h *APIHandler) HandleSearchSearchTemplateHistoryAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
-	resBody := map[string] interface{}{
-	}
+func (h *APIHandler) HandleSearchSearchTemplateHistoryAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	resBody := map[string]interface{}{}
 	var (
-		templateID = h.GetParameterOrDefault(req, "template_id", "")
-		strFrom = h.GetParameterOrDefault(req, "from", "0")
-		strSize = h.GetParameterOrDefault(req, "size", "20")
-		queryDSL = `{"query":{"bool":{"must":[%s]}},"from": %d, "size": %d}`
+		templateID  = h.GetParameterOrDefault(req, "template_id", "")
+		strFrom     = h.GetParameterOrDefault(req, "from", "0")
+		strSize     = h.GetParameterOrDefault(req, "size", "20")
+		queryDSL    = `{"query":{"bool":{"must":[%s]}},"from": %d, "size": %d}`
 		mustBuilder = &strings.Builder{}
 	)
 	from, _ := strconv.Atoi(strFrom)
 	size, _ := strconv.Atoi(strSize)
 	targetClusterID := ps.ByName("id")
 	mustBuilder.WriteString(fmt.Sprintf(`{"match":{"content.cluster_id": "%s"}}`, targetClusterID))
-	if templateID != ""{
+	if templateID != "" {
 		mustBuilder.WriteString(fmt.Sprintf(`,{"match":{"template_id": "%s"}}`, templateID))
 	}
 
@@ -356,11 +351,10 @@ func (h *APIHandler) HandleSearchSearchTemplateHistoryAction(w http.ResponseWrit
 	h.WriteJSON(w, res, http.StatusOK)
 }
 
-func (h *APIHandler) HandleRenderTemplateAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
-	resBody := map[string] interface{}{
-	}
+func (h *APIHandler) HandleRenderTemplateAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	resBody := map[string]interface{}{}
 	targetClusterID := ps.ByName("id")
-	exists,client,err:=h.GetClusterClient(targetClusterID)
+	exists, client, err := h.GetClusterClient(targetClusterID)
 	if err != nil {
 		log.Error(err)
 		resBody["error"] = err.Error()
@@ -368,8 +362,8 @@ func (h *APIHandler) HandleRenderTemplateAction(w http.ResponseWriter, req *http
 		return
 	}
 
-	if !exists{
-		resBody["error"] = fmt.Sprintf("cluster [%s] not found",targetClusterID)
+	if !exists {
+		resBody["error"] = fmt.Sprintf("cluster [%s] not found", targetClusterID)
 		log.Error(resBody["error"])
 		h.WriteJSON(w, resBody, http.StatusNotFound)
 		return
@@ -394,11 +388,10 @@ func (h *APIHandler) HandleRenderTemplateAction(w http.ResponseWriter, req *http
 	h.WriteJSON(w, string(res), http.StatusOK)
 }
 
-func (h *APIHandler) HandleSearchTemplateAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
-	resBody := map[string] interface{}{
-	}
+func (h *APIHandler) HandleSearchTemplateAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	resBody := map[string]interface{}{}
 	targetClusterID := ps.ByName("id")
-	exists,client,err:=h.GetClusterClient(targetClusterID)
+	exists, client, err := h.GetClusterClient(targetClusterID)
 	if err != nil {
 		log.Error(err)
 		resBody["error"] = err.Error()
@@ -406,8 +399,8 @@ func (h *APIHandler) HandleSearchTemplateAction(w http.ResponseWriter, req *http
 		return
 	}
 
-	if !exists{
-		resBody["error"] = fmt.Sprintf("cluster [%s] not found",targetClusterID)
+	if !exists {
+		resBody["error"] = fmt.Sprintf("cluster [%s] not found", targetClusterID)
 		log.Error(resBody["error"])
 		h.WriteJSON(w, resBody, http.StatusNotFound)
 		return

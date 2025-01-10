@@ -29,13 +29,13 @@ package server
 
 import (
 	log "github.com/cihub/seelog"
-	"infini.sh/framework/modules/configs/common"
-	"infini.sh/framework/modules/configs/config"
 	httprouter "infini.sh/framework/core/api/router"
 	config3 "infini.sh/framework/core/config"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/util"
+	"infini.sh/framework/modules/configs/common"
+	"infini.sh/framework/modules/configs/config"
 	"net/http"
 	"path"
 	"sync"

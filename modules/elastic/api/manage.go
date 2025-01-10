@@ -540,7 +540,7 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 		ClusterStorageMetricKey,
 		ClusterIndicesMetricKey,
 		ClusterNodeCountMetricKey:
-			metricType = v1.MetricTypeClusterStats
+		metricType = v1.MetricTypeClusterStats
 	case ClusterHealthMetricKey:
 		metricType = v1.MetricTypeClusterStats
 	case ShardCountMetricKey:
@@ -570,7 +570,7 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 	defer cancel()
 	if util.StringInArray([]string{v1.IndexThroughputMetricKey, v1.SearchThroughputMetricKey, v1.IndexLatencyMetricKey, v1.SearchLatencyMetricKey}, key) {
 		metrics, err = h.GetClusterIndexMetrics(ctx, id, bucketSize, min, max, key)
-	}else{
+	} else {
 		metrics, err = h.GetClusterMetrics(ctx, id, bucketSize, min, max, key)
 	}
 	if err != nil {
@@ -583,7 +583,7 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 			minBucketSize, err := v1.GetMetricMinBucketSize(id, metricType)
 			if err != nil {
 				log.Error(err)
-			}else{
+			} else {
 				metrics[key].MinBucketSize = int64(minBucketSize)
 			}
 		}
@@ -634,7 +634,7 @@ func (h *APIHandler) HandleNodeMetricsAction(w http.ResponseWriter, req *http.Re
 			minBucketSize, err := v1.GetMetricMinBucketSize(id, v1.MetricTypeNodeStats)
 			if err != nil {
 				log.Error(err)
-			}else{
+			} else {
 				metrics[key].MinBucketSize = int64(minBucketSize)
 			}
 		}
@@ -751,7 +751,7 @@ func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.R
 			}
 
 		}
-	}else{
+	} else {
 		metrics, err = h.getIndexMetrics(ctx, req, id, bucketSize, min, max, indexName, top, shardID, key)
 		if err != nil {
 			log.Error(err)
@@ -764,7 +764,7 @@ func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.R
 			minBucketSize, err := v1.GetMetricMinBucketSize(id, v1.MetricTypeNodeStats)
 			if err != nil {
 				log.Error(err)
-			}else{
+			} else {
 				metrics[key].MinBucketSize = int64(minBucketSize)
 			}
 		}
@@ -822,7 +822,7 @@ func (h *APIHandler) HandleQueueMetricsAction(w http.ResponseWriter, req *http.R
 			minBucketSize, err := v1.GetMetricMinBucketSize(id, v1.MetricTypeNodeStats)
 			if err != nil {
 				log.Error(err)
-			}else{
+			} else {
 				metrics[key].MinBucketSize = int64(minBucketSize)
 			}
 		}
@@ -949,20 +949,20 @@ const (
 )
 
 const (
-	ClusterStorageMetricKey = "cluster_storage"
+	ClusterStorageMetricKey   = "cluster_storage"
 	ClusterDocumentsMetricKey = "cluster_documents"
-	ClusterIndicesMetricKey  = "cluster_indices"
+	ClusterIndicesMetricKey   = "cluster_indices"
 	ClusterNodeCountMetricKey = "node_count"
-	ClusterHealthMetricKey = "cluster_health"
-	ShardCountMetricKey = "shard_count"
-	CircuitBreakerMetricKey = "circuit_breaker"
+	ClusterHealthMetricKey    = "cluster_health"
+	ShardCountMetricKey       = "shard_count"
+	CircuitBreakerMetricKey   = "circuit_breaker"
 )
 
 func (h *APIHandler) GetClusterMetrics(ctx context.Context, id string, bucketSize int, min, max int64, metricKey string) (map[string]*common.MetricItem, error) {
 
 	var (
-		clusterMetricsResult = map[string]*common.MetricItem {}
-		err error
+		clusterMetricsResult = map[string]*common.MetricItem{}
+		err                  error
 	)
 	switch metricKey {
 	case ClusterDocumentsMetricKey,
@@ -1277,7 +1277,7 @@ func (h *APIHandler) getCircuitBreakerMetric(ctx context.Context, id string, min
 		"query": util.MapStr{
 			"bool": util.MapStr{
 				"minimum_should_match": 1,
-				"should": should,
+				"should":               should,
 				"must": []util.MapStr{
 					{
 						"term": util.MapStr{

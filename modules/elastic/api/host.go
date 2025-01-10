@@ -211,8 +211,7 @@ func (h *APIHandler) getDiscoverHosts(w http.ResponseWriter, req *http.Request, 
 
 func getHostSummary(agentIDs []string, metricName string, summary map[string]util.MapStr) error {
 	if summary == nil {
-		summary = map[string]util.MapStr{
-		}
+		summary = map[string]util.MapStr{}
 	}
 
 	if len(agentIDs) == 0 {
@@ -506,8 +505,7 @@ func (h *APIHandler) FetchHostInfo(w http.ResponseWriter, req *http.Request, ps 
 	for key, item := range hostMetrics {
 		for _, line := range item.Lines {
 			if _, ok := networkMetrics[line.Metric.Label]; !ok {
-				networkMetrics[line.Metric.Label] = util.MapStr{
-				}
+				networkMetrics[line.Metric.Label] = util.MapStr{}
 			}
 			networkMetrics[line.Metric.Label][key] = line.Data
 		}
@@ -682,20 +680,20 @@ func (h *APIHandler) getSingleHostMetricFromNode(ctx context.Context, nodeID str
 }
 
 const (
-	OSCPUUsedPercentMetricKey = "cpu_used_percent"
-	MemoryUsedPercentMetricKey = "memory_used_percent"
-	DiskUsedPercentMetricKey    = "disk_used_percent"
-	SystemLoadMetricKey = "system_load"
-	CPUIowaitMetricKey = "cpu_iowait"
-	SwapMemoryUsedPercentMetricKey= "swap_memory_used_percent"
-	NetworkSummaryMetricKey = "network_summary"
-	NetworkPacketsSummaryMetricKey = "network_packets_summary"
-	DiskReadRateMetricKey = "disk_read_rate"
-	DiskWriteRateMetricKey = "disk_write_rate"
-	DiskPartitionUsageMetricKey = "disk_partition_usage"
+	OSCPUUsedPercentMetricKey           = "cpu_used_percent"
+	MemoryUsedPercentMetricKey          = "memory_used_percent"
+	DiskUsedPercentMetricKey            = "disk_used_percent"
+	SystemLoadMetricKey                 = "system_load"
+	CPUIowaitMetricKey                  = "cpu_iowait"
+	SwapMemoryUsedPercentMetricKey      = "swap_memory_used_percent"
+	NetworkSummaryMetricKey             = "network_summary"
+	NetworkPacketsSummaryMetricKey      = "network_packets_summary"
+	DiskReadRateMetricKey               = "disk_read_rate"
+	DiskWriteRateMetricKey              = "disk_write_rate"
+	DiskPartitionUsageMetricKey         = "disk_partition_usage"
 	NetworkInterfaceOutputRateMetricKey = "network_interface_output_rate"
-
 )
+
 func (h *APIHandler) GetSingleHostMetrics(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	hostID := ps.MustGetParameter("host_id")
 	hostInfo := &host.HostInfo{}
@@ -798,7 +796,7 @@ func (h *APIHandler) GetSingleHostMetrics(w http.ResponseWriter, req *http.Reque
 		metricItem.AddLine("Disk Write Rate", "Disk Write Rate", "network write rate of host.", "group1", "payload.host.diskio_summary.write.bytes", "max", bucketSizeStr, "%", "bytes", "0,0.[00]", "0,0.[00]", false, true)
 		metricItems = append(metricItems, metricItem)
 	case DiskPartitionUsageMetricKey, NetworkInterfaceOutputRateMetricKey:
-		resBody["metrics"] , err = h.getGroupHostMetrics(ctx, hostInfo.AgentID, min, max, bucketSize, key)
+		resBody["metrics"], err = h.getGroupHostMetrics(ctx, hostInfo.AgentID, min, max, bucketSize, key)
 		if err != nil {
 			log.Error(err)
 			h.WriteError(w, err, http.StatusInternalServerError)

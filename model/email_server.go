@@ -35,13 +35,13 @@ import (
 
 type EmailServer struct {
 	orm.ORMObjectBase
-	Name string `json:"name" elastic_mapping:"name:{type:text}"`
-	Host string `json:"host" elastic_mapping:"host:{type:keyword}"`
-	Port int    `json:"port" elastic_mapping:"port:{type:keyword}"`
-	TLS  bool   `json:"tls" elastic_mapping:"tls:{type:keyword}"`
-	Auth *model.BasicAuth `json:"auth" elastic_mapping:"auth:{type:object}"`
-	Enabled bool `json:"enabled" elastic_mapping:"enabled:{type:boolean}"`
-	CredentialID string `json:"credential_id" elastic_mapping:"credential_id:{type:keyword}"`
+	Name         string           `json:"name" elastic_mapping:"name:{type:text}"`
+	Host         string           `json:"host" elastic_mapping:"host:{type:keyword}"`
+	Port         int              `json:"port" elastic_mapping:"port:{type:keyword}"`
+	TLS          bool             `json:"tls" elastic_mapping:"tls:{type:keyword}"`
+	Auth         *model.BasicAuth `json:"auth" elastic_mapping:"auth:{type:object}"`
+	Enabled      bool             `json:"enabled" elastic_mapping:"enabled:{type:boolean}"`
+	CredentialID string           `json:"credential_id" elastic_mapping:"credential_id:{type:keyword}"`
 }
 
 func (serv *EmailServer) Validate(requireName bool) error {

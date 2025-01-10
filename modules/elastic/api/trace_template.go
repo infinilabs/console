@@ -38,10 +38,9 @@ import (
 )
 
 func (h *APIHandler) HandleCrateTraceTemplateAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	resBody := map[string] interface{}{
-	}
+	resBody := map[string]interface{}{}
 	targetClusterID := ps.ByName("id")
-	exists,client,err:=h.GetClusterClient(targetClusterID)
+	exists, client, err := h.GetClusterClient(targetClusterID)
 
 	if err != nil {
 		log.Error(err)
@@ -50,16 +49,14 @@ func (h *APIHandler) HandleCrateTraceTemplateAction(w http.ResponseWriter, req *
 		return
 	}
 
-	if !exists{
-		resBody["error"] = fmt.Sprintf("cluster [%s] not found",targetClusterID)
+	if !exists {
+		resBody["error"] = fmt.Sprintf("cluster [%s] not found", targetClusterID)
 		log.Error(resBody["error"])
 		h.WriteJSON(w, resBody, http.StatusNotFound)
 		return
 	}
 
-	var traceReq = &elastic.TraceTemplate{
-
-	}
+	var traceReq = &elastic.TraceTemplate{}
 
 	err = h.DecodeJSON(req, traceReq)
 	if err != nil {
@@ -84,22 +81,21 @@ func (h *APIHandler) HandleCrateTraceTemplateAction(w http.ResponseWriter, req *
 	resBody["_id"] = insertRes.ID
 	resBody["result"] = insertRes.Result
 
-	h.WriteJSON(w, resBody,http.StatusOK)
+	h.WriteJSON(w, resBody, http.StatusOK)
 }
 
 func (h *APIHandler) HandleSearchTraceTemplateAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	resBody := map[string] interface{}{
-	}
+	resBody := map[string]interface{}{}
 	var (
-		name          = h.GetParameterOrDefault(req, "name", "")
-		queryDSL      = `{"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d}`
-		strSize       = h.GetParameterOrDefault(req, "size", "20")
+		name        = h.GetParameterOrDefault(req, "name", "")
+		queryDSL    = `{"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d}`
+		strSize     = h.GetParameterOrDefault(req, "size", "20")
 		strFrom     = h.GetParameterOrDefault(req, "from", "0")
 		mustBuilder = &strings.Builder{}
 	)
 	targetClusterID := ps.ByName("id")
 	mustBuilder.WriteString(fmt.Sprintf(`{"term":{"cluster_id":{"value": "%s"}}}`, targetClusterID))
-	if name != ""{
+	if name != "" {
 		mustBuilder.WriteString(fmt.Sprintf(`,{"prefix":{"name": "%s"}}`, name))
 	}
 	size, _ := strconv.Atoi(strSize)
@@ -126,8 +122,7 @@ func (h *APIHandler) HandleSearchTraceTemplateAction(w http.ResponseWriter, req 
 }
 
 func (h *APIHandler) HandleSaveTraceTemplateAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	resBody := map[string]interface{}{
-	}
+	resBody := map[string]interface{}{}
 
 	reqParams := elastic.TraceTemplate{}
 	err := h.DecodeJSON(req, &reqParams)
@@ -140,7 +135,7 @@ func (h *APIHandler) HandleSaveTraceTemplateAction(w http.ResponseWriter, req *h
 	reqParams.ID = ps.ByName("template_id")
 	reqParams.Updated = time.Now()
 	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
-	_, err = esClient.Index(orm.GetIndexName(reqParams),"", reqParams.ID, reqParams, "wait_for")
+	_, err = esClient.Index(orm.GetIndexName(reqParams), "", reqParams.ID, reqParams, "wait_for")
 	if err != nil {
 		log.Error(err)
 		resBody["error"] = err.Error()
@@ -152,11 +147,11 @@ func (h *APIHandler) HandleSaveTraceTemplateAction(w http.ResponseWriter, req *h
 	resBody["result"] = "updated"
 	resBody["_source"] = reqParams
 
-	h.WriteJSON(w, resBody,http.StatusOK)
+	h.WriteJSON(w, resBody, http.StatusOK)
 }
 
-func (h *APIHandler) HandleGetTraceTemplateAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
-	resBody := map[string] interface{}{}
+func (h *APIHandler) HandleGetTraceTemplateAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	resBody := map[string]interface{}{}
 
 	id := ps.ByName("template_id")
 	indexName := orm.GetIndexName(elastic.TraceTemplate{})
@@ -166,7 +161,7 @@ func (h *APIHandler) HandleGetTraceTemplateAction(w http.ResponseWriter, req *ht
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 	}
-	h.WriteJSON(w,getResponse, getResponse.StatusCode)
+	h.WriteJSON(w, getResponse, getResponse.StatusCode)
 }
 
 func (h *APIHandler) HandleDeleteTraceTemplateAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -177,9 +172,9 @@ func (h *APIHandler) HandleDeleteTraceTemplateAction(w http.ResponseWriter, req 
 	if err != nil {
 		log.Error(err)
 		resBody["error"] = err.Error()
-		if delRes!=nil{
+		if delRes != nil {
 			h.WriteJSON(w, resBody, delRes.StatusCode)
-		}else{
+		} else {
 			h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		}
 	}

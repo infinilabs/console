@@ -34,8 +34,8 @@ import (
 )
 
 type docReqBody struct {
-	From     int    `json:"from"`
-	Size      int    `json:"size"`
+	From          int    `json:"from"`
+	Size          int    `json:"size"`
 	Filter        string `json:"filter"`
 	Cluster       string `json:"cluster"`
 	Keyword       string `json:"keyword"`
@@ -155,7 +155,7 @@ func (handler APIHandler) HandleSearchDocumentAction(w http.ResponseWriter, req 
 	}
 	indexName := ps.ByName("index")
 	var (
-		sort      = ""
+		sort = ""
 	)
 	if reqBody.From < 0 {
 		reqBody.From = 0
@@ -206,7 +206,7 @@ func (handler APIHandler) ValidateDocIDAction(w http.ResponseWriter, req *http.R
 	var (
 		index = handler.GetParameter(req, "index")
 		docID = handler.GetParameter(req, "doc_id")
-		typ = handler.GetParameter(req, "type")
+		typ   = handler.GetParameter(req, "type")
 	)
 	getRes, err := client.Get(index, typ, docID)
 	if err != nil {

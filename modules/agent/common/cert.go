@@ -37,15 +37,15 @@ import (
 	"path"
 )
 
-func GenerateClientCert(caFile, caKey string) (caCert, clientCertPEM, clientKeyPEM []byte, err error){
+func GenerateClientCert(caFile, caKey string) (caCert, clientCertPEM, clientKeyPEM []byte, err error) {
 	return generateCert(caFile, caKey, false)
 }
 
-func GenerateServerCert(caFile, caKey string) (caCert, serverCertPEM, serverKeyPEM []byte, err error){
+func GenerateServerCert(caFile, caKey string) (caCert, serverCertPEM, serverKeyPEM []byte, err error) {
 	return generateCert(caFile, caKey, true)
 }
 
-func generateCert(caFile, caKey string, isServer bool)(caCert, instanceCertPEM, instanceKeyPEM []byte, err error){
+func generateCert(caFile, caKey string, isServer bool) (caCert, instanceCertPEM, instanceKeyPEM []byte, err error) {
 	pool := x509.NewCertPool()
 	caCert, err = os.ReadFile(caFile)
 	if err != nil {
@@ -69,11 +69,11 @@ func generateCert(caFile, caKey string, isServer bool)(caCert, instanceCertPEM, 
 	if err != nil {
 		return
 	}
-	if isServer{
+	if isServer {
 		b = &pem.Block{Type: "CERTIFICATE", Bytes: caCertBytes}
 		certPEM := pem.EncodeToMemory(b)
-		instanceCertPEM, instanceKeyPEM, err  = util.GenerateServerCert(rootCert, certKey.(*rsa.PrivateKey), certPEM, nil)
-	}else{
+		instanceCertPEM, instanceKeyPEM, err = util.GenerateServerCert(rootCert, certKey.(*rsa.PrivateKey), certPEM, nil)
+	} else {
 		_, instanceCertPEM, instanceKeyPEM = util.GetClientCert(rootCert, certKey)
 	}
 	return caCert, instanceCertPEM, instanceKeyPEM, nil
@@ -84,9 +84,9 @@ func GetAgentInstanceCerts(caFile, caKey string) (string, string, error) {
 	instanceCrt := path.Join(dataDir, "certs/agent/instance.crt")
 	instanceKey := path.Join(dataDir, "certs/agent/instance.key")
 	var (
-		err error
+		err           error
 		clientCertPEM []byte
-		clientKeyPEM []byte
+		clientKeyPEM  []byte
 	)
 	if util.FileExists(instanceCrt) && util.FileExists(instanceKey) {
 		return instanceCrt, instanceKey, nil
@@ -96,7 +96,7 @@ func GetAgentInstanceCerts(caFile, caKey string) (string, string, error) {
 		return "", "", err
 	}
 	baseDir := path.Join(dataDir, "certs/agent")
-	if !util.IsExist(baseDir){
+	if !util.IsExist(baseDir) {
 		err = os.MkdirAll(baseDir, 0775)
 		if err != nil {
 			return "", "", err

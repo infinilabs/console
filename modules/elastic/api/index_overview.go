@@ -46,41 +46,41 @@ import (
 )
 
 func (h *APIHandler) SearchIndexMetadata(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	resBody:=util.MapStr{}
-	reqBody := struct{
-		Keyword string `json:"keyword"`
-		Size int `json:"size"`
-		From int `json:"from"`
-		Aggregations []elastic.SearchAggParam `json:"aggs"`
-		Highlight elastic.SearchHighlightParam `json:"highlight"`
-		Filter elastic.SearchFilterParam `json:"filter"`
-		Sort []string `json:"sort"`
-		SearchField string `json:"search_field"`
+	resBody := util.MapStr{}
+	reqBody := struct {
+		Keyword      string                       `json:"keyword"`
+		Size         int                          `json:"size"`
+		From         int                          `json:"from"`
+		Aggregations []elastic.SearchAggParam     `json:"aggs"`
+		Highlight    elastic.SearchHighlightParam `json:"highlight"`
+		Filter       elastic.SearchFilterParam    `json:"filter"`
+		Sort         []string                     `json:"sort"`
+		SearchField  string                       `json:"search_field"`
 	}{}
 	err := h.DecodeJSON(req, &reqBody)
 	if err != nil {
 		resBody["error"] = err.Error()
-		h.WriteJSON(w,resBody, http.StatusInternalServerError )
+		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
 	}
 	aggs := elastic.BuildSearchTermAggregations(reqBody.Aggregations)
 	aggs["term_cluster_id"] = util.MapStr{
 		"terms": util.MapStr{
 			"field": "metadata.cluster_id",
-			"size": 1000,
+			"size":  1000,
 		},
 		"aggs": util.MapStr{
 			"term_cluster_name": util.MapStr{
 				"terms": util.MapStr{
 					"field": "metadata.cluster_name",
-					"size": 1,
+					"size":  1,
 				},
 			},
 		},
 	}
 	filter := elastic.BuildSearchTermFilter(reqBody.Filter)
 	var should []util.MapStr
-	if reqBody.SearchField != ""{
+	if reqBody.SearchField != "" {
 		should = []util.MapStr{
 			{
 				"prefix": util.MapStr{
@@ -103,8 +103,8 @@ func (h *APIHandler) SearchIndexMetadata(w http.ResponseWriter, req *http.Reques
 				},
 			},
 		}
-	}else{
-		if reqBody.Keyword != ""{
+	} else {
+		if reqBody.Keyword != "" {
 			should = []util.MapStr{
 				{
 					"prefix": util.MapStr{
@@ -149,15 +149,13 @@ func (h *APIHandler) SearchIndexMetadata(w http.ResponseWriter, req *http.Reques
 		}
 	}
 
-	must := []interface{}{
-	}
-	if indexFilter, hasIndexPri :=  h.getAllowedIndexFilter(req); hasIndexPri {
-		if indexFilter != nil{
+	must := []interface{}{}
+	if indexFilter, hasIndexPri := h.getAllowedIndexFilter(req); hasIndexPri {
+		if indexFilter != nil {
 			must = append(must, indexFilter)
 		}
-	}else{
-		h.WriteJSON(w, elastic.SearchResponse{
-		}, http.StatusOK)
+	} else {
+		h.WriteJSON(w, elastic.SearchResponse{}, http.StatusOK)
 		return
 	}
 	boolQuery := util.MapStr{
@@ -169,7 +167,7 @@ func (h *APIHandler) SearchIndexMetadata(w http.ResponseWriter, req *http.Reques
 			},
 		},
 		"filter": filter,
-		"must": must,
+		"must":   must,
 	}
 	if len(should) > 0 {
 		boolQuery["should"] = should
@@ -178,7 +176,7 @@ func (h *APIHandler) SearchIndexMetadata(w http.ResponseWriter, req *http.Reques
 	query := util.MapStr{
 		"aggs":      aggs,
 		"size":      reqBody.Size,
-		"from": reqBody.From,
+		"from":      reqBody.From,
 		"highlight": elastic.BuildSearchHighlight(&reqBody.Highlight),
 		"query": util.MapStr{
 			"bool": boolQuery,
@@ -192,7 +190,7 @@ func (h *APIHandler) SearchIndexMetadata(w http.ResponseWriter, req *http.Reques
 		},
 	}
 	if len(reqBody.Sort) > 1 {
-		query["sort"] =  []util.MapStr{
+		query["sort"] = []util.MapStr{
 			{
 				reqBody.Sort[0]: util.MapStr{
 					"order": reqBody.Sort[1],
@@ -204,14 +202,14 @@ func (h *APIHandler) SearchIndexMetadata(w http.ResponseWriter, req *http.Reques
 	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).SearchWithRawQueryDSL(orm.GetIndexName(elastic.IndexConfig{}), dsl)
 	if err != nil {
 		resBody["error"] = err.Error()
-		h.WriteJSON(w,resBody, http.StatusInternalServerError )
+		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
 	}
 	w.Write(util.MustToJSONBytes(response))
 
 }
 
-func (h *APIHandler) getAllowedIndexFilter(req *http.Request) (util.MapStr, bool){
+func (h *APIHandler) getAllowedIndexFilter(req *http.Request) (util.MapStr, bool) {
 	hasAllPrivilege, indexPrivilege := h.GetCurrentUserIndex(req)
 	if !hasAllPrivilege && len(indexPrivilege) == 0 {
 		return nil, false
@@ -221,10 +219,10 @@ func (h *APIHandler) getAllowedIndexFilter(req *http.Request) (util.MapStr, bool
 		for clusterID, indices := range indexPrivilege {
 			var (
 				wildcardIndices []string
-				normalIndices []string
+				normalIndices   []string
 			)
 			for _, index := range indices {
-				if strings.Contains(index,"*") {
+				if strings.Contains(index, "*") {
 					wildcardIndices = append(wildcardIndices, index)
 					continue
 				}
@@ -234,8 +232,8 @@ func (h *APIHandler) getAllowedIndexFilter(req *http.Request) (util.MapStr, bool
 			if len(wildcardIndices) > 0 {
 				subShould = append(subShould, util.MapStr{
 					"query_string": util.MapStr{
-						"query": strings.Join(wildcardIndices, " "),
-						"fields": []string{"metadata.index_name"},
+						"query":            strings.Join(wildcardIndices, " "),
+						"fields":           []string{"metadata.index_name"},
 						"default_operator": "OR",
 					},
 				})
@@ -260,7 +258,7 @@ func (h *APIHandler) getAllowedIndexFilter(req *http.Request) (util.MapStr, bool
 						{
 							"bool": util.MapStr{
 								"minimum_should_match": 1,
-								"should": subShould,
+								"should":               subShould,
 							},
 						},
 					},
@@ -270,14 +268,14 @@ func (h *APIHandler) getAllowedIndexFilter(req *http.Request) (util.MapStr, bool
 		indexFilter := util.MapStr{
 			"bool": util.MapStr{
 				"minimum_should_match": 1,
-				"should": indexShould,
+				"should":               indexShould,
 			},
 		}
 		return indexFilter, true
 	}
 	return nil, true
 }
-func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter,  req *http.Request, ps httprouter.Params) {
+func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	var indexIDs []interface{}
 	h.DecodeJSON(req, &indexIDs)
 
@@ -288,8 +286,8 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter,  req *http.Request, p
 	indexIDs = indexIDs[0:1]
 	// map indexIDs(cluster_id:index_name => cluster_uuid:indexName)
 	var (
-		indexIDM = map[string]string{}
-		newIndexIDs []interface{}
+		indexIDM          = map[string]string{}
+		newIndexIDs       []interface{}
 		clusterIndexNames = map[string][]string{}
 	)
 	indexID := indexIDs[0]
@@ -318,12 +316,12 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter,  req *http.Request, p
 			return
 		}
 		clusterIndexNames[firstClusterID] = append(clusterIndexNames[firstClusterID], firstIndexName)
-	}else{
+	} else {
 		h.WriteError(w, fmt.Sprintf("invalid index_id: %v", indexID), http.StatusInternalServerError)
 		return
 	}
 	for clusterID, indexNames := range clusterIndexNames {
-		clusterUUID, err  := adapter.GetClusterUUID(clusterID)
+		clusterUUID, err := adapter.GetClusterUUID(clusterID)
 		if err != nil {
 			log.Warnf("get cluster uuid error: %v", err)
 			continue
@@ -382,7 +380,7 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter,  req *http.Request, p
 				}
 				if primary == true {
 					indexInfo.Shards++
-				}else{
+				} else {
 					indexInfo.Replicas++
 				}
 				indexInfo.Timestamp = hitM["timestamp"]
@@ -403,36 +401,36 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter,  req *http.Request, p
 	}
 	var metricLen = 15
 	// 索引速率
-	indexMetric:=newMetricItem("indexing", 1, OperationGroupKey)
+	indexMetric := newMetricItem("indexing", 1, OperationGroupKey)
 	indexMetric.OnlyPrimary = true
-	indexMetric.AddAxi("indexing rate","group1",common.PositionLeft,"num","0,0","0,0.[00]",5,true)
+	indexMetric.AddAxi("indexing rate", "group1", common.PositionLeft, "num", "0,0", "0,0.[00]", 5, true)
 	nodeMetricItems := []GroupMetricItem{}
-	nodeMetricItems=append(nodeMetricItems, GroupMetricItem{
-		Key: "indexing",
-		Field: "payload.elasticsearch.shard_stats.indexing.index_total",
-		ID: util.GetUUID(),
+	nodeMetricItems = append(nodeMetricItems, GroupMetricItem{
+		Key:          "indexing",
+		Field:        "payload.elasticsearch.shard_stats.indexing.index_total",
+		ID:           util.GetUUID(),
 		IsDerivative: true,
-		MetricItem: indexMetric,
-		FormatType: "num",
-		Units: "Indexing/s",
+		MetricItem:   indexMetric,
+		FormatType:   "num",
+		Units:        "Indexing/s",
 	})
-	queryMetric:=newMetricItem("search", 2, OperationGroupKey)
-	queryMetric.AddAxi("query rate","group1",common.PositionLeft,"num","0,0","0,0.[00]",5,true)
-	nodeMetricItems=append(nodeMetricItems, GroupMetricItem{
-		Key: "search",
-		Field: "payload.elasticsearch.shard_stats.search.query_total",
-		ID: util.GetUUID(),
+	queryMetric := newMetricItem("search", 2, OperationGroupKey)
+	queryMetric.AddAxi("query rate", "group1", common.PositionLeft, "num", "0,0", "0,0.[00]", 5, true)
+	nodeMetricItems = append(nodeMetricItems, GroupMetricItem{
+		Key:          "search",
+		Field:        "payload.elasticsearch.shard_stats.search.query_total",
+		ID:           util.GetUUID(),
 		IsDerivative: true,
-		MetricItem: queryMetric,
-		FormatType: "num",
-		Units: "Search/s",
+		MetricItem:   queryMetric,
+		FormatType:   "num",
+		Units:        "Search/s",
 	})
 
-	aggs:=map[string]interface{}{}
-	query :=map[string]interface{}{}
-	query["query"]=util.MapStr{
+	aggs := map[string]interface{}{}
+	query := map[string]interface{}{}
+	query["query"] = util.MapStr{
 		"bool": util.MapStr{
-			"must":  []util.MapStr{
+			"must": []util.MapStr{
 				{
 					"term": util.MapStr{
 						"metadata.category": util.MapStr{
@@ -462,7 +460,7 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter,  req *http.Request, p
 				{
 					"range": util.MapStr{
 						"timestamp": util.MapStr{
-							"gte": fmt.Sprintf("now-%ds", metricLen * bucketSize),
+							"gte": fmt.Sprintf("now-%ds", metricLen*bucketSize),
 						},
 					},
 				},
@@ -471,18 +469,18 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter,  req *http.Request, p
 	}
 
 	sumAggs := util.MapStr{}
-	for _,metricItem:=range nodeMetricItems{
+	for _, metricItem := range nodeMetricItems {
 		leafAgg := util.MapStr{
-			"max":util.MapStr{
+			"max": util.MapStr{
 				"field": metricItem.Field,
 			},
 		}
-		var sumBucketPath = "term_shard>"+ metricItem.ID
+		var sumBucketPath = "term_shard>" + metricItem.ID
 		if metricItem.MetricItem.OnlyPrimary {
 			filterSubAggs := util.MapStr{
 				metricItem.ID: leafAgg,
 			}
-			aggs["filter_pri"]=util.MapStr{
+			aggs["filter_pri"] = util.MapStr{
 				"filter": util.MapStr{
 					"term": util.MapStr{
 						"payload.elasticsearch.shard_stats.routing.primary": util.MapStr{
@@ -492,8 +490,8 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter,  req *http.Request, p
 				},
 				"aggs": filterSubAggs,
 			}
-			sumBucketPath = "term_shard>filter_pri>"+ metricItem.ID
-		}else{
+			sumBucketPath = "term_shard>filter_pri>" + metricItem.ID
+		} else {
 			aggs[metricItem.ID] = leafAgg
 		}
 
@@ -502,18 +500,18 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter,  req *http.Request, p
 				"buckets_path": sumBucketPath,
 			},
 		}
-		if metricItem.IsDerivative{
-			sumAggs[metricItem.ID+"_deriv"]=util.MapStr{
-				"derivative":util.MapStr{
+		if metricItem.IsDerivative {
+			sumAggs[metricItem.ID+"_deriv"] = util.MapStr{
+				"derivative": util.MapStr{
 					"buckets_path": metricItem.ID,
 				},
 			}
 		}
 	}
-	sumAggs["term_shard"]= util.MapStr{
+	sumAggs["term_shard"] = util.MapStr{
 		"terms": util.MapStr{
 			"field": "metadata.labels.shard_id",
-			"size": 10000,
+			"size":  10000,
 		},
 		"aggs": aggs,
 	}
@@ -523,8 +521,8 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter,  req *http.Request, p
 	if err != nil {
 		panic(err)
 	}
-	query["size"]=0
-	query["aggs"]= util.MapStr{
+	query["size"] = 0
+	query["aggs"] = util.MapStr{
 		"group_by_level": util.MapStr{
 			"terms": util.MapStr{
 				"field": "metadata.labels.index_id",
@@ -532,11 +530,11 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter,  req *http.Request, p
 			},
 			"aggs": util.MapStr{
 				"dates": util.MapStr{
-					"date_histogram":util.MapStr{
-						"field": "timestamp",
+					"date_histogram": util.MapStr{
+						"field":       "timestamp",
 						intervalField: bucketSizeStr,
 					},
-					"aggs":sumAggs,
+					"aggs": sumAggs,
 				},
 			},
 		},
@@ -549,9 +547,8 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter,  req *http.Request, p
 	indexMetrics := map[string]util.MapStr{}
 	for key, item := range metrics {
 		for _, line := range item.Lines {
-			if _, ok := indexMetrics[line.Metric.Label]; !ok{
-				indexMetrics[line.Metric.Label] = util.MapStr{
-				}
+			if _, ok := indexMetrics[line.Metric.Label]; !ok {
+				indexMetrics[line.Metric.Label] = util.MapStr{}
 			}
 			indexMetrics[line.Metric.Label][key] = line.Data
 		}
@@ -601,11 +598,11 @@ func (h *APIHandler) GetIndexInfo(w http.ResponseWriter, req *http.Request, ps h
 	indexID := ps.MustGetParameter("index")
 	parts := strings.Split(indexID, ":")
 	if len(parts) > 1 && !h.IsIndexAllowed(req, clusterID, parts[1]) {
-		h.WriteError(w,  http.StatusText(http.StatusForbidden), http.StatusForbidden)
+		h.WriteError(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
 	if len(parts) < 2 {
-		h.WriteError(w, "invalid index id: "+ indexID, http.StatusInternalServerError)
+		h.WriteError(w, "invalid index id: "+indexID, http.StatusInternalServerError)
 		return
 	}
 
@@ -635,7 +632,7 @@ func (h *APIHandler) GetIndexInfo(w http.ResponseWriter, req *http.Request, ps h
 		return
 	}
 	q1 := orm.Query{
-		Size: 1000,
+		Size:          1000,
 		WildcardIndex: true,
 	}
 	q1.Conds = orm.And(
@@ -651,9 +648,9 @@ func (h *APIHandler) GetIndexInfo(w http.ResponseWriter, req *http.Request, ps h
 	summary := util.MapStr{}
 	hit := response.Hits.Hits[0].Source
 	var (
-		shardsNum int
+		shardsNum   int
 		replicasNum int
-		indexInfo = util.MapStr{
+		indexInfo   = util.MapStr{
 			"index": parts[1],
 		}
 	)
@@ -683,7 +680,7 @@ func (h *APIHandler) GetIndexInfo(w http.ResponseWriter, req *http.Request, ps h
 				storeInBytes, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "shard_stats", "store", "size_in_bytes"}, resultM)
 				if docs, ok := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "shard_stats", "docs", "count"}, resultM); ok {
 					//summary["docs"] = docs
-					if v, ok := docs.(float64); ok && primary == true{
+					if v, ok := docs.(float64); ok && primary == true {
 						shardSum.DocsCount += int64(v)
 					}
 				}
@@ -695,7 +692,7 @@ func (h *APIHandler) GetIndexInfo(w http.ResponseWriter, req *http.Request, ps h
 				}
 				if primary == true {
 					shardSum.Shards++
-				}else{
+				} else {
 					shardSum.Replicas++
 				}
 			}
@@ -706,7 +703,7 @@ func (h *APIHandler) GetIndexInfo(w http.ResponseWriter, req *http.Request, ps h
 		indexInfo["store_size"] = util.FormatBytes(float64(shardSum.StoreInBytes), 1)
 		indexInfo["shards"] = shardSum.Shards + shardSum.Replicas
 
-		summary["unassigned_shards"] = (replicasNum + 1) * shardsNum - shardSum.Shards - shardSum.Replicas
+		summary["unassigned_shards"] = (replicasNum+1)*shardsNum - shardSum.Shards - shardSum.Replicas
 	}
 	summary["index_info"] = indexInfo
 
@@ -721,7 +718,7 @@ func (h *APIHandler) GetIndexShards(w http.ResponseWriter, req *http.Request, ps
 	}
 	indexName := ps.MustGetParameter("index")
 	q1 := orm.Query{
-		Size: 1000,
+		Size:          1000,
 		WildcardIndex: true,
 	}
 	clusterUUID, err := adapter.GetClusterUUID(clusterID)
@@ -742,7 +739,7 @@ func (h *APIHandler) GetIndexShards(w http.ResponseWriter, req *http.Request, ps
 	err, result := orm.Search(&event.Event{}, &q1)
 	if err != nil {
 		log.Error(err)
-		h.WriteError(w,err.Error(), http.StatusInternalServerError )
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	var shards = []interface{}{}
@@ -756,7 +753,7 @@ func (h *APIHandler) GetIndexShards(w http.ResponseWriter, req *http.Request, ps
 		err, nodesResult := orm.Search(elastic.NodeConfig{}, q)
 		if err != nil {
 			log.Error(err)
-			h.WriteError(w,err.Error(), http.StatusInternalServerError )
+			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		nodeIDToName := util.MapStr{}
@@ -803,7 +800,7 @@ func (h *APIHandler) GetIndexShards(w http.ResponseWriter, req *http.Request, ps
 					primary, _ := shardM.GetValue("routing.primary")
 					if primary == true {
 						shardInfo["prirep"] = "p"
-					}else{
+					} else {
 						shardInfo["prirep"] = "r"
 					}
 					shardInfo["state"], _ = shardM.GetValue("routing.state")
@@ -880,11 +877,11 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 	var metricType string
 	if metricKey == v1.IndexHealthMetricKey {
 		metricType = v1.MetricTypeClusterHealth
-	}else{
+	} else {
 		//for agent mode
 		metricType = v1.MetricTypeNodeStats
 	}
-	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, clusterID, metricType,60)
+	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, clusterID, metricType, 60)
 	if err != nil {
 		log.Error(err)
 		resBody["error"] = err
@@ -892,7 +889,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 		return
 	}
 	if bucketSize <= 60 {
-		min = min - int64(2 * bucketSize * 1000)
+		min = min - int64(2*bucketSize*1000)
 	}
 	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
 	du, err := time.ParseDuration(timeout)
@@ -947,14 +944,14 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 			return
 		}
 		metrics["shard_state"] = shardStateMetric
-	}else if metricKey == v1.IndexHealthMetricKey {
-			healthMetric, err := h.GetIndexHealthMetric(ctx, clusterID, indexName, min, max, bucketSize)
-			if err != nil {
-				log.Error(err)
-				h.WriteError(w, err, http.StatusInternalServerError)
-				return
-			}
-			metrics["index_health"] = healthMetric
+	} else if metricKey == v1.IndexHealthMetricKey {
+		healthMetric, err := h.GetIndexHealthMetric(ctx, clusterID, indexName, min, max, bucketSize)
+		if err != nil {
+			log.Error(err)
+			h.WriteError(w, err, http.StatusInternalServerError)
+			return
+		}
+		metrics["index_health"] = healthMetric
 	} else {
 		switch metricKey {
 		case v1.IndexThroughputMetricKey:
@@ -1037,7 +1034,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 			minBucketSize, err := v1.GetMetricMinBucketSize(clusterID, metricType)
 			if err != nil {
 				log.Error(err)
-			}else{
+			} else {
 				metrics[metricKey].MinBucketSize = int64(minBucketSize)
 			}
 		}
@@ -1047,8 +1044,8 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 	h.WriteJSON(w, resBody, http.StatusOK)
 }
 
-func (h *APIHandler) getIndexShardsMetric(ctx context.Context, id, indexName string, min, max int64, bucketSize int)(*common.MetricItem, error){
-	bucketSizeStr:=fmt.Sprintf("%vs",bucketSize)
+func (h *APIHandler) getIndexShardsMetric(ctx context.Context, id, indexName string, min, max int64, bucketSize int) (*common.MetricItem, error) {
+	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
 	if err != nil {
 		return nil, err
@@ -1101,14 +1098,14 @@ func (h *APIHandler) getIndexShardsMetric(ctx context.Context, id, indexName str
 		"aggs": util.MapStr{
 			"dates": util.MapStr{
 				"date_histogram": util.MapStr{
-					"field": "timestamp",
+					"field":       "timestamp",
 					intervalField: bucketSizeStr,
 				},
 				"aggs": util.MapStr{
 					"groups": util.MapStr{
 						"terms": util.MapStr{
 							"field": "payload.elasticsearch.shard_stats.routing.state",
-							"size": 10,
+							"size":  10,
 						},
 					},
 				},
@@ -1122,8 +1119,8 @@ func (h *APIHandler) getIndexShardsMetric(ctx context.Context, id, indexName str
 		return nil, err
 	}
 
-	metricItem:=newMetricItem("shard_state", 0, "")
-	metricItem.AddLine("Shard State","Shard State","","group1","payload.elasticsearch.shard_stats.routing.state","max",bucketSizeStr,"","ratio","0.[00]","0.[00]",false,false)
+	metricItem := newMetricItem("shard_state", 0, "")
+	metricItem.AddLine("Shard State", "Shard State", "", "group1", "payload.elasticsearch.shard_stats.routing.state", "max", bucketSizeStr, "", "ratio", "0.[00]", "0.[00]", false, false)
 
 	metricData := []interface{}{}
 	if response.StatusCode == 200 {
@@ -1140,7 +1137,7 @@ func (h *APIHandler) getIndexShardsMetric(ctx context.Context, id, indexName str
 }
 
 func (h *APIHandler) getIndexNodes(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	resBody := map[string] interface{}{}
+	resBody := map[string]interface{}{}
 	id := ps.ByName("id")
 	indexName := ps.ByName("index")
 	if !h.IsIndexAllowed(req, id, indexName) {
@@ -1149,7 +1146,7 @@ func (h *APIHandler) getIndexNodes(w http.ResponseWriter, req *http.Request, ps 
 		}, http.StatusForbidden)
 		return
 	}
-	q := &orm.Query{ Size: 1}
+	q := &orm.Query{Size: 1}
 	q.AddSort("timestamp", orm.DESC)
 	q.Conds = orm.And(
 		orm.Eq("metadata.category", "elasticsearch"),
@@ -1161,13 +1158,13 @@ func (h *APIHandler) getIndexNodes(w http.ResponseWriter, req *http.Request, ps 
 	err, result := orm.Search(event.Event{}, q)
 	if err != nil {
 		resBody["error"] = err.Error()
-		h.WriteJSON(w,resBody, http.StatusInternalServerError )
+		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 	}
 	namesM := util.MapStr{}
 	if len(result.Result) > 0 {
 		if data, ok := result.Result[0].(map[string]interface{}); ok {
 			if routingTable, exists := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "index_routing_table"}, data); exists {
-				if table, ok := routingTable.(map[string]interface{}); ok{
+				if table, ok := routingTable.(map[string]interface{}); ok {
 					if shardsM, ok := table["shards"].(map[string]interface{}); ok {
 						for _, rows := range shardsM {
 							if rowsArr, ok := rows.([]interface{}); ok {
@@ -1189,12 +1186,12 @@ func (h *APIHandler) getIndexNodes(w http.ResponseWriter, req *http.Request, ps 
 	}
 
 	//node uuid
-	nodeIds := make([]interface{}, 0, len(namesM) )
+	nodeIds := make([]interface{}, 0, len(namesM))
 	for name, _ := range namesM {
 		nodeIds = append(nodeIds, name)
 	}
 
-	q1 := &orm.Query{ Size: 100}
+	q1 := &orm.Query{Size: 100}
 	q1.AddSort("timestamp", orm.DESC)
 	q1.Conds = orm.And(
 		orm.Eq("metadata.category", "elasticsearch"),
@@ -1204,7 +1201,7 @@ func (h *APIHandler) getIndexNodes(w http.ResponseWriter, req *http.Request, ps 
 	err, result = orm.Search(elastic.NodeConfig{}, q1)
 	if err != nil {
 		resBody["error"] = err.Error()
-		h.WriteJSON(w,resBody, http.StatusInternalServerError )
+		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 	}
 	nodes := []interface{}{}
 	for _, hit := range result.Result {
@@ -1224,11 +1221,11 @@ func (h *APIHandler) getIndexNodes(w http.ResponseWriter, req *http.Request, ps 
 
 			if v, ok := nodeId.(string); ok {
 				ninfo := util.MapStr{
-					"id": v,
-					"name": nodeName,
-					"ip": ip,
-					"port": port,
-					"status": status,
+					"id":        v,
+					"name":      nodeName,
+					"ip":        ip,
+					"port":      port,
+					"status":    status,
 					"timestamp": hitM["timestamp"],
 				}
 				nodes = append(nodes, ninfo)
@@ -1249,7 +1246,7 @@ func (h APIHandler) ListIndex(w http.ResponseWriter, req *http.Request, ps httpr
 	}
 	var must = []util.MapStr{}
 
-	if !util.StringInArray(ids, "*"){
+	if !util.StringInArray(ids, "*") {
 
 		must = append(must, util.MapStr{
 			"terms": util.MapStr{
@@ -1260,9 +1257,8 @@ func (h APIHandler) ListIndex(w http.ResponseWriter, req *http.Request, ps httpr
 
 	if keyword != "" {
 		must = append(must, util.MapStr{
-			"wildcard":util.MapStr{
-				"metadata.index_name":
-				util.MapStr{"value": fmt.Sprintf("*%s*", keyword)},
+			"wildcard": util.MapStr{
+				"metadata.index_name": util.MapStr{"value": fmt.Sprintf("*%s*", keyword)},
 			},
 		})
 	}
@@ -1288,7 +1284,6 @@ func (h APIHandler) ListIndex(w http.ResponseWriter, req *http.Request, ps httpr
 		},
 	}
 
-
 	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 	indexName := orm.GetIndexName(elastic.IndexConfig{})
 	resp, err := esClient.SearchWithRawQueryDSL(indexName, util.MustToJSONBytes(dsl))
@@ -1310,22 +1305,22 @@ func (h APIHandler) ListIndex(w http.ResponseWriter, req *http.Request, ps httpr
 	return
 }
 
-//deleteIndexMetadata used to delete index metadata after index is deleted from cluster
+// deleteIndexMetadata used to delete index metadata after index is deleted from cluster
 func (h APIHandler) deleteIndexMetadata(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 	indexName := orm.GetIndexName(elastic.IndexConfig{})
-	must :=  []util.MapStr{
+	must := []util.MapStr{
 		{
 			"term": util.MapStr{
 				"metadata.labels.state": "delete",
 			},
 		},
 	}
-	if indexFilter, hasIndexPri :=  h.getAllowedIndexFilter(req); hasIndexPri {
+	if indexFilter, hasIndexPri := h.getAllowedIndexFilter(req); hasIndexPri {
 		if indexFilter != nil {
 			must = append(must, indexFilter)
 		}
-	}else{
+	} else {
 		//has no any index permission, just return
 		h.WriteAckOKJSON(w)
 		return

@@ -28,11 +28,11 @@
 package alerting
 
 type ParameterMeta struct {
-	Name string                   `json:"name"`
-	Type string                   `json:"type"` //int, float, string, date, array, object
-	Description string            `json:"description"`
-	Eg         string          `json:"eg,omitempty"`
-	Properties []ParameterMeta `json:"properties,omitempty"`
+	Name        string          `json:"name"`
+	Type        string          `json:"type"` //int, float, string, date, array, object
+	Description string          `json:"description"`
+	Eg          string          `json:"eg,omitempty"`
+	Properties  []ParameterMeta `json:"properties,omitempty"`
 }
 
 func GetTemplateParameters() []ParameterMeta {

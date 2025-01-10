@@ -144,8 +144,8 @@ const (
 	PermissionMigrationTaskWrite  = "task:write"
 	PermissionComparisonTaskRead  = "comparison_task:read"
 	PermissionComparisonTaskWrite = "comparison_task:write"
-	PermissionSmtpServerRead = "smtp_server:read"
-	PermissionSmtpServerWrite = "smtp_server:write"
+	PermissionSmtpServerRead      = "smtp_server:read"
+	PermissionSmtpServerWrite     = "smtp_server:write"
 )
 
 var (
@@ -221,8 +221,8 @@ var (
 	DashboardAllPermission       = []string{PermissionLayoutRead, PermissionLayoutWrite}
 	WorkbenchReadPermission      = []string{PermissionElasticsearchClusterRead, PermissionActivityRead, PermissionAlertMessageRead, PermissionElasticsearchMetricRead}
 	WorkbenchAllPermission       = WorkbenchReadPermission
-	SmtpServerReadPermission      = []string{PermissionSmtpServerRead}
-	SmtpServerAllPermission       = []string{PermissionSmtpServerRead, PermissionSmtpServerWrite}
+	SmtpServerReadPermission     = []string{PermissionSmtpServerRead}
+	SmtpServerAllPermission      = []string{PermissionSmtpServerRead, PermissionSmtpServerWrite}
 )
 
 var AdminPrivilege = []string{
@@ -304,8 +304,8 @@ func init() {
 
 		SubscriptionRead: SubscriptionReadPermission,
 		SubscriptionAll:  SubscriptionAllPermission,
-		SmtpServerRead:    SmtpServerReadPermission,
-		SmtpServerAll:      SmtpServerAllPermission,
+		SmtpServerRead:   SmtpServerReadPermission,
+		SmtpServerAll:    SmtpServerAllPermission,
 	}
 
 }

@@ -35,57 +35,57 @@ import (
 )
 
 const (
-	ThreadPoolGetGroupKey    = "thread_pool_get"
-	ThreadPoolSearchGroupKey   = "thread_pool_search"
-	ThreadPoolFlushGroupKey   = "thread_pool_flush"
-	ThreadPoolRefreshGroupKey     = "thread_pool_refresh"
+	ThreadPoolGetGroupKey        = "thread_pool_get"
+	ThreadPoolSearchGroupKey     = "thread_pool_search"
+	ThreadPoolFlushGroupKey      = "thread_pool_flush"
+	ThreadPoolRefreshGroupKey    = "thread_pool_refresh"
 	ThreadPoolWriteGroupKey      = "thread_pool_write"
 	ThreadPoolForceMergeGroupKey = "thread_pool_force_merge"
-	ThreadPoolIndexGroupKey = "thread_pool_index"
-	ThreadPoolBulkGroupKey  = "thread_pool_bulk"
+	ThreadPoolIndexGroupKey      = "thread_pool_index"
+	ThreadPoolBulkGroupKey       = "thread_pool_bulk"
 )
 
 const (
-	SearchThreadsMetricKey = "search_threads"
-	IndexThreadsMetricKey  = "index_threads"
-	BulkThreadsMetricKey  = "bulk_threads"
-	FlushThreadsMetricKey = "flush_threads"
-	RefreshThreadsMetricKey  = "refresh_threads"
-	WriteThreadsMetricKey = "write_threads"
-	ForceMergeThreadsMetricKey = "force_merge_threads"
-	SearchQueueMetricKey = "search_queue"
-	IndexQueueMetricKey  = "index_queue"
-	BulkQueueMetricKey  = "bulk_queue"
-	FlushQueueMetricKey = "flush_queue"
-	RefreshQueueMetricKey  = "refresh_queue"
-	WriteQueueMetricKey = "write_queue"
-	SearchActiveMetricKey = "search_active"
-	IndexActiveMetricKey  = "index_active"
-	BulkActiveMetricKey  = "bulk_active"
-	FlushActiveMetricKey = "flush_active"
-	WriteActiveMetricKey = "write_active"
-	ForceMergeActiveMetricKey = "force_merge_active"
-	SearchRejectedMetricKey = "search_rejected"
-	IndexRejectedMetricKey  = "index_rejected"
-	BulkRejectedMetricKey  = "bulk_rejected"
-	FlushRejectedMetricKey = "flush_rejected"
-	WriteRejectedMetricKey = "write_rejected"
+	SearchThreadsMetricKey      = "search_threads"
+	IndexThreadsMetricKey       = "index_threads"
+	BulkThreadsMetricKey        = "bulk_threads"
+	FlushThreadsMetricKey       = "flush_threads"
+	RefreshThreadsMetricKey     = "refresh_threads"
+	WriteThreadsMetricKey       = "write_threads"
+	ForceMergeThreadsMetricKey  = "force_merge_threads"
+	SearchQueueMetricKey        = "search_queue"
+	IndexQueueMetricKey         = "index_queue"
+	BulkQueueMetricKey          = "bulk_queue"
+	FlushQueueMetricKey         = "flush_queue"
+	RefreshQueueMetricKey       = "refresh_queue"
+	WriteQueueMetricKey         = "write_queue"
+	SearchActiveMetricKey       = "search_active"
+	IndexActiveMetricKey        = "index_active"
+	BulkActiveMetricKey         = "bulk_active"
+	FlushActiveMetricKey        = "flush_active"
+	WriteActiveMetricKey        = "write_active"
+	ForceMergeActiveMetricKey   = "force_merge_active"
+	SearchRejectedMetricKey     = "search_rejected"
+	IndexRejectedMetricKey      = "index_rejected"
+	BulkRejectedMetricKey       = "bulk_rejected"
+	FlushRejectedMetricKey      = "flush_rejected"
+	WriteRejectedMetricKey      = "write_rejected"
 	ForceMergeRejectedMetricKey = "force_merge_rejected"
-	GetThreadsMetricKey = "get_threads"
-	GetQueueMetricKey = "get_queue"
-	GetActiveMetricKey = "get_active"
-	GetRejectedMetricKey = "get_rejected"
-	RefreshActiveMetricKey = "refresh_active"
-	RefreshRejectedMetricKey = "refresh_rejected"
-	ForceMergeQueueMetricKey = "force_merge_queue"
+	GetThreadsMetricKey         = "get_threads"
+	GetQueueMetricKey           = "get_queue"
+	GetActiveMetricKey          = "get_active"
+	GetRejectedMetricKey        = "get_rejected"
+	RefreshActiveMetricKey      = "refresh_active"
+	RefreshRejectedMetricKey    = "refresh_rejected"
+	ForceMergeQueueMetricKey    = "force_merge_queue"
 )
 
-func (h *APIHandler) getThreadPoolMetrics(ctx context.Context, clusterID string, bucketSize int, min, max int64, nodeName string, top int, metricKey string) (map[string]*common.MetricItem, error){
+func (h *APIHandler) getThreadPoolMetrics(ctx context.Context, clusterID string, bucketSize int, min, max int64, nodeName string, top int, metricKey string) (map[string]*common.MetricItem, error) {
 	clusterUUID, err := h.getClusterUUID(clusterID)
 	if err != nil {
 		return nil, err
 	}
-	bucketSizeStr:=fmt.Sprintf("%vs",bucketSize)
+	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 	var must = []util.MapStr{
 		{
 			"term": util.MapStr{
@@ -108,7 +108,7 @@ func (h *APIHandler) getThreadPoolMetrics(ctx context.Context, clusterID string,
 	if nodeName != "" {
 		nodeNames = strings.Split(nodeName, ",")
 		top = len(nodeNames)
-	}else{
+	} else {
 		nodeNames, err = h.getTopNodeName(clusterID, top, 15)
 		if err != nil {
 			log.Error(err)
@@ -131,10 +131,9 @@ func (h *APIHandler) getThreadPoolMetrics(ctx context.Context, clusterID string,
 					},
 				},
 			},
-
 		})
 	}
-	should :=  []util.MapStr{
+	should := []util.MapStr{
 		{
 			"term": util.MapStr{
 				"metadata.labels.cluster_id": util.MapStr{
@@ -143,20 +142,20 @@ func (h *APIHandler) getThreadPoolMetrics(ctx context.Context, clusterID string,
 			},
 		},
 		{
-			"term":util.MapStr{
-				"metadata.labels.cluster_uuid":util.MapStr{
+			"term": util.MapStr{
+				"metadata.labels.cluster_uuid": util.MapStr{
 					"value": clusterUUID,
 				},
 			},
 		},
 	}
 
-	query:=map[string]interface{}{}
-	query["query"]=util.MapStr{
+	query := map[string]interface{}{}
+	query["query"] = util.MapStr{
 		"bool": util.MapStr{
-			"must": must,
+			"must":                 must,
 			"minimum_should_match": 1,
-			"should": should,
+			"should":               should,
 			"filter": []util.MapStr{
 				{
 					"range": util.MapStr{
@@ -173,159 +172,159 @@ func (h *APIHandler) getThreadPoolMetrics(ctx context.Context, clusterID string,
 	switch metricKey {
 	case SearchThreadsMetricKey:
 		searchThreadsMetric := newMetricItem(SearchThreadsMetricKey, 1, ThreadPoolSearchGroupKey)
-		searchThreadsMetric.AddAxi("Search Threads Count","group1",common.PositionLeft,"num","0.[0]","0.[0]",5,true)
+		searchThreadsMetric.AddAxi("Search Threads Count", "group1", common.PositionLeft, "num", "0.[0]", "0.[0]", 5, true)
 		queueMetricItems = append(queueMetricItems, GroupMetricItem{
-			Key: "search_threads",
-			Field: "payload.elasticsearch.node_stats.thread_pool.search.threads",
-			ID: util.GetUUID(),
+			Key:          "search_threads",
+			Field:        "payload.elasticsearch.node_stats.thread_pool.search.threads",
+			ID:           util.GetUUID(),
 			IsDerivative: false,
-			MetricItem: searchThreadsMetric,
-			FormatType: "num",
-			Units: "",
+			MetricItem:   searchThreadsMetric,
+			FormatType:   "num",
+			Units:        "",
 		})
 	case SearchQueueMetricKey:
 		searchQueueMetric := newMetricItem(SearchQueueMetricKey, 1, ThreadPoolSearchGroupKey)
-		searchQueueMetric.AddAxi("Search Queue Count","group1",common.PositionLeft,"num","0.[0]","0.[0]",5,true)
+		searchQueueMetric.AddAxi("Search Queue Count", "group1", common.PositionLeft, "num", "0.[0]", "0.[0]", 5, true)
 
 		queueMetricItems = append(queueMetricItems, GroupMetricItem{
-			Key: "search_queue",
-			Field: "payload.elasticsearch.node_stats.thread_pool.search.queue",
-			ID: util.GetUUID(),
+			Key:          "search_queue",
+			Field:        "payload.elasticsearch.node_stats.thread_pool.search.queue",
+			ID:           util.GetUUID(),
 			IsDerivative: false,
-			MetricItem: searchQueueMetric,
-			FormatType: "num",
-			Units: "",
+			MetricItem:   searchQueueMetric,
+			FormatType:   "num",
+			Units:        "",
 		})
 	case SearchActiveMetricKey:
 		searchActiveMetric := newMetricItem(SearchActiveMetricKey, 1, ThreadPoolSearchGroupKey)
-		searchActiveMetric.AddAxi("Search Active Count","group1",common.PositionLeft,"num","0.[0]","0.[0]",5,true)
+		searchActiveMetric.AddAxi("Search Active Count", "group1", common.PositionLeft, "num", "0.[0]", "0.[0]", 5, true)
 
 		queueMetricItems = append(queueMetricItems, GroupMetricItem{
-			Key: "search_active",
-			Field: "payload.elasticsearch.node_stats.thread_pool.search.active",
-			ID: util.GetUUID(),
+			Key:          "search_active",
+			Field:        "payload.elasticsearch.node_stats.thread_pool.search.active",
+			ID:           util.GetUUID(),
 			IsDerivative: false,
-			MetricItem: searchActiveMetric,
-			FormatType: "num",
-			Units: "",
+			MetricItem:   searchActiveMetric,
+			FormatType:   "num",
+			Units:        "",
 		})
 	case SearchRejectedMetricKey:
 		searchRejectedMetric := newMetricItem(SearchRejectedMetricKey, 1, ThreadPoolSearchGroupKey)
-		searchRejectedMetric.AddAxi("Search Rejected Count","group1",common.PositionLeft,"num","0.[0]","0.[0]",5,true)
+		searchRejectedMetric.AddAxi("Search Rejected Count", "group1", common.PositionLeft, "num", "0.[0]", "0.[0]", 5, true)
 
 		queueMetricItems = append(queueMetricItems, GroupMetricItem{
-			Key: "search_rejected",
-			Field: "payload.elasticsearch.node_stats.thread_pool.search.rejected",
-			ID: util.GetUUID(),
+			Key:          "search_rejected",
+			Field:        "payload.elasticsearch.node_stats.thread_pool.search.rejected",
+			ID:           util.GetUUID(),
 			IsDerivative: true,
-			MetricItem: searchRejectedMetric,
-			FormatType: "num",
-			Units: "rejected/s",
+			MetricItem:   searchRejectedMetric,
+			FormatType:   "num",
+			Units:        "rejected/s",
 		})
 	case GetThreadsMetricKey:
 		getThreadsMetric := newMetricItem(GetThreadsMetricKey, 1, ThreadPoolGetGroupKey)
-		getThreadsMetric.AddAxi("Get Threads Count","group1",common.PositionLeft,"num","0.[0]","0.[0]",5,true)
+		getThreadsMetric.AddAxi("Get Threads Count", "group1", common.PositionLeft, "num", "0.[0]", "0.[0]", 5, true)
 
 		queueMetricItems = append(queueMetricItems, GroupMetricItem{
-			Key: "get_threads",
-			Field: "payload.elasticsearch.node_stats.thread_pool.get.threads",
-			ID: util.GetUUID(),
+			Key:          "get_threads",
+			Field:        "payload.elasticsearch.node_stats.thread_pool.get.threads",
+			ID:           util.GetUUID(),
 			IsDerivative: false,
-			MetricItem: getThreadsMetric,
-			FormatType: "num",
-			Units: "",
+			MetricItem:   getThreadsMetric,
+			FormatType:   "num",
+			Units:        "",
 		})
 	case GetQueueMetricKey:
 		getQueueMetric := newMetricItem(GetQueueMetricKey, 1, ThreadPoolGetGroupKey)
-		getQueueMetric.AddAxi("Get Queue Count","group1",common.PositionLeft,"num","0.[0]","0.[0]",5,true)
+		getQueueMetric.AddAxi("Get Queue Count", "group1", common.PositionLeft, "num", "0.[0]", "0.[0]", 5, true)
 
 		queueMetricItems = append(queueMetricItems, GroupMetricItem{
-			Key: "get_queue",
-			Field: "payload.elasticsearch.node_stats.thread_pool.get.queue",
-			ID: util.GetUUID(),
+			Key:          "get_queue",
+			Field:        "payload.elasticsearch.node_stats.thread_pool.get.queue",
+			ID:           util.GetUUID(),
 			IsDerivative: false,
-			MetricItem: getQueueMetric,
-			FormatType: "num",
-			Units: "",
+			MetricItem:   getQueueMetric,
+			FormatType:   "num",
+			Units:        "",
 		})
 	case GetActiveMetricKey:
 		getActiveMetric := newMetricItem(GetActiveMetricKey, 1, ThreadPoolGetGroupKey)
-		getActiveMetric.AddAxi("Get Active Count","group1",common.PositionLeft,"num","0.[0]","0.[0]",5,true)
+		getActiveMetric.AddAxi("Get Active Count", "group1", common.PositionLeft, "num", "0.[0]", "0.[0]", 5, true)
 
 		queueMetricItems = append(queueMetricItems, GroupMetricItem{
-			Key: "get_active",
-			Field: "payload.elasticsearch.node_stats.thread_pool.get.active",
-			ID: util.GetUUID(),
+			Key:          "get_active",
+			Field:        "payload.elasticsearch.node_stats.thread_pool.get.active",
+			ID:           util.GetUUID(),
 			IsDerivative: false,
-			MetricItem: getActiveMetric,
-			FormatType: "num",
-			Units: "",
+			MetricItem:   getActiveMetric,
+			FormatType:   "num",
+			Units:        "",
 		})
 	case GetRejectedMetricKey:
 		getRejectedMetric := newMetricItem(GetRejectedMetricKey, 1, ThreadPoolGetGroupKey)
-		getRejectedMetric.AddAxi("Get Rejected Count","group1",common.PositionLeft,"num","0.[0]","0.[0]",5,true)
+		getRejectedMetric.AddAxi("Get Rejected Count", "group1", common.PositionLeft, "num", "0.[0]", "0.[0]", 5, true)
 
 		queueMetricItems = append(queueMetricItems, GroupMetricItem{
-			Key: "get_rejected",
-			Field: "payload.elasticsearch.node_stats.thread_pool.get.rejected",
-			ID: util.GetUUID(),
+			Key:          "get_rejected",
+			Field:        "payload.elasticsearch.node_stats.thread_pool.get.rejected",
+			ID:           util.GetUUID(),
 			IsDerivative: true,
-			MetricItem: getRejectedMetric,
-			FormatType: "num",
-			Units: "rejected/s",
+			MetricItem:   getRejectedMetric,
+			FormatType:   "num",
+			Units:        "rejected/s",
 		})
 	case FlushThreadsMetricKey:
 		flushThreadsMetric := newMetricItem(FlushThreadsMetricKey, 1, ThreadPoolFlushGroupKey)
-		flushThreadsMetric.AddAxi("Flush Threads Count","group1",common.PositionLeft,"num","0.[0]","0.[0]",5,true)
+		flushThreadsMetric.AddAxi("Flush Threads Count", "group1", common.PositionLeft, "num", "0.[0]", "0.[0]", 5, true)
 
 		queueMetricItems = append(queueMetricItems, GroupMetricItem{
-			Key: "flush_threads",
-			Field: "payload.elasticsearch.node_stats.thread_pool.flush.threads",
-			ID: util.GetUUID(),
+			Key:          "flush_threads",
+			Field:        "payload.elasticsearch.node_stats.thread_pool.flush.threads",
+			ID:           util.GetUUID(),
 			IsDerivative: false,
-			MetricItem: flushThreadsMetric,
-			FormatType: "num",
-			Units: "",
+			MetricItem:   flushThreadsMetric,
+			FormatType:   "num",
+			Units:        "",
 		})
 	case FlushQueueMetricKey:
 		flushQueueMetric := newMetricItem(FlushQueueMetricKey, 1, ThreadPoolFlushGroupKey)
-		flushQueueMetric.AddAxi("Get Queue Count","group1",common.PositionLeft,"num","0.[0]","0.[0]",5,true)
+		flushQueueMetric.AddAxi("Get Queue Count", "group1", common.PositionLeft, "num", "0.[0]", "0.[0]", 5, true)
 
 		queueMetricItems = append(queueMetricItems, GroupMetricItem{
-			Key: "flush_queue",
-			Field: "payload.elasticsearch.node_stats.thread_pool.flush.queue",
-			ID: util.GetUUID(),
+			Key:          "flush_queue",
+			Field:        "payload.elasticsearch.node_stats.thread_pool.flush.queue",
+			ID:           util.GetUUID(),
 			IsDerivative: false,
-			MetricItem: flushQueueMetric,
-			FormatType: "num",
-			Units: "",
+			MetricItem:   flushQueueMetric,
+			FormatType:   "num",
+			Units:        "",
 		})
 	case FlushActiveMetricKey:
 		flushActiveMetric := newMetricItem(FlushActiveMetricKey, 1, ThreadPoolFlushGroupKey)
-		flushActiveMetric.AddAxi("Flush Active Count","group1",common.PositionLeft,"num","0.[0]","0.[0]",5,true)
+		flushActiveMetric.AddAxi("Flush Active Count", "group1", common.PositionLeft, "num", "0.[0]", "0.[0]", 5, true)
 
 		queueMetricItems = append(queueMetricItems, GroupMetricItem{
-			Key: "flush_active",
-			Field: "payload.elasticsearch.node_stats.thread_pool.flush.active",
-			ID: util.GetUUID(),
+			Key:          "flush_active",
+			Field:        "payload.elasticsearch.node_stats.thread_pool.flush.active",
+			ID:           util.GetUUID(),
 			IsDerivative: false,
-			MetricItem: flushActiveMetric,
-			FormatType: "num",
-			Units: "",
+			MetricItem:   flushActiveMetric,
+			FormatType:   "num",
+			Units:        "",
 		})
 
 	case FlushRejectedMetricKey:
 		flushRejectedMetric := newMetricItem(FlushRejectedMetricKey, 1, ThreadPoolFlushGroupKey)
-		flushRejectedMetric.AddAxi("Flush Rejected Count","group1",common.PositionLeft,"num","0.[0]","0.[0]",5,true)
+		flushRejectedMetric.AddAxi("Flush Rejected Count", "group1", common.PositionLeft, "num", "0.[0]", "0.[0]", 5, true)
 
 		queueMetricItems = append(queueMetricItems, GroupMetricItem{
-			Key: "flush_rejected",
-			Field: "payload.elasticsearch.node_stats.thread_pool.flush.rejected",
-			ID: util.GetUUID(),
+			Key:          "flush_rejected",
+			Field:        "payload.elasticsearch.node_stats.thread_pool.flush.rejected",
+			ID:           util.GetUUID(),
 			IsDerivative: true,
-			MetricItem: flushRejectedMetric,
-			FormatType: "num",
-			Units: "rejected/s",
+			MetricItem:   flushRejectedMetric,
+			FormatType:   "num",
+			Units:        "rejected/s",
 		})
 	case IndexThreadsMetricKey:
 		indexThreadsMetric := newMetricItem(IndexThreadsMetricKey, 1, ThreadPoolIndexGroupKey)
@@ -485,137 +484,136 @@ func (h *APIHandler) getThreadPoolMetrics(ctx context.Context, clusterID string,
 		})
 	case RefreshThreadsMetricKey:
 		refreshThreadsMetric := newMetricItem(RefreshThreadsMetricKey, 1, ThreadPoolRefreshGroupKey)
-		refreshThreadsMetric.AddAxi("Refresh Threads Count","group1",common.PositionLeft,"num","0.[0]","0.[0]",5,true)
+		refreshThreadsMetric.AddAxi("Refresh Threads Count", "group1", common.PositionLeft, "num", "0.[0]", "0.[0]", 5, true)
 
 		queueMetricItems = append(queueMetricItems, GroupMetricItem{
-			Key: "refresh_threads",
-			Field: "payload.elasticsearch.node_stats.thread_pool.refresh.threads",
-			ID: util.GetUUID(),
+			Key:          "refresh_threads",
+			Field:        "payload.elasticsearch.node_stats.thread_pool.refresh.threads",
+			ID:           util.GetUUID(),
 			IsDerivative: false,
-			MetricItem: refreshThreadsMetric,
-			FormatType: "num",
-			Units: "",
+			MetricItem:   refreshThreadsMetric,
+			FormatType:   "num",
+			Units:        "",
 		})
 	case RefreshQueueMetricKey:
 		refreshQueueMetric := newMetricItem(RefreshQueueMetricKey, 1, ThreadPoolRefreshGroupKey)
-		refreshQueueMetric.AddAxi("Refresh Queue Count","group1",common.PositionLeft,"num","0.[0]","0.[0]",5,true)
+		refreshQueueMetric.AddAxi("Refresh Queue Count", "group1", common.PositionLeft, "num", "0.[0]", "0.[0]", 5, true)
 
 		queueMetricItems = append(queueMetricItems, GroupMetricItem{
-			Key: "refresh_queue",
-			Field: "payload.elasticsearch.node_stats.thread_pool.refresh.queue",
-			ID: util.GetUUID(),
+			Key:          "refresh_queue",
+			Field:        "payload.elasticsearch.node_stats.thread_pool.refresh.queue",
+			ID:           util.GetUUID(),
 			IsDerivative: false,
-			MetricItem: refreshQueueMetric,
-			FormatType: "num",
-			Units: "",
+			MetricItem:   refreshQueueMetric,
+			FormatType:   "num",
+			Units:        "",
 		})
 	case RefreshActiveMetricKey:
 		refreshActiveMetric := newMetricItem(RefreshActiveMetricKey, 1, ThreadPoolRefreshGroupKey)
-		refreshActiveMetric.AddAxi("Refresh Active Count","group1",common.PositionLeft,"num","0.[0]","0.[0]",5,true)
+		refreshActiveMetric.AddAxi("Refresh Active Count", "group1", common.PositionLeft, "num", "0.[0]", "0.[0]", 5, true)
 
 		queueMetricItems = append(queueMetricItems, GroupMetricItem{
-			Key: "refresh_active",
-			Field: "payload.elasticsearch.node_stats.thread_pool.refresh.active",
-			ID: util.GetUUID(),
+			Key:          "refresh_active",
+			Field:        "payload.elasticsearch.node_stats.thread_pool.refresh.active",
+			ID:           util.GetUUID(),
 			IsDerivative: false,
-			MetricItem: refreshActiveMetric,
-			FormatType: "num",
-			Units: "",
+			MetricItem:   refreshActiveMetric,
+			FormatType:   "num",
+			Units:        "",
 		})
 	case RefreshRejectedMetricKey:
 		refreshRejectedMetric := newMetricItem(RefreshRejectedMetricKey, 1, ThreadPoolRefreshGroupKey)
-		refreshRejectedMetric.AddAxi("Refresh Rejected Count","group1",common.PositionLeft,"num","0.[0]","0.[0]",5,true)
+		refreshRejectedMetric.AddAxi("Refresh Rejected Count", "group1", common.PositionLeft, "num", "0.[0]", "0.[0]", 5, true)
 
 		queueMetricItems = append(queueMetricItems, GroupMetricItem{
-			Key: "refresh_rejected",
-			Field: "payload.elasticsearch.node_stats.thread_pool.refresh.rejected",
-			ID: util.GetUUID(),
+			Key:          "refresh_rejected",
+			Field:        "payload.elasticsearch.node_stats.thread_pool.refresh.rejected",
+			ID:           util.GetUUID(),
 			IsDerivative: true,
-			MetricItem: refreshRejectedMetric,
-			FormatType: "num",
-			Units: "rejected/s",
+			MetricItem:   refreshRejectedMetric,
+			FormatType:   "num",
+			Units:        "rejected/s",
 		})
 	case ForceMergeThreadsMetricKey:
 		forceMergeThreadsMetric := newMetricItem(ForceMergeThreadsMetricKey, 1, ThreadPoolForceMergeGroupKey)
-		forceMergeThreadsMetric.AddAxi("Force Merge Threads Count","group1",common.PositionLeft,"num","0.[0]","0.[0]",5,true)
+		forceMergeThreadsMetric.AddAxi("Force Merge Threads Count", "group1", common.PositionLeft, "num", "0.[0]", "0.[0]", 5, true)
 
 		queueMetricItems = append(queueMetricItems, GroupMetricItem{
-			Key: "force_merge_threads",
-			Field: "payload.elasticsearch.node_stats.thread_pool.force_merge.threads",
-			ID: util.GetUUID(),
+			Key:          "force_merge_threads",
+			Field:        "payload.elasticsearch.node_stats.thread_pool.force_merge.threads",
+			ID:           util.GetUUID(),
 			IsDerivative: false,
-			MetricItem: forceMergeThreadsMetric,
-			FormatType: "num",
-			Units: "",
+			MetricItem:   forceMergeThreadsMetric,
+			FormatType:   "num",
+			Units:        "",
 		})
 	case ForceMergeQueueMetricKey:
 		forceMergeQueueMetric := newMetricItem(ForceMergeQueueMetricKey, 1, ThreadPoolForceMergeGroupKey)
-		forceMergeQueueMetric.AddAxi("Force Merge Queue Count","group1",common.PositionLeft,"num","0.[0]","0.[0]",5,true)
+		forceMergeQueueMetric.AddAxi("Force Merge Queue Count", "group1", common.PositionLeft, "num", "0.[0]", "0.[0]", 5, true)
 
 		queueMetricItems = append(queueMetricItems, GroupMetricItem{
-			Key: "force_merge_queue",
-			Field: "payload.elasticsearch.node_stats.thread_pool.force_merge.queue",
-			ID: util.GetUUID(),
+			Key:          "force_merge_queue",
+			Field:        "payload.elasticsearch.node_stats.thread_pool.force_merge.queue",
+			ID:           util.GetUUID(),
 			IsDerivative: false,
-			MetricItem: forceMergeQueueMetric,
-			FormatType: "num",
-			Units: "",
+			MetricItem:   forceMergeQueueMetric,
+			FormatType:   "num",
+			Units:        "",
 		})
 	case ForceMergeActiveMetricKey:
 		forceMergeActiveMetric := newMetricItem(ForceMergeActiveMetricKey, 1, ThreadPoolForceMergeGroupKey)
-		forceMergeActiveMetric.AddAxi("Force Merge Active Count","group1",common.PositionLeft,"num","0.[0]","0.[0]",5,true)
+		forceMergeActiveMetric.AddAxi("Force Merge Active Count", "group1", common.PositionLeft, "num", "0.[0]", "0.[0]", 5, true)
 
 		queueMetricItems = append(queueMetricItems, GroupMetricItem{
-			Key: "force_merge_active",
-			Field: "payload.elasticsearch.node_stats.thread_pool.force_merge.active",
-			ID: util.GetUUID(),
+			Key:          "force_merge_active",
+			Field:        "payload.elasticsearch.node_stats.thread_pool.force_merge.active",
+			ID:           util.GetUUID(),
 			IsDerivative: false,
-			MetricItem: forceMergeActiveMetric,
-			FormatType: "num",
-			Units: "",
+			MetricItem:   forceMergeActiveMetric,
+			FormatType:   "num",
+			Units:        "",
 		})
 	case ForceMergeRejectedMetricKey:
 		forceMergeRejectedMetric := newMetricItem(ForceMergeRejectedMetricKey, 1, ThreadPoolForceMergeGroupKey)
-		forceMergeRejectedMetric.AddAxi("Force Merge Rejected Count","group1",common.PositionLeft,"num","0.[0]","0.[0]",5,true)
+		forceMergeRejectedMetric.AddAxi("Force Merge Rejected Count", "group1", common.PositionLeft, "num", "0.[0]", "0.[0]", 5, true)
 
 		queueMetricItems = append(queueMetricItems, GroupMetricItem{
-			Key: "force_merge_rejected",
-			Field: "payload.elasticsearch.node_stats.thread_pool.force_merge.rejected",
-			ID: util.GetUUID(),
+			Key:          "force_merge_rejected",
+			Field:        "payload.elasticsearch.node_stats.thread_pool.force_merge.rejected",
+			ID:           util.GetUUID(),
 			IsDerivative: true,
-			MetricItem: forceMergeRejectedMetric,
-			FormatType: "num",
-			Units: "rejected/s",
+			MetricItem:   forceMergeRejectedMetric,
+			FormatType:   "num",
+			Units:        "rejected/s",
 		})
 	}
 
-
 	//Get Thread Pool queue
-	aggs:=map[string]interface{}{}
+	aggs := map[string]interface{}{}
 
-	for _,metricItem:=range queueMetricItems{
-		aggs[metricItem.ID]=util.MapStr{
-			"max":util.MapStr{
+	for _, metricItem := range queueMetricItems {
+		aggs[metricItem.ID] = util.MapStr{
+			"max": util.MapStr{
 				"field": metricItem.Field,
 			},
 		}
 		if metricItem.Field2 != "" {
-			aggs[metricItem.ID + "_field2"]=util.MapStr{
-				"max":util.MapStr{
+			aggs[metricItem.ID+"_field2"] = util.MapStr{
+				"max": util.MapStr{
 					"field": metricItem.Field2,
 				},
 			}
 		}
 
-		if metricItem.IsDerivative{
-			aggs[metricItem.ID+"_deriv"]=util.MapStr{
-				"derivative":util.MapStr{
+		if metricItem.IsDerivative {
+			aggs[metricItem.ID+"_deriv"] = util.MapStr{
+				"derivative": util.MapStr{
 					"buckets_path": metricItem.ID,
 				},
 			}
 			if metricItem.Field2 != "" {
-				aggs[metricItem.ID + "_field2_deriv"]=util.MapStr{
-					"derivative":util.MapStr{
+				aggs[metricItem.ID+"_field2_deriv"] = util.MapStr{
+					"derivative": util.MapStr{
 						"buckets_path": metricItem.ID + "_field2",
 					},
 				}
@@ -628,8 +626,8 @@ func (h *APIHandler) getThreadPoolMetrics(ctx context.Context, clusterID string,
 		panic(err)
 	}
 
-	query["size"]=0
-	query["aggs"]= util.MapStr{
+	query["size"] = 0
+	query["aggs"] = util.MapStr{
 		"group_by_level": util.MapStr{
 			"terms": util.MapStr{
 				"field": "metadata.labels.transport_address",
@@ -637,11 +635,11 @@ func (h *APIHandler) getThreadPoolMetrics(ctx context.Context, clusterID string,
 			},
 			"aggs": util.MapStr{
 				"dates": util.MapStr{
-					"date_histogram":util.MapStr{
-						"field": "timestamp",
+					"date_histogram": util.MapStr{
+						"field":       "timestamp",
 						intervalField: bucketSizeStr,
 					},
-					"aggs":aggs,
+					"aggs": aggs,
 				},
 			},
 		},

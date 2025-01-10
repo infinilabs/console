@@ -33,9 +33,9 @@ import (
 	"net/http"
 )
 
-func (h *APIHandler) HandleAliasAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
+func (h *APIHandler) HandleAliasAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	targetClusterID := ps.ByName("id")
-	exists,client,err:=h.GetClusterClient(targetClusterID)
+	exists, client, err := h.GetClusterClient(targetClusterID)
 
 	if err != nil {
 		log.Error(err)
@@ -43,8 +43,8 @@ func (h *APIHandler) HandleAliasAction(w http.ResponseWriter, req *http.Request,
 		return
 	}
 
-	if !exists{
-		errStr := fmt.Sprintf("cluster [%s] not found",targetClusterID)
+	if !exists {
+		errStr := fmt.Sprintf("cluster [%s] not found", targetClusterID)
 		log.Error(errStr)
 		h.WriteError(w, errStr, http.StatusInternalServerError)
 		return

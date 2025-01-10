@@ -37,7 +37,7 @@ import (
 	log "src/github.com/cihub/seelog"
 )
 
-func GetEnvVariables() (map[string]interface{}, error){
+func GetEnvVariables() (map[string]interface{}, error) {
 	configFile := global.Env().GetConfigFile()
 	envVariables, err := config.LoadEnvVariables(configFile)
 	if err != nil {
@@ -64,7 +64,7 @@ func GetEnvVariables() (map[string]interface{}, error){
 	return envVariables, nil
 }
 
-func GetInnerConsoleEndpoint() (string, error){
+func GetInnerConsoleEndpoint() (string, error) {
 	appConfig := &config2.AppConfig{
 		UI: config2.UIConfig{},
 	}

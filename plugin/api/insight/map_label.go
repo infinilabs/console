@@ -70,8 +70,8 @@ func (h *InsightAPI) renderMapLabelTemplate(w http.ResponseWriter, req *http.Req
 				kv := strings.Split(part, "=")
 				if len(kv) == 2 {
 					k := strings.TrimSpace(kv[0])
-					kvs[k]= strings.TrimSpace(kv[1])
-				}else{
+					kvs[k] = strings.TrimSpace(kv[1])
+				} else {
 					log.Debugf("got unexpected directory part: %s", part)
 				}
 			}
@@ -93,7 +93,7 @@ func (h *InsightAPI) renderMapLabelTemplate(w http.ResponseWriter, req *http.Req
 				}
 
 			}
-			valueField =  kvs["property"]
+			valueField = kvs["property"]
 			if indexName == "" || keyField == "" || valueField == "" {
 				return kvs["default"]
 			}
@@ -107,7 +107,7 @@ func (h *InsightAPI) renderMapLabelTemplate(w http.ResponseWriter, req *http.Req
 			}
 			var (
 				cacheLabels map[string]string
-				ok bool
+				ok          bool
 			)
 			if cacheLabels, ok = cacheLabelsMap[cacheKey]; !ok {
 				var keyFieldValues []string
@@ -120,7 +120,7 @@ func (h *InsightAPI) renderMapLabelTemplate(w http.ResponseWriter, req *http.Req
 				cacheLabels, err = common2.GetLabelMaps(indexName, keyField, valueField, client, keyFieldValues, len(keyFieldValues))
 				if err != nil {
 					log.Error(err)
-				}else{
+				} else {
 					cacheLabelsMap[cacheKey] = cacheLabels
 				}
 			}
@@ -155,10 +155,10 @@ func (h *InsightAPI) renderMapLabelTemplate(w http.ResponseWriter, req *http.Req
 
 type RenderTemplateRequest struct {
 	Contexts []RenderTemplateContext `json:"contexts"`
-	Template string `json:"template"`
+	Template string                  `json:"template"`
 }
 
 type RenderTemplateContext struct {
-	Key string `json:"key"`
+	Key   string                 `json:"key"`
 	Value map[string]interface{} `json:"value"`
 }

@@ -35,10 +35,10 @@ import (
 	"strconv"
 )
 
-func toFixed(precision int, num float64) float64{
+func toFixed(precision int, num float64) float64 {
 	return util.ToFixed(num, precision)
 }
-func add(a, b interface{}) float64{
+func add(a, b interface{}) float64 {
 	av := ToFloat64(a)
 	bv := ToFloat64(b)
 	return av + bv

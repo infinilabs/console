@@ -222,7 +222,7 @@ export default (props) => {
             setLoading(false);
             return;
           }
-          const newData = res.map((item) => Array.isArray(item) ? item : []);
+          const newData = res.map((item) => Array.isArray(item.data) ? item.data : []);
           let group_mapping
           if (is_layered) {
             group_mapping = group_labels[layer_index]

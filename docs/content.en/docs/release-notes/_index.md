@@ -16,7 +16,7 @@ Information about release notes of INFINI Console is provided here.
 - Add index metrics for segment memory (norms, points, version map, fixed bit set).
 - Support querying top N metrics in the Insight Data Query API
 - Add insight metric CURD API for managing custom metrics
-- Add builtin metrics templates for common use cases
+- Add built-in metrics templates for common use cases
 ### Bug fix
 - Fixed query thread pool metrics when cluster uuid is empty
 - Fixed unit tests

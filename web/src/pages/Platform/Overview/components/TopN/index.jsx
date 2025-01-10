@@ -1,7 +1,7 @@
 
 import TreemapSvg from "@/components/Icons/Treemap"
 import styles from "./index.less"
-import { Button, Icon, Input, InputNumber, Popover, Radio, Select, Spin } from "antd";
+import { Button, Icon, Input, InputNumber, message, Popover, Radio, Select, Spin, Tooltip } from "antd";
 import { formatMessage } from "umi/locale";
 import ConvertSvg from "@/components/Icons/Convert"
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -12,14 +12,7 @@ import GradientColorPicker from "./GradientColorPicker";
 import { cloneDeep } from "lodash";
 import request from "@/utils/request";
 import { formatTimeRange } from "@/lib/elasticsearch/util";
-import { autoFormatUnitForBytes, formatNumberData, formatPercentData } from "./utils";
 import { CopyToClipboard } from "react-copy-to-clipboard";
-
-const formatters = {
-  'number': formatNumberData,
-  'bytes': autoFormatUnitForBytes,
-  'percent': formatPercentData
-}
 
 export default (props) => {
 
@@ -31,8 +24,6 @@ export default (props) => {
 
     const [formData, setFormData] = useState({
         top: 15,
-        // statisticArea: 'rate',
-        // statisticColor: 'max',
         colors: ['#00bb1b', '#fcca00', '#ff4d4f']
     })
 
@@ -41,6 +32,7 @@ export default (props) => {
     const [loading, setLoading] = useState(false)
     const [data, setData] = useState([])
     const [result, setResult] = useState()
+    const searchParamsRef = useRef()
 
     const fetchMetrics = async (type) => {
         setLoading(true)
@@ -63,11 +55,14 @@ export default (props) => {
         setLoading(false)
     }
 
-    const fetchData = async (type, clusterID, timeRange, formData) => {
+    const fetchData = async (type, clusterID, timeRange, formData, shouldLoading = true) => {
         if (!clusterID || !timeRange || !formData.sourceArea) return;
-        setLoading(true)
+        if (shouldLoading) {
+            setLoading(true)
+        }
         const { top, sourceArea = {}, statisticArea, statisticColor, sourceColor = {} } = formData
         const newTimeRange = formatTimeRange(timeRange);
+        searchParamsRef.current = { type, clusterID, formData }
         const body = {
             "index_pattern": ".infini_metrics*",
             "time_field": "timestamp",
@@ -145,7 +140,9 @@ export default (props) => {
         } else {
             setResult()
         }
-        setLoading(false)
+        if (shouldLoading) {
+            setLoading(false)
+        }
     }
 
     const onFormDataChange = (values) => {
@@ -176,55 +173,192 @@ export default (props) => {
         return currentMode === 'treemap'
     }, [currentMode])
 
-    const { sourceArea, sourceColor } = formData
+    const { sourceArea, sourceColor } = config
 
     const formatData = useMemo(() => {
+
         const { data = [] } = result || {};
-        if (!data || !sourceArea) return { data: [] }
-        let formatData = {
-            data: data.map((item) => {
-                const { groups = [], value } = item;
-                const object = {
-                    name: groups[0],
-                    displayName: groups[0],
-                    value: value?.[sourceArea.formula] || 0,
-                    metricArea: sourceArea.key,
-                    nameArea: sourceArea.name,
+        if (!data || data.length === 0 || !sourceArea) return []
+        return data.filter((item) => !!(item.groups && item.groups[0])).map((item) => {
+            const { groups = [], value } = item;
+            let name = groups[0];
+            if (type === 'shard') {
+                const splits = name.split(':')
+                if (splits.length > 1) {
+                    name = splits.slice(1).join(':')
                 }
-                if (sourceColor?.formula && Number.isFinite(value?.[sourceColor?.formula])) {
-                    object['metricColor'] = sourceColor.key
-                    object['valueColor'] = value?.[sourceColor.formula] || 0
-                    object['nameColor'] = sourceColor.name
-                }
-                return object
-            })
-        };
-        const { format: formatArea } = sourceArea || {}
-        const formatterArea = formatters[formatArea]
-        if (formatterArea) {
-            formatData = formatterArea(formatData.data, 'value')
-            formatData = {
-                ...formatData,
-                unitArea: formatData.unit
             }
-        }
-        const { format: formatColor } = sourceColor || {}
-        const formatterColor = formatters[formatColor]
-        if (formatterColor) {
-            formatData = formatterColor(formatData.data, 'valueColor')
-            formatData = {
-                ...formatData,
-                unitColor: formatData.unit
+            const object = {
+                name: name,
+                displayName: name,
+                value: value?.[sourceArea.formula] || 0,
+                metricArea: sourceArea.key,
+                nameArea: sourceArea.name,
             }
+            if (sourceColor?.formula) {
+                object['metricColor'] = sourceColor.key
+                object['valueColor'] = value?.[sourceColor.formula] || 0
+                object['nameColor'] = sourceColor.name
+            }
+            return object
+        })
+    }, [result, sourceArea, sourceColor, type])
+
+    useEffect(() => {
+        if (searchParamsRef.current) {
+            const { type, clusterID, formData } = searchParamsRef.current
+            fetchData(type, clusterID, timeRange, formData, false)
         }
-        return formatData
-    }, [result, sourceArea, sourceColor])
+    }, [timeRange])
 
     return (
         <Spin spinning={loading}>
         <div className={styles.topn}>
             <div className={styles.header}>
-                <Radio.Group
+                <Input.Group compact style={{ width: 'auto '}}>
+                    <Radio.Group
+                        value={currentMode}
+                        onChange={(e) => setCurrentMode(e.target.value)}
+                        className={styles.mode}
+                        style={{ marginRight: 12, marginBottom: 12 }}
+                    >
+                        <Radio.Button value="treemap">
+                            <Icon
+                                component={TreemapSvg}
+                                style={{
+                                    fontSize: 16,
+                                    color: isTreemap ? "#1890ff" : "",
+                                    verticalAlign: '-3px'
+                                }}
+                            />
+                        </Radio.Button>
+                        <Radio.Button value="table">
+                            <Icon
+                                type="table"
+                                style={{
+                                    color: !isTreemap ? "#1890ff" : "",
+                                }}
+                            />
+                        </Radio.Button>
+                    </Radio.Group>
+                    <Input
+                        style={{ width: "60px", marginBottom: 12 }}
+                        className={styles.borderRadiusLeft}
+                        disabled
+                        defaultValue={"Top"}
+                    />
+                    <InputNumber
+                        style={{ width: "80px", marginBottom: 12, marginRight: 12 }}
+                        className={styles.borderRadiusRight}
+                        value={formData.top}
+                        min={1}
+                        step={1}
+                        precision={0}
+                        onChange={(value) => onFormDataChange({ top: value })}
+                    />
+                    <Input
+                        style={{ width: "80px", marginBottom: 12 }}
+                        className={styles.borderRadiusLeft}
+                        disabled
+                        defaultValue={"面积指标"}
+                    />
+                    <Select 
+                        style={{ width: "150px", marginBottom: 12 }}
+                        value={formData.sourceArea?.key}
+                        onChange={(value, option) => {
+                            const { items = [] } = option?.props?.metric || {}
+                            onFormDataChange({ 
+                                statisticArea: items[0]?.statistic === 'derivative' ? 'rate' : items[0]?.statistic,
+                                sourceArea: option?.props?.metric
+                            })
+                        }}
+                    >
+                        {
+                            metrics.map((item) => (
+                                <Select.Option key={item.key} metric={item}>
+                                    {item.name}
+                                </Select.Option>
+                            ))
+                        }
+                    </Select>
+                    <Select 
+                        style={{ width: "88px", marginBottom: 12, marginRight: 6 }}
+                        className={styles.borderRadiusRight}
+                        value={formData.statisticArea}
+                        onChange={(value) => onFormDataChange({ statisticArea: value })}
+                    >
+                        {
+                            formData.sourceArea?.statistics?.filter((item) => !!item).map((item) => (
+                                <Select.Option key={item}>
+                                    {item.toUpperCase()}
+                                </Select.Option>
+                            ))
+                        }
+                    </Select>
+                    <Button style={{ width: 32, marginBottom: 12, padding: 0, marginRight: 6, borderRadius: 4 }} onClick={() => onMetricExchange()}><Icon style={{ fontSize: 16 }} component={ConvertSvg}/></Button>
+                    <Input
+                        style={{ width: "80px", marginBottom: 12 }}
+                        className={styles.borderRadiusLeft}
+                        disabled
+                        defaultValue={"颜色指标"}
+                    />
+                    
+                    <Select 
+                        style={{ width: "150px", marginBottom: 12 }}
+                        value={formData.sourceColor?.key}
+                        onChange={(value, option) => {
+                            if (value) {
+                                const { items = [] } = option?.props?.metric || {}
+                                onFormDataChange({ 
+                                    statisticColor: items[0]?.statistic === 'derivative' ? 'rate' : items[0]?.statistic,
+                                    sourceColor: option?.props?.metric
+                                })
+                            } else {
+                                onFormDataChange({ 
+                                    statisticColor: undefined, 
+                                    sourceColor: undefined 
+                                })
+                            }
+                            
+                        }}
+                        allowClear
+                    >
+                        {
+                            metrics.map((item) => (
+                                <Select.Option key={item.key} metric={item}>
+                                    {item.name}
+                                </Select.Option>
+                            ))
+                        }
+                    </Select>
+                    <Select 
+                        style={{ width: "88px", marginBottom: 12 }}
+                        value={formData.statisticColor}
+                        onChange={(value) => onFormDataChange({ statisticColor: value })}
+                    >
+                        {
+                            formData.sourceColor?.statistics?.filter((item) => !!item).map((item) => (
+                                <Select.Option key={item}>
+                                    {item.toUpperCase()}
+                                </Select.Option>
+                            ))
+                        }
+                    </Select>
+                    <Input
+                        style={{ width: "60px", marginBottom: 12 }}
+                        disabled
+                        defaultValue={"主题"}
+                    />
+                    <GradientColorPicker className={styles.borderRadiusRight} style={{ marginRight: 12, marginBottom: 12 }} value={formData.colors || []} onChange={(value) => {
+                        onFormDataChange({ colors: value })
+                        setConfig({
+                            ...cloneDeep(config),
+                            colors: value
+                        })
+                    }}/>
+                    <Button style={{ marginBottom: 12 }} className={styles.borderRadiusLeft} type="primary" onClick={() => fetchData(type, clusterID, timeRange, formData)}>{formatMessage({ id: "form.button.search" })}</Button>
+                </Input.Group>
+                {/* <Radio.Group
                     value={currentMode}
                     onChange={(e) => setCurrentMode(e.target.value)}
                     className={styles.mode}
@@ -303,7 +437,7 @@ export default (props) => {
                     </Select>
                 </Input.Group>
                 <Button style={{ width: 32, padding: 0 }} onClick={() => onMetricExchange()}><Icon style={{ fontSize: 16 }} component={ConvertSvg}/></Button>
-                <Input.Group compact style={{ width: 'auto '}}>
+                <Input.Group compact style={{ width: 'auto'}}>
                     <Input
                         style={{ width: "80px" }}
                         disabled
@@ -366,16 +500,22 @@ export default (props) => {
                         }}/>
                     </Input.Group>
                 </Input.Group>
-                <Button type="primary" onClick={() => fetchData(type, clusterID, timeRange, formData)}>{formatMessage({ id: "form.button.search" })}</Button>
-                { result?.request && (
-                    <CopyToClipboard text={`GET .infini_metrics/_search\n${result.request}`}>
-                        <Button >{formatMessage({ id: "cluster.metrics.request.copy" })}</Button>
-                    </CopyToClipboard>
-                )}
+                <Button type="primary" onClick={() => fetchData(type, clusterID, timeRange, formData)}>{formatMessage({ id: "form.button.search" })}</Button> */}
             </div>
             
-            <div style={{ height: 'calc(100vh - 500px)', minHeight: 500 }}>
-                { isTreemap ? <Treemap config={config} {...formatData}/> : <Table type={type} config={config} {...formatData}/> }
+            <div className={styles.content}>
+                {
+                    result?.request && (
+                        <CopyToClipboard text={`GET .infini_metrics/_search\n${result.request}`}>
+                            <Tooltip title={formatMessage({id: "cluster.metrics.request.copy"})}>
+                                <div className={styles.info} onClick={() => message.success(formatMessage({id: "cluster.metrics.request.copy.success"}))}>
+                                    <Icon type="copy" />
+                                </div>
+                            </Tooltip>
+                        </CopyToClipboard>
+                    )
+                }
+                { isTreemap ? <Treemap config={config} data={formatData} /> : <Table type={type} config={config} data={formatData}/> }
             </div>
         </div>  
         </Spin>

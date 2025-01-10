@@ -3,7 +3,7 @@ import ColorPicker from "./ColorPicker";
 import styles from "./GradientColorPicker.less"
 import { useMemo } from "react";
 
-export default ({ value = [], onChange }) => {
+export default ({ value = [], onChange, style = {}, className = '' }) => {
 
     const background = useMemo(() => {
         if (value.length === 0) return undefined
@@ -47,7 +47,7 @@ export default ({ value = [], onChange }) => {
               </ColorPicker>
             </div>
         )}>
-            <div style={{ padding: '10px 8px', border: '1px solid #d9d9d9', width: 136, height: 32, cursor: 'pointer'}}>
+            <div className={className} style={{ padding: '10px 8px', border: '1px solid #d9d9d9', width: 136, height: 32, cursor: 'pointer', ...style }}>
                 <div style={{ background, height: 12}}></div>
             </div>
         </Popover>

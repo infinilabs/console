@@ -698,7 +698,7 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 	}
 	baseDir := path.Join(global.Env().GetConfigDir(), "setup")
 	var (
-		dslTplFileName = ""
+		dslTplFileName = "noop.tpl"
 		useCommon      = true
 	)
 	switch request.InitializeTemplate {
@@ -707,13 +707,10 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 		dslTplFileName = "template_ilm.tpl"
 		elastic2.InitTemplate(true)
 	case "rollup":
-		useCommon = true
-		dslTplFileName = "noop.tpl"
 		if ver.Distribution == elastic.Easysearch && compareVersions(ver.Number, "1.9.2") > 0 {
 			useCommon = false
 			dslTplFileName = "template_rollup.tpl"
 		}
-		elastic2.InitTemplate(true)
 	case "alerting":
 		dslTplFileName = "alerting.tpl"
 	case "insight":
@@ -725,6 +722,7 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 	default:
 		panic(fmt.Sprintf("unsupport template name [%s]", request.InitializeTemplate))
 	}
+
 	if useCommon {
 		baseDir = path.Join(baseDir, "common")
 	} else {

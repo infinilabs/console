@@ -19,6 +19,7 @@ Information about release notes of INFINI Console is provided here.
 - Add builtin metrics template
 ### Bug fix
 - Fixed query thread pool metrics when cluster uuid is empty
+- Fixed unit tests
 
 ### Improvements
 - Optimize UI of agent list when its columns are overflow.

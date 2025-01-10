@@ -1,5 +1,4 @@
 {
-
   "cat": [
     {"name": "cat.*", "methods": ["get"],
       "path": "_cat/*"
@@ -143,6 +142,12 @@
     },
     {"name": "cluster.get_alias", "methods": ["get"],
       "path": "_alias/:alias"
+    },
+    {"name": "cluster.mapping", "methods": ["get"],
+      "path": "_mapping"
+    },
+    {"name": "cluster.aliases", "methods": ["get"],
+      "path": "_aliases"
     }
   ],
   "indices": [
@@ -281,8 +286,8 @@
     {"name": "indices.field_caps", "methods":["get", "post"],
       "path": "/:index_name/_field_caps"
     },
-    {"name": "indices.exists_template", "methods":["get"],
-      "path": "/_template/:name"
+    {"name": "indices.exists_template", "methods":["head"],
+      "path": "/_template/:template_name"
     },
     {"name": "indices.field_usage_stats", "methods":["get"],
       "path": "/:index_name/_field_usage_stats"
@@ -367,7 +372,6 @@
       "path": "/_nodes/hot_threads"
     }
   ],
-
   "reindex": [
     {"name": "reindex.*", "methods": ["*"],
       "path": "/_reindex/*"
@@ -379,7 +383,31 @@
       "path": "/_reindex/:rid/_rethrottle"
     }
   ],
-
+  "template": [
+    {"name": "template.*", "methods": ["*"],
+      "path": "/_template/*"
+    },
+    {"name": "template.put", "methods": ["put"],
+      "path": "/_template/:template_name"
+    },
+    {"name": "template.delete", "methods": ["delete"],
+      "path": "/_template/:template_name"
+    }
+  ],
+  "rollup": [
+    { "name": "rollup.*","methods": ["*"],
+      "path": "/_rollup/*"
+    },
+    { "name": "rollup.get.explain","methods": ["get"],
+      "path": "/_rollup/jobs/:rollup_name/_explain"
+    },
+    { "name": "rollup.put","methods": ["put"],
+      "path": "/_rollup/jobs/:rollup_name"
+    },
+    { "name": "rollup.delete","methods": ["delete"],
+      "path": "/_rollup/jobs/:rollup_name"
+    }
+  ],
   "render_search_template": [
     {"name": "render_search_template.*", "methods": ["*"],
       "path": "/_render/template"

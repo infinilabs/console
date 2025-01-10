@@ -30,9 +30,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	"infini.sh/console/core/security"
-	"infini.sh/framework/lib/go-ucfg"
-	elastic2 "infini.sh/framework/modules/elastic"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -41,6 +38,10 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"infini.sh/console/core/security"
+	"infini.sh/framework/lib/go-ucfg"
+	elastic2 "infini.sh/framework/modules/elastic"
 
 	log "github.com/cihub/seelog"
 	"github.com/valyala/fasttemplate"
@@ -696,7 +697,7 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 	}
 	baseDir := path.Join(global.Env().GetConfigDir(), "setup")
 	var (
-		dslTplFileName = ""
+		dslTplFileName = "noop.tpl"
 		useCommon      = true
 	)
 	switch request.InitializeTemplate {
@@ -704,6 +705,13 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 		useCommon = false
 		dslTplFileName = "template_ilm.tpl"
 		elastic2.InitTemplate(true)
+	case "rollup":
+		if ver.Distribution == elastic.Easysearch {
+			if large, _ := util.VersionCompare(ver.Number, "1.9.2"); large > 0 {
+				useCommon = false
+				dslTplFileName = "template_rollup.tpl"
+			}
+		}
 	case "alerting":
 		dslTplFileName = "alerting.tpl"
 	case "insight":
@@ -715,6 +723,7 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 	default:
 		panic(fmt.Sprintf("unsupport template name [%s]", request.InitializeTemplate))
 	}
+
 	if useCommon {
 		baseDir = path.Join(baseDir, "common")
 	} else {

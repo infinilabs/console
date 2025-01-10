@@ -32,8 +32,8 @@ import (
 	"strconv"
 	"strings"
 
-	"infini.sh/framework/core/elastic"
 	"infini.sh/console/model/insight"
+	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/util"
 )
 
@@ -294,7 +294,7 @@ func collectMetricData(agg interface{}, groupValues []string, metricData *[]insi
 			interval, _ = timeBks["interval"].(string)
 			if bks, ok := timeBks["buckets"].([]interface{}); ok {
 				md := insight.MetricData{
-					Data:  map[string][]insight.MetricDataItem{},
+					Data:   map[string][]insight.MetricDataItem{},
 					Groups: groupValues,
 				}
 				for _, bk := range bks {
@@ -318,7 +318,7 @@ func collectMetricData(agg interface{}, groupValues []string, metricData *[]insi
 
 		} else {
 			md := insight.MetricData{
-				Data:  map[string][]insight.MetricDataItem{},
+				Data:   map[string][]insight.MetricDataItem{},
 				Groups: groupValues,
 			}
 			for k, v := range aggM {
@@ -357,7 +357,7 @@ func collectMetricDataOther(agg interface{}, groupValues []string, metricData *[
 			interval, _ = timeBks["interval"].(string)
 			if bks, ok := timeBks["buckets"].([]interface{}); ok {
 				md := insight.MetricData{
-					Data:  map[string][]insight.MetricDataItem{},
+					Data:   map[string][]insight.MetricDataItem{},
 					Groups: groupValues,
 				}
 				for _, bk := range bks {
@@ -382,7 +382,7 @@ func collectMetricDataOther(agg interface{}, groupValues []string, metricData *[
 			}
 		} else {
 			md := insight.MetricData{
-				Data:  map[string][]insight.MetricDataItem{},
+				Data:   map[string][]insight.MetricDataItem{},
 				Groups: groupValues,
 			}
 

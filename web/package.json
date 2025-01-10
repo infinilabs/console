@@ -68,6 +68,7 @@
     "re-resizable": "^6.9.1",
     "react": "^16.5.1",
     "react-calendar-heatmap": "^1.8.1",
+    "react-color": "^2.19.3",
     "react-container-query": "^0.11.0",
     "react-copy-to-clipboard": "^5.0.1",
     "react-dnd": "^14.0.4",

@@ -35,7 +35,9 @@ export default (props: IProps) => {
             ...metric,
             bucketSize: queries.getBucketSize(),
         });
-        setData(res)
+        if (res && !res.error) {
+            setData(res.data)
+        }
         setLoading(false)
     }
 

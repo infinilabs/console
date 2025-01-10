@@ -109,15 +109,14 @@ export default {
           },
         });
       }
-
+      
       //handle global cluster logic
 
       yield put({
         type: "global/updateCluster",
         payload: {
+          ...payload,
           id: res._id,
-          name: payload.name,
-          monitored: payload.monitored,
         },
       });
       return res;

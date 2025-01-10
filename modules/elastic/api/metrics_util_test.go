@@ -34,8 +34,11 @@ import (
 
 func TestGetMetricParams(t *testing.T) {
 	handler:=APIHandler{}
-	req:=http.Request{}
-	bucketSize, min, max, err:=handler.getMetricRangeAndBucketSize(&req,60,15)
+	req, err :=http.NewRequest("GET","https://infinilabs.com/api/?bucket_size=1m",nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bucketSize, min, max, err:=handler.GetMetricRangeAndBucketSize(req,"", "",15)
 
 	fmt.Println(bucketSize)
 	fmt.Println(util.FormatUnixTimestamp(min/1000))//2022-01-27 15:28:57

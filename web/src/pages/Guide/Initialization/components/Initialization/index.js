@@ -17,6 +17,9 @@ const initialTasks = [{
     name: "template_ilm",
     desc: "Initialize template and ilm"
 },{
+    name: "rollup",
+    desc: "Initialize rollup template"
+},{
     name: "insight",
     desc: "Initialize dashboard template and chart template"
 },{

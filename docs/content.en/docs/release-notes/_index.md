@@ -10,6 +10,13 @@ Information about release notes of INFINI Console is provided here.
 ## Latest (In development)
 
 ### Breaking changes
+### Features
+### Bug fix
+### Improvements
+
+## 1.28.0 (2025-01-11)
+
+### Breaking changes
 
 ### Features
 - Add allocation to activities if is cluster health change and changed to red.

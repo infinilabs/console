@@ -67,7 +67,7 @@ export default (props) => {
             })} 
             queryParams={queryParams}
             className={styles.vizChartContainer}
-            style={{ flex: metricKey == "cluster_health" ? '0 0 calc(100%)' : '0 0 calc(50% - 5px)'}}
+            style={{ flex: metricKey == "cluster_health" && !overview ? '0 0 calc(100%)' : '0 0 calc(50% - 5px)'}}
             formatMetric={(metric) => {
               if (metric) {
                 const lines = metric.lines || []

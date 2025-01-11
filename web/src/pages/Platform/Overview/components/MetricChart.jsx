@@ -91,6 +91,10 @@ export default (props) => {
         firstFetchRef.current = false
       }
     }
+
+    const fixFormat = (formatType, format) => {
+      return formatType === 'num' && format ? `${format}a` : format
+    }
   
     useEffect(() => {
       observerRef.current.deps = cloneDeep([queryParams, fetchUrl, metricKey, timeInterval, refresh])
@@ -235,11 +239,11 @@ export default (props) => {
                 ticks={item.ticks}
                 labelFormat={getFormatter(
                   item.formatType,
-                  item.labelFormat
+                  fixFormat(item.formatType, item.labelFormat)
                 )}
                 tickFormat={getFormatter(
                   item.formatType,
-                  item.tickFormat
+                  fixFormat(item.formatType, item.tickFormat)
                 )}
               />
             );
@@ -291,7 +295,7 @@ export default (props) => {
                 xAccessor={0}
                 tickFormat={getFormatter(
                   item.metric.formatType,
-                  item.metric.tickFormat,
+                  fixFormat(item.metric.formatType, item.metric.formatType),
                   item.metric.units
                 )}
                 yAccessors={[1]}

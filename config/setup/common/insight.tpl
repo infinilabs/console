@@ -3569,7 +3569,7 @@ POST $[[SETUP_INDEX_PREFIX]]layout/$[[SETUP_DOC_TYPE]]/cicmhbt3q95ich72lrvg
 }
 
 #shard level
-PUT .infini_metric/_doc/bD2jH5QB7KvGccywNCH9
+PUT $[[SETUP_INDEX_PREFIX]]metric/_doc/bD2jH5QB7KvGccywNCH9
 {
   "id": "bD2jH5QB7KvGccywNCH9",
   "name": "Indexing Rate",
@@ -3591,7 +3591,7 @@ PUT .infini_metric/_doc/bD2jH5QB7KvGccywNCH9
   "updated": "2025-01-09T14:30:56.63155+08:00"
 }
 
-PUT .infini_metric/_doc/bD2jH5QB7KvGccywNCH1
+PUT $[[SETUP_INDEX_PREFIX]]metric/_doc/bD2jH5QB7KvGccywNCH1
 {
   "id": "bD2jH5QB7KvGccywNCH1",
   "name": "Shard Storage",
@@ -3612,7 +3612,7 @@ PUT .infini_metric/_doc/bD2jH5QB7KvGccywNCH1
   "created": "2025-01-09T14:30:56.63155+08:00",
   "updated": "2025-01-09T14:30:56.63155+08:00"
 }
-PUT .infini_metric/_doc/bD2jH5QB7KvGccywNCH5
+PUT $[[SETUP_INDEX_PREFIX]]metric/_doc/bD2jH5QB7KvGccywNCH5
 {
   "id": "bD2jH5QB7KvGccywNCH5",
   "name": "Document Count",
@@ -3634,7 +3634,7 @@ PUT .infini_metric/_doc/bD2jH5QB7KvGccywNCH5
   "updated": "2025-01-09T14:30:56.63155+08:00"
 }
 
-PUT .infini_metric/_doc/bD2jH5QB7KvGccywNCH2
+PUT $[[SETUP_INDEX_PREFIX]]metric/_doc/bD2jH5QB7KvGccywNCH2
 {
   "id": "bD2jH5QB7KvGccywNCH2",
   "name": "Search Rate",
@@ -3655,7 +3655,7 @@ PUT .infini_metric/_doc/bD2jH5QB7KvGccywNCH2
   "created": "2025-01-09T14:30:56.63155+08:00",
   "updated": "2025-01-09T14:30:56.63155+08:00"
 }
-PUT .infini_metric/_doc/bD2jH5QB7KvGccywNCH3
+PUT $[[SETUP_INDEX_PREFIX]]metric/_doc/bD2jH5QB7KvGccywNCH3
 {
   "id": "bD2jH5QB7KvGccywNCH3",
   "name": "Indexing Latency",
@@ -3682,7 +3682,7 @@ PUT .infini_metric/_doc/bD2jH5QB7KvGccywNCH3
   "updated": "2025-01-09T14:30:56.63155+08:00"
 }
 
-PUT .infini_metric/_doc/bD2jH5QB7KvGccywNCH4
+PUT $[[SETUP_INDEX_PREFIX]]metric/_doc/bD2jH5QB7KvGccywNCH4
 {
   "id": "bD2jH5QB7KvGccywNCH4",
   "name": "Search Latency",
@@ -3708,7 +3708,7 @@ PUT .infini_metric/_doc/bD2jH5QB7KvGccywNCH4
   "created": "2025-01-09T14:30:56.63155+08:00",
   "updated": "2025-01-09T14:30:56.63155+08:00"
 }
-PUT .infini_metric/_doc/bD2jH5QB7KvGccywNCH6
+PUT $[[SETUP_INDEX_PREFIX]]metric/_doc/bD2jH5QB7KvGccywNCH6
 {
   "id": "bD2jH5QB7KvGccywNCH6",
   "name": "Segment Count",
@@ -3730,7 +3730,7 @@ PUT .infini_metric/_doc/bD2jH5QB7KvGccywNCH6
   "updated": "2025-01-09T14:30:56.63155+08:00"
 }
 
-PUT .infini_metric/_doc/bD2jH5QB7KvGccywNCH7
+PUT $[[SETUP_INDEX_PREFIX]]metric/_doc/bD2jH5QB7KvGccywNCH7
 {
   "id": "bD2jH5QB7KvGccywNCH7",
   "name": "Segment memory",
@@ -3753,7 +3753,7 @@ PUT .infini_metric/_doc/bD2jH5QB7KvGccywNCH7
 }
 
 #indices level
-PUT .infini_metric/_doc/aD2jH5QB7KvGccywNCH9
+PUT $[[SETUP_INDEX_PREFIX]]metric/_doc/aD2jH5QB7KvGccywNCH9
 {
   "id": "aD2jH5QB7KvGccywNCH9",
   "name": "Indexing Rate",
@@ -3775,7 +3775,7 @@ PUT .infini_metric/_doc/aD2jH5QB7KvGccywNCH9
   "updated": "2025-01-09T14:30:56.63155+08:00"
 }
 
-PUT .infini_metric/_doc/aD2jH5QB7KvGccywNCH1
+PUT $[[SETUP_INDEX_PREFIX]]metric/_doc/aD2jH5QB7KvGccywNCH1
 {
   "id": "aD2jH5QB7KvGccywNCH1",
   "name": "Index Storage",
@@ -3796,7 +3796,7 @@ PUT .infini_metric/_doc/aD2jH5QB7KvGccywNCH1
   "created": "2025-01-09T14:30:56.63155+08:00",
   "updated": "2025-01-09T14:30:56.63155+08:00"
 }
-PUT .infini_metric/_doc/aD2jH5QB7KvGccywNCH5
+PUT $[[SETUP_INDEX_PREFIX]]metric/_doc/aD2jH5QB7KvGccywNCH5
 {
   "id": "aD2jH5QB7KvGccywNCH5",
   "name": "Document Count",
@@ -3818,7 +3818,7 @@ PUT .infini_metric/_doc/aD2jH5QB7KvGccywNCH5
   "updated": "2025-01-09T14:30:56.63155+08:00"
 }
 
-PUT .infini_metric/_doc/aD2jH5QB7KvGccywNCH2
+PUT $[[SETUP_INDEX_PREFIX]]metric/_doc/aD2jH5QB7KvGccywNCH2
 {
   "id": "aD2jH5QB7KvGccywNCH2",
   "name": "Search Rate",
@@ -3839,7 +3839,7 @@ PUT .infini_metric/_doc/aD2jH5QB7KvGccywNCH2
   "created": "2025-01-09T14:30:56.63155+08:00",
   "updated": "2025-01-09T14:30:56.63155+08:00"
 }
-PUT .infini_metric/_doc/aD2jH5QB7KvGccywNCH3
+PUT $[[SETUP_INDEX_PREFIX]]metric/_doc/aD2jH5QB7KvGccywNCH3
 {
   "id": "aD2jH5QB7KvGccywNCH3",
   "name": "Indexing Latency",
@@ -3866,7 +3866,7 @@ PUT .infini_metric/_doc/aD2jH5QB7KvGccywNCH3
   "updated": "2025-01-09T14:30:56.63155+08:00"
 }
 
-PUT .infini_metric/_doc/aD2jH5QB7KvGccywNCH4
+PUT $[[SETUP_INDEX_PREFIX]]metric/_doc/aD2jH5QB7KvGccywNCH4
 {
   "id": "aD2jH5QB7KvGccywNCH4",
   "name": "Search Latency",
@@ -3892,7 +3892,7 @@ PUT .infini_metric/_doc/aD2jH5QB7KvGccywNCH4
   "created": "2025-01-09T14:30:56.63155+08:00",
   "updated": "2025-01-09T14:30:56.63155+08:00"
 }
-PUT .infini_metric/_doc/aD2jH5QB7KvGccywNCH6
+PUT $[[SETUP_INDEX_PREFIX]]metric/_doc/aD2jH5QB7KvGccywNCH6
 {
   "id": "aD2jH5QB7KvGccywNCH6",
   "name": "Segment Count",
@@ -3914,7 +3914,7 @@ PUT .infini_metric/_doc/aD2jH5QB7KvGccywNCH6
   "updated": "2025-01-09T14:30:56.63155+08:00"
 }
 
-PUT .infini_metric/_doc/aD2jH5QB7KvGccywNCH7
+PUT $[[SETUP_INDEX_PREFIX]]metric/_doc/aD2jH5QB7KvGccywNCH7
 {
   "id": "aD2jH5QB7KvGccywNCH7",
   "name": "Segment memory",
@@ -3937,7 +3937,7 @@ PUT .infini_metric/_doc/aD2jH5QB7KvGccywNCH7
 }
 
 #node level
-PUT .infini_metric/_doc/jD2jH5QB7KvGccywNCH9
+PUT $[[SETUP_INDEX_PREFIX]]metric/_doc/jD2jH5QB7KvGccywNCH9
 {
   "id": "jD2jH5QB7KvGccywNCH9",
   "name": "Indexing Rate",
@@ -3960,7 +3960,7 @@ PUT .infini_metric/_doc/jD2jH5QB7KvGccywNCH9
 }
 
 
-PUT .infini_metric/_doc/jD2jH5QB7KvGccywNCH4
+PUT $[[SETUP_INDEX_PREFIX]]metric/_doc/jD2jH5QB7KvGccywNCH4
 {
   "id": "jD2jH5QB7KvGccywNCH4",
   "name": "Process CPU Usage",
@@ -3982,7 +3982,7 @@ PUT .infini_metric/_doc/jD2jH5QB7KvGccywNCH4
   "updated": "2025-01-09T14:30:56.63155+08:00"
 }
 
-PUT .infini_metric/_doc/jD2jH5QB7KvGccywNCH3
+PUT $[[SETUP_INDEX_PREFIX]]metric/_doc/jD2jH5QB7KvGccywNCH3
 {
   "id": "jD2jH5QB7KvGccywNCH3",
   "name": "JVM Heap Usage",
@@ -4003,7 +4003,7 @@ PUT .infini_metric/_doc/jD2jH5QB7KvGccywNCH3
   "created": "2025-01-09T14:30:56.63155+08:00",
   "updated": "2025-01-09T14:30:56.63155+08:00"
 }
-PUT .infini_metric/_doc/jD2jH5QB7KvGccywNCH1
+PUT $[[SETUP_INDEX_PREFIX]]metric/_doc/jD2jH5QB7KvGccywNCH1
 {
   "id": "jD2jH5QB7KvGccywNCH1",
   "name": "Indexing Latency",
@@ -4030,7 +4030,7 @@ PUT .infini_metric/_doc/jD2jH5QB7KvGccywNCH1
   "updated": "2025-01-09T14:30:56.63155+08:00"
 }
 
-PUT .infini_metric/_doc/jD2jH5QB7KvGccywNCH0
+PUT $[[SETUP_INDEX_PREFIX]]metric/_doc/jD2jH5QB7KvGccywNCH0
 {
   "id": "jD2jH5QB7KvGccywNCH0",
   "name": "Search Rate",
@@ -4052,7 +4052,7 @@ PUT .infini_metric/_doc/jD2jH5QB7KvGccywNCH0
   "updated": "2025-01-09T14:30:56.63155+08:00"
 }
 
-PUT .infini_metric/_doc/jD2jH5QB7KvGccywNCH9
+PUT $[[SETUP_INDEX_PREFIX]]metric/_doc/jD2jH5QB7KvGccywNCH9
 {
   "id": "jD2jH5QB7KvGccywNCH9",
   "name": "Indexing Rate",
@@ -4073,7 +4073,7 @@ PUT .infini_metric/_doc/jD2jH5QB7KvGccywNCH9
   "created": "2025-01-09T14:30:56.63155+08:00",
   "updated": "2025-01-09T14:30:56.63155+08:00"
 }
-PUT .infini_metric/_doc/jD2jH5QB7KvGccywNCH5
+PUT $[[SETUP_INDEX_PREFIX]]metric/_doc/jD2jH5QB7KvGccywNCH5
 {
   "id": "jD2jH5QB7KvGccywNCH5",
   "name": "Search Latency",
@@ -4100,7 +4100,7 @@ PUT .infini_metric/_doc/jD2jH5QB7KvGccywNCH5
   "updated": "2025-01-09T14:30:56.63155+08:00"
 }
 
-PUT .infini_metric/_doc/jD2jH5QB7KvGccywNCH6
+PUT $[[SETUP_INDEX_PREFIX]]metric/_doc/jD2jH5QB7KvGccywNCH6
 {
   "id": "jD2jH5QB7KvGccywNCH6",
   "name": "Indices Storage",
@@ -4121,7 +4121,7 @@ PUT .infini_metric/_doc/jD2jH5QB7KvGccywNCH6
   "created": "2025-01-09T14:30:56.63155+08:00",
   "updated": "2025-01-09T14:30:56.63155+08:00"
 }
-PUT .infini_metric/_doc/jD2jH5QB7KvGccywNCH7
+PUT $[[SETUP_INDEX_PREFIX]]metric/_doc/jD2jH5QB7KvGccywNCH7
 {
   "id": "jD2jH5QB7KvGccywNCH7",
   "name": "Document Count",

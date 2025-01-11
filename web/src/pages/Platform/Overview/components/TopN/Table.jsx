@@ -3,6 +3,7 @@ import { Treemap } from "@ant-design/charts";
 import { Table } from "antd";
 import { useMemo } from "react";
 import { formatMessage } from "umi/locale";
+import { fixFormatter } from "./Treemap";
 
 export default (props) => {
 
@@ -23,7 +24,7 @@ export default (props) => {
     }];
     if (sourceArea) {
       const { format: formatArea, unit: unitArea } = sourceArea || {}
-      const formatterArea = getFormatter(formatArea)
+      const formatterArea = fixFormatter(formatArea)
       newColumns.push({
         title: unitArea ? `${sourceArea.name}(${unitArea})` : sourceArea.name,
         dataIndex: 'value',
@@ -35,7 +36,7 @@ export default (props) => {
     }
     if (sourceColor) {
       const { format: formatColor, unit: unitColor } = sourceColor
-      const formatterColor = getFormatter(formatColor)
+      const formatterColor = fixFormatter(formatColor)
       newColumns.push({
         title: unitColor ? `${sourceColor.name}(${unitColor})` : sourceColor.name,
         dataIndex: 'valueColor',

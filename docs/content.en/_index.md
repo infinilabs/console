@@ -17,7 +17,7 @@ weight: 2
 
 ## Features
 
-> INFINI Console is powerful, lightweight, and very easy to use.
+> INFINI Console - The Choice of Elasticsearch Professionals. Be an Elasticsearch Pro Today!
 
 - Support multi-cluster management, you can manage any number of clusters at the same time in one platform;
 - Multi-version Elasticsearch support, support 1.x, 2.x, 5.x, 6.x, 7.x, 8.x;

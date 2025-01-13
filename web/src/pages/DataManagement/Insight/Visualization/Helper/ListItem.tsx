@@ -31,7 +31,9 @@ export default (props: IMeta & {
             items,
             bucketSize: queries.getBucketSize(),
         });
-        setData(res)
+        if (res && !res.error) {
+            setData(res.data)
+        }
         setLoading(false)
     }
 

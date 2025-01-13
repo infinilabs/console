@@ -158,6 +158,7 @@ func main() {
 		orm.RegisterSchemaWithIndexName(api3.RemoteConfig{}, "configs")
 		orm.RegisterSchemaWithIndexName(model.AuditLog{}, "audit-logs")
 		orm.RegisterSchemaWithIndexName(host.HostInfo{}, "host")
+		orm.RegisterSchemaWithIndexName(insight.MetricBase{}, "metric")
 
 		module.Start()
 

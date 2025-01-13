@@ -31,6 +31,7 @@ import (
 	"infini.sh/console/core/security/enum"
 	consoleModel "infini.sh/console/model"
 	"infini.sh/console/model/alerting"
+	"infini.sh/console/model/insight"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/event"
 	"infini.sh/framework/core/model"
@@ -210,6 +211,10 @@ func GetCollectionMetas() map[string]CollectionMeta {
 					},
 				},
 				MatchObject: &alerting.Rule{},
+			},
+			"metric": {
+				Name:        "metric",
+				MatchObject: &insight.MetricBase{},
 			},
 		}
 	})

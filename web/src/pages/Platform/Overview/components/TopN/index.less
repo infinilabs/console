@@ -1,0 +1,78 @@
+.topn {
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+
+    :global {
+      .ant-input-group {
+        display: flex !important;
+        flex-wrap: wrap !important;
+      }
+    }
+    
+    .mode {
+      width: 84px;
+      :global {
+        .ant-radio-button-wrapper {
+          width: 42px;
+          padding: 0 13px;
+        }
+      }
+    }
+  }
+
+  .content {
+    width: 100%;
+    height: calc(100vh - 500px);
+    min-height: 500px;
+    position: relative;
+    
+    .info {
+        position: absolute;
+        display: none;
+        right: 2px;
+        top: 2px;
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        line-height: 24px;
+        text-align: center;
+        font-size: 16px;
+        box-shadow: rgba(0, 0, 0, 0.16) 0px 0px 5px 0px;
+        background: #fff;
+        z-index: 11;
+        cursor: pointer;
+        color: rgba(0, 0, 0, 0.45);
+        transition: all 0.3s ease;
+
+        &:hover {
+          color: #1890ff;
+          box-shadow: rgba(0, 0, 0, 0.3) 0px 0px 5px 0px;
+        }
+    }
+
+    &:hover {
+      .info {
+          display: block;
+      }
+    }
+  }
+}
+
+.borderRadiusLeft {
+  border-top-left-radius: 4px !important;
+  border-bottom-left-radius: 4px !important;
+}
+
+.borderRadiusRight {
+  border-top-right-radius: 4px !important;
+  border-bottom-right-radius: 4px !important;
+  :global {
+    .ant-select-selection {
+      border-top-right-radius: 4px !important;
+      border-bottom-right-radius: 4px !important;
+    }
+  }
+}

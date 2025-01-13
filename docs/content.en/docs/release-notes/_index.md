@@ -10,11 +10,20 @@ Information about release notes of INFINI Console is provided here.
 ## Latest (In development)
 
 ### Breaking changes
+### Features
+### Bug fix
+### Improvements
+
+## 1.28.0 (2025-01-11)
+
+### Breaking changes
 
 ### Features
 - Add allocation to activities if is cluster health change and changed to red.
 - Add index metrics for segment memory (norms, points, version map, fixed bit set).
-
+- Support querying top N metrics in the Insight Data Query API
+- Add insight metric CURD API for managing custom metrics
+- Add built-in metrics templates for common use cases
 ### Bug fix
 - Fixed query thread pool metrics when cluster uuid is empty
 - Fixed unit tests

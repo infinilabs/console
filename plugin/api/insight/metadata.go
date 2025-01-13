@@ -248,8 +248,8 @@ func getMetricData(metric *insight.Metric) (interface{}, error) {
 		return nil, err
 	}
 	esClient := elastic.GetClient(metric.ClusterId)
-	//log.Error(string(util.MustToJSONBytes(query)))
-	searchRes, err := esClient.SearchWithRawQueryDSL(metric.IndexPattern, util.MustToJSONBytes(query))
+	queryDSL := util.MustToJSONBytes(query)
+	searchRes, err := esClient.SearchWithRawQueryDSL(metric.IndexPattern, queryDSL)
 	if err != nil {
 		return nil, err
 	}
@@ -266,83 +266,101 @@ func getMetricData(metric *insight.Metric) (interface{}, error) {
 		}
 	}
 	timeBeforeGroup := metric.AutoTimeBeforeGroup()
-	metricData := CollectMetricData(agg, timeBeforeGroup)
+	metricData, interval := CollectMetricData(agg, timeBeforeGroup)
+	formula := strings.TrimSpace(metric.Formula)
+	//support older versions for a single formula.
+	if metric.Formula != "" && len(metric.Formulas) == 0 {
+		metric.Formulas = []string{metric.Formula}
+	}
 
 	var targetMetricData []insight.MetricData
-	formula := strings.TrimSpace(metric.Formula)
-	if len(metric.Items) == 1 && formula == "" {
+	if len(metric.Items) == 1 && len(metric.Formulas) == 0 {
 		targetMetricData = metricData
 	} else {
-		tpl, err := template.New("insight_formula").Parse(formula)
-		if err != nil {
-			return nil, err
-		}
-		msgBuffer := &bytes.Buffer{}
 		params := map[string]interface{}{}
 		if metric.BucketSize != "" {
-			du, err := util.ParseDuration(metric.BucketSize)
-			if err != nil {
-				return nil, err
+			bucketSize := metric.BucketSize
+			if metric.BucketSize == "auto" && interval != "" {
+				bucketSize = interval
 			}
-			params["bucket_size_in_second"] = du.Seconds()
+			if interval != "" || bucketSize != "auto" {
+				du, err := util.ParseDuration(bucketSize)
+				if err != nil {
+					return nil, err
+				}
+				params["bucket_size_in_second"] = du.Seconds()
+			}
 		}
-		err = tpl.Execute(msgBuffer, params)
-		if err != nil {
-			return nil, err
-		}
-		formula = msgBuffer.String()
 		for _, md := range metricData {
 			targetData := insight.MetricData{
 				Groups: md.Groups,
 				Data:   map[string][]insight.MetricDataItem{},
 			}
-			expression, err := govaluate.NewEvaluableExpression(formula)
-			if err != nil {
-				return nil, err
-			}
-			dataLength := 0
-			for _, v := range md.Data {
-				dataLength = len(v)
-				break
-			}
-		DataLoop:
-			for i := 0; i < dataLength; i++ {
-				parameters := map[string]interface{}{}
-				var timestamp interface{}
-				hasValidData := false
-				for k, v := range md.Data {
-					if len(k) == 20 {
-						continue
-					}
-					if len(v) < dataLength {
-						continue
-					}
-					if _, ok := v[i].Value.(float64); !ok {
-						continue DataLoop
-					}
-					hasValidData = true
-					parameters[k] = v[i].Value
-					timestamp = v[i].Timestamp
-				}
-				//todo return error?
-				if !hasValidData {
-					continue
-				}
-				result, err := expression.Evaluate(parameters)
+			retMetricDataItem := insight.MetricDataItem{}
+			for _, formula = range metric.Formulas {
+				tpl, err := template.New("insight_formula").Parse(formula)
 				if err != nil {
 					return nil, err
 				}
-				if r, ok := result.(float64); ok {
-					if math.IsNaN(r) || math.IsInf(r, 0) {
-						//if !isFilterNaN {
-						//	targetData.Data["result"] = append(targetData.Data["result"], []interface{}{timestamp, math.NaN()})
-						//}
+				msgBuffer := &bytes.Buffer{}
+				err = tpl.Execute(msgBuffer, params)
+				if err != nil {
+					return nil, err
+				}
+				resolvedFormula := msgBuffer.String()
+				expression, err := govaluate.NewEvaluableExpression(resolvedFormula)
+				if err != nil {
+					return nil, err
+				}
+				dataLength := 0
+				for _, v := range md.Data {
+					dataLength = len(v)
+					break
+				}
+			DataLoop:
+				for i := 0; i < dataLength; i++ {
+					parameters := map[string]interface{}{}
+					var timestamp interface{}
+					hasValidData := false
+					for k, v := range md.Data {
+						if _, ok := v[i].Value.(float64); !ok {
+							continue DataLoop
+						}
+						hasValidData = true
+						parameters[k] = v[i].Value
+						timestamp = v[i].Timestamp
+					}
+					//todo return error?
+					if !hasValidData {
 						continue
 					}
+					result, err := expression.Evaluate(parameters)
+					if err != nil {
+						log.Debugf("evaluate formula error: %v", err)
+						continue
+					}
+					if r, ok := result.(float64); ok {
+						if math.IsNaN(r) || math.IsInf(r, 0) {
+							//if !isFilterNaN {
+							//	targetData.Data["result"] = append(targetData.Data["result"], []interface{}{timestamp, math.NaN()})
+							//}
+							continue
+						}
+					}
+					retMetricDataItem.Timestamp = timestamp
+					if len(metric.Formulas) <= 1 && metric.Formula != "" {
+						//support older versions by returning the result for a single formula.
+						retMetricDataItem.Value = result
+					} else {
+						if v, ok := retMetricDataItem.Value.(map[string]interface{}); ok {
+							v[formula] = result
+						} else {
+							retMetricDataItem.Value = map[string]interface{}{formula: result}
+						}
+					}
 				}
-
-				targetData.Data["result"] = append(targetData.Data["result"], insight.MetricDataItem{Timestamp: timestamp, Value: result})
 			}
+			targetData.Data["result"] = append(targetData.Data["result"], retMetricDataItem)
 			targetMetricData = append(targetMetricData, targetData)
 		}
 	}
@@ -356,7 +374,10 @@ func getMetricData(metric *insight.Metric) (interface{}, error) {
 			}
 		}
 	}
-	return result, nil
+	return util.MapStr{
+		"data":    result,
+		"request": string(queryDSL),
+	}, nil
 }
 
 func getMetadataByIndexPattern(clusterID, indexPattern, timeField string, filter interface{}, fieldsFormat map[string]string) (interface{}, error) {

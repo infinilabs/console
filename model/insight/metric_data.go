@@ -29,25 +29,51 @@ package insight
 
 import (
 	"fmt"
-	"infini.sh/framework/core/util"
 	"regexp"
+
+	"infini.sh/framework/core/orm"
+	"infini.sh/framework/core/util"
 )
 
 type Metric struct {
-	AggTypes        []string          `json:"agg_types,omitempty"`
-	IndexPattern    string            `json:"index_pattern,omitempty"`
-	TimeField       string            `json:"time_field,omitempty"`
-	BucketSize      string            `json:"bucket_size,omitempty"`
-	Filter          interface{}       `json:"filter,omitempty"`
-	Groups          []MetricGroupItem `json:"groups,omitempty"` //bucket group
-	Sort            []GroupSort       `json:"sort,omitempty"`
-	ClusterId       string            `json:"cluster_id,omitempty"`
-	Formula         string            `json:"formula,omitempty"`
-	Items           []MetricItem      `json:"items"`
-	FormatType      string            `json:"format_type,omitempty"`
-	TimeFilter      interface{}       `json:"time_filter,omitempty"`
-	TimeBeforeGroup bool              `json:"time_before_group,omitempty"`
-	BucketLabel     *BucketLabel      `json:"bucket_label,omitempty"`
+	AggTypes     []string          `json:"agg_types,omitempty"`
+	IndexPattern string            `json:"index_pattern,omitempty"`
+	TimeField    string            `json:"time_field,omitempty"`
+	BucketSize   string            `json:"bucket_size,omitempty"`
+	Filter       interface{}       `json:"filter,omitempty"`
+	Groups       []MetricGroupItem `json:"groups,omitempty"` //bucket group
+	Sort         []GroupSort       `json:"sort,omitempty"`
+	ClusterId    string            `json:"cluster_id,omitempty"`
+	Formula      string            `json:"formula,omitempty"`
+	//array of formula for new version
+	Formulas        []string     `json:"formulas,omitempty"`
+	Items           []MetricItem `json:"items"`
+	FormatType      string       `json:"format,omitempty"`
+	TimeFilter      interface{}  `json:"time_filter,omitempty"`
+	TimeBeforeGroup bool         `json:"time_before_group,omitempty"`
+	BucketLabel     *BucketLabel `json:"bucket_label,omitempty"`
+	// number of buckets to return, used for aggregation auto_date_histogram when bucket size equals 'auto'
+	Buckets uint   `json:"buckets,omitempty"`
+	Unit    string `json:"unit,omitempty"`
+}
+
+type MetricBase struct {
+	orm.ORMObjectBase
+	//display name of the metric
+	Name string `json:"name"`
+	//metric identifier
+	Key string `json:"key"`
+	//optional values : "node", "indices", "shard"
+	Level string `json:"level"`
+	//metric calculation formula
+	Formula    string       `json:"formula,omitempty"`
+	Items      []MetricItem `json:"items"`
+	FormatType string       `json:"format,omitempty"`
+	Unit       string       `json:"unit,omitempty"`
+	//determine if this metric is built-in
+	Builtin bool `json:"builtin"`
+	//array of supported calculation statistic, eg: "avg", "sum", "min", "max"
+	Statistics []string `json:"statistics,omitempty"`
 }
 
 type GroupSort struct {
@@ -105,12 +131,8 @@ func (m *Metric) ValidateSortKey() error {
 		if !util.StringInArray([]string{"desc", "asc"}, sortItem.Direction) {
 			return fmt.Errorf("unknown sort direction [%s]", sortItem.Direction)
 		}
-		if v, ok := mm[sortItem.Key]; !ok && !util.StringInArray([]string{"_key", "_count"}, sortItem.Key) {
+		if _, ok := mm[sortItem.Key]; !ok && !util.StringInArray([]string{"_key", "_count"}, sortItem.Key) {
 			return fmt.Errorf("unknown sort key [%s]", sortItem.Key)
-		} else {
-			if v != nil && v.Statistic == "derivative" {
-				return fmt.Errorf("can not sort by pipeline agg [%s]", v.Statistic)
-			}
 		}
 	}
 	return nil

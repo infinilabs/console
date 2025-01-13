@@ -52,6 +52,17 @@ export default (props) => {
                 return true;
             }).map((item) => ({ ...item._source }))
             setMetrics(newMetrics)
+            if (newMetrics.length > 0 && (!formData.sourceArea && !formData.sourceColor)) {
+                const newFormData = {
+                    ...cloneDeep(formData),
+                    sourceArea: newMetrics[0],
+                    statisticArea: newMetrics[0]?.items[0]?.statistic,
+                    sourceColor: newMetrics[0],
+                    statisticColor: newMetrics[0].items[0]?.statistic
+                }
+                setFormData(newFormData)
+                fetchData(type, clusterID, timeRange, newFormData)
+            }
         }
         setLoading(false)
     }
@@ -283,6 +294,7 @@ export default (props) => {
                     <Select 
                         style={{ width: "150px", marginBottom: 12 }}
                         value={formData.sourceArea?.key}
+                        dropdownMatchSelectWidth={false}
                         onChange={(value, option) => {
 
                             if (value) {
@@ -312,6 +324,7 @@ export default (props) => {
                         style={{ width: "88px", marginBottom: 12, marginRight: 6 }}
                         className={styles.borderRadiusRight}
                         value={formData.statisticArea}
+                        dropdownMatchSelectWidth={false}
                         onChange={(value) => onFormDataChange({ statisticArea: value })}
                     >
                         {
@@ -333,6 +346,7 @@ export default (props) => {
                     <Select 
                         style={{ width: "150px", marginBottom: 12 }}
                         value={formData.sourceColor?.key}
+                        dropdownMatchSelectWidth={false}
                         onChange={(value, option) => {
                             if (value) {
                                 const { items = [] } = option?.props?.metric || {}
@@ -361,6 +375,7 @@ export default (props) => {
                     <Select 
                         style={{ width: "88px", marginBottom: 12 }}
                         value={formData.statisticColor}
+                        dropdownMatchSelectWidth={false}
                         onChange={(value) => onFormDataChange({ statisticColor: value })}
                     >
                         {

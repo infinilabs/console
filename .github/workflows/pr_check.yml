@@ -200,6 +200,28 @@ jobs:
                 repository: infinilabs/framework-vendor
                 path: vendor
 
+            - name: Set up nodejs toolchain
+              uses: actions/setup-node@v4
+              with:
+                node-version: ${{ env.NODEJS_VERSION }}
+
+            - name: Cache dependencies
+              uses: actions/cache@v4
+              with:
+                path: |
+                  node_modules
+                key: ${{ runner.os }}-cnpm-${{ hashFiles('**/package.json') }}
+                restore-keys: |
+                  ${{ runner.os }}-cnpm-
+
+            - name: Check nodejs toolchain
+              run: |
+                if ! command -v cnpm >/dev/null 2>&1; then
+                  npm install -g rimraf --quiet --no-progress
+                  npm install -g cnpm@9.2.0 --quiet --no-progress
+                fi
+                node -v && npm -v && cnpm -v
+
             - name: Set up go toolchain
               uses: actions/setup-go@v5
               with:
@@ -210,23 +232,38 @@ jobs:
             - name: Check go toolchain
               run: go version
 
+            - name: Cache Build Output
+              uses: actions/cache@v4
+              with:
+                path: |
+                 .public
+                key: ${{ runner.os }}-build-${{ hashFiles('**/package.json') }}-${{ github.sha }}
+                restore-keys: |
+                 ${{ runner.os }}-build-${{ hashFiles('**/package.json') }}-
+                 ${{ runner.os }}-build-
+
             - name: Code lint
               env:
                 GOFLAGS: -tags=ci
               run: |
                 echo Home path is $HOME
                 export WORKBASE=$HOME/go/src/infini.sh
-                export WORK=$WORKBASE/$PNAME
+                export WORK=$WORKBASE/console
 
                 # for test workspace
                 mkdir -p $HOME/go/src/
                 ln -s $GITHUB_WORKSPACE $WORKBASE
-                
+
+                # for web build
+                cd $WORK/web
+                cnpm install --quiet --no-progress
+                cnpm run build --quiet
+
                 # check work folder
                 ls -lrt $WORKBASE/
                 ls -alrt $WORK
 
                 # for unit test
                 cd $WORK
-                echo Linting code at $PWD ...
+                echo Testing code at $PWD ...
                 make lint

@@ -554,7 +554,6 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, id, metricType, 90)
 	if err != nil {
 		panic(err)
-		return
 	}
 	var metrics map[string]*common.MetricItem
 	if bucketSize <= 60 {

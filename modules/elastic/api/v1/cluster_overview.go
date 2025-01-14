@@ -113,7 +113,6 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, clusterIDs[0], MetricTypeIndexStats, 15)
 	if err != nil {
 		panic(err)
-		return
 	}
 
 	query := util.MapStr{}

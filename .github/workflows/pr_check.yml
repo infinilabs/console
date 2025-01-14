@@ -15,8 +15,8 @@ env:
 
 jobs:
     format_check:
-      runs-on: ubuntu-latest
-      steps:
+        runs-on: ubuntu-latest
+        steps:
           - name: Checkout current repository
             uses: actions/checkout@v4
             with:
@@ -35,6 +35,28 @@ jobs:
               repository: infinilabs/framework-vendor
               path: vendor
 
+          - name: Set up nodejs toolchain
+            uses: actions/setup-node@v4
+            with:
+              node-version: ${{ env.NODEJS_VERSION }}
+
+          - name: Cache dependencies
+            uses: actions/cache@v4
+            with:
+              path: |
+                node_modules
+              key: ${{ runner.os }}-cnpm-${{ hashFiles('**/package.json') }}
+              restore-keys: |
+                ${{ runner.os }}-cnpm-
+
+          - name: Check nodejs toolchain
+            run: |
+              if ! command -v cnpm >/dev/null 2>&1; then
+                npm install -g rimraf --quiet --no-progress
+                npm install -g cnpm@9.2.0 --quiet --no-progress
+              fi
+              node -v && npm -v && cnpm -v
+
           - name: Set up go toolchain
             uses: actions/setup-go@v5
             with:
@@ -44,23 +66,39 @@ jobs:
 
           - name: Check go toolchain
             run: go version
-            
-          - name: Run make format
-            shell: bash
+
+          - name: Cache Build Output
+            uses: actions/cache@v4
+            with:
+              path: |
+                .public
+              key: ${{ runner.os }}-build-${{ hashFiles('**/package.json') }}-${{ github.sha }}
+              restore-keys: |
+                ${{ runner.os }}-build-${{ hashFiles('**/package.json') }}-
+                ${{ runner.os }}-build-
+
+          - name: Code format
+            env:
+              GOFLAGS: -tags=ci
             run: |
               echo Home path is $HOME
               export WORKBASE=$HOME/go/src/infini.sh
-              export WORK=$WORKBASE/$PNAME
+              export WORK=$WORKBASE/console
 
               # for test workspace
               mkdir -p $HOME/go/src/
               ln -s $GITHUB_WORKSPACE $WORKBASE
-              
+
+              # for web build
+              cd $WORK/web
+              cnpm install --quiet --no-progress
+              cnpm run build --quiet
+
               # check work folder
               ls -lrt $WORKBASE/
               ls -alrt $WORK
-
-              # for unit test
+              
+              # for code format
               cd $WORK
               echo Formating code at $PWD ...
               make format
@@ -96,7 +134,7 @@ jobs:
             - name: Checkout current repository
               uses: actions/checkout@v4
               with:
-                path: console
+                path: ${{ env.PNAME }}
 
             - name: Checkout framework repository
               uses: actions/checkout@v4
@@ -159,7 +197,7 @@ jobs:
               run: |
                 echo Home path is $HOME
                 export WORKBASE=$HOME/go/src/infini.sh
-                export WORK=$WORKBASE/console
+                export WORK=$WORKBASE/$PNAME
 
                 # for test workspace
                 mkdir -p $HOME/go/src/
@@ -248,7 +286,7 @@ jobs:
               run: |
                 echo Home path is $HOME
                 export WORKBASE=$HOME/go/src/infini.sh
-                export WORK=$WORKBASE/console
+                export WORK=$WORKBASE/$PNAME
 
                 # for test workspace
                 mkdir -p $HOME/go/src/
@@ -263,7 +301,7 @@ jobs:
                 ls -lrt $WORKBASE/
                 ls -alrt $WORK
 
-                # for unit test
+                # for code lint
                 cd $WORK
                 echo Testing code at $PWD ...
                 # make lint

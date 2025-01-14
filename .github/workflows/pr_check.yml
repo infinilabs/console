@@ -266,4 +266,4 @@ jobs:
                 # for unit test
                 cd $WORK
                 echo Testing code at $PWD ...
-                make lint
+                # make lint

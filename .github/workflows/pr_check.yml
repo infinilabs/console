@@ -1,0 +1,232 @@
+name: Unit Test
+
+on:
+    pull_request:
+        branches: [ "main" ]
+
+defaults:
+  run:
+    shell: bash
+
+env:
+    GO_VERSION: 1.23.4
+    NODEJS_VERSION: 16.20.2
+    PNAME: console
+
+jobs:
+    format_check:
+      runs-on: ubuntu-latest
+      steps:
+          - name: Checkout current repository
+            uses: actions/checkout@v4
+            with:
+              path: ${{ env.PNAME }}
+
+          - name: Checkout framework repository
+            uses: actions/checkout@v4
+            with:
+              repository: infinilabs/framework
+              path: framework
+
+          - name: Checkout framework-vendor
+            uses: actions/checkout@v4
+            with:
+              ref: main
+              repository: infinilabs/framework-vendor
+              path: vendor
+
+          - name: Set up go toolchain
+            uses: actions/setup-go@v5
+            with:
+              go-version: ${{ env.GO_VERSION }}
+              check-latest: false
+              cache: true
+
+          - name: Check go toolchain
+            run: go version
+            
+          - name: Run make format
+            shell: bash
+            run: |
+              echo Home path is $HOME
+              export WORKBASE=$HOME/go/src/infini.sh
+              export WORK=$WORKBASE/$PNAME
+
+              # for test workspace
+              mkdir -p $HOME/go/src/
+              ln -s $GITHUB_WORKSPACE $WORKBASE
+              
+              # check work folder
+              ls -lrt $WORKBASE/
+              ls -alrt $WORK
+
+              # for unit test
+              cd $WORK
+              echo Formating code at $PWD ...
+              make format
+              if [ $? -ne 0 ]; then
+                echo "make format failed, please check make output"
+                exit 1
+              fi
+
+          - name: Check for changes after format
+            id: check-changes
+            shell: bash
+            run: |
+              export WORKBASE=$HOME/go/src/infini.sh
+              export WORK=$WORKBASE/$PNAME
+
+              # for foramt check
+              cd $WORK
+              if [[ $(git status --porcelain | grep -c " M .*\.go$") -gt 0 ]]; then
+                echo "go format detected formatting changes"
+                echo "changes=true" >> $GITHUB_OUTPUT
+              else
+                echo "go format no changes found"
+                echo "changes=false" >> $GITHUB_OUTPUT
+              fi
+          
+          - name: Fail workflow if changes after format
+            if: steps.check-changes.outputs.changes == 'true'
+            run: exit 1
+
+    unit_test:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout current repository
+              uses: actions/checkout@v4
+              with:
+                path: console
+
+            - name: Checkout framework repository
+              uses: actions/checkout@v4
+              with:
+                repository: infinilabs/framework
+                path: framework
+
+            - name: Checkout framework-vendor
+              uses: actions/checkout@v4
+              with:
+                ref: main
+                repository: infinilabs/framework-vendor
+                path: vendor
+
+            - name: Set up nodejs toolchain
+              uses: actions/setup-node@v4
+              with:
+                node-version: ${{ env.NODEJS_VERSION }}
+
+            - name: Cache dependencies
+              uses: actions/cache@v4
+              with:
+                path: |
+                  node_modules
+                key: ${{ runner.os }}-cnpm-${{ hashFiles('**/package.json') }}
+                restore-keys: |
+                  ${{ runner.os }}-cnpm-
+
+            - name: Check nodejs toolchain
+              run: |
+                if ! command -v cnpm >/dev/null 2>&1; then
+                  npm install -g rimraf --quiet --no-progress
+                  npm install -g cnpm@9.2.0 --quiet --no-progress
+                fi
+                node -v && npm -v && cnpm -v
+
+            - name: Set up go toolchain
+              uses: actions/setup-go@v5
+              with:
+                go-version: ${{ env.GO_VERSION }}
+                check-latest: false
+                cache: true
+
+            - name: Check go toolchain
+              run: go version
+
+            - name: Cache Build Output
+              uses: actions/cache@v4
+              with:
+                path: |
+                 .public
+                key: ${{ runner.os }}-build-${{ hashFiles('**/package.json') }}-${{ github.sha }}
+                restore-keys: |
+                 ${{ runner.os }}-build-${{ hashFiles('**/package.json') }}-
+                 ${{ runner.os }}-build-
+
+            - name: Unit test
+              env:
+                GOFLAGS: -tags=ci
+              run: |
+                echo Home path is $HOME
+                export WORKBASE=$HOME/go/src/infini.sh
+                export WORK=$WORKBASE/console
+
+                # for test workspace
+                mkdir -p $HOME/go/src/
+                ln -s $GITHUB_WORKSPACE $WORKBASE
+
+                # for web build
+                cd $WORK/web
+                cnpm install --quiet --no-progress
+                cnpm run build --quiet
+
+                # check work folder
+                ls -lrt $WORKBASE/
+                ls -alrt $WORK
+
+                # for unit test
+                cd $WORK
+                echo Testing code at $PWD ...
+                make test
+
+    code_lint:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout current repository
+              uses: actions/checkout@v4
+              with:
+                path: ${{ env.PNAME }}
+
+            - name: Checkout framework repository
+              uses: actions/checkout@v4
+              with:
+                repository: infinilabs/framework
+                path: framework
+
+            - name: Checkout framework-vendor
+              uses: actions/checkout@v4
+              with:
+                ref: main
+                repository: infinilabs/framework-vendor
+                path: vendor
+
+            - name: Set up go toolchain
+              uses: actions/setup-go@v5
+              with:
+                go-version: ${{ env.GO_VERSION }}
+                check-latest: false
+                cache: true
+
+            - name: Check go toolchain
+              run: go version
+
+            - name: Code lint
+              env:
+                GOFLAGS: -tags=ci
+              run: |
+                echo Home path is $HOME
+                export WORKBASE=$HOME/go/src/infini.sh
+                export WORK=$WORKBASE/$PNAME
+
+                # for test workspace
+                mkdir -p $HOME/go/src/
+                ln -s $GITHUB_WORKSPACE $WORKBASE
+                
+                # check work folder
+                ls -lrt $WORKBASE/
+                ls -alrt $WORK
+
+                # for unit test
+                cd $WORK
+                echo Linting code at $PWD ...
+                make lint

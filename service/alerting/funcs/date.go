@@ -32,10 +32,10 @@ import (
 	"time"
 )
 
-func datetimeInZone(zone string, date interface{}) string{
+func datetimeInZone(zone string, date interface{}) string {
 	return _dateInZone("2006-01-02 15:04:05", date, zone)
 }
-func datetime(date interface{}) string{
+func datetime(date interface{}) string {
 	return _dateInZone("2006-01-02 15:04:05", date, "Local")
 }
 
@@ -58,7 +58,7 @@ func _dateInZone(fmt string, date interface{}, zone string) string {
 		t = *date
 	case int64:
 		if date > 1e12 {
-			date = date/1000
+			date = date / 1000
 		}
 		t = time.Unix(date, 0)
 	case int:

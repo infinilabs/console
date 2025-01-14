@@ -47,11 +47,11 @@ import (
 
 func (h *AlertAPI) ignoreAlertMessage(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	body := struct {
-		Messages []alerting.AlertMessage `json:"messages"`
-		IgnoredReason string `json:"ignored_reason"`
-		IsReset bool `json:"is_reset"`
+		Messages      []alerting.AlertMessage `json:"messages"`
+		IgnoredReason string                  `json:"ignored_reason"`
+		IsReset       bool                    `json:"is_reset"`
 	}{}
-	err := h.DecodeJSON(req,  &body)
+	err := h.DecodeJSON(req, &body)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -83,7 +83,7 @@ func (h *AlertAPI) ignoreAlertMessage(w http.ResponseWriter, req *http.Request, 
 			},
 		})
 		source = fmt.Sprintf("ctx._source['status'] = '%s'", alerting.MessageStateAlerting)
-	}else {
+	} else {
 		must = append(must, util.MapStr{
 			"term": util.MapStr{
 				"status": util.MapStr{
@@ -114,9 +114,8 @@ func (h *AlertAPI) ignoreAlertMessage(w http.ResponseWriter, req *http.Request, 
 		_ = kv.DeleteKey(alerting2.KVLastMessageState, []byte(msg.RuleID))
 	}
 
-
 	h.WriteJSON(w, util.MapStr{
-		"ids": messageIDs,
+		"ids":    messageIDs,
 		"result": "updated",
 	}, 200)
 }
@@ -138,7 +137,7 @@ func (h *AlertAPI) getAlertMessageStats(w http.ResponseWriter, req *http.Request
 		return
 	}
 	if !hasAllPrivilege {
-		must = append(must,clusterFilter)
+		must = append(must, clusterFilter)
 	}
 	queryDsl := util.MapStr{
 		"size": 0,
@@ -151,13 +150,13 @@ func (h *AlertAPI) getAlertMessageStats(w http.ResponseWriter, req *http.Request
 			"terms_by_priority": util.MapStr{
 				"terms": util.MapStr{
 					"field": "priority",
-					"size": 5,
+					"size":  5,
 				},
 			},
 		},
 	}
 	indexName := orm.GetWildcardIndexName(alerting.AlertMessage{})
-	searchRes, err := esClient.SearchWithRawQueryDSL(indexName, util.MustToJSONBytes(queryDsl) )
+	searchRes, err := esClient.SearchWithRawQueryDSL(indexName, util.MustToJSONBytes(queryDsl))
 	if err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"error": err.Error(),
@@ -172,7 +171,7 @@ func (h *AlertAPI) getAlertMessageStats(w http.ResponseWriter, req *http.Request
 			}
 		}
 	}
-	for _, status := range []string{"info", "low","medium","high", "critical"} {
+	for _, status := range []string{"info", "low", "medium", "high", "critical"} {
 		if _, ok := statusCounts[status]; !ok {
 			statusCounts[status] = 0
 		}
@@ -206,18 +205,18 @@ func (h *AlertAPI) getAlertMessageStats(w http.ResponseWriter, req *http.Request
 			"terms_by_category": util.MapStr{
 				"terms": util.MapStr{
 					"field": "category",
-					"size": 100,
+					"size":  100,
 				},
 			},
 			"terms_by_tags": util.MapStr{
 				"terms": util.MapStr{
 					"field": "tags",
-					"size": 100,
+					"size":  100,
 				},
 			},
 		},
 	}
-	searchRes, err = esClient.SearchWithRawQueryDSL(indexName, util.MustToJSONBytes(queryDsl) )
+	searchRes, err = esClient.SearchWithRawQueryDSL(indexName, util.MustToJSONBytes(queryDsl))
 	if err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"error": err.Error(),
@@ -245,15 +244,14 @@ func (h *AlertAPI) getAlertMessageStats(w http.ResponseWriter, req *http.Request
 			"current": statusCounts,
 		},
 		"categories": categories,
-		"tags": tags,
+		"tags":       tags,
 	}, http.StatusOK)
 }
-
 
 func (h *AlertAPI) searchAlertMessage(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 
 	var (
-		queryDSL    = `{"sort":[%s],"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d,"aggs": {
+		queryDSL = `{"sort":[%s],"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d,"aggs": {
     "max_updated": {
       "max": {
         "field": "updated"
@@ -267,16 +265,16 @@ func (h *AlertAPI) searchAlertMessage(w http.ResponseWriter, req *http.Request, 
   }}`
 		strSize     = h.GetParameterOrDefault(req, "size", "20")
 		strFrom     = h.GetParameterOrDefault(req, "from", "0")
-		status   = h.GetParameterOrDefault(req, "status", "")
-		priority = h.GetParameterOrDefault(req, "priority", "")
-		sort     = h.GetParameterOrDefault(req, "sort", "")
-		ruleID        = h.GetParameterOrDefault(req, "rule_id", "")
-		min        = h.GetParameterOrDefault(req, "min", "")
-		max        = h.GetParameterOrDefault(req, "max", "")
+		status      = h.GetParameterOrDefault(req, "status", "")
+		priority    = h.GetParameterOrDefault(req, "priority", "")
+		sort        = h.GetParameterOrDefault(req, "sort", "")
+		ruleID      = h.GetParameterOrDefault(req, "rule_id", "")
+		min         = h.GetParameterOrDefault(req, "min", "")
+		max         = h.GetParameterOrDefault(req, "max", "")
 		mustBuilder = &strings.Builder{}
 		sortBuilder = strings.Builder{}
-		category = h.GetParameterOrDefault(req, "category", "")
-		tags = h.GetParameterOrDefault(req, "tags", "")
+		category    = h.GetParameterOrDefault(req, "category", "")
+		tags        = h.GetParameterOrDefault(req, "tags", "")
 	)
 	timeRange := util.MapStr{}
 	if min != "" {
@@ -292,7 +290,7 @@ func (h *AlertAPI) searchAlertMessage(w http.ResponseWriter, req *http.Request, 
 			},
 		}
 		mustBuilder.Write(util.MustToJSONBytes(timeFilter))
-	}else{
+	} else {
 		mustBuilder.WriteString(`{"match_all":{}}`)
 	}
 
@@ -374,7 +372,7 @@ func (h *AlertAPI) searchAlertMessage(w http.ResponseWriter, req *http.Request, 
 	h.WriteJSON(w, esRes, http.StatusOK)
 }
 
-func parseTime( t interface{}, layout string) (time.Time, error){
+func parseTime(t interface{}, layout string) (time.Time, error) {
 	switch t.(type) {
 	case string:
 		return time.Parse(layout, t.(string))
@@ -384,7 +382,7 @@ func parseTime( t interface{}, layout string) (time.Time, error){
 }
 
 func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	message :=  &alerting.AlertMessage{
+	message := &alerting.AlertMessage{
 		ID: ps.ByName("message_id"),
 	}
 	exists, err := orm.Get(message)
@@ -417,36 +415,36 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 	var duration time.Duration
 	if message.Status == alerting.MessageStateRecovered {
 		duration = message.Updated.Sub(message.Created)
-	}else{
+	} else {
 		duration = time.Now().Sub(message.Created)
 	}
 	detailObj := util.MapStr{
-		"message_id": message.ID,
-		"rule_id": message.RuleID,
-		"rule_name": rule.Name,
-		"rule_enabled": rule.Enabled,
-		"title": message.Title,
-		"message": message.Message,
-		"priority": message.Priority,
-		"created": message.Created,
-		"updated": message.Updated,
-		"resource_name": rule.Resource.Name,
-		"resource_id": rule.Resource.ID,
+		"message_id":       message.ID,
+		"rule_id":          message.RuleID,
+		"rule_name":        rule.Name,
+		"rule_enabled":     rule.Enabled,
+		"title":            message.Title,
+		"message":          message.Message,
+		"priority":         message.Priority,
+		"created":          message.Created,
+		"updated":          message.Updated,
+		"resource_name":    rule.Resource.Name,
+		"resource_id":      rule.Resource.ID,
 		"resource_objects": rule.Resource.Objects,
-		"conditions": rule.Conditions,
-		"duration": duration.Milliseconds(),
-		"ignored_time": message.IgnoredTime,
-		"ignored_reason": message.IgnoredReason,
-		"ignored_user": message.IgnoredUser,
-		"status": message.Status,
-		"expression": rule.Metrics.Expression,
-		"hit_condition": hitCondition,
+		"conditions":       rule.Conditions,
+		"duration":         duration.Milliseconds(),
+		"ignored_time":     message.IgnoredTime,
+		"ignored_reason":   message.IgnoredReason,
+		"ignored_user":     message.IgnoredUser,
+		"status":           message.Status,
+		"expression":       rule.Metrics.Expression,
+		"hit_condition":    hitCondition,
 	}
 	h.WriteJSON(w, detailObj, http.StatusOK)
 }
 
 func (h *AlertAPI) getMessageNotificationInfo(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	message :=  &alerting.AlertMessage{
+	message := &alerting.AlertMessage{
 		ID: ps.ByName("message_id"),
 	}
 	exists, err := orm.Get(message)
@@ -481,12 +479,12 @@ func (h *AlertAPI) getMessageNotificationInfo(w http.ResponseWriter, req *http.R
 	}
 	if rule.NotificationConfig != nil {
 		notificationInfo["alerting"] = util.MapStr{
-			"accept_time_range": rule.NotificationConfig.AcceptTimeRange,
-			"throttle_period": rule.NotificationConfig.ThrottlePeriod,
-			"escalation_enabled":  rule.NotificationConfig.EscalationEnabled,
+			"accept_time_range":          rule.NotificationConfig.AcceptTimeRange,
+			"throttle_period":            rule.NotificationConfig.ThrottlePeriod,
+			"escalation_enabled":         rule.NotificationConfig.EscalationEnabled,
 			"escalation_throttle_period": rule.NotificationConfig.EscalationThrottlePeriod,
-			"normal_stats": stats["normal"],
-			"escalation_stats": stats["escalation"],
+			"normal_stats":               stats["normal"],
+			"escalation_stats":           stats["escalation"],
 		}
 	}
 	if rule.RecoveryNotificationConfig != nil {
@@ -497,7 +495,7 @@ func (h *AlertAPI) getMessageNotificationInfo(w http.ResponseWriter, req *http.R
 	h.WriteJSON(w, notificationInfo, http.StatusOK)
 }
 
-func getMessageNotificationStats(msg *alerting.AlertMessage )(util.MapStr, error){
+func getMessageNotificationStats(msg *alerting.AlertMessage) (util.MapStr, error) {
 	rangeQ := util.MapStr{
 		"gte": msg.Created.UnixMilli(),
 	}
@@ -508,7 +506,7 @@ func getMessageNotificationStats(msg *alerting.AlertMessage )(util.MapStr, error
 		"grp_normal_channel": util.MapStr{
 			"terms": util.MapStr{
 				"field": "action_execution_results.channel_type",
-				"size": 20,
+				"size":  20,
 			},
 			"aggs": util.MapStr{
 				"top": util.MapStr{
@@ -531,7 +529,7 @@ func getMessageNotificationStats(msg *alerting.AlertMessage )(util.MapStr, error
 		"grp_escalation_channel": util.MapStr{
 			"terms": util.MapStr{
 				"field": "escalation_action_results.channel_type",
-				"size": 20,
+				"size":  20,
 			},
 			"aggs": util.MapStr{
 				"top": util.MapStr{
@@ -556,7 +554,7 @@ func getMessageNotificationStats(msg *alerting.AlertMessage )(util.MapStr, error
 		aggs["grp_recover_channel"] = util.MapStr{
 			"terms": util.MapStr{
 				"field": "recover_action_results.channel_type",
-				"size": 20,
+				"size":  20,
 			},
 			"aggs": util.MapStr{
 				"top": util.MapStr{
@@ -610,7 +608,7 @@ func getMessageNotificationStats(msg *alerting.AlertMessage )(util.MapStr, error
 	var normalStats = extractStatsFromRaw(result.Raw, "grp_normal_channel", "action_execution_results")
 	var escalationStats = extractStatsFromRaw(result.Raw, "grp_escalation_channel", "escalation_action_results")
 	stats := util.MapStr{
-		"normal": normalStats,
+		"normal":     normalStats,
 		"escalation": escalationStats,
 	}
 	if msg.Status == alerting.MessageStateRecovered {
@@ -627,14 +625,14 @@ func extractStatsFromRaw(searchRawRes []byte, grpKey string, actionKey string) [
 		statsItem["channel_type"], _ = jsonparser.GetString(value, "key")
 		statsItem["count"], _ = jsonparser.GetInt(value, "doc_count")
 		jsonparser.ArrayEach(value, func(v []byte, dataType jsonparser.ValueType, offset int, err error) {
-			ck, _ := jsonparser.GetString(v,  "channel_type")
-			cn, _ := jsonparser.GetString(v,  "channel_name")
+			ck, _ := jsonparser.GetString(v, "channel_type")
+			cn, _ := jsonparser.GetString(v, "channel_name")
 			if ck == statsItem["channel_type"] {
 				statsItem["channel_name"] = cn
-				statsItem["error"], _ = jsonparser.GetString(v,  "error")
+				statsItem["error"], _ = jsonparser.GetString(v, "error")
 			}
-		}, "top", "hits","hits", "[0]", "_source",actionKey)
-		statsItem["last_time"], _ =  jsonparser.GetString(value, "top", "hits","hits", "[0]", "_source","created")
+		}, "top", "hits", "hits", "[0]", "_source", actionKey)
+		statsItem["last_time"], _ = jsonparser.GetString(value, "top", "hits", "hits", "[0]", "_source", "created")
 		stats = append(stats, statsItem)
 	}, "aggregations", grpKey, "buckets")
 	return stats

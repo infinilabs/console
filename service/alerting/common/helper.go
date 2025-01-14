@@ -42,9 +42,9 @@ func PerformChannel(channel *alerting.Channel, ctx map[string]interface{}) ([]by
 		return nil, fmt.Errorf("empty channel"), nil
 	}
 	var (
-		act action.Action
+		act     action.Action
 		message []byte
-		err error
+		err     error
 	)
 	switch channel.Type {
 
@@ -75,7 +75,7 @@ func PerformChannel(channel *alerting.Channel, ctx map[string]interface{}) ([]by
 		act = &action.EmailAction{
 			Data:    channel.Email,
 			Subject: string(subjectBytes),
-			Body: string(message),
+			Body:    string(message),
 		}
 	default:
 		return nil, fmt.Errorf("unsupported action type: %s", channel.Type), message
@@ -84,10 +84,10 @@ func PerformChannel(channel *alerting.Channel, ctx map[string]interface{}) ([]by
 	return executeResult, err, message
 }
 
-func ResolveMessage(messageTemplate string, ctx map[string]interface{}) ([]byte, error){
-	msg :=  messageTemplate
+func ResolveMessage(messageTemplate string, ctx map[string]interface{}) ([]byte, error) {
+	msg := messageTemplate
 	tmpl, err := template.New("alert-message").Funcs(funcs.GenericFuncMap()).Parse(msg)
-	if err !=nil {
+	if err != nil {
 		return nil, fmt.Errorf("parse message temlate error: %w", err)
 	}
 	msgBuffer := &bytes.Buffer{}
@@ -120,14 +120,14 @@ func RetrieveChannel(ch *alerting.Channel, raiseChannelEnabledErr bool) (*alerti
 		case alerting.ChannelEmail:
 			if ch.Email == nil {
 				ch.Email = refCh.Email
-			}else{
+			} else {
 				ch.Email.ServerID = refCh.Email.ServerID
 				ch.Email.Recipients = refCh.Email.Recipients
 			}
 		case alerting.ChannelWebhook:
 			if ch.Webhook == nil {
 				ch.Webhook = refCh.Webhook
-			}else {
+			} else {
 				ch.Webhook.URL = refCh.Webhook.URL
 			}
 		}

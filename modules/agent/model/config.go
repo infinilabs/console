@@ -28,14 +28,14 @@
 package model
 
 type AgentConfig struct {
-	Enabled      bool `config:"enabled"`
-	Setup *SetupConfig `config:"setup"`
+	Enabled bool         `config:"enabled"`
+	Setup   *SetupConfig `config:"setup"`
 }
 
 type SetupConfig struct {
-	DownloadURL               string      `config:"download_url"`
-	CACertFile                string      `config:"ca_cert"`
-	CAKeyFile                 string      `config:"ca_key"`
-	ConsoleEndpoint           string      `config:"console_endpoint"`
-	Port                      string      `config:"port"`
+	DownloadURL     string `config:"download_url"`
+	CACertFile      string `config:"ca_cert"`
+	CAKeyFile       string `config:"ca_key"`
+	ConsoleEndpoint string `config:"console_endpoint"`
+	Port            string `config:"port"`
 }

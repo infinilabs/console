@@ -28,13 +28,13 @@
 package insight
 
 import (
-	"net/http"
-	"strconv"
 	log "github.com/cihub/seelog"
 	insight2 "infini.sh/console/model/insight"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
+	"net/http"
+	"strconv"
 )
 
 func (h *InsightAPI) createDashboard(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {

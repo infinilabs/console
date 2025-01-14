@@ -37,7 +37,7 @@ import (
 func substring(start, end int, s string) string {
 	runes := []rune(s)
 	length := len(runes)
-	if start < 0 || start > length || end < 0 || end > length{
+	if start < 0 || start > length || end < 0 || end > length {
 		return s
 	}
 	return string(runes[start:end])

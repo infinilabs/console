@@ -40,16 +40,16 @@ import (
 	"time"
 )
 
-func TestEngine( t *testing.T)  {
+func TestEngine(t *testing.T) {
 	rule := alerting.Rule{
-		ID: util.GetUUID(),
+		ID:      util.GetUUID(),
 		Created: time.Now(),
 		Updated: time.Now(),
 		Enabled: true,
 		Resource: alerting.Resource{
-			ID: "c8i18llath2blrusdjng",
-			Type: "elasticsearch",
-			Objects: []string{".infini_metrics*"},
+			ID:        "c8i18llath2blrusdjng",
+			Type:      "elasticsearch",
+			Objects:   []string{".infini_metrics*"},
 			TimeField: "timestamp",
 			Filter: alerting.FilterQuery{
 				And: []alerting.FilterQuery{
@@ -123,9 +123,9 @@ func TestEngine( t *testing.T)  {
 			ThrottlePeriod: "1h",
 			AcceptTimeRange: alerting.TimeRange{
 				Start: "8:00",
-				End: "21:00",
+				End:   "21:00",
 			},
-			EscalationEnabled: true,
+			EscalationEnabled:        true,
 			EscalationThrottlePeriod: "30m",
 		},
 	}
@@ -143,11 +143,11 @@ func TestEngine( t *testing.T)  {
 	//fmt.Println(util.MustToJSON(filter))
 }
 
-func TestGenerateAgg(t *testing.T)  {
+func TestGenerateAgg(t *testing.T) {
 	eng := &Engine{}
 	agg := eng.generateAgg(&insight.MetricItem{
-		Name: "a",
-		Field: "cpu.percent",
+		Name:      "a",
+		Field:     "cpu.percent",
 		Statistic: "p99",
 	})
 	fmt.Println(util.MustToJSON(agg))
@@ -210,20 +210,20 @@ func TestGeneratePercentilesAggQuery(t *testing.T) {
 	esClient := elasticsearch.ESAPIV7{}
 	esClient.Elasticsearch = cfg.ID
 	esClient.Version = elastic.Version{
-		Number: "7.10.2",
-		Major: 7,
+		Number:       "7.10.2",
+		Major:        7,
 		Distribution: elastic.Elasticsearch,
 	}
 	elastic.UpdateClient(cfg, &esClient)
 	rule := alerting.Rule{
-		ID: util.GetUUID(),
+		ID:      util.GetUUID(),
 		Created: time.Now(),
 		Updated: time.Now(),
 		Enabled: true,
 		Resource: alerting.Resource{
-			ID: cfg.ID,
-			Type: "elasticsearch",
-			Objects: []string{".infini_metrics*"},
+			ID:        cfg.ID,
+			Type:      "elasticsearch",
+			Objects:   []string{".infini_metrics*"},
 			TimeField: "timestamp",
 			RawFilter: map[string]interface{}{
 				"bool": map[string]interface{}{
@@ -271,9 +271,9 @@ func TestGeneratePercentilesAggQuery(t *testing.T) {
 			ThrottlePeriod: "1h",
 			AcceptTimeRange: alerting.TimeRange{
 				Start: "08:00",
-				End: "21:00",
+				End:   "21:00",
 			},
-			EscalationEnabled: true,
+			EscalationEnabled:        true,
 			EscalationThrottlePeriod: "30m",
 		},
 	}
@@ -289,21 +289,21 @@ func TestConvertFilterQuery(t *testing.T) {
 	fq := alerting.FilterQuery{
 		And: []alerting.FilterQuery{
 			{
-				Field: "metadata.category",
-				Values: []string{"elasticsearch"},
+				Field:    "metadata.category",
+				Values:   []string{"elasticsearch"},
 				Operator: "equals",
 			},
 			{
-				Field: "metadata.name",
-				Values: []string{"index_stats", "node_stats"},
+				Field:    "metadata.name",
+				Values:   []string{"index_stats", "node_stats"},
 				Operator: "in",
 			},
 			{
 				Not: []alerting.FilterQuery{
 					{
-						Field: "timestamp",
+						Field:    "timestamp",
 						Operator: "gt",
-						Values: []string{"2022-04-16T16:16:39.168605+08:00"},
+						Values:   []string{"2022-04-16T16:16:39.168605+08:00"},
 					},
 				},
 			},

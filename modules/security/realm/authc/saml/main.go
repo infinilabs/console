@@ -28,15 +28,15 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"github.com/crewjam/saml"
 	"net/http"
 	"net/url"
-	"github.com/crewjam/saml"
 
 	"github.com/crewjam/saml/samlsp"
 )
 
 var metdataurl = "https://sso.infini.ltd/metadata" //Metadata of the IDP
-var sessioncert = "./sessioncert"                 //Key pair used for creating a signed session
+var sessioncert = "./sessioncert"                  //Key pair used for creating a signed session
 var sessionkey = "./sessionkey"
 var serverkey = "./serverkey" //Server TLS
 var servercert = "./servercert"
@@ -68,13 +68,13 @@ func main() {
 	rootURL, err := url.Parse(serverurl)
 	panicIfError(err)
 	samlSP, _ := samlsp.New(samlsp.Options{
-		URL:            *rootURL,
-		Key:            keyPair.PrivateKey.(*rsa.PrivateKey),
-		Certificate:    keyPair.Leaf,
+		URL:         *rootURL,
+		Key:         keyPair.PrivateKey.(*rsa.PrivateKey),
+		Certificate: keyPair.Leaf,
 		IDPMetadata: &saml.EntityDescriptor{
-			//EntityID:
-		}, // you can also have Metadata XML instead of URL
-		EntityID:       entityId,
+				//EntityID:
+		},        // you can also have Metadata XML instead of URL
+		EntityID: entityId,
 	})
 	app := http.HandlerFunc(hello)
 	http.Handle("/hello", samlSP.RequireAccount(app))

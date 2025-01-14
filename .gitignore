@@ -32,5 +32,7 @@ appveyor.yml
 log/
 .env
 generated_*.go
+config/generated.go
+config/generat*.go
 config/initialization.dsl
 config/system_config.yml

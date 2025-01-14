@@ -29,11 +29,10 @@ package alerting
 
 const (
 	KVLastNotificationTime = "alert_last_notification_time"
-	KVLastTermStartTime = "alert_last_term_start_time"
-	KVLastEscalationTime = "alert_last_escalation_time"
-	KVLastMessageState = "alert_last_message_state"
+	KVLastTermStartTime    = "alert_last_term_start_time"
+	KVLastEscalationTime   = "alert_last_escalation_time"
+	KVLastMessageState     = "alert_last_message_state"
 )
-
 
 const (
 	ParamRuleID         = "rule_id"       //规则 UUID
@@ -50,6 +49,7 @@ const (
 	ParamGroupValues    = "group_values"
 	ParamIssueTimestamp = "issue_timestamp"
 	ParamRelationValues = "relation_values"
-//rule expression, rule_id, resource_id, resource_name, event_id, condition_name, preset_value,[group_tags, check_values],
-//check_status ,timestamp,
+
+// rule expression, rule_id, resource_id, resource_name, event_id, condition_name, preset_value,[group_tags, check_values],
+// check_status ,timestamp,
 )

@@ -72,7 +72,7 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, ctx context.Context, 
 	for _, v := range results.Result {
 		result, ok := v.(map[string]interface{})
 		if ok {
-			if indexID, ok :=  util.GetMapValueByKeys([]string{"metadata", "labels", "index_id"}, result); ok {
+			if indexID, ok := util.GetMapValueByKeys([]string{"metadata", "labels", "index_id"}, result); ok {
 				summary := map[string]interface{}{}
 				if docs, ok := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "index_stats", "total", "docs"}, result); ok {
 					if docsM, ok := docs.(map[string]interface{}); ok {
@@ -97,7 +97,7 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, ctx context.Context, 
 					if sinfo, ok := shardInfo.([]interface{}); ok {
 						unassignedCount := 0
 						for _, item := range sinfo {
-							if itemMap, ok := item.(map[string]interface{}); ok{
+							if itemMap, ok := item.(map[string]interface{}); ok {
 								if itemMap["state"] == "UNASSIGNED" {
 									unassignedCount++
 								}
@@ -121,7 +121,7 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, ctx context.Context, 
 			return
 		}
 		firstClusterID, firstIndexName = parts[0], parts[1]
-	}else{
+	} else {
 		h.WriteError(w, fmt.Sprintf("invalid index_id: %v", indexID), http.StatusInternalServerError)
 		return
 	}
@@ -137,35 +137,35 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, ctx context.Context, 
 	}
 	var metricLen = 15
 	// 索引速率
-	indexMetric:=newMetricItem("indexing", 1, OperationGroupKey)
-	indexMetric.AddAxi("indexing rate","group1",common.PositionLeft,"num","0,0","0,0.[00]",5,true)
+	indexMetric := newMetricItem("indexing", 1, OperationGroupKey)
+	indexMetric.AddAxi("indexing rate", "group1", common.PositionLeft, "num", "0,0", "0,0.[00]", 5, true)
 	nodeMetricItems := []GroupMetricItem{}
-	nodeMetricItems=append(nodeMetricItems, GroupMetricItem{
-		Key: "indexing",
-		Field: "payload.elasticsearch.index_stats.primaries.indexing.index_total",
-		ID: util.GetUUID(),
+	nodeMetricItems = append(nodeMetricItems, GroupMetricItem{
+		Key:          "indexing",
+		Field:        "payload.elasticsearch.index_stats.primaries.indexing.index_total",
+		ID:           util.GetUUID(),
 		IsDerivative: true,
-		MetricItem: indexMetric,
-		FormatType: "num",
-		Units: "Indexing/s",
+		MetricItem:   indexMetric,
+		FormatType:   "num",
+		Units:        "Indexing/s",
 	})
-	queryMetric:=newMetricItem("search", 2, OperationGroupKey)
-	queryMetric.AddAxi("query rate","group1",common.PositionLeft,"num","0,0","0,0.[00]",5,true)
-	nodeMetricItems=append(nodeMetricItems, GroupMetricItem{
-		Key: "search",
-		Field: "payload.elasticsearch.index_stats.total.search.query_total",
-		ID: util.GetUUID(),
+	queryMetric := newMetricItem("search", 2, OperationGroupKey)
+	queryMetric.AddAxi("query rate", "group1", common.PositionLeft, "num", "0,0", "0,0.[00]", 5, true)
+	nodeMetricItems = append(nodeMetricItems, GroupMetricItem{
+		Key:          "search",
+		Field:        "payload.elasticsearch.index_stats.total.search.query_total",
+		ID:           util.GetUUID(),
 		IsDerivative: true,
-		MetricItem: queryMetric,
-		FormatType: "num",
-		Units: "Search/s",
+		MetricItem:   queryMetric,
+		FormatType:   "num",
+		Units:        "Search/s",
 	})
 
-	aggs:=map[string]interface{}{}
-	query :=map[string]interface{}{}
-	query["query"]=util.MapStr{
+	aggs := map[string]interface{}{}
+	query := map[string]interface{}{}
+	query["query"] = util.MapStr{
 		"bool": util.MapStr{
-			"must":  []util.MapStr{
+			"must": []util.MapStr{
 				{
 					"term": util.MapStr{
 						"metadata.category": util.MapStr{
@@ -190,7 +190,7 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, ctx context.Context, 
 				{
 					"range": util.MapStr{
 						"timestamp": util.MapStr{
-							"gte": fmt.Sprintf("now-%ds", metricLen * bucketSize),
+							"gte": fmt.Sprintf("now-%ds", metricLen*bucketSize),
 						},
 					},
 				},
@@ -198,15 +198,15 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, ctx context.Context, 
 		},
 	}
 
-	for _,metricItem:=range nodeMetricItems{
-		aggs[metricItem.ID]=util.MapStr{
-			"max":util.MapStr{
+	for _, metricItem := range nodeMetricItems {
+		aggs[metricItem.ID] = util.MapStr{
+			"max": util.MapStr{
 				"field": metricItem.Field,
 			},
 		}
-		if metricItem.IsDerivative{
-			aggs[metricItem.ID+"_deriv"]=util.MapStr{
-				"derivative":util.MapStr{
+		if metricItem.IsDerivative {
+			aggs[metricItem.ID+"_deriv"] = util.MapStr{
+				"derivative": util.MapStr{
 					"buckets_path": metricItem.ID,
 				},
 			}
@@ -218,8 +218,8 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, ctx context.Context, 
 	if err != nil {
 		panic(err)
 	}
-	query["size"]=0
-	query["aggs"]= util.MapStr{
+	query["size"] = 0
+	query["aggs"] = util.MapStr{
 		"group_by_level": util.MapStr{
 			"terms": util.MapStr{
 				"field": "metadata.labels.index_id",
@@ -227,11 +227,11 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, ctx context.Context, 
 			},
 			"aggs": util.MapStr{
 				"dates": util.MapStr{
-					"date_histogram":util.MapStr{
-						"field": "timestamp",
+					"date_histogram": util.MapStr{
+						"field":       "timestamp",
 						intervalField: bucketSizeStr,
 					},
-					"aggs":aggs,
+					"aggs": aggs,
 				},
 			},
 		},
@@ -245,9 +245,8 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, ctx context.Context, 
 	indexMetrics := map[string]util.MapStr{}
 	for key, item := range metrics {
 		for _, line := range item.Lines {
-			if _, ok := indexMetrics[line.Metric.Label]; !ok{
-				indexMetrics[line.Metric.Label] = util.MapStr{
-				}
+			if _, ok := indexMetrics[line.Metric.Label]; !ok {
+				indexMetrics[line.Metric.Label] = util.MapStr{}
 			}
 			indexMetrics[line.Metric.Label][key] = line.Data
 		}
@@ -292,11 +291,11 @@ func (h *APIHandler) GetIndexInfo(w http.ResponseWriter, req *http.Request, ps h
 	indexID := ps.MustGetParameter("index")
 	parts := strings.Split(indexID, ":")
 	if len(parts) > 1 && !h.IsIndexAllowed(req, clusterID, parts[1]) {
-		h.WriteError(w,  http.StatusText(http.StatusForbidden), http.StatusForbidden)
+		h.WriteError(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
 	if len(parts) < 2 {
-		h.WriteError(w, "invalid index id: "+ indexID, http.StatusInternalServerError)
+		h.WriteError(w, "invalid index id: "+indexID, http.StatusInternalServerError)
 		return
 	}
 
@@ -320,7 +319,7 @@ func (h *APIHandler) GetIndexInfo(w http.ResponseWriter, req *http.Request, ps h
 		return
 	}
 	q1 := orm.Query{
-		Size: 1,
+		Size:          1,
 		WildcardIndex: true,
 	}
 	q1.Conds = orm.And(
@@ -340,7 +339,7 @@ func (h *APIHandler) GetIndexInfo(w http.ResponseWriter, req *http.Request, ps h
 		summary["aliases"] = aliases
 		summary["timestamp"] = hit["timestamp"]
 		summary["index_info"] = util.MapStr{
-			"health":health,
+			"health": health,
 			"status": state,
 		}
 	}
@@ -361,11 +360,11 @@ func (h *APIHandler) GetIndexInfo(w http.ResponseWriter, req *http.Request, ps h
 					if tm, ok := result["timestamp"].(string); ok {
 						issueTime, _ := time.Parse(time.RFC3339, tm)
 						if time.Now().Sub(issueTime).Seconds() > 30 {
-							health, _:= util.GetMapValueByKeys([]string{"metadata", "labels", "health_status"}, response.Hits.Hits[0].Source)
+							health, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "health_status"}, response.Hits.Hits[0].Source)
 							infoM["health"] = health
 						}
 					}
-					state, _:= util.GetMapValueByKeys([]string{"metadata", "labels", "state"}, response.Hits.Hits[0].Source)
+					state, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "state"}, response.Hits.Hits[0].Source)
 					if state == "delete" {
 						infoM["status"] = "delete"
 						infoM["health"] = "N/A"
@@ -377,7 +376,7 @@ func (h *APIHandler) GetIndexInfo(w http.ResponseWriter, req *http.Request, ps h
 				if sinfo, ok := shardInfo.([]interface{}); ok {
 					unassignedCount := 0
 					for _, item := range sinfo {
-						if itemMap, ok := item.(map[string]interface{}); ok{
+						if itemMap, ok := item.(map[string]interface{}); ok {
 							if itemMap["state"] == "UNASSIGNED" {
 								unassignedCount++
 							}
@@ -398,7 +397,7 @@ func (h *APIHandler) GetIndexShards(w http.ResponseWriter, req *http.Request, ps
 	clusterID := ps.MustGetParameter("id")
 	indexName := ps.MustGetParameter("index")
 	q1 := orm.Query{
-		Size: 1,
+		Size:          1,
 		WildcardIndex: true,
 	}
 	q1.Conds = orm.And(
@@ -411,9 +410,9 @@ func (h *APIHandler) GetIndexShards(w http.ResponseWriter, req *http.Request, ps
 	q1.AddSort("timestamp", orm.DESC)
 	err, result := orm.Search(&event.Event{}, &q1)
 	if err != nil {
-		h.WriteJSON(w,util.MapStr{
+		h.WriteJSON(w, util.MapStr{
 			"error": err.Error(),
-		}, http.StatusInternalServerError )
+		}, http.StatusInternalServerError)
 		return
 	}
 	var shardInfo interface{} = []interface{}{}
@@ -512,7 +511,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 			log.Error(err)
 		}
 		metrics["index_health"] = healthMetric
-	}else {
+	} else {
 		switch metricKey {
 		case IndexThroughputMetricKey:
 			metricItem := newMetricItem("index_throughput", 1, OperationGroupKey)
@@ -582,7 +581,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 			minBucketSize, err := GetMetricMinBucketSize(clusterID, MetricTypeIndexStats)
 			if err != nil {
 				log.Error(err)
-			}else{
+			} else {
 				metrics[metricKey].MinBucketSize = int64(minBucketSize)
 			}
 		}
@@ -591,8 +590,8 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 	h.WriteJSON(w, resBody, http.StatusOK)
 }
 
-func (h *APIHandler) GetIndexHealthMetric(ctx context.Context, id, indexName string, min, max int64, bucketSize int)(*common.MetricItem, error){
-	bucketSizeStr:=fmt.Sprintf("%vs",bucketSize)
+func (h *APIHandler) GetIndexHealthMetric(ctx context.Context, id, indexName string, min, max int64, bucketSize int) (*common.MetricItem, error) {
+	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
 	if err != nil {
 		return nil, err
@@ -645,14 +644,14 @@ func (h *APIHandler) GetIndexHealthMetric(ctx context.Context, id, indexName str
 		"aggs": util.MapStr{
 			"dates": util.MapStr{
 				"date_histogram": util.MapStr{
-					"field": "timestamp",
+					"field":       "timestamp",
 					intervalField: bucketSizeStr,
 				},
 				"aggs": util.MapStr{
 					"group_status": util.MapStr{
 						"terms": util.MapStr{
 							"field": "payload.elasticsearch.index_health.status",
-							"size": 5,
+							"size":  5,
 						},
 					},
 				},
@@ -666,8 +665,8 @@ func (h *APIHandler) GetIndexHealthMetric(ctx context.Context, id, indexName str
 		return nil, err
 	}
 
-	metricItem:=newMetricItem("index_health", 1, "")
-	metricItem.AddLine("health","Health","","group1","payload.elasticsearch.index_health.status","max",bucketSizeStr,"%","ratio","0.[00]","0.[00]",false,false)
+	metricItem := newMetricItem("index_health", 1, "")
+	metricItem.AddLine("health", "Health", "", "group1", "payload.elasticsearch.index_health.status", "max", bucketSizeStr, "%", "ratio", "0.[00]", "0.[00]", false, false)
 
 	metricData := []interface{}{}
 	if response.StatusCode == 200 {
@@ -683,8 +682,7 @@ func (h *APIHandler) GetIndexHealthMetric(ctx context.Context, id, indexName str
 	return metricItem, nil
 }
 
-
-func (h *APIHandler) GetIndexStatusOfRecentDay(clusterID, indexName string)(map[string][]interface{}, error){
+func (h *APIHandler) GetIndexStatusOfRecentDay(clusterID, indexName string) (map[string][]interface{}, error) {
 	q := orm.Query{
 		WildcardIndex: true,
 	}
@@ -698,53 +696,53 @@ func (h *APIHandler) GetIndexStatusOfRecentDay(clusterID, indexName string)(map[
 					"ranges": []util.MapStr{
 						{
 							"from": "now-13d/d",
-							"to": "now-12d/d",
+							"to":   "now-12d/d",
 						}, {
 							"from": "now-12d/d",
-							"to": "now-11d/d",
+							"to":   "now-11d/d",
 						},
 						{
 							"from": "now-11d/d",
-							"to": "now-10d/d",
+							"to":   "now-10d/d",
 						},
 						{
 							"from": "now-10d/d",
-							"to": "now-9d/d",
+							"to":   "now-9d/d",
 						}, {
 							"from": "now-9d/d",
-							"to": "now-8d/d",
+							"to":   "now-8d/d",
 						},
 						{
 							"from": "now-8d/d",
-							"to": "now-7d/d",
+							"to":   "now-7d/d",
 						},
 						{
 							"from": "now-7d/d",
-							"to": "now-6d/d",
+							"to":   "now-6d/d",
 						},
 						{
 							"from": "now-6d/d",
-							"to": "now-5d/d",
+							"to":   "now-5d/d",
 						}, {
 							"from": "now-5d/d",
-							"to": "now-4d/d",
+							"to":   "now-4d/d",
 						},
 						{
 							"from": "now-4d/d",
-							"to": "now-3d/d",
-						},{
+							"to":   "now-3d/d",
+						}, {
 							"from": "now-3d/d",
-							"to": "now-2d/d",
+							"to":   "now-2d/d",
 						}, {
 							"from": "now-2d/d",
-							"to": "now-1d/d",
+							"to":   "now-1d/d",
 						}, {
 							"from": "now-1d/d",
-							"to": "now/d",
+							"to":   "now/d",
 						},
 						{
 							"from": "now/d",
-							"to": "now",
+							"to":   "now",
 						},
 					},
 				},
@@ -817,16 +815,16 @@ func (h *APIHandler) GetIndexStatusOfRecentDay(clusterID, indexName string)(map[
 				}
 				healthMap := map[string]int{}
 				status := "unknown"
-				for _, hbkItem := range  healthBks {
+				for _, hbkItem := range healthBks {
 					if hitem, ok := hbkItem.(map[string]interface{}); ok {
 						healthMap[hitem["key"].(string)] = 1
 					}
 				}
 				if _, ok = healthMap["red"]; ok {
 					status = "red"
-				}else if _, ok = healthMap["yellow"]; ok {
+				} else if _, ok = healthMap["yellow"]; ok {
 					status = "yellow"
-				}else if _, ok = healthMap["green"]; ok {
+				} else if _, ok = healthMap["green"]; ok {
 					status = "green"
 				}
 				key := fmt.Sprintf("%s:%s", clusterID, indexName)
@@ -838,7 +836,7 @@ func (h *APIHandler) GetIndexStatusOfRecentDay(clusterID, indexName string)(map[
 }
 
 func (h *APIHandler) getIndexNodes(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	resBody := map[string] interface{}{}
+	resBody := map[string]interface{}{}
 	id := ps.ByName("id")
 	indexName := ps.ByName("index")
 	if !h.IsIndexAllowed(req, id, indexName) {
@@ -847,7 +845,7 @@ func (h *APIHandler) getIndexNodes(w http.ResponseWriter, req *http.Request, ps 
 		}, http.StatusForbidden)
 		return
 	}
-	q := &orm.Query{ Size: 1}
+	q := &orm.Query{Size: 1}
 	q.AddSort("timestamp", orm.DESC)
 	q.Conds = orm.And(
 		orm.Eq("metadata.category", "elasticsearch"),
@@ -859,13 +857,13 @@ func (h *APIHandler) getIndexNodes(w http.ResponseWriter, req *http.Request, ps 
 	err, result := orm.Search(event.Event{}, q)
 	if err != nil {
 		resBody["error"] = err.Error()
-		h.WriteJSON(w,resBody, http.StatusInternalServerError )
+		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 	}
 	namesM := util.MapStr{}
 	if len(result.Result) > 0 {
 		if data, ok := result.Result[0].(map[string]interface{}); ok {
 			if routingTable, exists := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "index_routing_table"}, data); exists {
-				if table, ok := routingTable.(map[string]interface{}); ok{
+				if table, ok := routingTable.(map[string]interface{}); ok {
 					if shardsM, ok := table["shards"].(map[string]interface{}); ok {
 						for _, rows := range shardsM {
 							if rowsArr, ok := rows.([]interface{}); ok {
@@ -887,12 +885,12 @@ func (h *APIHandler) getIndexNodes(w http.ResponseWriter, req *http.Request, ps 
 	}
 
 	//node uuid
-	nodeIds := make([]interface{}, 0, len(namesM) )
+	nodeIds := make([]interface{}, 0, len(namesM))
 	for name, _ := range namesM {
 		nodeIds = append(nodeIds, name)
 	}
 
-	q1 := &orm.Query{ Size: 100}
+	q1 := &orm.Query{Size: 100}
 	q1.AddSort("timestamp", orm.DESC)
 	q1.Conds = orm.And(
 		orm.Eq("metadata.category", "elasticsearch"),
@@ -902,7 +900,7 @@ func (h *APIHandler) getIndexNodes(w http.ResponseWriter, req *http.Request, ps 
 	err, result = orm.Search(elastic.NodeConfig{}, q1)
 	if err != nil {
 		resBody["error"] = err.Error()
-		h.WriteJSON(w,resBody, http.StatusInternalServerError )
+		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 	}
 	nodes := []interface{}{}
 	for _, hit := range result.Result {
@@ -922,11 +920,11 @@ func (h *APIHandler) getIndexNodes(w http.ResponseWriter, req *http.Request, ps 
 
 			if v, ok := nodeId.(string); ok {
 				ninfo := util.MapStr{
-					"id": v,
-					"name": nodeName,
-					"ip": ip,
-					"port": port,
-					"status": status,
+					"id":        v,
+					"name":      nodeName,
+					"ip":        ip,
+					"port":      port,
+					"status":    status,
 					"timestamp": hitM["timestamp"],
 				}
 				nodes = append(nodes, ninfo)
@@ -947,7 +945,7 @@ func (h APIHandler) ListIndex(w http.ResponseWriter, req *http.Request, ps httpr
 	}
 	var must = []util.MapStr{}
 
-	if !util.StringInArray(ids, "*"){
+	if !util.StringInArray(ids, "*") {
 
 		must = append(must, util.MapStr{
 			"terms": util.MapStr{
@@ -958,9 +956,8 @@ func (h APIHandler) ListIndex(w http.ResponseWriter, req *http.Request, ps httpr
 
 	if keyword != "" {
 		must = append(must, util.MapStr{
-			"wildcard":util.MapStr{
-				"metadata.index_name":
-				util.MapStr{"value": fmt.Sprintf("*%s*", keyword)},
+			"wildcard": util.MapStr{
+				"metadata.index_name": util.MapStr{"value": fmt.Sprintf("*%s*", keyword)},
 			},
 		})
 	}
@@ -985,7 +982,6 @@ func (h APIHandler) ListIndex(w http.ResponseWriter, req *http.Request, ps httpr
 			},
 		},
 	}
-
 
 	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 	indexName := orm.GetIndexName(elastic.IndexConfig{})

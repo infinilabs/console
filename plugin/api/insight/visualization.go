@@ -34,8 +34,8 @@ import (
 	"strings"
 
 	log "github.com/cihub/seelog"
-	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/console/model/insight"
+	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 )

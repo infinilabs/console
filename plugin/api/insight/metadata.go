@@ -280,7 +280,7 @@ func getMetricData(metric *insight.Metric) (interface{}, error) {
 		params := map[string]interface{}{}
 		if metric.BucketSize != "" {
 			bucketSize := metric.BucketSize
-			if  metric.BucketSize == "auto" && interval != "" {
+			if metric.BucketSize == "auto" && interval != "" {
 				bucketSize = interval
 			}
 			if interval != "" || bucketSize != "auto" {
@@ -348,13 +348,13 @@ func getMetricData(metric *insight.Metric) (interface{}, error) {
 						}
 					}
 					retMetricDataItem.Timestamp = timestamp
-					if len(metric.Formulas) <= 1 && metric.Formula != ""{
+					if len(metric.Formulas) <= 1 && metric.Formula != "" {
 						//support older versions by returning the result for a single formula.
 						retMetricDataItem.Value = result
 					} else {
 						if v, ok := retMetricDataItem.Value.(map[string]interface{}); ok {
 							v[formula] = result
-						}else{
+						} else {
 							retMetricDataItem.Value = map[string]interface{}{formula: result}
 						}
 					}
@@ -375,7 +375,7 @@ func getMetricData(metric *insight.Metric) (interface{}, error) {
 		}
 	}
 	return util.MapStr{
-		"data": result,
+		"data":    result,
 		"request": string(queryDSL),
 	}, nil
 }

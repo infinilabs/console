@@ -113,7 +113,7 @@ func generateGroupAggs(nodeMetricItems []GroupMetricItem) map[string]interface{}
 func (h *APIHandler) getMetrics(ctx context.Context, query map[string]interface{}, grpMetricItems []GroupMetricItem, bucketSize int) (map[string]*common.MetricItem, error) {
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 	queryDSL := util.MustToJSONBytes(query)
-	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).QueryDSL(ctx, getAllMetricsIndex(), nil,  queryDSL)
+	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).QueryDSL(ctx, getAllMetricsIndex(), nil, queryDSL)
 	if err != nil {
 		return nil, err
 	}
@@ -229,11 +229,12 @@ func GetMinBucketSize() int {
 
 const (
 	MetricTypeClusterHealth = "cluster_health"
-	MetricTypeClusterStats = "cluster_stats"
-	MetricTypeNodeStats      = "node_stats"
-	MetricTypeIndexStats     = "index_stats"
+	MetricTypeClusterStats  = "cluster_stats"
+	MetricTypeNodeStats     = "node_stats"
+	MetricTypeIndexStats    = "index_stats"
 )
-//GetMetricMinBucketSize returns twice the metrics collection interval based on the cluster ID and metric type
+
+// GetMetricMinBucketSize returns twice the metrics collection interval based on the cluster ID and metric type
 func GetMetricMinBucketSize(clusterID, metricType string) (int, error) {
 	meta := elastic.GetMetadata(clusterID)
 	if meta == nil {
@@ -243,19 +244,19 @@ func GetMetricMinBucketSize(clusterID, metricType string) (int, error) {
 	switch metricType {
 	case MetricTypeClusterHealth:
 		if meta.Config.MonitorConfigs != nil {
-			interval =  meta.Config.MonitorConfigs.ClusterHealth.Interval
+			interval = meta.Config.MonitorConfigs.ClusterHealth.Interval
 		}
 	case MetricTypeClusterStats:
 		if meta.Config.MonitorConfigs != nil {
-			interval =  meta.Config.MonitorConfigs.ClusterStats.Interval
+			interval = meta.Config.MonitorConfigs.ClusterStats.Interval
 		}
 	case MetricTypeNodeStats:
 		if meta.Config.MonitorConfigs != nil {
-			interval =  meta.Config.MonitorConfigs.NodeStats.Interval
+			interval = meta.Config.MonitorConfigs.NodeStats.Interval
 		}
 	case MetricTypeIndexStats:
 		if meta.Config.MonitorConfigs != nil {
-			interval =  meta.Config.MonitorConfigs.IndexStats.Interval
+			interval = meta.Config.MonitorConfigs.IndexStats.Interval
 		}
 	default:
 		return 0, fmt.Errorf("invalid metric name: %s", metricType)
@@ -278,7 +279,7 @@ func (h *APIHandler) GetMetricRangeAndBucketSize(req *http.Request, clusterID, m
 	}
 	bucketSize := 0
 
-	bucketSizeStr := h.GetParameterOrDefault(req, "bucket_size", "")    //默认 10，每个 bucket 的时间范围，单位秒
+	bucketSizeStr := h.GetParameterOrDefault(req, "bucket_size", "") //默认 10，每个 bucket 的时间范围，单位秒
 	if bucketSizeStr != "" {
 		du, err := util.ParseDuration(bucketSizeStr)
 		if err != nil {
@@ -293,7 +294,7 @@ func (h *APIHandler) GetMetricRangeAndBucketSize(req *http.Request, clusterID, m
 	maxStr := h.Get(req, "max", "")
 	var (
 		minBucketSize = 0
-		err error
+		err           error
 	)
 	//clusterID may be empty when querying host metrics
 	if clusterID != "" {
@@ -301,7 +302,7 @@ func (h *APIHandler) GetMetricRangeAndBucketSize(req *http.Request, clusterID, m
 		if err != nil {
 			return 0, 0, 0, fmt.Errorf("failed to get min bucket size for cluster [%s]:%w", clusterID, err)
 		}
-	}else{
+	} else {
 		//default to 20
 		minBucketSize = 20
 	}

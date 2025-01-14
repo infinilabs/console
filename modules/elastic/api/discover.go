@@ -39,7 +39,7 @@ import (
 
 func (h *APIHandler) HandleEseSearchAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	targetClusterID := ps.ByName("id")
-	exists,client,err:=h.GetClusterClient(targetClusterID)
+	exists, client, err := h.GetClusterClient(targetClusterID)
 
 	if err != nil {
 		log.Error(err)
@@ -47,16 +47,16 @@ func (h *APIHandler) HandleEseSearchAction(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	if !exists{
-		errStr := fmt.Sprintf("cluster [%s] not found",targetClusterID)
+	if !exists {
+		errStr := fmt.Sprintf("cluster [%s] not found", targetClusterID)
 		log.Error(errStr)
 		h.WriteError(w, errStr, http.StatusNotFound)
 		return
 	}
 
-	var reqParams = struct{
-		Index string `json:"index"`
-		Body map[string]interface{} `json:"body"`
+	var reqParams = struct {
+		Index           string                 `json:"index"`
+		Body            map[string]interface{} `json:"body"`
 		DistinctByField map[string]interface{} `json:"distinct_by_field"`
 	}{}
 
@@ -101,12 +101,12 @@ func (h *APIHandler) HandleEseSearchAction(w http.ResponseWriter, req *http.Requ
 			if qm, ok := query.(map[string]interface{}); ok {
 
 				filter, _ := util.MapStr(qm).GetValue("bool.filter")
-				if fv, ok := filter.([]interface{}); ok{
+				if fv, ok := filter.([]interface{}); ok {
 					fv = append(fv, util.MapStr{
 						"script": util.MapStr{
 							"script": util.MapStr{
 								"source": "distinct_by_field",
-								"lang": "infini",
+								"lang":   "infini",
 								"params": reqParams.DistinctByField,
 							},
 						},
@@ -173,7 +173,7 @@ func (h *APIHandler) HandleEseSearchAction(w http.ResponseWriter, req *http.Requ
 	if timeout != "" {
 		queryArgs = &[]util.KV{
 			{
-				Key: "timeout",
+				Key:   "timeout",
 				Value: timeout,
 			},
 		}
@@ -184,7 +184,7 @@ func (h *APIHandler) HandleEseSearchAction(w http.ResponseWriter, req *http.Requ
 		}
 		var cancel context.CancelFunc
 		// here add one second for network delay
-		ctx, cancel = context.WithTimeout(context.Background(), du + time.Second)
+		ctx, cancel = context.WithTimeout(context.Background(), du+time.Second)
 		defer cancel()
 	}
 
@@ -207,12 +207,10 @@ func (h *APIHandler) HandleEseSearchAction(w http.ResponseWriter, req *http.Requ
 	h.Write(w, searchRes.RawResult.Body)
 }
 
-
 func (h *APIHandler) HandleValueSuggestionAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	resBody := map[string]interface{}{
-	}
+	resBody := map[string]interface{}{}
 	targetClusterID := ps.ByName("id")
-	exists,client,err:=h.GetClusterClient(targetClusterID)
+	exists, client, err := h.GetClusterClient(targetClusterID)
 
 	if err != nil {
 		log.Error(err)
@@ -221,16 +219,16 @@ func (h *APIHandler) HandleValueSuggestionAction(w http.ResponseWriter, req *htt
 		return
 	}
 
-	if !exists{
-		errStr := fmt.Sprintf("cluster [%s] not found",targetClusterID)
+	if !exists {
+		errStr := fmt.Sprintf("cluster [%s] not found", targetClusterID)
 		h.WriteError(w, errStr, http.StatusNotFound)
 		return
 	}
 
-	var reqParams = struct{
+	var reqParams = struct {
 		BoolFilter interface{} `json:"boolFilter"`
-		FieldName string `json:"field"`
-		Query string `json:"query"`
+		FieldName  string      `json:"field"`
+		Query      string      `json:"query"`
 	}{}
 	err = h.DecodeJSON(req, &reqParams)
 	if err != nil {
@@ -246,7 +244,7 @@ func (h *APIHandler) HandleValueSuggestionAction(w http.ResponseWriter, req *htt
 	indices, hasAll := h.GetAllowedIndices(req, targetClusterID)
 	if !hasAll {
 		if len(indices) == 0 {
-			h.WriteJSON(w, values,http.StatusOK)
+			h.WriteJSON(w, values, http.StatusOK)
 			return
 		}
 		boolQ["must"] = []util.MapStr{
@@ -265,15 +263,15 @@ func (h *APIHandler) HandleValueSuggestionAction(w http.ResponseWriter, req *htt
 		"aggs": util.MapStr{
 			"suggestions": util.MapStr{
 				"terms": util.MapStr{
-					"field": reqParams.FieldName,
-					"include": reqParams.Query + ".*",
+					"field":          reqParams.FieldName,
+					"include":        reqParams.Query + ".*",
 					"execution_hint": "map",
-					"shard_size": 10,
+					"shard_size":     10,
 				},
 			},
 		},
 	}
-	var queryBodyBytes  = util.MustToJSONBytes(queryBody)
+	var queryBodyBytes = util.MustToJSONBytes(queryBody)
 
 	searchRes, err := client.SearchWithRawQueryDSL(indexName, queryBodyBytes)
 	if err != nil {
@@ -285,7 +283,7 @@ func (h *APIHandler) HandleValueSuggestionAction(w http.ResponseWriter, req *htt
 	for _, bucket := range searchRes.Aggregations["suggestions"].Buckets {
 		values = append(values, bucket["key"])
 	}
-	h.WriteJSON(w, values,http.StatusOK)
+	h.WriteJSON(w, values, http.StatusOK)
 }
 
 func (h *APIHandler) HandleTraceIDSearchAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -293,7 +291,7 @@ func (h *APIHandler) HandleTraceIDSearchAction(w http.ResponseWriter, req *http.
 	traceIndex := h.GetParameterOrDefault(req, "traceIndex", orm.GetIndexName(elastic.TraceMeta{}))
 	traceField := h.GetParameterOrDefault(req, "traceField", "trace_id")
 	targetClusterID := ps.ByName("id")
-	exists,client,err:=h.GetClusterClient(targetClusterID)
+	exists, client, err := h.GetClusterClient(targetClusterID)
 
 	if err != nil {
 		log.Error(err)
@@ -301,8 +299,8 @@ func (h *APIHandler) HandleTraceIDSearchAction(w http.ResponseWriter, req *http.
 		return
 	}
 
-	if !exists{
-		errStr := fmt.Sprintf("cluster [%s] not found",targetClusterID)
+	if !exists {
+		errStr := fmt.Sprintf("cluster [%s] not found", targetClusterID)
 		h.WriteError(w, errStr, http.StatusNotFound)
 		return
 	}
@@ -340,4 +338,3 @@ func (h *APIHandler) HandleTraceIDSearchAction(w http.ResponseWriter, req *http.
 	}
 	h.WriteJSON(w, indexNames, http.StatusOK)
 }
-

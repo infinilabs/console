@@ -115,8 +115,8 @@ func GenerateQuery(metric *insight.Metric) (interface{}, error) {
 		}
 	}
 	var (
-		useDateHistogram = false
-		dateHistogramAgg util.MapStr
+		useDateHistogram     = false
+		dateHistogramAgg     util.MapStr
 		dateHistogramAggName string
 	)
 	if metric.BucketSize != "" && metric.TimeField != "" {
@@ -128,10 +128,10 @@ func GenerateQuery(metric *insight.Metric) (interface{}, error) {
 				buckets = 2
 			}
 			dateHistogramAgg = util.MapStr{
-				"field": metric.TimeField,
+				"field":   metric.TimeField,
 				"buckets": buckets,
 			}
-		}else{
+		} else {
 			dateHistogramAggName = "date_histogram"
 			verInfo := elastic.GetClient(metric.ClusterId).GetVersion()
 
@@ -144,7 +144,7 @@ func GenerateQuery(metric *insight.Metric) (interface{}, error) {
 				return nil, fmt.Errorf("get interval field error: %w", err)
 			}
 			dateHistogramAgg = util.MapStr{
-				"field": metric.TimeField,
+				"field":       metric.TimeField,
 				intervalField: metric.BucketSize,
 			}
 		}
@@ -154,7 +154,7 @@ func GenerateQuery(metric *insight.Metric) (interface{}, error) {
 		basicAggs = util.MapStr{
 			"time_buckets": util.MapStr{
 				dateHistogramAggName: dateHistogramAgg,
-				"aggs": basicAggs,
+				"aggs":               basicAggs,
 			},
 		}
 	}
@@ -179,7 +179,7 @@ func GenerateQuery(metric *insight.Metric) (interface{}, error) {
 				"field": groups[i].Field,
 				"size":  limit,
 			}
-			if i == grpLength - 1 && len(metric.Sort) > 0 {
+			if i == grpLength-1 && len(metric.Sort) > 0 {
 				//use bucket sort instead of terms order when time after group
 				if !timeBeforeGroup && len(metric.Sort) > 0 {
 					basicAggs["sort_field"] = util.MapStr{
@@ -197,7 +197,7 @@ func GenerateQuery(metric *insight.Metric) (interface{}, error) {
 							},
 						},
 					}
-				}else{
+				} else {
 					var termsOrder []interface{}
 					percentAggs := []string{"p99", "p95", "p90", "p80", "p50"}
 					for _, sortItem := range metric.Sort {
@@ -250,7 +250,7 @@ func GenerateQuery(metric *insight.Metric) (interface{}, error) {
 			basicAggs = util.MapStr{
 				"time_buckets": util.MapStr{
 					dateHistogramAggName: dateHistogramAgg,
-					"aggs": basicAggs,
+					"aggs":               basicAggs,
 				},
 			}
 		}
@@ -288,7 +288,7 @@ func CollectMetricData(agg interface{}, timeBeforeGroup bool) ([]insight.MetricD
 }
 
 // timeBeforeGroup => false
-func collectMetricData(agg interface{}, groupValues []string, metricData *[]insight.MetricData) (interval string){
+func collectMetricData(agg interface{}, groupValues []string, metricData *[]insight.MetricData) (interval string) {
 	if aggM, ok := agg.(map[string]interface{}); ok {
 		if timeBks, ok := aggM["time_buckets"].(map[string]interface{}); ok {
 			interval, _ = timeBks["interval"].(string)
@@ -351,7 +351,7 @@ func collectMetricData(agg interface{}, groupValues []string, metricData *[]insi
 }
 
 // timeBeforeGroup => true
-func collectMetricDataOther(agg interface{}, groupValues []string, metricData *[]insight.MetricData, timeKey interface{}) (interval string){
+func collectMetricDataOther(agg interface{}, groupValues []string, metricData *[]insight.MetricData, timeKey interface{}) (interval string) {
 	if aggM, ok := agg.(map[string]interface{}); ok {
 		if timeBks, ok := aggM["time_buckets"].(map[string]interface{}); ok {
 			interval, _ = timeBks["interval"].(string)

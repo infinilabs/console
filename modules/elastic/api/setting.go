@@ -36,8 +36,7 @@ import (
 )
 
 func (h *APIHandler) HandleSettingAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	resBody := map[string]interface{}{
-	}
+	resBody := map[string]interface{}{}
 	targetClusterID := ps.ByName("id")
 
 	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
@@ -58,11 +57,10 @@ func (h *APIHandler) HandleSettingAction(w http.ResponseWriter, req *http.Reques
 	searchRes, err := esClient.SearchWithRawQueryDSL(indexName, []byte(queryDSL))
 	if len(searchRes.Hits.Hits) > 0 {
 		_, err = esClient.Index(indexName, "", searchRes.Hits.Hits[0].ID, reqParams, "wait_for")
-	}else{
+	} else {
 		reqParams.ID = util.GetUUID()
 		_, err = esClient.Index(indexName, "", reqParams.ID, reqParams, "wait_for")
 	}
-
 
 	if err != nil {
 		log.Error(err)
@@ -71,12 +69,11 @@ func (h *APIHandler) HandleSettingAction(w http.ResponseWriter, req *http.Reques
 		return
 	}
 	resBody["acknowledged"] = true
-	h.WriteJSON(w, resBody ,http.StatusOK)
+	h.WriteJSON(w, resBody, http.StatusOK)
 }
 
 func (h *APIHandler) HandleGetSettingAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	resBody := map[string]interface{}{
-	}
+	resBody := map[string]interface{}{}
 	targetClusterID := ps.ByName("id")
 
 	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
@@ -94,8 +91,8 @@ func (h *APIHandler) HandleGetSettingAction(w http.ResponseWriter, req *http.Req
 	var value interface{}
 	if len(searchRes.Hits.Hits) > 0 {
 		value = searchRes.Hits.Hits[0].Source["value"]
-	}else{
+	} else {
 		value = ""
 	}
-	h.WriteJSON(w, value ,http.StatusOK)
+	h.WriteJSON(w, value, http.StatusOK)
 }

@@ -545,7 +545,7 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 			minBucketSize, err := GetMetricMinBucketSize(id, metricType)
 			if err != nil {
 				log.Error(err)
-			}else{
+			} else {
 				metrics[key].MinBucketSize = int64(minBucketSize)
 			}
 		}
@@ -648,7 +648,7 @@ func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.R
 				}
 			}
 		}
-	}else{
+	} else {
 		metrics, err = h.getIndexMetrics(ctx, req, id, bucketSize, min, max, indexName, top, key)
 		if err != nil {
 			h.WriteError(w, err, http.StatusInternalServerError)
@@ -660,7 +660,7 @@ func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.R
 			minBucketSize, err := GetMetricMinBucketSize(id, MetricTypeNodeStats)
 			if err != nil {
 				log.Error(err)
-			}else{
+			} else {
 				metrics[key].MinBucketSize = int64(minBucketSize)
 			}
 		}
@@ -788,19 +788,20 @@ const (
 )
 
 const (
-	ClusterStorageMetricKey = "cluster_storage"
+	ClusterStorageMetricKey   = "cluster_storage"
 	ClusterDocumentsMetricKey = "cluster_documents"
-	ClusterIndicesMetricKey  = "cluster_indices"
+	ClusterIndicesMetricKey   = "cluster_indices"
 	ClusterNodeCountMetricKey = "node_count"
-	ClusterHealthMetricKey = "cluster_health"
-	ShardCountMetricKey = "shard_count"
-	CircuitBreakerMetricKey = "circuit_breaker"
+	ClusterHealthMetricKey    = "cluster_health"
+	ShardCountMetricKey       = "shard_count"
+	CircuitBreakerMetricKey   = "circuit_breaker"
 )
+
 func (h *APIHandler) GetClusterMetrics(ctx context.Context, id string, bucketSize int, min, max int64, metricKey string) (map[string]*common.MetricItem, error) {
 
 	var (
-		clusterMetricsResult = map[string]*common.MetricItem {}
-		err error
+		clusterMetricsResult = map[string]*common.MetricItem{}
+		err                  error
 	)
 	switch metricKey {
 	case ClusterDocumentsMetricKey,
@@ -915,12 +916,14 @@ func (h *APIHandler) getClusterMetricsByKey(ctx context.Context, id string, buck
 	}
 	return h.getSingleMetrics(ctx, clusterMetricItems, query, bucketSize)
 }
+
 const (
-	IndexThroughputMetricKey = "index_throughput"
+	IndexThroughputMetricKey  = "index_throughput"
 	SearchThroughputMetricKey = "search_throughput"
-	IndexLatencyMetricKey    = "index_latency"
-	SearchLatencyMetricKey   = "search_latency"
+	IndexLatencyMetricKey     = "index_latency"
+	SearchLatencyMetricKey    = "search_latency"
 )
+
 func (h *APIHandler) GetClusterIndexMetrics(ctx context.Context, id string, bucketSize int, min, max int64, metricKey string) (map[string]*common.MetricItem, error) {
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 	metricItems := []*common.MetricItem{}

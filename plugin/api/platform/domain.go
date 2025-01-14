@@ -213,7 +213,7 @@ func GetCollectionMetas() map[string]CollectionMeta {
 				MatchObject: &alerting.Rule{},
 			},
 			"metric": {
-				Name: "metric",
+				Name:        "metric",
 				MatchObject: &insight.MetricBase{},
 			},
 		}

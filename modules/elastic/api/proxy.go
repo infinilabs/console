@@ -278,5 +278,3 @@ func rewriteTableNamesOfSqlRequest(req *http.Request, distribution string) (stri
 	}
 	return strings.Join(unescapedTableNames, ","), nil
 }
-
-

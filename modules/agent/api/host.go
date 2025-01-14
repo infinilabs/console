@@ -46,9 +46,9 @@ func (h *APIHandler) enrollHost(w http.ResponseWriter, req *http.Request, ps htt
 		HostName string `json:"host_name"`
 		IP       string `json:"ip"`
 		Source   string `json:"source"`
-		OSName string `json:"os_name"`
-		OSArch string `json:"os_arch"`
-		NodeID string `json:"node_uuid"`
+		OSName   string `json:"os_name"`
+		OSArch   string `json:"os_arch"`
+		NodeID   string `json:"node_uuid"`
 	}
 	err := h.DecodeJSON(req, &reqBody)
 	if err != nil {
@@ -84,7 +84,7 @@ func (h *APIHandler) enrollHost(w http.ResponseWriter, req *http.Request, ps htt
 			hostInfo = &host.HostInfo{
 				IP: hi.IP,
 				OSInfo: host.OS{
-					Platform: hi.OSName,
+					Platform:   hi.OSName,
 					KernelArch: hi.OSArch,
 				},
 				NodeID: hi.NodeID,
@@ -97,7 +97,7 @@ func (h *APIHandler) enrollHost(w http.ResponseWriter, req *http.Request, ps htt
 		}
 		hostInfo.Timestamp = time.Now()
 		var ctx *orm.Context
-		if i == len(reqBody) - 1 {
+		if i == len(reqBody)-1 {
 			ctx = &orm.Context{
 				Refresh: "wait_for",
 			}
@@ -112,7 +112,7 @@ func (h *APIHandler) enrollHost(w http.ResponseWriter, req *http.Request, ps htt
 			continue
 		}
 	}
-	resBody :=  util.MapStr{
+	resBody := util.MapStr{
 		"success": true,
 	}
 	if len(errors) > 0 {
@@ -168,15 +168,15 @@ func (h *APIHandler) GetHostAgentInfo(w http.ResponseWriter, req *http.Request, 
 	}
 
 	h.WriteJSON(w, util.MapStr{
-		"host_id": hostID,
+		"host_id":  hostID,
 		"agent_id": obj.ID,
-		"version": obj.Application.Version,
-		"status": hostInfo.AgentStatus,
+		"version":  obj.Application.Version,
+		"status":   hostInfo.AgentStatus,
 		"endpoint": obj.GetEndpoint(),
 	}, http.StatusOK)
 }
 
-func getHost(hostID string) (*host.HostInfo, error){
+func getHost(hostID string) (*host.HostInfo, error) {
 	hostInfo := &host.HostInfo{}
 	hostInfo.ID = hostID
 	exists, err := orm.Get(hostInfo)

@@ -35,7 +35,7 @@ import (
 	"net/http"
 )
 
-func (h *APIHandler) HandleGetILMPolicyAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
+func (h *APIHandler) HandleGetILMPolicyAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	clusterID := ps.MustGetParameter("id")
 	esClient := elastic.GetClient(clusterID)
 	policies, err := esClient.GetILMPolicy("")
@@ -47,7 +47,7 @@ func (h *APIHandler) HandleGetILMPolicyAction(w http.ResponseWriter, req *http.R
 	h.WriteJSON(w, policies, http.StatusOK)
 }
 
-func (h *APIHandler) HandleSaveILMPolicyAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
+func (h *APIHandler) HandleSaveILMPolicyAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	clusterID := ps.MustGetParameter("id")
 	policy := ps.MustGetParameter("policy")
 	esClient := elastic.GetClient(clusterID)
@@ -66,7 +66,7 @@ func (h *APIHandler) HandleSaveILMPolicyAction(w http.ResponseWriter, req *http.
 	h.WriteAckOKJSON(w)
 }
 
-func (h *APIHandler) HandleDeleteILMPolicyAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params){
+func (h *APIHandler) HandleDeleteILMPolicyAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	clusterID := ps.MustGetParameter("id")
 	policy := ps.MustGetParameter("policy")
 	esClient := elastic.GetClient(clusterID)

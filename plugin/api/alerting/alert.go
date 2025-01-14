@@ -49,7 +49,7 @@ func (h *AlertAPI) getAlert(w http.ResponseWriter, req *http.Request, ps httprou
 
 	q := orm.Query{
 		WildcardIndex: true,
-		Size: 1,
+		Size:          1,
 	}
 	q.Conds = orm.And(orm.Eq("id", id))
 	err, result := orm.Search(obj, &q)
@@ -76,16 +76,16 @@ func (h *AlertAPI) getAlert(w http.ResponseWriter, req *http.Request, ps httprou
 func (h *AlertAPI) searchAlert(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 
 	var (
-		keyword        = h.GetParameterOrDefault(req, "keyword", "")
+		keyword     = h.GetParameterOrDefault(req, "keyword", "")
 		queryDSL    = `{"sort":[%s],"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d}`
 		strSize     = h.GetParameterOrDefault(req, "size", "20")
 		strFrom     = h.GetParameterOrDefault(req, "from", "0")
-		state    = h.GetParameterOrDefault(req, "state", "")
-		priority = h.GetParameterOrDefault(req, "priority", "")
-		sort     = h.GetParameterOrDefault(req, "sort", "")
-		ruleID        = h.GetParameterOrDefault(req, "rule_id", "")
-		min        = h.GetParameterOrDefault(req, "min", "")
-		max        = h.GetParameterOrDefault(req, "max", "")
+		state       = h.GetParameterOrDefault(req, "state", "")
+		priority    = h.GetParameterOrDefault(req, "priority", "")
+		sort        = h.GetParameterOrDefault(req, "sort", "")
+		ruleID      = h.GetParameterOrDefault(req, "rule_id", "")
+		min         = h.GetParameterOrDefault(req, "min", "")
+		max         = h.GetParameterOrDefault(req, "max", "")
 		mustBuilder = &strings.Builder{}
 		sortBuilder = strings.Builder{}
 	)
@@ -160,13 +160,13 @@ func (h *AlertAPI) getAlertStats(w http.ResponseWriter, req *http.Request, ps ht
 			"terms_by_state": util.MapStr{
 				"terms": util.MapStr{
 					"field": "priority",
-					"size": 5,
+					"size":  5,
 				},
 			},
 		},
 	}
 
-	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetWildcardIndexName(alerting.Alert{}), util.MustToJSONBytes(queryDsl) )
+	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetWildcardIndexName(alerting.Alert{}), util.MustToJSONBytes(queryDsl))
 	if err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"error": err.Error(),

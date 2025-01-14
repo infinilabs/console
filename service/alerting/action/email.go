@@ -35,27 +35,27 @@ import (
 )
 
 type EmailAction struct {
-	Data *alerting.Email
+	Data    *alerting.Email
 	Subject string
-	Body string
+	Body    string
 }
 
 const EmailQueueName = "email_messages"
 
-func (act *EmailAction) Execute()([]byte, error){
+func (act *EmailAction) Execute() ([]byte, error) {
 	queueCfg := queue.GetOrInitConfig(EmailQueueName)
 	if act.Data.ServerID == "" {
 		return nil, fmt.Errorf("parameter server_id must not be empty")
 	}
 	emailMsg := util.MapStr{
 		"server_id": act.Data.ServerID,
-		"email": act.Data.Recipients.To,
-		"template": "raw",
+		"email":     act.Data.Recipients.To,
+		"template":  "raw",
 		"variables": util.MapStr{
-			"subject": act.Subject,
-			"body": act.Body,
+			"subject":      act.Subject,
+			"body":         act.Body,
 			"content_type": act.Data.ContentType,
-			"cc": act.Data.Recipients.CC,
+			"cc":           act.Data.Recipients.CC,
 		},
 	}
 	emailMsgBytes := util.MustToJSONBytes(emailMsg)

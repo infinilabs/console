@@ -112,7 +112,7 @@ func generateGroupAggs(nodeMetricItems []GroupMetricItem) map[string]interface{}
 func (h *APIHandler) getMetrics(ctx context.Context, query map[string]interface{}, grpMetricItems []GroupMetricItem, bucketSize int) (map[string]*common.MetricItem, error) {
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 	queryDSL := util.MustToJSONBytes(query)
-	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).QueryDSL(ctx, getAllMetricsIndex(),nil, queryDSL)
+	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).QueryDSL(ctx, getAllMetricsIndex(), nil, queryDSL)
 	if err != nil {
 		return nil, err
 	}
@@ -205,12 +205,12 @@ func (h *APIHandler) getMetrics(ctx context.Context, query map[string]interface{
 				dataKey = dataKey + "_deriv"
 			}
 			line.Data = grpMetricData[dataKey][line.Metric.Label]
-			if v, ok := line.Data.([][]interface{}); ok && len(v)> 0 && bucketSize <= 60 {
+			if v, ok := line.Data.([][]interface{}); ok && len(v) > 0 && bucketSize <= 60 {
 				// remove first metric dot
 				temp := v[1:]
 				// // remove first last dot
 				if len(temp) > 0 {
-					temp = temp[0: len(temp)-1]
+					temp = temp[0 : len(temp)-1]
 				}
 				line.Data = temp
 			}
@@ -369,9 +369,9 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 		},
 	}
 	queryDSL := util.MustToJSONBytes(query)
-	response, err := elastic.GetClient(clusterID).QueryDSL(ctx, getAllMetricsIndex(), nil,  queryDSL)
+	response, err := elastic.GetClient(clusterID).QueryDSL(ctx, getAllMetricsIndex(), nil, queryDSL)
 	if err != nil {
-		return  nil, err
+		return nil, err
 	}
 
 	var minDate, maxDate int64
@@ -429,12 +429,12 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 		for _, line := range metricItem.Lines {
 			line.TimeRange = common.TimeRange{Min: minDate, Max: maxDate}
 			line.Data = metricData[line.Metric.GetDataKey()]
-			if v, ok := line.Data.([][]interface{}); ok && len(v)> 0 && bucketSize <= 60 {
+			if v, ok := line.Data.([][]interface{}); ok && len(v) > 0 && bucketSize <= 60 {
 				// remove first metric dot
 				temp := v[1:]
 				// // remove first last dot
 				if len(temp) > 0 {
-					temp = temp[0: len(temp)-1]
+					temp = temp[0 : len(temp)-1]
 				}
 				line.Data = temp
 			}
@@ -912,13 +912,13 @@ func parseGroupMetricData(buckets []elastic.BucketBase, isPercent bool) ([]inter
 					if bkMap, ok := statusBk.(map[string]interface{}); ok {
 						statusKey := bkMap["key"].(string)
 						count := bkMap["doc_count"].(float64)
-						if isPercent{
+						if isPercent {
 							metricData = append(metricData, map[string]interface{}{
 								"x": dateTime,
 								"y": count / totalCount * 100,
 								"g": statusKey,
 							})
-						}else{
+						} else {
 							metricData = append(metricData, map[string]interface{}{
 								"x": dateTime,
 								"y": count,
@@ -950,12 +950,12 @@ func (h *APIHandler) getSingleIndexMetricsByNodeStats(ctx context.Context, metri
 					"field": line.Metric.Field,
 				},
 			}
-			var sumBucketPath = "term_node>"+ line.Metric.ID
+			var sumBucketPath = "term_node>" + line.Metric.ID
 			aggs[line.Metric.ID] = leafAgg
 
 			sumAggs[line.Metric.ID] = util.MapStr{
 				"sum_bucket": util.MapStr{
-					"buckets_path":  sumBucketPath,
+					"buckets_path": sumBucketPath,
 				},
 			}
 			if line.Metric.Field2 != "" {
@@ -966,9 +966,9 @@ func (h *APIHandler) getSingleIndexMetricsByNodeStats(ctx context.Context, metri
 				}
 
 				aggs[line.Metric.ID+"_field2"] = leafAgg2
-				sumAggs[line.Metric.ID + "_field2"] = util.MapStr{
+				sumAggs[line.Metric.ID+"_field2"] = util.MapStr{
 					"sum_bucket": util.MapStr{
-						"buckets_path": sumBucketPath+"_field2",
+						"buckets_path": sumBucketPath + "_field2",
 					},
 				}
 			}
@@ -991,10 +991,10 @@ func (h *APIHandler) getSingleIndexMetricsByNodeStats(ctx context.Context, metri
 		}
 	}
 
-	sumAggs["term_node"]= util.MapStr{
+	sumAggs["term_node"] = util.MapStr{
 		"terms": util.MapStr{
 			"field": "metadata.labels.node_id",
-			"size": 1000,
+			"size":  1000,
 		},
 		"aggs": aggs,
 	}
@@ -1015,7 +1015,7 @@ func (h *APIHandler) getSingleIndexMetricsByNodeStats(ctx context.Context, metri
 			"aggs": sumAggs,
 		},
 	}
-	return parseSingleIndexMetrics(ctx, clusterID, metricItems, query, bucketSize,metricData, metricItemsMap)
+	return parseSingleIndexMetrics(ctx, clusterID, metricItems, query, bucketSize, metricData, metricItemsMap)
 }
 
 func (h *APIHandler) getSingleIndexMetrics(ctx context.Context, metricItems []*common.MetricItem, query map[string]interface{}, bucketSize int) (map[string]*common.MetricItem, error) {
@@ -1035,11 +1035,11 @@ func (h *APIHandler) getSingleIndexMetrics(ctx context.Context, metricItems []*c
 					"field": line.Metric.Field,
 				},
 			}
-			var sumBucketPath = "term_shard>"+ line.Metric.ID
+			var sumBucketPath = "term_shard>" + line.Metric.ID
 			aggs[line.Metric.ID] = leafAgg
 			sumAggs[line.Metric.ID] = util.MapStr{
 				"sum_bucket": util.MapStr{
-					"buckets_path":  sumBucketPath,
+					"buckets_path": sumBucketPath,
 				},
 			}
 			if line.Metric.Field2 != "" {
@@ -1050,9 +1050,9 @@ func (h *APIHandler) getSingleIndexMetrics(ctx context.Context, metricItems []*c
 				}
 				aggs[line.Metric.ID+"_field2"] = leafAgg2
 
-				sumAggs[line.Metric.ID + "_field2"] = util.MapStr{
+				sumAggs[line.Metric.ID+"_field2"] = util.MapStr{
 					"sum_bucket": util.MapStr{
-						"buckets_path": sumBucketPath+"_field2",
+						"buckets_path": sumBucketPath + "_field2",
 					},
 				}
 			}
@@ -1075,10 +1075,10 @@ func (h *APIHandler) getSingleIndexMetrics(ctx context.Context, metricItems []*c
 		}
 	}
 
-	sumAggs["term_shard"]= util.MapStr{
+	sumAggs["term_shard"] = util.MapStr{
 		"terms": util.MapStr{
 			"field": "metadata.labels.shard_id",
-			"size": 100000,
+			"size":  100000,
 		},
 		"aggs": aggs,
 	}
@@ -1092,7 +1092,7 @@ func (h *APIHandler) getSingleIndexMetrics(ctx context.Context, metricItems []*c
 	if len(metricItems) > 0 && len(metricItems[0].Lines) > 0 && metricItems[0].Lines[0].Metric.OnlyPrimary {
 		query["query"] = util.MapStr{
 			"bool": util.MapStr{
-			"must": []util.MapStr{
+				"must": []util.MapStr{
 					query["query"].(util.MapStr),
 					{"term": util.MapStr{"payload.elasticsearch.shard_stats.routing.primary": true}},
 				},
@@ -1109,7 +1109,7 @@ func (h *APIHandler) getSingleIndexMetrics(ctx context.Context, metricItems []*c
 			"aggs": sumAggs,
 		},
 	}
-	return parseSingleIndexMetrics(ctx, clusterID, metricItems, query, bucketSize,metricData, metricItemsMap)
+	return parseSingleIndexMetrics(ctx, clusterID, metricItems, query, bucketSize, metricData, metricItemsMap)
 }
 
 func parseSingleIndexMetrics(ctx context.Context, clusterID string, metricItems []*common.MetricItem, query map[string]interface{}, bucketSize int, metricData map[string][][]interface{}, metricItemsMap map[string]*common.MetricLine) (map[string]*common.MetricItem, error) {
@@ -1174,12 +1174,12 @@ func parseSingleIndexMetrics(ctx context.Context, clusterID string, metricItems 
 		for _, line := range metricItem.Lines {
 			line.TimeRange = common.TimeRange{Min: minDate, Max: maxDate}
 			line.Data = metricData[line.Metric.GetDataKey()]
-			if v, ok := line.Data.([][]interface{}); ok && len(v)> 0 && bucketSize <= 60 {
+			if v, ok := line.Data.([][]interface{}); ok && len(v) > 0 && bucketSize <= 60 {
 				// remove first metric dot
 				temp := v[1:]
 				// // remove first last dot
 				if len(temp) > 0 {
-					temp = temp[0: len(temp)-1]
+					temp = temp[0 : len(temp)-1]
 				}
 				line.Data = temp
 			}

@@ -27,6 +27,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
+	"net/http"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
 	log "github.com/cihub/seelog"
 	"infini.sh/console/core"
 	v1 "infini.sh/console/modules/elastic/api/v1"
@@ -39,12 +46,6 @@ import (
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/modules/elastic/common"
-	"math"
-	"net/http"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
 )
 
 type APIHandler struct {
@@ -534,13 +535,13 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 	key := h.GetParameter(req, "key")
 	var metricType string
 	switch key {
-	case v1.IndexThroughputMetricKey, v1.SearchThroughputMetricKey, v1.IndexLatencyMetricKey, v1.SearchLatencyMetricKey, CircuitBreakerMetricKey,ShardStateMetricKey:
+	case v1.IndexThroughputMetricKey, v1.SearchThroughputMetricKey, v1.IndexLatencyMetricKey, v1.SearchLatencyMetricKey, CircuitBreakerMetricKey, ShardStateMetricKey:
 		metricType = v1.MetricTypeNodeStats
 	case ClusterDocumentsMetricKey,
 		ClusterStorageMetricKey,
 		ClusterIndicesMetricKey,
 		ClusterNodeCountMetricKey:
-			metricType = v1.MetricTypeClusterStats
+		metricType = v1.MetricTypeClusterStats
 	case ClusterHealthMetricKey:
 		metricType = v1.MetricTypeClusterStats
 	case ShardCountMetricKey:
@@ -649,7 +650,7 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 			minBucketSize, err := v1.GetMetricMinBucketSize(id, metricType)
 			if err != nil {
 				log.Error(err)
-			}else{
+			} else {
 				metrics[key].MinBucketSize = int64(minBucketSize)
 			}
 		}
@@ -700,7 +701,7 @@ func (h *APIHandler) HandleNodeMetricsAction(w http.ResponseWriter, req *http.Re
 			minBucketSize, err := v1.GetMetricMinBucketSize(id, v1.MetricTypeNodeStats)
 			if err != nil {
 				log.Error(err)
-			}else{
+			} else {
 				metrics[key].MinBucketSize = int64(minBucketSize)
 			}
 		}
@@ -817,7 +818,7 @@ func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.R
 			}
 
 		}
-	}else{
+	} else {
 		metrics, err = h.getIndexMetrics(ctx, req, id, bucketSize, min, max, indexName, top, shardID, key)
 		if err != nil {
 			log.Error(err)
@@ -830,7 +831,7 @@ func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.R
 			minBucketSize, err := v1.GetMetricMinBucketSize(id, v1.MetricTypeNodeStats)
 			if err != nil {
 				log.Error(err)
-			}else{
+			} else {
 				metrics[key].MinBucketSize = int64(minBucketSize)
 			}
 		}
@@ -888,7 +889,7 @@ func (h *APIHandler) HandleQueueMetricsAction(w http.ResponseWriter, req *http.R
 			minBucketSize, err := v1.GetMetricMinBucketSize(id, v1.MetricTypeNodeStats)
 			if err != nil {
 				log.Error(err)
-			}else{
+			} else {
 				metrics[key].MinBucketSize = int64(minBucketSize)
 			}
 		}
@@ -1015,20 +1016,20 @@ const (
 )
 
 const (
-	ClusterStorageMetricKey = "cluster_storage"
+	ClusterStorageMetricKey   = "cluster_storage"
 	ClusterDocumentsMetricKey = "cluster_documents"
-	ClusterIndicesMetricKey  = "cluster_indices"
+	ClusterIndicesMetricKey   = "cluster_indices"
 	ClusterNodeCountMetricKey = "node_count"
-	ClusterHealthMetricKey = "cluster_health"
-	ShardCountMetricKey = "shard_count"
-	CircuitBreakerMetricKey = "circuit_breaker"
+	ClusterHealthMetricKey    = "cluster_health"
+	ShardCountMetricKey       = "shard_count"
+	CircuitBreakerMetricKey   = "circuit_breaker"
 )
 
 func (h *APIHandler) GetClusterMetrics(ctx context.Context, id string, bucketSize int, min, max int64, metricKey string) (map[string]*common.MetricItem, error) {
 
 	var (
-		clusterMetricsResult = map[string]*common.MetricItem {}
-		err error
+		clusterMetricsResult = map[string]*common.MetricItem{}
+		err                  error
 	)
 	switch metricKey {
 	case ClusterDocumentsMetricKey,
@@ -1343,7 +1344,7 @@ func (h *APIHandler) getCircuitBreakerMetric(ctx context.Context, id string, min
 		"query": util.MapStr{
 			"bool": util.MapStr{
 				"minimum_should_match": 1,
-				"should": should,
+				"should":               should,
 				"must": []util.MapStr{
 					{
 						"term": util.MapStr{

@@ -163,7 +163,6 @@ func (h *APIHandler) createInstance(w http.ResponseWriter, req *http.Request, ps
 		obj.Name = res.Name
 	}
 	obj.Application = res.Application
-	res.Network = res.Network
 
 	exists, err := orm.Get(obj)
 	if err != nil && err != elastic.ErrNotFound {

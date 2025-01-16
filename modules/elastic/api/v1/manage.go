@@ -522,7 +522,6 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, id, metricType, 90)
 	if err != nil {
 		panic(err)
-		return
 	}
 
 	timeout := h.GetParameterOrDefault(req, "timeout", "60s")

@@ -29,6 +29,7 @@ package insight
 
 import (
 	"fmt"
+	"infini.sh/console/plugin/api/insight/function"
 	"strconv"
 	"strings"
 
@@ -37,31 +38,36 @@ import (
 	"infini.sh/framework/core/util"
 )
 
-func generateAgg(metricItem *insight.MetricItem, timeField string) map[string]interface{} {
+func generateAgg(metricItem *insight.MetricItem, timeField string) (map[string]interface{}, error) {
 	var (
 		aggType = "value_count"
 		field   = metricItem.Field
 	)
 	if field == "" || field == "*" {
-		field = "_id"
+		if timeField != "" {
+			field = timeField
+		} else {
+			field = "_id"
+		}
 	}
 	var percent = 0.0
 	var isPipeline = false
+
 	switch metricItem.Statistic {
-	case "max", "min", "sum", "avg", "cardinality":
+	case insight.AggFuncMax, insight.AggFuncMin, insight.AggFuncSum, insight.AggFuncAvg, insight.AggFuncCardinality:
 		aggType = metricItem.Statistic
-	case "count", "value_count":
+	case insight.AggFuncCount, insight.AggFuncValueCount:
 		aggType = "value_count"
-	case "derivative":
+	case insight.AggFuncDerivative:
 		aggType = "max"
 		isPipeline = true
-	case "medium": // from es version 6.6
+	case insight.AggFuncMedium: // from es version 6.6
 		aggType = "median_absolute_deviation"
-	case "p99", "p95", "p90", "p80", "p50":
+	case insight.AggFuncPercent99, insight.AggFuncPercent95, insight.AggFuncPercent90, insight.AggFuncPercent80, insight.AggFuncPercent50:
 		aggType = "percentiles"
 		percentStr := strings.TrimPrefix(metricItem.Statistic, "p")
 		percent, _ = strconv.ParseFloat(percentStr, 32)
-	case "latest":
+	case insight.AggFuncLatest:
 		aggType = "top_hits"
 	}
 	aggValue := util.MapStr{}
@@ -89,7 +95,7 @@ func generateAgg(metricItem *insight.MetricItem, timeField string) map[string]in
 		},
 	}
 	if !isPipeline {
-		return aggs
+		return aggs, nil
 	}
 	pipelineAggID := util.GetUUID()
 	aggs[pipelineAggID] = aggs[metricItem.Name]
@@ -98,7 +104,53 @@ func generateAgg(metricItem *insight.MetricItem, timeField string) map[string]in
 			"buckets_path": pipelineAggID,
 		},
 	}
-	return aggs
+	return aggs, nil
+}
+
+func generateAggByFunction(metricItem *insight.MetricItem, timeField string) (map[string]interface{}, error) {
+	if metricItem.Function == nil {
+		return nil, fmt.Errorf("empty function for metric item: %s", metricItem.Name)
+	}
+	if len(metricItem.Function) != 1 {
+		return nil, fmt.Errorf("invalid function for metric item: %s: expected exactly one function name, but got zero or multiple", metricItem.Name)
+	}
+	var (
+		funcName   string
+		funcParams interface{}
+	)
+	for k, v := range metricItem.Function {
+		funcName = k
+		funcParams = v
+	}
+	if funcParams == nil {
+		return nil, fmt.Errorf("empty params for agg func: %s", funcName)
+	}
+	funcName = strings.ToLower(funcName)
+	buf := util.MustToJSONBytes(funcParams)
+	var generator Function
+	switch funcName {
+	case insight.AggFuncRate:
+		generator = &function.Rate{}
+	case insight.AggFuncLatency:
+		generator = &function.Latency{}
+	case insight.AggFuncSumFuncValueInGroup:
+		generator = &function.SumFuncValueInGroup{}
+	case insight.AggFuncRateSumFuncValueInGroup:
+		generator = &function.RateSumFuncValueInGroup{}
+	case insight.AggFuncLatencySumFuncValueInGroup:
+		generator = &function.LatencySumFuncValueInGroup{}
+	default:
+		baseParams := function.Base{}
+		util.MustFromJSONBytes(buf, &baseParams)
+		newMetricItem := &insight.MetricItem{
+			Name:      metricItem.Name,
+			Field:     baseParams.Field,
+			Statistic: funcName,
+		}
+		return generateAgg(newMetricItem, timeField)
+	}
+	util.MustFromJSONBytes(buf, &generator)
+	return generator.GenerateAggregation(metricItem.Name)
 }
 
 func GenerateQuery(metric *insight.Metric) (interface{}, error) {
@@ -109,7 +161,18 @@ func GenerateQuery(metric *insight.Metric) (interface{}, error) {
 		if metricItem.Name == "" {
 			metricItem.Name = string(rune('a' + i))
 		}
-		metricAggs := generateAgg(&metricItem, metric.TimeField)
+		var (
+			metricAggs map[string]interface{}
+			err        error
+		)
+		if metricItem.Function != nil {
+			metricAggs, err = generateAggByFunction(&metricItem, metric.TimeField)
+		} else {
+			metricAggs, err = generateAgg(&metricItem, metric.TimeField)
+		}
+		if err != nil {
+			return nil, err
+		}
 		if err := util.MergeFields(basicAggs, metricAggs, true); err != nil {
 			return nil, err
 		}
@@ -214,7 +277,9 @@ func GenerateQuery(metric *insight.Metric) (interface{}, error) {
 						}
 						termsOrder = append(termsOrder, util.MapStr{sortKey: sortItem.Direction})
 					}
-					termsCfg["order"] = termsOrder
+					if len(termsOrder) > 0 {
+						termsCfg["order"] = termsOrder
+					}
 				}
 			}
 			groupAgg := util.MapStr{

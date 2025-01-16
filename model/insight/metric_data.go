@@ -35,6 +35,29 @@ import (
 	"infini.sh/framework/core/util"
 )
 
+const (
+	AggFuncCount                      = "count"
+	AggFuncAvg                        = "avg"
+	AggFuncSum                        = "sum"
+	AggFuncMin                        = "min"
+	AggFuncMax                        = "max"
+	AggFuncMedium                     = "medium"
+	AggFuncValueCount                 = "value_count"
+	AggFuncCardinality                = "cardinality"
+	AggFuncDerivative                 = "derivative"
+	AggFuncRate                       = "rate"
+	AggFuncPercent99                  = "p99"
+	AggFuncPercent95                  = "p95"
+	AggFuncPercent90                  = "p90"
+	AggFuncPercent80                  = "p80"
+	AggFuncPercent50                  = "p50"
+	AggFuncLatest                     = "latest"
+	AggFuncLatency                    = "latency"
+	AggFuncSumFuncValueInGroup        = "sum_func_value_in_group"
+	AggFuncRateSumFuncValueInGroup    = "rate_sum_func_value_in_group"
+	AggFuncLatencySumFuncValueInGroup = "latency_sum_func_value_in_group"
+)
+
 type Metric struct {
 	AggTypes     []string          `json:"agg_types,omitempty"`
 	IndexPattern string            `json:"index_pattern,omitempty"`
@@ -109,8 +132,23 @@ func (m *Metric) GenerateExpression() (string, error) {
 	return string(expressionBytes), nil
 }
 func (m *Metric) AutoTimeBeforeGroup() bool {
+	aggFuncs := []string{
+		AggFuncDerivative,
+		AggFuncRate,
+		AggFuncLatency,
+		AggFuncSumFuncValueInGroup,
+		AggFuncRateSumFuncValueInGroup,
+		AggFuncLatencySumFuncValueInGroup,
+	}
 	for _, item := range m.Items {
-		if item.Statistic == "derivative" {
+		var statistic = item.Statistic
+		if item.Function != nil {
+			for key := range item.Function {
+				statistic = key
+				break
+			}
+		}
+		if util.StringInArray(aggFuncs, statistic) {
 			return false
 		}
 	}
@@ -143,6 +181,10 @@ type MetricItem struct {
 	Field     string `json:"field"`
 	FieldType string `json:"field_type,omitempty"`
 	Statistic string `json:"statistic,omitempty"`
+
+	//Function specifies the calculation details for the metric,
+	//including the aggregation type and any associated parameters.
+	Function map[string]interface{} `json:"function,omitempty"`
 }
 
 type MetricDataItem struct {

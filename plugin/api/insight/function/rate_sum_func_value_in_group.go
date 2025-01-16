@@ -36,7 +36,7 @@ import (
 // It combines a `Rate` calculation with a grouping operation and applies a specified aggregation function within each group.
 // The group defines the field to group by, the aggregation function to apply, and the maximum number of groups to include.
 type RateSumFuncValueInGroup struct {
-	Rate // Embeds the Rate struct for fields `Field` and `Scale`.
+	Rate  // Embeds the Rate struct for fields `Field` and `Scale`.
 	Group struct {
 		Field string `json:"field"` // The field used for grouping.
 		Func  string `json:"func"`  // The aggregation function to apply within each group (e.g., max, min, sum).

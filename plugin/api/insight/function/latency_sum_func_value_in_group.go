@@ -37,7 +37,7 @@ import (
 // The group defines the field to group by, the aggregation function to apply, and the maximum number of groups to include.
 type LatencySumFuncValueInGroup struct {
 	Latency // Embeds the Latency struct for fields `Divisor` and `Dividend`.
-	Group struct {
+	Group   struct {
 		Field string `json:"field"` // The field used for grouping.
 		Func  string `json:"func"`  // The aggregation function to apply within each group (e.g., max, min, sum).
 		Size  uint   `json:"size"`  // The maximum number of groups to return.

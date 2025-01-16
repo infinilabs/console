@@ -3,7 +3,7 @@ import { Treemap } from "@ant-design/charts";
 import { Table } from "antd";
 import { useMemo } from "react";
 import { formatMessage } from "umi/locale";
-import { fixFormatter } from "./Treemap";
+import { fixFormatter } from "./Chart";
 
 export default (props) => {
 

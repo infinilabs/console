@@ -6,7 +6,7 @@ import { formatMessage } from "umi/locale";
 import ConvertSvg from "@/components/Icons/Convert"
 import { useEffect, useMemo, useRef, useState } from "react";
 import ColorPicker from "./ColorPicker";
-import Treemap from "./Treemap";
+import Chart from "./Chart";
 import Table from "./Table";
 import GradientColorPicker from "./GradientColorPicker";
 import { cloneDeep } from "lodash";
@@ -414,7 +414,7 @@ export default (props) => {
                         </CopyToClipboard>
                     )
                 }
-                { isTreemap ? <Treemap config={config} data={formatData} /> : <Table type={type} config={config} data={formatData}/> }
+                { isTreemap ? <Chart config={config} data={formatData} /> : <Table type={type} config={config} data={formatData}/> }
             </div>
         </div>  
         </Spin>

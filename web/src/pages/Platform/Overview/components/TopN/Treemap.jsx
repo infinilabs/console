@@ -1,61 +1,7 @@
 import { getFormatter } from "@/utils/format";
 import { Treemap } from "@ant-design/charts";
-import { Empty } from "antd";
 import { useMemo } from "react";
-
-const generateGradientColors = (startColor, endColor, steps) => {
-  function colorToRgb(color) {
-    const rgb = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(color);
-    return rgb ? {
-        r: parseInt(rgb[1], 16),
-        g: parseInt(rgb[2], 16),
-        b: parseInt(rgb[3], 16)
-    } : null;
-  }
- 
-  function rgbToHex(r, g, b) {
-      return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
-  }
- 
-  const startRGB = colorToRgb(startColor);
-  const endRGB = colorToRgb(endColor);
-  const diffR = endRGB.r - startRGB.r;
-  const diffG = endRGB.g - startRGB.g;
-  const diffB = endRGB.b - startRGB.b;
- 
-  const colors = [];
-  for (let i = 0; i <= steps; i++) {
-    const r = startRGB.r + (diffR * i / steps);
-    const g = startRGB.g + (diffG * i / steps);
-    const b = startRGB.b + (diffB * i / steps);
-    colors.push(rgbToHex(Math.round(r), Math.round(g), Math.round(b)));
-  }
- 
-  return colors;
-}
-
-const generateColors = (colors, data) => {
-  if (!colors || colors.length <= 1 || !data || data.length <= 1 || data.length <= colors.length) return colors
-  const gradientSize = data.length - colors.length
-  const steps = Math.floor(gradientSize / (colors.length - 1)) + 1
-  let remainder = gradientSize % (colors.length - 1)
-  const newColors = []
-  for(let i=0; i<colors.length - 1; i++) {
-    let fixSteps = steps;
-    if (remainder > 0) {
-      fixSteps++
-      remainder--
-    }
-    const gradientColors = generateGradientColors(colors[i], colors[i+1], fixSteps)
-    newColors.push(...gradientColors.slice(0, gradientColors.length - 1))
-  }
-  newColors.push(colors[colors.length - 1])
-  return newColors
-}
-
-export const fixFormatter = (formatType) => {
-  return getFormatter(formatType === 'number' ? 'num' : formatType, formatType === 'number' ? '0,0.[00]a' : '')
-}
+import { fixFormatter, generateColors } from "./Chart";
 
 export default (props) => {
 
@@ -69,12 +15,12 @@ export default (props) => {
 
   const color = useMemo(() => {
     if (colors.length === 0 || !sourceColor?.key || data.length === 0) return undefined
-    const newColors = generateColors(colors, data)
-    const sortData = data.sort((a, b) => a.valueColor - b.valueColor)
+    const newColors = generateColors(colors, data).reverse()
+    if (newColors.length === 0) return undefined
     return ({ name }) => {
-      const index = sortData.findIndex((item) => item.name === name)
+      const index = data.findIndex((item) => item.name === name)
       if (index !== -1) {
-        return newColors[index] || newColors[0]
+        return newColors[index] || (value == 0 ? newColors[newColors.length - 1] : newColors[0])
       } else {
         return newColors[0]
       }
@@ -83,12 +29,8 @@ export default (props) => {
 
   return (
     <div style={{ height: '100%' }}>
-      { data.length === 0 || data.some((item) => !Number.isFinite(item.value)) ? (
-        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE}/>
-        </div>
-      ) : (
-        <Treemap {...{
+      <Treemap {...{
+          animation: false,
           data: {
             name: 'root',
             children: data
@@ -96,17 +38,17 @@ export default (props) => {
           autoFit: true,
           color,
           colorField: 'name',
-          legend: {
-              position: 'top-left',
-              itemName: {
-                formatter: (text) => {
-                  const item = data.find((item) => item.name === text)
-                  return item?.groupName || text
-                }
-              }
-          },
           label: {
-            formatter: (item) => item.displayName
+            formatter: (item, a, b, c) => item.displayName
+          },
+          legend: {
+            position: 'top-left',
+            itemName: {
+              formatter: (text) => {
+                const item = data.find((item) => item.name === text)
+                return item?.groupName || text
+              }
+            }
           },
           tooltip: {
               customContent: (title, items) => {
@@ -170,7 +112,6 @@ export default (props) => {
               },
             }
         }} />
-      )}
     </div>
   )
 }

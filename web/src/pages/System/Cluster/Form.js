@@ -8,7 +8,7 @@ import {
   Button,
   Switch,
   message,
-  Spin,
+  Spin, Select,
 } from "antd";
 import router from "umi/router";
 
@@ -158,6 +158,7 @@ class ClusterForm extends React.Component {
       let newVals = {
         name: values.name,
         host: values.host,
+        hosts: values.hosts,
         credential_id:
           values.credential_id !== MANUAL_VALUE
             ? values.credential_id
@@ -237,7 +238,7 @@ class ClusterForm extends React.Component {
   tryConnect = async (type) => {
     const { dispatch, form } = this.props;
     if (this.state.needAuth) {
-      if (type == "agent") {
+      if (type === "agent") {
         this.setState({
           ...this.state,
           credentialRequired: false,
@@ -252,7 +253,7 @@ class ClusterForm extends React.Component {
       }
     }
     let fieldNames = this.validateFieldNames;
-    if (type == "agent") {
+    if (type === "agent") {
       fieldNames = this.agentValidateFieldNames;
     }
     setTimeout(() => {
@@ -272,7 +273,7 @@ class ClusterForm extends React.Component {
 
             schema: values.isTLS === true ? "https" : "http",
           };
-          if (type == "agent") {
+          if (type === "agent") {
             newVals = {
               ...newVals,
               ...{
@@ -319,7 +320,7 @@ class ClusterForm extends React.Component {
             });
             this.clusterUUID = res.cluster_uuid;
           }
-          if (type == "agent") {
+          if (type === "agent") {
             this.setState({ btnLoadingAgent: false });
           } else {
             this.setState({ btnLoading: false });
@@ -327,6 +328,17 @@ class ClusterForm extends React.Component {
         }
       );
     }, 200);
+  };
+
+  validateHostsRule = (rule, value, callback) => {
+    let vals = value || [];
+    for(let i = 0; i < vals.length; i++) {
+      if (!/^[\w\.\-_~%]+(\:\d+)?$/.test(vals[i])) {
+        return callback(formatMessage({ id: "cluster.regist.form.verify.valid.endpoint" }));
+      }
+    }
+    // validation passed
+    callback();
   };
 
   render() {
@@ -354,6 +366,16 @@ class ClusterForm extends React.Component {
       },
     };
     const { editValue, editMode } = this.props.clusterConfig;
+    //add host value to hosts field if it's empty
+    if(editValue.host){
+      if(!editValue.hosts){
+        editValue.hosts = [editValue.host];
+      }else{
+        if (!editValue.hosts.includes(editValue.host)) {
+          editValue.hosts.push(editValue.host);
+        }
+      }
+    }
     return (
       <PageHeaderWrapper>
         <Card
@@ -427,15 +449,11 @@ class ClusterForm extends React.Component {
                   id: "cluster.manage.label.cluster_host",
                 })}
               >
-                {getFieldDecorator("host", {
-                  initialValue: editValue.host,
+                {getFieldDecorator("hosts", {
+                  initialValue: editValue.hosts,
                   rules: [
                     {
-                      type: "string",
-                      pattern: /^[\w\.\-_~%]+(\:\d+)?$/,
-                      message: formatMessage({
-                        id: "cluster.regist.form.verify.valid.endpoint",
-                      }),
+                      validator: this.validateHostsRule,
                     },
                     {
                       required: true,
@@ -444,7 +462,7 @@ class ClusterForm extends React.Component {
                       }),
                     },
                   ],
-                })(<TrimSpaceInput placeholder="127.0.0.1:9200" />)}
+                })(<Select placeholder="127.0.0.1:9200" mode="tags" />)}
               </Form.Item>
               <Form.Item style={{ marginBottom: 0 }}>
                 {getFieldDecorator("version", {

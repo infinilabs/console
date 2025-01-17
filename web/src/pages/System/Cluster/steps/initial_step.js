@@ -23,16 +23,32 @@ export class InitialStep extends React.Component {
       needAuth: val,
     });
   };
-  handleEndpointChange = (event) => {
-    const val = event.target.value;
-    this.setState({
-      isPageTLS: isTLS(val)
-    })
+  handleEndpointChange = (value) => {
+    if(!value.length) {
+      return
+    }
+    const val = value[value.length - 1];
+    if(val.startsWith("http://") || val.startsWith("https://")){
+      this.props.form.setFieldsValue({ isTLS: isTLS(val)})
+      this.setState({
+        isPageTLS: isTLS(val)
+      })
+    }
   };
   isPageTLSChange = (val) => {
     this.setState({
       isPageTLS: val,
     });
+  };
+  validateHostsRule = (rule, value, callback) => {
+    let vals = value || [];
+    for(let i = 0; i < vals.length; i++) {
+      if (!/^[\w\.\-_~%]+(\:\d+)?$/.test(vals[i])) {
+        return callback(formatMessage({ id: "cluster.regist.form.verify.valid.endpoint" }));
+      }
+    }
+    // validation passed
+    callback();
   };
   render() {
     const {
@@ -88,10 +104,10 @@ export class InitialStep extends React.Component {
             id: "cluster.manage.table.column.endpoint",
           })}
         >
-          {getFieldDecorator("host", {
-            initialValue: initialValue?.host || "",
+          {getFieldDecorator("hosts", {
+            initialValue: initialValue?.hosts || [],
             normalize: (value) => {
-              return removeHttpSchema(value || "").trim()
+              return (value || []).map((v) => removeHttpSchema(v || "").trim());
             },
             validateTrigger: ["onChange", "onBlur"],
             rules: [
@@ -102,14 +118,10 @@ export class InitialStep extends React.Component {
                 }),
               },
               {
-                type: "string",
-                pattern: /^[\w\.\-_~%]+(\:\d+)?$/, //(https?:\/\/)?
-                message: formatMessage({
-                  id: "cluster.regist.form.verify.valid.endpoint",
-                }),
-              },
+                validator: this.validateHostsRule,
+              }
             ],
-          })(<Input placeholder="127.0.0.1:9200" onChange={this.handleEndpointChange}/>)}
+          })(<Select placeholder="127.0.0.1:9200" mode="tags" allowClear={true} onChange={this.handleEndpointChange}/>)}
         </Form.Item>
         <Form.Item label="TLS">
           {getFieldDecorator("isTLS", {

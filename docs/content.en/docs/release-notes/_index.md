@@ -11,6 +11,7 @@ Information about release notes of INFINI Console is provided here.
 
 ### Breaking changes
 ### Features
+- Support configuring multiple hosts when creating a cluster
 ### Bug fix
 ### Improvements
 

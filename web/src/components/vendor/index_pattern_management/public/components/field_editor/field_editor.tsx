@@ -17,8 +17,8 @@
  * under the License.
  */
 
-import React, { PureComponent, Fragment } from 'react';
-import { intersection, union, get } from 'lodash';
+import React, { PureComponent, Fragment, useState, useMemo, useCallback } from 'react';
+import { intersection, union, get, cloneDeep } from 'lodash';
 
 import {
   EuiBasicTable,
@@ -41,6 +41,12 @@ import {
   EuiSpacer,
   EuiText,
   EUI_MODAL_CONFIRM_BUTTON,
+  EuiFilterButton,
+  EuiFilterGroup,
+  EuiPopover,
+  EuiSelectable,
+  EuiPopoverTitle,
+  EuiBadge,
 } from '@elastic/eui';
 
 import {
@@ -73,6 +79,26 @@ import { executeScript, isScriptValid } from './lib';
 // This loads Ace editor's "groovy" mode, used below to highlight the script.
 import 'brace/mode/groovy';
 import { useGlobalContext } from '../../context';
+import { formatMessage } from "umi/locale";
+import { message } from 'antd';
+
+const getStatistics = (type) => {
+  if (!type || type === 'string') return ["count",  "cardinality"];
+  return [
+    "max",
+    "min",
+    "avg",
+    "sum",
+    "medium",
+    "p99",
+    "p95",
+    "p90",
+    "p80",
+    "p50",
+    "count",
+    "cardinality",
+  ];
+};
 
 const getFieldTypeFormatsList = (
   field: IndexPatternField['spec'],
@@ -206,7 +232,7 @@ export class FieldEditor extends PureComponent<FieldEdiorProps, FieldEditorState
         data.fieldFormats
       ),
       fieldFormatId: get(indexPattern, ['fieldFormatMap', spec.name, 'type', 'id']),
-      fieldFormatParams: format.params(),
+      fieldFormatParams: format?.params(),
     });
   }
 
@@ -750,6 +776,61 @@ export class FieldEditor extends PureComponent<FieldEdiorProps, FieldEditorState
     return false;
   }
 
+  onMetricSettingsChange = (key, value) => {
+    const { spec = {} } = this.state;
+    const settings = cloneDeep(spec['metric_config'] || {})
+    settings[key] = value
+    this.onFieldChange('metric_config', settings)
+  };
+
+  renderMetricConfig() {
+    const { spec } = this.state;
+
+    return (
+      <>
+        <EuiFormRow
+          label={'Metric Name'}
+        >
+          <EuiFieldText
+            value={spec?.metric_config?.name}
+            onChange={(e) => {
+              this.onMetricSettingsChange('name', e.target.value)
+            }}
+          />
+        </EuiFormRow>
+        <EuiFormRow
+          label={'Statistics'}
+        >
+          <StatisticsSelect 
+            value={spec?.metric_config?.option_aggs || []}
+            statistics={getStatistics(spec?.type)}
+            onChange={(value) => {
+              this.onMetricSettingsChange('option_aggs', value)
+            }}
+          />
+        </EuiFormRow>
+        
+        <EuiFormRow
+          label={'Unit'}
+        >
+          <EuiFieldText
+            value={spec?.metric_config?.unit}
+            onChange={(e) => {
+              this.onMetricSettingsChange('unit', e.target.value)
+            }}
+          />
+        </EuiFormRow>
+        <EuiFormRow
+          label={'Tags'}
+        >
+          <Tags value={spec?.metric_config?.tags} onChange={(value) => {
+            this.onMetricSettingsChange('tags', value)
+          }}/>
+        </EuiFormRow>
+      </>
+    );
+  }
+
   render() {
     const { isReady, isCreating, spec } = this.state;
 
@@ -774,6 +855,7 @@ export class FieldEditor extends PureComponent<FieldEdiorProps, FieldEditorState
           {this.renderFormat()}
           {this.renderPopularity()}
           {this.renderScript()}
+          {this.renderMetricConfig()}
           {this.renderActions()}
           {this.renderDeleteModal()}
         </EuiForm>
@@ -782,3 +864,154 @@ export class FieldEditor extends PureComponent<FieldEdiorProps, FieldEditorState
     ) : null;
   }
 }
+
+
+const StatisticsSelect = (props) => {
+
+  const { value = [], statistics = [], onChange } = props;
+
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+
+  const onButtonClick = () => {
+    setIsPopoverOpen(!isPopoverOpen);
+  };
+  const closePopover = () => {
+    setIsPopoverOpen(false);
+  };
+
+  const items = useMemo(() => {
+    return statistics.map((item) => ({
+      label: item.toUpperCase(), key: item, checked: value.includes(item) ? 'on' : undefined
+    }))
+  }, [value, statistics])
+
+  const button = (
+    <EuiFilterButton
+      iconType="arrowDown"
+      badgeColor="success"
+      onClick={onButtonClick}
+      isSelected={isPopoverOpen}
+      // numFilters={items.filter((item) => item.checked !== 'off').length}
+      // hasActiveFilters={!!items.find((item) => item.checked === 'on')}
+      // numActiveFilters={items.filter((item) => item.checked === 'on').length}
+    >
+      {value.map((item) => item.toUpperCase()).join(', ')}
+    </EuiFilterButton>
+  );
+  return (
+    <>
+      <EuiFilterGroup style={{ width: '100%' }}>
+        <EuiPopover
+          button={button}
+          isOpen={isPopoverOpen}
+          closePopover={closePopover}
+          panelPaddingSize="none"
+        >
+          <EuiSelectable
+            allowExclusions
+            searchable
+            searchProps={{
+              placeholder: 'Filter list',
+              compressed: true,
+            }}
+            aria-label="Composers"
+            options={items}
+            onChange={(newOptions) => {
+              onChange(newOptions.filter((item) => item.checked === 'on').map((item) => item.key))
+            }}
+            emptyMessage="No data"
+            noMatchesMessage="No data"
+          >
+            {(list, search) => (
+              <div style={{ width: 300 }}>
+                <EuiPopoverTitle paddingSize="s">{search}</EuiPopoverTitle>
+                {list}
+              </div>
+            )}
+          </EuiSelectable>
+        </EuiPopover>
+      </EuiFilterGroup>
+    </>
+  );
+};
+
+const Tags = ({ value = [], onChange }) => {
+  const [inputVisible, setInputVisible] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+
+  const handleInputChange = (e) => {
+    setInputValue(e.target.value);
+  };
+
+  const showInput = () => {
+    setInputVisible(true);
+  };
+
+  const handleRemove = useCallback(
+    (index) => {
+      const newValue = [...value];
+      newValue.splice(index, 1);
+      onChange(newValue);
+    },
+    [value]
+  );
+
+  const handleInputConfirm = (input) => {
+    if (input.length === 0) {
+      return message.warning(
+        formatMessage({ id: "command.message.invalid.tag" })
+      );
+    }
+    if (input) onChange([...(value || []), input]);
+    setInputVisible(false);
+    setInputValue("");
+  }
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter') {
+      handleInputConfirm(inputValue)
+    }
+  };
+
+  return (
+    <EuiFlexGroup wrap responsive={false} gutterSize="xs">
+      {value.map((tag, index) => (
+        <EuiFlexItem grow={false}>
+          <EuiBadge
+            color="hollow"
+            iconType="cross"
+            iconSide="right"
+            iconOnClick={() => handleRemove(index)}
+            style={{ height: '40px', lineHeight: '40px', fontSize: 14}}
+          >
+            {tag}
+          </EuiBadge>
+        </EuiFlexItem>
+        
+      ))}
+      {inputVisible && (
+        <EuiFlexItem grow={false}>
+          <EuiFieldText
+            value={inputValue}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            onBlur={() => handleInputConfirm(inputValue)}
+          />
+        </EuiFlexItem>
+      )}
+      {!inputVisible && (
+        <EuiFlexItem grow={false}>
+          <EuiBadge
+            color="hollow"
+            iconType="plus"
+            iconSide="left"
+            onClick={showInput}
+            style={{ height: '40px', lineHeight: '40px', fontSize: 14}}
+          >
+            Add New
+          </EuiBadge>
+        </EuiFlexItem>
+      )}
+    </EuiFlexGroup>
+  );
+};

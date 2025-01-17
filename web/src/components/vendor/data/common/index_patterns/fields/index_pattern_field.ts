@@ -134,6 +134,14 @@ export class IndexPatternField implements IFieldType {
     return this.aggregatable && !notVisualizableFieldTypes.includes(this.spec.type);
   }
 
+  public set metric_config(metric_config) {
+    this.spec.metric_config = metric_config;
+  }
+
+  public get metric_config() {
+    return this.spec.metric_config;
+  }
+
   public toJSON() {
     return {
       count: this.count,
@@ -148,7 +156,8 @@ export class IndexPatternField implements IFieldType {
       searchable: this.searchable,
       aggregatable: this.aggregatable,
       readFromDocValues: this.readFromDocValues,
-      subType: this.subType,
+      subType: this.subType,      
+      metric_config: this.metric_config,
     };
   }
 
@@ -171,6 +180,7 @@ export class IndexPatternField implements IFieldType {
       readFromDocValues: this.readFromDocValues,
       subType: this.subType,
       format: getFormatterForField ? getFormatterForField(this).toJSON() : undefined,
+      metric_config: this.metric_config,
     };
   }
 }

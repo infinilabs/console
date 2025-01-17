@@ -110,6 +110,10 @@ export default {
   "cluster.monitor.timepicker.lastyear": "最近1年",
   "cluster.monitor.timepicker.today": "今天",
 
+  "cluster.monitor.topn.area": "面积指标",
+  "cluster.monitor.topn.color": "颜色指标",
+  "cluster.monitor.topn.theme": "主题",
+
   "cluster.metrics.axis.index_throughput.title": "索引吞吐",
   "cluster.metrics.axis.search_throughput.title": "查询吞吐",
   "cluster.metrics.axis.index_latency.title": "索引延迟",

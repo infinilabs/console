@@ -128,10 +128,11 @@ func (h *APIHandler) HandleGetViewListAction(w http.ResponseWriter, req *http.Re
 				"title":    hit.Source["title"],
 				"viewName": hit.Source["viewName"],
 			},
-			"score":      0,
-			"type":       "index-pattern",
-			"namespaces": []string{"default"},
-			"updated_at": hit.Source["updated_at"],
+			"score":          0,
+			"type":           "index-pattern",
+			"namespaces":     []string{"default"},
+			"updated_at":     hit.Source["updated_at"],
+			"complex_fields": hit.Source["complex_fields"],
 		}
 		savedObjects = append(savedObjects, savedObject)
 	}
@@ -329,6 +330,8 @@ func (h *APIHandler) HandleBulkGetViewAction(w http.ResponseWriter, req *http.Re
 			"namespaces":       []string{"default"},
 			"migrationVersion": map[string]interface{}{"index-pattern": "7.6.0"},
 			"updated_at":       hit.Source["updated_at"],
+			"complex_fields":   hit.Source["complex_fields"],
+			"references":       []interface{}{},
 		}
 		savedObjects = append(savedObjects, savedObject)
 	}

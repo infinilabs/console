@@ -24,4 +24,5 @@ If you are using **INFINI Console** and feel it good enough to tell others you a
 {{% load-img-link "/img/logo/howbuy.png" "howbuy" "https://www.howbuy.com" %}}
 {{% load-img-link "/img/logo/gszq.png" "国盛证券" "https://www.gszq.com/home" %}}
 {{% load-img-link "/img/logo/tuhu.png" "途虎养车" "https://www.tuhu.cn" %}}
-
+{{% load-img-link "/img/logo/guance.png" "观测云" "https://www.guance.com" %}}
+{{% load-img-link "/img/logo/gongkaoleida.png" "公考雷达" "https://www.gongkaoleida.com/" %}}

@@ -33,6 +33,7 @@ import (
 	"infini.sh/framework/core/api"
 	"infini.sh/framework/core/host"
 	model2 "infini.sh/framework/core/model"
+	"infini.sh/framework/core/util"
 	elastic2 "infini.sh/framework/modules/elastic"
 	_ "time/tzdata"
 
@@ -184,6 +185,29 @@ func main() {
 					log.Errorf("init email server error: %v", err)
 				}
 				return err
+			})
+			api.RegisterAppSetting("system_cluster", func() interface{} {
+				client := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
+				ver := client.GetVersion()
+				if ver.Distribution != elastic.Easysearch {
+					return map[string]interface{}{
+						"rollup_enabled": false,
+					}
+				}
+				settings, err := client.GetClusterSettings(nil)
+				if err != nil {
+					log.Errorf("failed to get cluster settings with system cluster: %v", err)
+					return nil
+				}
+
+				rollupEnabled, _ := util.GetMapValueByKeys([]string{"persistent", "rollup", "search", "enabled"}, settings)
+				rollupEnabledValue := false
+				if v, ok := rollupEnabled.(string); ok && v == "true" {
+					rollupEnabledValue = true
+				}
+				return map[string]interface{}{
+					"rollup_enabled": rollupEnabledValue,
+				}
 			})
 		}
 

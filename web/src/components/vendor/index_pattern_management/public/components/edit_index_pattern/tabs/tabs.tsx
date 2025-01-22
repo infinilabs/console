@@ -34,6 +34,7 @@ import {
   EuiFieldSearch,
   EuiSelect,
   EuiSelectOption,
+  EuiButton,
 } from "@elastic/eui";
 // import { fieldWildcardMatcher } from '../../../../../utils/public';
 import {
@@ -46,6 +47,7 @@ import {
 // import { IndexPatternManagmentContext } from '../../../types';
 import { createEditIndexPatternPageStateContainer } from "../edit_index_pattern_state_container";
 import {
+  TAB_COMPLEX_FIELDS,
   TAB_INDEXED_FIELDS,
   TAB_SCRIPTED_FIELDS,
   TAB_SOURCE_FILTERS,
@@ -64,6 +66,7 @@ import {
 import { useGlobalContext } from "../../../context";
 
 import LayoutList from "@/pages/DataManagement/View/LayoutList"
+import { ComplexFieldsTable } from "../indexed_fields_table/complex_fields_table";
 
 interface TabsProps extends Pick<RouteComponentProps, "history" | "location"> {
   indexPattern: IndexPattern;
@@ -95,6 +98,7 @@ export function Tabs({
     indexPatternFieldEditor,
   } = useGlobalContext();
   const [fieldFilter, setFieldFilter] = useState<string>("");
+  const [complexFieldFilter, setComplexFieldFilter] = useState<string>("");
   const [indexedFieldTypeFilter, setIndexedFieldTypeFilter] = useState<string>(
     ""
   );
@@ -193,6 +197,39 @@ export function Tabs({
     ]
   );
 
+  const getComplexFilterSection = useCallback(
+    () => {
+      return (
+        <EuiFlexGroup>
+          <EuiFlexItem grow={true}>
+            <EuiFieldSearch
+              fullWidth
+              placeholder={filterPlaceholder}
+              value={complexFieldFilter}
+              onChange={(e) => setComplexFieldFilter(e.target.value)}
+              data-test-subj="complexFieldFilter"
+              aria-label={searchAriaLabel}
+            />
+          </EuiFlexItem>
+          <EuiFlexItem grow={false}>
+            <EuiButton
+              fill
+              onClick={() => {
+                history.push(`/patterns/${indexPattern?.id}/complex/create`);
+              }}
+            >
+              {"Create field"}
+            </EuiButton>
+          </EuiFlexItem>
+        </EuiFlexGroup>
+      );
+    },
+    [
+      complexFieldFilter,
+      indexPattern,
+    ]
+  );
+
   const getContent = useCallback(
     (type: string) => {
       switch (type) {
@@ -217,6 +254,25 @@ export function Tabs({
               />
             </Fragment>
           );
+        case TAB_COMPLEX_FIELDS:
+            return (
+              <Fragment>
+                <EuiSpacer size="m" />
+                {getComplexFilterSection()}
+                <EuiSpacer size="m" />
+                <ComplexFieldsTable
+                  fields={fields}
+                  indexPattern={indexPattern}
+                  fieldFilter={complexFieldFilter}
+                  helpers={{
+                    redirectToRoute: (field) => {
+                      history.push(`/patterns/${indexPattern?.id}/complex/${field?.name}/edit`);
+                    },
+                    getFieldInfo: indexPatternManagementStart.list.getFieldInfo,
+                  }}
+                />
+              </Fragment>
+            );
         case TAB_SCRIPTED_FIELDS:
           return (
             <Fragment>
@@ -261,6 +317,7 @@ export function Tabs({
       fieldWildcardMatcherDecorated,
       fields,
       getFilterSection,
+      getComplexFilterSection,
       history,
       indexPattern,
       indexPatternManagementStart.list.getFieldInfo,
@@ -272,20 +329,34 @@ export function Tabs({
   );
 
   const euiTabs: EuiTabbedContentTab[] = useMemo(
-    () =>
-      getTabs(indexPattern, fieldFilter, indexPatternManagementStart.list).map(
+    () => {
+      const tabs = getTabs(indexPattern, fieldFilter, indexPatternManagementStart.list).map(
         (tab: Pick<EuiTabbedContentTab, "name" | "id">) => {
           return {
             ...tab,
             content: getContent(tab.id),
           };
         }
-      ).concat([{
+      )
+      let count = indexPattern?.complexFields?.length || 0
+      if (complexFieldFilter) {
+        const normalizedFieldFilter = complexFieldFilter.toLowerCase();
+        const fields = indexPattern?.complexFields?.filter((field) =>
+          field.name.toLowerCase().includes(normalizedFieldFilter)
+        );
+        count = fields.length
+      }
+      return tabs.concat([{
+          name: `Complex fields (${count})`,
+          id: TAB_COMPLEX_FIELDS,
+          content: getContent(TAB_COMPLEX_FIELDS)
+      }, {
         name: 'Layout',
         id: 'layout',
         content: <LayoutList indexPattern={indexPattern} clusterId={selectedCluster.id}/>,
-      }]),
-    [fieldFilter, getContent, indexPattern, indexPatternManagementStart.list]
+      }])
+    },
+    [fieldFilter, getContent, indexPattern, indexPatternManagementStart.list, complexFieldFilter]
   );
 
   const [selectedTabId, setSelectedTabId] = useState(euiTabs[0].id);

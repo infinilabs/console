@@ -19,6 +19,7 @@ import { formatMessage } from "umi/locale";
 import { getAuthority, hasAuthority } from "@/utils/authority";
 import EditLayout from "./View/EditLayout";
 import { Card, Empty } from "antd";
+import { CreateEditComplexFieldContainer } from "@/components/vendor/index_pattern_management/public/components/edit_index_pattern/create_edit_complex_field";
 
 const IndexPatterns = (props) => {
   if (!props.selectedCluster?.id) {
@@ -66,6 +67,14 @@ const IndexPatterns = (props) => {
             clusterList={props.clusterList}
             clusterStatus={props.clusterStatus}
           />
+        </Route>
+        <Route
+          path={[
+            "/patterns/:id/complex/:fieldName/edit",
+            "/patterns/:id/complex/create/",
+          ]}
+        >
+          <CreateEditComplexFieldContainer selectedCluster={props.selectedCluster} />
         </Route>
         <Route
           path={[

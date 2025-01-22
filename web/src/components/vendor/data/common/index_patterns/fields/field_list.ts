@@ -57,7 +57,7 @@ export const fieldList = (
       }
       this.groups.get(field.type)!.set(field.name, field);
     };
-    private removeByGroup = (field: IFieldType) => this.groups.get(field.type)!.delete(field.name);
+    private removeByGroup = (field: IFieldType) => this.groups.get(field.type)?.delete(field.name);
     private calcDisplayName = (name: string) =>
       shortDotsEnable ? shortenDottedString(name) : name;
     constructor() {
@@ -71,7 +71,7 @@ export const fieldList = (
       ...(this.groups.get(type) || new Map()).values(),
     ];
     public readonly add = (field: FieldSpec) => {
-      const newField = new IndexPatternField(field, this.calcDisplayName(field.name));
+      const newField = new IndexPatternField(field, this.calcDisplayName(field.displayName || field.name));
       this.push(newField);
       this.setByName(newField);
       this.setByGroup(newField);

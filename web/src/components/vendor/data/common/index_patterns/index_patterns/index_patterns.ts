@@ -358,6 +358,7 @@ export class IndexPatternsService {
         sourceFilters,
         fieldFormatMap,
         typeMeta,
+        complexFields,
       },
       type,
     } = savedObject;
@@ -370,6 +371,7 @@ export class IndexPatternsService {
       ? JSON.parse(fieldFormatMap)
       : {};
     const parsedFields: FieldSpec[] = fields ? JSON.parse(fields) : [];
+    const parsedComplexFields = complexFields ? JSON.parse(complexFields) : [];
 
     this.addFormatsToFields(parsedFields, parsedFieldFormatMap);
     return {
@@ -383,6 +385,7 @@ export class IndexPatternsService {
       fields: this.fieldArrayToMap(parsedFields),
       typeMeta: parsedTypeMeta,
       type,
+      complexFields: parsedComplexFields
     };
   };
 
@@ -409,7 +412,6 @@ export class IndexPatternsService {
     // if (!savedObject.version) {
     //   throw new SavedObjectNotFound(savedObjectType, id, 'management/kibana/indexPatterns');
     // }
-
     const spec = this.savedObjectToSpec(savedObject);
     const { title, type, typeMeta } = spec;
     const parsedFieldFormats: FieldFormatMap = savedObject.attributes
@@ -512,7 +514,6 @@ export class IndexPatternsService {
       UI_SETTINGS.SHORT_DOTS_ENABLE
     );
     const metaFields = await this.config.get(UI_SETTINGS.META_FIELDS);
-
     const indexPattern = new IndexPattern({
       spec,
       savedObjectsClient: this.savedObjectsClient,
@@ -623,8 +624,12 @@ export class IndexPatternsService {
         version: indexPattern.version,
       })
       .then((resp) => {
-        indexPattern.id = resp.id;
-        indexPattern.version = resp.version;
+        if (resp.id) {
+          indexPattern.id = resp.id;
+        }
+        if (resp.version) {
+          indexPattern.version = resp.version;
+        }
       })
       .catch(async (err) => {
         if (

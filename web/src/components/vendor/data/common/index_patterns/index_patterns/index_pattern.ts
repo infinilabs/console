@@ -133,6 +133,9 @@ export class IndexPattern implements IIndexPattern {
       return this.deserializeFieldFormatMap(mapping);
     });
     this.viewName = spec.viewName || "";
+    
+    this.complexFields = fieldList([], this.shortDotsEnable);
+    this.complexFields.replaceAll(this.complexFieldsToArray(spec.complexFields));
   }
 
   /**
@@ -184,6 +187,18 @@ export class IndexPattern implements IIndexPattern {
       },
       {}
     );
+
+  private complexFieldsToArray = (complexFields) => {
+    const keys = Object.keys(complexFields || {})
+    return keys.map((key) => {
+      const item = complexFields?.[key] || {}
+      return {
+        ...item,
+        name: key,
+        metric_name: item.name
+      }
+    })
+  }; 
 
   getComputedFields() {
     const scriptFields: any = {};
@@ -380,6 +395,20 @@ export class IndexPattern implements IIndexPattern {
     const fieldFormatMap = _.isEmpty(serialized)
       ? undefined
       : JSON.stringify(serialized);
+    
+    let formatComplexFields
+    if (this.complexFields) {
+      formatComplexFields = {}
+      this.complexFields.map((item) => {
+        if (item.spec?.id) {
+          const { metric_name, ...rest } = item.spec
+          formatComplexFields[item.spec.name] = {
+            ...rest,
+            name: metric_name
+          }
+        }
+      })
+    }
 
     return {
       title: this.title,
@@ -390,6 +419,7 @@ export class IndexPattern implements IIndexPattern {
         ? JSON.stringify(this.sourceFilters)
         : undefined,
       fields: this.fields ? JSON.stringify(this.fields) : undefined,
+      complex_fields: formatComplexFields ? JSON.stringify(formatComplexFields) : undefined,
       fieldFormatMap,
       type: this.type,
       typeMeta: this.typeMeta ? JSON.stringify(this.typeMeta) : undefined,

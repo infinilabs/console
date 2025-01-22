@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Button, Form, Icon, Input, Switch } from 'antd';
+import { Alert, Button, Form, Icon, Input, Switch, Select } from 'antd';
 import request from '@/utils/request';
 import { formatMessage } from "umi/locale";
 import TrimSpaceInput from '@/components/TrimSpaceInput';
@@ -49,9 +49,9 @@ export default ({ onNext, form, formData, onFormDataChange }) => {
                 setTestLoading(true);
                 setTestStatus();
                 setTestError();
-                const { host, isTLS, isAuth, username, password } = values;
+                const { hosts, isTLS, isAuth, username, password } = values;
                 const body = {
-                    host: host.trim(),
+                    hosts: (hosts || []).map(host=>host.trim()),
                     schema: isTLS === true ? "https" : "http",
                 }
                 if (isAuth) {
@@ -104,32 +104,41 @@ export default ({ onNext, form, formData, onFormDataChange }) => {
 
     const onFormDataSave = () => {
         const values = form.getFieldsValue();
-        const { host, isAuth, username, password } = form.getFieldsValue();
+        const { hosts, isAuth, username, password } = values;
         onFormDataChange({
-            host: host.trim(), isAuth, username, password
+            hosts: (hosts || []).map(host=>host.trim()),
+            isAuth, username, password
         })
         onNext();
     }
+    const validateHostsRule = (rule, value, callback) => {
+        let vals = value || [];
+        for(let i = 0; i < vals.length; i++) {
+            if (!/^[\w\.\-_~%]+(\:\d+)?$/.test(vals[i])) {
+                return callback(formatMessage({ id: 'guide.cluster.host.validate'}));
+            }
+        }
+        // validation passed
+        callback();
+    };
 
     const { getFieldDecorator } = form;
 
     return (
         <Form {...formItemLayout} onSubmit={onSubmit} colon={false}>
             <Form.Item label={formatMessage({ id: 'guide.cluster.host'})}>
-                {getFieldDecorator("host", {
-                    initialValue: formData.host,
+                {getFieldDecorator("hosts", {
+                    initialValue: formData.hosts,
                     rules: [
                         {
                             required: true,
                             message: formatMessage({ id: 'guide.cluster.host.required'}),
                         },
                         {
-                            type: "string",
-                            pattern: /^[\w\.\-_~%]+(\:\d+)?$/,
-                            message: formatMessage({ id: 'guide.cluster.host.validate'}),
-                        },
+                            validator: validateHostsRule,
+                        }
                     ],
-                })(<TrimSpaceInput placeholder="127.0.0.1:9200" onChange={resetTestStatus}/>)}
+                })(<Select placeholder="127.0.0.1:9200" mode="tags" allowClear={true} onChange={resetTestStatus}/>)}
             </Form.Item>
             <Form.Item label="TLS">
                 {getFieldDecorator("isTLS", {

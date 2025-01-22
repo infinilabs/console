@@ -1,5 +1,5 @@
-/public/
+public/
 .idea/
-docs/config.bak
-docs/resources/_gen
+config.bak
+resources/_gen
 themes/

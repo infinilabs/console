@@ -161,9 +161,9 @@ export default (props) => {
                     const { item } = data;
 
                     if (item) {
-                        const { format: formatColor, unit: unitColor } = sourceColor || {}
+                        const { format: formatColor, pattern: patternColor, unit: unitColor } = sourceColor || {}
                         const {  name, value, nameColor, valueColor, displayName } = item || {}
-                        const formatterColor = fixFormatter(formatColor)
+                        const formatterColor = fixFormatter(formatColor, patternColor)
                         const markers = []
                         markers.push({
                             name: nameColor,

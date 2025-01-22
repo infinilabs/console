@@ -23,8 +23,8 @@ export default (props) => {
       key: 'displayName',
     }];
     if (sourceArea) {
-      const { format: formatArea, unit: unitArea } = sourceArea || {}
-      const formatterArea = fixFormatter(formatArea)
+      const { format: formatArea, pattern: patternArea, unit: unitArea } = sourceArea || {}
+      const formatterArea = fixFormatter(formatArea, patternArea)
       newColumns.push({
         title: unitArea ? `${sourceArea.name}(${unitArea})` : sourceArea.name,
         dataIndex: 'value',
@@ -35,8 +35,8 @@ export default (props) => {
       })
     }
     if (sourceColor) {
-      const { format: formatColor, unit: unitColor } = sourceColor
-      const formatterColor = fixFormatter(formatColor)
+      const { format: formatColor, pattern: patternColor, unit: unitColor } = sourceColor
+      const formatterColor = fixFormatter(formatColor, patternColor)
       newColumns.push({
         title: unitColor ? `${sourceColor.name}(${unitColor})` : sourceColor.name,
         dataIndex: 'valueColor',

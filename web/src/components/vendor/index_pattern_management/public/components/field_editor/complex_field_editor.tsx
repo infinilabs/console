@@ -132,12 +132,6 @@ export class ComplexFieldEditor extends PureComponent<FieldEdiorProps, FieldEdit
 
     const { spec, indexPattern } = props;
 
-    const format = props.indexPattern.getFormatterForField(spec)
-    const fieldTypes = get(FIELD_TYPES_BY_LANG, spec.lang || '', DEFAULT_FIELD_TYPES);
-    const DefaultFieldFormat = data.fieldFormats.getDefaultType(
-      spec.type as KBN_FIELD_TYPES,
-      spec.esTypes as ES_FIELD_TYPES[]
-    );
     const isCreating = !indexPattern.complexFields.getByName(spec.name)
     const initSpec = cloneDeep({ ...spec, type: 'number' })
     if (isCreating) {
@@ -145,24 +139,28 @@ export class ComplexFieldEditor extends PureComponent<FieldEdiorProps, FieldEdit
         'rate': {}
       }
     }
+    const format = props.indexPattern.getFormatterForField(initSpec)
+    const DefaultFieldFormat = data.fieldFormats.getDefaultType(
+      initSpec.type as KBN_FIELD_TYPES,
+      initSpec.esTypes as ES_FIELD_TYPES[]
+    );
     this.state = {
       isDeprecatedLang: false,
       existingFieldNames: indexPattern.complexFields.getAll().map((f: IFieldType) => f.name),
       showDeleteModal: false,
       hasFormatError: false,
       isSaving: false,
-      format: props.indexPattern.getFormatterForField(spec),
+      format: props.indexPattern.getFormatterForField(initSpec),
       spec: initSpec,
       isReady: true,
-      isCreating: !indexPattern.complexFields.getByName(spec.name),
+      isCreating: !indexPattern.complexFields.getByName(initSpec.name),
       errors: [],
-      fieldTypes,
       fieldTypeFormats: getFieldTypeFormatsList(
-        spec,
+        initSpec,
         DefaultFieldFormat as FieldFormatInstanceType,
         data.fieldFormats
       ),
-      fieldFormatId: get(indexPattern, ['fieldFormatMap', spec.name, 'type', 'id']),
+      fieldFormatId: get(indexPattern, ['fieldFormatMap', initSpec.name, 'type', 'id']),
       fieldFormatParams: format?.params(),
     };
   }

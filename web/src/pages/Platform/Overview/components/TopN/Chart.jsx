@@ -54,8 +54,8 @@ export const generateColors = (colors, data) => {
   return newColors
 }
 
-export const fixFormatter = (formatType) => {
-  return getFormatter(formatType === 'number' ? 'num' : formatType, formatType === 'number' ? '0,0.[00]a' : '')
+export const fixFormatter = (formatType, pattern = '0,0.[00]a') => {
+  return getFormatter(formatType === 'number' ? 'num' : formatType, formatType === 'number' ? pattern : '')
 }
 
 export const handleTextOverflow = (text, maxWidth) => {

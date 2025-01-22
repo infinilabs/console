@@ -59,8 +59,8 @@ export default (props) => {
                 const markers = []
 
                 if (metricArea && tooltipArea !== false) {
-                  const { format: formatArea, unit: unitArea } = sourceArea || {}
-                  const formatterArea = fixFormatter(formatArea)
+                  const { format: formatArea, pattern: patternArea, unit: unitArea } = sourceArea || {}
+                  const formatterArea = fixFormatter(formatArea, patternArea)
                   markers.push({
                     name: nameArea,
                     value: formatterArea ? formatterArea(value) : value,
@@ -70,8 +70,8 @@ export default (props) => {
                 }
 
                 if (metricColor) {
-                  const { format: formatColor, unit: unitColor } = sourceColor || {}
-                  const formatterColor = fixFormatter(formatColor)
+                  const { format: formatColor, pattern: patternColor, unit: unitColor } = sourceColor || {}
+                  const formatterColor = fixFormatter(formatColor, patternColor)
                   markers.push({
                     name: nameColor,
                     value: formatterColor ? formatterColor(valueColor) : valueColor,

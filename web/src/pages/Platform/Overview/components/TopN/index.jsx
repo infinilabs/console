@@ -306,7 +306,7 @@ export default (props) => {
                     key: newConfig.sourceArea?.name,
                     name: newConfig.sourceArea.metric_config.name,
                     formula: areaFormula,
-                    format: newConfig.sourceColor.format,
+                    format: newConfig.sourceArea.format,
                     unit: newConfig.sourceArea.metric_config.unit
                 }
             }
@@ -524,7 +524,7 @@ export default (props) => {
                                 const { isComplex } = option?.props?.metric || {}
                                 let statisticColor;
                                 if (isComplex) {
-                                    statisticArea = formatComplexStatistic(Object.keys(option?.props?.metric?.metric_config?.function || {})[0])
+                                    statisticColor = formatComplexStatistic(Object.keys(option?.props?.metric?.metric_config?.function || {})[0])
                                 } else {
                                     const { items = [] } = option?.props?.metric || {}
                                     statisticColor = items[0]?.statistic === 'derivative' ? 'rate' : (items[0]?.statistic || 'max')
@@ -568,7 +568,7 @@ export default (props) => {
                             })
                         }
                     </Select>
-                    <div className={styles.label}>
+                    <div className={styles.label} style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}>
                         {formatMessage({ id: "cluster.monitor.topn.theme" })}
                     </div>
                     <GradientColorPicker className={styles.borderRadiusRight} style={{ marginRight: 12, marginBottom: 12 }} value={formData.colors || []} onChange={(value) => {

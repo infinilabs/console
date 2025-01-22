@@ -88,7 +88,7 @@ export default (props) => {
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE}/>
         </div>
       ) : (
-        config?.sourceArea?.id ? (
+        config?.sourceArea?.name ? (
             <Treemap {...props}/>
         ) : (
             <Heatmap {...props}/>

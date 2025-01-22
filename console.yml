@@ -72,11 +72,21 @@ metrics:
     node_stats: true
     index_stats: true
 
-
+## badger kv storage configuration
 badger:
+  enabled: true
+  single_bucket_mode: true
+  path: ''
+  memory_mode: false
+  sync_writes: false
+  mem_table_size: 10485760
+  num_mem_tables: 1
+  # lsm tuning options
   value_log_max_entries: 1000000
-  value_log_file_size: 104857600
-
+  value_log_file_size: 536870912
+  value_threshold: 1048576
+  num_level0_tables: 1
+  num_level0_tables_stall: 2
 
 security:
   enabled: true

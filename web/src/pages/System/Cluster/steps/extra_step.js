@@ -64,7 +64,7 @@ export class ExtraStep extends React.Component {
             return;
           }
           let newVals = {
-            host: initialValue.host,
+            hosts: initialValue?.hosts || [],
             schema: initialValue.isTLS === true ? "https" : "http",
           };
           newVals = {

@@ -54,9 +54,12 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
     const onCheck = async () => {
         try {
             setCheckLoading(true);
-            const { host, isTLS, isAuth, username, password } = formData;
+            const { hosts, isTLS, isAuth, username, password } = formData;
+            const host = hosts[0];
             const cluster = {
-                endpoint: isTLS ? `https://${host}` : `http://${host}`
+                endpoint: isTLS ? `https://${host}` : `http://${host}`,
+                hosts: hosts,
+                schema: isTLS ? "https": "http",
             }
             if (isAuth) {
                 cluster.username = username
@@ -110,14 +113,17 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
             }
         })
         const {
-            host,
+            hosts,
             isTLS,
             isAuth,
             username,
             password,
           } = formData;
+        const host = hosts[0];
           const cluster = {
             endpoint: isTLS ? `https://${host}` : `http://${host}`,
+              hosts: hosts,
+              schema: isTLS ? "https": "http"
           };
           if (isAuth) {
             cluster.username = username;

@@ -83,7 +83,7 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
     try {
       setLoading(true);
       const {
-        host,
+        hosts,
         isTLS,
         isAuth,
         username,
@@ -94,8 +94,11 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
         credential_secret,
       } = formData;
       const body = {};
+      const host = hosts[0];
       const cluster = {
         endpoint: isTLS ? `https://${host}` : `http://${host}`,
+        hosts: hosts,
+        schema: isTLS ? "https" : "http",
       };
       if (isAuth) {
         cluster.username = username;
@@ -191,14 +194,16 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
 
     setLoading(true);
     const {
-      host,
+      hosts,
       isTLS,
       isAuth,
       username,
       password,
     } = formData;
+    const host = hosts[0];
     const cluster = {
       endpoint: isTLS ? `https://${host}` : `http://${host}`,
+      hosts: hosts,
     };
     if (isAuth) {
       cluster.username = username;

@@ -90,6 +90,8 @@ export default (props) => {
                 fieldFormatMap = {}
                 fields = []
             }
+            if (!Array.isArray(fields)) fields = []
+            if (!Array.isArray(complexFields)) complexFields = []
             if (!newView.attributes) newView.attributes = {}
             newView.fieldFormatMap = fieldFormatMap
             newView.fields = fields.filter((item) => 

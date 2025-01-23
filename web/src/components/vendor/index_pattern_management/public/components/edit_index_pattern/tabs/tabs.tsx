@@ -350,10 +350,6 @@ export function Tabs({
           name: `Complex fields (${count})`,
           id: TAB_COMPLEX_FIELDS,
           content: getContent(TAB_COMPLEX_FIELDS)
-      }, {
-        name: 'Layout',
-        id: 'layout',
-        content: <LayoutList indexPattern={indexPattern} clusterId={selectedCluster.id}/>,
       }])
     },
     [fieldFilter, getContent, indexPattern, indexPatternManagementStart.list, complexFieldFilter]

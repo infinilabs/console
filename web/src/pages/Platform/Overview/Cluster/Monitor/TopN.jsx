@@ -38,18 +38,14 @@ export default (props) => {
       >
         <TopN type={param?.tab} {...props}/>
       </Tabs.TabPane>
-      {
-        !isAgent && (
-          <Tabs.TabPane
-            key="index"
-            tab={formatMessage({
-              id: "cluster.monitor.index.title",
-            })}
-          >
-            <TopN type={param?.tab} {...props}/>
-          </Tabs.TabPane>
-        )
-      }
+      <Tabs.TabPane
+        key="index"
+        tab={formatMessage({
+          id: "cluster.monitor.index.title",
+        })}
+      >
+        <TopN type={param?.tab} {...props}/>
+      </Tabs.TabPane>
       {
         isAgent && (
             <Tabs.TabPane

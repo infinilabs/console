@@ -58,18 +58,6 @@ const IndexPatterns = (props) => {
         </Route>
         <Route
           path={[
-            "/patterns/:id/layout/create",
-            "/patterns/:id/layout/:layoutId/edit",
-          ]}
-        >
-          <EditLayout
-            selectedCluster={props.selectedCluster}
-            clusterList={props.clusterList}
-            clusterStatus={props.clusterStatus}
-          />
-        </Route>
-        <Route
-          path={[
             "/patterns/:id/complex/:fieldName/edit",
             "/patterns/:id/complex/create/",
           ]}

@@ -85,7 +85,7 @@ func TestCreateRule(t *testing.T) {
 
 		Metrics: Metric{
 			Metric: insight.Metric{
-				Groups: []insight.MetricGroupItem{{"metadata.labels.cluster_id", 10}, {"metadata.labels.node_id", 10}},
+				Groups: []insight.MetricGroupItem{{Field: "metadata.labels.cluster_id", Limit: 10}, {Field: "metadata.labels.node_id", Limit: 10}},
 				Items: []insight.MetricItem{
 					{Name: "a", Field: "payload.elasticsearch.node_stats.fs.total.free_in_bytes", Statistic: "min"},
 					{Name: "b", Field: "payload.elasticsearch.node_stats.fs.total.total_in_bytes", Statistic: "max"},

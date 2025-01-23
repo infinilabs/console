@@ -12,6 +12,7 @@ Information about release notes of INFINI Console is provided here.
 ### Breaking changes
 ### Features
 - Support function-format parameters in Insight Data API
+- Support configuring multiple hosts when creating a cluster
 ### Bug fix
 ### Improvements
 

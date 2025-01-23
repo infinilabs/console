@@ -308,7 +308,6 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, clusterID, MetricTypeNodeStats, 15)
 	if err != nil {
 		panic(err)
-		return
 	}
 	// 索引速率
 	indexMetric := newMetricItem("indexing", 1, OperationGroupKey)

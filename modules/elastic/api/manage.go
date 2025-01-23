@@ -65,9 +65,18 @@ func (h *APIHandler) HandleCreateClusterAction(w http.ResponseWriter, req *http.
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	// TODO validate data format
 	conf.Enabled = true
+	if len(conf.Hosts) > 0 && conf.Host == "" {
+		conf.Host = conf.Hosts[0]
+	}
 	conf.Host = strings.TrimSpace(conf.Host)
+	if conf.Host == "" {
+		h.WriteError(w, "host is required", http.StatusBadRequest)
+		return
+	}
+	if conf.Schema == "" {
+		conf.Schema = "http"
+	}
 	conf.Endpoint = fmt.Sprintf("%s://%s", conf.Schema, conf.Host)
 	conf.ID = util.GetUUID()
 	ctx := &orm.Context{
@@ -554,7 +563,6 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, id, metricType, 90)
 	if err != nil {
 		panic(err)
-		return
 	}
 	var metrics map[string]*common.MetricItem
 	if bucketSize <= 60 {

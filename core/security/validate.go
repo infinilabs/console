@@ -43,7 +43,6 @@ import (
 type EsRequest struct {
 	Doc       string `json:"doc"`
 	Privilege string `json:"privilege"`
-	ClusterRequest
 	IndexRequest
 }
 

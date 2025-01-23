@@ -103,7 +103,7 @@ const ClusterStep = ({ dispatch, history, query }) => {
             username: values.username,
             password: values.password,
           },
-          host: values.host,
+          hosts: values.hosts,
           credential_id:
             values.credential_id !== MANUAL_VALUE
               ? values.credential_id
@@ -142,6 +142,7 @@ const ClusterStep = ({ dispatch, history, query }) => {
             version: clusterConfig.version,
             distribution: clusterConfig.distribution,
             host: clusterConfig.host,
+            hosts: clusterConfig.hosts,
             location: clusterConfig.location,
             credential_id:
               clusterConfig.credential_id !== MANUAL_VALUE

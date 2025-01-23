@@ -61,6 +61,6 @@ pipeline:
 #                  key_file: /xxx/client.key
 #                  skip_insecure_verify: false
                 schema: "$[[SETUP_SCHEME]]"
-                hosts: # receiver endpoint, fallback in order
-                  - "$[[SETUP_ENDPOINT]]"
+                # receiver endpoint, fallback in order
+                hosts: $[[SETUP_HOSTS]]
                 valid_status_code: [200,201] #panic on other status code

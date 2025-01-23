@@ -39,7 +39,7 @@ export const ResultStep = (props) => {
           ：
         </Col>
         <Col xs={24} sm={16}>
-          {clusterConfig?.host}
+          {clusterConfig?.hosts.map((host) => <div>{host}</div>)}
         </Col>
       </Row>
       <Row>

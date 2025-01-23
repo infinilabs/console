@@ -466,7 +466,7 @@ func getMetadataByIndexPattern(clusterID, indexPattern, timeField string, filter
 				}}
 			if seriesType == "column" || seriesType == "pie" {
 				seriesItem.Metric.Groups = []insight.MetricGroupItem{
-					{aggField.Name, 10},
+					{Field: aggField.Name, Limit: 10},
 				}
 			}
 			fieldVis := insight.Visualization{

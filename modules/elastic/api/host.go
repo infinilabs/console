@@ -468,7 +468,6 @@ func (h *APIHandler) FetchHostInfo(w http.ResponseWriter, req *http.Request, ps 
 	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, "", "", 15)
 	if err != nil {
 		panic(err)
-		return
 	}
 	networkInMetricItem := newMetricItem("network_in_rate", 1, SystemGroupKey)
 	networkInMetricItem.AddAxi("network_rate", "group1", common.PositionLeft, "bytes", "0.[0]", "0.[0]", 5, true)

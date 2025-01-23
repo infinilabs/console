@@ -136,7 +136,6 @@ func (m *Metric) AutoTimeBeforeGroup() bool {
 		AggFuncDerivative,
 		AggFuncRate,
 		AggFuncLatency,
-		AggFuncSumFuncValueInGroup,
 		AggFuncRateSumFuncValueInGroup,
 		AggFuncLatencySumFuncValueInGroup,
 	}

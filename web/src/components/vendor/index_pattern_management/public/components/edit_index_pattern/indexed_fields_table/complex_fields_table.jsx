@@ -78,7 +78,6 @@ export class ComplexFieldsTable extends Component {
     const { indexPattern } = this.props;
     const fields = this.getFilteredFields(this.state, {...this.props, fields: indexPattern?.complexFields});
     const editField = (field) => this.props.helpers.redirectToRoute(field)
-    debugger
 
     return (
       <div>

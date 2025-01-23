@@ -418,7 +418,7 @@ export class IndexPattern implements IIndexPattern {
       formatComplexFields = {}
       this.complexFields.map((item) => {
         if (item.spec?.name) {
-          const { metric_name, format, ...rest } = item.spec
+          const { metric_name, format, type, ...rest } = item.spec
           formatComplexFields[item.spec.name] = {
             ...rest,
             name: metric_name

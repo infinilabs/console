@@ -15,11 +15,18 @@ export default (props) => {
                 <EuiComboBox
                     singleSelection
                     options={indexPattern.fields?.filter((item) => !!item.spec?.name).map((item) => (
-                        { value: item.spec?.name, label: item.spec?.name }
+                        { value: item.spec?.name, label: item.spec?.name, type: item.spec?.type }
                     ))}
                     selectedOptions={field ? [{ value: field, label: field }] : []}
                     onChange={(value) => {
-                        onChange({ [statistic]: { field: value[0]?.value } })
+                        const types = getStatistics(value[0]?.type)
+                        onChange({ [statistic]: { 
+                            ...(func || {}),
+                            field: value[0]?.value,
+                            group: {
+                                func: types.includes('max') ? 'max' : types[0]
+                            } 
+                        }})
                     }}
                     isClearable={false}
                 />
@@ -28,17 +35,15 @@ export default (props) => {
                 <EuiComboBox
                     singleSelection
                     options={indexPattern.fields?.filter((item) => !!item.spec?.name).map((item) => (
-                        { value: item.spec?.name, label: item.spec?.name, type: item.spec?.type }
+                        { value: item.spec?.name, label: item.spec?.name }
                     ))}
                     selectedOptions={group?.field ? [{ value: group?.field, label: group?.field }] : []}
                     onChange={(value) => {
-                        const types = getStatistics(value[0]?.type)
                         onChange({ [statistic]: { 
                             ...(func || {}),
                             group: {
+                                ...(func?.group || {}),
                                 field: value[0]?.value,
-                                type: value[0]?.type,
-                                func: types.includes('max') ? 'max' : types[0]
                             }
                         }})
                     }}

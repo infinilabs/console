@@ -498,6 +498,7 @@ export class ComplexFieldEditor extends PureComponent<FieldEdiorProps, FieldEdit
           />
         </EuiFormRow>
         {this.renderFunction(statistic || 'rate')}
+        {this.renderFormat()}
         <EuiFormRow
           label={'Unit'}
         >
@@ -508,7 +509,6 @@ export class ComplexFieldEditor extends PureComponent<FieldEdiorProps, FieldEdit
             }}
           />
         </EuiFormRow>
-        {this.renderFormat()}
         <EuiFormRow
           label={'Tags'}
         >

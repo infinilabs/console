@@ -33,9 +33,11 @@ export class ComplexFieldsTable extends Component {
     return (
       (fields &&
         fields.map((field) => {
+          const func = Object.keys(field.spec?.function || {})[0]
           return {
             ...field.spec,
             displayName: field.spec.metric_name,
+            func: func,
             format: getFieldFormat(indexPattern, field.name),
             excluded: fieldWildcardMatch
               ? fieldWildcardMatch(field.name)
@@ -76,6 +78,7 @@ export class ComplexFieldsTable extends Component {
     const { indexPattern } = this.props;
     const fields = this.getFilteredFields(this.state, {...this.props, fields: indexPattern?.complexFields});
     const editField = (field) => this.props.helpers.redirectToRoute(field)
+    debugger
 
     return (
       <div>
@@ -104,6 +107,22 @@ export class ComplexFieldsTable extends Component {
                     render: (value) => value,
                     width: '38%',
                     'data-test-subj': 'complexFieldName',
+                  },
+                  {
+                    field: 'func',
+                    name: 'Function',
+                    dataType: 'string',
+                    sortable: true,
+                    render: (value) => value ? value.toUpperCase() : '-',
+                    'data-test-subj': 'complexFieldFunc',
+                  },
+                  {
+                    field: 'format',
+                    name: 'Format',
+                    dataType: 'string',
+                    sortable: true,
+                    render: (value) => value || 'Number',
+                    'data-test-subj': 'complexFieldFormat',
                   },
                   {
                     field: 'tags',

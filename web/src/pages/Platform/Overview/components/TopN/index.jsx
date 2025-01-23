@@ -191,12 +191,18 @@ export default (props) => {
         const formulas = []
         let isAreaRate = false
         let isColorRate = false
+        let isAreaLatency = false
+        let isColorLatency = false
         if (sourceArea) {
             areaValueID = generate20BitUUID()
             if (sourceArea.isComplex) {
                 if (sourceArea.metric_config.function) {
-                    if (Object.keys(sourceArea.metric_config.function || {})?.[0]?.includes('rate')) {
+                    const func = Object.keys(sourceArea.metric_config.function || {})?.[0]
+                    if (func?.includes('rate')) {
                         isAreaRate = true
+                    }
+                    if (func?.includes('latency')) {
+                        isAreaLatency = true
                     }
                     items.push({
                         name: areaValueID,
@@ -207,13 +213,15 @@ export default (props) => {
                 }
             } else {
                 if (statisticArea) {
-                    isAreaRate = statisticArea === 'rate'
                     items.push({
+                        function: {
+                            [statisticArea]: {
+                                field: sourceArea.name,
+                            }
+                        },
                         name: areaValueID,
-                        field: sourceArea.name,
-                        statistic: statisticArea,
                     })
-                    areaFormula = isAreaRate ? `${areaValueID}/{{.bucket_size_in_second}}` : areaValueID
+                    areaFormula = areaValueID
                     formulas.push(areaFormula)
                 }
             }
@@ -222,8 +230,12 @@ export default (props) => {
             colorValueID = generate20BitUUID()
             if (sourceColor.isComplex) {
                 if (sourceColor.metric_config.function) {
-                    if (Object.keys(sourceColor.metric_config.function || {})?.[0]?.includes('rate')) {
+                    const func = Object.keys(sourceColor.metric_config.function || {})?.[0]
+                    if (func?.includes('rate')) {
                         isColorRate = true
+                    }
+                    if (func?.includes('latency')) {
+                        isColorLatency = true
                     }
                     items.push({
                         name: colorValueID,
@@ -234,13 +246,15 @@ export default (props) => {
                 }
             } else {
                 if (statisticColor) {
-                    isColorRate = statisticArea === 'rate'
                     items.push({
+                        function: {
+                            [statisticColor]: {
+                                field: sourceColor.name,
+                            }
+                        },
                         name: colorValueID,
-                        field: sourceColor.name,
-                        statistic: statisticColor,
                     })
-                    colorFormula = isAreaRate ? `${colorValueID}/{{.bucket_size_in_second}}` : colorValueID
+                    colorFormula = colorValueID
                     formulas.push(colorFormula)
                 }
             }
@@ -295,7 +309,7 @@ export default (props) => {
                 "key": sortKey
             }] : undefined
         }
-        if (isAreaRate || isColorRate) {
+        if ((isAreaRate || isColorRate) || (isAreaLatency || isColorLatency)) {
             body['time_field'] = "timestamp"
             body['bucket_size'] = "auto"
         }

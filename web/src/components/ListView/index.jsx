@@ -531,6 +531,7 @@ const Index = forwardRef((props, ref) => {
                 <WidgetRender
                   widget={histogramState.widget}
                   range={histogramState.range}
+                  queryParams={queryParams?.filters || {}}
                 />
               </div>
             ) : null}

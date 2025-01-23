@@ -43,7 +43,7 @@ export class SimpleSavedObject<T = unknown> {
 
   constructor(
     private client: SavedObjectsClientContract,
-    { id, type, version, attributes, error, references, migrationVersion }: SavedObjectType<T>
+    { id, type, version, attributes, error, references, migrationVersion, complex_fields }: SavedObjectType<T>
   ) {
     this.id = id;
     this.type = type;
@@ -51,6 +51,7 @@ export class SimpleSavedObject<T = unknown> {
     this.references = references || [];
     this._version = version;
     this.migrationVersion = migrationVersion;
+    this.attributes.complexFields = complex_fields
     if (error) {
       this.error = error;
     }

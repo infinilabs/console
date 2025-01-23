@@ -17,7 +17,5 @@
  * under the License.
  */
 
-export const TAB_INDEXED_FIELDS = 'indexedFields';
-export const TAB_COMPLEX_FIELDS = 'complexFields';
-export const TAB_SCRIPTED_FIELDS = 'scriptedFields';
-export const TAB_SOURCE_FILTERS = 'sourceFilters';
+export { CreateEditComplexField } from './create_edit_complex_field';
+export { CreateEditComplexFieldContainer } from './create_edit_complex_field_container';

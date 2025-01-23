@@ -76,9 +76,10 @@ func (p *RateSumFuncValueInGroup) GenerateAggregation(metricName string) (map[st
 		aggID           = util.GetUUID()
 		sumBucketAggID  = util.GetUUID()
 		derivativeAggID = util.GetUUID()
+		groupID         = fmt.Sprintf("sum_group_%s", util.GetUUID())
 	)
 	return util.MapStr{
-		"sum_group": util.MapStr{
+		groupID: util.MapStr{
 			"aggs": util.MapStr{
 				aggID: util.MapStr{
 					p.Group.Func: util.MapStr{
@@ -93,7 +94,7 @@ func (p *RateSumFuncValueInGroup) GenerateAggregation(metricName string) (map[st
 		},
 		sumBucketAggID: util.MapStr{
 			"sum_bucket": util.MapStr{
-				"buckets_path": fmt.Sprintf("sum_group>%s", aggID),
+				"buckets_path": fmt.Sprintf("%s>%s", groupID, aggID),
 			},
 		},
 		derivativeAggID: util.MapStr{

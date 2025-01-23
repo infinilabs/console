@@ -72,9 +72,10 @@ func (p *LatencySumFuncValueInGroup) GenerateAggregation(metricName string) (map
 		sumDividendAggID        = util.GetUUID()
 		derivativeDivisorAggID  = util.GetUUID()
 		derivativeDividendAggID = util.GetUUID()
+		groupID                 = fmt.Sprintf("sum_group_%s", util.GetUUID())
 	)
 	return util.MapStr{
-		"sum_group": util.MapStr{
+		groupID: util.MapStr{
 			"aggs": util.MapStr{
 				divisorBaseAggID: util.MapStr{
 					p.Group.Func: util.MapStr{
@@ -94,12 +95,12 @@ func (p *LatencySumFuncValueInGroup) GenerateAggregation(metricName string) (map
 		},
 		sumDivisorAggID: util.MapStr{
 			"sum_bucket": util.MapStr{
-				"buckets_path": fmt.Sprintf("sum_group>%s", divisorBaseAggID),
+				"buckets_path": fmt.Sprintf("%s>%s", groupID, divisorBaseAggID),
 			},
 		},
 		sumDividendAggID: util.MapStr{
 			"sum_bucket": util.MapStr{
-				"buckets_path": fmt.Sprintf("sum_group>%s", dividendBaseAggID),
+				"buckets_path": fmt.Sprintf("%s>%s", groupID, dividendBaseAggID),
 			},
 		},
 		derivativeDivisorAggID: util.MapStr{

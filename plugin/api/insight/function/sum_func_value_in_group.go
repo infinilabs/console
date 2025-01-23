@@ -58,8 +58,9 @@ func (p *SumFuncValueInGroup) GenerateAggregation(metricName string) (map[string
 		p.Group.Size = 65536 // Default to a large size to include most groups.
 	}
 	aggID := util.GetUUID()
+	groupID := fmt.Sprintf("sum_group_%s", util.GetUUID())
 	return util.MapStr{
-		"sum_group": util.MapStr{
+		groupID: util.MapStr{
 			"aggs": util.MapStr{
 				aggID: util.MapStr{
 					p.Group.Func: util.MapStr{
@@ -74,7 +75,7 @@ func (p *SumFuncValueInGroup) GenerateAggregation(metricName string) (map[string
 		},
 		metricName: util.MapStr{
 			"sum_bucket": util.MapStr{
-				"buckets_path": fmt.Sprintf("sum_group>%s", aggID),
+				"buckets_path": fmt.Sprintf("%s>%s", groupID, aggID),
 			},
 		},
 	}, nil

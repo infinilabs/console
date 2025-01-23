@@ -242,7 +242,7 @@ export default (props) => {
                     "must": [{
                         "term": {
                             "metadata.name": {
-                                "value": `${type}_stats`
+                                "value": isAgent && type === 'index' ? `shard_stats` : `${type}_stats`
                             }
                         }
                     }, {

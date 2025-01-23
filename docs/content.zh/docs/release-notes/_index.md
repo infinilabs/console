@@ -7,6 +7,14 @@ title: "版本历史"
 
 这里是 INFINI Console 历史版本发布的相关说明。
 
+## Latest (In development)
+
+### Breaking changes
+### Features
+- Insight Data API 支持函数格式查询，方便拓展查询功能
+- 创建集群时支持配置多个主机地址，增强集群的高可用性
+### Bug fix
+### Improvements
 
 ## 1.28.0 (2025-01-11)
 

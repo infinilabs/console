@@ -35,6 +35,29 @@ import (
 	"infini.sh/framework/core/util"
 )
 
+const (
+	AggFuncCount                      = "count"
+	AggFuncAvg                        = "avg"
+	AggFuncSum                        = "sum"
+	AggFuncMin                        = "min"
+	AggFuncMax                        = "max"
+	AggFuncMedium                     = "medium"
+	AggFuncValueCount                 = "value_count"
+	AggFuncCardinality                = "cardinality"
+	AggFuncDerivative                 = "derivative"
+	AggFuncRate                       = "rate"
+	AggFuncPercent99                  = "p99"
+	AggFuncPercent95                  = "p95"
+	AggFuncPercent90                  = "p90"
+	AggFuncPercent80                  = "p80"
+	AggFuncPercent50                  = "p50"
+	AggFuncLatest                     = "latest"
+	AggFuncLatency                    = "latency"
+	AggFuncSumFuncValueInGroup        = "sum_func_value_in_group"
+	AggFuncRateSumFuncValueInGroup    = "rate_sum_func_value_in_group"
+	AggFuncLatencySumFuncValueInGroup = "latency_sum_func_value_in_group"
+)
+
 type Metric struct {
 	AggTypes     []string          `json:"agg_types,omitempty"`
 	IndexPattern string            `json:"index_pattern,omitempty"`
@@ -108,14 +131,55 @@ func (m *Metric) GenerateExpression() (string, error) {
 
 	return string(expressionBytes), nil
 }
-func (m *Metric) AutoTimeBeforeGroup() bool {
+
+// shouldUseAggregation checks if any item's statistic or function exists in the provided aggFuncs list.
+// If a match is found, it returns true; otherwise, it returns false.
+func (m *Metric) shouldUseAggregation(aggFuncs []string) bool {
 	for _, item := range m.Items {
-		if item.Statistic == "derivative" {
-			return false
+		// Default to item's Statistic field
+		statistic := item.Statistic
+
+		// If Function is defined, use its first key as the statistic
+		if item.Function != nil {
+			for key := range item.Function {
+				statistic = key
+				break
+			}
+		}
+
+		// Check if statistic is in the aggregation function list
+		if util.StringInArray(aggFuncs, statistic) {
+			return true
 		}
 	}
-	return true
+	return false
 }
+
+// AutoTimeBeforeGroup determines if date aggregation should be applied before terms aggregation.
+// Returns false if the metric uses any of the specified aggregation functions.
+func (m *Metric) AutoTimeBeforeGroup() bool {
+	return !m.shouldUseAggregation([]string{
+		AggFuncDerivative,
+		AggFuncRate,
+		AggFuncLatency,
+		AggFuncRateSumFuncValueInGroup,
+		AggFuncLatencySumFuncValueInGroup,
+	})
+}
+
+// UseBucketSort determines whether bucket sorting should be used for aggregation.
+// Returns false if the metric contains specific aggregation functions that require alternative handling.
+func (m *Metric) UseBucketSort() bool {
+	return m.shouldUseAggregation([]string{
+		AggFuncDerivative,
+		AggFuncRate,
+		AggFuncLatency,
+		AggFuncSumFuncValueInGroup,
+		AggFuncRateSumFuncValueInGroup,
+		AggFuncLatencySumFuncValueInGroup,
+	})
+}
+
 func (m *Metric) ValidateSortKey() error {
 	if len(m.Sort) == 0 {
 		return nil
@@ -143,6 +207,10 @@ type MetricItem struct {
 	Field     string `json:"field"`
 	FieldType string `json:"field_type,omitempty"`
 	Statistic string `json:"statistic,omitempty"`
+
+	//Function specifies the calculation details for the metric,
+	//including the aggregation type and any associated parameters.
+	Function map[string]interface{} `json:"function,omitempty"`
 }
 
 type MetricDataItem struct {

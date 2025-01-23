@@ -17,8 +17,8 @@
  * under the License.
  */
 
-import React, { PureComponent, Fragment } from 'react';
-import { intersection, union, get } from 'lodash';
+import React, { PureComponent, Fragment, useState, useMemo, useCallback } from 'react';
+import { intersection, union, get, cloneDeep } from 'lodash';
 
 import {
   EuiBasicTable,
@@ -41,6 +41,13 @@ import {
   EuiSpacer,
   EuiText,
   EUI_MODAL_CONFIRM_BUTTON,
+  EuiFilterButton,
+  EuiFilterGroup,
+  EuiPopover,
+  EuiSelectable,
+  EuiPopoverTitle,
+  EuiBadge,
+  EuiComboBox,
 } from '@elastic/eui';
 
 import {
@@ -69,10 +76,32 @@ import { IndexPatternManagmentContextValue } from '../../types';
 
 import { FIELD_TYPES_BY_LANG, DEFAULT_FIELD_TYPES } from './constants';
 import { executeScript, isScriptValid } from './lib';
+import styles from './field_editor.less'
 
 // This loads Ace editor's "groovy" mode, used below to highlight the script.
 import 'brace/mode/groovy';
 import { useGlobalContext } from '../../context';
+import { formatMessage } from "umi/locale";
+import { message } from 'antd';
+import { getRollupEnabled } from '@/utils/authority';
+
+export const getStatistics = (type) => {
+  if (!type || type === 'string') return ["count",  "cardinality"];
+  return [
+    "max",
+    "min",
+    "avg",
+    "sum",
+    "medium",
+    "p99",
+    "p95",
+    "p90",
+    "p80",
+    "p50",
+    "count",
+    "cardinality",
+  ];
+};
 
 const getFieldTypeFormatsList = (
   field: IndexPatternField['spec'],
@@ -206,7 +235,7 @@ export class FieldEditor extends PureComponent<FieldEdiorProps, FieldEditorState
         data.fieldFormats
       ),
       fieldFormatId: get(indexPattern, ['fieldFormatMap', spec.name, 'type', 'id']),
-      fieldFormatParams: format.params(),
+      fieldFormatParams: format?.params(),
     });
   }
 
@@ -750,11 +779,72 @@ export class FieldEditor extends PureComponent<FieldEdiorProps, FieldEditorState
     return false;
   }
 
+  onMetricSettingsChange = (key, value) => {
+    const { spec = {} } = this.state;
+    const settings = cloneDeep(spec['metric_config'] || {})
+    settings[key] = value
+    this.onFieldChange('metric_config', settings)
+  };
+
+  renderMetricConfig() {
+    const { spec } = this.state;
+
+    const isRollupEnabled = getRollupEnabled() === 'true'
+
+    return (
+      <>
+        <EuiFormRow
+          label={'Metric Name'}
+        >
+          <EuiFieldText
+            value={spec?.metric_config?.name}
+            onChange={(e) => {
+              this.onMetricSettingsChange('name', e.target.value)
+            }}
+          />
+        </EuiFormRow>
+        <EuiFormRow
+          label={'Statistics'}
+          helpText={
+            isRollupEnabled ? `Rollup is enabled, some statistics will be disabled.` : ''
+          }
+        >
+          <StatisticsSelect 
+            value={spec?.metric_config?.option_aggs || []}
+            statistics={getStatistics(spec?.type)}
+            onChange={(value) => {
+              this.onMetricSettingsChange('option_aggs', value)
+            }}
+            spec={spec}
+          />
+        </EuiFormRow>
+        
+        <EuiFormRow
+          label={'Unit'}
+        >
+          <EuiFieldText
+            value={spec?.metric_config?.unit}
+            onChange={(e) => {
+              this.onMetricSettingsChange('unit', e.target.value)
+            }}
+          />
+        </EuiFormRow>
+        <EuiFormRow
+          label={'Tags'}
+        >
+          <Tags value={spec?.metric_config?.tags} onChange={(value) => {
+            this.onMetricSettingsChange('tags', value)
+          }}/>
+        </EuiFormRow>
+      </>
+    );
+  }
+
   render() {
     const { isReady, isCreating, spec } = this.state;
 
     return isReady ? (
-      <div>
+      <div className={styles.editor}>
         <EuiText>
           <h3>
             {isCreating ? (
@@ -774,6 +864,7 @@ export class FieldEditor extends PureComponent<FieldEdiorProps, FieldEditorState
           {this.renderFormat()}
           {this.renderPopularity()}
           {this.renderScript()}
+          {this.renderMetricConfig()}
           {this.renderActions()}
           {this.renderDeleteModal()}
         </EuiForm>
@@ -782,3 +873,140 @@ export class FieldEditor extends PureComponent<FieldEdiorProps, FieldEditorState
     ) : null;
   }
 }
+
+export const ROLLUP_FIELDS = {
+  "payload.elasticsearch.shard_stats.indexing.index_total": ["max", "min"],
+  "payload.elasticsearch.shard_stats.store.size_in_bytes": ["max", "min"],
+  "payload.elasticsearch.shard_stats.docs.count": ["max", "min"],
+  "payload.elasticsearch.shard_stats.search.query_total":["max", "min"],
+  "payload.elasticsearch.shard_stats.indexing.index_time_in_millis": ["max", "min"],
+  "payload.elasticsearch.shard_stats.search.query_time_in_millis": ["max", "min"],
+  "payload.elasticsearch.shard_stats.segments.count": ["max", "min"],
+  "payload.elasticsearch.shard_stats.segments.memory_in_bytes": ["max", "min"],
+  "payload.elasticsearch.index_stats.total.store.size_in_bytes": ["max", "min"],
+  "payload.elasticsearch.index_stats.total.docs.count": ["max", "min"],
+  "payload.elasticsearch.index_stats.total.search.query_total": ["max", "min"],
+  "payload.elasticsearch.index_stats.primaries.indexing.index_total": ["max", "min"],
+  "payload.elasticsearch.index_stats.primaries.indexing.index_time_in_millis": ["max", "min"],
+  "payload.elasticsearch.index_stats.total.search.query_time_in_millis": ["max", "min"],
+  "payload.elasticsearch.index_stats.total.segments.count": ["max", "min"],
+  "payload.elasticsearch.index_stats.total.segments.memory_in_bytes": ["max", "min"],
+  "payload.elasticsearch.node_stats.indices.indexing.index_total": ["max", "min"],
+  "payload.elasticsearch.node_stats.process.cpu.percent": ["p99", "max", "medium", "min", "avg"],
+  "payload.elasticsearch.node_stats.jvm.mem.heap_used_in_bytes": ["p99", "max", "medium", "min", "avg"],
+  "payload.elasticsearch.node_stats.indices.indexing.index_time_in_millis": ["max", "min"],
+  "payload.elasticsearch.node_stats.indices.search.query_total": ["max", "min"],
+  "payload.elasticsearch.node_stats.indices.search.query_time_in_millis": ["max", "min"],
+  "payload.elasticsearch.node_stats.indices.store.size_in_bytes": ["max", "min"],
+  "payload.elasticsearch.node_stats.indices.docs.count": ["max", "min"]
+}
+
+const StatisticsSelect = (props) => {
+
+  const { value = [], statistics = [], onChange, spec } = props;
+
+  const isRollupEnabled = getRollupEnabled() === 'true'
+
+  const options = useMemo(() => {
+    const limits = ROLLUP_FIELDS[spec?.name] || ['max', 'count']
+    return statistics.map((item) => ({
+      label: item.toUpperCase(), value: item, disabled: isRollupEnabled ? !limits.includes(item) : false
+    }))
+  }, [value, statistics, spec, isRollupEnabled])
+
+
+  return (
+    <EuiComboBox
+      options={options}
+      selectedOptions={value.map((item) => ({ label: item.toUpperCase(), value: item }))}
+      onChange={(value) => {
+        onChange(value.map((item) => item.value))
+      }}
+    />
+  );
+};
+
+export const Tags = ({ value = [], onChange }) => {
+  const [inputVisible, setInputVisible] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+
+  const handleInputChange = (e) => {
+    setInputValue(e.target.value);
+  };
+
+  const showInput = () => {
+    setInputVisible(true);
+  };
+
+  const handleRemove = useCallback(
+    (index) => {
+      const newValue = [...value];
+      newValue.splice(index, 1);
+      onChange(newValue);
+    },
+    [value]
+  );
+
+  const handleInputConfirm = (input) => {
+    if (input.length === 0) {
+      return message.warning(
+        formatMessage({ id: "command.message.invalid.tag" })
+      );
+    }
+    if (input) onChange([...(value || []), input]);
+    setInputVisible(false);
+    setInputValue("");
+  }
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter') {
+      handleInputConfirm(inputValue)
+    }
+  };
+
+  return (
+    <EuiFlexGroup wrap responsive={false} gutterSize="xs">
+      {value.map((tag, index) => (
+        <EuiFlexItem grow={false}>
+          <EuiBadge
+            color="hollow"
+            iconType="cross"
+            iconSide="right"
+            iconOnClick={() => handleRemove(index)}
+            style={{ height: '40px', lineHeight: '40px', fontSize: 14}}
+          >
+            {tag}
+          </EuiBadge>
+        </EuiFlexItem>
+        
+      ))}
+      {inputVisible && (
+        <EuiFlexItem grow={false}>
+          <EuiFieldText
+            value={inputValue}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            onBlur={() => {
+              setInputVisible(false);
+              setInputValue("");
+            }}
+            autoFocus
+          />
+        </EuiFlexItem>
+      )}
+      {!inputVisible && (
+        <EuiFlexItem grow={false}>
+          <EuiBadge
+            color="hollow"
+            iconType="plus"
+            iconSide="left"
+            onClick={showInput}
+            style={{ height: '40px', lineHeight: '40px', fontSize: 14}}
+          >
+            Add New
+          </EuiBadge>
+        </EuiFlexItem>
+      )}
+    </EuiFlexGroup>
+  );
+};

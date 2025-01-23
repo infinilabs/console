@@ -139,7 +139,7 @@ export class Table extends PureComponent<IndexedFieldProps> {
       pageSizeOptions: [5, 10, 25, 50],
     };
 
-    const columns: Array<EuiBasicTableColumn<IndexedFieldItem>> = [
+    const columns: Array<EuiBasicTableColumn<IndexedFieldItem>> = this.props.columns || [
       {
         field: 'displayName',
         name: nameHeader,

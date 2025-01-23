@@ -86,6 +86,7 @@ export default {
   "form.logstash.kafkaconf.label": "Logstash Kafka 配置",
   "form.logstash.kafkaconf.placeholder": "请输入Kafka配置",
   "form.button.search": "搜索",
+  "form.button.apply": "应用",
   "form.button.new": "新建",
   "form.button.create": "创建",
   "form.button.add": "添加",

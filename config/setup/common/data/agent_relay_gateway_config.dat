@@ -67,8 +67,7 @@ elasticsearch:
     basic_auth:
       username: ingest
       password: password
-    endpoints:
-     - $[[SETUP_ENDPOINT]]
+    endpoints: $[[SETUP_ENDPOINTS]]
 
 pipeline:
   - name: bulk_request_ingest

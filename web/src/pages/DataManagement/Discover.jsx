@@ -112,15 +112,15 @@ const Discover = (props) => {
 
   const [timeZone, setTimeZone] = useState(() => getTimezone());
   const [mode, setMode] = useState("table");
-  const [viewLayout, setViewLayout] = useState();
+  // const [viewLayout, setViewLayout] = useState();
   const insightBarRef = useRef();
   const visRef = useRef();
-  const layoutRef = useRef();
+  // const layoutRef = useRef();
   const rangeCacheRef = useRef();
   const fullScreenHandle = useFullScreenHandle();
-  const [layout, setLayout] = useState(
-    Layouts.find((item) => item.name === "default")
-  );
+  // const [layout, setLayout] = useState(
+  //   Layouts.find((item) => item.name === "default")
+  // );
   const [timeTipsLoading, setTimeTipsLoading] = useState(false);
   const [insightLoading, setInsightLoading] = useState(false);
   const [showResultCount, setShowResultCount] = useState(true);
@@ -293,9 +293,9 @@ const Discover = (props) => {
           getFilters()
         );
       }
-      if (mode === "layout") {
-        layoutRef?.current?.onRefresh();
-      }
+      // if (mode === "layout") {
+      //   layoutRef?.current?.onRefresh();
+      // }
       if (!indexPatternRef.current) {
         return;
       }
@@ -415,7 +415,7 @@ const Discover = (props) => {
       columns: record.filter?.columns || ["_source"],
     }
     if (record.time_field) {
-      newState.sort = [{[record.time_field]: {order: "desc"}}]
+      newState.sort = [[record.time_field, 'desc']]
     }
     setState(newState);
     if (record.filter?.filters?.length > 0) {
@@ -881,24 +881,24 @@ const Discover = (props) => {
     }
   };
 
-  const fetchViewDefaultLayout = async (clusterId, viewId) => {
-    setInsightLoading(true);
-    const res = await request(
-      `/elasticsearch/${clusterId}/saved_objects/view/${viewId}`
-    );
-    const layoutId = res?._source?.default_layout_id;
-    if (layoutId) {
-      const layout = await request(`/layout/${layoutId}`);
-      if (layout?._source) {
-        setViewLayout(layout?._source);
-      } else {
-        setViewLayout();
-      }
-    } else {
-      setViewLayout();
-    }
-    setInsightLoading(false);
-  };
+  // const fetchViewDefaultLayout = async (clusterId, viewId) => {
+  //   setInsightLoading(true);
+  //   const res = await request(
+  //     `/elasticsearch/${clusterId}/saved_objects/view/${viewId}`
+  //   );
+  //   const layoutId = res?._source?.default_layout_id;
+  //   if (layoutId) {
+  //     const layout = await request(`/layout/${layoutId}`);
+  //     if (layout?._source) {
+  //       setViewLayout(layout?._source);
+  //     } else {
+  //       setViewLayout();
+  //     }
+  //   } else {
+  //     setViewLayout();
+  //   }
+  //   setInsightLoading(false);
+  // };
 
   const onFieldAgg = async (field, beforeFuc, afterFuc) => {
     let name = field?.spec?.name || field?.name
@@ -993,27 +993,27 @@ const Discover = (props) => {
     }
   }
 
-  useEffect(() => {
-    if (indexPattern?.type === "view") {
-      fetchViewDefaultLayout(props.selectedCluster?.id, indexPattern?.id);
-    } else {
-      setViewLayout();
-    }
-  }, [indexPattern, props.selectedCluster?.id]);
+  // useEffect(() => {
+  //   if (indexPattern?.type === "view") {
+  //     fetchViewDefaultLayout(props.selectedCluster?.id, indexPattern?.id);
+  //   } else {
+  //     setViewLayout();
+  //   }
+  // }, [indexPattern, props.selectedCluster?.id]);
 
-  useEffect(() => {
-    setMode(viewLayout ? "layout" : "table");
-  }, [viewLayout]);
+  // useEffect(() => {
+  //   setMode(viewLayout ? "layout" : "table");
+  // }, [viewLayout]);
 
-  useEffect(() => {
-    if (mode === "table" && viewLayout) {
-      setViewLayout();
-    }
-  }, [mode]);
+  // useEffect(() => {
+  //   if (mode === "table" && viewLayout) {
+  //     setViewLayout();
+  //   }
+  // }, [mode]);
 
-  const showLayoutListIcon = useMemo(() => {
-    return indexPattern?.type === "view";
-  }, [indexPattern]);
+  // const showLayoutListIcon = useMemo(() => {
+  //   return indexPattern?.type === "view";
+  // }, [indexPattern]);
 
   return (
     <div style={{ position: "relative" }}>
@@ -1104,10 +1104,10 @@ const Discover = (props) => {
               getBucketSize,
               columns: state.columns,
             }}
-            layoutConfig={{
-              layout,
-              onChange: setLayout,
-            }}
+            // layoutConfig={{
+            //   layout,
+            //   onChange: setLayout,
+            // }}
             isEmpty={resultState === "none" && queryFrom === 0}
             onQueriesSelect={onQueriesSelect}
             onQueriesRemove={(id) => {
@@ -1159,15 +1159,15 @@ const Discover = (props) => {
                   break;
               }
             }}
-            showLayoutListIcon={showLayoutListIcon}
-            viewLayout={viewLayout}
-            onViewLayoutChange={(layout) => {
-              if (layout) {
-                setViewLayout(layout);
-              } else {
-                setViewLayout();
-              }
-            }}
+            showLayoutListIcon={false}
+            // viewLayout={viewLayout}
+            // onViewLayoutChange={(layout) => {
+            //   if (layout) {
+            //     setViewLayout(layout);
+            //   } else {
+            //     setViewLayout();
+            //   }
+            // }}
           />
         </div>
 
@@ -1200,20 +1200,22 @@ const Discover = (props) => {
                 getFilters={getSearchFilters}
                 getBucketSize={getBucketSize}
                 fullScreenHandle={fullScreenHandle}
-                layout={layout}
+                // layout={layout}
                 selectedQueries={selectedQueries}
               />
-            ) : mode === "layout" ? (
-              <Layout
-                ref={layoutRef}
-                clusterId={props.selectedCluster?.id}
-                indexPattern={indexPattern}
-                timeRange={timefilter?.getTime()}
-                query={getSearchFilters()}
-                layout={viewLayout}
-                fullScreenHandle={fullScreenHandle}
-              />
-            ) : (
+            ) : 
+            // mode === "layout" ? (
+            //   <Layout
+            //     ref={layoutRef}
+            //     clusterId={props.selectedCluster?.id}
+            //     indexPattern={indexPattern}
+            //     timeRange={timefilter?.getTime()}
+            //     query={getSearchFilters()}
+            //     layout={viewLayout}
+            //     fullScreenHandle={fullScreenHandle}
+            //   />
+            // ) : 
+            (
               <>
                 {indexPattern && (
                   <EuiFlexItem grow={false}>

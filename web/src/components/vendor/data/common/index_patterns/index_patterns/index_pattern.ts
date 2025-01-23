@@ -117,7 +117,14 @@ export class IndexPattern implements IIndexPattern {
 
     // set values
     this.id = spec.id;
-    const fieldFormatMap = this.fieldSpecsToFieldFormatMap(spec.fields);
+    
+    this.complexFields = fieldList([], this.shortDotsEnable);
+    this.complexFields.replaceAll(this.complexFieldsToArray(spec.complexFields));
+
+    const fieldFormatMap = {
+      ...this.fieldSpecsToFieldFormatMap(spec.fields),
+      ...this.complexfieldSpecsToFieldFormatMap(spec.complexFields)
+    }
 
     this.version = spec.version;
 
@@ -184,6 +191,31 @@ export class IndexPattern implements IIndexPattern {
       },
       {}
     );
+
+  private complexfieldSpecsToFieldFormatMap = (
+      fldList: IndexPatternSpec["fields"] = {}
+    ) =>
+      Object.entries(fldList).reduce<Record<string, SerializedFieldFormat>>(
+        (col, [key, fieldSpec]) => {
+          if (fieldSpec.format) {
+            col[key] = { ...fieldSpec.format };
+          }
+          return col;
+        },
+        {}
+      );
+
+  private complexFieldsToArray = (complexFields) => {
+    const keys = Object.keys(complexFields || {})
+    return keys.map((key) => {
+      const item = complexFields?.[key] || {}
+      return {
+        ...item,
+        name: key,
+        metric_name: item.name
+      }
+    })
+  }; 
 
   getComputedFields() {
     const scriptFields: any = {};
@@ -381,6 +413,20 @@ export class IndexPattern implements IIndexPattern {
       ? undefined
       : JSON.stringify(serialized);
 
+    let formatComplexFields
+    if (this.complexFields) {
+      formatComplexFields = {}
+      this.complexFields.map((item) => {
+        if (item.spec?.name) {
+          const { metric_name, format, type, ...rest } = item.spec
+          formatComplexFields[item.spec.name] = {
+            ...rest,
+            name: metric_name
+          }
+        }
+      })
+    }
+
     return {
       title: this.title,
       viewName: this.viewName,
@@ -390,6 +436,7 @@ export class IndexPattern implements IIndexPattern {
         ? JSON.stringify(this.sourceFilters)
         : undefined,
       fields: this.fields ? JSON.stringify(this.fields) : undefined,
+      complex_fields: formatComplexFields ? JSON.stringify(formatComplexFields) : undefined,
       fieldFormatMap,
       type: this.type,
       typeMeta: this.typeMeta ? JSON.stringify(this.typeMeta) : undefined,

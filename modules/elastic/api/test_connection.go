@@ -80,23 +80,29 @@ func (h TestAPI) HandleTestConnectionAction(w http.ResponseWriter, req *http.Req
 	} else if config.Host != "" && config.Schema != "" {
 		url = fmt.Sprintf("%s://%s", config.Schema, config.Host)
 		config.Endpoint = url
-	} else {
-		resBody["error"] = fmt.Sprintf("invalid config: %v", util.MustToJSON(config))
-		h.WriteJSON(w, resBody, http.StatusInternalServerError)
-		return
 	}
-
-	if url == "" {
-		panic(errors.Error("invalid url: " + util.MustToJSON(config)))
+	if url != "" && !util.StringInArray(config.Endpoints, url) {
+		config.Endpoints = append(config.Endpoints, url)
 	}
-
-	if !util.SuffixStr(url, "/") {
-		url = fmt.Sprintf("%s/", url)
+	if config.Schema != "" && len(config.Hosts) > 0 {
+		for _, host := range config.Hosts {
+			host = strings.TrimSpace(host)
+			if host == "" {
+				continue
+			}
+			url = fmt.Sprintf("%s://%s", config.Schema, host)
+			if !util.StringInArray(config.Endpoints, url) {
+				config.Endpoints = append(config.Endpoints, url)
+			}
+		}
 	}
-
-	freq.SetRequestURI(url)
-	freq.Header.SetMethod("GET")
-
+	if len(config.Endpoints) == 0 {
+		panic(errors.Error(fmt.Sprintf("invalid config: %v", util.MustToJSON(config))))
+	}
+	// limit the number of endpoints to a maximum of 10 to prevent excessive processing
+	if len(config.Endpoints) > 10 {
+		config.Endpoints = config.Endpoints[0:10]
+	}
 	if (config.BasicAuth == nil || (config.BasicAuth != nil && config.BasicAuth.Username == "")) &&
 		config.CredentialID != "" && config.CredentialID != "manual" {
 		credential, err := common.GetCredential(config.CredentialID)
@@ -112,58 +118,85 @@ func (h TestAPI) HandleTestConnectionAction(w http.ResponseWriter, req *http.Req
 			config.BasicAuth = &auth
 		}
 	}
+	var (
+		i           int
+		clusterUUID string
+	)
+	for i, url = range config.Endpoints {
+		if !util.SuffixStr(url, "/") {
+			url = fmt.Sprintf("%s/", url)
+		}
 
-	if config.BasicAuth != nil && strings.TrimSpace(config.BasicAuth.Username) != "" {
-		freq.SetBasicAuth(config.BasicAuth.Username, config.BasicAuth.Password.Get())
+		freq.SetRequestURI(url)
+		freq.Header.SetMethod("GET")
+
+		if config.BasicAuth != nil && strings.TrimSpace(config.BasicAuth.Username) != "" {
+			freq.SetBasicAuth(config.BasicAuth.Username, config.BasicAuth.Password.Get())
+		}
+
+		const testClientName = "elasticsearch_test_connection"
+		err = api.GetFastHttpClient(testClientName).DoTimeout(freq, fres, 10*time.Second)
+
+		if err != nil {
+			panic(err)
+		}
+
+		var statusCode = fres.StatusCode()
+		if statusCode > 300 || statusCode == 0 {
+			resBody["error"] = fmt.Sprintf("invalid status code: %d", statusCode)
+			h.WriteJSON(w, resBody, 500)
+			return
+		}
+
+		b := fres.Body()
+		clusterInfo := &elastic.ClusterInformation{}
+		err = json.Unmarshal(b, clusterInfo)
+		if err != nil {
+			panic(err)
+		}
+
+		resBody["version"] = clusterInfo.Version.Number
+		resBody["cluster_uuid"] = clusterInfo.ClusterUUID
+		resBody["cluster_name"] = clusterInfo.ClusterName
+		resBody["distribution"] = clusterInfo.Version.Distribution
+
+		if i == 0 {
+			clusterUUID = clusterInfo.ClusterUUID
+		} else {
+			//validate whether two endpoints point to the same cluster
+			if clusterUUID != clusterInfo.ClusterUUID {
+				resBody["error"] = fmt.Sprintf("invalid multiple cluster endpoints: %v", config.Endpoints)
+				h.WriteJSON(w, resBody, http.StatusInternalServerError)
+				return
+			}
+			//skip fetch cluster health info if it's not the first endpoint
+			break
+		}
+		//fetch cluster health info
+		freq.SetRequestURI(fmt.Sprintf("%s/_cluster/health", url))
+		fres.Reset()
+		err = api.GetFastHttpClient(testClientName).Do(freq, fres)
+		if err != nil {
+			resBody["error"] = fmt.Sprintf("error on get cluster health: %v", err)
+			h.WriteJSON(w, resBody, http.StatusInternalServerError)
+			return
+		}
+
+		healthInfo := &elastic.ClusterHealth{}
+		err = json.Unmarshal(fres.Body(), &healthInfo)
+		if err != nil {
+			resBody["error"] = fmt.Sprintf("error on decode cluster health info : %v", err)
+			h.WriteJSON(w, resBody, http.StatusInternalServerError)
+			return
+		}
+		resBody["status"] = healthInfo.Status
+		resBody["number_of_nodes"] = healthInfo.NumberOfNodes
+		resBody["number_of_data_nodes"] = healthInfo.NumberOf_data_nodes
+		resBody["active_shards"] = healthInfo.ActiveShards
+
+		freq.Reset()
+		fres.Reset()
 	}
-
-	const testClientName = "elasticsearch_test_connection"
-	err = api.GetFastHttpClient(testClientName).DoTimeout(freq, fres, 10*time.Second)
-
-	if err != nil {
-		panic(err)
-	}
-
-	var statusCode = fres.StatusCode()
-	if statusCode > 300 || statusCode == 0 {
-		resBody["error"] = fmt.Sprintf("invalid status code: %d", statusCode)
-		h.WriteJSON(w, resBody, 500)
-		return
-	}
-
-	b := fres.Body()
-	clusterInfo := &elastic.ClusterInformation{}
-	err = json.Unmarshal(b, clusterInfo)
-	if err != nil {
-		panic(err)
-	}
-
-	resBody["version"] = clusterInfo.Version.Number
-	resBody["cluster_uuid"] = clusterInfo.ClusterUUID
-	resBody["cluster_name"] = clusterInfo.ClusterName
-	resBody["distribution"] = clusterInfo.Version.Distribution
-
-	//fetch cluster health info
-	freq.SetRequestURI(fmt.Sprintf("%s/_cluster/health", config.Endpoint))
-	fres.Reset()
-	err = api.GetFastHttpClient(testClientName).Do(freq, fres)
-	if err != nil {
-		resBody["error"] = fmt.Sprintf("error on get cluster health: %v", err)
-		h.WriteJSON(w, resBody, http.StatusInternalServerError)
-		return
-	}
-
-	healthInfo := &elastic.ClusterHealth{}
-	err = json.Unmarshal(fres.Body(), &healthInfo)
-	if err != nil {
-		resBody["error"] = fmt.Sprintf("error on decode cluster health info : %v", err)
-		h.WriteJSON(w, resBody, http.StatusInternalServerError)
-		return
-	}
-	resBody["status"] = healthInfo.Status
-	resBody["number_of_nodes"] = healthInfo.NumberOfNodes
-	resBody["number_of_data_nodes"] = healthInfo.NumberOf_data_nodes
-	resBody["active_shards"] = healthInfo.ActiveShards
 
 	h.WriteJSON(w, resBody, http.StatusOK)
 

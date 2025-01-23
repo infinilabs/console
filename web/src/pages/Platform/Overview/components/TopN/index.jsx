@@ -6,63 +6,146 @@ import { formatMessage } from "umi/locale";
 import ConvertSvg from "@/components/Icons/Convert"
 import { useEffect, useMemo, useRef, useState } from "react";
 import ColorPicker from "./ColorPicker";
-import Treemap from "./Treemap";
+import Chart from "./Chart";
 import Table from "./Table";
 import GradientColorPicker from "./GradientColorPicker";
 import { cloneDeep } from "lodash";
 import request from "@/utils/request";
 import { formatTimeRange } from "@/lib/elasticsearch/util";
 import { CopyToClipboard } from "react-copy-to-clipboard";
-import * as uuid from 'uuid';
+import { getRollupEnabled } from "@/utils/authority";
+import { getStatistics, ROLLUP_FIELDS } from "@/components/vendor/index_pattern_management/public/components/field_editor/field_editor";
+
+const DEFAULT_TOP = 15;
+const DEFAULT_COLORS = ['#00bb1b', '#fcca00', '#ff4d4f']
+
+function generate20BitUUID() {
+    let characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let uuid = characters[Math.floor(Math.random() * characters.length)];
+    const buffer = new Uint8Array(9); 
+    crypto.getRandomValues(buffer);
+    for (let i = 0; i < buffer.length; i++) {
+        uuid += buffer[i].toString(16).padStart(2, '0');
+    }
+    return uuid.slice(0, 20);
+}
+
+const formatComplexStatistic = (statistic) => {
+    if (statistic?.includes('rate')) {
+        return 'rate'
+    } else if (statistic?.includes('latency')) {
+        return 'latency'
+    } 
+    return 'max'
+}
 
 export default (props) => {
 
-    const { type, clusterID, timeRange } = props;
+    const { type, clusterID, timeRange, isAgent } = props;
 
     const [currentMode, setCurrentMode] = useState('treemap')
 
-    const [metrics, setMetrics] = useState([])
-
     const [formData, setFormData] = useState({
-        top: 15,
-        colors: ['#00bb1b', '#fcca00', '#ff4d4f']
+        top: DEFAULT_TOP,
+        colors: DEFAULT_COLORS
     })
+
+    const isRollupEnabled = getRollupEnabled() === 'true'
 
     const [config, setConfig] = useState({})
 
     const [loading, setLoading] = useState(false)
     const [data, setData] = useState([])
     const [result, setResult] = useState()
+    const [selectedView, setSelectedView] = useState()
     const searchParamsRef = useRef()
 
-    const fetchMetrics = async (type) => {
+    const fetchFields = async (clusterID, viewID, type, isAgent) => {
+        if (!clusterID || !viewID) return;
         setLoading(true)
-        const res = await request(`/collection/metric/_search`, {
+        const res = await request(`/elasticsearch/${clusterID}/saved_objects/_bulk_get`, {
             method: 'POST',
-            body: { 
-                size: 10000, 
-                from: 0,
-                query: { bool: { filter: [{ "term": { "level": type === 'index' ? 'indices' : type } }] }} 
-            }
+            body: [{ 
+                id: viewID,
+                type: "view"
+            }]
         })
-        if (res?.hits?.hits) {
-            const newMetrics = res?.hits?.hits.filter((item) => {
-                const { items = [] } = item._source;
-                if (items.length === 0) return false
-                return true;
-            }).map((item) => ({ ...item._source }))
-            setMetrics(newMetrics)
-            if (newMetrics.length > 0 && (!formData.sourceArea && !formData.sourceColor)) {
+        if (res && !res.error && Array.isArray(res.saved_objects) && res.saved_objects[0]) {
+            const newView = res.saved_objects[0]
+            let { fieldFormatMap, fields } = newView.attributes || {}
+            let { complex_fields: complexFields } = newView
+            try {
+                fieldFormatMap = JSON.parse(fieldFormatMap) || {}
+                fields = JSON.parse(fields) || []
+                complexFields = JSON.parse(complexFields)
+                const keys = Object.keys(complexFields || {})
+                complexFields = keys.map((key) => {
+                    const item = complexFields?.[key] || {}
+                    return {
+                        name: key,
+                        metric_config: item
+                    }
+                })
+            } catch (error) {
+                fieldFormatMap = {}
+                fields = []
+            }
+            if (!Array.isArray(fields)) fields = []
+            if (!Array.isArray(complexFields)) complexFields = []
+            if (!newView.attributes) newView.attributes = {}
+            newView.fieldFormatMap = fieldFormatMap
+            newView.fields = fields.filter((item) => 
+                !!item.metric_config && 
+                !!item.metric_config.name && 
+                item.metric_config.tags?.includes(type === 'index' ? 'indices' : type) && 
+                item.metric_config.tags?.includes(isAgent ? 'agent' : 'agentless')
+            ).map((item) => {
+                if(!item.metric_config.option_aggs || item.metric_config.option_aggs.length === 0) {
+                    item.metric_config.option_aggs = isRollupEnabled ? ROLLUP_FIELDS[item.name]: getStatistics(item.type)
+                }
+                return {
+                    ...item,
+                    format: fieldFormatMap[item.name]?.id || 'number',
+                    pattern: fieldFormatMap[item.name]?.params?.pattern,
+                }
+            }).concat(complexFields.filter((item) => 
+                !!item.metric_config && 
+                !!item.metric_config.name && 
+                !!item.metric_config.function && 
+                item.metric_config.tags?.includes(type === 'index' ? 'indices' : type) && 
+                item.metric_config.tags?.includes(isAgent ? 'agent' : 'agentless')
+            ).map((item) => {
+                item.metric_config.option_aggs = [formatComplexStatistic(Object.keys(item.metric_config.function || {})[0])]
+                return {
+                    ...item,
+                    format: fieldFormatMap[item.name]?.id || 'number',
+                    pattern: fieldFormatMap[item.name]?.params?.pattern,
+                    isComplex: true,
+                }
+            })).filter((item) => 
+                item.metric_config.option_aggs && 
+                item.metric_config.option_aggs.length > 0
+            )
+            
+            setSelectedView(newView)
+            if (newView.fields.length > 0 && (!formData.sourceArea && !formData.sourceColor)) {
+                const initField = newView.fields[0]
+                const initStatistic = newView.fields[0].metric_config?.option_aggs?.[0] || 'max'
                 const newFormData = {
                     ...cloneDeep(formData),
-                    sourceArea: newMetrics[0],
-                    statisticArea: newMetrics[0]?.items[0]?.statistic,
-                    sourceColor: newMetrics[0],
-                    statisticColor: newMetrics[0].items[0]?.statistic
+                    sourceArea: initField,
+                    statisticArea: initStatistic,
+                    sourceColor: initField,
+                    statisticColor: initStatistic
                 }
                 setFormData(newFormData)
                 fetchData(type, clusterID, timeRange, newFormData)
             }
+        } else {
+            setFormData({
+                top: DEFAULT_TOP,
+                colors: DEFAULT_COLORS
+            })
         }
         setLoading(false)
     }
@@ -72,20 +155,94 @@ export default (props) => {
         if (shouldLoading) {
             setLoading(true)
         }
-        const { top, sourceArea = {}, statisticArea, statisticColor, sourceColor = {} } = formData
+        const { top, sourceArea, statisticArea, statisticColor, sourceColor } = formData
         const newTimeRange = formatTimeRange(timeRange);
         searchParamsRef.current = { type, clusterID, formData }
-        const sortKey = sourceArea?.items?.[0]?.name || sourceColor?.items?.[0]?.name
+        let areaValueID
+        let colorValueID
+        let areaFormula
+        let colorFormula
+        const items = []
+        const formulas = []
+        let isAreaRate = false
+        let isColorRate = false
+        let isAreaLatency = false
+        let isColorLatency = false
+        if (sourceArea) {
+            areaValueID = generate20BitUUID()
+            if (sourceArea.isComplex) {
+                if (sourceArea.metric_config.function) {
+                    const func = Object.keys(sourceArea.metric_config.function || {})?.[0]
+                    if (func?.includes('rate')) {
+                        isAreaRate = true
+                    }
+                    if (func?.includes('latency')) {
+                        isAreaLatency = true
+                    }
+                    items.push({
+                        name: areaValueID,
+                        function: sourceArea.metric_config.function,
+                    })
+                    areaFormula = isAreaRate ? `${areaValueID}/{{.bucket_size_in_second}}` : areaValueID
+                    formulas.push(areaFormula)
+                }
+            } else {
+                if (statisticArea) {
+                    items.push({
+                        function: {
+                            [statisticArea]: {
+                                field: sourceArea.name,
+                            }
+                        },
+                        name: areaValueID,
+                    })
+                    areaFormula = areaValueID
+                    formulas.push(areaFormula)
+                }
+            }
+        }
+        if (sourceColor) {
+            colorValueID = generate20BitUUID()
+            if (sourceColor.isComplex) {
+                if (sourceColor.metric_config.function) {
+                    const func = Object.keys(sourceColor.metric_config.function || {})?.[0]
+                    if (func?.includes('rate')) {
+                        isColorRate = true
+                    }
+                    if (func?.includes('latency')) {
+                        isColorLatency = true
+                    }
+                    items.push({
+                        name: colorValueID,
+                        function: sourceColor.metric_config.function,
+                    })
+                    colorFormula = isColorRate ? `${colorValueID}/{{.bucket_size_in_second}}` : colorValueID
+                    formulas.push(colorFormula)
+                }
+            } else {
+                if (statisticColor) {
+                    items.push({
+                        function: {
+                            [statisticColor]: {
+                                field: sourceColor.name,
+                            }
+                        },
+                        name: colorValueID,
+                    })
+                    colorFormula = colorValueID
+                    formulas.push(colorFormula)
+                }
+            }
+        }
+        const sortKey = areaValueID || colorValueID
         const body = {
             "index_pattern": ".infini_metrics*",
-            "time_field": "timestamp",
-            "bucket_size": "auto",
             "filter": {
                 "bool": {
                     "must": [{
                         "term": {
                             "metadata.name": {
-                                "value": `${type}_stats`
+                                "value": isAgent && type === 'index' ? `shard_stats` : `${type}_stats`
                             }
                         }
                     }, {
@@ -116,20 +273,8 @@ export default (props) => {
                     ],
                 }
             },
-            "formulas": [sourceArea?.formula, sourceColor?.formula].filter((item) => !!item),
-            "items": [...(sourceArea?.items || [])?.map((item) => {
-                item.statistic = statisticArea
-                if (item.statistic === 'rate') {
-                    item.statistic = 'derivative'
-                }
-                return item
-            }),...(sourceColor?.items || [])?.map((item) => {
-                item.statistic = statisticColor
-                if (item.statistic === 'rate') {
-                    item.statistic = 'derivative'
-                }
-                return item
-            })].filter((item) => !!item),
+            "formulas": formulas,
+            "items": items,
             "groups": [{
                 "field": type === 'shard' ? `metadata.labels.shard_id` : `metadata.labels.${type}_name`,
                 "limit": top
@@ -139,9 +284,9 @@ export default (props) => {
                 "key": sortKey
             }] : undefined
         }
-        if (statisticArea !== 'rate' && statisticColor !== 'rate') {
-            delete body['time_field']
-            delete body['bucket_size']
+        if ((isAreaRate || isColorRate) || (isAreaLatency || isColorLatency)) {
+            body['time_field'] = "timestamp"
+            body['bucket_size'] = "auto"
         }
         const res = await request(`/elasticsearch/infini_default_system_cluster/visualization/data`, {
             method: 'POST',
@@ -149,7 +294,28 @@ export default (props) => {
         })
         if (res && !res.error) {
             setResult(res)
-            setConfig(cloneDeep(formData))
+            const newConfig = cloneDeep(formData)
+            if (newConfig.sourceArea?.name && newConfig.sourceArea?.metric_config?.name) {
+                newConfig.sourceArea = {
+                    key: newConfig.sourceArea?.name,
+                    name: newConfig.sourceArea.metric_config.name,
+                    formula: areaFormula,
+                    format: newConfig.sourceArea.format,
+                    pattern: newConfig.sourceArea.pattern,
+                    unit: newConfig.sourceArea.metric_config.unit
+                }
+            }
+            if (newConfig.sourceColor?.name && newConfig.sourceColor?.metric_config?.name) {
+                newConfig.sourceColor = {
+                    key: newConfig.sourceColor?.name,
+                    name: newConfig.sourceColor.metric_config.name,
+                    formula: colorFormula,
+                    format: newConfig.sourceColor.format,
+                    pattern: newConfig.sourceColor.pattern,
+                    unit: newConfig.sourceColor.metric_config.unit
+                }
+            }
+            setConfig(newConfig)
         } else {
             setResult()
         }
@@ -179,7 +345,10 @@ export default (props) => {
     }
 
     useEffect(() => {
-        fetchMetrics(type)
+        fetchFields(clusterID, 'infini_metrics', type, isAgent)
+    }, [clusterID, type, isAgent])
+
+    useEffect(() => {
     }, [type])
 
     const isTreemap = useMemo(() => {
@@ -214,7 +383,7 @@ export default (props) => {
                 sortKey = 'value'
             } else {
                 if (sourceColor) {
-                    const key = uuid.v4();
+                    const key = generate20BitUUID();
                     object['metricArea'] = `metric_${key}`
                     object['value'] = 1
                     object['nameArea'] = `name_${key}`
@@ -270,12 +439,9 @@ export default (props) => {
                             />
                         </Radio.Button>
                     </Radio.Group>
-                    <Input
-                        style={{ width: "60px", marginBottom: 12 }}
-                        className={styles.borderRadiusLeft}
-                        disabled
-                        defaultValue={"Top"}
-                    />
+                    <div className={styles.label}>
+                        Top
+                    </div>
                     <InputNumber
                         style={{ width: "80px", marginBottom: 12, marginRight: 12 }}
                         className={styles.borderRadiusRight}
@@ -285,22 +451,25 @@ export default (props) => {
                         precision={0}
                         onChange={(value) => onFormDataChange({ top: value })}
                     />
-                    <Input
-                        style={{ width: "80px", marginBottom: 12 }}
-                        className={styles.borderRadiusLeft}
-                        disabled
-                        defaultValue={"面积指标"}
-                    />
+                    <div className={styles.label}>
+                        {formatMessage({ id: "cluster.monitor.topn.area" })}
+                    </div>
                     <Select 
                         style={{ width: "150px", marginBottom: 12 }}
-                        value={formData.sourceArea?.key}
+                        value={formData.sourceArea?.name}
                         dropdownMatchSelectWidth={false}
                         onChange={(value, option) => {
-
                             if (value) {
-                                const { items = [] } = option?.props?.metric || {}
+                                const { isComplex } = option?.props?.metric || {}
+                                let statisticArea;
+                                if (isComplex) {
+                                    statisticArea = formatComplexStatistic(Object.keys(option?.props?.metric?.metric_config?.function || {})[0])
+                                } else {
+                                    const { items = [] } = option?.props?.metric || {}
+                                    statisticArea = items[0]?.statistic === 'derivative' ? 'rate' : (items[0]?.statistic || 'max')
+                                }
                                 onFormDataChange({ 
-                                    statisticArea: items[0]?.statistic === 'derivative' ? 'rate' : items[0]?.statistic,
+                                    statisticArea: statisticArea,
                                     sourceArea: option?.props?.metric
                                 })
                             } else {
@@ -313,9 +482,9 @@ export default (props) => {
                         allowClear
                     >
                         {
-                            metrics.map((item) => (
-                                <Select.Option key={item.key} metric={item}>
-                                    {item.name}
+                            (selectedView?.fields || []).filter((item) => !!item.metric_config).map((item) => (
+                                <Select.Option key={item.name} metric={item}>
+                                    {item.metric_config.name}
                                 </Select.Option>
                             ))
                         }
@@ -328,30 +497,36 @@ export default (props) => {
                         onChange={(value) => onFormDataChange({ statisticArea: value })}
                     >
                         {
-                            formData.sourceArea?.statistics?.filter((item) => !!item).map((item) => (
-                                <Select.Option key={item}>
-                                    {item.toUpperCase()}
-                                </Select.Option>
-                            ))
+                            formData.sourceArea?.metric_config?.option_aggs?.filter((item) => !!item).map((item) => {
+                                const limits = ROLLUP_FIELDS[formData.sourceArea.name]
+                                return (
+                                    <Select.Option key={item} disabled={limits && isRollupEnabled ? !limits.includes(item) : false}>
+                                        {item.toUpperCase()}
+                                    </Select.Option>
+                                )
+                            })
                         }
                     </Select>
                     <Button style={{ width: 32, marginBottom: 12, padding: 0, marginRight: 6, borderRadius: 4 }} onClick={() => onMetricExchange()}><Icon style={{ fontSize: 16 }} component={ConvertSvg}/></Button>
-                    <Input
-                        style={{ width: "80px", marginBottom: 12 }}
-                        className={styles.borderRadiusLeft}
-                        disabled
-                        defaultValue={"颜色指标"}
-                    />
-                    
+                    <div className={styles.label}>
+                        {formatMessage({ id: "cluster.monitor.topn.color" })}
+                    </div>
                     <Select 
                         style={{ width: "150px", marginBottom: 12 }}
-                        value={formData.sourceColor?.key}
+                        value={formData.sourceColor?.name}
                         dropdownMatchSelectWidth={false}
                         onChange={(value, option) => {
                             if (value) {
-                                const { items = [] } = option?.props?.metric || {}
+                                const { isComplex } = option?.props?.metric || {}
+                                let statisticColor;
+                                if (isComplex) {
+                                    statisticColor = formatComplexStatistic(Object.keys(option?.props?.metric?.metric_config?.function || {})[0])
+                                } else {
+                                    const { items = [] } = option?.props?.metric || {}
+                                    statisticColor = items[0]?.statistic === 'derivative' ? 'rate' : (items[0]?.statistic || 'max')
+                                }
                                 onFormDataChange({ 
-                                    statisticColor: items[0]?.statistic === 'derivative' ? 'rate' : items[0]?.statistic,
+                                    statisticColor: statisticColor,
                                     sourceColor: option?.props?.metric
                                 })
                             } else {
@@ -365,9 +540,9 @@ export default (props) => {
                         allowClear
                     >
                         {
-                            metrics.map((item) => (
-                                <Select.Option key={item.key} metric={item}>
-                                    {item.name}
+                            (selectedView?.fields || []).filter((item) => !!item.metric_config).map((item) => (
+                                <Select.Option key={item.name} metric={item}>
+                                    {item.metric_config.name}
                                 </Select.Option>
                             ))
                         }
@@ -379,18 +554,19 @@ export default (props) => {
                         onChange={(value) => onFormDataChange({ statisticColor: value })}
                     >
                         {
-                            formData.sourceColor?.statistics?.filter((item) => !!item).map((item) => (
-                                <Select.Option key={item}>
-                                    {item.toUpperCase()}
-                                </Select.Option>
-                            ))
+                            formData.sourceColor?.metric_config?.option_aggs?.filter((item) => !!item).map((item) => {
+                                const limits = ROLLUP_FIELDS[formData.sourceColor.name]
+                                return (
+                                    <Select.Option key={item} disabled={limits && isRollupEnabled ? !limits.includes(item) : false}>
+                                        {item.toUpperCase()}
+                                    </Select.Option>
+                                )
+                            })
                         }
                     </Select>
-                    <Input
-                        style={{ width: "60px", marginBottom: 12 }}
-                        disabled
-                        defaultValue={"主题"}
-                    />
+                    <div className={styles.label} style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}>
+                        {formatMessage({ id: "cluster.monitor.topn.theme" })}
+                    </div>
                     <GradientColorPicker className={styles.borderRadiusRight} style={{ marginRight: 12, marginBottom: 12 }} value={formData.colors || []} onChange={(value) => {
                         onFormDataChange({ colors: value })
                         setConfig({
@@ -398,7 +574,7 @@ export default (props) => {
                             colors: value
                         })
                     }}/>
-                    <Button style={{ marginBottom: 12 }} className={styles.borderRadiusLeft} type="primary" onClick={() => fetchData(type, clusterID, timeRange, formData)}>{formatMessage({ id: "form.button.search" })}</Button>
+                    <Button style={{ marginBottom: 12 }} className={styles.borderRadiusLeft} type="primary" onClick={() => fetchData(type, clusterID, timeRange, formData)}>{formatMessage({ id: "form.button.apply" })}</Button>
                 </Input.Group>
             </div>
             
@@ -414,7 +590,7 @@ export default (props) => {
                         </CopyToClipboard>
                     )
                 }
-                { isTreemap ? <Treemap config={config} data={formatData} /> : <Table type={type} config={config} data={formatData}/> }
+                { isTreemap ? <Chart config={config} data={formatData} /> : <Table type={type} config={config} data={formatData}/> }
             </div>
         </div>  
         </Spin>

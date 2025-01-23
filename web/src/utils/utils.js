@@ -427,3 +427,14 @@ export const formatToUniversalTime = (time, format, timezone) => {
   if (!time) return '-';
   return moment(time).tz(timezone || getTimezone()).format(format || "YYYY-MM-DD HH:mm:ss (G[M]TZ)")
 }
+
+export const generate20BitUUID = () => {
+  let characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let uuid = characters[Math.floor(Math.random() * characters.length)];
+  const buffer = new Uint8Array(9); 
+  crypto.getRandomValues(buffer);
+  for (let i = 0; i < buffer.length; i++) {
+      uuid += buffer[i].toString(16).padStart(2, '0');
+  }
+  return uuid.slice(0, 20);
+}

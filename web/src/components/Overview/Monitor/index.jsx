@@ -13,6 +13,7 @@ import { getTimezone } from "@/utils/utils";
 import { getContext } from "@/pages/DataManagement/context";
 import { ESPrefix } from "@/services/common";
 import CollectStatus from "@/components/CollectStatus";
+import styles from "./index.less"
 
 const { TabPane } = Tabs;
 
@@ -140,7 +141,7 @@ const Monitor = (props) => {
     <div>
       <BreadcrumbList data={breadcrumbList} />
 
-      <Card bodyStyle={{ padding: 15 }}>
+      <Card bodyStyle={{ padding: 16 }}>
         {
           selectedCluster?.id ? (
             <>
@@ -187,58 +188,59 @@ const Monitor = (props) => {
                   <CollectStatus fetchUrl={`${ESPrefix}/${selectedCluster?.id}/_collection_stats`}/>
                 </div>
               </div>
-
-              <Tabs
-                activeKey={param?.tab || panes[0]?.key}
-                onChange={(key) => {
-                  setParam({ ...param, tab: key });
-                }}
-                tabBarGutter={10}
-                destroyInactiveTabPane
-                animated={false}
-              >
-                {panes.map((pane) => (
-                  <TabPane tab={pane.title} key={pane.key}>
-                    <Spin spinning={spinning && !!state.refresh}>
-                      <StatisticBar
-                        setSpinning={setSpinning}
-                        onInfoChange={onInfoChange}
-                        {...state}
-                        {...extraParams}
-                      />
-                    </Spin>
-                    <div style={{ marginTop: 15 }}>
-                      {checkPaneParams({
-                        ...state,
-                        ...extraParams,
-                      }) ? (
-                        typeof pane.component == "string" ? (
-                          pane.component
-                        ) : (
-                          <pane.component
-                            selectedCluster={selectedCluster}
-                            isAgent={isAgent}
-                            {...state}
-                            handleTimeChange={handleTimeChange}
-                            handleTimeIntervalChange={(timeInterval) => {
-                              onTimeSettingsChange({
-                                timeInterval,
-                              })
-                              setState({
-                                ...state,
-                                timeInterval,
-                              });
-                            }}
-                            setSpinning={setSpinning}
-                            {...extraParams}
-                            bucketSize={state.timeInterval}
-                          />
-                        )
-                      ) : null}
-                    </div>
-                  </TabPane>
-                ))}
-              </Tabs>
+              <div className={styles.tabs}>
+                <Tabs
+                  activeKey={param?.tab || panes[0]?.key}
+                  onChange={(key) => {
+                    setParam({ ...param, tab: key });
+                  }}
+                  tabBarGutter={10}
+                  destroyInactiveTabPane
+                  animated={false}
+                >
+                  {panes.map((pane) => (
+                    <TabPane tab={pane.title} key={pane.key}>
+                      <Spin spinning={spinning && !!state.refresh}>
+                        <StatisticBar
+                          setSpinning={setSpinning}
+                          onInfoChange={onInfoChange}
+                          {...state}
+                          {...extraParams}
+                        />
+                      </Spin>
+                      <div style={{ marginTop: 15 }}>
+                        {checkPaneParams({
+                          ...state,
+                          ...extraParams,
+                        }) ? (
+                          typeof pane.component == "string" ? (
+                            pane.component
+                          ) : (
+                            <pane.component
+                              selectedCluster={selectedCluster}
+                              isAgent={isAgent}
+                              {...state}
+                              handleTimeChange={handleTimeChange}
+                              handleTimeIntervalChange={(timeInterval) => {
+                                onTimeSettingsChange({
+                                  timeInterval,
+                                })
+                                setState({
+                                  ...state,
+                                  timeInterval,
+                                });
+                              }}
+                              setSpinning={setSpinning}
+                              {...extraParams}
+                              bucketSize={state.timeInterval}
+                            />
+                          )
+                        ) : null}
+                      </div>
+                    </TabPane>
+                  ))}
+                </Tabs>
+              </div>
             </>
           ) : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
         }

@@ -119,6 +119,10 @@ export default {
   "cluster.monitor.timepicker.lastyear": "Last year",
   "cluster.monitor.timepicker.today": "Today",
 
+  "cluster.monitor.topn.area": "Area Metric",
+  "cluster.monitor.topn.color": "Color Metric",
+  "cluster.monitor.topn.theme": "Theme",
+
   "cluster.metrics.axis.index_throughput.title": "Indexing Rate",
   "cluster.metrics.axis.search_throughput.title": "Search Rate",
   "cluster.metrics.axis.index_latency.title": "Indexing Latency",

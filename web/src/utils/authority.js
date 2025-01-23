@@ -72,9 +72,14 @@ export function getAuthorizationHeader() {
   return "";
 }
 
+export function getRollupEnabled() {
+  return localStorage.getItem("infini-rollup-enabled");
+}
+
 (async function() {
-  const authRes = await request("/setting/application");
-  if (authRes && !authRes.error) {
-    localStorage.setItem("infini-auth", authRes.auth_enabled);
+  const res = await request("/setting/application");
+  if (res && !res.error) {
+    localStorage.setItem("infini-auth", res.auth_enabled);
+    localStorage.setItem('infini-rollup-enabled', res.system_cluster?.rollup_enabled || false)
   }
 })();

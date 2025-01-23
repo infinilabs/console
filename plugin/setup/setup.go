@@ -136,11 +136,12 @@ func (module *Module) Stop() error {
 
 type SetupRequest struct {
 	Cluster struct {
-		Host     string `json:"host"`
-		Schema   string `json:"schema"`
-		Endpoint string `json:"endpoint"`
-		Username string `json:"username"`
-		Password string `json:"password"`
+		Host     string   `json:"host"`
+		Schema   string   `json:"schema"`
+		Endpoint string   `json:"endpoint"`
+		Username string   `json:"username"`
+		Password string   `json:"password"`
+		Hosts    []string `json:"hosts"`
 	} `json:"cluster"`
 
 	Skip               bool   `json:"skip"`
@@ -796,8 +797,21 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 			return w.Write([]byte(request.Cluster.Password))
 		case "SETUP_SCHEME":
 			return w.Write([]byte(strings.Split(request.Cluster.Endpoint, "://")[0]))
-		case "SETUP_ENDPOINT":
-			return w.Write([]byte(strings.Split(request.Cluster.Endpoint, "://")[1]))
+		case "SETUP_ENDPOINTS":
+			endpoints := []string{request.Cluster.Endpoint}
+			for _, host := range request.Cluster.Hosts {
+				endpoint := fmt.Sprintf("%s://%s", request.Cluster.Schema, host)
+				if !util.StringInArray(endpoints, endpoint) {
+					endpoints = append(endpoints, endpoint)
+				}
+			}
+			endpointBytes := util.MustToJSONBytes(endpoints)
+			endpointBytes = bytes.ReplaceAll(endpointBytes, []byte("\""), []byte("\\\""))
+			return w.Write(endpointBytes)
+		case "SETUP_HOSTS":
+			hostsBytes := util.MustToJSONBytes(request.Cluster.Hosts)
+			hostsBytes = bytes.ReplaceAll(hostsBytes, []byte("\""), []byte("\\\""))
+			return w.Write(hostsBytes)
 		case "SETUP_TEMPLATE_NAME":
 			return w.Write([]byte(cfg1.TemplateName))
 		case "SETUP_INDEX_PREFIX":

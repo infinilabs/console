@@ -805,11 +805,13 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 					endpoints = append(endpoints, endpoint)
 				}
 			}
-			endpointsStr := fmt.Sprintf("[%s]", strings.Join(endpoints, ", "))
-			return w.Write([]byte(endpointsStr))
+			endpointBytes := util.MustToJSONBytes(endpoints)
+			endpointBytes = bytes.ReplaceAll(endpointBytes, []byte("\""), []byte("\\\""))
+			return w.Write(endpointBytes)
 		case "SETUP_HOSTS":
-			hostsStr := fmt.Sprintf("[%s]", strings.Join(request.Cluster.Hosts, ", "))
-			return w.Write([]byte(hostsStr))
+			hostsBytes := util.MustToJSONBytes(request.Cluster.Hosts)
+			hostsBytes = bytes.ReplaceAll(hostsBytes, []byte("\""), []byte("\\\""))
+			return w.Write(hostsBytes)
 		case "SETUP_TEMPLATE_NAME":
 			return w.Write([]byte(cfg1.TemplateName))
 		case "SETUP_INDEX_PREFIX":

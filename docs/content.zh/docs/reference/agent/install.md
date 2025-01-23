@@ -13,7 +13,7 @@ asciinema: true
 
 ### 安装前准备
 
-安装并运行 [INFINI Console](../../../getting-started/install)
+安装并运行 [INFINI Console](../../getting-started/install.md)
 
 ### 复制一键安装脚本
 

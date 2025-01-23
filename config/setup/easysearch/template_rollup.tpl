@@ -1,22 +1,5 @@
-PUT /.easysearch-ilm-config/_settings
-{
-  "index": {
-    "mapping": {
-      "nested_fields": {
-        "limit": 1000
-      },
-      "nested_objects": {
-        "limit": 20000
-      },
-      "total_fields": {
-        "limit": 30000
-      }
-    }
-  }
-}
-
-DELETE _rollup/jobs/rollup_index_stats
-PUT _rollup/jobs/rollup_index_stats?replace
+DELETE /_rollup/jobs/rollup_index_stats
+PUT /_rollup/jobs/rollup_index_stats
 {
   "rollup": {
     "source_index": ".infini_metrics",
@@ -29,6 +12,9 @@ PUT _rollup/jobs/rollup_index_stats?replace
     "stats": [
           {
             "max": {}
+          },
+          {
+            "min": {}
           },
           {
             "value_count": {}
@@ -56,8 +42,8 @@ PUT _rollup/jobs/rollup_index_stats?replace
   }
 }
 
-DELETE _rollup/jobs/rollup_index_health
-PUT _rollup/jobs/rollup_index_health?replace
+DELETE /_rollup/jobs/rollup_index_health
+PUT /_rollup/jobs/rollup_index_health
 {
   "rollup": {
     "source_index": ".infini_metrics",
@@ -96,8 +82,8 @@ PUT _rollup/jobs/rollup_index_health?replace
   }
 }
 
-DELETE _rollup/jobs/rollup_cluster_stats
-PUT _rollup/jobs/rollup_cluster_stats?replace
+DELETE /_rollup/jobs/rollup_cluster_stats
+PUT /_rollup/jobs/rollup_cluster_stats
 {
   "rollup": {
     "source_index": ".infini_metrics",
@@ -136,8 +122,8 @@ PUT _rollup/jobs/rollup_cluster_stats?replace
   }
 }
 
-DELETE _rollup/jobs/rollup_cluster_health
-PUT _rollup/jobs/rollup_cluster_health?replace
+DELETE /_rollup/jobs/rollup_cluster_health
+PUT /_rollup/jobs/rollup_cluster_health
 {
   "rollup": {
     "source_index": ".infini_metrics",
@@ -175,16 +161,15 @@ PUT _rollup/jobs/rollup_cluster_health?replace
   }
 }
 
-# 高级 节点
-DELETE _rollup/jobs/rollup_node_stats
-PUT _rollup/jobs/rollup_node_stats?replace
+DELETE /_rollup/jobs/rollup_node_stats
+PUT /_rollup/jobs/rollup_node_stats
 {
   "rollup": {
     "source_index": ".infini_metrics",
     "target_index": "rollup_node_stats_{{ctx.source_index}}",
     "timestamp": "timestamp",
     "continuous": true,
-    "page_size": 100,
+    "page_size": 200,
     "cron": "*/10 1-23 * * *",
     "timezone": "UTC",
     "stats": [
@@ -196,6 +181,42 @@ PUT _rollup/jobs/rollup_node_stats?replace
       },
       {
         "value_count": {}
+      }
+    ],
+    "special_metrics": [
+      {
+        "source_field": "payload.elasticsearch.node_stats.process.cpu.percent",
+        "metrics": [
+          {
+            "avg": {}
+          },
+          {
+            "max": {}
+          },
+          {
+            "min": {}
+          },
+          {
+            "percentiles": {}
+          }
+        ]
+      },
+      {
+        "source_field": "payload.elasticsearch.node_stats.jvm.mem.heap_used_in_bytes",
+        "metrics": [
+          {
+            "avg": {}
+          },
+          {
+            "max": {}
+          },
+          {
+            "min": {}
+          },
+          {
+            "percentiles": {}
+          }
+        ]
       }
     ],
     "interval": "1m",
@@ -222,20 +243,23 @@ PUT _rollup/jobs/rollup_node_stats?replace
   }
 }
 
-DELETE _rollup/jobs/rollup_shard_stats_metrics
-PUT _rollup/jobs/rollup_shard_stats_metrics?replace
+DELETE /_rollup/jobs/rollup_shard_stats_metrics
+PUT /_rollup/jobs/rollup_shard_stats_metrics
 {
   "rollup": {
     "source_index": ".infini_metrics",
     "target_index": "rollup_shard_stats_metrics_{{ctx.source_index}}",
     "timestamp": "timestamp",
     "continuous": true,
-    "page_size": 100,
+    "page_size": 200,
     "cron": "*/5 1-23 * * *",
     "timezone": "UTC",
     "stats": [
           {
             "max": {}
+          },
+          {
+            "min": {}
           },
           {
             "value_count": {}
@@ -265,8 +289,8 @@ PUT _rollup/jobs/rollup_shard_stats_metrics?replace
   }
 }
 
-DELETE _rollup/jobs/rollup_shard_stats_state
-PUT _rollup/jobs/rollup_shard_stats_state?replace
+DELETE /_rollup/jobs/rollup_shard_stats_state
+PUT /_rollup/jobs/rollup_shard_stats_state
 {
   "rollup": {
     "source_index": ".infini_metrics",
@@ -302,3 +326,36 @@ PUT _rollup/jobs/rollup_shard_stats_state?replace
     }
   }
 }
+
+# enable rollup search
+PUT /_cluster/settings
+{
+  "persistent": {
+    "rollup": {
+      "search": {
+        "enabled": "true"
+      }
+    }
+  }
+}
+
+# update index settings
+PUT /.easysearch-ilm-config/_settings
+{
+  "index": {
+    "mapping": {
+      "nested_fields": {
+        "limit": 1000
+      },
+      "nested_objects": {
+        "limit": 20000
+      },
+      "total_fields": {
+        "limit": 30000
+      }
+    }
+  }
+}
+
+# start all rollup jobs
+POST /_rollup/jobs/rollup*/_start

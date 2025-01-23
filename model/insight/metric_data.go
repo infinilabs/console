@@ -131,28 +131,55 @@ func (m *Metric) GenerateExpression() (string, error) {
 
 	return string(expressionBytes), nil
 }
-func (m *Metric) AutoTimeBeforeGroup() bool {
-	aggFuncs := []string{
-		AggFuncDerivative,
-		AggFuncRate,
-		AggFuncLatency,
-		AggFuncRateSumFuncValueInGroup,
-		AggFuncLatencySumFuncValueInGroup,
-	}
+
+// shouldUseAggregation checks if any item's statistic or function exists in the provided aggFuncs list.
+// If a match is found, it returns true; otherwise, it returns false.
+func (m *Metric) shouldUseAggregation(aggFuncs []string) bool {
 	for _, item := range m.Items {
-		var statistic = item.Statistic
+		// Default to item's Statistic field
+		statistic := item.Statistic
+
+		// If Function is defined, use its first key as the statistic
 		if item.Function != nil {
 			for key := range item.Function {
 				statistic = key
 				break
 			}
 		}
+
+		// Check if statistic is in the aggregation function list
 		if util.StringInArray(aggFuncs, statistic) {
-			return false
+			return true
 		}
 	}
-	return true
+	return false
 }
+
+// AutoTimeBeforeGroup determines if date aggregation should be applied before terms aggregation.
+// Returns false if the metric uses any of the specified aggregation functions.
+func (m *Metric) AutoTimeBeforeGroup() bool {
+	return !m.shouldUseAggregation([]string{
+		AggFuncDerivative,
+		AggFuncRate,
+		AggFuncLatency,
+		AggFuncRateSumFuncValueInGroup,
+		AggFuncLatencySumFuncValueInGroup,
+	})
+}
+
+// UseBucketSort determines whether bucket sorting should be used for aggregation.
+// Returns false if the metric contains specific aggregation functions that require alternative handling.
+func (m *Metric) UseBucketSort() bool {
+	return m.shouldUseAggregation([]string{
+		AggFuncDerivative,
+		AggFuncRate,
+		AggFuncLatency,
+		AggFuncSumFuncValueInGroup,
+		AggFuncRateSumFuncValueInGroup,
+		AggFuncLatencySumFuncValueInGroup,
+	})
+}
+
 func (m *Metric) ValidateSortKey() error {
 	if len(m.Sort) == 0 {
 		return nil

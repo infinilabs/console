@@ -244,19 +244,24 @@ func GenerateQuery(metric *insight.Metric) (interface{}, error) {
 			}
 			if i == grpLength-1 && len(metric.Sort) > 0 {
 				//use bucket sort instead of terms order when time after group
-				if !timeBeforeGroup && len(metric.Sort) > 0 {
-					basicAggs["sort_field"] = util.MapStr{
-						"max_bucket": util.MapStr{
-							"buckets_path": fmt.Sprintf("time_buckets>%s", metric.Sort[0].Key),
-						},
+				if metric.UseBucketSort() && len(metric.Sort) > 0 {
+					sortKey := metric.Sort[0].Key
+					if !timeBeforeGroup {
+						sortKey = "sort_field"
+						basicAggs[sortKey] = util.MapStr{
+							"max_bucket": util.MapStr{
+								"buckets_path": fmt.Sprintf("time_buckets>%s", metric.Sort[0].Key),
+							},
+						}
 					}
+
 					//using 65536 as a workaround for the terms aggregation limit; the actual limit is enforced in the bucket sort step
 					termsCfg["size"] = 65536
 					basicAggs["bucket_sorter"] = util.MapStr{
 						"bucket_sort": util.MapStr{
 							"size": limit,
 							"sort": []util.MapStr{
-								{"sort_field": util.MapStr{"order": metric.Sort[0].Direction}},
+								{sortKey: util.MapStr{"order": metric.Sort[0].Direction}},
 							},
 						},
 					}

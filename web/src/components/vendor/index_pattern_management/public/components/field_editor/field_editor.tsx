@@ -83,6 +83,7 @@ import 'brace/mode/groovy';
 import { useGlobalContext } from '../../context';
 import { formatMessage } from "umi/locale";
 import { message } from 'antd';
+import { getRollupEnabled } from '@/utils/authority';
 
 export const getStatistics = (type) => {
   if (!type || type === 'string') return ["count",  "cardinality"];
@@ -788,6 +789,8 @@ export class FieldEditor extends PureComponent<FieldEdiorProps, FieldEditorState
   renderMetricConfig() {
     const { spec } = this.state;
 
+    const isRollupEnabled = getRollupEnabled() === 'true'
+
     return (
       <>
         <EuiFormRow
@@ -802,6 +805,9 @@ export class FieldEditor extends PureComponent<FieldEdiorProps, FieldEditorState
         </EuiFormRow>
         <EuiFormRow
           label={'Statistics'}
+          helpText={
+            isRollupEnabled ? `Rollup is enabled, some statistics will be disabled.` : ''
+          }
         >
           <StatisticsSelect 
             value={spec?.metric_config?.option_aggs || []}
@@ -809,6 +815,7 @@ export class FieldEditor extends PureComponent<FieldEdiorProps, FieldEditorState
             onChange={(value) => {
               this.onMetricSettingsChange('option_aggs', value)
             }}
+            spec={spec}
           />
         </EuiFormRow>
         
@@ -867,16 +874,46 @@ export class FieldEditor extends PureComponent<FieldEdiorProps, FieldEditorState
   }
 }
 
+export const ROLLUP_FIELDS = {
+  "payload.elasticsearch.shard_stats.indexing.index_total": ["max", "min"],
+  "payload.elasticsearch.shard_stats.store.size_in_bytes": ["max", "min"],
+  "payload.elasticsearch.shard_stats.docs.count": ["max", "min"],
+  "payload.elasticsearch.shard_stats.search.query_total":["max", "min"],
+  "payload.elasticsearch.shard_stats.indexing.index_time_in_millis": ["max", "min"],
+  "payload.elasticsearch.shard_stats.search.query_time_in_millis": ["max", "min"],
+  "payload.elasticsearch.shard_stats.segments.count": ["max", "min"],
+  "payload.elasticsearch.shard_stats.segments.memory_in_bytes": ["max", "min"],
+  "payload.elasticsearch.index_stats.total.store.size_in_bytes": ["max", "min"],
+  "payload.elasticsearch.index_stats.total.docs.count": ["max", "min"],
+  "payload.elasticsearch.index_stats.total.search.query_total": ["max", "min"],
+  "payload.elasticsearch.index_stats.primaries.indexing.index_total": ["max", "min"],
+  "payload.elasticsearch.index_stats.primaries.indexing.index_time_in_millis": ["max", "min"],
+  "payload.elasticsearch.index_stats.total.search.query_time_in_millis": ["max", "min"],
+  "payload.elasticsearch.index_stats.total.segments.count": ["max", "min"],
+  "payload.elasticsearch.index_stats.total.segments.memory_in_bytes": ["max", "min"],
+  "payload.elasticsearch.node_stats.indices.indexing.index_total": ["max", "min"],
+  "payload.elasticsearch.node_stats.process.cpu.percent": ["p99", "max", "medium", "min", "avg"],
+  "payload.elasticsearch.node_stats.jvm.mem.heap_used_in_bytes": ["p99", "max", "medium", "min", "avg"],
+  "payload.elasticsearch.node_stats.indices.indexing.index_time_in_millis": ["max", "min"],
+  "payload.elasticsearch.node_stats.indices.search.query_total": ["max", "min"],
+  "payload.elasticsearch.node_stats.indices.search.query_time_in_millis": ["max", "min"],
+  "payload.elasticsearch.node_stats.indices.store.size_in_bytes": ["max", "min"],
+  "payload.elasticsearch.node_stats.indices.docs.count": ["max", "min"]
+}
 
 const StatisticsSelect = (props) => {
 
-  const { value = [], statistics = [], onChange } = props;
+  const { value = [], statistics = [], onChange, spec } = props;
+
+  const isRollupEnabled = getRollupEnabled() === 'true'
 
   const options = useMemo(() => {
+    const limits = ROLLUP_FIELDS[spec?.name] || ['max', 'count']
     return statistics.map((item) => ({
-      label: item.toUpperCase(), value: item
+      label: item.toUpperCase(), value: item, disabled: isRollupEnabled ? !limits.includes(item) : false
     }))
-  }, [value, statistics])
+  }, [value, statistics, spec, isRollupEnabled])
+
 
   return (
     <EuiComboBox

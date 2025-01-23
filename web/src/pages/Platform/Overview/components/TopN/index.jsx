@@ -14,37 +14,10 @@ import request from "@/utils/request";
 import { formatTimeRange } from "@/lib/elasticsearch/util";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import { getRollupEnabled } from "@/utils/authority";
-import { getStatistics } from "@/components/vendor/index_pattern_management/public/components/field_editor/field_editor";
+import { getStatistics, ROLLUP_FIELDS } from "@/components/vendor/index_pattern_management/public/components/field_editor/field_editor";
 
 const DEFAULT_TOP = 15;
 const DEFAULT_COLORS = ['#00bb1b', '#fcca00', '#ff4d4f']
-
-const ROLLUP_FIELDS = {
-    "payload.elasticsearch.shard_stats.indexing.index_total": ["max", "min"],
-    "payload.elasticsearch.shard_stats.store.size_in_bytes": ["max", "min"],
-    "payload.elasticsearch.shard_stats.docs.count": ["max", "min"],
-    "payload.elasticsearch.shard_stats.search.query_total":["max", "min"],
-    "payload.elasticsearch.shard_stats.indexing.index_time_in_millis": ["max", "min"],
-    "payload.elasticsearch.shard_stats.search.query_time_in_millis": ["max", "min"],
-    "payload.elasticsearch.shard_stats.segments.count": ["max", "min"],
-    "payload.elasticsearch.shard_stats.segments.memory_in_bytes": ["max", "min"],
-    "payload.elasticsearch.index_stats.total.store.size_in_bytes": ["max", "min"],
-    "payload.elasticsearch.index_stats.total.docs.count": ["max", "min"],
-    "payload.elasticsearch.index_stats.total.search.query_total": ["max", "min"],
-    "payload.elasticsearch.index_stats.primaries.indexing.index_total": ["max", "min"],
-    "payload.elasticsearch.index_stats.primaries.indexing.index_time_in_millis": ["max", "min"],
-    "payload.elasticsearch.index_stats.total.search.query_time_in_millis": ["max", "min"],
-    "payload.elasticsearch.index_stats.total.segments.count": ["max", "min"],
-    "payload.elasticsearch.index_stats.total.segments.memory_in_bytes": ["max", "min"],
-    "payload.elasticsearch.node_stats.indices.indexing.index_total": ["max", "min"],
-    "payload.elasticsearch.node_stats.process.cpu.percent": ["p99", "max", "medium", "min", "avg"],
-    "payload.elasticsearch.node_stats.jvm.mem.heap_used_in_bytes": ["p99", "max", "medium", "min", "avg"],
-    "payload.elasticsearch.node_stats.indices.indexing.index_time_in_millis": ["max", "min"],
-    "payload.elasticsearch.node_stats.indices.search.query_total": ["max", "min"],
-    "payload.elasticsearch.node_stats.indices.search.query_time_in_millis": ["max", "min"],
-    "payload.elasticsearch.node_stats.indices.store.size_in_bytes": ["max", "min"],
-    "payload.elasticsearch.node_stats.indices.docs.count": ["max", "min"]
-  }
 
 function generate20BitUUID() {
     let characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';

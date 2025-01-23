@@ -76,6 +76,7 @@ import { IndexPatternManagmentContextValue } from '../../types';
 
 import { FIELD_TYPES_BY_LANG, DEFAULT_FIELD_TYPES } from './constants';
 import { executeScript, isScriptValid } from './lib';
+import styles from './field_editor.less'
 
 // This loads Ace editor's "groovy" mode, used below to highlight the script.
 import 'brace/mode/groovy';
@@ -83,7 +84,7 @@ import { useGlobalContext } from '../../context';
 import { formatMessage } from "umi/locale";
 import { message } from 'antd';
 
-const getStatistics = (type) => {
+export const getStatistics = (type) => {
   if (!type || type === 'string') return ["count",  "cardinality"];
   return [
     "max",
@@ -836,7 +837,7 @@ export class FieldEditor extends PureComponent<FieldEdiorProps, FieldEditorState
     const { isReady, isCreating, spec } = this.state;
 
     return isReady ? (
-      <div>
+      <div className={styles.editor}>
         <EuiText>
           <h3>
             {isCreating ? (
@@ -879,8 +880,6 @@ const StatisticsSelect = (props) => {
 
   return (
     <EuiComboBox
-      aria-label="Accessible screen reader label"
-      placeholder="Select one or more options"
       options={options}
       selectedOptions={value.map((item) => ({ label: item.toUpperCase(), value: item }))}
       onChange={(value) => {
@@ -890,7 +889,7 @@ const StatisticsSelect = (props) => {
   );
 };
 
-const Tags = ({ value = [], onChange }) => {
+export const Tags = ({ value = [], onChange }) => {
   const [inputVisible, setInputVisible] = useState(false);
   const [inputValue, setInputValue] = useState("");
 
@@ -950,7 +949,11 @@ const Tags = ({ value = [], onChange }) => {
             value={inputValue}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            onBlur={() => handleInputConfirm(inputValue)}
+            onBlur={() => {
+              setInputVisible(false);
+              setInputValue("");
+            }}
+            autoFocus
           />
         </EuiFlexItem>
       )}

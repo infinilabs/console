@@ -62,6 +62,7 @@ import { message } from 'antd';
 import functions from './functions';
 import styles from './complex_field_editor.less'
 import { generate20BitUUID } from '@/utils/utils';
+import { Tags } from './field_editor';
 
 const getFieldTypeFormatsList = (
   field: IndexPatternField['spec'],
@@ -549,85 +550,3 @@ export class ComplexFieldEditor extends PureComponent<FieldEdiorProps, FieldEdit
     ) : null;
   }
 }
-
-const Tags = ({ value = [], onChange }) => {
-  const [inputVisible, setInputVisible] = useState(false);
-  const [inputValue, setInputValue] = useState("");
-
-  const handleInputChange = (e) => {
-    setInputValue(e.target.value);
-  };
-
-  const showInput = () => {
-    setInputVisible(true);
-  };
-
-  const handleRemove = useCallback(
-    (index) => {
-      const newValue = [...value];
-      newValue.splice(index, 1);
-      onChange(newValue);
-    },
-    [value]
-  );
-
-  const handleInputConfirm = (input) => {
-    if (input.length === 0) {
-      return message.warning(
-        formatMessage({ id: "command.message.invalid.tag" })
-      );
-    }
-    if (input) onChange([...(value || []), input]);
-    setInputVisible(false);
-    setInputValue("");
-  }
-
-  const handleKeyDown = (event) => {
-    if (event.key === 'Enter') {
-      handleInputConfirm(inputValue)
-    }
-  };
-
-  return (
-    <EuiFlexGroup wrap responsive={false} gutterSize="xs">
-      {value.map((tag, index) => (
-        <EuiFlexItem grow={false}>
-          <EuiBadge
-            color="hollow"
-            iconType="cross"
-            iconSide="right"
-            iconOnClick={() => handleRemove(index)}
-            style={{ height: '40px', lineHeight: '40px', fontSize: 14, fontWeight: 400 }}
-          >
-            {tag}
-          </EuiBadge>
-        </EuiFlexItem>
-        
-      ))}
-      {inputVisible && (
-        <EuiFlexItem grow={false}>
-          <EuiFieldText
-            value={inputValue}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            onBlur={() => handleInputConfirm(inputValue)}
-            autoFocus
-          />
-        </EuiFlexItem>
-      )}
-      {!inputVisible && (
-        <EuiFlexItem grow={false}>
-          <EuiBadge
-            color="hollow"
-            iconType="plus"
-            iconSide="left"
-            onClick={showInput}
-            style={{ height: '40px', lineHeight: '40px', fontSize: 14}}
-          >
-            Add New
-          </EuiBadge>
-        </EuiFlexItem>
-      )}
-    </EuiFlexGroup>
-  );
-};

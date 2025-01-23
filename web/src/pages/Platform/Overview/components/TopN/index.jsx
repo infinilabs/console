@@ -14,6 +14,7 @@ import request from "@/utils/request";
 import { formatTimeRange } from "@/lib/elasticsearch/util";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import { getRollupEnabled } from "@/utils/authority";
+import { getStatistics } from "@/components/vendor/index_pattern_management/public/components/field_editor/field_editor";
 
 const DEFAULT_TOP = 15;
 const DEFAULT_COLORS = ['#00bb1b', '#fcca00', '#ff4d4f']
@@ -121,11 +122,12 @@ export default (props) => {
             newView.fields = fields.filter((item) => 
                 !!item.metric_config && 
                 !!item.metric_config.name && 
-                !!item.metric_config.option_aggs && 
-                item.metric_config.option_aggs.length > 0 && 
                 item.metric_config.tags?.includes(type === 'index' ? 'indices' : type) && 
                 item.metric_config.tags?.includes(isAgent ? 'agent' : 'agentless')
             ).map((item) => {
+                if(!item.metric_config.option_aggs || item.metric_config.option_aggs.length === 0) {
+                    item.metric_config.option_aggs = isRollupEnabled ? ROLLUP_FIELDS[item.name]: getStatistics(item.type)
+                }
                 return {
                     ...item,
                     format: fieldFormatMap[item.name]?.id || 'number',
@@ -145,7 +147,10 @@ export default (props) => {
                     pattern: fieldFormatMap[item.name]?.pattern,
                     isComplex: true,
                 }
-            }))
+            })).filter((item) => 
+                item.metric_config.option_aggs && 
+                item.metric_config.option_aggs.length > 0
+            )
             
             setSelectedView(newView)
             if (newView.fields.length > 0 && (!formData.sourceArea && !formData.sourceColor)) {

@@ -81,6 +81,7 @@ export default {
   "form.publicUsers.option.B": "Colleague B",
   "form.publicUsers.option.C": "Colleague C",
   "form.button.search": "Search",
+  "form.button.apply": "Apply",
   "form.button.new": "New",
   "form.button.create": "Create",
   "form.button.add": "Add",

@@ -578,7 +578,7 @@ export default (props) => {
                             colors: value
                         })
                     }}/>
-                    <Button style={{ marginBottom: 12 }} className={styles.borderRadiusLeft} type="primary" onClick={() => fetchData(type, clusterID, timeRange, formData)}>{formatMessage({ id: "form.button.search" })}</Button>
+                    <Button style={{ marginBottom: 12 }} className={styles.borderRadiusLeft} type="primary" onClick={() => fetchData(type, clusterID, timeRange, formData)}>{formatMessage({ id: "form.button.apply" })}</Button>
                 </Input.Group>
             </div>
             

@@ -331,6 +331,10 @@ export class ComplexFieldEditor extends PureComponent<FieldEdiorProps, FieldEdit
     const { isCreating, spec, isSaving } = this.state;
     const { redirectAway } = this.props.services;
 
+    if (spec?.builtin) {
+      return null
+    }
+
     return (
       <EuiFormRow>
         <EuiFlexGroup>

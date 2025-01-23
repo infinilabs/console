@@ -117,7 +117,14 @@ export class IndexPattern implements IIndexPattern {
 
     // set values
     this.id = spec.id;
-    const fieldFormatMap = this.fieldSpecsToFieldFormatMap(spec.fields);
+    
+    this.complexFields = fieldList([], this.shortDotsEnable);
+    this.complexFields.replaceAll(this.complexFieldsToArray(spec.complexFields));
+
+    const fieldFormatMap = {
+      ...this.fieldSpecsToFieldFormatMap(spec.fields),
+      ...this.complexfieldSpecsToFieldFormatMap(spec.complexFields)
+    }
 
     this.version = spec.version;
 
@@ -133,9 +140,6 @@ export class IndexPattern implements IIndexPattern {
       return this.deserializeFieldFormatMap(mapping);
     });
     this.viewName = spec.viewName || "";
-    
-    this.complexFields = fieldList([], this.shortDotsEnable);
-    this.complexFields.replaceAll(this.complexFieldsToArray(spec.complexFields));
   }
 
   /**
@@ -187,6 +191,19 @@ export class IndexPattern implements IIndexPattern {
       },
       {}
     );
+
+  private complexfieldSpecsToFieldFormatMap = (
+      fldList: IndexPatternSpec["fields"] = {}
+    ) =>
+      Object.entries(fldList).reduce<Record<string, SerializedFieldFormat>>(
+        (col, [key, fieldSpec]) => {
+          if (fieldSpec.format) {
+            col[key] = { ...fieldSpec.format };
+          }
+          return col;
+        },
+        {}
+      );
 
   private complexFieldsToArray = (complexFields) => {
     const keys = Object.keys(complexFields || {})
@@ -395,13 +412,13 @@ export class IndexPattern implements IIndexPattern {
     const fieldFormatMap = _.isEmpty(serialized)
       ? undefined
       : JSON.stringify(serialized);
-    
+
     let formatComplexFields
     if (this.complexFields) {
       formatComplexFields = {}
       this.complexFields.map((item) => {
         if (item.spec?.name) {
-          const { metric_name, ...rest } = item.spec
+          const { metric_name, format, ...rest } = item.spec
           formatComplexFields[item.spec.name] = {
             ...rest,
             name: metric_name

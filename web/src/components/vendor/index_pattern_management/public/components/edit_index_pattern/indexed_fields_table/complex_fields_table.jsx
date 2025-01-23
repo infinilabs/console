@@ -105,7 +105,6 @@ export class ComplexFieldsTable extends Component {
                     dataType: 'string',
                     sortable: true,
                     render: (value) => value,
-                    width: '38%',
                     'data-test-subj': 'complexFieldName',
                   },
                   {
@@ -134,6 +133,15 @@ export class ComplexFieldsTable extends Component {
                     'data-test-subj': 'complexFieldTags',
                   },
                   {
+                    field: "builtin",
+                    name: 'Builtin',
+                    dataType: 'auto',
+                    render: (value) => {
+                      return value === true ? "true" : "false";
+                    },
+                    'data-test-subj': 'complexFieldBuiltin',
+                  },
+                  {
                     name: '',
                     actions: [
                       {
@@ -143,6 +151,7 @@ export class ComplexFieldsTable extends Component {
                         onClick: editField,
                         type: 'icon',
                         'data-test-subj': 'editFieldFormat',
+                        available: ({ builtin }) => !builtin,
                       },
                     ],
                     width: '40px',

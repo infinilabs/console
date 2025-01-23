@@ -106,7 +106,7 @@ export default (props) => {
                 return {
                     ...item,
                     format: fieldFormatMap[item.name]?.id || 'number',
-                    pattern: fieldFormatMap[item.name]?.pattern,
+                    pattern: fieldFormatMap[item.name]?.params?.pattern,
                 }
             }).concat(complexFields.filter((item) => 
                 !!item.metric_config && 
@@ -119,7 +119,7 @@ export default (props) => {
                 return {
                     ...item,
                     format: fieldFormatMap[item.name]?.id || 'number',
-                    pattern: fieldFormatMap[item.name]?.pattern,
+                    pattern: fieldFormatMap[item.name]?.params?.pattern,
                     isComplex: true,
                 }
             })).filter((item) => 
@@ -301,6 +301,7 @@ export default (props) => {
                     name: newConfig.sourceArea.metric_config.name,
                     formula: areaFormula,
                     format: newConfig.sourceArea.format,
+                    pattern: newConfig.sourceArea.pattern,
                     unit: newConfig.sourceArea.metric_config.unit
                 }
             }
@@ -310,6 +311,7 @@ export default (props) => {
                     name: newConfig.sourceColor.metric_config.name,
                     formula: colorFormula,
                     format: newConfig.sourceColor.format,
+                    pattern: newConfig.sourceColor.pattern,
                     unit: newConfig.sourceColor.metric_config.unit
                 }
             }

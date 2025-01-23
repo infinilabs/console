@@ -415,7 +415,7 @@ const Discover = (props) => {
       columns: record.filter?.columns || ["_source"],
     }
     if (record.time_field) {
-      newState.sort = [{[record.time_field]: {order: "desc"}}]
+      newState.sort = [[record.time_field, 'desc']]
     }
     setState(newState);
     if (record.filter?.filters?.length > 0) {

@@ -336,14 +336,14 @@ func (h *APIHandler) HandleBulkGetViewAction(w http.ResponseWriter, req *http.Re
 				"viewName":       hit.Source["viewName"],
 				"timeFieldName":  hit.Source["timeFieldName"],
 				"fieldFormatMap": hit.Source["fieldFormatMap"],
+				"complex_fields": hit.Source["complex_fields"],
+				"builtin":        hit.Source["builtin"],
 			},
 			"score":            0,
 			"type":             "view",
 			"namespaces":       []string{"default"},
 			"migrationVersion": map[string]interface{}{"index-pattern": "7.6.0"},
 			"updated_at":       hit.Source["updated_at"],
-			"complex_fields":   hit.Source["complex_fields"],
-			"builtin":          hit.Source["builtin"],
 			"references":       []interface{}{},
 		}
 		savedObjects = append(savedObjects, savedObject)

@@ -285,7 +285,10 @@ export default (props) => {
         }
         if ((isAreaRate || isColorRate) || (isAreaLatency || isColorLatency)) {
             body['time_field'] = "timestamp"
-            body['bucket_size'] = "auto"
+            body['bucket_size'] = "auto" 
+            if (newTimeRange.max && newTimeRange.min) {  
+                body['bucket_size'] = `${Math.round((newTimeRange.max - newTimeRange.min) / 1000)}s`
+            }
         }
         const res = await request(`/elasticsearch/infini_default_system_cluster/visualization/data`, {
             method: 'POST',

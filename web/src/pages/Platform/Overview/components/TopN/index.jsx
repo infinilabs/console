@@ -412,12 +412,12 @@ export default (props) => {
         <Spin spinning={loading}>
         <div className={styles.topn}>
             <div className={styles.header}>
-                <Input.Group compact style={{ width: 'auto '}}>
+                <Input.Group compact>
                     <Radio.Group
                         value={currentMode}
                         onChange={(e) => setCurrentMode(e.target.value)}
                         className={styles.mode}
-                        style={{ marginRight: 12, marginBottom: 12 }}
+                        style={{ marginRight: 10 }}
                     >
                         <Radio.Button value="treemap">
                             <Icon
@@ -438,11 +438,11 @@ export default (props) => {
                             />
                         </Radio.Button>
                     </Radio.Group>
-                    <div className={styles.label}>
+                    <div className={styles.label} title="Top">
                         Top
                     </div>
                     <InputNumber
-                        style={{ width: "80px", marginBottom: 12, marginRight: 12 }}
+                        style={{ width: "60px", marginRight: 10 }}
                         className={styles.borderRadiusRight}
                         value={formData.top}
                         min={1}
@@ -450,13 +450,17 @@ export default (props) => {
                         precision={0}
                         onChange={(value) => onFormDataChange({ top: value })}
                     />
-                    <div className={styles.label}>
+                    <div className={styles.label} title={formatMessage({ id: "cluster.monitor.topn.area" })}>
                         {formatMessage({ id: "cluster.monitor.topn.area" })}
                     </div>
                     <Select 
-                        style={{ width: "150px", marginBottom: 12 }}
+                        style={{ flexGrow: 0, flexShrink: 1, overflow: 'hidden' }}
                         value={formData.sourceArea?.name}
                         dropdownMatchSelectWidth={false}
+                        showSearch
+                        filterOption={(input, option) =>
+                            option.props?.children?.toLowerCase().indexOf(input?.toLowerCase()) >= 0
+                        }
                         onChange={(value, option) => {
                             if (value) {
                                 const { isComplex } = option?.props?.metric || {}
@@ -489,7 +493,7 @@ export default (props) => {
                         }
                     </Select>
                     <Select 
-                        style={{ width: "88px", marginBottom: 12, marginRight: 6 }}
+                        style={{ width: "70px", marginRight: 6 }}
                         className={styles.borderRadiusRight}
                         value={formData.statisticArea}
                         dropdownMatchSelectWidth={false}
@@ -506,14 +510,18 @@ export default (props) => {
                             })
                         }
                     </Select>
-                    <Button style={{ width: 32, marginBottom: 12, padding: 0, marginRight: 6, borderRadius: 4 }} onClick={() => onMetricExchange()}><Icon style={{ fontSize: 16 }} component={ConvertSvg}/></Button>
-                    <div className={styles.label}>
+                    <Button style={{ width: 32, minWidth: 32, padding: 0, marginRight: 6, borderRadius: 4 }} onClick={() => onMetricExchange()}><Icon style={{ fontSize: 16 }} component={ConvertSvg}/></Button>
+                    <div className={styles.label} title={formatMessage({ id: "cluster.monitor.topn.color" })}>
                         {formatMessage({ id: "cluster.monitor.topn.color" })}
                     </div>
                     <Select 
-                        style={{ width: "150px", marginBottom: 12 }}
+                        style={{ flexGrow: 0, flexShrink: 1, overflow: 'hidden' }}
                         value={formData.sourceColor?.name}
                         dropdownMatchSelectWidth={false}
+                        showSearch
+                        filterOption={(input, option) =>
+                            option.props?.children?.toLowerCase().indexOf(input?.toLowerCase()) >= 0
+                        }
                         onChange={(value, option) => {
                             if (value) {
                                 const { isComplex } = option?.props?.metric || {}
@@ -547,7 +555,7 @@ export default (props) => {
                         }
                     </Select>
                     <Select 
-                        style={{ width: "88px", marginBottom: 12 }}
+                        style={{ width: "70px" }}
                         value={formData.statisticColor}
                         dropdownMatchSelectWidth={false}
                         onChange={(value) => onFormDataChange({ statisticColor: value })}
@@ -563,17 +571,17 @@ export default (props) => {
                             })
                         }
                     </Select>
-                    <div className={styles.label} style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}>
+                    <div className={styles.label} title={formatMessage({ id: "cluster.monitor.topn.theme" })} style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}>
                         {formatMessage({ id: "cluster.monitor.topn.theme" })}
                     </div>
-                    <GradientColorPicker className={styles.borderRadiusRight} style={{ marginRight: 12, marginBottom: 12 }} value={formData.colors || []} onChange={(value) => {
+                    <GradientColorPicker className={styles.borderRadiusRight} style={{ marginRight: 10 }} value={formData.colors || []} onChange={(value) => {
                         onFormDataChange({ colors: value })
                         setConfig({
                             ...cloneDeep(config),
                             colors: value
                         })
                     }}/>
-                    <Button style={{ marginBottom: 12 }} className={styles.borderRadiusLeft} type="primary" onClick={() => fetchData(type, clusterID, timeRange, formData)}>{formatMessage({ id: "form.button.apply" })}</Button>
+                    <Button className={styles.borderRadiusLeft} type="primary" onClick={() => fetchData(type, clusterID, timeRange, formData)}>{formatMessage({ id: "form.button.apply" })}</Button>
                 </Input.Group>
             </div>
             

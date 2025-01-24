@@ -26,6 +26,9 @@ export default {
   "explore.createview.field.match_rule": "匹配规则",
   "explore.createview.field.match_rule.help":
     '使用 (*) 来匹配多个索引。 不能包含空格或者字符 , /, ?, ", <, >, |.',
+    "explore.createview.field.builtin": "是否内置",
+    "explore.createview.field.builtin.true": "是",
+    "explore.createview.field.builtin.false": "否",
   "explore.createview.status.match_index_num": "当前匹配到 {length} 个索引",
   "explore.createview.status.match_special_index":
     "当前规则没有匹配到任何索引。如需匹配特殊索引，请打开包含特殊索引开关。",

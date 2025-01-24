@@ -212,10 +212,17 @@ export const IndexPatternTable = ({
       sorter: (a: string, b: string) => sorter.string(a, b, "title"),
     },
     {
+      title: formatMessage({ id: "explore.createview.field.builtin" }),
+      dataIndex: "builtin",
+      render: (val) => {
+        return formatMessage({ id: `explore.createview.field.builtin.${val === true ? "true" : "false"}` });
+      },
+    },
+    {
       title: formatMessage({ id: "table.field.actions" }),
       render: (text, record) => (
         <div>
-          {canSave ? (
+          {canSave && !record.builtin ? (
             <>
               <a {...reactRouterNavigate(history, `patterns/${record.id}`)}>
                 {formatMessage({ id: "form.button.edit" })}

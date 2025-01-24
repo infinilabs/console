@@ -27,6 +27,9 @@ export default {
   "explore.createview.field.match_rule": "Match Rule",
   "explore.createview.field.match_rule.help":
     'Use (*) to match multiple indices and cannot contain spaces or characters , /, ?, ", <, >, |.',
+  "explore.createview.field.builtin": "Builtin",
+  "explore.createview.field.builtin.true": "True",
+  "explore.createview.field.builtin.false": "false",
   "explore.createview.status.match_index_num": "Matching {length} indices",
   "explore.createview.status.match_special_index":
     "The current matching rule did not match the Elasticsearch index.To match the special index, turn on the Include special index switch.",

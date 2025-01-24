@@ -358,7 +358,8 @@ export class IndexPatternsService {
         sourceFilters,
         fieldFormatMap,
         typeMeta,
-        complexFields,
+        complex_fields: complexFields,
+        builtin
       },
       type,
     } = savedObject;
@@ -385,7 +386,8 @@ export class IndexPatternsService {
       fields: this.fieldArrayToMap(parsedFields),
       typeMeta: parsedTypeMeta,
       type,
-      complexFields: parsedComplexFields
+      complexFields: parsedComplexFields,
+      builtin
     };
   };
 

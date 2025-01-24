@@ -3,17 +3,20 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    margin-bottom: 12px;
 
     :global {
       .ant-input-group {
         display: flex !important;
-        flex-wrap: wrap !important;
+        flex-wrap: nowrap !important;
+        width: 100%;
       }
     }
     
     .mode {
       width: 84px;
+      min-width: 84px;
       :global {
         .ant-radio-button-wrapper {
           width: 42px;
@@ -34,6 +37,10 @@
       border-radius: 4px;
       border-top-right-radius: 0px !important;
       border-bottom-right-radius: 0px !important;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex-grow: 0;
     }
   }
 

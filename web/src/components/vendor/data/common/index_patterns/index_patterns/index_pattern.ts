@@ -140,6 +140,7 @@ export class IndexPattern implements IIndexPattern {
       return this.deserializeFieldFormatMap(mapping);
     });
     this.viewName = spec.viewName || "";
+    this.builtin = spec.builtin;
   }
 
   /**
@@ -440,6 +441,7 @@ export class IndexPattern implements IIndexPattern {
       fieldFormatMap,
       type: this.type,
       typeMeta: this.typeMeta ? JSON.stringify(this.typeMeta) : undefined,
+      builtin: this.builtin
     };
   }
 

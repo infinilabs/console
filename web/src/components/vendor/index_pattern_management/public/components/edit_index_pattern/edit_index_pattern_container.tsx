@@ -40,6 +40,9 @@ const EditIndexPatternCont: React.FC<RouteComponentProps<{ id: string }>> = ({
       if (!ip.id) {
         ip.id = props.match.params.id;
       }
+      if (ip.builtin) {
+        props.history.push("");
+      }
       setIndexPattern(ip);
       // setBreadcrumbs(getEditBreadcrumbs(ip));
     });

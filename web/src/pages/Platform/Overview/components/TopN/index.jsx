@@ -72,8 +72,7 @@ export default (props) => {
         })
         if (res && !res.error && Array.isArray(res.saved_objects) && res.saved_objects[0]) {
             const newView = res.saved_objects[0]
-            let { fieldFormatMap, fields } = newView.attributes || {}
-            let { complex_fields: complexFields } = newView
+            let { fieldFormatMap, fields, complex_fields: complexFields } = newView.attributes || {}
             try {
                 fieldFormatMap = JSON.parse(fieldFormatMap) || {}
                 fields = JSON.parse(fields) || []

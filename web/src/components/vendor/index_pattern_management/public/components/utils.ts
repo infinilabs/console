@@ -38,8 +38,8 @@ export async function getIndexPatterns(
             const id = pattern.id;
             const title = pattern.get('title');
             const viewName = pattern.get('viewName');
+            const builtin = pattern.get('builtin');
             const isDefault = defaultIndex === id;
-
             const tags = (indexPatternManagementStart as IndexPatternManagementStart).list.getIndexPatternTags(
               pattern,
               isDefault
@@ -55,6 +55,7 @@ export async function getIndexPatterns(
               // so the sorting will but the default index on top
               // or on bottom of a the table
               sort: `${isDefault ? '0' : '1'}${title}`,
+              builtin,
             };
           })
           .sort((a, b) => {

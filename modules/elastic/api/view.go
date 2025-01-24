@@ -103,7 +103,7 @@ func (h *APIHandler) HandleGetViewListAction(w http.ResponseWriter, req *http.Re
 
 	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 
-	queryDSL := []byte(fmt.Sprintf(`{"_source":["title","viewName", "updated_at"],"size": %d, "query":{"bool":{"must":[{"match":{"cluster_id":"%s"}}%s]}}}`, size, targetClusterID, search))
+	queryDSL := []byte(fmt.Sprintf(`{"_source":["title","viewName", "updated_at", "builtin"],"size": %d, "query":{"bool":{"must":[{"match":{"cluster_id":"%s"}}%s]}}}`, size, targetClusterID, search))
 
 	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetIndexName(elastic.View{}), queryDSL)
 	if err != nil {
@@ -127,12 +127,12 @@ func (h *APIHandler) HandleGetViewListAction(w http.ResponseWriter, req *http.Re
 			"attributes": map[string]interface{}{
 				"title":    hit.Source["title"],
 				"viewName": hit.Source["viewName"],
+				"builtin":  hit.Source["builtin"],
 			},
-			"score":          0,
-			"type":           "index-pattern",
-			"namespaces":     []string{"default"},
-			"updated_at":     hit.Source["updated_at"],
-			"complex_fields": hit.Source["complex_fields"],
+			"score":      0,
+			"type":       "index-pattern",
+			"namespaces": []string{"default"},
+			"updated_at": hit.Source["updated_at"],
 		}
 		savedObjects = append(savedObjects, savedObject)
 	}
@@ -141,20 +141,32 @@ func (h *APIHandler) HandleGetViewListAction(w http.ResponseWriter, req *http.Re
 }
 
 func (h *APIHandler) HandleDeleteViewAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	resBody := map[string]interface{}{}
 
 	viewID := ps.ByName("view_id")
-
-	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
-
-	_, err := esClient.Delete(orm.GetIndexName(elastic.View{}), "", viewID, "wait_for")
+	view := elastic.View{
+		ID: viewID,
+	}
+	_, err := orm.Get(&view)
 	if err != nil {
 		log.Error(err)
-		resBody["error"] = err
-		h.WriteJSON(w, resBody, http.StatusInternalServerError)
+		h.WriteJSON(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	h.WriteJSON(w, resBody, http.StatusOK)
+	if view.Builtin {
+		h.WriteJSON(w, "builtin view can't be deleted", http.StatusBadRequest)
+		return
+	}
+
+	ctx := &orm.Context{
+		Refresh: "wait_for",
+	}
+	err = orm.Delete(ctx, &view)
+	if err != nil {
+		log.Error(err)
+		h.WriteJSON(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	h.WriteCreatedOKJSON(w, viewID)
 }
 
 func (h *APIHandler) HandleResolveIndexAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -324,13 +336,14 @@ func (h *APIHandler) HandleBulkGetViewAction(w http.ResponseWriter, req *http.Re
 				"viewName":       hit.Source["viewName"],
 				"timeFieldName":  hit.Source["timeFieldName"],
 				"fieldFormatMap": hit.Source["fieldFormatMap"],
+				"complex_fields": hit.Source["complex_fields"],
+				"builtin":        hit.Source["builtin"],
 			},
 			"score":            0,
 			"type":             "view",
 			"namespaces":       []string{"default"},
 			"migrationVersion": map[string]interface{}{"index-pattern": "7.6.0"},
 			"updated_at":       hit.Source["updated_at"],
-			"complex_fields":   hit.Source["complex_fields"],
 			"references":       []interface{}{},
 		}
 		savedObjects = append(savedObjects, savedObject)
@@ -401,14 +414,29 @@ func (h *APIHandler) HandleUpdateViewAction(w http.ResponseWriter, req *http.Req
 		return
 	}
 	id := ps.ByName("view_id")
-	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 	viewReq.Attributes.UpdatedAt = time.Now()
 	viewReq.Attributes.ClusterID = targetClusterID
-	_, err = esClient.Index(orm.GetIndexName(viewReq.Attributes), "", id, viewReq.Attributes, "wait_for")
+	viewReq.Attributes.ID = id
+	oldView := &elastic.View{
+		ID: id,
+	}
+	_, err = orm.Get(oldView)
 	if err != nil {
 		log.Error(err)
-		resBody["error"] = err
-		h.WriteJSON(w, resBody, http.StatusInternalServerError)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if oldView.Builtin {
+		h.WriteJSON(w, "builtin view can't be updated", http.StatusBadRequest)
+		return
+	}
+	ctx := &orm.Context{
+		Refresh: "wait_for",
+	}
+	err = orm.Save(ctx, viewReq.Attributes)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	h.WriteJSON(w, viewReq.Attributes, http.StatusOK)

@@ -69,6 +69,8 @@ security:
 | role_mapping.uid   | map    | 用于基于用户 UID 的权限映射                      |
 | role_mapping.group | map    | 用于基于用户 Group 的权限映射                    |
 
+> 注意：如果 `role_mapping` 中的 `uid` 或 `group` 的配置值包含 .，请更新 INFINI Console 至 `1.28.1` 或更高版本。
+
 ## 其他资源
 * [INFINI Console LDAP 配置教程](https://www.bilibili.com/video/BV1kj411S74B/) 视频介绍
 * [常见问题](https://www.infinilabs.cn/blog/2023/console-ldap-setting/)

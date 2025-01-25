@@ -10,27 +10,52 @@ Information about release notes of INFINI Console is provided here.
 ## Latest (In development)
 
 ### Breaking changes
+
 ### Features
+
+### Bug fix
+
+### Improvements
+
+## 1.28.1 (2025-01-24)
+
+### Features
+
 - Support function-format parameters in Insight Data API
 - Support configuring multiple hosts when creating a cluster
+- Provide an API to dump and view the current list of stored Badger keys
+- Rollup supports scenario-based condition adaptation, requires Easysearch > 1.9.2
+- TopN built-in metric - Index metric (agent collection mode)
+- TopN built-in view templates
+- TopN supports custom data views
+
 ### Bug fix
+
+- Fix the issue of high memory usage in Badger KV storage
+
 ### Improvements
+
+- LDAP configuration supports validation with special character "dot" (.) (#46)
 
 ## 1.28.0 (2025-01-11)
 
 ### Breaking changes
 
 ### Features
+
 - Add allocation to activities if is cluster health change and changed to red.
 - Add index metrics for segment memory (norms, points, version map, fixed bit set).
 - Support querying top N metrics in the Insight Data Query API
 - Add insight metric CURD API for managing custom metrics
 - Add built-in metrics templates for common use cases
+
 ### Bug fix
+
 - Fixed query thread pool metrics when cluster uuid is empty
 - Fixed unit tests
 
 ### Improvements
+
 - Optimize UI of agent list when its columns are overflow.
 - Add loading to each row in overview table.
 - Adapter metrics query with cluster id and cluster uuid
@@ -41,10 +66,10 @@ Information about release notes of INFINI Console is provided here.
 - Check if the cluster version supports metric transport_outbound_comnections in monitor.
 - Enhanced http_client to support customizable configurations.
 
-
 ## 1.27.0 (2024-12-13)
 
 ### Improvements
+
 - The code is open source and the [Github repository](https://github.com/infinilabs/console) is used for development
 - Split monitoring metric requests to optimize monitoring metric query response speed.
 - Optimizing ES metric collecting
@@ -54,6 +79,7 @@ Information about release notes of INFINI Console is provided here.
 - Optimizing layout of table component
 
 ### Bug fix
+
 - Fixed the issue of untimely update of cluster metadata
 - Fixed the issue of incorrect links in help documents, etc.
 - Fixed node and index metadata ID to prevent metadata record duplication.

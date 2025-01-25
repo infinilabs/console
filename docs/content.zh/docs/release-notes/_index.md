@@ -10,15 +10,37 @@ title: "版本历史"
 ## Latest (In development)
 
 ### Breaking changes
+
 ### Features
-- Insight Data API 支持函数格式查询，方便拓展查询功能
-- 创建集群时支持配置多个主机地址，增强集群的高可用性
+
 ### Bug fix
+
 ### Improvements
+
+## 1.28.1 (2025-01-24)
+
+### Features
+
+- 创建集群时支持配置多个主机地址，增强集群的高可用性
+- Insight Data API 支持函数格式查询，方便拓展查询功能
+- 提供 API 来 Dump 查看当前存储的 Badger Key 列表
+- Rollup 支持场景条件适配，要求 Easysearch > 1.9.2
+- TopN 内置指标- 索引指标（agent 采集模式）
+- TopN 内置视图模版
+- TopN 支持自定义数据视图
+
+### Bug fix
+
+- 修复 Badger KV 存储内存占用过高的问题
+
+### Improvements
+
+- LDAP 配置支持带特殊符号“点”(.) 验证(#46)
 
 ## 1.28.0 (2025-01-11)
 
 ### Features
+
 - 在集群健康状态变为红色时，将分配活动记录到动态日志中。
 - 为索引增加段内存指标（包括 norms、points、version map、fixed bit set）。
 - 支持在 Insight 数据查询 API 中查询 Top N 指标。
@@ -26,10 +48,12 @@ title: "版本历史"
 - 添加多个常见用例的内置指标模板。
 
 ### Bug fix
+
 - 修复当集群 UUID 为空时查询线程池指标的问题。
 - 修复单元测试中的问题。
 
 ### Improvements
+
 - 优化 Agent 列表的 UI，当列数据溢出时改善显示效果。
 - 在概览表格的每一行添加加载动画。
 - 支持通过集群 ID 和集群 UUID 查询指标。

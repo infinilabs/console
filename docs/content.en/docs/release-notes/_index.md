@@ -7,41 +7,6 @@ title: "Release Notes"
 
 Information about release notes of INFINI Console is provided here.
 
-## Latest (In development)
-
-### Breaking changes
-### Features
-- Support function-format parameters in Insight Data API
-- Support configuring multiple hosts when creating a cluster
-### Bug fix
-### Improvements
-
-## 1.28.0 (2025-01-11)
-
-### Breaking changes
-
-### Features
-- Add allocation to activities if is cluster health change and changed to red.
-- Add index metrics for segment memory (norms, points, version map, fixed bit set).
-- Support querying top N metrics in the Insight Data Query API
-- Add insight metric CURD API for managing custom metrics
-- Add built-in metrics templates for common use cases
-### Bug fix
-- Fixed query thread pool metrics when cluster uuid is empty
-- Fixed unit tests
-
-### Improvements
-- Optimize UI of agent list when its columns are overflow.
-- Add loading to each row in overview table.
-- Adapter metrics query with cluster id and cluster uuid
-- Optimize metric query bucket size (#59)
-- Add suggestion to chart in monitor if is no data because the time interval is less than the collection interval.
-- Check if the cluster version supports metric transport_outbound_comnections in monitor.
-- Set timeout to 10s by default in DatePicker's time settings.
-- Check if the cluster version supports metric transport_outbound_comnections in monitor.
-- Enhanced http_client to support customizable configurations.
-
-
 ## 1.27.0 (2024-12-09)
 
 ### Improvements

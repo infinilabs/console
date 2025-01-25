@@ -11,7 +11,7 @@ title: "版本历史"
 
 ### Improvements
 
-- 代码开源，统一采用 Github [仓库](https://github.com/infinilabs/console) 进行开发
+- 代码开源，统一采用 [Github 仓库](https://github.com/infinilabs/console) 进行开发
 - 指标采集优化，由原来的单一协程采集调整为每个注册的集群有单独的协程进行采集
 - 指标监控页面图表展示采用懒加载、单个图表独立加载，增强用户体验
 - 通用时间控件增加超时时间设置

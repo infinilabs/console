@@ -7,12 +7,12 @@ title: "Release Notes"
 
 Information about release notes of INFINI Console is provided here.
 
-## 1.27.0 (2024-12-09)
+## 1.27.0 (2024-12-13)
 
 ### Improvements
-- Split monitoring metric requests to optimize monitoring metric query response speed.
+- The code is open source and the [Github repository](https://github.com/infinilabs/console) is used for development
 - Optimizing ES metric collecting
-- The code is open source and the Github repository is used for development
+- Split monitoring metric requests to optimize monitoring metric query response speed.
 - Added timeout setting to general time component
 - Cluster selection component adds registration and refresh feature
 - Adding metrics collection status

@@ -334,7 +334,8 @@ PUT /_cluster/settings
     "rollup": {
       "search": {
         "enabled": "true"
-      }
+      },
+      "hours_before": "24"
     }
   }
 }

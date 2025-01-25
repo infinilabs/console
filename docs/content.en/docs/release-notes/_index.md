@@ -42,12 +42,12 @@ Information about release notes of INFINI Console is provided here.
 - Enhanced http_client to support customizable configurations.
 
 
-## 1.27.0 (2024-12-09)
+## 1.27.0 (2024-12-13)
 
 ### Improvements
+- The code is open source and the [Github repository](https://github.com/infinilabs/console) is used for development
 - Split monitoring metric requests to optimize monitoring metric query response speed.
 - Optimizing ES metric collecting
-- The code is open source and the Github repository is used for development
 - Added timeout setting to general time component
 - Cluster selection component adds registration and refresh feature
 - Adding metrics collection status

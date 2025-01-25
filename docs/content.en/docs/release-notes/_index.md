@@ -7,15 +7,6 @@ title: "Release Notes"
 
 Information about release notes of INFINI Console is provided here.
 
-## Latest (In development)
-
-### Breaking changes
-### Features
-- Support function-format parameters in Insight Data API
-- Support configuring multiple hosts when creating a cluster
-### Bug fix
-### Improvements
-
 ## 1.28.0 (2025-01-11)
 
 ### Breaking changes

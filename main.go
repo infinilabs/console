@@ -188,12 +188,6 @@ func main() {
 			})
 			api.RegisterAppSetting("system_cluster", func() interface{} {
 				client := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
-				ver := client.GetVersion()
-				if ver.Distribution != elastic.Easysearch {
-					return map[string]interface{}{
-						"rollup_enabled": false,
-					}
-				}
 				settings, err := client.GetClusterSettings(nil)
 				if err != nil {
 					log.Errorf("failed to get cluster settings with system cluster: %v", err)

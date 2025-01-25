@@ -63,7 +63,8 @@ export default (props) => {
     const fetchFields = async (clusterID, viewID, type, isAgent) => {
         if (!clusterID || !viewID) return;
         setLoading(true)
-        const res = await request(`/elasticsearch/${clusterID}/saved_objects/_bulk_get`, {
+        const systemClusterID = "infini_default_system_cluster";
+        const res = await request(`/elasticsearch/${systemClusterID}/saved_objects/_bulk_get`, {
             method: 'POST',
             body: [{ 
                 id: viewID,

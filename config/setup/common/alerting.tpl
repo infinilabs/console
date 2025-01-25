@@ -242,7 +242,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-cal8n7p7h710d
       "bool": {
         "must": [
           {
-            "match": {
+            "term": {
               "payload.elasticsearch.cluster_health.status": "red"
             }
           },
@@ -400,7 +400,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-calavvp7h710d
       ".infini_metrics"
     ],
     "filter": {},
-    "raw_filter": {"bool":{"must":[{"match":{"payload.elasticsearch.index_health.status":"red"}},{"term":{"metadata.name":{"value":"index_health"}}}]}},
+    "raw_filter": {"bool":{"must":[{"term":{"payload.elasticsearch.index_health.status":"red"}},{"term":{"metadata.name":{"value":"index_health"}}}]}},
     "time_field": "timestamp",
     "context": {
       "fields": null

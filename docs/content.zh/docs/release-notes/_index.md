@@ -7,61 +7,6 @@ title: "版本历史"
 
 这里是 INFINI Console 历史版本发布的相关说明。
 
-## Latest (In development)
-
-### Breaking changes
-### Features
-- Insight Data API 支持函数格式查询，方便拓展查询功能
-- 创建集群时支持配置多个主机地址，增强集群的高可用性
-### Bug fix
-### Improvements
-
-## 1.28.0 (2025-01-11)
-
-### Features
-- 在集群健康状态变为红色时，将分配活动记录到动态日志中。
-- 为索引增加段内存指标（包括 norms、points、version map、fixed bit set）。
-- 支持在 Insight 数据查询 API 中查询 Top N 指标。
-- 新增 Insight 指标 CURD API，用于管理自定义指标。
-- 添加多个常见用例的内置指标模板。
-
-### Bug fix
-- 修复当集群 UUID 为空时查询线程池指标的问题。
-- 修复单元测试中的问题。
-
-### Improvements
-- 优化 Agent 列表的 UI，当列数据溢出时改善显示效果。
-- 在概览表格的每一行添加加载动画。
-- 支持通过集群 ID 和集群 UUID 查询指标。
-- 优化指标查询的桶大小设置 (#59)。
-- 在监控图表中，如果时间间隔小于收集间隔导致无数据显示时，添加提示。
-- 检查监控中集群版本是否支持 metric transport_outbound_connections。
-- 将 DatePicker 的时间设置默认超时时间调整为 10 秒。
-- 检查监控中集群版本是否支持 metric transport_outbound_connections。
-- 增强 http_client，支持更多自定义配置选项。
-
-## 1.27.0 (2024-12-13)
-
-### Improvements
-
-- 代码开源，统一采用 Github [仓库](https://github.com/infinilabs/console) 进行开发
-- 指标采集优化，由原来的单一协程采集调整为每个注册的集群有单独的协程进行采集
-- 指标监控页面图表展示采用懒加载、单个图表独立加载，增强用户体验
-- 通用时间控件增加超时时间设置
-- 集群选择控件增加注册、刷新功能
-- 提供指标采集状态
-- 表格控件排版优化
-
-### Bug fix
-
-- 修复集群元数据更新不及时问题
-- 修复帮助文档等链接不正确问题
-- 修复节点、索引数据因随机 id 出现重复记录问题
-- 修复 Runtime、Agent 实例编辑页面出错问题
-- 修复集群、节点、索引、分片元数据无 Loading 问题
-- 修复索引健康状态指标采集失败问题
-- 修复个别菜单列未国际化问题
-
 ## 1.26.1 (2024-08-13)
 
 ### Improvements

@@ -15,7 +15,7 @@ import { formatMessage } from "umi/locale";
 import DatePicker from "@/common/src/DatePicker";
 import { getLocale } from "umi/locale";
 import { getTimezone } from "@/utils/utils";
-import { getAllTimeSettingsCache, TIME_SETTINGS_KEY } from "../../Monitor";
+import { getAllTimeSettingsCache, initState, TIME_SETTINGS_KEY } from "../../Monitor";
 
 const { TabPane } = Tabs;
 
@@ -33,37 +33,27 @@ export default (props) => {
   const allTimeSettingsCache = getAllTimeSettingsCache() || {}
 
   const [spinning, setSpinning] = useState(false);
-  const [state, setState] = useState({
+  const [state, setState] = useState(initState({
     timeRange: {
       min: "now-15m",
       max: "now",
-      timeFormatter: formatter.dates(1),
     },
     timeInterval: allTimeSettingsCache.timeInterval,
     timeout: allTimeSettingsCache.timeout || '10s',
-  });
+  }));
 
   const [refresh, setRefresh] = useState({ isRefreshPaused: allTimeSettingsCache.isRefreshPaused || false, refreshInterval: allTimeSettingsCache.refreshInterval || 30000 });
   const [timeZone, setTimeZone] = useState(() => allTimeSettingsCache.timeZone || getTimezone());
 
   const handleTimeChange = ({ start, end, timeInterval, timeout }) => {
-    const bounds = calculateBounds({
-      from: start,
-      to: end,
-    });
-    const day = moment
-      .duration(bounds.max.valueOf() - bounds.min.valueOf())
-      .asDays();
-    const intDay = parseInt(day) + 1;
-    setState({
+    setState(initState({
       timeRange: {
         min: start,
         max: end,
-        timeFormatter: formatter.dates(intDay),
       },
       timeInterval: timeInterval || state.timeInterval,
       timeout: timeout || state.timeout
-    });
+    }));
     setSpinning(true);
   };
 
@@ -115,6 +105,7 @@ export default (props) => {
             showTimeout={true}
             timeout={state.timeout}
             timeInterval={state.timeInterval}
+            timeIntervalDisabled={state.timeIntervalDisabled}
             onTimeSettingChange={(timeSetting) => {
               onTimeSettingsChange({
                 timeInterval: timeSetting.timeInterval,

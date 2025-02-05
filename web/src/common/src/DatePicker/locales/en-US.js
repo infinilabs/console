@@ -21,6 +21,7 @@ export default {
   "datepicker.time_setting.time_field": "Time field",
   "datepicker.time_setting.time_interval": "Time interval",
   "datepicker.time_setting.time_interval.auto": "Auto",
+  "datepicker.time_setting.time_interval.help": "Because of the long time range, time interval can only be calculated automatically.",
   "datepicker.time_setting.time_interval.ms": "Millisecond",
   "datepicker.time_setting.time_interval.s": "Second",
   "datepicker.time_setting.time_interval.m": "Minute",

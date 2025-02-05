@@ -21,6 +21,7 @@ export default {
   "datepicker.time_setting.time_field": "时间字段",
   "datepicker.time_setting.time_interval": "时间间隔",
   "datepicker.time_setting.time_interval.auto": "自动",
+  "datepicker.time_setting.time_interval.help": "由于时间跨度较长，仅支持自动计算时间间隔。",
   "datepicker.time_setting.time_interval.ms": "毫秒",
   "datepicker.time_setting.time_interval.s": "秒",
   "datepicker.time_setting.time_interval.m": "分",

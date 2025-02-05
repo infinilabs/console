@@ -61,7 +61,6 @@ export default (props) => {
   
     const fetchData = async (queryParams, fetchUrl, metricKey, timeInterval, showLoading) => {
       if (!observerRef.current.isInView || !fetchUrl) return;
-      setError()
       if (firstFetchRef.current || showLoading) {
         setLoading(true)
       }
@@ -79,11 +78,12 @@ export default (props) => {
         ignoreTimeout: true
       }, false, false)
       if (res?.error) {
-        const error = formatResponse(res.error);
+        const error = formatResponse(res);
         setError(error?.errorObject?.key ? formatMessage({ id: `${error?.errorObject?.key}` }) : res?.error?.reason)
       } else if (res && !res.error) {
         const { metrics = {} } = res || {};
         const metric = metrics[metricKey]
+        setError()
         setMetric(formatMetric && metric ? formatMetric(metric) : metric);
       }
       if (firstFetchRef.current || showLoading) {

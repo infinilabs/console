@@ -87,6 +87,7 @@ const DatePicker = (props) => {
     timeFields = [],
     showTimeInterval = false,
     timeInterval,
+    timeIntervalDisabled = false,
     showTimeout = false,
     timeout,
     autoFitLoading = false,

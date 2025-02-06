@@ -23,6 +23,7 @@
 | timeFields | 时间字段列表  | string[] | [] | 1.0.0 |
 | showTimeInterval | 是否显示时间间隔  | boolean | false | 1.0.0 |
 | timeInterval | 时间间隔  | string | - | 1.0.0 |
+| timeIntervalDisabled | 禁用时间间隔  | boolean | false | 1.0.0 |
 | showTimeout | 是否显示超时时间  | boolean | false | 1.0.0 |
 | timeout | 超时时间  | string | 10s | 1.0.0 |
 | onTimeSettingChange | 时间配置变更的回调 | ({timeField: string, timeInterval: string, timeout: string}) => void | - | 1.0.0 |

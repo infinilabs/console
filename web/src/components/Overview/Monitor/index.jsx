@@ -54,6 +54,36 @@ export const getAllTimeSettingsCache = () => {
   }
 }
 
+const getDuration = (from, to) => {
+  if (!from || !to) return;
+  const bounds = calculateBounds({
+    from,
+    to,
+  });
+  return bounds.max.valueOf() - bounds.min.valueOf()
+}
+
+export const initState = (state = {}) => {
+  const { timeRange, timeInterval, timeout } = state || {}
+  const from = timeRange?.min || "now-15m"
+  const to = timeRange?.max || "now"
+  const duration = getDuration(from, to);
+  const gtOneHour = moment.duration(duration).asHours() > 1
+  const day = moment.duration(duration).asDays();
+  const intDay = parseInt(day) + 1;
+  return {
+    ...state,
+    timeRange: {
+      min: from,
+      max: to,
+      timeFormatter: formatter.dates(intDay),
+    },
+    timeInterval: gtOneHour ? undefined : timeInterval,
+    timeIntervalDisabled: gtOneHour,
+    timeout: timeout || '10s',
+  }
+}
+
 const Monitor = (props) => {
   const {
     selectedCluster,
@@ -71,19 +101,16 @@ const Monitor = (props) => {
 
   const [spinning, setSpinning] = useState(false);
 
-  const [state, setState] = useState(
-    formatState({
-      timeRange: {
-        min: param?.timeRange?.min || "now-15m",
-        max: param?.timeRange?.max || "now",
-        timeFormatter: formatter.dates(1),
-      },
-      timeInterval: formatTimeInterval(param?.timeInterval) || allTimeSettingsCache.timeInterval,
-      timeout: formatTimeout(param?.timeout)  || allTimeSettingsCache.timeout || '10s',
-      param: param,
-      refresh: true,
-    })
-  );
+  const [state, setState] = useState(formatState(initState({
+    timeRange: {
+      min: param?.timeRange?.min || "now-15m",
+      max: param?.timeRange?.max || "now",
+    },
+    timeInterval: formatTimeInterval(param?.timeInterval) || allTimeSettingsCache.timeInterval,
+    timeout: formatTimeout(param?.timeout)  || allTimeSettingsCache.timeout || '10s',
+    param: param,
+    refresh: true,
+  })));
 
   const [refresh, setRefresh] = useState({ isRefreshPaused: typeof allTimeSettingsCache.isRefreshPaused !== 'undefined' ? allTimeSettingsCache.isRefreshPaused : true, refreshInterval: allTimeSettingsCache.refreshInterval || 30000 });
   const [timeZone, setTimeZone] = useState(() => allTimeSettingsCache.timeZone || getTimezone());
@@ -93,25 +120,16 @@ const Monitor = (props) => {
   }, [state.timeRange, state.timeInterval, state.timeout]);
 
   const handleTimeChange = useCallback(({ start, end, timeInterval, timeout, refresh }) => {
-    const bounds = calculateBounds({
-      from: start,
-      to: end,
-    });
-    const day = moment
-      .duration(bounds.max.valueOf() - bounds.min.valueOf())
-      .asDays();
-    const intDay = parseInt(day) + 1;
-    setState({
+    setState(initState({
       ...state,
       timeRange: {
         min: start,
         max: end,
-        timeFormatter: formatter.dates(intDay),
       },
       timeInterval: timeInterval || state.timeInterval,
       timeout: timeout || state.timeout,
       refresh
-    });
+    }));
   }, [state]) 
 
   const onInfoChange = (info) => {
@@ -163,6 +181,7 @@ const Monitor = (props) => {
                     showTimeSetting={true}
                     showTimeInterval={true}
                     timeInterval={state.timeInterval}
+                    timeIntervalDisabled={state.timeIntervalDisabled}
                     showTimeout={true}
                     timeout={state.timeout}
                     onTimeSettingChange={(timeSetting) => {

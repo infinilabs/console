@@ -20,7 +20,7 @@ const timeOuts = [
 ];
 
 const TimeSetting = props => {
-  const { currentLocales, timeFields = [], showTimeField, showTimeInterval, showTimeout, onTimeSettingChange, onCancel } = props;
+  const { currentLocales, timeFields = [], showTimeField, showTimeInterval, timeIntervalDisabled = false, showTimeout, onTimeSettingChange, onCancel } = props;
 
   const [isAuto, setIsAuto] = useState(!props.timeInterval)
   const [timeField, setTimeField] = useState(props.timeField);
@@ -78,7 +78,7 @@ const TimeSetting = props => {
           <div className={styles.label}>
             {currentLocales[`datepicker.time_setting.time_interval`]}
             <div className={styles.auto}>
-              <Switch size="small" checked={isAuto} onChange={(checked) => {
+              <Switch disabled={timeIntervalDisabled} size="small" checked={isAuto} onChange={(checked) => {
                 setIsAuto(checked)
                 if (checked) {
                   timeIntervalCache.current = timeInterval;
@@ -89,6 +89,13 @@ const TimeSetting = props => {
               }}/> {currentLocales[`datepicker.time_setting.time_interval.auto`]}
             </div>
           </div>
+          {
+            timeIntervalDisabled && isAuto && (
+              <div className={styles.help}>
+                {currentLocales[`datepicker.time_setting.time_interval.help`]}
+              </div>
+            )
+          }
           <div className={styles.form}>
             {
               !isAuto && timeIntervalObject && (

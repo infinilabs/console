@@ -18,7 +18,7 @@ import { PriorityIconText } from "../../components/Statistic";
 import WidgetLoader from "@/pages/DataManagement/View/WidgetLoader";
 const Option = Select.Option;
 
-const RuleRecords = ({ ruleID, timeRange, showAertMetric = false }) => {
+const RuleRecords = ({ ruleID, timeRange, showAertMetric = false, refresh }) => {
   if (!ruleID || !timeRange.min) {
     return null;
   }
@@ -231,6 +231,7 @@ const RuleRecords = ({ ruleID, timeRange, showAertMetric = false }) => {
               priority: queryParams.priority,
               state: queryParams.state,
             }}
+            refresh={refresh}
           />
         </div>
       ) : null}

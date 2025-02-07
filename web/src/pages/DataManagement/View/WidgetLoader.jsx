@@ -4,10 +4,13 @@ import styles from "./WidgetLoader.less"
 import { Empty, Spin } from "antd"
 import request from "@/utils/request"
 import { generateFilter, mergeFilters } from "./components/QueriesBar/generate_filters"
+import { calculateBounds } from "@/components/vendor/data/common/query/timefilter";
+import moment from "moment"
+import { getTimezone } from "@/utils/utils"
 
 export const WidgetRender = (props) => {
 
-   const { widget, range, query, queryParams = {}, highlightRange = {} } = props;
+   const { widget, range, query, queryParams = {}, highlightRange = {}, refresh } = props;
    const [globalRangeCache, setGlobalRangeCache] = useState()
 
    const filters = useMemo(() => {
@@ -27,12 +30,21 @@ export const WidgetRender = (props) => {
       return mergeFilters([], newFilters)
    }, [JSON.stringify(queryParams)])
 
+   const formatTimeRange = useMemo(() => {
+      if (!range.from || !range.to) return { from: 'now-15m', to: 'now'}
+      const bounds = calculateBounds(range);
+      return {
+         from: moment(bounds.min.valueOf()).tz(getTimezone()).utc().format(),
+         to: moment(bounds.max.valueOf()).tz(getTimezone()).utc().format(),
+      };
+   }, [JSON.stringify(range), refresh]);
+
    return (
       widget ? (
          <Widget
             record={widget}
             globalQueries={{
-               range,
+               range: formatTimeRange,
                filters,
                query
             }}

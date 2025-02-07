@@ -12,7 +12,7 @@ import moment from "moment";
 import { Link } from "umi";
 const Option = Select.Option;
 
-export default ({ ruleID, timeRange }) => {
+export default ({ ruleID, timeRange, refresh }) => {
   const initialQueryParams = {
     from: 0,
     size: 10,
@@ -261,6 +261,7 @@ export default ({ ruleID, timeRange }) => {
             priority: queryParams.priority,
             status: queryParams.status,
           }}
+          refresh={refresh}
         />
       </div>
       <Table

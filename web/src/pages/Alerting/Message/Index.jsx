@@ -349,10 +349,10 @@ const Index = (props) => {
     },
   ];
 
-  const onTimeChange = ({ start, end }) => {
+  const onTimeChange = ({ start, end, refresh }) => {
     dispatch({
       type: "timeChange",
-      value: { start_time: start, end_time: end },
+      value: { start_time: start, end_time: end, refresh },
     });
   };
 
@@ -503,6 +503,7 @@ const Index = (props) => {
     delete newQueryParams._t;
     delete newQueryParams.start_time;
     delete newQueryParams.end_time;
+    delete newQueryParams.refresh;
     return newQueryParams;
   }, [JSON.stringify(queryParams)]);
 
@@ -511,8 +512,8 @@ const Index = (props) => {
       return { minUpdated: "", maxUpdated: "" };
     }
     return {
-      minUpdated: moment(dataSource.aggregations.min_updated?.value),
-      maxUpdated: moment(dataSource.aggregations.max_updated?.value),
+      minUpdated: moment(dataSource.aggregations.min_updated?.value).tz(getTimezone()).utc().format(),
+      maxUpdated: moment(dataSource.aggregations.max_updated?.value).tz(getTimezone()).utc().format(),
     };
   }, [dataSource.aggregations]);
 
@@ -665,7 +666,7 @@ const Index = (props) => {
                   onRangeChange={onTimeChange}
                   {...refresh}
                   onRefreshChange={setRefresh}
-                  onRefresh={onTimeChange}
+                  onRefresh={({ start, end}) => onTimeChange({ start, end, refresh: new Date().valueOf()})}
                   timeZone={timeZone}
                   onTimeZoneChange={setTimeZone}
                   recentlyUsedRangesKey={'alerting-message'}
@@ -715,6 +716,7 @@ const Index = (props) => {
               to: maxUpdated,
             }}
             queryParams={widgetQueryParams}
+            refresh={queryParams?.refresh}
           />
         </div>
         <Table

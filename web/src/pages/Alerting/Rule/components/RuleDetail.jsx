@@ -134,7 +134,7 @@ const RuleDetail = (props) => {
     setParam({ ...param, timeRange: state.timeRange });
   }, [state.timeRange]);
 
-  const handleTimeChange = ({ start, end }) => {
+  const handleTimeChange = ({ start, end, refresh }) => {
     setState({
       ...state,
       spinning: true,
@@ -143,6 +143,7 @@ const RuleDetail = (props) => {
         max: end,
         timeFormatter: formatter.dates(1),
       },
+      refresh: refresh || state.refresh 
     });
   };
 
@@ -332,24 +333,12 @@ const RuleDetail = (props) => {
             onRangeChange={handleTimeChange}
             {...refresh}
             onRefreshChange={setRefresh}
-            onRefresh={handleTimeChange}
+            onRefresh={({ start, end}) => handleTimeChange({ start, end, refresh: new Date().valueOf()})}
             timeZone={timeZone}
             onTimeZoneChange={setTimeZone}
             recentlyUsedRangesKey={"rule-detail"}
           />
         </div>
-        <Button
-          onClick={() => {
-            handleTimeChange({
-              start: state.timeRange.min,
-              end: state.timeRange.max,
-            });
-          }}
-          icon={"reload"}
-          type="primary"
-        >
-          {formatMessage({ id: "form.button.refresh" })}
-        </Button>
       </div>
       <div style={{ display: "flex", gap: 15, marginBottom: 20 }}>
         <div style={{ flex: "1 1 50%" }}>
@@ -379,6 +368,7 @@ const RuleDetail = (props) => {
                   from: state.timeRange.min,
                   to: state.timeRange.max,
                 }}
+                refresh={state.refresh}
               />
             ) : (
               <Empty />
@@ -400,6 +390,7 @@ const RuleDetail = (props) => {
                 to: state.timeRange.max,
               }}
               queryParams={{ rule_id: ruleID }}
+              refresh={state.refresh}
             />
           </Card>
         </div>
@@ -419,7 +410,7 @@ const RuleDetail = (props) => {
           key="alerts"
           tab={formatMessage({ id: "alert.rule.detail.title.alert_event" })}
         >
-          <MessageRecord ruleID={ruleID} timeRange={state.timeRange} />
+          <MessageRecord ruleID={ruleID} timeRange={state.timeRange} refresh={state.refresh}/>
         </Tabs.TabPane>
         <Tabs.TabPane
           key="history"
@@ -429,6 +420,7 @@ const RuleDetail = (props) => {
             ruleID={ruleID}
             timeRange={state.timeRange}
             showAertMetric={true}
+            refresh={state.refresh}
           />
         </Tabs.TabPane>
       </Tabs>

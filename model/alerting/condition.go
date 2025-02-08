@@ -44,6 +44,16 @@ func (cond *Condition) GetMinimumPeriodMatch() int {
 	return minPeriodMatch
 }
 
+func (cond *Condition) GetMaxBucketCount() int {
+	var bucketCount = 0
+	for _, citem := range cond.Items {
+		if citem.BucketCount > bucketCount {
+			bucketCount = citem.BucketCount
+		}
+	}
+	return bucketCount
+}
+
 type ConditionItem struct {
 	//MetricName             string `json:"metric"`
 	MinimumPeriodMatch int      `json:"minimum_period_match"`
@@ -51,6 +61,10 @@ type ConditionItem struct {
 	Values             []string `json:"values"`
 	Priority           string   `json:"priority"`
 	Expression         string   `json:"expression,omitempty"`
+	//bucket condition type, e.g: size, content
+	Type string `json:"type,omitempty"`
+	// Represents the number of buckets in the bucket condition type.
+	BucketCount int `json:"bucket_count,omitempty"`
 }
 
 func (cond *ConditionItem) GenerateConditionExpression() (conditionExpression string, err error) {

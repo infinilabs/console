@@ -54,8 +54,9 @@ type Rule struct {
 		Name string `json:"name" elastic_mapping:"name: { type: keyword }"`
 		Id   string `json:"id" elastic_mapping:"id: { type: keyword }"`
 	} `json:"creator" elastic_mapping:"creator:{type:object}"`
-	Category string   `json:"category,omitempty"  elastic_mapping:"category: { type: keyword,copy_to:search_text }"`
-	Tags     []string `json:"tags,omitempty"  elastic_mapping:"tags: { type: keyword,copy_to:search_text }"`
+	Category         string     `json:"category,omitempty"  elastic_mapping:"category: { type: keyword,copy_to:search_text }"`
+	Tags             []string   `json:"tags,omitempty"  elastic_mapping:"tags: { type: keyword,copy_to:search_text }"`
+	BucketConditions *Condition `json:"bucket_conditions" elastic_mapping:"bucket_conditions:{type:object}"`
 }
 
 func (rule *Rule) GetOrInitExpression() (string, error) {

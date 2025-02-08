@@ -221,6 +221,7 @@ export default {
   //Configure alert objects 配置告警对象
   "alert.rule.form.title.configure_alert_object": "Configure alert objects",
   "alert.rule.form.label.alert_metric": "Metrics",
+  "alert.rule.form.label.bucket_label_template": "Bucket Label Template",
   "alert.rule.form.label.alert_metric.groups": "Groups",
   "alert.rule.form.label.alert_metric.button.add_group": "Add group",
   "alert.rule.form.label.alert_metric.button.add_metric": "Add metrics",
@@ -240,6 +241,7 @@ export default {
   "alert.rule.form.label.above_metric": "Above metrics",
   "alert.rule.form.label.docs_count": "Docs count",
   "alert.rule.form.label.content": "Content",
+  "alert.rule.form.label.in": "In",
   "alert.rule.form.label.content.changed": "Changed",
   "alert.rule.form.label.lasts_periods": "Lasts {num} periods",
   "alert.rule.form.button.add_condition": "Add condition",

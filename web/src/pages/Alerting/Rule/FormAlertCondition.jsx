@@ -1,4 +1,4 @@
-import { Form, Input, Select, Button, Icon, Radio } from "antd";
+import { Form, Input, Select, Button, Icon, Radio, InputNumber } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import "./form.scss";
 import { formatMessage } from "umi/locale";
@@ -31,14 +31,14 @@ const FormAlertCondition = (props) => {
           ))
         }
       </Radio.Group>
-      { type === 'metrics_value' ? <BucketValue {...props} /> : <BucketsCompare {...props} /> }
+      { type === 'metrics_value' ? <MetricsValue {...props} /> : <BucketsDiff {...props} /> }
     </>
   )
 };
 
 export default FormAlertCondition;
 
-const BucketValue = (props) => {
+const MetricsValue = (props) => {
   const { getFieldDecorator } = props.form;
   const alertObjectIndex = props.alertObjectIndex || 0;
   const conditions = props.conditions || {};
@@ -318,7 +318,7 @@ const BucketValue = (props) => {
   );
 }
 
-const BucketsCompare = (props) => {
+const BucketsDiff = (props) => {
   const { getFieldDecorator } = props.form;
   const alertObjectIndex = props.alertObjectIndex || 0;
   const conditions = props.bucket_conditions || {};
@@ -352,6 +352,52 @@ const BucketsCompare = (props) => {
               }}
               defaultValue={formatMessage({
                 id: `alert.rule.form.label.docs_count`,
+              })}
+              disabled
+            />
+          </Form.Item>
+          <Form.Item>
+            <Input
+              style={{
+                width: 50,
+                textAlign: "center",
+                pointerEvents: "none",
+                backgroundColor: "#fafafa",
+                color: "rgba(0, 0, 0, 0.65)",
+              }}
+              defaultValue={formatMessage({
+                id: `alert.rule.form.label.in`,
+              })}
+              disabled
+            />
+          </Form.Item>
+          <Form.Item>
+            {getFieldDecorator(
+              `alert_objects[${alertObjectIndex}][bucket_conditions][items][0][bucket_count]`,
+              {
+                initialValue: conditions?.items?.[0]?.bucket_count || 10,
+                rules: [
+                  {
+                    required: true,
+                    message: "Please select period!",
+                  },
+                ],
+              }
+            )(
+              <InputNumber style={{ width: 60 }} min={2} max={50} precision={0} step={1}/>
+            )}
+          </Form.Item>
+          <Form.Item>
+            <Input
+              style={{
+                width: 120,
+                textAlign: "center",
+                pointerEvents: "none",
+                backgroundColor: "#fafafa",
+                color: "rgba(0, 0, 0, 0.65)",
+              }}
+              defaultValue={formatMessage({
+                id: `alert.rule.form.label.stat_period`,
               })}
               disabled
             />
@@ -575,6 +621,52 @@ const BucketsCompare = (props) => {
               }}
               defaultValue={formatMessage({
                 id: `alert.rule.form.label.content`,
+              })}
+              disabled
+            />
+          </Form.Item>
+          <Form.Item>
+            <Input
+              style={{
+                width: 50,
+                textAlign: "center",
+                pointerEvents: "none",
+                backgroundColor: "#fafafa",
+                color: "rgba(0, 0, 0, 0.65)",
+              }}
+              defaultValue={formatMessage({
+                id: `alert.rule.form.label.in`,
+              })}
+              disabled
+            />
+          </Form.Item>
+          <Form.Item>
+            {getFieldDecorator(
+              `alert_objects[${alertObjectIndex}][bucket_conditions][items][1][bucket_count]`,
+              {
+                initialValue: conditions?.items?.[1]?.bucket_count || 10,
+                rules: [
+                  {
+                    required: true,
+                    message: "Please select period!",
+                  },
+                ],
+              }
+            )(
+              <InputNumber style={{ width: 60 }} min={2} max={50} precision={0} step={1}/>
+            )}
+          </Form.Item>
+          <Form.Item>
+            <Input
+              style={{
+                width: 120,
+                textAlign: "center",
+                pointerEvents: "none",
+                backgroundColor: "#fafafa",
+                color: "rgba(0, 0, 0, 0.65)",
+              }}
+              defaultValue={formatMessage({
+                id: `alert.rule.form.label.stat_period`,
               })}
               disabled
             />

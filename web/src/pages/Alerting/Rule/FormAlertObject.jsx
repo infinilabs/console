@@ -106,7 +106,9 @@ const FormAlertObject = (props) => {
                 statPeriod={props.statPeriod}
               />
             </Form.Item>
-            <Form.Item label="Bucket Label Template">
+            <Form.Item label={formatMessage({
+                id: "alert.rule.form.label.alert_metric",
+              })}>
               <FormBucketLabel form={props.form}  alertObjectIndex={i} initialValue={item?.metrics?.bucket_label || {}} />
             </Form.Item>
             <Form.Item

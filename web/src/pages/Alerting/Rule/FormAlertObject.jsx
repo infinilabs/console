@@ -118,7 +118,8 @@ const FormAlertObject = (props) => {
               <FormAlertCondition
                 form={props.form}
                 alertObjectIndex={i}
-                conditions={item?.conditions || {}}
+                conditions={item?.conditions}
+                bucketConditions={item?.bucket_conditions}
                 onPreviewChartChange={props.onPreviewChartChange}
               />
             </Form.Item>

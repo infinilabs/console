@@ -406,7 +406,7 @@ const BucketsDiff = (props) => {
             {getFieldDecorator(
               `alert_objects[${alertObjectIndex}][bucket_conditions][items][0][minimum_period_match]`,
               {
-                initialValue: conditions?.items?.[0]?.minimum_period_match?.toString() || "1",
+                initialValue: conditions?.items?.[0]?.minimum_period_match || 1,
                 rules: [
                   {
                     required: true,
@@ -431,7 +431,7 @@ const BucketsDiff = (props) => {
               >
                 {
                   lastsPeriods.map((item) => (
-                    <Option key={`${item}`} value={`${item}`}>
+                    <Option key={item} value={item}>
                       {formatMessage(
                         {
                           id: "alert.rule.form.label.lasts_periods",
@@ -675,7 +675,7 @@ const BucketsDiff = (props) => {
             {getFieldDecorator(
               `alert_objects[${alertObjectIndex}][bucket_conditions][items][1][minimum_period_match]`,
               {
-                initialValue: conditions?.items?.[1]?.minimum_period_match?.toString() || "1",
+                initialValue: conditions?.items?.[1]?.minimum_period_match || 1,
                 rules: [
                   {
                     required: true,
@@ -700,7 +700,7 @@ const BucketsDiff = (props) => {
               >
                 {
                   lastsPeriods.map((item) => (
-                    <Option key={`${item}`} value={`${item}`}>
+                    <Option key={item} value={item}>
                       {formatMessage(
                         {
                           id: "alert.rule.form.label.lasts_periods",

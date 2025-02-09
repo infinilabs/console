@@ -324,7 +324,6 @@ const RuleForm = (props) => {
         }
 
         const alert_objects = formatAlertObjects(newValues);
-        debugger
 
         if (parmas?.is_test) {
           onSendTestClick(alert_objects[0], parmas?.category);

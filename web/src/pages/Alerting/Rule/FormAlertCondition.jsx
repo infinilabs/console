@@ -11,14 +11,14 @@ const lastsPeriods = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15]
 const operators = ['equals', 'gte', 'gt', 'lt', 'lte', 'range']
 
 const FormAlertCondition = (props) => {
-  const { conditions, bucket_conditions } = props;
+  const { conditions, bucketConditions } = props;
   const [type, setType] = useState('metrics_value')
 
   useEffect(() => {
-    if (bucket_conditions?.items?.length > 0) {
+    if (bucketConditions?.items?.length > 0) {
       setType('buckets_diff')
     }
-  }, [JSON.stringify(conditions), JSON.stringify(bucket_conditions)])
+  }, [JSON.stringify(conditions), JSON.stringify(bucketConditions)])
 
   return (
     <>
@@ -321,7 +321,7 @@ const MetricsValue = (props) => {
 const BucketsDiff = (props) => {
   const { getFieldDecorator } = props.form;
   const alertObjectIndex = props.alertObjectIndex || 0;
-  const conditions = props.bucket_conditions || {};
+  const conditions = props.bucketConditions || {};
   const [conditionItems, setConditionItems] = useState(conditions?.items);
   const [operatorState, setOperatorState] = useState({});
   useMemo(() => {
@@ -334,6 +334,13 @@ const BucketsDiff = (props) => {
 
   return (
     <div className="group-wrapper">
+      {/* {conditionItems.map((conditionItem, i) => {
+        return (
+          <div key={i}>
+            
+          </div>
+        )
+      })} */}
       <InputGroup compact>
           {getFieldDecorator(
               `alert_objects[${alertObjectIndex}][bucket_conditions][items][0][type]`,

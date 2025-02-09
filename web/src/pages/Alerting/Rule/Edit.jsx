@@ -69,18 +69,20 @@ export default Form.create({ name: "rule_form_edit" })((props) => {
 
   const [editValue] = useMemo(() => {
     let editValue = value?._source || {};
-    if (editValue?.metrics && editValue?.conditions) {
+    if (editValue?.metrics && (editValue?.conditions || editValue?.bucket_conditions)) {
       editValue.alert_objects = [
         {
           name: editValue.name,
           metrics: editValue.metrics,
           conditions: editValue.conditions,
+          bucket_conditions: editValue.bucket_conditions, 
           schedule: editValue.schedule,
         },
       ];
       delete editValue.name;
       delete editValue.metrics;
       delete editValue.conditions;
+      delete editValue.bucket_conditions;
       delete editValue.schedule;
     }
     return [editValue];

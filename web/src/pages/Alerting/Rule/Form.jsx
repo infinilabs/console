@@ -242,6 +242,15 @@ const RuleForm = (props) => {
           }
         );
       }
+      if (alert_object.bucket_conditions?.items) {
+        alert_object.bucket_conditions.items = alert_object.bucket_conditions.items.filter((item) => {
+          if (item.type === 'content') {
+            delete item.values
+            delete item.operator
+          }
+          return !!item.type
+        });
+      }
       return { ...values, ...alert_object };
     });
     return alert_objects;

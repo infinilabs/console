@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import "./form.scss";
 import { formatMessage } from "umi/locale";
 import { PriorityColor } from "../utils/constants";
+import { cloneDeep } from "lodash";
 
 const { Option } = Select;
 const InputGroup = Input.Group;
@@ -322,468 +323,339 @@ const BucketsDiff = (props) => {
   const { getFieldDecorator } = props.form;
   const alertObjectIndex = props.alertObjectIndex || 0;
   const conditions = props.bucketConditions || {};
-  const [conditionItems, setConditionItems] = useState(conditions?.items);
-  const [operatorState, setOperatorState] = useState({});
-  useMemo(() => {
-    const tmp = {};
-    conditions?.items?.map((item, i) => {
-      tmp[`op${i}`] = item.operator;
-    });
-    setOperatorState({ ...operatorState, ...tmp });
-  }, [conditions?.items]);
+  const [conditionItems, setConditionItems] = useState(conditions?.items || [{ type: 'size' }]);
 
   return (
     <div className="group-wrapper">
-      {/* {conditionItems.map((conditionItem, i) => {
+      {conditionItems.map((conditionItem, i) => {
         return (
           <div key={i}>
-            
-          </div>
-        )
-      })} */}
-      <InputGroup compact>
-          {getFieldDecorator(
-              `alert_objects[${alertObjectIndex}][bucket_conditions][items][0][type]`,
-              {
-                initialValue: "size",
-              }
-          )}
-          <Form.Item>
-            <Input
-              style={{
-                width: 120,
-                textAlign: "center",
-                pointerEvents: "none",
-                backgroundColor: "#fafafa",
-                color: "rgba(0, 0, 0, 0.65)",
-              }}
-              defaultValue={formatMessage({
-                id: `alert.rule.form.label.docs_count`,
-              })}
-              disabled
-            />
-          </Form.Item>
-          <Form.Item>
-            <Input
-              style={{
-                width: 50,
-                textAlign: "center",
-                pointerEvents: "none",
-                backgroundColor: "#fafafa",
-                color: "rgba(0, 0, 0, 0.65)",
-              }}
-              defaultValue={formatMessage({
-                id: `alert.rule.form.label.in`,
-              })}
-              disabled
-            />
-          </Form.Item>
-          <Form.Item>
-            {getFieldDecorator(
-              `alert_objects[${alertObjectIndex}][bucket_conditions][items][0][bucket_count]`,
-              {
-                initialValue: conditions?.items?.[0]?.bucket_count || 10,
-                rules: [
-                  {
-                    required: true,
-                    message: "Please select period!",
-                  },
-                ],
-              }
-            )(
-              <InputNumber style={{ width: 60 }} min={2} max={50} precision={0} step={1}/>
-            )}
-          </Form.Item>
-          <Form.Item>
-            <Input
-              style={{
-                width: 120,
-                textAlign: "center",
-                pointerEvents: "none",
-                backgroundColor: "#fafafa",
-                color: "rgba(0, 0, 0, 0.65)",
-              }}
-              defaultValue={formatMessage({
-                id: `alert.rule.form.label.stat_period`,
-              })}
-              disabled
-            />
-          </Form.Item>
-          <Form.Item>
-            {getFieldDecorator(
-              `alert_objects[${alertObjectIndex}][bucket_conditions][items][0][minimum_period_match]`,
-              {
-                initialValue: conditions?.items?.[0]?.minimum_period_match || 1,
-                rules: [
-                  {
-                    required: true,
-                    message: "Please select periods match!",
-                  },
-                ],
-              }
-            )(
-              <Select
-                allowClear
-                showSearch
-                style={{ width: 150 }}
-                placeholder={formatMessage(
-                  {
-                    id: "alert.rule.form.label.lasts_periods",
-                  },
-                  { num: 1 }
-                )}
-                onChange={(value) => {
-                  props.onPreviewChartChange();
-                }}
-              >
-                {
-                  lastsPeriods.map((item) => (
-                    <Option key={item} value={item}>
-                      {formatMessage(
-                        {
-                          id: "alert.rule.form.label.lasts_periods",
-                        },
-                        { num: item }
-                      )}
-                    </Option>
-                  ))
-                }
-              </Select>
-            )}
-          </Form.Item>
-          <Form.Item>
-            {getFieldDecorator(
-              `alert_objects[${alertObjectIndex}][bucket_conditions][items][0][operator]`,
-              {
-                initialValue: conditions?.items?.[0]?.operator,
-                rules: [
-                  {
-                    required: true,
-                    message: "Please select operator!",
-                  },
-                ],
-              }
-            )(
-              <Select
-                allowClear
-                showSearch
-                style={{ width: 100 }}
-                placeholder={"equals"}
-                onChange={(value) => {
-                  props.onPreviewChartChange();
-                  setOperatorState({ ...operatorState, [`op0`]: value });
-                }}
-              >
-                { operators.map((item) => <Option key={item} value={item}>{item}</Option>)}
-              </Select>
-            )}
-          </Form.Item>
-
-          {operatorState?.[`op0`] == "range" ? (
-            <>
+            <InputGroup compact>
               <Form.Item>
                 {getFieldDecorator(
-                  `alert_objects[${alertObjectIndex}][bucket_conditions][items][0][values][0]`,
-                  {
-                    initialValue: conditions?.items?.[0]?.values?.[0],
-                    rules: [
-                      {
-                        required: true,
-                        message: "Please input min value!",
-                      },
-                    ],
-                  }
-                )(
-                  <Input
-                    style={{ width: 100 }}
-                    placeholder="min value"
-                    onChange={(e) => {
-                      props.onPreviewChartChange();
-                    }}
-                  />
-                )}
-              </Form.Item>
-              <span
-                style={{
-                  display: "inline-block",
-                  lineHeight: "40px",
-                  textAlign: "center",
-                }}
-              >
-                <Icon type="minus" />
-              </span>
-              <Form.Item>
-                {getFieldDecorator(
-                  `alert_objects[${alertObjectIndex}][bucket_conditions][items][0][values][1]`,
-                  {
-                    initialValue: conditions?.items?.[0]?.values?.[1],
-                    rules: [
-                      {
-                        required: true,
-                        message: "Please input max value!",
-                      },
-                    ],
-                  }
-                )(
-                  <Input
-                    style={{ width: 100 }}
-                    placeholder="max value"
-                    onChange={(e) => {
-                      props.onPreviewChartChange();
-                    }}
-                  />
-                )}
-              </Form.Item>
-            </>
-          ) : (
-            <Form.Item>
-              {getFieldDecorator(
-                `alert_objects[${alertObjectIndex}][bucket_conditions][items][0][values][0]`,
-                {
-                  initialValue: conditions?.items?.[0]?.values?.[0],
-                  rules: [
+                    `alert_objects[${alertObjectIndex}][bucket_conditions][items][${i}][type]`,
                     {
-                      required: true,
-                      message: "Please input value!",
-                    },
-                  ],
-                }
-              )(
+                      initialValue: conditionItem.type || "size",
+                    }
+                )(
+                  <Select style={{ width: 120 }} onChange={(value) => {
+                      const newItems = cloneDeep(conditionItems)
+                      newItems[i].type = value
+                      if (value === 'content') {
+                        newItems[i].values = undefined
+                        newItems[i].operator = undefined
+                      }
+                      setConditionItems(newItems)
+                  }}>
+                    <Option value={'size'}>{formatMessage({id: `alert.rule.form.label.docs_count`})}</Option>
+                    <Option value={'content'}>{formatMessage({id: `alert.rule.form.label.content`})}</Option>
+                  </Select>
+                )}
+              </Form.Item>
+              <Form.Item>
                 <Input
-                  style={{ width: 120 }}
-                  placeholder="value"
-                  onChange={(e) => {
-                    props.onPreviewChartChange();
+                  style={{
+                    width: 50,
+                    textAlign: "center",
+                    pointerEvents: "none",
+                    backgroundColor: "#fafafa",
+                    color: "rgba(0, 0, 0, 0.65)",
+                  }}
+                  defaultValue={formatMessage({
+                    id: `alert.rule.form.label.in`,
+                  })}
+                  disabled
+                />
+              </Form.Item>
+              <Form.Item>
+                {getFieldDecorator(
+                  `alert_objects[${alertObjectIndex}][bucket_conditions][items][${i}][bucket_count]`,
+                  {
+                    initialValue: conditionItem.bucket_count || 10,
+                    rules: [
+                      {
+                        required: true,
+                        message: "Please select period!",
+                      },
+                    ],
+                  }
+                )(
+                  <InputNumber style={{ width: 60 }} min={2} max={50} precision={0} step={1}/>
+                )}
+              </Form.Item>
+              <Form.Item>
+                <Input
+                  style={{
+                    width: 120,
+                    textAlign: "center",
+                    pointerEvents: "none",
+                    backgroundColor: "#fafafa",
+                    color: "rgba(0, 0, 0, 0.65)",
+                  }}
+                  defaultValue={formatMessage({
+                    id: `alert.rule.form.label.stat_period`,
+                  })}
+                  disabled
+                />
+              </Form.Item>
+              <Form.Item>
+                {getFieldDecorator(
+                  `alert_objects[${alertObjectIndex}][bucket_conditions][items][${i}][minimum_period_match]`,
+                  {
+                    initialValue: conditionItem.minimum_period_match || 1,
+                    rules: [
+                      {
+                        required: true,
+                        message: "Please select periods match!",
+                      },
+                    ],
+                  }
+                )(
+                  <Select
+                    allowClear
+                    showSearch
+                    style={{ width: 150 }}
+                    placeholder={formatMessage(
+                      {
+                        id: "alert.rule.form.label.lasts_periods",
+                      },
+                      { num: 1 }
+                    )}
+                    onChange={(value) => {
+                      props.onPreviewChartChange();
+                    }}
+                  >
+                    {
+                      lastsPeriods.map((item) => (
+                        <Option key={item} value={item}>
+                          {formatMessage(
+                            {
+                              id: "alert.rule.form.label.lasts_periods",
+                            },
+                            { num: item }
+                          )}
+                        </Option>
+                      ))
+                    }
+                  </Select>
+                )}
+              </Form.Item>
+              {
+                conditionItem.type === 'size' ? (
+                  <>
+                    <Form.Item>
+                      {getFieldDecorator(
+                        `alert_objects[${alertObjectIndex}][bucket_conditions][items][${i}][operator]`,
+                        {
+                          initialValue: conditionItem.operator,
+                          rules: [
+                            {
+                              required: true,
+                              message: "Please select operator!",
+                            },
+                          ],
+                        }
+                      )(
+                        <Select
+                          allowClear
+                          showSearch
+                          style={{ width: 100 }}
+                          placeholder={"equals"}
+                          onChange={(value) => {
+                            props.onPreviewChartChange();
+                            const newItems = cloneDeep(conditionItems)
+                            newItems[i].operator = value
+                            setConditionItems(newItems)
+                          }}
+                        >
+                          { operators.map((item) => <Option key={item} value={item}>{item}</Option>)}
+                        </Select>
+                      )}
+                    </Form.Item>
+
+                    {conditionItem.operator === "range" ? (
+                      <>
+                        <Form.Item>
+                          {getFieldDecorator(
+                            `alert_objects[${alertObjectIndex}][bucket_conditions][items][${i}][values][0]`,
+                            {
+                              initialValue: conditionItem.values?.[0],
+                              rules: [
+                                {
+                                  required: true,
+                                  message: "Please input min value!",
+                                },
+                              ],
+                            }
+                          )(
+                            <Input
+                              style={{ width: 100 }}
+                              placeholder="min value"
+                              onChange={(e) => {
+                                props.onPreviewChartChange();
+                              }}
+                            />
+                          )}
+                        </Form.Item>
+                        <span
+                          style={{
+                            display: "inline-block",
+                            lineHeight: "40px",
+                            textAlign: "center",
+                          }}
+                        >
+                          <Icon type="minus" />
+                        </span>
+                        <Form.Item>
+                          {getFieldDecorator(
+                            `alert_objects[${alertObjectIndex}][bucket_conditions][items][${i}][values][1]`,
+                            {
+                              initialValue: conditionItem.values?.[1],
+                              rules: [
+                                {
+                                  required: true,
+                                  message: "Please input max value!",
+                                },
+                              ],
+                            }
+                          )(
+                            <Input
+                              style={{ width: 100 }}
+                              placeholder="max value"
+                              onChange={(e) => {
+                                props.onPreviewChartChange();
+                              }}
+                            />
+                          )}
+                        </Form.Item>
+                      </>
+                    ) : (
+                      <Form.Item>
+                        {getFieldDecorator(
+                          `alert_objects[${alertObjectIndex}][bucket_conditions][items][${i}][values][0]`,
+                          {
+                            initialValue: conditionItem.values?.[0],
+                            rules: [
+                              {
+                                required: true,
+                                message: "Please input value!",
+                              },
+                            ],
+                          }
+                        )(
+                          <Input
+                            style={{ width: 120 }}
+                            placeholder="value"
+                            onChange={(e) => {
+                              props.onPreviewChartChange();
+                            }}
+                          />
+                        )}
+                      </Form.Item>
+                    )}
+                  </>
+                ) : (
+                  <Form.Item>
+                    <Input
+                      style={{
+                        width: 80,
+                        textAlign: "center",
+                        pointerEvents: "none",
+                        backgroundColor: "#fafafa",
+                        color: "rgba(0, 0, 0, 0.65)",
+                      }}
+                      defaultValue={formatMessage({ id: "alert.rule.form.label.content.changed"})}
+                      disabled
+                    />
+                  </Form.Item>
+                )
+              }
+              
+              <Form.Item>
+                <Input
+                  style={{
+                    width: 80,
+                    textAlign: "center",
+                    pointerEvents: "none",
+                    backgroundColor: "#fafafa",
+                    color: "rgba(0, 0, 0, 0.65)",
+                  }}
+                  defaultValue={formatMessage({
+                    id: "alert.rule.form.label.trigger",
+                  })}
+                  disabled
+                />
+              </Form.Item>
+
+              <Form.Item>
+                {getFieldDecorator(
+                  `alert_objects[${alertObjectIndex}][bucket_conditions][items][${i}][priority]`,
+                  {
+                    initialValue: conditionItem.priority,
+                    rules: [
+                      {
+                        required: true,
+                        message: "Please select priority!",
+                      },
+                    ],
+                  }
+                )(
+                  <Select
+                    allowClear
+                    showSearch
+                    style={{ width: 120 }}
+                    placeholder={"P1(High)"}
+                    onChange={(value) => {
+                      props.onPreviewChartChange();
+                    }}
+                  >
+                    {Object.keys(PriorityColor).map((item) => {
+                      return (
+                        <Option key={item} value={item}>
+                          {formatMessage({
+                            id: `alert.message.priority.${item}`,
+                          })}
+                        </Option>
+                      );
+                    })}
+                  </Select>
+                )}
+              </Form.Item>
+              {conditionItems.length > 1 && i > 0 ? (
+                <Icon
+                  className="dynamic-delete-button"
+                  type="close-circle"
+                  onClick={() => {
+                    setConditionItems(conditionItems.filter((_, key) => key !== i));
                   }}
                 />
-              )}
-            </Form.Item>
-          )}
-          <Form.Item>
-            <Input
-              style={{
-                width: 80,
-                textAlign: "center",
-                pointerEvents: "none",
-                backgroundColor: "#fafafa",
-                color: "rgba(0, 0, 0, 0.65)",
-              }}
-              defaultValue={formatMessage({
-                id: "alert.rule.form.label.trigger",
-              })}
-              disabled
-            />
-          </Form.Item>
+              ) : null}
 
-          <Form.Item>
-            {getFieldDecorator(
-              `alert_objects[${alertObjectIndex}][bucket_conditions][items][0][priority]`,
-              {
-                initialValue: conditions?.items?.[0]?.priority,
-                rules: [
-                  {
-                    required: true,
-                    message: "Please select priority!",
-                  },
-                ],
-              }
-            )(
-              <Select
-                allowClear
-                showSearch
-                style={{ width: 120 }}
-                placeholder={"P1(High)"}
-                onChange={(value) => {
-                  props.onPreviewChartChange();
-                }}
-              >
-                {Object.keys(PriorityColor).map((item) => {
-                  return (
-                    <Option key={item} value={item}>
-                      {formatMessage({
-                        id: `alert.message.priority.${item}`,
-                      })}
-                    </Option>
-                  );
-                })}
-              </Select>
-            )}
-          </Form.Item>
-      </InputGroup>
-      <InputGroup compact>
-          {getFieldDecorator(
-              `alert_objects[${alertObjectIndex}][bucket_conditions][items][1][type]`,
-              {
-                initialValue: "content",
-              }
-          )}
-          <Form.Item>
-            <Input
-              style={{
-                width: 120,
-                textAlign: "center",
-                pointerEvents: "none",
-                backgroundColor: "#fafafa",
-                color: "rgba(0, 0, 0, 0.65)",
-              }}
-              defaultValue={formatMessage({
-                id: `alert.rule.form.label.content`,
-              })}
-              disabled
-            />
-          </Form.Item>
-          <Form.Item>
-            <Input
-              style={{
-                width: 50,
-                textAlign: "center",
-                pointerEvents: "none",
-                backgroundColor: "#fafafa",
-                color: "rgba(0, 0, 0, 0.65)",
-              }}
-              defaultValue={formatMessage({
-                id: `alert.rule.form.label.in`,
-              })}
-              disabled
-            />
-          </Form.Item>
-          <Form.Item>
-            {getFieldDecorator(
-              `alert_objects[${alertObjectIndex}][bucket_conditions][items][1][bucket_count]`,
-              {
-                initialValue: conditions?.items?.[1]?.bucket_count || 10,
-                rules: [
-                  {
-                    required: true,
-                    message: "Please select period!",
-                  },
-                ],
-              }
-            )(
-              <InputNumber style={{ width: 60 }} min={2} max={50} precision={0} step={1}/>
-            )}
-          </Form.Item>
-          <Form.Item>
-            <Input
-              style={{
-                width: 120,
-                textAlign: "center",
-                pointerEvents: "none",
-                backgroundColor: "#fafafa",
-                color: "rgba(0, 0, 0, 0.65)",
-              }}
-              defaultValue={formatMessage({
-                id: `alert.rule.form.label.stat_period`,
-              })}
-              disabled
-            />
-          </Form.Item>
-          <Form.Item>
-            {getFieldDecorator(
-              `alert_objects[${alertObjectIndex}][bucket_conditions][items][1][minimum_period_match]`,
-              {
-                initialValue: conditions?.items?.[1]?.minimum_period_match || 1,
-                rules: [
-                  {
-                    required: true,
-                    message: "Please select periods match!",
-                  },
-                ],
-              }
-            )(
-              <Select
-                allowClear
-                showSearch
-                style={{ width: 150 }}
-                placeholder={formatMessage(
-                  {
-                    id: "alert.rule.form.label.lasts_periods",
-                  },
-                  { num: 1 }
-                )}
-                onChange={(value) => {
-                  props.onPreviewChartChange();
-                }}
-              >
-                {
-                  lastsPeriods.map((item) => (
-                    <Option key={item} value={item}>
-                      {formatMessage(
-                        {
-                          id: "alert.rule.form.label.lasts_periods",
-                        },
-                        { num: item }
-                      )}
-                    </Option>
-                  ))
-                }
-              </Select>
-            )}
-          </Form.Item>
-          <Form.Item>
-            <Input
-              style={{
-                width: 80,
-                textAlign: "center",
-                pointerEvents: "none",
-                backgroundColor: "#fafafa",
-                color: "rgba(0, 0, 0, 0.65)",
-              }}
-              defaultValue={formatMessage({ id: "alert.rule.form.label.content.changed"})}
-              disabled
-            />
-          </Form.Item>
-          <Form.Item>
-            <Input
-              style={{
-                width: 80,
-                textAlign: "center",
-                pointerEvents: "none",
-                backgroundColor: "#fafafa",
-                color: "rgba(0, 0, 0, 0.65)",
-              }}
-              defaultValue={formatMessage({
-                id: "alert.rule.form.label.trigger",
-              })}
-              disabled
-            />
-          </Form.Item>
-
-          <Form.Item>
-            {getFieldDecorator(
-              `alert_objects[${alertObjectIndex}][bucket_conditions][items][1][priority]`,
-              {
-                initialValue: conditions?.items?.[1]?.priority,
-                rules: [
-                  {
-                    required: true,
-                    message: "Please select priority!",
-                  },
-                ],
-              }
-            )(
-              <Select
-                allowClear
-                showSearch
-                style={{ width: 120 }}
-                placeholder={"P1(High)"}
-                onChange={(value) => {
-                  props.onPreviewChartChange();
-                }}
-              >
-                {Object.keys(PriorityColor).map((item) => {
-                  return (
-                    <Option key={item} value={item}>
-                      {formatMessage({
-                        id: `alert.message.priority.${item}`,
-                      })}
-                    </Option>
-                  );
-                })}
-              </Select>
-            )}
-          </Form.Item>
-      </InputGroup>
+              {i == 0 ? (
+                <Form.Item>
+                  <Button
+                    type="primary"
+                    icon="plus"
+                    onClick={() => {
+                      if (conditionItems.length >= 5) {
+                        return;
+                      }
+                      setConditionItems([...conditionItems, { type: 'size' }]);
+                    }}
+                    size="small"
+                    style={{ marginLeft: 10 }}
+                    disabled={conditionItems.length >= 5 ? true : false}
+                  >
+                    {formatMessage({
+                      id: "alert.rule.form.button.add_condition",
+                    })}
+                  </Button>
+                </Form.Item>
+              ) : null}
+          </InputGroup>
+          </div>
+        )
+      })}
     </div>
   );
 }

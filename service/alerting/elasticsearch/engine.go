@@ -643,14 +643,15 @@ func (engine *Engine) CheckBucketCondition(rule *alerting.Rule, targetMetricData
 		QueryResult: queryResult,
 	}
 	// remove first and last time bucket
-	for _, targetData := range targetMetricData {
-		for _, v := range targetData.Data {
+	for i, targetData := range targetMetricData {
+		for k, v := range targetData.Data {
 			if len(v) > 0 {
 				v = v[1:]
 			}
 			if len(v) > 0 {
 				v = v[0 : len(v)-1]
 			}
+			targetMetricData[i].Data[k] = v
 		}
 	}
 	//transform targetMetricData

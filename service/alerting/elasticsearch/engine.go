@@ -656,22 +656,20 @@ func (engine *Engine) CheckBucketCondition(rule *alerting.Rule, targetMetricData
 	}
 	//transform targetMetricData
 	var (
-		times    = map[int64]struct{}{}
-		buckets  = map[string]map[int64]int{}
-		timesArr []int64
+		times   = map[string][]int64{}
+		buckets = map[string]map[int64]int{}
 	)
 	for _, targetData := range targetMetricData {
 		for _, v := range targetData.Data {
 			for _, item := range v {
 				if tv, ok := item.Timestamp.(float64); ok {
 					timestamp := int64(tv)
-					if _, ok = times[timestamp]; !ok {
-						times[timestamp] = struct{}{}
-					}
 					bucketKey := strings.Join(targetData.GroupValues, "*")
 					if _, ok = buckets[bucketKey]; !ok {
 						buckets[bucketKey] = map[int64]int{}
+						times[bucketKey] = []int64{}
 					}
+					times[bucketKey] = append(times[bucketKey], timestamp)
 					buckets[bucketKey][timestamp] = item.DocCount
 				} else {
 					log.Warnf("invalid timestamp type: %T", item.Timestamp)
@@ -679,12 +677,6 @@ func (engine *Engine) CheckBucketCondition(rule *alerting.Rule, targetMetricData
 			}
 		}
 	}
-	for t := range times {
-		timesArr = append(timesArr, t)
-	}
-	sort.Slice(timesArr, func(i, j int) bool {
-		return timesArr[i] < timesArr[j] // Ascending order
-	})
 
 	//check bucket diff
 	diffResult := map[string]map[int64]BucketDiffState{}
@@ -693,6 +685,10 @@ func (engine *Engine) CheckBucketCondition(rule *alerting.Rule, targetMetricData
 		if _, ok := diffResult[grps]; !ok {
 			diffResult[grps] = map[int64]BucketDiffState{}
 		}
+		timesArr := times[grps]
+		sort.Slice(times[grps], func(i, j int) bool {
+			return timesArr[i] < timesArr[j] // Ascending order
+		})
 		for i, t := range timesArr {
 			if v, ok := bk[t]; !ok {
 				if hasPre {

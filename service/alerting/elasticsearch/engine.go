@@ -332,6 +332,8 @@ func getQueryTimeRange(rule *alerting.Rule, filterParam *alerting.FilterParam) (
 		var bucketCount int
 		if rule.BucketConditions != nil {
 			bucketCount = rule.BucketConditions.GetMaxBucketCount()
+			//for removing first and last time bucket
+			bucketCount += 2
 		} else {
 			bucketCount = rule.Conditions.GetMinimumPeriodMatch() + 1
 		}
@@ -640,7 +642,17 @@ func (engine *Engine) CheckBucketCondition(rule *alerting.Rule, targetMetricData
 	conditionResult := &alerting.ConditionResult{
 		QueryResult: queryResult,
 	}
-	//todo remove first and last time bucket
+	// remove first and last time bucket
+	for _, targetData := range targetMetricData {
+		for _, v := range targetData.Data {
+			if len(v) > 0 {
+				v = v[1:]
+			}
+			if len(v) > 0 {
+				v = v[0 : len(v)-1]
+			}
+		}
+	}
 	//transform targetMetricData
 	var (
 		times    = map[int64]struct{}{}

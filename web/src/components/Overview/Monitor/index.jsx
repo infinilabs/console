@@ -151,8 +151,11 @@ const Monitor = (props) => {
   const breadcrumbList = getBreadcrumbList(state);
 
   const isAgent = useMemo(() => {
-    const { monitor_configs = {} } = selectedCluster || {}
-    return monitor_configs?.node_stats?.enabled === false && monitor_configs?.index_stats?.enabled === false
+    const { metric_collection_mode, monitor_configs = {} } = selectedCluster || {}
+    if (typeof metric_collection_mode === 'undefined') {
+      return monitor_configs?.node_stats?.enabled === false && monitor_configs?.index_stats?.enabled === false
+    }
+    return metric_collection_mode === 'agent'
   }, [JSON.stringify(selectedCluster?.monitor_configs)])
 
   return (

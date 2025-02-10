@@ -24,7 +24,10 @@ const MonitorConfigsForm = (props) => {
         display: props.visible ? "block" : "none",
       }}
     >
-      {configs.map((item) => {
+      {configs.filter((item) => {
+          if (props.collectMode !== "agent") return true;
+          return !["node_stats", "index_stats"].includes(item.key);
+        }).map((item) => {
         return (
           <Form.Item
             key={item.key}

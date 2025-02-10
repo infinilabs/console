@@ -35,6 +35,7 @@ export default {
   "cluster.manage.table.column.location": "位置",
   "cluster.manage.monitored.on": "启用",
   "cluster.manage.monitored.off": "关闭",
+  "cluster.manage.metric_collection_mode": "采集模式",
   "cluster.manage.monitor_configs.cluster_health": "集群健康状态指标",
   "cluster.manage.monitor_configs.cluster_stats": "集群指标",
   "cluster.manage.monitor_configs.node_stats": "节点指标",

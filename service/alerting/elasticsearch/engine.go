@@ -640,23 +640,24 @@ func (engine *Engine) CheckBucketCondition(rule *alerting.Rule, targetMetricData
 	conditionResult := &alerting.ConditionResult{
 		QueryResult: queryResult,
 	}
+	//todo remove first and last time bucket
 	//transform targetMetricData
 	var (
-		times    = map[int]struct{}{}
-		buckets  = map[string]map[int]int{}
-		timesArr []int
+		times    = map[int64]struct{}{}
+		buckets  = map[string]map[int64]int{}
+		timesArr []int64
 	)
 	for _, targetData := range targetMetricData {
 		for _, v := range targetData.Data {
 			for _, item := range v {
 				if tv, ok := item.Timestamp.(float64); ok {
-					timestamp := int(tv)
+					timestamp := int64(tv)
 					if _, ok = times[timestamp]; !ok {
 						times[timestamp] = struct{}{}
 					}
 					bucketKey := strings.Join(targetData.GroupValues, "*")
 					if _, ok = buckets[bucketKey]; !ok {
-						buckets[bucketKey] = map[int]int{}
+						buckets[bucketKey] = map[int64]int{}
 					}
 					buckets[bucketKey][timestamp] = item.DocCount
 				} else {
@@ -668,13 +669,16 @@ func (engine *Engine) CheckBucketCondition(rule *alerting.Rule, targetMetricData
 	for t := range times {
 		timesArr = append(timesArr, t)
 	}
-	sort.Ints(timesArr)
+	sort.Slice(timesArr, func(i, j int) bool {
+		return timesArr[i] < timesArr[j] // Ascending order
+	})
+
 	//check bucket diff
-	diffResult := map[string]map[int]BucketDiffState{}
+	diffResult := map[string]map[int64]BucketDiffState{}
 	for grps, bk := range buckets {
 		hasPre := false
 		if _, ok := diffResult[grps]; !ok {
-			diffResult[grps] = map[int]BucketDiffState{}
+			diffResult[grps] = map[int64]BucketDiffState{}
 		}
 		for i, t := range timesArr {
 			if v, ok := bk[t]; !ok {
@@ -683,6 +687,8 @@ func (engine *Engine) CheckBucketCondition(rule *alerting.Rule, targetMetricData
 						ContentChangeState: -1,
 					}
 				}
+				// reset hasPre to false
+				hasPre = false
 			} else {
 				if !hasPre {
 					if i > 0 {
@@ -1298,12 +1304,12 @@ func collectMetricData(agg interface{}, groupValues string, metricData *[]alerti
 					if bkM, ok := bk.(map[string]interface{}); ok {
 
 						var docCount int
+						if v, ok := bkM["doc_count"]; ok {
+							docCount = int(v.(float64))
+						}
 						for k, v := range bkM {
-							if k == "key" || k == "key_as_string" {
+							if k == "key" || k == "key_as_string" || k == "doc_count" {
 								continue
-							}
-							if k == "doc_count" {
-								docCount = int(v.(float64))
 							}
 							if len(k) > 5 { //just store a,b,c
 								continue

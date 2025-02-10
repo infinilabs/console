@@ -928,6 +928,8 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			Category:     rule.Category,
 		}
 		paramsCtx[alerting2.ParamEventID] = newAlertMessage.ID
+	} else {
+		paramsCtx[alerting2.ParamEventID] = alertMessage.ID
 	}
 	title, message := rule.GetNotificationTitleAndMessage()
 	err = attachTitleMessageToCtx(title, message, paramsCtx)

@@ -33,7 +33,7 @@ export const createFilterDateHistogram = (
     {
       gte: start.toISOString(),
       lt: start.add(interval).toISOString(),
-      format: 'strict_date_optional_time',
+      // format: 'strict_date_optional_time',
     },
     agg.getIndexPattern()
   );

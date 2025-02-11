@@ -195,6 +195,8 @@ export default {
   "alert.rule.table.columnns.schedule": "计划周期",
   "alert.rule.table.columnns.expression": "告警规则",
   "alert.rule.table.columnns.status": "运行状态",
+  "alert.rule.table.columnns.status.failed": "连接失败",
+  "alert.rule.table.columnns.status.succeeded": "连接成功",
   "alert.rule.table.columnns.enabled": "告警启停",
   "alert.rule.table.columnns.updated": "更新时间",
   "alert.rule.table.columnns.category": "分类",

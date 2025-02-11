@@ -52,7 +52,7 @@ class ClusterForm extends React.Component {
 
   validateFieldNames = [
     "name",
-    "host",
+    "hosts",
     "isTLS",
     "credential_id",
     "username",
@@ -60,7 +60,7 @@ class ClusterForm extends React.Component {
   ];
   agentValidateFieldNames = [
     "name",
-    "host",
+    "hosts",
     "isTLS",
     "agent_credential_id",
     "agent_username",
@@ -71,11 +71,11 @@ class ClusterForm extends React.Component {
     //console.log(this.props.clusterConfig.editMode)
     const { match, dispatch, clusterConfig } = this.props;
     if (clusterConfig?.editValue) {
+
       this.setState({
         monitored: clusterConfig?.editValue.hasOwnProperty("monitored")
           ? clusterConfig?.editValue?.monitored
           : false,
-        collectMode: clusterConfig?.editValue?.metric_collection_mode || "agentless"
       });
     }
 
@@ -100,9 +100,14 @@ class ClusterForm extends React.Component {
             isManual = true;
           }
         }
+        let collectMode = editValue?.metric_collection_mode  || 'agentless'
+        if (typeof editValue?.metric_collection_mode === 'undefined' && editValue?.monitor_configs?.node_stats?.enabled === false && editValue?.monitor_configs?.index_stats?.enabled === false) {
+          collectMode = 'agent'
+        }
         this.setState({
           needAuth,
           isManual,
+          collectMode
         });
       }
     });
@@ -271,6 +276,7 @@ class ClusterForm extends React.Component {
           if (!values) {
             return;
           }
+          debugger
           let newVals = {
             name: values.name,
             hosts: values.hosts,

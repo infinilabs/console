@@ -642,40 +642,55 @@ func (engine *Engine) CheckBucketCondition(rule *alerting.Rule, targetMetricData
 	conditionResult := &alerting.ConditionResult{
 		QueryResult: queryResult,
 	}
-	// remove first and last time bucket
-	for i, targetData := range targetMetricData {
-		for k, v := range targetData.Data {
-			if len(v) > 0 {
-				v = v[1:]
-			}
-			if len(v) > 0 {
-				v = v[0 : len(v)-1]
-			}
-			targetMetricData[i].Data[k] = v
-		}
-	}
 	//transform targetMetricData
 	var (
-		times   = map[string][]int64{}
+		times   = map[int64]struct{}{}
 		buckets = map[string]map[int64]int{}
+		maxTime int64
+		minTime = time.Now().UnixMilli()
 	)
 	for _, targetData := range targetMetricData {
 		for _, v := range targetData.Data {
 			for _, item := range v {
 				if tv, ok := item.Timestamp.(float64); ok {
 					timestamp := int64(tv)
+					if timestamp < minTime {
+						minTime = timestamp
+					}
+					if timestamp > maxTime {
+						maxTime = timestamp
+					}
+					if _, ok = times[timestamp]; !ok {
+						times[timestamp] = struct{}{}
+					}
 					bucketKey := strings.Join(targetData.GroupValues, "*")
 					if _, ok = buckets[bucketKey]; !ok {
 						buckets[bucketKey] = map[int64]int{}
-						times[bucketKey] = []int64{}
 					}
-					times[bucketKey] = append(times[bucketKey], timestamp)
 					buckets[bucketKey][timestamp] = item.DocCount
 				} else {
 					log.Warnf("invalid timestamp type: %T", item.Timestamp)
 				}
 			}
 		}
+	}
+	var timesArr []int64
+	for t := range times {
+		timesArr = append(timesArr, t)
+	}
+	sort.Slice(timesArr, func(i, j int) bool {
+		return timesArr[i] < timesArr[j] // Ascending order
+	})
+
+	// Remove the first bucket if its timestamp equals minTime, and
+	// the last bucket if its timestamp equals maxTime
+	if len(timesArr) > 0 && timesArr[0] == minTime {
+		// Remove first bucket if timestamp matches minTime
+		timesArr = timesArr[1:]
+	}
+	if len(timesArr) > 0 && timesArr[len(timesArr)-1] == maxTime {
+		// Remove last bucket if timestamp matches maxTime
+		timesArr = timesArr[:len(timesArr)-1]
 	}
 
 	//check bucket diff
@@ -685,10 +700,6 @@ func (engine *Engine) CheckBucketCondition(rule *alerting.Rule, targetMetricData
 		if _, ok := diffResult[grps]; !ok {
 			diffResult[grps] = map[int64]BucketDiffState{}
 		}
-		timesArr := times[grps]
-		sort.Slice(times[grps], func(i, j int) bool {
-			return timesArr[i] < timesArr[j] // Ascending order
-		})
 		for i, t := range timesArr {
 			if v, ok := bk[t]; !ok {
 				if hasPre {
@@ -716,8 +727,8 @@ func (engine *Engine) CheckBucketCondition(rule *alerting.Rule, targetMetricData
 		}
 	}
 
-	sort.Slice(rule.Conditions.Items, func(i, j int) bool {
-		return alerting.PriorityWeights[rule.Conditions.Items[i].Priority] > alerting.PriorityWeights[rule.Conditions.Items[j].Priority]
+	sort.Slice(rule.BucketConditions.Items, func(i, j int) bool {
+		return alerting.PriorityWeights[rule.BucketConditions.Items[i].Priority] > alerting.PriorityWeights[rule.BucketConditions.Items[j].Priority]
 	})
 
 	for grps, states := range diffResult {

@@ -27,6 +27,7 @@ import { MANUAL_VALUE } from "./steps";
 import SearchEngines from "./components/SearchEngines";
 import Providers from "./components/Providers";
 import TrimSpaceInput from "@/components/TrimSpaceInput";
+import CollectMode from "./CollectMode";
 
 const InputGroup = Input.Group;
 @Form.create()
@@ -51,7 +52,7 @@ class ClusterForm extends React.Component {
 
   validateFieldNames = [
     "name",
-    "host",
+    "hosts",
     "isTLS",
     "credential_id",
     "username",
@@ -59,7 +60,7 @@ class ClusterForm extends React.Component {
   ];
   agentValidateFieldNames = [
     "name",
-    "host",
+    "hosts",
     "isTLS",
     "agent_credential_id",
     "agent_username",
@@ -70,6 +71,7 @@ class ClusterForm extends React.Component {
     //console.log(this.props.clusterConfig.editMode)
     const { match, dispatch, clusterConfig } = this.props;
     if (clusterConfig?.editValue) {
+
       this.setState({
         monitored: clusterConfig?.editValue.hasOwnProperty("monitored")
           ? clusterConfig?.editValue?.monitored
@@ -98,9 +100,14 @@ class ClusterForm extends React.Component {
             isManual = true;
           }
         }
+        let collectMode = editValue?.metric_collection_mode  || 'agentless'
+        if (typeof editValue?.metric_collection_mode === 'undefined' && editValue?.monitor_configs?.node_stats?.enabled === false && editValue?.monitor_configs?.index_stats?.enabled === false) {
+          collectMode = 'agent'
+        }
         this.setState({
           needAuth,
           isManual,
+          collectMode
         });
       }
     });
@@ -154,6 +161,7 @@ class ClusterForm extends React.Component {
       }
       const monitor_configs_new = formatConfigsValues(values.monitor_configs);
       const metadata_configs_new = formatConfigsValues(values.metadata_configs);
+      const isAgentMode = values.metric_collection_mode === "agent";
 
       let newVals = {
         name: values.name,
@@ -169,13 +177,14 @@ class ClusterForm extends React.Component {
         },
 
         agent_credential_id:
-          values.agent_credential_id !== MANUAL_VALUE
+          values.agent_credential_id !== MANUAL_VALUE && isAgentMode
             ? values.agent_credential_id
-            : undefined,
-        agent_basic_auth: {
+            : agent_credential_id,
+        agent_basic_auth: isAgentMode ? {
           username: values.agent_username,
           password: values.agent_password,
-        },
+        } : agent_basic_auth,
+        metric_collection_mode: values.metric_collection_mode || 'agentless',
 
         description: values.description,
         enabled: values.enabled,
@@ -267,9 +276,10 @@ class ClusterForm extends React.Component {
           if (!values) {
             return;
           }
+          debugger
           let newVals = {
             name: values.name,
-            host: values.host,
+            hosts: values.hosts,
 
             schema: values.isTLS === true ? "https" : "http",
           };
@@ -419,6 +429,15 @@ class ClusterForm extends React.Component {
               </Form.Item>
               <Form.Item
                 label={formatMessage({
+                  id: "cluster.manage.table.column.description",
+                })}
+              >
+                {getFieldDecorator("description", {
+                  initialValue: editValue.description,
+                })(<Input.TextArea placeholder="Cluster Descirption" />)}
+              </Form.Item>
+              <Form.Item
+                label={formatMessage({
                   id: "cluster.manage.label.distribution",
                 })}
               >
@@ -508,35 +527,12 @@ class ClusterForm extends React.Component {
                 tryConnect={this.tryConnect}
                 credentialRequired={this.state.credentialRequired}
               />
-              <AgentCredentialForm
-                btnLoading={this.state.btnLoadingAgent}
-                needAuth={this.state.needAuth}
-                form={this.props.form}
-                initialValue={{
-                  ...editValue,
-                  username: editValue.agent_basic_auth?.username,
-                  password: editValue.agent_basic_auth?.password,
-                }}
-                isManual={this.state.isManual}
-                isEdit={true}
-                tryConnect={this.tryConnect}
-                credentialRequired={this.state.agentCredentialRequired}
-              />
 
               {/* <Form.Item label="排序权重">
           {getFieldDecorator('order', {
             initialValue: editValue.order || 0,
           })(<InputNumber />)}
         </Form.Item> */}
-              <Form.Item
-                label={formatMessage({
-                  id: "cluster.manage.table.column.description",
-                })}
-              >
-                {getFieldDecorator("description", {
-                  initialValue: editValue.description,
-                })(<Input.TextArea placeholder="Cluster Descirption" />)}
-              </Form.Item>
               {/* <Form.Item label="是否启用">
           {getFieldDecorator('enabled', {
             valuePropName: 'checked',
@@ -581,10 +577,36 @@ class ClusterForm extends React.Component {
                   />
                 )}
               </Form.Item>
+              <CollectMode
+                form={this.props.form}
+                editValue={editValue}
+                onChange={(mode) => {
+                  this.setState({ collectMode: mode })
+                }}
+              />
+              {
+                this.state.collectMode === 'agent' && (
+                  <AgentCredentialForm
+                    btnLoading={this.state.btnLoadingAgent}
+                    needAuth={this.state.needAuth}
+                    form={this.props.form}
+                    initialValue={{
+                      ...editValue,
+                      username: editValue.agent_basic_auth?.username,
+                      password: editValue.agent_basic_auth?.password,
+                    }}
+                    isManual={this.state.isManual}
+                    isEdit={true}
+                    tryConnect={this.tryConnect}
+                    credentialRequired={this.state.agentCredentialRequired}
+                  />
+                )
+              }
               <MonitorConfigsForm
                 form={this.props.form}
                 editValue={editValue}
                 visible={this.state.monitored}
+                collectMode={this.state.collectMode}
               />
               <MetadataConfigsForm
                 form={this.props.form}

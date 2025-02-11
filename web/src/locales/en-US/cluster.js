@@ -35,6 +35,7 @@ export default {
   "cluster.manage.table.column.location": "Location",
   "cluster.manage.monitored.on": "ON",
   "cluster.manage.monitored.off": "OFF",
+  "cluster.manage.metric_collection_mode": "Collect Mode",
   "cluster.manage.monitor_configs.cluster_health": "Cluster health",
   "cluster.manage.monitor_configs.cluster_stats": "Cluster stats",
   "cluster.manage.monitor_configs.node_stats": "Node stats",

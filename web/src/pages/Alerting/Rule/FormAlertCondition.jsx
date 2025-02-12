@@ -347,7 +347,7 @@ const BucketsDiff = (props) => {
                       }
                       setConditionItems(newItems)
                   }}>
-                    <Option value={'size'}>{formatMessage({id: `alert.rule.form.label.docs_count`})}</Option>
+                    <Option value={'size'}>{formatMessage({id: `alert.rule.form.label.size`})}</Option>
                     <Option value={'content'}>{formatMessage({id: `alert.rule.form.label.content`})}</Option>
                   </Select>
                 )}

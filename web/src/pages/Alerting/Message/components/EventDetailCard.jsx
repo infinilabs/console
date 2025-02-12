@@ -8,6 +8,9 @@ import EventMessageStatus from "./EventMessageStatus";
 export default ({msgItem})=>{
   const labelSpan = 6;
   const vSpan = 18;
+
+  const isBucketDiff = !!(msgItem && msgItem.bucket_conditions)
+
   return (
     <Card size={"small"} title={formatMessage({ id: "alert.message.detail.title.event_detail" })}>
       <div style={{lineHeight:"2em"}} >
@@ -46,6 +49,18 @@ export default ({msgItem})=>{
           <Col span={labelSpan}>{formatMessage({ id: "alert.message.table.duration" })}</Col>
           <Col span={vSpan}>{moment.duration(msgItem?.duration).humanize()}</Col>
         </Row>
+        <Row>
+          <Col span={labelSpan}>{formatMessage({ id: "alert.message.detail.condition.type" })}</Col>
+          <Col span={vSpan}>{isBucketDiff ? formatMessage({id: `alert.rule.form.label.buckets_diff`}) : formatMessage({id: `alert.rule.form.label.metrics_value`})}</Col>
+        </Row>
+        {
+          isBucketDiff && msgItem?.bucket_diff_type ? (
+            <Row>
+              <Col span={labelSpan}>{formatMessage({ id: "alert.message.detail.bucket_diff_type" })}</Col>
+              <Col span={vSpan}>{formatMessage({id: `alert.rule.form.label.${msgItem.bucket_diff_type}`}) }</Col>
+            </Row>
+          ) : null
+        }
         <Row>
           <Col span={labelSpan}>{formatMessage({ id: "alert.message.detail.condition" })}</Col>
           <Col span={vSpan}>{msgItem?.hit_condition}</Col>

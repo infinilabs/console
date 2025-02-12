@@ -12,7 +12,7 @@ title: "版本历史"
 ### Breaking changes
 
 ### Features
-
+- 告警功能支持根据桶之间文档数差值和内容差异告警 (#119)
 ### Bug fix
 
 ### Improvements

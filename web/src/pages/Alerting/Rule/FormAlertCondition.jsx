@@ -440,96 +440,39 @@ const BucketsDiff = (props) => {
                   </Select>
                 )}
               </Form.Item>
-              {
-                conditionItem.type === 'size' ? (
-                  <>
-                    <Form.Item>
-                      {getFieldDecorator(
-                        `alert_objects[${alertObjectIndex}][bucket_conditions][items][${i}][operator]`,
-                        {
-                          initialValue: conditionItem.operator,
-                          rules: [
-                            {
-                              required: true,
-                              message: "Please select operator!",
-                            },
-                          ],
-                        }
-                      )(
-                        <Select
-                          allowClear
-                          showSearch
-                          style={{ width: 80 }}
-                          placeholder={"equals"}
-                          onChange={(value) => {
-                            props.onPreviewChartChange();
-                            const newItems = cloneDeep(conditionItems)
-                            newItems[i].operator = value
-                            setConditionItems(newItems)
-                          }}
-                        >
-                          { operators.map((item) => <Option key={item} value={item}>{item}</Option>)}
-                        </Select>
-                      )}
-                    </Form.Item>
+              <>
+                  <Form.Item>
+                    {getFieldDecorator(
+                      `alert_objects[${alertObjectIndex}][bucket_conditions][items][${i}][operator]`,
+                      {
+                        initialValue: conditionItem.operator,
+                        rules: [
+                          {
+                            required: true,
+                            message: "Please select operator!",
+                          },
+                        ],
+                      }
+                    )(
+                      <Select
+                        allowClear
+                        showSearch
+                        style={{ width: 80 }}
+                        placeholder={"equals"}
+                        onChange={(value) => {
+                          props.onPreviewChartChange();
+                          const newItems = cloneDeep(conditionItems)
+                          newItems[i].operator = value
+                          setConditionItems(newItems)
+                        }}
+                      >
+                        { operators.map((item) => <Option key={item} value={item}>{item}</Option>)}
+                      </Select>
+                    )}
+                  </Form.Item>
 
-                    {conditionItem.operator === "range" ? (
-                      <>
-                        <Form.Item>
-                          {getFieldDecorator(
-                            `alert_objects[${alertObjectIndex}][bucket_conditions][items][${i}][values][0]`,
-                            {
-                              initialValue: conditionItem.values?.[0],
-                              rules: [
-                                {
-                                  required: true,
-                                  message: "Please input min value!",
-                                },
-                              ],
-                            }
-                          )(
-                            <Input
-                              style={{ width: 80 }}
-                              placeholder="min value"
-                              onChange={(e) => {
-                                props.onPreviewChartChange();
-                              }}
-                            />
-                          )}
-                        </Form.Item>
-                        <span
-                          style={{
-                            display: "inline-block",
-                            lineHeight: "40px",
-                            textAlign: "center",
-                          }}
-                        >
-                          <Icon type="minus" />
-                        </span>
-                        <Form.Item>
-                          {getFieldDecorator(
-                            `alert_objects[${alertObjectIndex}][bucket_conditions][items][${i}][values][1]`,
-                            {
-                              initialValue: conditionItem.values?.[1],
-                              rules: [
-                                {
-                                  required: true,
-                                  message: "Please input max value!",
-                                },
-                              ],
-                            }
-                          )(
-                            <Input
-                              style={{ width: 80 }}
-                              placeholder="max value"
-                              onChange={(e) => {
-                                props.onPreviewChartChange();
-                              }}
-                            />
-                          )}
-                        </Form.Item>
-                      </>
-                    ) : (
+                  {conditionItem.operator === "range" ? (
+                    <>
                       <Form.Item>
                         {getFieldDecorator(
                           `alert_objects[${alertObjectIndex}][bucket_conditions][items][${i}][values][0]`,
@@ -538,39 +481,77 @@ const BucketsDiff = (props) => {
                             rules: [
                               {
                                 required: true,
-                                message: "Please input value!",
+                                message: "Please input min value!",
                               },
                             ],
                           }
                         )(
                           <Input
                             style={{ width: 80 }}
-                            placeholder="value"
+                            placeholder="min value"
                             onChange={(e) => {
                               props.onPreviewChartChange();
                             }}
                           />
                         )}
                       </Form.Item>
-                    )}
-                  </>
-                ) : (
-                  <Form.Item>
-                    <Input
-                      style={{
-                        width: 80,
-                        textAlign: "center",
-                        pointerEvents: "none",
-                        backgroundColor: "#fafafa",
-                        color: "rgba(0, 0, 0, 0.65)",
-                      }}
-                      defaultValue={formatMessage({ id: "alert.rule.form.label.content.changed"})}
-                      disabled
-                    />
-                  </Form.Item>
-                )
-              }
-              
+                      <span
+                        style={{
+                          display: "inline-block",
+                          lineHeight: "40px",
+                          textAlign: "center",
+                        }}
+                      >
+                        <Icon type="minus" />
+                      </span>
+                      <Form.Item>
+                        {getFieldDecorator(
+                          `alert_objects[${alertObjectIndex}][bucket_conditions][items][${i}][values][1]`,
+                          {
+                            initialValue: conditionItem.values?.[1],
+                            rules: [
+                              {
+                                required: true,
+                                message: "Please input max value!",
+                              },
+                            ],
+                          }
+                        )(
+                          <Input
+                            style={{ width: 80 }}
+                            placeholder="max value"
+                            onChange={(e) => {
+                              props.onPreviewChartChange();
+                            }}
+                          />
+                        )}
+                      </Form.Item>
+                    </>
+                  ) : (
+                    <Form.Item>
+                      {getFieldDecorator(
+                        `alert_objects[${alertObjectIndex}][bucket_conditions][items][${i}][values][0]`,
+                        {
+                          initialValue: conditionItem.values?.[0],
+                          rules: [
+                            {
+                              required: true,
+                              message: "Please input value!",
+                            },
+                          ],
+                        }
+                      )(
+                        <Input
+                          style={{ width: 80 }}
+                          placeholder="value"
+                          onChange={(e) => {
+                            props.onPreviewChartChange();
+                          }}
+                        />
+                      )}
+                    </Form.Item>
+                  )}
+                </>
               <Form.Item>
                 <Input
                   style={{

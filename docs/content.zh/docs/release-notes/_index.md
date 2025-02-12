@@ -17,6 +17,7 @@ title: "版本历史"
 
 ### Improvements
 
+- 告警规则新增分桶对比
 - 在注册 Agent 中新增 Agent 凭据设置
 - 在集群编辑中新增采集模式
 

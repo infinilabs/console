@@ -17,6 +17,8 @@ Information about release notes of INFINI Console is provided here.
 
 ### Improvements
 
+- add Buckets Diff to alerting rule
+
 ## 1.28.1 (2025-01-24)
 
 - add credential settings for agent in enrolling agent

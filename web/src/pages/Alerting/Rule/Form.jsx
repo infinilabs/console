@@ -231,16 +231,20 @@ const RuleForm = (props) => {
     delete values.alert_objects;
 
     alert_objects = alert_objects.map((alert_object) => {
-      alert_object.conditions["operator"] = "any";
-      alert_object.conditions.items = alert_object.conditions.items.map(
-        (item) => {
-          return {
-            ...item,
-            minimum_period_match: parseInt(item.minimum_period_match),
-          };
-        }
-      );
-
+      if (alert_object.conditions) {
+        alert_object.conditions["operator"] = "any";
+        alert_object.conditions.items = alert_object.conditions.items.map(
+          (item) => {
+            return {
+              ...item,
+              minimum_period_match: parseInt(item.minimum_period_match),
+            };
+          }
+        );
+      }
+      if (alert_object.bucket_conditions?.items) {
+        alert_object.bucket_conditions.items = alert_object.bucket_conditions.items.filter((item) => !!item.type);
+      }
       return { ...values, ...alert_object };
     });
     return alert_objects;

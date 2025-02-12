@@ -81,10 +81,15 @@ type QueryResult struct {
 
 type MetricData struct {
 	GroupValues []string                    `json:"group_values"`
-	Data        map[string][]TimeMetricData `json:"data"`
+	Data        map[string][]MetricDataItem `json:"data"`
 }
 
-type TimeMetricData []interface{}
+type MetricDataItem struct {
+	Timestamp interface{} `json:"timestamp,omitempty"`
+	Value     interface{} `json:"value"`
+	Groups    []string    `json:"groups,omitempty"`
+	DocCount  int         `json:"doc_count,omitempty"`
+}
 
 type AlertMetricItem struct {
 	common.MetricItem

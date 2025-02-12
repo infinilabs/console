@@ -329,9 +329,16 @@ func getQueryTimeRange(rule *alerting.Rule, filterParam *alerting.FilterParam) (
 		} else {
 			return nil, fmt.Errorf("period interval: %s is too small", rule.Metrics.BucketSize)
 		}
-		bucketCount := rule.Conditions.GetMinimumPeriodMatch() + 1
+		var bucketCount int
+		if rule.BucketConditions != nil {
+			bucketCount = rule.BucketConditions.GetMaxBucketCount()
+			//for removing first and last time bucket
+			bucketCount += 2
+		} else {
+			bucketCount = rule.Conditions.GetMinimumPeriodMatch() + 1
+		}
 		if bucketCount <= 0 {
-			bucketCount = 1
+			bucketCount = 2
 		}
 		duration, err := time.ParseDuration(fmt.Sprintf("%d%s", value*bucketCount, units))
 		if err != nil {
@@ -484,7 +491,7 @@ func (engine *Engine) GetTargetMetricData(rule *alerting.Rule, isFilterNaN bool,
 		} else {
 			targetData = alerting.MetricData{
 				GroupValues: md.GroupValues,
-				Data:        map[string][]alerting.TimeMetricData{},
+				Data:        map[string][]alerting.MetricDataItem{},
 			}
 			expression, err := govaluate.NewEvaluableExpression(rule.Metrics.Formula)
 			if err != nil {
@@ -508,14 +515,14 @@ func (engine *Engine) GetTargetMetricData(rule *alerting.Rule, isFilterNaN bool,
 					}
 
 					//drop nil value bucket
-					if v == nil || len(v[i]) < 2 {
+					if v == nil {
 						continue DataLoop
 					}
-					if _, ok := v[i][1].(float64); !ok {
+					if _, ok := v[i].Value.(float64); !ok {
 						continue DataLoop
 					}
-					parameters[k] = v[i][1]
-					timestamp = v[i][0]
+					parameters[k] = v[i].Value
+					timestamp = v[i].Timestamp
 				}
 				if len(parameters) == 0 {
 					continue
@@ -528,13 +535,13 @@ func (engine *Engine) GetTargetMetricData(rule *alerting.Rule, isFilterNaN bool,
 				if r, ok := result.(float64); ok {
 					if math.IsNaN(r) || math.IsInf(r, 0) {
 						if !isFilterNaN {
-							targetData.Data["result"] = append(targetData.Data["result"], []interface{}{timestamp, math.NaN()})
+							targetData.Data["result"] = append(targetData.Data["result"], alerting.MetricDataItem{Timestamp: timestamp, Value: math.NaN()})
 						}
 						continue
 					}
 				}
 
-				targetData.Data["result"] = append(targetData.Data["result"], []interface{}{timestamp, result})
+				targetData.Data["result"] = append(targetData.Data["result"], alerting.MetricDataItem{Timestamp: timestamp, Value: result})
 			}
 		}
 		targetMetricData = append(targetMetricData, targetData)
@@ -553,6 +560,9 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule) (*alerting.ConditionRe
 	}
 	if err != nil {
 		return conditionResult, err
+	}
+	if rule.BucketConditions != nil {
+		return engine.CheckBucketCondition(rule, targetMetricData, queryResult)
 	}
 	for idx, targetData := range targetMetricData {
 		if idx == 0 {
@@ -579,16 +589,16 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule) (*alerting.ConditionRe
 			triggerCount := 0
 			for i := 0; i < dataLength; i++ {
 				//clear nil value
-				if targetData.Data[dataKey][i][1] == nil {
+				if targetData.Data[dataKey][i].Value == nil {
 					continue
 				}
-				if r, ok := targetData.Data[dataKey][i][1].(float64); ok {
+				if r, ok := targetData.Data[dataKey][i].Value.(float64); ok {
 					if math.IsNaN(r) {
 						continue
 					}
 				}
 				evaluateResult, err := expression.Evaluate(map[string]interface{}{
-					"result": targetData.Data[dataKey][i][1],
+					"result": targetData.Data[dataKey][i].Value,
 				})
 				if err != nil {
 					return conditionResult, fmt.Errorf("evaluate rule [%s] error: %w", rule.ID, err)
@@ -603,12 +613,12 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule) (*alerting.ConditionRe
 					resultItem := alerting.ConditionResultItem{
 						GroupValues:    targetData.GroupValues,
 						ConditionItem:  &cond,
-						ResultValue:    targetData.Data[dataKey][i][1],
-						IssueTimestamp: targetData.Data[dataKey][i][0],
+						ResultValue:    targetData.Data[dataKey][i].Value,
+						IssueTimestamp: targetData.Data[dataKey][i].Timestamp,
 						RelationValues: map[string]interface{}{},
 					}
 					for _, metric := range rule.Metrics.Items {
-						resultItem.RelationValues[metric.Name] = queryResult.MetricData[idx].Data[metric.Name][i][1]
+						resultItem.RelationValues[metric.Name] = queryResult.MetricData[idx].Data[metric.Name][i].Value
 					}
 					resultItems = append(resultItems, resultItem)
 					break LoopCondition
@@ -616,6 +626,155 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule) (*alerting.ConditionRe
 			}
 
 		}
+	}
+	conditionResult.QueryResult.MetricData = targetMetricData
+	conditionResult.ResultItems = resultItems
+	return conditionResult, nil
+}
+
+type BucketDiffState struct {
+	ContentChangeState int
+	DocCount           int
+}
+
+func (engine *Engine) CheckBucketCondition(rule *alerting.Rule, targetMetricData []alerting.MetricData, queryResult *alerting.QueryResult) (*alerting.ConditionResult, error) {
+	var resultItems []alerting.ConditionResultItem
+	conditionResult := &alerting.ConditionResult{
+		QueryResult: queryResult,
+	}
+	//transform targetMetricData
+	var (
+		times   = map[int64]struct{}{}
+		buckets = map[string]map[int64]int{}
+		maxTime int64
+		minTime = time.Now().UnixMilli()
+	)
+	for _, targetData := range targetMetricData {
+		for _, v := range targetData.Data {
+			for _, item := range v {
+				if tv, ok := item.Timestamp.(float64); ok {
+					timestamp := int64(tv)
+					if timestamp < minTime {
+						minTime = timestamp
+					}
+					if timestamp > maxTime {
+						maxTime = timestamp
+					}
+					if _, ok = times[timestamp]; !ok {
+						times[timestamp] = struct{}{}
+					}
+					bucketKey := strings.Join(targetData.GroupValues, "*")
+					if _, ok = buckets[bucketKey]; !ok {
+						buckets[bucketKey] = map[int64]int{}
+					}
+					buckets[bucketKey][timestamp] = item.DocCount
+				} else {
+					log.Warnf("invalid timestamp type: %T", item.Timestamp)
+				}
+			}
+		}
+	}
+	var timesArr []int64
+	for t := range times {
+		timesArr = append(timesArr, t)
+	}
+	sort.Slice(timesArr, func(i, j int) bool {
+		return timesArr[i] < timesArr[j] // Ascending order
+	})
+
+	// Remove the first bucket if its timestamp equals minTime, and
+	// the last bucket if its timestamp equals maxTime
+	if len(timesArr) > 0 && timesArr[0] == minTime {
+		// Remove first bucket if timestamp matches minTime
+		timesArr = timesArr[1:]
+	}
+	if len(timesArr) > 0 && timesArr[len(timesArr)-1] == maxTime {
+		// Remove last bucket if timestamp matches maxTime
+		timesArr = timesArr[:len(timesArr)-1]
+	}
+
+	//check bucket diff
+	diffResult := map[string]map[int64]BucketDiffState{}
+	for grps, bk := range buckets {
+		hasPre := false
+		if _, ok := diffResult[grps]; !ok {
+			diffResult[grps] = map[int64]BucketDiffState{}
+		}
+		for i, t := range timesArr {
+			if v, ok := bk[t]; !ok {
+				if hasPre {
+					diffResult[grps][t] = BucketDiffState{
+						ContentChangeState: -1,
+					}
+				}
+				// reset hasPre to false
+				hasPre = false
+			} else {
+				if !hasPre {
+					if i > 0 {
+						diffResult[grps][t] = BucketDiffState{
+							ContentChangeState: 1,
+						}
+					}
+				} else {
+					diffResult[grps][t] = BucketDiffState{
+						ContentChangeState: 0,
+						DocCount:           v - bk[timesArr[i-1]],
+					}
+				}
+				hasPre = true
+			}
+		}
+	}
+
+	sort.Slice(rule.BucketConditions.Items, func(i, j int) bool {
+		return alerting.PriorityWeights[rule.BucketConditions.Items[i].Priority] > alerting.PriorityWeights[rule.BucketConditions.Items[j].Priority]
+	})
+
+	for grps, states := range diffResult {
+	LoopCondition:
+		for _, cond := range rule.BucketConditions.Items {
+			conditionExpression, err := cond.GenerateConditionExpression()
+			if err != nil {
+				return conditionResult, err
+			}
+			expression, err := govaluate.NewEvaluableExpression(conditionExpression)
+			if err != nil {
+				return conditionResult, err
+			}
+			triggerCount := 0
+			for t, state := range states {
+				resultValue := state.DocCount
+				if cond.Type == alerting.BucketDiffTypeContent {
+					resultValue = state.ContentChangeState
+				}
+				evaluateResult, err := expression.Evaluate(map[string]interface{}{
+					"result": resultValue,
+				})
+				if err != nil {
+					return conditionResult, fmt.Errorf("evaluate rule [%s] error: %w", rule.ID, err)
+				}
+				if evaluateResult == true {
+					triggerCount += 1
+				} else {
+					triggerCount = 0
+				}
+				if triggerCount >= cond.MinimumPeriodMatch {
+					groupValues := strings.Split(grps, "*")
+					log.Debugf("triggered condition  %v, groups: %v\n", cond, groupValues)
+					resultItem := alerting.ConditionResultItem{
+						GroupValues:    groupValues,
+						ConditionItem:  &cond,
+						ResultValue:    resultValue,
+						IssueTimestamp: t,
+						RelationValues: map[string]interface{}{},
+					}
+					resultItems = append(resultItems, resultItem)
+					break LoopCondition
+				}
+			}
+		}
+
 	}
 	conditionResult.QueryResult.MetricData = targetMetricData
 	conditionResult.ResultItems = resultItems
@@ -755,15 +914,9 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 	})
 
 	alertItem.Priority = priority
-	title, message := rule.GetNotificationTitleAndMessage()
-	err = attachTitleMessageToCtx(title, message, paramsCtx)
-	if err != nil {
-		return err
-	}
-	alertItem.Message = paramsCtx[alerting2.ParamMessage].(string)
-	alertItem.Title = paramsCtx[alerting2.ParamTitle].(string)
+	var newAlertMessage *alerting.AlertMessage
 	if alertMessage == nil || alertMessage.Status == alerting.MessageStateRecovered {
-		msg := &alerting.AlertMessage{
+		newAlertMessage = &alerting.AlertMessage{
 			RuleID:       rule.ID,
 			Created:      alertItem.Created,
 			Updated:      time.Now(),
@@ -772,13 +925,25 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			ResourceName: rule.Resource.Name,
 			Status:       alerting.MessageStateAlerting,
 			Priority:     priority,
-			Title:        alertItem.Title,
-			Message:      alertItem.Message,
 			Tags:         rule.Tags,
 			Category:     rule.Category,
 		}
-		alertMessage = msg
-		err = saveAlertMessage(msg)
+		paramsCtx[alerting2.ParamEventID] = newAlertMessage.ID
+	} else {
+		paramsCtx[alerting2.ParamEventID] = alertMessage.ID
+	}
+	title, message := rule.GetNotificationTitleAndMessage()
+	err = attachTitleMessageToCtx(title, message, paramsCtx)
+	if err != nil {
+		return err
+	}
+	alertItem.Message = paramsCtx[alerting2.ParamMessage].(string)
+	alertItem.Title = paramsCtx[alerting2.ParamTitle].(string)
+	if newAlertMessage != nil {
+		alertMessage = newAlertMessage
+		alertMessage.Title = alertItem.Title
+		alertMessage.Message = alertItem.Message
+		err = saveAlertMessage(newAlertMessage)
 		if err != nil {
 			return fmt.Errorf("save alert message error: %w", err)
 		}
@@ -813,10 +978,10 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 	log.Debugf("check condition result of rule %s is %v", conditionResults, rule.ID)
 
 	// if alert message status equals ignored , then skip sending message to channel
-	if alertMessage != nil && alertMessage.Status == alerting.MessageStateIgnored {
+	if alertMessage.Status == alerting.MessageStateIgnored {
 		return nil
 	}
-	if alertMessage != nil && paramsCtx != nil {
+	if paramsCtx != nil {
 		paramsCtx[alerting2.ParamEventID] = alertMessage.ID
 	}
 	// if channel is not enabled return
@@ -1135,12 +1300,16 @@ func collectMetricData(agg interface{}, groupValues string, metricData *[]alerti
 		if timeBks, ok := aggM["time_buckets"].(map[string]interface{}); ok {
 			if bks, ok := timeBks["buckets"].([]interface{}); ok {
 				md := alerting.MetricData{
-					Data:        map[string][]alerting.TimeMetricData{},
+					Data:        map[string][]alerting.MetricDataItem{},
 					GroupValues: strings.Split(groupValues, "*"),
 				}
 				for _, bk := range bks {
 					if bkM, ok := bk.(map[string]interface{}); ok {
 
+						var docCount int
+						if v, ok := bkM["doc_count"]; ok {
+							docCount = int(v.(float64))
+						}
 						for k, v := range bkM {
 							if k == "key" || k == "key_as_string" || k == "doc_count" {
 								continue
@@ -1150,20 +1319,20 @@ func collectMetricData(agg interface{}, groupValues string, metricData *[]alerti
 							}
 							if vm, ok := v.(map[string]interface{}); ok {
 								if metricVal, ok := vm["value"]; ok {
-									md.Data[k] = append(md.Data[k], alerting.TimeMetricData{bkM["key"], metricVal})
+									md.Data[k] = append(md.Data[k], alerting.MetricDataItem{Timestamp: bkM["key"], Value: metricVal, DocCount: docCount})
 								} else {
 									//percentiles agg type
 									switch vm["values"].(type) {
 									case []interface{}:
 										for _, val := range vm["values"].([]interface{}) {
 											if valM, ok := val.(map[string]interface{}); ok {
-												md.Data[k] = append(md.Data[k], alerting.TimeMetricData{bkM["key"], valM["value"]})
+												md.Data[k] = append(md.Data[k], alerting.MetricDataItem{Timestamp: bkM["key"], Value: valM["value"], DocCount: docCount})
 											}
 											break
 										}
 									case map[string]interface{}:
 										for _, val := range vm["values"].(map[string]interface{}) {
-											md.Data[k] = append(md.Data[k], alerting.TimeMetricData{bkM["key"], val})
+											md.Data[k] = append(md.Data[k], alerting.MetricDataItem{Timestamp: bkM["key"], Value: val, DocCount: docCount})
 											break
 										}
 									}

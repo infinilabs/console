@@ -404,7 +404,10 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 		return
 	}
 	metricExpression, _ := rule.Metrics.GenerateExpression()
-	var hitCondition string
+	var (
+		hitCondition   string
+		bucketDiffType string
+	)
 	conditions := rule.Conditions
 	if rule.BucketConditions != nil {
 		conditions = *rule.BucketConditions
@@ -413,6 +416,9 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 		expression, _ := cond.GenerateConditionExpression()
 		if cond.Priority == message.Priority {
 			hitCondition = strings.ReplaceAll(expression, "result", "")
+			if rule.BucketConditions != nil {
+				bucketDiffType = string(cond.Type)
+			}
 		}
 		conditions.Items[i].Expression = strings.ReplaceAll(expression, "result", metricExpression)
 	}
@@ -437,6 +443,7 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 		"resource_objects":  rule.Resource.Objects,
 		"conditions":        rule.Conditions,
 		"bucket_conditions": rule.BucketConditions,
+		"bucket_diff_type":  bucketDiffType,
 		"duration":          duration.Milliseconds(),
 		"ignored_time":      message.IgnoredTime,
 		"ignored_reason":    message.IgnoredReason,

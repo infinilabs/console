@@ -56,9 +56,9 @@ export async function createFiltersFromRangeSelectAction(event: RangeSelectConte
     lt: isDate ? moment(max).toISOString() : max,
   };
 
-  if (isDate) {
-    range.format = 'strict_date_optional_time';
-  }
+  // if (isDate) {
+  //   range.format = 'strict_date_optional_time';
+  // }
 
   return esFilters.mapAndFlattenFilters([esFilters.buildRangeFilter(field, range, indexPattern)]);
 }

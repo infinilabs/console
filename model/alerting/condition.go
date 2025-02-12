@@ -54,6 +54,18 @@ func (cond *Condition) GetMaxBucketCount() int {
 	return bucketCount
 }
 
+// BucketDiffType represents the type of bucket difference
+type BucketDiffType string
+
+// Constants defining possible bucket difference types
+const (
+	// BucketDiffTypeSize indicates the difference in bucket size
+	BucketDiffTypeSize BucketDiffType = "size"
+
+	// BucketDiffTypeContent indicates the difference in bucket content
+	BucketDiffTypeContent BucketDiffType = "content"
+)
+
 type ConditionItem struct {
 	//MetricName             string `json:"metric"`
 	MinimumPeriodMatch int      `json:"minimum_period_match"`
@@ -62,7 +74,7 @@ type ConditionItem struct {
 	Priority           string   `json:"priority"`
 	Expression         string   `json:"expression,omitempty"`
 	//bucket condition type, e.g: size, content
-	Type string `json:"type,omitempty"`
+	Type BucketDiffType `json:"type,omitempty"`
 	// Represents the number of buckets in the bucket condition type.
 	BucketCount int `json:"bucket_count,omitempty"`
 }

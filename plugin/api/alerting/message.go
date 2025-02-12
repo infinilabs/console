@@ -405,12 +405,16 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 	}
 	metricExpression, _ := rule.Metrics.GenerateExpression()
 	var hitCondition string
-	for i, cond := range rule.Conditions.Items {
+	conditions := rule.Conditions
+	if rule.BucketConditions != nil {
+		conditions = *rule.BucketConditions
+	}
+	for i, cond := range conditions.Items {
 		expression, _ := cond.GenerateConditionExpression()
 		if cond.Priority == message.Priority {
 			hitCondition = strings.ReplaceAll(expression, "result", "")
 		}
-		rule.Conditions.Items[i].Expression = strings.ReplaceAll(expression, "result", metricExpression)
+		conditions.Items[i].Expression = strings.ReplaceAll(expression, "result", metricExpression)
 	}
 	var duration time.Duration
 	if message.Status == alerting.MessageStateRecovered {
@@ -419,26 +423,27 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 		duration = time.Now().Sub(message.Created)
 	}
 	detailObj := util.MapStr{
-		"message_id":       message.ID,
-		"rule_id":          message.RuleID,
-		"rule_name":        rule.Name,
-		"rule_enabled":     rule.Enabled,
-		"title":            message.Title,
-		"message":          message.Message,
-		"priority":         message.Priority,
-		"created":          message.Created,
-		"updated":          message.Updated,
-		"resource_name":    rule.Resource.Name,
-		"resource_id":      rule.Resource.ID,
-		"resource_objects": rule.Resource.Objects,
-		"conditions":       rule.Conditions,
-		"duration":         duration.Milliseconds(),
-		"ignored_time":     message.IgnoredTime,
-		"ignored_reason":   message.IgnoredReason,
-		"ignored_user":     message.IgnoredUser,
-		"status":           message.Status,
-		"expression":       rule.Metrics.Expression,
-		"hit_condition":    hitCondition,
+		"message_id":        message.ID,
+		"rule_id":           message.RuleID,
+		"rule_name":         rule.Name,
+		"rule_enabled":      rule.Enabled,
+		"title":             message.Title,
+		"message":           message.Message,
+		"priority":          message.Priority,
+		"created":           message.Created,
+		"updated":           message.Updated,
+		"resource_name":     rule.Resource.Name,
+		"resource_id":       rule.Resource.ID,
+		"resource_objects":  rule.Resource.Objects,
+		"conditions":        rule.Conditions,
+		"bucket_conditions": rule.BucketConditions,
+		"duration":          duration.Milliseconds(),
+		"ignored_time":      message.IgnoredTime,
+		"ignored_reason":    message.IgnoredReason,
+		"ignored_user":      message.IgnoredUser,
+		"status":            message.Status,
+		"expression":        rule.Metrics.Expression,
+		"hit_condition":     hitCondition,
 	}
 	h.WriteJSON(w, detailObj, http.StatusOK)
 }

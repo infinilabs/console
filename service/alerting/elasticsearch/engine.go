@@ -734,66 +734,47 @@ func (engine *Engine) CheckBucketCondition(rule *alerting.Rule, targetMetricData
 	for grps, states := range diffResult {
 	LoopCondition:
 		for _, cond := range rule.BucketConditions.Items {
-			if cond.Type == "size" {
-				conditionExpression, err := cond.GenerateConditionExpression()
+			conditionExpression, err := cond.GenerateConditionExpression()
+			if err != nil {
+				return conditionResult, err
+			}
+			expression, err := govaluate.NewEvaluableExpression(conditionExpression)
+			if err != nil {
+				return conditionResult, err
+			}
+			triggerCount := 0
+			for t, state := range states {
+				resultValue := state.DocCount
+				if cond.Type == alerting.BucketDiffTypeContent {
+					resultValue = state.ContentChangeState
+				}
+				evaluateResult, err := expression.Evaluate(map[string]interface{}{
+					"result": resultValue,
+				})
 				if err != nil {
-					return conditionResult, err
+					return conditionResult, fmt.Errorf("evaluate rule [%s] error: %w", rule.ID, err)
 				}
-				expression, err := govaluate.NewEvaluableExpression(conditionExpression)
-				if err != nil {
-					return conditionResult, err
+				if evaluateResult == true {
+					triggerCount += 1
+				} else {
+					triggerCount = 0
 				}
-				triggerCount := 0
-				for t, state := range states {
-					evaluateResult, err := expression.Evaluate(map[string]interface{}{
-						"result": state.DocCount,
-					})
-					if err != nil {
-						return conditionResult, fmt.Errorf("evaluate rule [%s] error: %w", rule.ID, err)
+				if triggerCount >= cond.MinimumPeriodMatch {
+					groupValues := strings.Split(grps, "*")
+					log.Debugf("triggered condition  %v, groups: %v\n", cond, groupValues)
+					resultItem := alerting.ConditionResultItem{
+						GroupValues:    groupValues,
+						ConditionItem:  &cond,
+						ResultValue:    resultValue,
+						IssueTimestamp: t,
+						RelationValues: map[string]interface{}{},
 					}
-					if evaluateResult == true {
-						triggerCount += 1
-					} else {
-						triggerCount = 0
-					}
-					if triggerCount >= cond.MinimumPeriodMatch {
-						groupValues := strings.Split(grps, "*")
-						log.Debugf("triggered condition  %v, groups: %v\n", cond, groupValues)
-						resultItem := alerting.ConditionResultItem{
-							GroupValues:    groupValues,
-							ConditionItem:  &cond,
-							ResultValue:    state.DocCount,
-							IssueTimestamp: t,
-							RelationValues: map[string]interface{}{},
-						}
-						resultItems = append(resultItems, resultItem)
-						break LoopCondition
-					}
-				}
-			} else if cond.Type == "content" {
-				triggerCount := 0
-				for t, state := range states {
-					if state.ContentChangeState != 0 {
-						triggerCount += 1
-					} else {
-						triggerCount = 0
-					}
-					if triggerCount >= cond.MinimumPeriodMatch {
-						groupValues := strings.Split(grps, "*")
-						log.Debugf("triggered condition  %v, groups: %v\n", cond, groupValues)
-						resultItem := alerting.ConditionResultItem{
-							GroupValues:    groupValues,
-							ConditionItem:  &cond,
-							ResultValue:    state.ContentChangeState,
-							IssueTimestamp: t,
-							RelationValues: map[string]interface{}{},
-						}
-						resultItems = append(resultItems, resultItem)
-						break LoopCondition
-					}
+					resultItems = append(resultItems, resultItem)
+					break LoopCondition
 				}
 			}
 		}
+
 	}
 	conditionResult.QueryResult.MetricData = targetMetricData
 	conditionResult.ResultItems = resultItems

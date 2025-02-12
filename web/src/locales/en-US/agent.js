@@ -6,7 +6,12 @@ export default {
   "agent.instance.associate.labels.select_cluster": "Select Cluster",
   "agent.instance.associate.tips.associate":
     "Please select cluster(s) to enroll !",
+  "agent.instance.associate.set_credential": "Set credential for agent",
+  "agent.instance.associate.set_credential.tips":
+    "This permission will be used for metrics and log collection. It is recommended to use a user with a reasonable permission range.",
   "agent.instance.associate.tips.connected": "Connection succeeded!",
+  "agent.instance.associate.tips.connected.check": "please set a credential for agent",
+  "agent.instance.associate.auth.error": "The following clusters need to set credentials for the agent:",
   "agent.instance.associate.tips.metric":
     "After enroll, the agent will collect metrics for the enrolled cluster",
   "agent.instance.associate.tips.unregister":
@@ -35,4 +40,7 @@ export default {
   "agent.install.setup.copy.success": "Copied to clipboard successfully!",
   "agent.instance.auto_associate.title": "Auto Enroll",
   "agent.instance.install.title": "Install Agent",
+
+  "agent.label.agent_credential": "Agent Credential",
+  "agent.credential.tip": "No credential required",
 };

@@ -21,6 +21,9 @@ Information about release notes of INFINI Console is provided here.
 
 ## 1.28.1 (2025-01-24)
 
+- add credential settings for agent in enrolling agent
+- add collection mode to cluster editing
+
 ### Features
 
 - Support function-format parameters in Insight Data API

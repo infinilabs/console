@@ -1,21 +1,34 @@
 import { useGlobal } from "@/layouts/GlobalContext";
 import request from "@/utils/request";
-import { Form, Input, Switch, Icon, Button, Select } from "antd";
-import { useMemo, useRef, useState } from "react";
+import { Form, Input, Switch, Icon, Button, Alert } from "antd";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, router } from "umi";
 import { formatMessage } from "umi/locale";
 import ClusterSelect from "@/components/ClusterSelect";
+import SetAgentCredential from "./SetAgentCredential";
 
 export default ({ onBatchEnroll, loading }) => {
   const { clusterList = [], clusterStatus } = useGlobal();
-
   const [selectedCluster, setSelectedCluster] = useState([]);
+  const [auths, setAuths] = useState([]);
 
   const onBatchEnrollClick = () => {
-    if (typeof onBatchEnroll === "function") {
+    if (selectedCluster.length === 0) return;
+    const newAuths = [...auths]
+    selectedCluster.forEach((item) => {
+      if (item.credential_id && !item.agent_credential_id) {
+        newAuths.push(item)
+      }
+    })
+    setAuths(newAuths)
+    if (newAuths.length === 0 && typeof onBatchEnroll === "function") {
       onBatchEnroll(selectedCluster.map((item) => item.id));
     }
   };
+
+  useEffect(() => {
+    setAuths([])
+  }, [JSON.stringify(selectedCluster)])
 
   return (
     <div>
@@ -38,6 +51,27 @@ export default ({ onBatchEnroll, loading }) => {
           }}
         />
       </div>
+      <SetAgentCredential selectedCluster={selectedCluster} setSelectedCluster={setSelectedCluster}/>
+      {
+        auths.length > 0 && (
+          <Alert style={{ marginTop: 10 }} type="error" message={(
+            <div>
+              <div>
+                {formatMessage({
+                  id: "agent.instance.associate.auth.error",
+                })}
+              </div>
+              <div>
+                { auths.map((item) => (
+                  <div key={item.id}>
+                    - {item.name}
+                  </div>
+                )) }
+              </div>
+            </div>
+          )}/>
+        )
+      }
       <div style={{ marginTop: 10, textAlign: "right" }}>
         <div style={{ marginBottom: 15, color: "rgba(130,129,136,1)" }}>
           <span>

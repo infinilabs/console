@@ -5,7 +5,11 @@ export default {
   "agent.instance.associate.labels.cluster_version": "版本",
   "agent.instance.associate.labels.select_cluster": "关联到集群",
   "agent.instance.associate.tips.associate": "请选择要关联的集群！",
+  "agent.instance.associate.set_credential": "为代理设置凭据",
+  "agent.instance.associate.set_credential.tips": "此权限将用于度量和日志收集。建议使用具有合理权限范围的用户。",
   "agent.instance.associate.tips.connected": "连接成功！",
+  "agent.instance.associate.tips.connected.check": "请设置凭据",
+  "agent.instance.associate.auth.error": "以下集群需要为 Agent 设置凭据：",
   "agent.instance.associate.tips.metric":
     "关联后 Agent 会对关联的集群进行指标采集操作",
   "agent.instance.associate.tips.unregister":
@@ -33,4 +37,7 @@ export default {
   "agent.install.setup.copy.success": "已成功复制到剪贴板！",
   "agent.instance.auto_associate.title": "自动关联集群",
   "agent.instance.install.title": "安装 Agent",
+
+  "agent.label.agent_credential": "代理凭据",
+  "agent.credential.tip": "不需要凭据",
 };

@@ -228,7 +228,7 @@ export const AgentRowDetail = ({ agentID, t }) => {
                           })
                         }
                       >
-                        <Button type="link" loading={btnLoading}>
+                        <Button style={{padding: 0}} type="link" loading={btnLoading}>
                           Revoke
                         </Button>
                       </Popconfirm>

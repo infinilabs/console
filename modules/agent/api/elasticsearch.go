@@ -606,7 +606,7 @@ func (h *APIHandler) bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elast
 							}
 
 							if util.ContainStr(ip, "*") {
-								ip = "127.0.0.1"
+								ip = util.LocalAddress
 							}
 
 							nodeHost := fmt.Sprintf("%s:%d", ip, port)

@@ -12,6 +12,7 @@ Information about release notes of INFINI Console is provided here.
 ### Breaking changes
 
 ### Features
+- Support alerts based on bucket diff state (#119)
 
 ### Bug fix
 

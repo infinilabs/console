@@ -338,7 +338,7 @@ const BucketsDiff = (props) => {
                       initialValue: conditionItem.type || "size",
                     }
                 )(
-                  <Select style={{ width: 120 }} onChange={(value) => {
+                  <Select style={{ width: 110 }} onChange={(value) => {
                       const newItems = cloneDeep(conditionItems)
                       newItems[i].type = value
                       if (value === 'content') {
@@ -355,7 +355,7 @@ const BucketsDiff = (props) => {
               <Form.Item>
                 <Input
                   style={{
-                    width: 50,
+                    width: 40,
                     textAlign: "center",
                     pointerEvents: "none",
                     backgroundColor: "#fafafa",
@@ -386,7 +386,7 @@ const BucketsDiff = (props) => {
               <Form.Item>
                 <Input
                   style={{
-                    width: 120,
+                    width: 100,
                     textAlign: "center",
                     pointerEvents: "none",
                     backgroundColor: "#fafafa",
@@ -414,7 +414,7 @@ const BucketsDiff = (props) => {
                   <Select
                     allowClear
                     showSearch
-                    style={{ width: 150 }}
+                    style={{ width: 140 }}
                     placeholder={formatMessage(
                       {
                         id: "alert.rule.form.label.lasts_periods",
@@ -459,7 +459,7 @@ const BucketsDiff = (props) => {
                         <Select
                           allowClear
                           showSearch
-                          style={{ width: 100 }}
+                          style={{ width: 80 }}
                           placeholder={"equals"}
                           onChange={(value) => {
                             props.onPreviewChartChange();
@@ -489,7 +489,7 @@ const BucketsDiff = (props) => {
                             }
                           )(
                             <Input
-                              style={{ width: 100 }}
+                              style={{ width: 80 }}
                               placeholder="min value"
                               onChange={(e) => {
                                 props.onPreviewChartChange();
@@ -520,7 +520,7 @@ const BucketsDiff = (props) => {
                             }
                           )(
                             <Input
-                              style={{ width: 100 }}
+                              style={{ width: 80 }}
                               placeholder="max value"
                               onChange={(e) => {
                                 props.onPreviewChartChange();
@@ -544,7 +544,7 @@ const BucketsDiff = (props) => {
                           }
                         )(
                           <Input
-                            style={{ width: 120 }}
+                            style={{ width: 80 }}
                             placeholder="value"
                             onChange={(e) => {
                               props.onPreviewChartChange();

@@ -52,8 +52,8 @@ pipeline:
                     Content-Type: application/json
                 body: $[[message]]
                 basic_auth:
-                  username: $[[SETUP_ES_USERNAME]]
-                  password: $[[SETUP_ES_PASSWORD]]
+                  username: $[[SETUP_AGENT_USERNAME]]
+                  password: $[[SETUP_AGENT_PASSWORD]]
 #                tls: #for mTLS connection with config servers
 #                  enabled: true
 #                  ca_file: /xxx/ca.crt

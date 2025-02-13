@@ -26,7 +26,7 @@ Information about release notes of INFINI Console is provided here.
 - Add credential settings for agent in enrolling agent
 - Add collection mode to cluster editing
 - Add default roles to fix the issue (#114) (#130)
-- Add agent connection config with version and distribute to avoid panic at start(#131)
+- Add agent connection config with `version` and `distribution` to avoid panic at start(#131)
 
 ## 1.28.1 (2025-01-24)
 

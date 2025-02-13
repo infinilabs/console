@@ -54,7 +54,8 @@ export default (props) => {
       isEdit,
       fetchParamsCache,
       handleContextMenu,
-      isFullScreen
+      isFullScreen,
+      onResultChange
     } = props;
 
     const { series = [] } = record;
@@ -99,6 +100,7 @@ export default (props) => {
       if (!refresh) {
         setLoading(true)
         setData()
+        onResultChange && onResultChange()
       }
 
       if (isTimeSeries && !range) {
@@ -189,8 +191,10 @@ export default (props) => {
           }
           res.hits.hits = res.hits.hits || [];
           setData(res.hits)
+          onResultChange && onResultChange(res)
         }
       } else {
+        const index_pattern = indices.join(',')
         const bodys = metrics.map((item) => {
           const { groups = [] } = item;
           let newGroups = cloneDeep(groups);
@@ -204,7 +208,7 @@ export default (props) => {
           return { 
             cluster_id,
             filter,
-            index_pattern: indices.join(','),
+            index_pattern,
             time_field: time_field,
             ...item,
             items: item.items || [],
@@ -219,6 +223,7 @@ export default (props) => {
         if (res) {
           if (res.some((item) => item.status === 403)) {
             setData({ error: 403 })
+            onResultChange && onResultChange()
             setLoading(false);
             return;
           }
@@ -269,8 +274,15 @@ export default (props) => {
             }
           }
           setData(newData)
+          onResultChange && onResultChange(res.map((item) => (
+            {
+              ...item,
+              request: item.request ? `GET ${index_pattern}/_search\n${item.request}` : undefined
+            }
+          )))
         } else {
           setData([])
+          onResultChange && onResultChange()
         }
       }
       setLoading(false);

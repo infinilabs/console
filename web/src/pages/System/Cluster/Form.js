@@ -179,11 +179,11 @@ class ClusterForm extends React.Component {
         agent_credential_id:
           values.agent_credential_id !== MANUAL_VALUE && isAgentMode
             ? values.agent_credential_id
-            : agent_credential_id,
-        agent_basic_auth: isAgentMode ? {
+            : undefined,
+        agent_basic_auth: {
           username: values.agent_username,
           password: values.agent_password,
-        } : agent_basic_auth,
+        },
         metric_collection_mode: values.metric_collection_mode || 'agentless',
 
         description: values.description,
@@ -204,6 +204,7 @@ class ClusterForm extends React.Component {
       if (this.clusterUUID) {
         newVals.cluster_uuid = this.clusterUUID;
       }
+    
       if (clusterConfig.editMode === "NEW") {
         dispatch({
           type: "clusterConfig/addCluster",

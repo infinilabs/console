@@ -18,7 +18,9 @@ Information about release notes of INFINI Console is provided here.
 
 ### Improvements
 
-- add Buckets Diff to alerting rule
+- add Copy request to alerting chart
+- add credential settings for agent in enrolling agent
+- add collection mode to cluster editing
 
 ## 1.28.1 (2025-01-24)
 

@@ -41,7 +41,8 @@ export default (props) => {
     queriesBarParams,
     isFullScreen,
     hideHeader,
-    displayOptions={}
+    displayOptions={},
+    onResultChange,
   } = props;
 
   const [cacheRecord, setCacheRecord] = useState(record)
@@ -251,7 +252,8 @@ export default (props) => {
           fetchParamsCache={fetchParamsCacheRef}
           queriesBarParams={queriesBarParams}
           handleContextMenu={handleContextMenu}
-          isFullScreen={isFullScreen} 
+          isFullScreen={isFullScreen}
+          onResultChange={onResultChange} 
         />
       </Spin>
       <WidgetConfigDrawer 

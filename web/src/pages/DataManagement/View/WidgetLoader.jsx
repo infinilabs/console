@@ -1,17 +1,20 @@
 import { useEffect, useMemo, useState } from "react"
 import Widget from "./Widget"
 import styles from "./WidgetLoader.less"
-import { Empty, Spin } from "antd"
+import { Empty, Icon, message, Spin, Tooltip } from "antd"
 import request from "@/utils/request"
 import { generateFilter, mergeFilters } from "./components/QueriesBar/generate_filters"
 import { calculateBounds } from "@/components/vendor/data/common/query/timefilter";
 import moment from "moment"
 import { getTimezone } from "@/utils/utils"
+import { CopyToClipboard } from "react-copy-to-clipboard";
+import { formatMessage } from "umi/locale";
 
 export const WidgetRender = (props) => {
 
-   const { widget, range, query, queryParams = {}, highlightRange = {}, refresh } = props;
+   const { widget, range, query, queryParams = {}, highlightRange = {}, refresh, showCopy = true } = props;
    const [globalRangeCache, setGlobalRangeCache] = useState()
+   const [requests, setRequests] = useState([])
 
    const filters = useMemo(() => {
       const newFilters = []
@@ -41,32 +44,48 @@ export const WidgetRender = (props) => {
 
    return (
       widget ? (
-         <Widget
-            record={widget}
-            globalQueries={{
-               range: formatTimeRange,
-               filters,
-               query
-            }}
-            isEdit={false}
-            isFullElement={false}
-            isFullScreen={true}
-            hideHeader={true}
-            displayOptions={{
-               hideHeader: true,
-               hideBorder: true,
-            }}
-            globalRangeCache={globalRangeCache}
-            onGlobalRangeCacheChange={setGlobalRangeCache}
-            onGlobalQueriesChange={() => {}}
-            onClone={() => {}}
-            onRemove={() => {}}
-            onSave={() => {}}
-            onFullElement={() => {}}
-            clusterList={[]}
-            highlightRange={highlightRange}
-            onHighlightRangeChange={() => {}}
-         />
+         <div className={styles.content}>
+            {
+               showCopy && requests.length > 0 && (
+                  <CopyToClipboard text={requests.join('\n')}>
+                     <Tooltip placement="left" title={formatMessage({id: "cluster.metrics.request.copy"})}>
+                        <div className={styles.copy} onClick={() => message.success(formatMessage({id: "cluster.metrics.request.copy.success"}))}>
+                           <Icon type="copy" />
+                        </div>
+                     </Tooltip>
+                  </CopyToClipboard>
+               )
+            }
+            <Widget
+               record={widget}
+               globalQueries={{
+                  range: formatTimeRange,
+                  filters,
+                  query
+               }}
+               isEdit={false}
+               isFullElement={false}
+               isFullScreen={true}
+               hideHeader={true}
+               displayOptions={{
+                  hideHeader: true,
+                  hideBorder: true,
+               }}
+               globalRangeCache={globalRangeCache}
+               onGlobalRangeCacheChange={setGlobalRangeCache}
+               onGlobalQueriesChange={() => {}}
+               onClone={() => {}}
+               onRemove={() => {}}
+               onSave={() => {}}
+               onFullElement={() => {}}
+               clusterList={[]}
+               highlightRange={highlightRange}
+               onHighlightRangeChange={() => {}}
+               onResultChange={(res) => {
+                  setRequests(Array.isArray(res) ? res.filter((item) => !!item.request).map((item) => item.request) : [])
+               }}
+            />
+         </div>
       ) : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
    )
 }

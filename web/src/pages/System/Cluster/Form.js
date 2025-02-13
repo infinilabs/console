@@ -68,17 +68,7 @@ class ClusterForm extends React.Component {
   ];
 
   componentDidMount() {
-    //console.log(this.props.clusterConfig.editMode)
     const { match, dispatch, clusterConfig } = this.props;
-    if (clusterConfig?.editValue) {
-
-      this.setState({
-        monitored: clusterConfig?.editValue.hasOwnProperty("monitored")
-          ? clusterConfig?.editValue?.monitored
-          : false,
-      });
-    }
-
     dispatch({
       type: "clusterConfig/fetchCluster",
       payload: {
@@ -107,7 +97,8 @@ class ClusterForm extends React.Component {
         this.setState({
           needAuth,
           isManual,
-          collectMode
+          collectMode,
+          monitored: editValue?.hasOwnProperty("monitored") ? editValue?.monitored : false,
         });
       }
     });

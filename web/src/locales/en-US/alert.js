@@ -206,6 +206,8 @@ export default {
   "alert.rule.table.columnns.objects": "Objects",
   "alert.rule.table.columnns.schedule": "Schedule",
   "alert.rule.table.columnns.expression": "Expression",
+  "alert.rule.table.columnns.condition.type": "Condition Type",
+  "alert.rule.table.columnns.condition": "Condition",
   "alert.rule.table.columnns.status": "Status",
   "alert.rule.table.columnns.status.failed": "Connect failed",
   "alert.rule.table.columnns.status.succeeded": "Connect succeeded",

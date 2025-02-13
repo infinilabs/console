@@ -296,7 +296,11 @@ func getMetricData(metric *insight.Metric) (interface{}, error) {
 				Groups: md.Groups,
 				Data:   map[string][]insight.MetricDataItem{},
 			}
-			retMetricDataItem := insight.MetricDataItem{}
+			//merge metric data by timestamp
+			var timeMetricData = map[interface{}]*insight.MetricDataItem{}
+			//non time series data
+			grpMetricData := &insight.MetricDataItem{}
+			isTimeSeries := false
 			for _, formula = range metric.Formulas {
 				tpl, err := template.New("insight_formula").Parse(formula)
 				if err != nil {
@@ -347,6 +351,19 @@ func getMetricData(metric *insight.Metric) (interface{}, error) {
 							continue
 						}
 					}
+					var retMetricDataItem *insight.MetricDataItem
+					//time series data
+					if timestamp != nil {
+						isTimeSeries = true
+						if v, ok := timeMetricData[timestamp]; !ok {
+							retMetricDataItem = &insight.MetricDataItem{}
+						} else {
+							retMetricDataItem = v
+						}
+					} else {
+						//non time series data
+						retMetricDataItem = grpMetricData
+					}
 					retMetricDataItem.Timestamp = timestamp
 					if len(metric.Formulas) <= 1 && metric.Formula != "" {
 						//support older versions by returning the result for a single formula.
@@ -358,9 +375,18 @@ func getMetricData(metric *insight.Metric) (interface{}, error) {
 							retMetricDataItem.Value = map[string]interface{}{formula: result}
 						}
 					}
+					if timestamp != nil {
+						timeMetricData[timestamp] = retMetricDataItem
+					}
 				}
 			}
-			targetData.Data["result"] = append(targetData.Data["result"], retMetricDataItem)
+			if !isTimeSeries {
+				targetData.Data["result"] = append(targetData.Data["result"], *grpMetricData)
+			} else {
+				for _, v := range timeMetricData {
+					targetData.Data["result"] = append(targetData.Data["result"], *v)
+				}
+			}
 			targetMetricData = append(targetMetricData, targetData)
 		}
 	}

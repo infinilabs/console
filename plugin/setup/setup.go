@@ -718,7 +718,7 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 		elastic2.InitTemplate(true)
 	case "rollup":
 		if ver.Distribution == elastic.Easysearch {
-			if large, _ := util.VersionCompare(ver.Number, "1.10.0"); large > 0 {
+			if large, _ := util.VersionCompare(ver.Number, "1.10.1"); large > 0 {
 				useCommon = false
 				dslTplFileName = "template_rollup.tpl"
 			}

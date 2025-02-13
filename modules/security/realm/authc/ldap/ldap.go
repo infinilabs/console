@@ -48,10 +48,10 @@ type LDAPConfig struct {
 	UidAttribute   string `config:"uid_attribute"`
 	GroupAttribute string `config:"group_attribute"`
 
-	RoleMapping struct {
-		Group     map[string][]string `config:"group"`
-		Uid       map[string][]string `config:"uid"`
-		Anonymous []string            `yaml:"anonymous"`
+	DefaultRoles []string `config:"default_roles"`
+	RoleMapping  struct {
+		Group map[string][]string `config:"group"`
+		Uid   map[string][]string `config:"uid"`
 	} `config:"role_mapping"`
 }
 
@@ -95,7 +95,7 @@ func (r *LDAPRealm) mapLDAPRoles(authInfo auth.Info) []string {
 	}
 
 	//auto append anonymous roles
-	ret = append(ret, r.config.RoleMapping.Anonymous...)
+	ret = append(ret, r.config.DefaultRoles...)
 
 	return ret
 }

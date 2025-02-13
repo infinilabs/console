@@ -6,6 +6,8 @@ elasticsearch:
     name: $[[TASK_ID]]
     cluster_uuid: $[[CLUSTER_UUID]]
     enabled: true
+    distribution: $[[CLUSTER_DISTRIBUTION]]
+    version: $[[CLUSTER_VERSION]]
     endpoints: $[[CLUSTER_ENDPOINT]]
     discovery:
       enabled: false

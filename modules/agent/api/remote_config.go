@@ -197,22 +197,30 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 
 		var username = ""
 		var password = ""
+		var version = ""
+		var distribution = ""
 
-		if metadata.Config.AgentCredentialID != "" {
-			credential, err := common2.GetCredential(metadata.Config.AgentCredentialID)
-			if err != nil {
-				log.Error(err)
-				continue
-			}
-			var dv interface{}
-			dv, err = credential.Decode()
-			if err != nil {
-				log.Error(err)
-				continue
-			}
-			if auth, ok := dv.(model.BasicAuth); ok {
-				username = auth.Username
-				password = auth.Password.Get()
+		if metadata.Config != nil {
+
+			version = metadata.Config.Version
+			distribution = metadata.Config.Distribution
+
+			if metadata.Config.AgentCredentialID != "" {
+				credential, err := common2.GetCredential(metadata.Config.AgentCredentialID)
+				if err != nil {
+					log.Error(err)
+					continue
+				}
+				var dv interface{}
+				dv, err = credential.Decode()
+				if err != nil {
+					log.Error(err)
+					continue
+				}
+				if auth, ok := dv.(model.BasicAuth); ok {
+					username = auth.Username
+					password = auth.Password.Get()
+				}
 			}
 		}
 
@@ -238,20 +246,21 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 		}
 
 		taskID := v.ClusterID + "_" + v.NodeUUID
-
 		buffer.Write([]byte(fmt.Sprintf("\n  - name: \"%v\"\n    path: ./config/task_config.tpl\n    "+
 			"variable:\n      "+
 			"TASK_ID: %v\n      "+
 			"CLUSTER_ID: %v\n      "+
 			"CLUSTER_UUID: %v\n      "+
 			"NODE_UUID: %v\n      "+
+			"CLUSTER_VERSION: %v\n      "+
+			"CLUSTER_DISTRIBUTION: %v\n      "+
 			"CLUSTER_ENDPOINT: [\"%v\"]\n      "+
 			"CLUSTER_USERNAME: \"%v\"\n      "+
 			"CLUSTER_PASSWORD: \"%v\"\n      "+
 			"CLUSTER_LEVEL_TASKS_ENABLED: %v\n      "+
 			"NODE_LEVEL_TASKS_ENABLED: %v\n      "+
 			"NODE_LOGS_PATH: \"%v\"\n\n\n", taskID, taskID,
-			v.ClusterID, v.ClusterUUID, v.NodeUUID, nodeEndPoint, username, password, clusterLevelEnabled, nodeLevelEnabled, pathLogs)))
+			v.ClusterID, v.ClusterUUID, v.NodeUUID, version, distribution, nodeEndPoint, username, password, clusterLevelEnabled, nodeLevelEnabled, pathLogs)))
 	}
 
 	hash := util.MD5digest(buffer.String())

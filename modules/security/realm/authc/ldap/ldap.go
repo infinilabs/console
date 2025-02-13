@@ -48,7 +48,8 @@ type LDAPConfig struct {
 	UidAttribute   string `config:"uid_attribute"`
 	GroupAttribute string `config:"group_attribute"`
 
-	RoleMapping struct {
+	DefaultRoles []string `config:"default_roles"`
+	RoleMapping  struct {
 		Group map[string][]string `config:"group"`
 		Uid   map[string][]string `config:"uid"`
 	} `config:"role_mapping"`
@@ -92,6 +93,9 @@ func (r *LDAPRealm) mapLDAPRoles(authInfo auth.Info) []string {
 			log.Debugf("LDAP group: %v, roleName: %v, match: %v", uid, roleName, newRoles)
 		}
 	}
+
+	//auto append default roles
+	ret = append(ret, r.config.DefaultRoles...)
 
 	return ret
 }

@@ -25,7 +25,7 @@ Information about release notes of INFINI Console is provided here.
 - Add Copy request to alerting chart
 - Add credential settings for agent in enrolling agent
 - Add collection mode to cluster editing
-- Add anonymous roles to fix the issue (#114) (#130)
+- Add default roles to fix the issue (#114) (#130)
 
 ## 1.28.1 (2025-01-24)
 

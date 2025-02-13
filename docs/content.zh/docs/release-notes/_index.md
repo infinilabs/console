@@ -14,6 +14,7 @@ title: "版本历史"
 ### Features
 - 告警功能支持根据桶之间文档数差值和内容差异告警 (#119)
 ### Bug fix
+- 修复 Insight API 处理多时间序列数据时数据丢失的问题 (#127)
 
 ### Improvements
 

@@ -358,5 +358,42 @@ PUT /.easysearch-ilm-config/_settings
   }
 }
 
+# ilm settings for rollup indices
+DELETE _ilm/policy/ilm_$[[SETUP_INDEX_PREFIX]]rollup-30days-retention
+PUT _ilm/policy/ilm_$[[SETUP_INDEX_PREFIX]]rollup-30days-retention
+{
+  "policy": {
+    "phases": {
+      "hot": {
+        "min_age": "0ms",
+        "actions": {
+          "rollover": {
+            "max_age": "30d",
+            "max_size": "50gb"
+          },
+          "set_priority": {
+            "priority": 100
+          }
+        }
+      },
+      "delete": {
+        "min_age": "30d",
+        "actions": {
+          "delete": {
+            "timestamp_field": "timestamp.date_histogram",
+            "min_data_age": "30d"
+          }
+        }
+      }
+    }
+  }
+}
+
+# add ilm policy to rollup indices
+#POST _ilm/add/rollup_index_stats_logs-write
+#{
+#  "policy_id": "ilm_$[[SETUP_INDEX_PREFIX]]rollup-30days-retention"
+#}
+
 # start all rollup jobs
 POST /_rollup/jobs/rollup*/_start

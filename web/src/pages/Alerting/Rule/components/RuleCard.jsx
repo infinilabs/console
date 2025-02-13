@@ -94,6 +94,7 @@ const RuleCard = ({ ruleID, data = {} }) => {
     );
   };
   const clusters = useGlobalClusters();
+  const isBucketDiff = !!(data && data.bucket_conditions)
   
   return (
     <div>
@@ -158,10 +159,16 @@ const RuleCard = ({ ruleID, data = {} }) => {
             <span style={{ wordBreak: "break-all" }}>{data?.expression}</span>
           </Col>
         </Row>
-        <Row style={{ marginBottom: 30 }}>
-          <Col span={6}>Condition</Col>
+        <Row style={{ marginBottom: 10}}>
+          <Col span={6}>{formatMessage({ id: "alert.rule.table.columnns.condition.type" })}</Col>
           <Col span={18}>
-            <Conditions items={data.conditions?.items} />
+            {isBucketDiff ? formatMessage({id: `alert.rule.form.label.buckets_diff`}) : formatMessage({id: `alert.rule.form.label.metrics_value`})}
+          </Col>
+        </Row>
+        <Row style={{ marginBottom: 30 }}>
+          <Col span={6}>{formatMessage({ id: "alert.rule.table.columnns.condition" })}</Col>
+          <Col span={18}>
+            <Conditions items={isBucketDiff ? data.bucket_conditions?.items : data.conditions?.items} />
           </Col>
         </Row>
       </Card>
@@ -173,6 +180,9 @@ const Conditions = ({ items }) => {
   return (items || []).map((item) => {
     let operator = "";
     switch (item.operator) {
+      case "equals":
+        operator = "=";
+        break;
       case "gte":
         operator = ">=";
         break;
@@ -185,11 +195,29 @@ const Conditions = ({ items }) => {
       case "lte":
         operator = "<=";
         break;
+      case "range":
+        operator = "range";
+        break;
     }
     return (
       <div key={item.priority} style={{ marginBottom: 10 }}>
-        <span>{operator} </span>
-        <span style={{ marginRight: 15 }}>{item.values[0]}</span>
+        {item.type && (<span style={{ marginRight: 15 }}>{formatMessage({id: `alert.rule.form.label.${item.type}`})}</span>)}
+        {
+          operator === 'range' ? (
+            <>
+              <span>{`>=`}</span>
+              <span style={{ marginRight: 4 }}>{item.values[0]}</span>
+              <span style={{ marginRight: 4 }}>{`&`}</span>
+              <span>{`<=`}</span>
+              <span style={{ marginRight: 15 }}>{item.values[1]}</span>
+            </>
+          ) : (
+            <>
+              <span>{operator} </span>
+              <span style={{ marginRight: 15 }}>{item.values[0]}</span>
+            </>
+          )
+        }
         <PriorityIconText priority={item.priority} />
       </div>
     );

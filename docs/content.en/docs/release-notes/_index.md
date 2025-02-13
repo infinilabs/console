@@ -13,6 +13,7 @@ Information about release notes of INFINI Console is provided here.
 
 ### Features
 - Support alerts based on bucket diff state (#119)
+- Add rollup ilm when use Easysearch (#128)
 
 ### Bug fix
 

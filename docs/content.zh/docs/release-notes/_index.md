@@ -13,6 +13,7 @@ title: "版本历史"
 
 ### Features
 - 告警功能支持根据桶之间文档数差值和内容差异告警 (#119)
+- 当使用 Easysearch 存储指标时，增加 Rollup 索引生命周期 (#128)
 ### Bug fix
 
 ### Improvements

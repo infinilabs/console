@@ -90,7 +90,7 @@ export default {
     },
     *updateCluster({ payload }, { call, put, select }) {
       let res = yield call(updateClusterConfig, payload);
-      if (res.error) {
+      if (res?.error) {
         return false;
       }
       let { data } = yield select((state) => state.clusterConfig);

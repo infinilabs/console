@@ -18,13 +18,16 @@ Information about release notes of INFINI Console is provided here.
 
 ### Improvements
 
-- add Buckets Diff to alerting rule
+- Add Buckets Diff to alerting rule
 - Automatically create Agent metrics for system clusters when using Easysearch to store metrics Write least-privileged user (#120)
+- Add Copy request to alerting chart
+- Add credential settings for agent in enrolling agent
+- Add collection mode to cluster editing
 
 ## 1.28.1 (2025-01-24)
 
-- add credential settings for agent in enrolling agent
-- add collection mode to cluster editing
+- Add credential settings for agent in enrolling agent
+- Add collection mode to cluster editing
 
 ### Features
 

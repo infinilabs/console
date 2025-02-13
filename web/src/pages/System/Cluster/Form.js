@@ -68,17 +68,7 @@ class ClusterForm extends React.Component {
   ];
 
   componentDidMount() {
-    //console.log(this.props.clusterConfig.editMode)
     const { match, dispatch, clusterConfig } = this.props;
-    if (clusterConfig?.editValue) {
-
-      this.setState({
-        monitored: clusterConfig?.editValue.hasOwnProperty("monitored")
-          ? clusterConfig?.editValue?.monitored
-          : false,
-      });
-    }
-
     dispatch({
       type: "clusterConfig/fetchCluster",
       payload: {
@@ -107,7 +97,8 @@ class ClusterForm extends React.Component {
         this.setState({
           needAuth,
           isManual,
-          collectMode
+          collectMode,
+          monitored: editValue?.hasOwnProperty("monitored") ? editValue?.monitored : false,
         });
       }
     });
@@ -179,11 +170,11 @@ class ClusterForm extends React.Component {
         agent_credential_id:
           values.agent_credential_id !== MANUAL_VALUE && isAgentMode
             ? values.agent_credential_id
-            : agent_credential_id,
-        agent_basic_auth: isAgentMode ? {
+            : undefined,
+        agent_basic_auth: {
           username: values.agent_username,
           password: values.agent_password,
-        } : agent_basic_auth,
+        },
         metric_collection_mode: values.metric_collection_mode || 'agentless',
 
         description: values.description,
@@ -204,6 +195,7 @@ class ClusterForm extends React.Component {
       if (this.clusterUUID) {
         newVals.cluster_uuid = this.clusterUUID;
       }
+    
       if (clusterConfig.editMode === "NEW") {
         dispatch({
           type: "clusterConfig/addCluster",

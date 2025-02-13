@@ -15,6 +15,7 @@ Information about release notes of INFINI Console is provided here.
 - Support alerts based on bucket diff state (#119)
 
 ### Bug fix
+- Fixed missing data when processing multiple time series in a group with insight data API (#127)
 
 ### Improvements
 

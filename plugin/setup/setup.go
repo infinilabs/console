@@ -69,6 +69,8 @@ import (
 	"infini.sh/framework/plugins/replay"
 )
 
+const ingestUser = "infini_ingest"
+
 type Module struct {
 	api.Handler
 }
@@ -492,30 +494,9 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		if reuseOldCred {
 			toSaveCfg.CredentialID = oldCfg.CredentialID
 		} else {
-			cred := credential.Credential{
-				Name: "INFINI_SYSTEM",
-				Type: credential.BasicAuth,
-				Tags: []string{"infini", "system"},
-				Payload: map[string]interface{}{
-					"basic_auth": map[string]interface{}{
-						"username": request.Cluster.Username,
-						"password": request.Cluster.Password,
-					},
-				},
-			}
-			cred.ID = util.GetUUID()
-			err = cred.Encode()
-			if err != nil {
-				panic(err)
-			}
-			toSaveCfg.CredentialID = cred.ID
-			cfg.CredentialID = cred.ID
-			now := time.Now()
-			cred.Created = &now
-			err = orm.Save(nil, &cred)
-			if err != nil {
-				panic(err)
-			}
+			credId := createCred("INFINI_SYSTEM", request.Cluster.Username, request.Cluster.Password)
+			cfg.CredentialID = credId
+			toSaveCfg.CredentialID = credId
 			toSaveCfg.BasicAuth = nil
 		}
 	}
@@ -598,6 +579,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 
 	success = true
 }
+
 func (module *Module) validateSecret(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	err, client, request := module.initTempClient(r)
 	if err != nil {
@@ -657,6 +639,34 @@ func validateCredentialSecret(ormHandler orm.ORM, credentialSecret string) (bool
 		}
 	}
 	return exists, nil
+}
+
+func createCred(name, username, password string) string {
+	cred := credential.Credential{
+		Name: name,
+		Type: credential.BasicAuth,
+		Tags: []string{"infini", "system"},
+		Payload: map[string]interface{}{
+			"basic_auth": map[string]interface{}{
+				"username": username,
+				"password": password,
+			},
+		},
+	}
+	cred.ID = util.GetUUID()
+	err := cred.Encode()
+	if err != nil {
+		panic(err)
+	}
+
+	now := time.Now()
+	cred.Created = &now
+	cred.Updated = &now
+	err = orm.Save(nil, &cred)
+	if err != nil {
+		panic(err)
+	}
+	return cred.ID
 }
 
 func getYamlData(filename string) []byte {
@@ -775,6 +785,21 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 		}, http.StatusOK)
 		return
 	}
+
+	// Easysearch auto create ingest user
+	ingestPassword := util.GenerateRandomString(20)
+	if ver.Distribution == elastic.Easysearch {
+		err = keystore.SetValue("SYSTEM_CLUSTER_INGEST_PASSWORD", []byte(ingestPassword))
+		if err != nil {
+			panic(err)
+		}
+		client := elastic.GetClient(GlobalSystemElasticsearchID)
+		err = initIngestUser(client, cfg1.IndexPrefix, ingestUser, ingestPassword)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	output := tpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
 		switch tag {
 		case "SETUP_SYSTEM_INGEST_CONFIG":
@@ -795,6 +820,18 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 			return w.Write([]byte(request.Cluster.Username))
 		case "SETUP_ES_PASSWORD":
 			return w.Write([]byte(request.Cluster.Password))
+		case "SETUP_AGENT_USERNAME":
+			if ver.Distribution == elastic.Easysearch {
+				return w.Write([]byte(ingestUser))
+			} else {
+				return w.Write([]byte(request.Cluster.Username))
+			}
+		case "SETUP_AGENT_PASSWORD":
+			if ver.Distribution == elastic.Easysearch {
+				return w.Write([]byte(ingestPassword))
+			} else {
+				return w.Write([]byte(request.Cluster.Password))
+			}
 		case "SETUP_SCHEME":
 			return w.Write([]byte(strings.Split(request.Cluster.Endpoint, "://")[0]))
 		case "SETUP_ENDPOINTS":
@@ -866,4 +903,42 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 		"log":     fmt.Sprintf("initalize template [%s] succeed", request.InitializeTemplate),
 	}, http.StatusOK)
 
+}
+
+func initIngestUser(client elastic.API, indexPrefix string, username, password string) error {
+	roleTpl := `{
+	  "cluster": [
+		"cluster_monitor",
+		"cluster_composite_ops"
+	  ],
+	 "description": "Provide the minimum permissions for INFINI AGENT to write metrics and logs",
+	  "indices": [{
+		"names": [
+		  "%slogs*", "%smetrics*"
+		],
+		"query": "",
+		"field_security": [],
+		"field_mask": [],
+		"privileges": [
+		  "create_index","index","manage_aliases","write"
+		]
+	  }]
+	}`
+	roleBody := fmt.Sprintf(roleTpl, indexPrefix, indexPrefix)
+	err := client.PutRole(ingestUser, []byte(roleBody))
+	if err != nil {
+		return fmt.Errorf("failed to create ingest role: %w", err)
+	}
+	userTpl := `{
+		"roles": [
+			"%s"
+		],
+		"password": "%s"}`
+
+	userBody := fmt.Sprintf(userTpl, ingestUser, password)
+	err = client.PutUser(username, []byte(userBody))
+	if err != nil {
+		return fmt.Errorf("failed to create ingest user: %w", err)
+	}
+	return nil
 }

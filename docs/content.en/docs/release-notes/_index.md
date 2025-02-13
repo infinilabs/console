@@ -19,6 +19,7 @@ Information about release notes of INFINI Console is provided here.
 ### Improvements
 
 - add Buckets Diff to alerting rule
+- Automatically create Agent metrics for system clusters when using Easysearch to store metrics Write least-privileged user (#120)
 
 ## 1.28.1 (2025-01-24)
 

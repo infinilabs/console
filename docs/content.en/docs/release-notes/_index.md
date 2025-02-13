@@ -26,8 +26,7 @@ Information about release notes of INFINI Console is provided here.
 
 ## 1.28.1 (2025-01-24)
 
-- Add credential settings for agent in enrolling agent
-- Add collection mode to cluster editing
+### Breaking changes
 
 ### Features
 

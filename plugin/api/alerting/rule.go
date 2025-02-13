@@ -201,9 +201,13 @@ func (alertAPI *AlertAPI) getRuleDetail(w http.ResponseWriter, req *http.Request
 		return
 	}
 	metricExpression, _ := obj.Metrics.GenerateExpression()
-	for i, cond := range obj.Conditions.Items {
+	conditions := obj.Conditions
+	if obj.BucketConditions != nil {
+		conditions = *obj.BucketConditions
+	}
+	for i, cond := range conditions.Items {
 		expression, _ := cond.GenerateConditionExpression()
-		obj.Conditions.Items[i].Expression = strings.ReplaceAll(expression, "result", metricExpression)
+		conditions.Items[i].Expression = strings.ReplaceAll(expression, "result", metricExpression)
 	}
 	alertNumbers, err := alertAPI.getRuleAlertMessageNumbers([]string{obj.ID})
 	if err != nil {
@@ -329,6 +333,7 @@ func (alertAPI *AlertAPI) getRuleDetail(w http.ResponseWriter, req *http.Request
 		"bucket_size":                  obj.Metrics.BucketSize, //统计周期
 		"updated":                      obj.Updated,
 		"conditions":                   obj.Conditions,
+		"bucket_conditions":            obj.BucketConditions,
 		"message_count":                alertNumbers[obj.ID], //所有关联告警消息数（包括已恢复的）
 		"state":                        state,
 		"enabled":                      obj.Enabled,

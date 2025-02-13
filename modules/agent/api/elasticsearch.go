@@ -31,6 +31,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"runtime"
+	"sync/atomic"
+	"time"
+
 	"github.com/buger/jsonparser"
 	log "github.com/cihub/seelog"
 	"infini.sh/console/plugin/managed/server"
@@ -43,10 +48,6 @@ import (
 	"infini.sh/framework/modules/elastic/adapter"
 	"infini.sh/framework/modules/elastic/common"
 	"infini.sh/framework/modules/elastic/metadata"
-	"net/http"
-	"runtime"
-	"sync/atomic"
-	"time"
 )
 
 // node -> binding item
@@ -603,6 +604,11 @@ func (h *APIHandler) bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elast
 							if util.ContainStr(ip, "::") {
 								ip = fmt.Sprintf("[%s]", ip)
 							}
+
+							if util.ContainStr(ip, "*") {
+								ip = util.LocalAddress
+							}
+
 							nodeHost := fmt.Sprintf("%s:%d", ip, port)
 							nodeInfo := h.internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint, pid, nodeHost, auth)
 							if nodeInfo != nil {

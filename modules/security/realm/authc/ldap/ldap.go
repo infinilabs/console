@@ -94,7 +94,7 @@ func (r *LDAPRealm) mapLDAPRoles(authInfo auth.Info) []string {
 		}
 	}
 
-	//auto append anonymous roles
+	//auto append default roles
 	ret = append(ret, r.config.DefaultRoles...)
 
 	return ret

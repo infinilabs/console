@@ -594,12 +594,16 @@ class ClusterForm extends React.Component {
                   />
                 )
               }
-              <MonitorConfigsForm
-                form={this.props.form}
-                editValue={editValue}
-                visible={this.state.monitored}
-                collectMode={this.state.collectMode}
-              />
+              {
+                editValue?.monitor_configs && (
+                  <MonitorConfigsForm
+                    form={this.props.form}
+                    editValue={editValue}
+                    visible={this.state.monitored}
+                    collectMode={this.state.collectMode}
+                  />
+                )
+              }
               <MetadataConfigsForm
                 form={this.props.form}
                 editValue={editValue}

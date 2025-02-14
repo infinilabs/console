@@ -380,11 +380,17 @@ PUT _ilm/policy/ilm_$[[SETUP_INDEX_PREFIX]]rollup-30days-retention
   }
 }
 
+
 # add ilm policy to rollup indices
-#POST _ilm/add/rollup_index_stats_logs-write
-#{
-#  "policy_id": "ilm_$[[SETUP_INDEX_PREFIX]]rollup-30days-retention"
-#}
+PUT _template/rollup_policy_template
+{
+  "order": 1, 
+  "index_patterns": ["rollup*"],
+  "settings": {
+    "index.lifecycle.name": "ilm_$[[SETUP_INDEX_PREFIX]]rollup-30days-retention"
+  }
+}
+
 
 # start all rollup jobs
 POST /_rollup/jobs/rollup*/_start

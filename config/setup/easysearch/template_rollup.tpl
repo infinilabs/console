@@ -365,16 +365,7 @@ PUT _ilm/policy/ilm_$[[SETUP_INDEX_PREFIX]]rollup-30days-retention
   "policy": {
     "phases": {
       "hot": {
-        "min_age": "0ms",
-        "actions": {
-          "rollover": {
-            "max_age": "30d",
-            "max_size": "50gb"
-          },
-          "set_priority": {
-            "priority": 100
-          }
-        }
+        "min_age": "0ms"
       },
       "delete": {
         "min_age": "30d",

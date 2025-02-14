@@ -37,8 +37,11 @@ func GetMonitorState(clusterID string) string {
 	if conf == nil {
 		panic(fmt.Errorf("config of cluster [%s] is not found", clusterID))
 	}
-	if conf.MonitorConfigs != nil && !conf.MonitorConfigs.NodeStats.Enabled && !conf.MonitorConfigs.IndexStats.Enabled {
-		return elastic.ModeAgent
+	if conf.MetricCollectionMode == "" {
+		if conf.MonitorConfigs != nil && !conf.MonitorConfigs.NodeStats.Enabled && !conf.MonitorConfigs.IndexStats.Enabled {
+			return elastic.ModeAgent
+		}
+		return elastic.ModeAgentless
 	}
-	return elastic.ModeAgentless
+	return conf.MetricCollectionMode
 }

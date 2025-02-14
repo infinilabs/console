@@ -31,16 +31,21 @@ asciinema: true
 
 ### 配置告警指标以及触发条件
 
-{{% load-img "/img/screenshot/20220715-alerting-rule-new-metric.jpg" "alerting rule new" %}}
+{{% load-img "/img/screenshot/2025/alerting/rule_condition.png" "alerting rule new" %}}
 
 - 输入规则名称
 - 按需添加分组的字段以及分组大小，可以添加多个，用于 terms 聚合
 - 选择指标聚合字段以及统计类型，可以配置多个，当配置多个时必须配置公式用于计算最终的指标
 - 配置告警触发条件
+  - 选择指标数值
+  - 选择分桶对比
+    - 选择基于文档差异数或者内容差异数
+> 文档差异数：相邻两个时间桶内命中文档数量的差值  
+> 内容差异数：相邻两个时间桶内某个分组是否有变化，差异值为 1 表示增加，-1 表示减少，0 表示无变化
 - 选择执行检查周期
 - 输入告警事件标题（模版，被模版变量中的 title 引用，点击这里了解 [模版语法](./variables) ）
 - 输入告警事件消息（模版，被模版变量中的 message 引用，点击这里了解 [模版语法](./variables) ）
-
+>分桶对比是 INFINI Console 1.28.2 版本新增的功能，可以用于检测不同时间段数据的差异，比如检测某个时间段内的数据量是否有异常变化
 ### 配置消息通知
 
 {{% load-img "/img/screenshot/20220715-alerting-rule-new-notification.jpg" "alerting rule new" %}}

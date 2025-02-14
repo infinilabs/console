@@ -268,7 +268,6 @@ class ClusterForm extends React.Component {
           if (!values) {
             return;
           }
-          debugger
           let newVals = {
             name: values.name,
             hosts: values.hosts,

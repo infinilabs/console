@@ -93,7 +93,6 @@ export default (props) => {
     }
 
     const fixFormat = (formatType, format) => {
-      debugger
       return formatType === 'num' && format ? `${format}a` : format
     }
   

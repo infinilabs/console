@@ -338,7 +338,7 @@ const BucketsDiff = (props) => {
                       initialValue: conditionItem.type || "size",
                     }
                 )(
-                  <Select style={{ width: 110 }} onChange={(value) => {
+                  <Select style={{ width: 120 }} onChange={(value) => {
                       const newItems = cloneDeep(conditionItems)
                       newItems[i].type = value
                       if (value === 'content') {

@@ -16,9 +16,6 @@ export default (props) => {
     if (mode === "agent") {
       monitor_configs["node_stats"] = { enabled: false };
       monitor_configs["index_stats"] = { enabled: false };
-    } else {
-      monitor_configs["node_stats"] = { enabled: true };
-      monitor_configs["index_stats"] = { enabled: true };
     }
     form.setFieldsValue({ monitor_configs });
   }, [mode]);

@@ -239,7 +239,7 @@ export default (props) => {
                 ticks={item.ticks}
                 labelFormat={getFormatter(
                   item.formatType,
-                  fixFormat(item.formatType, item.labelFormat)
+                  fixFormat(item.formatType, item.tickFormat)
                 )}
                 tickFormat={getFormatter(
                   item.formatType,
@@ -295,7 +295,7 @@ export default (props) => {
                 xAccessor={0}
                 tickFormat={getFormatter(
                   item.metric.formatType,
-                  fixFormat(item.metric.formatType, item.metric.formatType),
+                  fixFormat(item.metric.formatType, item.metric.format),
                   item.metric.units
                 )}
                 yAccessors={[1]}

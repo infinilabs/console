@@ -31,16 +31,21 @@ Click the `New` button in the alerting rule list to enter the new alerting rule 
 
 ### Configure alerting metrics and trigger conditions
 
-{{% load-img "/img/screenshot/20220715-alerting-rule-new-metric.jpg" "alerting rule new" %}}
+{{% load-img "/img/screenshot/2025/alerting/rule_condition.png" "alerting rule new" %}}
 
 - Input the rule name
 - Add the grouped fields and group size as needed, you can add more than one for terms aggregation
 - Select the metrics aggregation field and statistics type, you can configure more than one, when configuring more than one, you must configure a formula to calculate the final metrics
 - Configure alerting trigger conditions
+  - Select **Metrics value**
+  - Select **Bucket diff**
+    - Select based on **Doc diff** or **Content diff**
+>**Doc diff**: The difference in the number of matching documents between two adjacent time buckets  
+>**Content diff**: Whether there’s a change in a group between two adjacent time buckets. A difference value of 1 indicates an increase, -1 indicates a decrease, and 0 indicates no change
 - Select execution check cycle
 - Input the title of the alerting event (template, referenced by the title in the template variable, click here to learn about [template syntax](./variables) )
 - Input alerting event message (template, referenced by message in template variable, click here for [template syntax](./variables) )
-
+>**Bucket Diff** is a feature introduced in INFINI Console version 1.28.2. It can be used to detect differences in data across different time periods, such as checking if there’s an abnormal change in data volume during a specific time window.
 ### Configure message notification
 
 {{% load-img "/img/screenshot/20220715-alerting-rule-new-notification.jpg" "alerting rule new" %}}

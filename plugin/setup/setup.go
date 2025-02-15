@@ -69,7 +69,10 @@ import (
 	"infini.sh/framework/plugins/replay"
 )
 
+// Easysearch auto create ingest user password
 const ingestUser = "infini_ingest"
+
+var ingestPassword = util.GenerateRandomString(20)
 
 type Module struct {
 	api.Handler
@@ -683,6 +686,7 @@ func getYamlData(filename string) []byte {
 	escapedContent = bytes.ReplaceAll(escapedContent, []byte("\""), []byte("\\\""))
 	return escapedContent
 }
+
 func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if !global.Env().SetupRequired() {
 		module.WriteError(w, "setup not permitted", 500)
@@ -730,6 +734,17 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 	case "view":
 		dslTplFileName = "view.tpl"
 	case "agent":
+		if ver.Distribution == elastic.Easysearch {
+			err = keystore.SetValue("SYSTEM_CLUSTER_INGEST_PASSWORD", []byte(ingestPassword))
+			if err != nil {
+				panic(err)
+			}
+			client := elastic.GetClient(GlobalSystemElasticsearchID)
+			err = initIngestUser(client, cfg1.IndexPrefix, ingestUser, ingestPassword)
+			if err != nil {
+				panic(err)
+			}
+		}
 		dslTplFileName = "agent.tpl"
 	default:
 		panic(fmt.Sprintf("unsupport template name [%s]", request.InitializeTemplate))
@@ -784,20 +799,6 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 			"log":     fmt.Sprintf("new fasttemplate [%s] error: ", err.Error()),
 		}, http.StatusOK)
 		return
-	}
-
-	// Easysearch auto create ingest user
-	ingestPassword := util.GenerateRandomString(20)
-	if ver.Distribution == elastic.Easysearch {
-		err = keystore.SetValue("SYSTEM_CLUSTER_INGEST_PASSWORD", []byte(ingestPassword))
-		if err != nil {
-			panic(err)
-		}
-		client := elastic.GetClient(GlobalSystemElasticsearchID)
-		err = initIngestUser(client, cfg1.IndexPrefix, ingestUser, ingestPassword)
-		if err != nil {
-			panic(err)
-		}
 	}
 
 	output := tpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
@@ -925,7 +926,7 @@ func initIngestUser(client elastic.API, indexPrefix string, username, password s
 	  }]
 	}`
 	roleBody := fmt.Sprintf(roleTpl, indexPrefix, indexPrefix)
-	err := client.PutRole(ingestUser, []byte(roleBody))
+	err := client.PutRole(username, []byte(roleBody))
 	if err != nil {
 		return fmt.Errorf("failed to create ingest role: %w", err)
 	}
@@ -935,7 +936,7 @@ func initIngestUser(client elastic.API, indexPrefix string, username, password s
 		],
 		"password": "%s"}`
 
-	userBody := fmt.Sprintf(userTpl, ingestUser, password)
+	userBody := fmt.Sprintf(userTpl, username, password)
 	err = client.PutUser(username, []byte(userBody))
 	if err != nil {
 		return fmt.Errorf("failed to create ingest user: %w", err)

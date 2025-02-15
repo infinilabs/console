@@ -506,6 +506,42 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 
 	//保存默认集群
 	t := time.Now()
+	toSaveCfg.MetadataConfigs = &elastic.MetadataConfig{
+		HealthCheck: elastic.TaskConfig{
+			Enabled:  true,
+			Interval: "10s",
+		},
+		ClusterSettingsCheck: elastic.TaskConfig{
+			Enabled:  true,
+			Interval: "10s",
+		},
+		MetadataRefresh: elastic.TaskConfig{
+			Enabled:  true,
+			Interval: "10s",
+		},
+		NodeAvailabilityCheck: elastic.TaskConfig{
+			Enabled:  true,
+			Interval: "10s",
+		},
+	}
+	toSaveCfg.MonitorConfigs = &elastic.MonitorConfig{
+		ClusterStats: elastic.TaskConfig{
+			Enabled:  true,
+			Interval: "10s",
+		},
+		NodeStats: elastic.TaskConfig{
+			Enabled:  true,
+			Interval: "10s",
+		},
+		ClusterHealth: elastic.TaskConfig{
+			Enabled:  true,
+			Interval: "10s",
+		},
+		IndexStats: elastic.TaskConfig{
+			Enabled:  true,
+			Interval: "10s",
+		},
+	}
 	toSaveCfg.Created = &t
 	err = orm.Save(nil, &toSaveCfg)
 	if err != nil {

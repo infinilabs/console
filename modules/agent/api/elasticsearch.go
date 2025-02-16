@@ -108,7 +108,7 @@ func refreshNodesInfo(instanceID, instanceEndpoint string) (*elastic.DiscoveryRe
 		return nil, fmt.Errorf("error on get binding nodes info: %w", err)
 	}
 
-	ctxTimeout, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctxTimeout, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 	nodesInfo, err := GetElasticsearchNodesViaAgent(ctxTimeout, instanceEndpoint)
 	if err != nil {

@@ -7,9 +7,7 @@ title: "Release Notes"
 
 Information about release notes of INFINI Console is provided here.
 
-## Latest (In development)
-
-### Breaking changes
+## 1.28.2 (2025-02-15)
 
 ### Features
 - Support alerts based on bucket diff state (#119)

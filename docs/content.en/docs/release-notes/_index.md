@@ -6,6 +6,15 @@ title: "Release Notes"
 # Release Notes
 
 Information about release notes of INFINI Console is provided here.
+## Latest (In development)
+
+### Breaking changes
+
+### Features
+
+### Bug fix
+- Fixed the error when querying empty metric data (#144)
+### Improvements
 
 ## 1.28.2 (2025-02-15)
 

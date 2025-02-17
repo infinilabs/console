@@ -7,13 +7,12 @@ title: "版本历史"
 
 这里是 INFINI Console 历史版本发布的相关说明。
 
-## Latest (In development)
-
-### Breaking changes
+## 1.28.2 (2025-02-15)
 
 ### Features
 - 告警功能支持根据桶之间文档数差值和内容差异告警 (#119)
 - 当使用 Easysearch 存储指标时，增加 Rollup 索引生命周期 (#128)
+
 ### Bug fix
 - 修复 Insight API 处理多时间序列数据时数据丢失的问题 (#127)
 

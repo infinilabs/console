@@ -28,6 +28,19 @@ PUT _template/$[[SETUP_TEMPLATE_NAME]]
       }
     },
     "mappings": {
+      "properties": {
+        "metadata": {
+          "properties": {
+            "labels": {
+              "properties": {
+                "cluster_id": {
+                  "type": "keyword"
+                }
+              }
+            }
+          }
+        }
+      },
       "dynamic_templates": [
         {
           "strings": {

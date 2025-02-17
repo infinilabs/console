@@ -31,8 +31,8 @@ title: "版本历史"
 - 在注册 Agent 中新增 Agent 凭据设置
 - 在集群编辑中新增采集模式
 - 当使用 Easysearch 存储指标时，自动为系统集群创建 Agent 指标写入最小权限用户 (#120)
-- 修复 LDAP 用户映射增加默认权限组 (#114) (#130)
-- Agent 连接 Easysearch 的配置信息中增加 `version` 和 `distribution` 来解决启动时退出问题 (#131)
+- 优化 LDAP 用户映射增加默认权限组 (#114) (#130)
+- 优化 Agent 连接 Easysearch 的配置信息中增加 `version` 和 `distribution` 来解决启动时退出问题 (#131)
 
 ## 1.28.1 (2025-01-24)
 

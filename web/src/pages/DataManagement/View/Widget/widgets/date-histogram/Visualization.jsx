@@ -14,7 +14,7 @@ export default (props) => {
 
     const { record, result, options, isGroup, isLock, onReady, bucketSize, isTimeSeries, highlightRange, currentQueries = {}, handleContextMenu, onChartElementClick } = props;
 
-    const { id, is_stack, is_percent, drilling = {}, series, legend } = record;
+    const { id, is_stack, is_percent, drilling = {}, series, legend, colors } = record;
 
     const { metric = {} } = series[0]
 
@@ -81,6 +81,13 @@ export default (props) => {
       if (is_percent) {
         config.isPercent = true;
         config.yAxis.label.formatter = (value) => `${value * 100}%`
+      }
+    }
+    
+    if (colors) {
+      config.color = Array.isArray(colors) ? colors : (value) => {
+        const { name } = value;
+        return colors[name];
       }
     }
 

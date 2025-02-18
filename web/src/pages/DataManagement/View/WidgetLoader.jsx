@@ -84,6 +84,7 @@ export const WidgetRender = (props) => {
                onResultChange={(res) => {
                   setRequests(Array.isArray(res) ? res.filter((item) => !!item.request).map((item) => item.request) : [])
                }}
+               refresh={refresh}
             />
          </div>
       ) : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />

@@ -180,7 +180,7 @@ const Monitor = (props) => {
                       onTimeSettingsChange(newRefresh)
                       setRefresh(newRefresh)
                     }}
-                    onRefresh={handleTimeChange}
+                    onRefresh={(value) => handleTimeChange({ ...(value || {}), refresh: new Date().valueOf()})}
                     showTimeSetting={true}
                     showTimeInterval={true}
                     timeInterval={state.timeInterval}
@@ -221,7 +221,7 @@ const Monitor = (props) => {
                   animated={false}
                 >
                   {panes.map((pane) => (
-                    <TabPane tab={pane.title} key={pane.key}>
+                    <TabPane tab={formatMessage({id: `cluster.monitor.tabs.${pane.key}`})} key={pane.key}>
                       <Spin spinning={spinning && !!state.refresh}>
                         <StatisticBar
                           setSpinning={setSpinning}

@@ -333,7 +333,7 @@ const RuleDetail = (props) => {
             onRangeChange={handleTimeChange}
             {...refresh}
             onRefreshChange={setRefresh}
-            onRefresh={({ start, end}) => handleTimeChange({ start, end, refresh: new Date().valueOf()})}
+            onRefresh={(value) => handleTimeChange({ ...(value || {}), refresh: new Date().valueOf()})}
             timeZone={timeZone}
             onTimeZoneChange={setTimeZone}
             recentlyUsedRangesKey={"rule-detail"}

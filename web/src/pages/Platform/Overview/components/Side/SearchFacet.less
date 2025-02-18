@@ -1,0 +1,30 @@
+.searchFacet {
+  .line {
+    padding: 4px 0;
+    &.label {
+      text-transform: capitalize;
+      font-size: 12px;
+      color: #8b9bad;
+      letter-spacing: 1px;
+      padding: 0;
+    }
+    .value {
+      display: flex;
+      align-items: center;
+      :global {
+        label.ant-checkbox-wrapper {
+          width: 152px;
+          overflow: hidden;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+        }
+      }
+      .count {
+        margin-left: auto;
+        color: #888;
+        font-size: 0.85em;
+        text-align: right;
+      }
+    }
+  }
+}

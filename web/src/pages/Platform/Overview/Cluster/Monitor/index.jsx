@@ -9,11 +9,13 @@ import Monitor from "@/components/Overview/Monitor";
 import StatisticBar from "./statistic_bar";
 import { Empty } from "antd";
 import TopN from "./TopN";
+import Logs from "./Logs";
 
 const panes = [
   { title: "Overview", component: Overview, key: "overview" },
   { title: "Advanced", component: Advanced, key: "advanced" },
   { title: "TopN", component: TopN, key: "topn" },
+  { title: "Logs", component: Logs, key: "logs" },
   { title: "Nodes", component: Nodes, key: "nodes" },
   { title: "Indices", component: Indices, key: "indices" },
 ];

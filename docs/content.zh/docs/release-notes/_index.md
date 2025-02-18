@@ -6,6 +6,7 @@ title: "版本历史"
 # 版本发布日志
 
 这里是 INFINI Console 历史版本发布的相关说明。
+
 ## Latest (In development)
 
 ### Breaking changes
@@ -14,7 +15,9 @@ title: "版本历史"
 
 ### Bug fix
 - 修复指标数据为空时的查询错误 (#144)
+
 ### Improvements
+- 优化下发给 Agent 的配置，增加集群名称 (#148)
 
 ## 1.28.2 (2025-02-15)
 

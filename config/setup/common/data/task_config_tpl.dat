@@ -34,6 +34,7 @@ pipeline:
       labels:
         cluster_id: $[[CLUSTER_ID]]
         cluster_uuid: $[[CLUSTER_UUID]]
+        cluster_name: $[[CLUSTER_NAME]]
       when:
         cluster_available: ["$[[TASK_ID]]"]
 
@@ -49,6 +50,7 @@ pipeline:
       labels:
         cluster_id: $[[CLUSTER_ID]]
         cluster_uuid: $[[CLUSTER_UUID]]
+        cluster_name: $[[CLUSTER_NAME]]
       logs_path: $[[NODE_LOGS_PATH]]
       queue_name: logs
       when:

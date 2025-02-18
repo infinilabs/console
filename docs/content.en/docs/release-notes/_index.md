@@ -6,6 +6,7 @@ title: "Release Notes"
 # Release Notes
 
 Information about release notes of INFINI Console is provided here.
+
 ## Latest (In development)
 
 ### Breaking changes
@@ -15,7 +16,9 @@ Information about release notes of INFINI Console is provided here.
 ### Bug fix
 - Fixed the error when querying empty metric data (#144)
 - Fixed empty host when setup step finishes (#147)
+
 ### Improvements
+- Update agent config with cluster name (#148)
 
 ## 1.28.2 (2025-02-15)
 

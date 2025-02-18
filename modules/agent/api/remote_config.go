@@ -199,11 +199,13 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 		var password = ""
 		var version = ""
 		var distribution = ""
+		var clusterName = ""
 
 		if metadata.Config != nil {
 
 			version = metadata.Config.Version
 			distribution = metadata.Config.Distribution
+			clusterName = metadata.Config.Name
 
 			if metadata.Config.AgentCredentialID != "" {
 				credential, err := common2.GetCredential(metadata.Config.AgentCredentialID)
@@ -250,6 +252,7 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 			"variable:\n      "+
 			"TASK_ID: %v\n      "+
 			"CLUSTER_ID: %v\n      "+
+			"CLUSTER_NAME: %v\n      "+
 			"CLUSTER_UUID: %v\n      "+
 			"NODE_UUID: %v\n      "+
 			"CLUSTER_VERSION: %v\n      "+
@@ -260,7 +263,7 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 			"CLUSTER_LEVEL_TASKS_ENABLED: %v\n      "+
 			"NODE_LEVEL_TASKS_ENABLED: %v\n      "+
 			"NODE_LOGS_PATH: \"%v\"\n\n\n", taskID, taskID,
-			v.ClusterID, v.ClusterUUID, v.NodeUUID, version, distribution, nodeEndPoint, username, password, clusterLevelEnabled, nodeLevelEnabled, pathLogs)))
+			v.ClusterID, clusterName, v.ClusterUUID, v.NodeUUID, version, distribution, nodeEndPoint, username, password, clusterLevelEnabled, nodeLevelEnabled, pathLogs)))
 	}
 
 	hash := util.MD5digest(buffer.String())

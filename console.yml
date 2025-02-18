@@ -104,6 +104,7 @@ security:
 #          group_attribute: "ou"
 #          bypass_api_key: true
 #          cache_ttl: "10s"
+#          default_roles: ["ReadonlyUI","DATA"] #default for all ldap users if no specify roles was defined
 #          role_mapping:
 #            group:
 #              superheros: [ "Administrator" ]
@@ -118,6 +119,7 @@ security:
 #          base_dn: "dc=example,dc=com"
 #          user_filter: "(uid=%s)"
 #          cache_ttl: "10s"
+#          default_roles: ["ReadonlyUI","DATA"] #default for all ldap users if no specify roles was defined
 #          role_mapping:
 #            uid:
 #              tesla: [ "readonly","data" ]

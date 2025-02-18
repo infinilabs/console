@@ -14,6 +14,7 @@ Information about release notes of INFINI Console is provided here.
 
 ### Bug fix
 - Fixed the error when querying empty metric data (#144)
+- Fixed empty host when setup step finishes (#147)
 ### Improvements
 
 ## 1.28.2 (2025-02-15)

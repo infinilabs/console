@@ -13,14 +13,19 @@ export default ({ formData }) => {
     username,
     password,
     isInit,
+      hosts = [],
     bootstrap_username,
     bootstrap_password,
     credential_secret,
   } = formData;
 
   const onDownload = () => {
+    let hostV = host
+    if (!hostV && hosts.length > 0) {
+      hostV = hosts[0]
+    }
     const data = {
-      "Cluster": isTLS ? `https://${host}` : `http://${host}`,
+      "Cluster": isTLS ? `https://${hostV}` : `http://${hostV}`,
       "Cluster Username": username,
       "Cluster Password": password,
       "Cluster Username": username,

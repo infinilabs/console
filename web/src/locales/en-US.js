@@ -121,6 +121,7 @@ export default {
   "form.button.restart": "Restart",
   "form.button.verify": "Verify",
   "form.button.clean": "Clean",
+  "form.button.view_logs": "View Logs",
   "form.button.clean.confim.desc": "Are you sure to clean data that is {status}?",
   "form.button.clean.unavailable.nodes": "Clean unavailable nodes",
   "form.button.clean.unavailable.nodes.desc": "Are you sure to clean nodes that are unavailable within seven days?",

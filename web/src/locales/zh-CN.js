@@ -126,6 +126,7 @@ export default {
   "form.button.restart": "重启",
   "form.button.verify": "校验",
   "form.button.clean": "清除",
+  "form.button.view_logs": "View Logs",
   "form.button.clean.confim.desc": "确定删除状态为 {status} 的数据吗？",
   "form.button.clean.unavailable.nodes": "清除不可用节点",
   "form.button.clean.unavailable.nodes.desc": "确定清除7天内不可用的节点吗？",

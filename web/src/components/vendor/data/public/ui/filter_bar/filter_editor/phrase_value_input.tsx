@@ -50,8 +50,7 @@ class PhraseValueInputUI extends PhraseSuggestorUI<Props> {
   }
 
   private renderWithSuggestions() {
-    let { suggestions } = this.state;
-    suggestions = suggestions || [];
+    const suggestions = Array.isArray(this.state.suggestions) ? this.state.suggestions : []
     const { value, intl, onChange } = this.props;
     // there are cases when the value is a number, this would cause an exception
     const valueAsStr = String(value);

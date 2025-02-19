@@ -264,7 +264,7 @@ export default function QueryBarTopRow(props: QueryBarTopRowProps) {
     return (
       <NoDataPopover storage={storage} showNoDataPopover={props.indicateNoData}>
         <EuiFlexGroup responsive={false} gutterSize="s">
-          {renderHistogram()}
+          {/* {renderHistogram()} */}
           {renderDatePicker()}
           <EuiFlexItem grow={false}>{button}</EuiFlexItem>
         </EuiFlexGroup>

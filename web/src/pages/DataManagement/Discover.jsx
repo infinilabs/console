@@ -1122,7 +1122,7 @@ const Discover = (props) => {
             getVisualizations={() => visRef?.current?.getVisualizations()}
             searchInfo={{
               took,
-              hits,
+              total: hits,
               ...timeChartProps,
             }}
             selectedQueriesId={selectedQueriesId}
@@ -1160,6 +1160,10 @@ const Discover = (props) => {
               }
             }}
             showLayoutListIcon={false}
+            histogramProps={{
+              histogramData,
+              timefilterUpdateHandler
+            }}
             // viewLayout={viewLayout}
             // onViewLayoutChange={(layout) => {
             //   if (layout) {

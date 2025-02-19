@@ -121,6 +121,9 @@ function FilterBarUI(props: Props) {
                 onCancel={() => setIsAddFilterPopoverOpen(false)}
                 key={JSON.stringify(newFilter)}
                 services={props.services}
+                dateRangeFrom={props.dateRangeFrom}
+                dateRangeTo={props.dateRangeTo}
+                timeField={props.timeField}
               />
             </div>
           </EuiFlexItem>

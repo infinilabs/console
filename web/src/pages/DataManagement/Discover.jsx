@@ -1160,6 +1160,10 @@ const Discover = (props) => {
               }
             }}
             showLayoutListIcon={false}
+            histogramProps={{
+              histogramData,
+              timefilterUpdateHandler
+            }}
             // viewLayout={viewLayout}
             // onViewLayoutChange={(layout) => {
             //   if (layout) {

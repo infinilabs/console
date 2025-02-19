@@ -5,9 +5,9 @@ import InsightConfig, { ISearchConfig } from "../InsightConfig";
 import styles from './index.less';
 import { create, list, remove, update } from "../services/queries";
 import FullScreen from "../FullScreen";
-import ModeHandler from "../ModeHandler";
 import { Icon, message } from "antd";
 import SearchInfo from "../SearchInfo";
+import Histogram from "../Histogram";
 import ViewLayout from "../ViewLayout";
 
 export interface IQueries {
@@ -72,7 +72,8 @@ export default forwardRef((props: IProps, ref: any) => {
     onSearchConfigChange,
     showLayoutListIcon,
     viewLayout,
-    onViewLayoutChange
+    onViewLayoutChange,
+    histogramProps = {}
   } = props;
 
   const {
@@ -183,6 +184,7 @@ export default forwardRef((props: IProps, ref: any) => {
   return (
     <div className={styles.bar}>
       <SearchInfo {...searchInfo} loading={searchLoading}/>
+      <Histogram {...histogramProps}/>
       <SaveQueries
         tags={tags} 
         onTagsChange={setTags} 

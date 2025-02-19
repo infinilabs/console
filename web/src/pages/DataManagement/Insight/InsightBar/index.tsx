@@ -184,7 +184,7 @@ export default forwardRef((props: IProps, ref: any) => {
   return (
     <div className={styles.bar}>
       <SearchInfo {...searchInfo} loading={searchLoading}/>
-      <Histogram {...histogramProps}/>
+      { histogramProps?.histogramData && <Histogram {...histogramProps}/>}
       <SaveQueries
         tags={tags} 
         onTagsChange={setTags} 

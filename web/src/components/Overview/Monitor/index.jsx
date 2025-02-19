@@ -119,9 +119,10 @@ const Monitor = (props) => {
     setParam({ ...param, timeRange: state.timeRange, timeInterval: state.timeInterval, timeout: state.timeout });
   }, [state.timeRange, state.timeInterval, state.timeout]);
 
-  const handleTimeChange = useCallback(({ start, end, timeInterval, timeout, refresh }) => {
+  const handleTimeChange = ({ start, end, timeInterval, timeout, refresh }) => {
     setState(initState({
       ...state,
+      param,
       timeRange: {
         min: start,
         max: end,
@@ -130,11 +131,12 @@ const Monitor = (props) => {
       timeout: timeout || state.timeout,
       refresh
     }));
-  }, [state]) 
+  }
 
   const onInfoChange = (info) => {
     setState({
       ...state,
+      param,
       info,
     });
   };
@@ -194,6 +196,7 @@ const Monitor = (props) => {
                       })
                       setState({
                         ...state,
+                        param,
                         timeInterval: timeSetting.timeInterval,
                         timeout: timeSetting.timeout
                       });
@@ -249,6 +252,7 @@ const Monitor = (props) => {
                                 })
                                 setState({
                                   ...state,
+                                  param,
                                   timeInterval,
                                 });
                               }}

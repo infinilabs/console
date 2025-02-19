@@ -1,5 +1,4 @@
 import { Empty, Input, Spin, Table } from "antd";
-import styles from "./Logs.less"
 import { formatMessage } from "umi/locale";
 import { Link } from "umi";
 import Logs from "../../components/Logs";
@@ -11,7 +10,7 @@ const AGGS = {
 }
 
 export default (props) => {
-    const { clusterID } = props;
+    const { clusterID, param = {} } = props;
 
     return (
         <Logs 
@@ -31,6 +30,14 @@ export default (props) => {
                     dataIndex: "metadata.labels.node_name",
                     width: 88,
                     ellipsis: true,
+                    render: (value, record) => {
+                        if (!record.metadata?.labels?.node_uuid) return value
+                        return (
+                            <Link to={`/cluster/monitor/${clusterID}/nodes/${record.metadata.labels.node_uuid}?_g=${encodeURIComponent(JSON.stringify(param))}`}>
+                                {value}
+                            </Link>
+                        )
+                    }
                 },
             ]}
         />

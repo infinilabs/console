@@ -215,7 +215,7 @@ const DatePicker = (props) => {
         isMinimum ? styles.minimum : ""
       } ${className}`}
     >
-      <Button.Group className={styles.RangeBox}>
+      <Button.Group className={styles.RangeBox} style={{ width: onRefresh ? 'calc(100% - 64px)' : 'calc(100% - 32px)'}}>
         {!isMinimum && (
           <Button
             className={`${styles.iconBtn} common-ui-datepicker-backward`}

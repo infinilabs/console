@@ -24,6 +24,10 @@ export default (props) => {
   if (indexName && indexName.includes("%")) {
     indexNameEncode = encodeURIComponent(indexName);
   }
+  const logStartTime = moment(timestamp).add(-3, "m");
+  const logEndTime = moment(timestamp).add(3, "m");
+  const logTimeRangeStr = encodeURIComponent(JSON.stringify({min:logStartTime.toISOString(),max:logEndTime.toISOString()}))
+
 
   switch (name) {
     case "index_state_change":
@@ -90,10 +94,20 @@ export default (props) => {
           </Link>{" "}
           <b>{opers[type]}</b> from <b>{hit._source.metadata.labels.from}</b> to{" "}
           <b>{hit._source.metadata.labels.to}</b>
+          <a
+          size="small"
+          style={{ marginLeft: 12, cursor: 'pointer' }} 
+          >
+            <Icon type="file-text" style={{marginRight:2}}/> 
+            <Link
+            to={`/cluster/monitor/elasticsearch/${hit._source.metadata.labels.cluster_id}?_g={"tab":"logs","timeRange":${logTimeRangeStr}}`}
+            >{formatMessage({ id: "form.button.view_logs" })}
+            </Link>
+        </a>
         </>
       );
     case "cluster_health_change":
-      return <ClusterHealthChange hit={hit} type={opers[type]} timeRangeStr={timeRangeStr}/>
+      return <ClusterHealthChange hit={hit} type={opers[type]} timeRangeStr={timeRangeStr} logTimeRangeStr={logTimeRangeStr}/>
     case "node_health_change":
       return (
         <>
@@ -110,6 +124,15 @@ export default (props) => {
             {hit._source.metadata.labels.cluster_name}
           </Link>{" "}
           <b>{opers[type]}</b> to <b>{hit._source.metadata.labels.to}</b>
+          <a
+            size="small"
+            style={{ marginLeft: 12, cursor: 'pointer' }} 
+          >
+            <Icon type="file-text" style={{marginRight:2}}/> 
+            <Link
+          to={`/cluster/monitor/${hit._source.metadata.labels.cluster_id}/nodes/${hit._source.metadata.labels.node_id}?_g={"tab":"logs","timeRange":${logTimeRangeStr}}`}
+        >{formatMessage({ id: "form.button.view_logs" })}</Link>
+        </a>
         </>
       );
     case "node_state_change":
@@ -216,12 +239,11 @@ export default (props) => {
 };
 
 const ClusterHealthChange = (props) => {
-  const { hit, type, timeRangeStr } = props;
+  const { hit, type, timeRangeStr, logTimeRangeStr } = props;
   const status = hit._source.metadata.labels.to
   const hasAllocationExplain = status === 'red'
 
   const [active, setActive] = useState(false)
-
   const content = (
     <span 
       style={{ cursor: hasAllocationExplain ? 'pointer' : 'default'}} 
@@ -251,6 +273,15 @@ const ClusterHealthChange = (props) => {
           <Icon type={active ? "up-square" : "down-square"}/> {formatMessage({ id: "form.button.detail" })} 
         </a>
       ) : null}
+      <a
+          size="small"
+          style={{ marginLeft: 12, cursor: 'pointer' }} 
+        >
+          <Icon type="file-text" style={{marginRight:2}}/> 
+          <Link
+        to={`/cluster/monitor/elasticsearch/${hit._source.metadata.labels.cluster_id}?_g={"tab":"logs","timeRange":${logTimeRangeStr}}`}
+      >{formatMessage({ id: "form.button.view_logs" })}</Link>
+        </a>
     </span>
   )
 

@@ -6,10 +6,12 @@ import { formatMessage } from "umi/locale";
 import Monitor from "@/components/Overview/Monitor";
 import StatisticBar from "./statistic_bar";
 import { connect } from "dva";
+import Logs from "./Logs";
 
 const panes = [
   { title: "Overview", component: Overview, key: "overview" },
   { title: "Advanced", component: Advanced, key: "advanced" },
+  { title: "Logs", component: Logs, key: "logs" },
   { title: "Shards", component: Shards, key: "shards" },
 ];
 const Page = (props) => {

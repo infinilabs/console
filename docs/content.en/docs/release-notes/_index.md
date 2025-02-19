@@ -13,6 +13,8 @@ Information about release notes of INFINI Console is provided here.
 
 ### Features
 
+- Add Logs to Monitor (cluster, node)
+
 ### Bug fix
 - Fixed the error when querying empty metric data (#144)
 - Fixed empty host when setup step finishes (#147)
@@ -20,7 +22,8 @@ Information about release notes of INFINI Console is provided here.
 
 ### Improvements
 - Update agent config with cluster name (#148)
-- Optimize UI of histogram and datepicker in discover
+- Optimize UI of histogram and datepicker in discover (#151)
+- Support viewing logs for cluster, node, index health change events (#150)
 
 ## 1.28.2 (2025-02-15)
 

@@ -115,6 +115,21 @@ export default {
   "cluster.monitor.topn.color": "颜色指标",
   "cluster.monitor.topn.theme": "主题",
 
+  "cluster.monitor.logs.timestamp": "时间戳",
+  "cluster.monitor.logs.type": "类型",
+  "cluster.monitor.logs.level": "等级",
+  "cluster.monitor.logs.node": "节点",
+  "cluster.monitor.logs.message": "日志",
+  "cluster.monitor.logs.search.placeholder": "搜索日志",
+
+  "cluster.monitor.tabs.overview": "概览",
+  "cluster.monitor.tabs.advanced": "高级",
+  "cluster.monitor.tabs.topn": "TopN",
+  "cluster.monitor.tabs.logs": "日志",
+  "cluster.monitor.tabs.nodes": "节点",
+  "cluster.monitor.tabs.indices": "索引",
+  "cluster.monitor.tabs.shards": "分片",
+
   "cluster.metrics.axis.index_throughput.title": "索引吞吐",
   "cluster.metrics.axis.search_throughput.title": "查询吞吐",
   "cluster.metrics.axis.index_latency.title": "索引延迟",

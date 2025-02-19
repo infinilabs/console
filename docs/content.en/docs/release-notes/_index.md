@@ -13,6 +13,8 @@ Information about release notes of INFINI Console is provided here.
 
 ### Features
 
+- Add Logs to Monitor (cluster, node)
+
 ### Bug fix
 - Fixed the error when querying empty metric data (#144)
 - Fixed empty host when setup step finishes (#147)

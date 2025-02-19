@@ -124,6 +124,21 @@ export default {
   "cluster.monitor.topn.color": "Color Metric",
   "cluster.monitor.topn.theme": "Theme",
 
+  "cluster.monitor.logs.timestamp": "Timestamp",
+  "cluster.monitor.logs.type": "Type",
+  "cluster.monitor.logs.level": "Level",
+  "cluster.monitor.logs.node": "Node",
+  "cluster.monitor.logs.message": "Message",
+  "cluster.monitor.logs.search.placeholder": "Search message",
+
+  "cluster.monitor.tabs.overview": "Overview",
+  "cluster.monitor.tabs.advanced": "Advanced",
+  "cluster.monitor.tabs.topn": "TopN",
+  "cluster.monitor.tabs.logs": "Logs",
+  "cluster.monitor.tabs.nodes": "Nodes",
+  "cluster.monitor.tabs.indices": "Indices",
+  "cluster.monitor.tabs.shards": "Shards",
+
   "cluster.metrics.axis.index_throughput.title": "Indexing Rate",
   "cluster.metrics.axis.search_throughput.title": "Search Rate",
   "cluster.metrics.axis.index_latency.title": "Indexing Latency",
@@ -370,5 +385,7 @@ export default {
   "cluster.metrics.time_interval.apply": "Apply suggestion",
 
   "cluster.collect.last_active_at": "Last Active At",
+
+  
 
 };

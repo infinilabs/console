@@ -666,7 +666,7 @@ const Index = (props) => {
                   onRangeChange={onTimeChange}
                   {...refresh}
                   onRefreshChange={setRefresh}
-                  onRefresh={({ start, end}) => onTimeChange({ start, end, refresh: new Date().valueOf()})}
+                  onRefresh={(value) => onTimeChange({ ...(value || {}), refresh: new Date().valueOf()})}
                   timeZone={timeZone}
                   onTimeZoneChange={setTimeZone}
                   recentlyUsedRangesKey={'alerting-message'}

@@ -82,17 +82,30 @@ export class PhraseSuggestorUI<
   protected updateSuggestions = debounce(async (query: string = "") => {
     if (this.abortController) this.abortController.abort();
     this.abortController = new AbortController();
-    const { indexPattern, field } = this.props as PhraseSuggestorProps;
+    const { indexPattern, field, dateRangeFrom, dateRangeTo, timeField } = this.props as PhraseSuggestorProps;
     if (!field || !this.isSuggestingValues()) {
       return;
     }
     this.setState({ isLoading: true });
+
+    const boolFilter = []
+    if (dateRangeFrom && dateRangeTo && timeField) {
+      boolFilter.push({
+        "range": {
+          [timeField]: {
+            "gte": dateRangeFrom,
+            "lte": dateRangeTo
+          }
+        }
+      })
+    }
 
     const suggestions = await this.props.services.data.autocomplete.getValueSuggestions(
       {
         indexPattern,
         field,
         query,
+        boolFilter,
         signal: this.abortController.signal,
       }
     );

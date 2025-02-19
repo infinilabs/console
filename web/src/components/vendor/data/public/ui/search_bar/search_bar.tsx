@@ -484,6 +484,9 @@ class SearchBarUI extends Component<SearchBarProps, State> {
               filters={this.props.filters!}
               onFiltersUpdated={this.props.onFiltersUpdated}
               indexPatterns={this.props.indexPatterns!}
+              dateRangeFrom={this.state.dateRangeFrom}
+              dateRangeTo={this.state.dateRangeTo}
+              timeField={this.props.timeSetting?.timeField}
               services={this.props.services}
             />
           </div>

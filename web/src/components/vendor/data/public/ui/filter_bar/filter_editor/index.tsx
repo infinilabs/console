@@ -313,6 +313,9 @@ class FilterEditorUI extends Component<Props, State> {
             onChange={this.onParamsChange}
             data-test-subj="phraseValueInput"
             services={this.props.services}
+            dateRangeFrom={this.props.dateRangeFrom}
+            dateRangeTo={this.props.dateRangeTo}
+            timeField={this.props.timeField}
           />
         );
       case 'phrases':
@@ -323,6 +326,9 @@ class FilterEditorUI extends Component<Props, State> {
             values={this.state.params}
             onChange={this.onParamsChange}
             services={this.props.services}
+            dateRangeFrom={this.props.dateRangeFrom}
+            dateRangeTo={this.props.dateRangeTo}
+            timeField={this.props.timeField}
           />
         );
       case 'range':

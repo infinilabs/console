@@ -1122,7 +1122,7 @@ const Discover = (props) => {
             getVisualizations={() => visRef?.current?.getVisualizations()}
             searchInfo={{
               took,
-              hits,
+              total: hits,
               ...timeChartProps,
             }}
             selectedQueriesId={selectedQueriesId}

@@ -30,7 +30,7 @@ export interface IProps {
    * selected interval
    */
   stateInterval: string;
-  hits: number;
+  total: number;
   took?: number;
 }
 
@@ -39,7 +39,7 @@ export default ({
   dateFormat,
   timeRange,
   stateInterval,
-  hits,
+  total,
   took,
 }: IProps) => {
   const [interval, setInterval] = useState(stateInterval);
@@ -69,7 +69,7 @@ export default ({
     >
       <EuiFlexItem grow={false}>
         <div style={{ fontSize: 12}}>
-          Found <span style={{fontWeight: "bold" }}>{hits}</span>{" "}
+          Found <span style={{fontWeight: "bold" }}>{total}</span>{" "}
           records {took && (
             <span style={{marginLeft: 5 }}>
               ({took} milliscond)

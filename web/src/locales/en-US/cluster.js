@@ -130,6 +130,8 @@ export default {
   "cluster.monitor.logs.node": "Node",
   "cluster.monitor.logs.message": "Message",
   "cluster.monitor.logs.search.placeholder": "Search message",
+  "cluster.monitor.logs.empty.agent": "No data, please change the time range or check if the Agent is working properly.",
+  "cluster.monitor.logs.empty.agentless": "No data, please install the Agent and change the cluster collection mode to Agent.",
 
   "cluster.monitor.tabs.overview": "Overview",
   "cluster.monitor.tabs.advanced": "Advanced",

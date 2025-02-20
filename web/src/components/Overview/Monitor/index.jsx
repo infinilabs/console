@@ -158,7 +158,7 @@ const Monitor = (props) => {
       return monitor_configs?.node_stats?.enabled === false && monitor_configs?.index_stats?.enabled === false
     }
     return metric_collection_mode === 'agent'
-  }, [JSON.stringify(selectedCluster?.monitor_configs)])
+  }, [JSON.stringify(selectedCluster)])
 
   return (
     <div>
@@ -170,46 +170,48 @@ const Monitor = (props) => {
             <>
               <div style={{ marginBottom: 5 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <DatePicker
-                    locale={getLocale()}
-                    start={state.timeRange.min}
-                    end={state.timeRange.max}
-                    onRangeChange={({ start, end }) => {
-                      handleTimeChange({ start, end })
-                    }}
-                    {...refresh}
-                    onRefreshChange={(newRefresh) => {
-                      onTimeSettingsChange(newRefresh)
-                      setRefresh(newRefresh)
-                    }}
-                    onRefresh={(value) => handleTimeChange({ ...(value || {}), refresh: new Date().valueOf()})}
-                    showTimeSetting={true}
-                    showTimeInterval={true}
-                    timeInterval={state.timeInterval}
-                    timeIntervalDisabled={state.timeIntervalDisabled}
-                    showTimeout={true}
-                    timeout={state.timeout}
-                    onTimeSettingChange={(timeSetting) => {
-                      onTimeSettingsChange({
-                        timeInterval: timeSetting.timeInterval,
-                        timeout: timeSetting.timeout
-                      })
-                      setState({
-                        ...state,
-                        param,
-                        timeInterval: timeSetting.timeInterval,
-                        timeout: timeSetting.timeout
-                      });
-                    }}
-                    timeZone={timeZone}
-                    onTimeZoneChange={(timeZone) => {
-                      onTimeSettingsChange({
-                        timeZone,
-                      })
-                      setTimeZone(timeZone)
-                    }}
-                    recentlyUsedRangesKey={'monitor'}
-                  />
+                  <div style={{ maxWidth: 600 }}>
+                    <DatePicker
+                      locale={getLocale()}
+                      start={state.timeRange.min}
+                      end={state.timeRange.max}
+                      onRangeChange={({ start, end }) => {
+                        handleTimeChange({ start, end })
+                      }}
+                      {...refresh}
+                      onRefreshChange={(newRefresh) => {
+                        onTimeSettingsChange(newRefresh)
+                        setRefresh(newRefresh)
+                      }}
+                      onRefresh={(value) => handleTimeChange({ ...(value || {}), refresh: new Date().valueOf()})}
+                      showTimeSetting={true}
+                      showTimeInterval={true}
+                      timeInterval={state.timeInterval}
+                      timeIntervalDisabled={state.timeIntervalDisabled}
+                      showTimeout={true}
+                      timeout={state.timeout}
+                      onTimeSettingChange={(timeSetting) => {
+                        onTimeSettingsChange({
+                          timeInterval: timeSetting.timeInterval,
+                          timeout: timeSetting.timeout
+                        })
+                        setState({
+                          ...state,
+                          param,
+                          timeInterval: timeSetting.timeInterval,
+                          timeout: timeSetting.timeout
+                        });
+                      }}
+                      timeZone={timeZone}
+                      onTimeZoneChange={(timeZone) => {
+                        onTimeSettingsChange({
+                          timeZone,
+                        })
+                        setTimeZone(timeZone)
+                      }}
+                      recentlyUsedRangesKey={'monitor'}
+                    />
+                  </div>
                   <CollectStatus fetchUrl={`${ESPrefix}/${selectedCluster?.id}/_collection_stats`}/>
                 </div>
               </div>

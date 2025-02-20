@@ -324,6 +324,19 @@ export default (props) => {
   
     return (
       <div key={metricKey} ref={containerRef} className={className} style={style}>
+        {
+                metric?.request && (
+                  <CopyToClipboard text={`GET .infini_metrics/_search\n${metric.request}`}>
+                    <Tooltip title={formatMessage({id: "cluster.metrics.request.copy"})}>
+                      <Icon 
+                        className="copyReq"
+                        type="copy" 
+                        onClick={() => message.success(formatMessage({id: "cluster.metrics.request.copy.success"}))}
+                      />
+                    </Tooltip>
+                  </CopyToClipboard>
+                )
+              }
         <Spin spinning={loading}>
         <div className={styles.vizChartItemTitle}>
           <span>
@@ -337,20 +350,6 @@ export default (props) => {
                   <Tooltip title={formatMessage({id: "cluster.metrics.time_interval.reload"}, { time_interval: queryParams.bucket_size })}>
                     <Icon className={styles.copy} style={{ marginRight: 12 }} type="history" onClick={() => setTimeInterval()}/>
                   </Tooltip>
-                )
-              }
-              {
-                metric?.request && (
-                  <CopyToClipboard text={`GET .infini_metrics/_search\n${metric.request}`}>
-                    <Tooltip title={formatMessage({id: "cluster.metrics.request.copy"})}>
-                      <Icon 
-                        className={styles.copy}
-                        style={{ marginRight: 12 }} 
-                        type="copy" 
-                        onClick={() => message.success(formatMessage({id: "cluster.metrics.request.copy.success"}))}
-                      />
-                    </Tooltip>
-                  </CopyToClipboard>
                 )
               }
               <Tooltip title={formatMessage({id: "form.button.refresh"})}>

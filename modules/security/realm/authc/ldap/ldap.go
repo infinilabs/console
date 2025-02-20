@@ -82,6 +82,9 @@ func (r *LDAPRealm) mapLDAPRoles(authInfo auth.Info) []string {
 	}
 
 	//map group
+	if len(authInfo.GetGroups()) == 0 {
+		log.Debugf("LDAP uid: %v, user: %v, group: %v", uid, authInfo, authInfo.GetGroups())
+	}
 	for _, roleName := range authInfo.GetGroups() {
 		newRoles, ok := r.config.RoleMapping.Group[roleName]
 		if ok {

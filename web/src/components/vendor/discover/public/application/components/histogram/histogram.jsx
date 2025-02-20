@@ -88,7 +88,7 @@ export class DiscoverHistogram extends Component {
 
   render() {
     const timeZone = getTimezone();
-    const { chartData } = this.props;
+    const { chartData, height = 100 } = this.props;
     
     const { chartsTheme, chartsBaseTheme } = this.state;
 
@@ -149,7 +149,7 @@ export class DiscoverHistogram extends Component {
     //console.log(data)
 
     return (
-      <Chart size={{ height: 40 }}>
+      <Chart size={{ height }}>
         <Settings
           xDomain={xDomain}
           onBrushEnd={this.onBrushEnd}

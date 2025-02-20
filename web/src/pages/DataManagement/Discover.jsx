@@ -178,6 +178,9 @@ const Discover = (props) => {
     field: "",
     enabled: false,
   };
+
+  const [histogramVisible, setHistogramVisible] = useState(false)
+
   const [distinctParams, setDistinctParams] = React.useState(
     distinctParamsDefault
   );
@@ -1162,7 +1165,9 @@ const Discover = (props) => {
             showLayoutListIcon={false}
             histogramProps={{
               histogramData,
-              timefilterUpdateHandler
+              onHistogramToggle: () => {
+                setHistogramVisible(!histogramVisible)
+              },
             }}
             // viewLayout={viewLayout}
             // onViewLayoutChange={(layout) => {
@@ -1310,6 +1315,31 @@ const Discover = (props) => {
                             responsive={false}
                             style={{ position: "relative" }}
                           >
+                            {histogramVisible && opts.timefield && (
+                              <EuiFlexItem>
+                                <section
+                                  aria-label={"Histogram of found documents"}
+                                  className="dscTimechart"
+                                >
+                                  {opts.chartAggConfigs &&
+                                    histogramData &&
+                                    records.length !== 0 && (
+                                      <div
+                                        className="dscHistogramGrid"
+                                        data-test-subj="discoverChart"
+                                      >
+                                        <DiscoverHistogram
+                                          chartData={histogramData}
+                                          timefilterUpdateHandler={
+                                            timefilterUpdateHandler
+                                          }
+                                        />
+                                      </div>
+                                    )}
+                                </section>
+                                <EuiSpacer size="s" />
+                              </EuiFlexItem>
+                            )}
                             <EuiFlexItem className="eui-yScroll">
                               <section
                                 className="dscTable eui-yScroll"

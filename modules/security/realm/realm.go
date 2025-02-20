@@ -77,9 +77,9 @@ func Init(config *config.Config) {
 
 func Authenticate(username, password string) (bool, *rbac.User, error) {
 
-	for i, realm := range realms {
+	for _, realm := range realms {
 		ok, user, err := realm.Authenticate(username, password)
-		log.Debugf("authenticate result: %v, user: %v, err: %v, realm: %v", ok, user, err, i)
+		log.Debugf("authenticate result: %v, user: %v, err: %v, realm: %v", ok, user, err, realm.GetType())
 		if ok && user != nil && err == nil {
 			return true, user, nil
 		}
@@ -92,14 +92,14 @@ func Authenticate(username, password string) (bool, *rbac.User, error) {
 
 func Authorize(user *rbac.User) (bool, error) {
 
-	for i, realm := range realms {
+	for _, realm := range realms {
 		//skip if not the same auth provider, TODO: support cross-provider authorization
 		if user.AuthProvider != realm.GetType() {
 			continue
 		}
 
 		ok, err := realm.Authorize(user)
-		log.Debugf("authorize result: %v, user: %v, err: %v, realm: %v", ok, user, err, i)
+		log.Debugf("authorize result: %v, user: %v, err: %v, realm: %v", ok, user, err, realm.GetType())
 		if ok && err == nil {
 			//return on any success, TODO, maybe merge all roles and privileges from all realms
 			return true, nil

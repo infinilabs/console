@@ -25,6 +25,7 @@ Information about release notes of INFINI Console is provided here.
 - Optimize UI of histogram and datepicker in discover (#151)
 - Support viewing logs for cluster, node, index health change events (#150)
 - Enhance LDAP authentication logging (#156)
+- Optimize UI for copying metric requests (#155)
 
 ## 1.28.2 (2025-02-15)
 

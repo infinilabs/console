@@ -5,25 +5,11 @@ import styles from "./index.less";
 
 export default (props) => {
 
-    const { histogramData, timefilterUpdateHandler } = props
-
-    const [visible, setVisible] = useState(false)
+    const { onHistogramToggle } = props
 
     return (
-        <Popover 
-            visible={visible} 
-            placement="left" 
-            title={null} 
-            overlayClassName={styles.histogram}
-            content={(
-                <DiscoverHistogram
-                    chartData={histogramData}
-                    timefilterUpdateHandler={timefilterUpdateHandler}
-                />
-        )}>
-            <Icon type="bar-chart" style={{color: '#006BB4', cursor: 'pointer'}} onClick={() => {
-                setVisible(!visible)
-            }}/>
-        </Popover>
+        <Icon type="bar-chart" title="show histogram" style={{color: '#006BB4', cursor: 'pointer'}} onClick={() => {
+            onHistogramToggle()
+        }}/>
     )
 }

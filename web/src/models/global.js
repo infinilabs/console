@@ -355,7 +355,10 @@ export default {
       let idx = state.clusterList.findIndex((item) => item.id === payload.id);
       idx > -1 && (state.clusterList[idx].name = payload.name);
       if (state.selectedCluster?.id === payload.id) {
-        state.selectedCluster.monitor_configs = payload.monitor_configs
+        state.selectedCluster = {
+          ...(state.selectedCluster || {}),
+          ...(payload || {})
+        }
       }
       state.clusterStatus[payload.id].config.monitored = payload.monitored;
       return state;

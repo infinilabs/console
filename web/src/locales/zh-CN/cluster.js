@@ -121,6 +121,8 @@ export default {
   "cluster.monitor.logs.node": "节点",
   "cluster.monitor.logs.message": "日志",
   "cluster.monitor.logs.search.placeholder": "搜索日志",
+  "cluster.monitor.logs.empty.agent": "没有数据，请更改时间范围或检查 Agent 是否正常工作。",
+  "cluster.monitor.logs.empty.agentless": "没有数据，请安装 Agent 并更改集群采集模式为 Agent 。",
 
   "cluster.monitor.tabs.overview": "概览",
   "cluster.monitor.tabs.advanced": "高级",

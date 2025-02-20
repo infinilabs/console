@@ -314,7 +314,10 @@ export default (props) => {
                             </div>
                         </>
                     ) : (
-                        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE}/>
+                        <Empty 
+                            image={Empty.PRESENTED_IMAGE_SIMPLE}
+                            description={formatMessage({ id: `cluster.monitor.logs.empty.${isAgent ? 'agent' : 'agentless'}` })}
+                        />
                     )
                 }
             </div>  

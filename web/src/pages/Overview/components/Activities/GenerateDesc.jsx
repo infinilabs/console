@@ -234,6 +234,20 @@ export default (props) => {
           </>
         );
       }
+      case "metric_collection_mode_change":
+      if (type == "update") {
+        return (
+          <>
+            metric collection mode of cluster{" "}
+            <Link
+              to={`/resource/cluster/${hit._source.metadata.labels.cluster_id}/edit`}
+            >
+              {hit._source.metadata.labels.cluster_name}
+            </Link>{" "}
+            was <b>changed from {hit._source.metadata.labels.from} to {hit._source.metadata.labels.to}</b>
+          </>
+        );
+      }
   }
   return <></>;
 };

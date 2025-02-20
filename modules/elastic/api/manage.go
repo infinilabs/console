@@ -27,6 +27,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"infini.sh/framework/core/queue"
 	"math"
 	"net/http"
 	"strconv"
@@ -107,6 +108,9 @@ func (h *APIHandler) HandleCreateClusterAction(w http.ResponseWriter, req *http.
 	if conf.Distribution == "" {
 		conf.Distribution = elastic.Elasticsearch
 	}
+	if conf.MetricCollectionMode == "" {
+		conf.MetricCollectionMode = elastic.ModeAgentless
+	}
 	err = orm.Create(ctx, conf)
 	if err != nil {
 		log.Error(err)
@@ -183,6 +187,7 @@ func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.
 		h.Error404(w)
 		return
 	}
+	var oldCollectionMode = originConf.MetricCollectionMode
 	buf := util.MustToJSONBytes(originConf)
 	source := map[string]interface{}{}
 	util.MustFromJSONBytes(buf, &source)
@@ -255,7 +260,10 @@ func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
+	// record cluster metric collection mode change activity
+	if oldCollectionMode != newConf.MetricCollectionMode {
+		recordCollectionModeChangeActivity(newConf.ID, newConf.Name, oldCollectionMode, newConf.MetricCollectionMode)
+	}
 	basicAuth, err := common.GetBasicAuth(newConf)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -271,6 +279,47 @@ func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.
 	}
 
 	h.WriteUpdatedOKJSON(w, id)
+}
+
+func recordCollectionModeChangeActivity(clusterID, clusterName, oldMode, newMode string) {
+	activityInfo := &event.Activity{
+		ID:        util.GetUUID(),
+		Timestamp: time.Now(),
+		Metadata: event.ActivityMetadata{
+			Category: "elasticsearch",
+			Group:    "platform",
+			Name:     "metric_collection_mode_change",
+			Type:     "update",
+			Labels: util.MapStr{
+				"cluster_id":   clusterID,
+				"cluster_name": clusterName,
+				"from":         oldMode,
+				"to":           newMode,
+			},
+		},
+	}
+
+	queueConfig := queue.GetOrInitConfig("platform##activities")
+	if queueConfig.Labels == nil {
+		queueConfig.ReplaceLabels(util.MapStr{
+			"type":     "platform",
+			"name":     "activity",
+			"category": "elasticsearch",
+			"activity": true,
+		})
+	}
+	err := queue.Push(queueConfig, util.MustToJSONBytes(event.Event{
+		Timestamp: time.Now(),
+		Metadata: event.EventMetadata{
+			Category: "elasticsearch",
+			Name:     "activity",
+		},
+		Fields: util.MapStr{
+			"activity": activityInfo,
+		}}))
+	if err != nil {
+		log.Error(err)
+	}
 }
 
 func (h *APIHandler) HandleDeleteClusterAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {

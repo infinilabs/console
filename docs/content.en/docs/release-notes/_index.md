@@ -30,6 +30,7 @@ Information about release notes of INFINI Console is provided here.
 ### Features
 - Support alerts based on bucket diff state (#119)
 - Add rollup ilm when use Easysearch (#128)
+- Log activity for cluster metric collection mode changes (#152)
 
 ### Bug fix
 - Fixed missing data when processing multiple time series in a group with insight data API (#127)

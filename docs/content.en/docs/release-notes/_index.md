@@ -34,6 +34,7 @@ Information about release notes of INFINI Console is provided here.
 
 ### Bug fix
 - Fixed missing data when processing multiple time series in a group with insight data API (#127)
+- Fixed incorrect node health change activity logging (#154)
 
 ### Improvements
 

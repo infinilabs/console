@@ -25,6 +25,28 @@
   }
 }
 
+.vizChartContainer{
+  position: relative;
+  .copyReq {
+    cursor: pointer;
+    position: absolute;
+    display: none;
+    right: 3px;
+    bottom: 0px;
+    width: 24px;
+    height: 24px;
+    z-index: 11;
+    &:hover {
+      color: #1890ff;
+    }
+  }
+  &:hover {
+    .copyReq {
+        display: block;
+    }
+}
+}
+
 .vizChartItem {
   background: white !important;
 

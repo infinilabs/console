@@ -80,6 +80,7 @@ func (h *APIHandler) HandleProxyAction(w http.ResponseWriter, req *http.Request,
 	}
 	if strings.Trim(newURL.Path, "/") == "_sql" {
 		distribution := esClient.GetVersion().Distribution
+		version := esClient.GetVersion().Number
 		indexName, err := rewriteTableNamesOfSqlRequest(req, distribution)
 		if err != nil {
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -92,6 +93,15 @@ func (h *APIHandler) HandleProxyAction(w http.ResponseWriter, req *http.Request,
 		q, _ := url.ParseQuery(newURL.RawQuery)
 		hasFormat := q.Has("format")
 		switch distribution {
+		case elastic.Elasticsearch:
+			if !hasFormat {
+				q.Add("format", "txt")
+			}
+			if large, _ := util.VersionCompare(version, "7.0.0"); large > 0 {
+				path = "_sql?" + q.Encode()
+			} else {
+				path = "_xpack/_sql?" + q.Encode()
+			}
 		case elastic.Opensearch:
 			path = "_plugins/_sql?format=raw"
 		case elastic.Easysearch:

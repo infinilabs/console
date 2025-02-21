@@ -41,7 +41,7 @@ export default (props) => {
         to = bounds.max;
       }
       if (!from || !to) return data
-      const newData = cloneDeep(data)
+      const newData = cloneDeep(data.sort((a, b) => a.timestamp - b.timestamp))
       const fromTimestamp = moment(from).valueOf();
       const toTimestamp = moment(to).valueOf();
       let start = newData[0].timestamp;

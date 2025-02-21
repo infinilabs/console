@@ -29,6 +29,7 @@ Information about release notes of INFINI Console is provided here.
 - Support viewing logs for cluster, node, index health change events (#150)
 - Enhance LDAP authentication logging (#156)
 - Optimize UI for copying metric requests (#155)
+- Enhance deletion tips by adding cluster info for indices
 
 ## 1.28.2 (2025-02-15)
 

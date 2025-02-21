@@ -18,8 +18,9 @@ Information about release notes of INFINI Console is provided here.
 ### Bug fix
 - Fixed the error when querying empty metric data (#144)
 - Fixed empty host when setup step finishes (#147)
-- Fixed the error of obtaining suggestions of field's value in discover
-- Fixed the wrong display of heatmap's data in alerting message
+- Fixed the error of obtaining suggestions of field's value in discover (#151)
+- Fixed the wrong display of heatmap's data in alerting message (#157)
+- Fixed Devtools `_sql` support for eleasticsearch 6.x (#158) 
 
 ### Improvements
 - Update agent config with cluster name (#148)

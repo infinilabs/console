@@ -123,18 +123,6 @@ const MessageDetail = (props) => {
             recentlyUsedRangesKey={"rule-detail"}
           />
         </div>
-        <Button
-          onClick={() => {
-            handleTimeChange({
-              start: timeRange.min,
-              end: timeRange.max,
-            });
-          }}
-          icon={"reload"}
-          type="primary"
-        >
-          {formatMessage({ id: "form.button.refresh" })}
-        </Button>
       </div>
       <div style={{marginTop: 15,display:"flex", gap: 15, marginBottom:10}}>
         <div style={{flex: "1 1 50%"}}>

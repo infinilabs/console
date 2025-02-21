@@ -682,14 +682,6 @@ const Index = (props) => {
               gap: 10,
             }}
           >
-            <Button
-              icon="redo"
-              onClick={() => {
-                onRefreshClick();
-              }}
-            >
-              {formatMessage({ id: "form.button.refresh" })}
-            </Button>
             {hasAuthority("alerting.message:all") ? (
               <Dropdown overlay={batchMenu}>
                 <Button type="primary">

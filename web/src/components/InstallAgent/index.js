@@ -8,7 +8,6 @@ import { formatMessage } from "umi/locale";
 import { getDocPathByLang, getWebsitePathByLang } from "@/utils/utils";
 
 export default ({autoInit = false}) => {
-    const { loading, value } = useFetch(`/instance/_search`);
 
     const [tokenLoading, setTokenLoading] = useState(false);
 
@@ -18,7 +17,6 @@ export default ({autoInit = false}) => {
 
     const fetchTokenInfo = async () => {
         setTokenInfo()
-        // if (seletedGateways.length === 0) return;
         setTokenLoading(true)
         const res = await request('/instance/_generate_install_script', {
             method: "POST",
@@ -35,32 +33,10 @@ export default ({autoInit = false}) => {
         }
     }, [])
 
-    const gateways = value?.hits?.hits || []
 
     return (
-        <Spin spinning={loading || tokenLoading}>
+        <Spin spinning={tokenLoading}>
             <div className={styles.installAgent}>
-                {/* <Form className={styles.gateway} layout="vertical">
-                    <Form.Item label="选择接入网关" required>
-                        <Select
-                            mode="multiple"
-                            style={{ width: '100%' }}
-                            onChange={(value) => setSeletedGateways(value)}
-                            onBlur={() => fetchTokenInfo()}
-                        >
-                            {
-                                gateways.map((item) => (
-                                    <Select.Option key={item._source.endpoint}>
-                                        <span>
-                                            <span style={{marginRight: 4}}>{item._source.name}</span>
-                                            <span>[{item._source.endpoint}]</span>
-                                        </span>
-                                    </Select.Option>
-                                ))
-                            }
-                        </Select>
-                    </Form.Item>
-                </Form> */}
                 {!autoInit && <Button  className={styles.gateway} type="primary" onClick={() => fetchTokenInfo()}>
                 {formatMessage({
                     id:"agent.install.label.get_cmd"

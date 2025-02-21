@@ -13,6 +13,7 @@ import Side from "../Side";
 import { WidgetRender } from "@/pages/DataManagement/View/WidgetLoader";
 import { cloneDeep } from "lodash";
 import { Link } from "umi";
+import InstallAgent from "@/components/InstallAgent";
 
 const COLORS = {
     'INFO': '#e8eef2',
@@ -317,7 +318,9 @@ export default (props) => {
                         <Empty 
                             image={Empty.PRESENTED_IMAGE_SIMPLE}
                             description={formatMessage({ id: `cluster.monitor.logs.empty.${isAgent ? 'agent' : 'agentless'}` })}
-                        />
+                        >
+                            <div style={{width: 644}}>{!isAgent && <InstallAgent autoInit={false}/>}</div>
+                        </Empty>
                     )
                 }
             </div>  

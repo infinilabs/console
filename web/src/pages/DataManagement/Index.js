@@ -744,6 +744,7 @@ class Index extends PureComponent {
           onChangeDeleteIndexConfirmState={this.onChangeDeleteIndexConfirmState}
           deleteIndexConfirm={this.state.deleteIndexConfirm}
           items={this.state.deleteIndexItems}
+          selectedCluster={this.props.selectedCluster}
         />
       </PageHeaderWrapper>
     );

@@ -1,4 +1,4 @@
-import { Modal, Checkbox, Tag, Badge, Alert, Icon } from "antd";
+import { Modal, Checkbox, Tag, Badge, Alert, Icon, Tooltip } from "antd";
 import { useCallback, useState, forwardRef, useMemo } from "react";
 import useFetch from "@/lib/hooks/use_fetch";
 import request from "@/utils/request";
@@ -28,7 +28,7 @@ export default (props) => {
       onOk={props.onOk}
       okButtonProps={{ disabled: !props.deleteIndexConfirm }}
     >
-      <p>You are about to delete these indices:</p>
+      <p>You are about to delete these indices in cluster <Tooltip title={props.selectedCluster.id}><b>{props.selectedCluster.name}</b></Tooltip>:</p>
       <ul style={{ maxHeight: 240, overflow: "scroll" }}>
         {props.items.map((item) => {
           return (

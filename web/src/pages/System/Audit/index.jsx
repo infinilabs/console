@@ -69,6 +69,7 @@ export default (props) => {
       }),
       key: "timestamp",
       sortable: true,
+      defaultSortOrder: 'descend',
       render: (text, record) => {
         return formatUtcTimeToLocal(record.timestamp);
       },

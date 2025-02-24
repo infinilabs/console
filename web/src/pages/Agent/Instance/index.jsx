@@ -379,6 +379,37 @@ const AgentList = (props) => {
     }
   };
 
+  const [clearLoading, setClearLoading] = useState(false)
+  const onClearClick = async ()=>{
+    setClearLoading(true);
+    const statusRes = await request(`/instance/_clear`, {
+      method: "POST",
+      queryParams: {
+        "app_name": "agent",
+      },
+    });
+    if(statusRes && statusRes.acknowledged){
+      message.success("submit successfully");
+    }
+    setClearLoading(false);
+  }
+  const showClearConfirm = useCallback(() => {
+    Modal.confirm({
+      title: formatMessage({ id: "agent.instance.clear.modal.title" }),
+      content: (
+        <>
+         <div>{formatMessage({ id: "agent.instance.clear.modal.desc" })}</div>
+        </>
+      ),
+      okText: "Yes",
+      okType: "danger",
+      cancelText: "No",
+      onOk() {
+        onClearClick();
+      },
+    });
+  }, []);
+
   return (
     <PageHeaderWrapper>
       <Card>
@@ -390,7 +421,7 @@ const AgentList = (props) => {
             marginBottom: 15,
           }}
         >
-          <div style={{ maxWidth: 500, flex: "1 1 auto" }}>
+          <div style={{ maxWidth: 450, flex: "1 1 auto" }}>
             <Search
               allowClear
               placeholder="Type keyword to search"
@@ -413,6 +444,9 @@ const AgentList = (props) => {
             {
               hasAuthority("agent.instance:all") && (
                 <>
+                  <Button loading={clearLoading} onClick={showClearConfirm}>
+                  {formatMessage({ id: "agent.instance.clear.title" })}
+                </Button>
                   <Button
                     type="primary"
                     onClick={() => {

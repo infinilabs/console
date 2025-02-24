@@ -40,4 +40,7 @@ export default {
 
   "agent.label.agent_credential": "代理凭据",
   "agent.credential.tip": "不需要凭据",
+  "agent.instance.clear.title": "清理离线实例",
+  "agent.instance.clear.modal.title": "您确定要清理离线实例？",
+  "agent.instance.clear.modal.desc": "该操作将会删除离线并且 7 天没有上报指标的实例"
 };

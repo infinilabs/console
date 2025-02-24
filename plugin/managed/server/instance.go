@@ -30,6 +30,9 @@ package server
 import (
 	"context"
 	"fmt"
+	"infini.sh/framework/core/event"
+	"infini.sh/framework/core/global"
+	"infini.sh/framework/core/task"
 	"net/http"
 	"strconv"
 	"strings"
@@ -76,6 +79,8 @@ func init() {
 
 	//try to connect to instance
 	api.HandleAPIMethod(api.POST, "/instance/try_connect", handler.RequireLogin(handler.tryConnect))
+	//clear instance that is not alive in 7 days
+	api.HandleAPIMethod(api.POST, "/instance/_clear", handler.RequirePermission(handler.clearInstance, enum.PermissionGatewayInstanceWrite))
 
 }
 
@@ -96,30 +101,7 @@ func (h APIHandler) registerInstance(w http.ResponseWriter, req *http.Request, p
 	oldInst.ID = obj.ID
 	exists, err := orm.Get(oldInst)
 	if exists {
-		errMsg := fmt.Sprintf("agent [%s] already exists", obj.ID)
-		h.WriteError(w, errMsg, http.StatusInternalServerError)
-		return
-	}
-	err, result := orm.GetBy("endpoint", obj.Endpoint, oldInst)
-	if err != nil {
-		log.Error(err)
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if len(result.Result) > 0 {
-		buf := util.MustToJSONBytes(result.Result[0])
-		util.MustFromJSONBytes(buf, &oldInst)
-		if oldInst.ID != "" {
-			//keep old created time
-			obj.Created = oldInst.Created
-			log.Infof("remove old instance [%s] with the same endpoint %s", oldInst.ID, oldInst.Endpoint)
-			err = orm.Delete(nil, oldInst)
-			if err != nil {
-				log.Error(err)
-				h.WriteError(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-		}
+		obj.Created = oldInst.Created
 	}
 	err = orm.Save(nil, obj)
 	if err != nil {
@@ -394,6 +376,168 @@ func (h *APIHandler) getInstanceStatus(w http.ResponseWriter, req *http.Request,
 	}
 	h.WriteJSON(w, result, http.StatusOK)
 }
+func (h *APIHandler) clearInstance(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	appName := h.GetParameterOrDefault(req, "app_name", "")
+	task.RunWithinGroup("clear_instance", func(ctx context.Context) error {
+		err := h.clearInstanceByAppName(appName)
+		if err != nil {
+			log.Error(err)
+		}
+		return err
+	})
+	h.WriteAckOKJSON(w)
+}
+
+func (h *APIHandler) clearInstanceByAppName(appName string) error {
+	var (
+		size = 100
+		from = 0
+	)
+	// Paginated query for all running instances
+	q := orm.Query{
+		Size: size,
+		From: from,
+	}
+	if appName != "" {
+		q.Conds = orm.And(
+			orm.Eq("application.name", appName),
+		)
+	}
+	q.AddSort("created", orm.ASC)
+	insts := []model.Instance{}
+	var (
+		instanceIDs []string
+		toRemoveIDs []string
+		instsCache  = map[string]*model.Instance{}
+	)
+	client := elastic2.GetClient(global.MustLookupString(elastic2.GlobalSystemElasticsearchID))
+	for {
+		err, _ := orm.SearchWithJSONMapper(&insts, &q)
+		if err != nil {
+			return err
+		}
+		for _, inst := range insts {
+			instanceIDs = append(instanceIDs, inst.ID)
+			instsCache[inst.ID] = &inst
+		}
+		if len(instanceIDs) == 0 {
+			break
+		}
+		aliveInstanceIDs, err := getAliveInstanceIDs(client, instanceIDs)
+		if err != nil {
+			return err
+		}
+		for _, instanceID := range instanceIDs {
+			if _, ok := aliveInstanceIDs[instanceID]; !ok {
+				toRemoveIDs = append(toRemoveIDs, instanceID)
+			}
+		}
+		if len(toRemoveIDs) > 0 {
+			// Use the same slice to avoid extra allocation
+			filteredIDs := toRemoveIDs[:0]
+			// check whether the instance is still online
+			for _, instanceID := range toRemoveIDs {
+				if inst, ok := instsCache[instanceID]; ok {
+					_, err = h.getInstanceInfo(inst.Endpoint, inst.BasicAuth)
+					if err == nil {
+						// Skip online instance, do not append to filtered list
+						continue
+					}
+				}
+				// Keep only offline instances
+				filteredIDs = append(filteredIDs, instanceID)
+			}
+
+			// Assign back after filtering
+			toRemoveIDs = filteredIDs
+			query := util.MapStr{
+				"query": util.MapStr{
+					"terms": util.MapStr{
+						"id": toRemoveIDs,
+					},
+				},
+			}
+			// remove instances
+			err = orm.DeleteBy(model.Instance{}, util.MustToJSONBytes(query))
+			if err != nil {
+				return fmt.Errorf("failed to delete instance: %w", err)
+			}
+			// remove instance related data
+			query = util.MapStr{
+				"query": util.MapStr{
+					"terms": util.MapStr{
+						"metadata.labels.agent_id": toRemoveIDs,
+					},
+				},
+			}
+			err = orm.DeleteBy(model.Setting{}, util.MustToJSONBytes(query))
+		}
+
+		// Exit loop when the number of returned records is less than the page size
+		if len(insts) <= size {
+			break
+		}
+		// Reset instance state for the next iteration
+		insts = []model.Instance{}
+		toRemoveIDs = nil
+		instsCache = make(map[string]*model.Instance)
+		q.From += size
+	}
+	return nil
+}
+
+func getAliveInstanceIDs(client elastic2.API, instanceIDs []string) (map[string]struct{}, error) {
+	query := util.MapStr{
+		"size": 0,
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": []util.MapStr{
+					{
+						"terms": util.MapStr{
+							"agent.id": instanceIDs,
+						},
+					},
+					{
+						"range": util.MapStr{
+							"timestamp": util.MapStr{
+								"gt": "now-7d",
+							},
+						},
+					},
+				},
+			},
+		},
+		"aggs": util.MapStr{
+			"grp_agent_id": util.MapStr{
+				"terms": util.MapStr{
+					"field": "agent.id",
+				},
+				"aggs": util.MapStr{
+					"count": util.MapStr{
+						"value_count": util.MapStr{
+							"field": "agent.id",
+						},
+					},
+				},
+			},
+		},
+	}
+	queryDSL := util.MustToJSONBytes(query)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	response, err := client.QueryDSL(ctx, orm.GetWildcardIndexName(event.Event{}), nil, queryDSL)
+	if err != nil {
+		return nil, err
+	}
+	ret := map[string]struct{}{}
+	for _, bk := range response.Aggregations["grp_agent_id"].Buckets {
+		key := bk["key"].(string)
+		if bk["doc_count"].(float64) > 0 {
+			ret[key] = struct{}{}
+		}
+	}
+	return ret, nil
+}
 
 func (h *APIHandler) proxy(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	var (
@@ -442,7 +586,7 @@ func (h *APIHandler) getInstanceInfo(endpoint string, basicAuth *model.BasicAuth
 	obj := &model.Instance{}
 	_, err := ProxyAgentRequest("runtime", endpoint, req1, obj)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	return obj, err
 

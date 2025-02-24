@@ -43,4 +43,7 @@ export default {
 
   "agent.label.agent_credential": "Agent Credential",
   "agent.credential.tip": "No credential required",
+  "agent.instance.clear.title": "Clear Offline Instances",
+  "agent.instance.clear.modal.title": "Are you sure you want to clear offline instances?",
+  "agent.instance.clear.modal.desc": "This operation will delete offline instances that have not reported metrics for 7 days."
 };

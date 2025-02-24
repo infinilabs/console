@@ -30,7 +30,7 @@ Information about release notes of INFINI Console is provided here.
 - Enhance LDAP authentication logging (#156)
 - Optimize UI for copying metric requests (#155)
 - Enhance deletion tips by adding cluster info for indices
-- Retain a single instance when registering duplicate endpoints （#163）
+- Support clearing offline agent instances (#165)
 
 ## 1.28.2 (2025-02-15)
 

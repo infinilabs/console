@@ -85,6 +85,11 @@ func (h APIHandler) registerInstance(w http.ResponseWriter, req *http.Request, p
 	err := h.DecodeJSON(req, obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if obj.Endpoint == "" {
+		h.WriteError(w, "empty endpoint", http.StatusInternalServerError)
+		return
 	}
 
 	oldInst := &model.Instance{}
@@ -95,8 +100,28 @@ func (h APIHandler) registerInstance(w http.ResponseWriter, req *http.Request, p
 		h.WriteError(w, errMsg, http.StatusInternalServerError)
 		return
 	}
-
-	err = orm.Create(nil, obj)
+	err, result := orm.GetBy("endpoint", obj.Endpoint, oldInst)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if len(result.Result) > 0 {
+		buf := util.MustToJSONBytes(result.Result[0])
+		util.MustFromJSONBytes(buf, &oldInst)
+		if oldInst.ID != "" {
+			//keep old created time
+			obj.Created = oldInst.Created
+			log.Infof("remove old instance [%s] with the same endpoint %s", oldInst.ID, oldInst.Endpoint)
+			err = orm.Delete(nil, oldInst)
+			if err != nil {
+				log.Error(err)
+				h.WriteError(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+	}
+	err = orm.Save(nil, obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return

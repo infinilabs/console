@@ -381,6 +381,12 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]alert-history-rollover
       }
     },
     "mappings" : {
+      "properties" : {
+          "condition_result" : {
+            "type" : "object",
+            "enabled" : false
+          }
+      },
       "dynamic_templates" : [
         {
           "strings" : {

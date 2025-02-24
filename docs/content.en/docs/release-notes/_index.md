@@ -22,6 +22,7 @@ Information about release notes of INFINI Console is provided here.
 - Fixed the wrong display of heatmap's data in alerting message (#157)
 - Fixed Devtools `_sql` support for elasticsearch 6.x (#158)
 - Fixed audit log default sorting across pagination (#161)
+- Fixed mapping type conflict error (#164)
 
 ### Improvements
 - Update agent config with cluster name (#148)

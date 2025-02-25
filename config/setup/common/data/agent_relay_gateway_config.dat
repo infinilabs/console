@@ -10,13 +10,13 @@ entry:
     router: my_router
     max_concurrency: 200000
     network:
-      binding: 0.0.0.0:8081
-#    tls: #for mTLS connection with config servers
-#      enabled: true
+      binding: 0.0.0.0:8765
+    tls: #for mTLS connection with config servers
+      enabled: true
 #      ca_file: /xxx/ca.crt
 #      cert_file: /xxx/server.crt
 #      key_file: /xxx/server.key
-#      skip_insecure_verify: false
+      skip_insecure_verify: false
 
 flow:
   - name: deny_flow
@@ -28,7 +28,7 @@ flow:
     filter:
       - basic_auth:
           valid_users:
-            ingest: n
+            $[[SETUP_AGENT_USERNAME]]: $[[SETUP_AGENT_PASSWORD]]
       - rewrite_to_bulk:
           type_removed: false
       - bulk_request_mutate:
@@ -65,8 +65,8 @@ elasticsearch:
   - name: prod
     enabled: true
     basic_auth:
-      username: ingest
-      password: password
+      username: $[[SETUP_AGENT_USERNAME]]
+      password: $[[SETUP_AGENT_PASSWORD]]
     endpoints: $[[SETUP_ENDPOINTS]]
 
 pipeline:

@@ -1,13 +1,13 @@
 path.data: data
 path.logs: log
 
-allow_multi_instance: true
-configs.auto_reload: false
+allow_multi_instance: false
+configs.auto_reload: true
 
 entry:
-  - name: my_es_entry
+  - name: agent_es_entry
     enabled: true
-    router: my_router
+    router: agent_metrics_router
     max_concurrency: 200000
     network:
       binding: 0.0.0.0:8765
@@ -50,7 +50,7 @@ flow:
           fix_null_id: true
 
 router:
-  - name: my_router
+  - name: agent_metrics_router
     default_flow: deny_flow
     rules:
       - method:

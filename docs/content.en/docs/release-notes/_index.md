@@ -7,7 +7,7 @@ title: "Release Notes"
 
 Information about release notes of INFINI Console is provided here.
 
-## Latest (In development)
+## 1.29.0 (2025-02-27)
 
 ### Breaking changes
 

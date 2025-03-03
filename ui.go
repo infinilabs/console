@@ -63,7 +63,7 @@ func (h UI) InitUI() {
 	//	w.Write(buf)
 	//})
 
-	api.HandleUIFunc("/api/", func(w http.ResponseWriter, req *http.Request) {
+	api.HandleAPIFunc("/api/", func(w http.ResponseWriter, req *http.Request) {
 		log.Warn("api: ", req.URL, " not implemented")
 		request, err := h.GetRawBody(req)
 		if err != nil {

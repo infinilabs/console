@@ -11,6 +11,7 @@ Information about release notes of INFINI Console is provided here.
 ### Breaking changes  
 ### Features  
 ### Bug fix  
+- Fixed incorrect real-time QPS calculation at the index level in agentless mode (#172)
 ### Improvements  
 
 ## 1.29.0 (2025-02-27)

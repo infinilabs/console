@@ -631,7 +631,13 @@ func (h *APIHandler) GetRealtimeClusterIndices(w http.ResponseWriter, req *http.
 		indexInfos = &filterIndices
 	}
 
-	qps, err := h.getIndexQPS(id, 20)
+	minBucketSize, err := GetMetricMinBucketSize(id, MetricTypeIndexStats)
+	if err != nil {
+		resBody["error"] = err.Error()
+		h.WriteJSON(w, resBody, http.StatusInternalServerError)
+		return
+	}
+	qps, err := h.getIndexQPS(id, minBucketSize)
 	if err != nil {
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
@@ -685,7 +691,7 @@ func (h *APIHandler) getIndexQPS(clusterID string, bucketSizeInSeconds int) (map
 					"date": util.MapStr{
 						"date_histogram": util.MapStr{
 							"field":       "timestamp",
-							intervalField: "10s",
+							intervalField: bucketSizeStr,
 						},
 						"aggs": util.MapStr{
 							"index_total": util.MapStr{
@@ -729,7 +735,7 @@ func (h *APIHandler) getIndexQPS(clusterID string, bucketSizeInSeconds int) (map
 					{
 						"range": util.MapStr{
 							"timestamp": util.MapStr{
-								"gte": "now-1m",
+								"gte": fmt.Sprintf("now-%ds", bucketSizeInSeconds*5),
 								"lte": "now",
 							},
 						},

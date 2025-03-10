@@ -28,6 +28,7 @@ import (
 	"errors"
 	"fmt"
 	cerr "infini.sh/console/core/errors"
+	v1 "infini.sh/console/modules/elastic/api/v1"
 	"infini.sh/framework/modules/elastic/adapter"
 	"net/http"
 	"strings"
@@ -727,7 +728,12 @@ func (h *APIHandler) GetRealtimeClusterNodes(w http.ResponseWriter, req *http.Re
 			shardCounts[shardInfo.NodeName] = 1
 		}
 	}
-	qps, err := h.getNodeQPS(id, 20)
+	minBucketSize, err := v1.GetMetricMinBucketSize(id, v1.MetricTypeNodeStats)
+	if err != nil {
+		h.WriteJSON(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	qps, err := h.getNodeQPS(id, minBucketSize)
 	if err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"error": err.Error(),
@@ -1176,7 +1182,7 @@ func (h *APIHandler) getNodeQPS(clusterID string, bucketSizeInSeconds int) (map[
 					{
 						"range": util.MapStr{
 							"timestamp": util.MapStr{
-								"gte": "now-1m",
+								"gte": fmt.Sprintf("now-1%ds", bucketSizeInSeconds),
 								"lte": "now",
 							},
 						},
@@ -1414,6 +1420,7 @@ func (h *APIHandler) getClusterMonitorState(w http.ResponseWriter, req *http.Req
 		}
 
 	}
+	ret["request"] = string(dsl)
 	h.WriteJSON(w, ret, http.StatusOK)
 }
 

@@ -11,6 +11,12 @@ title: "版本历史"
 ### Breaking changes  
 ### Features  
 ### Bug fix  
+### Improvements  
+
+## 1.29.1 (2025-03-14)
+### Breaking changes  
+### Features  
+### Bug fix  
 - 修复 agentless 模式下计算索引级别实时 qps 不准确的问题 (#172)
 ### Improvements  
 

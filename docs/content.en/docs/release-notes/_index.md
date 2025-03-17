@@ -12,6 +12,7 @@ Information about release notes of INFINI Console is provided here.
 ### Features  
 ### Bug fix  
 ### Improvements  
+- Optimize configs sync with labels(#176)
 
 ## 1.29.0 (2025-02-27)
 

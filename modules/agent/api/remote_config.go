@@ -53,18 +53,14 @@ func remoteConfigProvider(instance model.Instance) []*common.ConfigFile {
 
 	//fetch configs from remote db
 	//fetch configs assigned to (instance=_all OR instance=$instance_id ) AND application.name=$application.name
-	condition := orm.Eq("metadata.labels.instance", "_all")
-	if instance.Labels["instance"] != "" {
-		condition = orm.Eq("metadata.labels.instance", instance.Labels["instance"])
-	}
 	q := orm.Query{
 		Size: 1000,
 		Conds: orm.And(orm.Eq("metadata.category", "app_settings"),
 			orm.Eq("metadata.name", instance.Application.Name),
-			condition,
 		),
 	}
 
+	q.Conds = append(q.Conds, orm.Or(orm.Eq("metadata.labels.instance", "_all"), orm.Eq("metadata.labels.instance", instance.ID))...)
 	err, searchResult := orm.Search(RemoteConfig{}, &q)
 	if err != nil {
 		panic(err)

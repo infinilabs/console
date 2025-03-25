@@ -12,6 +12,9 @@ import "./ConsoleInput.scss";
 
 import { applyCurrentSettings } from "./apply_editor_settings";
 import { subscribeResizeChecker } from "./subscribe_console_resize_checker";
+import JSONBig from 'json-bigint';
+
+const JSONBigExt = JSONBig({ storeAsString: true });
 
 const isJSONContentType = (contentType?: string) =>
   Boolean(contentType && contentType.indexOf("application/json") >= 0);
@@ -88,10 +91,10 @@ function ConsoleOutput({ clusterID }: props) {
                   const idx = strValue.indexOf("\n");
                   comment = strValue.slice(0, idx);
                   strValue = strValue.slice(idx);
-                  ret = comment + "\n" + JSON.stringify(JSON.parse(strValue), null, 2);
+                  ret = comment + "\n" + JSONBigExt.stringify(JSONBigExt.parse(strValue), null, 2);
                   
                 }else{
-                  ret = JSON.stringify(JSON.parse(strValue), null, 2);
+                  ret = JSONBigExt.stringify(JSONBigExt.parse(strValue), null, 2);
                 }
                 return ret
               }catch(e){

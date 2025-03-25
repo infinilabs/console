@@ -5,7 +5,7 @@ import webpackPlugin from "./plugin.config";
 import defaultSettings from "../src/defaultSettings";
 import packageJson from "../package.json";
 
-const ProxyTarget = "http://localhost:9000"
+const ProxyTarget = "http://console.internal:9000"
 
 export default {
   // add for transfer to umi

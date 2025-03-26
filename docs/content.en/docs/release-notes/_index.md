@@ -11,6 +11,7 @@ Information about release notes of INFINI Console is provided here.
 ### Breaking changes  
 ### Features  
 ### Bug fix  
+- Fixed long integer precision loss in DevTools (#182)
 ### Improvements  
 - Optimize configs sync with labels(#176)
 

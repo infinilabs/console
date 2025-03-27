@@ -12,6 +12,8 @@ Information about release notes of INFINI Console is provided here.
 ### Features  
 ### Bug fix  
 - Fixed where querying activity events results in an error due to mapping nesting depth exceeding the default limit of 20 (#181)
+- Fixed long integer precision loss in DevTools (#182)
+
 ### Improvements  
 - Optimize configs sync with labels(#176)
 

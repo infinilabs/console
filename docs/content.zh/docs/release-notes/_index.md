@@ -11,6 +11,8 @@ title: "版本历史"
 ### Breaking changes  
 ### Features  
 ### Bug fix  
+- 修复开发工具查询长整型数据精度丢失问题 (#182)
+
 ### Improvements  
 - 优化配置同步时，可根据标签进行筛选(#176)
 

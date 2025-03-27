@@ -11,6 +11,7 @@ title: "版本历史"
 ### Breaking changes  
 ### Features  
 ### Bug fix  
+- 修复查询活动事件时因 `mapping` 嵌套层级超过默认值 20 报错 (#181)
 ### Improvements  
 - 优化配置同步时，可根据标签进行筛选(#176)
 

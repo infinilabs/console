@@ -12,9 +12,11 @@ title: "版本历史"
 ### Features  
 ### Bug fix  
 - 修复开发工具查询长整型数据精度丢失问题 (#182)
+- 回滚 `strict_date_optional_time` 修复 (#117) (#185)
 
 ### Improvements  
 - 优化配置同步时，可根据标签进行筛选(#176)
+- 优化屏幕分辨率适配，增强用户体验 (#186)
 
 ## 1.29.1 (2025-03-14)
 ### Breaking changes  

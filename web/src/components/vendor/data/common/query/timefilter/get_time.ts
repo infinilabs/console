@@ -72,7 +72,7 @@ function createTimeRangeFilter(
     {
       ...(bounds.min && { gte: bounds.min.toISOString() }),
       ...(bounds.max && { lte: bounds.max.toISOString() }),
-      // format: 'strict_date_optional_time',
+      format: 'strict_date_optional_time',
     },
     indexPattern
   );

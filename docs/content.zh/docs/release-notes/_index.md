@@ -11,6 +11,12 @@ title: "版本历史"
 ### Breaking changes  
 ### Features  
 ### Bug fix  
+### Improvements  
+
+## 1.29.2 (2025-03-31)
+### Breaking changes  
+### Features  
+### Bug fix  
 - 修复开发工具查询长整型数据精度丢失问题 (#182)
 
 ### Improvements  

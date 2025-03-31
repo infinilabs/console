@@ -11,6 +11,12 @@ Information about release notes of INFINI Console is provided here.
 ### Breaking changes  
 ### Features  
 ### Bug fix  
+### Improvements  
+
+## 1.29.2 (2025-03-31)
+### Breaking changes  
+### Features  
+### Bug fix  
 - Fixed long integer precision loss in DevTools (#182)
 - Rollback `strict_date_optional_time` change (#117) (#185)
 ### Improvements  

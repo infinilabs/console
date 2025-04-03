@@ -270,6 +270,8 @@ class Index extends PureComponent {
   }
 
   fetchData = () => {
+    this.props.index.mappings = {};
+    this.props.index.settings = {};
     const { dispatch, clusterID } = this.props;
     if (!clusterID) {
       return {};

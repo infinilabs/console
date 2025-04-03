@@ -10,7 +10,8 @@ title: "版本历史"
 ## Latest (In development)  
 ### Breaking changes  
 ### Features  
-### Bug fix  
+### Bug fix 
+- 修复删除索引后重建索引缓存问题 (#189)
 ### Improvements  
 
 ## 1.29.2 (2025-03-31)

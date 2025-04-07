@@ -11,6 +11,7 @@ Information about release notes of INFINI Console is provided here.
 ### Breaking changes  
 ### Features  
 ### Bug fix  
+- Fix index cache issue when recreating an index after deletion (#189)
 ### Improvements  
 
 ## 1.29.2 (2025-03-31)

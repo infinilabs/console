@@ -11,9 +11,18 @@ Information about release notes of INFINI Console is provided here.
 ### Breaking changes  
 ### Features  
 ### Bug fix  
+- Fix index cache issue when recreating an index after deletion (#189)
+### Improvements  
+
+## 1.29.2 (2025-03-31)
+### Breaking changes  
+### Features  
+### Bug fix  
 - Fixed long integer precision loss in DevTools (#182)
+- Rollback `strict_date_optional_time` change (#117) (#185)
 ### Improvements  
 - Optimize configs sync with labels(#176)
+- Optimize screen resolution adaptation for an improved user experience (#186)
 
 ## 1.29.1 (2025-03-14)
 ### Breaking changes  

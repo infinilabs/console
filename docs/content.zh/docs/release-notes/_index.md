@@ -10,11 +10,20 @@ title: "版本历史"
 ## Latest (In development)  
 ### Breaking changes  
 ### Features  
+### Bug fix 
+- 修复删除索引后重建索引缓存问题 (#189)
+### Improvements  
+
+## 1.29.2 (2025-03-31)
+### Breaking changes  
+### Features  
 ### Bug fix  
 - 修复开发工具查询长整型数据精度丢失问题 (#182)
+- 回滚 `strict_date_optional_time` 修复 (#117) (#185)
 
 ### Improvements  
 - 优化配置同步时，可根据标签进行筛选(#176)
+- 优化屏幕分辨率适配，增强用户体验 (#186)
 
 ## 1.29.1 (2025-03-14)
 ### Breaking changes  

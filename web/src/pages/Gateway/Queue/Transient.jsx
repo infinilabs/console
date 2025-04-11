@@ -88,7 +88,7 @@ export default (props) => {
       render: (name, row) => (
         <IconText
           text={
-            <Tooltip title={`ID:${row?.metadata?.id}`}>
+            <Tooltip overlayStyle={{ maxWidth: "none"}} title={`ID:${row?.metadata?.id}`}>
               <a
                 onClick={() => {
                   handleMessageList(row?.metadata?.id);

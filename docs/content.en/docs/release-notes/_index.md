@@ -12,7 +12,7 @@ Information about release notes of INFINI Console is provided here.
 ### Features  
 ### Bug fix  
 - Fixed index cache issue when recreating an index after deletion (#189)
-- fixed qps float value precision (#190)
+- Fixed qps float value precision (#190)
 ### Improvements  
 
 ## 1.29.2 (2025-03-31)

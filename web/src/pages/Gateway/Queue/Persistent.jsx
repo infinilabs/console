@@ -24,7 +24,7 @@ import IconText from "@/components/infini/IconText";
 import Consumer from "./Consumer";
 import QueueTypeIcon from "./QueueTypeIcon";
 import AutoTextEllipsis from "@/components/AutoTextEllipsis";
-import commonStyles from "@/common.less"
+import commonStyles from "@/common.less";
 
 const { Search } = Input;
 
@@ -107,33 +107,35 @@ export default (props) => {
         <>
           <IconText
             text={
-              <Popover
-                content={consumerLabelRender(row?.metadata?.label)}
-                title={(
-                  <>
-                    <div>{`ID: ${row?.metadata?.id}`}</div>
-                    <div>{`Name: ${name}`}</div>
-                  </>
-                )}
-              >
-                <a
-                  onClick={() => {
-                    handleMessageList(
-                      row?.metadata?.id,
-                      row?.earliest_consumer_offset
-                    );
-                  }}
+              <AutoTextEllipsis showTooltip={false}>
+                <Popover
+                  content={consumerLabelRender(row?.metadata?.label)}
+                  title={
+                    <>
+                      <div>{`ID: ${row?.metadata?.id}`}</div>
+                      <div>{`Name: ${name}`}</div>
+                    </>
+                  }
                 >
-                  <AutoTextEllipsis showTooltip={false}>{name}</AutoTextEllipsis>
-                </a>
-              </Popover>
+                  <a
+                    onClick={() => {
+                      handleMessageList(
+                        row?.metadata?.id,
+                        row?.earliest_consumer_offset
+                      );
+                    }}
+                  >
+                    {name}
+                  </a>
+                </Popover>
+              </AutoTextEllipsis>
             }
             icon={<QueueTypeIcon queue_type={row?.queue_type} />}
           />
         </>
       ),
       sorter: (a, b) => sorter.string(a, b, "name"),
-      className: commonStyles.maxColumnWidth
+      className: commonStyles.maxColumnWidth,
     },
     {
       title: "Local Storage",
@@ -430,7 +432,7 @@ export default (props) => {
             ? "offset-normal"
             : "";
         }}
-        scroll={{ x: 'max-content' }}
+        scroll={{ x: "max-content" }}
       />
     </div>
   );

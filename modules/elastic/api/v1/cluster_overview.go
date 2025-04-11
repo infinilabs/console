@@ -827,9 +827,9 @@ func (h *APIHandler) QueryQPS(query util.MapStr, bucketSizeInSeconds int) (map[s
 								}
 							}
 						}
-						indexQPS[k]["index"] = maxIndexRate / float64(bucketSizeInSeconds)
-						indexQPS[k]["query"] = maxQueryRate / float64(bucketSizeInSeconds)
-						indexQPS[k]["index_bytes"] = maxIndexBytesRate / float64(bucketSizeInSeconds)
+						indexQPS[k]["index"] = util.ToFixed(maxIndexRate/float64(bucketSizeInSeconds), 2)
+						indexQPS[k]["query"] = util.ToFixed(maxQueryRate/float64(bucketSizeInSeconds), 2)
+						indexQPS[k]["index_bytes"] = util.ToFixed(maxIndexBytesRate/float64(bucketSizeInSeconds), 2)
 						indexQPS[k]["latest_timestamp"] = maxTimestamp
 					}
 				}

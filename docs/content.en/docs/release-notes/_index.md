@@ -14,7 +14,7 @@ Information about release notes of INFINI Console is provided here.
 - Fixed index cache issue when recreating an index after deletion (#189)
 - Fixed qps float value precision (#190)
 ### Improvements  
-- Default settings for compress for http process (#192)
+- Add compression settings for HTTP process (#192)
 
 ## 1.29.2 (2025-03-31)
 ### Breaking changes  

@@ -47,7 +47,7 @@ pipeline:
             - http:
                 max_sending_qps: 100
                 compress: true
-                compression_threshold: 1024
+                compression_threshold: 1024000  # ~1MB in bytes
                 method: POST
                 path: /$[[SETUP_INDEX_PREFIX]]$[[queue_name]]/_doc/
                 headers:

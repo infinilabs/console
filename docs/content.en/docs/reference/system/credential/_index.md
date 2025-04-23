@@ -1,6 +1,6 @@
 ---
 weight: 1
-title: "Credential Management"
+title: "Credential"
 ---
 
 # Credential Management
@@ -14,13 +14,14 @@ Credential information is stored using encryption. Credential management can hel
 ## Credential List
 
 Created credential information can be queried in the credential list, and keyword search is supported
-{{% load-img "/img/screenshot/credential/20230222-list.jpg" "credential list" %}}
+
+{{% load-img "/img/screenshot/v1.29/settings/credential.png" "" %}}
 
 ## Add Credential
 
 Click the "Add" button in the upper right corner of the credential list, and then the add credential window will pop up on the right as follows:
 
-{{% load-img "/img/screenshot/credential/20230222-create.jpg" "add credential" %}}
+{{% load-img "/img/screenshot/v1.29/settings/credential-create.png" "" %}}
 
 - Select the credential type (only basic auth is supported)
 - Enter a credential name (required)
@@ -32,7 +33,7 @@ Click the "Add" button in the upper right corner of the credential list, and the
 
 Click the Edit button in the credential list table, and the update credential window will pop up on the right as follows:
 
-{{% load-img "/img/screenshot/credential/20230222-edit.jpg" "edit credential" %}}
+{{% load-img "/img/screenshot/v1.29/settings/credential-edit.png" "" %}}
 
 Modify the configuration as needed, then click the Save button to submit
 

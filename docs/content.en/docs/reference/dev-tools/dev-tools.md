@@ -14,7 +14,7 @@ When installation verification is enabled, all requests will go through API leve
 
 Use the Ctrl+Shift+O shortcut to open or click the icon in the upper right corner of the console.
 
-{{% load-img "/img/screenshot/20220330-devtool.jpg" "Dev Tools" %}}
+{{% load-img "/img/screenshot/v1.29/devtools/devtools.png" "" %}}
 
 ## Execute request shortcuts
 
@@ -27,9 +27,10 @@ The tab page uses the cluster name as the title by default, and can be modified 
 Below the Dev Tools is a status bar, and on the left is the health status, http address, and version information of the current cluster.
 On the right is the response status and duration of the elasticsearch interface request.
 
-{{% load-img "/img/screenshot/20220330-devtool_tab.jpg" "Dev Tools tab" %}}
+{{% load-img "/img/screenshot/v1.29/devtools/devtools-tab.png" "" %}}
 
 ## View request header information
 
 After using the Dev Tools to execute the elasticsearch request, you can click the headers Tab page on the right to view the request header information.
-{{% load-img "/img/screenshot/20220706-devtool-headers.jpg" "Dev Tools headers" %}}
+
+{{% load-img "/img/screenshot/v1.29/devtools/devtools-header.png" "" %}}

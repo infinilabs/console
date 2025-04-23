@@ -1,6 +1,7 @@
 ---
 weight: 1
 title: Dashboard
+draft: true
 ---
 
 # Dashboard

@@ -8,97 +8,76 @@ custom_css: "/css/img.css"
 
 ## 工作台
 
-{{% load-img "/img/screenshot/screenshot2023/overview.png" "overview" %}}
+{{% load-img "/img/screenshot/v1.29/workspace/overview.png" "" %}}
 
 ## 平台概览
 
-{{% load-img "/img/screenshot/screenshot2023/Platform-overview.png" "平台概览" %}}
-{{% load-img "/img/screenshot/screenshot2023/Platform-overview2.png" "平台概览" %}}
-{{% load-img "/img/screenshot/screenshot2023/Platform-overview3.png" "平台概览" %}}
-{{% load-img "/img/screenshot/screenshot2023/Platform-overview4.png" "平台概览" %}}
-{{% load-img "/img/screenshot/screenshot2023/Platform-overview5.png" "平台概览" %}}
-{{% load-img "/img/screenshot/screenshot2023/Platform-overview6.png" "平台概览" %}}
+{{% load-img "/img/screenshot/v1.29/platform/overview-cluster-table.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/platform/overview-cluster-card.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/platform/overview-cluster-card-side.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/platform/overview-nodes.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/platform/overview-indices.png" "" %}}
 
 ## 监控报表
 
-{{% load-img "/img/screenshot/screenshot2023/Monitoring1.png" "集群监控" %}}
-{{% load-img "/img/screenshot/screenshot2023/Monitoring2.png" "集群监控" %}}
-{{% load-img "/img/screenshot/screenshot2023/Monitoring3.png" "集群监控" %}}
-{{% load-img "/img/screenshot/screenshot2023/Monitoring4.png" "集群监控" %}}
-{{% load-img "/img/screenshot/screenshot2023/Monitoring5.png" "集群监控" %}}
-{{% load-img "/img/screenshot/screenshot2023/Monitoring6.png" "节点" %}}
-{{% load-img "/img/screenshot/screenshot2023/Monitoring7.png" "索引" %}}
-{{% load-img "/img/screenshot/screenshot2023/Monitoring8.png" "节点监控" %}}
-{{% load-img "/img/screenshot/screenshot2023/Monitoring9.png" "快速切换集群" %}}
+{{% load-img "/img/screenshot/v1.29/platform/monitoring-overview.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/platform/monitoring-advanced.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/platform/monitoring-topN.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/platform/monitoring-logs.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/platform/monitoring-nodes.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/platform/monitoring-indices.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/platform/monitoring-nodes-overview.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/platform/monitoring-nodes-shards.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/platform/monitoring-indices-overview.png" "" %}}
 
 ## 集群动态
 
-{{% load-img "/img/screenshot/screenshot2023/ActivIties.png" "集群动态" %}}
+{{% load-img "/img/screenshot/v1.29/platform/activities.png" "" %}}
 
 ## 数据管理
 
-{{% load-img "/img/screenshot/screenshot2023/datamanage.png" "索引" %}}
-{{% load-img "/img/screenshot/screenshot2023/datamanage2.png" "别名" %}}
-{{% load-img "/img/screenshot/screenshot2023/datamanage3.png" "视图" %}}
-{{% load-img "/img/screenshot/screenshot2023/datamanage4.png" "视图" %}}
-{{% load-img "/img/screenshot/screenshot2023/datamanage5.png" "视图" %}}
-{{% load-img "/img/screenshot/screenshot2023/datamanage6.png" "视图layout" %}}
-
+{{% load-img "/img/screenshot/v1.29/datamanage/index.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/datamanage/alias.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/datamanage/view.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/datamanage/view-create.png" "" %}}
 
 ## 数据分析
 
-{{% load-img "/img/screenshot/screenshot2023/dataInsight.png" "数据看板" %}}
-{{% load-img "/img/screenshot/screenshot2023/dataInsight2.png" "图表设置" %}}
-{{% load-img "/img/screenshot/screenshot2023/dataInsight3.png" "图表操作" %}}
-{{% load-img "/img/screenshot/screenshot2023/dataInsight4.png" "图表类型" %}}
-{{% load-img "/img/screenshot/screenshot2023/dataInsight5.png" "数据探索" %}}
+{{% load-img "/img/screenshot/v1.29/datainsight/discover.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/datainsight/discover-table.png" "" %}}
 
 ## 告警管理
 
-{{% load-img "/img/screenshot/screenshot2023/alerting.png" "告警消息" %}}
-{{% load-img "/img/screenshot/screenshot2023/alerting2.png" "告警详情" %}}
-{{% load-img "/img/screenshot/screenshot2023/alerting3.png" "告警规则" %}}
-{{% load-img "/img/screenshot/screenshot2023/alerting4.png" "规则创建" %}}
-{{% load-img "/img/screenshot/screenshot2023/alerting5.png" "告警渠道" %}}
-{{% load-img "/img/screenshot/screenshot2023/alerting6.png" "渠道创建" %}}
+{{% load-img "/img/screenshot/v1.29/alerting/message.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/alerting/message-side.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/alerting/rules.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/alerting/rules-detail.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/alerting/rules-edit.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/alerting/channels.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/alerting/channels-create.png" "" %}}
 
 ## 开发工具
 
-{{% load-img "/img/screenshot/screenshot2023/devtool3.png" "开发工具" %}}
-{{% load-img "/img/screenshot/screenshot2023/devtool2.png" "保存命令" %}}
-{{% load-img "/img/screenshot/screenshot2023/devtool.png" "加载命令" %}}
-{{% load-img "/img/screenshot/screenshot2023/devtool4.png" "快速切换" %}}
-{{% load-img "/img/screenshot/screenshot2023/devtool5.png" "智能提示" %}}
-
-## 数据工具
-
-{{% load-img "/img/screenshot/screenshot2023/datatools.png" "数据迁移" %}}
-{{% load-img "/img/screenshot/screenshot2023/datatools2.png" "迁移详情" %}}
-{{% load-img "/img/screenshot/screenshot2023/datatools3.png" "数据比对" %}}
-{{% load-img "/img/screenshot/screenshot2023/datatools4.png" "比对详情" %}}
-{{% load-img "/img/screenshot/screenshot2023/datatools5.png" "新建任务1" %}}
-{{% load-img "/img/screenshot/screenshot2023/datatools6.png" "新建任务2" %}}
-{{% load-img "/img/screenshot/screenshot2023/datatools7.png" "新建任务3" %}}
-{{% load-img "/img/screenshot/screenshot2023/datatools8.png" "新建任务4" %}}
+{{% load-img "/img/screenshot/v1.29/devtools/devtools.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/devtools/devtools-intelliprompt.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/devtools/devtools-tab.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/devtools/devtools-save-command.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/devtools/command.png" "" %}}
 
 ## 资源管理
 
-{{% load-img "/img/screenshot/screenshot2023/inventory.png" "网关管理" %}}
-{{% load-img "/img/screenshot/screenshot2023/inventory2.png" "网关管理" %}}
-{{% load-img "/img/screenshot/screenshot2023/inventory3.png" "网关管理" %}}
-{{% load-img "/img/screenshot/screenshot2023/inventory4.png" "网关日志" %}}
-{{% load-img "/img/screenshot/screenshot2023/inventory5.png" "集群管理" %}}
-{{% load-img "/img/screenshot/screenshot2023/inventory6.png" "集群详情" %}}
-{{% load-img "/img/screenshot/screenshot2023/inventory7.png" "注册集群" %}}
-{{% load-img "/img/screenshot/screenshot2023/inventory9.png" "探针管理" %}}
+{{% load-img "/img/screenshot/v1.29/inventory/cluster.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/inventory/cluster-register.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/inventory/runtime.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/inventory/agents.png" "" %}}
 
 ## 系统管理
 
-{{% load-img "/img/screenshot/screenshot2023/settings.png" "凭据管理" %}}
-{{% load-img "/img/screenshot/screenshot2023/settings2.png" "凭据管理" %}}
-{{% load-img "/img/screenshot/screenshot2023/settings3.png" "用户管理" %}}
-{{% load-img "/img/screenshot/screenshot2023/settings4.png" "权限管理" %}}
-{{% load-img "/img/screenshot/screenshot2023/settings5.png" "数据权限" %}}
-{{% load-img "/img/screenshot/screenshot2023/settings6.png" "平台权限" %}}
-{{% load-img "/img/screenshot/screenshot2023/settings7.png" "新建用户" %}}
-
+{{% load-img "/img/screenshot/v1.29/settings/smtp-server.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/settings/credential.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/settings/security-user.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/settings/security-user-create.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/settings/security-role.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/settings/security-role-platform-create.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/settings/security-role-data-edit.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/settings/audit.png" "" %}}

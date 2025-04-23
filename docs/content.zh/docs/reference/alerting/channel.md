@@ -13,16 +13,17 @@ asciinema: true
 ## 渠道列表
 
 在渠道列表中可以查询已经添加的渠道
-{{% load-img "/img/screenshot/20220715-alerting-channel-list.jpg" "alerting channel list" %}}
+
+{{% load-img "/img/screenshot/v1.29/alerting/channels.png" "" %}}
 
 ## 新建告警渠道
 
 在渠道列表页面中点击 `新建` 按钮进入新建告警渠道页面
 
-{{% load-img "/img/screenshot/20220715-alerting-channel-new.jpg" "alerting channel new" %}}
+{{% load-img "/img/screenshot/v1.29/alerting/channels-create.png" "" %}}
 
 - 输入渠道名称（必填）
-- 选择渠道类型（当前仅支持 webhook ）
+- 选择渠道类型（支持 Email、Slack、钉钉、飞书、企微、自定义 webhook 等多种类型 ）
 - 输入 webhook 地址
 - 选择 HTTP 请求的方法，默认 POST
 - 按需添加 HTTP 请求头
@@ -32,7 +33,9 @@ asciinema: true
 ## 更新渠道配置
 
 在渠道列表中选择需要更新的渠道点击编辑按钮进入更新渠道配置页
-{{% load-img "/img/screenshot/20220715-alerting-channel-update.jpg" "alerting channel update" %}}
+
+{{% load-img "/img/screenshot/v1.29/alerting/channels-edit.png" "" %}}
+
 操作参考新建告警渠道
 
 ## 删除告警渠道

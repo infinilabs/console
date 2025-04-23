@@ -7,4 +7,4 @@ title: Cluster Activities
 
 After registering a cluster, the activities of the cluster can be observed.
 
-{{% load-img "/img/screenshot/platform/activities.png" %}}
+{{% load-img "/img/screenshot/v1.29/platform/activities.png" "" %}}

@@ -10,26 +10,26 @@ asciinema: true
 
 You can view the main indicators at these levels(cluster, node, indice and host) to understand the operation status.
 
-## Cluster
+## Clusters
 
-{{% load-img "/img/screenshot/platform/overview/20220909-overview-clusters.png"%}}
+By switching between list and card views, users can explore cluster status information from multiple perspectives.
 
-## Node
+### 1. List mode
 
-{{% load-img "/img/screenshot/platform/overview/20220909-overview-nodes.png"%}}
+{{% load-img "/img/screenshot/v1.29/platform/overview-cluster-table.png" "" %}}
 
-## Indice
+### 2. Card mode
 
-{{% load-img "/img/screenshot/platform/overview/20220909-overview-indices.png"%}}
+{{% load-img "/img/screenshot/v1.29/platform/overview-cluster-card.png" "" %}}
 
-## Host
+Clicking on a single row provides a quick preview of key cluster metrics and access to more detailed cluster information.
 
-Host data comes from INFINI Agent reporting and node discovery of elasticsearch.
+{{% load-img "/img/screenshot/v1.29/platform/overview-cluster-card-side.png" "" %}}
 
-{{% load-img "/img/screenshot/platform/overview/20220909-overview-hosts.png"%}}
+## Nodes
 
-### Discover Host
+{{% load-img "/img/screenshot/v1.29/platform/overview-nodes.png" "" %}}
 
-Click the button "Discover Host" on the right side of the host list，then click the button "add hosts" to add the host to the host list after checking.
+## Indices
 
-{{% load-img "/img/screenshot/platform/overview/20220909-overview-hosts-discover.png"%}}
+{{% load-img "/img/screenshot/v1.29/platform/overview-indices.png" "" %}}

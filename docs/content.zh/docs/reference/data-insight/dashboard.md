@@ -1,6 +1,7 @@
 ---
 weight: 1
 title: 数据看板
+draft: true
 ---
 
 # 数据看板

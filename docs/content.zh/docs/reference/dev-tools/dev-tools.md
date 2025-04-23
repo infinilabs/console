@@ -14,7 +14,7 @@ title: 开发工具
 
 使用 Ctrl+Shift+O 快捷键打开或者在 console 右上角图标打开。
 
-{{% load-img "/img/screenshot/20220330-devtool.jpg" "dev tool" %}}
+{{% load-img "/img/screenshot/v1.29/devtools/devtools.png" "" %}}
 
 ## 执行请求快捷键
 
@@ -27,9 +27,10 @@ Tab 页默认使用集群名称作为标题，双击 Tab 页标题可以修改�
 开发工具下方是一个状态栏，左侧是当前集群的健康状态、http 地址、版本信息，
 右侧是 elasticsearch 接口请求的响应状态以及时长。
 
-{{% load-img "/img/screenshot/20220330-devtool_tab.jpg" "dev tool tab" %}}
+{{% load-img "/img/screenshot/v1.29/devtools/devtools-tab.png" "" %}}
 
 ## 查看请求头信息
 
 当使用开发工具执行 elasticsearch 请求之后，可以在右侧点击 headers Tab 页查看请求头信息。
-{{% load-img "/img/screenshot/20220706-devtool-headers.jpg" "dev tool headers" %}}
+
+{{% load-img "/img/screenshot/v1.29/devtools/devtools-header.png" "" %}}

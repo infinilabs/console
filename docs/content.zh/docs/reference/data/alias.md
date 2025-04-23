@@ -10,11 +10,11 @@ asciinema: true
 
 别名列表包括对别名的增删改查操作。
 
-{{% load-img "/img/screenshot/data/alias-list.jpg" "Alias management" %}}
+{{% load-img "/img/screenshot/v1.29/datamanage/alias.png" "" %}}
 
 ## 新建别名
 
-{{% load-img "/img/screenshot/data/alias-create.jpg" "Alias management" %}}
+{{% load-img "/img/screenshot/v1.29/datamanage/alias-create.png" "" %}}
 
 - 别名：输入别名名称
 - 索引：选择别名对应的目标索引，支持使用 (\*) 来绑定多个索引。
@@ -24,4 +24,4 @@ asciinema: true
 
 点开别名列表行首的`+`号按钮，会展开显示该别名对应绑定的索引列表，同时可以对索引进行关系绑定更新设置和删除。
 
-{{% load-img "/img/screenshot/data/alias-sub-list.jpg" "Alias management" %}}
+{{% load-img "/img/screenshot/v1.29/datamanage/alias-bind.png" "" %}}

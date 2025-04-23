@@ -159,7 +159,7 @@ class AliasManage extends PureComponent {
       dataIndex: "write_index",
       sorter: (a, b) => sorter.string(a, b, "write_index"),
       render: (text, record) => {
-        return <Link to={`/infra/discover?index=${text}`}>{text}</Link>;
+        return <Link to={`/insight/discover?index=${text}`}>{text}</Link>;
       },
     },
     {

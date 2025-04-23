@@ -295,9 +295,8 @@ export default (props) => {
           return {
             range: {
               [timeFieldName] : {
-                ...(bounds.min && { gte: bounds.min.toISOString() }),
-                ...(bounds.max && { lte: bounds.max.toISOString() }),
-                // format: 'strict_date_optional_time',
+                ...(bounds.min && { gte: bounds.min.valueOf() }),
+                ...(bounds.max && { lte: bounds.max.valueOf() }),
               }
             }
           }

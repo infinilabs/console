@@ -13,9 +13,21 @@ Information about release notes of INFINI Console is provided here.
 ### Bug fix  
 - Fixed where querying activity events results in an error due to mapping nesting depth exceeding the default limit of 20 (#181)
 - Fixed long integer precision loss in DevTools (#182)
+- Fixed index cache issue when recreating an index after deletion (#189)
+- Fixed qps float value precision (#190)
+- Corrected queue tooltip and message offset alignment (#191)
+### Improvements  
+
+## 1.29.2 (2025-03-31)
+### Breaking changes  
+### Features  
+### Bug fix  
+- Fixed long integer precision loss in DevTools (#182)
+- Rollback `strict_date_optional_time` change (#117) (#185)
 
 ### Improvements  
 - Optimize configs sync with labels(#176)
+- Optimize screen resolution adaptation for an improved user experience (#186)
 
 ## 1.29.1 (2025-03-14)
 ### Breaking changes  

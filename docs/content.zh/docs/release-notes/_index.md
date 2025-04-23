@@ -10,12 +10,23 @@ title: "版本历史"
 ## Latest (In development)  
 ### Breaking changes  
 ### Features  
+### Bug fix 
+- 修复删除索引后重建索引缓存问题 (#189)
+- 修复`qps`相关指标展示时的小数位数 (#190)
+- 修复队列数据查看不弹窗问题 (#191)
+### Improvements  
+
+## 1.29.2 (2025-03-31)
+### Breaking changes  
+### Features  
 ### Bug fix  
 - 修复查询活动事件时因 `mapping` 嵌套层级超过默认值 20 报错 (#181)
 - 修复开发工具查询长整型数据精度丢失问题 (#182)
+- 回滚 `strict_date_optional_time` 修复 (#117) (#185)
 
 ### Improvements  
 - 优化配置同步时，可根据标签进行筛选(#176)
+- 优化屏幕分辨率适配，增强用户体验 (#186)
 
 ## 1.29.1 (2025-03-14)
 ### Breaking changes  

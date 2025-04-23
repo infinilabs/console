@@ -533,6 +533,7 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]activities-rollover
     "settings" : {
       "index" : {
         "format" : "7",
+        "mapping.depth.limit": "50",
         "lifecycle" : {
           "name" : "ilm_$[[SETUP_INDEX_PREFIX]]metrics-30days-retention",
           "rollover_alias" : "$[[SETUP_INDEX_PREFIX]]activities"

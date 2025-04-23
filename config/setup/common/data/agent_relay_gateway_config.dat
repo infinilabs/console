@@ -28,7 +28,7 @@ flow:
     filter:
       - basic_auth:
           valid_users:
-            ingest: n
+            ingest: password
       - rewrite_to_bulk:
           type_removed: false
       - bulk_request_mutate:
@@ -65,8 +65,8 @@ elasticsearch:
   - name: prod
     enabled: true
     basic_auth:
-      username: ingest
-      password: password
+      username: $[[SETUP_AGENT_USERNAME]]
+      password: $[[SETUP_AGENT_PASSWORD]]
     endpoints: $[[SETUP_ENDPOINTS]]
 
 pipeline:

@@ -18,6 +18,7 @@ Information about release notes of INFINI Console is provided here.
 - Corrected queue tooltip and message offset alignment (#191)
 - Fixed resolve redirect issue by updating routing logic (#193)
 ### Improvements  
+- Add compression settings for HTTP process (#192)
 
 ## 1.29.2 (2025-03-31)
 ### Breaking changes  

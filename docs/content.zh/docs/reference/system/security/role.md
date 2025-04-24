@@ -14,7 +14,7 @@ asciinema: true
 
 ## 创建平台角色
 
-{{% load-img "/img/screenshot/20220612-create-platform-role.jpg" "Create Platform Role" %}}
+{{% load-img "/img/screenshot/v1.29/settings/security-role-platform-create.png" "" %}}
 
 - 输入唯一的角色名.
 - 选择平台权限，不能为空.
@@ -26,7 +26,7 @@ asciinema: true
 
 ## 创建数据角色
 
-{{% load-img "/img/screenshot/20220612-create-data-role.jpg" "Create Data Role" %}}
+{{% load-img "/img/screenshot/v1.29/settings/security-role-data-create.png" "" %}}
 
 - 输入唯一的角色名.
 - 选择一个或者多个集群， `*` 代表选择所有集群.
@@ -37,18 +37,18 @@ asciinema: true
 
 ## 查询角色
 
-{{% load-img "/img/screenshot/20220612-search-role.jpg" "Search Role" %}}
+{{% load-img "/img/screenshot/v1.29/settings/security-role.png" "" %}}
 
 输入关键字点击搜索按钮查询角色。
 
 ## 更新平台角色
 
-{{% load-img "/img/screenshot/20220612-update-platform-role.jpg" "Update Platform Role" %}}
+{{% load-img "/img/screenshot/v1.29/settings/security-role-platform-edit.png" "" %}}
 
 按需修改角色，然后点击保存按钮保存。
 
 ## 更新数据角色
 
-{{% load-img "/img/screenshot/20220612-update-data-role.jpg" "Update Data Role" %}}
+{{% load-img "/img/screenshot/v1.29/settings/security-role-data-edit.png" "" %}}
 
 按需修改角色，然后点击保存按钮保存。

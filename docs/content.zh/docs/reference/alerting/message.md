@@ -13,16 +13,19 @@ asciinema: true
 ## 事件消息列表
 
 消息列表聚合了所有已触发的告警事件，如每个告警规则重复触发了多次告警消息，这里只会聚合显示一条，点击详情就可以去看更多的信息。
-{{% load-img "/img/screenshot/alerting/Alerting-Message.png" "alerting message" %}}
+
+{{% load-img "/img/screenshot/v1.29/alerting/message.png" "" %}}
 
 ## 消息详情
 
 点击消息列表行列中的详情按钮可以查看当前告警事件消息的详细内容，包含事件消息的基本信息，事件触发周期内的时序曲线图，规则执行检测历史记录等，如下图所示：
-{{% load-img "/img/screenshot/alerting/Alerting-Message-Detail.png" "alerting message detail" %}}
+
+{{% load-img "/img/screenshot/v1.29/alerting/message-side.png" "" %}}
 
 ## 忽略告警消息
 
 如认为告警事件不需要做处理或者不重要，可以进行忽略操作，忽略后告警消息将不默认展在消息列表中，不过可以通过状态筛选过滤进行查询。
 
 操作步骤：点击消息列表表格中的忽略按钮，进行二次确认，填写忽略原因，提交后执行忽略操作。
-{{% load-img "/img/screenshot/alerting/Alerting-Message-Ignore.jpg" "alerting message ignore" %}}
+
+{{% load-img "/img/screenshot/v1.29/alerting/message-ignore.png" "" %}}

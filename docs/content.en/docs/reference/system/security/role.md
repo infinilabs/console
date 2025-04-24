@@ -14,7 +14,7 @@ includes elasticsearch api privileges which can be configured in the file config
 
 ## Create Platform Role
 
-{{% load-img "/img/screenshot/20220612-create-platform-role.jpg" "Create Platform Role" %}}
+{{% load-img "/img/screenshot/v1.29/settings/security-role-platform-create.png" "" %}}
 
 - Input role name, role name should be unique.
 - Select feature privileges, can not be empty.
@@ -26,7 +26,7 @@ no permission
 
 ## Create Data Role
 
-{{% load-img "/img/screenshot/20220612-create-data-role.jpg" "Create Data Role" %}}
+{{% load-img "/img/screenshot/v1.29/settings/security-role-data-create.png" "" %}}
 
 - Input role name, role name should be unique.
 - Select one or more cluster, `*` represents all clusters.
@@ -36,18 +36,18 @@ no permission
 
 ## Search Role
 
-{{% load-img "/img/screenshot/20220612-search-role.jpg" "Search Role" %}}
+{{% load-img "/img/screenshot/v1.29/settings/security-role.png" "" %}}
 
 Input a keyword and click the search button to query roles.
 
 ## Update Platform Role
 
-{{% load-img "/img/screenshot/20220612-update-platform-role.jpg" "Update Platform Role" %}}
+{{% load-img "/img/screenshot/v1.29/settings/security-role-platform-edit.png" "" %}}
 
 Modify the role as needed, and then click the Save button to submit.
 
 ## Update Data Role
 
-{{% load-img "/img/screenshot/20220612-update-data-role.jpg" "Update Data Role" %}}
+{{% load-img "/img/screenshot/v1.29/settings/security-role-data-edit.png" "" %}}
 
 Modify the role as needed, and then click the Save button to submit.

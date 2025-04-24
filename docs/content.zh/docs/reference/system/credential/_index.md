@@ -14,13 +14,14 @@ title: "凭据管理"
 ## 凭据列表
 
 在凭据列表中可以查询已创建的凭据信息，支持关键词搜索
-{{% load-img "/img/screenshot/credential/20230222-list.jpg" "credential list" %}}
+
+{{% load-img "/img/screenshot/v1.29/settings/credential.png" "" %}}
 
 ## 添加凭据
 
 点击凭据列表右上角"添加"按钮，右侧弹出添加凭据窗口如下：
 
-{{% load-img "/img/screenshot/credential/20230222-create.jpg" "add credential" %}}
+{{% load-img "/img/screenshot/v1.29/settings/credential-create.png" "" %}}
 
 - 选择凭据类型（当前仅支持 basic auth）
 - 输入凭据名称（必填）
@@ -32,7 +33,7 @@ title: "凭据管理"
 
 点击凭据列表表格中的编辑按钮，右侧弹出更新凭据窗口如下：
 
-{{% load-img "/img/screenshot/credential/20230222-edit.jpg" "edit credential" %}}
+{{% load-img "/img/screenshot/v1.29/settings/credential-edit.png" "" %}}
 
 按需修改配置，然后点击保存按钮提交
 

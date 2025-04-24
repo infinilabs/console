@@ -9,4 +9,4 @@ title: 集群动态
 
 当注册的集群后，在集群动态里面可以观测到集群的动态。
 
-{{% load-img "/img/screenshot/platform/activities.png" %}}
+{{% load-img "/img/screenshot/v1.29/platform/activities.png" "" %}}

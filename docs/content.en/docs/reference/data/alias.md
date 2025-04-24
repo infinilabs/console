@@ -1,6 +1,6 @@
 ---
 weight: 2
-title: Alias Management
+title: Alias
 asciinema: true
 ---
 
@@ -10,11 +10,11 @@ asciinema: true
 
 The alias list includes addition, deletion, modification, and search operations for aliases.
 
-{{% load-img "/img/screenshot/data/alias-list.jpg" "Alias management" %}}
+{{% load-img "/img/screenshot/v1.29/datamanage/alias.png" "" %}}
 
 ## New alias
 
-{{% load-img "/img/screenshot/data/alias-create.jpg" "Alias management" %}}
+{{% load-img "/img/screenshot/v1.29/datamanage/alias-create.png" "" %}}
 
 - Alias: Input an alias name
 - Index: Select the target index corresponding to the alias, and use (\*) to bind multiple indexes.
@@ -24,4 +24,4 @@ The alias list includes addition, deletion, modification, and search operations 
 
 Clicking the `+` button at the beginning of the alias list row will expand and display the index list bound to the alias, and at the same time, you can set and delete the relational binding update of the index.
 
-{{% load-img "/img/screenshot/data/alias-sub-list.jpg" "Alias management" %}}
+{{% load-img "/img/screenshot/v1.29/datamanage/alias-bind.png" "" %}}

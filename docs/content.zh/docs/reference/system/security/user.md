@@ -12,7 +12,7 @@ asciinema: true
 
 ## 创建用户
 
-{{% load-img "/img/screenshot/20220612-create-user.jpg" "Create User" %}}
+{{% load-img "/img/screenshot/v1.29/settings/security-user-create.png" "" %}}
 
 - 用户名是必填的并且需要唯一，作为登录账号名.
 - 昵称, 手机号, 邮箱都是可选的.
@@ -21,18 +21,18 @@ asciinema: true
 
 ## 查询用户
 
-{{% load-img "/img/screenshot/20220612-search-user.jpg" "Search User" %}}
+{{% load-img "/img/screenshot/v1.29/settings/security-user.png" "" %}}
 
 输入关键字，点击搜索按钮查询用户
 
 ## 更新用户
 
-{{% load-img "/img/screenshot/20220612-update-user.jpg" "Update User" %}}
+{{% load-img "/img/screenshot/v1.29/settings/security-user-edit.png" "" %}}
 
 按需修改，点击保存按钮保存
 
 ## 重置用户密码
 
-{{% load-img "/img/screenshot/20220612-reset-password.jpg" "Reset Password" %}}
+{{% load-img "/img/screenshot/v1.29/settings/security-user-reset-pwd.png" "" %}}
 
 输入新密码点击保存按钮重置密码

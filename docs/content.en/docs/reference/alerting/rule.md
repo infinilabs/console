@@ -1,27 +1,28 @@
 ---
 weight: 2
-title: Alerting Rules
+title: Rules
 asciinema: true
 ---
 
-# Alerting Rules
+# Rules
 
 ## Introduction
 
 The alerting rules include the configuration of four parts: data source, metrics definition, trigger condition, and message notification
 
-## Alerting rules list
+## Rule list
 
-In the alerting rules list, you can query the alerting rules that have been added
-{{% load-img "/img/screenshot/20220715-alerting-rule-list.jpg" "alerting rule list" %}}
+In the rule list, you can query the rules that have been added
 
-## New alerting rule
+{{% load-img "/img/screenshot/v1.29/alerting/rules.png" "" %}}
 
-Click the `New` button in the alerting rule list to enter the new alerting rule page
+## New rule
+
+Click the `New` button in the rule list to enter the new rule page
 
 ### Configure data source
 
-{{% load-img "/img/screenshot/20220715-alerting-rule-new-data.jpg" "alerting rule new" %}}
+{{% load-img "/img/screenshot/v1.29/alerting/rules-create-1.png" "" %}}
 
 - Select a cluster (required)
 - Select index, support input index pattern (required)
@@ -31,25 +32,24 @@ Click the `New` button in the alerting rule list to enter the new alerting rule 
 
 ### Configure alerting metrics and trigger conditions
 
-{{% load-img "/img/screenshot/2025/alerting/rule_condition.png" "alerting rule new" %}}
+{{% load-img "/img/screenshot/v1.29/alerting/rules-condition.png" "" %}}
 
 - Input the rule name
 - Add the grouped fields and group size as needed, you can add more than one for terms aggregation
 - Select the metrics aggregation field and statistics type, you can configure more than one, when configuring more than one, you must configure a formula to calculate the final metrics
 - Configure alerting trigger conditions
   - Select **Metrics value**
-  - Select **Bucket diff**
-    - Select based on **Doc diff** or **Content diff**
->**Doc diff**: The difference in the number of matching documents between two adjacent time buckets  
->**Content diff**: Whether there’s a change in a group between two adjacent time buckets. A difference value of 1 indicates an increase, -1 indicates a decrease, and 0 indicates no change
+  - Select **Bucket diff** - Select based on **Doc diff** or **Content diff**
+    > **Doc diff**: The difference in the number of matching documents between two adjacent time buckets  
+    > **Content diff**: Whether there’s a change in a group between two adjacent time buckets. A difference value of 1 indicates an increase, -1 indicates a decrease, and 0 indicates no change
 - Select execution check cycle
 - Input the title of the alerting event (template, referenced by the title in the template variable, click here to learn about [template syntax](./variables) )
 - Input alerting event message (template, referenced by message in template variable, click here for [template syntax](./variables) )
->**Bucket Diff** is a feature introduced in INFINI Console version 1.28.2. It can be used to detect differences in data across different time periods, such as checking if there’s an abnormal change in data volume during a specific time window.
+  > **Bucket Diff** is a feature introduced in INFINI Console version 1.28.2. It can be used to detect differences in data across different time periods, such as checking if there’s an abnormal change in data volume during a specific time window.
+
 ### Configure message notification
 
-{{% load-img "/img/screenshot/20220715-alerting-rule-new-notification.jpg" "alerting rule new" %}}
-{{% load-img "/img/screenshot/20220715-alerting-rule-new-notification1.jpg" "alerting rule new" %}}
+{{% load-img "/img/screenshot/v1.29/alerting/rules-create-2.png" "" %}}
 
 - Configure notification channels, which can be reconfigured, or you can use the add button to select an already created channel as a template to quickly fill in, and support adding multiple
 - Choose whether to enable notification upgrades as needed
@@ -57,13 +57,13 @@ Click the `New` button in the alerting rule list to enter the new alerting rule 
 - Configure notification sending time period
 - Click the save button to submit
 
-## Update alerting rules
+## Update rules
 
 Select the alerting rule to be updated in the alerting rules list and click the Edit button to enter the update alerting rules page
 
-## Delete alerting rules
+## Delete rules
 
-Click the delete button in the alerting rule list table to confirm the second time. After confirming the deletion, execute the delete operation.
+Click the delete button in the rule list table to confirm the second time. After confirming the deletion, execute the delete operation.
 
 ## Import of common rule templates
 

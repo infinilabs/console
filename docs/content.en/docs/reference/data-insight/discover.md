@@ -8,68 +8,40 @@ asciinema: true
 
 ## Introduction
 
-In Discover, you can search and query the data under the index or view according to conditions such as time and fields. The data display methods include regular mode and Insight mode.
+In Discover, you can search and query the data under the index or view according to conditions such as time and fields.
+
+{{% load-img "/img/screenshot/v1.29/datainsight/discover.png" "" %}}
 
 ## Search toolbar
 
 ### Index (View)
 
-{{% load-img "/img/screenshot/discover/20220825-discover-index.png"%}}
+{{% load-img "/img/screenshot/v1.29/datainsight/discover-index-view.png" "" %}}
 
-### Search Statement
+### Search
 
-{{% load-img "/img/screenshot/discover/20220825-discover-query.png"%}}
+{{% load-img "/img/screenshot/v1.29/datainsight/discover-search.png" "" %}}
 
 ### Time Range
 
-{{% load-img "/img/screenshot/discover/20220825-discover-datepicker.png"%}}
+{{% load-img "/img/screenshot/v1.29/datainsight/discover-time-range.png" "" %}}
 
 ### Field Filter
 
-{{% load-img "/img/screenshot/discover/20220825-discover-filter.png"%}}
+{{% load-img "/img/screenshot/v1.29/datainsight/discover-filter.png" "" %}}
 
 ### Save Search
 
-{{% load-img "/img/screenshot/discover/20220825-discover-save-icon.png"%}}
+{{% load-img "/img/screenshot/v1.29/datainsight/discover-save-btn.png" "" %}}
 
-{{% load-img "/img/screenshot/discover/20220825-discover-save.png"%}}
+{{% load-img "/img/screenshot/v1.29/datainsight/discover-save-query.png" "" %}}
 
-### Saved Search List
+## Document Details
 
-{{% load-img "/img/screenshot/discover/20220825-discover-save-list-icon.png"%}}
+Click the " > " button on the left side of a document row to expand and view detailed information. Both **Table** and **JSON** viewing modes are supported.
 
-{{% load-img "/img/screenshot/discover/20220825-discover-save-list.png"%}}
+{{% load-img "/img/screenshot/v1.29/datainsight/discover-table.png" "" %}}
 
-### Insight Mode Switch
+You can also edit or delete the document here.
 
-{{% load-img "/img/screenshot/discover/20220825-discover-insight-icon.png"%}}
-
-### Insight Configuration
-
-{{% load-img "/img/screenshot/discover/20220825-discover-insight-setting-icon.png"%}}
-
-{{% load-img "/img/screenshot/discover/20220825-discover-insight-setting.png"%}}
-
-## Normal Mode
-
-Flexibly add fields to data content with multi-function charts in normal mode
-
-{{% load-img "/img/screenshot/discover/20220825-discover-normal.png"%}}
-
-Edit, delete, etc. document data
-
-{{% load-img "/img/screenshot/discover/20220825-discover-normal-document-actions.png"%}}
-
-## Insight Mode
-
-In Insight mode, visual charts will be pushed to display data according to data characteristics
-
-{{% load-img "/img/screenshot/discover/20220825-discover-insight.png"%}}
-
-Charts can be added via push list
-
-{{% load-img "/img/screenshot/discover/20220825-discover-insight-metric-list.png"%}}
-
-Edit(Remove) chart widget
-
-{{% load-img "/img/screenshot/discover/20220825-discover-insight-chart-actions.png"%}}
+{{% load-img "/img/screenshot/v1.29/datainsight/discover-table-edit.png" "" %}}

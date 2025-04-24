@@ -12,13 +12,14 @@ title: 集群管理
 ## 集群列表
 
 在集群列表中可以查询注册的 Elasticsearch 集群
-{{% load-img "/img/screenshot/20220330-cluster_manage.jpg" "cluster list" %}}
+
+{{% load-img "/img/screenshot/v1.29/inventory/cluster.png" "" %}}
 
 ## 集群注册
 
 第一步填写集群地址，按需开启 TLS 和 身份验证（开启身份验证后需要输入用户名和密码）。
 
-{{% load-img "/img/screenshot/20220330-cluster_register_step1.jpg" "cluster register step one" %}}
+{{% load-img "/img/screenshot/v1.29/inventory/cluster-regist.png" "" %}}
 
 第二步，信息确认
 
@@ -26,13 +27,13 @@ title: 集群管理
 - 是否开启监控（默认开启），启用监控之后可以在 console 监控功能里面查看 Elasticsearch 集群的各种指标
 - 是否开启 Discovery（推荐开启） , 启用之后 console 会自动发现集群所有节点，当配置的集群地址不可用时，console 会尝试使用自动发现的其他节点中可用的地址和 Elasticsearch 交互
 
-{{% load-img "/img/screenshot/20220330-cluster_register_step2.jpg" "cluster register step two" %}}
+{{% load-img "/img/screenshot/v1.29/inventory/cluster-confirm.png" "" %}}
 
 ## 更新集群配置
 
 点击集群列表表格中的编辑按钮，进入更新界面
 
-{{% load-img "/img/screenshot/20220705-cluster-update.jpg" "cluster update" %}}
+{{% load-img "/img/screenshot/v1.29/inventory/cluster-edit.png" "" %}}
 
 按需修改配置，然后点击保存按钮提交
 

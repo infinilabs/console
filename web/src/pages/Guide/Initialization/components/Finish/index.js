@@ -83,7 +83,7 @@ export default ({ formData }) => {
           title={formatMessage({ id: "guide.configuration.title" })} 
           column={1}
         >
-          <Descriptions.Item label={formatMessage({ id: "guide.configuration.cluster" })}>{isTLS ? `https://${hostV}` : `http://${hostV}`}</Descriptions.Item>
+          <Descriptions.Item label={formatMessage({ id: "guide.configuration.cluster" })}>{isTLS ? `https://${hosts[0]}` : `http://${hosts[0]}`}</Descriptions.Item>
           {
             isAuth && (
               <>

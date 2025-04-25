@@ -17,8 +17,10 @@ Information about release notes of INFINI Console is provided here.
 - Fixed qps float value precision (#190)
 - Corrected queue tooltip and message offset alignment (#191)
 - Fixed resolve redirect issue by updating routing logic (#193)
+- Fixed initial guide `Cluster` host (#196)
 ### Improvements  
 - Add compression settings for HTTP process (#192)
+- Add default setting for `Rollup` with 1.12.1 (#196)
 
 ## 1.29.2 (2025-03-31)
 ### Breaking changes  

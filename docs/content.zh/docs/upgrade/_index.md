@@ -19,7 +19,7 @@ Console v1.28.0 版本新增了 TopN 功能，用于快速识别排名前 N 的�
 2. 将指标脚本 DSL 中字符串 `$[[SETUP_INDEX_PREFIX]]` 批量替换成实际的索引前缀，如果您未修改该配置，默认为 `.infini_`
 3. 执行指标脚本 DSL
 
-{{< expand "指标脚本 DSL" "..." >}}
+{{< details "指标脚本 DSL" "..." >}}
 
 ```dsl
 #shard level
@@ -598,7 +598,7 @@ PUT $[[SETUP_INDEX_PREFIX]]metric/_doc/jD2jH5QB7KvGccywNCH7
 }
 ```
 
-{{< /expand >}}
+{{< /details >}}
 
 ## 从 v1.7 升级至 v1.27.x
 

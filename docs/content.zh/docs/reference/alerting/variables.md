@@ -14,29 +14,29 @@ asciinema: true
 
 用于渲染字段的语法为 `{{ .字段名 }}`，可用于模板内容渲染的变量字段如下：
 
-| 变量字段名                 | 字段类型 | 说明                                       | 示例                                                    |
-| -------------------------- | -------- | ------------------------------------------ | ------------------------------------------------------- |
-| rule_id                    | string   | rule uuid                                  | c9f663tath2e5a0vksjg                                    |
-| rule_name                  | string   | rule name                                  | High CPU usage                                          |
-| resource_id                | string   | resource uuid                              | c9f663tath2e5a0vksjg                                    |
-| resource_name              | string   | resource name                              | es-v716                                                 |
-| event_id                   | string   | identifier for check details               | c9f663tath2e5a0vksjx                                    |
-| timestamp                  | number   | Millisecond timestamp                      | 1654595042399                                           |
-| trigger_at                 | number   | Millisecond timestamp                      | 1654595042399                                           |
-| duration                   | string   | Alarm duration                             | "2m10s"                                           |
-| objects                  | string array   | resource index name                         | [".infini_metrics*"]                                           |
-| first_group_value          | string   | The first value of group_values in results | c9aikmhpdamkiurn1vq0                                    |
-| first_threshold            | string   | The first value of threshold in results    | 90                                                      |
-| priority                   | string   | The highest priority in results            | critical                                                |
-| title                      | string   | event title                                | Node (`{{.first_group_value}}`) disk used >= 90%        |
-| message                    | string   | event content                              | EventID：`{{.event_id}}`; Cluster：`{{.resource_name}}` |
-| results                    | array    | result of groups                           |                                                         |
-| results[0].threshold       | array    |                                            | ["90"]                                                  |
-| results[0].priority        | string   |                                            | high                                                    |
-| results[0].group_values    | array    |                                            | ["cluster-xxx", "node-xxx"]                             |
-| results[0].issue_timestamp | number   | Millisecond timestamp                      | 1654595042399                                           |
-| results[0].result_value    | float    |                                            | 91.2                                                    |
-| results[0].relation_values | map      |                                            | {a:100, b:91.2}                                         |
+| 变量字段名                 | 字段类型     | 说明                                       | 示例                                                    |
+| -------------------------- | ------------ | ------------------------------------------ | ------------------------------------------------------- |
+| rule_id                    | string       | rule uuid                                  | c9f663tath2e5a0vksjg                                    |
+| rule_name                  | string       | rule name                                  | High CPU usage                                          |
+| resource_id                | string       | resource uuid                              | c9f663tath2e5a0vksjg                                    |
+| resource_name              | string       | resource name                              | es-v716                                                 |
+| event_id                   | string       | identifier for check details               | c9f663tath2e5a0vksjx                                    |
+| timestamp                  | number       | Millisecond timestamp                      | 1654595042399                                           |
+| trigger_at                 | number       | Millisecond timestamp                      | 1654595042399                                           |
+| duration                   | string       | Alarm duration                             | "2m10s"                                                 |
+| objects                    | string array | resource index name                        | [".infini_metrics*"]                                    |
+| first_group_value          | string       | The first value of group_values in results | c9aikmhpdamkiurn1vq0                                    |
+| first_threshold            | string       | The first value of threshold in results    | 90                                                      |
+| priority                   | string       | The highest priority in results            | critical                                                |
+| title                      | string       | event title                                | Node (`{{.first_group_value}}`) disk used >= 90%        |
+| message                    | string       | event content                              | EventID：`{{.event_id}}`; Cluster：`{{.resource_name}}` |
+| results                    | array        | result of groups                           |                                                         |
+| results[0].threshold       | array        |                                            | ["90"]                                                  |
+| results[0].priority        | string       |                                            | high                                                    |
+| results[0].group_values    | array        |                                            | ["cluster-xxx", "node-xxx"]                             |
+| results[0].issue_timestamp | number       | Millisecond timestamp                      | 1654595042399                                           |
+| results[0].result_value    | float        |                                            | 91.2                                                    |
+| results[0].relation_values | map          |                                            | {a:100, b:91.2}                                         |
 
 ### 变量使用示例
 
@@ -111,23 +111,23 @@ env:
 
 完整的模板函数列表如下：
 
-| 模板函数            | 参数         | 说明                                                                                                                                                                                       |
-| ------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
-| to_fixed            | 固定小数位数 | float 类型数值保留 N 位小数位<br>示例：`{{.result_value                                                                                                                                    | to_fixed 2}}`<br>输出：10.35                                     |
-| format_bytes        | 固定小数位数 | 字节类型数值格式化<br>示例：`{{.result_value                                                                                                                                               | format_bytes 2}}`<br>输出：10.35gb                               |
-| date                |              | 时间戳转为 UTC 日期<br>示例：`{{.timestamp                                                                                                                                                 | date}}`<br>输出：2022-05-01                                      |
-| date_in_zone        | 时区         | 时间戳转为当前区域日期<br>示例：`{{.timestamp                                                                                                                                              | date_in_zone "Asia/Shanghai"}}`<br>输出：2022-05-01              |
-| datetime            |              | 时间戳转为 UTC 时间<br>示例：`{{.timestamp                                                                                                                                                 | datetime}}`<br>输出：2022-05-01 10:10:10                         |
-| datetime_in_zone    | 时区         | 时间戳转为当前区域时间<br>示例：`{{.timestamp                                                                                                                                              | datetime_in_zone "Asia/Shanghai"}}`<br>输出：2022-05-01 10:10:10 |
-| to_lower            |              | 英文字符转为小写<br>示例：`{{.resource_name                                                                                                                                                | to_lower }}`<br>输出：cluster                                    |
-| to_upper            |              | 英文字符转为大写<br>示例：`{{.resource_name                                                                                                                                                | to_upper }}`<br>输出：CLUSTER                                    |
-| add                 | 数值类型     | 数值相加<br>示例：`{{.result_value                                                                                                                                                         | add 1 }}`<br>输出：2                                             |
-| sub                 | 数值类型     | 数值相减<br>示例：`{{sub .result_value 1 }}`<br>输出：0                                                                                                                                    |
-| mul                 | 数值类型     | 数值相乘<br>示例：`{{mul .result_value 3 2 }}`<br>输出：6                                                                                                                                  |
-| div                 | 数值类型     | 数值相除<br>示例：`{{div .result_value 2 }}`<br>输出：0.5                                                                                                                                  |
-| lookup              | 字符串类型   | 通过标识字段获取相关数据其他字段信息<br>示例(根据集群 ID 获取集群名称)：`{{lookup "category=metadata, object=cluster, property=name, default=N/A" "cg84bttath2dl9gaf50g"}}`<br>输出：es710 |
-| str_replace         | 字符串类型     | 字符串替换<br>示例：`{{ "hello world" | str_replace "world" "world!"}}`<br>输出：`hello world!`                                             |
-| md_to_html          | 字符串类型     | markdown 转 html 格式<br>示例：`{{ "**hello world**" | md_to_html }}`<br>输出：`<p><strong>hello world</strong></p>`                       |
+| 模板函数         | 参数         | 说明                                                                                                                                                                                       |
+| ---------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| to_fixed         | 固定小数位数 | float 类型数值保留 N 位小数位<br>示例：`{{.result_value                                                                                                                                    | to_fixed 2}}`<br>输出：10.35                                     |
+| format_bytes     | 固定小数位数 | 字节类型数值格式化<br>示例：`{{.result_value                                                                                                                                               | format_bytes 2}}`<br>输出：10.35gb                               |
+| date             |              | 时间戳转为 UTC 日期<br>示例：`{{.timestamp                                                                                                                                                 | date}}`<br>输出：2022-05-01                                      |
+| date_in_zone     | 时区         | 时间戳转为当前区域日期<br>示例：`{{.timestamp                                                                                                                                              | date_in_zone "Asia/Shanghai"}}`<br>输出：2022-05-01              |
+| datetime         |              | 时间戳转为 UTC 时间<br>示例：`{{.timestamp                                                                                                                                                 | datetime}}`<br>输出：2022-05-01 10:10:10                         |
+| datetime_in_zone | 时区         | 时间戳转为当前区域时间<br>示例：`{{.timestamp                                                                                                                                              | datetime_in_zone "Asia/Shanghai"}}`<br>输出：2022-05-01 10:10:10 |
+| to_lower         |              | 英文字符转为小写<br>示例：`{{.resource_name                                                                                                                                                | to_lower }}`<br>输出：cluster                                    |
+| to_upper         |              | 英文字符转为大写<br>示例：`{{.resource_name                                                                                                                                                | to_upper }}`<br>输出：CLUSTER                                    |
+| add              | 数值类型     | 数值相加<br>示例：`{{.result_value                                                                                                                                                         | add 1 }}`<br>输出：2                                             |
+| sub              | 数值类型     | 数值相减<br>示例：`{{sub .result_value 1 }}`<br>输出：0                                                                                                                                    |
+| mul              | 数值类型     | 数值相乘<br>示例：`{{mul .result_value 3 2 }}`<br>输出：6                                                                                                                                  |
+| div              | 数值类型     | 数值相除<br>示例：`{{div .result_value 2 }}`<br>输出：0.5                                                                                                                                  |
+| lookup           | 字符串类型   | 通过标识字段获取相关数据其他字段信息<br>示例(根据集群 ID 获取集群名称)：`{{lookup "category=metadata, object=cluster, property=name, default=N/A" "cg84bttath2dl9gaf50g"}}`<br>输出：es710 |
+| str_replace      | 字符串类型   | 字符串替换<br>示例：`{{ "hello world"                                                                                                                                                      | str_replace "world" "world!"}}`<br>输出：`hello world!`          |
+| md_to_html       | 字符串类型   | markdown 转 html 格式<br>示例：`{{ "**hello world**"                                                                                                                                       | md_to_html }}`<br>输出：`<p><strong>hello world</strong></p>`    |
 
 > 目前 lookup 函数第一个查找目录参数设置里面 `category` 仅支持 `metadata` 固定写法;`object` 可选值为 `cluster|node|index`，这三个指分别对应从
 > 系统索引 `.infini_cluster|.infini_node|.infini_index` 中查找数据； `property` 指定获取哪个字段；`default` 找不到对应字段或者出错时的返回值;
@@ -208,7 +208,7 @@ ge
 	Returns the boolean truth of arg1 >= arg2
 ```
 
-{{< expand "Slack message 模板完整示例" "..." >}}
+{{< details "Slack message 模板完整示例" "..." >}}
 
 ```
 {
@@ -269,6 +269,6 @@ ge
 }
 ```
 
-{{< /expand >}}
+{{< /details >}}
 
 更多模板语法[点击查看](https://pkg.go.dev/text/template#pkg-overview)

@@ -142,7 +142,7 @@ ge
 	Returns the boolean truth of arg1 >= arg2
 ```
 
-{{< expand "A more complete example for Slack message" "..." >}}
+{{< details "A more complete example for Slack message" "..." >}}
 
 ```
 {
@@ -203,6 +203,6 @@ ge
 }
 ```
 
-{{< /expand >}}
+{{< /details >}}
 
 More template syntax[Click me](https://pkg.go.dev/text/template#pkg-overview)

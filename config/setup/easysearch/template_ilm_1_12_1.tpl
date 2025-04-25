@@ -6,7 +6,8 @@ PUT _template/$[[SETUP_TEMPLATE_NAME]]
     ],
     "settings": {
       "index": {
-        "merge.policy.time_range_field": "@timestamp",
+        "merge.policy.time_range_field": "timestamp",
+        "requests.cache.enable": false,
         "max_result_window": "10000000",
         "codec": "ZSTD",
         "mapping": {

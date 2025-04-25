@@ -750,15 +750,24 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 	var (
 		dslTplFileName = "noop.tpl"
 		useCommon      = true
+		rollupEnabled  = false
 	)
+	if large, _ := util.VersionCompare(ver.Number, "1.12.1"); large >= 0 {
+		rollupEnabled = true
+	}
 	switch request.InitializeTemplate {
 	case "template_ilm":
 		useCommon = false
 		dslTplFileName = "template_ilm.tpl"
+		if ver.Distribution == elastic.Easysearch {
+			if rollupEnabled {
+				dslTplFileName = "template_ilm_1_12_1.tpl"
+			}
+		}
 		elastic2.InitTemplate(true)
 	case "rollup":
 		if ver.Distribution == elastic.Easysearch {
-			if large, _ := util.VersionCompare(ver.Number, "1.10.1"); large > 0 {
+			if rollupEnabled {
 				useCommon = false
 				dslTplFileName = "template_rollup.tpl"
 			}

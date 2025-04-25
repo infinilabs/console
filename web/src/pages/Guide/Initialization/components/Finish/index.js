@@ -13,7 +13,7 @@ export default ({ formData }) => {
     username,
     password,
     isInit,
-      hosts = [],
+    hosts = [],
     bootstrap_username,
     bootstrap_password,
     credential_secret,
@@ -83,7 +83,7 @@ export default ({ formData }) => {
           title={formatMessage({ id: "guide.configuration.title" })} 
           column={1}
         >
-          <Descriptions.Item label={formatMessage({ id: "guide.configuration.cluster" })}>{isTLS ? `https://${host}` : `http://${host}`}</Descriptions.Item>
+          <Descriptions.Item label={formatMessage({ id: "guide.configuration.cluster" })}>{isTLS ? `https://${hosts[0]}` : `http://${hosts[0]}`}</Descriptions.Item>
           {
             isAuth && (
               <>

@@ -6,27 +6,24 @@ PUT _template/$[[SETUP_TEMPLATE_NAME]]
     ],
     "settings": {
       "index": {
-        "merge.policy.time_range_field": "timestamp",
-        "requests.cache.enable": false,
         "max_result_window": "10000000",
-        "codec": "ZSTD",
         "mapping": {
           "total_fields": {
-            "limit": "200000"
+            "limit": "20000"
           }
         },
-        "refresh_interval": "30s",
         "analysis": {
           "analyzer": {
             "suggest_text_search": {
               "filter": [
-                "lowercase",
                 "word_delimiter"
               ],
               "tokenizer": "classic"
             }
           }
         },
+        "codec": "ZSTD",
+        "source_reuse": false,
         "number_of_shards": "1"
       }
     },
@@ -38,29 +35,6 @@ PUT _template/$[[SETUP_TEMPLATE_NAME]]
               "properties": {
                 "cluster_id": {
                   "type": "keyword"
-                }
-              }
-            }
-          }
-        },
-        "payload": {
-          "properties": {
-            "elasticsearch": {
-              "properties": {
-                "cluster_stats": {
-                  "properties": {
-                    "indices": {
-                      "properties": {
-                        "shards": {
-                          "properties": {
-                            "replication": {
-                              "type": "double"
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
                 }
               }
             }
@@ -80,15 +54,6 @@ PUT _template/$[[SETUP_TEMPLATE_NAME]]
         {
           "disable_payload_instance_stats": {
             "path_match": "payload.instance.stats.*",
-            "mapping": {
-              "type": "object",
-              "enabled": false
-            }
-          }
-        },
-        {
-          "ignore_payload_host_network_sockets": {
-            "path_match": "payload.host.network_sockets.*",
             "mapping": {
               "type": "object",
               "enabled": false
@@ -136,13 +101,15 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]metrics-rollover
     ],
     "settings" : {
       "index" : {
+        "merge.policy.time_range_field": "timestamp",
+        "requests.cache.enable": false,
         "format" : "7",
         "lifecycle" : {
           "name" : "ilm_$[[SETUP_INDEX_PREFIX]]metrics-30days-retention",
           "rollover_alias" : "$[[SETUP_INDEX_PREFIX]]metrics"
         },
         "codec" : "ZSTD",
-        "source_reuse": true,
+        "source_reuse": false,
         "number_of_shards" : "1",
         "translog.durability":"async",
         "mapping.coerce": false,
@@ -158,6 +125,24 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]metrics-rollover
               "type" : "keyword"
             },
             "match_mapping_type" : "string"
+          }
+        },
+        {
+          "disable_payload_instance_stats": {
+            "path_match": "payload.instance.stats.*",
+            "mapping": {
+              "type": "object",
+              "enabled": false
+            }
+          }
+        },
+        {
+          "ignore_payload_host_network_sockets": {
+            "path_match": "payload.host.network_sockets.*",
+            "mapping": {
+              "type": "object",
+              "enabled": false
+            }
           }
         }
       ]
@@ -568,7 +553,6 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]activities-rollover
     "settings" : {
       "index" : {
         "format" : "7",
-        "mapping.depth.limit": "50",
         "lifecycle" : {
           "name" : "ilm_$[[SETUP_INDEX_PREFIX]]metrics-30days-retention",
           "rollover_alias" : "$[[SETUP_INDEX_PREFIX]]activities"

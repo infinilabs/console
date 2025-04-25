@@ -38,21 +38,22 @@ api:
 ## 注册网关实例
 
 在 Console 中查看 Gateway 日志，首先得把 Gateway 实例在 Console 中注册，详细步骤请参考文档
-[网关管理](../reference/resource/gateway/)
+[实例管理](../reference/resource/runtime/)
 
 ## 查看 gateway 实时日志
 
-登录 Console 之后点击左侧菜单 `资源管理 > 网关管理`，如下图：
-{{% load-img "/img/screenshot/20230512-instance-list.jpg" "instance list" %}}
+登录 Console 之后点击左侧菜单 `资源管理 > 实例管理`，如下图：
+
+{{% load-img "/img/screenshot/v1.29/inventory/runtime-instance-logging.png" "" %}}
 
 然后选择相应的 Gateway 实例，点击 `Logging` 进入查看日志页面，如下图：
 
-{{% load-img "/img/screenshot/20230512-instance-logging1.jpg" "instance logging" %}}
+{{% load-img "/img/screenshot/v1.29/inventory/runtime-instance-logging-start.png" "" %}}
 
 到这里，如上图先查看右侧连接状态是否正常，选择推送实时日志级别，然后点击 `Start`
 按钮就可以查看实时的推送日志了，如下图：
 
-{{% load-img "/img/screenshot/20230512-instance-logging2.jpg" "instance logging" %}}
+{{% load-img "/img/screenshot/v1.29/inventory/runtime-instance-logging-stop.png" "" %}}
 
 - 这里默认会自动滚动日志，查看最新日志，也可关闭开关
 - 如果需要过滤日志，可以先点击 `Stop` 停止，然后再相应输入框中根据文件名，调用函数名，消息内容过滤，输入完成之后重新

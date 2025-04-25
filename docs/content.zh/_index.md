@@ -42,9 +42,11 @@ INFINI Console 使用 Golang 编写，安装包很小，只有 11MB 左右，没
 
 ## 系统截图
 
-{{% load-img "/img/screenshot/screenshot2023/overview.png" "overview" %}}
-{{% load-img "/img/screenshot/20220330-devtool_tab.jpg" "多个工作区并存" %}}
-{{% load-img "/img/screenshot/20220330-cluster_manage.jpg" "Elasticsearch 集群管理" %}}
+{{% load-img "/img/screenshot/v1.29/workspace/overview.png" "" %}}
+
+{{% load-img "/img/screenshot/v1.29/devtools/devtools-tab.png" "" %}}
+
+{{% load-img "/img/screenshot/v1.29/inventory/cluster.png" "" %}}
 
 {{< button relref="./docs/screenshot" >}}更多截图{{< /button >}}
 
@@ -52,8 +54,6 @@ INFINI Console 使用 Golang 编写，安装包很小，只有 11MB 左右，没
 
 [加入我们的 Discord](https://discord.gg/4tKTMkkvVX)
 
-
 ## 谁在用?
 
 如果您正在使用 INFINI Console，并且您觉得它还不错的话，请[告诉我们](https://discord.gg/4tKTMkkvVX)，所有的用户案例我们会集中放在[这里](./docs/user-cases/)，感谢您的支持。
-

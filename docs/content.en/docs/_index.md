@@ -41,9 +41,11 @@ INFINI Console is written in Golang, the installation package is very small, onl
 
 ## Screenshot
 
-{{% load-img "/img//screenshot/screenshot2023/overview.png" "Elasticsearch Cluster Overview" %}}
-{{% load-img "/img//screenshot/20220330-devtool_tab.jpg" "multiple workspaces" %}}
-{{% load-img "/img//screenshot/20220330-cluster_manage.jpg" "Elasticsearch Cluster Manage" %}}
+{{% load-img "/img/screenshot/v1.29/workspace/overview.png" "" %}}
+
+{{% load-img "/img/screenshot/v1.29/devtools/devtools-tab.png" "" %}}
+
+{{% load-img "/img/screenshot/v1.29/inventory/cluster.png" "" %}}
 
 {{< button relref="./screenshot" >}}View More{{< /button >}}
 

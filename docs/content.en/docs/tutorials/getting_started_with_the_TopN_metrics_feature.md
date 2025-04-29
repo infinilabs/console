@@ -4,7 +4,7 @@ title: Getting Started with the TopN Metrics Feature in INFINI Console
 asciinema: true
 ---
 
-# How to Monitor Elasticsearch Cluster Health
+# Getting Started with the TopN Metrics Feature in INFINI Console
 
 ## Background
 

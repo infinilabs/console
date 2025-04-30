@@ -6,8 +6,8 @@ PUT /_rollup/jobs/rollup_index_stats
     "target_index": "rollup_index_stats_{{ctx.source_index}}",
     "timestamp": "timestamp",
     "continuous": true,
-    "page_size": 100,
-    "cron": "*/10 1-23 * * *",
+    "page_size": 600,
+    "cron": "*/5 0-23 * * *",
     "timezone": "UTC",
     "stats": [
           {
@@ -38,7 +38,8 @@ PUT /_rollup/jobs/rollup_index_stats
     ],
     "filter": {
       "metadata.name": "index_stats"
-    }
+    },
+    "field_abbr": true
   }
 }
 
@@ -50,8 +51,8 @@ PUT /_rollup/jobs/rollup_index_health
     "target_index": "rollup_index_health_{{ctx.source_index}}",
     "timestamp": "timestamp",
     "continuous": true,
-    "page_size": 100,
-    "cron": "*/10 1-23 * * *",
+    "page_size": 600,
+    "cron": "*/5 0-23 * * *",
     "timezone": "UTC",
     "stats": [
           {
@@ -78,7 +79,8 @@ PUT /_rollup/jobs/rollup_index_health
     ],
     "filter": {
       "metadata.name": "index_health"
-    }
+    },
+    "field_abbr": true
   }
 }
 
@@ -88,9 +90,9 @@ PUT /_rollup/jobs/rollup_cluster_stats
   "rollup": {
     "source_index": ".infini_metrics",
     "target_index": "rollup_cluster_stats_{{ctx.source_index}}",
-    "page_size": 100,
+    "page_size": 600,
     "continuous": true,
-    "cron": "*/10 1-23 * * *",
+    "cron": "*/5 0-23 * * *",
     "timezone": "UTC",
     "stats": [
       {
@@ -118,7 +120,8 @@ PUT /_rollup/jobs/rollup_cluster_stats
     ],
     "filter": {
       "metadata.name": "cluster_stats"
-    }
+    },
+    "field_abbr": true
   }
 }
 
@@ -129,8 +132,8 @@ PUT /_rollup/jobs/rollup_cluster_health
     "source_index": ".infini_metrics",
     "target_index": "rollup_cluster_health_{{ctx.source_index}}",
     "continuous": true,
-    "page_size": 100,
-    "cron": "*/10 1-23 * * *",
+    "page_size": 600,
+    "cron": "*/5 0-23 * * *",
     "timezone": "UTC",
     "stats": [
       {
@@ -157,7 +160,8 @@ PUT /_rollup/jobs/rollup_cluster_health
     },
     "metrics": [
       "payload.elasticsearch.cluster_health.*"
-    ]
+    ],
+    "field_abbr": true
   }
 }
 
@@ -169,8 +173,8 @@ PUT /_rollup/jobs/rollup_node_stats
     "target_index": "rollup_node_stats_{{ctx.source_index}}",
     "timestamp": "timestamp",
     "continuous": true,
-    "page_size": 200,
-    "cron": "*/10 1-23 * * *",
+    "page_size": 600,
+    "cron": "*/5 0-23 * * *",
     "timezone": "UTC",
     "stats": [
       {
@@ -239,7 +243,8 @@ PUT /_rollup/jobs/rollup_node_stats
     ],
     "metrics": [
       "payload.elasticsearch.node_stats.*"
-    ]
+    ],
+    "field_abbr": true
   }
 }
 
@@ -251,8 +256,8 @@ PUT /_rollup/jobs/rollup_shard_stats_metrics
     "target_index": "rollup_shard_stats_metrics_{{ctx.source_index}}",
     "timestamp": "timestamp",
     "continuous": true,
-    "page_size": 200,
-    "cron": "*/5 1-23 * * *",
+    "page_size": 600,
+    "cron": "*/5 0-23 * * *",
     "timezone": "UTC",
     "stats": [
           {
@@ -284,8 +289,8 @@ PUT /_rollup/jobs/rollup_shard_stats_metrics
     "filter": {
       "metadata.name": "shard_stats",
       "payload.elasticsearch.shard_stats.routing.primary": true
-
-    }
+    },
+    "field_abbr": true
   }
 }
 
@@ -297,8 +302,8 @@ PUT /_rollup/jobs/rollup_shard_stats_state
     "target_index": "rollup_shard_stats_state_{{ctx.source_index}}",
     "timestamp": "timestamp",
     "continuous": true,
-    "page_size": 100,
-    "cron": "*/5 1-23 * * *",
+    "page_size": 600,
+    "cron": "*/5 0-23 * * *",
     "timezone": "UTC",
     "stats": [
           {
@@ -323,7 +328,8 @@ PUT /_rollup/jobs/rollup_shard_stats_state
     ],
     "filter": {
       "metadata.name": "shard_stats"
-    }
+    },
+    "field_abbr": true
   }
 }
 
@@ -349,7 +355,7 @@ PUT /.easysearch-ilm-config/_settings
         "limit": 1000
       },
       "nested_objects": {
-        "limit": 20000
+        "limit": 60000
       },
       "total_fields": {
         "limit": 30000
@@ -359,8 +365,8 @@ PUT /.easysearch-ilm-config/_settings
 }
 
 # ilm settings for rollup indices
-DELETE _ilm/policy/ilm_$[[SETUP_INDEX_PREFIX]]rollup-30days-retention
-PUT _ilm/policy/ilm_$[[SETUP_INDEX_PREFIX]]rollup-30days-retention
+DELETE _ilm/policy/ilm_.infini_rollup-30days-retention
+PUT _ilm/policy/ilm_.infini_rollup-30days-retention
 {
   "policy": {
     "phases": {
@@ -387,7 +393,7 @@ PUT _template/rollup_policy_template
   "order": 1, 
   "index_patterns": ["rollup*"],
   "settings": {
-    "index.lifecycle.name": "ilm_$[[SETUP_INDEX_PREFIX]]rollup-30days-retention"
+    "index.lifecycle.name": "ilm_.infini_rollup-30days-retention"
   }
 }
 

@@ -366,7 +366,7 @@ PUT /.easysearch-ilm-config/_settings
 
 # ilm settings for rollup indices
 DELETE _ilm/policy/ilm_$[[SETUP_INDEX_PREFIX]]rollup-30days-retention
-PUT _ilm/policy/ilm_[[SETUP_INDEX_PREFIX]]rollup-30days-retention
+PUT _ilm/policy/ilm_$[[SETUP_INDEX_PREFIX]]rollup-30days-retention
 {
   "policy": {
     "phases": {

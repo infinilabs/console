@@ -29,15 +29,16 @@ package common
 
 import (
 	"fmt"
+	"os"
+	"path"
+	"time"
+
 	"gopkg.in/yaml.v2"
 	"infini.sh/console/model"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/keystore"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
-	"os"
-	"path"
-	"time"
 )
 
 const emailServerConfigFile = "send_email.yml"
@@ -117,6 +118,7 @@ func GeneratePipelineConfig(servers []model.EmailServer) (string, error) {
 				"tls":               srv.TLS,
 				"refresh_timestamp": time.Now().UnixMilli(),
 			},
+			"min_tls_version": srv.TLSMinVersion,
 			"auth": util.MapStr{
 				"username": srv.Auth.Username,
 				"password": fmt.Sprintf("$[[keystore.%s]]", key),

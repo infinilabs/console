@@ -142,6 +142,18 @@ export default Form.create({ name: "email_server_cfg" })((props) => {
             ],
           })(<InputNumber />)}
         </Form.Item>
+        <Form.Item label="TLS Min Version">
+          {getFieldDecorator("tls_min_version", {
+            initialValue: config.tls_min_version,
+            rules: [
+            ],
+          })(<Select>
+            <Option value="TLS10">TLS10</Option>
+            <Option value="TLS11">TLS11</Option>
+            <Option value="TLS12">TLS12</Option>
+            <Option value="TLS13">TLS13</Option>
+          </Select>)}
+        </Form.Item>
         <Form.Item label="TLS">
           {getFieldDecorator("tls", {
             initialValue: config.tls,

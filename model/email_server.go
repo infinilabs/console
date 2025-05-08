@@ -28,20 +28,45 @@
 package model
 
 import (
+	"crypto/tls"
 	"fmt"
+
 	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/orm"
 )
 
 type EmailServer struct {
 	orm.ORMObjectBase
-	Name         string           `json:"name" elastic_mapping:"name:{type:text}"`
-	Host         string           `json:"host" elastic_mapping:"host:{type:keyword}"`
-	Port         int              `json:"port" elastic_mapping:"port:{type:keyword}"`
-	TLS          bool             `json:"tls" elastic_mapping:"tls:{type:keyword}"`
-	Auth         *model.BasicAuth `json:"auth" elastic_mapping:"auth:{type:object}"`
-	Enabled      bool             `json:"enabled" elastic_mapping:"enabled:{type:boolean}"`
-	CredentialID string           `json:"credential_id" elastic_mapping:"credential_id:{type:keyword}"`
+	Name          string           `json:"name" elastic_mapping:"name:{type:text}"`
+	Host          string           `json:"host" elastic_mapping:"host:{type:keyword}"`
+	Port          int              `json:"port" elastic_mapping:"port:{type:keyword}"`
+	TLS           bool             `json:"tls" elastic_mapping:"tls:{type:keyword}"`
+	Auth          *model.BasicAuth `json:"auth" elastic_mapping:"auth:{type:object}"`
+	Enabled       bool             `json:"enabled" elastic_mapping:"enabled:{type:boolean}"`
+	CredentialID  string           `json:"credential_id" elastic_mapping:"credential_id:{type:keyword}"`
+	TLSMinVersion string           `json:"tls_min_version" elastic_mapping:"tls_min_version:{type:keyword}"`
+}
+
+const (
+	TLSVersion10 = "TLS10"
+	TLSVersion11 = "TLS11"
+	TLSVersion12 = "TLS12"
+	TLSVersion13 = "TLS13"
+)
+
+func GetTLSVersion(version string) (uint16, error) {
+	switch version {
+	case TLSVersion10:
+		return tls.VersionTLS10, nil
+	case TLSVersion11:
+		return tls.VersionTLS11, nil
+	case TLSVersion12:
+		return tls.VersionTLS12, nil
+	case TLSVersion13:
+		return tls.VersionTLS13, nil
+	default:
+		return 0, fmt.Errorf("unsupported TLS version [%s]", version)
+	}
 }
 
 func (serv *EmailServer) Validate(requireName bool) error {

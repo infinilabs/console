@@ -31,6 +31,10 @@ import (
 	"bytes"
 	"crypto/tls"
 	"fmt"
+	"net/http"
+	"strconv"
+	"time"
+
 	"github.com/buger/jsonparser"
 	log "github.com/cihub/seelog"
 	"github.com/gopkg.in/gomail.v2"
@@ -41,9 +45,6 @@ import (
 	"infini.sh/framework/core/credential"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
-	"net/http"
-	"strconv"
-	"time"
 )
 
 func (h *EmailAPI) createEmailServer(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -380,7 +381,17 @@ func (h *EmailAPI) testEmailServer(w http.ResponseWriter, req *http.Request, ps 
 
 	message.SetBody("text/plain", "This is just a test email, do not reply!")
 	d := gomail.NewDialerWithTimeout(reqBody.Host, reqBody.Port, reqBody.Auth.Username, reqBody.Auth.Password.Get(), 3*time.Second)
-	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
+
+	// set default TLS min version to TLS 1.2 for security when not specified
+	if reqBody.TLSMinVersion == "" {
+		reqBody.TLSMinVersion = model.TLSVersion12
+	}
+	tlsMinVersion, err := model.GetTLSVersion(reqBody.TLSMinVersion)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	d.TLSConfig = &tls.Config{InsecureSkipVerify: true, MinVersion: tlsMinVersion}
 	d.SSL = reqBody.TLS
 
 	err = d.DialAndSend(message)

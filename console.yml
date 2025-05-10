@@ -25,7 +25,7 @@ configs:
 web:
   enabled: true
   embedding_api: true
-  auth:
+  security:
     enabled: true
   ui:
     enabled: true

@@ -10,9 +10,10 @@ title: "版本历史"
 ## Latest (In development)  
 ### ❌ Breaking changes  
 ### 🚀 Features  
-- 支持配置邮件服务器最小 TLS 使用版本
+- feat: 支持配置邮件服务器最小 TLS 使用版本
 ### 🐛 Bug fix  
 ### ✈️ Improvements  
+- chore: 为网关配置增加指标过滤器
 
 ## 1.29.3 (2025-04-27)
 ### Breaking changes  

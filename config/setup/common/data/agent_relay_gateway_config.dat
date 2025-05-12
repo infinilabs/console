@@ -29,6 +29,31 @@ flow:
       - basic_auth:
           valid_users:
             ingest: password
+      - request_body_json_del:
+          path:
+            - payload.elasticsearch.cluster_stats.indices.mappings
+            - payload.elasticsearch.cluster_stats.nodes.plugins
+            - payload.elasticsearch.shard_stats.bulk
+            - payload.elasticsearch.shard_stats.commit
+            - payload.elasticsearch.shard_stats.retention_leases
+            - payload.elasticsearch.shard_stats.seq_no
+            - payload.elasticsearch.shard_stats.shard_path
+            - payload.elasticsearch.shard_stats.sparse_vector
+            - payload.elasticsearch.shard_stats.dense_vector
+            - payload.elasticsearch.shard_stats.translog
+            - payload.elasticsearch.shard_stats.warmer
+            - payload.elasticsearch.shard_stats.indices.segments.file_sizes
+            - payload.elasticsearch.node_stats.attributes
+            - payload.elasticsearch.node_stats.discovery
+            - payload.elasticsearch.node_stats.script
+            - payload.elasticsearch.node_stats.repositories
+            - payload.elasticsearch.node_stats.script_cache
+            - payload.elasticsearch.node_stats.http.clients
+            - payload.elasticsearch.node_stats.indices.translog
+            - payload.elasticsearch.node_stats.indices.warmer
+            - payload.elasticsearch.node_stats.indices.segments.file_sizes
+            - payload.elasticsearch.node_stats.transport.actions
+            - payload.elasticsearch.node_stats.discovery.cluster_applier_stats
       - rewrite_to_bulk:
           type_removed: false
       - bulk_request_mutate:

@@ -44,7 +44,7 @@ import (
 	elastic2 "infini.sh/framework/modules/elastic"
 
 	log "github.com/cihub/seelog"
-	"github.com/valyala/fasttemplate"
+	"infini.sh/framework/lib/fasttemplate"
 	"golang.org/x/crypto/bcrypt"
 	elastic3 "infini.sh/console/modules/elastic/api"
 	security2 "infini.sh/console/modules/security"

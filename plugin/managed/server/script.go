@@ -30,7 +30,7 @@ package server
 import (
 	"fmt"
 	log "github.com/cihub/seelog"
-	"github.com/valyala/fasttemplate"
+	"infini.sh/framework/lib/fasttemplate"
 	"infini.sh/console/core/security"
 	"infini.sh/console/modules/agent/common"
 	httprouter "infini.sh/framework/core/api/router"

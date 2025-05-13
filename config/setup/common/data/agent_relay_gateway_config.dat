@@ -30,6 +30,7 @@ flow:
           valid_users:
             ingest: password
       - request_body_json_del:
+          ignore_missing: true
           path:
             - payload.elasticsearch.cluster_stats.indices.mappings
             - payload.elasticsearch.cluster_stats.nodes.plugins

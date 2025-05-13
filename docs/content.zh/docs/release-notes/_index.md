@@ -12,7 +12,7 @@ title: "版本历史"
 ### 🚀 Features  
 ### 🐛 Bug fix  
 ### ✈️ Improvements  
-- chore: 将 Rollup 模板更新为最新的 EasySearch 支持版本 (#199)
+- chore: 将 Rollup 模板更新为最新的 Easysearch 支持版本 (#199)
 
 ## 1.29.3 (2025-04-27)
 ### Breaking changes  

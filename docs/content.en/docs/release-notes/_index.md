@@ -13,6 +13,7 @@ Information about release notes of INFINI Console is provided here.
 - Support custom TLS minimum version for SMTP server configuration
 ### 🐛 Bug fix  
 ### ✈️ Improvements  
+- chore: update rollup template with latest Easysearch support (#199)
 
 ## 1.29.3 (2025-04-27)
 ### Breaking changes  

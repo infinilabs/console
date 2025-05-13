@@ -2,12 +2,12 @@ DELETE /_rollup/jobs/rollup_index_stats
 PUT /_rollup/jobs/rollup_index_stats
 {
   "rollup": {
-    "source_index": ".infini_metrics",
+    "source_index": "$[[SETUP_INDEX_PREFIX]]metrics",
     "target_index": "rollup_index_stats_{{ctx.source_index}}",
     "timestamp": "timestamp",
     "continuous": true,
-    "page_size": 100,
-    "cron": "*/10 1-23 * * *",
+    "page_size": 600,
+    "cron": "*/5 0-23 * * *",
     "timezone": "UTC",
     "stats": [
           {
@@ -38,7 +38,8 @@ PUT /_rollup/jobs/rollup_index_stats
     ],
     "filter": {
       "metadata.name": "index_stats"
-    }
+    },
+    "field_abbr": true
   }
 }
 
@@ -46,12 +47,12 @@ DELETE /_rollup/jobs/rollup_index_health
 PUT /_rollup/jobs/rollup_index_health
 {
   "rollup": {
-    "source_index": ".infini_metrics",
+    "source_index": "$[[SETUP_INDEX_PREFIX]]metrics",
     "target_index": "rollup_index_health_{{ctx.source_index}}",
     "timestamp": "timestamp",
     "continuous": true,
-    "page_size": 100,
-    "cron": "*/10 1-23 * * *",
+    "page_size": 600,
+    "cron": "*/5 0-23 * * *",
     "timezone": "UTC",
     "stats": [
           {
@@ -78,7 +79,8 @@ PUT /_rollup/jobs/rollup_index_health
     ],
     "filter": {
       "metadata.name": "index_health"
-    }
+    },
+    "field_abbr": true
   }
 }
 
@@ -86,11 +88,11 @@ DELETE /_rollup/jobs/rollup_cluster_stats
 PUT /_rollup/jobs/rollup_cluster_stats
 {
   "rollup": {
-    "source_index": ".infini_metrics",
+    "source_index": "$[[SETUP_INDEX_PREFIX]]metrics",
     "target_index": "rollup_cluster_stats_{{ctx.source_index}}",
-    "page_size": 100,
+    "page_size": 600,
     "continuous": true,
-    "cron": "*/10 1-23 * * *",
+    "cron": "*/5 0-23 * * *",
     "timezone": "UTC",
     "stats": [
       {
@@ -118,7 +120,8 @@ PUT /_rollup/jobs/rollup_cluster_stats
     ],
     "filter": {
       "metadata.name": "cluster_stats"
-    }
+    },
+    "field_abbr": true
   }
 }
 
@@ -126,11 +129,11 @@ DELETE /_rollup/jobs/rollup_cluster_health
 PUT /_rollup/jobs/rollup_cluster_health
 {
   "rollup": {
-    "source_index": ".infini_metrics",
+    "source_index": "$[[SETUP_INDEX_PREFIX]]metrics",
     "target_index": "rollup_cluster_health_{{ctx.source_index}}",
     "continuous": true,
-    "page_size": 100,
-    "cron": "*/10 1-23 * * *",
+    "page_size": 600,
+    "cron": "*/5 0-23 * * *",
     "timezone": "UTC",
     "stats": [
       {
@@ -157,7 +160,8 @@ PUT /_rollup/jobs/rollup_cluster_health
     },
     "metrics": [
       "payload.elasticsearch.cluster_health.*"
-    ]
+    ],
+    "field_abbr": true
   }
 }
 
@@ -165,12 +169,12 @@ DELETE /_rollup/jobs/rollup_node_stats
 PUT /_rollup/jobs/rollup_node_stats
 {
   "rollup": {
-    "source_index": ".infini_metrics",
+    "source_index": "$[[SETUP_INDEX_PREFIX]]metrics",
     "target_index": "rollup_node_stats_{{ctx.source_index}}",
     "timestamp": "timestamp",
     "continuous": true,
-    "page_size": 200,
-    "cron": "*/10 1-23 * * *",
+    "page_size": 600,
+    "cron": "*/5 0-23 * * *",
     "timezone": "UTC",
     "stats": [
       {
@@ -239,7 +243,8 @@ PUT /_rollup/jobs/rollup_node_stats
     ],
     "metrics": [
       "payload.elasticsearch.node_stats.*"
-    ]
+    ],
+    "field_abbr": true
   }
 }
 
@@ -247,12 +252,12 @@ DELETE /_rollup/jobs/rollup_shard_stats_metrics
 PUT /_rollup/jobs/rollup_shard_stats_metrics
 {
   "rollup": {
-    "source_index": ".infini_metrics",
+    "source_index": "$[[SETUP_INDEX_PREFIX]]metrics",
     "target_index": "rollup_shard_stats_metrics_{{ctx.source_index}}",
     "timestamp": "timestamp",
     "continuous": true,
-    "page_size": 200,
-    "cron": "*/5 1-23 * * *",
+    "page_size": 600,
+    "cron": "*/5 0-23 * * *",
     "timezone": "UTC",
     "stats": [
           {
@@ -284,8 +289,8 @@ PUT /_rollup/jobs/rollup_shard_stats_metrics
     "filter": {
       "metadata.name": "shard_stats",
       "payload.elasticsearch.shard_stats.routing.primary": true
-
-    }
+    },
+    "field_abbr": true
   }
 }
 
@@ -293,12 +298,12 @@ DELETE /_rollup/jobs/rollup_shard_stats_state
 PUT /_rollup/jobs/rollup_shard_stats_state
 {
   "rollup": {
-    "source_index": ".infini_metrics",
+    "source_index": "$[[SETUP_INDEX_PREFIX]]metrics",
     "target_index": "rollup_shard_stats_state_{{ctx.source_index}}",
     "timestamp": "timestamp",
     "continuous": true,
-    "page_size": 100,
-    "cron": "*/5 1-23 * * *",
+    "page_size": 600,
+    "cron": "*/5 0-23 * * *",
     "timezone": "UTC",
     "stats": [
           {
@@ -323,7 +328,8 @@ PUT /_rollup/jobs/rollup_shard_stats_state
     ],
     "filter": {
       "metadata.name": "shard_stats"
-    }
+    },
+    "field_abbr": true
   }
 }
 
@@ -349,7 +355,7 @@ PUT /.easysearch-ilm-config/_settings
         "limit": 1000
       },
       "nested_objects": {
-        "limit": 20000
+        "limit": 60000
       },
       "total_fields": {
         "limit": 30000

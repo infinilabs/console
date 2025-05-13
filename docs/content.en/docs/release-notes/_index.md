@@ -12,7 +12,7 @@ Information about release notes of INFINI Console is provided here.
 ### 🚀 Features  
 ### 🐛 Bug fix  
 ### ✈️ Improvements  
-- chore: update rollup template with latest easysearch support (#199)
+- chore: update rollup template with latest Easysearch support (#199)
 
 ## 1.29.3 (2025-04-27)
 ### Breaking changes  

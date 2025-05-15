@@ -28,10 +28,10 @@
 package security
 
 import (
+	log "github.com/cihub/seelog"
 	"infini.sh/framework/core/api/routetree"
 	"infini.sh/framework/core/kv"
 	"infini.sh/framework/core/util"
-	log "src/github.com/cihub/seelog"
 	"sync"
 )
 

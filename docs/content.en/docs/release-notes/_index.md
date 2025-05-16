@@ -10,6 +10,12 @@ Information about release notes of INFINI Console is provided here.
 ## Latest (In development)  
 ### ❌ Breaking changes  
 ### 🚀 Features  
+### 🐛 Bug fix  
+### ✈️ Improvements  
+
+## 1.29.4 (2025-05-16)
+### ❌ Breaking changes  
+### 🚀 Features  
 - feat: support custom TLS minimum version for SMTP server configuration
 ### 🐛 Bug fix  
 ### ✈️ Improvements  

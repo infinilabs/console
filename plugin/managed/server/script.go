@@ -30,12 +30,12 @@ package server
 import (
 	"fmt"
 	log "github.com/cihub/seelog"
-	"infini.sh/framework/lib/fasttemplate"
 	"infini.sh/console/core/security"
 	"infini.sh/console/modules/agent/common"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/util"
+	"infini.sh/framework/lib/fasttemplate"
 	"net/url"
 	"os"
 

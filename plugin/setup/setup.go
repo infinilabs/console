@@ -44,7 +44,6 @@ import (
 	elastic2 "infini.sh/framework/modules/elastic"
 
 	log "github.com/cihub/seelog"
-	"infini.sh/framework/lib/fasttemplate"
 	"golang.org/x/crypto/bcrypt"
 	elastic3 "infini.sh/console/modules/elastic/api"
 	security2 "infini.sh/console/modules/security"
@@ -63,6 +62,7 @@ import (
 	"infini.sh/framework/core/pipeline"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/lib/fasthttp"
+	"infini.sh/framework/lib/fasttemplate"
 	keystore2 "infini.sh/framework/lib/keystore"
 	"infini.sh/framework/modules/elastic/adapter"
 	elastic1 "infini.sh/framework/modules/elastic/common"
@@ -785,9 +785,11 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 				panic(err)
 			}
 			client := elastic.GetClient(GlobalSystemElasticsearchID)
-			err = initIngestUser(client, cfg1.IndexPrefix, ingestUser, ingestPassword)
-			if err != nil {
-				panic(err)
+			if privileges, _ := client.GetPrivileges(); len(privileges) > 0 {
+				err = initIngestUser(client, cfg1.IndexPrefix, ingestUser, ingestPassword)
+				if err != nil {
+					panic(err)
+				}
 			}
 		}
 		dslTplFileName = "agent.tpl"

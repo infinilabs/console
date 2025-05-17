@@ -861,8 +861,7 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 		return w.Write([]byte("$[[" + tag + "]]"))
 	})
 
-	tpl, err = fasttemplate.NewTemplate(output, "$[[", "]]")
-	output = tpl.ExecuteFuncString(func(w io.Writer, tag string) (int, error) {
+	output, err = fasttemplate.ExecuteFuncNetestStringWithErr(output, "$[[", "]]", func(w io.Writer, tag string) (int, error) {
 		switch tag {
 		case "SETUP_ES_USERNAME":
 			return w.Write([]byte(request.Cluster.Username))
@@ -881,7 +880,7 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 				return w.Write([]byte(request.Cluster.Password))
 			}
 		case "SETUP_SCHEME":
-			return w.Write([]byte(strings.Split(request.Cluster.Endpoint, "://")[0]))
+			return w.Write([]byte(request.Cluster.Schema))
 		case "SETUP_ENDPOINTS":
 			endpoints := []string{request.Cluster.Endpoint}
 			for _, host := range request.Cluster.Hosts {

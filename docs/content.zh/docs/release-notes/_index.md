@@ -10,6 +10,12 @@ title: "版本历史"
 ## Latest (In development)  
 ### ❌ Breaking changes  
 ### 🚀 Features  
+### 🐛 Bug fix  
+### ✈️ Improvements  
+
+## 1.29.4 (2025-05-16)
+### ❌ Breaking changes  
+### 🚀 Features  
 - feat: 支持配置邮件服务器最小 TLS 使用版本
 ### 🐛 Bug fix  
 ### ✈️ Improvements  

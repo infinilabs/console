@@ -70,6 +70,7 @@ const Index = forwardRef((props, ref) => {
   const [queryParams, setQueryParams] = useState({
     ...defaultQueryParams,
     ...param,
+    from: viewLayout === 'timeline' ? 0 : (defaultQueryParams.from ?? param.from)
   });
   const [histogramState, setHistogramState] = useState({
     visible: histogramVisible,

@@ -586,11 +586,13 @@ func (h *APIHandler) HandleMetricsSummaryAction(w http.ResponseWriter, req *http
 func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	resBody := map[string]interface{}{}
 	id := ps.ByName("id")
-	if GetMonitorState(id) == elastic.ModeAgentless {
+	key := h.GetParameter(req, "key")
+
+	if GetMonitorState(id) == elastic.ModeAgentless || strings.HasPrefix(key, "rollup") {
 		h.APIHandler.HandleClusterMetricsAction(w, req, ps)
 		return
 	}
-	key := h.GetParameter(req, "key")
+
 	var metricType string
 	switch key {
 	case v1.IndexThroughputMetricKey, v1.SearchThroughputMetricKey, v1.IndexLatencyMetricKey, v1.SearchLatencyMetricKey, CircuitBreakerMetricKey, ShardStateMetricKey:

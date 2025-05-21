@@ -131,6 +131,7 @@ export default {
   "cluster.monitor.logs.empty.agentless": "没有数据，请安装 Agent 并更改集群采集模式为 Agent 。",
 
   "cluster.monitor.tabs.overview": "概览",
+   "cluster.monitor.tabs.rollup": "Rollup",
   "cluster.monitor.tabs.advanced": "高级",
   "cluster.monitor.tabs.topn": "TopN",
   "cluster.monitor.tabs.logs": "日志",
@@ -352,7 +353,15 @@ export default {
     "In Flight Requests Breaker",
   "cluster.metrics.node.axis.model_inference_breaker.title":
     "Model Inference Breaker",
-
+  "cluster.metrics.axis.rollup_cluster_health.title": "Rollup Cluster Health",
+  "cluster.metrics.axis.rollup_index_health.title": "Rollup Index Health",
+  "cluster.metrics.axis.rollup_cluster_stats.title": "Rollup Cluster Stats",
+  "cluster.metrics.axis.rollup_index_stats.title": "Rollup Index Stats",
+  "cluster.metrics.axis.rollup_node_stats.title": "Rollup Node Stats",
+  "cluster.metrics.axis.rollup_shard_stats_metrics.title":
+    "Rollup Shard Stats Metrics",
+  "cluster.metrics.axis.rollup_shard_stats_state.title":
+    "Rollup Shard Stats State",
   //overview
   "overview.card.cluster.total_count": "集群总数",
   "overview.card.host.total_count": "主机总数",

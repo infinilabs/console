@@ -119,7 +119,7 @@ export default (props) => {
     });
   };
 
-  const formatTableData = async (value) => {
+  const formatTableData = async (value) => {    
     let dataNew = formatESSearchResult(value);
     //更新扩展数据
     let tableData = dataNew?.data?.map((item) => {
@@ -190,7 +190,6 @@ export default (props) => {
       sortable: true,
       searchable: true,
     },
-
     {
       title: formatMessage({
         id: "cluster.manage.table.column.monitored",
@@ -203,6 +202,16 @@ export default (props) => {
             ? "cluster.manage.monitored.on"
             : "cluster.manage.monitored.off",
         });
+      },
+    },
+    {
+      title: formatMessage({
+        id: "cluster.manage.table.column.monitor_mode",
+      }),
+      key: "metric_collection_mode",
+      sortable: false,
+      render: (text) => {
+        return text === "agent" ? "Agent" : "Agentless";
       },
     },
     {

@@ -10,6 +10,7 @@ title: "版本历史"
 ## Latest (In development)  
 ### ❌ Breaking changes  
 ### 🚀 Features  
+- feat: 集群设置切换指标采集模式时增加确认操作 (#207)
 ### 🐛 Bug fix  
 ### ✈️ Improvements  
 

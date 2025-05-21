@@ -10,6 +10,7 @@ Information about release notes of INFINI Console is provided here.
 ## Latest (In development)  
 ### ❌ Breaking changes  
 ### 🚀 Features  
+- feat: confirm cluster collect mode change (#207)
 ### 🐛 Bug fix  
 ### ✈️ Improvements  
 

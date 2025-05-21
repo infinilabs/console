@@ -18,6 +18,7 @@ title: "版本历史"
 ### 🚀 Features  
 - feat: 支持配置邮件服务器最小 TLS 使用版本
 ### 🐛 Bug fix  
+- fix: 集群动态滚动加载失效
 ### ✈️ Improvements  
 - chore: 将 Rollup 模板更新为最新的 Easysearch 支持版本 (#199)
 

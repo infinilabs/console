@@ -1370,6 +1370,7 @@ const Discover = (props) => {
                                       hitsTotal={hits}
                                       queryFrom={queryFrom}
                                       setQueryFrom={setQueryFrom}
+                                      scrollableTarget={window.document.getElementById('root')}
                                     />
                                   </div>
                                 ) : null}

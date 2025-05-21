@@ -20,6 +20,7 @@ Information about release notes of INFINI Console is provided here.
 - feat: support custom TLS minimum version for SMTP server configuration
 ### 🐛 Bug fix  
 - fix: failure of scroll loading in cluster activities
+- fix: failure of scroll loading in discover
 ### ✈️ Improvements  
 - chore: update rollup template with latest Easysearch support (#199)
 

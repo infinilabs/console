@@ -11,6 +11,7 @@ Information about release notes of INFINI Console is provided here.
 ### ❌ Breaking changes  
 ### 🚀 Features  
 - feat: confirm cluster collect mode change (#207)
+- feat: add rollup metics monitor (#210)
 ### 🐛 Bug fix  
 ### ✈️ Improvements  
 

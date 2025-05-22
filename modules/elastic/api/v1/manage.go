@@ -512,7 +512,7 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 		metricType = MetricTypeClusterStats
 	case ShardCountMetricKey:
 		metricType = MetricTypeClusterHealth
-	case CircuitBreakerMetricKey:
+	case CircuitBreakerMetricKey, RollupClusterHealthKey, RollupIndexHealthKey, RollupClusterStataKey, RollupIndexStatsKey, RollupNodeStatsKey, RollupShardStatsMetricsKey, RollupShardStatsStateKey:
 		metricType = MetricTypeNodeStats
 	default:
 		h.WriteError(w, "invalid metric key", http.StatusBadRequest)
@@ -796,6 +796,16 @@ const (
 	CircuitBreakerMetricKey   = "circuit_breaker"
 )
 
+const (
+	RollupClusterHealthKey     = "rollup_cluster_health"
+	RollupIndexHealthKey       = "rollup_index_health"
+	RollupClusterStataKey      = "rollup_cluster_stats"
+	RollupIndexStatsKey        = "rollup_index_stats"
+	RollupNodeStatsKey         = "rollup_node_stats"
+	RollupShardStatsMetricsKey = "rollup_shard_stats_metrics"
+	RollupShardStatsStateKey   = "rollup_shard_stats_state"
+)
+
 func (h *APIHandler) GetClusterMetrics(ctx context.Context, id string, bucketSize int, min, max int64, metricKey string) (map[string]*common.MetricItem, error) {
 
 	var (
@@ -818,9 +828,10 @@ func (h *APIHandler) GetClusterMetrics(ctx context.Context, id string, bucketSiz
 		}
 	case ShardCountMetricKey:
 		clusterMetricsResult, err = h.getShardsMetric(ctx, id, min, max, bucketSize)
-
 	case CircuitBreakerMetricKey:
 		clusterMetricsResult, err = h.getCircuitBreakerMetric(ctx, id, min, max, bucketSize)
+	case RollupClusterHealthKey, RollupIndexHealthKey, RollupClusterStataKey, RollupIndexStatsKey, RollupNodeStatsKey, RollupShardStatsMetricsKey, RollupShardStatsStateKey:
+		clusterMetricsResult, err = h.getRollupMetric(ctx, metricKey, id, min, max, bucketSize)
 	}
 
 	return clusterMetricsResult, err
@@ -1148,6 +1159,67 @@ func (h *APIHandler) getCircuitBreakerMetric(ctx context.Context, id string, min
 	var circuitBreakerMetrics []*common.MetricItem
 	circuitBreakerMetrics = append(circuitBreakerMetrics, metricItem)
 	return h.getSingleMetrics(ctx, circuitBreakerMetrics, query, bucketSize)
+}
+
+func (h *APIHandler) getRollupMetric(ctx context.Context, key, id string, min, max int64, bucketSize int) (map[string]*common.MetricItem, error) {
+	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
+	query := util.MapStr{
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": []util.MapStr{
+					{
+						"term": util.MapStr{
+							"metadata.labels.cluster_id": util.MapStr{
+								"value": id,
+							},
+						},
+					},
+					{
+						"term": util.MapStr{
+							"metadata.category": util.MapStr{
+								"value": "elasticsearch",
+							},
+						},
+					},
+					{
+						"term": util.MapStr{
+							"metadata.name": util.MapStr{
+								"value": "node_stats",
+							},
+						},
+					},
+				},
+				"filter": []util.MapStr{
+					{
+						"range": util.MapStr{
+							"timestamp": util.MapStr{
+								"gte": min,
+								"lte": max,
+							},
+						},
+					},
+				},
+			},
+		},
+		"aggs": util.MapStr{
+			"dates": util.MapStr{
+				"date_histogram": util.MapStr{
+					"field":    "timestamp",
+					"interval": bucketSizeStr,
+				},
+			},
+		},
+	}
+	metricItem := newMetricItem(key, 7, StorageGroupKey)
+	metricItem.AddAxi("Rollup Metrics", "group1", common.PositionLeft, "num", "0,0", "0,0.[00]", 5, false)
+	metricItem.AddLine("Documents Processed", "Documents Processed", "", "group1", "payload.elasticsearch.node_stats.jobs_stats."+key+".rollup_stats.documents_processed", "max", bucketSizeStr, "record/s", "num", "0,0.[00]", "0,0.[00]", false, true)
+	metricItem.AddLine("Pages Processed", "Pages Processed", "", "group1", "payload.elasticsearch.node_stats.jobs_stats."+key+".rollup_stats.pages_processed", "max", bucketSizeStr, "page/s", "num", "0,0.[00]", "0,0.[00]", false, true)
+	metricItem.AddLine("Rollups Indexed", "Rollups Indexed", "", "group1", "payload.elasticsearch.node_stats.jobs_stats."+key+".rollup_stats.rollups_indexed", "max", bucketSizeStr, "page/s", "num", "0,0.[00]", "0,0.[00]", false, true)
+	metricItem.AddLine("Index Time In Millis", "Index Time In Millis", "", "group1", "payload.elasticsearch.node_stats.jobs_stats."+key+".rollup_stats.index_time_in_millis", "max", bucketSizeStr, "millis/s", "num", "0,0.[00]", "0,0.[00]", false, true)
+	metricItem.AddLine("Search Time In Millis", "Search Time In Millis", "", "group1", "payload.elasticsearch.node_stats.jobs_stats."+key+".rollup_stats.search_time_in_millis", "max", bucketSizeStr, "millis/s", "num", "0,0.[00]", "0,0.[00]", false, true)
+	var rollupMetrics []*common.MetricItem
+	rollupMetrics = append(rollupMetrics, metricItem)
+	return h.getSingleMetrics(ctx, rollupMetrics, query, bucketSize)
 }
 
 func (h *APIHandler) getClusterStatusMetric(ctx context.Context, id string, min, max int64, bucketSize int) (*common.MetricItem, error) {

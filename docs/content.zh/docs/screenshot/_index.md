@@ -21,6 +21,7 @@ custom_css: "/css/img.css"
 ## 监控报表
 
 {{% load-img "/img/screenshot/v1.29/platform/monitoring-overview.png" "" %}}
+{{% load-img "/img/screenshot/v1.29/platform/monitoring-rollup.png" "" %}}
 {{% load-img "/img/screenshot/v1.29/platform/monitoring-advanced.png" "" %}}
 {{% load-img "/img/screenshot/v1.29/platform/monitoring-topN.png" "" %}}
 {{% load-img "/img/screenshot/v1.29/platform/monitoring-logs.png" "" %}}

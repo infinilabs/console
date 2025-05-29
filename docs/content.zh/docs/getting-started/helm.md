@@ -1,5 +1,5 @@
 ---
-weight: 35
+weight: 36
 title: Helm 部署
 asciinema: true
 ---

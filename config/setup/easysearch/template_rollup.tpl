@@ -39,7 +39,8 @@ PUT /_rollup/jobs/rollup_index_stats
     "filter": {
       "metadata.name": "index_stats"
     },
-    "field_abbr": true
+    "field_abbr": true,
+    "is_continue": true
   }
 }
 
@@ -80,7 +81,8 @@ PUT /_rollup/jobs/rollup_index_health
     "filter": {
       "metadata.name": "index_health"
     },
-    "field_abbr": true
+    "field_abbr": true,
+    "is_continue": true
   }
 }
 
@@ -121,7 +123,8 @@ PUT /_rollup/jobs/rollup_cluster_stats
     "filter": {
       "metadata.name": "cluster_stats"
     },
-    "field_abbr": true
+    "field_abbr": true,
+    "is_continue": true
   }
 }
 
@@ -161,7 +164,8 @@ PUT /_rollup/jobs/rollup_cluster_health
     "metrics": [
       "payload.elasticsearch.cluster_health.*"
     ],
-    "field_abbr": true
+    "field_abbr": true,
+    "is_continue": true
   }
 }
 
@@ -229,6 +233,7 @@ PUT /_rollup/jobs/rollup_node_stats
       "metadata.labels.cluster_uuid",
       "metadata.category",
       "metadata.labels.node_id",
+      "metadata.labels.node_name",
       "metadata.labels.transport_address"
     ],
     "attributes": [
@@ -244,7 +249,8 @@ PUT /_rollup/jobs/rollup_node_stats
     "metrics": [
       "payload.elasticsearch.node_stats.*"
     ],
-    "field_abbr": true
+    "field_abbr": true,
+    "is_continue": true
   }
 }
 
@@ -290,7 +296,8 @@ PUT /_rollup/jobs/rollup_shard_stats_metrics
       "metadata.name": "shard_stats",
       "payload.elasticsearch.shard_stats.routing.primary": true
     },
-    "field_abbr": true
+    "field_abbr": true,
+    "is_continue": true
   }
 }
 
@@ -329,7 +336,8 @@ PUT /_rollup/jobs/rollup_shard_stats_state
     "filter": {
       "metadata.name": "shard_stats"
     },
-    "field_abbr": true
+    "field_abbr": true,
+    "is_continue": true
   }
 }
 

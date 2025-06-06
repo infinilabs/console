@@ -831,7 +831,11 @@ func (h *APIHandler) getTopIndexName(req *http.Request, clusterID string, top in
 			"group_by_index": util.MapStr{
 				"terms": util.MapStr{
 					"field": "metadata.labels.index_name",
-					"size":  10000,
+					"include": util.MapStr{
+						"partition":      0,
+						"num_partitions": 10,
+					},
+					"size": 10000,
 				},
 				"aggs": util.MapStr{
 					"max_qps": util.MapStr{
@@ -869,7 +873,11 @@ func (h *APIHandler) getTopIndexName(req *http.Request, clusterID string, top in
 			"group_by_index1": util.MapStr{
 				"terms": util.MapStr{
 					"field": "metadata.labels.index_name",
-					"size":  10000,
+					"include": util.MapStr{
+						"partition":      0,
+						"num_partitions": 10,
+					},
+					"size": 10000,
 				},
 				"aggs": util.MapStr{
 					"max_qps": util.MapStr{

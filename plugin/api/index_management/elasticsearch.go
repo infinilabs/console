@@ -458,7 +458,11 @@ func (h *APIHandler) ClusterOverTreeMap(w http.ResponseWriter, req *http.Request
 			"indices": util.MapStr{
 				"terms": util.MapStr{
 					"field": "metadata.labels.index_name",
-					"size":  1000,
+					"include": util.MapStr{
+						"partition":      0,
+						"num_partitions": 10,
+					},
+					"size": 1000,
 				},
 				"aggs": util.MapStr{
 					"recent_15m": util.MapStr{

@@ -1015,7 +1015,7 @@ func (h *APIHandler) getSingleIndexMetricsByNodeStats(ctx context.Context, metri
 			"aggs": sumAggs,
 		},
 	}
-	return parseSingleIndexMetrics(ctx, clusterID, metricItems, query, bucketSize, metricData, metricItemsMap)
+	return parseSingleIndexMetrics(ctx, "term_node", clusterID, metricItems, query, bucketSize, metricData, metricItemsMap)
 }
 
 func (h *APIHandler) getSingleIndexMetrics(ctx context.Context, metricItems []*common.MetricItem, query map[string]interface{}, bucketSize int) (map[string]*common.MetricItem, error) {
@@ -1109,10 +1109,10 @@ func (h *APIHandler) getSingleIndexMetrics(ctx context.Context, metricItems []*c
 			"aggs": sumAggs,
 		},
 	}
-	return parseSingleIndexMetrics(ctx, clusterID, metricItems, query, bucketSize, metricData, metricItemsMap)
+	return parseSingleIndexMetrics(ctx, "term_shard", clusterID, metricItems, query, bucketSize, metricData, metricItemsMap)
 }
 
-func parseSingleIndexMetrics(ctx context.Context, clusterID string, metricItems []*common.MetricItem, query map[string]interface{}, bucketSize int, metricData map[string][][]interface{}, metricItemsMap map[string]*common.MetricLine) (map[string]*common.MetricItem, error) {
+func parseSingleIndexMetrics(ctx context.Context, term_level, clusterID string, metricItems []*common.MetricItem, query map[string]interface{}, bucketSize int, metricData map[string][][]interface{}, metricItemsMap map[string]*common.MetricLine) (map[string]*common.MetricItem, error) {
 	queryDSL := util.MustToJSONBytes(query)
 	response, err := elastic.GetClient(clusterID).QueryDSL(ctx, getAllMetricsIndex(), nil, util.MustToJSONBytes(query))
 	if err != nil {
@@ -1120,6 +1120,8 @@ func parseSingleIndexMetrics(ctx context.Context, clusterID string, metricItems 
 	}
 
 	var minDate, maxDate int64
+	var preNodes, curNodes int
+
 	if response.StatusCode == 200 {
 		for _, v := range response.Aggregations {
 			for _, bucket := range v.Buckets {
@@ -1127,9 +1129,24 @@ func parseSingleIndexMetrics(ctx context.Context, clusterID string, metricItems 
 				if !ok {
 					return nil, fmt.Errorf("invalid bucket key type: %T", bucket["key"])
 				}
+
 				dateTime := int64(v)
 				minDate = util.MinInt64(minDate, dateTime)
 				maxDate = util.MaxInt64(maxDate, dateTime)
+				preNodes = curNodes
+
+				termNodeAggResult, termNodeAggExists := bucket[term_level].(map[string]interface{})
+				if termNodeAggExists {
+					nodeBucketsRaw, nodeBucketsOk := termNodeAggResult["buckets"].([]interface{})
+					if nodeBucketsOk {
+						curNodes = len(nodeBucketsRaw)
+					}
+				}
+
+				if preNodes > 0 && curNodes > 0 && preNodes != curNodes {
+					continue
+				}
+
 				for mk1, mv1 := range metricData {
 					v1, ok := bucket[mk1]
 					if ok {

@@ -209,6 +209,7 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 	}
 	aggs := map[string]interface{}{}
 	sumAggs := util.MapStr{}
+	term_level := "term_node"
 
 	for _, metricItem := range indexMetricItems {
 		leafAgg := util.MapStr{
@@ -216,7 +217,7 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 				"field": metricItem.Field,
 			},
 		}
-		var sumBucketPath = "term_node>" + metricItem.ID
+		var sumBucketPath = term_level + ">" + metricItem.ID
 		aggs[metricItem.ID] = leafAgg
 
 		sumAggs[metricItem.ID] = util.MapStr{
@@ -232,7 +233,7 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 			}
 		}
 	}
-	sumAggs["term_node"] = util.MapStr{
+	sumAggs[term_level] = util.MapStr{
 		"terms": util.MapStr{
 			"field": "metadata.labels.node_id",
 			"size":  1000,
@@ -265,7 +266,7 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), du)
 	defer cancel()
-	indexMetrics, err := h.getMetrics(ctx, query, indexMetricItems, bucketSize)
+	indexMetrics, err := h.getMetrics(ctx, term_level, query, indexMetricItems, bucketSize)
 	if err != nil {
 		log.Error(err)
 		if errors.Is(err, context.DeadlineExceeded) {

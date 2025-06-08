@@ -109,7 +109,7 @@ func generateGroupAggs(nodeMetricItems []GroupMetricItem) map[string]interface{}
 	return aggs
 }
 
-func (h *APIHandler) getMetrics(ctx context.Context, query map[string]interface{}, grpMetricItems []GroupMetricItem, bucketSize int) (map[string]*common.MetricItem, error) {
+func (h *APIHandler) getMetrics(ctx context.Context, term_level string, query map[string]interface{}, grpMetricItems []GroupMetricItem, bucketSize int) (map[string]*common.MetricItem, error) {
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 	queryDSL := util.MustToJSONBytes(query)
 	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).QueryDSL(ctx, getAllMetricsIndex(), nil, queryDSL)
@@ -123,6 +123,8 @@ func (h *APIHandler) getMetrics(ctx context.Context, query map[string]interface{
 	grpMetricData := map[string]MetricData{}
 
 	var minDate, maxDate int64
+	var preBucketSize, curBucketSize int
+
 	if response.StatusCode == 200 {
 		if nodeAgg, ok := response.Aggregations["group_by_level"]; ok {
 			for _, bucket := range nodeAgg.Buckets {
@@ -149,6 +151,21 @@ func (h *APIHandler) getMetrics(ctx context.Context, query map[string]interface{
 								dateTime := int64(v)
 								minDate = util.MinInt64(minDate, dateTime)
 								maxDate = util.MaxInt64(maxDate, dateTime)
+
+								// check bucket size between previous and current
+								preBucketSize = curBucketSize
+								aggResult, aggExists := bucket[term_level].(map[string]interface{})
+								if aggExists {
+									buckets, bucketsOk := aggResult["buckets"].([]interface{})
+									if bucketsOk {
+										curBucketSize = len(buckets)
+									}
+								}
+
+								// skip: if the number of nodes in the previous and current buckets is not equal
+								if preBucketSize > 0 && curBucketSize > 0 && preBucketSize != curBucketSize {
+									continue
+								}
 
 								for mk1, mv1 := range grpMetricData {
 									v1, ok := bucketMap[mk1]
@@ -1120,7 +1137,7 @@ func parseSingleIndexMetrics(ctx context.Context, term_level, clusterID string, 
 	}
 
 	var minDate, maxDate int64
-	var preNodes, curNodes int
+	var preBucketSize, curBucketSize int
 
 	if response.StatusCode == 200 {
 		for _, v := range response.Aggregations {
@@ -1133,17 +1150,19 @@ func parseSingleIndexMetrics(ctx context.Context, term_level, clusterID string, 
 				dateTime := int64(v)
 				minDate = util.MinInt64(minDate, dateTime)
 				maxDate = util.MaxInt64(maxDate, dateTime)
-				preNodes = curNodes
 
-				termNodeAggResult, termNodeAggExists := bucket[term_level].(map[string]interface{})
-				if termNodeAggExists {
-					nodeBucketsRaw, nodeBucketsOk := termNodeAggResult["buckets"].([]interface{})
-					if nodeBucketsOk {
-						curNodes = len(nodeBucketsRaw)
+				// check bucket size between previous and current
+				preBucketSize = curBucketSize
+				aggResult, aggExists := bucket[term_level].(map[string]interface{})
+				if aggExists {
+					buckets, bucketsOk := aggResult["buckets"].([]interface{})
+					if bucketsOk {
+						curBucketSize = len(buckets)
 					}
 				}
 
-				if preNodes > 0 && curNodes > 0 && preNodes != curNodes {
+				// skip: if the number of nodes in the previous and current buckets is not equal
+				if preBucketSize > 0 && curBucketSize > 0 && preBucketSize != curBucketSize {
 					continue
 				}
 

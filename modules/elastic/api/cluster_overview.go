@@ -31,7 +31,6 @@ import (
 	v1 "infini.sh/console/modules/elastic/api/v1"
 	"infini.sh/framework/modules/elastic/adapter"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -839,7 +838,7 @@ func (h *APIHandler) GetRealtimeClusterIndices(w http.ResponseWriter, req *http.
 		indexInfos = &filterIndices
 	}
 
-	qps, err := h.getIndexQPS(id, 20)
+	qps, err := h.getIndexQPS(id, 30)
 	if err != nil {
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
@@ -883,9 +882,6 @@ func (h *APIHandler) getIndexQPS(clusterID string, bucketSizeInSeconds int) (map
 		return nil, err
 	}
 	clusterUUID, err := adapter.GetClusterUUID(clusterID)
-	if os.Getenv("MOCK_LOCAL") == "true" && clusterID == os.Getenv("MOCK_CLUSTER_ID") {
-		clusterUUID = os.Getenv("MOCK_CLUSTER_UUID")
-	}
 	if err != nil {
 		return nil, err
 	}
@@ -899,7 +895,7 @@ func (h *APIHandler) getIndexQPS(clusterID string, bucketSizeInSeconds int) (map
 						"partition":      0,
 						"num_partitions": 10,
 					},
-					"size": 1000,
+					"size": 10000,
 				},
 				"aggs": util.MapStr{
 					"date": util.MapStr{
@@ -977,8 +973,8 @@ func (h *APIHandler) getIndexQPS(clusterID string, bucketSizeInSeconds int) (map
 					{
 						"range": util.MapStr{
 							"timestamp": util.MapStr{
-								"gte": "now-1m",
-								"lte": "now",
+								"gte": "now-3m",
+								"lte": "now-1m",
 							},
 						},
 					},

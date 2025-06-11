@@ -25,8 +25,8 @@ package v1
 
 import (
 	"fmt"
+	log "github.com/cihub/seelog"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -690,7 +690,7 @@ func (h *APIHandler) getIndexQPS(clusterID string, bucketSizeInSeconds int) (map
 						"partition":      0,
 						"num_partitions": 10,
 					},
-					"size": 1000,
+					"size": 10000,
 				},
 				"aggs": util.MapStr{
 					"date": util.MapStr{
@@ -771,12 +771,10 @@ func (h *APIHandler) getIndexQPS(clusterID string, bucketSizeInSeconds int) (map
 func (h *APIHandler) QueryQPS(query util.MapStr, bucketSizeInSeconds int) (map[string]util.MapStr, error) {
 	esClient := h.Client()
 	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetWildcardIndexName(event.Event{}), util.MustToJSONBytes(query))
-	os.WriteFile("/tmp/realtime.json", util.MustToJSONBytes(searchRes), 0755)
 	if err != nil {
 		return nil, err
 	}
 	indexQPS := map[string]util.MapStr{}
-	var preBucketSize, curBucketSize int
 
 	for _, agg := range searchRes.Aggregations {
 		for _, bk := range agg.Buckets {
@@ -793,25 +791,33 @@ func (h *APIHandler) QueryQPS(query util.MapStr, bucketSizeInSeconds int) (map[s
 							maxTimestamp      float64
 						)
 
-						// check bucket size between previous and current
-						preBucketSize = curBucketSize
-						aggResult, aggExists := bk["term_shards"].(map[string]interface{})
-						if aggExists {
-							buckets, bucketsOk := aggResult["buckets"].([]interface{})
-							if bucketsOk {
-								curBucketSize = len(buckets)
-							}
-						}
-
-						// skip: if the number of nodes in the previous and current buckets is not equal
-						if preBucketSize > 0 && curBucketSize > 0 && preBucketSize != curBucketSize {
-							continue
-						}
-
+						var preBucketSize, curBucketSize int
 						for _, dateBk := range bks {
 							if dateBkVal, ok := dateBk.(map[string]interface{}); ok {
+								// check bucket size between previous and current
+								preBucketSize = curBucketSize
+								aggResult, aggExists := dateBkVal["term_shard"].(map[string]interface{})
+								if aggExists {
+									buckets, bucketsOk := aggResult["buckets"].([]interface{})
+									if bucketsOk {
+										curBucketSize = len(buckets)
+									}
+								}
+
+								// skip: if the number of shard in the previous and current buckets is not equal
+								if preBucketSize > 0 && curBucketSize > 0 && preBucketSize != curBucketSize {
+									log.Debugf("Skipping index %s, bucket size changed from %d to %d", k, preBucketSize, curBucketSize)
+									continue
+								}
+
 								if indexTotal, ok := dateBkVal["index_total"].(map[string]interface{}); ok {
 									if indexTotalVal, ok := indexTotal["value"].(float64); ok {
+										if dropNext {
+											preIndexTotal = indexTotalVal
+											// reset dropNext flag
+											dropNext = false
+											continue
+										}
 										if preIndexTotal > 0 {
 											//if value of indexTotal is decreasing, drop the next value,
 											//and we will drop current and next qps value
@@ -819,18 +825,12 @@ func (h *APIHandler) QueryQPS(query util.MapStr, bucketSizeInSeconds int) (map[s
 												dropNext = true
 												preIndexTotal = indexTotalVal
 												continue
-											} else {
-												dropNext = false
 											}
 										}
 										preIndexTotal = indexTotalVal
 									}
 								}
-								if dropNext {
-									continue
-								}
 								if indexRate, ok := dateBkVal["index_rate"].(map[string]interface{}); ok {
-
 									if indexRateVal, ok := indexRate["value"].(float64); ok && indexRateVal > maxIndexRate {
 										maxIndexRate = indexRateVal
 									}

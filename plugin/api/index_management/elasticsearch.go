@@ -462,7 +462,7 @@ func (h *APIHandler) ClusterOverTreeMap(w http.ResponseWriter, req *http.Request
 						"partition":      0,
 						"num_partitions": 10,
 					},
-					"size": 1000,
+					"size": 10000,
 				},
 				"aggs": util.MapStr{
 					"recent_15m": util.MapStr{

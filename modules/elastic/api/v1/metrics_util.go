@@ -352,8 +352,13 @@ func GetMetricRangeAndBucketSize(minStr string, maxStr string, bucketSize int, m
 	max = rangeTo.UnixNano() / 1e6
 	hours := rangeTo.Sub(rangeFrom).Hours()
 
-	if useMinMax {
+	bucketSize = CalcBucketSize(useMinMax, hours, bucketSize)
 
+	return bucketSize, min, max, nil
+}
+
+func CalcBucketSize(useMinMax bool, hours float64, bucketSize int) int {
+	if useMinMax {
 		if hours <= 0.25 {
 			bucketSize = GetMinBucketSize()
 		} else if hours <= 0.5 {
@@ -379,12 +384,8 @@ func GetMetricRangeAndBucketSize(minStr string, maxStr string, bucketSize int, m
 		} else if hours >= 30*24+1 { //>30days
 			bucketSize = 60 * 60 * 24 //daily bucket
 		}
-		if bucketSize < minBucketSize {
-			bucketSize = minBucketSize
-		}
 	}
-
-	return bucketSize, min, max, nil
+	return bucketSize
 }
 
 // 获取单个指标，可以包含多条曲线

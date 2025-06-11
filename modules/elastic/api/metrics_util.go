@@ -26,6 +26,7 @@ package api
 import (
 	"context"
 	"fmt"
+	v1 "infini.sh/console/modules/elastic/api/v1"
 	"infini.sh/framework/core/env"
 	"strings"
 	"time"
@@ -123,7 +124,6 @@ func (h *APIHandler) getMetrics(ctx context.Context, term_level string, query ma
 	grpMetricData := map[string]MetricData{}
 
 	var minDate, maxDate int64
-	var preBucketSize, curBucketSize int
 
 	if response.StatusCode == 200 {
 		if nodeAgg, ok := response.Aggregations["group_by_level"]; ok {
@@ -142,6 +142,7 @@ func (h *APIHandler) getMetrics(ctx context.Context, term_level string, query ma
 				}
 				if datesAgg, ok := bucket["dates"].(map[string]interface{}); ok {
 					if datesBuckets, ok := datesAgg["buckets"].([]interface{}); ok {
+						var preBucketSize, curBucketSize int
 						for _, dateBucket := range datesBuckets {
 							if bucketMap, ok := dateBucket.(map[string]interface{}); ok {
 								v, ok := bucketMap["key"].(float64)
@@ -164,6 +165,7 @@ func (h *APIHandler) getMetrics(ctx context.Context, term_level string, query ma
 
 								// skip: if the number of nodes in the previous and current buckets is not equal
 								if preBucketSize > 0 && curBucketSize > 0 && preBucketSize != curBucketSize {
+									log.Debugf("Multi Index Metrics Skipping bucket due to size mismatch: previous=%d, current=%d", preBucketSize, curBucketSize)
 									continue
 								}
 
@@ -294,34 +296,7 @@ func GetMetricRangeAndBucketSize(minStr string, maxStr string, bucketSize int, m
 	max = rangeTo.UnixNano() / 1e6
 	hours := rangeTo.Sub(rangeFrom).Hours()
 
-	if useMinMax {
-
-		if hours <= 0.25 {
-			bucketSize = GetMinBucketSize()
-		} else if hours <= 0.5 {
-			bucketSize = 30
-		} else if hours <= 2 {
-			bucketSize = 60
-		} else if hours < 3 {
-			bucketSize = 90
-		} else if hours < 6 {
-			bucketSize = 120
-		} else if hours < 12 {
-			bucketSize = 60 * 3
-		} else if hours < 25 { //1day
-			bucketSize = 60 * 5 * 2
-		} else if hours <= 7*24+1 { //7days
-			bucketSize = 60 * 15 * 2
-		} else if hours <= 15*24+1 { //15days
-			bucketSize = 60 * 30 * 2
-		} else if hours < 30*24+1 { //<30 days
-			bucketSize = 60 * 60 //hourly
-		} else if hours <= 30*24+1 { //<30days
-			bucketSize = 12 * 60 * 60 //half daily
-		} else if hours >= 30*24+1 { //>30days
-			bucketSize = 60 * 60 * 24 //daily bucket
-		}
-	}
+	bucketSize = v1.CalcBucketSize(useMinMax, hours, bucketSize)
 
 	return bucketSize, min, max, nil
 }
@@ -1139,10 +1114,10 @@ func parseSingleIndexMetrics(ctx context.Context, term_level, clusterID string, 
 	}
 
 	var minDate, maxDate int64
-	var preBucketSize, curBucketSize int
 
 	if response.StatusCode == 200 {
 		for _, v := range response.Aggregations {
+			var preBucketSize, curBucketSize int
 			for _, bucket := range v.Buckets {
 				v, ok := bucket["key"].(float64)
 				if !ok {
@@ -1165,7 +1140,7 @@ func parseSingleIndexMetrics(ctx context.Context, term_level, clusterID string, 
 
 				// skip: if the number of nodes in the previous and current buckets is not equal
 				if preBucketSize > 0 && curBucketSize > 0 && preBucketSize != curBucketSize {
-					log.Warnf("Skipping bucket due to size mismatch: previous=%d, current=%d", preBucketSize, curBucketSize)
+					log.Debugf("Single Index Metrics Skipping bucket due to size mismatch: previous=%d, current=%d", preBucketSize, curBucketSize)
 					continue
 				}
 

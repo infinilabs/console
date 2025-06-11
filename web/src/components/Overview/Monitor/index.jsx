@@ -13,6 +13,7 @@ import { getTimezone } from "@/utils/utils";
 import { getContext } from "@/pages/DataManagement/context";
 import { ESPrefix } from "@/services/common";
 import CollectStatus from "@/components/CollectStatus";
+import RollupStats from "@/components/RollupStats";
 import styles from "./index.less"
 
 const { TabPane } = Tabs;
@@ -212,7 +213,12 @@ const Monitor = (props) => {
                       recentlyUsedRangesKey={'monitor'}
                     />
                   </div>
-                  <CollectStatus fetchUrl={`${ESPrefix}/${selectedCluster?.id}/_collection_stats`}/>
+                  <div style={{display: "flex"}}>
+                    {selectedCluster?.id === "infini_default_system_cluster" && <RollupStats
+                      fetchUrl={`${ESPrefix}/${selectedCluster?.id}/_proxy?method=GET&path=/_rollup/jobs/*/_explain`}
+                      style={{ marginRight: 100 }}/>}
+                    <CollectStatus fetchUrl={`${ESPrefix}/${selectedCluster?.id}/_collection_stats`}/>
+                  </div>
                 </div>
               </div>
               <div className={styles.tabs}>

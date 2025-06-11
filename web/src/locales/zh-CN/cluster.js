@@ -51,6 +51,13 @@ export default {
   "cluster.manage.metadata_configs.node_availability_check": "节点可用性检查",
   "cluster.manage.metadata_configs.metadata_refresh": "元数据同步",
   "cluster.manage.metadata_configs.cluster_settings_check": "集群设置检查",
+  "cluster.manage.monitor_configs.rollup_node_stats": "节点指标",
+  "cluster.manage.monitor_configs.rollup_index_stats": "索引指标",
+  "cluster.manage.monitor_configs.rollup_cluster_stats": "集群指标",
+  "cluster.manage.monitor_configs.rollup_index_health": "索引健康状态",
+  "cluster.manage.monitor_configs.rollup_cluster_health": "集群健康状态",
+  "cluster.manage.monitor_configs.rollup_shard_stats_metrics": "分片指标",
+  "cluster.manage.monitor_configs.rollup_shard_stats_state": "分片状态",
 
   "cluster.regist.title": "集群注册",
   "cluster.edit.title": "修改集群配置",

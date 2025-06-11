@@ -53,6 +53,14 @@ export default {
   "cluster.manage.metadata_configs.metadata_refresh": "Metadata refresh",
   "cluster.manage.metadata_configs.cluster_settings_check":
     "Cluster settings check",
+  "cluster.manage.monitor_configs.rollup_node_stats": "Node Stats",
+  "cluster.manage.monitor_configs.rollup_index_stats": "Index Stats",
+  "cluster.manage.monitor_configs.rollup_cluster_stats": "Cluster Stats",
+  "cluster.manage.monitor_configs.rollup_index_health": "Index Health",
+  "cluster.manage.monitor_configs.rollup_cluster_health": "Cluster Health",
+  "cluster.manage.monitor_configs.rollup_shard_stats_metrics": "Shard Stats Metrics",
+  "cluster.manage.monitor_configs.rollup_shard_stats_state": "Shard Stats State",
+
 
   "cluster.regist.title": "CLUSTER REGISTRATION",
   "cluster.edit.title": "EDIT CLUSTER",

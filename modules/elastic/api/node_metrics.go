@@ -104,7 +104,14 @@ const (
 	FielddataBreakerMetricKey          = "fielddata_breaker"
 	RequestBreakerMetricKey            = "request_breaker"
 	InFlightRequestsBreakerMetricKey   = "in_flight_requests_breaker"
-	ModelInferenceBreakerMetricKey     = "model_inference_breaker"
+
+	// keys for es version > 8.6
+	// model_inference
+	ModelInferenceBreakerMetricKey = "model_inference_breaker"
+	// eql_sequence
+	EQLSequenceMetricKey = "eql_sequence_breaker"
+	// inflight_requests
+	InFlightRequestsMetricKey = "inflight_requests_breaker"
 )
 
 func (h *APIHandler) getNodeMetrics(ctx context.Context, clusterID string, bucketSize int, min, max int64, nodeName string, top int, metricKey string) (map[string]*common.MetricItem, error) {
@@ -1105,6 +1112,32 @@ func (h *APIHandler) getNodeMetrics(ctx context.Context, clusterID string, bucke
 			ID:           util.GetUUID(),
 			IsDerivative: true,
 			MetricItem:   modelInferenceBreakerMetric,
+			FormatType:   "num",
+			Units:        "times/s",
+		})
+	case EQLSequenceMetricKey:
+		//Elasticsearch 8.6+ Model Inference Breaker
+		eqlSequenceBreakerMetric := newMetricItem(EQLSequenceMetricKey, 6, CircuitBreakerGroupKey)
+		eqlSequenceBreakerMetric.AddAxi("EQL Sequence Breaker", "group1", common.PositionLeft, "num", "0.[0]", "0.[0]", 5, true)
+		nodeMetricItems = append(nodeMetricItems, GroupMetricItem{
+			Key:          EQLSequenceMetricKey,
+			Field:        "payload.elasticsearch.node_stats.breakers.eql_sequence.tripped",
+			ID:           util.GetUUID(),
+			IsDerivative: true,
+			MetricItem:   eqlSequenceBreakerMetric,
+			FormatType:   "num",
+			Units:        "times/s",
+		})
+	case InFlightRequestsMetricKey:
+		//Elasticsearch 8.6+ Model Inference Breaker
+		inFlightRequestsBreakerMetric := newMetricItem(InFlightRequestsMetricKey, 6, CircuitBreakerGroupKey)
+		inFlightRequestsBreakerMetric.AddAxi("In Flight Requests Breaker", "group1", common.PositionLeft, "num", "0.[0]", "0.[0]", 5, true)
+		nodeMetricItems = append(nodeMetricItems, GroupMetricItem{
+			Key:          InFlightRequestsMetricKey,
+			Field:        "payload.elasticsearch.node_stats.breakers.inflight_requests.tripped",
+			ID:           util.GetUUID(),
+			IsDerivative: true,
+			MetricItem:   inFlightRequestsBreakerMetric,
 			FormatType:   "num",
 			Units:        "times/s",
 		})

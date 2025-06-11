@@ -31,6 +31,7 @@ import (
 	v1 "infini.sh/console/modules/elastic/api/v1"
 	"infini.sh/framework/modules/elastic/adapter"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -882,6 +883,9 @@ func (h *APIHandler) getIndexQPS(clusterID string, bucketSizeInSeconds int) (map
 		return nil, err
 	}
 	clusterUUID, err := adapter.GetClusterUUID(clusterID)
+	if os.Getenv("MOCK_LOCAL") == "true" && clusterID == os.Getenv("MOCK_CLUSTER_ID") {
+		clusterUUID = os.Getenv("MOCK_CLUSTER_UUID")
+	}
 	if err != nil {
 		return nil, err
 	}

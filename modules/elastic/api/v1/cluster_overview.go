@@ -26,6 +26,7 @@ package v1
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -770,10 +771,13 @@ func (h *APIHandler) getIndexQPS(clusterID string, bucketSizeInSeconds int) (map
 func (h *APIHandler) QueryQPS(query util.MapStr, bucketSizeInSeconds int) (map[string]util.MapStr, error) {
 	esClient := h.Client()
 	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetWildcardIndexName(event.Event{}), util.MustToJSONBytes(query))
+	os.WriteFile("/tmp/realtime.json", util.MustToJSONBytes(searchRes), 0755)
 	if err != nil {
 		return nil, err
 	}
 	indexQPS := map[string]util.MapStr{}
+	var preBucketSize, curBucketSize int
+
 	for _, agg := range searchRes.Aggregations {
 		for _, bk := range agg.Buckets {
 			if k, ok := bk["key"].(string); ok {
@@ -788,6 +792,22 @@ func (h *APIHandler) QueryQPS(query util.MapStr, bucketSizeInSeconds int) (map[s
 							dropNext          bool
 							maxTimestamp      float64
 						)
+
+						// check bucket size between previous and current
+						preBucketSize = curBucketSize
+						aggResult, aggExists := bk["term_shards"].(map[string]interface{})
+						if aggExists {
+							buckets, bucketsOk := aggResult["buckets"].([]interface{})
+							if bucketsOk {
+								curBucketSize = len(buckets)
+							}
+						}
+
+						// skip: if the number of nodes in the previous and current buckets is not equal
+						if preBucketSize > 0 && curBucketSize > 0 && preBucketSize != curBucketSize {
+							continue
+						}
+
 						for _, dateBk := range bks {
 							if dateBkVal, ok := dateBk.(map[string]interface{}); ok {
 								if indexTotal, ok := dateBkVal["index_total"].(map[string]interface{}); ok {
@@ -810,6 +830,7 @@ func (h *APIHandler) QueryQPS(query util.MapStr, bucketSizeInSeconds int) (map[s
 									continue
 								}
 								if indexRate, ok := dateBkVal["index_rate"].(map[string]interface{}); ok {
+
 									if indexRateVal, ok := indexRate["value"].(float64); ok && indexRateVal > maxIndexRate {
 										maxIndexRate = indexRateVal
 									}

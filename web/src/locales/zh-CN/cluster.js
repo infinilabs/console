@@ -346,9 +346,11 @@ export default {
   "cluster.metrics.treemap.tooltip.formatter.value.percent": "总占比",
 
   "cluster.metrics.node.axis.parent_breaker.title": "Parent Breaker",
+  "cluster.metrics.node.axis.eql_sequence_breaker.title": "EQL Sequence",
   "cluster.metrics.node.axis.accounting_breaker.title": "Accounting Breaker",
   "cluster.metrics.node.axis.fielddata_breaker.title": "Fielddata Breaker",
   "cluster.metrics.node.axis.request_breaker.title": "Request Breaker",
+  "cluster.metrics.node.axis.inflight_requests_breaker.title": "In Flight Requests Breaker",
   "cluster.metrics.node.axis.in_flight_requests_breaker.title":
     "In Flight Requests Breaker",
   "cluster.metrics.node.axis.model_inference_breaker.title":

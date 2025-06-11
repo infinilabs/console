@@ -956,6 +956,7 @@ func (h *APIHandler) getSingleIndexMetricsByNodeStats(ctx context.Context, metri
 	aggs := util.MapStr{}
 	metricItemsMap := map[string]*common.MetricLine{}
 	sumAggs := util.MapStr{}
+	term_level := "term_node"
 
 	for _, metricItem := range metricItems {
 		for _, line := range metricItem.Lines {
@@ -967,7 +968,7 @@ func (h *APIHandler) getSingleIndexMetricsByNodeStats(ctx context.Context, metri
 					"field": line.Metric.Field,
 				},
 			}
-			var sumBucketPath = "term_node>" + line.Metric.ID
+			var sumBucketPath = term_level + ">" + line.Metric.ID
 			aggs[line.Metric.ID] = leafAgg
 
 			sumAggs[line.Metric.ID] = util.MapStr{
@@ -1008,7 +1009,7 @@ func (h *APIHandler) getSingleIndexMetricsByNodeStats(ctx context.Context, metri
 		}
 	}
 
-	sumAggs["term_node"] = util.MapStr{
+	sumAggs[term_level] = util.MapStr{
 		"terms": util.MapStr{
 			"field": "metadata.labels.node_id",
 			"size":  1000,
@@ -1032,7 +1033,7 @@ func (h *APIHandler) getSingleIndexMetricsByNodeStats(ctx context.Context, metri
 			"aggs": sumAggs,
 		},
 	}
-	return parseSingleIndexMetrics(ctx, "term_node", clusterID, metricItems, query, bucketSize, metricData, metricItemsMap)
+	return parseSingleIndexMetrics(ctx, term_level, clusterID, metricItems, query, bucketSize, metricData, metricItemsMap)
 }
 
 func (h *APIHandler) getSingleIndexMetrics(ctx context.Context, metricItems []*common.MetricItem, query map[string]interface{}, bucketSize int) (map[string]*common.MetricItem, error) {
@@ -1041,6 +1042,7 @@ func (h *APIHandler) getSingleIndexMetrics(ctx context.Context, metricItems []*c
 	aggs := util.MapStr{}
 	metricItemsMap := map[string]*common.MetricLine{}
 	sumAggs := util.MapStr{}
+	term_level := "term_shard"
 
 	for _, metricItem := range metricItems {
 		for _, line := range metricItem.Lines {
@@ -1052,7 +1054,7 @@ func (h *APIHandler) getSingleIndexMetrics(ctx context.Context, metricItems []*c
 					"field": line.Metric.Field,
 				},
 			}
-			var sumBucketPath = "term_shard>" + line.Metric.ID
+			var sumBucketPath = term_level + ">" + line.Metric.ID
 			aggs[line.Metric.ID] = leafAgg
 			sumAggs[line.Metric.ID] = util.MapStr{
 				"sum_bucket": util.MapStr{
@@ -1092,7 +1094,7 @@ func (h *APIHandler) getSingleIndexMetrics(ctx context.Context, metricItems []*c
 		}
 	}
 
-	sumAggs["term_shard"] = util.MapStr{
+	sumAggs[term_level] = util.MapStr{
 		"terms": util.MapStr{
 			"field": "metadata.labels.shard_id",
 			"size":  100000,
@@ -1126,7 +1128,7 @@ func (h *APIHandler) getSingleIndexMetrics(ctx context.Context, metricItems []*c
 			"aggs": sumAggs,
 		},
 	}
-	return parseSingleIndexMetrics(ctx, "term_shard", clusterID, metricItems, query, bucketSize, metricData, metricItemsMap)
+	return parseSingleIndexMetrics(ctx, term_level, clusterID, metricItems, query, bucketSize, metricData, metricItemsMap)
 }
 
 func parseSingleIndexMetrics(ctx context.Context, term_level, clusterID string, metricItems []*common.MetricItem, query map[string]interface{}, bucketSize int, metricData map[string][][]interface{}, metricItemsMap map[string]*common.MetricLine) (map[string]*common.MetricItem, error) {
@@ -1163,6 +1165,7 @@ func parseSingleIndexMetrics(ctx context.Context, term_level, clusterID string, 
 
 				// skip: if the number of nodes in the previous and current buckets is not equal
 				if preBucketSize > 0 && curBucketSize > 0 && preBucketSize != curBucketSize {
+					log.Warnf("Skipping bucket due to size mismatch: previous=%d, current=%d", preBucketSize, curBucketSize)
 					continue
 				}
 

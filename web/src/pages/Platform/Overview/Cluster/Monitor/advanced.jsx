@@ -23,6 +23,20 @@ export const checkMetric = (key, cluster) => {
       return false
     }
     return true
+  } else if (key === 'eql_sequence_breaker') {
+    if ([SearchEngines.Easysearch, SearchEngines.Opensearch].includes(cluster?.distribution)) return false;
+    const versions = cluster?.version?.split('.') || []
+    if (parseInt(versions[0]) > 8 || (parseInt(versions[0]) === 8 && parseInt(versions[1]) >= 6 )) {
+      return true
+    }
+    return false
+  } else if (key === 'inflight_requests_breaker') {
+    if ([SearchEngines.Easysearch, SearchEngines.Opensearch].includes(cluster?.distribution)) return false;
+    const versions = cluster?.version?.split('.') || []
+    if (parseInt(versions[0]) > 8 || (parseInt(versions[0]) === 8 && parseInt(versions[1]) >= 6 )) {
+      return true
+    }
+    return false
   } else if (key === 'model_inference_breaker') {
     if ([SearchEngines.Easysearch, SearchEngines.Opensearch].includes(cluster?.distribution)) return false;
     const versions = cluster?.version?.split('.') || []
@@ -143,10 +157,10 @@ export default (props) => {
                   "circuit_breaker",
                   [
                       "parent_breaker",
-                      "accounting_breaker",
+                      checkMetric("eql_sequence_breaker", selectedCluster) ? "eql_sequence_breaker" : "accounting_breaker",
                       "fielddata_breaker",
                       "request_breaker",
-                      "in_flight_requests_breaker",
+                      checkMetric("inflight_requests_breaker", selectedCluster) ? "inflight_requests_breaker" : "in_flight_requests_breaker",
                       checkMetric("model_inference_breaker", selectedCluster) ? "model_inference_breaker" : undefined
                   ].filter((item) => !!item)
               ],

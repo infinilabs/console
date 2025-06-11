@@ -207,8 +207,9 @@ func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.
 		source[k] = v
 	}
 
-	if host, ok := conf["host"].(string); ok {
-		host = strings.TrimSpace(host)
+	// convert hosts array to string to get first
+	if hosts, ok := conf["hosts"].([]interface{}); ok && len(hosts) > 0 {
+		host := strings.TrimSpace(hosts[0].(string))
 		if schema, ok := conf["schema"].(string); ok {
 			source["endpoint"] = fmt.Sprintf("%s://%s", schema, host)
 			source["host"] = host

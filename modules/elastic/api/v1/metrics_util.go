@@ -353,6 +353,9 @@ func GetMetricRangeAndBucketSize(minStr string, maxStr string, bucketSize int, m
 	hours := rangeTo.Sub(rangeFrom).Hours()
 
 	bucketSize = CalcBucketSize(useMinMax, hours, bucketSize)
+	if bucketSize < minBucketSize {
+		bucketSize = minBucketSize
+	}
 
 	return bucketSize, min, max, nil
 }

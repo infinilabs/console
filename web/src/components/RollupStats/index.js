@@ -52,7 +52,7 @@ export default (props) => {
         if (showLoading) {
             setLoading(true)
         }
-        const res = await request(fetchUrl, {method: 'POST'});
+        const res = await request(fetchUrl, {method: 'POST'}, false, false);
         if (res && !res?.error) {
           const body = res?.response_body || '';
           let retObj = {};

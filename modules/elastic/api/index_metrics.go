@@ -659,6 +659,7 @@ func (h *APIHandler) getIndexMetrics(ctx context.Context, req *http.Request, clu
 
 	aggs := map[string]interface{}{}
 	sumAggs := util.MapStr{}
+	term_level := "term_shard"
 
 	for _, metricItem := range indexMetricItems {
 		leafAgg := util.MapStr{
@@ -666,7 +667,7 @@ func (h *APIHandler) getIndexMetrics(ctx context.Context, req *http.Request, clu
 				"field": metricItem.Field,
 			},
 		}
-		var sumBucketPath = "term_shard>" + metricItem.ID
+		var sumBucketPath = term_level + ">" + metricItem.ID
 		aggs[metricItem.ID] = leafAgg
 
 		sumAggs[metricItem.ID] = util.MapStr{
@@ -704,7 +705,7 @@ func (h *APIHandler) getIndexMetrics(ctx context.Context, req *http.Request, clu
 			}
 		}
 	}
-	sumAggs["term_shard"] = util.MapStr{
+	sumAggs[term_level] = util.MapStr{
 		"terms": util.MapStr{
 			"field": "metadata.labels.shard_id",
 			"size":  10000,
@@ -779,7 +780,7 @@ func (h *APIHandler) getIndexMetrics(ctx context.Context, req *http.Request, clu
 						"size": top,
 					},
 				},
-				"term_shard": util.MapStr{
+				term_level: util.MapStr{
 					"terms": util.MapStr{
 						"field": "metadata.labels.shard_id",
 						"size":  10000,
@@ -794,13 +795,13 @@ func (h *APIHandler) getIndexMetrics(ctx context.Context, req *http.Request, clu
 				},
 				"max_store": util.MapStr{
 					"sum_bucket": util.MapStr{
-						"buckets_path": "term_shard>max_store",
+						"buckets_path": term_level + ">max_store",
 					},
 				},
 			},
 		},
 	}
-	return h.getMetrics(ctx, query, indexMetricItems, bucketSize)
+	return h.getMetrics(ctx, term_level, query, indexMetricItems, bucketSize)
 
 }
 
@@ -902,7 +903,11 @@ func (h *APIHandler) getTopIndexName(req *http.Request, clusterID string, top in
 			"group_by_index": util.MapStr{
 				"terms": util.MapStr{
 					"field": "metadata.labels.index_name",
-					"size":  10000,
+					"include": util.MapStr{
+						"partition":      0,
+						"num_partitions": 10,
+					},
+					"size": 10000,
 				},
 				"aggs": util.MapStr{
 					"max_qps": util.MapStr{
@@ -953,7 +958,11 @@ func (h *APIHandler) getTopIndexName(req *http.Request, clusterID string, top in
 			"group_by_index1": util.MapStr{
 				"terms": util.MapStr{
 					"field": "metadata.labels.index_name",
-					"size":  10000,
+					"include": util.MapStr{
+						"partition":      0,
+						"num_partitions": 10,
+					},
+					"size": 10000,
 				},
 				"aggs": util.MapStr{
 					"max_qps": util.MapStr{

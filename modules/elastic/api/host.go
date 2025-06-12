@@ -909,7 +909,7 @@ func (h *APIHandler) getGroupHostMetric(ctx context.Context, agentIDs []string, 
 			},
 		},
 	}
-	return h.getMetrics(ctx, query, hostMetricItems, bucketSize)
+	return h.getMetrics(ctx, "", query, hostMetricItems, bucketSize)
 }
 
 func getHost(hostID string) (*host.HostInfo, error) {

@@ -1212,11 +1212,11 @@ func (h *APIHandler) getRollupMetric(ctx context.Context, key, id string, min, m
 	}
 	metricItem := newMetricItem(key, 7, StorageGroupKey)
 	metricItem.AddAxi("Rollup Metrics", "group1", common.PositionLeft, "num", "0,0", "0,0.[00]", 5, false)
-	metricItem.AddLine("Documents Processed", "Documents Processed", "", "group1", "payload.elasticsearch.node_stats.jobs_stats."+key+".rollup_stats.documents_processed", "max", bucketSizeStr, "record/s", "num", "0,0.[00]", "0,0.[00]", false, true)
-	metricItem.AddLine("Pages Processed", "Pages Processed", "", "group1", "payload.elasticsearch.node_stats.jobs_stats."+key+".rollup_stats.pages_processed", "max", bucketSizeStr, "page/s", "num", "0,0.[00]", "0,0.[00]", false, true)
-	metricItem.AddLine("Rollups Indexed", "Rollups Indexed", "", "group1", "payload.elasticsearch.node_stats.jobs_stats."+key+".rollup_stats.rollups_indexed", "max", bucketSizeStr, "page/s", "num", "0,0.[00]", "0,0.[00]", false, true)
-	metricItem.AddLine("Index Time In Millis", "Index Time In Millis", "", "group1", "payload.elasticsearch.node_stats.jobs_stats."+key+".rollup_stats.index_time_in_millis", "max", bucketSizeStr, "millis/s", "num", "0,0.[00]", "0,0.[00]", false, true)
-	metricItem.AddLine("Search Time In Millis", "Search Time In Millis", "", "group1", "payload.elasticsearch.node_stats.jobs_stats."+key+".rollup_stats.search_time_in_millis", "max", bucketSizeStr, "millis/s", "num", "0,0.[00]", "0,0.[00]", false, true)
+	metricItem.AddLine("Documents Processed", "Documents Processed", "", "group1", "payload.elasticsearch.node_stats.rollup."+key+".rollup_stats.documents_processed", "max", bucketSizeStr, "record/s", "num", "0,0.[00]", "0,0.[00]", false, true)
+	metricItem.AddLine("Pages Processed", "Pages Processed", "", "group1", "payload.elasticsearch.node_stats.rollup."+key+".rollup_stats.pages_processed", "max", bucketSizeStr, "page/s", "num", "0,0.[00]", "0,0.[00]", false, true)
+	metricItem.AddLine("Rollups Indexed", "Rollups Indexed", "", "group1", "payload.elasticsearch.node_stats.rollup."+key+".rollup_stats.rollups_indexed", "max", bucketSizeStr, "page/s", "num", "0,0.[00]", "0,0.[00]", false, true)
+	metricItem.AddLine("Index Time In Millis", "Index Time In Millis", "", "group1", "payload.elasticsearch.node_stats.rollup."+key+".rollup_stats.index_time_in_millis", "max", bucketSizeStr, "millis/s", "num", "0,0.[00]", "0,0.[00]", false, true)
+	metricItem.AddLine("Search Time In Millis", "Search Time In Millis", "", "group1", "payload.elasticsearch.node_stats.rollup."+key+".rollup_stats.search_time_in_millis", "max", bucketSizeStr, "millis/s", "num", "0,0.[00]", "0,0.[00]", false, true)
 	var rollupMetrics []*common.MetricItem
 	rollupMetrics = append(rollupMetrics, metricItem)
 	return h.getSingleMetrics(ctx, rollupMetrics, query, bucketSize)

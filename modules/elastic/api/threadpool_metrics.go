@@ -644,5 +644,5 @@ func (h *APIHandler) getThreadPoolMetrics(ctx context.Context, clusterID string,
 			},
 		},
 	}
-	return h.getMetrics(ctx, query, queueMetricItems, bucketSize)
+	return h.getMetrics(ctx, "", query, queueMetricItems, bucketSize)
 }

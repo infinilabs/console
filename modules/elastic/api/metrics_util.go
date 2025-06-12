@@ -26,6 +26,7 @@ package api
 import (
 	"context"
 	"fmt"
+	v1 "infini.sh/console/modules/elastic/api/v1"
 	"infini.sh/framework/core/env"
 	"strings"
 	"time"
@@ -109,7 +110,7 @@ func generateGroupAggs(nodeMetricItems []GroupMetricItem) map[string]interface{}
 	return aggs
 }
 
-func (h *APIHandler) getMetrics(ctx context.Context, query map[string]interface{}, grpMetricItems []GroupMetricItem, bucketSize int) (map[string]*common.MetricItem, error) {
+func (h *APIHandler) getMetrics(ctx context.Context, term_level string, query map[string]interface{}, grpMetricItems []GroupMetricItem, bucketSize int) (map[string]*common.MetricItem, error) {
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 	queryDSL := util.MustToJSONBytes(query)
 	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).QueryDSL(ctx, getAllMetricsIndex(), nil, queryDSL)
@@ -123,7 +124,10 @@ func (h *APIHandler) getMetrics(ctx context.Context, query map[string]interface{
 	grpMetricData := map[string]MetricData{}
 
 	var minDate, maxDate int64
+
+	var origin string
 	if response.StatusCode == 200 {
+		origin = v1.GetSearchOrigin(response)
 		if nodeAgg, ok := response.Aggregations["group_by_level"]; ok {
 			for _, bucket := range nodeAgg.Buckets {
 				grpKey := bucket["key"].(string)
@@ -140,6 +144,7 @@ func (h *APIHandler) getMetrics(ctx context.Context, query map[string]interface{
 				}
 				if datesAgg, ok := bucket["dates"].(map[string]interface{}); ok {
 					if datesBuckets, ok := datesAgg["buckets"].([]interface{}); ok {
+						var preBucketSize, curBucketSize int
 						for _, dateBucket := range datesBuckets {
 							if bucketMap, ok := dateBucket.(map[string]interface{}); ok {
 								v, ok := bucketMap["key"].(float64)
@@ -149,6 +154,22 @@ func (h *APIHandler) getMetrics(ctx context.Context, query map[string]interface{
 								dateTime := int64(v)
 								minDate = util.MinInt64(minDate, dateTime)
 								maxDate = util.MaxInt64(maxDate, dateTime)
+
+								// check bucket size between previous and current
+								preBucketSize = curBucketSize
+								aggResult, aggExists := bucket[term_level].(map[string]interface{})
+								if aggExists {
+									buckets, bucketsOk := aggResult["buckets"].([]interface{})
+									if bucketsOk {
+										curBucketSize = len(buckets)
+									}
+								}
+
+								// skip: if the number of nodes in the previous and current buckets is not equal
+								if preBucketSize > 0 && curBucketSize > 0 && preBucketSize != curBucketSize {
+									log.Debugf("Multi Index Metrics Skipping bucket due to size mismatch: previous=%d, current=%d", preBucketSize, curBucketSize)
+									continue
+								}
 
 								for mk1, mv1 := range grpMetricData {
 									v1, ok := bucketMap[mk1]
@@ -217,6 +238,9 @@ func (h *APIHandler) getMetrics(ctx context.Context, query map[string]interface{
 		}
 		metricItem.MetricItem.Request = string(queryDSL)
 		metricItem.MetricItem.HitsTotal = hitsTotal
+		if origin == v1.EasysearchOriginRollup {
+			metricItem.MetricItem.MinBucketSize = 60
+		}
 		result[metricItem.Key] = metricItem.MetricItem
 	}
 	return result, nil
@@ -276,34 +300,8 @@ func GetMetricRangeAndBucketSize(minStr string, maxStr string, bucketSize int, m
 	min = rangeFrom.UnixNano() / 1e6
 	max = rangeTo.UnixNano() / 1e6
 	hours := rangeTo.Sub(rangeFrom).Hours()
-
 	if useMinMax {
-
-		if hours <= 0.25 {
-			bucketSize = GetMinBucketSize()
-		} else if hours <= 0.5 {
-			bucketSize = 30
-		} else if hours <= 2 {
-			bucketSize = 60
-		} else if hours < 3 {
-			bucketSize = 90
-		} else if hours < 6 {
-			bucketSize = 120
-		} else if hours < 12 {
-			bucketSize = 60 * 3
-		} else if hours < 25 { //1day
-			bucketSize = 60 * 5 * 2
-		} else if hours <= 7*24+1 { //7days
-			bucketSize = 60 * 15 * 2
-		} else if hours <= 15*24+1 { //15days
-			bucketSize = 60 * 30 * 2
-		} else if hours < 30*24+1 { //<30 days
-			bucketSize = 60 * 60 //hourly
-		} else if hours <= 30*24+1 { //<30days
-			bucketSize = 12 * 60 * 60 //half daily
-		} else if hours >= 30*24+1 { //>30days
-			bucketSize = 60 * 60 * 24 //daily bucket
-		}
+		bucketSize = v1.CalcBucketSize(hours, bucketSize)
 	}
 
 	return bucketSize, min, max, nil
@@ -939,6 +937,7 @@ func (h *APIHandler) getSingleIndexMetricsByNodeStats(ctx context.Context, metri
 	aggs := util.MapStr{}
 	metricItemsMap := map[string]*common.MetricLine{}
 	sumAggs := util.MapStr{}
+	term_level := "term_node"
 
 	for _, metricItem := range metricItems {
 		for _, line := range metricItem.Lines {
@@ -950,7 +949,7 @@ func (h *APIHandler) getSingleIndexMetricsByNodeStats(ctx context.Context, metri
 					"field": line.Metric.Field,
 				},
 			}
-			var sumBucketPath = "term_node>" + line.Metric.ID
+			var sumBucketPath = term_level + ">" + line.Metric.ID
 			aggs[line.Metric.ID] = leafAgg
 
 			sumAggs[line.Metric.ID] = util.MapStr{
@@ -991,7 +990,7 @@ func (h *APIHandler) getSingleIndexMetricsByNodeStats(ctx context.Context, metri
 		}
 	}
 
-	sumAggs["term_node"] = util.MapStr{
+	sumAggs[term_level] = util.MapStr{
 		"terms": util.MapStr{
 			"field": "metadata.labels.node_id",
 			"size":  1000,
@@ -1015,7 +1014,7 @@ func (h *APIHandler) getSingleIndexMetricsByNodeStats(ctx context.Context, metri
 			"aggs": sumAggs,
 		},
 	}
-	return parseSingleIndexMetrics(ctx, clusterID, metricItems, query, bucketSize, metricData, metricItemsMap)
+	return parseSingleIndexMetrics(ctx, term_level, clusterID, metricItems, query, bucketSize, metricData, metricItemsMap)
 }
 
 func (h *APIHandler) getSingleIndexMetrics(ctx context.Context, metricItems []*common.MetricItem, query map[string]interface{}, bucketSize int) (map[string]*common.MetricItem, error) {
@@ -1024,6 +1023,7 @@ func (h *APIHandler) getSingleIndexMetrics(ctx context.Context, metricItems []*c
 	aggs := util.MapStr{}
 	metricItemsMap := map[string]*common.MetricLine{}
 	sumAggs := util.MapStr{}
+	term_level := "term_shard"
 
 	for _, metricItem := range metricItems {
 		for _, line := range metricItem.Lines {
@@ -1035,7 +1035,7 @@ func (h *APIHandler) getSingleIndexMetrics(ctx context.Context, metricItems []*c
 					"field": line.Metric.Field,
 				},
 			}
-			var sumBucketPath = "term_shard>" + line.Metric.ID
+			var sumBucketPath = term_level + ">" + line.Metric.ID
 			aggs[line.Metric.ID] = leafAgg
 			sumAggs[line.Metric.ID] = util.MapStr{
 				"sum_bucket": util.MapStr{
@@ -1075,7 +1075,7 @@ func (h *APIHandler) getSingleIndexMetrics(ctx context.Context, metricItems []*c
 		}
 	}
 
-	sumAggs["term_shard"] = util.MapStr{
+	sumAggs[term_level] = util.MapStr{
 		"terms": util.MapStr{
 			"field": "metadata.labels.shard_id",
 			"size":  100000,
@@ -1109,10 +1109,10 @@ func (h *APIHandler) getSingleIndexMetrics(ctx context.Context, metricItems []*c
 			"aggs": sumAggs,
 		},
 	}
-	return parseSingleIndexMetrics(ctx, clusterID, metricItems, query, bucketSize, metricData, metricItemsMap)
+	return parseSingleIndexMetrics(ctx, term_level, clusterID, metricItems, query, bucketSize, metricData, metricItemsMap)
 }
 
-func parseSingleIndexMetrics(ctx context.Context, clusterID string, metricItems []*common.MetricItem, query map[string]interface{}, bucketSize int, metricData map[string][][]interface{}, metricItemsMap map[string]*common.MetricLine) (map[string]*common.MetricItem, error) {
+func parseSingleIndexMetrics(ctx context.Context, term_level, clusterID string, metricItems []*common.MetricItem, query map[string]interface{}, bucketSize int, metricData map[string][][]interface{}, metricItemsMap map[string]*common.MetricLine) (map[string]*common.MetricItem, error) {
 	queryDSL := util.MustToJSONBytes(query)
 	response, err := elastic.GetClient(clusterID).QueryDSL(ctx, getAllMetricsIndex(), nil, util.MustToJSONBytes(query))
 	if err != nil {
@@ -1120,16 +1120,38 @@ func parseSingleIndexMetrics(ctx context.Context, clusterID string, metricItems 
 	}
 
 	var minDate, maxDate int64
+	var origin string
+
 	if response.StatusCode == 200 {
+		origin = v1.GetSearchOrigin(response)
 		for _, v := range response.Aggregations {
+			var preBucketSize, curBucketSize int
 			for _, bucket := range v.Buckets {
 				v, ok := bucket["key"].(float64)
 				if !ok {
 					return nil, fmt.Errorf("invalid bucket key type: %T", bucket["key"])
 				}
+
 				dateTime := int64(v)
 				minDate = util.MinInt64(minDate, dateTime)
 				maxDate = util.MaxInt64(maxDate, dateTime)
+
+				// check bucket size between previous and current
+				preBucketSize = curBucketSize
+				aggResult, aggExists := bucket[term_level].(map[string]interface{})
+				if aggExists {
+					buckets, bucketsOk := aggResult["buckets"].([]interface{})
+					if bucketsOk {
+						curBucketSize = len(buckets)
+					}
+				}
+
+				// skip: if the number of nodes in the previous and current buckets is not equal
+				if preBucketSize > 0 && curBucketSize > 0 && preBucketSize != curBucketSize {
+					log.Debugf("Single Index Metrics Skipping bucket due to size mismatch: previous=%d, current=%d", preBucketSize, curBucketSize)
+					continue
+				}
+
 				for mk1, mv1 := range metricData {
 					v1, ok := bucket[mk1]
 					if ok {
@@ -1186,6 +1208,9 @@ func parseSingleIndexMetrics(ctx context.Context, clusterID string, metricItems 
 		}
 		metricItem.Request = string(queryDSL)
 		metricItem.HitsTotal = response.GetTotal()
+		if origin == v1.EasysearchOriginRollup {
+			metricItem.MinBucketSize = 60
+		}
 		result[metricItem.Key] = metricItem
 	}
 

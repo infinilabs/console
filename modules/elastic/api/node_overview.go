@@ -416,7 +416,7 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 			},
 		},
 	}
-	metrics, err := h.getMetrics(ctx, query, nodeMetricItems, bucketSize)
+	metrics, err := h.getMetrics(ctx, "", query, nodeMetricItems, bucketSize)
 	if err != nil {
 		log.Error(err)
 		h.WriteError(w, err, http.StatusInternalServerError)

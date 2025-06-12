@@ -144,3 +144,14 @@ security:
 #    console_endpoint: $[[env.INFINI_CONSOLE_ENDPOINT]]
 #    ingest_cluster_endpoint: $[[env.INGEST_CLUSTER_ENDPOINT]]
 #    ingest_cluster_credential_id: $[[env.INGEST_CLUSTER_CREDENTIAL_ID]]
+
+
+http_client:
+  default:
+    tls:
+      skip_insecure_verify: true
+      skip_domain_verify: true
+    proxy:
+      enabled: true
+      default_config:
+        using_proxy_env: true

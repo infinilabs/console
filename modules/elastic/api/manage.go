@@ -27,13 +27,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"infini.sh/framework/core/queue"
 	"math"
 	"net/http"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"infini.sh/framework/core/queue"
 
 	log "github.com/cihub/seelog"
 	"infini.sh/console/core"
@@ -207,8 +208,9 @@ func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.
 		source[k] = v
 	}
 
-	if host, ok := conf["host"].(string); ok {
-		host = strings.TrimSpace(host)
+	// convert hosts array to string to get first
+	if hosts, ok := conf["hosts"].([]interface{}); ok && len(hosts) > 0 {
+		host := strings.TrimSpace(hosts[0].(string))
 		if schema, ok := conf["schema"].(string); ok {
 			source["endpoint"] = fmt.Sprintf("%s://%s", schema, host)
 			source["host"] = host
@@ -705,7 +707,7 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 		return
 	}
 	if _, ok := metrics[key]; ok {
-		if metrics[key].HitsTotal > 0 {
+		if metrics[key].HitsTotal > 0 && metrics[key].MinBucketSize == 0 {
 			minBucketSize, err := v1.GetMetricMinBucketSize(id, metricType)
 			if err != nil {
 				log.Error(err)

@@ -15,6 +15,9 @@ title: "版本历史"
 - feat: 监控页面支持查看 `Rollup` 处理进度 (#214)
 ### 🐛 Bug fix  
 ### ✈️ Improvements  
+- chore: 增强指标聚合功能
+- chore: 更新查询和过滤功能以支持范围
+- chore: 优化桶大小计算
 
 ## 1.29.4 (2025-05-16)
 ### ❌ Breaking changes  

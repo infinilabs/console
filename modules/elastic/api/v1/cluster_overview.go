@@ -25,6 +25,7 @@ package v1
 
 import (
 	"fmt"
+	log "github.com/cihub/seelog"
 	"net/http"
 	"strings"
 	"time"
@@ -685,7 +686,11 @@ func (h *APIHandler) getIndexQPS(clusterID string, bucketSizeInSeconds int) (map
 			"term_index": util.MapStr{
 				"terms": util.MapStr{
 					"field": "metadata.labels.index_name",
-					"size":  1000,
+					"include": util.MapStr{
+						"partition":      0,
+						"num_partitions": 10,
+					},
+					"size": 10000,
 				},
 				"aggs": util.MapStr{
 					"date": util.MapStr{
@@ -770,6 +775,7 @@ func (h *APIHandler) QueryQPS(query util.MapStr, bucketSizeInSeconds int) (map[s
 		return nil, err
 	}
 	indexQPS := map[string]util.MapStr{}
+
 	for _, agg := range searchRes.Aggregations {
 		for _, bk := range agg.Buckets {
 			if k, ok := bk["key"].(string); ok {
@@ -784,10 +790,34 @@ func (h *APIHandler) QueryQPS(query util.MapStr, bucketSizeInSeconds int) (map[s
 							dropNext          bool
 							maxTimestamp      float64
 						)
+
+						var preBucketSize, curBucketSize int
 						for _, dateBk := range bks {
 							if dateBkVal, ok := dateBk.(map[string]interface{}); ok {
+								// check bucket size between previous and current
+								preBucketSize = curBucketSize
+								aggResult, aggExists := dateBkVal["term_shard"].(map[string]interface{})
+								if aggExists {
+									buckets, bucketsOk := aggResult["buckets"].([]interface{})
+									if bucketsOk {
+										curBucketSize = len(buckets)
+									}
+								}
+
+								// skip: if the number of shard in the previous and current buckets is not equal
+								if preBucketSize > 0 && curBucketSize > 0 && preBucketSize != curBucketSize {
+									log.Debugf("Skipping index %s, bucket size changed from %d to %d", k, preBucketSize, curBucketSize)
+									continue
+								}
+
 								if indexTotal, ok := dateBkVal["index_total"].(map[string]interface{}); ok {
 									if indexTotalVal, ok := indexTotal["value"].(float64); ok {
+										if dropNext {
+											preIndexTotal = indexTotalVal
+											// reset dropNext flag
+											dropNext = false
+											continue
+										}
 										if preIndexTotal > 0 {
 											//if value of indexTotal is decreasing, drop the next value,
 											//and we will drop current and next qps value
@@ -795,15 +825,10 @@ func (h *APIHandler) QueryQPS(query util.MapStr, bucketSizeInSeconds int) (map[s
 												dropNext = true
 												preIndexTotal = indexTotalVal
 												continue
-											} else {
-												dropNext = false
 											}
 										}
 										preIndexTotal = indexTotalVal
 									}
-								}
-								if dropNext {
-									continue
 								}
 								if indexRate, ok := dateBkVal["index_rate"].(map[string]interface{}); ok {
 									if indexRateVal, ok := indexRate["value"].(float64); ok && indexRateVal > maxIndexRate {

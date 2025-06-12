@@ -26,10 +26,14 @@ package v1
 import (
 	"context"
 	"fmt"
-	"infini.sh/framework/core/env"
+	"math"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/buger/jsonparser"
+
+	"infini.sh/framework/core/env"
 
 	log "github.com/cihub/seelog"
 	"infini.sh/framework/core/elastic"
@@ -147,7 +151,7 @@ func (h *APIHandler) getMetrics(ctx context.Context, query map[string]interface{
 								if !ok {
 									panic("invalid bucket key")
 								}
-								dateTime := (int64(v))
+								dateTime := int64(v)
 								minDate = util.MinInt64(minDate, dateTime)
 								maxDate = util.MaxInt64(maxDate, dateTime)
 
@@ -353,38 +357,103 @@ func GetMetricRangeAndBucketSize(minStr string, maxStr string, bucketSize int, m
 	hours := rangeTo.Sub(rangeFrom).Hours()
 
 	if useMinMax {
-
-		if hours <= 0.25 {
-			bucketSize = GetMinBucketSize()
-		} else if hours <= 0.5 {
-			bucketSize = 30
-		} else if hours <= 2 {
-			bucketSize = 60
-		} else if hours < 3 {
-			bucketSize = 90
-		} else if hours < 6 {
-			bucketSize = 120
-		} else if hours < 12 {
-			bucketSize = 60 * 3
-		} else if hours < 25 { //1day
-			bucketSize = 60 * 5 * 2
-		} else if hours <= 7*24+1 { //7days
-			bucketSize = 60 * 15 * 2
-		} else if hours <= 15*24+1 { //15days
-			bucketSize = 60 * 30 * 2
-		} else if hours < 30*24+1 { //<30 days
-			bucketSize = 60 * 60 //hourly
-		} else if hours <= 30*24+1 { //<30days
-			bucketSize = 12 * 60 * 60 //half daily
-		} else if hours >= 30*24+1 { //>30days
-			bucketSize = 60 * 60 * 24 //daily bucket
-		}
+		bucketSize = CalcBucketSize(hours, bucketSize)
 		if bucketSize < minBucketSize {
 			bucketSize = minBucketSize
 		}
 	}
 
 	return bucketSize, min, max, nil
+}
+
+// findClosestNiceInterval finds the interval in sortedNiceIntervals that is closest to targetSize.
+func findClosestNiceInterval(targetSize float64, sortedNiceIntervals []float64) float64 {
+	if len(sortedNiceIntervals) == 0 {
+		return targetSize // Or some other default if list is empty
+	}
+	if targetSize <= sortedNiceIntervals[0] {
+		return sortedNiceIntervals[0]
+	}
+	if targetSize >= sortedNiceIntervals[len(sortedNiceIntervals)-1] {
+		return sortedNiceIntervals[len(sortedNiceIntervals)-1]
+	}
+
+	// Binary search or linear scan to find the two closest intervals
+	// For simplicity with a moderately sized list, linear scan is fine.
+	// For very large niceIntervals list, binary search would be better.
+	closest := sortedNiceIntervals[0]
+	minDiff := math.Abs(targetSize - closest)
+
+	for _, interval := range sortedNiceIntervals {
+		diff := math.Abs(targetSize - interval)
+		if diff < minDiff {
+			minDiff = diff
+			closest = interval
+		} else if diff == minDiff && interval < closest {
+			// Prefer smaller interval in case of a tie if targetSize is exactly midway
+			// Or handle ties based on other preferences.
+			// This part can be adjusted based on desired tie-breaking.
+			// For now, let's say if it's a tie, it keeps the first one found (which might be smaller if list is sorted).
+			// A more common tie-breaking is to round to the nearest even, or consistently up/down.
+			// Or, to pick the one that results in bucket count closer to target.
+		}
+	}
+	return closest
+}
+
+// CalcBucketSize calculates a suitable bucket size in seconds with finer granularity.
+func CalcBucketSize(hours float64, targetPointCount int) int {
+	if hours <= 0 {
+		return GetMinBucketSize()
+	}
+
+	var actualTargetPoints float64
+	if targetPointCount <= 0 {
+		actualTargetPoints = 120
+	} else {
+		actualTargetPoints = float64(targetPointCount)
+	}
+
+	totalSeconds := hours * float64(time.Hour.Seconds())
+	idealBucketSize := totalSeconds / actualTargetPoints
+
+	// More granular "Nice" intervals (in seconds)
+	niceIntervals := []float64{
+		20, 30, 45, // Seconds
+		1 * float64(time.Minute.Seconds()),   // 60s (1m)
+		1.5 * float64(time.Minute.Seconds()), // 1.5m
+		2 * float64(time.Minute.Seconds()),   // 120s (2m)
+		2.5 * float64(time.Minute.Seconds()), // 150s (2.5m)
+		3 * float64(time.Minute.Seconds()),   // 180s (3m)
+		5 * float64(time.Minute.Seconds()),   // 300s (5m)
+		7.5 * float64(time.Minute.Seconds()), // 450s (7.5m)
+		10 * float64(time.Minute.Seconds()),  // 600s (10m)
+		15 * float64(time.Minute.Seconds()),  // 900s (15m)
+		20 * float64(time.Minute.Seconds()),  // 1200s (20m)
+		30 * float64(time.Minute.Seconds()),  // 1800s (30m)
+		45 * float64(time.Minute.Seconds()),  // 2700s (45m)
+		1 * float64(time.Hour.Seconds()),     // 3600s (1h)
+		1.5 * float64(time.Hour.Seconds()),   // 5400s (1.5h)
+		2 * float64(time.Hour.Seconds()),     // 7200s (2h)
+		2.5 * float64(time.Hour.Seconds()),   // 9000s (2.5h)
+		3 * float64(time.Hour.Seconds()),     // 10800s (3h)
+		4 * float64(time.Hour.Seconds()),     // 14400s (4h)
+		6 * float64(time.Hour.Seconds()),     // 21600s (6h)
+		8 * float64(time.Hour.Seconds()),     // 28800s (8h)
+		12 * float64(time.Hour.Seconds()),    // 43200s (12h)
+		18 * float64(time.Hour.Seconds()),    // 64800s (18h)
+		1 * float64(24*time.Hour.Seconds()),  // 86400s (1 day)
+	}
+
+	calculatedBucketSize := findClosestNiceInterval(idealBucketSize, niceIntervals)
+
+	// Apply minimum bucket size limit.
+	finalBucketSize := math.Max(float64(GetMinBucketSize()), calculatedBucketSize)
+
+	// Apply maximum bucket size limit (1 day).
+	finalBucketSize = math.Min(finalBucketSize, 24*float64(time.Hour.Seconds())) // 1 day in seconds
+
+	return int(math.Round(finalBucketSize))
 }
 
 // 获取单个指标，可以包含多条曲线
@@ -453,14 +522,16 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 	}
 
 	var minDate, maxDate int64
+	var origin string
 	if response.StatusCode == 200 {
+		origin = GetSearchOrigin(response)
 		for _, v := range response.Aggregations {
 			for _, bucket := range v.Buckets {
 				v, ok := bucket["key"].(float64)
 				if !ok {
 					panic("invalid bucket key")
 				}
-				dateTime := (int64(v))
+				dateTime := int64(v)
 				minDate = util.MinInt64(minDate, dateTime)
 				maxDate = util.MaxInt64(maxDate, dateTime)
 				for mk1, mv1 := range metricData {
@@ -511,10 +582,20 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 		}
 		metricItem.Request = string(queryDSL)
 		metricItem.HitsTotal = hitsTotal
+		if origin == EasysearchOriginRollup {
+			metricItem.MinBucketSize = 60
+		}
 		result[metricItem.Key] = metricItem
 	}
 
 	return result, nil
+}
+
+const EasysearchOriginRollup = "rollup"
+
+func GetSearchOrigin(response *elastic.SearchResponse) string {
+	origin, _ := jsonparser.GetString(response.RawResult.Body, "origin")
+	return origin
 }
 
 //func (h *APIHandler) executeQuery(query map[string]interface{}, bucketItems *[]common.BucketItem, bucketSize int) map[string]*common.MetricItem {
@@ -777,7 +858,7 @@ func ParseAggregationBucketResult(bucketSize int, aggsData util.MapStr, groupKey
 															if ok {
 																buckets, ok := metricValue.([]interface{})
 																if ok {
-																	var result string = "unavailable"
+																	var result = "unavailable"
 																	for _, v := range buckets {
 																		x, ok := v.(map[string]interface{})
 																		if ok {

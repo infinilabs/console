@@ -27,13 +27,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"infini.sh/framework/core/queue"
 	"math"
 	"net/http"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"infini.sh/framework/core/queue"
 
 	log "github.com/cihub/seelog"
 	"infini.sh/console/core"
@@ -705,7 +706,7 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 		return
 	}
 	if _, ok := metrics[key]; ok {
-		if metrics[key].HitsTotal > 0 {
+		if metrics[key].HitsTotal > 0 && metrics[key].MinBucketSize == 0 {
 			minBucketSize, err := v1.GetMetricMinBucketSize(id, metricType)
 			if err != nil {
 				log.Error(err)

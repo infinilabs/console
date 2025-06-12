@@ -30,6 +30,10 @@ package v1
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strings"
+	"time"
+
 	log "github.com/cihub/seelog"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
@@ -38,9 +42,6 @@ import (
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/modules/elastic/common"
-	"net/http"
-	"strings"
-	"time"
 )
 
 func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, ctx context.Context, indexIDs []interface{}) {
@@ -577,7 +578,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 		}
 	}
 	if _, ok := metrics[metricKey]; ok {
-		if metrics[metricKey].HitsTotal > 0 {
+		if metrics[metricKey].HitsTotal > 0 && metrics[metricKey].MinBucketSize == 0 {
 			minBucketSize, err := GetMetricMinBucketSize(clusterID, MetricTypeIndexStats)
 			if err != nil {
 				log.Error(err)

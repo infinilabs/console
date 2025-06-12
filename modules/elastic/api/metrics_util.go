@@ -26,9 +26,11 @@ package api
 import (
 	"context"
 	"fmt"
-	"infini.sh/framework/core/env"
 	"strings"
 	"time"
+
+	v1 "infini.sh/console/modules/elastic/api/v1"
+	"infini.sh/framework/core/env"
 
 	log "github.com/cihub/seelog"
 	"infini.sh/framework/core/elastic"
@@ -123,7 +125,9 @@ func (h *APIHandler) getMetrics(ctx context.Context, query map[string]interface{
 	grpMetricData := map[string]MetricData{}
 
 	var minDate, maxDate int64
+	var origin string
 	if response.StatusCode == 200 {
+		origin = v1.GetSearchOrigin(response)
 		if nodeAgg, ok := response.Aggregations["group_by_level"]; ok {
 			for _, bucket := range nodeAgg.Buckets {
 				grpKey := bucket["key"].(string)
@@ -217,6 +221,9 @@ func (h *APIHandler) getMetrics(ctx context.Context, query map[string]interface{
 		}
 		metricItem.MetricItem.Request = string(queryDSL)
 		metricItem.MetricItem.HitsTotal = hitsTotal
+		if origin == v1.EasysearchOriginRollup {
+			metricItem.MetricItem.MinBucketSize = 60
+		}
 		result[metricItem.Key] = metricItem.MetricItem
 	}
 	return result, nil
@@ -1120,7 +1127,9 @@ func parseSingleIndexMetrics(ctx context.Context, clusterID string, metricItems 
 	}
 
 	var minDate, maxDate int64
+	var origin string
 	if response.StatusCode == 200 {
+		origin = v1.GetSearchOrigin(response)
 		for _, v := range response.Aggregations {
 			for _, bucket := range v.Buckets {
 				v, ok := bucket["key"].(float64)
@@ -1186,6 +1195,9 @@ func parseSingleIndexMetrics(ctx context.Context, clusterID string, metricItems 
 		}
 		metricItem.Request = string(queryDSL)
 		metricItem.HitsTotal = response.GetTotal()
+		if origin == v1.EasysearchOriginRollup {
+			metricItem.MinBucketSize = 60
+		}
 		result[metricItem.Key] = metricItem
 	}
 

@@ -295,8 +295,9 @@ func GetMetricRangeAndBucketSize(minStr string, maxStr string, bucketSize int, m
 	min = rangeFrom.UnixNano() / 1e6
 	max = rangeTo.UnixNano() / 1e6
 	hours := rangeTo.Sub(rangeFrom).Hours()
-
-	bucketSize = v1.CalcBucketSize(useMinMax, hours, bucketSize)
+	if useMinMax {
+		bucketSize = v1.CalcBucketSize(hours, bucketSize)
+	}
 
 	return bucketSize, min, max, nil
 }

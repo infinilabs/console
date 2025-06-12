@@ -352,41 +352,41 @@ func GetMetricRangeAndBucketSize(minStr string, maxStr string, bucketSize int, m
 	max = rangeTo.UnixNano() / 1e6
 	hours := rangeTo.Sub(rangeFrom).Hours()
 
-	bucketSize = CalcBucketSize(useMinMax, hours, bucketSize)
-	if bucketSize < minBucketSize {
-		bucketSize = minBucketSize
+	if useMinMax {
+		bucketSize = CalcBucketSize(hours, bucketSize)
+		if bucketSize < minBucketSize {
+			bucketSize = minBucketSize
+		}
 	}
 
 	return bucketSize, min, max, nil
 }
 
-func CalcBucketSize(useMinMax bool, hours float64, bucketSize int) int {
-	if useMinMax {
-		if hours <= 0.25 {
-			bucketSize = GetMinBucketSize()
-		} else if hours <= 0.5 {
-			bucketSize = 30
-		} else if hours <= 2 {
-			bucketSize = 60
-		} else if hours < 3 {
-			bucketSize = 90
-		} else if hours < 6 {
-			bucketSize = 120
-		} else if hours < 12 {
-			bucketSize = 60 * 3
-		} else if hours < 25 { //1day
-			bucketSize = 60 * 5 * 2
-		} else if hours <= 7*24+1 { //7days
-			bucketSize = 60 * 15 * 2
-		} else if hours <= 15*24+1 { //15days
-			bucketSize = 60 * 30 * 2
-		} else if hours < 30*24+1 { //<30 days
-			bucketSize = 60 * 60 //hourly
-		} else if hours <= 30*24+1 { //<30days
-			bucketSize = 12 * 60 * 60 //half daily
-		} else if hours >= 30*24+1 { //>30days
-			bucketSize = 60 * 60 * 24 //daily bucket
-		}
+func CalcBucketSize(hours float64, bucketSize int) int {
+	if hours <= 0.25 {
+		bucketSize = GetMinBucketSize()
+	} else if hours <= 0.5 {
+		bucketSize = 30
+	} else if hours <= 2 {
+		bucketSize = 60
+	} else if hours < 3 {
+		bucketSize = 90
+	} else if hours < 6 {
+		bucketSize = 120
+	} else if hours < 12 {
+		bucketSize = 60 * 3
+	} else if hours < 25 { //1day
+		bucketSize = 60 * 5 * 2
+	} else if hours <= 7*24+1 { //7days
+		bucketSize = 60 * 15 * 2
+	} else if hours <= 15*24+1 { //15days
+		bucketSize = 60 * 30 * 2
+	} else if hours < 30*24+1 { //<30 days
+		bucketSize = 60 * 60 //hourly
+	} else if hours <= 30*24+1 { //<30days
+		bucketSize = 12 * 60 * 60 //half daily
+	} else if hours >= 30*24+1 { //>30days
+		bucketSize = 60 * 60 * 24 //daily bucket
 	}
 	return bucketSize
 }

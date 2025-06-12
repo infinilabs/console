@@ -14,6 +14,9 @@ title: "版本历史"
 - feat: 系统集群增加 `Rollup` 监控指标 (#210)
 ### 🐛 Bug fix  
 ### ✈️ Improvements  
+- chore: 增强指标聚合功能
+- chore: 更新查询和过滤功能以支持范围
+- chore: 优化桶大小计算
 
 ## 1.29.4 (2025-05-16)
 ### ❌ Breaking changes  

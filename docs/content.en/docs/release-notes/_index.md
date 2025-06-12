@@ -14,6 +14,9 @@ Information about release notes of INFINI Console is provided here.
 - feat: add rollup metics monitor (#210)
 ### 🐛 Bug fix  
 ### ✈️ Improvements  
+- chore: metric aggregation enhancements
+- chore: query and filtering updates with range
+- chore: bucket size calculation optimization
 
 ## 1.29.4 (2025-05-16)
 ### ❌ Breaking changes  

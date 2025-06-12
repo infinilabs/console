@@ -26,11 +26,14 @@ package v1
 import (
 	"context"
 	"fmt"
-	"infini.sh/framework/core/env"
 	"math"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/buger/jsonparser"
+
+	"infini.sh/framework/core/env"
 
 	log "github.com/cihub/seelog"
 	"infini.sh/framework/core/elastic"
@@ -148,7 +151,7 @@ func (h *APIHandler) getMetrics(ctx context.Context, query map[string]interface{
 								if !ok {
 									panic("invalid bucket key")
 								}
-								dateTime := (int64(v))
+								dateTime := int64(v)
 								minDate = util.MinInt64(minDate, dateTime)
 								maxDate = util.MaxInt64(maxDate, dateTime)
 
@@ -519,14 +522,16 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 	}
 
 	var minDate, maxDate int64
+	var origin string
 	if response.StatusCode == 200 {
+		origin = GetSearchOrigin(response)
 		for _, v := range response.Aggregations {
 			for _, bucket := range v.Buckets {
 				v, ok := bucket["key"].(float64)
 				if !ok {
 					panic("invalid bucket key")
 				}
-				dateTime := (int64(v))
+				dateTime := int64(v)
 				minDate = util.MinInt64(minDate, dateTime)
 				maxDate = util.MaxInt64(maxDate, dateTime)
 				for mk1, mv1 := range metricData {
@@ -577,10 +582,20 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 		}
 		metricItem.Request = string(queryDSL)
 		metricItem.HitsTotal = hitsTotal
+		if origin == EasysearchOriginRollup {
+			metricItem.MinBucketSize = 60
+		}
 		result[metricItem.Key] = metricItem
 	}
 
 	return result, nil
+}
+
+const EasysearchOriginRollup = "rollup"
+
+func GetSearchOrigin(response *elastic.SearchResponse) string {
+	origin, _ := jsonparser.GetString(response.RawResult.Body, "origin")
+	return origin
 }
 
 //func (h *APIHandler) executeQuery(query map[string]interface{}, bucketItems *[]common.BucketItem, bucketSize int) map[string]*common.MetricItem {
@@ -843,7 +858,7 @@ func ParseAggregationBucketResult(bucketSize int, aggsData util.MapStr, groupKey
 															if ok {
 																buckets, ok := metricValue.([]interface{})
 																if ok {
-																	var result string = "unavailable"
+																	var result = "unavailable"
 																	for _, v := range buckets {
 																		x, ok := v.(map[string]interface{})
 																		if ok {

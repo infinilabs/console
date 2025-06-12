@@ -14,6 +14,7 @@ import { WidgetRender } from "@/pages/DataManagement/View/WidgetLoader";
 import { cloneDeep } from "lodash";
 import { Link } from "umi";
 import InstallAgent from "@/components/InstallAgent";
+import { getSystemClusterID } from "@/utils/setup";
 
 const COLORS = {
     'INFO': '#e8eef2',
@@ -72,7 +73,7 @@ export default (props) => {
                 }
             });
         }
-        const res = await request(`${ESPrefix}/infini_default_system_cluster/search/ese?timeout=60m`, {
+        const res = await request(`${ESPrefix}/${getSystemClusterID()}/search/ese?timeout=60m`, {
             method: 'POST',
             body: {
                 index: indexName,
@@ -224,7 +225,7 @@ export default (props) => {
                     ],
                 },
                 queries: {
-                    cluster_id: "infini_default_system_cluster",
+                    cluster_id: getSystemClusterID(),
                     indices: [indexName],
                     time_field: timeField,
                 },

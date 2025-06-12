@@ -30,6 +30,10 @@ package api
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strings"
+	"time"
+
 	log "github.com/cihub/seelog"
 	v1 "infini.sh/console/modules/elastic/api/v1"
 	httprouter "infini.sh/framework/core/api/router"
@@ -40,9 +44,6 @@ import (
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/modules/elastic/adapter"
 	"infini.sh/framework/modules/elastic/common"
-	"net/http"
-	"strings"
-	"time"
 )
 
 func (h *APIHandler) SearchIndexMetadata(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -1032,7 +1033,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 		}
 	}
 	if _, ok := metrics[metricKey]; ok {
-		if metrics[metricKey].HitsTotal > 0 {
+		if metrics[metricKey].HitsTotal > 0 && metrics[metricKey].MinBucketSize == 0 {
 			minBucketSize, err := v1.GetMetricMinBucketSize(clusterID, metricType)
 			if err != nil {
 				log.Error(err)

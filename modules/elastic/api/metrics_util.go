@@ -125,7 +125,9 @@ func (h *APIHandler) getMetrics(ctx context.Context, term_level string, query ma
 
 	var minDate, maxDate int64
 
+	var origin string
 	if response.StatusCode == 200 {
+		origin = v1.GetSearchOrigin(response)
 		if nodeAgg, ok := response.Aggregations["group_by_level"]; ok {
 			for _, bucket := range nodeAgg.Buckets {
 				grpKey := bucket["key"].(string)
@@ -236,6 +238,9 @@ func (h *APIHandler) getMetrics(ctx context.Context, term_level string, query ma
 		}
 		metricItem.MetricItem.Request = string(queryDSL)
 		metricItem.MetricItem.HitsTotal = hitsTotal
+		if origin == v1.EasysearchOriginRollup {
+			metricItem.MetricItem.MinBucketSize = 60
+		}
 		result[metricItem.Key] = metricItem.MetricItem
 	}
 	return result, nil
@@ -1115,8 +1120,10 @@ func parseSingleIndexMetrics(ctx context.Context, term_level, clusterID string, 
 	}
 
 	var minDate, maxDate int64
+	var origin string
 
 	if response.StatusCode == 200 {
+		origin = v1.GetSearchOrigin(response)
 		for _, v := range response.Aggregations {
 			var preBucketSize, curBucketSize int
 			for _, bucket := range v.Buckets {
@@ -1201,6 +1208,9 @@ func parseSingleIndexMetrics(ctx context.Context, term_level, clusterID string, 
 		}
 		metricItem.Request = string(queryDSL)
 		metricItem.HitsTotal = response.GetTotal()
+		if origin == v1.EasysearchOriginRollup {
+			metricItem.MinBucketSize = 60
+		}
 		result[metricItem.Key] = metricItem
 	}
 

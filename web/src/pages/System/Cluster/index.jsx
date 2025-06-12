@@ -19,12 +19,13 @@ import request from "@/utils/request";
 import { hasAuthority } from "@/utils/authority";
 import { useGlobal } from "@/layouts/GlobalContext";
 import { ESPrefix } from "@/services/common";
+import { getSystemClusterID } from "@/utils/setup";
 
 export default (props) => {
   const ref = useRef(null);
   const [isLoading, setIsLoading] = React.useState();
 
-  const clusterID = "infini_default_system_cluster";
+  const clusterID = getSystemClusterID();
   const collectionName = "cluster";
   const { clusterStatus, dispatch } = useGlobal();
 

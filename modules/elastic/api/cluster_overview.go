@@ -27,12 +27,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	cerr "infini.sh/console/core/errors"
-	v1 "infini.sh/console/modules/elastic/api/v1"
-	"infini.sh/framework/modules/elastic/adapter"
 	"net/http"
 	"strings"
 	"time"
+
+	cerr "infini.sh/console/core/errors"
+	v1 "infini.sh/console/modules/elastic/api/v1"
+	"infini.sh/framework/modules/elastic/adapter"
 
 	log "github.com/cihub/seelog"
 	httprouter "infini.sh/framework/core/api/router"
@@ -1365,25 +1366,51 @@ func (h *APIHandler) SearchClusterMetadata(w http.ResponseWriter, req *http.Requ
 func (h *APIHandler) getClusterMonitorState(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	id := ps.ByName("id")
 	collectionMode := GetMonitorState(id)
+	var (
+		indexName = h.GetParameterOrDefault(req, "index_name", "")
+		nodeName  = h.GetParameterOrDefault(req, "node_name", "")
+	)
 	ret := util.MapStr{
 		"cluster_id":             id,
 		"metric_collection_mode": collectionMode,
 	}
+	must := []util.MapStr{
+		{
+			"term": util.MapStr{
+				"metadata.labels.cluster_id": id,
+			},
+		},
+		{
+			"term": util.MapStr{
+				"metadata.category": "elasticsearch",
+			},
+		},
+		{
+			"range": util.MapStr{
+				"timestamp": util.MapStr{
+					"gte": "now-15m",
+				},
+			},
+		},
+	}
+	if indexName != "" {
+		must = append(must, util.MapStr{
+			"term": util.MapStr{
+				"metadata.labels.index_name": indexName,
+			},
+		})
+	}
+	if nodeName != "" {
+		must = append(must, util.MapStr{
+			"term": util.MapStr{
+				"metadata.labels.node_name": nodeName,
+			},
+		})
+	}
 	queryDSL := util.MapStr{
 		"query": util.MapStr{
 			"bool": util.MapStr{
-				"must": []util.MapStr{
-					{
-						"term": util.MapStr{
-							"metadata.labels.cluster_id": id,
-						},
-					},
-					{
-						"term": util.MapStr{
-							"metadata.category": "elasticsearch",
-						},
-					},
-				},
+				"must": must,
 			},
 		},
 		"size": 0,
@@ -1414,11 +1441,11 @@ func (h *APIHandler) getClusterMonitorState(w http.ResponseWriter, req *http.Req
 		key := bk["key"].(string)
 		if tv, ok := bk["max_timestamp"].(map[string]interface{}); ok {
 			if collectionMode == elastic.ModeAgentless {
-				if util.StringInArray([]string{"index_stats", "cluster_health", "cluster_stats", "node_stats"}, key) {
+				if util.StringInArray([]string{"index_stats", "cluster_health", "index_health", "cluster_stats", "node_stats"}, key) {
 					ret[key] = getCollectionStats(tv["value"])
 				}
 			} else {
-				if util.StringInArray([]string{"shard_stats", "cluster_health", "cluster_stats", "node_stats"}, key) {
+				if util.StringInArray([]string{"shard_stats", "cluster_health", "index_health", "cluster_stats", "node_stats"}, key) {
 					ret[key] = getCollectionStats(tv["value"])
 				}
 			}

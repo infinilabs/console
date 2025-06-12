@@ -12,6 +12,7 @@ Information about release notes of INFINI Console is provided here.
 ### 🚀 Features  
 - feat: confirm cluster collect mode change (#207)
 - feat: add rollup metics monitor (#210)
+- feat: display rollup gap statistics on monitor page (#214)
 ### 🐛 Bug fix  
 ### ✈️ Improvements  
 - chore: metric aggregation enhancements

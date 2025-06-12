@@ -22,7 +22,7 @@ const STATUS_ICONS = {
         <Icon
             type="warning"
             theme="filled"
-            style={{ color: "#ff3030", fontSize: 14 }}
+            style={{ color: "blue", fontSize: 14 }}
         />
     ),
     'unknown': (
@@ -41,7 +41,7 @@ const STATUS_ICONS = {
 
 export default (props) => {
 
-    const { fetchUrl, filter={} } = props;
+    const { fetchUrl } = props;
 
     const [loading, setLoading] = useState(false);
     const [data, setData] = useState();
@@ -52,9 +52,16 @@ export default (props) => {
         if (showLoading) {
             setLoading(true)
         }
-        const res = await request(fetchUrl, {queryParams: filter})
+        const res = await request(fetchUrl, {method: 'POST'});
         if (res && !res?.error) {
-            setData(res)
+          const body = res?.response_body || '';
+          let retObj = {};
+          try{
+            retObj = JSON.parse(body)
+          }catch(e){
+            console.error('Failed to parse response body', e);
+          }
+          setData(retObj)
         }
         if (showLoading) {
             setLoading(false)
@@ -76,23 +83,23 @@ export default (props) => {
         }
     }, [fetchUrl])
 
-    const stats = useMemo(() => {
-        if(filter?.node_name){
-            return ['node_stats']
+    const stats = ['rollup_cluster_stats', 'rollup_cluster_health', 'rollup_node_stats', 'rollup_index_stats', 'rollup_index_health', 
+      'rollup_shard_stats_metrics', 'rollup_shard_stats_state' ]
+   
+    const calculateStatus = (nextWindowStartTime) => {
+        if (!nextWindowStartTime) {
+            return 'unknown';
         }
-        if(filter?.index_name){
-            if(data?.metric_collection_mode === 'agent'){
-                return ['shard_stats', 'index_health']
-            }
-            return ['index_stats', 'index_health']
+        const now = new Date().valueOf();
+        if(now - nextWindowStartTime <= 2 * 60 * 60 * 1000) { // less than 2 hours
+          return 'ok';
         }
-        return ['cluster_health', 'cluster_stats', "index_health", 'node_stats', data?.metric_collection_mode === 'agent' ? 'shard_stats' : 'index_stats']
-    }, [data?.metric_collection_mode, filter])
-
+        return 'warning';
+    }
     const renderIcon = () => {
         if (!data) {
             return STATUS_ICONS['unknown']
-        } else if (stats.every((key) => data?.[key]?.status === 'ok')) {
+        } else if (stats.every((key) => calculateStatus(data?.[key]?.rollup_metadata?.continuous?.next_window_start_time) === 'ok')) {
             return STATUS_ICONS['ok']
         } else {
             return STATUS_ICONS['warning']
@@ -107,19 +114,21 @@ export default (props) => {
                     <div>
                         <div style={{ marginBottom: 12 }} >
                             <span style={{ fontWeight: 'bold' }}>
-                                {formatMessage({ id: 'cluster.collect.last_active_at'})}
+                                Rollup Gap
                             </span>
                             <a style={{ marginLeft: 8 }} onClick={() => !loading && fetchData(fetchUrl)} ><Icon type="reload"/></a>
                         </div>
                         {
-                            stats.map((key, i) => (
+                            stats.map((key, i) => {
+                              const nextWindowStartTime = data?.[key]?.rollup_metadata?.continuous?.next_window_start_time;
+                              return (
                                 <div key={key} style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: i === stats.length - 1 ? 0 : 12 }}>
-                                    <div style={{ width: 130 }}>{formatMessage({ id: `cluster.manage.monitor_configs.${key}`})}</div>
+                                    <div style={{ width: 140 }}>{formatMessage({ id: `cluster.manage.monitor_configs.${key}`})}</div>
                                     <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                                        {STATUS_ICONS[data?.[key]?.status || 'unknown']}{data?.[key]?.last_active_at ? moment.duration(data?.[key]?.last_active_at - new Date().valueOf()).humanize(true) : '-'}
+                                        {STATUS_ICONS[calculateStatus(nextWindowStartTime)]}{ nextWindowStartTime? moment.duration(nextWindowStartTime - new Date().valueOf()).humanize(true) : '-'}
                                     </div>
                                 </div>
-                            ))
+                            )})
                         } 
                     </div>
                 </Spin>
@@ -127,9 +136,8 @@ export default (props) => {
             overlayStyle={{ maxWidth: 'none', width: 'auto' }}
         >
             <Spin spinning={loading}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, cursor: 'pointer' }}>
-                    {renderIcon()}
-                    {firstUpperCase(data?.metric_collection_mode) || "Unknown"}
+                <div style={{ ...(props.style || {}), display: "flex", alignItems: "center", gap: 6, cursor: 'pointer' }}>
+                    {renderIcon()} Rollup
                 </div>
             </Spin>
         </Tooltip>

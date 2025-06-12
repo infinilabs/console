@@ -13,7 +13,9 @@ import { getTimezone } from "@/utils/utils";
 import { getContext } from "@/pages/DataManagement/context";
 import { ESPrefix } from "@/services/common";
 import CollectStatus from "@/components/CollectStatus";
+import RollupStats from "@/components/RollupStats";
 import styles from "./index.less"
+import { isSystemCluster } from "@/utils/setup";
 
 const { TabPane } = Tabs;
 
@@ -151,6 +153,21 @@ const Monitor = (props) => {
   }
 
   const breadcrumbList = getBreadcrumbList(state);
+  const collectionStatsFilter = useMemo(() => {
+    if(breadcrumbList && breadcrumbList.length === 5){
+      const pageCate = breadcrumbList[3].title;
+      if(pageCate === "Nodes"){
+        return {
+          node_name: breadcrumbList[4].title
+        };
+      }else if (pageCate === "Indices"){
+        return {
+          index_name: breadcrumbList[4].title
+        };
+      }
+    }
+    return null;
+  }, [selectedCluster?.id, breadcrumbList]);
 
   const isAgent = useMemo(() => {
     const { metric_collection_mode, monitor_configs = {} } = selectedCluster || {}
@@ -212,7 +229,12 @@ const Monitor = (props) => {
                       recentlyUsedRangesKey={'monitor'}
                     />
                   </div>
-                  <CollectStatus fetchUrl={`${ESPrefix}/${selectedCluster?.id}/_collection_stats`}/>
+                  <div style={{display: "flex"}}>
+                    {isSystemCluster(selectedCluster?.id) && <RollupStats
+                      fetchUrl={`${ESPrefix}/${selectedCluster?.id}/_proxy?method=GET&path=/_rollup/jobs/*/_explain`}
+                      style={{ marginRight: 100 }}/>}
+                    <CollectStatus filter={collectionStatsFilter} fetchUrl={`${ESPrefix}/${selectedCluster?.id}/_collection_stats`}/>
+                  </div>
                 </div>
               </div>
               <div className={styles.tabs}>

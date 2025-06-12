@@ -10,10 +10,11 @@ import request from "@/utils/request";
 import PageHeaderWrapper from "@/components/PageHeaderWrapper";
 import ListView from "@/components/ListView";
 import styles from './index.less';
+import { getSystemClusterID } from "@/utils/setup";
 
 export default (props) => {
   const listViewRef = useRef(null);
-  const clusterID = "infini_default_system_cluster";
+  const clusterID = getSystemClusterID();
   const collectionName = "audit_log";
   const timeField = "timestamp"; //timestamp
 

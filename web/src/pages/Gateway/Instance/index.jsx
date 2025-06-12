@@ -20,12 +20,13 @@ import { formatter } from "@/lib/format";
 import { hasAuthority } from "@/utils/authority";
 import Wizard from "./Wizard";
 import { isNumber } from "lodash";
+import { getSystemClusterID } from "@/utils/setup";
 
 export default (props) => {
   const ref = useRef(null);
   const [isLoading, setIsLoading] = React.useState();
 
-  const clusterID = "infini_default_system_cluster";
+  const clusterID = getSystemClusterID();
   const collectionName = "gateway";
   const timeField = "updated";
 

@@ -33,6 +33,7 @@ import Import from "../components/Import";
 import Export from "../components/Export";
 import NoData from "./components/NoData";
 import { HealthStatusCircle } from "@/components/infini/health_status_circle";
+import { getSystemClusterID } from "@/utils/setup";
 
 export default (props) => {
   const ref = useRef(null);
@@ -41,7 +42,7 @@ export default (props) => {
   const [importVisible, setImportVisible] = useState(false);
   const [exportVisible, setExportVisible] = useState(false);
 
-  const clusterID = "infini_default_system_cluster";
+  const clusterID = getSystemClusterID();
   const collectionName = "alerting_rule";
   const timeField = "updated"; //timestamp
 

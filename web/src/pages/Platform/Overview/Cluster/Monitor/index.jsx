@@ -11,6 +11,7 @@ import { Empty } from "antd";
 import TopN from "./TopN";
 import Logs from "./Logs";
 import Rollup from "./Rollup";
+import { isSystemCluster } from "@/utils/setup";
 
 const getPanes = (clusterID) => {
   const basePanes = [
@@ -22,7 +23,7 @@ const getPanes = (clusterID) => {
     { title: "Indices", component: Indices, key: "indices" },
   ];
 
-  if (clusterID === "infini_default_system_cluster") {
+  if (isSystemCluster(clusterID)) {
     const overviewIndex = basePanes.findIndex(p => p.key === "overview");
     basePanes.splice(overviewIndex + 1, 0, {
       title: "Rollup",

@@ -8,6 +8,7 @@ import { hasAuthority } from "@/utils/authority";
 import request from "@/utils/request";
 import ListView from "@/components/ListView";
 import GenerateDesc from "@/pages/Overview/components/Activities/GenerateDesc";
+import { getSystemClusterID } from "@/utils/setup";
 
 const opers = {
   delete: "deleted",
@@ -100,7 +101,7 @@ const DiffItem = ({ diff }) => {
 
 export default (props) => {
   const ref = useRef(null);
-  const clusterID = "infini_default_system_cluster";
+  const clusterID = getSystemClusterID();
   const collectionName = "activity";
   const timeField = "timestamp"; //timestamp
   const [histogramState, setHistogramState] = useState({

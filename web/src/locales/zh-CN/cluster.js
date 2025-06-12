@@ -46,6 +46,7 @@ export default {
   "cluster.manage.monitor_configs.cluster_stats": "集群指标",
   "cluster.manage.monitor_configs.node_stats": "节点指标",
   "cluster.manage.monitor_configs.index_stats": "索引指标",
+  "cluster.manage.monitor_configs.index_health": "索引健康状态指标",
   "cluster.manage.monitor_configs.shard_stats": "分片指标",
   "cluster.manage.metadata_configs.health_check": "健康检查",
   "cluster.manage.metadata_configs.node_availability_check": "节点可用性检查",

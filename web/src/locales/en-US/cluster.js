@@ -46,6 +46,7 @@ export default {
   "cluster.manage.monitor_configs.cluster_stats": "Cluster stats",
   "cluster.manage.monitor_configs.node_stats": "Node stats",
   "cluster.manage.monitor_configs.index_stats": "Index stats",
+  "cluster.manage.monitor_configs.index_health": "Index health",
   "cluster.manage.monitor_configs.shard_stats": "Shard stats",
   "cluster.manage.metadata_configs.health_check": "Health check",
   "cluster.manage.metadata_configs.node_availability_check":

@@ -15,6 +15,7 @@ import { formatTimeRange } from "@/lib/elasticsearch/util";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import { getRollupEnabled } from "@/utils/authority";
 import { getStatistics, ROLLUP_FIELDS } from "@/components/vendor/index_pattern_management/public/components/field_editor/field_editor";
+import { getSystemClusterID } from "@/utils/setup";
 
 const DEFAULT_TOP = 15;
 const DEFAULT_COLORS = ['#00bb1b', '#fcca00', '#ff4d4f']
@@ -63,7 +64,7 @@ export default (props) => {
     const fetchFields = async (clusterID, viewID, type, isAgent) => {
         if (!clusterID || !viewID) return;
         setLoading(true)
-        const systemClusterID = "infini_default_system_cluster";
+        const systemClusterID = getSystemClusterID();
         const res = await request(`/elasticsearch/${systemClusterID}/saved_objects/_bulk_get`, {
             method: 'POST',
             body: [{ 
@@ -291,7 +292,8 @@ export default (props) => {
                 body['bucket_size'] = `${Math.round((newTimeRange.max - newTimeRange.min) / 1000)}s`
             }
         }
-        const res = await request(`/elasticsearch/infini_default_system_cluster/visualization/data`, {
+        const sysClusterID = getSystemClusterID();
+        const res = await request(`/elasticsearch/${sysClusterID}/visualization/data`, {
             method: 'POST',
             body 
         })

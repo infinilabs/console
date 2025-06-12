@@ -41,7 +41,7 @@ const STATUS_ICONS = {
 
 export default (props) => {
 
-    const { fetchUrl } = props;
+    const { fetchUrl, filter={} } = props;
 
     const [loading, setLoading] = useState(false);
     const [data, setData] = useState();
@@ -52,7 +52,7 @@ export default (props) => {
         if (showLoading) {
             setLoading(true)
         }
-        const res = await request(fetchUrl)
+        const res = await request(fetchUrl, {queryParams: filter})
         if (res && !res?.error) {
             setData(res)
         }
@@ -77,8 +77,17 @@ export default (props) => {
     }, [fetchUrl])
 
     const stats = useMemo(() => {
-        return ['cluster_health', 'cluster_stats', 'node_stats', data?.metric_collection_mode === 'agent' ? 'shard_stats' : 'index_stats']
-    }, [data?.metric_collection_mode])
+        if(filter?.node_name){
+            return ['node_stats']
+        }
+        if(filter?.index_name){
+            if(data?.metric_collection_mode === 'agent'){
+                return ['shard_stats', 'index_health']
+            }
+            return ['index_stats', 'index_health']
+        }
+        return ['cluster_health', 'cluster_stats', "index_health", 'node_stats', data?.metric_collection_mode === 'agent' ? 'shard_stats' : 'index_stats']
+    }, [data?.metric_collection_mode, filter])
 
     const renderIcon = () => {
         if (!data) {

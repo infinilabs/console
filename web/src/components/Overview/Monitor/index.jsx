@@ -16,6 +16,7 @@ import CollectStatus from "@/components/CollectStatus";
 import RollupStats from "@/components/RollupStats";
 import styles from "./index.less"
 import { isSystemCluster } from "@/utils/setup";
+import { getRollupEnabled } from "@/utils/authority";
 
 const { TabPane } = Tabs;
 
@@ -230,7 +231,7 @@ const Monitor = (props) => {
                     />
                   </div>
                   <div style={{display: "flex"}}>
-                    {isSystemCluster(selectedCluster?.id) && <RollupStats
+                    {isSystemCluster(selectedCluster?.id) && getRollupEnabled() === "true" && <RollupStats
                       fetchUrl={`${ESPrefix}/${selectedCluster?.id}/_proxy?method=GET&path=/_rollup/jobs/*/_explain`}
                       style={{ marginRight: 100 }}/>}
                     <CollectStatus filter={collectionStatsFilter} fetchUrl={`${ESPrefix}/${selectedCluster?.id}/_collection_stats`}/>

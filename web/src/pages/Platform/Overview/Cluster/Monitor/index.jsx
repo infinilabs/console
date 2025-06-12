@@ -12,6 +12,7 @@ import TopN from "./TopN";
 import Logs from "./Logs";
 import Rollup from "./Rollup";
 import { isSystemCluster } from "@/utils/setup";
+import { getRollupEnabled } from "@/utils/authority";
 
 const getPanes = (clusterID) => {
   const basePanes = [
@@ -23,7 +24,7 @@ const getPanes = (clusterID) => {
     { title: "Indices", component: Indices, key: "indices" },
   ];
 
-  if (isSystemCluster(clusterID)) {
+  if (isSystemCluster(clusterID) && getRollupEnabled() === "true") {
     const overviewIndex = basePanes.findIndex(p => p.key === "overview");
     basePanes.splice(overviewIndex + 1, 0, {
       title: "Rollup",

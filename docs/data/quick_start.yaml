@@ -41,6 +41,6 @@ easysearch: {
       contacts: ':',
     }
   ],
-  version: '1.29.6',
+  version: '1.13.0',
   doc: "/docs/latest/easysearch/getting-started/install/"
 }

@@ -22,7 +22,7 @@ mkdir -p ~/infinilabs && cd ~/infinilabs
 cat << "EOF" > docker-compose.yml
 services:
   console:
-    image: infinilabs/console:1.29.4-2108
+    image: infinilabs/console:{{< globaldata "console" "version" >}}
     container_name: console
     hostname: console
     networks:
@@ -34,7 +34,7 @@ services:
       - $PWD/console/data:/data
       - $PWD/console/logs:/log
   easysearch:
-    image: infinilabs/easysearch:1.12.2-2106
+    image: infinilabs/easysearch:{{< globaldata "easysearch" "version" >}}
     container_name: easysearch
     hostname: easysearch
     networks:
@@ -76,8 +76,8 @@ EOF
 
 ```bash
 cd ~/infinilabs
-docker run --rm -v $PWD/console:/work infinilabs/console:1.29.4-2108 cp -rf /config /work
-docker run --rm --entrypoint "" -v $PWD/easysearch:/work infinilabs/easysearch:1.12.2-2106 cp -rf /app/easysearch/config /work
+docker run --rm -v $PWD/console:/work infinilabs/console:{{< globaldata "console" "version" >}} cp -rf /config /work
+docker run --rm --entrypoint "" -v $PWD/easysearch:/work infinilabs/easysearch:{{< globaldata "easysearch" "version" >}} cp -rf /app/easysearch/config /work
 ```
 
 ## 启动服务

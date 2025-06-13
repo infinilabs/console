@@ -82,7 +82,7 @@ kubectl create secret generic easysearch-secrets \
 
 使用以下命令部署 Console 和 Easysearch, 镜像下载需要一些时间，请耐心等待。
 
-> 安装时可以使用 --set 来调整参数，如调整 Easysearch 镜像版本：  --set image.repository=infinilabs/easysearch  --set image.tag=1.12.2-2106
+> 安装时可以使用 --set 来调整参数，如调整 Easysearch 镜像版本：  --set image.repository=infinilabs/easysearch  --set image.tag={{< globaldata "easysearch" "version" >}}
 
 ```bash
 helm repo add infinilabs https://helm.infinilabs.com --force-update

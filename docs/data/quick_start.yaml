@@ -26,3 +26,21 @@ agent: {
   version: '1.29.4',
   doc: "/docs/latest/agent/getting-started/install/"
 }
+
+
+easysearch: {
+  shells: [
+    {
+      type: 'Linux',
+      shell: 'curl -sSL http://get.infini.cloud | bash -s -- -p easysearch',
+      contacts: ' -v ',
+    },
+    {
+      type: 'Docker',
+      shell: 'docker run -p 9200:9200 infinilabs/easysearch',
+      contacts: ':',
+    }
+  ],
+  version: '1.13.0',
+  doc: "/docs/latest/easysearch/getting-started/install/"
+}

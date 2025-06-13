@@ -82,7 +82,7 @@ kubectl create secret generic easysearch-secrets \
 
 Use the following commands to deploy Console and Easysearch. Image downloads may take some time, please be patient.
 
-> During installation, you can use `--set` to adjust parameters, for example, to change the Easysearch image version:  `--set image.repository=infinilabs/easysearch  --set image.tag=1.12.2-2106`
+> During installation, you can use `--set` to adjust parameters, for example, to change the Easysearch image version:  `--set image.repository=infinilabs/easysearch  --set image.tag={{< globaldata "easysearch" "version" >}}`
 
 ```bash
 helm repo add infinilabs https://helm.infinilabs.com --force-update

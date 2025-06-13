@@ -27,6 +27,7 @@ title: "版本历史"
 ### 🐛 Bug fix  
 - fix: 集群动态滚动加载失效
 - fix: 数据探索滚动加载失效
+- fix: 修复求导指标的错误告警行为
 ### ✈️ Improvements  
 - chore: 将 Rollup 模板更新为最新的 Easysearch 支持版本 (#199)
 

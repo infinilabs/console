@@ -15,6 +15,7 @@ Information about release notes of INFINI Console is provided here.
 - feat: display rollup gap statistics on monitor page (#214)
 ### 🐛 Bug fix  
 - fix: incorrect time range parameters when querying alerts on event detail page
+- fix: incorrect alerting behavior for derivative metrics
 ### ✈️ Improvements  
 - chore: metric aggregation enhancements
 - chore: query and filtering updates with range

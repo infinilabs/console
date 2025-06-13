@@ -30,6 +30,13 @@ package elasticsearch
 import (
 	"context"
 	"fmt"
+	"math"
+	"runtime/debug"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/Knetic/govaluate"
 	log "github.com/cihub/seelog"
 	"infini.sh/console/model"
@@ -41,12 +48,6 @@ import (
 	"infini.sh/framework/core/kv"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
-	"math"
-	"runtime/debug"
-	"sort"
-	"strconv"
-	"strings"
-	"time"
 )
 
 type Engine struct {
@@ -564,6 +565,10 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule) (*alerting.ConditionRe
 	if rule.BucketConditions != nil {
 		return engine.CheckBucketCondition(rule, targetMetricData, queryResult)
 	}
+	valueExpression, err := govaluate.NewEvaluableExpression(rule.Metrics.Formula)
+	if err != nil {
+		return conditionResult, fmt.Errorf("generate value expression: %s error: %w", rule.Metrics.Formula, err)
+	}
 	for idx, targetData := range targetMetricData {
 		if idx == 0 {
 			sort.Slice(rule.Conditions.Items, func(i, j int) bool {
@@ -597,8 +602,19 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule) (*alerting.ConditionRe
 						continue
 					}
 				}
+				relationValues := map[string]interface{}{}
+				for _, metric := range rule.Metrics.Items {
+					relationValues[metric.Name] = queryResult.MetricData[idx].Data[metric.Name][i].Value
+				}
+				valueExpressionResult, err := valueExpression.Evaluate(relationValues)
+				if err != nil {
+					return conditionResult, fmt.Errorf("evaluate value expression: %s error: %w", rule.Metrics.Formula, err)
+				}
+				if v, ok := valueExpressionResult.(float64); ok {
+					valueExpressionResult = util.ToFixed(v, 1)
+				}
 				evaluateResult, err := expression.Evaluate(map[string]interface{}{
-					"result": targetData.Data[dataKey][i].Value,
+					"result": valueExpressionResult,
 				})
 				if err != nil {
 					return conditionResult, fmt.Errorf("evaluate rule [%s] error: %w", rule.ID, err)
@@ -613,12 +629,9 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule) (*alerting.ConditionRe
 					resultItem := alerting.ConditionResultItem{
 						GroupValues:    targetData.GroupValues,
 						ConditionItem:  &cond,
-						ResultValue:    targetData.Data[dataKey][i].Value,
+						ResultValue:    valueExpressionResult,
 						IssueTimestamp: targetData.Data[dataKey][i].Timestamp,
-						RelationValues: map[string]interface{}{},
-					}
-					for _, metric := range rule.Metrics.Items {
-						resultItem.RelationValues[metric.Name] = queryResult.MetricData[idx].Data[metric.Name][i].Value
+						RelationValues: relationValues,
 					}
 					resultItems = append(resultItems, resultItem)
 					break LoopCondition

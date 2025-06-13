@@ -14,6 +14,7 @@ Information about release notes of INFINI Console is provided here.
 - feat: add rollup metics monitor (#210)
 - feat: display rollup gap statistics on monitor page (#214)
 ### 🐛 Bug fix  
+- fix: incorrect time range parameters when querying alerts on event detail page
 ### ✈️ Improvements  
 
 ## 1.29.4 (2025-05-16)

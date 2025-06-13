@@ -42,8 +42,8 @@ const MessageDetail = (props) => {
 
 
   const [timeRange, setTimeRange] = React.useState({
-    min: param?.timeRange?.min || "now-7d",
-    max: param?.timeRange?.max || "now",
+    min: param?.timeRange?.min || "", // here we must use time range which calculated by event message, do not set default time range
+    max: param?.timeRange?.max || "",
     timeFormatter: formatter.dates(1),
   });
 
@@ -148,11 +148,12 @@ const MessageDetail = (props) => {
             /> : null}
           </Card>
       </div>
-      <Tabs>
+      {messageDetail.message_id && <Tabs>
         <Tabs.TabPane tab={formatMessage({ id: "alert.rule.detail.title.alert_history" })}>
           <RuleRecords ruleID={messageDetail?.rule_id} timeRange={timeRange} />
         </Tabs.TabPane>
       </Tabs>
+  }
     </Card>
   );
 };

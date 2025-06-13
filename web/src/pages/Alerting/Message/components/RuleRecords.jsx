@@ -25,10 +25,16 @@ const RuleRecords = ({ ruleID, timeRange, showAertMetric = false, refresh }) => 
   const [dataSource, setDataSource] = useState({ data: [], total: 0 });
   const [loading, setLoading] = React.useState(true);
 
+  const bounds = calculateBounds({
+    from: timeRange.min || "now-1d",
+    to: timeRange.max || "now",
+  });
   const initialQueryParams = {
     from: 0,
     size: 10,
     rule_id: ruleID,
+    min: bounds.min.valueOf(),
+    max: bounds.max.valueOf(),
   };
 
   const alertReducer = (queryParams, action) => {
@@ -110,38 +116,25 @@ const RuleRecords = ({ ruleID, timeRange, showAertMetric = false, refresh }) => 
     },
   ];
 
-  const fetchAlerts = useCallback(
-    (queryParams) => {
-      setLoading(true);
-      const bounds = calculateBounds({
-        from: timeRange.min || "now-1d",
-        to: timeRange.max || "now",
+  const fetchAlerts = (queryParams) => {
+    setLoading(true);
+    const fetchData = async () => {
+      let url = `/alerting/alert/_search`;
+      const res = await request(url, {
+        method: "GET",
+        queryParams,
       });
-
-      const fetchData = async () => {
-        let url = `/alerting/alert/_search`;
-        const res = await request(url, {
-          method: "GET",
-          queryParams: {
-            ...queryParams,
-            min: bounds.min.valueOf(),
-            max: bounds.max.valueOf(),
-          },
-        });
-        if (res && !res.error) {
-          let { data, total } = formatESSearchResult(res);
-          setDataSource({ data, total });
-        }
-        setLoading(false);
-      };
-      fetchData();
-    },
-    [queryParams, timeRange]
-  );
-
+      if (res && !res.error) {
+        let { data, total } = formatESSearchResult(res);
+        setDataSource({ data, total });
+      }
+      setLoading(false);
+    };
+    fetchData();
+  };
   useEffect(() => {
     fetchAlerts(queryParams);
-  }, [ruleID, timeRange, queryParams]);
+  }, [queryParams]);
 
   return (
     <div>

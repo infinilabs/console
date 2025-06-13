@@ -29,12 +29,12 @@ package alerting
 
 import (
 	"fmt"
+	log "github.com/cihub/seelog"
 	config2 "infini.sh/console/config"
 	"infini.sh/framework/core/config"
 	"infini.sh/framework/core/env"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/kv"
-	log "src/github.com/cihub/seelog"
 )
 
 func GetEnvVariables() (map[string]interface{}, error) {

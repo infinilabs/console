@@ -36,7 +36,6 @@ import (
 	"net/http"
 	"sort"
 	"strings"
-	"time"
 )
 
 // getClusterUUID reads the cluster uuid from metadata
@@ -123,7 +122,7 @@ func (h *APIHandler) getIndexMetrics(ctx context.Context, req *http.Request, clu
 		top = len(indexNames)
 
 	} else {
-		indexNames, err = h.getTopIndexName(req, clusterID, top, 15)
+		indexNames, err = h.getTopIndexName(req, clusterID, top, min, max)
 		if err != nil {
 			return nil, err
 		}
@@ -805,17 +804,12 @@ func (h *APIHandler) getIndexMetrics(ctx context.Context, req *http.Request, clu
 
 }
 
-func (h *APIHandler) getTopIndexName(req *http.Request, clusterID string, top int, lastMinutes int) ([]string, error) {
+func (h *APIHandler) getTopIndexName(req *http.Request, clusterID string, top int, min, max int64) ([]string, error) {
 	ver := h.Client().GetVersion()
 	cr, _ := util.VersionCompare(ver.Number, "6.1")
 	if (ver.Distribution == "" || ver.Distribution == elastic.Elasticsearch) && cr == -1 {
 		return nil, nil
 	}
-	var (
-		now = time.Now()
-		max = now.UnixNano() / 1e6
-		min = now.Add(-time.Duration(lastMinutes)*time.Minute).UnixNano() / 1e6
-	)
 	clusterUUID, err := h.getClusterUUID(clusterID)
 	if err != nil {
 		return nil, err
@@ -871,6 +865,22 @@ func (h *APIHandler) getTopIndexName(req *http.Request, clusterID string, top in
 		return nil, err
 	}
 
+	partition_num := 10
+	term_index := util.MapStr{
+		"field": "metadata.labels.index_name",
+		"size":  1000,
+	}
+	if v1.GetIndicesCount(clusterID) > 200 {
+		term_index = util.MapStr{
+			"field": "metadata.labels.index_name",
+			"include": util.MapStr{
+				"partition":      0,
+				"num_partitions": partition_num,
+			},
+			"size": 10000,
+		}
+	}
+
 	query := util.MapStr{
 		"size": 0,
 		"query": util.MapStr{
@@ -901,14 +911,7 @@ func (h *APIHandler) getTopIndexName(req *http.Request, clusterID string, top in
 		},
 		"aggs": util.MapStr{
 			"group_by_index": util.MapStr{
-				"terms": util.MapStr{
-					"field": "metadata.labels.index_name",
-					"include": util.MapStr{
-						"partition":      0,
-						"num_partitions": 10,
-					},
-					"size": 10000,
-				},
+				"terms": term_index,
 				"aggs": util.MapStr{
 					"max_qps": util.MapStr{
 						"max_bucket": util.MapStr{
@@ -956,14 +959,7 @@ func (h *APIHandler) getTopIndexName(req *http.Request, clusterID string, top in
 				},
 			},
 			"group_by_index1": util.MapStr{
-				"terms": util.MapStr{
-					"field": "metadata.labels.index_name",
-					"include": util.MapStr{
-						"partition":      0,
-						"num_partitions": 10,
-					},
-					"size": 10000,
-				},
+				"terms": term_index,
 				"aggs": util.MapStr{
 					"max_qps": util.MapStr{
 						"max_bucket": util.MapStr{

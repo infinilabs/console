@@ -10,6 +10,12 @@ Information about release notes of INFINI Console is provided here.
 ## Latest (In development)  
 ### ❌ Breaking changes  
 ### 🚀 Features  
+### 🐛 Bug fix  
+### ✈️ Improvements  
+
+## 1.29.6 (2025-06-13)
+### ❌ Breaking changes  
+### 🚀 Features  
 - feat: confirm cluster collect mode change (#207)
 - feat: add rollup metics monitor (#210)
 - feat: display rollup gap statistics on monitor page (#214)

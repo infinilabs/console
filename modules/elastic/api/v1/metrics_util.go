@@ -1075,3 +1075,14 @@ func parseHealthMetricData(buckets []elastic.BucketBase) ([]interface{}, error) 
 	}
 	return metricData, nil
 }
+
+// index name top search need index count for partition
+func GetIndicesCount(clusterID string) int {
+	meta := elastic.GetMetadata(clusterID)
+	if meta != nil && meta.ClusterState != nil && meta.ClusterState.Metadata != nil && meta.ClusterState.Metadata.Indices != nil {
+		return len(meta.ClusterState.Metadata.Indices)
+	}
+	esClient := elastic.GetClient(clusterID)
+	indexInfos, _ := esClient.GetIndices("")
+	return len(*indexInfos)
+}

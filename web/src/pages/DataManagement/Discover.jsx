@@ -179,7 +179,7 @@ const Discover = (props) => {
     enabled: false,
   };
 
-  const [histogramVisible, setHistogramVisible] = useState(false)
+  const [histogramVisible, setHistogramVisible] = useState(true)
 
   const [distinctParams, setDistinctParams] = React.useState(
     distinctParamsDefault

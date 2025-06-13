@@ -28,12 +28,12 @@
 package api
 
 import (
+	"github.com/buger/jsonparser"
 	log "github.com/cihub/seelog"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"io"
 	"net/http"
-	"src/github.com/buger/jsonparser"
 )
 
 func (h *APIHandler) HandleGetTemplateAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {

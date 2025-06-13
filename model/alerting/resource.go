@@ -37,7 +37,7 @@ type Resource struct {
 	Type      string                 `json:"type" elastic_mapping:"type:{type:keyword}"`
 	Objects   []string               `json:"objects" elastic_mapping:"objects:{type:keyword,copy_to:search_text}"`
 	Filter    FilterQuery            `json:"filter,omitempty" elastic_mapping:"-"`
-	RawFilter map[string]interface{} `json:"raw_filter,omitempty"`
+	RawFilter map[string]interface{} `json:"raw_filter,omitempty" elastic_mapping:"raw_filter:{type:object,enabled:false}"`
 	TimeField string                 `json:"time_field,omitempty" elastic_mapping:"id:{type:keyword}"`
 	Context   Context                `json:"context"`
 }

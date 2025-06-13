@@ -10,6 +10,12 @@ title: "版本历史"
 ## Latest (In development)  
 ### ❌ Breaking changes  
 ### 🚀 Features  
+### 🐛 Bug fix  
+### ✈️ Improvements  
+
+## 1.29.6 (2025-06-13)
+### ❌ Breaking changes  
+### 🚀 Features  
 - feat: 集群设置切换指标采集模式时增加确认操作 (#207)
 - feat: 系统集群增加 `Rollup` 监控指标 (#210)
 - feat: 监控页面支持查看 `Rollup` 处理进度 (#214)

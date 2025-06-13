@@ -35,7 +35,6 @@ import (
 	"net/http"
 	"sort"
 	"strings"
-	"time"
 )
 
 const (
@@ -131,7 +130,7 @@ func (h *APIHandler) getIndexMetrics(ctx context.Context, req *http.Request, clu
 		top = len(indexNames)
 
 	} else {
-		indexNames, err = h.getTopIndexName(req, clusterID, top, 15)
+		indexNames, err = h.getTopIndexName(req, clusterID, top, min, max)
 		if err != nil {
 			log.Error(err)
 		}
@@ -748,17 +747,12 @@ func (h *APIHandler) getIndexMetrics(ctx context.Context, req *http.Request, clu
 
 }
 
-func (h *APIHandler) getTopIndexName(req *http.Request, clusterID string, top int, lastMinutes int) ([]string, error) {
+func (h *APIHandler) getTopIndexName(req *http.Request, clusterID string, top int, min, max int64) ([]string, error) {
 	ver := h.Client().GetVersion()
 	cr, _ := util.VersionCompare(ver.Number, "6.1")
 	if (ver.Distribution == "" || ver.Distribution == elastic.Elasticsearch) && cr == -1 {
 		return nil, nil
 	}
-	var (
-		now = time.Now()
-		max = now.UnixNano() / 1e6
-		min = now.Add(-time.Duration(lastMinutes)*time.Minute).UnixNano() / 1e6
-	)
 	var must = []util.MapStr{
 		{
 			"term": util.MapStr{

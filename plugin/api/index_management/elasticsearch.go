@@ -453,21 +453,25 @@ func (h *APIHandler) ClusterOverTreeMap(w http.ResponseWriter, req *http.Request
 
 	clusterID := ps.ByName("id")
 	partition_num := 10
-	if v1.GetIndicesCount(clusterID) < 200 {
-		partition_num = 1
+	term_index := util.MapStr{
+		"field": "metadata.labels.index_name",
+		"size":  1000,
+	}
+	if v1.GetIndicesCount(clusterID) > 200 {
+		term_index = util.MapStr{
+			"field": "metadata.labels.index_name",
+			"include": util.MapStr{
+				"partition":      0,
+				"num_partitions": partition_num,
+			},
+			"size": 10000,
+		}
 	}
 	queryLatency := util.MapStr{
 		"size": 0,
 		"aggs": util.MapStr{
 			"indices": util.MapStr{
-				"terms": util.MapStr{
-					"field": "metadata.labels.index_name",
-					"include": util.MapStr{
-						"partition":      0,
-						"num_partitions": partition_num,
-					},
-					"size": 10000,
-				},
+				"terms": term_index,
 				"aggs": util.MapStr{
 					"recent_15m": util.MapStr{
 						"auto_date_histogram": util.MapStr{

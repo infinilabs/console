@@ -870,10 +870,23 @@ func (h *APIHandler) getTopIndexName(req *http.Request, clusterID string, top in
 	if err != nil {
 		return nil, err
 	}
+
 	partition_num := 10
-	if v1.GetIndicesCount(clusterID) < 200 {
-		partition_num = 1
+	term_index := util.MapStr{
+		"field": "metadata.labels.index_name",
+		"size":  1000,
 	}
+	if v1.GetIndicesCount(clusterID) > 200 {
+		term_index = util.MapStr{
+			"field": "metadata.labels.index_name",
+			"include": util.MapStr{
+				"partition":      0,
+				"num_partitions": partition_num,
+			},
+			"size": 10000,
+		}
+	}
+
 	query := util.MapStr{
 		"size": 0,
 		"query": util.MapStr{
@@ -904,14 +917,7 @@ func (h *APIHandler) getTopIndexName(req *http.Request, clusterID string, top in
 		},
 		"aggs": util.MapStr{
 			"group_by_index": util.MapStr{
-				"terms": util.MapStr{
-					"field": "metadata.labels.index_name",
-					"include": util.MapStr{
-						"partition":      0,
-						"num_partitions": partition_num,
-					},
-					"size": 10000,
-				},
+				"terms": term_index,
 				"aggs": util.MapStr{
 					"max_qps": util.MapStr{
 						"max_bucket": util.MapStr{
@@ -959,14 +965,7 @@ func (h *APIHandler) getTopIndexName(req *http.Request, clusterID string, top in
 				},
 			},
 			"group_by_index1": util.MapStr{
-				"terms": util.MapStr{
-					"field": "metadata.labels.index_name",
-					"include": util.MapStr{
-						"partition":      0,
-						"num_partitions": partition_num,
-					},
-					"size": 10000,
-				},
+				"terms": term_index,
 				"aggs": util.MapStr{
 					"max_qps": util.MapStr{
 						"max_bucket": util.MapStr{

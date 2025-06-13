@@ -800,7 +800,10 @@ func (h *APIHandler) getTopIndexName(req *http.Request, clusterID string, top in
 	if err != nil {
 		return nil, err
 	}
-
+	partition_num := 10
+	if GetIndicesCount(clusterID) < 200 {
+		partition_num = 1
+	}
 	query := util.MapStr{
 		"size": 0,
 		"query": util.MapStr{
@@ -833,7 +836,7 @@ func (h *APIHandler) getTopIndexName(req *http.Request, clusterID string, top in
 					"field": "metadata.labels.index_name",
 					"include": util.MapStr{
 						"partition":      0,
-						"num_partitions": 10,
+						"num_partitions": partition_num,
 					},
 					"size": 10000,
 				},
@@ -875,7 +878,7 @@ func (h *APIHandler) getTopIndexName(req *http.Request, clusterID string, top in
 					"field": "metadata.labels.index_name",
 					"include": util.MapStr{
 						"partition":      0,
-						"num_partitions": 10,
+						"num_partitions": partition_num,
 					},
 					"size": 10000,
 				},

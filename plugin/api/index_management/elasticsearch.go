@@ -29,6 +29,7 @@ import (
 	"infini.sh/console/common"
 	"infini.sh/console/core/security"
 	"infini.sh/console/model"
+	v1 "infini.sh/console/modules/elastic/api/v1"
 	"infini.sh/console/service"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
@@ -451,7 +452,10 @@ func (handler APIHandler) getGroupMetric(indexName, field string, filter interfa
 func (h *APIHandler) ClusterOverTreeMap(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 
 	clusterID := ps.ByName("id")
-
+	partition_num := 10
+	if v1.GetIndicesCount(clusterID) < 200 {
+		partition_num = 1
+	}
 	queryLatency := util.MapStr{
 		"size": 0,
 		"aggs": util.MapStr{
@@ -460,7 +464,7 @@ func (h *APIHandler) ClusterOverTreeMap(w http.ResponseWriter, req *http.Request
 					"field": "metadata.labels.index_name",
 					"include": util.MapStr{
 						"partition":      0,
-						"num_partitions": 10,
+						"num_partitions": partition_num,
 					},
 					"size": 10000,
 				},

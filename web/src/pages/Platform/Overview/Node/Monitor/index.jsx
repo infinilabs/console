@@ -15,10 +15,10 @@ const panes = [
   { title: "Shards", component: Shards, key: "shards" },
 ];
 const Page = (props) => {
-  const { clusterStatus, selectedCluster } = props;
+  const { clusterStatus, clusterList, selectedCluster } = props;
   return (
     <Monitor
-      selectedCluster={selectedCluster}
+      selectedCluster={props.match.params?.cluster_id === selectedCluster?.id ? selectedCluster : clusterList.find((item) => item.id === props.match.params?.cluster_id)}
       formatState={(state) => {
         return {
           ...state,
@@ -61,5 +61,6 @@ const Page = (props) => {
 
 export default connect(({ global }) => ({
   selectedCluster: global.selectedCluster,
+  clusterList: global.clusterList,
   clusterStatus: global.clusterStatus,
 }))(Page);

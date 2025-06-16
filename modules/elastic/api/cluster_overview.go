@@ -678,7 +678,7 @@ func (h *APIHandler) GetClusterNodes(w http.ResponseWriter, req *http.Request, p
 					if nodeInfos[v]["timestamp"] != nil {
 						if ts, ok := nodeInfos[v]["timestamp"].(string); ok {
 							tt, _ := time.Parse(time.RFC3339, ts)
-							if time.Now().Sub(tt).Seconds() > 30 {
+							if time.Now().Sub(tt).Seconds() > 300 {
 								ninfo["status"] = "unavailable"
 							}
 						}

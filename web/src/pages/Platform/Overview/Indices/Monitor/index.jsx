@@ -9,7 +9,7 @@ import ShardStatisticBar from "./shard_statistic_bar";
 import { connect } from "dva";
 
 const Page = (props) => {
-  const { clusterStatus, selectedCluster } = props;
+  const { clusterStatus, clusterList, selectedCluster } = props;
   const {shard_id} = props.location.query;
   const panes = React.useMemo(()=>{
     const panes = [
@@ -28,7 +28,7 @@ const Page = (props) => {
   }
   return (
     <Monitor
-      selectedCluster={selectedCluster}
+      selectedCluster={props.match.params?.cluster_id === selectedCluster?.id ? selectedCluster : clusterList.find((item) => item.id === props.match.params?.cluster_id)}
       formatState={(state) => {
         return {
           ...state,
@@ -86,5 +86,6 @@ const Page = (props) => {
 
 export default connect(({ global }) => ({
   selectedCluster: global.selectedCluster,
+  clusterList: global.clusterList,
   clusterStatus: global.clusterStatus,
 }))(Page);

@@ -452,21 +452,20 @@ func (handler APIHandler) getGroupMetric(indexName, field string, filter interfa
 func (h *APIHandler) ClusterOverTreeMap(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 
 	clusterID := ps.ByName("id")
+
 	partition_num := 10
+	if v1.GetIndicesCount(clusterID) < 200 {
+		partition_num = 1
+	}
 	term_index := util.MapStr{
 		"field": "metadata.labels.index_name",
-		"size":  1000,
+		"include": util.MapStr{
+			"partition":      0,
+			"num_partitions": partition_num,
+		},
+		"size": 10000,
 	}
-	if v1.GetIndicesCount(clusterID) > 200 {
-		term_index = util.MapStr{
-			"field": "metadata.labels.index_name",
-			"include": util.MapStr{
-				"partition":      0,
-				"num_partitions": partition_num,
-			},
-			"size": 10000,
-		}
-	}
+
 	queryLatency := util.MapStr{
 		"size": 0,
 		"aggs": util.MapStr{

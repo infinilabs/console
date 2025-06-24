@@ -81,7 +81,7 @@ func (h APIHandler) CreateUser(w http.ResponseWriter, r *http.Request, ps httpro
 		h.ErrorInternalServer(w, err.Error())
 		return
 	}
-	_ = h.WriteOKJSON(w, util.MapStr{
+	h.WriteOKJSON(w, util.MapStr{
 		"_id":      id,
 		"password": randStr,
 		"result":   "created",
@@ -168,7 +168,7 @@ func (h APIHandler) UpdateUser(w http.ResponseWriter, r *http.Request, ps httpro
 	if len(changeLog) > 0 {
 		rbac.DeleteUserToken(id)
 	}
-	_ = h.WriteOKJSON(w, api.UpdateResponse(id))
+	h.WriteOKJSON(w, api.UpdateResponse(id))
 	return
 }
 
@@ -195,7 +195,7 @@ func (h APIHandler) DeleteUser(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	}
 	rbac.DeleteUserToken(id)
-	_ = h.WriteOKJSON(w, api.DeleteResponse(id))
+	h.WriteOKJSON(w, api.DeleteResponse(id))
 	return
 }
 
@@ -277,7 +277,7 @@ func (h APIHandler) UpdateUserPassword(w http.ResponseWriter, r *http.Request, p
 	//disable old token to let user login
 	rbac.DeleteUserToken(id)
 
-	_ = h.WriteOKJSON(w, api.UpdateResponse(id))
+	h.WriteOKJSON(w, api.UpdateResponse(id))
 	return
 
 }

@@ -490,10 +490,8 @@ func (h *APIHandler) HandleMetricsSummaryAction(w http.ResponseWriter, req *http
 	}
 
 	resBody["summary"] = summary
-	err = h.WriteJSON(w, resBody, http.StatusOK)
-	if err != nil {
-		log.Error(err)
-	}
+	h.WriteJSON(w, resBody, http.StatusOK)
+
 }
 
 // new
@@ -557,10 +555,7 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 
 	resBody["metrics"] = metrics
 
-	err = h.WriteJSON(w, resBody, http.StatusOK)
-	if err != nil {
-		log.Error(err)
-	}
+	h.WriteJSON(w, resBody, http.StatusOK)
 
 }
 
@@ -677,10 +672,7 @@ func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.R
 		}
 	}
 
-	err = h.WriteJSON(w, resBody, http.StatusOK)
-	if err != nil {
-		log.Error(err)
-	}
+	h.WriteJSON(w, resBody, http.StatusOK)
 }
 
 // TODO, use expired hash

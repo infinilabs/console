@@ -77,7 +77,7 @@ func (h APIHandler) CreateRole(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	}
 	rbac.RoleMap[role.Name] = *role
-	_ = h.WriteOKJSON(w, api.CreateResponse(id))
+	h.WriteOKJSON(w, api.CreateResponse(id))
 	return
 
 }
@@ -161,7 +161,7 @@ func (h APIHandler) DeleteRole(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	}
 	delete(rbac.RoleMap, oldRole.Name)
-	_ = h.WriteOKJSON(w, api.DeleteResponse(id))
+	h.WriteOKJSON(w, api.DeleteResponse(id))
 	return
 }
 
@@ -204,6 +204,6 @@ func (h APIHandler) UpdateRole(w http.ResponseWriter, r *http.Request, ps httpro
 		h.ErrorInternalServer(w, err.Error())
 		return
 	}
-	_ = h.WriteOKJSON(w, api.UpdateResponse(id))
+	h.WriteOKJSON(w, api.UpdateResponse(id))
 	return
 }

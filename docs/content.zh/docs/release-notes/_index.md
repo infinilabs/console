@@ -12,6 +12,7 @@ title: "版本历史"
 ### 🚀 Features  
 ### 🐛 Bug fix  
 ### ✈️ Improvements  
+- chore: 提交`pr`时增加 web 编译测试 (#230)
 
 ## 1.29.6 (2025-06-13)
 ### ❌ Breaking changes  

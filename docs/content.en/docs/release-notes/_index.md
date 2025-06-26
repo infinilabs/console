@@ -12,6 +12,7 @@ Information about release notes of INFINI Console is provided here.
 ### 🚀 Features  
 ### 🐛 Bug fix  
 ### ✈️ Improvements  
+- chore: add web build check for pr (#230)
 
 ## 1.29.6 (2025-06-13)
 ### ❌ Breaking changes  

@@ -341,6 +341,4 @@ jobs:
         - name: Check web build
           run: |
             echo Home path is $HOME
-            export WORKBASE=$HOME/go/src/infini.sh
-            export WORK=$WORKBASE/$PNAME
-            cd $WORK/web && cnpm install --quiet --no-progress && cnpm run build --quiet
+            cd $GITHUB_WORKSPACE/$PNAME/web && cnpm install --quiet --no-progress && cnpm run build --quiet

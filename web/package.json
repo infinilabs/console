@@ -154,6 +154,12 @@
       "react-draggable": "4.4.6"
     }
   },
+  "resolutions": {
+    "react-draggable": "4.4.6",
+    "react-grid-layout": {
+      "react-draggable": "4.4.6"
+    }
+  },
   "scripts": {
     "dev": "cross-env MOCK=none UMI_UI=none NODE_OPTIONS=\"--max_old_space_size=4096\" umi dev",
     "mock": "cross-env UMI_UI=none NODE_OPTIONS=\"--max_old_space_size=4096\" umi dev",

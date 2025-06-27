@@ -315,3 +315,30 @@ jobs:
                 cd $WORK
                 echo Testing code at $PWD ...
                 # make lint
+    web_test:
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout current repository
+          uses: actions/checkout@v4
+          with:
+            path: ${{ env.PNAME }}
+
+        - name: Set up nodejs toolchain
+          uses: actions/setup-node@v4
+          with:
+            node-version: ${{ env.NODEJS_VERSION }}
+            cache: 'npm'
+            cache-dependency-path: "**/package.json"
+
+        - name: Check nodejs toolchain
+          run: |
+            if ! command -v cnpm >/dev/null 2>&1; then
+              npm install -g rimraf
+              npm install -g cnpm@9.2.0
+            fi
+            node -v && npm -v && cnpm -v
+
+        - name: Check web build
+          run: |
+            echo Home path is $HOME
+            cd $GITHUB_WORKSPACE/$PNAME/web && cnpm install --quiet --no-progress && cnpm run build --quiet

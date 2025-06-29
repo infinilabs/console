@@ -12,6 +12,13 @@ Information about release notes of INFINI Console is provided here.
 ### 🚀 Features  
 ### 🐛 Bug fix  
 ### ✈️ Improvements  
+
+## 1.29.7 (2025-06-29)
+### ❌ Breaking changes  
+### 🚀 Features  
+### 🐛 Bug fix  
+### ✈️ Improvements  
+- This release includes updates from the underlying [Framework v1.1.8](https://docs.infinilabs.com/framework/v1.1.8), which resolves several common issues and enhances overall stability and performance. While there are no direct changes to CONSOLE itself, the improvements inherited from Framework benefit CONSOLE indirectly.
 - chore: add web build check for pr (#230)
 
 ## 1.29.6 (2025-06-13)

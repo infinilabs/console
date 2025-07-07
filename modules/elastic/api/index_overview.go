@@ -940,7 +940,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 	metricItems := []*common.MetricItem{}
 	metrics := map[string]*common.MetricItem{}
 	if metricKey == ShardStateMetricKey {
-		shardStateMetric, err := h.getIndexShardsMetric(ctx, clusterID, indexName, min, max, bucketSize)
+		shardStateMetric, err := h.getIndexShardsMetric(ctx, clusterID, indexName, min, max, bucketSize, shardID)
 		if err != nil {
 			log.Error(err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -1047,45 +1047,55 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 	h.WriteJSON(w, resBody, http.StatusOK)
 }
 
-func (h *APIHandler) getIndexShardsMetric(ctx context.Context, id, indexName string, min, max int64, bucketSize int) (*common.MetricItem, error) {
+func (h *APIHandler) getIndexShardsMetric(ctx context.Context, id, indexName string, min, max int64, bucketSize int, shardID string) (*common.MetricItem, error) {
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
 	if err != nil {
 		return nil, err
 	}
+	must := []util.MapStr{
+		{
+			"term": util.MapStr{
+				"metadata.labels.cluster_id": util.MapStr{
+					"value": id,
+				},
+			},
+		},
+		{
+			"term": util.MapStr{
+				"metadata.category": util.MapStr{
+					"value": "elasticsearch",
+				},
+			},
+		},
+		{
+			"term": util.MapStr{
+				"metadata.name": util.MapStr{
+					"value": "shard_stats",
+				},
+			},
+		},
+		{
+			"term": util.MapStr{
+				"metadata.labels.index_name": util.MapStr{
+					"value": indexName,
+				},
+			},
+		},
+	}
+	if shardID != "" {
+		must = append(must, util.MapStr{
+			"term": util.MapStr{
+				"metadata.labels.shard_id": util.MapStr{
+					"value": shardID,
+				},
+			},
+		})
+	}
 	query := util.MapStr{
 		"query": util.MapStr{
 			"bool": util.MapStr{
-				"must": []util.MapStr{
-					{
-						"term": util.MapStr{
-							"metadata.labels.cluster_id": util.MapStr{
-								"value": id,
-							},
-						},
-					},
-					{
-						"term": util.MapStr{
-							"metadata.category": util.MapStr{
-								"value": "elasticsearch",
-							},
-						},
-					},
-					{
-						"term": util.MapStr{
-							"metadata.name": util.MapStr{
-								"value": "shard_stats",
-							},
-						},
-					},
-					{
-						"term": util.MapStr{
-							"metadata.labels.index_name": util.MapStr{
-								"value": indexName,
-							},
-						},
-					},
-				},
+				"must": must,
 				"filter": []util.MapStr{
 					{
 						"range": util.MapStr{

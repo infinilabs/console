@@ -61,6 +61,21 @@ export default (props) => {
         }
     }
 
+    const stats = useMemo(() => {
+        if(filter?.node_name){
+            return ['node_stats']
+        }
+        if(filter?.shard_id){
+            return ['shard_stats']
+        }
+        if(filter?.index_name){
+            if(data?.metric_collection_mode === 'agent'){
+                return ['shard_stats', 'index_health']
+            }
+            return ['index_stats', 'index_health']
+        }
+        return ['cluster_health', 'cluster_stats', "index_health", 'node_stats', data?.metric_collection_mode === 'agent' ? 'shard_stats' : 'index_stats']
+    }, [data?.metric_collection_mode, filter])
     useEffect(() => {
         fetchData(fetchUrl)
         if (intervalRef.current) {
@@ -74,20 +89,7 @@ export default (props) => {
                 clearInterval(intervalRef.current)
             }
         }
-    }, [fetchUrl])
-
-    const stats = useMemo(() => {
-        if(filter?.node_name){
-            return ['node_stats']
-        }
-        if(filter?.index_name){
-            if(data?.metric_collection_mode === 'agent'){
-                return ['shard_stats', 'index_health']
-            }
-            return ['index_stats', 'index_health']
-        }
-        return ['cluster_health', 'cluster_stats', "index_health", 'node_stats', data?.metric_collection_mode === 'agent' ? 'shard_stats' : 'index_stats']
-    }, [data?.metric_collection_mode, filter])
+    }, [fetchUrl, stats])
 
     const renderIcon = () => {
         if (!data) {

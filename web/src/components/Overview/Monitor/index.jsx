@@ -162,6 +162,12 @@ const Monitor = (props) => {
           node_name: breadcrumbList[4].title
         };
       }else if (pageCate === "Indices"){
+        const shardID = new URLSearchParams(window.location.search).get('shard_id');
+        if(shardID){
+          return {
+            shard_id: shardID
+          };
+        }
         return {
           index_name: breadcrumbList[4].title
         };

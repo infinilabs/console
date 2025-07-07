@@ -12,6 +12,8 @@ Information about release notes of INFINI Console is provided here.
 ### 🚀 Features  
 ### 🐛 Bug fix  
 - fix: shard_id parameter not applied in shard-level shard state metric
+- fix: Optimize the display of axis labels in the chart on the monitor
+- fix: stats not refreshed after changing metric level
 ### ✈️ Improvements  
 
 ## 1.29.7 (2025-06-29)

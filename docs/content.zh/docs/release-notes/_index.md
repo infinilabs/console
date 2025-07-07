@@ -11,6 +11,7 @@ title: "版本历史"
 ### ❌ Breaking changes  
 ### 🚀 Features  
 ### 🐛 Bug fix  
+- fix: 修复指标级别变更之后采集状态未更新的问题
 ### ✈️ Improvements  
 
 ## 1.29.7 (2025-06-29)
@@ -18,6 +19,7 @@ title: "版本历史"
 ### 🚀 Features  
 ### 🐛 Bug fix  
 - fix: 修复参数 `shard_id` 在分片级别查询分片状态指标不生效的问题
+- fix: 修复监控图标横坐标标签显示重叠问题
 ### ✈️ Improvements  
 - 此版本包含了底层 [Framework v1.1.9](https://docs.infinilabs.com/framework/v1.1.9) 的更新，解决了一些常见问题，并增强了整体稳定性和性能。虽然 CONSOLE 本身没有直接的变更，但从 Framework 中继承的改进间接地使 CONSOLE 受益。
 - chore: 提交`pr`时增加 web 编译测试 (#230)

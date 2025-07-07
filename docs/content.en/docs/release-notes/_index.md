@@ -11,6 +11,8 @@ Information about release notes of INFINI Console is provided here.
 ### ❌ Breaking changes  
 ### 🚀 Features  
 ### 🐛 Bug fix  
+- fix: Optimize the display of axis labels in the chart on the monitor
+- fix: stats not refreshed after changing metric level
 ### ✈️ Improvements  
 
 ## 1.29.7 (2025-06-29)

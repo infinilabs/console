@@ -216,7 +216,6 @@ export default (props) => {
           <Axis
             id={`${metricKey}-bottom`}
             position={Position.Bottom}
-            showOverlappingTicks
             labelFormat={timeRange.timeFormatter}
             tickFormat={timeRange.timeFormatter}
           />

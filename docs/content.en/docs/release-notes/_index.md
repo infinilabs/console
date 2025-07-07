@@ -11,6 +11,7 @@ Information about release notes of INFINI Console is provided here.
 ### ❌ Breaking changes  
 ### 🚀 Features  
 ### 🐛 Bug fix  
+- fix: shard_id parameter not applied in shard-level shard state metric
 ### ✈️ Improvements  
 
 ## 1.29.7 (2025-06-29)

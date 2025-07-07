@@ -40,7 +40,6 @@ export default (props) => {
             </h4>
           }
           endMessage={null}
-          scrollableTarget={document.getElementById('root')}
         >
           <Timeline>
             {dataNew.map((item, i) => {

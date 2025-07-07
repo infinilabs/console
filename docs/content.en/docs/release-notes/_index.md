@@ -20,6 +20,7 @@ Information about release notes of INFINI Console is provided here.
 ### ❌ Breaking changes  
 ### 🚀 Features  
 ### 🐛 Bug fix  
+- fix: failure of scroll loading
 ### ✈️ Improvements  
 - This release includes updates from the underlying [Framework v1.1.9](https://docs.infinilabs.com/framework/v1.1.9), which resolves several common issues and enhances overall stability and performance. While there are no direct changes to CONSOLE itself, the improvements inherited from Framework benefit CONSOLE indirectly.
 - chore: add web build check for pr (#230)

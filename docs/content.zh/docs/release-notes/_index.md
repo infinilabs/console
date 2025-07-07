@@ -18,6 +18,7 @@ title: "版本历史"
 ### ❌ Breaking changes  
 ### 🚀 Features  
 ### 🐛 Bug fix  
+- fix: 修复滚动加载失效问题
 - fix: 修复参数 `shard_id` 在分片级别查询分片状态指标不生效的问题
 - fix: 修复监控图标横坐标标签显示重叠问题
 ### ✈️ Improvements  

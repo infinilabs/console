@@ -17,6 +17,7 @@ title: "版本历史"
 ### ❌ Breaking changes  
 ### 🚀 Features  
 ### 🐛 Bug fix  
+- fix: 修复滚动加载失效问题
 ### ✈️ Improvements  
 - 此版本包含了底层 [Framework v1.1.9](https://docs.infinilabs.com/framework/v1.1.9) 的更新，解决了一些常见问题，并增强了整体稳定性和性能。虽然 CONSOLE 本身没有直接的变更，但从 Framework 中继承的改进间接地使 CONSOLE 受益。
 - chore: 提交`pr`时增加 web 编译测试 (#230)

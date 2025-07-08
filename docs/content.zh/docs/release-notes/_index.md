@@ -13,6 +13,7 @@ title: "版本历史"
 ### 🐛 Bug fix  
 - fix: 修复指标级别变更之后采集状态未更新的问题
 ### ✈️ Improvements  
+- improvement: 优化指标查询超时错误提示
 
 ## 1.29.7 (2025-06-29)
 ### ❌ Breaking changes  

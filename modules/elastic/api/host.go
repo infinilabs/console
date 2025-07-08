@@ -181,7 +181,7 @@ func (h *APIHandler) updateHost(w http.ResponseWriter, req *http.Request, ps htt
 	if toUpObj.IP != "" {
 		obj.IP = toUpObj.IP
 	}
-	err = orm.Update(nil, &obj)
+	err = orm.Save(nil, &obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)

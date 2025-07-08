@@ -211,7 +211,7 @@ func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.
 			newConf.CredentialID = ""
 		}
 	}
-	err = orm.Update(ctx, newConf)
+	err = orm.Save(ctx, newConf)
 	if err != nil {
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)

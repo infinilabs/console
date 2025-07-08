@@ -682,8 +682,11 @@ func (h *APIHandler) getIndexQPS(clusterID string, bucketSizeInSeconds int) (map
 	}
 
 	partition_num := 10
-	if GetIndicesCount(clusterID) < 200 {
+	indexCount := GetIndicesCount(clusterID)
+	if indexCount < 40 {
 		partition_num = 1
+	} else {
+		partition_num = indexCount / 20
 	}
 	term_index := util.MapStr{
 		"field": "metadata.labels.index_name",

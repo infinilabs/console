@@ -25,13 +25,16 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	v1 "infini.sh/console/modules/elastic/api/v1"
-	"infini.sh/framework/core/env"
 	"strings"
 	"time"
 
+	v1 "infini.sh/console/modules/elastic/api/v1"
+	"infini.sh/framework/core/env"
+
 	log "github.com/cihub/seelog"
+	cerr "infini.sh/console/core/errors"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/util"
@@ -115,6 +118,9 @@ func (h *APIHandler) getMetrics(ctx context.Context, term_level string, query ma
 	queryDSL := util.MustToJSONBytes(query)
 	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).QueryDSL(ctx, getAllMetricsIndex(), nil, queryDSL)
 	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return nil, cerr.New(cerr.ErrTypeRequestTimeout, "", err)
+		}
 		return nil, err
 	}
 	grpMetricItemsIndex := map[string]int{}
@@ -1116,6 +1122,9 @@ func parseSingleIndexMetrics(ctx context.Context, term_level, clusterID string, 
 	queryDSL := util.MustToJSONBytes(query)
 	response, err := elastic.GetClient(clusterID).QueryDSL(ctx, getAllMetricsIndex(), nil, util.MustToJSONBytes(query))
 	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return nil, cerr.New(cerr.ErrTypeRequestTimeout, "", err)
+		}
 		return nil, err
 	}
 

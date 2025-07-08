@@ -25,6 +25,7 @@ package v1
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"net/http"
@@ -36,6 +37,7 @@ import (
 	"infini.sh/framework/core/env"
 
 	log "github.com/cihub/seelog"
+	cerr "infini.sh/console/core/errors"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/util"
@@ -119,6 +121,9 @@ func (h *APIHandler) getMetrics(ctx context.Context, query map[string]interface{
 	queryDSL := util.MustToJSONBytes(query)
 	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).QueryDSL(ctx, getAllMetricsIndex(), nil, queryDSL)
 	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return nil, cerr.New(cerr.ErrTypeRequestTimeout, "", err)
+		}
 		return nil, err
 	}
 	grpMetricItemsIndex := map[string]int{}
@@ -518,6 +523,9 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 	queryDSL := util.MustToJSONBytes(query)
 	response, err := elastic.GetClient(clusterID).QueryDSL(ctx, getAllMetricsIndex(), nil, queryDSL)
 	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return nil, cerr.New(cerr.ErrTypeRequestTimeout, "", err)
+		}
 		return nil, err
 	}
 

@@ -442,7 +442,7 @@ func (alertAPI *AlertAPI) updateRule(w http.ResponseWriter, req *http.Request, p
 	}
 	rule.Metrics.Groups = groups
 
-	err = orm.Update(nil, rule)
+	err = orm.Save(nil, rule)
 	if err != nil {
 		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)

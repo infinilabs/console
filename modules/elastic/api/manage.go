@@ -256,7 +256,7 @@ func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.
 		}
 	}
 
-	err = orm.Update(ctx, newConf)
+	err = orm.Save(ctx, newConf)
 	if err != nil {
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)

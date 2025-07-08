@@ -125,7 +125,7 @@ func (h *LayoutAPI) updateLayout(w http.ResponseWriter, req *http.Request, ps ht
 	ctx := &orm.Context{
 		Refresh: "wait_for",
 	}
-	err = orm.Update(ctx, &obj)
+	err = orm.Save(ctx, &obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)

@@ -454,9 +454,13 @@ func (h *APIHandler) ClusterOverTreeMap(w http.ResponseWriter, req *http.Request
 	clusterID := ps.ByName("id")
 
 	partition_num := 10
-	if v1.GetIndicesCount(clusterID) < 200 {
+	indexCount := v1.GetIndicesCount(clusterID)
+	if indexCount < 40 {
 		partition_num = 1
+	} else {
+		partition_num = indexCount / 20
 	}
+
 	term_index := util.MapStr{
 		"field": "metadata.labels.index_name",
 		"include": util.MapStr{

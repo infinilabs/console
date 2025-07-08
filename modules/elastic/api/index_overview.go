@@ -1032,13 +1032,13 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 			h.WriteError(w, err, http.StatusInternalServerError)
 		}
 	}
-	if _, ok := metrics[metricKey]; ok {
-		if metrics[metricKey].HitsTotal > 0 && metrics[metricKey].MinBucketSize == 0 {
+	if metricItem, ok := metrics[metricKey]; ok && metricItem != nil {
+		if metricItem.HitsTotal > 0 && metricItem.MinBucketSize == 0 {
 			minBucketSize, err := v1.GetMetricMinBucketSize(clusterID, metricType)
 			if err != nil {
 				log.Error(err)
 			} else {
-				metrics[metricKey].MinBucketSize = int64(minBucketSize)
+				metricItem.MinBucketSize = int64(minBucketSize)
 			}
 		}
 	}

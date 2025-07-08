@@ -29,12 +29,14 @@ package v1
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
 	log "github.com/cihub/seelog"
+	cerr "infini.sh/console/core/errors"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/event"
@@ -509,7 +511,8 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 	if metricKey == IndexHealthMetricKey {
 		healthMetric, err := h.GetIndexHealthMetric(ctx, clusterID, indexName, min, max, bucketSize)
 		if err != nil {
-			log.Error(err)
+			h.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 		metrics["index_health"] = healthMetric
 	} else {
@@ -577,13 +580,13 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 			return
 		}
 	}
-	if _, ok := metrics[metricKey]; ok {
-		if metrics[metricKey].HitsTotal > 0 && metrics[metricKey].MinBucketSize == 0 {
+	if metricItem, ok := metrics[metricKey]; ok && metricItem != nil {
+		if metricItem.HitsTotal > 0 && metricItem.MinBucketSize == 0 {
 			minBucketSize, err := GetMetricMinBucketSize(clusterID, MetricTypeIndexStats)
 			if err != nil {
 				log.Error(err)
 			} else {
-				metrics[metricKey].MinBucketSize = int64(minBucketSize)
+				metricItem.MinBucketSize = int64(minBucketSize)
 			}
 		}
 	}
@@ -662,6 +665,9 @@ func (h *APIHandler) GetIndexHealthMetric(ctx context.Context, id, indexName str
 	queryDSL := util.MustToJSONBytes(query)
 	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).QueryDSL(ctx, getAllMetricsIndex(), nil, queryDSL)
 	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return nil, cerr.New(cerr.ErrTypeRequestTimeout, "", err)
+		}
 		log.Error(err)
 		return nil, err
 	}

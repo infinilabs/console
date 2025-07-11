@@ -530,9 +530,7 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 	}
 
 	var minDate, maxDate int64
-	var origin string
 	if response.StatusCode == 200 {
-		origin = GetSearchOrigin(response)
 		for _, v := range response.Aggregations {
 			for _, bucket := range v.Buckets {
 				v, ok := bucket["key"].(float64)
@@ -590,7 +588,7 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 		}
 		metricItem.Request = string(queryDSL)
 		metricItem.HitsTotal = hitsTotal
-		if origin == EasysearchOriginRollup {
+		if IsRollupSearch(response) {
 			metricItem.MinBucketSize = 60
 		}
 		result[metricItem.Key] = metricItem
@@ -599,11 +597,13 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 	return result, nil
 }
 
-const EasysearchOriginRollup = "rollup"
+func IsRollupSearch(response *elastic.SearchResponse) bool {
+	if response == nil || response.RawResult == nil {
+		return false
+	}
 
-func GetSearchOrigin(response *elastic.SearchResponse) string {
 	origin, _ := jsonparser.GetString(response.RawResult.Body, "origin")
-	return origin
+	return len(origin) > 0
 }
 
 //func (h *APIHandler) executeQuery(query map[string]interface{}, bucketItems *[]common.BucketItem, bucketSize int) map[string]*common.MetricItem {

@@ -14,8 +14,10 @@ Information about release notes of INFINI Console is provided here.
 - fix: shard_id parameter not applied in shard-level shard state metric
 - fix: Optimize the display of axis labels in the chart on the monitor
 - fix: stats not refreshed after changing metric level
+- fix: rollup check by response key
 ### ✈️ Improvements  
 - improvement: add custom timeout error for metric request
+- chore: optimize dynamic partition and use save when update not work with omitempty json tag
 
 ## 1.29.7 (2025-06-29)
 ### ❌ Breaking changes  

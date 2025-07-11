@@ -11,9 +11,14 @@ title: "版本历史"
 ### ❌ Breaking changes  
 ### 🚀 Features  
 ### 🐛 Bug fix  
-- fix: 修复指标级别变更之后采集状态未更新的问题
+- fix: 在获取分片级别的分片状态指标时，shard_id 参数未生效的问题
+- fix: 优化了监控图表中坐标轴标签的显示效果
+- fix: 在更改指标级别后，统计数据未刷新的问题
+- fix: 根据响应中的 key 来进行 rollup 检查
+- fix: 因 omitempty JSON 标签导致更新不生效时，改为使用 save 方法
 ### ✈️ Improvements  
-- improvement: 优化指标查询超时错误提示
+- improve: 为指标请求添加了自定义的超时错误处理
+- chore: 优化了动态分区逻辑
 
 ## 1.29.7 (2025-06-29)
 ### ❌ Breaking changes  

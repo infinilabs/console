@@ -31,7 +31,10 @@ INFINI Console
 
 INFINI Console is written in Golang, the installation package is very small, only about 11MB, there is no external environment dependency, deployment and installation are very simple, just need to download the binary executable file of the corresponding platform, start the application and then you are good to go.
 
-To learn more about Console, please visit: https://docs.infinilabs.com/console/
+To learn more about Console, please visit: 
+
+- https://docs.infinilabs.com/console/
+- https://deepwiki.com/infinilabs/console
 
 
 ## Community

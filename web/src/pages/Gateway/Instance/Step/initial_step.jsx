@@ -60,7 +60,7 @@ export class InitialStep extends React.Component {
               },
               {
                 type: "string",
-                pattern: /^[\w\.\-_~%]+(\:\d+)?\s*$/, //(https?:\/\/)?
+                pattern: /^([\w.-]+(:\d+)?)([/][\w.-]*)*\/?$/, //(https?:\/\/)?
                 message: formatMessage({
                   id: "cluster.regist.form.verify.valid.endpoint",
                 }),

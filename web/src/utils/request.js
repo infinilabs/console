@@ -171,6 +171,34 @@ const cachedSave = (response, hashcode) => {
 };
 
 /**
+ * Builds a full URL by prepending the application's routerBase.
+ * It handles various path formats gracefully.
+ *
+ * @param {string} relativeUrl - The relative URL path (e.g., '/api/users' or 'api/status').
+ * @returns {string} The full, correctly formed URL.
+ */
+const buildUrlWithBasePath = (relativeUrl) => {
+  // 1. Check if the URL is absolute. If so, don't modify it.
+  // This handles cases like 'http://...', 'https://...', or '//...'.
+  if (/^(https?:)?\/\//.test(relativeUrl)) {
+    return relativeUrl;
+  }
+
+  // 2. Get the basePath from the global window object.
+  // Default to an empty string if it's not set or is just '/'.
+  const basePath = (window.routerBase && window.routerBase !== '/')
+    ? window.routerBase
+    : '';
+
+  // 3. Clean up paths to prevent double slashes.
+  const cleanBase = basePath.replace(/\/$/, ''); // Remove trailing slash from base
+  const cleanUrl = relativeUrl.replace(/^\//, ''); // Remove leading slash from url
+
+  // 4. Combine them and return.
+  return `${cleanBase}/${cleanUrl}`;
+}
+
+/**
  * Requests a URL, returning a promise.
  *
  * @param  {string} url       The URL we want to request
@@ -183,6 +211,7 @@ export default function request(
   returnRawResponse = false,
   noticeable = true
 ) {
+  url = buildUrlWithBasePath(url);
   if (option?.queryParams && Object.keys(option.queryParams).length > 0) {
     let separator = "?";
     if (url.indexOf(separator) > -1) {

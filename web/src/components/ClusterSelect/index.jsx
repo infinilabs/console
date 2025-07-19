@@ -59,7 +59,7 @@ export default connect(({ global, loading }) => ({
   const actions = [];
   if (hasAuthority("system.cluster:all") && showCreate) {
     actions.push(
-      <a onClick={() => window.open(`/#/resource/cluster/regist`,"_blank")}>
+      <a onClick={() => window.open(window.routerBase.replace(/\/+$/, "") + `/#/resource/cluster/regist`,"_blank")}>
         {formatMessage({ id: "cluster.manage.btn.regist" })}
       </a>
     );

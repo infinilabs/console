@@ -16,7 +16,7 @@ configs:
   auto_reload: true
   manager:
     local_configs_repo_path: ./config_repo/
-  tls: #for mTLS connection with config servers
+  tls: # for mTLS connection with config servers
     enabled: true
     ca_file: config/certs/ca.crt
     cert_file: config/certs/ca.crt
@@ -25,6 +25,7 @@ configs:
 web:
   enabled: true
   embedding_api: true
+  # base_path: /console
   security:
     enabled: true
   ui:

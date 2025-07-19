@@ -418,7 +418,11 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	if r.TLS != nil {
 		scheme = "https"
 	}
+	basePath := global.Env().SystemConfig.WebAppConfig.BasePath
 	consoleEndpoint := fmt.Sprintf("%s://%s", scheme, r.Host)
+	if len(basePath) > 0 {
+		consoleEndpoint = consoleEndpoint + basePath
+	}
 	err = kv.AddValue("system", []byte("INFINI_CONSOLE_ENDPOINT"), []byte(consoleEndpoint))
 	if err != nil {
 		log.Error(err)

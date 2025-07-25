@@ -11,12 +11,19 @@ title: "版本历史"
 ### ❌ Breaking changes  
 ### 🚀 Features  
 ### 🐛 Bug fix  
+### ✈️ Improvements  
+
+## 1.29.8 (2025-07-25)
+### ❌ Breaking changes  
+### 🚀 Features  
+### 🐛 Bug fix  
 - fix: 在获取分片级别的分片状态指标时，shard_id 参数未生效的问题
 - fix: 优化了监控图表中坐标轴标签的显示效果
 - fix: 在更改指标级别后，统计数据未刷新的问题
 - fix: 根据响应中的 key 来进行 rollup 检查
 - fix: 因 omitempty JSON 标签导致更新不生效时，改为使用 save 方法
 ### ✈️ Improvements  
+- 此版本包含了底层 [Framework v1.2.0](https://docs.infinilabs.com/framework/v1.2.0) 的更新，解决了一些常见问题，并增强了整体稳定性和性能。虽然 Console 本身没有直接的变更，但从 Framework 中继承的改进间接地使 Console 受益。
 - improve: 为指标请求添加了自定义的超时错误处理
 - chore: 优化了动态分区逻辑
 

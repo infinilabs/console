@@ -11,6 +11,7 @@ title: "版本历史"
 ### ❌ Breaking changes  
 ### 🚀 Features  
 ### 🐛 Bug fix  
+- fix: incorrect index mapping after rollover
 ### ✈️ Improvements  
 
 ## 1.29.8 (2025-07-25)

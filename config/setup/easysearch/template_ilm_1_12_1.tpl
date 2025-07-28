@@ -397,45 +397,22 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]alert-history-rollover
         "codec" : "ZSTD",
         "source_reuse": false,
         "number_of_shards" : "1",
-        "translog.durability":"async"
+        "translog.durability":"async",
+        "analysis": {
+          "analyzer": {
+            "suggest_text_search": {
+              "filter": [
+              "lowercase",
+                "word_delimiter"
+              ],
+              "tokenizer": "classic"
+            }
+          }
+        }
       }
     },
     "mappings" : {
       "properties" : {
-          "condition_result" : {
-            "type" : "object",
-            "enabled" : false
-          }
-      },
-      "dynamic_templates" : [
-        {
-          "strings" : {
-            "mapping" : {
-              "ignore_above" : 256,
-              "type" : "keyword"
-            },
-            "match_mapping_type" : "string"
-          }
-        }
-      ]
-    },
-    "aliases" : { }
-  }
-
-
-PUT $[[SETUP_INDEX_PREFIX]]alert-history-00001
-{
-  "settings": {
-    "index.lifecycle.rollover_alias":"$[[SETUP_INDEX_PREFIX]]alert-history"
-    , "refresh_interval": "5s"
-  },
-  "aliases":{
-    "$[[SETUP_INDEX_PREFIX]]alert-history":{
-      "is_write_index":true
-    }
-  },
-  "mappings": {
-    "properties" : {
         "condition" : {
           "properties" : {
             "items" : {
@@ -539,8 +516,34 @@ PUT $[[SETUP_INDEX_PREFIX]]alert-history-00001
         "updated" : {
           "type" : "date"
         }
-      }
+      },
+      "dynamic_templates" : [
+        {
+          "strings" : {
+            "mapping" : {
+              "ignore_above" : 256,
+              "type" : "keyword"
+            },
+            "match_mapping_type" : "string"
+          }
+        }
+      ]
+    },
+    "aliases" : { }
+  }
+
+
+PUT $[[SETUP_INDEX_PREFIX]]alert-history-00001
+{
+  "settings": {
+    "index.lifecycle.rollover_alias":"$[[SETUP_INDEX_PREFIX]]alert-history"
+    , "refresh_interval": "5s"
+  },
+  "aliases":{
+    "$[[SETUP_INDEX_PREFIX]]alert-history":{
+      "is_write_index":true
     }
+  }
 }
 
 
@@ -561,10 +564,57 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]activities-rollover
         "codec" : "ZSTD",
         "source_reuse": false,
         "number_of_shards" : "1",
-        "translog.durability":"async"
+        "translog.durability":"async",
+        "analysis": {
+          "analyzer": {
+            "suggest_text_search": {
+              "filter": [
+              "lowercase",
+                "word_delimiter"
+              ],
+              "tokenizer": "classic"
+            }
+          }
+        }
       }
     },
     "mappings" : {
+      "properties": {
+        "changelog": {
+          "type": "object",
+          "enabled": false
+        },
+        "id": {
+          "type": "keyword"
+        },
+        "metadata": {
+          "properties": {
+            "category": {
+              "type": "keyword",
+              "ignore_above": 256
+            },
+            "group": {
+              "type": "keyword",
+              "ignore_above": 256
+            },
+            "name": {
+              "type": "keyword",
+              "ignore_above": 256
+            },
+            "type": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "payload": {
+          "type": "object",
+          "enabled": false
+        },
+        "timestamp": {
+          "type": "date"
+        }
+      },
       "dynamic_templates" : [
         {
           "strings" : {
@@ -583,55 +633,6 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]activities-rollover
 
 PUT $[[SETUP_INDEX_PREFIX]]activities-00001
 {
-  "mappings": {
-    "dynamic_templates": [
-      {
-        "strings": {
-          "match_mapping_type": "string",
-          "mapping": {
-            "ignore_above": 256,
-            "type": "keyword"
-          }
-        }
-      }
-    ],
-    "properties": {
-      "changelog": {
-         "type": "object",
-         "enabled": false
-      },
-      "id": {
-        "type": "keyword"
-      },
-      "metadata": {
-        "properties": {
-          "category": {
-            "type": "keyword",
-            "ignore_above": 256
-          },
-          "group": {
-            "type": "keyword",
-            "ignore_above": 256
-          },
-          "name": {
-            "type": "keyword",
-            "ignore_above": 256
-          },
-          "type": {
-            "type": "keyword",
-            "ignore_above": 256
-          }
-        }
-      },
-      "payload": {
-        "type": "object",
-        "enabled": false
-      },
-      "timestamp": {
-        "type": "date"
-      }
-    }
-  },
   "settings": {
     "index": {
       "lifecycle.rollover_alias": "$[[SETUP_INDEX_PREFIX]]activities",
@@ -641,18 +642,7 @@ PUT $[[SETUP_INDEX_PREFIX]]activities-00001
           "limit": "20000"
         }
       },
-      "max_result_window": "10000000",
-      "analysis": {
-        "analyzer": {
-          "suggest_text_search": {
-            "filter": [
-              "lowercase",
-              "word_delimiter"
-            ],
-            "tokenizer": "classic"
-          }
-        }
-      }
+      "max_result_window": "10000000"
     }
   },
   "aliases": {
@@ -679,7 +669,18 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]audit-logs-rollover
         "codec" : "ZSTD",
         "source_reuse": false,
         "number_of_shards" : "1",
-        "translog.durability":"async"
+        "translog.durability":"async",
+        "analysis": {
+          "analyzer": {
+            "suggest_text_search": {
+              "filter": [
+              "lowercase",
+                "word_delimiter"
+              ],
+              "tokenizer": "classic"
+            }
+          }
+        }
       }
     },
     "mappings" : {
@@ -747,18 +748,7 @@ PUT $[[SETUP_INDEX_PREFIX]]audit-logs-00001
           "limit": "20000"
         }
       },
-      "max_result_window": "10000000",
-      "analysis": {
-        "analyzer": {
-          "suggest_text_search": {
-            "filter": [
-              "lowercase",
-              "word_delimiter"
-            ],
-            "tokenizer": "classic"
-          }
-        }
-      }
+      "max_result_window": "10000000"
     }
   },
   "aliases": {

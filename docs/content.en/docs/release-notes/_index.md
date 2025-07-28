@@ -11,6 +11,7 @@ Information about release notes of INFINI Console is provided here.
 ### ❌ Breaking changes  
 ### 🚀 Features  
 ### 🐛 Bug fix  
+- fix: 索引 mapping 在滚动操作之后不对的问题
 ### ✈️ Improvements  
 
 ## 1.29.8 (2025-07-25)

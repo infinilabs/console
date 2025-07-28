@@ -370,39 +370,22 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]alert-history-rollover
         },
         "codec" : "best_compression",
         "number_of_shards" : "1",
-        "translog.durability":"async"
+        "translog.durability":"async",
+         "analysis": {
+          "analyzer": {
+            "suggest_text_search": {
+              "filter": [
+                "lowercase",
+                "word_delimiter"
+              ],
+              "tokenizer": "classic"
+            }
+          }
+        }
       }
     },
     "mappings" : {
-      "dynamic_templates" : [
-        {
-          "strings" : {
-            "mapping" : {
-              "ignore_above" : 256,
-              "type" : "keyword"
-            },
-            "match_mapping_type" : "string"
-          }
-        }
-      ]
-    },
-    "aliases" : { }
-  }
-
-
-PUT $[[SETUP_INDEX_PREFIX]]alert-history-00001
-{
-  "settings": {
-    "index.lifecycle.rollover_alias":"$[[SETUP_INDEX_PREFIX]]alert-history"
-    , "refresh_interval": "5s"
-  },
-  "aliases":{
-    "$[[SETUP_INDEX_PREFIX]]alert-history":{
-      "is_write_index":true
-    }
-  },
-  "mappings": {
-    "properties" : {
+      "properties" : {
         "condition" : {
           "properties" : {
             "items" : {
@@ -506,8 +489,34 @@ PUT $[[SETUP_INDEX_PREFIX]]alert-history-00001
         "updated" : {
           "type" : "date"
         }
-      }
+      },
+      "dynamic_templates" : [
+        {
+          "strings" : {
+            "mapping" : {
+              "ignore_above" : 256,
+              "type" : "keyword"
+            },
+            "match_mapping_type" : "string"
+          }
+        }
+      ]
+    },
+    "aliases" : { }
+  }
+
+
+PUT $[[SETUP_INDEX_PREFIX]]alert-history-00001
+{
+  "settings": {
+    "index.lifecycle.rollover_alias":"$[[SETUP_INDEX_PREFIX]]alert-history"
+    , "refresh_interval": "5s"
+  },
+  "aliases":{
+    "$[[SETUP_INDEX_PREFIX]]alert-history":{
+      "is_write_index":true
     }
+  }
 }
 
 
@@ -526,41 +535,22 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]activities-rollover
         },
         "codec" : "best_compression",
         "number_of_shards" : "1",
-        "translog.durability":"async"
+        "translog.durability":"async",
+        "analysis": {
+          "analyzer": {
+            "suggest_text_search": {
+              "filter": [
+               "lowercase",
+                "word_delimiter"
+              ],
+              "tokenizer": "classic"
+            }
+          }
+        }
       }
     },
     "mappings" : {
-      "dynamic_templates" : [
-        {
-          "strings" : {
-            "mapping" : {
-              "ignore_above" : 256,
-              "type" : "keyword"
-            },
-            "match_mapping_type" : "string"
-          }
-        }
-      ]
-    },
-    "aliases" : { }
-  }
-
-
-PUT $[[SETUP_INDEX_PREFIX]]activities-00001
-{
-  "mappings": {
-    "dynamic_templates": [
-      {
-        "strings": {
-          "match_mapping_type": "string",
-          "mapping": {
-            "ignore_above": 256,
-            "type": "keyword"
-          }
-        }
-      }
-    ],
-    "properties": {
+      "properties": {
       "changelog": {
          "type": "object",
          "enabled": false
@@ -595,8 +585,25 @@ PUT $[[SETUP_INDEX_PREFIX]]activities-00001
       "timestamp": {
         "type": "date"
       }
-    }
-  },
+    },
+    "dynamic_templates" : [
+        {
+          "strings" : {
+            "mapping" : {
+              "ignore_above" : 256,
+              "type" : "keyword"
+            },
+            "match_mapping_type" : "string"
+          }
+        }
+      ]
+    },
+    "aliases" : { }
+  }
+
+
+PUT $[[SETUP_INDEX_PREFIX]]activities-00001
+{
   "settings": {
     "index": {
       "lifecycle.rollover_alias": "$[[SETUP_INDEX_PREFIX]]activities",
@@ -606,17 +613,7 @@ PUT $[[SETUP_INDEX_PREFIX]]activities-00001
           "limit": "20000"
         }
       },
-      "max_result_window": "10000000",
-      "analysis": {
-        "analyzer": {
-          "suggest_text_search": {
-            "filter": [
-             "lowercase",
-              "word_delimiter"
-            ],
-            "tokenizer": "classic"
-          }
-        }
+      "max_result_window": "10000000"
       }
     }
   },

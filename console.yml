@@ -60,6 +60,7 @@ elastic:
     init_template: true
     template_name: ".infini"
     index_prefix: ".infini_"
+    # override_exists_template: true
 
 metrics:
   enabled: true

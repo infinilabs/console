@@ -631,11 +631,12 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 }
 
 func (module *Module) validateSecret(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	err, _, request := module.initTempClient(r)
+	err, client, request := module.initTempClient(r)
 	if err != nil {
 		module.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	module.registerORMAndInitSchema(client)
 
 	_, err = validateCredentialSecret(request.CredentialSecret)
 	if err != nil && err != errSecretMismatch {

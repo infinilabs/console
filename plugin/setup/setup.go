@@ -287,15 +287,16 @@ func (module *Module) validate(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 
 	success = true
+	module.registerORMAndInitSchema(client)
 }
 
 var cfg elastic.ElasticsearchConfig
 
-func (module *Module) initTempClient(r *http.Request) (error, elastic.API, SetupRequest) {
+func (module *Module) decodeRequest(r *http.Request) (SetupRequest, error) {
 	request := SetupRequest{}
 	err := module.DecodeJSON(r, &request)
 	if err != nil {
-		return err, nil, request
+		return request, err
 	}
 
 	if request.Cluster.Endpoint == "" && request.Cluster.Host == "" {
@@ -307,7 +308,15 @@ func (module *Module) initTempClient(r *http.Request) (error, elastic.API, Setup
 			request.Cluster.Endpoint = fmt.Sprintf("%v://%v", request.Cluster.Schema, request.Cluster.Host)
 		}
 	}
+	return request, nil
 
+}
+
+func (module *Module) initTempClient(r *http.Request) (error, elastic.API, SetupRequest) {
+	request, err := module.decodeRequest(r)
+	if err != nil {
+		return err, nil, request
+	}
 	cfg = elastic.ElasticsearchConfig{
 		Enabled:  true,
 		Reserved: true,
@@ -359,6 +368,35 @@ func (module *Module) initTempClient(r *http.Request) (error, elastic.API, Setup
 	return err, client, request
 }
 
+func (module *Module) registerORMAndInitSchema(client elastic.API) {
+	if cfg1.IndexPrefix == "" {
+		cfg1.IndexPrefix = ".infini_"
+	}
+	if cfg1.TemplateName == "" {
+		cfg1.TemplateName = ".infini"
+	}
+
+	if !cfg1.Enabled {
+		cfg1.Enabled = true
+	}
+
+	if !cfg1.InitTemplate {
+		cfg1.InitTemplate = true
+	}
+
+	cfg.Reserved = true
+	cfg.Monitored = true
+	cfg.Source = elastic.ElasticsearchConfigSourceElasticsearch
+
+	//处理ORM
+	handler := elastic2.ElasticORM{Client: client, Config: cfg1}
+
+	orm.Register("elastic_setup_"+util.GetUUID(), &handler)
+	//处理索引
+	security2.InitSchema() //register user index
+	elastic2.InitSchema()
+}
+
 func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if !global.Env().SetupRequired() {
 		module.WriteError(w, "setup not permitted", 500)
@@ -406,7 +444,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		}
 		module.WriteJSON(w, result, code)
 	}()
-	err, client, request := module.initTempClient(r)
+	request, err := module.decodeRequest(r)
 	if err != nil {
 		panic(err)
 	}
@@ -423,32 +461,8 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	if err != nil {
 		log.Error(err)
 	}
-
-	if cfg1.IndexPrefix == "" {
-		cfg1.IndexPrefix = ".infini_"
-	}
-	if cfg1.TemplateName == "" {
-		cfg1.TemplateName = ".infini"
-	}
-
-	if !cfg1.Enabled {
-		cfg1.Enabled = true
-	}
-
-	if !cfg1.InitTemplate {
-		cfg1.InitTemplate = true
-	}
-
-	cfg.Reserved = true
-	cfg.Monitored = true
-	cfg.Source = elastic.ElasticsearchConfigSourceElasticsearch
-
-	//处理ORM
-	handler := elastic2.ElasticORM{Client: client, Config: cfg1}
-
-	orm.Register("elastic_setup_"+util.GetUUID(), &handler)
 	//validate secret key
-	exists, err := validateCredentialSecret(&handler, request.CredentialSecret)
+	exists, err := validateCredentialSecret(request.CredentialSecret)
 	if err != nil && err != errSecretMismatch {
 		panic(err)
 	}
@@ -467,9 +481,6 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 			panic(err)
 		}
 	}
-	//处理索引
-	security2.InitSchema() //register user index
-	elastic2.InitSchema()
 	toSaveCfg := cfg
 	oldCfg := elastic.ElasticsearchConfig{}
 	oldCfg.ID = toSaveCfg.ID
@@ -620,15 +631,13 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 }
 
 func (module *Module) validateSecret(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	err, client, request := module.initTempClient(r)
+	err, _, request := module.initTempClient(r)
 	if err != nil {
 		module.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	handler := elastic2.ElasticORM{Client: client, Config: cfg1}
-
-	_, err = validateCredentialSecret(&handler, request.CredentialSecret)
+	_, err = validateCredentialSecret(request.CredentialSecret)
 	if err != nil && err != errSecretMismatch {
 		module.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -641,7 +650,7 @@ func (module *Module) validateSecret(w http.ResponseWriter, r *http.Request, ps 
 
 var errSecretMismatch = fmt.Errorf("invalid credential secret")
 
-func validateCredentialSecret(ormHandler orm.ORM, credentialSecret string) (bool, error) {
+func validateCredentialSecret(credentialSecret string) (bool, error) {
 	rkey, err := keystore.GetValue(credential.SecretKey)
 	var exists bool
 	if err != nil && err != keystore2.ErrKeyDoesntExists {
@@ -661,7 +670,7 @@ func validateCredentialSecret(ormHandler orm.ORM, credentialSecret string) (bool
 		exists = false
 		tempCred := credential.Credential{}
 		var result orm.Result
-		err, result = ormHandler.Search(&tempCred, &orm.Query{
+		err, result = orm.Search(&tempCred, &orm.Query{
 			Size: 1,
 		})
 		if err != nil {

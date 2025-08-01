@@ -6,24 +6,8 @@ import styles from "./CollectMode.less";
 
 export default (props) => {
   const { clusterStatus } = useGlobal();
-  const { editValue, form, onChange} = props;
+  const { editValue, form, onChange, mode } = props;
   const { getFieldDecorator } = form;
-
-  const [mode, setMode] = useState(
-    editValue?.metric_collection_mode || "agentless"
-  );
-
-  useEffect(() => {
-    const monitor_configs = form.getFieldValue("monitor_configs");
-    if (mode === "agent") {
-      monitor_configs["node_stats"] = { enabled: false };
-      monitor_configs["index_stats"] = { enabled: false };
-    }else {
-      monitor_configs["node_stats"] = { enabled: true };
-      monitor_configs["index_stats"] = { enabled: true };
-    }
-    form.setFieldsValue({ monitor_configs });
-  }, [mode]);
 
   return (
     <>
@@ -59,7 +43,6 @@ export default (props) => {
                 cancelText: formatMessage({ id: "cluster.manage.metric_collection_mode.confirm.button.cancel"}),
                 okType: isAgentless && isLargeCluster ? "danger" : "primary",
                 onOk() {
-                  setMode(value);
                   onChange(value);
                 },
                 onCancel() {

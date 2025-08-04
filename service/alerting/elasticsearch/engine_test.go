@@ -29,15 +29,16 @@ package elasticsearch
 
 import (
 	"fmt"
-	"infini.sh/console/model/alerting"
-	"infini.sh/console/model/insight"
-	"infini.sh/framework/core/elastic"
-	"infini.sh/framework/core/util"
-	"infini.sh/framework/modules/elastic/adapter/elasticsearch"
 	"net/http"
 	"sort"
 	"testing"
 	"time"
+
+	"infini.sh/console/core/insight"
+	"infini.sh/console/model/alerting"
+	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/util"
+	"infini.sh/framework/modules/elastic/adapter/elasticsearch"
 )
 
 func TestEngine(t *testing.T) {

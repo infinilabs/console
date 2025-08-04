@@ -29,16 +29,17 @@ package insight
 
 import (
 	"fmt"
-	"infini.sh/console/plugin/api/insight/function"
+	"sort"
 	"strconv"
 	"strings"
 
-	"infini.sh/console/model/insight"
+	log "github.com/cihub/seelog"
+	"infini.sh/console/core/insight/function"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/util"
 )
 
-func generateAgg(metricItem *insight.MetricItem, timeField string) (map[string]interface{}, error) {
+func generateAgg(metricItem *MetricItem, timeField string) (map[string]interface{}, error) {
 	var (
 		aggType = "value_count"
 		field   = metricItem.Field
@@ -54,21 +55,24 @@ func generateAgg(metricItem *insight.MetricItem, timeField string) (map[string]i
 	var isPipeline = false
 
 	switch metricItem.Statistic {
-	case insight.AggFuncMax, insight.AggFuncMin, insight.AggFuncSum, insight.AggFuncAvg, insight.AggFuncCardinality:
+	case AggFuncMax, AggFuncMin, AggFuncSum, AggFuncAvg, AggFuncCardinality:
 		aggType = metricItem.Statistic
-	case insight.AggFuncCount, insight.AggFuncValueCount:
+	case AggFuncCount, AggFuncValueCount:
 		aggType = "value_count"
-	case insight.AggFuncDerivative:
+	case AggFuncDerivative:
 		aggType = "max"
 		isPipeline = true
-	case insight.AggFuncMedium: // from es version 6.6
+	case AggFuncMedium: // from es version 6.6
 		aggType = "median_absolute_deviation"
-	case insight.AggFuncPercent99, insight.AggFuncPercent95, insight.AggFuncPercent90, insight.AggFuncPercent80, insight.AggFuncPercent50:
+	case AggFuncPercent99, AggFuncPercent95, AggFuncPercent90, AggFuncPercent80, AggFuncPercent50:
 		aggType = "percentiles"
 		percentStr := strings.TrimPrefix(metricItem.Statistic, "p")
 		percent, _ = strconv.ParseFloat(percentStr, 32)
-	case insight.AggFuncLatest:
+	case AggFuncLatest:
 		aggType = "top_hits"
+	case AggFuncPercentage:
+		// percentage is a special case, it will be calculated with doc_count, juest return empty aggs
+		aggType = "value_count"
 	}
 	aggValue := util.MapStr{}
 	if aggType != "top_hits" {
@@ -107,7 +111,7 @@ func generateAgg(metricItem *insight.MetricItem, timeField string) (map[string]i
 	return aggs, nil
 }
 
-func generateAggByFunction(metricItem *insight.MetricItem, timeField string) (map[string]interface{}, error) {
+func generateAggByFunction(metricItem *MetricItem, timeField string) (map[string]interface{}, error) {
 	if metricItem.Function == nil {
 		return nil, fmt.Errorf("empty function for metric item: %s", metricItem.Name)
 	}
@@ -129,20 +133,20 @@ func generateAggByFunction(metricItem *insight.MetricItem, timeField string) (ma
 	buf := util.MustToJSONBytes(funcParams)
 	var generator Function
 	switch funcName {
-	case insight.AggFuncRate:
+	case AggFuncRate:
 		generator = &function.Rate{}
-	case insight.AggFuncLatency:
+	case AggFuncLatency:
 		generator = &function.Latency{}
-	case insight.AggFuncSumFuncValueInGroup:
+	case AggFuncSumFuncValueInGroup:
 		generator = &function.SumFuncValueInGroup{}
-	case insight.AggFuncRateSumFuncValueInGroup:
+	case AggFuncRateSumFuncValueInGroup:
 		generator = &function.RateSumFuncValueInGroup{}
-	case insight.AggFuncLatencySumFuncValueInGroup:
+	case AggFuncLatencySumFuncValueInGroup:
 		generator = &function.LatencySumFuncValueInGroup{}
 	default:
 		baseParams := function.Base{}
 		util.MustFromJSONBytes(buf, &baseParams)
-		newMetricItem := &insight.MetricItem{
+		newMetricItem := &MetricItem{
 			Name:      metricItem.Name,
 			Field:     baseParams.Field,
 			Statistic: funcName,
@@ -153,10 +157,18 @@ func generateAggByFunction(metricItem *insight.MetricItem, timeField string) (ma
 	return generator.GenerateAggregation(metricItem.Name)
 }
 
-func GenerateQuery(metric *insight.Metric) (interface{}, error) {
+func GenerateQuery(metric *Metric) (interface{}, error) {
 	var timeBeforeGroup = metric.AutoTimeBeforeGroup()
 	basicAggs := util.MapStr{}
 	i := 0
+
+	for _, metricItem := range metric.Items {
+		if metricItem.Statistic == AggFuncPercentage {
+			if len(metric.Groups) == 0 {
+				return nil, fmt.Errorf("metric item %s with statistic %s requires at least one group", metricItem.Name, metricItem.Statistic)
+			}
+		}
+	}
 	for _, metricItem := range metric.Items {
 		if metricItem.Name == "" {
 			metricItem.Name = string(rune('a' + i))
@@ -346,26 +358,48 @@ func GenerateQuery(metric *insight.Metric) (interface{}, error) {
 	return queryDsl, nil
 }
 
-func CollectMetricData(agg interface{}, timeBeforeGroup bool) ([]insight.MetricData, string) {
-	metricData := []insight.MetricData{}
+// CollectMetricData collects metric data from the search result based on the metric definition.
+// It processes the aggregations and returns a slice of MetricData along with the interval string.
+func CollectMetricData(metric *Metric, searchResult map[string]interface{}) ([]MetricData, string) {
+	var agg = searchResult["aggregations"]
+	if metric.Filter != nil {
+		if aggM, ok := agg.(map[string]interface{}); ok {
+			agg = aggM["filter_agg"]
+		}
+	}
+	// AutoTimeBeforeGroup determines if the metric should be grouped before or after the time bucket
+	timeBeforeGroup := metric.AutoTimeBeforeGroup()
+	metricData := []MetricData{}
 	var interval string
 	if timeBeforeGroup {
-		interval = collectMetricDataOther(agg, nil, &metricData, nil)
+		interval = collectMetricDataOther(agg, nil, &metricData, nil, nil)
 	} else {
 		interval = collectMetricData(agg, nil, &metricData)
+	}
+	derivedAggs := metric.GetDerivedAggregations()
+	for _, aggName := range derivedAggs {
+		if aggregation, ok := GetDerivedAggregation(aggName); ok {
+			if err := aggregation.Calculate(metric, searchResult, &metricData); err != nil {
+				log.Errorf("calculate derived aggregation %s error: %v", aggName, err)
+				return metricData, interval
+			}
+		}
+	}
+	if timeBeforeGroup && metric.TimeField != "" {
+		metricData = MergeGroupValues(metricData)
 	}
 	return metricData, interval
 }
 
 // timeBeforeGroup => false
-func collectMetricData(agg interface{}, groupValues []string, metricData *[]insight.MetricData) (interval string) {
+func collectMetricData(agg interface{}, groups []MetricDataGroup, metricData *[]MetricData) (interval string) {
 	if aggM, ok := agg.(map[string]interface{}); ok {
 		if timeBks, ok := aggM["time_buckets"].(map[string]interface{}); ok {
 			interval, _ = timeBks["interval"].(string)
 			if bks, ok := timeBks["buckets"].([]interface{}); ok {
-				md := insight.MetricData{
-					Data:   map[string][]insight.MetricDataItem{},
-					Groups: groupValues,
+				md := MetricData{
+					Data:   map[string][]MetricDataItem{},
+					Groups: groups,
 				}
 				for _, bk := range bks {
 					if bkM, ok := bk.(map[string]interface{}); ok {
@@ -376,7 +410,7 @@ func collectMetricData(agg interface{}, groupValues []string, metricData *[]insi
 							}
 
 							if vm, ok := v.(map[string]interface{}); ok {
-								collectMetricDataItem(k, vm, &md, bkM["key"])
+								collectMetricDataItem(k, vm, &md, bkM["key"], bkM["doc_count"], nil)
 							}
 
 						}
@@ -387,9 +421,9 @@ func collectMetricData(agg interface{}, groupValues []string, metricData *[]insi
 			}
 
 		} else {
-			md := insight.MetricData{
-				Data:   map[string][]insight.MetricDataItem{},
-				Groups: groupValues,
+			md := MetricData{
+				Data:   map[string][]MetricDataItem{},
+				Groups: groups,
 			}
 			for k, v := range aggM {
 				if k == "key" || k == "doc_count" {
@@ -400,15 +434,18 @@ func collectMetricData(agg interface{}, groupValues []string, metricData *[]insi
 						for _, bk := range bks {
 							if bkVal, ok := bk.(map[string]interface{}); ok {
 								var currentGroup = fmt.Sprintf("%v", bkVal["key"])
-								newGroupValues := make([]string, 0, len(groupValues)+1)
-								newGroupValues = append(newGroupValues, groupValues...)
-								newGroupValues = append(newGroupValues, currentGroup)
+								newGroupValues := make([]MetricDataGroup, 0, len(groups)+1)
+								newGroupValues = append(newGroupValues, groups...)
+								newGroupValues = append(newGroupValues, MetricDataGroup{
+									Value:    currentGroup,
+									DocCount: uint32(bkVal["doc_count"].(float64)),
+								})
 								interval = collectMetricData(bk, newGroupValues, metricData)
 							}
 						}
 					} else {
 						//non time series metric data
-						collectMetricDataItem(k, vm, &md, nil)
+						collectMetricDataItem(k, vm, &md, nil, nil, vm["doc_count"])
 					}
 				}
 			}
@@ -421,14 +458,14 @@ func collectMetricData(agg interface{}, groupValues []string, metricData *[]insi
 }
 
 // timeBeforeGroup => true
-func collectMetricDataOther(agg interface{}, groupValues []string, metricData *[]insight.MetricData, timeKey interface{}) (interval string) {
+func collectMetricDataOther(agg interface{}, groups []MetricDataGroup, metricData *[]MetricData, timeKey, timeBucketDocCount interface{}) (interval string) {
 	if aggM, ok := agg.(map[string]interface{}); ok {
 		if timeBks, ok := aggM["time_buckets"].(map[string]interface{}); ok {
 			interval, _ = timeBks["interval"].(string)
 			if bks, ok := timeBks["buckets"].([]interface{}); ok {
-				md := insight.MetricData{
-					Data:   map[string][]insight.MetricDataItem{},
-					Groups: groupValues,
+				md := MetricData{
+					Data:   map[string][]MetricDataItem{},
+					Groups: groups,
 				}
 				for _, bk := range bks {
 					if bkM, ok := bk.(map[string]interface{}); ok {
@@ -438,9 +475,10 @@ func collectMetricDataOther(agg interface{}, groupValues []string, metricData *[
 							}
 							if vm, ok := v.(map[string]interface{}); ok {
 								if vm["buckets"] != nil {
-									interval = collectMetricDataOther(vm, groupValues, metricData, bkM["key"])
+									timeBucketDocCount = bkM["doc_count"]
+									interval = collectMetricDataOther(vm, groups, metricData, bkM["key"], timeBucketDocCount)
 								} else {
-									collectMetricDataItem(k, vm, &md, bkM["key"])
+									collectMetricDataItem(k, vm, &md, bkM["key"], bkM["doc_count"], timeBucketDocCount)
 								}
 							}
 						}
@@ -451,9 +489,9 @@ func collectMetricDataOther(agg interface{}, groupValues []string, metricData *[
 				}
 			}
 		} else {
-			md := insight.MetricData{
-				Data:   map[string][]insight.MetricDataItem{},
-				Groups: groupValues,
+			md := MetricData{
+				Data:   map[string][]MetricDataItem{},
+				Groups: groups,
 			}
 
 			if bks, ok := aggM["buckets"].([]interface{}); ok {
@@ -463,10 +501,13 @@ func collectMetricDataOther(agg interface{}, groupValues []string, metricData *[
 						if v := util.ToString(bkVal["key_as_string"]); v == "true" || v == "false" {
 							currentGroup = v
 						}
-						newGroupValues := make([]string, 0, len(groupValues)+1)
-						newGroupValues = append(newGroupValues, groupValues...)
-						newGroupValues = append(newGroupValues, currentGroup)
-						interval = collectMetricDataOther(bk, newGroupValues, metricData, timeKey)
+						newGroupValues := make([]MetricDataGroup, 0, len(groups)+1)
+						newGroupValues = append(newGroupValues, groups...)
+						newGroupValues = append(newGroupValues, MetricDataGroup{
+							Value:    currentGroup,
+							DocCount: uint32(bkVal["doc_count"].(float64)),
+						})
+						interval = collectMetricDataOther(bk, newGroupValues, metricData, timeKey, timeBucketDocCount)
 					}
 				}
 			} else {
@@ -474,9 +515,9 @@ func collectMetricDataOther(agg interface{}, groupValues []string, metricData *[
 				for k, v := range aggM {
 					if vm, ok := v.(map[string]interface{}); ok {
 						if vm["buckets"] != nil {
-							interval = collectMetricDataOther(vm, groupValues, metricData, timeKey)
+							interval = collectMetricDataOther(vm, groups, metricData, timeKey, timeBucketDocCount)
 						} else {
-							collectMetricDataItem(k, vm, &md, timeKey)
+							collectMetricDataItem(k, vm, &md, timeKey, timeBucketDocCount, aggM["doc_count"])
 						}
 					}
 				}
@@ -490,11 +531,21 @@ func collectMetricDataOther(agg interface{}, groupValues []string, metricData *[
 	return
 }
 
-func collectMetricDataItem(key string, vm map[string]interface{}, metricData *insight.MetricData, timeKey interface{}) {
+func collectMetricDataItem(key string, vm map[string]interface{}, metricData *MetricData, timeKey, timeBucketDocCount, groupDocCount interface{}) {
+	var timeBucketDocumentCunt uint32
+	if dc, ok := timeBucketDocCount.(float64); ok {
+		timeBucketDocumentCunt = uint32(dc)
+	}
+	var groupDocumentCunt uint32
+	if dc, ok := groupDocCount.(float64); ok {
+		groupDocumentCunt = uint32(dc)
+	}
 	if val, ok := vm["value"]; ok {
-		metricData.Data[key] = append(metricData.Data[key], insight.MetricDataItem{
-			Value:     val,
-			Timestamp: timeKey,
+		metricData.Data[key] = append(metricData.Data[key], MetricDataItem{
+			Value:              val,
+			Timestamp:          timeKey,
+			DocCount:           groupDocumentCunt,
+			TimeBucketDocCount: timeBucketDocumentCunt,
 		})
 	} else if hits, ok := vm["hits"]; ok {
 		if hits, ok := hits.(map[string]interface{}); ok {
@@ -503,9 +554,11 @@ func collectMetricDataItem(key string, vm map[string]interface{}, metricData *in
 				if hits, ok := hits.([]interface{}); ok {
 					for _, hit := range hits {
 						if hit, ok := hit.(map[string]interface{}); ok {
-							metricData.Data[key] = append(metricData.Data[key], insight.MetricDataItem{
-								Value:     extractSomeValue(hit["_source"]),
-								Timestamp: timeKey,
+							metricData.Data[key] = append(metricData.Data[key], MetricDataItem{
+								Value:              extractSomeValue(hit["_source"]),
+								Timestamp:          timeKey,
+								DocCount:           groupDocumentCunt,
+								TimeBucketDocCount: timeBucketDocumentCunt,
 							})
 						}
 					}
@@ -518,18 +571,22 @@ func collectMetricDataItem(key string, vm map[string]interface{}, metricData *in
 		case []interface{}:
 			for _, val := range vm["values"].([]interface{}) {
 				if valM, ok := val.(map[string]interface{}); ok {
-					metricData.Data[key] = append(metricData.Data[key], insight.MetricDataItem{
-						Value:     valM["value"],
-						Timestamp: timeKey,
+					metricData.Data[key] = append(metricData.Data[key], MetricDataItem{
+						Value:              valM["value"],
+						Timestamp:          timeKey,
+						DocCount:           groupDocumentCunt,
+						TimeBucketDocCount: timeBucketDocumentCunt,
 					})
 				}
 				break
 			}
 		case map[string]interface{}:
 			for _, val = range vm["values"].(map[string]interface{}) {
-				metricData.Data[key] = append(metricData.Data[key], insight.MetricDataItem{
-					Value:     val,
-					Timestamp: timeKey,
+				metricData.Data[key] = append(metricData.Data[key], MetricDataItem{
+					Value:              val,
+					Timestamp:          timeKey,
+					DocCount:           groupDocumentCunt,
+					TimeBucketDocCount: timeBucketDocumentCunt,
 				})
 				break
 			}
@@ -545,4 +602,54 @@ func extractSomeValue(v interface{}) interface{} {
 		return nil
 	}
 	return v
+}
+
+func MergeGroupValues(metricData []MetricData) []MetricData {
+	// skip if no data or no groups, in this case, metricData is already merged
+	if len(metricData) == 0 || len(metricData[0].Groups) == 0 {
+		return metricData
+	}
+	grpMd := map[string]MetricData{}
+	for _, md := range metricData {
+		if len(md.Groups) == 0 {
+			continue
+		}
+		groupValues := make([]string, 0, len(md.Groups))
+		for _, group := range md.Groups {
+			groupValues = append(groupValues, group.Value)
+		}
+		groupKey := strings.Join(groupValues, "|")
+		if existingMd, ok := grpMd[groupKey]; ok {
+			for k, v := range md.Data {
+				if existingItems, exists := existingMd.Data[k]; exists {
+					// Merge items with the same key
+					existingMd.Data[k] = append(existingItems, v...)
+				} else {
+					// Add new key with its items
+					existingMd.Data[k] = v
+				}
+			}
+		} else {
+			grpMd[groupKey] = md
+		}
+	}
+	// sort the merged metric data by timestamp
+	for _, md := range grpMd {
+		if len(md.Data) > 0 {
+			for _, items := range md.Data {
+				sort.Slice(items, func(i, j int) bool {
+					if items[i].Timestamp == nil || items[j].Timestamp == nil {
+						return false
+					}
+					return items[i].Timestamp.(float64) < items[j].Timestamp.(float64)
+				})
+			}
+		}
+	}
+	// Convert map to slice
+	mergedMetricData := make([]MetricData, 0, len(grpMd))
+	for _, md := range grpMd {
+		mergedMetricData = append(mergedMetricData, md)
+	}
+	return mergedMetricData
 }

@@ -6,6 +6,22 @@ import { parse, stringify } from "qs";
 import wcmatch from "wildcard-match";
 import { getLocale } from "umi/locale";
 
+export const checkPasswordStrength = (password = '', passwordRules) => {
+  const fulfilled = [];
+  const unfulfilled = [];
+
+  passwordRules.forEach(rule => {
+    if (rule.regex.test(password)) {
+      fulfilled.push(rule);
+    } else {
+      unfulfilled.push(rule);
+    }
+  });
+
+  return { fulfilled, unfulfilled, isValid: unfulfilled.length === 0 };
+};
+
+
 export function getWebsitePathByLang() {
   if (!APP_OFFICIAL_WEBSITE) return;
   if (getLocale() === "zh-CN") {

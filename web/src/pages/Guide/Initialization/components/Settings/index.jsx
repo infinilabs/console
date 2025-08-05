@@ -16,7 +16,9 @@ import {
 } from "antd";
 import styles from "../Initialization/index.less";
 import request from "@/utils/request";
+import { checkPasswordStrength } from "@/utils/utils";
 import { formatMessage } from "umi/locale";
+import { passwordRules } from "@/pages/System/User/resetPassword";
 const { confirm } = Modal;
 
 const formItemLayout = {
@@ -26,49 +28,6 @@ const formItemLayout = {
   wrapperCol: {
     md: { span: 10 },
   },
-};
-
-const passwordRules = [
-  {
-    id: "guide.password.rule.length",
-    text: formatMessage({ id: "guide.password.rule.length" }), 
-    regex: /.{8,}/,
-  },
-  {
-    id: "guide.password.rule.uppercase",
-    text: formatMessage({ id: "guide.password.rule.uppercase" }), 
-    regex: /[A-Z]/,
-  },
-  {
-    id: "guide.password.rule.lowercase",
-    text: formatMessage({ id: "guide.password.rule.lowercase" }),
-    regex: /[a-z]/,
-  },
-  {
-    id: "guide.password.rule.digit",
-    text: formatMessage({ id: "guide.password.rule.digit" }),
-    regex: /[0-9]/,
-  },
-  {
-    id: "guide.password.rule.special",
-    text: formatMessage({ id: "guide.password.rule.special" }), 
-    regex: /[^A-Za-z0-9]/, 
-  },
-];
-
-const checkPasswordStrength = (password = "") => {
-  const fulfilled = [];
-  const unfulfilled = [];
-  
-  passwordRules.forEach(rule => {
-    if (rule.regex.test(password)) {
-      fulfilled.push(rule);
-    } else {
-      unfulfilled.push(rule);
-    }
-  });
-
-  return { fulfilled, unfulfilled, isValid: unfulfilled.length === 0 };
 };
 
 export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
@@ -184,7 +143,12 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
 
   const validateToNextPassword = (rule, value, callback) => {
     if (value && confirmDirty) {
-      form.validateFields(["bootstrap_password_confirm"], { force: true });
+      const { isValid } = checkPasswordStrength(value,passwordRules);
+      if (!isValid) {
+        callback(formatMessage({ id: "guide.password.strength.invalid" })); 
+      } else {
+        form.validateFields(["bootstrap_password_confirm"], { force: true });
+      }
     }
     callback();
   };
@@ -212,19 +176,6 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
     } catch (error) {
       console.log(error);
       setLoading(false);
-    }
-  };
-
-  const validatePasswordStrength = (rule, value, callback) => {
-    if (!value) {
-      callback();
-      return;
-    }
-    const { isValid } = checkPasswordStrength(value);
-    if (!isValid) {
-      callback(formatMessage({ id: "guide.password.strength.invalid" })); 
-    } else {
-      callback();
     }
   };
 
@@ -338,7 +289,7 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
                   message: formatMessage({ id: "guide.password.required" }),
                 },
                 {
-                  validator: validatePasswordStrength,
+                  validator: validateToNextPassword,
                 },
               ],
             })(<Input.Password />)}
@@ -494,7 +445,7 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
                 message: formatMessage({ id: "guide.password.required" }),
               },
               {
-                validator: validatePasswordStrength,
+                validator: validateToNextPassword,
               },
             ],
           })(<Input.Password />)}

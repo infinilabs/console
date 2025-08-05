@@ -2,6 +2,7 @@ import router from "umi/router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import request from "@/utils/request";
 import { Input, Card, Form, Button, message } from "antd";
+import { formatMessage } from "umi/locale";
 
 const formItemLayout = {
   labelCol: {
@@ -78,7 +79,7 @@ export default Form.create({ name: "password_modify_form" })((props) => {
       extra={
         <div>
           <Button type="primary" onClick={onCancelClick}>
-            Go back
+            {formatMessage({ id: "form.button.goback" })}
           </Button>
         </div>
       }

@@ -72,7 +72,7 @@ import (
 // Easysearch auto create ingest user password
 const ingestUser = "infini_ingest"
 
-var ingestPassword = util.GenerateRandomString(20)
+var ingestPassword = util.GenerateSecureString(20)
 
 type Module struct {
 	api.Handler
@@ -111,6 +111,7 @@ func InvokeSetupCallback() {
 	}
 }
 
+// Start initializes the module and registers a change event for credentials.
 func (module *Module) Start() error {
 	credential.RegisterChangeEvent(func(cred *credential.Credential) {
 		if cred == nil {
@@ -135,10 +136,13 @@ func (module *Module) Start() error {
 	})
 	return nil
 }
+
+// Stop is a no-op for this module, as it does not require any specific shutdown logic.
 func (module *Module) Stop() error {
 	return nil
 }
 
+// SetupRequest represents the request structure for setting up the Elasticsearch cluster.
 type SetupRequest struct {
 	Cluster struct {
 		Host     string   `json:"host"`
@@ -165,19 +169,25 @@ const VersionNotSupport = "unknown_cluster_version"
 
 var cfg1 elastic1.ORMConfig
 
+// validate checks the Elasticsearch cluster configuration and validates the setup.
 func (module *Module) validate(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	if !global.Env().SetupRequired() {
-		module.WriteError(w, "setup not permitted", 500)
+		module.WriteError(w, "setup not permitted", http.StatusInternalServerError)
+		return
+	}
+
+	request := &SetupRequest{}
+	err := module.DecodeJSON(r, request)
+	if err != nil {
+		module.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	success := false
-	var err error
 	var errType string
 	var fixTips string
-	var code int
-	code = 200
+	var code = http.StatusOK
 	defer func() {
 
 		global.Env().CheckSetup()
@@ -206,13 +216,13 @@ func (module *Module) validate(w http.ResponseWriter, r *http.Request, ps httpro
 				if fixTips != "" {
 					result["fix_tips"] = fixTips
 				}
-				code = 500
+				code = http.StatusInternalServerError
 			}
 		}
 		module.WriteJSON(w, result, code)
 	}()
 
-	err, client, _ := module.initTempClient(r)
+	err, client := module.initTempClient(request)
 	if err != nil {
 		panic(err)
 	}
@@ -291,13 +301,8 @@ func (module *Module) validate(w http.ResponseWriter, r *http.Request, ps httpro
 
 var cfg elastic.ElasticsearchConfig
 
-func (module *Module) initTempClient(r *http.Request) (error, elastic.API, SetupRequest) {
-	request := SetupRequest{}
-	err := module.DecodeJSON(r, &request)
-	if err != nil {
-		return err, nil, request
-	}
-
+// initTempClient initializes a temporary Elasticsearch client based on the provided setup request.
+func (module *Module) initTempClient(request *SetupRequest) (error, elastic.API) {
 	if request.Cluster.Endpoint == "" && request.Cluster.Host == "" {
 		panic("invalid configuration")
 	}
@@ -338,7 +343,7 @@ func (module *Module) initTempClient(r *http.Request) (error, elastic.API, Setup
 
 	client, err := elastic1.InitClientWithConfig(cfg)
 	if err != nil {
-		return err, nil, request
+		return err, nil
 	}
 
 	global.Register(elastic.GlobalSystemElasticsearchID, GlobalSystemElasticsearchID)
@@ -347,7 +352,7 @@ func (module *Module) initTempClient(r *http.Request) (error, elastic.API, Setup
 	elastic.UpdateClient(cfg, client)
 	health, err := client.ClusterHealth(context.Background())
 	if err != nil {
-		return err, nil, request
+		return err, nil
 	}
 	if health != nil {
 		cfg.RawName = health.Name
@@ -356,19 +361,32 @@ func (module *Module) initTempClient(r *http.Request) (error, elastic.API, Setup
 	cfg.Version = ver.Number
 	cfg.Distribution = ver.Distribution
 
-	return err, client, request
+	return err, client
 }
 
+// initialize sets up the Elasticsearch cluster with the provided configuration and initializes the system.
 func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if !global.Env().SetupRequired() {
-		module.WriteError(w, "setup not permitted", 500)
+		module.WriteError(w, "setup not permitted", http.StatusInternalServerError)
 		return
 	}
+	request := &SetupRequest{}
+	err := module.DecodeJSON(r, request)
+	if err != nil {
+		module.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if !util.ValidateSecure(request.BootstrapPassword) {
+		module.WriteError(w, "invalid bootstrap password", http.StatusInternalServerError)
+		return
+	}
+
 	var (
 		success        = false
 		errType        string
 		fixTips        string
-		code           = 200
+		code           = http.StatusOK
 		secretMismatch = false
 	)
 	defer func() {
@@ -401,12 +419,12 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 				if fixTips != "" {
 					result["fix_tips"] = fixTips
 				}
-				code = 500
+				code = http.StatusInternalServerError
 			}
 		}
 		module.WriteJSON(w, result, code)
 	}()
-	err, client, request := module.initTempClient(r)
+	err, client := module.initTempClient(request)
 	if err != nil {
 		panic(err)
 	}
@@ -443,7 +461,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	cfg.Monitored = true
 	cfg.Source = elastic.ElasticsearchConfigSourceElasticsearch
 
-	//处理ORM
+	// Prepare the ORM handler
 	handler := elastic2.ElasticORM{Client: client, Config: cfg1}
 
 	orm.Register("elastic_setup_"+util.GetUUID(), &handler)
@@ -455,7 +473,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	if err == errSecretMismatch {
 		secretMismatch = true
 	}
-	//不存在或者密钥不匹配时保存凭据密钥
+	// Not exists or secret mismatch, save the credential secret
 	if err == errSecretMismatch || !exists {
 		h := md5.New()
 		rawSecret := []byte(request.CredentialSecret)
@@ -467,14 +485,14 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 			panic(err)
 		}
 	}
-	//处理索引
-	security2.InitSchema() //register user index
+	// Prepare the Elasticsearch configuration
+	security2.InitSchema()
 	elastic2.InitSchema()
 	toSaveCfg := cfg
 	oldCfg := elastic.ElasticsearchConfig{}
 	oldCfg.ID = toSaveCfg.ID
 	_, _ = orm.Get(&oldCfg)
-	//当原系统集群存在时更新配置
+	// If the old configuration exists, update it with the new values
 	if oldCfg.Name != "" {
 		toSaveCfg = oldCfg
 		toSaveCfg.Endpoint = cfg.Endpoint
@@ -504,7 +522,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		}
 	}
 
-	//保存默认集群
+	// Process the cluster configuration
 	t := time.Now()
 	toSaveCfg.MetadataConfigs = &elastic.MetadataConfig{
 		HealthCheck: elastic.TaskConfig{
@@ -619,8 +637,15 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	success = true
 }
 
+// validateSecret validates the provided credential secret against the stored secret.
 func (module *Module) validateSecret(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	err, client, request := module.initTempClient(r)
+	request := &SetupRequest{}
+	err := module.DecodeJSON(r, request)
+	if err != nil {
+		module.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	err, client := module.initTempClient(request)
 	if err != nil {
 		module.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -641,6 +666,7 @@ func (module *Module) validateSecret(w http.ResponseWriter, r *http.Request, ps 
 
 var errSecretMismatch = fmt.Errorf("invalid credential secret")
 
+// validateCredentialSecret checks if the provided credential secret matches the stored secret.
 func validateCredentialSecret(ormHandler orm.ORM, credentialSecret string) (bool, error) {
 	rkey, err := keystore.GetValue(credential.SecretKey)
 	var exists bool
@@ -680,6 +706,7 @@ func validateCredentialSecret(ormHandler orm.ORM, credentialSecret string) (bool
 	return exists, nil
 }
 
+// createCred creates a new credential with the given name, username, and password.
 func createCred(name, username, password string) string {
 	cred := credential.Credential{
 		Name: name,
@@ -708,6 +735,7 @@ func createCred(name, username, password string) string {
 	return cred.ID
 }
 
+// getYamlData reads a YAML file from the setup directory and returns its content as a byte slice.
 func getYamlData(filename string) []byte {
 	baseDir := path.Join(global.Env().GetConfigDir(), "setup")
 	filePath := path.Join(baseDir, "common", "data", filename)
@@ -716,18 +744,21 @@ func getYamlData(filename string) []byte {
 		log.Errorf("Error reading YAML file:", err)
 		return nil
 	}
-	// 转义换行符
+	// convert newlines to \n
 	escapedContent := bytes.ReplaceAll(content, []byte("\n"), []byte("\\n"))
-	// 转义双引号
+	// escape double quotes
 	escapedContent = bytes.ReplaceAll(escapedContent, []byte("\""), []byte("\\\""))
 	return escapedContent
 }
 
+// initializeTemplate initializes the template based on the request.
 func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if !global.Env().SetupRequired() {
-		module.WriteError(w, "setup not permitted", 500)
+		module.WriteError(w, "setup not permitted", http.StatusInternalServerError)
 		return
 	}
+
+	// recover from panic and return error message
 	defer func() {
 		if v := recover(); v != nil {
 			module.WriteJSON(w, util.MapStr{
@@ -736,8 +767,9 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 			}, http.StatusOK)
 		}
 	}()
-	request := SetupRequest{}
-	err := module.DecodeJSON(r, &request)
+
+	request := &SetupRequest{}
+	err := module.DecodeJSON(r, request)
 	if err != nil {
 		panic(err)
 	}
@@ -952,6 +984,7 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 
 }
 
+// initIngestUser initializes the ingest user with the required permissions for writing metrics and logs.
 func initIngestUser(client elastic.API, indexPrefix string, username, password string) error {
 	roleTpl := `{
 	  "cluster": [

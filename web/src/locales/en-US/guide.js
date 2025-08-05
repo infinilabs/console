@@ -33,7 +33,7 @@ export default {
   "guide.cluster.skip": "Skip",
   "guide.cluster.skip.desc":
     "You can also skip this step and reuse the existing data.",
-  "guide.user.title": "Creating a default user",
+  "guide.user.title": "Initialize Administrator Account",
   "guide.step.next": "Next",
   "guide.step.prev": "Previous",
   "guide.step.refresh": "Refresh",
@@ -44,8 +44,14 @@ export default {
   "guide.password.required": "Please input password!",
   "guide.confirm.password": "Confirm Password",
   "guide.confirm.password.required": "Please input confirm password!",
-  "guide.confirm.password.validate":
-    "Two passwords that you enter is inconsistent!",
+  "guide.confirm.password.validate": "The two passwords that you entered do not match!",
+  "guide.password.strength.invalid": "Password does not meet all security requirements.",
+  "guide.password.rules.title": "Password must contain",
+  "guide.password.rule.length": "At least 8 characters long",
+  "guide.password.rule.uppercase": "At least one uppercase letter (A-Z)",
+  "guide.password.rule.lowercase": "At least one lowercase letter (a-z)",
+  "guide.password.rule.digit": "At least one number (0-9)",
+  "guide.password.rule.special": "At least one special character",
   "guide.credential_secret": "Secret Key",
   "guide.credential_secret.required": "Please input credential secret key!",
   "guide.credential_secret.tips":

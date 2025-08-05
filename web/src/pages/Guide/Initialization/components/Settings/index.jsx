@@ -12,6 +12,7 @@ import {
   Row,
   Col,
   Modal,
+  List, 
 } from "antd";
 import styles from "../Initialization/index.less";
 import request from "@/utils/request";
@@ -27,11 +28,54 @@ const formItemLayout = {
   },
 };
 
+const passwordRules = [
+  {
+    id: "guide.password.rule.length",
+    text: formatMessage({ id: "guide.password.rule.length" }), 
+    regex: /.{8,}/,
+  },
+  {
+    id: "guide.password.rule.uppercase",
+    text: formatMessage({ id: "guide.password.rule.uppercase" }), 
+    regex: /[A-Z]/,
+  },
+  {
+    id: "guide.password.rule.lowercase",
+    text: formatMessage({ id: "guide.password.rule.lowercase" }),
+    regex: /[a-z]/,
+  },
+  {
+    id: "guide.password.rule.digit",
+    text: formatMessage({ id: "guide.password.rule.digit" }),
+    regex: /[0-9]/,
+  },
+  {
+    id: "guide.password.rule.special",
+    text: formatMessage({ id: "guide.password.rule.special" }), 
+    regex: /[^A-Za-z0-9]/, 
+  },
+];
+
+const checkPasswordStrength = (password = "") => {
+  const fulfilled = [];
+  const unfulfilled = [];
+  
+  passwordRules.forEach(rule => {
+    if (rule.regex.test(password)) {
+      fulfilled.push(rule);
+    } else {
+      unfulfilled.push(rule);
+    }
+  });
+
+  return { fulfilled, unfulfilled, isValid: unfulfilled.length === 0 };
+};
+
 export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
   const [confirmDirty, setConfirmDirty] = useState(false);
   const [resetUser, setResetUser] = useState(false)
-
   const [loading, setLoading] = useState(false);
+  const [passwordHelp, setPasswordHelp] = useState(null);
 
   const handlePrev = () => {
     const resetValues = {
@@ -171,6 +215,19 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
     }
   };
 
+  const validatePasswordStrength = (rule, value, callback) => {
+    if (!value) {
+      callback();
+      return;
+    }
+    const { isValid } = checkPasswordStrength(value);
+    if (!isValid) {
+      callback(formatMessage({ id: "guide.password.strength.invalid" })); 
+    } else {
+      callback();
+    }
+  };
+
   const { getFieldDecorator } = form;
 
   useEffect(() => {
@@ -228,7 +285,7 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
       setVerified(res.success)
     }
     setLoading(false);
-  }
+  };
 
   return (
     <Spin spinning={loading}>
@@ -255,19 +312,38 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
               ],
             })(<Input />)}
           </Form.Item>
-          <Form.Item label={formatMessage({ id: "guide.password" })}>
+          <Form.Item
+            label={
+              <span>
+                {formatMessage({ id: "guide.password" })} &nbsp;
+                <Tooltip overlayClassName={styles.passwordTooltip} title={
+                  <List
+                    size="small"
+                    header={<div style={{fontWeight: 'bold'}}>{formatMessage({ id: "guide.password.rules.title" })}</div>} // e.g., "Password must contain:"
+                    dataSource={passwordRules}
+                    renderItem={item => <List.Item style={{padding: '2px 0', border: 'none'}}>{item.text}</List.Item>}
+                  />
+                }>
+                  <Icon type="info-circle" style={{ color: 'rgba(0,0,0,.45)' }} />
+                </Tooltip>
+              </span>
+            }
+            extra={passwordHelp}
+          >
             {getFieldDecorator("bootstrap_password", {
+              initialValue: formData.bootstrap_password,
               rules: [
                 {
                   required: true,
                   message: formatMessage({ id: "guide.password.required" }),
                 },
                 {
-                  validator: validateToNextPassword,
+                  validator: validatePasswordStrength,
                 },
               ],
             })(<Input.Password />)}
           </Form.Item>
+
           <Form.Item
             label={formatMessage({ id: "guide.confirm.password" })}
             hasFeedback
@@ -418,7 +494,7 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
                 message: formatMessage({ id: "guide.password.required" }),
               },
               {
-                validator: validateToNextPassword,
+                validator: validatePasswordStrength,
               },
             ],
           })(<Input.Password />)}

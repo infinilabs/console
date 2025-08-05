@@ -10,8 +10,9 @@ title: "版本历史"
 ## Latest (In development)  
 ### ❌ Breaking changes  
 ### 🚀 Features  
+- feat: 为初始化管理员用户增加密码强度校验 (#250)
 ### 🐛 Bug fix  
-- fix: incorrect index mapping after rollover
+- fix: 修复了索引映射 (mapping) 在滚动查询 (scroll) 后不正确的问题 (#248)
 ### ✈️ Improvements  
 
 ## 1.29.8 (2025-07-25)

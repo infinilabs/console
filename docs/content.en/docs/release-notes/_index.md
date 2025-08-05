@@ -10,8 +10,9 @@ Information about release notes of INFINI Console is provided here.
 ## Latest (In development)  
 ### ❌ Breaking changes  
 ### 🚀 Features  
+- feat: init user password security validate (#250)
 ### 🐛 Bug fix  
-- fix: 索引 mapping 在滚动操作之后不对的问题
+- fix: initialize index schema earlier to apply correct mapping (#248)
 ### ✈️ Improvements  
 
 ## 1.29.8 (2025-07-25)

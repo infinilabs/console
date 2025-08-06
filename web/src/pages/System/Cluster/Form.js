@@ -571,8 +571,19 @@ class ClusterForm extends React.Component {
               <CollectMode
                 form={this.props.form}
                 editValue={editValue}
+                mode={this.state.collectMode}
                 onChange={(mode) => {
-                  this.setState({ collectMode: mode })
+                  this.setState({ collectMode: mode }, () => {
+                    const monitor_configs = this.props.form.getFieldValue("monitor_configs");
+                    if (mode === "agent") {
+                      monitor_configs["node_stats"] = { enabled: false };
+                      monitor_configs["index_stats"] = { enabled: false };
+                    }else {
+                      monitor_configs["node_stats"] = { enabled: true };
+                      monitor_configs["index_stats"] = { enabled: true };
+                    }
+                    this.props.form.setFieldsValue({ monitor_configs });
+                  })
                 }}
               />
               {
@@ -594,7 +605,7 @@ class ClusterForm extends React.Component {
                 )
               }
               {
-                editValue?.monitor_configs && (
+                editValue?.monitor_configs && this.state.collectMode && (
                   <MonitorConfigsForm
                     form={this.props.form}
                     editValue={editValue}

@@ -297,6 +297,7 @@ func (module *Module) validate(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 
 	success = true
+	module.registerORMAndInitSchema(client)
 }
 
 var cfg elastic.ElasticsearchConfig
@@ -365,6 +366,35 @@ func (module *Module) initTempClient(request *SetupRequest) (error, elastic.API)
 }
 
 // initialize sets up the Elasticsearch cluster with the provided configuration and initializes the system.
+func (module *Module) registerORMAndInitSchema(client elastic.API) {
+	if cfg1.IndexPrefix == "" {
+		cfg1.IndexPrefix = ".infini_"
+	}
+	if cfg1.TemplateName == "" {
+		cfg1.TemplateName = ".infini"
+	}
+
+	if !cfg1.Enabled {
+		cfg1.Enabled = true
+	}
+
+	if !cfg1.InitTemplate {
+		cfg1.InitTemplate = true
+	}
+
+	cfg.Reserved = true
+	cfg.Monitored = true
+	cfg.Source = elastic.ElasticsearchConfigSourceElasticsearch
+
+	//处理ORM
+	handler := elastic2.ElasticORM{Client: client, Config: cfg1}
+
+	orm.Register("elastic_setup_"+util.GetUUID(), &handler)
+	//处理索引
+	security2.InitSchema() //register user index
+	elastic2.InitSchema()
+}
+
 func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if !global.Env().SetupRequired() {
 		module.WriteError(w, "setup not permitted", http.StatusInternalServerError)
@@ -466,7 +496,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 
 	orm.Register("elastic_setup_"+util.GetUUID(), &handler)
 	//validate secret key
-	exists, err := validateCredentialSecret(&handler, request.CredentialSecret)
+	exists, err := validateCredentialSecret(request.CredentialSecret)
 	if err != nil && err != errSecretMismatch {
 		panic(err)
 	}
@@ -650,10 +680,9 @@ func (module *Module) validateSecret(w http.ResponseWriter, r *http.Request, ps 
 		module.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	module.registerORMAndInitSchema(client)
 
-	handler := elastic2.ElasticORM{Client: client, Config: cfg1}
-
-	_, err = validateCredentialSecret(&handler, request.CredentialSecret)
+	_, err = validateCredentialSecret(request.CredentialSecret)
 	if err != nil && err != errSecretMismatch {
 		module.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -667,7 +696,7 @@ func (module *Module) validateSecret(w http.ResponseWriter, r *http.Request, ps 
 var errSecretMismatch = fmt.Errorf("invalid credential secret")
 
 // validateCredentialSecret checks if the provided credential secret matches the stored secret.
-func validateCredentialSecret(ormHandler orm.ORM, credentialSecret string) (bool, error) {
+func validateCredentialSecret(credentialSecret string) (bool, error) {
 	rkey, err := keystore.GetValue(credential.SecretKey)
 	var exists bool
 	if err != nil && err != keystore2.ErrKeyDoesntExists {
@@ -687,7 +716,7 @@ func validateCredentialSecret(ormHandler orm.ORM, credentialSecret string) (bool
 		exists = false
 		tempCred := credential.Credential{}
 		var result orm.Result
-		err, result = ormHandler.Search(&tempCred, &orm.Query{
+		err, result = orm.Search(&tempCred, &orm.Query{
 			Size: 1,
 		})
 		if err != nil {

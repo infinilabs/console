@@ -10,6 +10,7 @@ Information about release notes of INFINI Console is provided here.
 ## Latest (In development)  
 ### ❌ Breaking changes  
 ### 🚀 Features  
+- feat: add support for percentage-based derived aggregations
 ### 🐛 Bug fix  
 - fix: 索引 mapping 在滚动操作之后不对的问题
 - fix: 集群监控设置显示错误

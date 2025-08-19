@@ -29,9 +29,10 @@ package alerting
 
 import (
 	"fmt"
-	"infini.sh/console/model/insight"
-	"infini.sh/framework/modules/elastic/common"
 	"regexp"
+
+	"infini.sh/console/core/insight"
+	"infini.sh/framework/modules/elastic/common"
 )
 
 type Metric struct {
@@ -71,24 +72,16 @@ type MetricItem struct {
 }
 
 type QueryResult struct {
-	Query      string       `json:"query"`
-	Raw        string       `json:"raw"`
-	MetricData []MetricData `json:"metric_data"`
-	Nodata     bool         `json:"nodata"`
-	Min        interface{}  `json:"-"`
-	Max        interface{}  `json:"-"`
-}
-
-type MetricData struct {
-	GroupValues []string                    `json:"group_values"`
-	Data        map[string][]MetricDataItem `json:"data"`
+	Query      string               `json:"query"`
+	Raw        string               `json:"raw"`
+	MetricData []insight.MetricData `json:"metric_data"`
+	Nodata     bool                 `json:"nodata"`
+	Min        interface{}          `json:"-"`
+	Max        interface{}          `json:"-"`
 }
 
 type MetricDataItem struct {
-	Timestamp interface{} `json:"timestamp,omitempty"`
-	Value     interface{} `json:"value"`
-	Groups    []string    `json:"groups,omitempty"`
-	DocCount  int         `json:"doc_count,omitempty"`
+	insight.MetricDataItem
 }
 
 type AlertMetricItem struct {

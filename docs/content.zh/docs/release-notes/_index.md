@@ -10,6 +10,7 @@ title: "版本历史"
 ## Latest (In development)  
 ### ❌ Breaking changes  
 ### 🚀 Features  
+- feat: 支持百分比聚合
 ### 🐛 Bug fix  
 - fix: incorrect index mapping after rollover
 - fix: display error in monitor configuration

@@ -38,7 +38,7 @@ const FormAlertMetric = (props) => {
   const [fieldsType, setFieldsType] = useState({});
   const getFunctions = (type) => {
     if (type == "string") {
-      return ["count",  "cardinality",];
+      return ["count",  "cardinality", "percentage"];
     }
     return [
       "count",
@@ -54,6 +54,7 @@ const FormAlertMetric = (props) => {
       "p90",
       "p80",
       "p50",
+      "percentage",
     ].concat(funcs);
   };
 

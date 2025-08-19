@@ -62,7 +62,13 @@ export const buildWidgetByRule = (rule, queries, created, updated) => {
   };
   let query;
   try {
-    query = JSON.stringify(queries.raw_filter);
+    // handle empty raw_filter
+    if(!queries.raw_filter || Object.keys(queries.raw_filter).length === 0) {
+      query = null;
+    }else{
+      query = JSON.stringify(queries.raw_filter);
+    }
+   
   } catch (error) {}
 
   const number = parseInt(metrics.bucket_size);

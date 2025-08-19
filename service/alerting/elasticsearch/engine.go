@@ -39,9 +39,9 @@ import (
 
 	"github.com/Knetic/govaluate"
 	log "github.com/cihub/seelog"
+	"infini.sh/console/core/insight"
 	"infini.sh/console/model"
 	"infini.sh/console/model/alerting"
-	"infini.sh/console/model/insight"
 	alerting2 "infini.sh/console/service/alerting"
 	"infini.sh/console/service/alerting/common"
 	"infini.sh/framework/core/elastic"
@@ -60,6 +60,9 @@ type Engine struct {
 // group of metric item converted to terms aggregation and TimeField of rule converted to date_histogram aggregation
 // convert statistic of metric item to elasticsearch aggregation
 func (engine *Engine) GenerateQuery(rule *alerting.Rule, filterParam *alerting.FilterParam) (interface{}, error) {
+	if len(rule.Metrics.Items) == 0 {
+		return nil, fmt.Errorf("metric items should not be empty")
+	}
 	filter, err := engine.GenerateRawFilter(rule, filterParam)
 	if err != nil {
 		return nil, err
@@ -68,91 +71,17 @@ func (engine *Engine) GenerateQuery(rule *alerting.Rule, filterParam *alerting.F
 	if err != nil {
 		return nil, err
 	}
-	if len(rule.Metrics.Items) == 0 {
-		return nil, fmt.Errorf("metric items should not be empty")
-	}
-	basicAggs := util.MapStr{}
-	//todo bucket sort (es 6.1) bucket script (es 2.0)
-	for _, metricItem := range rule.Metrics.Items {
-		metricAggs := engine.generateAgg(&metricItem)
-		if err = util.MergeFields(basicAggs, metricAggs, true); err != nil {
-			return nil, err
-		}
-	}
-	verInfo := elastic.GetClient(rule.Resource.ID).GetVersion()
-	var periodInterval = rule.Metrics.BucketSize
-	if filterParam != nil && filterParam.BucketSize != "" {
-		periodInterval = filterParam.BucketSize
-	}
-
-	if verInfo.Number == "" {
-		panic("invalid version")
-	}
-
-	intervalField, err := elastic.GetDateHistogramIntervalField(verInfo.Distribution, verInfo.Number, periodInterval)
-	if err != nil {
-		return nil, fmt.Errorf("get interval field error: %w", err)
-	}
-	timeAggs := util.MapStr{
-		"time_buckets": util.MapStr{
-			"date_histogram": util.MapStr{
-				"field":       rule.Resource.TimeField,
-				intervalField: periodInterval,
-			},
-			"aggs": basicAggs,
-		},
-	}
-
-	var rootAggs util.MapStr
-	groups := rule.Metrics.Groups
-	if grpLength := len(groups); grpLength > 0 {
-		var lastGroupAgg util.MapStr
-
-		for i := grpLength - 1; i >= 0; i-- {
-			limit := groups[i].Limit
-			//top group 10
-			if limit <= 0 {
-				limit = 10
-			}
-			groupAgg := util.MapStr{
-				"terms": util.MapStr{
-					"field": groups[i].Field,
-					"size":  limit,
-				},
-			}
-			groupID := util.GetUUID()
-			if lastGroupAgg != nil {
-				groupAgg["aggs"] = util.MapStr{
-					groupID: lastGroupAgg,
-				}
-			} else {
-				groupAgg["aggs"] = timeAggs
-			}
-			lastGroupAgg = groupAgg
-		}
-		rootAggs = util.MapStr{
-			util.GetUUID(): lastGroupAgg,
-		}
-	} else {
-		rootAggs = timeAggs
-	}
 	if len(filter) > 0 {
-		rootAggs = util.MapStr{
-			"filter_agg": util.MapStr{
-				"filter": filter,
-				"aggs":   rootAggs,
-			},
-		}
+		rule.Metrics.Filter = filter
 	}
+	rule.Metrics.TimeFilter = timeFilter
+	rule.Metrics.ClusterId = rule.Resource.ID
+	rule.Metrics.TimeField = rule.Resource.TimeField
 
-	return util.MapStr{
-		"size":  0,
-		"query": timeFilter,
-		"aggs":  rootAggs,
-	}, nil
+	return insight.GenerateQuery(&rule.Metrics.Metric)
 }
 
-// generateAgg convert statistic of metric item to elasticsearch aggregation
+// Deprecated: generateAgg convert statistic of metric item to elasticsearch aggregation
 func (engine *Engine) generateAgg(metricItem *insight.MetricItem) map[string]interface{} {
 	var (
 		aggType = "value_count"
@@ -168,6 +97,8 @@ func (engine *Engine) generateAgg(metricItem *insight.MetricItem) map[string]int
 		aggType = metricItem.Statistic
 	case "count", "value_count":
 		aggType = "value_count"
+	case "cardinality":
+		aggType = "cardinality"
 	case "derivative":
 		aggType = "max"
 		isPipeline = true
@@ -365,7 +296,7 @@ func (engine *Engine) generateTimeFilter(rule *alerting.Rule, filterParam *alert
 }
 
 func (engine *Engine) GenerateRawFilter(rule *alerting.Rule, filterParam *alerting.FilterParam) (map[string]interface{}, error) {
-	query := map[string]interface{}{}
+	var query map[string]interface{}
 	var err error
 	if rule.Resource.RawFilter != nil {
 		query = util.DeepCopy(rule.Resource.RawFilter).(map[string]interface{})
@@ -448,8 +379,7 @@ func (engine *Engine) ExecuteQuery(rule *alerting.Rule, filterParam *alerting.Fi
 	if err != nil {
 		return queryResult, err
 	}
-	metricData := []alerting.MetricData{}
-	CollectMetricData(searchResult["aggregations"], "", &metricData)
+	metricData, _ := insight.CollectMetricData(&rule.Metrics.Metric, searchResult)
 	//将 derivative 求导数据 除以 bucket size (单位 /s)
 	//statisticM := map[string] string{}
 	//for _, mi := range rule.Metrics.Items {
@@ -479,20 +409,20 @@ func (engine *Engine) ExecuteQuery(rule *alerting.Rule, filterParam *alerting.Fi
 	queryResult.MetricData = metricData
 	return queryResult, nil
 }
-func (engine *Engine) GetTargetMetricData(rule *alerting.Rule, isFilterNaN bool, filterParam *alerting.FilterParam) ([]alerting.MetricData, *alerting.QueryResult, error) {
+func (engine *Engine) GetTargetMetricData(rule *alerting.Rule, isFilterNaN bool, filterParam *alerting.FilterParam) ([]insight.MetricData, *alerting.QueryResult, error) {
 	queryResult, err := engine.ExecuteQuery(rule, filterParam)
 	if err != nil {
 		return nil, queryResult, err
 	}
-	var targetMetricData []alerting.MetricData
+	var targetMetricData []insight.MetricData
 	for _, md := range queryResult.MetricData {
-		var targetData alerting.MetricData
+		var targetData insight.MetricData
 		if len(rule.Metrics.Items) == 1 {
 			targetData = md
 		} else {
-			targetData = alerting.MetricData{
-				GroupValues: md.GroupValues,
-				Data:        map[string][]alerting.MetricDataItem{},
+			targetData = insight.MetricData{
+				Groups: md.Groups,
+				Data:   map[string][]insight.MetricDataItem{},
 			}
 			expression, err := govaluate.NewEvaluableExpression(rule.Metrics.Formula)
 			if err != nil {
@@ -536,13 +466,13 @@ func (engine *Engine) GetTargetMetricData(rule *alerting.Rule, isFilterNaN bool,
 				if r, ok := result.(float64); ok {
 					if math.IsNaN(r) || math.IsInf(r, 0) {
 						if !isFilterNaN {
-							targetData.Data["result"] = append(targetData.Data["result"], alerting.MetricDataItem{Timestamp: timestamp, Value: math.NaN()})
+							targetData.Data["result"] = append(targetData.Data["result"], insight.MetricDataItem{Timestamp: timestamp, Value: math.NaN()})
 						}
 						continue
 					}
 				}
 
-				targetData.Data["result"] = append(targetData.Data["result"], alerting.MetricDataItem{Timestamp: timestamp, Value: result})
+				targetData.Data["result"] = append(targetData.Data["result"], insight.MetricDataItem{Timestamp: timestamp, Value: result})
 			}
 		}
 		targetMetricData = append(targetMetricData, targetData)
@@ -611,7 +541,7 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule) (*alerting.ConditionRe
 					return conditionResult, fmt.Errorf("evaluate value expression: %s error: %w", rule.Metrics.Formula, err)
 				}
 				if v, ok := valueExpressionResult.(float64); ok {
-					valueExpressionResult = util.ToFixed(v, 1)
+					valueExpressionResult = util.ToFixed(v, 2)
 				}
 				evaluateResult, err := expression.Evaluate(map[string]interface{}{
 					"result": valueExpressionResult,
@@ -625,9 +555,15 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule) (*alerting.ConditionRe
 					triggerCount = 0
 				}
 				if triggerCount >= cond.MinimumPeriodMatch {
-					log.Debugf("triggered condition  %v, groups: %v\n", cond, targetData.GroupValues)
+					log.Debugf("triggered condition  %v, groups: %v\n", cond, targetData.Groups)
+					// collect group values
+					grpValues := make([]string, 0, len(targetData.Groups))
+					for _, v := range targetData.Groups {
+						grpValues = append(grpValues, v.Value)
+					}
 					resultItem := alerting.ConditionResultItem{
-						GroupValues:    targetData.GroupValues,
+						GroupValues:    grpValues,
+						Groups:         targetData.Groups,
 						ConditionItem:  &cond,
 						ResultValue:    valueExpressionResult,
 						IssueTimestamp: targetData.Data[dataKey][i].Timestamp,
@@ -650,7 +586,7 @@ type BucketDiffState struct {
 	DocCount           int
 }
 
-func (engine *Engine) CheckBucketCondition(rule *alerting.Rule, targetMetricData []alerting.MetricData, queryResult *alerting.QueryResult) (*alerting.ConditionResult, error) {
+func (engine *Engine) CheckBucketCondition(rule *alerting.Rule, targetMetricData []insight.MetricData, queryResult *alerting.QueryResult) (*alerting.ConditionResult, error) {
 	var resultItems []alerting.ConditionResultItem
 	conditionResult := &alerting.ConditionResult{
 		QueryResult: queryResult,
@@ -676,11 +612,12 @@ func (engine *Engine) CheckBucketCondition(rule *alerting.Rule, targetMetricData
 					if _, ok = times[timestamp]; !ok {
 						times[timestamp] = struct{}{}
 					}
-					bucketKey := strings.Join(targetData.GroupValues, "*")
+					grpValues := insight.GetGroupValues(targetData.Groups)
+					bucketKey := strings.Join(grpValues, "*")
 					if _, ok = buckets[bucketKey]; !ok {
 						buckets[bucketKey] = map[int64]int{}
 					}
-					buckets[bucketKey][timestamp] = item.DocCount
+					buckets[bucketKey][timestamp] = int(item.DocCount)
 				} else {
 					log.Warnf("invalid timestamp type: %T", item.Timestamp)
 				}
@@ -1294,96 +1231,6 @@ func (engine *Engine) GenerateTask(rule alerting.Rule) func(ctx context.Context)
 		err := engine.Do(&rule)
 		if err != nil {
 			log.Error(err)
-		}
-	}
-}
-
-func CollectMetricData(agg interface{}, groupValues string, metricData *[]alerting.MetricData) {
-	if aggM, ok := agg.(map[string]interface{}); ok {
-		if targetAgg, ok := aggM["filter_agg"]; ok {
-			collectMetricData(targetAgg, groupValues, metricData)
-		} else {
-			collectMetricData(aggM, groupValues, metricData)
-		}
-	}
-}
-
-func collectMetricData(agg interface{}, groupValues string, metricData *[]alerting.MetricData) {
-	if aggM, ok := agg.(map[string]interface{}); ok {
-		if timeBks, ok := aggM["time_buckets"].(map[string]interface{}); ok {
-			if bks, ok := timeBks["buckets"].([]interface{}); ok {
-				md := alerting.MetricData{
-					Data:        map[string][]alerting.MetricDataItem{},
-					GroupValues: strings.Split(groupValues, "*"),
-				}
-				for _, bk := range bks {
-					if bkM, ok := bk.(map[string]interface{}); ok {
-
-						var docCount int
-						if v, ok := bkM["doc_count"]; ok {
-							docCount = int(v.(float64))
-						}
-						for k, v := range bkM {
-							if k == "key" || k == "key_as_string" || k == "doc_count" {
-								continue
-							}
-							if len(k) > 5 { //just store a,b,c
-								continue
-							}
-							if vm, ok := v.(map[string]interface{}); ok {
-								if metricVal, ok := vm["value"]; ok {
-									md.Data[k] = append(md.Data[k], alerting.MetricDataItem{Timestamp: bkM["key"], Value: metricVal, DocCount: docCount})
-								} else {
-									//percentiles agg type
-									switch vm["values"].(type) {
-									case []interface{}:
-										for _, val := range vm["values"].([]interface{}) {
-											if valM, ok := val.(map[string]interface{}); ok {
-												md.Data[k] = append(md.Data[k], alerting.MetricDataItem{Timestamp: bkM["key"], Value: valM["value"], DocCount: docCount})
-											}
-											break
-										}
-									case map[string]interface{}:
-										for _, val := range vm["values"].(map[string]interface{}) {
-											md.Data[k] = append(md.Data[k], alerting.MetricDataItem{Timestamp: bkM["key"], Value: val, DocCount: docCount})
-											break
-										}
-									}
-
-								}
-
-							}
-
-						}
-					}
-
-				}
-				*metricData = append(*metricData, md)
-			}
-
-		} else {
-			for k, v := range aggM {
-				if k == "key" || k == "doc_count" {
-					continue
-				}
-				if vm, ok := v.(map[string]interface{}); ok {
-					if bks, ok := vm["buckets"].([]interface{}); ok {
-						for _, bk := range bks {
-							if bkVal, ok := bk.(map[string]interface{}); ok {
-								currentGroup := bkVal["key"].(string)
-								newGroupValues := currentGroup
-								if groupValues != "" {
-									newGroupValues = fmt.Sprintf("%s*%s", groupValues, currentGroup)
-								}
-
-								collectMetricData(bk, newGroupValues, metricData)
-							}
-
-						}
-					}
-				}
-				break
-			}
 		}
 	}
 }

@@ -1,3 +1,331 @@
+PUT $[[SETUP_INDEX_PREFIX]]alert-rule
+{
+  "mappings": {
+    "properties": {
+      "bucket_conditions": {
+        "properties": {
+          "items": {
+            "properties": {
+              "bucket_count": {
+                "type": "long"
+              },
+              "minimum_period_match": {
+                "type": "long"
+              },
+              "operator": {
+                "type": "keyword",
+                "ignore_above": 256
+              },
+              "priority": {
+                "type": "keyword",
+                "ignore_above": 256
+              },
+              "type": {
+                "type": "keyword",
+                "ignore_above": 256
+              },
+              "values": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          },
+          "operator": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "category": {
+        "type": "keyword",
+        "ignore_above": 256
+      },
+      "conditions": {
+        "properties": {
+          "items": {
+            "properties": {
+              "minimum_period_match": {
+                "type": "long"
+              },
+              "operator": {
+                "type": "keyword",
+                "ignore_above": 256
+              },
+              "priority": {
+                "type": "keyword",
+                "ignore_above": 256
+              },
+              "values": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          },
+          "operator": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "created": {
+        "type": "date"
+      },
+      "creator": {
+        "properties": {
+          "id": {
+            "type": "keyword",
+            "ignore_above": 256
+          },
+          "name": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "enabled": {
+        "type": "boolean"
+      },
+      "id": {
+        "type": "keyword",
+        "ignore_above": 256
+      },
+      "metrics": {
+        "properties": {
+          "bucket_label": {
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              }
+            }
+          },
+          "bucket_size": {
+            "type": "keyword",
+            "ignore_above": 256
+          },
+          "expression": {
+            "type": "keyword",
+            "ignore_above": 256
+          },
+          "format_type": {
+            "type": "keyword",
+            "ignore_above": 256
+          },
+          "formula": {
+            "type": "keyword",
+            "ignore_above": 256
+          },
+          "groups": {
+            "properties": {
+              "field": {
+                "type": "keyword",
+                "ignore_above": 256
+              },
+              "limit": {
+                "type": "long"
+              }
+            }
+          },
+          "items": {
+            "properties": {
+              "field": {
+                "type": "keyword",
+                "ignore_above": 256
+              },
+              "name": {
+                "type": "keyword",
+                "ignore_above": 256
+              },
+              "statistic": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          }
+        }
+      },
+      "name": {
+        "type": "keyword",
+        "ignore_above": 256
+      },
+      "notification_config": {
+        "properties": {
+          "accept_time_range": {
+            "properties": {
+              "end": {
+                "type": "keyword",
+                "ignore_above": 256
+              },
+              "start": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "escalation_throttle_period": {
+            "type": "keyword",
+            "ignore_above": 256
+          },
+          "message": {
+            "type": "keyword",
+            "ignore_above": 256
+          },
+          "normal": {
+            "properties": {
+              "created": {
+                "type": "date"
+              },
+              "enabled": {
+                "type": "boolean"
+              },
+              "id": {
+                "type": "keyword",
+                "ignore_above": 256
+              },
+              "name": {
+                "type": "keyword",
+                "ignore_above": 256
+              },
+              "sub_type": {
+                "type": "keyword",
+                "ignore_above": 256
+              },
+              "type": {
+                "type": "keyword",
+                "ignore_above": 256
+              },
+              "updated": {
+                "type": "date"
+              },
+              "webhook": {
+                "properties": {
+                  "body": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                  },
+                  "header_params": {
+                    "properties": {
+                      "Content-Type": {
+                        "type": "keyword",
+                        "ignore_above": 256
+                      },
+                      "Content-type": {
+                        "type": "keyword",
+                        "ignore_above": 256
+                      }
+                    }
+                  },
+                  "method": {
+                    "type": "keyword",
+                    "ignore_above": 256
+                  }
+                }
+              }
+            }
+          },
+          "throttle_period": {
+            "type": "keyword",
+            "ignore_above": 256
+          },
+          "title": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "recovery_notification_config": {
+        "properties": {
+          "accept_time_range": {
+            "properties": {
+              "end": {
+                "type": "keyword",
+                "ignore_above": 256
+              },
+              "start": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "event_enabled": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "keyword",
+            "ignore_above": 256
+          },
+          "normal": {
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "id": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+          },
+          "title": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "resource": {
+        "properties": {
+          "context": {
+            "type": "object"
+          },
+          "filter": {
+            "type": "object",
+            "enabled": false
+          },
+          "objects": {
+            "type": "keyword",
+            "ignore_above": 256
+          },
+          "raw_filter": {
+            "type": "object",
+            "enabled": false
+          },
+          "resource_id": {
+            "type": "keyword",
+            "ignore_above": 256
+          },
+          "resource_name": {
+            "type": "keyword",
+            "ignore_above": 256
+          },
+          "time_field": {
+            "type": "keyword",
+            "ignore_above": 256
+          },
+          "type": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "schedule": {
+        "properties": {
+          "interval": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "updated": {
+        "type": "date"
+      }
+    }
+  }
+}
+
 #alerting channel
 #The `id` value is consistent with the `_id` value
 POST $[[SETUP_INDEX_PREFIX]]channel/$[[SETUP_DOC_TYPE]]/cgnb2nt3q95nmusjl65g

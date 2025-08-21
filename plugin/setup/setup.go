@@ -297,7 +297,7 @@ func (module *Module) validate(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 
 	success = true
-	module.registerORMAndInitSchema(client)
+	module.registerORM(client)
 }
 
 var cfg elastic.ElasticsearchConfig
@@ -366,7 +366,7 @@ func (module *Module) initTempClient(request *SetupRequest) (error, elastic.API)
 }
 
 // initialize sets up the Elasticsearch cluster with the provided configuration and initializes the system.
-func (module *Module) registerORMAndInitSchema(client elastic.API) {
+func (module *Module) registerORM(client elastic.API) {
 	if cfg1.IndexPrefix == "" {
 		cfg1.IndexPrefix = ".infini_"
 	}
@@ -390,9 +390,6 @@ func (module *Module) registerORMAndInitSchema(client elastic.API) {
 	handler := elastic2.ElasticORM{Client: client, Config: cfg1}
 
 	orm.Register("elastic_setup_"+util.GetUUID(), &handler)
-	//处理索引
-	security2.InitSchema() //register user index
-	elastic2.InitSchema()
 }
 
 func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -680,7 +677,7 @@ func (module *Module) validateSecret(w http.ResponseWriter, r *http.Request, ps 
 		module.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	module.registerORMAndInitSchema(client)
+	module.registerORM(client)
 
 	_, err = validateCredentialSecret(request.CredentialSecret)
 	if err != nil && err != errSecretMismatch {

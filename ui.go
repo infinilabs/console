@@ -24,9 +24,13 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	public "infini.sh/console/.public"
+	"infini.sh/framework/core/global"
+	"io"
 	"net/http"
+	"strings"
 
 	log "github.com/cihub/seelog"
 	"infini.sh/console/config"
@@ -45,23 +49,32 @@ func (h UI) InitUI() {
 
 	vfs.RegisterFS(public.StaticFS{StaticFolder: h.Config.UI.LocalPath, TrimLeftPath: h.Config.UI.LocalPath, CheckLocalFirst: h.Config.UI.LocalEnabled, SkipVFS: !h.Config.UI.VFSEnabled})
 
-	api.HandleUI("/", vfs.FileServer(vfs.VFS()))
+	basePath := "/" + strings.Trim(global.Env().SystemConfig.WebAppConfig.BasePath, "/")
+
+	// a) Create the handler for all static files.
+	//    This is the "default" action for most requests in the sub-path.
+	staticFilesHandler := vfs.FileServer(vfs.VFS())
+
+	// b) Create the final handler that acts as a dispatcher for the sub-path.
+	finalHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Check if the request is for the sub-path's entrypoint.
+		if r.Method == "GET" && (r.URL.Path == "/" || r.URL.Path == basePath+"/" || r.URL.Path == basePath) {
+			serveDynamicIndex(w, r, basePath)
+			return
+		}
+
+		// For all other requests, delegate to the static file handler.
+		staticFilesHandler.ServeHTTP(w, r)
+	})
+
+	// c) Register the final dispatcher to handle the entire sub-path.
+	if basePath != "/" {
+		api.HandleUI(basePath, finalHandler)
+		api.HandleUI(basePath+"/", finalHandler)
+	}
+	api.HandleUI("/", finalHandler)
 
 	uiapi.Init(h.Config)
-
-	//var apiEndpoint = h.Config.UI.APIEndpoint
-	//apiConfig := &global.Env().SystemConfig.APIConfig
-	//
-	//api.HandleUIFunc("/config", func(w http.ResponseWriter, req *http.Request){
-	//	if(strings.TrimSpace(apiEndpoint) == ""){
-	//		hostParts := strings.Split(req.RemoteIP, ":")
-	//		apiEndpoint = fmt.Sprintf("%s//%s:%s", apiConfig.GetSchema(), hostParts[0], apiConfig.NetworkConfig.GetBindingPort())
-	//	}
-	//	buf, _ := json.Marshal(util.MapStr{
-	//		"api_endpoint": apiEndpoint,
-	//	})
-	//	w.Write(buf)
-	//})
 
 	api.HandleAPIFunc("/api/", func(w http.ResponseWriter, req *http.Request) {
 		log.Warn("api: ", req.URL, " not implemented")
@@ -76,4 +89,35 @@ func (h UI) InitUI() {
 
 		w.Write(util.MustToJSONBytes(request))
 	})
+}
+
+// Helper function for serving the DYNAMIC index.html with replacements.
+func serveDynamicIndex(w http.ResponseWriter, r *http.Request, basePath string) {
+	file, err := vfs.VFS().Open("/index.html")
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	defer file.Close()
+	content, err := io.ReadAll(file)
+	if err != nil {
+		http.Error(w, "Cannot read index.html", http.StatusInternalServerError)
+		return
+	}
+
+	jsBasePath := basePath + "/"
+	if basePath == "/" {
+		jsBasePath = basePath
+	}
+
+	content = bytes.ReplaceAll(content, []byte(`href="/`), []byte(`href="`+jsBasePath))
+	content = bytes.ReplaceAll(content, []byte(`src="/`), []byte(`src="`+jsBasePath))
+	content = bytes.ReplaceAll(content, []byte(`window.routerBase = "/";`), []byte(`window.routerBase = "`+jsBasePath+`";`))
+	content = bytes.ReplaceAll(content, []byte(`window.publicPath = "/";`), []byte(`window.publicPath = "`+jsBasePath+`";`))
+
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	w.Header().Set("Pragma", "no-cache")
+	w.Header().Set("Expires", "0")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Write(content)
 }

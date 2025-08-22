@@ -11,6 +11,7 @@ Information about release notes of INFINI Console is provided here.
 ### ❌ Breaking changes  
 ### 🚀 Features  
 - feat: init user password security validate (#250)
+- feat: support base path when use nginx proxy (#243)
 ### 🐛 Bug fix  
 - fix: initialize index schema earlier to apply correct mapping (#248)
 - fix: incorrect index mapping after rollover

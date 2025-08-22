@@ -146,7 +146,9 @@ export class Fetch {
       query: removedUndefined(query),
     });
 
-    return new Request(url, fetchOptions as RequestInit);
+    // trim right slashes
+    const baseUrl = window.routerBase.replace(/\/+$/, "");
+    return new Request( baseUrl + url, fetchOptions as RequestInit);
   }
 
   private async fetchResponse(

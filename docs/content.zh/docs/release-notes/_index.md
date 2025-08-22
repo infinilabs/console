@@ -11,6 +11,7 @@ title: "版本历史"
 ### ❌ Breaking changes  
 ### 🚀 Features  
 - feat: 为初始化管理员用户增加密码强度校验 (#250)
+- feat: 支持 Nginx 代理下的子目录路径 (#243)
 ### 🐛 Bug fix  
 - fix: 修复了索引映射 (mapping) 在滚动查询 (scroll) 后不正确的问题 (#248)
 - fix: 索引 mapping 在滚动操作之后不对的问题

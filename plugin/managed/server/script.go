@@ -86,6 +86,11 @@ func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Req
 		consoleEndpoint = getDefaultEndpoint(req)
 	}
 
+	basePath := global.Env().SystemConfig.WebAppConfig.BasePath
+	if len(basePath) > 0 {
+		consoleEndpoint = fmt.Sprintf("%s%s", strings.TrimRight(consoleEndpoint, "/"), basePath)
+	}
+
 	endpoint, err := url.JoinPath(consoleEndpoint, GET_INSTALL_SCRIPT_API)
 	if err != nil {
 		panic(err)

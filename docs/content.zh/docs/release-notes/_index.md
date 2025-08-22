@@ -10,6 +10,16 @@ title: "版本历史"
 ## Latest (In development)  
 ### ❌ Breaking changes  
 ### 🚀 Features  
+- feat: 为初始化管理员用户增加密码强度校验 (#250)
+### 🐛 Bug fix  
+- fix: 修复了索引映射 (mapping) 在滚动查询 (scroll) 后不正确的问题 (#248)
+- fix: 索引 mapping 在滚动操作之后不对的问题
+- fix: 集群监控设置显示错误
+### ✈️ Improvements  
+
+## 1.29.8 (2025-07-25)
+### ❌ Breaking changes  
+### 🚀 Features  
 ### 🐛 Bug fix  
 - fix: 在获取分片级别的分片状态指标时，shard_id 参数未生效的问题
 - fix: 优化了监控图表中坐标轴标签的显示效果
@@ -17,6 +27,7 @@ title: "版本历史"
 - fix: 根据响应中的 key 来进行 rollup 检查
 - fix: 因 omitempty JSON 标签导致更新不生效时，改为使用 save 方法
 ### ✈️ Improvements  
+- 此版本包含了底层 [Framework v1.2.0](https://docs.infinilabs.com/framework/v1.2.0) 的更新，解决了一些常见问题，并增强了整体稳定性和性能。虽然 Console 本身没有直接的变更，但从 Framework 中继承的改进间接地使 Console 受益。
 - improve: 为指标请求添加了自定义的超时错误处理
 - chore: 优化了动态分区逻辑
 

@@ -12,10 +12,13 @@ import {
   Row,
   Col,
   Modal,
+  List, 
 } from "antd";
 import styles from "../Initialization/index.less";
 import request from "@/utils/request";
+import { checkPasswordStrength } from "@/utils/utils";
 import { formatMessage } from "umi/locale";
+import { passwordRules } from "@/pages/System/User/resetPassword";
 const { confirm } = Modal;
 
 const formItemLayout = {
@@ -30,8 +33,8 @@ const formItemLayout = {
 export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
   const [confirmDirty, setConfirmDirty] = useState(false);
   const [resetUser, setResetUser] = useState(false)
-
   const [loading, setLoading] = useState(false);
+  const [passwordHelp, setPasswordHelp] = useState(null);
 
   const handlePrev = () => {
     const resetValues = {
@@ -140,7 +143,12 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
 
   const validateToNextPassword = (rule, value, callback) => {
     if (value && confirmDirty) {
-      form.validateFields(["bootstrap_password_confirm"], { force: true });
+      const { isValid } = checkPasswordStrength(value,passwordRules);
+      if (!isValid) {
+        callback(formatMessage({ id: "guide.password.strength.invalid" })); 
+      } else {
+        form.validateFields(["bootstrap_password_confirm"], { force: true });
+      }
     }
     callback();
   };
@@ -228,7 +236,7 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
       setVerified(res.success)
     }
     setLoading(false);
-  }
+  };
 
   return (
     <Spin spinning={loading}>
@@ -255,8 +263,26 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
               ],
             })(<Input />)}
           </Form.Item>
-          <Form.Item label={formatMessage({ id: "guide.password" })}>
+          <Form.Item
+            label={
+              <span>
+                {formatMessage({ id: "guide.password" })} &nbsp;
+                <Tooltip overlayClassName={styles.passwordTooltip} title={
+                  <List
+                    size="small"
+                    header={<div style={{fontWeight: 'bold'}}>{formatMessage({ id: "guide.password.rules.title" })}</div>} // e.g., "Password must contain:"
+                    dataSource={passwordRules}
+                    renderItem={item => <List.Item style={{padding: '2px 0', border: 'none'}}>{item.text}</List.Item>}
+                  />
+                }>
+                  <Icon type="info-circle" style={{ color: 'rgba(0,0,0,.45)' }} />
+                </Tooltip>
+              </span>
+            }
+            extra={passwordHelp}
+          >
             {getFieldDecorator("bootstrap_password", {
+              initialValue: formData.bootstrap_password,
               rules: [
                 {
                   required: true,
@@ -268,6 +294,7 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
               ],
             })(<Input.Password />)}
           </Form.Item>
+
           <Form.Item
             label={formatMessage({ id: "guide.confirm.password" })}
             hasFeedback

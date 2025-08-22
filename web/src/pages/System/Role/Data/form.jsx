@@ -21,6 +21,7 @@ import ApiPrivilegeField from "./api_privilege_field";
 import IndexPrivilegeField from "./index_privilege_field";
 import { useGlobal } from "@/layouts/GlobalContext";
 import { DataRoleFromContext } from "./context";
+import { formatMessage } from "umi/locale";
 
 const formItemLayout = {
   labelCol: {
@@ -148,7 +149,7 @@ const DataRoleForm = (props) => {
         extra={
           <div>
             <Button type="primary" onClick={onCancelClick}>
-              Go back
+              {formatMessage({ id: "form.button.goback" })}
             </Button>
           </div>
         }

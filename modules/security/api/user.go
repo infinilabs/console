@@ -63,7 +63,7 @@ func (h APIHandler) CreateUser(w http.ResponseWriter, r *http.Request, ps httpro
 	if h.userNameExists(w, user.Username) {
 		return
 	}
-	randStr := util.GenerateRandomString(8)
+	randStr := util.GenerateSecureString(16)
 	hash, err := bcrypt.GenerateFromPassword([]byte(randStr), bcrypt.DefaultCost)
 	if err != nil {
 		return

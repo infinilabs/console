@@ -10,12 +10,23 @@ Information about release notes of INFINI Console is provided here.
 ## Latest (In development)  
 ### ❌ Breaking changes  
 ### 🚀 Features  
+- feat: init user password security validate (#250)
+### 🐛 Bug fix  
+- fix: initialize index schema earlier to apply correct mapping (#248)
+- fix: incorrect index mapping after rollover
+- fix: display error in monitor configuration
+### ✈️ Improvements  
+
+## 1.29.8 (2025-07-25)
+### ❌ Breaking changes  
+### 🚀 Features  
 ### 🐛 Bug fix  
 - fix: shard_id parameter not applied in shard-level shard state metric
 - fix: Optimize the display of axis labels in the chart on the monitor
 - fix: stats not refreshed after changing metric level
 - fix: rollup check by response key
 ### ✈️ Improvements  
+- This release includes updates from the underlying [Framework v1.2.0](https://docs.infinilabs.com/framework/v1.2.0), which resolves several common issues and enhances overall stability and performance. While there are no direct changes to Console itself, the improvements inherited from Framework benefit Console indirectly.
 - improvement: add custom timeout error for metric request
 - chore: optimize dynamic partition and use save when update not work with omitempty json tag
 

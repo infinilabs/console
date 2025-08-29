@@ -18,6 +18,7 @@ import useFetch from "@/lib/hooks/use_fetch";
 import TagEditor from "@/components/infini/TagEditor";
 // import { formatESSearchResult } from "@/lib/elasticsearch/util";
 import { EuiCopy } from "@elastic/eui";
+import { formatMessage } from "umi/locale";
 
 const formItemLayout = {
   labelCol: {
@@ -99,7 +100,7 @@ const UserForm = (props) => {
         extra={
           <div>
             <Button type="primary" onClick={onCancelClick}>
-              Go back
+              {formatMessage({ id: "form.button.goback" })}
             </Button>
           </div>
         }

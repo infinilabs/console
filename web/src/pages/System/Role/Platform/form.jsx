@@ -20,6 +20,7 @@ import Permission from "./permission";
 import ApiPermission from "./api_permission";
 import request from "@/utils/request";
 import { menuData } from "./menu";
+import { formatMessage } from "umi/locale";
 
 const formItemLayout = {
   labelCol: {
@@ -75,7 +76,7 @@ const PlatformRoleForm = (props) => {
         extra={
           <div>
             <Button type="primary" onClick={onCancelClick}>
-              Go back
+              {formatMessage({ id: "form.button.goback" })}
             </Button>
           </div>
         }

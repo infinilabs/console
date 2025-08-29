@@ -191,7 +191,7 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
                                 </div>
                                 {taskState.status === "failed" ?
                                  <div style={{marginLeft:"auto"}}>
-                                    <a onClick={retryTask}>Retry</a><Divider type="vertical" /><a onClick={skipTask}>Skip</a>
+                                    <a onClick={retryTask} key="retry">Retry</a><Divider type="vertical" /><a onClick={skipTask} key="skip">Skip</a>
                                  </div>: null}
                             </div>
                             <div style={{background:"rgb(16, 16, 16)", color:"#fff", height:214, marginTop:5, borderRadius:5,padding:5, overflow:"scroll"}}>

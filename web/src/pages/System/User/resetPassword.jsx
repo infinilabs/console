@@ -3,8 +3,10 @@ import router from "umi/router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import request from "@/utils/request";
 import "@/assets/headercontent.scss";
-import { Input, Card, Form, Button, message } from "antd";
+import { Input, Card, Form, Button, message, Tooltip, Icon, List } from "antd";
 import { formatMessage } from "umi/locale";
+import { checkPasswordStrength } from "@/utils/utils";
+import styles from "./index.less";
 
 const formItemLayout = {
   labelCol: {
@@ -29,32 +31,68 @@ const tailFormItemLayout = {
   },
 };
 
+
+// Define password rules in a reusable constant
+export const passwordRules = [
+  {
+    id: 'guide.password.rule.length',
+    text: formatMessage({ id: 'guide.password.rule.length' }), 
+    regex: /.{8,}/,
+  },
+  {
+    id: 'guide.password.rule.uppercase',
+    text: formatMessage({ id: 'guide.password.rule.uppercase' }), 
+    regex: /[A-Z]/,
+  },
+  {
+    id: 'guide.password.rule.lowercase',
+    text: formatMessage({ id: 'guide.password.rule.lowercase' }), 
+    regex: /[a-z]/,
+  },
+  {
+    id: 'guide.password.rule.digit',
+    text: formatMessage({ id: 'guide.password.rule.digit' }), 
+    regex: /[0-9]/,
+  },
+  {
+    id: 'guide.password.rule.special',
+    text: formatMessage({ id: 'guide.password.rule.special' }), 
+    regex: /[^A-Za-z0-9]/,
+  },
+];
+
 export default Form.create({ name: "user_form_new" })((props) => {
-  const onCancelClick = () => {
-    props.history.go(-1);
-  };
   const [isLoading, setIsLoading] = useState(false);
   const { form, match } = props;
   const { getFieldDecorator } = form;
+  const [passwordHelp, setPasswordHelp] = useState(null);
+  
+  const onCancelClick = () => {
+    props.history.go(-1);
+  };
 
   const compareToFirstPassword = (rule, value, callback) => {
     if (value && value !== form.getFieldValue("password")) {
-      callback("Two passwords that you enter is inconsistent!");
+      callback(formatMessage({ id: "guide.confirm.password.validate" }));
     } else {
       callback();
     }
   };
 
   const validateToNextPassword = (rule, value, callback) => {
-    if (value) {
-      if (value.length < 8) {
-        callback("The password must contain at least 8 characters");
-        return;
-      }
-      form.validateFields(["confirm"], { force: true });
+    if (!value) {
+      callback();
+      return;
     }
-    callback();
+    const { isValid } = checkPasswordStrength(value,passwordRules);
+    if (!isValid) {
+      callback(formatMessage({ id: "guide.password.strength.invalid" }));
+    } else {
+      form.validateFields(["confirm"], { force: true });
+      callback();
+    }
   };
+
   const onSaveClick = (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -85,33 +123,49 @@ export default Form.create({ name: "user_form_new" })((props) => {
         extra={
           <div>
             <Button type="primary" onClick={onCancelClick}>
-              Go back
+              {formatMessage({ id: "form.button.goback" })}
             </Button>
           </div>
         }
       >
         <Form {...formItemLayout}>
-          <Form.Item label="Password" hasFeedback>
+          <Form.Item
+            label={
+              <span>
+                {formatMessage({ id: "guide.password" })} &nbsp;
+                <Tooltip overlayClassName={styles.passwordTooltip} title={
+                  <List
+                    size="small"
+                    header={<div style={{fontWeight: 'bold'}}>{formatMessage({ id: "guide.password.rules.title" })}</div>} 
+                    dataSource={passwordRules}
+                    renderItem={item => <List.Item style={{padding: '2px 0', border: 'none'}}>{item.text}</List.Item>}
+                  />
+                }>
+                  <Icon type="info-circle" style={{ color: 'rgba(0,0,0,.45)' }} />
+                </Tooltip>
+              </span>
+            }
+            extra={passwordHelp}
+          >
             {getFieldDecorator("password", {
-              initialValue: "",
               rules: [
                 {
                   required: true,
-                  message: "Please password!",
+                  message: formatMessage({ id: "guide.password.required" }),
                 },
-                {
-                  validator: validateToNextPassword,
-                },
+                { validator: validateToNextPassword }, 
               ],
-            })(<Input type="password" />)}
+            })(<Input.Password/>)}
           </Form.Item>
-          <Form.Item label="Confirm Password" hasFeedback>
+          <Form.Item label={formatMessage({ id: "guide.confirm.password" })} hasFeedback>
             {getFieldDecorator("confirm", {
               initialValue: "",
               rules: [
                 {
                   required: true,
-                  message: "Please input confirm password!",
+                  message: formatMessage({
+                    id: "guide.confirm.password.required",
+                  }),
                 },
                 {
                   validator: compareToFirstPassword,
@@ -122,7 +176,7 @@ export default Form.create({ name: "user_form_new" })((props) => {
 
           <Form.Item {...tailFormItemLayout}>
             <Button type="primary" onClick={onSaveClick} loading={isLoading}>
-              Save
+              {formatMessage({ id: "form.save" })}
             </Button>
           </Form.Item>
         </Form>

@@ -16,6 +16,7 @@ title: "版本历史"
 - fix: 索引 mapping 在滚动操作之后不对的问题
 - fix: 集群监控设置显示错误
 ### ✈️ Improvements  
+- chore: 删除集群后减少 Agent 上报异常错误日志输出 (#258)
 
 ## 1.29.8 (2025-07-25)
 ### ❌ Breaking changes  

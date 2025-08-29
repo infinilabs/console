@@ -16,6 +16,7 @@ Information about release notes of INFINI Console is provided here.
 - fix: incorrect index mapping after rollover
 - fix: display error in monitor configuration
 ### ✈️ Improvements  
+- chore: reduce error log when cluster removed but agent online (#258)
 
 ## 1.29.8 (2025-07-25)
 ### ❌ Breaking changes  

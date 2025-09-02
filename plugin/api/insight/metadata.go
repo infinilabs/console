@@ -261,7 +261,6 @@ func getMetricData(metric *insightpkg.Metric) (interface{}, error) {
 		return nil, err
 	}
 
-	metric.MergeDataByGroup = true
 	metricData, interval := insightpkg.CollectMetricData(metric, searchResult)
 	formula := strings.TrimSpace(metric.Formula)
 	//support older versions for a single formula.

@@ -533,6 +533,7 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule) (*alerting.ConditionRe
 				continue
 			}
 			triggerCount := 0
+		LoopData:
 			for i := 0; i < dataLength; i++ {
 				//clear nil value
 				if targetData.Data[dataKey][i].Value == nil {
@@ -547,8 +548,11 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule) (*alerting.ConditionRe
 				for _, metric := range rule.Metrics.Items {
 					md := queryResult.MetricData[idx]
 					if _, ok := md.Data[metric.Name]; !ok || len(md.Data[metric.Name]) < i {
-						log.Warnf("metric data %s not found in query result", metric.Name)
-						continue
+						if global.Env().IsDebug {
+							log.Debugf("metric data %s not found in query result", metric.Name)
+						}
+						// skip this data point
+						continue LoopData
 					}
 					relationValues[metric.Name] = md.Data[metric.Name][i].Value
 				}

@@ -79,8 +79,6 @@ type Metric struct {
 	// number of buckets to return, used for aggregation auto_date_histogram when bucket size equals 'auto'
 	Buckets uint   `json:"buckets,omitempty"`
 	Unit    string `json:"unit,omitempty"`
-	// MergeDataByGroup indicates whether to merge data by group values when returning results.
-	MergeDataByGroup bool `json:"-"`
 }
 
 type GroupSort struct {

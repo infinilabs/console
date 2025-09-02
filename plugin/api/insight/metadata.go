@@ -261,6 +261,7 @@ func getMetricData(metric *insightpkg.Metric) (interface{}, error) {
 		return nil, err
 	}
 
+	metric.MergeDataByGroup = true
 	metricData, interval := insightpkg.CollectMetricData(metric, searchResult)
 	formula := strings.TrimSpace(metric.Formula)
 	//support older versions for a single formula.
@@ -311,10 +312,16 @@ func getMetricData(metric *insightpkg.Metric) (interface{}, error) {
 				if err != nil {
 					return nil, err
 				}
-				dataLength := 0
+				dataLength := math.MaxInt32
 				for _, v := range md.Data {
-					dataLength = len(v)
-					break
+					// find the shortest data length
+					if len(v) < dataLength {
+						dataLength = len(v)
+					}
+				}
+				// skip empty data
+				if dataLength == math.MaxInt32 || dataLength == 0 {
+					continue
 				}
 			DataLoop:
 				for i := 0; i < dataLength; i++ {

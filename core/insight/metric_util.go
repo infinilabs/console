@@ -385,7 +385,7 @@ func CollectMetricData(metric *Metric, searchResult map[string]interface{}) ([]M
 			}
 		}
 	}
-	if timeBeforeGroup && metric.TimeField != "" {
+	if timeBeforeGroup && metric.TimeField != "" && metric.MergeDataByGroup {
 		metricData = MergeGroupValues(metricData)
 	}
 	return metricData, interval

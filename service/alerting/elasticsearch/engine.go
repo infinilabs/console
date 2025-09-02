@@ -45,6 +45,7 @@ import (
 	alerting2 "infini.sh/console/service/alerting"
 	"infini.sh/console/service/alerting/common"
 	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/kv"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
@@ -363,6 +364,9 @@ func (engine *Engine) ExecuteQuery(rule *alerting.Rule, filterParam *alerting.Fi
 		return nil, err
 	}
 	queryResult.Query = string(queryDslBytes)
+	if global.Env().IsDebug {
+		log.Info(fmt.Sprintf("alerting rule [%s] execute query: %s", rule.Name, string(queryDslBytes)))
+	}
 	searchRes, err := esClient.SearchWithRawQueryDSL(indexName, queryDslBytes)
 	if err != nil {
 		return queryResult, err
@@ -515,11 +519,18 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule) (*alerting.ConditionRe
 			if err != nil {
 				return conditionResult, err
 			}
-			dataLength := 0
+			dataLength := math.MaxInt32
 			dataKey := ""
 			for k, v := range targetData.Data {
-				dataLength = len(v)
+				// find the shortest data length
+				if len(v) < dataLength {
+					dataLength = len(v)
+				}
 				dataKey = k
+			}
+			// skip empty data
+			if dataLength == math.MaxInt32 || dataLength == 0 {
+				continue
 			}
 			triggerCount := 0
 			for i := 0; i < dataLength; i++ {
@@ -534,7 +545,12 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule) (*alerting.ConditionRe
 				}
 				relationValues := map[string]interface{}{}
 				for _, metric := range rule.Metrics.Items {
-					relationValues[metric.Name] = queryResult.MetricData[idx].Data[metric.Name][i].Value
+					md := queryResult.MetricData[idx]
+					if _, ok := md.Data[metric.Name]; !ok || len(md.Data[metric.Name]) < i {
+						log.Warnf("metric data %s not found in query result", metric.Name)
+						continue
+					}
+					relationValues[metric.Name] = md.Data[metric.Name][i].Value
 				}
 				valueExpressionResult, err := valueExpression.Evaluate(relationValues)
 				if err != nil {

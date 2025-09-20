@@ -81,7 +81,7 @@ export function send(
     headers["Authorization"] = authorizationHeader;
   }
   const options: JQuery.AjaxSettings = {
-    url: `${ESPrefix}/${clusterID}/_proxy?` + stringify({ path, method }),
+    url: window.routerBase.replace(/\/+$/, "") + `${ESPrefix}/${clusterID}/_proxy?` + stringify({ path, method }),
     // headers: {
     //   'infini-xsrf': 'search-center',
     //   'origin': location.origin,
@@ -123,7 +123,7 @@ export function queryCommonCommands(title?: string) {
   if (authorizationHeader) {
     headers["Authorization"] = authorizationHeader;
   }
-  let url = `${pathPrefix}/elasticsearch/command?size=1000`;
+  let url = window.routerBase.replace(/\/+$/, "") + `${pathPrefix}/elasticsearch/command?size=1000`;
   if (title) {
     url += `&title=${title}`;
   }
@@ -149,7 +149,8 @@ export function saveCommonCommand(params: any) {
   if (authorizationHeader) {
     headers["Authorization"] = authorizationHeader;
   }
-  return fetch(`${pathPrefix}/elasticsearch/command`, {
+  let url = window.routerBase.replace(/\/+$/, "") + `${pathPrefix}//elasticsearch/command`;
+  return fetch(url, {
     method: "POST",
     body: JSON.stringify(params),
     headers: headers,

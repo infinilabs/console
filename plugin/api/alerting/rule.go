@@ -30,6 +30,10 @@ package alerting
 import (
 	"errors"
 	"fmt"
+	"net/http"
+	"strings"
+	"time"
+
 	log "github.com/cihub/seelog"
 	"github.com/r3labs/diff/v2"
 	"infini.sh/console/core/security"
@@ -49,9 +53,6 @@ import (
 	"infini.sh/framework/core/util"
 	elastic2 "infini.sh/framework/modules/elastic"
 	"infini.sh/framework/modules/elastic/common"
-	"net/http"
-	"strings"
-	"time"
 )
 
 func (alertAPI *AlertAPI) createRule(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -108,7 +109,7 @@ func (alertAPI *AlertAPI) createRule(w http.ResponseWriter, req *http.Request, p
 			rule.Creator.Id = user.UserId
 		}
 
-		err = orm.Save(nil, rule)
+		err = orm.Save(nil, &rule)
 		if err != nil {
 			log.Error(err)
 			alertAPI.WriteJSON(w, util.MapStr{
@@ -855,7 +856,7 @@ func (alertAPI *AlertAPI) enableRule(w http.ResponseWriter, req *http.Request, p
 		disableRule(&obj)
 	}
 	obj.Enabled = reqObj.Enabled
-	err = orm.Save(nil, obj)
+	err = orm.Save(nil, &obj)
 	if err != nil {
 		log.Error(err)
 		alertAPI.WriteError(w, fmt.Sprintf("save rule error:%v", err), http.StatusInternalServerError)

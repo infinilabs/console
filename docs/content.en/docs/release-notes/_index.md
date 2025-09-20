@@ -10,6 +10,7 @@ Information about release notes of INFINI Console is provided here.
 ## Latest (In development)  
 ### ❌ Breaking changes  
 ### 🚀 Features  
+- feat: add support for percentage-based derived aggregations
 - feat: init user password security validate (#250)
 - feat: support base path when use nginx proxy (#243)
 ### 🐛 Bug fix  

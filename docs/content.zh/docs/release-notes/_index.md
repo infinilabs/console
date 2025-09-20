@@ -10,6 +10,7 @@ title: "版本历史"
 ## Latest (In development)  
 ### ❌ Breaking changes  
 ### 🚀 Features  
+- feat: 支持百分比聚合
 - feat: 为初始化管理员用户增加密码强度校验 (#250)
 - feat: 支持 Nginx 代理下的子目录路径 (#243)
 ### 🐛 Bug fix  

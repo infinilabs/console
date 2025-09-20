@@ -27,7 +27,11 @@
 
 package alerting
 
-import "fmt"
+import (
+	"fmt"
+
+	"infini.sh/console/core/insight"
+)
 
 type Condition struct {
 	Operator string          `json:"operator"`
@@ -111,11 +115,12 @@ type ConditionResult struct {
 	QueryResult *QueryResult          `json:"query_result"`
 }
 type ConditionResultItem struct {
-	GroupValues    []string               `json:"group_values"`
-	ConditionItem  *ConditionItem         `json:"condition_item"`
-	IssueTimestamp interface{}            `json:"issue_timestamp"`
-	ResultValue    interface{}            `json:"result_value"` //满足条件最后一个值
-	RelationValues map[string]interface{} `json:"relation_values"`
+	GroupValues    []string                  `json:"group_values"`
+	Groups         []insight.MetricDataGroup `json:"groups"`
+	ConditionItem  *ConditionItem            `json:"condition_item"`
+	IssueTimestamp interface{}               `json:"issue_timestamp"`
+	ResultValue    interface{}               `json:"result_value"` //满足条件最后一个值
+	RelationValues map[string]interface{}    `json:"relation_values"`
 }
 
 var PriorityWeights = map[string]int{

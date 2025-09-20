@@ -27,8 +27,12 @@
 
 package insight
 
+import (
+	"infini.sh/console/core/insight"
+)
+
 type SeriesItem struct {
 	Type    string                 `json:"type"`
 	Options map[string]interface{} `json:"options"`
-	Metric  Metric                 `json:"metric"`
+	Metric  insight.Metric         `json:"metric"`
 }

@@ -4,6 +4,13 @@ title: "用户案例"
 custom_css: "/css/img.css?ver=1.0"
 ---
 
+<style>
+.img-link a img {
+    height:48px;
+}
+
+</style>
+
 # 用户案例
 
 ## 谁在用?
@@ -25,3 +32,20 @@ custom_css: "/css/img.css?ver=1.0"
 {{% load-img-link "/img/logo/tuhu.png" "途虎养车" "https://www.tuhu.cn" %}}
 {{% load-img-link "/img/logo/guance.png" "观测云" "https://www.guance.com" %}}
 {{% load-img-link "/img/logo/gongkaoleida.png" "公考雷达" "https://www.gongkaoleida.com/" %}}
+{{% load-img-link "/img/logo/casstime.png" "开思时代" "https://www.casstime.com/" %}}
+{{% load-img-link "/img/logo/dahan.png" "大汉软件" "https://hanweb.com/" %}}
+{{% load-img-link "/img/logo/zhenai.png" "珍爱网" "https://www.zhenai.com/" %}}
+{{% load-img-link "/img/logo/nio.jpg" "蔚来" "https://www.nio.cn/" %}}
+{{% load-img-link "/img/logo/uupt.png" "UU跑腿" "https://www.uupt.com/" %}}
+{{% load-img-link "/img/logo/100tal.png" "好未来" "https://www.100tal.com/" %}}
+{{% load-img-link "/img/logo/suyun.png" "快狗打车" "https://suyun.daojia.com/" %}}
+{{% load-img-link "/img/logo/shannonai.svg" "香侬科技" "https://www.shannonai.com/" %}}
+{{% load-img-link "/img/logo/huihaohealth.svg" "上海惠灏一生" "https://www.huihaohealth.com/" %}}
+{{% load-img-link "/img/logo/kotei.png" "武汉光庭" "https://www.kotei.com.cn/" %}}
+{{% load-img-link "/img/logo/vimworld.jpg" "VIMworld" "https://www.vimworld.com" %}}
+{{% load-img-link "/img/logo/truckerpath.png" "truckerpath" "https://truckerpath.com/" %}}
+{{% load-img-link "/img/logo/accenture.png" "埃森哲" "https://www.accenture.cn/" %}}
+{{% load-img-link "/img/logo/deyatong.png" "德雅通科技" "http://www.deyatong.com" %}}
+{{% load-img-link "/img/logo/chaoli.png" "江苏超力" "https://www.chaoli-electric.com/" %}}
+{{% load-img-link "/img/logo/66y.png" "游酷盛世" "https://www.66y.com/" %}}
+{{% load-img-link "/img/logo/anzhongyun.png" "安众科技" "https://www.anzhongyun.com/" %}}

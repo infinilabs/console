@@ -8,7 +8,6 @@ custom_css: "/css/img.css?ver=1.0"
 .img-link a img {
     height:48px;
 }
-
 </style>
 
 # 用户案例

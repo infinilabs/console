@@ -346,24 +346,6 @@ PUT /_cluster/settings
   }
 }
 
-# update index settings
-PUT /.easysearch-ilm-config/_settings
-{
-  "index": {
-    "mapping": {
-      "nested_fields": {
-        "limit": 1000
-      },
-      "nested_objects": {
-        "limit": 60000
-      },
-      "total_fields": {
-        "limit": 30000
-      }
-    }
-  }
-}
-
 # ilm settings for rollup indices
 DELETE _ilm/policy/ilm_$[[SETUP_INDEX_PREFIX]]rollup-30days-retention
 PUT _ilm/policy/ilm_$[[SETUP_INDEX_PREFIX]]rollup-30days-retention

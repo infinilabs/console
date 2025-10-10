@@ -29,11 +29,12 @@ package alerting
 
 import (
 	"fmt"
-	"infini.sh/console/model/insight"
-	"infini.sh/framework/core/util"
 	"net/http"
 	"testing"
 	"time"
+
+	"infini.sh/console/core/insight"
+	"infini.sh/framework/core/util"
 )
 
 func TestCreateRule(t *testing.T) {

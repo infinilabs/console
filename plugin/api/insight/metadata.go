@@ -29,8 +29,15 @@ package insight
 
 import (
 	"bytes"
+	"math"
+	"net/http"
+	"strings"
+	"sync"
+	"text/template"
+
 	"github.com/Knetic/govaluate"
 	log "github.com/cihub/seelog"
+	insightpkg "infini.sh/console/core/insight"
 	"infini.sh/console/model/alerting"
 	"infini.sh/console/model/insight"
 	httprouter "infini.sh/framework/core/api/router"
@@ -40,11 +47,6 @@ import (
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/radix"
 	"infini.sh/framework/core/util"
-	"math"
-	"net/http"
-	"strings"
-	"sync"
-	"text/template"
 )
 
 func (h *InsightAPI) HandleGetPreview(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -200,7 +202,7 @@ func (h *InsightAPI) HandleGetMetadata(w http.ResponseWriter, req *http.Request,
 }
 
 func (h *InsightAPI) HandleGetMetricData(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	reqBody := insight.Metric{}
+	reqBody := insightpkg.Metric{}
 	err := h.DecodeJSON(req, &reqBody)
 	if err != nil {
 		log.Error(err)
@@ -242,8 +244,8 @@ func getAllowedSystemIndices() []string {
 	return allowedSystemIndices
 }
 
-func getMetricData(metric *insight.Metric) (interface{}, error) {
-	query, err := GenerateQuery(metric)
+func getMetricData(metric *insightpkg.Metric) (interface{}, error) {
+	query, err := insightpkg.GenerateQuery(metric)
 	if err != nil {
 		return nil, err
 	}
@@ -259,21 +261,14 @@ func getMetricData(metric *insight.Metric) (interface{}, error) {
 		return nil, err
 	}
 
-	var agg = searchResult["aggregations"]
-	if metric.Filter != nil {
-		if aggM, ok := agg.(map[string]interface{}); ok {
-			agg = aggM["filter_agg"]
-		}
-	}
-	timeBeforeGroup := metric.AutoTimeBeforeGroup()
-	metricData, interval := CollectMetricData(agg, timeBeforeGroup)
+	metricData, interval := insightpkg.CollectMetricData(metric, searchResult)
 	formula := strings.TrimSpace(metric.Formula)
 	//support older versions for a single formula.
 	if metric.Formula != "" && len(metric.Formulas) == 0 {
 		metric.Formulas = []string{metric.Formula}
 	}
 
-	var targetMetricData []insight.MetricData
+	var targetMetricData []insightpkg.MetricData
 	if len(metric.Items) == 1 && len(metric.Formulas) == 0 {
 		targetMetricData = metricData
 	} else {
@@ -292,14 +287,14 @@ func getMetricData(metric *insight.Metric) (interface{}, error) {
 			}
 		}
 		for _, md := range metricData {
-			targetData := insight.MetricData{
+			targetData := insightpkg.MetricData{
 				Groups: md.Groups,
-				Data:   map[string][]insight.MetricDataItem{},
+				Data:   map[string][]insightpkg.MetricDataItem{},
 			}
 			//merge metric data by timestamp
-			var timeMetricData = map[interface{}]*insight.MetricDataItem{}
+			var timeMetricData = map[interface{}]*insightpkg.MetricDataItem{}
 			//non time series data
-			grpMetricData := &insight.MetricDataItem{}
+			grpMetricData := &insightpkg.MetricDataItem{}
 			isTimeSeries := false
 			for _, formula = range metric.Formulas {
 				tpl, err := template.New("insight_formula").Parse(formula)
@@ -316,10 +311,16 @@ func getMetricData(metric *insight.Metric) (interface{}, error) {
 				if err != nil {
 					return nil, err
 				}
-				dataLength := 0
+				dataLength := math.MaxInt32
 				for _, v := range md.Data {
-					dataLength = len(v)
-					break
+					// find the shortest data length
+					if len(v) < dataLength {
+						dataLength = len(v)
+					}
+				}
+				// skip empty data
+				if dataLength == math.MaxInt32 || dataLength == 0 {
+					continue
 				}
 			DataLoop:
 				for i := 0; i < dataLength; i++ {
@@ -351,12 +352,12 @@ func getMetricData(metric *insight.Metric) (interface{}, error) {
 							continue
 						}
 					}
-					var retMetricDataItem *insight.MetricDataItem
+					var retMetricDataItem *insightpkg.MetricDataItem
 					//time series data
 					if timestamp != nil {
 						isTimeSeries = true
 						if v, ok := timeMetricData[timestamp]; !ok {
-							retMetricDataItem = &insight.MetricDataItem{}
+							retMetricDataItem = &insightpkg.MetricDataItem{}
 						} else {
 							retMetricDataItem = v
 						}
@@ -391,11 +392,11 @@ func getMetricData(metric *insight.Metric) (interface{}, error) {
 		}
 	}
 
-	result := []insight.MetricDataItem{}
+	result := []insightpkg.MetricDataItem{}
 	for _, md := range targetMetricData {
 		for _, v := range md.Data {
 			for _, mitem := range v {
-				mitem.Groups = md.Groups
+				mitem.GroupInfos = md.Groups
 				result = append(result, mitem)
 			}
 		}
@@ -479,8 +480,8 @@ func getMetadataByIndexPattern(clusterID, indexPattern, timeField string, filter
 			seriesItem := insight.SeriesItem{
 				Type:    seriesType,
 				Options: options,
-				Metric: insight.Metric{
-					Items: []insight.MetricItem{
+				Metric: insightpkg.Metric{
+					Items: []insightpkg.MetricItem{
 						{
 							Name:      "a",
 							Field:     aggField.Name,
@@ -491,7 +492,7 @@ func getMetadataByIndexPattern(clusterID, indexPattern, timeField string, filter
 					AggTypes: aggTypes,
 				}}
 			if seriesType == "column" || seriesType == "pie" {
-				seriesItem.Metric.Groups = []insight.MetricGroupItem{
+				seriesItem.Metric.Groups = []insightpkg.MetricGroupItem{
 					{Field: aggField.Name, Limit: 10},
 				}
 			}

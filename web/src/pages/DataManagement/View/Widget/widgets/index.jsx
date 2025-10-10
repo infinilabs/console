@@ -175,6 +175,8 @@ export const getTooltipOption = (record, bucketSize = '', showTitle = true) => {
         'h': 'YYYY-MM-DD HH:mm',
         'd': 'YYYY-MM-DD'
       }
+      const validItems = items.filter(item => item.value !== undefined);
+      const sortedItems = [...validItems].sort((a, b) => b.value - a.value);
       return (
         <div style={{ padding: 4 }}>
           {
@@ -185,7 +187,7 @@ export const getTooltipOption = (record, bucketSize = '', showTitle = true) => {
             )
           }
           <ul style={{ paddingLeft: 0 }}>
-            {items?.map((item, index) => {
+            {sortedItems?.map((item, index) => {
               const { name, value, color } = item;
               const newValue = formatValueByConfig(value, format, is_percent)
 

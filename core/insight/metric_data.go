@@ -28,6 +28,7 @@
 package insight
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 
@@ -55,6 +56,7 @@ const (
 	AggFuncSumFuncValueInGroup        = "sum_func_value_in_group"
 	AggFuncRateSumFuncValueInGroup    = "rate_sum_func_value_in_group"
 	AggFuncLatencySumFuncValueInGroup = "latency_sum_func_value_in_group"
+	AggFuncPercentage                 = "percentage"
 )
 
 type Metric struct {
@@ -182,6 +184,26 @@ func (m *Metric) ValidateSortKey() error {
 	return nil
 }
 
+// GetDerivedAggregations returns a list of derived aggregation names that are supported by the metric.
+// It checks the metric items against a predefined set of derived aggregation types.
+// The derived aggregation types are defined in the constant AggFuncPercentage.
+func (m *Metric) GetDerivedAggregations() []string {
+	var supportedDerivedAggTypes = map[string]struct{}{
+		AggFuncPercentage: {},
+	}
+	length := len(m.Items)
+	if v := len(supportedDerivedAggTypes); v < length {
+		length = v
+	}
+	var derivedAggs = make([]string, 0, length)
+	for _, item := range m.Items {
+		if _, ok := supportedDerivedAggTypes[item.Statistic]; ok {
+			derivedAggs = append(derivedAggs, item.Statistic)
+		}
+	}
+	return derivedAggs
+}
+
 type MetricItem struct {
 	Name      string `json:"name,omitempty"`
 	Field     string `json:"field"`
@@ -194,14 +216,45 @@ type MetricItem struct {
 }
 
 type MetricDataItem struct {
-	Timestamp  interface{} `json:"timestamp,omitempty"`
-	Value      interface{} `json:"value"`
-	Groups     []string    `json:"groups,omitempty"`
-	GroupLabel string      `json:"group_label,omitempty"`
+	Timestamp interface{} `json:"timestamp,omitempty"`
+	Value     interface{} `json:"value"`
+	// legacy group values
+	// Groups is a list of group values for this item, used for legacy support
+	Groups     []string          `json:"groups,omitempty"`
+	GroupInfos []MetricDataGroup `json:"-"`
+	GroupLabel string            `json:"group_label,omitempty"`
+	// DocCount is the count of documents in the bucket
+	DocCount uint32 `json:"doc_count,omitempty"`
+	// TimeBucketDocCount is the count of documents in the time bucket
+	TimeBucketDocCount uint32 `json:"time_bucket_doc_count,omitempty"`
+}
+
+func GetGroupValues(grpInfos []MetricDataGroup) []string {
+	if len(grpInfos) == 0 {
+		return nil
+	}
+	groupValues := make([]string, 0, len(grpInfos))
+	for _, group := range grpInfos {
+		groupValues = append(groupValues, group.Value)
+	}
+	return groupValues
+}
+
+func (m *MetricDataItem) MarshalJSON() ([]byte, error) {
+	type Alias MetricDataItem
+	av := (*Alias)(m)
+	if len(av.Groups) == 0 && len(av.GroupInfos) > 0 {
+		av.Groups = GetGroupValues(av.GroupInfos)
+	}
+	return json.Marshal(&struct {
+		*Alias
+	}{
+		Alias: av,
+	})
 }
 
 type MetricData struct {
-	Groups     []string `json:"groups,omitempty"`
+	Groups     []MetricDataGroup `json:"groups,omitempty"`
 	Data       map[string][]MetricDataItem
 	GroupLabel string `json:"group_label,omitempty"`
 }
@@ -209,4 +262,9 @@ type MetricData struct {
 type BucketLabel struct {
 	Enabled  bool   `json:"enabled"`
 	Template string `json:"template,omitempty"`
+}
+
+type MetricDataGroup struct {
+	Value    string `json:"value"`
+	DocCount uint32 `json:"doc_count,omitempty"`
 }

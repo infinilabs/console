@@ -36,9 +36,9 @@ import (
 
 	log "github.com/cihub/seelog"
 	"github.com/r3labs/diff/v2"
+	"infini.sh/console/core/insight"
 	"infini.sh/console/core/security"
 	"infini.sh/console/model/alerting"
-	"infini.sh/console/model/insight"
 	"infini.sh/console/modules/elastic/api"
 	alerting2 "infini.sh/console/service/alerting"
 	_ "infini.sh/console/service/alerting/elasticsearch"
@@ -280,45 +280,47 @@ func (alertAPI *AlertAPI) getRuleDetail(w http.ResponseWriter, req *http.Request
 			channelIDs = append(channelIDs, ch.ID)
 		}
 	}
-	q = &orm.Query{
-		Size: len(channelIDs),
-	}
-	q.Conds = append(q.Conds, orm.In("id", channelIDs))
-	err, result = orm.Search(alerting.Channel{}, q)
-	if err != nil {
-		log.Error(err)
-		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	chm := map[string]alerting.Channel{}
-	for _, row := range result.Result {
-		buf := util.MustToJSONBytes(row)
-		ch := alerting.Channel{}
-		util.MustFromJSONBytes(buf, &ch)
-		chm[ch.ID] = ch
-	}
-	if obj.NotificationConfig != nil {
-		for i, ch := range obj.NotificationConfig.Normal {
-			if v, ok := chm[ch.ID]; ok {
-				obj.NotificationConfig.Normal[i].Enabled = v.Enabled && ch.Enabled
-				obj.NotificationConfig.Normal[i].Type = v.SubType
-				obj.NotificationConfig.Normal[i].Name = v.Name
+	if len(channelIDs) > 0 {
+		q = &orm.Query{
+			Size: len(channelIDs),
+		}
+		q.Conds = append(q.Conds, orm.In("id", channelIDs))
+		err, result = orm.Search(alerting.Channel{}, q)
+		if err != nil {
+			log.Error(err)
+			alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		chm := map[string]alerting.Channel{}
+		for _, row := range result.Result {
+			buf := util.MustToJSONBytes(row)
+			ch := alerting.Channel{}
+			util.MustFromJSONBytes(buf, &ch)
+			chm[ch.ID] = ch
+		}
+		if obj.NotificationConfig != nil {
+			for i, ch := range obj.NotificationConfig.Normal {
+				if v, ok := chm[ch.ID]; ok {
+					obj.NotificationConfig.Normal[i].Enabled = v.Enabled && ch.Enabled
+					obj.NotificationConfig.Normal[i].Type = v.SubType
+					obj.NotificationConfig.Normal[i].Name = v.Name
+				}
+			}
+			for i, ch := range obj.NotificationConfig.Escalation {
+				if v, ok := chm[ch.ID]; ok {
+					obj.NotificationConfig.Escalation[i].Enabled = v.Enabled && ch.Enabled
+					obj.NotificationConfig.Escalation[i].Type = v.SubType
+					obj.NotificationConfig.Escalation[i].Name = v.Name
+				}
 			}
 		}
-		for i, ch := range obj.NotificationConfig.Escalation {
-			if v, ok := chm[ch.ID]; ok {
-				obj.NotificationConfig.Escalation[i].Enabled = v.Enabled && ch.Enabled
-				obj.NotificationConfig.Escalation[i].Type = v.SubType
-				obj.NotificationConfig.Escalation[i].Name = v.Name
-			}
-		}
-	}
-	if obj.RecoveryNotificationConfig != nil {
-		for i, ch := range obj.RecoveryNotificationConfig.Normal {
-			if v, ok := chm[ch.ID]; ok {
-				obj.RecoveryNotificationConfig.Normal[i].Enabled = v.Enabled && ch.Enabled
-				obj.RecoveryNotificationConfig.Normal[i].Type = v.SubType
-				obj.RecoveryNotificationConfig.Normal[i].Name = v.Name
+		if obj.RecoveryNotificationConfig != nil {
+			for i, ch := range obj.RecoveryNotificationConfig.Normal {
+				if v, ok := chm[ch.ID]; ok {
+					obj.RecoveryNotificationConfig.Normal[i].Enabled = v.Enabled && ch.Enabled
+					obj.RecoveryNotificationConfig.Normal[i].Type = v.SubType
+					obj.RecoveryNotificationConfig.Normal[i].Name = v.Name
+				}
 			}
 		}
 	}
@@ -1121,11 +1123,12 @@ func getRuleMetricData(rule *alerting.Rule, filterParam *alerting.FilterParam) (
 		//	}
 		//}
 
-		var label = strings.Join(md.GroupValues, "-")
+		grpValues := insight.GetGroupValues(md.Groups)
+		var label = strings.Join(grpValues, "-")
 		if label == "" {
 			label, _ = rule.GetOrInitExpression()
 		}
-		metricItem.BucketGroups = append(metricItem.BucketGroups, md.GroupValues)
+		metricItem.BucketGroups = append(metricItem.BucketGroups, grpValues)
 		metricItem.Lines = append(metricItem.Lines, &common.MetricLine{
 			Data:       targetData,
 			BucketSize: filterParam.BucketSize,
@@ -1224,7 +1227,6 @@ func (alertAPI *AlertAPI) batchDisableRule(w http.ResponseWriter, req *http.Requ
 				"source": fmt.Sprintf("ctx._source['enabled'] = %v", false),
 			},
 		}
-		log.Info(util.MustToJSON(q))
 		err = orm.UpdateBy(alerting.Rule{}, util.MustToJSONBytes(q))
 		if err != nil {
 			log.Error(err)

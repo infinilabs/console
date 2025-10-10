@@ -30,8 +30,10 @@ package alerting
 import (
 	"context"
 	"fmt"
-	"infini.sh/console/model/alerting"
 	"sync"
+
+	"infini.sh/console/core/insight"
+	"infini.sh/console/model/alerting"
 )
 
 type Engine interface {
@@ -40,7 +42,7 @@ type Engine interface {
 	CheckCondition(rule *alerting.Rule) (*alerting.ConditionResult, error)
 	GenerateTask(rule alerting.Rule) func(ctx context.Context)
 	Test(rule *alerting.Rule, msgType string) ([]alerting.ActionExecutionResult, error)
-	GetTargetMetricData(rule *alerting.Rule, isFilterNaN bool, filterParam *alerting.FilterParam) ([]alerting.MetricData, *alerting.QueryResult, error)
+	GetTargetMetricData(rule *alerting.Rule, isFilterNaN bool, filterParam *alerting.FilterParam) ([]insight.MetricData, *alerting.QueryResult, error)
 }
 
 var (

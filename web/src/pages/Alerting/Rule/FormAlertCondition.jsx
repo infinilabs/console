@@ -1,4 +1,4 @@
-import { Form, Input, Select, Button, Icon, Radio, InputNumber } from "antd";
+import { Form, Input, Select, Button, Icon, Radio, InputNumber, Menu, Dropdown } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import "./form.scss";
 import { formatMessage } from "umi/locale";
@@ -54,6 +54,24 @@ const MetricsValue = (props) => {
     });
     setOperatorState({ ...operatorState, ...tmp });
   }, [conditions?.items]);
+
+  // const handleMenuClick = (e) => {
+  //   if (e.key === "1") {
+  //      if (conditionItems.length >= 5) {
+  //      }
+  //   }
+  // }
+
+  // const menu = (
+  // <Menu onClick={handleMenuClick}>
+  //   <Menu.Item key="1">
+  //     New Condition
+  //   </Menu.Item>
+  //   <Menu.Item key="2">
+  //     Extra Condition
+  //   </Menu.Item>
+  // </Menu>
+// );
 
   return (
     <div className="group-wrapper">
@@ -292,6 +310,13 @@ const MetricsValue = (props) => {
 
               {i == 0 ? (
                 <Form.Item>
+                  {/* <Dropdown overlay={menu}>
+                    <Button type="primary">
+                      {formatMessage({
+                      id: "form.button.add",
+                    })} <Icon type="down" />
+                    </Button>
+                  </Dropdown> */}
                   <Button
                     type="primary"
                     icon="plus"

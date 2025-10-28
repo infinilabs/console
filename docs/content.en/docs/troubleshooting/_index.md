@@ -78,3 +78,27 @@ DELETE .infini_index
 ```
 
 - start console
+
+#### Problem Description
+
+When an older version of INFINI Console (<=1.29.8) connects to a newer, incompatible version of INFINI Easysearch (>=1.5.0), an error occurs during the initialization process.
+
+The following `index_not_found_exception` error is reported:
+```json
+PUT /.easysearch-ilm-config/_settings {"error":{"root_cause":[{"type":"index_not_found_exception","reason":"no such index [.easysearch-ilm-config]","resource.type":"index_or_alias","resource.id":".easysearch-ilm-config","index_uuid":"_na_","index":".easysearch-ilm-config"}],"type":"index_not_found_exception","reason":"no such index [.easysearch-ilm-config]","resource.type":"index_or_alias","resource.id":".easysearch-ilm-config","index_uuid":"_na_","index":".easysearch-ilm-config"},"status":404}
+```
+
+As shown in the image below:
+{{% load-img "/img/troubleshooting/ilm-error.png" "Error during initialization" %}}
+
+#### Solution
+
+This issue is caused by a version incompatibility. To resolve it, you need to align the versions of INFINI Console and INFINI Easysearch.
+
+First, stop the INFINI Console service. Then, choose **one** of the following two options:
+
+*   **Option 1: Downgrade INFINI Easysearch**
+    *   Downgrade your INFINI Easysearch instance to a compatible version, such as **1.4.2 or older**.
+
+*   **Option 2: Upgrade INFINI Console**
+    *   Upgrade your INFINI Console instance to a compatible version, such as **1.29.9 or newer**.

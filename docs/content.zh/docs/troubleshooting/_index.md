@@ -78,3 +78,27 @@ DELETE .infini_index
 ```
 
 - 启动 INFINI Console
+
+#### 问题描述
+
+当较低版本的 INFINI Console (<=1.29.8) 连接到版本不兼容的较高版本 INFINI Easysearch (>=1.5.0) 时，程序在初始化阶段会报错。
+
+系统会报告以下 `index_not_found_exception` 错误：
+```json
+PUT /.easysearch-ilm-config/_settings {"error":{"root_cause":[{"type":"index_not_found_exception","reason":"no such index [.easysearch-ilm-config]","resource.type":"index_or_alias","resource.id":".easysearch-ilm-config","index_uuid":"_na_","index":".easysearch-ilm-config"}],"type":"index_not_found_exception","reason":"no such index [.easysearch-ilm-config]","resource.type":"index_or_alias","resource.id":".easysearch-ilm-config","index_uuid":"_na_","index":".easysearch-ilm-config"},"status":404}
+```
+
+如下图所示：
+{{% load-img "/img/troubleshooting/ilm-error.png" "初始化报错" %}}
+
+#### 解决方案
+
+该问题由版本不兼容导致。为解决此问题，您需要确保 INFINI Console 和 INFINI Easysearch 的版本相互兼容。
+
+首先，请停止 INFINI Console 服务。然后，在以下两个方案中选择**其中一个**执行：
+
+*   **方案一：降级 INFINI Easysearch**
+    *   将您的 INFINI Easysearch 实例降级至兼容版本，例如 **1.4.2 或更早版本**。
+
+*   **方案二：升级 INFINI Console**
+    *   将您的 INFINI Console 实例升级至兼容版本，例如 **1.29.9 或更高版本**。

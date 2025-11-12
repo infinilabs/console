@@ -39,7 +39,7 @@ docker run --rm -v $PWD/console:/work infinilabs/console:{{< globaldata "console
 
 ## 启动平台
 
-使用如下命令启动极限网关容器：
+使用如下命令启动 INFINI Console 容器：
 
 ```bash
 docker run -p 9000:9000 \

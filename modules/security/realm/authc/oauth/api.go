@@ -39,4 +39,12 @@ type APIHandler struct {
 
 const adapterType = "native"
 
-var apiHandler = APIHandler{Adapter: rbac.GetAdapter(adapterType)} //TODO handle hard coded
+var apiHandler APIHandler
+var apiHandlerInitialized bool
+
+func initAPIHandler() {
+	if !apiHandlerInitialized {
+		apiHandler = APIHandler{Adapter: rbac.GetAdapter(adapterType)}
+		apiHandlerInitialized = true
+	}
+}

@@ -714,3 +714,14 @@ POST _plugins/_ism/add/$[[SETUP_INDEX_PREFIX]]audit-logs-00001
 {
   "policy_id": "ilm_$[[SETUP_INDEX_PREFIX]]metrics-30days-retention"
 }
+
+PUT /_index_template/$[[SETUP_INDEX_PREFIX]]top_queries
+{
+  "index_patterns": ["top_queries-*"],
+  "template": {
+    "settings": {
+      "index.mapping.total_fields.limit": 2000
+    }
+  },
+  "priority": 500
+}

@@ -25,7 +25,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	public "infini.sh/console/.public"
 	"infini.sh/framework/core/global"
 	"io"
@@ -77,10 +76,9 @@ func (h UI) InitUI() {
 	uiapi.Init(h.Config)
 
 	api.HandleAPIFunc("/api/", func(w http.ResponseWriter, req *http.Request) {
-		log.Warn("api: ", req.URL, " not implemented")
 		request, err := h.GetRawBody(req)
 		if err != nil {
-			fmt.Println(err)
+			log.Errorf("api: error reading request body: ", err)
 			return
 		}
 

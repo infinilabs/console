@@ -10,6 +10,12 @@ Information about release notes of INFINI Console is provided here.
 ## Latest (In development)  
 ### ❌ Breaking changes  
 ### 🚀 Features  
+### 🐛 Bug fix  
+### ✈️ Improvements  
+
+## 1.30.0 (2025-11-19)
+### ❌ Breaking changes  
+### 🚀 Features  
 - feat: add support for percentage-based derived aggregations
 - feat: init user password security validate (#250)
 - feat: support base path when use nginx proxy (#243)
@@ -18,6 +24,7 @@ Information about release notes of INFINI Console is provided here.
 - fix: incorrect index mapping after rollover
 - fix: display error in monitor configuration
 ### ✈️ Improvements  
+- This release includes updates from the underlying [Framework v1.3.0](https://docs.infinilabs.com/framework/v1.3.0), which resolves several common issues and enhances overall stability and performance. While there are no direct changes to Console itself, the improvements inherited from Framework benefit Console indirectly.
 - chore: reduce error log when cluster removed but agent online (#258)
 
 ## 1.29.8 (2025-07-25)

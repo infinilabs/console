@@ -719,8 +719,12 @@ PUT /_index_template/$[[SETUP_INDEX_PREFIX]]top_queries
 {
   "index_patterns": ["top_queries-*"],
   "template": {
-    "settings": {
-      "index.mapping.total_fields.limit": 2000
+    "mappings": {
+      "properties": {
+        "source": {
+          "enabled": false
+        }
+      }
     }
   },
   "priority": 500

@@ -11,7 +11,7 @@ console: {
       contacts: ':',
     }
   ],
-  version: '1.29.8',
+  version: '1.30.0',
   doc: "/docs/latest/console/getting-started/install/"
 }
 
@@ -23,7 +23,7 @@ agent: {
       contacts: ' -v ',
     }
   ],
-  version: '1.29.8',
+  version: '1.30.0',
   doc: "/docs/latest/agent/getting-started/install/"
 }
 
@@ -41,6 +41,6 @@ easysearch: {
       contacts: ':',
     }
   ],
-  version: '1.14.0',
+  version: '2.0.0',
   doc: "/docs/latest/easysearch/getting-started/install/"
 }

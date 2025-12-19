@@ -614,7 +614,6 @@ PUT $[[SETUP_INDEX_PREFIX]]activities-00001
         }
       },
       "max_result_window": "10000000"
-      }
     }
   },
   "aliases": {

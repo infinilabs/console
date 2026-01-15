@@ -21,7 +21,7 @@ weight: 2
 > INFINI Console 功能强大、轻量级、使用起来也非常简单。
 
 - 支持多集群管理，可以在一个平台内同时纳管任意多套集群；
-- 多版本支持 Easysearch（1.x–2.x）、OpenSearch（1.x–3.x）和 Elasticsearch（1.x–9.x，含 5.x/6.x/7.x/8.x）；
+- 支持多版本 Easysearch（1.x–2.x）、OpenSearch（1.x–3.x）和 Elasticsearch（1.x–9.x，含 5.x/6.x/7.x/8.x）；
 - 支持探针采集指标和日志，支持超大规模部署的集群管理；
 - 支持以项目为单位来分组管理集群的元数据信息、支持标签；
 - 支持动态注册添加集群，目标集群无需任何变动即可被接入管理；

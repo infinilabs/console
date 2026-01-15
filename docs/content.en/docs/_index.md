@@ -20,7 +20,8 @@ weight: 2
 > INFINI Console - The Choice of Elasticsearch Professionals. Be an Elasticsearch Pro Today!
 
 - Support multi-cluster management, you can manage any number of clusters at the same time in one platform;
-- Multi-version Elasticsearch support, support 1.x, 2.x, 5.x, 6.x, 7.x, 8.x;
+- Supports multiple versions of Easysearch (1.x–2.x), OpenSearch (1.x–3.x), and Elasticsearch (1.x–9.x, including 5.x/6.x/7.x/8.x).  
+- Supports agent-based metric and log collection, and cluster management for hyperscale deployments.
 - Supports grouping and managing cluster metadata information on a project-by-project basis, support custom tags;
 - Support dynamic clusters registration, and the target cluster can be accessed and managed on the fly;
 - Supports viewing the historical version of cluster metadata, and can view the changes and audits of cluster metadata.

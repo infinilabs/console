@@ -43,6 +43,35 @@ INFINI Console needs to use some features of Elasticsearch 7.0 and above
 
 Upgrade the Elasticsearch cluster version of the INFINI Console storage data to v7.0+
 
+### System cluster status shows as unavailable
+as shown below:
+{{% load-img "/img/troubleshooting/cluster_unavilabe.png" "System cluster status shows as unavailable" %}}
+
+#### Fault Description
+In versions 1.29.0 or 1.29.1, the health status field of the system cluster was updated incorrectly, resulting in the inability to display the cluster status correctly.
+
+#### Solution
+Execute the following command in the developer tools to update the status or upgrade Console to the latest version
+```
+POST /.infini_cluster/_update_by_query?conflicts=proceed
+{
+  "query": {
+    "term": {
+      "id": {
+        "value": "infini_default_system_cluster"
+      }
+    }
+  },
+  "script": {
+    "source": "ctx._source.labels = ['health_status': params.status]",
+    "lang": "painless",
+    "params": {
+      "status": "green"
+    }
+  }
+}
+```
+
 ### Startup Error
 
 ```

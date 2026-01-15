@@ -43,6 +43,38 @@ INFINI Console 需要用到 Elasticsearch 7.0 以上版本的一些特性
 
 将 INFINI Console 存储数据的 ES 集群版本升级到 v7.0+
 
+### 系统集群状态显示为不可用
+
+如下如所示：
+{{% load-img "/img/troubleshooting/cluster_unavilabe.png" "系统集群状态显示为不可用" %}}
+
+#### 问题描述
+
+在 1.29.0 或 1.29.1 版本中，系统集群的健康状态字段更新错误，导致无法正确显示集群状态。
+
+#### 解决方案
+在开发工具中执行以下命令进行状态更新或升级 Console 至最新版本
+
+```
+POST /.infini_cluster/_update_by_query?conflicts=proceed
+{
+  "query": {
+    "term": {
+      "id": {
+        "value": "infini_default_system_cluster"
+      }
+    }
+  },
+  "script": {
+    "source": "ctx._source.labels = ['health_status': params.status]",
+    "lang": "painless",
+    "params": {
+      "status": "green"
+    }
+  }
+}
+```
+
 ### 启动报错
 
 ```

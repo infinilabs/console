@@ -85,6 +85,15 @@ func (r *NativeRealm) Authorize(user *rbac.User) (bool, error) {
 
 	var _, privilege = user.GetPermissions()
 
+	// If the user has roles assigned but no privileges were resolved, the RoleMap
+	// may have been loaded before the database was ready (e.g. during shard recovery).
+	// Attempt a reload and retry once before failing.
+	if len(privilege) == 0 && len(user.Roles) > 0 {
+		log.Warn("no privilege resolved for user, reloading role map and retrying:", user.Username)
+		loadRemoteRolePermission()
+		_, privilege = user.GetPermissions()
+	}
+
 	if len(privilege) == 0 {
 		log.Error("no privilege assigned to user:", user)
 		return false, errors.New("no privilege assigned to this user:" + user.Username)

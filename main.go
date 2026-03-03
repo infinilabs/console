@@ -27,6 +27,7 @@ import (
 	"context"
 	"errors"
 	_ "expvar"
+	"fmt"
 	api3 "infini.sh/console/modules/agent/api"
 	"infini.sh/console/plugin/api/email"
 	"infini.sh/console/plugin/audit_log"
@@ -163,6 +164,17 @@ func main() {
 		module.Start()
 
 		var initFunc = func() {
+			// check cluster health before initialization, refuse to start if status is red
+			sysClusterID := global.MustLookupString(elastic.GlobalSystemElasticsearchID)
+			client := elastic.GetClient(sysClusterID)
+			health, err := client.ClusterHealth(context.Background())
+			if err != nil {
+				panic(fmt.Errorf("failed to get system cluster health: %v", err))
+			}
+			if health != nil && health.Status == "red" {
+				panic(fmt.Errorf("system cluster health status is [red], please fix the cluster before starting"))
+			}
+
 			elastic2.InitTemplate(false)
 
 			if global.Env().SetupRequired() {

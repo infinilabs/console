@@ -194,6 +194,12 @@ func (h TestAPI) HandleTestConnectionAction(w http.ResponseWriter, req *http.Req
 		resBody["number_of_data_nodes"] = healthInfo.NumberOf_data_nodes
 		resBody["active_shards"] = healthInfo.ActiveShards
 
+		if healthInfo.Status == "red" {
+			resBody["error"] = "cluster health status is red, please fix the cluster before connecting"
+			h.WriteJSON(w, resBody, http.StatusInternalServerError)
+			return
+		}
+
 		freq.Reset()
 		fres.Reset()
 	}

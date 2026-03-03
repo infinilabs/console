@@ -356,6 +356,9 @@ func (module *Module) initTempClient(request *SetupRequest) (error, elastic.API)
 		return err, nil
 	}
 	if health != nil {
+		if health.Status == "red" {
+			return errors.Errorf("cluster health status is red, please fix the cluster before setup"), nil
+		}
 		cfg.RawName = health.Name
 	}
 	ver := client.GetVersion()

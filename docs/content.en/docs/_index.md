@@ -9,7 +9,7 @@ weight: 2
 
 ## Introduction
 
-**INFINI Console** is a very lightweight multi-cluster, cross-version unified Elasticsearch governance platform. Through the centralized management of Elasticsearch, you can quickly and conveniently manage multiple sets of Elasticsearch clusters within the enterprise.
+**INFINI Console** is a very lightweight multi-cluster, cross-version unified Elasticsearch/OpenSearch monitoring & alerting tool. Through the centralized management of Elasticsearch, you can quickly and conveniently manage multiple sets of Elasticsearch/OpenSearch clusters within the enterprise.
 
 ## Architecture
 

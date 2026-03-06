@@ -41,19 +41,82 @@ PUT _template/$[[SETUP_TEMPLATE_NAME]]
           }
         }
       },
-      "dynamic_templates": [
+    "dynamic_templates":[
         {
           "strings": {
+            "match_mapping_type": "string",
             "mapping": {
               "ignore_above": 256,
               "type": "keyword"
-            },
-            "match_mapping_type": "string"
+            }
           }
         },
         {
           "disable_payload_instance_stats": {
             "path_match": "payload.instance.stats.*",
+            "mapping": {
+              "type": "object",
+              "enabled": false
+            }
+          }
+        },
+        {
+          "disable_instance_pool_objects": {
+            "path_match": "payload.instance.pool.objects.*",
+            "mapping": {
+              "type": "object",
+              "enabled": false
+            }
+          }
+        },
+        {
+          "disable_host_network_sockets": {
+            "path_match": "payload.host.network_sockets.*",
+            "mapping": {
+              "type": "object",
+              "enabled": false
+            }
+          }
+        },
+        {
+          "disable_es_http_routes": {
+            "path_match": "payload.elasticsearch.node_stats.http.routes.*",
+            "mapping": {
+              "type": "object",
+              "enabled": false
+            }
+          }
+        },
+        {
+          "disable_es_transport_actions": {
+            "path_match": "payload.elasticsearch.node_stats.transport.actions.*",
+            "mapping": {
+              "type": "object",
+              "enabled": false
+            }
+          }
+        },
+        {
+          "disable_es_routing_table": {
+            "path_match": "payload.elasticsearch.index_routing_table.*",
+            "mapping": {
+              "type": "object",
+              "enabled": false
+            }
+          }
+        },
+        {
+          "disable_es_rollup": {
+            "path_match": "payload.elasticsearch.node_stats.rollup.*",
+            "mapping": {
+              "type": "object",
+              "enabled": false
+            }
+          }
+        },
+        {
+          "disable_es_nodes_plugins": {
+            "path_match": "payload.elasticsearch.cluster_stats.nodes.plugins.*",
             "mapping": {
               "type": "object",
               "enabled": false

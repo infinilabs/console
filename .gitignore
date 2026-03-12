@@ -13,6 +13,7 @@ run/
 __debug_bin*
 *.sw*
 *.un~
+mise.toml
 
 app/public
 config/manifest.json

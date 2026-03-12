@@ -1,0 +1,4 @@
+registry=https://registry.npmmirror.com
+parallel=false
+stream=false
+timeout=120000

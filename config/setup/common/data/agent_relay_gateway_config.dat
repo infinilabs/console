@@ -32,7 +32,6 @@ flow:
       - request_body_json_del:
           ignore_missing: true
           path:
-            path:
               - payload.instance.pool.objects
               - payload.host.network_sockets.tcp
               - payload.host.network_sockets.udp

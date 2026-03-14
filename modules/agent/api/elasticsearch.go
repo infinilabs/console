@@ -647,7 +647,7 @@ func (h *APIHandler) internalProcessBind(clusterID, clusterUUID, instanceID, ins
 		}
 
 		settings := NewNodeAgentSettings(instanceID, &item)
-		err := orm.Update(&orm.Context{
+		err := orm.Save(&orm.Context{
 			Refresh: "wait_for",
 		}, settings)
 

@@ -24,8 +24,14 @@
     {"name": "cat.allocation", "methods": ["get"],
       "path": "_cat/allocation"
     },
+    {"name": "cat.allocation", "methods": ["get"],
+      "path": "_cat/allocation/:node_id"
+    },
     {"name": "cat.count", "methods": ["get"],
       "path": "_cat/count"
+    },
+    {"name": "cat.count", "methods": ["get"],
+      "path": "_cat/count/:index"
     },
     {"name": "cat.shards", "methods": ["get"],
       "path": "_cat/shards"
@@ -45,8 +51,14 @@
     {"name": "cat.templates", "methods": ["get"],
       "path": "_cat/templates"
     },
+    {"name": "cat.templates", "methods": ["get"],
+      "path": "_cat/templates/:name"
+    },
     {"name": "cat.thread_pool", "methods": ["get"],
       "path": "_cat/thread_pool"
+    },
+    {"name": "cat.thread_pool", "methods": ["get"],
+      "path": "_cat/thread_pool/:thread_pool_patterns"
     },
     {"name": "cat.health", "methods": ["get"],
       "path": "_cat/health"
@@ -54,8 +66,14 @@
     {"name": "cat.recovery", "methods": ["get"],
       "path": "_cat/recovery"
     },
+    {"name": "cat.recovery", "methods": ["get"],
+      "path": "_cat/recovery/:index"
+    },
     {"name": "cat.fielddata", "methods": ["get"],
       "path": "_cat/fielddata"
+    },
+    {"name": "cat.fielddata", "methods": ["get"],
+      "path": "_cat/fielddata/:fields"
     },
     {"name": "cat.nodes", "methods": ["get"],
       "path": "_cat/nodes"
@@ -66,8 +84,14 @@
     {"name": "cat.segments", "methods": ["get"],
       "path": "_cat/segments"
     },
+    {"name": "cat.segments", "methods": ["get"],
+      "path": "_cat/segments/:index"
+    },
     {"name": "cat.snapshots", "methods": ["get"],
       "path": "_cat/snapshots"
+    },
+    {"name": "cat.snapshots", "methods": ["get"],
+      "path": "_cat/snapshots/:repository"
     },
     {"name": "cat.master", "methods": ["get"],
       "path": "_cat/master"
@@ -83,6 +107,9 @@
     {"name": "cluster.health", "methods": ["get"],
       "path": "_cluster/health"
     },
+    {"name": "cluster.health", "methods": ["get"],
+      "path": "_cluster/health/:index_name"
+    },
     {"name": "cluster.get_settings", "methods":["get"],
       "path": "_cluster/settings"
     },
@@ -95,7 +122,7 @@
     {"name": "cluster.remote_info", "methods": ["get"],
       "path": "_remote/info"
     },
-    {"name": "cluster.allocation_explain", "methods": ["get"],
+    {"name": "cluster.allocation_explain", "methods": ["get", "post"],
       "path": "_cluster/allocation/explain"
     },
     {"name": "cluster.put_settings", "methods": ["put"],
@@ -109,6 +136,12 @@
     },
     {"name": "cluster.state", "methods": ["get"],
       "path": "_cluster/state"
+    },
+    {"name": "cluster.state", "methods": ["get"],
+      "path": "_cluster/state/:metric"
+    },
+    {"name": "cluster.state", "methods": ["get"],
+      "path": "_cluster/state/:metric/:index_name"
     },
     {"name": "cluster.bulk", "methods": ["put", "post"],
       "path": "_bulk"
@@ -134,6 +167,9 @@
     {"name": "cluster.search", "methods": ["get", "post"],
       "path": "_search"
     },
+    {"name": "cluster.search_template", "methods": ["get", "post"],
+      "path": "_search/template"
+    },
     {"name": "cluster.search_shards", "methods": ["get", "post"],
       "path": "_search_shards"
     },
@@ -148,6 +184,81 @@
     },
     {"name": "cluster.aliases", "methods": ["get"],
       "path": "_aliases"
+    },
+    {"name": "cluster.update_aliases", "methods": ["post"],
+      "path": "_aliases"
+    },
+    {"name": "cluster.get_alias", "methods": ["get"],
+      "path": "_alias"
+    },
+    {"name": "cluster.field_caps", "methods": ["get", "post"],
+      "path": "_field_caps"
+    },
+    {"name": "cluster.clear_cache", "methods": ["post"],
+      "path": "_cache/clear"
+    },
+    {"name": "cluster.flush", "methods": ["get", "post"],
+      "path": "_flush"
+    },
+    {"name": "cluster.flush_synced", "methods": ["get", "post"],
+      "path": "_flush/synced"
+    },
+    {"name": "cluster.forcemerge", "methods": ["post"],
+      "path": "_forcemerge"
+    },
+    {"name": "cluster.refresh", "methods": ["get", "post"],
+      "path": "_refresh"
+    },
+    {"name": "cluster.stats", "methods": ["get"],
+      "path": "_cluster/stats/nodes/:node_id"
+    },
+    {"name": "cluster.validate_query", "methods": ["get", "post"],
+      "path": "_validate/query"
+    },
+    {"name": "cluster.get_settings", "methods": ["get"],
+      "path": "_settings"
+    },
+    {"name": "cluster.put_settings", "methods": ["put"],
+      "path": "_settings"
+    },
+    {"name": "cluster.recovery", "methods": ["get"],
+      "path": "_recovery"
+    },
+    {"name": "cluster.segments", "methods": ["get"],
+      "path": "_segments"
+    },
+    {"name": "cluster.shard_stores", "methods": ["get"],
+      "path": "_shard_stores"
+    },
+    {"name": "cluster.index_stats", "methods": ["get"],
+      "path": "_stats"
+    },
+    {"name": "cluster.index_stats", "methods": ["get"],
+      "path": "_stats/:metric"
+    },
+    {"name": "cluster.get_upgrade", "methods": ["get"],
+      "path": "_upgrade"
+    },
+    {"name": "cluster.upgrade", "methods": ["post"],
+      "path": "_upgrade"
+    },
+    {"name": "cluster.analyze", "methods": ["get", "post"],
+      "path": "_analyze"
+    },
+    {"name": "cluster.delete_voting_config_exclusions", "methods": ["delete"],
+      "path": "_cluster/voting_config_exclusions"
+    },
+    {"name": "cluster.post_voting_config_exclusions", "methods": ["post"],
+      "path": "_cluster/voting_config_exclusions"
+    },
+    {"name": "cluster.ik_reload", "methods": ["post"],
+      "path": "_ik/_reload"
+    },
+    {"name": "cluster.refresh_search_analyzers", "methods": ["post"],
+      "path": "_refresh_search_analyzers"
+    },
+    {"name": "cluster.refresh_search_analyzers", "methods": ["post"],
+      "path": "_refresh_search_analyzers/:index_name"
     }
   ],
   "indices": [
@@ -292,6 +403,48 @@
     {"name": "indices.field_usage_stats", "methods":["get"],
       "path": "/:index_name/_field_usage_stats"
     },
+    {"name": "indices.clone", "methods": ["post", "put"],
+      "path": "/:index_name/_clone/:target"
+    },
+    {"name": "indices.add_block", "methods": ["put"],
+      "path": "/:index_name/_block/:block"
+    },
+    {"name": "indices.disk_usage", "methods": ["post"],
+      "path": "/:index_name/_disk_usage"
+    },
+    {"name": "indices.get_alias", "methods": ["get"],
+      "path": "/:index_name/_alias"
+    },
+    {"name": "indices.update_aliases", "methods": ["post"],
+      "path": "/:index_name/_aliases"
+    },
+    {"name": "indices.shrink", "methods": ["post", "put"],
+      "path": "/:index_name/_shrink/:target"
+    },
+    {"name": "indices.split", "methods": ["post", "put"],
+      "path": "/:index_name/_split/:target"
+    },
+    {"name": "indices.rollover", "methods": ["post"],
+      "path": "/:index_name/_rollover/:new_index"
+    },
+    {"name": "indices.stats", "methods": ["get"],
+      "path": "/:index_name/_stats/:metric"
+    },
+    {"name": "indices.get_settings", "methods": ["get"],
+      "path": "/:index_name/_settings/:name"
+    },
+    {"name": "indices.get_upgrade", "methods": ["get"],
+      "path": "/:index_name/_upgrade"
+    },
+    {"name": "indices.search_template", "methods": ["get", "post"],
+      "path": "/:index_name/_search/template"
+    },
+    {"name": "indices.put_mapping", "methods": ["post", "put"],
+      "path": "/:index_name/_mappings"
+    },
+    {"name": "indices.reload", "methods": ["get", "post"],
+      "path": "/:index_name/_reload"
+    },
     {"name": "doc.*", "methods": ["*"],
       "path": "/:index_name/:doctype"
     },
@@ -332,17 +485,23 @@
     {"name": "ingest.*", "methods": ["*"],
       "path": "/_ingest/*"
     },
-    {"name": "ingest.delete_pipeline", "methods": ["delete"],
+    {"name": "ingest.get_pipeline", "methods": ["get"],
       "path": "/_ingest/pipeline"
     },
+    {"name": "ingest.get_pipeline", "methods": ["get"],
+      "path": "/_ingest/pipeline/:id"
+    },
     {"name": "ingest.put_pipeline", "methods": ["put"],
-      "path": "/_ingest/pipeline"
+      "path": "/_ingest/pipeline/:id"
+    },
+    {"name": "ingest.delete_pipeline", "methods": ["delete"],
+      "path": "/_ingest/pipeline/:id"
     },
     {"name": "ingest.simulate", "methods": ["get", "post"],
       "path": "/_ingest/pipeline/_simulate"
     },
-    {"name": "ingest.put_pipeline", "methods": ["get"],
-      "path": "/_ingest/pipeline"
+    {"name": "ingest.simulate", "methods": ["get", "post"],
+      "path": "/_ingest/pipeline/:id/_simulate"
     },
     {"name": "ingest.processor_grok", "methods": ["get"],
       "path": "/_ingest/processor/grok"
@@ -359,17 +518,50 @@
     {"name": "nodes.info", "methods": ["get"],
       "path": "/_nodes/:node_id"
     },
+    {"name": "nodes.info", "methods": ["get"],
+      "path": "/_nodes/:node_id/:metric"
+    },
     {"name": "nodes.stats", "methods": ["get"],
       "path": "/_nodes/stats"
+    },
+    {"name": "nodes.stats", "methods": ["get"],
+      "path": "/_nodes/stats/:metric"
+    },
+    {"name": "nodes.stats", "methods": ["get"],
+      "path": "/_nodes/stats/:metric/:index_metric"
+    },
+    {"name": "nodes.stats", "methods": ["get"],
+      "path": "/_nodes/:node_id/stats"
+    },
+    {"name": "nodes.stats", "methods": ["get"],
+      "path": "/_nodes/:node_id/stats/:metric"
+    },
+    {"name": "nodes.stats", "methods": ["get"],
+      "path": "/_nodes/:node_id/stats/:metric/:index_metric"
     },
     {"name": "nodes.reload_secure_settings", "methods": ["post"],
       "path": "/_nodes/reload_secure_settings"
     },
+    {"name": "nodes.reload_secure_settings", "methods": ["post"],
+      "path": "/_nodes/:node_id/reload_secure_settings"
+    },
     {"name": "nodes.usage", "methods": ["get"],
       "path": "/_nodes/usage"
     },
+    {"name": "nodes.usage", "methods": ["get"],
+      "path": "/_nodes/usage/:metric"
+    },
+    {"name": "nodes.usage", "methods": ["get"],
+      "path": "/_nodes/:node_id/usage"
+    },
+    {"name": "nodes.usage", "methods": ["get"],
+      "path": "/_nodes/:node_id/usage/:metric"
+    },
     {"name": "nodes.hot_threads", "methods": ["get"],
       "path": "/_nodes/hot_threads"
+    },
+    {"name": "nodes.hot_threads", "methods": ["get"],
+      "path": "/_nodes/:node_id/hot_threads"
     }
   ],
   "reindex": [
@@ -381,13 +573,28 @@
     },
     {"name": "reindex.rethrottle", "methods": ["post"],
       "path": "/_reindex/:rid/_rethrottle"
+    },
+    {"name": "delete_by_query.rethrottle", "methods": ["post"],
+      "path": "/_delete_by_query/:task_id/_rethrottle"
+    },
+    {"name": "update_by_query.rethrottle", "methods": ["post"],
+      "path": "/_update_by_query/:task_id/_rethrottle"
     }
   ],
   "template": [
     {"name": "template.*", "methods": ["*"],
       "path": "/_template/*"
     },
-    {"name": "template.put", "methods": ["put"],
+    {"name": "template.get", "methods": ["get"],
+      "path": "/_template"
+    },
+    {"name": "template.get", "methods": ["get"],
+      "path": "/_template/:template_name"
+    },
+    {"name": "template.exists", "methods": ["head"],
+      "path": "/_template/:template_name"
+    },
+    {"name": "template.put", "methods": ["put", "post"],
       "path": "/_template/:template_name"
     },
     {"name": "template.delete", "methods": ["delete"],
@@ -398,14 +605,32 @@
     { "name": "rollup.*","methods": ["*"],
       "path": "/_rollup/*"
     },
+    { "name": "rollup.get","methods": ["get"],
+      "path": "/_rollup/jobs"
+    },
+    { "name": "rollup.get","methods": ["get"],
+      "path": "/_rollup/jobs/:rollup_name"
+    },
     { "name": "rollup.get.explain","methods": ["get"],
       "path": "/_rollup/jobs/:rollup_name/_explain"
     },
-    { "name": "rollup.put","methods": ["put"],
+    { "name": "rollup.exists","methods": ["head"],
+      "path": "/_rollup/jobs/:rollup_name"
+    },
+    { "name": "rollup.put","methods": ["put", "post"],
       "path": "/_rollup/jobs/:rollup_name"
     },
     { "name": "rollup.delete","methods": ["delete"],
       "path": "/_rollup/jobs/:rollup_name"
+    },
+    { "name": "rollup.start","methods": ["post"],
+      "path": "/_rollup/jobs/:rollup_name/_start"
+    },
+    { "name": "rollup.stop","methods": ["post"],
+      "path": "/_rollup/jobs/:rollup_name/_stop"
+    },
+    { "name": "rollup.search","methods": ["get", "post"],
+      "path": "/:index_name/_rollup_search"
     }
   ],
   "render_search_template": [
@@ -426,14 +651,23 @@
     {"name": "scripts.get", "methods": ["get"],
       "path": "/_scripts/:sid"
     },
-    {"name": "scripts.put", "methods": ["put"],
+    {"name": "scripts.put", "methods": ["put", "post"],
       "path": "/_scripts/:sid"
+    },
+    {"name": "scripts.put", "methods": ["put", "post"],
+      "path": "/_scripts/:sid/:context"
     },
     {"name": "scripts.delete", "methods": ["delete"],
       "path": "/_scripts/:sid"
     },
     {"name": "scripts.painless_execute", "methods": ["get", "post"],
       "path": "_scripts/painless/_execute"
+    },
+    {"name": "scripts.get_context", "methods": ["get"],
+      "path": "/_script_context"
+    },
+    {"name": "scripts.get_languages", "methods": ["get"],
+      "path": "/_script_language"
     }
   ],
 
@@ -460,12 +694,15 @@
       "path": "/_snapshot/*"
     },
     {"name": "snapshot.get_repository", "methods": ["get"],
+      "path": "/_snapshot"
+    },
+    {"name": "snapshot.get_repository", "methods": ["get"],
       "path": "/_snapshot/:repo_name"
     },
-    {"name": "snapshot.create_repository", "methods": ["post"],
+    {"name": "snapshot.create_repository", "methods": ["post", "put"],
       "path": "/_snapshot/:repo_name"
     },
-    {"name": "snapshot.create", "methods": ["post"],
+    {"name": "snapshot.create", "methods": ["post", "put"],
       "path": "/_snapshot/:repo_name/:snapshot_name"
     },
     {"name": "snapshot.restore", "methods": ["post"],
@@ -473,6 +710,12 @@
     },
     {"name": "snapshot.status", "methods": ["get"],
       "path": "/_snapshot/_status"
+    },
+    {"name": "snapshot.status", "methods": ["get"],
+      "path": "/_snapshot/:repo_name/_status"
+    },
+    {"name": "snapshot.status", "methods": ["get"],
+      "path": "/_snapshot/:repo_name/:snapshot_name/_status"
     },
     {"name": "snapshot.delete", "methods": ["delete"],
       "path": "/_snapshot/:repo_name/:snapshot_name"
@@ -482,6 +725,12 @@
     },
     {"name": "snapshot.verify_repository", "methods": ["post"],
       "path": "/_snapshot/:repo_name/_verify"
+    },
+    {"name": "snapshot.cleanup_repository", "methods": ["post"],
+      "path": "/_snapshot/:repo_name/_cleanup"
+    },
+    {"name": "snapshot.clone", "methods": ["put"],
+      "path": "/_snapshot/:repo_name/:snapshot_name/_clone/:target_snapshot"
     },
     {"name": "snapshot.get", "methods": ["get"],
       "path": "/_snapshot/:repo_name/:snapshot_name"
@@ -498,6 +747,9 @@
     {"name": "tasks.cancel", "methods":  ["post"],
       "path": "/_tasks/:task_id/_cancel"
     },
+    {"name": "tasks.cancel", "methods":  ["post"],
+      "path": "/_tasks/_cancel"
+    },
     {"name": "tasks.get", "methods":  ["get"],
       "path": "/_tasks/:task_id"
     }
@@ -510,6 +762,267 @@
     {"name": "sql.get_async_status", "methods": ["get"], "path": "/_sql/async/status/:search_id"},
     {"name": "sql.search", "methods":  ["get", "post"], "path": "/_sql"},
     {"name": "sql.search", "methods":  ["post"], "path": "/_plugins/_sql"},
-    {"name": "sql.translate", "methods":  ["get", "post"], "path": "/_sql/translate"}
+    {"name": "sql.translate", "methods":  ["get", "post"], "path": "/_sql/translate"},
+    {"name": "sql.explain", "methods":  ["post"], "path": "/_sql/_explain"},
+    {"name": "sql.stats", "methods":  ["post"], "path": "/_sql/stats"},
+    {"name": "sql.settings", "methods":  ["put"], "path": "/_sql/_query/settings"}
+  ],
+
+  "async_search": [
+    {"name": "async_search.*", "methods": ["*"],
+      "path": "/_async_search/*"
+    },
+    {"name": "async_search.submit", "methods": ["post"],
+      "path": "/_async_search"
+    },
+    {"name": "async_search.submit", "methods": ["post"],
+      "path": "/:index_name/_async_search"
+    },
+    {"name": "async_search.get", "methods": ["get"],
+      "path": "/_async_search/:id"
+    },
+    {"name": "async_search.delete", "methods": ["delete"],
+      "path": "/_async_search/:id"
+    },
+    {"name": "async_search.stats", "methods": ["get"],
+      "path": "/_async_search/stats"
+    }
+  ],
+
+  "index_template": [
+    {"name": "index_template.*", "methods": ["*"],
+      "path": "/_index_template/*"
+    },
+    {"name": "index_template.get", "methods": ["get"],
+      "path": "/_index_template"
+    },
+    {"name": "index_template.get", "methods": ["get"],
+      "path": "/_index_template/:template_name"
+    },
+    {"name": "index_template.exists", "methods": ["head"],
+      "path": "/_index_template/:template_name"
+    },
+    {"name": "index_template.put", "methods": ["put", "post"],
+      "path": "/_index_template/:template_name"
+    },
+    {"name": "index_template.delete", "methods": ["delete"],
+      "path": "/_index_template/:template_name"
+    },
+    {"name": "index_template.simulate", "methods": ["post"],
+      "path": "/_index_template/_simulate"
+    },
+    {"name": "index_template.simulate", "methods": ["post"],
+      "path": "/_index_template/_simulate/:template_name"
+    },
+    {"name": "index_template.simulate_index", "methods": ["post"],
+      "path": "/_index_template/_simulate_index/:template_name"
+    }
+  ],
+
+  "component_template": [
+    {"name": "component_template.*", "methods": ["*"],
+      "path": "/_component_template/*"
+    },
+    {"name": "component_template.get", "methods": ["get"],
+      "path": "/_component_template"
+    },
+    {"name": "component_template.get", "methods": ["get"],
+      "path": "/_component_template/:template_name"
+    },
+    {"name": "component_template.exists", "methods": ["head"],
+      "path": "/_component_template/:template_name"
+    },
+    {"name": "component_template.put", "methods": ["put", "post"],
+      "path": "/_component_template/:template_name"
+    },
+    {"name": "component_template.delete", "methods": ["delete"],
+      "path": "/_component_template/:template_name"
+    }
+  ],
+
+  "data_stream": [
+    {"name": "data_stream.*", "methods": ["*"],
+      "path": "/_data_stream/*"
+    },
+    {"name": "data_stream.get", "methods": ["get"],
+      "path": "/_data_stream"
+    },
+    {"name": "data_stream.get", "methods": ["get"],
+      "path": "/_data_stream/:name"
+    },
+    {"name": "data_stream.stats", "methods": ["get"],
+      "path": "/_data_stream/_stats"
+    },
+    {"name": "data_stream.stats", "methods": ["get"],
+      "path": "/_data_stream/:name/_stats"
+    },
+    {"name": "data_stream.create", "methods": ["put"],
+      "path": "/_data_stream/:name"
+    },
+    {"name": "data_stream.delete", "methods": ["delete"],
+      "path": "/_data_stream/:name"
+    }
+  ],
+
+  "ilm": [
+    {"name": "ilm.*", "methods": ["*"],
+      "path": "/_ilm/*"
+    },
+    {"name": "ilm.get_policy", "methods": ["get"],
+      "path": "/_ilm/policy"
+    },
+    {"name": "ilm.get_policy", "methods": ["get"],
+      "path": "/_ilm/policy/:policy_id"
+    },
+    {"name": "ilm.exists_policy", "methods": ["head"],
+      "path": "/_ilm/policy/:policy_id"
+    },
+    {"name": "ilm.put_policy", "methods": ["put"],
+      "path": "/_ilm/policy/:policy_id"
+    },
+    {"name": "ilm.delete_policy", "methods": ["delete"],
+      "path": "/_ilm/policy/:policy_id"
+    },
+    {"name": "ilm.explain", "methods": ["get"],
+      "path": "/_ilm/explain"
+    },
+    {"name": "ilm.explain", "methods": ["get"],
+      "path": "/_ilm/explain/:index_name"
+    },
+    {"name": "ilm.add_policy", "methods": ["post"],
+      "path": "/_ilm/add"
+    },
+    {"name": "ilm.add_policy", "methods": ["post"],
+      "path": "/_ilm/add/:index_name"
+    },
+    {"name": "ilm.change_policy", "methods": ["post"],
+      "path": "/_ilm/change_policy"
+    },
+    {"name": "ilm.change_policy", "methods": ["post"],
+      "path": "/_ilm/change_policy/:index_name"
+    },
+    {"name": "ilm.remove_policy", "methods": ["post"],
+      "path": "/_ilm/remove"
+    },
+    {"name": "ilm.remove_policy", "methods": ["post"],
+      "path": "/_ilm/remove/:index_name"
+    },
+    {"name": "ilm.retry", "methods": ["post"],
+      "path": "/_ilm/retry"
+    },
+    {"name": "ilm.retry", "methods": ["post"],
+      "path": "/_ilm/retry/:index_name"
+    }
+  ],
+
+  "resolve": [
+    {"name": "resolve.*", "methods": ["*"],
+      "path": "/_resolve/*"
+    },
+    {"name": "resolve.index", "methods": ["get"],
+      "path": "/_resolve/index/:name"
+    }
+  ],
+
+  "dangling_indices": [
+    {"name": "dangling_indices.*", "methods": ["*"],
+      "path": "/_dangling/*"
+    },
+    {"name": "dangling_indices.list", "methods": ["get"],
+      "path": "/_dangling"
+    },
+    {"name": "dangling_indices.import", "methods": ["post"],
+      "path": "/_dangling/:index_uuid"
+    },
+    {"name": "dangling_indices.delete", "methods": ["delete"],
+      "path": "/_dangling/:index_uuid"
+    }
+  ],
+
+  "pit": [
+    {"name": "pit.*", "methods": ["*"],
+      "path": "/_pit/*"
+    },
+    {"name": "pit.create", "methods": ["post"],
+      "path": "/:index_name/_pit"
+    },
+    {"name": "pit.delete", "methods": ["delete"],
+      "path": "/_pit"
+    },
+    {"name": "pit.delete_all", "methods": ["delete"],
+      "path": "/_pit/_all"
+    },
+    {"name": "pit.get_all", "methods": ["get"],
+      "path": "/_pit/_all"
+    }
+  ],
+
+  "search_pipeline": [
+    {"name": "search_pipeline.*", "methods": ["*"],
+      "path": "/_search/pipeline/*"
+    },
+    {"name": "search_pipeline.get", "methods": ["get"],
+      "path": "/_search/pipeline"
+    },
+    {"name": "search_pipeline.get", "methods": ["get"],
+      "path": "/_search/pipeline/:id"
+    },
+    {"name": "search_pipeline.put", "methods": ["put"],
+      "path": "/_search/pipeline/:id"
+    },
+    {"name": "search_pipeline.delete", "methods": ["delete"],
+      "path": "/_search/pipeline/:id"
+    }
+  ],
+
+  "transform": [
+    {"name": "transform.*", "methods": ["*"],
+      "path": "/_ilm/_transform/*"
+    },
+    {"name": "transform.get", "methods": ["get"],
+      "path": "/_ilm/_transform"
+    },
+    {"name": "transform.get", "methods": ["get"],
+      "path": "/_ilm/_transform/:transform_id"
+    },
+    {"name": "transform.exists", "methods": ["head"],
+      "path": "/_ilm/_transform/:transform_id"
+    },
+    {"name": "transform.create", "methods": ["post"],
+      "path": "/_ilm/_transform"
+    },
+    {"name": "transform.put", "methods": ["put"],
+      "path": "/_ilm/_transform/:transform_id"
+    },
+    {"name": "transform.delete", "methods": ["delete"],
+      "path": "/_ilm/_transform/:transform_id"
+    },
+    {"name": "transform.explain", "methods": ["get"],
+      "path": "/_ilm/_transform/:transform_id/_explain"
+    },
+    {"name": "transform.preview", "methods": ["post"],
+      "path": "/_ilm/_transform/_preview"
+    },
+    {"name": "transform.start", "methods": ["post"],
+      "path": "/_ilm/_transform/:transform_id/_start"
+    },
+    {"name": "transform.stop", "methods": ["post"],
+      "path": "/_ilm/_transform/:transform_id/_stop"
+    }
+  ],
+
+  "license": [
+    {"name": "license.*", "methods": ["*"],
+      "path": "/_license/*"
+    },
+    {"name": "license.get", "methods": ["get"],
+      "path": "/_license/info"
+    },
+    {"name": "license.apply", "methods": ["post"],
+      "path": "/_license/apply"
+    },
+    {"name": "license.delete", "methods": ["delete"],
+      "path": "/_license"
+    }
   ]
 }

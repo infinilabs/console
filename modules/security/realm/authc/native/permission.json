@@ -387,6 +387,9 @@
     {"name": "template.*", "methods": ["*"],
       "path": "/_template/*"
     },
+    {"name": "template.get", "methods": ["get"],
+      "path": "/_template/:template_name"
+    },
     {"name": "template.put", "methods": ["put"],
       "path": "/_template/:template_name"
     },

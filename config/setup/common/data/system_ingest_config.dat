@@ -54,8 +54,8 @@ pipeline:
                     Content-Type: application/json
                 body: $[[message]]
                 basic_auth:
-                  username: $[[SETUP_AGENT_USERNAME]]
-                  password: $[[SETUP_AGENT_PASSWORD]]
+                  username: '$[[SETUP_AGENT_USERNAME]]'
+                  password: '$[[SETUP_AGENT_PASSWORD]]'
 #                tls: #for mTLS connection with config servers
 #                  enabled: true
 #                  ca_file: /xxx/ca.crt
@@ -64,5 +64,5 @@ pipeline:
 #                  skip_insecure_verify: false
                 schema: "$[[SETUP_SCHEME]]"
                 # receiver endpoint, fallback in order
-                hosts: $[[SETUP_HOSTS]]
+                hosts: "$[[SETUP_HOSTS]]"
                 valid_status_code: [200,201] #panic on other status code

@@ -407,7 +407,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		return
 	}
 
-	if !util.ValidateSecure(request.BootstrapPassword) {
+	if request.BootstrapPassword != "" && !util.ValidateSecure(request.BootstrapPassword) {
 		module.WriteError(w, "invalid bootstrap password", http.StatusInternalServerError)
 		return
 	}

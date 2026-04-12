@@ -155,6 +155,6 @@ http_client:
       skip_insecure_verify: true
       skip_domain_verify: true
     proxy:
-      enabled: true
+      enabled: false
       default_config:
         using_proxy_env: true

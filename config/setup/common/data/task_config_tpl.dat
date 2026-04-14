@@ -2,18 +2,18 @@ env:
    CLUSTER_PASSWORD: $[[keystore.$[[CLUSTER_ID]]_password]]
 
 elasticsearch:
-  - id: $[[TASK_ID]]
-    name: $[[TASK_ID]]
-    cluster_uuid: $[[CLUSTER_UUID]]
+  - id: "$[[TASK_ID]]"
+    name: "$[[TASK_ID]]"
+    cluster_uuid: "$[[CLUSTER_UUID]]"
     enabled: true
-    distribution: $[[CLUSTER_DISTRIBUTION]]
-    version: $[[CLUSTER_VERSION]]
-    endpoints: $[[CLUSTER_ENDPOINT]]
+    distribution: "$[[CLUSTER_DISTRIBUTION]]"
+    version: "$[[CLUSTER_VERSION]]"
+    endpoints: "$[[CLUSTER_ENDPOINT]]"
     discovery:
       enabled: false
     basic_auth:
-      username: $[[CLUSTER_USERNAME]]
-      password: $[[CLUSTER_PASSWORD]]
+      username: '$[[CLUSTER_USERNAME]]'
+      password: '$[[CLUSTER_PASSWORD]]'
     traffic_control:
       enabled: true
       max_qps_per_node: 100
@@ -32,9 +32,9 @@ pipeline:
   - es_node_stats:
       elasticsearch: $[[TASK_ID]]
       labels:
-        cluster_id: $[[CLUSTER_ID]]
-        cluster_uuid: $[[CLUSTER_UUID]]
-        cluster_name: $[[CLUSTER_NAME]]
+        cluster_id: "$[[CLUSTER_ID]]"
+        cluster_uuid: "$[[CLUSTER_UUID]]"
+        cluster_name: "$[[CLUSTER_NAME]]"
       when:
         cluster_available: ["$[[TASK_ID]]"]
 
@@ -46,12 +46,12 @@ pipeline:
   retry_delay_in_ms: 10000
   processor:
   - es_logs_processor:
-      elasticsearch: $[[TASK_ID]]
+      elasticsearch: "$[[TASK_ID]]"
       labels:
-        cluster_id: $[[CLUSTER_ID]]
-        cluster_uuid: $[[CLUSTER_UUID]]
-        cluster_name: $[[CLUSTER_NAME]]
-      logs_path: $[[NODE_LOGS_PATH]]
+        cluster_id: "$[[CLUSTER_ID]]"
+        cluster_uuid: "$[[CLUSTER_UUID]]"
+        cluster_name: "$[[CLUSTER_NAME]]"
+      logs_path: "$[[NODE_LOGS_PATH]]"
       queue_name: logs
       when:
         cluster_available: ["$[[TASK_ID]]"]

@@ -22,5 +22,6 @@ export default {
   "overview.quick.security": "安全管理",
   "overview.quick.discover": "数据探索",
   "overview.quick.monitor": "监控指标",
+  "overview.quick.migration": "数据迁移",
 
 };

@@ -117,7 +117,6 @@ const checkStatus = async (response, noticeable, option={}) => {
     response.status != 403 &&
     response.status != 401
   ) {
-    console.log("response.status:", response.status);
     if (noticeable) {
       let desc = (
         <div>

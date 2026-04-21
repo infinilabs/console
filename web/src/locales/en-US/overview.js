@@ -23,4 +23,5 @@ export default {
   "overview.quick.security": "Configure Security",
   "overview.quick.discover": "Discover Your Data",
   "overview.quick.monitor": "Cluster Metrics Ops",
+  "overview.quick.migration": "Start The Migration",
 };

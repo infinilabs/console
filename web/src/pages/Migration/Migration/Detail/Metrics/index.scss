@@ -1,0 +1,27 @@
+.mi-metrics{
+  display: flex;
+  gap: 10px;
+  .metric-item{
+    width: 25%;
+    .title{
+      border: 1px solid #E8E8E8;
+      border-bottom: none;
+      line-height: 1.6em;
+      padding: 5px 0px 5px 10px;
+    }
+    .body{
+      height: 164px;
+      padding: 1;
+      border: 1px solid #E8E8E8;
+    }
+  }
+}
+.perf-title{
+  font-weight: 700;
+  font-size: 16px;
+  color: rgb(16, 16, 16);
+  height: 40px;
+  line-height: 40px;
+  position: relative;
+  margin-top: 12px;
+}

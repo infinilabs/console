@@ -71,7 +71,6 @@ export default {
       const response = yield call(clearNotices, payload);
       // clear successfully
       if (response?.acknowledged !== true) {
-        message.error(res.error);
         return false;
       }
       yield put({
@@ -87,8 +86,7 @@ export default {
     },
     *fetchClusterList({ payload }, { call, put, select, take }) {
       let res = yield call(searchClusterConfig, payload);
-      if (res.error) {
-        message.error(res.error);
+      if (res?.error) {
         return false;
       }
       res = formatESSearchResult(res);
@@ -416,6 +414,8 @@ export default {
           "/guide",
           "/resource",
           "/platform/notification",
+          "/data_tools/migration",
+          "/data_tools/comparison",
         ];
         if (clusterHiddenPath.some((p) => pathname.startsWith(p))) {
           clusterVisible = false;

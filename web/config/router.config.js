@@ -263,6 +263,69 @@ export default [
         ],
       },
 
+      
+      {
+        path: "/data_tools",
+        name: "data_tools",
+        icon: "tool",
+        authority: ["data_tools"],
+        isPro: true,
+        routes: [
+          {
+            path: "/data_tools/migration/new",
+            name: "migration_new",
+            component: "./Migration/Migration/New",
+            hideInMenu: true,
+            authority: ["data_tools.migration:all"],
+          },
+          {
+            path: "/data_tools/migration",
+            component: "./Migration/Migration/Index",
+            name: "migration",
+            authority: [
+              "data_tools.migration:all",
+              "data_tools.migration:read",
+            ],
+          },
+          {
+            path: "/data_tools/migration/:id/detail",
+            component: "./Migration/Migration/Detail/index",
+            name: "Detail",
+            hideInMenu: true,
+            authority: [
+              "data_tools.migration:all",
+              "data_tools.migration:read",
+            ],
+          },
+          {
+            path: "/data_tools/comparison",
+            component: "./Comparison/Comparison/Index",
+            name: "comparison",
+            authority: [
+              "data_tools.comparison:all",
+              "data_tools.comparison:read",
+            ],
+          },
+          {
+            path: "/data_tools/comparison/new",
+            name: "comparison_new",
+            component: "./Comparison/Comparison/New",
+            hideInMenu: true,
+            authority: ["data_tools.comparison:all"],
+          },
+          {
+            path: "/data_tools/comparison/:id/detail",
+            component: "./Comparison/Comparison/Detail/index",
+            name: "Detail",
+            hideInMenu: true,
+            authority: [
+              "data_tools.comparison:all",
+              "data_tools.comparison:read",
+            ],
+          },
+        ],
+      },
+
       // resource
       {
         path: "/resource",

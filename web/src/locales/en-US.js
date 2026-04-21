@@ -17,6 +17,7 @@ import settings from "./en-US/settings";
 import listview from "./en-US/listview";
 import audit from "./en-US/audit";
 import error from "./en-US/error";
+import migration from "./en-US/migration";
 
 export default {
   "navBar.lang": "Languages",
@@ -320,6 +321,16 @@ export default {
   "menu.header.help.release_notes": "Release notes",
   "menu.header.help.document": "Documentation",
   "menu.header.help.ticket": "Report issue",
+
+  //migration
+  "menu.data_tools": "DATA TOOLS",
+  "menu.data_tools.migration": "MIGRATION",
+  "menu.data_tools.migration_new": "CREATE",
+  "menu.data_tools.Detail": "Detail",
+  // comparison
+  "menu.data_tools.comparison": "COMPARISON",
+  "menu.data_tools.comparison_new": "CREATE",
+  "menu.data_tools.Detail": "Detail",
 
   "app.message.operate.success": "Operate successfully",
   "app.message.operate.failed": "Operate failure",
@@ -632,5 +643,6 @@ export default {
   ...settings,
   ...listview,
   ...audit,
-  ...error
+  ...error,
+  ...migration,
 };

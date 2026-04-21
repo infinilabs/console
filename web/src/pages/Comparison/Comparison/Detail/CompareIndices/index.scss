@@ -1,0 +1,85 @@
+.comparisonList {
+   margin-top: 24px;
+   .tag{
+    background: rgba(68, 142, 247, 0.2); 
+    color: #448EF7;
+    border: none;
+    border-radius: 3px;
+  }
+  .td-v-center, .ant-table-row-expand-icon-cell{
+    vertical-align: middle;
+    .status{
+        background: rgba(108, 206, 121, 0.2);
+        padding: 0px 3px;
+        height: 20px;
+        display: inline-block;
+        border-radius: 4px;
+    }
+  }
+   .header {
+        font-weight: 700;
+        font-size: 16px;
+        color: rgb(16, 16, 16);
+        height: 40px;
+        line-height: 40px;
+        position: relative;
+        margin-bottom: 12px;
+
+        .actions {
+            position: absolute;
+            right: 0;
+            top: 0;
+
+            .refresh {
+                display: flex;
+                align-items: center;
+                height: 50px;
+
+                .text {
+                    height: 32px;
+                    font-size: 14px;
+                    font-weight: normal;
+                    line-height: 32px;
+                    padding: 0 8px;
+                    border: 1px solid #d9d9d9;
+                }
+
+                .ant-input-number, .ant-select-selection, .ant-btn {
+                    border-radius: 0;
+                }
+            }
+        }
+   }
+
+   th.middle {
+        vertical-align: middle;
+        width:80px
+    }
+
+    .actions {
+
+        .start {
+            font-size: 18px;
+            color: #007fff;
+            cursor: pointer;
+            vertical-align: -4px;
+    
+            &.disabled {
+                color: #C1C1C1;
+            }
+        }
+
+        .stop {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background-color: #EC0202 ;
+            cursor: pointer;
+    
+            &.disabled {
+                background-color: #C1C1C1;
+            }
+        }
+    }
+}
+

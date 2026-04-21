@@ -65,6 +65,17 @@ export const menuData = [
     ],
   },
   {
+    key: "data_tools",
+    children: [
+      {
+        key: "data_tools.migration",
+      },
+      {
+        key: "data_tools.comparison",
+      },
+    ],
+  },
+  {
     key: "resource",
     children: [
       {

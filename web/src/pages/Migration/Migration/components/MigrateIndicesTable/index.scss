@@ -1,0 +1,27 @@
+.migrateIndicesTable {
+    .ant-table-thead th, .ant-table-row td {
+        text-align: center !important;
+    }
+    .divider {
+        background-color: #f5f7fa !important;
+    }
+
+    th.ant-table-selection-column {
+        vertical-align: middle;
+        width:80px
+    }
+
+    .ant-table-expanded-row {
+        background-color: #fff;
+        &:hover {
+            background-color: #fff;
+        }
+        > td {
+            border-right: 0 !important;
+            border-bottom: 1px solid #e8e8e8;
+            &:last-child {
+                padding-right: 58px !important;
+            }
+        }
+    }
+}

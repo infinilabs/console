@@ -1,0 +1,11 @@
+.indexEditor {
+    position: relative;
+    padding-right: 18px;
+    cursor: pointer;
+    .icon {
+        position: absolute;
+        right: 4px;
+        top: 8px;
+        font-size: 10px;
+    }
+}

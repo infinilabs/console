@@ -1,0 +1,15 @@
+.cluster-item{
+  text-align: center;
+  &>dl>dt{
+    margin-bottom: 10px;
+  }
+  .tag{
+    background: rgba(68, 142, 247, 0.2); 
+    color: #448EF7;
+    border: none;
+    border-radius: 3px;
+  }
+  .name{
+    color: #1890FF;
+  }
+}

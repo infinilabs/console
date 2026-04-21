@@ -1,0 +1,44 @@
+.executeIntervalItem {
+  display: flex;
+  .interval {
+    flex: 1;
+    border: 1px solid #bbb;
+    border-radius: 3px;
+    padding: 0 12px;
+    font-size: 14px;
+    height: 35px;
+    line-height: 35px;
+    text-align: center;
+    .timePicker {
+      .ant-time-picker-input {
+        border: 0;
+        text-align: center;
+        font-size: 16px;
+      }
+    }
+  }
+  .actions {
+    width: 28px;
+
+    .anticon {
+      font-size: 16px;
+      margin-left: 12px;
+      color: #007FFF;
+      cursor: pointer;
+    }
+  }
+}
+
+
+
+.timePickerPopup {
+  .ant-time-picker-panel-inner {
+    left: 12px;
+    .ant-time-picker-panel-input-wrap {
+      padding-right: 12px;
+      .ant-time-picker-panel-input {
+        text-align: center;
+      }
+    }
+  }
+}

@@ -17,6 +17,7 @@ import settings from "./zh-CN/settings";
 import listview from "./zh-CN/listview";
 import audit from "./zh-CN/audit";
 import error from "./zh-CN/error";
+import migration from "./zh-CN/migration";
 
 export default {
   "navBar.lang": "语言",
@@ -325,6 +326,16 @@ export default {
   "menu.header.help.release_notes": "更新日志",
   "menu.header.help.document": "产品文档",
   "menu.header.help.ticket": "提交问题",
+  
+  //migration
+  "menu.data_tools": "数据工具",
+  "menu.data_tools.migration": "数据迁移",
+  "menu.data_tools.migration_new": "创建迁移任务",
+  "menu.data_tools.Detail": "任务详情",
+  // comparison
+  "menu.data_tools.comparison": "数据比对",
+  "menu.data_tools.comparison_new": "创建比对任务",
+  "menu.data_tools.Detail": "任务详情",
 
   "app.message.operate.success": "操作成功",
   "app.message.operate.failed": "操作失败",
@@ -623,5 +634,6 @@ export default {
   ...settings,
   ...listview,
   ...audit,
-  ...error
+  ...error,
+  ...migration,
 };

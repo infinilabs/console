@@ -1,0 +1,24 @@
+.comparisonInfo {
+  background-color: #f5f7fa;
+  padding: 24px 48px 12px;
+  font-size: 14px;
+  font-weight: 400;
+  .ant-descriptions-item-label {
+    width: 30%;
+    text-align: right;
+    color: #868686;
+  }
+  .ant-descriptions-item-content {
+    width: 70%;
+    text-align: left;
+    color: #101010;
+    padding-left: 12px;
+  }
+  .icon-wrapper {
+    display: flex;
+    align-items: center;
+    span {
+      margin-left: 3px;
+    }
+  }
+}

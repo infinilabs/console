@@ -42,7 +42,7 @@ export class NumberFormatEditor extends DefaultFormatEditor<NumberFormatEditorPa
     const defaultPattern = format.getParamDefaults().pattern;
 
     return (
-      <Fragment>
+      <Fragment key="numberFormatEditor">
         <EuiFormRow
           label={
             `Numeral.js format pattern (Default: ${<EuiCode>{defaultPattern}</EuiCode>})`

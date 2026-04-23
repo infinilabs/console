@@ -24,9 +24,24 @@ const aggsParams = [
 ];
 
 const details = [
-  { title: "Metrics", component: Metrics, key: "metrics" },
-  { title: "Infos", component: Infos, key: "infos" },
-  { title: "Edit", component: Edit, key: "edit" },
+  {
+    title: "Metrics",
+    titleId: "overview.detail.metrics",
+    component: Metrics,
+    key: "metrics",
+  },
+  {
+    title: "Infos",
+    titleId: "overview.detail.infos",
+    component: Infos,
+    key: "infos",
+  },
+  {
+    title: "Edit",
+    titleId: "form.button.edit",
+    component: Edit,
+    key: "edit",
+  },
 ];
 
 const sideSorterOptions = [

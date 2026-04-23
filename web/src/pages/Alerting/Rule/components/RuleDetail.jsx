@@ -38,6 +38,7 @@ import DatePicker from "@/common/src/DatePicker";
 import { getLocale } from "umi/locale";
 import { getTimezone } from "@/utils/utils";
 import moment from "moment";
+import isEqual from "lodash/isEqual";
 
 const { Title } = Typography;
 
@@ -135,10 +136,20 @@ const RuleDetail = (props) => {
 
   const [refresh, setRefresh] = useState({ isRefreshPaused: true });
   const [timeZone, setTimeZone] = useState(() => getTimezone());
+  const syncedTimeRange = useMemo(
+    () => ({
+      min: state.timeRange.min,
+      max: state.timeRange.max,
+    }),
+    [state.timeRange.max, state.timeRange.min]
+  );
 
-  useMemo(() => {
-    setParam({ ...param, timeRange: state.timeRange });
-  }, [state.timeRange]);
+  useEffect(() => {
+    if (isEqual(param?.timeRange, syncedTimeRange)) {
+      return;
+    }
+    setParam({ ...param, timeRange: syncedTimeRange });
+  }, [param, setParam, syncedTimeRange]);
 
   const handleTimeChange = ({ start, end, refresh }) => {
     setState({
@@ -150,6 +161,16 @@ const RuleDetail = (props) => {
         timeFormatter: formatter.dates(1),
       },
       refresh: refresh || state.refresh 
+    });
+  };
+
+  const handleWidgetQueriesChange = (queries = {}) => {
+    if (!queries?.range?.from || !queries?.range?.to) {
+      return;
+    }
+    handleTimeChange({
+      start: queries.range.from,
+      end: queries.range.to,
     });
   };
 
@@ -375,6 +396,7 @@ const RuleDetail = (props) => {
                   to: state.timeRange.max,
                 }}
                 refresh={state.refresh}
+                onGlobalQueriesChange={handleWidgetQueriesChange}
               />
             ) : (
               <Empty />
@@ -389,15 +411,16 @@ const RuleDetail = (props) => {
             })}
             bodyStyle={{ height: 250, padding: 1 }}
           >
-            <WidgetLoader
-              id="cji1sc28go5i051pl1i0"
-              range={{
-                from: state.timeRange.min,
-                to: state.timeRange.max,
-              }}
-              queryParams={{ rule_id: ruleID }}
-              refresh={state.refresh}
-            />
+              <WidgetLoader
+                id="cji1sc28go5i051pl1i0"
+                range={{
+                  from: state.timeRange.min,
+                  to: state.timeRange.max,
+                }}
+                queryParams={{ rule_id: ruleID }}
+                refresh={state.refresh}
+                onGlobalQueriesChange={handleWidgetQueriesChange}
+              />
           </Card>
         </div>
       </div>

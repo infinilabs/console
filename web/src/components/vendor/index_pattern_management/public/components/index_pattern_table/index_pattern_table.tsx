@@ -220,6 +220,7 @@ export const IndexPatternTable = ({
     },
     {
       title: formatMessage({ id: "table.field.actions" }),
+      width: 100,
       render: (text, record) => (
         <div>
           {canSave && !record.builtin ? (
@@ -294,8 +295,8 @@ export const IndexPatternTable = ({
           <div style={{ maxWidth: 500, flex: "1 1 auto" }}>
             <Search
               allowClear
-              placeholder="Type keyword to search"
-              enterButton="Search"
+              placeholder={formatMessage({ id: "listview.search.placeholder" })}
+              enterButton={formatMessage({ id: "form.button.search" })}
               onSearch={(value) => {
                 setSearchValue(value);
               }}

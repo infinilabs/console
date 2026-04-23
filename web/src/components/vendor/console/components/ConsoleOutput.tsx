@@ -53,7 +53,7 @@ function ConsoleOutput({ clusterID }: props) {
     textarea.setAttribute("id", inputId);
     textarea.setAttribute("readonly", "true");
     applyCurrentSettings(editorInstanceRef.current!, {
-      fontSize: 12,
+      fontSize: 13,
       wrapMode: true,
     });
     const unsubscribeResizer = subscribeResizeChecker(

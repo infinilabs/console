@@ -6,7 +6,7 @@ import {
   Col, Form, Row, Select, Input, Card, Icon, Table, InputNumber, Popconfirm,
   Divider, Button, Tooltip, Modal, DatePicker, message, Cascader, List,Radio
 } from 'antd';
-import Editor, {monaco} from '@monaco-editor/react';
+import Editor, { monaco } from '@/components/monaco-editor';
 import moment from 'moment';
 import {createDependencyProposals} from './autocomplete';
 import InputSelect from '@/components/infini/InputSelect';
@@ -264,7 +264,10 @@ class JSONTable extends React.Component{
             <Card title={item.id}
               actions={[
                 <Icon type="edit" key="edit" onClick={()=>this.handleEditClick(item)} />,
-                <Popconfirm title="Sure to delete?" onConfirm={()=>this.handleDeleteClick(item)}>
+                <Popconfirm
+                  title={formatMessage({ id: "app.message.confirm.delete" })}
+                  onConfirm={()=>this.handleDeleteClick(item)}
+                >
                   <Icon type="delete" key="delete" />
                 </Popconfirm>,
               ]}>
@@ -361,7 +364,10 @@ class EditableCell extends React.Component {
                   </a>
                 )}
               </EditableContext.Consumer>
-              <Popconfirm title="Sure to cancel?" onConfirm={() => this.cancel(record.id)}>
+              <Popconfirm
+                title={formatMessage({ id: "document.confirm.cancel" })}
+                onConfirm={() => this.cancel(record.id)}
+              >
                 <a>{formatMessage({id:'form.button.cancel'})}</a>
               </Popconfirm>
             </span>
@@ -370,9 +376,12 @@ class EditableCell extends React.Component {
               {formatMessage({id:'form.button.edit'})}
             </a>
             <Divider type="vertical"/>
-              <Popconfirm title="Sure to delete?" onConfirm={() => this.delete(record)}>
-                <a>{formatMessage({id:'form.button.delete'})}</a>
-              </Popconfirm>
+               <Popconfirm
+                 title={formatMessage({ id: "app.message.confirm.delete" })}
+                 onConfirm={() => this.delete(record)}
+               >
+                 <a>{formatMessage({id:'form.button.delete'})}</a>
+               </Popconfirm>
            </div>
           );
         },

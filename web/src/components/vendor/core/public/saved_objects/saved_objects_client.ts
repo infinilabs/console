@@ -272,7 +272,7 @@ export class SavedObjectsClient {
       body: JSON.stringify(objects),
     });
     return request.then((resp) => {
-      resp.saved_objects = resp.saved_objects.map((d) => this.createSavedObject(d));
+      resp.saved_objects = (resp.saved_objects ?? []).map((d) => this.createSavedObject(d));
       return renameKeys<
         PromiseType<ReturnType<SavedObjectsApi['bulkCreate']>>,
         SavedObjectsBatchResponse

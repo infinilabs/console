@@ -57,7 +57,7 @@ export const ResultStep = (props) => {
     </div>
   );
   const actions = (
-    <Fragment>
+    <Fragment key="actions">
       <Button type="primary" onClick={oneMoreClick}>
         {formatMessage({
           id: "cluster.regist.step.complete.btn.create",

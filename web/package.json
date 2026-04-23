@@ -155,9 +155,10 @@
     "@antv/l7-component": "2.23.0"
   },
   "scripts": {
-    "dev": "cross-env MOCK=none UMI_UI=none NODE_OPTIONS=\"--max_old_space_size=4096\" umi dev",
-    "mock": "cross-env UMI_UI=none NODE_OPTIONS=\"--max_old_space_size=4096\" umi dev",
-    "build": "NODE_OPTIONS=\"--max_old_space_size=4096  --trace-deprecation\" umi build && cp -R  static/* ../.public/static/",
+    "preinstall": "node ./scripts/ensure-cnpm.js",
+    "dev": "cross-env HTTPS=true MOCK=none node ./scripts/run-umi.js dev",
+    "mock": "node ./scripts/run-umi.js dev",
+    "build": "node ./scripts/run-umi.js build && cp -R static/* ../.public/static/",
     "autod": "autod",
     "docker:dev": "docker-compose -f ./docker/docker-compose.dev.yml up --remove-orphans -d",
     "docker:stop-dev": "docker-compose -f ./docker/docker-compose.dev.yml  down",

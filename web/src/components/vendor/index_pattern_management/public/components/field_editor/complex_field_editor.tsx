@@ -254,7 +254,7 @@ export class ComplexFieldEditor extends PureComponent<FieldEdiorProps, FieldEdit
     );
 
     return (
-      <Fragment>
+      <Fragment key="formatSection">
         <EuiFormRow
           label={label}
           helpText={

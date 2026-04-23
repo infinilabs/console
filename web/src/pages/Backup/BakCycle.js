@@ -249,7 +249,7 @@ class BakCycle extends PureComponent {
     {
       title: '操作',
       render: (text, record) => (
-        <Fragment>
+        <Fragment key={record.name}>
           <a onClick={() => this.handleUpdateModalVisible(true, record)}>设置</a>
           <Divider type="vertical" />
           <a onClick={() => {
@@ -415,7 +415,7 @@ class BakCycle extends PureComponent {
     } = this.props;
 
     return (
-      <Fragment>
+      <Fragment key="bakCycle">
         <Card bordered={false}>
           <div >
             <div>

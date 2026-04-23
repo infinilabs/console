@@ -143,9 +143,9 @@ function calcHeightToPX(height: string) {
 }
 
 export const ConsoleUI = ({
-  selectedCluster,
-  clusterList,
-  clusterStatus,
+  selectedCluster = {},
+  clusterList = [],
+  clusterStatus = {},
   minimize = false,
   onMinimizeClick,
   resizeable = false,
@@ -158,27 +158,27 @@ export const ConsoleUI = ({
       return cm;
     }
     (clusterList || []).map((cluster: any) => {
-      cluster.status = clusterStatus[cluster.id]?.health?.status;
+      const nextCluster = { ...cluster };
+      nextCluster.status = clusterStatus[cluster.id]?.health?.status;
       if (!clusterStatus[cluster.id]?.available) {
-        cluster.status = "unavailable";
+        nextCluster.status = "unavailable";
       }
-      cm[cluster.id] = cluster;
+      cm[cluster.id] = nextCluster;
     });
     return cm;
   }, [clusterList, clusterStatus]);
   const initialDefaultState = () => {
-    let defaultCluster = selectedCluster;
-    if (!defaultCluster.id) {
-      defaultCluster = clusterList[0];
-    }
-    const defaultActiveKey = `${defaultCluster.id ||
-      ""}:${new Date().valueOf()}`;
-    const defaultState = defaultCluster
+    let defaultCluster = selectedCluster?.id ? selectedCluster : clusterList?.[0];
+    const defaultClusterID = defaultCluster?.id || "";
+    const defaultActiveKey = defaultClusterID
+      ? `${defaultClusterID}:${new Date().valueOf()}`
+      : "";
+    const defaultState = defaultClusterID
       ? {
           panes: [
             {
               key: defaultActiveKey,
-              cluster_id: defaultCluster.id,
+              cluster_id: defaultClusterID,
               title: defaultCluster.name,
             },
           ],
@@ -339,8 +339,8 @@ export const ConsoleUI = ({
     ),
   };
 
-  setClusterID(tabState.activeKey?.split(":")[0]);
-  const panes = tabState.panes.filter((pane: any) => {
+  setClusterID(tabState.activeKey?.split(":")[0] || "");
+  const panes = (tabState.panes || []).filter((pane: any) => {
     pane.closable = true;
     return typeof clusterMap[pane.cluster_id] != "undefined";
   });

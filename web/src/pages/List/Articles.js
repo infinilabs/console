@@ -120,7 +120,7 @@ class SearchList extends Component {
       ) : null;
 
     return (
-      <Fragment>
+      <Fragment key="search-list">
         <Card bordered={false}>
           <Form layout="inline">
             <StandardFormRow title="所属类目" block style={{ paddingBottom: 11 }}>

@@ -353,6 +353,12 @@ func (alertAPI *AlertAPI) batchEnableChannel(w http.ResponseWriter, req *http.Re
 		return
 	}
 	if len(channelIDs) > 0 {
+		err = validateChannelsBeforeEnable(channelIDs)
+		if err != nil {
+			log.Error(err)
+			alertAPI.WriteError(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 		err = setChannelEnabled(true, channelIDs)
 		if err != nil {
 			log.Error(err)
@@ -399,4 +405,52 @@ func setChannelEnabled(enabled bool, channelIDs []string) error {
 	}
 	err := orm.UpdateBy(alerting.Channel{}, util.MustToJSONBytes(q))
 	return err
+}
+
+func validateChannelsBeforeEnable(channelIDs []string) error {
+	for _, id := range channelIDs {
+		channel := alerting.Channel{}
+		channel.ID = id
+		exists, err := orm.Get(&channel)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			return fmt.Errorf("channel [%s] not found", id)
+		}
+		if err = validateChannelBeforeEnable(&channel); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateChannelBeforeEnable(channel *alerting.Channel) error {
+	if channel == nil {
+		return fmt.Errorf("empty channel")
+	}
+
+	channelType := channel.SubType
+	if channelType == "" {
+		channelType = channel.Type
+	}
+	if channelType != alerting.ChannelEmail {
+		return nil
+	}
+
+	if channel.Email == nil {
+		return fmt.Errorf("email channel [%s] is incomplete, please configure the smtp server and recipients first", channel.Name)
+	}
+
+	if channel.Email.ServerID == "" && len(channel.Email.Recipients.To) == 0 {
+		return fmt.Errorf("email channel [%s] is incomplete, please configure the smtp server and recipients first", channel.Name)
+	}
+	if channel.Email.ServerID == "" {
+		return fmt.Errorf("email channel [%s] is incomplete, please configure the smtp server first", channel.Name)
+	}
+	if len(channel.Email.Recipients.To) == 0 {
+		return fmt.Errorf("email channel [%s] is incomplete, please configure at least one recipient first", channel.Name)
+	}
+
+	return nil
 }

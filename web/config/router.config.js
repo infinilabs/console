@@ -155,6 +155,85 @@ export default [
           },
         ],
       },
+      {
+        path: "/data_tools",
+        name: "data_tools",
+        icon: "swap",
+        authority: [
+          "data_tools.migration:all",
+          "data_tools.migration:read",
+          "data_tools.comparison:all",
+          "data_tools.comparison:read",
+        ],
+        routes: [
+          {
+            path: "/data_tools",
+            exact: true,
+            redirect: "/data_tools/migration",
+          },
+          {
+            path: "/data_tools/migration/elasticsearch/:id",
+            exact: true,
+            component: "./DataTools/Migration/LegacyClusterRedirect",
+            hideInMenu: true,
+            authority: ["data_tools.migration:all", "data_tools.migration:read"],
+          },
+          {
+            path: "/data_tools/migration/new",
+            component: "./DataTools/Migration/New",
+            hideInMenu: true,
+            authority: ["data_tools.migration:all"],
+          },
+          {
+            path: "/data_tools/migration/:id/detail",
+            component: "./DataTools/Migration/Detail",
+            hideInMenu: true,
+            authority: ["data_tools.migration:all", "data_tools.migration:read"],
+          },
+          {
+            path: "/data_tools/migration",
+            name: "migration",
+            component: "./DataTools/Migration",
+            exact: true,
+            authority: ["data_tools.migration:all", "data_tools.migration:read"],
+          },
+          {
+            path: "/data_tools/comparison/elasticsearch/:id",
+            exact: true,
+            component: "./DataTools/Comparison/LegacyClusterRedirect",
+            hideInMenu: true,
+            authority: [
+              "data_tools.comparison:all",
+              "data_tools.comparison:read",
+            ],
+          },
+          {
+            path: "/data_tools/comparison/new",
+            component: "./DataTools/Comparison/New",
+            hideInMenu: true,
+            authority: ["data_tools.comparison:all"],
+          },
+          {
+            path: "/data_tools/comparison/:id/detail",
+            component: "./DataTools/Comparison/Detail",
+            hideInMenu: true,
+            authority: [
+              "data_tools.comparison:all",
+              "data_tools.comparison:read",
+            ],
+          },
+          {
+            path: "/data_tools/comparison",
+            name: "comparison",
+            component: "./DataTools/Comparison",
+            exact: true,
+            authority: [
+              "data_tools.comparison:all",
+              "data_tools.comparison:read",
+            ],
+          },
+        ],
+      },
 
       // alerting
       {
@@ -278,6 +357,11 @@ export default [
         ],
         routes: [
           {
+            path: "/resource/runtime",
+            hideInMenu: true,
+            hideInBreadcrumb: true,
+          },
+          {
             path: "/resource/runtime/instance/new",
             name: "runtime.new_instance",
             component: "./Gateway/Instance/new",
@@ -381,6 +465,8 @@ export default [
         name: "system",
         icon: "setting",
         authority: [
+          "system.cluster:all",
+          "system.cluster:read",
           "system.credential:all",
           "system.credential:read",
           "system.security:all",
@@ -392,10 +478,26 @@ export default [
         ],
         routes: [
           {
+            path: "/system/settings",
+            name: "settings",
+            component: "./System/Settings/index",
+            authority: [
+              "system.cluster:all",
+              "system.cluster:read",
+              "system.smtp_server:all",
+              "system.smtp_server:read",
+            ],
+          },
+          {
             path: "/system/email_server",
-            name: "smtp_server",
-            component: "./System/Email/Server",
-            authority: ["system.smtp_server:all", "system.smtp_server:read"],
+            component: "./System/Settings/index",
+            hideInMenu: true,
+            authority: [
+              "system.cluster:all",
+              "system.cluster:read",
+              "system.smtp_server:all",
+              "system.smtp_server:read",
+            ],
           },
           {
             path: "/system/credential",

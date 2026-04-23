@@ -106,7 +106,7 @@ export class CreateButton extends Component<Props, State> {
                   <EuiDescriptionList style={{ whiteSpace: 'nowrap' }}>
                     <EuiDescriptionListTitle>
                       {option.text}
-                      {option.isBeta ? <Fragment> {this.renderBetaBadge()}</Fragment> : null}
+                      {option.isBeta ? <Fragment key={`${option.text}-beta`}> {this.renderBetaBadge()}</Fragment> : null}
                     </EuiDescriptionListTitle>
                     <EuiDescriptionListDescription>
                       {option.description}

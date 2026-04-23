@@ -594,13 +594,15 @@ export default (props) => {
             <div className={styles.content}>
                 {
                     result?.request && (
-                        <CopyToClipboard text={`GET .infini_metrics/_search\n${result.request}`}>
-                            <Tooltip title={formatMessage({id: "cluster.metrics.request.copy"})}>
-                                <div className={styles.info} onClick={() => message.success(formatMessage({id: "cluster.metrics.request.copy.success"}))}>
-                                    <Icon type="copy" />
-                                </div>
-                            </Tooltip>
-                        </CopyToClipboard>
+                        <div className={styles.copyAction}>
+                            <CopyToClipboard text={`GET .infini_metrics/_search\n${result.request}`}>
+                                <Tooltip title={formatMessage({id: "cluster.metrics.request.copy"})}>
+                                    <div className={styles.info} onClick={() => message.success(formatMessage({id: "cluster.metrics.request.copy.success"}))}>
+                                        <Icon type="copy" />
+                                    </div>
+                                </Tooltip>
+                            </CopyToClipboard>
+                        </div>
                     )
                 }
                 { isTreemap ? <Chart config={config} data={formatData} /> : <Table type={type} config={config} data={formatData}/> }

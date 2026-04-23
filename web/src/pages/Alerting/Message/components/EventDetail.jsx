@@ -18,6 +18,7 @@ import DatePicker from "@/common/src/DatePicker";
 import { getLocale } from "umi/locale";
 import { getTimezone } from "@/utils/utils";
 import { JsonParam, QueryParamProvider, useQueryParam } from "use-query-params";
+import isEqual from "lodash/isEqual";
 
 const { Title } = Typography;
 
@@ -49,10 +50,20 @@ const MessageDetail = (props) => {
 
   const [refresh, setRefresh] = useState({ isRefreshPaused: true });
   const [timeZone, setTimeZone] = useState(() => getTimezone());
+  const syncedTimeRange = useMemo(
+    () => ({
+      min: timeRange.min,
+      max: timeRange.max,
+    }),
+    [timeRange.max, timeRange.min]
+  );
 
-  useMemo(() => {
-    setParam({ ...param, timeRange: timeRange });
-  }, [timeRange]);
+  useEffect(() => {
+    if (isEqual(param?.timeRange, syncedTimeRange)) {
+      return;
+    }
+    setParam({ ...param, timeRange: syncedTimeRange });
+  }, [param, setParam, syncedTimeRange]);
 
   const updateTimeRange = (messageDetail) => {
     let startTimestamp = moment(messageDetail.created).valueOf();
@@ -149,7 +160,7 @@ const MessageDetail = (props) => {
           </Card>
       </div>
       {messageDetail.message_id && <Tabs>
-        <Tabs.TabPane tab={formatMessage({ id: "alert.rule.detail.title.alert_history" })}>
+        <Tabs.TabPane tab={formatMessage({ id: "alert.rule.detail.title.alert_history" })} key="alert-history">
           <RuleRecords ruleID={messageDetail?.rule_id} timeRange={timeRange} />
         </Tabs.TabPane>
       </Tabs>

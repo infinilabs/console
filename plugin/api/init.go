@@ -36,6 +36,7 @@ import (
 	"infini.sh/console/plugin/api/layout"
 	"infini.sh/console/plugin/api/notification"
 	"infini.sh/console/plugin/api/platform"
+	"infini.sh/console/plugin/api/settings"
 	"infini.sh/framework/core/api"
 )
 
@@ -80,4 +81,5 @@ func Init(cfg *config.AppConfig) {
 	email.InitAPI()
 	data.InitAPI()
 	platform.InitAPI()
+	settings.InitAPI()
 }

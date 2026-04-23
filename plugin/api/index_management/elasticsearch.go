@@ -60,7 +60,7 @@ func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req
 	queryDsl := util.MapStr{
 		"size": 100,
 	}
-	clusterFilter, hasAllPrivilege := handler.GetClusterFilter(req, "_id")
+	clusterFilter, hasAllPrivilege := handler.GetClusterFilter(req, "id")
 	if !hasAllPrivilege && clusterFilter == nil {
 		handler.WriteJSON(w, util.MapStr{
 			"nodes_count":               0,

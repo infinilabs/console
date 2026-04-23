@@ -18,4 +18,13 @@ export default {
   "indices.button.filters": "设置过滤",
   "indices.field.name.placeholder": "请输入名称",
   "indices.field.name.required_message": "请输入至少五个字符的名称！",
+  "indices.delete.modal.title.single": "删除索引",
+  "indices.delete.modal.title.batch": "删除 {count} 个索引",
+  "indices.delete.modal.cluster": "即将在集群 {cluster} 中删除以下索引：",
+  "indices.delete.modal.special_index": "特殊索引",
+  "indices.delete.modal.special_warning.title": "删除特殊索引可能导致 Console 无法正常工作！",
+  "indices.delete.modal.special_warning.description":
+    "特殊索引用于 Console 的内部运行。一旦删除将无法恢复，请确认已经做好备份。",
+  "indices.delete.modal.special_warning.confirm": "我已了解删除特殊索引的后果",
+  "indices.delete.modal.description": "已删除的索引无法恢复，请确认已经做好备份。",
 };

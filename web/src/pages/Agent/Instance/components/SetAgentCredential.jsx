@@ -32,6 +32,9 @@ export default connect()((props) => {
     });
     dispatch({
         type: "global/fetchClusterStatus",
+        payload: {
+            force: true,
+        },
     })
   };
 

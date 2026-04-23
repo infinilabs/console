@@ -26,7 +26,7 @@ import QueueTypeIcon from "./QueueTypeIcon";
 import AutoTextEllipsis from "@/components/AutoTextEllipsis";
 import commonStyles from "@/common.less";
 
-const { Search } = Input;
+import SearchInput from "@/components/infini/SearchInput";
 
 export default (props) => {
   const {
@@ -360,7 +360,7 @@ export default (props) => {
         }}
       >
         <div style={{ maxWidth: 500, flex: "1 1 auto" }}>
-          <Search
+          <SearchInput
             allowClear
             placeholder="Type keyword to search"
             enterButton="Search"

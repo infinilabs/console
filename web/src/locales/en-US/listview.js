@@ -1,4 +1,5 @@
 export default {
+  "listview.filters.placeholder": "Filters",
   "listview.search.placeholder": "Search ...",
   "listview.search.response.tip": "Found {total} records ({took} millisecond)",
   "listview.sort": "Sort",

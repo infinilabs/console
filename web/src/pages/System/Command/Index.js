@@ -21,15 +21,8 @@ import {
   Popconfirm,
   Switch,
 } from "antd";
-// import { loader } from "@monaco-editor/react";
-import Editor from "@monaco-editor/react";
+import Editor from "@/components/monaco-editor";
 import { EuiCodeBlock } from "@elastic/eui";
-// loader.config({
-//   paths: {
-//     vs: "monaco-editor/min/vs",
-//   },
-// });
-
 import styles from "../../List/TableList.less";
 import { transformSettingsForApi } from "@/lib/elasticsearch/edit_settings";
 import PageHeaderWrapper from "@/components/PageHeaderWrapper";
@@ -38,11 +31,11 @@ import { formatMessage } from "umi/locale";
 import { deleteCommand } from "@/components/vendor/console/modules/mappings/mappings";
 import { hasAuthority } from "@/utils/authority";
 import "./index.scss";
+import SearchInput from "@/components/infini/SearchInput";
 
 const FormItem = Form.Item;
 const { TextArea } = Input;
 const { TabPane } = Tabs;
-const { Search } = Input;
 
 /* eslint react/no-multi-comp:0 */
 @connect(({ command }) => ({
@@ -87,8 +80,9 @@ class Index extends PureComponent {
     },
     {
       title: formatMessage({ id: "table.field.actions" }),
+      width: 100,
       render: (text, record) => (
-        <Fragment>
+        <Fragment key={record.id}>
           {hasAuthority("system.command:all") ? (
             <Popconfirm
               title="Sure to delete?"
@@ -261,7 +255,7 @@ class Index extends PureComponent {
               }}
             >
               <div style={{ maxWidth: 500, flex: "1 1 auto" }}>
-                <Search
+                <SearchInput
                   allowClear
                   placeholder="Type keyword to search"
                   enterButton="Search"

@@ -1,17 +1,27 @@
 .activities {
   width: 100%;
   height: 100%;
-  max-height: 536px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 
   :global {
-    .ant-card-body {
-      width: 100%;
+    .ant-card {
       height: 100%;
     }
 
-    .ant-timeline {
-      height: calc(100% - 12px);
+    .ant-card-body {
+      width: 100%;
+      height: 100%;
       overflow: hidden;
+    }
+
+    .ant-timeline {
+      height: 100%;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-right: 8px;
+      margin-right: -8px;
     }
     .ant-timeline-item {
       margin-bottom: -20px;
@@ -39,6 +49,8 @@
 
   .content {
     width: 100%;
-    height: calc(100% - 29px);
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
   }
 }

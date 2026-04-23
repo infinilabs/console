@@ -1,0 +1,12 @@
+.migrateIndicesInfo {
+    font-size: 14px;
+    font-weight: 400;
+    color: #101010;
+
+    .viewLog {
+        text-align: center;
+        .ant-descriptions-item-colon {
+            display: none;
+        }
+    }
+}

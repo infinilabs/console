@@ -242,7 +242,6 @@ const Logs = (props) => {
           <div className="right">
             <Button
               loading={loading}
-              size="small"
               onClick={() => fetchLogs(true)}
             >
               {formatMessage({ id: "form.button.refresh" })}

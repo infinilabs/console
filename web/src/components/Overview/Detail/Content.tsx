@@ -1,4 +1,5 @@
 import { Tabs } from "antd";
+import { formatMessage } from "umi/locale";
 
 interface IProps {
   data: any;
@@ -24,7 +25,10 @@ export default (props: IProps) => {
         tabPosition="right"
       >
         {details.map((pane) => (
-          <Tabs.TabPane tab={pane.title} key={pane.key}>
+          <Tabs.TabPane
+            tab={pane.titleId ? formatMessage({ id: pane.titleId }) : pane.title}
+            key={pane.key}
+          >
             {typeof pane.component == "string" ? (
               pane.component
             ) : (

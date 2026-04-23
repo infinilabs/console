@@ -32,9 +32,9 @@ export default ({notificationConfig, recoverNotificationConfig})=>{
             <Timeline.Item dot={<Icon component={LowerVolume} theme="filled" style={{color: notificationConfig?.enabled === true ? "rgb(0, 127, 255)": "rgb(187, 187, 187)"}}/>}>
               <span style={{color:"rgba(51,51,51,1)", fontWeight:400, lineHeight:"24px"}}>{formatMessage({id:"alert.rule.lable.alerting_channels"})}</span>
               <div>
-                {(notificationConfig?.normal || []).map((item)=>{
+                {(notificationConfig?.normal || []).map((item, index)=>{
                   const color = item.enabled === true ? '': "rgb(187, 187, 187)";
-                  return  <div style={{marginTop:5}} title={item.enabled === false ? "channel is not enabled": ""}>
+                  return  <div key={`${item.type}-${item.name}-${index}`} style={{marginTop:5}} title={item.enabled === false ? "channel is not enabled": ""}>
                   <Icon component={getChannelIcon(item.type, color)} style={{color:color}}/>
                   <span style={{color:"rgba(153,153,153,1)",lineHeight:"20px", marginRight:10}}>{item.name}</span>
                 </div>
@@ -45,9 +45,9 @@ export default ({notificationConfig, recoverNotificationConfig})=>{
               <span style={{color:"rgba(51,51,51,1)", fontWeight:400, lineHeight:"24px"}}>{formatMessage({id:"alert.rule.lable.escalation_channels"})}</span>
               {notificationConfig?.escalation_throttle_period ? <span style={{color:"rgba(0,127,255,1)", fontSize:12, background:"rgba(173, 173, 173, 0.15)", padding:"0 5px", marginLeft: 10}}>{formatMessage({id:"alert.rule.label.wait_time"})}: {notificationConfig?.escalation_throttle_period}</span>: null}
               <div>
-              {(notificationConfig?.escalation || []).map((item)=>{
+              {(notificationConfig?.escalation || []).map((item, index)=>{
                   const color = item.enabled === true ? '': "rgb(187, 187, 187)";
-                  return  <div style={{marginTop:5}} title={item.enabled === false ? "channel is not enabled": ""}>
+                  return  <div key={`${item.type}-${item.name}-${index}`} style={{marginTop:5}} title={item.enabled === false ? "channel is not enabled": ""}>
                   <Icon component={getChannelIcon(item.type, color)} style={{color:color}}/>
                   <span style={{color:"rgba(153,153,153,1)",lineHeight:"20px", marginRight:10}}>{item.name}</span>
                 </div>
@@ -69,9 +69,9 @@ export default ({notificationConfig, recoverNotificationConfig})=>{
             <Timeline.Item dot={<Icon component={LowerVolume} theme="filled" style={{color: recoverNotificationConfig?.enabled === true ? "rgb(0, 127, 255)": "rgb(187, 187, 187)"}}/>}>
               <span style={{color:"rgba(51,51,51,1)", fontWeight:400, lineHeight:"24px"}}>{formatMessage({id:"alert.rule.lable.recovery_channels"})}</span>
               <div>
-              {(recoverNotificationConfig?.normal || []).map((item)=>{
+              {(recoverNotificationConfig?.normal || []).map((item, index)=>{
                 const color = item.enabled === true ? '': "rgb(187, 187, 187)";
-                return  <div style={{marginTop:5}} title={item.enabled === false ? "channel is not enabled": ""}>
+                return  <div key={`${item.type}-${item.name}-${index}`} style={{marginTop:5}} title={item.enabled === false ? "channel is not enabled": ""}>
                 <Icon component={getChannelIcon(item.type, color)} style={{color:color}}/>
                 <span style={{color:"rgba(153,153,153,1)",lineHeight:"20px", marginRight:10}}>{item.name}</span>
               </div>

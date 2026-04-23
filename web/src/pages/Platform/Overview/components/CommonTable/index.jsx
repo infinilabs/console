@@ -71,6 +71,7 @@ export default (props) => {
         loading={loading}
         columns={columns}
         dataSource={tableData}
+        scroll={{ x: "max-content" }}
         rowKey={"id"}
         pagination={{
           size: "small",

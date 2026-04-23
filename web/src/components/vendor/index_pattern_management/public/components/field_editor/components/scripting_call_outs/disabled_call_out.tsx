@@ -24,7 +24,7 @@ import { EuiCallOut, EuiSpacer } from '@elastic/eui';
 
 export const ScriptingDisabledCallOut = ({ isVisible = false }) => {
   return isVisible ? (
-    <Fragment>
+    <Fragment key="scriptingDisabledCallOut">
       <EuiCallOut
         title={
           "Scripting disabled"

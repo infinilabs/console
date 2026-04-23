@@ -37,11 +37,23 @@ import IconText from "@/components/infini/IconText";
 import AutoTextEllipsis from "@/components/AutoTextEllipsis";
 import commonStyles from "@/common.less"
 
-const { Search } = Input;
+import SearchInput from "@/components/infini/SearchInput";
 
 const FormItem = Form.Item;
 const { TextArea } = Input;
 const { TabPane } = Tabs;
+const placeholder = `{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 1
+  },
+  "mappings": {
+    "properties": {
+      "field1": { "type": "text" },
+      "field2": { "type": "keyword" }
+    }
+  }
+}`;
 
 class JSONWrapper extends PureComponent {
   state = {
@@ -82,19 +94,28 @@ class JSONWrapper extends PureComponent {
 }
 @Form.create()
 class CreateForm extends React.Component {
+  state = {
+    editorValue: ""
+  };
   okHandle = () => {
     const { handleAdd, form } = this.props;
-    const me = this;
 
     form.validateFields((err, fieldsValue) => {
       if (err) return;
-      fieldsValue["config"] = me.editor.getValue();
+
+      fieldsValue["config"] = this.state.editorValue || "{}";
       handleAdd(fieldsValue);
       form.resetFields();
+
+      if (this.editor) this.editor.setValue("");
+      this.setState({ editorValue: "" });
     });
   };
   onEditorDidMount = (editor) => {
     this.editor = editor;
+    editor.onDidChangeModelContent(() => {
+      this.setState({ editorValue: editor.getValue() });
+    });
   };
 
   render() {
@@ -141,6 +162,8 @@ class CreateForm extends React.Component {
               height="300px"
               language="json"
               theme="light"
+              value={this.state.editorValue || placeholder} 
+              onChange={(value) => this.setState({ editorValue: value })}
               options={{
                 minimap: {
                   enabled: false,
@@ -234,7 +257,7 @@ class Index extends PureComponent {
       title: formatMessage({ id: "table.field.actions" }),
       width: 116,
       render: (text, record) => (
-        <Fragment>
+        <Fragment key={record.id || record.key}>
           <a
             onClick={() => {
               this.setState({
@@ -247,8 +270,8 @@ class Index extends PureComponent {
           </a>
           {hasAuthority("data.index:all")
             ? [
-                <Divider type="vertical" />,
-                <a onClick={() => this.showDeleteConfirm([record.index])}>
+                <Divider key="divider" type="vertical" />,
+                <a key="delete" onClick={() => this.showDeleteConfirm([record.index])}>
                   {formatMessage({ id: "form.button.delete" })}
                 </a>,
               ]
@@ -304,12 +327,12 @@ class Index extends PureComponent {
     }).then(function(value) {
       if (value) {
         that.fetchData();
-        message.success("deleted");
+        message.success(formatMessage({ id: "app.message.delete.success" }));
         that.setState({
           deleteIndexVisible: false,
         });
       } else {
-        message.error("delete failed");
+        message.error(formatMessage({ id: "app.message.delete.failed" }));
       }
     });
   };
@@ -507,10 +530,12 @@ class Index extends PureComponent {
               }}
             >
               <div style={{ maxWidth: 500, flex: "1 1 auto" }}>
-                <Search
+                <SearchInput
                   allowClear
-                  placeholder="Type keyword to search"
-                  enterButton="Search"
+                  placeholder={formatMessage({
+                    id: "system.security.search.placeholder",
+                  })}
+                  enterButton={formatMessage({ id: "form.button.search" })}
                   onSearch={(value) => {
                     this.handleSearch(value);
                   }}

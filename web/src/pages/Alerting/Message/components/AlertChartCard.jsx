@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import { formatMessage } from "umi/locale";
 import { buildWidgetByRule } from "../../Rule/components/RuleDetail";
 
-export default ({msgItem, range})=>{
+export default ({msgItem, range, onRangeChange})=>{
 
   const { rule_id, created, updated, expression } = msgItem;
   const [rule, setRule] = useState()
@@ -59,7 +59,16 @@ export default ({msgItem, range})=>{
     } bodyStyle={{ height: 250, padding: 1 }} loading={loading}>
       {
         rule ? (
-          <WidgetRender widget={widget} range={range} highlightRange={highlightRange} />
+          <WidgetRender
+            widget={widget}
+            range={range}
+            highlightRange={highlightRange}
+            onGlobalQueriesChange={(queries) => {
+              if (queries?.range && typeof onRangeChange === "function") {
+                onRangeChange(queries.range);
+              }
+            }}
+          />
         ) : <Empty />
       }
     </Card>

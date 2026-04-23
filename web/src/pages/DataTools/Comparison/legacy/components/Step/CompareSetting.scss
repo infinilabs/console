@@ -1,0 +1,42 @@
+.migrateSettingTable {
+    padding: 36px;
+    .ant-table-thead th, .ant-table-row td {
+        text-align: center !important;
+    }
+
+    .partial {
+        color: #007fff
+    }
+
+    .textIcon {
+        margin-left: 12px;
+        color: #007fff;
+        cursor: pointer;
+    }
+}
+
+.form {
+    padding: 24px;
+    .ant-form-item {
+      margin-bottom: 12px;
+    }
+
+    .preview {
+        padding: 18px 36px 18px 24px;
+
+        // p {
+        //     margin-top: 36px;
+        //     font-weight: 500;
+        //     font-size: 12px;
+        //     color: rgb(16, 16, 16);
+        // }
+
+        .title {
+            margin-top: 36px;
+            margin-bottom: 12px;
+            font-weight: 500;
+            font-size: 14px;
+            color: rgb(16, 16, 16);
+        }
+    }
+}

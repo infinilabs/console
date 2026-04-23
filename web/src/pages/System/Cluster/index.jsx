@@ -212,7 +212,12 @@ export default (props) => {
       key: "metric_collection_mode",
       sortable: false,
       render: (text) => {
-        return text === "agent" ? "Agent" : "Agentless";
+        return formatMessage({
+          id:
+            text === "agent"
+              ? "cluster.manage.metric_collection_mode.option.agent"
+              : "cluster.manage.metric_collection_mode.option.agentless",
+        });
       },
     },
     {

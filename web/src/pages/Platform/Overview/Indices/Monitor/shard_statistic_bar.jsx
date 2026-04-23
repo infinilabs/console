@@ -3,6 +3,7 @@ import useFetch from "@/lib/hooks/use_fetch";
 import { ESPrefix } from "@/services/common";
 import { HealthStatusCircle } from "@/components/infini/health_status_circle";
 import OverviewStatistic from "../../components/overview_statistic";
+import { formatMessage } from "umi/locale";
 import { formatUtcTimeToLocal, formatt } from "@/utils/utils";
 import {formatter} from "@/utils/format";
 
@@ -39,37 +40,37 @@ const StatisticBar = ({ clusterID, indexName, timeRange, setSpinning, shardID, }
     overviewStatistic = [
       {
         key: "shard",
-        title: "Shard",
+        title: formatMessage({ id: "overview.column.shard" }),
         value: shardValue.metadata.labels.shard,
       },
       {
         key: "state",
-        title: "State",
+        title: formatMessage({ id: "overview.column.state" }),
         value: shardValue?.payload?.elasticsearch?.shard_stats.routing.state || "N/A",
       },
       {
         key: "node",
-        title: "node",
+        title: formatMessage({ id: "overview.column.node" }),
         value: nodeV,
       },
       {
         key: "primary",
-        title: "Primary",
+        title: formatMessage({ id: "overview.statistic.primary" }),
         value: shardValue?.payload?.elasticsearch?.shard_stats.routing.primary,
       },
       {
         key: "Documents",
-        title: "Documents",
+        title: formatMessage({ id: "indices.field.docs_count" }),
         value: shardValue?.payload?.elasticsearch?.shard_stats?.docs.count || "N/A",
       },
       {
         key: "store",
-        title: "Store",
+        title: formatMessage({ id: "overview.column.store" }),
         value: formatter.bytes(shardValue?.payload?.elasticsearch?.shard_stats.store?.size_in_bytes || 0) || "N/A",
       },
       {
         key: "Updated",
-        title: "Updated",
+        title: formatMessage({ id: "overview.statistic.updated" }),
         value: shardValue?.timestamp
           ? formatUtcTimeToLocal(shardValue?.timestamp)
           : "N/A",

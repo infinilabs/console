@@ -36,3 +36,4 @@ log/
 /web/
 .github
 src/common*/
+/public

@@ -1,10 +1,12 @@
 import { Input, Select } from "antd";
+import { formatMessage } from "umi/locale";
+
 const { Search } = Input;
 const InputGroup = Input.Group;
 const Option = Select.Option;
 
 const FilterSearchGroup = ({
-  enterButton = true,
+  enterButton = formatMessage({ id: "form.button.search" }),
   filterWidth = 120,
   filterFields,
   onFilterChange,
@@ -17,7 +19,7 @@ const FilterSearchGroup = ({
         allowClear={true}
         style={{ width: filterWidth }}
         dropdownMatchSelectWidth={false}
-        placeholder="Filters"
+        placeholder={formatMessage({ id: "listview.filters.placeholder" })}
         onChange={(value) => {
           if (typeof onFilterChange == "function") {
             onFilterChange(value);
@@ -35,7 +37,7 @@ const FilterSearchGroup = ({
       <Search
         enterButton={enterButton}
         allowClear={true}
-        placeholder="Type keyword to search"
+        placeholder={formatMessage({ id: "listview.search.placeholder" })}
         style={{ width: `calc(100% - ${filterWidth}px)` }}
         onSearch={(value) => {
           if (typeof onSearch == "function") {

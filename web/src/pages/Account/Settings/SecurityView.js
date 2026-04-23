@@ -34,7 +34,7 @@ class SecurityView extends Component {
     {
       title: formatMessage({ id: "app.settings.security.password" }, {}),
       description: (
-        <Fragment>
+        <Fragment key="passwordDescription">
           {formatMessage({ id: "app.settings.security.password-description" })}
           ：{passwordStrength.strong}
         </Fragment>
@@ -94,7 +94,7 @@ class SecurityView extends Component {
 
   render() {
     return (
-      <Fragment>
+      <Fragment key="securityView">
         <List
           itemLayout="horizontal"
           dataSource={this.getData()}

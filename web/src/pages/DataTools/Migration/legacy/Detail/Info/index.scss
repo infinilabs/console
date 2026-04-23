@@ -1,0 +1,52 @@
+.mi-info {
+    border-radius: 3px;
+    box-sizing: border-box;
+    border: 1px solid #E8E8E8;
+    .first-part{
+        background: #F5F7FA;
+        padding: 20px 15px 10px 15px;
+    }
+    .tag{
+        background: rgba(68, 142, 247, 0.2); 
+        color: #448EF7;
+        border: none;
+        border-radius: 3px;
+      }
+    .second-part{
+        padding: 10px 20px;
+        .iw{
+            display: flex;
+            .im{
+                flex: 1 1 20%;
+                &>dl>dt{
+                    color: #999999;;
+                    font-weight: normal;
+                    margin-bottom: 8px;
+                }
+                &>dl>dd{
+                    color: #333333;
+                }
+            }
+        }
+    }
+    font-size: 14px;
+    font-weight: 400;
+    .ant-descriptions-item-label {
+        width: 30%;
+        text-align: right;
+        color: #868686;
+    }
+    .ant-descriptions-item-content {
+        width: 70%;
+        text-align: left;
+        color: #101010;
+        padding-left: 12px;
+    }
+    .icon-wrapper{
+        display: flex;
+        align-items: center;
+        span{
+            margin-left: 3px;
+        }
+    }
+}

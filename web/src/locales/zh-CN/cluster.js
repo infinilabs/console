@@ -37,6 +37,8 @@ export default {
   "cluster.manage.monitored.on": "启用",
   "cluster.manage.monitored.off": "关闭",
   "cluster.manage.metric_collection_mode": "采集模式",
+  "cluster.manage.metric_collection_mode.option.agent": "探针",
+  "cluster.manage.metric_collection_mode.option.agentless": "非探针",
   "cluster.manage.metric_collection_mode.confirm.title": "确认切换监控方式",
   "cluster.manage.metric_collection_mode.confirm.message": "您确认要切换为 {mode} 模式吗？",
   "cluster.manage.metric_collection_mode.warning.large_cluster": "当前集群节点数大于等于 {number_of_nodes} 个，强烈建议使用 Agent 模式进行监控。",
@@ -84,10 +86,30 @@ export default {
   "cluster.regist.form.verify.required.cluster_name": "请输入集群名称！",
   "cluster.regist.form.verify.valid.endpoint": "请输入域名或 IP 地址和端口号！",
   "cluster.regist.form.verify.required.endpoint": "请输入 endpoint 地址！",
+  "cluster.regist.form.label.probe_path": "检测路径",
+  "cluster.regist.form.placeholder.probe_path": "/_cluster/health",
+  "cluster.regist.form.toggle.probe_path": "自定义检测路径",
+  "cluster.regist.form.help.probe_path":
+    "可选。留空时默认使用 / 进行探测，仅在 WAF 等特殊场景下需要填写。",
+  "cluster.regist.form.verify.valid.probe_path":
+    "检测路径必须以 / 开头！",
   "cluster.regist.form.verify.required.credential": "请选择用户凭据！",
   "cluster.regist.form.verify.required.agent_credential": "请选择 Agent 凭据！",
   "cluster.regist.form.verify.required.auth_username": "请输入授权用户名！",
   "cluster.regist.form.verify.required.auth_password": "请输入授权密码！",
+  "cluster.regist.try_connect.failed": "集群连接失败，请检查地址、TLS 与认证信息。",
+  "cluster.connect.error.health_red":
+    "目标集群当前健康状态为 red，仅允许连接健康状态为 green 的集群，请先修复集群后再连接。",
+  "cluster.connect.error.tls_mismatch":
+    "TLS 设置与集群地址不匹配，请检查是否应该启用 HTTPS。",
+  "cluster.connect.error.auth_required":
+    "集群需要认证，或当前凭据无效，请检查用户名、密码或凭据配置。",
+  "cluster.connect.error.endpoint_unreachable":
+    "无法连接到集群地址，请检查地址、网络连通性以及 TLS 设置。",
+  "cluster.connect.error.non_es_endpoint":
+    "目标地址返回的不是 Elasticsearch 兼容 API 响应，请检查地址和端口是否填写正确。",
+  "cluster.connect.error.unexpected_status":
+    "集群返回了异常状态码，请检查地址、TLS 设置和认证信息。",
   "cluster.regist.form.credential.manual.desc":
     "*新的身份验证信息将在保存后添加到凭据库",
 
@@ -128,6 +150,8 @@ export default {
   "cluster.monitor.topn.area": "面积指标",
   "cluster.monitor.topn.color": "颜色指标",
   "cluster.monitor.topn.theme": "主题",
+  "cluster.monitor.rollup.gap": "汇聚延迟",
+  "cluster.monitor.treemap.search_latency_by_index": "按索引统计平均查询延迟",
 
   "cluster.monitor.logs.timestamp": "时间戳",
   "cluster.monitor.logs.type": "类型",
@@ -139,9 +163,9 @@ export default {
   "cluster.monitor.logs.empty.agentless": "没有数据，请安装 Agent 并更改集群采集模式为 Agent 。",
 
   "cluster.monitor.tabs.overview": "概览",
-   "cluster.monitor.tabs.rollup": "Rollup",
+   "cluster.monitor.tabs.rollup": "汇聚",
   "cluster.monitor.tabs.advanced": "高级",
-  "cluster.monitor.tabs.topn": "TopN",
+  "cluster.monitor.tabs.topn": "视图",
   "cluster.monitor.tabs.logs": "日志",
   "cluster.monitor.tabs.nodes": "节点",
   "cluster.monitor.tabs.indices": "索引",
@@ -363,15 +387,15 @@ export default {
     "In Flight Requests Breaker",
   "cluster.metrics.node.axis.model_inference_breaker.title":
     "Model Inference Breaker",
-  "cluster.metrics.axis.rollup_cluster_health.title": "Rollup Cluster Health",
-  "cluster.metrics.axis.rollup_index_health.title": "Rollup Index Health",
-  "cluster.metrics.axis.rollup_cluster_stats.title": "Rollup Cluster Stats",
-  "cluster.metrics.axis.rollup_index_stats.title": "Rollup Index Stats",
-  "cluster.metrics.axis.rollup_node_stats.title": "Rollup Node Stats",
+  "cluster.metrics.axis.rollup_cluster_health.title": "汇聚集群健康状态",
+  "cluster.metrics.axis.rollup_index_health.title": "汇聚索引健康状态",
+  "cluster.metrics.axis.rollup_cluster_stats.title": "汇聚集群指标",
+  "cluster.metrics.axis.rollup_index_stats.title": "汇聚索引指标",
+  "cluster.metrics.axis.rollup_node_stats.title": "汇聚节点指标",
   "cluster.metrics.axis.rollup_shard_stats_metrics.title":
-    "Rollup Shard Stats Metrics",
+    "汇聚分片指标",
   "cluster.metrics.axis.rollup_shard_stats_state.title":
-    "Rollup Shard Stats State",
+    "汇聚分片状态",
   //overview
   "overview.card.cluster.total_count": "集群总数",
   "overview.card.host.total_count": "主机总数",

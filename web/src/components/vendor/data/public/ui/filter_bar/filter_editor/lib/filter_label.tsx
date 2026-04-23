@@ -49,7 +49,7 @@ export default function FilterLabel({ filter, valueLabel, filterLabelStatus }: F
 
   if (filter.meta.alias !== null) {
     return (
-      <Fragment>
+      <Fragment key={filter.meta.alias}>
         {prefix}
         {filter.meta.alias}
         {filterLabelStatus && <>: {getValue(valueLabel)}</>}
@@ -60,35 +60,35 @@ export default function FilterLabel({ filter, valueLabel, filterLabelStatus }: F
   switch (filter.meta.type) {
     case FILTERS.EXISTS:
       return (
-        <Fragment>
+        <Fragment key={filter.meta.key}>
           {prefix}
           {filter.meta.key}: {getValue(`${existsOperator.message}`)}
         </Fragment>
       );
     case FILTERS.GEO_BOUNDING_BOX:
       return (
-        <Fragment>
+        <Fragment key={filter.meta.key}>
           {prefix}
           {filter.meta.key}: {getValue(valueLabel)}
         </Fragment>
       );
     case FILTERS.GEO_POLYGON:
       return (
-        <Fragment>
+        <Fragment key={filter.meta.key}>
           {prefix}
           {filter.meta.key}: {getValue(valueLabel)}
         </Fragment>
       );
     case FILTERS.PHRASES:
       return (
-        <Fragment>
+        <Fragment key={filter.meta.key}>
           {prefix}
           {filter.meta.key}: {getValue(`${isOneOfOperator.message} ${valueLabel}`)}
         </Fragment>
       );
     case FILTERS.QUERY_STRING:
       return (
-        <Fragment>
+        <Fragment key={filter.meta.key}>
           {prefix}
           {getValue(`${valueLabel}`)}
         </Fragment>
@@ -96,14 +96,14 @@ export default function FilterLabel({ filter, valueLabel, filterLabelStatus }: F
     case FILTERS.PHRASE:
     case FILTERS.RANGE:
       return (
-        <Fragment>
+        <Fragment key={filter.meta.key}>
           {prefix}
           {filter.meta.key}: {getValue(valueLabel)}
         </Fragment>
       );
     default:
       return (
-        <Fragment>
+        <Fragment key={filter.meta.key}>
           {prefix}
           {getValue(`${JSON.stringify(filter.query) || filter.meta.value}`)}
         </Fragment>

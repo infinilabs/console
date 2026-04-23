@@ -35,16 +35,21 @@ import (
 	"net/http"
 	uri2 "net/url"
 	"path"
+	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
+	console_common "infini.sh/console/common"
+	core2 "infini.sh/console/core"
 	"infini.sh/console/core/security"
 	"infini.sh/framework/lib/go-ucfg"
 	elastic2 "infini.sh/framework/modules/elastic"
 
 	log "github.com/cihub/seelog"
-	"golang.org/x/crypto/bcrypt"
 	elastic3 "infini.sh/console/modules/elastic/api"
 	security2 "infini.sh/console/modules/security"
 	"infini.sh/framework/core/api"
@@ -64,7 +69,6 @@ import (
 	"infini.sh/framework/lib/fasthttp"
 	"infini.sh/framework/lib/fasttemplate"
 	keystore2 "infini.sh/framework/lib/keystore"
-	"infini.sh/framework/modules/elastic/adapter"
 	elastic1 "infini.sh/framework/modules/elastic/common"
 	"infini.sh/framework/plugins/replay"
 )
@@ -92,23 +96,35 @@ func (module *Module) Setup() {
 		return
 	}
 
-	api.HandleAPIMethod(api.POST, "/setup/_validate", module.validate)
-	api.HandleAPIMethod(api.POST, "/setup/_initialize", module.initialize)
-	api.HandleAPIMethod(api.POST, "/setup/_validate_secret", module.validateSecret)
+	api.HandleAPIMethod(api.POST, "/setup/_validate", core2.RequireSecureTransport(core2.RequireReplayProtection(module.validate)))
+	api.HandleAPIMethod(api.POST, "/setup/_initialize", core2.RequireSecureTransport(core2.RequireReplayProtection(module.initialize)))
+	api.HandleAPIMethod(api.POST, "/setup/_validate_secret", core2.RequireSecureTransport(core2.RequireReplayProtection(module.validateSecret)))
 	api.HandleAPIMethod(api.POST, "/setup/_initialize_template", module.initializeTemplate)
 	elastic3.InitTestAPI()
 }
 
 var setupFinishedCallback = []func(){}
+var setupCallbackOnce sync.Once
+var setupInitializeRunning uint32
 
 func RegisterSetupCallback(f func()) {
 	setupFinishedCallback = append(setupFinishedCallback, f)
 }
 
 func InvokeSetupCallback() {
-	for _, v := range setupFinishedCallback {
-		v()
-	}
+	setupCallbackOnce.Do(func() {
+		for _, v := range setupFinishedCallback {
+			v()
+		}
+	})
+}
+
+func acquireSetupInitialization() bool {
+	return atomic.CompareAndSwapUint32(&setupInitializeRunning, 0, 1)
+}
+
+func releaseSetupInitialization() {
+	atomic.StoreUint32(&setupInitializeRunning, 0)
 }
 
 // Start initializes the module and registers a change event for credentials.
@@ -158,6 +174,8 @@ type SetupRequest struct {
 	BootstrapPassword  string `json:"bootstrap_password"`
 	CredentialSecret   string `json:"credential_secret"`
 	InitializeTemplate string `json:"initialize_template"`
+	PrimaryShards      int    `json:"primary_shards"`
+	AutoExpandReplicas string `json:"auto_expand_replicas"`
 }
 
 var GlobalSystemElasticsearchID = "infini_default_system_cluster"
@@ -168,6 +186,40 @@ const TemplateExists = "elasticsearch_template_exists"
 const VersionNotSupport = "unknown_cluster_version"
 
 var cfg1 elastic1.ORMConfig
+
+const defaultSetupAutoExpandReplicas = "0-1"
+
+var setupAutoExpandReplicasPattern = regexp.MustCompile(`^(false|all|\d+-\d+)$`)
+
+func resolveSetupTemplateSettings(client elastic.API, request *SetupRequest) (int, string, error) {
+	primaryShards := request.PrimaryShards
+	if primaryShards <= 0 {
+		health, err := client.ClusterHealth(context.Background())
+		if err != nil {
+			return 0, "", err
+		}
+		if health != nil {
+			if health.NumberOf_data_nodes > 0 {
+				primaryShards = health.NumberOf_data_nodes
+			} else if health.NumberOfNodes > 0 {
+				primaryShards = health.NumberOfNodes
+			}
+		}
+	}
+	if primaryShards <= 0 {
+		primaryShards = 1
+	}
+
+	autoExpandReplicas := strings.TrimSpace(request.AutoExpandReplicas)
+	if autoExpandReplicas == "" {
+		autoExpandReplicas = defaultSetupAutoExpandReplicas
+	}
+	if !setupAutoExpandReplicasPattern.MatchString(autoExpandReplicas) {
+		return 0, "", errors.Errorf("invalid auto expand replicas, expected false, all, or a range like 0-1")
+	}
+
+	return primaryShards, autoExpandReplicas, nil
+}
 
 // validate checks the Elasticsearch cluster configuration and validates the setup.
 func (module *Module) validate(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -228,7 +280,7 @@ func (module *Module) validate(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 
 	//validate version
-	verInfo, err := adapter.ClusterVersion(elastic.GetMetadata(cfg.ID))
+	verInfo, err := console_common.ClusterVersion(elastic.GetMetadata(cfg.ID))
 	if err != nil {
 		panic(err)
 	}
@@ -336,7 +388,7 @@ func (module *Module) initTempClient(request *SetupRequest) (error, elastic.API)
 	cfg.ID = GlobalSystemElasticsearchID
 	cfg.Name = "INFINI_SYSTEM (" + util.PickRandomName() + ")"
 	elastic.InitMetadata(&cfg, true)
-	verInfo, err := adapter.ClusterVersion(elastic.GetMetadata(cfg.ID))
+	verInfo, err := console_common.ClusterVersion(elastic.GetMetadata(cfg.ID))
 	if err != nil {
 		panic(err)
 	}
@@ -400,6 +452,11 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		module.WriteError(w, "setup not permitted", http.StatusInternalServerError)
 		return
 	}
+	if !acquireSetupInitialization() {
+		module.WriteError(w, "setup is already running", http.StatusConflict)
+		return
+	}
+	defer releaseSetupInitialization()
 	request := &SetupRequest{}
 	err := module.DecodeJSON(r, request)
 	if err != nil {
@@ -606,13 +663,10 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		user.ID = "default_user_" + request.BootstrapUsername
 		user.Username = request.BootstrapUsername
 		user.Nickname = request.BootstrapUsername
-		var hash []byte
-		hash, err = bcrypt.GenerateFromPassword([]byte(request.BootstrapPassword), bcrypt.DefaultCost)
+		err = security.SetPassword(&user, request.BootstrapPassword)
 		if err != nil {
 			panic(err)
 		}
-
-		user.Password = string(hash)
 		role := []security.UserRole{}
 		role = append(role, security.UserRole{
 			ID:   security.RoleAdminName,
@@ -889,6 +943,11 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 		break
 	}
 
+	primaryShards, autoExpandReplicas, err := resolveSetupTemplateSettings(elastic.GetClient(GlobalSystemElasticsearchID), request)
+	if err != nil {
+		panic(err)
+	}
+
 	dslTplFile := path.Join(baseDir, dslTplFileName)
 	if !util.FileExists(dslTplFile) {
 		panic(errors.Errorf("template file %v for setup was missing", dslTplFile))
@@ -975,6 +1034,10 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 			return w.Write([]byte(request.BootstrapUsername))
 		case "SETUP_DOC_TYPE":
 			return w.Write([]byte(docType))
+		case "SETUP_PRIMARY_SHARDS":
+			return w.Write([]byte(strconv.Itoa(primaryShards)))
+		case "SETUP_AUTO_EXPAND_REPLICAS":
+			return w.Write([]byte(autoExpandReplicas))
 		}
 		//ignore unresolved variable
 		return w.Write([]byte("$[[" + tag + "]]"))

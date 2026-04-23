@@ -9,9 +9,65 @@ title: "版本历史"
 
 ## Latest (In development)  
 ### ❌ Breaking changes  
+- breaking: 前端敏感操作现在必须走 HTTPS 传输。要继续在 UI 中执行登录、初始化校验/执行、密码修改、凭据管理、集群注册以及邮件服务器写入/测试等操作，必须直接开启 Console HTTPS，或将 Console 部署在 HTTPS 反向代理之后
+- breaking: Console 现在对每个用户只保留一个有效 JWT。重新登录或退出登录后，该用户此前签发的旧令牌会立即失效
+- breaking: `/_info`、实例代理 `/_info` 以及实例连通性测试响应不再返回 `endpoint`、`host`、`network`、`basic_auth` 等敏感字段
+- breaking: 之前可直接访问的 insight visualization/dashboard/widget/map-label 接口现在必须携带登录态并满足对应权限
+- breaking: web 前端依赖安装现在仅允许使用 `cnpm` / `npminstall`
 ### 🚀 Features  
+- feat: 通过 `/setting/application` 为 DataTools 菜单、路由、首页快捷入口和角色权限树增加企业插件动态开关
+- feat: 恢复并挂载 `/data_tools/*` 下的迁移/比对旧版列表页、详情页和创建页，补齐语言包，并保持所选网关的云端兼容运行时元数据
+- feat: 新增真正可用的“系统设置”页面，集成 Rollup 开关、嵌入式邮件服务器管理，以及对应的后端 Rollup 设置接口
+- feat: 为 `/account/login/challenge` 增加原生挑战应答登录，并为新建、重置、修改及升级后的本地账号写入密码 verifier/salt
+- feat: 为受 WAF 限制的集群增加 Console 侧 `probe_path` 能力，将其保存到集群标签中并在注册/版本探测流程中复用
+- feat: 为初始化向导增加主分片数、自动副本和 Easysearch Rollup 条件初始化支持
+- feat: 为 Insight 增加分享操作，可将当前查询、过滤条件、时间范围、列配置和视图状态复制为可直接复用的 URL
+- feat: 为迁移流程增加 Easysearch 目标索引参数注入入口，可批量补充 compression / `source_reuse` 设置，避免逐个索引手工编辑
 ### 🐛 Bug fix  
+- fix: 清洗 `/_info`、实例代理和实例连通性测试响应，避免继续暴露敏感运行时字段
+- fix: 修复退出登录后 JWT 仍可继续访问的问题，服务端现在会失效当前令牌并拒绝旧/被替换的 Bearer Token
+- fix: 将 `/elasticsearch/_search` 默认排序改为 `function_score`，修复权限过滤中的 `id` / `_id` 不一致，并增加 zero-hit 调试 DSL 日志
+- fix: 为此前暴露的 insight visualization/dashboard/widget/map-label 路由补齐登录与权限保护
+- fix: 在需要初始化时跳过 task-manager 的 scheduler/dispatcher 启动逻辑，避免 setup 模式下启动失败
+- fix: 修复 DataTools 详情页/新建页刷新后路由丢失的问题，并避免旧版 Back 按钮回到空白页
+- fix: 修复迁移/比对索引选择在搜索、分页、过滤后覆盖已选内容的问题
+- fix: 为迁移/比对子任务增加失败一键重试，修正 bulk 非法原因聚合问题，并让迁移日志刷新时持续累积
+- fix: 修复迁移/比对详情页在硬刷新、任务数据尚未返回时直接崩溃的问题
+- fix: 修复旧邮件告警通道缺少 `server_id` 时无法发送的问题；当系统中仅启用一个 SMTP 服务器时，现会自动继承该服务器
+- fix: 修复邮件告警渠道未完成 SMTP/收件人配置时也能被启用的问题；现在会在渠道列表直接提示并阻止启用，避免后续执行时才失败
+- fix: 保留 `data/views` 空状态下的页面框架与面包屑，并增强 Dev Tools、Search Flow、数据管理页面对空集群状态和异常聚合数据的容错
+- fix: 统一搜索/删除/系统安全相关提示，避免页面继续出现 `Search` / `搜索` / 图标按钮混用以及未国际化英文确认框
+- fix: 将集群连通性测试错误统一为本地化、可读的提示，不再直接暴露 `EOF`、HTML 解析错误或后端原始 JSON reason
+- fix: 修复旧版 DataTools `ExecuteNodes` 的导入路径，避免在更严格的路径敏感环境下前端构建失败
+- fix: 修复 `menu` 语言项缺失告警、无名路由 React Intl 标题崩溃、登出 401 循环，以及 HealthProvider 组件卸载后仍更新状态导致的主界面异常
+- fix: 消除 ListView、Discover 和 DataTools 表格中的重复 key / 相同路径跳转告警，并修复迁移/比对分段进度条在 Tooltip 下的运行时崩溃
+- fix: 修复 Easysearch 数据保留期更新流程：改为按 `policy.phases` 重新创建 ILM policy，在重建前删除同名旧策略，并将模板与受管索引重新绑定到新的保留期策略
+- fix: 修复告警规则列表状态在规则健康信息尚未返回前先短暂显示为异常的问题，改为先保持中性占位再展示真实红绿状态
+- fix: 平台角色表单页补齐标签与校验文案国际化，并移除面包屑中原样显示的 `/role/platform` 路径段
+- fix: 修复共享 Overview URL 状态同步的重复写入，避免集群总览在推送相同路径时触发 hash-history 告警
+- fix: 修复 ListView 头部操作区 Fragment key 可能重复的问题，消除重复 key 告警
+- fix: 修复集群总览共享表格区域在左侧过滤栏展开时把页面撑出横向滚动条的问题
+
 ### ✈️ Improvements  
+- improve: 补充迁移/比对的导出、写入、差异等进度汇总，并在详情页提供失败分区批量重试入口
+- improve: 通过稳定的本地化错误 key 展示红集群、鉴权失败、TLS 协议不匹配、非 Elasticsearch 端点、端点不可达和异常状态码等错误
+- improve: 默认将集群 `probe_path` 隐藏到“高级设置”中，同时继续兼容已保存的自定义路径
+- improve: 当 `setup_required=true` 时，登录页会自动跳转到初始化向导，并提升清空本地 data/log 后的 setup 流程韧性
+- improve: 更新 setup 模板，让 ILM 和 Rollup 相关索引继承配置的分片数与自动副本策略，包括 rollup 目标索引
+- improve: 将英文系统菜单改为 `SYSTEM` / `SYSTEM SETTINGS`，并在角色权限树中把 `SMTP SERVER` 展示为 `System Settings`
+- improve: 合并重复的 `/setting/application` 请求，增加 stale chunk 自动刷新、`manifest.json` 禁缓存处理，并通过 `run-umi.js` 优化前端构建
+- improve: 用 Console 本地 `console_smtp` 处理器替代生成邮件 pipeline 对 framework SMTP 的依赖，并为 web 安装流程增加 `cnpm` / `npminstall` 限制
+- improve: 浏览器控制台启动欢迎信息改为显示本地时区构建时间，并为 Dev Tools 编辑器切换到更易读的字体栈和更大的默认字号
+- improve: 将迁移/比对列表页和详情页的进度展示升级为更长的分段式进度条，提升可读性
+- improve: 在非开发环境下屏蔽 `umi.dll.js` 带来的噪声告警输出，同时保留开发模式下的原始告警
+- improve: 优化 `/elasticsearch/status` 的后台轮询策略，仅在页面可见时刷新，增加前端 TTL 缓存，并将强制刷新保留给显式用户操作
+- improve: 在系统设置页展示系统托管 ILM 的 rollover 存储大小，并让保留期更新同时携带删除天数与 rollover 存储阈值
+- improve: 优化前端错误提示泡泡：对短时间内重复错误做去重，并限制全局 message 同时显示数量，避免失败时满屏重复弹泡
+- improve: 调整集群总览页布局，将筛选条件统一移到左侧栏，和控制台其他页面保持一致
+- improve: 对齐集群总览与集群活动页布局：统一使用独立左侧过滤栏，并将侧栏折叠入口移动到顶部，减少操作成本
+- improve: 优化概览页“产品动态”卡片高度：当动态条目较少时按内容自适应收起，避免出现大块空白
+- improve: 优化概览页“集群动态”面板高度：右侧根据左侧内容高度对齐，避免左右两列底部不齐
+- improve: 平台概览、集群动态与审计日志页默认收起左侧过滤栏，为数据内容释放更多空间
 
 ## 1.30.1 (2025-12-19)
 ### ❌ Breaking changes  

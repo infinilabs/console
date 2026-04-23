@@ -10,6 +10,7 @@ import React, {
   Fragment,
 } from "react";
 import { Card, Table, Button, Input, Icon, Switch, Empty, Spin } from "antd";
+import isEqual from "lodash/isEqual";
 import styles from "./index.less";
 import { formatMessage, getLocale } from "umi/locale";
 import { getTimezone } from "@/utils/utils";
@@ -65,6 +66,22 @@ const Index = forwardRef((props, ref) => {
   const rowMultiSelectExtra = rowSelectionExtra.getExtra
     ? rowSelectionExtra.getExtra(props)
     : [];
+
+  const getHeaderExtraKey = (item, index) => {
+    let baseKey;
+    if (React.isValidElement(item) && item.key != null) {
+      baseKey = item.key;
+    } else if (item?.key != null) {
+      baseKey = item.key;
+    } else if (item?.id != null) {
+      baseKey = item.id;
+    } else if (item?.props?.id != null) {
+      baseKey = item.props.id;
+    }
+    return baseKey != null
+      ? `header-extra-${String(baseKey)}-${index}`
+      : `header-extra-${index}`;
+  };
 
   const [param, setParam] = useQueryParam("_g", JsonParam);
   const [queryParams, setQueryParams] = useState({
@@ -137,18 +154,23 @@ const Index = forwardRef((props, ref) => {
     return [columnsNew, sortOptions, aggOptions, searchFields];
   }, [columns]);
 
-  const formatAggs = useMemo(() => {
+  const [formatAggs, aggMetas] = useMemo(() => {
     let aggsJson = {};
+    let metas = {};
     let aggsArr = sideEnable ? aggOptions : [];
     aggsArr.map((item) => {
-      aggsJson[item.label] = {
+      aggsJson[item.field] = {
         terms: {
           field: item.field,
           size: item.size,
         },
       };
+      metas[item.field] = {
+        label: item.label,
+        field: item.field,
+      };
     });
-    return aggsJson;
+    return [aggsJson, metas];
   }, [sideEnable, aggOptions]);
 
   const formatQueryBody = (queryParams) => {
@@ -242,6 +264,35 @@ const Index = forwardRef((props, ref) => {
     return res?.hits?.total?.value || 0;
   };
   const [dataSource, setDataSource] = useState({});
+  const tableDataSource = useMemo(() => {
+    const rows = Array.isArray(dataSource?.data) ? dataSource.data : [];
+    const rowKeyCounts = new Map();
+
+    rows.forEach((item, index) => {
+      const baseKey =
+        item?.id ?? item?._id ?? item?.key ?? item?._key ?? item?.name ?? null;
+      const normalizedKey =
+        baseKey == null || baseKey === "" ? `row-${index}` : String(baseKey);
+      rowKeyCounts.set(normalizedKey, (rowKeyCounts.get(normalizedKey) || 0) + 1);
+    });
+
+    return rows.map((item, index) => {
+      const baseKey =
+        item?.id ?? item?._id ?? item?.key ?? item?._key ?? item?.name ?? null;
+      const normalizedKey =
+        baseKey == null || baseKey === "" ? `row-${index}` : String(baseKey);
+      const uniqueKey =
+        rowKeyCounts.get(normalizedKey) > 1
+          ? `${normalizedKey}-${index}`
+          : normalizedKey;
+
+      return {
+        ...item,
+        __listview_row_key: uniqueKey,
+      };
+    });
+  }, [dataSource]);
+
   useMemo(async () => {
     let ds = value;
     // console.log("dataSource:", value);
@@ -384,9 +435,30 @@ const Index = forwardRef((props, ref) => {
     }
   };
 
+  const onHistogramQueriesChange = (nextQueries = {}) => {
+    const nextRange = nextQueries?.range;
+    if (!nextRange?.from || !nextRange?.to) {
+      return;
+    }
+    const timeField =
+      histogramState.widget?.series?.[0]?.queries?.time_field ||
+      queryParams?.timeRange?.timeField ||
+      defaultQueryParams?.timeRange?.timeField ||
+      "";
+    onTimeRangeChange({
+      start: nextRange.from,
+      end: nextRange.to,
+      timeField,
+    });
+  };
+
   useEffect(() => {
-    setParam((st) => ({ ...st, ...queryParams }));
-  }, [queryParams]);
+    const nextParam = { ...(param || {}), ...queryParams };
+    if (isEqual(param || {}, nextParam)) {
+      return;
+    }
+    setParam(nextParam);
+  }, [param, queryParams, setParam]);
 
   //用 useImperativeHandle 暴露一些外部 ref 能访问的属性
   useImperativeHandle(ref, () => ({
@@ -418,7 +490,7 @@ const Index = forwardRef((props, ref) => {
       {sideEnable && aggOptions.length > 0 ? (
         <div className={styles.sideWrap}>
           <Side
-            aggs={formatAggs}
+            aggs={aggMetas}
             data={dataSource.aggregations || {}}
             filters={queryParams?.filters || {}}
             onFacetChange={onFacetChange}
@@ -488,7 +560,7 @@ const Index = forwardRef((props, ref) => {
                   {formatMessage({ id: "form.button.refresh" })}
                 </Button>
                 {headerExtra.map((item, i) => (
-                  <Fragment key={i}>{item}</Fragment>
+                   <Fragment key={getHeaderExtraKey(item, i)}>{item}</Fragment>
                 ))}
               </div>
             </div>
@@ -533,6 +605,7 @@ const Index = forwardRef((props, ref) => {
                   widget={histogramState.widget}
                   range={histogramState.range}
                   queryParams={queryParams?.filters || {}}
+                  onGlobalQueriesChange={onHistogramQueriesChange}
                 />
               </div>
             ) : null}
@@ -543,8 +616,8 @@ const Index = forwardRef((props, ref) => {
                   size={"small"}
                   loading={loading}
                   columns={columnsNew}
-                  dataSource={dataSource?.data || []}
-                  rowKey={"id"}
+                  dataSource={tableDataSource}
+                  rowKey={"__listview_row_key"}
                   onChange={onTableChange}
                   pagination={{
                     size: "small",

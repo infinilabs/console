@@ -9,7 +9,7 @@ export default {
   "command.manage.title": "常用命令管理",
   "command.manage.description":
     "常用命令可以帮助您保存常用的请求，并且在开发工具里面通过 LOAD 命令快速地加载。",
-  "console.menu.copy_as_curl": "复制为Curl命令",
+  "console.menu.copy_as_curl": "复制为 cURL 命令",
   "console.menu.auto_indent": "自动缩进",
   "console.menu.save_as_command": "保存为常用命令",
 };

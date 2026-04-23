@@ -1,0 +1,450 @@
+import React, { useState } from "react";
+import {
+  Button,
+  Checkbox,
+  Form,
+  InputNumber,
+  Input,
+  Select,
+  message,
+  Switch,
+  DatePicker,
+} from "antd";
+import moment from "moment";
+import ExecuteIntervals from "../FormItem/ExecuteIntervals";
+import ExecuteNodes from "../FormItem/ExecuteNodes";
+import request from "@/utils/request";
+import { router } from "umi";
+import { formatMessage } from "umi/locale";
+import useFetch from "@/lib/hooks/use_fetch";
+import _ from "lodash";
+
+const { Option } = Select;
+
+const formItemLayout = {
+  labelCol: {
+    sm: { span: 24 },
+    md: { span: 8 },
+  },
+  wrapperCol: {
+    sm: { span: 24 },
+    md: { span: 8 },
+  },
+};
+
+export const RunSetting = (props) => {
+  const { stepData, setStepData, form, onPrevious } = props;
+
+  const { getFieldDecorator } = form;
+  const [loading, setLoading] = useState(false);
+  const [schedule, setSchedule] = useState(false);
+  const [incremental, setIncremental] = useState(false);
+  const [skipbulkcountcheck,setSkipbulkcountcheck] = useState(false);
+  const [skipExistDocs,setSkipExistDocs] = useState(false);
+  const [bulkOperation,setBulkOperation] = useState("index");
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    props.form.validateFields((err, values) => {
+      if (err) {
+        return false;
+      }
+      setLoading(true);
+
+      values.settings.execution.nodes.permit = (
+        values.settings.execution.nodes.permit || []
+      ).map((node) => {
+        if (typeof node === "string") {
+          return { id: node, name: "" };
+        }
+        return {
+          id: node.id || node.key,
+          name: node.name || node.label || "",
+        };
+      });
+
+      values.settings.scroll.timeout += "m";
+
+      if (incremental) {
+        const repeat = values.settings.execution.repeat;
+        values.settings.execution.repeat.interval = `${repeat.interval_number}${repeat.interval_unit}`
+      }
+      if (!schedule) {
+        values.settings.execution.repeat.next_run_time = null;
+      }
+      values.settings.bulk.operation = bulkOperation
+      values.settings.skip_bulk_count_check = skipbulkcountcheck
+      const params = { ...stepData, settings: values.settings, name: values.name, tags: values.tags };
+      setStepData(params);
+      submitData(params);
+    });
+  };
+
+  const submitData = async (params) => {
+    //clear invalid field
+    const indices = params.indices.map((item) => {
+      delete item.source.init_docs;
+      delete item.target.docs;
+      delete item.data_partition;
+      delete item.range;
+      return item;
+    });
+
+    const newVals = { ...params, indices };
+
+    const url = "/migration/data";
+    const res = await request(url, {
+      method: "POST",
+      body: newVals,
+    });
+    if (res && res.result == "created") {
+      setTimeout(() => {
+        message.success(
+          formatMessage({
+            id: "app.message.create.success",
+          })
+        );
+        setLoading(false);
+        router.push("/data_tools/migration");
+      }, 1000);
+    } else {
+      setLoading(false);
+      console.log("Created failed!", res);
+      message.error(
+        formatMessage({
+          id: "app.message.create.failed",
+        })
+      );
+    }
+  };
+
+  const [valuesState, setValuesState] = useState({});
+
+  const { value: tagItems } = useFetch(
+    `/migration/data/_search_values`,
+    {
+      queryParams: {
+        field: "metadata.labels.tags",
+        keyword: valuesState.tagsKeyword,
+      },
+    },
+    [valuesState.tagsKeyword]
+  );
+  const onSearchTags = _.debounce((value) => {
+    setValuesState((st) => {
+      return {
+        ...st,
+        tagsKeyword: value,
+      };
+    });
+  }, 500);
+
+  return (
+    <Form
+      style={{ marginTop: 48 }}
+      {...formItemLayout}
+      onSubmit={handleSubmit}
+      colon={false}
+    >
+      {/* <Form.Item label="Parallel Migration Indices">
+        {getFieldDecorator("settings.parallel_indices", {
+          initialValue: stepData?.settings?.parallel_indices || 1,
+          rules: [
+            {
+              required: true,
+              message: "Please select parallel indices!",
+            },
+          ],
+        })(<InputNumber style={{ width: "100%" }} min={1} />)}
+      </Form.Item>
+      <Form.Item label="Parallel Tasks(per index)">
+        {getFieldDecorator("settings.parallel_task_per_index", {
+          initialValue: stepData?.settings?.parallel_task_per_index || 1,
+          rules: [
+            {
+              required: true,
+              message: "Please select parallel tasks(per index)!",
+            },
+          ],
+        })(<InputNumber style={{ width: "100%" }} min={1} />)}
+      </Form.Item> */}
+      <Form.Item
+        label={
+          <span
+            style={{
+              fontWeight: 700,
+              color: "rgba(87,87,87,1)",
+            }}
+          >
+            {formatMessage({ id: "migration.setting.scroll_setting" })}
+          </span>
+        }
+      ></Form.Item>
+      <Form.Item label={formatMessage({ id: "migration.setting.slice_size" })}>
+        {getFieldDecorator("settings.scroll.slice_size", {
+          initialValue: stepData?.settings?.scroll?.slice_size || 1,
+          rules: [
+            {
+              required: true,
+              message: formatMessage({ id: "migration.validation.slice_size" }),
+            },
+          ],
+        })(<InputNumber style={{ width: "100%" }} min={1} />)}
+      </Form.Item>
+      <Form.Item label={formatMessage({ id: "migration.setting.documents" })}>
+        {getFieldDecorator("settings.scroll.docs", {
+          initialValue: stepData?.settings?.scroll?.docs || 1000,
+          rules: [
+            {
+              required: true,
+              message: formatMessage({ id: "migration.validation.documents" }),
+            },
+          ],
+        })(<InputNumber style={{ width: "100%" }} min={0} />)}
+      </Form.Item>
+      <Form.Item label={formatMessage({ id: "migration.setting.timeout" })}>
+        {getFieldDecorator("settings.scroll.timeout", {
+          initialValue: stepData?.settings?.scroll?.timeout || 5,
+          rules: [
+            {
+              required: true,
+              message: formatMessage({ id: "migration.validation.timeout" }),
+            },
+          ],
+        })(
+          <InputNumber
+            style={{ width: "100%" }}
+            min={0}
+            formatter={(value) => `${value}m`}
+            parser={(value) => value.replace("m", "")}
+          />
+        )}
+      </Form.Item>
+      <Form.Item
+        label={
+          <span
+            style={{
+              fontWeight: 700,
+              color: "rgba(87,87,87,1)",
+            }}
+          >
+            {formatMessage({ id: "migration.setting.bulk_setting" })}
+          </span>
+        }
+      ></Form.Item>
+      <Form.Item label={formatMessage({ id: "migration.setting.slice_size" })}>
+        {getFieldDecorator("settings.bulk.slice_size", {
+          initialValue: stepData?.settings?.bulk?.slice_size || 1,
+          rules: [
+            {
+              required: true,
+              message: formatMessage({ id: "migration.validation.slice_size" }),
+            },
+          ],
+        })(<InputNumber style={{ width: "100%" }} min={1} />)}
+      </Form.Item>
+      <Form.Item label={formatMessage({ id: "migration.setting.documents" })}>
+        {getFieldDecorator("settings.bulk.docs", {
+          initialValue: stepData?.settings?.bulk?.docs || 5000,
+          rules: [
+            {
+              required: true,
+              message: formatMessage({ id: "migration.validation.documents" }),
+            },
+          ],
+        })(<InputNumber style={{ width: "100%" }} min={0} />)}
+      </Form.Item>
+      <Form.Item label={formatMessage({ id: "migration.setting.batch_size" })}>
+        {getFieldDecorator("settings.bulk.store_size_in_mb", {
+          initialValue: stepData?.settings?.bulk?.store_size_in_mb || 10,
+          rules: [
+            {
+              required: true,
+              message: formatMessage({ id: "migration.validation.batch_size" }),
+            },
+          ],
+        })(
+          <InputNumber
+            style={{ width: "100%" }}
+            min={0}
+            formatter={(value) => `${value}MB`}
+            parser={(value) => value.replace("MB", "")}
+          />
+        )}
+      </Form.Item>
+      <Form.Item
+        label={formatMessage({ id: "migration.setting.max_worker_size" })}
+      >
+        {getFieldDecorator("settings.bulk.max_worker_size", {
+          initialValue: stepData?.settings?.bulk?.max_worker_size || 10,
+          rules: [
+            {
+              required: true,
+              message: formatMessage({
+                id: "migration.validation.max_worker_size",
+              }),
+            },
+          ],
+        })(<InputNumber style={{ width: "100%" }} min={1} max={30} />)}
+      </Form.Item>
+      <Form.Item
+        label={formatMessage({
+          id: "migration.setting.idle_timeout_in_seconds",
+        })}
+      >
+        {getFieldDecorator("settings.bulk.idle_timeout_in_seconds", {
+          initialValue: stepData?.settings?.bulk?.idle_timeout_in_seconds || 5,
+          rules: [
+            {
+              required: true,
+              message: formatMessage({ id: "migration.validation.idle_timeout" }),
+            },
+          ],
+        })(<InputNumber style={{ width: "100%" }} min={1} max={60} />)}
+      </Form.Item>
+      <Form.Item label={formatMessage({ id: "migration.setting.compress" })}>
+        {getFieldDecorator("settings.bulk.compress", {
+          initialValue:
+            stepData?.settings?.bulk?.compress === true ? true : false,
+        })(<Switch />)}
+      </Form.Item>
+      <Form.Item
+        label={formatMessage({
+          id: "migration.setting.skip_verify_scrolled_docs",
+        })}
+      >
+        {getFieldDecorator("settings.skip_scroll_count_check", {
+          initialValue:
+            stepData?.settings?.skip_scroll_count_check === true ? true : false,
+        })(<Switch />)}
+      </Form.Item>
+      <Form.Item
+        label={formatMessage({
+          id: "migration.setting.skip_verify_written_docs",
+        })}
+      >
+        {getFieldDecorator("settings.skip_bulk_count_check", {
+          initialValue:
+            stepData?.settings?.skip_bulk_count_check === true ? true : false,
+        })(<Switch checked= {skipbulkcountcheck} disabled={skipExistDocs} onChange={(checked) => {
+             if(!skipExistDocs) setSkipbulkcountcheck(checked);
+             }}/>)}
+      </Form.Item>
+      <Form.Item
+        label={formatMessage({
+          id: "migration.setting.skip_existing_documents",
+        })}
+      >
+        {getFieldDecorator("settings.bulk.operation", {
+          initialValue:
+            stepData?.settings?.bulk?.operation === "create" ? true : false,
+        })(<Switch checked= {skipExistDocs} onChange={(checked) => {
+              setSkipExistDocs(checked);
+              if(checked) {
+                setSkipbulkcountcheck(checked);
+                setBulkOperation("create")
+              }else{
+                setBulkOperation("index")
+              }
+          }}/>)}
+      </Form.Item>
+      <ExecuteNodes
+        record={stepData}
+        form={form}
+      />
+      <Form.Item
+        label={formatMessage({ id: "migration.setting.detect_incremental_data" })}
+      >
+        {getFieldDecorator("settings.execution.repeat.incremental", {
+          initialValue: false,
+          valuePropName: 'checked',
+        })(<Checkbox onChange={e => setIncremental(e.target.checked)}/>)}
+      </Form.Item>
+      {
+        incremental &&
+        <Form.Item label={formatMessage({ id: "migration.setting.detect_interval" })}>
+          <Input.Group compact style={{ width: "100%" }}>
+            {getFieldDecorator("settings.execution.repeat.interval_number", {
+              initialValue: 15,
+            })(
+              <InputNumber
+                style={{ width: "calc(100% - 120px)" }}
+                min={0}
+              />
+            )}
+            {getFieldDecorator("settings.execution.repeat.interval_unit", {
+              initialValue: 'm',
+            })(
+              <Select style={{ width: 120 }}>
+                <Option value="h">{formatMessage({ id: "migration.unit.hours" })}</Option>
+                <Option value="m">{formatMessage({ id: "migration.unit.minutes" })}</Option>
+              </Select>
+            )}
+          </Input.Group>
+        </Form.Item>
+      }
+      <Form.Item label={formatMessage({ id: "migration.setting.auto_start" })}>
+        {getFieldDecorator("settings.execution.repeat.schedule", {
+          initialValue: stepData?.settings?.execution?.repeat?.next_run_time || false,
+          valuePropName: 'checked',
+        })(<Checkbox onChange={e => setSchedule(e.target.checked)}/>)}
+      </Form.Item>
+      {
+        schedule &&
+        <Form.Item label={formatMessage({ id: "migration.setting.next_run_time" })}>
+          {getFieldDecorator("settings.execution.repeat.next_run_time", {
+            initialValue: stepData?.settings?.execution?.repeat?.next_run_time || moment(),
+          })(<DatePicker showTime placeholder={formatMessage({ id: "migration.setting.next_run_time" })} />)}
+        </Form.Item>
+      }
+      <ExecuteIntervals record={stepData} form={form} />
+      <Form.Item label={formatMessage({ id: "migration.setting.task_name" })}>
+        {getFieldDecorator("name", {
+          initialValue: stepData?.name || '',
+          rules: [
+            {
+              required: true,
+              message: formatMessage({ id: "migration.validation.task_name" }),
+            },
+          ],
+        })(<Input />)}
+      </Form.Item>
+      <Form.Item
+          label={formatMessage({ id: "migration.setting.tags" })}
+        >
+        {getFieldDecorator(`tags`, {
+          initialValue: stepData?.tags,
+          rules: [],
+        })(
+          <Select
+            allowClear
+            showSearch
+            placeholder={formatMessage({ id: "migration.placeholder.tags" })}
+            mode="tags"
+            onSearch={onSearchTags}
+          >
+            {(_.isArray(tagItems) ? tagItems : []).map((item) => {
+              return (
+                <Select.Option key={item} value={item}>
+                  {item}
+                </Select.Option>
+              );
+            })}
+          </Select>
+        )}
+      </Form.Item>
+      <Form.Item label=" ">
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <Button
+            style={{ width: "50%" }}
+            type="primary"
+            htmlType="submit"
+            loading={loading}
+          >
+            {formatMessage({ id: "migration.setting.create_task" })}
+          </Button>
+        </div>
+      </Form.Item>
+    </Form>
+  );
+};

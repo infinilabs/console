@@ -37,6 +37,7 @@ import (
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/util"
 	"net/http"
+	"strings"
 )
 
 const userInSession = "user_session:"
@@ -49,13 +50,64 @@ const NativeProvider = "native"
 func (h APIHandler) Logout(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	reqUser, err := rbac.FromUserContext(r.Context())
 	if err != nil {
+		if api.IsAuthEnable() {
+			claims, validateErr := rbac.ValidateLogin(r.Header.Get("Authorization"))
+			if validateErr != nil {
+				h.WriteError(w, validateErr.Error(), http.StatusUnauthorized)
+				return
+			}
+			reqUser = claims.ShortUser
+		}
+	}
+
+	if reqUser != nil && reqUser.UserId != "" {
+		rbac.DeleteUserToken(reqUser.UserId)
+	}
+	h.WriteOKJSON(w, util.MapStr{
+		"status": "ok",
+	})
+}
+
+func (h APIHandler) LoginChallenge(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	var req struct {
+		Username string `json:"username"`
+		UserName string `json:"userName"`
+	}
+	err := h.DecodeJSON(r, &req)
+	if err != nil {
+		h.Error400(w, err.Error())
+		return
+	}
+
+	username := normalizedUsername(req.Username, req.UserName)
+	if username == "" {
+		h.Error400(w, "username is required")
+		return
+	}
+
+	user, err := h.User.GetBy("name", username)
+	if err != nil {
 		h.ErrorInternalServer(w, err.Error())
 		return
 	}
 
-	rbac.DeleteUserToken(reqUser.UserId)
+	if user == nil || !rbac.CanUsePasswordChallenge(user) {
+		h.WriteOKJSON(w, util.MapStr{
+			"status": "ok",
+			"method": "plain",
+		})
+		return
+	}
+
+	challenge := rbac.NewLoginChallenge(username)
 	h.WriteOKJSON(w, util.MapStr{
-		"status": "ok",
+		"status":       "ok",
+		"method":       rbac.PasswordChallengeMethod,
+		"algorithm":    rbac.PasswordChallengeAlgorithm,
+		"iterations":   rbac.PasswordChallengeIterations,
+		"challenge_id": challenge.ID,
+		"nonce":        challenge.Nonce,
+		"salt":         user.PasswordSalt,
 	})
 }
 
@@ -128,12 +180,11 @@ func (h APIHandler) UpdatePassword(w http.ResponseWriter, r *http.Request, ps ht
 		h.ErrorInternalServer(w, "old password is not correct")
 		return
 	}
-	hash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	err = rbac.SetPassword(&user, req.NewPassword)
 	if err != nil {
 		h.ErrorInternalServer(w, err.Error())
 		return
 	}
-	user.Password = string(hash)
 	err = h.User.Update(&user)
 	if err != nil {
 		h.ErrorInternalServer(w, err.Error())
@@ -178,8 +229,11 @@ func (h APIHandler) UpdateProfile(w http.ResponseWriter, r *http.Request, ps htt
 
 func (h APIHandler) Login(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var req struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
+		Username    string `json:"username"`
+		UserName    string `json:"userName"`
+		Password    string `json:"password"`
+		ChallengeID string `json:"challenge_id"`
+		Proof       string `json:"proof"`
 	}
 	err := h.DecodeJSON(r, &req)
 	if err != nil {
@@ -188,9 +242,19 @@ func (h APIHandler) Login(w http.ResponseWriter, r *http.Request, ps httprouter.
 	}
 
 	var user *rbac.User
+	username := normalizedUsername(req.Username, req.UserName)
+	if username == "" {
+		h.Error400(w, "username is required")
+		return
+	}
 
 	//check user validation
-	ok, user, err := realm.Authenticate(req.Username, req.Password)
+	var ok bool
+	if req.ChallengeID != "" || req.Proof != "" {
+		ok, user, err = h.authenticateChallengeLogin(username, req.ChallengeID, req.Proof)
+	} else {
+		ok, user, err = realm.Authenticate(username, req.Password)
+	}
 	if err != nil {
 		h.WriteError(w, err.Error(), 500)
 		return
@@ -202,14 +266,20 @@ func (h APIHandler) Login(w http.ResponseWriter, r *http.Request, ps httprouter.
 	}
 
 	if user == nil {
-		h.ErrorInternalServer(w, fmt.Sprintf("failed to authenticate user: %v", req.Username))
+		h.ErrorInternalServer(w, fmt.Sprintf("failed to authenticate user: %v", username))
 		return
+	}
+
+	if user.AuthProvider == NativeProvider && req.Password != "" {
+		if err := h.ensurePasswordChallenge(user, req.Password); err != nil {
+			log.Warnf("failed to migrate password verifier for user [%s]: %v", username, err)
+		}
 	}
 
 	//check permissions
 	ok, err = realm.Authorize(user)
 	if err != nil || !ok {
-		h.ErrorInternalServer(w, fmt.Sprintf("failed to authorize user: %v", req.Username))
+		h.ErrorInternalServer(w, fmt.Sprintf("failed to authorize user: %v", username))
 		return
 	}
 
@@ -222,10 +292,56 @@ func (h APIHandler) Login(w http.ResponseWriter, r *http.Request, ps httprouter.
 	//generate access token
 	token, err := rbac.GenerateAccessToken(user)
 	if err != nil {
-		h.ErrorInternalServer(w, fmt.Sprintf("failed to authorize user: %v", req.Username))
+		h.ErrorInternalServer(w, fmt.Sprintf("failed to authorize user: %v", username))
 		return
 	}
 
 	//api.SetSession(w, r, userInSession+req.Username, req.Username)
 	h.WriteOKJSON(w, token)
+}
+
+func normalizedUsername(username, userName string) string {
+	username = strings.TrimSpace(username)
+	if username != "" {
+		return username
+	}
+	return strings.TrimSpace(userName)
+}
+
+func (h APIHandler) authenticateChallengeLogin(username, challengeID, proof string) (bool, *rbac.User, error) {
+	if challengeID == "" || proof == "" {
+		return false, nil, fmt.Errorf("challenge response is incomplete")
+	}
+
+	challenge, err := rbac.ConsumeLoginChallenge(challengeID, username)
+	if err != nil {
+		return false, nil, err
+	}
+
+	user, err := h.User.GetBy("name", username)
+	if err != nil {
+		return false, nil, err
+	}
+	if user == nil {
+		return false, nil, fmt.Errorf("invalid username or password")
+	}
+	if !rbac.CanUsePasswordChallenge(user) {
+		return false, nil, fmt.Errorf("password challenge is not available")
+	}
+	if !rbac.VerifyPasswordProof(user.PasswordVerifier, username, challenge.ID, challenge.Nonce, proof) {
+		return false, nil, fmt.Errorf("incorrect password")
+	}
+
+	user.AuthProvider = NativeProvider
+	return true, user, nil
+}
+
+func (h APIHandler) ensurePasswordChallenge(user *rbac.User, password string) error {
+	if user == nil || password == "" || rbac.CanUsePasswordChallenge(user) {
+		return nil
+	}
+	if err := rbac.EnsurePasswordChallenge(user, password); err != nil {
+		return err
+	}
+	return h.User.Update(user)
 }

@@ -34,10 +34,13 @@ import (
 	"time"
 )
 
+const accessTokenTTL = 2 * time.Hour
+
 func GenerateAccessToken(user *User) (map[string]interface{}, error) {
 
 	var data map[string]interface{}
 	roles, privilege := user.GetPermissions()
+	expireAt := time.Now().Add(accessTokenTTL)
 
 	token1 := jwt.NewWithClaims(jwt.SigningMethodHS256, UserClaims{
 		ShortUser: &ShortUser{
@@ -47,7 +50,7 @@ func GenerateAccessToken(user *User) (map[string]interface{}, error) {
 			Roles:    roles,
 		},
 		RegisteredClaims: &jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			ExpiresAt: jwt.NewNumericDate(expireAt),
 		},
 	})
 
@@ -56,14 +59,18 @@ func GenerateAccessToken(user *User) (map[string]interface{}, error) {
 		return nil, errors.Errorf("failed to generate access_token for user: %v", user.Username)
 	}
 
-	token := Token{ExpireIn: time.Now().Unix() + 86400}
+	token := Token{
+		JwtStr:   tokenString,
+		Value:    tokenString,
+		ExpireIn: expireAt.Unix(),
+	}
 	SetUserToken(user.ID, token)
 
 	data = util.MapStr{
 		"access_token": tokenString,
 		"username":     user.Username,
 		"id":           user.ID,
-		"expire_in":    86400,
+		"expire_in":    int64(accessTokenTTL / time.Second),
 		"roles":        roles,
 		"privilege":    privilege,
 	}

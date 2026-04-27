@@ -10,7 +10,7 @@ import { formatter } from "@/utils/format";
 import { filterSearchValue, sorter, formatUtcTimeToLocal } from "@/utils/utils";
 import { formatTimeRange } from "@/lib/elasticsearch/util";
 
-const { Search } = Input;
+import SearchInput from "@/components/infini/SearchInput";
 
 const Shards = ({
   clusterID,
@@ -161,7 +161,7 @@ const Shards = ({
           }}
         >
           <div style={{ maxWidth: 500, flex: "1 1 auto" }}>
-            <Search
+            <SearchInput
               allowClear
               placeholder="Type keyword to search"
               enterButton="Search"

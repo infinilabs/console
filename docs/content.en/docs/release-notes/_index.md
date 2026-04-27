@@ -9,9 +9,64 @@ Information about release notes of INFINI Console is provided here.
 
 ## Latest (In development)  
 ### ❌ Breaking changes  
+- breaking: sensitive frontend operations now require HTTPS transport. Console must either enable HTTPS directly or run behind an HTTPS reverse proxy before using login, setup initialization/validation, password changes, credential management, cluster registration, or email-server write/test APIs over the UI
+- breaking: Console now keeps a single active JWT per user. Logging in again or logging out invalidates previously issued tokens for that user
+- breaking: `/_info`, proxied instance `/_info`, and instance try-connect responses no longer expose sensitive fields such as `endpoint`, `host`, `network`, and `basic_auth`
+- breaking: previously reachable insight visualization/dashboard/widget/map-label endpoints now require authenticated requests with matching permissions
+- breaking: web dependency installation is now restricted to `cnpm` / `npminstall`
 ### 🚀 Features  
+- feat: add enterprise-plugin feature gating for DataTools menus, routes, homepage shortcuts, and role permission trees via `/setting/application`
+- feat: restore legacy migration/comparison task list, detail, and create pages under `/data_tools/*`, with locale bundles and cloud-compatible runtime metadata for selected gateways
+- feat: add a real System Settings page with Rollup control, embedded email server management, and backend Rollup setting APIs
+- feat: add native challenge-response login at `/account/login/challenge`, with password verifier/salt support for new, reset, updated, and upgraded native accounts
+- feat: add Console-only cluster `probe_path` support for WAF-restricted endpoints, stored in cluster labels and reused in version detection / registration flows
+- feat: add setup-wizard support for configurable primary shards, auto replicas, and conditional Easysearch rollup initialization
+- feat: add an Insight share action that copies the current query, filters, time range, columns, and view state into a reusable URL
+- feat: add migration-step actions for Easysearch targets to batch inject compression and `source_reuse` index settings instead of editing each index by hand
 ### 🐛 Bug fix  
+- fix: sanitize `/_info`, instance proxy, and instance try-connect responses so sensitive runtime fields are no longer exposed
+- fix: make logout invalidate the current JWT server-side and reject stale/replaced Bearer tokens during validation
+- fix: replace default `/elasticsearch/_search` ranking with `function_score`, fix `id` vs `_id` permission filters, and add debug DSL logging for zero-hit troubleshooting
+- fix: protect previously exposed insight visualization/dashboard/widget/map-label routes with login and permission guards
+- fix: avoid setup-mode startup failures by skipping task-manager scheduler/dispatcher work when setup is required
+- fix: preserve DataTools detail/new routes on browser refresh and stop legacy Back actions from landing on blank pages
+- fix: preserve selected migration/comparison indices across search, pagination, and filtering instead of overwriting earlier selections
+- fix: add one-click retry for failed migration/comparison subtasks, correct bulk invalid-reason aggregation, and keep migration logs accumulating across refreshes
+- fix: prevent migration/comparison detail pages from crashing on hard refresh before task data is loaded
+- fix: allow alert email channels without a stored `server_id` to inherit the single enabled SMTP server automatically, so existing rules keep working after SMTP is configured
+- fix: block enabling incomplete email alert channels until an SMTP server and recipients are configured, and surface clearer channel-list hints instead of silently failing later
+- fix: preserve `data/views` page chrome/breadcrumb on empty states and harden Dev Tools, Search Flow, and data-management pages against missing cluster state or malformed aggregations
+- fix: normalize search/delete/system-security prompts so pages no longer show mixed `Search` / `搜索` / icon-only buttons or raw English confirmations
+- fix: normalize cluster connection-test failures into localized, user-friendly messages instead of raw `EOF`, HTML parse errors, or backend JSON reasons
+- fix: repair the legacy DataTools `ExecuteNodes` import path so web builds no longer fail on stricter path-sensitive environments
+- fix: prevent missing `menu` locale warnings, unnamed-route React Intl title crashes, repeated logout 401 loops, and HealthProvider updates after unmount from breaking the main UI
+- fix: stop duplicate-key and same-path warnings in ListView, Discover, and DataTools tables, and avoid segmented-progress tooltip crashes on migration/comparison pages
+- fix: update Easysearch retention changes by recreating ILM policies with `policy.phases`, deleting stale target policies before recreation, and rebinding templates plus managed indices to the new policy
+- fix: keep Alerting rule list statuses neutral until rule health info finishes loading, instead of briefly showing an incorrect abnormal state first
+- fix: localize the platform role form labels and validation messages, and remove raw `/role/platform` path segments from its breadcrumb trail
+- fix: prevent the shared cluster overview table area from forcing page-level horizontal scrolling when the filter sidebar is open
+- fix: avoid redundant hash-history updates in the shared overview URL sync so cluster overview no longer warns when pushing the same path
+- fix: ensure ListView header action fragments always receive unique React keys to remove duplicate-key warnings
 ### ✈️ Improvements  
+- improve: summarize migration/comparison progress with exported/written and diff counters, and expose bulk retry controls for failed partitions
+- improve: surface red-cluster, auth-required, TLS-mismatch, non-Elasticsearch, unreachable-endpoint, and unexpected-status failures through stable localized error keys
+- improve: hide cluster `probe_path` behind an Advanced toggle by default while still honoring saved custom paths
+- improve: redirect the login page to the initialization guide when `setup_required=true` and keep setup flows resilient after local data/log resets
+- improve: update setup templates so ILM and rollup indices inherit configured shard and auto-replica defaults, including rollup target indices
+- improve: rename English system menus to `SYSTEM` / `SYSTEM SETTINGS` and show `System Settings` instead of `SMTP SERVER` in the role permission tree
+- improve: dedupe repeated `/setting/application` fetches, auto-reload once on stale chunk errors, disable cache for `manifest.json`, and streamline web builds with `run-umi.js`
+- improve: replace framework SMTP dependency in generated email pipelines with the Console-local `console_smtp` processor and enforce `cnpm`/`npminstall` for web installs
+- improve: show the browser-console startup banner with local-time build timestamps and upgrade Dev Tools editor defaults to a more readable font stack and larger default size
+- improve: replace migration/comparison progress bars with longer segmented progress visuals across list and detail views
+- improve: suppress noisy `umi.dll.js` warning output outside development while still keeping warnings visible during local dev
+- improve: reduce background `/elasticsearch/status` polling by refreshing only while the page is visible, adding client-side TTL caching, and reserving force refresh for explicit actions
+- improve: expose system-managed ILM rollover size in System Settings and allow retention updates to carry both delete age and rollover storage threshold
+- improve: dedupe bursty frontend error toasts and cap concurrent global message bubbles so repeated failures no longer flood the screen
+- improve: align cluster overview layout with the rest of the console by moving facet filters to a left sidebar
+- improve: align cluster overview with cluster activities by using a dedicated left filter sidebar and moving sidebar collapse toggles to the top for easier access
+- improve: shrink the product updates card on the overview page to its content height so short update lists no longer leave large blank areas
+- improve: align the cluster activities panel on the overview page to the height of the left column so both sides end cleanly without mismatched bottoms
+- improve: collapse left-side filters by default in platform overview, cluster activities, and audit logs to leave more room for data
 
 ## 1.30.1 (2025-12-19)
 ### ❌ Breaking changes  

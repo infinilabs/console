@@ -108,13 +108,13 @@ export default (props) => {
 
     return (
         <Tooltip
-            placement="bottomRight"
+            placement="bottomLeft"
             title={(
                 <Spin spinning={loading}>
                     <div>
                         <div style={{ marginBottom: 12 }} >
                             <span style={{ fontWeight: 'bold' }}>
-                                Rollup Gap
+                                {formatMessage({ id: "cluster.monitor.rollup.gap" })}
                             </span>
                             <a style={{ marginLeft: 8 }} onClick={() => !loading && fetchData(fetchUrl)} ><Icon type="reload"/></a>
                         </div>
@@ -137,7 +137,7 @@ export default (props) => {
         >
             <Spin spinning={loading}>
                 <div style={{ ...(props.style || {}), display: "flex", alignItems: "center", gap: 6, cursor: 'pointer' }}>
-                    {renderIcon()} Rollup
+                    {renderIcon()} {formatMessage({ id: "cluster.monitor.tabs.rollup" })}
                 </div>
             </Spin>
         </Tooltip>

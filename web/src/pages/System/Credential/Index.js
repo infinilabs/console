@@ -21,7 +21,7 @@ import { hasAuthority } from "@/utils/authority";
 import AutoTextEllipsis from "@/components/AutoTextEllipsis";
 import commonStyles from "@/common.less"
 
-const { Search } = Input;
+import SearchInput from "@/components/infini/SearchInput";
 
 export default () => {
   const initialQueryParams = {
@@ -174,7 +174,9 @@ export default () => {
 
   const columns = [
     {
-      title: "ID",
+      title: formatMessage({
+        id: "table.field.id",
+      }),
       dataIndex: "id",
       key: "id",
     },
@@ -231,7 +233,7 @@ export default () => {
       }),
       width: 150,
       render: (text, record) => (
-        <Fragment>
+        <Fragment key={record.id}>
           <a
             onClick={() => {
               setSelectedItem(record);
@@ -279,7 +281,7 @@ export default () => {
           }}
         >
           <div style={{ maxWidth: 500, flex: "1 1 auto" }}>
-            <Search
+            <SearchInput
               allowClear
               placeholder="Type keyword to search"
               enterButton="Search"

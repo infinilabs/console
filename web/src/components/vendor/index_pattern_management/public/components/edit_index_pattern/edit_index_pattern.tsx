@@ -56,8 +56,8 @@ const confirmMessage =
   "This action resets the popularity counter of each field.";
 
 const confirmModalOptionsRefresh = {
-  confirmButtonText: "Refresh",
-  title: "Refresh field list?",
+  confirmButtonText: formatMessage({ id: "form.button.refresh" }),
+  title: formatMessage({ id: "explore.view.index_pattern.refreshFieldListTitle" }),
 };
 
 const confirmModalOptionsDelete = {

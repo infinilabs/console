@@ -306,6 +306,7 @@ export default {
   "alert.message.priority.info": "P4(Info)",
   "alert.message.priority.ignored": "Ignored",
   "alert.message.priority.": "Undefined",
+  "alert.message.priority.undefined": "Undefined",
 
   "alert.message.table.created": "Created time",
   "alert.message.table.priority": "Priority",
@@ -375,6 +376,12 @@ export default {
   "alert.channel.form.email.template.body": "Body",
   "alert.channel.form.email.template.body.required": "Please input body!",
   "alert.channel.form.email.send.test": "Send A Test Email",
+  "alert.channel.enable.tip.email_incomplete":
+    "Configure an SMTP server and at least one recipient before enabling this email channel.",
+  "alert.channel.enable.tip.email_server":
+    "Configure an SMTP server before enabling this email channel.",
+  "alert.channel.enable.tip.email_recipients":
+    "Configure at least one recipient before enabling this email channel.",
 
   "alert.channel.empty": "No channels?",
   "alert.channel.export-import.label": " Channels",

@@ -20,8 +20,18 @@ import EmptyNoticeSvg from "@/assets/emptyNotice.svg";
 import EmptyTodoSvg from "@/assets/emptyTodo.svg";
 import router from "umi/router";
 
+const isMacPlatform = () =>
+  typeof window !== "undefined" &&
+  /(Mac|iPhone|iPad|iPod)/i.test(window.navigator.platform);
+
 export default class GlobalHeaderRight extends PureComponent {
   state = { consoleVisible: false, notificationPopupVisible: false };
+
+  isConsoleToggleShortcut = (event) => {
+    const key = (event.key || "").toLowerCase();
+    return (event.ctrlKey || event.metaKey) && event.shiftKey && (key === "o" || event.keyCode === 79);
+  };
+
   getNoticeData() {
     const { notices = [] } = this.props;
     if (notices.length === 0) {
@@ -49,32 +59,26 @@ export default class GlobalHeaderRight extends PureComponent {
     }
   };
   onKeyDown = (e) => {
-    const { keyCode } = e;
-    if (this.keysPressed["17"] && this.keysPressed["16"] && keyCode == 79) {
+    const hasDevtoolPrivilege =
+      hasAuthority("devtool.console:all") ||
+      hasAuthority("devtool.console:read");
+    if (hasDevtoolPrivilege && this.isConsoleToggleShortcut(e)) {
+      e.preventDefault();
       if (this.state.consoleVisible) document.body.style.overflow = "";
       this.setConsoleVisible(!this.state.consoleVisible);
       return true;
     }
-    this.keysPressed[keyCode] = e.type == "keydown";
     return false;
-  };
-  onKeyUp = (e) => {
-    const { keyCode } = e;
-    delete this.keysPressed[keyCode];
   };
   constructor(props) {
     super(props);
     this.onKeyDown = this.onKeyDown.bind(this);
-    this.onKeyUp = this.onKeyUp.bind(this);
   }
   componentDidMount() {
-    this.keysPressed = {};
     document.addEventListener("keydown", this.onKeyDown, false);
-    document.addEventListener("keyup", this.onKeyUp, false);
   }
   componentWillUnmount() {
     document.removeEventListener("keydown", this.onKeyDown);
-    document.removeEventListener("keyup", this.onKeyUp);
   }
 
   render() {
@@ -132,6 +136,9 @@ export default class GlobalHeaderRight extends PureComponent {
     const hasDevtoolPrivilege =
       hasAuthority("devtool.console:all") ||
       hasAuthority("devtool.console:read");
+    const consoleShortcutLabel = isMacPlatform()
+      ? "Cmd+Shift+O"
+      : "Ctrl+Shift+O";
 
     return (
       <div className={className}>
@@ -167,16 +174,17 @@ export default class GlobalHeaderRight extends PureComponent {
           </a>
         </Dropdown>
         {hasDevtoolPrivilege ? (
-          <a
-            className={styles.action}
-            onClick={() => {
-              const { history, selectedCluster } = this.props;
-              this.setConsoleVisible(!this.state.consoleVisible);
-            }}
-          >
-            {" "}
-            <Icon type="code" />
-          </a>
+          <Tooltip title={consoleShortcutLabel}>
+            <a
+              className={styles.action}
+              aria-label={`${formatMessage({ id: "menu.devtool.console" })} (${consoleShortcutLabel})`}
+              onClick={() => {
+                this.setConsoleVisible(!this.state.consoleVisible);
+              }}
+            >
+              <Icon type="code" />
+            </a>
+          </Tooltip>
         ) : null}
         {APP_OFFICIAL_WEBSITE ? (
           <Dropdown

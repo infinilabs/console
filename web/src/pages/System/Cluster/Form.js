@@ -20,7 +20,11 @@ import { formatMessage } from "umi/locale";
 import TagEditor from "@/components/infini/TagEditor";
 import MonitorConfigsForm from "./MonitorConfigsForm";
 import MetadataConfigsForm from "./MetadataConfigsForm";
-import { formatConfigsValues } from "./utils";
+import {
+  formatConfigsValues,
+  getClusterProbePath,
+  getClusterConnectErrorMessageFromResponse,
+} from "./utils";
 import CredentialForm from "./CredentialForm";
 import AgentCredentialForm from "./AgentCredentialForm";
 import { MANUAL_VALUE } from "./steps";
@@ -47,6 +51,7 @@ class ClusterForm extends React.Component {
       btnLoading: false,
       btnLoadingAgent: false,
       submitLoading: false,
+      showProbePath: !!getClusterProbePath(props.clusterConfig?.editValue),
     };
   }
 
@@ -99,6 +104,7 @@ class ClusterForm extends React.Component {
           isManual,
           collectMode,
           monitored: editValue?.hasOwnProperty("monitored") ? editValue?.monitored : false,
+          showProbePath: !!getClusterProbePath(editValue),
         });
       }
     });
@@ -158,6 +164,7 @@ class ClusterForm extends React.Component {
         name: values.name,
         host: values.host,
         hosts: values.hosts,
+        probe_path: values.probe_path,
         credential_id:
           values.credential_id !== MANUAL_VALUE
             ? values.credential_id
@@ -273,6 +280,7 @@ class ClusterForm extends React.Component {
             hosts: values.hosts,
 
             schema: values.isTLS === true ? "https" : "http",
+            probe_path: values.probe_path,
           };
           if (type === "agent") {
             newVals = {
@@ -310,7 +318,7 @@ class ClusterForm extends React.Component {
             type: "clusterConfig/doTryConnect",
             payload: newVals,
           });
-          if (res) {
+          if (res && !res.error) {
             message.success(
               formatMessage({
                 id: "app.message.connect.success",
@@ -320,6 +328,13 @@ class ClusterForm extends React.Component {
               version: res.version,
             });
             this.clusterUUID = res.cluster_uuid;
+          } else if (res?.error) {
+            message.error(
+              getClusterConnectErrorMessageFromResponse(
+                res,
+                "cluster.regist.try_connect.failed"
+              )
+            );
           }
           if (type === "agent") {
             this.setState({ btnLoadingAgent: false });
@@ -339,6 +354,17 @@ class ClusterForm extends React.Component {
       }
     }
     // validation passed
+    callback();
+  };
+  validateProbePathRule = (rule, value, callback) => {
+    if (!value) {
+      callback();
+      return;
+    }
+    if (!String(value).trim().startsWith("/")) {
+      callback(formatMessage({ id: "cluster.regist.form.verify.valid.probe_path" }));
+      return;
+    }
     callback();
   };
 
@@ -491,6 +517,47 @@ class ClusterForm extends React.Component {
                   />
                 )}
               </Form.Item>
+              <Form.Item label={formatMessage({ id: "app.action.advanced" })}>
+                <Button
+                  type="link"
+                  style={{ paddingLeft: 0 }}
+                  onClick={() =>
+                    this.setState((st) => ({ showProbePath: !st.showProbePath }))
+                  }
+                >
+                  {formatMessage({
+                    id: this.state.showProbePath
+                      ? "form.button.collapse"
+                      : "cluster.regist.form.toggle.probe_path",
+                  })}
+                </Button>
+              </Form.Item>
+              {this.state.showProbePath ? (
+                <Form.Item
+                  label={formatMessage({
+                    id: "cluster.regist.form.label.probe_path",
+                  })}
+                  extra={formatMessage({
+                    id: "cluster.regist.form.help.probe_path",
+                  })}
+                >
+                  {getFieldDecorator("probe_path", {
+                    initialValue: getClusterProbePath(editValue),
+                    normalize: (value) => (value || "").trim(),
+                    rules: [
+                      {
+                        validator: this.validateProbePathRule,
+                      },
+                    ],
+                  })(
+                    <Input
+                      placeholder={formatMessage({
+                        id: "cluster.regist.form.placeholder.probe_path",
+                      })}
+                    />
+                  )}
+                </Form.Item>
+              ) : null}
               <Form.Item
                 label={formatMessage({
                   id: "cluster.regist.step.connect.label.auth",

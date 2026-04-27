@@ -1,6 +1,7 @@
 import { HealthStatusCircle } from "@/components/infini/health_status_circle";
 import request from "@/utils/request";
 import { AutoComplete, Input, Select, Button, Radio, Icon } from "antd";
+import { formatMessage } from "umi/locale";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import Filters from "./Filters";
 import styles from "./index.scss";
@@ -183,7 +184,7 @@ export default (props: IProps) => {
               allowClear={true}
               style={{ width: filterWidth }}
               dropdownMatchSelectWidth={false}
-              placeholder="Filters"
+              placeholder={formatMessage({ id: "listview.filters.placeholder" })}
               onChange={onSearchFieldChange}
               value={searchField}
             >
@@ -218,8 +219,8 @@ export default (props: IProps) => {
               {...autoCompleteProps}
             >
               <Input.Search
-                placeholder="Type keyword to search"
-                enterButton="Search"
+                placeholder={formatMessage({ id: "listview.search.placeholder" })}
+                enterButton={formatMessage({ id: "form.button.search" })}
                 onSearch={(value) => {
                   onSearchChange(value);
                   setSearchOpen(false);

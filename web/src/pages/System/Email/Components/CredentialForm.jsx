@@ -72,7 +72,7 @@ export default (props) => {
                     {
                         data.map((item) => <Select.Option value={item.id}>{item.name}</Select.Option>)
                     }
-                    <Select.Option value={MANUAL_VALUE}>
+                    <Select.Option key={MANUAL_VALUE} value={MANUAL_VALUE}>
                         {
                             formatMessage({
                                 id: "cluster.regist.step.connect.credential.manual",
@@ -100,7 +100,9 @@ export default (props) => {
                                     }),
                                 },
                                 ],
-                            })(<Input autoComplete="off" placeholder="Auth user name" />)}
+                            })(<Input autoComplete="off" placeholder={formatMessage({
+                                id: "credential.manage.form.username",
+                            })} />)}
                         </Form.Item>
                         <Form.Item
                             label={formatMessage({
@@ -121,7 +123,9 @@ export default (props) => {
                             })(
                                 <Input.Password
                                 autoComplete="off"
-                                placeholder="Auth user password"
+                                placeholder={formatMessage({
+                                    id: "credential.manage.form.password",
+                                })}
                                 />
                             )}
                         </Form.Item>
@@ -129,11 +133,11 @@ export default (props) => {
                             isEdit && (
                                 <>
                                     <Form.Item label={" "} colon={false}>
-                                        <div>
+                                        <span>
                                             {formatMessage({
                                                 id: "cluster.regist.form.credential.manual.desc",
                                             })}
-                                        </div>
+                                        </span>
                                     </Form.Item>
                                 </>
                             )

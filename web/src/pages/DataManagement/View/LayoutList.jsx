@@ -8,6 +8,7 @@ import { formatMessage } from "umi/locale";
 import request from "@/utils/request";
 import styles from './LayoutList.less';
 import { withRouter } from "react-router-dom";
+import SearchInput from "@/components/infini/SearchInput";
 
 export default withRouter((props) => {
   const { layout, indexPattern, clusterId, isView, onRowSelect } = props;
@@ -141,7 +142,7 @@ export default withRouter((props) => {
 
           return (
             isView ? (
-              <Fragment>
+              <Fragment key={record.id}>
                   {
                     selectedRow?.id !== record.id && (
                       <a onClick={() => {
@@ -153,7 +154,7 @@ export default withRouter((props) => {
                   { defaultAction }
               </Fragment>
             ) : (
-              <Fragment>
+              <Fragment key={record.id}>
                   <Link to={`patterns/${viewId}/layout/${record.id}/edit`}>
                     Edit
                   </Link>
@@ -194,7 +195,7 @@ export default withRouter((props) => {
           }}
         >
           <div style={{ maxWidth: 500, flex: "1 1 auto" }}>
-            <Input.Search
+            <SearchInput
               allowClear
               placeholder="Type keyword to search"
               enterButton="Search"

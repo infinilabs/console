@@ -5,25 +5,69 @@ import webpackPlugin from "./plugin.config";
 import defaultSettings from "../src/defaultSettings";
 import packageJson from "../package.json";
 
-const ProxyTarget = "http://localhost:9001"
+const ProxyTarget = "https://localhost:9000";
+
+// 统一代理路径列表
+const proxyPaths = [
+  "/elasticsearch/",
+  "/_search-center/",
+  "/gateway/",
+  "/_info",
+  "/config/",
+  "/environments/",
+  "/pipeline/",
+  "/queue/",
+  "/task/",
+  "/tasks/",
+  "/debug/",
+  "/alerting/",
+  "/health",
+  "/stats",
+  "/keystore",
+  "/user",
+  "/role/",
+  "/permission/",
+  "/account/",
+  "/notification/",
+  "/agent/",
+  "/insight/",
+  "/host/",
+  "/_platform/",
+  "/migration/",
+  "/comparison/",
+  "/_license/",
+  "/setup/",
+  "/layout",
+  "/credential",
+  "/setting/",
+  "/email/",
+  "/data/",
+  "/instance",
+  "/collection/",
+];
+
+// 生成代理配置，统一加上 secure: false
+const proxy = proxyPaths.reduce(function(acc, path) {
+  acc[path] = {
+    target: ProxyTarget,
+    changeOrigin: true,
+    secure: false, // 忽略自签名证书
+  };
+  return acc;
+}, {});
 
 export default {
-  // add for transfer to umi
   plugins: [
     [
       "umi-plugin-react",
       {
         antd: true,
-        dva: {
-          hmr: true,
-        },
-        targets: {
-          ie: 11,
-        },
+        dva: { hmr: true },
+        targets: { ie: 11 },
         locale: {
-          enable: true, // default false
-          default: "en-US", // default zh-CN
-          baseNavigator: true, // default true, when it is true, will use `navigator.language` overwrite default
+          enable: true,
+          default: "en-US",
+          baseNavigator: true,
         },
         dynamicImport: {
           loadingComponent: "./components/PageLoading/index",
@@ -39,17 +83,8 @@ export default {
           : {}),
       },
     ],
-    // [
-    //   'umi-plugin-ga',
-    //   {
-    //     code: 'UA-12123-6',
-    //     judge: () => process.env.APP_TYPE === 'site',
-    //   },
-    // ],
   ],
-  targets: {
-    ie: 11,
-  },
+  targets: { ie: 11 },
   define: {
     APP_TYPE: process.env.APP_TYPE || "",
     ENV: process.env.NODE_ENV,
@@ -59,170 +94,16 @@ export default {
     APP_AUTHOR: packageJson.author,
     APP_OFFICIAL_WEBSITE: packageJson.official_website || "",
   },
-  // 路由配置
   routes: pageRoutes,
-  // Theme for antd
-  // https://ant.design/docs/react/customize-theme-cn
-  theme: {
-    "primary-color": defaultSettings.primaryColor,
-  },
-  externals: {
-    // '@antv/data-set': 'DataSet',
-  },
-  proxy: {
-    "/elasticsearch/": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/_search-center/": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/static/": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/gateway/": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/_info": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/config/": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/environments/": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/pipeline/": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/queue/": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/task/": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/tasks/": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/debug/": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/alerting/": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/health": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/stats": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/keystore": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/user": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/role/": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/permission/": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/account/": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/notification/": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/agent/": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/insight/": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/host/": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/_platform/": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/migration/": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/comparison/": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/_license/": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/setup/": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/layout": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/credential": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/setting": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/email": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/data": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/instance": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-    "/collection": {
-      target: ProxyTarget,
-      changeOrigin: true,
-    },
-  },
+  theme: { "primary-color": defaultSettings.primaryColor },
+  proxy: proxy,
   ignoreMomentLocale: true,
-  lessLoaderOptions: {
-    javascriptEnabled: true,
-  },
+  ...(process.env.NODE_ENV === "production" ? { devtool: false } : {}),
+  lessLoaderOptions: { javascriptEnabled: true },
   disableRedirectHoist: true,
   cssLoaderOptions: {
     modules: true,
-    getLocalIdent: (context, localIdentName, localName) => {
+    getLocalIdent: function(context, localIdentName, localName) {
       if (
         context.resourcePath.includes("node_modules") ||
         context.resourcePath.includes("ant.design.pro.less") ||
@@ -236,33 +117,19 @@ export default {
         const antdProPath = match[1].replace(".less", "");
         const arr = antdProPath
           .split("/")
-          .map((a) => a.replace(/([A-Z])/g, "-$1"))
-          .map((a) => a.toLowerCase());
+          .map(function(a) { return a.replace(/([A-Z])/g, "-$1"); })
+          .map(function(a) { return a.toLowerCase(); });
         return `antd-pro${arr.join("-")}-${localName}`.replace(/--/g, "-");
       }
       return localName;
     },
   },
-
-  // chainWebpack: webpackPlugin,
-  cssnano: {
-    mergeRules: false,
-  },
-
-  // extra configuration for egg
+  cssnano: { mergeRules: false },
   runtimePublicPath: true,
   hash: true,
   outputPath: "../.public",
-  manifest: {
-    fileName: "../.public/manifest.json",
-    publicPath: "",
-  },
-
+  manifest: { fileName: "../.public/manifest.json", publicPath: "" },
   copy: ["./src/assets/favicon.ico"],
   history: "hash",
-  // exportStatic: {
-  //   // htmlSuffix: true,
-  //   dynamicRoot: true,
-  // },
   sass: {},
 };

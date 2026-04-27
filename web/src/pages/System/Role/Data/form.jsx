@@ -6,6 +6,7 @@ import {
   InputNumber,
   Card,
   Button,
+  Result,
   Row,
   Col,
   Transfer,
@@ -49,6 +50,15 @@ const tailFormItemLayout = {
 const DataRoleForm = (props) => {
   const { getFieldDecorator } = props.form;
   const [isLoading, setIsLoading] = useState(false);
+  const breadcrumbList = [
+    { title: "home", locale: "menu.home", href: "/" },
+    { title: "system", locale: "menu.system" },
+    { title: "security", locale: "menu.system.security" },
+    {
+      title: props.mode === "edit" ? "edit_role" : "new_role",
+      locale: props.mode === "edit" ? "menu.system.edit_role" : "menu.system.new_role",
+    },
+  ];
 
   const handleSubmit = useCallback(
     (e) => {
@@ -144,7 +154,7 @@ const DataRoleForm = (props) => {
   });
 
   return (
-    <PageHeaderWrapper>
+    <PageHeaderWrapper breadcrumbList={breadcrumbList}>
       <Card
         extra={
           <div>
@@ -154,81 +164,131 @@ const DataRoleForm = (props) => {
           </div>
         }
       >
-        <DataRoleFromContext.Provider value={{ selectedClusterIDs }}>
-          <Form {...formItemLayout}>
-            <Form.Item label="Name">
-              {getFieldDecorator("name", {
-                initialValue: editValue.name,
-                rules: [
-                  {
-                    required: true,
-                    message: "Please input name!",
-                  },
-                ],
-              })(<Input disabled={props.mode == "edit"} />)}
-            </Form.Item>
-            <Form.Item label="Cluster">
-              {getFieldDecorator("privilege.elasticsearch.cluster.resources", {
-                initialValue: editValue.privilege?.elasticsearch?.cluster
-                  ?.resources || [{ id: "*", name: "*" }],
-                rules: [
-                  {
-                    required: true,
-                    message: "Please select cluster!",
-                  },
-                ],
-              })(
-                <ClusterField
-                  options={clusterList}
-                  setSelectedClusterIDs={setSelectedClusterIDs}
-                />
-              )}
-            </Form.Item>
-            <Form.Item label="Cluster Privilege">
-              {getFieldDecorator(
-                "privilege.elasticsearch.cluster.permissions",
-                {
-                  initialValue: editValue.privilege?.elasticsearch?.cluster
-                    ?.permissions || [{ "*": ["*"] }],
+        {props.createResult ? (
+          <Result
+            status="success"
+            title={formatMessage({ id: "system.security.role.create.success" })}
+            extra={[
+              <Button
+                key="view-role-list"
+                onClick={() => {
+                  props.history.push(
+                    `/system/security?_g=${encodeURIComponent(
+                      JSON.stringify({ tab: "role" })
+                    )}`
+                  );
+                }}
+              >
+                {formatMessage({
+                  id: "system.security.role.create.button.view_list",
+                })}
+              </Button>,
+              <Button
+                key="continue-create-role"
+                type="primary"
+                onClick={props.onContinueCreate}
+              >
+                {formatMessage({
+                  id: "system.security.role.create.button.continue",
+                })}
+              </Button>,
+            ]}
+          />
+        ) : (
+          <DataRoleFromContext.Provider value={{ selectedClusterIDs }}>
+            <Form {...formItemLayout}>
+              <Form.Item label={formatMessage({ id: "system.security.role.table.name" })}>
+                {getFieldDecorator("name", {
+                  initialValue: editValue.name,
                   rules: [
                     {
                       required: true,
-                      message: "Please select cluster privilege!",
+                      message: formatMessage({
+                        id: "system.role.platform.name.required",
+                      }),
                     },
                   ],
-                }
-              )(<ApiPrivilegeField options={permissions.cluster_privileges} />)}
-            </Form.Item>
-            <Form.Item label="Index Privilege">
-              {getFieldDecorator("privilege.elasticsearch.index", {
-                initialValue: editValue.privilege?.elasticsearch?.index || [
-                  { name: ["*"], permissions: ["*"] },
-                ],
-                rules: [
+                })(<Input disabled={props.mode == "edit"} />)}
+              </Form.Item>
+              <Form.Item label={formatMessage({ id: "system.role.data.cluster.label" })}>
+                {getFieldDecorator("privilege.elasticsearch.cluster.resources", {
+                  initialValue: editValue.privilege?.elasticsearch?.cluster
+                    ?.resources || [{ id: "*", name: "*" }],
+                  rules: [
+                    {
+                      required: true,
+                      message: formatMessage({
+                        id: "system.role.data.cluster.required",
+                      }),
+                    },
+                  ],
+                })(
+                  <ClusterField
+                    options={clusterList}
+                    setSelectedClusterIDs={setSelectedClusterIDs}
+                  />
+                )}
+              </Form.Item>
+              <Form.Item
+                label={formatMessage({
+                  id: "system.role.data.cluster_privilege.label",
+                })}
+              >
+                {getFieldDecorator(
+                  "privilege.elasticsearch.cluster.permissions",
                   {
-                    required: true,
-                    message: "Please select index privilege!",
-                  },
-                ],
-              })(
-                <IndexPrivilegeField
-                  privileges={permissions.index_privileges}
-                />
-              )}
-            </Form.Item>
-            <Form.Item label="Description">
-              {getFieldDecorator("description", {
-                initialValue: editValue.description,
-                rules: [],
-              })(<Input.TextArea />)}
-            </Form.Item>
-            <Form.Item {...tailFormItemLayout}>
-              <Button type="primary" onClick={handleSubmit} loading={isLoading}>
-                Save
-              </Button>
-            </Form.Item>
-          </Form>
-        </DataRoleFromContext.Provider>
+                    initialValue: editValue.privilege?.elasticsearch?.cluster
+                      ?.permissions || [{ "*": ["*"] }],
+                    rules: [
+                      {
+                        required: true,
+                        message: formatMessage({
+                          id: "system.role.data.cluster_privilege.required",
+                        }),
+                      },
+                    ],
+                  }
+                )(<ApiPrivilegeField options={permissions.cluster_privileges} />)}
+              </Form.Item>
+              <Form.Item
+                label={formatMessage({
+                  id: "system.role.data.index_privilege.label",
+                })}
+              >
+                {getFieldDecorator("privilege.elasticsearch.index", {
+                  initialValue: editValue.privilege?.elasticsearch?.index || [
+                    { name: ["*"], permissions: ["*"] },
+                  ],
+                  rules: [
+                    {
+                      required: true,
+                      message: formatMessage({
+                        id: "system.role.data.index_privilege.required",
+                      }),
+                    },
+                  ],
+                })(
+                  <IndexPrivilegeField
+                    privileges={permissions.index_privileges}
+                  />
+                )}
+              </Form.Item>
+              <Form.Item
+                label={formatMessage({ id: "system.security.role.table.description" })}
+              >
+                {getFieldDecorator("description", {
+                  initialValue: editValue.description,
+                  rules: [],
+                })(<Input.TextArea />)}
+              </Form.Item>
+              <Form.Item {...tailFormItemLayout}>
+                <Button type="primary" onClick={handleSubmit} loading={isLoading}>
+                  {formatMessage({ id: "form.button.save" })}
+                </Button>
+              </Form.Item>
+            </Form>
+          </DataRoleFromContext.Provider>
+        )}
       </Card>
     </PageHeaderWrapper>
   );

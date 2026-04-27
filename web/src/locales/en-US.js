@@ -18,6 +18,11 @@ import listview from "./en-US/listview";
 import audit from "./en-US/audit";
 import error from "./en-US/error";
 
+let migration = {};
+try {
+  migration = require("./en-US/migration").default ?? {};
+} catch (e) {}
+
 export default {
   "navBar.lang": "Languages",
   "layout.user.appslogon":
@@ -129,8 +134,63 @@ export default {
   "form.button.clean.deleted.indices.desc": "Are you sure to clean indices that are deleted?",
   "component.refreshGroup.label.title": "Auto Refresh",
   "component.refreshGroup.label.every": "Every",
+  "data_tools.task.keyword": "Search by keyword",
 
+  "table.field.id": "ID",
   "table.field.actions": "Actions",
+  "table.field.listen_address": "Listen Address",
+  "table.field.cmdline": "Cmdline",
+  "table.field.name": "Name",
+  "table.field.pid": "PID",
+  "system.security.tab.user": "User",
+  "system.security.tab.role": "Role",
+  "system.security.search.placeholder": "Type keyword to search",
+  "system.security.pagination.total": "{start}-{end} of {total} items",
+  "system.security.confirm.delete": "Sure to delete?",
+  "system.role.platform.name.required": "Please input name!",
+  "system.role.platform.feature_privilege.label": "Feature privileges",
+  "system.role.platform.feature_privilege.required":
+    "Please select platform feature privilege!",
+  "system.role.data.cluster.label": "Cluster",
+  "system.role.data.cluster.required": "Please select cluster!",
+  "system.role.data.cluster_privilege.label": "Cluster Privilege",
+  "system.role.data.cluster_privilege.required":
+    "Please select cluster privilege!",
+  "system.role.data.index_privilege.label": "Index Privilege",
+  "system.role.data.index_privilege.required":
+    "Please select index privilege!",
+  "system.role.data.api_privilege.category": "Category",
+  "system.role.data.api_privilege.privilege": "Privilege",
+  "system.role.data.index_privilege.index": "Index",
+  "system.role.data.index_privilege.privilege": "Privilege",
+  "system.security.user.table.name": "Name",
+  "system.security.user.table.nickname": "Nickname",
+  "system.security.user.table.roles": "Roles",
+  "system.security.user.table.phone": "Phone",
+  "system.security.user.table.email": "Email",
+  "system.security.user.table.tags": "Tags",
+  "system.security.user.action.reset_password": "Reset Password",
+  "system.security.user.form.name": "User Name",
+  "system.security.user.form.nickname": "Nick Name",
+  "system.security.user.form.phone": "Phone",
+  "system.security.user.form.email": "Email",
+  "system.security.user.form.roles": "Role",
+  "system.security.user.form.tags": "Tags",
+  "system.security.user.form.name.required": "Please input name!",
+  "system.security.user.form.email.invalid": "The input is not valid email!",
+  "system.security.user.form.roles.required": "Please select roles!",
+  "system.security.user.create.success": "Successfully Created User!",
+  "system.security.user.create.password": "Password: {password}",
+  "system.security.user.create.copy_password": "Copy Password",
+  "system.security.role.table.name": "Name",
+  "system.security.role.table.type": "Type",
+  "system.security.role.table.builtin": "Builtin",
+  "system.security.role.table.description": "Description",
+  "system.security.role.menu.add_platform": "Add Platform Role",
+  "system.security.role.menu.add_data": "Add Data Role",
+  "system.security.role.create.success": "Role created successfully!",
+  "system.security.role.create.button.view_list": "Back to Role List",
+  "system.security.role.create.button.continue": "Continue Creating",
 
   "component.globalHeader.search": "Search",
   "component.globalHeader.search.example1": "Search example 1",
@@ -158,6 +218,30 @@ export default {
   "menu.insight": "DATA INSIGHT",
   "menu.insight.dashboard": "DASHBOARD",
   "menu.insight.discover": "DISCOVER",
+  "insight.config.title": "Insight Config",
+  "insight.config.tab.search": "Search",
+  "insight.config.search.track_total_hits": "Track Total Hits",
+  "insight.config.search.timeout": "Timeout",
+  "insight.config.search.field_summary": "Field Summary",
+  "insight.config.search.whether_to_sample": "Whether to Sample",
+  "insight.config.search.sample_records": "Sample Records",
+  "insight.config.search.sample_records.all": "All Records",
+  "insight.config.search.sample_records.manual": "Manual Setting",
+  "insight.config.search.top_number": "Top Number",
+  "insight.config.search.time_interval.seconds": "Seconds",
+  "insight.config.search.time_interval.minutes": "Minutes",
+  "insight.config.search.time_interval.hours": "Hours",
+  "insight.config.search.time_interval.days": "Days",
+  "insight.export.csv": "Export CSV",
+  "insight.export.excel": "Export Excel",
+  "insight.export.empty": "No data available to export",
+  "insight.discover.empty.no_indices_or_views":
+    "The current cluster has no indices or views",
+  "insight.discover.empty.create_now": "Create Now",
+  "insight.share.copy": "Copy share link",
+  "insight.share.success": "Share link copied",
+  "insight.share.failed": "Failed to copy share link",
+  "insight.button.updating": "Updating",
 
   //new alert version
   "menu.alerting.rule": "RULES",
@@ -232,6 +316,10 @@ export default {
   "menu.resource.agent.new_instance": "REGISTER AGENT",
   "menu.resource.agent.edit_instance": "EDIT AGENT",
 
+  "menu.data_tools": "DATA TOOLS",
+  "menu.data_tools.migration": "MIGRATION",
+  "menu.data_tools.comparison": "COMPARISON",
+
   "menu.search": "SEARCH",
   "menu.search.overview": "OVERVIEW",
   "menu.search.template": "TEMPLATES",
@@ -251,8 +339,8 @@ export default {
   "menu.backup.index": "BACKUPS",
   "menu.backup.lifecycle": "POLICIES",
 
-  "menu.system": "SETTINGS",
-  "menu.system.settings": "SETTINGS",
+  "menu.system": "SYSTEM",
+  "menu.system.settings": "SYSTEM SETTINGS",
   "menu.system.settings.global": "GLOBAL",
   "menu.system.settings.gateway": "GATEWAY",
 
@@ -390,6 +478,7 @@ export default {
   "app.message.system-tips.no-available-cluster-data-permission":
     "There is no available cluster, please make sure you have cluster data permission",
   "app.message.confirm.delete": "Sure to delete?",
+  "document.confirm.cancel": "Sure to cancel?",
   "app.message.warning.table.select-row": "Please select a table row",
   "app.message.warning.invalid.params": "Invalid parameter",
 
@@ -402,6 +491,13 @@ export default {
   "app.login.sign-in-with": "Sign in with SSO",
   "app.login.signup": "Sign up",
   "app.login.login": "Login",
+  "app.login.username.required": "Please enter username!",
+  "app.login.password.required": "Please enter password!",
+  "app.login.mobile.placeholder": "Mobile number",
+  "app.login.mobile.required": "Please enter mobile number!",
+  "app.login.mobile.invalid": "Wrong mobile number format!",
+  "app.login.captcha.placeholder": "Captcha",
+  "app.login.captcha.required": "Please enter captcha!",
   "app.register.register": "Register",
   "app.register.get-verification-code": "Get code",
   "app.register.sing-in": "Already have an account?",
@@ -624,6 +720,7 @@ export default {
   ...alias,
   ...guide,
   ...license,
+  ...migration,
   ...credential,
   ...overview,
   ...dashboard,

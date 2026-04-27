@@ -9,7 +9,7 @@ import { formatESSearchResult } from '@/lib/elasticsearch/util';
 import { formatMessage } from "umi/locale";
 import EmptyServer from './Components/EmptyServer';
 
-const ServerList = ({})=>{
+const ServerList = ({ embedded = false })=>{
 
   const [loading, setLoading] = useState(false);
   
@@ -62,7 +62,11 @@ const ServerList = ({})=>{
         method: "DELETE",
       });
       if (deleteRes && deleteRes.result == "deleted") {
-        message.success("delete succed");
+        message.success(
+          formatMessage({
+            id: "app.message.delete.success",
+          })
+        );
       }
     }
     setState(st=>{
@@ -144,15 +148,19 @@ const ServerList = ({})=>{
   };
   const onEmptyAddClick = ()=>{
     setState(st=>{
-      const newCfg = {name:"New Config Name", id: "tmp_"+new Date().valueOf()};
+      const newCfg = {
+        name: formatMessage({
+          id: "settings.email.server.form.temp_name",
+        }),
+        id: "tmp_"+new Date().valueOf()
+      };
       return {
         servers: [...(st.servers || []), newCfg],
         activeKey: newCfg.id,
       }
     })
   }
-  return (
-    <PageHeaderWrapper>
+  const content = (
       <Card loading={loading}>
         {state.servers.length == 0 ? <EmptyServer onAddClick={onEmptyAddClick}/>:
         <Tabs
@@ -166,10 +174,12 @@ const ServerList = ({})=>{
             <TabPane 
             tab={<span className='srv-tab'>{cfg.name}
              <Popconfirm
-                  title="Sure to delete?"
-                  onConfirm={() => onDeleteClick(cfg.id)}
-                >
-                  <Icon type="close"/>
+                   title={formatMessage({
+                     id: "app.message.confirm.delete",
+                   })}
+                   onConfirm={() => onDeleteClick(cfg.id)}
+                 >
+                   <Icon type="close"/>
               </Popconfirm>
             </span>} 
             key={cfg.id} closable={false} >
@@ -182,6 +192,13 @@ const ServerList = ({})=>{
         </span>} key="add" closable={false} />
         </Tabs>}
       </Card>
+  );
+  if (embedded) {
+    return content;
+  }
+  return (
+    <PageHeaderWrapper>
+      {content}
     </PageHeaderWrapper>
   );
 }

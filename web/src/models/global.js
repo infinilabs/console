@@ -20,6 +20,31 @@ import { formatMessage } from "umi/locale";
 
 const MENU_COLLAPSED_KEY = "search-center:menu:collapsed";
 const COUSOLE_VERSION_KEY = "console:version";
+const CLUSTER_STATUS_CACHE_TTL = 60 * 1000;
+const CONSOLE_WELCOME_BANNER_STYLE =
+  "color:#1677ff;font-size:14px;font-weight:700;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;";
+
+const formatBuildDate = (value) => {
+  if (!value) {
+    return value;
+  }
+
+  const buildDate = new Date(value);
+  if (Number.isNaN(buildDate.getTime())) {
+    return value;
+  }
+
+  return buildDate.toLocaleString(undefined, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+    timeZoneName: "short",
+  });
+};
 
 export default {
   namespace: "global",
@@ -30,6 +55,8 @@ export default {
     notices: [],
     clusterVisible: true,
     clusterList: [],
+    clusterStatus: {},
+    clusterStatusFetchedAt: 0,
     selectedCluster: {},
     selectedClusterID: null,
     search: {
@@ -86,97 +113,99 @@ export default {
       });
     },
     *fetchClusterList({ payload }, { call, put, select, take }) {
-      let res = yield call(searchClusterConfig, payload);
-      if (res.error) {
-        message.error(res.error);
-        return false;
-      }
-      res = formatESSearchResult(res);
-      let { clusterList, search, selectedClusterID } = yield select(
-        (state) => state.global
-      );
-      let data = res.data
-        .filter((item) => item.enabled)
-        .map((item) => {
-          return {
+      try {
+        let res = yield call(searchClusterConfig, payload);
+
+        if (!res) {
+          message.error("No response from cluster service");
+          return false;
+        }
+
+        if (res.error) {
+          message.error(String("Error: " + (res.error.reason || res.error.message || res.error)));
+          return false;
+        }
+
+        res = formatESSearchResult(res);
+
+        let { clusterList, search, selectedClusterID } = yield select(
+          (state) => state.global
+        );
+
+        let data = res.data
+          .filter((item) => item.enabled)
+          .map((item) => ({
             ...item,
             distribution: item.distribution || "elasticsearch",
             cluster_uuid: item.cluster_uuid || "",
-          };
-        });
+          }));
 
-      if (clusterList.length === 0 && !payload.name) {
-        if (data.length === 0 && location.href.indexOf("user/login") === -1) {
-          if (getAuthEnabled() && !hasAuthority("system.cluster:all")) {
+        if (clusterList.length === 0 && !payload.name) {
+          if (data.length === 0 && location.href.indexOf("user/login") === -1) {
+            if (getAuthEnabled() && !hasAuthority("system.cluster:all")) {
+              Modal.info({
+                title: formatMessage({ id: "app.message.system-tips" }),
+                content: formatMessage({
+                  id:
+                    "app.message.system-tips.no-available-cluster-data-permission",
+                }),
+                okText: formatMessage({ id: "form.button.ok" }),
+              });
+              return;
+            }
             Modal.info({
               title: formatMessage({ id: "app.message.system-tips" }),
               content: formatMessage({
                 id:
-                  "app.message.system-tips.no-available-cluster-data-permission",
+                  "app.message.system-tips.no-available-cluster-redirect-setting",
               }),
               okText: formatMessage({ id: "form.button.ok" }),
-              onOk() {},
+              onOk() {
+                router.push("/resource/cluster");
+              },
             });
-            return;
           }
-          Modal.info({
-            title: formatMessage({ id: "app.message.system-tips" }),
-            content: formatMessage({
-              id:
-                "app.message.system-tips.no-available-cluster-redirect-setting",
-            }),
-            okText: formatMessage({ id: "form.button.ok" }),
-            onOk() {
-              router.push("/resource/cluster");
+        }
+
+        if (!selectedClusterID) {
+          const targetID = extractClusterIDFromURL();
+          let idx = data.findIndex((item) => item.id == targetID);
+
+          if (idx === -1) {
+            yield put({ type: "fetchClusterStatus" });
+            yield take("fetchClusterStatus/@@end");
+            let { clusterStatus } = yield select((state) => state.global);
+            idx = data.findIndex((item) => clusterStatus[item.id]?.available);
+            if (idx === -1) idx = 0;
+          }
+
+          yield put({
+            type: "saveData",
+            payload: {
+              selectedCluster: data[idx],
+              selectedClusterID: (data[idx] || {}).id,
             },
           });
         }
-      }
-      if (!selectedClusterID) {
-        const targetID = extractClusterIDFromURL();
-        let idx = data.findIndex((item) => {
-          return item.id == targetID;
-        });
-        // idx = idx > -1 ? idx : 0;
-        if (idx == -1) {
-          let cstatus = yield put({
-            type: "fetchClusterStatus",
-          });
-          yield take("fetchClusterStatus/@@end");
-          let { clusterStatus } = yield select((state) => state.global);
-          idx = data.findIndex((item) => {
-            return clusterStatus[item.id]?.available;
-          });
-          if (idx == -1) {
-            idx = 0;
-          }
-        }
+
+        let newClusterList = search.name !== payload.name
+          ? data
+          : clusterList.concat(data);
+
         yield put({
           type: "saveData",
           payload: {
-            selectedCluster: data[idx],
-            selectedClusterID: (data[idx] || {}).id,
+            clusterList: newClusterList,
+            clusterTotal: res.total,
+            search: { ...search, cluster: payload },
           },
         });
+
+        return data;
+      } catch (err) {
+        message.error(err.message || "Unknown error occurred while fetching clusters");
+        return false;
       }
-      let newClusterList = [];
-      if (search.name != payload.name) {
-        newClusterList = data;
-      } else {
-        newClusterList = clusterList.concat(data);
-      }
-      yield put({
-        type: "saveData",
-        payload: {
-          clusterList: newClusterList,
-          clusterTotal: res.total,
-          search: {
-            ...search,
-            cluster: payload,
-          },
-        },
-      });
-      return data;
     },
     *reloadClusterList({ payload }, { call, put, select }) {
       yield put({
@@ -201,6 +230,17 @@ export default {
     *rewriteURL({ payload }, { select, put }) {
       const { pathname, history, search, isChangedState } = payload;
       if (pathname.startsWith("/exception")) {
+        return;
+      }
+
+      const dataToolsNewMatch = pathname.match(
+        /^\/data_tools\/(migration|comparison)\/new(?:\/elasticsearch\/[^/]+\/?)?$/
+      );
+      if (dataToolsNewMatch) {
+        const normalizedPath = `/data_tools/${dataToolsNewMatch[1]}/new`;
+        if (pathname !== normalizedPath) {
+          history.replace(normalizedPath + (search || ""));
+        }
         return;
       }
       
@@ -234,21 +274,38 @@ export default {
       if (location.href.indexOf("#/user/login") > -1) {
         return false;
       }
-      let res = yield call(getClusterStatus, payload);
+      const options = payload || {};
+      const { force = false, maxAge = CLUSTER_STATUS_CACHE_TTL } = options;
+      const { clusterStatus, clusterStatusFetchedAt } = yield select(
+        (state) => state.global
+      );
+
+      if (
+        !force &&
+        clusterStatusFetchedAt > 0 &&
+        Date.now() - clusterStatusFetchedAt < maxAge
+      ) {
+        return clusterStatus;
+      }
+
+      let res = yield call(getClusterStatus);
       if (!res) {
         return false;
       }
-      const { clusterStatus } = yield select((state) => state.global);
       if (res.error) {
         console.log(res.error);
         return false;
       }
+      const nextPayload = {
+        clusterStatusFetchedAt: Date.now(),
+      };
       if (!_.isEqual(res, clusterStatus)) {
+        nextPayload.clusterStatus = res;
+      }
+      if (Object.keys(nextPayload).length > 0) {
         yield put({
           type: "saveData",
-          payload: {
-            clusterStatus: res,
-          },
+          payload: nextPayload,
         });
       }
       return res;
@@ -271,11 +328,13 @@ export default {
         }
 
         //please do not delete
-        console.log(`Welcome to ${APP_TITLE}!`);
-        console.log("version.number:", data?.application?.version?.number);
-        console.log("version.build_number:", data?.application?.version?.build_number);
-        console.log("version.build_hash:", data?.application?.version?.build_hash);
-        console.log("version.build_date:", data?.application?.version?.build_date);
+        console.log(`%cWelcome to ${APP_TITLE}!`, CONSOLE_WELCOME_BANNER_STYLE);
+        console.log("version:", data?.application?.version?.number);
+        console.log("build_number:", data?.application?.version?.build_number);
+        console.log("build_hash:", data?.application?.version?.build_hash);
+        console.log("build_date:",
+          formatBuildDate(data?.application?.version?.build_date)
+        );
       } else {
         console.log("fetch console info failed, ", data);
         return false;

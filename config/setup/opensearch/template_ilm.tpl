@@ -23,7 +23,8 @@ PUT _template/$[[SETUP_TEMPLATE_NAME]]
           }
         }
       },
-      "number_of_shards": "1"
+      "number_of_shards": "$[[SETUP_PRIMARY_SHARDS]]",
+      "auto_expand_replicas": "$[[SETUP_AUTO_EXPAND_REPLICAS]]"
     }
   },
   "mappings": {
@@ -117,7 +118,8 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]metrics-rollover
    "settings": {
     "index":{
         "codec" : "best_compression",
-        "number_of_shards" : "1",
+        "number_of_shards": "$[[SETUP_PRIMARY_SHARDS]]",
+        "auto_expand_replicas": "$[[SETUP_AUTO_EXPAND_REPLICAS]]",
         "translog.durability":"async"
     },
     "plugins.index_state_management.rollover_alias": "$[[SETUP_INDEX_PREFIX]]metrics"
@@ -167,7 +169,8 @@ PUT /_template/$[[SETUP_INDEX_PREFIX]]logs-rollover
     "settings": {
       "plugins.index_state_management.rollover_alias": "$[[SETUP_INDEX_PREFIX]]logs",
       "codec": "best_compression",
-      "number_of_shards": "1",
+      "number_of_shards": "$[[SETUP_PRIMARY_SHARDS]]",
+      "auto_expand_replicas": "$[[SETUP_AUTO_EXPAND_REPLICAS]]",
       "translog": {
         "durability": "async"
       }
@@ -222,7 +225,8 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]requests_logging-rollover
     "settings": {
       "plugins.index_state_management.rollover_alias": "$[[SETUP_INDEX_PREFIX]]requests_logging",
       "codec": "best_compression",
-      "number_of_shards": "1",
+      "number_of_shards": "$[[SETUP_PRIMARY_SHARDS]]",
+      "auto_expand_replicas": "$[[SETUP_AUTO_EXPAND_REPLICAS]]",
       "translog": {
         "durability": "async"
       }
@@ -288,7 +292,8 @@ PUT /_template/$[[SETUP_INDEX_PREFIX]]async_bulk_results-rollover
       "settings": {
         "plugins.index_state_management.rollover_alias": "$[[SETUP_INDEX_PREFIX]]async_bulk_results",
         "codec": "best_compression",
-        "number_of_shards": "1",
+        "number_of_shards": "$[[SETUP_PRIMARY_SHARDS]]",
+        "auto_expand_replicas": "$[[SETUP_AUTO_EXPAND_REPLICAS]]",
         "translog": {
           "durability": "async"
         }
@@ -353,7 +358,8 @@ PUT /_template/$[[SETUP_INDEX_PREFIX]]alert-history-rollover
       "settings": {
         "plugins.index_state_management.rollover_alias": "$[[SETUP_INDEX_PREFIX]]alert-history",
         "codec": "best_compression",
-        "number_of_shards": "1",
+        "number_of_shards": "$[[SETUP_PRIMARY_SHARDS]]",
+        "auto_expand_replicas": "$[[SETUP_AUTO_EXPAND_REPLICAS]]",
         "translog": {
           "durability": "async"
         },
@@ -516,7 +522,8 @@ PUT /_template/$[[SETUP_INDEX_PREFIX]]activities-rollover
       "settings": {
         "plugins.index_state_management.rollover_alias": "$[[SETUP_INDEX_PREFIX]]activities",
         "codec": "best_compression",
-        "number_of_shards": "1",
+        "number_of_shards": "$[[SETUP_PRIMARY_SHARDS]]",
+        "auto_expand_replicas": "$[[SETUP_AUTO_EXPAND_REPLICAS]]",
         "translog": {
           "durability": "async"
         },
@@ -620,7 +627,8 @@ PUT /_template/$[[SETUP_INDEX_PREFIX]]audit-logs-rollover
       "settings": {
         "plugins.index_state_management.rollover_alias": "$[[SETUP_INDEX_PREFIX]]audit-logs",
         "codec": "best_compression",
-        "number_of_shards": "1",
+        "number_of_shards": "$[[SETUP_PRIMARY_SHARDS]]",
+        "auto_expand_replicas": "$[[SETUP_AUTO_EXPAND_REPLICAS]]",
         "translog": {
           "durability": "async"
         },

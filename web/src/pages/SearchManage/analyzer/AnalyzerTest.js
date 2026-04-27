@@ -101,7 +101,7 @@ class AnalyzerTest extends Component {
 
 
         return (
-            <Fragment>
+            <Fragment key="analyzer">
             <Card bordered={false}>
             <div>
             <Form onSubmit={this.handleSubmit}  hideRequiredMark style={{ marginTop: 8 }}>

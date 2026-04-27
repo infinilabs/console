@@ -38,6 +38,7 @@ import (
 
 	"github.com/buger/jsonparser"
 	log "github.com/cihub/seelog"
+	console_common "infini.sh/console/common"
 	"infini.sh/console/plugin/managed/server"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
@@ -45,7 +46,6 @@ import (
 	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
-	"infini.sh/framework/modules/elastic/adapter"
 	"infini.sh/framework/modules/elastic/common"
 	"infini.sh/framework/modules/elastic/metadata"
 )
@@ -170,7 +170,7 @@ func refreshNodesInfo(instanceID, instanceEndpoint string) (*elastic.DiscoveryRe
 					continue
 				}
 			} else {
-				clusterInfo, err = adapter.ClusterVersion(elastic.GetMetadata(v.ClusterID))
+				clusterInfo, err = console_common.ClusterVersion(elastic.GetMetadata(v.ClusterID))
 				if err != nil || clusterInfo == nil {
 					log.Error(err)
 					continue

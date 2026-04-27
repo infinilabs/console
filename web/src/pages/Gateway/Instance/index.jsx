@@ -22,6 +22,28 @@ import Wizard from "./Wizard";
 import { isNumber } from "lodash";
 import { getSystemClusterID } from "@/utils/setup";
 
+const metricTransitionStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  transition: "color 0.2s ease, opacity 0.2s ease",
+};
+
+const metricLoadingStyle = {
+  ...metricTransitionStyle,
+  color: "rgba(0, 0, 0, 0.45)",
+};
+
+const metricValueStyle = {
+  ...metricTransitionStyle,
+  color: "rgba(0, 0, 0, 0.85)",
+};
+
+const metricUnavailableStyle = {
+  ...metricTransitionStyle,
+  color: "#cf1322",
+};
+
 export default (props) => {
   const ref = useRef(null);
   const [isLoading, setIsLoading] = React.useState();
@@ -44,16 +66,28 @@ export default (props) => {
 
     if (res && !res.error) {
       let tableData = dataSource?.data?.map((item) => {
-        item.info = res?.[item.id] || {};
-        return item;
+        return {
+          ...item,
+          info: res?.[item.id] || {},
+          statsFetched: true,
+        };
       });
       dataSource.data = tableData;
-      // update dataSource
-      setTimeout(() => {
-        if (ref.current?.setDataSource) {
-          ref.current.setDataSource({ ...dataSource, data: tableData });
-        }
-      }, 500);
+      if (ref.current?.setDataSource) {
+        ref.current.setDataSource({ ...dataSource, data: tableData });
+      }
+      return;
+    }
+
+    const tableData = dataSource?.data?.map((item) => {
+      return {
+        ...item,
+        info: item.info || {},
+        statsFetched: true,
+      };
+    });
+    if (ref.current?.setDataSource) {
+      ref.current.setDataSource({ ...dataSource, data: tableData });
     }
   };
 
@@ -76,16 +110,21 @@ export default (props) => {
 
   const showDeleteConfirm = useCallback((record) => {
     Modal.confirm({
-      title: "Are you sure delete this item?",
+      title: formatMessage({ id: "gateway.instance.delete.confirm.title" }),
       content: (
         <>
-          <div>Name: {record.name}</div>
-          <div>Endpoint: {record.endpoint}</div>
+          <div>
+            {formatMessage({ id: "gateway.instance.column.name" })}: {record.name}
+          </div>
+          <div>
+            {formatMessage({ id: "gateway.instance.column.endpoint" })}:{" "}
+            {record.endpoint}
+          </div>
         </>
       ),
-      okText: "Yes",
+      okText: formatMessage({ id: "form.button.ok" }),
       okType: "danger",
-      cancelText: "No",
+      cancelText: formatMessage({ id: "form.button.cancel" }),
       onOk() {
         onDeleteClick(record.id);
       },
@@ -94,89 +133,173 @@ export default (props) => {
 
   const formatTableData = async (value) => {
     let dataNew = formatESSearchResult(value);
+    dataNew.data = (dataNew.data || []).map((item) => {
+      return {
+        ...item,
+        info: item.info || {},
+        statsFetched: false,
+      };
+    });
     //异步加载&更新扩展数据
     fetchInstanceStats(dataNew);
     return dataNew;
   };
 
+  const renderPendingMetric = (icon = "loading") => {
+    return (
+      <span style={metricLoadingStyle}>
+        <Icon type={icon} />
+        <span>--</span>
+      </span>
+    );
+  };
+
+  const renderUnavailableMetric = (icon = "warning") => {
+    return (
+      <span style={metricUnavailableStyle}>
+        <Icon type={icon} />
+        <span>--</span>
+      </span>
+    );
+  };
+
+  const renderMetricValue = (icon, value, color) => {
+    return (
+      <span style={metricValueStyle}>
+        <Icon type={icon} style={{ color }} />
+        <span>{value}</span>
+      </span>
+    );
+  };
+
   const columns = [
     {
-      title: "Application",
+      title: formatMessage({ id: "gateway.instance.column.application" }),
       key: "application.name",
       sortable: true,
       searchable: true,
       aggregable: true,
     },
     {
-      title: "Name",
+      title: formatMessage({ id: "gateway.instance.column.name" }),
       key: "name",
       sortable: true,
       searchable: true,
     },
     {
-      title: "Endpoint",
+      title: formatMessage({ id: "gateway.instance.column.endpoint" }),
       key: "endpoint",
       sortable: true,
       searchable: true,
     },
-    {
-      title: "Status",
-      key: "info.system",
-      render: (text, record) => {
-        return text ? (
-          <span style={{ color: "green" }}>Online</span>
-        ) : (
-          <span style={{ color: "red" }}>N/A</span>
-        );
+      {
+        title: formatMessage({ id: "gateway.instance.column.status" }),
+        key: "info.system",
+        render: (text, record) => {
+          if (!record.statsFetched) {
+            return (
+              <span style={metricLoadingStyle}>
+                <Icon type="loading" />
+                <span>
+                  {formatMessage({ id: "gateway.instance.status.checking" })}
+                </span>
+              </span>
+            );
+          }
+          return text ? (
+            <span style={{ ...metricValueStyle, color: "#389e0d" }}>
+              <Icon type="check-circle" theme="filled" />
+              {formatMessage({ id: "gateway.instance.status.online" })}
+            </span>
+          ) : (
+            <span style={metricUnavailableStyle}>
+              <Icon type="close-circle" theme="filled" />
+              {formatMessage({ id: "gateway.instance.status.unavailable" })}
+            </span>
+          );
+        },
       },
-    },
-    {
-      title: "CPU",
-      key: "info.system.cpu",
-      render: (text, record) => {
-        return text || isNumber(text) ? `${text}%` : null;
+      {
+        title: formatMessage({ id: "gateway.instance.column.cpu" }),
+        key: "info.system.cpu",
+        render: (text, record) => {
+          if (!record.statsFetched) {
+            return renderPendingMetric();
+          }
+          return text || isNumber(text)
+            ? renderMetricValue("dashboard", `${text}%`, "#1890ff")
+            : renderUnavailableMetric();
+        },
       },
-    },
-    {
-      title: "Memory",
-      key: "info.system.mem",
-      render: (text, record) => {
-        if (!text) {
-          return null;
-        }
-        const byteFormatted = formatter.bytes(text);
-        return byteFormatted.size + byteFormatted.unit;
+      {
+        title: formatMessage({ id: "gateway.instance.column.memory" }),
+        key: "info.system.mem",
+        render: (text, record) => {
+          if (!record.statsFetched) {
+            return renderPendingMetric();
+          }
+          if (!text) {
+            return renderUnavailableMetric();
+          }
+          const byteFormatted = formatter.bytes(text);
+          return renderMetricValue(
+            "database",
+            byteFormatted.size + byteFormatted.unit,
+            "#722ed1"
+          );
+        },
       },
-    },
     {
-      title: "Storage",
+      title: formatMessage({ id: "gateway.instance.column.storage" }),
       key: "info.disk",
       render: (text, record) => {
+        if (!record.statsFetched) {
+          return renderPendingMetric();
+        }
         if (!text) {
-          return null;
+          return renderUnavailableMetric();
         }
         const freeByteFormatted = formatter.bytes(record.info.disk.free);
         const storeByteFormatted = formatter.bytes(record.info.system.store);
         const allByteFormatted = formatter.bytes(record.info.disk.all);
         return (
-          <Tooltip title={"Free/Total: " + freeByteFormatted.size + freeByteFormatted.unit + "/" + allByteFormatted.size + allByteFormatted.unit}>
-            <span>{storeByteFormatted.size + storeByteFormatted.unit}</span>
+          <Tooltip
+            title={formatMessage(
+              { id: "gateway.instance.storage.tooltip" },
+              {
+                free: `${freeByteFormatted.size}${freeByteFormatted.unit}`,
+                total: `${allByteFormatted.size}${allByteFormatted.unit}`,
+              }
+            )}
+          >
+            {renderMetricValue(
+              "hdd",
+              storeByteFormatted.size + storeByteFormatted.unit,
+              "#fa8c16"
+            )}
           </Tooltip>
-        )
+        );
       },
     },
     {
-      title: "Uptime",
+      title: formatMessage({ id: "gateway.instance.column.uptime" }),
       key: "info.system.uptime_in_ms",
       render: (text, record) => {
-        if (!text) {
-          return null;
+        if (!record.statsFetched) {
+          return renderPendingMetric();
         }
-        return moment.duration(text, "ms").humanize();
+        if (!text) {
+          return renderUnavailableMetric("clock-circle");
+        }
+        return renderMetricValue(
+          "clock-circle",
+          moment.duration(text, "ms").humanize(),
+          "#13c2c2"
+        );
       },
     },
     {
-      title: "Tags",
+      title: formatMessage({ id: "gateway.instance.column.tags" }),
       key: "tags",
       aggregable: true,
       searchable: true,
@@ -203,7 +326,7 @@ export default (props) => {
             key: "queue",
             content: (
               <Link to={`/resource/runtime/instance/${record.id}/queue`}>
-                Queue
+                {formatMessage({ id: "gateway.instance.menu.queue" })}
               </Link>
             ),
           },
@@ -211,7 +334,7 @@ export default (props) => {
             key: "task",
             content: (
               <Link to={`/resource/runtime/instance/${record.id}/task`}>
-                Task
+                {formatMessage({ id: "gateway.instance.menu.task" })}
               </Link>
             ),
           },
@@ -229,7 +352,7 @@ export default (props) => {
             key: "logging",
             content: (
               <Link to={`/resource/runtime/instance/${record.id}/logging`}>
-                Logging
+                {formatMessage({ id: "gateway.instance.menu.logging" })}
               </Link>
             ),
           });
@@ -237,7 +360,7 @@ export default (props) => {
             key: "config",
             content: (
               <Link to={`/resource/runtime/instance/${record.id}/config`}>
-                Config
+                {formatMessage({ id: "gateway.instance.menu.config" })}
               </Link>
             ),
           });

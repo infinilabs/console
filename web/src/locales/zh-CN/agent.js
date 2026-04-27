@@ -17,6 +17,15 @@ export default {
   "agent.instance.associate.tips.to_register": "前往注册",
   "agent.instance.associate.drawer.title": "关联集群",
   "agent.instance.regist": "探针注册",
+  "agent.instance.field.endpoint.placeholder":
+    "Agent API 地址，例如：127.0.0.1:2900",
+  "agent.instance.field.endpoint.form.required": "请输入 Agent API 地址！",
+  "agent.instance.step.result.button.register_new": "继续注册新探针",
+  "agent.instance.step.result.button.view_list": "查看探针列表",
+  "agent.instance.column.agent_ip": "探针 IP",
+  "agent.instance.row_detail.tab.detected_processes": "已识别进程（{count}）",
+  "agent.instance.row_detail.tab.unknown_processes": "未知进程（{count}）",
+  "agent.instance.process.detail.title": "进程详情",
   "agent.instance.associate.labels.node_adress": "节点地址",
   "agent.instance.associate.tips.access_failed":
     "探针未能成功访问该节点，请修改设置后再试！",
@@ -40,6 +49,8 @@ export default {
 
   "agent.label.agent_credential": "代理凭据",
   "agent.credential.tip": "不需要凭据",
+  "agent.instance.button.revoke": "撤销",
+  "agent.instance.revoke.confirm.title": "确定要撤销吗？",
   "agent.instance.clear.title": "清理离线实例",
   "agent.instance.clear.modal.title": "您确定要清理离线实例？",
   "agent.instance.clear.modal.desc": "该操作将会删除离线并且 7 天没有上报指标的实例"

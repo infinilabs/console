@@ -9,7 +9,7 @@ import { Link } from "umi";
 
 const icon = () => (
   <svg
-    class="icon"
+    className="icon"
     width="1em"
     height="1em"
     viewBox="0 0 1024 1024"

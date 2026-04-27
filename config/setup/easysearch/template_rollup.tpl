@@ -6,7 +6,7 @@ PUT /_rollup/jobs/rollup_index_stats
     "target_index": "rollup_index_stats_{{ctx.source_index}}",
     "timestamp": "timestamp",
     "continuous": true,
-    "page_size": 600,
+    "page_size": 100,
     "cron": "*/5 0-23 * * *",
     "timezone": "UTC",
     "stats": [
@@ -51,7 +51,7 @@ PUT /_rollup/jobs/rollup_index_health
     "target_index": "rollup_index_health_{{ctx.source_index}}",
     "timestamp": "timestamp",
     "continuous": true,
-    "page_size": 600,
+    "page_size": 100,
     "cron": "*/5 0-23 * * *",
     "timezone": "UTC",
     "stats": [
@@ -90,7 +90,7 @@ PUT /_rollup/jobs/rollup_cluster_stats
   "rollup": {
     "source_index": "$[[SETUP_INDEX_PREFIX]]metrics",
     "target_index": "rollup_cluster_stats_{{ctx.source_index}}",
-    "page_size": 600,
+    "page_size": 100,
     "continuous": true,
     "cron": "*/5 0-23 * * *",
     "timezone": "UTC",
@@ -132,7 +132,7 @@ PUT /_rollup/jobs/rollup_cluster_health
     "source_index": "$[[SETUP_INDEX_PREFIX]]metrics",
     "target_index": "rollup_cluster_health_{{ctx.source_index}}",
     "continuous": true,
-    "page_size": 600,
+    "page_size": 100,
     "cron": "*/5 0-23 * * *",
     "timezone": "UTC",
     "stats": [
@@ -173,7 +173,7 @@ PUT /_rollup/jobs/rollup_node_stats
     "target_index": "rollup_node_stats_{{ctx.source_index}}",
     "timestamp": "timestamp",
     "continuous": true,
-    "page_size": 600,
+    "page_size": 100,
     "cron": "*/5 0-23 * * *",
     "timezone": "UTC",
     "stats": [
@@ -256,7 +256,7 @@ PUT /_rollup/jobs/rollup_shard_stats_metrics
     "target_index": "rollup_shard_stats_metrics_{{ctx.source_index}}",
     "timestamp": "timestamp",
     "continuous": true,
-    "page_size": 600,
+    "page_size": 100,
     "cron": "*/5 0-23 * * *",
     "timezone": "UTC",
     "stats": [
@@ -302,7 +302,7 @@ PUT /_rollup/jobs/rollup_shard_stats_state
     "target_index": "rollup_shard_stats_state_{{ctx.source_index}}",
     "timestamp": "timestamp",
     "continuous": true,
-    "page_size": 600,
+    "page_size": 100,
     "cron": "*/5 0-23 * * *",
     "timezone": "UTC",
     "stats": [
@@ -375,7 +375,8 @@ PUT _template/rollup_policy_template
   "order": 1, 
   "index_patterns": ["rollup*"],
   "settings": {
-    "index.lifecycle.name": "ilm_$[[SETUP_INDEX_PREFIX]]rollup-30days-retention"
+    "index.lifecycle.name": "ilm_$[[SETUP_INDEX_PREFIX]]rollup-30days-retention",
+    "index.auto_expand_replicas": "$[[SETUP_AUTO_EXPAND_REPLICAS]]"
   }
 }
 

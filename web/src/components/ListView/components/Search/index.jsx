@@ -1,4 +1,5 @@
 import { Input } from "antd";
+import { formatMessage } from "umi/locale";
 
 const { Search } = Input;
 
@@ -10,7 +11,7 @@ export default (props) => {
       allowClear
       placeholder={placeholder}
       value={value}
-      enterButton
+      enterButton={formatMessage({ id: "form.button.search" })}
       onSearch={onSearch}
       onChange={(e) => {
         onSearch(e.currentTarget.value);

@@ -16,6 +16,7 @@ import MetadataConfigsForm from "../MetadataConfigsForm";
 import "../Form.scss";
 import AgentCredentialForm from "../AgentCredentialForm";
 import { MANUAL_VALUE } from "./initial_step";
+import { getClusterConnectErrorMessageFromResponse } from "../utils";
 
 @Form.create()
 export class ExtraStep extends React.Component {
@@ -66,6 +67,7 @@ export class ExtraStep extends React.Component {
           let newVals = {
             hosts: initialValue?.hosts || [],
             schema: initialValue.isTLS === true ? "https" : "http",
+            probe_path: initialValue?.probe_path,
           };
           newVals = {
             ...newVals,
@@ -86,11 +88,18 @@ export class ExtraStep extends React.Component {
             type: "clusterConfig/doTryConnect",
             payload: newVals,
           });
-          if (res) {
+          if (res && !res.error) {
             message.success(
               formatMessage({
                 id: "app.message.connect.success",
               })
+            );
+          } else if (res?.error) {
+            message.error(
+              getClusterConnectErrorMessageFromResponse(
+                res,
+                "cluster.regist.try_connect.failed"
+              )
             );
           }
           this.setState({ btnLoadingAgent: false });

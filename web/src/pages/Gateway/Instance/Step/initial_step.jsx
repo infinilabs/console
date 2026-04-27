@@ -44,7 +44,11 @@ export class InitialStep extends React.Component {
     };
     return (
       <Form {...formItemLayout} form={this.props.formRef}>
-        <Form.Item label="Endpoint">
+        <Form.Item
+          label={formatMessage({
+            id: "gateway.instance.field.endpoint.label",
+          })}
+        >
           {getFieldDecorator("endpoint", {
             initialValue: removeHttpSchema(initialValue?.endpoint || ""),
             normalize: (value) => {
@@ -67,10 +71,19 @@ export class InitialStep extends React.Component {
               },
             ],
           })(
-            <Input placeholder="Instance api endpoint eg: 127.0.0.1:2900" onChange={this.handleEndpointChange}/>
+            <Input
+              placeholder={formatMessage({
+                id: "gateway.instance.field.endpoint.placeholder",
+              })}
+              onChange={this.handleEndpointChange}
+            />
           )}
         </Form.Item>
-        <Form.Item label="TLS">
+        <Form.Item
+          label={formatMessage({
+            id: "gateway.instance.field.tls.label",
+          })}
+        >
           {getFieldDecorator("isTLS", {
             initialValue: isTLS(initialValue?.endpoint),
           })(
@@ -107,10 +120,19 @@ export class InitialStep extends React.Component {
                 rules: [
                   {
                     required: true,
-                    message: "Please input auth username!",
+                    message: formatMessage({
+                      id: "cluster.regist.form.verify.required.auth_username",
+                    }),
                   },
                 ],
-              })(<Input autoComplete="off" placeholder="auth user name" />)}
+              })(
+                <Input
+                  autoComplete="off"
+                  placeholder={formatMessage({
+                    id: "credential.manage.form.username",
+                  })}
+                />
+              )}
             </Form.Item>
             <Form.Item
               label={formatMessage({
@@ -123,13 +145,17 @@ export class InitialStep extends React.Component {
                 rules: [
                   {
                     required: true,
-                    message: "Please input auth password!",
+                    message: formatMessage({
+                      id: "cluster.regist.form.verify.required.auth_password",
+                    }),
                   },
                 ],
               })(
                 <Input.Password
                   autoComplete="off"
-                  placeholder="auth user password"
+                  placeholder={formatMessage({
+                    id: "credential.manage.form.password",
+                  })}
                 />
               )}
             </Form.Item>

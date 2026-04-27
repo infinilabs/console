@@ -51,4 +51,6 @@ export default {
   "explore.indexfield.description":
     "当前页面列出匹配 {pattern} 索引的所有字段，字段类型为搜索引擎内的类型。 若需要更改类型，请使用",
   "explore.view.index_pattern.removeTooltip": "删除视图",
+  "explore.view.index_pattern.refreshTooltip": "刷新字段列表",
+  "explore.view.index_pattern.refreshFieldListTitle": "刷新字段列表？",
 };

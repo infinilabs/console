@@ -24,10 +24,14 @@ import request from "@/utils/request";
 
 export default ({}) => {
   const { selectedCluster } = useGlobal();
+  const clusterId = selectedCluster?.id;
   const handleDeleteClick = useCallback(
     async (id) => {
+      if (!clusterId) {
+        return false;
+      }
       const res = await request(
-        `${ESPrefix}/${selectedCluster.id}/trace_template/${id}`,
+        `${ESPrefix}/${clusterId}/trace_template/${id}`,
         {
           method: "DELETE",
         }
@@ -36,12 +40,12 @@ export default ({}) => {
         return false;
       }
       message.success("delete succeed");
-      setQueryParams({
-        ...queryParams,
+      setQueryParams((st) => ({
+        ...st,
         t: new Date().valueOf(),
-      });
+      }));
     },
-    [selectedCluster]
+    [clusterId]
   );
   const columns = [
     {
@@ -70,12 +74,12 @@ export default ({}) => {
         <div>
           <Link to={`/data/search_flow/edit/${record.id}`}>Edit</Link>
           <Divider type="vertical" />
-          <Popconfirm
-            title="Sure to delete?"
-            onConfirm={() => handleDeleteClick(record.id)}
-          >
-            <a>Delete</a>
-          </Popconfirm>
+           <Popconfirm
+             title={formatMessage({ id: "app.message.confirm.delete" })}
+             onConfirm={() => handleDeleteClick(record.id)}
+           >
+             <a>{formatMessage({ id: "form.button.delete" })}</a>
+           </Popconfirm>
         </div>
       ),
     },
@@ -83,11 +87,12 @@ export default ({}) => {
   const [queryParams, setQueryParams] = React.useState({});
 
   const { loading, error, value } = useFetch(
-    `${ESPrefix}/${selectedCluster.id}/trace_template`,
+    `${ESPrefix}/${clusterId}/trace_template`,
     {
       queryParams: queryParams,
     },
-    [selectedCluster, queryParams]
+    [clusterId, queryParams],
+    !!clusterId
   );
   const { data: templates, total } = React.useMemo(() => {
     if (!value) {
@@ -119,7 +124,7 @@ export default ({}) => {
                 />
               </div>
               <div className="btn-col">
-                <Button type="primary" icon="search" onClick={onSearchClick}>
+                <Button type="primary" onClick={onSearchClick}>
                   {formatMessage({ id: "form.button.search" })}
                 </Button>
               </div>

@@ -12,7 +12,7 @@ const { Option } = Select;
 
 // 头像组件 方便以后独立，增加裁剪之类的功能
 const AvatarView = ({ avatar }) => (
-  <Fragment>
+  <Fragment key="avatarView">
     <div className={styles.avatar_title}>
       <FormattedMessage
         id="app.settings.basic.avatar"

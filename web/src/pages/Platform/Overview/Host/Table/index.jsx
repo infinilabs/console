@@ -67,7 +67,7 @@ export default (props) => {
   const [columns] = useMemo(() => {
     let columns = [
       {
-        title: "Transport Address",
+        title: formatMessage({ id: "overview.column.transport_address" }),
         dataIndex: "host",
         render: (text, record) => {
           return (
@@ -93,7 +93,7 @@ export default (props) => {
         },
       },
       {
-        title: "Status",
+        title: formatMessage({ id: "overview.column.status" }),
         dataIndex: "host_status",
         render: (text, record) => {
           return (
@@ -120,7 +120,7 @@ export default (props) => {
         },
       },
       {
-        title: "Host Name",
+        title: formatMessage({ id: "overview.column.host_name" }),
         dataIndex: "host_name",
         render: (text, record) => {
           return (
@@ -137,7 +137,7 @@ export default (props) => {
         },
       },
       {
-        title: "Agent Status",
+        title: formatMessage({ id: "overview.column.agent_status" }),
         dataIndex: "agent_status",
         render: (text, record) => {
           return (
@@ -149,7 +149,7 @@ export default (props) => {
         },
       },
       {
-        title: "CPU Usage",
+        title: formatMessage({ id: "overview.column.cpu_usage" }),
         dataIndex: "CPU Usage",
         render: (text, record) => {
           return (
@@ -164,7 +164,7 @@ export default (props) => {
         },
       },
       {
-        title: "Disk Usage",
+        title: formatMessage({ id: "overview.column.disk_usage" }),
         dataIndex: "DiskUsage",
         render: (text, record) => {
           return (
@@ -191,7 +191,7 @@ export default (props) => {
         },
       },
       {
-        title: "JVM Heap",
+        title: formatMessage({ id: "overview.column.jvm_heap" }),
         dataIndex: "JVMHeap",
         render: (text, record) => {
           return (
@@ -229,6 +229,7 @@ export default (props) => {
         loading={loading}
         columns={columns}
         dataSource={tableData}
+        scroll={{ x: "max-content" }}
         rowKey={"id"}
         pagination={{
           size: "small",

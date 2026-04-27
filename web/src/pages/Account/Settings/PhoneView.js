@@ -10,7 +10,7 @@ class PhoneView extends PureComponent {
       values = value.split('-');
     }
     return (
-      <Fragment>
+      <Fragment key="phoneView">
         <Input
           className={styles.area_code}
           value={values[0]}

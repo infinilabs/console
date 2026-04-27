@@ -1,12 +1,12 @@
 import PlatformRoleForm from "./form";
 import { Form } from "antd";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import request from "@/utils/request";
-import { message } from "antd";
 import { router } from "umi";
 import { formatMessage } from "umi/locale";
 
 export default Form.create({ name: "platform_role_form_new" })((props) => {
+  const [createResult, setCreateResult] = useState(null);
   const onSaveClick = useCallback(async (values) => {
     const saveRes = await request(`/role/platform`, {
       method: "POST",
@@ -15,17 +15,18 @@ export default Form.create({ name: "platform_role_form_new" })((props) => {
       },
     });
     if (saveRes && saveRes.result == "created") {
-      message.success(
-        formatMessage({
-          id: "app.message.save.success",
-        })
-      );
-      props.form.resetFields();
+      setCreateResult(saveRes);
     }
   }, []);
   return (
     <PlatformRoleForm
       {...props}
+      mode="new"
+      createResult={createResult}
+      onContinueCreate={() => {
+        props.form.resetFields();
+        setCreateResult(null);
+      }}
       onSaveClick={onSaveClick}
       title="Create Platform Role"
     />

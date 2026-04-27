@@ -47,6 +47,14 @@ import (
 	"infini.sh/framework/core/util"
 )
 
+func newEmailTLSConfig(serverName string, minVersion uint16) *tls.Config {
+	return &tls.Config{
+		InsecureSkipVerify: true,
+		MinVersion:         minVersion,
+		ServerName:         serverName,
+	}
+}
+
 func (h *EmailAPI) createEmailServer(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	var obj = &model.EmailServer{}
 	err := h.DecodeJSON(req, obj)
@@ -391,7 +399,7 @@ func (h *EmailAPI) testEmailServer(w http.ResponseWriter, req *http.Request, ps 
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	d.TLSConfig = &tls.Config{InsecureSkipVerify: true, MinVersion: tlsMinVersion}
+	d.TLSConfig = newEmailTLSConfig(reqBody.Host, tlsMinVersion)
 	d.SSL = reqBody.TLS
 
 	err = d.DialAndSend(message)

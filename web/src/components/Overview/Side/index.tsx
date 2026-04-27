@@ -2,6 +2,8 @@ import Sorter from "@/components/infini/search/sort/sort";
 import { getSearchFacets } from "@/lib/elasticsearch/search";
 import request from "@/utils/request";
 import { useEffect, useState } from "react";
+import { Icon } from "antd";
+import { formatMessage } from "umi/locale";
 import SearchFacet from "./SearchFacet";
 import './index.scss';
 
@@ -16,6 +18,7 @@ interface IProps {
     }
     filters: {[key: string]: string};
     onFacetChange: (facet: any) => void;
+    onReset?: () => void;
 }
 
 interface IFacet {
@@ -32,7 +35,8 @@ export default (props: IProps) => {
         facetLabels, 
         aggsConfig : { action, params }, 
         filters, 
-        onFacetChange 
+        onFacetChange,
+        onReset
     } = props;
 
     const [facets, setFacets] = useState<IFacet[]>([]);
@@ -59,7 +63,17 @@ export default (props: IProps) => {
 
     return (
         <div className="search-filter">
-            <div style={{ marginBottom: 10 }}>
+            <div className="search-filter-title">
+                <span>{formatMessage({ id: "listview.side.filter" })}</span>
+                <span
+                    className="search-filter-reset"
+                    onClick={onReset}
+                    title={formatMessage({ id: "listview.side.filter.reset" })}
+                >
+                    <Icon type="reload" style={{ color: "rgba(0, 127, 255, 1)" }} />
+                </span>
+            </div>
+            <div style={{ marginBottom: 16 }}>
                 <Sorter
                     options={sorterOptions}
                     value={sorterValues}

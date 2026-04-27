@@ -9,6 +9,7 @@ import {
   message,
 } from "antd";
 import { useCallback, useState } from "react";
+import { formatMessage } from "umi/locale";
 import CredentialForm from "./CredentialForm";
 import { hasAuthority } from "@/utils/authority";
 
@@ -70,7 +71,11 @@ export default Form.create({ name: "email_server_cfg" })((props) => {
       const { sendTo } = values;
       const emailRegexp = /^[\w-]+(\.[\w-]+)*@([a-z0-9-]+\.)+[a-z]{2,}$/i;
       if (!sendTo || !emailRegexp.test(sendTo.trim())) {
-        message.error("Receive Email is invalid");
+        message.error(
+          formatMessage({
+            id: "settings.email.server.form.validation.recipient",
+          })
+        );
         return;
       }
       const send_to = [sendTo.trim()];
@@ -84,7 +89,11 @@ export default Form.create({ name: "email_server_cfg" })((props) => {
         },
       });
       if (testRes && testRes.acknowledged === true) {
-        message.success("send succed");
+        message.success(
+          formatMessage({
+            id: "settings.email.server.message.test.success",
+          })
+        );
       }
     });
   };
@@ -94,13 +103,19 @@ export default Form.create({ name: "email_server_cfg" })((props) => {
   return (
     <div>
       <Form {...formItemLayout}>
-        <Form.Item label="Name">
+        <Form.Item
+          label={formatMessage({
+            id: "settings.email.server.form.name",
+          })}
+        >
           {getFieldDecorator("name", {
             initialValue: config.name,
             rules: [
               {
                 required: true,
-                message: "Please input name!",
+                message: formatMessage({
+                  id: "settings.email.server.form.validation.name",
+                }),
               },
             ],
             onChange: (ev) => {
@@ -120,60 +135,93 @@ export default Form.create({ name: "email_server_cfg" })((props) => {
             },
           })(<Input />)}
         </Form.Item>
-        <Form.Item label="Host">
+        <Form.Item
+          label={formatMessage({
+            id: "settings.email.server.form.host",
+          })}
+        >
           {getFieldDecorator("host", {
             initialValue: config.host,
             rules: [
               {
                 required: true,
-                message: "Please input smtp server host!",
+                message: formatMessage({
+                  id: "settings.email.server.form.validation.host",
+                }),
               },
             ],
           })(<Input />)}
         </Form.Item>
-        <Form.Item label="Port">
+        <Form.Item
+          label={formatMessage({
+            id: "settings.email.server.form.port",
+          })}
+        >
           {getFieldDecorator("port", {
             initialValue: config.port,
             rules: [
               {
                 required: true,
-                message: "Please input smtp server port!",
+                message: formatMessage({
+                  id: "settings.email.server.form.validation.port",
+                }),
               },
             ],
           })(<InputNumber />)}
         </Form.Item>
-        <Form.Item label="TLS Min Version">
+        <Form.Item
+          label={formatMessage({
+            id: "settings.email.server.form.tls_min_version",
+          })}
+        >
           {getFieldDecorator("tls_min_version", {
             initialValue: config.tls_min_version,
             rules: [
             ],
           })(<Select>
-            <Option value="TLS10">TLS10</Option>
-            <Option value="TLS11">TLS11</Option>
-            <Option value="TLS12">TLS12</Option>
-            <Option value="TLS13">TLS13</Option>
+            <Select.Option value="TLS10">TLS10</Select.Option>
+            <Select.Option value="TLS11">TLS11</Select.Option>
+            <Select.Option value="TLS12">TLS12</Select.Option>
+            <Select.Option value="TLS13">TLS13</Select.Option>
           </Select>)}
         </Form.Item>
-        <Form.Item label="TLS">
+        <Form.Item
+          label={formatMessage({
+            id: "settings.email.server.form.tls",
+          })}
+        >
           {getFieldDecorator("tls", {
             initialValue: config.tls,
             valuePropName: "checked",
           })(<Switch />)}
         </Form.Item>
         <CredentialForm form={form} initialValue={config} isEdit={isEdit} />
-        <Form.Item label="Enabled">
+        <Form.Item
+          label={formatMessage({
+            id: "settings.email.server.form.enabled",
+          })}
+        >
           {getFieldDecorator("enabled", {
             initialValue: config.enabled,
             valuePropName: "checked",
           })(<Switch />)}
         </Form.Item>
-        <Form.Item label="Recipient">
+        <Form.Item
+          label={formatMessage({
+            id: "settings.email.server.form.recipient",
+          })}
+        >
           <div className="receive-test">
             {getFieldDecorator(
               "sendTo",
               {}
             )(
-              <Input className="send-to" placeholder="Please input recipient" />
+              <Input
+                className="send-to"
+                placeholder={formatMessage({
+                  id: "settings.email.server.form.recipient.placeholder",
+                })}
+              />
             )}
             <Button
               className="btn-send"
@@ -181,7 +229,9 @@ export default Form.create({ name: "email_server_cfg" })((props) => {
               onClick={onSendTestClick}
               disabled={hasAuthority("alerting.rule:all") ? false : true}
             >
-              Send A Test Email
+              {formatMessage({
+                id: "settings.email.server.form.test.button",
+              })}
             </Button>
           </div>
         </Form.Item>
@@ -192,7 +242,9 @@ export default Form.create({ name: "email_server_cfg" })((props) => {
             loading={isLoading}
             disabled={hasAuthority("alerting.rule:all") ? false : true}
           >
-            Save
+            {formatMessage({
+              id: "form.button.save",
+            })}
           </Button>
         </Form.Item>
       </Form>

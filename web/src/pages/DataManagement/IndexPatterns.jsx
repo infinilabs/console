@@ -23,7 +23,13 @@ import { CreateEditComplexFieldContainer } from "@/components/vendor/index_patte
 
 const IndexPatterns = (props) => {
   if (!props.selectedCluster?.id) {
-    return <Card ><Empty image={Empty.PRESENTED_IMAGE_SIMPLE} /></Card>;
+    return (
+      <PageHeaderWrapper>
+        <Card>
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        </Card>
+      </PageHeaderWrapper>
+    );
   }
   const history = useMemo(() => {
     return new ScopedHistory(props.history, "/data/views");

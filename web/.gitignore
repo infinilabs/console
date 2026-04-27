@@ -36,3 +36,5 @@ log/
 /web/
 .github
 src/common*/
+/public
+plugin/enterprise/

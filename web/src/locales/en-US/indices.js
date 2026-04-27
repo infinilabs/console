@@ -19,4 +19,17 @@ export default {
   "indices.field.name.placeholder": "Please input index name",
   "indices.field.name.required_message":
     "Please input a name of at least five characters!",
+  "indices.delete.modal.title.single": "Delete index",
+  "indices.delete.modal.title.batch": "Delete {count} indices",
+  "indices.delete.modal.cluster":
+    "You are about to delete these indices in cluster {cluster}:",
+  "indices.delete.modal.special_index": "Special index",
+  "indices.delete.modal.special_warning.title":
+    "Deleting a special index can break Console!",
+  "indices.delete.modal.special_warning.description":
+    "Special indices are critical for internal operations. If you delete a special index, you can't recover it. Make sure you have appropriate backups.",
+  "indices.delete.modal.special_warning.confirm":
+    "I understand the consequences of deleting a special index",
+  "indices.delete.modal.description":
+    "You can't recover a deleted index. Make sure you have appropriate backups.",
 };

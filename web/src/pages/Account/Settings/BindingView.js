@@ -38,7 +38,7 @@ class BindingView extends Component {
 
   render() {
     return (
-      <Fragment>
+      <Fragment key="bindingView">
         <List
           itemLayout="horizontal"
           dataSource={this.getData()}

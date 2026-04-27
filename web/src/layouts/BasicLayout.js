@@ -69,7 +69,7 @@ const { Content } = Layout;
 function formatter(data, parentAuthority, parentName) {
   return data
     .map((item) => {
-      let locale = "menu";
+      let locale;
       if (parentName && item.name) {
         locale = `${parentName}.${item.name}`;
       } else if (item.name) {
@@ -290,8 +290,12 @@ class BasicLayout extends React.PureComponent {
     if (!currRouterData) {
       return APP_TITLE;
     }
+    const messageId = currRouterData.locale || currRouterData.name;
+    if (!messageId) {
+      return APP_TITLE;
+    }
     const message = formatMessage({
-      id: currRouterData.locale || currRouterData.name,
+      id: messageId,
       defaultMessage: currRouterData.name,
     });
     return `${message} - ${APP_TITLE}`;

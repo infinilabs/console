@@ -24,7 +24,8 @@ PUT _template/$[[SETUP_TEMPLATE_NAME]]
         },
         "codec": "ZSTD",
         "source_reuse": false,
-        "number_of_shards": "1"
+        "number_of_shards": "$[[SETUP_PRIMARY_SHARDS]]",
+        "auto_expand_replicas": "$[[SETUP_AUTO_EXPAND_REPLICAS]]"
       }
     },
     "mappings": {
@@ -110,7 +111,8 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]metrics-rollover
         },
         "codec" : "ZSTD",
         "source_reuse": false,
-        "number_of_shards" : "1",
+        "number_of_shards": "$[[SETUP_PRIMARY_SHARDS]]",
+        "auto_expand_replicas": "$[[SETUP_AUTO_EXPAND_REPLICAS]]",
         "translog.durability":"async",
         "mapping.coerce": false,
         "mapping.ignore_malformed": true
@@ -197,7 +199,8 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]logs-rollover
       },
       "codec": "ZSTD",
       "source_reuse": false,
-      "number_of_shards": "1",
+      "number_of_shards": "$[[SETUP_PRIMARY_SHARDS]]",
+      "auto_expand_replicas": "$[[SETUP_AUTO_EXPAND_REPLICAS]]",
       "translog": {
         "durability": "async"
       }
@@ -256,7 +259,8 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]requests_logging-rollover
       },
       "codec": "ZSTD",
       "source_reuse": true,
-      "number_of_shards": "1",
+      "number_of_shards": "$[[SETUP_PRIMARY_SHARDS]]",
+      "auto_expand_replicas": "$[[SETUP_AUTO_EXPAND_REPLICAS]]",
       "translog": {
         "durability": "async"
       }
@@ -326,7 +330,8 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]async_bulk_results-rollover
       },
       "codec": "ZSTD",
       "source_reuse": false,
-      "number_of_shards": "1",
+      "number_of_shards": "$[[SETUP_PRIMARY_SHARDS]]",
+      "auto_expand_replicas": "$[[SETUP_AUTO_EXPAND_REPLICAS]]",
       "translog": {
         "durability": "async"
       }
@@ -396,7 +401,8 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]alert-history-rollover
         },
         "codec" : "ZSTD",
         "source_reuse": false,
-        "number_of_shards" : "1",
+        "number_of_shards": "$[[SETUP_PRIMARY_SHARDS]]",
+        "auto_expand_replicas": "$[[SETUP_AUTO_EXPAND_REPLICAS]]",
         "translog.durability":"async",
         "analysis": {
           "analyzer": {
@@ -563,7 +569,8 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]activities-rollover
         },
         "codec" : "ZSTD",
         "source_reuse": false,
-        "number_of_shards" : "1",
+        "number_of_shards": "$[[SETUP_PRIMARY_SHARDS]]",
+        "auto_expand_replicas": "$[[SETUP_AUTO_EXPAND_REPLICAS]]",
         "translog.durability":"async",
         "analysis": {
           "analyzer": {
@@ -668,7 +675,8 @@ PUT _template/$[[SETUP_INDEX_PREFIX]]audit-logs-rollover
         },
         "codec" : "ZSTD",
         "source_reuse": false,
-        "number_of_shards" : "1",
+        "number_of_shards": "$[[SETUP_PRIMARY_SHARDS]]",
+        "auto_expand_replicas": "$[[SETUP_AUTO_EXPAND_REPLICAS]]",
         "translog.durability":"async",
         "analysis": {
           "analyzer": {

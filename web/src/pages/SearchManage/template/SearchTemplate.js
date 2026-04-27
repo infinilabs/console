@@ -137,7 +137,7 @@ class SearchTemplate extends PureComponent {
     {
       title: '操作',
       render: (text, record) => (
-        <Fragment>
+        <Fragment key={record.id}>
           <a onClick={() => this.handleUpdateModalVisible(true, record)}>设置</a>
           <Divider type="vertical" />
           <a onClick={() => {
@@ -342,7 +342,7 @@ class SearchTemplate extends PureComponent {
       handleUpdate: this.handleUpdate,
     };
     return (
-      <Fragment>
+      <Fragment key="searchTemplate">
         <Card bordered={false}>
           <div className={styles.tableList}>
             <div className={styles.tableListForm}>{this.renderForm()}</div>

@@ -41,7 +41,7 @@ export default ({ value = [], onChange }) => {
     <div>
       {value.map((tag, index) => (
         <Tag
-          key={index}
+          key={`tag-${index}`}
           closable
           style={{ padding: "0 5px", fontSize: 14, margin: "5px 10px 5px 0" }}
           onClose={() => handleRemove(index)}

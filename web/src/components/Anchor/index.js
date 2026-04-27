@@ -1,88 +1,95 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useState } from "react";
 import { Tooltip, Timeline } from "antd";
 import { formatMessage } from "umi/locale";
-import { throttle } from 'lodash';
+import { throttle } from "lodash";
 import "./index.scss";
 
-function Anchor({ links }) {
+function Anchor({ links = [] }) {
   const [activeID, setActiveID] = useState(links[0]);
-  const [isFixed, setIsFixed] = useState(false);
-  const anchorRef = useRef(null);
 
   useEffect(() => {
+    setActiveID(links[0]);
+  }, [links]);
+
+  useEffect(() => {
+    if (!links.length) {
+      return undefined;
+    }
+
     const handleScroll = () => {
+      const scrollPosition = window.scrollY || document.documentElement.scrollTop;
+      let nextActiveID = links[0];
 
-      setTimeout(() => {
-        const anchorElements = links.map(link => document.getElementById(link));
-        const scrollPosition = window.scrollY || document.documentElement.scrollTop;
-
-        for (let i = anchorElements.length - 1; i >= 0; i--) {
-          const anchorElement = anchorElements[i];
-          if (!anchorElement) {
-            continue
-          }
-
-          const offsetTop = anchorElement.offsetTop
-          if (offsetTop <= scrollPosition - 200) {
-            setActiveID(anchorElement.id);
-            break;
-          }
+      for (let i = links.length - 1; i >= 0; i--) {
+        const anchorElement = document.getElementById(links[i]);
+        if (!anchorElement) {
+          continue;
         }
-      }, 1000)
 
-      const offsetLeft = anchorRef.current.getBoundingClientRect().left;
-      const offsetTop = anchorRef.current.getBoundingClientRect().top;
-      const children = anchorRef.current.children[0];
-
-      if (offsetTop <= 0) {
-        setIsFixed(true);
-        children.style.top = 0;
-        children.style.left = offsetLeft + 'px';
-      } else {
-        setIsFixed(false);
+        const offsetTop =
+          anchorElement.getBoundingClientRect().top + window.pageYOffset;
+        if (offsetTop <= scrollPosition + 120) {
+          nextActiveID = anchorElement.id;
+          break;
+        }
       }
+
+      setActiveID((prevActiveID) =>
+        prevActiveID === nextActiveID ? prevActiveID : nextActiveID
+      );
     };
 
-    const throttledScroll = throttle(handleScroll, 1000);
+    const throttledScroll = throttle(handleScroll, 100, {
+      leading: true,
+      trailing: true,
+    });
 
-    window.addEventListener('scroll', throttledScroll);
+    handleScroll();
+    window.addEventListener("scroll", throttledScroll, { passive: true });
+    window.addEventListener("resize", throttledScroll);
 
     return () => {
-      window.removeEventListener('scroll', throttledScroll);
+      window.removeEventListener("scroll", throttledScroll);
+      window.removeEventListener("resize", throttledScroll);
+      throttledScroll.cancel();
     };
-  }, []);
+  }, [links]);
 
   const handleClick = (targetId) => {
     const targetElement = document.getElementById(targetId);
     if (targetElement) {
-      setActiveID(targetId)
+      const targetTop =
+        targetElement.getBoundingClientRect().top + window.pageYOffset - 120;
+      setActiveID(targetId);
       window.scrollTo({
-        behavior: 'smooth',
-        top: targetElement.offsetTop + 300,
+        behavior: "smooth",
+        top: Math.max(targetTop, 0),
       });
     }
   };
 
+  if (!links.length) {
+    return null;
+  }
+
   return (
-    <div ref={anchorRef} className='p-anchor'>
-      <div className={`c-anchor ${isFixed ? 'fixed-top' : ''}`}>
-        <Timeline >
-          {links.map((link, index) => {
-            const linkElement = document.getElementById(link)
-            return linkElement ? (
-              <Tooltip
-                placement="leftTop"
-                title={formatMessage({ id: `cluster.metrics.group.${link}` })}
-                key={link}>
-                <Timeline.Item
-                  color={activeID === link ? undefined : 'gray'}
-                  onClick={() => handleClick(link)}
-                >
-                  <span style={{ opacity: 0 }}>1</span>
-                </Timeline.Item>
-              </Tooltip>
-            ) : null
-          })}
+    <div className="p-anchor">
+      <div className="c-anchor">
+        <Timeline>
+          {links.map((link) => (
+            <Tooltip
+              placement="leftTop"
+              title={formatMessage({ id: `cluster.metrics.group.${link}` })}
+              key={link}
+            >
+              <Timeline.Item
+                color={activeID === link ? undefined : "gray"}
+                onClick={() => handleClick(link)}
+              >
+                <span style={{ opacity: 0 }}>1</span>
+              </Timeline.Item>
+            </Tooltip>
+          ))}
         </Timeline>
       </div>
     </div>

@@ -50,8 +50,8 @@ export default ({msgItem})=>{
               <span style={{color:"rgba(51,51,51,1)", fontWeight:400, lineHeight:"24px"}}>{formatMessage({id:"alert.rule.lable.alerting_channels"})}</span>
               <div style={{color:"rgba(153,153,153,1)", lineHeight:"20px"}}>Sent on: {formatUtcTimeToLocal(lastTime)}</div>
               <div>
-                {normalStats.map((item)=>{
-                  return  <div style={{marginTop:5}}>
+                {normalStats.map((item, index)=>{
+                  return  <div key={`${item.channel_type}-${item.channel_name}-${index}`} style={{marginTop:5}}>
                   <Icon component={getChannelIcon(item.channel_type)}/>
                   <span style={{color:"rgba(153,153,153,1)",lineHeight:"20px", marginRight:10}}>{item.channel_name}</span>
                   <Badge count={item.count}/>
@@ -65,8 +65,8 @@ export default ({msgItem})=>{
               {value?.alerting?.escalation_throttle_period ? <span style={{color:"rgba(0,127,255,1)", fontSize:12, background:"rgba(173, 173, 173, 0.15)", padding:"0 5px", marginLeft: 10}}>{formatMessage({id:"alert.rule.label.wait_time"})}: {value?.alerting?.escalation_throttle_period}</span>: null}
               {willSend ? <div  style={{color:"rgba(153,153,153,1)", lineHeight:"20px"}}>It will be sent at：{formatUtcTimeToLocal(willSend)}</div>: null}
               <div>
-                {escalationStats.map((item)=>{
-                  return  <div style={{marginTop:5}}>
+                {escalationStats.map((item, index)=>{
+                  return  <div key={`${item.channel_type}-${item.channel_name}-${index}`} style={{marginTop:5}}>
                   <Icon component={getChannelIcon(item.channel_type)}/>
                   <span style={{color:"rgba(153,153,153,1)",lineHeight:"20px", marginRight:10}}>{item.channel_name}</span>
                   <Badge count={item.count}/>
@@ -90,8 +90,8 @@ export default ({msgItem})=>{
               <span style={{color:"rgba(51,51,51,1)", fontWeight:400, lineHeight:"24px"}}>{formatMessage({id:"alert.rule.lable.recovery_channels"})}</span>
               {recoveryTime ? <div style={{color:"rgba(153,153,153,1)", lineHeight:"20px"}}>Sent on: {formatUtcTimeToLocal(recoveryTime)}</div>: null}
               <div>
-              {recoverStats.map((item)=>{
-                return  <div style={{marginTop:5}}>
+              {recoverStats.map((item, index)=>{
+                return  <div key={`${item.channel_type}-${item.channel_name}-${index}`} style={{marginTop:5}}>
                 <Icon component={getChannelIcon(item.channel_type)}/>
                 <span style={{color:"rgba(153,153,153,1)",lineHeight:"20px", marginRight:10}}>{item.channel_name}</span>
               </div>

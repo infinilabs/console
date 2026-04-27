@@ -24,7 +24,7 @@ import "../list.scss";
 import "@/assets/headercontent.scss";
 import moment from "moment";
 
-const { Search } = Input;
+import SearchInput from "@/components/infini/SearchInput";
 
 const FlowList = (props) => {
   const [queryParams, setQueryParams] = React.useState({});
@@ -146,7 +146,7 @@ const FlowList = (props) => {
           }}
         >
           <div style={{ maxWidth: 500, flex: "1 1 auto" }}>
-            <Search
+            <SearchInput
               allowClear
               placeholder="Type keyword to search"
               enterButton="Search"

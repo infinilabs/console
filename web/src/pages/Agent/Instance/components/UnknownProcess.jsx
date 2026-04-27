@@ -2,6 +2,7 @@ import { Table, Drawer } from "antd";
 import { useMemo, useState } from "react";
 import { formatMessage } from "umi/locale";
 import { Editor } from "@/components/monaco-editor";
+import styles from "./RowDetail.less";
 
 export default (props) => {
   const { loading = true, data = [] } = props;
@@ -18,24 +19,28 @@ export default (props) => {
 
   const columns = [
     {
-      title: "PID",
+      title: formatMessage({ id: "table.field.pid" }),
+      width: 120,
       dataIndex: "pid",
+      render: (text) => <div className={styles.cellWrap}>{text}</div>,
     },
     {
-      title: "Name",
+      title: formatMessage({ id: "table.field.name" }),
+      width: 140,
       dataIndex: "name",
+      render: (text) => <div className={styles.cellWrap}>{text}</div>,
     },
     {
-      title: "Cmdline",
+      title: formatMessage({ id: "table.field.cmdline" }),
       dataIndex: "cmdline",
       render: (text, record) => {
         let lines = text?.split(" ");
         let newLines = lines.slice(0, 4);
         return (
-          <>
-            {newLines.map((item) => {
+          <div className={styles.cellWrap}>
+            {newLines.map((item, index) => {
               return (
-                <div key={item}>
+                <div key={`${item}-${index}`} className={styles.cellWrap}>
                   {item}
                   <br />
                 </div>
@@ -50,15 +55,16 @@ export default (props) => {
                 id: "component.noticeIcon.viewMoreText",
               })}
             </a>
-          </>
+          </div>
         );
       },
     },
     {
-      title: "Listen addresses",
+      title: formatMessage({ id: "table.field.listen_address" }),
+      width: 180,
       dataIndex: "listen_addresses",
       render: (text, record) => (
-        <>
+        <div className={styles.cellWrap}>
           {Array.isArray(text) &&
             text.map((item, index) => {
               return (
@@ -68,11 +74,12 @@ export default (props) => {
                 </span>
               );
             })}
-        </>
+        </div>
       ),
     },
     {
       title: formatMessage({ id: "table.field.actions" }),
+      width: 100,
       render: (text, record) => (
         <div>
           <a
@@ -86,18 +93,18 @@ export default (props) => {
           </a>
         </div>
       ),
-      width: 100,
     },
   ];
 
   return (
-    <div>
+    <div className={styles.tableWrap}>
       <Table
         size={"small"}
         bordered
         loading={loading}
         dataSource={data}
         rowKey={"pid"}
+        tableLayout="fixed"
         pagination={{
           size: "small",
           showSizeChanger: true,
@@ -107,7 +114,9 @@ export default (props) => {
         columns={columns}
       />
       <Drawer
-        title={"Processes detail"}
+        title={formatMessage({
+          id: "agent.instance.process.detail.title",
+        })}
         visible={state.drawerVisible}
         destroyOnClose
         onClose={() => {

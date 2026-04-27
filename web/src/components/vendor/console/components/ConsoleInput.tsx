@@ -10,7 +10,7 @@ import {
 } from "@elastic/eui";
 import { SenseEditor } from "../entities/sense_editor";
 import { LegacyCoreEditor } from "../modules/legacy_core_editor";
-import ConsoleMenu from "./ConsoleMenu";
+import ConsoleMenu, { CONSOLE_MENU_SHORTCUTS } from "./ConsoleMenu";
 // import { RequestContextProvider } from '../contexts/request_context';
 import { getDocumentation, autoIndent } from "../entities/console_menu_actions";
 import "./ConsoleInput.scss";
@@ -27,6 +27,11 @@ import { useServicesContext } from "../contexts";
 import { applyCurrentSettings } from "./apply_editor_settings";
 import { subscribeResizeChecker } from "./subscribe_console_resize_checker";
 import { formatMessage } from "umi/locale";
+import { hasAuthority } from "@/utils/authority";
+
+const isMacPlatform = () =>
+  typeof window !== "undefined" &&
+  /(Mac|iPhone|iPad|iPod)/i.test(window.navigator.platform);
 
 const abs: CSSProperties = {
   position: "absolute",
@@ -47,6 +52,10 @@ const abs: CSSProperties = {
 const SendRequestButton = (props: any) => {
   const sendCurrentRequestToES = useSendCurrentRequestToES();
   const saveCurrentTextObject = useSaveCurrentTextObject();
+  const sendShortcutLabel = isMacPlatform() ? "Cmd+Enter" : "Ctrl+Enter";
+  const tooltipContent = `${formatMessage({
+    id: "console.SendRequestButton.ToolTip",
+  })} (${sendShortcutLabel})`;
 
   const { saveCurrentTextObjectRef } = props;
   useEffect(() => {
@@ -54,12 +63,10 @@ const SendRequestButton = (props: any) => {
   }, [saveCurrentTextObjectRef]);
 
   return (
-    <EuiToolTip
-      content={formatMessage({ id: "console.SendRequestButton.ToolTip" })}
-    >
+    <EuiToolTip content={tooltipContent}>
       <button
         data-test-subj="sendRequestButton"
-        aria-label={"Click to send request"}
+        aria-label={tooltipContent}
         className="conApp__editorActionButton conApp__editorActionButton--success"
         onClick={sendCurrentRequestToES}
       >
@@ -130,6 +137,29 @@ const ConsoleInputUI = ({
         aceEditor.execCommand("iSearch");
       },
     });
+    aceEditor.commands.addCommand({
+      name: "copy_as_curl",
+      bindKey: CONSOLE_MENU_SHORTCUTS.copyAsCurl.bindKey,
+      exec: () => {
+        consoleMenuRef.current?.copyAsCurl();
+      },
+    });
+    aceEditor.commands.addCommand({
+      name: "auto_indent_request",
+      bindKey: CONSOLE_MENU_SHORTCUTS.autoIndent.bindKey,
+      exec: () => {
+        consoleMenuRef.current?.autoIndent();
+      },
+    });
+    if (hasAuthority("system.command:all")) {
+      aceEditor.commands.addCommand({
+        name: "save_as_common_command",
+        bindKey: CONSOLE_MENU_SHORTCUTS.saveAsCommand.bindKey,
+        exec: () => {
+          consoleMenuRef.current?.saveAsCommonCommand();
+        },
+      });
+    }
     const senseEditor = new SenseEditor(legacyCoreEditor);
     // senseEditor.highlightCurrentRequestsAndUpdateActionBar();
     editorInstanceRef.current = senseEditor;
@@ -137,7 +167,7 @@ const ConsoleInputUI = ({
     senseEditor.paneKey = paneKey;
     senseEditor.update(initialText || DEFAULT_INPUT_VALUE);
     applyCurrentSettings(senseEditor!.getCoreEditor(), {
-      fontSize: 12,
+      fontSize: 13,
       wrapMode: true,
     });
 

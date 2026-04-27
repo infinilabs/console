@@ -1,5 +1,5 @@
 import request from "@/utils/request"
-import { firstUpperCase, formatToUniversalTime } from "@/utils/utils";
+import { formatToUniversalTime } from "@/utils/utils";
 import { Descriptions, Icon, Spin, Tooltip } from "antd";
 import moment from "moment";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -37,6 +37,15 @@ const STATUS_ICONS = {
             }}
         />
     )
+}
+
+const getMetricCollectionModeLabel = (mode) => {
+    if (mode === "agent" || mode === "agentless") {
+        return formatMessage({
+            id: `cluster.manage.metric_collection_mode.option.${mode}`,
+        });
+    }
+    return "Unknown";
 }
 
 export default (props) => {
@@ -131,7 +140,7 @@ export default (props) => {
             <Spin spinning={loading}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, cursor: 'pointer' }}>
                     {renderIcon()}
-                    {firstUpperCase(data?.metric_collection_mode) || "Unknown"}
+                    {getMetricCollectionModeLabel(data?.metric_collection_mode)}
                 </div>
             </Spin>
         </Tooltip>

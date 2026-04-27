@@ -51,7 +51,7 @@ class Step3 extends React.PureComponent {
       </div>
     );
     const actions = (
-      <Fragment>
+      <Fragment key="actions">
         <Button type="primary" onClick={onFinish}>
           再转一笔
         </Button>

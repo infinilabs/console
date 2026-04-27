@@ -37,9 +37,71 @@ export const IFrame = ({ children, styleSelector, ...props }) => {
     const linkEls = win.parent.document.querySelectorAll(styleSelector);
     if (linkEls.length) {
       linkEls.forEach((el) => {
-        win.document.head.appendChild(el);
+        win.document.head.appendChild(el.cloneNode(true));
       });
     }
+
+    const parentWin = win.parent;
+    const parentDoc = parentWin.document;
+    const parentEl = contentRef.parentElement || parentDoc.body;
+    const parentStyles = parentWin.getComputedStyle(parentEl);
+    const linkProbe = parentDoc.createElement("a");
+    linkProbe.href = "#";
+    linkProbe.style.position = "absolute";
+    linkProbe.style.visibility = "hidden";
+    linkProbe.style.pointerEvents = "none";
+    parentDoc.body.appendChild(linkProbe);
+    const linkColor = parentWin.getComputedStyle(linkProbe).color;
+    linkProbe.remove();
+
+    const themeStyleId = "markdown-frame-theme";
+    const existingThemeStyle = win.document.getElementById(themeStyleId);
+    if (existingThemeStyle) {
+      existingThemeStyle.remove();
+    }
+
+    const themeStyle = win.document.createElement("style");
+    themeStyle.id = themeStyleId;
+    themeStyle.textContent = `
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        color: ${parentStyles.color};
+        font-size: ${parentStyles.fontSize};
+        line-height: ${parentStyles.lineHeight};
+        font-family: ${parentStyles.fontFamily};
+      }
+
+      .markdown-body {
+        color: ${parentStyles.color};
+        background: transparent;
+        font-size: ${parentStyles.fontSize};
+        line-height: ${parentStyles.lineHeight};
+        font-family: ${parentStyles.fontFamily};
+      }
+
+      .markdown-body p,
+      .markdown-body li,
+      .markdown-body blockquote,
+      .markdown-body table,
+      .markdown-body td,
+      .markdown-body th,
+      .markdown-body span,
+      .markdown-body strong,
+      .markdown-body em {
+        color: inherit;
+      }
+
+      .markdown-body a,
+      .markdown-body a:hover,
+      .markdown-body a:focus,
+      .markdown-body a:active,
+      .markdown-body a:visited {
+        color: ${linkColor};
+      }
+    `;
+    win.document.head.appendChild(themeStyle);
   }, [contentRef, styleSelector]);
   let docHeight = "auto";
   if (contentRef) {

@@ -271,7 +271,7 @@ export default (props) => {
                                         onSearch={value => {
                                             setQueryParams((st) => ({ ...st, from: 0, keyword: value }));
                                         }} 
-                                        enterButton
+                                        enterButton={formatMessage({ id: "form.button.search" })}
                                     />
                                 </div>
                                 <div className={styles.histogram}>

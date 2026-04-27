@@ -6,6 +6,13 @@ import { router } from "umi";
 import { formatMessage } from "umi/locale";
 
 export default (props) => {
+  const selectedCluster = props.selectedCluster || {};
+  const selectedClusterId = selectedCluster?.id || "";
+  const selectedClusterName =
+    (typeof selectedCluster?.name === "string" && selectedCluster?.name) ||
+    (typeof selectedCluster?.label === "string" && selectedCluster?.label) ||
+    (typeof selectedCluster?.title === "string" && selectedCluster?.title) ||
+    selectedClusterId;
   const [len, hasSpecialIndex] = useMemo(() => {
     let items = props.items;
     let len = items.length;
@@ -23,12 +30,35 @@ export default (props) => {
     <Modal
       width={600}
       visible={props.visible}
-      title={len > 1 ? `Delete ${len} indices` : "Delete index"}
+      title={formatMessage(
+        {
+          id:
+            len > 1
+              ? "indices.delete.modal.title.batch"
+              : "indices.delete.modal.title.single",
+        },
+        { count: len }
+      )}
       onCancel={props.onCancel}
       onOk={props.onOk}
       okButtonProps={{ disabled: !props.deleteIndexConfirm }}
     >
-      <p>You are about to delete these indices in cluster <Tooltip title={props.selectedCluster.id}><b>{props.selectedCluster.name}</b></Tooltip>:</p>
+      <p>
+        {formatMessage(
+          { id: "indices.delete.modal.cluster" },
+          {
+            cluster: selectedClusterName || selectedClusterId || "-",
+          }
+        )}
+        {selectedClusterId && selectedClusterName !== selectedClusterId ? (
+          <>
+            {" "}
+            <Tooltip title={selectedClusterId}>
+              <Icon type="info-circle" />
+            </Tooltip>
+          </>
+        ) : null}
+      </p>
       <ul style={{ maxHeight: 240, overflow: "scroll" }}>
         {props.items.map((item) => {
           return (
@@ -36,7 +66,8 @@ export default (props) => {
               <Badge color="#353741" text={item} />{" "}
               {item.startsWith(".") ? (
                 <Tag color="red">
-                  <Icon type="warning" /> Special index
+                  <Icon type="warning" />{" "}
+                  {formatMessage({ id: "indices.delete.modal.special_index" })}
                 </Tag>
               ) : null}
             </li>
@@ -47,8 +78,12 @@ export default (props) => {
       {hasSpecialIndex ? (
         <p>
           <Alert
-            message="Deleting a special index can break Console!"
-            description="Special indices are critical for internal operations. If you delete a special index, you can't recover it. Make sure you have appropriate backups."
+            message={formatMessage({
+              id: "indices.delete.modal.special_warning.title",
+            })}
+            description={formatMessage({
+              id: "indices.delete.modal.special_warning.description",
+            })}
             type="error"
           />
           <p style={{ paddingTop: 10 }}>
@@ -61,14 +96,15 @@ export default (props) => {
                 }
               }}
             >
-              I understand the consequences of deleting a special index
+              {formatMessage({
+                id: "indices.delete.modal.special_warning.confirm",
+              })}
             </Checkbox>
           </p>
         </p>
       ) : (
         <p>
-          You can't recover a deleted index. Make sure you have appropriate
-          backups.
+          {formatMessage({ id: "indices.delete.modal.description" })}
         </p>
       )}
     </Modal>

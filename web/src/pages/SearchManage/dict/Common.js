@@ -178,16 +178,16 @@ class Common extends PureComponent {
         {
             title: '操作',
             render: (text, record) => (
-                <Fragment>
+                <Fragment key={record.keyword}>
                 <a onClick={() => this.handleUpdateModalVisible(true, record)}>修改</a>
-<Divider type="vertical" />
-    <a onClick={() => {
-    this.state.selectedRows.push(record);
-    this.handleDeleteClick();
-}}>删除</a>
-</Fragment>
-),
-},
+                <Divider type="vertical" />
+                    <a onClick={() => {
+                    this.state.selectedRows.push(record);
+                    this.handleDeleteClick();
+                }}>删除</a>
+                </Fragment>
+                ),
+            },
 ];
 
 componentDidMount() {
@@ -393,7 +393,7 @@ render() {
         handleUpdate: this.handleUpdate,
     };
     return (
-        <Fragment>
+        <Fragment key="common">
         <Card bordered={false}>
         <div className={styles.tableList}>
         <div className={styles.tableListForm}>{this.renderForm()}</div>

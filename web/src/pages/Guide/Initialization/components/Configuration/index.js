@@ -3,6 +3,10 @@ import { Alert, Button, Form, Icon, Input, Switch, Select } from 'antd';
 import request from '@/utils/request';
 import { formatMessage } from "umi/locale";
 import TrimSpaceInput from '@/components/TrimSpaceInput';
+import {
+    getClusterConnectErrorMessageFromError,
+    getClusterConnectErrorMessageFromResponse,
+} from '@/pages/System/Cluster/utils';
 
 const formItemLayout = {
     labelCol: {
@@ -18,6 +22,7 @@ export default ({ onNext, form, formData, onFormDataChange }) => {
     const [testLoading, setTestLoading] = useState(false);
     const [testStatus, setTestStatus] = useState();
     const [testError, setTestError] = useState();
+    const [clusterDefaults, setClusterDefaults] = useState({});
 
     const checkVersion = (version, distribution) => {
         if (!version) return false;
@@ -38,6 +43,12 @@ export default ({ onNext, form, formData, onFormDataChange }) => {
             return true
         }
         return true
+    }
+
+    const getRecommendedPrimaryShards = (res) => {
+        const dataNodes = Number(res?.number_of_data_nodes) || 0;
+        const totalNodes = Number(res?.number_of_nodes) || 0;
+        return Math.max(1, dataNodes || totalNodes || 1);
     }
 
     const onTest = async (callback) => {
@@ -67,20 +78,39 @@ export default ({ onNext, form, formData, onFormDataChange }) => {
                 }, undefined, false)
                 if (['green', 'yellow'].includes(res?.status)) {
                     if (checkVersion(res?.version, res?.distribution)) {
+                        const nextDefaults = {
+                            distribution: res?.distribution,
+                            version: res?.version,
+                            number_of_nodes: res?.number_of_nodes,
+                            number_of_data_nodes: res?.number_of_data_nodes,
+                            primary_shards: getRecommendedPrimaryShards(res),
+                            auto_expand_replicas: formData.auto_expand_replicas || "0-1",
+                        };
                         setTestStatus('success')
-                        if (callback) callback()
+                        setClusterDefaults(nextDefaults)
+                        if (callback) callback(nextDefaults)
                     } else {
                         setTestStatus('error')
                         setTestError(formatMessage({ id: 'guide.cluster.test.connection.error.version'}))
                     }
                 } else {
                     setTestStatus('error')
-                    setTestError(formatMessage({ id: 'guide.cluster.test.connection.failed'}))
+                    setTestError(
+                        getClusterConnectErrorMessageFromResponse(
+                            res,
+                            'guide.cluster.test.connection.failed'
+                        )
+                    )
                 }
                 setTestLoading(false);
             } catch (error) {
-                console.log(error);
                 setTestStatus('error')
+                setTestError(
+                    await getClusterConnectErrorMessageFromError(
+                        error,
+                        'guide.cluster.test.connection.failed'
+                    )
+                )
                 setTestLoading(false);
             }
         });
@@ -89,6 +119,7 @@ export default ({ onNext, form, formData, onFormDataChange }) => {
     const resetTestStatus = () => {
         !!testStatus && setTestStatus()
         !!testError && setTestError()
+        setClusterDefaults({})
     }
 
     const onSubmit = async (e) => {
@@ -102,12 +133,21 @@ export default ({ onNext, form, formData, onFormDataChange }) => {
         onFormDataSave();
     }
 
-    const onFormDataSave = () => {
+    const onFormDataSave = (defaults = clusterDefaults) => {
         const values = form.getFieldsValue();
-        const { hosts, isAuth, username, password } = values;
+        const { hosts, isTLS, isAuth, username, password } = values;
         onFormDataChange({
             hosts: (hosts || []).map(host=>host.trim()),
-            isAuth, username, password
+            isTLS,
+            isAuth,
+            username,
+            password,
+            distribution: defaults?.distribution,
+            version: defaults?.version,
+            number_of_nodes: defaults?.number_of_nodes,
+            number_of_data_nodes: defaults?.number_of_data_nodes,
+            primary_shards: formData.primary_shards || defaults?.primary_shards,
+            auto_expand_replicas: formData.auto_expand_replicas || defaults?.auto_expand_replicas,
         })
         onNext();
     }

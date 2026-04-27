@@ -106,5 +106,18 @@ func TestNewEmailTestDialerRejectsUnsupportedTLSVersion(t *testing.T) {
 	_, err := newEmailTestDialer(server)
 	if err == nil {
 		t.Fatal("expected unsupported TLS version to fail")
+}
+
+func TestNewEmailTLSConfigSetsServerName(t *testing.T) {
+	cfg := newEmailTLSConfig("smtp.example.com", tls.VersionTLS13)
+
+	if cfg.ServerName != "smtp.example.com" {
+		t.Fatalf("expected server name to be preserved, got %q", cfg.ServerName)
+	}
+	if cfg.MinVersion != tls.VersionTLS13 {
+		t.Fatalf("expected min TLS version %d, got %d", tls.VersionTLS13, cfg.MinVersion)
+	}
+	if !cfg.InsecureSkipVerify {
+		t.Fatal("expected insecure skip verify to remain enabled")
 	}
 }

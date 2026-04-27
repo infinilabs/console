@@ -19,6 +19,18 @@ export default {
   "agent.instance.associate.tips.to_register": "go to register",
   "agent.instance.associate.drawer.title": "Enroll Cluster",
   "agent.instance.regist": "Agent Registration",
+  "agent.instance.field.endpoint.placeholder":
+    "Agent API endpoint e.g. 127.0.0.1:2900",
+  "agent.instance.field.endpoint.form.required":
+    "Please input agent API endpoint!",
+  "agent.instance.step.result.button.register_new": "Register Another Agent",
+  "agent.instance.step.result.button.view_list": "View Agent List",
+  "agent.instance.column.agent_ip": "Agent IP",
+  "agent.instance.row_detail.tab.detected_processes":
+    "Detected Processes ({count})",
+  "agent.instance.row_detail.tab.unknown_processes":
+    "Unknown Processes ({count})",
+  "agent.instance.process.detail.title": "Processes detail",
   "agent.instance.associate.labels.node_adress": "Node Publish Address",
   "agent.instance.associate.tips.access_failed":
     "The agent failed to access this node, please update the settings and try again!",
@@ -43,6 +55,8 @@ export default {
 
   "agent.label.agent_credential": "Agent Credential",
   "agent.credential.tip": "No credential required",
+  "agent.instance.button.revoke": "Revoke",
+  "agent.instance.revoke.confirm.title": "Sure to revoke?",
   "agent.instance.clear.title": "Clear Offline Instances",
   "agent.instance.clear.modal.title": "Are you sure you want to clear offline instances?",
   "agent.instance.clear.modal.desc": "This operation will delete offline instances that have not reported metrics for 7 days."

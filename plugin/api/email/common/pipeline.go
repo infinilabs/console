@@ -147,7 +147,7 @@ func GeneratePipelineConfig(servers []model.EmailServer) (string, error) {
 							},
 							"processor": []util.MapStr{
 								{
-									"smtp": util.MapStr{
+									"console_smtp": util.MapStr{
 										"idle_timeout_in_seconds": 1,
 										"servers":                 smtpServers,
 										"templates": util.MapStr{

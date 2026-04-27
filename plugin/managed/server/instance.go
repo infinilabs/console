@@ -30,10 +30,12 @@ package server
 import (
 	"context"
 	"fmt"
+	console_common "infini.sh/console/common"
 	"infini.sh/framework/core/event"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/task"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -568,6 +570,13 @@ func (h *APIHandler) proxy(w http.ResponseWriter, req *http.Request, ps httprout
 		panic(err)
 	}
 
+	if isSensitiveInfoPath(path) && len(res.Body) > 0 {
+		res.Body, err = console_common.SanitizeInstanceInfoBytes(res.Body)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	h.WriteHeader(w, res.StatusCode)
 	h.Write(w, res.Body)
 }
@@ -607,7 +616,15 @@ func (h *APIHandler) tryConnect(w http.ResponseWriter, req *http.Request, ps htt
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	h.WriteJSON(w, connectRes, http.StatusOK)
+	h.WriteJSON(w, console_common.SanitizeInstanceInfoMap(util.MapStr{
+		"id":          connectRes.ID,
+		"name":        connectRes.Name,
+		"application": connectRes.Application,
+		"labels":      connectRes.Labels,
+		"tags":        connectRes.Tags,
+		"description": connectRes.Description,
+		"status":      connectRes.Status,
+	}), http.StatusOK)
 }
 
 func (h *APIHandler) tryESConnect(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -672,6 +689,17 @@ func (h *APIHandler) tryESConnect(w http.ResponseWriter, req *http.Request, ps h
 
 	h.WriteHeader(w, res.StatusCode)
 	h.Write(w, res.Body)
+}
+
+func isSensitiveInfoPath(rawPath string) bool {
+	if rawPath == "" {
+		return false
+	}
+	parsed, err := url.Parse(rawPath)
+	if err != nil {
+		return rawPath == "/_info"
+	}
+	return parsed.Path == "/_info"
 }
 
 // TODO check permission by user

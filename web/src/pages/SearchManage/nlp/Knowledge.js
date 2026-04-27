@@ -191,7 +191,7 @@ class Knowledge extends PureComponent {
     {
       title: '操作',
       render: (text, record) => (
-        <Fragment>
+        <Fragment key={record.name}>
           <a onClick={() => this.handleUpdateModalVisible(true, record)}>设置</a>
           <Divider type="vertical" />
           <a onClick={() => {
@@ -387,7 +387,7 @@ class Knowledge extends PureComponent {
       handleUpdate: this.handleUpdate,
     };
     return (
-      <Fragment>
+      <Fragment key="knowledge">
         <Card bordered={false}>
           <div className={styles.tableList}>
             <div className={styles.tableListForm}>{this.renderForm()}</div>

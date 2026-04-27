@@ -67,6 +67,7 @@ export default (props) => {
     if (ruleInfo && !ruleInfo.error) {
       let tableData = dataSource?.data?.map((item) => {
         item.info = ruleInfo?.[item.id] || {};
+        item.infoLoaded = true;
         return item;
       });
       dataSource.data = tableData;
@@ -245,6 +246,15 @@ export default (props) => {
     return dataNew;
   };
 
+  const renderRuleStatus = (record) => {
+    if (!record?.infoLoaded) {
+      return <span style={{ width: 14, height: 14, display: "inline-block" }} />;
+    }
+    return (
+      <HealthStatusCircle status={RuleStautsColor[record.info?.status] || "gray"} />
+    );
+  };
+
   const columns = [
     {
       title: formatMessage({ id: "alert.rule.table.columnns.category" }),
@@ -272,7 +282,7 @@ export default (props) => {
             to={`/alerting/rule/${record.id}`}
             style={{ display: "flex", alignItems: "center", gap: 5 }}
           >
-            <HealthStatusCircle status={RuleStautsColor[record.info?.status]} />
+            {renderRuleStatus(record)}
             <span>{text}</span>
           </Link>
         );
@@ -421,8 +431,9 @@ export default (props) => {
           getExtra: (props) => [
             hasAuthority("alerting.rule:all")
               ? [
-                  <>
+                  <Fragment key="rule-import-export">
                     <Button
+                      key="rule-import"
                       type="primary"
                       icon="upload"
                       onClick={() => {
@@ -467,8 +478,9 @@ export default (props) => {
                         },
                       ]}
                     />
-                  </>,
+                  </Fragment>,
                   <Button
+                    key="rule-create"
                     type="primary"
                     icon="plus"
                     onClick={() => router.push(`/alerting/rule/new`)}
@@ -484,6 +496,7 @@ export default (props) => {
             hasAuthority("alerting.rule:all")
               ? [
                   <Button
+                    key="rule-enable"
                     type="primary"
                     icon="check-circle"
                     onClick={() => {
@@ -496,6 +509,7 @@ export default (props) => {
                     {formatMessage({ id: "form.button.enable" })}
                   </Button>,
                   <Button
+                    key="rule-disable"
                     type="danger"
                     icon="stop"
                     onClick={() => {
@@ -508,6 +522,7 @@ export default (props) => {
                     {formatMessage({ id: "form.button.disable" })}
                   </Button>,
                   <Button
+                    key="rule-export"
                     type="primary"
                     icon="download"
                     onClick={() => {
@@ -517,6 +532,7 @@ export default (props) => {
                     {formatMessage({ id: "form.button.export" })}
                   </Button>,
                   <Button
+                    key="rule-delete"
                     type="danger"
                     icon="delete"
                     onClick={() => {

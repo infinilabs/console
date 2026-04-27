@@ -32,7 +32,7 @@ import SearchSelectFacet from "../search_select_facet";
 import { FilteredTags } from "../filtered_tags";
 import Sorter from "@/components/infini/search/sort/sort";
 
-const { Search } = Input;
+import SearchInput from "@/components/infini/SearchInput";
 const InputGroup = Input.Group;
 const Option = Select.Option;
 const filterWidth = 120;
@@ -292,7 +292,7 @@ const Indices = (props) => {
                   open={searchOpen}
                   onDropdownVisibleChange={setSearchOpen}
                 >
-                  <Search
+                  <SearchInput
                     placeholder="Type keyword to search"
                     enterButton="Search"
                     onSearch={(value) => {

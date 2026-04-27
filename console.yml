@@ -1,4 +1,4 @@
-#env:
+# env:
 #  INFINI_CONSOLE_ENDPOINT: "http://127.0.0.1:9000"
 #  INGEST_CLUSTER_ENDPOINT: "https://127.0.0.1:9200"
 #  INGEST_CLUSTER_CREDENTIAL_ID: chjkp9dath21f1ae9tq0
@@ -6,7 +6,7 @@
 #  DISCORD_WEBHOOK_ENDPOINT:
 #  DINGTALK_WEBHOOK_ENDPOINT:
 #  WECOM_WEBHOOK_ENDPOINT:
-#  FEISHU_WEBHOOK_ENDPOINT:
+#  FEISHU_WEBHOOK_ENDPOINT: https://open.feishu.cn/open-apis/bot/v2/hook/
 
 
 # must in major config file
@@ -24,6 +24,10 @@ configs:
     skip_insecure_verify: false
 web:
   enabled: true
+  tls:
+    enabled: true
+    skip_insecure_verify: true
+    default_domain: "localhost:9000"
   embedding_api: true
   # base_path: /console
   security:

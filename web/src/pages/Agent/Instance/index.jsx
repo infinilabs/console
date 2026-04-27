@@ -43,10 +43,15 @@ import AutoEnroll from "./components/AutoEnroll";
 import { sorter } from "@/utils/utils";
 import { HealthStatusView } from "@/components/infini/health_status_view";
 import { isNumber } from "lodash";
-
-const { Search } = Input;
+import SearchInput from "@/components/infini/SearchInput";
 
 const AgentList = (props) => {
+  const renderWrapCell = (text) => (
+    <div style={{ minWidth: 0, whiteSpace: "normal", wordBreak: "break-all" }}>
+      {text}
+    </div>
+  );
+
   const [queryParams, setQueryParams] = React.useState({
     size: 20,
   });
@@ -94,22 +99,30 @@ const AgentList = (props) => {
   const columns = useMemo(
     () => [
       {
-        title: "Name",
+        title: formatMessage({ id: "gateway.instance.column.name" }),
+        width: 180,
         dataIndex: "name",
+        render: (text) => renderWrapCell(text),
         sorter: (a, b) => sorter.string(a, b, "name"),
       },
       {
-        title: "Endpoint",
+        title: formatMessage({ id: "gateway.instance.column.endpoint" }),
+        width: 220,
         dataIndex: "endpoint",
+        render: (text) => renderWrapCell(text),
         sorter: (a, b) => sorter.string(a, b, "endpoint"),
       },
       {
-        title: "Status",
+        title: formatMessage({ id: "gateway.instance.column.status" }),
         width: 120,
         dataIndex: "status",
         render: (text, record) => {
           const status = instanceStatus[record.id]?.system ? "online" : "N/A";
-          return <HealthStatusView status={status} label={text} />;
+          const label =
+            text === "online" || text === "Online"
+              ? formatMessage({ id: "gateway.instance.status.online" })
+              : text;
+          return <HealthStatusView status={status} label={label} />;
         },
         sorter: (a, b) => {
           const status1 = instanceStatus[a.id]?.system ? 1 : 0;
@@ -118,7 +131,7 @@ const AgentList = (props) => {
         },
       },
       {
-        title: "CPU",
+        title: formatMessage({ id: "gateway.instance.column.cpu" }),
         width: 100,
         render: (text, record) => {
           return instanceStatus[record.id]?.system?.cpu ||
@@ -140,7 +153,7 @@ const AgentList = (props) => {
         },
       },
       {
-        title: "Memory",
+        title: formatMessage({ id: "gateway.instance.column.memory" }),
         width: 130,
         render: (text, record) => {
           if (!instanceStatus[record.id]?.system) {
@@ -162,7 +175,7 @@ const AgentList = (props) => {
         },
       },
       {
-        title: "Uptime",
+        title: formatMessage({ id: "gateway.instance.column.uptime" }),
         width: 130,
         render: (text, record) => {
           if (!instanceStatus[record.id]?.system) {
@@ -345,7 +358,11 @@ const AgentList = (props) => {
       if (delInstId == record.id) {
         return null;
       }
-      return <AgentRowDetail agentID={record.id} t={queryParams.t} />;
+      return (
+        <div style={{ width: 0, minWidth: "100%", maxWidth: "100%", overflow: "hidden" }}>
+          <AgentRowDetail agentID={record.id} t={queryParams.t} />
+        </div>
+      );
     },
     [queryParams.t, delInstId]
   );
@@ -422,10 +439,12 @@ const AgentList = (props) => {
           }}
         >
           <div style={{ maxWidth: 450, flex: "1 1 auto" }}>
-            <Search
+            <SearchInput
               allowClear
-              placeholder="Type keyword to search"
-              enterButton="Search"
+              placeholder={formatMessage({
+                id: "system.security.search.placeholder",
+              })}
+              enterButton={formatMessage({ id: "form.button.search" })}
               onSearch={(value) => {
                 onSearchClick(value);
               }}
@@ -497,6 +516,7 @@ const AgentList = (props) => {
           bordered
           dataSource={instances}
           rowKey={"id"}
+          tableLayout="fixed"
           pagination={{
             size: "small",
             pageSize: queryParams.size,
@@ -508,7 +528,6 @@ const AgentList = (props) => {
           columns={columns}
           onChange={handleTableChange}
           expandedRowRender={expandedRowRender}
-          scroll={{x: 'max-content' }}
         />
         <Drawer
           title={`Task Settings(${editState.editItem?.remote_ip})`}
@@ -728,11 +747,11 @@ const DiscoverAgent = ({ addSuccessCb }) => {
   }, []);
   const columns = [
     {
-      title: "Agent IP",
+      title: formatMessage({ id: "agent.instance.column.agent_ip" }),
       dataIndex: "remote_ip",
     },
     {
-      title: "Version",
+      title: formatMessage({ id: "overview.column.version" }),
       dataIndex: "version",
     },
     {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Tooltip, Progress, Icon, Spin } from "antd";
 import { formatter } from "@/utils/format";
+import { formatMessage } from "umi/locale";
 import { HealthStatusView } from "@/components/infini/health_status_view";
 import { StatusBlockGroup } from "@/components/infini/status_block";
 import CommonTable from "../../components/CommonTable";
@@ -11,7 +12,7 @@ export default (props) => {
       {...props}
       columns={[
         {
-          title: "Name",
+          title: formatMessage({ id: "overview.column.name" }),
           dataIndex: "name",
           render: (text, record) => {
             return (
@@ -51,7 +52,7 @@ export default (props) => {
           },
         },
         {
-          title: "Status",
+          title: formatMessage({ id: "overview.column.status" }),
           dataIndex: "status",
           render: (text, record) => {
             return (
@@ -85,21 +86,21 @@ export default (props) => {
           },
         },
         {
-          title: "Indices",
+          title: formatMessage({ id: "overview.column.indices" }),
           dataIndex: "Indices",
           render: (text, record) => {
             return record.summary?.shard_info?.indices_count || 0;
           },
         },
         {
-          title: "Shards",
+          title: formatMessage({ id: "overview.column.shards" }),
           dataIndex: "Shards",
           render: (text, record) => {
             return record.summary?.shard_info?.shard_count || 0;
           },
         },
         {
-          title: "Docs",
+          title: formatMessage({ id: "overview.column.docs" }),
           dataIndex: "Docs",
           render: (text, record) => {
             return (
@@ -114,7 +115,7 @@ export default (props) => {
           },
         },
         {
-          title: "Disk Usage",
+          title: formatMessage({ id: "overview.column.disk_usage" }),
           dataIndex: "DiskUsage",
           render: (text, record) => {
             return (
@@ -141,7 +142,7 @@ export default (props) => {
           },
         },
         {
-          title: "JVM Heap",
+          title: formatMessage({ id: "overview.column.jvm_heap" }),
           dataIndex: "JVMHeap",
           render: (text, record) => {
             return (

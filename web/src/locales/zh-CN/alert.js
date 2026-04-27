@@ -290,6 +290,7 @@ export default {
   "alert.message.priority.info": "P4(Info)",
   "alert.message.priority.ignored": "Ignored",
   "alert.message.priority.": "Undefined",
+  "alert.message.priority.undefined": "未定义",
 
   "alert.message.table.created": "触发时间",
   "alert.message.table.priority": "告警级别",
@@ -357,6 +358,12 @@ export default {
   "alert.channel.form.email.template.body": "正文",
   "alert.channel.form.email.template.body.required": "请输入正文！",
   "alert.channel.form.email.send.test": "发送测试邮件",
+  "alert.channel.enable.tip.email_incomplete":
+    "启用邮件渠道前，请先配置邮件服务器和至少一个收件人。",
+  "alert.channel.enable.tip.email_server":
+    "启用邮件渠道前，请先配置邮件服务器。",
+  "alert.channel.enable.tip.email_recipients":
+    "启用邮件渠道前，请先配置至少一个收件人。",
 
   "alert.channel.empty": "没有告警渠道？",
   "alert.channel.export-import.label": "告警渠道",

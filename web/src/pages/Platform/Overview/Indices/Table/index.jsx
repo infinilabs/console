@@ -14,7 +14,7 @@ export default (props) => {
       {...props}
       columns={[
         {
-          title: "Name",
+          title: formatMessage({ id: "overview.column.name" }),
           dataIndex: "name",
           render: (text, record) => {
             return (
@@ -44,7 +44,7 @@ export default (props) => {
           },
         },
         {
-          title: "Health",
+          title: formatMessage({ id: "overview.column.health" }),
           dataIndex: "health_status",
           render: (text, record) => {
             return (
@@ -80,21 +80,21 @@ export default (props) => {
           },
         },
         {
-          title: "Status",
+          title: formatMessage({ id: "overview.column.status" }),
           dataIndex: "index_status",
           render: (text, record) => {
             return record.metadata?.labels?.state ?? "N/A";
           },
         },
         {
-          title: "Store Size",
+          title: formatMessage({ id: "overview.column.store_size" }),
           dataIndex: "store_size",
           render: (text, record) => {
             return record.summary?.index_info?.store_size?.toUpperCase() || "N/A";
           },
         },
         {
-          title: "Shards",
+          title: formatMessage({ id: "overview.column.shards" }),
           dataIndex: "Shards",
           render: (text, record) => {
             return (
@@ -120,7 +120,7 @@ export default (props) => {
           },
         },
         {
-          title: "Docs",
+          title: formatMessage({ id: "overview.column.docs" }),
           dataIndex: "Docs",
           render: (text, record) => {
             return (

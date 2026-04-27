@@ -12,11 +12,20 @@ export default ({ children, location }) => {
   const [health, setHealth] = useState()
   const [visible, setVisible] = useState(false)
   const intervalRef = useRef(null);
+  const isMountedRef = useRef(false);
+  const fetchSeqRef = useRef(0);
 
   const fetchHealth = async () => {
+    const fetchSeq = ++fetchSeqRef.current;
     try {
+        if (!isMountedRef.current) {
+          return;
+        }
         setModalLoading(true)
         const res = await getHealth();
+        if (!isMountedRef.current || fetchSeq !== fetchSeqRef.current) {
+          return;
+        }
         if(res instanceof Error && res.name === "ERR_CONNECTION_REFUSED"){
           setHealth({})
           setModalLoading(false)
@@ -28,6 +37,9 @@ export default ({ children, location }) => {
           router.push("/guide/initialization");
         }
     } catch (error) {
+        if (!isMountedRef.current || fetchSeq !== fetchSeqRef.current) {
+          return;
+        }
         setModalLoading(false)
         console.log(error);
         message.error('Check servies health failed!')
@@ -44,29 +56,37 @@ export default ({ children, location }) => {
   }
 
   useEffect(() => {
+    fetchSeqRef.current += 1;
     if (!location?.pathname || location?.pathname.includes('/guide/initialization')) {
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
+        intervalRef.current = null;
       }
       setHealth()
+      setVisible(false)
       return;
     }
-    if (!health) {
+    fetchHealth()
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+    }
+    intervalRef.current = setInterval(() => {
       fetchHealth()
+    }, 5 * 60 * 1000)
+    return () => {
+      fetchSeqRef.current += 1;
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
+        intervalRef.current = null;
       }
-      intervalRef.current = setInterval(() => {
-        fetchHealth(true)
-      }, [5*60*1000])
     }
-  }, [location?.pathname, JSON.stringify(health)])
+  }, [location?.pathname])
 
   useEffect(() => {
     if (health) {
       checkStatus(health)
     }
-  }, [JSON.stringify(health)])
+  }, [health])
 
   useEffect(() => {
     if (health?.setup_required) {
@@ -75,12 +95,16 @@ export default ({ children, location }) => {
   }, [health?.setup_required])
 
   useEffect(() => {
+    isMountedRef.current = true;
     window.setGlobalHealth = setHealth;
     return () => {
+      isMountedRef.current = false;
+      fetchSeqRef.current += 1;
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
-        window.setGlobalHealth = null;
+        intervalRef.current = null;
       }
+      window.setGlobalHealth = null;
     }
   }, [])
 
@@ -100,7 +124,7 @@ export default ({ children, location }) => {
       {children}
       <Modal
           visible={visible}
-          wrapClassName={styles.systemHealth}
+          className={styles.systemHealth}
           closable={false}
           footer={null}
         >

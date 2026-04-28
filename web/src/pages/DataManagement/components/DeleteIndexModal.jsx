@@ -1,5 +1,6 @@
 import { Modal, Checkbox, Tag, Badge, Alert, Icon, Tooltip } from "antd";
 import { useCallback, useState, forwardRef, useMemo } from "react";
+import { FormattedMessage } from 'react-intl';
 import useFetch from "@/lib/hooks/use_fetch";
 import request from "@/utils/request";
 import { router } from "umi";
@@ -44,12 +45,12 @@ export default (props) => {
       okButtonProps={{ disabled: !props.deleteIndexConfirm }}
     >
       <p>
-        {formatMessage(
-          { id: "indices.delete.modal.cluster" },
-          {
-            cluster: selectedClusterName || selectedClusterId || "-",
-          }
-        )}
+        <FormattedMessage
+          id="indices.delete.modal.cluster"
+          values={{
+            cluster: <strong style={{ color: '#fa541c' }}>{selectedClusterName || selectedClusterId || "-"}</strong>
+          }}
+        />
         {selectedClusterId && selectedClusterName !== selectedClusterId ? (
           <>
             {" "}
@@ -103,7 +104,7 @@ export default (props) => {
           </p>
         </p>
       ) : (
-        <p>
+        <p style={{ color: "red" }}>
           {formatMessage({ id: "indices.delete.modal.description" })}
         </p>
       )}

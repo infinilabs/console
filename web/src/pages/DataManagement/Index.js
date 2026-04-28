@@ -289,6 +289,9 @@ class Index extends PureComponent {
   componentDidUpdate(oldProps, newState, snapshot) {
     if (oldProps.clusterID != this.props.clusterID) {
       this.fetchData();
+      this.setState({
+        selectedRowKeys: [],
+      });
     }
   }
 
@@ -330,6 +333,7 @@ class Index extends PureComponent {
         message.success(formatMessage({ id: "app.message.delete.success" }));
         that.setState({
           deleteIndexVisible: false,
+          selectedRowKeys: [], 
         });
       } else {
         message.error(formatMessage({ id: "app.message.delete.failed" }));

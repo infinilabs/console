@@ -1,4 +1,4 @@
-import { Form, Input, Select, Button, Drawer, Tag, Icon } from "antd";
+import { Spin, Form, Input, Select, Button, Drawer, Tag, Icon } from "antd";
 import { formatMessage } from "umi/locale";
 import {
   forwardRef,
@@ -94,63 +94,65 @@ export default Form.create()((props) => {
   }, [record?.type]);
 
   return (
-    <Form {...formItemLayout} colon={false} loading={true}>
-      <Form.Item
-        label={formatMessage({
-          id: "credential.manage.form.type",
-        })}
-      >
-        {getFieldDecorator("type", {
-          initialValue: record?.type,
-          rules: [
-            {
-              required: true,
-              message: "Please select type!",
-            },
-          ],
-        })(
-          <Select onChange={(value) => setType(value)}>
-            {TYPES.map((item) => (
-              <Select.Option value={item.type}>{item.name}</Select.Option>
-            ))}
-          </Select>
-        )}
-      </Form.Item>
-      <Form.Item
-        label={formatMessage({
-          id: "credential.manage.form.name",
-        })}
-      >
-        {getFieldDecorator("name", {
-          initialValue: record?.name,
-          rules: [
-            {
-              required: true,
-              message: "Please input name!",
-            },
-          ],
-        })(<Input />)}
-      </Form.Item>
-      {renderAuth(type)}
-      <Form.Item
-        label={formatMessage({
-          id: "credential.manage.form.tags",
-        })}
-      >
-        {getFieldDecorator("tags", {
-          initialValue: record?.tags || [],
-        })(<Tags />)}
-      </Form.Item>
-      <Form.Item label=" ">
-        <div style={{ textAlign: "right" }}>
-          <Button type="primary" onClick={handleSubmit}>
-            {formatMessage({
-              id: record ? "form.button.save" : "form.button.submit",
-            })}
-          </Button>
-        </div>
-      </Form.Item>
-    </Form>
+    <Spin spinning={loading}>
+      <Form {...formItemLayout} colon={false}>
+        <Form.Item 
+          label={formatMessage({
+            id: "credential.manage.form.type",
+          })}
+        >
+          {getFieldDecorator("type", {
+            initialValue: record?.type,
+            rules: [
+              {
+                required: true,
+                message: "Please select type!",
+              },
+            ],
+          })(
+            <Select key={`cred-${record?.type}`} onChange={(value) => setType(value)}>
+              {TYPES.map((item) => (
+                <Select.Option key={`opt-${item.type}`} value={item.type}>{item.name}</Select.Option>
+              ))}
+            </Select>
+          )}
+        </Form.Item>
+        <Form.Item
+          label={formatMessage({
+            id: "credential.manage.form.name",
+          })}
+        >
+          {getFieldDecorator("name", {
+            initialValue: record?.name,
+            rules: [
+              {
+                required: true,
+                message: "Please input name!",
+              },
+            ],
+          })(<Input />)}
+        </Form.Item>
+        {renderAuth(type)}
+        <Form.Item
+          label={formatMessage({
+            id: "credential.manage.form.tags",
+          })}
+        >
+          {getFieldDecorator("tags", {
+            initialValue: record?.tags || [],
+          })(<Tags />)}
+        </Form.Item>
+        <Form.Item label=" ">
+          <div style={{ textAlign: "right" }}>
+            <Button type="primary" onClick={handleSubmit}>
+              {formatMessage({
+                id: record ? "form.button.save" : "form.button.submit",
+              })}
+            </Button>
+          </div>
+        </Form.Item>
+      </Form>
+    </Spin>
   );
 });
 

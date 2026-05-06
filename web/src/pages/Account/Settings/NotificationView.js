@@ -32,7 +32,7 @@ class NotificationView extends Component {
 
   render() {
     return (
-      <Fragment>
+      <Fragment key="notificationView">
         <List
           itemLayout="horizontal"
           dataSource={this.getData()}

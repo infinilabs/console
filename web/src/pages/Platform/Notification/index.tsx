@@ -36,9 +36,9 @@ import { hasAuthority } from "@/utils/authority";
 import "./index.scss";
 import _ from "lodash";
 import Markdown from "@/components/Markdown";
+import SearchInput from "@/components/infini/SearchInput";
 
 const { TabPane } = Tabs;
-const { Search } = Input;
 const { Option } = Select;
 
 const Index = (props) => {
@@ -245,7 +245,7 @@ const Index = (props) => {
         }}
       >
         <div style={{ width: 500 }}>
-          <Search
+          <SearchInput
             allowClear
             placeholder="Type keyword to search"
             enterButton="Search"

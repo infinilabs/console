@@ -30,6 +30,33 @@ const steps = [
   },
 ];
 
+const parseResponsePayload = async (response) => {
+  if (!response || typeof response.text !== "function") {
+    return null;
+  }
+
+  const text = await response.text();
+  if (!text) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    const htmlIndex = text.indexOf("<!DOCTYPE");
+    if (htmlIndex > -1) {
+      const jsonText = text.slice(0, htmlIndex).trim();
+      if (jsonText) {
+        try {
+          return JSON.parse(jsonText);
+        } catch (e) {}
+      }
+    }
+  }
+
+  return null;
+};
+
 const NewStep = ({ current, changeStep, history }) => {
   const formRef = useRef();
   const [instanceConfig, setInstanceConfig] = useState({});
@@ -107,10 +134,14 @@ const NewStep = ({ current, changeStep, history }) => {
     const res = await request(`/instance`, {
       method: "POST",
       body: newVals,
-    });
-    if (res && !res.error) {
-      return true;
-    } else {
+    }, true);
+    if (res?.ok) {
+      const payload = await parseResponsePayload(res);
+      if (payload && !payload.error) {
+        return true;
+      }
+    }
+    {
       setIsLoading(false);
       return false;
     }
@@ -163,10 +194,9 @@ const NewStep = ({ current, changeStep, history }) => {
     <PageHeaderWrapper>
       <Card className={styles.steps}>
         <div className={styles.header}>
-          {/* {formatMessage({
-              id: "gateway.instance.regist",
-          })} */}
-          Agent Registration
+          {formatMessage({
+            id: "agent.instance.regist",
+          })}
           <Link to={"/resource/agent"}>
             <Button type="primary">
               {formatMessage({

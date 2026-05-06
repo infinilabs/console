@@ -21,7 +21,7 @@ import { hasAuthority } from "@/utils/authority";
 import IconText from "@/components/infini/IconText";
 import QueueTypeIcon from "./QueueTypeIcon";
 
-const { Search } = Input;
+import SearchInput from "@/components/infini/SearchInput";
 
 export default (props) => {
   const {
@@ -223,7 +223,7 @@ export default (props) => {
         }}
       >
         <div style={{ maxWidth: 500, flex: "1 1 auto" }}>
-          <Search
+          <SearchInput
             allowClear
             placeholder="Type keyword to search"
             enterButton="Search"

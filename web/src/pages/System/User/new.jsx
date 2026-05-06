@@ -28,6 +28,7 @@ export default Form.create({ name: "user_form_new" })((props) => {
     <div>
       <UserForm
         {...props}
+        mode="new"
         onSaveClick={onSaveClick}
         title="Create User"
         createResult={createResult}

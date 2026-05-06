@@ -43,11 +43,11 @@ func init() {
 	api.HandleAPIMethod(api.GET, "/elasticsearch/:id/queue_metrics", clusterAPI.RequireClusterPermission(clusterAPI.HandleQueueMetricsAction))
 	api.HandleAPIMethod(api.GET, "/elasticsearch/:id/storage_metrics", clusterAPI.RequireClusterPermission(clusterAPI.HandleGetStorageMetricAction))
 
-	api.HandleAPIMethod(api.POST, "/elasticsearch/", clusterAPI.RequirePermission(clusterAPI.HandleCreateClusterAction, enum.PermissionElasticsearchClusterWrite))
+	api.HandleAPIMethod(api.POST, "/elasticsearch/", clusterAPI.RequireSecureTransport(clusterAPI.RequireReplayProtection(clusterAPI.RequirePermission(clusterAPI.HandleCreateClusterAction, enum.PermissionElasticsearchClusterWrite))))
 	api.HandleAPIMethod(api.GET, "/elasticsearch/indices", clusterAPI.RequireLogin(clusterAPI.ListIndex))
 	api.HandleAPIMethod(api.GET, "/elasticsearch/status", clusterAPI.RequireLogin(clusterAPI.GetClusterStatusAction))
 	api.HandleAPIMethod(api.GET, "/elasticsearch/:id", clusterAPI.RequireClusterPermission(clusterAPI.RequirePermission(clusterAPI.HandleGetClusterAction, enum.PermissionElasticsearchClusterRead)))
-	api.HandleAPIMethod(api.PUT, "/elasticsearch/:id", clusterAPI.RequireClusterPermission(clusterAPI.RequirePermission(clusterAPI.HandleUpdateClusterAction, enum.PermissionElasticsearchClusterWrite)))
+	api.HandleAPIMethod(api.PUT, "/elasticsearch/:id", clusterAPI.RequireSecureTransport(clusterAPI.RequireReplayProtection(clusterAPI.RequireClusterPermission(clusterAPI.RequirePermission(clusterAPI.HandleUpdateClusterAction, enum.PermissionElasticsearchClusterWrite)))))
 	api.HandleAPIMethod(api.DELETE, "/elasticsearch/:id", clusterAPI.RequireClusterPermission(clusterAPI.RequirePermission(clusterAPI.HandleDeleteClusterAction, enum.PermissionElasticsearchClusterWrite)))
 	api.HandleAPIMethod(api.GET, "/elasticsearch/_search", clusterAPI.RequirePermission(clusterAPI.HandleSearchClusterAction, enum.PermissionElasticsearchClusterRead))
 	api.HandleAPIMethod(api.POST, "/elasticsearch/_search", clusterAPI.RequirePermission(clusterAPI.HandleSearchClusterAction, enum.PermissionElasticsearchClusterRead))

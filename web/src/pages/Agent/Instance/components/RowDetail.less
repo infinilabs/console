@@ -28,10 +28,26 @@
   overflow: hidden;
 }
 
-.cellWrap {
+.cmdlineWrap {
   display: block;
   width: 100%;
-  min-width: 0;
   white-space: normal;
   word-break: break-all;
+}
+
+.cellWrap {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  a, span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
 }

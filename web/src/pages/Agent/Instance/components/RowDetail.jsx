@@ -10,6 +10,7 @@ import {
   message,
   Tabs,
   Icon,
+  Tooltip,
 } from "antd";
 import { useMemo, useState } from "react";
 import { Link } from "umi";
@@ -145,52 +146,51 @@ export const AgentRowDetail = ({ agentID, t }) => {
       },
       {
         title: formatMessage({ id: "overview.column.cluster" }),
-        width: 100,
+        width: 160,
         dataIndex: "cluster_info.cluster_name",
         render: (text, record) => {
-          return <div className={styles.cellWrap}>
-            <div style={{
-              display: 'inline-block',
-              marginRight: '3px',
-              position: 'relative',
-              top: -2
-            }}>
-              <SearchEngineIcon
-                distribution={record.cluster_info.version.distribution}
-                width="16px"
-                height="16px"
-              />
-            </div> 
-            {record.cluster_id ? (
-              <Link to={`/cluster/monitor/elasticsearch/${record.cluster_id}`}>
-                {text}
-              </Link>
-               ) : (
-                 text
-                )}
-          </div>
+          const content = record.cluster_id ? (
+            <Link to={`/cluster/monitor/elasticsearch/${record.cluster_id}`}>
+              {text}
+            </Link>
+          ) : text;
+
+          return (
+            <Tooltip title={text}>
+              <div className={styles.cellWrap}>
+                <div style={{ display: 'inline-block', marginRight: '3px', position: 'relative', top: -2, flexShrink: 0 }}>
+                  <SearchEngineIcon
+                    distribution={record.cluster_info.version.distribution}
+                    width="16px"
+                    height="16px"
+                  />
+                </div>
+                {content}
+              </div>
+            </Tooltip>
+          );
         },
       },
       {
         title: formatMessage({ id: "overview.column.node" }),
-        width: 100,
+        width: 160,
         dataIndex: "node_info.name",
         render: (text, record) => {
           return record.cluster_id ? (
-            <div className={styles.cellWrap}>
-              <IconText
-                icon={<Icon type="database" />}
-                text={
-                  <Link
-                    to={`/cluster/monitor/${record.cluster_id}/nodes/${record.id}?_g={"cluster_name":"${record.cluster_info.cluster_name}","node_name":"${text}"}`}
-                  >
-                    {text}
-                  </Link>
-                }
-              />
-            </div>
+            <Tooltip title={text}>
+              <div className={styles.cellWrap}>
+                <Icon type="database" style={{ marginRight: 4, flexShrink: 0 }} />
+                <Link
+                  to={`/cluster/monitor/${record.cluster_id}/nodes/${record.id}?_g={"cluster_name":"${record.cluster_info.cluster_name}","node_name":"${text}"}`}
+                >
+                  {text}
+                </Link>
+              </div>
+            </Tooltip>
           ) : (
-            <div className={styles.cellWrap}>{text}</div>
+            <Tooltip title={text}>
+              <div className={styles.cellWrap}>{text}</div>
+            </Tooltip>
           );
         },
       },

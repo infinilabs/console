@@ -15,6 +15,7 @@ import {
   Icon,
   Dropdown,
   Menu,
+  Tooltip,
 } from "antd";
 import { formatMessage } from "umi/locale";
 import useFetch from "@/lib/hooks/use_fetch";
@@ -44,7 +45,6 @@ import Import from "../components/Import";
 import Export from "../components/Export";
 import DiscordWithColor from "@/components/Icons/DiscordWithColor";
 
-const { Search } = Input;
 const { Option } = Select;
 
 export const CHANNELS = [
@@ -175,11 +175,32 @@ const Index = (props) => {
     } else {
       console.log("operate failed,", res);
       message.error(
-        formatMessage({
-          id: "app.message.operate.failed",
-        })
+        res?.message ||
+          res?.error ||
+          formatMessage({
+            id: "app.message.operate.failed",
+          })
       );
     }
+  }, []);
+
+  const getChannelEnableHint = useCallback((record) => {
+    const channelType = record?.sub_type || record?.type;
+    if (channelType !== "email") {
+      return "";
+    }
+    const hasServer = !!record?.email?.server_id;
+    const hasRecipients = (record?.email?.recipients?.to || []).length > 0;
+    if (!hasServer && !hasRecipients) {
+      return formatMessage({ id: "alert.channel.enable.tip.email_incomplete" });
+    }
+    if (!hasServer) {
+      return formatMessage({ id: "alert.channel.enable.tip.email_server" });
+    }
+    if (!hasRecipients) {
+      return formatMessage({ id: "alert.channel.enable.tip.email_recipients" });
+    }
+    return "";
   }, []);
 
   const defaultSelectedRows = {
@@ -228,16 +249,25 @@ const Index = (props) => {
     {
       title: formatMessage({ id: "alert.channel.table.columns.enable" }),
       dataIndex: "enabled",
-      render: (value, record) => (
-        <Switch
-          disabled={hasAuthority("alerting.rule:all") ? false : true}
-          checked={value}
-          size={"small"}
-          onChange={(checked) => {
-            onEnableClick([record.id], checked ? "enable" : "disable");
-          }}
-        />
-      ),
+      render: (value, record) => {
+        const enableHint = getChannelEnableHint(record);
+        return (
+          <Tooltip title={!value ? enableHint : ""}>
+            <Switch
+              disabled={hasAuthority("alerting.rule:all") ? false : true}
+              checked={value}
+              size={"small"}
+              onChange={(checked) => {
+                if (checked && enableHint) {
+                  message.warning(enableHint);
+                  return;
+                }
+                onEnableClick([record.id], checked ? "enable" : "disable");
+              }}
+            />
+          </Tooltip>
+        );
+      },
     },
     {
       title: formatMessage({ id: "alert.message.detail.updated" }),
@@ -257,7 +287,7 @@ const Index = (props) => {
               </Link>
               <Divider key="d3" type="vertical" />
               <Popconfirm
-                title="Sure to delete?"
+                title={formatMessage({ id: "system.security.confirm.delete" })}
                 onConfirm={() => onDeleteClick([record.id])}
               >
                 <a>{formatMessage({ id: "form.button.delete" })}</a>
@@ -363,11 +393,11 @@ const Index = (props) => {
               width: 600,
             }}
           >
-            <Select
+                <Select
               allowClear
               showSearch
               style={{ width: 150 }}
-              placeholder={"webhook"}
+               placeholder="webhook"
               defaultValue={queryParams?.sub_type}
               onChange={(value) => {
                 dispatch({ type: "type", value: value });
@@ -386,18 +416,18 @@ const Index = (props) => {
               ))}
             </Select>
             <div style={{ width: 500, flex: "1 1 auto" }}>
-              <Search
-                allowClear
-                placeholder="Type keyword to search"
-                enterButton="Search"
-                defaultValue={queryParams?.keyword}
-                onSearch={(value) => {
-                  dispatch({ type: "search", value: value });
-                }}
-                onChange={(e) => {
-                  dispatch({ type: "search", value: e.currentTarget.value });
-                }}
-              />
+                <Input.Search
+                  allowClear
+                  placeholder={formatMessage({ id: "system.security.search.placeholder" })}
+                  enterButton={formatMessage({ id: "form.button.search" })}
+                  defaultValue={queryParams?.keyword}
+                  onSearch={(value) => {
+                    dispatch({ type: "search", value: value });
+                  }}
+                  onChange={(e) => {
+                    dispatch({ type: "search", value: e.currentTarget.value });
+                  }}
+                />
             </div>
           </div>
 
@@ -494,7 +524,10 @@ const Index = (props) => {
               dispatch({ type: "pageSizeChange", value: size });
             },
             showTotal: (total, range) =>
-              `${range[0]}-${range[1]} of ${total} items`,
+              formatMessage(
+                { id: "system.security.pagination.total" },
+                { start: range[0], end: range[1], total }
+              ),
           }}
           columns={columns}
           rowSelection={rowSelection}

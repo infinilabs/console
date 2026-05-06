@@ -30,10 +30,12 @@ package common
 import (
 	"bytes"
 	"fmt"
+	"infini.sh/console/model"
 	"infini.sh/console/model/alerting"
 	"infini.sh/console/service/alerting/action"
 	"infini.sh/console/service/alerting/funcs"
 	"infini.sh/framework/core/orm"
+	"infini.sh/framework/core/util"
 	"text/template"
 )
 
@@ -64,6 +66,9 @@ func PerformChannel(channel *alerting.Channel, ctx map[string]interface{}) ([]by
 			Message: string(message),
 		}
 	case alerting.ChannelEmail:
+		if channel.Email == nil {
+			return nil, fmt.Errorf("empty email channel config"), nil
+		}
 		message, err = ResolveMessage(channel.Email.Body, ctx)
 		if err != nil {
 			return nil, err, message
@@ -71,6 +76,14 @@ func PerformChannel(channel *alerting.Channel, ctx map[string]interface{}) ([]by
 		subjectBytes, err := ResolveMessage(channel.Email.Subject, ctx)
 		if err != nil {
 			return nil, err, nil
+		}
+		err = ensureEmailServerID(channel.Email)
+		if err != nil {
+			return nil, err, message
+		}
+		err = ensureEmailRecipients(channel.Email)
+		if err != nil {
+			return nil, err, message
 		}
 		act = &action.EmailAction{
 			Data:    channel.Email,
@@ -133,4 +146,67 @@ func RetrieveChannel(ch *alerting.Channel, raiseChannelEnabledErr bool) (*alerti
 		}
 	}
 	return ch, nil
+}
+
+func ensureEmailServerID(email *alerting.Email) error {
+	if email == nil {
+		return fmt.Errorf("empty email channel config")
+	}
+	if email.ServerID != "" {
+		return nil
+	}
+	serverID, err := getFallbackEmailServerID()
+	if err != nil {
+		return err
+	}
+	email.ServerID = serverID
+	return nil
+}
+
+func ensureEmailRecipients(email *alerting.Email) error {
+	if email == nil {
+		return fmt.Errorf("empty email channel config")
+	}
+	if len(email.Recipients.To) == 0 {
+		return fmt.Errorf("email channel recipients are empty, please configure at least one recipient")
+	}
+	return nil
+}
+
+func getFallbackEmailServerID() (string, error) {
+	servers, err := getEnabledEmailServers()
+	if err != nil {
+		return "", err
+	}
+	return selectFallbackEmailServerID(servers)
+}
+
+func selectFallbackEmailServerID(servers []model.EmailServer) (string, error) {
+	switch len(servers) {
+	case 0:
+		return "", fmt.Errorf("parameter server_id must not be empty and no enabled smtp server is available")
+	case 1:
+		return servers[0].ID, nil
+	default:
+		return "", fmt.Errorf("parameter server_id must not be empty and multiple enabled smtp servers were found")
+	}
+}
+
+func getEnabledEmailServers() ([]model.EmailServer, error) {
+	q := &orm.Query{
+		Size: 100,
+	}
+	q.Conds = orm.And(orm.Eq("enabled", true))
+	err, result := orm.Search(model.EmailServer{}, q)
+	if err != nil {
+		return nil, err
+	}
+	servers := make([]model.EmailServer, 0, len(result.Result))
+	for _, row := range result.Result {
+		server := model.EmailServer{}
+		buf := util.MustToJSONBytes(row)
+		util.MustFromJSONBytes(buf, &server)
+		servers = append(servers, server)
+	}
+	return servers, nil
 }

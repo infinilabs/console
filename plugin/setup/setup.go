@@ -35,7 +35,9 @@ import (
 	"net/http"
 	uri2 "net/url"
 	"path"
+	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -158,6 +160,8 @@ type SetupRequest struct {
 	BootstrapPassword  string `json:"bootstrap_password"`
 	CredentialSecret   string `json:"credential_secret"`
 	InitializeTemplate string `json:"initialize_template"`
+	PrimaryShards      int    `json:"primary_shards"`
+	AutoExpandReplicas string `json:"auto_expand_replicas"`
 }
 
 var GlobalSystemElasticsearchID = "infini_default_system_cluster"
@@ -168,6 +172,40 @@ const TemplateExists = "elasticsearch_template_exists"
 const VersionNotSupport = "unknown_cluster_version"
 
 var cfg1 elastic1.ORMConfig
+
+const defaultSetupAutoExpandReplicas = "0-1"
+
+var setupAutoExpandReplicasPattern = regexp.MustCompile(`^(false|all|\d+-\d+)$`)
+
+func resolveSetupTemplateSettings(client elastic.API, request *SetupRequest) (int, string, error) {
+	primaryShards := request.PrimaryShards
+	if primaryShards <= 0 {
+		health, err := client.ClusterHealth(context.Background())
+		if err != nil {
+			return 0, "", err
+		}
+		if health != nil {
+			if health.NumberOf_data_nodes > 0 {
+				primaryShards = health.NumberOf_data_nodes
+			} else if health.NumberOfNodes > 0 {
+				primaryShards = health.NumberOfNodes
+			}
+		}
+	}
+	if primaryShards <= 0 {
+		primaryShards = 1
+	}
+
+	autoExpandReplicas := strings.TrimSpace(request.AutoExpandReplicas)
+	if autoExpandReplicas == "" {
+		autoExpandReplicas = defaultSetupAutoExpandReplicas
+	}
+	if !setupAutoExpandReplicasPattern.MatchString(autoExpandReplicas) {
+		return 0, "", errors.Errorf("invalid auto expand replicas, expected false, all, or a range like 0-1")
+	}
+
+	return primaryShards, autoExpandReplicas, nil
+}
 
 // validate checks the Elasticsearch cluster configuration and validates the setup.
 func (module *Module) validate(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -889,6 +927,11 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 		break
 	}
 
+	primaryShards, autoExpandReplicas, err := resolveSetupTemplateSettings(elastic.GetClient(GlobalSystemElasticsearchID), request)
+	if err != nil {
+		panic(err)
+	}
+
 	dslTplFile := path.Join(baseDir, dslTplFileName)
 	if !util.FileExists(dslTplFile) {
 		panic(errors.Errorf("template file %v for setup was missing", dslTplFile))
@@ -975,6 +1018,10 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 			return w.Write([]byte(request.BootstrapUsername))
 		case "SETUP_DOC_TYPE":
 			return w.Write([]byte(docType))
+		case "SETUP_PRIMARY_SHARDS":
+			return w.Write([]byte(strconv.Itoa(primaryShards)))
+		case "SETUP_AUTO_EXPAND_REPLICAS":
+			return w.Write([]byte(autoExpandReplicas))
 		}
 		//ignore unresolved variable
 		return w.Write([]byte("$[[" + tag + "]]"))

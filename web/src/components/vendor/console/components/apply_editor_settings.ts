@@ -21,6 +21,9 @@ import { DevToolsSettings } from '../services';
 import { CoreEditor } from '../entities/core_editor';
 import { CustomAceEditor } from '../modules/legacy_core_editor/create_readonly';
 
+const CONSOLE_FONT_FAMILY =
+  '"JetBrains Mono","SFMono-Regular","Cascadia Code","Fira Code",Consolas,"Liberation Mono",Menlo,monospace';
+
 export function applyCurrentSettings(
   editor: CoreEditor | CustomAceEditor,
   settings: DevToolsSettings
@@ -34,4 +37,10 @@ export function applyCurrentSettings(
     (editor as CustomAceEditor).getSession().setUseWrapMode(settings.wrapMode);
     (editor as CustomAceEditor).container.style.fontSize = settings.fontSize + 'px';
   }
+
+  const container =
+    typeof (editor as any).getContainer === 'function'
+      ? (editor as CoreEditor).getContainer()
+      : (editor as CustomAceEditor).container;
+  container.style.fontFamily = CONSOLE_FONT_FAMILY;
 }

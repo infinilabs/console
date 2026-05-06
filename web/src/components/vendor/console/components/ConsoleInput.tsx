@@ -28,6 +28,10 @@ import { applyCurrentSettings } from "./apply_editor_settings";
 import { subscribeResizeChecker } from "./subscribe_console_resize_checker";
 import { formatMessage } from "umi/locale";
 
+const isMacPlatform = () =>
+  typeof window !== "undefined" &&
+  /(Mac|iPhone|iPad|iPod)/i.test(window.navigator.platform);
+
 const abs: CSSProperties = {
   position: "absolute",
   top: "0",
@@ -47,6 +51,10 @@ const abs: CSSProperties = {
 const SendRequestButton = (props: any) => {
   const sendCurrentRequestToES = useSendCurrentRequestToES();
   const saveCurrentTextObject = useSaveCurrentTextObject();
+  const sendShortcutLabel = isMacPlatform() ? "Cmd+Enter" : "Ctrl+Enter";
+  const tooltipContent = `${formatMessage({
+    id: "console.SendRequestButton.ToolTip",
+  })} (${sendShortcutLabel})`;
 
   const { saveCurrentTextObjectRef } = props;
   useEffect(() => {
@@ -54,12 +62,10 @@ const SendRequestButton = (props: any) => {
   }, [saveCurrentTextObjectRef]);
 
   return (
-    <EuiToolTip
-      content={formatMessage({ id: "console.SendRequestButton.ToolTip" })}
-    >
+    <EuiToolTip content={tooltipContent}>
       <button
         data-test-subj="sendRequestButton"
-        aria-label={"Click to send request"}
+        aria-label={tooltipContent}
         className="conApp__editorActionButton conApp__editorActionButton--success"
         onClick={sendCurrentRequestToES}
       >
@@ -137,7 +143,7 @@ const ConsoleInputUI = ({
     senseEditor.paneKey = paneKey;
     senseEditor.update(initialText || DEFAULT_INPUT_VALUE);
     applyCurrentSettings(senseEditor!.getCoreEditor(), {
-      fontSize: 12,
+      fontSize: 13,
       wrapMode: true,
     });
 

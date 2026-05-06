@@ -9,6 +9,7 @@ import { Icon, message } from "antd";
 import SearchInfo from "../SearchInfo";
 import Histogram from "../Histogram";
 import ViewLayout from "../ViewLayout";
+import { formatMessage } from "umi/locale";
 
 export interface IQueries {
   clusterId: string;
@@ -33,6 +34,7 @@ export interface IRecord {
 
 export interface IProps {
   queries: IQueries;
+  exportHits?: any[];
   loading: boolean;
   isEmpty: boolean;
   mode: string;
@@ -52,11 +54,63 @@ export interface IProps {
   showLayoutListIcon: boolean;
   viewLayout: any;
   onViewLayoutChange: (layout: any) => void;
+  getShareUrl?: () => string;
 }
+
+const normalizeExportValue = (value: any) => {
+  if (value === null || value === undefined) {
+    return "";
+  }
+  if (typeof value === "object") {
+    return JSON.stringify(value);
+  }
+  return String(value);
+};
+
+const escapeCSVValue = (value: any) => {
+  const text = normalizeExportValue(value);
+  return `"${text.replace(/"/g, '""')}"`;
+};
+
+const escapeHTML = (value: any) => {
+  return normalizeExportValue(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+};
+
+const sanitizeFileName = (value: string) => {
+  return (value || "insight")
+    .replace(/[\\/:*?"<>|]+/g, "_")
+    .replace(/\s+/g, "_");
+};
+
+const copyText = async (text: string) => {
+  if (!text) {
+    return false;
+  }
+  if (navigator?.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return true;
+  }
+
+  const input = document.createElement("textarea");
+  input.value = text;
+  input.setAttribute("readonly", "readonly");
+  input.style.position = "fixed";
+  input.style.top = "-9999px";
+  document.body.appendChild(input);
+  input.select();
+  const copied = document.execCommand("copy");
+  document.body.removeChild(input);
+  return copied;
+};
 
 export default forwardRef((props: IProps, ref: any) => {
   const { 
     queries,
+    exportHits = [],
     loading: searchLoading,
     isEmpty,
     mode,
@@ -73,7 +127,8 @@ export default forwardRef((props: IProps, ref: any) => {
     showLayoutListIcon,
     viewLayout,
     onViewLayoutChange,
-    histogramProps = {}
+    histogramProps = {},
+    getShareUrl,
   } = props;
 
   const {
@@ -91,6 +146,105 @@ export default forwardRef((props: IProps, ref: any) => {
   const [data, setData] = useState<IRecord[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+
+  const getFlattenedHit = (hit: any) => {
+    if (indexPattern?.flattenHit) {
+      return indexPattern.flattenHit(hit, true) || {};
+    }
+    return hit?._source || {};
+  };
+
+  const getExportColumns = () => {
+    const visibleColumns = (columns || []).filter((item) => item);
+    if (visibleColumns.length > 0 && !visibleColumns.includes("_source")) {
+      return visibleColumns;
+    }
+    const fieldSet = new Set<string>();
+    exportHits.forEach((hit) => {
+      Object.keys(getFlattenedHit(hit)).forEach((field) => {
+        fieldSet.add(field);
+      });
+    });
+    return Array.from(fieldSet);
+  };
+
+  const downloadFile = (content: string, type: string, extension: string) => {
+    const baseName = sanitizeFileName(indexPattern?.title || "insight");
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const blob = new Blob(["\ufeff", content], { type });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${baseName}-${timestamp}.${extension}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
+
+  const handleExport = (type: "csv" | "excel") => {
+    if (!exportHits || exportHits.length === 0) {
+      message.warning(formatMessage({ id: "insight.export.empty" }));
+      return;
+    }
+
+    const exportColumns = getExportColumns();
+    if (exportColumns.length === 0) {
+      message.warning(formatMessage({ id: "insight.export.empty" }));
+      return;
+    }
+
+    const rows = exportHits.map((hit) => {
+      const flattened = getFlattenedHit(hit);
+      return exportColumns.map((field) => flattened[field]);
+    });
+
+    if (type === "csv") {
+      const content = [
+        exportColumns.map(escapeCSVValue).join(","),
+        ...rows.map((row) => row.map(escapeCSVValue).join(",")),
+      ].join("\n");
+      downloadFile(content, "text/csv;charset=utf-8;", "csv");
+      return;
+    }
+
+    const content = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+          <meta charset="UTF-8" />
+        </head>
+        <body>
+          <table>
+            <thead>
+              <tr>${exportColumns.map((field) => `<th>${escapeHTML(field)}</th>`).join("")}</tr>
+            </thead>
+            <tbody>
+              ${rows
+                .map(
+                  (row) =>
+                    `<tr>${row.map((cell) => `<td>${escapeHTML(cell)}</td>`).join("")}</tr>`
+                )
+                .join("")}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `;
+    downloadFile(content, "application/vnd.ms-excel;charset=utf-8;", "xls");
+  };
+
+  const handleShare = async () => {
+    try {
+      const shareUrl = getShareUrl?.();
+      const copied = await copyText(shareUrl || "");
+      if (!copied) {
+        throw new Error("copy failed");
+      }
+      message.success(formatMessage({ id: "insight.share.success" }));
+    } catch (error) {
+      message.error(formatMessage({ id: "insight.share.failed" }));
+    }
+  };
 
   const onSelect = (item: IRecord) => {
     setRecord(item)
@@ -212,6 +366,23 @@ export default forwardRef((props: IProps, ref: any) => {
         onClick={() => handleModeChange("table")}
       /> */}
       { !isEmpty && mode !== "table" && <FullScreen onFullScreen={onFullScreen}/> }
+      <span className={styles.exportActions}>
+        <Icon
+          type="share-alt"
+          title={formatMessage({ id: "insight.share.copy" })}
+          onClick={handleShare}
+        />
+        <Icon
+          type="file-text"
+          title={formatMessage({ id: "insight.export.csv" })}
+          onClick={() => handleExport("csv")}
+        />
+        <Icon
+          type="file-excel"
+          title={formatMessage({ id: "insight.export.excel" })}
+          onClick={() => handleExport("excel")}
+        />
+      </span>
       <InsightConfig 
         searchConfig={searchConfig}
         onSearchConfigChange={onSearchConfigChange}

@@ -30,7 +30,7 @@ import {
   prettyDuration,
 } from "@elastic/eui";
 // @ts-ignore
-import { EuiSuperUpdateButton, OnRefreshProps } from "@elastic/eui";
+import { OnRefreshProps } from "@elastic/eui";
 import { Toast } from "src/core/public";
 import { IIndexPattern, TimeRange, TimeHistoryContract, Query } from "../..";
 import { toMountPoint, withKibana } from "../../../../react/public";
@@ -40,7 +40,7 @@ import { NoDataPopover } from "./no_data_popover";
 import { DiscoverHistogram } from "@/components/vendor/discover/public/application/components/histogram/histogram";
 import DatePicker from "@/common/src/DatePicker";
 import styles from "./query_bar_top_row.less";
-import { getLocale } from "umi/locale";
+import { formatMessage, getLocale } from "umi/locale";
 
 const QueryStringInput = withKibana(QueryStringInputUI);
 
@@ -251,14 +251,25 @@ export default function QueryBarTopRow(props: QueryBarTopRowProps) {
         className: styles.euiButtonRefresh,
       })
     ) : (
-      <EuiSuperUpdateButton
-        needsUpdate={props.isDirty}
+      <EuiButton
+        fill
+        color={props.isDirty || props.isLoading ? "secondary" : "primary"}
+        iconType={props.isDirty || props.isLoading ? "kqlFunction" : "refresh"}
+        textProps={{
+          className: "euiSuperUpdateButton__text",
+        }}
         isDisabled={isDateRangeInvalid}
         isLoading={props.isLoading}
         onClick={onClickSubmitButton}
         data-test-subj="querySubmitButton"
-        className={styles.euiButtonRefresh}
-      />
+        className={classNames("euiSuperUpdateButton", styles.euiButtonRefresh)}
+      >
+        {props.isLoading
+          ? formatMessage({ id: "insight.button.updating" })
+          : props.isDirty
+          ? formatMessage({ id: "form.button.update" })
+          : formatMessage({ id: "form.button.refresh" })}
+      </EuiButton>
     );
 
     return (

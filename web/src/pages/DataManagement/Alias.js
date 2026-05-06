@@ -156,6 +156,7 @@ class AliasManage extends PureComponent {
     },
     {
       title: formatMessage({ id: "alias.table.field.write_index" }),
+      with: 150,
       dataIndex: "write_index",
       sorter: (a, b) => sorter.string(a, b, "write_index"),
       render: (text, record) => {
@@ -164,14 +165,15 @@ class AliasManage extends PureComponent {
     },
     {
       title: formatMessage({ id: "table.field.actions" }),
+      width: 100,
       render: (text, record) => {
         return (
-          <Fragment>
+          <Fragment key={record.alias}>
             {/*<a onClick={() => this.handleUpdateModalVisible(true, record)}>别名设置</a>*/}
             {/*<Divider type="vertical" />*/}
             {hasAuthority("data.alias:all") ? (
               <Popconfirm
-                title="Sure to delete？"
+                title={formatMessage({ id: "app.message.confirm.delete" })}
                 onConfirm={() => this.handleDeleteAliasClick(record)}
               >
                 {" "}

@@ -11,8 +11,18 @@ import { CopyToClipboard } from "react-copy-to-clipboard";
 import { formatMessage } from "umi/locale";
 
 export const WidgetRender = (props) => {
-
-   const { widget, range, query, queryParams = {}, highlightRange = {}, refresh, showCopy = true } = props;
+ 
+   const {
+      widget,
+      range,
+      query,
+      queryParams = {},
+      highlightRange = {},
+      refresh,
+      showCopy = true,
+      onGlobalQueriesChange = () => {},
+      onHighlightRangeChange = () => {},
+   } = props;
    const [globalRangeCache, setGlobalRangeCache] = useState()
    const [requests, setRequests] = useState([])
 
@@ -71,20 +81,20 @@ export const WidgetRender = (props) => {
                   hideHeader: true,
                   hideBorder: true,
                }}
-               globalRangeCache={globalRangeCache}
-               onGlobalRangeCacheChange={setGlobalRangeCache}
-               onGlobalQueriesChange={() => {}}
-               onClone={() => {}}
-               onRemove={() => {}}
-               onSave={() => {}}
-               onFullElement={() => {}}
-               clusterList={[]}
-               highlightRange={highlightRange}
-               onHighlightRangeChange={() => {}}
-               onResultChange={(res) => {
-                  setRequests(Array.isArray(res) ? res.filter((item) => !!item.request).map((item) => item.request) : [])
-               }}
-               refresh={refresh}
+                globalRangeCache={globalRangeCache}
+                onGlobalRangeCacheChange={setGlobalRangeCache}
+                onGlobalQueriesChange={onGlobalQueriesChange}
+                onClone={() => {}}
+                onRemove={() => {}}
+                onSave={() => {}}
+                onFullElement={() => {}}
+                clusterList={[]}
+                highlightRange={highlightRange}
+                onHighlightRangeChange={onHighlightRangeChange}
+                onResultChange={(res) => {
+                   setRequests(Array.isArray(res) ? res.filter((item) => !!item.request).map((item) => item.request) : [])
+                }}
+                refresh={refresh}
             />
          </div>
       ) : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />

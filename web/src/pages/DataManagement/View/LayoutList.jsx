@@ -141,7 +141,7 @@ export default withRouter((props) => {
 
           return (
             isView ? (
-              <Fragment>
+              <Fragment key={record.id}>
                   {
                     selectedRow?.id !== record.id && (
                       <a onClick={() => {
@@ -153,7 +153,7 @@ export default withRouter((props) => {
                   { defaultAction }
               </Fragment>
             ) : (
-              <Fragment>
+              <Fragment key={record.id}>
                   <Link to={`patterns/${viewId}/layout/${record.id}/edit`}>
                     Edit
                   </Link>

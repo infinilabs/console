@@ -95,7 +95,7 @@ const Table: React.FC<TableProps> = ({
                   {hits.map((row, idx) => {
                     return (
                       <TableRow
-                        key={"discover-table-row" + row._id}
+                        key={`discover-table-row-${row._index || "unknown"}-${row._id || "unknown"}-${idx}`}
                         onFilter={onFilter}
                         columns={columns}
                         hideTimeColumn={false}

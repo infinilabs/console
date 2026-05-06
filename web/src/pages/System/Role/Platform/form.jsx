@@ -19,8 +19,9 @@ import TagEditor from "@/components/infini/TagEditor";
 import Permission from "./permission";
 import ApiPermission from "./api_permission";
 import request from "@/utils/request";
-import { menuData } from "./menu";
+import { getMenuData } from "./menu";
 import { formatMessage } from "umi/locale";
+import { refreshApplicationSettings } from "@/utils/authority";
 
 const formItemLayout = {
   labelCol: {
@@ -47,6 +48,7 @@ const tailFormItemLayout = {
 const PlatformRoleForm = (props) => {
   const { getFieldDecorator } = props.form;
   const [isLoading, setIsLoading] = useState(false);
+  const [menuData, setMenuData] = useState(() => getMenuData());
 
   const handleSubmit = useCallback(
     (e) => {
@@ -69,6 +71,18 @@ const PlatformRoleForm = (props) => {
   };
 
   const editValue = props.value || {};
+
+  useEffect(() => {
+    let isMounted = true;
+    refreshApplicationSettings().finally(() => {
+      if (isMounted) {
+        setMenuData(getMenuData());
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <PageHeaderWrapper>

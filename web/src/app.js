@@ -21,7 +21,11 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import { getAuthEnabled } from "./utils/authority";
+import {
+  getAuthEnabled,
+  getEnterpriseTaskManagerEnabled,
+  refreshApplicationSettings,
+} from "./utils/authority";
 import request from "./utils/request";
 import { setSetupRequired } from "@/utils/setup";
 import { getHealth } from "@/services/system"
@@ -36,8 +40,12 @@ if (!String.prototype.replaceAll) {
 }
 
 export async function patchRoutes(routes) {
+  await refreshApplicationSettings();
   const healthRes = await getHealth();
   setSetupRequired(`${healthRes?.setup_required}`);
+  if (getEnterpriseTaskManagerEnabled() !== "true") {
+    hideRoutesInMenu(routes, ["data_tools"], "");
+  }
   if (getAuthEnabled() === "false") {
     routes = filterRoutes(routes, ["system.security"], "");
     // routes = disableAuth(routes);
@@ -77,6 +85,24 @@ function filterRoutes(routes, names, prefix) {
       route.routes = filterRoutes(route.routes, names, pn);
     }
     return true;
+  });
+}
+
+function hideRoutesInMenu(routes, names, prefix) {
+  (routes || []).forEach((route) => {
+    if (route.name) {
+      const pn = prefix ? `${prefix}.${route.name}` : route.name;
+      if (names.includes(pn)) {
+        route.hideInMenu = true;
+      }
+    }
+    if (route.routes) {
+      let pn = "";
+      if (route.name) {
+        pn = prefix ? `${prefix}.${route.name}` : route.name;
+      }
+      hideRoutesInMenu(route.routes, names, pn);
+    }
   });
 }
 

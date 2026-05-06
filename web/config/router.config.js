@@ -1,3 +1,13 @@
+import fs from "fs";
+import path from "path";
+
+const pluginRoutes = [];
+
+const pluginRoutePath = path.resolve("config", "router.enterprise.js");
+if (fs.existsSync(pluginRoutePath)) {
+  pluginRoutes.push(...require(pluginRoutePath).default);
+}
+
 export default [
   // user
   {
@@ -155,6 +165,7 @@ export default [
           },
         ],
       },
+      ...pluginRoutes,
 
       // alerting
       {

@@ -10,6 +10,7 @@ import {
   message,
   Tabs,
   Icon,
+  Tooltip,
 } from "antd";
 import { useMemo, useState } from "react";
 import { Link } from "umi";
@@ -27,6 +28,7 @@ import { SearchEngineIcon } from "@/lib/search_engines";
 import { hasAuthority } from "@/utils/authority";
 import AutoTextEllipsis from "@/components/AutoTextEllipsis";
 import commonStyles from "@/common.less"
+import styles from "./RowDetail.less";
 
 const { TabPane } = Tabs;
 
@@ -129,83 +131,97 @@ export const AgentRowDetail = ({ agentID, t }) => {
   const columns = useMemo(
     () => [
       {
-        title: "PID",
+        title: formatMessage({ id: "overview.column.pid" }),
+        width: 100,
         dataIndex: "node_info.process.id",
+        render: (text) => <div className={styles.cellWrap}>{text}</div>,
       },
       {
-        title: "Port",
+        title: formatMessage({ id: "alert.email.manage.field.port" }),
+        width: 100,
         dataIndex: "node_info.http.publish_address",
         render: (text, record) => {
-          return text?.split(":")?.[1];
+          return <div className={styles.cellWrap}>{text?.split(":")?.[1]}</div>;
         },
       },
       {
-        title: "Cluster",
+        title: formatMessage({ id: "overview.column.cluster" }),
+        width: 160,
         dataIndex: "cluster_info.cluster_name",
         render: (text, record) => {
-          return <>
-            <div style={{
-              display: 'inline-block',
-              marginRight: '3px',
-              position: 'relative',
-              top: -2
-            }}>
-              <SearchEngineIcon
-                distribution={record.cluster_info.version.distribution}
-                width="16px"
-                height="16px"
-              />
-            </div> 
-            {record.cluster_id ? (
-              <Link to={`/cluster/monitor/elasticsearch/${record.cluster_id}`}>
-                {text}
-              </Link>
-              ) : (
-                text
-              )}
-          </>
+          const content = record.cluster_id ? (
+            <Link to={`/cluster/monitor/elasticsearch/${record.cluster_id}`}>
+              {text}
+            </Link>
+          ) : text;
+
+          return (
+            <Tooltip title={text}>
+              <div className={styles.cellWrap}>
+                <div style={{ display: 'inline-block', marginRight: '3px', position: 'relative', top: -2, flexShrink: 0 }}>
+                  <SearchEngineIcon
+                    distribution={record.cluster_info.version.distribution}
+                    width="16px"
+                    height="16px"
+                  />
+                </div>
+                {content}
+              </div>
+            </Tooltip>
+          );
         },
       },
       {
-        title: "Node",
+        title: formatMessage({ id: "overview.column.node" }),
+        width: 160,
         dataIndex: "node_info.name",
         render: (text, record) => {
           return record.cluster_id ? (
-            <IconText
-              icon={<Icon type="database" />}
-              text={
+            <Tooltip title={text}>
+              <div className={styles.cellWrap}>
+                <Icon type="database" style={{ marginRight: 4, flexShrink: 0 }} />
                 <Link
                   to={`/cluster/monitor/${record.cluster_id}/nodes/${record.id}?_g={"cluster_name":"${record.cluster_info.cluster_name}","node_name":"${text}"}`}
                 >
                   {text}
                 </Link>
-              }
-            />
+              </div>
+            </Tooltip>
           ) : (
-            text
+            <Tooltip title={text}>
+              <div className={styles.cellWrap}>{text}</div>
+            </Tooltip>
           );
         },
       },
       {
-        title: "Home",
+        title: formatMessage({ id: "overview.column.homepath" }),
         dataIndex: "node_info.settings.path.home",
-        render: (text) => <AutoTextEllipsis >{text}</AutoTextEllipsis>,
+        render: (text) => (
+          <div className={styles.cellWrap}>
+            <AutoTextEllipsis>{text}</AutoTextEllipsis>
+          </div>
+        ),
         className: commonStyles.maxColumnWidth
       },
       {
-        title: "Status",
+        title: formatMessage({ id: "overview.column.status" }),
         dataIndex: "status",
         render: (text, record) => {
           const status = text == "online" ? "online" : "gray";
-          return <HealthStatusView status={status} label={text} />;
+          const label =
+            text === "online" || text === "Online"
+              ? formatMessage({ id: "gateway.instance.status.online" })
+              : text;
+          return <HealthStatusView status={status} label={label} />;
         },
         width: 100,
       },
       {
         title: formatMessage({ id: "table.field.actions" }),
-        width: 160,
+        width: 100,
         render: (text, record) => (
-          <div>
+          <div className={styles.cellWrap}>
             {/* <Popconfirm
                 title="Sure to delete?"
                 onConfirm={() => onDeleteClick(record.id, agentID)}
@@ -219,7 +235,9 @@ export const AgentRowDetail = ({ agentID, t }) => {
                   hasAuthority("agent.instance:all") && (
                     <>
                       <Popconfirm
-                        title="Sure to revoke?"
+                        title={formatMessage({
+                          id: "agent.instance.revoke.confirm.title",
+                        })}
                         onConfirm={() =>
                           onRevoke({
                             cluster_id: record.cluster_id,
@@ -229,7 +247,7 @@ export const AgentRowDetail = ({ agentID, t }) => {
                         }
                       >
                         <Button style={{padding: 0}} type="link" loading={btnLoading}>
-                          Revoke
+                          {formatMessage({ id: "agent.instance.button.revoke" })}
                         </Button>
                       </Popconfirm>
                       <Divider key="d3" type="vertical" />
@@ -358,14 +376,15 @@ export const AgentRowDetail = ({ agentID, t }) => {
   };
 
   return (
-    <div>
+    <div className={styles.detail}>
       <Tabs
+        className={styles.detailTabs}
         activeKey={state.processesTab}
         onChange={(tabKey) => {
           setState({ ...state, processesTab: tabKey });
         }}
         tabBarExtraContent={
-          <div style={{ display: "flex", gap: 10 }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             {hasAuthority("agent.instance:all") && state.processesTab === "unknown" ? (
               <Button
                 type="primary"
@@ -391,26 +410,39 @@ export const AgentRowDetail = ({ agentID, t }) => {
         }
       >
         <TabPane
-          tab={`Detected Processes (${nodes.length})`}
+          tab={formatMessage(
+            {
+              id: "agent.instance.row_detail.tab.detected_processes",
+            },
+            { count: nodes.length }
+          )}
           key={"elasticsearch"}
         >
-          <Table
-            size={"small"}
-            bordered
-            loading={loading}
-            dataSource={nodes}
-            rowKey={"id"}
-            pagination={{
-              size: "small",
-              showSizeChanger: true,
-              showTotal: (total, range) =>
-                `${range[0]}-${range[1]} of ${total} items`,
-            }}
-            columns={columns}
-          />
+          <div className={styles.tableWrap}>
+            <Table
+              size={"small"}
+              bordered
+              loading={loading}
+              dataSource={nodes}
+              rowKey={"id"}
+              tableLayout="fixed"
+              pagination={{
+                size: "small",
+                showSizeChanger: true,
+                showTotal: (total, range) =>
+                  `${range[0]}-${range[1]} of ${total} items`,
+              }}
+              columns={columns}
+            />
+          </div>
         </TabPane>
         <TabPane
-          tab={`Unknown Processes (${unknownProcess.length})`}
+          tab={formatMessage(
+            {
+              id: "agent.instance.row_detail.tab.unknown_processes",
+            },
+            { count: unknownProcess.length }
+          )}
           key={"unknown"}
         >
           <UnknownProcess data={unknownProcess} loading={loading} />

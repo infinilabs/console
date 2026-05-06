@@ -1,124 +1,198 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Alert, Button, Form, Icon, Input, Switch, Select } from 'antd';
 import request from '@/utils/request';
 import { formatMessage } from "umi/locale";
-import TrimSpaceInput from '@/components/TrimSpaceInput';
 
 const formItemLayout = {
-    labelCol: {
-        md: { span: 8 },
-    },
-    wrapperCol: {
-        md: { span: 10 },
-    },
+    labelCol: { md: { span: 8 } },
+    wrapperCol: { md: { span: 10 } },
+};
+
+const stripSchema = (host = '') => host.trim().replace(/^https?:\/\//i, '');
+
+const detectTLS = (hosts = []) => {
+    let result = null;
+    for (const h of hosts) {
+        if (/^https:\/\//i.test(h.trim())) result = true;
+        else if (/^http:\/\//i.test(h.trim())) result = false;
+    }
+    return result;
+};
+
+const extractStructuredReason = (reason) => {
+    const normalized = `${reason || ''}`.trim();
+    if (!normalized.startsWith('{')) {
+        return normalized;
+    }
+    try {
+        const payload = JSON.parse(normalized);
+        return payload?.error?.reason || payload?.error?.root_cause?.[0]?.reason || normalized;
+    } catch (e) {
+        return normalized;
+    }
+};
+
+const getClusterConnectErrorMessageFromResponse = (res, fallbackId) => {
+    const rawError = res?.error;
+    if (!rawError) {
+        return formatMessage({ id: fallbackId });
+    }
+    if (typeof rawError === 'string') {
+        return extractStructuredReason(rawError) || formatMessage({ id: fallbackId });
+    }
+    return (
+        extractStructuredReason(rawError.reason) ||
+        rawError.message ||
+        formatMessage({ id: fallbackId })
+    );
+};
+
+const getClusterConnectErrorMessageFromError = async (error, fallbackId) => {
+    if (error?.response?.clone) {
+        try {
+            const payload = await error.response.clone().json();
+            return getClusterConnectErrorMessageFromResponse(payload, fallbackId);
+        } catch (e) {}
+    }
+    return (
+        extractStructuredReason(error?.message || error?.reason) ||
+        formatMessage({ id: fallbackId })
+    );
 };
 
 export default ({ onNext, form, formData, onFormDataChange }) => {
 
     const [testLoading, setTestLoading] = useState(false);
-    const [testStatus, setTestStatus] = useState();
-    const [testError, setTestError] = useState();
+    const [testStatus, setTestStatus]   = useState();
+    const [testError, setTestError]     = useState();
+    const [clusterDefaults, setClusterDefaults] = useState({});
 
     const checkVersion = (version, distribution) => {
         if (!version) return false;
-        if(distribution === "easysearch" || distribution === "opensearch"){
-            return true
-        }
-        const base = '5.3';
-        const baseSplit = base.split('.').map(x => parseInt(x))
-        const versionSplit = version.split('.').map(x => parseInt(x))
-        if(baseSplit[0] > versionSplit[0]){
-            return false
-        }else if(baseSplit[0] < versionSplit[0]){
-            return true
-        }
-        if(baseSplit[1] > versionSplit[1]){
-            return false
-        }else if(baseSplit[1] < versionSplit[1]){
-            return true
-        }
-        return true
-    }
+        if (distribution === 'easysearch' || distribution === 'opensearch') return true;
+        const [bMajor, bMinor] = '5.3'.split('.').map(Number);
+        const [vMajor, vMinor] = version.split('.').map(Number);
+        if (vMajor !== bMajor) return vMajor > bMajor;
+        return vMinor >= bMinor;
+    };
+
+    const getRecommendedPrimaryShards = (res) => {
+        const dataNodes  = Number(res?.number_of_data_nodes) || 0;
+        const totalNodes = Number(res?.number_of_nodes) || 0;
+        return Math.max(1, dataNodes || totalNodes || 1);
+    };
+
+    const resetTestStatus = () => {
+        if (testStatus) setTestStatus(undefined);
+        if (testError)  setTestError(undefined);
+        setClusterDefaults({});
+    };
+
+    const handleHostsChange = (values) => {
+        const tls     = detectTLS(values);
+        const cleaned = (values || []).map(stripSchema);
+
+        const patch = { hosts: cleaned };
+        if (tls !== null) patch.isTLS = tls;
+        form.setFieldsValue(patch);
+
+        if (tls !== null) onFormDataChange({ isTLS: tls });
+
+        resetTestStatus();
+    };
 
     const onTest = async (callback) => {
         form.validateFields(async (err, values) => {
-            if (err) {
-              return false;
-            }
+            if (err) return;
+
             try {
                 setTestLoading(true);
-                setTestStatus();
-                setTestError();
+                setTestStatus(undefined);
+                setTestError(undefined);
+
                 const { hosts, isTLS, isAuth, username, password } = values;
+
                 const body = {
-                    hosts: (hosts || []).map(host=>host.trim()),
-                    schema: isTLS === true ? "https" : "http",
-                }
-                if (isAuth) {
-                    body.basic_auth =  {
-                        username,
-                        password,
-                    }
-                }
+                    hosts:  (hosts || []).map(stripSchema),
+                    schema: isTLS ? 'https' : 'http',
+                };
+                if (isAuth) body.basic_auth = { username, password };
 
                 const res = await request('/elasticsearch/try_connect', {
-                    method: "POST",
-                    body: body,
-                }, undefined, false)
+                    method: 'POST',
+                    body,
+                }, undefined, false);
+
                 if (['green', 'yellow'].includes(res?.status)) {
                     if (checkVersion(res?.version, res?.distribution)) {
-                        setTestStatus('success')
-                        if (callback) callback()
+                        const nextDefaults = {
+                            distribution:         res?.distribution,
+                            version:              res?.version,
+                            number_of_nodes:      res?.number_of_nodes,
+                            number_of_data_nodes: res?.number_of_data_nodes,
+                            primary_shards:       getRecommendedPrimaryShards(res),
+                            auto_expand_replicas: formData.auto_expand_replicas || '0-1',
+                        };
+                        setTestStatus('success');
+                        setClusterDefaults(nextDefaults);
+                        if (callback) callback(nextDefaults);
                     } else {
-                        setTestStatus('error')
-                        setTestError(formatMessage({ id: 'guide.cluster.test.connection.error.version'}))
+                        setTestStatus('error');
+                        setTestError(formatMessage({ id: 'guide.cluster.test.connection.error.version' }));
                     }
                 } else {
-                    setTestStatus('error')
-                    setTestError(formatMessage({ id: 'guide.cluster.test.connection.failed'}))
+                    setTestStatus('error');
+                    setTestError(
+                        getClusterConnectErrorMessageFromResponse(res, 'guide.cluster.test.connection.failed')
+                    );
                 }
-                setTestLoading(false);
             } catch (error) {
-                console.log(error);
-                setTestStatus('error')
+                setTestStatus('error');
+                setTestError(
+                    await getClusterConnectErrorMessageFromError(error, 'guide.cluster.test.connection.failed')
+                );
+            } finally {
                 setTestLoading(false);
             }
         });
-    }
+    };
 
-    const resetTestStatus = () => {
-        !!testStatus && setTestStatus()
-        !!testError && setTestError()
-    }
-
-    const onSubmit = async (e) => {
+    const onSubmit = (e) => {
         e.preventDefault();
-        
         if (!testStatus || testStatus === 'error') {
-            onTest(onFormDataSave)
+            onTest(onFormDataSave);
             return;
         }
-
         onFormDataSave();
-    }
+    };
 
-    const onFormDataSave = () => {
+    const onFormDataSave = (defaults = clusterDefaults) => {
         const values = form.getFieldsValue();
-        const { hosts, isAuth, username, password } = values;
+        const { hosts, isTLS, isAuth, username, password } = values;
+
         onFormDataChange({
-            hosts: (hosts || []).map(host=>host.trim()),
-            isAuth, username, password
-        })
+            hosts:                (hosts || []).map(stripSchema),
+            isTLS,
+            isAuth,
+            username,
+            password,
+            distribution:         defaults?.distribution,
+            version:              defaults?.version,
+            number_of_nodes:      defaults?.number_of_nodes,
+            number_of_data_nodes: defaults?.number_of_data_nodes,
+            primary_shards:       formData.primary_shards       || defaults?.primary_shards,
+            auto_expand_replicas: formData.auto_expand_replicas || defaults?.auto_expand_replicas,
+        });
         onNext();
-    }
+    };
+
     const validateHostsRule = (rule, value, callback) => {
-        let vals = value || [];
-        for(let i = 0; i < vals.length; i++) {
-            if (!/^[\w\.\-_~%]+(\:\d+)?$/.test(vals[i])) {
-                return callback(formatMessage({ id: 'guide.cluster.host.validate'}));
+        for (const raw of (value || [])) {
+            const host = stripSchema(raw);
+            if (!/^[\w.\-_~%]+(:\d+)?$/.test(host)) {
+                return callback(formatMessage({ id: 'guide.cluster.host.validate' }));
             }
         }
-        // validation passed
         callback();
     };
 
@@ -126,90 +200,94 @@ export default ({ onNext, form, formData, onFormDataChange }) => {
 
     return (
         <Form {...formItemLayout} onSubmit={onSubmit} colon={false}>
-            <Form.Item label={formatMessage({ id: 'guide.cluster.host'})}>
-                {getFieldDecorator("hosts", {
+            <Form.Item label={formatMessage({ id: 'guide.cluster.host' })}>
+                {getFieldDecorator('hosts', {
                     initialValue: formData.hosts,
                     rules: [
                         {
                             required: true,
-                            message: formatMessage({ id: 'guide.cluster.host.required'}),
+                            message: formatMessage({ id: 'guide.cluster.host.required' }),
                         },
-                        {
-                            validator: validateHostsRule,
-                        }
+                        { validator: validateHostsRule },
                     ],
-                })(<Select placeholder="127.0.0.1:9200" mode="tags" allowClear={true} onChange={resetTestStatus}/>)}
+                })(
+                    <Select
+                        placeholder="127.0.0.1:9200"
+                        mode="tags"
+                        allowClear
+                        onChange={handleHostsChange}
+                    />
+                )}
             </Form.Item>
+
             <Form.Item label="TLS">
-                {getFieldDecorator("isTLS", {
+                {getFieldDecorator('isTLS', {
                     initialValue: formData.isTLS,
-                    valuePropName: 'checked'
-                })(<Switch size="small" onChange={(checked) => {
-                    resetTestStatus();
-                    onFormDataChange({ isTLS: checked })
-                }}/>)}
+                    valuePropName: 'checked',
+                })(
+                    <Switch size="small" onChange={(checked) => {
+                        resetTestStatus();
+                        onFormDataChange({ isTLS: checked });
+                    }} />
+                )}
             </Form.Item>
-            <Form.Item label={formatMessage({ id: 'guide.cluster.auth'})}>
-                {getFieldDecorator("isAuth", { 
+
+            <Form.Item label={formatMessage({ id: 'guide.cluster.auth' })}>
+                {getFieldDecorator('isAuth', {
                     initialValue: formData.isAuth,
-                    valuePropName: 'checked'
-                })(<Switch size="small" onChange={(checked) => {
-                    resetTestStatus();
-                    onFormDataChange({ isAuth: checked })
-                }}/>)}
+                    valuePropName: 'checked',
+                })(
+                    <Switch size="small" onChange={(checked) => {
+                        resetTestStatus();
+                        onFormDataChange({ isAuth: checked });
+                    }} />
+                )}
             </Form.Item>
-            {
-                formData.isAuth && (
-                    <>
-                        <Form.Item label={formatMessage({ id: 'guide.username'})}>
-                            {getFieldDecorator("username", {
-                                initialValue: formData.username,
-                                rules: [
-                                    {
-                                        required: true,
-                                        message: formatMessage({ id: 'guide.username.required'}),
-                                    }
-                                ],
-                            })(<Input onChange={resetTestStatus}/>)}
-                        </Form.Item>
-                        <Form.Item label={formatMessage({ id: 'guide.password'})}>
-                            {getFieldDecorator("password", {
-                                rules: [{
-                                    required: true,
-                                    message: formatMessage({ id: 'guide.password.required'}),
-                                }],
-                            })(<Input.Password onChange={resetTestStatus}/>)}
-                        </Form.Item>
-                    </>
-                )
-            }
-            {
-                testError && (
-                    <Form.Item label=" ">
-                        <Alert message={testError} type="error" />
+
+            {formData.isAuth && (
+                <>
+                    <Form.Item label={formatMessage({ id: 'guide.username' })}>
+                        {getFieldDecorator('username', {
+                            initialValue: formData.username,
+                            rules: [{
+                                required: true,
+                                message: formatMessage({ id: 'guide.username.required' }),
+                            }],
+                        })(<Input onChange={resetTestStatus} />)}
                     </Form.Item>
-                )
-            }
+                    <Form.Item label={formatMessage({ id: 'guide.password' })}>
+                        {getFieldDecorator('password', {
+                            rules: [{
+                                required: true,
+                                message: formatMessage({ id: 'guide.password.required' }),
+                            }],
+                        })(<Input.Password onChange={resetTestStatus} />)}
+                    </Form.Item>
+                </>
+            )}
+
+            {testError && (
+                <Form.Item label=" ">
+                    <Alert message={testError} type="error" />
+                </Form.Item>
+            )}
+
             <Form.Item label=" ">
-                <div style={{ display: 'flex', justifyContent: 'space-between'}}>
-                    <Button style={{width: '48%'}} loading={testLoading} onClick={() => onTest()}>
-                        {
-                            testStatus === 'success' && (
-                                <Icon style={{ color: '#27b148'}} type="check-circle" theme="filled" />
-                            )
-                        }
-                        {
-                            testStatus === 'error' && (
-                                <Icon style={{ color: '#ff0000'}} type="close-circle" theme="filled" />
-                            )
-                        }
-                        {formatMessage({ id: 'guide.cluster.test.connection'})}
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Button style={{ width: '48%' }} loading={testLoading} onClick={() => onTest()}>
+                        {testStatus === 'success' && (
+                            <Icon style={{ color: '#27b148' }} type="check-circle" theme="filled" />
+                        )}
+                        {testStatus === 'error' && (
+                            <Icon style={{ color: '#ff0000' }} type="close-circle" theme="filled" />
+                        )}
+                        {formatMessage({ id: 'guide.cluster.test.connection' })}
                     </Button>
-                    <Button style={{width: '48%'}} disabled={testLoading} type="primary" htmlType="submit">
-                        {formatMessage({ id: 'guide.step.next'})}
+                    <Button style={{ width: '48%' }} disabled={testLoading} type="primary" htmlType="submit">
+                        {formatMessage({ id: 'guide.step.next' })}
                     </Button>
                 </div>
             </Form.Item>
         </Form>
-    )
-}
+    );
+};

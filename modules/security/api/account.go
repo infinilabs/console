@@ -49,11 +49,19 @@ const NativeProvider = "native"
 func (h APIHandler) Logout(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	reqUser, err := rbac.FromUserContext(r.Context())
 	if err != nil {
-		h.ErrorInternalServer(w, err.Error())
-		return
+		if api.IsAuthEnable() {
+			claims, validateErr := rbac.ValidateLogin(r.Header.Get("Authorization"))
+			if validateErr != nil {
+				h.WriteError(w, validateErr.Error(), http.StatusUnauthorized)
+				return
+			}
+			reqUser = claims.ShortUser
+		}
 	}
 
-	rbac.DeleteUserToken(reqUser.UserId)
+	if reqUser != nil && reqUser.UserId != "" {
+		rbac.DeleteUserToken(reqUser.UserId)
+	}
 	h.WriteOKJSON(w, util.MapStr{
 		"status": "ok",
 	})

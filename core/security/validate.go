@@ -351,6 +351,14 @@ func ValidateLogin(authorizationHeader string) (clams *UserClaims, err error) {
 		DeleteUserToken(clams.UserId)
 		return
 	}
+	activeToken := tokenVal.Value
+	if activeToken == "" {
+		activeToken = tokenVal.JwtStr
+	}
+	if activeToken != "" && activeToken != tokenString {
+		err = errors.New("token is invalid")
+		return
+	}
 	if ok && token.Valid {
 		return clams, nil
 	}

@@ -56,7 +56,11 @@ func GenerateAccessToken(user *User) (map[string]interface{}, error) {
 		return nil, errors.Errorf("failed to generate access_token for user: %v", user.Username)
 	}
 
-	token := Token{ExpireIn: time.Now().Unix() + 86400}
+	token := Token{
+		JwtStr:   tokenString,
+		Value:    tokenString,
+		ExpireIn: time.Now().Unix() + 86400,
+	}
 	SetUserToken(user.ID, token)
 
 	data = util.MapStr{

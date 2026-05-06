@@ -235,7 +235,7 @@ const AgentList = (props) => {
       // },
       {
         title: formatMessage({ id: "table.field.actions" }),
-        width: 120,
+        width: 100,
         render: (text, record) => (
           <div>
             {hasAuthority("agent.instance:all") ? (

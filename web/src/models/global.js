@@ -475,6 +475,8 @@ export default {
           "/guide",
           "/resource",
           "/platform/notification",
+          "/data_tools/migration",
+          "/data_tools/comparison",
         ];
         if (clusterHiddenPath.some((p) => pathname.startsWith(p))) {
           clusterVisible = false;

@@ -37,23 +37,12 @@ export default (props) => {
         let lines = text?.split(" ");
         let newLines = lines.slice(0, 4);
         return (
-          <div className={styles.cellWrap}>
-            {newLines.map((item, index) => {
-              return (
-                <div key={`${item}-${index}`} className={styles.cellWrap}>
-                  {item}
-                  <br />
-                </div>
-              );
-            })}
-            <a
-              onClick={() => {
-                onDetailClick(record);
-              }}
-            >
-              {formatMessage({
-                id: "component.noticeIcon.viewMoreText",
-              })}
+          <div className={styles.cmdlineWrap}>
+            {newLines.map((item, index) => (
+              <div key={`${item}-${index}`}>{item}</div>
+            ))}
+            <a onClick={() => onDetailClick(record)}>
+              {formatMessage({ id: "component.noticeIcon.viewMoreText" })}
             </a>
           </div>
         );
@@ -64,7 +53,7 @@ export default (props) => {
       width: 180,
       dataIndex: "listen_addresses",
       render: (text, record) => (
-        <div className={styles.cellWrap}>
+        <div className={styles.cmdlineWrap}>
           {Array.isArray(text) &&
             text.map((item, index) => {
               return (

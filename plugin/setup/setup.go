@@ -37,6 +37,8 @@ import (
 	"path"
 	"runtime"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"infini.sh/console/core/security"
@@ -100,15 +102,27 @@ func (module *Module) Setup() {
 }
 
 var setupFinishedCallback = []func(){}
+var setupCallbackOnce sync.Once
+var setupInitializeRunning uint32
 
 func RegisterSetupCallback(f func()) {
 	setupFinishedCallback = append(setupFinishedCallback, f)
 }
 
 func InvokeSetupCallback() {
-	for _, v := range setupFinishedCallback {
-		v()
-	}
+	setupCallbackOnce.Do(func() {
+		for _, v := range setupFinishedCallback {
+			v()
+		}
+	})
+}
+
+func acquireSetupInitialization() bool {
+	return atomic.CompareAndSwapUint32(&setupInitializeRunning, 0, 1)
+}
+
+func releaseSetupInitialization() {
+	atomic.StoreUint32(&setupInitializeRunning, 0)
 }
 
 // Start initializes the module and registers a change event for credentials.
@@ -400,6 +414,11 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		module.WriteError(w, "setup not permitted", http.StatusInternalServerError)
 		return
 	}
+	if !acquireSetupInitialization() {
+		module.WriteError(w, "setup is already running", http.StatusConflict)
+		return
+	}
+	defer releaseSetupInitialization()
 	request := &SetupRequest{}
 	err := module.DecodeJSON(r, request)
 	if err != nil {

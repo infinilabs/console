@@ -24,7 +24,6 @@ import "../list.scss";
 import "@/assets/headercontent.scss";
 import moment from "moment";
 
-import SearchInput from "@/components/infini/SearchInput";
 
 const EntryList = (props) => {
   const [queryParams, setQueryParams] = React.useState({});
@@ -169,7 +168,7 @@ const EntryList = (props) => {
           }}
         >
           <div style={{ maxWidth: 500, flex: "1 1 auto" }}>
-            <SearchInput
+            <Input.Search
               allowClear
               placeholder="Type keyword to search"
               enterButton="Search"

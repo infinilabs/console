@@ -31,7 +31,6 @@ import { formatMessage } from "umi/locale";
 import { deleteCommand } from "@/components/vendor/console/modules/mappings/mappings";
 import { hasAuthority } from "@/utils/authority";
 import "./index.scss";
-import SearchInput from "@/components/infini/SearchInput";
 
 const FormItem = Form.Item;
 const { TextArea } = Input;
@@ -255,7 +254,7 @@ class Index extends PureComponent {
               }}
             >
               <div style={{ maxWidth: 500, flex: "1 1 auto" }}>
-                <SearchInput
+                <Input.Search
                   allowClear
                   placeholder="Type keyword to search"
                   enterButton="Search"

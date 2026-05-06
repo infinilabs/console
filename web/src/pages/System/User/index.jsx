@@ -25,7 +25,6 @@ import moment from "moment";
 import { formatter } from "@/lib/format";
 import { hasAuthority } from "@/utils/authority";
 
-import SearchInput from "@/components/infini/SearchInput";
 
 const UserList = (props) => {
   const [queryParams, setQueryParams] = React.useState({});
@@ -179,7 +178,7 @@ const UserList = (props) => {
         }}
       >
         <div style={{ maxWidth: 500, flex: "1 1 auto" }}>
-          <SearchInput
+          <Input.Search
             allowClear
             placeholder={formatMessage({
               id: "system.security.search.placeholder",

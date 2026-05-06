@@ -1,4 +1,4 @@
-import { Form, Steps, Button, message, Spin, Card, Row, Col } from "antd";
+import { Alert, Form, Steps, Button, message, Spin, Card, Row, Col } from "antd";
 import { connect } from "dva";
 import { useState, useRef, useEffect } from "react";
 import { InitialStep, ExtraStep, ResultStep, MANUAL_VALUE } from "./steps";
@@ -6,6 +6,10 @@ import PageHeaderWrapper from "@/components/PageHeaderWrapper";
 import styles from "./step.less";
 import { formatMessage } from "umi/locale";
 import { formatConfigsValues } from "./utils";
+import {
+  getClusterConnectErrorMessageFromError,
+  getClusterConnectErrorMessageFromResponse,
+} from "./utils";
 import { Link } from "umi";
 import { SearchEngines } from "@/lib/search_engines";
 
@@ -42,6 +46,7 @@ const ClusterStep = ({ dispatch, history, query }) => {
     isLoading: false,
     current: 0,
   });
+  const [connectError, setConnectError] = useState();
   const changeStep = (step) => {
     setState((st) => {
       return {
@@ -65,6 +70,7 @@ const ClusterStep = ({ dispatch, history, query }) => {
   const createFormPromise = (type, formatPayload, callback) => {
     return new Promise((resolve, reject) => {
       setIsLoading(true);
+      setConnectError(undefined);
       formRef.current.validateFields((errors, values) => {
         if (errors) {
           resolve(false);
@@ -82,12 +88,25 @@ const ClusterStep = ({ dispatch, history, query }) => {
               }
               resolve(true);
             } else {
+              setConnectError(
+                getClusterConnectErrorMessageFromResponse(
+                  res,
+                  "cluster.regist.try_connect.failed"
+                )
+              );
               resolve(false);
               setIsLoading(false);
             }
           })
-          .catch((err) => {
+          .catch(async (err) => {
+            setConnectError(
+              await getClusterConnectErrorMessageFromError(
+                err,
+                "cluster.regist.try_connect.failed"
+              )
+            );
             setIsLoading(false);
+            resolve(false);
           });
       });
     });
@@ -109,6 +128,7 @@ const ClusterStep = ({ dispatch, history, query }) => {
               ? values.credential_id
               : undefined,
           schema: values.isTLS === true ? "https" : "http",
+          probe_path: values.probe_path,
         }),
         (values, res) => {
           setClusterConfig({
@@ -143,6 +163,7 @@ const ClusterStep = ({ dispatch, history, query }) => {
             distribution: clusterConfig.distribution,
             host: clusterConfig.host,
             hosts: clusterConfig.hosts,
+            probe_path: clusterConfig.probe_path,
             location: clusterConfig.location,
             credential_id:
               clusterConfig.credential_id !== MANUAL_VALUE
@@ -241,6 +262,14 @@ const ClusterStep = ({ dispatch, history, query }) => {
                 ))}
               </Steps>
               <div className="steps-content">{renderContent(current)}</div>
+              {current === 0 && connectError ? (
+                <Alert
+                  style={{ marginBottom: 16 }}
+                  type="error"
+                  showIcon
+                  message={connectError}
+                />
+              ) : null}
               <Form
                 {...{
                   labelCol: {

@@ -37,6 +37,7 @@ import (
 	"infini.sh/framework/core/queue"
 
 	log "github.com/cihub/seelog"
+	console_common "infini.sh/console/common"
 	"infini.sh/console/core"
 	v1 "infini.sh/console/modules/elastic/api/v1"
 	httprouter "infini.sh/framework/core/api/router"
@@ -60,13 +61,15 @@ func (h *APIHandler) Client() elastic.API {
 }
 
 func (h *APIHandler) HandleCreateClusterAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	var conf = &elastic.ElasticsearchConfig{}
-	err := h.DecodeJSON(req, conf)
+	payload := &elasticConfigPayload{}
+	err := h.DecodeJSON(req, payload)
 	if err != nil {
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	conf := &payload.ElasticsearchConfig
+	console_common.SetProbePath(conf, payload.ProbePath)
 	conf.Enabled = true
 	if len(conf.Hosts) > 0 && conf.Host == "" {
 		conf.Host = conf.Hosts[0]
@@ -225,6 +228,10 @@ func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.
 	newConf := &elastic.ElasticsearchConfig{}
 	json.Unmarshal(confBytes, newConf)
 	newConf.ID = id
+	if probePath, ok := conf["probe_path"]; ok {
+		console_common.SetProbePath(newConf, util.ToString(probePath))
+		delete(conf, "probe_path")
+	}
 
 	if conf["credential_id"] == nil {
 		if newConf.BasicAuth != nil && newConf.BasicAuth.Username != "" {

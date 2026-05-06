@@ -90,6 +90,13 @@ export default {
   "cluster.regist.form.verify.valid.endpoint":
     "Please input a domain name or IP address and port number!",
   "cluster.regist.form.verify.required.endpoint": "Please input endpoint!",
+  "cluster.regist.form.label.probe_path": "Probe Path",
+  "cluster.regist.form.placeholder.probe_path": "/_cluster/health",
+  "cluster.regist.form.toggle.probe_path": "Custom Probe Path",
+  "cluster.regist.form.help.probe_path":
+    "Optional. Leave empty to use the default / probe path. Only needed for special cases such as WAF restrictions.",
+  "cluster.regist.form.verify.valid.probe_path":
+    "Probe path must start with /",
   "cluster.regist.form.verify.required.credential":
     "Please select  Agent credential!",
   "cluster.regist.form.verify.required.agent_credential":
@@ -98,6 +105,20 @@ export default {
     "Please input auth username!",
   "cluster.regist.form.verify.required.auth_password":
     "Please input auth password!",
+  "cluster.regist.try_connect.failed":
+    "Cluster connection failed. Check the endpoint, TLS, and authentication settings.",
+  "cluster.connect.error.health_red":
+    "The target cluster health is red. Console only allows connecting Easysearch clusters when their health is green. Fix the cluster before connecting again.",
+  "cluster.connect.error.tls_mismatch":
+    "The TLS setting does not match the cluster endpoint. Check whether HTTPS should be enabled.",
+  "cluster.connect.error.auth_required":
+    "Authentication is required or the credential is invalid. Check the username, password, or saved credential.",
+  "cluster.connect.error.endpoint_unreachable":
+    "Unable to connect to the cluster endpoint. Check the address, network accessibility, and TLS setting.",
+  "cluster.connect.error.non_es_endpoint":
+    "The endpoint did not return an Elasticsearch-compatible API response. Check that the address and port point to the Elasticsearch API.",
+  "cluster.connect.error.unexpected_status":
+    "The cluster returned an unexpected status. Check the address, TLS setting, and authentication settings.",
   "cluster.regist.form.credential.manual.desc":
     "*The new authentication information will be added to the credential store after saving",
 
@@ -138,7 +159,6 @@ export default {
   "cluster.monitor.topn.area": "Area Metric",
   "cluster.monitor.topn.color": "Color Metric",
   "cluster.monitor.topn.theme": "Theme",
-
   "cluster.monitor.logs.timestamp": "Timestamp",
   "cluster.monitor.logs.type": "Type",
   "cluster.monitor.logs.level": "Level",

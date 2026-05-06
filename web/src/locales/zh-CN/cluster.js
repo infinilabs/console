@@ -84,10 +84,30 @@ export default {
   "cluster.regist.form.verify.required.cluster_name": "请输入集群名称！",
   "cluster.regist.form.verify.valid.endpoint": "请输入域名或 IP 地址和端口号！",
   "cluster.regist.form.verify.required.endpoint": "请输入 endpoint 地址！",
+  "cluster.regist.form.label.probe_path": "检测路径",
+  "cluster.regist.form.placeholder.probe_path": "/_cluster/health",
+  "cluster.regist.form.toggle.probe_path": "自定义检测路径",
+  "cluster.regist.form.help.probe_path":
+    "可选。留空时默认使用 / 进行探测，仅在 WAF 等特殊场景下需要填写。",
+  "cluster.regist.form.verify.valid.probe_path":
+    "检测路径必须以 / 开头！",
   "cluster.regist.form.verify.required.credential": "请选择用户凭据！",
   "cluster.regist.form.verify.required.agent_credential": "请选择 Agent 凭据！",
   "cluster.regist.form.verify.required.auth_username": "请输入授权用户名！",
   "cluster.regist.form.verify.required.auth_password": "请输入授权密码！",
+  "cluster.regist.try_connect.failed": "集群连接失败，请检查地址、TLS 与认证信息。",
+  "cluster.connect.error.health_red":
+    "目标集群当前健康状态为 red，仅允许连接健康状态为 green 的集群，请先修复集群后再连接。",
+  "cluster.connect.error.tls_mismatch":
+    "TLS 设置与集群地址不匹配，请检查是否应该启用 HTTPS。",
+  "cluster.connect.error.auth_required":
+    "集群需要认证，或当前凭据无效，请检查用户名、密码或凭据配置。",
+  "cluster.connect.error.endpoint_unreachable":
+    "无法连接到集群地址，请检查地址、网络连通性以及 TLS 设置。",
+  "cluster.connect.error.non_es_endpoint":
+    "目标地址返回的不是 Elasticsearch 兼容 API 响应，请检查地址和端口是否填写正确。",
+  "cluster.connect.error.unexpected_status":
+    "集群返回了异常状态码，请检查地址、TLS 设置和认证信息。",
   "cluster.regist.form.credential.manual.desc":
     "*新的身份验证信息将在保存后添加到凭据库",
 
@@ -128,7 +148,6 @@ export default {
   "cluster.monitor.topn.area": "面积指标",
   "cluster.monitor.topn.color": "颜色指标",
   "cluster.monitor.topn.theme": "主题",
-
   "cluster.monitor.logs.timestamp": "时间戳",
   "cluster.monitor.logs.type": "类型",
   "cluster.monitor.logs.level": "等级",

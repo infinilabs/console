@@ -27,6 +27,15 @@ import { setSetupRequired } from "@/utils/setup";
 import { getHealth } from "@/services/system"
 import PlatformContainer from "./components/PlatformContainer";
 import React from "react";
+import { message, notification } from "antd";
+
+message.config({
+  maxCount: 3,
+});
+
+notification.config({
+  placement: "topRight",
+});
 
 if (!String.prototype.replaceAll) {
   String.prototype.replaceAll = function(search, replacement) {

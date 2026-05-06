@@ -31,6 +31,40 @@ export const formatResponse = (response) => {
   }
 }
 
+const ERROR_NOTIFICATION_DEDUPE_MS = 4000;
+const recentErrorNotifications = new Map();
+
+const cleanupRecentErrorNotifications = (now = Date.now()) => {
+  recentErrorNotifications.forEach((timestamp, key) => {
+    if (now - timestamp >= ERROR_NOTIFICATION_DEDUPE_MS) {
+      recentErrorNotifications.delete(key);
+    }
+  });
+};
+
+const showErrorNotification = ({
+  message,
+  description,
+  style,
+  dedupeKey,
+}) => {
+  const now = Date.now();
+  cleanupRecentErrorNotifications(now);
+  const key = dedupeKey || `${message}`;
+  const lastShownAt = recentErrorNotifications.get(key);
+  if (lastShownAt && now - lastShownAt < ERROR_NOTIFICATION_DEDUPE_MS) {
+    return;
+  }
+  recentErrorNotifications.set(key, now);
+  notification.error({
+    key,
+    placement: "topRight",
+    message,
+    description,
+    style,
+  });
+};
+
 const checkStatus = async (response, noticeable, option={}) => {
   const codeMessage = {
     200: formatMessage({ id: "app.message.http.status.200" }),
@@ -88,10 +122,11 @@ const checkStatus = async (response, noticeable, option={}) => {
             {desc}
           </div>
         );
-        notification.error({
+        showErrorNotification({
           message: formatMessage({ id: "app.message.http.request.error" }),
           description: desc,
           style: { wordBreak: "break-all" },
+          dedupeKey: `http-500:${typeof jsonRes.error === "string" ? jsonRes.error : jsonRes.error?.reason || response.status}`,
         });
       }
       return response;
@@ -104,10 +139,11 @@ const checkStatus = async (response, noticeable, option={}) => {
     option.hasOwnProperty("showErrorInner") &&
     option.showErrorInner === true
   ) {
-    notification.error({
+    showErrorNotification({
       message: response.statusText,
       description: errortext,
       style: { wordBreak: "break-all" },
+      dedupeKey: `http-inner:${response.status}:${response.statusText}:${errortext}`,
     });
     return response;
   }
@@ -136,10 +172,11 @@ const checkStatus = async (response, noticeable, option={}) => {
           {errortext}
         </div>
       );
-      notification.error({
+      showErrorNotification({
         message: `${formatMessage({ id: "app.message.http.request.error" })}`,
         description: desc,
         style: { wordBreak: "break-all" },
+        dedupeKey: `http-status:${response.status}:${errortext}`,
       });
     }
   }

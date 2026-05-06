@@ -292,7 +292,7 @@ func (h *APIHandler) HandleSearchClusterAction(w http.ResponseWriter, req *http.
 		name        = h.GetParameterOrDefault(req, "name", "")
 		sortField   = h.GetParameterOrDefault(req, "sort_field", "")
 		sortOrder   = h.GetParameterOrDefault(req, "sort_order", "")
-		queryDSL    = `{"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d%s}`
+		queryDSL    = `{"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d%s%s}`
 		strSize     = h.GetParameterOrDefault(req, "size", "20")
 		strFrom     = h.GetParameterOrDefault(req, "from", "0")
 		mustBuilder = &strings.Builder{}
@@ -300,7 +300,7 @@ func (h *APIHandler) HandleSearchClusterAction(w http.ResponseWriter, req *http.
 	if name != "" {
 		mustBuilder.WriteString(fmt.Sprintf(`{"prefix":{"name.text": "%s"}}`, name))
 	}
-	clusterFilter, hasAllPrivilege := h.GetClusterFilter(req, "_id")
+	clusterFilter, hasAllPrivilege := h.GetClusterFilter(req, "id")
 	if !hasAllPrivilege && clusterFilter == nil {
 		h.WriteJSON(w, elastic.SearchResponse{}, http.StatusOK)
 		return
@@ -311,6 +311,9 @@ func (h *APIHandler) HandleSearchClusterAction(w http.ResponseWriter, req *http.
 		}
 		mustBuilder.Write(util.MustToJSONBytes(clusterFilter))
 	}
+	if mustBuilder.Len() == 0 {
+		mustBuilder.WriteString(`{"match_all":{}}`)
+	}
 
 	size, _ := strconv.Atoi(strSize)
 	if size <= 0 {
@@ -320,23 +323,38 @@ func (h *APIHandler) HandleSearchClusterAction(w http.ResponseWriter, req *http.
 	if from < 0 {
 		from = 0
 	}
-	var sort = ""
+	var (
+		functions  = ""
+		sort       = ""
+		trackScore = ""
+	)
 	if sortField != "" && sortOrder != "" {
 		sort = fmt.Sprintf(`,"sort":[{"%s":{"order":"%s"}}]`, sortField, sortOrder)
+	} else {
+		functions = `,"functions":[{"filter":{"term":{"labels.health_status":"red"}},"weight":300},{"filter":{"term":{"labels.health_status":"yellow"}},"weight":200},{"filter":{"term":{"labels.health_status":"unavailable"}},"weight":100},{"filter":{"term":{"labels.health_status":"green"}},"weight":1}]`
+		sort = `,"sort":[{"_score":{"order":"desc"}},{"name.keyword":{"order":"asc","unmapped_type":"keyword"}}]`
+		trackScore = `,"track_scores":true`
+		queryDSL = `{"query":{"function_score":{"query":{"bool":{"must":[%s]}}%s,"score_mode":"sum","boost_mode":"replace"}}, "size": %d, "from": %d%s%s}`
 	}
 
-	queryDSL = fmt.Sprintf(queryDSL, mustBuilder.String(), size, from, sort)
+	queryDSL = fmt.Sprintf(queryDSL, mustBuilder.String(), functions, size, from, sort, trackScore)
 	q := orm.Query{
 		RawQuery: []byte(queryDSL),
 	}
 	err, result := orm.Search(elastic.ElasticsearchConfig{}, &q)
 	if err != nil {
+		if global.Env().IsDebug {
+			log.Errorf("cluster search failed, name=%q, from=%d, size=%d, dsl=%s, err=%v", name, from, size, queryDSL, err)
+		}
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	searchRes := elastic.SearchResponse{}
 	util.MustFromJSONBytes(result.Raw, &searchRes)
+	if global.Env().IsDebug && len(searchRes.Hits.Hits) == 0 {
+		log.Debugf("cluster search returned zero hits, name=%q, from=%d, size=%d, dsl=%s", name, from, size, queryDSL)
+	}
 	if len(searchRes.Hits.Hits) > 0 {
 		for _, hit := range searchRes.Hits.Hits {
 			if basicAuth, ok := hit.Source["basic_auth"]; ok {

@@ -13,7 +13,6 @@ import IconText from "@/components/infini/IconText";
 import AutoTextEllipsis from "@/components/AutoTextEllipsis";
 import commonStyles from "@/common.less"
 
-const { Search } = Input;
 
 export default ({
   clusterID,
@@ -88,7 +87,7 @@ export default ({
   const [columns] = React.useMemo(() => {
     let columns = [
       {
-        title: "Shard",
+        title: formatMessage({ id: "overview.column.shard" }),
         dataIndex: "shard",
         render: (text, record) => {
           if (!record.shard_id) {
@@ -111,7 +110,7 @@ export default ({
         sorter: (a, b) => a?.shard - b?.shard,
       },
       {
-        title: "Prirep",
+        title: formatMessage({ id: "overview.column.prirep" }),
         dataIndex: "prirep",
         render: (text, record) => (
           <span>
@@ -125,12 +124,12 @@ export default ({
         sorter: (a, b) => sorter.string(a, b, "prirep"),
       },
       {
-        title: "IP",
+        title: formatMessage({ id: "overview.column.ip" }),
         dataIndex: "ip",
         sorter: (a, b) => sorter.string(a, b, "ip"),
       },
       {
-        title: "Node",
+        title: formatMessage({ id: "overview.column.node" }),
         dataIndex: "node",
         render: (text, record) => {
           if (!text) {
@@ -159,12 +158,12 @@ export default ({
         className: commonStyles.maxColumnWidth
       },
       {
-        title: "State",
+        title: formatMessage({ id: "overview.column.state" }),
         dataIndex: "state",
         sorter: (a, b) => sorter.string(a, b, "state"),
       },
       {
-        title: "Docs",
+        title: formatMessage({ id: "overview.column.docs" }),
         dataIndex: "docs",
         render: (text, record) => (
           <span>{formatter.number(record?.docs || 0)}</span>
@@ -172,7 +171,7 @@ export default ({
         sorter: (a, b) => a?.docs - b?.docs,
       },
       {
-        title: "Store",
+        title: formatMessage({ id: "overview.column.store" }),
         dataIndex: "store_size_bytes",
         render: (text, record) => (
           <span>{formatter.bytes(record?.store_in_bytes || 0)}</span>
@@ -180,7 +179,7 @@ export default ({
         sorter: (a, b) => a?.store_in_bytes - b?.store_in_bytes,
       },
       {
-        title: "Indexing Rate",
+        title: formatMessage({ id: "overview.column.indexing_rate" }),
         dataIndex: "index_qps",
         render: (text, record) => (
           <span>{text != null ? `${text} /s` : "N/A"}</span>
@@ -188,7 +187,7 @@ export default ({
         sorter: (a, b) => a?.index_qps - b?.index_qps,
       },
       {
-        title: "Indexing Bytes",
+        title: formatMessage({ id: "overview.column.indexing_bytes" }),
         dataIndex: "index_bytes_qps",
         render: (text, record) => (
           <span>
@@ -212,7 +211,7 @@ export default ({
         }}
       >
         <div style={{ maxWidth: 500, flex: "1 1 auto" }}>
-          <Search
+          <Input.Search
             allowClear
             placeholder="Type keyword to search"
             enterButton="Search"

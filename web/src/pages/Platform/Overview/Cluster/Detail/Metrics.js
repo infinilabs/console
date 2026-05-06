@@ -13,19 +13,19 @@ export default (props) => {
   }
 
   const overviews = [
-    { 
-      key: 'nodes', 
-      title: 'Nodes', 
+    {
+      key: "nodes",
+      titleId: "overview.title.node",
       action: `${ESPrefix}/${clusterID}/nodes`,
-      component: MetricNodes 
+      component: MetricNodes,
     },
-    { 
-      key: 'indices', 
-      title: 'Indices', 
+    {
+      key: "indices",
+      titleId: "overview.title.index",
       action: `${ESPrefix}/${clusterID}/indices`,
-      component: MetricIndices 
-    }
-  ]
+      component: MetricIndices,
+    },
+  ];
 
   return (
     <Metrics
@@ -33,8 +33,13 @@ export default (props) => {
       params={{ clusterID, clusterName }}
       linkMore={`/cluster/monitor/elasticsearch/${clusterID}`}
       overviews={overviews}
-      metrics={['index_throughput', 'search_throughput', 'index_latency', 'search_latency']}
+      metrics={[
+        "index_throughput",
+        "search_throughput",
+        "index_latency",
+        "search_latency",
+      ]}
     />
-  )
+  );
 
 };

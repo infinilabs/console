@@ -17,10 +17,14 @@ import { default as Hosts } from "./components/host/host_table";
 const { TabPane } = Tabs;
 
 const panes = [
-  { title: "Clusters", component: Clusters, key: "clusters" },
-  { title: "Nodes", component: Nodes, key: "nodes" },
-  { title: "Indices", component: Indices, key: "indices" },
-  // { title: "Hosts", component: Hosts, key: "hosts" },
+  {
+    titleId: "overview.title.cluster",
+    component: Clusters,
+    key: "clusters",
+  },
+  { titleId: "overview.title.node", component: Nodes, key: "nodes" },
+  { titleId: "overview.title.index", component: Indices, key: "indices" },
+  // { titleId: "overview.title.host", component: Hosts, key: "hosts" },
 ];
 
 const NewOverview = (props) => {
@@ -128,7 +132,12 @@ const NewOverview = (props) => {
           activeKey={param?.tab || "clusters"}
         >
           {panes.map((pane) => (
-            <TabPane tab={pane.title} key={pane.key}>
+            <TabPane
+              tab={formatMessage({
+                id: pane.titleId,
+              })}
+              key={pane.key}
+            >
               {typeof pane.component == "string" ? (
                 pane.component
               ) : (

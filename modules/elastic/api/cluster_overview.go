@@ -1326,7 +1326,7 @@ func (h *APIHandler) SearchClusterMetadata(w http.ResponseWriter, req *http.Requ
 		}
 	}
 
-	clusterFilter, hasAllPrivilege := h.GetClusterFilter(req, "_id")
+	clusterFilter, hasAllPrivilege := h.GetClusterFilter(req, "id")
 	if !hasAllPrivilege && clusterFilter == nil {
 		h.WriteJSON(w, elastic.SearchResponse{}, http.StatusOK)
 		return

@@ -114,6 +114,18 @@ export async function fakeAccountLogin(params) {
   });
 }
 
+export async function getAccountLoginChallenge(params) {
+  return request(
+    "/account/login/challenge",
+    {
+      method: "POST",
+      body: params,
+    },
+    false,
+    false
+  );
+}
+
 export async function fakeRegister(params) {
   return request("/api/register", {
     method: "POST",

@@ -1,11 +1,16 @@
 import { routerRedux } from "dva/router";
 import { stringify } from "qs";
-import { fakeAccountLogin, getFakeCaptcha } from "@/services/api";
+import {
+  fakeAccountLogin,
+  getAccountLoginChallenge,
+  getFakeCaptcha,
+} from "@/services/api";
 import { setAuthority } from "@/utils/authority";
 import { getPageQuery } from "@/utils/utils";
 import { reloadAuthorized } from "@/utils/Authorized";
 import * as CurrentUser from "@/utils/CurrentUser";
 import { getAuthEnabled } from "@/utils/authority";
+import { buildPasswordProof } from "@/utils/password";
 
 export default {
   namespace: "login",
@@ -16,7 +21,28 @@ export default {
 
   effects: {
     *login({ payload }, { call, put }) {
-      const response = yield call(fakeAccountLogin, payload);
+      const username = payload.username || payload.userName;
+      let loginPayload = payload;
+      const challenge = yield call(getAccountLoginChallenge, { username });
+
+      if (challenge?.status === "ok" && challenge?.method === "challenge") {
+        const proof = yield call(buildPasswordProof, {
+          password: payload.password,
+          username,
+          challengeId: challenge.challenge_id,
+          nonce: challenge.nonce,
+          salt: challenge.salt,
+          iterations: challenge.iterations,
+        });
+        loginPayload = {
+          userName: username,
+          type: payload.type,
+          challenge_id: challenge.challenge_id,
+          proof,
+        };
+      }
+
+      const response = yield call(fakeAccountLogin, loginPayload);
       yield put({
         type: "changeLoginStatus",
         payload: response,

@@ -45,42 +45,83 @@ import { saveCommonCommand } from "../modules/es";
 import { pushCommand } from "../modules/mappings/mappings";
 import { formatMessage } from "umi/locale";
 import { hasAuthority } from "@/utils/authority";
-import { CopyToClipboard } from "react-copy-to-clipboard";
 
 interface Props {
   getCurl: () => Promise<string>;
   getDocumentation: () => Promise<string | null>;
-  autoIndent: (ev: React.MouseEvent) => void;
+  autoIndent: (ev?: { preventDefault?: () => void }) => void;
   saveAsCommonCommand: () => Promise<ESRequestParams>;
 }
 
 interface State {
   isPopoverOpen: boolean;
-  curlCode: string;
   modalVisible: boolean;
 }
+
+type ShortcutConfig = {
+  bindKey: {
+    win: string;
+    mac: string;
+  };
+  label: {
+    win: string;
+    mac: string;
+  };
+};
+
+export const CONSOLE_MENU_SHORTCUTS: Record<
+  "copyAsCurl" | "autoIndent" | "saveAsCommand",
+  ShortcutConfig
+> = {
+  copyAsCurl: {
+    bindKey: { win: "Ctrl-Alt-C", mac: "Command-Option-C" },
+    label: { win: "Ctrl+Alt+C", mac: "Cmd+Opt+C" },
+  },
+  autoIndent: {
+    bindKey: { win: "Ctrl-Alt-I", mac: "Command-Option-I" },
+    label: { win: "Ctrl+Alt+I", mac: "Cmd+Opt+I" },
+  },
+  saveAsCommand: {
+    bindKey: { win: "Ctrl-Alt-S", mac: "Command-Option-S" },
+    label: { win: "Ctrl+Alt+S", mac: "Cmd+Opt+S" },
+  },
+};
+
+const isMacPlatform = () =>
+  typeof window !== "undefined" &&
+  /(Mac|iPhone|iPad|iPod)/i.test(window.navigator.platform);
+
+const renderMenuItemContent = (label: string, shortcut: ShortcutConfig["label"]) => (
+  <span
+    style={{
+      display: "flex",
+      width: "100%",
+      alignItems: "center",
+      gap: 16,
+    }}
+  >
+    <span>{label}</span>
+    <span style={{ color: "#98A2B3", fontSize: 12, marginLeft: "auto", textAlign: "right" }}>
+      {isMacPlatform() ? shortcut.mac : shortcut.win}
+    </span>
+  </span>
+);
 
 export default class ConsoleMenu extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
 
     this.state = {
-      curlCode: "",
       isPopoverOpen: false,
       modalVisible: false,
     };
   }
 
-  mouseEnter = () => {
-    if (this.state.isPopoverOpen) return;
-    this.props.getCurl().then((text) => {
-      this.setState({ curlCode: text });
-    });
-  };
-
-  async copyAsCurl() {
+  copyAsCurl = async () => {
+    this.closePopover();
     try {
-      await this.copyText(this.state.curlCode);
+      const curlCode = await this.props.getCurl();
+      await this.copyText(curlCode);
       notification.open({
         message: "Request copied as cURL",
         placement: "bottomRight",
@@ -91,7 +132,7 @@ export default class ConsoleMenu extends Component<Props, State> {
         placement: "bottomRight",
       });
     }
-  }
+  };
 
   async copyText(text: string) {
     if (window.navigator?.clipboard) {
@@ -122,7 +163,7 @@ export default class ConsoleMenu extends Component<Props, State> {
     window.open(documentation, "_blank");
   };
 
-  autoIndent = (event: React.MouseEvent) => {
+  autoIndent = (event?: { preventDefault?: () => void }) => {
     this.closePopover();
     this.props.autoIndent(event);
   };
@@ -167,7 +208,16 @@ export default class ConsoleMenu extends Component<Props, State> {
 
     const items = [
       <EuiContextMenuItem key="Auto indent" onClick={this.autoIndent}>
-        {formatMessage({ id: "console.menu.auto_indent" })}
+        {renderMenuItemContent(
+          formatMessage({ id: "console.menu.auto_indent" }),
+          CONSOLE_MENU_SHORTCUTS.autoIndent.label
+        )}
+      </EuiContextMenuItem>,
+      <EuiContextMenuItem key="Copy as cURL" id="ConCopyAsCurl" onClick={this.copyAsCurl}>
+        {renderMenuItemContent(
+          formatMessage({ id: "console.menu.copy_as_curl" }),
+          CONSOLE_MENU_SHORTCUTS.copyAsCurl.label
+        )}
       </EuiContextMenuItem>
     ];
     if(hasAuthority("system.command:all")){
@@ -175,28 +225,15 @@ export default class ConsoleMenu extends Component<Props, State> {
         key="Save as common command"
         onClick={this.saveAsCommonCommand}
       >
-        {formatMessage({ id: "console.menu.save_as_command" })}
+        {renderMenuItemContent(
+          formatMessage({ id: "console.menu.save_as_command" }),
+          CONSOLE_MENU_SHORTCUTS.saveAsCommand.label
+        )}
       </EuiContextMenuItem>)
     }
-    items.unshift(
-      <CopyToClipboard key="Copy as cURL" text={this.state.curlCode}>
-        <EuiContextMenuItem
-          id="ConCopyAsCurl"
-          onClick={() => {
-            this.closePopover();
-            notification.open({
-              message: "Request copied as cURL",
-              placement: "bottomRight",
-            });
-          }}
-        >
-          {formatMessage({ id: "console.menu.copy_as_curl" })}
-        </EuiContextMenuItem>
-      </CopyToClipboard>
-    );
 
     return (
-      <span onMouseEnter={this.mouseEnter}>
+      <span>
         <EuiPopover
           id="contextMenu"
           button={button}

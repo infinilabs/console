@@ -67,6 +67,7 @@ export default (props) => {
     if (ruleInfo && !ruleInfo.error) {
       let tableData = dataSource?.data?.map((item) => {
         item.info = ruleInfo?.[item.id] || {};
+        item.infoLoaded = true;
         return item;
       });
       dataSource.data = tableData;
@@ -245,6 +246,15 @@ export default (props) => {
     return dataNew;
   };
 
+  const renderRuleStatus = (record) => {
+    if (!record?.infoLoaded) {
+      return <span style={{ width: 14, height: 14, display: "inline-block" }} />;
+    }
+    return (
+      <HealthStatusCircle status={RuleStautsColor[record.info?.status] || "gray"} />
+    );
+  };
+
   const columns = [
     {
       title: formatMessage({ id: "alert.rule.table.columnns.category" }),
@@ -272,7 +282,7 @@ export default (props) => {
             to={`/alerting/rule/${record.id}`}
             style={{ display: "flex", alignItems: "center", gap: 5 }}
           >
-            <HealthStatusCircle status={RuleStautsColor[record.info?.status]} />
+            {renderRuleStatus(record)}
             <span>{text}</span>
           </Link>
         );

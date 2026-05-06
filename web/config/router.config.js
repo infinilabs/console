@@ -381,6 +381,8 @@ export default [
         name: "system",
         icon: "setting",
         authority: [
+          "system.cluster:all",
+          "system.cluster:read",
           "system.credential:all",
           "system.credential:read",
           "system.security:all",
@@ -392,10 +394,26 @@ export default [
         ],
         routes: [
           {
+            path: "/system/settings",
+            name: "settings",
+            component: "./System/Settings/index",
+            authority: [
+              "system.cluster:all",
+              "system.cluster:read",
+              "system.smtp_server:all",
+              "system.smtp_server:read",
+            ],
+          },
+          {
             path: "/system/email_server",
-            name: "smtp_server",
-            component: "./System/Email/Server",
-            authority: ["system.smtp_server:all", "system.smtp_server:read"],
+            component: "./System/Settings/index",
+            hideInMenu: true,
+            authority: [
+              "system.cluster:all",
+              "system.cluster:read",
+              "system.smtp_server:all",
+              "system.smtp_server:read",
+            ],
           },
           {
             path: "/system/credential",

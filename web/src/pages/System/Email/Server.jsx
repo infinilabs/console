@@ -9,7 +9,7 @@ import { formatESSearchResult } from '@/lib/elasticsearch/util';
 import { formatMessage } from "umi/locale";
 import EmptyServer from './Components/EmptyServer';
 
-const ServerList = ({})=>{
+const ServerList = ({ embedded = false })=>{
 
   const [loading, setLoading] = useState(false);
   
@@ -151,38 +151,42 @@ const ServerList = ({})=>{
       }
     })
   }
+  const content = (
+    <Card loading={loading}>
+      {state.servers.length == 0 ? <EmptyServer onAddClick={onEmptyAddClick}/>:
+      <Tabs
+        hideAdd
+        onChange={handleTabChange}
+        activeKey={state.activeKey}
+        type="editable-card"
+        // onEdit={this.onEdit}
+      >
+        {state.servers.map(cfg => (
+          <TabPane 
+          tab={<span className='srv-tab'>{cfg.name}
+           <Popconfirm
+                title="Sure to delete?"
+                onConfirm={() => onDeleteClick(cfg.id)}
+              >
+                <Icon type="close"/>
+            </Popconfirm>
+          </span>} 
+          key={cfg.id} closable={false} >
+            <ServerConfig config={cfg} setState={setState} onSaveClick={onSaveClick}/>
+            <div></div>
+          </TabPane>
+        ))}
+         <TabPane tab={<span>
+        <Icon type="plus" />
+      </span>} key="add" closable={false} />
+      </Tabs>}
+    </Card>
+  );
+  if (embedded) {
+    return content;
+  }
   return (
-    <PageHeaderWrapper>
-      <Card loading={loading}>
-        {state.servers.length == 0 ? <EmptyServer onAddClick={onEmptyAddClick}/>:
-        <Tabs
-          hideAdd
-          onChange={handleTabChange}
-          activeKey={state.activeKey}
-          type="editable-card"
-          // onEdit={this.onEdit}
-        >
-          {state.servers.map(cfg => (
-            <TabPane 
-            tab={<span className='srv-tab'>{cfg.name}
-             <Popconfirm
-                  title="Sure to delete?"
-                  onConfirm={() => onDeleteClick(cfg.id)}
-                >
-                  <Icon type="close"/>
-              </Popconfirm>
-            </span>} 
-            key={cfg.id} closable={false} >
-              <ServerConfig config={cfg} setState={setState} onSaveClick={onSaveClick}/>
-              <div></div>
-            </TabPane>
-          ))}
-           <TabPane tab={<span>
-          <Icon type="plus" />
-        </span>} key="add" closable={false} />
-        </Tabs>}
-      </Card>
-    </PageHeaderWrapper>
+    <PageHeaderWrapper>{content}</PageHeaderWrapper>
   );
 }
 

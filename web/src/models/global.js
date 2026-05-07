@@ -14,6 +14,7 @@ import router from "umi/router";
 import _ from "lodash";
 import { getAuthEnabled, hasAuthority } from "@/utils/authority";
 import { formatMessage } from "umi/locale";
+import { getPreferredCluster } from "@/utils/setup";
 
 // import ReactGA from "react-ga";
 // ReactGA.initialize("G-L0XH1C4CVP");
@@ -169,21 +170,26 @@ export default {
 
         if (!selectedClusterID) {
           const targetID = extractClusterIDFromURL();
-          let idx = data.findIndex((item) => item.id == targetID);
+          let nextSelectedCluster = getPreferredCluster(data, {
+            targetClusterID: targetID,
+          });
 
-          if (idx === -1) {
+          if (!nextSelectedCluster || (targetID && nextSelectedCluster.id !== targetID)) {
             yield put({ type: "fetchClusterStatus" });
             yield take("fetchClusterStatus/@@end");
             let { clusterStatus } = yield select((state) => state.global);
-            idx = data.findIndex((item) => clusterStatus[item.id]?.available);
-            if (idx === -1) idx = 0;
+            const availableCluster = data.find(
+              (item) => clusterStatus[item.id]?.available
+            );
+            nextSelectedCluster =
+              nextSelectedCluster || availableCluster || data[0];
           }
 
           yield put({
             type: "saveData",
             payload: {
-              selectedCluster: data[idx],
-              selectedClusterID: (data[idx] || {}).id,
+              selectedCluster: nextSelectedCluster,
+              selectedClusterID: nextSelectedCluster?.id,
             },
           });
         }

@@ -22,6 +22,7 @@ import { ResizeBar } from "@/components/infini/resize_bar";
 import maximizeSvg from "@/assets/window-maximize.svg";
 import restoreSvg from "@/assets/window-restore.svg";
 import ClusterSelect from "@/components/ClusterSelect";
+import { getPreferredCluster } from "@/utils/setup";
 
 const MaximizeIcon = (props = {}) => {
   return <img height="14px" width="14px" {...props} src={maximizeSvg} />;
@@ -143,9 +144,9 @@ function calcHeightToPX(height: string) {
 }
 
 export const ConsoleUI = ({
-  selectedCluster,
-  clusterList,
-  clusterStatus,
+  selectedCluster = {},
+  clusterList = [],
+  clusterStatus = {},
   minimize = false,
   onMinimizeClick,
   resizeable = false,
@@ -158,27 +159,29 @@ export const ConsoleUI = ({
       return cm;
     }
     (clusterList || []).map((cluster: any) => {
-      cluster.status = clusterStatus[cluster.id]?.health?.status;
+      const nextCluster = { ...cluster };
+      nextCluster.status = clusterStatus[cluster.id]?.health?.status;
       if (!clusterStatus[cluster.id]?.available) {
-        cluster.status = "unavailable";
+        nextCluster.status = "unavailable";
       }
-      cm[cluster.id] = cluster;
+      cm[cluster.id] = nextCluster;
     });
     return cm;
   }, [clusterList, clusterStatus]);
   const initialDefaultState = () => {
-    let defaultCluster = selectedCluster;
-    if (!defaultCluster.id) {
-      defaultCluster = clusterList[0];
-    }
-    const defaultActiveKey = `${defaultCluster.id ||
-      ""}:${new Date().valueOf()}`;
-    const defaultState = defaultCluster
+    const defaultCluster = getPreferredCluster(clusterList, {
+      selectedClusterID: selectedCluster?.id,
+    });
+    const defaultClusterID = defaultCluster?.id || "";
+    const defaultActiveKey = defaultClusterID
+      ? `${defaultClusterID}:${new Date().valueOf()}`
+      : "";
+    const defaultState = defaultClusterID
       ? {
           panes: [
             {
               key: defaultActiveKey,
-              cluster_id: defaultCluster.id,
+              cluster_id: defaultClusterID,
               title: defaultCluster.name,
             },
           ],
@@ -339,8 +342,8 @@ export const ConsoleUI = ({
     ),
   };
 
-  setClusterID(tabState.activeKey?.split(":")[0]);
-  const panes = tabState.panes.filter((pane: any) => {
+  setClusterID(tabState.activeKey?.split(":")[0] || "");
+  const panes = (tabState.panes || []).filter((pane: any) => {
     pane.closable = true;
     return typeof clusterMap[pane.cluster_id] != "undefined";
   });

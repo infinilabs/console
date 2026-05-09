@@ -43,11 +43,18 @@ import (
 
 var configProvidersLock = sync.RWMutex{}
 var configProviders = []func(instance model.Instance) []*common.ConfigFile{}
+var secretProviders = []func(instance model.Instance) *common.Secrets{}
 
 func RegisterConfigProvider(provider func(instance model.Instance) []*common.ConfigFile) {
 	configProvidersLock.Lock()
 	defer configProvidersLock.Unlock()
 	configProviders = append(configProviders, provider)
+}
+
+func RegisterSecretProvider(provider func(instance model.Instance) *common.Secrets) {
+	configProvidersLock.Lock()
+	defer configProvidersLock.Unlock()
+	secretProviders = append(secretProviders, provider)
 }
 
 func refreshConfigsRepo() {
@@ -118,6 +125,15 @@ func getSecretsForInstance(instance model.Instance) *common.Secrets {
 					}
 				}
 			}
+		}
+	}
+
+	for _, providerSecrets := range getSecretsFromExternalProviders(instance) {
+		if providerSecrets == nil {
+			continue
+		}
+		for k, v := range providerSecrets.Keystore {
+			secrets.Keystore[k] = v
 		}
 	}
 	return &secrets
@@ -306,4 +322,17 @@ func getConfigsFromExternalProviders(client model.Instance) []*common.ConfigFile
 		}
 	}
 	return cfgs
+}
+
+func getSecretsFromExternalProviders(client model.Instance) []*common.Secrets {
+	configProvidersLock.Lock()
+	defer configProvidersLock.Unlock()
+	var secrets []*common.Secrets
+	for _, p := range secretProviders {
+		s := p(client)
+		if s != nil {
+			secrets = append(secrets, s)
+		}
+	}
+	return secrets
 }

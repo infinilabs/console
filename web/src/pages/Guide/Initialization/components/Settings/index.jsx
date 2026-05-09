@@ -341,14 +341,7 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
             )}
           </Form.Item>
           <Form.Item label=" ">
-            <div
-              style={{
-                color: "#ff0000",
-                lineHeight: "20px",
-                opacity: 0.7,
-                wordBreak: "break-all",
-              }}
-            >
+            <div className={styles.credentialSecretTip}>
               {formatMessage({ id: "guide.credential_secret.tips" })}
             </div>
           </Form.Item>
@@ -412,14 +405,7 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
          
         </Form.Item>
         <Form.Item label=" ">
-          <div
-            style={{
-              color: "#ff0000",
-              lineHeight: "20px",
-              opacity: 0.7,
-              wordBreak: "break-all",
-            }}
-          >
+          <div className={styles.credentialSecretTip}>
             {formatMessage({ id: "guide.credential_secret.tips" })}
           </div>
         </Form.Item>

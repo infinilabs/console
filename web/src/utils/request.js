@@ -34,7 +34,12 @@ export const formatResponse = (response) => {
 const secureTransportErrorReason =
   "Sensitive requests require HTTPS. Enable Console HTTPS or put Console behind an HTTPS reverse proxy.";
 const ERROR_NOTIFICATION_DEDUPE_MS = 4000;
+const DATATOOLS_LICENSE_REQUIRED_REASON =
+  "a valid license is required to use DataTools";
+const DATATOOLS_LICENSE_MODAL_EVENT = "console:datatools-license-required";
+const DATATOOLS_LICENSE_MODAL_DEDUPE_MS = 3000;
 const recentErrorNotifications = new Map();
+let lastDataToolsLicenseModalAt = 0;
 
 const sensitiveRequestRules = [
   { method: "POST", pattern: /^\/account\/login\/challenge$/ },
@@ -84,6 +89,38 @@ const requestUsesSecureTransport = (requestUrl) => {
   }
 
   return new URL(requestUrl, window.location.origin).protocol === "https:";
+};
+
+const getCurrentRoutePath = () => {
+  if (typeof window === "undefined") {
+    return "/";
+  }
+
+  const hash = window.location.hash || "";
+  const hashPath = hash.startsWith("#") ? hash.slice(1) : hash;
+  if (hashPath.startsWith("/")) {
+    return getNormalizedRequestPath(hashPath);
+  }
+
+  return getNormalizedRequestPath(window.location.pathname || "/");
+};
+
+const isDataToolsRoute = () => {
+  return /^\/data_tools(\/|$)/.test(getCurrentRoutePath());
+};
+
+const openDataToolsLicenseModal = () => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const now = Date.now();
+  if (now - lastDataToolsLicenseModalAt < DATATOOLS_LICENSE_MODAL_DEDUPE_MS) {
+    return;
+  }
+
+  lastDataToolsLicenseModalAt = now;
+  window.dispatchEvent(new CustomEvent(DATATOOLS_LICENSE_MODAL_EVENT));
 };
 
 const requestRequiresSecureTransport = (requestUrl, method = "GET") => {
@@ -195,6 +232,18 @@ const checkStatus = async (response, noticeable, option={}) => {
 
   if (response.status >= 200 && response.status < 300) {
     return response;
+  }
+  if (response.status === 403 && isDataToolsRoute()) {
+    let jsonRes = null;
+    try {
+      jsonRes = await response.clone().json();
+    } catch (error) {
+      jsonRes = null;
+    }
+    if (jsonRes?.error?.reason === DATATOOLS_LICENSE_REQUIRED_REASON) {
+      openDataToolsLicenseModal();
+      return response;
+    }
   }
   if (response.status == 500) {
     let jsonRes = null;

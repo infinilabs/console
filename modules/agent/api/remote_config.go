@@ -33,15 +33,21 @@ import (
 	log "github.com/cihub/seelog"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/global"
+	"infini.sh/framework/core/keystore"
 	"infini.sh/framework/core/kv"
 	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
+	keystore2 "infini.sh/framework/lib/keystore"
 	"infini.sh/framework/modules/configs/common"
 	common2 "infini.sh/framework/modules/elastic/common"
 	metadata2 "infini.sh/framework/modules/elastic/metadata"
+	"strings"
 	"time"
 )
+
+const systemClusterPassKey = "SYSTEM_CLUSTER_PASS"
+const systemClusterIngestPasswordKey = "SYSTEM_CLUSTER_INGEST_PASSWORD"
 
 type RemoteConfig struct {
 	orm.ORMObjectBase
@@ -81,6 +87,7 @@ func remoteConfigProvider(instance model.Instance) []*common.ConfigFile {
 						item.Name = util.ToString(name)
 						item.Location = util.ToString(f["location"])
 						item.Content = util.ToString(f["content"])
+						item.Content = rewriteLegacyAgentConfigContent(instance, item.Content)
 						item.Version, _ = util.ToInt64(util.ToString(f["version"]))
 						item.Size = int64(len(item.Content))
 						item.Managed = true
@@ -100,6 +107,26 @@ func remoteConfigProvider(instance model.Instance) []*common.ConfigFile {
 	}
 
 	return result
+}
+
+func rewriteLegacyAgentConfigContent(instance model.Instance, content string) string {
+	if content == "" {
+		return content
+	}
+
+	if instance.Application.Name != "agent" && instance.Application.Name != "gateway" {
+		return content
+	}
+
+	if !strings.Contains(content, "$[[SETUP_AGENT_PASSWORD]]") {
+		return content
+	}
+
+	return strings.ReplaceAll(
+		content,
+		"$[[SETUP_AGENT_PASSWORD]]",
+		fmt.Sprintf("$[[keystore.%s]]", getSystemClusterIngestSecretKey()),
+	)
 }
 
 func dynamicAgentConfigProvider(instance model.Instance) []*common.ConfigFile {
@@ -156,6 +183,98 @@ func dynamicAgentConfigProvider(instance model.Instance) []*common.ConfigFile {
 	return result
 }
 
+func agentSecretProvider(instance model.Instance) *common.Secrets {
+	if instance.Application.Name != "agent" && instance.Application.Name != "gateway" {
+		return nil
+	}
+
+	secrets := &common.Secrets{Keystore: map[string]common.KeystoreValue{}}
+	appendKeystoreSecret(secrets, getSystemClusterIngestSecretKey())
+
+	if instance.Application.Name == "agent" {
+		ids, err := GetEnrolledNodesByAgent(instance.ID)
+		if err != nil {
+			panic(err)
+		}
+
+		for _, v := range ids {
+			auth, err := getAgentBasicAuth(v.ClusterID)
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+			if auth == nil {
+				continue
+			}
+			secrets.Keystore[getAgentPasswordKey(v.ClusterID)] = common.KeystoreValue{
+				Type:  "plaintext",
+				Value: auth.Password.Get(),
+			}
+		}
+	}
+
+	if len(secrets.Keystore) == 0 {
+		return nil
+	}
+	return secrets
+}
+
+func getSystemClusterIngestSecretKey() string {
+	systemClusterID := global.MustLookupString(elastic.GlobalSystemElasticsearchID)
+
+	if metadata := elastic.GetMetadata(systemClusterID); metadata != nil && metadata.Config != nil {
+		if metadata.Config.Distribution == elastic.Easysearch {
+			return systemClusterIngestPasswordKey
+		}
+		return systemClusterPassKey
+	}
+
+	if cfg := elastic.GetConfigNoPanic(systemClusterID); cfg != nil {
+		if cfg.Distribution == elastic.Easysearch {
+			return systemClusterIngestPasswordKey
+		}
+		return systemClusterPassKey
+	}
+
+	return systemClusterPassKey
+}
+
+func appendKeystoreSecret(secrets *common.Secrets, key string) {
+	if secrets == nil || key == "" {
+		return
+	}
+	value, err := keystore.GetValue(key)
+	if err == keystore2.ErrKeyDoesntExists {
+		return
+	}
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	secrets.Keystore[key] = common.KeystoreValue{
+		Type:  "plaintext",
+		Value: string(value),
+	}
+}
+
+func getAgentPasswordKey(clusterID string) string {
+	return fmt.Sprintf("%s_password", clusterID)
+}
+
+func getAgentBasicAuth(clusterID string) (*model.BasicAuth, error) {
+	metadata := elastic.GetMetadata(clusterID)
+	if metadata == nil || metadata.Config == nil || metadata.Config.AgentCredentialID == "" {
+		return nil, nil
+	}
+
+	credential, err := common2.GetCredential(metadata.Config.AgentCredentialID)
+	if err != nil {
+		return nil, err
+	}
+
+	return credential.DecodeBasicAuth()
+}
+
 func getAgentIngestConfigs(instance string, items map[string]BindingItem) (string, string) {
 
 	if instance == "" {
@@ -208,22 +327,12 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 			distribution = metadata.Config.Distribution
 			clusterName = metadata.Config.Name
 
-			if metadata.Config.AgentCredentialID != "" {
-				credential, err := common2.GetCredential(metadata.Config.AgentCredentialID)
-				if err != nil {
-					log.Error(err)
-					continue
-				}
-				var dv interface{}
-				dv, err = credential.Decode()
-				if err != nil {
-					log.Error(err)
-					continue
-				}
-				if auth, ok := dv.(model.BasicAuth); ok {
-					username = auth.Username
-					password = auth.Password.Get()
-				}
+			if auth, err := getAgentBasicAuth(v.ClusterID); err != nil {
+				log.Error(err)
+				continue
+			} else if auth != nil {
+				username = auth.Username
+				password = fmt.Sprintf("$[[keystore.%s]]", getAgentPasswordKey(v.ClusterID))
 			}
 		}
 
@@ -269,7 +378,6 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 
 	hash := util.MD5digest(buffer.String())
 
-	//password: $[[keystore.$[[CLUSTER_ID]]_password]]
 	buffer.WriteString("\n")
 	buffer.WriteString(fmt.Sprintf("#MANAGED_CONFIG_VERSION: %v\n#MANAGED: true\n", latestVersion))
 

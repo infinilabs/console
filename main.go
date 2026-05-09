@@ -163,8 +163,11 @@ func main() {
 
 		module.Start()
 
-		var initFunc = func() {
+		var initFunc = func(startDeferredModules bool) {
 			// check cluster health before initialization, refuse to start if status is red
+			if err := setup1.EnsureSystemClusterBasicAuth(); err != nil {
+				panic(fmt.Errorf("failed to hydrate system cluster auth: %v", err))
+			}
 			sysClusterID := global.MustLookupString(elastic.GlobalSystemElasticsearchID)
 			client := elastic.GetClient(sysClusterID)
 			health, err := client.ClusterHealth(context.Background())
@@ -177,7 +180,7 @@ func main() {
 
 			elastic2.InitTemplate(false)
 
-			if global.Env().SetupRequired() {
+			if startDeferredModules {
 				for _, v := range modules {
 					v.Value.Start()
 				}
@@ -217,9 +220,11 @@ func main() {
 		}
 
 		if !global.Env().SetupRequired() {
-			initFunc()
+			initFunc(false)
 		} else {
-			setup1.RegisterSetupCallback(initFunc)
+			setup1.RegisterSetupCallback(func() {
+				initFunc(true)
+			})
 		}
 
 		if !global.Env().SetupRequired() {

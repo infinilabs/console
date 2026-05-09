@@ -6,17 +6,21 @@ type TransformOptions = {
 }
 
 export const transform = (config: any, options: TransformOptions) => {
-  if(options.sourceDistribution === SearchEngines.Opensearch){
-    return transformOpensearchToElasticsearch(config);
+  if(returnsInternalILMPolicy(options.sourceDistribution) && options.targetDistribution !== SearchEngines.Opensearch){
+    return transformISMToElasticsearch(config);
   }
-  if(options.targetDistribution === SearchEngines.Opensearch){
-    return transformElasticsearchToOpensearch(config);
+  if(options.sourceDistribution !== SearchEngines.Opensearch && options.targetDistribution === SearchEngines.Opensearch){
+    return transformElasticsearchToISM(config);
   }
   
   return config
 }
 
-const transformElasticsearchToOpensearch = (config: any) =>{
+const returnsInternalILMPolicy = (distribution: string) => {
+  return distribution === SearchEngines.Opensearch || distribution === SearchEngines.Easysearch;
+}
+
+const transformElasticsearchToISM = (config: any) =>{
   if(!config || !config.policy){
     return {};
   }
@@ -32,11 +36,17 @@ const transformElasticsearchToOpensearch = (config: any) =>{
     policy["states"] = transformPhases(policy["phases"]);
     delete policy["phases"];
   }
-  policy["description"] = "tranform with infini console";
-  policy["default_state"] = policy.states[0]?.name;
-  policy["ism_template"] = {
-    "index_patterns": [],
-    "priority": 100
+  if(!policy["description"]){
+    policy["description"] = "tranform with infini console";
+  }
+  if(!policy["default_state"]){
+    policy["default_state"] = policy.states?.[0]?.name;
+  }
+  if(!policy["ism_template"]){
+    policy["ism_template"] = {
+      "index_patterns": [],
+      "priority": 100
+    }
   }
   return config;
 }
@@ -52,16 +62,25 @@ const transformPhases = (phases: any)=>{
         "transitions": [],
       }
       Object.keys(phases[pk].actions).forEach(key => {
-        if(pk === "delete"){
-          delete  phases[pk].actions[key]["delete_searchable_snapshot"];
-        }
         //transform action key
         let tkey = key;
         if(key === "set_priority"){
           tkey = "index_priority";
+        } else if(key === "allocate"){
+          tkey = "allocation";
+        } else if(key === "forcemerge"){
+          tkey = "force_merge";
+        } else if(key === "readonly"){
+          tkey = "read_only";
         }
         //transform action value
         let tvalue = phases[pk].actions[key];
+        if(tvalue && typeof tvalue === "object" && !Array.isArray(tvalue)){
+          tvalue = { ...tvalue };
+        }
+        if(pk === "delete" && tvalue && typeof tvalue === "object"){
+          delete tvalue["delete_searchable_snapshot"];
+        }
         if(key === "rollover"){
           tvalue = transformRollover(tvalue, true)
         }
@@ -96,7 +115,7 @@ const transformPhases = (phases: any)=>{
   return states;
 }
 
-const transformOpensearchToElasticsearch = (config: any)=>{
+const transformISMToElasticsearch = (config: any)=>{
   if(!config || !config.policy){
     return {};
   }
@@ -123,20 +142,32 @@ const transformStates = (states: any[])=>{
   states.forEach((st)=>{
     const actions = {};
     (st.actions || []).forEach((action: any)=>{
-      const ak = Object.keys(action).shift();
-      if(!ak) {
-        return;
-      }
-      let tkey = ak;
-      let tvalue = action[ak];
-      if(tkey === "rollover"){
-        tvalue = transformRollover(tvalue, false);
-      }
-      //transform key
-      if(tkey === "index_priority"){
-        tkey = "set_priority";
-      }
-      actions[tkey] = tvalue
+      Object.keys(action || {}).forEach((ak)=>{
+        if(ak === "retry" || ak === "timeout"){
+          return;
+        }
+        let tkey = ak;
+        let tvalue = action[ak];
+        if(tvalue && typeof tvalue === "object" && !Array.isArray(tvalue)){
+          tvalue = { ...tvalue };
+        }
+        if(tkey === "rollover"){
+          tvalue = transformRollover(tvalue, false);
+        }
+        if(tkey === "index_priority"){
+          tkey = "set_priority";
+        } else if(tkey === "allocation"){
+          tkey = "allocate";
+          if(tvalue && typeof tvalue === "object"){
+            delete tvalue.wait_for;
+          }
+        } else if(tkey === "force_merge"){
+          tkey = "forcemerge";
+        } else if(tkey === "read_only"){
+          tkey = "readonly";
+        }
+        actions[tkey] = tvalue
+      })
     })
     phases[st.name] = {
       actions

@@ -757,6 +757,7 @@ func (h *APIHandler) GetIndexStatusOfRecentDay(clusterID, indexName string) (map
 					"term_health": util.MapStr{
 						"terms": util.MapStr{
 							"field": "payload.elasticsearch.index_health.status",
+							"size":  10,
 						},
 					},
 				},

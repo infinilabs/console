@@ -225,23 +225,34 @@ function install_config() {
   server=${register_server:-$location_ep}
   echo "[agent] agent listening port $port, will register to console endpoint [ $server ]"
   cat <<EOF > ${install_dir}/agent.yml
-configs.auto_reload: true
-
 env:
-  API_BINDING: "0.0.0.0:${port}"
+  WEB_BINDING: "0.0.0.0:${port}"
+  MANAGED: true
+  REMOTE_CONFIG_SERVERS: ["${server}"]
+  REMOTE_CONFIG_INTERVAL: "10s"
+  SECURITY_ENABLED: true
+  SECURITY_MANAGED_ENABLED: false
 
 path.data: data
 path.logs: log
-path.configs: config
+path.configs: "config"
+configs.auto_reload: true
 
 resource_limit.cpu.max_num_of_cpus: 1
-resource_limit.memory.max_in_bytes: 533708800
+resource_limit:
+  memory:
+    max_in_bytes: 533708800 #50MB
+
+task:
+  max_concurrent_tasks: 3
 
 stats:
-  include_storage_stats_in_api: false
+  include_storage_stats_in_api: true
 
 elastic:
   skip_init_metadata_on_start: true
+  metadata_refresh:
+    enabled: false
   health_check:
     enabled: true
     interval: 60s
@@ -252,46 +263,50 @@ elastic:
 disk_queue:
   max_msg_size: 20485760
   max_bytes_per_file: 20485760
-  max_used_bytes: 524288000
+  max_used_bytes: 524288000 # 500MB
   retention.max_num_of_local_files: 1
   compress:
-    idle_threshold: 0
+    idle_threshold: 1
     num_of_files_decompress_ahead: 0
     segment:
       enabled: true
 
 api:
-  enabled: true
-  tls:
-    enabled: false
-    cert_file: "config/client.crt"
-    key_file: "config/client.key"
-    ca_file: "config/ca.crt"
-    skip_insecure_verify: false
-  network:
-    binding: \$[[env.API_BINDING]]
+  disable_api_directory: true
+  enabled: false
 
-badger:
-  value_threshold: 1024
-  mem_table_size: 1048576
-  value_log_max_entries: 1000000
-  value_log_file_size: 104857600
+web:
+  embedding_api: true
+  websocket:
+    enabled: false
+  enabled: true
+  network:
+    binding: \$[[env.WEB_BINDING]]
+  ui:
+    vfs: true
+#  tls:
+#    enabled: true
+#    cert_file: /etc/ssl.crt
+#    key_file: /etc/ssl.key
+#    skip_insecure_verify: false
+  security:
+    enabled: \$[[env.SECURITY_ENABLED]]
+    managed: \$[[env.SECURITY_MANAGED_ENABLED]]
+
+agent:
+
+metrics:
+  enabled: false
 
 configs:
   #for managed client's setting
-  managed: true # managed by remote servers
+  managed: \$[[env.MANAGED]] # managed by remote servers
   panic_on_config_error: false #ignore config error
-  interval: "10s"
-  servers: # config servers
-    - "${server}"
-  soft_delete: false
+  allow_generated_metrics_tasks: false # allow auto-generated metrics tasks (e.g. k8s)
+  interval: \$[[env.REMOTE_CONFIG_INTERVAL]]
+  servers: \$[[env.REMOTE_CONFIG_SERVERS]] # config servers
   max_backup_files: 5
-  tls: #for mTLS connection with config servers
-    enabled: false
-    cert_file: "config/client.crt"
-    key_file: "config/client.key"
-    ca_file: "config/ca.crt"
-    skip_insecure_verify: false
+  soft_delete: false
 
 node:
   major_ip_pattern: ".*"

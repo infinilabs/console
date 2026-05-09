@@ -98,7 +98,7 @@ elasticsearch:
     enabled: true
     basic_auth:
       username: $[[SETUP_AGENT_USERNAME]]
-      password: $[[SETUP_AGENT_PASSWORD]]
+      password: $[[keystore.$[[SETUP_AGENT_PASSWORD_KEY]]]]
     endpoints: $[[SETUP_ENDPOINTS]]
 
 pipeline:

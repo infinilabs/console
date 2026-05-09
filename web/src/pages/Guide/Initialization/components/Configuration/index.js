@@ -13,6 +13,7 @@ const formItemLayout = {
 };
 
 const stripSchema = (host = '') => host.trim().replace(/^https?:\/\//i, '');
+const normalizeHosts = (hosts = []) => (hosts || []).map(stripSchema).filter(Boolean);
 
 const detectTLS = (hosts = []) => {
     let result = null;
@@ -53,13 +54,13 @@ export default ({ onNext, form, formData, onFormDataChange }) => {
 
     const handleHostsChange = (values) => {
         const tls     = detectTLS(values);
-        const cleaned = (values || []).map(stripSchema);
+        const cleaned = normalizeHosts(values);
+
+        if (tls !== null) form.setFieldsValue({ isTLS: tls });
 
         const patch = { hosts: cleaned };
         if (tls !== null) patch.isTLS = tls;
-        form.setFieldsValue(patch);
-
-        if (tls !== null) onFormDataChange({ isTLS: tls });
+        onFormDataChange(patch);
 
         resetTestStatus();
     };
@@ -76,7 +77,7 @@ export default ({ onNext, form, formData, onFormDataChange }) => {
                 const { hosts, isTLS, isAuth, username, password } = values;
 
                 const body = {
-                    hosts:  (hosts || []).map(stripSchema),
+                    hosts:  normalizeHosts(hosts),
                     schema: isTLS ? 'https' : 'http',
                 };
                 if (isAuth) body.basic_auth = { username, password };
@@ -134,7 +135,7 @@ export default ({ onNext, form, formData, onFormDataChange }) => {
         const { hosts, isTLS, isAuth, username, password } = values;
 
         onFormDataChange({
-            hosts:                (hosts || []).map(stripSchema),
+            hosts:                normalizeHosts(hosts),
             isTLS,
             isAuth,
             username,
@@ -166,6 +167,7 @@ export default ({ onNext, form, formData, onFormDataChange }) => {
             <Form.Item label={formatMessage({ id: 'guide.cluster.host' })}>
                 {getFieldDecorator('hosts', {
                     initialValue: formData.hosts,
+                    normalize: normalizeHosts,
                     rules: [
                         {
                             required: true,

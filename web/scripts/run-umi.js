@@ -26,16 +26,18 @@ const syncStaticAssets = () => {
 
 const syncPluginDirectory = async () => {
   const pluginDir = path.resolve(__dirname, "../../plugin/enterprise/web"); 
-  const pagesDir = path.resolve(__dirname, "../");
+  const webDir = path.resolve(__dirname, "../");
+  const licenceDir = path.resolve(webDir, "src/components/Licence");
 
   if (fs.existsSync(pluginDir)) {
     console.log("Plugin directory found. Syncing with the main project...");
 
     try {
-      fs.cpSync(pluginDir, pagesDir, { recursive: true, force: true });
-      console.log(`Plugin synced directly to ${pagesDir}`);
+      fs.rmSync(licenceDir, { recursive: true, force: true })
+      fs.cpSync(pluginDir, webDir, { recursive: true, force: true });
+      console.log(`Plugin synced directly to ${webDir}`);
     } catch (err) {
-      console.error(`Failed to sync plugin to ${pagesDir}:`, err);
+      console.error(`Failed to sync plugin to ${webDir}:`, err);
     }
   } else {
     console.log("No plugin directory found, skipping sync.");

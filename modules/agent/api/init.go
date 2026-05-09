@@ -59,4 +59,5 @@ func Init() {
 
 	server.RegisterConfigProvider(remoteConfigProvider)
 	server.RegisterConfigProvider(dynamicAgentConfigProvider)
+	server.RegisterSecretProvider(agentSecretProvider)
 }

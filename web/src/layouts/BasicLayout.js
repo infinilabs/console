@@ -179,6 +179,13 @@ class BasicLayout extends React.PureComponent {
         // });
       }
     });
+    this.handleDataToolsLicenseRequired = () => {
+      this.licenceRef?.openToTab?.("license");
+    };
+    window.addEventListener(
+      "console:datatools-license-required",
+      this.handleDataToolsLicenseRequired
+    );
     let firstLogin = localStorage.getItem("first-login");
     if (firstLogin === "true" && isLogin()) {
       localStorage.setItem("first-login", false);
@@ -240,6 +247,10 @@ class BasicLayout extends React.PureComponent {
   componentWillUnmount() {
     cancelAnimationFrame(this.renderRef);
     unenquireScreen(this.enquireHandler);
+    window.removeEventListener(
+      "console:datatools-license-required",
+      this.handleDataToolsLicenseRequired
+    );
   }
 
   getContext() {

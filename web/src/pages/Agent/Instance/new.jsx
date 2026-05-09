@@ -138,6 +138,7 @@ const NewStep = ({ current, changeStep, history }) => {
     if (res?.ok) {
       const payload = await parseResponsePayload(res);
       if (payload && !payload.error) {
+        setInstanceConfig(newVals);
         return true;
       }
     }

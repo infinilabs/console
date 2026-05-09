@@ -22,6 +22,7 @@ import { ResizeBar } from "@/components/infini/resize_bar";
 import maximizeSvg from "@/assets/window-maximize.svg";
 import restoreSvg from "@/assets/window-restore.svg";
 import ClusterSelect from "@/components/ClusterSelect";
+import { getPreferredCluster } from "@/utils/setup";
 
 const MaximizeIcon = (props = {}) => {
   return <img height="14px" width="14px" {...props} src={maximizeSvg} />;
@@ -168,7 +169,9 @@ export const ConsoleUI = ({
     return cm;
   }, [clusterList, clusterStatus]);
   const initialDefaultState = () => {
-    let defaultCluster = selectedCluster?.id ? selectedCluster : clusterList?.[0];
+    const defaultCluster = getPreferredCluster(clusterList, {
+      selectedClusterID: selectedCluster?.id,
+    });
     const defaultClusterID = defaultCluster?.id || "";
     const defaultActiveKey = defaultClusterID
       ? `${defaultClusterID}:${new Date().valueOf()}`

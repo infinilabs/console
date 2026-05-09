@@ -55,7 +55,7 @@ pipeline:
                 body: $[[message]]
                 basic_auth:
                   username: '$[[SETUP_AGENT_USERNAME]]'
-                  password: '$[[SETUP_AGENT_PASSWORD]]'
+                  password: '$[[keystore.$[[SETUP_AGENT_PASSWORD_KEY]]]]'
 #                tls: #for mTLS connection with config servers
 #                  enabled: true
 #                  ca_file: /xxx/ca.crt

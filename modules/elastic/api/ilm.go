@@ -28,12 +28,85 @@
 package api
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
 	log "github.com/cihub/seelog"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/util"
 	"io"
 	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
 )
+
+type rawRequester interface {
+	Request(ctx context.Context, method, url string, body []byte) (*util.Result, error)
+}
+
+func rawJSONRequest(clusterID, method, path string, body []byte) (map[string]interface{}, int, error) {
+	cfg := elastic.GetConfig(clusterID)
+	client := elastic.GetClient(clusterID)
+	requester, ok := client.(rawRequester)
+	if !ok {
+		return nil, 0, fmt.Errorf("cluster client does not support raw requests")
+	}
+	requestURL := fmt.Sprintf("%s%s", strings.TrimRight(cfg.GetAnyEndpoint(), "/"), path)
+	resp, err := requester.Request(context.Background(), method, requestURL, body)
+	if err != nil {
+		return nil, 0, err
+	}
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, resp.StatusCode, nil
+	}
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		return nil, resp.StatusCode, fmt.Errorf("%s", resp.Body)
+	}
+	if len(resp.Body) == 0 {
+		return map[string]interface{}{}, resp.StatusCode, nil
+	}
+	result := map[string]interface{}{}
+	if err := util.FromJSONBytes(resp.Body, &result); err != nil {
+		return nil, resp.StatusCode, err
+	}
+	return result, resp.StatusCode, nil
+}
+
+func parseInt64(value interface{}) int64 {
+	switch v := value.(type) {
+	case json.Number:
+		i, _ := v.Int64()
+		return i
+	case float64:
+		return int64(v)
+	case int64:
+		return v
+	case int:
+		return int64(v)
+	case string:
+		i, _ := strconv.ParseInt(v, 10, 64)
+		return i
+	default:
+		return 0
+	}
+}
+
+func putEasysearchILMPolicy(clusterID, policy string, policyConfig []byte) error {
+	path := "/_ilm/policy/" + url.PathEscape(policy)
+	current, statusCode, err := rawJSONRequest(clusterID, util.Verb_GET, path, nil)
+	if err != nil && statusCode != http.StatusNotFound {
+		return err
+	}
+	if statusCode != http.StatusNotFound {
+		seqNo := parseInt64(current["_seq_no"])
+		primaryTerm := parseInt64(current["_primary_term"])
+		path += fmt.Sprintf("?if_seq_no=%d&if_primary_term=%d", seqNo, primaryTerm)
+	}
+	_, _, err = rawJSONRequest(clusterID, util.Verb_PUT, path, policyConfig)
+	return err
+}
 
 func (h *APIHandler) HandleGetILMPolicyAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	clusterID := ps.MustGetParameter("id")
@@ -51,13 +124,18 @@ func (h *APIHandler) HandleSaveILMPolicyAction(w http.ResponseWriter, req *http.
 	clusterID := ps.MustGetParameter("id")
 	policy := ps.MustGetParameter("policy")
 	esClient := elastic.GetClient(clusterID)
+	cfg := elastic.GetConfig(clusterID)
 	reqBody, err := io.ReadAll(req.Body)
 	if err != nil {
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err = esClient.PutILMPolicy(policy, reqBody)
+	if strings.EqualFold(cfg.Distribution, elastic.Easysearch) {
+		err = putEasysearchILMPolicy(clusterID, policy, reqBody)
+	} else {
+		err = esClient.PutILMPolicy(policy, reqBody)
+	}
 	if err != nil {
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)

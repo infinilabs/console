@@ -8,6 +8,7 @@ import {
   Modal,
   Tag,
   Switch,
+  Tooltip,
 } from "antd";
 import {
   useCallback,
@@ -59,18 +60,46 @@ export default (props) => {
     if (!ids || ids.length == 0) {
       return;
     }
-    let ruleInfo = await request(`/alerting/rule/info`, {
-      method: "POST",
-      body: ids,
-    });
+    try {
+      let ruleInfo = await request(`/alerting/rule/info`, {
+        method: "POST",
+        body: ids,
+      });
 
-    if (ruleInfo && !ruleInfo.error) {
+      const requestError = ruleInfo?.error;
       let tableData = dataSource?.data?.map((item) => {
-        item.info = ruleInfo?.[item.id] || {};
+        item.info =
+          ruleInfo?.[item.id] ||
+          (requestError
+            ? {
+                status_error: requestError,
+              }
+            : {});
+        item.infoLoaded = true;
         return item;
       });
       dataSource.data = tableData;
       // update dataSource
+      setTimeout(() => {
+        if (ref.current?.setDataSource) {
+          ref.current.setDataSource({ ...dataSource, data: tableData });
+        }
+      }, 500);
+    } catch (error) {
+      const errorMessage =
+        error?.message ||
+        formatMessage({
+          id: "alert.rule.status.load_failed",
+          defaultMessage: "Failed to load the latest alert status for this rule",
+        });
+      let tableData = dataSource?.data?.map((item) => {
+        item.info = {
+          status_error: errorMessage,
+        };
+        item.infoLoaded = true;
+        return item;
+      });
+      dataSource.data = tableData;
       setTimeout(() => {
         if (ref.current?.setDataSource) {
           ref.current.setDataSource({ ...dataSource, data: tableData });
@@ -245,6 +274,19 @@ export default (props) => {
     return dataNew;
   };
 
+  const renderRuleStatus = (record) => {
+    if (!record?.infoLoaded) {
+      return <span style={{ width: 14, height: 14, display: "inline-block" }} />;
+    }
+    const indicator = (
+      <HealthStatusCircle status={RuleStautsColor[record.info?.status] || "gray"} />
+    );
+    if (record.info?.status_error) {
+      return <Tooltip title={record.info.status_error}>{indicator}</Tooltip>;
+    }
+    return indicator;
+  };
+
   const columns = [
     {
       title: formatMessage({ id: "alert.rule.table.columnns.category" }),
@@ -272,7 +314,7 @@ export default (props) => {
             to={`/alerting/rule/${record.id}`}
             style={{ display: "flex", alignItems: "center", gap: 5 }}
           >
-            <HealthStatusCircle status={RuleStautsColor[record.info?.status]} />
+            {renderRuleStatus(record)}
             <span>{text}</span>
           </Link>
         );
@@ -421,8 +463,9 @@ export default (props) => {
           getExtra: (props) => [
             hasAuthority("alerting.rule:all")
               ? [
-                  <>
+                  <Fragment key="rule-import-export">
                     <Button
+                      key="rule-import"
                       type="primary"
                       icon="upload"
                       onClick={() => {
@@ -467,8 +510,9 @@ export default (props) => {
                         },
                       ]}
                     />
-                  </>,
+                  </Fragment>,
                   <Button
+                    key="rule-create"
                     type="primary"
                     icon="plus"
                     onClick={() => router.push(`/alerting/rule/new`)}
@@ -484,6 +528,7 @@ export default (props) => {
             hasAuthority("alerting.rule:all")
               ? [
                   <Button
+                    key="rule-enable"
                     type="primary"
                     icon="check-circle"
                     onClick={() => {
@@ -496,6 +541,7 @@ export default (props) => {
                     {formatMessage({ id: "form.button.enable" })}
                   </Button>,
                   <Button
+                    key="rule-disable"
                     type="danger"
                     icon="stop"
                     onClick={() => {
@@ -508,6 +554,7 @@ export default (props) => {
                     {formatMessage({ id: "form.button.disable" })}
                   </Button>,
                   <Button
+                    key="rule-export"
                     type="primary"
                     icon="download"
                     onClick={() => {
@@ -517,6 +564,7 @@ export default (props) => {
                     {formatMessage({ id: "form.button.export" })}
                   </Button>,
                   <Button
+                    key="rule-delete"
                     type="danger"
                     icon="delete"
                     onClick={() => {

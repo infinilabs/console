@@ -16,7 +16,7 @@ import { ConsoleUI } from "@/pages/DevTool/Console";
 
 const Index = (props) => {
   return (
-    <Card bodyStyle={{ padding: 5 }}>
+    <Card bordered={false} bodyStyle={{ padding: 0 }}>
       <ConsoleUI
         selectedCluster={props.selectedCluster}
         clusterList={props.clusterList}

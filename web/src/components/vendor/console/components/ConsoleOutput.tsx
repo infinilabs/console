@@ -1,5 +1,5 @@
 // @ts-ignore
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useLayoutEffect } from "react";
 import "brace/mode/text";
 import "brace/mode/json";
 import "brace/mode/yaml";
@@ -47,7 +47,7 @@ function ConsoleOutput({ clusterID }: props) {
     editorInstanceRef.current?.setValue("");
   }, [clusterID]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     editorInstanceRef.current = createReadOnlyAceEditor(editorRef.current!);
     const textarea = editorRef.current!.querySelector("textarea")!;
     textarea.setAttribute("id", inputId);

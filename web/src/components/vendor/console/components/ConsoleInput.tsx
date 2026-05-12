@@ -1,5 +1,5 @@
 // @ts-ignore
-import React, { useRef, useEffect, CSSProperties, useMemo } from "react";
+import React, { useRef, useEffect, useLayoutEffect, CSSProperties, useMemo } from "react";
 import ace from "brace";
 import {
   EuiFlexGroup,
@@ -28,6 +28,7 @@ import { applyCurrentSettings } from "./apply_editor_settings";
 import { subscribeResizeChecker } from "./subscribe_console_resize_checker";
 import { formatMessage } from "umi/locale";
 import { hasAuthority } from "@/utils/authority";
+import { applyConsoleEditorFont } from "../utils/editor_font";
 
 const isMacPlatform = () =>
   typeof window !== "undefined" &&
@@ -122,8 +123,9 @@ const ConsoleInputUI = ({
   //   }
   // }
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const aceEditor = ace.edit(editorRef.current!);
+    applyConsoleEditorFont(aceEditor.container, "13px");
     aceEditorRef.current = aceEditor;
     const legacyCoreEditor = new LegacyCoreEditor(
       aceEditor,
@@ -165,11 +167,11 @@ const ConsoleInputUI = ({
     editorInstanceRef.current = senseEditor;
     setInputEditor(senseEditor);
     senseEditor.paneKey = paneKey;
-    senseEditor.update(initialText || DEFAULT_INPUT_VALUE);
     applyCurrentSettings(senseEditor!.getCoreEditor(), {
       fontSize: 13,
       wrapMode: true,
     });
+    senseEditor.update(initialText || DEFAULT_INPUT_VALUE);
 
     function setupAutosave() {
       let timer: number;

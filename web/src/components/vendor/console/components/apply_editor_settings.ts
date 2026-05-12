@@ -20,9 +20,7 @@
 import { DevToolsSettings } from '../services';
 import { CoreEditor } from '../entities/core_editor';
 import { CustomAceEditor } from '../modules/legacy_core_editor/create_readonly';
-
-const CONSOLE_FONT_FAMILY =
-  '"JetBrains Mono","SFMono-Regular","Cascadia Code","Fira Code",Consolas,"Liberation Mono",Menlo,monospace';
+import { applyConsoleEditorFont } from '../utils/editor_font';
 
 export function applyCurrentSettings(
   editor: CoreEditor | CustomAceEditor,
@@ -42,5 +40,5 @@ export function applyCurrentSettings(
     typeof (editor as any).getContainer === 'function'
       ? (editor as CoreEditor).getContainer()
       : (editor as CustomAceEditor).container;
-  container.style.fontFamily = CONSOLE_FONT_FAMILY;
+  applyConsoleEditorFont(container, settings.fontSize + 'px');
 }

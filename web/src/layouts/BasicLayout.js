@@ -363,8 +363,16 @@ class BasicLayout extends React.PureComponent {
     } = this.props;
     const { isMobile, menuData } = this.state;
     const isTop = PropsLayout === "topmenu";
-    const hideFooter = pathname.startsWith("/devtool/console");
+    const isDevtoolConsolePage = pathname.startsWith("/devtool/console");
+    const hideFooter = isDevtoolConsolePage;
     const routerConfig = this.matchParamsPath(pathname);
+    const contentStyle = isDevtoolConsolePage
+      ? {
+          ...this.getContentStyle(),
+          margin: 0,
+          overflow: "hidden",
+        }
+      : this.getContentStyle();
 
     const renderInvalidSecretNotification = () => {
       const secretMismatch = localStorage.getItem("secret_mismatch");
@@ -405,7 +413,7 @@ class BasicLayout extends React.PureComponent {
             {...this.props}
           />
 
-          <Content style={this.getContentStyle()}>
+          <Content style={contentStyle}>
             <Authorized
               authority={routerConfig && routerConfig.authority}
               noMatch={<Exception403 />}

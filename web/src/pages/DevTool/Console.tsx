@@ -152,6 +152,7 @@ export const ConsoleUI = ({
   resizeable = false,
   height = "50vh",
   mode = "global",
+  reservePageSpace = mode === "global",
 }: any) => {
   const clusterMap = useMemo(() => {
     let cm = {};
@@ -400,10 +401,13 @@ export const ConsoleUI = ({
     });
   };
   useEffect(() => {
-    if (mode != "global") {
+    var sl = document.querySelector("#root>div");
+    if (!reservePageSpace) {
+      if (sl) {
+        sl.style.paddingBottom = "0px";
+      }
       return;
     }
-    var sl = document.querySelector("#root>div");
     if (sl) {
       if (typeof editorHeight == "number")
         sl.style.paddingBottom = editorHeight + "px";
@@ -411,7 +415,12 @@ export const ConsoleUI = ({
         sl.style.paddingBottom = editorHeight;
       }
     }
-  }, [editorHeight]);
+    return () => {
+      if (sl) {
+        sl.style.paddingBottom = "0px";
+      }
+    };
+  }, [editorHeight, reservePageSpace]);
 
   return (
     <Resizable

@@ -53,6 +53,7 @@ export default class GlobalHeaderRight extends PureComponent {
     this.setState({
       consoleVisible: visible,
     });
+    document.body.style.overflow = visible ? "hidden" : "";
     var sl = document.querySelector("#root>div");
     if (sl) {
       sl.style.paddingBottom = "0px";
@@ -352,6 +353,7 @@ export default class GlobalHeaderRight extends PureComponent {
                   }}
                   clusterStatus={this.props.clusterStatus}
                   resizeable={true}
+                  reservePageSpace={false}
                 />
               )}
           </div>

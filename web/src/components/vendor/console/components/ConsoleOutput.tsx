@@ -12,6 +12,7 @@ import "./ConsoleInput.scss";
 
 import { applyCurrentSettings } from "./apply_editor_settings";
 import { subscribeResizeChecker } from "./subscribe_console_resize_checker";
+import { DEFAULT_CONSOLE_FONT_SIZE } from "../utils/editor_font";
 import JSONBig from 'json-bigint';
 
 const JSONBigExt = JSONBig({ storeAsString: true });
@@ -53,7 +54,7 @@ function ConsoleOutput({ clusterID }: props) {
     textarea.setAttribute("id", inputId);
     textarea.setAttribute("readonly", "true");
     applyCurrentSettings(editorInstanceRef.current!, {
-      fontSize: 13,
+      fontSize: Number.parseFloat(DEFAULT_CONSOLE_FONT_SIZE),
       wrapMode: true,
     });
     const unsubscribeResizer = subscribeResizeChecker(

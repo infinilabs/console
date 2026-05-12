@@ -20,7 +20,7 @@
 import { DevToolsSettings } from '../services';
 import { CoreEditor } from '../entities/core_editor';
 import { CustomAceEditor } from '../modules/legacy_core_editor/create_readonly';
-import { applyConsoleEditorFont } from '../utils/editor_font';
+import { applyConsoleAceFont, applyConsoleEditorFont } from '../utils/editor_font';
 
 export function applyCurrentSettings(
   editor: CoreEditor | CustomAceEditor,
@@ -33,7 +33,7 @@ export function applyCurrentSettings(
     });
   } else {
     (editor as CustomAceEditor).getSession().setUseWrapMode(settings.wrapMode);
-    (editor as CustomAceEditor).container.style.fontSize = settings.fontSize + 'px';
+    applyConsoleAceFont(editor as CustomAceEditor, settings.fontSize + 'px');
   }
 
   const container =

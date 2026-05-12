@@ -494,5 +494,5 @@ export default connect(({ global, loading }) => ({
   selectedCluster: global.selectedCluster,
   clusterList: global.clusterList,
   clusterStatus: global.clusterStatus,
-  height: window.innerHeight - 75 + "px",
+  height: window.innerHeight - 64 + "px",
 }))(ConsoleUI);

@@ -38,7 +38,7 @@ import { Position, Range } from './position';
 import { Token } from './token';
 import { TokensProvider } from './tokens_provider';
 import { AceTokensProvider } from './ace_tokens_providers';
-import { applyConsoleEditorFont } from '../utils/editor_font';
+import { applyConsoleAceFont } from '../utils/editor_font';
 
 // @ts-ignore
 import * as InputMode from './mode/input';
@@ -299,7 +299,7 @@ export class LegacyCoreEditor implements CoreEditor {
 
   setStyles(styles: { wrapLines: boolean; fontSize: string }) {
     this.editor.getSession().setUseWrapMode(styles.wrapLines);
-    applyConsoleEditorFont(this.editor.container, styles.fontSize);
+    applyConsoleAceFont(this.editor, styles.fontSize);
   }
 
   registerKeyboardShortcut(opts: { keys: string; fn: () => void; name: string }): void {

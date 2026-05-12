@@ -28,7 +28,10 @@ import { applyCurrentSettings } from "./apply_editor_settings";
 import { subscribeResizeChecker } from "./subscribe_console_resize_checker";
 import { formatMessage } from "umi/locale";
 import { hasAuthority } from "@/utils/authority";
-import { applyConsoleEditorFont } from "../utils/editor_font";
+import {
+  applyConsoleAceFont,
+  DEFAULT_CONSOLE_FONT_SIZE,
+} from "../utils/editor_font";
 
 const isMacPlatform = () =>
   typeof window !== "undefined" &&
@@ -125,7 +128,7 @@ const ConsoleInputUI = ({
 
   useLayoutEffect(() => {
     const aceEditor = ace.edit(editorRef.current!);
-    applyConsoleEditorFont(aceEditor.container, "13px");
+    applyConsoleAceFont(aceEditor, DEFAULT_CONSOLE_FONT_SIZE);
     aceEditorRef.current = aceEditor;
     const legacyCoreEditor = new LegacyCoreEditor(
       aceEditor,
@@ -168,7 +171,7 @@ const ConsoleInputUI = ({
     setInputEditor(senseEditor);
     senseEditor.paneKey = paneKey;
     applyCurrentSettings(senseEditor!.getCoreEditor(), {
-      fontSize: 13,
+      fontSize: Number.parseFloat(DEFAULT_CONSOLE_FONT_SIZE),
       wrapMode: true,
     });
     senseEditor.update(initialText || DEFAULT_INPUT_VALUE);

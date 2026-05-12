@@ -167,7 +167,7 @@ func saveBasicAuthToCredential(name string, auth *model.BasicAuth) (string, erro
 	if err != nil {
 		return "", err
 	}
-	err = orm.Create(nil, &cred)
+	err = orm.Create(&orm.Context{Refresh: "wait_for"}, &cred)
 	if err != nil {
 		return "", err
 	}

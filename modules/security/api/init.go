@@ -64,6 +64,7 @@ func Init() {
 	api.HandleAPIMethod(api.POST, "/account/replay_nonce", apiHandler.RequireSecureTransport(apiHandler.IssueReplayNonce))
 	api.HandleAPIMethod(api.POST, "/account/login/challenge", apiHandler.RequireSecureTransport(apiHandler.LoginChallenge))
 	api.HandleAPIMethod(api.POST, "/account/login", apiHandler.RequireSecureTransport(apiHandler.RequireReplayProtection(apiHandler.Login)))
+	api.HandleAPIMethod(api.POST, "/account/refresh", apiHandler.RequireSecureTransport(apiHandler.RequireLogin(apiHandler.RefreshToken)))
 	api.HandleAPIMethod(api.POST, "/account/logout", apiHandler.Logout)
 	api.HandleAPIMethod(api.DELETE, "/account/logout", apiHandler.Logout)
 

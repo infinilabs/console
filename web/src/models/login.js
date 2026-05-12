@@ -12,6 +12,10 @@ import { reloadAuthorized } from "@/utils/Authorized";
 import * as CurrentUser from "@/utils/CurrentUser";
 import { getAuthEnabled } from "@/utils/authority";
 import { buildPasswordProof } from "@/utils/password";
+import {
+  clearStoredLoginResponse,
+  storeLoginResponse,
+} from "@/utils/auth_session";
 
 let logoutInProgress = false;
 
@@ -62,7 +66,7 @@ export default {
             },
           });
         }
-        localStorage.setItem("login-response", JSON.stringify(response));
+        storeLoginResponse(response);
         const urlParams = new URL(window.location.href);
         const params = getPageQuery();
         let { redirect } = params;
@@ -102,7 +106,7 @@ export default {
             currentAuthority: "guest",
           },
         });
-        localStorage.removeItem("login-response");
+        clearStoredLoginResponse();
         reloadAuthorized();
         //clear selected cluster state
         yield put({

@@ -69,6 +69,7 @@ func GenerateAccessToken(user *User) (map[string]interface{}, error) {
 
 	data = util.MapStr{
 		"access_token": tokenString,
+		"expires_at":   expireAt.Unix(),
 		"username":     user.Username,
 		"id":           user.ID,
 		"expire_in":    int64(accessTokenTTL / time.Second),

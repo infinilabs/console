@@ -276,27 +276,35 @@ func (h APIHandler) Login(w http.ResponseWriter, r *http.Request, ps httprouter.
 		}
 	}
 
-	//check permissions
-	ok, err = realm.Authorize(user)
-	if err != nil || !ok {
-		h.ErrorInternalServer(w, fmt.Sprintf("failed to authorize user: %v", username))
-		return
-	}
-
-	//fetch user profile
-	//TODO
-	if user.Nickname == "" {
-		user.Nickname = user.Username
-	}
-
-	//generate access token
-	token, err := rbac.GenerateAccessToken(user)
+	token, err := h.issueAccessToken(user)
 	if err != nil {
 		h.ErrorInternalServer(w, fmt.Sprintf("failed to authorize user: %v", username))
 		return
 	}
 
 	//api.SetSession(w, r, userInSession+req.Username, req.Username)
+	h.WriteOKJSON(w, token)
+}
+
+func (h APIHandler) RefreshToken(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	reqUser, err := rbac.FromUserContext(r.Context())
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	user, err := h.loadRefreshUser(reqUser)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	token, err := h.issueAccessToken(user)
+	if err != nil {
+		h.ErrorInternalServer(w, fmt.Sprintf("failed to refresh token for user: %v", reqUser.Username))
+		return
+	}
+
 	h.WriteOKJSON(w, token)
 }
 
@@ -344,4 +352,46 @@ func (h APIHandler) ensurePasswordChallenge(user *rbac.User, password string) er
 		return err
 	}
 	return h.User.Update(user)
+}
+
+func (h APIHandler) issueAccessToken(user *rbac.User) (map[string]interface{}, error) {
+	ok, err := realm.Authorize(user)
+	if err != nil || !ok {
+		return nil, fmt.Errorf("failed to authorize user: %v", user.Username)
+	}
+
+	if user.Nickname == "" {
+		user.Nickname = user.Username
+	}
+
+	return rbac.GenerateAccessToken(user)
+}
+
+func (h APIHandler) loadRefreshUser(reqUser *rbac.ShortUser) (*rbac.User, error) {
+	if reqUser == nil {
+		return nil, fmt.Errorf("user not found")
+	}
+
+	if reqUser.Provider == NativeProvider {
+		user, err := h.User.Get(reqUser.UserId)
+		if err != nil {
+			return nil, err
+		}
+		user.AuthProvider = NativeProvider
+		return &user, nil
+	}
+
+	roles := make([]rbac.UserRole, 0, len(reqUser.Roles))
+	for _, role := range reqUser.Roles {
+		roles = append(roles, rbac.UserRole{Name: role})
+	}
+
+	user := &rbac.User{
+		AuthProvider: reqUser.Provider,
+		Username:     reqUser.Username,
+		Nickname:     reqUser.Username,
+		Roles:        roles,
+	}
+	user.ID = reqUser.UserId
+	return user, nil
 }

@@ -26,6 +26,7 @@ import {
   getEnterpriseTaskManagerEnabled,
   refreshApplicationSettings,
 } from "./utils/authority";
+import { startActivityAwareTokenRefresh } from "./utils/auth_session";
 import request from "./utils/request";
 import { setSetupRequired } from "@/utils/setup";
 import { getHealth } from "@/services/system"
@@ -221,6 +222,7 @@ export async function patchRoutes(routes) {
 
 
 export function render(oldRoutes) {
+  startActivityAwareTokenRefresh();
   oldRoutes();
 }
 

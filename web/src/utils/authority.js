@@ -1,4 +1,8 @@
 import request from "./request";
+import {
+  getAuthorizationToken,
+  getStoredLoginResponse,
+} from "./auth_session";
 
 const APPLICATION_AUTH_KEY = "infini-auth";
 const APPLICATION_ROLLUP_KEY = "infini-rollup-enabled";
@@ -59,33 +63,17 @@ export function getAuthEnabled() {
 }
 
 export function isLogin() {
-  const responseStr = localStorage.getItem("login-response");
-  if (responseStr) {
-    let loginResponse = null;
-    try {
-      loginResponse = JSON.parse(responseStr);
-      if (loginResponse?.username && loginResponse?.status == "ok") {
-        return true;
-      }
-    } catch (err) {
-      console.error(err);
-    }
+  const loginResponse = getStoredLoginResponse();
+  if (loginResponse?.username && loginResponse?.status == "ok") {
+    return true;
   }
   return false;
 }
 
 export function getAuthorizationHeader() {
-  const responseStr = localStorage.getItem("login-response");
-  if (responseStr) {
-    let loginResponse = null;
-    try {
-      loginResponse = JSON.parse(responseStr);
-    } catch (err) {
-      console.error(err);
-    }
-    if (loginResponse) {
-      return "Bearer " + loginResponse.access_token;
-    }
+  const accessToken = getAuthorizationToken();
+  if (accessToken) {
+    return "Bearer " + accessToken;
   }
   return "";
 }

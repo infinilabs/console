@@ -5,6 +5,7 @@ import hash from "hash.js";
 import { isAntdPro } from "./utils";
 import { formatMessage } from "umi/locale";
 import { getAuthorizationHeader } from "./authority";
+import { ensureFreshAccessToken } from "./auth_session";
 import * as uuid from 'uuid';
 
 export const formatResponse = (response) => {
@@ -44,6 +45,7 @@ let lastDataToolsLicenseModalAt = 0;
 const sensitiveRequestRules = [
   { method: "POST", pattern: /^\/account\/login\/challenge$/ },
   { method: "POST", pattern: /^\/account\/login$/ },
+  { method: "POST", pattern: /^\/account\/refresh$/ },
   { method: "PUT", pattern: /^\/account\/password$/ },
   { method: "POST", pattern: /^\/user$/ },
   { method: "PUT", pattern: /^\/user\/[^/]+\/password$/ },
@@ -482,11 +484,6 @@ export default function request(
     "Accept-Encoding": "gzip, deflate, br",
     ...newOptions.headers,
   };
-  const authorizationHeader = getAuthorizationHeader();
-  if (authorizationHeader) {
-    newOptions.headers["Authorization"] = authorizationHeader;
-  }
-
   const requiresSecureTransport = requestRequiresSecureTransport(url, requestMethod);
   if (requiresSecureTransport && !requestUsesSecureTransport(url)) {
     if (noticeable) {
@@ -614,21 +611,34 @@ export default function request(
       });
   };
 
-  const noncePromise = requiresSecureTransport
-    ? fetchReplayNonce(url, requestMethod, authorizationHeader)
-    : Promise.resolve(null);
-
-  const handleNonceError = (error) => {
-    if (noticeable) {
-      showErrorNotification({
-        message: "Request rejected",
-        description: error?.message || "failed to fetch replay nonce",
-        style: { wordBreak: "break-all" },
-        dedupeKey: `request-rejected:${getNormalizedRequestPath(url)}:${error?.message || "failed to fetch replay nonce"}`,
-      });
+  const executeRequest = () => {
+    const authorizationHeader = getAuthorizationHeader();
+    if (authorizationHeader) {
+      newOptions.headers["Authorization"] = authorizationHeader;
+    } else {
+      delete newOptions.headers["Authorization"];
     }
-    return getInsecureTransportResponse();
+
+    const noncePromise = requiresSecureTransport
+      ? fetchReplayNonce(url, requestMethod, authorizationHeader)
+      : Promise.resolve(null);
+
+    const handleNonceError = (error) => {
+      if (noticeable) {
+        showErrorNotification({
+          message: "Request rejected",
+          description: error?.message || "failed to fetch replay nonce",
+          style: { wordBreak: "break-all" },
+          dedupeKey: `request-rejected:${getNormalizedRequestPath(url)}:${error?.message || "failed to fetch replay nonce"}`,
+        });
+      }
+      return getInsecureTransportResponse();
+    };
+
+    return noncePromise.then((nonce) => sendRequest(nonce), handleNonceError);
   };
 
-  return noncePromise.then((nonce) => sendRequest(nonce), handleNonceError);
+  return Promise.resolve(
+    option?.skipAuthRefresh === true ? null : ensureFreshAccessToken(url)
+  ).then(executeRequest);
 }

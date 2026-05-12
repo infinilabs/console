@@ -39,6 +39,12 @@ export default {
   "agent.install.setup.desc":
     "Please copy the command below and execute it on the target host, which includes downloading, deploying and starting INFINI Agent",
   "agent.install.tips.title": "Tips",
+  "agent.install.tips.target": "The default install directory is",
+  "agent.install.tips.version": "To install a specific Agent version, append",
+  "agent.install.tips.download":
+    "To use an internal mirror or custom download source, append",
+  "agent.install.tips.server":
+    "If the target host cannot access the current Console address directly, append",
   "agent.install.tips.desc":
     "The automatic installation of the current version only supports Linux, for non-Linux systems, please select ",
   "agent.install.link.manual_install": "manual installation",

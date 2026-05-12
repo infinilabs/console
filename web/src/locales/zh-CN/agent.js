@@ -34,6 +34,12 @@ export default {
   "agent.install.setup.desc":
     "请复制下方命令并在目标主机上执行，其包含 INFINI Agent 的下载、部署及启动",
   "agent.install.tips.title": "提示",
+  "agent.install.tips.target": "默认安装目录为",
+  "agent.install.tips.version": "如需指定 Agent 版本，可追加",
+  "agent.install.tips.download":
+    "如需使用内网或自定义下载源，可追加",
+  "agent.install.tips.server":
+    "如目标主机无法直接访问当前 Console 地址，可追加",
   "agent.install.tips.desc":
     "当前版本自动安装仅支持 Linux ，非 Linux 系统请选择",
   "agent.install.link.manual_install": "手动安装",

@@ -5,7 +5,7 @@ set -eo pipefail
 function print_usage() {
   echo "Usage: curl -ksSL http://$[[CLOUD_ENDPOINT]]/instance/_get_install_script?token | sudo bash -s -- [-u url_for_download_program] [-v version_for_program ] [-t target_install_dir] [-o overwite_flag] [-s url_console_lan_adress]"
   echo "Options:"
-  echo "  -u, --url <url>             Install Agent download URL, format is schema://domain:port/stable/agent-platform-version.ext, can be manually specified"
+  echo "  -u, --url <url>             Install Agent download URL, supports host, package directory, or direct package file URL"
   echo "  -v, --version <version>     Install Agent version, default is to get latest version online, can be manually specified"  
   echo "  -t, --target <dir>          Install Agent target path, default is /opt/agent, can be manually specified"
   echo "  -o, --overwrite <bool>      Whether to overwrite existing files during Agent install, default is true, can be manually specified" 
@@ -181,7 +181,10 @@ function check_platform() {
 }
 
 function install_binary() {
-  local download_url="$location/${program_name}-${version}-${file_ext}"
+  local archive_name="${program_name}-${version}-${file_ext}"
+  local download_url=$(resolve_download_url "$location" "$archive_name")
+  local downloaded_file="${download_url##*/}"
+  downloaded_file="${downloaded_file%%\?*}"
   echo "File: [$download_url]"
 
   tmp_dir="$(mktemp -d)"
@@ -196,12 +199,31 @@ function install_binary() {
   fi
 
   if [[ "${file_ext}" == *".tar.gz" ]]; then
-      tar -xzf "${program_name}-${version}-${file_ext}" -C "$install_dir"
+      tar -xzf "${downloaded_file}" -C "$install_dir"
   else
-      unzip -q "${program_name}-${version}-${file_ext}" -d "$install_dir"
+      unzip -q "${downloaded_file}" -d "$install_dir"
   fi
 
   cd "${install_dir}" && rm -rf "${tmp_dir}" && echo ""
+}
+
+function resolve_download_url() {
+  local input_url="${1%/}"
+  local archive_name="$2"
+
+  case "$input_url" in
+    *.tar.gz|*.zip)
+      echo "$input_url"
+      return
+      ;;
+  esac
+
+  if [[ "$input_url" =~ ^[a-zA-Z][a-zA-Z0-9+.-]*://[^/]+$ ]]; then
+    echo "${input_url}/agent/stable/${archive_name}"
+    return
+  fi
+
+  echo "${input_url}/${archive_name}"
 }
 
 function install_certs() {

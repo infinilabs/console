@@ -13,10 +13,10 @@ Install and keep [INFINI Console](../../getting-started/install) running.
 ## Install by Console generated script
 
 ```
-curl -sSL http://localhost:9000/agent/install.sh?token=cjctdrms4us1c6fu04ag |sudo bash -s -- -u https://release.infinilabs.com/agent/stable -v 0.6.0-262 -t /opt/agent
+curl -sSL http://localhost:9000/agent/install.sh?token=cjctdrms4us1c6fu04ag |sudo bash -s -- -v 0.6.0-262 -t /opt/agent
 ```
 
-> The -u and -v parameters indicate that the specified version of the Agent is downloaded from the specified URL, and the -t parameter indicates the installation path. In a networked environment, the -- and subsequent parameters can be ignored, and by default, the latest version of the Agent will be downloaded from the official website for installation. 
+> The `-u` and `-v` parameters download a specific Agent version from a custom URL, and `-t` specifies the install path. When using the official default download source, `-u` can be omitted; pass it only for an internal mirror or another custom source. `-u` supports three forms: a download site root such as `http://192.168.1.1:8080`, a package directory such as `http://192.168.1.1:8080/agent/stable`, or a full package URL such as `http://192.168.1.1:8080/agent/stable/agent-1.30.3-2407-linux-amd64.tar.gz`. In a connected environment, the `--` arguments can be omitted and the latest Agent will be downloaded from the official release site by default.
 
 ## Container Deployment
 

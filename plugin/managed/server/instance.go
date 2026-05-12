@@ -61,7 +61,7 @@ func init() {
 	api.HandleAPIMethod(api.POST, common.REGISTER_API, handler.registerInstance) //client register self to config servers
 
 	//for public usage, get install script
-	api.HandleAPIMethod(api.GET, GET_INSTALL_SCRIPT_API, handler.getInstallScript)
+	api.HandleAPIMethod(api.GET, getInstallScriptAPI, handler.getInstallScript)
 
 	api.HandleAPIMethod(api.POST, "/instance/_generate_install_script", handler.RequireLogin(handler.generateInstallCommand))
 

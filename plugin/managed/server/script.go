@@ -51,7 +51,8 @@ type Token struct {
 }
 
 const ExpiredIn = time.Millisecond * 1000 * 60 * 60
-const GET_INSTALL_SCRIPT_API = "/instance/_get_install_script"
+const getInstallScriptAPI = "/instance/_get_install_script"
+const defaultAgentDownloadURL = "https://release.infinilabs.com/agent/stable"
 
 var expiredTokenCache = util.NewCacheWithExpireOnAdd(ExpiredIn, 100)
 
@@ -91,17 +92,34 @@ func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Req
 		consoleEndpoint = fmt.Sprintf("%s%s", strings.TrimRight(consoleEndpoint, "/"), basePath)
 	}
 
-	endpoint, err := url.JoinPath(consoleEndpoint, GET_INSTALL_SCRIPT_API)
+	endpoint, err := url.JoinPath(consoleEndpoint, getInstallScriptAPI)
 	if err != nil {
 		panic(err)
 	}
+	downloadURL := normalizeAgentDownloadURL(agCfg.Setup.DownloadURL)
 
 	h.WriteJSON(w, util.MapStr{
-		"script": fmt.Sprintf(`curl -ksSL %s?token=%s |sudo bash -s -- -u %s -t %v`,
-			endpoint, tokenStr, agCfg.Setup.DownloadURL, location),
+		"script":     buildInstallCommand(endpoint, tokenStr, downloadURL, location),
 		"token":      tokenStr,
 		"expired_at": t.CreatedAt.Add(ExpiredIn),
 	}, http.StatusOK)
+}
+
+func buildInstallCommand(endpoint, tokenStr, downloadURL, location string) string {
+	command := fmt.Sprintf(`curl -ksSL %s?token=%s |sudo bash -s -- -t %s`,
+		endpoint, tokenStr, location)
+	if normalizeAgentDownloadURL(downloadURL) != defaultAgentDownloadURL {
+		command = fmt.Sprintf(`%s -u %s`, command, downloadURL)
+	}
+	return command
+}
+
+func normalizeAgentDownloadURL(downloadURL string) string {
+	normalized := strings.TrimRight(strings.TrimSpace(downloadURL), "/")
+	if normalized == "" {
+		return defaultAgentDownloadURL
+	}
+	return normalized
 }
 
 func getDefaultEndpoint(req *http.Request) string {
@@ -150,10 +168,7 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 	}
 
 	tpl := fasttemplate.New(string(buf), "{{", "}}")
-	downloadURL := agCfg.Setup.DownloadURL
-	if downloadURL == "" {
-		downloadURL = "https://release.infinilabs.com/agent/stable/"
-	}
+	downloadURL := normalizeAgentDownloadURL(agCfg.Setup.DownloadURL)
 
 	port := agCfg.Setup.Port
 	if port == "" {
@@ -166,7 +181,7 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 	}
 
 	_, err = tpl.Execute(w, map[string]interface{}{
-		"base_url":         agCfg.Setup.DownloadURL,
+		"base_url":         downloadURL,
 		"console_endpoint": consoleEndpoint,
 		"client_crt":       clientCertPEM,
 		"client_key":       clientKeyPEM,

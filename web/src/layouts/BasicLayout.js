@@ -363,6 +363,7 @@ class BasicLayout extends React.PureComponent {
     } = this.props;
     const { isMobile, menuData } = this.state;
     const isTop = PropsLayout === "topmenu";
+    const hideFooter = pathname.startsWith("/devtool/console");
     const routerConfig = this.matchParamsPath(pathname);
 
     const renderInvalidSecretNotification = () => {
@@ -420,7 +421,7 @@ class BasicLayout extends React.PureComponent {
             </Authorized>
           </Content>
 
-          <Footer />
+          {!hideFooter ? <Footer /> : null}
         </Layout>
       </Layout>
       </>

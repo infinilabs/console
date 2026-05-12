@@ -379,10 +379,16 @@ export const ConsoleUI = ({
   }, [isFullscreen]);
 
   const disableWindowScroll = () => {
+    if (mode !== "global") {
+      return;
+    }
     document.body.style.overflow = "hidden";
   };
 
   const enableWindowScroll = () => {
+    if (mode !== "global") {
+      return;
+    }
     document.body.style.overflow = "";
   };
   const onTabNodeMoved = (newOrder: string[]) => {

@@ -135,7 +135,11 @@ export class InitialStep extends React.Component {
             ],
           })(<Select placeholder="127.0.0.1:9200" mode="tags" allowClear={true} onChange={this.handleEndpointChange}/>)}
         </Form.Item>
-        <Form.Item label="TLS">
+        <Form.Item
+          label={formatMessage({
+            id: "cluster.manage.field.tls.label",
+          })}
+        >
           {getFieldDecorator("isTLS", {
             initialValue: initialValue?.isTLS || false,
           })(

@@ -19,7 +19,14 @@ import Header from "./Header";
 import Context from "./MenuContext";
 import Exception403 from "../pages/Exception/403";
 import { GlobalContext } from "./GlobalContext";
-import { getAuthEnabled, getAuthority, isLogin } from "@/utils/authority";
+import {
+  APPLICATION_SETTINGS_UPDATED_EVENT,
+  getAuthEnabled,
+  getAuthority,
+  getEnterpriseTaskManagerEnabled,
+  isLogin,
+  refreshApplicationSettings,
+} from "@/utils/authority";
 import { router, history } from "umi";
 import request from "@/utils/request";
 import HealthProvider from "@/components/HealthProvider";
@@ -95,6 +102,19 @@ function formatter(data, parentAuthority, parentName) {
       return null;
     })
     .filter((item) => item);
+}
+
+function filterMenuDataByName(menuData, names = []) {
+  return (menuData || []).map((item) => {
+    const nextItem = { ...item };
+    if (names.includes(nextItem.name)) {
+      nextItem.hideInMenu = true;
+    }
+    if (nextItem.children) {
+      nextItem.children = filterMenuDataByName(nextItem.children, names);
+    }
+    return nextItem;
+  });
 }
 
 const memoizeOneFormatter = memoizeOne(formatter, isEqual);
@@ -186,6 +206,22 @@ class BasicLayout extends React.PureComponent {
       "console:datatools-license-required",
       this.handleDataToolsLicenseRequired
     );
+    this.handleApplicationSettingsUpdated = async () => {
+      const menuData = this.getMenuData();
+      this.setState({ menuData });
+      await dispatch({
+        type: "global/saveData",
+        payload: {
+          menuData,
+        },
+      });
+    };
+    window.addEventListener(
+      APPLICATION_SETTINGS_UPDATED_EVENT,
+      this.handleApplicationSettingsUpdated
+    );
+    await refreshApplicationSettings(true);
+    await this.handleApplicationSettingsUpdated();
     let firstLogin = localStorage.getItem("first-login");
     if (firstLogin === "true" && isLogin()) {
       localStorage.setItem("first-login", false);
@@ -251,6 +287,10 @@ class BasicLayout extends React.PureComponent {
       "console:datatools-license-required",
       this.handleDataToolsLicenseRequired
     );
+    window.removeEventListener(
+      APPLICATION_SETTINGS_UPDATED_EVENT,
+      this.handleApplicationSettingsUpdated
+    );
   }
 
   getContext() {
@@ -265,7 +305,11 @@ class BasicLayout extends React.PureComponent {
     const {
       route: { routes },
     } = this.props;
-    return memoizeOneFormatter(routes);
+    let menuData = memoizeOneFormatter(routes);
+    if (getEnterpriseTaskManagerEnabled() !== "true") {
+      menuData = filterMenuDataByName(menuData, ["data_tools"]);
+    }
+    return menuData;
     //
   }
 

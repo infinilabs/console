@@ -393,6 +393,15 @@ class ClusterForm extends React.Component {
       },
     };
     const { editValue, editMode } = this.props.clusterConfig;
+    const breadcrumbList = [
+      { title: "home", locale: "menu.home", href: "/" },
+      { title: "resource", locale: "menu.resource" },
+      { title: "cluster", locale: "menu.resource.cluster", href: "/resource/cluster" },
+      {
+        title: "editCluster",
+        locale: editMode === "NEW" ? "menu.resource.registCluster" : "menu.resource.editCluster",
+      },
+    ];
     //add host value to hosts field if it's empty
     if(editValue.host){
       if(!editValue.hosts){
@@ -404,7 +413,7 @@ class ClusterForm extends React.Component {
       }
     }
     return (
-      <PageHeaderWrapper>
+      <PageHeaderWrapper breadcrumbList={breadcrumbList}>
         <Card
           title={formatMessage({
             id:
@@ -506,7 +515,11 @@ class ClusterForm extends React.Component {
                   rules: [],
                 })(<Input type="hidden" />)}
               </Form.Item>
-              <Form.Item label="TLS">
+              <Form.Item
+                label={formatMessage({
+                  id: "cluster.manage.field.tls.label",
+                })}
+              >
                 {getFieldDecorator("isTLS", {
                   initialValue: editValue?.schema === "https",
                   valuePropName: "checked",
@@ -685,7 +698,11 @@ class ClusterForm extends React.Component {
                 form={this.props.form}
                 editValue={editValue}
               />
-              <Form.Item label="Tags">
+              <Form.Item
+                label={formatMessage({
+                  id: "cluster.manage.field.tags.label",
+                })}
+              >
                 {getFieldDecorator("tags", {
                   initialValue: editValue.tags,
                   rules: [],

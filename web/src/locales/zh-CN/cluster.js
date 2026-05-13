@@ -34,6 +34,8 @@ export default {
   "cluster.manage.table.column.owner": "管理人员",
   "cluster.manage.table.column.area": "服务器可用区",
   "cluster.manage.table.column.location": "位置",
+  "cluster.manage.field.tls.label": "开启 TLS",
+  "cluster.manage.field.tags.label": "标签",
   "cluster.manage.monitored.on": "启用",
   "cluster.manage.monitored.off": "关闭",
   "cluster.manage.metric_collection_mode": "采集模式",

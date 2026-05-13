@@ -7,6 +7,8 @@ import {
 const APPLICATION_AUTH_KEY = "infini-auth";
 const APPLICATION_ROLLUP_KEY = "infini-rollup-enabled";
 const ENTERPRISE_TASK_MANAGER_KEY = "infini-enterprise-task-manager-enabled";
+export const APPLICATION_SETTINGS_UPDATED_EVENT =
+  "console:application-settings-updated";
 let applicationSettingsPromise = null;
 let applicationSettingsCache = null;
 
@@ -100,6 +102,13 @@ export async function refreshApplicationSettings(force = false) {
       if (res && !res.error) {
         persistApplicationSettings(res);
         applicationSettingsCache = res;
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent(APPLICATION_SETTINGS_UPDATED_EVENT, {
+              detail: res,
+            })
+          );
+        }
       }
       return res;
     })

@@ -23,7 +23,7 @@ export default {
     "Please input instance API endpoint!",
   "gateway.instance.field.endpoint.placeholder":
     "Instance API endpoint e.g. 127.0.0.1:2900",
-  "gateway.instance.field.tls.label": "TLS",
+  "gateway.instance.field.tls.label": "Enable TLS",
   "gateway.instance.field.tags.label": "Tags",
   "gateway.instance.field.description.placeholder": "Instance description",
   "gateway.instance.delete.confirm.title": "Are you sure you want to delete this item?",
@@ -76,6 +76,10 @@ export default {
     "Please copy the following command and execute it in the local deployment environment, which includes the download, deployment, and startup of INFINI Gateway:",
   "gateway.guide.shell.copy.success": "Copy succeed!",
   "gateway.guide.tips.title": "Tips:",
+  "gateway.guide.tips.version":
+    "To specify a Gateway version, append",
+  "gateway.guide.tips.directory":
+    "To specify an installation directory, append",
   "gateway.guide.tips.content":
     "The current version of automatic installation only supports Linux, For others, please ",
   "gateway.guide.tips.install_manually": "install manually",

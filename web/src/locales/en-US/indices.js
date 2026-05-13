@@ -16,6 +16,9 @@ export default {
   "indices.show_unavailable_index": "Show unavailable",
   "indices.show_unavailable_node": "Show unavailable",
   "indices.button.filters": "Filters",
+  "indices.tab.mappings": "Mappings",
+  "indices.tab.edit_settings": "Edit settings",
+  "indices.hint.edit_json": "Edit, then save your JSON",
   "indices.field.name.placeholder": "Please input index name",
   "indices.field.name.required_message":
     "Please input a name of at least five characters!",

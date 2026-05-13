@@ -418,9 +418,9 @@ const AgentList = (props) => {
          <div>{formatMessage({ id: "agent.instance.clear.modal.desc" })}</div>
         </>
       ),
-      okText: "Yes",
+      okText: formatMessage({ id: "form.button.ok" }),
       okType: "danger",
-      cancelText: "No",
+      cancelText: formatMessage({ id: "form.button.cancel" }),
       onOk() {
         onClearClick();
       },

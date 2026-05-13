@@ -12,7 +12,7 @@ import {
   Row,
   Col,
   Modal,
-  List, 
+  List,
 } from "antd";
 import styles from "../Initialization/index.less";
 import request from "@/utils/request";
@@ -341,9 +341,11 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
             )}
           </Form.Item>
           <Form.Item label=" ">
-            <div className={styles.credentialSecretTip}>
-              {formatMessage({ id: "guide.credential_secret.tips" })}
-            </div>
+            <Tooltip title={formatMessage({ id: "guide.credential_secret.tips" })}>
+                <div className={styles.credentialSecretTip}>
+                  {formatMessage({ id: "guide.credential_secret.tips" })}
+                </div>
+             </Tooltip>
           </Form.Item>
           <Form.Item label=" ">
             <div style={{ display: "flex", justifyContent: "space-between" }}>

@@ -1121,23 +1121,56 @@ func (h *SettingsAPI) updateRetentionSetting(w http.ResponseWriter, req *http.Re
 	}, http.StatusOK)
 }
 
-func updateRollupJobs(client elastic.API, cfg *elastic.ElasticsearchConfig, action string) error {
-	requester, ok := client.(rawRequester)
-	if !ok {
-		return fmt.Errorf("cluster client does not support raw requests")
-	}
-	url := fmt.Sprintf("%s/_rollup/jobs/rollup*/_%s", cfg.GetAnyEndpoint(), action)
-	resp, err := requester.Request(context.Background(), util.Verb_POST, url, nil)
+func updateRollupJobs(requester rawRequester, cfg *elastic.ElasticsearchConfig, action string) error {
+	response, statusCode, err := rawJSONRequest(requester, cfg, util.Verb_GET, "/_rollup/jobs", nil)
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode == http.StatusNotFound {
+	if statusCode == http.StatusNotFound {
 		return nil
 	}
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("%s", resp.Body)
+	jobIDs := getManagedRollupJobIDs(response)
+	for _, jobID := range jobIDs {
+		_, statusCode, err := rawJSONRequest(
+			requester,
+			cfg,
+			util.Verb_POST,
+			fmt.Sprintf("/_rollup/jobs/%s/_%s", url.PathEscape(jobID), action),
+			nil,
+		)
+		if statusCode == http.StatusNotFound {
+			continue
+		}
+		if err != nil {
+			return err
+		}
 	}
 	return nil
+}
+
+func getManagedRollupJobIDs(response map[string]interface{}) []string {
+	jobs, ok := response["jobs"].([]interface{})
+	if !ok || len(jobs) == 0 {
+		return nil
+	}
+	jobIDs := make([]string, 0, len(jobs))
+	for _, item := range jobs {
+		job, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		config, ok := job["config"].(map[string]interface{})
+		if !ok {
+			continue
+		}
+		jobID, _ := config["id"].(string)
+		jobID = strings.TrimSpace(jobID)
+		if !strings.HasPrefix(jobID, "rollup_") {
+			continue
+		}
+		jobIDs = append(jobIDs, jobID)
+	}
+	return jobIDs
 }
 
 func (h *SettingsAPI) getRollupSetting(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -1180,7 +1213,14 @@ func (h *SettingsAPI) updateRollupSetting(w http.ResponseWriter, req *http.Reque
 	}
 
 	if !payload.Enabled {
-		err = updateRollupJobs(client, cfg, "stop")
+		requester, ok := client.(rawRequester)
+		if !ok {
+			err = fmt.Errorf("cluster client does not support raw requests")
+			log.Error(err)
+			h.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		err = updateRollupJobs(requester, cfg, "stop")
 		if err != nil {
 			log.Error(err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -1204,7 +1244,14 @@ func (h *SettingsAPI) updateRollupSetting(w http.ResponseWriter, req *http.Reque
 	}
 
 	if payload.Enabled {
-		err = updateRollupJobs(client, cfg, "start")
+		requester, ok := client.(rawRequester)
+		if !ok {
+			err = fmt.Errorf("cluster client does not support raw requests")
+			log.Error(err)
+			h.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		err = updateRollupJobs(requester, cfg, "start")
 		if err != nil {
 			log.Error(err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)

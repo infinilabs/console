@@ -1091,10 +1091,15 @@ func GetIndicesCount(clusterID string) int {
 	if meta != nil && meta.ClusterState != nil && meta.ClusterState.Metadata != nil && meta.ClusterState.Metadata.Indices != nil {
 		indexCount = len(meta.ClusterState.Metadata.Indices)
 	} else {
-		log.Warnf("Can't get indices from metadata with %s", clusterID)
 		esClient := elastic.GetClient(clusterID)
-		indexInfos, _ := esClient.GetIndices("")
-		indexCount = len(*indexInfos)
+		indexInfos, err := esClient.GetIndices("")
+		if err != nil {
+			log.Warnf("Can't get indices count with %s from metadata or indices API: %v", clusterID, err)
+			return indexCount
+		}
+		if indexInfos != nil {
+			indexCount = len(*indexInfos)
+		}
 	}
 	log.Debugf("Get cluster id %s indices count %d", clusterID, indexCount)
 	return indexCount

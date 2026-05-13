@@ -150,7 +150,11 @@ export const Associate = Form.create({ name: "associate_form" })((props) => {
                 ],
               })(<Input placeholder="127.0.0.1:9200" />)}
             </Form.Item>
-            <Form.Item label="TLS">
+            <Form.Item
+              label={formatMessage({
+                id: "gateway.instance.field.tls.label",
+              })}
+            >
               {getFieldDecorator("isTLS", {
                 initialValue: record?.schema === "https",
                 valuePropName: "checked",

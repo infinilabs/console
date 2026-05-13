@@ -357,7 +357,14 @@ export default {
   "alert.channel.form.advanced.custom": "(Custom)",
   "alert.channel.form.advanced.load.default": "Load Channel's Default Config",
 
+  "alert.channel.form.webhook.url": "Webhook URL",
+  "alert.channel.form.webhook.url.required": "Please input webhook URL!",
+  "alert.channel.form.webhook.method": "HTTP Method",
+  "alert.channel.form.webhook.method.required": "Please select HTTP method!",
+  "alert.channel.form.webhook.headers": "Headers",
   "alert.channel.form.webhook.template.title": "Default Body Template",
+  "alert.channel.form.webhook.body": "Body",
+  "alert.channel.form.webhook.body.required": "Please input body!",
   "alert.channel.form.webhook.send.test": "Send Test Message",
 
   "alert.channel.form.email.server": "SMTP Server",

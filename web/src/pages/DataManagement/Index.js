@@ -682,7 +682,10 @@ class Index extends PureComponent {
                 </Descriptions.Item>
               </Descriptions>
             </TabPane>
-            <TabPane tab="Mappings" key="mappings">
+            <TabPane
+              tab={formatMessage({ id: "indices.tab.mappings" })}
+              key="mappings"
+            >
               <JSONWrapper>
                 <div
                   style={{
@@ -702,10 +705,13 @@ class Index extends PureComponent {
               </JSONWrapper>
             </TabPane>
             {hasAuthority("data.index:all") ? (
-              <TabPane tab="Edit settings" key="settings">
+              <TabPane
+                tab={formatMessage({ id: "indices.tab.edit_settings" })}
+                key="settings"
+              >
                 <div style={{ textAlign: "right", marginBottom: 10 }}>
                   <span style={{ marginRight: 30 }}>
-                    Edit, then save your JSON
+                    {formatMessage({ id: "indices.hint.edit_json" })}
                   </span>
                   <Button
                     type="primary"
@@ -713,7 +719,7 @@ class Index extends PureComponent {
                       this.handleIndexSettingsSaveClick(editingIndex.index);
                     }}
                   >
-                    Save
+                    {formatMessage({ id: "form.button.save" })}
                   </Button>
                 </div>
                 <div style={{ border: "1px solid rgb(232, 232, 232)" }}>

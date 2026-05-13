@@ -1,7 +1,15 @@
 .cluster-name-link {
   display: flex;
   align-items: center;
+  min-width: 0;
+
   > span {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: block;
     margin-left: 3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }

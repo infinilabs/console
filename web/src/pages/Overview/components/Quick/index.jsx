@@ -1,4 +1,5 @@
 import { Card, Col, Icon, Row } from "antd";
+import React, { useEffect, useState } from "react";
 import styles from "./index.less";
 import { router } from "umi";
 import MessageIcon from "./icons/MessageIcon";
@@ -10,11 +11,13 @@ import MonitorIcon from "./icons/MonitorIcon";
 import MigrationIcon from "./icons/MigrationIcon";
 import { formatMessage } from "umi/locale";
 import {
+  APPLICATION_SETTINGS_UPDATED_EVENT,
   getEnterpriseTaskManagerEnabled,
   hasAuthority,
+  refreshApplicationSettings,
 } from "@/utils/authority";
 
-const getRoutes = () => {
+const getRoutes = (taskManagerEnabled) => {
   const routes = [
     {
       path: "/resource/cluster",
@@ -49,7 +52,7 @@ const getRoutes = () => {
   ];
 
   if (
-    getEnterpriseTaskManagerEnabled() === "true" &&
+    taskManagerEnabled &&
     (hasAuthority("data_tools.comparison:all") ||
       hasAuthority("data_tools.comparison:read"))
   ) {
@@ -61,7 +64,7 @@ const getRoutes = () => {
   }
 
   if (
-    getEnterpriseTaskManagerEnabled() === "true" &&
+    taskManagerEnabled &&
     (hasAuthority("data_tools.migration:all") ||
       hasAuthority("data_tools.migration:read"))
   ) {
@@ -76,7 +79,29 @@ const getRoutes = () => {
 };
 
 export default () => {
-  const routes = getRoutes();
+  const [taskManagerEnabled, setTaskManagerEnabled] = useState(
+    getEnterpriseTaskManagerEnabled() === "true"
+  );
+
+  useEffect(() => {
+    const syncTaskManagerEnabled = () => {
+      setTaskManagerEnabled(getEnterpriseTaskManagerEnabled() === "true");
+    };
+
+    refreshApplicationSettings(true).finally(syncTaskManagerEnabled);
+    window.addEventListener(
+      APPLICATION_SETTINGS_UPDATED_EVENT,
+      syncTaskManagerEnabled
+    );
+    return () => {
+      window.removeEventListener(
+        APPLICATION_SETTINGS_UPDATED_EVENT,
+        syncTaskManagerEnabled
+      );
+    };
+  }, []);
+
+  const routes = getRoutes(taskManagerEnabled);
   const compactLayout = routes.length > 6;
 
   return (

@@ -39,17 +39,27 @@ export default () => {
           {formatMessage({ id: "gateway.guide.tips.title" })}
         </div>
         <div className={styles.tipsDesc}>
-          <div style={{ marginBottom: 28 }}>
-            · {formatMessage({ id: "gateway.guide.tips.content" })}
-            {` `}
-            <a
-              href={`${getDocPathByLang('gateway')}/getting-started/install/`}
-              target={"_blank"}
-            >
-              {`${formatMessage({
-                id: "gateway.guide.tips.install_manually",
-              })}>`}
-            </a>
+          <div className={styles.tipLines}>
+            <p>
+              · {formatMessage({ id: "gateway.guide.tips.version" })}{" "}
+              <code>-v 1.30.3-2407</code>
+            </p>
+            <p>
+              · {formatMessage({ id: "gateway.guide.tips.directory" })}{" "}
+              <code>-d /custom/path</code>
+            </p>
+            <p>
+              · {formatMessage({ id: "gateway.guide.tips.content" })}{" "}
+              <a
+                href={`${getDocPathByLang("gateway")}/getting-started/install/`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {formatMessage({
+                  id: "gateway.guide.tips.install_manually",
+                })}
+              </a>
+            </p>
           </div>
           <div>
             <span style={{ marginRight: 8 }}>

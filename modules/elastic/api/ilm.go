@@ -53,6 +53,10 @@ func rawJSONRequest(clusterID, method, path string, body []byte) (map[string]int
 	if !ok {
 		return nil, 0, fmt.Errorf("cluster client does not support raw requests")
 	}
+	return rawJSONRequestWithRequester(requester, cfg, method, path, body)
+}
+
+func rawJSONRequestWithRequester(requester rawRequester, cfg *elastic.ElasticsearchConfig, method, path string, body []byte) (map[string]interface{}, int, error) {
 	requestURL := fmt.Sprintf("%s%s", strings.TrimRight(cfg.GetAnyEndpoint(), "/"), path)
 	resp, err := requester.Request(context.Background(), method, requestURL, body)
 	if err != nil {
@@ -93,9 +97,8 @@ func parseInt64(value interface{}) int64 {
 	}
 }
 
-func putEasysearchILMPolicy(clusterID, policy string, policyConfig []byte) error {
-	path := "/_ilm/policy/" + url.PathEscape(policy)
-	current, statusCode, err := rawJSONRequest(clusterID, util.Verb_GET, path, nil)
+func putVersionedILMPolicy(requester rawRequester, cfg *elastic.ElasticsearchConfig, path string, policyConfig []byte) error {
+	current, statusCode, err := rawJSONRequestWithRequester(requester, cfg, util.Verb_GET, path, nil)
 	if err != nil && statusCode != http.StatusNotFound {
 		return err
 	}
@@ -104,8 +107,28 @@ func putEasysearchILMPolicy(clusterID, policy string, policyConfig []byte) error
 		primaryTerm := parseInt64(current["_primary_term"])
 		path += fmt.Sprintf("?if_seq_no=%d&if_primary_term=%d", seqNo, primaryTerm)
 	}
-	_, _, err = rawJSONRequest(clusterID, util.Verb_PUT, path, policyConfig)
+	_, _, err = rawJSONRequestWithRequester(requester, cfg, util.Verb_PUT, path, policyConfig)
 	return err
+}
+
+func putEasysearchILMPolicy(clusterID, policy string, policyConfig []byte) error {
+	cfg := elastic.GetConfig(clusterID)
+	client := elastic.GetClient(clusterID)
+	requester, ok := client.(rawRequester)
+	if !ok {
+		return fmt.Errorf("cluster client does not support raw requests")
+	}
+	return putVersionedILMPolicy(requester, cfg, "/_ilm/policy/"+url.PathEscape(policy), policyConfig)
+}
+
+func putOpensearchILMPolicy(clusterID, policy string, policyConfig []byte) error {
+	cfg := elastic.GetConfig(clusterID)
+	client := elastic.GetClient(clusterID)
+	requester, ok := client.(rawRequester)
+	if !ok {
+		return fmt.Errorf("cluster client does not support raw requests")
+	}
+	return putVersionedILMPolicy(requester, cfg, "/_plugins/_ism/policies/"+url.PathEscape(policy), policyConfig)
 }
 
 func (h *APIHandler) HandleGetILMPolicyAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -133,6 +156,8 @@ func (h *APIHandler) HandleSaveILMPolicyAction(w http.ResponseWriter, req *http.
 	}
 	if strings.EqualFold(cfg.Distribution, elastic.Easysearch) {
 		err = putEasysearchILMPolicy(clusterID, policy, reqBody)
+	} else if strings.EqualFold(cfg.Distribution, elastic.Opensearch) {
+		err = putOpensearchILMPolicy(clusterID, policy, reqBody)
 	} else {
 		err = esClient.PutILMPolicy(policy, reqBody)
 	}

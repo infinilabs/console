@@ -33,12 +33,12 @@ export default {
   "settings.system.retention.validation.days": "请输入有效的保留天数",
   "settings.system.retention.validation.max_size":
     "请输入有效的滚动存储大小，单位为 GB，例如 50",
-  "settings.system.rollup.title": "Rollup",
+  "settings.system.rollup.title": "数据汇聚",
   "settings.system.rollup.description":
-    "可在系统设置中启用或停止系统集群的 Rollup 任务。",
+    "可在系统设置中启用或停止系统集群的数据汇聚任务。",
   "settings.system.rollup.enabled": "开启",
   "settings.system.rollup.disabled": "关闭",
   "settings.system.rollup.help":
-    "关闭 Rollup 会停止 rollup job，并同步关闭集群设置中的 rollup search。",
-  "settings.system.rollup.update.success": "Rollup 设置已更新",
+    "关闭数据汇聚会逐个停止现有的数据汇聚任务，并同步关闭集群设置中的 rollup search。",
+  "settings.system.rollup.update.success": "数据汇聚设置已更新",
 };

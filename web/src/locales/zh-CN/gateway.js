@@ -21,7 +21,7 @@ export default {
   "gateway.instance.field.endpoint.form.required": "请输入实例 API 地址！",
   "gateway.instance.field.endpoint.placeholder":
     "实例 API 地址，例如：127.0.0.1:2900",
-  "gateway.instance.field.tls.label": "TLS",
+  "gateway.instance.field.tls.label": "开启 TLS",
   "gateway.instance.field.tags.label": "标签",
   "gateway.instance.field.description.placeholder": "实例描述",
   "gateway.instance.delete.confirm.title": "确定要删除这条记录吗？",
@@ -73,6 +73,8 @@ export default {
     "请复制下方命令并在本地部署环境执行，其包含 INFINI Gateway 的下载、部署及启动：",
   "gateway.guide.shell.copy.success": "复制成功！",
   "gateway.guide.tips.title": "提示：",
+  "gateway.guide.tips.version": "如需指定 Gateway 版本，可追加",
+  "gateway.guide.tips.directory": "如需指定安装目录，可追加",
   "gateway.guide.tips.content":
     "当前版本自动安装仅支持 Linux， 非 Linux 系统请",
   "gateway.guide.tips.install_manually": "手动安装",

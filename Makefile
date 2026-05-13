@@ -9,6 +9,7 @@ APP_STATIC_FOLDER := .public
 APP_STATIC_PACKAGE := public
 APP_UI_FOLDER := ui
 APP_PLUGIN_FOLDER := plugin
+GOBUILD_FLAGS += -trimpath
 
 # easyjson -all domain.go
 include ../framework/Makefile

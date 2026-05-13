@@ -133,7 +133,11 @@ export class ExtraStep extends React.Component {
           >
             {initialValue?.host}
           </Descriptions.Item>
-          <Descriptions.Item label="TLS">
+          <Descriptions.Item
+            label={formatMessage({
+              id: "cluster.manage.field.tls.label",
+            })}
+          >
             {initialValue?.isTLS ? (
               <Icon type="lock" style={{ color: "#52c41a" }} />
             ) : null}
@@ -284,7 +288,11 @@ export class ExtraStep extends React.Component {
             editValue={initialValue}
           />
 
-          <Form.Item label="Tags">
+          <Form.Item
+            label={formatMessage({
+              id: "cluster.manage.field.tags.label",
+            })}
+          >
             {getFieldDecorator("tags", {
               initialValue: initialValue?.tags || ["default"],
               rules: [],

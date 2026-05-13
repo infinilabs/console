@@ -310,6 +310,7 @@ export default {
   "menu.resource.runtime.config": "CONFIG",
   "menu.resource.cluster": "CLUSTER",
   "menu.resource.registCluster": "REGISTER CLUSTER",
+  "menu.resource.editCluster": "EDIT CLUSTER",
   "menu.sysresourcetem.editCluster": "EDIT CLUSTER",
 
   "menu.resource.agent": "AGENTS",

@@ -60,7 +60,10 @@ export default ({ value = [], onChange }) => {
       )}
       {!inputVisible && (
         <Tag onClick={showInput} style={{ padding: "0 5px", fontSize: 14 }}>
-          <Icon type="plus" /> Add New
+          <Icon type="plus" />{" "}
+          {formatMessage({
+            id: "command.btn.newtag",
+          })}
         </Tag>
       )}
     </div>

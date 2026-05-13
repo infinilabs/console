@@ -44,7 +44,10 @@ export const ResultStep = (props) => {
       </Row>
       <Row>
         <Col xs={24} sm={8} className={styles.label}>
-          TLS：
+          {formatMessage({
+            id: "cluster.manage.field.tls.label",
+          })}
+          ：
         </Col>
         <Col xs={24} sm={16}>
           {formatMessage({

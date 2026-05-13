@@ -1,6 +1,14 @@
 package settings
 
-import "testing"
+import (
+	"context"
+	"net/http"
+	"strings"
+	"testing"
+
+	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/util"
+)
 
 func TestSetILMRetentionDays(t *testing.T) {
 	policy := map[string]interface{}{
@@ -280,6 +288,88 @@ func TestSetISMRetentionMaxSize(t *testing.T) {
 	if size != "120gb" {
 		t.Fatalf("expected 120gb retention size, got %s", size)
 	}
+}
+
+func TestGetManagedRollupJobIDs(t *testing.T) {
+	jobIDs := getManagedRollupJobIDs(map[string]interface{}{
+		"jobs": []interface{}{
+			map[string]interface{}{
+				"config": map[string]interface{}{
+					"id": "rollup_node_stats",
+				},
+			},
+			map[string]interface{}{
+				"config": map[string]interface{}{
+					"id": "custom_job",
+				},
+			},
+			map[string]interface{}{
+				"config": map[string]interface{}{
+					"id": " rollup_cluster_stats ",
+				},
+			},
+		},
+	})
+	if len(jobIDs) != 2 {
+		t.Fatalf("expected 2 managed rollup jobs, got %#v", jobIDs)
+	}
+	if jobIDs[0] != "rollup_node_stats" || jobIDs[1] != "rollup_cluster_stats" {
+		t.Fatalf("unexpected managed rollup job ids %#v", jobIDs)
+	}
+}
+
+func TestUpdateRollupJobsStopsManagedJobsIndividually(t *testing.T) {
+	requester := &mockRawRequester{
+		responses: map[string]*util.Result{
+			"GET http://example.com/_rollup/jobs": {
+				StatusCode: http.StatusOK,
+				Body: []byte(`{"jobs":[
+					{"config":{"id":"rollup_node_stats"}},
+					{"config":{"id":"custom_job"}},
+					{"config":{"id":"rollup_cluster_health"}}
+				]}`),
+			},
+			"POST http://example.com/_rollup/jobs/rollup_node_stats/_stop": {
+				StatusCode: http.StatusOK,
+				Body:       []byte(`{"stopped":true}`),
+			},
+			"POST http://example.com/_rollup/jobs/rollup_cluster_health/_stop": {
+				StatusCode: http.StatusOK,
+				Body:       []byte(`{"stopped":true}`),
+			},
+		},
+	}
+
+	if err := updateRollupJobs(requester, &elastic.ElasticsearchConfig{Endpoint: "http://example.com"}, "stop"); err != nil {
+		t.Fatalf("updateRollupJobs returned error: %v", err)
+	}
+
+	if len(requester.calls) != 3 {
+		t.Fatalf("expected 3 requests, got %#v", requester.calls)
+	}
+	if requester.calls[0] != "GET http://example.com/_rollup/jobs" {
+		t.Fatalf("expected rollup jobs list request first, got %s", requester.calls[0])
+	}
+	if strings.Contains(strings.Join(requester.calls, "\n"), "custom_job") {
+		t.Fatalf("expected custom job to be skipped, got %#v", requester.calls)
+	}
+}
+
+type mockRawRequester struct {
+	responses map[string]*util.Result
+	calls     []string
+}
+
+func (m *mockRawRequester) Request(_ context.Context, method, requestURL string, _ []byte) (*util.Result, error) {
+	key := method + " " + requestURL
+	m.calls = append(m.calls, key)
+	if response, ok := m.responses[key]; ok {
+		return response, nil
+	}
+	return &util.Result{
+		StatusCode: http.StatusNotFound,
+		Body:       []byte(`{"error":"not found"}`),
+	}, nil
 }
 
 func TestSetRollupILMRetentionDaysFromStates(t *testing.T) {

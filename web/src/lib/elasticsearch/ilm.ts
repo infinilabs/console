@@ -61,17 +61,64 @@ const sanitizeISMPayload = (config: any) => {
   };
 }
 
+const stripWaitForSnapshotFromPhases = (config: any) => {
+  const phases = config?.policy?.phases;
+  if(!phases || typeof phases !== "object"){
+    return config;
+  }
+  Object.keys(phases).forEach((phaseName) => {
+    const actions = phases?.[phaseName]?.actions;
+    if(actions && typeof actions === "object" && !Array.isArray(actions)){
+      delete actions.wait_for_snapshot;
+    }
+  });
+  return config;
+}
+
+const stripDeleteSearchableSnapshotFromPhases = (config: any) => {
+  const phases = config?.policy?.phases;
+  if(!phases || typeof phases !== "object"){
+    return config;
+  }
+  Object.keys(phases).forEach((phaseName) => {
+    const deleteAction = phases?.[phaseName]?.actions?.delete;
+    if(deleteAction && typeof deleteAction === "object" && !Array.isArray(deleteAction)){
+      delete deleteAction.delete_searchable_snapshot;
+    }
+  });
+  return config;
+}
+
+const stripWaitForSnapshotFromStates = (config: any) => {
+  const states = config?.policy?.states;
+  if(!Array.isArray(states)){
+    return config;
+  }
+  config.policy.states = states.map((state: any) => {
+    const actions = Array.isArray(state?.actions) ? state.actions : [];
+    return {
+      ...state,
+      actions: actions.filter((action: any) => {
+        return !(action && typeof action === "object" && !Array.isArray(action) && action.wait_for_snapshot !== undefined);
+      }),
+    };
+  });
+  return config;
+}
+
 export const transform = (config: any, options: TransformOptions) => {
   if(options.targetDistribution === SearchEngines.Opensearch){
     if(returnsInternalILMPolicy(options.sourceDistribution)){
-      return normalizeISMPolicy(config);
+      return stripWaitForSnapshotFromStates(normalizeISMPolicy(config));
     }
-    return transformElasticsearchToISM(config);
+    return stripWaitForSnapshotFromStates(transformElasticsearchToISM(config));
   }
   if(returnsInternalILMPolicy(options.sourceDistribution)){
     return transformISMToElasticsearch(config);
   }
-  
+  if(options.targetDistribution === SearchEngines.Easysearch){
+    return stripDeleteSearchableSnapshotFromPhases(stripWaitForSnapshotFromPhases(config));
+  }
   return config
 }
 

@@ -14,6 +14,7 @@ import {
   AutoComplete,
   Switch,
   Popconfirm,
+  Icon,
 } from "antd";
 import PageHeaderWrapper from "@/components/PageHeaderWrapper";
 import "@/assets/headercontent.scss";
@@ -25,6 +26,11 @@ import SearchInput from "@/components/infini/SearchInput";
 
 const FormItem = Form.Item;
 const { TextArea } = Input;
+const firstColumnIconStyle = {
+  marginRight: 8,
+  color: "#999",
+  fontSize: 12,
+};
 
 const UpdateForm = Form.create()((props) => {
   const {
@@ -154,6 +160,12 @@ class AliasManage extends PureComponent {
       title: formatMessage({ id: "alias.table.field.name" }),
       dataIndex: "alias",
       sorter: (a, b) => sorter.string(a, b, "alias"),
+      render: (text) => (
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <Icon type="tag" style={firstColumnIconStyle} />
+          <span>{text}</span>
+        </div>
+      ),
     },
     {
       title: formatMessage({ id: "alias.table.field.write_index" }),

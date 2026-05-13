@@ -189,7 +189,7 @@ const watchPluginChanges = async () => {
 const run = async () => {
   syncStaticAssets();
 
-  await syncPluginDirectory();
+  const snapshot = await syncPluginDirectory({ createSnapshot: mode === "build" });
 
   if (mode === "dev") {
     await watchPluginChanges(); 
@@ -225,17 +225,23 @@ const run = async () => {
   }
 
   let exitCode = 0;
-  const result = spawnSync("./node_modules/.bin/umi", [mode], {
-    stdio: "inherit",
-    shell: true,
-    env,
-  });
+  try {
+    const result = spawnSync("./node_modules/.bin/umi", [mode], {
+      stdio: "inherit",
+      shell: true,
+      env,
+    });
 
-  if (result.error) {
-    console.error(result.error);
-    exitCode = 1;
-  } else {
-    exitCode = result.status || 0;
+    if (result.error) {
+      console.error(result.error);
+      exitCode = 1;
+    } else {
+      exitCode = result.status || 0;
+    }
+  } finally {
+    if (mode === "build") {
+      restorePluginSyncSnapshot(snapshot);
+    }
   }
 
   process.exit(exitCode);

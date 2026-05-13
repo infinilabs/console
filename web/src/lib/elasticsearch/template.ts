@@ -64,12 +64,31 @@ const readISMSetting = (settings: any, key: string) => {
   if(!settings){
     return;
   }
-  const flatValue = settings[`index.plugins.index_state_management.${key}`];
-  if(flatValue !== undefined){
-    return flatValue;
+  for(const prefix of [
+    "plugins.index_state_management",
+    "opendistro.index_state_management",
+  ]){
+    const flatValue = settings[`index.${prefix}.${key}`];
+    if(flatValue !== undefined){
+      return flatValue;
+    }
   }
   const indexSettings = settings.index || {};
-  return indexSettings?.[`plugins.index_state_management.${key}`];
+  for(const prefix of [
+    "plugins.index_state_management",
+    "opendistro.index_state_management",
+  ]){
+    const prefixedValue = indexSettings?.[`${prefix}.${key}`];
+    if(prefixedValue !== undefined){
+      return prefixedValue;
+    }
+  }
+  for(const namespace of ["plugins", "opendistro"]){
+    const nestedValue = indexSettings?.[namespace]?.index_state_management?.[key];
+    if(nestedValue !== undefined){
+      return nestedValue;
+    }
+  }
 }
 
 const deleteElasticsearchLifecycleSettings = (settings: any) => {
@@ -94,11 +113,34 @@ const deleteISMSettings = (settings: any) => {
   if(!settings){
     return;
   }
-  delete settings["index.plugins.index_state_management.policy_id"];
-  delete settings["index.plugins.index_state_management.rollover_alias"];
+  for(const prefix of [
+    "plugins.index_state_management",
+    "opendistro.index_state_management",
+  ]){
+    delete settings[`index.${prefix}.policy_id`];
+    delete settings[`index.${prefix}.rollover_alias`];
+  }
   const indexSettings = settings.index || {};
-  delete indexSettings["plugins.index_state_management.policy_id"];
-  delete indexSettings["plugins.index_state_management.rollover_alias"];
+  for(const prefix of [
+    "plugins.index_state_management",
+    "opendistro.index_state_management",
+  ]){
+    delete indexSettings[`${prefix}.policy_id`];
+    delete indexSettings[`${prefix}.rollover_alias`];
+  }
+  for(const namespace of ["plugins", "opendistro"]){
+    if(!indexSettings?.[namespace]?.index_state_management){
+      continue;
+    }
+    delete indexSettings[namespace].index_state_management.policy_id;
+    delete indexSettings[namespace].index_state_management.rollover_alias;
+    if(Object.keys(indexSettings[namespace].index_state_management).length === 0){
+      delete indexSettings[namespace].index_state_management;
+    }
+    if(Object.keys(indexSettings[namespace]).length === 0){
+      delete indexSettings[namespace];
+    }
+  }
 }
 
 const transformElasticsearchTemplateLifecycleToISM = (tpl: any) => {
@@ -106,9 +148,17 @@ const transformElasticsearchTemplateLifecycleToISM = (tpl: any) => {
   if(!settings){
     return tpl;
   }
-  const policyID = readElasticsearchLifecycleSetting(settings, "name");
-  const rolloverAlias = readElasticsearchLifecycleSetting(settings, "rollover_alias");
+  let policyID = readElasticsearchLifecycleSetting(settings, "name");
+  let rolloverAlias = readElasticsearchLifecycleSetting(settings, "rollover_alias");
+  if(policyID === undefined && rolloverAlias === undefined){
+    policyID = readISMSetting(settings, "policy_id");
+    rolloverAlias = readISMSetting(settings, "rollover_alias");
+    if(policyID === undefined && rolloverAlias === undefined){
+      return tpl;
+    }
+  }
   deleteElasticsearchLifecycleSettings(settings);
+  deleteISMSettings(settings);
   const indexSettings = ensureIndexSettings(tpl);
   if(policyID !== undefined){
     indexSettings["plugins.index_state_management.policy_id"] = policyID;

@@ -11,6 +11,7 @@ import {
   message,
   Menu,
   Dropdown,
+  Icon,
 } from "antd";
 import { formatMessage } from "umi/locale";
 import useFetch from "@/lib/hooks/use_fetch";
@@ -28,6 +29,12 @@ import { formatter } from "@/lib/format";
 import { hasAuthority } from "@/utils/authority";
 
 import SearchInput from "@/components/infini/SearchInput";
+
+const firstColumnIconStyle = {
+  marginRight: 8,
+  color: "#999",
+  fontSize: 12,
+};
 
 const RoleList = (props) => {
   const [queryParams, setQueryParams] = React.useState({});
@@ -63,6 +70,12 @@ const RoleList = (props) => {
       {
         title: formatMessage({ id: "system.security.role.table.name" }),
         dataIndex: "name",
+        render: (text) => (
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <Icon type="safety" style={firstColumnIconStyle} />
+            <span>{text}</span>
+          </div>
+        ),
       },
       {
         title: formatMessage({ id: "system.security.role.table.type" }),

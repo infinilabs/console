@@ -8,6 +8,7 @@ import {
   Popconfirm,
   Table,
   message,
+  Icon,
 } from "antd";
 import PageHeaderWrapper from "@/components/PageHeaderWrapper";
 import styles from "./Index.less";
@@ -22,6 +23,12 @@ import AutoTextEllipsis from "@/components/AutoTextEllipsis";
 import commonStyles from "@/common.less"
 
 import SearchInput from "@/components/infini/SearchInput";
+
+const firstColumnIconStyle = {
+  marginRight: 8,
+  color: "#999",
+  fontSize: 12,
+};
 
 export default () => {
   const initialQueryParams = {
@@ -179,6 +186,12 @@ export default () => {
       }),
       dataIndex: "id",
       key: "id",
+      render: (text) => (
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <Icon type="key" style={firstColumnIconStyle} />
+          <span>{text}</span>
+        </div>
+      ),
     },
     {
       title: formatMessage({

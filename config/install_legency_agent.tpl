@@ -3,13 +3,11 @@
 set -eo pipefail
 
 function print_usage() {
-  echo "Usage: curl -ksSL http://$[[CLOUD_ENDPOINT]]/instance/_get_install_script?token | sudo bash -s -- [-u url_for_download_program] [-v version_for_program ] [-t target_install_dir] [-o overwite_flag] [-s url_console_lan_adress]"
+  echo "Usage: curl -sSL http://get.infini.cloud/ | sudo bash -s -- [-u url_for_download_program] [-v version_for_program ] [-t target_install_dir] [-p port_for_program]"
   echo "Options:"
-  echo "  -u, --url <url>             Install Agent download URL, supports host, package directory, or direct package file URL"
-  echo "  -v, --version <version>     Install Agent version, default is to get latest version online, can be manually specified"  
-  echo "  -t, --target <dir>          Install Agent target path, default is /opt/agent, can be manually specified"
-  echo "  -o, --overwrite <bool>      Whether to overwrite existing files during Agent install, default is true, can be manually specified" 
-  echo "  -s, --server <url>          Server address for Agent to communicate with INFINI Console after install, default is current Console address, can be manually specified"
+  echo "  -u, --url <url>             Download url of the program to install which default is http://localhost"
+  echo "  -v, --version <version>     Version of the program to install which default is latest from "
+  echo "  -t, --target <dir>          Target directory of the program install which default is /opt/agent"
   exit 1
 }
 
@@ -67,6 +65,18 @@ function __catch() {
   [[ $_old_try -ne 0 ]]
 }
 
+function confirm() {
+  display_str=$1
+  default_ans=$2
+  if [[ $default_ans == 'y/N' ]]; then
+     must_match='[yY]'
+  else
+     must_match='[nN]'
+  fi
+  read -p"${display_str} [${default_ans}]:" ans
+  [[ $ans == $must_match ]]
+}
+
 function get_latest_version() {
   echo $(curl -m3 -s "https://release.infinilabs.com/.latest" |sed 's/",/"/;s/"//g;s/://1' |grep -Ev '^[{}]' |grep "$program_name" |awk '{print $NF}')
 }
@@ -85,14 +95,9 @@ function check_dir() {
   fi
 
   if [[ "$(ls -A ${install_dir})" ]]; then
-    if [ "$o" == "true" ]; then
-      echo "WARN: Auto replace or upgrade exists agent files."
-      uninstall_service
-      rm -rf ${install_dir}/*
-    else
-      echo "Error: Please manual clean exists agent files at ${install_dir}, reinstall again."
-      exit 1
-    fi
+    confirm "RISK WARN: Replace or upgrade exists agent version, Proceed?" 'y/N' && echo || exit 1;
+    uninstall_service
+    rm -rf ${install_dir}/*
   fi
 }
 
@@ -181,10 +186,7 @@ function check_platform() {
 }
 
 function install_binary() {
-  local archive_name="${program_name}-${version}-${file_ext}"
-  local download_url=$(resolve_download_url "$location" "$archive_name")
-  local downloaded_file="${download_url##*/}"
-  downloaded_file="${downloaded_file%%\?*}"
+  local download_url="$location/${program_name}-${version}-${file_ext}"
   echo "File: [$download_url]"
 
   tmp_dir="$(mktemp -d)"
@@ -199,31 +201,12 @@ function install_binary() {
   fi
 
   if [[ "${file_ext}" == *".tar.gz" ]]; then
-      tar -xzf "${downloaded_file}" -C "$install_dir"
+      tar -xzf "${program_name}-${version}-${file_ext}" -C "$install_dir"
   else
-      unzip -q "${downloaded_file}" -d "$install_dir"
+      unzip -q "${program_name}-${version}-${file_ext}" -d "$install_dir"
   fi
 
   cd "${install_dir}" && rm -rf "${tmp_dir}" && echo ""
-}
-
-function resolve_download_url() {
-  local input_url="${1%/}"
-  local archive_name="$2"
-
-  case "$input_url" in
-    *.tar.gz|*.zip)
-      echo "$input_url"
-      return
-      ;;
-  esac
-
-  if [[ "$input_url" =~ ^[a-zA-Z][a-zA-Z0-9+.-]*://[^/]+$ ]]; then
-    echo "${input_url}/agent/stable/${archive_name}"
-    return
-  fi
-
-  echo "${input_url}/${archive_name}"
 }
 
 function install_certs() {
@@ -241,39 +224,24 @@ function install_certs() {
 function install_config() {
   echo "[agent] waiting generate config"
   port={{port}}
-  console_endpoint="{{console_endpoint}}"
-
-  server=${register_server:-$console_endpoint}
-  echo "[agent] agent listening port $port, will register to console endpoint [ $server ]"
   cat <<EOF > ${install_dir}/agent.yml
+configs.auto_reload: true
+
 env:
-  WEB_BINDING: "0.0.0.0:${port}"
-  MANAGED: true
-  REMOTE_CONFIG_SERVERS: ["${server}"]
-  REMOTE_CONFIG_INTERVAL: "10s"
-  SECURITY_ENABLED: true
-  SECURITY_MANAGED_ENABLED: false
+  API_BINDING: "0.0.0.0:${port}"
 
 path.data: data
 path.logs: log
-path.configs: "config"
-configs.auto_reload: true
+path.configs: config
 
 resource_limit.cpu.max_num_of_cpus: 1
-resource_limit:
-  memory:
-    max_in_bytes: 533708800 #50MB
-
-task:
-  max_concurrent_tasks: 3
+resource_limit.memory.max_in_bytes: 533708800
 
 stats:
-  include_storage_stats_in_api: true
+  include_storage_stats_in_api: false
 
 elastic:
   skip_init_metadata_on_start: true
-  metadata_refresh:
-    enabled: false
   health_check:
     enabled: true
     interval: 60s
@@ -284,50 +252,46 @@ elastic:
 disk_queue:
   max_msg_size: 20485760
   max_bytes_per_file: 20485760
-  max_used_bytes: 524288000 # 500MB
+  max_used_bytes: 1024288000
   retention.max_num_of_local_files: 1
   compress:
-    idle_threshold: 1
+    idle_threshold: 0
     num_of_files_decompress_ahead: 0
     segment:
       enabled: true
 
 api:
-  disable_api_directory: true
-  enabled: false
-
-web:
-  embedding_api: true
-  websocket:
-    enabled: false
   enabled: true
+  tls:
+    enabled: true
+    cert_file: "config/client.crt"
+    key_file: "config/client.key"
+    ca_file: "config/ca.crt"
+    skip_insecure_verify: false
   network:
-    binding: \$[[env.WEB_BINDING]]
-  ui:
-    vfs: true
-#  tls:
-#    enabled: true
-#    cert_file: /etc/ssl.crt
-#    key_file: /etc/ssl.key
-#    skip_insecure_verify: false
-  security:
-    enabled: \$[[env.SECURITY_ENABLED]]
-    managed: \$[[env.SECURITY_MANAGED_ENABLED]]
+    binding: \$[[env.API_BINDING]]
 
-agent:
-
-metrics:
-  enabled: false
+badger:
+  value_threshold: 1024
+  mem_table_size: 1048576
+  value_log_max_entries: 1000000
+  value_log_file_size: 104857600
 
 configs:
   #for managed client's setting
-  managed: \$[[env.MANAGED]] # managed by remote servers
+  managed: true # managed by remote servers
   panic_on_config_error: false #ignore config error
-  allow_generated_metrics_tasks: false # allow auto-generated metrics tasks (e.g. k8s)
-  interval: \$[[env.REMOTE_CONFIG_INTERVAL]]
-  servers: \$[[env.REMOTE_CONFIG_SERVERS]] # config servers
-  max_backup_files: 5
+  interval: "10s"
+  servers: # config servers
+    - "http://localhost:9000"
   soft_delete: false
+  max_backup_files: 5
+  tls: #for mTLS connection with config servers
+    enabled: true
+    cert_file: "config/client.crt"
+    key_file: "config/client.key"
+    ca_file: "config/ca.crt"
+    skip_insecure_verify: false
 
 node:
   major_ip_pattern: ".*"
@@ -346,6 +310,7 @@ function uninstall_service() {
     $agent_svc -service stop &>/dev/null
     $agent_svc -service uninstall &>/dev/null
   fi
+  sleep 3
 }
 
 function install_service() {
@@ -354,6 +319,19 @@ function install_service() {
   echo "[agent] waiting service install & start"
   $agent_svc -service install &>/dev/null
   $agent_svc -service start &>/dev/null
+  sleep 3
+}
+
+function register_agent() {
+  console_endpoint="{{console_endpoint}}"
+  token={{token}}
+  echo '[agent] waiting registering to INFINI Console'
+  until curl -s -m30 -XPOST "${console_endpoint}/agent/instance?token=${token}";
+  do
+    echo -n '.'; sleep 3;
+  done;
+  echo
+  #__try curl -s --retry 1 --retry-delay 3 -m30 -XPOST -o ${install_dir}/setup.log "${console_endpoint}/agent/instance?token=${token}"
 }
 
 function main() {
@@ -362,8 +340,6 @@ function main() {
       -u|--url) url_download="$2"; shift 2 ;;
       -v|--version) version="$2"; shift 2 ;;
       -t|--target) target_dir="$2"; shift 2 ;;
-      -o|--overwrite) overwrite="$2"; shift 2 ;;
-      -s|--server) register_server="$2"; shift 2 ;;
       *) print_usage ;;
     esac
   done
@@ -373,7 +349,6 @@ function main() {
   install_dir=${target_dir:-/opt/$program_name}
   latest_version=$(get_latest_version)
   version=${version:-$latest_version}
-  o=${overwrite:-true}
   file_ext=""
 
   if [[ -z "${version}" ]]; then
@@ -382,13 +357,14 @@ function main() {
     echo "Name: [${program_name}], Version: [${version}], Path: [${install_dir}]"
   fi
 
-  check_platform
   check_dir
+  check_platform
   install_binary
   install_certs
   install_config
   uninstall_service
   install_service
+  register_agent
 
   echo ""
   echo ""

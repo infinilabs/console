@@ -30,6 +30,7 @@ package server
 import (
 	"fmt"
 	log "github.com/cihub/seelog"
+	goversion "github.com/hashicorp/go-version"
 	"infini.sh/console/core/security"
 	"infini.sh/console/modules/agent/common"
 	httprouter "infini.sh/framework/core/api/router"
@@ -53,6 +54,9 @@ type Token struct {
 const ExpiredIn = time.Millisecond * 1000 * 60 * 60
 const getInstallScriptAPI = "/instance/_get_install_script"
 const defaultAgentDownloadURL = "https://release.infinilabs.com/agent/stable"
+const installScriptTemplate = "install_agent.tpl"
+const legacyInstallScriptTemplate = "install_legency_agent.tpl"
+const legacyInstallScriptVersion = "1.30.3"
 
 var expiredTokenCache = util.NewCacheWithExpireOnAdd(ExpiredIn, 100)
 
@@ -82,36 +86,49 @@ func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Req
 	}
 
 	expiredTokenCache.Put(tokenStr, t)
-	consoleEndpoint := agCfg.Setup.ConsoleEndpoint
-	if consoleEndpoint == "" {
-		consoleEndpoint = getDefaultEndpoint(req)
-	}
-
-	basePath := global.Env().SystemConfig.WebAppConfig.BasePath
-	if len(basePath) > 0 {
-		consoleEndpoint = fmt.Sprintf("%s%s", strings.TrimRight(consoleEndpoint, "/"), basePath)
-	}
-
-	endpoint, err := url.JoinPath(consoleEndpoint, getInstallScriptAPI)
+	consoleEndpoint := resolveConsoleEndpoint(req, agCfg.Setup.ConsoleEndpoint)
+	installVersion := strings.TrimSpace(agCfg.Setup.Version)
+	endpoint, err := buildInstallScriptURL(consoleEndpoint, tokenStr, installVersion)
 	if err != nil {
-		panic(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
 	}
 	downloadURL := normalizeAgentDownloadURL(agCfg.Setup.DownloadURL)
 
 	h.WriteJSON(w, util.MapStr{
-		"script":     buildInstallCommand(endpoint, tokenStr, downloadURL, location),
+		"script":     buildInstallCommand(endpoint, downloadURL, location, installVersion),
 		"token":      tokenStr,
 		"expired_at": t.CreatedAt.Add(ExpiredIn),
 	}, http.StatusOK)
 }
 
-func buildInstallCommand(endpoint, tokenStr, downloadURL, location string) string {
-	command := fmt.Sprintf(`curl -ksSL %s?token=%s |sudo bash -s -- -t %s`,
-		endpoint, tokenStr, location)
+func buildInstallCommand(endpoint, downloadURL, location, installVersion string) string {
+	command := fmt.Sprintf(`curl -ksSL %q |sudo bash -s -- -t %q`,
+		endpoint, location)
 	if normalizeAgentDownloadURL(downloadURL) != defaultAgentDownloadURL {
-		command = fmt.Sprintf(`%s -u %s`, command, downloadURL)
+		command = fmt.Sprintf(`%s -u %q`, command, downloadURL)
+	}
+	if installVersion != "" {
+		command = fmt.Sprintf(`%s -v %q`, command, installVersion)
 	}
 	return command
+}
+
+func buildInstallScriptURL(consoleEndpoint, tokenStr, installVersion string) (string, error) {
+	parsedURL, err := url.Parse(consoleEndpoint)
+	if err != nil {
+		return "", err
+	}
+	parsedURL.Path = path.Join(parsedURL.Path, getInstallScriptAPI)
+
+	query := parsedURL.Query()
+	query.Set("token", tokenStr)
+	if installVersion != "" {
+		query.Set("version", installVersion)
+	}
+	parsedURL.RawQuery = query.Encode()
+	return parsedURL.String(), nil
 }
 
 func normalizeAgentDownloadURL(downloadURL string) string {
@@ -120,6 +137,37 @@ func normalizeAgentDownloadURL(downloadURL string) string {
 		return defaultAgentDownloadURL
 	}
 	return normalized
+}
+
+func resolveConsoleEndpoint(req *http.Request, configuredEndpoint string) string {
+	configuredEndpoint = strings.TrimRight(strings.TrimSpace(configuredEndpoint), "/")
+	if configuredEndpoint != "" {
+		return configuredEndpoint
+	}
+
+	consoleEndpoint := getDefaultEndpoint(req)
+	basePath := global.Env().SystemConfig.WebAppConfig.BasePath
+	if len(basePath) > 0 {
+		consoleEndpoint = fmt.Sprintf("%s%s", strings.TrimRight(consoleEndpoint, "/"), basePath)
+	}
+	return consoleEndpoint
+}
+
+func shouldUseLegacyInstallScriptTemplate(installVersion string) bool {
+	installVersion = strings.TrimSpace(strings.TrimPrefix(installVersion, "v"))
+	if installVersion == "" {
+		return false
+	}
+
+	requestedVersion, err := goversion.NewVersion(installVersion)
+	if err != nil {
+		return false
+	}
+	legacyVersion, err := goversion.NewVersion(legacyInstallScriptVersion)
+	if err != nil {
+		return false
+	}
+	return requestedVersion.LessThan(legacyVersion) || requestedVersion.Equal(legacyVersion)
 }
 
 func getDefaultEndpoint(req *http.Request) string {
@@ -152,6 +200,10 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 	}
 
 	agCfg := common.GetAgentConfig()
+	if agCfg == nil || agCfg.Setup == nil {
+		h.WriteError(w, "agent setup config was not found, please configure in the configuration file first", http.StatusInternalServerError)
+		return
+	}
 	caCert, clientCertPEM, clientKeyPEM, err := common.GenerateServerCert(agCfg.Setup.CACertFile, agCfg.Setup.CAKeyFile)
 	if err != nil {
 		log.Error(err)
@@ -159,7 +211,13 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 		return
 	}
 
-	scriptTplPath := path.Join(global.Env().GetConfigDir(), "install_agent.tpl")
+	installVersion := h.GetParameterOrDefault(req, "version", strings.TrimSpace(agCfg.Setup.Version))
+	scriptTplFile := installScriptTemplate
+	if shouldUseLegacyInstallScriptTemplate(installVersion) {
+		scriptTplFile = legacyInstallScriptTemplate
+	}
+
+	scriptTplPath := path.Join(global.Env().GetConfigDir(), scriptTplFile)
 	buf, err := os.ReadFile(scriptTplPath)
 	if err != nil {
 		log.Error(err)
@@ -175,10 +233,7 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 		port = "8080"
 	}
 
-	consoleEndpoint := agCfg.Setup.ConsoleEndpoint
-	if consoleEndpoint == "" {
-		consoleEndpoint = getDefaultEndpoint(req)
-	}
+	consoleEndpoint := resolveConsoleEndpoint(req, agCfg.Setup.ConsoleEndpoint)
 
 	_, err = tpl.Execute(w, map[string]interface{}{
 		"base_url":         downloadURL,

@@ -212,7 +212,9 @@ func (h *APIHandler) deleteInstance(w http.ResponseWriter, req *http.Request, ps
 		return
 	}
 
-	err = orm.Delete(nil, &obj)
+	err = orm.Delete(&orm.Context{
+		Refresh: orm.WaitForRefresh,
+	}, &obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)

@@ -328,6 +328,12 @@ configs:
   servers: \$[[env.REMOTE_CONFIG_SERVERS]] # config servers
   max_backup_files: 5
   soft_delete: false
+  tls: #for mTLS connection with config servers
+    enabled: true
+    cert_file: "config/client.crt"
+    key_file: "config/client.key"
+    ca_file: "config/ca.crt"
+    skip_insecure_verify: true
 
 node:
   major_ip_pattern: ".*"

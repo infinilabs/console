@@ -3,11 +3,12 @@
 set -eo pipefail
 
 function print_usage() {
-  echo "Usage: curl -sSL http://get.infini.cloud/ | sudo bash -s -- [-u url_for_download_program] [-v version_for_program ] [-t target_install_dir] [-p port_for_program]"
+  echo "Usage: curl -sSL http://get.infini.cloud/ | sudo bash -s -- [-u url_for_download_program] [-v version_for_program ] [-t target_install_dir] [-s url_console_lan_adress]"
   echo "Options:"
   echo "  -u, --url <url>             Download url of the program to install which default is http://localhost"
   echo "  -v, --version <version>     Version of the program to install which default is latest from "
   echo "  -t, --target <dir>          Target directory of the program install which default is /opt/agent"
+  echo "  -s, --server <url>          Server address for Agent to communicate with INFINI Console after install, default is current Console address, can be manually specified"
   exit 1
 }
 
@@ -224,6 +225,9 @@ function install_certs() {
 function install_config() {
   echo "[agent] waiting generate config"
   port={{port}}
+  console_endpoint="{{console_endpoint}}"
+  server=${register_server:-$console_endpoint}
+  echo "[agent] agent listening port $port, will register to console endpoint [ $server ]"
   cat <<EOF > ${install_dir}/agent.yml
 configs.auto_reload: true
 
@@ -267,7 +271,7 @@ api:
     cert_file: "config/client.crt"
     key_file: "config/client.key"
     ca_file: "config/ca.crt"
-    skip_insecure_verify: false
+    skip_insecure_verify: true
   network:
     binding: \$[[env.API_BINDING]]
 
@@ -283,7 +287,7 @@ configs:
   panic_on_config_error: false #ignore config error
   interval: "10s"
   servers: # config servers
-    - "http://localhost:9000"
+    - "${server}"
   soft_delete: false
   max_backup_files: 5
   tls: #for mTLS connection with config servers
@@ -291,7 +295,7 @@ configs:
     cert_file: "config/client.crt"
     key_file: "config/client.key"
     ca_file: "config/ca.crt"
-    skip_insecure_verify: false
+    skip_insecure_verify: true
 
 node:
   major_ip_pattern: ".*"
@@ -324,12 +328,31 @@ function install_service() {
 
 function register_agent() {
   console_endpoint="{{console_endpoint}}"
+  server=${register_server:-$console_endpoint}
   token={{token}}
+  max_attempts=${register_max_attempts:-10}
+  attempt=1
+  curl_tls_opts=(
+    --insecure
+    --cert "${install_dir}/config/client.crt"
+    --key "${install_dir}/config/client.key"
+    --cacert "${install_dir}/config/ca.crt"
+  )
   echo '[agent] waiting registering to INFINI Console'
-  until curl -s -m30 -XPOST "${console_endpoint}/agent/instance?token=${token}";
+  while ! curl -s -m30 -XPOST "${curl_tls_opts[@]}" "${server}/agent/instance?token=${token}";
   do
-    echo -n '.'; sleep 3;
-  done;
+    if [[ $attempt -ge $max_attempts ]]; then
+      echo
+      echo "[agent] WARN: failed to register to INFINI Console after ${max_attempts} attempts."
+      echo "[agent] WARN: update ${install_dir}/agent.yml if needed, then restart the agent service to retry remote registration."
+      echo "[agent] WARN: if you need to retry instance registration manually before the token expires, run:"
+      echo "[agent] WARN: curl -s -m30 -XPOST --insecure --cert \"${install_dir}/config/client.crt\" --key \"${install_dir}/config/client.key\" --cacert \"${install_dir}/config/ca.crt\" \"${server}/agent/instance?token=${token}\""
+      return 0
+    fi
+    echo -n '.'
+    attempt=$((attempt + 1))
+    sleep 3
+  done
   echo
   #__try curl -s --retry 1 --retry-delay 3 -m30 -XPOST -o ${install_dir}/setup.log "${console_endpoint}/agent/instance?token=${token}"
 }
@@ -340,6 +363,7 @@ function main() {
       -u|--url) url_download="$2"; shift 2 ;;
       -v|--version) version="$2"; shift 2 ;;
       -t|--target) target_dir="$2"; shift 2 ;;
+      -s|--server) register_server="$2"; shift 2 ;;
       *) print_usage ;;
     esac
   done

@@ -31,6 +31,7 @@ import (
 	"fmt"
 	log "github.com/cihub/seelog"
 	goversion "github.com/hashicorp/go-version"
+	consolecore "infini.sh/console/core"
 	"infini.sh/console/core/security"
 	"infini.sh/console/modules/agent/common"
 	httprouter "infini.sh/framework/core/api/router"
@@ -172,10 +173,44 @@ func shouldUseLegacyInstallScriptTemplate(installVersion string) bool {
 
 func getDefaultEndpoint(req *http.Request) string {
 	scheme := "http"
-	if req.TLS != nil {
+	if consolecore.RequestUsesSecureTransport(req) {
 		scheme = "https"
 	}
-	return fmt.Sprintf("%s://%s", scheme, req.Host)
+	return fmt.Sprintf("%s://%s", scheme, getForwardedHost(req))
+}
+
+func getForwardedHost(req *http.Request) string {
+	if req == nil {
+		return ""
+	}
+
+	if host := strings.TrimSpace(strings.Split(req.Header.Get("X-Forwarded-Host"), ",")[0]); host != "" {
+		return host
+	}
+
+	if host := parseForwardedHost(req.Header.Get("Forwarded")); host != "" {
+		return host
+	}
+
+	return req.Host
+}
+
+func parseForwardedHost(value string) string {
+	if value == "" {
+		return ""
+	}
+
+	for _, forwardedValue := range strings.Split(value, ",") {
+		for _, token := range strings.Split(forwardedValue, ";") {
+			parts := strings.SplitN(strings.TrimSpace(token), "=", 2)
+			if len(parts) != 2 || !strings.EqualFold(parts[0], "host") {
+				continue
+			}
+			return strings.Trim(parts[1], "\"")
+		}
+	}
+
+	return ""
 }
 
 func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {

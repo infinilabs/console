@@ -3,3 +3,45 @@
     height: calc(100vh - 260px);
   }
 }
+
+.command-list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.command-list-item__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #e6f7ff;
+  color: #1890ff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 32px;
+}
+
+.command-list-item__body {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.command-list-item__title {
+  display: inline-block;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.command-list-item__summary {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+  line-height: 20px;
+  word-break: break-all;
+}
+
+.command-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}

@@ -1,7 +1,11 @@
 export default {
   "command.table.field.name": "Name",
   "command.table.field.tag": "Tag",
+  "command.table.field.creator": "Creator",
+  "command.table.field.created": "Created",
   "command.table.field.content": "Content",
+  "command.table.field.summary": "Summary",
+  "command.table.summary.requests": "{count} requests",
   "command.manage.edit.title": "Command",
   "command.btn.newtag": "Add New Tag",
   "command.message.invalid.tag": "invalid tag",

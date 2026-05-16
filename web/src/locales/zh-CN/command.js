@@ -1,7 +1,11 @@
 export default {
   "command.table.field.name": "名称",
   "command.table.field.tag": "标签",
+  "command.table.field.creator": "创建人",
+  "command.table.field.created": "创建时间",
   "command.table.field.content": "内容",
+  "command.table.field.summary": "摘要",
+  "command.table.summary.requests": "{count} 个请求",
   "command.manage.edit.title": "常用命令",
   "command.btn.newtag": "新建标签",
   "command.message.invalid.tag": "无效的标签内容",

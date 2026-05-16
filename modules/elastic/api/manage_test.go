@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/model"
 )
 
 func TestGetClusterCredentialDisplayName(t *testing.T) {
@@ -114,6 +115,35 @@ func TestEnsureManagedAgentCollectionCredentialSkipsUnsupportedDistribution(t *t
 
 	if err := ensureManagedAgentCollectionCredential(conf, ""); err != nil {
 		t.Fatalf("expected unsupported distribution to be skipped, got %v", err)
+	}
+}
+
+func TestHydrateRuntimeBasicAuthSetsDecodedCredential(t *testing.T) {
+	conf := &elastic.ElasticsearchConfig{CredentialID: "cred-1"}
+	auth := &model.BasicAuth{Username: "admin"}
+
+	err := hydrateRuntimeBasicAuthWithGetter(conf, func(cfg *elastic.ElasticsearchConfig) (*model.BasicAuth, error) {
+		if cfg.CredentialID != "cred-1" {
+			t.Fatalf("expected credential-backed config, got %#v", cfg)
+		}
+		return auth, nil
+	})
+	if err != nil {
+		t.Fatalf("expected auth hydration to succeed, got %v", err)
+	}
+	if conf.BasicAuth != auth {
+		t.Fatalf("expected hydrated auth to be applied to runtime config, got %#v", conf.BasicAuth)
+	}
+}
+
+func TestHydrateRuntimeBasicAuthPropagatesGetterError(t *testing.T) {
+	wantErr := errors.New("decode credential failed")
+
+	err := hydrateRuntimeBasicAuthWithGetter(&elastic.ElasticsearchConfig{}, func(*elastic.ElasticsearchConfig) (*model.BasicAuth, error) {
+		return nil, wantErr
+	})
+	if !errors.Is(err, wantErr) {
+		t.Fatalf("expected getter error %v, got %v", wantErr, err)
 	}
 }
 

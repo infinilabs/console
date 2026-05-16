@@ -254,9 +254,9 @@ env:
   SECURITY_ENABLED: true
   SECURITY_MANAGED_ENABLED: false
 
-path.data: data
-path.logs: log
-path.configs: "config"
+path.data: "${install_dir}/data"
+path.logs: "${install_dir}/log"
+path.configs: "${install_dir}/config"
 configs.auto_reload: true
 
 resource_limit.cpu.max_num_of_cpus: 1
@@ -343,8 +343,8 @@ function uninstall_service() {
 
   if [[ -f "$linux_svc" || -f "$macos_svc" ]]; then
     echo "[agent] waiting service stop & uninstall for exist agent"
-    $agent_svc -service stop &>/dev/null
-    $agent_svc -service uninstall &>/dev/null
+    (cd "${install_dir}" && $agent_svc -service stop &>/dev/null)
+    (cd "${install_dir}" && $agent_svc -service uninstall &>/dev/null)
   fi
 }
 
@@ -352,8 +352,8 @@ function install_service() {
   agent_svc=${install_dir}/${program_name}-${file_ext%%.*}
   chmod 755 $agent_svc
   echo "[agent] waiting service install & start"
-  $agent_svc -service install &>/dev/null
-  $agent_svc -service start &>/dev/null
+  (cd "${install_dir}" && $agent_svc -service install &>/dev/null)
+  (cd "${install_dir}" && $agent_svc -service start &>/dev/null)
 }
 
 function main() {

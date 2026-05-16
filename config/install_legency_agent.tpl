@@ -230,9 +230,9 @@ configs.auto_reload: true
 env:
   API_BINDING: "0.0.0.0:${port}"
 
-path.data: data
-path.logs: log
-path.configs: config
+path.data: "${install_dir}/data"
+path.logs: "${install_dir}/log"
+path.configs: "${install_dir}/config"
 
 resource_limit.cpu.max_num_of_cpus: 1
 resource_limit.memory.max_in_bytes: 533708800
@@ -307,8 +307,8 @@ function uninstall_service() {
 
   if [[ -f "$linux_svc" || -f "$macos_svc" ]]; then
     echo "[agent] waiting service stop & uninstall for exist agent"
-    $agent_svc -service stop &>/dev/null
-    $agent_svc -service uninstall &>/dev/null
+    (cd "${install_dir}" && $agent_svc -service stop &>/dev/null)
+    (cd "${install_dir}" && $agent_svc -service uninstall &>/dev/null)
   fi
   sleep 3
 }
@@ -317,8 +317,8 @@ function install_service() {
   agent_svc=${install_dir}/${program_name}-${file_ext%%.*}
   chmod 755 $agent_svc
   echo "[agent] waiting service install & start"
-  $agent_svc -service install &>/dev/null
-  $agent_svc -service start &>/dev/null
+  (cd "${install_dir}" && $agent_svc -service install &>/dev/null)
+  (cd "${install_dir}" && $agent_svc -service start &>/dev/null)
   sleep 3
 }
 

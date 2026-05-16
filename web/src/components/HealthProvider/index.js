@@ -14,6 +14,11 @@ export default ({ children, location }) => {
   const intervalRef = useRef(null);
   const isMountedRef = useRef(false);
   const fetchSeqRef = useRef(0);
+  const pathname = location?.pathname || "";
+  const shouldSuppressHealthModal =
+    !pathname ||
+    pathname.includes('/guide/initialization') ||
+    pathname.includes('/devtool');
 
   const fetchHealth = async () => {
     const fetchSeq = ++fetchSeqRef.current;
@@ -47,6 +52,10 @@ export default ({ children, location }) => {
   }
 
   const checkStatus = (health) => {
+    if (shouldSuppressHealthModal) {
+      setVisible(false)
+      return;
+    }
     const { status } = health
     if (['green', 'yellow'].includes(status)) {
       setVisible(false)
@@ -57,7 +66,7 @@ export default ({ children, location }) => {
 
   useEffect(() => {
     fetchSeqRef.current += 1;
-    if (!location?.pathname || location?.pathname.includes('/guide/initialization')) {
+    if (shouldSuppressHealthModal) {
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
         intervalRef.current = null;
@@ -80,7 +89,7 @@ export default ({ children, location }) => {
         intervalRef.current = null;
       }
     }
-  }, [location?.pathname])
+  }, [shouldSuppressHealthModal, location?.pathname])
 
   useEffect(() => {
     if (health) {

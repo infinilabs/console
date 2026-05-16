@@ -328,7 +328,7 @@ func ensureManagedAgentCollectionCredential(conf *elastic.ElasticsearchConfig, p
 	if err != nil {
 		return err
 	}
-	if err := initAgentCollectionUser(client, autoAgentCollectionUsername, password); err != nil {
+	if err := initAgentCollectionUser(client, conf.Distribution, autoAgentCollectionUsername, password); err != nil {
 		return err
 	}
 
@@ -397,25 +397,62 @@ func newManagedClusterSecurityClient(conf *elastic.ElasticsearchConfig, auth *mo
 	return common.InitClientWithConfig(tempConf)
 }
 
-func initAgentCollectionUser(client elastic.API, username, password string) error {
-	roleBody := util.MustToJSONBytes(util.MapStr{
-		"cluster": []string{
-			"monitor",
-		},
-		"description": "Provide the minimum permissions for INFINI AGENT to collect metrics",
-	})
+func initAgentCollectionUser(client elastic.API, distribution, username, password string) error {
+	roleBody, err := buildAgentCollectionRoleBody(distribution)
+	if err != nil {
+		return err
+	}
 	if err := client.PutRole(username, roleBody); err != nil {
 		return fmt.Errorf("failed to create agent collection role: %w", err)
 	}
 
-	userBody := util.MustToJSONBytes(util.MapStr{
-		"roles":    []string{username},
-		"password": password,
-	})
+	userBody, err := buildAgentCollectionUserBody(distribution, username, password)
+	if err != nil {
+		return err
+	}
 	if err := client.PutUser(username, userBody); err != nil {
 		return fmt.Errorf("failed to create agent collection user: %w", err)
 	}
 	return nil
+}
+
+func buildAgentCollectionRoleBody(distribution string) ([]byte, error) {
+	switch distribution {
+	case elastic.Easysearch:
+		return util.MustToJSONBytes(util.MapStr{
+			"cluster": []string{
+				"cluster_monitor",
+			},
+			"description": "Provide the minimum permissions for INFINI AGENT to collect metrics",
+			"indices": []util.MapStr{
+				{
+					"names": []string{
+						"*",
+					},
+					"query":          "",
+					"field_security": []string{},
+					"field_mask":     []string{},
+					"privileges": []string{
+						"indices_monitor",
+					},
+				},
+			},
+		}), nil
+	default:
+		return nil, fmt.Errorf("unsupported distribution for agent collection role: %s", distribution)
+	}
+}
+
+func buildAgentCollectionUserBody(distribution, username, password string) ([]byte, error) {
+	switch distribution {
+	case elastic.Easysearch:
+		return util.MustToJSONBytes(util.MapStr{
+			"roles":    []string{username},
+			"password": password,
+		}), nil
+	default:
+		return nil, fmt.Errorf("unsupported distribution for agent collection user: %s", distribution)
+	}
 }
 
 func (h *APIHandler) HandleGetClusterAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {

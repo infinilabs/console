@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -112,5 +113,48 @@ func TestEnsureManagedAgentCollectionCredentialSkipsUnsupportedDistribution(t *t
 
 	if err := ensureManagedAgentCollectionCredential(conf, ""); err != nil {
 		t.Fatalf("expected unsupported distribution to be skipped, got %v", err)
+	}
+}
+
+func TestBuildAgentCollectionRoleBody(t *testing.T) {
+	var body struct {
+		Cluster []string `json:"cluster"`
+		Indices []struct {
+			Names      []string `json:"names"`
+			Privileges []string `json:"privileges"`
+		} `json:"indices"`
+	}
+
+	roleBody, err := buildAgentCollectionRoleBody(elastic.Easysearch)
+	if err != nil {
+		t.Fatalf("expected easysearch role body, got %v", err)
+	}
+	if err := json.Unmarshal(roleBody, &body); err != nil {
+		t.Fatalf("expected valid json body, got %v", err)
+	}
+
+	if len(body.Cluster) != 1 || body.Cluster[0] != "cluster_monitor" {
+		t.Fatalf("expected cluster_monitor permission, got %#v", body.Cluster)
+	}
+	if len(body.Indices) != 1 {
+		t.Fatalf("expected one indices permission block, got %#v", body.Indices)
+	}
+	if len(body.Indices[0].Names) != 1 || body.Indices[0].Names[0] != "*" {
+		t.Fatalf("expected wildcard indices scope, got %#v", body.Indices[0].Names)
+	}
+	if len(body.Indices[0].Privileges) != 1 || body.Indices[0].Privileges[0] != "indices_monitor" {
+		t.Fatalf("expected indices_monitor privilege, got %#v", body.Indices[0].Privileges)
+	}
+}
+
+func TestBuildAgentCollectionRoleBodyRejectsUnsupportedDistribution(t *testing.T) {
+	if _, err := buildAgentCollectionRoleBody(elastic.Elasticsearch); err == nil {
+		t.Fatal("expected unsupported distribution error")
+	}
+}
+
+func TestBuildAgentCollectionUserBodyRejectsUnsupportedDistribution(t *testing.T) {
+	if _, err := buildAgentCollectionUserBody(elastic.Elasticsearch, "infini_agent", "secret"); err == nil {
+		t.Fatal("expected unsupported distribution error")
 	}
 }

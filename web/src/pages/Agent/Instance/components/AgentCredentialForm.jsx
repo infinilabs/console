@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Button, Divider, Form, Input, Select, Row, Col } from "antd";
+import { Button, Form, Input, Select, Row, Col, Tooltip } from "antd";
 import { formatMessage } from "umi/locale";
 
 import useFetch from "@/lib/hooks/use_fetch";
 import { formatESSearchResult } from "@/lib/elasticsearch/util";
+import { hasAuthority } from "@/utils/authority";
 
 export const MANUAL_VALUE = "manual";
 
@@ -19,8 +20,11 @@ export default (props) => {
     isManual,
     setIsManual,
   } = props;
+  const canReadCredential =
+    hasAuthority("system.credential:all") ||
+    hasAuthority("system.credential:read");
 
-  const { loading, error, value, run } = useFetch(
+  const { loading, value, run } = useFetch(
     "/credential/_search",
     {
       queryParams: {
@@ -39,9 +43,21 @@ export default (props) => {
     }
   };
 
-  const { data, total } = useMemo(() => {
+  const { data } = useMemo(() => {
     return formatESSearchResult(value);
   }, [value]);
+
+  useEffect(() => {
+    if (canReadCredential) {
+      run();
+    }
+  }, [canReadCredential, run]);
+
+  useEffect(() => {
+    if (canReadCredential && initialValue?.agent_credential_id) {
+      run();
+    }
+  }, [canReadCredential, initialValue?.agent_credential_id, run]);
 
   if (!needAuth) {
     return null;
@@ -69,16 +85,33 @@ export default (props) => {
             },
           ],
         })(
-          <Select loading={loading} onChange={onCredentialChange} allowClear>
-            <Select.Option value={MANUAL_VALUE}>
-              {formatMessage({
-                id: "cluster.regist.step.connect.credential.manual",
-              })}
-            </Select.Option>
-            {data.map((item) => (
-              <Select.Option value={item.id}>{item.name}</Select.Option>
-            ))}
-          </Select>
+          <Row gutter={8}>
+            <Col span={20}>
+              <Select loading={loading} onChange={onCredentialChange} allowClear>
+                <Select.Option value={MANUAL_VALUE}>
+                  {formatMessage({
+                    id: "cluster.regist.step.connect.credential.manual",
+                  })}
+                </Select.Option>
+                {data.map((item) => (
+                  <Select.Option key={item.id} value={item.id}>
+                    {item.name}
+                  </Select.Option>
+                ))}
+              </Select>
+            </Col>
+            <Col span={4}>
+              <Tooltip title={formatMessage({ id: "form.button.refresh" })}>
+                <Button
+                  icon="reload"
+                  onClick={() => run()}
+                  loading={loading}
+                  disabled={!canReadCredential}
+                  style={{ width: "100%" }}
+                />
+              </Tooltip>
+            </Col>
+          </Row>
         )}
       </Form.Item>
       {isManual && (

@@ -46,7 +46,7 @@ export default {
   "cluster.manage.metric_collection_mode.warning.large_cluster": "The current cluster has {number_of_nodes} or more nodes. It is strongly recommended to use Agent mode for monitoring.",
   "cluster.manage.metric_collection_mode.confirm.button.ok": "OK",
   "cluster.manage.metric_collection_mode.confirm.button.cancel": "Cancel",
-  "cluster.manage.agent_credential.tip.auto_create": "When Agent mode is enabled, Console automatically creates the low-privilege infini_agent user for metrics collection only. You can still override it with a custom Agent credential below if needed.",
+  "cluster.manage.agent_credential.tip.auto_create": "When probe collection mode is enabled, Console automatically creates the low-privilege infini_agent user for metrics and log collection. You can still override it with a custom probe credential below if needed.",
   "cluster.manage.monitor_configs.cluster_health": "Cluster health",
   "cluster.manage.monitor_configs.cluster_stats": "Cluster stats",
   "cluster.manage.monitor_configs.node_stats": "Node stats",
@@ -77,7 +77,7 @@ export default {
   "cluster.regist.step.complete.title": "Complete",
   "cluster.regist.step.connect.label.auth": "Auth",
   "cluster.regist.step.connect.label.credential": "Credential",
-  "cluster.regist.step.connect.label.agent_credential": "Agent credential",
+  "cluster.regist.step.connect.label.agent_credential": "Probe credential",
   "cluster.regist.step.connect.credential.manual": "Manual Input",
   "cluster.regist.step.connect.label.username": "Username",
   "cluster.regist.step.connect.label.password": "Password",
@@ -105,7 +105,7 @@ export default {
   "cluster.regist.form.verify.required.credential":
     "Please select  Agent credential!",
   "cluster.regist.form.verify.required.agent_credential":
-    "Please select credential!",
+    "Please select a probe credential!",
   "cluster.regist.form.verify.required.auth_username":
     "Please input auth username!",
   "cluster.regist.form.verify.required.auth_password":

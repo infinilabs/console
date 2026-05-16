@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Alert, Button, Divider, Form, Input, Select, Row, Col } from "antd";
+import { Alert, Button, Form, Input, Select, Row, Col, Tooltip } from "antd";
 import { formatMessage } from "umi/locale";
 import useFetch from "@/lib/hooks/use_fetch";
 import { formatESSearchResult } from "@/lib/elasticsearch/util";
@@ -55,8 +55,11 @@ export default (props) => {
   };
 
   const [isManual, setIsManual] = useState();
+  const canReadCredential =
+    hasAuthority("system.credential:all") ||
+    hasAuthority("system.credential:read");
 
-  const { loading, error, value, run } = useFetch(
+  const { loading, value, run } = useFetch(
     "/credential/_search",
     {
       queryParams: {
@@ -76,7 +79,7 @@ export default (props) => {
     }
   };
 
-  const { data, total } = useMemo(() => {
+  const { data } = useMemo(() => {
     return formatESSearchResult(value);
   }, [value]);
 
@@ -85,10 +88,16 @@ export default (props) => {
   }, [props.isManual]);
 
   useEffect(() => {
-    if (hasAuthority('system.credential:all') || hasAuthority('system.credential:read')) {
-      run()
+    if (canReadCredential) {
+      run();
     }
-  }, [])
+  }, [canReadCredential, run]);
+
+  useEffect(() => {
+    if (canReadCredential && initialValue?.agent_credential_id) {
+      run();
+    }
+  }, [canReadCredential, initialValue?.agent_credential_id, run]);
 
   if (!needAuth) {
     return null;
@@ -132,7 +141,9 @@ export default (props) => {
                 allowClear
               >
                 {data.map((item) => (
-                  <Select.Option value={item.id}>{item.name}</Select.Option>
+                  <Select.Option key={item.id} value={item.id}>
+                    {item.name}
+                  </Select.Option>
                 ))}
                 <Select.Option value={MANUAL_VALUE}>
                   {formatMessage({
@@ -142,7 +153,18 @@ export default (props) => {
               </Select>
             )}
           </Col>
-          <Col span={6} offset={1}>
+          <Col span={2} offset={1}>
+            <Tooltip title={formatMessage({ id: "form.button.refresh" })}>
+              <Button
+                icon="reload"
+                onClick={() => run()}
+                loading={loading}
+                disabled={!canReadCredential}
+                style={{ width: "100%" }}
+              />
+            </Tooltip>
+          </Col>
+          <Col span={4} offset={1}>
             <Button
               loading={btnLoading}
               type="primary"

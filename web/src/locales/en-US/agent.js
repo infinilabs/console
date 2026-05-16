@@ -6,9 +6,9 @@ export default {
   "agent.instance.associate.labels.select_cluster": "Select Cluster",
   "agent.instance.associate.tips.associate":
     "Please select cluster(s) to enroll !",
-  "agent.instance.associate.set_credential": "Set credential for agent",
+  "agent.instance.associate.set_credential": "Set probe credential",
   "agent.instance.associate.set_credential.tips":
-    "This permission will be used for metrics and log collection. It is recommended to use a user with a reasonable permission range.",
+    "This credential will be used for metrics and log collection. It is recommended to use a user with a reasonable permission scope.",
   "agent.instance.associate.tips.connected": "Connection succeeded!",
   "agent.instance.associate.tips.connected.check": "please set a credential for agent",
   "agent.instance.associate.auth.error": "The following clusters need platform or agent credentials first:",
@@ -59,7 +59,7 @@ export default {
   "agent.instance.auto_associate.title": "Auto Enroll",
   "agent.instance.install.title": "Install Agent",
 
-  "agent.label.agent_credential": "Agent Credential",
+  "agent.label.agent_credential": "Probe Credential",
   "agent.credential.tip": "No credential required",
   "agent.instance.button.revoke": "Revoke",
   "agent.instance.revoke.confirm.title": "Sure to revoke?",

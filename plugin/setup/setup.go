@@ -708,6 +708,26 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	if err != nil {
 		panic(err)
 	}
+	previousAgentCredentialID := toSaveCfg.AgentCredentialID
+	previousNoDefaultAuthForAgent := toSaveCfg.NoDefaultAuthForAgent
+	err = elastic3.EnsureManagedAgentCredential(&toSaveCfg, oldCfg.Name)
+	if err != nil {
+		panic(err)
+	}
+	if previousAgentCredentialID != toSaveCfg.AgentCredentialID || previousNoDefaultAuthForAgent != toSaveCfg.NoDefaultAuthForAgent {
+		err = orm.Save(newSetupSaveContext(), &toSaveCfg)
+		if err != nil {
+			panic(err)
+		}
+	}
+	if meta := elastic.GetMetadata(toSaveCfg.ID); meta != nil && meta.Config != nil {
+		meta.Config.AgentCredentialID = toSaveCfg.AgentCredentialID
+		meta.Config.NoDefaultAuthForAgent = toSaveCfg.NoDefaultAuthForAgent
+	}
+	elastic.UpdateConfig(toSaveCfg)
+	if err := EnsureSystemClusterBasicAuth(); err != nil {
+		panic(err)
+	}
 
 	if request.BootstrapUsername != "" && request.BootstrapPassword != "" {
 		//Save bootstrap user

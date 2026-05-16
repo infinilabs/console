@@ -47,6 +47,23 @@ export default (props) => {
     return formatESSearchResult(value);
   }, [value]);
 
+  const credentialOptions = useMemo(() => {
+    const options = data.map((item) => ({
+      id: item.id,
+      name: item.name,
+    }));
+    if (
+      initialValue?.agent_credential_id &&
+      !options.find((item) => item.id === initialValue.agent_credential_id)
+    ) {
+      options.unshift({
+        id: initialValue.agent_credential_id,
+        name: initialValue.agent_credential_id,
+      });
+    }
+    return options;
+  }, [data, initialValue?.agent_credential_id]);
+
   useEffect(() => {
     if (canReadCredential) {
       run();
@@ -93,7 +110,7 @@ export default (props) => {
                     id: "cluster.regist.step.connect.credential.manual",
                   })}
                 </Select.Option>
-                {data.map((item) => (
+                {credentialOptions.map((item) => (
                   <Select.Option key={item.id} value={item.id}>
                     {item.name}
                   </Select.Option>

@@ -41,6 +41,7 @@ export default connect()((props) => {
   const expandedRowRender = (record) => {
     return (
       <AgentCredential
+        key={`${record.id}:${record.agent_credential_id || record.agent_basic_auth?.username || ""}`}
         record={record}
         onAgentCredentialSave={(values) => onAgentCredentialSave(values)}
       />
@@ -134,7 +135,7 @@ export default connect()((props) => {
               dataIndex: "agent_credential_id",
               key: "agent_credential_id",
               render: (text, record) => {
-                return record.agent_credential_id ? "Set" : "No set";
+                return record.agent_credential_id || record.agent_basic_auth?.username ? "Set" : "No set";
               },
             },
             {

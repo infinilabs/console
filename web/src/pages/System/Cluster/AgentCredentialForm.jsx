@@ -83,6 +83,23 @@ export default (props) => {
     return formatESSearchResult(value);
   }, [value]);
 
+  const credentialOptions = useMemo(() => {
+    const options = data.map((item) => ({
+      id: item.id,
+      name: item.name,
+    }));
+    if (
+      initialValue?.agent_credential_id &&
+      !options.find((item) => item.id === initialValue.agent_credential_id)
+    ) {
+      options.unshift({
+        id: initialValue.agent_credential_id,
+        name: initialValue.agent_credential_id,
+      });
+    }
+    return options;
+  }, [data, initialValue?.agent_credential_id]);
+
   useEffect(() => {
     setIsManual(props.isManual);
   }, [props.isManual]);
@@ -140,7 +157,7 @@ export default (props) => {
                 onChange={onCredentialChange}
                 allowClear
               >
-                {data.map((item) => (
+                {credentialOptions.map((item) => (
                   <Select.Option key={item.id} value={item.id}>
                     {item.name}
                   </Select.Option>

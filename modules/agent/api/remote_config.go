@@ -258,6 +258,7 @@ func appendKeystoreSecret(secrets *common.Secrets, key string) {
 }
 
 func getAgentPasswordKey(clusterID string) string {
+	// One agent can bind multiple clusters, so the synced keystore entry must stay cluster-scoped.
 	return fmt.Sprintf("%s_password", clusterID)
 }
 

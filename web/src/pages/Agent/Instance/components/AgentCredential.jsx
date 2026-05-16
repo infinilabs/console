@@ -1,5 +1,5 @@
 import { Alert, Button, Form, message } from "antd";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { formatMessage } from "umi/locale";
 
 import request from "@/utils/request";
@@ -24,6 +24,10 @@ export default Form.create()((props) => {
   const [saveLoading, setSaveLoading] = useState(false);
 
   const needAuth = !!(record.credential_id || record.basic_auth?.username);
+
+  useEffect(() => {
+    setIsManual(!record.agent_credential_id && !!record.agent_basic_auth?.username);
+  }, [record.agent_credential_id, record.agent_basic_auth?.username]);
 
   const onConfirm = async () => {
     form.validateFields(async (errors, values) => {

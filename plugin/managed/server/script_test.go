@@ -5,6 +5,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
+
+	"infini.sh/framework/core/util"
 )
 
 func TestGetDefaultEndpoint(t *testing.T) {
@@ -54,5 +57,71 @@ func TestGetDefaultEndpoint(t *testing.T) {
 				t.Fatalf("expected %q, got %q", tt.expected, got)
 			}
 		})
+	}
+}
+
+func TestBuildGatewayInstallCommand(t *testing.T) {
+	command := buildGatewayInstallCommand(
+		"https://console.local/instance/_get_gateway_install_script?token=abc",
+		"https://mirror.local/gateway/stable",
+		"/srv/gateway",
+		"1.2.3-4567",
+	)
+
+	expected := `curl -ksSL "https://console.local/instance/_get_gateway_install_script?token=abc" |sudo bash -s -- -d "/srv/gateway" -u "https://mirror.local/gateway/stable" -v "1.2.3-4567"`
+	if command != expected {
+		t.Fatalf("expected %q, got %q", expected, command)
+	}
+}
+
+func TestBuildInstallCommandAlwaysIncludesDownloadURL(t *testing.T) {
+	command := buildInstallCommand(
+		"https://console.local/instance/_get_install_script?token=abc",
+		"https://console.local/agent/stable",
+		"/srv/agent",
+		"1.2.3-4567",
+	)
+
+	expected := `curl -ksSL "https://console.local/instance/_get_install_script?token=abc" |sudo bash -s -- -t "/srv/agent" -u "https://console.local/agent/stable" -v "1.2.3-4567"`
+	if command != expected {
+		t.Fatalf("expected %q, got %q", expected, command)
+	}
+}
+
+func TestResolvePackageDownloadURLUsesConsoleStaticPath(t *testing.T) {
+	got, err := resolvePackageDownloadURL("https://console.local/console", "", agentPackageRelativePath)
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	expected := "https://console.local/console/agent/stable"
+	if got != expected {
+		t.Fatalf("expected %q, got %q", expected, got)
+	}
+}
+
+func TestResolvePackageDownloadURLHonorsConfiguredOverride(t *testing.T) {
+	got, err := resolvePackageDownloadURL("https://console.local", "https://mirror.local/custom/agent", agentPackageRelativePath)
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	expected := "https://mirror.local/custom/agent"
+	if got != expected {
+		t.Fatalf("expected %q, got %q", expected, got)
+	}
+}
+
+func TestValidateInstallTokenRejectsWrongProduct(t *testing.T) {
+	token := util.GetUUID()
+	expiredTokenCache.Put(token, &Token{
+		CreatedAt: time.Now(),
+		UserID:    "u1",
+		Product:   installProductAgent,
+	})
+	t.Cleanup(func() {
+		expiredTokenCache.Delete(token)
+	})
+
+	if _, err := validateInstallToken(token, installProductGateway); err == nil {
+		t.Fatal("expected product mismatch to be rejected")
 	}
 }

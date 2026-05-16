@@ -2,11 +2,14 @@
 
 set -eo pipefail
 
+DEFAULT_DOWNLOAD_URL="{{base_url}}"
+DEFAULT_VERSION="{{version}}"
+
 function print_usage() {
   echo "Usage: curl -ksSL http://$[[CLOUD_ENDPOINT]]/instance/_get_install_script?token | sudo bash -s -- [-u url_for_download_program] [-v version_for_program ] [-t target_install_dir] [-o overwite_flag] [-s url_console_lan_adress]"
   echo "Options:"
   echo "  -u, --url <url>             Install Agent download URL, supports host, package directory, or direct package file URL"
-  echo "  -v, --version <version>     Install Agent version, default is to get latest version online, can be manually specified"  
+  echo "  -v, --version <version>     Install Agent version, default is Console configured version or the latest version from the download source"  
   echo "  -t, --target <dir>          Install Agent target path, default is /opt/agent, can be manually specified"
   echo "  -o, --overwrite <bool>      Whether to overwrite existing files during Agent install, default is true, can be manually specified" 
   echo "  -s, --server <url>          Server address for Agent to communicate with INFINI Console after install, default is current Console address, can be manually specified"
@@ -68,7 +71,27 @@ function __catch() {
 }
 
 function get_latest_version() {
-  echo $(curl -m3 -s "https://release.infinilabs.com/.latest" |sed 's/",/"/;s/"//g;s/://1' |grep -Ev '^[{}]' |grep "$program_name" |awk '{print $NF}')
+  local input_url="${1%/}"
+  local latest_url
+  local latest_version=""
+
+  case "$input_url" in
+    *.tar.gz|*.zip)
+      echo ""
+      return
+      ;;
+  esac
+
+  for latest_url in "${input_url}/.latest" "${input_url%/agent/stable}/.latest"; do
+    [[ -z "$latest_url" ]] && continue
+    latest_version=$(curl -m3 -s "$latest_url" |sed 's/",/"/;s/"//g;s/://1' |grep -Ev '^[{}]' |grep "$program_name" |awk '{print $NF}')
+    if [[ -n "$latest_version" ]]; then
+      echo "$latest_version"
+      return
+    fi
+  done
+
+  echo ""
 }
 
 function check_dir() {
@@ -375,10 +398,13 @@ function main() {
   done
 
   program_name=agent
-  location=${url_download:-https://release.infinilabs.com/agent/stable}
+  location=${url_download:-$DEFAULT_DOWNLOAD_URL}
   install_dir=${target_dir:-/opt/$program_name}
-  latest_version=$(get_latest_version)
-  version=${version:-$latest_version}
+  latest_version=""
+  if [[ -z "${version}" && -z "${DEFAULT_VERSION}" ]]; then
+    latest_version=$(get_latest_version "$location")
+  fi
+  version=${version:-${DEFAULT_VERSION:-$latest_version}}
   o=${overwrite:-true}
   file_ext=""
 

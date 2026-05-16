@@ -3,6 +3,8 @@ export default {
   "gateway.instance.new.title": "实例注册",
   "gateway.instance.new.description": "输入网关地址分步注册极限网关。",
   "gateway.instance.btn.new": "新建",
+  "gateway.instance.install.title": "安装 Gateway",
+  "gateway.install.label.get_cmd": "获取安装命令",
   "gateway.entry.index.title": "入口管理",
   "gateway.entry.index.description":
     "入口管理帮助您方便快捷地添加、查看、修改以及删除极限网关的入口配置。",
@@ -71,10 +73,14 @@ export default {
   "gateway.guide.quick_install": "快速安装",
   "gateway.guide.quick_install.desc":
     "请复制下方命令并在本地部署环境执行，其包含 INFINI Gateway 的下载、部署及启动：",
+  "gateway.guide.intranet.title": "内网部署说明",
+  "gateway.guide.intranet.desc":
+    "默认会从 Console 的静态目录读取 Gateway 安装包；如需改用外部安装源再设置 download_url，仅当目标主机访问 Console 需要使用不同地址时才设置 console_endpoint。",
   "gateway.guide.shell.copy.success": "复制成功！",
   "gateway.guide.tips.title": "提示：",
   "gateway.guide.tips.version": "如需指定 Gateway 版本，可追加",
   "gateway.guide.tips.directory": "如需指定安装目录，可追加",
+  "gateway.guide.tips.download_source": "如需使用内网或自定义下载源，可追加",
   "gateway.guide.tips.content":
     "当前版本自动安装仅支持 Linux， 非 Linux 系统请",
   "gateway.guide.tips.install_manually": "手动安装",

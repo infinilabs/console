@@ -33,6 +33,9 @@ export default {
   "agent.install.setup.title": "快速安装",
   "agent.install.setup.desc":
     "请复制下方命令并在目标主机上执行，其包含 INFINI Agent 的下载、部署及启动",
+  "agent.install.tips.intranet.title": "内网部署说明",
+  "agent.install.tips.intranet.desc":
+    "默认会从 Console 的静态目录读取 Agent 安装包；如需改用外部安装源再设置 download_url，仅当目标主机访问 Console 需要使用不同地址时才设置 console_endpoint。",
   "agent.install.tips.title": "提示",
   "agent.install.tips.target": "默认安装目录为",
   "agent.install.tips.version": "如需指定 Agent 版本，可追加",

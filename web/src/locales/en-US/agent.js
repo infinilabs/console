@@ -38,6 +38,9 @@ export default {
   "agent.install.setup.title": "Quick Installation",
   "agent.install.setup.desc":
     "Please copy the command below and execute it on the target host, which includes downloading, deploying and starting INFINI Agent",
+  "agent.install.tips.intranet.title": "Intranet deployment",
+  "agent.install.tips.intranet.desc":
+    "By default, Agent packages are served from the Console static directory. Only configure download_url when using an external mirror, and set console_endpoint only when the target host must use a different Console address.",
   "agent.install.tips.title": "Tips",
   "agent.install.tips.target": "The default install directory is",
   "agent.install.tips.version": "To install a specific Agent version, append",

@@ -4,6 +4,8 @@ export default {
   "gateway.instance.new.description":
     "Input the instance endpoint to register the INFINI Gateway step by step.",
   "gateway.instance.btn.new": "New",
+  "gateway.instance.install.title": "Install Gateway",
+  "gateway.install.label.get_cmd": "Get Setup Command",
   "gateway.entry.index.title": "ENTRY",
   "gateway.entry.index.description":
     "Entry management helps you to add, view, modify and delete the entry configuration of the INFINI Gateway conveniently and quickly.",
@@ -74,12 +76,17 @@ export default {
   "gateway.guide.quick_install": "Quick Install",
   "gateway.guide.quick_install.desc":
     "Please copy the following command and execute it in the local deployment environment, which includes the download, deployment, and startup of INFINI Gateway:",
+  "gateway.guide.intranet.title": "Intranet deployment",
+  "gateway.guide.intranet.desc":
+    "By default, Gateway packages are served from the Console static directory. Only configure download_url when using an external mirror, and set console_endpoint only when the target host must use a different Console address.",
   "gateway.guide.shell.copy.success": "Copy succeed!",
   "gateway.guide.tips.title": "Tips:",
   "gateway.guide.tips.version":
     "To specify a Gateway version, append",
   "gateway.guide.tips.directory":
     "To specify an installation directory, append",
+  "gateway.guide.tips.download_source":
+    "To use an internal or custom download source, append",
   "gateway.guide.tips.content":
     "The current version of automatic installation only supports Linux, For others, please ",
   "gateway.guide.tips.install_manually": "install manually",

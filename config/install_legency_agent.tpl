@@ -2,11 +2,14 @@
 
 set -eo pipefail
 
+DEFAULT_DOWNLOAD_URL="{{base_url}}"
+DEFAULT_VERSION="{{version}}"
+
 function print_usage() {
   echo "Usage: curl -sSL http://get.infini.cloud/ | sudo bash -s -- [-u url_for_download_program] [-v version_for_program ] [-t target_install_dir] [-s url_console_lan_adress]"
   echo "Options:"
   echo "  -u, --url <url>             Download url of the program to install which default is http://localhost"
-  echo "  -v, --version <version>     Version of the program to install which default is latest from "
+  echo "  -v, --version <version>     Version of the program to install, default is the Console configured version or the latest version from the download source"
   echo "  -t, --target <dir>          Target directory of the program install which default is /opt/agent"
   echo "  -s, --server <url>          Server address for Agent to communicate with INFINI Console after install, default is current Console address, can be manually specified"
   exit 1
@@ -79,7 +82,27 @@ function confirm() {
 }
 
 function get_latest_version() {
-  echo $(curl -m3 -s "https://release.infinilabs.com/.latest" |sed 's/",/"/;s/"//g;s/://1' |grep -Ev '^[{}]' |grep "$program_name" |awk '{print $NF}')
+  local input_url="${1%/}"
+  local latest_url
+  local latest_version=""
+
+  case "$input_url" in
+    *.tar.gz|*.zip)
+      echo ""
+      return
+      ;;
+  esac
+
+  for latest_url in "${input_url}/.latest" "${input_url%/agent/stable}/.latest"; do
+    [[ -z "$latest_url" ]] && continue
+    latest_version=$(curl -m3 -s "$latest_url" |sed 's/",/"/;s/"//g;s/://1' |grep -Ev '^[{}]' |grep "$program_name" |awk '{print $NF}')
+    if [[ -n "$latest_version" ]]; then
+      echo "$latest_version"
+      return
+    fi
+  done
+
+  echo ""
 }
 
 function check_dir() {
@@ -338,10 +361,13 @@ function main() {
   done
 
   program_name=agent
-  location=${url_download:-https://release.infinilabs.com/agent/stable}
+  location=${url_download:-$DEFAULT_DOWNLOAD_URL}
   install_dir=${target_dir:-/opt/$program_name}
-  latest_version=$(get_latest_version)
-  version=${version:-$latest_version}
+  latest_version=""
+  if [[ -z "${version}" && -z "${DEFAULT_VERSION}" ]]; then
+    latest_version=$(get_latest_version "$location")
+  fi
+  version=${version:-${DEFAULT_VERSION:-$latest_version}}
   file_ext=""
 
   if [[ -z "${version}" ]]; then

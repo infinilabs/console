@@ -45,6 +45,11 @@ type UI struct {
 }
 
 func (h UI) InitUI() {
+	if h.Config.UI.LocalEnabled {
+		if err := config.EnsureSelfHostedPackageDirs(h.Config.UI.LocalPath); err != nil {
+			log.Errorf("failed to prepare self-hosted package directories under [%s]: %v", h.Config.UI.LocalPath, err)
+		}
+	}
 
 	vfs.RegisterFS(public.StaticFS{StaticFolder: h.Config.UI.LocalPath, TrimLeftPath: h.Config.UI.LocalPath, CheckLocalFirst: h.Config.UI.LocalEnabled, SkipVFS: !h.Config.UI.VFSEnabled})
 

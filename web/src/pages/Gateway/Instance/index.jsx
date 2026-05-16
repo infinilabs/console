@@ -1,5 +1,5 @@
 import PageHeaderWrapper from "@/components/PageHeaderWrapper";
-import { Button, Dropdown, Icon, Menu, message, Modal, Tooltip } from "antd";
+import { Button, Drawer, Dropdown, Icon, Menu, message, Modal, Tooltip } from "antd";
 import {
   useCallback,
   useEffect,
@@ -19,6 +19,7 @@ import moment from "moment";
 import { formatter } from "@/lib/format";
 import { hasAuthority } from "@/utils/authority";
 import Wizard from "./Wizard";
+import InstallGateway from "@/components/InstallGateway";
 import { isNumber } from "lodash";
 import { getSystemClusterID } from "@/utils/setup";
 
@@ -402,6 +403,7 @@ export default (props) => {
   ];
 
   const [showEmptyUI, setShowEmptyUI] = useState(false);
+  const [installVisible, setInstallVisible] = useState(false);
   if (showEmptyUI) {
     return <Wizard />;
   }
@@ -427,6 +429,11 @@ export default (props) => {
         headerToobarExtra={{
           getExtra: (props) => [
             hasAuthority("gateway.instance:all") ? (
+              <Button onClick={() => setInstallVisible(true)}>
+                {formatMessage({ id: "gateway.instance.install.title" })}
+              </Button>
+            ) : null,
+            hasAuthority("gateway.instance:all") ? (
               <Button
                 type="primary"
                 icon="plus"
@@ -440,6 +447,15 @@ export default (props) => {
         showEmptyUI={showEmptyUI}
         setShowEmptyUI={setShowEmptyUI}
       />
+      <Drawer
+        title={formatMessage({ id: "gateway.instance.install.title" })}
+        visible={installVisible}
+        destroyOnClose
+        onClose={() => setInstallVisible(false)}
+        width={700}
+      >
+        <InstallGateway autoInit={true} />
+      </Drawer>
     </PageHeaderWrapper>
   );
 };

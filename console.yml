@@ -149,10 +149,13 @@ security:
 
 #agent:
 #  setup:
+#    # Optional external mirror. By default Console serves packages from web.ui.path/agent/stable
+#    # (the default UI path is .public, so files can be placed under .public/agent/stable).
 #    download_url: "https://release.infinilabs.com/agent/stable"
 #    version: 0.5.0-214
 #    ca_cert: "config/certs/ca.crt"
 #    ca_key: "config/certs/ca.key"
+#    # Optional when the target host must use a different Console address than the current page.
 #    console_endpoint: $[[env.INFINI_CONSOLE_ENDPOINT]]
 #    ingest_cluster_endpoint: $[[env.INGEST_CLUSTER_ENDPOINT]]
 #    ingest_cluster_credential_id: $[[env.INGEST_CLUSTER_CREDENTIAL_ID]]
@@ -161,6 +164,15 @@ security:
 agent:
   setup:
     version: 1.30.3-2407
+
+#gateway:
+#  setup:
+#    # Optional external mirror. By default Console serves packages from web.ui.path/gateway/stable
+#    # (the default UI path is .public, so files can be placed under .public/gateway/stable).
+#    download_url: "https://release.infinilabs.com/gateway/stable"
+#    version: 1.0.0-0000
+#    # Optional when the target host must use a different Console address than the current page.
+#    console_endpoint: $[[env.INFINI_CONSOLE_ENDPOINT]]
 
 http_client:
   default:

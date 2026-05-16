@@ -55,6 +55,27 @@ export default ({autoInit = false}) => {
                                     id:"agent.install.setup.desc"
                                 })}：
                             </p>
+                            <div style={{
+                                background: "#f6ffed",
+                                border: "1px solid #b7eb8f",
+                                borderRadius: 6,
+                                padding: "10px 12px",
+                                marginBottom: 16,
+                                color: "#565656",
+                                fontSize: 12,
+                                lineHeight: 1.8,
+                             }}>
+                                <div style={{ color: "#101010", fontWeight: 500, marginBottom: 4 }}>
+                                    {formatMessage({ id: "agent.install.tips.intranet.title" })}
+                                </div>
+                                <div>{formatMessage({ id: "agent.install.tips.intranet.desc" })}</div>
+                                <div>
+                                    <code>web.ui.path/agent/stable</code> / <code>.public/agent/stable</code>
+                                </div>
+                                <div>
+                                    <code>agent.setup.download_url</code> / <code>agent.setup.console_endpoint</code>
+                                </div>
+                            </div>
                             <div className={styles.content}>
                                 {tokenInfo.script}
                                 <CopyToClipboard text={tokenInfo.script}>

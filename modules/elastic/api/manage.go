@@ -59,9 +59,10 @@ type APIHandler struct {
 }
 
 const (
-	clusterCredentialKindPlatform = "platform"
-	clusterCredentialKindAgent    = "agent"
-	autoAgentCollectionUsername   = "infini_agent"
+	clusterCredentialKindPlatform       = "platform"
+	clusterCredentialKindAgent          = "agent"
+	autoAgentCollectionUsername         = "infini-agent"
+	autoAgentCollectionFallbackUsername = "infini-console-agent"
 )
 
 func (h *APIHandler) Client() elastic.API {
@@ -201,7 +202,7 @@ func PrepareClusterForAgentCollection(clusterID string) (*elastic.ElasticsearchC
 	return conf, nil
 }
 
-// EnsureManagedAgentCredential initializes or refreshes the auto-generated infini_agent credential when supported.
+// EnsureManagedAgentCredential initializes or refreshes the auto-generated infini-agent credential when supported.
 func EnsureManagedAgentCredential(conf *elastic.ElasticsearchConfig, previousClusterName string) error {
 	return ensureManagedAgentCollectionCredential(conf, previousClusterName)
 }
@@ -316,9 +317,15 @@ func ensureManagedAgentCollectionCredential(conf *elastic.ElasticsearchConfig, p
 		return nil
 	}
 
+	username := autoAgentCollectionUsername
 	password := ""
-	if existingAuth != nil && existingAuth.Username == autoAgentCollectionUsername && existingAuth.Password.Get() != "" {
-		password = existingAuth.Password.Get()
+	if existingAuth != nil {
+		if strings.TrimSpace(existingAuth.Username) != "" {
+			username = strings.TrimSpace(existingAuth.Username)
+		}
+		if existingAuth.Password.Get() != "" {
+			password = existingAuth.Password.Get()
+		}
 	}
 	if password == "" {
 		password = util.GenerateSecureString(20)
@@ -328,7 +335,8 @@ func ensureManagedAgentCollectionCredential(conf *elastic.ElasticsearchConfig, p
 	if err != nil {
 		return err
 	}
-	if err := initAgentCollectionUser(client, conf.Distribution, autoAgentCollectionUsername, password); err != nil {
+	username, err = initAgentCollectionUser(client, conf.Distribution, username, password)
+	if err != nil {
 		return err
 	}
 
@@ -338,7 +346,7 @@ func ensureManagedAgentCollectionCredential(conf *elastic.ElasticsearchConfig, p
 		existingCredential.Tags = []string{"ES"}
 		existingCredential.Payload = map[string]interface{}{
 			"basic_auth": map[string]interface{}{
-				"username": autoAgentCollectionUsername,
+				"username": username,
 				"password": password,
 			},
 		}
@@ -351,7 +359,7 @@ func ensureManagedAgentCollectionCredential(conf *elastic.ElasticsearchConfig, p
 		conf.AgentCredentialID = existingCredential.ID
 	} else {
 		auth := &model.BasicAuth{
-			Username: autoAgentCollectionUsername,
+			Username: username,
 			Password: ucfg.SecretString(password),
 		}
 		credentialID, err := saveClusterBasicAuthToCredential(conf.Name, conf.ID, clusterCredentialKindAgent, auth)
@@ -397,23 +405,30 @@ func newManagedClusterSecurityClient(conf *elastic.ElasticsearchConfig, auth *mo
 	return common.InitClientWithConfig(tempConf)
 }
 
-func initAgentCollectionUser(client elastic.API, distribution, username, password string) error {
+func initAgentCollectionUser(client elastic.API, distribution, username, password string) (string, error) {
 	roleBody, err := buildAgentCollectionRoleBody(distribution)
 	if err != nil {
-		return err
+		return username, err
 	}
 	if err := client.PutRole(username, roleBody); err != nil {
-		return fmt.Errorf("failed to create agent collection role: %w", err)
+		fallbackUsername, fallback := getManagedAgentCollectionFallbackUsername(distribution, username, err)
+		if !fallback {
+			return username, wrapAgentCollectionProvisionError(distribution, "role", err)
+		}
+		username = fallbackUsername
+		if err := client.PutRole(username, roleBody); err != nil {
+			return username, wrapAgentCollectionProvisionError(distribution, "role", err)
+		}
 	}
 
 	userBody, err := buildAgentCollectionUserBody(distribution, username, password)
 	if err != nil {
-		return err
+		return username, err
 	}
 	if err := client.PutUser(username, userBody); err != nil {
-		return fmt.Errorf("failed to create agent collection user: %w", err)
+		return username, wrapAgentCollectionProvisionError(distribution, "user", err)
 	}
-	return nil
+	return username, nil
 }
 
 func buildAgentCollectionRoleBody(distribution string) ([]byte, error) {
@@ -453,6 +468,54 @@ func buildAgentCollectionUserBody(distribution, username, password string) ([]by
 	default:
 		return nil, fmt.Errorf("unsupported distribution for agent collection user: %s", distribution)
 	}
+}
+
+func wrapAgentCollectionProvisionError(distribution, resource string, err error) error {
+	if err == nil {
+		return nil
+	}
+
+	raw := err.Error()
+	lowerRaw := strings.ToLower(raw)
+
+	if distribution == elastic.Easysearch &&
+		strings.Contains(lowerRaw, `"status":"not_found"`) &&
+		strings.Contains(lowerRaw, "resource") &&
+		strings.Contains(lowerRaw, "not available") {
+		return fmt.Errorf(
+			"failed to create agent collection %s: target Easysearch cluster does not allow modifying _security/%s via the current credential; check security.restapi.roles_enabled and security.restapi.endpoints_disabled for %s access: %w",
+			resource,
+			resource,
+			strings.ToUpper(resource),
+			err,
+		)
+	}
+
+	return fmt.Errorf("failed to create agent collection %s: %w", resource, err)
+}
+
+func getManagedAgentCollectionFallbackUsername(distribution, username string, err error) (string, bool) {
+	if distribution != elastic.Easysearch {
+		return "", false
+	}
+	if username != autoAgentCollectionUsername {
+		return "", false
+	}
+	if !isUnavailableSecurityResourceError(err) {
+		return "", false
+	}
+	return autoAgentCollectionFallbackUsername, true
+}
+
+func isUnavailableSecurityResourceError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	lowerRaw := strings.ToLower(err.Error())
+	return strings.Contains(lowerRaw, `"status":"not_found"`) &&
+		strings.Contains(lowerRaw, "resource") &&
+		strings.Contains(lowerRaw, "not available")
 }
 
 func (h *APIHandler) HandleGetClusterAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {

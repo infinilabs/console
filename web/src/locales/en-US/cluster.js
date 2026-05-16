@@ -46,7 +46,7 @@ export default {
   "cluster.manage.metric_collection_mode.warning.large_cluster": "The current cluster has {number_of_nodes} or more nodes. It is strongly recommended to use Agent mode for monitoring.",
   "cluster.manage.metric_collection_mode.confirm.button.ok": "OK",
   "cluster.manage.metric_collection_mode.confirm.button.cancel": "Cancel",
-  "cluster.manage.agent_credential.tip.auto_create": "When probe collection mode is enabled, Console automatically creates the low-privilege infini_agent user for metrics and log collection. You can still override it with a custom probe credential below if needed.",
+  "cluster.manage.agent_credential.tip.auto_create": "When probe collection mode is enabled, Console automatically creates the low-privilege infini-agent user for metrics and log collection. You can still override it with a custom probe credential below if needed.",
   "cluster.manage.monitor_configs.cluster_health": "Cluster health",
   "cluster.manage.monitor_configs.cluster_stats": "Cluster stats",
   "cluster.manage.monitor_configs.node_stats": "Node stats",

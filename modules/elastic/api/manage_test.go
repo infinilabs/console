@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 
@@ -154,7 +155,49 @@ func TestBuildAgentCollectionRoleBodyRejectsUnsupportedDistribution(t *testing.T
 }
 
 func TestBuildAgentCollectionUserBodyRejectsUnsupportedDistribution(t *testing.T) {
-	if _, err := buildAgentCollectionUserBody(elastic.Elasticsearch, "infini_agent", "secret"); err == nil {
+	if _, err := buildAgentCollectionUserBody(elastic.Elasticsearch, "infini-agent", "secret"); err == nil {
 		t.Fatal("expected unsupported distribution error")
+	}
+}
+
+func TestWrapAgentCollectionProvisionErrorForEasysearchRoleAPI(t *testing.T) {
+	err := wrapAgentCollectionProvisionError(
+		elastic.Easysearch,
+		"role",
+		errors.New(`{"status":"NOT_FOUND","message":"Resource 'infini-agent' is not available."}`),
+	)
+
+	if err == nil {
+		t.Fatal("expected wrapped error")
+	}
+	if !strings.Contains(err.Error(), "does not allow modifying _security/role") {
+		t.Fatalf("expected actionable role api error, got %v", err)
+	}
+	if !strings.Contains(err.Error(), "security.restapi.roles_enabled") {
+		t.Fatalf("expected config hint in error, got %v", err)
+	}
+}
+
+func TestGetManagedAgentCollectionFallbackUsername(t *testing.T) {
+	username, ok := getManagedAgentCollectionFallbackUsername(
+		elastic.Easysearch,
+		autoAgentCollectionUsername,
+		errors.New(`{"status":"NOT_FOUND","message":"Resource 'infini-agent' is not available."}`),
+	)
+	if !ok {
+		t.Fatal("expected fallback username for reserved infini-agent resource")
+	}
+	if username != autoAgentCollectionFallbackUsername {
+		t.Fatalf("expected fallback username %q, got %q", autoAgentCollectionFallbackUsername, username)
+	}
+}
+
+func TestGetManagedAgentCollectionFallbackUsernameSkipsCustomUser(t *testing.T) {
+	if _, ok := getManagedAgentCollectionFallbackUsername(
+		elastic.Easysearch,
+		"custom-agent-user",
+		errors.New(`{"status":"NOT_FOUND","message":"Resource 'custom-agent-user' is not available."}`),
+	); ok {
+		t.Fatal("expected no fallback for custom managed usernames")
 	}
 }

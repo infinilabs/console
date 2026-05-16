@@ -13,7 +13,7 @@ export default {
   "agent.instance.associate.tips.connected.check": "please set a credential for agent",
   "agent.instance.associate.auth.error": "The following clusters need platform or agent credentials first:",
   "agent.instance.associate.tips.metric":
-    "Enroll will switch the cluster to Agent mode, initialize the infini_agent credential, and auto-enroll newly added nodes afterward",
+    "Enroll will switch the cluster to Agent mode, initialize the infini-agent credential, and auto-enroll newly added nodes afterward",
   "agent.instance.associate.tips.unregister":
     "No registration information for this cluster was found in the Console,",
   "agent.instance.associate.tips.to_register": "go to register",

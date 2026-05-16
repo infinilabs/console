@@ -74,7 +74,7 @@ import (
 )
 
 // Easysearch auto create ingest user password
-const ingestUser = "infini_ingest"
+const ingestUser = "infini-ingest"
 const systemClusterIngestPasswordKey = "SYSTEM_CLUSTER_INGEST_PASSWORD"
 
 type Module struct {

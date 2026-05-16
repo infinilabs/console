@@ -11,7 +11,7 @@ export default {
   "agent.instance.associate.tips.connected.check": "请设置凭据",
   "agent.instance.associate.auth.error": "以下集群需要先设置平台凭据或 Agent 凭据：",
   "agent.instance.associate.tips.metric":
-    "关联后会自动切换为 Agent 采集模式并初始化 infini_agent 凭据，后续新增节点也会自动补充关联",
+    "关联后会自动切换为 Agent 采集模式并初始化 infini-agent 凭据，后续新增节点也会自动补充关联",
   "agent.instance.associate.tips.unregister":
     "没有在 Console 中找到该集群的注册信息，",
   "agent.instance.associate.tips.to_register": "前往注册",

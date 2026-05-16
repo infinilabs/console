@@ -79,6 +79,11 @@ metrics:
     node_stats: true
     index_stats: true
 
+disk_queue:
+  cleanup_files_on_init: true
+  compress:
+    delete_after_compress: true
+
 ## badger kv storage configuration
 badger:
   enabled: true

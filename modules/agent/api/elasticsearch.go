@@ -887,9 +887,9 @@ func (h *APIHandler) enrollESNode(w http.ResponseWriter, req *http.Request, ps h
 	success, _, _ := h.getESNodeInfoViaProxyWithConfig(preparedConf, preparedConf.BasicAuth, instance.GetEndpoint())
 
 	if success {
-		//update node's setting
+		// Save will create the binding on first manual enroll and update it on subsequent enrolls.
 		settings := NewNodeAgentSettings(instID, &item)
-		err = orm.Update(&orm.Context{
+		err = orm.Save(&orm.Context{
 			Refresh: "wait_for",
 		}, settings)
 		if err != nil {

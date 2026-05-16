@@ -39,6 +39,7 @@ import (
 	"github.com/buger/jsonparser"
 	log "github.com/cihub/seelog"
 	console_common "infini.sh/console/common"
+	elasticapi "infini.sh/console/modules/elastic/api"
 	"infini.sh/console/plugin/managed/server"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
@@ -406,6 +407,125 @@ type ClusterInfo struct {
 
 var autoEnrollRunning = atomic.Bool{}
 
+func getAutoEnrollClusterInfo(clusterIDs []string) (ClusterInfo, error) {
+	if len(clusterIDs) > 0 {
+		return ClusterInfo{ClusterIDs: clusterIDs}, nil
+	}
+
+	q := &orm.Query{
+		Size: 1000,
+		Conds: orm.And(
+			orm.Eq("metric_collection_mode", elastic.ModeAgent),
+			orm.Eq("enabled", true),
+		),
+	}
+	err, res := orm.Search(&elastic.ElasticsearchConfig{}, q)
+	if err != nil {
+		return ClusterInfo{}, err
+	}
+
+	ids := make([]string, 0, len(res.Result))
+	for _, row := range res.Result {
+		item, ok := row.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		id := util.ToString(item["id"])
+		if id != "" {
+			ids = append(ids, id)
+		}
+	}
+	return ClusterInfo{ClusterIDs: ids}, nil
+}
+
+func startAutoEnroll(clusterIDs []string) error {
+	clusterInfo, err := getAutoEnrollClusterInfo(clusterIDs)
+	if err != nil {
+		return err
+	}
+	if len(clusterInfo.ClusterIDs) <= 0 {
+		return nil
+	}
+	if autoEnrollRunning.Load() {
+		return errors.New("auto_enroll is already running in background")
+	}
+
+	autoEnrollRunning.Swap(true)
+	go runAutoEnroll(clusterInfo)
+	return nil
+}
+
+func runAutoEnroll(clusterInfo ClusterInfo) {
+	defer func() {
+		autoEnrollRunning.Swap(false)
+		if !global.Env().IsDebug {
+			if r := recover(); r != nil {
+				var v string
+				switch r.(type) {
+				case error:
+					v = r.(error).Error()
+				case runtime.Error:
+					v = r.(runtime.Error).Error()
+				case string:
+					v = r.(string)
+				}
+				if v != "" {
+					log.Error(v)
+				}
+			}
+		}
+		log.Debug("finish auto enroll")
+	}()
+
+	log.Debug("start auto enroll")
+	q := &orm.Query{Conds: orm.And(orm.Eq("application.name", "agent"))}
+	q.From = 0
+	q.Size = 50000
+	err, res := orm.Search(&model.Instance{}, q)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	for _, v := range res.Result {
+		f, ok := v.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		instanceIDObj, ok1 := f["id"]
+		instanceEndpointObj, ok2 := f["endpoint"]
+		if !ok1 || !ok2 {
+			continue
+		}
+		instanceID, ok1 := instanceIDObj.(string)
+		instanceEndpoint, ok2 := instanceEndpointObj.(string)
+		if !ok1 || !ok2 {
+			continue
+		}
+		nodes, err := refreshNodesInfo(instanceID, instanceEndpoint)
+		if err != nil {
+			log.Error(err)
+			continue
+		}
+		log.Debugf("instance:%v,%v, has: %v nodes, %v unknown nodes", instanceID, instanceEndpoint, len(nodes.Nodes), len(nodes.UnknownProcess))
+		if len(nodes.UnknownProcess) > 0 {
+			pids := bindInstanceToCluster(clusterInfo, nodes, instanceID, instanceEndpoint)
+			log.Infof("instance:%v,%v, success enroll %v nodes", instanceID, instanceEndpoint, len(pids))
+		}
+
+		if len(nodes.Nodes) > 0 {
+			for k, v := range nodes.Nodes {
+				log.Debug(k, v.Status, v.Enrolled)
+				if !v.Enrolled {
+					pids := bindInstanceToCluster(clusterInfo, nodes, instanceID, instanceEndpoint)
+					log.Infof("instance:%v,%v, success enroll %v nodes", instanceID, instanceEndpoint, len(pids))
+					break
+				}
+			}
+		}
+	}
+}
+
 func (h *APIHandler) autoEnrollESNode(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	//{"cluster_id":["infini_default_system_cluster"]}
 	clusterInfo := ClusterInfo{}
@@ -423,79 +543,9 @@ func (h *APIHandler) autoEnrollESNode(w http.ResponseWriter, req *http.Request, 
 		panic(errors.New("please select cluster to enroll"))
 	}
 
-	if autoEnrollRunning.Load() {
-		panic(errors.New("auto_enroll is already running in background"))
+	if err := startAutoEnroll(clusterInfo.ClusterIDs); err != nil {
+		panic(err)
 	}
-
-	autoEnrollRunning.Swap(true)
-	go func(clusterInfo ClusterInfo) {
-		defer func() {
-			autoEnrollRunning.Swap(false)
-			if !global.Env().IsDebug {
-				if r := recover(); r != nil {
-					var v string
-					switch r.(type) {
-					case error:
-						v = r.(error).Error()
-					case runtime.Error:
-						v = r.(runtime.Error).Error()
-					case string:
-						v = r.(string)
-					}
-					if v != "" {
-						log.Error(v)
-					}
-				}
-			}
-			log.Debug("finish auto enroll")
-		}()
-
-		log.Debug("start auto enroll")
-		//get instances
-		q := &orm.Query{Conds: orm.And(orm.Eq("application.name", "agent"))}
-		q.From = 0
-		q.Size = 50000
-		err, res := orm.Search(&model.Instance{}, q)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-
-		for _, v := range res.Result {
-			f, ok := v.(map[string]interface{})
-			if ok {
-				instanceIDObj, ok1 := f["id"]
-				instanceEndpointObj, ok2 := f["endpoint"]
-				if ok1 && ok2 {
-					instanceID, ok1 := instanceIDObj.(string)
-					instanceEndpoint, ok2 := instanceEndpointObj.(string)
-					if ok1 && ok2 {
-						nodes, err := refreshNodesInfo(instanceID, instanceEndpoint)
-						if err != nil {
-							log.Error(err)
-							continue
-						}
-						log.Debugf("instance:%v,%v, has: %v nodes, %v unknown nodes", instanceID, instanceEndpoint, len(nodes.Nodes), len(nodes.UnknownProcess))
-						if len(nodes.UnknownProcess) > 0 {
-							pids := h.bindInstanceToCluster(clusterInfo, nodes, instanceID, instanceEndpoint)
-							log.Infof("instance:%v,%v, success enroll %v nodes", instanceID, instanceEndpoint, len(pids))
-						}
-
-						if len(nodes.Nodes) > 0 {
-							for k, v := range nodes.Nodes {
-								log.Debug(k, v.Status, v.Enrolled)
-								if !v.Enrolled {
-									pids := h.bindInstanceToCluster(clusterInfo, nodes, instanceID, instanceEndpoint)
-									log.Infof("instance:%v,%v, success enroll %v nodes", instanceID, instanceEndpoint, len(pids))
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-
-	}(clusterInfo)
 
 	//get all unknown nodes
 	//check each process with cluster id
@@ -536,7 +586,7 @@ func (h *APIHandler) discoveryESNodesInfo(w http.ResponseWriter, req *http.Reque
 			if len(bytes) > 0 {
 				clusterInfo := ClusterInfo{}
 				util.FromJSONBytes(bytes, &clusterInfo)
-				discoveredPIDs = h.bindInstanceToCluster(clusterInfo, nodes, instance.ID, instance.GetEndpoint())
+				discoveredPIDs = bindInstanceToCluster(clusterInfo, nodes, instance.ID, instance.GetEndpoint())
 			}
 		}
 
@@ -556,11 +606,16 @@ func (h *APIHandler) discoveryESNodesInfo(w http.ResponseWriter, req *http.Reque
 	h.WriteJSON(w, nodes, http.StatusOK)
 }
 
-func (h *APIHandler) bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elastic.DiscoveryResult, instanceID, instanceEndpoint string) map[int]*elastic.LocalNodeInfo {
+func bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elastic.DiscoveryResult, instanceID, instanceEndpoint string) map[int]*elastic.LocalNodeInfo {
 	discoveredPIDs := map[int]*elastic.LocalNodeInfo{}
 	if len(clusterInfo.ClusterIDs) > 0 {
 		//try connect this node to cluster by using this cluster's agent credential
 		for _, clusterID := range clusterInfo.ClusterIDs {
+			preparedConf, err := elasticapi.PrepareClusterForAgentCollection(clusterID)
+			if err != nil {
+				log.Error(err)
+				continue
+			}
 			meta := elastic.GetMetadata(clusterID)
 			if meta != nil {
 				states, err := elastic.GetClient(clusterID).GetClusterState()
@@ -570,50 +625,48 @@ func (h *APIHandler) bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elast
 				}
 
 				clusterUUID := states.ClusterUUID
+				auth, err := common.GetAgentBasicAuth(preparedConf)
+				if err != nil {
+					log.Error(err)
+					continue
+				}
+				if auth == nil || auth.Username == "" {
+					log.Errorf("cluster [%s] has no available agent credential", clusterID)
+					continue
+				}
 
-				//no auth or agent auth configured
-				if meta.Config.AgentCredentialID != "" || meta.Config.CredentialID == "" {
-					auth, err := common.GetAgentBasicAuth(meta.Config)
-					if err != nil {
-						panic(err)
-					}
-
-					for _, v := range nodes.Nodes {
-						if !v.Enrolled {
-							if v.NodeInfo != nil {
-								pid := v.NodeInfo.Process.Id
-								nodeHost := v.NodeInfo.GetHttpPublishHost()
-								nodeInfo := h.internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint, pid, nodeHost, auth)
-								if nodeInfo != nil {
-									discoveredPIDs[pid] = nodeInfo
-								}
-							}
-						}
-					}
-
-					//try connect
-					for _, node := range nodes.UnknownProcess {
-
-						pid := node.PID
-
-						for _, v := range node.ListenAddresses {
-
-							ip := v.IP
-							port := v.Port
-
-							if util.ContainStr(ip, "::") {
-								ip = fmt.Sprintf("[%s]", ip)
-							}
-
-							if util.ContainStr(ip, "*") {
-								ip = util.LocalAddress
-							}
-
-							nodeHost := fmt.Sprintf("%s:%d", ip, port)
-							nodeInfo := h.internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint, pid, nodeHost, auth)
+				for _, v := range nodes.Nodes {
+					if !v.Enrolled {
+						if v.NodeInfo != nil {
+							pid := v.NodeInfo.Process.Id
+							nodeHost := v.NodeInfo.GetHttpPublishHost()
+							nodeInfo := (&APIHandler{}).internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint, pid, nodeHost, auth)
 							if nodeInfo != nil {
 								discoveredPIDs[pid] = nodeInfo
 							}
+						}
+					}
+				}
+
+				for _, node := range nodes.UnknownProcess {
+					pid := node.PID
+
+					for _, v := range node.ListenAddresses {
+						ip := v.IP
+						port := v.Port
+
+						if util.ContainStr(ip, "::") {
+							ip = fmt.Sprintf("[%s]", ip)
+						}
+
+						if util.ContainStr(ip, "*") {
+							ip = util.LocalAddress
+						}
+
+						nodeHost := fmt.Sprintf("%s:%d", ip, port)
+						nodeInfo := (&APIHandler{}).internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint, pid, nodeHost, auth)
+						if nodeInfo != nil {
+							discoveredPIDs[pid] = nodeInfo
 						}
 					}
 				}
@@ -814,16 +867,24 @@ func (h *APIHandler) enrollESNode(w http.ResponseWriter, req *http.Request, ps h
 	}
 
 	//check if the cluster's agent credential is valid
-	meta := elastic.GetMetadata(item.ClusterID)
-	if meta == nil {
-		h.WriteError(w, "cluster not found", http.StatusInternalServerError)
+	preparedConf, err := elasticapi.PrepareClusterForAgentCollection(item.ClusterID)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	//use agent credential to access the node
-	meta.Config.BasicAuth, _ = common.GetAgentBasicAuth(meta.Config)
+	preparedConf.BasicAuth, err = common.GetAgentBasicAuth(preparedConf)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if preparedConf.BasicAuth == nil || preparedConf.BasicAuth.Username == "" {
+		h.WriteError(w, "cluster has no available agent credential", http.StatusInternalServerError)
+		return
+	}
 
-	success, _, _ := h.getESNodeInfoViaProxyWithConfig(meta.Config, meta.Config.BasicAuth, instance.GetEndpoint())
+	success, _, _ := h.getESNodeInfoViaProxyWithConfig(preparedConf, preparedConf.BasicAuth, instance.GetEndpoint())
 
 	if success {
 		//update node's setting

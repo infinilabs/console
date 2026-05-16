@@ -11,9 +11,9 @@ export default {
     "This permission will be used for metrics and log collection. It is recommended to use a user with a reasonable permission range.",
   "agent.instance.associate.tips.connected": "Connection succeeded!",
   "agent.instance.associate.tips.connected.check": "please set a credential for agent",
-  "agent.instance.associate.auth.error": "The following clusters need to set credentials for the agent:",
+  "agent.instance.associate.auth.error": "The following clusters need platform or agent credentials first:",
   "agent.instance.associate.tips.metric":
-    "After enroll, the agent will collect metrics for the enrolled cluster",
+    "Enroll will switch the cluster to Agent mode, initialize the infini_agent credential, and auto-enroll newly added nodes afterward",
   "agent.instance.associate.tips.unregister":
     "No registration information for this cluster was found in the Console,",
   "agent.instance.associate.tips.to_register": "go to register",

@@ -326,37 +326,6 @@ function install_service() {
   sleep 3
 }
 
-function register_agent() {
-  console_endpoint="{{console_endpoint}}"
-  server=${register_server:-$console_endpoint}
-  token={{token}}
-  max_attempts=${register_max_attempts:-10}
-  attempt=1
-  curl_tls_opts=(
-    --insecure
-    --cert "${install_dir}/config/client.crt"
-    --key "${install_dir}/config/client.key"
-    --cacert "${install_dir}/config/ca.crt"
-  )
-  echo '[agent] waiting registering to INFINI Console'
-  while ! curl -s -m30 -XPOST "${curl_tls_opts[@]}" "${server}/agent/instance?token=${token}";
-  do
-    if [[ $attempt -ge $max_attempts ]]; then
-      echo
-      echo "[agent] WARN: failed to register to INFINI Console after ${max_attempts} attempts."
-      echo "[agent] WARN: update ${install_dir}/agent.yml if needed, then restart the agent service to retry remote registration."
-      echo "[agent] WARN: if you need to retry instance registration manually before the token expires, run:"
-      echo "[agent] WARN: curl -s -m30 -XPOST --insecure --cert \"${install_dir}/config/client.crt\" --key \"${install_dir}/config/client.key\" --cacert \"${install_dir}/config/ca.crt\" \"${server}/agent/instance?token=${token}\""
-      return 0
-    fi
-    echo -n '.'
-    attempt=$((attempt + 1))
-    sleep 3
-  done
-  echo
-  #__try curl -s --retry 1 --retry-delay 3 -m30 -XPOST -o ${install_dir}/setup.log "${console_endpoint}/agent/instance?token=${token}"
-}
-
 function main() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -388,7 +357,6 @@ function main() {
   install_config
   uninstall_service
   install_service
-  register_agent
 
   echo ""
   echo ""

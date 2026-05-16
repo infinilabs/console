@@ -46,6 +46,7 @@ export default {
   "cluster.manage.metric_collection_mode.warning.large_cluster": "当前集群节点数大于等于 {number_of_nodes} 个，强烈建议使用 Agent 模式进行监控。",
   "cluster.manage.metric_collection_mode.confirm.button.ok": "确定",
   "cluster.manage.metric_collection_mode.confirm.button.cancel": "取消",
+  "cluster.manage.agent_credential.tip.auto_create": "切换为 Agent 采集模式后，Console 会自动创建低权限的 infini_agent 用户，仅用于监控指标采集；如有需要，也可以在下方改用自定义 Agent 凭据。",
   "cluster.manage.monitor_configs.cluster_health": "集群健康状态指标",
   "cluster.manage.monitor_configs.cluster_stats": "集群指标",
   "cluster.manage.monitor_configs.node_stats": "节点指标",

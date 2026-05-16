@@ -281,7 +281,7 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 		panic("instance id is empty")
 	}
 
-	buffer := bytes.NewBuffer([]byte("configs.template:  "))
+	buffer := bytes.NewBufferString("configs.template:")
 
 	//sort items
 	newItems := []util.KeyValue{}
@@ -358,22 +358,21 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 		}
 
 		taskID := v.ClusterID + "_" + v.NodeUUID
-		buffer.Write([]byte(fmt.Sprintf("\n  - name: \"%v\"\n    path: ./config/task_config.tpl\n    "+
-			"variable:\n      "+
-			"TASK_ID: %v\n      "+
-			"CLUSTER_ID: %v\n      "+
-			"CLUSTER_NAME: %v\n      "+
-			"CLUSTER_UUID: %v\n      "+
-			"NODE_UUID: %v\n      "+
-			"CLUSTER_VERSION: %v\n      "+
-			"CLUSTER_DISTRIBUTION: %v\n      "+
-			"CLUSTER_ENDPOINT: [\"%v\"]\n      "+
-			"CLUSTER_USERNAME: \"%v\"\n      "+
-			"CLUSTER_PASSWORD: \"%v\"\n      "+
-			"CLUSTER_LEVEL_TASKS_ENABLED: %v\n      "+
-			"NODE_LEVEL_TASKS_ENABLED: %v\n      "+
-			"NODE_LOGS_PATH: \"%v\"\n\n\n", taskID, taskID,
-			v.ClusterID, clusterName, v.ClusterUUID, v.NodeUUID, version, distribution, nodeEndPoint, username, password, clusterLevelEnabled, nodeLevelEnabled, pathLogs)))
+		buffer.WriteString(renderAgentTaskTemplateConfig(
+			taskID,
+			v.ClusterID,
+			clusterName,
+			v.ClusterUUID,
+			v.NodeUUID,
+			version,
+			distribution,
+			nodeEndPoint,
+			username,
+			password,
+			clusterLevelEnabled,
+			nodeLevelEnabled,
+			pathLogs,
+		))
 	}
 
 	hash := util.MD5digest(buffer.String())
@@ -382,6 +381,27 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 	buffer.WriteString(fmt.Sprintf("#MANAGED_CONFIG_VERSION: %v\n#MANAGED: true\n", latestVersion))
 
 	return buffer.String(), hash
+}
+
+func renderAgentTaskTemplateConfig(taskID, clusterID, clusterName, clusterUUID, nodeUUID, version, distribution, nodeEndpoint, username, password string, clusterLevelEnabled, nodeLevelEnabled bool, pathLogs string) string {
+	return fmt.Sprintf(
+		"\n  - name: %s\n    path: %s\n    variable:\n      TASK_ID: %s\n      CLUSTER_ID: %s\n      CLUSTER_NAME: %s\n      CLUSTER_UUID: %s\n      NODE_UUID: %s\n      CLUSTER_VERSION: %s\n      CLUSTER_DISTRIBUTION: %s\n      CLUSTER_ENDPOINT: %s\n      CLUSTER_USERNAME: %s\n      CLUSTER_PASSWORD: %s\n      CLUSTER_LEVEL_TASKS_ENABLED: %t\n      NODE_LEVEL_TASKS_ENABLED: %t\n      NODE_LOGS_PATH: %s\n\n",
+		util.MustToJSON(taskID),
+		util.MustToJSON("./config/task_config.tpl"),
+		util.MustToJSON(taskID),
+		util.MustToJSON(clusterID),
+		util.MustToJSON(clusterName),
+		util.MustToJSON(clusterUUID),
+		util.MustToJSON(nodeUUID),
+		util.MustToJSON(version),
+		util.MustToJSON(distribution),
+		util.MustToJSON([]string{nodeEndpoint}),
+		util.MustToJSON(username),
+		util.MustToJSON(password),
+		clusterLevelEnabled,
+		nodeLevelEnabled,
+		util.MustToJSON(pathLogs),
+	)
 }
 
 const LastAgentHash = "last_agent_hash"

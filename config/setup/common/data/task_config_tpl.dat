@@ -8,7 +8,7 @@ elasticsearch:
     enabled: true
     distribution: "$[[CLUSTER_DISTRIBUTION]]"
     version: "$[[CLUSTER_VERSION]]"
-    endpoints: "$[[CLUSTER_ENDPOINT]]"
+    endpoints: ["$[[CLUSTER_ENDPOINT]]"]
     discovery:
       enabled: false
     basic_auth:

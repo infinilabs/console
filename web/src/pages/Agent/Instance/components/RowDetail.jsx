@@ -32,12 +32,6 @@ import styles from "./RowDetail.less";
 
 const { TabPane } = Tabs;
 
-const details = [
-  { title: "Metrics", component: Metrics, key: "metrics" },
-  { title: "Infos", component: Infos, key: "infos" },
-  { title: "Logs", component: Logs, key: "logs" },
-];
-
 const detailTitleConfig = {
   getLabels: (item) => [
     item._source?.metadata?.cluster_name,
@@ -80,6 +74,27 @@ export const AgentRowDetail = ({ agentID, t }) => {
     processesTab: "elasticsearch",
     unknownAssociateVisible: false,
   });
+
+  const details = useMemo(
+    () => [
+      {
+        title: formatMessage({ id: "overview.detail.metrics" }),
+        component: Metrics,
+        key: "metrics",
+      },
+      {
+        title: formatMessage({ id: "overview.detail.infos" }),
+        component: Infos,
+        key: "infos",
+      },
+      {
+        title: formatMessage({ id: "cluster.monitor.tabs.logs" }),
+        component: Logs,
+        key: "logs",
+      },
+    ],
+    [t]
+  );
 
   const onDetailClick = async (node_uuid, cluster_id) => {
     const res = await request("/elasticsearch/node/_search", {
@@ -219,7 +234,7 @@ export const AgentRowDetail = ({ agentID, t }) => {
       },
       {
         title: formatMessage({ id: "table.field.actions" }),
-        width: 100,
+        width: 140,
         render: (text, record) => (
           <div className={styles.actionWrap}>
             {/* <Popconfirm
@@ -246,7 +261,7 @@ export const AgentRowDetail = ({ agentID, t }) => {
                           })
                         }
                       >
-                        <Button style={{ padding: 0 }} type="link" loading={btnLoading}>
+                        <Button style={{ padding: 0, height: "auto" }} type="link" loading={btnLoading}>
                           {formatMessage({ id: "agent.instance.button.revoke" })}
                         </Button>
                       </Popconfirm>
@@ -254,7 +269,9 @@ export const AgentRowDetail = ({ agentID, t }) => {
                     </>
                   )
                 }
-                <a
+                <Button
+                  style={{ padding: 0, height: "auto" }}
+                  type="link"
                   onClick={() => {
                     onDetailClick(record.id, record.cluster_id);
                   }}
@@ -262,10 +279,12 @@ export const AgentRowDetail = ({ agentID, t }) => {
                   {formatMessage({
                     id: "agent.instance.table.operation.detail",
                   })}
-                </a>
+                </Button>
               </>
             ) : (
-              <a
+              <Button
+                style={{ padding: 0, height: "auto" }}
+                type="link"
                 onClick={() => {
                   setState((st) => {
                     return {
@@ -275,17 +294,17 @@ export const AgentRowDetail = ({ agentID, t }) => {
                     };
                   });
                 }}
-              >
-                {formatMessage({
-                  id: "agent.instance.table.operation.associate",
-                })}
-              </a>
+                >
+                  {formatMessage({
+                    id: "agent.instance.table.operation.associate",
+                  })}
+              </Button>
             )}
           </div>
         ),
       },
     ],
-    [agentID]
+    [agentID, btnLoading, t]
   );
   const onRefreshClick = async () => {
     setQueryParams((st) => {
@@ -430,7 +449,10 @@ export const AgentRowDetail = ({ agentID, t }) => {
                 size: "small",
                 showSizeChanger: true,
                 showTotal: (total, range) =>
-                  `${range[0]}-${range[1]} of ${total} items`,
+                  formatMessage(
+                    { id: "system.security.pagination.total" },
+                    { start: range[0], end: range[1], total }
+                  ),
               }}
               columns={columns}
             />

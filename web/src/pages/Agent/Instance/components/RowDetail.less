@@ -55,6 +55,17 @@
 .actionWrap {
   display: flex;
   align-items: flex-start;
-  flex-wrap: wrap;
+  justify-content: flex-start;
   width: 100%;
+  white-space: nowrap;
+}
+
+.actionWrap :global(.ant-divider-vertical) {
+  align-self: flex-start;
+  margin: 0 8px;
+}
+
+.actionWrap :global(.ant-btn-link) {
+  height: auto;
+  padding: 0;
 }

@@ -106,6 +106,103 @@ func TestTaskConfigTemplateAllowsArrayEndpointSubstitution(t *testing.T) {
 	}
 }
 
+func TestGatewayRelayTemplateRendersAsChildConfig(t *testing.T) {
+	content := renderGatewaySetupData(t, "gateway_relay.dat")
+
+	if _, err := config2.NewConfigWithYAML([]byte(content), "relay.yml"); err != nil {
+		t.Fatalf("expected rendered relay config to parse, got %v\n%s", err, content)
+	}
+	assertNoChildConfigGlobals(t, content)
+	assertContainsAll(t, content,
+		`binding: 0.0.0.0:8081`,
+		`password: "$[[keystore.SYSTEM_CLUSTER_INGEST_PASSWORD]]"`,
+		`queue_name_prefix: console_gateway_relay_async_bulk`,
+		`elasticsearch: console_gateway_relay_system`,
+		`name: console_gateway_relay_bulk_request_ingest`,
+	)
+}
+
+func TestGatewayMigrationTemplateRendersAsChildConfig(t *testing.T) {
+	content := renderGatewaySetupData(t, "gateway_migration.dat")
+
+	if _, err := config2.NewConfigWithYAML([]byte(content), "migration.yml"); err != nil {
+		t.Fatalf("expected rendered migration config to parse, got %v\n%s", err, content)
+	}
+	assertNoChildConfigGlobals(t, content)
+	assertContainsAll(t, content,
+		`binding: 0.0.0.0:8082`,
+		`password: "$[[keystore.SYSTEM_CLUSTER_INGEST_PASSWORD]]"`,
+		`queue_name_prefix: console_gateway_migration_async_bulk`,
+		`name: console_gateway_migration_async_ingest_bulk_requests`,
+		`name: console_gateway_migration_request_logging_merge`,
+	)
+}
+
+func TestAgentSetupTemplateSeedsRelayAndMigrationGatewayConfigs(t *testing.T) {
+	content := string(mustReadSetupTemplateFile(t, "agent.tpl"))
+
+	assertContainsAll(t, content,
+		`"location": "relay.yml"`,
+		`"name": "relay.yml"`,
+		`"location": "migration.yml"`,
+		`"name": "migration.yml"`,
+		`"id": "gateway_migration_yml"`,
+	)
+	if strings.Contains(content, "agent_relay_gateway_config.yml") {
+		t.Fatalf("expected old relay file name to be removed, got:\n%s", content)
+	}
+}
+
+func renderGatewaySetupData(t *testing.T, name string) string {
+	t.Helper()
+
+	content := string(mustReadSetupDataFile(t, name))
+	content = strings.ReplaceAll(content, "$[[SETUP_AGENT_USERNAME]]", "infini-ingest")
+	content = strings.ReplaceAll(content, "$[[SETUP_AGENT_PASSWORD_KEY]]", "SYSTEM_CLUSTER_INGEST_PASSWORD")
+	content = strings.ReplaceAll(content, "$[[SETUP_ENDPOINTS]]", `["https://192.168.3.185:9201"]`)
+	content = strings.ReplaceAll(content, "$[[SETUP_INDEX_PREFIX]]", ".infini_")
+	return content
+}
+
+func assertNoChildConfigGlobals(t *testing.T, content string) {
+	t.Helper()
+
+	for _, forbidden := range []string{
+		"allow_multi_instance:",
+		"path.data:",
+		"path.logs:",
+		"path.configs:",
+		"configs.auto_reload:",
+		"\napi:",
+		"\nnode:",
+	} {
+		if strings.Contains(content, forbidden) {
+			t.Fatalf("expected child config to omit %q, got:\n%s", forbidden, content)
+		}
+	}
+}
+
+func assertContainsAll(t *testing.T, content string, expected ...string) {
+	t.Helper()
+
+	for _, item := range expected {
+		if !strings.Contains(content, item) {
+			t.Fatalf("expected content to contain %q, got:\n%s", item, content)
+		}
+	}
+}
+
+func mustReadSetupTemplateFile(t *testing.T, name string) []byte {
+	t.Helper()
+
+	path := filepath.Join("..", "..", "config", "setup", "common", name)
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("failed to read %s: %v", name, err)
+	}
+	return content
+}
+
 func mustReadSetupDataFile(t *testing.T, name string) []byte {
 	t.Helper()
 

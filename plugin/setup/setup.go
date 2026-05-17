@@ -1068,8 +1068,10 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 			return w.Write(getYamlData("system_ingest_config.dat"))
 		case "SETUP_TASK_CONFIG_TPL":
 			return w.Write(getYamlData("task_config_tpl.dat"))
-		case "SETUP_AGENT_RELAY_GATEWAY_CONFIG":
-			return w.Write(getYamlData("agent_relay_gateway_config.dat"))
+		case "SETUP_GATEWAY_RELAY_CONFIG":
+			return w.Write(getYamlData("gateway_relay.dat"))
+		case "SETUP_GATEWAY_MIGRATION_CONFIG":
+			return w.Write(getYamlData("gateway_migration.dat"))
 		}
 		//ignore unresolved variable
 		return w.Write([]byte("$[[" + tag + "]]"))

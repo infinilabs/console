@@ -4,6 +4,9 @@ import (
 	"crypto/tls"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -71,6 +74,41 @@ func TestBuildGatewayInstallCommand(t *testing.T) {
 	expected := `curl -ksSL "https://console.local/instance/_get_gateway_install_script?token=abc" |sudo bash -s -- -d "/srv/gateway" -u "https://mirror.local/gateway/stable" -v "1.2.3-4567"`
 	if command != expected {
 		t.Fatalf("expected %q, got %q", expected, command)
+	}
+}
+
+func TestGatewayInstallTemplateBootstrapsManagedConfig(t *testing.T) {
+	templatePath := filepath.Join("..", "..", "..", "config", "install_gateway.tpl")
+	content, err := os.ReadFile(templatePath)
+	if err != nil {
+		t.Fatalf("failed to read gateway install template: %v", err)
+	}
+
+	rendered := strings.NewReplacer(
+		"{{base_url}}", "https://mirror.local/gateway/stable",
+		"{{version}}", "1.2.3-4567",
+		"{{console_endpoint}}", "https://console.local",
+		"{{client_crt}}", "CLIENT_CERT",
+		"{{client_key}}", "CLIENT_KEY",
+		"{{ca_crt}}", "CA_CERT",
+		"{{port}}", "2900",
+	).Replace(string(content))
+
+	expectedSnippets := []string{
+		`echo -e "${ca_crt}" > ${install_dir}/config/ca.crt`,
+		`cat <<EOF > ${install_dir}/gateway.yml`,
+		`configs.auto_reload: true`,
+		`managed: true`,
+		`panic_on_config_error: false`,
+		`    - "${server}"`,
+		`cert_file: "config/client.crt"`,
+		`echo "cd ${install_dir} && ./gateway-${file_ext%%.*} -config gateway.yml"`,
+	}
+
+	for _, snippet := range expectedSnippets {
+		if !strings.Contains(rendered, snippet) {
+			t.Fatalf("expected rendered template to contain %q", snippet)
+		}
 	}
 }
 

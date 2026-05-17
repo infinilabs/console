@@ -282,7 +282,8 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 		panic("instance id is empty")
 	}
 
-	buffer := bytes.NewBufferString("configs.template:")
+	elasticBuffer := bytes.NewBufferString("elasticsearch:")
+	pipelineBuffer := bytes.NewBufferString("\npipeline:")
 
 	//sort items
 	newItems := []util.KeyValue{}
@@ -359,22 +360,28 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 		}
 
 		taskID := v.ClusterID + "_" + v.NodeUUID
-		buffer.WriteString(renderAgentTaskTemplateConfig(
+		elasticBuffer.WriteString(renderAgentTaskElasticsearchConfig(
 			taskID,
-			v.ClusterID,
-			clusterName,
 			v.ClusterUUID,
-			v.NodeUUID,
 			version,
 			distribution,
 			nodeEndPoint,
 			username,
 			password,
+		))
+		pipelineBuffer.WriteString(renderAgentTaskPipelineConfig(
+			taskID,
+			v.ClusterID,
+			clusterName,
+			v.ClusterUUID,
 			clusterLevelEnabled,
 			nodeLevelEnabled,
 			pathLogs,
 		))
 	}
+
+	buffer := bytes.NewBufferString(elasticBuffer.String())
+	buffer.WriteString(pipelineBuffer.String())
 
 	hash := util.MD5digest(buffer.String())
 
@@ -384,24 +391,40 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 	return buffer.String(), hash
 }
 
-func renderAgentTaskTemplateConfig(taskID, clusterID, clusterName, clusterUUID, nodeUUID, version, distribution, nodeEndpoint, username, password string, clusterLevelEnabled, nodeLevelEnabled bool, pathLogs string) string {
+func renderAgentTaskElasticsearchConfig(taskID, clusterUUID, version, distribution, nodeEndpoint, username, password string) string {
 	return fmt.Sprintf(
-		"\n  - name: %s\n    path: %s\n    variable:\n      TASK_ID: %s\n      CLUSTER_ID: %s\n      CLUSTER_NAME: %s\n      CLUSTER_UUID: %s\n      NODE_UUID: %s\n      CLUSTER_VERSION: %s\n      CLUSTER_DISTRIBUTION: %s\n      CLUSTER_ENDPOINT: %s\n      CLUSTER_USERNAME: %s\n      CLUSTER_PASSWORD: %s\n      CLUSTER_LEVEL_TASKS_ENABLED: %t\n      NODE_LEVEL_TASKS_ENABLED: %t\n      NODE_LOGS_PATH: %s\n\n",
+		"\n  - id: %s\n    name: %s\n    cluster_uuid: %s\n    enabled: true\n    distribution: %s\n    version: %s\n    endpoints: [%s]\n    discovery:\n      enabled: false\n    basic_auth:\n      username: %s\n      password: %s\n    traffic_control:\n      enabled: true\n      max_qps_per_node: 100\n      max_bytes_per_node: 10485760\n      max_connection_per_node: 5\n",
 		util.MustToJSON(taskID),
-		util.MustToJSON("./config/task_config.tpl"),
 		util.MustToJSON(taskID),
-		util.MustToJSON(clusterID),
-		util.MustToJSON(clusterName),
 		util.MustToJSON(clusterUUID),
-		util.MustToJSON(nodeUUID),
-		util.MustToJSON(version),
 		util.MustToJSON(distribution),
+		util.MustToJSON(version),
 		util.MustToJSON(nodeEndpoint),
 		util.MustToJSON(username),
 		util.MustToJSON(password),
-		clusterLevelEnabled,
+	)
+}
+
+func renderAgentTaskPipelineConfig(taskID, clusterID, clusterName, clusterUUID string, clusterLevelEnabled, nodeLevelEnabled bool, pathLogs string) string {
+	return fmt.Sprintf(
+		"\n  - auto_start: %t\n    enabled: %t\n    keep_running: true\n    name: collect_%s_es_node_stats\n    retry_delay_in_ms: 10000\n    processor:\n      - es_node_stats:\n          elasticsearch: %s\n          labels:\n            cluster_id: %s\n            cluster_uuid: %s\n            cluster_name: %s\n          when:\n            cluster_available:\n              - %s\n\n  - auto_start: %t\n    enabled: %t\n    keep_running: true\n    name: collect_%s_es_logs\n    retry_delay_in_ms: 10000\n    processor:\n      - es_logs_processor:\n          elasticsearch: %s\n          labels:\n            cluster_id: %s\n            cluster_uuid: %s\n            cluster_name: %s\n          logs_path: %s\n          queue_name: logs\n          when:\n            cluster_available:\n              - %s\n",
 		nodeLevelEnabled,
+		nodeLevelEnabled,
+		taskID,
+		util.MustToJSON(taskID),
+		util.MustToJSON(clusterID),
+		util.MustToJSON(clusterUUID),
+		util.MustToJSON(clusterName),
+		util.MustToJSON(taskID),
+		nodeLevelEnabled,
+		nodeLevelEnabled,
+		taskID,
+		util.MustToJSON(taskID),
+		util.MustToJSON(clusterID),
+		util.MustToJSON(clusterUUID),
+		util.MustToJSON(clusterName),
 		util.MustToJSON(pathLogs),
+		util.MustToJSON(taskID),
 	)
 }
 

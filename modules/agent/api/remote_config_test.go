@@ -11,17 +11,19 @@ import (
 )
 
 func TestRenderAgentTaskTemplateConfigProducesValidYAML(t *testing.T) {
-	content := "configs.template:" + renderAgentTaskTemplateConfig(
+	content := "elasticsearch:" + renderAgentTaskElasticsearchConfig(
 		"cluster-1_node-1",
-		"cluster-1",
-		"Quartz: primary #1",
 		"uuid:cluster",
-		"node:uuid",
 		"8.13.4",
 		"easysearch",
 		"https://192.168.3.8:9200",
 		"agent-user",
 		"$[[keystore.cluster-1_password]]",
+	) + "\npipeline:" + renderAgentTaskPipelineConfig(
+		"cluster-1_node-1",
+		"cluster-1",
+		"Quartz: primary #1",
+		"uuid:cluster",
 		false,
 		true,
 		`C:\Program Files\Agent\logs`,
@@ -32,27 +34,62 @@ func TestRenderAgentTaskTemplateConfigProducesValidYAML(t *testing.T) {
 		t.Fatalf("expected generated yaml to parse, got error: %v\n%s", err, content)
 	}
 
-	var templates config2.TemplateConfigs
-	if err := cfg.Unpack(&templates); err != nil {
+	var parsed struct {
+		Elasticsearch []struct {
+			ID          string   `config:"id"`
+			ClusterUUID string   `config:"cluster_uuid"`
+			Endpoints   []string `config:"endpoints"`
+			BasicAuth   struct {
+				Password string `config:"password"`
+			} `config:"basic_auth"`
+		} `config:"elasticsearch"`
+		Pipeline []struct {
+			Name      string `config:"name"`
+			Processor []struct {
+				NodeStats struct {
+					Labels struct {
+						ClusterName string `config:"cluster_name"`
+					} `config:"labels"`
+				} `config:"es_node_stats"`
+				Logs struct {
+					LogsPath string `config:"logs_path"`
+				} `config:"es_logs_processor"`
+			} `config:"processor"`
+		} `config:"pipeline"`
+	}
+	if err := cfg.Unpack(&parsed); err != nil {
 		t.Fatalf("expected generated yaml to unpack, got error: %v", err)
 	}
 
-	if len(templates.Templates) != 1 {
-		t.Fatalf("expected 1 template, got %d", len(templates.Templates))
+	if len(parsed.Elasticsearch) != 1 {
+		t.Fatalf("expected 1 elasticsearch config, got %d", len(parsed.Elasticsearch))
 	}
-
-	vars := templates.Templates[0].Variable
-	if got := vars["CLUSTER_NAME"]; got != "Quartz: primary #1" {
-		t.Fatalf("expected cluster name to round-trip, got %#v", got)
+	if got := parsed.Elasticsearch[0].ID; got != "cluster-1_node-1" {
+		t.Fatalf("expected elasticsearch id to round-trip, got %#v", got)
 	}
-	if got := vars["NODE_LOGS_PATH"]; got != `C:\Program Files\Agent\logs` {
-		t.Fatalf("expected logs path to round-trip, got %#v", got)
+	if got := parsed.Elasticsearch[0].ClusterUUID; got != "uuid:cluster" {
+		t.Fatalf("expected cluster uuid to round-trip, got %#v", got)
 	}
-	if got := vars["CLUSTER_PASSWORD"]; got != "$[[keystore.cluster-1_password]]" {
+	if got := parsed.Elasticsearch[0].BasicAuth.Password; got != "$[[keystore.cluster-1_password]]" {
 		t.Fatalf("expected password placeholder to round-trip, got %#v", got)
 	}
-	if !strings.Contains(content, `CLUSTER_ENDPOINT: "https://192.168.3.8:9200"`) {
+	if len(parsed.Elasticsearch[0].Endpoints) != 1 || parsed.Elasticsearch[0].Endpoints[0] != "https://192.168.3.8:9200" {
+		t.Fatalf("expected single endpoint array, got %#v", parsed.Elasticsearch[0].Endpoints)
+	}
+	if len(parsed.Pipeline) != 2 {
+		t.Fatalf("expected 2 pipelines, got %d", len(parsed.Pipeline))
+	}
+	if got := parsed.Pipeline[0].Processor[0].NodeStats.Labels.ClusterName; got != "Quartz: primary #1" {
+		t.Fatalf("expected cluster name to round-trip, got %#v", got)
+	}
+	if got := parsed.Pipeline[1].Processor[0].Logs.LogsPath; got != `C:\Program Files\Agent\logs` {
+		t.Fatalf("expected logs path to round-trip, got %#v", got)
+	}
+	if !strings.Contains(content, `endpoints: ["https://192.168.3.8:9200"]`) {
 		t.Fatalf("expected endpoint string to be quoted safely, got: %s", content)
+	}
+	if strings.Contains(content, "configs.template:") {
+		t.Fatalf("expected generated config to be fully rendered, got: %s", content)
 	}
 }
 

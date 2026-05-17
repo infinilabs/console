@@ -245,6 +245,59 @@ function install_binary() {
   cd "${install_dir}" && rm -rf "${tmp_dir}" && echo ""
 }
 
+function install_certs() {
+  ca_crt="{{ca_crt}}"
+  client_crt="{{client_crt}}"
+  client_key="{{client_key}}"
+
+  mkdir -p ${install_dir}/config
+  echo "[gateway] waiting generate certs"
+  echo -e "${ca_crt}" > ${install_dir}/config/ca.crt
+  echo -e "${client_crt}" > ${install_dir}/config/client.crt
+  echo -e "${client_key}" > ${install_dir}/config/client.key
+}
+
+function install_config() {
+  echo "[gateway] waiting generate config"
+  port={{port}}
+  console_endpoint="{{console_endpoint}}"
+  server=${register_server:-$console_endpoint}
+  echo "[gateway] gateway api listening port $port, will sync configs from console endpoint [ $server ]"
+  cat <<EOF > ${install_dir}/gateway.yml
+configs.auto_reload: true
+
+env:
+  API_BINDING: "0.0.0.0:${port}"
+
+path.data: "${install_dir}/data"
+path.logs: "${install_dir}/log"
+path.configs: "${install_dir}/config"
+
+api:
+  enabled: true
+  network:
+    binding: \$[[env.API_BINDING]]
+
+configs:
+  managed: true
+  panic_on_config_error: false
+  interval: "10s"
+  servers:
+    - "${server}"
+  max_backup_files: 5
+  soft_delete: false
+  tls:
+    enabled: true
+    cert_file: "config/client.crt"
+    key_file: "config/client.key"
+    ca_file: "config/ca.crt"
+    skip_insecure_verify: true
+
+node:
+  major_ip_pattern: ".*"
+EOF
+}
+
 function main() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -274,13 +327,15 @@ function main() {
   check_dir
   check_platform
   install_binary
+  install_certs
+  install_config
 
   echo ""
   echo "Installation complete. [${program_name}] is ready to use!"
   echo ""
   echo ""
   echo "----------------------------------------------------------------"
-  echo "cd ${install_dir} && ./gateway-${file_ext%%.*}"
+  echo "cd ${install_dir} && ./gateway-${file_ext%%.*} -config gateway.yml"
   echo "----------------------------------------------------------------"
   echo ""
   echo ""

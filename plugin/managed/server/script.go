@@ -76,6 +76,7 @@ type gatewaySetupConfig struct {
 	DownloadURL     string `config:"download_url"`
 	Version         string `config:"version"`
 	ConsoleEndpoint string `config:"console_endpoint"`
+	Port            string `config:"port"`
 }
 
 func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -386,6 +387,15 @@ func (h *APIHandler) getGatewayInstallScript(w http.ResponseWriter, req *http.Re
 		return
 	}
 
+	agCfg := common.GetAgentConfig()
+	caCert, clientCertPEM, clientKeyPEM, err := common.GenerateServerCert(agCfg.Setup.CACertFile, agCfg.Setup.CAKeyFile)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	installVersion := h.GetParameterOrDefault(req, "version", strings.TrimSpace(gwCfg.Setup.Version))
 	scriptTplPath := path.Join(global.Env().GetConfigDir(), gatewayInstallScriptTemplate)
 	buf, err := os.ReadFile(scriptTplPath)
 	if err != nil {
@@ -402,9 +412,19 @@ func (h *APIHandler) getGatewayInstallScript(w http.ResponseWriter, req *http.Re
 		log.Error(err)
 		return
 	}
+
+	port := strings.TrimSpace(gwCfg.Setup.Port)
+	if port == "" {
+		port = "2900"
+	}
 	_, err = tpl.Execute(w, map[string]interface{}{
-		"base_url": downloadURL,
-		"version":  strings.TrimSpace(gwCfg.Setup.Version),
+		"base_url":         downloadURL,
+		"console_endpoint": consoleEndpoint,
+		"client_crt":       clientCertPEM,
+		"client_key":       clientKeyPEM,
+		"ca_crt":           caCert,
+		"port":             port,
+		"version":          installVersion,
 	})
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)

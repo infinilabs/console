@@ -298,6 +298,28 @@ node:
 EOF
 }
 
+function uninstall_service() {
+  gateway_svc=${install_dir}/${program_name}-${file_ext%%.*}
+  chmod 755 $gateway_svc
+
+  macos_svc=/Library/LaunchDaemons/gateway.plist
+  linux_svc=/etc/systemd/system/gateway.service
+
+  if [[ -f "$linux_svc" || -f "$macos_svc" ]]; then
+    echo "[gateway] waiting service stop & uninstall for exist gateway"
+    (cd "${install_dir}" && $gateway_svc -service stop &>/dev/null)
+    (cd "${install_dir}" && $gateway_svc -service uninstall &>/dev/null)
+  fi
+}
+
+function install_service() {
+  gateway_svc=${install_dir}/${program_name}-${file_ext%%.*}
+  chmod 755 $gateway_svc
+  echo "[gateway] waiting service install & start"
+  (cd "${install_dir}" && $gateway_svc -service install &>/dev/null)
+  (cd "${install_dir}" && $gateway_svc -service start &>/dev/null)
+}
+
 function main() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -329,13 +351,13 @@ function main() {
   install_binary
   install_certs
   install_config
+  uninstall_service
+  install_service
 
-  echo ""
-  echo "Installation complete. [${program_name}] is ready to use!"
   echo ""
   echo ""
   echo "----------------------------------------------------------------"
-  echo "cd ${install_dir} && ./gateway-${file_ext%%.*} -config gateway.yml"
+  echo "Congratulations, gateway install success!"
   echo "----------------------------------------------------------------"
   echo ""
   echo ""

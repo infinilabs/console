@@ -102,7 +102,11 @@ func TestGatewayInstallTemplateBootstrapsManagedConfig(t *testing.T) {
 		`panic_on_config_error: false`,
 		`    - "${server}"`,
 		`cert_file: "config/client.crt"`,
-		`echo "cd ${install_dir} && ./gateway-${file_ext%%.*} -config gateway.yml"`,
+		`macos_svc=/Library/LaunchDaemons/gateway.plist`,
+		`linux_svc=/etc/systemd/system/gateway.service`,
+		`(cd "${install_dir}" && $gateway_svc -service install &>/dev/null)`,
+		`(cd "${install_dir}" && $gateway_svc -service start &>/dev/null)`,
+		`Congratulations, gateway install success!`,
 	}
 
 	for _, snippet := range expectedSnippets {

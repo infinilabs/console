@@ -20,7 +20,10 @@ export default connect()((props) => {
     const newSelectedCluster = cloneDeep(selectedCluster);
     const index = newSelectedCluster.findIndex((item) => item.id === values.id);
     if (index !== -1) {
-      newSelectedCluster[index] = values;
+      newSelectedCluster[index] = {
+        ...newSelectedCluster[index],
+        ...values,
+      };
       setSelectedCluster(newSelectedCluster);
     }
     dispatch({

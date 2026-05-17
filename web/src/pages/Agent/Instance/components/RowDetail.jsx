@@ -221,7 +221,7 @@ export const AgentRowDetail = ({ agentID, t }) => {
         title: formatMessage({ id: "table.field.actions" }),
         width: 100,
         render: (text, record) => (
-          <div className={styles.cellWrap}>
+          <div className={styles.actionWrap}>
             {/* <Popconfirm
                 title="Sure to delete?"
                 onConfirm={() => onDeleteClick(record.id, agentID)}
@@ -246,7 +246,7 @@ export const AgentRowDetail = ({ agentID, t }) => {
                           })
                         }
                       >
-                        <Button style={{padding: 0}} type="link" loading={btnLoading}>
+                        <Button style={{ padding: 0 }} type="link" loading={btnLoading}>
                           {formatMessage({ id: "agent.instance.button.revoke" })}
                         </Button>
                       </Popconfirm>

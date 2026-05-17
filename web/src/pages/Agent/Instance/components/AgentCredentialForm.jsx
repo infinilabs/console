@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Button, Form, Input, Select, Row, Col, Tooltip } from "antd";
+import { Button, Form, Input, Select, Tooltip } from "antd";
 import { formatMessage } from "umi/locale";
 
 import useFetch from "@/lib/hooks/use_fetch";
@@ -102,8 +102,8 @@ export default (props) => {
             },
           ],
         })(
-          <Row gutter={8}>
-            <Col span={20}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <Select loading={loading} onChange={onCredentialChange} allowClear>
                 <Select.Option value={MANUAL_VALUE}>
                   {formatMessage({
@@ -116,19 +116,17 @@ export default (props) => {
                   </Select.Option>
                 ))}
               </Select>
-            </Col>
-            <Col span={4}>
-              <Tooltip title={formatMessage({ id: "form.button.refresh" })}>
-                <Button
-                  icon="reload"
-                  onClick={() => run()}
-                  loading={loading}
-                  disabled={!canReadCredential}
-                  style={{ width: "100%" }}
-                />
-              </Tooltip>
-            </Col>
-          </Row>
+            </div>
+            <Tooltip title={formatMessage({ id: "form.button.refresh" })}>
+              <Button
+                icon="reload"
+                onClick={() => run()}
+                loading={loading}
+                disabled={!canReadCredential}
+                style={{ width: 32, minWidth: 32, padding: 0 }}
+              />
+            </Tooltip>
+          </div>
         )}
       </Form.Item>
       {isManual && (

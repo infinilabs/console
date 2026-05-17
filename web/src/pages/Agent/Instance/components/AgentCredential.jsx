@@ -56,20 +56,25 @@ export default Form.create()((props) => {
             id: "app.message.update.success",
           })
         );
-        const res = await request(`/elasticsearch/${record.id}`);
-        if (res?.found) {
-          onAgentCredentialSave(res._source);
-          if (res._source?.agent_credential_id) {
+        const latestRecordResponse = await request(`/elasticsearch/${record.id}`);
+        if (latestRecordResponse?.found) {
+          const nextRecord = {
+            ...record,
+            ...latestRecordResponse._source,
+            id: record.id,
+          };
+          onAgentCredentialSave(nextRecord);
+          if (nextRecord?.agent_credential_id) {
             setIsManual(false);
           }
           form.setFieldsValue({
-            agent_credential_id: res._source?.agent_credential_id
-              ? res._source?.agent_credential_id
-              : res._source?.agent_basic_auth?.username
+            agent_credential_id: nextRecord?.agent_credential_id
+              ? nextRecord?.agent_credential_id
+              : nextRecord?.agent_basic_auth?.username
               ? MANUAL_VALUE
               : undefined,
-            agent_username: res._source.agent_basic_auth?.username,
-            agent_password: res._source.agent_basic_auth?.password,
+            agent_username: nextRecord.agent_basic_auth?.username,
+            agent_password: nextRecord.agent_basic_auth?.password,
           });
         }
       } else {

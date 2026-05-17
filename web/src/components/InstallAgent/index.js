@@ -69,12 +69,6 @@ export default ({autoInit = false}) => {
                                     {formatMessage({ id: "agent.install.tips.intranet.title" })}
                                 </div>
                                 <div>{formatMessage({ id: "agent.install.tips.intranet.desc" })}</div>
-                                <div>
-                                    <code>web.ui.path/agent/stable</code> / <code>.public/agent/stable</code>
-                                </div>
-                                <div>
-                                    <code>agent.setup.download_url</code> / <code>agent.setup.console_endpoint</code>
-                                </div>
                             </div>
                             <div className={styles.content}>
                                 {tokenInfo.script}

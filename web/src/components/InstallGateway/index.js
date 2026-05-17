@@ -67,20 +67,12 @@ export default ({ autoInit = false }) => {
           <div style={{ color: "#565656", marginBottom: 10 }}>
             {formatMessage({ id: "gateway.guide.quick_install.desc" })}
           </div>
-           <div style={intranetNoticeStyle}>
-             <div style={{ color: "#101010", fontWeight: 500, marginBottom: 4 }}>
-               {formatMessage({ id: "gateway.guide.intranet.title" })}
-             </div>
-             <div>{formatMessage({ id: "gateway.guide.intranet.desc" })}</div>
-             <div>
-               <code>web.ui.path/gateway/stable</code> /{" "}
-               <code>.public/gateway/stable</code>
-             </div>
-             <div>
-               <code>gateway.setup.download_url</code> /{" "}
-               <code>gateway.setup.console_endpoint</code>
-             </div>
-           </div>
+            <div style={intranetNoticeStyle}>
+              <div style={{ color: "#101010", fontWeight: 500, marginBottom: 4 }}>
+                {formatMessage({ id: "gateway.guide.intranet.title" })}
+              </div>
+              <div>{formatMessage({ id: "gateway.guide.intranet.desc" })}</div>
+            </div>
           <div style={shellContainerStyle}>
             {tokenInfo.script}
             <CopyToClipboard text={tokenInfo.script}>

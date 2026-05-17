@@ -229,9 +229,9 @@ function install_binary() {
   cd "$tmp_dir"
 
   if command -v curl >/dev/null 2>&1; then
-    curl -# -LO "$download_url"
+    curl -k -# -LO "$download_url"
   elif command -v wget >/dev/null 2>&1; then
-    wget -q -nc --show-progress --progress=bar:force:noscroll "$download_url"
+    wget --no-check-certificate -q -nc --show-progress --progress=bar:force:noscroll "$download_url"
   else
     echo "Error: Could not find curl or wget, Please install wget or curl in advance." >&2; exit 1;
   fi

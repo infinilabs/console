@@ -165,14 +165,9 @@ agent:
   setup:
     version: 1.30.3-2407
 
-#gateway:
-#  setup:
-#    # Optional external mirror. By default Console serves packages from web.ui.path/gateway/stable
-#    # (the default UI path is .public, so files can be placed under .public/gateway/stable).
-#    download_url: "https://release.infinilabs.com/gateway/stable"
-#    version: 1.0.0-0000
-#    # Optional when the target host must use a different Console address than the current page.
-#    console_endpoint: $[[env.INFINI_CONSOLE_ENDPOINT]]
+gateway:
+  setup:
+   version: 1.30.3-2407
 
 http_client:
   default:

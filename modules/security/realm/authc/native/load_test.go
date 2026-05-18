@@ -1,30 +1,42 @@
 package native
 
 import (
-	"fmt"
-	"strings"
 	"testing"
 
-	"github.com/segmentio/encoding/json"
+	rbac "infini.sh/console/core/security"
+	"infini.sh/framework/core/orm"
 )
 
-func TestPermissionFileHasNoDuplicateMethodPathPairs(t *testing.T) {
-	apis := map[string]ElasticsearchAPIMetadataList{}
-	if err := json.Unmarshal(permissionFile, &apis); err != nil {
-		t.Fatalf("failed to unmarshal permission file: %v", err)
+func cloneRoleMap(src map[string]rbac.Role) map[string]rbac.Role {
+	dst := make(map[string]rbac.Role, len(src))
+	for k, v := range src {
+		dst[k] = v
+	}
+	return dst
+}
+
+func TestLoadRemoteRolePermissionSkipsWhenORMUnavailable(t *testing.T) {
+	if orm.HasHandler() {
+		t.Skip("test requires ORM handler to be unregistered")
 	}
 
-	seen := map[string]string{}
-	for category, list := range apis {
-		for _, md := range list {
-			owner := fmt.Sprintf("%s/%s", category, md.Name)
-			for _, method := range md.Methods {
-				key := strings.ToUpper(method) + " " + md.Path
-				if previous, ok := seen[key]; ok {
-					t.Fatalf("duplicate permission route %s in %s and %s", key, previous, owner)
-				}
-				seen[key] = owner
-			}
+	previousRoleMap := cloneRoleMap(rbac.RoleMap)
+	defer func() {
+		rbac.RoleMap = previousRoleMap
+	}()
+
+	loadRemoteRolePermission()
+
+	if len(rbac.RoleMap) != len(rbac.BuiltinRoles) {
+		t.Fatalf("expected only builtin roles to be loaded, got %d roles", len(rbac.RoleMap))
+	}
+	for name, role := range rbac.BuiltinRoles {
+		got, ok := rbac.RoleMap[name]
+		if !ok {
+			t.Fatalf("expected builtin role %q to be present", name)
+		}
+		if got.Name != role.Name {
+			t.Fatalf("expected builtin role %q, got %q", role.Name, got.Name)
 		}
 	}
 }

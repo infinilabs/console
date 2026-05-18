@@ -132,6 +132,7 @@ func TestGatewayMigrationTemplateRendersAsChildConfig(t *testing.T) {
 	assertContainsAll(t, content,
 		`binding: 0.0.0.0:8082`,
 		`password: "$[[keystore.SYSTEM_CLUSTER_INGEST_PASSWORD]]"`,
+		`name: logging-server`,
 		`queue_name_prefix: console_gateway_migration_async_bulk`,
 		`name: console_gateway_migration_async_ingest_bulk_requests`,
 		`name: console_gateway_migration_request_logging_merge`,

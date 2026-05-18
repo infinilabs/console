@@ -8,6 +8,15 @@ elasticsearch:
       username: "$[[SETUP_AGENT_USERNAME]]"
       password: "$[[keystore.$[[SETUP_AGENT_PASSWORD_KEY]]]]"
     metadata_cache_enabled: false
+  - name: logging-server
+    enabled: true
+    endpoints: $[[SETUP_ENDPOINTS]]
+    discovery:
+      enabled: false
+    basic_auth:
+      username: "$[[SETUP_AGENT_USERNAME]]"
+      password: "$[[keystore.$[[SETUP_AGENT_PASSWORD_KEY]]]]"
+    metadata_cache_enabled: false
 
 entry:
   - name: console_gateway_migration_entry

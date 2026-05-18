@@ -143,7 +143,10 @@ func releaseSetupInitialization() {
 }
 
 func EnsureSystemClusterBasicAuth() error {
-	sysClusterID := global.MustLookupString(elastic.GlobalSystemElasticsearchID)
+	sysClusterID, ok := lookupSystemClusterID()
+	if !ok {
+		return nil
+	}
 	conf := elastic.GetConfigNoPanic(sysClusterID)
 	if conf == nil || (conf.BasicAuth != nil && conf.BasicAuth.Username != "") || conf.CredentialID == "" {
 		return nil
@@ -165,6 +168,15 @@ func EnsureSystemClusterBasicAuth() error {
 	return nil
 }
 
+func lookupSystemClusterID() (string, bool) {
+	value := global.Lookup(elastic.GlobalSystemElasticsearchID)
+	sysClusterID, ok := value.(string)
+	if !ok || sysClusterID == "" {
+		return "", false
+	}
+	return sysClusterID, true
+}
+
 // Start initializes the module and registers a change event for credentials.
 func (module *Module) Start() error {
 	if !global.Env().SetupRequired() {
@@ -176,8 +188,14 @@ func (module *Module) Start() error {
 		if cred == nil {
 			return
 		}
-		sysClusterID := global.MustLookupString(elastic.GlobalSystemElasticsearchID)
+		sysClusterID, ok := lookupSystemClusterID()
+		if !ok {
+			return
+		}
 		conf := elastic.GetConfig(sysClusterID)
+		if conf == nil {
+			return
+		}
 		if conf.CredentialID != cred.ID {
 			return
 		}

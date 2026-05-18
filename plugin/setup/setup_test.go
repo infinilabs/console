@@ -31,6 +31,8 @@ import (
 	"testing"
 
 	config2 "infini.sh/framework/core/config"
+	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/global"
 )
 
 func TestInvokeSetupCallbackRunsOnlyOnce(t *testing.T) {
@@ -75,6 +77,17 @@ func TestAcquireSetupInitialization(t *testing.T) {
 
 	if !acquireSetupInitialization() {
 		t.Fatal("expected acquire to succeed after release")
+	}
+}
+
+func TestEnsureSystemClusterBasicAuthSkipsWhenSystemClusterUnavailable(t *testing.T) {
+	previous := global.Lookup(elastic.GlobalSystemElasticsearchID)
+	defer global.Register(elastic.GlobalSystemElasticsearchID, previous)
+
+	global.Register(elastic.GlobalSystemElasticsearchID, "")
+
+	if err := EnsureSystemClusterBasicAuth(); err != nil {
+		t.Fatalf("expected nil error when system cluster id is unavailable, got %v", err)
 	}
 }
 

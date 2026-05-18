@@ -234,20 +234,24 @@ func main() {
 				}
 			}
 
-			task1.RunWithinGroup("initialize_alerting", func(ctx context.Context) error {
-				err := alerting2.InitTasks()
-				if err != nil {
-					log.Errorf("init alerting task error: %v", err)
-				}
-				return err
-			})
-			task1.RunWithinGroup("initialize_email_server", func(ctx context.Context) error {
-				err := email.InitEmailServer()
-				if err != nil {
-					log.Errorf("init email server error: %v", err)
-				}
-				return err
-			})
+			if orm.HasHandler() {
+				task1.RunWithinGroup("initialize_alerting", func(ctx context.Context) error {
+					err := alerting2.InitTasks()
+					if err != nil {
+						log.Errorf("init alerting task error: %v", err)
+					}
+					return err
+				})
+				task1.RunWithinGroup("initialize_email_server", func(ctx context.Context) error {
+					err := email.InitEmailServer()
+					if err != nil {
+						log.Errorf("init email server error: %v", err)
+					}
+					return err
+				})
+			} else {
+				log.Warn("skip alerting and email initialization, ORM handler is not registered")
+			}
 			api.RegisterAppSetting("system_cluster", getSystemClusterAppSetting)
 		}
 

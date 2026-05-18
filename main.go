@@ -34,7 +34,6 @@ import (
 	"infini.sh/framework/core/api"
 	"infini.sh/framework/core/host"
 	model2 "infini.sh/framework/core/model"
-	"infini.sh/framework/core/util"
 	elastic2 "infini.sh/framework/modules/elastic"
 	_ "time/tzdata"
 
@@ -168,17 +167,20 @@ func main() {
 			if err := setup1.EnsureSystemClusterBasicAuth(); err != nil {
 				panic(fmt.Errorf("failed to hydrate system cluster auth: %v", err))
 			}
-			sysClusterID := global.MustLookupString(elastic.GlobalSystemElasticsearchID)
-			client := elastic.GetClient(sysClusterID)
-			health, err := client.ClusterHealth(context.Background())
-			if err != nil {
-				panic(fmt.Errorf("failed to get system cluster health: %v", err))
-			}
-			if health != nil && health.Status == "red" {
-				panic(fmt.Errorf("system cluster health status is [red], please fix the cluster before starting"))
-			}
+			client, ok := getSystemClusterClient()
+			if !ok {
+				log.Warn("skip system cluster post-initialization, system cluster is not available")
+			} else {
+				health, err := client.ClusterHealth(context.Background())
+				if err != nil {
+					panic(fmt.Errorf("failed to get system cluster health: %v", err))
+				}
+				if health != nil && health.Status == "red" {
+					panic(fmt.Errorf("system cluster health status is [red], please fix the cluster before starting"))
+				}
 
-			elastic2.InitTemplate(false)
+				elastic2.InitTemplate(false)
+			}
 
 		if startDeferredModules {
 				for k, v := range modules {
@@ -201,23 +203,7 @@ func main() {
 				}
 				return err
 			})
-			api.RegisterAppSetting("system_cluster", func() interface{} {
-				client := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
-				settings, err := client.GetClusterSettings(nil)
-				if err != nil {
-					log.Errorf("failed to get cluster settings with system cluster: %v", err)
-					return nil
-				}
-
-				rollupEnabled, _ := util.GetMapValueByKeys([]string{"persistent", "rollup", "search", "enabled"}, settings)
-				rollupEnabledValue := false
-				if v, ok := rollupEnabled.(string); ok && v == "true" {
-					rollupEnabledValue = true
-				}
-				return map[string]interface{}{
-					"rollup_enabled": rollupEnabledValue,
-				}
-			})
+			api.RegisterAppSetting("system_cluster", getSystemClusterAppSetting)
 		}
 
 		if !global.Env().SetupRequired() {
@@ -229,9 +215,13 @@ func main() {
 		}
 
 		if !global.Env().SetupRequired() {
-			err := bootstrapRequirementCheck()
-			if err != nil {
-				panic(err)
+			if _, ok := lookupSystemClusterID(); !ok {
+				log.Warn("skip bootstrap requirement check, system cluster is not available")
+			} else {
+				err := bootstrapRequirementCheck()
+				if err != nil {
+					panic(err)
+				}
 			}
 		}
 

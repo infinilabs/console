@@ -34,6 +34,7 @@ import (
 	"infini.sh/framework/core/api"
 	"infini.sh/framework/core/host"
 	model2 "infini.sh/framework/core/model"
+	"infini.sh/framework/core/util"
 	elastic2 "infini.sh/framework/modules/elastic"
 	_ "time/tzdata"
 
@@ -67,6 +68,50 @@ import (
 
 var appConfig *config.AppConfig
 var appUI *UI
+
+func lookupSystemClusterID() (string, bool) {
+	value := global.Lookup(elastic.GlobalSystemElasticsearchID)
+	systemID, ok := value.(string)
+	if !ok || systemID == "" {
+		return "", false
+	}
+	return systemID, true
+}
+
+func getSystemClusterClient() (elastic.API, bool) {
+	systemID, ok := lookupSystemClusterID()
+	if !ok {
+		return nil, false
+	}
+
+	client := elastic.GetClientNoPanic(systemID)
+	if client == nil {
+		return nil, false
+	}
+	return client, true
+}
+
+func getSystemClusterAppSetting() interface{} {
+	client, ok := getSystemClusterClient()
+	if !ok {
+		return nil
+	}
+
+	settings, err := client.GetClusterSettings(nil)
+	if err != nil {
+		log.Errorf("failed to get cluster settings with system cluster: %v", err)
+		return nil
+	}
+
+	rollupEnabled, _ := util.GetMapValueByKeys([]string{"persistent", "rollup", "search", "enabled"}, settings)
+	rollupEnabledValue := false
+	if v, ok := rollupEnabled.(string); ok && v == "true" {
+		rollupEnabledValue = true
+	}
+	return map[string]interface{}{
+		"rollup_enabled": rollupEnabledValue,
+	}
+}
 
 func main() {
 	terminalHeader := ("\n")

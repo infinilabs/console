@@ -31,6 +31,7 @@ import (
 	"fmt"
 	log "github.com/cihub/seelog"
 	goversion "github.com/hashicorp/go-version"
+	consoleconfig "infini.sh/console/config"
 	consolecore "infini.sh/console/core"
 	"infini.sh/console/core/security"
 	"infini.sh/console/modules/agent/common"
@@ -63,6 +64,8 @@ const legacyInstallScriptTemplate = "install_legency_agent.tpl"
 const legacyInstallScriptVersion = "1.30.3"
 const installProductAgent = "agent"
 const installProductGateway = "gateway"
+const agentPackageRelativePath = "/agent/stable"
+const gatewayPackageRelativePath = "/gateway/stable"
 const defaultAgentDownloadURL = "https://release.infinilabs.com/agent/stable"
 const defaultGatewayDownloadURL = "https://release.infinilabs.com/gateway/stable"
 const defaultAgentInstallDir = "/infini/agent"
@@ -123,7 +126,7 @@ func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Req
 		return
 	}
 	if strings.TrimSpace(agCfg.Setup.DownloadURL) == "" {
-		log.Warnf("agent.setup.download_url is empty, defaulting to public release mirror: %s", downloadURL)
+		logAutoResolvedDownloadURL("agent", downloadURL, defaultAgentDownloadURL)
 	}
 
 	h.WriteJSON(w, util.MapStr{
@@ -171,7 +174,7 @@ func (h *APIHandler) generateGatewayInstallCommand(w http.ResponseWriter, req *h
 		return
 	}
 	if strings.TrimSpace(gwCfg.Setup.DownloadURL) == "" {
-		log.Warnf("gateway.setup.download_url is empty, defaulting to public release mirror: %s", downloadURL)
+		logAutoResolvedDownloadURL("gateway", downloadURL, defaultGatewayDownloadURL)
 	}
 	h.WriteJSON(w, util.MapStr{
 		"script":     buildGatewayInstallCommand(endpoint, downloadURL, location, installVersion),
@@ -221,19 +224,40 @@ func buildInstallScriptURLForAPI(consoleEndpoint, apiPath, tokenStr, installVers
 }
 
 func resolveAgentDownloadURL(consoleEndpoint, downloadURL string) (string, error) {
-	return resolvePackageDownloadURL(consoleEndpoint, downloadURL, defaultAgentDownloadURL)
+	return resolvePackageDownloadURL(consoleEndpoint, downloadURL, defaultAgentDownloadURL, agentPackageRelativePath)
 }
 
 func resolveGatewayDownloadURL(consoleEndpoint, downloadURL string) (string, error) {
-	return resolvePackageDownloadURL(consoleEndpoint, downloadURL, defaultGatewayDownloadURL)
+	return resolvePackageDownloadURL(consoleEndpoint, downloadURL, defaultGatewayDownloadURL, gatewayPackageRelativePath)
 }
 
-func resolvePackageDownloadURL(_ string, downloadURL, defaultDownloadURL string) (string, error) {
+func resolvePackageDownloadURL(consoleEndpoint, downloadURL, defaultDownloadURL, relativePath string) (string, error) {
 	normalized := strings.TrimRight(strings.TrimSpace(downloadURL), "/")
 	if normalized != "" {
 		return normalized, nil
 	}
+
+	hasSelfHostedPackages, err := consoleconfig.HasSelfHostedPackageFiles(global.Env().SystemConfig.WebAppConfig.UI.LocalPath, strings.TrimPrefix(relativePath, "/"))
+	if err != nil {
+		return "", err
+	}
+	if hasSelfHostedPackages {
+		parsedURL, err := url.Parse(consoleEndpoint)
+		if err != nil {
+			return "", err
+		}
+		parsedURL.Path = path.Join(parsedURL.Path, relativePath)
+		return parsedURL.String(), nil
+	}
 	return defaultDownloadURL, nil
+}
+
+func logAutoResolvedDownloadURL(product, downloadURL, defaultDownloadURL string) {
+	if downloadURL == defaultDownloadURL {
+		log.Warnf("%s.setup.download_url is empty, defaulting to public release mirror: %s", product, downloadURL)
+		return
+	}
+	log.Infof("%s.setup.download_url is empty, using Console self-hosted package path: %s", product, downloadURL)
 }
 
 func resolveInstallDir(installDir, defaultInstallDir string) string {
@@ -248,6 +272,10 @@ func resolveConsoleEndpoint(req *http.Request, configuredEndpoint string) string
 	configuredEndpoint = strings.TrimRight(strings.TrimSpace(configuredEndpoint), "/")
 	if configuredEndpoint != "" {
 		return configuredEndpoint
+	}
+
+	if envEndpoint := strings.TrimRight(strings.TrimSpace(os.Getenv("INFINI_CONSOLE_ENDPOINT")), "/"); envEndpoint != "" {
+		return envEndpoint
 	}
 
 	consoleEndpoint := getDefaultEndpoint(req)

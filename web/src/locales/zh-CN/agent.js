@@ -35,7 +35,7 @@ export default {
     "请复制下方命令并在目标主机上执行，其包含 INFINI Agent 的下载、部署及启动",
   "agent.install.tips.intranet.title": "内网部署说明",
   "agent.install.tips.intranet.desc":
-    "默认会从官方 release 站点下载 Agent 安装包，默认安装目录为 /infini/agent。若是内网或隔离环境，请直接在 console.yml 中配置 agent.setup.download_url；如需改安装目录，也可配置 agent.setup.install_dir，无需手动改命令里的 -u 或 -t。",
+    "默认安装目录为 /infini/agent。若 web.ui.path/agent/stable 下已有安装包，Console 会自动使用自己的 Web 地址下发下载链接；否则回退到官方 release 站点。只有在需要自定义内网镜像时，才需要配置 agent.setup.download_url。",
   "agent.install.tips.title": "提示",
   "agent.install.tips.target": "默认安装目录为",
   "agent.install.tips.version": "如需指定 Agent 版本，可追加",

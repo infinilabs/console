@@ -150,9 +150,10 @@ security:
 
 #agent:
 #  setup:
-#    # Optional package mirror. By default Console uses the official release site.
-#    # For air-gapped environments, point this to your internal mirror, such as
-#    # https://mirror.local/agent/stable or https://console.local/agent/stable.
+#    # Optional package mirror. If files exist under web.ui.path/agent/stable,
+#    # Console automatically uses its own web endpoint as the download source.
+#    # Otherwise it falls back to the official release site. For custom mirrors,
+#    # set an explicit URL such as https://mirror.local/agent/stable.
 #    download_url: "https://release.infinilabs.com/agent/stable"
 #    # Optional install directory. Default is /infini/agent.
 #    install_dir: "/infini/agent"
@@ -168,13 +169,11 @@ security:
 agent:
   setup:
     install_dir: /infini/agent
-    download_url: "https://mirror.local/agent/stable"
     version: 1.30.3-2407
 
 gateway:
   setup:
     install_dir: /infini/gateway
-    download_url: "https://mirror.local/gateway/stable"
     version: 1.30.3-2407
 
 http_client:

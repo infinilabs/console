@@ -63,6 +63,26 @@ func TestGetDefaultEndpoint(t *testing.T) {
 	}
 }
 
+func TestResolveConsoleEndpointPriority(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "http://console.local/instance/_get_install_script", nil)
+
+	t.Run("prefers configured endpoint", func(t *testing.T) {
+		t.Setenv("INFINI_CONSOLE_ENDPOINT", "http://127.0.0.1:9000")
+		got := resolveConsoleEndpoint(req, "https://configured.local:9443")
+		if got != "https://configured.local:9443" {
+			t.Fatalf("expected configured endpoint, got %q", got)
+		}
+	})
+
+	t.Run("uses env endpoint when configured missing", func(t *testing.T) {
+		t.Setenv("INFINI_CONSOLE_ENDPOINT", "http://127.0.0.1:9000")
+		got := resolveConsoleEndpoint(req, "")
+		if got != "http://127.0.0.1:9000" {
+			t.Fatalf("expected env endpoint, got %q", got)
+		}
+	})
+}
+
 func TestBuildGatewayInstallCommand(t *testing.T) {
 	command := buildGatewayInstallCommand(
 		"https://console.local/instance/_get_gateway_install_script?token=abc",
@@ -145,7 +165,7 @@ func TestBuildInstallCommandAlwaysIncludesDownloadURL(t *testing.T) {
 }
 
 func TestResolvePackageDownloadURLUsesOfficialDefault(t *testing.T) {
-	got, err := resolvePackageDownloadURL("https://console.local/console", "", defaultAgentDownloadURL)
+	got, err := resolvePackageDownloadURL("https://console.local/console", "", defaultAgentDownloadURL, agentPackageRelativePath)
 	if err != nil {
 		t.Fatalf("expected nil error, got %v", err)
 	}
@@ -156,11 +176,38 @@ func TestResolvePackageDownloadURLUsesOfficialDefault(t *testing.T) {
 }
 
 func TestResolvePackageDownloadURLHonorsConfiguredOverride(t *testing.T) {
-	got, err := resolvePackageDownloadURL("https://console.local", "https://mirror.local/custom/agent", defaultAgentDownloadURL)
+	got, err := resolvePackageDownloadURL("https://console.local", "https://mirror.local/custom/agent", defaultAgentDownloadURL, agentPackageRelativePath)
 	if err != nil {
 		t.Fatalf("expected nil error, got %v", err)
 	}
 	expected := "https://mirror.local/custom/agent"
+	if got != expected {
+		t.Fatalf("expected %q, got %q", expected, got)
+	}
+}
+
+func TestResolvePackageDownloadURLUsesConsoleSelfHostedPathWhenPackagesExist(t *testing.T) {
+	executablePath, err := os.Executable()
+	if err != nil {
+		t.Fatalf("failed to get executable path: %v", err)
+	}
+	selfHostedDir := filepath.Join(filepath.Dir(executablePath), ".public", "gateway", "stable")
+	if err := os.MkdirAll(selfHostedDir, 0o755); err != nil {
+		t.Fatalf("failed to create self-hosted dir: %v", err)
+	}
+	testFile := filepath.Join(selfHostedDir, "gateway-1.2.3-linux-amd64.tar.gz")
+	if err := os.WriteFile(testFile, []byte("test"), 0o644); err != nil {
+		t.Fatalf("failed to write self-hosted package file: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = os.Remove(testFile)
+	})
+
+	got, err := resolvePackageDownloadURL("https://console.local:9000", "", defaultGatewayDownloadURL, gatewayPackageRelativePath)
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	expected := "https://console.local:9000/gateway/stable"
 	if got != expected {
 		t.Fatalf("expected %q, got %q", expected, got)
 	}

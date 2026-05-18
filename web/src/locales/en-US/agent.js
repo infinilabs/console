@@ -40,7 +40,7 @@ export default {
     "Please copy the command below and execute it on the target host, which includes downloading, deploying and starting INFINI Agent",
   "agent.install.tips.intranet.title": "Intranet deployment",
   "agent.install.tips.intranet.desc":
-    "By default, Agent packages are downloaded from the official release site and installed to /infini/agent. For air-gapped environments, configure agent.setup.download_url in console.yml. To change the install directory, use agent.setup.install_dir instead of editing -u or -t in the generated command.",
+    "The default install directory is /infini/agent. If package files exist under web.ui.path/agent/stable, Console automatically serves them from its own web endpoint; otherwise it falls back to the official release site. Configure agent.setup.download_url only when you need a custom internal mirror.",
   "agent.install.tips.title": "Tips",
   "agent.install.tips.target": "The default install directory is",
   "agent.install.tips.version": "To install a specific Agent version, append",

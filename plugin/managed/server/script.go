@@ -63,8 +63,10 @@ const legacyInstallScriptTemplate = "install_legency_agent.tpl"
 const legacyInstallScriptVersion = "1.30.3"
 const installProductAgent = "agent"
 const installProductGateway = "gateway"
-const agentPackageRelativePath = "/agent/stable"
-const gatewayPackageRelativePath = "/gateway/stable"
+const defaultAgentDownloadURL = "https://release.infinilabs.com/agent/stable"
+const defaultGatewayDownloadURL = "https://release.infinilabs.com/gateway/stable"
+const defaultAgentInstallDir = "/infini/agent"
+const defaultGatewayInstallDir = "/infini/gateway"
 
 var expiredTokenCache = util.NewCacheWithExpireOnAdd(ExpiredIn, 100)
 
@@ -74,6 +76,7 @@ type gatewayConfig struct {
 
 type gatewaySetupConfig struct {
 	DownloadURL     string `config:"download_url"`
+	InstallDir      string `config:"install_dir"`
 	Version         string `config:"version"`
 	ConsoleEndpoint string `config:"console_endpoint"`
 	Port            string `config:"port"`
@@ -95,8 +98,7 @@ func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Req
 		tokenStr string
 	)
 
-	//TODO: get location from request, validate it
-	location := "/opt/agent"
+	location := resolveInstallDir(agCfg.Setup.InstallDir, defaultAgentInstallDir)
 
 	tokenStr = util.GetUUID()
 	t = &Token{
@@ -120,6 +122,9 @@ func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Req
 		log.Error(err)
 		return
 	}
+	if strings.TrimSpace(agCfg.Setup.DownloadURL) == "" {
+		log.Warnf("agent.setup.download_url is empty, defaulting to public release mirror: %s", downloadURL)
+	}
 
 	h.WriteJSON(w, util.MapStr{
 		"script":     buildInstallCommand(endpoint, downloadURL, location, installVersion),
@@ -141,7 +146,7 @@ func (h *APIHandler) generateGatewayInstallCommand(w http.ResponseWriter, req *h
 		return
 	}
 
-	location := "/opt/gateway"
+	location := resolveInstallDir(gwCfg.Setup.InstallDir, defaultGatewayInstallDir)
 	tokenStr := util.GetUUID()
 	t := &Token{
 		CreatedAt: time.Now(),
@@ -164,6 +169,9 @@ func (h *APIHandler) generateGatewayInstallCommand(w http.ResponseWriter, req *h
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
 		return
+	}
+	if strings.TrimSpace(gwCfg.Setup.DownloadURL) == "" {
+		log.Warnf("gateway.setup.download_url is empty, defaulting to public release mirror: %s", downloadURL)
 	}
 	h.WriteJSON(w, util.MapStr{
 		"script":     buildGatewayInstallCommand(endpoint, downloadURL, location, installVersion),
@@ -213,26 +221,27 @@ func buildInstallScriptURLForAPI(consoleEndpoint, apiPath, tokenStr, installVers
 }
 
 func resolveAgentDownloadURL(consoleEndpoint, downloadURL string) (string, error) {
-	return resolvePackageDownloadURL(consoleEndpoint, downloadURL, agentPackageRelativePath)
+	return resolvePackageDownloadURL(consoleEndpoint, downloadURL, defaultAgentDownloadURL)
 }
 
 func resolveGatewayDownloadURL(consoleEndpoint, downloadURL string) (string, error) {
-	return resolvePackageDownloadURL(consoleEndpoint, downloadURL, gatewayPackageRelativePath)
+	return resolvePackageDownloadURL(consoleEndpoint, downloadURL, defaultGatewayDownloadURL)
 }
 
-func resolvePackageDownloadURL(consoleEndpoint, downloadURL, relativePath string) (string, error) {
+func resolvePackageDownloadURL(_ string, downloadURL, defaultDownloadURL string) (string, error) {
 	normalized := strings.TrimRight(strings.TrimSpace(downloadURL), "/")
 	if normalized != "" {
 		return normalized, nil
 	}
+	return defaultDownloadURL, nil
+}
 
-	parsedURL, err := url.Parse(consoleEndpoint)
-	if err != nil {
-		return "", err
+func resolveInstallDir(installDir, defaultInstallDir string) string {
+	normalized := strings.TrimSpace(installDir)
+	if normalized != "" {
+		return normalized
 	}
-
-	parsedURL.Path = path.Join(parsedURL.Path, relativePath)
-	return parsedURL.String(), nil
+	return defaultInstallDir
 }
 
 func resolveConsoleEndpoint(req *http.Request, configuredEndpoint string) string {

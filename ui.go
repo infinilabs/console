@@ -45,13 +45,19 @@ type UI struct {
 }
 
 func (h UI) InitUI() {
+	localPath, err := config.ResolveSelfHostedPackageBasePath(h.Config.UI.LocalPath)
+	if err != nil {
+		log.Errorf("failed to resolve self-hosted package path [%s]: %v", h.Config.UI.LocalPath, err)
+		localPath = h.Config.UI.LocalPath
+	}
+
 	if h.Config.UI.LocalEnabled {
-		if err := config.EnsureSelfHostedPackageDirs(h.Config.UI.LocalPath); err != nil {
-			log.Errorf("failed to prepare self-hosted package directories under [%s]: %v", h.Config.UI.LocalPath, err)
+		if err := config.EnsureSelfHostedPackageDirs(localPath); err != nil {
+			log.Errorf("failed to prepare self-hosted package directories under [%s]: %v", localPath, err)
 		}
 	}
 
-	vfs.RegisterFS(public.StaticFS{StaticFolder: h.Config.UI.LocalPath, TrimLeftPath: h.Config.UI.LocalPath, CheckLocalFirst: h.Config.UI.LocalEnabled, SkipVFS: !h.Config.UI.VFSEnabled})
+	vfs.RegisterFS(public.StaticFS{StaticFolder: localPath, TrimLeftPath: localPath, CheckLocalFirst: h.Config.UI.LocalEnabled, SkipVFS: !h.Config.UI.VFSEnabled})
 
 	basePath := "/" + strings.Trim(global.Env().SystemConfig.WebAppConfig.BasePath, "/")
 

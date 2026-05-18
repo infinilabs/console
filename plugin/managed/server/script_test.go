@@ -77,6 +77,20 @@ func TestBuildGatewayInstallCommand(t *testing.T) {
 	}
 }
 
+func TestResolveInstallDirUsesDefault(t *testing.T) {
+	got := resolveInstallDir("", defaultAgentInstallDir)
+	if got != defaultAgentInstallDir {
+		t.Fatalf("expected %q, got %q", defaultAgentInstallDir, got)
+	}
+}
+
+func TestResolveInstallDirHonorsConfiguredValue(t *testing.T) {
+	got := resolveInstallDir("/srv/custom-agent", defaultAgentInstallDir)
+	if got != "/srv/custom-agent" {
+		t.Fatalf("expected %q, got %q", "/srv/custom-agent", got)
+	}
+}
+
 func TestGatewayInstallTemplateBootstrapsManagedConfig(t *testing.T) {
 	templatePath := filepath.Join("..", "..", "..", "config", "install_gateway.tpl")
 	content, err := os.ReadFile(templatePath)
@@ -119,36 +133,46 @@ func TestGatewayInstallTemplateBootstrapsManagedConfig(t *testing.T) {
 func TestBuildInstallCommandAlwaysIncludesDownloadURL(t *testing.T) {
 	command := buildInstallCommand(
 		"https://console.local/instance/_get_install_script?token=abc",
-		"https://console.local/agent/stable",
+		defaultAgentDownloadURL,
 		"/srv/agent",
 		"1.2.3-4567",
 	)
 
-	expected := `curl -ksSL "https://console.local/instance/_get_install_script?token=abc" |sudo bash -s -- -t "/srv/agent" -u "https://console.local/agent/stable" -v "1.2.3-4567"`
+	expected := `curl -ksSL "https://console.local/instance/_get_install_script?token=abc" |sudo bash -s -- -t "/srv/agent" -u "https://release.infinilabs.com/agent/stable" -v "1.2.3-4567"`
 	if command != expected {
 		t.Fatalf("expected %q, got %q", expected, command)
 	}
 }
 
-func TestResolvePackageDownloadURLUsesConsoleStaticPath(t *testing.T) {
-	got, err := resolvePackageDownloadURL("https://console.local/console", "", agentPackageRelativePath)
+func TestResolvePackageDownloadURLUsesOfficialDefault(t *testing.T) {
+	got, err := resolvePackageDownloadURL("https://console.local/console", "", defaultAgentDownloadURL)
 	if err != nil {
 		t.Fatalf("expected nil error, got %v", err)
 	}
-	expected := "https://console.local/console/agent/stable"
+	expected := defaultAgentDownloadURL
 	if got != expected {
 		t.Fatalf("expected %q, got %q", expected, got)
 	}
 }
 
 func TestResolvePackageDownloadURLHonorsConfiguredOverride(t *testing.T) {
-	got, err := resolvePackageDownloadURL("https://console.local", "https://mirror.local/custom/agent", agentPackageRelativePath)
+	got, err := resolvePackageDownloadURL("https://console.local", "https://mirror.local/custom/agent", defaultAgentDownloadURL)
 	if err != nil {
 		t.Fatalf("expected nil error, got %v", err)
 	}
 	expected := "https://mirror.local/custom/agent"
 	if got != expected {
 		t.Fatalf("expected %q, got %q", expected, got)
+	}
+}
+
+func TestResolveGatewayDownloadURLUsesOfficialDefault(t *testing.T) {
+	got, err := resolveGatewayDownloadURL("https://console.local", "")
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if got != defaultGatewayDownloadURL {
+		t.Fatalf("expected %q, got %q", defaultGatewayDownloadURL, got)
 	}
 }
 

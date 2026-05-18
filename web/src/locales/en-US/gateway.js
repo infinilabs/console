@@ -78,7 +78,7 @@ export default {
     "Please copy the following command and execute it in the local deployment environment, which includes the download, deployment, and startup of INFINI Gateway:",
   "gateway.guide.intranet.title": "Intranet deployment",
   "gateway.guide.intranet.desc":
-    "By default, Gateway packages are read from .public/gateway/stable. If web.ui.path is customized, use the gateway/stable directory under that path instead. Only adjust the related settings when using an external mirror or when the target host must use a different Console address.",
+    "By default, Gateway packages are downloaded from the official release site and installed to /infini/gateway. For air-gapped environments, configure gateway.setup.download_url in console.yml. To change the install directory, use gateway.setup.install_dir instead of editing -u or -d in the generated command.",
   "gateway.guide.shell.copy.success": "Copy succeed!",
   "gateway.guide.tips.title": "Tips:",
   "gateway.guide.tips.version":

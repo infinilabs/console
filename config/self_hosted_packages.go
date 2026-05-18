@@ -7,6 +7,10 @@ import (
 )
 
 func EnsureSelfHostedPackageDirs(basePath string) error {
+	basePath, err := ResolveSelfHostedPackageBasePath(basePath)
+	if err != nil {
+		return err
+	}
 	basePath = strings.TrimSpace(basePath)
 	if basePath == "" {
 		return nil
@@ -22,4 +26,17 @@ func EnsureSelfHostedPackageDirs(basePath string) error {
 	}
 
 	return nil
+}
+
+func ResolveSelfHostedPackageBasePath(basePath string) (string, error) {
+	basePath = strings.TrimSpace(basePath)
+	if basePath == "" || filepath.IsAbs(basePath) {
+		return basePath, nil
+	}
+
+	executablePath, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(filepath.Dir(executablePath), basePath), nil
 }

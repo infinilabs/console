@@ -427,13 +427,17 @@ export default (props) => {
         sideVisible={false}
         sidePlacement="left"
         headerToobarExtra={{
-          getExtra: (props) => [
-            hasAuthority("gateway.instance:all") ? (
-              <Button onClick={() => setInstallVisible(true)}>
-                {formatMessage({ id: "gateway.instance.install.title" })}
-              </Button>
-            ) : null,
-            hasAuthority("gateway.instance:all") ? (
+            getExtra: (props) => [
+              hasAuthority("gateway.instance:all") ? (
+               <Button
+                 type="primary"
+                 style={{ order: -1 }}
+                 onClick={() => setInstallVisible(true)}
+               >
+                 {formatMessage({ id: "gateway.instance.install.title" })}
+               </Button>
+             ) : null,
+              hasAuthority("gateway.instance:all") ? (
               <Button
                 type="primary"
                 icon="plus"

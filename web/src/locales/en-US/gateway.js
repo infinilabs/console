@@ -46,6 +46,7 @@ export default {
   "gateway.instance.menu.task": "Task",
   "gateway.instance.menu.logging": "Logging",
   "gateway.instance.menu.config": "Config",
+  "gateway.task.empty": "No tasks found",
   "gateway.router.column.name": "Name",
   "gateway.router.column.default_flow": "Default Flow",
   "gateway.router.column.tracing_flow": "Tracing Flow",

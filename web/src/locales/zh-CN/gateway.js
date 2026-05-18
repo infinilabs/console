@@ -44,6 +44,7 @@ export default {
   "gateway.instance.menu.task": "任务",
   "gateway.instance.menu.logging": "日志",
   "gateway.instance.menu.config": "配置",
+  "gateway.task.empty": "暂无任务",
   "gateway.router.column.name": "名称",
   "gateway.router.column.default_flow": "默认流程",
   "gateway.router.column.tracing_flow": "追踪流程",

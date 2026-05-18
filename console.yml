@@ -165,17 +165,17 @@ security:
 #    ingest_cluster_credential_id: $[[env.INGEST_CLUSTER_CREDENTIAL_ID]]
 
 # setting version for console select install agent tpl and download agent version
-    agent:
-      setup:
-        install_dir: /infini/agent
-        download_url: "https://mirror.local/agent/stable"
-        version: 1.30.3-2407
+agent:
+  setup:
+    install_dir: /infini/agent
+    download_url: "https://mirror.local/agent/stable"
+    version: 1.30.3-2407
 
-    gateway:
-      setup:
-        install_dir: /infini/gateway
-        download_url: "https://mirror.local/gateway/stable"
-        version: 1.30.3-2407
+gateway:
+  setup:
+    install_dir: /infini/gateway
+    download_url: "https://mirror.local/gateway/stable"
+    version: 1.30.3-2407
 
 http_client:
   default:

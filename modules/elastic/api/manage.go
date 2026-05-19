@@ -677,6 +677,8 @@ func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.
 		return
 	}
 
+	elastic.RemoveHostsByClusterID(id)
+
 	//update config in heap
 	newConf.Source = elastic.ElasticsearchConfigSourceElasticsearch
 	_, err = common.InitElasticInstance(*newConf)

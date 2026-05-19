@@ -471,6 +471,7 @@ export default {
   "app.message.system-tips.no-available-cluster-data-permission":
     "当前没有可用集群，请确保您有集群数据权限",
   "app.message.confirm.delete": "确定要删除？",
+  "app.message.confirm.delete.multiple": "确定要删除这 {count} 项吗？",
   "document.confirm.cancel": "确定要取消？",
   "app.message.warning.invalid.params": "无效的参数",
   "app.message.warning.table.select-row": "请选择表格行",

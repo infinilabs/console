@@ -178,7 +178,7 @@ export default (props) => {
           {hasAuthority("gateway.instance:all") ? (
             <>
               <Popconfirm
-                title="Sure to delete?"
+                title={formatMessage({ id: "app.message.confirm.delete" })}
                 onConfirm={() => onDeleteClick([record.metadata.id])}
               >
                 <a>{formatMessage({ id: "form.button.delete" })}</a>

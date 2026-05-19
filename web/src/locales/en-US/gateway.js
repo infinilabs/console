@@ -52,7 +52,7 @@ export default {
   "gateway.router.column.tracing_flow": "Tracing Flow",
   "gateway.router.column.updated": "Last Updated",
   "gateway.router.search.placeholder": "Type keyword to search",
-  "gateway.router.delete.confirm.title": "Sure to delete?",
+  "gateway.router.delete.confirm.title": "Are you sure you want to delete this item?",
   "gateway.router.btn.new": "New",
   "gateway.router.pagination.total": "{start}-{end} of {total} items",
 

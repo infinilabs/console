@@ -111,7 +111,7 @@ const EntryList = (props) => {
             </Link>
             <Divider type="vertical" />
             <Popconfirm
-              title="Sure to delete?"
+              title={formatMessage({ id: "app.message.confirm.delete" })}
               onConfirm={() => onDeleteClick(record.id)}
             >
               <a>{formatMessage({ id: "form.button.delete" })}</a>

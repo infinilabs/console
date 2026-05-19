@@ -259,7 +259,7 @@ export default () => {
           </a>
           <Divider type="vertical" />
           <Popconfirm
-            title="Sure to delete?"
+            title={formatMessage({ id: "app.message.confirm.delete" })}
             onConfirm={() => onRemove(record.id)}
           >
             <a>

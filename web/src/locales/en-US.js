@@ -146,7 +146,7 @@ export default {
   "system.security.tab.role": "Role",
   "system.security.search.placeholder": "Type keyword to search",
   "system.security.pagination.total": "{start}-{end} of {total} items",
-  "system.security.confirm.delete": "Sure to delete?",
+  "system.security.confirm.delete": "Are you sure you want to delete this item?",
   "system.role.platform.name.required": "Please input name!",
   "system.role.platform.feature_privilege.label": "Feature privileges",
   "system.role.platform.feature_privilege.required":
@@ -478,7 +478,8 @@ export default {
     "There is no available cluster, click OK to automatically jump to System Settings => Cluster Settings",
   "app.message.system-tips.no-available-cluster-data-permission":
     "There is no available cluster, please make sure you have cluster data permission",
-  "app.message.confirm.delete": "Sure to delete?",
+  "app.message.confirm.delete": "Are you sure you want to delete this item?",
+  "app.message.confirm.delete.multiple": "Are you sure you want to delete these {count} items?",
   "document.confirm.cancel": "Sure to cancel?",
   "app.message.warning.table.select-row": "Please select a table row",
   "app.message.warning.invalid.params": "Invalid parameter",

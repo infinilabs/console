@@ -160,10 +160,10 @@ export default withRouter((props) => {
                   </Link>
                   <Divider type="vertical" />
                   <Popconfirm
-                      title={"Sure to delete?"}
+                      title={formatMessage({ id: "app.message.confirm.delete" })}
                       onConfirm={() => onRemove(record.id)}
                   >
-                      <a>Delete</a>
+                      <a>{formatMessage({ id: "form.button.delete" })}</a>
                   </Popconfirm>
                   <Divider type="vertical" />
                   { defaultAction }

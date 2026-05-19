@@ -143,13 +143,13 @@ class Index extends PureComponent {
       title: formatMessage({ id: "table.field.actions" }),
       width: 100,
       render: (text, record) => (
-        <Fragment key={record.id}>
-          {hasAuthority("system.command:all") ? (
-            <Popconfirm
-              title="Sure to delete?"
-              onConfirm={() => this.handleDeleteClick(record.id)}
-            >
-              <a>{formatMessage({ id: "form.button.delete" })}</a>
+            <Fragment key={record.id}>
+              {hasAuthority("system.command:all") ? (
+                <Popconfirm
+                  title={formatMessage({ id: "app.message.confirm.delete" })}
+                  onConfirm={() => this.handleDeleteClick(record.id)}
+                >
+                  <a>{formatMessage({ id: "form.button.delete" })}</a>
             </Popconfirm>
           ) : null}
         </Fragment>

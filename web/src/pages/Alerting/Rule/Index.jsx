@@ -197,15 +197,15 @@ export default (props) => {
 
   const showDeleteConfirm = useCallback((record) => {
     Modal.confirm({
-      title: "Are you sure delete this item?",
+      title: formatMessage({ id: "app.message.confirm.delete" }),
       content: (
         <ul style={{ listStyle: "initial" }}>
           <li>{record.name}</li>
         </ul>
       ),
-      okText: "Yes",
+      okText: formatMessage({ id: "form.button.ok" }),
       okType: "danger",
-      cancelText: "No",
+      cancelText: formatMessage({ id: "form.button.cancel" }),
       onOk() {
         onDelete([record.id]);
       },
@@ -214,7 +214,10 @@ export default (props) => {
 
   const batchDeleteConfirm = useCallback((records) => {
     Modal.confirm({
-      title: `Are you sure delete these ${records.length} items?`,
+      title: formatMessage(
+        { id: "app.message.confirm.delete.multiple" },
+        { count: records.length }
+      ),
       content: (
         <ul style={{ listStyle: "initial" }}>
           {records.map((item) => {
@@ -222,9 +225,9 @@ export default (props) => {
           })}
         </ul>
       ),
-      okText: "Yes",
+      okText: formatMessage({ id: "form.button.ok" }),
       okType: "danger",
-      cancelText: "No",
+      cancelText: formatMessage({ id: "form.button.cancel" }),
       onOk() {
         onDelete(records.map((item) => item.id));
       },

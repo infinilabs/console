@@ -46,6 +46,24 @@ export default (props) => {
   const { data } = useMemo(() => {
     return formatESSearchResult(value);
   }, [value]);
+  const credentialGroupStyle = {
+    display: "flex",
+    alignItems: "stretch",
+    minWidth: 0,
+  };
+  const credentialSelectWrapStyle = {
+    flex: 1,
+    minWidth: 0,
+  };
+  const refreshButtonStyle = {
+    width: 32,
+    minWidth: 32,
+    padding: 0,
+    marginLeft: -1,
+    borderTopLeftRadius: 0,
+    borderBottomLeftRadius: 0,
+    zIndex: 1,
+  };
 
   const credentialOptions = useMemo(() => {
     const options = data.map((item) => ({
@@ -102,8 +120,8 @@ export default (props) => {
             },
           ],
         })(
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={credentialGroupStyle}>
+            <div style={credentialSelectWrapStyle}>
               <Select loading={loading} onChange={onCredentialChange} allowClear>
                 <Select.Option value={MANUAL_VALUE}>
                   {formatMessage({
@@ -123,7 +141,7 @@ export default (props) => {
                 onClick={() => run()}
                 loading={loading}
                 disabled={!canReadCredential}
-                style={{ width: 32, minWidth: 32, padding: 0 }}
+                style={refreshButtonStyle}
               />
             </Tooltip>
           </div>

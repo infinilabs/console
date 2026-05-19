@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Button, Form, Icon, Input, Select, Row, Col, Tooltip } from "antd";
+import { Button, Form, Icon, Input, Select, Tooltip } from "antd";
 import { formatMessage } from "umi/locale";
 import useFetch from "@/lib/hooks/use_fetch";
 import { formatESSearchResult } from "@/lib/elasticsearch/util";
@@ -82,6 +82,30 @@ export default (props) => {
   const { data } = useMemo(() => {
     return formatESSearchResult(value);
   }, [value]);
+  const credentialActionsStyle = {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+  };
+  const credentialGroupStyle = {
+    display: "flex",
+    alignItems: "stretch",
+    flex: 1,
+    minWidth: 0,
+  };
+  const credentialSelectWrapStyle = {
+    flex: 1,
+    minWidth: 0,
+  };
+  const refreshButtonStyle = {
+    width: 32,
+    minWidth: 32,
+    padding: 0,
+    marginLeft: -1,
+    borderTopLeftRadius: 0,
+    borderBottomLeftRadius: 0,
+    zIndex: 1,
+  };
 
   const credentialOptions = useMemo(() => {
     const options = data.map((item) => ({
@@ -141,66 +165,64 @@ export default (props) => {
           </span>
         }
       >
-        <Row>
-          <Col span={16}>
-            {getFieldDecorator("agent_credential_id", {
-              initialValue: initialValue?.agent_credential_id
-                ? initialValue?.agent_credential_id
-                : initialValue?.username
-                ? MANUAL_VALUE
-                : undefined,
-              rules: [
-                {
-                  required: credentialRequired,
-                  message: formatMessage({
-                    id: "cluster.regist.form.verify.required.agent_credential",
-                  }),
-                },
-              ],
-            })(
-              <Select
-                loading={loading}
-                onChange={onCredentialChange}
-                allowClear
-              >
-                {credentialOptions.map((item) => (
-                  <Select.Option key={item.id} value={item.id}>
-                    {item.name}
+        <div style={credentialActionsStyle}>
+          <div style={credentialGroupStyle}>
+            <div style={credentialSelectWrapStyle}>
+              {getFieldDecorator("agent_credential_id", {
+                initialValue: initialValue?.agent_credential_id
+                  ? initialValue?.agent_credential_id
+                  : initialValue?.username
+                  ? MANUAL_VALUE
+                  : undefined,
+                rules: [
+                  {
+                    required: credentialRequired,
+                    message: formatMessage({
+                      id: "cluster.regist.form.verify.required.agent_credential",
+                    }),
+                  },
+                ],
+              })(
+                <Select
+                  loading={loading}
+                  onChange={onCredentialChange}
+                  allowClear
+                >
+                  {credentialOptions.map((item) => (
+                    <Select.Option key={item.id} value={item.id}>
+                      {item.name}
+                    </Select.Option>
+                  ))}
+                  <Select.Option value={MANUAL_VALUE}>
+                    {formatMessage({
+                      id: "cluster.regist.step.connect.credential.manual",
+                    })}
                   </Select.Option>
-                ))}
-                <Select.Option value={MANUAL_VALUE}>
-                  {formatMessage({
-                    id: "cluster.regist.step.connect.credential.manual",
-                  })}
-                </Select.Option>
-              </Select>
-            )}
-          </Col>
-          <Col span={2} offset={1}>
+                </Select>
+              )}
+            </div>
             <Tooltip title={formatMessage({ id: "form.button.refresh" })}>
               <Button
                 icon="reload"
                 onClick={() => run()}
                 loading={loading}
                 disabled={!canReadCredential}
-                style={{ width: "100%" }}
+                style={refreshButtonStyle}
               />
             </Tooltip>
-          </Col>
-          <Col span={4} offset={1}>
-            <Button
-              loading={btnLoading}
-              type="primary"
-              onClick={() => {
-                tryConnect("agent");
-              }}
-            >
-              {formatMessage({
-                id: "cluster.manage.btn.try_connect",
-              })}
-            </Button>
-          </Col>
-        </Row>
+          </div>
+          <Button
+            loading={btnLoading}
+            type="primary"
+            onClick={() => {
+              tryConnect("agent");
+            }}
+          >
+            {formatMessage({
+              id: "cluster.manage.btn.try_connect",
+            })}
+          </Button>
+        </div>
       </Form.Item>
       {isManual && (
         <>

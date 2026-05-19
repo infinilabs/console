@@ -3,6 +3,7 @@ import {
   Input,
   Switch,
   Icon,
+  Tooltip,
   InputNumber,
   Divider,
   Descriptions,
@@ -277,8 +278,26 @@ export class ExtraStep extends React.Component {
               credentialRequired={this.state.agentCredentialRequired}
             />
           ) : (
-            <Form.Item label=" " colon={false}>
-              <div>{formatMessage({ id: "cluster.manage.agent_credential.tip.agentless_skip" })}</div>
+            <Form.Item
+              label={
+                <span>
+                  {formatMessage({
+                    id: "cluster.regist.step.connect.label.agent_credential",
+                  })}
+                  <Tooltip
+                    title={formatMessage({
+                      id: "cluster.manage.agent_credential.tip.agentless_skip",
+                    })}
+                  >
+                    <Icon
+                      type="info-circle"
+                      style={{ marginLeft: 8, color: "#1890ff" }}
+                    />
+                  </Tooltip>
+                </span>
+              }
+            >
+              <span />
             </Form.Item>
           )}
           <Form.Item

@@ -148,11 +148,13 @@
   },
   "overrides": {
     "@antv/gl-matrix": "2.7.1",
+    "size-sensor": "1.0.4",
     "ts-loader": "8.4.0",
     "typescript": "4.9.5"
   },
   "resolutions": {
     "@antv/gl-matrix": "2.7.1",
+    "size-sensor": "1.0.4",
     "react-draggable": "4.4.6",
     "react-resizable": "3.0.5",
     "@antv/l7-component": "2.23.0"

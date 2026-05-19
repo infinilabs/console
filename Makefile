@@ -46,6 +46,16 @@ web-lint:
 	@(cd web && npx eslint . --ext .js,.jsx,.ts,.tsx)
 	@echo "Linting complete."
 
+.PHONY: format format-ci
+format: format-ci
+
+format-ci:
+	@echo "formatting code"
+	@find . -type f -name '*.go' \
+		-not -path './vendor/*' \
+		-not -path './.git/*' \
+		-print0 | xargs -0 gofmt -w
+
 # Build the web app
 build-web:
 	@echo "Building the web app..."

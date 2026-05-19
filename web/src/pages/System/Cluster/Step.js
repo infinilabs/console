@@ -157,10 +157,10 @@ const ClusterStep = ({ dispatch, history, query }) => {
           );
           clusterConfig.location.region =
             clusterConfig.location.region || "default";
-          const newVals = {
-            name: values.name,
-            version: clusterConfig.version,
-            distribution: clusterConfig.distribution,
+            const newVals = {
+              name: values.name,
+              version: clusterConfig.version,
+              distribution: clusterConfig.distribution,
             host: clusterConfig.host,
             hosts: clusterConfig.hosts,
             probe_path: clusterConfig.probe_path,
@@ -182,11 +182,12 @@ const ClusterStep = ({ dispatch, history, query }) => {
               password: values.agent_password,
             },
             description: values.description,
-            enabled: true,
-            monitored: values.monitored,
-            monitor_configs: monitor_configs_new,
-            metadata_configs: metadata_configs_new,
-            discovery: {
+              enabled: true,
+              monitored: values.monitored,
+              metric_collection_mode: values.metric_collection_mode || "agentless",
+              monitor_configs: monitor_configs_new,
+              metadata_configs: metadata_configs_new,
+              discovery: {
               enabled: values.discovery.enabled,
             },
             schema: clusterConfig.isTLS ? "https" : "http",

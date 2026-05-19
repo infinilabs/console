@@ -8,6 +8,7 @@ import (
 
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/model"
+	"infini.sh/framework/core/orm"
 )
 
 func TestGetClusterCredentialDisplayName(t *testing.T) {
@@ -144,6 +145,32 @@ func TestHydrateRuntimeBasicAuthPropagatesGetterError(t *testing.T) {
 	})
 	if !errors.Is(err, wantErr) {
 		t.Fatalf("expected getter error %v, got %v", wantErr, err)
+	}
+}
+
+func TestNewManagedClusterSecurityClientInitializesMetadataForUnregisteredCluster(t *testing.T) {
+	conf := &elastic.ElasticsearchConfig{
+		ORMObjectBase: orm.ORMObjectBase{ID: "cluster-under-test"},
+		Name:          "cluster-under-test",
+		Distribution:  elastic.Easysearch,
+		Version:       "2.2.0",
+		Enabled:       true,
+		Schema:        "http",
+		Host:          "127.0.0.1:9200",
+		Endpoint:      "http://127.0.0.1:9200",
+	}
+	auth := &model.BasicAuth{Username: "admin"}
+
+	_, err := newManagedClusterSecurityClient(conf, auth)
+	if err != nil {
+		t.Fatalf("expected managed client to initialize, got %v", err)
+	}
+
+	defer elastic.RemoveInstance(conf.ID)
+	if meta := elastic.GetMetadata(conf.ID); meta == nil {
+		t.Fatal("expected temporary client metadata to be initialized")
+	} else if meta.Config == nil || meta.Config.ID != conf.ID {
+		t.Fatalf("expected metadata for %q, got %#v", conf.ID, meta.Config)
 	}
 }
 

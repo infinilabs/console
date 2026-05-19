@@ -47,6 +47,7 @@ export default {
   "cluster.manage.metric_collection_mode.confirm.button.ok": "OK",
   "cluster.manage.metric_collection_mode.confirm.button.cancel": "Cancel",
   "cluster.manage.agent_credential.tip.auto_create": "When probe collection mode is enabled, Console automatically creates the low-privilege infini-agent user for metrics and log collection. You can still override it with a custom probe credential below if needed.",
+  "cluster.manage.agent_credential.tip.agentless_skip": "Probe credentials are not needed in Agentless mode. Switch to Agent mode first if you want metrics and logs collected through agents.",
   "cluster.manage.monitor_configs.cluster_health": "Cluster health",
   "cluster.manage.monitor_configs.cluster_stats": "Cluster stats",
   "cluster.manage.monitor_configs.node_stats": "Node stats",

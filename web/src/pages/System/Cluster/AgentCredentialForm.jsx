@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Alert, Button, Form, Input, Select, Row, Col, Tooltip } from "antd";
+import { Button, Form, Icon, Input, Select, Row, Col, Tooltip } from "antd";
 import { formatMessage } from "umi/locale";
 import useFetch from "@/lib/hooks/use_fetch";
 import { formatESSearchResult } from "@/lib/elasticsearch/util";
@@ -122,18 +122,24 @@ export default (props) => {
 
   return (
     <>
-      <Alert
-        style={{ marginBottom: 16 }}
-        showIcon
-        type="info"
-        message={formatMessage({
-          id: "cluster.manage.agent_credential.tip.auto_create",
-        })}
-      />
       <Form.Item
-        label={formatMessage({
-          id: "cluster.regist.step.connect.label.agent_credential",
-        })}
+        label={
+          <span>
+            {formatMessage({
+              id: "cluster.regist.step.connect.label.agent_credential",
+            })}
+            <Tooltip
+              title={formatMessage({
+                id: "cluster.manage.agent_credential.tip.auto_create",
+              })}
+            >
+              <Icon
+                type="info-circle"
+                style={{ marginLeft: 8, color: "#1890ff" }}
+              />
+            </Tooltip>
+          </span>
+        }
       >
         <Row>
           <Col span={16}>

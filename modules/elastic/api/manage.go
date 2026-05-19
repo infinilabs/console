@@ -419,7 +419,14 @@ func newManagedClusterSecurityClient(conf *elastic.ElasticsearchConfig, auth *mo
 	tempConf.CredentialID = ""
 	tempConf.AgentBasicAuth = nil
 	tempConf.AgentCredentialID = ""
-	return common.InitClientWithConfig(tempConf)
+	client, err := common.InitClientWithConfig(tempConf)
+	if err != nil {
+		return nil, err
+	}
+	// The managed Easysearch security bootstrap runs before the new cluster config
+	// is registered globally, so the temporary client must carry its own metadata.
+	elastic.GetOrInitMetadata(&tempConf)
+	return client, nil
 }
 
 func initAgentCollectionUser(client elastic.API, distribution, username, password string) (string, error) {

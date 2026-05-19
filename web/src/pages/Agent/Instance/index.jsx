@@ -251,7 +251,9 @@ const AgentList = (props) => {
                 </Link>
                 <Divider key="d3" type="vertical" />
                 <Popconfirm
-                  title="Sure to delete?"
+                  title={formatMessage({
+                    id: "agent.instance.delete.confirm.title",
+                  })}
                   onConfirm={() => onDeleteClick(record.id)}
                 >
                   <a>{formatMessage({ id: "form.button.delete" })}</a>
@@ -761,7 +763,9 @@ const DiscoverAgent = ({ addSuccessCb }) => {
           {hasAuthority("agent.instance:all") ? (
             <>
               <Popconfirm
-                title="Sure to delete?"
+                title={formatMessage({
+                  id: "agent.instance.delete.confirm.title",
+                })}
                 onConfirm={() => onDeleteClick(record.id)}
               >
                 <a>{formatMessage({ id: "form.button.delete" })}</a>

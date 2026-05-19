@@ -65,6 +65,7 @@ export default {
   "agent.label.agent_credential": "Probe Credential",
   "agent.credential.tip": "No credential required",
   "agent.instance.button.revoke": "Revoke",
+  "agent.instance.delete.confirm.title": "Are you sure you want to delete this agent?",
   "agent.instance.revoke.confirm.title": "Sure to revoke?",
   "agent.instance.clear.title": "Clear Offline Instances",
   "agent.instance.clear.modal.title": "Are you sure you want to clear offline instances?",

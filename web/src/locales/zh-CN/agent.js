@@ -59,6 +59,7 @@ export default {
   "agent.label.agent_credential": "探针凭据",
   "agent.credential.tip": "不需要凭据",
   "agent.instance.button.revoke": "撤销",
+  "agent.instance.delete.confirm.title": "确定要删除这个探针吗？",
   "agent.instance.revoke.confirm.title": "确定要撤销吗？",
   "agent.instance.clear.title": "清理离线实例",
   "agent.instance.clear.modal.title": "您确定要清理离线实例？",

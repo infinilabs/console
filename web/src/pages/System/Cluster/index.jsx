@@ -88,17 +88,32 @@ export default (props) => {
 
   const showDeleteConfirm = useCallback((record) => {
     Modal.confirm({
-      title: "Are you sure delete this item?",
+      title: formatMessage({ id: "cluster.manage.delete.confirm.title" }),
       content: (
         <>
-          <div>Cluster: {record.name}</div>
-          <div>Version: {record.version}</div>
-          <div>Endpoint: {record.endpoint}</div>
+          <div>
+            {formatMessage(
+              { id: "cluster.manage.delete.confirm.cluster" },
+              { name: record.name }
+            )}
+          </div>
+          <div>
+            {formatMessage(
+              { id: "cluster.manage.delete.confirm.version" },
+              { version: record.version }
+            )}
+          </div>
+          <div>
+            {formatMessage(
+              { id: "cluster.manage.delete.confirm.endpoint" },
+              { endpoint: record.endpoint }
+            )}
+          </div>
         </>
       ),
-      okText: "Yes",
+      okText: formatMessage({ id: "form.button.ok" }),
       okType: "danger",
-      cancelText: "No",
+      cancelText: formatMessage({ id: "form.button.cancel" }),
       onOk() {
         onDeleteClick(record.id);
       },

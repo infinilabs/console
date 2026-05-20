@@ -788,7 +788,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 
 			err = orm.Save(nil, alertItem)
 			if err != nil {
-				log.Error(err)
+				log.Errorf("save alert item failed, rule_id=%s, alert_id=%s, state=%s: %v", rule.ID, alertItem.ID, alertItem.State, err)
 			}
 		}
 	}()
@@ -850,9 +850,9 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 				})
 				err = attachTitleMessageToCtx(recoverCfg.Title, recoverCfg.Message, paramsCtx)
 				if err != nil {
-					return err
+					return fmt.Errorf("resolve recovery notification template for rule [%s] error: %w", rule.ID, err)
 				}
-				actionResults, _ := performChannels(recoverCfg.Normal, paramsCtx, false)
+				actionResults, _ := performChannels(rule.ID, "recovery_notification", recoverCfg.Normal, paramsCtx, false)
 				alertItem.RecoverActionResults = actionResults
 				//clear history notification time
 				rule.LastNotificationTime = time.Time{}
@@ -905,7 +905,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 	title, message := rule.GetNotificationTitleAndMessage()
 	err = attachTitleMessageToCtx(title, message, paramsCtx)
 	if err != nil {
-		return err
+		return fmt.Errorf("resolve notification template for rule [%s] error: %w", rule.ID, err)
 	}
 	alertItem.Message = paramsCtx[alerting2.ParamMessage].(string)
 	alertItem.Title = paramsCtx[alerting2.ParamTitle].(string)
@@ -991,7 +991,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		}
 
 		if alertMessage == nil || period > periodDuration {
-			actionResults, _ := performChannels(notifyCfg.Normal, paramsCtx, false)
+			actionResults, _ := performChannels(rule.ID, "notification", notifyCfg.Normal, paramsCtx, false)
 			alertItem.ActionExecutionResults = actionResults
 			//change and save last notification time in local kv store when action error count equals zero
 			rule.LastNotificationTime = time.Now()
@@ -1021,7 +1021,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 					}
 				}
 				if time.Now().Sub(rule.LastEscalationTime.Local()) > periodDuration {
-					actionResults, _ := performChannels(notifyCfg.Escalation, paramsCtx, false)
+					actionResults, _ := performChannels(rule.ID, "escalation", notifyCfg.Escalation, paramsCtx, false)
 					alertItem.EscalationActionResults = actionResults
 					//todo init last escalation time when create task (by last alert item is escalated)
 					rule.LastEscalationTime = time.Now()
@@ -1098,7 +1098,7 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 	}
 	envVariables, err := alerting2.GetEnvVariables()
 	if err != nil {
-		log.Errorf("get env variables error: %v", err)
+		log.Errorf("get env variables error, rule_id=%s: %v", rule.ID, err)
 	}
 	var (
 		min interface{}
@@ -1131,7 +1131,7 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 	}
 	err = util.MergeFields(paramsCtx, extraParams, true)
 	if err != nil {
-		log.Errorf("merge template params error: %v", err)
+		log.Errorf("merge template params error, rule_id=%s: %v", rule.ID, err)
 	}
 	return paramsCtx
 }
@@ -1162,7 +1162,7 @@ func (engine *Engine) Test(rule *alerting.Rule, msgType string) ([]alerting.Acti
 		title, message := rule.GetNotificationTitleAndMessage()
 		err = attachTitleMessageToCtx(title, message, paramsCtx)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("resolve %s template for rule [%s] error: %w", msgType, rule.ID, err)
 		}
 	} else if msgType == "recover_notification" {
 		if rule.RecoveryNotificationConfig == nil {
@@ -1170,7 +1170,7 @@ func (engine *Engine) Test(rule *alerting.Rule, msgType string) ([]alerting.Acti
 		}
 		err = attachTitleMessageToCtx(rule.RecoveryNotificationConfig.Title, rule.RecoveryNotificationConfig.Message, paramsCtx)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("resolve recovery notification template for rule [%s] error: %w", rule.ID, err)
 		}
 	} else {
 		return nil, fmt.Errorf("unkonwn parameter msg type")
@@ -1196,14 +1196,14 @@ func (engine *Engine) Test(rule *alerting.Rule, msgType string) ([]alerting.Acti
 		channels = notifyCfg.Normal
 	}
 	if len(channels) > 0 {
-		actionResults, _ = performChannels(channels, paramsCtx, true)
+		actionResults, _ = performChannels(rule.ID, msgType, channels, paramsCtx, true)
 	} else {
 		return nil, fmt.Errorf("no useable channel")
 	}
 	return actionResults, nil
 }
 
-func performChannels(channels []alerting.Channel, ctx map[string]interface{}, raiseChannelEnabledErr bool) ([]alerting.ActionExecutionResult, int) {
+func performChannels(ruleID string, phase string, channels []alerting.Channel, ctx map[string]interface{}, raiseChannelEnabledErr bool) ([]alerting.ActionExecutionResult, int) {
 	var errCount int
 	var actionResults []alerting.ActionExecutionResult
 	for _, channel := range channels {
@@ -1214,7 +1214,7 @@ func performChannels(channels []alerting.Channel, ctx map[string]interface{}, ra
 		)
 		_, err := common.RetrieveChannel(&channel, raiseChannelEnabledErr)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("retrieve alert channel failed, rule_id=%s, phase=%s, channel_id=%s, channel_name=%s, channel_type=%s: %v", ruleID, phase, channel.ID, channel.Name, channel.Type, err)
 			errCount++
 			errStr = err.Error()
 		} else {
@@ -1223,6 +1223,7 @@ func performChannels(channels []alerting.Channel, ctx map[string]interface{}, ra
 			}
 			resBytes, err, messageBytes = common.PerformChannel(&channel, ctx)
 			if err != nil {
+				log.Errorf("perform alert channel failed, rule_id=%s, phase=%s, channel_id=%s, channel_name=%s, channel_type=%s: %v", ruleID, phase, channel.ID, channel.Name, channel.Type, err)
 				errCount++
 				errStr = err.Error()
 			}
@@ -1243,16 +1244,16 @@ func performChannels(channels []alerting.Channel, ctx map[string]interface{}, ra
 func (engine *Engine) GenerateTask(rule alerting.Rule) func(ctx context.Context) {
 	return func(ctx context.Context) {
 		defer func() {
-			if !global.Env().IsDebug {
+		if !global.Env().IsDebug {
 				if err := recover(); err != nil {
-					log.Error(err)
+					log.Errorf("alert task panic recovered, rule_id=%s, rule_name=%s: %v", rule.ID, rule.Name, err)
 					debug.PrintStack()
 				}
 			}
 		}()
 		err := engine.Do(&rule)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("execute alert rule failed, rule_id=%s, rule_name=%s: %v", rule.ID, rule.Name, err)
 		}
 	}
 }

@@ -116,13 +116,13 @@ func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Req
 	endpoint, err := buildInstallScriptURL(consoleEndpoint, tokenStr, installVersion)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
+		log.Errorf("build agent install script url failed: %v", err)
 		return
 	}
 	downloadURL, err := resolveAgentDownloadURL(consoleEndpoint, agCfg.Setup.DownloadURL)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
+		log.Errorf("resolve agent download url failed: %v", err)
 		return
 	}
 	if strings.TrimSpace(agCfg.Setup.DownloadURL) == "" {
@@ -163,14 +163,14 @@ func (h *APIHandler) generateGatewayInstallCommand(w http.ResponseWriter, req *h
 	endpoint, err := buildInstallScriptURLForAPI(consoleEndpoint, getGatewayInstallScriptAPI, tokenStr, installVersion)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
+		log.Errorf("build gateway install script url failed: %v", err)
 		return
 	}
 
 	downloadURL, err := resolveGatewayDownloadURL(consoleEndpoint, gwCfg.Setup.DownloadURL)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
+		log.Errorf("resolve gateway download url failed: %v", err)
 		return
 	}
 	if strings.TrimSpace(gwCfg.Setup.DownloadURL) == "" {
@@ -205,6 +205,26 @@ func buildGatewayInstallCommand(endpoint, downloadURL, location, installVersion 
 
 func buildInstallScriptURL(consoleEndpoint, tokenStr, installVersion string) (string, error) {
 	return buildInstallScriptURLForAPI(consoleEndpoint, getInstallScriptAPI, tokenStr, installVersion)
+}
+
+func formatBuildVersion(version, buildNumber string) string {
+	version = strings.TrimSpace(version)
+	buildNumber = strings.TrimSpace(buildNumber)
+	if version == "" {
+		return ""
+	}
+	if buildNumber == "" {
+		return version
+	}
+	return fmt.Sprintf("%s-%s", version, buildNumber)
+}
+
+func getDefaultInstallVersion(configuredVersion string) string {
+	configuredVersion = strings.TrimSpace(configuredVersion)
+	if configuredVersion != "" {
+		return configuredVersion
+	}
+	return formatBuildVersion(global.Env().GetVersion(), global.Env().GetBuildNumber())
 }
 
 func buildInstallScriptURLForAPI(consoleEndpoint, apiPath, tokenStr, installVersion string) (string, error) {
@@ -361,12 +381,12 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 	}
 	caCert, clientCertPEM, clientKeyPEM, err := common.GenerateServerCert(agCfg.Setup.CACertFile, agCfg.Setup.CAKeyFile)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("generate agent install certs failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	installVersion := h.GetParameterOrDefault(req, "version", strings.TrimSpace(agCfg.Setup.Version))
+	installVersion := h.GetParameterOrDefault(req, "version", getDefaultInstallVersion(agCfg.Setup.Version))
 	scriptTplFile := installScriptTemplate
 	if shouldUseLegacyInstallScriptTemplate(installVersion) {
 		scriptTplFile = legacyInstallScriptTemplate
@@ -375,7 +395,7 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 	scriptTplPath := path.Join(global.Env().GetConfigDir(), scriptTplFile)
 	buf, err := os.ReadFile(scriptTplPath)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("read agent install script template failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -390,7 +410,7 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 	downloadURL, err := resolveAgentDownloadURL(consoleEndpoint, agCfg.Setup.DownloadURL)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
+		log.Errorf("resolve agent install script download url failed: %v", err)
 		return
 	}
 
@@ -427,16 +447,16 @@ func (h *APIHandler) getGatewayInstallScript(w http.ResponseWriter, req *http.Re
 	agCfg := common.GetAgentConfig()
 	caCert, clientCertPEM, clientKeyPEM, err := common.GenerateServerCert(agCfg.Setup.CACertFile, agCfg.Setup.CAKeyFile)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("generate gateway install certs failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	installVersion := h.GetParameterOrDefault(req, "version", strings.TrimSpace(gwCfg.Setup.Version))
+	installVersion := h.GetParameterOrDefault(req, "version", getDefaultInstallVersion(gwCfg.Setup.Version))
 	scriptTplPath := path.Join(global.Env().GetConfigDir(), gatewayInstallScriptTemplate)
 	buf, err := os.ReadFile(scriptTplPath)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("read gateway install script template failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -446,7 +466,7 @@ func (h *APIHandler) getGatewayInstallScript(w http.ResponseWriter, req *http.Re
 	downloadURL, err := resolveGatewayDownloadURL(consoleEndpoint, gwCfg.Setup.DownloadURL)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
+		log.Errorf("resolve gateway install script download url failed: %v", err)
 		return
 	}
 

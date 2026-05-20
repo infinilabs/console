@@ -111,6 +111,24 @@ func TestResolveInstallDirHonorsConfiguredValue(t *testing.T) {
 	}
 }
 
+func TestFormatBuildVersion(t *testing.T) {
+	if got := formatBuildVersion("1.2.3", "456"); got != "1.2.3-456" {
+		t.Fatalf("expected combined build version, got %q", got)
+	}
+	if got := formatBuildVersion("1.2.3", ""); got != "1.2.3" {
+		t.Fatalf("expected plain version when build number missing, got %q", got)
+	}
+	if got := formatBuildVersion("", "456"); got != "" {
+		t.Fatalf("expected empty version when version missing, got %q", got)
+	}
+}
+
+func TestGetDefaultInstallVersionPrefersConfiguredValue(t *testing.T) {
+	if got := getDefaultInstallVersion("2.0.0-999"); got != "2.0.0-999" {
+		t.Fatalf("expected configured version to win, got %q", got)
+	}
+}
+
 func TestGatewayInstallTemplateBootstrapsManagedConfig(t *testing.T) {
 	templatePath := filepath.Join("..", "..", "..", "config", "install_gateway.tpl")
 	content, err := os.ReadFile(templatePath)

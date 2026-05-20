@@ -9,7 +9,7 @@ function print_usage() {
   echo "Usage: curl -ksSL http://console.local/instance/_get_gateway_install_script?token | sudo bash -s -- [-u url_for_download_program] [-v version_for_program] [-d target_install_dir]"
   echo "Options:"
   echo "  -u, --url <url>             Install Gateway download URL, supports host, package directory, or direct package file URL"
-  echo "  -v, --version <version>     Install Gateway version, default is Console configured version or the latest version from the download source"
+  echo "  -v, --version <version>     Install Gateway version, default is Console configured version, current Console build version, or the latest version from the download source"
   echo "  -d, --install-dir <dir>     Install Gateway target path, default is /opt/gateway"
   exit 1
 }

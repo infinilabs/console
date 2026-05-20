@@ -9,7 +9,7 @@ function print_usage() {
   echo "Usage: curl -sSL http://get.infini.cloud/ | sudo bash -s -- [-u url_for_download_program] [-v version_for_program ] [-t target_install_dir] [-s url_console_lan_adress]"
   echo "Options:"
   echo "  -u, --url <url>             Download url of the program to install which default is http://localhost"
-  echo "  -v, --version <version>     Version of the program to install, default is the Console configured version or the latest version from the download source"
+  echo "  -v, --version <version>     Version of the program to install, default is the Console configured version, current Console build version, or the latest version from the download source"
   echo "  -t, --target <dir>          Target directory of the program install which default is /opt/agent"
   echo "  -s, --server <url>          Server address for Agent to communicate with INFINI Console after install, default is current Console address, can be manually specified"
   exit 1

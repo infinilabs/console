@@ -9,7 +9,7 @@ function print_usage() {
   echo "Usage: curl -ksSL http://$[[CLOUD_ENDPOINT]]/instance/_get_install_script?token | sudo bash -s -- [-u url_for_download_program] [-v version_for_program ] [-t target_install_dir] [-o overwite_flag] [-s url_console_lan_adress]"
   echo "Options:"
   echo "  -u, --url <url>             Install Agent download URL, supports host, package directory, or direct package file URL"
-  echo "  -v, --version <version>     Install Agent version, default is Console configured version or the latest version from the download source"  
+  echo "  -v, --version <version>     Install Agent version, default is Console configured version, current Console build version, or the latest version from the download source"  
   echo "  -t, --target <dir>          Install Agent target path, default is /opt/agent, can be manually specified"
   echo "  -o, --overwrite <bool>      Whether to overwrite existing files during Agent install, default is true, can be manually specified" 
   echo "  -s, --server <url>          Server address for Agent to communicate with INFINI Console after install, default is current Console address, can be manually specified"

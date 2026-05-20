@@ -31,11 +31,13 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
 	"infini.sh/console/core/insight"
 	"infini.sh/console/model/alerting"
+	alerting2 "infini.sh/console/service/alerting"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/modules/elastic/adapter/elasticsearch"
@@ -152,6 +154,49 @@ func TestGenerateAgg(t *testing.T) {
 		Statistic: "p99",
 	})
 	fmt.Println(util.MustToJSON(agg))
+}
+
+func TestAttachTitleMessageToCtxCollapsesBlankLines(t *testing.T) {
+	paramsCtx := map[string]interface{}{
+		"priority":      "critical",
+		"event_id":      "evt-1",
+		"resource_name": "migrator-source",
+		"objects":       []string{"migration-pmc"},
+		"trigger_at":    "2026-05-20 15:00:00",
+		"results": []util.MapStr{
+			{
+				"group_values": []string{"migration-pmc"},
+				"result_value": "92.82gb",
+			},
+		},
+	}
+
+	err := attachTitleMessageToCtx(
+		"Alert: {{.resource_name}}",
+		`- Priority:{{.priority}}
+- EventID: {{.event_id}}
+- Target: {{.resource_name}}-{{.objects}}
+- TriggerAt: {{.trigger_at}}
+            
+{{range .results}}
+Index: {{index .group_values 0}} of Cluster: {{$.resource_name}}, Max Shard Storage: {{.result_value}}
+{{end}}`,
+		paramsCtx,
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got := paramsCtx[alerting2.ParamMessage].(string)
+	if strings.Contains(got, "\n\n\n") {
+		t.Fatalf("expected blank lines to collapse, got %q", got)
+	}
+	if !strings.Contains(got, "Index: migration-pmc of Cluster: migrator-source, Max Shard Storage: 92.82gb") {
+		t.Fatalf("expected rendered content, got %q", got)
+	}
+	if strings.HasSuffix(got, "\n") {
+		t.Fatalf("expected trailing blank lines to be trimmed, got %q", got)
+	}
 }
 
 func TestGeneratePercentilesAggQuery(t *testing.T) {

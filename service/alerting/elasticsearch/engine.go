@@ -1068,13 +1068,37 @@ func attachTitleMessageToCtx(title, message string, paramsCtx map[string]interfa
 	if err != nil {
 		return fmt.Errorf("resolve message template error: %w", err)
 	}
-	paramsCtx[alerting2.ParamMessage] = string(tplBytes)
+	paramsCtx[alerting2.ParamMessage] = normalizeAlertTemplateText(string(tplBytes))
 	tplBytes, err = common.ResolveMessage(title, paramsCtx)
 	if err != nil {
 		return fmt.Errorf("resolve title template error: %w", err)
 	}
-	paramsCtx[alerting2.ParamTitle] = string(tplBytes)
+	paramsCtx[alerting2.ParamTitle] = normalizeAlertTemplateText(string(tplBytes))
 	return nil
+}
+
+func normalizeAlertTemplateText(text string) string {
+	text = strings.ReplaceAll(text, "\r\n", "\n")
+	lines := strings.Split(text, "\n")
+	result := make([]string, 0, len(lines))
+	lastBlank := false
+	for _, line := range lines {
+		line = strings.TrimRight(line, " \t")
+		if strings.TrimSpace(line) == "" {
+			if len(result) == 0 || lastBlank {
+				continue
+			}
+			result = append(result, "")
+			lastBlank = true
+			continue
+		}
+		result = append(result, line)
+		lastBlank = false
+	}
+	for len(result) > 0 && strings.TrimSpace(result[len(result)-1]) == "" {
+		result = result[:len(result)-1]
+	}
+	return strings.Join(result, "\n")
 }
 
 func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult, extraParams map[string]interface{}) map[string]interface{} {

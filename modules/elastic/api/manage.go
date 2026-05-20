@@ -354,6 +354,21 @@ func ensureManagedAgentCollectionCredential(conf *elastic.ElasticsearchConfig, p
 	}
 	username, err = initAgentCollectionUser(client, conf.Distribution, username, password)
 	if err != nil {
+		if shouldFallbackToPlatformCredentialForManagedAgentProvision(err) {
+			if existingCredential != nil {
+				log.Warnf("keep existing managed agent credential for cluster [%s] because auto-provision refresh is unavailable: %v", conf.Name, err)
+				conf.AgentCredentialID = existingCredential.ID
+				conf.AgentBasicAuth = nil
+				conf.NoDefaultAuthForAgent = true
+				return nil
+			}
+
+			log.Warnf("skip managed agent credential auto-provision for cluster [%s], falling back to platform credential: %v", conf.Name, err)
+			conf.AgentCredentialID = ""
+			conf.AgentBasicAuth = nil
+			conf.NoDefaultAuthForAgent = false
+			return nil
+		}
 		return err
 	}
 
@@ -518,6 +533,78 @@ func wrapAgentCollectionProvisionError(distribution, resource string, err error)
 	return fmt.Errorf("failed to create agent collection %s: %w", resource, err)
 }
 
+func shouldFallbackToPlatformCredentialForManagedAgentProvision(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	lower := strings.ToLower(err.Error())
+	return strings.Contains(lower, "does not allow modifying _security/role") ||
+		strings.Contains(lower, "does not allow modifying _security/user")
+}
+
+func applyClusterRuntimeConfig(conf *elastic.ElasticsearchConfig) error {
+	if conf == nil {
+		return nil
+	}
+
+	conf.Source = elastic.ElasticsearchConfigSourceElasticsearch
+	elastic.UpdateConfig(*conf)
+
+	meta := elastic.GetMetadata(conf.ID)
+	if meta == nil {
+		if _, err := common.InitElasticInstance(*conf); err != nil {
+			log.Warn("error on init elasticsearch:", err)
+		}
+		return nil
+	}
+
+	updatedMeta := *meta
+	cfgCopy := *conf
+	updatedMeta.Config = &cfgCopy
+	elastic.SetMetadata(conf.ID, &updatedMeta)
+	return nil
+}
+
+func setClustersMonitored(monitored bool, clusterIDs []string) error {
+	if len(clusterIDs) == 0 {
+		return nil
+	}
+
+	for _, clusterID := range clusterIDs {
+		clusterID = strings.TrimSpace(clusterID)
+		if clusterID == "" {
+			continue
+		}
+
+		conf := &elastic.ElasticsearchConfig{}
+		conf.ID = clusterID
+		exists, err := orm.Get(conf)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			return fmt.Errorf("cluster [%s] not found", clusterID)
+		}
+		if conf.Monitored == monitored {
+			continue
+		}
+
+		conf.Monitored = monitored
+		if err := orm.Update(&orm.Context{Refresh: "wait_for"}, conf); err != nil {
+			return err
+		}
+		if err := hydrateRuntimeBasicAuth(conf); err != nil {
+			return err
+		}
+		if err := applyClusterRuntimeConfig(conf); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func getManagedAgentCollectionFallbackUsername(distribution, username string, err error) (string, bool) {
 	if distribution != elastic.Easysearch {
 		return "", false
@@ -553,6 +640,35 @@ func (h *APIHandler) HandleGetClusterAction(w http.ResponseWriter, req *http.Req
 		return
 	}
 	h.WriteGetOKJSON(w, id, clusterConf)
+}
+
+func (h *APIHandler) HandleEnableClusterMonitoringAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	h.handleSetClusterMonitoringAction(w, req, true)
+}
+
+func (h *APIHandler) HandleDisableClusterMonitoringAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	h.handleSetClusterMonitoringAction(w, req, false)
+}
+
+func (h *APIHandler) handleSetClusterMonitoringAction(w http.ResponseWriter, req *http.Request, monitored bool) {
+	clusterIDs := []string{}
+	if err := h.DecodeJSON(req, &clusterIDs); err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if len(clusterIDs) == 0 {
+		h.WriteJSON(w, util.MapStr{}, http.StatusOK)
+		return
+	}
+
+	if err := setClustersMonitored(monitored, clusterIDs); err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	h.WriteAckOKJSON(w)
 }
 
 func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {

@@ -86,6 +86,37 @@ export default (props) => {
     });
   }, []);
 
+  const onMonitorClick = useCallback(async (ids, actionKey) => {
+    let actionUrl = "";
+    if (actionKey === "enable") {
+      actionUrl = `${ESPrefix}/_enable`;
+    } else if (actionKey === "disable") {
+      actionUrl = `${ESPrefix}/_disable`;
+    }
+    if (!actionUrl || !(ids instanceof Array)) {
+      message.warn(formatMessage({ id: "app.message.warning.invalid.params" }));
+      return;
+    }
+
+    setIsLoading(true);
+    const res = await request(actionUrl, {
+      method: "POST",
+      body: ids,
+    });
+
+    if (res?.acknowledged) {
+      message.success(formatMessage({ id: "app.message.operate.success" }));
+      ref.current?.refresh();
+    } else {
+      message.error(
+        res?.message ||
+          res?.error ||
+          formatMessage({ id: "app.message.operate.failed" })
+      );
+    }
+    setIsLoading(false);
+  }, []);
+
   const showDeleteConfirm = useCallback((record) => {
     Modal.confirm({
       title: formatMessage({ id: "cluster.manage.delete.confirm.title" }),
@@ -229,7 +260,7 @@ export default (props) => {
       render: renderWithTooltip,
     },
     {
-      title: formatMessage({ id: "cluster.manage.table.column.monitored" }),
+      title: formatMessage({ id: "cluster.manage.table.column.monitor_toggle" }),
       width: 120,
       key: "monitored",
       sortable: true,
@@ -283,6 +314,12 @@ export default (props) => {
       render: (text, record) => {
         const onMenuClick = ({ key }) => {
           switch (key) {
+            case "enable_monitoring":
+              onMonitorClick([record.id], "enable");
+              break;
+            case "disable_monitoring":
+              onMonitorClick([record.id], "disable");
+              break;
             case "clean_nodes":
               showCleanConfirm("node");
               break;
@@ -306,6 +343,19 @@ export default (props) => {
               >
                 {formatMessage({ id: "form.button.edit" })}
               </Link>
+            ),
+          });
+          menuItems.push({
+            key: record.monitored ? "disable_monitoring" : "enable_monitoring",
+            content: (
+              <Fragment>
+                <Icon type={record.monitored ? "stop" : "check-circle"} />
+                <span style={{ marginLeft: 8 }}>
+                  {formatMessage({
+                    id: record.monitored ? "form.button.disable" : "form.button.enable",
+                  })}
+                </span>
+              </Fragment>
             ),
           });
           menuItems.push({

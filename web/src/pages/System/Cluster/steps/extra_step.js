@@ -47,7 +47,7 @@ export class ExtraStep extends React.Component {
     this.setState({
       monitored: initialValue?.monitored ?? true,
       needAuth,
-      isManual: needAuth ? !!initialValue?.username : false,
+      isManual: !initialValue?.agent_credential_id && !!initialValue?.agent_username,
       collectMode,
     });
   }
@@ -268,9 +268,9 @@ export class ExtraStep extends React.Component {
               form={this.props.form}
               initialValue={{
                 ...(initialValue || {}),
-                agent_credential_id: initialValue?.agent_credential_id || initialValue?.credential_id,
-                username: initialValue?.agent_username || initialValue?.username,
-                password: initialValue?.agent_password || initialValue?.password,
+                agent_credential_id: initialValue?.agent_credential_id,
+                username: initialValue?.agent_username,
+                password: initialValue?.agent_password,
               }}
               isManual={this.state.isManual}
               isEdit={true}

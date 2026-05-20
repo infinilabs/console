@@ -235,6 +235,50 @@ func TestWrapAgentCollectionProvisionErrorForEasysearchRoleAPI(t *testing.T) {
 	}
 }
 
+func TestShouldFallbackToPlatformCredentialForManagedAgentProvision(t *testing.T) {
+	err := errors.New("failed to create agent collection user: target Easysearch cluster does not allow modifying _security/user via the current credential")
+	if !shouldFallbackToPlatformCredentialForManagedAgentProvision(err) {
+		t.Fatalf("expected unsupported managed-user provisioning to fall back, got %v", err)
+	}
+}
+
+func TestShouldFallbackToPlatformCredentialForManagedAgentProvisionSkipsOtherErrors(t *testing.T) {
+	err := errors.New("failed to create agent collection user: connection refused")
+	if shouldFallbackToPlatformCredentialForManagedAgentProvision(err) {
+		t.Fatalf("expected ordinary provisioning errors to remain blocking, got %v", err)
+	}
+}
+
+func TestApplyClusterRuntimeConfigUpdatesExistingMetadataConfig(t *testing.T) {
+	conf := &elastic.ElasticsearchConfig{
+		ORMObjectBase: orm.ORMObjectBase{ID: "cluster-runtime-config"},
+		Name:          "cluster-runtime-config",
+		Monitored:     true,
+	}
+	oldMeta := elastic.InitMetadata(conf, true)
+	t.Cleanup(func() {
+		elastic.RemoveInstance(conf.ID)
+	})
+
+	nextConf := *conf
+	nextConf.Monitored = false
+
+	if err := applyClusterRuntimeConfig(&nextConf); err != nil {
+		t.Fatalf("expected runtime config update to succeed, got %v", err)
+	}
+
+	meta := elastic.GetMetadata(conf.ID)
+	if meta == nil || meta.Config == nil {
+		t.Fatal("expected metadata to remain available after runtime config update")
+	}
+	if meta.Config.Monitored {
+		t.Fatalf("expected monitored flag to be updated to false, got %#v", meta.Config)
+	}
+	if oldMeta == meta {
+		t.Fatal("expected metadata instance to be replaced to trigger update listeners")
+	}
+}
+
 func TestGetManagedAgentCollectionFallbackUsername(t *testing.T) {
 	username, ok := getManagedAgentCollectionFallbackUsername(
 		elastic.Easysearch,

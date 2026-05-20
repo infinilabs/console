@@ -18,6 +18,13 @@ export default (props) => {
   } = props;
   useEffect(() => {}, [credentialRequired]);
 
+  const getInitialAgentCredentialValue = (value) =>
+    value?.agent_credential_id
+      ? value.agent_credential_id
+      : value?.username
+      ? MANUAL_VALUE
+      : undefined;
+
   const onTryConnect = async () => {
     const values = await props.form.validateFields((errors, values) => {
       if (errors?.credential_id) {
@@ -54,7 +61,12 @@ export default (props) => {
     tryConnect(values);
   };
 
-  const [isManual, setIsManual] = useState();
+  const [selectedCredential, setSelectedCredential] = useState(
+    getInitialAgentCredentialValue(initialValue)
+  );
+  const [isManual, setIsManual] = useState(
+    getInitialAgentCredentialValue(initialValue) === MANUAL_VALUE
+  );
   const canReadCredential =
     hasAuthority("system.credential:all") ||
     hasAuthority("system.credential:read");
@@ -72,11 +84,8 @@ export default (props) => {
   );
 
   const onCredentialChange = (value) => {
-    if (value === "manual") {
-      setIsManual(true);
-    } else {
-      setIsManual(false);
-    }
+    setSelectedCredential(value);
+    setIsManual(value === MANUAL_VALUE);
   };
 
   const { data } = useMemo(() => {
@@ -125,8 +134,10 @@ export default (props) => {
   }, [data, initialValue?.agent_credential_id]);
 
   useEffect(() => {
-    setIsManual(props.isManual);
-  }, [props.isManual]);
+    const nextValue = getInitialAgentCredentialValue(initialValue);
+    setSelectedCredential(nextValue);
+    setIsManual(nextValue === MANUAL_VALUE);
+  }, [initialValue?.agent_credential_id, initialValue?.username]);
 
   useEffect(() => {
     if (canReadCredential) {
@@ -169,11 +180,7 @@ export default (props) => {
           <div style={credentialGroupStyle}>
             <div style={credentialSelectWrapStyle}>
               {getFieldDecorator("agent_credential_id", {
-                initialValue: initialValue?.agent_credential_id
-                  ? initialValue?.agent_credential_id
-                  : initialValue?.username
-                  ? MANUAL_VALUE
-                  : undefined,
+                initialValue: getInitialAgentCredentialValue(initialValue),
                 rules: [
                   {
                     required: credentialRequired,
@@ -187,6 +194,9 @@ export default (props) => {
                   loading={loading}
                   onChange={onCredentialChange}
                   allowClear
+                  placeholder={formatMessage({
+                    id: "cluster.manage.agent_credential.placeholder.auto_create",
+                  })}
                 >
                   {credentialOptions.map((item) => (
                     <Select.Option key={item.id} value={item.id}>
@@ -211,17 +221,19 @@ export default (props) => {
               />
             </Tooltip>
           </div>
-          <Button
-            loading={btnLoading}
-            type="primary"
-            onClick={() => {
-              tryConnect("agent");
-            }}
-          >
-            {formatMessage({
-              id: "cluster.manage.btn.try_connect",
-            })}
-          </Button>
+          {selectedCredential ? (
+            <Button
+              loading={btnLoading}
+              type="primary"
+              onClick={() => {
+                tryConnect("agent");
+              }}
+            >
+              {formatMessage({
+                id: "cluster.manage.btn.try_connect",
+              })}
+            </Button>
+          ) : null}
         </div>
       </Form.Item>
       {isManual && (

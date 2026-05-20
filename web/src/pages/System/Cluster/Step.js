@@ -155,9 +155,10 @@ const ClusterStep = ({ dispatch, history, query }) => {
           const metadata_configs_new = formatConfigsValues(
             values.metadata_configs
           );
+          const isAgentMode = values.metric_collection_mode === "agent";
           clusterConfig.location.region =
             clusterConfig.location.region || "default";
-            const newVals = {
+             const newVals = {
               name: values.name,
               version: clusterConfig.version,
               distribution: clusterConfig.distribution,
@@ -169,22 +170,24 @@ const ClusterStep = ({ dispatch, history, query }) => {
               clusterConfig.credential_id !== MANUAL_VALUE
                 ? clusterConfig.credential_id
                 : undefined,
-            basic_auth: {
-              username: clusterConfig.username || "",
-              password: clusterConfig.password || "",
-            },
-            agent_credential_id:
-              values.agent_credential_id !== MANUAL_VALUE
-                ? values.agent_credential_id
-                : undefined,
-            agent_basic_auth: {
-              username: values.agent_username,
-              password: values.agent_password,
-            },
-            description: values.description,
-              enabled: true,
-              monitored: values.monitored,
-              metric_collection_mode: values.metric_collection_mode || "agentless",
+             basic_auth: {
+               username: clusterConfig.username || "",
+               password: clusterConfig.password || "",
+             },
+             agent_credential_id:
+               values.agent_credential_id !== MANUAL_VALUE && isAgentMode
+                 ? values.agent_credential_id
+                 : undefined,
+             agent_basic_auth: isAgentMode
+               ? {
+                   username: values.agent_username,
+                   password: values.agent_password,
+                 }
+               : undefined,
+             description: values.description,
+               enabled: true,
+               monitored: values.monitored,
+               metric_collection_mode: values.metric_collection_mode || "agentless",
               monitor_configs: monitor_configs_new,
               metadata_configs: metadata_configs_new,
               discovery: {

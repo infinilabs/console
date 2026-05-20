@@ -591,7 +591,7 @@ func setClustersMonitored(monitored bool, clusterIDs []string) error {
 		}
 
 		conf.Monitored = monitored
-		if err := orm.Update(&orm.Context{Refresh: "wait_for"}, conf); err != nil {
+		if err := orm.Save(&orm.Context{Refresh: "wait_for"}, conf); err != nil {
 			return err
 		}
 		if err := hydrateRuntimeBasicAuth(conf); err != nil {

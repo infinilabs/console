@@ -617,7 +617,7 @@ class Index extends PureComponent {
         </Card>
         <CreateForm {...parentMethods} modalVisible={modalVisible} />
         <Drawer
-          title={editingIndex.index}
+          title={`${formatMessage({ id: "indices.field.name" })}: ${editingIndex.index || ""}`}
           visible={drawerVisible}
           onClose={() => {
             this.setState({

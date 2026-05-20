@@ -2,11 +2,7 @@ import PageHeaderWrapper from "@/components/PageHeaderWrapper";
 import { Button, Dropdown, Icon, Menu, message, Modal, Tooltip } from "antd";
 import {
   useCallback,
-  useEffect,
-  useMemo,
-  useState,
   useRef,
-  Fragment,
 } from "react";
 import { formatMessage } from "umi/locale";
 import { formatESSearchResult } from "@/lib/elasticsearch/util";
@@ -107,6 +103,9 @@ export default (props) => {
     if (res?.acknowledged) {
       message.success(formatMessage({ id: "app.message.operate.success" }));
       ref.current?.refresh();
+      dispatch({
+        type: "global/fetchClusterStatus",
+      });
     } else {
       message.error(
         res?.message ||
@@ -347,16 +346,9 @@ export default (props) => {
           });
           menuItems.push({
             key: record.monitored ? "disable_monitoring" : "enable_monitoring",
-            content: (
-              <Fragment>
-                <Icon type={record.monitored ? "stop" : "check-circle"} />
-                <span style={{ marginLeft: 8 }}>
-                  {formatMessage({
-                    id: record.monitored ? "form.button.disable" : "form.button.enable",
-                  })}
-                </span>
-              </Fragment>
-            ),
+            content: formatMessage({
+              id: record.monitored ? "form.button.disable" : "form.button.enable",
+            }),
           });
           menuItems.push({
             key: "clean_nodes",

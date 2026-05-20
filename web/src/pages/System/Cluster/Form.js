@@ -178,10 +178,12 @@ class ClusterForm extends React.Component {
           values.agent_credential_id !== MANUAL_VALUE && isAgentMode
             ? values.agent_credential_id
             : undefined,
-        agent_basic_auth: {
-          username: values.agent_username,
-          password: values.agent_password,
-        },
+        agent_basic_auth: isAgentMode
+          ? {
+              username: values.agent_username,
+              password: values.agent_password,
+            }
+          : undefined,
         metric_collection_mode: values.metric_collection_mode || 'agentless',
 
         description: values.description,

@@ -32,6 +32,11 @@ export default {
     "Unknown Processes ({count})",
   "agent.instance.process.detail.title": "Processes detail",
   "agent.instance.associate.labels.node_adress": "Node Publish Address",
+  "agent.instance.associate.labels.logs_paths": "Log Paths",
+  "agent.instance.associate.labels.logs_paths.placeholder":
+    "Enter one or more log directories",
+  "agent.instance.associate.labels.logs_paths.tips":
+    "The detected path.logs is prefilled. You can append extra directories and Console will deliver them through the same logs_path setting for Agent collection.",
   "agent.instance.associate.tips.access_failed":
     "The agent failed to access this node, please update the settings and try again!",
   "agent.install.label.get_cmd": "Get Setup Command",

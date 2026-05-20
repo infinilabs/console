@@ -353,7 +353,10 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 
 		nodeEndPoint := metadata.PrepareEndpoint(publishAddress)
 
-		pathLogs := nodeInfo.Payload.NodeInfo.GetPathLogs()
+		logsPaths := normalizeLogsPaths(v.LogsPaths, v.PathLogs)
+		if len(logsPaths) == 0 {
+			logsPaths = normalizeLogsPaths(nil, nodeInfo.Payload.NodeInfo.GetPathLogs())
+		}
 
 		if v.Updated > latestVersion {
 			latestVersion = v.Updated
@@ -376,7 +379,7 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 			v.ClusterUUID,
 			clusterLevelEnabled,
 			nodeLevelEnabled,
-			pathLogs,
+			logsPaths,
 		))
 	}
 
@@ -405,7 +408,15 @@ func renderAgentTaskElasticsearchConfig(taskID, clusterUUID, version, distributi
 	)
 }
 
-func renderAgentTaskPipelineConfig(taskID, clusterID, clusterName, clusterUUID string, clusterLevelEnabled, nodeLevelEnabled bool, pathLogs string) string {
+func renderAgentTaskPipelineConfig(taskID, clusterID, clusterName, clusterUUID string, clusterLevelEnabled, nodeLevelEnabled bool, logsPaths []string) string {
+	logsPathValue := `""`
+	switch len(logsPaths) {
+	case 0:
+	case 1:
+		logsPathValue = util.MustToJSON(logsPaths[0])
+	default:
+		logsPathValue = util.MustToJSON(logsPaths)
+	}
 	return fmt.Sprintf(
 		"\n  - auto_start: %t\n    enabled: %t\n    keep_running: true\n    name: collect_%s_es_node_stats\n    retry_delay_in_ms: 10000\n    processor:\n      - es_node_stats:\n          elasticsearch: %s\n          labels:\n            cluster_id: %s\n            cluster_uuid: %s\n            cluster_name: %s\n          when:\n            cluster_available:\n              - %s\n\n  - auto_start: %t\n    enabled: %t\n    keep_running: true\n    name: collect_%s_es_logs\n    retry_delay_in_ms: 10000\n    processor:\n      - es_logs_processor:\n          elasticsearch: %s\n          labels:\n            cluster_id: %s\n            cluster_uuid: %s\n            cluster_name: %s\n          logs_path: %s\n          queue_name: logs\n          when:\n            cluster_available:\n              - %s\n",
 		nodeLevelEnabled,
@@ -423,7 +434,7 @@ func renderAgentTaskPipelineConfig(taskID, clusterID, clusterName, clusterUUID s
 		util.MustToJSON(clusterID),
 		util.MustToJSON(clusterUUID),
 		util.MustToJSON(clusterName),
-		util.MustToJSON(pathLogs),
+		logsPathValue,
 		util.MustToJSON(taskID),
 	)
 }

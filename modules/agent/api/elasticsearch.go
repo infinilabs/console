@@ -33,6 +33,7 @@ import (
 	"fmt"
 	"net/http"
 	"runtime"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -84,6 +85,8 @@ func GetEnrolledNodesByAgent(instanceID string) (map[string]BindingItem, error) 
 
 						item.ClusterUUID = util.ToString(f["cluster_uuid"])
 						item.NodeUUID = nodeID
+						item.PathLogs = util.ToString(f["path_logs"])
+						item.LogsPaths = extractStringSlice(f["logs_paths"])
 
 						t, ok := v["updated"]
 						if ok {
@@ -224,17 +227,26 @@ type BindingItem struct {
 	//infini system assigned id
 	ClusterID string `json:"cluster_id"`
 
-	ClusterUUID string `json:"cluster_uuid"`
-	NodeUUID    string `json:"node_uuid"`
+	ClusterUUID string   `json:"cluster_uuid"`
+	NodeUUID    string   `json:"node_uuid"`
+	PathLogs    string   `json:"path_logs"`
+	LogsPaths   []string `json:"logs_paths"`
 
 	Updated int64 `json:"updated"`
 }
 
-func GetElasticLogFiles(ctx context.Context, instance *model.Instance, logsPath string) (interface{}, error) {
+func GetElasticLogFiles(ctx context.Context, instance *model.Instance, logsPaths []string) (interface{}, error) {
+	body := util.MapStr{}
+	switch len(logsPaths) {
+	case 0:
+		body["logs_path"] = ""
+	case 1:
+		body["logs_path"] = logsPaths[0]
+	default:
+		body["logs_path"] = logsPaths
+	}
 
-	reqBody := util.MustToJSONBytes(util.MapStr{
-		"logs_path": logsPath,
-	})
+	reqBody := util.MustToJSONBytes(body)
 
 	req := &util.Request{
 		Method:  http.MethodPost,
@@ -283,7 +295,7 @@ func GetElasticLogFileContent(ctx context.Context, instance *model.Instance, bod
 func (h *APIHandler) getLogFilesByNode(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	clusterID := ps.MustGetParameter("id")
 	nodeID := ps.MustGetParameter("node_id")
-	inst, pathLogs, err := getAgentByNodeID(clusterID, nodeID)
+	inst, logsPaths, err := getAgentByNodeID(clusterID, nodeID)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -297,7 +309,7 @@ func (h *APIHandler) getLogFilesByNode(w http.ResponseWriter, req *http.Request,
 		}, http.StatusOK)
 		return
 	}
-	logFiles, err := GetElasticLogFiles(nil, inst, pathLogs)
+	logFiles, err := GetElasticLogFiles(nil, inst, logsPaths)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -312,7 +324,7 @@ func (h *APIHandler) getLogFilesByNode(w http.ResponseWriter, req *http.Request,
 func (h *APIHandler) getLogFileContent(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	clusterID := ps.MustGetParameter("id")
 	nodeID := ps.MustGetParameter("node_id")
-	inst, pathLogs, err := getAgentByNodeID(clusterID, nodeID)
+	inst, logsPaths, err := getAgentByNodeID(clusterID, nodeID)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -335,7 +347,12 @@ func (h *APIHandler) getLogFileContent(w http.ResponseWriter, req *http.Request,
 		log.Error(err)
 		return
 	}
-	reqBody.LogsPath = pathLogs
+	reqBody.LogsPath, err = pickAllowedLogsPath(logsPaths, reqBody.LogsPath)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
 	res, err := GetElasticLogFileContent(nil, inst, reqBody)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -345,8 +362,8 @@ func (h *APIHandler) getLogFileContent(w http.ResponseWriter, req *http.Request,
 	h.WriteJSON(w, res, http.StatusOK)
 }
 
-// instance, pathLogs
-func getAgentByNodeID(clusterID, nodeID string) (*model.Instance, string, error) {
+// instance, logsPaths
+func getAgentByNodeID(clusterID, nodeID string) (*model.Instance, []string, error) {
 
 	q := orm.Query{
 		Size: 1000,
@@ -359,20 +376,26 @@ func getAgentByNodeID(clusterID, nodeID string) (*model.Instance, string, error)
 
 	err, result := orm.Search(model.Setting{}, &q)
 	if err != nil {
-		return nil, "", err
+		return nil, nil, err
 	}
 
 	nodeInfo, err := metadata.GetNodeConfig(clusterID, nodeID)
 	if err != nil || nodeInfo == nil {
 		log.Error("node info is nil")
-		return nil, "", err
+		return nil, nil, err
 	}
 
-	pathLogs := nodeInfo.Payload.NodeInfo.GetPathLogs()
+	logsPaths := normalizeLogsPaths(nil, nodeInfo.Payload.NodeInfo.GetPathLogs())
 
 	for _, row := range result.Result {
 		v, ok := row.(map[string]interface{})
 		if ok {
+			if payload, ok := v["payload"].(map[string]interface{}); ok {
+				logsPaths = normalizeLogsPaths(extractStringSlice(payload["logs_paths"]), util.ToString(payload["path_logs"]))
+				if len(logsPaths) == 0 {
+					logsPaths = normalizeLogsPaths(nil, nodeInfo.Payload.NodeInfo.GetPathLogs())
+				}
+			}
 
 			x, ok := v["metadata"]
 			if ok {
@@ -386,19 +409,19 @@ func getAgentByNodeID(clusterID, nodeID string) (*model.Instance, string, error)
 							inst.ID = util.ToString(id)
 							_, err = orm.Get(inst)
 							if err != nil {
-								return nil, pathLogs, err
+								return nil, logsPaths, err
 							}
 							if inst.Name == "" {
-								return nil, pathLogs, nil
+								return nil, logsPaths, nil
 							}
-							return inst, pathLogs, nil
+							return inst, logsPaths, nil
 						}
 					}
 				}
 			}
 		}
 	}
-	return nil, "", nil
+	return nil, nil, nil
 }
 
 type ClusterInfo struct {
@@ -776,6 +799,7 @@ func NewClusterSettings(clusterID string) *model.Setting {
 }
 
 func NewNodeAgentSettings(instanceID string, item *BindingItem) *model.Setting {
+	logsPaths := normalizeLogsPaths(item.LogsPaths, item.PathLogs)
 
 	settings := model.Setting{
 		Metadata: model.Metadata{
@@ -793,9 +817,74 @@ func NewNodeAgentSettings(instanceID string, item *BindingItem) *model.Setting {
 		"cluster_id":   item.ClusterID,
 		"cluster_uuid": item.ClusterUUID,
 		"node_uuid":    item.NodeUUID,
+		"path_logs":    firstString(logsPaths),
+		"logs_paths":   logsPaths,
 	}
 
 	return &settings
+}
+
+func extractStringSlice(value interface{}) []string {
+	switch v := value.(type) {
+	case nil:
+		return nil
+	case []string:
+		return normalizeLogsPaths(v, "")
+	case []interface{}:
+		items := make([]string, 0, len(v))
+		for _, item := range v {
+			items = append(items, util.ToString(item))
+		}
+		return normalizeLogsPaths(items, "")
+	default:
+		return nil
+	}
+}
+
+func normalizeLogsPaths(paths []string, fallback string) []string {
+	items := paths
+	if len(items) == 0 && fallback != "" {
+		items = []string{fallback}
+	}
+
+	seen := map[string]struct{}{}
+	result := make([]string, 0, len(items))
+	for _, item := range items {
+		item = strings.TrimSpace(item)
+		if item == "" {
+			continue
+		}
+		if _, exists := seen[item]; exists {
+			continue
+		}
+		seen[item] = struct{}{}
+		result = append(result, item)
+	}
+	return result
+}
+
+func firstString(items []string) string {
+	if len(items) == 0 {
+		return ""
+	}
+	return items[0]
+}
+
+func pickAllowedLogsPath(allowed []string, requested string) (string, error) {
+	allowed = normalizeLogsPaths(allowed, "")
+	if len(allowed) == 0 {
+		return "", fmt.Errorf("no logs path configured")
+	}
+	if requested == "" {
+		return allowed[0], nil
+	}
+	requested = strings.TrimSpace(requested)
+	for _, item := range allowed {
+		if item == requested {
+			return item, nil
+		}
+	}
+	return "", fmt.Errorf("invalid logs path: %s", requested)
 }
 
 func NewIndexSettings(clusterID, nodeID, agentID, indexName, indexID string) *model.Setting {

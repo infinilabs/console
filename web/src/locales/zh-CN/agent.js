@@ -27,6 +27,11 @@ export default {
   "agent.instance.row_detail.tab.unknown_processes": "未知进程（{count}）",
   "agent.instance.process.detail.title": "进程详情",
   "agent.instance.associate.labels.node_adress": "节点地址",
+  "agent.instance.associate.labels.logs_paths": "日志目录",
+  "agent.instance.associate.labels.logs_paths.placeholder":
+    "请输入一个或多个日志目录",
+  "agent.instance.associate.labels.logs_paths.tips":
+    "默认已带出节点的 path.logs，可继续追加其他目录；这些目录会通过同一个 logs_path 下发给 Agent 采集。",
   "agent.instance.associate.tips.access_failed":
     "探针未能成功访问该节点，请修改设置后再试！",
   "agent.install.label.get_cmd": "获取安装命令",

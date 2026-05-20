@@ -28,6 +28,8 @@ import InstallAgent from "@/components/InstallAgent";
 import { formatMessage } from "umi/locale";
 import Location from "@/components/Icons/Location";
 const ButtonGroup = Button.Group;
+const getLogFileKey = (logFile = {}) =>
+  `${logFile.logs_path || ""}::${logFile.name || ""}`;
 
 const Logs = (props) => {
   const clusterID = props.data?._source?.metadata?.cluster_id;
@@ -38,6 +40,8 @@ const Logs = (props) => {
     items: [],
     logFiles: [],
     file: "",
+    fileName: "",
+    logsPath: "",
     offset: 0,
     startLineNumber: 1,
     autoScrollToBottom: false,
@@ -51,12 +55,15 @@ const Logs = (props) => {
     if (res && res.success) {
       const { log_files: logFiles } = res;
       setLogState((st) => {
+        const selectedFile = logFiles[0] || {};
         return {
           ...st,
           logFiles,
-          file: logFiles[0]?.name,
-          fileSize: logFiles[0]?.size_in_bytes,
-          totalRows: logFiles[0]?.total_rows,
+          file: selectedFile?.name ? getLogFileKey(selectedFile) : "",
+          fileName: selectedFile?.name,
+          logsPath: selectedFile?.logs_path,
+          fileSize: selectedFile?.size_in_bytes,
+          totalRows: selectedFile?.total_rows,
           startLineNumber: 1,
         };
       });
@@ -77,12 +84,14 @@ const Logs = (props) => {
     if(!nodeID){
       return
     }
-    setLogState({
+      setLogState({
       hasNextPage: true,
       isNextPageLoading: false,
       items: [],
       logFiles: [],
       file: "",
+      fileName: "",
+      logsPath: "",
       offset: 0,
       startLineNumber: 1,
     });
@@ -105,7 +114,8 @@ const Logs = (props) => {
       const res = await request(`/elasticsearch/${clusterID}/node/${nodeID}/logs/_read`, {
         method: "POST",
         body: {
-          file_name: newLogState.file,
+          file_name: newLogState.fileName,
+          logs_path: newLogState.logsPath,
           offset: newLogState.offset,
           start_line_number: newLogState.startLineNumber,
           lines: 50,
@@ -162,10 +172,12 @@ const Logs = (props) => {
   const onLogFileChange = (file) => {
     clearAutoRefresh();
     setLogState((st) => {
-      const logFile = st.logFiles.find((lf) => lf.name == file);
+      const logFile = st.logFiles.find((lf) => getLogFileKey(lf) == file);
       return {
         ...st,
         file,
+        fileName: logFile?.name,
+        logsPath: logFile?.logs_path,
         offset: 0,
         items: [],
         hasNextPage: true,
@@ -271,8 +283,14 @@ const Logs = (props) => {
           >
             {(logState.logFiles || []).map((logFile) => {
               return (
-                <Select.Option key={logFile.name} value={logFile.name}>
+                <Select.Option key={getLogFileKey(logFile)} value={getLogFileKey(logFile)}>
                   {logFile.name}
+                  {logFile.logs_path ? (
+                    <>
+                      <Divider type="vertical" />
+                      {logFile.logs_path}
+                    </>
+                  ) : null}
                   <Divider type="vertical" />
                   {formatter.bytes(logFile.size_in_bytes || 0)}
                   <Divider type="vertical" />

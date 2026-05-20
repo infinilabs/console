@@ -320,3 +320,53 @@ func TestConvertFilterQuery(t *testing.T) {
 		t.Errorf("expect dsl %s but got %s", targetDsl, dsl)
 	}
 }
+
+func TestGetRelationValuesSkipsNilMetricValue(t *testing.T) {
+	queryResult := &alerting.QueryResult{
+		MetricData: []insight.MetricData{
+			{
+				Data: map[string][]insight.MetricDataItem{
+					"a": {{Timestamp: int64(1), Value: float64(12)}},
+					"b": {{Timestamp: int64(1), Value: nil}},
+				},
+			},
+		},
+	}
+
+	values, ok := getRelationValues(queryResult, []insight.MetricItem{
+		{Name: "a"},
+		{Name: "b"},
+	}, 0, 0)
+
+	if ok {
+		t.Fatalf("expected relation values with nil metric to be skipped")
+	}
+	if values != nil {
+		t.Fatalf("expected nil relation values, got %#v", values)
+	}
+}
+
+func TestGetRelationValuesReturnsValidMetricValues(t *testing.T) {
+	queryResult := &alerting.QueryResult{
+		MetricData: []insight.MetricData{
+			{
+				Data: map[string][]insight.MetricDataItem{
+					"a": {{Timestamp: int64(1), Value: float64(12)}},
+					"b": {{Timestamp: int64(1), Value: float64(7)}},
+				},
+			},
+		},
+	}
+
+	values, ok := getRelationValues(queryResult, []insight.MetricItem{
+		{Name: "a"},
+		{Name: "b"},
+	}, 0, 0)
+
+	if !ok {
+		t.Fatalf("expected relation values to be available")
+	}
+	if values["a"] != float64(12) || values["b"] != float64(7) {
+		t.Fatalf("unexpected relation values: %#v", values)
+	}
+}

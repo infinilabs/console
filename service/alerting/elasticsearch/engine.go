@@ -536,25 +536,12 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule) (*alerting.ConditionRe
 		LoopData:
 			for i := 0; i < dataLength; i++ {
 				//clear nil value
-				if targetData.Data[dataKey][i].Value == nil {
+				if isInvalidMetricValue(targetData.Data[dataKey][i].Value) {
 					continue
 				}
-				if r, ok := targetData.Data[dataKey][i].Value.(float64); ok {
-					if math.IsNaN(r) {
-						continue
-					}
-				}
-				relationValues := map[string]interface{}{}
-				for _, metric := range rule.Metrics.Items {
-					md := queryResult.MetricData[idx]
-					if _, ok := md.Data[metric.Name]; !ok || len(md.Data[metric.Name]) < i {
-						if global.Env().IsDebug {
-							log.Debugf("metric data %s not found in query result", metric.Name)
-						}
-						// skip this data point
-						continue LoopData
-					}
-					relationValues[metric.Name] = md.Data[metric.Name][i].Value
+				relationValues, ok := getRelationValues(queryResult, rule.Metrics.Items, idx, i)
+				if !ok {
+					continue LoopData
 				}
 				valueExpressionResult, err := valueExpression.Evaluate(relationValues)
 				if err != nil {
@@ -599,6 +586,42 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule) (*alerting.ConditionRe
 	conditionResult.QueryResult.MetricData = targetMetricData
 	conditionResult.ResultItems = resultItems
 	return conditionResult, nil
+}
+
+func getRelationValues(queryResult *alerting.QueryResult, metrics []insight.MetricItem, metricIndex int, pointIndex int) (map[string]interface{}, bool) {
+	if queryResult == nil || metricIndex < 0 || metricIndex >= len(queryResult.MetricData) {
+		return nil, false
+	}
+
+	md := queryResult.MetricData[metricIndex]
+	relationValues := map[string]interface{}{}
+	for _, metric := range metrics {
+		values, ok := md.Data[metric.Name]
+		if !ok || len(values) <= pointIndex {
+			if global.Env().IsDebug {
+				log.Debugf("metric data %s not found in query result", metric.Name)
+			}
+			return nil, false
+		}
+		if isInvalidMetricValue(values[pointIndex].Value) {
+			if global.Env().IsDebug {
+				log.Debugf("metric data %s is invalid in query result, point_index=%d", metric.Name, pointIndex)
+			}
+			return nil, false
+		}
+		relationValues[metric.Name] = values[pointIndex].Value
+	}
+	return relationValues, true
+}
+
+func isInvalidMetricValue(value interface{}) bool {
+	if value == nil {
+		return true
+	}
+	if r, ok := value.(float64); ok {
+		return math.IsNaN(r) || math.IsInf(r, 0)
+	}
+	return false
 }
 
 type BucketDiffState struct {

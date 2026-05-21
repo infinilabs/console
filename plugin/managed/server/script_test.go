@@ -168,6 +168,36 @@ func TestGatewayInstallTemplateBootstrapsManagedConfig(t *testing.T) {
 	}
 }
 
+func TestAgentInstallTemplateEnablesEmbeddedAPISkipLogin(t *testing.T) {
+	templatePath := filepath.Join("..", "..", "..", "config", "install_agent.tpl")
+	content, err := os.ReadFile(templatePath)
+	if err != nil {
+		t.Fatalf("failed to read agent install template: %v", err)
+	}
+
+	rendered := strings.NewReplacer(
+		"{{base_url}}", "https://mirror.local/agent/stable",
+		"{{version}}", "1.2.3-4567",
+		"{{console_endpoint}}", "https://console.local",
+		"{{client_crt}}", "CLIENT_CERT",
+		"{{client_key}}", "CLIENT_KEY",
+		"{{ca_crt}}", "CA_CERT",
+		"{{port}}", "2900",
+	).Replace(string(content))
+
+	expectedSnippets := []string{
+		`cat <<EOF > ${install_dir}/agent.yml`,
+		`embedding_api: true`,
+		`cert_file: "config/client.crt"`,
+	}
+
+	for _, snippet := range expectedSnippets {
+		if !strings.Contains(rendered, snippet) {
+			t.Fatalf("expected rendered template to contain %q", snippet)
+		}
+	}
+}
+
 func TestBuildInstallCommandAlwaysIncludesDownloadURL(t *testing.T) {
 	command := buildInstallCommand(
 		"https://console.local/instance/_get_install_script?token=abc",

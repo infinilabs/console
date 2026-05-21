@@ -498,26 +498,34 @@ func (info ClusterInfo) GetLogsPaths(clusterID string) []string {
 	return nil
 }
 
+func hydrateAutoEnrollClusterInfo(clusterInfo ClusterInfo) (ClusterInfo, error) {
+	if len(clusterInfo.ClusterIDs) == 0 {
+		return clusterInfo, nil
+	}
+
+	clusters := make([]ClusterBinding, 0, len(clusterInfo.ClusterIDs))
+	for _, clusterID := range clusterInfo.ClusterIDs {
+		logsPaths := clusterInfo.GetLogsPaths(clusterID)
+		if len(logsPaths) == 0 {
+			var err error
+			logsPaths, err = agentservice.GetClusterLogsPaths(clusterID)
+			if err != nil {
+				return ClusterInfo{}, err
+			}
+		}
+		clusters = append(clusters, ClusterBinding{
+			ClusterID: clusterID,
+			LogsPaths: logsPaths,
+		})
+	}
+	clusterInfo.Clusters = clusters
+	return clusterInfo, nil
+}
+
 func getAutoEnrollClusterInfo(clusterInfo ClusterInfo) (ClusterInfo, error) {
 	clusterInfo = normalizeClusterInfo(clusterInfo)
 	if len(clusterInfo.ClusterIDs) > 0 {
-		clusters := make([]ClusterBinding, 0, len(clusterInfo.ClusterIDs))
-		for _, clusterID := range clusterInfo.ClusterIDs {
-			logsPaths := clusterInfo.GetLogsPaths(clusterID)
-			if len(logsPaths) == 0 {
-				var err error
-				logsPaths, err = agentservice.GetClusterLogsPaths(clusterID)
-				if err != nil {
-					return ClusterInfo{}, err
-				}
-			}
-			clusters = append(clusters, ClusterBinding{
-				ClusterID: clusterID,
-				LogsPaths: logsPaths,
-			})
-		}
-		clusterInfo.Clusters = clusters
-		return clusterInfo, nil
+		return hydrateAutoEnrollClusterInfo(clusterInfo)
 	}
 
 	q := &orm.Query{
@@ -544,7 +552,8 @@ func getAutoEnrollClusterInfo(clusterInfo ClusterInfo) (ClusterInfo, error) {
 		}
 	}
 	clusterInfo.ClusterIDs = ids
-	return getAutoEnrollClusterInfo(clusterInfo)
+	clusterInfo = normalizeClusterInfo(clusterInfo)
+	return hydrateAutoEnrollClusterInfo(clusterInfo)
 }
 
 func startAutoEnroll(clusterInfo ClusterInfo) error {

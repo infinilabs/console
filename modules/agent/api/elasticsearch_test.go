@@ -45,3 +45,16 @@ func TestNewClusterAgentSettings(t *testing.T) {
 		t.Fatalf("unexpected logs_paths payload: %#v", logsPaths)
 	}
 }
+
+func TestHydrateAutoEnrollClusterInfoReturnsEmptyWithoutClusterIDs(t *testing.T) {
+	info, err := hydrateAutoEnrollClusterInfo(ClusterInfo{})
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if len(info.ClusterIDs) != 0 {
+		t.Fatalf("expected no cluster ids, got %#v", info.ClusterIDs)
+	}
+	if len(info.Clusters) != 0 {
+		t.Fatalf("expected no clusters, got %#v", info.Clusters)
+	}
+}

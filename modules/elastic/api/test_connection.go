@@ -61,8 +61,7 @@ const (
 
 type elasticConfigPayload struct {
 	elastic.ElasticsearchConfig
-	ProbePath      string   `json:"probe_path,omitempty"`
-	AgentLogsPaths []string `json:"agent_logs_paths,omitempty"`
+	ProbePath string `json:"probe_path,omitempty"`
 }
 
 var testAPI = TestAPI{}

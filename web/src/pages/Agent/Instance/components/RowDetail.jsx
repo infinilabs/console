@@ -346,7 +346,7 @@ export const AgentRowDetail = ({ agentID, t }) => {
       ? clusters
           .map((item) =>
             typeof item === "string"
-              ? { cluster_id: item, logs_paths: [] }
+              ? { cluster_id: item }
               : item
           )
           .filter((item) => item?.cluster_id)

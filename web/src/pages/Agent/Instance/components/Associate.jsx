@@ -1,7 +1,7 @@
 import { useGlobal } from "@/layouts/GlobalContext";
 import request from "@/utils/request";
-import { Form, Input, Switch, Icon, Button, Select, Tooltip } from "antd";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Form, Input, Switch, Icon, Button, Select } from "antd";
+import { useMemo, useRef, useState } from "react";
 import { Link, router } from "umi";
 import { formatMessage } from "umi/locale";
 import CredentialForm from "../../../System/Cluster/CredentialForm";
@@ -241,18 +241,9 @@ const Result = ({ data, onComplete, loading = false }) => {
   );
   const selectedID = clusters[0]?.id || "";
   const clusterRef = useRef();
-  const [logsPaths, setLogsPaths] = useState(detectedLogsPaths);
-
-  useEffect(() => {
-    setLogsPaths(detectedLogsPaths);
-  }, [detectedLogsPaths.join("\n")]);
-
   const onAssociateClick = () => {
     if (typeof onComplete === "function") {
       const clusterID = clusterRef.current.rcSelect.state?.value[0] || "";
-      const normalizedLogsPaths = Array.from(
-        new Set((logsPaths || []).map((item) => item?.trim()).filter(Boolean))
-      );
       onComplete({
         cluster_id: clusterID,
         cluster_name: data?.cluster_info?.cluster_name,
@@ -261,8 +252,6 @@ const Result = ({ data, onComplete, loading = false }) => {
         publish_address: data?.node_info?.http?.publish_address,
         node_name: data?.node_info?.name,
         path_home: data?.node_info?.settings?.path?.home,
-        path_logs: normalizedLogsPaths[0] || "",
-        logs_paths: normalizedLogsPaths,
         // credential_id:values.credential_id,
       });
     }
@@ -330,37 +319,6 @@ const Result = ({ data, onComplete, loading = false }) => {
                 );
               })}
             </Select>
-          </div>
-        </div>
-        <div style={{ display: "flex", alignItems: "flex-start", marginTop: 15 }}>
-          <div style={{ paddingRight: 10, lineHeight: "32px" }}>
-            <span>
-              {formatMessage({
-                id: "agent.instance.associate.labels.logs_paths",
-              })}
-              <Tooltip
-                title={formatMessage({
-                  id: "agent.instance.associate.labels.logs_paths.tips",
-                })}
-              >
-                <Icon
-                  type="info-circle"
-                  style={{ marginLeft: 8, color: "#1890ff" }}
-                />
-              </Tooltip>
-            </span>
-          </div>
-          <div style={{ flex: "1 1 auto" }}>
-            <Select
-              mode="tags"
-              style={{ width: "100%" }}
-              value={logsPaths}
-              onChange={setLogsPaths}
-              tokenSeparators={[","]}
-              placeholder={formatMessage({
-                id: "agent.instance.associate.labels.logs_paths.placeholder",
-              })}
-            />
           </div>
         </div>
       </div>

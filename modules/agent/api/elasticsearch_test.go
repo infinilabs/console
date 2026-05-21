@@ -58,3 +58,22 @@ func TestHydrateAutoEnrollClusterInfoReturnsEmptyWithoutClusterIDs(t *testing.T)
 		t.Fatalf("expected no clusters, got %#v", info.Clusters)
 	}
 }
+
+func TestDeriveLogsPathsFromCmdlineSinglePathWhenGCMatchesCurrent(t *testing.T) {
+	cmdline := `/usr/share/elasticsearch/jdk/bin/java -Xlog:gc*,gc+age=trace:file=logs/gc.log:utctime,pid,tags:filecount=32,filesize=64m -Des.path.home=/usr/share/elasticsearch`
+	got := deriveLogsPathsFromCmdline(cmdline, "")
+	if len(got) != 1 || got[0] != "/usr/share/elasticsearch/logs" {
+		t.Fatalf("unexpected logs paths: %#v", got)
+	}
+}
+
+func TestDeriveLogsPathsFromCmdlineTwoPathsWhenGCDiffers(t *testing.T) {
+	cmdline := `/usr/share/elasticsearch/jdk/bin/java -Xlog:gc*,gc+age=trace:file=/var/log/elasticsearch/gc.log:utctime,pid,tags:filecount=32,filesize=64m -Des.path.home=/usr/share/elasticsearch`
+	got := deriveLogsPathsFromCmdline(cmdline, "")
+	if len(got) != 2 {
+		t.Fatalf("expected 2 logs paths, got %#v", got)
+	}
+	if got[0] != "/usr/share/elasticsearch/logs" || got[1] != "/var/log/elasticsearch" {
+		t.Fatalf("unexpected logs paths: %#v", got)
+	}
+}

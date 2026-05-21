@@ -32,6 +32,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"sync/atomic"
@@ -42,7 +44,6 @@ import (
 	console_common "infini.sh/console/common"
 	elasticapi "infini.sh/console/modules/elastic/api"
 	"infini.sh/console/plugin/managed/server"
-	agentservice "infini.sh/console/service/agent"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/global"
@@ -242,6 +243,7 @@ type BindingItem struct {
 
 	ClusterUUID string   `json:"cluster_uuid"`
 	NodeUUID    string   `json:"node_uuid"`
+	PathHome    string   `json:"path_home,omitempty"`
 	PathLogs    string   `json:"path_logs"`
 	LogsPaths   []string `json:"logs_paths"`
 
@@ -505,17 +507,8 @@ func hydrateAutoEnrollClusterInfo(clusterInfo ClusterInfo) (ClusterInfo, error) 
 
 	clusters := make([]ClusterBinding, 0, len(clusterInfo.ClusterIDs))
 	for _, clusterID := range clusterInfo.ClusterIDs {
-		logsPaths := clusterInfo.GetLogsPaths(clusterID)
-		if len(logsPaths) == 0 {
-			var err error
-			logsPaths, err = agentservice.GetClusterLogsPaths(clusterID)
-			if err != nil {
-				return ClusterInfo{}, err
-			}
-		}
 		clusters = append(clusters, ClusterBinding{
 			ClusterID: clusterID,
-			LogsPaths: logsPaths,
 		})
 	}
 	clusterInfo.Clusters = clusters
@@ -662,12 +655,6 @@ func (h *APIHandler) autoEnrollESNode(w http.ResponseWriter, req *http.Request, 
 		panic(errors.New("please select cluster to enroll"))
 	}
 
-	for _, item := range clusterInfo.Clusters {
-		if err := agentservice.SaveClusterLogsPaths(item.ClusterID, item.LogsPaths); err != nil {
-			panic(err)
-		}
-	}
-
 	if err := startAutoEnroll(clusterInfo); err != nil {
 		panic(err)
 	}
@@ -712,11 +699,6 @@ func (h *APIHandler) discoveryESNodesInfo(w http.ResponseWriter, req *http.Reque
 				clusterInfo := ClusterInfo{}
 				util.FromJSONBytes(bytes, &clusterInfo)
 				clusterInfo = normalizeClusterInfo(clusterInfo)
-				for _, item := range clusterInfo.Clusters {
-					if err := agentservice.SaveClusterLogsPaths(item.ClusterID, item.LogsPaths); err != nil {
-						panic(err)
-					}
-				}
 				discoveredPIDs = bindInstanceToCluster(clusterInfo, nodes, instance.ID, instance.GetEndpoint())
 			}
 		}
@@ -742,7 +724,6 @@ func bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elastic.DiscoveryResu
 	if len(clusterInfo.ClusterIDs) > 0 {
 		//try connect this node to cluster by using this cluster's agent credential
 		for _, clusterID := range clusterInfo.ClusterIDs {
-			logsPaths := clusterInfo.GetLogsPaths(clusterID)
 			preparedConf, err := elasticapi.PrepareClusterForAgentCollection(clusterID)
 			if err != nil {
 				log.Errorf("failed to prepare cluster [%s] for agent collection: %v", clusterID, err)
@@ -776,7 +757,7 @@ func bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elastic.DiscoveryResu
 						if v.NodeInfo != nil {
 							pid := v.NodeInfo.Process.Id
 							nodeHost := v.NodeInfo.GetHttpPublishHost()
-							nodeInfo := (&APIHandler{}).internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint, pid, nodeHost, auth, logsPaths)
+							nodeInfo := (&APIHandler{}).internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint, pid, nodeHost, auth, "")
 							if nodeInfo != nil {
 								discoveredPIDs[pid] = nodeInfo
 							}
@@ -800,7 +781,7 @@ func bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elastic.DiscoveryResu
 						}
 
 						nodeHost := fmt.Sprintf("%s:%d", ip, port)
-						nodeInfo := (&APIHandler{}).internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint, pid, nodeHost, auth, logsPaths)
+						nodeInfo := (&APIHandler{}).internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint, pid, nodeHost, auth, node.Cmdline)
 						if nodeInfo != nil {
 							discoveredPIDs[pid] = nodeInfo
 						}
@@ -812,7 +793,7 @@ func bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elastic.DiscoveryResu
 	return discoveredPIDs
 }
 
-func (h *APIHandler) internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint string, pid int, nodeHost string, auth *model.BasicAuth, logsPaths []string) *elastic.LocalNodeInfo {
+func (h *APIHandler) internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint string, pid int, nodeHost string, auth *model.BasicAuth, cmdline string) *elastic.LocalNodeInfo {
 	success, tryAgain, nodeInfo := h.getESNodeInfoViaProxy(nodeHost, "http", auth, instanceID)
 	if !success && tryAgain {
 		//try https again
@@ -833,8 +814,10 @@ func (h *APIHandler) internalProcessBind(clusterID, clusterUUID, instanceID, ins
 			ClusterID:   clusterID,
 			ClusterUUID: nodeInfo.ClusterInfo.ClusterUUID,
 			NodeUUID:    nodeInfo.NodeUUID,
-			LogsPaths:   logsPaths,
+			PathHome:    extractNodePathHome(nodeInfo.NodeInfo),
+			LogsPaths:   deriveLogsPathsFromCmdline(cmdline, extractNodePathHome(nodeInfo.NodeInfo)),
 		}
+		item.PathLogs = firstString(item.LogsPaths)
 
 		settings := NewNodeAgentSettings(instanceID, &item)
 		err := orm.Save(&orm.Context{
@@ -974,6 +957,109 @@ func normalizeLogsPaths(paths []string, fallback string) []string {
 	return result
 }
 
+var (
+	cmdlinePathHomeRegx = regexp.MustCompile(`(?:^|\s)-D(?:es|opensearch)\.path\.home=([^\s]+)`)
+	cmdlinePathLogsRegx = regexp.MustCompile(`(?:^|\s)-D(?:es|opensearch)\.path\.logs=([^\s]+)`)
+	cmdlineGCFileRegx   = regexp.MustCompile(`(?:^|\s)-Xlog:[^\s]*?file=([^\s]+)`)
+)
+
+func deriveLogsPathsFromCmdline(cmdline, fallbackHome string) []string {
+	pathHome := extractCmdlineValue(cmdlinePathHomeRegx, cmdline)
+	if pathHome == "" {
+		pathHome = strings.TrimSpace(fallbackHome)
+	}
+
+	currentLogsPath := extractCmdlineValue(cmdlinePathLogsRegx, cmdline)
+	if currentLogsPath == "" && pathHome != "" {
+		currentLogsPath = filepath.Join(pathHome, "logs")
+	}
+
+	result := make([]string, 0, 2)
+	result = appendLogsDir(result, currentLogsPath, pathHome)
+	result = appendLogsFileDir(result, trimGCLogFileValue(extractCmdlineValue(cmdlineGCFileRegx, cmdline)), pathHome)
+	return result
+}
+
+func extractCmdlineValue(reg *regexp.Regexp, cmdline string) string {
+	matches := reg.FindStringSubmatch(cmdline)
+	if len(matches) > 1 {
+		return trimCmdlinePathValue(matches[1])
+	}
+	return ""
+}
+
+func appendLogsDir(paths []string, value, base string) []string {
+	if len(paths) >= 2 {
+		return paths
+	}
+	resolved := resolveCmdlinePath(value, base)
+	if resolved == "" {
+		return paths
+	}
+	for _, item := range paths {
+		if item == resolved {
+			return paths
+		}
+	}
+	return append(paths, resolved)
+}
+
+func appendLogsFileDir(paths []string, value, base string) []string {
+	resolved := resolveCmdlinePath(value, base)
+	if resolved == "" {
+		return paths
+	}
+	return appendLogsDir(paths, filepath.Dir(resolved), "")
+}
+
+func resolveCmdlinePath(value, base string) string {
+	value = trimCmdlinePathValue(value)
+	if value == "" {
+		return ""
+	}
+	if !filepath.IsAbs(value) {
+		if base == "" {
+			return ""
+		}
+		value = filepath.Join(base, value)
+	}
+	return filepath.Clean(value)
+}
+
+func trimCmdlinePathValue(value string) string {
+	return strings.Trim(strings.TrimSpace(value), `"'`)
+}
+
+func trimGCLogFileValue(value string) string {
+	value = trimCmdlinePathValue(value)
+	if value == "" {
+		return ""
+	}
+	searchFrom := 0
+	if len(value) > 1 && value[1] == ':' {
+		searchFrom = 2
+	}
+	if idx := strings.Index(value[searchFrom:], ":"); idx >= 0 {
+		value = value[:searchFrom+idx]
+	}
+	return value
+}
+
+func extractNodePathHome(nodeInfo *elastic.NodesInfo) string {
+	if nodeInfo == nil {
+		return ""
+	}
+	path, ok := nodeInfo.Settings["path"]
+	if !ok {
+		return ""
+	}
+	pathObj, ok := path.(map[string]interface{})
+	if !ok {
+		return ""
+	}
+	return strings.TrimSpace(util.ToString(pathObj["home"]))
+}
+
 func firstString(items []string) string {
 	if len(items) == 0 {
 		return ""
@@ -1084,9 +1170,14 @@ func (h *APIHandler) enrollESNode(w http.ResponseWriter, req *http.Request, ps h
 		return
 	}
 
-	success, _, _ := h.getESNodeInfoViaProxyWithConfig(preparedConf, instance.ID)
+	success, _, nodeInfo := h.getESNodeInfoViaProxyWithConfig(preparedConf, instance.ID)
 
 	if success {
+		if item.PathHome == "" {
+			item.PathHome = extractNodePathHome(nodeInfo.NodeInfo)
+		}
+		item.LogsPaths = deriveLogsPathsFromCmdline("", item.PathHome)
+		item.PathLogs = firstString(item.LogsPaths)
 		// Save will create the binding on first manual enroll and update it on subsequent enrolls.
 		settings := NewNodeAgentSettings(instID, &item)
 		err = orm.Save(&orm.Context{

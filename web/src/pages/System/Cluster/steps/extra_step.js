@@ -15,7 +15,6 @@ import MonitorConfigsForm from "../MonitorConfigsForm";
 import MetadataConfigsForm from "../MetadataConfigsForm";
 import "../Form.scss";
 import AgentCredentialForm from "../AgentCredentialForm";
-import AgentLogsPathForm from "../AgentLogsPathForm";
 import CollectMode from "../CollectMode";
 import { MANUAL_VALUE } from "./initial_step";
 import { getClusterConnectErrorMessageFromResponse } from "../utils";
@@ -277,11 +276,6 @@ export class ExtraStep extends React.Component {
                 isEdit={true}
                 tryConnect={this.tryConnect}
                 credentialRequired={this.state.agentCredentialRequired}
-              />
-              <AgentLogsPathForm
-                form={this.props.form}
-                initialValue={initialValue}
-                visible={true}
               />
             </>
           ) : null}

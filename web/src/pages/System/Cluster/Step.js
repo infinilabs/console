@@ -184,7 +184,6 @@ const ClusterStep = ({ dispatch, history, query }) => {
                     password: values.agent_password,
                   }
                 : undefined,
-              agent_logs_paths: isAgentMode ? values.agent_logs_paths || [] : undefined,
               description: values.description,
                 enabled: true,
                monitored: values.monitored,

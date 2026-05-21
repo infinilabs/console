@@ -1,6 +1,6 @@
 import { useGlobal } from "@/layouts/GlobalContext";
 import request from "@/utils/request";
-import { Button, Alert, Select, Tooltip, Icon } from "antd";
+import { Button, Alert } from "antd";
 import { useEffect, useState } from "react";
 import { formatMessage } from "umi/locale";
 import ClusterSelect from "@/components/ClusterSelect";
@@ -10,8 +10,6 @@ export default ({ onBatchEnroll, loading }) => {
   const { clusterList = [] } = useGlobal();
   const [selectedCluster, setSelectedCluster] = useState([]);
   const [auths, setAuths] = useState([]);
-  const [logsPaths, setLogsPaths] = useState([]);
-
   const needCredentialSetup = (item) =>
     !item?.credential_id &&
     !item?.basic_auth?.username &&
@@ -31,7 +29,6 @@ export default ({ onBatchEnroll, loading }) => {
       onBatchEnroll(
         selectedCluster.map((item) => ({
           cluster_id: item.id,
-          logs_paths: logsPaths,
         }))
       );
     }
@@ -63,40 +60,6 @@ export default ({ onBatchEnroll, loading }) => {
         />
       </div>
       <SetAgentCredential selectedCluster={selectedCluster} setSelectedCluster={setSelectedCluster}/>
-      <div style={{ marginTop: 32 }}>
-        <div
-          style={{
-            fontSize: 16,
-            color: "rgba(16, 16, 16, 1)",
-            fontWeight: 600,
-            marginBottom: 8,
-          }}
-        >
-          {formatMessage({ id: "agent.instance.associate.set_logs_paths" })}
-          <Tooltip
-            title={formatMessage({
-              id: "agent.instance.associate.set_logs_paths.tips",
-            })}
-          >
-            <Icon
-              type="info-circle"
-              style={{ marginLeft: 8, color: "#1890ff" }}
-            />
-          </Tooltip>
-        </div>
-        <div style={{ marginTop: 15 }}>
-          <Select
-            mode="tags"
-            style={{ width: "100%" }}
-            value={logsPaths}
-            onChange={setLogsPaths}
-            tokenSeparators={[","]}
-              placeholder={formatMessage({
-                id: "agent.instance.associate.labels.logs_paths.placeholder",
-              })}
-            />
-        </div>
-      </div>
       {
         auths.length > 0 && (
           <Alert style={{ marginTop: 10 }} type="error" message={(

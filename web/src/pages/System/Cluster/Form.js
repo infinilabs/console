@@ -27,7 +27,6 @@ import {
 } from "./utils";
 import CredentialForm from "./CredentialForm";
 import AgentCredentialForm from "./AgentCredentialForm";
-import AgentLogsPathForm from "./AgentLogsPathForm";
 import { MANUAL_VALUE } from "./steps";
 import SearchEngines from "./components/SearchEngines";
 import Providers from "./components/Providers";
@@ -185,7 +184,6 @@ class ClusterForm extends React.Component {
               password: values.agent_password,
             }
           : undefined,
-        agent_logs_paths: isAgentMode ? values.agent_logs_paths || [] : undefined,
         metric_collection_mode: values.metric_collection_mode || 'agentless',
 
         description: values.description,
@@ -686,11 +684,6 @@ class ClusterForm extends React.Component {
                       isEdit={true}
                       tryConnect={this.tryConnect}
                       credentialRequired={this.state.agentCredentialRequired}
-                    />
-                    <AgentLogsPathForm
-                      form={this.props.form}
-                      initialValue={editValue}
-                      visible={true}
                     />
                   </>
                 )

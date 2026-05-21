@@ -322,7 +322,7 @@ func (h *APIHandler) getLogFilesByNode(w http.ResponseWriter, req *http.Request,
 		return
 	}
 	if inst == nil {
-		log.Errorf("can not find agent for cluster [%s], node [%s]", clusterID, nodeID)
+		log.Warnf("no agent associated with cluster [%s], node [%s]", clusterID, nodeID)
 		h.WriteJSON(w, util.MapStr{
 			"success": false,
 			"reason":  "AGENT_NOT_FOUND",

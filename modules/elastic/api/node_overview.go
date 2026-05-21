@@ -1159,10 +1159,15 @@ func (h *APIHandler) getLatestIndices(req *http.Request, min string, max string,
 	}
 
 	query := util.MapStr{
-		"size":    10000,
-		"_source": []string{"metadata.labels.index_name", "payload.elasticsearch.shard_stats.docs", "payload.elasticsearch.shard_stats.store", "payload.elasticsearch.shard_stats.routing", "timestamp"},
-		"collapse": util.MapStr{
-			"field": "metadata.labels.shard_id",
+		"size": 10000,
+		"_source": []string{
+			"metadata.labels.index_name",
+			"metadata.labels.shard",
+			"metadata.labels.shard_id",
+			"payload.elasticsearch.shard_stats.docs",
+			"payload.elasticsearch.shard_stats.store",
+			"payload.elasticsearch.shard_stats.routing",
+			"timestamp",
 		},
 		"sort": []util.MapStr{
 			{
@@ -1215,13 +1220,24 @@ func (h *APIHandler) getLatestIndices(req *http.Request, min string, max string,
 	if err != nil {
 		log.Warnf("failed to enrich latest indices for cluster [%s], fallback to base index state only: %v", clusterID, err)
 	} else {
+		seenShards := map[string]struct{}{}
 		for _, hit := range searchResult.Result {
 			if hitM, ok := hit.(map[string]interface{}); ok {
 				shardDocCount, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "shard_stats", "docs", "count"}, hitM)
 				storeInBytes, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "shard_stats", "store", "size_in_bytes"}, hitM)
 				indexName, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "index_name"}, hitM)
+				shardID, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "shard_id"}, hitM)
+				shardNum, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "shard"}, hitM)
 				primary, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "shard_stats", "routing", "primary"}, hitM)
 				if v, ok := indexName.(string); ok {
+					dedupeKey := util.ToString(shardID)
+					if dedupeKey == "" {
+						dedupeKey = fmt.Sprintf("%s:%s:%v", v, util.ToString(shardNum), primary)
+					}
+					if _, exists := seenShards[dedupeKey]; exists {
+						continue
+					}
+					seenShards[dedupeKey] = struct{}{}
 					if _, ok = indexInfos[v]; !ok {
 						indexInfos[v] = &ShardsSummary{}
 					}
@@ -1238,7 +1254,9 @@ func (h *APIHandler) getLatestIndices(req *http.Request, min string, max string,
 					} else {
 						indexInfo.Replicas++
 					}
-					indexInfo.Timestamp = hitM["timestamp"]
+					if indexInfo.Timestamp == nil {
+						indexInfo.Timestamp = hitM["timestamp"]
+					}
 				}
 			}
 		}

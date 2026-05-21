@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Alert, Button, Divider, Form, Icon, Input, InputNumber, message, Result, Spin, Switch, Tooltip } from 'antd';
+import { useEffect, useMemo, useState } from 'react';
+import { Alert, Button, Divider, Form, Icon, Input, InputNumber, message, Result, Spin, Switch, Tag, Tooltip } from 'antd';
 import styles from './index.less'
 import request from '@/utils/request';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
@@ -149,20 +149,49 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
     const [taskState, setTaskState] = useState({
         currentIndex: 1,
         status: "pending",
-        logs: [],
+        taskLogs: {},
     });
+    const taskLogItems = useMemo(() => {
+        if (!hasStarted) {
+            return [];
+        }
+        return initialTasks.map((task, index) => {
+            const taskLog = taskState.taskLogs?.[task.name] || {};
+            return {
+                ...task,
+                order: index + 1,
+                status: taskLog.status || "pending",
+                reason: taskLog.reason || "",
+            };
+        });
+    }, [hasStarted, initialTasks, taskState.taskLogs]);
+    const updateTaskLog = (task, nextLog = {}) => {
+        setTaskState((st) => ({
+            ...st,
+            taskLogs: {
+                ...(st.taskLogs || {}),
+                [task.name]: {
+                    name: task.name,
+                    desc: task.desc,
+                    ...(st.taskLogs?.[task.name] || {}),
+                    ...nextLog,
+                },
+            },
+        }));
+    };
     const runTask = async ()=>{
         if(taskState.currentIndex > initialTasks.length){
             return
         }
         const currentTask = initialTasks[taskState.currentIndex - 1];
-        setTaskState(st=>{
-            st.logs.push(formatMessage({ id: "guide.initialization.task.start" }, { task: currentTask.desc }))
-            return {
-                ...st,
-                status: "running",
-            }
-        })
+        updateTaskLog(currentTask, {
+            status: "running",
+            reason: "",
+        });
+        setTaskState(st => ({
+            ...st,
+            status: "running",
+        }));
         const {
             hosts,
             isTLS,
@@ -196,20 +225,15 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
         false
         );
         if(typeof res?.success !== "undefined"){
-            setTaskState(st=>{
-                if(res?.success === true){
-                    st.logs.push(formatMessage({ id: "guide.initialization.task.success" }, { task: currentTask.desc }));
-                } else {
-                    st.logs.push(formatMessage({ id: "guide.initialization.task.failed" }, { task: currentTask.desc, reason: res?.log || "" }));
-                }
-                if(res?.success === true){
-                    st.currentIndex = st.currentIndex +1;
-                }
-                return {
-                    ...st,
-                    status: res?.success === true ? "success" : "failed",
-                }
+            updateTaskLog(currentTask, {
+                status: res?.success === true ? "success" : "failed",
+                reason: res?.success === true ? "" : (res?.log || res?.error?.reason || ""),
             });
+            setTaskState(st => ({
+                ...st,
+                currentIndex: res?.success === true ? st.currentIndex + 1 : st.currentIndex,
+                status: res?.success === true ? "success" : "failed",
+            }));
         }
     }
     useEffect(()=>{
@@ -233,6 +257,11 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
             auto_expand_replicas: autoExpandReplicas,
             enable_rollup: rollupSupported ? formData.enable_rollup !== false : false,
         });
+        setTaskState({
+            currentIndex: 1,
+            status: "pending",
+            taskLogs: {},
+        });
         setHasStarted(true);
     }
 
@@ -240,10 +269,18 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
         runTask();
     }
     const skipTask = ()=>{
+        const currentTask = initialTasks[taskState.currentIndex - 1];
+        if (currentTask) {
+            updateTaskLog(currentTask, {
+                status: "skipped",
+                reason: "",
+            });
+        }
         setTaskState(st=>{
             return {
                 ...st,
-                currentIndex: st.currentIndex + 1
+                currentIndex: st.currentIndex + 1,
+                status: "pending",
             }
         })
     }
@@ -344,14 +381,26 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
                                  <div style={{marginLeft:"auto"}}>
                                      <a onClick={retryTask} key="retry">Retry</a><Divider type="vertical" /><a onClick={skipTask} key="skip">Skip</a>
                                   </div>: null}
-                             </div>
-                             <div className={styles.taskLogPanel}>
-                                 {taskState.logs.map((item, index) => (
-                                     <div key={`${item}-${index}`} className={styles.taskLogItem}>
-                                         {item}
-                                     </div>
-                                 ))}
-                             </div>
+                              </div>
+                              <div className={styles.taskLogPanel}>
+                                  {taskLogItems.map((item) => (
+                                      <div key={item.name} className={styles.taskLogItem}>
+                                          <div className={styles.taskLogMain}>
+                                              <span className={styles.taskLogName}>
+                                                  [{item.order}/{initialTasks.length}] {item.desc}
+                                              </span>
+                                              <div className={styles.taskLogStatus}>
+                                                  <StatusTag status={item.status} />
+                                                  {item.reason ? (
+                                                      <Tooltip title={item.reason}>
+                                                          <Icon type="info-circle" className={styles.taskLogReasonIcon} />
+                                                      </Tooltip>
+                                                  ) : null}
+                                              </div>
+                                          </div>
+                                      </div>
+                                  ))}
+                              </div>
                              <div style={{ display: "flex", justifyContent: "space-between", width:"60%", margin:"15px auto 0 auto" }}>
                                 <Button
                                 style={{ width: "48%" }}
@@ -421,3 +470,22 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
         
     )
 }
+
+const StatusTag = ({ status = "pending" }) => {
+    const colorMap = {
+        pending: "default",
+        running: "processing",
+        success: "success",
+        failed: "error",
+        skipped: "orange",
+    };
+
+    return (
+        <Tag color={colorMap[status] || "default"} style={{ marginRight: 0 }}>
+            {formatMessage({
+                id: `guide.initialization.task.status.${status}`,
+                defaultMessage: status,
+            })}
+        </Tag>
+    );
+};

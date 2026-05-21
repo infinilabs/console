@@ -31,6 +31,11 @@ export default {
   "guide.initialization.task.start": "Starting: {task}",
   "guide.initialization.task.success": "Completed: {task}",
   "guide.initialization.task.failed": "Failed: {task} {reason}",
+  "guide.initialization.task.status.pending": "Pending",
+  "guide.initialization.task.status.running": "Running",
+  "guide.initialization.task.status.success": "Completed",
+  "guide.initialization.task.status.failed": "Failed",
+  "guide.initialization.task.status.skipped": "Skipped",
   "guide.initialization.step.settings": "Settings",
   "guide.initialization.step.settings.desc":
     "Set the default user for login and credential secret.",

@@ -41,26 +41,42 @@
     }
 
     .taskLogItem {
-        position: relative;
-        padding-left: 12px;
         color: #445066;
         line-height: 1.8;
-        word-break: break-word;
 
         & + .taskLogItem {
-            margin-top: 4px;
+            margin-top: 8px;
         }
+    }
 
-        &::before {
-            content: "";
-            position: absolute;
-            left: 0;
-            top: 11px;
-            width: 4px;
-            height: 4px;
-            border-radius: 50%;
-            background: #1890ff;
-        }
+    .taskLogMain {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        justify-content: space-between;
+        min-width: 0;
+        padding: 8px 10px 8px 12px;
+        border-radius: 6px;
+        background: #fff;
+        border: 1px solid #eef2f7;
+    }
+
+    .taskLogName {
+        min-width: 0;
+        flex: 1 1 auto;
+        word-break: break-word;
+    }
+
+    .taskLogStatus {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+
+    .taskLogReasonIcon {
+        color: rgba(0, 0, 0, 0.45);
     }
 
     .skipDesc {

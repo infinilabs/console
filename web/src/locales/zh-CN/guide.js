@@ -30,6 +30,11 @@ export default {
   "guide.initialization.task.start": "开始执行：{task}",
   "guide.initialization.task.success": "执行成功：{task}",
   "guide.initialization.task.failed": "执行失败：{task} {reason}",
+  "guide.initialization.task.status.pending": "待执行",
+  "guide.initialization.task.status.running": "执行中",
+  "guide.initialization.task.status.success": "已完成",
+  "guide.initialization.task.status.failed": "失败",
+  "guide.initialization.task.status.skipped": "已跳过",
   "guide.initialization.step.settings": "设置",
   "guide.initialization.step.settings.desc":
     "设置登录的默认用户以及凭据密钥。",

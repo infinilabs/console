@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -26,6 +27,13 @@ const (
 	agentReverseResponseCommand         = "agent_reverse_response"
 	agentReverseDefaultTimeout          = 30 * time.Second
 	agentReverseMaxResponseBytes        = 8 * 1024 * 1024
+	agentReverseReconnectWait           = 6 * time.Second
+	agentReverseReconnectPoll           = 200 * time.Millisecond
+)
+
+var (
+	errAgentReverseChannelDisconnected = errors.New("agent reverse channel disconnected")
+	errAgentReverseChannelNotConnected = errors.New("agent reverse channel is not connected")
 )
 
 type agentReverseHelloMessage struct {
@@ -134,7 +142,7 @@ func (m *agentReverseChannelManager) onDisconnect(sessionID string) {
 	if currentSession, exists := m.activeSessions[instanceID]; exists && currentSession == sessionID {
 		delete(m.activeSessions, instanceID)
 	}
-	m.failPendingLocked(instanceID, fmt.Errorf("agent reverse channel disconnected"))
+	m.failPendingLocked(instanceID, errAgentReverseChannelDisconnected)
 }
 
 func (m *agentReverseChannelManager) activateSession(sessionID, instanceID string) error {
@@ -249,6 +257,22 @@ func (m *agentReverseChannelManager) proxyRequest(instanceID string, req *util.R
 		defer cancel()
 	}
 
+	var lastErr error
+	for attempt := 0; attempt < 2; attempt++ {
+		res, err := m.proxyRequestOnce(ctx, instanceID, req, responseObjectToUnMarshall)
+		if err == nil {
+			return res, nil
+		}
+		lastErr = err
+		if attempt == 0 && errors.Is(err, errAgentReverseChannelDisconnected) && m.waitForReconnect(ctx, instanceID) {
+			continue
+		}
+		return res, err
+	}
+	return nil, lastErr
+}
+
+func (m *agentReverseChannelManager) proxyRequestOnce(ctx context.Context, instanceID string, req *util.Request, responseObjectToUnMarshall interface{}) (*util.Result, error) {
 	requestID := util.GetUUID()
 	requestMsg := agentReverseRequestMessage{
 		RequestID:  requestID,
@@ -270,7 +294,7 @@ func (m *agentReverseChannelManager) proxyRequest(instanceID string, req *util.R
 	sessionID, ok := m.activeSessions[instanceID]
 	if !ok || sessionID == "" {
 		m.mu.Unlock()
-		return nil, fmt.Errorf("agent reverse channel is not connected for instance [%s]", instanceID)
+		return nil, fmt.Errorf("%w for instance [%s]", errAgentReverseChannelNotConnected, instanceID)
 	}
 	m.pendingResponses[requestID] = pending
 	m.mu.Unlock()
@@ -308,13 +332,40 @@ func (m *agentReverseChannelManager) proxyRequest(instanceID string, req *util.R
 	return res, nil
 }
 
+func (m *agentReverseChannelManager) waitForReconnect(ctx context.Context, instanceID string) bool {
+	waitCtx, cancel := context.WithTimeout(ctx, agentReverseReconnectWait)
+	defer cancel()
+
+	if m.isConnected(instanceID) {
+		return true
+	}
+
+	ticker := time.NewTicker(agentReverseReconnectPoll)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-waitCtx.Done():
+			return false
+		case <-ticker.C:
+			if m.isConnected(instanceID) {
+				return true
+			}
+		}
+	}
+}
+
+func (m *agentReverseChannelManager) isConnected(instanceID string) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	sessionID, ok := m.activeSessions[instanceID]
+	return ok && sessionID != ""
+}
+
 func ProxyAgentRequestViaChannel(instanceID string, req *util.Request, responseObjectToUnMarshall interface{}) (*util.Result, error) {
 	return agentReverseChannel.proxyRequest(instanceID, req, responseObjectToUnMarshall)
 }
 
 func IsAgentReverseChannelConnected(instanceID string) bool {
-	agentReverseChannel.mu.Lock()
-	defer agentReverseChannel.mu.Unlock()
-	sessionID, ok := agentReverseChannel.activeSessions[instanceID]
-	return ok && sessionID != ""
+	return agentReverseChannel.isConnected(instanceID)
 }

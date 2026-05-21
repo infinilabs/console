@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Button, Divider, Form, Icon, Input, InputNumber, message, Result, Spin, Switch, Tag, Tooltip } from 'antd';
+import { Alert, Button, Divider, Form, Icon, Input, InputNumber, message, Result, Spin, Switch, Tooltip } from 'antd';
 import styles from './index.less'
 import request from '@/utils/request';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
@@ -472,20 +472,40 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
 }
 
 const StatusTag = ({ status = "pending" }) => {
-    const colorMap = {
-        pending: "default",
-        running: "processing",
-        success: "success",
-        failed: "error",
-        skipped: "orange",
+    const statusMetaMap = {
+        pending: {
+            icon: "clock-circle",
+            className: styles.taskStatusTagPending,
+        },
+        running: {
+            icon: "loading",
+            className: styles.taskStatusTagRunning,
+        },
+        success: {
+            icon: "check-circle",
+            theme: "filled",
+            className: styles.taskStatusTagSuccess,
+        },
+        failed: {
+            icon: "close-circle",
+            theme: "filled",
+            className: styles.taskStatusTagFailed,
+        },
+        skipped: {
+            icon: "minus-circle",
+            theme: "filled",
+            className: styles.taskStatusTagSkipped,
+        },
     };
+    const statusMeta = statusMetaMap[status] || statusMetaMap.pending;
 
     return (
-        <Tag color={colorMap[status] || "default"} style={{ marginRight: 0 }}>
+        <span className={`${styles.taskStatusTag} ${statusMeta.className}`}>
+            <Icon type={statusMeta.icon} theme={statusMeta.theme} />
             {formatMessage({
                 id: `guide.initialization.task.status.${status}`,
                 defaultMessage: status,
             })}
-        </Tag>
+        </span>
     );
 };

@@ -135,16 +135,28 @@ const StatisticBar = ({
           .isAfter(value?.summary?.timestamp) ? (
         <div className={"mask"}>
           <div>
-            Cluster is not monitored.{" "}
+            {formatMessage({
+              id: "cluster.manage.monitoring.notice.unmonitored",
+            })}{" "}
             <Button type="primary">
-              <Link to={`/resource/cluster/${clusterID}/edit`}>Go to open</Link>
+              <Link to={`/resource/cluster/${clusterID}/edit`}>
+                {formatMessage({
+                  id: "cluster.manage.monitoring.notice.enable_button",
+                })}
+              </Link>
             </Button>
           </div>
           <div>
-            Last data collection time:{" "}
-            {value?.summary?.timestamp
-              ? formatUtcTimeToLocal(value?.summary?.timestamp)
-              : "N/A"}
+            {formatMessage(
+              {
+                id: "cluster.manage.monitoring.notice.last_collection_time",
+              },
+              {
+                timestamp: value?.summary?.timestamp
+                  ? formatUtcTimeToLocal(value?.summary?.timestamp)
+                  : "N/A",
+              }
+            )}
           </div>
         </div>
       ) : null}

@@ -1,6 +1,6 @@
 import { useGlobal } from "@/layouts/GlobalContext";
 import request from "@/utils/request";
-import { Button, Alert, Select } from "antd";
+import { Button, Alert, Select, Tooltip, Icon } from "antd";
 import { useEffect, useState } from "react";
 import { formatMessage } from "umi/locale";
 import ClusterSelect from "@/components/ClusterSelect";
@@ -73,8 +73,17 @@ export default ({ onBatchEnroll, loading }) => {
           }}
         >
           {formatMessage({ id: "agent.instance.associate.set_logs_paths" })}
+          <Tooltip
+            title={formatMessage({
+              id: "agent.instance.associate.set_logs_paths.tips",
+            })}
+          >
+            <Icon
+              type="info-circle"
+              style={{ marginLeft: 8, color: "#1890ff" }}
+            />
+          </Tooltip>
         </div>
-        <div>{formatMessage({ id: "agent.instance.associate.set_logs_paths.tips" })}</div>
         <div style={{ marginTop: 15 }}>
           <Select
             mode="tags"
@@ -82,15 +91,10 @@ export default ({ onBatchEnroll, loading }) => {
             value={logsPaths}
             onChange={setLogsPaths}
             tokenSeparators={[","]}
-            placeholder={formatMessage({
-              id: "agent.instance.associate.labels.logs_paths.placeholder",
-            })}
-          />
-          <div style={{ marginTop: 8, color: "rgba(130,129,136,1)" }}>
-            {formatMessage({
-              id: "agent.instance.associate.labels.logs_paths.tips",
-            })}
-          </div>
+              placeholder={formatMessage({
+                id: "agent.instance.associate.labels.logs_paths.placeholder",
+              })}
+            />
         </div>
       </div>
       {

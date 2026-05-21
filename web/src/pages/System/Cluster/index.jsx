@@ -150,6 +150,44 @@ export default (props) => {
     });
   }, []);
 
+  const showMonitorConfirm = useCallback((record, actionKey) => {
+    const isEnable = actionKey === "enable";
+    Modal.confirm({
+      title: formatMessage({
+        id: isEnable
+          ? "cluster.manage.monitoring.confirm.enable.title"
+          : "cluster.manage.monitoring.confirm.disable.title",
+      }),
+      content: (
+        <>
+          <div>
+            {formatMessage(
+              { id: "cluster.manage.monitoring.confirm.cluster" },
+              { name: record.name }
+            )}
+          </div>
+          <div>
+            {formatMessage(
+              { id: "cluster.manage.monitoring.confirm.version" },
+              { version: record.version }
+            )}
+          </div>
+          <div>
+            {formatMessage(
+              { id: "cluster.manage.monitoring.confirm.endpoint" },
+              { endpoint: record.endpoint }
+            )}
+          </div>
+        </>
+      ),
+      okText: formatMessage({ id: "form.button.ok" }),
+      cancelText: formatMessage({ id: "form.button.cancel" }),
+      onOk() {
+        onMonitorClick([record.id], actionKey);
+      },
+    });
+  }, []);
+
   const onClean = async (type) => {
     setIsLoading(true);
     const res = await request(`${ESPrefix}/metadata/${type}`, {
@@ -314,10 +352,10 @@ export default (props) => {
         const onMenuClick = ({ key }) => {
           switch (key) {
             case "enable_monitoring":
-              onMonitorClick([record.id], "enable");
+              showMonitorConfirm(record, "enable");
               break;
             case "disable_monitoring":
-              onMonitorClick([record.id], "disable");
+              showMonitorConfirm(record, "disable");
               break;
             case "clean_nodes":
               showCleanConfirm("node");
@@ -347,7 +385,9 @@ export default (props) => {
           menuItems.push({
             key: record.monitored ? "disable_monitoring" : "enable_monitoring",
             content: formatMessage({
-              id: record.monitored ? "form.button.disable" : "form.button.enable",
+              id: record.monitored
+                ? "cluster.manage.monitoring.disable.action"
+                : "cluster.manage.monitoring.enable.action",
             }),
           });
           menuItems.push({

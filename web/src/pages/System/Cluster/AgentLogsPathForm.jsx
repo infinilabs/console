@@ -1,5 +1,5 @@
 import React from "react";
-import { Form, Select } from "antd";
+import { Form, Select, Tooltip, Icon } from "antd";
 import { formatMessage } from "umi/locale";
 
 export default ({ form, initialValue, visible = true }) => {
@@ -11,9 +11,23 @@ export default ({ form, initialValue, visible = true }) => {
 
   return (
     <Form.Item
-      label={formatMessage({
-        id: "cluster.manage.agent_logs_paths.label",
-      })}
+      label={
+        <span>
+          {formatMessage({
+            id: "cluster.manage.agent_logs_paths.label",
+          })}
+          <Tooltip
+            title={formatMessage({
+              id: "cluster.manage.agent_logs_paths.tips",
+            })}
+          >
+            <Icon
+              type="info-circle"
+              style={{ marginLeft: 8, color: "#1890ff" }}
+            />
+          </Tooltip>
+        </span>
+      }
     >
       {getFieldDecorator("agent_logs_paths", {
         initialValue: initialValue?.agent_logs_paths || [],
@@ -27,11 +41,6 @@ export default ({ form, initialValue, visible = true }) => {
           })}
         />
       )}
-      <div style={{ marginTop: 8, color: "rgba(130,129,136,1)", lineHeight: "20px" }}>
-        {formatMessage({
-          id: "cluster.manage.agent_logs_paths.tips",
-        })}
-      </div>
     </Form.Item>
   );
 };

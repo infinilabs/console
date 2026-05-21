@@ -1,10 +1,35 @@
 import { useGlobal } from "@/layouts/GlobalContext";
 import request from "@/utils/request";
-import { Form, Input, Switch, Icon, Button, Select } from "antd";
-import { useMemo, useRef, useState } from "react";
+import { Form, Input, Switch, Icon, Button, Select, Tooltip } from "antd";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, router } from "umi";
 import { formatMessage } from "umi/locale";
 import CredentialForm from "../../../System/Cluster/CredentialForm";
+
+const normalizeLogsPaths = (items = []) =>
+  Array.from(
+    new Set(
+      items
+        .reduce((result, item) => {
+          if (Array.isArray(item)) {
+            return result.concat(item);
+          }
+          result.push(item);
+          return result;
+        }, [])
+        .map((item) => `${item || ""}`.trim())
+        .filter(Boolean)
+    )
+  );
+
+const getDetectedLogsPaths = (data = {}) =>
+  normalizeLogsPaths([
+    data?.logs_paths,
+    data?.path_logs,
+    data?.node_info?.logs_paths,
+    data?.node_info?.path_logs,
+    data?.node_info?.settings?.path?.logs,
+  ]);
 
 export const Associate = Form.create({ name: "associate_form" })((props) => {
   const formItemLayout = {
@@ -200,7 +225,8 @@ export const Associate = Form.create({ name: "associate_form" })((props) => {
 
 const Result = ({ data, onComplete, loading = false }) => {
   const { clusterList = [] } = useGlobal();
-  const detectedLogsPath = data?.node_info?.settings?.path?.logs || "";
+  const detectedLogsPaths = useMemo(() => getDetectedLogsPaths(data), [data]);
+  const detectedLogsPath = detectedLogsPaths.join(", ");
   const clusters = useMemo(
     () => {
       if (!data.cluster_info.cluster_uuid) {
@@ -215,9 +241,11 @@ const Result = ({ data, onComplete, loading = false }) => {
   );
   const selectedID = clusters[0]?.id || "";
   const clusterRef = useRef();
-  const [logsPaths, setLogsPaths] = useState(
-    detectedLogsPath ? [detectedLogsPath] : []
-  );
+  const [logsPaths, setLogsPaths] = useState(detectedLogsPaths);
+
+  useEffect(() => {
+    setLogsPaths(detectedLogsPaths);
+  }, [detectedLogsPaths.join("\n")]);
 
   const onAssociateClick = () => {
     if (typeof onComplete === "function") {
@@ -306,9 +334,21 @@ const Result = ({ data, onComplete, loading = false }) => {
         </div>
         <div style={{ display: "flex", alignItems: "flex-start", marginTop: 15 }}>
           <div style={{ paddingRight: 10, lineHeight: "32px" }}>
-            {formatMessage({
-              id: "agent.instance.associate.labels.logs_paths",
-            })}
+            <span>
+              {formatMessage({
+                id: "agent.instance.associate.labels.logs_paths",
+              })}
+              <Tooltip
+                title={formatMessage({
+                  id: "agent.instance.associate.labels.logs_paths.tips",
+                })}
+              >
+                <Icon
+                  type="info-circle"
+                  style={{ marginLeft: 8, color: "#1890ff" }}
+                />
+              </Tooltip>
+            </span>
           </div>
           <div style={{ flex: "1 1 auto" }}>
             <Select
@@ -321,11 +361,6 @@ const Result = ({ data, onComplete, loading = false }) => {
                 id: "agent.instance.associate.labels.logs_paths.placeholder",
               })}
             />
-            <div style={{ marginTop: 8, color: "rgba(130,129,136,1)" }}>
-              {formatMessage({
-                id: "agent.instance.associate.labels.logs_paths.tips",
-              })}
-            </div>
           </div>
         </div>
       </div>

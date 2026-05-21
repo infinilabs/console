@@ -57,8 +57,8 @@ func Init() {
 	api.HandleAPIMethod(api.POST, "/instance/node/_auto_enroll", handler.RequirePermission(handler.autoEnrollESNode, enum.PermissionAgentInstanceWrite))
 
 	//get elasticsearch node logs, direct fetch or via stored logs(TODO)
-	api.HandleAPIMethod(api.GET, "/elasticsearch/:id/node/:node_id/logs/_list", handler.RequirePermission(handler.getLogFilesByNode, enum.PermissionAgentInstanceRead))
-	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/node/:node_id/logs/_read", handler.RequirePermission(handler.getLogFileContent, enum.PermissionAgentInstanceRead))
+	api.HandleAPIMethod(api.GET, "/elasticsearch/:id/node/:node_id/logs/_list", handler.RequireClusterPermission(handler.RequirePermission(handler.getLogFilesByNode, enum.PermissionElasticsearchMetricRead, enum.PermissionElasticsearchNodeRead)))
+	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/node/:node_id/logs/_read", handler.RequireClusterPermission(handler.RequirePermission(handler.getLogFileContent, enum.PermissionElasticsearchMetricRead, enum.PermissionElasticsearchNodeRead)))
 
 	server.RegisterConfigProvider(remoteConfigProvider)
 	server.RegisterConfigProvider(dynamicAgentConfigProvider)

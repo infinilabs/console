@@ -109,11 +109,19 @@ export default (props) => {
   const refreshButtonStyle = {
     width: 32,
     minWidth: 32,
+    height: "100%",
     padding: 0,
     marginLeft: -1,
     borderTopLeftRadius: 0,
     borderBottomLeftRadius: 0,
     zIndex: 1,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  };
+  const refreshButtonWrapStyle = {
+    display: "flex",
+    alignItems: "stretch",
   };
 
   const credentialOptions = useMemo(() => {
@@ -211,15 +219,19 @@ export default (props) => {
                 </Select>
               )}
             </div>
-            <Tooltip title={formatMessage({ id: "form.button.refresh" })}>
-              <Button
-                icon="reload"
-                onClick={() => run()}
-                loading={loading}
-                disabled={!canReadCredential}
-                style={refreshButtonStyle}
-              />
-            </Tooltip>
+            <div style={refreshButtonWrapStyle}>
+              <Tooltip title={formatMessage({ id: "form.button.refresh" })}>
+                <span style={refreshButtonWrapStyle}>
+                  <Button
+                    icon="reload"
+                    onClick={() => run()}
+                    loading={loading}
+                    disabled={!canReadCredential}
+                    style={refreshButtonStyle}
+                  />
+                </span>
+              </Tooltip>
+            </div>
           </div>
           {selectedCredential ? (
             <Button

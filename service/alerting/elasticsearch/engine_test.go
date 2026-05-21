@@ -156,7 +156,7 @@ func TestGenerateAgg(t *testing.T) {
 	fmt.Println(util.MustToJSON(agg))
 }
 
-func TestAttachTitleMessageToCtxCollapsesBlankLines(t *testing.T) {
+func TestAttachTitleMessageToCtxRemovesBlankLines(t *testing.T) {
 	paramsCtx := map[string]interface{}{
 		"priority":      "critical",
 		"event_id":      "evt-1",
@@ -188,14 +188,14 @@ Index: {{index .group_values 0}} of Cluster: {{$.resource_name}}, Max Shard Stor
 	}
 
 	got := paramsCtx[alerting2.ParamMessage].(string)
-	if strings.Contains(got, "\n\n\n") {
-		t.Fatalf("expected blank lines to collapse, got %q", got)
+	if strings.Contains(got, "\n\n") {
+		t.Fatalf("expected blank lines to be removed, got %q", got)
 	}
 	if !strings.Contains(got, "Index: migration-pmc of Cluster: migrator-source, Max Shard Storage: 92.82gb") {
 		t.Fatalf("expected rendered content, got %q", got)
 	}
-	if strings.HasSuffix(got, "\n") {
-		t.Fatalf("expected trailing blank lines to be trimmed, got %q", got)
+	if strings.Contains(got, "- TriggerAt: 2026-05-20 15:00:00\nIndex: migration-pmc of Cluster: migrator-source, Max Shard Storage: 92.82gb") == false {
+		t.Fatalf("expected content lines to stay contiguous, got %q", got)
 	}
 }
 

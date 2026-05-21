@@ -30,6 +30,19 @@ import Location from "@/components/Icons/Location";
 const ButtonGroup = Button.Group;
 const getLogFileKey = (logFile = {}) =>
   `${logFile.logs_path || ""}::${logFile.name || ""}`;
+const formatLogFileLabel = (logFile = {}, includeMeta = false) => {
+  const parts = [logFile.name];
+  if (logFile.logs_path) {
+    parts.push(logFile.logs_path);
+  }
+  if (includeMeta) {
+    parts.push(formatter.bytes(logFile.size_in_bytes || 0));
+    if (logFile.modify_time) {
+      parts.push(moment(logFile.modify_time).format("YYYY.MM.DD"));
+    }
+  }
+  return parts.filter(Boolean).join(" | ");
+};
 
 const Logs = (props) => {
   const clusterID = props.data?._source?.metadata?.cluster_id;
@@ -48,6 +61,11 @@ const Logs = (props) => {
   });
 
   const [loading, setLoading] = useState(false);
+  const selectedLogFile = useMemo(
+    () =>
+      (logState.logFiles || []).find((logFile) => getLogFileKey(logFile) === logState.file),
+    [logState.file, logState.logFiles]
+  );
 
   const fetchLogs = async (withLoading) => {
     if (withLoading) setLoading(true);
@@ -275,30 +293,41 @@ const Logs = (props) => {
       <div className="form-line">
         <div className="form-item">
         {formatMessage({ id: "agent.logs.label.log_file" })}
-          <Select
-            style={{ width: 390 }}
-            value={logState.file}
-            onChange={onLogFileChange}
-            dropdownMatchSelectWidth={false}
-          >
-            {(logState.logFiles || []).map((logFile) => {
-              return (
-                <Select.Option key={getLogFileKey(logFile)} value={getLogFileKey(logFile)}>
-                  {logFile.name}
-                  {logFile.logs_path ? (
-                    <>
-                      <Divider type="vertical" />
-                      {logFile.logs_path}
-                    </>
-                  ) : null}
-                  <Divider type="vertical" />
-                  {formatter.bytes(logFile.size_in_bytes || 0)}
-                  <Divider type="vertical" />
-                  {moment(logFile.modify_time).format("YYYY.MM.DD")}
-                </Select.Option>
-              );
-            })}
-          </Select>
+          <Tooltip title={selectedLogFile ? formatLogFileLabel(selectedLogFile, true) : ""}>
+            <Select
+              style={{ width: 390 }}
+              value={logState.file}
+              onChange={onLogFileChange}
+              optionLabelProp="title"
+            >
+              {(logState.logFiles || []).map((logFile) => {
+                const optionKey = getLogFileKey(logFile);
+                const optionLabel = formatLogFileLabel(logFile);
+                return (
+                  <Select.Option
+                    key={optionKey}
+                    value={optionKey}
+                    title={optionLabel}
+                  >
+                    <div className="log-file-option">
+                      <span className="log-file-option__name">{logFile.name}</span>
+                      {logFile.logs_path ? (
+                        <Tooltip title={logFile.logs_path}>
+                          <span className="log-file-option__path">{logFile.logs_path}</span>
+                        </Tooltip>
+                      ) : null}
+                      <span className="log-file-option__meta">
+                        {formatter.bytes(logFile.size_in_bytes || 0)}
+                      </span>
+                      <span className="log-file-option__meta">
+                        {moment(logFile.modify_time).format("YYYY.MM.DD")}
+                      </span>
+                    </div>
+                  </Select.Option>
+                );
+              })}
+            </Select>
+          </Tooltip>
         </div>
         <ButtonGroup>
         {/* loading={logState.autoRefreshLoading} */}

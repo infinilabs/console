@@ -42,6 +42,7 @@ import (
 	console_common "infini.sh/console/common"
 	elasticapi "infini.sh/console/modules/elastic/api"
 	"infini.sh/console/plugin/managed/server"
+	agentservice "infini.sh/console/service/agent"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/global"
@@ -235,6 +236,11 @@ type BindingItem struct {
 	Updated int64 `json:"updated"`
 }
 
+type ClusterBinding struct {
+	ClusterID string   `json:"cluster_id"`
+	LogsPaths []string `json:"logs_paths,omitempty"`
+}
+
 func GetElasticLogFiles(ctx context.Context, instance *model.Instance, logsPaths []string) (interface{}, error) {
 	body := util.MapStr{}
 	switch len(logsPaths) {
@@ -425,14 +431,77 @@ func getAgentByNodeID(clusterID, nodeID string) (*model.Instance, []string, erro
 }
 
 type ClusterInfo struct {
-	ClusterIDs []string `json:"cluster_id"`
+	ClusterIDs []string         `json:"cluster_id"`
+	Clusters   []ClusterBinding `json:"clusters,omitempty"`
 }
 
 var autoEnrollRunning = atomic.Bool{}
 
-func getAutoEnrollClusterInfo(clusterIDs []string) (ClusterInfo, error) {
-	if len(clusterIDs) > 0 {
-		return ClusterInfo{ClusterIDs: clusterIDs}, nil
+func normalizeClusterInfo(info ClusterInfo) ClusterInfo {
+	clusterIDs := make([]string, 0, len(info.ClusterIDs)+len(info.Clusters))
+	seen := map[string]int{}
+	existingClusters := info.Clusters
+
+	appendCluster := func(clusterID string, logsPaths []string) {
+		clusterID = strings.TrimSpace(clusterID)
+		if clusterID == "" {
+			return
+		}
+		logsPaths = normalizeLogsPaths(logsPaths, "")
+		if idx, exists := seen[clusterID]; exists {
+			if len(logsPaths) > 0 {
+				info.Clusters[idx].LogsPaths = logsPaths
+			}
+			return
+		}
+		seen[clusterID] = len(info.Clusters)
+		clusterIDs = append(clusterIDs, clusterID)
+		info.Clusters = append(info.Clusters, ClusterBinding{
+			ClusterID: clusterID,
+			LogsPaths: logsPaths,
+		})
+	}
+
+	info.Clusters = make([]ClusterBinding, 0, len(info.Clusters))
+	for _, clusterID := range info.ClusterIDs {
+		appendCluster(clusterID, nil)
+	}
+	for _, item := range existingClusters {
+		appendCluster(item.ClusterID, item.LogsPaths)
+	}
+	info.ClusterIDs = clusterIDs
+	return info
+}
+
+func (info ClusterInfo) GetLogsPaths(clusterID string) []string {
+	for _, item := range info.Clusters {
+		if item.ClusterID == clusterID {
+			return normalizeLogsPaths(item.LogsPaths, "")
+		}
+	}
+	return nil
+}
+
+func getAutoEnrollClusterInfo(clusterInfo ClusterInfo) (ClusterInfo, error) {
+	clusterInfo = normalizeClusterInfo(clusterInfo)
+	if len(clusterInfo.ClusterIDs) > 0 {
+		clusters := make([]ClusterBinding, 0, len(clusterInfo.ClusterIDs))
+		for _, clusterID := range clusterInfo.ClusterIDs {
+			logsPaths := clusterInfo.GetLogsPaths(clusterID)
+			if len(logsPaths) == 0 {
+				var err error
+				logsPaths, err = agentservice.GetClusterLogsPaths(clusterID)
+				if err != nil {
+					return ClusterInfo{}, err
+				}
+			}
+			clusters = append(clusters, ClusterBinding{
+				ClusterID: clusterID,
+				LogsPaths: logsPaths,
+			})
+		}
+		clusterInfo.Clusters = clusters
+		return clusterInfo, nil
 	}
 
 	q := &orm.Query{
@@ -458,11 +527,12 @@ func getAutoEnrollClusterInfo(clusterIDs []string) (ClusterInfo, error) {
 			ids = append(ids, id)
 		}
 	}
-	return ClusterInfo{ClusterIDs: ids}, nil
+	clusterInfo.ClusterIDs = ids
+	return getAutoEnrollClusterInfo(clusterInfo)
 }
 
-func startAutoEnroll(clusterIDs []string) error {
-	clusterInfo, err := getAutoEnrollClusterInfo(clusterIDs)
+func startAutoEnroll(clusterInfo ClusterInfo) error {
+	clusterInfo, err := getAutoEnrollClusterInfo(clusterInfo)
 	if err != nil {
 		return err
 	}
@@ -562,11 +632,18 @@ func (h *APIHandler) autoEnrollESNode(w http.ResponseWriter, req *http.Request, 
 		}
 	}
 
+	clusterInfo = normalizeClusterInfo(clusterInfo)
 	if len(clusterInfo.ClusterIDs) <= 0 {
 		panic(errors.New("please select cluster to enroll"))
 	}
 
-	if err := startAutoEnroll(clusterInfo.ClusterIDs); err != nil {
+	for _, item := range clusterInfo.Clusters {
+		if err := agentservice.SaveClusterLogsPaths(item.ClusterID, item.LogsPaths); err != nil {
+			panic(err)
+		}
+	}
+
+	if err := startAutoEnroll(clusterInfo); err != nil {
 		panic(err)
 	}
 
@@ -609,6 +686,12 @@ func (h *APIHandler) discoveryESNodesInfo(w http.ResponseWriter, req *http.Reque
 			if len(bytes) > 0 {
 				clusterInfo := ClusterInfo{}
 				util.FromJSONBytes(bytes, &clusterInfo)
+				clusterInfo = normalizeClusterInfo(clusterInfo)
+				for _, item := range clusterInfo.Clusters {
+					if err := agentservice.SaveClusterLogsPaths(item.ClusterID, item.LogsPaths); err != nil {
+						panic(err)
+					}
+				}
 				discoveredPIDs = bindInstanceToCluster(clusterInfo, nodes, instance.ID, instance.GetEndpoint())
 			}
 		}
@@ -634,6 +717,7 @@ func bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elastic.DiscoveryResu
 	if len(clusterInfo.ClusterIDs) > 0 {
 		//try connect this node to cluster by using this cluster's agent credential
 		for _, clusterID := range clusterInfo.ClusterIDs {
+			logsPaths := clusterInfo.GetLogsPaths(clusterID)
 			preparedConf, err := elasticapi.PrepareClusterForAgentCollection(clusterID)
 			if err != nil {
 				log.Error(err)
@@ -663,7 +747,7 @@ func bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elastic.DiscoveryResu
 						if v.NodeInfo != nil {
 							pid := v.NodeInfo.Process.Id
 							nodeHost := v.NodeInfo.GetHttpPublishHost()
-							nodeInfo := (&APIHandler{}).internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint, pid, nodeHost, auth)
+							nodeInfo := (&APIHandler{}).internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint, pid, nodeHost, auth, logsPaths)
 							if nodeInfo != nil {
 								discoveredPIDs[pid] = nodeInfo
 							}
@@ -687,7 +771,7 @@ func bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elastic.DiscoveryResu
 						}
 
 						nodeHost := fmt.Sprintf("%s:%d", ip, port)
-						nodeInfo := (&APIHandler{}).internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint, pid, nodeHost, auth)
+						nodeInfo := (&APIHandler{}).internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint, pid, nodeHost, auth, logsPaths)
 						if nodeInfo != nil {
 							discoveredPIDs[pid] = nodeInfo
 						}
@@ -699,7 +783,7 @@ func bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elastic.DiscoveryResu
 	return discoveredPIDs
 }
 
-func (h *APIHandler) internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint string, pid int, nodeHost string, auth *model.BasicAuth) *elastic.LocalNodeInfo {
+func (h *APIHandler) internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint string, pid int, nodeHost string, auth *model.BasicAuth, logsPaths []string) *elastic.LocalNodeInfo {
 	success, tryAgain, nodeInfo := h.getESNodeInfoViaProxy(nodeHost, "http", auth, instanceEndpoint)
 	if !success && tryAgain {
 		//try https again
@@ -720,6 +804,7 @@ func (h *APIHandler) internalProcessBind(clusterID, clusterUUID, instanceID, ins
 			ClusterID:   clusterID,
 			ClusterUUID: nodeInfo.ClusterInfo.ClusterUUID,
 			NodeUUID:    nodeInfo.NodeUUID,
+			LogsPaths:   logsPaths,
 		}
 
 		settings := NewNodeAgentSettings(instanceID, &item)

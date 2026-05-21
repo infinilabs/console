@@ -178,14 +178,15 @@ const ClusterStep = ({ dispatch, history, query }) => {
                values.agent_credential_id !== MANUAL_VALUE && isAgentMode
                  ? values.agent_credential_id
                  : undefined,
-             agent_basic_auth: isAgentMode
-               ? {
-                   username: values.agent_username,
-                   password: values.agent_password,
-                 }
-               : undefined,
-             description: values.description,
-               enabled: true,
+              agent_basic_auth: isAgentMode
+                ? {
+                    username: values.agent_username,
+                    password: values.agent_password,
+                  }
+                : undefined,
+              agent_logs_paths: isAgentMode ? values.agent_logs_paths || [] : undefined,
+              description: values.description,
+                enabled: true,
                monitored: values.monitored,
                metric_collection_mode: values.metric_collection_mode || "agentless",
               monitor_configs: monitor_configs_new,

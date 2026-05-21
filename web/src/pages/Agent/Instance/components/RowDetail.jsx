@@ -341,8 +341,18 @@ export const AgentRowDetail = ({ agentID, t }) => {
     });
   };
 
-  const onUnknownProcessEnroll = async (clusterIDs) => {
-    if (!Array.isArray(clusterIDs) || clusterIDs.length === 0) {
+  const onUnknownProcessEnroll = async (clusters) => {
+    const clusterItems = Array.isArray(clusters)
+      ? clusters
+          .map((item) =>
+            typeof item === "string"
+              ? { cluster_id: item, logs_paths: [] }
+              : item
+          )
+          .filter((item) => item?.cluster_id)
+      : [];
+    const clusterIDs = clusterItems.map((item) => item.cluster_id);
+    if (clusterIDs.length === 0) {
       message.warn(
         formatMessage({ id: "agent.instance.associate.tips.associate" })
       );
@@ -353,6 +363,7 @@ export const AgentRowDetail = ({ agentID, t }) => {
       method: "POST",
       body: {
         cluster_id: clusterIDs,
+        clusters: clusterItems,
       },
     });
     setBtnLoading(false);

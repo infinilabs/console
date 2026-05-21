@@ -64,7 +64,7 @@ func Init() {
 	server.RegisterConfigProvider(dynamicAgentConfigProvider)
 	server.RegisterSecretProvider(agentSecretProvider)
 	agentservice.RegisterAutoEnrollCallback(func(clusterIDs []string) {
-		if err := startAutoEnroll(clusterIDs); err != nil {
+		if err := startAutoEnroll(ClusterInfo{ClusterIDs: clusterIDs}); err != nil {
 			// ignore concurrent trigger errors here; manual/scheduled runs already cover the next pass
 		}
 	})
@@ -75,7 +75,7 @@ func Init() {
 		Interval:    "1m",
 		Singleton:   true,
 		Task: func(ctx context.Context) {
-			if err := startAutoEnroll(nil); err != nil {
+			if err := startAutoEnroll(ClusterInfo{}); err != nil {
 				// ignore concurrent trigger errors; the running task will complete the current scan
 			}
 		},

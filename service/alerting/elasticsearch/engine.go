@@ -1081,22 +1081,12 @@ func normalizeAlertTemplateText(text string) string {
 	text = strings.ReplaceAll(text, "\r\n", "\n")
 	lines := strings.Split(text, "\n")
 	result := make([]string, 0, len(lines))
-	lastBlank := false
 	for _, line := range lines {
 		line = strings.TrimRight(line, " \t")
 		if strings.TrimSpace(line) == "" {
-			if len(result) == 0 || lastBlank {
-				continue
-			}
-			result = append(result, "")
-			lastBlank = true
 			continue
 		}
 		result = append(result, line)
-		lastBlank = false
-	}
-	for len(result) > 0 && strings.TrimSpace(result[len(result)-1]) == "" {
-		result = result[:len(result)-1]
 	}
 	return strings.Join(result, "\n")
 }

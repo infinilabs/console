@@ -7,6 +7,9 @@ export default {
   "agent.instance.associate.tips.associate": "请选择要关联的集群！",
   "agent.instance.associate.set_credential": "为探针设置凭据",
   "agent.instance.associate.set_credential.tips": "此凭据将用于指标和日志收集，建议使用权限范围合理的用户。",
+  "agent.instance.associate.set_logs_paths": "为探针设置日志采集路径",
+  "agent.instance.associate.set_logs_paths.tips":
+    "这些日志目录会用于本次批量关联，并保存为后续自动补关联节点的默认日志采集路径。",
   "agent.instance.associate.tips.connected": "连接成功！",
   "agent.instance.associate.tips.connected.check": "请设置凭据",
   "agent.instance.associate.auth.error": "以下集群需要先设置平台凭据或 Agent 凭据：",

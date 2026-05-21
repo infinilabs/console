@@ -9,6 +9,9 @@ export default {
   "agent.instance.associate.set_credential": "Set probe credential",
   "agent.instance.associate.set_credential.tips":
     "This credential will be used for metrics and log collection. It is recommended to use a user with a reasonable permission scope.",
+  "agent.instance.associate.set_logs_paths": "Set probe log collection paths",
+  "agent.instance.associate.set_logs_paths.tips":
+    "These log directories are used for the current batch enroll and saved as the default log collection paths for future auto-enrolled nodes.",
   "agent.instance.associate.tips.connected": "Connection succeeded!",
   "agent.instance.associate.tips.connected.check": "please set a credential for agent",
   "agent.instance.associate.auth.error": "The following clusters need platform or agent credentials first:",

@@ -736,6 +736,162 @@ func (alertAPI *AlertAPI) getRuleAlertMessageNumbers(ruleIDs []string) (map[stri
 	return ruleAlertNumbers, nil
 }
 
+type alertInfoSearchFieldConfig struct {
+	RuleIDField string
+	StateField  string
+}
+
+var alertInfoSearchFieldConfigs = []alertInfoSearchFieldConfig{
+	{
+		RuleIDField: "rule_id",
+		StateField:  "state",
+	},
+}
+
+func searchLatestAlertsByField(esClient elastic.API, ruleIDs []string, fieldConfig alertInfoSearchFieldConfig, sourceFields []string, alertState string) (*elastic.SearchResponse, error) {
+	queryDsl := util.MapStr{
+		"_source": sourceFields,
+		"sort": []util.MapStr{
+			{
+				"created": util.MapStr{
+					"order": "desc",
+				},
+			},
+		},
+		"collapse": util.MapStr{
+			"field": fieldConfig.RuleIDField,
+		},
+	}
+
+	if alertState == "" {
+		queryDsl["query"] = util.MapStr{
+			"terms": util.MapStr{
+				fieldConfig.RuleIDField: ruleIDs,
+			},
+		}
+	} else {
+		queryDsl["query"] = util.MapStr{
+			"bool": util.MapStr{
+				"must": []util.MapStr{
+					{
+						"terms": util.MapStr{
+							fieldConfig.RuleIDField: ruleIDs,
+						},
+					},
+					{
+						"term": util.MapStr{
+							fieldConfig.StateField: util.MapStr{
+								"value": alertState,
+							},
+						},
+					},
+				},
+			},
+		}
+	}
+
+	return esClient.SearchWithRawQueryDSL(orm.GetWildcardIndexName(alerting.Alert{}), util.MustToJSONBytes(queryDsl))
+}
+
+func getRemainingRuleIDs(ruleIDs []string, found map[string]struct{}) []string {
+	remaining := make([]string, 0, len(ruleIDs))
+	for _, ruleID := range ruleIDs {
+		if _, ok := found[ruleID]; ok {
+			continue
+		}
+		remaining = append(remaining, ruleID)
+	}
+	return remaining
+}
+
+func fetchLatestRuleStatuses(esClient elastic.API, ruleIDs []string) (map[string]util.MapStr, []string) {
+	results := map[string]util.MapStr{}
+	found := map[string]struct{}{}
+	remaining := append([]string(nil), ruleIDs...)
+	attempts := make([]string, 0, len(alertInfoSearchFieldConfigs))
+
+	for _, fieldConfig := range alertInfoSearchFieldConfigs {
+		if len(remaining) == 0 {
+			break
+		}
+
+		searchRes, err := searchLatestAlertsByField(esClient, remaining, fieldConfig, []string{"state", "rule_id"}, "")
+		if err != nil {
+			attempts = append(attempts, fmt.Sprintf("%s query failed: %v", fieldConfig.RuleIDField, err))
+			continue
+		}
+		if len(searchRes.Hits.Hits) == 0 {
+			attempts = append(attempts, fmt.Sprintf("%s query returned no hits", fieldConfig.RuleIDField))
+			continue
+		}
+
+		matched := 0
+		for _, hit := range searchRes.Hits.Hits {
+			ruleID, ok := hit.Source["rule_id"].(string)
+			if !ok || ruleID == "" {
+				continue
+			}
+			results[ruleID] = util.MapStr{
+				"status": hit.Source["state"],
+			}
+			found[ruleID] = struct{}{}
+			matched++
+		}
+		attempts = append(attempts, fmt.Sprintf("%s query matched %d rule(s)", fieldConfig.RuleIDField, matched))
+		remaining = getRemainingRuleIDs(ruleIDs, found)
+	}
+
+	return results, attempts
+}
+
+func fetchLatestRuleNotificationTimes(esClient elastic.API, ruleIDs []string) (map[string]interface{}, []string) {
+	results := map[string]interface{}{}
+	found := map[string]struct{}{}
+	remaining := append([]string(nil), ruleIDs...)
+	attempts := make([]string, 0, len(alertInfoSearchFieldConfigs))
+
+	for _, fieldConfig := range alertInfoSearchFieldConfigs {
+		if len(remaining) == 0 {
+			break
+		}
+
+		searchRes, err := searchLatestAlertsByField(esClient, remaining, fieldConfig, []string{"created", "rule_id"}, alerting.AlertStateAlerting)
+		if err != nil {
+			attempts = append(attempts, fmt.Sprintf("%s notification query failed: %v", fieldConfig.RuleIDField, err))
+			continue
+		}
+		if len(searchRes.Hits.Hits) == 0 {
+			attempts = append(attempts, fmt.Sprintf("%s notification query returned no hits", fieldConfig.RuleIDField))
+			continue
+		}
+
+		matched := 0
+		for _, hit := range searchRes.Hits.Hits {
+			ruleID, ok := hit.Source["rule_id"].(string)
+			if !ok || ruleID == "" {
+				continue
+			}
+			results[ruleID] = hit.Source["created"]
+			found[ruleID] = struct{}{}
+			matched++
+		}
+		attempts = append(attempts, fmt.Sprintf("%s notification query matched %d rule(s)", fieldConfig.RuleIDField, matched))
+		remaining = getRemainingRuleIDs(ruleIDs, found)
+	}
+
+	return results, attempts
+}
+
+func buildRuleStatusUnavailableReason(statusAttempts []string) string {
+	if len(statusAttempts) == 0 {
+		return "latest alert status unavailable: no alert history found for this rule yet"
+	}
+	return fmt.Sprintf(
+		"latest alert status unavailable: no matching alert history found for this rule yet (attempts: %s)",
+		strings.Join(statusAttempts, "; "),
+	)
+}
+
 func (alertAPI *AlertAPI) fetchAlertInfos(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	var ruleIDs = []string{}
 	alertAPI.DecodeJSON(req, &ruleIDs)
@@ -745,90 +901,26 @@ func (alertAPI *AlertAPI) fetchAlertInfos(w http.ResponseWriter, req *http.Reque
 		return
 	}
 	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
-	queryDsl := util.MapStr{
-		"_source": []string{"state", "rule_id"},
-		"sort": []util.MapStr{
-			{
-				"created": util.MapStr{
-					"order": "desc",
-				},
-			},
-		},
-		"collapse": util.MapStr{
-			"field": "rule_id",
-		},
-		"query": util.MapStr{
-			"terms": util.MapStr{
-				"rule_id": ruleIDs,
-			},
-		},
-	}
+	latestAlertInfos, statusAttempts := fetchLatestRuleStatuses(esClient, ruleIDs)
+	lastNotificationTimes, _ := fetchLatestRuleNotificationTimes(esClient, ruleIDs)
 
-	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetWildcardIndexName(alerting.Alert{}), util.MustToJSONBytes(queryDsl))
-	if err != nil {
-		log.Error(err)
-		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if len(searchRes.Hits.Hits) == 0 {
-		alertAPI.WriteJSON(w, util.MapStr{}, http.StatusOK)
-		return
-	}
-
-	latestAlertInfos := map[string]util.MapStr{}
-	for _, hit := range searchRes.Hits.Hits {
-		if ruleID, ok := hit.Source["rule_id"].(string); ok {
-			latestAlertInfos[ruleID] = util.MapStr{
-				"status": hit.Source["state"],
+	response := make(util.MapStr, len(ruleIDs))
+	for _, ruleID := range ruleIDs {
+		info := util.MapStr{}
+		if latestInfo, ok := latestAlertInfos[ruleID]; ok {
+			for k, v := range latestInfo {
+				info[k] = v
 			}
 		}
-	}
-	queryDsl = util.MapStr{
-		"_source": []string{"created", "rule_id"},
-		"sort": []util.MapStr{
-			{
-				"created": util.MapStr{
-					"order": "desc",
-				},
-			},
-		},
-		"collapse": util.MapStr{
-			"field": "rule_id",
-		},
-		"query": util.MapStr{
-			"bool": util.MapStr{
-				"must": []util.MapStr{
-					{
-						"terms": util.MapStr{
-							"rule_id": ruleIDs,
-						},
-					},
-					{
-						"term": util.MapStr{
-							"state": util.MapStr{
-								"value": alerting.AlertStateAlerting,
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-	searchRes, err = esClient.SearchWithRawQueryDSL(orm.GetWildcardIndexName(alerting.Alert{}), util.MustToJSONBytes(queryDsl))
-	if err != nil {
-		log.Error(err)
-		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	for _, hit := range searchRes.Hits.Hits {
-		if ruleID, ok := hit.Source["rule_id"].(string); ok {
-			if _, ok = latestAlertInfos[ruleID]; ok {
-				latestAlertInfos[ruleID]["last_notification_time"] = hit.Source["created"]
-			}
+		if lastNotificationTime, ok := lastNotificationTimes[ruleID]; ok {
+			info["last_notification_time"] = lastNotificationTime
 		}
-
+		if _, ok := info["status"]; !ok {
+			info["status_error"] = buildRuleStatusUnavailableReason(statusAttempts)
+		}
+		response[ruleID] = info
 	}
-	alertAPI.WriteJSON(w, latestAlertInfos, http.StatusOK)
+	alertAPI.WriteJSON(w, response, http.StatusOK)
 }
 
 func (alertAPI *AlertAPI) enableRule(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {

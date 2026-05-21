@@ -169,7 +169,7 @@ func (h *APIHandler) updateHost(w http.ResponseWriter, req *http.Request, ps htt
 	err = h.DecodeJSON(req, &toUpObj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
+		log.Errorf("updateHost failed: %v", err)
 		return
 	}
 
@@ -184,7 +184,7 @@ func (h *APIHandler) updateHost(w http.ResponseWriter, req *http.Request, ps htt
 	err = orm.Save(nil, &obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
+		log.Errorf("updateHost failed: %v", err)
 		return
 	}
 
@@ -197,7 +197,7 @@ func (h *APIHandler) updateHost(w http.ResponseWriter, req *http.Request, ps htt
 func (h *APIHandler) getDiscoverHosts(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	hosts, err := discoverHost()
 	if err != nil {
-		log.Error(err)
+		log.Errorf("getDiscoverHosts failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -409,7 +409,7 @@ func (h *APIHandler) FetchHostInfo(w http.ResponseWriter, req *http.Request, ps 
 	}
 	err, result := orm.Search(host.HostInfo{}, q)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("FetchHostInfo failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -427,7 +427,7 @@ func (h *APIHandler) FetchHostInfo(w http.ResponseWriter, req *http.Request, ps 
 		buf := util.MustToJSONBytes(row)
 		err = util.FromJSONBytes(buf, &tempHost)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("FetchHostInfo failed: %v", err)
 			continue
 		}
 		if tempHost.AgentID != "" {
@@ -443,7 +443,7 @@ func (h *APIHandler) FetchHostInfo(w http.ResponseWriter, req *http.Request, ps 
 
 	summaryFromAgent, err := getHostSummaryFromAgent(agentIDs)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("FetchHostInfo failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -452,7 +452,7 @@ func (h *APIHandler) FetchHostInfo(w http.ResponseWriter, req *http.Request, ps 
 	if len(nodeIDs) > 0 {
 		summaryFromNode, err = getHostSummaryFromNode(nodeIDs)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("FetchHostInfo failed: %v", err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -460,7 +460,7 @@ func (h *APIHandler) FetchHostInfo(w http.ResponseWriter, req *http.Request, ps 
 
 	statusMetric, err := getAgentOnlineStatusOfRecentDay(hostIDs)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("FetchHostInfo failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -495,7 +495,7 @@ func (h *APIHandler) FetchHostInfo(w http.ResponseWriter, req *http.Request, ps 
 	}
 	hostMetrics, err := h.getGroupHostMetric(context.Background(), agentIDs, min, max, bucketSize, hostMetricItems, "agent.id")
 	if err != nil {
-		log.Error(err)
+		log.Errorf("FetchHostInfo failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -554,7 +554,7 @@ func (h *APIHandler) GetHostInfo(w http.ResponseWriter, req *http.Request, ps ht
 	hostInfo.ID = hostID
 	exists, err := orm.Get(hostInfo)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetHostInfo failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -699,7 +699,7 @@ func (h *APIHandler) GetSingleHostMetrics(w http.ResponseWriter, req *http.Reque
 	hostInfo.ID = hostID
 	exists, err := orm.Get(hostInfo)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetSingleHostMetrics failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -711,7 +711,7 @@ func (h *APIHandler) GetSingleHostMetrics(w http.ResponseWriter, req *http.Reque
 	resBody := map[string]interface{}{}
 	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, "", "", 60)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetSingleHostMetrics failed: %v", err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -720,7 +720,7 @@ func (h *APIHandler) GetSingleHostMetrics(w http.ResponseWriter, req *http.Reque
 	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
 	du, err := time.ParseDuration(timeout)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetSingleHostMetrics failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -729,7 +729,7 @@ func (h *APIHandler) GetSingleHostMetrics(w http.ResponseWriter, req *http.Reque
 	if hostInfo.AgentID == "" {
 		resBody["metrics"], err = h.getSingleHostMetricFromNode(ctx, hostInfo.NodeID, min, max, bucketSize, key)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("GetSingleHostMetrics failed: %v", err)
 			h.WriteError(w, err, http.StatusInternalServerError)
 			return
 		}
@@ -797,7 +797,7 @@ func (h *APIHandler) GetSingleHostMetrics(w http.ResponseWriter, req *http.Reque
 	case DiskPartitionUsageMetricKey, NetworkInterfaceOutputRateMetricKey:
 		resBody["metrics"], err = h.getGroupHostMetrics(ctx, hostInfo.AgentID, min, max, bucketSize, key)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("GetSingleHostMetrics failed: %v", err)
 			h.WriteError(w, err, http.StatusInternalServerError)
 			return
 		}
@@ -806,7 +806,7 @@ func (h *APIHandler) GetSingleHostMetrics(w http.ResponseWriter, req *http.Reque
 	}
 	hostMetrics, err := h.getSingleHostMetric(ctx, hostInfo.AgentID, min, max, bucketSize, metricItems)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetSingleHostMetrics failed: %v", err)
 		h.WriteError(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -929,7 +929,7 @@ func (h *APIHandler) GetHostMetricStats(w http.ResponseWriter, req *http.Request
 	hostID := ps.MustGetParameter("host_id")
 	hostInfo, err := getHost(hostID)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetHostMetricStats failed: %v", err)
 		h.WriteJSON(w, util.MapStr{}, http.StatusOK)
 		return
 	}
@@ -1018,7 +1018,7 @@ func (h *APIHandler) GetHostOverviewInfo(w http.ResponseWriter, req *http.Reques
 	hostInfo.ID = hostID
 	exists, err := orm.Get(hostInfo)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetHostOverviewInfo failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -1036,7 +1036,7 @@ func (h *APIHandler) GetHostOverviewInfo(w http.ResponseWriter, req *http.Reques
 	if hostInfo.AgentID != "" {
 		summaries, err := getHostSummaryFromAgent([]string{hostID})
 		if err != nil {
-			log.Error(err)
+			log.Errorf("GetHostOverviewInfo failed: %v", err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -1047,7 +1047,7 @@ func (h *APIHandler) GetHostOverviewInfo(w http.ResponseWriter, req *http.Reques
 	} else if hostInfo.NodeID != "" {
 		summaries, err := getHostSummaryFromNode([]string{hostInfo.NodeID})
 		if err != nil {
-			log.Error(err)
+			log.Errorf("GetHostOverviewInfo failed: %v", err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

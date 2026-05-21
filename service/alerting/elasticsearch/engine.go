@@ -536,25 +536,12 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule) (*alerting.ConditionRe
 		LoopData:
 			for i := 0; i < dataLength; i++ {
 				//clear nil value
-				if targetData.Data[dataKey][i].Value == nil {
+				if isInvalidMetricValue(targetData.Data[dataKey][i].Value) {
 					continue
 				}
-				if r, ok := targetData.Data[dataKey][i].Value.(float64); ok {
-					if math.IsNaN(r) {
-						continue
-					}
-				}
-				relationValues := map[string]interface{}{}
-				for _, metric := range rule.Metrics.Items {
-					md := queryResult.MetricData[idx]
-					if _, ok := md.Data[metric.Name]; !ok || len(md.Data[metric.Name]) < i {
-						if global.Env().IsDebug {
-							log.Debugf("metric data %s not found in query result", metric.Name)
-						}
-						// skip this data point
-						continue LoopData
-					}
-					relationValues[metric.Name] = md.Data[metric.Name][i].Value
+				relationValues, ok := getRelationValues(queryResult, rule.Metrics.Items, idx, i)
+				if !ok {
+					continue LoopData
 				}
 				valueExpressionResult, err := valueExpression.Evaluate(relationValues)
 				if err != nil {
@@ -599,6 +586,42 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule) (*alerting.ConditionRe
 	conditionResult.QueryResult.MetricData = targetMetricData
 	conditionResult.ResultItems = resultItems
 	return conditionResult, nil
+}
+
+func getRelationValues(queryResult *alerting.QueryResult, metrics []insight.MetricItem, metricIndex int, pointIndex int) (map[string]interface{}, bool) {
+	if queryResult == nil || metricIndex < 0 || metricIndex >= len(queryResult.MetricData) {
+		return nil, false
+	}
+
+	md := queryResult.MetricData[metricIndex]
+	relationValues := map[string]interface{}{}
+	for _, metric := range metrics {
+		values, ok := md.Data[metric.Name]
+		if !ok || len(values) <= pointIndex {
+			if global.Env().IsDebug {
+				log.Debugf("metric data %s not found in query result", metric.Name)
+			}
+			return nil, false
+		}
+		if isInvalidMetricValue(values[pointIndex].Value) {
+			if global.Env().IsDebug {
+				log.Debugf("metric data %s is invalid in query result, point_index=%d", metric.Name, pointIndex)
+			}
+			return nil, false
+		}
+		relationValues[metric.Name] = values[pointIndex].Value
+	}
+	return relationValues, true
+}
+
+func isInvalidMetricValue(value interface{}) bool {
+	if value == nil {
+		return true
+	}
+	if r, ok := value.(float64); ok {
+		return math.IsNaN(r) || math.IsInf(r, 0)
+	}
+	return false
 }
 
 type BucketDiffState struct {
@@ -788,7 +811,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 
 			err = orm.Save(nil, alertItem)
 			if err != nil {
-				log.Error(err)
+				log.Errorf("save alert item failed, rule_id=%s, alert_id=%s, state=%s: %v", rule.ID, alertItem.ID, alertItem.State, err)
 			}
 		}
 	}()
@@ -850,9 +873,9 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 				})
 				err = attachTitleMessageToCtx(recoverCfg.Title, recoverCfg.Message, paramsCtx)
 				if err != nil {
-					return err
+					return fmt.Errorf("resolve recovery notification template for rule [%s] error: %w", rule.ID, err)
 				}
-				actionResults, _ := performChannels(recoverCfg.Normal, paramsCtx, false)
+				actionResults, _ := performChannels(rule.ID, "recovery_notification", recoverCfg.Normal, paramsCtx, false)
 				alertItem.RecoverActionResults = actionResults
 				//clear history notification time
 				rule.LastNotificationTime = time.Time{}
@@ -905,7 +928,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 	title, message := rule.GetNotificationTitleAndMessage()
 	err = attachTitleMessageToCtx(title, message, paramsCtx)
 	if err != nil {
-		return err
+		return fmt.Errorf("resolve notification template for rule [%s] error: %w", rule.ID, err)
 	}
 	alertItem.Message = paramsCtx[alerting2.ParamMessage].(string)
 	alertItem.Title = paramsCtx[alerting2.ParamTitle].(string)
@@ -991,7 +1014,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		}
 
 		if alertMessage == nil || period > periodDuration {
-			actionResults, _ := performChannels(notifyCfg.Normal, paramsCtx, false)
+			actionResults, _ := performChannels(rule.ID, "notification", notifyCfg.Normal, paramsCtx, false)
 			alertItem.ActionExecutionResults = actionResults
 			//change and save last notification time in local kv store when action error count equals zero
 			rule.LastNotificationTime = time.Now()
@@ -1021,7 +1044,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 					}
 				}
 				if time.Now().Sub(rule.LastEscalationTime.Local()) > periodDuration {
-					actionResults, _ := performChannels(notifyCfg.Escalation, paramsCtx, false)
+					actionResults, _ := performChannels(rule.ID, "escalation", notifyCfg.Escalation, paramsCtx, false)
 					alertItem.EscalationActionResults = actionResults
 					//todo init last escalation time when create task (by last alert item is escalated)
 					rule.LastEscalationTime = time.Now()
@@ -1045,13 +1068,27 @@ func attachTitleMessageToCtx(title, message string, paramsCtx map[string]interfa
 	if err != nil {
 		return fmt.Errorf("resolve message template error: %w", err)
 	}
-	paramsCtx[alerting2.ParamMessage] = string(tplBytes)
+	paramsCtx[alerting2.ParamMessage] = normalizeAlertTemplateText(string(tplBytes))
 	tplBytes, err = common.ResolveMessage(title, paramsCtx)
 	if err != nil {
 		return fmt.Errorf("resolve title template error: %w", err)
 	}
-	paramsCtx[alerting2.ParamTitle] = string(tplBytes)
+	paramsCtx[alerting2.ParamTitle] = normalizeAlertTemplateText(string(tplBytes))
 	return nil
+}
+
+func normalizeAlertTemplateText(text string) string {
+	text = strings.ReplaceAll(text, "\r\n", "\n")
+	lines := strings.Split(text, "\n")
+	result := make([]string, 0, len(lines))
+	for _, line := range lines {
+		line = strings.TrimRight(line, " \t")
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		result = append(result, line)
+	}
+	return strings.Join(result, "\n")
 }
 
 func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult, extraParams map[string]interface{}) map[string]interface{} {
@@ -1098,7 +1135,7 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 	}
 	envVariables, err := alerting2.GetEnvVariables()
 	if err != nil {
-		log.Errorf("get env variables error: %v", err)
+		log.Errorf("get env variables error, rule_id=%s: %v", rule.ID, err)
 	}
 	var (
 		min interface{}
@@ -1131,7 +1168,7 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 	}
 	err = util.MergeFields(paramsCtx, extraParams, true)
 	if err != nil {
-		log.Errorf("merge template params error: %v", err)
+		log.Errorf("merge template params error, rule_id=%s: %v", rule.ID, err)
 	}
 	return paramsCtx
 }
@@ -1162,7 +1199,7 @@ func (engine *Engine) Test(rule *alerting.Rule, msgType string) ([]alerting.Acti
 		title, message := rule.GetNotificationTitleAndMessage()
 		err = attachTitleMessageToCtx(title, message, paramsCtx)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("resolve %s template for rule [%s] error: %w", msgType, rule.ID, err)
 		}
 	} else if msgType == "recover_notification" {
 		if rule.RecoveryNotificationConfig == nil {
@@ -1170,7 +1207,7 @@ func (engine *Engine) Test(rule *alerting.Rule, msgType string) ([]alerting.Acti
 		}
 		err = attachTitleMessageToCtx(rule.RecoveryNotificationConfig.Title, rule.RecoveryNotificationConfig.Message, paramsCtx)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("resolve recovery notification template for rule [%s] error: %w", rule.ID, err)
 		}
 	} else {
 		return nil, fmt.Errorf("unkonwn parameter msg type")
@@ -1196,14 +1233,14 @@ func (engine *Engine) Test(rule *alerting.Rule, msgType string) ([]alerting.Acti
 		channels = notifyCfg.Normal
 	}
 	if len(channels) > 0 {
-		actionResults, _ = performChannels(channels, paramsCtx, true)
+		actionResults, _ = performChannels(rule.ID, msgType, channels, paramsCtx, true)
 	} else {
 		return nil, fmt.Errorf("no useable channel")
 	}
 	return actionResults, nil
 }
 
-func performChannels(channels []alerting.Channel, ctx map[string]interface{}, raiseChannelEnabledErr bool) ([]alerting.ActionExecutionResult, int) {
+func performChannels(ruleID string, phase string, channels []alerting.Channel, ctx map[string]interface{}, raiseChannelEnabledErr bool) ([]alerting.ActionExecutionResult, int) {
 	var errCount int
 	var actionResults []alerting.ActionExecutionResult
 	for _, channel := range channels {
@@ -1214,7 +1251,7 @@ func performChannels(channels []alerting.Channel, ctx map[string]interface{}, ra
 		)
 		_, err := common.RetrieveChannel(&channel, raiseChannelEnabledErr)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("retrieve alert channel failed, rule_id=%s, phase=%s, channel_id=%s, channel_name=%s, channel_type=%s: %v", ruleID, phase, channel.ID, channel.Name, channel.Type, err)
 			errCount++
 			errStr = err.Error()
 		} else {
@@ -1223,6 +1260,7 @@ func performChannels(channels []alerting.Channel, ctx map[string]interface{}, ra
 			}
 			resBytes, err, messageBytes = common.PerformChannel(&channel, ctx)
 			if err != nil {
+				log.Errorf("perform alert channel failed, rule_id=%s, phase=%s, channel_id=%s, channel_name=%s, channel_type=%s: %v", ruleID, phase, channel.ID, channel.Name, channel.Type, err)
 				errCount++
 				errStr = err.Error()
 			}
@@ -1244,13 +1282,13 @@ func (engine *Engine) GenerateTask(rule alerting.Rule) func(ctx context.Context)
 	return func(ctx context.Context) {
 		defer func() {
 			if err := recover(); err != nil {
-				log.Error(err)
+				log.Errorf("alert task panic recovered, rule_id=%s, rule_name=%s: %v", rule.ID, rule.Name, err)
 				debug.PrintStack()
 			}
 		}()
 		err := engine.Do(&rule)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("execute alert rule failed, rule_id=%s, rule_name=%s: %v", rule.ID, rule.Name, err)
 		}
 	}
 }

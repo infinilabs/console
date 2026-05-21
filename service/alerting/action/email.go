@@ -47,6 +47,9 @@ func (act *EmailAction) Execute() ([]byte, error) {
 	if act.Data.ServerID == "" {
 		return nil, fmt.Errorf("parameter server_id must not be empty")
 	}
+	if len(act.Data.Recipients.To) == 0 {
+		return nil, fmt.Errorf("parameter recipients.to must not be empty")
+	}
 	emailMsg := util.MapStr{
 		"server_id": act.Data.ServerID,
 		"email":     act.Data.Recipients.To,

@@ -334,7 +334,7 @@ func GetMetricRangeAndBucketSize(minStr string, maxStr string, bucketSize int, m
 			//try 1629637500000
 			v, err := util.ToInt64(minStr)
 			if err != nil {
-				log.Error("invalid timestamp:", minStr, err)
+				log.Errorf("GetMetricRangeAndBucketSize invalid min timestamp [%s]: %v", minStr, err)
 				rangeFrom = now.Add(-time.Second * time.Duration(bucketSize*metricCount+1))
 			} else {
 				rangeFrom = util.FromUnixTimestamp(v / 1000)
@@ -349,7 +349,7 @@ func GetMetricRangeAndBucketSize(minStr string, maxStr string, bucketSize int, m
 		if err != nil {
 			v, err := util.ToInt64(maxStr)
 			if err != nil {
-				log.Error("invalid timestamp:", maxStr, err)
+				log.Errorf("GetMetricRangeAndBucketSize invalid max timestamp [%s]: %v", maxStr, err)
 				rangeTo = now.Add(-time.Second * time.Duration(int(1*(float64(bucketSize)))))
 			} else {
 				rangeTo = util.FromUnixTimestamp(int64(v) / 1000)
@@ -615,7 +615,7 @@ func (h *APIHandler) getBucketMetrics(query map[string]interface{}, bucketItems 
 	//bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).SearchWithRawQueryDSL(getAllMetricsIndex(), util.MustToJSONBytes(query))
 	if err != nil {
-		log.Error(err)
+		log.Errorf("getBucketMetrics failed: %v", err)
 		panic(err)
 	}
 	//grpMetricItemsIndex := map[string]int{}
@@ -1058,7 +1058,7 @@ func parseHealthMetricData(buckets []elastic.BucketBase) ([]interface{}, error) 
 	for _, bucket := range buckets {
 		v, ok := bucket["key"].(float64)
 		if !ok {
-			log.Error("invalid bucket key")
+			log.Errorf("parseHealthMetricData invalid bucket key in aggregation response")
 			return nil, fmt.Errorf("invalid bucket key")
 		}
 		dateTime := int64(v)
@@ -1091,10 +1091,15 @@ func GetIndicesCount(clusterID string) int {
 	if meta != nil && meta.ClusterState != nil && meta.ClusterState.Metadata != nil && meta.ClusterState.Metadata.Indices != nil {
 		indexCount = len(meta.ClusterState.Metadata.Indices)
 	} else {
-		log.Warnf("Can't get indices from metadata with %s", clusterID)
 		esClient := elastic.GetClient(clusterID)
-		indexInfos, _ := esClient.GetIndices("")
-		indexCount = len(*indexInfos)
+		indexInfos, err := esClient.GetIndices("")
+		if err != nil {
+			log.Warnf("Can't get indices count with %s from metadata or indices API: %v", clusterID, err)
+			return indexCount
+		}
+		if indexInfos != nil {
+			indexCount = len(*indexInfos)
+		}
 	}
 	log.Debugf("Get cluster id %s indices count %d", clusterID, indexCount)
 	return indexCount

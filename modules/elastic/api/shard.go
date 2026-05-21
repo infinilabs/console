@@ -41,7 +41,7 @@ func (h *APIHandler) GetShardInfo(w http.ResponseWriter, req *http.Request, ps h
 	shardID := ps.MustGetParameter("shard_id")
 	clusterUUID, err := adapter.GetClusterUUID(clusterID)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetShardInfo failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -57,7 +57,7 @@ func (h *APIHandler) GetShardInfo(w http.ResponseWriter, req *http.Request, ps h
 
 	err, res := orm.Search(&event.Event{}, &q)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetShardInfo failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -32,7 +32,6 @@ import (
 	"errors"
 	"github.com/buger/jsonparser"
 	log "github.com/cihub/seelog"
-	"golang.org/x/crypto/bcrypt"
 	rbac "infini.sh/console/core/security"
 	"infini.sh/framework/core/api"
 	httprouter "infini.sh/framework/core/api/router"
@@ -64,11 +63,11 @@ func (h APIHandler) CreateUser(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	}
 	randStr := util.GenerateSecureString(16)
-	hash, err := bcrypt.GenerateFromPassword([]byte(randStr), bcrypt.DefaultCost)
+	err = rbac.SetPassword(&user, randStr)
 	if err != nil {
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
-	user.Password = string(hash)
 
 	now := time.Now()
 	user.Created = &now
@@ -117,6 +116,9 @@ func (h APIHandler) GetUser(w http.ResponseWriter, r *http.Request, ps httproute
 		h.ErrorInternalServer(w, err.Error())
 		return
 	}
+	user.Password = ""
+	user.PasswordSalt = ""
+	user.PasswordVerifier = ""
 	h.WriteOKJSON(w, api.FoundResponse(id, user))
 	return
 }
@@ -150,6 +152,9 @@ func (h APIHandler) UpdateUser(w http.ResponseWriter, r *http.Request, ps httpro
 	user.Updated = &now
 	user.Created = oldUser.Created
 	user.ID = id
+	user.Password = oldUser.Password
+	user.PasswordSalt = oldUser.PasswordSalt
+	user.PasswordVerifier = oldUser.PasswordVerifier
 	err = h.User.Update(&user)
 
 	if err != nil {
@@ -217,6 +222,8 @@ func (h APIHandler) SearchUser(w http.ResponseWriter, r *http.Request, ps httpro
 	hitsBuf.Write([]byte("["))
 	jsonparser.ArrayEach(res.Raw, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 		value = jsonparser.Delete(value, "_source", "password")
+		value = jsonparser.Delete(value, "_source", "password_salt")
+		value = jsonparser.Delete(value, "_source", "password_verifier")
 		hitsBuf.Write(value)
 		hitsBuf.Write([]byte(","))
 	}, "hits", "hits")
@@ -261,11 +268,11 @@ func (h APIHandler) UpdateUserPassword(w http.ResponseWriter, r *http.Request, p
 		h.ErrorInternalServer(w, err.Error())
 		return
 	}
-	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	err = rbac.SetPassword(&user, req.Password)
 	if err != nil {
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
-	user.Password = string(hash)
 	//t:=time.Now()
 	//user.Updated =&t
 	err = h.User.Update(&user)

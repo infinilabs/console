@@ -37,9 +37,7 @@ import (
 func GetAgentConfig() *model.AgentConfig {
 	agentCfg := &model.AgentConfig{
 		Enabled: true,
-		Setup: &model.SetupConfig{
-			DownloadURL: "https://release.infinilabs.com/agent/stable",
-		},
+		Setup:   &model.SetupConfig{},
 	}
 	_, err := env.ParseConfig("agent", agentCfg)
 	if err != nil {

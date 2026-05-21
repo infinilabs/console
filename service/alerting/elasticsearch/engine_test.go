@@ -31,11 +31,13 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
 	"infini.sh/console/core/insight"
 	"infini.sh/console/model/alerting"
+	alerting2 "infini.sh/console/service/alerting"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/modules/elastic/adapter/elasticsearch"
@@ -152,6 +154,49 @@ func TestGenerateAgg(t *testing.T) {
 		Statistic: "p99",
 	})
 	fmt.Println(util.MustToJSON(agg))
+}
+
+func TestAttachTitleMessageToCtxRemovesBlankLines(t *testing.T) {
+	paramsCtx := map[string]interface{}{
+		"priority":      "critical",
+		"event_id":      "evt-1",
+		"resource_name": "migrator-source",
+		"objects":       []string{"migration-pmc"},
+		"trigger_at":    "2026-05-20 15:00:00",
+		"results": []util.MapStr{
+			{
+				"group_values": []string{"migration-pmc"},
+				"result_value": "92.82gb",
+			},
+		},
+	}
+
+	err := attachTitleMessageToCtx(
+		"Alert: {{.resource_name}}",
+		`- Priority:{{.priority}}
+- EventID: {{.event_id}}
+- Target: {{.resource_name}}-{{.objects}}
+- TriggerAt: {{.trigger_at}}
+            
+{{range .results}}
+Index: {{index .group_values 0}} of Cluster: {{$.resource_name}}, Max Shard Storage: {{.result_value}}
+{{end}}`,
+		paramsCtx,
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got := paramsCtx[alerting2.ParamMessage].(string)
+	if strings.Contains(got, "\n\n") {
+		t.Fatalf("expected blank lines to be removed, got %q", got)
+	}
+	if !strings.Contains(got, "Index: migration-pmc of Cluster: migrator-source, Max Shard Storage: 92.82gb") {
+		t.Fatalf("expected rendered content, got %q", got)
+	}
+	if strings.Contains(got, "- TriggerAt: 2026-05-20 15:00:00\nIndex: migration-pmc of Cluster: migrator-source, Max Shard Storage: 92.82gb") == false {
+		t.Fatalf("expected content lines to stay contiguous, got %q", got)
+	}
 }
 
 func TestGeneratePercentilesAggQuery(t *testing.T) {
@@ -318,5 +363,55 @@ func TestConvertFilterQuery(t *testing.T) {
 	}
 	if dsl := util.MustToJSON(q); dsl != targetDsl {
 		t.Errorf("expect dsl %s but got %s", targetDsl, dsl)
+	}
+}
+
+func TestGetRelationValuesSkipsNilMetricValue(t *testing.T) {
+	queryResult := &alerting.QueryResult{
+		MetricData: []insight.MetricData{
+			{
+				Data: map[string][]insight.MetricDataItem{
+					"a": {{Timestamp: int64(1), Value: float64(12)}},
+					"b": {{Timestamp: int64(1), Value: nil}},
+				},
+			},
+		},
+	}
+
+	values, ok := getRelationValues(queryResult, []insight.MetricItem{
+		{Name: "a"},
+		{Name: "b"},
+	}, 0, 0)
+
+	if ok {
+		t.Fatalf("expected relation values with nil metric to be skipped")
+	}
+	if values != nil {
+		t.Fatalf("expected nil relation values, got %#v", values)
+	}
+}
+
+func TestGetRelationValuesReturnsValidMetricValues(t *testing.T) {
+	queryResult := &alerting.QueryResult{
+		MetricData: []insight.MetricData{
+			{
+				Data: map[string][]insight.MetricDataItem{
+					"a": {{Timestamp: int64(1), Value: float64(12)}},
+					"b": {{Timestamp: int64(1), Value: float64(7)}},
+				},
+			},
+		},
+	}
+
+	values, ok := getRelationValues(queryResult, []insight.MetricItem{
+		{Name: "a"},
+		{Name: "b"},
+	}, 0, 0)
+
+	if !ok {
+		t.Fatalf("expected relation values to be available")
+	}
+	if values["a"] != float64(12) || values["b"] != float64(7) {
+		t.Fatalf("unexpected relation values: %#v", values)
 	}
 }

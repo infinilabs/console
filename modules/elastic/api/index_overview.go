@@ -295,7 +295,7 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, req *http.Request, ps
 	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
 	du, err := time.ParseDuration(timeout)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("FetchIndexInfo failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -391,7 +391,7 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, req *http.Request, ps
 
 	statusMetric, err := h.GetIndexStatusOfRecentDay(firstClusterID, firstIndexName)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("FetchIndexInfo failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -544,7 +544,7 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, req *http.Request, ps
 	}
 	metrics, err := h.getMetrics(ctx, term_level, query, nodeMetricItems, bucketSize)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("FetchIndexInfo failed: %v", err)
 		h.WriteError(w, err, http.StatusInternalServerError)
 	}
 	indexMetrics := map[string]util.MapStr{}
@@ -630,7 +630,7 @@ func (h *APIHandler) GetIndexInfo(w http.ResponseWriter, req *http.Request, ps h
 	}
 	clusterUUID, err := adapter.GetClusterUUID(clusterID)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetIndexInfo failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -726,7 +726,7 @@ func (h *APIHandler) GetIndexShards(w http.ResponseWriter, req *http.Request, ps
 	}
 	clusterUUID, err := adapter.GetClusterUUID(clusterID)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetIndexShards failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -741,7 +741,7 @@ func (h *APIHandler) GetIndexShards(w http.ResponseWriter, req *http.Request, ps
 	q1.AddSort("timestamp", orm.DESC)
 	err, result := orm.Search(&event.Event{}, &q1)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetIndexShards failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -755,7 +755,7 @@ func (h *APIHandler) GetIndexShards(w http.ResponseWriter, req *http.Request, ps
 		)
 		err, nodesResult := orm.Search(elastic.NodeConfig{}, q)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("GetIndexShards failed: %v", err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -771,7 +771,7 @@ func (h *APIHandler) GetIndexShards(w http.ResponseWriter, req *http.Request, ps
 		}
 		qps, err := h.getShardQPS(clusterID, "", indexName, 20)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("GetIndexShards failed: %v", err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -789,7 +789,7 @@ func (h *APIHandler) GetIndexShards(w http.ResponseWriter, req *http.Request, ps
 				}
 				shardV, err := source.GetValue("payload.elasticsearch.shard_stats")
 				if err != nil {
-					log.Error(err)
+					log.Errorf("GetIndexShards failed: %v", err)
 					continue
 				}
 				shardInfo["id"], _ = source.GetValue("metadata.labels.node_id")
@@ -837,7 +837,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 	}
 	clusterUUID, err := h.getClusterUUID(clusterID)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetSingleIndexMetrics failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -886,7 +886,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 	}
 	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, clusterID, metricType, 60)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetSingleIndexMetrics failed: %v", err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -897,7 +897,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
 	du, err := time.ParseDuration(timeout)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetSingleIndexMetrics failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -942,7 +942,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 	if metricKey == ShardStateMetricKey {
 		shardStateMetric, err := h.getIndexShardsMetric(ctx, clusterID, indexName, min, max, bucketSize, shardID)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("GetSingleIndexMetrics failed: %v", err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -950,7 +950,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 	} else if metricKey == v1.IndexHealthMetricKey {
 		healthMetric, err := h.GetIndexHealthMetric(ctx, clusterID, indexName, min, max, bucketSize)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("GetSingleIndexMetrics failed: %v", err)
 			h.WriteError(w, err, http.StatusInternalServerError)
 			return
 		}
@@ -1028,7 +1028,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 		}
 		metrics, err = h.getSingleIndexMetrics(context.Background(), metricItems, query, bucketSize)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("GetSingleIndexMetrics failed: %v", err)
 			h.WriteError(w, err, http.StatusInternalServerError)
 		}
 	}
@@ -1036,7 +1036,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 		if metricItem.HitsTotal > 0 && metricItem.MinBucketSize == 0 {
 			minBucketSize, err := v1.GetMetricMinBucketSize(clusterID, metricType)
 			if err != nil {
-				log.Error(err)
+				log.Errorf("GetSingleIndexMetrics failed: %v", err)
 			} else {
 				metricItem.MinBucketSize = int64(minBucketSize)
 			}
@@ -1128,7 +1128,7 @@ func (h *APIHandler) getIndexShardsMetric(ctx context.Context, id, indexName str
 	queryDSL := util.MustToJSONBytes(query)
 	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).QueryDSL(ctx, getAllMetricsIndex(), nil, queryDSL)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("getIndexShardsMetric failed: %v", err)
 		return nil, err
 	}
 

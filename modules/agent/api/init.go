@@ -28,10 +28,13 @@
 package api
 
 import (
+	"context"
 	"infini.sh/console/core"
 	"infini.sh/console/core/security/enum"
 	"infini.sh/console/plugin/managed/server"
+	agentservice "infini.sh/console/service/agent"
 	"infini.sh/framework/core/api"
+	"infini.sh/framework/core/task"
 )
 
 type APIHandler struct {
@@ -59,4 +62,22 @@ func Init() {
 
 	server.RegisterConfigProvider(remoteConfigProvider)
 	server.RegisterConfigProvider(dynamicAgentConfigProvider)
+	server.RegisterSecretProvider(agentSecretProvider)
+	agentservice.RegisterAutoEnrollCallback(func(clusterIDs []string) {
+		if err := startAutoEnroll(ClusterInfo{ClusterIDs: clusterIDs}); err != nil {
+			// ignore concurrent trigger errors here; manual/scheduled runs already cover the next pass
+		}
+	})
+	task.RegisterScheduleTask(task.ScheduleTask{
+		ID:          "agent-auto-enroll-clusters",
+		Description: "auto enroll agent clusters",
+		Type:        "interval",
+		Interval:    "1m",
+		Singleton:   true,
+		Task: func(ctx context.Context) {
+			if err := startAutoEnroll(ClusterInfo{}); err != nil {
+				// ignore concurrent trigger errors; the running task will complete the current scan
+			}
+		},
+	})
 }

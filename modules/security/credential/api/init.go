@@ -40,8 +40,8 @@ import (
 
 func Init() {
 	handler := APIHandler{}
-	api.HandleAPIMethod(api.POST, "/credential", handler.RequirePermission(handler.createCredential, enum.PermissionCredentialWrite))
-	api.HandleAPIMethod(api.PUT, "/credential/:id", handler.RequirePermission(handler.updateCredential, enum.PermissionCredentialWrite))
+	api.HandleAPIMethod(api.POST, "/credential", handler.RequireSecureTransport(handler.RequireReplayProtection(handler.RequirePermission(handler.createCredential, enum.PermissionCredentialWrite))))
+	api.HandleAPIMethod(api.PUT, "/credential/:id", handler.RequireSecureTransport(handler.RequireReplayProtection(handler.RequirePermission(handler.updateCredential, enum.PermissionCredentialWrite))))
 	api.HandleAPIMethod(api.DELETE, "/credential/:id", handler.RequirePermission(handler.deleteCredential, enum.PermissionCredentialWrite))
 	api.HandleAPIMethod(api.GET, "/credential/_search", handler.RequirePermission(handler.searchCredential, enum.PermissionCredentialRead))
 	api.HandleAPIMethod(api.GET, "/credential/:id", handler.RequirePermission(handler.getCredential, enum.PermissionCredentialRead))

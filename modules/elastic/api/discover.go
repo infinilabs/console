@@ -42,14 +42,14 @@ func (h *APIHandler) HandleEseSearchAction(w http.ResponseWriter, req *http.Requ
 	exists, client, err := h.GetClusterClient(targetClusterID)
 
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleEseSearchAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	if !exists {
 		errStr := fmt.Sprintf("cluster [%s] not found", targetClusterID)
-		log.Error(errStr)
+		log.Errorf("HandleEseSearchAction failed: %v", errStr)
 		h.WriteError(w, errStr, http.StatusNotFound)
 		return
 	}
@@ -62,14 +62,14 @@ func (h *APIHandler) HandleEseSearchAction(w http.ResponseWriter, req *http.Requ
 
 	err = h.DecodeJSON(req, &reqParams)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleEseSearchAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	//validate index search api permission
 	reqUser, err := security.FromUserContext(req.Context())
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleEseSearchAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -82,7 +82,7 @@ func (h *APIHandler) HandleEseSearchAction(w http.ResponseWriter, req *http.Requ
 
 	err = security.ValidateIndex(indexReq, newRole)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleEseSearchAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusForbidden)
 		return
 	}
@@ -121,7 +121,7 @@ func (h *APIHandler) HandleEseSearchAction(w http.ResponseWriter, req *http.Requ
 		vr, err := util.VersionCompare(ver.Number, "7.2")
 		if err != nil {
 			errStr := fmt.Sprintf("version compare error: %v", err)
-			log.Error(errStr)
+			log.Errorf("HandleEseSearchAction failed: %v", errStr)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -213,7 +213,7 @@ func (h *APIHandler) HandleValueSuggestionAction(w http.ResponseWriter, req *htt
 	exists, client, err := h.GetClusterClient(targetClusterID)
 
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleValueSuggestionAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -232,7 +232,7 @@ func (h *APIHandler) HandleValueSuggestionAction(w http.ResponseWriter, req *htt
 	}{}
 	err = h.DecodeJSON(req, &reqParams)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleValueSuggestionAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -275,7 +275,7 @@ func (h *APIHandler) HandleValueSuggestionAction(w http.ResponseWriter, req *htt
 
 	searchRes, err := client.SearchWithRawQueryDSL(indexName, queryBodyBytes)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleValueSuggestionAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -294,7 +294,7 @@ func (h *APIHandler) HandleTraceIDSearchAction(w http.ResponseWriter, req *http.
 	exists, client, err := h.GetClusterClient(targetClusterID)
 
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleTraceIDSearchAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -324,7 +324,7 @@ func (h *APIHandler) HandleTraceIDSearchAction(w http.ResponseWriter, req *http.
 	}
 	searchRes, err := client.SearchWithRawQueryDSL(traceIndex, util.MustToJSONBytes(queryDSL))
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleTraceIDSearchAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

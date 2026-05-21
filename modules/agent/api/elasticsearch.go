@@ -253,7 +253,7 @@ type ClusterBinding struct {
 	LogsPaths []string `json:"logs_paths,omitempty"`
 }
 
-func GetElasticLogFiles(ctx context.Context, instance *model.Instance, logsPaths []string) (interface{}, error) {
+func GetSearchLogFiles(ctx context.Context, instance *model.Instance, logsPaths []string) (interface{}, error) {
 	body := util.MapStr{}
 	switch len(logsPaths) {
 	case 0:
@@ -279,13 +279,13 @@ func GetElasticLogFiles(ctx context.Context, instance *model.Instance, logsPaths
 		return nil, err
 	}
 	if resBody["success"] != true {
-		return nil, fmt.Errorf("get elasticsearch log files error: %v", resBody)
+		return nil, fmt.Errorf("get search log files error: %v", resBody)
 	}
 	return resBody["result"], nil
 
 }
 
-func GetElasticLogFileContent(ctx context.Context, instance *model.Instance, body interface{}) (interface{}, error) {
+func GetSearchLogFileContent(ctx context.Context, instance *model.Instance, body interface{}) (interface{}, error) {
 	req := &util.Request{
 		Method:  http.MethodPost,
 		Path:    "/elasticsearch/logs/_read",
@@ -298,7 +298,7 @@ func GetElasticLogFileContent(ctx context.Context, instance *model.Instance, bod
 		return nil, err
 	}
 	if resBody["success"] != true {
-		return nil, fmt.Errorf("get elasticsearch log files error: %v", resBody["error"])
+		return nil, fmt.Errorf("get search log files error: %v", resBody)
 	}
 	var hasMore bool
 	if v, ok := resBody["EOF"].(bool); ok && !v {
@@ -327,7 +327,7 @@ func (h *APIHandler) getLogFilesByNode(w http.ResponseWriter, req *http.Request,
 		}, http.StatusOK)
 		return
 	}
-	logFiles, err := GetElasticLogFiles(nil, inst, logsPaths)
+	logFiles, err := GetSearchLogFiles(nil, inst, logsPaths)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Errorf("failed to get log files for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
@@ -371,7 +371,7 @@ func (h *APIHandler) getLogFileContent(w http.ResponseWriter, req *http.Request,
 		log.Errorf("invalid logs path for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
 		return
 	}
-	res, err := GetElasticLogFileContent(nil, inst, reqBody)
+	res, err := GetSearchLogFileContent(nil, inst, reqBody)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Errorf("failed to get log content for cluster [%s], node [%s]: %v", clusterID, nodeID, err)

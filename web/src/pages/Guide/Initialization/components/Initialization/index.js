@@ -342,13 +342,17 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
                                 </div>
                                 {taskState.status === "failed" ?
                                  <div style={{marginLeft:"auto"}}>
-                                    <a onClick={retryTask} key="retry">Retry</a><Divider type="vertical" /><a onClick={skipTask} key="skip">Skip</a>
-                                 </div>: null}
-                            </div>
-                            <div style={{background:"rgb(16, 16, 16)", color:"#fff", height:214, marginTop:5, borderRadius:5,padding:5, overflow:"scroll"}}>
-                                {taskState.logs.map(item=><div>{item}</div>)}
-                            </div>
-                            <div style={{ display: "flex", justifyContent: "space-between", width:"60%", margin:"15px auto 0 auto" }}>
+                                     <a onClick={retryTask} key="retry">Retry</a><Divider type="vertical" /><a onClick={skipTask} key="skip">Skip</a>
+                                  </div>: null}
+                             </div>
+                             <div className={styles.taskLogPanel}>
+                                 {taskState.logs.map((item, index) => (
+                                     <div key={`${item}-${index}`} className={styles.taskLogItem}>
+                                         {item}
+                                     </div>
+                                 ))}
+                             </div>
+                             <div style={{ display: "flex", justifyContent: "space-between", width:"60%", margin:"15px auto 0 auto" }}>
                                 <Button
                                 style={{ width: "48%" }}
                                 type="primary"

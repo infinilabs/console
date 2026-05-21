@@ -9,6 +9,7 @@ import {
   Row,
   Col,
   Result,
+  message,
 } from "antd";
 import PageHeaderWrapper from "@/components/PageHeaderWrapper";
 // import "./form.scss";
@@ -56,7 +57,7 @@ const UserForm = (props) => {
     },
   ];
 
-  const { value: roleRes } = useFetch(
+  const { loading: rolesLoading, error: rolesError, value: roleRes } = useFetch(
     `/role/_search`,
     { queryParams: { size: 10000 } },
     []
@@ -77,24 +78,35 @@ const UserForm = (props) => {
       e.preventDefault();
       setIsLoading(true);
       props.form.validateFields(async (err, values) => {
-        if (err) {
-          return false;
-        }
-        if (typeof props.onSaveClick == "function") {
-          let newVals = {
-            ...values,
-          };
-          if (newVals.roles) {
-            newVals.roles = newVals.roles.map((rid) => {
-              return roles.find((role) => role.id == rid);
-            });
+        try {
+          if (err || rolesLoading || rolesError) {
+            return;
           }
-          await props.onSaveClick(newVals);
+          if (typeof props.onSaveClick == "function") {
+            let newVals = {
+              ...values,
+            };
+            if (newVals.roles) {
+              newVals.roles = newVals.roles
+                .map((rid) => {
+                  return roles.find((role) => role.id == rid);
+                })
+                .filter(Boolean);
+            }
+            await props.onSaveClick(newVals);
+          }
+        } catch (error) {
+          message.error(
+            formatMessage({
+              id: "app.message.save.failed",
+            })
+          );
+        } finally {
           setIsLoading(false);
         }
       });
     },
-    [props.form, roles]
+    [props.form, props.onSaveClick, roles, rolesError, rolesLoading]
   );
   const editValue = props.value || {};
   if (editValue.roles && editValue.roles.length && editValue.roles[0]?.name) {
@@ -206,6 +218,7 @@ const UserForm = (props) => {
                 <Select
                   showSearch
                   mode="multiple"
+                  loading={rolesLoading}
                   filterOption={(input, option) =>
                     option.props.children
                       .toLowerCase()
@@ -231,7 +244,12 @@ const UserForm = (props) => {
               })(<TagEditor />)}
             </Form.Item>
             <Form.Item {...tailFormItemLayout}>
-              <Button type="primary" onClick={handleSubmit} loading={isLoading}>
+              <Button
+                type="primary"
+                onClick={handleSubmit}
+                loading={isLoading}
+                disabled={rolesLoading || !!rolesError}
+              >
                 {formatMessage({ id: "form.button.save" })}
               </Button>
             </Form.Item>

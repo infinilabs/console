@@ -22,6 +22,14 @@ export default Form.create({ name: "user_form_new" })((props) => {
         })
       );
       setCreateResult(saveRes);
+      return;
+    }
+    if (saveRes && !saveRes.error) {
+      message.error(
+        formatMessage({
+          id: "app.message.save.failed",
+        })
+      );
     }
   }, []);
   return (

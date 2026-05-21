@@ -30,6 +30,39 @@
         }
     }
 
+    .taskLogPanel {
+        height: 214px;
+        margin-top: 8px;
+        padding: 10px 12px;
+        overflow: auto;
+        border-radius: 6px;
+        border: 1px solid #e8edf3;
+        background: #fafbfc;
+    }
+
+    .taskLogItem {
+        position: relative;
+        padding-left: 12px;
+        color: #445066;
+        line-height: 1.8;
+        word-break: break-word;
+
+        & + .taskLogItem {
+            margin-top: 4px;
+        }
+
+        &::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 11px;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #1890ff;
+        }
+    }
+
     .skipDesc {
         color: rgba(0, 0, 0, 0.45);
         font-size: 14px;

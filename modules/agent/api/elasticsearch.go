@@ -357,9 +357,10 @@ func (h *APIHandler) getLogFileContent(w http.ResponseWriter, req *http.Request,
 	reqBody := struct {
 		FileName        string `json:"file_name"`
 		LogsPath        string `json:"logs_path"`
-		Offset          int    `json:"offset"`
+		Offset          int64  `json:"offset"`
 		Lines           int    `json:"lines"`
 		StartLineNumber int64  `json:"start_line_number"`
+		TailLines       int    `json:"tail_lines"`
 	}{}
 	err = h.DecodeJSON(req, &reqBody)
 	if err != nil {

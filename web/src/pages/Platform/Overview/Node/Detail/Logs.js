@@ -1,9 +1,7 @@
 import {
   Button,
-  Divider,
   Icon,
-  Input,
-  Progress,
+  InputNumber,
   Select,
   Tooltip,
   Slider,
@@ -19,7 +17,6 @@ import {
 } from "@/components/hooks/useFullScreen";
 
 import "./logs.scss";
-import useFetch from "@/lib/hooks/use_fetch";
 import request from "@/utils/request";
 import moment from "moment";
 import { formatter } from "@/utils/format";
@@ -28,8 +25,53 @@ import InstallAgent from "@/components/InstallAgent";
 import { formatMessage } from "umi/locale";
 import Location from "@/components/Icons/Location";
 const ButtonGroup = Button.Group;
+const PAGE_SIZE = 50;
+const TAIL_PRELOAD_LINES = 200;
+
 const getLogFileKey = (logFile = {}) =>
   `${logFile.logs_path || ""}::${logFile.name || ""}`;
+
+const getLatestStartLine = (totalRows = 0) =>
+  Math.max((totalRows || 0) - PAGE_SIZE + 1, 1);
+
+const hasKnownTotalRows = (logFile = {}) =>
+  logFile?.total_rows_known === true && Number.isInteger(logFile?.total_rows);
+
+const createInitialLogState = () => ({
+  hasNextPage: true,
+  isNextPageLoading: false,
+  items: [],
+  logFiles: [],
+  file: "",
+  fileName: "",
+  logsPath: "",
+  offset: 0,
+  totalRows: undefined,
+  totalRowsKnown: false,
+  startLineNumber: 1,
+  loadTailLines: 0,
+  autoScrollToBottom: false,
+});
+
+const getSelectedFileState = (logFile = {}) => {
+  const totalRowsKnown = hasKnownTotalRows(logFile);
+  return {
+    file: logFile?.name ? getLogFileKey(logFile) : "",
+    fileName: logFile?.name,
+    logsPath: logFile?.logs_path,
+    fileSize: logFile?.size_in_bytes,
+    totalRows: totalRowsKnown ? logFile?.total_rows : undefined,
+    totalRowsKnown,
+    offset: 0,
+    items: [],
+    hasNextPage: !!logFile?.name,
+    isNextPageLoading: false,
+    startLineNumber: totalRowsKnown ? getLatestStartLine(logFile?.total_rows) : 1,
+    loadTailLines: 0,
+    autoScrollToBottom: totalRowsKnown,
+  };
+};
+
 const formatLogFileLabel = (logFile = {}, includeMeta = false) => {
   const parts = [logFile.name];
   if (logFile.logs_path) {
@@ -47,42 +89,41 @@ const formatLogFileLabel = (logFile = {}, includeMeta = false) => {
 const Logs = (props) => {
   const clusterID = props.data?._source?.metadata?.cluster_id;
   const nodeID = props.data?._source?.metadata?.node_id;
-  const [logState, setLogState] = useState({
-    hasNextPage: true,
-    isNextPageLoading: false,
-    items: [],
-    logFiles: [],
-    file: "",
-    fileName: "",
-    logsPath: "",
-    offset: 0,
-    startLineNumber: 1,
-    autoScrollToBottom: false,
-  });
+  const [logState, setLogState] = useState(createInitialLogState);
 
   const [loading, setLoading] = useState(false);
+  const [gotoLine, setGotoLine] = useState();
+  const logStateRef = useRef(logState);
+  const requestSeqRef = useRef(0);
+
+  useEffect(() => {
+    logStateRef.current = logState;
+  }, [logState]);
+
   const selectedLogFile = useMemo(
     () =>
-      (logState.logFiles || []).find((logFile) => getLogFileKey(logFile) === logState.file),
+      (logState.logFiles || []).find(
+        (logFile) => getLogFileKey(logFile) === logState.file
+      ),
     [logState.file, logState.logFiles]
   );
 
-  const fetchLogs = async (withLoading) => {
+  const fetchLogs = async (withLoading = false, preferredFile = logStateRef.current.file) => {
     if (withLoading) setLoading(true);
     const res = await request(`/elasticsearch/${clusterID}/node/${nodeID}/logs/_list`);
     if (res && res.success) {
       const { log_files: logFiles } = res;
+      const selectedFile =
+        logFiles.find((logFile) => getLogFileKey(logFile) === preferredFile) ||
+        logFiles[0] ||
+        {};
+      requestSeqRef.current += 1;
       setLogState((st) => {
-        const selectedFile = logFiles[0] || {};
         return {
           ...st,
+          agentStatus: undefined,
           logFiles,
-          file: selectedFile?.name ? getLogFileKey(selectedFile) : "",
-          fileName: selectedFile?.name,
-          logsPath: selectedFile?.logs_path,
-          fileSize: selectedFile?.size_in_bytes,
-          totalRows: selectedFile?.total_rows,
-          startLineNumber: 1,
+          ...getSelectedFileState(selectedFile),
         };
       });
     } else {
@@ -99,31 +140,30 @@ const Logs = (props) => {
   };
 
   useEffect(() => {
-    if(!nodeID){
-      return
+    if (!nodeID) {
+      return;
     }
-      setLogState({
-      hasNextPage: true,
-      isNextPageLoading: false,
-      items: [],
-      logFiles: [],
-      file: "",
-      fileName: "",
-      logsPath: "",
-      offset: 0,
-      startLineNumber: 1,
-    });
+    requestSeqRef.current += 1;
+    setLogState(createInitialLogState());
     fetchLogs();
-  }, [nodeID]);
+  }, [clusterID, nodeID]);
+
   const loadNextPage = useCallback(
     async (...args) => {
-      if (!logState.file) {
+      const force = args[0] === true;
+      const currentState = logStateRef.current;
+      if (!currentState.file) {
         return;
       }
-      // console.log("loadNextPage", ...args);
-      let newLogState = logState;
+      if (currentState.isNextPageLoading) {
+        return;
+      }
+      if (!force && !currentState.hasNextPage) {
+        return;
+      }
+      const requestSeq = requestSeqRef.current + 1;
+      requestSeqRef.current = requestSeq;
       setLogState((st) => {
-        newLogState = st;
         return {
           ...st,
           isNextPageLoading: true,
@@ -132,126 +172,156 @@ const Logs = (props) => {
       const res = await request(`/elasticsearch/${clusterID}/node/${nodeID}/logs/_read`, {
         method: "POST",
         body: {
-          file_name: newLogState.fileName,
-          logs_path: newLogState.logsPath,
-          offset: newLogState.offset,
-          start_line_number: newLogState.startLineNumber,
-          lines: 50,
+          file_name: currentState.fileName,
+          logs_path: currentState.logsPath,
+          offset: currentState.offset,
+          start_line_number: currentState.startLineNumber,
+          tail_lines: currentState.loadTailLines,
+          lines: PAGE_SIZE,
         },
       });
-      if (res && res.lines) {
-        setLogState((st) => {
-          const newItems = [...newLogState.items];
-          let idx = newItems.length;
-          res.lines.map((line) => {
-            newItems.push({
-              ...line,
-              lineNumber: line.line_number,
-              index: idx,
-            });
-            idx++;
-          });
-          const maxLineNumber = newItems[newItems.length - 1]?.line_number;
-          return {
-            ...st,
-            hasNextPage: res.has_more,
-            isNextPageLoading: false,
-            items: newItems,
-            offset: newItems[newItems.length - 1]?.offset || st.offset,
-            startLineNumber: maxLineNumber + 1,
-            totalRows: maxLineNumber > st.totalRows ? maxLineNumber :  st.totalRows,
-          };
-        });
-      } else {
-        setLogState((st) => {
-          return {
-            ...st,
-            isNextPageLoading: false,
-            hasNextPage: res.has_more,
-          };
-        });
+      if (requestSeq !== requestSeqRef.current) {
+        return;
       }
+      setLogState((st) => {
+        if (st.file !== currentState.file) {
+          return {
+            ...st,
+            isNextPageLoading: false,
+          };
+        }
+        const incomingLines = res?.lines || [];
+        const newItems = [...st.items];
+        let idx = newItems.length;
+        incomingLines.forEach((line) => {
+          newItems.push({
+            ...line,
+            lineNumber: line.line_number,
+            index: idx,
+          });
+          idx += 1;
+        });
+        const lastLine = newItems[newItems.length - 1];
+        const lastLineNumber = lastLine?.line_number;
+        const nextStartLineNumber = Number.isInteger(lastLineNumber)
+          ? lastLineNumber + 1
+          : 0;
+        return {
+          ...st,
+          hasNextPage: !!res?.has_more,
+          isNextPageLoading: false,
+          items: newItems,
+          offset: lastLine?.offset || st.offset,
+          startLineNumber:
+            incomingLines.length > 0 ? nextStartLineNumber : st.startLineNumber,
+          loadTailLines: 0,
+          totalRows:
+            st.totalRowsKnown &&
+            Number.isInteger(lastLineNumber) &&
+            lastLineNumber > (st.totalRows || 0)
+              ? lastLineNumber
+              : st.totalRows,
+        };
+      });
     },
-    [nodeID, logState]
+    [clusterID, nodeID]
   );
-  const clearAutoRefresh = ()=>{
-    if(autoRefreshTimeoutRef.current){
+
+  const clearAutoRefresh = () => {
+    if (autoRefreshTimeoutRef.current) {
       setRefreshStart(false);
       clearTimeout(autoRefreshTimeoutRef.current);
       autoRefreshTimeoutRef.current = null;
-      setLogState(st=>{
+      setLogState((st) => {
         return {
           ...st,
           autoScrollToBottom: false,
-        }
-      })
+        };
+      });
     }
-  }
+  };
+
+  const resetViewerPosition = useCallback(
+    ({ startLineNumber = 1, autoScrollToBottom = false, loadTailLines = 0 }) => {
+      requestSeqRef.current += 1;
+      setLogState((st) => {
+        return {
+          ...st,
+          hasNextPage: !!st.fileName,
+          isNextPageLoading: false,
+          items: [],
+          offset: 0,
+          startLineNumber:
+            loadTailLines > 0 ? 0 : Math.max(startLineNumber || 1, 1),
+          loadTailLines,
+          autoScrollToBottom,
+        };
+      });
+    },
+    []
+  );
+
   const onLogFileChange = (file) => {
     clearAutoRefresh();
+    requestSeqRef.current += 1;
     setLogState((st) => {
-      const logFile = st.logFiles.find((lf) => getLogFileKey(lf) == file);
+      const logFile = st.logFiles.find((lf) => getLogFileKey(lf) === file);
       return {
         ...st,
-        file,
-        fileName: logFile?.name,
-        logsPath: logFile?.logs_path,
-        offset: 0,
-        items: [],
-        hasNextPage: true,
-        fileSize: logFile?.size_in_bytes,
-        totalRows: logFile?.total_rows,
-        startLineNumber: 1,
+        ...getSelectedFileState(logFile),
       };
     });
   };
-  const offsetRef = useRef();
+
   const onGotoOffsetClick = () => {
     clearAutoRefresh();
-    setLogState((st) => {
-      return {
-        ...st,
-        currentLineNumber: parseInt(offsetRef.current?.state.value)
-      };
-    });
+    if (!logStateRef.current.totalRowsKnown) {
+      return;
+    }
+    if (!Number.isInteger(gotoLine) || gotoLine < 1) {
+      return;
+    }
+    resetViewerPosition({ startLineNumber: gotoLine, autoScrollToBottom: false });
   };
 
   const autoRefreshTimeoutRef = useRef();
   const [refreshStart, setRefreshStart] = useState(false);
-  const autoRefresh = async ()=> {
-    setLogState(st=>{
+
+  const autoRefresh = async () => {
+    setLogState((st) => {
       return {
         ...st,
         autoRefreshLoading: true,
         autoScrollToBottom: true,
-        currentLineNumber: undefined
-      }
-    })
-    await loadNextPage()
-    setLogState(st=>{
+      };
+    });
+    await loadNextPage(true);
+    setLogState((st) => {
       return {
         ...st,
         autoRefreshLoading: false,
-      }
-    })
-    autoRefreshTimeoutRef.current = setTimeout(autoRefresh, 5000)
-  }
+      };
+    });
+    autoRefreshTimeoutRef.current = setTimeout(autoRefresh, 5000);
+  };
 
-  useEffect(()=>{
+  useEffect(() => {
     return clearAutoRefresh;
   }, []);
 
   const onViewLatestClick = () => {
-    setLogState((st) => {
-      return {
-        ...st,
-        startLineNumber: st.totalRows - 20,
-        items: [],
-        hasNextPage: true,
-      };
+    clearAutoRefresh();
+    if (logStateRef.current.totalRowsKnown) {
+      resetViewerPosition({
+        startLineNumber: getLatestStartLine(logStateRef.current.totalRows),
+        autoScrollToBottom: true,
+      });
+      return;
+    }
+    resetViewerPosition({
+      loadTailLines: TAIL_PRELOAD_LINES,
+      autoScrollToBottom: true,
     });
-    // autoRefreshTimeoutRef.current = setTimeout(autoRefresh, 5000)
-   
   };
 
   if (logState.agentStatus === "uninstall") {
@@ -292,13 +362,15 @@ const Logs = (props) => {
     <div className="logs">
       <div className="form-line">
         <div className="form-item">
-        {formatMessage({ id: "agent.logs.label.log_file" })}
+          {formatMessage({ id: "agent.logs.label.log_file" })}
           <Tooltip title={selectedLogFile ? formatLogFileLabel(selectedLogFile, true) : ""}>
             <Select
               style={{ width: 390 }}
               value={logState.file}
               onChange={onLogFileChange}
               optionLabelProp="title"
+              showSearch
+              optionFilterProp="title"
             >
               {(logState.logFiles || []).map((logFile) => {
                 const optionKey = getLogFileKey(logFile);
@@ -330,51 +402,76 @@ const Logs = (props) => {
           </Tooltip>
         </div>
         <ButtonGroup>
-        {/* loading={logState.autoRefreshLoading} */}
-          <Button type="primary" ghost onClick={onViewLatestClick}> {formatMessage({ id: "agent.logs.button.view_latest" })}</Button>
-          <Button type="primary" ghost 
-          icon={refreshStart ? "pause" : "caret-right"}
-          onClick={()=>{
-            setRefreshStart(!refreshStart);
-            if(autoRefreshTimeoutRef.current){
+          <Button type="primary" ghost onClick={onViewLatestClick}>
+            {formatMessage({ id: "agent.logs.button.view_latest" })}
+          </Button>
+          <Button
+            type="primary"
+            ghost
+            onClick={() => {
               clearAutoRefresh();
-              return
-            }
-            autoRefresh();
-          }}
-        />
-          <Popover
-            placement="topRight"
-            content={
-              <div style={{display:"flex"}}>
-                <div className="form-item">
-                {formatMessage({ id: "agent.logs.label.goto" })}
-                  <Input key="offset" style={{width: 80, margin:"0 5px"}} className="offset" ref={offsetRef} />
-                </div>
-                <Button type="primary" onClick={onGotoOffsetClick}>
-                {formatMessage({ id: "agent.logs.button.goto" })}
-                </Button>
-              </div>
-            }
-            trigger="click"
+              fetchLogs(true, logStateRef.current.file);
+            }}
           >
-            <Button type="primary" ghost>
+            {formatMessage({ id: "form.button.refresh" })}
+          </Button>
+          <Button
+            type="primary"
+            ghost
+            icon={refreshStart ? "pause" : "caret-right"}
+            onClick={() => {
+              setRefreshStart(!refreshStart);
+              if (autoRefreshTimeoutRef.current) {
+                clearAutoRefresh();
+                return;
+              }
+              autoRefresh();
+            }}
+          />
+          {logState.totalRowsKnown ? (
+            <Popover
+              placement="topRight"
+              content={
+                <div style={{ display: "flex" }}>
+                  <div className="form-item">
+                    {formatMessage({ id: "agent.logs.label.goto" })}
+                    <InputNumber
+                      min={1}
+                      precision={0}
+                      style={{ width: 96, margin: "0 5px" }}
+                      className="offset"
+                      value={gotoLine}
+                      onChange={setGotoLine}
+                    />
+                  </div>
+                  <Button type="primary" onClick={onGotoOffsetClick}>
+                    {formatMessage({ id: "agent.logs.button.goto" })}
+                  </Button>
+                </div>
+              }
+              trigger="click"
+            >
+              <Button type="primary" ghost>
+                <Icon component={Location} />
+              </Button>
+            </Popover>
+          ) : (
+            <Button type="primary" ghost disabled>
               <Icon component={Location} />
             </Button>
-          </Popover>
+          )}
         </ButtonGroup>
       </div>
-      <div className="viewer">
-        {logState.file ? (
-          <InfiniteLogViewer
-            key={logState.file}
-            {...logState}
-            setLogState={setLogState}
-            loadNextPage={loadNextPage}
-            autoScrollToBottom={logState.autoScrollToBottom}
-          />
-        ) : null}
-      </div>
+        <div className="viewer">
+          {logState.file ? (
+            <InfiniteLogViewer
+              key={logState.file}
+              {...logState}
+              loadNextPage={loadNextPage}
+              resetViewerPosition={resetViewerPosition}
+            />
+          ) : null}
+        </div>
     </div>
   );
 };
@@ -452,26 +549,29 @@ const InfiniteLogViewer = ({
   isNextPageLoading,
   items,
   loadNextPage,
-  file,
-  logFiles,
-  setLogState,
   autoScrollToBottom,
-  currentLineNumber,
   totalRows,
+  totalRowsKnown,
+  resetViewerPosition,
 }) => {
-  const maxLineNumber = Math.max(
-    ...items
-      .filter((item) => Number.isInteger(item.lineNumber))
-      .map((item) => item.lineNumber)
+  const maxLineNumber = useMemo(
+    () =>
+      items.reduce((max, item) => {
+        if (Number.isInteger(item.lineNumber) && item.lineNumber > max) {
+          return item.lineNumber;
+        }
+        return max;
+      }, totalRows || 1),
+    [items, totalRows]
   );
   const fullScreenHandle = useFullScreenHandle();
 
   const itemCount = hasNextPage ? items.length + 1 : items.length;
 
-  const loadMoreItems = isNextPageLoading ? () => {} : loadNextPage;
+  const loadMoreItems = isNextPageLoading ? () => Promise.resolve() : loadNextPage;
   const [progress, setProgress] = useState(0);
 
-  const progressCacheRef = useRef()
+  const progressCacheRef = useRef();
 
   // Every row is loaded except for our loading indicator row.
   const isItemLoaded = (index) => !hasNextPage || index < items.length;
@@ -515,39 +615,24 @@ const InfiniteLogViewer = ({
   };
 
   const onSliderAfterChange = () => {
-    if (Number.isInteger(progressCacheRef.current)) {
-      setLogState((st) => {
-        let startLineNumber = parseInt((st.totalRows * progressCacheRef.current) / 100);
-        return {
-          ...st,
-          hasNextPage: true,
-          currentLineNumber: startLineNumber === 0 ? 1 : startLineNumber
-        };
-      });
+    if (
+      totalRowsKnown &&
+      Number.isInteger(progressCacheRef.current) &&
+      totalRows > 0
+    ) {
+      const startLineNumber = Math.max(
+        parseInt((totalRows * progressCacheRef.current) / 100, 10),
+        1
+      );
+      resetViewerPosition({ startLineNumber, autoScrollToBottom: false });
     }
-  }
+  };
 
   useEffect(() => {
     if (autoScrollToBottom === true) {
-      listRef.current.scrollToItem(itemCount, "end");
+      listRef.current?.scrollToItem(Math.max(itemCount - 1, 0), "end");
     }
-  }, [items]);
-
-  useEffect(() => {
-    if (autoScrollToBottom || items.length === 0 || !Number.isInteger(currentLineNumber) || currentLineNumber < 1) {
-      return;
-    }
-    const lastItemLineNumber = items[items.length - 1].lineNumber
-    if (lastItemLineNumber >= currentLineNumber) {
-      listRef.current.scrollToItem(currentLineNumber - 1, "end");
-    } else {
-      if (hasNextPage) {
-        loadNextPage()
-      } else {
-        listRef.current.scrollToItem(currentLineNumber - 1, "end");
-      }
-    }
-  }, [JSON.stringify(items), hasNextPage, currentLineNumber, autoScrollToBottom])
+  }, [autoScrollToBottom, itemCount, items]);
 
   return (
     <FullScreen handle={fullScreenHandle}>
@@ -585,26 +670,20 @@ const InfiniteLogViewer = ({
                       itemCount={itemCount}
                       onItemsRendered={(props) => {
                         const { visibleStopIndex } = props;
-                        if (visibleStopIndex > 0) {
-                          if (logFiles?.length === 0 || !file) return 0;
-                          const currentFile = logFiles.find(
-                            (item) => item.name === file
+                        if (
+                          totalRowsKnown &&
+                          totalRows > 0 &&
+                          Number.isInteger(visibleStopIndex) &&
+                          items[visibleStopIndex]
+                        ) {
+                          setProgress(
+                            parseInt(
+                              Math.floor(
+                                (items[visibleStopIndex].lineNumber / totalRows) * 100
+                              ).toFixed(0),
+                              10
+                            )
                           );
-                          if (
-                            currentFile &&
-                            currentFile.size_in_bytes &&
-                            Number.isInteger(visibleStopIndex) &&
-                            items[visibleStopIndex]
-                          ) {
-                            setProgress(
-                              parseInt(
-                                Math.floor(
-                                  (items[visibleStopIndex].lineNumber / totalRows) *
-                                    100
-                                ).toFixed(0)
-                              )
-                            );
-                          }
                         }
                         return onItemsRendered(props);
                       }}
@@ -612,12 +691,6 @@ const InfiniteLogViewer = ({
                       height={height}
                       width={width}
                       itemSize={getRowHeight}
-                      onScroll={() => {
-                        setLogState((logState) => ({
-                          ...logState,
-                          currentLineNumber: undefined
-                        }))
-                      }}
                     >
                       {Item}
                     </List>
@@ -628,8 +701,12 @@ const InfiniteLogViewer = ({
           </InfiniteLoader>
         </div>
         <div style={{ marginTop: -4 }}>
-          {/* <Progress percent={progress} size={"small"} status={"normal"}/> */}
-          <Slider value={progress} onChange={onSliderChange} onAfterChange={onSliderAfterChange} />
+          <Slider
+            disabled={!totalRowsKnown || totalRows <= 0}
+            value={progress}
+            onChange={onSliderChange}
+            onAfterChange={onSliderAfterChange}
+          />
         </div>
       </div>
     </FullScreen>

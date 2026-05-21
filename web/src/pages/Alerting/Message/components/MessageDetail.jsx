@@ -56,6 +56,17 @@ const MessageDetail = (props) => {
     });
   }
 
+  const handleChartRangeChange = ({ from, to }) => {
+    if (!from || !to) {
+      return;
+    }
+    setTimeRange((previous) => ({
+      ...previous,
+      min: from,
+      max: to,
+    }));
+  };
+
   useEffect(() => {
     if (messageID) {
       fetchMessageDetail(messageID);
@@ -76,7 +87,7 @@ const MessageDetail = (props) => {
             {<AlertChartCard msgItem={messageDetail} range={{ 
               from: timeRange.min, 
               to: timeRange.max
-            }}/>}
+            }} onRangeChange={handleChartRangeChange} />}
           </div>
         </Tabs.TabPane>
         <Tabs.TabPane tab={formatMessage({ id: "alert.message.detail.title.notification" })} key="notification">

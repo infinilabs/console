@@ -119,7 +119,15 @@ const Monitor = (props) => {
   const [timeZone, setTimeZone] = useState(() => allTimeSettingsCache.timeZone || getTimezone());
 
   useEffect(() => {
-    setParam({ ...param, timeRange: state.timeRange, timeInterval: state.timeInterval, timeout: state.timeout });
+    const newParam = {
+      ...param,
+      timeRange: state.timeRange,
+      timeInterval: state.timeInterval,
+      timeout: state.timeout
+    };
+    if (JSON.stringify(newParam) !== JSON.stringify(param)) {
+      setParam(newParam);
+    }
   }, [state.timeRange, state.timeInterval, state.timeout]);
 
   const handleTimeChange = ({ start, end, timeInterval, timeout, refresh }) => {
@@ -236,10 +244,10 @@ const Monitor = (props) => {
                       recentlyUsedRangesKey={'monitor'}
                     />
                   </div>
-                  <div style={{display: "flex"}}>
+                  <div className={styles.statusActions}>
                     {isSystemCluster(selectedCluster?.id) && getRollupEnabled() === "true" && <RollupStats
                       fetchUrl={`${ESPrefix}/${selectedCluster?.id}/_proxy?method=GET&path=/_rollup/jobs/*/_explain`}
-                      style={{ marginRight: 100 }}/>}
+                    />}
                     <CollectStatus filter={collectionStatsFilter} fetchUrl={`${ESPrefix}/${selectedCluster?.id}/_collection_stats`}/>
                   </div>
                 </div>

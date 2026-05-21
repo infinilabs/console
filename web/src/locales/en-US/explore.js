@@ -53,4 +53,6 @@ export default {
   "explore.indexfield.description":
     "The current page lists all fields that match the {pattern} index, and the field type is an Elasticsearch data type. To change the type, use the ",
   "explore.view.index_pattern.removeTooltip": "Delete view",
+  "explore.view.index_pattern.refreshTooltip": "Refresh field list",
+  "explore.view.index_pattern.refreshFieldListTitle": "Refresh field list?",
 };

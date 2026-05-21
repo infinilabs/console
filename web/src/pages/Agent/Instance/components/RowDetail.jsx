@@ -10,6 +10,7 @@ import {
   message,
   Tabs,
   Icon,
+  Tooltip,
 } from "antd";
 import { useMemo, useState } from "react";
 import { Link } from "umi";
@@ -27,14 +28,9 @@ import { SearchEngineIcon } from "@/lib/search_engines";
 import { hasAuthority } from "@/utils/authority";
 import AutoTextEllipsis from "@/components/AutoTextEllipsis";
 import commonStyles from "@/common.less"
+import styles from "./RowDetail.less";
 
 const { TabPane } = Tabs;
-
-const details = [
-  { title: "Metrics", component: Metrics, key: "metrics" },
-  { title: "Infos", component: Infos, key: "infos" },
-  { title: "Logs", component: Logs, key: "logs" },
-];
 
 const detailTitleConfig = {
   getLabels: (item) => [
@@ -78,6 +74,27 @@ export const AgentRowDetail = ({ agentID, t }) => {
     processesTab: "elasticsearch",
     unknownAssociateVisible: false,
   });
+
+  const details = useMemo(
+    () => [
+      {
+        title: formatMessage({ id: "overview.detail.metrics" }),
+        component: Metrics,
+        key: "metrics",
+      },
+      {
+        title: formatMessage({ id: "overview.detail.infos" }),
+        component: Infos,
+        key: "infos",
+      },
+      {
+        title: formatMessage({ id: "cluster.monitor.tabs.logs" }),
+        component: Logs,
+        key: "logs",
+      },
+    ],
+    [t]
+  );
 
   const onDetailClick = async (node_uuid, cluster_id) => {
     const res = await request("/elasticsearch/node/_search", {
@@ -129,83 +146,97 @@ export const AgentRowDetail = ({ agentID, t }) => {
   const columns = useMemo(
     () => [
       {
-        title: "PID",
+        title: formatMessage({ id: "overview.column.pid" }),
+        width: 100,
         dataIndex: "node_info.process.id",
+        render: (text) => <div className={styles.cellWrap}>{text}</div>,
       },
       {
-        title: "Port",
+        title: formatMessage({ id: "alert.email.manage.field.port" }),
+        width: 100,
         dataIndex: "node_info.http.publish_address",
         render: (text, record) => {
-          return text?.split(":")?.[1];
+          return <div className={styles.cellWrap}>{text?.split(":")?.[1]}</div>;
         },
       },
       {
-        title: "Cluster",
+        title: formatMessage({ id: "overview.column.cluster" }),
+        width: 160,
         dataIndex: "cluster_info.cluster_name",
         render: (text, record) => {
-          return <>
-            <div style={{
-              display: 'inline-block',
-              marginRight: '3px',
-              position: 'relative',
-              top: -2
-            }}>
-              <SearchEngineIcon
-                distribution={record.cluster_info.version.distribution}
-                width="16px"
-                height="16px"
-              />
-            </div> 
-            {record.cluster_id ? (
-              <Link to={`/cluster/monitor/elasticsearch/${record.cluster_id}`}>
-                {text}
-              </Link>
-              ) : (
-                text
-              )}
-          </>
+          const content = record.cluster_id ? (
+            <Link to={`/cluster/monitor/elasticsearch/${record.cluster_id}`}>
+              {text}
+            </Link>
+          ) : text;
+
+          return (
+            <Tooltip title={text}>
+              <div className={styles.cellWrap}>
+                <div style={{ display: 'inline-block', marginRight: '3px', position: 'relative', top: -2, flexShrink: 0 }}>
+                  <SearchEngineIcon
+                    distribution={record.cluster_info.version.distribution}
+                    width="16px"
+                    height="16px"
+                  />
+                </div>
+                {content}
+              </div>
+            </Tooltip>
+          );
         },
       },
       {
-        title: "Node",
+        title: formatMessage({ id: "overview.column.node" }),
+        width: 160,
         dataIndex: "node_info.name",
         render: (text, record) => {
           return record.cluster_id ? (
-            <IconText
-              icon={<Icon type="database" />}
-              text={
+            <Tooltip title={text}>
+              <div className={styles.cellWrap}>
+                <Icon type="database" style={{ marginRight: 4, flexShrink: 0 }} />
                 <Link
                   to={`/cluster/monitor/${record.cluster_id}/nodes/${record.id}?_g={"cluster_name":"${record.cluster_info.cluster_name}","node_name":"${text}"}`}
                 >
                   {text}
                 </Link>
-              }
-            />
+              </div>
+            </Tooltip>
           ) : (
-            text
+            <Tooltip title={text}>
+              <div className={styles.cellWrap}>{text}</div>
+            </Tooltip>
           );
         },
       },
       {
-        title: "Home",
+        title: formatMessage({ id: "overview.column.homepath" }),
         dataIndex: "node_info.settings.path.home",
-        render: (text) => <AutoTextEllipsis >{text}</AutoTextEllipsis>,
+        render: (text) => (
+          <div className={styles.cellWrap}>
+            <AutoTextEllipsis>{text}</AutoTextEllipsis>
+          </div>
+        ),
         className: commonStyles.maxColumnWidth
       },
       {
-        title: "Status",
+        title: formatMessage({ id: "overview.column.status" }),
         dataIndex: "status",
         render: (text, record) => {
           const status = text == "online" ? "online" : "gray";
-          return <HealthStatusView status={status} label={text} />;
+          const label =
+            text === "online" || text === "Online"
+              ? formatMessage({ id: "gateway.instance.status.online" })
+              : text;
+          return <HealthStatusView status={status} label={label} />;
         },
         width: 100,
       },
       {
         title: formatMessage({ id: "table.field.actions" }),
-        width: 160,
+        width: 140,
         render: (text, record) => (
-          <div>
+          <div className={styles.actionWrap}>
             {/* <Popconfirm
                 title="Sure to delete?"
                 onConfirm={() => onDeleteClick(record.id, agentID)}
@@ -219,7 +250,9 @@ export const AgentRowDetail = ({ agentID, t }) => {
                   hasAuthority("agent.instance:all") && (
                     <>
                       <Popconfirm
-                        title="Sure to revoke?"
+                        title={formatMessage({
+                          id: "agent.instance.revoke.confirm.title",
+                        })}
                         onConfirm={() =>
                           onRevoke({
                             cluster_id: record.cluster_id,
@@ -228,15 +261,17 @@ export const AgentRowDetail = ({ agentID, t }) => {
                           })
                         }
                       >
-                        <Button style={{padding: 0}} type="link" loading={btnLoading}>
-                          Revoke
+                        <Button style={{ padding: 0, height: "auto" }} type="link" loading={btnLoading}>
+                          {formatMessage({ id: "agent.instance.button.revoke" })}
                         </Button>
                       </Popconfirm>
                       <Divider key="d3" type="vertical" />
                     </>
                   )
                 }
-                <a
+                <Button
+                  style={{ padding: 0, height: "auto" }}
+                  type="link"
                   onClick={() => {
                     onDetailClick(record.id, record.cluster_id);
                   }}
@@ -244,10 +279,12 @@ export const AgentRowDetail = ({ agentID, t }) => {
                   {formatMessage({
                     id: "agent.instance.table.operation.detail",
                   })}
-                </a>
+                </Button>
               </>
             ) : (
-              <a
+              <Button
+                style={{ padding: 0, height: "auto" }}
+                type="link"
                 onClick={() => {
                   setState((st) => {
                     return {
@@ -257,17 +294,17 @@ export const AgentRowDetail = ({ agentID, t }) => {
                     };
                   });
                 }}
-              >
-                {formatMessage({
-                  id: "agent.instance.table.operation.associate",
-                })}
-              </a>
+                >
+                  {formatMessage({
+                    id: "agent.instance.table.operation.associate",
+                  })}
+              </Button>
             )}
           </div>
         ),
       },
     ],
-    [agentID]
+    [agentID, btnLoading, t]
   );
   const onRefreshClick = async () => {
     setQueryParams((st) => {
@@ -304,8 +341,18 @@ export const AgentRowDetail = ({ agentID, t }) => {
     });
   };
 
-  const onUnknownProcessEnroll = async (clusterIDs) => {
-    if (!Array.isArray(clusterIDs) || clusterIDs.length === 0) {
+  const onUnknownProcessEnroll = async (clusters) => {
+    const clusterItems = Array.isArray(clusters)
+      ? clusters
+          .map((item) =>
+            typeof item === "string"
+              ? { cluster_id: item, logs_paths: [] }
+              : item
+          )
+          .filter((item) => item?.cluster_id)
+      : [];
+    const clusterIDs = clusterItems.map((item) => item.cluster_id);
+    if (clusterIDs.length === 0) {
       message.warn(
         formatMessage({ id: "agent.instance.associate.tips.associate" })
       );
@@ -316,6 +363,7 @@ export const AgentRowDetail = ({ agentID, t }) => {
       method: "POST",
       body: {
         cluster_id: clusterIDs,
+        clusters: clusterItems,
       },
     });
     setBtnLoading(false);
@@ -358,14 +406,15 @@ export const AgentRowDetail = ({ agentID, t }) => {
   };
 
   return (
-    <div>
+    <div className={styles.detail}>
       <Tabs
+        className={styles.detailTabs}
         activeKey={state.processesTab}
         onChange={(tabKey) => {
           setState({ ...state, processesTab: tabKey });
         }}
         tabBarExtraContent={
-          <div style={{ display: "flex", gap: 10 }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             {hasAuthority("agent.instance:all") && state.processesTab === "unknown" ? (
               <Button
                 type="primary"
@@ -391,26 +440,42 @@ export const AgentRowDetail = ({ agentID, t }) => {
         }
       >
         <TabPane
-          tab={`Detected Processes (${nodes.length})`}
+          tab={formatMessage(
+            {
+              id: "agent.instance.row_detail.tab.detected_processes",
+            },
+            { count: nodes.length }
+          )}
           key={"elasticsearch"}
         >
-          <Table
-            size={"small"}
-            bordered
-            loading={loading}
-            dataSource={nodes}
-            rowKey={"id"}
-            pagination={{
-              size: "small",
-              showSizeChanger: true,
-              showTotal: (total, range) =>
-                `${range[0]}-${range[1]} of ${total} items`,
-            }}
-            columns={columns}
-          />
+          <div className={styles.tableWrap}>
+            <Table
+              size={"small"}
+              bordered
+              loading={loading}
+              dataSource={nodes}
+              rowKey={"id"}
+              tableLayout="fixed"
+              pagination={{
+                size: "small",
+                showSizeChanger: true,
+                showTotal: (total, range) =>
+                  formatMessage(
+                    { id: "system.security.pagination.total" },
+                    { start: range[0], end: range[1], total }
+                  ),
+              }}
+              columns={columns}
+            />
+          </div>
         </TabPane>
         <TabPane
-          tab={`Unknown Processes (${unknownProcess.length})`}
+          tab={formatMessage(
+            {
+              id: "agent.instance.row_detail.tab.unknown_processes",
+            },
+            { count: unknownProcess.length }
+          )}
           key={"unknown"}
         >
           <UnknownProcess data={unknownProcess} loading={loading} />

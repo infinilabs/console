@@ -404,9 +404,8 @@ const Index = (props) => {
   };
 
   useEffect(() => {
-    setParam({ ...param, ...queryParams });
+    setParam(prev => ({ ...prev, ...queryParams }));
     fetchMessages(queryParams);
-
     fetchMessageStats(queryParams);
   }, [queryParams]);
 
@@ -451,7 +450,14 @@ const Index = (props) => {
       >
         <div>{title}</div>
         <div style={{ paddingRight: 30 }}>
-          <Link to={`/alerting/message/${id}`}>
+          <Link
+              to={`/alerting/message/${id}`}
+              onClick={(e) => {
+                if (window.location.pathname === `/alerting/message/${id}`) {
+                  e.preventDefault();
+                }
+              }}
+            >
             <Button type="primary">
               {formatMessage({ id: "form.button.detail" })}
             </Button>

@@ -37,7 +37,7 @@ const menu = (
 );
 
 const action = (
-  <Fragment>
+  <Fragment key="action">
     <ButtonGroup>
       <Button>操作</Button>
       <Button>操作</Button>
@@ -90,7 +90,7 @@ const tabList = [
 
 const desc1 = (
   <div className={classNames(styles.textSecondary, styles.stepDescription)}>
-    <Fragment>
+    <Fragment key="desc1">
       曲丽丽
       <Icon type="dingding-o" style={{ marginLeft: 8 }} />
     </Fragment>
@@ -100,7 +100,7 @@ const desc1 = (
 
 const desc2 = (
   <div className={styles.stepDescription}>
-    <Fragment>
+    <Fragment key="desc2">
       周毛毛
       <Icon type="dingding-o" style={{ color: '#00A0E9', marginLeft: 8 }} />
     </Fragment>

@@ -195,7 +195,7 @@ class rule extends PureComponent {
     {
       title: '操作',
       render: (text, record) => (
-        <Fragment>
+        <Fragment key={record.name}>
           <a onClick={() => this.handleUpdateModalVisible(true, record)}>设置规则</a>
           <Divider type="vertical" />
           <a onClick={() => {
@@ -391,7 +391,7 @@ class rule extends PureComponent {
       handleUpdate: this.handleUpdate,
     };
     return (
-      <Fragment>
+      <Fragment key="rule">
         <Card bordered={false}>
           <div className={styles.tableList}>
             <div className={styles.tableListForm}>{this.renderForm()}</div>

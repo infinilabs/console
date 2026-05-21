@@ -240,7 +240,7 @@ export default (props) => {
 
     return (
         <Spin spinning={loading}>
-            <div className={styles.logs} style={isNotEmpty ? {} : { justifyContent: 'center', alignItems: 'center'}}>
+            <div className={styles.logs}>
                 {
                     isNotEmpty ? (
                         <>
@@ -271,7 +271,7 @@ export default (props) => {
                                         onSearch={value => {
                                             setQueryParams((st) => ({ ...st, from: 0, keyword: value }));
                                         }} 
-                                        enterButton
+                                        enterButton={formatMessage({ id: "form.button.search" })}
                                     />
                                 </div>
                                 <div className={styles.histogram}>
@@ -316,12 +316,19 @@ export default (props) => {
                             </div>
                         </>
                     ) : (
-                        <Empty 
-                            image={Empty.PRESENTED_IMAGE_SIMPLE}
-                            description={formatMessage({ id: `cluster.monitor.logs.empty.${isAgent ? 'agent' : 'agentless'}` })}
-                        >
-                            <div style={{width: 644}}>{!isAgent && <InstallAgent autoInit={false}/>}</div>
-                        </Empty>
+                        <div className={styles.emptyState}>
+                            <Empty 
+                                className={styles.emptyBlock}
+                                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                description={formatMessage({ id: `cluster.monitor.logs.empty.${isAgent ? 'agent' : 'agentless'}` })}
+                            >
+                                {!isAgent && (
+                                    <div className={styles.installAgentWrap}>
+                                        <InstallAgent autoInit={false}/>
+                                    </div>
+                                )}
+                            </Empty>
+                        </div>
                     )
                 }
             </div>  

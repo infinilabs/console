@@ -20,7 +20,10 @@ export default connect()((props) => {
     const newSelectedCluster = cloneDeep(selectedCluster);
     const index = newSelectedCluster.findIndex((item) => item.id === values.id);
     if (index !== -1) {
-      newSelectedCluster[index] = values;
+      newSelectedCluster[index] = {
+        ...newSelectedCluster[index],
+        ...values,
+      };
       setSelectedCluster(newSelectedCluster);
     }
     dispatch({
@@ -32,12 +35,16 @@ export default connect()((props) => {
     });
     dispatch({
         type: "global/fetchClusterStatus",
+        payload: {
+            force: true,
+        },
     })
   };
 
   const expandedRowRender = (record) => {
     return (
       <AgentCredential
+        key={`${record.id}:${record.agent_credential_id || record.agent_basic_auth?.username || ""}`}
         record={record}
         onAgentCredentialSave={(values) => onAgentCredentialSave(values)}
       />
@@ -131,7 +138,7 @@ export default connect()((props) => {
               dataIndex: "agent_credential_id",
               key: "agent_credential_id",
               render: (text, record) => {
-                return record.agent_credential_id ? "Set" : "No set";
+                return record.agent_credential_id || record.agent_basic_auth?.username ? "Set" : "No set";
               },
             },
             {

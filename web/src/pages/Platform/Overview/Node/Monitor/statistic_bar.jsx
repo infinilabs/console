@@ -6,6 +6,7 @@ import { formatUtcTimeToLocal } from "@/utils/utils";
 import moment from "moment";
 import { HealthStatusCircle } from "@/components/infini/health_status_circle";
 import OverviewStatistic from "../../components/overview_statistic";
+import { formatMessage } from "umi/locale";
 
 const vstyle = {
   fontSize: 12,
@@ -44,7 +45,7 @@ const StatisticBar = ({ clusterID, nodeID, timeRange, setSpinning }) => {
       {
         key: "Status",
         value: nodeValue?.status || "N/A",
-        title: "Status",
+        title: formatMessage({ id: "overview.column.status" }),
         vstyle: {
           ...vstyle,
           display: "flex",
@@ -57,39 +58,41 @@ const StatisticBar = ({ clusterID, nodeID, timeRange, setSpinning }) => {
         value: nodeValue?.jvm?.uptime
           ? moment.duration(nodeValue?.jvm?.uptime).humanize()
           : "N/A",
-        title: "Uptime",
+        title: formatMessage({ id: "overview.column.uptime" }),
       },
       {
         key: "Type",
-        value: nodeValue?.is_master_node ? "Master Node" : "Not Master Node",
-        title: "Type",
+        value: nodeValue?.is_master_node
+          ? formatMessage({ id: "overview.statistic.master_node" })
+          : formatMessage({ id: "overview.statistic.not_master_node" }),
+        title: formatMessage({ id: "overview.statistic.type" }),
       },
       {
         key: "Transport Address",
         value: nodeValue?.transport_address || "N/A",
-        title: "Transport Address",
+        title: formatMessage({ id: "overview.column.transport_address" }),
       },
       {
         key: "Indices",
         value: nodeValue?.shard_info?.indices_count,
-        title: "Indices",
+        title: formatMessage({ id: "overview.column.indices" }),
       },
       {
         key: "Shards",
         value:
           (nodeValue?.shard_info?.shard_count || 0) +
           (nodeValue?.shard_info?.replicas_count || 0),
-        title: "Shards",
+        title: formatMessage({ id: "overview.column.shards" }),
       },
       {
         key: "Documents",
         value: formatter.number(nodeValue?.indices?.docs?.count || 0),
-        title: "Documents",
+        title: formatMessage({ id: "indices.field.docs_count" }),
       },
       {
         key: "Data",
         value: formatter.bytes(nodeValue?.indices?.store?.size_in_bytes || 0),
-        title: "Data",
+        title: formatMessage({ id: "overview.column.data" }),
       },
       {
         key: "JVM Heap",
@@ -104,7 +107,7 @@ const StatisticBar = ({ clusterID, nodeID, timeRange, setSpinning }) => {
             : 0
           ).toFixed(2) +
           "%)",
-        title: "JVM Heap",
+        title: formatMessage({ id: "overview.column.jvm_heap" }),
       },
       {
         key: "Free Disk Space",
@@ -117,7 +120,7 @@ const StatisticBar = ({ clusterID, nodeID, timeRange, setSpinning }) => {
             : 0
           ).toFixed(2) +
           "%)",
-        title: "Free Disk Space",
+        title: formatMessage({ id: "overview.column.disk_free_space" }),
       },
     ];
   }
@@ -126,10 +129,14 @@ const StatisticBar = ({ clusterID, nodeID, timeRange, setSpinning }) => {
       {!isAvailable ? (
         <div className={"mask"}>
           <div>
-            Node is not availabe since:{" "}
-            {nodeValue?.timestamp
-              ? formatUtcTimeToLocal(nodeValue?.timestamp)
-              : "N/A"}
+            {formatMessage(
+              { id: "overview.status.node_since" },
+              {
+                timestamp: nodeValue?.timestamp
+                  ? formatUtcTimeToLocal(nodeValue?.timestamp)
+                  : "N/A",
+              }
+            )}
           </div>
         </div>
       ) : null}

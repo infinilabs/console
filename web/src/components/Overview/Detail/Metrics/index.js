@@ -155,7 +155,14 @@ export default (props) => {
         <div className={styles.metricWrapper}>
           <Tabs size={"small"}>
             {overviews.map((item) => (
-              <TabPane tab={item.title} key={item.key}>
+              <TabPane
+                tab={
+                  item.titleId
+                    ? formatMessage({ id: item.titleId })
+                    : item.title
+                }
+                key={item.key}
+              >
                 <item.component
                   timeRange={state.timeRange}
                   action={item.action}

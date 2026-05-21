@@ -12,6 +12,7 @@ import { formatMessage } from "umi/locale";
 import useFetch from "@/lib/hooks/use_fetch";
 import { useMemo } from "react";
 import TagEditor from "@/components/infini/TagEditor";
+import { HealthStatusView } from "@/components/infini/health_status_view";
 
 export const ExtraStep = Form.create({ name: "instance_step_edit" })(
   (props) => {
@@ -33,14 +34,31 @@ export const ExtraStep = Form.create({ name: "instance_step_edit" })(
     return (
       <>
         <Descriptions column={2} size="small" bordered>
-          <Descriptions.Item label="Endpoint">
+          <Descriptions.Item
+            label={formatMessage({
+              id: "gateway.instance.column.endpoint",
+            })}
+          >
             {initialValue?.endpoint}
           </Descriptions.Item>
-          <Descriptions.Item label="Version">
+          <Descriptions.Item
+            label={formatMessage({
+              id: "overview.column.version",
+            })}
+          >
             {initialValue?.version.number}
           </Descriptions.Item>
-          <Descriptions.Item label="Status">
-            {initialValue?.status}
+          <Descriptions.Item
+            label={formatMessage({
+              id: "gateway.instance.column.status",
+            })}
+          >
+            <HealthStatusView
+              status="online"
+              label={formatMessage({
+                id: "gateway.instance.status.online",
+              })}
+            />
           </Descriptions.Item>
         </Descriptions>
         <Divider />

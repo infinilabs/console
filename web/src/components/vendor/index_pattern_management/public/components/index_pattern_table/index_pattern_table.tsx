@@ -43,7 +43,7 @@ import {
 import { EmptyIndexPatternPrompt } from "./empty_index_pattern_prompt";
 import { getIndices } from "../create_index_pattern_wizard/lib";
 import { useGlobalContext } from "../../context";
-import { Card, Button, Table, Input, Divider, Popconfirm, message } from "antd";
+import { Card, Button, Table, Input, Divider, Popconfirm, message, Icon } from "antd";
 import PageHeaderWrapper from "@/components/PageHeaderWrapper";
 import styles from "@/pages/System/Cluster/step.less";
 import { router } from "umi";
@@ -53,6 +53,11 @@ import { filterSearchValue, sorter } from "@/utils/utils";
 const { Search } = Input;
 
 const title = formatMessage({ id: "explore.viewlist.title" });
+const firstColumnIconStyle = {
+  marginRight: 8,
+  color: "#999",
+  fontSize: 12,
+};
 
 interface Props extends RouteComponentProps {
   canSave: boolean;
@@ -200,8 +205,10 @@ export const IndexPatternTable = ({
           onClick={() => {
             router.push(`/insight/discover?viewID=${record.id}`);
           }}
+          style={{ display: "inline-flex", alignItems: "center" }}
         >
-          {text}
+          <Icon type="eye" style={firstColumnIconStyle} />
+          <span>{text}</span>
         </a>
       ),
       sorter: (a: string, b: string) => sorter.string(a, b, "viewName"),
@@ -220,6 +227,7 @@ export const IndexPatternTable = ({
     },
     {
       title: formatMessage({ id: "table.field.actions" }),
+      width: 100,
       render: (text, record) => (
         <div>
           {canSave && !record.builtin ? (
@@ -294,8 +302,8 @@ export const IndexPatternTable = ({
           <div style={{ maxWidth: 500, flex: "1 1 auto" }}>
             <Search
               allowClear
-              placeholder="Type keyword to search"
-              enterButton="Search"
+              placeholder={formatMessage({ id: "listview.search.placeholder" })}
+              enterButton={formatMessage({ id: "form.button.search" })}
               onSearch={(value) => {
                 setSearchValue(value);
               }}

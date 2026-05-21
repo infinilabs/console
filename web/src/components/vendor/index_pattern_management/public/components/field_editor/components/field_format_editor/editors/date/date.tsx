@@ -47,7 +47,7 @@ export class DateFormatEditor extends DefaultFormatEditor<DateFormatEditorFormat
     const defaultPattern = format.getParamDefaults().pattern;
 
     return (
-      <Fragment>
+      <Fragment key="dateFormatEditor">
         <EuiFormRow
           label={
             `Moment.js format pattern (Default: ${<EuiCode>{defaultPattern}</EuiCode>})`

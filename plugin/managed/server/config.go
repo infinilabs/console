@@ -184,6 +184,8 @@ func (h APIHandler) syncConfigs(w http.ResponseWriter, req *http.Request, ps htt
 		log.Trace("request:", util.MustToJSON(obj))
 	}
 
+	syncManagedInstanceEndpoint(obj.Client)
+
 	//TODO, check the client's and the server's hash, if same, skip the sync
 
 	var res = common.ConfigSyncResponse{}

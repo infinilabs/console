@@ -320,7 +320,7 @@ api:
   enabled: false
 
 web:
-  embedding_api: false
+  embedding_api: true
   enabled: true
   network:
     binding: \$[[env.WEB_BINDING]]

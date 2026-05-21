@@ -118,6 +118,24 @@ func (h APIHandler) registerInstance(w http.ResponseWriter, req *http.Request, p
 	h.WriteAckOKJSON(w)
 }
 
+func syncManagedInstanceEndpoint(client model.Instance) {
+	if client.ID == "" || client.Endpoint == "" {
+		return
+	}
+
+	existing := model.Instance{}
+	existing.ID = client.ID
+	exists, err := orm.Get(&existing)
+	if err != nil || !exists || existing.Endpoint == client.Endpoint {
+		return
+	}
+
+	existing.Endpoint = client.Endpoint
+	if err := orm.Update(nil, &existing); err != nil {
+		log.Warnf("failed to update instance endpoint for [%s]: %v", client.ID, err)
+	}
+}
+
 func (h APIHandler) enrollInstance(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 
 }
@@ -569,7 +587,7 @@ func (h *APIHandler) proxy(w http.ResponseWriter, req *http.Request, ps httprout
 		req1.SetBasicAuth(obj.BasicAuth.Username, obj.BasicAuth.Password.Get())
 	}
 
-	res, err := ProxyAgentRequest("runtime", obj.GetEndpoint(), req1, nil)
+	res, err := proxyInstanceRequest(obj, req1, nil)
 	if err != nil {
 		panic(err)
 	}

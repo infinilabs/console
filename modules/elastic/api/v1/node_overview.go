@@ -1041,20 +1041,21 @@ func (h *APIHandler) getLatestIndices(req *http.Request, min string, max string,
 		},
 	}
 	q := &orm.Query{RawQuery: util.MustToJSONBytes(query), WildcardIndex: true}
+	indexInfos := map[string]util.MapStr{}
 	err, searchResult := orm.Search(event.Event{}, q)
 	if err != nil {
-		return nil, err
-	}
-	indexInfos := map[string]util.MapStr{}
-	for _, hit := range searchResult.Result {
-		if hitM, ok := hit.(map[string]interface{}); ok {
-			indexInfo, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "index_stats", "index_info"}, hitM)
-			indexName, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "index_name"}, hitM)
-			if v, ok := indexName.(string); ok {
-				if infoM, ok := indexInfo.(map[string]interface{}); ok {
-					if _, ok = infoM["index"].(string); ok {
-						infoM["timestamp"] = hitM["timestamp"]
-						indexInfos[v] = infoM
+		log.Warnf("failed to enrich latest indices for cluster [%s] in v1 API, fallback to base index state only: %v", clusterID, err)
+	} else {
+		for _, hit := range searchResult.Result {
+			if hitM, ok := hit.(map[string]interface{}); ok {
+				indexInfo, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "index_stats", "index_info"}, hitM)
+				indexName, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "index_name"}, hitM)
+				if v, ok := indexName.(string); ok {
+					if infoM, ok := indexInfo.(map[string]interface{}); ok {
+						if _, ok = infoM["index"].(string); ok {
+							infoM["timestamp"] = hitM["timestamp"]
+							indexInfos[v] = infoM
+						}
 					}
 				}
 			}

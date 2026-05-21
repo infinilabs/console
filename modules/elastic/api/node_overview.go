@@ -1210,35 +1210,36 @@ func (h *APIHandler) getLatestIndices(req *http.Request, min string, max string,
 		},
 	}
 	q := &orm.Query{RawQuery: util.MustToJSONBytes(query), WildcardIndex: true}
+	indexInfos := map[string]*ShardsSummary{}
 	err, searchResult := orm.Search(event.Event{}, q)
 	if err != nil {
-		return nil, err
-	}
-	indexInfos := map[string]*ShardsSummary{}
-	for _, hit := range searchResult.Result {
-		if hitM, ok := hit.(map[string]interface{}); ok {
-			shardDocCount, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "shard_stats", "docs", "count"}, hitM)
-			storeInBytes, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "shard_stats", "store", "size_in_bytes"}, hitM)
-			indexName, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "index_name"}, hitM)
-			primary, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "shard_stats", "routing", "primary"}, hitM)
-			if v, ok := indexName.(string); ok {
-				if _, ok = indexInfos[v]; !ok {
-					indexInfos[v] = &ShardsSummary{}
+		log.Warnf("failed to enrich latest indices for cluster [%s], fallback to base index state only: %v", clusterID, err)
+	} else {
+		for _, hit := range searchResult.Result {
+			if hitM, ok := hit.(map[string]interface{}); ok {
+				shardDocCount, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "shard_stats", "docs", "count"}, hitM)
+				storeInBytes, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "shard_stats", "store", "size_in_bytes"}, hitM)
+				indexName, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "index_name"}, hitM)
+				primary, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "shard_stats", "routing", "primary"}, hitM)
+				if v, ok := indexName.(string); ok {
+					if _, ok = indexInfos[v]; !ok {
+						indexInfos[v] = &ShardsSummary{}
+					}
+					indexInfo := indexInfos[v]
+					indexInfo.Index = v
+					if count, ok := shardDocCount.(float64); ok && primary == true {
+						indexInfo.DocsCount += int64(count)
+					}
+					if storeSize, ok := storeInBytes.(float64); ok {
+						indexInfo.StoreInBytes += int64(storeSize)
+					}
+					if primary == true {
+						indexInfo.Shards++
+					} else {
+						indexInfo.Replicas++
+					}
+					indexInfo.Timestamp = hitM["timestamp"]
 				}
-				indexInfo := indexInfos[v]
-				indexInfo.Index = v
-				if count, ok := shardDocCount.(float64); ok && primary == true {
-					indexInfo.DocsCount += int64(count)
-				}
-				if storeSize, ok := storeInBytes.(float64); ok {
-					indexInfo.StoreInBytes += int64(storeSize)
-				}
-				if primary == true {
-					indexInfo.Shards++
-				} else {
-					indexInfo.Replicas++
-				}
-				indexInfo.Timestamp = hitM["timestamp"]
 			}
 		}
 	}

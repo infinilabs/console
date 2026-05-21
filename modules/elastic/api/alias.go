@@ -38,14 +38,14 @@ func (h *APIHandler) HandleAliasAction(w http.ResponseWriter, req *http.Request,
 	exists, client, err := h.GetClusterClient(targetClusterID)
 
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleAliasAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	if !exists {
 		errStr := fmt.Sprintf("cluster [%s] not found", targetClusterID)
-		log.Error(errStr)
+		log.Errorf("HandleAliasAction failed: %v", errStr)
 		h.WriteError(w, errStr, http.StatusInternalServerError)
 		return
 	}
@@ -54,7 +54,7 @@ func (h *APIHandler) HandleAliasAction(w http.ResponseWriter, req *http.Request,
 
 	err = h.DecodeJSON(req, aliasReq)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleAliasAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -74,7 +74,7 @@ func (h *APIHandler) HandleAliasAction(w http.ResponseWriter, req *http.Request,
 
 	err = client.Alias(bodyBytes)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleAliasAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -87,20 +87,20 @@ func (h *APIHandler) HandleGetAliasAction(w http.ResponseWriter, req *http.Reque
 	exists, client, err := h.GetClusterClient(targetClusterID)
 
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleGetAliasAction failed: %v", err)
 		h.WriteJSON(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	if !exists {
 		errStr := fmt.Sprintf("cluster [%s] not found", targetClusterID)
-		log.Error(errStr)
+		log.Errorf("HandleGetAliasAction failed: %v", errStr)
 		h.WriteError(w, errStr, http.StatusInternalServerError)
 		return
 	}
 	res, err := client.GetAliasesDetail()
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleGetAliasAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

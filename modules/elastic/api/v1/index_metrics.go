@@ -132,7 +132,7 @@ func (h *APIHandler) getIndexMetrics(ctx context.Context, req *http.Request, clu
 	} else {
 		indexNames, err = h.getTopIndexName(req, clusterID, top, min, max)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("getIndexMetrics failed: %v", err)
 		}
 
 	}
@@ -914,7 +914,7 @@ func (h *APIHandler) getTopIndexName(req *http.Request, clusterID string, top in
 	}
 	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).SearchWithRawQueryDSL(getAllMetricsIndex(), util.MustToJSONBytes(query))
 	if err != nil {
-		log.Error(err)
+		log.Errorf("getTopIndexName failed: %v", err)
 		return nil, err
 	}
 	var maxQpsKVS = map[string]float64{}

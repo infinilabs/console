@@ -58,7 +58,7 @@ func (h *APIHandler) HandleCreateClusterAction(w http.ResponseWriter, req *http.
 	var conf = &elastic.ElasticsearchConfig{}
 	err := h.DecodeJSON(req, conf)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleCreateClusterAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -73,7 +73,7 @@ func (h *APIHandler) HandleCreateClusterAction(w http.ResponseWriter, req *http.
 	if conf.CredentialID == "" && conf.BasicAuth != nil && conf.BasicAuth.Username != "" {
 		credentialID, err := saveBasicAuthToCredential(conf)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("HandleCreateClusterAction failed: %v", err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -85,13 +85,13 @@ func (h *APIHandler) HandleCreateClusterAction(w http.ResponseWriter, req *http.
 	}
 	err = orm.Create(ctx, conf)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleCreateClusterAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	basicAuth, err := common.GetBasicAuth(conf)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleCreateClusterAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -138,7 +138,7 @@ func (h *APIHandler) HandleGetClusterAction(w http.ResponseWriter, req *http.Req
 	clusterConf.ID = id
 	exists, err := orm.Get(&clusterConf)
 	if err != nil || !exists {
-		log.Error(err)
+		log.Errorf("HandleGetClusterAction failed: %v", err)
 		h.Error404(w)
 		return
 	}
@@ -149,7 +149,7 @@ func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.
 	var conf = map[string]interface{}{}
 	err := h.DecodeJSON(req, &conf)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleUpdateClusterAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -158,7 +158,7 @@ func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.
 	originConf.ID = id
 	exists, err := orm.Get(&originConf)
 	if err != nil || !exists {
-		log.Error(err)
+		log.Errorf("HandleUpdateClusterAction failed: %v", err)
 		h.Error404(w)
 		return
 	}
@@ -201,7 +201,7 @@ func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.
 		if newConf.BasicAuth != nil && newConf.BasicAuth.Username != "" {
 			credentialID, err := saveBasicAuthToCredential(newConf)
 			if err != nil {
-				log.Error(err)
+				log.Errorf("HandleUpdateClusterAction failed: %v", err)
 				h.WriteError(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -213,14 +213,14 @@ func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.
 	}
 	err = orm.Save(ctx, newConf)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleUpdateClusterAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	basicAuth, err := common.GetBasicAuth(newConf)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleUpdateClusterAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -246,7 +246,7 @@ func (h *APIHandler) HandleDeleteClusterAction(w http.ResponseWriter, req *http.
 	esConfig.ID = id
 	ok, err := orm.Get(&esConfig)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleDeleteClusterAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -264,7 +264,7 @@ func (h *APIHandler) HandleDeleteClusterAction(w http.ResponseWriter, req *http.
 	err = orm.Delete(ctx, &esConfig)
 
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleDeleteClusterAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -277,11 +277,11 @@ func (h *APIHandler) HandleDeleteClusterAction(w http.ResponseWriter, req *http.
 	}
 	err = orm.DeleteBy(elastic.NodeConfig{}, util.MustToJSONBytes(delDsl))
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleDeleteClusterAction failed: %v", err)
 	}
 	err = orm.DeleteBy(elastic.IndexConfig{}, util.MustToJSONBytes(delDsl))
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleDeleteClusterAction failed: %v", err)
 	}
 
 	elastic.RemoveInstance(id)
@@ -348,7 +348,7 @@ func (h *APIHandler) HandleSearchClusterAction(w http.ResponseWriter, req *http.
 		if global.Env().IsDebug {
 			log.Errorf("cluster search failed, name=%q, from=%d, size=%d, dsl=%s, err=%v", name, from, size, queryDSL, err)
 		}
-		log.Error(err)
+		log.Errorf("HandleSearchClusterAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -417,7 +417,7 @@ func (h *APIHandler) HandleMetricsSummaryAction(w http.ResponseWriter, req *http
 	err, result := orm.Search(event.Event{}, &q)
 	if err != nil {
 		resBody["error"] = err.Error()
-		log.Error("MetricsSummary search error: ", err)
+		log.Errorf("HandleMetricsSummaryAction metrics summary search failed: %v", err)
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
 	}
@@ -498,7 +498,7 @@ func (h *APIHandler) HandleMetricsSummaryAction(w http.ResponseWriter, req *http
 	q.RawQuery = util.MustToJSONBytes(query)
 	err, result = orm.Search(event.Event{}, &q)
 	if err != nil {
-		log.Error("MetricsSummary search error: ", err)
+		log.Errorf("HandleMetricsSummaryAction metrics summary search failed: %v", err)
 	} else {
 		if len(result.Result) > 0 {
 			if v, ok := result.Result[0].(map[string]interface{}); ok {
@@ -545,7 +545,7 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
 	du, err := time.ParseDuration(timeout)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleClusterMetricsAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -561,14 +561,14 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 		if metrics[key].HitsTotal > 0 {
 			minBucketSize, err := GetMetricMinBucketSize(id, metricType)
 			if err != nil {
-				log.Error(err)
+				log.Errorf("HandleClusterMetricsAction failed: %v", err)
 			} else {
 				metrics[key].MinBucketSize = int64(minBucketSize)
 			}
 		}
 	}
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleClusterMetricsAction failed: %v", err)
 		h.WriteError(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -584,7 +584,7 @@ func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.R
 	id := ps.ByName("id")
 	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, id, MetricTypeIndexStats, 90)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleIndexMetricsAction failed: %v", err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -595,7 +595,7 @@ func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.R
 	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
 	du, err := time.ParseDuration(timeout)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleIndexMetricsAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -673,7 +673,7 @@ func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.R
 		if metrics[key].HitsTotal > 0 {
 			minBucketSize, err := GetMetricMinBucketSize(id, MetricTypeNodeStats)
 			if err != nil {
-				log.Error(err)
+				log.Errorf("HandleIndexMetricsAction failed: %v", err)
 			} else {
 				metrics[key].MinBucketSize = int64(minBucketSize)
 			}
@@ -685,7 +685,7 @@ func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.R
 	if ver.Distribution == "" {
 		cr, err := util.VersionCompare(ver.Number, "6.1")
 		if err != nil {
-			log.Error(err)
+			log.Errorf("HandleIndexMetricsAction failed: %v", err)
 		}
 		if cr < 0 {
 			resBody["tips"] = "The system cluster version is lower than 6.1, the top index may be inaccurate"
@@ -748,7 +748,7 @@ func (h *APIHandler) GetClusterHealth(w http.ResponseWriter, req *http.Request, 
 	exists, client, err := h.GetClusterClient(id)
 
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetClusterHealth failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -1298,7 +1298,7 @@ func (h *APIHandler) getClusterStatusMetric(ctx context.Context, id string, min,
 	queryDSL := util.MustToJSONBytes(query)
 	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).QueryDSL(ctx, getAllMetricsIndex(), nil, util.MustToJSONBytes(query))
 	if err != nil {
-		log.Error(err)
+		log.Errorf("getClusterStatusMetric failed: %v", err)
 		return nil, err
 	}
 	metricData := []interface{}{}

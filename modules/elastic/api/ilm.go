@@ -323,7 +323,7 @@ func (h *APIHandler) HandleGetILMPolicyAction(w http.ResponseWriter, req *http.R
 	esClient := elastic.GetClient(clusterID)
 	policies, err := esClient.GetILMPolicy("")
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleGetILMPolicyAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -337,7 +337,7 @@ func (h *APIHandler) HandleSaveILMPolicyAction(w http.ResponseWriter, req *http.
 	cfg := elastic.GetConfig(clusterID)
 	reqBody, err := io.ReadAll(req.Body)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleSaveILMPolicyAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -345,7 +345,7 @@ func (h *APIHandler) HandleSaveILMPolicyAction(w http.ResponseWriter, req *http.
 	if requesterOK {
 		reqBody, err = sanitizeILMPolicyForTarget(requester, cfg, reqBody)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("HandleSaveILMPolicyAction failed: %v", err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -358,7 +358,7 @@ func (h *APIHandler) HandleSaveILMPolicyAction(w http.ResponseWriter, req *http.
 		err = esClient.PutILMPolicy(policy, reqBody)
 	}
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleSaveILMPolicyAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -371,7 +371,7 @@ func (h *APIHandler) HandleDeleteILMPolicyAction(w http.ResponseWriter, req *htt
 	esClient := elastic.GetClient(clusterID)
 	err := esClient.DeleteILMPolicy(policy)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleDeleteILMPolicyAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

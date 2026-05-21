@@ -46,7 +46,7 @@ func (h *APIHandler) HandleCreateViewAction(w http.ResponseWriter, req *http.Req
 	exists, _, err := h.GetClusterClient(targetClusterID)
 
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleCreateViewAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -54,7 +54,7 @@ func (h *APIHandler) HandleCreateViewAction(w http.ResponseWriter, req *http.Req
 
 	if !exists {
 		resBody["error"] = fmt.Sprintf("cluster [%s] not found", targetClusterID)
-		log.Error(resBody["error"])
+		log.Errorf("HandleCreateViewAction failed: %v", resBody["error"])
 		h.WriteJSON(w, resBody, http.StatusNotFound)
 		return
 	}
@@ -63,7 +63,7 @@ func (h *APIHandler) HandleCreateViewAction(w http.ResponseWriter, req *http.Req
 
 	err = h.DecodeJSON(req, viewReq)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleCreateViewAction failed: %v", err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -75,7 +75,7 @@ func (h *APIHandler) HandleCreateViewAction(w http.ResponseWriter, req *http.Req
 	viewReq.Attributes.ClusterID = targetClusterID
 	_, err = esClient.Index(orm.GetIndexName(viewReq.Attributes), "", id, viewReq.Attributes, "wait_for")
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleCreateViewAction failed: %v", err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -107,7 +107,7 @@ func (h *APIHandler) HandleGetViewListAction(w http.ResponseWriter, req *http.Re
 
 	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetIndexName(elastic.View{}), queryDSL)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleGetViewListAction failed: %v", err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -148,7 +148,7 @@ func (h *APIHandler) HandleDeleteViewAction(w http.ResponseWriter, req *http.Req
 	}
 	_, err := orm.Get(&view)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleDeleteViewAction failed: %v", err)
 		h.WriteJSON(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -162,7 +162,7 @@ func (h *APIHandler) HandleDeleteViewAction(w http.ResponseWriter, req *http.Req
 	}
 	err = orm.Delete(ctx, &view)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleDeleteViewAction failed: %v", err)
 		h.WriteJSON(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -179,7 +179,7 @@ func (h *APIHandler) HandleResolveIndexAction(w http.ResponseWriter, req *http.R
 	exists, client, err := h.GetClusterClient(targetClusterID)
 
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleResolveIndexAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -187,7 +187,7 @@ func (h *APIHandler) HandleResolveIndexAction(w http.ResponseWriter, req *http.R
 
 	if !exists {
 		resBody["error"] = fmt.Sprintf("cluster [%s] not found", targetClusterID)
-		log.Error(resBody["error"])
+		log.Errorf("HandleResolveIndexAction failed: %v", resBody["error"])
 		h.WriteJSON(w, resBody, http.StatusNotFound)
 		return
 	}
@@ -214,7 +214,7 @@ func (h *APIHandler) HandleResolveIndexAction(w http.ResponseWriter, req *http.R
 		}
 		searchRes, err := client.SearchWithRawQueryDSL(wild, util.MustToJSONBytes(q))
 		if err != nil {
-			log.Error(err)
+			log.Errorf("HandleResolveIndexAction failed: %v", err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -252,7 +252,7 @@ func (h *APIHandler) HandleResolveIndexAction(w http.ResponseWriter, req *http.R
 
 	res, err := client.GetAliasesAndIndices()
 	if err != nil || res == nil {
-		log.Error(err)
+		log.Errorf("HandleResolveIndexAction failed: %v", err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -301,7 +301,7 @@ func (h *APIHandler) HandleBulkGetViewAction(w http.ResponseWriter, req *http.Re
 
 	err := h.DecodeJSON(req, &reqIDs)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleBulkGetViewAction failed: %v", err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -321,7 +321,7 @@ func (h *APIHandler) HandleBulkGetViewAction(w http.ResponseWriter, req *http.Re
 		{"match": {"cluster_id": "%s"}}]}}}`, strings.Join(strIDs, ","), targetClusterID))
 	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetIndexName(elastic.View{}), queryDSL)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleBulkGetViewAction failed: %v", err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -352,7 +352,7 @@ func (h *APIHandler) HandleBulkGetViewAction(w http.ResponseWriter, req *http.Re
 	for _, indexName := range indexNames {
 		fields, err := elastic.GetFieldCaps(esTragertClient, indexName, []string{"_source", "_id", "_type", "_index"})
 		if err != nil {
-			log.Error(err)
+			log.Errorf("HandleBulkGetViewAction failed: %v", err)
 			resBody["error"] = err.Error()
 			h.WriteJSON(w, resBody, http.StatusInternalServerError)
 			return
@@ -386,7 +386,7 @@ func (h *APIHandler) HandleUpdateViewAction(w http.ResponseWriter, req *http.Req
 	exists, _, err := h.GetClusterClient(targetClusterID)
 
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleUpdateViewAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -394,7 +394,7 @@ func (h *APIHandler) HandleUpdateViewAction(w http.ResponseWriter, req *http.Req
 
 	if !exists {
 		resBody["error"] = fmt.Sprintf("cluster [%s] not found", targetClusterID)
-		log.Error(resBody["error"])
+		log.Errorf("HandleUpdateViewAction failed: %v", resBody["error"])
 		h.WriteJSON(w, resBody, http.StatusNotFound)
 		return
 	}
@@ -403,7 +403,7 @@ func (h *APIHandler) HandleUpdateViewAction(w http.ResponseWriter, req *http.Req
 
 	err = h.DecodeJSON(req, viewReq)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleUpdateViewAction failed: %v", err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -422,7 +422,7 @@ func (h *APIHandler) HandleUpdateViewAction(w http.ResponseWriter, req *http.Req
 	}
 	_, err = orm.Get(oldView)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleUpdateViewAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -435,7 +435,7 @@ func (h *APIHandler) HandleUpdateViewAction(w http.ResponseWriter, req *http.Req
 	}
 	err = orm.Save(ctx, viewReq.Attributes)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleUpdateViewAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -457,7 +457,7 @@ func (h *APIHandler) HandleGetFieldCapsAction(w http.ResponseWriter, req *http.R
 	esClient := elastic.GetClient(targetClusterID)
 	kbnFields, err := elastic.GetFieldCaps(esClient, pattern, metaFields)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleGetFieldCapsAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -507,7 +507,7 @@ func (h *APIHandler) HandleGetViewAction(w http.ResponseWriter, req *http.Reques
 	}
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
+		log.Errorf("HandleGetViewAction failed: %v", err)
 		return
 	}
 
@@ -519,7 +519,7 @@ func (h *APIHandler) SetDefaultLayout(w http.ResponseWriter, req *http.Request, 
 
 	err := h.DecodeJSON(req, viewReq)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("SetDefaultLayout failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -543,7 +543,7 @@ func (h *APIHandler) SetDefaultLayout(w http.ResponseWriter, req *http.Request, 
 	err = orm.Update(ctx, &viewObj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
+		log.Errorf("SetDefaultLayout failed: %v", err)
 		return
 	}
 

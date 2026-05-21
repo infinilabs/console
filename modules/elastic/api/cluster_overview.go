@@ -126,7 +126,7 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 	for _, cid := range clusterIDs {
 		clusterUUID, err := adapter.GetClusterUUID(cid)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("FetchClusterInfo failed: %v", err)
 			continue
 		}
 		clusterUUIDs = append(clusterUUIDs, clusterUUID)
@@ -261,7 +261,7 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
 	du, err := time.ParseDuration(timeout)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("FetchClusterInfo failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -269,7 +269,7 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 	defer cancel()
 	indexMetrics, err := h.getMetrics(ctx, term_level, query, indexMetricItems, bucketSize)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("FetchClusterInfo failed: %v", err)
 		if errors.Is(err, context.DeadlineExceeded) {
 			h.WriteError(w, cerr.New(cerr.ErrTypeRequestTimeout, "", err).Error(), http.StatusRequestTimeout)
 			return
@@ -718,7 +718,7 @@ func (h *APIHandler) GetRealtimeClusterNodes(w http.ResponseWriter, req *http.Re
 	}
 	catShardsInfo, err := esClient.CatShards()
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetRealtimeClusterNodes failed: %v", err)
 	}
 	shardCounts := map[string]int{}
 	nodeM := map[string]string{}
@@ -1444,7 +1444,7 @@ func (h *APIHandler) getClusterMonitorState(w http.ResponseWriter, req *http.Req
 	dsl := util.MustToJSONBytes(queryDSL)
 	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).SearchWithRawQueryDSL(getAllMetricsIndex(), dsl)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("getClusterMonitorState failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -145,7 +145,7 @@ func refreshNodesInfo(instanceID, instanceEndpoint string) (*elastic.DiscoveryRe
 		if _, ok := newNodes[k]; !ok {
 			client := elastic.GetClientNoPanic(v.ClusterID)
 			if client == nil {
-				log.Error("client not found:", v.ClusterID)
+				log.Errorf("agent client not found for cluster [%s]", v.ClusterID)
 				continue
 			}
 			status := "online"
@@ -157,27 +157,39 @@ func refreshNodesInfo(instanceID, instanceEndpoint string) (*elastic.DiscoveryRe
 				//get nodes information
 				nodeInfos, err := metadata.GetNodeInformation(v.ClusterID, []string{v.NodeUUID})
 				if err != nil || len(nodeInfos) == 0 {
-					log.Error("node info not found:", v.ClusterID, ",", []string{v.NodeUUID}, ",", err, err != nil, len(nodeInfos) == 0)
+					if err != nil {
+						log.Errorf("failed to get fallback node info for cluster [%s], node [%s]: %v", v.ClusterID, v.NodeUUID, err)
+					} else {
+						log.Errorf("fallback node info not found for cluster [%s], node [%s]", v.ClusterID, v.NodeUUID)
+					}
 					continue
 				}
 
 				//get node information
 				nodeInfo, ok = nodeInfos[v.NodeUUID]
 				if !ok {
-					log.Error("node info not found:", v.ClusterID, ",", v.NodeUUID, ",", err)
+					log.Errorf("fallback node info map missing cluster [%s], node [%s]", v.ClusterID, v.NodeUUID)
 					continue
 				}
 
 				//get cluster information
 				clusterInfo, err = metadata.GetClusterInformation(v.ClusterID)
 				if err != nil || clusterInfo == nil {
-					log.Error("cluster info not found:", v.ClusterID, ",", err, clusterInfo == nil)
+					if err != nil {
+						log.Errorf("failed to get cluster info for cluster [%s]: %v", v.ClusterID, err)
+					} else {
+						log.Errorf("cluster info not found for cluster [%s]", v.ClusterID)
+					}
 					continue
 				}
 			} else {
 				clusterInfo, err = console_common.ClusterVersion(elastic.GetMetadata(v.ClusterID))
 				if err != nil || clusterInfo == nil {
-					log.Error(err)
+					if err != nil {
+						log.Errorf("failed to resolve cluster version for cluster [%s]: %v", v.ClusterID, err)
+					} else {
+						log.Errorf("cluster version not found for cluster [%s]", v.ClusterID)
+					}
 					continue
 				}
 			}
@@ -304,11 +316,11 @@ func (h *APIHandler) getLogFilesByNode(w http.ResponseWriter, req *http.Request,
 	inst, logsPaths, err := getAgentByNodeID(clusterID, nodeID)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
+		log.Errorf("failed to resolve agent for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
 		return
 	}
 	if inst == nil {
-		log.Error(fmt.Sprintf("can not find agent by node [%s]", nodeID))
+		log.Errorf("can not find agent for cluster [%s], node [%s]", clusterID, nodeID)
 		h.WriteJSON(w, util.MapStr{
 			"success": false,
 			"reason":  "AGENT_NOT_FOUND",
@@ -318,7 +330,7 @@ func (h *APIHandler) getLogFilesByNode(w http.ResponseWriter, req *http.Request,
 	logFiles, err := GetElasticLogFiles(nil, inst, logsPaths)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
+		log.Errorf("failed to get log files for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
 		return
 	}
 	h.WriteJSON(w, util.MapStr{
@@ -333,7 +345,7 @@ func (h *APIHandler) getLogFileContent(w http.ResponseWriter, req *http.Request,
 	inst, logsPaths, err := getAgentByNodeID(clusterID, nodeID)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
+		log.Errorf("failed to resolve agent for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
 		return
 	}
 	if inst == nil {
@@ -350,19 +362,19 @@ func (h *APIHandler) getLogFileContent(w http.ResponseWriter, req *http.Request,
 	err = h.DecodeJSON(req, &reqBody)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
+		log.Errorf("failed to decode log content request for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
 		return
 	}
 	reqBody.LogsPath, err = pickAllowedLogsPath(logsPaths, reqBody.LogsPath)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
+		log.Errorf("invalid logs path for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
 		return
 	}
 	res, err := GetElasticLogFileContent(nil, inst, reqBody)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
+		log.Errorf("failed to get log content for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
 		return
 	}
 	h.WriteJSON(w, res, http.StatusOK)
@@ -387,7 +399,11 @@ func getAgentByNodeID(clusterID, nodeID string) (*model.Instance, []string, erro
 
 	nodeInfo, err := metadata.GetNodeConfig(clusterID, nodeID)
 	if err != nil || nodeInfo == nil {
-		log.Error("node info is nil")
+		if err != nil {
+			log.Errorf("failed to get node config for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
+		} else {
+			log.Errorf("node config not found for cluster [%s], node [%s]", clusterID, nodeID)
+		}
 		return nil, nil, err
 	}
 
@@ -563,7 +579,7 @@ func runAutoEnroll(clusterInfo ClusterInfo) {
 					v = r.(string)
 				}
 				if v != "" {
-					log.Error(v)
+					log.Errorf("auto enroll panic recovered: %s", v)
 				}
 			}
 		}
@@ -576,7 +592,7 @@ func runAutoEnroll(clusterInfo ClusterInfo) {
 	q.Size = 50000
 	err, res := orm.Search(&model.Instance{}, q)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("failed to search agent instances during auto enroll: %v", err)
 		return
 	}
 
@@ -597,7 +613,7 @@ func runAutoEnroll(clusterInfo ClusterInfo) {
 		}
 		nodes, err := refreshNodesInfo(instanceID, instanceEndpoint)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("failed to refresh nodes for agent instance [%s] at [%s]: %v", instanceID, instanceEndpoint, err)
 			continue
 		}
 		log.Debugf("instance:%v,%v, has: %v nodes, %v unknown nodes", instanceID, instanceEndpoint, len(nodes.Nodes), len(nodes.UnknownProcess))
@@ -720,21 +736,25 @@ func bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elastic.DiscoveryResu
 			logsPaths := clusterInfo.GetLogsPaths(clusterID)
 			preparedConf, err := elasticapi.PrepareClusterForAgentCollection(clusterID)
 			if err != nil {
-				log.Error(err)
+				log.Errorf("failed to prepare cluster [%s] for agent collection: %v", clusterID, err)
 				continue
 			}
 			meta := elastic.GetMetadata(clusterID)
 			if meta != nil {
 				states, err := elastic.GetClient(clusterID).GetClusterState()
 				if err != nil || states == nil {
-					log.Error(err)
+					if err != nil {
+						log.Errorf("failed to get cluster state for cluster [%s]: %v", clusterID, err)
+					} else {
+						log.Errorf("cluster state is empty for cluster [%s]", clusterID)
+					}
 					continue
 				}
 
 				clusterUUID := states.ClusterUUID
 				auth, err := common.GetAgentBasicAuth(preparedConf)
 				if err != nil {
-					log.Error(err)
+					log.Errorf("failed to get agent credential for cluster [%s]: %v", clusterID, err)
 					continue
 				}
 				if auth == nil || auth.Username == "" {
@@ -847,7 +867,7 @@ func (h *APIHandler) getESNodeInfoViaProxyWithConfig(cfg *elastic.ElasticsearchC
 	res, err := server.ProxyAgentRequest("elasticsearch", endpoint, req, &obj)
 	if err != nil {
 		if global.Env().IsDebug {
-			log.Error(err)
+			log.Errorf("failed to proxy elasticsearch node info via agent endpoint [%s]: %v", endpoint, err)
 		}
 		return false, true, nil
 	}

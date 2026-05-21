@@ -361,45 +361,73 @@ const Logs = (props) => {
   return (
     <div className="logs">
       <div className="form-line">
-        <div className="form-item">
-          {formatMessage({ id: "agent.logs.label.log_file" })}
-          <Tooltip title={selectedLogFile ? formatLogFileLabel(selectedLogFile, true) : ""}>
-            <Select
-              style={{ width: 390 }}
-              value={logState.file}
-              onChange={onLogFileChange}
-              optionLabelProp="title"
-              showSearch
-              optionFilterProp="title"
-            >
-              {(logState.logFiles || []).map((logFile) => {
-                const optionKey = getLogFileKey(logFile);
-                const optionLabel = formatLogFileLabel(logFile);
-                return (
-                  <Select.Option
-                    key={optionKey}
-                    value={optionKey}
-                    title={optionLabel}
-                  >
-                    <div className="log-file-option">
-                      <span className="log-file-option__name">{logFile.name}</span>
-                      {logFile.logs_path ? (
-                        <Tooltip title={logFile.logs_path}>
-                          <span className="log-file-option__path">{logFile.logs_path}</span>
-                        </Tooltip>
-                      ) : null}
-                      <span className="log-file-option__meta">
-                        {formatter.bytes(logFile.size_in_bytes || 0)}
-                      </span>
-                      <span className="log-file-option__meta">
-                        {moment(logFile.modify_time).format("YYYY.MM.DD")}
-                      </span>
+        <div className="form-item form-item--log-file">
+          <span className="form-item__label">
+            {formatMessage({ id: "agent.logs.label.log_file" })}
+          </span>
+          <div className="log-file-picker">
+            <Tooltip title={selectedLogFile ? formatLogFileLabel(selectedLogFile, true) : ""}>
+              <Select
+                className="log-file-select"
+                style={{ width: 460 }}
+                value={logState.file}
+                onChange={onLogFileChange}
+                optionLabelProp="label"
+                showSearch
+                optionFilterProp="title"
+                dropdownMatchSelectWidth={false}
+                dropdownStyle={{ width: 560 }}
+              >
+                {(logState.logFiles || []).map((logFile) => {
+                  const optionKey = getLogFileKey(logFile);
+                  const optionLabel = formatLogFileLabel(logFile);
+                  return (
+                    <Select.Option
+                      key={optionKey}
+                      value={optionKey}
+                      label={logFile.name}
+                      title={optionLabel}
+                    >
+                      <div className="log-file-option">
+                        <div className="log-file-option__main">
+                          <span className="log-file-option__name" title={logFile.name}>
+                            {logFile.name}
+                          </span>
+                          {logFile.logs_path ? (
+                            <span
+                              className="log-file-option__path"
+                              title={logFile.logs_path}
+                            >
+                              {logFile.logs_path}
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="log-file-option__meta">
+                          <span>{formatter.bytes(logFile.size_in_bytes || 0)}</span>
+                          <span>{moment(logFile.modify_time).format("YYYY.MM.DD")}</span>
+                        </div>
+                      </div>
+                    </Select.Option>
+                  );
+                })}
+              </Select>
+            </Tooltip>
+            {selectedLogFile ? (
+              <div className="log-file-summary">
+                {selectedLogFile.logs_path ? (
+                  <Tooltip title={selectedLogFile.logs_path}>
+                    <div className="log-file-summary__path">
+                      {selectedLogFile.logs_path}
                     </div>
-                  </Select.Option>
-                );
-              })}
-            </Select>
-          </Tooltip>
+                  </Tooltip>
+                ) : null}
+                <div className="log-file-summary__meta">
+                  <span>{formatter.bytes(selectedLogFile.size_in_bytes || 0)}</span>
+                  <span>{moment(selectedLogFile.modify_time).format("YYYY.MM.DD HH:mm")}</span>
+                </div>
+              </div>
+            ) : null}
+          </div>
         </div>
         <ButtonGroup>
           <Button type="primary" ghost onClick={onViewLatestClick}>

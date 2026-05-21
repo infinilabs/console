@@ -56,7 +56,7 @@ func (h *APIHandler) HandleProxyAction(w http.ResponseWriter, req *http.Request,
 	exists, esClient, err := h.GetClusterClient(targetClusterID)
 
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleProxyAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -64,7 +64,7 @@ func (h *APIHandler) HandleProxyAction(w http.ResponseWriter, req *http.Request,
 
 	if !exists {
 		resBody["error"] = fmt.Sprintf("cluster [%s] not found", targetClusterID)
-		log.Error(resBody["error"])
+		log.Errorf("HandleProxyAction failed: %v", resBody["error"])
 		h.WriteJSON(w, resBody, http.StatusNotFound)
 		return
 	}
@@ -73,7 +73,7 @@ func (h *APIHandler) HandleProxyAction(w http.ResponseWriter, req *http.Request,
 	var realPath = authPath
 	newURL, err := url.Parse(realPath)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleProxyAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -126,7 +126,7 @@ func (h *APIHandler) HandleProxyAction(w http.ResponseWriter, req *http.Request,
 	newReq.Method = method
 	isSuperAdmin, permission, err := h.ValidateProxyRequest(newReq, targetClusterID)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleProxyAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusForbidden)
 		return
@@ -153,7 +153,7 @@ func (h *APIHandler) HandleProxyAction(w http.ResponseWriter, req *http.Request,
 	metadata := elastic.GetMetadata(targetClusterID)
 	if metadata == nil {
 		resBody["error"] = fmt.Sprintf("cluster [%s] metadata not found", targetClusterID)
-		log.Error(resBody["error"])
+		log.Errorf("HandleProxyAction failed: %v", resBody["error"])
 		h.WriteJSON(w, resBody, http.StatusNotFound)
 		return
 	}
@@ -192,7 +192,7 @@ func (h *APIHandler) HandleProxyAction(w http.ResponseWriter, req *http.Request,
 		} else {
 			body, err := io.ReadAll(req.Body)
 			if err != nil {
-				log.Error(err)
+				log.Errorf("HandleProxyAction failed: %v", err)
 				h.WriteError(w, err.Error(), http.StatusInternalServerError)
 				return
 			}

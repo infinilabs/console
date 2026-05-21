@@ -35,10 +35,13 @@ import (
 	"time"
 
 	"infini.sh/framework/core/queue"
+	ucfg "infini.sh/framework/lib/go-ucfg"
 
 	log "github.com/cihub/seelog"
+	console_common "infini.sh/console/common"
 	"infini.sh/console/core"
 	v1 "infini.sh/console/modules/elastic/api/v1"
+	agentservice "infini.sh/console/service/agent"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/credential"
 	"infini.sh/framework/core/elastic"
@@ -55,18 +58,27 @@ type APIHandler struct {
 	v1.APIHandler
 }
 
+const (
+	clusterCredentialKindPlatform       = "platform"
+	clusterCredentialKindAgent          = "agent"
+	autoAgentCollectionUsername         = "infini-agent"
+	autoAgentCollectionFallbackUsername = "infini-console-agent"
+)
+
 func (h *APIHandler) Client() elastic.API {
 	return elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 }
 
 func (h *APIHandler) HandleCreateClusterAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	var conf = &elastic.ElasticsearchConfig{}
-	err := h.DecodeJSON(req, conf)
+	payload := &elasticConfigPayload{}
+	err := h.DecodeJSON(req, payload)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleCreateClusterAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	conf := &payload.ElasticsearchConfig
+	console_common.SetProbePath(conf, payload.ProbePath)
 	conf.Enabled = true
 	if len(conf.Hosts) > 0 && conf.Host == "" {
 		conf.Host = conf.Hosts[0]
@@ -85,9 +97,9 @@ func (h *APIHandler) HandleCreateClusterAction(w http.ResponseWriter, req *http.
 		Refresh: "wait_for",
 	}
 	if conf.CredentialID == "" && conf.BasicAuth != nil && conf.BasicAuth.Username != "" {
-		credentialID, err := saveBasicAuthToCredential(conf.Name+"_platform("+conf.ID+")", conf.BasicAuth)
+		credentialID, err := saveClusterBasicAuthToCredential(conf.Name, conf.ID, clusterCredentialKindPlatform, conf.BasicAuth)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("HandleCreateClusterAction failed: %v", err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -96,9 +108,9 @@ func (h *APIHandler) HandleCreateClusterAction(w http.ResponseWriter, req *http.
 	conf.BasicAuth = nil
 
 	if conf.AgentCredentialID == "" && conf.AgentBasicAuth != nil && conf.AgentBasicAuth.Username != "" {
-		credentialID, err := saveBasicAuthToCredential(conf.Name+"_agent("+conf.ID+")", conf.AgentBasicAuth)
+		credentialID, err := saveClusterBasicAuthToCredential(conf.Name, conf.ID, clusterCredentialKindAgent, conf.AgentBasicAuth)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("HandleCreateClusterAction failed: %v", err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -112,26 +124,109 @@ func (h *APIHandler) HandleCreateClusterAction(w http.ResponseWriter, req *http.
 	if conf.MetricCollectionMode == "" {
 		conf.MetricCollectionMode = elastic.ModeAgentless
 	}
+	err = ensureManagedAgentCollectionCredential(conf, "")
+	if err != nil {
+		log.Errorf("HandleCreateClusterAction failed: %v", err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	err = orm.Create(ctx, conf)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleCreateClusterAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	basicAuth, err := common.GetBasicAuth(conf)
-	if err != nil {
-		log.Error(err)
+	if err := hydrateRuntimeBasicAuth(conf); err != nil {
+		log.Errorf("HandleCreateClusterAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	conf.BasicAuth = basicAuth
 	conf.Source = elastic.ElasticsearchConfigSourceElasticsearch
 	_, err = common.InitElasticInstance(*conf)
 	if err != nil {
 		log.Warn("error on init elasticsearch:", err)
 	}
+	if err := agentservice.SaveClusterLogsPaths(conf.ID, payload.AgentLogsPaths); err != nil {
+		log.Errorf("HandleCreateClusterAction failed: %v", err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if conf.MetricCollectionMode == elastic.ModeAgent {
+		agentservice.TriggerAutoEnroll([]string{conf.ID})
+	}
 
 	h.WriteCreatedOKJSON(w, conf.ID)
+}
+
+func PrepareClusterForAgentCollection(clusterID string) (*elastic.ElasticsearchConfig, error) {
+	if strings.TrimSpace(clusterID) == "" {
+		return nil, fmt.Errorf("cluster id is required")
+	}
+
+	conf := &elastic.ElasticsearchConfig{}
+	conf.ID = clusterID
+	exists, err := orm.Get(conf)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, fmt.Errorf("cluster not found")
+	}
+
+	oldMode := conf.MetricCollectionMode
+	oldAgentCredentialID := conf.AgentCredentialID
+	oldNoDefaultAuthForAgent := conf.NoDefaultAuthForAgent
+
+	conf.MetricCollectionMode = elastic.ModeAgent
+	if err := ensureManagedAgentCollectionCredential(conf, conf.Name); err != nil {
+		return nil, err
+	}
+
+	changed := oldMode != conf.MetricCollectionMode ||
+		oldAgentCredentialID != conf.AgentCredentialID ||
+		oldNoDefaultAuthForAgent != conf.NoDefaultAuthForAgent
+
+	if changed {
+		if err := orm.Save(&orm.Context{Refresh: "wait_for"}, conf); err != nil {
+			return nil, err
+		}
+		if err := syncAutoGeneratedClusterCredentialName(conf.AgentCredentialID, conf.ID, conf.Name, conf.Name, clusterCredentialKindAgent); err != nil {
+			return nil, err
+		}
+		if err := hydrateRuntimeBasicAuth(conf); err != nil {
+			return nil, err
+		}
+		conf.Source = elastic.ElasticsearchConfigSourceElasticsearch
+		if _, err := common.InitElasticInstance(*conf); err != nil {
+			log.Warn("error on init elasticsearch:", err)
+		}
+		if oldMode != conf.MetricCollectionMode {
+			recordCollectionModeChangeActivity(conf.ID, conf.Name, oldMode, conf.MetricCollectionMode)
+		}
+	}
+
+	return conf, nil
+}
+
+// EnsureManagedAgentCredential initializes or refreshes the auto-generated infini-agent credential when supported.
+func EnsureManagedAgentCredential(conf *elastic.ElasticsearchConfig, previousClusterName string) error {
+	return ensureManagedAgentCollectionCredential(conf, previousClusterName)
+}
+
+func hydrateRuntimeBasicAuth(conf *elastic.ElasticsearchConfig) error {
+	return hydrateRuntimeBasicAuthWithGetter(conf, common.GetBasicAuth)
+}
+
+func hydrateRuntimeBasicAuthWithGetter(conf *elastic.ElasticsearchConfig, getBasicAuth func(*elastic.ElasticsearchConfig) (*model.BasicAuth, error)) error {
+	if conf == nil {
+		return nil
+	}
+	basicAuth, err := getBasicAuth(conf)
+	if err != nil {
+		return err
+	}
+	conf.BasicAuth = basicAuth
+	return nil
 }
 
 func saveBasicAuthToCredential(name string, auth *model.BasicAuth) (string, error) {
@@ -151,11 +246,392 @@ func saveBasicAuthToCredential(name string, auth *model.BasicAuth) (string, erro
 	if err != nil {
 		return "", err
 	}
-	err = orm.Create(nil, &cred)
+	err = orm.Create(&orm.Context{Refresh: "wait_for"}, &cred)
 	if err != nil {
 		return "", err
 	}
 	return cred.ID, nil
+}
+
+func saveClusterBasicAuthToCredential(clusterName, clusterID, kind string, auth *model.BasicAuth) (string, error) {
+	return saveBasicAuthToCredential(getClusterCredentialDisplayName(clusterName, kind), auth)
+}
+
+func getClusterCredentialDisplayName(clusterName, kind string) string {
+	clusterName = strings.TrimSpace(clusterName)
+	switch kind {
+	case clusterCredentialKindAgent:
+		return fmt.Sprintf("%s (Agent)", clusterName)
+	default:
+		return fmt.Sprintf("%s (Platform)", clusterName)
+	}
+}
+
+func getLegacyClusterCredentialDisplayName(clusterName, clusterID, kind string) string {
+	clusterName = strings.TrimSpace(clusterName)
+	return fmt.Sprintf("%s_%s(%s)", clusterName, kind, clusterID)
+}
+
+func isAutoGeneratedClusterCredentialName(name, clusterName, clusterID, kind string) bool {
+	if name == "" {
+		return false
+	}
+	return name == getClusterCredentialDisplayName(clusterName, kind) ||
+		(clusterID != "" && name == getLegacyClusterCredentialDisplayName(clusterName, clusterID, kind))
+}
+
+func syncAutoGeneratedClusterCredentialName(credentialID, clusterID, oldClusterName, newClusterName, kind string) error {
+	if credentialID == "" {
+		return nil
+	}
+
+	cred := credential.Credential{}
+	cred.ID = credentialID
+	exists, err := orm.Get(&cred)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return nil
+	}
+
+	if !isAutoGeneratedClusterCredentialName(cred.Name, oldClusterName, clusterID, kind) &&
+		!isAutoGeneratedClusterCredentialName(cred.Name, newClusterName, clusterID, kind) {
+		return nil
+	}
+
+	newName := getClusterCredentialDisplayName(newClusterName, kind)
+	if cred.Name == newName {
+		return nil
+	}
+
+	cred.Name = newName
+	return orm.Update(&orm.Context{Refresh: "wait_for"}, &cred)
+}
+
+func ensureManagedAgentCollectionCredential(conf *elastic.ElasticsearchConfig, previousClusterName string) error {
+	if conf == nil {
+		return nil
+	}
+	if conf.Distribution != elastic.Easysearch {
+		return nil
+	}
+
+	existingCredential, existingAuth, shouldManage, err := getManagedAgentCredential(conf, previousClusterName)
+	if err != nil {
+		return err
+	}
+	if !shouldManage {
+		if conf.AgentCredentialID != "" {
+			conf.NoDefaultAuthForAgent = true
+		}
+		return nil
+	}
+
+	platformAuth, err := common.GetBasicAuth(conf)
+	if err != nil {
+		return err
+	}
+	if platformAuth == nil || platformAuth.Username == "" {
+		if conf.MetricCollectionMode == elastic.ModeAgent {
+			return fmt.Errorf("platform credential is required to create agent collection user")
+		}
+		return nil
+	}
+
+	username := autoAgentCollectionUsername
+	password := ""
+	if existingAuth != nil {
+		if strings.TrimSpace(existingAuth.Username) != "" {
+			username = strings.TrimSpace(existingAuth.Username)
+		}
+		if existingAuth.Password.Get() != "" {
+			password = existingAuth.Password.Get()
+		}
+	}
+	if password == "" {
+		password = util.GenerateSecureString(20)
+	}
+
+	client, err := newManagedClusterSecurityClient(conf, platformAuth)
+	if err != nil {
+		return err
+	}
+	username, err = initAgentCollectionUser(client, conf.Distribution, username, password)
+	if err != nil {
+		if shouldFallbackToPlatformCredentialForManagedAgentProvision(err) {
+			if existingCredential != nil {
+				log.Warnf("keep existing managed agent credential for cluster [%s] because auto-provision refresh is unavailable: %v", conf.Name, err)
+				conf.AgentCredentialID = existingCredential.ID
+				conf.AgentBasicAuth = nil
+				conf.NoDefaultAuthForAgent = true
+				return nil
+			}
+
+			log.Warnf("skip managed agent credential auto-provision for cluster [%s], falling back to platform credential: %v", conf.Name, err)
+			conf.AgentCredentialID = ""
+			conf.AgentBasicAuth = nil
+			conf.NoDefaultAuthForAgent = false
+			return nil
+		}
+		return err
+	}
+
+	if existingCredential != nil {
+		existingCredential.Name = getClusterCredentialDisplayName(conf.Name, clusterCredentialKindAgent)
+		existingCredential.Type = credential.BasicAuth
+		existingCredential.Tags = []string{"ES"}
+		existingCredential.Payload = map[string]interface{}{
+			"basic_auth": map[string]interface{}{
+				"username": username,
+				"password": password,
+			},
+		}
+		if err := existingCredential.Encode(); err != nil {
+			return err
+		}
+		if err := orm.Update(&orm.Context{Refresh: "wait_for"}, existingCredential); err != nil {
+			return err
+		}
+		conf.AgentCredentialID = existingCredential.ID
+	} else {
+		auth := &model.BasicAuth{
+			Username: username,
+			Password: ucfg.SecretString(password),
+		}
+		credentialID, err := saveClusterBasicAuthToCredential(conf.Name, conf.ID, clusterCredentialKindAgent, auth)
+		if err != nil {
+			return err
+		}
+		conf.AgentCredentialID = credentialID
+	}
+
+	conf.AgentBasicAuth = nil
+	conf.NoDefaultAuthForAgent = true
+	return nil
+}
+
+func getManagedAgentCredential(conf *elastic.ElasticsearchConfig, previousClusterName string) (*credential.Credential, *model.BasicAuth, bool, error) {
+	if conf == nil || conf.AgentCredentialID == "" {
+		return nil, nil, true, nil
+	}
+
+	cred, err := common.GetCredential(conf.AgentCredentialID)
+	if err != nil {
+		return nil, nil, false, err
+	}
+	auth, err := cred.DecodeBasicAuth()
+	if err != nil {
+		return nil, nil, false, err
+	}
+
+	if isAutoGeneratedClusterCredentialName(cred.Name, conf.Name, conf.ID, clusterCredentialKindAgent) ||
+		(previousClusterName != "" && isAutoGeneratedClusterCredentialName(cred.Name, previousClusterName, conf.ID, clusterCredentialKindAgent)) {
+		return cred, auth, true, nil
+	}
+
+	return cred, auth, false, nil
+}
+
+func newManagedClusterSecurityClient(conf *elastic.ElasticsearchConfig, auth *model.BasicAuth) (elastic.API, error) {
+	tempConf := *conf
+	tempConf.BasicAuth = auth
+	tempConf.CredentialID = ""
+	tempConf.AgentBasicAuth = nil
+	tempConf.AgentCredentialID = ""
+	client, err := common.InitClientWithConfig(tempConf)
+	if err != nil {
+		return nil, err
+	}
+	// The managed Easysearch security bootstrap runs before the new cluster config
+	// is registered globally, so the temporary client must carry its own metadata.
+	elastic.GetOrInitMetadata(&tempConf)
+	return client, nil
+}
+
+func initAgentCollectionUser(client elastic.API, distribution, username, password string) (string, error) {
+	roleBody, err := buildAgentCollectionRoleBody(distribution)
+	if err != nil {
+		return username, err
+	}
+	if err := client.PutRole(username, roleBody); err != nil {
+		fallbackUsername, fallback := getManagedAgentCollectionFallbackUsername(distribution, username, err)
+		if !fallback {
+			return username, wrapAgentCollectionProvisionError(distribution, "role", err)
+		}
+		username = fallbackUsername
+		if err := client.PutRole(username, roleBody); err != nil {
+			return username, wrapAgentCollectionProvisionError(distribution, "role", err)
+		}
+	}
+
+	userBody, err := buildAgentCollectionUserBody(distribution, username, password)
+	if err != nil {
+		return username, err
+	}
+	if err := client.PutUser(username, userBody); err != nil {
+		return username, wrapAgentCollectionProvisionError(distribution, "user", err)
+	}
+	return username, nil
+}
+
+func buildAgentCollectionRoleBody(distribution string) ([]byte, error) {
+	switch distribution {
+	case elastic.Easysearch:
+		return util.MustToJSONBytes(util.MapStr{
+			"cluster": []string{
+				"cluster_monitor",
+			},
+			"description": "Provide the minimum permissions for INFINI AGENT to collect metrics",
+			"indices": []util.MapStr{
+				{
+					"names": []string{
+						"*",
+					},
+					"query":          "",
+					"field_security": []string{},
+					"field_mask":     []string{},
+					"privileges": []string{
+						"indices_monitor",
+					},
+				},
+			},
+		}), nil
+	default:
+		return nil, fmt.Errorf("unsupported distribution for agent collection role: %s", distribution)
+	}
+}
+
+func buildAgentCollectionUserBody(distribution, username, password string) ([]byte, error) {
+	switch distribution {
+	case elastic.Easysearch:
+		return util.MustToJSONBytes(util.MapStr{
+			"roles":    []string{username},
+			"password": password,
+		}), nil
+	default:
+		return nil, fmt.Errorf("unsupported distribution for agent collection user: %s", distribution)
+	}
+}
+
+func wrapAgentCollectionProvisionError(distribution, resource string, err error) error {
+	if err == nil {
+		return nil
+	}
+
+	raw := err.Error()
+	lowerRaw := strings.ToLower(raw)
+
+	if distribution == elastic.Easysearch &&
+		strings.Contains(lowerRaw, `"status":"not_found"`) &&
+		strings.Contains(lowerRaw, "resource") &&
+		strings.Contains(lowerRaw, "not available") {
+		return fmt.Errorf(
+			"failed to create agent collection %s: target Easysearch cluster does not allow modifying _security/%s via the current credential; check security.restapi.roles_enabled and security.restapi.endpoints_disabled for %s access: %w",
+			resource,
+			resource,
+			strings.ToUpper(resource),
+			err,
+		)
+	}
+
+	return fmt.Errorf("failed to create agent collection %s: %w", resource, err)
+}
+
+func shouldFallbackToPlatformCredentialForManagedAgentProvision(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	lower := strings.ToLower(err.Error())
+	return strings.Contains(lower, "does not allow modifying _security/role") ||
+		strings.Contains(lower, "does not allow modifying _security/user")
+}
+
+func applyClusterRuntimeConfig(conf *elastic.ElasticsearchConfig) error {
+	if conf == nil {
+		return nil
+	}
+
+	conf.Source = elastic.ElasticsearchConfigSourceElasticsearch
+	elastic.UpdateConfig(*conf)
+
+	meta := elastic.GetMetadata(conf.ID)
+	if meta == nil {
+		if _, err := common.InitElasticInstance(*conf); err != nil {
+			log.Warn("error on init elasticsearch:", err)
+		}
+		return nil
+	}
+
+	updatedMeta := *meta
+	cfgCopy := *conf
+	updatedMeta.Config = &cfgCopy
+	elastic.SetMetadata(conf.ID, &updatedMeta)
+	return nil
+}
+
+func setClustersMonitored(monitored bool, clusterIDs []string) error {
+	if len(clusterIDs) == 0 {
+		return nil
+	}
+
+	for _, clusterID := range clusterIDs {
+		clusterID = strings.TrimSpace(clusterID)
+		if clusterID == "" {
+			continue
+		}
+
+		conf := &elastic.ElasticsearchConfig{}
+		conf.ID = clusterID
+		exists, err := orm.Get(conf)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			return fmt.Errorf("cluster [%s] not found", clusterID)
+		}
+		if conf.Monitored == monitored {
+			continue
+		}
+
+		conf.Monitored = monitored
+		if err := orm.Save(&orm.Context{Refresh: "wait_for"}, conf); err != nil {
+			return err
+		}
+		if err := hydrateRuntimeBasicAuth(conf); err != nil {
+			return err
+		}
+		if err := applyClusterRuntimeConfig(conf); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func getManagedAgentCollectionFallbackUsername(distribution, username string, err error) (string, bool) {
+	if distribution != elastic.Easysearch {
+		return "", false
+	}
+	if username != autoAgentCollectionUsername {
+		return "", false
+	}
+	if !isUnavailableSecurityResourceError(err) {
+		return "", false
+	}
+	return autoAgentCollectionFallbackUsername, true
+}
+
+func isUnavailableSecurityResourceError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	lowerRaw := strings.ToLower(err.Error())
+	return strings.Contains(lowerRaw, `"status":"not_found"`) &&
+		strings.Contains(lowerRaw, "resource") &&
+		strings.Contains(lowerRaw, "not available")
 }
 
 func (h *APIHandler) HandleGetClusterAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -164,18 +640,56 @@ func (h *APIHandler) HandleGetClusterAction(w http.ResponseWriter, req *http.Req
 	clusterConf.ID = id
 	exists, err := orm.Get(&clusterConf)
 	if err != nil || !exists {
-		log.Error(err)
+		log.Errorf("HandleGetClusterAction failed: %v", err)
 		h.Error404(w)
 		return
 	}
-	h.WriteGetOKJSON(w, id, clusterConf)
+	source := map[string]interface{}{}
+	util.MustFromJSONBytes(util.MustToJSONBytes(clusterConf), &source)
+	logsPaths, err := agentservice.GetClusterLogsPaths(id)
+	if err != nil {
+		log.Errorf("HandleGetClusterAction failed: %v", err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	source["agent_logs_paths"] = logsPaths
+	h.WriteGetOKJSON(w, id, source)
+}
+
+func (h *APIHandler) HandleEnableClusterMonitoringAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	h.handleSetClusterMonitoringAction(w, req, true)
+}
+
+func (h *APIHandler) HandleDisableClusterMonitoringAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	h.handleSetClusterMonitoringAction(w, req, false)
+}
+
+func (h *APIHandler) handleSetClusterMonitoringAction(w http.ResponseWriter, req *http.Request, monitored bool) {
+	clusterIDs := []string{}
+	if err := h.DecodeJSON(req, &clusterIDs); err != nil {
+		log.Errorf("handleSetClusterMonitoringAction failed: %v", err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if len(clusterIDs) == 0 {
+		h.WriteJSON(w, util.MapStr{}, http.StatusOK)
+		return
+	}
+
+	if err := setClustersMonitored(monitored, clusterIDs); err != nil {
+		log.Errorf("handleSetClusterMonitoringAction failed: %v", err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	h.WriteAckOKJSON(w)
 }
 
 func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	var conf = map[string]interface{}{}
 	err := h.DecodeJSON(req, &conf)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleUpdateClusterAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -184,11 +698,13 @@ func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.
 	originConf.ID = id
 	exists, err := orm.Get(&originConf)
 	if err != nil || !exists {
-		log.Error(err)
+		log.Errorf("HandleUpdateClusterAction failed: %v", err)
 		h.Error404(w)
 		return
 	}
 	var oldCollectionMode = originConf.MetricCollectionMode
+	rawLogsPaths, hasAgentLogsPaths := conf["agent_logs_paths"]
+	logsPaths := extractLogsPathsFromValue(rawLogsPaths)
 	buf := util.MustToJSONBytes(originConf)
 	source := map[string]interface{}{}
 	util.MustFromJSONBytes(buf, &source)
@@ -225,12 +741,16 @@ func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.
 	newConf := &elastic.ElasticsearchConfig{}
 	json.Unmarshal(confBytes, newConf)
 	newConf.ID = id
+	if probePath, ok := conf["probe_path"]; ok {
+		console_common.SetProbePath(newConf, util.ToString(probePath))
+		delete(conf, "probe_path")
+	}
 
 	if conf["credential_id"] == nil {
 		if newConf.BasicAuth != nil && newConf.BasicAuth.Username != "" {
-			credentialID, err := saveBasicAuthToCredential(newConf.Name+"_platform("+newConf.ID+")", newConf.BasicAuth)
+			credentialID, err := saveClusterBasicAuthToCredential(newConf.Name, newConf.ID, clusterCredentialKindPlatform, newConf.BasicAuth)
 			if err != nil {
-				log.Error(err)
+				log.Errorf("HandleUpdateClusterAction failed: %v", err)
 				h.WriteError(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -243,9 +763,9 @@ func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.
 
 	if conf["agent_credential_id"] == nil {
 		if newConf.AgentBasicAuth != nil && newConf.AgentBasicAuth.Username != "" {
-			credentialID, err := saveBasicAuthToCredential(newConf.Name+"_agent("+newConf.ID+")", newConf.AgentBasicAuth)
+			credentialID, err := saveClusterBasicAuthToCredential(newConf.Name, newConf.ID, clusterCredentialKindAgent, newConf.AgentBasicAuth)
 			if err != nil {
-				log.Error(err)
+				log.Errorf("HandleUpdateClusterAction failed: %v", err)
 				h.WriteError(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -255,10 +775,35 @@ func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.
 			newConf.AgentCredentialID = ""
 		}
 	}
+	err = ensureManagedAgentCollectionCredential(newConf, originConf.Name)
+	if err != nil {
+		log.Errorf("HandleUpdateClusterAction failed: %v", err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	err = orm.Save(ctx, newConf)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleUpdateClusterAction failed: %v", err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if hasAgentLogsPaths {
+		if err := agentservice.SaveClusterLogsPaths(newConf.ID, logsPaths); err != nil {
+			log.Errorf("HandleUpdateClusterAction failed: %v", err)
+			h.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+	err = syncAutoGeneratedClusterCredentialName(newConf.CredentialID, newConf.ID, originConf.Name, newConf.Name, clusterCredentialKindPlatform)
+	if err != nil {
+		log.Errorf("HandleUpdateClusterAction failed: %v", err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	err = syncAutoGeneratedClusterCredentialName(newConf.AgentCredentialID, newConf.ID, originConf.Name, newConf.Name, clusterCredentialKindAgent)
+	if err != nil {
+		log.Errorf("HandleUpdateClusterAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -266,12 +811,12 @@ func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.
 	if oldCollectionMode != newConf.MetricCollectionMode {
 		recordCollectionModeChangeActivity(newConf.ID, newConf.Name, oldCollectionMode, newConf.MetricCollectionMode)
 	}
-	basicAuth, err := common.GetBasicAuth(newConf)
-	if err != nil {
+	if err := hydrateRuntimeBasicAuth(newConf); err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	newConf.BasicAuth = basicAuth
+
+	elastic.RemoveHostsByClusterID(id)
 
 	//update config in heap
 	newConf.Source = elastic.ElasticsearchConfigSourceElasticsearch
@@ -279,8 +824,28 @@ func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.
 	if err != nil {
 		log.Warn("error on init elasticsearch:", err)
 	}
+	if oldCollectionMode != elastic.ModeAgent && newConf.MetricCollectionMode == elastic.ModeAgent {
+		agentservice.TriggerAutoEnroll([]string{newConf.ID})
+	}
 
 	h.WriteUpdatedOKJSON(w, id)
+}
+
+func extractLogsPathsFromValue(value interface{}) []string {
+	switch v := value.(type) {
+	case nil:
+		return nil
+	case []string:
+		return agentservice.NormalizeLogsPaths(v)
+	case []interface{}:
+		items := make([]string, 0, len(v))
+		for _, item := range v {
+			items = append(items, util.ToString(item))
+		}
+		return agentservice.NormalizeLogsPaths(items)
+	default:
+		return nil
+	}
 }
 
 func recordCollectionModeChangeActivity(clusterID, clusterName, oldMode, newMode string) {
@@ -320,7 +885,7 @@ func recordCollectionModeChangeActivity(clusterID, clusterName, oldMode, newMode
 			"activity": activityInfo,
 		}}))
 	if err != nil {
-		log.Error(err)
+		log.Errorf("recordCollectionModeChangeActivity failed: %v", err)
 	}
 }
 
@@ -332,7 +897,7 @@ func (h *APIHandler) HandleDeleteClusterAction(w http.ResponseWriter, req *http.
 	esConfig.ID = id
 	ok, err := orm.Get(&esConfig)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleDeleteClusterAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -350,7 +915,7 @@ func (h *APIHandler) HandleDeleteClusterAction(w http.ResponseWriter, req *http.
 	err = orm.Delete(ctx, &esConfig)
 
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleDeleteClusterAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -363,11 +928,11 @@ func (h *APIHandler) HandleDeleteClusterAction(w http.ResponseWriter, req *http.
 	}
 	err = orm.DeleteBy(elastic.NodeConfig{}, util.MustToJSONBytes(delDsl))
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleDeleteClusterAction failed: %v", err)
 	}
 	err = orm.DeleteBy(elastic.IndexConfig{}, util.MustToJSONBytes(delDsl))
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleDeleteClusterAction failed: %v", err)
 	}
 
 	elastic.RemoveInstance(id)
@@ -380,7 +945,7 @@ func (h *APIHandler) HandleSearchClusterAction(w http.ResponseWriter, req *http.
 		name        = h.GetParameterOrDefault(req, "name", "")
 		sortField   = h.GetParameterOrDefault(req, "sort_field", "")
 		sortOrder   = h.GetParameterOrDefault(req, "sort_order", "")
-		queryDSL    = `{"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d%s}`
+		queryDSL    = `{"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d%s%s}`
 		strSize     = h.GetParameterOrDefault(req, "size", "20")
 		strFrom     = h.GetParameterOrDefault(req, "from", "0")
 		mustBuilder = &strings.Builder{}
@@ -388,7 +953,7 @@ func (h *APIHandler) HandleSearchClusterAction(w http.ResponseWriter, req *http.
 	if name != "" {
 		mustBuilder.WriteString(fmt.Sprintf(`{"prefix":{"name.text": "%s"}}`, name))
 	}
-	clusterFilter, hasAllPrivilege := h.GetClusterFilter(req, "_id")
+	clusterFilter, hasAllPrivilege := h.GetClusterFilter(req, "id")
 	if !hasAllPrivilege && clusterFilter == nil {
 		h.WriteJSON(w, elastic.SearchResponse{}, http.StatusOK)
 		return
@@ -399,6 +964,9 @@ func (h *APIHandler) HandleSearchClusterAction(w http.ResponseWriter, req *http.
 		}
 		mustBuilder.Write(util.MustToJSONBytes(clusterFilter))
 	}
+	if mustBuilder.Len() == 0 {
+		mustBuilder.WriteString(`{"match_all":{}}`)
+	}
 
 	size, _ := strconv.Atoi(strSize)
 	if size <= 0 {
@@ -408,23 +976,38 @@ func (h *APIHandler) HandleSearchClusterAction(w http.ResponseWriter, req *http.
 	if from < 0 {
 		from = 0
 	}
-	var sort = ""
+	var (
+		functions  = ""
+		sort       = ""
+		trackScore = ""
+	)
 	if sortField != "" && sortOrder != "" {
 		sort = fmt.Sprintf(`,"sort":[{"%s":{"order":"%s"}}]`, sortField, sortOrder)
+	} else {
+		functions = `,"functions":[{"filter":{"term":{"labels.health_status":"red"}},"weight":300},{"filter":{"term":{"labels.health_status":"yellow"}},"weight":200},{"filter":{"term":{"labels.health_status":"unavailable"}},"weight":100},{"filter":{"term":{"labels.health_status":"green"}},"weight":1}]`
+		sort = `,"sort":[{"_score":{"order":"desc"}},{"name.keyword":{"order":"asc","unmapped_type":"keyword"}}]`
+		trackScore = `,"track_scores":true`
+		queryDSL = `{"query":{"function_score":{"query":{"bool":{"must":[%s]}}%s,"score_mode":"sum","boost_mode":"replace"}}, "size": %d, "from": %d%s%s}`
 	}
 
-	queryDSL = fmt.Sprintf(queryDSL, mustBuilder.String(), size, from, sort)
+	queryDSL = fmt.Sprintf(queryDSL, mustBuilder.String(), functions, size, from, sort, trackScore)
 	q := orm.Query{
 		RawQuery: []byte(queryDSL),
 	}
 	err, result := orm.Search(elastic.ElasticsearchConfig{}, &q)
 	if err != nil {
-		log.Error(err)
+		if global.Env().IsDebug {
+			log.Errorf("cluster search failed, name=%q, from=%d, size=%d, dsl=%s, err=%v", name, from, size, queryDSL, err)
+		}
+		log.Errorf("HandleSearchClusterAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	searchRes := elastic.SearchResponse{}
 	util.MustFromJSONBytes(result.Raw, &searchRes)
+	if global.Env().IsDebug && len(searchRes.Hits.Hits) == 0 {
+		log.Debugf("cluster search returned zero hits, name=%q, from=%d, size=%d, dsl=%s", name, from, size, queryDSL)
+	}
 	if len(searchRes.Hits.Hits) > 0 {
 		for _, hit := range searchRes.Hits.Hits {
 			if basicAuth, ok := hit.Source["basic_auth"]; ok {
@@ -485,7 +1068,7 @@ func (h *APIHandler) HandleMetricsSummaryAction(w http.ResponseWriter, req *http
 	err, result := orm.Search(event.Event{}, &q)
 	if err != nil {
 		resBody["error"] = err.Error()
-		log.Error("MetricsSummary search error: ", err)
+		log.Errorf("HandleMetricsSummaryAction metrics summary search failed: %v", err)
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
 	}
@@ -566,7 +1149,7 @@ func (h *APIHandler) HandleMetricsSummaryAction(w http.ResponseWriter, req *http
 	q.RawQuery = util.MustToJSONBytes(query)
 	err, result = orm.Search(event.Event{}, &q)
 	if err != nil {
-		log.Error("MetricsSummary search error: ", err)
+		log.Errorf("HandleMetricsSummaryAction metrics summary search failed: %v", err)
 	} else {
 		if len(result.Result) > 0 {
 			if v, ok := result.Result[0].(map[string]interface{}); ok {
@@ -622,7 +1205,7 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
 	du, err := time.ParseDuration(timeout)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleClusterMetricsAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -633,7 +1216,7 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 	} else if key == ShardStateMetricKey {
 		clusterUUID, err := h.getClusterUUID(id)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("HandleClusterMetricsAction failed: %v", err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -689,7 +1272,7 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 		}
 		shardStateMetric, err := getNodeShardStateMetric(ctx, query, bucketSize)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("HandleClusterMetricsAction failed: %v", err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -700,7 +1283,7 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 		metrics, err = h.GetClusterMetrics(ctx, id, bucketSize, min, max, key)
 	}
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleClusterMetricsAction failed: %v", err)
 		h.WriteError(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -708,7 +1291,7 @@ func (h *APIHandler) HandleClusterMetricsAction(w http.ResponseWriter, req *http
 		if metrics[key].HitsTotal > 0 && metrics[key].MinBucketSize == 0 {
 			minBucketSize, err := v1.GetMetricMinBucketSize(id, metricType)
 			if err != nil {
-				log.Error(err)
+				log.Errorf("HandleClusterMetricsAction failed: %v", err)
 			} else {
 				metrics[key].MinBucketSize = int64(minBucketSize)
 			}
@@ -725,7 +1308,7 @@ func (h *APIHandler) HandleNodeMetricsAction(w http.ResponseWriter, req *http.Re
 	id := ps.ByName("id")
 	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, id, v1.MetricTypeNodeStats, 90)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleNodeMetricsAction failed: %v", err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -739,7 +1322,7 @@ func (h *APIHandler) HandleNodeMetricsAction(w http.ResponseWriter, req *http.Re
 	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
 	du, err := time.ParseDuration(timeout)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleNodeMetricsAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -747,7 +1330,7 @@ func (h *APIHandler) HandleNodeMetricsAction(w http.ResponseWriter, req *http.Re
 	defer cancel()
 	metrics, err := h.getNodeMetrics(ctx, id, bucketSize, min, max, nodeName, top, key)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleNodeMetricsAction failed: %v", err)
 		h.WriteError(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -755,7 +1338,7 @@ func (h *APIHandler) HandleNodeMetricsAction(w http.ResponseWriter, req *http.Re
 		if metrics[key].HitsTotal > 0 {
 			minBucketSize, err := v1.GetMetricMinBucketSize(id, v1.MetricTypeNodeStats)
 			if err != nil {
-				log.Error(err)
+				log.Errorf("HandleNodeMetricsAction failed: %v", err)
 			} else {
 				metrics[key].MinBucketSize = int64(minBucketSize)
 			}
@@ -766,7 +1349,7 @@ func (h *APIHandler) HandleNodeMetricsAction(w http.ResponseWriter, req *http.Re
 	if ver.Distribution == "" {
 		cr, err := util.VersionCompare(ver.Number, "6.1")
 		if err != nil {
-			log.Error(err)
+			log.Errorf("HandleNodeMetricsAction failed: %v", err)
 		}
 		if cr < 0 {
 			resBody["tips"] = "The system cluster version is lower than 6.1, the top node may be inaccurate"
@@ -786,7 +1369,7 @@ func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.R
 	}
 	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, id, v1.MetricTypeNodeStats, 90)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleIndexMetricsAction failed: %v", err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -801,7 +1384,7 @@ func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.R
 	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
 	du, err := time.ParseDuration(timeout)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleIndexMetricsAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -811,13 +1394,13 @@ func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.R
 	if key == v1.DocPercentMetricKey {
 		metrics, err = h.getIndexMetrics(ctx, req, id, bucketSize, min, max, indexName, top, shardID, v1.DocCountMetricKey)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("HandleIndexMetricsAction failed: %v", err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		docsDeletedMetrics, err := h.getIndexMetrics(ctx, req, id, bucketSize, min, max, indexName, top, shardID, v1.DocsDeletedMetricKey)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("HandleIndexMetricsAction failed: %v", err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -874,7 +1457,7 @@ func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.R
 	} else {
 		metrics, err = h.getIndexMetrics(ctx, req, id, bucketSize, min, max, indexName, top, shardID, key)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("HandleIndexMetricsAction failed: %v", err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -883,7 +1466,7 @@ func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.R
 		if metrics[key].HitsTotal > 0 {
 			minBucketSize, err := v1.GetMetricMinBucketSize(id, v1.MetricTypeNodeStats)
 			if err != nil {
-				log.Error(err)
+				log.Errorf("HandleIndexMetricsAction failed: %v", err)
 			} else {
 				metrics[key].MinBucketSize = int64(minBucketSize)
 			}
@@ -894,7 +1477,7 @@ func (h *APIHandler) HandleIndexMetricsAction(w http.ResponseWriter, req *http.R
 	if ver.Distribution == "" {
 		cr, err := util.VersionCompare(ver.Number, "6.1")
 		if err != nil {
-			log.Error(err)
+			log.Errorf("HandleIndexMetricsAction failed: %v", err)
 		}
 		if cr < 0 {
 			resBody["tips"] = "The system cluster version is lower than 6.1, the top index may be inaccurate"
@@ -909,7 +1492,7 @@ func (h *APIHandler) HandleQueueMetricsAction(w http.ResponseWriter, req *http.R
 	id := ps.ByName("id")
 	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, id, v1.MetricTypeNodeStats, 90)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleQueueMetricsAction failed: %v", err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -923,7 +1506,7 @@ func (h *APIHandler) HandleQueueMetricsAction(w http.ResponseWriter, req *http.R
 	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
 	du, err := time.ParseDuration(timeout)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleQueueMetricsAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -931,7 +1514,7 @@ func (h *APIHandler) HandleQueueMetricsAction(w http.ResponseWriter, req *http.R
 	defer cancel()
 	metrics, err := h.getThreadPoolMetrics(ctx, id, bucketSize, min, max, nodeName, top, key)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleQueueMetricsAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -939,7 +1522,7 @@ func (h *APIHandler) HandleQueueMetricsAction(w http.ResponseWriter, req *http.R
 		if metrics[key].HitsTotal > 0 {
 			minBucketSize, err := v1.GetMetricMinBucketSize(id, v1.MetricTypeNodeStats)
 			if err != nil {
-				log.Error(err)
+				log.Errorf("HandleQueueMetricsAction failed: %v", err)
 			} else {
 				metrics[key].MinBucketSize = int64(minBucketSize)
 			}
@@ -950,7 +1533,7 @@ func (h *APIHandler) HandleQueueMetricsAction(w http.ResponseWriter, req *http.R
 	if ver.Distribution == "" {
 		cr, err := util.VersionCompare(ver.Number, "6.1")
 		if err != nil {
-			log.Error(err)
+			log.Errorf("HandleQueueMetricsAction failed: %v", err)
 		}
 		if cr < 0 {
 			resBody["tips"] = "The system cluster version is lower than 6.1, the top node may be inaccurate"
@@ -1014,7 +1597,7 @@ func (h *APIHandler) GetClusterHealth(w http.ResponseWriter, req *http.Request, 
 	exists, client, err := h.GetClusterClient(id)
 
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetClusterHealth failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -1507,7 +2090,7 @@ func (h *APIHandler) getClusterStatusMetric(ctx context.Context, id string, min,
 	queryDSL := util.MustToJSONBytes(query)
 	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).QueryDSL(ctx, getAllMetricsIndex(), nil, queryDSL)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("getClusterStatusMetric failed: %v", err)
 		return nil, err
 	}
 	metricData := []interface{}{}

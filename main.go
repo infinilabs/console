@@ -69,6 +69,50 @@ import (
 var appConfig *config.AppConfig
 var appUI *UI
 
+func lookupSystemClusterID() (string, bool) {
+	value := global.Lookup(elastic.GlobalSystemElasticsearchID)
+	systemID, ok := value.(string)
+	if !ok || systemID == "" {
+		return "", false
+	}
+	return systemID, true
+}
+
+func getSystemClusterClient() (elastic.API, bool) {
+	systemID, ok := lookupSystemClusterID()
+	if !ok {
+		return nil, false
+	}
+
+	client := elastic.GetClientNoPanic(systemID)
+	if client == nil {
+		return nil, false
+	}
+	return client, true
+}
+
+func getSystemClusterAppSetting() interface{} {
+	client, ok := getSystemClusterClient()
+	if !ok {
+		return nil
+	}
+
+	settings, err := client.GetClusterSettings(nil)
+	if err != nil {
+		log.Errorf("failed to get cluster settings with system cluster: %v", err)
+		return nil
+	}
+
+	rollupEnabled, _ := util.GetMapValueByKeys([]string{"persistent", "rollup", "search", "enabled"}, settings)
+	rollupEnabledValue := false
+	if v, ok := rollupEnabled.(string); ok && v == "true" {
+		rollupEnabledValue = true
+	}
+	return map[string]interface{}{
+		"rollup_enabled": rollupEnabledValue,
+	}
+}
+
 func main() {
 	terminalHeader := ("\n")
 	terminalHeader += ("   ___  ___    __  __    ___  __   __ \n")
@@ -163,69 +207,69 @@ func main() {
 
 		module.Start()
 
-		var initFunc = func() {
+		var initFunc = func(startDeferredModules bool) {
 			// check cluster health before initialization, refuse to start if status is red
-			sysClusterID := global.MustLookupString(elastic.GlobalSystemElasticsearchID)
-			client := elastic.GetClient(sysClusterID)
-			health, err := client.ClusterHealth(context.Background())
-			if err != nil {
-				panic(fmt.Errorf("failed to get system cluster health: %v", err))
+			if err := setup1.EnsureSystemClusterBasicAuth(); err != nil {
+				panic(fmt.Errorf("failed to hydrate system cluster auth: %v", err))
 			}
-			if health != nil && health.Status == "red" {
-				panic(fmt.Errorf("system cluster health status is [red], please fix the cluster before starting"))
+			client, ok := getSystemClusterClient()
+			if !ok {
+				log.Warn("skip system cluster post-initialization, system cluster is not available")
+			} else {
+				health, err := client.ClusterHealth(context.Background())
+				if err != nil {
+					panic(fmt.Errorf("failed to get system cluster health: %v", err))
+				}
+				if health != nil && health.Status == "red" {
+					panic(fmt.Errorf("system cluster health status is [red], please fix the cluster before starting"))
+				}
+
+				elastic2.InitTemplate(false)
 			}
 
-			elastic2.InitTemplate(false)
-
-			if global.Env().SetupRequired() {
+			if startDeferredModules {
 				for _, v := range modules {
 					v.Value.Start()
 				}
 			}
 
-			task1.RunWithinGroup("initialize_alerting", func(ctx context.Context) error {
-				err := alerting2.InitTasks()
-				if err != nil {
-					log.Errorf("init alerting task error: %v", err)
-				}
-				return err
-			})
-			task1.RunWithinGroup("initialize_email_server", func(ctx context.Context) error {
-				err := email.InitEmailServer()
-				if err != nil {
-					log.Errorf("init email server error: %v", err)
-				}
-				return err
-			})
-			api.RegisterAppSetting("system_cluster", func() interface{} {
-				client := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
-				settings, err := client.GetClusterSettings(nil)
-				if err != nil {
-					log.Errorf("failed to get cluster settings with system cluster: %v", err)
-					return nil
-				}
-
-				rollupEnabled, _ := util.GetMapValueByKeys([]string{"persistent", "rollup", "search", "enabled"}, settings)
-				rollupEnabledValue := false
-				if v, ok := rollupEnabled.(string); ok && v == "true" {
-					rollupEnabledValue = true
-				}
-				return map[string]interface{}{
-					"rollup_enabled": rollupEnabledValue,
-				}
-			})
+			if orm.HasHandler() {
+				task1.RunWithinGroup("initialize_alerting", func(ctx context.Context) error {
+					err := alerting2.InitTasks()
+					if err != nil {
+						log.Errorf("init alerting task error: %v", err)
+					}
+					return err
+				})
+				task1.RunWithinGroup("initialize_email_server", func(ctx context.Context) error {
+					err := email.InitEmailServer()
+					if err != nil {
+						log.Errorf("init email server error: %v", err)
+					}
+					return err
+				})
+			} else {
+				log.Warn("skip alerting and email initialization, ORM handler is not registered")
+			}
+			api.RegisterAppSetting("system_cluster", getSystemClusterAppSetting)
 		}
 
 		if !global.Env().SetupRequired() {
-			initFunc()
+			initFunc(false)
 		} else {
-			setup1.RegisterSetupCallback(initFunc)
+			setup1.RegisterSetupCallback(func() {
+				initFunc(true)
+			})
 		}
 
 		if !global.Env().SetupRequired() {
-			err := bootstrapRequirementCheck()
-			if err != nil {
-				panic(err)
+			if _, ok := lookupSystemClusterID(); !ok {
+				log.Warn("skip bootstrap requirement check, system cluster is not available")
+			} else {
+				err := bootstrapRequirementCheck()
+				if err != nil {
+					panic(err)
+				}
 			}
 		}
 

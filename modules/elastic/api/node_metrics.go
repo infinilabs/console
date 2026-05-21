@@ -168,7 +168,7 @@ func (h *APIHandler) getNodeMetrics(ctx context.Context, clusterID string, bucke
 	} else {
 		nodeNames, err = h.getTopNodeName(clusterID, top, 15)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("getNodeMetrics failed: %v", err)
 		}
 	}
 	if len(nodeNames) > 0 {
@@ -1146,7 +1146,7 @@ func (h *APIHandler) getNodeMetrics(ctx context.Context, clusterID string, bucke
 	aggs := generateGroupAggs(nodeMetricItems)
 	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("getNodeMetrics failed: %v", err)
 		panic(err)
 	}
 
@@ -1310,7 +1310,7 @@ func (h *APIHandler) getTopNodeName(clusterID string, top int, lastMinutes int) 
 	}
 	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).SearchWithRawQueryDSL(getAllMetricsIndex(), util.MustToJSONBytes(query))
 	if err != nil {
-		log.Error(err)
+		log.Errorf("getTopNodeName failed: %v", err)
 		return nil, err
 	}
 	var maxQpsKVS = map[string]float64{}

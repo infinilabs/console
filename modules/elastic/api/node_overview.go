@@ -204,7 +204,7 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
 	du, err := time.ParseDuration(timeout)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("invalid fetch node info timeout [%s]: %v", timeout, err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -253,7 +253,7 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 
 	err, results := orm.Search(&event.Event{}, &q1)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("failed to search node overview info for nodes %v: %v", nodeIDs, err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -307,7 +307,7 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 	}
 	statusMetric, err := getNodeOnlineStatusOfRecentDay(nodeIDs)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("failed to get node online status for nodes %v: %v", nodeIDs, err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -418,7 +418,7 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 	}
 	metrics, err := h.getMetrics(ctx, "", query, nodeMetricItems, bucketSize)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("failed to get node overview metrics for nodes %v: %v", nodeIDs, err)
 		h.WriteError(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -628,7 +628,7 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 	resBody := map[string]interface{}{}
 	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, clusterID, v1.MetricTypeNodeStats, 60)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("failed to get node metric range for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -658,7 +658,7 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
 	du, err := time.ParseDuration(timeout)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("invalid node metric timeout [%s] for cluster [%s], node [%s], key [%s]: %v", timeout, clusterID, nodeID, metricKey, err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -668,7 +668,7 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 	if metricKey == NodeHealthMetricKey {
 		healthMetric, err := getNodeHealthMetric(ctx, query, bucketSize)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("failed to get node health metric for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -718,7 +718,7 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 		}
 		shardStateMetric, err := getNodeShardStateMetric(ctx, query, bucketSize)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("failed to get shard state metric for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -792,7 +792,7 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 
 		metrics, err = h.getSingleMetrics(ctx, metricItems, query, bucketSize)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("failed to get node metrics for cluster [%s], node [%s], key [%s]: %v", clusterID, nodeID, metricKey, err)
 			h.WriteError(w, err, http.StatusInternalServerError)
 			return
 		}
@@ -801,7 +801,7 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 		if metrics[metricKey].HitsTotal > 0 {
 			minBucketSize, err := v1.GetMetricMinBucketSize(clusterID, v1.MetricTypeNodeStats)
 			if err != nil {
-				log.Error(err)
+				log.Errorf("failed to get node metric min bucket size for cluster [%s], key [%s]: %v", clusterID, metricKey, err)
 			} else {
 				metrics[metricKey].MinBucketSize = int64(minBucketSize)
 			}
@@ -838,7 +838,7 @@ func getNodeShardStateMetric(ctx context.Context, query util.MapStr, bucketSize 
 	queryDSL := util.MustToJSONBytes(query)
 	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).QueryDSL(ctx, getAllMetricsIndex(), nil, queryDSL)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("failed to query shard state metric data: %v", err)
 		return nil, err
 	}
 
@@ -882,7 +882,7 @@ func getNodeHealthMetric(ctx context.Context, query util.MapStr, bucketSize int)
 	queryDSL := util.MustToJSONBytes(query)
 	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).QueryDSL(ctx, getAllMetricsIndex(), nil, queryDSL)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("failed to query node health metric data: %v", err)
 		return nil, err
 	}
 
@@ -894,7 +894,7 @@ func getNodeHealthMetric(ctx context.Context, query util.MapStr, bucketSize int)
 		for _, bucket := range response.Aggregations["dates"].Buckets {
 			v, ok := bucket["key"].(float64)
 			if !ok {
-				log.Error("invalid bucket key")
+				log.Errorf("invalid bucket key in node health metric aggregation: %#v", bucket["key"])
 				return nil, fmt.Errorf("invalid bucket key")
 			}
 			dateTime := int64(v)
@@ -1306,7 +1306,7 @@ func (h *APIHandler) GetNodeShards(w http.ResponseWriter, req *http.Request, ps 
 	}
 	clusterUUID, err := h.getClusterUUID(clusterID)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("failed to get cluster UUID for cluster [%s] when listing node shards for node [%s]: %v", clusterID, nodeID, err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -1320,7 +1320,7 @@ func (h *APIHandler) GetNodeShards(w http.ResponseWriter, req *http.Request, ps 
 	q1.AddSort("timestamp", orm.DESC)
 	err, result := orm.Search(&event.Event{}, &q1)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("failed to search node shards for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -1328,7 +1328,7 @@ func (h *APIHandler) GetNodeShards(w http.ResponseWriter, req *http.Request, ps 
 	if len(result.Result) > 0 {
 		qps, err := h.getShardQPS(clusterID, nodeID, "", 20)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("failed to get shard QPS for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -1338,7 +1338,7 @@ func (h *APIHandler) GetNodeShards(w http.ResponseWriter, req *http.Request, ps 
 				source := util.MapStr(row)
 				shardV, err := source.GetValue("payload.elasticsearch.shard_stats")
 				if err != nil {
-					log.Error(err)
+					log.Errorf("failed to read shard stats from node shard result for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
 					continue
 				}
 				shardInfo := util.MapStr{}

@@ -39,14 +39,14 @@ POST $[[SETUP_INDEX_PREFIX]]configs/$[[SETUP_DOC_TYPE]]/task_config_tpl
   "id": "task_config_tpl"
 }
 
-#init_gateway_config.tpl
+#init_gateway_relay_config.tpl
 POST $[[SETUP_INDEX_PREFIX]]configs/$[[SETUP_DOC_TYPE]]/agent_relay_gateway_config_yml
 {
  "payload": {
-    "content": "$[[SETUP_AGENT_RELAY_GATEWAY_CONFIG]]",
+    "content": "$[[SETUP_GATEWAY_RELAY_CONFIG]]",
     "version": 1,
-    "location": "agent_relay_gateway_config.yml",
-    "name": "agent_relay_gateway_config.yml"
+    "location": "relay.yml",
+    "name": "relay.yml"
   },
   "updated": "2023-10-19T14:49:56.768754+08:00",
   "metadata": {
@@ -57,4 +57,24 @@ POST $[[SETUP_INDEX_PREFIX]]configs/$[[SETUP_DOC_TYPE]]/agent_relay_gateway_conf
     "name": "gateway"
   },
   "id": "agent_relay_gateway_config_yml"
+}
+
+#init_gateway_migration_config.tpl
+POST $[[SETUP_INDEX_PREFIX]]configs/$[[SETUP_DOC_TYPE]]/gateway_migration_yml
+{
+ "payload": {
+    "content": "$[[SETUP_GATEWAY_MIGRATION_CONFIG]]",
+    "version": 1,
+    "location": "migration.yml",
+    "name": "migration.yml"
+  },
+  "updated": "2023-10-19T14:49:56.768754+08:00",
+  "metadata": {
+    "labels": {
+      "instance": "_all"
+    },
+    "category": "app_settings",
+    "name": "gateway"
+  },
+  "id": "gateway_migration_yml"
 }

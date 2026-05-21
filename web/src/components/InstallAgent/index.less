@@ -1,6 +1,7 @@
 .installAgent {
     .gateway {
-        margin-bottom: 20px;
+        display: block;
+        margin: 0 auto 20px;
     }
     .shell {
         .installtitle{
@@ -19,7 +20,11 @@
             padding: 12px 30px 12px 12px;
             background: rgb(241, 242, 245);
             position: relative;
-            word-break: break-all;
+            text-align: left;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-family: "SFMono-Regular", Monaco, Menlo, Consolas, "Liberation Mono", "Ubuntu Mono", monospace;
             margin-bottom: 30px;
 
             .copy {
@@ -35,14 +40,17 @@
             .title {
                 font-weight: 400;
                 color: #101010;
-                font-size: 14px;
+                font-size: 12px;
                 margin-bottom: 8px;
             }
             .content {
-                font-size: 14px;
+                font-size: 12px;
                 color: #565656;
                 p {
                     margin-bottom: 6px;
+                }
+                code {
+                    font-size: 12px;
                 }
                 .children {
                     margin: 0 8px;

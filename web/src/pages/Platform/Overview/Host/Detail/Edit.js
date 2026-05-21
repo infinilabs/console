@@ -105,7 +105,7 @@ export default Form.create()((props)=>{
         <Form.Item label=" ">
           <div style={{ textAlign: "right", marginTop: 30}}>
           <Popconfirm
-            title="Sure to delete?"
+            title={formatMessage({ id: "app.message.confirm.delete" })}
             onConfirm={onDeleteClick}
           >
             <Button style={{marginRight: 15}} type="primary" ghost>

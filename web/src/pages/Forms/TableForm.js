@@ -237,7 +237,7 @@ class TableForm extends PureComponent {
     const { loading, data } = this.state;
 
     return (
-      <Fragment>
+      <Fragment key="table-form">
         <Table
           size={"small"}
           loading={loading}

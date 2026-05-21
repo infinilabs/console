@@ -79,7 +79,7 @@ export default (props) => {
               </a>
               <Divider key="d3" type="vertical" />
               <Popconfirm
-                title="Sure to delete?"
+                title={formatMessage({ id: "app.message.confirm.delete" })}
                 onConfirm={() => onConsumerDelete([record.id])}
               >
                 <a>{formatMessage({ id: "form.button.delete" })}</a>

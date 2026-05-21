@@ -1,4 +1,28 @@
 import request from "./request";
+import {
+  getAuthorizationToken,
+  getStoredLoginResponse,
+} from "./auth_session";
+
+const APPLICATION_AUTH_KEY = "infini-auth";
+const APPLICATION_ROLLUP_KEY = "infini-rollup-enabled";
+const ENTERPRISE_TASK_MANAGER_KEY = "infini-enterprise-task-manager-enabled";
+export const APPLICATION_SETTINGS_UPDATED_EVENT =
+  "console:application-settings-updated";
+let applicationSettingsPromise = null;
+let applicationSettingsCache = null;
+
+function persistApplicationSettings(res) {
+  localStorage.setItem(APPLICATION_AUTH_KEY, `${res.auth_enabled}`);
+  localStorage.setItem(
+    APPLICATION_ROLLUP_KEY,
+    `${!!res.system_cluster?.rollup_enabled}`
+  );
+  localStorage.setItem(
+    ENTERPRISE_TASK_MANAGER_KEY,
+    `${!!res.enterprise_plugins?.task_manager}`
+  );
+}
 
 // use localStorage to store the authority info, which might be sent from server in actual project.
 export function getAuthority(str) {
@@ -37,49 +61,64 @@ export function hasAuthority(authority) {
 }
 
 export function getAuthEnabled() {
-  return localStorage.getItem("infini-auth");
+  return localStorage.getItem(APPLICATION_AUTH_KEY);
 }
 
 export function isLogin() {
-  const responseStr = localStorage.getItem("login-response");
-  if (responseStr) {
-    let loginResponse = null;
-    try {
-      loginResponse = JSON.parse(responseStr);
-      if (loginResponse?.username && loginResponse?.status == "ok") {
-        return true;
-      }
-    } catch (err) {
-      console.error(err);
-    }
+  const loginResponse = getStoredLoginResponse();
+  if (loginResponse?.username && loginResponse?.status == "ok") {
+    return true;
   }
   return false;
 }
 
 export function getAuthorizationHeader() {
-  const responseStr = localStorage.getItem("login-response");
-  if (responseStr) {
-    let loginResponse = null;
-    try {
-      loginResponse = JSON.parse(responseStr);
-    } catch (err) {
-      console.error(err);
-    }
-    if (loginResponse) {
-      return "Bearer " + loginResponse.access_token;
-    }
+  const accessToken = getAuthorizationToken();
+  if (accessToken) {
+    return "Bearer " + accessToken;
   }
   return "";
 }
 
 export function getRollupEnabled() {
-  return localStorage.getItem("infini-rollup-enabled");
+  return localStorage.getItem(APPLICATION_ROLLUP_KEY);
+}
+
+export function getEnterpriseTaskManagerEnabled() {
+  return localStorage.getItem(ENTERPRISE_TASK_MANAGER_KEY);
+}
+
+export async function refreshApplicationSettings(force = false) {
+  if (applicationSettingsPromise) {
+    return applicationSettingsPromise;
+  }
+
+  if (!force && applicationSettingsCache) {
+    return applicationSettingsCache;
+  }
+
+  applicationSettingsPromise = request("/setting/application")
+    .then((res) => {
+      if (res && !res.error) {
+        persistApplicationSettings(res);
+        applicationSettingsCache = res;
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent(APPLICATION_SETTINGS_UPDATED_EVENT, {
+              detail: res,
+            })
+          );
+        }
+      }
+      return res;
+    })
+    .finally(() => {
+      applicationSettingsPromise = null;
+    });
+
+  return applicationSettingsPromise;
 }
 
 (async function() {
-  const res = await request("/setting/application");
-  if (res && !res.error) {
-    localStorage.setItem("infini-auth", res.auth_enabled);
-    localStorage.setItem('infini-rollup-enabled', res.system_cluster?.rollup_enabled || false)
-  }
+  await refreshApplicationSettings();
 })();

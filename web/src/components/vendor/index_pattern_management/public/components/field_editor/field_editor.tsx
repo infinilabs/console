@@ -467,7 +467,7 @@ export class FieldEditor extends PureComponent<FieldEdiorProps, FieldEditorState
     );
 
     return (
-      <Fragment>
+      <Fragment key="formatSection">
         <EuiFormRow
           label={label}
           helpText={
@@ -538,7 +538,7 @@ export class FieldEditor extends PureComponent<FieldEdiorProps, FieldEditorState
     )
     
     return spec.scripted ? (
-      <Fragment>
+      <Fragment key="scriptSection">
         <EuiFormRow
           fullWidth
           label={'Script'}
@@ -556,7 +556,7 @@ export class FieldEditor extends PureComponent<FieldEdiorProps, FieldEditorState
         </EuiFormRow>
 
         <EuiFormRow>
-          <Fragment>
+          <Fragment key="scriptHelpSection">
             <EuiText>
               Access fields with  <code>{`doc['some_field'].value`}</code>.
             </EuiText>
@@ -673,7 +673,7 @@ export class FieldEditor extends PureComponent<FieldEdiorProps, FieldEditorState
     }
 
     return (
-      <Fragment>
+      <Fragment key="scriptSection">
         <ScriptingDisabledCallOut isVisible={!scriptingLangs.length} />
         <ScriptingWarningCallOut isVisible />
         <ScriptingHelpFlyout

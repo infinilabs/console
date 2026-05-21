@@ -13,7 +13,7 @@ import IconText from "@/components/infini/IconText";
 import AutoTextEllipsis from "@/components/AutoTextEllipsis";
 import commonStyles from "@/common.less"
 
-const { Search } = Input;
+import SearchInput from "@/components/infini/SearchInput";
 
 export default ({ clusterID, clusterName, nodeID, timeRange, bucketSize }) => {
   const [searchValue, setSearchValue] = React.useState("");
@@ -85,7 +85,7 @@ export default ({ clusterID, clusterName, nodeID, timeRange, bucketSize }) => {
   const [columns] = React.useMemo(() => {
     let columns = [
       {
-        title: "Index",
+        title: formatMessage({ id: "overview.column.index" }),
         dataIndex: "index",
         render: (text, record) => {
           return (
@@ -109,7 +109,7 @@ export default ({ clusterID, clusterName, nodeID, timeRange, bucketSize }) => {
         className: commonStyles.maxColumnWidth
       },
       {
-        title: "Shard",
+        title: formatMessage({ id: "overview.column.shard" }),
         dataIndex: "shard",
         render: (text, record) => {
           if (!record.shard_id) {
@@ -132,7 +132,7 @@ export default ({ clusterID, clusterName, nodeID, timeRange, bucketSize }) => {
         sorter: (a, b) => a?.shard - b?.shard,
       },
       {
-        title: "Prirep",
+        title: formatMessage({ id: "overview.column.prirep" }),
         dataIndex: "prirep",
         render: (text, record) => (
           <span>
@@ -146,12 +146,12 @@ export default ({ clusterID, clusterName, nodeID, timeRange, bucketSize }) => {
         sorter: (a, b) => sorter.string(a, b, "prirep"),
       },
       {
-        title: "State",
+        title: formatMessage({ id: "overview.column.state" }),
         dataIndex: "state",
         sorter: (a, b) => sorter.string(a, b, "state"),
       },
       {
-        title: "Docs",
+        title: formatMessage({ id: "overview.column.docs" }),
         dataIndex: "docs",
         render: (text, record) => (
           <span>{formatter.number(record?.docs || 0)}</span>
@@ -159,7 +159,7 @@ export default ({ clusterID, clusterName, nodeID, timeRange, bucketSize }) => {
         sorter: (a, b) => a?.docs - b?.docs,
       },
       {
-        title: "Store",
+        title: formatMessage({ id: "overview.column.store" }),
         dataIndex: "store_size_bytes",
         render: (text, record) => (
           <span>{formatter.bytes(record?.store_in_bytes || 0)}</span>
@@ -167,7 +167,7 @@ export default ({ clusterID, clusterName, nodeID, timeRange, bucketSize }) => {
         sorter: (a, b) => a?.store_in_bytes - b?.store_in_bytes,
       },
       {
-        title: "Indexing Rate",
+        title: formatMessage({ id: "overview.column.indexing_rate" }),
         dataIndex: "index_qps",
         render: (text, record) => (
           <span>{text != null ? `${text} /s` : "N/A"}</span>
@@ -175,7 +175,7 @@ export default ({ clusterID, clusterName, nodeID, timeRange, bucketSize }) => {
         sorter: (a, b) => a?.index_qps - b?.index_qps,
       },
       {
-        title: "Indexing Bytes",
+        title: formatMessage({ id: "overview.column.indexing_bytes" }),
         dataIndex: "index_bytes_qps",
         render: (text, record) => (
           <span>
@@ -199,7 +199,7 @@ export default ({ clusterID, clusterName, nodeID, timeRange, bucketSize }) => {
         }}
       >
         <div style={{ maxWidth: 500, flex: "1 1 auto" }}>
-          <Search
+          <SearchInput
             allowClear
             placeholder="Type keyword to search"
             enterButton="Search"

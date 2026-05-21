@@ -36,7 +36,10 @@ export const ResultStep = (props) => {
       </Row>
       <Row>
         <Col xs={24} sm={8} className={styles.label}>
-          Endpoint ：
+          {formatMessage({
+            id: "gateway.instance.field.endpoint.label",
+          })}
+          ：
         </Col>
         <Col xs={24} sm={16}>
           {removeHttpSchema(instanceConfig?.endpoint)}
@@ -44,7 +47,10 @@ export const ResultStep = (props) => {
       </Row>
       <Row>
         <Col xs={24} sm={8} className={styles.label}>
-          TLS：
+          {formatMessage({
+            id: "gateway.instance.field.tls.label",
+          })}
+          ：
         </Col>
         <Col xs={24} sm={16}>
           {formatMessage({
@@ -57,7 +63,7 @@ export const ResultStep = (props) => {
     </div>
   );
   const actions = (
-    <Fragment>
+    <Fragment key="actions">
       <Button type="primary" onClick={oneMoreClick}>
         {formatMessage({
         id: "gateway.guide.step.result.button.register_new",

@@ -6,6 +6,30 @@ export default {
   "guide.initialization.step.initialization": "初始化",
   "guide.initialization.step.initialization.desc":
     "初始化系统索引和模板的基本设置。",
+  "guide.initialization.start": "开始初始化",
+  "guide.initialization.defaults.message":
+    "已检测到 {dataNodes} 个可用数据节点（总节点数 {totalNodes}），主分片默认按节点数推荐为 {primaryShards}。",
+  "guide.initialization.primary_shards": "主分片数",
+  "guide.initialization.primary_shards.help":
+    "默认按可用数据节点数计算，通常保持与承载数据的节点数一致即可。",
+  "guide.initialization.primary_shards.invalid": "请输入大于 0 的主分片数。",
+  "guide.initialization.auto_expand_replicas": "自动副本",
+  "guide.initialization.auto_expand_replicas.help":
+    "默认使用 0-1，可填写 false、all 或形如 0-1 的范围值。",
+  "guide.initialization.auto_expand_replicas.invalid":
+    "自动副本格式无效，请输入 false、all 或形如 0-1 的范围值。",
+  "guide.initialization.rollup": "初始化 Rollup 模板",
+  "guide.initialization.rollup.help":
+    "仅 Easysearch 1.12.1 及以上版本支持。关闭后将跳过 Rollup 模板和作业初始化。",
+  "guide.initialization.task.template_ilm": "初始化模板和 ILM",
+  "guide.initialization.task.rollup": "初始化 Rollup 模板",
+  "guide.initialization.task.insight": "初始化仪表盘和可视化模板",
+  "guide.initialization.task.alerting": "初始化内置告警规则和通道",
+  "guide.initialization.task.agent": "初始化 Agent 安装模板",
+  "guide.initialization.task.view": "初始化数据视图模板",
+  "guide.initialization.task.start": "开始执行：{task}",
+  "guide.initialization.task.success": "执行成功：{task}",
+  "guide.initialization.task.failed": "执行失败：{task} {reason}",
   "guide.initialization.step.settings": "设置",
   "guide.initialization.step.settings.desc":
     "设置登录的默认用户以及凭据密钥。",
@@ -45,11 +69,11 @@ export default {
   "guide.confirm.password.validate": "您输入的两次密码不一致！",
   "guide.password.strength.invalid": "密码未满足所有安全要求。",
   "guide.password.rules.title": "密码必须符合以下规则",
-  "guide.password.rule.length": "长度至少为 8 个字符",
+  "guide.password.rule.length": "长度至少为 10 个字符",
   "guide.password.rule.uppercase": "至少一个大写字母 (A-Z)",
   "guide.password.rule.lowercase": "至少一个小写字母 (a-z)",
   "guide.password.rule.digit": "至少一个数字 (0-9)",
-  "guide.password.rule.special": "至少一个特殊字符",
+  "guide.password.rule.special": "至少一个特殊字符（!@#%^&*_+-=?）",
   "guide.credential_secret": "凭据密钥",
   "guide.credential_secret.required": "请输入凭据密钥！",
   "guide.credential_secret.tips":
@@ -70,7 +94,7 @@ export default {
 
   "health.modal.title": "服务受限",
   "health.modal.desc":
-    "请检查 Console 相关服务状态，以确保 Console 能正常运行。",
+    "请点击上方的服务受限，以确保系统集群正常运行。",
   "health.modal.services.title": "服务状态",
 
   "guide.startup.modal.title": `欢迎使用 ${APP_DOMAIN} Console`,

@@ -30,7 +30,17 @@ export default (props) => {
                 content: (
                   <>
                     <div>
-                      {formatMessage({id: "cluster.manage.metric_collection_mode.confirm.message"}, { mode: value === "agent" ? "Agent" : "Agentless" })}
+                      {formatMessage(
+                        { id: "cluster.manage.metric_collection_mode.confirm.message" },
+                        {
+                          mode: formatMessage({
+                            id:
+                              value === "agent"
+                                ? "cluster.manage.metric_collection_mode.option.agent"
+                                : "cluster.manage.metric_collection_mode.option.agentless",
+                          }),
+                        }
+                      )}
                     </div>
                     {isAgentless && isLargeCluster && (
                       <div style={{ marginTop: 10, color: "red",fontWeight: "bold" }}>
@@ -51,8 +61,16 @@ export default (props) => {
               });
             }}
           >
-            <Radio.Button value="agentless">Agentless</Radio.Button>
-            <Radio.Button value="agent">Agent</Radio.Button>
+            <Radio.Button value="agentless">
+              {formatMessage({
+                id: "cluster.manage.metric_collection_mode.option.agentless",
+              })}
+            </Radio.Button>
+            <Radio.Button value="agent">
+              {formatMessage({
+                id: "cluster.manage.metric_collection_mode.option.agent",
+              })}
+            </Radio.Button>
           </Radio.Group>
         )}
       </Form.Item>

@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Button, Divider, Form, Input, Select, Row, Col } from "antd";
+import { Button, Form, Input, Select, Tooltip } from "antd";
 import { formatMessage } from "umi/locale";
 
 import useFetch from "@/lib/hooks/use_fetch";
 import { formatESSearchResult } from "@/lib/elasticsearch/util";
+import { hasAuthority } from "@/utils/authority";
 
 export const MANUAL_VALUE = "manual";
 
@@ -19,8 +20,11 @@ export default (props) => {
     isManual,
     setIsManual,
   } = props;
+  const canReadCredential =
+    hasAuthority("system.credential:all") ||
+    hasAuthority("system.credential:read");
 
-  const { loading, error, value, run } = useFetch(
+  const { loading, value, run } = useFetch(
     "/credential/_search",
     {
       queryParams: {
@@ -39,9 +43,64 @@ export default (props) => {
     }
   };
 
-  const { data, total } = useMemo(() => {
+  const { data } = useMemo(() => {
     return formatESSearchResult(value);
   }, [value]);
+  const credentialGroupStyle = {
+    display: "flex",
+    alignItems: "stretch",
+    minWidth: 0,
+  };
+  const credentialSelectWrapStyle = {
+    flex: 1,
+    minWidth: 0,
+  };
+  const refreshButtonStyle = {
+    width: 32,
+    minWidth: 32,
+    height: "100%",
+    padding: 0,
+    marginLeft: -1,
+    borderTopLeftRadius: 0,
+    borderBottomLeftRadius: 0,
+    zIndex: 1,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  };
+  const refreshButtonWrapStyle = {
+    display: "flex",
+    alignItems: "stretch",
+  };
+
+  const credentialOptions = useMemo(() => {
+    const options = data.map((item) => ({
+      id: item.id,
+      name: item.name,
+    }));
+    if (
+      initialValue?.agent_credential_id &&
+      !options.find((item) => item.id === initialValue.agent_credential_id)
+    ) {
+      options.unshift({
+        id: initialValue.agent_credential_id,
+        name: initialValue.agent_credential_id,
+      });
+    }
+    return options;
+  }, [data, initialValue?.agent_credential_id]);
+
+  useEffect(() => {
+    if (canReadCredential) {
+      run();
+    }
+  }, [canReadCredential, run]);
+
+  useEffect(() => {
+    if (canReadCredential && initialValue?.agent_credential_id) {
+      run();
+    }
+  }, [canReadCredential, initialValue?.agent_credential_id, run]);
 
   if (!needAuth) {
     return null;
@@ -69,16 +128,35 @@ export default (props) => {
             },
           ],
         })(
-          <Select loading={loading} onChange={onCredentialChange} allowClear>
-            <Select.Option value={MANUAL_VALUE}>
-              {formatMessage({
-                id: "cluster.regist.step.connect.credential.manual",
-              })}
-            </Select.Option>
-            {data.map((item) => (
-              <Select.Option value={item.id}>{item.name}</Select.Option>
-            ))}
-          </Select>
+          <div style={credentialGroupStyle}>
+            <div style={credentialSelectWrapStyle}>
+              <Select loading={loading} onChange={onCredentialChange} allowClear>
+                <Select.Option value={MANUAL_VALUE}>
+                  {formatMessage({
+                    id: "cluster.regist.step.connect.credential.manual",
+                  })}
+                </Select.Option>
+                {credentialOptions.map((item) => (
+                  <Select.Option key={item.id} value={item.id}>
+                    {item.name}
+                  </Select.Option>
+                ))}
+              </Select>
+            </div>
+            <div style={refreshButtonWrapStyle}>
+              <Tooltip title={formatMessage({ id: "form.button.refresh" })}>
+                <span style={refreshButtonWrapStyle}>
+                  <Button
+                    icon="reload"
+                    onClick={() => run()}
+                    loading={loading}
+                    disabled={!canReadCredential}
+                    style={refreshButtonStyle}
+                  />
+                </span>
+              </Tooltip>
+            </div>
+          </div>
         )}
       </Form.Item>
       {isManual && (

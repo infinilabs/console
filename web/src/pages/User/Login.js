@@ -3,7 +3,10 @@ import { connect } from "dva";
 import { formatMessage, FormattedMessage } from "umi/locale";
 import Link from "umi/link";
 import { Checkbox, Alert, Icon,Button } from "antd";
+import router from "umi/router";
 import Login from "@/components/Login";
+import { getHealth } from "@/services/system";
+import { getSetupRequired, setSetupRequired } from "@/utils/setup";
 import styles from "./Login.less";
 import "./LoginPage.scss";
 
@@ -17,6 +20,27 @@ class LoginPage extends Component {
   state = {
     type: "account",
     autoLogin: true,
+  };
+
+  componentDidMount() {
+    if (getSetupRequired() === "true") {
+      router.replace("/guide/initialization");
+      return;
+    }
+
+    this.syncSetupState();
+  }
+
+  syncSetupState = async () => {
+    try {
+      const res = await getHealth();
+      setSetupRequired(`${!!res?.setup_required}`);
+      if (res?.setup_required) {
+        router.replace("/guide/initialization");
+      }
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   onTabChange = (type) => {

@@ -4,6 +4,8 @@ export default {
   "gateway.instance.new.description":
     "Input the instance endpoint to register the INFINI Gateway step by step.",
   "gateway.instance.btn.new": "New",
+  "gateway.instance.install.title": "Install Gateway",
+  "gateway.install.label.get_cmd": "Get Setup Command",
   "gateway.entry.index.title": "ENTRY",
   "gateway.entry.index.description":
     "Entry management helps you to add, view, modify and delete the entry configuration of the INFINI Gateway conveniently and quickly.",
@@ -18,10 +20,41 @@ export default {
     "Modify the instance configuration, and then click the Save button, and it will take effect after the save is successful.",
   "gateway.instance.field.name.label": "Instance Name",
   "gateway.instance.field.name.form.required": "Please input instance name!",
+  "gateway.instance.field.endpoint.label": "Endpoint",
   "gateway.instance.field.endpoint.form.required":
-    "Plsease input instance api endpoint!",
+    "Please input instance API endpoint!",
+  "gateway.instance.field.endpoint.placeholder":
+    "Instance API endpoint e.g. 127.0.0.1:2900",
+  "gateway.instance.field.tls.label": "Enable TLS",
   "gateway.instance.field.tags.label": "Tags",
   "gateway.instance.field.description.placeholder": "Instance description",
+  "gateway.instance.delete.confirm.title": "Are you sure you want to delete this item?",
+  "gateway.instance.column.application": "Application",
+  "gateway.instance.column.name": "Name",
+  "gateway.instance.column.endpoint": "Endpoint",
+  "gateway.instance.column.status": "Status",
+  "gateway.instance.column.cpu": "CPU",
+  "gateway.instance.column.memory": "Memory",
+  "gateway.instance.column.storage": "Storage",
+  "gateway.instance.column.uptime": "Uptime",
+  "gateway.instance.column.tags": "Tags",
+  "gateway.instance.status.checking": "Checking",
+  "gateway.instance.status.online": "Online",
+  "gateway.instance.status.unavailable": "N/A",
+  "gateway.instance.storage.tooltip": "Free/Total: {free}/{total}",
+  "gateway.instance.menu.queue": "Queue",
+  "gateway.instance.menu.task": "Task",
+  "gateway.instance.menu.logging": "Logging",
+  "gateway.instance.menu.config": "Config",
+  "gateway.task.empty": "No tasks found",
+  "gateway.router.column.name": "Name",
+  "gateway.router.column.default_flow": "Default Flow",
+  "gateway.router.column.tracing_flow": "Tracing Flow",
+  "gateway.router.column.updated": "Last Updated",
+  "gateway.router.search.placeholder": "Type keyword to search",
+  "gateway.router.delete.confirm.title": "Are you sure you want to delete this item?",
+  "gateway.router.btn.new": "New",
+  "gateway.router.pagination.total": "{start}-{end} of {total} items",
 
   "gateway.instance.regist": "Instance Regist",
 
@@ -44,8 +77,17 @@ export default {
   "gateway.guide.quick_install": "Quick Install",
   "gateway.guide.quick_install.desc":
     "Please copy the following command and execute it in the local deployment environment, which includes the download, deployment, and startup of INFINI Gateway:",
+  "gateway.guide.intranet.title": "Intranet deployment",
+  "gateway.guide.intranet.desc":
+    "The default install directory is /infini/gateway. If package files exist under web.ui.path/gateway/stable, Console automatically serves them from its own web endpoint; otherwise it falls back to the official release site. Configure gateway.setup.download_url only when you need a custom internal mirror.",
   "gateway.guide.shell.copy.success": "Copy succeed!",
   "gateway.guide.tips.title": "Tips:",
+  "gateway.guide.tips.version":
+    "To specify a Gateway version, append",
+  "gateway.guide.tips.directory":
+    "To specify an installation directory, append",
+  "gateway.guide.tips.download_source":
+    "To use an internal or custom download source, append",
   "gateway.guide.tips.content":
     "The current version of automatic installation only supports Linux, For others, please ",
   "gateway.guide.tips.install_manually": "install manually",

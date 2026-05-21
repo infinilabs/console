@@ -1,5 +1,5 @@
 import { Alert, Button, Form, message } from "antd";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { formatMessage } from "umi/locale";
 
 import request from "@/utils/request";
@@ -24,6 +24,10 @@ export default Form.create()((props) => {
   const [saveLoading, setSaveLoading] = useState(false);
 
   const needAuth = !!(record.credential_id || record.basic_auth?.username);
+
+  useEffect(() => {
+    setIsManual(!record.agent_credential_id && !!record.agent_basic_auth?.username);
+  }, [record.agent_credential_id, record.agent_basic_auth?.username]);
 
   const onConfirm = async () => {
     form.validateFields(async (errors, values) => {
@@ -52,20 +56,25 @@ export default Form.create()((props) => {
             id: "app.message.update.success",
           })
         );
-        const res = await request(`/elasticsearch/${record.id}`);
-        if (res?.found) {
-          onAgentCredentialSave(res._source);
-          if (res._source?.agent_credential_id) {
+        const latestRecordResponse = await request(`/elasticsearch/${record.id}`);
+        if (latestRecordResponse?.found) {
+          const nextRecord = {
+            ...record,
+            ...latestRecordResponse._source,
+            id: record.id,
+          };
+          onAgentCredentialSave(nextRecord);
+          if (nextRecord?.agent_credential_id) {
             setIsManual(false);
           }
           form.setFieldsValue({
-            agent_credential_id: res._source?.agent_credential_id
-              ? res._source?.agent_credential_id
-              : res._source?.agent_basic_auth?.username
+            agent_credential_id: nextRecord?.agent_credential_id
+              ? nextRecord?.agent_credential_id
+              : nextRecord?.agent_basic_auth?.username
               ? MANUAL_VALUE
               : undefined,
-            agent_username: res._source.agent_basic_auth?.username,
-            agent_password: res._source.agent_basic_auth?.password,
+            agent_username: nextRecord.agent_basic_auth?.username,
+            agent_password: nextRecord.agent_basic_auth?.password,
           });
         }
       } else {

@@ -41,9 +41,13 @@ const setDefaultAriaLabel = "设置为默认视图";
 
 const setDefaultTooltip = "设置为默认视图";
 
-const refreshAriaLabel = "重新加载字段列表";
+const refreshAriaLabel = formatMessage({
+  id: "explore.view.index_pattern.refreshTooltip",
+});
 
-const refreshTooltip = "刷新字段列表";
+const refreshTooltip = formatMessage({
+  id: "explore.view.index_pattern.refreshTooltip",
+});
 
 const removeAriaLabel = formatMessage({
   id: "explore.view.index_pattern.removeTooltip",

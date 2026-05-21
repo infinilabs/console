@@ -12,6 +12,40 @@
       }
     }
   }
+
+  .log-file-option {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+    gap: 8px;
+
+    &__name,
+    &__meta {
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    &__name {
+      max-width: 110px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    &__path {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: rgba(0, 0, 0, 0.65);
+    }
+
+    &__meta {
+      color: rgba(0, 0, 0, 0.45);
+    }
+  }
+
   .viewer {
     margin-top: 10px;
   }

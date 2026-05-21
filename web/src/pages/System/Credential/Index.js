@@ -8,6 +8,7 @@ import {
   Popconfirm,
   Table,
   message,
+  Icon,
 } from "antd";
 import PageHeaderWrapper from "@/components/PageHeaderWrapper";
 import styles from "./Index.less";
@@ -21,7 +22,13 @@ import { hasAuthority } from "@/utils/authority";
 import AutoTextEllipsis from "@/components/AutoTextEllipsis";
 import commonStyles from "@/common.less"
 
-const { Search } = Input;
+import SearchInput from "@/components/infini/SearchInput";
+
+const firstColumnIconStyle = {
+  marginRight: 8,
+  color: "#999",
+  fontSize: 12,
+};
 
 export default () => {
   const initialQueryParams = {
@@ -174,9 +181,17 @@ export default () => {
 
   const columns = [
     {
-      title: "ID",
+      title: formatMessage({
+        id: "table.field.id",
+      }),
       dataIndex: "id",
       key: "id",
+      render: (text) => (
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <Icon type="key" style={firstColumnIconStyle} />
+          <span>{text}</span>
+        </div>
+      ),
     },
     {
       title: formatMessage({
@@ -231,7 +246,7 @@ export default () => {
       }),
       width: 150,
       render: (text, record) => (
-        <Fragment>
+        <Fragment key={record.id}>
           <a
             onClick={() => {
               setSelectedItem(record);
@@ -244,7 +259,7 @@ export default () => {
           </a>
           <Divider type="vertical" />
           <Popconfirm
-            title="Sure to delete?"
+            title={formatMessage({ id: "app.message.confirm.delete" })}
             onConfirm={() => onRemove(record.id)}
           >
             <a>
@@ -279,7 +294,7 @@ export default () => {
           }}
         >
           <div style={{ maxWidth: 500, flex: "1 1 auto" }}>
-            <Search
+            <SearchInput
               allowClear
               placeholder="Type keyword to search"
               enterButton="Search"

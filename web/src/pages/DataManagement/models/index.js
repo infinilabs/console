@@ -7,6 +7,7 @@ import {
   createIndex,
 } from "@/services/indices";
 import { message } from "antd";
+import { formatMessage } from "umi/locale";
 
 export default {
   namespace: "index",
@@ -59,7 +60,7 @@ export default {
         return false;
       }
       if (resp.result == "updated") {
-        message.success("save successfully");
+        message.success(formatMessage({ id: "app.message.save.success" }));
       }
       let { settings } = yield select((state) => state.index);
       settings[payload.index] = payload.settings;

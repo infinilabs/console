@@ -150,7 +150,11 @@ export const Associate = Form.create({ name: "associate_form" })((props) => {
                 ],
               })(<Input placeholder="127.0.0.1:9200" />)}
             </Form.Item>
-            <Form.Item label="TLS">
+            <Form.Item
+              label={formatMessage({
+                id: "gateway.instance.field.tls.label",
+              })}
+            >
               {getFieldDecorator("isTLS", {
                 initialValue: record?.schema === "https",
                 valuePropName: "checked",
@@ -196,6 +200,7 @@ export const Associate = Form.create({ name: "associate_form" })((props) => {
 
 const Result = ({ data, onComplete, loading = false }) => {
   const { clusterList = [] } = useGlobal();
+  const detectedLogsPath = data?.node_info?.settings?.path?.logs || "";
   const clusters = useMemo(
     () => {
       if (!data.cluster_info.cluster_uuid) {
@@ -210,10 +215,16 @@ const Result = ({ data, onComplete, loading = false }) => {
   );
   const selectedID = clusters[0]?.id || "";
   const clusterRef = useRef();
+  const [logsPaths, setLogsPaths] = useState(
+    detectedLogsPath ? [detectedLogsPath] : []
+  );
 
   const onAssociateClick = () => {
     if (typeof onComplete === "function") {
       const clusterID = clusterRef.current.rcSelect.state?.value[0] || "";
+      const normalizedLogsPaths = Array.from(
+        new Set((logsPaths || []).map((item) => item?.trim()).filter(Boolean))
+      );
       onComplete({
         cluster_id: clusterID,
         cluster_name: data?.cluster_info?.cluster_name,
@@ -222,7 +233,8 @@ const Result = ({ data, onComplete, loading = false }) => {
         publish_address: data?.node_info?.http?.publish_address,
         node_name: data?.node_info?.name,
         path_home: data?.node_info?.settings?.path?.home,
-        path_logs: data?.node_info?.settings?.path?.logs,
+        path_logs: normalizedLogsPaths[0] || "",
+        logs_paths: normalizedLogsPaths,
         // credential_id:values.credential_id,
       });
     }
@@ -265,7 +277,7 @@ const Result = ({ data, onComplete, loading = false }) => {
           <div>Node UUID：{data?.id}</div>
           <div>Publish Address：{data?.node_info?.http?.publish_address}</div>
           <div>Path Home：{data?.node_info?.settings?.path?.home}</div>
-          <div>Path Log：{data?.node_info?.settings?.path?.logs}</div>
+          <div>Path Log：{detectedLogsPath}</div>
         </div>
       </div>
       <div>
@@ -290,6 +302,30 @@ const Result = ({ data, onComplete, loading = false }) => {
                 );
               })}
             </Select>
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "flex-start", marginTop: 15 }}>
+          <div style={{ paddingRight: 10, lineHeight: "32px" }}>
+            {formatMessage({
+              id: "agent.instance.associate.labels.logs_paths",
+            })}
+          </div>
+          <div style={{ flex: "1 1 auto" }}>
+            <Select
+              mode="tags"
+              style={{ width: "100%" }}
+              value={logsPaths}
+              onChange={setLogsPaths}
+              tokenSeparators={[","]}
+              placeholder={formatMessage({
+                id: "agent.instance.associate.labels.logs_paths.placeholder",
+              })}
+            />
+            <div style={{ marginTop: 8, color: "rgba(130,129,136,1)" }}>
+              {formatMessage({
+                id: "agent.instance.associate.labels.logs_paths.tips",
+              })}
+            </div>
           </div>
         </div>
       </div>

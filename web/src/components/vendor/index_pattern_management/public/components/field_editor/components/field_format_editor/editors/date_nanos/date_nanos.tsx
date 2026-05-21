@@ -46,7 +46,7 @@ export class DateNanosFormatEditor extends DefaultFormatEditor<DateNanosFormatEd
     const defaultPattern = format.getParamDefaults().pattern;
 
     return (
-      <Fragment>
+      <Fragment key="dateNanosFormatEditor">
         <EuiFormRow
           label={
             `Moment.js format pattern (Default: ${<EuiCode>{defaultPattern}</EuiCode>})`

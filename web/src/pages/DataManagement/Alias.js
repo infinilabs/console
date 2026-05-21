@@ -14,6 +14,7 @@ import {
   AutoComplete,
   Switch,
   Popconfirm,
+  Icon,
 } from "antd";
 import PageHeaderWrapper from "@/components/PageHeaderWrapper";
 import "@/assets/headercontent.scss";
@@ -21,9 +22,15 @@ import { formatMessage } from "umi/locale";
 import { hasAuthority } from "@/utils/authority";
 import { isMatch, sorter } from "@/utils/utils";
 import { Link } from "umi";
+import SearchInput from "@/components/infini/SearchInput";
 
 const FormItem = Form.Item;
 const { TextArea } = Input;
+const firstColumnIconStyle = {
+  marginRight: 8,
+  color: "#999",
+  fontSize: 12,
+};
 
 const UpdateForm = Form.create()((props) => {
   const {
@@ -153,9 +160,16 @@ class AliasManage extends PureComponent {
       title: formatMessage({ id: "alias.table.field.name" }),
       dataIndex: "alias",
       sorter: (a, b) => sorter.string(a, b, "alias"),
+      render: (text) => (
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <Icon type="tag" style={firstColumnIconStyle} />
+          <span>{text}</span>
+        </div>
+      ),
     },
     {
       title: formatMessage({ id: "alias.table.field.write_index" }),
+      with: 150,
       dataIndex: "write_index",
       sorter: (a, b) => sorter.string(a, b, "write_index"),
       render: (text, record) => {
@@ -164,14 +178,15 @@ class AliasManage extends PureComponent {
     },
     {
       title: formatMessage({ id: "table.field.actions" }),
+      width: 100,
       render: (text, record) => {
         return (
-          <Fragment>
+          <Fragment key={record.alias}>
             {/*<a onClick={() => this.handleUpdateModalVisible(true, record)}>别名设置</a>*/}
             {/*<Divider type="vertical" />*/}
             {hasAuthority("data.alias:all") ? (
               <Popconfirm
-                title="Sure to delete？"
+                title={formatMessage({ id: "app.message.confirm.delete" })}
                 onConfirm={() => this.handleDeleteAliasClick(record)}
               >
                 {" "}
@@ -385,7 +400,7 @@ class AliasManage extends PureComponent {
               }}
             >
               <div style={{ maxWidth: 500, flex: "1 1 auto" }}>
-                <Input.Search
+                <SearchInput
                   allowClear
                   placeholder="Type keyword to search"
                   enterButton="Search"

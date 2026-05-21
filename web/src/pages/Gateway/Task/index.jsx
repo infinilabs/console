@@ -3,6 +3,7 @@ import {
   Tabs,
   Card,
   Table,
+  Empty,
   Popconfirm,
   Divider,
   Form,
@@ -273,19 +274,31 @@ const TaskList = (props) => {
           loading={false}
           bordered
           dataSource={taskList}
+          locale={{
+            emptyText: (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={formatMessage({ id: "gateway.task.empty" })}
+              />
+            ),
+          }}
           rowKey={(row) => row.name}
           rowSelection={{
             selectedRowKeys: state.selectedRowKeys,
             onChange: onSelectChange,
           }}
-          pagination={{
-            size: "small",
-            pageSize: 20,
-            total: taskList.length,
-            showSizeChanger: true,
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} of ${total} items`,
-          }}
+          pagination={
+            taskList.length > 0
+              ? {
+                  size: "small",
+                  pageSize: 20,
+                  total: taskList.length,
+                  showSizeChanger: true,
+                  showTotal: (total, range) =>
+                    `${range[0]}-${range[1]} of ${total} items`,
+                }
+              : false
+          }
           columns={columns}
           onChange={handleTableChange}
         />

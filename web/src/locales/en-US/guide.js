@@ -6,6 +6,31 @@ export default {
   "guide.initialization.step.initialization": "Initialization",
   "guide.initialization.step.initialization.desc":
     "Initializing basic settings for system indices and templates.",
+  "guide.initialization.start": "Start Initialization",
+  "guide.initialization.defaults.message":
+    "{dataNodes} data nodes detected ({totalNodes} total nodes). Primary shards default to {primaryShards} based on node count.",
+  "guide.initialization.primary_shards": "Primary Shards",
+  "guide.initialization.primary_shards.help":
+    "Defaults to the detected data-node count. In most cases it should match the number of nodes storing the data.",
+  "guide.initialization.primary_shards.invalid":
+    "Please enter a primary shard count greater than 0.",
+  "guide.initialization.auto_expand_replicas": "Auto Expand Replicas",
+  "guide.initialization.auto_expand_replicas.help":
+    "Defaults to 0-1. You can enter false, all, or a range such as 0-1.",
+  "guide.initialization.auto_expand_replicas.invalid":
+    "Invalid auto expand replicas value. Use false, all, or a range such as 0-1.",
+  "guide.initialization.rollup": "Initialize Rollup Templates",
+  "guide.initialization.rollup.help":
+    "Available only on Easysearch 1.12.1 and above. Turn it off to skip rollup template and job initialization.",
+  "guide.initialization.task.template_ilm": "Initialize templates and ILM",
+  "guide.initialization.task.rollup": "Initialize rollup templates",
+  "guide.initialization.task.insight": "Initialize dashboards and visualizations",
+  "guide.initialization.task.alerting": "Initialize built-in alerting rules and channels",
+  "guide.initialization.task.agent": "Initialize agent setup templates",
+  "guide.initialization.task.view": "Initialize data view templates",
+  "guide.initialization.task.start": "Starting: {task}",
+  "guide.initialization.task.success": "Completed: {task}",
+  "guide.initialization.task.failed": "Failed: {task} {reason}",
   "guide.initialization.step.settings": "Settings",
   "guide.initialization.step.settings.desc":
     "Set the default user for login and credential secret.",
@@ -47,11 +72,11 @@ export default {
   "guide.confirm.password.validate": "The two passwords that you entered do not match!",
   "guide.password.strength.invalid": "Password does not meet all security requirements.",
   "guide.password.rules.title": "Password must contain",
-  "guide.password.rule.length": "At least 8 characters long",
+  "guide.password.rule.length": "At least 10 characters long",
   "guide.password.rule.uppercase": "At least one uppercase letter (A-Z)",
   "guide.password.rule.lowercase": "At least one lowercase letter (a-z)",
   "guide.password.rule.digit": "At least one number (0-9)",
-  "guide.password.rule.special": "At least one special character",
+  "guide.password.rule.special": "At least one special character (!@#%^&*_+-=?)",
   "guide.credential_secret": "Secret Key",
   "guide.credential_secret.required": "Please input credential secret key!",
   "guide.credential_secret.tips":
@@ -72,7 +97,7 @@ export default {
   "guide.enter.console": `Enter ${APP_DOMAIN} Console`,
 
   "health.modal.title": "Services are limited",
-  "health.modal.desc": `Please check the status of the ${APP_DOMAIN} Console related services to ensure that the ${APP_DOMAIN} Console can work correctly.`,
+  "health.modal.desc": `Please click the services health above to ensure the system cluster is running properly.`,
   "health.modal.services.title": "Services Health",
 
   "guide.startup.modal.title": `Welcome to ${APP_DOMAIN} Console`,

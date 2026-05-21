@@ -8,15 +8,22 @@ export default (props) => {
   const { aggs, data, filters, onFacetChange, onReset } = props;
 
   const facets = useMemo(() => {
-    const fts = Object.keys(data).map((item) => {
-      return {
-        label: item,
-        field: aggs[item].terms.field,
-        buckets: data[item]?.buckets || [],
-      };
-    });
+    const safeData = data && typeof data === "object" ? data : {};
+    const fts = Object.keys(safeData).reduce((items, item) => {
+      const agg = aggs?.[item];
+      const field = agg?.field || agg?.terms?.field;
+      if (!field) {
+        return items;
+      }
+      items.push({
+        label: agg?.label || item,
+        field,
+        buckets: safeData[item]?.buckets || [],
+      });
+      return items;
+    }, []);
     return fts;
-  }, [data]);
+  }, [data, aggs]);
 
   return (
     <div className={styles.searchFilter}>

@@ -28,6 +28,21 @@ import InstallAgent from "@/components/InstallAgent";
 import { formatMessage } from "umi/locale";
 import Location from "@/components/Icons/Location";
 const ButtonGroup = Button.Group;
+const getLogFileKey = (logFile = {}) =>
+  `${logFile.logs_path || ""}::${logFile.name || ""}`;
+const formatLogFileLabel = (logFile = {}, includeMeta = false) => {
+  const parts = [logFile.name];
+  if (logFile.logs_path) {
+    parts.push(logFile.logs_path);
+  }
+  if (includeMeta) {
+    parts.push(formatter.bytes(logFile.size_in_bytes || 0));
+    if (logFile.modify_time) {
+      parts.push(moment(logFile.modify_time).format("YYYY.MM.DD"));
+    }
+  }
+  return parts.filter(Boolean).join(" | ");
+};
 
 const Logs = (props) => {
   const clusterID = props.data?._source?.metadata?.cluster_id;
@@ -38,12 +53,19 @@ const Logs = (props) => {
     items: [],
     logFiles: [],
     file: "",
+    fileName: "",
+    logsPath: "",
     offset: 0,
     startLineNumber: 1,
     autoScrollToBottom: false,
   });
 
   const [loading, setLoading] = useState(false);
+  const selectedLogFile = useMemo(
+    () =>
+      (logState.logFiles || []).find((logFile) => getLogFileKey(logFile) === logState.file),
+    [logState.file, logState.logFiles]
+  );
 
   const fetchLogs = async (withLoading) => {
     if (withLoading) setLoading(true);
@@ -51,12 +73,15 @@ const Logs = (props) => {
     if (res && res.success) {
       const { log_files: logFiles } = res;
       setLogState((st) => {
+        const selectedFile = logFiles[0] || {};
         return {
           ...st,
           logFiles,
-          file: logFiles[0]?.name,
-          fileSize: logFiles[0]?.size_in_bytes,
-          totalRows: logFiles[0]?.total_rows,
+          file: selectedFile?.name ? getLogFileKey(selectedFile) : "",
+          fileName: selectedFile?.name,
+          logsPath: selectedFile?.logs_path,
+          fileSize: selectedFile?.size_in_bytes,
+          totalRows: selectedFile?.total_rows,
           startLineNumber: 1,
         };
       });
@@ -77,12 +102,14 @@ const Logs = (props) => {
     if(!nodeID){
       return
     }
-    setLogState({
+      setLogState({
       hasNextPage: true,
       isNextPageLoading: false,
       items: [],
       logFiles: [],
       file: "",
+      fileName: "",
+      logsPath: "",
       offset: 0,
       startLineNumber: 1,
     });
@@ -105,7 +132,8 @@ const Logs = (props) => {
       const res = await request(`/elasticsearch/${clusterID}/node/${nodeID}/logs/_read`, {
         method: "POST",
         body: {
-          file_name: newLogState.file,
+          file_name: newLogState.fileName,
+          logs_path: newLogState.logsPath,
           offset: newLogState.offset,
           start_line_number: newLogState.startLineNumber,
           lines: 50,
@@ -162,10 +190,12 @@ const Logs = (props) => {
   const onLogFileChange = (file) => {
     clearAutoRefresh();
     setLogState((st) => {
-      const logFile = st.logFiles.find((lf) => lf.name == file);
+      const logFile = st.logFiles.find((lf) => getLogFileKey(lf) == file);
       return {
         ...st,
         file,
+        fileName: logFile?.name,
+        logsPath: logFile?.logs_path,
         offset: 0,
         items: [],
         hasNextPage: true,
@@ -242,7 +272,6 @@ const Logs = (props) => {
           <div className="right">
             <Button
               loading={loading}
-              size="small"
               onClick={() => fetchLogs(true)}
             >
               {formatMessage({ id: "form.button.refresh" })}
@@ -264,24 +293,41 @@ const Logs = (props) => {
       <div className="form-line">
         <div className="form-item">
         {formatMessage({ id: "agent.logs.label.log_file" })}
-          <Select
-            style={{ width: 390 }}
-            value={logState.file}
-            onChange={onLogFileChange}
-            dropdownMatchSelectWidth={false}
-          >
-            {(logState.logFiles || []).map((logFile) => {
-              return (
-                <Select.Option key={logFile.name} value={logFile.name}>
-                  {logFile.name}
-                  <Divider type="vertical" />
-                  {formatter.bytes(logFile.size_in_bytes || 0)}
-                  <Divider type="vertical" />
-                  {moment(logFile.modify_time).format("YYYY.MM.DD")}
-                </Select.Option>
-              );
-            })}
-          </Select>
+          <Tooltip title={selectedLogFile ? formatLogFileLabel(selectedLogFile, true) : ""}>
+            <Select
+              style={{ width: 390 }}
+              value={logState.file}
+              onChange={onLogFileChange}
+              optionLabelProp="title"
+            >
+              {(logState.logFiles || []).map((logFile) => {
+                const optionKey = getLogFileKey(logFile);
+                const optionLabel = formatLogFileLabel(logFile);
+                return (
+                  <Select.Option
+                    key={optionKey}
+                    value={optionKey}
+                    title={optionLabel}
+                  >
+                    <div className="log-file-option">
+                      <span className="log-file-option__name">{logFile.name}</span>
+                      {logFile.logs_path ? (
+                        <Tooltip title={logFile.logs_path}>
+                          <span className="log-file-option__path">{logFile.logs_path}</span>
+                        </Tooltip>
+                      ) : null}
+                      <span className="log-file-option__meta">
+                        {formatter.bytes(logFile.size_in_bytes || 0)}
+                      </span>
+                      <span className="log-file-option__meta">
+                        {moment(logFile.modify_time).format("YYYY.MM.DD")}
+                      </span>
+                    </div>
+                  </Select.Option>
+                );
+              })}
+            </Select>
+          </Tooltip>
         </div>
         <ButtonGroup>
         {/* loading={logState.autoRefreshLoading} */}

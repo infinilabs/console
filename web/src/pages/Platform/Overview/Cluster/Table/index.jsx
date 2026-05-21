@@ -14,7 +14,7 @@ export default (props) => {
       {...props}
       columns={[
         {
-          title: "Name",
+          title: formatMessage({ id: "overview.column.name" }),
           dataIndex: "name",
           render: (text, record) => {
             return (
@@ -55,14 +55,14 @@ export default (props) => {
           },
         },
         {
-          title: "Version",
+          title: formatMessage({ id: "overview.column.version" }),
           dataIndex: "version",
           render: (text, record) => {
             return record.metadata?.version ?? "";
           },
         },
         {
-          title: "Health",
+          title: formatMessage({ id: "overview.column.health" }),
           dataIndex: "health_status",
           render: (text, record) => {
             return (
@@ -98,28 +98,28 @@ export default (props) => {
           },
         },
         {
-          title: "Nodes",
+          title: formatMessage({ id: "overview.column.nodes" }),
           dataIndex: "nodes",
           render: (text, record) => {
             return record.summary?.number_of_nodes || 0;
           },
         },
         {
-          title: "Indices",
+          title: formatMessage({ id: "overview.column.indices" }),
           dataIndex: "Indices",
           render: (text, record) => {
             return record.summary?.number_of_indices || 0;
           },
         },
         {
-          title: "Shards",
+          title: formatMessage({ id: "overview.column.shards" }),
           dataIndex: "Shards",
           render: (text, record) => {
             return record.summary?.number_of_shards || 0;
           },
         },
         {
-          title: "Docs",
+          title: formatMessage({ id: "overview.column.docs" }),
           dataIndex: "Docs",
           render: (text, record) => {
             return (
@@ -134,7 +134,7 @@ export default (props) => {
           },
         },
         {
-          title: "Disk Usage",
+          title: formatMessage({ id: "overview.column.disk_usage" }),
           dataIndex: "DiskUsage",
           render: (text, record) => {
             return (
@@ -161,7 +161,7 @@ export default (props) => {
           },
         },
         {
-          title: "JVM Heap",
+          title: formatMessage({ id: "overview.column.jvm_heap" }),
           dataIndex: "JVMHeap",
           render: (text, record) => {
             return (

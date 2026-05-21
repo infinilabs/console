@@ -164,10 +164,10 @@ export default (props) => {
         const emptyProps = {}
         if (metric?.min_bucket_size > 0 && metric?.hits_total > 0) {
           emptyProps.description = (
-            <>
-              <div style={{ wordBreak: 'break-all', textAlign: 'left', marginBotton: 2 }} >
+            <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 6, width: '100%' }}>
+              <span style={{ wordBreak: 'break-all' }}>
                 {formatMessage({ id: "cluster.metrics.time_interval.empty" }, { min_bucket_size: metric.min_bucket_size})}
-              </div>
+              </span>
               <Dropdown overlay={(
                 <Menu>
                   <Menu.Item onClick={() => handleTimeIntervalChange(`${metric?.min_bucket_size}s`)}>
@@ -178,11 +178,11 @@ export default (props) => {
                   </Menu.Item>
                 </Menu>
               )}>
-                <a onClick={e => e.preventDefault()}>
+                <a style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} onClick={e => e.preventDefault()}>
                   {formatMessage({ id: `cluster.metrics.time_interval.apply`})} <Icon type="down" />
                 </a>
               </Dropdown>
-            </>
+            </span>
           )
         }
         return (
@@ -322,20 +322,27 @@ export default (props) => {
     }
   
     return (
-      <div key={metricKey} ref={containerRef} className={className} style={style}>
+      <div
+        key={metricKey}
+        ref={containerRef}
+        className={[styles.metricChartContainer, className].filter(Boolean).join(" ")}
+        style={style}
+      >
         {
-                metric?.request && (
-                  <CopyToClipboard text={`GET .infini_metrics/_search\n${metric.request}`}>
-                    <Tooltip title={formatMessage({id: "cluster.metrics.request.copy"})}>
-                      <Icon 
-                        className="copyReq"
-                        type="copy" 
-                        onClick={() => message.success(formatMessage({id: "cluster.metrics.request.copy.success"}))}
-                      />
-                    </Tooltip>
-                  </CopyToClipboard>
-                )
-              }
+          metric?.request && (
+            <div className={styles.copyAction}>
+              <CopyToClipboard text={`GET .infini_metrics/_search\n${metric.request}`}>
+                <Tooltip title={formatMessage({id: "cluster.metrics.request.copy"})}>
+                  <Icon
+                    className={styles.copyReq}
+                    type="copy"
+                    onClick={() => message.success(formatMessage({id: "cluster.metrics.request.copy.success"}))}
+                  />
+                </Tooltip>
+              </CopyToClipboard>
+            </div>
+          )
+        }
         <Spin spinning={loading}>
         <div className={styles.vizChartItemTitle}>
           <span>

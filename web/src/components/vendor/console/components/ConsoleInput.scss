@@ -24,7 +24,22 @@
 .conApp__outputContent {
   height: 100%;
   flex: 1 1 1px;
-  font-size: 14px;
+  font-size: 13px;
+  font-family: "SFMono-Regular", Monaco, Menlo, Consolas, "Liberation Mono", "Ubuntu Mono",
+    monospace;
+}
+
+.conApp__editorContent .ace_editor,
+.conApp__editorContent .ace_content,
+.conApp__editorContent .ace_layer,
+.conApp__editorContent textarea,
+.conApp__outputContent .ace_editor,
+.conApp__outputContent .ace_content,
+.conApp__outputContent .ace_layer,
+.conApp__outputContent textarea {
+  font-size: 13px !important;
+  font-family: "SFMono-Regular", Monaco, Menlo, Consolas, "Liberation Mono", "Ubuntu Mono",
+    monospace !important;
 }
 
 .conApp__editorActions {

@@ -179,7 +179,7 @@ export function SavedQueryManagementComponent({
   };
 
   return (
-    <Fragment>
+    <Fragment key="savedQueryManagement">
       <EuiPopover
         id="savedQueryPopover"
         button={savedQueryPopoverButton}
@@ -199,7 +199,7 @@ export function SavedQueryManagementComponent({
             {savedQueryPopoverTitleText}
           </EuiPopoverTitle>
           {savedQueries.length > 0 ? (
-            <Fragment>
+            <Fragment key="savedQueryList">
               <EuiText size="s" color="subdued" className="kbnSavedQueryManagement__text">
                 <p>{savedQueryDescriptionText}</p>
               </EuiText>
@@ -220,7 +220,7 @@ export function SavedQueryManagementComponent({
               />
             </Fragment>
           ) : (
-            <Fragment>
+            <Fragment key="noSavedQueries">
               <EuiText size="s" color="subdued" className="kbnSavedQueryManagement__text">
                 <p>{noSavedQueriesDescriptionText}</p>
               </EuiText>
@@ -237,7 +237,7 @@ export function SavedQueryManagementComponent({
               wrap={true}
             >
               {showSaveQuery && loadedSavedQuery && (
-                <Fragment>
+                <Fragment key="saveQueryActions">
                   <EuiFlexItem grow={false}>
                     <EuiButton
                       size="s"

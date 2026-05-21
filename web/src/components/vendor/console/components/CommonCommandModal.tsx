@@ -48,7 +48,7 @@ export const TagGenerator = ({ value = [], onChange }: ITagGeneratorProps) => {
     <div>
       {value.map((tag, index) => (
         <Tag
-          key={index}
+          key={`modal-tag-${index}`}
           closable
           style={{ padding: "0 5px", fontSize: 14, margin: "5px 10px 5px 0" }}
           onClose={() => handleRemove(index)}

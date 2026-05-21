@@ -48,6 +48,7 @@ func Init() {
 	api.HandleAPIMethod(api.GET, "/host/:host_id/agent/info", handler.GetHostAgentInfo)
 	api.HandleAPIMethod(api.GET, "/host/:host_id/processes", handler.GetHostElasticProcess)
 	api.HandleAPIMethod(api.DELETE, "/host/:host_id", handler.deleteHost)
+	api.HandleAPIMethod(api.POST, "/agent/instance/stats", handler.RequirePermission(handler.getAgentInstanceStatus, enum.PermissionAgentInstanceRead))
 
 	//bind agent with nodes
 	api.HandleAPIMethod(api.GET, "/instance/:instance_id/node/_discovery", handler.RequirePermission(handler.discoveryESNodesInfo, enum.PermissionAgentInstanceRead))

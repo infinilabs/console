@@ -93,6 +93,7 @@ const Logs = (props) => {
 
   const [loading, setLoading] = useState(false);
   const [gotoLine, setGotoLine] = useState();
+  const [gotoPopoverVisible, setGotoPopoverVisible] = useState(false);
   const logStateRef = useRef(logState);
   const requestSeqRef = useRef(0);
 
@@ -276,12 +277,14 @@ const Logs = (props) => {
   const onGotoOffsetClick = () => {
     clearAutoRefresh();
     if (!logStateRef.current.totalRowsKnown) {
-      return;
+      return false;
     }
     if (!Number.isInteger(gotoLine) || gotoLine < 1) {
-      return;
+      return false;
     }
     resetViewerPosition({ startLineNumber: gotoLine, autoScrollToBottom: false });
+    setGotoPopoverVisible(false);
+    return true;
   };
 
   const autoRefreshTimeoutRef = useRef();
@@ -389,23 +392,12 @@ const Logs = (props) => {
                       title={optionLabel}
                     >
                       <div className="log-file-option">
-                        <div className="log-file-option__main">
-                          <span className="log-file-option__name" title={logFile.name}>
-                            {logFile.name}
-                          </span>
-                          {logFile.logs_path ? (
-                            <span
-                              className="log-file-option__path"
-                              title={logFile.logs_path}
-                            >
-                              {logFile.logs_path}
-                            </span>
-                          ) : null}
-                        </div>
-                        <div className="log-file-option__meta">
-                          <span>{formatter.bytes(logFile.size_in_bytes || 0)}</span>
-                          <span>{moment(logFile.modify_time).format("YYYY.MM.DD")}</span>
-                        </div>
+                        <span className="log-file-option__name" title={logFile.name}>
+                          {logFile.name}
+                        </span>
+                        <span className="log-file-option__meta">
+                          {formatter.bytes(logFile.size_in_bytes || 0)}
+                        </span>
                       </div>
                     </Select.Option>
                   );
@@ -413,19 +405,22 @@ const Logs = (props) => {
               </Select>
             </Tooltip>
             {selectedLogFile ? (
-              <div className="log-file-summary">
-                {selectedLogFile.logs_path ? (
-                  <Tooltip title={selectedLogFile.logs_path}>
-                    <div className="log-file-summary__path">
+              <Tooltip title={formatLogFileLabel(selectedLogFile, true)}>
+                <div className="log-file-summary">
+                  <span className="log-file-summary__name">{selectedLogFile.name}</span>
+                  {selectedLogFile.logs_path ? (
+                    <span className="log-file-summary__path">
                       {selectedLogFile.logs_path}
-                    </div>
-                  </Tooltip>
-                ) : null}
-                <div className="log-file-summary__meta">
-                  <span>{formatter.bytes(selectedLogFile.size_in_bytes || 0)}</span>
-                  <span>{moment(selectedLogFile.modify_time).format("YYYY.MM.DD HH:mm")}</span>
+                    </span>
+                  ) : null}
+                  <span className="log-file-summary__meta">
+                    {formatter.bytes(selectedLogFile.size_in_bytes || 0)}
+                  </span>
+                  <span className="log-file-summary__meta">
+                    {moment(selectedLogFile.modify_time).format("YYYY.MM.DD HH:mm")}
+                  </span>
                 </div>
-              </div>
+              </Tooltip>
             ) : null}
           </div>
         </div>
@@ -459,6 +454,8 @@ const Logs = (props) => {
           {logState.totalRowsKnown ? (
             <Popover
               placement="topRight"
+              visible={gotoPopoverVisible}
+              onVisibleChange={setGotoPopoverVisible}
               content={
                 <div style={{ display: "flex" }}>
                   <div className="form-item">
@@ -470,6 +467,7 @@ const Logs = (props) => {
                       className="offset"
                       value={gotoLine}
                       onChange={setGotoLine}
+                      onPressEnter={onGotoOffsetClick}
                     />
                   </div>
                   <Button type="primary" onClick={onGotoOffsetClick}>

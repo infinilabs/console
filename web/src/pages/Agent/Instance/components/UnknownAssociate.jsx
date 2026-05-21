@@ -54,7 +54,6 @@ export default ({ onBatchEnroll, loading }) => {
           dropdownWidth={400}
           selectedCluster={selectedCluster}
           onChange={(item) => {
-            console.log("onChange item:", item);
             setSelectedCluster(item);
           }}
         />

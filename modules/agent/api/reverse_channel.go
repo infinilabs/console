@@ -311,3 +311,10 @@ func (m *agentReverseChannelManager) proxyRequest(instanceID string, req *util.R
 func ProxyAgentRequestViaChannel(instanceID string, req *util.Request, responseObjectToUnMarshall interface{}) (*util.Result, error) {
 	return agentReverseChannel.proxyRequest(instanceID, req, responseObjectToUnMarshall)
 }
+
+func IsAgentReverseChannelConnected(instanceID string) bool {
+	agentReverseChannel.mu.Lock()
+	defer agentReverseChannel.mu.Unlock()
+	sessionID, ok := agentReverseChannel.activeSessions[instanceID]
+	return ok && sessionID != ""
+}

@@ -285,7 +285,7 @@ const AgentList = (props) => {
         return;
       }
       const instanceIDs = instances.map((inst) => inst.id);
-      const statusRes = await request(`/instance/stats`, {
+      const statusRes = await request(`/agent/instance/stats`, {
         method: "POST",
         body: instanceIDs,
       });

@@ -43,6 +43,7 @@ type APIHandler struct {
 
 func Init() {
 	handler := APIHandler{}
+	registerAgentReverseChannel()
 	api.HandleAPIMethod(api.POST, "/host/_enroll", handler.enrollHost)
 	api.HandleAPIMethod(api.GET, "/host/:host_id/agent/info", handler.GetHostAgentInfo)
 	api.HandleAPIMethod(api.GET, "/host/:host_id/processes", handler.GetHostElasticProcess)

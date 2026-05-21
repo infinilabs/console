@@ -107,7 +107,7 @@ func GetEnrolledNodesByAgent(instanceID string) (map[string]BindingItem, error) 
 	return ids, nil
 }
 
-func refreshNodesInfo(instanceID, instanceEndpoint string) (*elastic.DiscoveryResult, error) {
+func refreshNodesInfo(instanceID string) (*elastic.DiscoveryResult, error) {
 	enrolledNodesByAgent, err := GetEnrolledNodesByAgent(instanceID)
 	if err != nil {
 		return nil, fmt.Errorf("error on get binding nodes info: %w", err)
@@ -115,7 +115,7 @@ func refreshNodesInfo(instanceID, instanceEndpoint string) (*elastic.DiscoveryRe
 
 	ctxTimeout, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
-	nodesInfo, err := GetElasticsearchNodesViaAgent(ctxTimeout, instanceEndpoint)
+	nodesInfo, err := GetElasticsearchNodesViaAgent(ctxTimeout, instanceID)
 	if err != nil {
 		//TODO return already biding nodes info ??
 		return nil, fmt.Errorf("error on get nodes info from agent: %w", err)
@@ -220,7 +220,7 @@ func refreshNodesInfo(instanceID, instanceEndpoint string) (*elastic.DiscoveryRe
 }
 
 // get nodes info via agent
-func GetElasticsearchNodesViaAgent(ctx context.Context, endpoint string) (*elastic.DiscoveryResult, error) {
+func GetElasticsearchNodesViaAgent(ctx context.Context, instanceID string) (*elastic.DiscoveryResult, error) {
 	req := &util.Request{
 		Method:  http.MethodGet,
 		Path:    "/elasticsearch/node/_discovery",
@@ -228,7 +228,7 @@ func GetElasticsearchNodesViaAgent(ctx context.Context, endpoint string) (*elast
 	}
 
 	obj := elastic.DiscoveryResult{}
-	_, err := server.ProxyAgentRequest("elasticsearch", endpoint, req, &obj)
+	_, err := ProxyAgentRequestViaChannel(instanceID, req, &obj)
 	if err != nil {
 		return nil, err
 	}
@@ -274,7 +274,7 @@ func GetSearchLogFiles(ctx context.Context, instance *model.Instance, logsPaths 
 	}
 
 	resBody := map[string]interface{}{}
-	_, err := server.ProxyAgentRequest("elasticsearch", instance.GetEndpoint(), req, &resBody)
+	_, err := ProxyAgentRequestViaChannel(instance.ID, req, &resBody)
 	if err != nil {
 		return nil, err
 	}
@@ -293,7 +293,7 @@ func GetSearchLogFileContent(ctx context.Context, instance *model.Instance, body
 		Body:    util.MustToJSONBytes(body),
 	}
 	resBody := map[string]interface{}{}
-	_, err := server.ProxyAgentRequest("elasticsearch", instance.GetEndpoint(), req, &resBody)
+	_, err := ProxyAgentRequestViaChannel(instance.ID, req, &resBody)
 	if err != nil {
 		return nil, err
 	}
@@ -620,7 +620,7 @@ func runAutoEnroll(clusterInfo ClusterInfo) {
 		if !ok1 || !ok2 {
 			continue
 		}
-		nodes, err := refreshNodesInfo(instanceID, instanceEndpoint)
+		nodes, err := refreshNodesInfo(instanceID)
 		if err != nil {
 			log.Errorf("failed to refresh nodes for agent instance [%s] at [%s]: %v", instanceID, instanceEndpoint, err)
 			continue
@@ -694,7 +694,7 @@ func (h *APIHandler) discoveryESNodesInfo(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	nodes, err := refreshNodesInfo(instance.ID, instance.GetEndpoint())
+	nodes, err := refreshNodesInfo(instance.ID)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -813,10 +813,10 @@ func bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elastic.DiscoveryResu
 }
 
 func (h *APIHandler) internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint string, pid int, nodeHost string, auth *model.BasicAuth, logsPaths []string) *elastic.LocalNodeInfo {
-	success, tryAgain, nodeInfo := h.getESNodeInfoViaProxy(nodeHost, "http", auth, instanceEndpoint)
+	success, tryAgain, nodeInfo := h.getESNodeInfoViaProxy(nodeHost, "http", auth, instanceID)
 	if !success && tryAgain {
 		//try https again
-		success, tryAgain, nodeInfo = h.getESNodeInfoViaProxy(nodeHost, "https", auth, instanceEndpoint)
+		success, tryAgain, nodeInfo = h.getESNodeInfoViaProxy(nodeHost, "https", auth, instanceID)
 	}
 
 	log.Debug(clusterUUID, nodeHost, instanceEndpoint, success, tryAgain, nodeInfo)
@@ -850,12 +850,12 @@ func (h *APIHandler) internalProcessBind(clusterID, clusterUUID, instanceID, ins
 	return nil
 }
 
-func (h *APIHandler) getESNodeInfoViaProxy(esHost string, esSchema string, auth *model.BasicAuth, endpoint string) (success, tryAgain bool, info *elastic.LocalNodeInfo) {
+func (h *APIHandler) getESNodeInfoViaProxy(esHost string, esSchema string, auth *model.BasicAuth, instanceID string) (success, tryAgain bool, info *elastic.LocalNodeInfo) {
 	esConfig := elastic.ElasticsearchConfig{Host: esHost, Schema: esSchema, BasicAuth: auth}
-	return h.getESNodeInfoViaProxyWithConfig(&esConfig, auth, endpoint)
+	return h.getESNodeInfoViaProxyWithConfig(&esConfig, instanceID)
 }
 
-func (h *APIHandler) getESNodeInfoViaProxyWithConfig(cfg *elastic.ElasticsearchConfig, auth *model.BasicAuth, endpoint string) (success, tryAgain bool, info *elastic.LocalNodeInfo) {
+func (h *APIHandler) getESNodeInfoViaProxyWithConfig(cfg *elastic.ElasticsearchConfig, instanceID string) (success, tryAgain bool, info *elastic.LocalNodeInfo) {
 	body := util.MustToJSONBytes(cfg)
 	if cfg.BasicAuth != nil {
 		body, _ = jsonparser.Set(body, []byte(`"`+cfg.BasicAuth.Password.Get()+`"`), "basic_auth", "password")
@@ -868,15 +868,12 @@ func (h *APIHandler) getESNodeInfoViaProxyWithConfig(cfg *elastic.ElasticsearchC
 		Context: ctx,
 		Body:    body,
 	}
-	if auth != nil {
-		req.SetBasicAuth(auth.Username, auth.Password.Get())
-	}
 
 	obj := elastic.LocalNodeInfo{}
-	res, err := server.ProxyAgentRequest("elasticsearch", endpoint, req, &obj)
+	res, err := ProxyAgentRequestViaChannel(instanceID, req, &obj)
 	if err != nil {
 		if global.Env().IsDebug {
-			log.Errorf("failed to proxy elasticsearch node info via agent endpoint [%s]: %v", endpoint, err)
+			log.Errorf("failed to proxy elasticsearch node info via agent reverse channel [%s]: %v", instanceID, err)
 		}
 		return false, true, nil
 	}
@@ -1087,7 +1084,7 @@ func (h *APIHandler) enrollESNode(w http.ResponseWriter, req *http.Request, ps h
 		return
 	}
 
-	success, _, _ := h.getESNodeInfoViaProxyWithConfig(preparedConf, preparedConf.BasicAuth, instance.GetEndpoint())
+	success, _, _ := h.getESNodeInfoViaProxyWithConfig(preparedConf, instance.ID)
 
 	if success {
 		// Save will create the binding on first manual enroll and update it on subsequent enrolls.

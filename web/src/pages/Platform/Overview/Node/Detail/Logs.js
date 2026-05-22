@@ -24,7 +24,6 @@ import { formatter } from "@/utils/format";
 import InstallAgent from "@/components/InstallAgent";
 import { formatMessage } from "umi/locale";
 import Location from "@/components/Icons/Location";
-const ButtonGroup = Button.Group;
 const PAGE_SIZE = 50;
 const TAIL_PRELOAD_LINES = 200;
 
@@ -372,14 +371,13 @@ const Logs = (props) => {
             <Tooltip title={selectedLogFile ? formatLogFileLabel(selectedLogFile, true) : ""}>
               <Select
                 className="log-file-select"
-                style={{ width: 460 }}
                 value={logState.file}
                 onChange={onLogFileChange}
                 optionLabelProp="label"
                 showSearch
                 optionFilterProp="title"
                 dropdownMatchSelectWidth={false}
-                dropdownStyle={{ width: 560 }}
+                dropdownStyle={{ width: 640, maxWidth: "calc(100vw - 48px)" }}
               >
                 {(logState.logFiles || []).map((logFile) => {
                   const optionKey = getLogFileKey(logFile);
@@ -424,7 +422,7 @@ const Logs = (props) => {
             ) : null}
           </div>
         </div>
-        <ButtonGroup>
+        <div className="log-actions">
           <Button type="primary" ghost onClick={onViewLatestClick}>
             {formatMessage({ id: "agent.logs.button.view_latest" })}
           </Button>
@@ -486,7 +484,7 @@ const Logs = (props) => {
               <Icon component={Location} />
             </Button>
           )}
-        </ButtonGroup>
+        </div>
       </div>
         <div className="viewer">
           {logState.file ? (

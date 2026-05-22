@@ -1,29 +1,33 @@
 .logs {
   .form-line {
     display: flex;
-    align-items: flex-start;
-    flex-wrap: nowrap;
-    gap: 1em;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
 
     .form-item {
       display: flex;
       align-items: center;
-      gap: 3px;
+      gap: 8px;
+      min-width: 0;
 
       .offset {
         width: 100px;
       }
 
       &--log-file {
-        flex: 1 1 auto;
+        flex: 1 1 560px;
         min-width: 0;
-        align-items: flex-start;
+        max-width: 100%;
+        flex-direction: column;
+        align-items: stretch;
         gap: 8px;
       }
 
       &__label {
-        line-height: 32px;
+        line-height: 20px;
         white-space: nowrap;
+        font-weight: 500;
       }
     }
   }
@@ -32,16 +36,21 @@
     flex: 1 1 auto;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
     min-width: 0;
   }
 
-  .ant-btn-group {
-    flex-shrink: 0;
-    white-space: nowrap;
+  .log-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    flex: 0 0 auto;
   }
 
   .log-file-select {
+    width: min(100%, 560px);
+
     .ant-select-selection-selected-value {
       max-width: calc(100% - 24px);
       overflow: hidden;
@@ -51,18 +60,21 @@
   }
 
   .log-file-summary {
-    max-width: 460px;
+    max-width: min(100%, 640px);
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 12px;
     min-width: 0;
-    white-space: nowrap;
+    row-gap: 4px;
+    white-space: normal;
 
     &__name {
-      flex-shrink: 0;
-      max-width: 160px;
+      flex: 0 1 auto;
+      max-width: 220px;
       overflow: hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
       color: rgba(0, 0, 0, 0.85);
       font-size: 12px;
       line-height: 20px;
@@ -70,7 +82,7 @@
 
     &__path {
       min-width: 0;
-      flex: 1 1 auto;
+      flex: 1 1 100%;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -84,6 +96,9 @@
       color: rgba(0, 0, 0, 0.45);
       font-size: 12px;
       line-height: 20px;
+      padding: 0 8px;
+      border-radius: 999px;
+      background: #fafafa;
     }
   }
 
@@ -93,7 +108,7 @@
     justify-content: space-between;
     width: 100%;
     min-width: 0;
-    gap: 12px;
+    gap: 16px;
 
     &__name {
       min-width: 0;
@@ -109,6 +124,7 @@
       white-space: nowrap;
       color: rgba(0, 0, 0, 0.45);
       font-size: 12px;
+      margin-left: auto;
     }
   }
 

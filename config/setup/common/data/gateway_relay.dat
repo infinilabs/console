@@ -1,18 +1,18 @@
 entry:
-  - name: console_gateway_relay_entry
+  - name: gateway_relay_entry
     enabled: true
-    router: console_gateway_relay_router
+    router: gateway_relay_router
     max_concurrency: 200000
     network:
       binding: 0.0.0.0:8081
 
 flow:
-  - name: console_gateway_relay_deny_flow
+  - name: gateway_relay_deny_flow
     filter:
       - set_response:
           body: "request not allowed"
           status: 500
-  - name: console_gateway_relay_ingest_flow
+  - name: gateway_relay_ingest_flow
     filter:
       - basic_auth:
           valid_users:
@@ -61,15 +61,15 @@ flow:
           when:
             contains:
               _ctx.request.path: /_bulk
-          elasticsearch: console_gateway_relay_system
-          queue_name_prefix: console_gateway_relay_async_bulk
+          elasticsearch: gateway_relay_system
+          queue_name_prefix: gateway_relay_async_bulk
           level: node
           partition_size: 1
           fix_null_id: true
 
 router:
-  - name: console_gateway_relay_router
-    default_flow: console_gateway_relay_deny_flow
+  - name: gateway_relay_router
+    default_flow: gateway_relay_deny_flow
     rules:
       - method:
           - "POST"
@@ -77,10 +77,10 @@ router:
         pattern:
           - "/{any_index}/_doc/"
         flow:
-          - console_gateway_relay_ingest_flow
+          - gateway_relay_ingest_flow
 
 elasticsearch:
-  - name: console_gateway_relay_system
+  - name: gateway_relay_system
     enabled: true
     basic_auth:
       username: "$[[SETUP_AGENT_USERNAME]]"
@@ -90,7 +90,7 @@ elasticsearch:
     endpoints: $[[SETUP_ENDPOINTS]]
 
 pipeline:
-  - name: console_gateway_relay_bulk_request_ingest
+  - name: gateway_relay_bulk_request_ingest
     auto_start: true
     keep_running: true
     processor:
@@ -108,5 +108,5 @@ pipeline:
           queue_selector:
             labels:
               type: bulk_reshuffle
-              elasticsearch: console_gateway_relay_system
+              elasticsearch: gateway_relay_system
               level: node

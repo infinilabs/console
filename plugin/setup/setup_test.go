@@ -129,9 +129,9 @@ func TestGatewayRelayTemplateRendersAsChildConfig(t *testing.T) {
 	assertContainsAll(t, content,
 		`binding: 0.0.0.0:8081`,
 		`password: "$[[keystore.SYSTEM_CLUSTER_INGEST_PASSWORD]]"`,
-		`queue_name_prefix: console_gateway_relay_async_bulk`,
-		`elasticsearch: console_gateway_relay_system`,
-		`name: console_gateway_relay_bulk_request_ingest`,
+		`queue_name_prefix: gateway_relay_async_bulk`,
+		`elasticsearch: gateway_relay_system`,
+		`name: gateway_relay_bulk_request_ingest`,
 	)
 }
 
@@ -146,9 +146,9 @@ func TestGatewayMigrationTemplateRendersAsChildConfig(t *testing.T) {
 		`binding: 0.0.0.0:8082`,
 		`password: "$[[keystore.SYSTEM_CLUSTER_INGEST_PASSWORD]]"`,
 		`name: logging-server`,
-		`queue_name_prefix: console_gateway_migration_async_bulk`,
-		`name: console_gateway_migration_async_ingest_bulk_requests`,
-		`name: console_gateway_migration_request_logging_merge`,
+		`queue_name_prefix: gateway_migration_async_bulk`,
+		`name: gateway_migration_async_ingest_bulk_requests`,
+		`name: gateway_migration_request_logging_merge`,
 	)
 }
 

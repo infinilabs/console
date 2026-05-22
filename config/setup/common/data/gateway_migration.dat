@@ -1,5 +1,5 @@
 elasticsearch:
-  - name: console_gateway_migration_system
+  - name: gateway_migration_system
     enabled: true
     endpoints: $[[SETUP_ENDPOINTS]]
     discovery:
@@ -19,18 +19,18 @@ elasticsearch:
     metadata_cache_enabled: false
 
 entry:
-  - name: console_gateway_migration_entry
+  - name: gateway_migration_entry
     enabled: true
-    router: console_gateway_migration_router
+    router: gateway_migration_router
     max_concurrency: 10000
     network:
       binding: 0.0.0.0:8082
       reuse_port: true
 
 router:
-  - name: console_gateway_migration_router
-    default_flow: console_gateway_migration_default_flow
-    tracing_flow: console_gateway_migration_logging_flow
+  - name: gateway_migration_router
+    default_flow: gateway_migration_default_flow
+    tracing_flow: gateway_migration_logging_flow
     rules:
       - method:
           - "*"
@@ -38,66 +38,66 @@ router:
           - "/_bulk"
           - "/{any_index}/_bulk"
         flow:
-          - console_gateway_migration_async_bulk_flow
+          - gateway_migration_async_bulk_flow
 
 flow:
-  - name: console_gateway_migration_default_flow
+  - name: gateway_migration_default_flow
     filter:
       - elasticsearch:
-          elasticsearch: console_gateway_migration_system
+          elasticsearch: gateway_migration_system
           max_connection_per_node: 1000
-  - name: console_gateway_migration_logging_flow
+  - name: gateway_migration_logging_flow
     filter:
       - logging:
-          queue_name: console_gateway_migration_request_logging
+          queue_name: gateway_migration_request_logging
           max_request_body_size: 4096
           max_response_body_size: 4096
-  - name: console_gateway_migration_async_bulk_flow
+  - name: gateway_migration_async_bulk_flow
     filter:
       - bulk_reshuffle:
           when:
             contains:
               _ctx.request.path: /_bulk
-          elasticsearch: console_gateway_migration_system
-          queue_name_prefix: console_gateway_migration_async_bulk
+          elasticsearch: gateway_migration_system
+          queue_name_prefix: gateway_migration_async_bulk
           level: node
           partition_size: 10
           continue_metadata_missing: true
           fix_null_id: true
       - elasticsearch:
-          elasticsearch: console_gateway_migration_system
+          elasticsearch: gateway_migration_system
           max_connection_per_node: 1000
 
 pipeline:
-  - name: console_gateway_migration_async_messages_merge
+  - name: gateway_migration_async_messages_merge
     auto_start: true
     keep_running: true
     processor:
       - indexing_merge:
-          input_queue: "console_gateway_migration_bulk_result_messages"
-          elasticsearch: "console_gateway_migration_system"
+          input_queue: "gateway_migration_bulk_result_messages"
+          elasticsearch: "gateway_migration_system"
           index_name: "$[[SETUP_INDEX_PREFIX]]async_bulk_results"
           output_queue:
-            name: "console_gateway_migration_merged_requests"
+            name: "gateway_migration_merged_requests"
             label:
-              tag: "console_gateway_migration_merged"
+              tag: "gateway_migration_merged"
           worker_size: 1
           bulk_size_in_mb: 10
-  - name: console_gateway_migration_request_logging_merge
+  - name: gateway_migration_request_logging_merge
     auto_start: true
     keep_running: true
     processor:
       - indexing_merge:
-          input_queue: "console_gateway_migration_request_logging"
-          elasticsearch: "console_gateway_migration_system"
+          input_queue: "gateway_migration_request_logging"
+          elasticsearch: "gateway_migration_system"
           index_name: "$[[SETUP_INDEX_PREFIX]]requests_logging"
           output_queue:
-            name: "console_gateway_migration_merged_requests"
+            name: "gateway_migration_merged_requests"
             label:
-              tag: "console_gateway_migration_merged"
+              tag: "gateway_migration_merged"
           worker_size: 1
           bulk_size_in_mb: 10
-  - name: console_gateway_migration_ingest_merged_requests
+  - name: gateway_migration_ingest_merged_requests
     auto_start: true
     keep_running: true
     processor:
@@ -107,9 +107,9 @@ pipeline:
             compress: false
             batch_size_in_mb: 10
             batch_size_in_docs: 500
-            invalid_queue: "console_gateway_migration_invalid_request"
+            invalid_queue: "gateway_migration_invalid_request"
             response_handle:
-              bulk_result_message_queue: "console_gateway_migration_system_failure_messages"
+              bulk_result_message_queue: "gateway_migration_system_failure_messages"
               max_request_body_size: 10240
               max_response_body_size: 10240
               save_success_results: false
@@ -118,11 +118,11 @@ pipeline:
             fetch_max_messages: 100
           queues:
             type: indexing_merge
-            tag: "console_gateway_migration_merged"
+            tag: "gateway_migration_merged"
           when:
             cluster_available:
-              - "console_gateway_migration_system"
-  - name: console_gateway_migration_async_ingest_bulk_requests
+              - "gateway_migration_system"
+  - name: gateway_migration_async_ingest_bulk_requests
     auto_start: true
     keep_running: true
     retry_delay_in_ms: 1000
@@ -136,10 +136,10 @@ pipeline:
             compress: false
             batch_size_in_mb: 20
             batch_size_in_docs: 5000
-            invalid_queue: "console_gateway_migration_bulk_invalid_requests"
-            dead_letter_queue: "console_gateway_migration_bulk_dead_requests"
+            invalid_queue: "gateway_migration_bulk_invalid_requests"
+            dead_letter_queue: "gateway_migration_bulk_dead_requests"
             response_handle:
-              bulk_result_message_queue: "console_gateway_migration_bulk_result_messages"
+              bulk_result_message_queue: "gateway_migration_bulk_result_messages"
               max_request_body_size: 1024
               max_response_body_size: 1024
               save_success_results: true
@@ -158,5 +158,5 @@ pipeline:
           queue_selector:
             labels:
               type: bulk_reshuffle
-              elasticsearch: console_gateway_migration_system
+              elasticsearch: gateway_migration_system
               level: node

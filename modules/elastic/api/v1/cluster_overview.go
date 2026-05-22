@@ -431,9 +431,6 @@ func (h *APIHandler) GetClusterNodes(w http.ResponseWriter, req *http.Request, p
 	}
 	query := util.MapStr{
 		"size": 1000,
-		"collapse": util.MapStr{
-			"field": "metadata.labels.node_id",
-		},
 		"sort": []util.MapStr{
 			{
 				"timestamp": util.MapStr{
@@ -486,8 +483,18 @@ func (h *APIHandler) GetClusterNodes(w http.ResponseWriter, req *http.Request, p
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 	}
 	nodeInfos := map[string]util.MapStr{}
+	seenNodeInfos := map[string]struct{}{}
 	for _, hit := range searchResult.Result {
 		if hitM, ok := hit.(map[string]interface{}); ok {
+			nodeID, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "node_id"}, hitM)
+			nodeIDStr := util.ToString(nodeID)
+			if nodeIDStr == "" {
+				continue
+			}
+			if _, exists := seenNodeInfos[nodeIDStr]; exists {
+				continue
+			}
+			seenNodeInfos[nodeIDStr] = struct{}{}
 			shardInfo, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "node_stats", "shard_info"}, hitM)
 			var totalShards float64
 			if v, ok := shardInfo.(map[string]interface{}); ok {
@@ -505,22 +512,18 @@ func (h *APIHandler) GetClusterNodes(w http.ResponseWriter, req *http.Request, p
 			load, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "node_stats", "os", "cpu", "load_average", "1m"}, hitM)
 			heapUsage, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "node_stats", "jvm", "mem", "heap_used_percent"}, hitM)
 			freeDisk, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "node_stats", "fs", "total", "free_in_bytes"}, hitM)
-			nodeID, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "node_id"}, hitM)
 			if v, ok := freeDisk.(float64); ok {
 				freeDisk = util.ByteSize(uint64(v))
 			}
 
-			if v, ok := nodeID.(string); ok {
-				nodeInfos[v] = util.MapStr{
-					"timestamp":    hitM["timestamp"],
-					"shards":       totalShards,
-					"cpu":          cpu,
-					"load_1m":      load,
-					"heap.percent": heapUsage,
-					"disk.avail":   freeDisk,
-					"uptime":       uptime,
-				}
-
+			nodeInfos[nodeIDStr] = util.MapStr{
+				"timestamp":    hitM["timestamp"],
+				"shards":       totalShards,
+				"cpu":          cpu,
+				"load_1m":      load,
+				"heap.percent": heapUsage,
+				"disk.avail":   freeDisk,
+				"uptime":       uptime,
 			}
 		}
 	}

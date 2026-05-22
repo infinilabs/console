@@ -432,7 +432,7 @@ export default (props) => {
             ? "offset-normal"
             : "";
         }}
-        scroll={{ x: "max-content" }}
+        scroll={dataSource.total > 0 ? { x: "max-content" } : undefined}
       />
     </div>
   );

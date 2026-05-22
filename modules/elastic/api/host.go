@@ -295,9 +295,6 @@ func getHostSummaryFromNode(nodeIDs []string) (map[string]util.MapStr, error) {
 				},
 			},
 		},
-		"collapse": util.MapStr{
-			"field": "metadata.labels.node_id",
-		},
 		"query": util.MapStr{
 			"bool": util.MapStr{
 				"must": []util.MapStr{
@@ -331,12 +328,17 @@ func getHostSummaryFromNode(nodeIDs []string) (map[string]util.MapStr, error) {
 		return nil, err
 	}
 	summary := map[string]util.MapStr{}
+	seenNodeIDs := map[string]struct{}{}
 	for _, v := range results.Result {
 		result, ok := v.(map[string]interface{})
 		if ok {
 			nodeID, ok := util.GetMapValueByKeys([]string{"metadata", "labels", "node_id"}, result)
 			if ok {
 				strNodeID := util.ToString(nodeID)
+				if _, exists := seenNodeIDs[strNodeID]; exists {
+					continue
+				}
+				seenNodeIDs[strNodeID] = struct{}{}
 				summary[strNodeID] = util.MapStr{}
 				osCPUPercent, ok := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "node_stats", "os", "cpu", "percent"}, result)
 				if ok {

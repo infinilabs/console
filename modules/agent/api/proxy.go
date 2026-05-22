@@ -67,10 +67,20 @@ func agentInstanceProxyProvider(instance *model.Instance, req *util.Request, res
 	}
 
 	res, err := ProxyAgentRequestViaChannel(instance.ID, req, responseObjectToUnMarshall)
-	if err != nil && res != nil && res.StatusCode == http.StatusNotFound {
+	if shouldFallbackToDirectAgentProxy(res, err) {
 		return nil, false, nil
 	}
 	return res, true, err
+}
+
+func shouldFallbackToDirectAgentProxy(res *util.Result, err error) bool {
+	if err == nil {
+		return false
+	}
+	if res != nil && res.StatusCode == http.StatusNotFound {
+		return true
+	}
+	return isAgentReverseChannelRecoverableError(err)
 }
 
 func init() {

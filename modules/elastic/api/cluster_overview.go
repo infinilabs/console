@@ -537,9 +537,6 @@ func (h *APIHandler) GetClusterNodes(w http.ResponseWriter, req *http.Request, p
 	clusterUUID, err := adapter.GetClusterUUID(id)
 	query := util.MapStr{
 		"size": 1000,
-		"collapse": util.MapStr{
-			"field": "metadata.labels.node_id",
-		},
 		"sort": []util.MapStr{
 			{
 				"timestamp": util.MapStr{
@@ -606,8 +603,18 @@ func (h *APIHandler) GetClusterNodes(w http.ResponseWriter, req *http.Request, p
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 	}
 	nodeInfos := map[string]util.MapStr{}
+	seenNodeInfos := map[string]struct{}{}
 	for _, hit := range searchResult.Result {
 		if hitM, ok := hit.(map[string]interface{}); ok {
+			nodeID, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "node_id"}, hitM)
+			nodeIDStr := util.ToString(nodeID)
+			if nodeIDStr == "" {
+				continue
+			}
+			if _, exists := seenNodeInfos[nodeIDStr]; exists {
+				continue
+			}
+			seenNodeInfos[nodeIDStr] = struct{}{}
 			shardInfo, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "node_stats", "shard_info"}, hitM)
 			var totalShards float64
 			if v, ok := shardInfo.(map[string]interface{}); ok {
@@ -626,7 +633,6 @@ func (h *APIHandler) GetClusterNodes(w http.ResponseWriter, req *http.Request, p
 			heapUsage, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "node_stats", "jvm", "mem", "heap_used_percent"}, hitM)
 			availDisk, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "node_stats", "fs", "total", "available_in_bytes"}, hitM)
 			totalDisk, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "node_stats", "fs", "total", "total_in_bytes"}, hitM)
-			nodeID, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "node_id"}, hitM)
 			var usedDisk string
 			if v, ok := availDisk.(float64); ok {
 				availDisk = util.ByteSize(uint64(v))
@@ -635,8 +641,8 @@ func (h *APIHandler) GetClusterNodes(w http.ResponseWriter, req *http.Request, p
 				}
 			}
 
-			if v, ok := nodeID.(string); ok {
-				nodeInfos[v] = util.MapStr{
+			if nodeIDStr != "" {
+				nodeInfos[nodeIDStr] = util.MapStr{
 					"timestamp":    hitM["timestamp"],
 					"shards":       totalShards,
 					"cpu":          cpu,

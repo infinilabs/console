@@ -213,15 +213,13 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 
 	q1 := orm.Query{WildcardIndex: true}
 	query := util.MapStr{
+		"size": 1000,
 		"sort": []util.MapStr{
 			{
 				"timestamp": util.MapStr{
 					"order": "desc",
 				},
 			},
-		},
-		"collapse": util.MapStr{
-			"field": "metadata.labels.node_id",
 		},
 		"query": util.MapStr{
 			"bool": util.MapStr{
@@ -258,11 +256,17 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 		return
 	}
 	statusMap := map[string]interface{}{}
+	seenNodeIDs := map[string]struct{}{}
 	for _, v := range results.Result {
 		result, ok := v.(map[string]interface{})
 		if ok {
 			nodeID, ok := util.GetMapValueByKeys([]string{"metadata", "labels", "node_id"}, result)
 			if ok {
+				nodeIDStr := util.ToString(nodeID)
+				if _, exists := seenNodeIDs[nodeIDStr]; exists {
+					continue
+				}
+				seenNodeIDs[nodeIDStr] = struct{}{}
 				source := map[string]interface{}{}
 				//timestamp, ok := result["timestamp"].(string)
 				uptime, ok := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "node_stats", "jvm", "uptime_in_millis"}, result)
@@ -301,7 +305,7 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 					}
 				}
 
-				statusMap[util.ToString(nodeID)] = source
+				statusMap[nodeIDStr] = source
 			}
 		}
 	}
@@ -495,7 +499,6 @@ func (h *APIHandler) GetNodeInfo(w http.ResponseWriter, req *http.Request, ps ht
 		orm.Eq("metadata.name", "node_stats"),
 		orm.Eq("metadata.labels.node_id", nodeID),
 	)
-	q1.Collapse("metadata.labels.node_id")
 	q1.AddSort("timestamp", orm.DESC)
 	err, result := orm.Search(&event.Event{}, &q1)
 	kvs := util.MapStr{}

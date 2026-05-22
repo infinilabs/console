@@ -264,12 +264,16 @@ func (m *agentReverseChannelManager) proxyRequest(instanceID string, req *util.R
 			return res, nil
 		}
 		lastErr = err
-		if attempt == 0 && errors.Is(err, errAgentReverseChannelDisconnected) && m.waitForReconnect(ctx, instanceID) {
+		if attempt == 0 && isAgentReverseChannelRecoverableError(err) && m.waitForReconnect(ctx, instanceID) {
 			continue
 		}
 		return res, err
 	}
 	return nil, lastErr
+}
+
+func isAgentReverseChannelRecoverableError(err error) bool {
+	return errors.Is(err, errAgentReverseChannelDisconnected) || errors.Is(err, errAgentReverseChannelNotConnected)
 }
 
 func (m *agentReverseChannelManager) proxyRequestOnce(ctx context.Context, instanceID string, req *util.Request, responseObjectToUnMarshall interface{}) (*util.Result, error) {

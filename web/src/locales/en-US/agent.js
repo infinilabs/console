@@ -28,6 +28,22 @@ export default {
     "Agent API endpoint e.g. 127.0.0.1:2900",
   "agent.instance.field.endpoint.form.required":
     "Please input agent API endpoint!",
+  "agent.instance.registration.copy": "Copy",
+  "agent.instance.registration.console.title": "Console Registration Info",
+  "agent.instance.registration.console.endpoint": "Console Endpoint",
+  "agent.instance.registration.console.endpoint.tip":
+    "Copy this endpoint to the Agent managed configuration.",
+  "agent.instance.registration.console.token": "Console Token",
+  "agent.instance.registration.console.token.tip":
+    "Copy this token to the Agent keystore so the Agent can register and sync configs with Console.",
+  "agent.instance.registration.agent.title": "Agent Registration Info",
+  "agent.instance.registration.agent.token": "Agent Token",
+  "agent.instance.registration.agent.token.required":
+    "Please input agent token!",
+  "agent.instance.registration.agent.token.placeholder":
+    "Paste the Agent access token generated on the host",
+  "agent.instance.registration.agent.token.tip":
+    "Paste the Agent token here so Console can authenticate reverse-channel requests.",
   "agent.instance.step.result.button.register_new": "Register Another Agent",
   "agent.instance.step.result.button.view_list": "View Agent List",
   "agent.instance.column.agent_ip": "Agent IP",

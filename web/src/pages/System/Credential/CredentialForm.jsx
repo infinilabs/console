@@ -1,14 +1,6 @@
-import { Spin, Form, Input, Select, Button, Drawer, Tag, Icon } from "antd";
+import { Spin, Form, Input, Select, Button, Tag, Icon, Tooltip } from "antd";
 import { formatMessage } from "umi/locale";
-import {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import request from "@/utils/request";
+import { forwardRef, useEffect, useRef, useState } from "react";
 
 const formItemLayout = {
   labelCol: {
@@ -25,6 +17,10 @@ const TYPES = [
   {
     type: "basic_auth",
     name: "basic_auth",
+  },
+  {
+    type: "token",
+    name: "token",
   },
 ];
 
@@ -85,6 +81,35 @@ export default Form.create()((props) => {
             )}
           </Form.Item>
         </>
+      );
+    }
+    if (type === "token") {
+      return (
+        <Form.Item
+          label={formatMessage({
+            id: "credential.manage.form.token",
+          })}
+        >
+          {getFieldDecorator("token_value", {
+            initialValue: payload[type]?.value,
+            rules: [
+              {
+                required: record?.id ? false : true,
+                message: formatMessage({
+                  id: "credential.manage.form.token.required",
+                }),
+              },
+            ],
+          })(
+            <Input.Password
+              placeholder={formatMessage({
+                id: record?.id
+                  ? "credential.manage.form.token.placeholder.edit"
+                  : "credential.manage.form.token.placeholder",
+              })}
+            />
+          )}
+        </Form.Item>
       );
     }
   };

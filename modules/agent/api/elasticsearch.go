@@ -43,6 +43,7 @@ import (
 	"github.com/buger/jsonparser"
 	log "github.com/cihub/seelog"
 	console_common "infini.sh/console/common"
+	agent_common "infini.sh/console/modules/agent/common"
 	elasticapi "infini.sh/console/modules/elastic/api"
 	"infini.sh/console/plugin/managed/server"
 	httprouter "infini.sh/framework/core/api/router"
@@ -254,8 +255,8 @@ func GetElasticsearchNodesViaAgent(ctx context.Context, instance *model.Instance
 		}
 	}
 
-	if instance.BasicAuth != nil {
-		req.SetBasicAuth(instance.BasicAuth.Username, instance.BasicAuth.Password.Get())
+	if err := agent_common.ApplyInstanceRequestAuth(req, instance); err != nil {
+		return nil, err
 	}
 	_, err := server.ProxyAgentRequest("runtime", instance.GetEndpoint(), req, &obj)
 	if err != nil {

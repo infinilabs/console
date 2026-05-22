@@ -365,6 +365,19 @@ node:
 EOF
 }
 
+function install_manager_token() {
+  manager_token="{{manager_token}}"
+  manager_token_key="{{manager_token_key}}"
+  agent_svc=${install_dir}/${program_name}-${file_ext%%.*}
+
+  if [[ -z "${manager_token}" || -z "${manager_token_key}" ]]; then
+    return
+  fi
+
+  echo "[agent] waiting save console manager token"
+  echo -n "${manager_token}" | ${agent_svc} keystore add "${manager_token_key}" --stdin --force >/dev/null
+}
+
 function uninstall_service() {
   agent_svc=${install_dir}/${program_name}-${file_ext%%.*}
   chmod 755 $agent_svc
@@ -420,6 +433,7 @@ function main() {
   check_dir
   install_binary
   install_certs
+  install_manager_token
   install_config
   uninstall_service
   install_service

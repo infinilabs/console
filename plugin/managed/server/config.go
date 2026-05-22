@@ -29,15 +29,18 @@ package server
 
 import (
 	log "github.com/cihub/seelog"
+	agent_common "infini.sh/console/modules/agent/common"
 	httprouter "infini.sh/framework/core/api/router"
 	config3 "infini.sh/framework/core/config"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/model"
+	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/modules/configs/common"
 	"infini.sh/framework/modules/configs/config"
 	"net/http"
 	"path"
+	"strings"
 	"sync"
 )
 
@@ -182,6 +185,36 @@ func (h APIHandler) syncConfigs(w http.ResponseWriter, req *http.Request, ps htt
 
 	if global.Env().IsDebug {
 		log.Trace("request:", util.MustToJSON(obj))
+	}
+
+	if strings.EqualFold(obj.Client.Application.Name, "agent") {
+		instance := model.Instance{}
+		instance.ID = obj.Client.ID
+		exists, err := orm.Get(&instance)
+		if err != nil {
+			h.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if !exists {
+			h.WriteError(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+		if instance.ManagerCredentialID != "" {
+			ok, err := agent_common.ValidateManagerToken(&instance, getBearerToken(req))
+			if err != nil {
+				h.WriteError(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			if !ok {
+				h.WriteError(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+				return
+			}
+		} else if err := validateManagerBasicAuthIfConfigured(req); err != nil {
+			h.WriteError(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+		obj.Client.ManagerCredentialID = instance.ManagerCredentialID
+		obj.Client.AccessCredentialID = instance.AccessCredentialID
 	}
 
 	syncManagedInstanceEndpoint(obj.Client)

@@ -18,5 +18,10 @@ export default {
   "credential.manage.form.name": "Name",
   "credential.manage.form.username": "Username",
   "credential.manage.form.password": "Password",
+  "credential.manage.form.token": "Token",
+  "credential.manage.form.token.required": "Please input token!",
+  "credential.manage.form.token.placeholder": "Please input token!",
+  "credential.manage.form.token.placeholder.edit":
+    "Original token is not displayed",
   "credential.manage.form.tags": "Tags",
 };

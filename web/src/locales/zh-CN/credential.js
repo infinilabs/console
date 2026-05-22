@@ -18,5 +18,9 @@ export default {
   "credential.manage.form.name": "凭据名称",
   "credential.manage.form.username": "用户名",
   "credential.manage.form.password": "密码",
+  "credential.manage.form.token": "Token",
+  "credential.manage.form.token.required": "请输入 Token！",
+  "credential.manage.form.token.placeholder": "请输入 Token！",
+  "credential.manage.form.token.placeholder.edit": "原始 Token 不会显示",
   "credential.manage.form.tags": "标签",
 };

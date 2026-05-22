@@ -104,7 +104,7 @@ export default () => {
   };
 
   const onSubmit = async (value) => {
-    const { name, type, tags, username, password } = value;
+    const { name, type, tags, username, password, token_value } = value;
     const body = {
       name,
       type,
@@ -119,9 +119,19 @@ export default () => {
         },
       };
     }
+    if (type === "token") {
+      body.payload = {
+        token: {
+          value: token_value,
+        },
+      };
+    }
     if (selectedItem) {
       if (body.payload?.basic_auth?.password === "") {
         delete body.payload.basic_auth["password"];
+      }
+      if (body.payload?.token?.value === "") {
+        delete body.payload.token["value"];
       }
       const res = await request(`/credential/${selectedItem.id}`, {
         method: "PUT",

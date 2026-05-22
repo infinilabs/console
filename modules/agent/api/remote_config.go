@@ -31,6 +31,7 @@ import (
 	"bytes"
 	"fmt"
 	log "github.com/cihub/seelog"
+	agent_common "infini.sh/console/modules/agent/common"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/keystore"
@@ -190,6 +191,10 @@ func agentSecretProvider(instance model.Instance) *common.Secrets {
 
 	secrets := &common.Secrets{Keystore: map[string]common.KeystoreValue{}}
 	appendKeystoreSecret(secrets, getSystemClusterIngestSecretKey())
+	appendTokenCredentialSecret(secrets, instance.ManagerCredentialID, agent_common.AgentManagerTokenKey())
+	if instance.Application.Name == "agent" {
+		appendTokenCredentialSecret(secrets, instance.AccessCredentialID, agent_common.AgentAccessTokenKey())
+	}
 
 	if instance.Application.Name == "agent" {
 		ids, err := GetEnrolledNodesByAgent(instance.ID)
@@ -254,6 +259,24 @@ func appendKeystoreSecret(secrets *common.Secrets, key string) {
 	secrets.Keystore[key] = common.KeystoreValue{
 		Type:  "plaintext",
 		Value: string(value),
+	}
+}
+
+func appendTokenCredentialSecret(secrets *common.Secrets, credentialID, keystoreKey string) {
+	if secrets == nil || credentialID == "" || keystoreKey == "" {
+		return
+	}
+	value, err := agent_common.GetTokenCredentialValue(credentialID)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	if value == "" {
+		return
+	}
+	secrets.Keystore[keystoreKey] = common.KeystoreValue{
+		Type:  "plaintext",
+		Value: value,
 	}
 }
 

@@ -32,9 +32,11 @@ import (
 	"fmt"
 	log "github.com/cihub/seelog"
 	"infini.sh/console/core"
+	agent_common "infini.sh/console/modules/agent/common"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/credential"
 	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/task"
 	"infini.sh/framework/core/util"
@@ -108,7 +110,9 @@ func (h *APIHandler) updateCredential(w http.ResponseWriter, req *http.Request, 
 	}
 
 	encodeChanged := false
+	rotatedTokenValue := ""
 	if obj.Type != newObj.Type {
+		obj.Payload = newObj.Payload
 		encodeChanged = true
 	} else {
 		switch newObj.Type {
@@ -130,6 +134,23 @@ func (h *APIHandler) updateCredential(w http.ResponseWriter, req *http.Request, 
 					if oldParams, ok := obj.Payload[obj.Type].(map[string]interface{}); ok {
 						oldParams["username"] = params["username"]
 					}
+				}
+			}
+		case credential.Token:
+			var oldValue string
+			if oldParams, ok := obj.Payload[newObj.Type].(map[string]interface{}); ok {
+				if value, ok := oldParams["value"].(string); ok {
+					oldValue = value
+				} else {
+					http.Error(w, fmt.Sprintf("invalid token value of credential [%s]", obj.ID), http.StatusInternalServerError)
+					return
+				}
+			}
+			if params, ok := newObj.Payload[newObj.Type].(map[string]interface{}); ok {
+				if value, ok := params["value"].(string); ok && value != oldValue {
+					obj.Payload = newObj.Payload
+					encodeChanged = true
+					rotatedTokenValue = oldValue
 				}
 			}
 		default:
@@ -157,6 +178,9 @@ func (h *APIHandler) updateCredential(w http.ResponseWriter, req *http.Request, 
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
 		return
+	}
+	if rotatedTokenValue != "" {
+		agent_common.RememberPreviousToken(obj.ID, rotatedTokenValue)
 	}
 	task.RunWithinGroup("credential_callback", func(ctx context.Context) error {
 		credential.TriggerChangeEvent(&obj)
@@ -214,6 +238,19 @@ func canDelete(cred *credential.Credential) (bool, error) {
 	err, result := orm.Search(elastic.ElasticsearchConfig{}, &q)
 	if err != nil {
 		return false, fmt.Errorf("query elasticsearch config error: %w", err)
+	}
+	if result.Total > 0 {
+		return false, nil
+	}
+	q = orm.Query{
+		Conds: orm.Or(
+			orm.Eq("manager_credential_id", cred.ID),
+			orm.Eq("access_credential_id", cred.ID),
+		),
+	}
+	err, result = orm.Search(model.Instance{}, &q)
+	if err != nil {
+		return false, fmt.Errorf("query instance config error: %w", err)
 	}
 	return result.Total == 0, nil
 }
@@ -276,6 +313,7 @@ func (h *APIHandler) searchCredential(w http.ResponseWriter, req *http.Request, 
 		for _, hit := range searchRes.Hits.Hits {
 			delete(hit.Source, "encrypt")
 			util.MapStr(hit.Source).Delete("payload.basic_auth.password")
+			util.MapStr(hit.Source).Delete("payload.token.value")
 		}
 	}
 
@@ -296,5 +334,6 @@ func (h *APIHandler) getCredential(w http.ResponseWriter, req *http.Request, ps 
 		return
 	}
 	util.MapStr(obj.Payload).Delete("basic_auth.password")
+	util.MapStr(obj.Payload).Delete("token.value")
 	h.WriteGetOKJSON(w, id, obj)
 }

@@ -25,6 +25,21 @@ export default {
   "agent.instance.field.endpoint.placeholder":
     "Agent API 地址，例如：127.0.0.1:2900",
   "agent.instance.field.endpoint.form.required": "请输入 Agent API 地址！",
+  "agent.instance.registration.copy": "复制",
+  "agent.instance.registration.console.title": "Console 注册信息",
+  "agent.instance.registration.console.endpoint": "Console 地址",
+  "agent.instance.registration.console.endpoint.tip":
+    "请复制这个地址到 Agent 的托管配置中。",
+  "agent.instance.registration.console.token": "Console Token",
+  "agent.instance.registration.console.token.tip":
+    "请复制这个 Token 到 Agent keystore，用于 Agent 向 Console 注册和同步配置。",
+  "agent.instance.registration.agent.title": "Agent 注册信息",
+  "agent.instance.registration.agent.token": "Agent Token",
+  "agent.instance.registration.agent.token.required": "请输入 Agent Token！",
+  "agent.instance.registration.agent.token.placeholder":
+    "请粘贴目标主机上生成的 Agent 访问 Token",
+  "agent.instance.registration.agent.token.tip":
+    "把 Agent Token 粘贴到这里，Console 后续会用它来发起反向通道请求。",
   "agent.instance.step.result.button.register_new": "继续注册新探针",
   "agent.instance.step.result.button.view_list": "查看探针列表",
   "agent.instance.column.agent_ip": "探针 IP",

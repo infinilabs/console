@@ -29,6 +29,7 @@ import (
 	_ "expvar"
 	"fmt"
 	api3 "infini.sh/console/modules/agent/api"
+	common2 "infini.sh/console/modules/agent/common"
 	"infini.sh/console/plugin/api/email"
 	"infini.sh/console/plugin/audit_log"
 	"infini.sh/framework/core/api"
@@ -201,6 +202,7 @@ func main() {
 		orm.RegisterSchemaWithIndexName(model.Notification{}, "notification")
 		orm.RegisterSchemaWithIndexName(model.EmailServer{}, "email-server")
 		orm.RegisterSchemaWithIndexName(model2.Instance{}, "instance")
+		orm.RegisterSchemaWithIndexName(common2.PendingRegistrationToken{}, "agent-registration-token")
 		orm.RegisterSchemaWithIndexName(api3.RemoteConfig{}, "configs")
 		orm.RegisterSchemaWithIndexName(model.AuditLog{}, "audit-logs")
 		orm.RegisterSchemaWithIndexName(host.HostInfo{}, "host")

@@ -6,7 +6,7 @@ import PageHeaderWrapper from "@/components/PageHeaderWrapper";
 import "@/assets/headercontent.scss";
 import { formatMessage } from "umi/locale";
 import request from "@/utils/request";
-import { isTLS, addHttpSchema } from "@/utils/utils";
+import { addHttpSchema } from "@/utils/utils";
 import styles from "./new.less";
 import { Link } from "umi";
 

@@ -136,6 +136,27 @@ func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Req
 	}, http.StatusOK)
 }
 
+func (h *APIHandler) prepareRegistration(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	agCfg := common.GetAgentConfig()
+	consoleEndpoint := resolveConsoleEndpoint(req, "")
+	if agCfg != nil && agCfg.Setup != nil {
+		consoleEndpoint = resolveConsoleEndpoint(req, agCfg.Setup.ConsoleEndpoint)
+	}
+
+	record, tokenValue, err := common.CreatePendingManagerToken(common.AgentPendingTokenSourceUI)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	h.WriteJSON(w, util.MapStr{
+		"id":         record.ID,
+		"endpoint":   consoleEndpoint,
+		"token":      tokenValue,
+		"expired_at": time.UnixMilli(record.ExpiresAt),
+	}, http.StatusOK)
+}
+
 func (h *APIHandler) generateGatewayInstallCommand(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	claims, ok := req.Context().Value("user").(*security.UserClaims)
 	if !ok {
@@ -431,6 +452,11 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 		log.Errorf("resolve agent install script download url failed: %v", err)
 		return
 	}
+	managerTokenRecord, managerTokenValue, err := common.CreatePendingManagerToken(common.AgentPendingTokenSourceVM)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	_, err = tpl.Execute(w, map[string]interface{}{
 		"base_url":                 downloadURL,
@@ -441,6 +467,9 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 		"ca_crt":                   caCert,
 		"port":                     port,
 		"token":                    tokenStr,
+		"manager_token":            managerTokenValue,
+		"manager_token_key":        common.AgentManagerTokenKey(),
+		"manager_token_id":         managerTokenRecord.ID,
 		"version":                  installVersion,
 	})
 

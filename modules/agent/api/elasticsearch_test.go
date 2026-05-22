@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	agentservice "infini.sh/console/service/agent"
+	"infini.sh/framework/core/model"
 )
 
 func TestNormalizeClusterInfo(t *testing.T) {
@@ -87,6 +88,26 @@ func TestShouldFallbackToDirectAgentDiscovery(t *testing.T) {
 	}
 	if shouldFallbackToDirectAgentDiscovery(assertDiscoveryError("boom")) {
 		t.Fatal("did not expect non-recoverable errors to fall back to direct discovery")
+	}
+}
+
+func TestPrioritizeListenAddressesPrefersHTTPPorts(t *testing.T) {
+	got := prioritizeListenAddresses([]model.ListenAddr{
+		{IP: "::", Port: 9300},
+		{IP: "::", Port: 9200},
+		{IP: "::", Port: 443},
+		{IP: "::", Port: 8080},
+	})
+
+	if len(got) != 4 {
+		t.Fatalf("unexpected listen address count: %#v", got)
+	}
+
+	expectedPorts := []int{9200, 443, 8080, 9300}
+	for idx, port := range expectedPorts {
+		if got[idx].Port != port {
+			t.Fatalf("unexpected listen address order: %#v", got)
+		}
 	}
 }
 

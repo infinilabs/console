@@ -22,12 +22,25 @@ configs:
     cert_file: config/certs/ca.crt
     key_file: config/certs/ca.key
     skip_insecure_verify: false
+api:
+  enabled: true
+  network:
+    binding: 0.0.0.0:2900
+    skip_occupied_port: true
+  websocket:
+    enabled: true
+    base_path: /ws
+    skip_host_verify: true
+  tls:
+    enabled: true
+    skip_insecure_verify: false
+    default_domain: localhost
 web:
   enabled: true
   tls:
     enabled: true
     skip_insecure_verify: true
-    default_domain: "localhost:9000"
+    default_domain: "localhost"
   embedding_api: true
   # base_path: /console
   security:

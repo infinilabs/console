@@ -56,8 +56,8 @@ export default (props) => {
     minWidth: 0,
   };
   const refreshButtonStyle = {
-    width: 32,
-    minWidth: 32,
+    width: 28,
+    minWidth: 28,
     height: "100%",
     padding: 0,
     marginLeft: -1,

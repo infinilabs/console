@@ -12,6 +12,8 @@ export default {
     "这些日志目录会用于本次批量关联，并保存为后续自动补关联节点的默认日志采集路径。",
   "agent.instance.associate.tips.connected": "连接成功！",
   "agent.instance.associate.tips.connected.check": "请设置凭据",
+  "agent.instance.associate.tips.no_match":
+    "未能匹配并关联到节点，请检查探针凭据、节点 HTTP 端口和集群连通性后重试。",
   "agent.instance.associate.auth.error": "以下集群需要先设置平台凭据或 Agent 凭据：",
   "agent.instance.associate.tips.metric":
     "关联后会自动切换为 Agent 采集模式并初始化 infini-agent 凭据，后续新增节点也会自动补充关联",
@@ -37,6 +39,8 @@ export default {
     "默认已带出节点的 path.logs，可继续追加其他目录；这些目录会通过同一个 logs_path 下发给 Agent 采集。",
   "agent.instance.associate.tips.access_failed":
     "探针未能成功访问该节点，请修改设置后再试！",
+  "agent.instance.associate.credential_status.set": "已设置",
+  "agent.instance.associate.credential_status.unset": "未设置",
   "agent.install.label.get_cmd": "获取安装命令",
   "agent.install.setup.title": "快速安装",
   "agent.install.setup.desc":

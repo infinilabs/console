@@ -306,6 +306,23 @@ func resolveConsoleEndpoint(req *http.Request, configuredEndpoint string) string
 	return consoleEndpoint
 }
 
+func resolveAgentReverseChannelEndpoint(req *http.Request, configuredEndpoint string) string {
+	configuredEndpoint = strings.TrimRight(strings.TrimSpace(configuredEndpoint), "/")
+	if configuredEndpoint != "" {
+		return configuredEndpoint
+	}
+
+	if envEndpoint := strings.TrimRight(strings.TrimSpace(os.Getenv("INFINI_AGENT_REVERSE_CHANNEL_ENDPOINT")), "/"); envEndpoint != "" {
+		return envEndpoint
+	}
+
+	if global.Env().SystemConfig.APIConfig.Enabled {
+		return strings.TrimRight(global.Env().SystemConfig.APIConfig.GetEndpoint(), "/")
+	}
+
+	return resolveConsoleEndpoint(req, "")
+}
+
 func shouldUseLegacyInstallScriptTemplate(installVersion string) bool {
 	installVersion = strings.TrimSpace(strings.TrimPrefix(installVersion, "v"))
 	if installVersion == "" {
@@ -379,7 +396,7 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 		h.WriteError(w, "agent setup config was not found, please configure in the configuration file first", http.StatusInternalServerError)
 		return
 	}
-	caCert, clientCertPEM, clientKeyPEM, err := common.GenerateServerCert(agCfg.Setup.CACertFile, agCfg.Setup.CAKeyFile)
+	caCert, clientCertPEM, clientKeyPEM, err := common.GenerateClientCert(agCfg.Setup.CACertFile, agCfg.Setup.CAKeyFile)
 	if err != nil {
 		log.Errorf("generate agent install certs failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -407,6 +424,7 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 	}
 
 	consoleEndpoint := resolveConsoleEndpoint(req, agCfg.Setup.ConsoleEndpoint)
+	reverseChannelEndpoint := resolveAgentReverseChannelEndpoint(req, agCfg.Setup.ReverseChannelEndpoint)
 	downloadURL, err := resolveAgentDownloadURL(consoleEndpoint, agCfg.Setup.DownloadURL)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -415,14 +433,15 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 	}
 
 	_, err = tpl.Execute(w, map[string]interface{}{
-		"base_url":         downloadURL,
-		"console_endpoint": consoleEndpoint,
-		"client_crt":       clientCertPEM,
-		"client_key":       clientKeyPEM,
-		"ca_crt":           caCert,
-		"port":             port,
-		"token":            tokenStr,
-		"version":          installVersion,
+		"base_url":                 downloadURL,
+		"console_endpoint":         consoleEndpoint,
+		"reverse_channel_endpoint": reverseChannelEndpoint,
+		"client_crt":               clientCertPEM,
+		"client_key":               clientKeyPEM,
+		"ca_crt":                   caCert,
+		"port":                     port,
+		"token":                    tokenStr,
+		"version":                  installVersion,
 	})
 
 	if err != nil {
@@ -445,7 +464,7 @@ func (h *APIHandler) getGatewayInstallScript(w http.ResponseWriter, req *http.Re
 	}
 
 	agCfg := common.GetAgentConfig()
-	caCert, clientCertPEM, clientKeyPEM, err := common.GenerateServerCert(agCfg.Setup.CACertFile, agCfg.Setup.CAKeyFile)
+	caCert, clientCertPEM, clientKeyPEM, err := common.GenerateClientCert(agCfg.Setup.CACertFile, agCfg.Setup.CAKeyFile)
 	if err != nil {
 		log.Errorf("generate gateway install certs failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)

@@ -213,7 +213,9 @@ export const Associate = Form.create({ name: "associate_form" })((props) => {
             />
             <Form.Item {...tailFormItemLayout}>
               <Button type="primary" onClick={onConnectClick}>
-                Connect
+                {formatMessage({
+                  id: "cluster.regist.step.connect.title",
+                })}
               </Button>
             </Form.Item>
           </Form>

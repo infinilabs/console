@@ -35,6 +35,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"sort"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -800,7 +801,7 @@ func bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elastic.DiscoveryResu
 				for _, node := range nodes.UnknownProcess {
 					pid := node.PID
 
-					for _, v := range node.ListenAddresses {
+					for _, v := range prioritizeListenAddresses(node.ListenAddresses) {
 						ip := v.IP
 						port := v.Port
 
@@ -816,6 +817,7 @@ func bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elastic.DiscoveryResu
 						nodeInfo := (&APIHandler{}).internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint, pid, nodeHost, auth, node.Cmdline)
 						if nodeInfo != nil {
 							discoveredPIDs[pid] = nodeInfo
+							break
 						}
 					}
 				}
@@ -823,6 +825,36 @@ func bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elastic.DiscoveryResu
 		}
 	}
 	return discoveredPIDs
+}
+
+func prioritizeListenAddresses(addresses []model.ListenAddr) []model.ListenAddr {
+	if len(addresses) <= 1 {
+		return addresses
+	}
+
+	items := append([]model.ListenAddr(nil), addresses...)
+	sort.SliceStable(items, func(i, j int) bool {
+		left := listenAddressPriority(items[i])
+		right := listenAddressPriority(items[j])
+		if left != right {
+			return left < right
+		}
+		return items[i].Port < items[j].Port
+	})
+	return items
+}
+
+func listenAddressPriority(addr model.ListenAddr) int {
+	switch addr.Port {
+	case 9200:
+		return 0
+	case 443, 80:
+		return 1
+	case 9300:
+		return 3
+	default:
+		return 2
+	}
 }
 
 func (h *APIHandler) internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint string, pid int, nodeHost string, auth *model.BasicAuth, cmdline string) *elastic.LocalNodeInfo {

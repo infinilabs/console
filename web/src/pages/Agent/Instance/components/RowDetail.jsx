@@ -358,6 +358,8 @@ export const AgentRowDetail = ({ agentID, t }) => {
       );
       return;
     }
+    const previousNodeCount = nodes.length;
+    const previousUnknownCount = unknownProcess.length;
     setBtnLoading(true);
     const res = await request(`/instance/${agentID}/node/_discovery`, {
       method: "POST",
@@ -368,10 +370,23 @@ export const AgentRowDetail = ({ agentID, t }) => {
     });
     setBtnLoading(false);
     if (res && !res.error) {
-      message.success(formatMessage({ id: "app.message.operate.success" }));
+      const nextNodeCount = Object.keys(res.nodes || {}).length;
+      const nextUnknownCount = Array.isArray(res.unknown_process)
+        ? res.unknown_process.length
+        : previousUnknownCount;
+      const hasBoundNode =
+        nextNodeCount > previousNodeCount ||
+        nextUnknownCount < previousUnknownCount;
       if (res.nodes) {
         setDataSource({ ...res, t: Date.now() });
       }
+      if (!hasBoundNode) {
+        message.warning(
+          formatMessage({ id: "agent.instance.associate.tips.no_match" })
+        );
+        return;
+      }
+      message.success(formatMessage({ id: "app.message.operate.success" }));
     } else {
       console.log("onUnknownProcessEnroll error:", res);
       return;

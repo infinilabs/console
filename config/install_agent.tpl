@@ -265,8 +265,10 @@ function install_config() {
   echo "[agent] waiting generate config"
   port={{port}}
   console_endpoint="{{console_endpoint}}"
+  reverse_channel_endpoint="{{reverse_channel_endpoint}}"
 
   server=${register_server:-$console_endpoint}
+  reverse_server=${register_reverse_server:-$reverse_channel_endpoint}
   echo "[agent] agent listening port $port, will register to console endpoint [ $server ]"
   cat <<EOF > ${install_dir}/agent.yml
 env:
@@ -320,7 +322,7 @@ api:
   enabled: false
 
 web:
-  embedding_api: true
+  embedding_api: false
   enabled: true
   network:
     binding: \$[[env.WEB_BINDING]]
@@ -336,6 +338,8 @@ web:
     managed: \$[[env.SECURITY_MANAGED_ENABLED]]
 
 agent:
+  setup:
+    reverse_channel_endpoint: "${reverse_server}"
 
 metrics:
   enabled: false
@@ -354,7 +358,7 @@ configs:
     cert_file: "config/client.crt"
     key_file: "config/client.key"
     ca_file: "config/ca.crt"
-    skip_insecure_verify: true
+    skip_insecure_verify: false
 
 node:
   major_ip_pattern: ".*"

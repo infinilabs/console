@@ -14,6 +14,8 @@ export default {
     "These log directories are used for the current batch enroll and saved as the default log collection paths for future auto-enrolled nodes.",
   "agent.instance.associate.tips.connected": "Connection succeeded!",
   "agent.instance.associate.tips.connected.check": "please set a credential for agent",
+  "agent.instance.associate.tips.no_match":
+    "No node was matched and enrolled. Check the probe credential, node HTTP port, and cluster connectivity, then try again.",
   "agent.instance.associate.auth.error": "The following clusters need platform or agent credentials first:",
   "agent.instance.associate.tips.metric":
     "Enroll will switch the cluster to Agent mode, initialize the infini-agent credential, and auto-enroll newly added nodes afterward",
@@ -42,6 +44,8 @@ export default {
     "The detected path.logs is prefilled. You can append extra directories and Console will deliver them through the same logs_path setting for Agent collection.",
   "agent.instance.associate.tips.access_failed":
     "The agent failed to access this node, please update the settings and try again!",
+  "agent.instance.associate.credential_status.set": "Set",
+  "agent.instance.associate.credential_status.unset": "Not Set",
   "agent.install.label.get_cmd": "Get Setup Command",
   "agent.install.setup.title": "Quick Installation",
   "agent.install.setup.desc":

@@ -287,14 +287,14 @@ disk_queue:
     segment:
       enabled: true
 
-api:
-  enabled: true
+  api:
+    enabled: true
   tls:
     enabled: true
     cert_file: "config/client.crt"
     key_file: "config/client.key"
     ca_file: "config/ca.crt"
-    skip_insecure_verify: true
+    skip_insecure_verify: false
   network:
     binding: \$[[env.API_BINDING]]
 
@@ -318,7 +318,7 @@ configs:
     cert_file: "config/client.crt"
     key_file: "config/client.key"
     ca_file: "config/ca.crt"
-    skip_insecure_verify: true
+    skip_insecure_verify: false
 
 node:
   major_ip_pattern: ".*"

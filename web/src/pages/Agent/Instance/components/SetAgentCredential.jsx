@@ -138,7 +138,13 @@ export default connect()((props) => {
               dataIndex: "agent_credential_id",
               key: "agent_credential_id",
               render: (text, record) => {
-                return record.agent_credential_id || record.agent_basic_auth?.username ? "Set" : "No set";
+                return record.agent_credential_id || record.agent_basic_auth?.username
+                  ? formatMessage({
+                      id: "agent.instance.associate.credential_status.set",
+                    })
+                  : formatMessage({
+                      id: "agent.instance.associate.credential_status.unset",
+                    });
               },
             },
             {

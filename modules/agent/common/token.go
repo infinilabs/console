@@ -286,15 +286,15 @@ func HashAgentToken(tokenValue string) string {
 }
 
 func BuildManagerCredentialName(instance *model.Instance) string {
-	return fmt.Sprintf("INFINI_SYSTEM (%s) (Agent)", getAgentCredentialDisplayName(instance))
+	return fmt.Sprintf("%s (Agent)", getAgentCredentialDisplayName(instance))
 }
 
 func BuildAccessCredentialName(instance *model.Instance) string {
-	return fmt.Sprintf("INFINI_SYSTEM (%s) (Agent Access)", getAgentCredentialDisplayName(instance))
+	return fmt.Sprintf("%s (Agent Access)", getAgentCredentialDisplayName(instance))
 }
 
 func BuildPendingManagerCredentialName() string {
-	return fmt.Sprintf("INFINI_SYSTEM (%s) (Agent)", util.PickRandomName())
+	return fmt.Sprintf("%s (Agent)", util.PickRandomName())
 }
 
 func BuildManagerCredentialTags() []string {

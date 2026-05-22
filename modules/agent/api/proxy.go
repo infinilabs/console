@@ -39,6 +39,8 @@ func newAgentReverseProxyMatcher() *httprouter.Router {
 		{http.MethodGet, "/config/"},
 		{http.MethodPut, "/config/"},
 		{http.MethodGet, "/config/runtime"},
+		{http.MethodGet, "/setting/logger"},
+		{http.MethodPost, "/setting/logger"},
 	}
 	for _, route := range routes {
 		router.Handle(route.method, route.path, handle)

@@ -101,7 +101,7 @@ func registerAgentReverseChannel() {
 func (m *agentReverseChannelManager) onConnect(sessionID string, w http.ResponseWriter, r *http.Request) error {
 	instanceID := strings.TrimSpace(r.Header.Get(agentReverseChannelHeaderInstanceID))
 	if instanceID == "" {
-		return fmt.Errorf("missing %s", agentReverseChannelHeaderInstanceID)
+		return nil
 	}
 
 	instance := model.Instance{}

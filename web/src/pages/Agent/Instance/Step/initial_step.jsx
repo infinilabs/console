@@ -3,7 +3,6 @@ import {
   Input,
   Switch,
   Icon,
-  Button,
   Divider,
   Spin,
   message,
@@ -73,16 +72,16 @@ export class InitialStep extends React.Component {
           id: "agent.instance.registration.copy",
         })}
       >
-        <Button
-          shape="circle"
-          size="small"
-          icon="copy"
-          disabled={!text}
+        <Icon
+          type="copy"
           style={{
+            color: text ? "#007fff" : "rgba(0,0,0,0.25)",
+            cursor: text ? "pointer" : "not-allowed",
             position: "absolute",
             right: 8,
             top: 8,
             zIndex: 1,
+            fontSize: 16,
             ...style,
           }}
         />
@@ -107,6 +106,27 @@ export class InitialStep extends React.Component {
       </CopyToClipboard>
     );
   };
+
+  renderReadonlyBlock = (text) => (
+    <div
+      style={{
+        position: "relative",
+        borderRadius: 6,
+        fontSize: 14,
+        padding: "12px 36px 12px 12px",
+        background: "rgb(241, 242, 245)",
+        textAlign: "left",
+        lineHeight: 1.6,
+        whiteSpace: "pre-wrap",
+        wordBreak: "break-word",
+        fontFamily:
+          '"SFMono-Regular", Monaco, Menlo, Consolas, "Liberation Mono", "Ubuntu Mono", monospace',
+      }}
+    >
+      {text || "-"}
+      {this.renderCopyButton(text)}
+    </div>
+  );
 
   renderLabel = (labelId, tip) => {
     const label = formatMessage({
@@ -184,6 +204,12 @@ export class InitialStep extends React.Component {
           })(<Input type="hidden" />)}
           {getFieldDecorator("registration_expired_at", {
             initialValue: initialValue?.registration_expired_at,
+          })(<Input type="hidden" />)}
+          {getFieldDecorator("console_endpoint", {
+            initialValue: initialValue?.console_endpoint,
+          })(<Input type="hidden" />)}
+          {getFieldDecorator("manager_token", {
+            initialValue: initialValue?.manager_token,
           })(<Input type="hidden" />)}
 
           <Divider orientation="left">
@@ -293,22 +319,7 @@ export class InitialStep extends React.Component {
                 )}
                 style={{ marginBottom: 16 }}
               >
-                <div style={{ position: "relative" }}>
-                  {getFieldDecorator("console_endpoint", {
-                    initialValue: initialValue?.console_endpoint,
-                  })(
-                    <Input
-                      readOnly
-                      style={{
-                        paddingRight: 40,
-                      }}
-                    />
-                  )}
-                  {this.renderCopyButton(consoleEndpoint, {
-                    top: "50%",
-                    marginTop: -12,
-                  })}
-                </div>
+                {this.renderReadonlyBlock(consoleEndpoint)}
               </Form.Item>
 
               <Form.Item
@@ -319,20 +330,7 @@ export class InitialStep extends React.Component {
                 )}
                 style={{ marginBottom: 0 }}
               >
-                <div style={{ position: "relative" }}>
-                  {getFieldDecorator("manager_token", {
-                    initialValue: initialValue?.manager_token,
-                  })(
-                    <Input.TextArea
-                      readOnly
-                      autoSize={{ minRows: 3, maxRows: 4 }}
-                      style={{
-                        paddingRight: 40,
-                      }}
-                    />
-                  )}
-                  {this.renderCopyButton(managerToken)}
-                </div>
+                {this.renderReadonlyBlock(managerToken)}
               </Form.Item>
             </Panel>
           </Collapse>

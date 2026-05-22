@@ -18,7 +18,7 @@ func TestIsAgentReverseProxyPathAllowed(t *testing.T) {
 		{name: "queue consumer offset", method: http.MethodPut, path: "/queue/test/consumer/default/offset", expect: true},
 		{name: "task list with query", method: http.MethodGet, path: "/pipeline/tasks/?size=10", expect: true},
 		{name: "config root", method: http.MethodGet, path: "/config/", expect: true},
-		{name: "unsupported path", method: http.MethodPost, path: "/setting/logger", expect: false},
+		{name: "logger setting", method: http.MethodPost, path: "/setting/logger", expect: true},
 	}
 
 	for _, tc := range testCases {

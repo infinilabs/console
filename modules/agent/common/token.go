@@ -31,7 +31,9 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
+	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -52,6 +54,12 @@ const (
 )
 
 var rotatedTokenCache = util.NewCacheWithExpireOnAdd(tokenGracePeriod, 1024)
+
+var (
+	ErrInvalidManagerToken      = errors.New("invalid agent manager token")
+	ErrInvalidManagerBasicAuth  = errors.New("invalid manager basic auth")
+	ErrManagerAuthNotConfigured = errors.New("agent manager auth is not configured")
+)
 
 type PendingRegistrationToken struct {
 	orm.ORMObjectBase
@@ -242,6 +250,67 @@ func ApplyBearerToken(req *util.Request, tokenValue string) {
 		return
 	}
 	req.AddHeader("Authorization", "Bearer "+tokenValue)
+}
+
+func ExtractBearerToken(req *http.Request) string {
+	if req == nil {
+		return ""
+	}
+	value := strings.TrimSpace(req.Header.Get("Authorization"))
+	if !strings.HasPrefix(strings.ToLower(value), "bearer ") {
+		return ""
+	}
+	return strings.TrimSpace(value[7:])
+}
+
+func ValidateManagerRequestAuth(req *http.Request, instance *model.Instance, fallbackBasicAuth *model.BasicAuth) error {
+	return validateManagerRequestAuth(req, instance, fallbackBasicAuth, ValidateManagerToken, false)
+}
+
+func ValidateLegacyCompatibleManagerRequestAuth(req *http.Request, instance *model.Instance, fallbackBasicAuth *model.BasicAuth) error {
+	return validateManagerRequestAuth(req, instance, fallbackBasicAuth, ValidateManagerToken, true)
+}
+
+func IsManagerAuthFailure(err error) bool {
+	return errors.Is(err, ErrInvalidManagerToken) ||
+		errors.Is(err, ErrInvalidManagerBasicAuth) ||
+		errors.Is(err, ErrManagerAuthNotConfigured)
+}
+
+func validateManagerRequestAuth(
+	req *http.Request,
+	instance *model.Instance,
+	fallbackBasicAuth *model.BasicAuth,
+	validateToken func(instance *model.Instance, tokenValue string) (bool, error),
+	allowLegacyWithoutManagerAuth bool,
+) error {
+	if instance == nil {
+		return fmt.Errorf("instance is nil")
+	}
+	if strings.TrimSpace(instance.ManagerCredentialID) != "" {
+		ok, err := validateToken(instance, ExtractBearerToken(req))
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return ErrInvalidManagerToken
+		}
+		return nil
+	}
+	if fallbackBasicAuth == nil || strings.TrimSpace(fallbackBasicAuth.Username) == "" {
+		if allowLegacyWithoutManagerAuth {
+			return nil
+		}
+		return ErrManagerAuthNotConfigured
+	}
+	if req == nil {
+		return ErrInvalidManagerBasicAuth
+	}
+	user, password, ok := req.BasicAuth()
+	if !ok || user != fallbackBasicAuth.Username || password != fallbackBasicAuth.Password.Get() {
+		return ErrInvalidManagerBasicAuth
+	}
+	return nil
 }
 
 func ValidateManagerToken(instance *model.Instance, tokenValue string) (bool, error) {

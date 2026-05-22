@@ -120,22 +120,8 @@ func (m *agentReverseChannelManager) onConnect(sessionID string, w http.Response
 	if !strings.EqualFold(instance.Application.Name, "agent") {
 		return fmt.Errorf("instance [%s] is not agent", instanceID)
 	}
-	if instance.ManagerCredentialID != "" {
-		ok, err := agent_common.ValidateManagerToken(&instance, getReverseBearerToken(r))
-		if err != nil {
-			return err
-		}
-		if !ok {
-			return fmt.Errorf("invalid agent manager token")
-		}
-	} else {
-		managerAuth := global.Env().SystemConfig.Configs.ManagerConfig.BasicAuth
-		if managerAuth.Username != "" {
-			user, password, hasAuth := r.BasicAuth()
-			if !hasAuth || user != managerAuth.Username || password != managerAuth.Password.Get() {
-				return fmt.Errorf("invalid manager basic auth")
-			}
-		}
+	if err := agent_common.ValidateManagerRequestAuth(r, &instance, (*model.BasicAuth)(&global.Env().SystemConfig.Configs.ManagerConfig.BasicAuth)); err != nil {
+		return err
 	}
 
 	m.mu.Lock()
@@ -393,17 +379,6 @@ func ProxyAgentRequestViaChannel(instanceID string, req *util.Request, responseO
 
 func IsAgentReverseChannelConnected(instanceID string) bool {
 	return agentReverseChannel.isConnected(instanceID)
-}
-
-func getReverseBearerToken(r *http.Request) string {
-	if r == nil {
-		return ""
-	}
-	value := strings.TrimSpace(r.Header.Get("Authorization"))
-	if !strings.HasPrefix(strings.ToLower(value), "bearer ") {
-		return ""
-	}
-	return strings.TrimSpace(value[7:])
 }
 
 func loadReverseAccessToken(instanceID string) (string, error) {

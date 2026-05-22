@@ -119,23 +119,17 @@ func (h APIHandler) registerInstance(w http.ResponseWriter, req *http.Request, p
 	var pendingToConsume *agent_common.PendingRegistrationToken
 
 	if strings.EqualFold(obj.Application.Name, "agent") {
-		tokenValue := getBearerToken(req)
+		tokenValue := agent_common.ExtractBearerToken(req)
 		if exists {
 			if oldInst.Created != nil {
 				obj.Created = oldInst.Created
 			}
-			if oldInst.ManagerCredentialID != "" {
-				ok, err := agent_common.ValidateManagerToken(oldInst, tokenValue)
-				if err != nil {
+			if err := agent_common.ValidateLegacyCompatibleManagerRequestAuth(req, oldInst, (*model.BasicAuth)(&global.Env().SystemConfig.Configs.ManagerConfig.BasicAuth)); err != nil {
+				if agent_common.IsManagerAuthFailure(err) {
+					h.WriteError(w, err.Error(), http.StatusUnauthorized)
+				} else {
 					h.WriteError(w, err.Error(), http.StatusInternalServerError)
-					return
 				}
-				if !ok {
-					h.WriteError(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-					return
-				}
-			} else if err := validateManagerBasicAuthIfConfigured(req); err != nil {
-				h.WriteError(w, err.Error(), http.StatusUnauthorized)
 				return
 			}
 			obj.ManagerCredentialID = oldInst.ManagerCredentialID
@@ -901,29 +895,6 @@ func GetRuntimeInstanceByID(instanceID string) (bool, *model.Instance, error) {
 		return exists, nil, err
 	}
 	return true, &obj, err
-}
-
-func getBearerToken(req *http.Request) string {
-	if req == nil {
-		return ""
-	}
-	value := strings.TrimSpace(req.Header.Get("Authorization"))
-	if !strings.HasPrefix(strings.ToLower(value), "bearer ") {
-		return ""
-	}
-	return strings.TrimSpace(value[7:])
-}
-
-func validateManagerBasicAuthIfConfigured(req *http.Request) error {
-	managerAuth := global.Env().SystemConfig.Configs.ManagerConfig.BasicAuth
-	if managerAuth.Username == "" {
-		return nil
-	}
-	user, password, ok := req.BasicAuth()
-	if !ok || user != managerAuth.Username || password != managerAuth.Password.Get() {
-		return fmt.Errorf("invalid manager basic auth")
-	}
-	return nil
 }
 
 func renamePendingManagerCredential(instance *model.Instance, credentialID string) error {

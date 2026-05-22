@@ -34,7 +34,6 @@ import (
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/util"
 	"net/http"
-	"strings"
 )
 
 // Handler is the object of http handler
@@ -96,79 +95,23 @@ func (handler Handler) RequirePermission(h httprouter.Handle, permissions ...str
 }
 
 func RequestUsesSecureTransport(req *http.Request) bool {
-	if req == nil {
-		return false
-	}
-	if req.TLS != nil {
-		return true
-	}
-
-	for _, header := range []string{"X-Forwarded-Proto", "X-Forwarded-Protocol", "X-Url-Scheme"} {
-		if headerIndicatesHTTPS(req.Header.Get(header)) {
-			return true
-		}
-	}
-
-	if strings.EqualFold(strings.TrimSpace(req.Header.Get("X-Forwarded-Ssl")), "on") {
-		return true
-	}
-
-	return forwardedHeaderIndicatesHTTPS(req.Header.Get("Forwarded"))
+	return api.RequestUsesSecureTransport(req, api.SecureTransportOptions{TrustForwardHeaders: true})
 }
 
 func (handler Handler) RequireSecureTransport(h httprouter.Handle) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-		if !RequestUsesSecureTransport(r) {
-			handler.WriteError(w, "sensitive endpoints require HTTPS or a trusted HTTPS reverse proxy", http.StatusUpgradeRequired)
-			return
-		}
-		h(w, r, ps)
-	}
+	return handler.Handler.RequireSecureTransport(h, api.SecureTransportOptions{TrustForwardHeaders: true})
 }
 
 func RequireSecureTransport(h httprouter.Handle) httprouter.Handle {
-	return Handler{}.RequireSecureTransport(h)
+	return api.RequireSecureTransport(h, api.SecureTransportOptions{TrustForwardHeaders: true})
 }
 
 func (handler Handler) RequireReplayProtection(h httprouter.Handle) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-		if err := ValidateAndConsumeReplayNonce(r); err != nil {
-			handler.WriteError(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
-		h(w, r, ps)
-	}
+	return handler.Handler.RequireReplayProtection(h)
 }
 
 func RequireReplayProtection(h httprouter.Handle) httprouter.Handle {
-	return Handler{}.RequireReplayProtection(h)
-}
-
-func headerIndicatesHTTPS(value string) bool {
-	if value == "" {
-		return false
-	}
-	first := strings.TrimSpace(strings.Split(value, ",")[0])
-	return strings.EqualFold(first, "https")
-}
-
-func forwardedHeaderIndicatesHTTPS(value string) bool {
-	if value == "" {
-		return false
-	}
-
-	for _, forwardedValue := range strings.Split(value, ",") {
-		for _, token := range strings.Split(forwardedValue, ";") {
-			parts := strings.SplitN(strings.TrimSpace(token), "=", 2)
-			if len(parts) != 2 || !strings.EqualFold(parts[0], "proto") {
-				continue
-			}
-			proto := strings.Trim(parts[1], "\"")
-			return strings.EqualFold(proto, "https")
-		}
-	}
-
-	return false
+	return api.RequireReplayProtection(h)
 }
 
 func (handler Handler) RequireClusterPermission(h httprouter.Handle, permissions ...string) httprouter.Handle {

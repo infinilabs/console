@@ -24,8 +24,8 @@
 package api
 
 import (
-	core2 "infini.sh/console/core"
 	httprouter "infini.sh/framework/core/api/router"
+	replaysecurity "infini.sh/framework/core/security/replay"
 	"net/http"
 	"time"
 )
@@ -41,7 +41,7 @@ func (h APIHandler) IssueReplayNonce(w http.ResponseWriter, r *http.Request, ps 
 		return
 	}
 
-	nonce, ttl, err := core2.IssueReplayNonce(r, req.Method, req.Path)
+	nonce, ttl, err := replaysecurity.IssueReplayNonce(r, req.Method, req.Path)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusBadRequest)
 		return

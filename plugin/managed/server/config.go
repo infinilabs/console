@@ -204,18 +204,12 @@ func (h APIHandler) syncConfigs(w http.ResponseWriter, req *http.Request, ps htt
 			h.WriteError(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}
-		if instance.ManagerCredentialID != "" {
-			ok, err := agent_common.ValidateManagerToken(&instance, getBearerToken(req))
-			if err != nil {
+		if err := agent_common.ValidateLegacyCompatibleManagerRequestAuth(req, &instance, (*model.BasicAuth)(&global.Env().SystemConfig.Configs.ManagerConfig.BasicAuth)); err != nil {
+			if agent_common.IsManagerAuthFailure(err) {
+				h.WriteError(w, err.Error(), http.StatusUnauthorized)
+			} else {
 				h.WriteError(w, err.Error(), http.StatusInternalServerError)
-				return
 			}
-			if !ok {
-				h.WriteError(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-				return
-			}
-		} else if err := validateManagerBasicAuthIfConfigured(req); err != nil {
-			h.WriteError(w, err.Error(), http.StatusUnauthorized)
 			return
 		}
 		obj.Client.ManagerCredentialID = instance.ManagerCredentialID

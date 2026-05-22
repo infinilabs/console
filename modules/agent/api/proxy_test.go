@@ -4,26 +4,32 @@ import (
 	"net/http"
 	"testing"
 
+	"infini.sh/framework/core/env"
+	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/util"
 )
 
-func TestIsAgentReverseProxyPathAllowed(t *testing.T) {
+func TestShouldAttemptAgentReverseProxy(t *testing.T) {
+	agentInstance := &model.Instance{Application: env.Application{Name: "agent"}}
+	otherInstance := &model.Instance{Application: env.Application{Name: "gateway"}}
+
 	testCases := []struct {
-		name   string
-		method string
-		path   string
-		expect bool
+		name      string
+		instance  *model.Instance
+		req       *util.Request
+		connected bool
+		expect    bool
 	}{
-		{name: "queue stats", method: http.MethodGet, path: "/queue/stats", expect: true},
-		{name: "queue consumer offset", method: http.MethodPut, path: "/queue/test/consumer/default/offset", expect: true},
-		{name: "task list with query", method: http.MethodGet, path: "/pipeline/tasks/?size=10", expect: true},
-		{name: "config root", method: http.MethodGet, path: "/config/", expect: true},
-		{name: "logger setting", method: http.MethodPost, path: "/setting/logger", expect: true},
+		{name: "connected agent uses reverse for arbitrary path", instance: agentInstance, req: &util.Request{Method: http.MethodGet, Path: "/any/path"}, connected: true, expect: true},
+		{name: "path no longer gates reverse", instance: agentInstance, req: &util.Request{Method: http.MethodPost, Path: "/totally/custom"}, connected: true, expect: true},
+		{name: "disconnected agent skips reverse", instance: agentInstance, req: &util.Request{Method: http.MethodGet, Path: "/queue/stats"}, connected: false, expect: false},
+		{name: "non agent skips reverse", instance: otherInstance, req: &util.Request{Method: http.MethodGet, Path: "/queue/stats"}, connected: true, expect: false},
+		{name: "nil request skips reverse", instance: agentInstance, connected: true, expect: false},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			if actual := isAgentReverseProxyPathAllowed(tc.method, tc.path); actual != tc.expect {
+			if actual := shouldAttemptAgentReverseProxy(tc.instance, tc.req, tc.connected); actual != tc.expect {
 				t.Fatalf("unexpected match result: %v", actual)
 			}
 		})

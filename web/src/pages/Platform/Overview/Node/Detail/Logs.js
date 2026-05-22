@@ -377,7 +377,7 @@ const Logs = (props) => {
                 showSearch
                 optionFilterProp="title"
                 dropdownMatchSelectWidth={false}
-                dropdownStyle={{ width: 640, maxWidth: "calc(100vw - 48px)" }}
+                dropdownStyle={{ width: 520, maxWidth: "calc(100vw - 48px)" }}
               >
                 {(logState.logFiles || []).map((logFile) => {
                   const optionKey = getLogFileKey(logFile);

@@ -66,7 +66,7 @@ type PendingRegistrationToken struct {
 
 func CreatePendingManagerToken(source string) (*PendingRegistrationToken, string, error) {
 	tokenValue := util.GenerateRandomString(48)
-	credentialID, err := SaveTokenCredential("Pending Agent -> Console token", []string{"agent", "token", "manager", "pending"}, tokenValue)
+	credentialID, err := SaveTokenCredential(BuildPendingManagerCredentialName(), []string{"agent", "token", "manager", "pending"}, tokenValue)
 	if err != nil {
 		return nil, "", err
 	}
@@ -286,11 +286,15 @@ func HashAgentToken(tokenValue string) string {
 }
 
 func BuildManagerCredentialName(instance *model.Instance) string {
-	return fmt.Sprintf("Agent -> Console token (%s)", getInstanceDisplayName(instance))
+	return fmt.Sprintf("INFINI_SYSTEM (%s) (Agent)", getAgentCredentialDisplayName(instance))
 }
 
 func BuildAccessCredentialName(instance *model.Instance) string {
-	return fmt.Sprintf("Console -> Agent token (%s)", getInstanceDisplayName(instance))
+	return fmt.Sprintf("INFINI_SYSTEM (%s) (Agent Access)", getAgentCredentialDisplayName(instance))
+}
+
+func BuildPendingManagerCredentialName() string {
+	return fmt.Sprintf("INFINI_SYSTEM (%s) (Agent)", util.PickRandomName())
 }
 
 func BuildManagerCredentialTags() []string {
@@ -334,4 +338,11 @@ func getInstanceDisplayName(instance *model.Instance) string {
 		return name
 	}
 	return strings.TrimSpace(instance.ID)
+}
+
+func getAgentCredentialDisplayName(instance *model.Instance) string {
+	if displayName := getInstanceDisplayName(instance); displayName != "" {
+		return displayName
+	}
+	return util.PickRandomName()
 }

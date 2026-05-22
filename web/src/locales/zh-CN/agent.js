@@ -26,20 +26,25 @@ export default {
     "Agent API 地址，例如：127.0.0.1:2900",
   "agent.instance.field.endpoint.form.required": "请输入 Agent API 地址！",
   "agent.instance.registration.copy": "复制",
-  "agent.instance.registration.console.title": "Console 注册信息",
-  "agent.instance.registration.console.endpoint": "Console 地址",
+  "agent.instance.registration.console.title": "Console 访问信息",
+  "agent.instance.registration.access.endpoint": "访问地址",
+  "agent.instance.registration.access.credential": "访问凭据",
   "agent.instance.registration.console.endpoint.tip":
-    "请复制这个地址到 Agent 的托管配置中。",
-  "agent.instance.registration.console.token": "Console Token",
+    "请复制这个访问地址到 Agent 的托管配置中。",
   "agent.instance.registration.console.token.tip":
-    "请复制这个 Token 到 Agent keystore，用于 Agent 向 Console 注册和同步配置。",
-  "agent.instance.registration.agent.title": "Agent 注册信息",
-  "agent.instance.registration.agent.token": "Agent Token",
-  "agent.instance.registration.agent.token.required": "请输入 Agent Token！",
+    "请复制这个访问凭据到 Agent keystore，用于 Agent 向 Console 注册和同步配置。",
+  "agent.instance.registration.console.token.expire.tip":
+    "如果 Agent 在 {time} 前未完成注册，这个访问凭据会过期。",
+  "agent.instance.registration.agent.title": "Agent 访问信息",
+  "agent.instance.registration.agent.token.required": "请输入访问凭据！",
+  "agent.instance.registration.agent.endpoint.tip":
+    "请输入 Console 可以访问到的 Agent 访问地址。",
   "agent.instance.registration.agent.token.placeholder":
-    "请粘贴目标主机上生成的 Agent 访问 Token",
+    "请粘贴目标主机上生成的访问凭据",
   "agent.instance.registration.agent.token.tip":
-    "把 Agent Token 粘贴到这里，Console 后续会用它来发起反向通道请求。",
+    "把 Agent 访问凭据粘贴到这里，Console 后续会用它来发起反向通道请求。",
+  "agent.instance.registration.agent.token.expire.tip":
+    "这个访问凭据没有固定有效期，只有在轮换或替换后才会失效。",
   "agent.instance.step.result.button.register_new": "继续注册新探针",
   "agent.instance.step.result.button.view_list": "查看探针列表",
   "agent.instance.column.agent_ip": "探针 IP",

@@ -29,21 +29,26 @@ export default {
   "agent.instance.field.endpoint.form.required":
     "Please input agent API endpoint!",
   "agent.instance.registration.copy": "Copy",
-  "agent.instance.registration.console.title": "Console Registration Info",
-  "agent.instance.registration.console.endpoint": "Console Endpoint",
+  "agent.instance.registration.console.title": "Console Access Info",
+  "agent.instance.registration.access.endpoint": "Access Endpoint",
+  "agent.instance.registration.access.credential": "Access Credential",
   "agent.instance.registration.console.endpoint.tip":
-    "Copy this endpoint to the Agent managed configuration.",
-  "agent.instance.registration.console.token": "Console Token",
+    "Copy this access endpoint to the Agent managed configuration.",
   "agent.instance.registration.console.token.tip":
-    "Copy this token to the Agent keystore so the Agent can register and sync configs with Console.",
-  "agent.instance.registration.agent.title": "Agent Registration Info",
-  "agent.instance.registration.agent.token": "Agent Token",
+    "Copy this access credential to the Agent keystore so the Agent can register and sync configs with Console.",
+  "agent.instance.registration.console.token.expire.tip":
+    "This access credential expires at {time} if the Agent has not completed registration.",
+  "agent.instance.registration.agent.title": "Agent Access Info",
   "agent.instance.registration.agent.token.required":
-    "Please input agent token!",
+    "Please input access credential!",
+  "agent.instance.registration.agent.endpoint.tip":
+    "Enter the Agent access endpoint that Console can reach.",
   "agent.instance.registration.agent.token.placeholder":
-    "Paste the Agent access token generated on the host",
+    "Paste the access credential generated on the host",
   "agent.instance.registration.agent.token.tip":
-    "Paste the Agent token here so Console can authenticate reverse-channel requests.",
+    "Paste the Agent access credential here so Console can authenticate reverse-channel requests.",
+  "agent.instance.registration.agent.token.expire.tip":
+    "This access credential has no fixed expiration and remains valid until it is rotated or replaced.",
   "agent.instance.step.result.button.register_new": "Register Another Agent",
   "agent.instance.step.result.button.view_list": "View Agent List",
   "agent.instance.column.agent_ip": "Agent IP",

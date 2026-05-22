@@ -1,4 +1,15 @@
-import { Form, Input, Switch, Icon, Button, Divider, Spin, message } from "antd";
+import {
+  Form,
+  Input,
+  Switch,
+  Icon,
+  Button,
+  Divider,
+  Spin,
+  message,
+  Tooltip,
+  Collapse,
+} from "antd";
 import React from "react";
 import { formatMessage } from "umi/locale";
 import { CopyToClipboard } from "react-copy-to-clipboard";
@@ -36,6 +47,7 @@ export class InitialStep extends React.Component {
     }
     this.props.form.setFieldsValue({
       registration_id: res.id,
+      registration_expired_at: res.expired_at,
       console_endpoint: res.endpoint,
       manager_token: res.token,
     });
@@ -54,15 +66,31 @@ export class InitialStep extends React.Component {
     });
   };
 
-  renderCopyButton = (text) => {
+  renderCopyButton = (text, style = {}) => {
+    const button = (
+      <Tooltip
+        title={formatMessage({
+          id: "agent.instance.registration.copy",
+        })}
+      >
+        <Button
+          shape="circle"
+          size="small"
+          icon="copy"
+          disabled={!text}
+          style={{
+            position: "absolute",
+            right: 8,
+            top: 8,
+            zIndex: 1,
+            ...style,
+          }}
+        />
+      </Tooltip>
+    );
+
     if (!text) {
-      return (
-        <Button disabled style={{ marginLeft: 8 }}>
-          {formatMessage({
-            id: "agent.instance.registration.copy",
-          })}
-        </Button>
-      );
+      return button;
     }
     return (
       <CopyToClipboard
@@ -75,12 +103,30 @@ export class InitialStep extends React.Component {
           );
         }}
       >
-        <Button style={{ marginLeft: 8 }}>
-          {formatMessage({
-            id: "agent.instance.registration.copy",
-          })}
-        </Button>
+        {button}
       </CopyToClipboard>
+    );
+  };
+
+  renderLabel = (labelId, tip) => {
+    const label = formatMessage({
+      id: labelId,
+    });
+    if (!tip) {
+      return label;
+    }
+    return (
+      <span>
+        {label}
+        <Tooltip
+          title={tip}
+        >
+          <Icon
+            type="info-circle"
+            style={{ marginLeft: 8, color: "rgba(0,0,0,0.45)" }}
+          />
+        </Tooltip>
+      </span>
     );
   };
 
@@ -101,6 +147,34 @@ export class InitialStep extends React.Component {
     };
     const consoleEndpoint = getFieldValue("console_endpoint") || initialValue?.console_endpoint;
     const managerToken = getFieldValue("manager_token") || initialValue?.manager_token;
+    const registrationExpiredAt =
+      getFieldValue("registration_expired_at") || initialValue?.registration_expired_at;
+    const managerTokenTip = [
+      formatMessage({
+        id: "agent.instance.registration.console.token.tip",
+      }),
+    ];
+    if (registrationExpiredAt) {
+      managerTokenTip.push(
+        formatMessage(
+          {
+            id: "agent.instance.registration.console.token.expire.tip",
+          },
+          {
+            time: new Date(registrationExpiredAt).toLocaleString(),
+          }
+        )
+      );
+    }
+    const agentAccessTokenTip = [
+      formatMessage({
+        id: "agent.instance.registration.agent.token.tip",
+      }),
+      formatMessage({
+        id: "agent.instance.registration.agent.token.expire.tip",
+      }),
+    ].join(" ");
+    const { Panel } = Collapse;
 
     return (
       <Spin spinning={this.state.preparingRegistration}>
@@ -108,53 +182,9 @@ export class InitialStep extends React.Component {
           {getFieldDecorator("registration_id", {
             initialValue: initialValue?.registration_id,
           })(<Input type="hidden" />)}
-
-          <Divider orientation="left">
-            {formatMessage({
-              id: "agent.instance.registration.console.title",
-            })}
-          </Divider>
-
-          <Form.Item
-            label={formatMessage({
-              id: "agent.instance.registration.console.endpoint",
-            })}
-          >
-            <div style={{ display: "flex", alignItems: "center" }}>
-              {getFieldDecorator("console_endpoint", {
-                initialValue: initialValue?.console_endpoint,
-              })(<Input readOnly />)}
-              {this.renderCopyButton(consoleEndpoint)}
-            </div>
-            <div style={{ color: "rgba(0,0,0,0.45)", marginTop: 8 }}>
-              {formatMessage({
-                id: "agent.instance.registration.console.endpoint.tip",
-              })}
-            </div>
-          </Form.Item>
-
-          <Form.Item
-            label={formatMessage({
-              id: "agent.instance.registration.console.token",
-            })}
-          >
-            <div style={{ display: "flex", alignItems: "flex-start" }}>
-              {getFieldDecorator("manager_token", {
-                initialValue: initialValue?.manager_token,
-              })(
-                <Input.TextArea
-                  readOnly
-                  autoSize={{ minRows: 3, maxRows: 4 }}
-                />
-              )}
-              {this.renderCopyButton(managerToken)}
-            </div>
-            <div style={{ color: "rgba(0,0,0,0.45)", marginTop: 8 }}>
-              {formatMessage({
-                id: "agent.instance.registration.console.token.tip",
-              })}
-            </div>
-          </Form.Item>
+          {getFieldDecorator("registration_expired_at", {
+            initialValue: initialValue?.registration_expired_at,
+          })(<Input type="hidden" />)}
 
           <Divider orientation="left">
             {formatMessage({
@@ -163,9 +193,12 @@ export class InitialStep extends React.Component {
           </Divider>
 
           <Form.Item
-            label={formatMessage({
-              id: "gateway.instance.field.endpoint.label",
-            })}
+            label={this.renderLabel(
+              "agent.instance.registration.access.endpoint",
+              formatMessage({
+                id: "agent.instance.registration.agent.endpoint.tip",
+              })
+            )}
           >
             {getFieldDecorator("endpoint", {
               initialValue: removeHttpSchema(initialValue?.endpoint || ""),
@@ -217,9 +250,10 @@ export class InitialStep extends React.Component {
           </Form.Item>
 
           <Form.Item
-            label={formatMessage({
-              id: "agent.instance.registration.agent.token",
-            })}
+            label={this.renderLabel(
+              "agent.instance.registration.access.credential",
+              agentAccessTokenTip
+            )}
           >
             {getFieldDecorator("access_token", {
               initialValue: initialValue?.access_token || "",
@@ -240,12 +274,68 @@ export class InitialStep extends React.Component {
                 })}
               />
             )}
-            <div style={{ color: "rgba(0,0,0,0.45)", marginTop: 8 }}>
-              {formatMessage({
-                id: "agent.instance.registration.agent.token.tip",
-              })}
-            </div>
           </Form.Item>
+
+          <Collapse style={{ marginTop: 24 }}>
+            <Panel
+              header={formatMessage({
+                id: "agent.instance.registration.console.title",
+              })}
+              key="console-access-info"
+            >
+              <Form.Item
+                {...formItemLayout}
+                label={this.renderLabel(
+                  "agent.instance.registration.access.endpoint",
+                  formatMessage({
+                    id: "agent.instance.registration.console.endpoint.tip",
+                  })
+                )}
+                style={{ marginBottom: 16 }}
+              >
+                <div style={{ position: "relative" }}>
+                  {getFieldDecorator("console_endpoint", {
+                    initialValue: initialValue?.console_endpoint,
+                  })(
+                    <Input
+                      readOnly
+                      style={{
+                        paddingRight: 40,
+                      }}
+                    />
+                  )}
+                  {this.renderCopyButton(consoleEndpoint, {
+                    top: "50%",
+                    marginTop: -12,
+                  })}
+                </div>
+              </Form.Item>
+
+              <Form.Item
+                {...formItemLayout}
+                label={this.renderLabel(
+                  "agent.instance.registration.access.credential",
+                  managerTokenTip.join(" ")
+                )}
+                style={{ marginBottom: 0 }}
+              >
+                <div style={{ position: "relative" }}>
+                  {getFieldDecorator("manager_token", {
+                    initialValue: initialValue?.manager_token,
+                  })(
+                    <Input.TextArea
+                      readOnly
+                      autoSize={{ minRows: 3, maxRows: 4 }}
+                      style={{
+                        paddingRight: 40,
+                      }}
+                    />
+                  )}
+                  {this.renderCopyButton(managerToken)}
+                </div>
+              </Form.Item>
+            </Panel>
+          </Collapse>
         </Form>
       </Spin>
     );

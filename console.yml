@@ -28,10 +28,12 @@ api:
     binding: 0.0.0.0:2900
     skip_occupied_port: true
   websocket:
+    # Agent reverse channel is exposed on the API listener (/ws).
     enabled: true
     base_path: /ws
     skip_host_verify: true
   tls:
+    # Reverse-channel mTLS uses the API listener TLS settings, not web.tls.
     enabled: true
     skip_insecure_verify: false
     default_domain: localhost
@@ -41,7 +43,7 @@ web:
     enabled: true
     skip_insecure_verify: true
     default_domain: "localhost"
-  embedding_api: true
+  embedding_api: false
   # base_path: /console
   security:
     enabled: true
@@ -64,7 +66,7 @@ elastic:
     enabled: true
     interval: 30s
   availability_check:
-    enabled: false
+    enabled: true
     interval: 60s
   metadata_refresh:
     enabled: true

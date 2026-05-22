@@ -23,14 +23,14 @@ import (
 )
 
 const (
-	agentReverseChannelHeaderInstanceID = "X-INFINI-INSTANCE-ID"
-	agentReverseHelloCommand            = "agent_reverse_hello"
-	agentReverseRequestCommand          = "agent_reverse_request"
-	agentReverseResponseCommand         = "agent_reverse_response"
-	agentReverseDefaultTimeout          = 30 * time.Second
-	agentReverseMaxResponseBytes        = 8 * 1024 * 1024
-	agentReverseReconnectWait           = 6 * time.Second
-	agentReverseReconnectPoll           = 200 * time.Millisecond
+	reverseChannelHeaderInstanceID = "X-INFINI-INSTANCE-ID"
+	reverseHelloCommand            = "reverse_hello"
+	reverseRequestCommand          = "reverse_request"
+	reverseResponseCommand         = "reverse_response"
+	reverseDefaultTimeout          = 30 * time.Second
+	reverseMaxResponseBytes        = 8 * 1024 * 1024
+	reverseReconnectWait           = 6 * time.Second
+	reverseReconnectPoll           = 200 * time.Millisecond
 )
 
 var (
@@ -93,13 +93,13 @@ func registerAgentReverseChannel() {
 	agentReverseChannelRegisterOnce.Do(func() {
 		framework_ws.RegisterConnectCallback(agentReverseChannel.onConnect)
 		framework_ws.RegisterDisconnectCallback(agentReverseChannel.onDisconnect)
-		framework_api.HandleWebSocketCommand(agentReverseHelloCommand, "agent reverse hello", agentReverseChannel.handleHelloCommand)
-		framework_api.HandleWebSocketCommand(agentReverseResponseCommand, "agent reverse response", agentReverseChannel.handleResponseCommand)
+		framework_api.HandleWebSocketCommand(reverseHelloCommand, "agent reverse hello", agentReverseChannel.handleHelloCommand)
+		framework_api.HandleWebSocketCommand(reverseResponseCommand, "agent reverse response", agentReverseChannel.handleResponseCommand)
 	})
 }
 
 func (m *agentReverseChannelManager) onConnect(sessionID string, w http.ResponseWriter, r *http.Request) error {
-	instanceID := strings.TrimSpace(r.Header.Get(agentReverseChannelHeaderInstanceID))
+	instanceID := strings.TrimSpace(r.Header.Get(reverseChannelHeaderInstanceID))
 	if instanceID == "" {
 		return nil
 	}
@@ -225,8 +225,8 @@ func (m *agentReverseChannelManager) acceptResponse(msg agentReverseResponseMess
 			m.completePendingLocked(msg.RequestID, pending, 0, fmt.Errorf("decode reverse response chunk: %w", err))
 			return
 		}
-		if pending.body.Len()+len(chunk) > agentReverseMaxResponseBytes {
-			m.completePendingLocked(msg.RequestID, pending, 0, fmt.Errorf("agent reverse response exceeds %d bytes", agentReverseMaxResponseBytes))
+		if pending.body.Len()+len(chunk) > reverseMaxResponseBytes {
+			m.completePendingLocked(msg.RequestID, pending, 0, fmt.Errorf("agent reverse response exceeds %d bytes", reverseMaxResponseBytes))
 			return
 		}
 		_, _ = pending.body.Write(chunk)
@@ -265,11 +265,11 @@ func (m *agentReverseChannelManager) proxyRequest(instanceID string, req *util.R
 	ctx := req.Context
 	if ctx == nil {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(context.Background(), agentReverseDefaultTimeout)
+		ctx, cancel = context.WithTimeout(context.Background(), reverseDefaultTimeout)
 		defer cancel()
 	} else if _, hasDeadline := ctx.Deadline(); !hasDeadline {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, agentReverseDefaultTimeout)
+		ctx, cancel = context.WithTimeout(ctx, reverseDefaultTimeout)
 		defer cancel()
 	}
 
@@ -324,7 +324,7 @@ func (m *agentReverseChannelManager) proxyRequestOnce(ctx context.Context, insta
 	m.pendingResponses[requestID] = pending
 	m.mu.Unlock()
 
-	if err := framework_ws.SendPrivateMessage(sessionID, agentReverseRequestCommand+" "+payload); err != nil {
+	if err := framework_ws.SendPrivateMessage(sessionID, reverseRequestCommand+" "+payload); err != nil {
 		m.mu.Lock()
 		delete(m.pendingResponses, requestID)
 		m.mu.Unlock()
@@ -358,14 +358,14 @@ func (m *agentReverseChannelManager) proxyRequestOnce(ctx context.Context, insta
 }
 
 func (m *agentReverseChannelManager) waitForReconnect(ctx context.Context, instanceID string) bool {
-	waitCtx, cancel := context.WithTimeout(ctx, agentReverseReconnectWait)
+	waitCtx, cancel := context.WithTimeout(ctx, reverseReconnectWait)
 	defer cancel()
 
 	if m.isConnected(instanceID) {
 		return true
 	}
 
-	ticker := time.NewTicker(agentReverseReconnectPoll)
+	ticker := time.NewTicker(reverseReconnectPoll)
 	defer ticker.Stop()
 
 	for {

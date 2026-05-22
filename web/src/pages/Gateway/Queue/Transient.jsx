@@ -83,12 +83,15 @@ export default (props) => {
 
   const columns = [
     {
-      title: "Name",
+      title: formatMessage({ id: "table.field.name" }),
       dataIndex: "name",
       render: (name, row) => (
         <IconText
           text={
-            <Tooltip overlayStyle={{ maxWidth: "none"}} title={`ID:${row?.metadata?.id}`}>
+            <Tooltip
+              overlayStyle={{ maxWidth: "none"}}
+              title={`${formatMessage({ id: "table.field.id" })}: ${row?.metadata?.id}`}
+            >
               <a
                 onClick={() => {
                   handleMessageList(row?.metadata?.id);
@@ -104,14 +107,14 @@ export default (props) => {
       sorter: (a, b) => sorter.string(a, b, "name"),
     },
     {
-      title: "Local Storage",
+      title: formatMessage({ id: "gateway.queue.field.local_storage" }),
       dataIndex: "storage.local_usage",
       sorter: (a, b) =>
         a.storage.local_usage_in_bytes - b.storage.local_usage_in_bytes,
       sortDirections: ["descend", "ascend"],
     },
     {
-      title: "Depth",
+      title: formatMessage({ id: "gateway.queue.field.depth" }),
       dataIndex: "depth",
       sorter: (a, b) => a.depth - b.depth,
       sortDirections: ["descend", "ascend"],
@@ -158,19 +161,30 @@ export default (props) => {
 
         let respSuccessCountText = "";
         if (respSuccessCount > 0) {
-          respSuccessCountText = `Success: ${respSuccessCount}`;
+          respSuccessCountText = formatMessage(
+            { id: "gateway.queue.message.partial_success" },
+            { count: respSuccessCount }
+          );
         }
         message.error(
-          `Delete queues failed; ${
-            respSuccessCount > 0 ? respSuccessCountText : ""
-          }`
+          formatMessage(
+            { id: "gateway.queue.delete.error" },
+            {
+              detail: respSuccessCount > 0 ? ` ${respSuccessCountText}` : "",
+            }
+          )
         );
         break;
       }
     }
 
     if (respSuccessCount > 0) {
-      message.success(`Deleted ${respSuccessCount} queues successfully`);
+      message.success(
+        formatMessage(
+          { id: "gateway.queue.delete.success" },
+          { count: respSuccessCount }
+        )
+      );
       clearSelectedRows();
       setTimeout(() => {
         onRefresh();
@@ -198,7 +212,7 @@ export default (props) => {
     <Menu onClick={handleBatchMenuClick}>
       <Menu.Item key="delete_queue">
         <Icon type="delete" />
-        {formatMessage({ id: "form.button.delete" })} Queues
+        {formatMessage({ id: "gateway.queue.batch.delete_queues" })}
       </Menu.Item>
     </Menu>
   );
@@ -225,8 +239,8 @@ export default (props) => {
         <div style={{ maxWidth: 500, flex: "1 1 auto" }}>
           <SearchInput
             allowClear
-            placeholder="Type keyword to search"
-            enterButton="Search"
+            placeholder={formatMessage({ id: "gateway.router.search.placeholder" })}
+            enterButton={formatMessage({ id: "form.button.search" })}
             onSearch={(value) => {
               setSearchValue(value);
             }}
@@ -272,7 +286,10 @@ export default (props) => {
             dispatch({ type: "pageSizeChange", value: size });
           },
           showTotal: (total, range) =>
-            `${range[0]}-${range[1]} of ${total} items`,
+            formatMessage(
+              { id: "gateway.router.pagination.total" },
+              { start: range[0], end: range[1], total }
+            ),
         }}
         columns={columns}
         rowSelection={rowSelection}

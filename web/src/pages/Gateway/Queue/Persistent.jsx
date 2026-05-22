@@ -101,7 +101,7 @@ export default (props) => {
 
   const columns = [
     {
-      title: "Name",
+      title: formatMessage({ id: "table.field.name" }),
       dataIndex: "name",
       render: (name, row) => (
         <>
@@ -112,8 +112,12 @@ export default (props) => {
                   content={consumerLabelRender(row?.metadata?.label)}
                   title={
                     <>
-                      <div>{`ID: ${row?.metadata?.id}`}</div>
-                      <div>{`Name: ${name}`}</div>
+                      <div>
+                        {formatMessage({ id: "table.field.id" })}: {row?.metadata?.id}
+                      </div>
+                      <div>
+                        {formatMessage({ id: "table.field.name" })}: {name}
+                      </div>
                     </>
                   }
                 >
@@ -138,33 +142,35 @@ export default (props) => {
       className: commonStyles.maxColumnWidth,
     },
     {
-      title: "Local Storage",
+      title: formatMessage({ id: "gateway.queue.field.local_storage" }),
       dataIndex: "storage.local_usage",
       sorter: (a, b) =>
         a.storage.local_usage_in_bytes - b.storage.local_usage_in_bytes,
       sortDirections: ["descend", "ascend"],
     },
     {
-      title: "Produce Offset",
+      title: formatMessage({ id: "gateway.queue.field.produce_offset" }),
       dataIndex: "offset",
       sorter: (a, b) => a.offset - b.offset,
       sortDirections: ["descend", "ascend"],
     },
     {
-      title: "Consume Offset (earliest)",
+      title: formatMessage({ id: "gateway.queue.field.consume_offset_earliest" }),
       dataIndex: "earliest_consumer_offset",
       sorter: (a, b) => a.earliest_consumer_offset - b.earliest_consumer_offset,
       sortDirections: ["descend", "ascend"],
     },
     {
-      title: "Synchronization (latest_segment)",
+      title: formatMessage({
+        id: "gateway.queue.field.synchronization_latest_segment",
+      }),
       dataIndex: "synchronization.latest_segment",
       sorter: (a, b) =>
         a.synchronization.latest_segment - b.synchronization.latest_segment,
       sortDirections: ["descend", "ascend"],
     },
     {
-      title: "Total Messages",
+      title: formatMessage({ id: "gateway.queue.field.total_messages" }),
       dataIndex: "messages",
       sorter: (a, b) => a.messages - b.messages,
       sortDirections: ["descend", "ascend"],
@@ -229,19 +235,30 @@ export default (props) => {
 
         let respSuccessCountText = "";
         if (respSuccessCount > 0) {
-          respSuccessCountText = `Success: ${respSuccessCount}`;
+          respSuccessCountText = formatMessage(
+            { id: "gateway.queue.message.partial_success" },
+            { count: respSuccessCount }
+          );
         }
         message.error(
-          `Delete queue failed; ${
-            respSuccessCount > 0 ? respSuccessCountText : ""
-          }`
+          formatMessage(
+            { id: "gateway.queue.delete.error" },
+            {
+              detail: respSuccessCount > 0 ? ` ${respSuccessCountText}` : "",
+            }
+          )
         );
         break;
       }
     }
 
     if (respSuccessCount > 0) {
-      message.success(`Deleted ${respSuccessCount} queues successfully`);
+      message.success(
+        formatMessage(
+          { id: "gateway.queue.delete.success" },
+          { count: respSuccessCount }
+        )
+      );
       //clear select state
       clearSelectedRows();
       setTimeout(() => {
@@ -276,7 +293,12 @@ export default (props) => {
       .flat(Infinity);
     if (promises.length > 0) {
       try {
-        message.success(`Deleted ${promises.length} consumers successfully`);
+        message.success(
+          formatMessage(
+            { id: "gateway.queue.consumer.delete.success" },
+            { count: promises.length }
+          )
+        );
         await Promise.all(promises);
 
         //clear select state
@@ -292,7 +314,7 @@ export default (props) => {
           consumerSelectedRows
         );
         console.log("onConsumerDelete error:", e);
-        message.error(`Delete failed`);
+        message.error(formatMessage({ id: "gateway.queue.delete_failed" }));
       }
     }
   };
@@ -331,11 +353,11 @@ export default (props) => {
     <Menu onClick={handleBatchMenuClick}>
       <Menu.Item key="delete_queue">
         <Icon type="delete" />
-        {formatMessage({ id: "form.button.delete" })} Queues
+        {formatMessage({ id: "gateway.queue.batch.delete_queues" })}
       </Menu.Item>
       <Menu.Item key="delete_consumer">
         <Icon type="delete" />
-        {formatMessage({ id: "form.button.delete" })} Consumers
+        {formatMessage({ id: "gateway.queue.batch.delete_consumers" })}
       </Menu.Item>
     </Menu>
   );
@@ -362,8 +384,8 @@ export default (props) => {
         <div style={{ maxWidth: 500, flex: "1 1 auto" }}>
           <SearchInput
             allowClear
-            placeholder="Type keyword to search"
-            enterButton="Search"
+            placeholder={formatMessage({ id: "gateway.router.search.placeholder" })}
+            enterButton={formatMessage({ id: "form.button.search" })}
             onSearch={(value) => {
               setSearchValue(value);
             }}
@@ -410,7 +432,10 @@ export default (props) => {
             dispatch({ type: "pageSizeChange", value: size });
           },
           showTotal: (total, range) =>
-            `${range[0]}-${range[1]} of ${total} items`,
+            formatMessage(
+              { id: "gateway.router.pagination.total" },
+              { start: range[0], end: range[1], total }
+            ),
         }}
         columns={columns}
         rowSelection={rowSelection}

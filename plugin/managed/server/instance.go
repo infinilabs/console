@@ -734,25 +734,37 @@ func (h *APIHandler) proxy(w http.ResponseWriter, req *http.Request, ps httprout
 }
 
 func (h *APIHandler) getInstanceInfo(endpoint string, basicAuth *model.BasicAuth, accessToken string) (*model.Instance, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-	req1 := &util.Request{
-		Method:  http.MethodGet,
-		Path:    "/agent/_info",
-		Context: ctx,
-	}
+	paths := []string{"/_info"}
 	if strings.TrimSpace(accessToken) != "" {
-		agent_common.ApplyBearerToken(req1, accessToken)
-	} else if basicAuth != nil {
-		req1.SetBasicAuth(basicAuth.Username, basicAuth.Password.Get())
+		paths = []string{"/agent/_info", "/_info"}
 	}
-	obj := &model.Instance{}
-	_, err := ProxyAgentRequest("runtime", endpoint, req1, obj)
-	if err != nil {
-		return nil, err
-	}
-	return obj, err
 
+	var lastErr error
+	for _, infoPath := range paths {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+		req1 := &util.Request{
+			Method:  http.MethodGet,
+			Path:    infoPath,
+			Context: ctx,
+		}
+		if strings.TrimSpace(accessToken) != "" {
+			agent_common.ApplyBearerToken(req1, accessToken)
+		} else if basicAuth != nil {
+			req1.SetBasicAuth(basicAuth.Username, basicAuth.Password.Get())
+		}
+		obj := &model.Instance{}
+		_, err := ProxyAgentRequest("runtime", endpoint, req1, obj)
+		cancel()
+		if err == nil {
+			return obj, nil
+		}
+		lastErr = err
+		if !shouldFallbackInstanceInfoPath(infoPath, err) {
+			return nil, err
+		}
+	}
+
+	return nil, lastErr
 }
 
 func (h *APIHandler) tryConnect(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -855,6 +867,10 @@ func isSensitiveInfoPath(rawPath string) bool {
 		return rawPath == "/_info" || rawPath == "/agent/_info"
 	}
 	return parsed.Path == "/_info" || parsed.Path == "/agent/_info"
+}
+
+func shouldFallbackInstanceInfoPath(path string, err error) bool {
+	return path == "/agent/_info" && err != nil
 }
 
 // TODO check permission by user

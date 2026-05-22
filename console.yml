@@ -26,9 +26,10 @@ api:
   enabled: true
   network:
     binding: 0.0.0.0:9443
-    skip_occupied_port: true
+    skip_occupied_port: false
   websocket:
-    # Agent reverse channel is exposed on the API listener (/ws).
+    # Agent reverse channel can use /ws on the active Console listener.
+    # If web.embedding_api or web.websocket is enabled, install scripts prefer the web endpoint.
     enabled: true
     base_path: /ws
     skip_host_verify: true

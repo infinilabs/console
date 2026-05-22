@@ -337,11 +337,26 @@ func resolveAgentReverseChannelEndpoint(req *http.Request, configuredEndpoint st
 		return envEndpoint
 	}
 
+	if canServeAgentReverseOnWeb() {
+		return resolveConsoleEndpoint(req, "")
+	}
+
 	if global.Env().SystemConfig.APIConfig.Enabled {
 		return strings.TrimRight(global.Env().SystemConfig.APIConfig.GetEndpoint(), "/")
 	}
 
 	return resolveConsoleEndpoint(req, "")
+}
+
+func canServeAgentReverseOnWeb() bool {
+	webCfg := global.Env().SystemConfig.WebAppConfig
+	if !webCfg.Enabled {
+		return false
+	}
+	if webCfg.EmbeddingAPI && global.Env().SystemConfig.APIConfig.Enabled && global.Env().SystemConfig.APIConfig.WebsocketConfig.Enabled {
+		return true
+	}
+	return webCfg.WebsocketConfig.Enabled
 }
 
 func shouldUseLegacyInstallScriptTemplate(installVersion string) bool {

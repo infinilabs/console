@@ -25,7 +25,7 @@ configs:
 api:
   enabled: true
   network:
-    binding: 0.0.0.0:2900
+    binding: 0.0.0.0:9443
     skip_occupied_port: true
   websocket:
     # Agent reverse channel is exposed on the API listener (/ws).
@@ -39,11 +39,11 @@ api:
     default_domain: localhost
 web:
   enabled: true
+  embedding_api: true
   tls:
     enabled: true
     skip_insecure_verify: true
     default_domain: "localhost"
-  embedding_api: false
   # base_path: /console
   security:
     enabled: true

@@ -31,6 +31,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"path/filepath"
 	"regexp"
@@ -803,18 +804,7 @@ func bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elastic.DiscoveryResu
 					pid := node.PID
 
 					for _, v := range prioritizeListenAddresses(node.ListenAddresses) {
-						ip := v.IP
-						port := v.Port
-
-						if util.ContainStr(ip, "::") {
-							ip = fmt.Sprintf("[%s]", ip)
-						}
-
-						if util.ContainStr(ip, "*") {
-							ip = util.LocalAddress
-						}
-
-						nodeHost := fmt.Sprintf("%s:%d", ip, port)
+						nodeHost := fmt.Sprintf("%s:%d", normalizeListenHostIP(v.IP), v.Port)
 						nodeInfo := (&APIHandler{}).internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint, pid, nodeHost, auth, node.Cmdline)
 						if nodeInfo != nil {
 							discoveredPIDs[pid] = nodeInfo
@@ -826,6 +816,29 @@ func bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elastic.DiscoveryResu
 		}
 	}
 	return discoveredPIDs
+}
+
+func normalizeListenHostIP(ip string) string {
+	ip = strings.TrimSpace(ip)
+	if ip == "" || util.ContainStr(ip, "*") || ip == util.LocalIpv6Address {
+		return util.LocalAddress
+	}
+
+	rawIP := strings.Trim(ip, "[]")
+	if parsed := net.ParseIP(rawIP); parsed != nil {
+		if parsed.IsUnspecified() || parsed.IsLoopback() {
+			return util.LocalAddress
+		}
+		if parsed.To4() == nil {
+			return fmt.Sprintf("[%s]", rawIP)
+		}
+		return rawIP
+	}
+
+	if strings.Contains(ip, ":") && !strings.HasPrefix(ip, "[") {
+		return fmt.Sprintf("[%s]", ip)
+	}
+	return ip
 }
 
 func prioritizeListenAddresses(addresses []model.ListenAddr) []model.ListenAddr {
@@ -923,7 +936,29 @@ func (h *APIHandler) getESNodeInfoViaProxyWithConfig(cfg *elastic.ElasticsearchC
 		if global.Env().IsDebug {
 			log.Errorf("failed to proxy elasticsearch node info via agent reverse channel [%s]: %v", instanceID, err)
 		}
-		return false, true, nil
+		if !shouldFallbackToDirectAgentNodeInfo(err) {
+			return false, true, nil
+		}
+		exists, instance, getErr := server.GetRuntimeInstanceByID(instanceID)
+		if getErr != nil || !exists || instance == nil {
+			if global.Env().IsDebug && getErr != nil {
+				log.Errorf("failed to load agent instance [%s] for direct node info fallback: %v", instanceID, getErr)
+			}
+			return false, true, nil
+		}
+		if authErr := agent_common.ApplyInstanceRequestAuth(req, instance); authErr != nil {
+			if global.Env().IsDebug {
+				log.Errorf("failed to apply agent auth for direct node info fallback [%s]: %v", instanceID, authErr)
+			}
+			return false, true, nil
+		}
+		if _, directErr := server.ProxyAgentRequest("runtime", instance.GetEndpoint(), req, &obj); directErr != nil {
+			if global.Env().IsDebug {
+				log.Errorf("failed to proxy elasticsearch node info directly via agent [%s]: %v", instanceID, directErr)
+			}
+			return false, true, nil
+		}
+		return true, false, &obj
 	}
 
 	if res != nil && res.StatusCode == http.StatusForbidden {
@@ -940,6 +975,10 @@ func (h *APIHandler) getESNodeInfoViaProxyWithConfig(cfg *elastic.ElasticsearchC
 	}
 
 	return false, true, nil
+}
+
+func shouldFallbackToDirectAgentNodeInfo(err error) bool {
+	return isAgentReverseChannelRecoverableError(err)
 }
 
 func NewClusterSettings(clusterID string) *model.Setting {

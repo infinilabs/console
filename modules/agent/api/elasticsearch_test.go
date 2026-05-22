@@ -91,6 +91,18 @@ func TestShouldFallbackToDirectAgentDiscovery(t *testing.T) {
 	}
 }
 
+func TestShouldFallbackToDirectAgentNodeInfo(t *testing.T) {
+	if !shouldFallbackToDirectAgentNodeInfo(errAgentReverseChannelDisconnected) {
+		t.Fatal("expected disconnected reverse channel to fall back to direct node info")
+	}
+	if !shouldFallbackToDirectAgentNodeInfo(errAgentReverseChannelNotConnected) {
+		t.Fatal("expected not connected reverse channel to fall back to direct node info")
+	}
+	if shouldFallbackToDirectAgentNodeInfo(assertDiscoveryError("boom")) {
+		t.Fatal("did not expect non-recoverable errors to fall back to direct node info")
+	}
+}
+
 func TestPrioritizeListenAddressesPrefersHTTPPorts(t *testing.T) {
 	got := prioritizeListenAddresses([]model.ListenAddr{
 		{IP: "::", Port: 9300},
@@ -108,6 +120,29 @@ func TestPrioritizeListenAddressesPrefersHTTPPorts(t *testing.T) {
 		if got[idx].Port != port {
 			t.Fatalf("unexpected listen address order: %#v", got)
 		}
+	}
+}
+
+func TestNormalizeListenHostIP(t *testing.T) {
+	testCases := []struct {
+		name   string
+		input  string
+		expect string
+	}{
+		{name: "wildcard star", input: "*", expect: "127.0.0.1"},
+		{name: "ipv4 unspecified", input: "0.0.0.0", expect: "127.0.0.1"},
+		{name: "ipv6 unspecified", input: "::", expect: "127.0.0.1"},
+		{name: "ipv6 loopback", input: "::1", expect: "127.0.0.1"},
+		{name: "normal ipv4", input: "192.168.1.10", expect: "192.168.1.10"},
+		{name: "normal ipv6", input: "2001:db8::10", expect: "[2001:db8::10]"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if actual := normalizeListenHostIP(tc.input); actual != tc.expect {
+				t.Fatalf("unexpected normalized host, got %q want %q", actual, tc.expect)
+			}
+		})
 	}
 }
 

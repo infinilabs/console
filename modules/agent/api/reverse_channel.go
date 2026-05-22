@@ -19,6 +19,7 @@ import (
 	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
+	elastic "infini.sh/framework/modules/elastic"
 )
 
 const (
@@ -106,11 +107,15 @@ func (m *agentReverseChannelManager) onConnect(sessionID string, w http.Response
 	instance := model.Instance{}
 	instance.ID = instanceID
 	exists, err := orm.Get(&instance)
+	if err == elastic.ErrNotFound {
+		err = nil
+		exists = false
+	}
 	if err != nil {
 		return err
 	}
 	if !exists {
-		return fmt.Errorf("instance not found")
+		return fmt.Errorf("instance not registered")
 	}
 	if !strings.EqualFold(instance.Application.Name, "agent") {
 		return fmt.Errorf("instance [%s] is not agent", instanceID)

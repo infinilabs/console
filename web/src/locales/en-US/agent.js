@@ -46,7 +46,7 @@ export default {
   "agent.instance.registration.agent.token.placeholder":
     "Paste the access credential generated on the host",
   "agent.instance.registration.agent.token.tip":
-    "Paste the Agent access credential here so Console can authenticate reverse-channel requests.",
+    "Paste the Agent access credential here so Console can access the Agent later.",
   "agent.instance.registration.agent.token.expire.tip":
     "This access credential has no fixed expiration and remains valid until it is rotated or replaced.",
   "agent.instance.step.result.button.register_new": "Register Another Agent",

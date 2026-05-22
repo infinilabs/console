@@ -38,6 +38,7 @@ import (
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/modules/configs/common"
 	"infini.sh/framework/modules/configs/config"
+	elastic "infini.sh/framework/modules/elastic"
 	"net/http"
 	"path"
 	"strings"
@@ -191,6 +192,10 @@ func (h APIHandler) syncConfigs(w http.ResponseWriter, req *http.Request, ps htt
 		instance := model.Instance{}
 		instance.ID = obj.Client.ID
 		exists, err := orm.Get(&instance)
+		if err == elastic.ErrNotFound {
+			err = nil
+			exists = false
+		}
 		if err != nil {
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return

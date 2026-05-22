@@ -107,6 +107,10 @@ func (h APIHandler) registerInstance(w http.ResponseWriter, req *http.Request, p
 	oldInst := &model.Instance{}
 	oldInst.ID = obj.ID
 	exists, err := orm.Get(oldInst)
+	if err == elastic.ErrNotFound {
+		err = nil
+		exists = false
+	}
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -173,7 +177,7 @@ func (h APIHandler) registerInstance(w http.ResponseWriter, req *http.Request, p
 		}
 	}
 
-	err = orm.Save(nil, obj)
+	err = orm.Save(&orm.Context{Refresh: orm.WaitForRefresh}, obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -311,7 +315,7 @@ func (h *APIHandler) createInstance(w http.ResponseWriter, req *http.Request, ps
 		obj.AccessCredentialID = credentialID
 		obj.BasicAuth = nil
 	}
-	err = orm.Create(nil, obj)
+	err = orm.Create(&orm.Context{Refresh: orm.WaitForRefresh}, obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -753,13 +757,15 @@ func (h *APIHandler) getInstanceInfo(endpoint string, basicAuth *model.BasicAuth
 			req1.SetBasicAuth(basicAuth.Username, basicAuth.Password.Get())
 		}
 		obj := &model.Instance{}
-		_, err := ProxyAgentRequest("runtime", endpoint, req1, obj)
+		res, err := ProxyAgentRequest("runtime", endpoint, req1, obj)
 		cancel()
 		if err == nil {
 			return obj, nil
 		}
-		lastErr = err
-		if !shouldFallbackInstanceInfoPath(infoPath, err) {
+		if lastErr == nil {
+			lastErr = err
+		}
+		if !shouldFallbackInstanceInfoPath(infoPath, res, err) {
 			return nil, err
 		}
 	}
@@ -869,8 +875,14 @@ func isSensitiveInfoPath(rawPath string) bool {
 	return parsed.Path == "/_info" || parsed.Path == "/agent/_info"
 }
 
-func shouldFallbackInstanceInfoPath(path string, err error) bool {
-	return path == "/agent/_info" && err != nil
+func shouldFallbackInstanceInfoPath(path string, res *util.Result, err error) bool {
+	if path != "/agent/_info" || err == nil {
+		return false
+	}
+	if res != nil {
+		return res.StatusCode == http.StatusNotFound
+	}
+	return true
 }
 
 // TODO check permission by user
@@ -878,6 +890,10 @@ func GetRuntimeInstanceByID(instanceID string) (bool, *model.Instance, error) {
 	obj := model.Instance{}
 	obj.ID = instanceID
 	exists, err := orm.Get(&obj)
+	if err == elastic.ErrNotFound {
+		err = nil
+		exists = false
+	}
 	if !exists || err != nil {
 		if !exists {
 			err = fmt.Errorf("instance not found")

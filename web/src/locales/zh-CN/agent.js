@@ -42,7 +42,7 @@ export default {
   "agent.instance.registration.agent.token.placeholder":
     "请粘贴目标主机上生成的访问凭据",
   "agent.instance.registration.agent.token.tip":
-    "把 Agent 访问凭据粘贴到这里，Console 后续会用它来发起反向通道请求。",
+    "把 Agent 访问凭据粘贴到这里，Console 后续会用它来访问 Agent。",
   "agent.instance.registration.agent.token.expire.tip":
     "这个访问凭据没有固定有效期，只有在轮换或替换后才会失效。",
   "agent.instance.step.result.button.register_new": "继续注册新探针",

@@ -109,6 +109,16 @@ func GetEnrolledNodesByAgent(instanceID string) (map[string]BindingItem, error) 
 }
 
 func refreshNodesInfo(instanceID string) (*elastic.DiscoveryResult, error) {
+	instance := model.Instance{}
+	instance.ID = instanceID
+	exists, err := orm.Get(&instance)
+	if err != nil {
+		return nil, fmt.Errorf("error on get agent instance: %w", err)
+	}
+	if !exists {
+		return nil, fmt.Errorf("agent instance [%s] not found", instanceID)
+	}
+
 	enrolledNodesByAgent, err := GetEnrolledNodesByAgent(instanceID)
 	if err != nil {
 		return nil, fmt.Errorf("error on get binding nodes info: %w", err)
@@ -116,7 +126,7 @@ func refreshNodesInfo(instanceID string) (*elastic.DiscoveryResult, error) {
 
 	ctxTimeout, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
-	nodesInfo, err := GetElasticsearchNodesViaAgent(ctxTimeout, instanceID)
+	nodesInfo, err := GetElasticsearchNodesViaAgent(ctxTimeout, &instance)
 	if err != nil {
 		//TODO return already biding nodes info ??
 		return nil, fmt.Errorf("error on get nodes info from agent: %w", err)
@@ -221,7 +231,11 @@ func refreshNodesInfo(instanceID string) (*elastic.DiscoveryResult, error) {
 }
 
 // get nodes info via agent
-func GetElasticsearchNodesViaAgent(ctx context.Context, instanceID string) (*elastic.DiscoveryResult, error) {
+func GetElasticsearchNodesViaAgent(ctx context.Context, instance *model.Instance) (*elastic.DiscoveryResult, error) {
+	if instance == nil || instance.ID == "" {
+		return nil, errors.New("invalid agent instance")
+	}
+
 	req := &util.Request{
 		Method:  http.MethodGet,
 		Path:    "/elasticsearch/node/_discovery",
@@ -229,12 +243,29 @@ func GetElasticsearchNodesViaAgent(ctx context.Context, instanceID string) (*ela
 	}
 
 	obj := elastic.DiscoveryResult{}
-	_, err := ProxyAgentRequestViaChannel(instanceID, req, &obj)
+	if IsAgentReverseChannelConnected(instance.ID) {
+		_, err := ProxyAgentRequestViaChannel(instance.ID, req, &obj)
+		if err == nil {
+			return &obj, nil
+		}
+		if !shouldFallbackToDirectAgentDiscovery(err) {
+			return nil, err
+		}
+	}
+
+	if instance.BasicAuth != nil {
+		req.SetBasicAuth(instance.BasicAuth.Username, instance.BasicAuth.Password.Get())
+	}
+	_, err := server.ProxyAgentRequest("runtime", instance.GetEndpoint(), req, &obj)
 	if err != nil {
 		return nil, err
 	}
 
 	return &obj, nil
+}
+
+func shouldFallbackToDirectAgentDiscovery(err error) bool {
+	return isAgentReverseChannelRecoverableError(err)
 }
 
 type BindingItem struct {

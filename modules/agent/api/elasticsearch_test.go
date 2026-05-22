@@ -77,3 +77,21 @@ func TestDeriveLogsPathsFromCmdlineTwoPathsWhenGCDiffers(t *testing.T) {
 		t.Fatalf("unexpected logs paths: %#v", got)
 	}
 }
+
+func TestShouldFallbackToDirectAgentDiscovery(t *testing.T) {
+	if !shouldFallbackToDirectAgentDiscovery(errAgentReverseChannelDisconnected) {
+		t.Fatal("expected disconnected reverse channel to fall back to direct discovery")
+	}
+	if !shouldFallbackToDirectAgentDiscovery(errAgentReverseChannelNotConnected) {
+		t.Fatal("expected not connected reverse channel to fall back to direct discovery")
+	}
+	if shouldFallbackToDirectAgentDiscovery(assertDiscoveryError("boom")) {
+		t.Fatal("did not expect non-recoverable errors to fall back to direct discovery")
+	}
+}
+
+type assertDiscoveryError string
+
+func (e assertDiscoveryError) Error() string {
+	return string(e)
+}

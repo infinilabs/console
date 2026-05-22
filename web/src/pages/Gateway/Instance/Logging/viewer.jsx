@@ -51,16 +51,23 @@ const WebsocketLogViewer = ({ instance = {} }) => {
     reconnectAttempts: 30,
     reconnectInterval: 10000,
     onMessage: (ev) => {
-      const rawMsg = ev.data;
+      const rawMsg = typeof ev.data === "string" ? ev.data : "";
+      if (!rawMsg) {
+        return;
+      }
       const [msgType] = rawMsg.split(" ", 1);
       const msg = rawMsg.substr(msgType.length + 1);
       if (msgType !== "PUBLIC") {
         if (msgType == "CONFIG") {
+          const trimmedMsg = msg.trim();
+          if (!trimmedMsg || !/^[\[{]/.test(trimmedMsg)) {
+            return;
+          }
           let configObj = {};
           try {
-            configObj = JSON.parse(msg);
+            configObj = JSON.parse(trimmedMsg);
           } catch (err) {
-            console.error(err);
+            return;
           }
           setLoggingConfig(configObj);
         }

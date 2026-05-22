@@ -16,6 +16,7 @@ import {
   Select,
   Checkbox,
   Modal,
+  Icon,
 } from "antd";
 import { formatMessage } from "umi/locale";
 import useFetch from "@/lib/hooks/use_fetch";
@@ -95,6 +96,18 @@ const AgentList = (props) => {
     });
   };
   const [instanceStatus, setInstanceStatus] = React.useState({});
+  const [instanceStatusLoading, setInstanceStatusLoading] = React.useState(false);
+  const [expandedRowKeys, setExpandedRowKeys] = React.useState([]);
+
+  const isAgentStatusResolved = useCallback(
+    (instanceID) => Object.prototype.hasOwnProperty.call(instanceStatus, instanceID),
+    [instanceStatus]
+  );
+
+  const isAgentOnline = useCallback(
+    (instanceID) => !!instanceStatus[instanceID]?.system,
+    [instanceStatus]
+  );
 
   const columns = useMemo(
     () => [
@@ -282,8 +295,12 @@ const AgentList = (props) => {
   useEffect(() => {
     const fetchStatus = async () => {
       if (!instances || instances.length == 0) {
+        setInstanceStatus({});
+        setInstanceStatusLoading(false);
         return;
       }
+      setInstanceStatus({});
+      setInstanceStatusLoading(true);
       const instanceIDs = instances.map((inst) => inst.id);
       const statusRes = await request(`/agent/instance/stats`, {
         method: "POST",
@@ -293,9 +310,59 @@ const AgentList = (props) => {
       if (statusRes && !statusRes.error) {
         setInstanceStatus(statusRes);
       }
+      setInstanceStatusLoading(false);
     };
     fetchStatus();
-  }, [value]);
+  }, [instances]);
+
+  useEffect(() => {
+    setExpandedRowKeys((keys) =>
+      keys.filter(
+        (key) =>
+          instances.some((instance) => instance.id === key) && isAgentOnline(key)
+      )
+    );
+  }, [instances, isAgentOnline]);
+
+  const onExpand = useCallback(
+    (expanded, record) => {
+      if (!expanded) {
+        setExpandedRowKeys((keys) => keys.filter((key) => key !== record.id));
+        return;
+      }
+      if (!isAgentStatusResolved(record.id) || !isAgentOnline(record.id)) {
+        return;
+      }
+      setExpandedRowKeys((keys) =>
+        keys.includes(record.id) ? keys : [...keys, record.id]
+      );
+    },
+    [isAgentOnline, isAgentStatusResolved]
+  );
+
+  const renderExpandIcon = useCallback(
+    ({ expanded, onExpand, record }) => {
+      const resolved = isAgentStatusResolved(record.id);
+      if (!resolved) {
+        return instanceStatusLoading ? (
+          <Icon type="loading" style={{ color: "#bfbfbf" }} />
+        ) : (
+          <span style={{ display: "inline-block", width: 14 }} />
+        );
+      }
+      if (!isAgentOnline(record.id)) {
+        return <span style={{ display: "inline-block", width: 14 }} />;
+      }
+      return (
+        <Icon
+          type={expanded ? "minus-square" : "plus-square"}
+          style={{ color: "#1890ff", cursor: "pointer" }}
+          onClick={(event) => onExpand(record, event)}
+        />
+      );
+    },
+    [instanceStatusLoading, isAgentOnline, isAgentStatusResolved]
+  );
 
   const handleTableChange = (pagination, filters, sorter, extra) => {
     const { pageSize, current } = pagination;
@@ -360,13 +427,16 @@ const AgentList = (props) => {
       if (delInstId == record.id) {
         return null;
       }
+      if (!isAgentOnline(record.id)) {
+        return null;
+      }
       return (
         <div style={{ width: 0, minWidth: "100%", maxWidth: "100%", overflow: "hidden" }}>
           <AgentRowDetail agentID={record.id} t={queryParams.t} />
         </div>
       );
     },
-    [queryParams.t, delInstId]
+    [queryParams.t, delInstId, isAgentOnline]
   );
 
   const onAutoEnroll = async (clusterIDs) => {
@@ -530,6 +600,9 @@ const AgentList = (props) => {
           columns={columns}
           onChange={handleTableChange}
           expandedRowRender={expandedRowRender}
+          expandedRowKeys={expandedRowKeys}
+          onExpand={onExpand}
+          expandIcon={renderExpandIcon}
         />
         <Drawer
           title={`Task Settings(${editState.editItem?.remote_ip})`}

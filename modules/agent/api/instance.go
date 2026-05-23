@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -11,6 +12,9 @@ import (
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 )
+
+var proxyAgentRequestViaChannelFn = ProxyAgentRequestViaChannel
+var proxyAgentRequestDirectFn = proxyAgentRequestDirect
 
 func (h *APIHandler) getAgentInstanceStatus(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {
 	var instanceIDs []string
@@ -77,7 +81,7 @@ func fetchAgentInstanceStats(instance model.Instance, stats *util.MapStr) bool {
 			Path:    "/stats",
 			Context: ctx,
 		}
-		if _, err := ProxyAgentRequestViaChannel(instance.ID, req, stats); err == nil {
+		if _, err := proxyAgentRequestViaChannelFn(instance.ID, req, stats); err == nil {
 			return true
 		}
 	}
@@ -90,8 +94,55 @@ func fetchAgentInstanceStats(instance model.Instance, stats *util.MapStr) bool {
 		Path:    "/stats",
 		Context: ctx,
 	}
-	if _, err := proxyAgentRequestDirect(&instance, req, stats); err != nil {
+	if _, err := proxyAgentRequestDirectFn(&instance, req, stats); err == nil {
+		return true
+	}
+
+	info, err := fetchAgentInstanceInfoDirect(&instance)
+	if err != nil {
 		return false
+	}
+	if stats != nil {
+		(*stats)["system"] = util.MapStr{}
+		if info != nil {
+			(*stats)["application"] = info.Application
+		}
+	}
+	return true
+}
+
+func fetchAgentInstanceInfoDirect(instance *model.Instance) (*model.Instance, error) {
+	if instance == nil {
+		return nil, fmt.Errorf("instance is nil")
+	}
+
+	for _, infoPath := range []string{"/agent/_info", "/_info"} {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		req := &util.Request{
+			Method:  http.MethodGet,
+			Path:    infoPath,
+			Context: ctx,
+		}
+		obj := &model.Instance{}
+		res, err := proxyAgentRequestDirectFn(instance, req, obj)
+		cancel()
+		if err == nil {
+			return obj, nil
+		}
+		if !shouldFallbackAgentInfoPath(infoPath, res, err) {
+			return nil, err
+		}
+	}
+
+	return nil, fmt.Errorf("agent info unavailable")
+}
+
+func shouldFallbackAgentInfoPath(path string, res *util.Result, err error) bool {
+	if path != "/agent/_info" || err == nil {
+		return false
+	}
+	if res != nil {
+		return res.StatusCode == http.StatusNotFound
 	}
 	return true
 }

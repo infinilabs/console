@@ -273,7 +273,7 @@ env:
   WEB_BINDING: "0.0.0.0:${port}"
   MANAGED: true
   REMOTE_CONFIG_SERVERS: ["${server}"]
-  REVERSE_CHANNEL_ENDPOINTS: {{reverse_channel_endpoints}}
+  REVERSE_CHANNEL_ENDPOINTS: ["${server}"]
   REMOTE_CONFIG_INTERVAL: "10s"
   SECURITY_ENABLED: true
   SECURITY_MANAGED_ENABLED: false

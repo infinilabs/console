@@ -305,7 +305,7 @@ func TestAgentInstallTemplateEnablesEmbeddedAPISkipLogin(t *testing.T) {
 	expectedSnippets := []string{
 		`cat <<EOF > ${install_dir}/agent.yml`,
 		`embedding_api: false`,
-		`REVERSE_CHANNEL_ENDPOINTS: ["https://console-api.local:2900"]`,
+		`REVERSE_CHANNEL_ENDPOINTS: ["${server}"]`,
 		`reverse_channel_endpoints: \$[[env.REVERSE_CHANNEL_ENDPOINTS]]`,
 		`cert_file: "config/client.crt"`,
 		`skip_insecure_verify: false`,

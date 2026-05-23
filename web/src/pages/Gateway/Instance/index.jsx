@@ -322,49 +322,47 @@ export default (props) => {
           }
         };
 
-        const menuItems = [
-          {
-            key: "queue",
-            content: (
-              <Link to={`/resource/runtime/instance/${record.id}/queue`}>
-                {formatMessage({ id: "gateway.instance.menu.queue" })}
-              </Link>
-            ),
-          },
-          {
-            key: "task",
-            content: (
-              <Link to={`/resource/runtime/instance/${record.id}/task`}>
-                {formatMessage({ id: "gateway.instance.menu.task" })}
-              </Link>
-            ),
-          },
-          // {
-          //   key: "disk",
-          //   content: (
-          //     <Link to={`/resource/runtime/instance/${record.id}/disk`}>
-          //       Disk
-          //     </Link>
-          //   ),
-          // },
-        ];
+        const isUnavailable = record.statsFetched && !record.info?.system;
+        const menuItems = [];
+        if (!isUnavailable) {
+          menuItems.push(
+            {
+              key: "queue",
+              content: (
+                <Link to={`/resource/runtime/instance/${record.id}/queue`}>
+                  {formatMessage({ id: "gateway.instance.menu.queue" })}
+                </Link>
+              ),
+            },
+            {
+              key: "task",
+              content: (
+                <Link to={`/resource/runtime/instance/${record.id}/task`}>
+                  {formatMessage({ id: "gateway.instance.menu.task" })}
+                </Link>
+              ),
+            }
+          );
+        }
         if (hasAuthority("gateway.instance:all")) {
-          menuItems.push({
-            key: "logging",
-            content: (
-              <Link to={`/resource/runtime/instance/${record.id}/logging`}>
-                {formatMessage({ id: "gateway.instance.menu.logging" })}
-              </Link>
-            ),
-          });
-          menuItems.push({
-            key: "config",
-            content: (
-              <Link to={`/resource/runtime/instance/${record.id}/config`}>
-                {formatMessage({ id: "gateway.instance.menu.config" })}
-              </Link>
-            ),
-          });
+          if (!isUnavailable) {
+            menuItems.push({
+              key: "logging",
+              content: (
+                <Link to={`/resource/runtime/instance/${record.id}/logging`}>
+                  {formatMessage({ id: "gateway.instance.menu.logging" })}
+                </Link>
+              ),
+            });
+            menuItems.push({
+              key: "config",
+              content: (
+                <Link to={`/resource/runtime/instance/${record.id}/config`}>
+                  {formatMessage({ id: "gateway.instance.menu.config" })}
+                </Link>
+              ),
+            });
+          }
           menuItems.push({
             key: "edit",
             content: (
@@ -377,6 +375,10 @@ export default (props) => {
             key: "delete",
             content: <a>{formatMessage({ id: "form.button.delete" })}</a>,
           });
+        }
+
+        if (menuItems.length === 0) {
+          return null;
         }
 
         const menu = (

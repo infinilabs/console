@@ -265,16 +265,15 @@ function install_config() {
   echo "[agent] waiting generate config"
   port={{port}}
   console_endpoint="{{console_endpoint}}"
-  reverse_channel_endpoint="{{reverse_channel_endpoint}}"
 
   server=${register_server:-$console_endpoint}
-  reverse_server=${register_reverse_server:-$reverse_channel_endpoint}
   echo "[agent] agent listening port $port, will register to console endpoint [ $server ]"
   cat <<EOF > ${install_dir}/agent.yml
 env:
   WEB_BINDING: "0.0.0.0:${port}"
   MANAGED: true
   REMOTE_CONFIG_SERVERS: ["${server}"]
+  REVERSE_CHANNEL_ENDPOINTS: {{reverse_channel_endpoints}}
   REMOTE_CONFIG_INTERVAL: "10s"
   SECURITY_ENABLED: true
   SECURITY_MANAGED_ENABLED: false
@@ -339,7 +338,7 @@ web:
 
 agent:
   setup:
-    reverse_channel_endpoint: "${reverse_server}"
+    reverse_channel_endpoints: \$[[env.REVERSE_CHANNEL_ENDPOINTS]]
 
 metrics:
   enabled: false

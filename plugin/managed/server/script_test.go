@@ -159,6 +159,48 @@ func TestResolveAgentReverseChannelEndpointFallsBackToAPIEndpoint(t *testing.T) 
 	}
 }
 
+func TestResolveAgentReverseChannelEndpointUsesAPIEndpointForReverseMTLSWhenWebCannotServeWS(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "https://console.local/instance/_get_install_script", nil)
+	req.TLS = &tls.ConnectionState{}
+	oldWebConfig := global.Env().SystemConfig.WebAppConfig
+	oldAPIConfig := global.Env().SystemConfig.APIConfig
+	t.Cleanup(func() {
+		global.Env().SystemConfig.WebAppConfig = oldWebConfig
+		global.Env().SystemConfig.APIConfig = oldAPIConfig
+	})
+
+	global.Env().SystemConfig.WebAppConfig.Enabled = true
+	global.Env().SystemConfig.WebAppConfig.EmbeddingAPI = false
+	global.Env().SystemConfig.WebAppConfig.WebsocketConfig.Enabled = false
+	global.Env().SystemConfig.APIConfig.Enabled = true
+	global.Env().SystemConfig.APIConfig.WebsocketConfig.Enabled = true
+	global.Env().SystemConfig.APIConfig.TLSConfig.TLSEnabled = true
+	global.Env().SystemConfig.APIConfig.TLSConfig.TLSInsecureSkipVerify = false
+	global.Env().SystemConfig.APIConfig.NetworkConfig.Publish = "console-api.local:2900"
+
+	got := resolveAgentReverseChannelEndpoint(req, "")
+	if got != "https://console-api.local:2900" {
+		t.Fatalf("expected api endpoint, got %q", got)
+	}
+}
+
+func TestResolveAgentReverseChannelEndpointsPrefersConfiguredList(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "https://console.local:9000/instance/_get_install_script", nil)
+	got := resolveAgentReverseChannelEndpoints(req, []string{
+		" https://console-api-1.local:9443 ",
+		"",
+		"https://console-api-2.local:9443",
+	})
+
+	expected := []string{
+		"https://console-api-1.local:9443",
+		"https://console-api-2.local:9443",
+	}
+	if strings.Join(got, ",") != strings.Join(expected, ",") {
+		t.Fatalf("expected %v, got %v", expected, got)
+	}
+}
+
 func TestBuildGatewayInstallCommand(t *testing.T) {
 	command := buildGatewayInstallCommand(
 		"https://console.local/instance/_get_gateway_install_script?token=abc",
@@ -253,7 +295,7 @@ func TestAgentInstallTemplateEnablesEmbeddedAPISkipLogin(t *testing.T) {
 		"{{base_url}}", "https://mirror.local/agent/stable",
 		"{{version}}", "1.2.3-4567",
 		"{{console_endpoint}}", "https://console.local",
-		"{{reverse_channel_endpoint}}", "https://console-api.local:2900",
+		"{{reverse_channel_endpoints}}", `["https://console-api.local:2900"]`,
 		"{{client_crt}}", "CLIENT_CERT",
 		"{{client_key}}", "CLIENT_KEY",
 		"{{ca_crt}}", "CA_CERT",
@@ -263,8 +305,8 @@ func TestAgentInstallTemplateEnablesEmbeddedAPISkipLogin(t *testing.T) {
 	expectedSnippets := []string{
 		`cat <<EOF > ${install_dir}/agent.yml`,
 		`embedding_api: false`,
-		`reverse_channel_endpoint="https://console-api.local:2900"`,
-		`reverse_channel_endpoint: "${reverse_server}"`,
+		`REVERSE_CHANNEL_ENDPOINTS: ["https://console-api.local:2900"]`,
+		`reverse_channel_endpoints: \$[[env.REVERSE_CHANNEL_ENDPOINTS]]`,
 		`cert_file: "config/client.crt"`,
 		`skip_insecure_verify: false`,
 	}

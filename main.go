@@ -56,7 +56,7 @@ import (
 	"infini.sh/framework/core/module"
 	"infini.sh/framework/core/orm"
 	task1 "infini.sh/framework/core/task"
-	_ "infini.sh/framework/modules/api"
+	apimodule "infini.sh/framework/modules/api"
 	"infini.sh/framework/modules/metrics"
 	"infini.sh/framework/modules/pipeline"
 	queue2 "infini.sh/framework/modules/queue/disk_queue"
@@ -150,6 +150,7 @@ func main() {
 		//load core modules first
 		module.RegisterSystemModule(&setup1.Module{})
 		module.RegisterSystemModule(uiModule)
+		module.RegisterSystemModule(&apimodule.APIModule{})
 
 		if !global.Env().SetupRequired() {
 			for _, v := range modules {

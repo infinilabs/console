@@ -344,6 +344,21 @@ func resolveAgentReverseChannelEndpoint(req *http.Request, configuredEndpoint st
 	return resolveConsoleEndpoint(req, "")
 }
 
+func resolveAgentReverseChannelEndpoints(req *http.Request, configuredEndpoints []string) []string {
+	endpoints := make([]string, 0, len(configuredEndpoints))
+	for _, endpoint := range configuredEndpoints {
+		endpoint = strings.TrimSpace(endpoint)
+		if endpoint == "" {
+			continue
+		}
+		endpoints = append(endpoints, endpoint)
+	}
+	if len(endpoints) > 0 {
+		return endpoints
+	}
+	return []string{resolveAgentReverseChannelEndpoint(req, "")}
+}
+
 func shouldUseAPIEndpointForReverseMTLS() bool {
 	apiCfg := global.Env().SystemConfig.APIConfig
 	return apiCfg.Enabled &&
@@ -464,7 +479,7 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 	}
 
 	consoleEndpoint := resolveConsoleEndpoint(req, agCfg.Setup.ConsoleEndpoint)
-	reverseChannelEndpoint := resolveAgentReverseChannelEndpoint(req, agCfg.Setup.ReverseChannelEndpoint)
+	reverseChannelEndpoints := resolveAgentReverseChannelEndpoints(req, agCfg.Setup.ReverseChannelEndpoints)
 	downloadURL, err := resolveAgentDownloadURL(consoleEndpoint, agCfg.Setup.DownloadURL)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -478,18 +493,18 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 	}
 
 	_, err = tpl.Execute(w, map[string]interface{}{
-		"base_url":                 downloadURL,
-		"console_endpoint":         consoleEndpoint,
-		"reverse_channel_endpoint": reverseChannelEndpoint,
-		"client_crt":               clientCertPEM,
-		"client_key":               clientKeyPEM,
-		"ca_crt":                   caCert,
-		"port":                     port,
-		"token":                    tokenStr,
-		"manager_token":            managerTokenValue,
-		"manager_token_key":        common.AgentManagerTokenKey(),
-		"manager_token_id":         managerTokenRecord.ID,
-		"version":                  installVersion,
+		"base_url":                  downloadURL,
+		"console_endpoint":          consoleEndpoint,
+		"reverse_channel_endpoints": string(util.MustToJSONBytes(reverseChannelEndpoints)),
+		"client_crt":                clientCertPEM,
+		"client_key":                clientKeyPEM,
+		"ca_crt":                    caCert,
+		"port":                      port,
+		"token":                     tokenStr,
+		"manager_token":             managerTokenValue,
+		"manager_token_key":         common.AgentManagerTokenKey(),
+		"manager_token_id":          managerTokenRecord.ID,
+		"version":                   installVersion,
 	})
 
 	if err != nil {

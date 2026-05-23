@@ -1,9 +1,11 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
+	agent_common "infini.sh/console/modules/agent/common"
 	"infini.sh/console/plugin/managed/server"
 	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/util"
@@ -36,6 +38,19 @@ func shouldFallbackToDirectAgentProxy(res *util.Result, err error) bool {
 		return true
 	}
 	return isAgentReverseChannelRecoverableError(err)
+}
+
+func proxyAgentRequestDirect(instance *model.Instance, req *util.Request, responseObjectToUnMarshall interface{}) (*util.Result, error) {
+	if instance == nil {
+		return nil, fmt.Errorf("instance is nil")
+	}
+	if req == nil {
+		return nil, fmt.Errorf("request is nil")
+	}
+	if err := agent_common.ApplyInstanceRequestAuth(req, instance); err != nil {
+		return nil, err
+	}
+	return server.ProxyAgentRequest("runtime", instance.GetEndpoint(), req, responseObjectToUnMarshall)
 }
 
 func init() {

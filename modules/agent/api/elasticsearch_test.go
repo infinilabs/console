@@ -5,6 +5,7 @@ import (
 
 	agentservice "infini.sh/console/service/agent"
 	"infini.sh/framework/core/model"
+	"infini.sh/framework/core/util"
 )
 
 func TestNormalizeClusterInfo(t *testing.T) {
@@ -100,6 +101,18 @@ func TestShouldFallbackToDirectAgentNodeInfo(t *testing.T) {
 	}
 	if shouldFallbackToDirectAgentNodeInfo(assertDiscoveryError("boom")) {
 		t.Fatal("did not expect non-recoverable errors to fall back to direct node info")
+	}
+}
+
+func TestIsForbiddenAgentReverseResult(t *testing.T) {
+	if !isForbiddenAgentReverseResult(&util.Result{StatusCode: 403}) {
+		t.Fatal("expected forbidden reverse result to be detected")
+	}
+	if isForbiddenAgentReverseResult(&util.Result{StatusCode: 404}) {
+		t.Fatal("did not expect 404 reverse result to be treated as forbidden")
+	}
+	if isForbiddenAgentReverseResult(nil) {
+		t.Fatal("did not expect nil result to be treated as forbidden")
 	}
 }
 

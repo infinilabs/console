@@ -44,7 +44,6 @@ import (
 	"github.com/buger/jsonparser"
 	log "github.com/cihub/seelog"
 	console_common "infini.sh/console/common"
-	agent_common "infini.sh/console/modules/agent/common"
 	elasticapi "infini.sh/console/modules/elastic/api"
 	"infini.sh/console/plugin/managed/server"
 	httprouter "infini.sh/framework/core/api/router"
@@ -256,10 +255,7 @@ func GetElasticsearchNodesViaAgent(ctx context.Context, instance *model.Instance
 		}
 	}
 
-	if err := agent_common.ApplyInstanceRequestAuth(req, instance); err != nil {
-		return nil, err
-	}
-	_, err := server.ProxyAgentRequest("runtime", instance.GetEndpoint(), req, &obj)
+	_, err := proxyAgentRequestDirect(instance, req, &obj)
 	if err != nil {
 		return nil, err
 	}
@@ -932,6 +928,9 @@ func (h *APIHandler) getESNodeInfoViaProxyWithConfig(cfg *elastic.ElasticsearchC
 
 	obj := elastic.LocalNodeInfo{}
 	res, err := ProxyAgentRequestViaChannel(instanceID, req, &obj)
+	if isForbiddenAgentReverseResult(res) {
+		return false, false, nil
+	}
 	if err != nil {
 		if global.Env().IsDebug {
 			log.Errorf("failed to proxy elasticsearch node info via agent reverse channel [%s]: %v", instanceID, err)
@@ -946,23 +945,13 @@ func (h *APIHandler) getESNodeInfoViaProxyWithConfig(cfg *elastic.ElasticsearchC
 			}
 			return false, true, nil
 		}
-		if authErr := agent_common.ApplyInstanceRequestAuth(req, instance); authErr != nil {
-			if global.Env().IsDebug {
-				log.Errorf("failed to apply agent auth for direct node info fallback [%s]: %v", instanceID, authErr)
-			}
-			return false, true, nil
-		}
-		if _, directErr := server.ProxyAgentRequest("runtime", instance.GetEndpoint(), req, &obj); directErr != nil {
+		if _, directErr := proxyAgentRequestDirect(instance, req, &obj); directErr != nil {
 			if global.Env().IsDebug {
 				log.Errorf("failed to proxy elasticsearch node info directly via agent [%s]: %v", instanceID, directErr)
 			}
 			return false, true, nil
 		}
 		return true, false, &obj
-	}
-
-	if res != nil && res.StatusCode == http.StatusForbidden {
-		return false, false, nil
 	}
 
 	if res != nil && res.StatusCode == http.StatusOK {
@@ -979,6 +968,10 @@ func (h *APIHandler) getESNodeInfoViaProxyWithConfig(cfg *elastic.ElasticsearchC
 
 func shouldFallbackToDirectAgentNodeInfo(err error) bool {
 	return isAgentReverseChannelRecoverableError(err)
+}
+
+func isForbiddenAgentReverseResult(res *util.Result) bool {
+	return res != nil && res.StatusCode == http.StatusForbidden
 }
 
 func NewClusterSettings(clusterID string) *model.Setting {

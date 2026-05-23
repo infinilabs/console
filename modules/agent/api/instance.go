@@ -6,8 +6,6 @@ import (
 	"sync"
 	"time"
 
-	agent_common "infini.sh/console/modules/agent/common"
-	"infini.sh/console/plugin/managed/server"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/orm"
@@ -92,10 +90,7 @@ func fetchAgentInstanceStats(instance model.Instance, stats *util.MapStr) bool {
 		Path:    "/stats",
 		Context: ctx,
 	}
-	if err := agent_common.ApplyInstanceRequestAuth(req, &instance); err != nil {
-		return false
-	}
-	if _, err := server.ProxyAgentRequest("runtime", instance.GetEndpoint(), req, stats); err != nil {
+	if _, err := proxyAgentRequestDirect(&instance, req, stats); err != nil {
 		return false
 	}
 	return true

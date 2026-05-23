@@ -3,6 +3,7 @@ package server
 import (
 	"sync"
 
+	agent_common "infini.sh/console/modules/agent/common"
 	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/util"
 )
@@ -34,5 +35,6 @@ func proxyInstanceRequest(instance *model.Instance, req *util.Request, responseO
 			return res, err
 		}
 	}
-	return ProxyAgentRequest("runtime", instance.GetEndpoint(), req, responseObjectToUnMarshall)
+	endpoint := agent_common.ResolveInstanceRequestEndpoint(instance, req.Path)
+	return ProxyAgentRequest("runtime", endpoint, req, responseObjectToUnMarshall)
 }

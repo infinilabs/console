@@ -50,7 +50,8 @@ func proxyAgentRequestDirect(instance *model.Instance, req *util.Request, respon
 	if err := agent_common.ApplyInstanceRequestAuth(req, instance); err != nil {
 		return nil, err
 	}
-	return server.ProxyAgentRequest("runtime", instance.GetEndpoint(), req, responseObjectToUnMarshall)
+	endpoint := agent_common.ResolveInstanceRequestEndpoint(instance, req.Path)
+	return server.ProxyAgentRequest("runtime", endpoint, req, responseObjectToUnMarshall)
 }
 
 func init() {

@@ -90,11 +90,11 @@ export default ({autoInit = false}) => {
                                     id:"agent.install.tips.title"
                                 })}：</div>
                                 <div className={styles.content}>
-                                    <p>
-                                        · {formatMessage({
-                                                id:"agent.install.tips.target"
-                                            })} <code>-t /custom/path</code>
-                                    </p>
+                                     <p>
+                                         · {formatMessage({
+                                                 id:"agent.install.tips.target"
+                                             })} <code>-t /opt/agent</code>
+                                     </p>
                                     <p>
                                         · {formatMessage({
                                                 id:"agent.install.tips.version"

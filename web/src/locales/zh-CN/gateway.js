@@ -126,7 +126,7 @@ export default {
     "请复制下方命令并在本地部署环境执行，其包含 INFINI Gateway 的下载、部署及启动：",
   "gateway.guide.intranet.title": "内网部署说明",
   "gateway.guide.intranet.desc":
-    "默认安装目录为 /infini/gateway。若 web.ui.path/gateway/stable 下已有安装包，Console 会自动使用自己的 Web 地址下发下载链接；否则回退到官方 release 站点。只有在需要自定义内网镜像时，才需要配置 gateway.setup.download_url。",
+    "默认安装目录为 /infini/gateway，通常无需额外配置；如需使用内网镜像，再配置自定义下载地址即可。",
   "gateway.guide.shell.copy.success": "复制成功！",
   "gateway.guide.tips.title": "提示：",
   "gateway.guide.tips.version": "如需指定 Gateway 版本，可追加",

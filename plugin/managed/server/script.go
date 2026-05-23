@@ -130,7 +130,7 @@ func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Req
 	}
 
 	h.WriteJSON(w, util.MapStr{
-		"script":     buildInstallCommand(endpoint, downloadURL, location, installVersion),
+		"script":     buildInstallCommand(endpoint, location),
 		"token":      tokenStr,
 		"expired_at": t.CreatedAt.Add(ExpiredIn),
 	}, http.StatusOK)
@@ -198,29 +198,21 @@ func (h *APIHandler) generateGatewayInstallCommand(w http.ResponseWriter, req *h
 		logAutoResolvedDownloadURL("gateway", downloadURL, defaultGatewayDownloadURL)
 	}
 	h.WriteJSON(w, util.MapStr{
-		"script":     buildGatewayInstallCommand(endpoint, downloadURL, location, installVersion),
+		"script":     buildGatewayInstallCommand(endpoint, location),
 		"token":      tokenStr,
 		"expired_at": t.CreatedAt.Add(ExpiredIn),
 	}, http.StatusOK)
 }
 
-func buildInstallCommand(endpoint, downloadURL, location, installVersion string) string {
+func buildInstallCommand(endpoint, location string) string {
 	command := fmt.Sprintf(`curl -ksSL %q |sudo bash -s -- -t %q`,
 		endpoint, location)
-	command = fmt.Sprintf(`%s -u %q`, command, downloadURL)
-	if installVersion != "" {
-		command = fmt.Sprintf(`%s -v %q`, command, installVersion)
-	}
 	return command
 }
 
-func buildGatewayInstallCommand(endpoint, downloadURL, location, installVersion string) string {
+func buildGatewayInstallCommand(endpoint, location string) string {
 	command := fmt.Sprintf(`curl -ksSL %q |sudo bash -s -- -d %q`,
 		endpoint, location)
-	command = fmt.Sprintf(`%s -u %q`, command, downloadURL)
-	if installVersion != "" {
-		command = fmt.Sprintf(`%s -v %q`, command, installVersion)
-	}
 	return command
 }
 

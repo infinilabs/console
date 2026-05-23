@@ -162,12 +162,10 @@ func TestResolveAgentReverseChannelEndpointFallsBackToAPIEndpoint(t *testing.T) 
 func TestBuildGatewayInstallCommand(t *testing.T) {
 	command := buildGatewayInstallCommand(
 		"https://console.local/instance/_get_gateway_install_script?token=abc",
-		"https://mirror.local/gateway/stable",
 		"/srv/gateway",
-		"1.2.3-4567",
 	)
 
-	expected := `curl -ksSL "https://console.local/instance/_get_gateway_install_script?token=abc" |sudo bash -s -- -d "/srv/gateway" -u "https://mirror.local/gateway/stable" -v "1.2.3-4567"`
+	expected := `curl -ksSL "https://console.local/instance/_get_gateway_install_script?token=abc" |sudo bash -s -- -d "/srv/gateway"`
 	if command != expected {
 		t.Fatalf("expected %q, got %q", expected, command)
 	}
@@ -278,15 +276,13 @@ func TestAgentInstallTemplateEnablesEmbeddedAPISkipLogin(t *testing.T) {
 	}
 }
 
-func TestBuildInstallCommandAlwaysIncludesDownloadURL(t *testing.T) {
+func TestBuildInstallCommandUsesScriptDefaults(t *testing.T) {
 	command := buildInstallCommand(
 		"https://console.local/instance/_get_install_script?token=abc",
-		defaultAgentDownloadURL,
 		"/srv/agent",
-		"1.2.3-4567",
 	)
 
-	expected := `curl -ksSL "https://console.local/instance/_get_install_script?token=abc" |sudo bash -s -- -t "/srv/agent" -u "https://release.infinilabs.com/agent/stable" -v "1.2.3-4567"`
+	expected := `curl -ksSL "https://console.local/instance/_get_install_script?token=abc" |sudo bash -s -- -t "/srv/agent"`
 	if command != expected {
 		t.Fatalf("expected %q, got %q", expected, command)
 	}

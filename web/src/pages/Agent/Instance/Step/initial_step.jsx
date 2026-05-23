@@ -5,9 +5,11 @@ import {
   Icon,
   Divider,
   Spin,
+  Card,
+  Row,
+  Col,
   message,
   Tooltip,
-  Collapse,
 } from "antd";
 import React from "react";
 import { formatMessage } from "umi/locale";
@@ -150,6 +152,42 @@ export class InitialStep extends React.Component {
     );
   };
 
+  renderConsoleAccessInfo = (consoleEndpoint, managerToken, managerTokenTip) => (
+    <Card
+      size="small"
+      title={formatMessage({
+        id: "agent.instance.registration.console.title",
+      })}
+      style={{
+        marginBottom: 24,
+        borderRadius: 8,
+      }}
+      bodyStyle={{ padding: 16 }}
+    >
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 8, fontWeight: 500 }}>
+          {this.renderLabel(
+            "agent.instance.registration.access.endpoint",
+            formatMessage({
+              id: "agent.instance.registration.console.endpoint.tip",
+            })
+          )}
+        </div>
+        {this.renderReadonlyBlock(consoleEndpoint)}
+      </div>
+
+      <div>
+        <div style={{ marginBottom: 8, fontWeight: 500 }}>
+          {this.renderLabel(
+            "agent.instance.registration.access.credential",
+            managerTokenTip.join(" ")
+          )}
+        </div>
+        {this.renderReadonlyBlock(managerToken)}
+      </div>
+    </Card>
+  );
+
   render() {
     const {
       form: { getFieldDecorator, getFieldValue },
@@ -194,8 +232,6 @@ export class InitialStep extends React.Component {
         id: "agent.instance.registration.agent.token.expire.tip",
       }),
     ].join(" ");
-    const { Panel } = Collapse;
-
     return (
       <Spin spinning={this.state.preparingRegistration}>
         <Form {...formItemLayout} form={this.props.formRef}>
@@ -212,128 +248,107 @@ export class InitialStep extends React.Component {
             initialValue: initialValue?.manager_token,
           })(<Input type="hidden" />)}
 
-          <Divider orientation="left">
-            {formatMessage({
-              id: "agent.instance.registration.agent.title",
-            })}
-          </Divider>
-
-          <Form.Item
-            label={this.renderLabel(
-              "agent.instance.registration.access.endpoint",
-              formatMessage({
-                id: "agent.instance.registration.agent.endpoint.tip",
-              })
-            )}
-          >
-            {getFieldDecorator("endpoint", {
-              initialValue: removeHttpSchema(initialValue?.endpoint || ""),
-              normalize: (value) => {
-                return removeHttpSchema(value || "").trim();
-              },
-              validateTrigger: ["onChange", "onBlur"],
-              rules: [
-                {
-                  required: true,
-                  message: formatMessage({
-                    id: "agent.instance.field.endpoint.form.required",
-                  }),
-                },
-                {
-                  type: "string",
-                  pattern: /^[\w\.\-_~%]+(\:\d+)?\s*$/,
-                  message: formatMessage({
-                    id: "cluster.regist.form.verify.valid.endpoint",
-                  }),
-                },
-              ],
-            })(
-              <Input
-                placeholder={formatMessage({
-                  id: "agent.instance.field.endpoint.placeholder",
+          <Row gutter={24} type="flex" align="top">
+            <Col xs={24} xl={16}>
+              <Divider orientation="left">
+                {formatMessage({
+                  id: "agent.instance.registration.agent.title",
                 })}
-                onChange={this.handleEndpointChange}
-              />
-            )}
-          </Form.Item>
+              </Divider>
 
-          <Form.Item
-            label={formatMessage({
-              id: "gateway.instance.field.tls.label",
-            })}
-          >
-            {getFieldDecorator("isTLS", {
-              initialValue: isTLS(initialValue?.endpoint),
-            })(
-              <Switch
-                defaultChecked={isTLS(initialValue?.endpoint)}
-                checkedChildren={<Icon type="check" />}
-                unCheckedChildren={<Icon type="close" />}
-                checked={this.state.isPageTLS}
-                onChange={this.isPageTLSChange}
-              />
-            )}
-          </Form.Item>
-
-          <Form.Item
-            label={this.renderLabel(
-              "agent.instance.registration.access.credential",
-              agentAccessTokenTip
-            )}
-          >
-            {getFieldDecorator("access_token", {
-              initialValue: initialValue?.access_token || "",
-              rules: [
-                {
-                  required: true,
-                  message: formatMessage({
-                    id: "agent.instance.registration.agent.token.required",
-                  }),
-                },
-              ],
-            })(
-              <Input.TextArea
-                autoComplete="off"
-                autoSize={{ minRows: 3, maxRows: 4 }}
-                placeholder={formatMessage({
-                  id: "agent.instance.registration.agent.token.placeholder",
-                })}
-              />
-            )}
-          </Form.Item>
-
-          <Collapse style={{ marginTop: 24 }}>
-            <Panel
-              header={formatMessage({
-                id: "agent.instance.registration.console.title",
-              })}
-              key="console-access-info"
-            >
               <Form.Item
-                {...formItemLayout}
                 label={this.renderLabel(
                   "agent.instance.registration.access.endpoint",
                   formatMessage({
-                    id: "agent.instance.registration.console.endpoint.tip",
+                    id: "agent.instance.registration.agent.endpoint.tip",
                   })
                 )}
-                style={{ marginBottom: 16 }}
               >
-                {this.renderReadonlyBlock(consoleEndpoint)}
+                {getFieldDecorator("endpoint", {
+                  initialValue: removeHttpSchema(initialValue?.endpoint || ""),
+                  normalize: (value) => {
+                    return removeHttpSchema(value || "").trim();
+                  },
+                  validateTrigger: ["onChange", "onBlur"],
+                  rules: [
+                    {
+                      required: true,
+                      message: formatMessage({
+                        id: "agent.instance.field.endpoint.form.required",
+                      }),
+                    },
+                    {
+                      type: "string",
+                      pattern: /^[\w\.\-_~%]+(\:\d+)?\s*$/,
+                      message: formatMessage({
+                        id: "cluster.regist.form.verify.valid.endpoint",
+                      }),
+                    },
+                  ],
+                })(
+                  <Input
+                    placeholder={formatMessage({
+                      id: "agent.instance.field.endpoint.placeholder",
+                    })}
+                    onChange={this.handleEndpointChange}
+                  />
+                )}
               </Form.Item>
 
               <Form.Item
-                {...formItemLayout}
+                label={formatMessage({
+                  id: "gateway.instance.field.tls.label",
+                })}
+              >
+                {getFieldDecorator("isTLS", {
+                  initialValue: isTLS(initialValue?.endpoint),
+                })(
+                  <Switch
+                    defaultChecked={isTLS(initialValue?.endpoint)}
+                    checkedChildren={<Icon type="check" />}
+                    unCheckedChildren={<Icon type="close" />}
+                    checked={this.state.isPageTLS}
+                    onChange={this.isPageTLSChange}
+                  />
+                )}
+              </Form.Item>
+
+              <Form.Item
                 label={this.renderLabel(
                   "agent.instance.registration.access.credential",
-                  managerTokenTip.join(" ")
+                  agentAccessTokenTip
                 )}
-                style={{ marginBottom: 0 }}
               >
-                {this.renderReadonlyBlock(managerToken)}
+                {getFieldDecorator("access_token", {
+                  initialValue: initialValue?.access_token || "",
+                  rules: [
+                    {
+                      required: true,
+                      message: formatMessage({
+                        id: "agent.instance.registration.agent.token.required",
+                      }),
+                    },
+                  ],
+                })(
+                  <Input.TextArea
+                    autoComplete="off"
+                    autoSize={{ minRows: 3, maxRows: 4 }}
+                    placeholder={formatMessage({
+                      id: "agent.instance.registration.agent.token.placeholder",
+                    })}
+                  />
+                )}
               </Form.Item>
-            </Panel>
-          </Collapse>
+            </Col>
+
+            <Col xs={24} xl={8}>
+              {this.renderConsoleAccessInfo(
+                consoleEndpoint,
+                managerToken,
+                managerTokenTip
+              )}
+            </Col>
+          </Row>
         </Form>
       </Spin>
     );

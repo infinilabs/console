@@ -103,7 +103,7 @@ export default ({ autoInit = false }) => {
             </p>
             <p>
               · {formatMessage({ id: "gateway.guide.tips.directory" })}{" "}
-              <code>-d /custom/path</code>
+              <code>-d /opt/gateway</code>
             </p>
             <p>
               · {formatMessage({ id: "gateway.guide.tips.download_source" })}{" "}

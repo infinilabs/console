@@ -23,7 +23,7 @@ configs:
     key_file: config/certs/ca.key
     skip_insecure_verify: false
 api:
-  enabled: true
+  enabled: false
   network:
     binding: 0.0.0.0:9443
     skip_occupied_port: false
@@ -34,13 +34,17 @@ api:
     base_path: /ws
     skip_host_verify: true
   tls:
-    # Reverse-channel mTLS uses the API listener TLS settings, not web.tls.
-    enabled: true
+    # Keep API listener TLS optional so agents can use the embedded /ws on web :9000.
+    enabled: false
     skip_insecure_verify: false
     default_domain: localhost
 web:
   enabled: true
   embedding_api: true
+  websocket:
+    enabled: true
+    base_path: /ws
+    skip_host_verify: true
   tls:
     enabled: true
     skip_insecure_verify: true

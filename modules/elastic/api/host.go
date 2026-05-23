@@ -1036,15 +1036,13 @@ func (h *APIHandler) GetHostOverviewInfo(w http.ResponseWriter, req *http.Reques
 		summary util.MapStr
 	)
 	if hostInfo.AgentID != "" {
-		summaries, err := getHostSummaryFromAgent([]string{hostID})
+		summaries, err := getHostSummaryFromAgent([]string{hostInfo.AgentID})
 		if err != nil {
 			log.Errorf("GetHostOverviewInfo failed: %v", err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		if v, ok := summaries[hostID]; ok {
-			summary = v
-		}
+		summary = resolveHostOverviewAgentSummary(hostInfo, summaries)
 
 	} else if hostInfo.NodeID != "" {
 		summaries, err := getHostSummaryFromNode([]string{hostInfo.NodeID})
@@ -1066,6 +1064,23 @@ func (h *APIHandler) GetHostOverviewInfo(w http.ResponseWriter, req *http.Reques
 		"agent_id":     hostInfo.AgentID,
 	}, http.StatusOK)
 
+}
+
+func resolveHostOverviewAgentSummary(hostInfo *host.HostInfo, summaries map[string]util.MapStr) util.MapStr {
+	if hostInfo == nil || len(summaries) == 0 {
+		return nil
+	}
+	if hostInfo.AgentID != "" {
+		if summary, ok := summaries[hostInfo.AgentID]; ok {
+			return summary
+		}
+	}
+	if hostInfo.ID != "" {
+		if summary, ok := summaries[hostInfo.ID]; ok {
+			return summary
+		}
+	}
+	return nil
 }
 
 // discoverHost auto discover host ip from elasticsearch node metadata and agent ips

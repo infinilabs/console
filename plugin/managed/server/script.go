@@ -337,6 +337,10 @@ func resolveAgentReverseChannelEndpoint(req *http.Request, configuredEndpoint st
 		return envEndpoint
 	}
 
+	if shouldUseAPIEndpointForReverseMTLS() {
+		return strings.TrimRight(global.Env().SystemConfig.APIConfig.GetEndpoint(), "/")
+	}
+
 	if canServeAgentReverseOnWeb() {
 		return resolveConsoleEndpoint(req, "")
 	}
@@ -346,6 +350,14 @@ func resolveAgentReverseChannelEndpoint(req *http.Request, configuredEndpoint st
 	}
 
 	return resolveConsoleEndpoint(req, "")
+}
+
+func shouldUseAPIEndpointForReverseMTLS() bool {
+	apiCfg := global.Env().SystemConfig.APIConfig
+	return apiCfg.Enabled &&
+		apiCfg.WebsocketConfig.Enabled &&
+		apiCfg.TLSConfig.TLSEnabled &&
+		!apiCfg.TLSConfig.TLSInsecureSkipVerify
 }
 
 func canServeAgentReverseOnWeb() bool {

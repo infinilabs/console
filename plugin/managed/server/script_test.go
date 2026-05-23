@@ -84,7 +84,7 @@ func TestResolveConsoleEndpointPriority(t *testing.T) {
 	})
 }
 
-func TestResolveAgentReverseChannelEndpointPrefersWebEndpointWhenWebCanServeWS(t *testing.T) {
+func TestResolveAgentReverseChannelEndpointPrefersAPIEndpointWhenAPIMTLSIsEnabled(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "https://console.local:9000/instance/_get_install_script", nil)
 	req.TLS = &tls.ConnectionState{}
 	oldWebConfig := global.Env().SystemConfig.WebAppConfig
@@ -101,6 +101,33 @@ func TestResolveAgentReverseChannelEndpointPrefersWebEndpointWhenWebCanServeWS(t
 	global.Env().SystemConfig.APIConfig.Enabled = true
 	global.Env().SystemConfig.APIConfig.WebsocketConfig.Enabled = true
 	global.Env().SystemConfig.APIConfig.TLSConfig.TLSEnabled = true
+	global.Env().SystemConfig.APIConfig.TLSConfig.TLSInsecureSkipVerify = false
+	global.Env().SystemConfig.APIConfig.NetworkConfig.Publish = "console-api.local:2900"
+
+	got := resolveAgentReverseChannelEndpoint(req, "")
+	if got != "https://console-api.local:2900" {
+		t.Fatalf("expected api endpoint, got %q", got)
+	}
+}
+
+func TestResolveAgentReverseChannelEndpointPrefersWebEndpointWhenWebCanServeWSWithoutAPIMTLS(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "https://console.local:9000/instance/_get_install_script", nil)
+	req.TLS = &tls.ConnectionState{}
+	oldWebConfig := global.Env().SystemConfig.WebAppConfig
+	oldAPIConfig := global.Env().SystemConfig.APIConfig
+	t.Cleanup(func() {
+		global.Env().SystemConfig.WebAppConfig = oldWebConfig
+		global.Env().SystemConfig.APIConfig = oldAPIConfig
+	})
+
+	global.Env().SystemConfig.WebAppConfig.Enabled = true
+	global.Env().SystemConfig.WebAppConfig.EmbeddingAPI = true
+	global.Env().SystemConfig.WebAppConfig.TLSConfig.TLSEnabled = true
+	global.Env().SystemConfig.WebAppConfig.NetworkConfig.Publish = "console-web.local:9000"
+	global.Env().SystemConfig.APIConfig.Enabled = true
+	global.Env().SystemConfig.APIConfig.WebsocketConfig.Enabled = true
+	global.Env().SystemConfig.APIConfig.TLSConfig.TLSEnabled = true
+	global.Env().SystemConfig.APIConfig.TLSConfig.TLSInsecureSkipVerify = true
 	global.Env().SystemConfig.APIConfig.NetworkConfig.Publish = "console-api.local:2900"
 
 	got := resolveAgentReverseChannelEndpoint(req, "")

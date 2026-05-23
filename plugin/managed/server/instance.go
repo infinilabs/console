@@ -49,7 +49,6 @@ import (
 	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
-	ucfg "infini.sh/framework/lib/go-ucfg"
 	"infini.sh/framework/modules/configs/common"
 	"infini.sh/framework/modules/elastic"
 	common2 "infini.sh/framework/modules/elastic/common"
@@ -463,65 +462,49 @@ func (h *APIHandler) getInstanceStatus(w http.ResponseWriter, req *http.Request,
 	}
 	q.RawQuery = util.MustToJSONBytes(queryDSL)
 
-	err, res := orm.Search(&model.Instance{}, &q)
-	if err != nil {
+	instances := []model.Instance{}
+	if err, _ := orm.SearchWithJSONMapper(&instances, &q); err != nil {
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	result := util.MapStr{}
-	for _, item := range res.Result {
-		instance := util.MapStr(item.(map[string]interface{}))
-		if err != nil {
-			log.Error(err)
-			continue
-		}
-		endpoint, _ := instance.GetValue("endpoint")
-
-		gid, _ := instance.GetValue("id")
-
-		//req := &proxy.Request{
-		//	Endpoint: endpoint.(string),
-		//	Method:   http.MethodGet,
-		//	Path:     "/stats",
-		//}
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-		defer cancel()
-		req := &util.Request{
-			Method:  http.MethodGet,
-			Path:    "/stats",
-			Context: ctx,
-		}
-
-		storedInstance := &model.Instance{
-			AccessCredentialID: util.ToString(instance["access_credential_id"]),
-		}
-		username, _ := instance.GetValue("basic_auth.username")
-		if username != nil && username.(string) != "" {
-			password, _ := instance.GetValue("basic_auth.password")
-			if password != nil && password.(string) != "" {
-				storedInstance.BasicAuth = &model.BasicAuth{
-					Username: username.(string),
-					Password: ucfg.SecretString(password.(string)),
-				}
-			}
-		}
-		if err := agent_common.ApplyInstanceRequestAuth(req, storedInstance); err != nil {
-			log.Error(err)
-			result[gid.(string)] = util.MapStr{}
-			continue
-		}
-
+	for i := range instances {
+		instance := instances[i]
 		var resMap = util.MapStr{}
-		_, err := ProxyAgentRequest("runtime", endpoint.(string), req, &resMap)
-		if err != nil {
-			log.Error(endpoint, ",", err)
-			result[gid.(string)] = util.MapStr{}
+		if !fetchManagedInstanceStats(&instance, &resMap) {
+			result[instance.ID] = util.MapStr{}
 			continue
 		}
-		result[gid.(string)] = resMap
+		result[instance.ID] = resMap
 	}
 	h.WriteJSON(w, result, http.StatusOK)
+}
+
+func fetchManagedInstanceStats(instance *model.Instance, stats *util.MapStr) bool {
+	if instance == nil {
+		return false
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	req := &util.Request{
+		Method:  http.MethodGet,
+		Path:    "/stats",
+		Context: ctx,
+	}
+	if err := agent_common.ApplyInstanceRequestAuth(req, instance); err != nil {
+		log.Error(err)
+		return false
+	}
+
+	if _, err := proxyInstanceRequest(instance, req, stats); err != nil {
+		log.Error(instance.GetEndpoint(), ",", err)
+		return false
+	}
+	return true
 }
 func (h *APIHandler) clearInstance(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	appName := h.GetParameterOrDefault(req, "app_name", "")
@@ -585,11 +568,12 @@ func (h *APIHandler) clearInstanceByAppName(appName string) error {
 			// check whether the instance is still online
 			for _, instanceID := range toRemoveIDs {
 				if inst, ok := instsCache[instanceID]; ok {
-					accessToken, tokenErr := agent_common.GetTokenCredentialValue(inst.AccessCredentialID)
-					if tokenErr != nil {
+					if _, tokenErr := agent_common.GetTokenCredentialValue(inst.AccessCredentialID); tokenErr != nil {
 						err = tokenErr
 					} else {
-						_, err = h.getInstanceInfo(inst.Endpoint, inst.BasicAuth, accessToken)
+						if inst != nil {
+							_, err = h.getRuntimeInstanceInfo(inst)
+						}
 					}
 					if err == nil {
 						// Skip online instance, do not append to filtered list
@@ -732,10 +716,7 @@ func (h *APIHandler) proxy(w http.ResponseWriter, req *http.Request, ps httprout
 }
 
 func (h *APIHandler) getInstanceInfo(endpoint string, basicAuth *model.BasicAuth, accessToken string) (*model.Instance, error) {
-	paths := []string{"/_info"}
-	if strings.TrimSpace(accessToken) != "" {
-		paths = []string{"/agent/_info", "/_info"}
-	}
+	paths := buildInstanceInfoPaths(false, accessToken)
 
 	var lastErr error
 	for _, infoPath := range paths {
@@ -764,6 +745,41 @@ func (h *APIHandler) getInstanceInfo(endpoint string, basicAuth *model.BasicAuth
 		}
 	}
 
+	return nil, lastErr
+}
+
+func (h *APIHandler) getRuntimeInstanceInfo(instance *model.Instance) (*model.Instance, error) {
+	if instance == nil {
+		return nil, fmt.Errorf("instance is nil")
+	}
+
+	paths := buildInstanceInfoPaths(strings.EqualFold(instance.Application.Name, "agent"), "")
+	var lastErr error
+	for _, infoPath := range paths {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+		req1 := &util.Request{
+			Method:  http.MethodGet,
+			Path:    infoPath,
+			Context: ctx,
+		}
+		if err := agent_common.ApplyInstanceRequestAuth(req1, instance); err != nil {
+			cancel()
+			return nil, err
+		}
+
+		obj := &model.Instance{}
+		res, err := proxyInstanceRequest(instance, req1, obj)
+		cancel()
+		if err == nil {
+			return obj, nil
+		}
+		if lastErr == nil {
+			lastErr = err
+		}
+		if !shouldFallbackInstanceInfoPath(infoPath, res, err) {
+			return nil, err
+		}
+	}
 	return nil, lastErr
 }
 
@@ -842,7 +858,7 @@ func (h *APIHandler) tryESConnect(w http.ResponseWriter, req *http.Request, ps h
 		panic(err)
 	}
 
-	res, err := ProxyAgentRequest("runtime", instance.GetEndpoint(), req1, nil)
+	res, err := proxyInstanceRequest(instance, req1, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -867,6 +883,13 @@ func isSensitiveInfoPath(rawPath string) bool {
 		return rawPath == "/_info" || rawPath == "/agent/_info"
 	}
 	return parsed.Path == "/_info" || parsed.Path == "/agent/_info"
+}
+
+func buildInstanceInfoPaths(isAgent bool, accessToken string) []string {
+	if isAgent || strings.TrimSpace(accessToken) != "" {
+		return []string{"/agent/_info", "/_info"}
+	}
+	return []string{"/_info"}
 }
 
 func shouldFallbackInstanceInfoPath(path string, res *util.Result, err error) bool {

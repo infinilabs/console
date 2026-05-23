@@ -596,6 +596,7 @@ const InfiniteLogViewer = ({
   const [progress, setProgress] = useState(0);
 
   const progressCacheRef = useRef();
+  const sliderChangingRef = useRef(false);
 
   // Every row is loaded except for our loading indicator row.
   const isItemLoaded = (index) => !hasNextPage || index < items.length;
@@ -634,6 +635,7 @@ const InfiniteLogViewer = ({
     return <div style={style}>{content}</div>;
   };
   const onSliderChange = (v) => {
+    sliderChangingRef.current = true;
     progressCacheRef.current = v;
     setProgress(v);
   };
@@ -650,6 +652,7 @@ const InfiniteLogViewer = ({
       );
       resetViewerPosition({ startLineNumber, autoScrollToBottom: false });
     }
+    sliderChangingRef.current = false;
   };
 
   useEffect(() => {
@@ -695,6 +698,7 @@ const InfiniteLogViewer = ({
                       onItemsRendered={(props) => {
                         const { visibleStopIndex } = props;
                         if (
+                          !sliderChangingRef.current &&
                           totalRowsKnown &&
                           totalRows > 0 &&
                           Number.isInteger(visibleStopIndex) &&

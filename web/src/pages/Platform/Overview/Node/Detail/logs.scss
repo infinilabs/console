@@ -89,12 +89,22 @@
     }
 
     &__meta {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
       flex-shrink: 0;
       color: rgba(0, 0, 0, 0.45);
       font-size: 12px;
       line-height: 20px;
-      padding-left: 10px;
-      border-left: 1px solid #d9d9d9;
+      margin-left: 12px;
+
+      &::before {
+        content: "";
+        width: 1px;
+        height: 12px;
+        background: #d9d9d9;
+        flex-shrink: 0;
+      }
     }
   }
 
@@ -110,19 +120,29 @@
       min-width: 0;
       flex: 1 1 auto;
       font-weight: 500;
+      padding-right: 12px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
     &__meta {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
       flex-shrink: 0;
       white-space: nowrap;
       color: rgba(0, 0, 0, 0.45);
       font-size: 12px;
       margin-left: auto;
-      padding-left: 10px;
-      border-left: 1px solid #d9d9d9;
+
+      &::before {
+        content: "";
+        width: 1px;
+        height: 12px;
+        background: #d9d9d9;
+        flex-shrink: 0;
+      }
     }
   }
 

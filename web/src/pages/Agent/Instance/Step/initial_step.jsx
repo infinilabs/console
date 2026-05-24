@@ -5,11 +5,9 @@ import {
   Icon,
   Divider,
   Spin,
-  Card,
-  Row,
-  Col,
   message,
   Tooltip,
+  Popover,
 } from "antd";
 import React from "react";
 import { formatMessage } from "umi/locale";
@@ -152,41 +150,69 @@ export class InitialStep extends React.Component {
     );
   };
 
-  renderConsoleAccessInfo = (consoleEndpoint, managerToken, managerTokenTip) => (
-    <Card
-      size="small"
-      title={formatMessage({
-        id: "agent.instance.registration.console.title",
-      })}
-      style={{
-        marginBottom: 24,
-        borderRadius: 8,
-      }}
-      bodyStyle={{ padding: 16 }}
-    >
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ marginBottom: 8, fontWeight: 500 }}>
-          {this.renderLabel(
-            "agent.instance.registration.access.endpoint",
-            formatMessage({
-              id: "agent.instance.registration.console.endpoint.tip",
-            })
-          )}
+  renderConsoleAccessInfo = (consoleEndpoint, managerToken, managerTokenTip) => {
+    const hasConsoleAccessInfo = !!(consoleEndpoint || managerToken);
+    const content = (
+      <div style={{ width: 360, maxWidth: "calc(100vw - 64px)" }}>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 8, fontWeight: 500 }}>
+            {this.renderLabel(
+              "agent.instance.registration.access.endpoint",
+              formatMessage({
+                id: "agent.instance.registration.console.endpoint.tip",
+              })
+            )}
+          </div>
+          {this.renderReadonlyBlock(consoleEndpoint)}
         </div>
-        {this.renderReadonlyBlock(consoleEndpoint)}
-      </div>
 
-      <div>
-        <div style={{ marginBottom: 8, fontWeight: 500 }}>
-          {this.renderLabel(
-            "agent.instance.registration.access.credential",
-            managerTokenTip.join(" ")
-          )}
+        <div>
+          <div style={{ marginBottom: 8, fontWeight: 500 }}>
+            {this.renderLabel(
+              "agent.instance.registration.access.credential",
+              managerTokenTip.join(" ")
+            )}
+          </div>
+          {this.renderReadonlyBlock(managerToken)}
         </div>
-        {this.renderReadonlyBlock(managerToken)}
       </div>
-    </Card>
-  );
+    );
+
+    const icon = (
+      <Tooltip
+        title={formatMessage({
+          id: "agent.instance.registration.console.title",
+        })}
+      >
+        <Icon
+          type="info-circle"
+          style={{
+            marginLeft: 8,
+            color: hasConsoleAccessInfo ? "#1890ff" : "rgba(0,0,0,0.25)",
+            cursor: hasConsoleAccessInfo ? "pointer" : "not-allowed",
+            fontSize: 16,
+          }}
+        />
+      </Tooltip>
+    );
+
+    if (!hasConsoleAccessInfo) {
+      return icon;
+    }
+
+    return (
+      <Popover
+        trigger="click"
+        placement="rightTop"
+        title={formatMessage({
+          id: "agent.instance.registration.console.title",
+        })}
+        content={content}
+      >
+        {icon}
+      </Popover>
+    );
+  };
 
   render() {
     const {
@@ -248,107 +274,102 @@ export class InitialStep extends React.Component {
             initialValue: initialValue?.manager_token,
           })(<Input type="hidden" />)}
 
-          <Row gutter={24} type="flex" align="top">
-            <Col xs={24} xl={16}>
-              <Divider orientation="left">
-                {formatMessage({
-                  id: "agent.instance.registration.agent.title",
-                })}
-              </Divider>
-
-              <Form.Item
-                label={this.renderLabel(
-                  "agent.instance.registration.access.endpoint",
-                  formatMessage({
-                    id: "agent.instance.registration.agent.endpoint.tip",
-                  })
-                )}
-              >
-                {getFieldDecorator("endpoint", {
-                  initialValue: removeHttpSchema(initialValue?.endpoint || ""),
-                  normalize: (value) => {
-                    return removeHttpSchema(value || "").trim();
-                  },
-                  validateTrigger: ["onChange", "onBlur"],
-                  rules: [
-                    {
-                      required: true,
-                      message: formatMessage({
-                        id: "agent.instance.field.endpoint.form.required",
-                      }),
-                    },
-                    {
-                      type: "string",
-                      pattern: /^[\w\.\-_~%]+(\:\d+)?\s*$/,
-                      message: formatMessage({
-                        id: "cluster.regist.form.verify.valid.endpoint",
-                      }),
-                    },
-                  ],
-                })(
-                  <Input
-                    placeholder={formatMessage({
-                      id: "agent.instance.field.endpoint.placeholder",
-                    })}
-                    onChange={this.handleEndpointChange}
-                  />
-                )}
-              </Form.Item>
-
-              <Form.Item
-                label={formatMessage({
-                  id: "gateway.instance.field.tls.label",
-                })}
-              >
-                {getFieldDecorator("isTLS", {
-                  initialValue: isTLS(initialValue?.endpoint),
-                })(
-                  <Switch
-                    defaultChecked={isTLS(initialValue?.endpoint)}
-                    checkedChildren={<Icon type="check" />}
-                    unCheckedChildren={<Icon type="close" />}
-                    checked={this.state.isPageTLS}
-                    onChange={this.isPageTLSChange}
-                  />
-                )}
-              </Form.Item>
-
-              <Form.Item
-                label={this.renderLabel(
-                  "agent.instance.registration.access.credential",
-                  agentAccessTokenTip
-                )}
-              >
-                {getFieldDecorator("access_token", {
-                  initialValue: initialValue?.access_token || "",
-                  rules: [
-                    {
-                      required: true,
-                      message: formatMessage({
-                        id: "agent.instance.registration.agent.token.required",
-                      }),
-                    },
-                  ],
-                })(
-                  <Input.TextArea
-                    autoComplete="off"
-                    autoSize={{ minRows: 3, maxRows: 4 }}
-                    placeholder={formatMessage({
-                      id: "agent.instance.registration.agent.token.placeholder",
-                    })}
-                  />
-                )}
-              </Form.Item>
-            </Col>
-
-            <Col xs={24} xl={8}>
+          <Divider orientation="left">
+            <span style={{ display: "inline-flex", alignItems: "center" }}>
+              {formatMessage({
+                id: "agent.instance.registration.agent.title",
+              })}
               {this.renderConsoleAccessInfo(
                 consoleEndpoint,
                 managerToken,
                 managerTokenTip
               )}
-            </Col>
-          </Row>
+            </span>
+          </Divider>
+
+          <Form.Item
+            label={this.renderLabel(
+              "agent.instance.registration.access.endpoint",
+              formatMessage({
+                id: "agent.instance.registration.agent.endpoint.tip",
+              })
+            )}
+          >
+            {getFieldDecorator("endpoint", {
+              initialValue: removeHttpSchema(initialValue?.endpoint || ""),
+              normalize: (value) => {
+                return removeHttpSchema(value || "").trim();
+              },
+              validateTrigger: ["onChange", "onBlur"],
+              rules: [
+                {
+                  required: true,
+                  message: formatMessage({
+                    id: "agent.instance.field.endpoint.form.required",
+                  }),
+                },
+                {
+                  type: "string",
+                  pattern: /^[\w\.\-_~%]+(\:\d+)?\s*$/,
+                  message: formatMessage({
+                    id: "cluster.regist.form.verify.valid.endpoint",
+                  }),
+                },
+              ],
+            })(
+              <Input
+                placeholder={formatMessage({
+                  id: "agent.instance.field.endpoint.placeholder",
+                })}
+                onChange={this.handleEndpointChange}
+              />
+            )}
+          </Form.Item>
+
+          <Form.Item
+            label={formatMessage({
+              id: "gateway.instance.field.tls.label",
+            })}
+          >
+            {getFieldDecorator("isTLS", {
+              initialValue: isTLS(initialValue?.endpoint),
+            })(
+              <Switch
+                defaultChecked={isTLS(initialValue?.endpoint)}
+                checkedChildren={<Icon type="check" />}
+                unCheckedChildren={<Icon type="close" />}
+                checked={this.state.isPageTLS}
+                onChange={this.isPageTLSChange}
+              />
+            )}
+          </Form.Item>
+
+          <Form.Item
+            label={this.renderLabel(
+              "agent.instance.registration.access.credential",
+              agentAccessTokenTip
+            )}
+          >
+            {getFieldDecorator("access_token", {
+              initialValue: initialValue?.access_token || "",
+              rules: [
+                {
+                  required: true,
+                  message: formatMessage({
+                    id: "agent.instance.registration.agent.token.required",
+                  }),
+                },
+              ],
+            })(
+              <Input.TextArea
+                autoComplete="off"
+                autoSize={{ minRows: 3, maxRows: 4 }}
+                placeholder={formatMessage({
+                  id: "agent.instance.registration.agent.token.placeholder",
+                })}
+              />
+            )}
+          </Form.Item>
         </Form>
       </Spin>
     );

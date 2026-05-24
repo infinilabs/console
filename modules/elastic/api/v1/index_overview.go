@@ -130,7 +130,7 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, ctx context.Context, 
 	}
 	statusMetric, err := h.GetIndexStatusOfRecentDay(firstClusterID, firstIndexName)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("FetchIndexInfo failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -241,7 +241,7 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, ctx context.Context, 
 	}
 	metrics, err := h.getMetrics(ctx, query, nodeMetricItems, bucketSize)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("FetchIndexInfo failed: %v", err)
 		h.WriteError(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -473,7 +473,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 	resBody := map[string]interface{}{}
 	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, clusterID, MetricTypeIndexStats, 60)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetSingleIndexMetrics failed: %v", err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -501,7 +501,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
 	du, err := time.ParseDuration(timeout)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetSingleIndexMetrics failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -575,7 +575,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 		}
 		metrics, err = h.getSingleMetrics(ctx, metricItems, query, bucketSize)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("GetSingleIndexMetrics failed: %v", err)
 			h.WriteError(w, err, http.StatusInternalServerError)
 			return
 		}
@@ -584,7 +584,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 		if metricItem.HitsTotal > 0 && metricItem.MinBucketSize == 0 {
 			minBucketSize, err := GetMetricMinBucketSize(clusterID, MetricTypeIndexStats)
 			if err != nil {
-				log.Error(err)
+				log.Errorf("GetSingleIndexMetrics failed: %v", err)
 			} else {
 				metricItem.MinBucketSize = int64(minBucketSize)
 			}
@@ -668,7 +668,7 @@ func (h *APIHandler) GetIndexHealthMetric(ctx context.Context, id, indexName str
 		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, cerr.New(cerr.ErrTypeRequestTimeout, "", err)
 		}
-		log.Error(err)
+		log.Errorf("GetIndexHealthMetric failed: %v", err)
 		return nil, err
 	}
 
@@ -757,6 +757,7 @@ func (h *APIHandler) GetIndexStatusOfRecentDay(clusterID, indexName string) (map
 					"term_health": util.MapStr{
 						"terms": util.MapStr{
 							"field": "payload.elasticsearch.index_health.status",
+							"size":  10,
 						},
 					},
 				},

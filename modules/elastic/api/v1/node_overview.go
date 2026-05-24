@@ -202,15 +202,13 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 
 	q1 := orm.Query{WildcardIndex: true}
 	query := util.MapStr{
+		"size": 1000,
 		"sort": []util.MapStr{
 			{
 				"timestamp": util.MapStr{
 					"order": "desc",
 				},
 			},
-		},
-		"collapse": util.MapStr{
-			"field": "metadata.labels.node_id",
 		},
 		"query": util.MapStr{
 			"bool": util.MapStr{
@@ -242,7 +240,7 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 
 	err, results := orm.Search(&event.Event{}, &q1)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("FetchNodeInfo failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -252,11 +250,17 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 	}
 	var clusterID string
 	statusMap := map[string]interface{}{}
+	seenNodeIDs := map[string]struct{}{}
 	for _, v := range results.Result {
 		result, ok := v.(map[string]interface{})
 		if ok {
 			nodeID, ok := util.GetMapValueByKeys([]string{"metadata", "labels", "node_id"}, result)
 			if ok {
+				nodeIDStr := util.ToString(nodeID)
+				if _, exists := seenNodeIDs[nodeIDStr]; exists {
+					continue
+				}
+				seenNodeIDs[nodeIDStr] = struct{}{}
 				source := map[string]interface{}{}
 				//timestamp, ok := result["timestamp"].(string)
 				uptime, ok := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "node_stats", "jvm", "uptime_in_millis"}, result)
@@ -295,13 +299,13 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 					}
 				}
 
-				statusMap[util.ToString(nodeID)] = source
+				statusMap[nodeIDStr] = source
 			}
 		}
 	}
 	statusMetric, err := getNodeOnlineStatusOfRecentDay(nodeIDs)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("FetchNodeInfo failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -412,7 +416,7 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 	}
 	metrics, err := h.getMetrics(context.Background(), query, nodeMetricItems, bucketSize)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("FetchNodeInfo failed: %v", err)
 		h.WriteError(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -488,7 +492,6 @@ func (h *APIHandler) GetNodeInfo(w http.ResponseWriter, req *http.Request, ps ht
 		orm.Eq("metadata.name", "node_stats"),
 		orm.Eq("metadata.labels.node_id", nodeID),
 	)
-	q1.Collapse("metadata.labels.node_id")
 	q1.AddSort("timestamp", orm.DESC)
 	err, result := orm.Search(&event.Event{}, &q1)
 	kvs := util.MapStr{}
@@ -569,7 +572,7 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 	clusterID := ps.MustGetParameter("id")
 	clusterUUID, err := adapter.GetClusterUUID(clusterID)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetSingleNodeMetrics failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -607,7 +610,7 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 	resBody := map[string]interface{}{}
 	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, clusterID, MetricTypeNodeStats, 60)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetSingleNodeMetrics failed: %v", err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -691,13 +694,13 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 	metricItems = append(metricItems, metricItem)
 	metrics, err := h.getSingleMetrics(context.Background(), metricItems, query, bucketSize)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetSingleNodeMetrics failed: %v", err)
 		h.WriteError(w, err, http.StatusInternalServerError)
 		return
 	}
 	healthMetric, err := getNodeHealthMetric(query, bucketSize)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetSingleNodeMetrics failed: %v", err)
 		h.WriteError(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -729,7 +732,7 @@ func getNodeHealthMetric(query util.MapStr, bucketSize int) (*common.MetricItem,
 	}
 	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).SearchWithRawQueryDSL(getAllMetricsIndex(), util.MustToJSONBytes(query))
 	if err != nil {
-		log.Error(err)
+		log.Errorf("getNodeHealthMetric failed: %v", err)
 		return nil, err
 	}
 
@@ -741,7 +744,7 @@ func getNodeHealthMetric(query util.MapStr, bucketSize int) (*common.MetricItem,
 		for _, bucket := range response.Aggregations["dates"].Buckets {
 			v, ok := bucket["key"].(float64)
 			if !ok {
-				log.Error("invalid bucket key")
+				log.Errorf("getNodeHealthMetric invalid bucket key in aggregation response")
 				return nil, fmt.Errorf("invalid bucket key")
 			}
 			dateTime := int64(v)
@@ -1041,20 +1044,21 @@ func (h *APIHandler) getLatestIndices(req *http.Request, min string, max string,
 		},
 	}
 	q := &orm.Query{RawQuery: util.MustToJSONBytes(query), WildcardIndex: true}
+	indexInfos := map[string]util.MapStr{}
 	err, searchResult := orm.Search(event.Event{}, q)
 	if err != nil {
-		return nil, err
-	}
-	indexInfos := map[string]util.MapStr{}
-	for _, hit := range searchResult.Result {
-		if hitM, ok := hit.(map[string]interface{}); ok {
-			indexInfo, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "index_stats", "index_info"}, hitM)
-			indexName, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "index_name"}, hitM)
-			if v, ok := indexName.(string); ok {
-				if infoM, ok := indexInfo.(map[string]interface{}); ok {
-					if _, ok = infoM["index"].(string); ok {
-						infoM["timestamp"] = hitM["timestamp"]
-						indexInfos[v] = infoM
+		log.Warnf("failed to enrich latest indices for cluster [%s] in v1 API, fallback to base index state only: %v", clusterID, err)
+	} else {
+		for _, hit := range searchResult.Result {
+			if hitM, ok := hit.(map[string]interface{}); ok {
+				indexInfo, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "index_stats", "index_info"}, hitM)
+				indexName, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "index_name"}, hitM)
+				if v, ok := indexName.(string); ok {
+					if infoM, ok := indexInfo.(map[string]interface{}); ok {
+						if _, ok = infoM["index"].(string); ok {
+							infoM["timestamp"] = hitM["timestamp"]
+							indexInfos[v] = infoM
+						}
 					}
 				}
 			}
@@ -1123,7 +1127,7 @@ func (h *APIHandler) GetNodeShards(w http.ResponseWriter, req *http.Request, ps 
 			shardInfo, ok = util.GetMapValueByKeys([]string{"payload", "elasticsearch", "node_stats", "shard_info", "shards"}, row)
 			qps, err := h.getIndexQPS(clusterID, 20)
 			if err != nil {
-				log.Error(err)
+				log.Errorf("GetNodeShards failed: %v", err)
 				h.WriteError(w, err.Error(), http.StatusInternalServerError)
 				return
 			}

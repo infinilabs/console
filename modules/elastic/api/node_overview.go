@@ -204,7 +204,7 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
 	du, err := time.ParseDuration(timeout)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("invalid fetch node info timeout [%s]: %v", timeout, err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -213,15 +213,13 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 
 	q1 := orm.Query{WildcardIndex: true}
 	query := util.MapStr{
+		"size": 1000,
 		"sort": []util.MapStr{
 			{
 				"timestamp": util.MapStr{
 					"order": "desc",
 				},
 			},
-		},
-		"collapse": util.MapStr{
-			"field": "metadata.labels.node_id",
 		},
 		"query": util.MapStr{
 			"bool": util.MapStr{
@@ -253,16 +251,22 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 
 	err, results := orm.Search(&event.Event{}, &q1)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("failed to search node overview info for nodes %v: %v", nodeIDs, err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	statusMap := map[string]interface{}{}
+	seenNodeIDs := map[string]struct{}{}
 	for _, v := range results.Result {
 		result, ok := v.(map[string]interface{})
 		if ok {
 			nodeID, ok := util.GetMapValueByKeys([]string{"metadata", "labels", "node_id"}, result)
 			if ok {
+				nodeIDStr := util.ToString(nodeID)
+				if _, exists := seenNodeIDs[nodeIDStr]; exists {
+					continue
+				}
+				seenNodeIDs[nodeIDStr] = struct{}{}
 				source := map[string]interface{}{}
 				//timestamp, ok := result["timestamp"].(string)
 				uptime, ok := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "node_stats", "jvm", "uptime_in_millis"}, result)
@@ -301,13 +305,13 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 					}
 				}
 
-				statusMap[util.ToString(nodeID)] = source
+				statusMap[nodeIDStr] = source
 			}
 		}
 	}
 	statusMetric, err := getNodeOnlineStatusOfRecentDay(nodeIDs)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("failed to get node online status for nodes %v: %v", nodeIDs, err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -418,7 +422,7 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 	}
 	metrics, err := h.getMetrics(ctx, "", query, nodeMetricItems, bucketSize)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("failed to get node overview metrics for nodes %v: %v", nodeIDs, err)
 		h.WriteError(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -495,7 +499,6 @@ func (h *APIHandler) GetNodeInfo(w http.ResponseWriter, req *http.Request, ps ht
 		orm.Eq("metadata.name", "node_stats"),
 		orm.Eq("metadata.labels.node_id", nodeID),
 	)
-	q1.Collapse("metadata.labels.node_id")
 	q1.AddSort("timestamp", orm.DESC)
 	err, result := orm.Search(&event.Event{}, &q1)
 	kvs := util.MapStr{}
@@ -628,7 +631,7 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 	resBody := map[string]interface{}{}
 	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, clusterID, v1.MetricTypeNodeStats, 60)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("failed to get node metric range for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -658,7 +661,7 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
 	du, err := time.ParseDuration(timeout)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("invalid node metric timeout [%s] for cluster [%s], node [%s], key [%s]: %v", timeout, clusterID, nodeID, metricKey, err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -668,7 +671,7 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 	if metricKey == NodeHealthMetricKey {
 		healthMetric, err := getNodeHealthMetric(ctx, query, bucketSize)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("failed to get node health metric for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -718,7 +721,7 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 		}
 		shardStateMetric, err := getNodeShardStateMetric(ctx, query, bucketSize)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("failed to get shard state metric for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -792,7 +795,7 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 
 		metrics, err = h.getSingleMetrics(ctx, metricItems, query, bucketSize)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("failed to get node metrics for cluster [%s], node [%s], key [%s]: %v", clusterID, nodeID, metricKey, err)
 			h.WriteError(w, err, http.StatusInternalServerError)
 			return
 		}
@@ -801,7 +804,7 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 		if metrics[metricKey].HitsTotal > 0 {
 			minBucketSize, err := v1.GetMetricMinBucketSize(clusterID, v1.MetricTypeNodeStats)
 			if err != nil {
-				log.Error(err)
+				log.Errorf("failed to get node metric min bucket size for cluster [%s], key [%s]: %v", clusterID, metricKey, err)
 			} else {
 				metrics[metricKey].MinBucketSize = int64(minBucketSize)
 			}
@@ -838,7 +841,7 @@ func getNodeShardStateMetric(ctx context.Context, query util.MapStr, bucketSize 
 	queryDSL := util.MustToJSONBytes(query)
 	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).QueryDSL(ctx, getAllMetricsIndex(), nil, queryDSL)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("failed to query shard state metric data: %v", err)
 		return nil, err
 	}
 
@@ -882,7 +885,7 @@ func getNodeHealthMetric(ctx context.Context, query util.MapStr, bucketSize int)
 	queryDSL := util.MustToJSONBytes(query)
 	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).QueryDSL(ctx, getAllMetricsIndex(), nil, queryDSL)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("failed to query node health metric data: %v", err)
 		return nil, err
 	}
 
@@ -894,7 +897,7 @@ func getNodeHealthMetric(ctx context.Context, query util.MapStr, bucketSize int)
 		for _, bucket := range response.Aggregations["dates"].Buckets {
 			v, ok := bucket["key"].(float64)
 			if !ok {
-				log.Error("invalid bucket key")
+				log.Errorf("invalid bucket key in node health metric aggregation: %#v", bucket["key"])
 				return nil, fmt.Errorf("invalid bucket key")
 			}
 			dateTime := int64(v)
@@ -1159,10 +1162,15 @@ func (h *APIHandler) getLatestIndices(req *http.Request, min string, max string,
 	}
 
 	query := util.MapStr{
-		"size":    10000,
-		"_source": []string{"metadata.labels.index_name", "payload.elasticsearch.shard_stats.docs", "payload.elasticsearch.shard_stats.store", "payload.elasticsearch.shard_stats.routing", "timestamp"},
-		"collapse": util.MapStr{
-			"field": "metadata.labels.shard_id",
+		"size": 10000,
+		"_source": []string{
+			"metadata.labels.index_name",
+			"metadata.labels.shard",
+			"metadata.labels.shard_id",
+			"payload.elasticsearch.shard_stats.docs",
+			"payload.elasticsearch.shard_stats.store",
+			"payload.elasticsearch.shard_stats.routing",
+			"timestamp",
 		},
 		"sort": []util.MapStr{
 			{
@@ -1210,35 +1218,49 @@ func (h *APIHandler) getLatestIndices(req *http.Request, min string, max string,
 		},
 	}
 	q := &orm.Query{RawQuery: util.MustToJSONBytes(query), WildcardIndex: true}
+	indexInfos := map[string]*ShardsSummary{}
 	err, searchResult := orm.Search(event.Event{}, q)
 	if err != nil {
-		return nil, err
-	}
-	indexInfos := map[string]*ShardsSummary{}
-	for _, hit := range searchResult.Result {
-		if hitM, ok := hit.(map[string]interface{}); ok {
-			shardDocCount, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "shard_stats", "docs", "count"}, hitM)
-			storeInBytes, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "shard_stats", "store", "size_in_bytes"}, hitM)
-			indexName, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "index_name"}, hitM)
-			primary, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "shard_stats", "routing", "primary"}, hitM)
-			if v, ok := indexName.(string); ok {
-				if _, ok = indexInfos[v]; !ok {
-					indexInfos[v] = &ShardsSummary{}
+		log.Warnf("failed to enrich latest indices for cluster [%s], fallback to base index state only: %v", clusterID, err)
+	} else {
+		seenShards := map[string]struct{}{}
+		for _, hit := range searchResult.Result {
+			if hitM, ok := hit.(map[string]interface{}); ok {
+				shardDocCount, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "shard_stats", "docs", "count"}, hitM)
+				storeInBytes, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "shard_stats", "store", "size_in_bytes"}, hitM)
+				indexName, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "index_name"}, hitM)
+				shardID, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "shard_id"}, hitM)
+				shardNum, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "shard"}, hitM)
+				primary, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "shard_stats", "routing", "primary"}, hitM)
+				if v, ok := indexName.(string); ok {
+					dedupeKey := util.ToString(shardID)
+					if dedupeKey == "" {
+						dedupeKey = fmt.Sprintf("%s:%s:%v", v, util.ToString(shardNum), primary)
+					}
+					if _, exists := seenShards[dedupeKey]; exists {
+						continue
+					}
+					seenShards[dedupeKey] = struct{}{}
+					if _, ok = indexInfos[v]; !ok {
+						indexInfos[v] = &ShardsSummary{}
+					}
+					indexInfo := indexInfos[v]
+					indexInfo.Index = v
+					if count, ok := shardDocCount.(float64); ok && primary == true {
+						indexInfo.DocsCount += int64(count)
+					}
+					if storeSize, ok := storeInBytes.(float64); ok {
+						indexInfo.StoreInBytes += int64(storeSize)
+					}
+					if primary == true {
+						indexInfo.Shards++
+					} else {
+						indexInfo.Replicas++
+					}
+					if indexInfo.Timestamp == nil {
+						indexInfo.Timestamp = hitM["timestamp"]
+					}
 				}
-				indexInfo := indexInfos[v]
-				indexInfo.Index = v
-				if count, ok := shardDocCount.(float64); ok && primary == true {
-					indexInfo.DocsCount += int64(count)
-				}
-				if storeSize, ok := storeInBytes.(float64); ok {
-					indexInfo.StoreInBytes += int64(storeSize)
-				}
-				if primary == true {
-					indexInfo.Shards++
-				} else {
-					indexInfo.Replicas++
-				}
-				indexInfo.Timestamp = hitM["timestamp"]
 			}
 		}
 	}
@@ -1306,7 +1328,7 @@ func (h *APIHandler) GetNodeShards(w http.ResponseWriter, req *http.Request, ps 
 	}
 	clusterUUID, err := h.getClusterUUID(clusterID)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("failed to get cluster UUID for cluster [%s] when listing node shards for node [%s]: %v", clusterID, nodeID, err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -1320,7 +1342,7 @@ func (h *APIHandler) GetNodeShards(w http.ResponseWriter, req *http.Request, ps 
 	q1.AddSort("timestamp", orm.DESC)
 	err, result := orm.Search(&event.Event{}, &q1)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("failed to search node shards for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -1328,7 +1350,7 @@ func (h *APIHandler) GetNodeShards(w http.ResponseWriter, req *http.Request, ps 
 	if len(result.Result) > 0 {
 		qps, err := h.getShardQPS(clusterID, nodeID, "", 20)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("failed to get shard QPS for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -1338,7 +1360,7 @@ func (h *APIHandler) GetNodeShards(w http.ResponseWriter, req *http.Request, ps 
 				source := util.MapStr(row)
 				shardV, err := source.GetValue("payload.elasticsearch.shard_stats")
 				if err != nil {
-					log.Error(err)
+					log.Errorf("failed to read shard stats from node shard result for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
 					continue
 				}
 				shardInfo := util.MapStr{}

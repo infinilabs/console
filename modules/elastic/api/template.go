@@ -41,7 +41,7 @@ func (h *APIHandler) HandleGetTemplateAction(w http.ResponseWriter, req *http.Re
 	esClient := elastic.GetClient(clusterID)
 	templates, err := esClient.GetTemplate("")
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleGetTemplateAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -54,13 +54,13 @@ func (h *APIHandler) HandleSaveTemplateAction(w http.ResponseWriter, req *http.R
 	esClient := elastic.GetClient(clusterID)
 	reqBody, err := io.ReadAll(req.Body)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleSaveTemplateAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	esResBody, err := esClient.PutTemplate(templateName, reqBody)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleSaveTemplateAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

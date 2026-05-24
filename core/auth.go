@@ -94,6 +94,26 @@ func (handler Handler) RequirePermission(h httprouter.Handle, permissions ...str
 	}
 }
 
+func RequestUsesSecureTransport(req *http.Request) bool {
+	return api.RequestUsesSecureTransport(req, api.SecureTransportOptions{TrustForwardHeaders: true})
+}
+
+func (handler Handler) RequireSecureTransport(h httprouter.Handle) httprouter.Handle {
+	return handler.Handler.RequireSecureTransport(h, api.SecureTransportOptions{TrustForwardHeaders: true})
+}
+
+func RequireSecureTransport(h httprouter.Handle) httprouter.Handle {
+	return api.RequireSecureTransport(h, api.SecureTransportOptions{TrustForwardHeaders: true})
+}
+
+func (handler Handler) RequireReplayProtection(h httprouter.Handle) httprouter.Handle {
+	return handler.Handler.RequireReplayProtection(h)
+}
+
+func RequireReplayProtection(h httprouter.Handle) httprouter.Handle {
+	return api.RequireReplayProtection(h)
+}
+
 func (handler Handler) RequireClusterPermission(h httprouter.Handle, permissions ...string) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 

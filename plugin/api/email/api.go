@@ -45,10 +45,10 @@ type EmailAPI struct {
 
 func InitAPI() {
 	email := EmailAPI{}
-	api.HandleAPIMethod(api.POST, "/email/server/_test", email.RequirePermission(email.testEmailServer, enum.PermissionSmtpServerRead))
+	api.HandleAPIMethod(api.POST, "/email/server/_test", email.RequireSecureTransport(email.RequireReplayProtection(email.RequirePermission(email.testEmailServer, enum.PermissionSmtpServerRead))))
 	api.HandleAPIMethod(api.GET, "/email/server/:email_server_id", email.RequirePermission(email.getEmailServer, enum.PermissionAlertRuleRead))
-	api.HandleAPIMethod(api.POST, "/email/server", email.RequirePermission(email.createEmailServer, enum.PermissionSmtpServerWrite))
-	api.HandleAPIMethod(api.PUT, "/email/server/:email_server_id", email.RequirePermission(email.updateEmailServer, enum.PermissionSmtpServerWrite))
+	api.HandleAPIMethod(api.POST, "/email/server", email.RequireSecureTransport(email.RequireReplayProtection(email.RequirePermission(email.createEmailServer, enum.PermissionSmtpServerWrite))))
+	api.HandleAPIMethod(api.PUT, "/email/server/:email_server_id", email.RequireSecureTransport(email.RequireReplayProtection(email.RequirePermission(email.updateEmailServer, enum.PermissionSmtpServerWrite))))
 	api.HandleAPIMethod(api.DELETE, "/email/server/:email_server_id", email.RequirePermission(email.deleteEmailServer, enum.PermissionSmtpServerWrite))
 	api.HandleAPIMethod(api.GET, "/email/server/_search", email.RequirePermission(email.searchEmailServer, enum.PermissionSmtpServerRead))
 

@@ -79,7 +79,7 @@ func (dal *Role) Create(role *rbac.Role) (string, error) {
 func (dal *Role) Delete(id string) error {
 	role := rbac.Role{}
 	role.ID = id
-	return orm.Delete(nil, role)
+	return orm.Delete(nil, &role)
 }
 
 func (dal *Role) Search(keyword string, from, size int) (orm.Result, error) {

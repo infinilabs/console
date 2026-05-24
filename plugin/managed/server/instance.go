@@ -30,13 +30,14 @@ package server
 import (
 	"context"
 	"fmt"
-	"infini.sh/framework/core/event"
-	"infini.sh/framework/core/global"
-	"infini.sh/framework/core/task"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"infini.sh/framework/core/event"
+	"infini.sh/framework/core/global"
+	"infini.sh/framework/core/task"
 
 	log "github.com/cihub/seelog"
 	"infini.sh/console/core/security/enum"
@@ -57,6 +58,7 @@ var instanceSecrets = map[string][]common.Secrets{} //map instance->secrets TODO
 func init() {
 	//for public usage, agent can report self to server, usually need to enroll by manager
 	api.HandleAPIMethod(api.POST, common.REGISTER_API, handler.registerInstance) //client register self to config servers
+	api.HandleAPIMethod(api.POST, instanceTokenExchangeAPI, handler.exchangeInstanceToken)
 
 	//for public usage, get install script
 	api.HandleAPIMethod(api.GET, GET_INSTALL_SCRIPT_API, handler.getInstallScript)
@@ -85,7 +87,6 @@ func init() {
 }
 
 func (h APIHandler) registerInstance(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-
 	var obj = &model.Instance{}
 	err := h.DecodeJSON(req, obj)
 	if err != nil {
@@ -97,12 +98,22 @@ func (h APIHandler) registerInstance(w http.ResponseWriter, req *http.Request, p
 		return
 	}
 
-	oldInst := &model.Instance{}
-	oldInst.ID = obj.ID
-	exists, err := orm.Get(oldInst)
-	if exists {
-		obj.Created = oldInst.Created
+	if writeTokenAuthError(h, w, validateRegisterRequestAuth(req, obj)) {
+		return
 	}
+
+	oldInst, err := loadExistingInstance(obj.ID)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if oldInst != nil {
+		obj.Created = oldInst.Created
+		preserveManagedCredentialIDs(obj, oldInst)
+	}
+
+	clearInstanceAccessToken(obj)
+
 	err = orm.Save(nil, obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)

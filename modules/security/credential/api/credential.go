@@ -132,6 +132,22 @@ func (h *APIHandler) updateCredential(w http.ResponseWriter, req *http.Request, 
 					}
 				}
 			}
+		case credential.AccessToken:
+			var oldToken string
+			if oldParams, ok := obj.Payload[newObj.Type].(map[string]interface{}); ok {
+				if token, ok := oldParams["access_token"].(string); ok {
+					oldToken = token
+				} else {
+					http.Error(w, fmt.Sprintf("invalid access token of credential [%s]", obj.ID), http.StatusInternalServerError)
+					return
+				}
+			}
+			if params, ok := newObj.Payload[newObj.Type].(map[string]interface{}); ok {
+				if token, ok := params["access_token"].(string); ok && token != oldToken {
+					obj.Payload = newObj.Payload
+					encodeChanged = true
+				}
+			}
 		default:
 			h.WriteError(w, fmt.Sprintf("unsupport credential type [%s]", newObj.Type), http.StatusInternalServerError)
 			return
@@ -276,6 +292,7 @@ func (h *APIHandler) searchCredential(w http.ResponseWriter, req *http.Request, 
 		for _, hit := range searchRes.Hits.Hits {
 			delete(hit.Source, "encrypt")
 			util.MapStr(hit.Source).Delete("payload.basic_auth.password")
+			util.MapStr(hit.Source).Delete("payload.access_token.access_token")
 		}
 	}
 
@@ -296,5 +313,6 @@ func (h *APIHandler) getCredential(w http.ResponseWriter, req *http.Request, ps 
 		return
 	}
 	util.MapStr(obj.Payload).Delete("basic_auth.password")
+	util.MapStr(obj.Payload).Delete("access_token.access_token")
 	h.WriteGetOKJSON(w, id, obj)
 }

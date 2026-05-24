@@ -11,7 +11,9 @@ Information about release notes of INFINI Console is provided here.
 ### ❌ Breaking changes  
 ### 🚀 Features  
 ### 🐛 Bug fix  
+- fix: secure managed Agent install, registration, token exchange, and config sync with scoped API tokens instead of the previous unauthenticated path
 ### ✈️ Improvements  
+- chore: align managed Agent bootstrap with the web endpoint and simplify the post-register token exchange flow and credential naming
 
 ## 1.30.2 (2026-03-16)
 ### ❌ Breaking changes  

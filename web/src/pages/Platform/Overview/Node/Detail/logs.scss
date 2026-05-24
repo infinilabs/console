@@ -1,17 +1,151 @@
 .logs {
   .form-line {
     display: flex;
-    align-items: center;
-    gap: 1em;
+    align-items: flex-start;
+    flex-wrap: nowrap;
+    gap: 16px;
+
     .form-item {
       display: flex;
       align-items: center;
-      gap: 3px;
+      gap: 8px;
+      min-width: 0;
+
       .offset {
         width: 100px;
       }
+
+      &--log-file {
+        flex: 1 1 auto;
+        min-width: 0;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      &__label {
+        line-height: 32px;
+        white-space: nowrap;
+      }
     }
   }
+
+  .log-file-picker {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .log-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 8px;
+    flex: 0 0 auto;
+    margin-left: auto;
+  }
+
+  .log-file-select {
+    width: min(100%, 460px);
+
+    .ant-select-selection-selected-value {
+      max-width: calc(100% - 24px);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .log-file-summary {
+    max-width: 100%;
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 10px;
+    min-width: 0;
+    white-space: nowrap;
+
+    &__name {
+      flex: 0 1 160px;
+      max-width: 160px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: rgba(0, 0, 0, 0.85);
+      font-size: 12px;
+      line-height: 20px;
+    }
+
+    &__path {
+      min-width: 0;
+      flex: 1 1 auto;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: rgba(0, 0, 0, 0.45);
+      font-size: 12px;
+      line-height: 20px;
+    }
+
+    &__meta {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+      color: rgba(0, 0, 0, 0.45);
+      font-size: 12px;
+      line-height: 20px;
+      margin-left: 12px;
+
+      &::before {
+        content: "";
+        width: 1px;
+        height: 12px;
+        background: #d9d9d9;
+        flex-shrink: 0;
+      }
+    }
+  }
+
+  .log-file-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-width: 0;
+    gap: 16px;
+
+    &__name {
+      min-width: 0;
+      flex: 1 1 auto;
+      font-weight: 500;
+      padding-right: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    &__meta {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+      white-space: nowrap;
+      color: rgba(0, 0, 0, 0.45);
+      font-size: 12px;
+      margin-left: auto;
+
+      &::before {
+        content: "";
+        width: 1px;
+        height: 12px;
+        background: #d9d9d9;
+        flex-shrink: 0;
+      }
+    }
+  }
+
   .viewer {
     margin-top: 10px;
   }
@@ -19,9 +153,17 @@
     height: 100%;
     width: 100%;
     background-color: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 4px;
+    overflow: hidden;
+
     .v-header {
-      border: 1px solid #d9d9d9;
+      background-color: #fafafa;
+      border-bottom: 1px solid #e8e8e8;
       display: flex;
+      min-height: 40px;
+      align-items: center;
+
       .icon-list {
         margin-left: auto;
         margin-right: 1em;
@@ -31,28 +173,42 @@
       }
     }
     .body {
-      background-color: black;
-      color: #fff;
+      background-color: #fff;
+      color: rgba(0, 0, 0, 0.85);
       font-size: 12px;
       padding-right: 0;
+      font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+
       .log-row {
         display: flex;
         gap: 1em;
+        padding: 4px 12px;
+        border-bottom: 1px solid #f5f5f5;
+
+        &:hover {
+          background-color: #fafafa;
+        }
+
         .number {
           text-align: right;
+          color: rgba(0, 0, 0, 0.45);
+          flex-shrink: 0;
         }
         .log-text {
           display: flex;
           overflow: hidden;
+          min-width: 0;
 
           .more {
             cursor: pointer;
-            margin-right: 4px ;
+            margin-right: 4px;
+            color: rgba(0, 0, 0, 0.45);
           }
           .text {
             margin-bottom: 0;
             word-break: break-all;
             word-wrap: break-word;
+            color: inherit;
             &.collapsed {
               white-space: nowrap;
               text-overflow: ellipsis;
@@ -61,6 +217,21 @@
           }
         }
       }
+    }
+  }
+
+  @media (max-width: 1320px) {
+    .form-line {
+      flex-wrap: wrap;
+    }
+
+    .log-actions {
+      width: 100%;
+      margin-left: 0;
+    }
+
+    .log-file-select {
+      width: min(100%, 420px);
     }
   }
 }

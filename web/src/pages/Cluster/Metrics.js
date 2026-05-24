@@ -378,15 +378,24 @@ class ClusterMonitor extends PureComponent {
               .isAfter(clusterStats?.timestamp) ? (
             <div className={styles.mask}>
               <div>
-                Cluster is not monitored.{" "}
+                {formatMessage({
+                  id: "cluster.manage.monitoring.notice.unmonitored",
+                })}{" "}
                 <Button type="primary">
                   <Link to={`/resource/cluster/${selectedCluster.id}/edit`}>
-                    Go to open
+                    {formatMessage({
+                      id: "cluster.manage.monitoring.notice.enable_button",
+                    })}
                   </Link>
                 </Button>
               </div>
               <div className={styles.time}>
-                Last data collection time: {clusterStats?.timestamp}
+                {formatMessage(
+                  {
+                    id: "cluster.manage.monitoring.notice.last_collection_time",
+                  },
+                  { timestamp: clusterStats?.timestamp || "N/A" }
+                )}
               </div>
             </div>
           ) : null}

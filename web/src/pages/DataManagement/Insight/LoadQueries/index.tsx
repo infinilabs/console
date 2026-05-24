@@ -1,5 +1,6 @@
 import { Drawer, Icon, Input, List, Popconfirm, Select, Tag } from "antd";
 import { useMemo, useState } from "react";
+import { formatMessage } from "umi/locale";
 import { IRecord } from "../InsightBar";
 import styles from "./index.less";
 
@@ -82,15 +83,15 @@ export default (props: IProps) => {
                 actions={[
                   <Popconfirm
                     placement="topRight"
-                    title="Sure to delete?"
+                    title={formatMessage({ id: "app.message.confirm.delete" })}
                     onConfirm={(e) => {
                       e.stopPropagation();
                       item.id && onDelete(item.id)
                     }}
-                    okText="Yes"
-                    cancelText="No"
+                    okText={formatMessage({ id: "form.button.ok" })}
+                    cancelText={formatMessage({ id: "form.button.cancel" })}
                   >
-                    <a key="delete" onClick={(e) => e.stopPropagation()}>delete</a>
+                    <a key="delete" onClick={(e) => e.stopPropagation()}>{formatMessage({ id: "form.button.delete" })}</a>
                   </Popconfirm>,
                 ]}
               >

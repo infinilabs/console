@@ -15,7 +15,9 @@ import MonitorConfigsForm from "../MonitorConfigsForm";
 import MetadataConfigsForm from "../MetadataConfigsForm";
 import "../Form.scss";
 import AgentCredentialForm from "../AgentCredentialForm";
+import CollectMode from "../CollectMode";
 import { MANUAL_VALUE } from "./initial_step";
+import { getClusterConnectErrorMessageFromResponse } from "../utils";
 
 @Form.create()
 export class ExtraStep extends React.Component {
@@ -27,15 +29,25 @@ export class ExtraStep extends React.Component {
       agentCredentialRequired: false,
       isManual: false,
       needAuth: false,
+      collectMode: "agentless",
     };
   }
   componentDidMount() {
     const { initialValue } = this.props
-    const needAuth = initialValue?.credential_id ? true : false
+    let collectMode = initialValue?.metric_collection_mode || "agentless";
+    if (
+      typeof initialValue?.metric_collection_mode === "undefined" &&
+      initialValue?.monitor_configs?.node_stats?.enabled === false &&
+      initialValue?.monitor_configs?.index_stats?.enabled === false
+    ) {
+      collectMode = "agent";
+    }
+    const needAuth = !!(initialValue?.credential_id || initialValue?.username);
     this.setState({
       monitored: initialValue?.monitored ?? true,
       needAuth,
-      isManual: needAuth ? !!initialValue?.username : false
+      isManual: !initialValue?.agent_credential_id && !!initialValue?.agent_username,
+      collectMode,
     });
   }
 
@@ -66,6 +78,7 @@ export class ExtraStep extends React.Component {
           let newVals = {
             hosts: initialValue?.hosts || [],
             schema: initialValue.isTLS === true ? "https" : "http",
+            probe_path: initialValue?.probe_path,
           };
           newVals = {
             ...newVals,
@@ -86,11 +99,18 @@ export class ExtraStep extends React.Component {
             type: "clusterConfig/doTryConnect",
             payload: newVals,
           });
-          if (res) {
+          if (res && !res.error) {
             message.success(
               formatMessage({
                 id: "app.message.connect.success",
               })
+            );
+          } else if (res?.error) {
+            message.error(
+              getClusterConnectErrorMessageFromResponse(
+                res,
+                "cluster.regist.try_connect.failed"
+              )
             );
           }
           this.setState({ btnLoadingAgent: false });
@@ -124,7 +144,11 @@ export class ExtraStep extends React.Component {
           >
             {initialValue?.host}
           </Descriptions.Item>
-          <Descriptions.Item label="TLS">
+          <Descriptions.Item
+            label={formatMessage({
+              id: "cluster.manage.field.tls.label",
+            })}
+          >
             {initialValue?.isTLS ? (
               <Icon type="lock" style={{ color: "#52c41a" }} />
             ) : null}
@@ -215,21 +239,46 @@ export class ExtraStep extends React.Component {
               initialValue: "",
             })(<Input.TextArea placeholder="Cluster description" />)}
           </Form.Item>
-          <AgentCredentialForm
-            btnLoading={this.state.btnLoadingAgent}
-            needAuth={this.state.needAuth}
+          <CollectMode
             form={this.props.form}
-            initialValue={{
-              ...(initialValue || {}),
-              agent_credential_id: initialValue?.credential_id,
-              username: initialValue?.username,
-              password: initialValue?.password,
+            editValue={initialValue}
+            mode={this.state.collectMode}
+            onChange={(mode) => {
+              this.setState({ collectMode: mode, agentCredentialRequired: false }, () => {
+                const monitor_configs = this.props.form.getFieldValue("monitor_configs") || {};
+                if (mode === "agent") {
+                  monitor_configs.node_stats = { ...(monitor_configs.node_stats || {}), enabled: false };
+                  monitor_configs.index_stats = { ...(monitor_configs.index_stats || {}), enabled: false };
+                } else {
+                  monitor_configs.node_stats = { ...(monitor_configs.node_stats || {}), enabled: true };
+                  monitor_configs.index_stats = { ...(monitor_configs.index_stats || {}), enabled: true };
+                }
+                this.props.form.setFieldsValue({
+                  metric_collection_mode: mode,
+                  monitor_configs,
+                });
+              });
             }}
-            isManual={this.state.isManual}
-            isEdit={true}
-            tryConnect={this.tryConnect}
-            credentialRequired={this.state.agentCredentialRequired}
           />
+          {this.state.collectMode === "agent" ? (
+            <>
+              <AgentCredentialForm
+                btnLoading={this.state.btnLoadingAgent}
+                needAuth={this.state.needAuth}
+                form={this.props.form}
+                initialValue={{
+                  ...(initialValue || {}),
+                  agent_credential_id: initialValue?.agent_credential_id,
+                  username: initialValue?.agent_username,
+                  password: initialValue?.agent_password,
+                }}
+                isManual={this.state.isManual}
+                isEdit={true}
+                tryConnect={this.tryConnect}
+                credentialRequired={this.state.agentCredentialRequired}
+              />
+            </>
+          ) : null}
           <Form.Item
             label={formatMessage({
               id: "cluster.manage.table.column.discovery.enabled",
@@ -269,13 +318,18 @@ export class ExtraStep extends React.Component {
             form={this.props.form}
             editValue={initialValue}
             visible={this.state.monitored}
+            collectMode={this.state.collectMode}
           />
           <MetadataConfigsForm
             form={this.props.form}
             editValue={initialValue}
           />
 
-          <Form.Item label="Tags">
+          <Form.Item
+            label={formatMessage({
+              id: "cluster.manage.field.tags.label",
+            })}
+          >
             {getFieldDecorator("tags", {
               initialValue: initialValue?.tags || ["default"],
               rules: [],

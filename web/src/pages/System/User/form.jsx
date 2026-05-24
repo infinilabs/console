@@ -9,6 +9,7 @@ import {
   Row,
   Col,
   Result,
+  message,
 } from "antd";
 import PageHeaderWrapper from "@/components/PageHeaderWrapper";
 // import "./form.scss";
@@ -45,8 +46,18 @@ const tailFormItemLayout = {
 const UserForm = (props) => {
   const { getFieldDecorator } = props.form;
   const [isLoading, setIsLoading] = useState(false);
+  const breadcrumbList = [
+    { title: "home", locale: "menu.home", href: "/" },
+    { title: "system", locale: "menu.system" },
+    { title: "security", locale: "menu.system.security" },
+    {
+      title: props.mode === "edit" ? "edit_user" : "new_user",
+      locale:
+        props.mode === "edit" ? "menu.system.edit_user" : "menu.system.new_user",
+    },
+  ];
 
-  const { value: roleRes } = useFetch(
+  const { loading: rolesLoading, error: rolesError, value: roleRes } = useFetch(
     `/role/_search`,
     { queryParams: { size: 10000 } },
     []
@@ -67,24 +78,35 @@ const UserForm = (props) => {
       e.preventDefault();
       setIsLoading(true);
       props.form.validateFields(async (err, values) => {
-        if (err) {
-          return false;
-        }
-        if (typeof props.onSaveClick == "function") {
-          let newVals = {
-            ...values,
-          };
-          if (newVals.roles) {
-            newVals.roles = newVals.roles.map((rid) => {
-              return roles.find((role) => role.id == rid);
-            });
+        try {
+          if (err || rolesLoading || rolesError) {
+            return;
           }
-          await props.onSaveClick(newVals);
+          if (typeof props.onSaveClick == "function") {
+            let newVals = {
+              ...values,
+            };
+            if (newVals.roles) {
+              newVals.roles = newVals.roles
+                .map((rid) => {
+                  return roles.find((role) => role.id == rid);
+                })
+                .filter(Boolean);
+            }
+            await props.onSaveClick(newVals);
+          }
+        } catch (error) {
+          message.error(
+            formatMessage({
+              id: "app.message.save.failed",
+            })
+          );
+        } finally {
           setIsLoading(false);
         }
       });
     },
-    [props.form, roles]
+    [props.form, props.onSaveClick, roles, rolesError, rolesLoading]
   );
   const editValue = props.value || {};
   if (editValue.roles && editValue.roles.length && editValue.roles[0]?.name) {
@@ -95,7 +117,7 @@ const UserForm = (props) => {
   };
 
   return (
-    <PageHeaderWrapper>
+    <PageHeaderWrapper breadcrumbList={breadcrumbList}>
       <Card
         extra={
           <div>
@@ -107,18 +129,24 @@ const UserForm = (props) => {
       >
         {!props.createResult ? (
           <Form {...formItemLayout}>
-            <Form.Item label="User Name">
+            <Form.Item
+              label={formatMessage({ id: "system.security.user.form.name" })}
+            >
               {getFieldDecorator("name", {
                 initialValue: editValue.name,
                 rules: [
                   {
                     required: true,
-                    message: "Please input name!",
+                    message: formatMessage({
+                      id: "system.security.user.form.name.required",
+                    }),
                   },
                 ],
               })(<Input readOnly={props.mode == "edit"} />)}
             </Form.Item>
-            <Form.Item label="Nick Name">
+            <Form.Item
+              label={formatMessage({ id: "system.security.user.form.nickname" })}
+            >
               {getFieldDecorator("nick_name", {
                 initialValue: editValue.nick_name,
                 rules: [
@@ -136,7 +164,9 @@ const UserForm = (props) => {
               rules: [],
             })(<Input type="password" />)}
           </Form.Item> */}
-            <Form.Item label="Phone">
+            <Form.Item
+              label={formatMessage({ id: "system.security.user.form.phone" })}
+            >
               {getFieldDecorator("phone", {
                 initialValue: editValue.phone,
                 rules: [
@@ -152,7 +182,9 @@ const UserForm = (props) => {
                 ],
               })(<Input />)}
             </Form.Item>
-            <Form.Item label="Email">
+            <Form.Item
+              label={formatMessage({ id: "system.security.user.form.email" })}
+            >
               {getFieldDecorator("email", {
                 initialValue: editValue.email,
                 rules: [
@@ -162,24 +194,31 @@ const UserForm = (props) => {
                   // },
                   {
                     type: "email",
-                    message: "The input is not valid email!",
+                    message: formatMessage({
+                      id: "system.security.user.form.email.invalid",
+                    }),
                   },
                 ],
               })(<Input />)}
             </Form.Item>
-            <Form.Item label="Role">
+            <Form.Item
+              label={formatMessage({ id: "system.security.user.form.roles" })}
+            >
               {getFieldDecorator("roles", {
                 initialValue: editValue.roles,
                 rules: [
                   {
                     required: true,
-                    message: "Please select roles!",
+                    message: formatMessage({
+                      id: "system.security.user.form.roles.required",
+                    }),
                   },
                 ],
               })(
                 <Select
                   showSearch
                   mode="multiple"
+                  loading={rolesLoading}
                   filterOption={(input, option) =>
                     option.props.children
                       .toLowerCase()
@@ -196,15 +235,22 @@ const UserForm = (props) => {
                 </Select>
               )}
             </Form.Item>
-            <Form.Item label="Tags">
+            <Form.Item
+              label={formatMessage({ id: "system.security.user.form.tags" })}
+            >
               {getFieldDecorator("tags", {
                 initialValue: editValue.tags || [],
                 rules: [],
               })(<TagEditor />)}
             </Form.Item>
             <Form.Item {...tailFormItemLayout}>
-              <Button type="primary" onClick={handleSubmit} loading={isLoading}>
-                Save
+              <Button
+                type="primary"
+                onClick={handleSubmit}
+                loading={isLoading}
+                disabled={rolesLoading || !!rolesError}
+              >
+                {formatMessage({ id: "form.button.save" })}
               </Button>
             </Form.Item>
           </Form>
@@ -221,13 +267,16 @@ export default UserForm;
 const CreateResult = ({ password }) => (
   <Result
     status="success"
-    title="Successfully Created User!"
-    subTitle={`Password: ${password}`}
+    title={formatMessage({ id: "system.security.user.create.success" })}
+    subTitle={formatMessage(
+      { id: "system.security.user.create.password" },
+      { password }
+    )}
     extra={[
-      <EuiCopy textToCopy={password}>
+      <EuiCopy key="copy-password" textToCopy={password}>
         {(copy) => (
           <Button type="primary" key="console" onClick={copy}>
-            Copy Password
+            {formatMessage({ id: "system.security.user.create.copy_password" })}
           </Button>
         )}
       </EuiCopy>,

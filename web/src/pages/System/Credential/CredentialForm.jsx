@@ -1,14 +1,6 @@
-import { Form, Input, Select, Button, Drawer, Tag, Icon } from "antd";
+import { Spin, Form, Input, Select, Button, Tag, Icon, Tooltip } from "antd";
 import { formatMessage } from "umi/locale";
-import {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import request from "@/utils/request";
+import { forwardRef, useEffect, useRef, useState } from "react";
 
 const formItemLayout = {
   labelCol: {
@@ -25,6 +17,10 @@ const TYPES = [
   {
     type: "basic_auth",
     name: "basic_auth",
+  },
+  {
+    type: "token",
+    name: "token",
   },
 ];
 
@@ -87,6 +83,35 @@ export default Form.create()((props) => {
         </>
       );
     }
+    if (type === "token") {
+      return (
+        <Form.Item
+          label={formatMessage({
+            id: "credential.manage.form.token",
+          })}
+        >
+          {getFieldDecorator("token_value", {
+            initialValue: payload[type]?.value,
+            rules: [
+              {
+                required: record?.id ? false : true,
+                message: formatMessage({
+                  id: "credential.manage.form.token.required",
+                }),
+              },
+            ],
+          })(
+            <Input.Password
+              placeholder={formatMessage({
+                id: record?.id
+                  ? "credential.manage.form.token.placeholder.edit"
+                  : "credential.manage.form.token.placeholder",
+              })}
+            />
+          )}
+        </Form.Item>
+      );
+    }
   };
 
   useEffect(() => {
@@ -94,63 +119,65 @@ export default Form.create()((props) => {
   }, [record?.type]);
 
   return (
-    <Form {...formItemLayout} colon={false} loading={true}>
-      <Form.Item
-        label={formatMessage({
-          id: "credential.manage.form.type",
-        })}
-      >
-        {getFieldDecorator("type", {
-          initialValue: record?.type,
-          rules: [
-            {
-              required: true,
-              message: "Please select type!",
-            },
-          ],
-        })(
-          <Select onChange={(value) => setType(value)}>
-            {TYPES.map((item) => (
-              <Select.Option value={item.type}>{item.name}</Select.Option>
-            ))}
-          </Select>
-        )}
-      </Form.Item>
-      <Form.Item
-        label={formatMessage({
-          id: "credential.manage.form.name",
-        })}
-      >
-        {getFieldDecorator("name", {
-          initialValue: record?.name,
-          rules: [
-            {
-              required: true,
-              message: "Please input name!",
-            },
-          ],
-        })(<Input />)}
-      </Form.Item>
-      {renderAuth(type)}
-      <Form.Item
-        label={formatMessage({
-          id: "credential.manage.form.tags",
-        })}
-      >
-        {getFieldDecorator("tags", {
-          initialValue: record?.tags || [],
-        })(<Tags />)}
-      </Form.Item>
-      <Form.Item label=" ">
-        <div style={{ textAlign: "right" }}>
-          <Button type="primary" onClick={handleSubmit}>
-            {formatMessage({
-              id: record ? "form.button.save" : "form.button.submit",
-            })}
-          </Button>
-        </div>
-      </Form.Item>
-    </Form>
+    <Spin spinning={loading}>
+      <Form {...formItemLayout} colon={false}>
+        <Form.Item 
+          label={formatMessage({
+            id: "credential.manage.form.type",
+          })}
+        >
+          {getFieldDecorator("type", {
+            initialValue: record?.type,
+            rules: [
+              {
+                required: true,
+                message: "Please select type!",
+              },
+            ],
+          })(
+            <Select key={`cred-${record?.type}`} onChange={(value) => setType(value)}>
+              {TYPES.map((item) => (
+                <Select.Option key={`opt-${item.type}`} value={item.type}>{item.name}</Select.Option>
+              ))}
+            </Select>
+          )}
+        </Form.Item>
+        <Form.Item
+          label={formatMessage({
+            id: "credential.manage.form.name",
+          })}
+        >
+          {getFieldDecorator("name", {
+            initialValue: record?.name,
+            rules: [
+              {
+                required: true,
+                message: "Please input name!",
+              },
+            ],
+          })(<Input />)}
+        </Form.Item>
+        {renderAuth(type)}
+        <Form.Item
+          label={formatMessage({
+            id: "credential.manage.form.tags",
+          })}
+        >
+          {getFieldDecorator("tags", {
+            initialValue: record?.tags || [],
+          })(<Tags />)}
+        </Form.Item>
+        <Form.Item label=" ">
+          <div style={{ textAlign: "right" }}>
+            <Button type="primary" onClick={handleSubmit}>
+              {formatMessage({
+                id: record ? "form.button.save" : "form.button.submit",
+              })}
+            </Button>
+          </div>
+        </Form.Item>
+      </Form>
+    </Spin>
   );
 });
 

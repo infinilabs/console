@@ -46,9 +46,9 @@ const renderTree = ({ key, children, menuKey }, onValueChange) => {
   );
 };
 
-export default ({ data, value, onChange }) => {
+const Permission = React.forwardRef(({ data, value, onChange }, ref) => {
   const onValueChange = (pitem) => {
-    let permissions = value || [];
+    const permissions = [...(value || [])];
     const newTemps = (pitem || "").split(":");
     const srcIndex = permissions.findIndex((p) => {
       return (
@@ -62,22 +62,26 @@ export default ({ data, value, onChange }) => {
     } else {
       permissions.push(pitem);
     }
-    permissions = permissions.filter((p) => !p.endsWith(":none"));
+    const nextPermissions = permissions.filter((p) => !p.endsWith(":none"));
     if (typeof onChange == "function") {
-      onChange(permissions);
+      onChange(nextPermissions);
     }
   };
   data = data || [];
   return (
-    <PermissionContext.Provider value={{ value }}>
-      <Tree switcherIcon={<Icon type="down" />}>
-        {data.map((item) => {
-          return renderTree(item, onValueChange);
-        })}
-      </Tree>
-    </PermissionContext.Provider>
+    <div ref={ref}>
+      <PermissionContext.Provider value={{ value }}>
+        <Tree switcherIcon={<Icon type="down" />}>
+          {data.map((item) => {
+            return renderTree(item, onValueChange);
+          })}
+        </Tree>
+      </PermissionContext.Provider>
+    </div>
   );
-};
+});
+
+export default Permission;
 
 const PermissionTitle = ({ id, title, onChange, showOptions }) => {
   const { value } = React.useContext(PermissionContext);
@@ -112,7 +116,7 @@ const PermissionTitle = ({ id, title, onChange, showOptions }) => {
           <Radio.Group
             size="small"
             buttonStyle="solid"
-            defaultValue={privilege || `${id}:none`}
+            value={privilege || `${id}:none`}
             onChange={onPermissionChange}
           >
             {enumValues.map((item) => {

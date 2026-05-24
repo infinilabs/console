@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Button, Divider, Form, Input, Select, Row, Col } from "antd";
+import { Button, Form, Icon, Input, Select, Tooltip } from "antd";
 import { formatMessage } from "umi/locale";
 import useFetch from "@/lib/hooks/use_fetch";
 import { formatESSearchResult } from "@/lib/elasticsearch/util";
@@ -17,6 +17,13 @@ export default (props) => {
     credentialRequired = false,
   } = props;
   useEffect(() => {}, [credentialRequired]);
+
+  const getInitialAgentCredentialValue = (value) =>
+    value?.agent_credential_id
+      ? value.agent_credential_id
+      : value?.username
+      ? MANUAL_VALUE
+      : undefined;
 
   const onTryConnect = async () => {
     const values = await props.form.validateFields((errors, values) => {
@@ -54,9 +61,17 @@ export default (props) => {
     tryConnect(values);
   };
 
-  const [isManual, setIsManual] = useState();
+  const [selectedCredential, setSelectedCredential] = useState(
+    getInitialAgentCredentialValue(initialValue)
+  );
+  const [isManual, setIsManual] = useState(
+    getInitialAgentCredentialValue(initialValue) === MANUAL_VALUE
+  );
+  const canReadCredential =
+    hasAuthority("system.credential:all") ||
+    hasAuthority("system.credential:read");
 
-  const { loading, error, value, run } = useFetch(
+  const { loading, value, run } = useFetch(
     "/credential/_search",
     {
       queryParams: {
@@ -69,26 +84,80 @@ export default (props) => {
   );
 
   const onCredentialChange = (value) => {
-    if (value === "manual") {
-      setIsManual(true);
-    } else {
-      setIsManual(false);
-    }
+    setSelectedCredential(value);
+    setIsManual(value === MANUAL_VALUE);
   };
 
-  const { data, total } = useMemo(() => {
+  const { data } = useMemo(() => {
     return formatESSearchResult(value);
   }, [value]);
+  const credentialActionsStyle = {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+  };
+  const credentialGroupStyle = {
+    display: "flex",
+    alignItems: "stretch",
+    flex: 1,
+    minWidth: 0,
+  };
+  const credentialSelectWrapStyle = {
+    flex: 1,
+    minWidth: 0,
+  };
+  const refreshButtonStyle = {
+    width: 28,
+    minWidth: 28,
+    height: "100%",
+    padding: 0,
+    marginLeft: -1,
+    borderTopLeftRadius: 0,
+    borderBottomLeftRadius: 0,
+    zIndex: 1,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  };
+  const refreshButtonWrapStyle = {
+    display: "flex",
+    alignItems: "stretch",
+  };
 
-  useEffect(() => {
-    setIsManual(props.isManual);
-  }, [props.isManual]);
-
-  useEffect(() => {
-    if (hasAuthority('system.credential:all') || hasAuthority('system.credential:read')) {
-      run()
+  const credentialOptions = useMemo(() => {
+    const options = data.map((item) => ({
+      id: item.id,
+      name: item.name,
+    }));
+    if (
+      initialValue?.agent_credential_id &&
+      !options.find((item) => item.id === initialValue.agent_credential_id)
+    ) {
+      options.unshift({
+        id: initialValue.agent_credential_id,
+        name: initialValue.agent_credential_id,
+      });
     }
-  }, [])
+    return options;
+  }, [data, initialValue?.agent_credential_id]);
+
+  useEffect(() => {
+    const nextValue = getInitialAgentCredentialValue(initialValue);
+    setSelectedCredential(nextValue);
+    setIsManual(nextValue === MANUAL_VALUE);
+  }, [initialValue?.agent_credential_id, initialValue?.username]);
+
+  useEffect(() => {
+    if (canReadCredential) {
+      run();
+    }
+  }, [canReadCredential, run]);
+
+  useEffect(() => {
+    if (canReadCredential && initialValue?.agent_credential_id) {
+      run();
+    }
+  }, [canReadCredential, initialValue?.agent_credential_id, run]);
 
   if (!needAuth) {
     return null;
@@ -97,44 +166,74 @@ export default (props) => {
   return (
     <>
       <Form.Item
-        label={formatMessage({
-          id: "cluster.regist.step.connect.label.agent_credential",
-        })}
+        label={
+          <span>
+            {formatMessage({
+              id: "cluster.regist.step.connect.label.agent_credential",
+            })}
+            <Tooltip
+              title={formatMessage({
+                id: "cluster.manage.agent_credential.tip.auto_create",
+              })}
+            >
+              <Icon
+                type="info-circle"
+                style={{ marginLeft: 8, color: "#1890ff" }}
+              />
+            </Tooltip>
+          </span>
+        }
       >
-        <Row>
-          <Col span={16}>
-            {getFieldDecorator("agent_credential_id", {
-              initialValue: initialValue?.agent_credential_id
-                ? initialValue?.agent_credential_id
-                : initialValue?.username
-                ? MANUAL_VALUE
-                : undefined,
-              rules: [
-                {
-                  required: credentialRequired,
-                  message: formatMessage({
-                    id: "cluster.regist.form.verify.required.agent_credential",
-                  }),
-                },
-              ],
-            })(
-              <Select
-                loading={loading}
-                onChange={onCredentialChange}
-                allowClear
-              >
-                {data.map((item) => (
-                  <Select.Option value={item.id}>{item.name}</Select.Option>
-                ))}
-                <Select.Option value={MANUAL_VALUE}>
-                  {formatMessage({
-                    id: "cluster.regist.step.connect.credential.manual",
+        <div style={credentialActionsStyle}>
+          <div style={credentialGroupStyle}>
+            <div style={credentialSelectWrapStyle}>
+              {getFieldDecorator("agent_credential_id", {
+                initialValue: getInitialAgentCredentialValue(initialValue),
+                rules: [
+                  {
+                    required: credentialRequired,
+                    message: formatMessage({
+                      id: "cluster.regist.form.verify.required.agent_credential",
+                    }),
+                  },
+                ],
+              })(
+                <Select
+                  loading={loading}
+                  onChange={onCredentialChange}
+                  allowClear
+                  placeholder={formatMessage({
+                    id: "cluster.manage.agent_credential.placeholder.auto_create",
                   })}
-                </Select.Option>
-              </Select>
-            )}
-          </Col>
-          <Col span={6} offset={1}>
+                >
+                  {credentialOptions.map((item) => (
+                    <Select.Option key={item.id} value={item.id}>
+                      {item.name}
+                    </Select.Option>
+                  ))}
+                  <Select.Option value={MANUAL_VALUE}>
+                    {formatMessage({
+                      id: "cluster.regist.step.connect.credential.manual",
+                    })}
+                  </Select.Option>
+                </Select>
+              )}
+            </div>
+            <div style={refreshButtonWrapStyle}>
+              <Tooltip title={formatMessage({ id: "form.button.refresh" })}>
+                <span style={refreshButtonWrapStyle}>
+                  <Button
+                    icon="reload"
+                    onClick={() => run()}
+                    loading={loading}
+                    disabled={!canReadCredential}
+                    style={refreshButtonStyle}
+                  />
+                </span>
+              </Tooltip>
+            </div>
+          </div>
+          {selectedCredential ? (
             <Button
               loading={btnLoading}
               type="primary"
@@ -146,8 +245,8 @@ export default (props) => {
                 id: "cluster.manage.btn.try_connect",
               })}
             </Button>
-          </Col>
-        </Row>
+          ) : null}
+        </div>
       </Form.Item>
       {isManual && (
         <>

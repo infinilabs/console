@@ -11,6 +11,7 @@ import Authorized from "@/utils/Authorized";
 import { getSetupRequired } from "@/utils/setup";
 
 const { Header } = Layout;
+const CLUSTER_STATUS_REFRESH_INTERVAL = 60 * 1000;
 
 class HeaderView extends PureComponent {
   state = {
@@ -28,15 +29,17 @@ class HeaderView extends PureComponent {
 
   componentDidMount() {
     document.addEventListener("scroll", this.handScroll, { passive: true });
-    this.fetchClusterStatus();
+    document.addEventListener("visibilitychange", this.handleVisibilityChange);
+    window.addEventListener("focus", this.handleWindowFocus);
+    this.fetchClusterStatus({ force: true });
     this.handleNoticeVisibleChange(true);
   }
 
   componentWillUnmount() {
     document.removeEventListener("scroll", this.handScroll);
-    if (this.fetchClusterStatusTimer) {
-      clearTimeout(this.fetchClusterStatusTimer);
-    }
+    document.removeEventListener("visibilitychange", this.handleVisibilityChange);
+    window.removeEventListener("focus", this.handleWindowFocus);
+    this.clearClusterStatusTimer();
   }
 
   getHeadWidth = () => {
@@ -149,24 +152,59 @@ class HeaderView extends PureComponent {
     });
   };
 
-  fetchClusterStatus = async () => {
+  clearClusterStatusTimer = () => {
+    if (this.fetchClusterStatusTimer) {
+      clearTimeout(this.fetchClusterStatusTimer);
+      this.fetchClusterStatusTimer = null;
+    }
+  };
+
+  scheduleClusterStatusRefresh = () => {
+    this.clearClusterStatusTimer();
+    if (document.visibilityState === "hidden") {
+      return;
+    }
+    this.fetchClusterStatusTimer = setTimeout(() => {
+      this.fetchClusterStatus();
+    }, CLUSTER_STATUS_REFRESH_INTERVAL);
+  };
+
+  handleVisibilityChange = () => {
+    if (document.visibilityState === "hidden") {
+      this.clearClusterStatusTimer();
+      return;
+    }
+    this.fetchClusterStatus();
+  };
+
+  handleWindowFocus = () => {
+    if (document.visibilityState === "hidden") {
+      return;
+    }
+    this.fetchClusterStatus();
+  };
+
+  fetchClusterStatus = async ({ force = false } = {}) => {
     if (
       location.href.indexOf("/guide/initialization") !== -1 ||
-      getSetupRequired() === "true"
+      getSetupRequired() === "true" ||
+      document.visibilityState === "hidden"
     ) {
+      this.clearClusterStatusTimer();
       return;
     }
     const { dispatch } = this.props;
     const res = await dispatch({
       type: "global/fetchClusterStatus",
+      payload: {
+        force,
+      },
     });
-    if (this.fetchClusterStatusTimer) {
-      clearTimeout(this.fetchClusterStatusTimer);
-    }
+    this.clearClusterStatusTimer();
     if (!res) {
       return;
     }
-    this.fetchClusterStatusTimer = setTimeout(this.fetchClusterStatus, 10000);
+    this.scheduleClusterStatusRefresh();
   };
 
   render() {

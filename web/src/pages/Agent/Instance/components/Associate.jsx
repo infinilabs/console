@@ -6,6 +6,31 @@ import { Link, router } from "umi";
 import { formatMessage } from "umi/locale";
 import CredentialForm from "../../../System/Cluster/CredentialForm";
 
+const normalizeLogsPaths = (items = []) =>
+  Array.from(
+    new Set(
+      items
+        .reduce((result, item) => {
+          if (Array.isArray(item)) {
+            return result.concat(item);
+          }
+          result.push(item);
+          return result;
+        }, [])
+        .map((item) => `${item || ""}`.trim())
+        .filter(Boolean)
+    )
+  );
+
+const getDetectedLogsPaths = (data = {}) =>
+  normalizeLogsPaths([
+    data?.logs_paths,
+    data?.path_logs,
+    data?.node_info?.logs_paths,
+    data?.node_info?.path_logs,
+    data?.node_info?.settings?.path?.logs,
+  ]);
+
 export const Associate = Form.create({ name: "associate_form" })((props) => {
   const formItemLayout = {
     labelCol: {
@@ -150,7 +175,11 @@ export const Associate = Form.create({ name: "associate_form" })((props) => {
                 ],
               })(<Input placeholder="127.0.0.1:9200" />)}
             </Form.Item>
-            <Form.Item label="TLS">
+            <Form.Item
+              label={formatMessage({
+                id: "gateway.instance.field.tls.label",
+              })}
+            >
               {getFieldDecorator("isTLS", {
                 initialValue: record?.schema === "https",
                 valuePropName: "checked",
@@ -184,7 +213,9 @@ export const Associate = Form.create({ name: "associate_form" })((props) => {
             />
             <Form.Item {...tailFormItemLayout}>
               <Button type="primary" onClick={onConnectClick}>
-                Connect
+                {formatMessage({
+                  id: "cluster.regist.step.connect.title",
+                })}
               </Button>
             </Form.Item>
           </Form>
@@ -196,6 +227,8 @@ export const Associate = Form.create({ name: "associate_form" })((props) => {
 
 const Result = ({ data, onComplete, loading = false }) => {
   const { clusterList = [] } = useGlobal();
+  const detectedLogsPaths = useMemo(() => getDetectedLogsPaths(data), [data]);
+  const detectedLogsPath = detectedLogsPaths.join(", ");
   const clusters = useMemo(
     () => {
       if (!data.cluster_info.cluster_uuid) {
@@ -210,7 +243,6 @@ const Result = ({ data, onComplete, loading = false }) => {
   );
   const selectedID = clusters[0]?.id || "";
   const clusterRef = useRef();
-
   const onAssociateClick = () => {
     if (typeof onComplete === "function") {
       const clusterID = clusterRef.current.rcSelect.state?.value[0] || "";
@@ -222,7 +254,6 @@ const Result = ({ data, onComplete, loading = false }) => {
         publish_address: data?.node_info?.http?.publish_address,
         node_name: data?.node_info?.name,
         path_home: data?.node_info?.settings?.path?.home,
-        path_logs: data?.node_info?.settings?.path?.logs,
         // credential_id:values.credential_id,
       });
     }
@@ -265,7 +296,7 @@ const Result = ({ data, onComplete, loading = false }) => {
           <div>Node UUID：{data?.id}</div>
           <div>Publish Address：{data?.node_info?.http?.publish_address}</div>
           <div>Path Home：{data?.node_info?.settings?.path?.home}</div>
-          <div>Path Log：{data?.node_info?.settings?.path?.logs}</div>
+          <div>Path Log：{detectedLogsPath}</div>
         </div>
       </div>
       <div>

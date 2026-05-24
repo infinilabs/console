@@ -13,11 +13,17 @@ export default ({ onEnroll, loading }) => {
   const [selectedCluster, setSelectedCluster] = useState([]);
   const [auths, setAuths] = useState([]);
 
+  const needCredentialSetup = (item) =>
+    !item?.credential_id &&
+    !item?.basic_auth?.username &&
+    !item?.agent_credential_id &&
+    !item?.agent_basic_auth?.username;
+
   const onEnrollClick = () => {
     if (selectedCluster.length === 0) return;
     const newAuths = [...auths]
     selectedCluster.forEach((item) => {
-      if (item.credential_id && !item.agent_credential_id) {
+      if (needCredentialSetup(item)) {
         newAuths.push(item)
       }
     })

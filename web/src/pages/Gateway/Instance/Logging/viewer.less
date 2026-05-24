@@ -1,0 +1,146 @@
+:global {
+  .realtime-log-viewer {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    &__header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    &__toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1 1 720px;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+
+    &__level {
+      width: 110px;
+    }
+
+    &__input {
+      width: 210px;
+    }
+
+    &__input--wide {
+      width: 260px;
+    }
+
+    &__meta {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex: 0 0 auto;
+      flex-wrap: wrap;
+      margin-left: auto;
+    }
+
+    &__meta-item,
+    &__status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 32px;
+      padding: 0 12px;
+      border-radius: 999px;
+      border: 1px solid #e8edf3;
+      background: #fafcff;
+      color: #445066;
+    }
+
+    &__meta-item--endpoint {
+      max-width: 340px;
+    }
+
+    &__meta-label {
+      color: #6b778c;
+    }
+
+    &__meta-value {
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: #1f2937;
+      font-weight: 500;
+    }
+
+    &__status--open {
+      color: #237804;
+      background: #f6ffed;
+      border-color: #b7eb8f;
+    }
+
+    &__status--connecting {
+      color: #0958d9;
+      background: #e6f4ff;
+      border-color: #91caff;
+    }
+
+    &__status--closing,
+    &__status--closed {
+      color: #cf1322;
+      background: #fff1f0;
+      border-color: #ffa39e;
+    }
+
+    &__status--idle {
+      color: #8c8c8c;
+      background: #fafafa;
+      border-color: #d9d9d9;
+    }
+
+    &__body {
+      margin-top: 2px;
+    }
+
+    &__log-panel {
+      height: clamp(360px, calc(100vh - 300px), 720px);
+      overflow-y: auto;
+      border: 1px solid #e8edf3;
+      border-radius: 10px;
+      background: #fafcff;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+      padding: 12px;
+    }
+
+    &__log-list {
+      font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      color: #1f2937;
+    }
+
+    &__log-line {
+      white-space: pre-wrap;
+      word-break: break-word;
+      padding: 2px 0;
+    }
+
+    &__empty {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #6b778c;
+      min-height: 24px;
+    }
+  }
+
+  @media (max-width: 1200px) {
+    .realtime-log-viewer {
+      &__meta {
+        width: 100%;
+        justify-content: flex-start;
+        margin-left: 0;
+      }
+    }
+  }
+}

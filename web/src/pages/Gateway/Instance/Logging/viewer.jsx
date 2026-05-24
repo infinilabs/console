@@ -1,58 +1,73 @@
 import React, {
   useState,
-  useCallback,
   useEffect,
   useMemo,
   useRef,
 } from "react";
 import {
   Button,
-  Card,
+  Empty,
   Input,
   Icon,
-  Tabs,
   Select,
   Switch,
 } from "antd";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 import request from "@/utils/request";
+import { formatMessage } from "umi/locale";
+import "./viewer.less";
 
-const WebsocketLogViewer = ({instance={}}) => {
-  let {endpoint = ""} = instance;
-  if(endpoint === ""){
-    console.error("empty endpoint");
-    return;
+const WebsocketLogViewer = ({ instance = {} }) => {
+  let { endpoint = "" } = instance;
+  if (endpoint === "") {
+    return (
+      <Empty
+        image={Empty.PRESENTED_IMAGE_SIMPLE}
+        description={formatMessage({
+          id: "gateway.instance.logging.endpoint.empty",
+        })}
+      />
+    );
   }
-  const wsSchema = location.protocol.replace(":", "") === "https" ? "wss": "ws";
+  const wsSchema =
+    location.protocol.replace(":", "") === "https" ? "wss" : "ws";
   const url = new URL(endpoint);
-  if(url.protocol === "https:"){
-    endpoint = endpoint.replace("https://", "wss://")
-  }else{
-    endpoint = endpoint.replace("http://", "ws://")
+  if (url.protocol === "https:") {
+    endpoint = endpoint.replace("https://", "wss://");
+  } else {
+    endpoint = endpoint.replace("http://", "ws://");
   }
-  const [socketUrl, setSocketUrl] = useState(`${wsSchema}://${location.host}/ws_proxy?endpoint=${endpoint}&path=/ws`); //(`ws://${url.host}/ws`);
+  const socketUrl = `${wsSchema}://${location.host}/ws_proxy?endpoint=${endpoint}&path=/ws`;
   const [pubMessages, setPubMessages] = useState([]);
   const [loggingConfig, setLoggingConfig] = useState({});
   const messageEnd = useRef();
+  const logPanelRef = useRef();
   const didUnmount = useRef(false);
 
-  const { sendMessage, lastMessage, readyState, getWebSocket } = useWebSocket(socketUrl, {
-    shouldReconnect: (closeEvent) => {
+  const { readyState } = useWebSocket(socketUrl, {
+    shouldReconnect: () => {
       return didUnmount.current === false;
     },
     reconnectAttempts: 30,
     reconnectInterval: 10000,
     onMessage: (ev) => {
-      const rawMsg = ev.data;
+      const rawMsg = typeof ev.data === "string" ? ev.data : "";
+      if (!rawMsg) {
+        return;
+      }
       const [msgType] = rawMsg.split(" ", 1);
       const msg = rawMsg.substr(msgType.length + 1);
       if (msgType !== "PUBLIC") {
         if (msgType == "CONFIG") {
+          const trimmedMsg = msg.trim();
+          if (!trimmedMsg || !/^[\[{]/.test(trimmedMsg)) {
+            return;
+          }
           let configObj = {};
           try {
-            configObj = JSON.parse(msg);
+            configObj = JSON.parse(trimmedMsg);
           } catch (err) {
-            console.error(err);
+            return;
           }
           setLoggingConfig(configObj);
         }
@@ -61,14 +76,11 @@ const WebsocketLogViewer = ({instance={}}) => {
 
       setPubMessages((msgs) => {
         let newMsgs = msgs.concat(msg);
-        if(newMsgs.length > 10000) {
-          newMsgs = newMsgs.slice(newMsgs.length - 10000)
+        if (newMsgs.length > 10000) {
+          newMsgs = newMsgs.slice(newMsgs.length - 10000);
         }
-        return newMsgs
+        return newMsgs;
       });
-    },
-    onOpen: (ev) => {
-      console.log("connected");
     },
   });
   useEffect(() => {
@@ -76,14 +88,6 @@ const WebsocketLogViewer = ({instance={}}) => {
       didUnmount.current = true;
     };
   }, []);
-
-  const connectionStatus = {
-    [ReadyState.CONNECTING]: "Connecting",
-    [ReadyState.OPEN]: "Established",
-    [ReadyState.CLOSING]: "Closing",
-    [ReadyState.CLOSED]: "Closed",
-    [ReadyState.UNINSTANTIATED]: "Uninstantiated",
-  }[readyState];
 
   const updateRealtimeConfig = async (realtime) => {
     const newLoggingConfig = {
@@ -115,15 +119,54 @@ const WebsocketLogViewer = ({instance={}}) => {
   const [autoScrollToBottom, setAutoScrollToBottom] = useState(true);
   useEffect(() => {
     if (autoScrollToBottom === true) {
-      messageEnd.current?.scrollIntoView();
+      const panel = logPanelRef.current;
+      if (panel) {
+        panel.scrollTop = panel.scrollHeight;
+      } else {
+        messageEnd.current?.scrollIntoView({ block: "end" });
+      }
     }
   }, [pubMessages.length]);
 
+  const connectionMeta = useMemo(
+    () => ({
+      [ReadyState.CONNECTING]: {
+        icon: "sync",
+        className: "realtime-log-viewer__status realtime-log-viewer__status--connecting",
+        text: formatMessage({ id: "gateway.instance.logging.connection.connecting" }),
+      },
+      [ReadyState.OPEN]: {
+        icon: "check-circle",
+        theme: "filled",
+        className: "realtime-log-viewer__status realtime-log-viewer__status--open",
+        text: formatMessage({ id: "gateway.instance.logging.connection.established" }),
+      },
+      [ReadyState.CLOSING]: {
+        icon: "disconnect",
+        className: "realtime-log-viewer__status realtime-log-viewer__status--closing",
+        text: formatMessage({ id: "gateway.instance.logging.connection.closing" }),
+      },
+      [ReadyState.CLOSED]: {
+        icon: "close-circle",
+        theme: "filled",
+        className: "realtime-log-viewer__status realtime-log-viewer__status--closed",
+        text: formatMessage({ id: "gateway.instance.logging.connection.closed" }),
+      },
+      [ReadyState.UNINSTANTIATED]: {
+        icon: "pause-circle",
+        className: "realtime-log-viewer__status realtime-log-viewer__status--idle",
+        text: formatMessage({ id: "gateway.instance.logging.connection.uninstantiated" }),
+      },
+    }),
+    []
+  );
+
   return (
-    <div>
-      <div style={{ display: "flex", alignItems: "center" }}>
-        <div className="toolbar">
+    <div className="realtime-log-viewer">
+      <div className="realtime-log-viewer__header">
+        <div className="realtime-log-viewer__toolbar">
           <Select
+            className="realtime-log-viewer__level"
             onChange={(v) => {
               setLoggingConfig((st) => {
                 return {
@@ -132,7 +175,6 @@ const WebsocketLogViewer = ({instance={}}) => {
                 };
               });
             }}
-            style={{ width: 100, marginRight: 5 }}
             value={loggingConfig?.push_log_level?.toUpperCase() || ""}
           >
             {["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"].map(
@@ -155,9 +197,11 @@ const WebsocketLogViewer = ({instance={}}) => {
               const value = ev.target.value;
               onInputChange("file_pattern", value);
             }}
-            style={{ width: 180, marginRight: 5 }}
+            className="realtime-log-viewer__input"
             key="filePattern"
-            placeholder="FilePattern, eg: xyz*.go"
+            placeholder={formatMessage({
+              id: "gateway.instance.logging.placeholder.file_pattern",
+            })}
           />
           <Input
             value={
@@ -169,9 +213,11 @@ const WebsocketLogViewer = ({instance={}}) => {
               const value = ev.target.value;
               onInputChange("func_pattern", value);
             }}
-            style={{ width: 185, marginRight: 5 }}
+            className="realtime-log-viewer__input"
             key="funcPattern"
-            placeholder="FuncPattern, eg: submit*"
+            placeholder={formatMessage({
+              id: "gateway.instance.logging.placeholder.func_pattern",
+            })}
           />
           <Input
             value={
@@ -182,49 +228,66 @@ const WebsocketLogViewer = ({instance={}}) => {
             onChange={(ev) => {
               onInputChange("message_pattern", ev.target.value);
             }}
-            style={{ width: 220, marginRight: 5 }}
+            className="realtime-log-viewer__input realtime-log-viewer__input--wide"
             key="msgPattern"
-            placeholder="MessagePattern, eg: *timeout"
+            placeholder={formatMessage({
+              id: "gateway.instance.logging.placeholder.message_pattern",
+            })}
           />
           <Button
             icon="play-circle"
-            style={{ marginRight: 5 }}
             disabled={loggingConfig.realtime}
             type="primary"
             onClick={onStartClick}
           >
-            Start
+            {formatMessage({ id: "gateway.instance.logging.button.start" })}
           </Button>
           <Button
             icon="stop"
             onClick={onStopClick}
             disabled={!loggingConfig.realtime}
           >
-            Stop
+            {formatMessage({ id: "gateway.instance.logging.button.stop" })}
           </Button>
         </div>
-        <div style={{flex: "1 1 auto", textAlign:'center'}}><Switch onChange={setAutoScrollToBottom} checked={autoScrollToBottom}/> Auto Scroll </div>
-        <div style={{ marginLeft: "auto" }}>
-          <ConnectionStatus status={connectionStatus}/>
+        <div className="realtime-log-viewer__meta">
+          <div className="realtime-log-viewer__meta-item realtime-log-viewer__meta-item--switch">
+            <Icon type="vertical-align-bottom" />
+            <span className="realtime-log-viewer__meta-label">
+              {formatMessage({ id: "gateway.instance.logging.auto_scroll" })}
+            </span>
+            <Switch onChange={setAutoScrollToBottom} checked={autoScrollToBottom} />
+          </div>
+          <ConnectionStatus readyState={readyState} connectionMeta={connectionMeta} />
+          <div className="realtime-log-viewer__meta-item realtime-log-viewer__meta-item--endpoint">
+            <Icon type="link" />
+            <span className="realtime-log-viewer__meta-label">
+              {formatMessage({ id: "gateway.instance.logging.endpoint.label" })}
+            </span>
+            <span className="realtime-log-viewer__meta-value" title={url.host}>
+              {url.host}
+            </span>
+          </div>
         </div>
       </div>
-      <div style={{ marginTop: 10 }}>
-        <div
-          style={{
-            background: "black",
-            color:"#fff",
-            padding: 5,
-            fontSize: 14,
-            maxHeight: "calc(100vh - 245px)",
-            overflowY: "scroll",
-          }}
-        >
-          {!loggingConfig.realtime && pubMessages.length === 0 ? <div> Click start button to show real-time logs </div>:
-          <ul>
+      <div className="realtime-log-viewer__body">
+        <div className="realtime-log-viewer__log-panel" ref={logPanelRef}>
+          {!loggingConfig.realtime && pubMessages.length === 0 ? (
+            <div className="realtime-log-viewer__empty">
+              <Icon type="play-circle" theme="filled" />
+              <span>
+                {formatMessage({ id: "gateway.instance.logging.empty" })}
+              </span>
+            </div>
+          ) : (
+            <div className="realtime-log-viewer__log-list">
             {pubMessages.map((message, idx) => (
-              <li key={idx}>{message}</li>
+              <div key={idx} className="realtime-log-viewer__log-line">
+                {message}
+              </div>
             ))}
-          </ul>}
+            </div>
+          )}
           <div style={{ float: "left", clear: "both" }} ref={messageEnd} />
         </div>
       </div>
@@ -234,9 +297,13 @@ const WebsocketLogViewer = ({instance={}}) => {
 
 export default WebsocketLogViewer;
 
-const ConnectionStatus = ({status})=>{
-  if(status === "Established"){
-    return  <span style={{color:"green"}}>{status}</span>;
-  }
-  return status;
-}
+const ConnectionStatus = ({ readyState, connectionMeta = {} }) => {
+  const status =
+    connectionMeta[readyState] || connectionMeta[ReadyState.UNINSTANTIATED];
+  return (
+    <div className={status.className} aria-label={status.text}>
+      <Icon type={status.icon} theme={status.theme} />
+      <span>{status.text}</span>
+    </div>
+  );
+};

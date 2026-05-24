@@ -20,10 +20,10 @@ asciinema: true
 在 INFINI Console 左侧菜单 `资源管理>探针管理`，进入页面之后点击 `Install Agent` 按钮，即可复制类似如下一键安装脚本：
 
 ```
-curl -sSL http://localhost:9000/agent/install.sh?token=cjctdrms4us1c6fu04ag |sudo bash -s -- -u https://release.infinilabs.com/agent/stable -v 0.6.0-262 -t /opt/agent
+curl -sSL http://localhost:9000/agent/install.sh?token=cjctdrms4us1c6fu04ag |sudo bash -s -- -v 0.6.0-262 -t /opt/agent
 ```
 
-> -u和-v参数表示从指定的 URL 下载指定版本的 Agent，-t参数表示安装的路径，在联网的环境中，-- 及后面的参数都可以忽略，默认情况下将从官网下载最新的 Agent 版本进行安装。
+> `-u` 和 `-v` 参数用于从指定 URL 下载指定版本的 Agent，`-t` 参数表示安装路径。Console 现在默认使用官方 release 镜像 `https://release.infinilabs.com/agent/stable`，默认安装目录为 `/infini/agent`；只有在内网环境或需要自定义下载源时，才需要配置 `agent.setup.download_url`，如需调整默认安装目录则配置 `agent.setup.install_dir`。`-u` 支持三种形式：下载站点根地址（如 `http://192.168.1.1:8080`）、安装包目录（如 `http://192.168.1.1:8080/agent/stable`）或完整安装包地址（如 `http://192.168.1.1:8080/agent/stable/agent-1.30.3-2407-linux-amd64.tar.gz`）。
 
 将一键安装脚本粘贴到终端执行即可完成安装，安装之后该探针实例会被自动注册到 INFINI Console。具体操作步骤参考 [Agent 快速安装](manage/manage/#快速安装探针)
 

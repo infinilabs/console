@@ -1,28 +1,36 @@
 import { useGlobal } from "@/layouts/GlobalContext";
 import request from "@/utils/request";
-import { Form, Input, Switch, Icon, Button, Alert } from "antd";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, router } from "umi";
+import { Button, Alert } from "antd";
+import { useEffect, useState } from "react";
 import { formatMessage } from "umi/locale";
 import ClusterSelect from "@/components/ClusterSelect";
 import SetAgentCredential from "./SetAgentCredential";
 
 export default ({ onBatchEnroll, loading }) => {
-  const { clusterList = [], clusterStatus } = useGlobal();
+  const { clusterList = [] } = useGlobal();
   const [selectedCluster, setSelectedCluster] = useState([]);
   const [auths, setAuths] = useState([]);
+  const needCredentialSetup = (item) =>
+    !item?.credential_id &&
+    !item?.basic_auth?.username &&
+    !item?.agent_credential_id &&
+    !item?.agent_basic_auth?.username;
 
   const onBatchEnrollClick = () => {
     if (selectedCluster.length === 0) return;
     const newAuths = [...auths]
     selectedCluster.forEach((item) => {
-      if (item.credential_id && !item.agent_credential_id) {
+      if (needCredentialSetup(item)) {
         newAuths.push(item)
       }
     })
     setAuths(newAuths)
     if (newAuths.length === 0 && typeof onBatchEnroll === "function") {
-      onBatchEnroll(selectedCluster.map((item) => item.id));
+      onBatchEnroll(
+        selectedCluster.map((item) => ({
+          cluster_id: item.id,
+        }))
+      );
     }
   };
 
@@ -46,7 +54,6 @@ export default ({ onBatchEnroll, loading }) => {
           dropdownWidth={400}
           selectedCluster={selectedCluster}
           onChange={(item) => {
-            console.log("onChange item:", item);
             setSelectedCluster(item);
           }}
         />

@@ -31,13 +31,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
+	"path/filepath"
+	"regexp"
 	"runtime"
+	"sort"
+	"strings"
 	"sync/atomic"
 	"time"
 
 	"github.com/buger/jsonparser"
 	log "github.com/cihub/seelog"
+	console_common "infini.sh/console/common"
+	elasticapi "infini.sh/console/modules/elastic/api"
 	"infini.sh/console/plugin/managed/server"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
@@ -45,7 +52,6 @@ import (
 	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
-	"infini.sh/framework/modules/elastic/adapter"
 	"infini.sh/framework/modules/elastic/common"
 	"infini.sh/framework/modules/elastic/metadata"
 )
@@ -83,6 +89,8 @@ func GetEnrolledNodesByAgent(instanceID string) (map[string]BindingItem, error) 
 
 						item.ClusterUUID = util.ToString(f["cluster_uuid"])
 						item.NodeUUID = nodeID
+						item.PathLogs = util.ToString(f["path_logs"])
+						item.LogsPaths = extractStringSlice(f["logs_paths"])
 
 						t, ok := v["updated"]
 						if ok {
@@ -102,7 +110,17 @@ func GetEnrolledNodesByAgent(instanceID string) (map[string]BindingItem, error) 
 	return ids, nil
 }
 
-func refreshNodesInfo(instanceID, instanceEndpoint string) (*elastic.DiscoveryResult, error) {
+func refreshNodesInfo(instanceID string) (*elastic.DiscoveryResult, error) {
+	instance := model.Instance{}
+	instance.ID = instanceID
+	exists, err := orm.Get(&instance)
+	if err != nil {
+		return nil, fmt.Errorf("error on get agent instance: %w", err)
+	}
+	if !exists {
+		return nil, fmt.Errorf("agent instance [%s] not found", instanceID)
+	}
+
 	enrolledNodesByAgent, err := GetEnrolledNodesByAgent(instanceID)
 	if err != nil {
 		return nil, fmt.Errorf("error on get binding nodes info: %w", err)
@@ -110,7 +128,7 @@ func refreshNodesInfo(instanceID, instanceEndpoint string) (*elastic.DiscoveryRe
 
 	ctxTimeout, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
-	nodesInfo, err := GetElasticsearchNodesViaAgent(ctxTimeout, instanceEndpoint)
+	nodesInfo, err := GetElasticsearchNodesViaAgent(ctxTimeout, &instance)
 	if err != nil {
 		//TODO return already biding nodes info ??
 		return nil, fmt.Errorf("error on get nodes info from agent: %w", err)
@@ -140,7 +158,7 @@ func refreshNodesInfo(instanceID, instanceEndpoint string) (*elastic.DiscoveryRe
 		if _, ok := newNodes[k]; !ok {
 			client := elastic.GetClientNoPanic(v.ClusterID)
 			if client == nil {
-				log.Error("client not found:", v.ClusterID)
+				log.Errorf("agent client not found for cluster [%s]", v.ClusterID)
 				continue
 			}
 			status := "online"
@@ -152,27 +170,39 @@ func refreshNodesInfo(instanceID, instanceEndpoint string) (*elastic.DiscoveryRe
 				//get nodes information
 				nodeInfos, err := metadata.GetNodeInformation(v.ClusterID, []string{v.NodeUUID})
 				if err != nil || len(nodeInfos) == 0 {
-					log.Error("node info not found:", v.ClusterID, ",", []string{v.NodeUUID}, ",", err, err != nil, len(nodeInfos) == 0)
+					if err != nil {
+						log.Errorf("failed to get fallback node info for cluster [%s], node [%s]: %v", v.ClusterID, v.NodeUUID, err)
+					} else {
+						log.Errorf("fallback node info not found for cluster [%s], node [%s]", v.ClusterID, v.NodeUUID)
+					}
 					continue
 				}
 
 				//get node information
 				nodeInfo, ok = nodeInfos[v.NodeUUID]
 				if !ok {
-					log.Error("node info not found:", v.ClusterID, ",", v.NodeUUID, ",", err)
+					log.Errorf("fallback node info map missing cluster [%s], node [%s]", v.ClusterID, v.NodeUUID)
 					continue
 				}
 
 				//get cluster information
 				clusterInfo, err = metadata.GetClusterInformation(v.ClusterID)
 				if err != nil || clusterInfo == nil {
-					log.Error("cluster info not found:", v.ClusterID, ",", err, clusterInfo == nil)
+					if err != nil {
+						log.Errorf("failed to get cluster info for cluster [%s]: %v", v.ClusterID, err)
+					} else {
+						log.Errorf("cluster info not found for cluster [%s]", v.ClusterID)
+					}
 					continue
 				}
 			} else {
-				clusterInfo, err = adapter.ClusterVersion(elastic.GetMetadata(v.ClusterID))
+				clusterInfo, err = console_common.ClusterVersion(elastic.GetMetadata(v.ClusterID))
 				if err != nil || clusterInfo == nil {
-					log.Error(err)
+					if err != nil {
+						log.Errorf("failed to resolve cluster version for cluster [%s]: %v", v.ClusterID, err)
+					} else {
+						log.Errorf("cluster version not found for cluster [%s]", v.ClusterID)
+					}
 					continue
 				}
 			}
@@ -203,7 +233,11 @@ func refreshNodesInfo(instanceID, instanceEndpoint string) (*elastic.DiscoveryRe
 }
 
 // get nodes info via agent
-func GetElasticsearchNodesViaAgent(ctx context.Context, endpoint string) (*elastic.DiscoveryResult, error) {
+func GetElasticsearchNodesViaAgent(ctx context.Context, instance *model.Instance) (*elastic.DiscoveryResult, error) {
+	if instance == nil || instance.ID == "" {
+		return nil, errors.New("invalid agent instance")
+	}
+
 	req := &util.Request{
 		Method:  http.MethodGet,
 		Path:    "/elasticsearch/node/_discovery",
@@ -211,7 +245,17 @@ func GetElasticsearchNodesViaAgent(ctx context.Context, endpoint string) (*elast
 	}
 
 	obj := elastic.DiscoveryResult{}
-	_, err := server.ProxyAgentRequest("elasticsearch", endpoint, req, &obj)
+	if IsAgentReverseChannelConnected(instance.ID) {
+		_, err := ProxyAgentRequestViaChannel(instance.ID, req, &obj)
+		if err == nil {
+			return &obj, nil
+		}
+		if !shouldFallbackToDirectAgentDiscovery(err) {
+			return nil, err
+		}
+	}
+
+	_, err := proxyAgentRequestDirect(instance, req, &obj)
 	if err != nil {
 		return nil, err
 	}
@@ -219,21 +263,40 @@ func GetElasticsearchNodesViaAgent(ctx context.Context, endpoint string) (*elast
 	return &obj, nil
 }
 
+func shouldFallbackToDirectAgentDiscovery(err error) bool {
+	return isAgentReverseChannelRecoverableError(err)
+}
+
 type BindingItem struct {
 	//infini system assigned id
 	ClusterID string `json:"cluster_id"`
 
-	ClusterUUID string `json:"cluster_uuid"`
-	NodeUUID    string `json:"node_uuid"`
+	ClusterUUID string   `json:"cluster_uuid"`
+	NodeUUID    string   `json:"node_uuid"`
+	PathHome    string   `json:"path_home,omitempty"`
+	PathLogs    string   `json:"path_logs"`
+	LogsPaths   []string `json:"logs_paths"`
 
 	Updated int64 `json:"updated"`
 }
 
-func GetElasticLogFiles(ctx context.Context, instance *model.Instance, logsPath string) (interface{}, error) {
+type ClusterBinding struct {
+	ClusterID string   `json:"cluster_id"`
+	LogsPaths []string `json:"logs_paths,omitempty"`
+}
 
-	reqBody := util.MustToJSONBytes(util.MapStr{
-		"logs_path": logsPath,
-	})
+func GetSearchLogFiles(ctx context.Context, instance *model.Instance, logsPaths []string) (interface{}, error) {
+	body := util.MapStr{}
+	switch len(logsPaths) {
+	case 0:
+		body["logs_path"] = ""
+	case 1:
+		body["logs_path"] = logsPaths[0]
+	default:
+		body["logs_path"] = logsPaths
+	}
+
+	reqBody := util.MustToJSONBytes(body)
 
 	req := &util.Request{
 		Method:  http.MethodPost,
@@ -243,18 +306,18 @@ func GetElasticLogFiles(ctx context.Context, instance *model.Instance, logsPath 
 	}
 
 	resBody := map[string]interface{}{}
-	_, err := server.ProxyAgentRequest("elasticsearch", instance.GetEndpoint(), req, &resBody)
+	_, err := ProxyAgentRequestViaChannel(instance.ID, req, &resBody)
 	if err != nil {
 		return nil, err
 	}
 	if resBody["success"] != true {
-		return nil, fmt.Errorf("get elasticsearch log files error: %v", resBody)
+		return nil, fmt.Errorf("get search log files error: %v", resBody)
 	}
 	return resBody["result"], nil
 
 }
 
-func GetElasticLogFileContent(ctx context.Context, instance *model.Instance, body interface{}) (interface{}, error) {
+func GetSearchLogFileContent(ctx context.Context, instance *model.Instance, body interface{}) (interface{}, error) {
 	req := &util.Request{
 		Method:  http.MethodPost,
 		Path:    "/elasticsearch/logs/_read",
@@ -262,12 +325,12 @@ func GetElasticLogFileContent(ctx context.Context, instance *model.Instance, bod
 		Body:    util.MustToJSONBytes(body),
 	}
 	resBody := map[string]interface{}{}
-	_, err := server.ProxyAgentRequest("elasticsearch", instance.GetEndpoint(), req, &resBody)
+	_, err := ProxyAgentRequestViaChannel(instance.ID, req, &resBody)
 	if err != nil {
 		return nil, err
 	}
 	if resBody["success"] != true {
-		return nil, fmt.Errorf("get elasticsearch log files error: %v", resBody["error"])
+		return nil, fmt.Errorf("get search log files error: %v", resBody)
 	}
 	var hasMore bool
 	if v, ok := resBody["EOF"].(bool); ok && !v {
@@ -282,24 +345,24 @@ func GetElasticLogFileContent(ctx context.Context, instance *model.Instance, bod
 func (h *APIHandler) getLogFilesByNode(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	clusterID := ps.MustGetParameter("id")
 	nodeID := ps.MustGetParameter("node_id")
-	inst, pathLogs, err := getAgentByNodeID(clusterID, nodeID)
+	inst, logsPaths, err := getAgentByNodeID(clusterID, nodeID)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
+		log.Errorf("failed to resolve agent for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
 		return
 	}
 	if inst == nil {
-		log.Error(fmt.Sprintf("can not find agent by node [%s]", nodeID))
+		log.Warnf("no agent associated with cluster [%s], node [%s]", clusterID, nodeID)
 		h.WriteJSON(w, util.MapStr{
 			"success": false,
 			"reason":  "AGENT_NOT_FOUND",
 		}, http.StatusOK)
 		return
 	}
-	logFiles, err := GetElasticLogFiles(nil, inst, pathLogs)
+	logFiles, err := GetSearchLogFiles(nil, inst, logsPaths)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
+		log.Errorf("failed to get log files for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
 		return
 	}
 	h.WriteJSON(w, util.MapStr{
@@ -311,10 +374,10 @@ func (h *APIHandler) getLogFilesByNode(w http.ResponseWriter, req *http.Request,
 func (h *APIHandler) getLogFileContent(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	clusterID := ps.MustGetParameter("id")
 	nodeID := ps.MustGetParameter("node_id")
-	inst, pathLogs, err := getAgentByNodeID(clusterID, nodeID)
+	inst, logsPaths, err := getAgentByNodeID(clusterID, nodeID)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
+		log.Errorf("failed to resolve agent for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
 		return
 	}
 	if inst == nil {
@@ -324,28 +387,34 @@ func (h *APIHandler) getLogFileContent(w http.ResponseWriter, req *http.Request,
 	reqBody := struct {
 		FileName        string `json:"file_name"`
 		LogsPath        string `json:"logs_path"`
-		Offset          int    `json:"offset"`
+		Offset          int64  `json:"offset"`
 		Lines           int    `json:"lines"`
 		StartLineNumber int64  `json:"start_line_number"`
+		TailLines       int    `json:"tail_lines"`
 	}{}
 	err = h.DecodeJSON(req, &reqBody)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
+		log.Errorf("failed to decode log content request for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
 		return
 	}
-	reqBody.LogsPath = pathLogs
-	res, err := GetElasticLogFileContent(nil, inst, reqBody)
+	reqBody.LogsPath, err = pickAllowedLogsPath(logsPaths, reqBody.LogsPath)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
+		log.Errorf("invalid logs path for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
+		return
+	}
+	res, err := GetSearchLogFileContent(nil, inst, reqBody)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Errorf("failed to get log content for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
 		return
 	}
 	h.WriteJSON(w, res, http.StatusOK)
 }
 
-// instance, pathLogs
-func getAgentByNodeID(clusterID, nodeID string) (*model.Instance, string, error) {
+// instance, logsPaths
+func getAgentByNodeID(clusterID, nodeID string) (*model.Instance, []string, error) {
 
 	q := orm.Query{
 		Size: 1000,
@@ -358,20 +427,30 @@ func getAgentByNodeID(clusterID, nodeID string) (*model.Instance, string, error)
 
 	err, result := orm.Search(model.Setting{}, &q)
 	if err != nil {
-		return nil, "", err
+		return nil, nil, err
 	}
 
 	nodeInfo, err := metadata.GetNodeConfig(clusterID, nodeID)
 	if err != nil || nodeInfo == nil {
-		log.Error("node info is nil")
-		return nil, "", err
+		if err != nil {
+			log.Errorf("failed to get node config for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
+		} else {
+			log.Errorf("node config not found for cluster [%s], node [%s]", clusterID, nodeID)
+		}
+		return nil, nil, err
 	}
 
-	pathLogs := nodeInfo.Payload.NodeInfo.GetPathLogs()
+	logsPaths := normalizeLogsPaths(nil, nodeInfo.Payload.NodeInfo.GetPathLogs())
 
 	for _, row := range result.Result {
 		v, ok := row.(map[string]interface{})
 		if ok {
+			if payload, ok := v["payload"].(map[string]interface{}); ok {
+				logsPaths = normalizeLogsPaths(extractStringSlice(payload["logs_paths"]), util.ToString(payload["path_logs"]))
+				if len(logsPaths) == 0 {
+					logsPaths = normalizeLogsPaths(nil, nodeInfo.Payload.NodeInfo.GetPathLogs())
+				}
+			}
 
 			x, ok := v["metadata"]
 			if ok {
@@ -385,26 +464,209 @@ func getAgentByNodeID(clusterID, nodeID string) (*model.Instance, string, error)
 							inst.ID = util.ToString(id)
 							_, err = orm.Get(inst)
 							if err != nil {
-								return nil, pathLogs, err
+								return nil, logsPaths, err
 							}
 							if inst.Name == "" {
-								return nil, pathLogs, nil
+								return nil, logsPaths, nil
 							}
-							return inst, pathLogs, nil
+							return inst, logsPaths, nil
 						}
 					}
 				}
 			}
 		}
 	}
-	return nil, "", nil
+	return nil, nil, nil
 }
 
 type ClusterInfo struct {
-	ClusterIDs []string `json:"cluster_id"`
+	ClusterIDs []string         `json:"cluster_id"`
+	Clusters   []ClusterBinding `json:"clusters,omitempty"`
 }
 
 var autoEnrollRunning = atomic.Bool{}
+
+func normalizeClusterInfo(info ClusterInfo) ClusterInfo {
+	clusterIDs := make([]string, 0, len(info.ClusterIDs)+len(info.Clusters))
+	seen := map[string]int{}
+	existingClusters := info.Clusters
+
+	appendCluster := func(clusterID string, logsPaths []string) {
+		clusterID = strings.TrimSpace(clusterID)
+		if clusterID == "" {
+			return
+		}
+		logsPaths = normalizeLogsPaths(logsPaths, "")
+		if idx, exists := seen[clusterID]; exists {
+			if len(logsPaths) > 0 {
+				info.Clusters[idx].LogsPaths = logsPaths
+			}
+			return
+		}
+		seen[clusterID] = len(info.Clusters)
+		clusterIDs = append(clusterIDs, clusterID)
+		info.Clusters = append(info.Clusters, ClusterBinding{
+			ClusterID: clusterID,
+			LogsPaths: logsPaths,
+		})
+	}
+
+	info.Clusters = make([]ClusterBinding, 0, len(info.Clusters))
+	for _, clusterID := range info.ClusterIDs {
+		appendCluster(clusterID, nil)
+	}
+	for _, item := range existingClusters {
+		appendCluster(item.ClusterID, item.LogsPaths)
+	}
+	info.ClusterIDs = clusterIDs
+	return info
+}
+
+func (info ClusterInfo) GetLogsPaths(clusterID string) []string {
+	for _, item := range info.Clusters {
+		if item.ClusterID == clusterID {
+			return normalizeLogsPaths(item.LogsPaths, "")
+		}
+	}
+	return nil
+}
+
+func hydrateAutoEnrollClusterInfo(clusterInfo ClusterInfo) (ClusterInfo, error) {
+	if len(clusterInfo.ClusterIDs) == 0 {
+		return clusterInfo, nil
+	}
+
+	clusters := make([]ClusterBinding, 0, len(clusterInfo.ClusterIDs))
+	for _, clusterID := range clusterInfo.ClusterIDs {
+		clusters = append(clusters, ClusterBinding{
+			ClusterID: clusterID,
+		})
+	}
+	clusterInfo.Clusters = clusters
+	return clusterInfo, nil
+}
+
+func getAutoEnrollClusterInfo(clusterInfo ClusterInfo) (ClusterInfo, error) {
+	clusterInfo = normalizeClusterInfo(clusterInfo)
+	if len(clusterInfo.ClusterIDs) > 0 {
+		return hydrateAutoEnrollClusterInfo(clusterInfo)
+	}
+
+	q := &orm.Query{
+		Size: 1000,
+		Conds: orm.And(
+			orm.Eq("metric_collection_mode", elastic.ModeAgent),
+			orm.Eq("enabled", true),
+		),
+	}
+	err, res := orm.Search(&elastic.ElasticsearchConfig{}, q)
+	if err != nil {
+		return ClusterInfo{}, err
+	}
+
+	ids := make([]string, 0, len(res.Result))
+	for _, row := range res.Result {
+		item, ok := row.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		id := util.ToString(item["id"])
+		if id != "" {
+			ids = append(ids, id)
+		}
+	}
+	clusterInfo.ClusterIDs = ids
+	clusterInfo = normalizeClusterInfo(clusterInfo)
+	return hydrateAutoEnrollClusterInfo(clusterInfo)
+}
+
+func startAutoEnroll(clusterInfo ClusterInfo) error {
+	clusterInfo, err := getAutoEnrollClusterInfo(clusterInfo)
+	if err != nil {
+		return err
+	}
+	if len(clusterInfo.ClusterIDs) <= 0 {
+		return nil
+	}
+	if autoEnrollRunning.Load() {
+		return errors.New("auto_enroll is already running in background")
+	}
+
+	autoEnrollRunning.Swap(true)
+	go runAutoEnroll(clusterInfo)
+	return nil
+}
+
+func runAutoEnroll(clusterInfo ClusterInfo) {
+	defer func() {
+		autoEnrollRunning.Swap(false)
+		if !global.Env().IsDebug {
+			if r := recover(); r != nil {
+				var v string
+				switch r.(type) {
+				case error:
+					v = r.(error).Error()
+				case runtime.Error:
+					v = r.(runtime.Error).Error()
+				case string:
+					v = r.(string)
+				}
+				if v != "" {
+					log.Errorf("auto enroll panic recovered: %s", v)
+				}
+			}
+		}
+		log.Debug("finish auto enroll")
+	}()
+
+	log.Debug("start auto enroll")
+	q := &orm.Query{Conds: orm.And(orm.Eq("application.name", "agent"))}
+	q.From = 0
+	q.Size = 50000
+	err, res := orm.Search(&model.Instance{}, q)
+	if err != nil {
+		log.Errorf("failed to search agent instances during auto enroll: %v", err)
+		return
+	}
+
+	for _, v := range res.Result {
+		f, ok := v.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		instanceIDObj, ok1 := f["id"]
+		instanceEndpointObj, ok2 := f["endpoint"]
+		if !ok1 || !ok2 {
+			continue
+		}
+		instanceID, ok1 := instanceIDObj.(string)
+		instanceEndpoint, ok2 := instanceEndpointObj.(string)
+		if !ok1 || !ok2 {
+			continue
+		}
+		nodes, err := refreshNodesInfo(instanceID)
+		if err != nil {
+			log.Errorf("failed to refresh nodes for agent instance [%s] at [%s]: %v", instanceID, instanceEndpoint, err)
+			continue
+		}
+		log.Debugf("instance:%v,%v, has: %v nodes, %v unknown nodes", instanceID, instanceEndpoint, len(nodes.Nodes), len(nodes.UnknownProcess))
+		if len(nodes.UnknownProcess) > 0 {
+			pids := bindInstanceToCluster(clusterInfo, nodes, instanceID, instanceEndpoint)
+			log.Infof("instance:%v,%v, success enroll %v nodes", instanceID, instanceEndpoint, len(pids))
+		}
+
+		if len(nodes.Nodes) > 0 {
+			for k, v := range nodes.Nodes {
+				log.Debug(k, v.Status, v.Enrolled)
+				if !v.Enrolled {
+					pids := bindInstanceToCluster(clusterInfo, nodes, instanceID, instanceEndpoint)
+					log.Infof("instance:%v,%v, success enroll %v nodes", instanceID, instanceEndpoint, len(pids))
+					break
+				}
+			}
+		}
+	}
+}
 
 func (h *APIHandler) autoEnrollESNode(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	//{"cluster_id":["infini_default_system_cluster"]}
@@ -419,83 +681,14 @@ func (h *APIHandler) autoEnrollESNode(w http.ResponseWriter, req *http.Request, 
 		}
 	}
 
+	clusterInfo = normalizeClusterInfo(clusterInfo)
 	if len(clusterInfo.ClusterIDs) <= 0 {
 		panic(errors.New("please select cluster to enroll"))
 	}
 
-	if autoEnrollRunning.Load() {
-		panic(errors.New("auto_enroll is already running in background"))
+	if err := startAutoEnroll(clusterInfo); err != nil {
+		panic(err)
 	}
-
-	autoEnrollRunning.Swap(true)
-	go func(clusterInfo ClusterInfo) {
-		defer func() {
-			autoEnrollRunning.Swap(false)
-			if !global.Env().IsDebug {
-				if r := recover(); r != nil {
-					var v string
-					switch r.(type) {
-					case error:
-						v = r.(error).Error()
-					case runtime.Error:
-						v = r.(runtime.Error).Error()
-					case string:
-						v = r.(string)
-					}
-					if v != "" {
-						log.Error(v)
-					}
-				}
-			}
-			log.Debug("finish auto enroll")
-		}()
-
-		log.Debug("start auto enroll")
-		//get instances
-		q := &orm.Query{Conds: orm.And(orm.Eq("application.name", "agent"))}
-		q.From = 0
-		q.Size = 50000
-		err, res := orm.Search(&model.Instance{}, q)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-
-		for _, v := range res.Result {
-			f, ok := v.(map[string]interface{})
-			if ok {
-				instanceIDObj, ok1 := f["id"]
-				instanceEndpointObj, ok2 := f["endpoint"]
-				if ok1 && ok2 {
-					instanceID, ok1 := instanceIDObj.(string)
-					instanceEndpoint, ok2 := instanceEndpointObj.(string)
-					if ok1 && ok2 {
-						nodes, err := refreshNodesInfo(instanceID, instanceEndpoint)
-						if err != nil {
-							log.Error(err)
-							continue
-						}
-						log.Debugf("instance:%v,%v, has: %v nodes, %v unknown nodes", instanceID, instanceEndpoint, len(nodes.Nodes), len(nodes.UnknownProcess))
-						if len(nodes.UnknownProcess) > 0 {
-							pids := h.bindInstanceToCluster(clusterInfo, nodes, instanceID, instanceEndpoint)
-							log.Infof("instance:%v,%v, success enroll %v nodes", instanceID, instanceEndpoint, len(pids))
-						}
-
-						if len(nodes.Nodes) > 0 {
-							for k, v := range nodes.Nodes {
-								log.Debug(k, v.Status, v.Enrolled)
-								if !v.Enrolled {
-									pids := h.bindInstanceToCluster(clusterInfo, nodes, instanceID, instanceEndpoint)
-									log.Infof("instance:%v,%v, success enroll %v nodes", instanceID, instanceEndpoint, len(pids))
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-
-	}(clusterInfo)
 
 	//get all unknown nodes
 	//check each process with cluster id
@@ -519,7 +712,7 @@ func (h *APIHandler) discoveryESNodesInfo(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	nodes, err := refreshNodesInfo(instance.ID, instance.GetEndpoint())
+	nodes, err := refreshNodesInfo(instance.ID)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -536,7 +729,8 @@ func (h *APIHandler) discoveryESNodesInfo(w http.ResponseWriter, req *http.Reque
 			if len(bytes) > 0 {
 				clusterInfo := ClusterInfo{}
 				util.FromJSONBytes(bytes, &clusterInfo)
-				discoveredPIDs = h.bindInstanceToCluster(clusterInfo, nodes, instance.ID, instance.GetEndpoint())
+				clusterInfo = normalizeClusterInfo(clusterInfo)
+				discoveredPIDs = bindInstanceToCluster(clusterInfo, nodes, instance.ID, instance.GetEndpoint())
 			}
 		}
 
@@ -556,64 +750,61 @@ func (h *APIHandler) discoveryESNodesInfo(w http.ResponseWriter, req *http.Reque
 	h.WriteJSON(w, nodes, http.StatusOK)
 }
 
-func (h *APIHandler) bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elastic.DiscoveryResult, instanceID, instanceEndpoint string) map[int]*elastic.LocalNodeInfo {
+func bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elastic.DiscoveryResult, instanceID, instanceEndpoint string) map[int]*elastic.LocalNodeInfo {
 	discoveredPIDs := map[int]*elastic.LocalNodeInfo{}
 	if len(clusterInfo.ClusterIDs) > 0 {
 		//try connect this node to cluster by using this cluster's agent credential
 		for _, clusterID := range clusterInfo.ClusterIDs {
+			preparedConf, err := elasticapi.PrepareClusterForAgentCollection(clusterID)
+			if err != nil {
+				log.Errorf("failed to prepare cluster [%s] for agent collection: %v", clusterID, err)
+				continue
+			}
 			meta := elastic.GetMetadata(clusterID)
 			if meta != nil {
 				states, err := elastic.GetClient(clusterID).GetClusterState()
 				if err != nil || states == nil {
-					log.Error(err)
+					if err != nil {
+						log.Errorf("failed to get cluster state for cluster [%s]: %v", clusterID, err)
+					} else {
+						log.Errorf("cluster state is empty for cluster [%s]", clusterID)
+					}
 					continue
 				}
 
 				clusterUUID := states.ClusterUUID
+				auth, err := common.GetAgentBasicAuth(preparedConf)
+				if err != nil {
+					log.Errorf("failed to get agent credential for cluster [%s]: %v", clusterID, err)
+					continue
+				}
+				if auth == nil || auth.Username == "" {
+					log.Errorf("cluster [%s] has no available agent credential", clusterID)
+					continue
+				}
 
-				//no auth or agent auth configured
-				if meta.Config.AgentCredentialID != "" || meta.Config.CredentialID == "" {
-					auth, err := common.GetAgentBasicAuth(meta.Config)
-					if err != nil {
-						panic(err)
-					}
-
-					for _, v := range nodes.Nodes {
-						if !v.Enrolled {
-							if v.NodeInfo != nil {
-								pid := v.NodeInfo.Process.Id
-								nodeHost := v.NodeInfo.GetHttpPublishHost()
-								nodeInfo := h.internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint, pid, nodeHost, auth)
-								if nodeInfo != nil {
-									discoveredPIDs[pid] = nodeInfo
-								}
-							}
-						}
-					}
-
-					//try connect
-					for _, node := range nodes.UnknownProcess {
-
-						pid := node.PID
-
-						for _, v := range node.ListenAddresses {
-
-							ip := v.IP
-							port := v.Port
-
-							if util.ContainStr(ip, "::") {
-								ip = fmt.Sprintf("[%s]", ip)
-							}
-
-							if util.ContainStr(ip, "*") {
-								ip = util.LocalAddress
-							}
-
-							nodeHost := fmt.Sprintf("%s:%d", ip, port)
-							nodeInfo := h.internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint, pid, nodeHost, auth)
+				for _, v := range nodes.Nodes {
+					if !v.Enrolled {
+						if v.NodeInfo != nil {
+							pid := v.NodeInfo.Process.Id
+							nodeHost := v.NodeInfo.GetHttpPublishHost()
+							nodeInfo := (&APIHandler{}).internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint, pid, nodeHost, auth, "")
 							if nodeInfo != nil {
 								discoveredPIDs[pid] = nodeInfo
 							}
+						}
+					}
+				}
+
+				for _, node := range nodes.UnknownProcess {
+					pid := node.PID
+
+					for _, v := range prioritizeListenAddresses(node.ListenAddresses) {
+						nodeHost := fmt.Sprintf("%s:%d", normalizeListenHostIP(v.IP), v.Port)
+						nodeInfo := (&APIHandler{}).internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint, pid, nodeHost, auth, node.Cmdline)
+						if nodeInfo != nil {
+							discoveredPIDs[pid] = nodeInfo
+							break
 						}
 					}
 				}
@@ -623,11 +814,64 @@ func (h *APIHandler) bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elast
 	return discoveredPIDs
 }
 
-func (h *APIHandler) internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint string, pid int, nodeHost string, auth *model.BasicAuth) *elastic.LocalNodeInfo {
-	success, tryAgain, nodeInfo := h.getESNodeInfoViaProxy(nodeHost, "http", auth, instanceEndpoint)
+func normalizeListenHostIP(ip string) string {
+	ip = strings.TrimSpace(ip)
+	if ip == "" || util.ContainStr(ip, "*") || ip == util.LocalIpv6Address {
+		return util.LocalAddress
+	}
+
+	rawIP := strings.Trim(ip, "[]")
+	if parsed := net.ParseIP(rawIP); parsed != nil {
+		if parsed.IsUnspecified() || parsed.IsLoopback() {
+			return util.LocalAddress
+		}
+		if parsed.To4() == nil {
+			return fmt.Sprintf("[%s]", rawIP)
+		}
+		return rawIP
+	}
+
+	if strings.Contains(ip, ":") && !strings.HasPrefix(ip, "[") {
+		return fmt.Sprintf("[%s]", ip)
+	}
+	return ip
+}
+
+func prioritizeListenAddresses(addresses []model.ListenAddr) []model.ListenAddr {
+	if len(addresses) <= 1 {
+		return addresses
+	}
+
+	items := append([]model.ListenAddr(nil), addresses...)
+	sort.SliceStable(items, func(i, j int) bool {
+		left := listenAddressPriority(items[i])
+		right := listenAddressPriority(items[j])
+		if left != right {
+			return left < right
+		}
+		return items[i].Port < items[j].Port
+	})
+	return items
+}
+
+func listenAddressPriority(addr model.ListenAddr) int {
+	switch addr.Port {
+	case 9200:
+		return 0
+	case 443, 80:
+		return 1
+	case 9300:
+		return 3
+	default:
+		return 2
+	}
+}
+
+func (h *APIHandler) internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint string, pid int, nodeHost string, auth *model.BasicAuth, cmdline string) *elastic.LocalNodeInfo {
+	success, tryAgain, nodeInfo := h.getESNodeInfoViaProxy(nodeHost, "http", auth, instanceID)
 	if !success && tryAgain {
 		//try https again
-		success, tryAgain, nodeInfo = h.getESNodeInfoViaProxy(nodeHost, "https", auth, instanceEndpoint)
+		success, tryAgain, nodeInfo = h.getESNodeInfoViaProxy(nodeHost, "https", auth, instanceID)
 	}
 
 	log.Debug(clusterUUID, nodeHost, instanceEndpoint, success, tryAgain, nodeInfo)
@@ -644,7 +888,10 @@ func (h *APIHandler) internalProcessBind(clusterID, clusterUUID, instanceID, ins
 			ClusterID:   clusterID,
 			ClusterUUID: nodeInfo.ClusterInfo.ClusterUUID,
 			NodeUUID:    nodeInfo.NodeUUID,
+			PathHome:    extractNodePathHome(nodeInfo.NodeInfo),
+			LogsPaths:   deriveLogsPathsFromCmdline(cmdline, extractNodePathHome(nodeInfo.NodeInfo)),
 		}
+		item.PathLogs = firstString(item.LogsPaths)
 
 		settings := NewNodeAgentSettings(instanceID, &item)
 		err := orm.Save(&orm.Context{
@@ -660,12 +907,12 @@ func (h *APIHandler) internalProcessBind(clusterID, clusterUUID, instanceID, ins
 	return nil
 }
 
-func (h *APIHandler) getESNodeInfoViaProxy(esHost string, esSchema string, auth *model.BasicAuth, endpoint string) (success, tryAgain bool, info *elastic.LocalNodeInfo) {
+func (h *APIHandler) getESNodeInfoViaProxy(esHost string, esSchema string, auth *model.BasicAuth, instanceID string) (success, tryAgain bool, info *elastic.LocalNodeInfo) {
 	esConfig := elastic.ElasticsearchConfig{Host: esHost, Schema: esSchema, BasicAuth: auth}
-	return h.getESNodeInfoViaProxyWithConfig(&esConfig, auth, endpoint)
+	return h.getESNodeInfoViaProxyWithConfig(&esConfig, instanceID)
 }
 
-func (h *APIHandler) getESNodeInfoViaProxyWithConfig(cfg *elastic.ElasticsearchConfig, auth *model.BasicAuth, endpoint string) (success, tryAgain bool, info *elastic.LocalNodeInfo) {
+func (h *APIHandler) getESNodeInfoViaProxyWithConfig(cfg *elastic.ElasticsearchConfig, instanceID string) (success, tryAgain bool, info *elastic.LocalNodeInfo) {
 	body := util.MustToJSONBytes(cfg)
 	if cfg.BasicAuth != nil {
 		body, _ = jsonparser.Set(body, []byte(`"`+cfg.BasicAuth.Password.Get()+`"`), "basic_auth", "password")
@@ -678,21 +925,33 @@ func (h *APIHandler) getESNodeInfoViaProxyWithConfig(cfg *elastic.ElasticsearchC
 		Context: ctx,
 		Body:    body,
 	}
-	if auth != nil {
-		req.SetBasicAuth(auth.Username, auth.Password.Get())
-	}
 
 	obj := elastic.LocalNodeInfo{}
-	res, err := server.ProxyAgentRequest("elasticsearch", endpoint, req, &obj)
+	res, err := ProxyAgentRequestViaChannel(instanceID, req, &obj)
+	if isForbiddenAgentReverseResult(res) {
+		return false, false, nil
+	}
 	if err != nil {
 		if global.Env().IsDebug {
-			log.Error(err)
+			log.Errorf("failed to proxy elasticsearch node info via agent reverse channel [%s]: %v", instanceID, err)
 		}
-		return false, true, nil
-	}
-
-	if res != nil && res.StatusCode == http.StatusForbidden {
-		return false, false, nil
+		if !shouldFallbackToDirectAgentNodeInfo(err) {
+			return false, true, nil
+		}
+		exists, instance, getErr := server.GetRuntimeInstanceByID(instanceID)
+		if getErr != nil || !exists || instance == nil {
+			if global.Env().IsDebug && getErr != nil {
+				log.Errorf("failed to load agent instance [%s] for direct node info fallback: %v", instanceID, getErr)
+			}
+			return false, true, nil
+		}
+		if _, directErr := proxyAgentRequestDirect(instance, req, &obj); directErr != nil {
+			if global.Env().IsDebug {
+				log.Errorf("failed to proxy elasticsearch node info directly via agent [%s]: %v", instanceID, directErr)
+			}
+			return false, true, nil
+		}
+		return true, false, &obj
 	}
 
 	if res != nil && res.StatusCode == http.StatusOK {
@@ -705,6 +964,14 @@ func (h *APIHandler) getESNodeInfoViaProxyWithConfig(cfg *elastic.ElasticsearchC
 	}
 
 	return false, true, nil
+}
+
+func shouldFallbackToDirectAgentNodeInfo(err error) bool {
+	return isAgentReverseChannelRecoverableError(err)
+}
+
+func isForbiddenAgentReverseResult(res *util.Result) bool {
+	return res != nil && res.StatusCode == http.StatusForbidden
 }
 
 func NewClusterSettings(clusterID string) *model.Setting {
@@ -723,6 +990,7 @@ func NewClusterSettings(clusterID string) *model.Setting {
 }
 
 func NewNodeAgentSettings(instanceID string, item *BindingItem) *model.Setting {
+	logsPaths := normalizeLogsPaths(item.LogsPaths, item.PathLogs)
 
 	settings := model.Setting{
 		Metadata: model.Metadata{
@@ -740,9 +1008,177 @@ func NewNodeAgentSettings(instanceID string, item *BindingItem) *model.Setting {
 		"cluster_id":   item.ClusterID,
 		"cluster_uuid": item.ClusterUUID,
 		"node_uuid":    item.NodeUUID,
+		"path_logs":    firstString(logsPaths),
+		"logs_paths":   logsPaths,
 	}
 
 	return &settings
+}
+
+func extractStringSlice(value interface{}) []string {
+	switch v := value.(type) {
+	case nil:
+		return nil
+	case []string:
+		return normalizeLogsPaths(v, "")
+	case []interface{}:
+		items := make([]string, 0, len(v))
+		for _, item := range v {
+			items = append(items, util.ToString(item))
+		}
+		return normalizeLogsPaths(items, "")
+	default:
+		return nil
+	}
+}
+
+func normalizeLogsPaths(paths []string, fallback string) []string {
+	items := paths
+	if len(items) == 0 && fallback != "" {
+		items = []string{fallback}
+	}
+
+	seen := map[string]struct{}{}
+	result := make([]string, 0, len(items))
+	for _, item := range items {
+		item = strings.TrimSpace(item)
+		if item == "" {
+			continue
+		}
+		if _, exists := seen[item]; exists {
+			continue
+		}
+		seen[item] = struct{}{}
+		result = append(result, item)
+	}
+	return result
+}
+
+var (
+	cmdlinePathHomeRegx = regexp.MustCompile(`(?:^|\s)-D(?:es|opensearch)\.path\.home=([^\s]+)`)
+	cmdlinePathLogsRegx = regexp.MustCompile(`(?:^|\s)-D(?:es|opensearch)\.path\.logs=([^\s]+)`)
+	cmdlineGCFileRegx   = regexp.MustCompile(`(?:^|\s)-Xlog:[^\s]*?file=([^\s]+)`)
+)
+
+func deriveLogsPathsFromCmdline(cmdline, fallbackHome string) []string {
+	pathHome := extractCmdlineValue(cmdlinePathHomeRegx, cmdline)
+	if pathHome == "" {
+		pathHome = strings.TrimSpace(fallbackHome)
+	}
+
+	currentLogsPath := extractCmdlineValue(cmdlinePathLogsRegx, cmdline)
+	if currentLogsPath == "" && pathHome != "" {
+		currentLogsPath = filepath.Join(pathHome, "logs")
+	}
+
+	result := make([]string, 0, 2)
+	result = appendLogsDir(result, currentLogsPath, pathHome)
+	result = appendLogsFileDir(result, trimGCLogFileValue(extractCmdlineValue(cmdlineGCFileRegx, cmdline)), pathHome)
+	return result
+}
+
+func extractCmdlineValue(reg *regexp.Regexp, cmdline string) string {
+	matches := reg.FindStringSubmatch(cmdline)
+	if len(matches) > 1 {
+		return trimCmdlinePathValue(matches[1])
+	}
+	return ""
+}
+
+func appendLogsDir(paths []string, value, base string) []string {
+	if len(paths) >= 2 {
+		return paths
+	}
+	resolved := resolveCmdlinePath(value, base)
+	if resolved == "" {
+		return paths
+	}
+	for _, item := range paths {
+		if item == resolved {
+			return paths
+		}
+	}
+	return append(paths, resolved)
+}
+
+func appendLogsFileDir(paths []string, value, base string) []string {
+	resolved := resolveCmdlinePath(value, base)
+	if resolved == "" {
+		return paths
+	}
+	return appendLogsDir(paths, filepath.Dir(resolved), "")
+}
+
+func resolveCmdlinePath(value, base string) string {
+	value = trimCmdlinePathValue(value)
+	if value == "" {
+		return ""
+	}
+	if !filepath.IsAbs(value) {
+		if base == "" {
+			return ""
+		}
+		value = filepath.Join(base, value)
+	}
+	return filepath.Clean(value)
+}
+
+func trimCmdlinePathValue(value string) string {
+	return strings.Trim(strings.TrimSpace(value), `"'`)
+}
+
+func trimGCLogFileValue(value string) string {
+	value = trimCmdlinePathValue(value)
+	if value == "" {
+		return ""
+	}
+	searchFrom := 0
+	if len(value) > 1 && value[1] == ':' {
+		searchFrom = 2
+	}
+	if idx := strings.Index(value[searchFrom:], ":"); idx >= 0 {
+		value = value[:searchFrom+idx]
+	}
+	return value
+}
+
+func extractNodePathHome(nodeInfo *elastic.NodesInfo) string {
+	if nodeInfo == nil {
+		return ""
+	}
+	path, ok := nodeInfo.Settings["path"]
+	if !ok {
+		return ""
+	}
+	pathObj, ok := path.(map[string]interface{})
+	if !ok {
+		return ""
+	}
+	return strings.TrimSpace(util.ToString(pathObj["home"]))
+}
+
+func firstString(items []string) string {
+	if len(items) == 0 {
+		return ""
+	}
+	return items[0]
+}
+
+func pickAllowedLogsPath(allowed []string, requested string) (string, error) {
+	allowed = normalizeLogsPaths(allowed, "")
+	if len(allowed) == 0 {
+		return "", fmt.Errorf("no logs path configured")
+	}
+	if requested == "" {
+		return allowed[0], nil
+	}
+	requested = strings.TrimSpace(requested)
+	for _, item := range allowed {
+		if item == requested {
+			return item, nil
+		}
+	}
+	return "", fmt.Errorf("invalid logs path: %s", requested)
 }
 
 func NewIndexSettings(clusterID, nodeID, agentID, indexName, indexID string) *model.Setting {
@@ -814,21 +1250,34 @@ func (h *APIHandler) enrollESNode(w http.ResponseWriter, req *http.Request, ps h
 	}
 
 	//check if the cluster's agent credential is valid
-	meta := elastic.GetMetadata(item.ClusterID)
-	if meta == nil {
-		h.WriteError(w, "cluster not found", http.StatusInternalServerError)
+	preparedConf, err := elasticapi.PrepareClusterForAgentCollection(item.ClusterID)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	//use agent credential to access the node
-	meta.Config.BasicAuth, _ = common.GetAgentBasicAuth(meta.Config)
+	preparedConf.BasicAuth, err = common.GetAgentBasicAuth(preparedConf)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if preparedConf.BasicAuth == nil || preparedConf.BasicAuth.Username == "" {
+		h.WriteError(w, "cluster has no available agent credential", http.StatusInternalServerError)
+		return
+	}
 
-	success, _, _ := h.getESNodeInfoViaProxyWithConfig(meta.Config, meta.Config.BasicAuth, instance.GetEndpoint())
+	success, _, nodeInfo := h.getESNodeInfoViaProxyWithConfig(preparedConf, instance.ID)
 
 	if success {
-		//update node's setting
+		if item.PathHome == "" {
+			item.PathHome = extractNodePathHome(nodeInfo.NodeInfo)
+		}
+		item.LogsPaths = deriveLogsPathsFromCmdline("", item.PathHome)
+		item.PathLogs = firstString(item.LogsPaths)
+		// Save will create the binding on first manual enroll and update it on subsequent enrolls.
 		settings := NewNodeAgentSettings(instID, &item)
-		err = orm.Update(&orm.Context{
+		err = orm.Save(&orm.Context{
 			Refresh: "wait_for",
 		}, settings)
 		if err != nil {

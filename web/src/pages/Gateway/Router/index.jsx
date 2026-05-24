@@ -24,7 +24,7 @@ import "../list.scss";
 import "@/assets/headercontent.scss";
 import moment from "moment";
 
-const { Search } = Input;
+import SearchInput from "@/components/infini/SearchInput";
 
 const RouterList = (props) => {
   const [queryParams, setQueryParams] = React.useState({});
@@ -44,7 +44,7 @@ const RouterList = (props) => {
         method: "DELETE",
       });
       if (deleteRes && deleteRes.result == "deleted") {
-        message.success("delete succeed");
+        message.success(formatMessage({ id: "app.message.delete.success" }));
         setQueryParams((params) => {
           return {
             ...params,
@@ -58,11 +58,11 @@ const RouterList = (props) => {
   const columns = useMemo(
     () => [
       {
-        title: "Name",
+        title: formatMessage({ id: "gateway.router.column.name" }),
         dataIndex: "name",
       },
       {
-        title: "Default Flow",
+        title: formatMessage({ id: "gateway.router.column.default_flow" }),
         dataIndex: "default_flow",
         render: (text) => {
           if (!value || !value.flows) {
@@ -81,7 +81,7 @@ const RouterList = (props) => {
       //   },
       // },
       {
-        title: "Tracing Flow",
+        title: formatMessage({ id: "gateway.router.column.tracing_flow" }),
         dataIndex: "tracing_flow",
         render: (text) => {
           if (!value || !value.flows) {
@@ -95,7 +95,7 @@ const RouterList = (props) => {
         },
       },
       {
-        title: "Last Updated",
+        title: formatMessage({ id: "gateway.router.column.updated" }),
         dataIndex: "updated",
         render: (text) => {
           return moment(text).format("YYYY-MM-DD HH:mm:ss");
@@ -110,7 +110,7 @@ const RouterList = (props) => {
             </Link>
             <Divider type="vertical" />
             <Popconfirm
-              title="Sure to delete?"
+              title={formatMessage({ id: "gateway.router.delete.confirm.title" })}
               onConfirm={() => {
                 onDeleteClick(record.id);
               }}
@@ -169,10 +169,12 @@ const RouterList = (props) => {
           }}
         >
           <div style={{ maxWidth: 500, flex: "1 1 auto" }}>
-            <Search
+            <SearchInput
               allowClear
-              placeholder="Type keyword to search"
-              enterButton="Search"
+              placeholder={formatMessage({
+                id: "gateway.router.search.placeholder",
+              })}
+              enterButton={formatMessage({ id: "form.button.search" })}
               onSearch={(value) => {
                 onSearchClick(value);
               }}
@@ -201,7 +203,7 @@ const RouterList = (props) => {
               icon="plus"
               onClick={() => router.push(`/gateway/router/new`)}
             >
-              {formatMessage({ id: "gateway.instance.btn.new" })}
+              {formatMessage({ id: "gateway.router.btn.new" })}
             </Button>
           </div>
         </div>
@@ -215,13 +217,16 @@ const RouterList = (props) => {
           pagination={{
             size: "small",
             pageSize: 20,
-            total: total?.value || total,
-            showSizeChanger: true,
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} of ${total} items`,
-          }}
-          columns={columns}
-          onChange={handleTableChange}
+             total: total?.value || total,
+             showSizeChanger: true,
+             showTotal: (total, range) =>
+              formatMessage(
+                { id: "gateway.router.pagination.total" },
+                { start: range[0], end: range[1], total }
+              ),
+           }}
+           columns={columns}
+           onChange={handleTableChange}
         />
       </Card>
     </PageHeaderWrapper>

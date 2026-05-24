@@ -1,4 +1,4 @@
-#env:
+# env:
 #  INFINI_CONSOLE_ENDPOINT: "http://127.0.0.1:9000"
 #  INGEST_CLUSTER_ENDPOINT: "https://127.0.0.1:9200"
 #  INGEST_CLUSTER_CREDENTIAL_ID: chjkp9dath21f1ae9tq0
@@ -6,7 +6,7 @@
 #  DISCORD_WEBHOOK_ENDPOINT:
 #  DINGTALK_WEBHOOK_ENDPOINT:
 #  WECOM_WEBHOOK_ENDPOINT:
-#  FEISHU_WEBHOOK_ENDPOINT:
+#  FEISHU_WEBHOOK_ENDPOINT: https://open.feishu.cn/open-apis/bot/v2/hook/
 
 
 # must in major config file
@@ -22,14 +22,39 @@ configs:
     cert_file: config/certs/ca.crt
     key_file: config/certs/ca.key
     skip_insecure_verify: false
+api:
+  enabled: false
+  network:
+    binding: 0.0.0.0:9443
+    skip_occupied_port: false
+  websocket:
+    # Agent reverse channel can use /ws on the active Console listener.
+    # If web.embedding_api or web.websocket is enabled, install scripts prefer the web endpoint.
+    enabled: true
+    base_path: /ws
+    skip_host_verify: true
+  tls:
+    # Keep API listener TLS optional so agents can use the embedded /ws on web :9000.
+    enabled: false
+    skip_insecure_verify: false
+    default_domain: localhost
 web:
   enabled: true
   embedding_api: true
+  websocket:
+    enabled: true
+    base_path: /ws
+    skip_host_verify: true
+  tls:
+    enabled: true
+    skip_insecure_verify: true
+    default_domain: "localhost"
   # base_path: /console
   security:
     enabled: true
   ui:
     enabled: true
+    # Relative paths are resolved from the Console executable directory.
     path: .public
     vfs: true
     local: true
@@ -74,6 +99,11 @@ metrics:
     cluster_stats: true
     node_stats: true
     index_stats: true
+
+disk_queue:
+  cleanup_files_on_init: true
+  compress:
+    delete_after_compress: true
 
 ## badger kv storage configuration
 badger:
@@ -140,14 +170,31 @@ security:
 
 #agent:
 #  setup:
+#    # Optional package mirror. If files exist under web.ui.path/agent/stable,
+#    # Console automatically uses its own web endpoint as the download source.
+#    # Otherwise it falls back to the official release site. For custom mirrors,
+#    # set an explicit URL such as https://mirror.local/agent/stable.
 #    download_url: "https://release.infinilabs.com/agent/stable"
+#    # Optional install directory. Default is /infini/agent.
+#    install_dir: "/infini/agent"
 #    version: 0.5.0-214
 #    ca_cert: "config/certs/ca.crt"
 #    ca_key: "config/certs/ca.key"
+#    # Optional when the target host must use a different Console address than the current page.
 #    console_endpoint: $[[env.INFINI_CONSOLE_ENDPOINT]]
 #    ingest_cluster_endpoint: $[[env.INGEST_CLUSTER_ENDPOINT]]
 #    ingest_cluster_credential_id: $[[env.INGEST_CLUSTER_CREDENTIAL_ID]]
 
+# setting version for console select install agent tpl and download agent version
+agent:
+  setup:
+    install_dir: /infini/agent
+    version: 1.30.3-2407
+
+gateway:
+  setup:
+    install_dir: /infini/gateway
+    version: 1.30.3-2407
 
 http_client:
   default:
@@ -155,6 +202,6 @@ http_client:
       skip_insecure_verify: true
       skip_domain_verify: true
     proxy:
-      enabled: true
+      enabled: false
       default_config:
         using_proxy_env: true

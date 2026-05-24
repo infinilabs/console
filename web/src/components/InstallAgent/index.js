@@ -55,6 +55,21 @@ export default ({autoInit = false}) => {
                                     id:"agent.install.setup.desc"
                                 })}：
                             </p>
+                            <div style={{
+                                background: "#f6ffed",
+                                border: "1px solid #b7eb8f",
+                                borderRadius: 6,
+                                padding: "10px 12px",
+                                marginBottom: 16,
+                                color: "#565656",
+                                fontSize: 12,
+                                lineHeight: 1.8,
+                             }}>
+                                <div style={{ color: "#101010", fontWeight: 500, marginBottom: 4 }}>
+                                    {formatMessage({ id: "agent.install.tips.intranet.title" })}
+                                </div>
+                                <div>{formatMessage({ id: "agent.install.tips.intranet.desc" })}</div>
+                            </div>
                             <div className={styles.content}>
                                 {tokenInfo.script}
                                 <CopyToClipboard text={tokenInfo.script}>
@@ -75,27 +90,33 @@ export default ({autoInit = false}) => {
                                     id:"agent.install.tips.title"
                                 })}：</div>
                                 <div className={styles.content}>
-                                    {/* <p>
-                                        · 支持的自定义变量如下，均为可选参数, 多个环境变量之间以空格分割:
+                                     <p>
+                                         · {formatMessage({
+                                                 id:"agent.install.tips.target"
+                                             })} <code>-t /opt/agent</code>
+                                     </p>
+                                    <p>
+                                        · {formatMessage({
+                                                id:"agent.install.tips.version"
+                                            })} <code>-v 1.30.3-2407</code>
                                     </p>
-                                    <div className={styles.children}>
-                                        <p>
-                                            BASE_URL:  Agent安装包的下载地址，如: https://release.infinilabs.com/agent/stable
-                                        </p>
-                                        <p>
-                                            AGENT_VER:  Agent版本号，如: 0.4.0-126
-                                        </p>
-                                        <p>
-                                            INSTALL_PATH:  Agent安装目录, 如: /opt
-                                        </p>
-                                    </div> */}
+                                    <p>
+                                        · {formatMessage({
+                                                id:"agent.install.tips.download"
+                                            })} <code>-u http://192.168.1.1:8080</code>
+                                    </p>
+                                    <p>
+                                        · {formatMessage({
+                                                id:"agent.install.tips.server"
+                                            })} <code>-s http://192.168.1.1:9000</code>
+                                    </p>
                                     <p>
                                         ·  {formatMessage({
                                                 id:"agent.install.tips.desc"
                                             })}
                                         <a href={`${getDocPathByLang()}/reference/agent/install/`} target="_blank">{formatMessage({
                                                 id:"agent.install.link.manual_install"
-                                            })}&gt;</a>
+                                            })}</a>
                                     </p>
                                 </div>
                             </div>

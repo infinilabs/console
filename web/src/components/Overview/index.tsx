@@ -9,6 +9,8 @@ import React, {
 import useFetch from "@/lib/hooks/use_fetch";
 import "./index.scss";
 import request from "@/utils/request";
+import { Button, Card, Icon } from "antd";
+import { formatMessage } from "umi/locale";
 import { JsonParam, useQueryParam } from "use-query-params";
 import Header from "./Header";
 import List from "./List";
@@ -17,6 +19,7 @@ import Drawer, { IDrawerRef } from "./Drawer";
 import Title from "./Detail/Title";
 import Content from "./Detail/Content";
 import { useLocalStorage } from "@/lib/hooks/storage";
+import isEqual from "lodash/isEqual";
 
 interface IQueryParams {
   from: number;
@@ -27,6 +30,7 @@ interface IQueryParams {
 interface IDetail {
   key: string;
   title: string;
+  titleId?: string;
   component: any;
 }
 
@@ -101,6 +105,7 @@ export default forwardRef((props: IProps, ref: any) => {
   } = props;
 
   const drawRef = useRef<IDrawerRef>(null);
+  const [sideVisible, setSideVisible] = useState(false);
 
   const [searchField, setSearchField] = useState<string>();
   const [selectedItem, setSelectedItem] = useState<IRecord>({});
@@ -177,6 +182,7 @@ export default forwardRef((props: IProps, ref: any) => {
 
   const result = (value as any)?.hits || {};
   const { hits = [] } = result;
+  const hasSide = sideSorterOptions.length > 0 || aggsParams.length > 0;
 
   const initQueryParams = () => {
     extraQueryFields.forEach((item) => {
@@ -204,6 +210,16 @@ export default forwardRef((props: IProps, ref: any) => {
     dispatch({ type: "pagination", value: 1 })
   };
 
+  const onSideReset = () => {
+    const { filters, ...restParams } = param || {};
+    setParam(restParams);
+    dispatch({ type: "pagination", value: 1 });
+  };
+
+  const onRefresh = () => {
+    run();
+  };
+
   useEffect(() => {
     if (hits.length === 0) {
       return;
@@ -213,8 +229,12 @@ export default forwardRef((props: IProps, ref: any) => {
   }, [value]);
 
   useEffect(() => {
-    setParam({ ...param, ...queryParams });
-  }, [JSON.stringify(queryParams)]);
+    const nextParam = { ...(param || {}), ...queryParams };
+    if (isEqual(param || {}, nextParam)) {
+      return;
+    }
+    setParam(nextParam);
+  }, [param, queryParams, setParam]);
 
   useEffect(() => {
     initQueryParams();
@@ -226,106 +246,139 @@ export default forwardRef((props: IProps, ref: any) => {
 
   return (
     <>
-      <div className="overview-wrapper">
-        <div className="content">
-          <div className="left">
-            <Header
-              searchField={searchField}
-              filters={param?.filters || {}}
-              selectFilterLabels={selectFilterLabels || facetLabels}
-              onSearchFieldChange={(value) => {
-                setSearchField(value);
-                setParam({ ...param, search_field: value });
-              }}
-              defaultSearchValue={queryParams?.keyword}
-              onSearchChange={(value) => {
-                dispatch({ type: "search", value })
-              }}
-              onFacetChange={onFacetChange}
-              dispalyType={dispalyTypeObj[currentTab]}
-              onDisplayTypeChange={onDisplayTypeChange}
-              autoCompleteConfig={{
-                action: searchAction,
-                highlightFields: searchHighlightFields,
-                ...searchAutoCompleteConfig,
-              }}
-              {...headerConfig}
-              onCleanSuccess={() => {
-                dispatch({ type: "pagination", value: 1 })
-              }}
-            />
-            <div className="search-result">
-              {dispalyTypeObj[currentTab] == "card" ? (
-                <List
-                  dataSource={hits}
-                  total={result?.total?.value || 0}
-                  from={queryParams.from}
-                  pageSize={queryParams.size}
-                  loading={loading}
-                  onPageChange={(page) =>
-                    dispatch({ type: "pagination", value: page })
-                  }
-                  onPageSizeChange={(size) =>
-                    dispatch({ type: "pageSizeChange", value: size })
-                  }
-                  renderItem={(item) => {
-                    const infoField = listItemConfig.getId(item);
-                    return (
-                      <listItemConfig.component
-                        data={item}
-                        id={infoField}
-                        isActive={listItemConfig.getId(selectedItem?._id) == infoField}
-                        onSelect={() => {
-                          setSelectedItem(item);
-                          drawRef.current?.open();
-                        }}
-                        onChangeFacet={onFacetChange}
-                        infoAction={infoAction}
-                        parentLoading={loading}
-                      />
-                    );
-                  }}
-                />
-              ) : (
-                <tableConfig.component
-                  infoAction={infoAction}
-                  dataSource={hits.map((item) => ({...item, id: listItemConfig.getId(item)}))}
-                  total={result?.total?.value || 0}
-                  from={queryParams.from}
-                  pageSize={queryParams.size}
-                  loading={loading}
-                  onPageChange={(page) =>
-                    dispatch({ type: "pagination", value: page })
-                  }
-                  onPageSizeChange={(size) =>
-                    dispatch({ type: "pageSizeChange", value: size })
-                  }
-                  onRowClick={(item) => {
-                    setSelectedItem(item);
-                    drawRef.current?.open();
-                  }}
-                  parentLoading={loading}
-                />
-              )}
-            </div>
+      <div className={`overview-wrapper ${hasSide && sideVisible ? "expand" : "collapse"}`}>
+        {hasSide ? (
+          <div className="overview-side-wrap">
+            {sideVisible ? (
+              <Side
+                sorterOptions={sideSorterOptions}
+                sorterValues={param?.sort || []}
+                onSorterChange={(sort) => {
+                  setParam({
+                    ...param,
+                    sort,
+                  });
+                }}
+                facetLabels={facetLabels}
+                aggsConfig={{
+                  action: searchAction,
+                  params: aggsParams,
+                }}
+                filters={param?.filters || {}}
+                onFacetChange={onFacetChange}
+                onReset={onSideReset}
+              />
+            ) : null}
           </div>
-          <Side
-            sorterOptions={sideSorterOptions}
-            sorterValues={param?.sort || []}
-            onSorterChange={(sort) => {
-              setParam({
-                ...param,
-                sort,
-              });
-            }}
-            facetLabels={facetLabels}
-            aggsConfig={{
-              action: searchAction,
-              params: aggsParams,
-            }}
-            filters={param?.filters || {}}
-            onFacetChange={onFacetChange}
-          />
+        ) : null}
+        <div className="overview-content-wrap">
+          {hasSide ? (
+            <span
+              className="overview-expand-and-collapse"
+              onClick={() => setSideVisible((visible) => !visible)}
+              title={
+                sideVisible
+                  ? formatMessage({ id: "listview.side.button.collapse" })
+                  : formatMessage({ id: "listview.side.button.expand" })
+              }
+            >
+              <Icon type={sideVisible ? "left" : "right"} style={{ fontSize: 12 }} />
+            </span>
+          ) : null}
+          <Card className="overview-content-card">
+            <div className="content">
+              <Header
+                searchField={searchField}
+                filters={param?.filters || {}}
+                selectFilterLabels={selectFilterLabels || facetLabels}
+                onSearchFieldChange={(value) => {
+                  setSearchField(value);
+                  setParam({ ...param, search_field: value });
+                }}
+                defaultSearchValue={queryParams?.keyword}
+                onSearchChange={(value) => {
+                  dispatch({ type: "search", value })
+                }}
+                onFacetChange={onFacetChange}
+                dispalyType={dispalyTypeObj[currentTab]}
+                onDisplayTypeChange={onDisplayTypeChange}
+                autoCompleteConfig={{
+                  action: searchAction,
+                  highlightFields: searchHighlightFields,
+                  ...searchAutoCompleteConfig,
+                }}
+                {...headerConfig}
+                getExtra={(headerProps) => {
+                  const extras = headerConfig.getExtra
+                    ? headerConfig.getExtra(headerProps)
+                    : [];
+                  return [
+                    <Button key="refresh" icon="redo" onClick={onRefresh}>
+                      {formatMessage({ id: "form.button.refresh" })}
+                    </Button>,
+                    ...extras,
+                  ];
+                }}
+                onCleanSuccess={() => {
+                  dispatch({ type: "pagination", value: 1 })
+                }}
+              />
+              <div className="search-result">
+                {dispalyTypeObj[currentTab] == "card" ? (
+                  <List
+                    dataSource={hits}
+                    total={result?.total?.value || 0}
+                    from={queryParams.from}
+                    pageSize={queryParams.size}
+                    loading={loading}
+                    onPageChange={(page) =>
+                      dispatch({ type: "pagination", value: page })
+                    }
+                    onPageSizeChange={(size) =>
+                      dispatch({ type: "pageSizeChange", value: size })
+                    }
+                    renderItem={(item) => {
+                      const infoField = listItemConfig.getId(item);
+                      return (
+                        <listItemConfig.component
+                          data={item}
+                          id={infoField}
+                          isActive={listItemConfig.getId(selectedItem?._id) == infoField}
+                          onSelect={() => {
+                            setSelectedItem(item);
+                            drawRef.current?.open();
+                          }}
+                          onChangeFacet={onFacetChange}
+                          infoAction={infoAction}
+                          parentLoading={loading}
+                        />
+                      );
+                    }}
+                  />
+                ) : (
+                  <tableConfig.component
+                    infoAction={infoAction}
+                    dataSource={hits.map((item) => ({...item, id: listItemConfig.getId(item)}))}
+                    total={result?.total?.value || 0}
+                    from={queryParams.from}
+                    pageSize={queryParams.size}
+                    loading={loading}
+                    onPageChange={(page) =>
+                      dispatch({ type: "pagination", value: page })
+                    }
+                    onPageSizeChange={(size) =>
+                      dispatch({ type: "pageSizeChange", value: size })
+                    }
+                    onRowClick={(item) => {
+                      setSelectedItem(item);
+                      drawRef.current?.open();
+                    }}
+                    parentLoading={loading}
+                  />
+                )}
+              </div>
+            </div>
+          </Card>
         </div>
       </div>
       <Drawer

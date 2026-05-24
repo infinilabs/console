@@ -235,7 +235,7 @@ export function Tabs({
       switch (type) {
         case TAB_INDEXED_FIELDS:
           return (
-            <Fragment>
+            <Fragment key={type}>
               <EuiSpacer size="m" />
               {getFilterSection(type)}
               <EuiSpacer size="m" />
@@ -256,7 +256,7 @@ export function Tabs({
           );
         case TAB_COMPLEX_FIELDS:
             return (
-              <Fragment>
+              <Fragment key={type}>
                 <EuiSpacer size="m" />
                 {getComplexFilterSection()}
                 <EuiSpacer size="m" />
@@ -275,7 +275,7 @@ export function Tabs({
             );
         case TAB_SCRIPTED_FIELDS:
           return (
-            <Fragment>
+            <Fragment key={type}>
               <EuiSpacer size="m" />
               {getFilterSection(type)}
               <EuiSpacer size="m" />
@@ -296,7 +296,7 @@ export function Tabs({
           );
         case TAB_SOURCE_FILTERS:
           return (
-            <Fragment>
+            <Fragment key={type}>
               <EuiSpacer size="m" />
               {getFilterSection(type)}
               <EuiSpacer size="m" />

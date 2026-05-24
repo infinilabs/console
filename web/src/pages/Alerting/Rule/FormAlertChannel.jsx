@@ -78,7 +78,6 @@ const FormAlertChannel = (props) => {
 - EventID: {{.event_id}}
 - Target: {{.resource_name}}-{{.objects}}
 - TriggerAt: {{.trigger_at | datetime}}
-            
 {{range .results}}
 Group:{{index .group_values 0}}; Value:{{.result_value}};
 {{end}}`,

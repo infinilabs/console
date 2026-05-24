@@ -36,6 +36,7 @@ import 'brace/mode/json';
 // @ts-ignore
 import * as OutputMode from './mode/output';
 import smartResize from './smart_resize';
+import { applyConsoleAceFont, DEFAULT_CONSOLE_FONT_SIZE } from '../../utils/editor_font';
 
 export interface CustomAceEditor extends ace.Editor {
   update: (text: string, mode?: unknown, cb?: () => void) => void;
@@ -48,6 +49,7 @@ export interface CustomAceEditor extends ace.Editor {
  */
 export function createReadOnlyAceEditor(element: HTMLElement): CustomAceEditor {
   const output: CustomAceEditor = ace.acequire('ace/ace').edit(element);
+  applyConsoleAceFont(output, DEFAULT_CONSOLE_FONT_SIZE);
 
   const outputMode = new OutputMode.Mode();
 

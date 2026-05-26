@@ -203,5 +203,5 @@ func (handler Handler) GetCurrentUserClusterIndex(req *http.Request, clusterID s
 	if err == nil && user != nil {
 		return rbac.GetRoleIndex(user.Roles, clusterID)
 	}
-	panic("user context value not found")
+	return false, nil
 }

@@ -308,7 +308,7 @@ func GetCurrentUserCluster(req *http.Request) (bool, []string) {
 	if err == nil && user != nil {
 		return GetRoleCluster(user.Roles)
 	}
-	panic("user context value not found")
+	return false, nil
 }
 
 func GetRoleIndex(roles []string, clusterID string) (bool, []string) {

@@ -312,7 +312,15 @@ func (h *APIHandler) getCredential(w http.ResponseWriter, req *http.Request, ps 
 		}, http.StatusNotFound)
 		return
 	}
-	util.MapStr(obj.Payload).Delete("basic_auth.password")
-	util.MapStr(obj.Payload).Delete("access_token.access_token")
+	payloadStr := make(util.MapStr, len(obj.Payload))
+	for k, v := range obj.Payload {
+		payloadStr[string(k)] = v
+	}
+	payloadStr.Delete("basic_auth.password")
+	payloadStr.Delete("access_token.access_token")
+	obj.Payload = make(map[credential.CredentialType]interface{}, len(payloadStr))
+	for k, v := range payloadStr {
+		obj.Payload[credential.CredentialType(k)] = v
+	}
 	h.WriteGetOKJSON(w, id, obj)
 }

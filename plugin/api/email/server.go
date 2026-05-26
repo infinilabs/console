@@ -37,7 +37,6 @@ import (
 
 	"github.com/buger/jsonparser"
 	log "github.com/cihub/seelog"
-	"github.com/gopkg.in/gomail.v2"
 	"infini.sh/console/model"
 	"infini.sh/console/model/alerting"
 	"infini.sh/console/plugin/api/email/common"
@@ -45,6 +44,7 @@ import (
 	"infini.sh/framework/core/credential"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
+	"infini.sh/framework/lib/gomail"
 )
 
 func (h *EmailAPI) createEmailServer(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -129,8 +129,8 @@ func saveBasicAuthToCredential(srv *model.EmailServer) (string, error) {
 		Name: srv.Name,
 		Type: credential.BasicAuth,
 		Tags: []string{"Email"},
-		Payload: map[string]interface{}{
-			"basic_auth": map[string]interface{}{
+		Payload: map[credential.CredentialType]interface{}{
+			credential.BasicAuth: map[string]interface{}{
 				"username": srv.Auth.Username,
 				"password": srv.Auth.Password.Get(),
 			},

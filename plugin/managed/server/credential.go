@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	model2 "infini.sh/console/model"
 	"net/http"
 	"strings"
 
@@ -9,12 +10,10 @@ import (
 	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
-	common2 "infini.sh/framework/modules/elastic/common"
-	"infini.sh/framework/modules/security/access_token"
 )
 
 const instanceAccessTokenKey = "access_token"
-const agentAPICredentialIDKey = "agent_api_credential_id"
+const agentAccessTokenKey = "agent_api_credential_id"
 const managerAPICredentialIDKey = "manager_api_credential_id"
 
 // Keep reading the old key so existing managed instances continue to work
@@ -95,12 +94,15 @@ func preserveManagedCredentialIDs(instance, oldInst *model.Instance) {
 		return
 	}
 
-	if instance.CredentialID == "" {
-		instance.CredentialID = oldInst.CredentialID
+	//get previous saved credential info
+	if id := oldInst.GetSystemString(model.CredentialIDSystemKey); id != "" {
+		instance.SetSystemValue(model.CredentialIDSystemKey, id)
 	}
-	if getAgentAPICredentialID(instance) == "" {
-		setAgentAPICredentialID(instance, getAgentAPICredentialID(oldInst))
+
+	if getAgentAccessToken(instance) == "" {
+		setAgentAPICredentialID(instance, getAgentAccessToken(oldInst))
 	}
+
 	if getManagerAPICredentialID(instance) == "" {
 		setManagerAPICredentialID(instance, getManagerAPICredentialID(oldInst))
 	}
@@ -121,7 +123,7 @@ func upsertManagedAccessTokenCredential(credentialID, name string, tags []string
 	cred.Name = name
 	cred.Type = credential.AccessToken
 	cred.Tags = tags
-	cred.Payload = map[string]interface{}{
+	cred.Payload = map[credential.CredentialType]interface{}{
 		credential.AccessToken: map[string]interface{}{
 			"access_token": accessToken,
 		},
@@ -140,25 +142,24 @@ func upsertManagedAccessTokenCredential(credentialID, name string, tags []string
 		return cred.ID, nil
 	}
 
-	cred.ID = util.GetUUID()
 	if err := orm.Create(ctx, &cred); err != nil {
 		return "", err
 	}
 	return cred.ID, nil
 }
 
-func getAgentAPICredentialID(instance *model.Instance) string {
+func getAgentAccessToken(instance *model.Instance) string {
 	if instance == nil {
 		return ""
 	}
-	if credentialID := getInstanceSystemString(instance, agentAPICredentialIDKey); credentialID != "" {
-		return credentialID
+	if accessToken := getInstanceSystemString(instance, agentAccessTokenKey); accessToken != "" {
+		return accessToken
 	}
-	return instance.CredentialID
+	return instance.AccessToken
 }
 
 func setAgentAPICredentialID(instance *model.Instance, credentialID string) {
-	setInstanceSystemString(instance, agentAPICredentialIDKey, credentialID)
+	setInstanceSystemString(instance, agentAccessTokenKey, credentialID)
 }
 
 func getManagerAPICredentialID(instance *model.Instance) string {
@@ -182,7 +183,7 @@ func upsertInstanceAgentAPICredential(instance *model.Instance, accessToken stri
 	}
 
 	return upsertManagedAccessTokenCredential(
-		getAgentAPICredentialID(instance),
+		getAgentAccessToken(instance),
 		fmt.Sprintf("%s agent api", getInstanceCredentialName(instance)),
 		[]string{"agent", "managed", "agent_api", "access_token"},
 		accessToken,
@@ -203,52 +204,6 @@ func upsertInstanceManagerAPICredential(instance *model.Instance, accessToken st
 		[]string{"agent", "managed", "manager_api", "access_token"},
 		accessToken,
 	)
-}
-
-func applyCredentialRequestAuth(req *util.Request, credentialID string) error {
-	if req == nil || strings.TrimSpace(credentialID) == "" {
-		return nil
-	}
-
-	cred, err := common2.GetCredential(credentialID)
-	if err != nil {
-		return err
-	}
-
-	switch cred.Type {
-	case credential.BasicAuth:
-		auth, err := cred.DecodeBasicAuth()
-		if err != nil {
-			return err
-		}
-		req.SetBasicAuth(auth.Username, auth.Password.Get())
-	case credential.AccessToken:
-		token, err := cred.DecodeAccessToken()
-		if err != nil {
-			return err
-		}
-		req.AddHeader(access_token.HeaderAPIToken, token.AccessToken.Get())
-	default:
-		return fmt.Errorf("unsupported credential type [%s]", cred.Type)
-	}
-
-	return nil
-}
-
-func applyInstanceRequestAuth(req *util.Request, instance *model.Instance) error {
-	if req == nil || instance == nil {
-		return nil
-	}
-
-	if credentialID := getAgentAPICredentialID(instance); credentialID != "" {
-		return applyCredentialRequestAuth(req, credentialID)
-	}
-
-	if instance.BasicAuth != nil && instance.BasicAuth.Username != "" {
-		req.SetBasicAuth(instance.BasicAuth.Username, instance.BasicAuth.Password.Get())
-	}
-
-	return nil
 }
 
 func getInstanceByEndpoint(endpoint string) (*model.Instance, error) {
@@ -290,7 +245,8 @@ func prepareProxyAgentRequest(endpoint string, req *util.Request) error {
 	if err != nil || instance == nil {
 		return err
 	}
-	return applyInstanceRequestAuth(req, instance)
+
+	return model2.ApplyAuthFromInstance(instance, req)
 }
 
 func isAuthorizedStatus(code int) bool {

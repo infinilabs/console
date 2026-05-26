@@ -30,7 +30,7 @@ package security
 import (
 	"errors"
 	"fmt"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v4"
 	"infini.sh/console/core/security/enum"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/radix"

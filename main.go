@@ -38,7 +38,7 @@ import (
 	elastic2 "infini.sh/framework/modules/elastic"
 	_ "time/tzdata"
 
-	log "github.com/cihub/seelog"
+	"infini.sh/framework/core/log"
 	"infini.sh/console/config"
 	"infini.sh/console/model"
 	"infini.sh/console/model/alerting"

@@ -745,8 +745,8 @@ func createCred(name, username, password string) string {
 		Name: name,
 		Type: credential.BasicAuth,
 		Tags: []string{"infini", "system"},
-		Payload: map[string]interface{}{
-			"basic_auth": map[string]interface{}{
+		Payload: map[credential.CredentialType]interface{}{
+			credential.BasicAuth: map[string]interface{}{
 				"username": username,
 				"password": password,
 			},

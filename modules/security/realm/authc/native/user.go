@@ -47,7 +47,7 @@ func (dal *User) Get(id string) (rbac.User, error) {
 
 func (dal *User) GetBy(field string, value interface{}) (*rbac.User, error) {
 	user := &rbac.User{}
-	err, result := orm.GetBy(field, value, rbac.User{})
+	err, result := orm.GetBy(field, value, user)
 	if err != nil {
 		return nil, err
 	}

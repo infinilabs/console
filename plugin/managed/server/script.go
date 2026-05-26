@@ -86,8 +86,8 @@ type gatewaySetupConfig struct {
 }
 
 func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	claims, ok := req.Context().Value("user").(*security.UserClaims)
-	if !ok {
+	user, err := security.FromUserContext(req.Context())
+	if err != nil || user == nil {
 		h.WriteError(w, "user not found", http.StatusInternalServerError)
 		return
 	}
@@ -106,7 +106,7 @@ func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Req
 	tokenStr = util.GetUUID()
 	t = &Token{
 		CreatedAt: time.Now(),
-		UserID:    claims.UserId,
+		UserID:    user.UserId,
 		Product:   installProductAgent,
 	}
 
@@ -158,8 +158,8 @@ func (h *APIHandler) prepareRegistration(w http.ResponseWriter, req *http.Reques
 }
 
 func (h *APIHandler) generateGatewayInstallCommand(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	claims, ok := req.Context().Value("user").(*security.UserClaims)
-	if !ok {
+	user, err := security.FromUserContext(req.Context())
+	if err != nil || user == nil {
 		h.WriteError(w, "user not found", http.StatusInternalServerError)
 		return
 	}
@@ -174,7 +174,7 @@ func (h *APIHandler) generateGatewayInstallCommand(w http.ResponseWriter, req *h
 	tokenStr := util.GetUUID()
 	t := &Token{
 		CreatedAt: time.Now(),
-		UserID:    claims.UserId,
+		UserID:    user.UserId,
 		Product:   installProductGateway,
 	}
 	expiredTokenCache.Put(tokenStr, t)

@@ -32,6 +32,8 @@ import (
 	rbac "infini.sh/console/core/security"
 	"infini.sh/console/core/security/enum"
 	"infini.sh/framework/core/api"
+	frameworkaccount "infini.sh/framework/modules/security/account"
+	frameworkrbac "infini.sh/framework/modules/security/rbac"
 )
 
 type APIHandler struct {
@@ -61,14 +63,14 @@ func Init() {
 	api.HandleAPIMethod(api.GET, "/user/_search", apiHandler.RequirePermission(apiHandler.SearchUser, enum.UserReadPermission...))
 	api.HandleAPIMethod(api.PUT, "/user/:id/password", apiHandler.RequireSecureTransport(apiHandler.RequireReplayProtection(apiHandler.RequirePermission(apiHandler.UpdateUserPassword, enum.UserAllPermission...))))
 
-	api.HandleAPIMethod(api.POST, "/account/replay_nonce", apiHandler.RequireSecureTransport(apiHandler.IssueReplayNonce))
-	api.HandleAPIMethod(api.POST, "/account/login/challenge", apiHandler.RequireSecureTransport(apiHandler.LoginChallenge))
-	api.HandleAPIMethod(api.POST, "/account/login", apiHandler.RequireSecureTransport(apiHandler.RequireReplayProtection(apiHandler.Login)))
-	api.HandleAPIMethod(api.POST, "/account/refresh", apiHandler.RequireSecureTransport(apiHandler.RequireLogin(apiHandler.RefreshToken)))
-	api.HandleAPIMethod(api.POST, "/account/logout", apiHandler.Logout)
-	api.HandleAPIMethod(api.DELETE, "/account/logout", apiHandler.Logout)
+	api.HandleAPIMethod(api.POST, "/account/replay_nonce", apiHandler.RequireSecureTransport(frameworkrbac.IssueReplayNonce))
+	api.HandleAPIMethod(api.POST, "/account/login/challenge", apiHandler.RequireSecureTransport(frameworkrbac.LoginChallenge))
+	api.HandleAPIMethod(api.POST, "/account/login", apiHandler.RequireSecureTransport(frameworkrbac.Login))
+	api.HandleAPIMethod(api.POST, "/account/refresh", apiHandler.RequireSecureTransport(apiHandler.RequireLogin(frameworkaccount.Refresh)))
+	api.HandleAPIMethod(api.POST, "/account/logout", frameworkaccount.Logout)
+	api.HandleAPIMethod(api.DELETE, "/account/logout", frameworkaccount.Logout)
 
-	api.HandleAPIMethod(api.GET, "/account/profile", apiHandler.RequireLogin(apiHandler.Profile))
+	api.HandleAPIMethod(api.GET, "/account/profile", apiHandler.RequireLogin(frameworkaccount.Profile))
 	api.HandleAPIMethod(api.PUT, "/account/password", apiHandler.RequireSecureTransport(apiHandler.RequireReplayProtection(apiHandler.RequireLogin(apiHandler.UpdatePassword))))
 
 }

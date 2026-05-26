@@ -65,6 +65,7 @@ import (
 	"infini.sh/framework/core/module"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/pipeline"
+	frameworksecurity "infini.sh/framework/core/security"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/lib/fasthttp"
 	"infini.sh/framework/lib/fasttemplate"
@@ -753,10 +754,13 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		user.ID = "default_user_" + request.BootstrapUsername
 		user.Username = request.BootstrapUsername
 		user.Nickname = request.BootstrapUsername
-		err = security.SetPassword(&user, request.BootstrapPassword)
+		material, err := frameworksecurity.GeneratePasswordMaterial(request.BootstrapPassword)
 		if err != nil {
 			panic(err)
 		}
+		user.Password = material.Hash
+		user.PasswordSalt = material.Salt
+		user.PasswordVerifier = material.Verifier
 		role := []security.UserRole{}
 		role = append(role, security.UserRole{
 			ID:   security.RoleAdminName,

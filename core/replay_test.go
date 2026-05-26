@@ -27,21 +27,23 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	replaysecurity "infini.sh/framework/core/security/replay"
 )
 
 func TestReplayNonceCanOnlyBeUsedOnce(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "https://console.local/account/login", nil)
 
-	nonce, _, err := IssueReplayNonce(req, http.MethodPost, "/account/login")
+	nonce, _, err := replaysecurity.IssueReplayNonce(req, http.MethodPost, "/account/login")
 	if err != nil {
 		t.Fatalf("issue replay nonce failed: %v", err)
 	}
 
-	req.Header.Set(replayNonceHeader, nonce)
-	if err := ValidateAndConsumeReplayNonce(req); err != nil {
+	req.Header.Set(replaysecurity.HeaderName, nonce)
+	if err := replaysecurity.ValidateAndConsumeReplayNonce(req); err != nil {
 		t.Fatalf("expected first nonce use to succeed: %v", err)
 	}
-	if err := ValidateAndConsumeReplayNonce(req); err == nil {
+	if err := replaysecurity.ValidateAndConsumeReplayNonce(req); err == nil {
 		t.Fatal("expected second nonce use to be rejected")
 	}
 }
@@ -50,15 +52,15 @@ func TestReplayNonceBindsToAuthorizationHeader(t *testing.T) {
 	issueReq := httptest.NewRequest(http.MethodPut, "https://console.local/credential/test", nil)
 	issueReq.Header.Set("Authorization", "Bearer token-a")
 
-	nonce, _, err := IssueReplayNonce(issueReq, http.MethodPut, "/credential/test")
+	nonce, _, err := replaysecurity.IssueReplayNonce(issueReq, http.MethodPut, "/credential/test")
 	if err != nil {
 		t.Fatalf("issue replay nonce failed: %v", err)
 	}
 
 	useReq := httptest.NewRequest(http.MethodPut, "https://console.local/credential/test", nil)
-	useReq.Header.Set(replayNonceHeader, nonce)
+	useReq.Header.Set(replaysecurity.HeaderName, nonce)
 	useReq.Header.Set("Authorization", "Bearer token-b")
-	if err := ValidateAndConsumeReplayNonce(useReq); err == nil {
+	if err := replaysecurity.ValidateAndConsumeReplayNonce(useReq); err == nil {
 		t.Fatal("expected nonce bound to a different authorization header to fail")
 	}
 }
@@ -66,14 +68,14 @@ func TestReplayNonceBindsToAuthorizationHeader(t *testing.T) {
 func TestReplayNonceBindsToPathAndMethod(t *testing.T) {
 	issueReq := httptest.NewRequest(http.MethodPost, "https://console.local/setup/_initialize", nil)
 
-	nonce, _, err := IssueReplayNonce(issueReq, http.MethodPost, "/setup/_initialize")
+	nonce, _, err := replaysecurity.IssueReplayNonce(issueReq, http.MethodPost, "/setup/_initialize")
 	if err != nil {
 		t.Fatalf("issue replay nonce failed: %v", err)
 	}
 
 	useReq := httptest.NewRequest(http.MethodPut, "https://console.local/setup/_initialize", nil)
-	useReq.Header.Set(replayNonceHeader, nonce)
-	if err := ValidateAndConsumeReplayNonce(useReq); err == nil {
+	useReq.Header.Set(replaysecurity.HeaderName, nonce)
+	if err := replaysecurity.ValidateAndConsumeReplayNonce(useReq); err == nil {
 		t.Fatal("expected nonce with mismatched method to fail")
 	}
 }

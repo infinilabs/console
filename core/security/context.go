@@ -30,8 +30,8 @@ package security
 import (
 	"context"
 	"fmt"
-
 	"github.com/golang-jwt/jwt/v4"
+	frameworksecurity "infini.sh/framework/core/security"
 )
 
 const ctxUserKey = "user"
@@ -51,17 +51,68 @@ type ShortUser struct {
 const Secret = "console"
 
 func NewUserContext(ctx context.Context, clam *UserClaims) context.Context {
+	if clam != nil {
+		ctx = frameworksecurity.AddUserToContext(ctx, clam.ToSessionInfo())
+	}
 	return context.WithValue(ctx, ctxUserKey, clam)
 }
 
 func FromUserContext(ctx context.Context) (*ShortUser, error) {
 	ctxUser := ctx.Value(ctxUserKey)
-	if ctxUser == nil {
-		return nil, fmt.Errorf("user not found")
+	if ctxUser != nil {
+		switch reqUser := ctxUser.(type) {
+		case *UserClaims:
+			return reqUser.ShortUser, nil
+		case *ShortUser:
+			return reqUser, nil
+		}
 	}
-	reqUser, ok := ctxUser.(*UserClaims)
-	if !ok {
-		return nil, fmt.Errorf("invalid context user")
+
+	sessionUser, err := frameworksecurity.GetUserFromContext(ctx)
+	if err == nil && sessionUser != nil {
+		return NewShortUserFromSession(sessionUser), nil
 	}
-	return reqUser.ShortUser, nil
+	return nil, fmt.Errorf("user not found")
+}
+
+func NewShortUserFromSession(sessionUser *frameworksecurity.UserSessionInfo) *ShortUser {
+	if sessionUser == nil {
+		return nil
+	}
+	return &ShortUser{
+		Provider: sessionUser.Provider,
+		Username: sessionUser.Login,
+		UserId:   sessionUser.UserID,
+		Roles:    append([]string(nil), sessionUser.Roles...),
+	}
+}
+
+func NewUserClaimsFromSession(sessionUser *frameworksecurity.UserSessionInfo) *UserClaims {
+	shortUser := NewShortUserFromSession(sessionUser)
+	if shortUser == nil {
+		return nil
+	}
+	return &UserClaims{
+		ShortUser: shortUser,
+	}
+}
+
+func (u *UserClaims) ToSessionInfo() *frameworksecurity.UserSessionInfo {
+	if u == nil {
+		return nil
+	}
+	return u.ShortUser.ToSessionInfo()
+}
+
+func (u *ShortUser) ToSessionInfo() *frameworksecurity.UserSessionInfo {
+	if u == nil {
+		return nil
+	}
+	sessionUser := &frameworksecurity.UserSessionInfo{
+		Provider: u.Provider,
+		Login:    u.Username,
+		Roles:    append([]string(nil), u.Roles...),
+	}
+	sessionUser.SetUserID(u.UserId)
+	return sessionUser
 }

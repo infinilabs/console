@@ -1,5 +1,18 @@
 import { query as queryUsers, queryCurrent } from "@/services/user";
-import { setCurrentUser, getCurrentUser } from "@/utils/CurrentUser";
+import { setCurrentUser } from "@/utils/CurrentUser";
+
+function normalizeCurrentUser(payload) {
+  const source = payload?._source || payload;
+  if (!source || typeof source !== "object") {
+    return {};
+  }
+
+  return {
+    ...source,
+    user_id: source.user_id || source.id || payload?._id || payload?.id,
+    nick_name: source.nick_name || source.name,
+  };
+}
 
 export default {
   namespace: "user",
@@ -37,16 +50,15 @@ export default {
       };
     },
     saveCurrentUser(state, action) {
+      const currentUser = normalizeCurrentUser(action.payload);
       //update localStorage
-      if (action.payload && action.payload._source) {
-        setCurrentUser(action.payload._source);
-      }
+      setCurrentUser(currentUser);
 
       return {
         ...state,
         currentUser: {
           ...state.currentUser,
-          ...(action.payload._source || {}),
+          ...currentUser,
         },
       };
     },

@@ -176,9 +176,9 @@ func (handler Handler) GetCurrentUserIndex(req *http.Request) (bool, map[string]
 	if !api.IsAuthEnable() {
 		return true, nil
 	}
-	ctxVal := req.Context().Value("user")
-	if userClaims, ok := ctxVal.(*rbac.UserClaims); ok {
-		roles := userClaims.Roles
+	user, err := rbac.FromUserContext(req.Context())
+	if err == nil && user != nil {
+		roles := user.Roles
 		var realIndex = map[string][]string{}
 		for _, roleName := range roles {
 			role, ok := rbac.RoleMap[roleName]
@@ -199,10 +199,9 @@ func (handler Handler) GetCurrentUserIndex(req *http.Request) (bool, map[string]
 }
 
 func (handler Handler) GetCurrentUserClusterIndex(req *http.Request, clusterID string) (bool, []string) {
-	ctxVal := req.Context().Value("user")
-	if userClaims, ok := ctxVal.(*rbac.UserClaims); ok {
-		return rbac.GetRoleIndex(userClaims.Roles, clusterID)
-	} else {
-		panic("user context value not found")
+	user, err := rbac.FromUserContext(req.Context())
+	if err == nil && user != nil {
+		return rbac.GetRoleIndex(user.Roles, clusterID)
 	}
+	panic("user context value not found")
 }

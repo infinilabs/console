@@ -35,6 +35,7 @@ import (
 	rbac "infini.sh/console/core/security"
 	"infini.sh/framework/core/api"
 	httprouter "infini.sh/framework/core/api/router"
+	frameworksecurity "infini.sh/framework/core/security"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/modules/elastic"
 	"net/http"
@@ -63,11 +64,14 @@ func (h APIHandler) CreateUser(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	}
 	randStr := util.GenerateSecureString(16)
-	err = rbac.SetPassword(&user, randStr)
+	material, err := frameworksecurity.GeneratePasswordMaterial(randStr)
 	if err != nil {
 		h.ErrorInternalServer(w, err.Error())
 		return
 	}
+	user.Password = material.Hash
+	user.PasswordSalt = material.Salt
+	user.PasswordVerifier = material.Verifier
 
 	now := time.Now()
 	user.Created = &now
@@ -268,11 +272,14 @@ func (h APIHandler) UpdateUserPassword(w http.ResponseWriter, r *http.Request, p
 		h.ErrorInternalServer(w, err.Error())
 		return
 	}
-	err = rbac.SetPassword(&user, req.Password)
+	material, err := frameworksecurity.GeneratePasswordMaterial(req.Password)
 	if err != nil {
 		h.ErrorInternalServer(w, err.Error())
 		return
 	}
+	user.Password = material.Hash
+	user.PasswordSalt = material.Salt
+	user.PasswordVerifier = material.Verifier
 	//t:=time.Now()
 	//user.Updated =&t
 	err = h.User.Update(&user)

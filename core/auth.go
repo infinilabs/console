@@ -139,9 +139,9 @@ func (handler Handler) RequireClusterPermission(h httprouter.Handle, permissions
 
 func (handler Handler) GetCurrentUser(req *http.Request) string {
 	if api.IsAuthEnable() {
-		claims, ok := req.Context().Value("user").(*security.UserClaims)
-		if ok {
-			return claims.Username
+		user, err := security.FromUserContext(req.Context())
+		if err == nil && user != nil {
+			return user.Username
 		}
 	}
 	return ""

@@ -38,6 +38,7 @@ import (
 	"infini.sh/console/core/security/enum"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/radix"
+	frameworksecurity "infini.sh/framework/core/security"
 	"infini.sh/framework/core/util"
 )
 
@@ -303,12 +304,11 @@ func GetRoleCluster(roles []string) (bool, []string) {
 // GetCurrentUserCluster get cluster id by current login user
 // return true when has all cluster privilege, otherwise return cluster id list
 func GetCurrentUserCluster(req *http.Request) (bool, []string) {
-	ctxVal := req.Context().Value("user")
-	if userClaims, ok := ctxVal.(*UserClaims); ok {
-		return GetRoleCluster(userClaims.Roles)
-	} else {
-		panic("user context value not found")
+	user, err := FromUserContext(req.Context())
+	if err == nil && user != nil {
+		return GetRoleCluster(user.Roles)
 	}
+	panic("user context value not found")
 }
 
 func GetRoleIndex(roles []string, clusterID string) (bool, []string) {
@@ -356,7 +356,11 @@ func ValidateLogin(authorizationHeader string) (clams *UserClaims, err error) {
 		return []byte(Secret), nil
 	})
 	if err != nil {
-		return
+		sessionUser, frameworkErr := frameworksecurity.ValidateAuthorizationHeader(authorizationHeader)
+		if frameworkErr == nil {
+			return NewUserClaimsFromSession(sessionUser), nil
+		}
+		return nil, err
 	}
 	clams, ok := token.Claims.(*UserClaims)
 

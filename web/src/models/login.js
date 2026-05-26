@@ -47,6 +47,9 @@ export default {
           challenge_id: challenge.challenge_id,
           proof,
         };
+      } else if (challenge?.status === "ok" && challenge?.method === "plain") {
+        // Legacy accounts keep using the original password payload until the backend upgrades verifier data.
+        loginPayload = payload;
       }
 
       const response = yield call(fakeAccountLogin, loginPayload);

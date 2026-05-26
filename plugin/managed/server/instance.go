@@ -30,6 +30,9 @@ package server
 import (
 	"context"
 	"fmt"
+	model2 "infini.sh/console/model"
+	"infini.sh/framework/core/security"
+	"infini.sh/framework/modules/security/access_token"
 	"net/http"
 	"strconv"
 	"strings"
@@ -39,11 +42,11 @@ import (
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/task"
 
-	log "github.com/cihub/seelog"
 	"infini.sh/console/core/security/enum"
 	"infini.sh/framework/core/api"
 	httprouter "infini.sh/framework/core/api/router"
 	elastic2 "infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/log"
 	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
@@ -102,6 +105,10 @@ func (h APIHandler) registerInstance(w http.ResponseWriter, req *http.Request, p
 		return
 	}
 
+	//1. client report instance info include agent's access_token
+	//2. server received the instance info, save access token to credential db
+	//3. server generate a access_token return to client
+
 	oldInst, err := loadExistingInstance(obj.ID)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -109,12 +116,29 @@ func (h APIHandler) registerInstance(w http.ResponseWriter, req *http.Request, p
 	}
 	if oldInst != nil {
 		obj.Created = oldInst.Created
-		preserveManagedCredentialIDs(obj, oldInst)
+
+		//get previous saved credential info
+		if id := oldInst.GetSystemString(model.CredentialIDSystemKey); id != "" {
+			obj.SetSystemValue(model.CredentialIDSystemKey, id)
+		}
+
+		if obj.AccessToken != "" {
+			//save instance's reported agent to console's crendential
+			err := upsertAccessTokenToCredential(obj, obj.AccessToken)
+			if err != nil {
+				panic(err)
+			}
+		}
+
 	}
+
+	//cleanup instance's sensitive data
+	obj.AccessToken = ""
+	obj.BasicAuth = nil
 
 	clearInstanceAccessToken(obj)
 
-	err = orm.Save(nil, obj)
+	err = orm.Save(orm.NewContextWithParent(req.Context()), obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -122,7 +146,15 @@ func (h APIHandler) registerInstance(w http.ResponseWriter, req *http.Request, p
 
 	log.Infof("register instance: %v[%v], %v", obj.Name, obj.ID, obj.Endpoint)
 
-	h.WriteAckOKJSON(w)
+	permissions := []security.PermissionKey{}
+	//TODO add permission keys for config client's api permissions
+
+	res, err := access_token.CreateAPIToken(nil, fmt.Sprintf("access_token for instance: %v(%v)", obj.Name, obj.ID), "for_instance", -1, permissions)
+	if err != nil {
+		panic(err)
+	}
+
+	api.WriteAckJSON(w, true, 200, res)
 }
 
 func (h APIHandler) enrollInstance(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -449,7 +481,7 @@ func (h *APIHandler) clearInstanceByAppName(appName string) error {
 			// check whether the instance is still online
 			for _, instanceID := range toRemoveIDs {
 				if inst, ok := instsCache[instanceID]; ok {
-					_, err = h.getInstanceInfo(inst.Endpoint, inst.BasicAuth)
+					err = h.checkInstanceInfo(inst)
 					if err == nil {
 						// Skip online instance, do not append to filtered list
 						continue
@@ -570,9 +602,8 @@ func (h *APIHandler) proxy(w http.ResponseWriter, req *http.Request, ps httprout
 		Context: ctx,
 		Body:    reqBody,
 	}
-	if obj.BasicAuth != nil {
-		req1.SetBasicAuth(obj.BasicAuth.Username, obj.BasicAuth.Password.Get())
-	}
+
+	_ = model2.ApplyAuthFromInstance(obj, req1)
 
 	res, err := ProxyAgentRequest("runtime", obj.GetEndpoint(), req1, nil)
 	if err != nil {
@@ -600,6 +631,26 @@ func (h *APIHandler) getInstanceInfo(endpoint string, basicAuth *model.BasicAuth
 		return nil, err
 	}
 	return obj, err
+
+}
+
+func (h *APIHandler) checkInstanceInfo(instance *model.Instance) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	req1 := &util.Request{
+		Method:  http.MethodGet,
+		Path:    "/_info",
+		Context: ctx,
+	}
+
+	_ = model2.ApplyAuthFromInstance(instance, req1)
+
+	obj := &model.Instance{}
+	_, err := ProxyAgentRequest("runtime", instance.Endpoint, req1, obj)
+	if err != nil {
+		return err
+	}
+	return err
 
 }
 

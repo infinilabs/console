@@ -108,7 +108,7 @@ func preserveManagedCredentialIDs(instance, oldInst *model.Instance) {
 	}
 }
 
-func upsertManagedAccessTokenCredential(credentialID, name string, tags []string, accessToken string) (string, error) {
+func upsertAccessToken(credentialID, name string, tags []string, accessToken string) (string, error) {
 	cred := credential.Credential{}
 	exists := false
 	if credentialID != "" {
@@ -148,6 +148,48 @@ func upsertManagedAccessTokenCredential(credentialID, name string, tags []string
 	return cred.ID, nil
 }
 
+func upsertAccessTokenToCredential(instance *model.Instance, accessToken string) error {
+	cred := credential.Credential{}
+	exists := false
+	if credentialID := instance.GetSystemString(model.CredentialIDSystemKey); credentialID != "" {
+		cred.ID = credentialID
+		var err error
+		exists, err = orm.Get(&cred)
+		if err != nil {
+			return err
+		}
+	}
+
+	cred.Name = fmt.Sprintf("access_token for instance: %v/%v", instance.Name, instance.ID)
+	cred.Type = credential.AccessToken
+
+	cred.Payload = map[credential.CredentialType]interface{}{
+		credential.AccessToken: map[string]interface{}{
+			"access_token": accessToken,
+		},
+	}
+
+	if err := cred.Encode(); err != nil {
+		return err
+	}
+
+	ctx := &orm.Context{Refresh: orm.WaitForRefresh}
+	if exists {
+		cred.Invalid = false
+		if err := orm.Update(ctx, &cred); err != nil {
+			return err
+		}
+		instance.SetSystemValue(model.CredentialIDSystemKey, cred.ID)
+		return nil
+	}
+
+	if err := orm.Create(ctx, &cred); err != nil {
+		return err
+	}
+	instance.SetSystemValue(model.CredentialIDSystemKey, cred.ID)
+	return nil
+}
+
 func getAgentAccessToken(instance *model.Instance) string {
 	if instance == nil {
 		return ""
@@ -182,12 +224,8 @@ func upsertInstanceAgentAPICredential(instance *model.Instance, accessToken stri
 		return "", fmt.Errorf("access token is empty")
 	}
 
-	return upsertManagedAccessTokenCredential(
-		getAgentAccessToken(instance),
-		fmt.Sprintf("%s agent api", getInstanceCredentialName(instance)),
-		[]string{"agent", "managed", "agent_api", "access_token"},
-		accessToken,
-	)
+	e := upsertAccessTokenToCredential(instance, accessToken)
+	return "", e
 }
 
 func upsertInstanceManagerAPICredential(instance *model.Instance, accessToken string) (string, error) {
@@ -198,12 +236,14 @@ func upsertInstanceManagerAPICredential(instance *model.Instance, accessToken st
 		return "", fmt.Errorf("access token is empty")
 	}
 
-	return upsertManagedAccessTokenCredential(
-		getManagerAPICredentialID(instance),
-		fmt.Sprintf("%s manager api", getInstanceCredentialName(instance)),
-		[]string{"agent", "managed", "manager_api", "access_token"},
-		accessToken,
-	)
+	//return upsertAccessTokenToCredential(
+	//	getManagerAPICredentialID(instance),
+	//	fmt.Sprintf("%s manager api", getInstanceCredentialName(instance)),
+	//	[]string{"agent", "managed", "manager_api", "access_token"},
+	//	accessToken,
+	//)
+	e := upsertAccessTokenToCredential(instance, accessToken)
+	return "", e
 }
 
 func getInstanceByEndpoint(endpoint string) (*model.Instance, error) {

@@ -38,7 +38,6 @@ import (
 	elastic2 "infini.sh/framework/modules/elastic"
 	_ "time/tzdata"
 
-	"infini.sh/framework/core/log"
 	"infini.sh/console/config"
 	"infini.sh/console/model"
 	"infini.sh/console/model/alerting"
@@ -52,6 +51,7 @@ import (
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/env"
 	"infini.sh/framework/core/global"
+	"infini.sh/framework/core/log"
 	"infini.sh/framework/core/module"
 	"infini.sh/framework/core/orm"
 	task1 "infini.sh/framework/core/task"

@@ -28,10 +28,11 @@
 package security
 
 import (
-	"github.com/golang-jwt/jwt"
+	"time"
+
+	"github.com/golang-jwt/jwt/v4"
 	"infini.sh/framework/core/errors"
 	"infini.sh/framework/core/util"
-	"time"
 )
 
 func GenerateAccessToken(user *User) (map[string]interface{}, error) {

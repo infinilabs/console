@@ -12,6 +12,7 @@ Information about release notes of INFINI Console is provided here.
 ### 🚀 Features  
 ### 🐛 Bug fix  
 ### ✈️ Improvements  
+- chore: add native Go modules support for Console build and PR checks
 
 ## 1.30.2 (2026-03-16)
 ### ❌ Breaking changes  

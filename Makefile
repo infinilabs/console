@@ -9,9 +9,8 @@ APP_STATIC_FOLDER := .public
 APP_STATIC_PACKAGE := public
 APP_UI_FOLDER := ui
 APP_PLUGIN_FOLDER := plugin
-GOMODULE := false
 
-# GO15VENDOREXPERIMENT="1" GO111MODULE=off easyjson -all domain.go
+# easyjson -all domain.go
 include ../framework/Makefile
 
 

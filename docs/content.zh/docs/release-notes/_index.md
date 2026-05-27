@@ -12,6 +12,7 @@ title: "版本历史"
 ### 🚀 Features  
 ### 🐛 Bug fix  
 ### ✈️ Improvements  
+- chore: 为 Console 构建与 PR 检查增加原生 Go Modules 支持
 
 ## 1.30.2 (2026-03-16)
 ### ❌ Breaking changes  

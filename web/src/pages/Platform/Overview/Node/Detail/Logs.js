@@ -36,7 +36,7 @@ const getLatestStartLine = (totalRows = 0) =>
 const hasKnownTotalRows = (logFile = {}) =>
   logFile?.total_rows_known === true && Number.isInteger(logFile?.total_rows);
 
-const createInitialLogState = () => ({
+const createInitialLogState = (viewerVersion = 0) => ({
   hasNextPage: true,
   isNextPageLoading: false,
   items: [],
@@ -50,6 +50,7 @@ const createInitialLogState = () => ({
   startLineNumber: 1,
   loadTailLines: 0,
   autoScrollToBottom: false,
+  viewerVersion,
 });
 
 const getSelectedFileState = (logFile = {}) => {
@@ -88,7 +89,7 @@ const formatLogFileLabel = (logFile = {}, includeMeta = false) => {
 const Logs = (props) => {
   const clusterID = props.data?._source?.metadata?.cluster_id;
   const nodeID = props.data?._source?.metadata?.node_id;
-  const [logState, setLogState] = useState(createInitialLogState);
+  const [logState, setLogState] = useState(() => createInitialLogState());
 
   const [loading, setLoading] = useState(false);
   const [gotoLine, setGotoLine] = useState();
@@ -123,6 +124,7 @@ const Logs = (props) => {
           ...st,
           agentStatus: undefined,
           logFiles,
+          viewerVersion: st.viewerVersion + 1,
           ...getSelectedFileState(selectedFile),
         };
       });
@@ -144,7 +146,7 @@ const Logs = (props) => {
       return;
     }
     requestSeqRef.current += 1;
-    setLogState(createInitialLogState());
+    setLogState((st) => createInitialLogState(st.viewerVersion + 1));
     fetchLogs();
   }, [clusterID, nodeID]);
 
@@ -247,6 +249,7 @@ const Logs = (props) => {
       setLogState((st) => {
         return {
           ...st,
+          viewerVersion: st.viewerVersion + 1,
           hasNextPage: !!st.fileName,
           isNextPageLoading: false,
           items: [],
@@ -268,6 +271,7 @@ const Logs = (props) => {
       const logFile = st.logFiles.find((lf) => getLogFileKey(lf) === file);
       return {
         ...st,
+        viewerVersion: st.viewerVersion + 1,
         ...getSelectedFileState(logFile),
       };
     });
@@ -377,6 +381,7 @@ const Logs = (props) => {
                 showSearch
                 optionFilterProp="title"
                 dropdownMatchSelectWidth={false}
+                dropdownClassName="log-file-select-dropdown"
                 dropdownStyle={{ width: 520, maxWidth: "calc(100vw - 48px)" }}
               >
                 {(logState.logFiles || []).map((logFile) => {
@@ -489,7 +494,7 @@ const Logs = (props) => {
         <div className="viewer">
           {logState.file ? (
             <InfiniteLogViewer
-              key={logState.file}
+              key={`${logState.file}:${logState.viewerVersion}`}
               {...logState}
               loadNextPage={loadNextPage}
               resetViewerPosition={resetViewerPosition}

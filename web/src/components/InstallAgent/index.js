@@ -1,4 +1,4 @@
-import { Form, Select, Spin, Icon, message, Button } from "antd";
+import { Form, Select, Spin, Icon, message, Button, Switch } from "antd";
 import styles from "./index.less";
 import useFetch from "@/lib/hooks/use_fetch";
 import { useEffect, useMemo, useState } from "react";
@@ -10,6 +10,7 @@ import { getDocPathByLang, getWebsitePathByLang } from "@/utils/utils";
 export default ({autoInit = false}) => {
 
     const [tokenLoading, setTokenLoading] = useState(false);
+    const [enableReverseChannel, setEnableReverseChannel] = useState(false);
 
     const [seletedGateways, setSeletedGateways] = useState([]);
 
@@ -21,7 +22,8 @@ export default ({autoInit = false}) => {
         const res = await request('/instance/_generate_install_script', {
             method: "POST",
             body: {
-                gateway_endpoints: seletedGateways
+                gateway_endpoints: seletedGateways,
+                enable_reverse_channel: enableReverseChannel,
             }
         })
         setTokenInfo(res)
@@ -37,6 +39,23 @@ export default ({autoInit = false}) => {
     return (
         <Spin spinning={tokenLoading}>
             <div className={styles.installAgent}>
+                <div style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 12 }}>
+                    <span>{formatMessage({ id: "agent.install.reverse_channel.label" })}</span>
+                    <Switch
+                        checked={enableReverseChannel}
+                        onChange={(checked) => {
+                            setEnableReverseChannel(checked);
+                            if (autoInit || tokenInfo) {
+                                setTimeout(() => {
+                                    fetchTokenInfo();
+                                }, 0);
+                            }
+                        }}
+                    />
+                    <span style={{ color: "rgba(0,0,0,0.45)", fontSize: 12 }}>
+                        {formatMessage({ id: "agent.install.reverse_channel.help" })}
+                    </span>
+                </div>
                 {!autoInit && <Button  className={styles.gateway} type="primary" onClick={() => fetchTokenInfo()}>
                 {formatMessage({
                     id:"agent.install.label.get_cmd"

@@ -28,6 +28,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	log "github.com/cihub/seelog"
 	goversion "github.com/hashicorp/go-version"
@@ -40,6 +41,7 @@ import (
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/lib/fasttemplate"
+	"io"
 	"net/url"
 	"os"
 
@@ -85,6 +87,21 @@ type gatewaySetupConfig struct {
 	Port            string `config:"port"`
 }
 
+type installCommandRequest struct {
+	GatewayEndpoints     []string `json:"gateway_endpoints"`
+	EnableReverseChannel bool     `json:"enable_reverse_channel"`
+}
+
+func renderAgentReverseChannelEndpoints(req *http.Request, configuredEndpoints []string, enabled bool) string {
+	if !enabled {
+		return "[]"
+	}
+	if len(configuredEndpoints) == 0 {
+		return `["${server}"]`
+	}
+	return string(util.MustToJSONBytes(resolveAgentReverseChannelEndpoints(req, configuredEndpoints)))
+}
+
 func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	user, err := security.FromUserContext(req.Context())
 	if err != nil || user == nil {
@@ -95,6 +112,14 @@ func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Req
 	if agCfg == nil || agCfg.Setup == nil {
 		h.WriteError(w, "agent setup config was not found, please configure in the configuration file first", http.StatusInternalServerError)
 		return
+	}
+	payload := installCommandRequest{}
+	if req.Body != nil {
+		defer req.Body.Close()
+		if err := json.NewDecoder(req.Body).Decode(&payload); err != nil && err != io.EOF {
+			h.WriteError(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 	}
 	var (
 		t        *Token
@@ -113,7 +138,7 @@ func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Req
 	expiredTokenCache.Put(tokenStr, t)
 	consoleEndpoint := resolveConsoleEndpoint(req, agCfg.Setup.ConsoleEndpoint)
 	installVersion := strings.TrimSpace(agCfg.Setup.Version)
-	endpoint, err := buildInstallScriptURL(consoleEndpoint, tokenStr, installVersion)
+	endpoint, err := buildInstallScriptURL(consoleEndpoint, tokenStr, installVersion, payload.EnableReverseChannel)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Errorf("build agent install script url failed: %v", err)
@@ -216,8 +241,23 @@ func buildGatewayInstallCommand(endpoint, location string) string {
 	return command
 }
 
-func buildInstallScriptURL(consoleEndpoint, tokenStr, installVersion string) (string, error) {
-	return buildInstallScriptURLForAPI(consoleEndpoint, getInstallScriptAPI, tokenStr, installVersion)
+func buildInstallScriptURL(consoleEndpoint, tokenStr, installVersion string, enableReverseChannel bool) (string, error) {
+	endpoint, err := buildInstallScriptURLForAPI(consoleEndpoint, getInstallScriptAPI, tokenStr, installVersion)
+	if err != nil {
+		return "", err
+	}
+	if !enableReverseChannel {
+		return endpoint, nil
+	}
+
+	parsed, err := url.Parse(endpoint)
+	if err != nil {
+		return "", err
+	}
+	query := parsed.Query()
+	query.Set("enable_reverse_channel", "true")
+	parsed.RawQuery = query.Encode()
+	return parsed.String(), nil
 }
 
 func formatBuildVersion(version, buildNumber string) string {
@@ -479,7 +519,11 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 	}
 
 	consoleEndpoint := resolveConsoleEndpoint(req, agCfg.Setup.ConsoleEndpoint)
-	reverseChannelEndpoints := resolveAgentReverseChannelEndpoints(req, agCfg.Setup.ReverseChannelEndpoints)
+	reverseChannelEndpoints := renderAgentReverseChannelEndpoints(
+		req,
+		agCfg.Setup.ReverseChannelEndpoints,
+		strings.EqualFold(strings.TrimSpace(req.URL.Query().Get("enable_reverse_channel")), "true"),
+	)
 	downloadURL, err := resolveAgentDownloadURL(consoleEndpoint, agCfg.Setup.DownloadURL)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -495,7 +539,7 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 	_, err = tpl.Execute(w, map[string]interface{}{
 		"base_url":                  downloadURL,
 		"console_endpoint":          consoleEndpoint,
-		"reverse_channel_endpoints": string(util.MustToJSONBytes(reverseChannelEndpoints)),
+		"reverse_channel_endpoints": reverseChannelEndpoints,
 		"client_crt":                clientCertPEM,
 		"client_key":                clientKeyPEM,
 		"ca_crt":                    caCert,

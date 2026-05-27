@@ -305,7 +305,7 @@ func TestAgentInstallTemplateEnablesEmbeddedAPISkipLogin(t *testing.T) {
 	expectedSnippets := []string{
 		`cat <<EOF > ${install_dir}/agent.yml`,
 		`embedding_api: false`,
-		`REVERSE_CHANNEL_ENDPOINTS: ["${server}"]`,
+		`REVERSE_CHANNEL_ENDPOINTS: ["https://console-api.local:2900"]`,
 		`reverse_channel_endpoints: \$[[env.REVERSE_CHANNEL_ENDPOINTS]]`,
 		`cert_file: "config/client.crt"`,
 		`skip_insecure_verify: false`,
@@ -327,6 +327,41 @@ func TestBuildInstallCommandUsesScriptDefaults(t *testing.T) {
 	expected := `curl -ksSL "https://console.local/instance/_get_install_script?token=abc" |sudo bash -s -- -t "/srv/agent"`
 	if command != expected {
 		t.Fatalf("expected %q, got %q", expected, command)
+	}
+}
+
+func TestBuildInstallScriptURLHonorsReverseChannelOption(t *testing.T) {
+	withoutReverse, err := buildInstallScriptURL("https://console.local", "abc", "1.2.3", false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if strings.Contains(withoutReverse, "enable_reverse_channel=true") {
+		t.Fatalf("did not expect reverse channel flag in %q", withoutReverse)
+	}
+
+	withReverse, err := buildInstallScriptURL("https://console.local", "abc", "1.2.3", true)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(withReverse, "enable_reverse_channel=true") {
+		t.Fatalf("expected reverse channel flag in %q", withReverse)
+	}
+}
+
+func TestRenderAgentReverseChannelEndpoints(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "https://console.local:9000/instance/_get_install_script", nil)
+
+	if got := renderAgentReverseChannelEndpoints(req, nil, false); got != "[]" {
+		t.Fatalf("expected reverse channel disabled output, got %q", got)
+	}
+
+	if got := renderAgentReverseChannelEndpoints(req, nil, true); got != `["${server}"]` {
+		t.Fatalf("expected default server placeholder, got %q", got)
+	}
+
+	got := renderAgentReverseChannelEndpoints(req, []string{"https://console-api.local:9443"}, true)
+	if got != `["https://console-api.local:9443"]` {
+		t.Fatalf("expected configured endpoints, got %q", got)
 	}
 }
 

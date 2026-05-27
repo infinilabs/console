@@ -85,6 +85,8 @@ export default {
   "agent.logs.button.view_latest": "查看最新",
   "agent.logs.button.goto": "确定",
   "agent.install.setup.copy.success": "已成功复制到剪贴板！",
+  "agent.install.reverse_channel.label": "启用反向通道",
+  "agent.install.reverse_channel.help": "默认关闭，只有在安装时显式开启后，Agent 才会回连 Console 建立反向通道。",
   "agent.instance.auto_associate.title": "自动关联集群",
   "agent.instance.install.title": "安装 Agent",
 

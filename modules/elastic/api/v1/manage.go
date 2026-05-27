@@ -64,6 +64,7 @@ func (h *APIHandler) HandleCreateClusterAction(w http.ResponseWriter, req *http.
 	}
 	// TODO validate data format
 	conf.Enabled = true
+	conf.Monitored = true
 	conf.Host = strings.TrimSpace(conf.Host)
 	conf.Endpoint = fmt.Sprintf("%s://%s", conf.Schema, conf.Host)
 	conf.ID = util.GetUUID()

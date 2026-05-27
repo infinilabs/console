@@ -80,6 +80,7 @@ func (h *APIHandler) HandleCreateClusterAction(w http.ResponseWriter, req *http.
 	conf := &payload.ElasticsearchConfig
 	console_common.SetProbePath(conf, payload.ProbePath)
 	conf.Enabled = true
+	conf.Monitored = true
 	if len(conf.Hosts) > 0 && conf.Host == "" {
 		conf.Host = conf.Hosts[0]
 	}

@@ -131,16 +131,16 @@ const Monitor = (props) => {
   }, [state.timeRange, state.timeInterval, state.timeout]);
 
   const handleTimeChange = ({ start, end, timeInterval, timeout, refresh }) => {
-    setState(initState({
-      ...state,
+    setState((prevState) => initState({
+      ...prevState,
       param,
       timeRange: {
-        min: start,
-        max: end,
+        min: start || prevState?.timeRange?.min,
+        max: end || prevState?.timeRange?.max,
       },
-      timeInterval: timeInterval || state.timeInterval,
-      timeout: timeout || state.timeout,
-      refresh
+      timeInterval: timeInterval || prevState.timeInterval,
+      timeout: timeout || prevState.timeout,
+      refresh,
     }));
   }
 

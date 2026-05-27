@@ -57,6 +57,7 @@ export default {
   "cluster.manage.monitoring.notice.unmonitored": "Monitoring is not enabled for this cluster.",
   "cluster.manage.monitoring.notice.last_collection_time": "Last data collection time: {timestamp}",
   "cluster.manage.monitoring.notice.enable_button": "Go to enable monitoring",
+  "cluster.manage.monitoring.notice.unavailable_since": "Cluster is not available since: {timestamp}",
   "cluster.manage.delete.confirm.title": "Are you sure you want to delete this cluster?",
   "cluster.manage.delete.confirm.cluster": "Cluster: {name}",
   "cluster.manage.delete.confirm.version": "Version: {version}",

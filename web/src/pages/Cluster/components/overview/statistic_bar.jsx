@@ -123,10 +123,16 @@ const StatisticBar = ({
       {!clusterAvailable ? (
         <div className={"mask"}>
           <div>
-            Cluster is not availabe since:{" "}
-            {value?.summary?.timestamp
-              ? formatUtcTimeToLocal(value?.summary?.timestamp)
-              : "N/A"}
+            {formatMessage(
+              {
+                id: "cluster.manage.monitoring.notice.unavailable_since",
+              },
+              {
+                timestamp: value?.summary?.timestamp
+                  ? formatUtcTimeToLocal(value?.summary?.timestamp)
+                  : "N/A",
+              }
+            )}
           </div>
         </div>
       ) : !clusterMonitored &&

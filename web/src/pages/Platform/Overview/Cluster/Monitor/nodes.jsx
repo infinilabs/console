@@ -23,6 +23,8 @@ export default ({
   clusterID,
   clusterName,
   timeRange,
+  refresh,
+  timeout,
   clusterAvailable,
   bucketSize,
 }) => {
@@ -61,9 +63,12 @@ export default ({
   } = useFetch(
     `${ESPrefix}/${clusterID}/nodes${showRealtime ? "/realtime" : ""}`,
     {
-      queryParams: showRealtime ? {} : formatTimeRange(timeRange),
+      queryParams: {
+        ...(showRealtime ? {} : formatTimeRange(timeRange)),
+        timeout,
+      },
     },
-    [clusterID, timeRange, showRealtime]
+    [clusterID, timeRange, showRealtime, refresh, timeout]
   );
 
   const [hits, hitsTotal] = React.useMemo(() => {

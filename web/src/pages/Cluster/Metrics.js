@@ -172,20 +172,24 @@ class ClusterMonitor extends PureComponent {
       from: timeRange.min,
       to: timeRange.max,
     });
-    dispatch({
-      type: "clusterMonitor/fetchClusterMetrics",
-      payload: {
-        timeRange: {
-          min: bounds.min.valueOf(),
-          max: bounds.max.valueOf(),
+    Promise.resolve(
+      dispatch({
+        type: "clusterMonitor/fetchClusterMetrics",
+        payload: {
+          timeRange: {
+            min: bounds.min.valueOf(),
+            max: bounds.max.valueOf(),
+          },
+          cluster_id: this.state.clusterID,
         },
-        cluster_id: this.state.clusterID,
-      },
-    }).then((res) => {
-      this.setState({
-        spinning: false,
+      })
+    )
+      .catch(() => null)
+      .finally(() => {
+        this.setState({
+          spinning: false,
+        });
       });
-    });
   };
 
   componentDidUpdate(prevProps, prevState, snapshot) {
@@ -369,7 +373,12 @@ class ClusterMonitor extends PureComponent {
           {!clusterAvailable ? (
             <div className={styles.mask}>
               <div>
-                Cluster is not availabe since: {clusterStats?.timestamp}
+                {formatMessage(
+                  {
+                    id: "cluster.manage.monitoring.notice.unavailable_since",
+                  },
+                  { timestamp: clusterStats?.timestamp || "N/A" }
+                )}
               </div>
             </div>
           ) : !clusterMonitored &&

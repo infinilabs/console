@@ -57,6 +57,7 @@ export default {
   "cluster.manage.monitoring.notice.unmonitored": "当前集群尚未启用监控。",
   "cluster.manage.monitoring.notice.last_collection_time": "最近一次数据采集时间：{timestamp}",
   "cluster.manage.monitoring.notice.enable_button": "前往启用监控",
+  "cluster.manage.monitoring.notice.unavailable_since": "集群自 {timestamp} 起不可用",
   "cluster.manage.delete.confirm.title": "确认删除这个集群吗？",
   "cluster.manage.delete.confirm.cluster": "集群：{name}",
   "cluster.manage.delete.confirm.version": "版本：{version}",

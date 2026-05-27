@@ -50,6 +50,7 @@ import (
 	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
+	elasticmodule "infini.sh/framework/modules/elastic"
 	"infini.sh/framework/modules/elastic/common"
 )
 
@@ -146,6 +147,8 @@ func (h *APIHandler) HandleCreateClusterAction(w http.ResponseWriter, req *http.
 	_, err = common.InitElasticInstance(*conf)
 	if err != nil {
 		log.Warn("error on init elasticsearch:", err)
+	} else {
+		elasticmodule.SyncClusterHealthStatus(conf.ID)
 	}
 	if conf.MetricCollectionMode == elastic.ModeAgent {
 		agentservice.TriggerAutoEnroll([]string{conf.ID})

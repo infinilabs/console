@@ -20,6 +20,8 @@ const vstyle = {
 const StatisticBar = ({
   clusterID,
   timeRange,
+  refresh,
+  timeout,
   setSpinning,
   clusterAvailable,
   clusterMonitored,
@@ -30,13 +32,20 @@ const StatisticBar = ({
 
   const { loading, error, value } = useFetch(
     `${ESPrefix}/${clusterID}/metrics`,
-    {},
-    [clusterID, timeRange]
+    {
+      queryParams: {
+        timeout,
+      },
+    },
+    [clusterID, timeRange, refresh, timeout]
   );
 
   React.useEffect(() => {
     setSpinning(loading);
-  }, [loading]);
+    return () => {
+      setSpinning(false);
+    };
+  }, [loading, setSpinning]);
 
   React.useEffect(() => {
     if (onInfoChange) {
@@ -130,10 +139,16 @@ const StatisticBar = ({
       {!clusterAvailable ? (
         <div className={"mask"}>
           <div>
-            Cluster is not availabe since:{" "}
-            {value?.summary?.timestamp
-              ? formatUtcTimeToLocal(value?.summary?.timestamp)
-              : "N/A"}
+            {formatMessage(
+              {
+                id: "cluster.manage.monitoring.notice.unavailable_since",
+              },
+              {
+                timestamp: value?.summary?.timestamp
+                  ? formatUtcTimeToLocal(value?.summary?.timestamp)
+                  : "N/A",
+              }
+            )}
           </div>
         </div>
       ) : !clusterMonitored &&

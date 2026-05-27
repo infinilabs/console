@@ -19,6 +19,8 @@ const Indices = ({
   clusterID,
   clusterName,
   timeRange,
+  refresh,
+  timeout,
   clusterAvailable,
   bucketSize,
 }) => {
@@ -60,9 +62,12 @@ const Indices = ({
   } = useFetch(
     `${ESPrefix}/${clusterID}/indices${showRealtime ? "/realtime" : ""}`,
     {
-      queryParams: showRealtime ? {} : formatTimeRange(timeRange),
+      queryParams: {
+        ...(showRealtime ? {} : formatTimeRange(timeRange)),
+        timeout,
+      },
     },
-    [clusterID, timeRange, showRealtime]
+    [clusterID, timeRange, showRealtime, refresh, timeout]
   );
 
   const [hits, hitsTotal] = useMemo(() => {

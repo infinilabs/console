@@ -92,9 +92,33 @@ func getSystemClusterClient() (elastic.API, bool) {
 	return client, true
 }
 
+func isSystemClusterRollupSupported(cfg *elastic.ElasticsearchConfig) bool {
+	if cfg == nil || cfg.Distribution != elastic.Easysearch || cfg.Version == "" {
+		return false
+	}
+
+	version, err := util.ParseSemantic(cfg.Version)
+	if err != nil {
+		log.Warnf("failed to parse system cluster version [%s] for rollup support: %v", cfg.Version, err)
+		return false
+	}
+
+	return version.AtLeast(util.MustParseSemantic("1.12.1"))
+}
+
 func getSystemClusterAppSetting() interface{} {
 	client, ok := getSystemClusterClient()
 	if !ok {
+		return nil
+	}
+
+	systemID, ok := lookupSystemClusterID()
+	if !ok {
+		return nil
+	}
+
+	cfg := elastic.GetConfigNoPanic(systemID)
+	if cfg == nil {
 		return nil
 	}
 
@@ -110,7 +134,10 @@ func getSystemClusterAppSetting() interface{} {
 		rollupEnabledValue = true
 	}
 	return map[string]interface{}{
-		"rollup_enabled": rollupEnabledValue,
+		"distribution":     cfg.Distribution,
+		"version":          cfg.Version,
+		"rollup_enabled":   rollupEnabledValue,
+		"rollup_supported": isSystemClusterRollupSupported(cfg),
 	}
 }
 
@@ -230,7 +257,7 @@ func main() {
 				elastic2.InitTemplate(false)
 			}
 
-		if startDeferredModules {
+			if startDeferredModules {
 				for k, v := range modules {
 					log.Debugf("start module: %v", k)
 					v.Value.Start()

@@ -52,6 +52,7 @@ const SystemSettings = (props) => {
   );
   const [retentionLoading, setRetentionLoading] = useState(false);
   const [rollupEnabled, setRollupEnabled] = useState(false);
+  const [rollupSupported, setRollupSupported] = useState(false);
   const [rollupLoading, setRollupLoading] = useState(false);
 
   const normalizeRetentionSize = (value) =>
@@ -113,6 +114,14 @@ const SystemSettings = (props) => {
     };
     const fetchRollupSetting = async () => {
       setRollupLoading(true);
+      const applicationSettings = await refreshApplicationSettings(true);
+      const supported = !!applicationSettings?.system_cluster?.rollup_supported;
+      setRollupSupported(supported);
+      if (!supported) {
+        setRollupEnabled(false);
+        setRollupLoading(false);
+        return;
+      }
       const res = await request("/setting/system/rollup", {
         method: "GET",
       });
@@ -273,7 +282,7 @@ const SystemSettings = (props) => {
   };
 
   const renderRollupSettings = () => {
-    if (!canReadCluster) {
+    if (!canReadCluster || !rollupSupported) {
       return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="" />;
     }
     return (
@@ -318,7 +327,7 @@ const SystemSettings = (props) => {
     return (
       <>
         {renderRetentionSettings()}
-        {renderRollupSettings()}
+        {rollupSupported ? renderRollupSettings() : null}
       </>
     );
   };

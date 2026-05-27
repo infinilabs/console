@@ -148,7 +148,7 @@ func TestHydrateRuntimeBasicAuthPropagatesGetterError(t *testing.T) {
 	}
 }
 
-func TestNewManagedClusterSecurityClientInitializesMetadataForUnregisteredCluster(t *testing.T) {
+func TestNewManagedClusterSecurityClientUsesTemporaryMetadataForUnregisteredCluster(t *testing.T) {
 	conf := &elastic.ElasticsearchConfig{
 		ORMObjectBase: orm.ORMObjectBase{ID: "cluster-under-test"},
 		Name:          "cluster-under-test",
@@ -161,16 +161,20 @@ func TestNewManagedClusterSecurityClientInitializesMetadataForUnregisteredCluste
 	}
 	auth := &model.BasicAuth{Username: "admin"}
 
-	_, err := newManagedClusterSecurityClient(conf, auth)
+	tempRuntimeID := managedClusterSecurityRuntimeID(conf.ID)
+	_, cleanup, err := newManagedClusterSecurityClient(conf, auth)
 	if err != nil {
 		t.Fatalf("expected managed client to initialize, got %v", err)
 	}
+	defer cleanup()
 
-	defer elastic.RemoveInstance(conf.ID)
-	if meta := elastic.GetMetadata(conf.ID); meta == nil {
+	if meta := elastic.GetMetadata(conf.ID); meta != nil {
+		t.Fatalf("expected real cluster metadata %q to stay untouched, got %#v", conf.ID, meta.Config)
+	}
+	if meta := elastic.GetMetadata(tempRuntimeID); meta == nil {
 		t.Fatal("expected temporary client metadata to be initialized")
-	} else if meta.Config == nil || meta.Config.ID != conf.ID {
-		t.Fatalf("expected metadata for %q, got %#v", conf.ID, meta.Config)
+	} else if meta.Config == nil || meta.Config.ID != tempRuntimeID {
+		t.Fatalf("expected metadata for %q, got %#v", tempRuntimeID, meta.Config)
 	}
 }
 

@@ -352,10 +352,11 @@ func ensureManagedAgentCollectionCredential(conf *elastic.ElasticsearchConfig, p
 		password = util.GenerateSecureString(20)
 	}
 
-	client, err := newManagedClusterSecurityClient(conf, platformAuth)
+	client, cleanup, err := newManagedClusterSecurityClient(conf, platformAuth)
 	if err != nil {
 		return err
 	}
+	defer cleanup()
 	username, err = initAgentCollectionUser(client, conf.Distribution, username, password)
 	if err != nil {
 		if shouldFallbackToPlatformCredentialForManagedAgentProvision(err) {
@@ -432,20 +433,32 @@ func getManagedAgentCredential(conf *elastic.ElasticsearchConfig, previousCluste
 	return cred, auth, false, nil
 }
 
-func newManagedClusterSecurityClient(conf *elastic.ElasticsearchConfig, auth *model.BasicAuth) (elastic.API, error) {
+func managedClusterSecurityRuntimeID(clusterID string) string {
+	clusterID = strings.TrimSpace(clusterID)
+	if clusterID == "" {
+		clusterID = util.GetUUID()
+	}
+	return fmt.Sprintf("%s-managed-security", clusterID)
+}
+
+func newManagedClusterSecurityClient(conf *elastic.ElasticsearchConfig, auth *model.BasicAuth) (elastic.API, func(), error) {
 	tempConf := *conf
+	tempConf.ID = managedClusterSecurityRuntimeID(conf.ID)
 	tempConf.BasicAuth = auth
 	tempConf.CredentialID = ""
 	tempConf.AgentBasicAuth = nil
 	tempConf.AgentCredentialID = ""
 	client, err := common.InitClientWithConfig(tempConf)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	// The managed Easysearch security bootstrap runs before the new cluster config
-	// is registered globally, so the temporary client must carry its own metadata.
+	// is registered globally, so the temporary client must carry its own metadata
+	// under an isolated runtime ID to avoid polluting the real cluster state.
 	elastic.GetOrInitMetadata(&tempConf)
-	return client, nil
+	return client, func() {
+		elastic.RemoveInstance(tempConf.ID)
+	}, nil
 }
 
 func initAgentCollectionUser(client elastic.API, distribution, username, password string) (string, error) {

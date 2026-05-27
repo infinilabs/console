@@ -42,6 +42,7 @@ import (
 	"infini.sh/framework/core/util"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 type APIHandler struct {
@@ -56,10 +57,21 @@ func (h *APIHandler) createCredential(w http.ResponseWriter, req *http.Request, 
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	cred.Name = strings.TrimSpace(cred.Name)
 	err = cred.Validate()
 	if err != nil {
 		log.Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	exists, err := credentialNameExists(cred.Name, "")
+	if err != nil {
+		log.Error(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if exists {
+		h.WriteError(w, "credential name already exists", http.StatusConflict)
 		return
 	}
 	err = cred.Encode()
@@ -102,10 +114,21 @@ func (h *APIHandler) updateCredential(w http.ResponseWriter, req *http.Request, 
 		log.Error(err)
 		return
 	}
+	newObj.Name = strings.TrimSpace(newObj.Name)
 	err = newObj.Validate()
 	if err != nil {
 		log.Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	exists, err = credentialNameExists(newObj.Name, obj.ID)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
+	if exists {
+		h.WriteError(w, "credential name already exists", http.StatusConflict)
 		return
 	}
 
@@ -226,6 +249,26 @@ func (h *APIHandler) deleteCredential(w http.ResponseWriter, req *http.Request, 
 	}
 
 	h.WriteDeletedOKJSON(w, id)
+}
+
+func credentialNameExists(name, excludeID string) (bool, error) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return false, nil
+	}
+
+	existing := credential.Credential{}
+	err, result := orm.GetBy("name", name, &existing)
+	if err != nil {
+		return false, err
+	}
+	if result.Total == 0 {
+		return false, nil
+	}
+	if strings.TrimSpace(excludeID) != "" && existing.ID == excludeID {
+		return false, nil
+	}
+	return true, nil
 }
 
 func canDelete(cred *credential.Credential) (bool, error) {

@@ -25,18 +25,20 @@ const TYPES = [
 ];
 
 export default Form.create()((props) => {
-  const { form, record, onSubmit } = props;
+  const { form, record, onSubmit, submitLoading } = props;
   const { getFieldDecorator } = form;
 
   const { payload = {} } = record || {};
 
   const [type, setType] = useState(record?.type);
-  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (submitLoading) {
+      return;
+    }
     form.validateFields(async (err, values) => {
       if (err) return;
-      onSubmit(values);
+      await onSubmit(values);
     });
   };
 
@@ -119,7 +121,7 @@ export default Form.create()((props) => {
   }, [record?.type]);
 
   return (
-    <Spin spinning={loading}>
+    <Spin spinning={!!submitLoading}>
       <Form {...formItemLayout} colon={false}>
         <Form.Item 
           label={formatMessage({
@@ -169,7 +171,7 @@ export default Form.create()((props) => {
         </Form.Item>
         <Form.Item label=" ">
           <div style={{ textAlign: "right" }}>
-            <Button type="primary" onClick={handleSubmit}>
+            <Button type="primary" onClick={handleSubmit} loading={!!submitLoading} disabled={!!submitLoading}>
               {formatMessage({
                 id: record ? "form.button.save" : "form.button.submit",
               })}

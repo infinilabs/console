@@ -56,6 +56,7 @@ interface Props {
 interface State {
   isPopoverOpen: boolean;
   modalVisible: boolean;
+  isSavingCommonCommand: boolean;
 }
 
 type ShortcutConfig = {
@@ -114,6 +115,7 @@ export default class ConsoleMenu extends Component<Props, State> {
     this.state = {
       isPopoverOpen: false,
       modalVisible: false,
+      isSavingCommonCommand: false,
     };
   }
 
@@ -176,26 +178,42 @@ export default class ConsoleMenu extends Component<Props, State> {
   };
 
   handleClose = () => {
+    if (this.state.isSavingCommonCommand) {
+      return;
+    }
     this.setState({ modalVisible: false });
   };
 
   handleConfirm = async (params: Record<string, any>) => {
-    const requests = await this.props.saveAsCommonCommand();
-    const reqBody = {
-      ...params,
-      requests,
-    };
-    const result = await (await saveCommonCommand(reqBody))?.json();
-    if (result.error) {
-      notification.error({
-        message: result.error,
+    if (this.state.isSavingCommonCommand) {
+      return;
+    }
+
+    this.setState({ isSavingCommonCommand: true });
+    try {
+      const requests = await this.props.saveAsCommonCommand();
+      const reqBody = {
+        ...params,
+        requests,
+      };
+      const response = await saveCommonCommand(reqBody);
+      const result = await response?.json();
+      if (result?.error) {
+        notification.error({
+          message: result.error,
+        });
+        return;
+      }
+
+      this.setState({
+        modalVisible: false,
       });
-    } else {
-      this.handleClose();
       notification.success({
         message: formatMessage({ id: "app.message.save.success" }),
       });
       pushCommand(result);
+    } finally {
+      this.setState({ isSavingCommonCommand: false });
     }
   };
 
@@ -248,6 +266,7 @@ export default class ConsoleMenu extends Component<Props, State> {
           <CommonCommandModal
             onClose={this.handleClose}
             onConfirm={this.handleConfirm}
+            confirmLoading={this.state.isSavingCommonCommand}
           />
         )}
       </span>

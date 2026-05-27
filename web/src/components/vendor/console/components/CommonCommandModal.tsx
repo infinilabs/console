@@ -1,5 +1,5 @@
 // @ts-ignore
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { Modal, Form, Input, Tag, message } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { formatMessage } from "umi/locale";
@@ -76,18 +76,27 @@ export const TagGenerator = ({ value = [], onChange }: ITagGeneratorProps) => {
 
 interface ICommonCommandModalProps {
   onClose: () => void;
-  onConfirm: (params: Record<string, any>) => void;
+  onConfirm: (params: Record<string, any>) => Promise<void> | void;
+  confirmLoading?: boolean;
   form: any;
 }
 
 const CommonCommandModal = Form.create()((props: ICommonCommandModalProps) => {
   const { form } = props;
+  const submittingRef = useRef(false);
 
   const handleConfirm = async () => {
+    if (submittingRef.current || props.confirmLoading) {
+      return;
+    }
+    submittingRef.current = true;
     try {
       const values = await form.validateFields();
-      props.onConfirm(values);
-    } catch (e) {}
+      await props.onConfirm(values);
+    } catch (e) {
+    } finally {
+      submittingRef.current = false;
+    }
   };
 
   return (
@@ -96,9 +105,12 @@ const CommonCommandModal = Form.create()((props: ICommonCommandModalProps) => {
       visible={true}
       onCancel={props.onClose}
       onOk={handleConfirm}
+      confirmLoading={!!props.confirmLoading}
       zIndex={1003}
       cancelText={formatMessage({ id: "form.button.cancel" })}
       okText={formatMessage({ id: "form.button.save" })}
+      okButtonProps={{ disabled: !!props.confirmLoading }}
+      cancelButtonProps={{ disabled: !!props.confirmLoading }}
     >
       <Form layout="vertical">
         <Form.Item label={formatMessage({ id: "command.table.field.name" })}>

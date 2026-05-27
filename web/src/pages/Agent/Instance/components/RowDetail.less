@@ -52,6 +52,24 @@
   }
 }
 
+.cellIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  min-width: 16px;
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+.cellContent {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .actionWrap {
   display: flex;
   align-items: flex-start;

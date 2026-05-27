@@ -40,21 +40,23 @@ export default ({autoInit = false}) => {
         <Spin spinning={tokenLoading}>
             <div className={styles.installAgent}>
                 <div className={styles.reverseChannelToggle}>
+                <span className={styles.reverseChannelLabel}>
                     <span>{formatMessage({ id: "agent.install.reverse_channel.label" })}</span>
-                    <Switch
-                        checked={enableReverseChannel}
-                        onChange={(checked) => {
-                            setEnableReverseChannel(checked);
-                            if (autoInit || tokenInfo) {
+                    <Tooltip title={formatMessage({ id: "agent.install.reverse_channel.help" })}>
+                        <Icon type="info-circle" className={styles.reverseChannelInfo} />
+                    </Tooltip>
+                </span>
+                <Switch
+                    checked={enableReverseChannel}
+                    onChange={(checked) => {
+                        setEnableReverseChannel(checked);
+                        if (autoInit || tokenInfo) {
                                 setTimeout(() => {
                                     fetchTokenInfo();
                                 }, 0);
                             }
                         }}
                     />
-                    <Tooltip title={formatMessage({ id: "agent.install.reverse_channel.help" })}>
-                        <Icon type="info-circle" className={styles.reverseChannelInfo} />
-                    </Tooltip>
                 </div>
                 {!autoInit && <Button  className={styles.gateway} type="primary" onClick={() => fetchTokenInfo()}>
                 {formatMessage({
@@ -96,9 +98,13 @@ export default ({autoInit = false}) => {
                                         type="copy" 
                                         className={styles.copy} 
                                         onClick={
-                                            () => message.success(formatMessage({
-                                                id: "agent.install.setup.copy.success"
-                                            }))
+                                            () => message.open({
+                                                type: "success",
+                                                key: "agent-install-copy-success",
+                                                content: formatMessage({
+                                                    id: "agent.install.setup.copy.success"
+                                                }),
+                                            })
                                         }
                                     />
                                 </CopyToClipboard>

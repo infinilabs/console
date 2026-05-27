@@ -173,14 +173,14 @@ export const AgentRowDetail = ({ agentID, t }) => {
           return (
             <Tooltip title={text}>
               <div className={styles.cellWrap}>
-                <div style={{ display: 'inline-block', marginRight: '3px', position: 'relative', top: -2, flexShrink: 0 }}>
+                <div className={styles.cellIcon}>
                   <SearchEngineIcon
                     distribution={record.cluster_info.version.distribution}
                     width="16px"
                     height="16px"
                   />
                 </div>
-                {content}
+                <div className={styles.cellContent}>{content}</div>
               </div>
             </Tooltip>
           );
@@ -194,17 +194,23 @@ export const AgentRowDetail = ({ agentID, t }) => {
           return record.cluster_id ? (
             <Tooltip title={text}>
               <div className={styles.cellWrap}>
-                <Icon type="database" style={{ marginRight: 4, flexShrink: 0 }} />
-                <Link
-                  to={`/cluster/monitor/${record.cluster_id}/nodes/${record.id}?_g={"cluster_name":"${record.cluster_info.cluster_name}","node_name":"${text}"}`}
-                >
-                  {text}
-                </Link>
+                <div className={styles.cellIcon}>
+                  <Icon type="database" />
+                </div>
+                <div className={styles.cellContent}>
+                  <Link
+                    to={`/cluster/monitor/${record.cluster_id}/nodes/${record.id}?_g={"cluster_name":"${record.cluster_info.cluster_name}","node_name":"${text}"}`}
+                  >
+                    {text}
+                  </Link>
+                </div>
               </div>
             </Tooltip>
           ) : (
             <Tooltip title={text}>
-              <div className={styles.cellWrap}>{text}</div>
+              <div className={styles.cellWrap}>
+                <div className={styles.cellContent}>{text}</div>
+              </div>
             </Tooltip>
           );
         },

@@ -247,6 +247,17 @@ const checkStatus = async (response, noticeable, option={}) => {
       return response;
     }
   }
+  if (response.status === 409) {
+    let jsonRes = null;
+    try {
+      jsonRes = await response.clone().json();
+    } catch (error) {
+      jsonRes = null;
+    }
+    if (jsonRes?.error?.reason) {
+      return response;
+    }
+  }
   if (response.status == 500) {
     let jsonRes = null;
     try {

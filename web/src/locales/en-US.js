@@ -191,6 +191,7 @@ export default {
   "system.security.role.create.success": "Role created successfully!",
   "system.security.role.create.button.view_list": "Back to Role List",
   "system.security.role.create.button.continue": "Continue Creating",
+  "system.security.role.delete.error.assigned_to_users": "Cannot delete role: it is still assigned to users.",
 
   "component.globalHeader.search": "Search",
   "component.globalHeader.search.example1": "Search example 1",

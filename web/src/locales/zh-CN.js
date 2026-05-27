@@ -193,6 +193,7 @@ export default {
   "system.security.role.create.success": "角色创建成功！",
   "system.security.role.create.button.view_list": "返回角色列表",
   "system.security.role.create.button.continue": "继续创建",
+  "system.security.role.delete.error.assigned_to_users": "无法删除角色：该角色仍被用户使用。",
 
   "component.globalHeader.search": "站内搜索",
   "component.globalHeader.search.example1": "搜索提示一",

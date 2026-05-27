@@ -51,7 +51,7 @@ const RoleList = (props) => {
     async (roleID) => {
       const deleteRes = await request(`/role/${roleID}`, {
         method: "DELETE",
-      });
+      }, false, false);
       if (deleteRes && deleteRes.result == "deleted") {
         message.success(
           formatMessage({
@@ -61,6 +61,17 @@ const RoleList = (props) => {
         setTimeout(() => {
           onRefreshClick();
         }, 1000);
+      } else if (deleteRes && deleteRes.error) {
+        const reason = deleteRes.error.reason || "";
+        if (reason === "role is still assigned to users") {
+          message.error(
+            formatMessage({
+              id: "system.security.role.delete.error.assigned_to_users",
+            })
+          );
+        } else {
+          message.error(reason || formatMessage({ id: "app.message.error" }));
+        }
       }
     },
     [setQueryParams]

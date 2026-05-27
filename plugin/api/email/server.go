@@ -379,19 +379,11 @@ func (h *EmailAPI) testEmailServer(w http.ResponseWriter, req *http.Request, ps 
 	message.SetHeader("Subject", "INFINI platform test email")
 
 	message.SetBody("text/plain", "This is just a test email, do not reply!")
-	d := gomail.NewDialer(reqBody.Host, reqBody.Port, reqBody.Auth.Username, reqBody.Auth.Password.Get())
-
-	// set default TLS min version to TLS 1.2 for security when not specified
-	if reqBody.TLSMinVersion == "" {
-		reqBody.TLSMinVersion = model.TLSVersion12
-	}
-	tlsMinVersion, err := model.GetTLSVersion(reqBody.TLSMinVersion)
+	d, err := newEmailTestDialer(&reqBody.EmailServer)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	d.TLSConfig = &tls.Config{InsecureSkipVerify: true, MinVersion: tlsMinVersion}
-	d.SSL = reqBody.TLS
 
 	err = d.DialAndSend(message)
 	if err != nil {
@@ -400,4 +392,27 @@ func (h *EmailAPI) testEmailServer(w http.ResponseWriter, req *http.Request, ps 
 		return
 	}
 	h.WriteAckOKJSON(w)
+}
+
+// newEmailTestDialer keeps Console on the standard gopkg.in/gomail.v2 module.
+// The vendored gomail fork exposed NewDialerWithTimeout and used an explicit 3s
+// timeout here before, but the standard module does not. Test-email requests now
+// inherit gomail's built-in 10s connect timeout, so keep that behavior change
+// documented in this helper instead of hiding it inline at the call site.
+func newEmailTestDialer(server *model.EmailServer) (*gomail.Dialer, error) {
+	tlsMinVersionName := server.TLSMinVersion
+	if tlsMinVersionName == "" {
+		tlsMinVersionName = model.TLSVersion12
+	}
+
+	tlsMinVersion, err := model.GetTLSVersion(tlsMinVersionName)
+	if err != nil {
+		return nil, err
+	}
+
+	dialer := gomail.NewDialer(server.Host, server.Port, server.Auth.Username, server.Auth.Password.Get())
+	dialer.TLSConfig = &tls.Config{InsecureSkipVerify: true, MinVersion: tlsMinVersion}
+	dialer.SSL = server.TLS
+
+	return dialer, nil
 }

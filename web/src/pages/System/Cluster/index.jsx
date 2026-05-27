@@ -438,7 +438,14 @@ export default (props) => {
           collectionName={collectionName}
           columns={columns}
           formatDataSource={(value) => formatTableData(value)}
-          defaultQueryParams={{ from: 0, size: 20 }}
+          defaultQueryParams={{
+            from: 0,
+            size: 20,
+            sort: [
+              ["name", "asc"],
+              ["id", "asc"],
+            ],
+          }}
           sortEnable={true}
           sideEnable={true}
           sideVisible={false}

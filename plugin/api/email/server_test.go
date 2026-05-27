@@ -106,6 +106,7 @@ func TestNewEmailTestDialerRejectsUnsupportedTLSVersion(t *testing.T) {
 	_, err := newEmailTestDialer(server)
 	if err == nil {
 		t.Fatal("expected unsupported TLS version to fail")
+	}
 }
 
 func TestNewEmailTLSConfigSetsServerName(t *testing.T) {

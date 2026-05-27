@@ -1243,9 +1243,11 @@ func performChannels(channels []alerting.Channel, ctx map[string]interface{}, ra
 func (engine *Engine) GenerateTask(rule alerting.Rule) func(ctx context.Context) {
 	return func(ctx context.Context) {
 		defer func() {
-			if err := recover(); err != nil {
-				log.Error(err)
-				debug.PrintStack()
+			if !global.Env().IsDebug {
+				if err := recover(); err != nil {
+					log.Error(err)
+					debug.PrintStack()
+				}
 			}
 		}()
 		err := engine.Do(&rule)

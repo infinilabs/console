@@ -33,11 +33,10 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/buger/jsonparser"
 	log "github.com/cihub/seelog"
-	"github.com/gopkg.in/gomail.v2"
+	"gopkg.in/gomail.v2"
 	"infini.sh/console/model"
 	"infini.sh/console/model/alerting"
 	"infini.sh/console/plugin/api/email/common"
@@ -380,7 +379,7 @@ func (h *EmailAPI) testEmailServer(w http.ResponseWriter, req *http.Request, ps 
 	message.SetHeader("Subject", "INFINI platform test email")
 
 	message.SetBody("text/plain", "This is just a test email, do not reply!")
-	d := gomail.NewDialerWithTimeout(reqBody.Host, reqBody.Port, reqBody.Auth.Username, reqBody.Auth.Password.Get(), 3*time.Second)
+	d := gomail.NewDialer(reqBody.Host, reqBody.Port, reqBody.Auth.Username, reqBody.Auth.Password.Get())
 
 	// set default TLS min version to TLS 1.2 for security when not specified
 	if reqBody.TLSMinVersion == "" {

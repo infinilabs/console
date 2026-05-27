@@ -83,7 +83,7 @@ func (inst *TaskWorker) DeletePipeline(pipelineID string) error {
 	return inst.doRequest(req, nil)
 }
 
-func (inst *TaskWorker) GetPipeline(pipelineID string) (*pipeline.PipelineStatus, error) {
+func (inst *TaskWorker) GetPipeline(pipelineID string) (*pipeline.PipelineTaskStatus, error) {
 	if pipelineID == "" {
 		return nil, errors.New("invalid pipelineID")
 	}
@@ -94,7 +94,7 @@ func (inst *TaskWorker) GetPipeline(pipelineID string) (*pipeline.PipelineStatus
 		Url:     fmt.Sprintf("%s/pipeline/task/%s", inst.Endpoint, pipelineID),
 		Context: ctx,
 	}
-	res := pipeline.PipelineStatus{}
+	res := pipeline.PipelineTaskStatus{}
 	err := inst.doRequest(req, &res)
 	if err != nil {
 		return nil, err
@@ -102,7 +102,7 @@ func (inst *TaskWorker) GetPipeline(pipelineID string) (*pipeline.PipelineStatus
 	return &res, nil
 }
 
-func (inst *TaskWorker) GetPipelinesByIDs(pipelineIDs []string) (pipeline.GetPipelinesResponse, error) {
+func (inst *TaskWorker) GetPipelinesByIDs(pipelineIDs []string) (pipeline.GetPipelineTasksResponse, error) {
 	body := util.MustToJSONBytes(util.MapStr{
 		"ids": pipelineIDs,
 	})
@@ -114,7 +114,7 @@ func (inst *TaskWorker) GetPipelinesByIDs(pipelineIDs []string) (pipeline.GetPip
 		Body:    body,
 		Context: ctx,
 	}
-	res := pipeline.GetPipelinesResponse{}
+	res := pipeline.GetPipelineTasksResponse{}
 	err := inst.doRequest(req, &res)
 	return res, err
 }
@@ -165,7 +165,7 @@ func (inst *TaskWorker) doRequest(req *util.Request, resBody interface{}) error 
 		return err
 	}
 	if result.StatusCode != http.StatusOK {
-		return fmt.Errorf(string(result.Body))
+		return fmt.Errorf("%s", result.Body)
 	}
 	if resBody != nil {
 		return util.FromJSONBytes(result.Body, resBody)

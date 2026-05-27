@@ -26,10 +26,9 @@ package email
 import (
 	"fmt"
 	"io"
-	"time"
 
 	log "github.com/cihub/seelog"
-	"github.com/gopkg.in/gomail.v2"
+	"gopkg.in/gomail.v2"
 	"infini.sh/console/model"
 	emailcommon "infini.sh/console/plugin/api/email/common"
 	"infini.sh/framework/core/config"
@@ -347,12 +346,14 @@ func (processor *EmailProcessor) send(server *EmailServerConfig, to []string, cc
 		return err
 	}
 
-	d := gomail.NewDialerWithTimeout(
+	// The standard gopkg.in/gomail.v2 module does not expose NewDialerWithTimeout.
+	// DialTimeoutInSeconds is therefore no longer mapped 1:1 here and falls back
+	// to gomail's built-in connect timeout behavior.
+	d := gomail.NewDialer(
 		server.Server.Host,
 		server.Server.Port,
 		server.Auth.Username,
 		server.Auth.Password,
-		time.Duration(processor.config.DialTimeoutInSeconds)*time.Second,
 	)
 	d.TLSConfig = newEmailTLSConfig(server.Server.Host, tlsMinVersion)
 	d.SSL = server.Server.TLS

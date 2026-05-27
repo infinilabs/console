@@ -321,8 +321,12 @@ api:
   enabled: false
 
 web:
-  embedding_api: false
+  embedding_api: {{embedding_api}}
   enabled: true
+  websocket:
+    enabled: {{websocket_enabled}}
+    base_path: /ws
+    skip_host_verify: true
   network:
     binding: \$[[env.WEB_BINDING]]
   ui:

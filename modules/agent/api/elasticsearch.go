@@ -306,7 +306,7 @@ func GetSearchLogFiles(ctx context.Context, instance *model.Instance, logsPaths 
 	}
 
 	resBody := map[string]interface{}{}
-	_, err := ProxyAgentRequestViaChannel(instance.ID, req, &resBody)
+	_, err := proxyAgentRequest(instance, req, &resBody)
 	if err != nil {
 		return nil, err
 	}
@@ -325,7 +325,7 @@ func GetSearchLogFileContent(ctx context.Context, instance *model.Instance, body
 		Body:    util.MustToJSONBytes(body),
 	}
 	resBody := map[string]interface{}{}
-	_, err := ProxyAgentRequestViaChannel(instance.ID, req, &resBody)
+	_, err := proxyAgentRequest(instance, req, &resBody)
 	if err != nil {
 		return nil, err
 	}

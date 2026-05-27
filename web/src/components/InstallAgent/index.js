@@ -1,4 +1,4 @@
-import { Form, Select, Spin, Icon, message, Button, Switch } from "antd";
+import { Form, Select, Spin, Icon, message, Button, Switch, Tooltip } from "antd";
 import styles from "./index.less";
 import useFetch from "@/lib/hooks/use_fetch";
 import { useEffect, useMemo, useState } from "react";
@@ -39,7 +39,7 @@ export default ({autoInit = false}) => {
     return (
         <Spin spinning={tokenLoading}>
             <div className={styles.installAgent}>
-                <div style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 12 }}>
+                <div className={styles.reverseChannelToggle}>
                     <span>{formatMessage({ id: "agent.install.reverse_channel.label" })}</span>
                     <Switch
                         checked={enableReverseChannel}
@@ -52,9 +52,9 @@ export default ({autoInit = false}) => {
                             }
                         }}
                     />
-                    <span style={{ color: "rgba(0,0,0,0.45)", fontSize: 12 }}>
-                        {formatMessage({ id: "agent.install.reverse_channel.help" })}
-                    </span>
+                    <Tooltip title={formatMessage({ id: "agent.install.reverse_channel.help" })}>
+                        <Icon type="info-circle" className={styles.reverseChannelInfo} />
+                    </Tooltip>
                 </div>
                 {!autoInit && <Button  className={styles.gateway} type="primary" onClick={() => fetchTokenInfo()}>
                 {formatMessage({

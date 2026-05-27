@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"infini.sh/framework/core/env"
@@ -56,6 +57,46 @@ func TestShouldFallbackToDirectAgentProxy(t *testing.T) {
 				t.Fatalf("unexpected fallback result: %v", actual)
 			}
 		})
+	}
+}
+
+func TestProxyAgentRequestFallsBackToDirectWhenReverseChannelIsNotConnected(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/elasticsearch/logs/_list" {
+			t.Fatalf("unexpected request path: %s", r.URL.Path)
+		}
+		if r.Method != http.MethodPost {
+			t.Fatalf("unexpected request method: %s", r.Method)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"success":true,"result":["app.log"]}`))
+	}))
+	defer server.Close()
+
+	instance := &model.Instance{
+		Endpoint: "http://agent-api.local:2900",
+		Services: []model.ServiceInfo{
+			{Name: "api", Endpoint: "http://agent-api.local:2900"},
+			{Name: "web", Endpoint: server.URL},
+		},
+	}
+	instance.ID = "agent-direct-only"
+	instance.Application.Name = "agent"
+
+	resBody := map[string]interface{}{}
+	res, err := proxyAgentRequest(instance, &util.Request{
+		Method: http.MethodPost,
+		Path:   "/elasticsearch/logs/_list",
+		Body:   []byte(`{"logs_path":"/var/log/elasticsearch"}`),
+	}, &resBody)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if res == nil || res.StatusCode != http.StatusOK {
+		t.Fatalf("unexpected response: %#v", res)
+	}
+	if resBody["success"] != true {
+		t.Fatalf("expected success body, got %#v", resBody)
 	}
 }
 

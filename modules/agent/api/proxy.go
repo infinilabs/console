@@ -54,6 +54,24 @@ func proxyAgentRequestDirect(instance *model.Instance, req *util.Request, respon
 	return server.ProxyAgentRequest("runtime", endpoint, req, responseObjectToUnMarshall)
 }
 
+func proxyAgentRequest(instance *model.Instance, req *util.Request, responseObjectToUnMarshall interface{}) (*util.Result, error) {
+	if instance == nil {
+		return nil, fmt.Errorf("instance is nil")
+	}
+	if req == nil {
+		return nil, fmt.Errorf("request is nil")
+	}
+
+	if shouldAttemptAgentReverseProxy(instance, req, IsAgentReverseChannelConnected(instance.ID)) {
+		res, err := ProxyAgentRequestViaChannel(instance.ID, req, responseObjectToUnMarshall)
+		if !shouldFallbackToDirectAgentProxy(res, err) {
+			return res, err
+		}
+	}
+
+	return proxyAgentRequestDirect(instance, req, responseObjectToUnMarshall)
+}
+
 func init() {
 	server.RegisterInstanceProxyProvider(agentInstanceProxyProvider)
 }

@@ -284,7 +284,7 @@ func TestGatewayInstallTemplateBootstrapsManagedConfig(t *testing.T) {
 	}
 }
 
-func TestAgentInstallTemplateEnablesEmbeddedAPISkipLogin(t *testing.T) {
+func TestAgentInstallTemplateKeepsEmbeddedAPIDisabledWhenReverseChannelEnabled(t *testing.T) {
 	templatePath := filepath.Join("..", "..", "..", "config", "install_agent.tpl")
 	content, err := os.ReadFile(templatePath)
 	if err != nil {
@@ -296,6 +296,8 @@ func TestAgentInstallTemplateEnablesEmbeddedAPISkipLogin(t *testing.T) {
 		"{{version}}", "1.2.3-4567",
 		"{{console_endpoint}}", "https://console.local",
 		"{{reverse_channel_endpoints}}", `["https://console-api.local:2900"]`,
+		"{{embedding_api}}", "false",
+		"{{websocket_enabled}}", "false",
 		"{{client_crt}}", "CLIENT_CERT",
 		"{{client_key}}", "CLIENT_KEY",
 		"{{ca_crt}}", "CA_CERT",
@@ -305,10 +307,46 @@ func TestAgentInstallTemplateEnablesEmbeddedAPISkipLogin(t *testing.T) {
 	expectedSnippets := []string{
 		`cat <<EOF > ${install_dir}/agent.yml`,
 		`embedding_api: false`,
+		`websocket:`,
+		`enabled: false`,
 		`REVERSE_CHANNEL_ENDPOINTS: ["https://console-api.local:2900"]`,
 		`reverse_channel_endpoints: \$[[env.REVERSE_CHANNEL_ENDPOINTS]]`,
 		`cert_file: "config/client.crt"`,
 		`skip_insecure_verify: false`,
+	}
+
+	for _, snippet := range expectedSnippets {
+		if !strings.Contains(rendered, snippet) {
+			t.Fatalf("expected rendered template to contain %q", snippet)
+		}
+	}
+}
+
+func TestAgentInstallTemplateEnablesEmbeddedAPIWithoutReverseChannel(t *testing.T) {
+	templatePath := filepath.Join("..", "..", "..", "config", "install_agent.tpl")
+	content, err := os.ReadFile(templatePath)
+	if err != nil {
+		t.Fatalf("failed to read agent install template: %v", err)
+	}
+
+	rendered := strings.NewReplacer(
+		"{{base_url}}", "https://mirror.local/agent/stable",
+		"{{version}}", "1.2.3-4567",
+		"{{console_endpoint}}", "https://console.local",
+		"{{reverse_channel_endpoints}}", `[]`,
+		"{{embedding_api}}", "true",
+		"{{websocket_enabled}}", "true",
+		"{{client_crt}}", "CLIENT_CERT",
+		"{{client_key}}", "CLIENT_KEY",
+		"{{ca_crt}}", "CA_CERT",
+		"{{port}}", "2900",
+	).Replace(string(content))
+
+	expectedSnippets := []string{
+		`embedding_api: true`,
+		`enabled: true`,
+		`base_path: /ws`,
+		`REVERSE_CHANNEL_ENDPOINTS: []`,
 	}
 
 	for _, snippet := range expectedSnippets {

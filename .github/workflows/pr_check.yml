@@ -9,7 +9,6 @@ defaults:
     shell: bash
 
 env:
-    GO_VERSION: 1.23.4
     NODEJS_VERSION: 16.20.2
     PNAME: console
 
@@ -27,13 +26,6 @@ jobs:
             with:
               repository: infinilabs/framework
               path: framework
-
-          - name: Checkout framework-vendor
-            uses: actions/checkout@v4
-            with:
-              ref: main
-              repository: infinilabs/framework-vendor
-              path: vendor
 
           - name: Set up nodejs toolchain
             uses: actions/setup-node@v4
@@ -60,9 +52,12 @@ jobs:
           - name: Set up go toolchain
             uses: actions/setup-go@v5
             with:
-              go-version: ${{ env.GO_VERSION }}
+              go-version-file: console/go.mod
               check-latest: false
               cache: true
+              cache-dependency-path: |
+                console/go.sum
+                framework/go.sum
 
           - name: Check go toolchain
             run: go version
@@ -83,11 +78,9 @@ jobs:
             run: |
               echo Home path is $HOME
               export WORKBASE=$HOME/go/src/infini.sh
-              export WORK=$WORKBASE/console
-
-              # for test workspace
-              mkdir -p $HOME/go/src/
-              ln -s $GITHUB_WORKSPACE $WORKBASE
+              export WORK=$GITHUB_WORKSPACE/$PNAME
+              mkdir -p $WORKBASE
+              ln -sfn $GITHUB_WORKSPACE/framework $WORKBASE/framework
 
               # for web build
               cd $WORK/web
@@ -112,7 +105,9 @@ jobs:
             shell: bash
             run: |
               export WORKBASE=$HOME/go/src/infini.sh
-              export WORK=$WORKBASE/$PNAME
+              export WORK=$GITHUB_WORKSPACE/$PNAME
+              mkdir -p $WORKBASE
+              ln -sfn $GITHUB_WORKSPACE/framework $WORKBASE/framework
 
               # for foramt check
               cd $WORK
@@ -128,7 +123,9 @@ jobs:
             if: steps.check-changes.outputs.changes == 'true'
             run: |
                 export WORKBASE=$HOME/go/src/infini.sh
-                export WORK=$WORKBASE/$PNAME
+                export WORK=$GITHUB_WORKSPACE/$PNAME
+                mkdir -p $WORKBASE
+                ln -sfn $GITHUB_WORKSPACE/framework $WORKBASE/framework
 
                 # for foramt check
                 cd $WORK && echo
@@ -151,13 +148,6 @@ jobs:
               with:
                 repository: infinilabs/framework
                 path: framework
-
-            - name: Checkout framework-vendor
-              uses: actions/checkout@v4
-              with:
-                ref: main
-                repository: infinilabs/framework-vendor
-                path: vendor
 
             - name: Set up nodejs toolchain
               uses: actions/setup-node@v4
@@ -184,9 +174,12 @@ jobs:
             - name: Set up go toolchain
               uses: actions/setup-go@v5
               with:
-                go-version: ${{ env.GO_VERSION }}
+                go-version-file: console/go.mod
                 check-latest: false
                 cache: true
+                cache-dependency-path: |
+                  console/go.sum
+                  framework/go.sum
 
             - name: Check go toolchain
               run: go version
@@ -207,11 +200,9 @@ jobs:
               run: |
                 echo Home path is $HOME
                 export WORKBASE=$HOME/go/src/infini.sh
-                export WORK=$WORKBASE/$PNAME
-
-                # for test workspace
-                mkdir -p $HOME/go/src/
-                ln -s $GITHUB_WORKSPACE $WORKBASE
+                export WORK=$GITHUB_WORKSPACE/$PNAME
+                mkdir -p $WORKBASE
+                ln -sfn $GITHUB_WORKSPACE/framework $WORKBASE/framework
 
                 # for web build
                 cd $WORK/web
@@ -241,13 +232,6 @@ jobs:
                 repository: infinilabs/framework
                 path: framework
 
-            - name: Checkout framework-vendor
-              uses: actions/checkout@v4
-              with:
-                ref: main
-                repository: infinilabs/framework-vendor
-                path: vendor
-
             - name: Set up nodejs toolchain
               uses: actions/setup-node@v4
               with:
@@ -273,9 +257,12 @@ jobs:
             - name: Set up go toolchain
               uses: actions/setup-go@v5
               with:
-                go-version: ${{ env.GO_VERSION }}
+                go-version-file: console/go.mod
                 check-latest: false
                 cache: true
+                cache-dependency-path: |
+                  console/go.sum
+                  framework/go.sum
 
             - name: Check go toolchain
               run: go version
@@ -296,11 +283,9 @@ jobs:
               run: |
                 echo Home path is $HOME
                 export WORKBASE=$HOME/go/src/infini.sh
-                export WORK=$WORKBASE/$PNAME
-
-                # for test workspace
-                mkdir -p $HOME/go/src/
-                ln -s $GITHUB_WORKSPACE $WORKBASE
+                export WORK=$GITHUB_WORKSPACE/$PNAME
+                mkdir -p $WORKBASE
+                ln -sfn $GITHUB_WORKSPACE/framework $WORKBASE/framework
 
                 # for web build
                 cd $WORK/web

@@ -33,10 +33,10 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/buger/jsonparser"
 	log "github.com/cihub/seelog"
+	"gopkg.in/gomail.v2"
 	"infini.sh/console/model"
 	"infini.sh/console/model/alerting"
 	"infini.sh/console/plugin/api/email/common"
@@ -44,7 +44,6 @@ import (
 	"infini.sh/framework/core/credential"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
-	"infini.sh/framework/lib/gomail"
 )
 
 func (h *EmailAPI) createEmailServer(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -129,8 +128,8 @@ func saveBasicAuthToCredential(srv *model.EmailServer) (string, error) {
 		Name: srv.Name,
 		Type: credential.BasicAuth,
 		Tags: []string{"Email"},
-		Payload: map[credential.CredentialType]interface{}{
-			credential.BasicAuth: map[string]interface{}{
+		Payload: map[string]interface{}{
+			"basic_auth": map[string]interface{}{
 				"username": srv.Auth.Username,
 				"password": srv.Auth.Password.Get(),
 			},
@@ -380,19 +379,11 @@ func (h *EmailAPI) testEmailServer(w http.ResponseWriter, req *http.Request, ps 
 	message.SetHeader("Subject", "INFINI platform test email")
 
 	message.SetBody("text/plain", "This is just a test email, do not reply!")
-	d := gomail.NewDialerWithTimeout(reqBody.Host, reqBody.Port, reqBody.Auth.Username, reqBody.Auth.Password.Get(), 3*time.Second)
-
-	// set default TLS min version to TLS 1.2 for security when not specified
-	if reqBody.TLSMinVersion == "" {
-		reqBody.TLSMinVersion = model.TLSVersion12
-	}
-	tlsMinVersion, err := model.GetTLSVersion(reqBody.TLSMinVersion)
+	d, err := newEmailTestDialer(&reqBody.EmailServer)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	d.TLSConfig = &tls.Config{InsecureSkipVerify: true, MinVersion: tlsMinVersion}
-	d.SSL = reqBody.TLS
 
 	err = d.DialAndSend(message)
 	if err != nil {
@@ -401,4 +392,27 @@ func (h *EmailAPI) testEmailServer(w http.ResponseWriter, req *http.Request, ps 
 		return
 	}
 	h.WriteAckOKJSON(w)
+}
+
+// newEmailTestDialer keeps Console on the standard gopkg.in/gomail.v2 module.
+// The vendored gomail fork exposed NewDialerWithTimeout and used an explicit 3s
+// timeout here before, but the standard module does not. Test-email requests now
+// inherit gomail's built-in 10s connect timeout, so keep that behavior change
+// documented in this helper instead of hiding it inline at the call site.
+func newEmailTestDialer(server *model.EmailServer) (*gomail.Dialer, error) {
+	tlsMinVersionName := server.TLSMinVersion
+	if tlsMinVersionName == "" {
+		tlsMinVersionName = model.TLSVersion12
+	}
+
+	tlsMinVersion, err := model.GetTLSVersion(tlsMinVersionName)
+	if err != nil {
+		return nil, err
+	}
+
+	dialer := gomail.NewDialer(server.Host, server.Port, server.Auth.Username, server.Auth.Password.Get())
+	dialer.TLSConfig = &tls.Config{InsecureSkipVerify: true, MinVersion: tlsMinVersion}
+	dialer.SSL = server.TLS
+
+	return dialer, nil
 }

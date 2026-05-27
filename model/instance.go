@@ -169,7 +169,7 @@ func (inst *TaskWorker) doRequest(req *util.Request, resBody interface{}) error 
 		return err
 	}
 	if result.StatusCode != http.StatusOK {
-		return fmt.Errorf(string(result.Body))
+		return fmt.Errorf("%s", result.Body)
 	}
 	if resBody != nil {
 		return util.FromJSONBytes(result.Body, resBody)

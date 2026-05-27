@@ -178,7 +178,8 @@ func main() {
 			elastic2.InitTemplate(false)
 
 			if global.Env().SetupRequired() {
-				for _, v := range modules {
+				for k, v := range modules {
+					log.Debugf("start module: %v", k)
 					v.Value.Start()
 				}
 			}

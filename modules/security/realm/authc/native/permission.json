@@ -591,9 +591,6 @@
     {"name": "template.get", "methods": ["get"],
       "path": "/_template/:template_name"
     },
-    {"name": "template.exists", "methods": ["head"],
-      "path": "/_template/:template_name"
-    },
     {"name": "template.put", "methods": ["put", "post"],
       "path": "/_template/:template_name"
     },

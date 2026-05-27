@@ -195,28 +195,30 @@ func (module *Module) validate(w http.ResponseWriter, r *http.Request, ps httpro
 		result := util.MapStr{}
 		result["success"] = success
 
-		if r := recover(); r != nil {
-			var v string
-			switch r.(type) {
-			case error:
-				v = r.(error).Error()
-			case runtime.Error:
-				v = r.(runtime.Error).Error()
-			case string:
-				v = r.(string)
-			}
-			if v != "" {
-				success = false
-				result["error"] = util.MapStr{
-					"reason": v,
+		if !global.Env().IsDebug {
+			if r := recover(); r != nil {
+				var v string
+				switch r.(type) {
+				case error:
+					v = r.(error).Error()
+				case runtime.Error:
+					v = r.(runtime.Error).Error()
+				case string:
+					v = r.(string)
 				}
-				if errType != "" {
-					result["type"] = errType
+				if v != "" {
+					success = false
+					result["error"] = util.MapStr{
+						"reason": v,
+					}
+					if errType != "" {
+						result["type"] = errType
+					}
+					if fixTips != "" {
+						result["fix_tips"] = fixTips
+					}
+					code = http.StatusInternalServerError
 				}
-				if fixTips != "" {
-					result["fix_tips"] = fixTips
-				}
-				code = http.StatusInternalServerError
 			}
 		}
 		module.WriteJSON(w, result, code)
@@ -427,31 +429,33 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 			"secret_mismatch": secretMismatch,
 		}
 		result["success"] = success
-
-		if r := recover(); r != nil {
-			var v string
-			switch r.(type) {
-			case error:
-				v = r.(error).Error()
-			case runtime.Error:
-				v = r.(runtime.Error).Error()
-			case string:
-				v = r.(string)
-			}
-			if v != "" {
-				success = false
-				result["error"] = util.MapStr{
-					"reason": v,
+		if !global.Env().IsDebug {
+			if r := recover(); r != nil {
+				var v string
+				switch r.(type) {
+				case error:
+					v = r.(error).Error()
+				case runtime.Error:
+					v = r.(runtime.Error).Error()
+				case string:
+					v = r.(string)
 				}
-				if errType != "" {
-					result["type"] = errType
+				if v != "" {
+					success = false
+					result["error"] = util.MapStr{
+						"reason": v,
+					}
+					if errType != "" {
+						result["type"] = errType
+					}
+					if fixTips != "" {
+						result["fix_tips"] = fixTips
+					}
+					code = http.StatusInternalServerError
 				}
-				if fixTips != "" {
-					result["fix_tips"] = fixTips
-				}
-				code = http.StatusInternalServerError
 			}
 		}
+
 		module.WriteJSON(w, result, code)
 	}()
 	err, client := module.initTempClient(request)
@@ -793,12 +797,15 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 
 	// recover from panic and return error message
 	defer func() {
-		if v := recover(); v != nil {
-			module.WriteJSON(w, util.MapStr{
-				"success": false,
-				"log":     fmt.Sprintf("%v", v),
-			}, http.StatusOK)
+		if !global.Env().IsDebug {
+			if v := recover(); v != nil {
+				module.WriteJSON(w, util.MapStr{
+					"success": false,
+					"log":     fmt.Sprintf("%v", v),
+				}, http.StatusOK)
+			}
 		}
+
 	}()
 
 	request := &SetupRequest{}

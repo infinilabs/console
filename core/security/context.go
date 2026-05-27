@@ -30,8 +30,9 @@ package security
 import (
 	"context"
 	"fmt"
-	"github.com/golang-jwt/jwt/v4"
 	frameworksecurity "infini.sh/framework/core/security"
+
+	"github.com/golang-jwt/jwt/v4"
 )
 
 const ctxUserKey = "user"

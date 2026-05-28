@@ -113,8 +113,8 @@ func saveBasicAuthToCredential(conf *elastic.ElasticsearchConfig) (string, error
 		Name: conf.Name,
 		Type: credential.BasicAuth,
 		Tags: []string{"ES"},
-		Payload: map[string]interface{}{
-			"basic_auth": map[string]interface{}{
+		Payload: map[credential.CredentialType]interface{}{
+			credential.BasicAuth: map[string]interface{}{
 				"username": conf.BasicAuth.Username,
 				"password": conf.BasicAuth.Password.Get(),
 			},

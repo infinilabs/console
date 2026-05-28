@@ -164,6 +164,10 @@ func (h APIHandler) syncConfigs(w http.ResponseWriter, req *http.Request, ps htt
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 	}
 
+	if writeTokenAuthError(h, w, validateSyncRequestAuth(req, &obj.Client)) {
+		return
+	}
+
 	if global.Env().IsDebug {
 		log.Trace("request:", util.MustToJSON(obj))
 	}

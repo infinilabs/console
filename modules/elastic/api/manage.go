@@ -139,8 +139,8 @@ func saveBasicAuthToCredential(name string, auth *model.BasicAuth) (string, erro
 		Name: name,
 		Type: credential.BasicAuth,
 		Tags: []string{"ES"},
-		Payload: map[string]interface{}{
-			"basic_auth": map[string]interface{}{
+		Payload: map[credential.CredentialType]interface{}{
+			credential.BasicAuth: map[string]interface{}{
 				"username": auth.Username,
 				"password": auth.Password.Get(),
 			},

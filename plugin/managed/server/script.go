@@ -28,12 +28,14 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 	log "github.com/cihub/seelog"
-	"infini.sh/console/core/security"
+	rbac "infini.sh/console/core/security"
 	"infini.sh/console/modules/agent/common"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/global"
+	"infini.sh/framework/core/security"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/lib/fasttemplate"
 	"net/url"
@@ -45,18 +47,63 @@ import (
 	"time"
 )
 
-type Token struct {
+type installScriptToken struct {
 	CreatedAt time.Time
 	UserID    string
 }
 
-const ExpiredIn = time.Millisecond * 1000 * 60 * 60
+const managedInstallTokenTTL = time.Millisecond * 1000 * 60 * 60
 const GET_INSTALL_SCRIPT_API = "/instance/_get_install_script"
 
-var expiredTokenCache = util.NewCacheWithExpireOnAdd(ExpiredIn, 100)
+var expiredTokenCache = util.NewCacheWithExpireOnAdd(managedInstallTokenTTL, 100)
+var errBootstrapTokenRequired = errors.New("bootstrap token is required")
+var errBootstrapTokenInvalid = errors.New("bootstrap token is invalid")
+var errBootstrapTokenExpired = errors.New("bootstrap token is expired")
+
+func issueBootstrapToken(userID string) (string, error) {
+	return issueManagedAPIToken(
+		newManagedTokenUser(userID, nil),
+		"managed bootstrap",
+		"managed_agent_bootstrap",
+		time.Now().Add(managedInstallTokenTTL).Unix(),
+		getBootstrapTokenPermissions(),
+	)
+}
+
+func getBootstrapToken(tokenStr string, permissions ...security.PermissionKey) (*security.AccessToken, error) {
+	if strings.TrimSpace(tokenStr) == "" {
+		return nil, errBootstrapTokenRequired
+	}
+
+	token, err := getManagedAPIToken(tokenStr)
+	if err != nil {
+		if errors.Is(err, errManagedTokenExpired) {
+			return nil, errBootstrapTokenExpired
+		}
+		return nil, errBootstrapTokenInvalid
+	}
+	if err := requireManagedPermissions(token, permissions...); err != nil {
+		return nil, errBootstrapTokenInvalid
+	}
+
+	return token, nil
+}
+
+func validateBootstrapToken(tokenStr string) error {
+	_, err := getBootstrapToken(tokenStr, managedRegisterPermission)
+	return err
+}
+
+func getBootstrapTokenUserID(tokenStr string) (string, error) {
+	token, err := getBootstrapToken(tokenStr, managedExchangePermission)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(token.GetOwnerID()), nil
+}
 
 func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	claims, ok := req.Context().Value("user").(*security.UserClaims)
+	claims, ok := req.Context().Value("user").(*rbac.UserClaims)
 	if !ok {
 		h.WriteError(w, "user not found", http.StatusInternalServerError)
 		return
@@ -67,7 +114,7 @@ func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Req
 		return
 	}
 	var (
-		t        *Token
+		t        *installScriptToken
 		tokenStr string
 	)
 
@@ -75,21 +122,13 @@ func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Req
 	location := "/opt/agent"
 
 	tokenStr = util.GetUUID()
-	t = &Token{
+	t = &installScriptToken{
 		CreatedAt: time.Now(),
 		UserID:    claims.UserId,
 	}
 
 	expiredTokenCache.Put(tokenStr, t)
-	consoleEndpoint := agCfg.Setup.ConsoleEndpoint
-	if consoleEndpoint == "" {
-		consoleEndpoint = getDefaultEndpoint(req)
-	}
-
-	basePath := global.Env().SystemConfig.WebAppConfig.BasePath
-	if len(basePath) > 0 {
-		consoleEndpoint = fmt.Sprintf("%s%s", strings.TrimRight(consoleEndpoint, "/"), basePath)
-	}
+	consoleEndpoint := getConsoleEndpoint(req, agCfg.Setup.ConsoleEndpoint)
 
 	endpoint, err := url.JoinPath(consoleEndpoint, GET_INSTALL_SCRIPT_API)
 	if err != nil {
@@ -100,7 +139,7 @@ func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Req
 		"script": fmt.Sprintf(`curl -ksSL %s?token=%s |sudo bash -s -- -u %s -t %v`,
 			endpoint, tokenStr, agCfg.Setup.DownloadURL, location),
 		"token":      tokenStr,
-		"expired_at": t.CreatedAt.Add(ExpiredIn),
+		"expired_at": t.CreatedAt.Add(managedInstallTokenTTL),
 	}, http.StatusOK)
 }
 
@@ -110,6 +149,18 @@ func getDefaultEndpoint(req *http.Request) string {
 		scheme = "https"
 	}
 	return fmt.Sprintf("%s://%s", scheme, req.Host)
+}
+
+func getConsoleEndpoint(req *http.Request, configured string) string {
+	endpoint := configured
+	if endpoint == "" {
+		endpoint = getDefaultEndpoint(req)
+	}
+	basePath := strings.TrimSpace(global.Env().SystemConfig.WebAppConfig.BasePath)
+	if basePath == "" || strings.HasSuffix(strings.TrimRight(endpoint, "/"), basePath) {
+		return endpoint
+	}
+	return fmt.Sprintf("%s%s", strings.TrimRight(endpoint, "/"), basePath)
 }
 
 func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -126,8 +177,8 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 		return
 	}
 
-	t, ok := v.(*Token)
-	if !ok || t.CreatedAt.Add(ExpiredIn).Before(time.Now()) {
+	t, ok := v.(*installScriptToken)
+	if !ok || t.CreatedAt.Add(managedInstallTokenTTL).Before(time.Now()) {
 		expiredTokenCache.Delete(tokenStr)
 		h.WriteError(w, "token was expired", http.StatusUnauthorized)
 		return
@@ -160,9 +211,13 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 		port = "8080"
 	}
 
-	consoleEndpoint := agCfg.Setup.ConsoleEndpoint
-	if consoleEndpoint == "" {
-		consoleEndpoint = getDefaultEndpoint(req)
+	consoleEndpoint := getConsoleEndpoint(req, agCfg.Setup.ConsoleEndpoint)
+
+	accessToken, err := issueBootstrapToken(t.UserID)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	_, err = tpl.Execute(w, map[string]interface{}{
@@ -172,6 +227,7 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 		"client_key":       clientKeyPEM,
 		"ca_crt":           caCert,
 		"port":             port,
+		"access_token":     accessToken,
 		"token":            tokenStr,
 	})
 

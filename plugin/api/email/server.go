@@ -129,7 +129,7 @@ func saveBasicAuthToCredential(srv *model.EmailServer) (string, error) {
 		Type: credential.BasicAuth,
 		Tags: []string{"Email"},
 		Payload: map[string]interface{}{
-			"basic_auth": map[string]interface{}{
+			string(credential.BasicAuth): map[string]interface{}{
 				"username": srv.Auth.Username,
 				"password": srv.Auth.Password.Get(),
 			},

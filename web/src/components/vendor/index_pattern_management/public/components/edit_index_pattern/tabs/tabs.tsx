@@ -67,6 +67,7 @@ import { useGlobalContext } from "../../../context";
 
 import LayoutList from "@/pages/DataManagement/View/LayoutList"
 import { ComplexFieldsTable } from "../indexed_fields_table/complex_fields_table";
+import { formatMessage } from "umi/locale";
 
 interface TabsProps extends Pick<RouteComponentProps, "history" | "location"> {
   indexPattern: IndexPattern;
@@ -74,11 +75,17 @@ interface TabsProps extends Pick<RouteComponentProps, "history" | "location"> {
   saveIndexPattern; //: DataPublicPluginStart['indexPatterns']['updateSavedObject'];
 }
 
-const searchAriaLabel = "Search fields";
+const searchAriaLabel = formatMessage({
+  id: "explore.view.index_pattern.search_fields",
+});
 
-const filterAriaLabel = "Filter field types";
+const filterAriaLabel = formatMessage({
+  id: "explore.view.index_pattern.filter_field_types",
+});
 
-const filterPlaceholder = "Search";
+const filterPlaceholder = formatMessage({
+  id: "explore.view.index_pattern.search_placeholder",
+});
 
 export function Tabs({
   indexPattern,
@@ -218,7 +225,7 @@ export function Tabs({
                 history.push(`/patterns/${indexPattern?.id}/complex/create`);
               }}
             >
-              {"Create field"}
+              {formatMessage({ id: "explore.view.index_pattern.create_field" })}
             </EuiButton>
           </EuiFlexItem>
         </EuiFlexGroup>
@@ -347,7 +354,10 @@ export function Tabs({
         count = fields.length
       }
       return tabs.concat([{
-          name: `Complex fields (${count})`,
+          name: formatMessage(
+            { id: "explore.view.index_pattern.tab.complex_fields" },
+            { count }
+          ),
           id: TAB_COMPLEX_FIELDS,
           content: getContent(TAB_COMPLEX_FIELDS)
       }])

@@ -23,7 +23,7 @@ const COLORS = {
 }
 
 export default (props) => {
-    const { timeRange, isAgent, refresh, aggs, queryFilters = [], extraColumns = [] } = props;
+    const { timeRange, isAgent, refresh, aggs, queryFilters = [], extraColumns = [], handleTimeChange } = props;
 
     const ref = useRef(null);
 
@@ -32,6 +32,7 @@ export default (props) => {
 
     const [loading, setLoading] = useState(false)
     const [result, setResult] = useState(false)
+    const [sideVisible, setSideVisible] = useState(true)
 
     const [queryParams, setQueryParams] = useState({
         size: 20,
@@ -238,12 +239,23 @@ export default (props) => {
         return result?.data?.length > 0
     }, [result?.data?.length])
 
+    const onHistogramQueriesChange = (nextQueries = {}) => {
+        const nextRange = nextQueries?.range;
+        if (!nextRange?.from || !nextRange?.to || typeof handleTimeChange !== "function") {
+            return;
+        }
+        handleTimeChange({
+            start: nextRange.from,
+            end: nextRange.to,
+        });
+    }
+
     return (
         <Spin spinning={loading}>
             <div className={styles.logs}>
                 {
                     isNotEmpty ? (
-                        <>
+                        <div className={`${styles.logLayout} ${sideVisible ? styles.expand : styles.collapse}`}>
                             <div className={styles.side}>
                                 <Side
                                     aggs={aggs}
@@ -264,6 +276,19 @@ export default (props) => {
                                 />
                             </div>
                             <div className={styles.result}>
+                                <span
+                                    className={styles.expandAndCollapse}
+                                    onClick={() => setSideVisible((visible) => !visible)}
+                                    title={
+                                        sideVisible
+                                            ? formatMessage({ id: "listview.side.button.collapse" })
+                                            : formatMessage({ id: "listview.side.button.expand" })
+                                    }
+                                >
+                                    <span style={{ fontSize: 12 }}>
+                                        {sideVisible ? <span>&lt;</span> : <span>&gt;</span>}
+                                    </span>
+                                </span>
                                 <div className={styles.header}>
                                     <Input.Search 
                                         style={{ maxWidth: 600 }} 
@@ -284,6 +309,7 @@ export default (props) => {
                                         }}
                                         queryParams={queryParams?.filters || {}}
                                         refresh={refresh}
+                                        onGlobalQueriesChange={onHistogramQueriesChange}
                                     />
                                 </div>
                                 <div className={styles.table}>
@@ -314,7 +340,7 @@ export default (props) => {
                                     />
                                 </div>
                             </div>
-                        </>
+                        </div>
                     ) : (
                         <div className={styles.emptyState}>
                             <Empty 

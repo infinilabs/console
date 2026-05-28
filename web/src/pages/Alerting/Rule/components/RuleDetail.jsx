@@ -439,7 +439,12 @@ const RuleDetail = (props) => {
           key="alerts"
           tab={formatMessage({ id: "alert.rule.detail.title.alert_event" })}
         >
-          <MessageRecord ruleID={ruleID} timeRange={state.timeRange} refresh={state.refresh}/>
+          <MessageRecord
+            ruleID={ruleID}
+            timeRange={state.timeRange}
+            refresh={state.refresh}
+            onTimeRangeChange={handleTimeChange}
+          />
         </Tabs.TabPane>
         <Tabs.TabPane
           key="history"
@@ -450,6 +455,7 @@ const RuleDetail = (props) => {
             timeRange={state.timeRange}
             showAertMetric={true}
             refresh={state.refresh}
+            onTimeRangeChange={handleTimeChange}
           />
         </Tabs.TabPane>
       </Tabs>

@@ -6,42 +6,72 @@
 
 .command-list-item {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  align-items: center;
+  gap: 10px;
 }
 
 .command-list-item__icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
   background: #e6f7ff;
   color: #1890ff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 32px;
+  flex: 0 0 28px;
 }
 
 .command-list-item__body {
   min-width: 0;
   flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .command-list-item__title {
   display: inline-block;
   font-weight: 500;
-  margin-bottom: 4px;
+  margin-bottom: 0;
+  flex: 0 1 180px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .command-list-item__summary {
   color: rgba(0, 0, 0, 0.45);
   font-size: 12px;
-  line-height: 20px;
-  word-break: break-all;
+  line-height: 18px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .command-tag-list {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 4px;
+  overflow: hidden;
+  white-space: nowrap;
+
+  :global(.ant-tag) {
+    margin-right: 0;
+    margin-bottom: 0;
+    line-height: 18px;
+  }
+}
+
+.command-list-table {
+  :global(.ant-table-small > .ant-table-content > .ant-table-body > table > .ant-table-tbody > tr > td) {
+    vertical-align: middle;
+  }
+
+  :global(.ant-table-small > .ant-table-content > .ant-table-body > table > .ant-table-thead > tr > th) {
+    vertical-align: middle;
+  }
 }

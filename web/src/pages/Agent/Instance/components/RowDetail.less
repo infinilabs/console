@@ -57,17 +57,35 @@
   align-items: center;
   justify-content: center;
   width: 16px;
+  height: 16px;
   min-width: 16px;
   margin-right: 4px;
   flex-shrink: 0;
+
+  :global(.anticon) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    line-height: 1;
+    font-size: 16px;
+    vertical-align: top;
+  }
 }
 
 .cellContent {
   flex: 1;
+  display: block;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+
+  > a,
+  > span {
+    display: block;
+  }
 }
 
 .actionWrap {

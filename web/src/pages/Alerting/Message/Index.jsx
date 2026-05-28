@@ -356,6 +356,16 @@ const Index = (props) => {
     });
   };
 
+  const onWidgetQueriesChange = (queries = {}) => {
+    if (!queries?.range?.from || !queries?.range?.to) {
+      return;
+    }
+    onTimeChange({
+      start: queries.range.from,
+      end: queries.range.to,
+    });
+  };
+
   const fetchMessages = (queryParams) => {
     setLoading(true);
     let params = queryParams;
@@ -715,6 +725,7 @@ const Index = (props) => {
             }}
             queryParams={widgetQueryParams}
             refresh={queryParams?.refresh}
+            onGlobalQueriesChange={onWidgetQueriesChange}
           />
         </div>
         <Table

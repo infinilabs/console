@@ -93,6 +93,7 @@ class Index extends PureComponent {
           <div className="command-list-item__body">
             <a
               className="command-list-item__title"
+              title={text}
               onClick={() => {
                 this.setState({
                   editingCommand: record,
@@ -102,7 +103,10 @@ class Index extends PureComponent {
             >
               {text}
             </a>
-            <div className="command-list-item__summary">
+            <div
+              className="command-list-item__summary"
+              title={this.getCommandSummary(record)}
+            >
               {this.getCommandSummary(record)}
             </div>
           </div>
@@ -352,6 +356,7 @@ class Index extends PureComponent {
             </div>
 
             <Table
+              className="command-list-table"
               size={"small"}
               bordered
               dataSource={data}

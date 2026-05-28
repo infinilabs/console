@@ -273,6 +273,8 @@ export default {
   "menu.data.overview": "平台概览",
   "menu.data.index": "索引管理",
   "menu.data.view": "视图管理",
+  "menu.data.view.create": "创建",
+  "menu.data.view.detail": "详情",
   "menu.data.document": "文档管理",
   "menu.data.template": "模版管理",
   "menu.data.lifecycle": "周期管理",

@@ -142,7 +142,14 @@ const MessageDetail = (props) => {
             range={{ 
               from: timeRange.min || "now-7d", 
               to: timeRange.max || "now"
-            }}/>
+            }}
+            onRangeChange={({ from, to }) => {
+              handleTimeChange({
+                start: from,
+                end: to,
+              });
+            }}
+          />
         </div>
           <Card
             style={{flex: "1 1 50%"}}
@@ -156,6 +163,15 @@ const MessageDetail = (props) => {
                 to: timeRange.max || "now"
               }}
               queryParams={{state:"alerting", rule_id: messageDetail?.rule_id}}
+              onGlobalQueriesChange={(queries = {}) => {
+                if (!queries?.range?.from || !queries?.range?.to) {
+                  return;
+                }
+                handleTimeChange({
+                  start: queries.range.from,
+                  end: queries.range.to,
+                });
+              }}
             /> : null}
           </Card>
       </div>

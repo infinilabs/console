@@ -272,6 +272,8 @@ export default {
   "menu.data.overview": "OVERVIEW",
   "menu.data.index": "INDEX",
   "menu.data.view": "VIEW",
+  "menu.data.view.create": "CREATE",
+  "menu.data.view.detail": "DETAIL",
   "menu.data.document": "DOCUMENTS",
   "menu.data.template": "TEMPLATES",
   "menu.data.lifecycle": "LIFECYCLES",

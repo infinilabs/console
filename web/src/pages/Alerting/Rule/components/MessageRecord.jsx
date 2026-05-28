@@ -12,7 +12,7 @@ import moment from "moment";
 import { Link } from "umi";
 const Option = Select.Option;
 
-export default ({ ruleID, timeRange, refresh }) => {
+export default ({ ruleID, timeRange, refresh, onTimeRangeChange }) => {
   const initialQueryParams = {
     from: 0,
     size: 10,
@@ -168,6 +168,16 @@ export default ({ ruleID, timeRange, refresh }) => {
     dispatch({ type: "refresh" });
   };
 
+  const onWidgetQueriesChange = (queries = {}) => {
+    if (!queries?.range?.from || !queries?.range?.to || typeof onTimeRangeChange !== "function") {
+      return;
+    }
+    onTimeRangeChange({
+      start: queries.range.from,
+      end: queries.range.to,
+    });
+  };
+
   return (
     <div>
       <div
@@ -262,6 +272,7 @@ export default ({ ruleID, timeRange, refresh }) => {
             status: queryParams.status,
           }}
           refresh={refresh}
+          onGlobalQueriesChange={onWidgetQueriesChange}
         />
       </div>
       <Table

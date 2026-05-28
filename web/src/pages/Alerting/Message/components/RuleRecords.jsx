@@ -18,7 +18,7 @@ import { PriorityIconText } from "../../components/Statistic";
 import WidgetLoader from "@/pages/DataManagement/View/WidgetLoader";
 const Option = Select.Option;
 
-const RuleRecords = ({ ruleID, timeRange, showAertMetric = false, refresh }) => {
+const RuleRecords = ({ ruleID, timeRange, showAertMetric = false, refresh, onTimeRangeChange }) => {
   if (!ruleID || !timeRange.min) {
     return null;
   }
@@ -69,6 +69,16 @@ const RuleRecords = ({ ruleID, timeRange, showAertMetric = false, refresh }) => 
   };
   const onRefreshClick = () => {
     dispatch({ type: "refresh" });
+  };
+
+  const onWidgetQueriesChange = (queries = {}) => {
+    if (!queries?.range?.from || !queries?.range?.to || typeof onTimeRangeChange !== "function") {
+      return;
+    }
+    onTimeRangeChange({
+      start: queries.range.from,
+      end: queries.range.to,
+    });
   };
   const [queryParams, dispatch] = React.useReducer(
     alertReducer,
@@ -225,6 +235,7 @@ const RuleRecords = ({ ruleID, timeRange, showAertMetric = false, refresh }) => 
               state: queryParams.state,
             }}
             refresh={refresh}
+            onGlobalQueriesChange={onWidgetQueriesChange}
           />
         </div>
       ) : null}

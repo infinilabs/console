@@ -34,6 +34,7 @@ import (
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/event"
 	"infini.sh/framework/core/global"
+	"infini.sh/framework/core/kv"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	elasticmodule "infini.sh/framework/modules/elastic"
@@ -290,6 +291,18 @@ func (h *APIHandler) HandleDeleteClusterAction(w http.ResponseWriter, req *http.
 
 	elastic.RemoveInstance(id)
 	elastic.RemoveHostsByClusterID(id)
+	err = kv.DeleteKey(elastic.KVElasticNodeMetadata, []byte(id))
+	if err != nil {
+		log.Errorf("failed to delete node metadata for cluster [%s]: %v", id, err)
+	}
+	err = kv.DeleteKey(elastic.KVElasticIndexMetadata, []byte(id))
+	if err != nil {
+		log.Errorf("failed to delete index metadata for cluster [%s]: %v", id, err)
+	}
+	err = kv.DeleteKey(elastic.KVElasticClusterSettings, []byte(id))
+	if err != nil {
+		log.Errorf("failed to delete cluster settings metadata for cluster [%s]: %v", id, err)
+	}
 	h.WriteDeletedOKJSON(w, id)
 }
 

@@ -1,4 +1,4 @@
-import { Card, Empty, Icon, Input, Spin, Table } from "antd";
+import { Card, Empty, Icon, Spin, Table } from "antd";
 import styles from "./index.less"
 import DatePicker from "@/common/src/DatePicker";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -15,6 +15,7 @@ import { cloneDeep } from "lodash";
 import { Link } from "umi";
 import InstallAgent from "@/components/InstallAgent";
 import { getSystemClusterID } from "@/utils/setup";
+import SearchInput from "@/components/infini/SearchInput";
 
 const COLORS = {
     'INFO': '#e8eef2',
@@ -66,6 +67,7 @@ export default (props) => {
         },
         keyword: ''
     })
+    const [searchKeyword, setSearchKeyword] = useState("")
 
     const fetchData = async (queryParams, timeRange, aggs, queryFilters) => {
         if (!timeRange) return;
@@ -353,11 +355,22 @@ export default (props) => {
                                 <Card className={styles.resultCard}>
                                     <div className={styles.header}>
                                         <div className={styles.searchBox}>
-                                            <Input.Search 
+                                            <SearchInput
+                                                value={searchKeyword}
+                                                allowClear
                                                 placeholder={formatMessage({ id: "cluster.monitor.logs.search.placeholder" })} 
                                                 onSearch={value => {
-                                                    setQueryParams((st) => ({ ...st, from: 0, keyword: `${value ?? ""}`.trim() }));
+                                                    const nextKeyword = `${value ?? ""}`.trim();
+                                                    setSearchKeyword(nextKeyword);
+                                                    setQueryParams((st) => ({ ...st, from: 0, keyword: nextKeyword }));
                                                 }} 
+                                                onChange={(e) => {
+                                                    const nextKeyword = e?.target?.value ?? "";
+                                                    setSearchKeyword(nextKeyword);
+                                                    if (nextKeyword === "") {
+                                                        setQueryParams((st) => ({ ...st, from: 0, keyword: "" }));
+                                                    }
+                                                }}
                                                 enterButton={formatMessage({ id: "form.button.search" })}
                                             />
                                         </div>

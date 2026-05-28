@@ -32,8 +32,9 @@
   .log-file-picker {
     flex: 1 1 auto;
     display: flex;
-    align-items: center;
-    gap: 16px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
     min-width: 0;
   }
 
@@ -48,6 +49,7 @@
 
   .log-file-select {
     width: min(100%, 460px);
+    align-self: flex-start;
 
     .ant-select-selection-selected-value {
       max-width: calc(100% - 24px);
@@ -58,7 +60,7 @@
   }
 
   .log-file-summary {
-    flex: 1 1 auto;
+    width: 100%;
     max-width: 100%;
     display: flex;
     align-items: center;
@@ -67,7 +69,6 @@
     gap: 12px;
     min-width: 0;
     white-space: nowrap;
-    margin-left: 8px;
 
     &__name {
       flex: 0 1 160px;
@@ -192,13 +193,11 @@
     }
 
     .log-file-picker {
-      align-items: flex-start;
-      flex-wrap: wrap;
+      align-items: stretch;
     }
 
     .log-file-summary {
       width: 100%;
-      margin-left: 0;
       justify-content: flex-start;
     }
 
@@ -211,37 +210,39 @@
       width: min(100%, 420px);
     }
 
-    .log-file-select-dropdown {
-      .log-file-option {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        width: 100%;
-        min-width: 0;
-        gap: 16px;
+  }
+}
 
-        &__name {
-          min-width: 0;
-          flex: 1 1 auto;
-          font-weight: 500;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
+.log-file-select-dropdown {
+  .log-file-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-width: 0;
+    gap: 16px;
 
-        &__meta {
-          display: inline-flex;
-          align-items: center;
-          justify-content: flex-end;
-          min-width: 72px;
-          flex-shrink: 0;
-          white-space: nowrap;
-          color: rgba(0, 0, 0, 0.45);
-          font-size: 12px;
-          text-align: right;
-          margin-left: 12px;
-        }
-      }
+    &__name {
+      min-width: 0;
+      flex: 1 1 auto;
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      padding-right: 24px;
+    }
+
+    &__meta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      min-width: 88px;
+      flex-shrink: 0;
+      white-space: nowrap;
+      color: rgba(0, 0, 0, 0.45);
+      font-size: 12px;
+      text-align: right;
+      margin-left: 24px;
     }
   }
 }

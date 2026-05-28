@@ -803,6 +803,15 @@ const RuleForm = (props) => {
           )}
 
           <Form.Item {...tailFormItemLayout}>
+            {typeof props.onSyncTemplateClick === "function" && (
+              <Button
+                loading={props.syncLoading}
+                style={{ marginRight: 8 }}
+                onClick={props.onSyncTemplateClick}
+              >
+                {formatMessage({ id: "alert.rule.form.template.sync" })}
+              </Button>
+            )}
             <Button
               loading={submitLoading}
               type="primary"

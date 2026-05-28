@@ -55,6 +55,116 @@ import (
 	"infini.sh/framework/modules/elastic/common"
 )
 
+const (
+	defaultRuleNotificationTitle   = "🔥 [{{.rule_name}}] Alerting"
+	defaultRuleNotificationMessage = `- Priority:{{.priority}}
+- EventID: {{.event_id}}
+- Target: {{.resource_name}}-{{.objects}}
+- TriggerAt: {{.trigger_at | datetime}}
+{{range .results}}
+Group:{{index .group_values 0}}; Value:{{.result_value}};
+{{end}}`
+	defaultRuleRecoveryTitle   = "🌈 [{{.rule_name}}] Resolved"
+	defaultRuleRecoveryMessage = `- EventID: {{.event_id}}
+- Target: {{.resource_name}}-{{.objects}}
+- TriggerAt: {{.trigger_at | datetime}}
+- ResolveAt: {{.timestamp | datetime}}
+- Duration: {{.duration}}`
+)
+
+func ensureNotificationConfig(rule *alerting.Rule) *alerting.NotificationConfig {
+	if rule.NotificationConfig != nil {
+		return rule.NotificationConfig
+	}
+	if rule.Channels != nil {
+		rule.NotificationConfig = rule.Channels
+		return rule.NotificationConfig
+	}
+	rule.NotificationConfig = &alerting.NotificationConfig{}
+	return rule.NotificationConfig
+}
+
+func applyBuiltinRuleTemplates(rule *alerting.Rule) {
+	notificationConfig := ensureNotificationConfig(rule)
+	notificationConfig.Title = defaultRuleNotificationTitle
+	notificationConfig.Message = defaultRuleNotificationMessage
+	rule.Metrics.Title = defaultRuleNotificationTitle
+	rule.Metrics.Message = defaultRuleNotificationMessage
+
+	if rule.RecoveryNotificationConfig != nil {
+		rule.RecoveryNotificationConfig.Title = defaultRuleRecoveryTitle
+		rule.RecoveryNotificationConfig.Message = defaultRuleRecoveryMessage
+	}
+}
+
+func normalizeRuleForSave(rule *alerting.Rule) error {
+	var err error
+	rule.Metrics.Expression, err = rule.Metrics.GenerateExpression()
+	if err != nil {
+		return err
+	}
+
+	var groups []insight.MetricGroupItem
+	for _, grp := range rule.Metrics.Groups {
+		if grp.Field != "" {
+			groups = append(groups, grp)
+		}
+	}
+	rule.Metrics.Groups = groups
+
+	return nil
+}
+
+func persistUpdatedRule(oldRule, rule *alerting.Rule) error {
+	changeLog, err := util.DiffTwoObject(oldRule, rule)
+	if err != nil {
+		log.Error(err)
+	}
+
+	rule.ID = oldRule.ID
+	rule.Created = oldRule.Created
+	rule.Updated = time.Now()
+
+	if err := normalizeRuleForSave(rule); err != nil {
+		return err
+	}
+
+	if err := orm.Save(nil, rule); err != nil {
+		return err
+	}
+	saveAlertActivity("alerting_rule_change", "update", util.MapStr{
+		"cluster_id":   rule.Resource.ID,
+		"rule_id":      rule.ID,
+		"rule_name":    rule.Name,
+		"cluster_name": rule.Resource.Name,
+	}, changeLog, oldRule)
+
+	if rule.Enabled {
+		exists, err := checkResourceExists(rule)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			return fmt.Errorf("resource [%s] not found", rule.Resource.ID)
+		}
+		task.StopTask(rule.ID)
+		clearKV(rule.ID)
+		eng := alerting2.GetEngine(rule.Resource.Type)
+		ruleTask := task.ScheduleTask{
+			ID:          rule.ID,
+			Interval:    rule.Schedule.Interval,
+			Description: rule.Metrics.Expression,
+			Task:        eng.GenerateTask(*rule),
+		}
+		task.RegisterScheduleTask(ruleTask)
+		task.StartTask(ruleTask.ID)
+	} else {
+		task.DeleteTask(rule.ID)
+	}
+
+	return nil
+}
+
 func (alertAPI *AlertAPI) createRule(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	rules := []alerting.Rule{}
 	err := alertAPI.DecodeJSON(req, &rules)
@@ -420,67 +530,43 @@ func (alertAPI *AlertAPI) updateRule(w http.ResponseWriter, req *http.Request, p
 		log.Error(err)
 		return
 	}
-	rule.Metrics.Expression, err = rule.Metrics.GenerateExpression()
-	if err != nil {
-		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Error(err)
-		return
-	}
-	changeLog, err := util.DiffTwoObject(oldRule, rule)
-	if err != nil {
-		log.Error(err)
-	}
-
-	//protect
 	rule.ID = id
 	rule.Created = create
-	rule.Updated = time.Now()
-
-	//filter empty metric group
-	var groups []insight.MetricGroupItem
-	for _, grp := range rule.Metrics.Groups {
-		if grp.Field != "" {
-			groups = append(groups, grp)
-		}
-	}
-	rule.Metrics.Groups = groups
-
-	err = orm.Save(nil, rule)
+	err = persistUpdatedRule(oldRule, rule)
 	if err != nil {
 		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
 		return
 	}
-	saveAlertActivity("alerting_rule_change", "update", util.MapStr{
-		"cluster_id":   rule.Resource.ID,
-		"rule_id":      rule.ID,
-		"rule_name":    rule.Name,
-		"cluster_name": rule.Resource.Name,
-	}, changeLog, oldRule)
 
-	if rule.Enabled {
-		exists, err = checkResourceExists(rule)
-		if err != nil || !exists {
-			log.Error(err)
-			alertAPI.WriteJSON(w, util.MapStr{
-				"error": err.Error(),
-			}, http.StatusInternalServerError)
-			return
-		}
-		//update task
-		task.StopTask(id)
-		clearKV(rule.ID)
-		eng := alerting2.GetEngine(rule.Resource.Type)
-		ruleTask := task.ScheduleTask{
-			ID:          rule.ID,
-			Interval:    rule.Schedule.Interval,
-			Description: rule.Metrics.Expression,
-			Task:        eng.GenerateTask(*rule),
-		}
-		task.RegisterScheduleTask(ruleTask)
-		task.StartTask(ruleTask.ID)
-	} else {
-		task.DeleteTask(id)
+	alertAPI.WriteJSON(w, util.MapStr{
+		"_id":    rule.ID,
+		"result": "updated",
+	}, 200)
+}
+
+func (alertAPI *AlertAPI) syncRuleTemplate(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	id := ps.MustGetParameter("rule_id")
+	oldRule := &alerting.Rule{ID: id}
+
+	exists, err := orm.Get(oldRule)
+	if !exists || err != nil {
+		log.Error(err)
+		alertAPI.WriteJSON(w, util.MapStr{
+			"_id":    id,
+			"result": "not_found",
+		}, http.StatusNotFound)
+		return
+	}
+
+	rule := *oldRule
+	applyBuiltinRuleTemplates(&rule)
+
+	err = persistUpdatedRule(oldRule, &rule)
+	if err != nil {
+		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Error(err)
+		return
 	}
 
 	alertAPI.WriteJSON(w, util.MapStr{

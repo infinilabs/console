@@ -10,10 +10,11 @@ export default Form.create({ name: "rule_form_edit" })((props) => {
   const { match } = props;
   const ruleID = match.params.rule_id;
   const [submitLoading, setSubmitLoading] = useState(false)
-  const { loading, error, value } = useFetch(
+  const [syncLoading, setSyncLoading] = useState(false);
+  const { loading, error, value, run: reloadRule } = useFetch(
     `/alerting/rule/${ruleID}`,
     null,
-    []
+    [ruleID]
   );
 
   const onSaveClick = useCallback(
@@ -45,6 +46,30 @@ export default Form.create({ name: "rule_form_edit" })((props) => {
     },
     [value]
   );
+
+  const onSyncTemplateClick = useCallback(async () => {
+    setSyncLoading(true);
+    const res = await request(`/alerting/rule/${ruleID}/_sync_template`, {
+      method: "POST",
+    });
+    if (res && res.result == "updated") {
+      message.success(
+        formatMessage({
+          id: "alert.rule.form.template.sync.success",
+        })
+      );
+      reloadRule();
+    } else {
+      message.error(
+        res?.message ||
+          res?.error ||
+          formatMessage({
+            id: "alert.rule.form.template.sync.failed",
+          })
+      );
+    }
+    setSyncLoading(false);
+  }, [reloadRule, ruleID]);
 
   const formatChannelItems = (items) => {
     return items?.map((item) => {
@@ -97,6 +122,8 @@ export default Form.create({ name: "rule_form_edit" })((props) => {
       {...props}
       title={formatMessage({ id: "alert.rule.form.title.edit" })}
       onSaveClick={onSaveClick}
+      onSyncTemplateClick={onSyncTemplateClick}
+      syncLoading={syncLoading}
       value={editValue}
       submitLoading={submitLoading}
     />

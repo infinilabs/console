@@ -4,6 +4,7 @@ import {
   Button,
   Card,
   Empty,
+  Icon,
   InputNumber,
   Spin,
   Switch,
@@ -54,6 +55,8 @@ const SystemSettings = (props) => {
   const [rollupEnabled, setRollupEnabled] = useState(false);
   const [rollupSupported, setRollupSupported] = useState(false);
   const [rollupLoading, setRollupLoading] = useState(false);
+  const [advancedVisible, setAdvancedVisible] = useState(false);
+  const [localTemplatesLoading, setLocalTemplatesLoading] = useState(false);
 
   const normalizeRetentionSize = (value) =>
     `${value || ""}`.replace(/\s+/g, "").toLowerCase();
@@ -199,6 +202,20 @@ const SystemSettings = (props) => {
     );
   };
 
+  const onLocalTemplatesRefresh = async () => {
+    setLocalTemplatesLoading(true);
+    const res = await request("/setting/system/local_templates/_refresh", {
+      method: "POST",
+    });
+    setLocalTemplatesLoading(false);
+    if (res?.error) {
+      return;
+    }
+    message.success(
+      formatMessage({ id: "settings.system.local_templates.update.success" })
+    );
+  };
+
   const renderRetentionSettings = () => {
     if (!canReadCluster) {
       return null;
@@ -283,11 +300,11 @@ const SystemSettings = (props) => {
 
   const renderRollupSettings = () => {
     if (!canReadCluster || !rollupSupported) {
-      return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="" />;
+      return null;
     }
     return (
       <Spin spinning={rollupLoading}>
-        <Card bordered={false}>
+        <Card bordered={false} style={{ marginBottom: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <div>
               <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 8 }}>
@@ -320,6 +337,75 @@ const SystemSettings = (props) => {
     );
   };
 
+  const renderLocalTemplateSettings = () => {
+    if (!canReadCluster) {
+      return null;
+    }
+    return (
+      <Spin spinning={localTemplatesLoading}>
+        <Card bordered={false}>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 8 }}>
+                {formatMessage({ id: "settings.system.local_templates.title" })}
+              </div>
+              <div style={{ color: "rgba(0,0,0,0.65)", marginBottom: 16 }}>
+                {formatMessage({
+                  id: "settings.system.local_templates.description",
+                })}
+              </div>
+            </div>
+            <Button
+              type="primary"
+              loading={localTemplatesLoading}
+              disabled={!canWriteCluster}
+              onClick={onLocalTemplatesRefresh}
+            >
+              {formatMessage({ id: "settings.system.local_templates.refresh" })}
+            </Button>
+          </div>
+          <Alert
+            type="info"
+            showIcon
+            message={formatMessage({ id: "settings.system.local_templates.help" })}
+          />
+        </Card>
+      </Spin>
+    );
+  };
+
+  const renderAdvancedSettings = () => {
+    if (!canReadCluster) {
+      return null;
+    }
+    return (
+      <Card bordered={false}>
+        <Button
+          type="link"
+          style={{
+            padding: 0,
+            height: "auto",
+            color: "rgba(0,0,0,0.65)",
+            fontSize: 12,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+          onClick={() => setAdvancedVisible((visible) => !visible)}
+        >
+          {formatMessage({ id: "settings.system.advanced.title" })}
+          <Icon type={advancedVisible ? "up" : "down"} />
+        </Button>
+        {advancedVisible ? (
+          <div style={{ marginTop: 16 }}>
+            {renderRollupSettings()}
+            {renderLocalTemplateSettings()}
+          </div>
+        ) : null}
+      </Card>
+    );
+  };
+
   const renderGeneralSettings = () => {
     if (!canReadCluster) {
       return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description=""/>;
@@ -327,7 +413,7 @@ const SystemSettings = (props) => {
     return (
       <>
         {renderRetentionSettings()}
-        {rollupSupported ? renderRollupSettings() : null}
+        {renderAdvancedSettings()}
       </>
     );
   };

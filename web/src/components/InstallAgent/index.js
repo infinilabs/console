@@ -12,6 +12,7 @@ export default ({autoInit = false, centerToggle = false}) => {
     const [tokenLoading, setTokenLoading] = useState(false);
     const [enableReverseChannel, setEnableReverseChannel] = useState(false);
     const [noService, setNoService] = useState(false);
+    const [advancedVisible, setAdvancedVisible] = useState(false);
 
     const [seletedGateways, setSeletedGateways] = useState([]);
 
@@ -44,47 +45,59 @@ export default ({autoInit = false, centerToggle = false}) => {
     return (
         <Spin spinning={tokenLoading}>
             <div className={styles.installAgent}>
-                <div className={`${styles.toggleStack} ${centerToggle ? styles.toggleStackCentered : ""}`}>
-                    <div className={styles.reverseChannelToggle}>
-                        <span className={styles.reverseChannelLabel}>
-                            <span>{formatMessage({ id: "agent.install.reverse_channel.label" })}</span>
-                            <Tooltip title={formatMessage({ id: "agent.install.reverse_channel.help" })}>
-                                <Icon type="info-circle" className={styles.reverseChannelInfo} />
-                            </Tooltip>
-                        </span>
-                        <Switch
-                            checked={enableReverseChannel}
-                            onChange={(checked) => {
-                                setEnableReverseChannel(checked);
-                                if (autoInit || tokenInfo) {
-                                    fetchTokenInfo(checked, noService);
-                                }
-                            }}
-                        />
-                    </div>
-                    <div className={styles.reverseChannelToggle}>
-                        <span className={styles.reverseChannelLabel}>
-                            <span>{formatMessage({ id: "agent.install.no_sudo.label" })}</span>
-                            <Tooltip title={formatMessage({ id: "agent.install.no_sudo.help" })}>
-                                <Icon type="info-circle" className={styles.reverseChannelInfo} />
-                            </Tooltip>
-                        </span>
-                        <Switch
-                            checked={noService}
-                            onChange={(checked) => {
-                                setNoService(checked);
-                                if (autoInit || tokenInfo) {
-                                    fetchTokenInfo(enableReverseChannel, checked);
-                                }
-                            }}
-                        />
-                    </div>
-                </div>
                 {!autoInit && <Button  className={styles.gateway} type="primary" onClick={() => fetchTokenInfo()}>
                 {formatMessage({
                     id:"agent.install.label.get_cmd"
                 })}
                 </Button>}
+                <div className={`${styles.advancedWrap} ${centerToggle ? styles.advancedWrapCentered : ""}`}>
+                    <Button
+                        type="link"
+                        className={styles.advancedToggle}
+                        onClick={() => setAdvancedVisible((visible) => !visible)}
+                    >
+                        {formatMessage({ id: "agent.install.advanced.title" })}
+                        <Icon type={advancedVisible ? "up" : "down"} />
+                    </Button>
+                    {advancedVisible ? (
+                        <div className={`${styles.toggleStack} ${centerToggle ? styles.toggleStackCentered : ""}`}>
+                            <div className={styles.reverseChannelToggle}>
+                                <span className={styles.reverseChannelLabel}>
+                                    <span>{formatMessage({ id: "agent.install.reverse_channel.label" })}</span>
+                                    <Tooltip title={formatMessage({ id: "agent.install.reverse_channel.help" })}>
+                                        <Icon type="info-circle" className={styles.reverseChannelInfo} />
+                                    </Tooltip>
+                                </span>
+                                <Switch
+                                    checked={enableReverseChannel}
+                                    onChange={(checked) => {
+                                        setEnableReverseChannel(checked);
+                                        if (autoInit || tokenInfo) {
+                                            fetchTokenInfo(checked, noService);
+                                        }
+                                    }}
+                                />
+                            </div>
+                            <div className={styles.reverseChannelToggle}>
+                                <span className={styles.reverseChannelLabel}>
+                                    <span>{formatMessage({ id: "agent.install.no_sudo.label" })}</span>
+                                    <Tooltip title={formatMessage({ id: "agent.install.no_sudo.help" })}>
+                                        <Icon type="info-circle" className={styles.reverseChannelInfo} />
+                                    </Tooltip>
+                                </span>
+                                <Switch
+                                    checked={noService}
+                                    onChange={(checked) => {
+                                        setNoService(checked);
+                                        if (autoInit || tokenInfo) {
+                                            fetchTokenInfo(enableReverseChannel, checked);
+                                        }
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    ) : null}
+                </div>
                 {
                     tokenInfo && (
                         <div className={styles.shell}>

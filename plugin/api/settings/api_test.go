@@ -50,6 +50,42 @@ func TestNormalizeRetentionSize(t *testing.T) {
 	}
 }
 
+func TestRenderSetupDataTemplateContentSupportsNestedPlaceholders(t *testing.T) {
+	content := `password: "$[[keystore.$[[SETUP_AGENT_PASSWORD_KEY]]]]"` + "\n" + `hosts: $[[SETUP_HOSTS]]`
+	rendered, err := renderSetupDataTemplateContent(content, map[string]string{
+		"SETUP_AGENT_PASSWORD_KEY": "SYSTEM_CLUSTER_INGEST_PASSWORD",
+		"SETUP_HOSTS":              `["192.168.3.8:9200"]`,
+	})
+	if err != nil {
+		t.Fatalf("renderSetupDataTemplateContent returned error: %v", err)
+	}
+	if !strings.Contains(rendered, `password: "$[[keystore.SYSTEM_CLUSTER_INGEST_PASSWORD]]"`) {
+		t.Fatalf("expected nested password placeholder to be resolved, got %s", rendered)
+	}
+	if !strings.Contains(rendered, `hosts: ["192.168.3.8:9200"]`) {
+		t.Fatalf("expected hosts array to be rendered, got %s", rendered)
+	}
+}
+
+func TestResolveSystemClusterEndpointsAndHosts(t *testing.T) {
+	cfg := &elastic.ElasticsearchConfig{
+		Endpoints: []string{"https://192.168.3.8:9200", "https://192.168.3.9:9200"},
+	}
+	schema, endpoints, hosts, err := resolveSystemClusterEndpointsAndHosts(cfg)
+	if err != nil {
+		t.Fatalf("resolveSystemClusterEndpointsAndHosts returned error: %v", err)
+	}
+	if schema != "https" {
+		t.Fatalf("expected https schema, got %s", schema)
+	}
+	if len(endpoints) != 2 || endpoints[0] != "https://192.168.3.8:9200" || endpoints[1] != "https://192.168.3.9:9200" {
+		t.Fatalf("unexpected endpoints %#v", endpoints)
+	}
+	if len(hosts) != 2 || hosts[0] != "192.168.3.8:9200" || hosts[1] != "192.168.3.9:9200" {
+		t.Fatalf("unexpected hosts %#v", hosts)
+	}
+}
+
 func TestSetILMRetentionDaysFromStates(t *testing.T) {
 	policy := map[string]interface{}{
 		"states": []interface{}{

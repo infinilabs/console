@@ -50,6 +50,7 @@ const buildTimestampKeywordFilter = (keyword, timeField) => {
       [timeField]: {
         gte: parsed.clone().startOf("second").toISOString(),
         lte: parsed.clone().endOf("second").toISOString(),
+        format: "strict_date_optional_time",
       },
     },
   };
@@ -224,6 +225,7 @@ const Index = forwardRef((props, ref) => {
       range[queryParams.timeRange.timeField] = {
         gte: queryParams.timeRange.from,
         lte: queryParams.timeRange.to,
+        format: "strict_date_optional_time",
       };
       filter.push({
         range,

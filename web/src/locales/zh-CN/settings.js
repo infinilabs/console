@@ -42,4 +42,12 @@ export default {
   "settings.system.rollup.help":
     "关闭数据汇聚会逐个停止现有的数据汇聚任务，并同步关闭集群设置中的 rollup search。",
   "settings.system.rollup.update.success": "数据汇聚设置已更新",
+  "settings.system.advanced.title": "高级设置",
+  "settings.system.local_templates.title": "本地模板更新",
+  "settings.system.local_templates.description":
+    "刷新 Console 内置并托管在系统集群中的本地配置模板，用于在二进制升级后同步 Agent 与 Gateway 的托管模板内容。",
+  "settings.system.local_templates.refresh": "更新模板",
+  "settings.system.local_templates.help":
+    "会覆盖系统集群中由 Console 托管的 system_ingest_config.yml、task_config.tpl、relay.yml 和 migration.yml，并触发实例重新同步。",
+  "settings.system.local_templates.update.success": "本地模板已更新",
 };

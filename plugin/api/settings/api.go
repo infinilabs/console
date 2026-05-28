@@ -27,21 +27,30 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
+	"path"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	log "github.com/cihub/seelog"
 	"infini.sh/console/core"
 	"infini.sh/console/core/security/enum"
+	agentapi "infini.sh/console/modules/agent/api"
+	setupplugin "infini.sh/console/plugin/setup"
 	"infini.sh/framework/core/api"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/env"
 	"infini.sh/framework/core/global"
+	"infini.sh/framework/core/model"
+	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
+	"infini.sh/framework/lib/fasttemplate"
+	configCommon "infini.sh/framework/modules/configs/common"
 	elasticCommon "infini.sh/framework/modules/elastic/common"
 )
 
@@ -74,6 +83,46 @@ func InitAPI() {
 	api.HandleAPIMethod(api.PUT, "/setting/system/retention", handler.RequireSecureTransport(handler.RequireReplayProtection(handler.RequirePermission(handler.updateRetentionSetting, enum.PermissionElasticsearchClusterWrite))))
 	api.HandleAPIMethod(api.GET, "/setting/system/rollup", handler.RequirePermission(handler.getRollupSetting, enum.PermissionElasticsearchClusterRead))
 	api.HandleAPIMethod(api.PUT, "/setting/system/rollup", handler.RequireSecureTransport(handler.RequireReplayProtection(handler.RequirePermission(handler.updateRollupSetting, enum.PermissionElasticsearchClusterWrite))))
+	api.HandleAPIMethod(api.POST, "/setting/system/local_templates/_refresh", handler.RequireSecureTransport(handler.RequireReplayProtection(handler.RequirePermission(handler.refreshLocalTemplates, enum.PermissionElasticsearchClusterWrite))))
+}
+
+type managedLocalTemplateSpec struct {
+	ID       string
+	AppName  string
+	FileName string
+	Location string
+	DataFile string
+}
+
+var managedLocalTemplateSpecs = []managedLocalTemplateSpec{
+	{
+		ID:       "system_ingest_config_yml",
+		AppName:  "agent",
+		FileName: "system_ingest_config.yml",
+		Location: "system_ingest_config.yml",
+		DataFile: "system_ingest_config.dat",
+	},
+	{
+		ID:       "task_config_tpl",
+		AppName:  "agent",
+		FileName: "task_config.tpl",
+		Location: "task_config.tpl",
+		DataFile: "task_config_tpl.dat",
+	},
+	{
+		ID:       "agent_relay_gateway_config_yml",
+		AppName:  "gateway",
+		FileName: "relay.yml",
+		Location: "relay.yml",
+		DataFile: "gateway_relay.dat",
+	},
+	{
+		ID:       "gateway_migration_yml",
+		AppName:  "gateway",
+		FileName: "migration.yml",
+		Location: "migration.yml",
+		DataFile: "gateway_migration.dat",
+	},
 }
 
 func resolveSystemIndexPrefix() string {
@@ -183,6 +232,148 @@ func normalizeRetentionSize(value interface{}) (string, error) {
 		unit = "tb"
 	}
 	return matches[1] + unit, nil
+}
+
+func renderSetupDataTemplateContent(content string, replacements map[string]string) (string, error) {
+	return fasttemplate.ExecuteFuncNetestStringWithErr(content, "$[[", "]]", func(w io.Writer, tag string) (int, error) {
+		if value, ok := replacements[tag]; ok {
+			return w.Write([]byte(value))
+		}
+		return w.Write([]byte("$[[" + tag + "]]"))
+	})
+}
+
+func resolveSystemClusterEndpointsAndHosts(cfg *elastic.ElasticsearchConfig) (string, []string, []string, error) {
+	if cfg == nil {
+		return "", nil, nil, fmt.Errorf("system cluster config not found")
+	}
+	schema := strings.TrimSpace(cfg.Schema)
+	endpoints := []string{}
+	appendUnique := func(items []string, value string) []string {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			return items
+		}
+		for _, item := range items {
+			if item == value {
+				return items
+			}
+		}
+		return append(items, value)
+	}
+
+	if cfg.Endpoint != "" {
+		endpoints = appendUnique(endpoints, cfg.Endpoint)
+	}
+	for _, item := range cfg.Endpoints {
+		endpoints = appendUnique(endpoints, item)
+	}
+	if len(endpoints) == 0 {
+		if cfg.Host != "" {
+			if schema == "" {
+				schema = "http"
+			}
+			endpoints = appendUnique(endpoints, fmt.Sprintf("%s://%s", schema, cfg.Host))
+		}
+		for _, item := range cfg.Hosts {
+			if schema == "" {
+				schema = "http"
+			}
+			endpoints = appendUnique(endpoints, fmt.Sprintf("%s://%s", schema, item))
+		}
+	}
+	if len(endpoints) == 0 {
+		return "", nil, nil, fmt.Errorf("system cluster endpoint not found")
+	}
+
+	hosts := []string{}
+	for _, endpoint := range endpoints {
+		parsed, err := url.Parse(endpoint)
+		if err != nil {
+			return "", nil, nil, err
+		}
+		if schema == "" {
+			schema = parsed.Scheme
+		}
+		host := parsed.Host
+		if host == "" {
+			host = endpoint
+		}
+		hosts = appendUnique(hosts, host)
+	}
+	if schema == "" {
+		schema = "http"
+	}
+	return schema, endpoints, hosts, nil
+}
+
+func loadManagedLocalTemplateContent(dataFile string, replacements map[string]string) (string, error) {
+	dataFilePath := path.Join(global.Env().GetConfigDir(), "setup", "common", "data", dataFile)
+	content, err := util.FileGetContent(dataFilePath)
+	if err != nil {
+		return "", err
+	}
+	if len(content) == 0 {
+		return "", fmt.Errorf("template file %s is empty", dataFile)
+	}
+	return renderSetupDataTemplateContent(string(content), replacements)
+}
+
+func saveManagedLocalTemplate(spec managedLocalTemplateSpec, content string, version int64, updated time.Time) error {
+	config := agentapi.RemoteConfig{}
+	config.ID = spec.ID
+	config.Updated = &updated
+	config.Metadata = model.Metadata{
+		Category: "app_settings",
+		Name:     spec.AppName,
+		Labels: util.MapStr{
+			"instance": "_all",
+		},
+	}
+	config.Payload = configCommon.ConfigFile{
+		Name:     spec.FileName,
+		Location: spec.Location,
+		Content:  content,
+		Updated:  version,
+		Version:  version,
+		Size:     int64(len(content)),
+		Managed:  true,
+	}
+	return orm.Save(&orm.Context{Refresh: "wait_for"}, &config)
+}
+
+func refreshManagedLocalTemplates(client elastic.API, cfg *elastic.ElasticsearchConfig) ([]string, error) {
+	indexPrefix := resolveSystemIndexPrefix()
+	agentUsername, passwordKey, err := setupplugin.ResolveManagedAgentTemplateCredentials(client, indexPrefix)
+	if err != nil {
+		return nil, err
+	}
+	schema, endpoints, hosts, err := resolveSystemClusterEndpointsAndHosts(cfg)
+	if err != nil {
+		return nil, err
+	}
+	replacements := map[string]string{
+		"SETUP_AGENT_USERNAME":     agentUsername,
+		"SETUP_AGENT_PASSWORD_KEY": passwordKey,
+		"SETUP_SCHEME":             schema,
+		"SETUP_HOSTS":              string(util.MustToJSONBytes(hosts)),
+		"SETUP_ENDPOINTS":          string(util.MustToJSONBytes(endpoints)),
+		"SETUP_INDEX_PREFIX":       indexPrefix,
+	}
+	now := time.Now()
+	version := now.Unix()
+	updatedFiles := make([]string, 0, len(managedLocalTemplateSpecs))
+	for _, spec := range managedLocalTemplateSpecs {
+		content, err := loadManagedLocalTemplateContent(spec.DataFile, replacements)
+		if err != nil {
+			return nil, err
+		}
+		if err := saveManagedLocalTemplate(spec, content, version, now); err != nil {
+			return nil, err
+		}
+		updatedFiles = append(updatedFiles, spec.Location)
+	}
+	return updatedFiles, nil
 }
 
 func rawJSONRequest(requester rawRequester, cfg *elastic.ElasticsearchConfig, method, path string, payload interface{}) (map[string]interface{}, int, error) {
@@ -1093,6 +1284,29 @@ func getSystemClusterClient() (elastic.API, *elastic.ElasticsearchConfig, error)
 		return nil, nil, fmt.Errorf("system cluster client not found")
 	}
 	return client, cfg, nil
+}
+
+func (h *SettingsAPI) refreshLocalTemplates(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	if err := setupplugin.EnsureSystemClusterBasicAuth(); err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	client, cfg, err := getSystemClusterClient()
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	updatedFiles, err := refreshManagedLocalTemplates(client, cfg)
+	if err != nil {
+		log.Error(err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	h.WriteJSON(w, util.MapStr{
+		"updated_files": updatedFiles,
+	}, http.StatusOK)
 }
 
 func (h *SettingsAPI) getRetentionSetting(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {

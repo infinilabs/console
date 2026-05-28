@@ -23,7 +23,7 @@ export function getListBreadcrumbs() {
   return [
     {
       text: "views",
-      href: `/`,
+      href: `/data/views`,
     },
   ];
 }
@@ -33,7 +33,7 @@ export function getCreateBreadcrumbs() {
     ...getListBreadcrumbs(),
     {
       text: "Create view",
-      href: `/create`,
+      href: `/data/views/create`,
     },
   ];
 }
@@ -43,7 +43,7 @@ export function getEditBreadcrumbs(indexPattern: IndexPattern) {
     ...getListBreadcrumbs(),
     {
       text: indexPattern.title,
-      href: `/patterns/${indexPattern.id}`,
+      href: `/data/views/patterns/${indexPattern.id}`,
     },
   ];
 }

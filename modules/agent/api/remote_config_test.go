@@ -38,6 +38,7 @@ func TestRenderAgentTaskTemplateConfigProducesValidYAML(t *testing.T) {
 		Elasticsearch []struct {
 			ID          string   `config:"id"`
 			ClusterUUID string   `config:"cluster_uuid"`
+			Monitored   bool     `config:"monitored"`
 			Endpoints   []string `config:"endpoints"`
 			BasicAuth   struct {
 				Password string `config:"password"`
@@ -69,6 +70,9 @@ func TestRenderAgentTaskTemplateConfigProducesValidYAML(t *testing.T) {
 	}
 	if got := parsed.Elasticsearch[0].ClusterUUID; got != "uuid:cluster" {
 		t.Fatalf("expected cluster uuid to round-trip, got %#v", got)
+	}
+	if !parsed.Elasticsearch[0].Monitored {
+		t.Fatalf("expected generated elasticsearch config to enable monitoring")
 	}
 	if got := parsed.Elasticsearch[0].BasicAuth.Password; got != "$[[keystore.cluster-1_password]]" {
 		t.Fatalf("expected password placeholder to round-trip, got %#v", got)
@@ -168,11 +172,15 @@ func TestTaskConfigTemplateRendersEndpointArrayForLegacyAgent(t *testing.T) {
 
 	var parsed struct {
 		Elasticsearch []struct {
+			Monitored bool     `config:"monitored"`
 			Endpoints []string `config:"endpoints"`
 		} `config:"elasticsearch"`
 	}
 	if err := cfg.Unpack(&parsed); err != nil {
 		t.Fatalf("expected rendered task config to unpack, got %v", err)
+	}
+	if len(parsed.Elasticsearch) != 1 || !parsed.Elasticsearch[0].Monitored {
+		t.Fatalf("expected rendered task config to enable monitoring, got %#v", parsed.Elasticsearch)
 	}
 	if len(parsed.Elasticsearch) != 1 || len(parsed.Elasticsearch[0].Endpoints) != 1 || parsed.Elasticsearch[0].Endpoints[0] != "http://192.168.3.8:9200" {
 		t.Fatalf("expected single endpoint array, got %#v", parsed.Elasticsearch)

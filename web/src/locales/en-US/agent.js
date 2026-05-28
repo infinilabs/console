@@ -96,6 +96,7 @@ export default {
   "agent.logs.button.view_latest": "Follow Latest",
   "agent.logs.button.goto": "Goto",
   "agent.install.setup.copy.success": "Copied to clipboard successfully!",
+  "agent.install.advanced.title": "Advanced configuration",
   "agent.install.reverse_channel.label": "Enable reverse channel",
   "agent.install.reverse_channel.help": "Disabled by default. Enable only when Console cannot reach the Agent port, such as in containers; when enabled, Agent connects back to Console.",
   "agent.install.no_sudo.label": "No sudo access",

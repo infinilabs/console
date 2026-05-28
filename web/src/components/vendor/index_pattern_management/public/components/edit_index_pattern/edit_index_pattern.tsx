@@ -152,7 +152,7 @@ export const EditIndexPattern = withRouter(
           Promise.resolve(
             data.indexPatterns.delete(indexPattern.id || id)
           ).then(function() {
-            history.push("");
+            history.push("/data/views");
           });
         }
       }
@@ -178,6 +178,23 @@ export const EditIndexPattern = withRouter(
       id: "explore.view.index_pattern.detail_title",
     });
 
+    const breadcrumbList = [
+      {
+        title: formatMessage({ id: "menu.home" }),
+        href: "/",
+      },
+      {
+        title: formatMessage({ id: "menu.data" }),
+      },
+      {
+        title: formatMessage({ id: "menu.data.view" }),
+        href: "/data/views",
+      },
+      {
+        title: indexPattern?.viewName || indexPattern?.title,
+      },
+    ];
+
     // chrome.docTitle.change(indexPattern.title);
 
     const showTagsSection = Boolean(
@@ -185,7 +202,7 @@ export const EditIndexPattern = withRouter(
     );
 
     return (
-      <PageHeaderWrapper>
+      <PageHeaderWrapper breadcrumbList={breadcrumbList}>
         <EuiPanel paddingSize={"l"}>
           <div
             data-test-subj="editIndexPattern"
@@ -198,7 +215,7 @@ export const EditIndexPattern = withRouter(
               refreshFields={refreshFields}
               deleteIndexPatternClick={removePattern}
               defaultIndex={defaultIndex}
-              goBack={() => history.push("")}
+              goBack={() => history.push("/data/views")}
             />
             {/* <EuiSpacer size="s" />
             {showTagsSection && (

@@ -89,6 +89,7 @@ export default {
   "agent.logs.button.view_latest": "跟随最新",
   "agent.logs.button.goto": "确定",
   "agent.install.setup.copy.success": "已成功复制到剪贴板！",
+  "agent.install.advanced.title": "高级配置",
   "agent.install.reverse_channel.label": "启用反向通道",
   "agent.install.reverse_channel.help": "默认关闭。仅在 Agent 端口不可达时开启（如容器环境）；开启后 Agent 会回连 Console。",
   "agent.install.no_sudo.label": "无 sudo 权限",

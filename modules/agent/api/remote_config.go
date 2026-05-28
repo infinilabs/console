@@ -419,7 +419,7 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 
 func renderAgentTaskElasticsearchConfig(taskID, clusterUUID, version, distribution, nodeEndpoint, username, password string) string {
 	return fmt.Sprintf(
-		"\n  - id: %s\n    name: %s\n    cluster_uuid: %s\n    enabled: true\n    distribution: %s\n    version: %s\n    endpoints: [%s]\n    discovery:\n      enabled: false\n    basic_auth:\n      username: %s\n      password: %s\n    traffic_control:\n      enabled: true\n      max_qps_per_node: 100\n      max_bytes_per_node: 10485760\n      max_connection_per_node: 5\n",
+		"\n  - id: %s\n    name: %s\n    cluster_uuid: %s\n    enabled: true\n    monitored: true\n    distribution: %s\n    version: %s\n    endpoints: [%s]\n    discovery:\n      enabled: false\n    basic_auth:\n      username: %s\n      password: %s\n    traffic_control:\n      enabled: true\n      max_qps_per_node: 100\n      max_bytes_per_node: 10485760\n      max_connection_per_node: 5\n",
 		util.MustToJSON(taskID),
 		util.MustToJSON(taskID),
 		util.MustToJSON(clusterUUID),

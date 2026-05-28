@@ -47,4 +47,13 @@ export default {
   "settings.system.rollup.help":
     "Turning Rollup off will stop rollup jobs and disable rollup search in cluster settings.",
   "settings.system.rollup.update.success": "Rollup setting updated successfully",
+  "settings.system.advanced.title": "Advanced settings",
+  "settings.system.local_templates.title": "Local template refresh",
+  "settings.system.local_templates.description":
+    "Refresh the built-in local configuration templates managed by Console in the system cluster after a binary upgrade.",
+  "settings.system.local_templates.refresh": "Refresh templates",
+  "settings.system.local_templates.help":
+    "This overwrites the Console-managed system_ingest_config.yml, task_config.tpl, relay.yml, and migration.yml documents in the system cluster and triggers instances to sync them again.",
+  "settings.system.local_templates.update.success":
+    "Local templates updated successfully",
 };

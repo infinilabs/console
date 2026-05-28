@@ -169,6 +169,42 @@ func EnsureSystemClusterBasicAuth() error {
 	return nil
 }
 
+func ResolveManagedAgentTemplateCredentials(client elastic.API, indexPrefix string) (string, string, error) {
+	if client == nil {
+		return "", "", fmt.Errorf("system cluster client not found")
+	}
+	version := client.GetVersion()
+	distribution := version.Distribution
+	if distribution == "" {
+		distribution = elastic.Elasticsearch
+	}
+	if distribution == elastic.Easysearch {
+		agentPassword, err := getOrCreateIngestPassword()
+		if err != nil {
+			return "", "", err
+		}
+		if _, err := client.GetPrivileges(); err != nil {
+			return "", "", err
+		}
+		if err := initIngestUser(client, indexPrefix, ingestUser, agentPassword); err != nil {
+			return "", "", err
+		}
+		return ingestUser, systemClusterIngestPasswordKey, nil
+	}
+	if err := EnsureSystemClusterBasicAuth(); err != nil {
+		return "", "", err
+	}
+	sysClusterID, ok := lookupSystemClusterID()
+	if !ok {
+		return "", "SYSTEM_CLUSTER_PASS", nil
+	}
+	cfg := elastic.GetConfigNoPanic(sysClusterID)
+	if cfg != nil && cfg.BasicAuth != nil {
+		return cfg.BasicAuth.Username, "SYSTEM_CLUSTER_PASS", nil
+	}
+	return "", "SYSTEM_CLUSTER_PASS", nil
+}
+
 func lookupSystemClusterID() (string, bool) {
 	value := global.Lookup(elastic.GlobalSystemElasticsearchID)
 	sysClusterID, ok := value.(string)

@@ -58,6 +58,7 @@ const Index = forwardRef((props, ref) => {
     onRow = null,
     showEmptyUI = false,
     setShowEmptyUI = null,
+    scroll,
   } = props;
 
   const headerExtra = headerToobarExtra.getExtra
@@ -617,6 +618,7 @@ const Index = forwardRef((props, ref) => {
                   loading={loading}
                   columns={columnsNew}
                   dataSource={tableDataSource}
+                  scroll={scroll}
                   rowKey={"__listview_row_key"}
                   onChange={onTableChange}
                   pagination={{

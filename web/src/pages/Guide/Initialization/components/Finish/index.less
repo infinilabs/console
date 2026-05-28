@@ -1,4 +1,32 @@
 .finish {
+    .panel {
+        width: 100%;
+        max-width: 860px;
+        margin: auto;
+    }
+
+    .pendingAlert {
+        margin-bottom: 12px;
+        text-align: center;
+
+        :global(.ant-alert-message) {
+            white-space: nowrap;
+        }
+    }
+
+    .statusAlert {
+        margin-bottom: 12px;
+        text-align: left;
+    }
+
+    .configTable {
+        text-align: center;
+    }
+
+    .tipsAlert {
+        margin-top: 12px;
+        text-align: center;
+    }
     
     .success {
         font-size: 46px;
@@ -24,7 +52,7 @@
             }
             
             .ant-result-extra {
-                margin-top: 56px;
+                margin-top: 32px;
                 .ant-btn {
                     width: 250px;
                 }

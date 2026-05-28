@@ -105,14 +105,14 @@ export default ({ formData, onPrev }) => {
       >
         {isInitializing ? (
           <Alert
-            style={{ width: "60%", margin: "auto", marginBottom: 12, textAlign: "center" }}
+            className={`${styles.panel} ${styles.pendingAlert}`}
             message={formatMessage({ id: "guide.initialization.finish.pending.desc" })}
             type="info"
           />
         ) : null}
         {isFailed ? (
           <Alert
-            style={{ width: "60%", margin: "auto", marginBottom: 12, textAlign: "left" }}
+          className={`${styles.panel} ${styles.statusAlert}`}
             message={formatMessage({ id: "guide.initialization.finish.failed.desc" })}
             description={setupError}
             type="error"
@@ -122,7 +122,7 @@ export default ({ formData, onPrev }) => {
         <Descriptions 
           bordered 
           size="small" 
-          style={{width: "60%", margin: "auto", textAlign: 'center'}} 
+        className={`${styles.panel} ${styles.configTable}`}
           title={formatMessage({ id: "guide.configuration.title" })} 
           column={1}
         >
@@ -145,7 +145,7 @@ export default ({ formData, onPrev }) => {
           }
           <Descriptions.Item label={formatMessage({ id: "guide.configuration.credential_secret" })}>{credential_secret}</Descriptions.Item>
         </Descriptions>
-        <Alert style={{width: "60%", margin: "auto", marginTop: 12, textAlign: 'center'}} message={(
+        <Alert className={`${styles.panel} ${styles.tipsAlert}`} message={(
           <div>
             {formatMessage({ id: "guide.configuration.tips"})}
             <a style={{ marginLeft: 12 }} onClick={onDownload} ><Icon type={"download"}/></a>

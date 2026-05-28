@@ -337,6 +337,19 @@ const Logs = (props) => {
     autoRefreshTimeoutRef.current = setTimeout(autoRefresh, 5000);
   };
 
+  const refreshCurrentLog = useCallback(async () => {
+    const currentState = logStateRef.current;
+    if (!currentState.fileName) {
+      await fetchLogs(true, currentState.file);
+      return;
+    }
+    setLogState((st) => ({
+      ...st,
+      autoScrollToBottom: st.followLatestEnabled,
+    }));
+    await loadNextPage(true);
+  }, [loadNextPage]);
+
   useEffect(() => {
     return clearAutoRefresh;
   }, []);
@@ -475,7 +488,7 @@ const Logs = (props) => {
             ghost
             onClick={() => {
               clearAutoRefresh();
-              fetchLogs(true, logStateRef.current.file);
+              refreshCurrentLog();
             }}
           >
             {formatMessage({ id: "form.button.refresh" })}

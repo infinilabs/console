@@ -128,6 +128,16 @@ export default (props) => {
         fetchData(queryParams, timeRange, aggs, queryFilters)
     }, [JSON.stringify(queryParams), timeRange, JSON.stringify(aggs), JSON.stringify(queryFilters)])
 
+    const lastTimeRangeKeyRef = useRef(`${timeRange?.min || ""}:${timeRange?.max || ""}`);
+
+    useEffect(() => {
+        const nextTimeRangeKey = `${timeRange?.min || ""}:${timeRange?.max || ""}`;
+        if (lastTimeRangeKeyRef.current !== nextTimeRangeKey && queryParams.from !== 0) {
+            setQueryParams((st) => ({ ...st, from: 0 }));
+        }
+        lastTimeRangeKeyRef.current = nextTimeRangeKey;
+    }, [timeRange?.min, timeRange?.max, queryParams.from]);
+
     const columns = [
         {
             title: formatMessage({ id: "cluster.monitor.logs.timestamp" }),
@@ -235,15 +245,20 @@ export default (props) => {
         ],
     }
 
+    const totalHits = useMemo(() => {
+        return result?.total?.value || result?.total || 0;
+    }, [result?.total]);
+
     const isNotEmpty = useMemo(() => {
-        return result?.data?.length > 0
-    }, [result?.data?.length])
+        return totalHits > 0
+    }, [totalHits])
 
     const onHistogramQueriesChange = (nextQueries = {}) => {
         const nextRange = nextQueries?.range;
         if (!nextRange?.from || !nextRange?.to || typeof handleTimeChange !== "function") {
             return;
         }
+        setQueryParams((st) => ({ ...st, from: 0 }));
         handleTimeChange({
             start: nextRange.from,
             end: nextRange.to,
@@ -255,30 +270,11 @@ export default (props) => {
             <div className={styles.logs}>
                 {
                     isNotEmpty ? (
-                        <div className={`${styles.logLayout} ${sideVisible ? styles.expand : styles.collapse}`}>
-                            <div className={styles.side}>
-                                <Side
-                                    aggs={aggs}
-                                    data={result?.aggregations || {}}
-                                    filters={queryParams?.filters || {}}
-                                    onFacetChange={(v) => {
-                                        const newFilters = cloneDeep(queryParams.filters) || {}
-                                        if (!v.value || v.value.length === 0) {
-                                            delete newFilters[v.field];
-                                        } else {
-                                            newFilters[v.field] = v.value;
-                                        }
-                                        setQueryParams((st) => ({ ...st, from: 0, filters: newFilters }));
-                                    }}
-                                    onReset={() => {
-                                        setQueryParams((st) => ({ ...st, from: 0, filters: {} }));
-                                    }}
-                                />
-                            </div>
-                            <div className={styles.result}>
-                                <div className={styles.header}>
-                                    <span
-                                        className={styles.expandAndCollapse}
+                        <div className={styles.logLayout}>
+                            <div className={`${styles.side} ${!sideVisible ? styles.sideCollapsed : ""}`}>
+                                <div className={styles.sideHeader}>
+                                    <div
+                                        className={styles.sideToggle}
                                         onClick={() => setSideVisible((visible) => !visible)}
                                         title={
                                             sideVisible
@@ -286,8 +282,36 @@ export default (props) => {
                                                 : formatMessage({ id: "listview.side.button.expand" })
                                         }
                                     >
-                                        <Icon type={sideVisible ? "left" : "right"} style={{ fontSize: 12 }} />
-                                    </span>
+                                        <Icon type={sideVisible ? "down" : "right"} style={{ fontSize: 12 }} />
+                                    </div>
+                                    <div className={styles.sideTitle}>
+                                        {formatMessage({ id: "listview.side.filter" })}
+                                    </div>
+                                </div>
+                                {sideVisible ? (
+                                    <div className={styles.sideBody}>
+                                        <Side
+                                            aggs={aggs}
+                                            data={result?.aggregations || {}}
+                                            filters={queryParams?.filters || {}}
+                                            onFacetChange={(v) => {
+                                                const newFilters = cloneDeep(queryParams.filters) || {}
+                                                if (!v.value || v.value.length === 0) {
+                                                    delete newFilters[v.field];
+                                                } else {
+                                                    newFilters[v.field] = v.value;
+                                                }
+                                                setQueryParams((st) => ({ ...st, from: 0, filters: newFilters }));
+                                            }}
+                                            onReset={() => {
+                                                setQueryParams((st) => ({ ...st, from: 0, filters: {} }));
+                                            }}
+                                        />
+                                    </div>
+                                ) : null}
+                            </div>
+                            <div className={styles.result}>
+                                <div className={styles.header}>
                                     <div className={styles.searchBox}>
                                         <Input.Search 
                                             placeholder={formatMessage({ id: "cluster.monitor.logs.search.placeholder" })} 

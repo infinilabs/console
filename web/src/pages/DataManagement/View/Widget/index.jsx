@@ -102,6 +102,116 @@ export default (props) => {
     setCacheRecord(record)
   }
 
+  const parseBucketSize = (bucketSize) => {
+    const matched = `${bucketSize || ""}`.trim().match(/^(\d+)(ms|s|m|h|d|w|M|y)$/);
+    if (!matched) {
+      return null;
+    }
+    const value = parseInt(matched[1], 10);
+    if (!Number.isInteger(value) || value <= 0) {
+      return null;
+    }
+    return {
+      value,
+      unit: matched[2],
+    };
+  }
+
+  const getMomentAddUnit = (unit) => {
+    const unitMap = {
+      ms: "milliseconds",
+      s: "seconds",
+      m: "minutes",
+      h: "hours",
+      d: "days",
+      w: "weeks",
+      M: "months",
+      y: "years",
+    };
+    return unitMap[unit];
+  }
+
+  const floorMomentToBucket = (value, bucketSize) => {
+    const parsedBucket = parseBucketSize(bucketSize);
+    const currentMoment = moment(value);
+    if (!parsedBucket || !currentMoment.isValid()) {
+      return null;
+    }
+    const { value: bucketValue, unit } = parsedBucket;
+    switch (unit) {
+      case "ms":
+        return currentMoment.clone();
+      case "s":
+        return currentMoment.clone().milliseconds(0).seconds(
+          Math.floor(currentMoment.seconds() / bucketValue) * bucketValue
+        );
+      case "m":
+        return currentMoment
+          .clone()
+          .startOf("hour")
+          .add(Math.floor(currentMoment.minutes() / bucketValue) * bucketValue, "minutes");
+      case "h":
+        return currentMoment
+          .clone()
+          .startOf("day")
+          .add(Math.floor(currentMoment.hours() / bucketValue) * bucketValue, "hours");
+      case "d":
+        return currentMoment
+          .clone()
+          .startOf("month")
+          .add(Math.floor((currentMoment.date() - 1) / bucketValue) * bucketValue, "days");
+      case "w": {
+        const baseMoment = moment(0).startOf("week");
+        const diff = currentMoment.clone().startOf("week").diff(baseMoment, "weeks");
+        return baseMoment.clone().add(Math.floor(diff / bucketValue) * bucketValue, "weeks");
+      }
+      case "M":
+        return currentMoment
+          .clone()
+          .startOf("year")
+          .add(Math.floor(currentMoment.month() / bucketValue) * bucketValue, "months");
+      case "y": {
+        const baseMoment = moment(0).startOf("year");
+        const diff = currentMoment.clone().startOf("year").diff(baseMoment, "years");
+        return baseMoment.clone().add(Math.floor(diff / bucketValue) * bucketValue, "years");
+      }
+      default:
+        return null;
+    }
+  }
+
+  const ceilMomentToBucket = (value, bucketSize) => {
+    const parsedBucket = parseBucketSize(bucketSize);
+    const currentMoment = moment(value);
+    const flooredMoment = floorMomentToBucket(value, bucketSize);
+    if (!parsedBucket || !currentMoment.isValid() || !flooredMoment) {
+      return null;
+    }
+    if (currentMoment.valueOf() === flooredMoment.valueOf()) {
+      return flooredMoment.clone();
+    }
+    return flooredMoment.clone().add(parsedBucket.value, getMomentAddUnit(parsedBucket.unit));
+  }
+
+  const alignRangeToBucket = (range, bucketSize) => {
+    const parsedBucket = parseBucketSize(bucketSize);
+    if (!parsedBucket || !range?.from || !range?.to) {
+      return null;
+    }
+    const startMoment = floorMomentToBucket(range.from, bucketSize);
+    let endMoment = ceilMomentToBucket(range.to, bucketSize);
+    if (!startMoment || !endMoment) {
+      return null;
+    }
+    if (endMoment.valueOf() === startMoment.valueOf()) {
+      endMoment = endMoment.clone().add(parsedBucket.value, getMomentAddUnit(parsedBucket.unit));
+    }
+    return {
+      from: startMoment.toISOString(),
+      to: endMoment.toISOString(),
+    };
+  }
+
   const handleZoom = (newZoom) => {
     if (newZoom === 0) {
       setZoom(newZoom)
@@ -146,7 +256,10 @@ export default (props) => {
     if (!params || !params.range) return;
     const { range } = params;
     let newRange = {};
-    if (range.from === range.to) {
+    const alignedRange = alignRangeToBucket(range, fetchParamsCacheRef.current?.bucketSize);
+    if (alignedRange) {
+      newRange = alignedRange;
+    } else if (range.from === range.to) {
       if (fetchParamsCacheRef.current?.bucketSize) {
         let value = parseInt(fetchParamsCacheRef.current?.bucketSize)   
         let unit = (fetchParamsCacheRef.current?.bucketSize).replace(/\d+/gi,"") 

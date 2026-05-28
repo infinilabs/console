@@ -191,25 +191,23 @@ export const AgentRowDetail = ({ agentID, t }) => {
         width: 160,
         dataIndex: "node_info.name",
         render: (text, record) => {
-          return record.cluster_id ? (
+          const content = record.cluster_id ? (
+            <Link
+              to={`/cluster/monitor/${record.cluster_id}/nodes/${record.id}?_g={"cluster_name":"${record.cluster_info.cluster_name}","node_name":"${text}"}`}
+            >
+              {text}
+            </Link>
+          ) : (
+            text
+          );
+
+          return (
             <Tooltip title={text}>
               <div className={styles.cellWrap}>
                 <div className={styles.cellIcon}>
                   <Icon type="database" />
                 </div>
-                <div className={styles.cellContent}>
-                  <Link
-                    to={`/cluster/monitor/${record.cluster_id}/nodes/${record.id}?_g={"cluster_name":"${record.cluster_info.cluster_name}","node_name":"${text}"}`}
-                  >
-                    {text}
-                  </Link>
-                </div>
-              </div>
-            </Tooltip>
-          ) : (
-            <Tooltip title={text}>
-              <div className={styles.cellWrap}>
-                <div className={styles.cellContent}>{text}</div>
+                <div className={styles.cellContent}>{content}</div>
               </div>
             </Tooltip>
           );

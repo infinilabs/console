@@ -6,6 +6,7 @@ import {
   Tooltip,
   Slider,
   Popover,
+  Switch,
 } from "antd";
 import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import { VariableSizeList as List } from "react-window";
@@ -49,11 +50,15 @@ const createInitialLogState = (viewerVersion = 0) => ({
   totalRowsKnown: false,
   startLineNumber: 1,
   loadTailLines: 0,
+  followLatestEnabled: false,
   autoScrollToBottom: false,
   viewerVersion,
 });
 
-const getSelectedFileState = (logFile = {}) => {
+const getSelectedFileState = (
+  logFile = {},
+  { followLatestEnabled = false, autoScrollToBottom = false } = {}
+) => {
   const totalRowsKnown = hasKnownTotalRows(logFile);
   return {
     file: logFile?.name ? getLogFileKey(logFile) : "",
@@ -68,7 +73,8 @@ const getSelectedFileState = (logFile = {}) => {
     isNextPageLoading: false,
     startLineNumber: totalRowsKnown ? getLatestStartLine(logFile?.total_rows) : 1,
     loadTailLines: 0,
-    autoScrollToBottom: totalRowsKnown,
+    followLatestEnabled,
+    autoScrollToBottom,
   };
 };
 
@@ -118,6 +124,11 @@ const Logs = (props) => {
         logFiles.find((logFile) => getLogFileKey(logFile) === preferredFile) ||
         logFiles[0] ||
         {};
+      const currentState = logStateRef.current;
+      const keepFollowLatest =
+        preferredFile && preferredFile === currentState.file
+          ? currentState.followLatestEnabled
+          : false;
       requestSeqRef.current += 1;
       setLogState((st) => {
         return {
@@ -125,7 +136,10 @@ const Logs = (props) => {
           agentStatus: undefined,
           logFiles,
           viewerVersion: st.viewerVersion + 1,
-          ...getSelectedFileState(selectedFile),
+          ...getSelectedFileState(selectedFile, {
+            followLatestEnabled: keepFollowLatest,
+            autoScrollToBottom: keepFollowLatest,
+          }),
         };
       });
     } else {
@@ -244,7 +258,12 @@ const Logs = (props) => {
   };
 
   const resetViewerPosition = useCallback(
-    ({ startLineNumber = 1, autoScrollToBottom = false, loadTailLines = 0 }) => {
+    ({
+      startLineNumber = 1,
+      autoScrollToBottom = false,
+      loadTailLines = 0,
+      followLatestEnabled,
+    }) => {
       requestSeqRef.current += 1;
       setLogState((st) => {
         return {
@@ -257,6 +276,9 @@ const Logs = (props) => {
           startLineNumber:
             loadTailLines > 0 ? 0 : Math.max(startLineNumber || 1, 1),
           loadTailLines,
+          ...(typeof followLatestEnabled === "boolean"
+            ? { followLatestEnabled }
+            : {}),
           autoScrollToBottom,
         };
       });
@@ -285,7 +307,11 @@ const Logs = (props) => {
     if (!Number.isInteger(gotoLine) || gotoLine < 1) {
       return false;
     }
-    resetViewerPosition({ startLineNumber: gotoLine, autoScrollToBottom: false });
+    resetViewerPosition({
+      startLineNumber: gotoLine,
+      autoScrollToBottom: false,
+      followLatestEnabled: false,
+    });
     setGotoPopoverVisible(false);
     return true;
   };
@@ -298,7 +324,7 @@ const Logs = (props) => {
       return {
         ...st,
         autoRefreshLoading: true,
-        autoScrollToBottom: true,
+        autoScrollToBottom: st.followLatestEnabled,
       };
     });
     await loadNextPage(true);
@@ -315,18 +341,28 @@ const Logs = (props) => {
     return clearAutoRefresh;
   }, []);
 
-  const onViewLatestClick = () => {
+  const onViewLatestClick = (checked) => {
+    if (!checked) {
+      setLogState((st) => ({
+        ...st,
+        followLatestEnabled: false,
+        autoScrollToBottom: false,
+      }));
+      return;
+    }
     clearAutoRefresh();
     if (logStateRef.current.totalRowsKnown) {
       resetViewerPosition({
         startLineNumber: getLatestStartLine(logStateRef.current.totalRows),
         autoScrollToBottom: true,
+        followLatestEnabled: true,
       });
       return;
     }
     resetViewerPosition({
       loadTailLines: TAIL_PRELOAD_LINES,
       autoScrollToBottom: true,
+      followLatestEnabled: true,
     });
   };
 
@@ -358,7 +394,7 @@ const Logs = (props) => {
           <div className="title">
           {formatMessage({ id: "agent.install.title" })}
           </div>
-          <InstallAgent />
+          <InstallAgent centerToggle={true} />
         </div>
       </div>
     );
@@ -424,9 +460,16 @@ const Logs = (props) => {
           </div>
         </div>
         <div className="log-actions">
-          <Button type="primary" ghost onClick={onViewLatestClick}>
-            {formatMessage({ id: "agent.logs.button.view_latest" })}
-          </Button>
+          <div className="log-latest-switch">
+            <span className="log-latest-switch__label">
+              {formatMessage({ id: "agent.logs.button.view_latest" })}
+            </span>
+            <Switch
+              size="small"
+              checked={logState.followLatestEnabled}
+              onChange={onViewLatestClick}
+            />
+          </div>
           <Button
             type="primary"
             ghost
@@ -651,7 +694,11 @@ const InfiniteLogViewer = ({
         parseInt((totalRows * progressCacheRef.current) / 100, 10),
         1
       );
-      resetViewerPosition({ startLineNumber, autoScrollToBottom: false });
+      resetViewerPosition({
+        startLineNumber,
+        autoScrollToBottom: false,
+        followLatestEnabled: false,
+      });
     }
     sliderChangingRef.current = false;
   };

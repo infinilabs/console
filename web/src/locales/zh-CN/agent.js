@@ -16,7 +16,7 @@ export default {
     "未能匹配并关联到节点，请检查探针凭据、节点 HTTP 端口和集群连通性后重试。",
   "agent.instance.associate.auth.error": "以下集群需要先设置平台凭据或 Agent 凭据：",
   "agent.instance.associate.tips.metric":
-    "关联后会自动切换为 Agent 采集模式并初始化 infini-agent 凭据，后续新增节点也会自动补充关联",
+    "关联后会自动切换为 Agent 采集模式，后续新增节点也会自动补充关联",
   "agent.instance.associate.tips.unregister":
     "没有在 Console 中找到该集群的注册信息，",
   "agent.instance.associate.tips.to_register": "前往注册",
@@ -82,11 +82,11 @@ export default {
   "agent.install.logs.tips": "日志查看功能需先安装探针(INFINI Agent)",
   "agent.logs.label.log_file": "日志文件",
   "agent.logs.label.goto": "跳转至行",
-  "agent.logs.button.view_latest": "查看最新",
+  "agent.logs.button.view_latest": "跟随最新",
   "agent.logs.button.goto": "确定",
   "agent.install.setup.copy.success": "已成功复制到剪贴板！",
   "agent.install.reverse_channel.label": "启用反向通道",
-  "agent.install.reverse_channel.help": "默认关闭，只有在安装时显式开启后，Agent 才会回连 Console 建立反向通道。",
+  "agent.install.reverse_channel.help": "默认关闭。仅在 Agent 端口不可达时开启（如容器环境）；开启后 Agent 会回连 Console。",
   "agent.instance.auto_associate.title": "自动关联集群",
   "agent.instance.install.title": "安装 Agent",
 

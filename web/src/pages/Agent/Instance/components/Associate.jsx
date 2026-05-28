@@ -1,6 +1,6 @@
 import { useGlobal } from "@/layouts/GlobalContext";
 import request from "@/utils/request";
-import { Form, Input, Switch, Icon, Button, Select } from "antd";
+import { Form, Input, Switch, Icon, Button, Select, Alert } from "antd";
 import { useMemo, useRef, useState } from "react";
 import { Link, router } from "umi";
 import { formatMessage } from "umi/locale";
@@ -348,11 +348,12 @@ const Result = ({ data, onComplete, loading = false }) => {
               </a>
             </span>
           ) : (
-            <span>
-              {formatMessage({
+            <Alert
+              type="success"
+              message={formatMessage({
                 id: "agent.instance.associate.tips.metric",
               })}
-            </span>
+            />
           )}
         </div>
         <Button

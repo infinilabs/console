@@ -79,13 +79,13 @@ export default ({ onEnroll, loading }) => {
         )
       }
       <div style={{ marginTop: 10, textAlign: "right" }}>
-        <div style={{ marginBottom: 15, color: "rgba(130,129,136,1)" }}>
-          <span>
-            {formatMessage({
-              id: "agent.instance.associate.tips.metric",
-            })}
-          </span>
-        </div>
+        <Alert
+          style={{ marginBottom: 15, textAlign: "left" }}
+          type="success"
+          message={formatMessage({
+            id: "agent.instance.associate.tips.metric",
+          })}
+        />
         <Button
           type="primary"
           disabled={clusterList.length === 0}

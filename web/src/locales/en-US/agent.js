@@ -18,7 +18,7 @@ export default {
     "No node was matched and enrolled. Check the probe credential, node HTTP port, and cluster connectivity, then try again.",
   "agent.instance.associate.auth.error": "The following clusters need platform or agent credentials first:",
   "agent.instance.associate.tips.metric":
-    "Enroll will switch the cluster to Agent mode, initialize the infini-agent credential, and auto-enroll newly added nodes afterward",
+    "Enroll will switch the cluster to Agent mode and auto-enroll newly added nodes afterward",
   "agent.instance.associate.tips.unregister":
     "No registration information for this cluster was found in the Console,",
   "agent.instance.associate.tips.to_register": "go to register",
@@ -89,11 +89,11 @@ export default {
     "The log viewing feature needs to install the INFINI Agent first",
   "agent.logs.label.log_file": "Log File",
   "agent.logs.label.goto": "Jump To Line",
-  "agent.logs.button.view_latest": "View Latest",
+  "agent.logs.button.view_latest": "Follow Latest",
   "agent.logs.button.goto": "Goto",
   "agent.install.setup.copy.success": "Copied to clipboard successfully!",
   "agent.install.reverse_channel.label": "Enable reverse channel",
-  "agent.install.reverse_channel.help": "Disabled by default. Agent connects back to Console through the reverse channel only when explicitly enabled during installation.",
+  "agent.install.reverse_channel.help": "Disabled by default. Enable only when Console cannot reach the Agent port, such as in containers; when enabled, Agent connects back to Console.",
   "agent.instance.auto_associate.title": "Auto Enroll",
   "agent.instance.install.title": "Install Agent",
 

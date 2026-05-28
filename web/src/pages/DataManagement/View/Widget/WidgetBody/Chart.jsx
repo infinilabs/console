@@ -57,6 +57,7 @@ export default (props) => {
       isFullScreen,
       onResultChange,
       lockInteractions,
+      autoApplyRangeFilter,
     } = props;
 
     const { series = [] } = record;
@@ -439,6 +440,7 @@ export default (props) => {
               isEdit={isEdit}
               isFullScreen={isFullScreen}
               handleContextMenu={handleContextMenu}
+              autoApplyRangeFilter={autoApplyRangeFilter}
               onChartElementClick={onChartElementClick}
             />
           )

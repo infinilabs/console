@@ -478,7 +478,7 @@ const AgentList = (props) => {
       },
     });
     if(statusRes && statusRes.acknowledged){
-      message.success("submit successfully");
+      message.success(formatMessage({ id: "app.message.operate.success" }));
     }
     setClearLoading(false);
   }

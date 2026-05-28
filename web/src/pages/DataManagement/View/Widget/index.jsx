@@ -44,6 +44,7 @@ export default (props) => {
     displayOptions={},
     onResultChange,
     lockInteractions,
+    autoApplyRangeFilter,
   } = props;
 
   const [cacheRecord, setCacheRecord] = useState(record)
@@ -255,6 +256,7 @@ export default (props) => {
           handleContextMenu={handleContextMenu}
           isFullScreen={isFullScreen}
           lockInteractions={lockInteractions}
+          autoApplyRangeFilter={autoApplyRangeFilter}
           onResultChange={onResultChange} 
         />
       </Spin>

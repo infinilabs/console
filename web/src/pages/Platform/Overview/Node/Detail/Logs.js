@@ -26,7 +26,8 @@ import InstallAgent from "@/components/InstallAgent";
 import { formatMessage } from "umi/locale";
 import Location from "@/components/Icons/Location";
 const PAGE_SIZE = 50;
-const TAIL_PRELOAD_LINES = 200;
+const DEFAULT_TAIL_LINES = 200;
+const TAIL_LINE_OPTIONS = [50, 100, 200, 500, 1000];
 
 const getLogFileKey = (logFile = {}) =>
   `${logFile.logs_path || ""}::${logFile.name || ""}`;
@@ -50,6 +51,7 @@ const createInitialLogState = (viewerVersion = 0) => ({
   totalRowsKnown: false,
   startLineNumber: 1,
   loadTailLines: 0,
+  latestLines: DEFAULT_TAIL_LINES,
   followLatestEnabled: false,
   autoScrollToBottom: false,
   viewerVersion,
@@ -206,7 +208,19 @@ const Logs = (props) => {
             isNextPageLoading: false,
           };
         }
-        const incomingLines = res?.lines || [];
+        const incomingLines = (res?.lines || []).map((line, index, arr) => {
+          if (
+            currentState.loadTailLines > 0 &&
+            st.totalRowsKnown &&
+            Number.isInteger(st.totalRows)
+          ) {
+            return {
+              ...line,
+              line_number: Math.max(st.totalRows - arr.length + index + 1, 1),
+            };
+          }
+          return line;
+        });
         const newItems = [...st.items];
         let idx = newItems.length;
         incomingLines.forEach((line) => {
@@ -364,16 +378,8 @@ const Logs = (props) => {
       return;
     }
     clearAutoRefresh();
-    if (logStateRef.current.totalRowsKnown) {
-      resetViewerPosition({
-        startLineNumber: getLatestStartLine(logStateRef.current.totalRows),
-        autoScrollToBottom: true,
-        followLatestEnabled: true,
-      });
-      return;
-    }
     resetViewerPosition({
-      loadTailLines: TAIL_PRELOAD_LINES,
+      loadTailLines: logStateRef.current.latestLines || DEFAULT_TAIL_LINES,
       autoScrollToBottom: true,
       followLatestEnabled: true,
     });
@@ -482,6 +488,34 @@ const Logs = (props) => {
               checked={logState.followLatestEnabled}
               onChange={onViewLatestClick}
             />
+            <Select
+              size="small"
+              value={logState.latestLines}
+              className="log-latest-switch__select"
+              onChange={(value) => {
+                clearAutoRefresh();
+                setLogState((st) => ({
+                  ...st,
+                  latestLines: value,
+                }));
+                if (logStateRef.current.followLatestEnabled) {
+                  resetViewerPosition({
+                    loadTailLines: value,
+                    autoScrollToBottom: true,
+                    followLatestEnabled: true,
+                  });
+                }
+              }}
+            >
+              {TAIL_LINE_OPTIONS.map((count) => (
+                <Select.Option key={count} value={count}>
+                  {count}
+                </Select.Option>
+              ))}
+            </Select>
+            <span className="log-latest-switch__suffix">
+              {formatMessage({ id: "agent.logs.label.latest_lines" })}
+            </span>
           </div>
           <Button
             type="primary"

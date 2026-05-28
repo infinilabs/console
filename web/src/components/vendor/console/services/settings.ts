@@ -76,7 +76,7 @@ export class Settings {
   }
 
   getPolling() {
-    return this.storage.get('console_polling', true);
+    return this.storage.get('console_polling', false);
   }
 
   setPolling(polling: any) {

@@ -1,17 +1,22 @@
 .installAgent {
     .toggleStack {
         display: flex;
-        flex-direction: column;
-        gap: 12px;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        column-gap: 24px;
+        row-gap: 12px;
         margin-bottom: 16px;
     }
     .toggleStackCentered {
+        justify-content: center;
         align-items: center;
     }
     .reverseChannelToggle {
         display: flex;
         align-items: center;
         gap: 8px;
+        flex: 0 0 auto;
     }
     .reverseChannelLabel {
         display: inline-flex;

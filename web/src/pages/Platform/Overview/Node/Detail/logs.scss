@@ -62,6 +62,16 @@
       white-space: nowrap;
       line-height: 1;
     }
+
+    &__select {
+      width: 88px;
+    }
+
+    &__suffix {
+      color: rgba(0, 0, 0, 0.65);
+      white-space: nowrap;
+      line-height: 1;
+    }
   }
 
   .log-file-select {

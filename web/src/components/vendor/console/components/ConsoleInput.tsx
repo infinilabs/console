@@ -19,7 +19,7 @@ import { useSetInputEditor } from "../hooks/use_set_input_editor";
 import "@elastic/eui/dist/eui_theme_light.css";
 import { instance as registry } from "../contexts/editor_context/editor_registry";
 import "antd/dist/antd.css";
-import { retrieveAutoCompleteInfo } from "../modules/mappings/mappings";
+import { clearSubscriptions, retrieveAutoCompleteInfo } from "../modules/mappings/mappings";
 import { useSaveCurrentTextObject } from "../hooks/use_save_current_text_object";
 import { useEditorReadContext } from "../contexts/editor_context/editor_context";
 import { useDataInit } from "../hooks/use_data_init";
@@ -206,6 +206,7 @@ const ConsoleInputUI = ({
     setupAutosave();
 
     return () => {
+      clearSubscriptions();
       unsubscribeResizer();
       if (editorInstanceRef.current) {
         editorInstanceRef.current.getCoreEditor().destroy();

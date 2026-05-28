@@ -85,6 +85,7 @@ export default {
   "agent.install.logs.tips": "日志查看功能需先安装探针(INFINI Agent)",
   "agent.logs.label.log_file": "日志文件",
   "agent.logs.label.goto": "跳转至行",
+  "agent.logs.label.latest_lines": "行",
   "agent.logs.button.view_latest": "跟随最新",
   "agent.logs.button.goto": "确定",
   "agent.install.setup.copy.success": "已成功复制到剪贴板！",

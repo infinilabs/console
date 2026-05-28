@@ -231,6 +231,7 @@ func buildEmailServerConfig(server model.EmailServer) (*EmailServerConfig, error
 	cfg.Server.Host = server.Host
 	cfg.Server.Port = server.Port
 	cfg.Server.TLS = server.TLS
+	cfg.SendFrom = emailcommon.ResolveSender(server.Sender, auth.Username)
 	cfg.Auth.Username = auth.Username
 	cfg.Auth.Password = auth.Password.Get()
 	normalizeEmailServerConfig(cfg)

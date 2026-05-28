@@ -92,6 +92,7 @@ export default {
     "The log viewing feature needs to install the INFINI Agent first",
   "agent.logs.label.log_file": "Log File",
   "agent.logs.label.goto": "Jump To Line",
+  "agent.logs.label.latest_lines": "lines",
   "agent.logs.button.view_latest": "Follow Latest",
   "agent.logs.button.goto": "Goto",
   "agent.install.setup.copy.success": "Copied to clipboard successfully!",

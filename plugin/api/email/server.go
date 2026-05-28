@@ -381,8 +381,9 @@ func (h *EmailAPI) testEmailServer(w http.ResponseWriter, req *http.Request, ps 
 		h.WriteError(w, "auth info required", http.StatusInternalServerError)
 		return
 	}
+	sender := common.ResolveSender(reqBody.Sender, reqBody.Auth.Username)
 	message := gomail.NewMessage()
-	message.SetHeader("From", reqBody.Auth.Username)
+	message.SetHeader("From", sender)
 	message.SetHeader("To", reqBody.SendTo...)
 	message.SetHeader("Subject", "INFINI platform test email")
 

@@ -39,6 +39,7 @@ func TestGeneratePipelineConfigUsesConsoleSMTP(t *testing.T) {
 			ORMObjectBase: orm.ORMObjectBase{ID: "srv-1"},
 			Host:          "smtp.example.com",
 			Port:          465,
+			Sender:        "alerts@example.com",
 			Auth: &framework_model.BasicAuth{
 				Username: "user",
 				Password: ucfg.SecretString("secret"),
@@ -50,5 +51,8 @@ func TestGeneratePipelineConfigUsesConsoleSMTP(t *testing.T) {
 	}
 	if !strings.Contains(cfg, "console_smtp:") {
 		t.Fatalf("expected pipeline config to use console_smtp, got %s", cfg)
+	}
+	if !strings.Contains(cfg, "sender: alerts@example.com") {
+		t.Fatalf("expected pipeline config to preserve sender, got %s", cfg)
 	}
 }

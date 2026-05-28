@@ -18,14 +18,16 @@ import { ESPrefix } from "@/services/common";
 import { getSystemClusterID } from "@/utils/setup";
 
 // 统一的省略 + Tooltip 渲染
-const renderWithTooltip = (text) => (
+const renderWithTooltip = (text, maxWidth = "100%") => (
   <Tooltip title={text} placement="topLeft">
     <span
       style={{
-        display: "block",
+        display: "inline-block",
+        maxWidth,
         overflow: "hidden",
         textOverflow: "ellipsis",
         whiteSpace: "nowrap",
+        verticalAlign: "bottom",
       }}
     >
       {text}
@@ -294,7 +296,7 @@ export default (props) => {
       searchable: true,
       ellipsis: true,
       onHeaderCell: noWrapHeaderCell,
-      render: renderWithTooltip,
+      render: (text) => renderWithTooltip(text, 180),
     },
     {
       title: formatMessage({ id: "cluster.manage.table.column.monitor_toggle" }),

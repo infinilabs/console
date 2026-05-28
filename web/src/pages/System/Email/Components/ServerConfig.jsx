@@ -198,6 +198,15 @@ export default Form.create({ name: "email_server_cfg" })((props) => {
         <CredentialForm form={form} initialValue={config} isEdit={isEdit} />
         <Form.Item
           label={formatMessage({
+            id: "settings.email.server.form.sender",
+          })}
+        >
+          {getFieldDecorator("sender", {
+            initialValue: config.sender,
+          })(<Input />)}
+        </Form.Item>
+        <Form.Item
+          label={formatMessage({
             id: "settings.email.server.form.enabled",
           })}
         >

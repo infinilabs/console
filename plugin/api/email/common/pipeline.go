@@ -119,6 +119,7 @@ func GeneratePipelineConfig(servers []model.EmailServer) (string, error) {
 				"refresh_timestamp": time.Now().UnixMilli(),
 			},
 			"min_tls_version": srv.TLSMinVersion,
+			"sender":          ResolveSender(srv.Sender, srv.Auth.Username),
 			"auth": util.MapStr{
 				"username": srv.Auth.Username,
 				"password": fmt.Sprintf("$[[keystore.%s]]", key),

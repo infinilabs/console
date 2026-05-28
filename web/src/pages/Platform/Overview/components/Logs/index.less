@@ -2,10 +2,6 @@
     width: 100%;
     min-height: calc(100vh - 444px);
 
-    .emptyState {
-        width: 100%;
-    }
-
     .emptyBlock {
         width: 100%;
         margin: 0;
@@ -31,49 +27,35 @@
 
 .logLayout {
     display: flex;
-    align-items: flex-start;
-    gap: 12px;
     width: 100%;
+    gap: 10px;
 
-    .side {
-        width: 220px;
-        border: 1px solid #e8e8e8;
-        box-shadow: rgba(0, 0, 0, 0.15) 0px 2px 8px;
+    .sideWrap {
+        min-height: calc(100vh - 130px);
+        padding: 24px 15px;
         background-color: #ffffff;
-        box-sizing: border-box;
+    }
 
-        .sideHeader {
-            background-color: #fafafa;
-            display: flex;
-            align-items: center;
-            border-bottom: 1px solid #e8e8e8;
-        }
+    .contentWrap {
+        position: relative;
+        min-width: 0;
 
-        .sideToggle {
-            display: flex;
-            flex: none;
-            align-self: stretch;
-            align-items: center;
+        .expandAndCollapse {
             cursor: pointer;
-            padding-left: 10px;
-        }
-
-        .sideTitle {
-            padding: 6px 10px;
-            font-weight: 500;
-        }
-
-        .sideBody {
-            padding: 6px 10px;
+            z-index: 10;
+            position: absolute;
+            left: 0;
+            top: 24px;
+            width: 14px;
+            height: 32px;
+            line-height: 32px;
+            border-radius: 0 4px 4px 0;
+            background-color: rgba(234, 244, 255, 1);
+            text-align: center;
         }
     }
 
-    .sideCollapsed {
-        border-bottom: none;
-    }
-
-    .result {
-        flex: 1 1 auto;
+    .resultCard {
         min-width: 0;
 
         .header {
@@ -89,12 +71,37 @@
             max-width: 600px;
         }
 
-        .histogram {
+        :global(.ant-table-placeholder) {
+            border-bottom: none;
+        }
+    }
+
+    .histogram {
+        width: 100%;
+        height: 140px;
+        border: 1px solid rgb(232, 232, 232);
+        border-radius: 2px;
+        margin-bottom: 16px;
+    }
+
+    &.expand {
+        .sideWrap {
+            display: block;
+            width: 220px;
+        }
+
+        .contentWrap {
+            width: calc(100% - 220px);
+        }
+    }
+
+    &.collapse {
+        .sideWrap {
+            display: none;
+        }
+
+        .contentWrap {
             width: 100%;
-            height: 140px;
-            border: 1px solid rgb(232, 232, 232);
-            border-radius: 2px;
-            margin-bottom: 16px;
         }
     }
 }

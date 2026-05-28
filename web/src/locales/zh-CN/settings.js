@@ -8,6 +8,7 @@ export default {
   "settings.email.server.form.port": "端口",
   "settings.email.server.form.tls_min_version": "TLS 最低版本",
   "settings.email.server.form.tls": "TLS",
+  "settings.email.server.form.sender": "发件人",
   "settings.email.server.form.enabled": "启用",
   "settings.email.server.form.recipient": "收件人",
   "settings.email.server.form.recipient.placeholder": "请输入收件人",

@@ -8,6 +8,7 @@ export default {
   "settings.email.server.form.port": "Port",
   "settings.email.server.form.tls_min_version": "TLS Min Version",
   "settings.email.server.form.tls": "TLS",
+  "settings.email.server.form.sender": "Sender",
   "settings.email.server.form.enabled": "Enabled",
   "settings.email.server.form.recipient": "Recipient",
   "settings.email.server.form.recipient.placeholder": "Please input recipient",

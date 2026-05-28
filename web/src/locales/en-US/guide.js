@@ -100,6 +100,11 @@ export default {
 
   "guide.completed": "Initialization completed!",
   "guide.enter.console": `Enter ${APP_DOMAIN} Console`,
+  "guide.initialization.finish.pending": "Finishing initialization...",
+  "guide.initialization.finish.pending.desc": "You are on the final step now. You can download the configuration first and enter Console after initialization completes.",
+  "guide.initialization.finish.pending.button": "Initializing",
+  "guide.initialization.finish.failed": "Initialization not completed",
+  "guide.initialization.finish.failed.desc": "Go back to the previous step, review the settings, and try again.",
 
   "health.modal.title": "Services are limited",
   "health.modal.desc": `Please click the services health above to ensure the system cluster is running properly.`,

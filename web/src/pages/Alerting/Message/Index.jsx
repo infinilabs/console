@@ -533,6 +533,19 @@ const Index = (props) => {
     };
   }, [dataSource.aggregations]);
 
+  const widgetRange = useMemo(() => {
+    if (queryParams?.start_time && queryParams?.end_time) {
+      return {
+        from: queryParams.start_time,
+        to: queryParams.end_time,
+      };
+    }
+    return {
+      from: minUpdated,
+      to: maxUpdated,
+    };
+  }, [queryParams?.start_time, queryParams?.end_time, minUpdated, maxUpdated]);
+
   const filterPriorityAndStatus = (params) => {
     dispatch({
       type: "timeChange",
@@ -577,10 +590,9 @@ const Index = (props) => {
             >
               <WidgetLoader
                 id="cji1sc28go5i051pl1i0"
-                range={{
-                  from: "now-6M",
-                  to: "now",
-                }}
+                range={widgetRange}
+                queryParams={widgetQueryParams}
+                refresh={queryParams?.refresh}
               />
             </Card>
           </div>
@@ -719,10 +731,7 @@ const Index = (props) => {
         >
           <WidgetLoader
             id="cji1ttq8go5i051pl1t0"
-            range={{
-              from: minUpdated,
-              to: maxUpdated,
-            }}
+            range={widgetRange}
             queryParams={widgetQueryParams}
             refresh={queryParams?.refresh}
             onGlobalQueriesChange={onWidgetQueriesChange}

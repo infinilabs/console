@@ -1,10 +1,10 @@
-import { Alert, Button, Icon, Result, Descriptions } from "antd";
+import { Alert, Button, Icon, Result, Descriptions, Spin } from "antd";
 import styles from "./index.less";
 import { Link } from "umi";
 import { formatMessage } from "umi/locale";
 import { useEffect } from "react";
 
-export default ({ formData }) => {
+export default ({ formData, onPrev }) => {
 
   const {
     host,
@@ -17,7 +17,12 @@ export default ({ formData }) => {
     bootstrap_username,
     bootstrap_password,
     credential_secret,
+    setupStatus = "success",
+    setupError,
   } = formData;
+
+  const isInitializing = setupStatus === "running";
+  const isFailed = setupStatus === "failed";
 
   const onDownload = () => {
     let hostV = host
@@ -56,26 +61,64 @@ export default ({ formData }) => {
     <div className={styles.finish}>
       <Result
         icon={
-          <Icon className={styles.success} type="check-circle" theme="filled" />
+          isInitializing ? (
+            <Spin size="large" />
+          ) : isFailed ? (
+            <Icon type="close-circle" theme="filled" style={{ color: "#ff4d4f" }} />
+          ) : (
+            <Icon className={styles.success} type="check-circle" theme="filled" />
+          )
         }
         title={
           <span className={styles.title}>
-            {formatMessage({ id: "guide.completed" })}
+            {formatMessage({
+              id: isInitializing
+                ? "guide.initialization.finish.pending"
+                : isFailed
+                ? "guide.initialization.finish.failed"
+                : "guide.completed",
+            })}
           </span>
         }
         extra={
-          <Link to="/user/login">
-            <Button
-              type="primary"
-              onClick={() => {
-                localStorage.removeItem("infini-setup-required");
-              }}
-            >
-              {formatMessage({ id: "guide.enter.console" })}
+          isInitializing ? (
+            <Button type="primary" loading disabled>
+              {formatMessage({ id: "guide.initialization.finish.pending.button" })}
             </Button>
-          </Link>
+          ) : isFailed ? (
+            <Button type="primary" onClick={onPrev}>
+              {formatMessage({ id: "guide.step.prev" })}
+            </Button>
+          ) : (
+            <Link to="/user/login">
+              <Button
+                type="primary"
+                onClick={() => {
+                  localStorage.removeItem("infini-setup-required");
+                }}
+              >
+                {formatMessage({ id: "guide.enter.console" })}
+              </Button>
+            </Link>
+          )
         }
       >
+        {isInitializing ? (
+          <Alert
+            style={{ width: "60%", margin: "auto", marginBottom: 12, textAlign: "center" }}
+            message={formatMessage({ id: "guide.initialization.finish.pending.desc" })}
+            type="info"
+          />
+        ) : null}
+        {isFailed ? (
+          <Alert
+            style={{ width: "60%", margin: "auto", marginBottom: 12, textAlign: "left" }}
+            message={formatMessage({ id: "guide.initialization.finish.failed.desc" })}
+            description={setupError}
+            type="error"
+            showIcon
+          />
+        ) : null}
         <Descriptions 
           bordered 
           size="small" 

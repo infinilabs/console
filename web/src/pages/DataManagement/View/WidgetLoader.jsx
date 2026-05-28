@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import Widget from "./Widget"
 import styles from "./WidgetLoader.less"
 import { Empty, Icon, message, Spin, Tooltip } from "antd"
@@ -25,6 +25,7 @@ export const WidgetRender = (props) => {
    } = props;
    const [globalRangeCache, setGlobalRangeCache] = useState()
    const [requests, setRequests] = useState([])
+   const fallbackWidgetIdRef = useRef(`widget-${Math.random().toString(36).slice(2)}`)
 
    const filters = useMemo(() => {
       const newFilters = []
@@ -52,6 +53,19 @@ export const WidgetRender = (props) => {
       };
    }, [JSON.stringify(range), refresh]);
 
+   const renderWidget = useMemo(() => {
+      if (!widget) {
+         return widget;
+      }
+      if (widget.id) {
+         return widget;
+      }
+      return {
+         ...widget,
+         id: fallbackWidgetIdRef.current,
+      };
+   }, [widget]);
+
    return (
       widget ? (
          <div className={styles.content}>
@@ -67,7 +81,7 @@ export const WidgetRender = (props) => {
                )
             }
             <Widget
-               record={widget}
+              record={renderWidget}
                globalQueries={{
                   range: formatTimeRange,
                   filters,

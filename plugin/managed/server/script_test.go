@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	frameworkconfig "infini.sh/framework/core/config"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/util"
 )
@@ -361,6 +362,66 @@ func TestAgentInstallTemplateEnablesEmbeddedAPIWithoutReverseChannel(t *testing.
 func TestGetEndpointHostname(t *testing.T) {
 	if got := getEndpointHostname("https://demo.infini.cloud:9000/console"); got != "demo.infini.cloud" {
 		t.Fatalf("expected demo.infini.cloud, got %q", got)
+	}
+}
+
+func TestResolveConsoleTLSServerNameUsesEndpointHostnameWhenItIsDNS(t *testing.T) {
+	if got := resolveConsoleTLSServerName("https://console.local:9000"); got != "console.local" {
+		t.Fatalf("expected console.local, got %q", got)
+	}
+}
+
+func TestResolveConsoleTLSServerNameFallsBackToTLSDefaultDomainForIPEndpoint(t *testing.T) {
+	oldWebConfig := global.Env().SystemConfig.WebAppConfig
+	oldAPIConfig := global.Env().SystemConfig.APIConfig
+	t.Cleanup(func() {
+		global.Env().SystemConfig.WebAppConfig = oldWebConfig
+		global.Env().SystemConfig.APIConfig = oldAPIConfig
+	})
+
+	global.Env().SystemConfig.WebAppConfig.Enabled = true
+	global.Env().SystemConfig.WebAppConfig.NetworkConfig.Publish = "0.0.0.0:9000"
+	global.Env().SystemConfig.WebAppConfig.TLSConfig = frameworkconfig.TLSConfig{
+		TLSEnabled:    true,
+		DefaultDomain: "console.example.com",
+	}
+	global.Env().SystemConfig.APIConfig = frameworkconfig.APIConfig{}
+
+	if got := resolveConsoleTLSServerName("https://192.168.3.8:9000"); got != "console.example.com" {
+		t.Fatalf("expected console.example.com, got %q", got)
+	}
+}
+
+func TestResolveConsoleTLSServerNameFallsBackToCertificateDNSNameForIPEndpoint(t *testing.T) {
+	oldWebConfig := global.Env().SystemConfig.WebAppConfig
+	oldAPIConfig := global.Env().SystemConfig.APIConfig
+	t.Cleanup(func() {
+		global.Env().SystemConfig.WebAppConfig = oldWebConfig
+		global.Env().SystemConfig.APIConfig = oldAPIConfig
+	})
+
+	rootCert, rootKey, rootPEM := util.GetRootCert()
+	certPEM, _, err := util.GenerateServerCert(rootCert, rootKey, rootPEM, []string{"console.example.com"})
+	if err != nil {
+		t.Fatalf("failed to generate server cert: %v", err)
+	}
+
+	tempDir := t.TempDir()
+	certFile := filepath.Join(tempDir, "server.crt")
+	if err := os.WriteFile(certFile, certPEM, 0600); err != nil {
+		t.Fatalf("failed to write cert file: %v", err)
+	}
+
+	global.Env().SystemConfig.WebAppConfig.Enabled = true
+	global.Env().SystemConfig.WebAppConfig.NetworkConfig.Publish = "0.0.0.0:9000"
+	global.Env().SystemConfig.WebAppConfig.TLSConfig = frameworkconfig.TLSConfig{
+		TLSEnabled:  true,
+		TLSCertFile: certFile,
+	}
+	global.Env().SystemConfig.APIConfig = frameworkconfig.APIConfig{}
+
+	if got := resolveConsoleTLSServerName("https://192.168.3.8:9000"); got != "console.example.com" {
+		t.Fatalf("expected console.example.com, got %q", got)
 	}
 }
 

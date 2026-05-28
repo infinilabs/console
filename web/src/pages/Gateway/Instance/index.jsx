@@ -45,6 +45,35 @@ const metricUnavailableStyle = {
   color: "#cf1322",
 };
 
+const applicationCellStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+  minWidth: 0,
+};
+
+const applicationIconStyle = {
+  width: 16,
+  display: "inline-flex",
+  justifyContent: "center",
+  color: "rgba(0, 0, 0, 0.65)",
+};
+
+const applicationMeta = {
+  console: {
+    label: "Console",
+    icon: "appstore",
+  },
+  gateway: {
+    label: "Gateway",
+    icon: "api",
+  },
+  agent: {
+    label: "Agent",
+    icon: "deployment-unit",
+  },
+};
+
 export default (props) => {
   const ref = useRef(null);
   const [isLoading, setIsLoading] = React.useState();
@@ -173,6 +202,22 @@ export default (props) => {
     );
   };
 
+  const renderApplication = (value) => {
+    const key = `${value || ""}`.trim().toLowerCase();
+    const meta = applicationMeta[key] || {
+      label: key ? `${key.charAt(0).toUpperCase()}${key.slice(1)}` : "--",
+      icon: "appstore",
+    };
+    return (
+      <span style={applicationCellStyle}>
+        <span style={applicationIconStyle}>
+          <Icon type={meta.icon} />
+        </span>
+        <span>{meta.label}</span>
+      </span>
+    );
+  };
+
   const columns = [
     {
       title: formatMessage({ id: "gateway.instance.column.application" }),
@@ -180,6 +225,7 @@ export default (props) => {
       sortable: true,
       searchable: true,
       aggregable: true,
+      render: (text) => renderApplication(text),
     },
     {
       title: formatMessage({ id: "gateway.instance.column.name" }),

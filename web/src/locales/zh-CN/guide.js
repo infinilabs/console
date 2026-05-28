@@ -96,6 +96,11 @@ export default {
 
   "guide.completed": "初始化完成！",
   "guide.enter.console": `进入 ${APP_DOMAIN} Console`,
+  "guide.initialization.finish.pending": "正在完成初始化...",
+  "guide.initialization.finish.pending.desc": "已进入最后一步，您可以先下载配置，初始化完成后再进入 Console。",
+  "guide.initialization.finish.pending.button": "初始化中",
+  "guide.initialization.finish.failed": "初始化未完成",
+  "guide.initialization.finish.failed.desc": "请返回上一步检查配置后重试。",
 
   "health.modal.title": "服务受限",
   "health.modal.desc":

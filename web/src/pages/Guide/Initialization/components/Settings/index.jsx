@@ -76,15 +76,17 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
       const newValues = {
         ...formData,
         ...values,
+        setupStatus: "running",
+        setupError: undefined,
       };
       onFormDataChange(newValues);
+      onNext();
       onInitialize(newValues);
     });
   }
-
+ 
   const onInitialize = async (formData) => {
     try {
-      setLoading(true);
       const {
         hosts,
         isTLS,
@@ -125,14 +127,25 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
         if(res.secret_mismatch === true){
           localStorage.setItem("secret_mismatch", "1");
         }
-        onNext();
+        onFormDataChange({
+          ...formData,
+          setupStatus: "success",
+          setupError: undefined,
+        });
       } else {
-        message.error(res?.error?.reason);
+        onFormDataChange({
+          ...formData,
+          setupStatus: "failed",
+          setupError: res?.error?.reason,
+        });
       }
-      setLoading(false);
     } catch (error) {
       console.log(error);
-      setLoading(false);
+      onFormDataChange({
+        ...formData,
+        setupStatus: "failed",
+        setupError: error?.message,
+      });
     }
   };
 

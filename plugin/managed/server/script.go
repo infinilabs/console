@@ -28,7 +28,9 @@
 package server
 
 import (
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	log "github.com/cihub/seelog"
 	goversion "github.com/hashicorp/go-version"
@@ -37,11 +39,13 @@ import (
 	"infini.sh/console/core/security"
 	"infini.sh/console/modules/agent/common"
 	httprouter "infini.sh/framework/core/api/router"
+	frameworkconfig "infini.sh/framework/core/config"
 	"infini.sh/framework/core/env"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/lib/fasttemplate"
 	"io"
+	"net"
 	"net/url"
 	"os"
 
@@ -367,6 +371,101 @@ func getEndpointHostname(endpoint string) string {
 	return parsed.Hostname()
 }
 
+func resolveConsoleTLSServerName(consoleEndpoint string) string {
+	hostname := getEndpointHostname(consoleEndpoint)
+	if hostname != "" && net.ParseIP(hostname) == nil {
+		return hostname
+	}
+
+	for _, tlsCfg := range getPreferredConsoleTLSConfigs(consoleEndpoint) {
+		if serverName := resolveTLSServerNameFromConfig(tlsCfg); serverName != "" {
+			return serverName
+		}
+	}
+	return hostname
+}
+
+func getPreferredConsoleTLSConfigs(consoleEndpoint string) []*frameworkconfig.TLSConfig {
+	webCfg := global.Env().SystemConfig.WebAppConfig
+	apiCfg := global.Env().SystemConfig.APIConfig
+
+	configs := make([]*frameworkconfig.TLSConfig, 0, 2)
+	if endpointMatchesPublishedEndpoint(consoleEndpoint, apiCfg.GetEndpoint()) {
+		configs = append(configs, &apiCfg.TLSConfig)
+	}
+	if endpointMatchesPublishedEndpoint(consoleEndpoint, webCfg.GetEndpoint()) {
+		configs = append(configs, &webCfg.TLSConfig)
+	}
+	if len(configs) > 0 {
+		return configs
+	}
+
+	if webCfg.Enabled {
+		configs = append(configs, &webCfg.TLSConfig)
+	}
+	if apiCfg.Enabled {
+		configs = append(configs, &apiCfg.TLSConfig)
+	}
+	return configs
+}
+
+func endpointMatchesPublishedEndpoint(endpoint, published string) bool {
+	ep, err := url.Parse(strings.TrimSpace(endpoint))
+	if err != nil {
+		return false
+	}
+	pub, err := url.Parse(strings.TrimSpace(published))
+	if err != nil {
+		return false
+	}
+
+	return strings.EqualFold(ep.Scheme, pub.Scheme) && ep.Port() == pub.Port()
+}
+
+func resolveTLSServerNameFromConfig(tlsCfg *frameworkconfig.TLSConfig) string {
+	if tlsCfg == nil {
+		return ""
+	}
+	if serverName := strings.TrimSpace(tlsCfg.DefaultDomain); serverName != "" {
+		return serverName
+	}
+	return readTLSServerNameFromCertFile(strings.TrimSpace(tlsCfg.TLSCertFile))
+}
+
+func readTLSServerNameFromCertFile(certFile string) string {
+	if certFile == "" || !util.FileExists(certFile) {
+		return ""
+	}
+	rawCert, err := os.ReadFile(certFile)
+	if err != nil {
+		return ""
+	}
+	for len(rawCert) > 0 {
+		block, rest := pem.Decode(rawCert)
+		if block == nil {
+			break
+		}
+		rawCert = rest
+		if block.Type != "CERTIFICATE" {
+			continue
+		}
+		cert, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			continue
+		}
+		for _, dnsName := range cert.DNSNames {
+			if dnsName = strings.TrimSpace(dnsName); dnsName != "" {
+				return dnsName
+			}
+		}
+		commonName := strings.TrimSpace(cert.Subject.CommonName)
+		if commonName != "" && net.ParseIP(commonName) == nil {
+			return commonName
+		}
+	}
+	return ""
+}
+
 func resolveAgentReverseChannelEndpoint(req *http.Request, configuredEndpoint string) string {
 	configuredEndpoint = strings.TrimRight(strings.TrimSpace(configuredEndpoint), "/")
 	if configuredEndpoint != "" {
@@ -527,7 +626,7 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 	}
 
 	consoleEndpoint := resolveConsoleEndpoint(req, agCfg.Setup.ConsoleEndpoint)
-	consoleDomain := getEndpointHostname(consoleEndpoint)
+	consoleDomain := resolveConsoleTLSServerName(consoleEndpoint)
 	reverseChannelEnabled := strings.EqualFold(strings.TrimSpace(req.URL.Query().Get("enable_reverse_channel")), "true")
 	reverseChannelEndpoints := renderAgentReverseChannelEndpoints(
 		req,

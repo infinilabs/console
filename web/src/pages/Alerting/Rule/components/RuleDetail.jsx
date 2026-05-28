@@ -11,9 +11,10 @@ import {
   Tabs,
 } from "antd";
 import Link from "umi/link";
+import router from "umi/router";
 import { formatMessage } from "umi/locale";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
-import { useHistory } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import request from "@/utils/request";
 import { formatter, getFormatter } from "@/utils/format";
 import { calculateBounds } from "@/components/vendor/data/common/query/timefilter";
@@ -121,8 +122,12 @@ const RuleDetail = (props) => {
   if (!ruleID) {
     return null;
   }
+  const location = useLocation();
   const [param, setParam] = useQueryParam("_g", JsonParam);
-  const history = useHistory();
+  const backTo = useMemo(() => {
+    const searchParams = new URLSearchParams(location.search);
+    return searchParams.get("back_to");
+  }, [location.search]);
   const [state, setState] = React.useState({
     spinning: false,
     timeRange: {
@@ -250,7 +255,7 @@ const RuleDetail = (props) => {
             style={{ marginLeft: 20 }}
             type="primary"
             onClick={() => {
-              history.goBack();
+              router.push(backTo || "/alerting/rule");
             }}
           >
             {formatMessage({ id: "form.button.goback" })}

@@ -62,6 +62,7 @@ const sensitiveRequestRules = [
   { method: "PUT", pattern: /^\/email\/server\/[^/]+$/ },
   { method: "PUT", pattern: /^\/setting\/system\/rollup$/ },
   { method: "PUT", pattern: /^\/setting\/system\/retention$/ },
+  { method: "POST", pattern: /^\/setting\/system\/local_templates\/_refresh$/ },
 ];
 
 const getNormalizedRequestPath = (requestUrl) => {

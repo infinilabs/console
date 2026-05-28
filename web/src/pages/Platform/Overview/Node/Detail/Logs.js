@@ -413,7 +413,7 @@ const Logs = (props) => {
           <div className="title">
           {formatMessage({ id: "agent.install.title" })}
           </div>
-          <InstallAgent centerToggle={true} />
+          <InstallAgent centerToggle={true} showAdvanced={false} />
         </div>
       </div>
     );

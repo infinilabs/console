@@ -610,6 +610,7 @@ func MergeGroupValues(metricData []MetricData) []MetricData {
 		return metricData
 	}
 	grpMd := map[string]MetricData{}
+	groupOrder := make([]string, 0, len(metricData))
 	for _, md := range metricData {
 		if len(md.Groups) == 0 {
 			continue
@@ -629,8 +630,10 @@ func MergeGroupValues(metricData []MetricData) []MetricData {
 					existingMd.Data[k] = v
 				}
 			}
+			grpMd[groupKey] = existingMd
 		} else {
 			grpMd[groupKey] = md
+			groupOrder = append(groupOrder, groupKey)
 		}
 	}
 	// sort the merged metric data by timestamp
@@ -648,8 +651,10 @@ func MergeGroupValues(metricData []MetricData) []MetricData {
 	}
 	// Convert map to slice
 	mergedMetricData := make([]MetricData, 0, len(grpMd))
-	for _, md := range grpMd {
-		mergedMetricData = append(mergedMetricData, md)
+	for _, groupKey := range groupOrder {
+		if md, ok := grpMd[groupKey]; ok {
+			mergedMetricData = append(mergedMetricData, md)
+		}
 	}
 	return mergedMetricData
 }

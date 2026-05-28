@@ -42,9 +42,56 @@ const buildTimestampKeywordFilter = (keyword, timeField) => {
             [timeField]: {
                 gte: parsed.clone().startOf("second").toISOString(),
                 lte: parsed.clone().endOf("second").toISOString(),
+                format: "strict_date_optional_time",
             }
         }
     };
+};
+
+const buildLogSearchFilters = (queryParams = {}, queryFilters = [], timeField) => {
+    const filters = [...queryFilters];
+    if (queryParams?.filters) {
+        Object.keys(queryParams.filters).map((field) => {
+            const values = queryParams.filters[field];
+            if (Array.isArray(values)) {
+                values.forEach((item) => {
+                    filters.push({
+                        term: { [field]: item }
+                    });
+                });
+            } else if (values) {
+                filters.push({
+                    term: { [field]: values }
+                });
+            }
+        });
+    }
+    const keywordFilters = [];
+    const searchQuery = buildContainsQueryString(queryParams?.keyword);
+    if (searchQuery) {
+        keywordFilters.push({
+            query_string: {
+                query: searchQuery,
+                fields: ["payload.message"],
+                analyze_wildcard: true,
+            }
+        });
+    }
+    const timestampKeywordFilter = buildTimestampKeywordFilter(queryParams?.keyword, timeField);
+    if (timestampKeywordFilter) {
+        keywordFilters.push(timestampKeywordFilter);
+    }
+    if (keywordFilters.length === 1) {
+        filters.push(keywordFilters[0]);
+    } else if (keywordFilters.length > 1) {
+        filters.push({
+            bool: {
+                should: keywordFilters,
+                minimum_should_match: 1,
+            }
+        });
+    }
+    return filters;
 };
 
 export default (props) => {
@@ -73,50 +120,7 @@ export default (props) => {
         if (!timeRange) return;
         setLoading(true)
         const newTimeRange = formatTimeRange(timeRange);
-        const filters = [...queryFilters]
-        if (queryParams?.filters) {
-            Object.keys(queryParams.filters).map((field) => {
-              const values = queryParams.filters[field];
-              if (Array.isArray(values)) {
-                values.forEach((item) => {
-                    filters.push({
-                        'term': { [field]: item }
-                    })
-                });
-              } else {
-                if (values) {
-                    filters.push({
-                        'term': { [field]: values }
-                    })
-                }
-              }
-            });
-        }
-        const keywordFilters = [];
-        const searchQuery = buildContainsQueryString(queryParams?.keyword);
-        if (searchQuery) {
-            keywordFilters.push({ 
-                query_string: {
-                    query: searchQuery,
-                    fields: ['payload.message'],
-                    analyze_wildcard: true,
-                }
-            });
-        }
-        const timestampKeywordFilter = buildTimestampKeywordFilter(queryParams?.keyword, timeField);
-        if (timestampKeywordFilter) {
-            keywordFilters.push(timestampKeywordFilter);
-        }
-        if (keywordFilters.length === 1) {
-            filters.push(keywordFilters[0]);
-        } else if (keywordFilters.length > 1) {
-            filters.push({
-                bool: {
-                    should: keywordFilters,
-                    minimum_should_match: 1,
-                }
-            });
-        }
+        const filters = buildLogSearchFilters(queryParams, queryFilters, timeField);
         const res = await request(`${ESPrefix}/${getSystemClusterID()}/search/ese?timeout=60m`, {
             method: 'POST',
             body: {
@@ -288,6 +292,26 @@ export default (props) => {
         ],
     }
 
+    const histogramQuery = useMemo(() => {
+        const filters = buildLogSearchFilters(
+            {
+                keyword: queryParams?.keyword,
+            },
+            queryFilters,
+            timeField
+        );
+        if (filters.length === 0) {
+            return undefined;
+        }
+        return JSON.stringify({
+            bool: {
+                filter: filters,
+                should: [],
+                must_not: [],
+            }
+        });
+    }, [queryParams?.keyword, JSON.stringify(queryFilters)]);
+
     const totalHits = useMemo(() => {
         return result?.total?.value || result?.total || 0;
     }, [result?.total]);
@@ -383,6 +407,7 @@ export default (props) => {
                                                 to: timeRange.max,
                                                 timeField: timeField,
                                             }}
+                                            query={histogramQuery}
                                             queryParams={queryParams?.filters || {}}
                                             refresh={refresh}
                                             onGlobalQueriesChange={onHistogramQueriesChange}
@@ -429,7 +454,7 @@ export default (props) => {
                             description={formatMessage({ id: "cluster.monitor.logs.empty.agentless" })}
                         >
                             <div className={styles.installAgentWrap}>
-                                <InstallAgent autoInit={false} centerToggle={true}/>
+                                <InstallAgent autoInit={false} centerToggle={true} showAdvanced={false} />
                             </div>
                         </Empty>
                     </div>

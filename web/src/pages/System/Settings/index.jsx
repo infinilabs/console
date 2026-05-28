@@ -385,8 +385,9 @@ const SystemSettings = (props) => {
           style={{
             padding: 0,
             height: "auto",
-            color: "rgba(0,0,0,0.65)",
-            fontSize: 12,
+            color: "rgba(0,0,0,0.85)",
+            fontSize: 16,
+            fontWeight: 500,
             display: "inline-flex",
             alignItems: "center",
             gap: 6,

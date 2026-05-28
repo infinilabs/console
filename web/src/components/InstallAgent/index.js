@@ -1,13 +1,12 @@
-import { Alert, Form, Select, Spin, Icon, message, Button, Switch, Tooltip } from "antd";
+import { Alert, Spin, Icon, message, Button, Switch, Tooltip } from "antd";
 import styles from "./index.less";
-import useFetch from "@/lib/hooks/use_fetch";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import request from "@/utils/request";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import { formatMessage } from "umi/locale"; 
-import { getDocPathByLang, getWebsitePathByLang } from "@/utils/utils";
+import { getDocPathByLang } from "@/utils/utils";
 
-export default ({autoInit = false, centerToggle = false}) => {
+export default ({autoInit = false, centerToggle = false, showAdvanced = true}) => {
 
     const [tokenLoading, setTokenLoading] = useState(false);
     const [enableReverseChannel, setEnableReverseChannel] = useState(false);
@@ -50,54 +49,6 @@ export default ({autoInit = false, centerToggle = false}) => {
                     id:"agent.install.label.get_cmd"
                 })}
                 </Button>}
-                <div className={`${styles.advancedWrap} ${centerToggle ? styles.advancedWrapCentered : ""}`}>
-                    <Button
-                        type="link"
-                        className={styles.advancedToggle}
-                        onClick={() => setAdvancedVisible((visible) => !visible)}
-                    >
-                        {formatMessage({ id: "agent.install.advanced.title" })}
-                        <Icon type={advancedVisible ? "up" : "down"} />
-                    </Button>
-                    {advancedVisible ? (
-                        <div className={`${styles.toggleStack} ${centerToggle ? styles.toggleStackCentered : ""}`}>
-                            <div className={styles.reverseChannelToggle}>
-                                <span className={styles.reverseChannelLabel}>
-                                    <span>{formatMessage({ id: "agent.install.reverse_channel.label" })}</span>
-                                    <Tooltip title={formatMessage({ id: "agent.install.reverse_channel.help" })}>
-                                        <Icon type="info-circle" className={styles.reverseChannelInfo} />
-                                    </Tooltip>
-                                </span>
-                                <Switch
-                                    checked={enableReverseChannel}
-                                    onChange={(checked) => {
-                                        setEnableReverseChannel(checked);
-                                        if (autoInit || tokenInfo) {
-                                            fetchTokenInfo(checked, noService);
-                                        }
-                                    }}
-                                />
-                            </div>
-                            <div className={styles.reverseChannelToggle}>
-                                <span className={styles.reverseChannelLabel}>
-                                    <span>{formatMessage({ id: "agent.install.no_sudo.label" })}</span>
-                                    <Tooltip title={formatMessage({ id: "agent.install.no_sudo.help" })}>
-                                        <Icon type="info-circle" className={styles.reverseChannelInfo} />
-                                    </Tooltip>
-                                </span>
-                                <Switch
-                                    checked={noService}
-                                    onChange={(checked) => {
-                                        setNoService(checked);
-                                        if (autoInit || tokenInfo) {
-                                            fetchTokenInfo(enableReverseChannel, checked);
-                                        }
-                                    }}
-                                />
-                            </div>
-                        </div>
-                    ) : null}
-                </div>
                 {
                     tokenInfo && (
                         <div className={styles.shell}>
@@ -111,6 +62,56 @@ export default ({autoInit = false, centerToggle = false}) => {
                                     id:"agent.install.setup.desc"
                                 })}：
                             </p>
+                            {showAdvanced ? (
+                                <div className={`${styles.advancedWrap} ${centerToggle ? styles.advancedWrapCentered : ""}`}>
+                                    <Button
+                                        type="link"
+                                        className={styles.advancedToggle}
+                                        onClick={() => setAdvancedVisible((visible) => !visible)}
+                                    >
+                                        {formatMessage({ id: "agent.install.advanced.title" })}
+                                        <Icon type={advancedVisible ? "up" : "down"} />
+                                    </Button>
+                                    {advancedVisible ? (
+                                        <div className={`${styles.toggleStack} ${centerToggle ? styles.toggleStackCentered : ""}`}>
+                                            <div className={styles.reverseChannelToggle}>
+                                                <span className={styles.reverseChannelLabel}>
+                                                    <span>{formatMessage({ id: "agent.install.reverse_channel.label" })}</span>
+                                                    <Tooltip title={formatMessage({ id: "agent.install.reverse_channel.help" })}>
+                                                        <Icon type="info-circle" className={styles.reverseChannelInfo} />
+                                                    </Tooltip>
+                                                </span>
+                                                <Switch
+                                                    checked={enableReverseChannel}
+                                                    onChange={(checked) => {
+                                                        setEnableReverseChannel(checked);
+                                                        if (autoInit || tokenInfo) {
+                                                            fetchTokenInfo(checked, noService);
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
+                                            <div className={styles.reverseChannelToggle}>
+                                                <span className={styles.reverseChannelLabel}>
+                                                    <span>{formatMessage({ id: "agent.install.no_sudo.label" })}</span>
+                                                    <Tooltip title={formatMessage({ id: "agent.install.no_sudo.help" })}>
+                                                        <Icon type="info-circle" className={styles.reverseChannelInfo} />
+                                                    </Tooltip>
+                                                </span>
+                                                <Switch
+                                                    checked={noService}
+                                                    onChange={(checked) => {
+                                                        setNoService(checked);
+                                                        if (autoInit || tokenInfo) {
+                                                            fetchTokenInfo(enableReverseChannel, checked);
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    ) : null}
+                                </div>
+                            ) : null}
                             <div style={{
                                 background: "#f6ffed",
                                 border: "1px solid #b7eb8f",

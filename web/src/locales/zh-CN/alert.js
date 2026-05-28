@@ -365,7 +365,7 @@ export default {
   "alert.channel.form.email.template.body": "正文",
   "alert.channel.form.email.template.body.required": "请输入正文！",
   "alert.channel.form.email.send.test": "发送测试邮件",
-  "alert.rule.form.template.sync": "同步内置模板",
+  "alert.rule.form.template.sync": "同步模板",
   "alert.rule.form.template.sync.success": "已将当前规则模板同步到数据库",
   "alert.rule.form.template.sync.failed": "同步规则模板失败",
   "alert.channel.enable.tip.email_incomplete":

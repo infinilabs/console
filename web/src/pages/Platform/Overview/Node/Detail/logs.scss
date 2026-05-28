@@ -47,6 +47,23 @@
     margin-left: auto;
   }
 
+  .log-latest-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 32px;
+    padding: 0 12px;
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    background: #fff;
+
+    &__label {
+      color: rgba(0, 0, 0, 0.85);
+      white-space: nowrap;
+      line-height: 1;
+    }
+  }
+
   .log-file-select {
     width: min(100%, 460px);
     align-self: flex-start;

@@ -31,19 +31,34 @@
 
 .logLayout {
     display: flex;
+    align-items: stretch;
     gap: 12px;
     width: 100%;
 
     .side {
         width: 220px;
+        padding: 24px 15px;
+        border: 1px solid rgb(240, 240, 240);
+        border-radius: 2px;
+        background-color: #ffffff;
+        box-sizing: border-box;
     }
 
     .result {
-        position: relative;
         width: calc(100% - 220px - 12px);
+        min-width: 0;
 
         .header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             margin-bottom: 16px;
+        }
+
+        .searchBox {
+            flex: 1;
+            min-width: 0;
+            max-width: 600px;
         }
 
         .histogram {
@@ -57,15 +72,15 @@
 
     .expandAndCollapse {
         cursor: pointer;
-        z-index: 10;
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
         height: 32px;
-        line-height: 32px;
-        border-radius: 0 4px 4px 0;
+        flex: 0 0 28px;
+        border-radius: 4px;
         background-color: rgba(234, 244, 255, 1);
+        color: rgba(0, 127, 255, 1);
         text-align: center;
     }
 

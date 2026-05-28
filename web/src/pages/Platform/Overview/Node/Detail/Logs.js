@@ -410,16 +410,12 @@ const Logs = (props) => {
             {selectedLogFile ? (
               <Tooltip title={formatLogFileLabel(selectedLogFile, true)}>
                 <div className="log-file-summary">
-                  <span className="log-file-summary__name">{selectedLogFile.name}</span>
                   {selectedLogFile.logs_path ? (
                     <span className="log-file-summary__path">
                       {selectedLogFile.logs_path}
                     </span>
                   ) : null}
-                  <span className="log-file-summary__meta">
-                    {formatter.bytes(selectedLogFile.size_in_bytes || 0)}
-                  </span>
-                  <span className="log-file-summary__meta">
+                  <span className="log-file-summary__time">
                     {moment(selectedLogFile.modify_time).format("YYYY.MM.DD HH:mm")}
                   </span>
                 </div>

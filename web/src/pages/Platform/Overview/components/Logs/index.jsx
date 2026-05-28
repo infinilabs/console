@@ -1,4 +1,4 @@
-import { Empty, Input, Spin, Table } from "antd";
+import { Empty, Icon, Input, Spin, Table } from "antd";
 import styles from "./index.less"
 import DatePicker from "@/common/src/DatePicker";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -276,28 +276,27 @@ export default (props) => {
                                 />
                             </div>
                             <div className={styles.result}>
-                                <span
-                                    className={styles.expandAndCollapse}
-                                    onClick={() => setSideVisible((visible) => !visible)}
-                                    title={
-                                        sideVisible
-                                            ? formatMessage({ id: "listview.side.button.collapse" })
-                                            : formatMessage({ id: "listview.side.button.expand" })
-                                    }
-                                >
-                                    <span style={{ fontSize: 12 }}>
-                                        {sideVisible ? <span>&lt;</span> : <span>&gt;</span>}
-                                    </span>
-                                </span>
                                 <div className={styles.header}>
-                                    <Input.Search 
-                                        style={{ maxWidth: 600 }} 
-                                        placeholder={formatMessage({ id: "cluster.monitor.logs.search.placeholder" })} 
-                                        onSearch={value => {
-                                            setQueryParams((st) => ({ ...st, from: 0, keyword: value }));
-                                        }} 
-                                        enterButton={formatMessage({ id: "form.button.search" })}
-                                    />
+                                    <span
+                                        className={styles.expandAndCollapse}
+                                        onClick={() => setSideVisible((visible) => !visible)}
+                                        title={
+                                            sideVisible
+                                                ? formatMessage({ id: "listview.side.button.collapse" })
+                                                : formatMessage({ id: "listview.side.button.expand" })
+                                        }
+                                    >
+                                        <Icon type={sideVisible ? "left" : "right"} style={{ fontSize: 12 }} />
+                                    </span>
+                                    <div className={styles.searchBox}>
+                                        <Input.Search 
+                                            placeholder={formatMessage({ id: "cluster.monitor.logs.search.placeholder" })} 
+                                            onSearch={value => {
+                                                setQueryParams((st) => ({ ...st, from: 0, keyword: value }));
+                                            }} 
+                                            enterButton={formatMessage({ id: "form.button.search" })}
+                                        />
+                                    </div>
                                 </div>
                                 <div className={styles.histogram}>
                                     <WidgetRender
@@ -350,7 +349,7 @@ export default (props) => {
                             >
                                 {!isAgent && (
                                     <div className={styles.installAgentWrap}>
-                                        <InstallAgent autoInit={false}/>
+                                        <InstallAgent autoInit={false} centerToggle={true}/>
                                     </div>
                                 )}
                             </Empty>

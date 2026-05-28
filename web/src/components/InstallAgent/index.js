@@ -7,7 +7,7 @@ import { CopyToClipboard } from "react-copy-to-clipboard";
 import { formatMessage } from "umi/locale"; 
 import { getDocPathByLang, getWebsitePathByLang } from "@/utils/utils";
 
-export default ({autoInit = false}) => {
+export default ({autoInit = false, centerToggle = false}) => {
 
     const [tokenLoading, setTokenLoading] = useState(false);
     const [enableReverseChannel, setEnableReverseChannel] = useState(false);
@@ -16,14 +16,14 @@ export default ({autoInit = false}) => {
 
     const [tokenInfo, setTokenInfo] = useState();
 
-    const fetchTokenInfo = async () => {
+    const fetchTokenInfo = async (reverseChannelEnabled = enableReverseChannel) => {
         setTokenInfo()
         setTokenLoading(true)
         const res = await request('/instance/_generate_install_script', {
             method: "POST",
             body: {
                 gateway_endpoints: seletedGateways,
-                enable_reverse_channel: enableReverseChannel,
+                enable_reverse_channel: reverseChannelEnabled,
             }
         })
         setTokenInfo(res)
@@ -39,7 +39,7 @@ export default ({autoInit = false}) => {
     return (
         <Spin spinning={tokenLoading}>
             <div className={styles.installAgent}>
-                <div className={styles.reverseChannelToggle}>
+                <div className={`${styles.reverseChannelToggle} ${centerToggle ? styles.reverseChannelToggleCentered : ""}`}>
                 <span className={styles.reverseChannelLabel}>
                     <span>{formatMessage({ id: "agent.install.reverse_channel.label" })}</span>
                     <Tooltip title={formatMessage({ id: "agent.install.reverse_channel.help" })}>
@@ -51,10 +51,8 @@ export default ({autoInit = false}) => {
                     onChange={(checked) => {
                         setEnableReverseChannel(checked);
                         if (autoInit || tokenInfo) {
-                                setTimeout(() => {
-                                    fetchTokenInfo();
-                                }, 0);
-                            }
+                            fetchTokenInfo(checked);
+                        }
                         }}
                     />
                 </div>

@@ -81,6 +81,7 @@ export const WidgetRender = (props) => {
                   hideHeader: true,
                   hideBorder: true,
                }}
+               lockInteractions={false}
                 globalRangeCache={globalRangeCache}
                 onGlobalRangeCacheChange={setGlobalRangeCache}
                 onGlobalQueriesChange={onGlobalQueriesChange}

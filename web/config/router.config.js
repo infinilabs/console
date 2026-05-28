@@ -355,6 +355,11 @@ export default [
             authority: ["gateway.instance:all"],
           },
           {
+            path: "/resource/runtime/instance/:instance_id",
+            hideInMenu: true,
+            hideInBreadcrumb: true,
+          },
+          {
             path: "/resource/runtime/instance/:instance_id/task",
             name: "runtime.task",
             component: "./Gateway/Task/index",

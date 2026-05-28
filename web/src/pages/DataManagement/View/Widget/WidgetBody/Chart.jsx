@@ -55,7 +55,8 @@ export default (props) => {
       fetchParamsCache,
       handleContextMenu,
       isFullScreen,
-      onResultChange
+      onResultChange,
+      lockInteractions,
     } = props;
 
     const { series = [] } = record;
@@ -67,7 +68,11 @@ export default (props) => {
 
     const chartRef = useRef(null)
 
-    const isLockRef = useRef(isEdit || isFullScreen)
+    const getIsInteractionLocked = () =>
+      isEdit ||
+      (typeof lockInteractions === "boolean" ? lockInteractions : isFullScreen);
+
+    const isLockRef = useRef(getIsInteractionLocked())
 
     const fetchData = async (params, zoom, refresh) => {
       if (['iframe'].includes(type) || !params || !params.currentQueries) return;
@@ -355,8 +360,8 @@ export default (props) => {
     }
 
     useEffect(() => {
-      isLockRef.current = isEdit || isFullScreen
-    }, [isEdit, isFullScreen])
+      isLockRef.current = getIsInteractionLocked()
+    }, [isEdit, isFullScreen, lockInteractions])
 
     const onChartElementClick = (data, callback) => {
       if (isLockRef.current) return;
@@ -430,7 +435,7 @@ export default (props) => {
               isTimeSeries={currentParams?.isTimeSeries}
               highlightRange={highlightRange}
               currentQueries={currentParams?.currentQueries || {}}
-              isLock={isEdit || isFullScreen}
+              isLock={getIsInteractionLocked()}
               isEdit={isEdit}
               isFullScreen={isFullScreen}
               handleContextMenu={handleContextMenu}

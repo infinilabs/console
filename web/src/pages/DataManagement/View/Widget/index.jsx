@@ -43,6 +43,7 @@ export default (props) => {
     hideHeader,
     displayOptions={},
     onResultChange,
+    lockInteractions,
   } = props;
 
   const [cacheRecord, setCacheRecord] = useState(record)
@@ -253,6 +254,7 @@ export default (props) => {
           queriesBarParams={queriesBarParams}
           handleContextMenu={handleContextMenu}
           isFullScreen={isFullScreen}
+          lockInteractions={lockInteractions}
           onResultChange={onResultChange} 
         />
       </Spin>

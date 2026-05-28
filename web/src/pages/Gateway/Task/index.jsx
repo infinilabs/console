@@ -94,22 +94,27 @@ const TaskList = (props) => {
   const columns = useMemo(
     () => [
       {
-        title: "Name",
+        title: formatMessage({ id: "gateway.task.column.name" }),
         dataIndex: "name",
       },
       {
-        title: "State",
+        title: formatMessage({ id: "gateway.task.column.state" }),
         dataIndex: "state",
+        render: (text) =>
+          formatMessage({
+            id: `gateway.task.state.${String(text || "").toLowerCase()}`,
+            defaultMessage: text,
+          }),
       },
       {
-        title: "Start Time",
+        title: formatMessage({ id: "gateway.task.column.start_time" }),
         dataIndex: "start_time",
         render: (text) => {
           return moment(text).format("YYYY-MM-DD HH:mm:ss");
         },
       },
       {
-        title: "End Time",
+        title: formatMessage({ id: "gateway.task.column.end_time" }),
         dataIndex: "end_time",
         render: (text) => {
           return text ? moment(text).format("YYYY-MM-DD HH:mm:ss") : text;
@@ -125,20 +130,20 @@ const TaskList = (props) => {
             <div>
               {record.state === taskStatus.STOPPED ? (
                 <Popconfirm
-                  title="Sure to start?"
+                  title={formatMessage({ id: "gateway.task.confirm.start" })}
                   onConfirm={() => onStartClick(record.name)}
                 >
-                  <a>Start</a>
+                  <a>{formatMessage({ id: "form.button.start" })}</a>
                 </Popconfirm>
               ) : null}
 
               {/* <Divider type="vertical" /> */}
               {record.state !== taskStatus.STOPPED ? (
                 <Popconfirm
-                  title="Sure to stop?"
+                  title={formatMessage({ id: "gateway.task.confirm.stop" })}
                   onConfirm={() => onStopClick(record.name)}
                 >
-                  <a>Stop</a>
+                  <a>{formatMessage({ id: "form.button.stop" })}</a>
                 </Popconfirm>
               ) : null}
             </div>
@@ -243,14 +248,14 @@ const TaskList = (props) => {
                 onClick={onBatchStartClick}
                 disabled={state.selectedStartKeys.length == 0}
               >
-                Start
+                {formatMessage({ id: "form.button.start" })}
               </Button>
               <Button
                 onClick={onBatchStopClick}
                 style={{ marginLeft: 10 }}
                 disabled={state.selectedStopKeys.length == 0}
               >
-                Stop
+                {formatMessage({ id: "form.button.stop" })}
               </Button>
             </>
           ) : null}
@@ -295,7 +300,10 @@ const TaskList = (props) => {
                   total: taskList.length,
                   showSizeChanger: true,
                   showTotal: (total, range) =>
-                    `${range[0]}-${range[1]} of ${total} items`,
+                    formatMessage(
+                      { id: "system.security.pagination.total" },
+                      { start: range[0], end: range[1], total }
+                    ),
                 }
               : false
           }

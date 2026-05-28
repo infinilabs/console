@@ -501,6 +501,11 @@ const Index = forwardRef((props, ref) => {
     });
   };
 
+  const histogramQuery = useMemo(() => {
+    const query = formatQueryBody(queryParams)?.query;
+    return query ? JSON.stringify(query) : undefined;
+  }, [JSON.stringify(queryParams)]);
+
   useEffect(() => {
     const nextParam = { ...(param || {}), ...queryParams };
     if (isEqual(param || {}, nextParam)) {
@@ -653,6 +658,7 @@ const Index = forwardRef((props, ref) => {
                 <WidgetRender
                   widget={histogramState.widget}
                   range={histogramState.range}
+                  query={histogramQuery}
                   queryParams={queryParams?.filters || {}}
                   onGlobalQueriesChange={onHistogramQueriesChange}
                 />

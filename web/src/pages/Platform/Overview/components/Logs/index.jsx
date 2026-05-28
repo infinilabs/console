@@ -454,7 +454,7 @@ export default (props) => {
                             description={formatMessage({ id: "cluster.monitor.logs.empty.agentless" })}
                         >
                             <div className={styles.installAgentWrap}>
-                                <InstallAgent autoInit={false} centerToggle={true} showAdvanced={false} />
+                                <InstallAgent autoInit={false} centerToggle={true} />
                             </div>
                         </Empty>
                     </div>

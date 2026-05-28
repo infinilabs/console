@@ -528,7 +528,7 @@ export default (props) => {
       const isSingleMetric = series.length === 1;
 
       let newData = Array.isArray(data) ? data : [];
-      if (Number.isInteger(size)) {
+      if (Number.isInteger(size) && !currentParams?.isTimeSeries) {
         newData = newData.map((item) => { 
           item = Array.isArray(item) ? item : [];
           if(order == "desc"){
@@ -562,6 +562,15 @@ export default (props) => {
               name: isSingleMetric ? item.group : `${item.group}-${item.name}`,
             }))
           }
+          newData = [...newData].sort((a, b) => {
+            const timestampDiff = Number(a?.timestamp || 0) - Number(b?.timestamp || 0);
+            if (timestampDiff !== 0) {
+              return timestampDiff;
+            }
+            const nameA = `${a?.name || ""}`;
+            const nameB = `${b?.name || ""}`;
+            return nameA.localeCompare(nameB);
+          });
         } else {
           if (isGroup) {
             newData = newData.map((item) => ({
@@ -577,11 +586,11 @@ export default (props) => {
         }
 
       }
-      if (order === "desc") {
+      if (!currentParams?.isTimeSeries && order === "desc") {
         newData = newData.sort((a, b) => b.value - a.value)
       }
 
-      if (order === "asc") {
+      if (!currentParams?.isTimeSeries && order === "asc") {
         newData = newData.sort((a, b) => a.value - b.value)
       }
 

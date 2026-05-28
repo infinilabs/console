@@ -26,7 +26,7 @@ export default {
   "cluster.manage.label.provider.digital-ocean": "Digital Ocean",
   "cluster.manage.label.region": "集群位置",
   "cluster.manage.table.column.monitored": "监控启用",
-  "cluster.manage.table.column.monitor_toggle": "监控启停",
+  "cluster.manage.table.column.monitor_toggle": "监控状态",
   "cluster.manage.table.column.monitor_mode": "监控模式",
   "cluster.manage.table.column.discovery.enabled": "节点发现",
   "cluster.manage.table.column.operation": "操作",

@@ -26,7 +26,7 @@ export default {
   "cluster.manage.table.column.node_count": "Nodes",
   "cluster.manage.table.column.endpoint": "Endpoint",
   "cluster.manage.table.column.monitored": "Monitored",
-  "cluster.manage.table.column.monitor_toggle": "Monitoring",
+  "cluster.manage.table.column.monitor_toggle": "Monitoring Status",
   "cluster.manage.table.column.monitor_mode": "Monitor Mode",
   "cluster.manage.table.column.discovery.enabled": "Discovery",
   "cluster.manage.table.column.operation": "Actions",

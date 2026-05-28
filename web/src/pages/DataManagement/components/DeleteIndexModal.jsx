@@ -104,7 +104,10 @@ export default (props) => {
           </p>
         </p>
       ) : (
-        <p style={{ color: "red" }}>
+        <p style={{ color: "red", display: "flex", alignItems: "center", gap: 8 }}>
+          <span role="img" aria-label="warning">
+            ⚠️
+          </span>
           {formatMessage({ id: "indices.delete.modal.description" })}
         </p>
       )}

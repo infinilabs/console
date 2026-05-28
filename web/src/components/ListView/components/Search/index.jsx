@@ -5,6 +5,9 @@ const { Search } = Input;
 
 export default (props) => {
   const { value = "", onSearch, placeholder = null } = props;
+  const handleSearch = (nextValue) => {
+    onSearch(`${nextValue ?? ""}`.trim());
+  };
 
   return (
     <Search
@@ -12,9 +15,12 @@ export default (props) => {
       placeholder={placeholder}
       value={value}
       enterButton={formatMessage({ id: "form.button.search" })}
-      onSearch={onSearch}
+      onSearch={handleSearch}
       onChange={(e) => {
         onSearch(e.currentTarget.value);
+      }}
+      onBlur={(e) => {
+        handleSearch(e.currentTarget.value);
       }}
     />
   );

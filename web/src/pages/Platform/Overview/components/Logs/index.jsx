@@ -318,7 +318,7 @@ export default (props) => {
                                         <Input.Search 
                                             placeholder={formatMessage({ id: "cluster.monitor.logs.search.placeholder" })} 
                                             onSearch={value => {
-                                                setQueryParams((st) => ({ ...st, from: 0, keyword: value }));
+                                                setQueryParams((st) => ({ ...st, from: 0, keyword: `${value ?? ""}`.trim() }));
                                             }} 
                                             enterButton={formatMessage({ id: "form.button.search" })}
                                         />

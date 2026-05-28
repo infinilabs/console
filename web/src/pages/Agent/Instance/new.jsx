@@ -30,6 +30,36 @@ const steps = [
   },
 ];
 
+const sanitizeRegistrationAuth = (values = {}) => {
+  const sanitized = { ...values };
+  const isAuth = !!sanitized.isAuth;
+  const authType = sanitized.auth_type;
+
+  delete sanitized.isAuth;
+  delete sanitized.auth_type;
+
+  if (!isAuth) {
+    delete sanitized.access_token;
+    delete sanitized.basic_auth;
+    return sanitized;
+  }
+
+  if (authType === "basic_auth") {
+    const username = sanitized.basic_auth?.username?.trim?.() || "";
+    const password = sanitized.basic_auth?.password || "";
+    sanitized.basic_auth = {
+      username,
+      password,
+    };
+    delete sanitized.access_token;
+    return sanitized;
+  }
+
+  sanitized.access_token = (sanitized.access_token || "").trim();
+  delete sanitized.basic_auth;
+  return sanitized;
+};
+
 const parseResponsePayload = async (response) => {
   if (!response || typeof response.text !== "function") {
     return null;
@@ -81,6 +111,7 @@ const NewStep = ({ current, changeStep, history }) => {
       ...result,
       endpoint: (result.endpoint || "").trim(),
     };
+    result = sanitizeRegistrationAuth(result);
     setIsLoading(true);
 
     result.endpoint = addHttpSchema(result.endpoint, result?.isTLS);
@@ -128,7 +159,7 @@ const NewStep = ({ current, changeStep, history }) => {
     const newVals = {
       id: instanceConfig.instance_id,
       ...instanceConfig,
-      ...result,
+      ...sanitizeRegistrationAuth(result),
     };
     setIsLoading(true);
     const res = await request(`/instance`, {

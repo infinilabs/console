@@ -26,7 +26,7 @@ export default {
     "探针地址，例如：127.0.0.1:2900",
   "agent.instance.field.endpoint.form.required": "请输入探针 API 地址！",
   "agent.instance.registration.copy": "复制",
-  "agent.instance.registration.console.title": "Console 访问信息",
+  "agent.instance.registration.console.title": "INFINI Console 访问信息",
   "agent.instance.registration.access.endpoint": "访问地址",
   "agent.instance.registration.access.credential": "访问凭据",
   "agent.instance.registration.console.endpoint.tip":
@@ -45,6 +45,9 @@ export default {
     "请粘贴探针访问凭据。",
   "agent.instance.registration.agent.token.expire.tip":
     "凭据长期有效，轮换或替换后失效。",
+  "agent.instance.registration.auth.type": "认证方式",
+  "agent.instance.registration.auth.type.access_token": "访问凭据",
+  "agent.instance.registration.auth.type.basic_auth": "用户名 / 密码",
   "agent.instance.step.result.button.register_new": "继续注册新探针",
   "agent.instance.step.result.button.view_list": "查看探针列表",
   "agent.instance.column.agent_ip": "探针 IP",

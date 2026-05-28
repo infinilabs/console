@@ -8,6 +8,7 @@ import {
   message,
   Tooltip,
   Popover,
+  Radio,
 } from "antd";
 import React from "react";
 import { formatMessage } from "umi/locale";
@@ -15,13 +16,20 @@ import { CopyToClipboard } from "react-copy-to-clipboard";
 import request from "@/utils/request";
 import { isTLS, removeHttpSchema } from "@/utils/utils";
 
+const AUTH_TYPE_ACCESS_TOKEN = "access_token";
+const AUTH_TYPE_BASIC_AUTH = "basic_auth";
+
 @Form.create()
 export class InitialStep extends React.Component {
   constructor(props) {
     super(props);
+    const hasAccessToken = !!props.initialValue?.access_token;
+    const hasBasicAuth = !!props.initialValue?.basic_auth?.username;
     this.state = {
       isPageTLS: isTLS(props.initialValue?.endpoint),
       preparingRegistration: false,
+      needAuth: hasAccessToken || hasBasicAuth,
+      authType: hasBasicAuth ? AUTH_TYPE_BASIC_AUTH : AUTH_TYPE_ACCESS_TOKEN,
     };
   }
 
@@ -65,6 +73,36 @@ export class InitialStep extends React.Component {
     });
   };
 
+  handleAuthChange = (val) => {
+    this.setState({
+      needAuth: val,
+    });
+    if (!val) {
+      this.props.form.setFieldsValue({
+        access_token: "",
+        "basic_auth.username": undefined,
+        "basic_auth.password": undefined,
+      });
+    }
+  };
+
+  handleAuthTypeChange = (event) => {
+    const nextType = event.target.value;
+    this.setState({
+      authType: nextType,
+    });
+    if (nextType === AUTH_TYPE_ACCESS_TOKEN) {
+      this.props.form.setFieldsValue({
+        "basic_auth.username": undefined,
+        "basic_auth.password": undefined,
+      });
+      return;
+    }
+    this.props.form.setFieldsValue({
+      access_token: "",
+    });
+  };
+
   renderCopyButton = (text, style = {}) => {
     const button = (
       <Tooltip
@@ -95,11 +133,13 @@ export class InitialStep extends React.Component {
       <CopyToClipboard
         text={text}
         onCopy={() => {
-          message.success(
-            formatMessage({
+          message.open({
+            type: "success",
+            key: "agent-registration-copy-success",
+            content: formatMessage({
               id: "agent.install.setup.copy.success",
-            })
-          );
+            }),
+          });
         }}
       >
         {button}
@@ -152,10 +192,13 @@ export class InitialStep extends React.Component {
 
   renderConsoleAccessInfo = (consoleEndpoint, managerToken, managerTokenTip) => {
     const hasConsoleAccessInfo = !!(consoleEndpoint || managerToken);
+    const title = formatMessage({
+      id: "agent.instance.registration.console.title",
+    });
     const content = (
-      <div style={{ width: 360, maxWidth: "calc(100vw - 64px)" }}>
+      <div style={{ width: 420, maxWidth: "calc(100vw - 64px)" }}>
         <div style={{ marginBottom: 16 }}>
-          <div style={{ marginBottom: 8, fontWeight: 500 }}>
+          <div style={{ marginBottom: 8, fontWeight: 600, fontSize: 14 }}>
             {this.renderLabel(
               "agent.instance.registration.access.endpoint",
               formatMessage({
@@ -167,7 +210,7 @@ export class InitialStep extends React.Component {
         </div>
 
         <div>
-          <div style={{ marginBottom: 8, fontWeight: 500 }}>
+          <div style={{ marginBottom: 8, fontWeight: 600, fontSize: 14 }}>
             {this.renderLabel(
               "agent.instance.registration.access.credential",
               managerTokenTip.join(" ")
@@ -178,38 +221,45 @@ export class InitialStep extends React.Component {
       </div>
     );
 
-    const icon = (
+    const trigger = (
       <Tooltip
-        title={formatMessage({
-          id: "agent.instance.registration.console.title",
-        })}
+        title={title}
       >
-        <Icon
-          type="info-circle"
+        <span
           style={{
             marginLeft: 8,
             color: hasConsoleAccessInfo ? "#1890ff" : "rgba(0,0,0,0.25)",
             cursor: hasConsoleAccessInfo ? "pointer" : "not-allowed",
-            fontSize: 16,
+            fontSize: 14,
+            fontWeight: 500,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+            whiteSpace: "nowrap",
           }}
-        />
+        >
+          <span>{title}</span>
+          <Icon type="down" style={{ fontSize: 12 }} />
+        </span>
       </Tooltip>
     );
 
     if (!hasConsoleAccessInfo) {
-      return icon;
+      return trigger;
     }
 
     return (
       <Popover
         trigger="click"
         placement="rightTop"
-        title={formatMessage({
-          id: "agent.instance.registration.console.title",
-        })}
+        title={
+          <span style={{ fontSize: 16, fontWeight: 600, lineHeight: "24px" }}>
+            {title}
+          </span>
+        }
         content={content}
       >
-        {icon}
+        {trigger}
       </Popover>
     );
   };
@@ -345,31 +395,129 @@ export class InitialStep extends React.Component {
           </Form.Item>
 
           <Form.Item
-            label={this.renderLabel(
-              "agent.instance.registration.access.credential",
-              agentAccessTokenTip
-            )}
+            label={formatMessage({
+              id: "cluster.regist.step.connect.label.auth",
+            })}
           >
-            {getFieldDecorator("access_token", {
-              initialValue: initialValue?.access_token || "",
-              rules: [
-                {
-                  required: true,
-                  message: formatMessage({
-                    id: "agent.instance.registration.agent.token.required",
-                  }),
-                },
-              ],
+            {getFieldDecorator("isAuth", {
+              initialValue: this.state.needAuth,
+              valuePropName: "checked",
             })(
-              <Input.TextArea
-                autoComplete="off"
-                autoSize={{ minRows: 3, maxRows: 4 }}
-                placeholder={formatMessage({
-                  id: "agent.instance.registration.agent.token.placeholder",
-                })}
+              <Switch
+                onChange={this.handleAuthChange}
+                checkedChildren={<Icon type="check" />}
+                unCheckedChildren={<Icon type="close" />}
               />
             )}
           </Form.Item>
+
+          {this.state.needAuth ? (
+            <>
+              <Form.Item
+                label={formatMessage({
+                  id: "agent.instance.registration.auth.type",
+                })}
+              >
+                {getFieldDecorator("auth_type", {
+                  initialValue: this.state.authType,
+                })(
+                  <Radio.Group onChange={this.handleAuthTypeChange}>
+                    <Radio.Button value={AUTH_TYPE_ACCESS_TOKEN}>
+                      {formatMessage({
+                        id: "agent.instance.registration.auth.type.access_token",
+                      })}
+                    </Radio.Button>
+                    <Radio.Button value={AUTH_TYPE_BASIC_AUTH}>
+                      {formatMessage({
+                        id: "agent.instance.registration.auth.type.basic_auth",
+                      })}
+                    </Radio.Button>
+                  </Radio.Group>
+                )}
+              </Form.Item>
+
+              {this.state.authType === AUTH_TYPE_ACCESS_TOKEN ? (
+                <Form.Item
+                  label={this.renderLabel(
+                    "agent.instance.registration.access.credential",
+                    agentAccessTokenTip
+                  )}
+                >
+                  {getFieldDecorator("access_token", {
+                    initialValue: initialValue?.access_token || "",
+                    rules: [
+                      {
+                        required: true,
+                        message: formatMessage({
+                          id: "agent.instance.registration.agent.token.required",
+                        }),
+                      },
+                    ],
+                  })(
+                    <Input.TextArea
+                      autoComplete="off"
+                      autoSize={{ minRows: 3, maxRows: 4 }}
+                      placeholder={formatMessage({
+                        id: "agent.instance.registration.agent.token.placeholder",
+                      })}
+                    />
+                  )}
+                </Form.Item>
+              ) : (
+                <>
+                  <Form.Item
+                    label={formatMessage({
+                      id: "cluster.regist.step.connect.label.username",
+                    })}
+                  >
+                    {getFieldDecorator("basic_auth.username", {
+                      initialValue: initialValue?.basic_auth?.username || "",
+                      rules: [
+                        {
+                          required: true,
+                          message: formatMessage({
+                            id: "cluster.regist.form.verify.required.auth_username",
+                          }),
+                        },
+                      ],
+                    })(
+                      <Input
+                        autoComplete="off"
+                        placeholder={formatMessage({
+                          id: "credential.manage.form.username",
+                        })}
+                      />
+                    )}
+                  </Form.Item>
+                  <Form.Item
+                    label={formatMessage({
+                      id: "cluster.regist.step.connect.label.password",
+                    })}
+                    hasFeedback
+                  >
+                    {getFieldDecorator("basic_auth.password", {
+                      initialValue: initialValue?.basic_auth?.password || "",
+                      rules: [
+                        {
+                          required: true,
+                          message: formatMessage({
+                            id: "cluster.regist.form.verify.required.auth_password",
+                          }),
+                        },
+                      ],
+                    })(
+                      <Input.Password
+                        autoComplete="off"
+                        placeholder={formatMessage({
+                          id: "credential.manage.form.password",
+                        })}
+                      />
+                    )}
+                  </Form.Item>
+                </>
+              )}
+            </>
+          ) : null}
         </Form>
       </Spin>
     );

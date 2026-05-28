@@ -153,6 +153,7 @@ class AliasManage extends PureComponent {
     formValues: {},
     updateFormValues: {},
     pageSize: 10,
+    editMode: "UPDATE",
   };
 
   columns = [
@@ -293,10 +294,8 @@ class AliasManage extends PureComponent {
     let newState = {
       updateModalVisible: !!flag,
       updateFormValues: values,
+      editMode: values.alias ? "UPDATE" : "NEW",
     };
-    if (!values.alias) {
-      newState.editMode = "NEW";
-    }
 
     this.setState(newState);
   };
@@ -316,10 +315,10 @@ class AliasManage extends PureComponent {
     this.handleModalVisible();
   };
 
-  handleUpdate = (fields) => {
+  handleUpdate = async (fields) => {
     let upVals = {};
     for (let k in fields) {
-      if (fields[k]) {
+      if (fields[k] !== undefined && fields[k] !== null && fields[k] !== "") {
         if (k === "filter") {
           upVals[k] = JSON.parse(fields[k]);
         } else {
@@ -328,15 +327,25 @@ class AliasManage extends PureComponent {
       }
     }
     const { dispatch } = this.props;
-    dispatch({
+    const res = await dispatch({
       type: "alias/update",
       payload: {
         actionBody: upVals,
         clusterID: this.props.selectedClusterID,
       },
     });
-
-    message.success("updated successfully");
+    if (!res?.acknowledged) {
+      message.error(formatMessage({ id: "app.message.update.failed" }));
+      return;
+    }
+    message.success(
+      formatMessage({
+        id:
+          this.state.editMode === "NEW"
+            ? "app.message.create.success"
+            : "app.message.update.success",
+      })
+    );
     this.handleUpdateModalVisible();
   };
 
@@ -540,7 +549,7 @@ class AliasIndexTable extends React.Component {
             </a>
             <Divider type="vertical" />
             <Popconfirm
-              title="Sure to delete？"
+              title={formatMessage({ id: "app.message.confirm.delete" })}
               onConfirm={() => {
                 this.props.handleDeleteClick({
                   ...record,

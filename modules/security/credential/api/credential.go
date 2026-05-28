@@ -257,18 +257,32 @@ func credentialNameExists(name, excludeID string) (bool, error) {
 		return false, nil
 	}
 
-	existing := credential.Credential{}
-	err, result := orm.GetBy("name", name, &existing)
+	existing := []credential.Credential{}
+	query := orm.Query{
+		Size: 10,
+		Conds: orm.And(
+			orm.Eq("name", name),
+		),
+	}
+	err, _ := orm.SearchWithJSONMapper(&existing, &query)
 	if err != nil {
 		return false, err
 	}
-	if result.Total == 0 {
+	if len(existing) == 0 {
 		return false, nil
 	}
-	if strings.TrimSpace(excludeID) != "" && existing.ID == excludeID {
-		return false, nil
+	return hasCredentialNameConflict(existing, excludeID), nil
+}
+
+func hasCredentialNameConflict(existing []credential.Credential, excludeID string) bool {
+	excludeID = strings.TrimSpace(excludeID)
+	for _, item := range existing {
+		if excludeID != "" && item.ID == excludeID {
+			continue
+		}
+		return true
 	}
-	return true, nil
+	return false
 }
 
 func canDelete(cred *credential.Credential) (bool, error) {

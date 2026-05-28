@@ -29,6 +29,31 @@ import TimeLine from "./components/TimeLine";
 import useResizeObserver from "@react-hook/resize-observer";
 import { WidgetRender } from "@/pages/DataManagement/View/WidgetLoader";
 import { buildContainsQueryString } from "@/lib/elasticsearch/util";
+import moment from "moment";
+
+const buildTimestampKeywordFilter = (keyword, timeField) => {
+  const value = `${keyword ?? ""}`.trim();
+  if (!value || !timeField) {
+    return null;
+  }
+  const parsed = moment.tz(
+    value,
+    ["YYYY-MM-DD HH:mm:ss", "YYYY-MM-DDTHH:mm:ss"],
+    true,
+    getTimezone()
+  );
+  if (!parsed.isValid()) {
+    return null;
+  }
+  return {
+    range: {
+      [timeField]: {
+        gte: parsed.clone().startOf("second").toISOString(),
+        lte: parsed.clone().endOf("second").toISOString(),
+      },
+    },
+  };
+};
 
 const Index = forwardRef((props, ref) => {
   const {
@@ -205,6 +230,7 @@ const Index = forwardRef((props, ref) => {
       });
     }
     //query match
+    const keywordFilters = [];
     const searchQuery = buildContainsQueryString(queryParams?.keyword);
     if (searchQuery) {
       let query_string = {
@@ -212,7 +238,24 @@ const Index = forwardRef((props, ref) => {
         fields: searchFields,
         analyze_wildcard: true,
       };
-      filter.push({ query_string });
+      keywordFilters.push({ query_string });
+    }
+    const timestampKeywordFilter = buildTimestampKeywordFilter(
+      queryParams?.keyword,
+      queryParams?.timeRange?.timeField
+    );
+    if (timestampKeywordFilter) {
+      keywordFilters.push(timestampKeywordFilter);
+    }
+    if (keywordFilters.length === 1) {
+      filter.push(keywordFilters[0]);
+    } else if (keywordFilters.length > 1) {
+      filter.push({
+        bool: {
+          should: keywordFilters,
+          minimum_should_match: 1,
+        },
+      });
     }
 
     //sort by

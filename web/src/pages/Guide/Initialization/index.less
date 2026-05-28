@@ -15,6 +15,7 @@
         display: flex;
         flex-direction: column;
         min-height: 0;
+        min-height: clamp(720px, 78vh, 900px);
 
         .stepsContent {
             display: flex;
@@ -32,8 +33,14 @@
     
             .content {
                 border-radius: 12px;
-                min-height: 0;
+                min-height: clamp(520px, 58vh, 680px);
                 flex: 1 1 auto;
+                display: flex;
+                align-items: stretch;
+
+                > * {
+                    width: 100%;
+                }
             }
         }
     

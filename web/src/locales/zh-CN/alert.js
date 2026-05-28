@@ -366,7 +366,7 @@ export default {
   "alert.channel.form.email.template.body.required": "请输入正文！",
   "alert.channel.form.email.send.test": "发送测试邮件",
   "alert.rule.form.template.sync": "同步模板",
-  "alert.rule.form.template.sync.success": "已将当前规则模板同步到数据库",
+  "alert.rule.form.template.sync.success": "当前规则模板同步成功",
   "alert.rule.form.template.sync.failed": "同步规则模板失败",
   "alert.channel.enable.tip.email_incomplete":
     "启用邮件渠道前，请先配置邮件服务器和至少一个收件人。",

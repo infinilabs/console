@@ -384,7 +384,7 @@ export default {
   "alert.channel.form.email.template.body.required": "Please input body!",
   "alert.channel.form.email.send.test": "Send A Test Email",
   "alert.rule.form.template.sync": "Sync template",
-  "alert.rule.form.template.sync.success": "The current rule template has been synced to the database",
+  "alert.rule.form.template.sync.success": "The current rule template has been synced success",
   "alert.rule.form.template.sync.failed": "Failed to sync rule template",
   "alert.channel.enable.tip.email_incomplete":
     "Configure an SMTP server and at least one recipient before enabling this email channel.",

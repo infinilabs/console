@@ -571,3 +571,79 @@ func TestExtractILMPolicyFromDirectBody(t *testing.T) {
 		t.Fatalf("expected extracted policy phases, got %#v", policy)
 	}
 }
+
+func TestExtractILMPolicyConcurrencyWithoutMetadata(t *testing.T) {
+	response := map[string]interface{}{
+		"ilm_.infini_metrics-3days-retention": map[string]interface{}{
+			"policy": map[string]interface{}{
+				"phases": map[string]interface{}{},
+			},
+		},
+	}
+
+	seqNo, primaryTerm := extractILMPolicyConcurrency(response, "ilm_.infini_metrics-3days-retention")
+	if seqNo != -1 || primaryTerm != -1 {
+		t.Fatalf("expected missing concurrency metadata to return -1/-1, got %d/%d", seqNo, primaryTerm)
+	}
+}
+
+func TestExtractILMPolicyConcurrencyFromWrapper(t *testing.T) {
+	response := map[string]interface{}{
+		"ilm_.infini_metrics-3days-retention": map[string]interface{}{
+			"_seq_no":       float64(7),
+			"_primary_term": float64(3),
+			"policy": map[string]interface{}{
+				"phases": map[string]interface{}{},
+			},
+		},
+	}
+
+	seqNo, primaryTerm := extractILMPolicyConcurrency(response, "ilm_.infini_metrics-3days-retention")
+	if seqNo != 7 || primaryTerm != 3 {
+		t.Fatalf("expected wrapper concurrency metadata 7/3, got %d/%d", seqNo, primaryTerm)
+	}
+}
+
+func TestPutILMPolicySkipsConcurrencyWhenMetadataMissing(t *testing.T) {
+	requester := &mockRawRequester{
+		responses: map[string]*util.Result{
+			"PUT http://example.com/_ilm/policy/ilm_.infini_metrics-3days-retention": {
+				StatusCode: http.StatusOK,
+				Body:       []byte(`{"acknowledged":true}`),
+			},
+		},
+	}
+
+	err := putILMPolicy(
+		requester,
+		&elastic.ElasticsearchConfig{Endpoint: "http://example.com"},
+		"ilm_.infini_metrics-3days-retention",
+		map[string]interface{}{
+			"phases": map[string]interface{}{
+				"hot": map[string]interface{}{
+					"actions": map[string]interface{}{
+						"rollover": map[string]interface{}{
+							"max_age":  "3d",
+							"max_size": "50gb",
+						},
+					},
+				},
+				"delete": map[string]interface{}{
+					"min_age": "3d",
+				},
+			},
+		},
+		-1,
+		-1,
+	)
+	if err != nil {
+		t.Fatalf("putILMPolicy returned error: %v", err)
+	}
+
+	if len(requester.calls) != 1 {
+		t.Fatalf("expected one request, got %#v", requester.calls)
+	}
+	if requester.calls[0] != "PUT http://example.com/_ilm/policy/ilm_.infini_metrics-3days-retention" {
+		t.Fatalf("expected put without concurrency query, got %s", requester.calls[0])
+	}
+}

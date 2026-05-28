@@ -283,13 +283,59 @@ func getILMPolicy(requester rawRequester, cfg *elastic.ElasticsearchConfig, poli
 	if err != nil || statusCode == http.StatusNotFound {
 		return nil, 0, 0, statusCode, err
 	}
-	seqNo, _ := response["_seq_no"].(json.Number)
-	primaryTerm, _ := response["_primary_term"].(json.Number)
-	seqNoVal, _ := seqNo.Int64()
-	primaryTermVal, _ := primaryTerm.Int64()
+	seqNoVal, primaryTermVal := extractILMPolicyConcurrency(response, policyID)
 
 	policy, err := extractILMPolicy(response, policyID)
 	return policy, seqNoVal, primaryTermVal, statusCode, err
+}
+
+func extractILMPolicyConcurrency(response map[string]interface{}, policyID string) (int64, int64) {
+	seqNo := int64(-1)
+	primaryTerm := int64(-1)
+
+	if value, ok := readInt64Value(response["_seq_no"]); ok {
+		seqNo = value
+	}
+	if value, ok := readInt64Value(response["_primary_term"]); ok {
+		primaryTerm = value
+	}
+	if seqNo >= 0 && primaryTerm >= 0 {
+		return seqNo, primaryTerm
+	}
+
+	if policyWrapper, ok := castMap(response[policyID]); ok {
+		if value, ok := readInt64Value(policyWrapper["_seq_no"]); ok {
+			seqNo = value
+		}
+		if value, ok := readInt64Value(policyWrapper["_primary_term"]); ok {
+			primaryTerm = value
+		}
+	}
+
+	return seqNo, primaryTerm
+}
+
+func readInt64Value(value interface{}) (int64, bool) {
+	switch v := value.(type) {
+	case json.Number:
+		parsed, err := v.Int64()
+		return parsed, err == nil
+	case float64:
+		return int64(v), true
+	case float32:
+		return int64(v), true
+	case int:
+		return int64(v), true
+	case int64:
+		return v, true
+	case int32:
+		return int64(v), true
+	case string:
+		parsed, err := strconv.ParseInt(strings.TrimSpace(v), 10, 64)
+		return parsed, err == nil
+	default:
+		return 0, false
+	}
 }
 
 func extractILMPolicy(response map[string]interface{}, policyID string) (map[string]interface{}, error) {
@@ -467,7 +513,7 @@ func putILMPolicy(requester rawRequester, cfg *elastic.ElasticsearchConfig, poli
 		return err
 	}
 	path := "/_ilm/policy/" + url.PathEscape(policyID)
-	if seqNo >= 0 {
+	if seqNo >= 0 && primaryTerm >= 0 {
 		path += fmt.Sprintf("?if_seq_no=%d&if_primary_term=%d", seqNo, primaryTerm)
 	}
 	_, _, err = rawJSONRequest(

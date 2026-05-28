@@ -6,13 +6,14 @@ DEFAULT_DOWNLOAD_URL="{{base_url}}"
 DEFAULT_VERSION="{{version}}"
 
 function print_usage() {
-  echo "Usage: curl -ksSL http://$[[CLOUD_ENDPOINT]]/instance/_get_install_script?token | sudo bash -s -- [-u url_for_download_program] [-v version_for_program ] [-t target_install_dir] [-o overwite_flag] [-s url_console_lan_adress]"
+  echo "Usage: curl -ksSL http://$[[CLOUD_ENDPOINT]]/instance/_get_install_script?token | bash -s -- [-u url_for_download_program] [-v version_for_program ] [-t target_install_dir] [-o overwite_flag] [-s url_console_lan_adress] [--no-service]"
   echo "Options:"
   echo "  -u, --url <url>             Install Agent download URL, supports host, package directory, or direct package file URL"
   echo "  -v, --version <version>     Install Agent version, default is Console configured version, current Console build version, or the latest version from the download source"  
   echo "  -t, --target <dir>          Install Agent target path, default is /opt/agent, can be manually specified"
   echo "  -o, --overwrite <bool>      Whether to overwrite existing files during Agent install, default is true, can be manually specified" 
   echo "  -s, --server <url>          Server address for Agent to communicate with INFINI Console after install, default is current Console address, can be manually specified"
+  echo "      --no-service            Skip service install/start and print foreground startup instructions for containers or non-sudo environments"
   exit 1
 }
 
@@ -110,7 +111,9 @@ function check_dir() {
   if [[ "$(ls -A ${install_dir})" ]]; then
     if [ "$o" == "true" ]; then
       echo "WARN: Auto replace or upgrade exists agent files."
-      uninstall_service
+      if [[ "${no_service}" != "true" ]]; then
+        uninstall_service
+      fi
       rm -rf ${install_dir}/*
     else
       echo "Error: Please manual clean exists agent files at ${install_dir}, reinstall again."
@@ -404,6 +407,16 @@ function install_service() {
   (cd "${install_dir}" && $agent_svc -service start &>/dev/null)
 }
 
+function print_no_service_hint() {
+  local agent_bin="${program_name}-${file_ext%%.*}"
+  echo "[agent] service installation skipped (--no-service)"
+  echo "[agent] start agent in foreground:"
+  echo "  (cd \"${install_dir}\" && exec ./${agent_bin} -config agent.yml)"
+  echo "[agent] container example:"
+  echo "  ENTRYPOINT [\"sh\", \"-c\", \"cd ${install_dir} && exec ./agent-* -config agent.yml\"]"
+  echo "  CMD [\"sh\", \"-c\", \"cd ${install_dir} && exec ./agent-* -config agent.yml\"]"
+}
+
 function main() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -412,6 +425,7 @@ function main() {
       -t|--target) target_dir="$2"; shift 2 ;;
       -o|--overwrite) overwrite="$2"; shift 2 ;;
       -s|--server) register_server="$2"; shift 2 ;;
+      --no-service) no_service=true; shift ;;
       *) print_usage ;;
     esac
   done
@@ -425,6 +439,7 @@ function main() {
   fi
   version=${version:-${DEFAULT_VERSION:-$latest_version}}
   o=${overwrite:-true}
+  no_service=${no_service:-false}
   file_ext=""
 
   if [[ -z "${version}" ]]; then
@@ -439,8 +454,12 @@ function main() {
   install_certs
   install_manager_token
   install_config
-  uninstall_service
-  install_service
+  if [[ "${no_service}" == "true" ]]; then
+    print_no_service_hint
+  else
+    uninstall_service
+    install_service
+  fi
 
   echo ""
   echo ""

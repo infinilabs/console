@@ -94,6 +94,13 @@ export default {
   "agent.install.setup.copy.success": "Copied to clipboard successfully!",
   "agent.install.reverse_channel.label": "Enable reverse channel",
   "agent.install.reverse_channel.help": "Disabled by default. Enable only when Console cannot reach the Agent port, such as in containers; when enabled, Agent connects back to Console.",
+  "agent.install.no_sudo.label": "No sudo access",
+  "agent.install.no_sudo.help": "Recommended for containers or non-root environments. When enabled, the generated command removes sudo and appends --no-service. After installation, run Agent in the foreground via the container ENTRYPOINT/CMD.",
+  "agent.install.no_sudo.help_line": "If sudo or system services are unavailable in the target environment, append",
+  "agent.install.no_sudo.tip.title": "Container / no-sudo mode",
+  "agent.install.no_sudo.tip.desc": "This mode skips service installation and startup. After installation, run the Agent binary as the container main process and let Docker or Kubernetes handle restart behavior.",
+  "agent.install.no_sudo.entrypoint.title": "Dockerfile ENTRYPOINT example",
+  "agent.install.no_sudo.cmd.title": "Dockerfile CMD example",
   "agent.instance.auto_associate.title": "Auto Enroll",
   "agent.instance.install.title": "Install Agent",
 

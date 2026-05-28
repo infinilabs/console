@@ -1,12 +1,17 @@
 .installAgent {
-    .reverseChannelToggle {
+    .toggleStack {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
         margin-bottom: 16px;
+    }
+    .toggleStackCentered {
+        align-items: center;
+    }
+    .reverseChannelToggle {
         display: flex;
         align-items: center;
         gap: 8px;
-    }
-    .reverseChannelToggleCentered {
-        justify-content: center;
     }
     .reverseChannelLabel {
         display: inline-flex;
@@ -21,6 +26,29 @@
     .gateway {
         display: block;
         margin: 0 auto 20px;
+    }
+    .noServiceAlert {
+        margin-bottom: 16px;
+        text-align: left;
+    }
+    .noServiceAlertContent {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .noServiceCodeTitle {
+        font-weight: 500;
+        color: #101010;
+    }
+    .noServiceCodeBlock {
+        display: block;
+        padding: 8px 10px;
+        border-radius: 4px;
+        background: #f5f5f5;
+        color: #434343;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-family: "SFMono-Regular", Monaco, Menlo, Consolas, "Liberation Mono", "Ubuntu Mono", monospace;
     }
     .shell {
         .installtitle{

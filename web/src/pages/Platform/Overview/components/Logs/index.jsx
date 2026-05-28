@@ -2,7 +2,7 @@ import { Empty, Icon, Input, Spin, Table } from "antd";
 import styles from "./index.less"
 import DatePicker from "@/common/src/DatePicker";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { formatESSearchResult, formatTimeRange } from "@/lib/elasticsearch/util";
+import { buildContainsQueryString, formatESSearchResult, formatTimeRange } from "@/lib/elasticsearch/util";
 import { formatMessage } from "umi/locale";
 import request from "@/utils/request";
 import moment from "moment";
@@ -66,11 +66,13 @@ export default (props) => {
               }
             });
         }
-        if (queryParams?.keyword) {
+        const searchQuery = buildContainsQueryString(queryParams?.keyword);
+        if (searchQuery) {
             filters.push({ 
                 query_string: {
-                    query: `*${queryParams.keyword}*`,
+                    query: searchQuery,
                     fields: ['payload.message'],
+                    analyze_wildcard: true,
                 }
             });
         }

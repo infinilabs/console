@@ -87,6 +87,13 @@ export default {
   "agent.install.setup.copy.success": "已成功复制到剪贴板！",
   "agent.install.reverse_channel.label": "启用反向通道",
   "agent.install.reverse_channel.help": "默认关闭。仅在 Agent 端口不可达时开启（如容器环境）；开启后 Agent 会回连 Console。",
+  "agent.install.no_sudo.label": "无 sudo 权限",
+  "agent.install.no_sudo.help": "适用于容器或非 root 环境。开启后生成的命令会去掉 sudo，并自动追加 --no-service，安装完成后请将 Agent 作为容器 ENTRYPOINT/CMD 前台运行。",
+  "agent.install.no_sudo.help_line": "如当前环境没有 sudo 或不支持系统服务，可追加",
+  "agent.install.no_sudo.tip.title": "容器/无 sudo 模式说明",
+  "agent.install.no_sudo.tip.desc": "此模式不会安装或启动系统服务。安装完成后，请把 Agent 二进制作为容器主进程运行，由 Docker 或 Kubernetes 负责拉起与重启。",
+  "agent.install.no_sudo.entrypoint.title": "Dockerfile ENTRYPOINT 示例",
+  "agent.install.no_sudo.cmd.title": "Dockerfile CMD 示例",
   "agent.instance.auto_associate.title": "自动关联集群",
   "agent.instance.install.title": "安装 Agent",
 

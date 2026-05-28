@@ -170,3 +170,20 @@ export function formatTimeRange(timeRange) {
     max: bounds.max.valueOf(),
   };
 }
+
+export function escapeLuceneQueryTerm(term = "") {
+  return `${term}`.replace(/([+\-=&|><!(){}\[\]^"~*?:\\/])/g, "\\$1");
+}
+
+export function buildContainsQueryString(keyword = "") {
+  const normalizedKeyword = `${keyword}`.trim();
+  if (!normalizedKeyword) {
+    return "";
+  }
+
+  return normalizedKeyword
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((term) => `*${escapeLuceneQueryTerm(term)}*`)
+    .join(" AND ");
+}

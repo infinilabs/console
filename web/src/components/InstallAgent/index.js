@@ -1,4 +1,4 @@
-import { Form, Select, Spin, Icon, message, Button, Switch, Tooltip } from "antd";
+import { Alert, Form, Select, Spin, Icon, message, Button, Switch, Tooltip } from "antd";
 import styles from "./index.less";
 import useFetch from "@/lib/hooks/use_fetch";
 import { useEffect, useMemo, useState } from "react";
@@ -11,12 +11,16 @@ export default ({autoInit = false, centerToggle = false}) => {
 
     const [tokenLoading, setTokenLoading] = useState(false);
     const [enableReverseChannel, setEnableReverseChannel] = useState(false);
+    const [noService, setNoService] = useState(false);
 
     const [seletedGateways, setSeletedGateways] = useState([]);
 
     const [tokenInfo, setTokenInfo] = useState();
 
-    const fetchTokenInfo = async (reverseChannelEnabled = enableReverseChannel) => {
+    const fetchTokenInfo = async (
+        reverseChannelEnabled = enableReverseChannel,
+        noServiceEnabled = noService
+    ) => {
         setTokenInfo()
         setTokenLoading(true)
         const res = await request('/instance/_generate_install_script', {
@@ -24,6 +28,7 @@ export default ({autoInit = false, centerToggle = false}) => {
             body: {
                 gateway_endpoints: seletedGateways,
                 enable_reverse_channel: reverseChannelEnabled,
+                no_service: noServiceEnabled,
             }
         })
         setTokenInfo(res)
@@ -39,22 +44,41 @@ export default ({autoInit = false, centerToggle = false}) => {
     return (
         <Spin spinning={tokenLoading}>
             <div className={styles.installAgent}>
-                <div className={`${styles.reverseChannelToggle} ${centerToggle ? styles.reverseChannelToggleCentered : ""}`}>
-                <span className={styles.reverseChannelLabel}>
-                    <span>{formatMessage({ id: "agent.install.reverse_channel.label" })}</span>
-                    <Tooltip title={formatMessage({ id: "agent.install.reverse_channel.help" })}>
-                        <Icon type="info-circle" className={styles.reverseChannelInfo} />
-                    </Tooltip>
-                </span>
-                <Switch
-                    checked={enableReverseChannel}
-                    onChange={(checked) => {
-                        setEnableReverseChannel(checked);
-                        if (autoInit || tokenInfo) {
-                            fetchTokenInfo(checked);
-                        }
-                        }}
-                    />
+                <div className={`${styles.toggleStack} ${centerToggle ? styles.toggleStackCentered : ""}`}>
+                    <div className={styles.reverseChannelToggle}>
+                        <span className={styles.reverseChannelLabel}>
+                            <span>{formatMessage({ id: "agent.install.reverse_channel.label" })}</span>
+                            <Tooltip title={formatMessage({ id: "agent.install.reverse_channel.help" })}>
+                                <Icon type="info-circle" className={styles.reverseChannelInfo} />
+                            </Tooltip>
+                        </span>
+                        <Switch
+                            checked={enableReverseChannel}
+                            onChange={(checked) => {
+                                setEnableReverseChannel(checked);
+                                if (autoInit || tokenInfo) {
+                                    fetchTokenInfo(checked, noService);
+                                }
+                            }}
+                        />
+                    </div>
+                    <div className={styles.reverseChannelToggle}>
+                        <span className={styles.reverseChannelLabel}>
+                            <span>{formatMessage({ id: "agent.install.no_sudo.label" })}</span>
+                            <Tooltip title={formatMessage({ id: "agent.install.no_sudo.help" })}>
+                                <Icon type="info-circle" className={styles.reverseChannelInfo} />
+                            </Tooltip>
+                        </span>
+                        <Switch
+                            checked={noService}
+                            onChange={(checked) => {
+                                setNoService(checked);
+                                if (autoInit || tokenInfo) {
+                                    fetchTokenInfo(enableReverseChannel, checked);
+                                }
+                            }}
+                        />
+                    </div>
                 </div>
                 {!autoInit && <Button  className={styles.gateway} type="primary" onClick={() => fetchTokenInfo()}>
                 {formatMessage({
@@ -107,6 +131,31 @@ export default ({autoInit = false, centerToggle = false}) => {
                                     />
                                 </CopyToClipboard>
                             </div>
+                            {noService ? (
+                                <Alert
+                                    className={styles.noServiceAlert}
+                                    type="info"
+                                    showIcon
+                                    message={formatMessage({ id: "agent.install.no_sudo.tip.title" })}
+                                    description={
+                                        <div className={styles.noServiceAlertContent}>
+                                            <div>{formatMessage({ id: "agent.install.no_sudo.tip.desc" })}</div>
+                                            <div className={styles.noServiceCodeTitle}>
+                                                {formatMessage({ id: "agent.install.no_sudo.entrypoint.title" })}
+                                            </div>
+                                            <code className={styles.noServiceCodeBlock}>
+                                                ENTRYPOINT ["sh", "-c", "cd /path/to/agent && exec ./agent-* -config agent.yml"]
+                                            </code>
+                                            <div className={styles.noServiceCodeTitle}>
+                                                {formatMessage({ id: "agent.install.no_sudo.cmd.title" })}
+                                            </div>
+                                            <code className={styles.noServiceCodeBlock}>
+                                                CMD ["sh", "-c", "cd /path/to/agent && exec ./agent-* -config agent.yml"]
+                                            </code>
+                                        </div>
+                                    }
+                                />
+                            ) : null}
                             <div className={styles.help}>
                                 <div className={styles.title}> 
                                 {formatMessage({
@@ -133,6 +182,13 @@ export default ({autoInit = false, centerToggle = false}) => {
                                                 id:"agent.install.tips.server"
                                             })} <code>-s http://192.168.1.1:9000</code>
                                     </p>
+                                    {noService ? (
+                                        <p>
+                                            · {formatMessage({
+                                                    id:"agent.install.no_sudo.help_line"
+                                                })} <code>--no-service</code>
+                                        </p>
+                                    ) : null}
                                     <p>
                                         ·  {formatMessage({
                                                 id:"agent.install.tips.desc"

@@ -6,12 +6,13 @@ DEFAULT_DOWNLOAD_URL="{{base_url}}"
 DEFAULT_VERSION="{{version}}"
 
 function print_usage() {
-  echo "Usage: curl -sSL http://get.infini.cloud/ | sudo bash -s -- [-u url_for_download_program] [-v version_for_program ] [-t target_install_dir] [-s url_console_lan_adress]"
+  echo "Usage: curl -sSL http://get.infini.cloud/ | bash -s -- [-u url_for_download_program] [-v version_for_program ] [-t target_install_dir] [-s url_console_lan_adress] [--no-service]"
   echo "Options:"
   echo "  -u, --url <url>             Download url of the program to install which default is http://localhost"
   echo "  -v, --version <version>     Version of the program to install, default is the Console configured version, current Console build version, or the latest version from the download source"
   echo "  -t, --target <dir>          Target directory of the program install which default is /opt/agent"
   echo "  -s, --server <url>          Server address for Agent to communicate with INFINI Console after install, default is current Console address, can be manually specified"
+  echo "      --no-service            Skip service install/start and print foreground startup instructions for containers or non-sudo environments"
   exit 1
 }
 
@@ -120,7 +121,9 @@ function check_dir() {
 
   if [[ "$(ls -A ${install_dir})" ]]; then
     confirm "RISK WARN: Replace or upgrade exists agent version, Proceed?" 'y/N' && echo || exit 1;
-    uninstall_service
+    if [[ "${no_service}" != "true" ]]; then
+      uninstall_service
+    fi
     rm -rf ${install_dir}/*
   fi
 }
@@ -350,6 +353,16 @@ function install_service() {
   sleep 3
 }
 
+function print_no_service_hint() {
+  local agent_bin="${program_name}-${file_ext%%.*}"
+  echo "[agent] service installation skipped (--no-service)"
+  echo "[agent] start agent in foreground:"
+  echo "  (cd \"${install_dir}\" && exec ./${agent_bin} -config agent.yml)"
+  echo "[agent] container example:"
+  echo "  ENTRYPOINT [\"sh\", \"-c\", \"cd ${install_dir} && exec ./agent-* -config agent.yml\"]"
+  echo "  CMD [\"sh\", \"-c\", \"cd ${install_dir} && exec ./agent-* -config agent.yml\"]"
+}
+
 function main() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -357,6 +370,7 @@ function main() {
       -v|--version) version="$2"; shift 2 ;;
       -t|--target) target_dir="$2"; shift 2 ;;
       -s|--server) register_server="$2"; shift 2 ;;
+      --no-service) no_service=true; shift ;;
       *) print_usage ;;
     esac
   done
@@ -377,13 +391,18 @@ function main() {
     echo "Name: [${program_name}], Version: [${version}], Path: [${install_dir}]"
   fi
 
+  no_service=${no_service:-false}
   check_dir
   check_platform
   install_binary
   install_certs
   install_config
-  uninstall_service
-  install_service
+  if [[ "${no_service}" == "true" ]]; then
+    print_no_service_hint
+  else
+    uninstall_service
+    install_service
+  fi
 
   echo ""
   echo ""

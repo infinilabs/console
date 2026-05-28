@@ -94,6 +94,7 @@ type gatewaySetupConfig struct {
 type installCommandRequest struct {
 	GatewayEndpoints     []string `json:"gateway_endpoints"`
 	EnableReverseChannel bool     `json:"enable_reverse_channel"`
+	NoService            bool     `json:"no_service"`
 }
 
 func renderAgentReverseChannelEndpoints(req *http.Request, configuredEndpoints []string, enabled bool) string {
@@ -159,7 +160,7 @@ func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Req
 	}
 
 	h.WriteJSON(w, util.MapStr{
-		"script":     buildInstallCommand(endpoint, location),
+		"script":     buildInstallCommand(endpoint, location, payload.NoService),
 		"token":      tokenStr,
 		"expired_at": t.CreatedAt.Add(ExpiredIn),
 	}, http.StatusOK)
@@ -233,9 +234,15 @@ func (h *APIHandler) generateGatewayInstallCommand(w http.ResponseWriter, req *h
 	}, http.StatusOK)
 }
 
-func buildInstallCommand(endpoint, location string) string {
-	command := fmt.Sprintf(`curl -ksSL %q |sudo bash -s -- -t %q`,
-		endpoint, location)
+func buildInstallCommand(endpoint, location string, noService bool) string {
+	shell := "sudo bash"
+	extraArgs := ""
+	if noService {
+		shell = "bash"
+		extraArgs = " --no-service"
+	}
+	command := fmt.Sprintf(`curl -ksSL %q |%s -s -- -t %q%s`,
+		endpoint, shell, location, extraArgs)
 	return command
 }
 

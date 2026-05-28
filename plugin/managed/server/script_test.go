@@ -464,9 +464,23 @@ func TestBuildInstallCommandUsesScriptDefaults(t *testing.T) {
 	command := buildInstallCommand(
 		"https://console.local/instance/_get_install_script?token=abc",
 		"/srv/agent",
+		false,
 	)
 
 	expected := `curl -ksSL "https://console.local/instance/_get_install_script?token=abc" |sudo bash -s -- -t "/srv/agent"`
+	if command != expected {
+		t.Fatalf("expected %q, got %q", expected, command)
+	}
+}
+
+func TestBuildInstallCommandSkipsSudoForNoServiceMode(t *testing.T) {
+	command := buildInstallCommand(
+		"https://console.local/instance/_get_install_script?token=abc",
+		"/srv/agent",
+		true,
+	)
+
+	expected := `curl -ksSL "https://console.local/instance/_get_install_script?token=abc" |bash -s -- -t "/srv/agent" --no-service`
 	if command != expected {
 		t.Fatalf("expected %q, got %q", expected, command)
 	}

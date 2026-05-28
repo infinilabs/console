@@ -28,6 +28,7 @@ import DatePicker from "./components/DatePicker";
 import TimeLine from "./components/TimeLine";
 import useResizeObserver from "@react-hook/resize-observer";
 import { WidgetRender } from "@/pages/DataManagement/View/WidgetLoader";
+import { buildContainsQueryString } from "@/lib/elasticsearch/util";
 
 const Index = forwardRef((props, ref) => {
   const {
@@ -204,10 +205,12 @@ const Index = forwardRef((props, ref) => {
       });
     }
     //query match
-    if (queryParams?.keyword) {
+    const searchQuery = buildContainsQueryString(queryParams?.keyword);
+    if (searchQuery) {
       let query_string = {
-        query: `*${queryParams.keyword}*`,
+        query: searchQuery,
         fields: searchFields,
+        analyze_wildcard: true,
       };
       filter.push({ query_string });
     }

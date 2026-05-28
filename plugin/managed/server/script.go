@@ -359,6 +359,14 @@ func resolveConsoleEndpoint(req *http.Request, configuredEndpoint string) string
 	return consoleEndpoint
 }
 
+func getEndpointHostname(endpoint string) string {
+	parsed, err := url.Parse(strings.TrimSpace(endpoint))
+	if err != nil {
+		return ""
+	}
+	return parsed.Hostname()
+}
+
 func resolveAgentReverseChannelEndpoint(req *http.Request, configuredEndpoint string) string {
 	configuredEndpoint = strings.TrimRight(strings.TrimSpace(configuredEndpoint), "/")
 	if configuredEndpoint != "" {
@@ -519,6 +527,7 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 	}
 
 	consoleEndpoint := resolveConsoleEndpoint(req, agCfg.Setup.ConsoleEndpoint)
+	consoleDomain := getEndpointHostname(consoleEndpoint)
 	reverseChannelEnabled := strings.EqualFold(strings.TrimSpace(req.URL.Query().Get("enable_reverse_channel")), "true")
 	reverseChannelEndpoints := renderAgentReverseChannelEndpoints(
 		req,
@@ -540,6 +549,7 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 	_, err = tpl.Execute(w, map[string]interface{}{
 		"base_url":                  downloadURL,
 		"console_endpoint":          consoleEndpoint,
+		"console_domain":            consoleDomain,
 		"reverse_channel_endpoints": reverseChannelEndpoints,
 		"embedding_api":             fmt.Sprintf("%t", !reverseChannelEnabled),
 		"websocket_enabled":         fmt.Sprintf("%t", !reverseChannelEnabled),

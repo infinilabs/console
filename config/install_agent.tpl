@@ -361,6 +361,7 @@ configs:
     cert_file: "config/client.crt"
     key_file: "config/client.key"
     ca_file: "config/ca.crt"
+    default_domain: "{{console_domain}}"
     skip_insecure_verify: false
 
 node:

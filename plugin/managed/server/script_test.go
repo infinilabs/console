@@ -333,6 +333,7 @@ func TestAgentInstallTemplateEnablesEmbeddedAPIWithoutReverseChannel(t *testing.
 		"{{base_url}}", "https://mirror.local/agent/stable",
 		"{{version}}", "1.2.3-4567",
 		"{{console_endpoint}}", "https://console.local",
+		"{{console_domain}}", "console.local",
 		"{{reverse_channel_endpoints}}", `[]`,
 		"{{embedding_api}}", "true",
 		"{{websocket_enabled}}", "true",
@@ -347,11 +348,53 @@ func TestAgentInstallTemplateEnablesEmbeddedAPIWithoutReverseChannel(t *testing.
 		`enabled: true`,
 		`base_path: /ws`,
 		`REVERSE_CHANNEL_ENDPOINTS: []`,
+		`default_domain: "console.local"`,
 	}
 
 	for _, snippet := range expectedSnippets {
 		if !strings.Contains(rendered, snippet) {
 			t.Fatalf("expected rendered template to contain %q", snippet)
+		}
+
+		func TestGetEndpointHostname(t *testing.T) {
+			if got := getEndpointHostname("https://demo.infini.cloud:9000/console"); got != "demo.infini.cloud" {
+				t.Fatalf("expected demo.infini.cloud, got %q", got)
+			}
+		}
+
+		func TestLegacyAgentInstallTemplateSetsConfigTLSServerName(t *testing.T) {
+			templatePath := filepath.Join("..", "..", "..", "config", "install_legency_agent.tpl")
+			content, err := os.ReadFile(templatePath)
+			if err != nil {
+				t.Fatalf("failed to read legacy agent install template: %v", err)
+			}
+
+			rendered := strings.NewReplacer(
+				"{{base_url}}", "https://mirror.local/agent/stable",
+				"{{version}}", "1.30.3-4567",
+				"{{console_endpoint}}", "https://console.local",
+				"{{console_domain}}", "console.local",
+				"{{client_crt}}", "CLIENT_CERT",
+				"{{client_key}}", "CLIENT_KEY",
+				"{{ca_crt}}", "CA_CERT",
+				"{{port}}", "2900",
+				"{{token}}", "TOKEN",
+				"{{manager_token}}", "MANAGER_TOKEN",
+				"{{manager_token_key}}", "MANAGER_TOKEN_KEY",
+				"{{manager_token_id}}", "MANAGER_TOKEN_ID",
+			).Replace(string(content))
+
+			expectedSnippets := []string{
+				`servers: # config servers`,
+				`    default_domain: "console.local"`,
+				`    skip_insecure_verify: false`,
+			}
+
+			for _, snippet := range expectedSnippets {
+				if !strings.Contains(rendered, snippet) {
+					t.Fatalf("expected rendered template to contain %q", snippet)
+				}
+			}
 		}
 	}
 }

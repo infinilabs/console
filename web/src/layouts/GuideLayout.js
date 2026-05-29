@@ -17,7 +17,7 @@ export default ({ children }) => {
 
   const fetchHealth = async () => {
     try {
-      const res = await refreshApplicationSettings(true);
+      const res = await refreshApplicationSettings();
       if (!res?.setup_required) {
         router.push("/");
       }

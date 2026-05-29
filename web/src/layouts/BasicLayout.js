@@ -220,7 +220,7 @@ class BasicLayout extends React.PureComponent {
       APPLICATION_SETTINGS_UPDATED_EVENT,
       this.handleApplicationSettingsUpdated
     );
-    await refreshApplicationSettings(true);
+    await refreshApplicationSettings();
     await this.handleApplicationSettingsUpdated();
     let firstLogin = localStorage.getItem("first-login");
     if (firstLogin === "true" && isLogin()) {

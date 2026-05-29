@@ -32,6 +32,7 @@ import (
 	authapi "infini.sh/console/modules/security/api"
 	"infini.sh/console/modules/security/config"
 	credapi "infini.sh/console/modules/security/credential/api"
+	_ "infini.sh/console/modules/security/filter"
 	"infini.sh/console/modules/security/realm"
 	"infini.sh/console/modules/security/realm/authc/oauth"
 	"infini.sh/framework/core/credential"

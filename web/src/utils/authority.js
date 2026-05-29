@@ -122,7 +122,3 @@ export async function refreshApplicationSettings(force = false) {
 
   return applicationSettingsPromise;
 }
-
-(async function() {
-  await refreshApplicationSettings();
-})();

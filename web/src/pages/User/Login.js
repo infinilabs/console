@@ -33,7 +33,7 @@ class LoginPage extends Component {
 
   syncSetupState = async () => {
     try {
-      const res = await refreshApplicationSettings(true);
+      const res = await refreshApplicationSettings();
       setSetupRequired(`${!!res?.setup_required}`);
       if (res?.setup_required) {
         router.replace("/guide/initialization");

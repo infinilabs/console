@@ -142,10 +142,25 @@ func prepareWebsocketProxyRequest(req *http.Request) (string, string, error) {
 		return "", "", err
 	}
 	endpoint = resolveInstanceWebsocketEndpoint(instance, path, endpoint)
-	if err := agent_common.ApplyInstanceHTTPRequestAuth(req, instance); err != nil {
-		return "", "", err
+	if shouldApplyInstanceWebsocketAuth(instance, path) {
+		if err := agent_common.ApplyInstanceHTTPRequestAuth(req, instance); err != nil {
+			return "", "", err
+		}
 	}
 	return endpoint, path, nil
+}
+
+func shouldApplyInstanceWebsocketAuth(instance *framework_model.Instance, path string) bool {
+	if instance == nil {
+		return false
+	}
+	if strings.TrimSpace(path) != "/ws" {
+		return true
+	}
+	if strings.EqualFold(strings.TrimSpace(instance.Application.Name), "console") {
+		return false
+	}
+	return true
 }
 
 func normalizeWebsocketEndpoint(endpoint string) string {

@@ -350,6 +350,27 @@ func TestRewriteWebsocketProxyHeadersKeepsOriginEmptyForNonBrowserClients(t *tes
 	}
 }
 
+func TestShouldApplyInstanceWebsocketAuthSkipsConsoleLogSocket(t *testing.T) {
+	instance := &model.Instance{}
+	instance.Application.Name = "console"
+
+	if shouldApplyInstanceWebsocketAuth(instance, "/ws") {
+		t.Fatal("expected console websocket log proxy to keep browser session auth")
+	}
+}
+
+func TestShouldApplyInstanceWebsocketAuthKeepsManagedInstanceAuth(t *testing.T) {
+	instance := &model.Instance{}
+	instance.Application.Name = "agent"
+
+	if !shouldApplyInstanceWebsocketAuth(instance, "/ws") {
+		t.Fatal("expected managed instance websocket proxy to keep instance auth")
+	}
+	if !shouldApplyInstanceWebsocketAuth(instance, "/_proxy") {
+		t.Fatal("expected non-websocket proxy requests to keep instance auth")
+	}
+}
+
 func TestProxyInstanceRequestUsesLocalHandlerForCurrentInstanceID(t *testing.T) {
 	originalEnv := global.Env()
 	testEnv := env.EmptyEnv()

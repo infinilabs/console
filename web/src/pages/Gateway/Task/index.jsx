@@ -91,6 +91,12 @@ const TaskList = (props) => {
     }
   };
 
+  const renderConfirmTitle = (id) => (
+    <span style={{ whiteSpace: "nowrap" }}>
+      {formatMessage({ id })}
+    </span>
+  );
+
   const columns = useMemo(
     () => [
       {
@@ -130,7 +136,7 @@ const TaskList = (props) => {
             <div>
               {record.state === taskStatus.STOPPED ? (
                 <Popconfirm
-                  title={formatMessage({ id: "gateway.task.confirm.start" })}
+                  title={renderConfirmTitle("gateway.task.confirm.start")}
                   onConfirm={() => onStartClick(record.name)}
                 >
                   <a>{formatMessage({ id: "form.button.start" })}</a>
@@ -140,7 +146,7 @@ const TaskList = (props) => {
               {/* <Divider type="vertical" /> */}
               {record.state !== taskStatus.STOPPED ? (
                 <Popconfirm
-                  title={formatMessage({ id: "gateway.task.confirm.stop" })}
+                  title={renderConfirmTitle("gateway.task.confirm.stop")}
                   onConfirm={() => onStopClick(record.name)}
                 >
                   <a>{formatMessage({ id: "form.button.stop" })}</a>

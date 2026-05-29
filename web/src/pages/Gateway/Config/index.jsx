@@ -174,15 +174,27 @@ const Index = (props) => {
           visibleConfigs?.[data?.name] ? (
             <Popconfirm
               placement="topRight"
-              title="Are you sure to save?"
+              title={formatMessage({
+                id: "gateway.instance.config.save.confirm",
+                defaultMessage: "Are you sure to save?",
+              })}
               onConfirm={() => {
                 onUpdateClick(data?.name);
               }}
-              okText="Yes"
-              cancelText="No"
+              okText={formatMessage({
+                id: "form.button.ok",
+                defaultMessage: "OK",
+              })}
+              cancelText={formatMessage({
+                id: "form.button.cancel",
+                defaultMessage: "Cancel",
+              })}
             >
               <Button type="primary" loading={btnLoading}>
-                Save
+                {formatMessage({
+                  id: "form.button.save",
+                  defaultMessage: "Save",
+                })}
               </Button>
             </Popconfirm>
           ) : null
@@ -190,7 +202,13 @@ const Index = (props) => {
       >
         {/* <div>updated:{config?.updated}</div> */}
         {data?.location ? (
-          <div className={styles.label}>Location:{data?.location}</div>
+          <div className={styles.label}>
+            {formatMessage({
+              id: "gateway.instance.config.location",
+              defaultMessage: "Location",
+            })}
+            :{data?.location}
+          </div>
         ) : null}
 
         <div className={styles.editor}>
@@ -219,9 +237,18 @@ const Index = (props) => {
         <div className={styles.config}>
           <Card
             className={styles.menu}
-            title={"Configs"}
+            title={formatMessage({
+              id: "gateway.instance.config.files",
+              defaultMessage: "Configs",
+            })}
             extra={
-              <a onClick={onRefresh} title="Refresh">
+              <a
+                onClick={onRefresh}
+                title={formatMessage({
+                  id: "form.button.refresh",
+                  defaultMessage: "Refresh",
+                })}
+              >
                 <Icon type="redo" style={{ color: "rgba(0, 127, 255, 1)" }} />
               </a>
             }
@@ -235,7 +262,10 @@ const Index = (props) => {
                   onViewClick("runtime");
                 }}
               >
-                Runtime
+                {formatMessage({
+                  id: "gateway.instance.config.runtime",
+                  defaultMessage: "Runtime",
+                })}
               </div>
               <div className={styles.hr}></div>
               <div
@@ -246,7 +276,10 @@ const Index = (props) => {
                   onViewClick("main");
                 }}
               >
-                Main
+                {formatMessage({
+                  id: "gateway.instance.config.main",
+                  defaultMessage: "Main",
+                })}
               </div>
               <div className={styles.hr}></div>
               {Object.keys(visibleConfigs).map((item) => {

@@ -33,6 +33,14 @@ var consoleAdditionalProtectedWebAPIRoutes = []frameworkapi.ProtectedAPIRoute{
 	{Method: frameworkapi.DELETE, Path: "/_local/files/:file"},
 }
 
+var consoleAccountProxyUIRoutes = []frameworkapi.ProtectedAPIRoute{
+	{Method: frameworkapi.POST, Path: "/account/refresh"},
+	{Method: frameworkapi.POST, Path: "/account/logout"},
+	{Method: frameworkapi.DELETE, Path: "/account/logout"},
+	{Method: frameworkapi.GET, Path: "/account/profile"},
+	{Method: frameworkapi.PUT, Path: "/account/password"},
+}
+
 type consoleSelfAPIHandler struct {
 	frameworkapi.Handler
 }
@@ -43,9 +51,23 @@ func initConsoleSelfAPI() {
 	}
 
 	handler := consoleSelfAPIHandler{}
+	registerConsoleProtectedUIRoutes(handler)
+	registerConsoleAccountProxyUIRoutes(handler)
+	registerMissingConsoleAPIProxyUIRoutes(handler)
+}
+
+func registerConsoleProtectedUIRoutes(handler consoleSelfAPIHandler) {
 	routes := append([]frameworkapi.ProtectedAPIRoute{}, frameworkapi.DefaultProtectedAPIRoutes...)
 	routes = append(routes, consoleAdditionalProtectedWebAPIRoutes...)
 	frameworkapi.RegisterProtectedUIRoutes(routes, handler.requireLoginOrAccessToken(handler.proxyLocalAPI), frameworkapi.AllowOPTIONSS(), frameworkapi.Feature(frameworkapi.FeatureCORS))
+}
+
+func registerConsoleAccountProxyUIRoutes(handler consoleSelfAPIHandler) {
+	frameworkapi.RegisterProtectedUIRoutes(consoleAccountProxyUIRoutes, handler.requireLoginOrAccessToken(handler.proxyLocalAPI), frameworkapi.Override(), frameworkapi.AllowOPTIONSS(), frameworkapi.Feature(frameworkapi.FeatureCORS))
+}
+
+func registerMissingConsoleAPIProxyUIRoutes(handler consoleSelfAPIHandler) {
+	frameworkapi.RegisterMissingAPIMethodUIRoutes(handler.requireLoginOrAccessToken(handler.proxyLocalAPI))
 }
 
 func (h consoleSelfAPIHandler) proxyLocalAPI(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {

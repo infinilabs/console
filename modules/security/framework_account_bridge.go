@@ -24,6 +24,8 @@
 package security
 
 import (
+	"net/http"
+
 	rbac "infini.sh/console/core/security"
 	"infini.sh/console/modules/security/realm"
 	frameworksecurity "infini.sh/framework/core/security"
@@ -103,6 +105,24 @@ func registerFrameworkAccountBridge() {
 	adapter := rbac.GetAdapter("native")
 	frameworksecurity.RegisterAuthenticationProvider("console-native-account-bridge", frameworkNativeAccountProvider{adapter: adapter})
 	frameworksecurity.RegisterAccountPasswordLoginProvider("console-realm-password-login", frameworkRealmPasswordLoginProvider{})
+	frameworksecurity.RegisterHTTPAuthFilterProvider("console-bearer-token", func(_ http.ResponseWriter, r *http.Request) (*frameworksecurity.UserClaims, error) {
+		claims, err := rbac.ValidateLogin(r.Header.Get("Authorization"))
+		if err != nil || claims == nil {
+			return nil, err
+		}
+
+		sessionUser := claims.ToSessionInfo()
+		if sessionUser == nil {
+			return nil, nil
+		}
+
+		bridgedClaims := frameworksecurity.NewUserClaims()
+		bridgedClaims.UserSessionInfo = sessionUser
+		if claims.RegisteredClaims != nil {
+			bridgedClaims.RegisteredClaims = claims.RegisteredClaims
+		}
+		return bridgedClaims, nil
+	})
 	frameworksecurity.RegisterSessionTokenResponseDecorator("console-platform-privilege", func(token map[string]interface{}, user *frameworksecurity.UserSessionInfo) {
 		if user == nil {
 			return

@@ -4,5 +4,5 @@ export default {
   "error.request_timeout_error": "request timeout, please try again later!",
   "error.request.connection_refused": "Failed to connect to the server.",
   "error.request.connection_refused.tip":
-    "Failed to connect to the server. Click the \"Services are limited\" link above to open Dev Tools and check the system cluster status.",
+    "Please click the services health above to ensure the system cluster is running properly.",
 };

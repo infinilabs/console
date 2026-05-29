@@ -4,5 +4,5 @@ export default {
   "error.request_timeout_error": "请求超时，请稍后重试！",
   "error.request.connection_refused": "连接服务器失败。",
   "error.request.connection_refused.tip":
-    "连接服务器失败。请点击上方“服务受限”链接进入开发者工具，检查系统集群状态。",
+    "请点击上方的服务受限，以确保系统集群正常运行。",
 }

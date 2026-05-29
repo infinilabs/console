@@ -1281,7 +1281,7 @@ func performChannels(ruleID string, phase string, channels []alerting.Channel, c
 func (engine *Engine) GenerateTask(rule alerting.Rule) func(ctx context.Context) {
 	return func(ctx context.Context) {
 		defer func() {
-		if !global.Env().IsDebug {
+			if !global.Env().IsDebug {
 				if err := recover(); err != nil {
 					log.Errorf("alert task panic recovered, rule_id=%s, rule_name=%s: %v", rule.ID, rule.Name, err)
 					debug.PrintStack()

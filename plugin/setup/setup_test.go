@@ -245,6 +245,57 @@ func TestSetupRegistersTryConnectUIRoute(t *testing.T) {
 	}
 }
 
+func TestSetupRegistersTryConnectUIRouteWhenSetupNotRequired(t *testing.T) {
+	oldEnv := global.Env()
+	testEnv := env.EmptyEnv()
+	testEnv.SystemConfig.PathConfig.Data = t.TempDir()
+	if err := os.WriteFile(filepath.Join(testEnv.SystemConfig.PathConfig.Data, ".setup_lock"), []byte("1"), 0o644); err != nil {
+		t.Fatalf("write setup lock: %v", err)
+	}
+	testEnv.EnableSetup(true)
+	global.RegisterEnv(testEnv)
+	defer global.RegisterEnv(oldEnv)
+
+	module := &Module{}
+	module.Setup()
+
+	webCfg := config2.WebAppConfig{}
+	webCfg.NetworkConfig.Binding = "127.0.0.1:0"
+	api2.StartWeb(webCfg)
+	defer api2.StopWeb(webCfg)
+
+	nonceReq := httptest.NewRequest(http.MethodPost, "https://console.local/account/replay_nonce", bytes.NewBufferString(`{"method":"POST","path":"/elasticsearch/try_connect"}`))
+	nonceReq.Header.Set("Content-Type", "application/json")
+	nonceResp := httptest.NewRecorder()
+
+	if err := api2.ServeRegisteredUIRequest(nonceResp, nonceReq); err != nil {
+		t.Fatalf("serve nonce request: %v", err)
+	}
+
+	var nonceBody map[string]interface{}
+	if err := json.Unmarshal(nonceResp.Body.Bytes(), &nonceBody); err != nil {
+		t.Fatalf("unmarshal nonce response: %v", err)
+	}
+
+	nonce, ok := nonceBody["nonce"].(string)
+	if !ok || nonce == "" {
+		t.Fatalf("expected nonce in response, got %#v", nonceBody)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "https://console.local/elasticsearch/try_connect", bytes.NewBufferString(`{invalid`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(replaysecurity.HeaderName, nonce)
+	resp := httptest.NewRecorder()
+
+	if err := api2.ServeRegisteredUIRequest(resp, req); err != nil {
+		t.Fatalf("serve try_connect request: %v", err)
+	}
+
+	if resp.Code == http.StatusNotFound {
+		t.Fatalf("expected try_connect route to stay registered on UI router when setup is not required, got 404")
+	}
+}
+
 func TestGatewayRelayTemplateRendersAsChildConfig(t *testing.T) {
 	content := renderGatewaySetupData(t, "gateway_relay.dat")
 

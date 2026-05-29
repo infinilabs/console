@@ -92,11 +92,6 @@ func init() {
 }
 
 func (module *Module) Setup() {
-
-	if !global.Env().SetupRequired() {
-		return
-	}
-
 	registerPublicSetupRoute := func(method api.Method, path string, handler func(w http.ResponseWriter, req *http.Request, ps httprouter.Params)) {
 		api.HandleUIMethod(method, path,
 			handler,

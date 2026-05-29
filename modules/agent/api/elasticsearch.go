@@ -245,19 +245,20 @@ func GetElasticsearchNodesViaAgent(ctx context.Context, instance *model.Instance
 	}
 
 	obj := elastic.DiscoveryResult{}
-	if IsAgentReverseChannelConnected(instance.ID) {
-		_, err := ProxyAgentRequestViaChannel(instance.ID, req, &obj)
-		if err == nil {
-			return &obj, nil
-		}
-		if !shouldFallbackToDirectAgentDiscovery(err) {
-			return nil, err
-		}
+	_, err := proxyAgentRequestDirect(instance, req, &obj)
+	if err == nil {
+		return &obj, nil
+	}
+	if !IsAgentReverseChannelConnected(instance.ID) {
+		return nil, err
 	}
 
-	_, err := proxyAgentRequestDirect(instance, req, &obj)
-	if err != nil {
-		return nil, err
+	_, reverseErr := ProxyAgentRequestViaChannel(instance.ID, req, &obj)
+	if reverseErr != nil {
+		if shouldFallbackToDirectAgentDiscovery(reverseErr) {
+			return nil, err
+		}
+		return nil, reverseErr
 	}
 
 	return &obj, nil

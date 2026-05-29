@@ -68,6 +68,15 @@ var testAPI = TestAPI{}
 
 var testInited bool
 
+func RegisterPublicUITestAPI() {
+	api.HandleUIMethod(
+		api.POST,
+		"/elasticsearch/try_connect",
+		testAPI.RequireSecureTransport(testAPI.RequireReplayProtection(testAPI.HandleTestConnectionAction)),
+		api.AllowPublicAccess(),
+	)
+}
+
 func InitTestAPI() {
 	if !testInited {
 		api.HandleAPIMethod(api.POST, "/elasticsearch/try_connect", testAPI.RequireSecureTransport(testAPI.RequireReplayProtection(testAPI.HandleTestConnectionAction)))

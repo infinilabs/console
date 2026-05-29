@@ -108,6 +108,7 @@ func (module *Module) Setup() {
 	registerPublicSetupRoute(api.POST, "/setup/_initialize", core2.RequireSecureTransport(core2.RequireReplayProtection(module.initialize)))
 	registerPublicSetupRoute(api.POST, "/setup/_validate_secret", core2.RequireSecureTransport(core2.RequireReplayProtection(module.validateSecret)))
 	registerPublicSetupRoute(api.POST, "/setup/_initialize_template", core2.RequireSecureTransport(core2.RequireReplayProtection(module.initializeTemplate)))
+	elastic3.RegisterPublicUITestAPI()
 
 	api.HandleAPIMethod(api.POST, "/account/replay_nonce", core2.RequireSecureTransport(frameworkrbac.IssueReplayNonce))
 	api.HandleAPIMethod(api.POST, "/setup/_validate", core2.RequireSecureTransport(core2.RequireReplayProtection(module.validate)))

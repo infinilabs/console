@@ -1,4 +1,12 @@
 .finish {
+    height: 100%;
+
+    .panels {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
     .panel {
         width: 100%;
         max-width: 860px;
@@ -6,7 +14,6 @@
     }
 
     .pendingAlert {
-        margin-bottom: 12px;
         text-align: center;
 
         :global(.ant-alert-message) {
@@ -15,7 +22,6 @@
     }
 
     .statusAlert {
-        margin-bottom: 12px;
         text-align: left;
     }
 
@@ -24,7 +30,6 @@
     }
 
     .tipsAlert {
-        margin-top: 12px;
         text-align: center;
     }
     
@@ -46,17 +51,39 @@
     :global {
         .ant-result {
             padding: 0;
+            height: 100%;
 
             .ant-result-icon {
                 margin-bottom: 0
             }
+
+            .ant-result-title {
+                margin-top: 8px;
+                margin-bottom: 0;
+            }
+
+            .ant-result-subtitle {
+                margin-top: 6px;
+            }
+
+            .ant-result-content {
+                margin-top: 16px;
+                padding: 0 10%;
+                background: transparent;
+            }
             
             .ant-result-extra {
-                margin-top: 32px;
+                margin-top: 24px;
                 .ant-btn {
                     width: 250px;
                 }
             }
+        }
+
+        .ant-descriptions-small .ant-descriptions-row > th,
+        .ant-descriptions-small .ant-descriptions-row > td {
+            padding-top: 10px;
+            padding-bottom: 10px;
         }
     }
 }

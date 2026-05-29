@@ -1,5 +1,51 @@
 .initialization {
-    
+    height: 100%;
+
+    .contentInner {
+        width: 100%;
+        max-width: 860px;
+        margin: 0 auto;
+    }
+
+    .topAlert,
+    .fieldBlock,
+    .toggleBlock {
+        margin-bottom: 16px;
+    }
+
+    .fieldTitle {
+        margin-bottom: 8px;
+        font-weight: 500;
+    }
+
+    .fieldHelp {
+        margin-top: 8px;
+        color: rgba(0, 0, 0, 0.45);
+    }
+
+    .toggleBlock {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .toggleHelp {
+        margin-top: 4px;
+        color: rgba(0, 0, 0, 0.45);
+    }
+
+    .actionRow {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+        max-width: 520px;
+        margin: 16px auto 0;
+    }
+
+    .actionButton {
+        width: calc(50% - 6px);
+    }
+
     .warning {
         font-size: 46px;
         color: rgb(255, 215, 0);
@@ -31,9 +77,9 @@
     }
 
     .taskLogPanel {
-        height: 214px;
+        height: 272px;
         margin-top: 8px;
-        padding: 10px 12px;
+        padding: 8px 10px;
         overflow: auto;
         border-radius: 6px;
         border: 1px solid #e8edf3;
@@ -45,7 +91,7 @@
         line-height: 1.8;
 
         & + .taskLogItem {
-            margin-top: 8px;
+            margin-top: 6px;
         }
     }
 
@@ -55,10 +101,25 @@
         gap: 12px;
         justify-content: space-between;
         min-width: 0;
-        padding: 8px 10px 8px 12px;
+        padding: 7px 10px 7px 12px;
         border-radius: 6px;
         background: #fff;
         border: 1px solid #eef2f7;
+    }
+
+    .taskHeader {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .taskHeaderMain {
+        min-width: 0;
+    }
+
+    .taskHeaderActions {
+        margin-left: auto;
+        white-space: nowrap;
     }
 
     .taskLogName {

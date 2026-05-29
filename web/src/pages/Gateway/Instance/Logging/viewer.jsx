@@ -37,7 +37,9 @@ const WebsocketLogViewer = ({ instance = {} }) => {
   } else {
     endpoint = endpoint.replace("http://", "ws://");
   }
-  const socketUrl = `${wsSchema}://${location.host}/ws_proxy?endpoint=${endpoint}&path=/ws`;
+  const socketUrl = `${wsSchema}://${location.host}/ws_proxy?instance_id=${encodeURIComponent(
+    instance.id
+  )}&endpoint=${encodeURIComponent(endpoint)}&path=${encodeURIComponent("/ws")}`;
   const [pubMessages, setPubMessages] = useState([]);
   const [loggingConfig, setLoggingConfig] = useState({});
   const messageEnd = useRef();

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"sync"
 
 	agent_common "infini.sh/console/modules/agent/common"
@@ -25,6 +26,14 @@ func RegisterInstanceProxyProvider(provider InstanceProxyProvider) {
 }
 
 func proxyInstanceRequest(instance *model.Instance, req *util.Request, responseObjectToUnMarshall interface{}) (*util.Result, error) {
+	if instance != nil && isCurrentManagedInstance(instance) {
+		res, err := proxyManagedAPIRequestLocally(req, responseObjectToUnMarshall)
+		if err != nil {
+			return res, err
+		}
+		return res, nil
+	}
+
 	instanceProxyProvidersMu.RLock()
 	providers := append([]InstanceProxyProvider(nil), instanceProxyProviders...)
 	instanceProxyProvidersMu.RUnlock()
@@ -36,5 +45,8 @@ func proxyInstanceRequest(instance *model.Instance, req *util.Request, responseO
 		}
 	}
 	endpoint := agent_common.ResolveInstanceRequestEndpoint(instance, req.Path)
+	if endpoint == "" {
+		return nil, fmt.Errorf("instance endpoint is empty")
+	}
 	return ProxyAgentRequest("runtime", endpoint, req, responseObjectToUnMarshall)
 }

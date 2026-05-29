@@ -272,6 +272,61 @@ func TestFetchManagedInstanceStatsUsesLocalHandlerForCurrentInstanceID(t *testin
 	}
 }
 
+func TestProxyInstanceRequestUsesLocalHandlerForCurrentInstanceID(t *testing.T) {
+	originalEnv := global.Env()
+	testEnv := env.EmptyEnv()
+	testEnv.SystemConfig.NodeConfig.ID = "console-self"
+	testEnv.SystemConfig.APIConfig = config.APIConfig{
+		Enabled: true,
+		Security: config.APISecurityConfig{
+			Enabled:  true,
+			Username: "local_api_user",
+			Password: "local_api_password",
+		},
+	}
+	global.RegisterEnv(testEnv)
+	defer global.RegisterEnv(originalEnv)
+
+	api.HandleAPIMethod(api.GET, "/_managed/self_proxy_test", func(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+		username, password, ok := req.BasicAuth()
+		if !ok || username != "local_api_user" || password != "local_api_password" {
+			w.WriteHeader(http.StatusUnauthorized)
+			_, _ = w.Write([]byte(`{"error":{"reason":"unauthorized"},"status":401}`))
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	})
+
+	originalProviders := instanceProxyProviders
+	instanceProxyProviders = nil
+	defer func() {
+		instanceProxyProviders = originalProviders
+	}()
+	RegisterInstanceProxyProvider(func(instance *model.Instance, req *util.Request, responseObjectToUnMarshall interface{}) (*util.Result, bool, error) {
+		t.Fatal("expected self proxy to use local handler instead of proxy provider")
+		return nil, true, nil
+	})
+
+	instance := &model.Instance{Endpoint: "https://203.0.113.10:9443"}
+	instance.ID = "console-self"
+	resp := util.MapStr{}
+
+	res, err := proxyInstanceRequest(instance, &util.Request{
+		Method: http.MethodGet,
+		Path:   "/_managed/self_proxy_test",
+	}, &resp)
+	if err != nil {
+		t.Fatalf("expected proxy to succeed, got %v", err)
+	}
+	if res == nil || res.StatusCode != http.StatusOK {
+		t.Fatalf("unexpected proxy result: %#v", res)
+	}
+	if ok, _ := resp["ok"].(bool); !ok {
+		t.Fatalf("unexpected response payload: %#v", resp)
+	}
+}
+
 type assertiveError string
 
 func (e assertiveError) Error() string {

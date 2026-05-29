@@ -117,6 +117,21 @@ function filterMenuDataByName(menuData, names = []) {
   });
 }
 
+function hasCurrentUserSession(response) {
+  if (!response || typeof response !== "object" || response.error) {
+    return false;
+  }
+
+  const source = response._source || response;
+  return !!(
+    source?.user_id ||
+    source?.id ||
+    response?._id ||
+    response?.id ||
+    source?.username
+  );
+}
+
 const memoizeOneFormatter = memoizeOne(formatter, isEqual);
 
 const query = {
@@ -153,9 +168,11 @@ class BasicLayout extends React.PureComponent {
   }
 
   state = {
+    authResolved: getAuthEnabled() !== "true",
     rendering: true,
     isMobile: false,
     menuData: this.getMenuData(),
+    sessionValid: getAuthEnabled() !== "true",
     welcomeModal: null,
   };
 
@@ -167,9 +184,15 @@ class BasicLayout extends React.PureComponent {
   async componentDidMount() {
     const { menuData } = this.state;
     const { dispatch, global } = this.props;
+    let sessionValid = getAuthEnabled() !== "true";
     if (getAuthEnabled() === "true") {
-      dispatch({
+      const response = await dispatch({
         type: "user/fetchCurrent",
+      });
+      sessionValid = hasCurrentUserSession(response);
+      this.setState({
+        authResolved: true,
+        sessionValid,
       });
     }
     dispatch({
@@ -223,7 +246,7 @@ class BasicLayout extends React.PureComponent {
     await refreshApplicationSettings();
     await this.handleApplicationSettingsUpdated();
     let firstLogin = localStorage.getItem("first-login");
-    if (firstLogin === "true" && isLogin()) {
+    if (firstLogin === "true" && isLogin() && sessionValid) {
       localStorage.setItem("first-login", false);
       this.state.welcomeModal = Modal.info({
         title: (
@@ -255,6 +278,9 @@ class BasicLayout extends React.PureComponent {
         },
       });
       this.isInited = true;
+      return;
+    }
+    if (!this.state.authResolved || !this.state.sessionValid) {
       return;
     }
     if (isLogin()) {

@@ -32,6 +32,7 @@ import (
 	"fmt"
 	log "github.com/cihub/seelog"
 	"infini.sh/console/core"
+	agent_common "infini.sh/console/modules/agent/common"
 	"infini.sh/framework/core/api"
 	"infini.sh/framework/core/errors"
 	"infini.sh/framework/core/global"
@@ -40,6 +41,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 )
@@ -59,8 +61,15 @@ func init() {
 	//delegate api to instances
 	api.HandleAPIFunc("/ws_proxy", func(w http.ResponseWriter, req *http.Request) {
 		log.Debug(req.RequestURI)
-		endpoint := req.URL.Query().Get("endpoint")
-		path := req.URL.Query().Get("path")
+		endpoint, path, err := prepareWebsocketProxyRequest(req)
+		if err != nil {
+			handler.WriteError(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if endpoint == "" {
+			handler.WriteError(w, "empty endpoint", http.StatusBadRequest)
+			return
+		}
 		var tlsConfig = &tls.Config{
 			InsecureSkipVerify: true,
 		}
@@ -86,6 +95,31 @@ func init() {
 		wsProxy.TLSClientConfig = tlsConfig
 		wsProxy.ServeHTTP(w, req)
 	})
+}
+
+func prepareWebsocketProxyRequest(req *http.Request) (string, string, error) {
+	if req == nil {
+		return "", "", fmt.Errorf("request is nil")
+	}
+	query := req.URL.Query()
+	endpoint := strings.TrimSpace(query.Get("endpoint"))
+	path := query.Get("path")
+	instanceID := strings.TrimSpace(query.Get("instance_id"))
+	if instanceID == "" {
+		return endpoint, path, nil
+	}
+
+	_, instance, err := GetRuntimeInstanceByID(instanceID)
+	if err != nil {
+		return "", "", err
+	}
+	if endpoint == "" {
+		endpoint = strings.TrimSpace(instance.Endpoint)
+	}
+	if err := agent_common.ApplyInstanceHTTPRequestAuth(req, instance); err != nil {
+		return "", "", err
+	}
+	return endpoint, path, nil
 }
 
 var mTLSClient *http.Client //TODO get mTLSClient

@@ -28,6 +28,7 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	console_common "infini.sh/console/common"
@@ -544,19 +545,68 @@ func fetchManagedInstanceStatsLocally(stats *util.MapStr) bool {
 	if stats == nil {
 		return false
 	}
-	recorder := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, "/stats", nil)
-	applyConsoleLocalAPIAuth(req)
-	api.ServeRegisteredAPIRequest(recorder, req)
-	if recorder.Code != http.StatusOK {
-		log.Errorf("local /stats request failed, status: %d, body: %s", recorder.Code, recorder.Body.String())
-		return false
-	}
-	if err := util.FromJSONBytes(recorder.Body.Bytes(), stats); err != nil {
-		log.Error(err)
+	res, err := proxyManagedAPIRequestLocally(&util.Request{
+		Method: http.MethodGet,
+		Path:   "/stats",
+	}, stats)
+	if err != nil {
+		body := ""
+		status := 0
+		if res != nil {
+			body = string(res.Body)
+			status = res.StatusCode
+		}
+		log.Errorf("local /stats request failed, status: %d, body: %s", status, body)
 		return false
 	}
 	return true
+}
+
+func proxyManagedAPIRequestLocally(req *util.Request, responseObjectToUnMarshall interface{}) (*util.Result, error) {
+	if req == nil {
+		return nil, fmt.Errorf("request is nil")
+	}
+	requestPath := strings.TrimSpace(req.Path)
+	if requestPath == "" {
+		return nil, fmt.Errorf("request path is empty")
+	}
+
+	bodyReader := bytes.NewReader(req.Body)
+	localReq := httptest.NewRequest(req.Method, requestPath, bodyReader)
+	if req.Context != nil {
+		localReq = localReq.WithContext(req.Context)
+	}
+	for key, value := range req.AllHeaders() {
+		localReq.Header.Set(key, value)
+	}
+	if req.ContentType != "" {
+		localReq.Header.Set("Content-Type", req.ContentType)
+	}
+	applyConsoleLocalAPIAuth(localReq)
+
+	recorder := httptest.NewRecorder()
+	api.ServeRegisteredAPIRequest(recorder, localReq)
+	httpResult := recorder.Result()
+	defer httpResult.Body.Close()
+
+	res := &util.Result{
+		StatusCode: recorder.Code,
+		Body:       append([]byte(nil), recorder.Body.Bytes()...),
+		Headers:    map[string][]string{},
+	}
+	for key, values := range httpResult.Header {
+		res.Headers[strings.ToLower(key)] = append([]string(nil), values...)
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return res, fmt.Errorf("request error: %v, %v", nil, string(res.Body))
+	}
+	if responseObjectToUnMarshall != nil && len(res.Body) > 0 {
+		if err := util.FromJSONBytes(res.Body, responseObjectToUnMarshall); err != nil {
+			return res, err
+		}
+	}
+	return res, nil
 }
 
 func applyConsoleLocalAPIAuth(req *http.Request) {

@@ -235,6 +235,30 @@ func ApplyInstanceRequestAuth(req *util.Request, instance *model.Instance) error
 		req.AddHeader("Authorization", "Bearer "+tokenValue)
 		return nil
 	}
+	if instance.AccessToken != nil && strings.TrimSpace(instance.AccessToken.Value) != "" {
+		req.AddHeader("Authorization", "Bearer "+strings.TrimSpace(instance.AccessToken.Value))
+		return nil
+	}
+	if instance.BasicAuth != nil {
+		req.SetBasicAuth(instance.BasicAuth.Username, instance.BasicAuth.Password.Get())
+	}
+	return nil
+}
+
+func ApplyInstanceHTTPRequestAuth(req *http.Request, instance *model.Instance) error {
+	if req == nil || instance == nil {
+		return nil
+	}
+	if tokenValue, err := GetPreferredTokenCredentialValue(instance.AccessCredentialID); err != nil {
+		return err
+	} else if tokenValue != "" {
+		req.Header.Set("Authorization", "Bearer "+tokenValue)
+		return nil
+	}
+	if instance.AccessToken != nil && strings.TrimSpace(instance.AccessToken.Value) != "" {
+		req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(instance.AccessToken.Value))
+		return nil
+	}
 	if instance.BasicAuth != nil {
 		req.SetBasicAuth(instance.BasicAuth.Username, instance.BasicAuth.Password.Get())
 	}

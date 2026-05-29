@@ -66,6 +66,14 @@ const sensitiveRequestRules = [
   { method: "POST", pattern: /^\/setting\/system\/local_templates\/_refresh$/ },
 ];
 
+const publicRequestRules = [
+  { method: "GET", pattern: /^\/setting\/application$/ },
+  { method: "GET", pattern: /^\/_info$/ },
+  { method: "GET", pattern: /^\/_license\/info$/ },
+  { method: "POST", pattern: /^\/account\/login\/challenge$/ },
+  { method: "POST", pattern: /^\/account\/login$/ },
+];
+
 const getNormalizedRequestPath = (requestUrl) => {
   if (typeof window === "undefined") {
     return requestUrl;
@@ -134,6 +142,24 @@ const requestRequiresSecureTransport = (requestUrl, method = "GET") => {
   return sensitiveRequestRules.some(
     ({ method: sensitiveMethod, pattern }) =>
       sensitiveMethod === normalizedMethod && pattern.test(normalizedPath)
+  );
+};
+
+const requestShouldSkipAuthorization = (
+  requestUrl,
+  method = "GET",
+  option = {}
+) => {
+  if (option?.skipAuthorization === true) {
+    return true;
+  }
+
+  const normalizedMethod = method.toUpperCase();
+  const normalizedPath = getNormalizedRequestPath(requestUrl);
+
+  return publicRequestRules.some(
+    ({ method: publicMethod, pattern }) =>
+      publicMethod === normalizedMethod && pattern.test(normalizedPath)
   );
 };
 
@@ -625,7 +651,13 @@ export default function request(
   };
 
   const executeRequest = () => {
-    const authorizationHeader = getAuthorizationHeader();
+    const authorizationHeader = requestShouldSkipAuthorization(
+      url,
+      requestMethod,
+      option
+    )
+      ? ""
+      : getAuthorizationHeader();
     if (authorizationHeader) {
       newOptions.headers["Authorization"] = authorizationHeader;
     } else {

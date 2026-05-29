@@ -292,13 +292,13 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
             <div className={styles.initialization}>
                 {
                     checkResult.success ? (
-                        <div style={{width:"80%", margin:"0 auto"}}>
+                        <div className={styles.contentInner}>
                             {!hasStarted ? (
                                 <>
                                     <Alert
                                         showIcon
                                         type="info"
-                                        style={{ marginBottom: 16 }}
+                                        className={styles.topAlert}
                                         message={formatMessage(
                                             { id: "guide.initialization.defaults.message" },
                                             {
@@ -308,8 +308,8 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
                                             }
                                         )}
                                     />
-                                    <div style={{ marginBottom: 16 }}>
-                                        <div style={{ marginBottom: 8, fontWeight: 500 }}>
+                                    <div className={styles.fieldBlock}>
+                                        <div className={styles.fieldTitle}>
                                             {formatMessage({ id: "guide.initialization.primary_shards" })}
                                         </div>
                                         <InputNumber
@@ -319,48 +319,48 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
                                             value={formData.primary_shards}
                                             onChange={(value) => onFormDataChange({ primary_shards: value })}
                                         />
-                                        <div style={{ marginTop: 8, color: "rgba(0,0,0,.45)" }}>
+                                        <div className={styles.fieldHelp}>
                                             {formatMessage({ id: "guide.initialization.primary_shards.help" })}
                                         </div>
                                     </div>
-                                    <div style={{ marginBottom: 16 }}>
-                                        <div style={{ marginBottom: 8, fontWeight: 500 }}>
+                                    <div className={styles.fieldBlock}>
+                                        <div className={styles.fieldTitle}>
                                             {formatMessage({ id: "guide.initialization.auto_expand_replicas" })}
                                         </div>
                                         <Input
                                             value={formData.auto_expand_replicas}
                                             onChange={(event) => onFormDataChange({ auto_expand_replicas: event.target.value })}
                                         />
-                                    <div style={{ marginTop: 8, color: "rgba(0,0,0,.45)" }}>
+                                    <div className={styles.fieldHelp}>
                                             {formatMessage({ id: "guide.initialization.auto_expand_replicas.help" })}
                                         </div>
                                     </div>
                                     {rollupSupported ? (
-                                        <div style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+                                        <div className={styles.toggleBlock}>
                                             <Switch
                                                 checked={formData.enable_rollup !== false}
                                                 onChange={(checked) => onFormDataChange({ enable_rollup: checked })}
                                             />
                                             <div>
-                                                <div style={{ fontWeight: 500 }}>
+                                                <div className={styles.fieldTitle}>
                                                     {formatMessage({ id: "guide.initialization.rollup" })}
                                                 </div>
-                                                <div style={{ marginTop: 4, color: "rgba(0,0,0,.45)" }}>
+                                                <div className={styles.toggleHelp}>
                                                     {formatMessage({ id: "guide.initialization.rollup.help" })}
                                                 </div>
                                             </div>
                                         </div>
                                     ) : null}
-                                    <div style={{ display: "flex", justifyContent: "space-between", width:"60%", margin:"15px auto 0 auto" }}>
+                                    <div className={styles.actionRow}>
                                         <Button
-                                            style={{ width: "48%" }}
+                                            className={styles.actionButton}
                                             type="primary"
                                             onClick={handlePrev}
                                         >
                                             {formatMessage({ id: "guide.step.prev" })}
                                         </Button>
                                         <Button
-                                            style={{ width: "48%" }}
+                                            className={styles.actionButton}
                                             type="primary"
                                             onClick={startInitialization}
                                         >
@@ -370,15 +370,15 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
                                 </>
                             ) : (
                                 <>
-                            <div style={{display:"flex"}}>
-                                <div>
+                            <div className={styles.taskHeader}>
+                               <div className={styles.taskHeaderMain}>
                                 [{currentIndex+1}/{initialTasks.length}]
                                 {taskState.status === "running" ? <Icon type="loading" style={{color:"rgb(2, 127, 254)", marginLeft:5}}/>: null}
                                 {taskState.status === "failed" ? <Icon type="close-circle" style={{color:"rgb(219, 0, 0)", marginLeft:5}} theme="filled"/>: null}
                                 <span style={{marginLeft:5}}>{initialTasks[currentIndex].desc}</span>
                                 </div>
                                 {taskState.status === "failed" ?
-                                 <div style={{marginLeft:"auto"}}>
+                                <div className={styles.taskHeaderActions}>
                                      <a onClick={retryTask} key="retry">Retry</a><Divider type="vertical" /><a onClick={skipTask} key="skip">Skip</a>
                                   </div>: null}
                               </div>
@@ -401,16 +401,16 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
                                       </div>
                                   ))}
                               </div>
-                             <div style={{ display: "flex", justifyContent: "space-between", width:"60%", margin:"15px auto 0 auto" }}>
+                             <div className={styles.actionRow}>
                                 <Button
-                                style={{ width: "48%" }}
+                                className={styles.actionButton}
                                 type="primary"
                                 disabled={taskState.status === "running"}
                                 onClick={handlePrev}
                                 >
                                 {formatMessage({ id: "guide.step.prev" })}
                                 </Button>
-                                <Button style={{ width: "48%" }} type="primary" disabled={taskState.status === "running"} onClick={onNext}>
+                                <Button className={styles.actionButton} type="primary" disabled={taskState.status === "running"} onClick={onNext}>
                                 {formatMessage({ id: "guide.step.next" })}
                                 </Button>
                             </div>

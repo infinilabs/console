@@ -2,6 +2,7 @@ package common
 
 import (
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"infini.sh/framework/core/model"
@@ -78,6 +79,61 @@ func TestValidateManagerRequestAuth(t *testing.T) {
 		}, true)
 		if err != nil {
 			t.Fatalf("expected legacy compatibility to pass, got %v", err)
+		}
+	})
+}
+
+func TestApplyInstanceHTTPRequestAuth(t *testing.T) {
+	t.Run("applies bearer token from access credential", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/ws", nil)
+		instance := &model.Instance{AccessCredentialID: "cred-1"}
+		RememberPreviousToken("cred-1", "access-token")
+
+		if err := ApplyInstanceHTTPRequestAuth(req, instance); err != nil {
+			t.Fatalf("expected auth to apply, got %v", err)
+		}
+
+		if got := req.Header.Get("Authorization"); got != "Bearer access-token" {
+			t.Fatalf("unexpected authorization header: %q", got)
+		}
+	})
+
+	t.Run("falls back to direct access token", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/ws", nil)
+		instance := &model.Instance{
+			AccessToken: &model.Token{
+				Value: "direct-token",
+			},
+		}
+
+		if err := ApplyInstanceHTTPRequestAuth(req, instance); err != nil {
+			t.Fatalf("expected access token to apply, got %v", err)
+		}
+
+		if got := req.Header.Get("Authorization"); got != "Bearer direct-token" {
+			t.Fatalf("unexpected authorization header: %q", got)
+		}
+	})
+
+	t.Run("falls back to basic auth", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/ws", nil)
+		instance := &model.Instance{
+			BasicAuth: &model.BasicAuth{
+				Username: "managed_gateway",
+				Password: ucfg.SecretString("secret"),
+			},
+		}
+
+		if err := ApplyInstanceHTTPRequestAuth(req, instance); err != nil {
+			t.Fatalf("expected basic auth to apply, got %v", err)
+		}
+
+		user, password, ok := req.BasicAuth()
+		if !ok || user != "managed_gateway" || password != "secret" {
+			t.Fatalf("unexpected basic auth credentials: ok=%v user=%q password=%q", ok, user, password)
+		}
+		if auth := req.Header.Get("Authorization"); !strings.HasPrefix(auth, "Basic ") {
+			t.Fatalf("expected basic authorization header, got %q", auth)
 		}
 	})
 }

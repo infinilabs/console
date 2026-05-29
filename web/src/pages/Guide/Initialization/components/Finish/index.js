@@ -116,54 +116,56 @@ export default ({ formData, onPrev }) => {
           )
         }
       >
-        {isInitializing ? (
-          <Alert
-            className={`${styles.panel} ${styles.pendingAlert}`}
-            message={formatMessage({ id: "guide.initialization.finish.pending.desc" })}
-            type="info"
-          />
-        ) : null}
-        {isFailed ? (
-          <Alert
-          className={`${styles.panel} ${styles.statusAlert}`}
-            message={formatMessage({ id: "guide.initialization.finish.failed.desc" })}
-            description={setupError}
-            type="error"
-            showIcon
-          />
-        ) : null}
-        <Descriptions 
-          bordered 
-          size="small" 
-        className={`${styles.panel} ${styles.configTable}`}
-          title={formatMessage({ id: "guide.configuration.title" })} 
-          column={1}
-        >
-          <Descriptions.Item label={formatMessage({ id: "guide.configuration.cluster" })}>{isTLS ? `https://${hosts[0]}` : `http://${hosts[0]}`}</Descriptions.Item>
-          {
-            isAuth && (
-              <>
-              <Descriptions.Item label={formatMessage({ id: "guide.configuration.cluster_username" })}>{username}</Descriptions.Item>
-                <Descriptions.Item label={formatMessage({ id: "guide.configuration.cluster_password" })}>{password.split("").map(() => "*")}</Descriptions.Item>
-              </>
-            )
-          }
-          {
-            isInit && (
-              <>
-                <Descriptions.Item label={formatMessage({ id: "guide.configuration.console_username" })}>{bootstrap_username}</Descriptions.Item>
-                <Descriptions.Item label={formatMessage({ id: "guide.configuration.console_password" })}>{bootstrap_password.split("").map(() => "*")}</Descriptions.Item>
+        <div className={styles.panels}>
+          {isInitializing ? (
+            <Alert
+              className={`${styles.panel} ${styles.pendingAlert}`}
+              message={formatMessage({ id: "guide.initialization.finish.pending.desc" })}
+              type="info"
+            />
+          ) : null}
+          {isFailed ? (
+            <Alert
+            className={`${styles.panel} ${styles.statusAlert}`}
+              message={formatMessage({ id: "guide.initialization.finish.failed.desc" })}
+              description={setupError}
+              type="error"
+              showIcon
+            />
+          ) : null}
+          <Descriptions 
+            bordered 
+            size="small" 
+          className={`${styles.panel} ${styles.configTable}`}
+            title={formatMessage({ id: "guide.configuration.title" })} 
+            column={1}
+          >
+            <Descriptions.Item label={formatMessage({ id: "guide.configuration.cluster" })}>{isTLS ? `https://${hosts[0]}` : `http://${hosts[0]}`}</Descriptions.Item>
+            {
+              isAuth && (
+                <>
+                <Descriptions.Item label={formatMessage({ id: "guide.configuration.cluster_username" })}>{username}</Descriptions.Item>
+                  <Descriptions.Item label={formatMessage({ id: "guide.configuration.cluster_password" })}>{password.split("").map(() => "*")}</Descriptions.Item>
                 </>
-            )
-          }
-          <Descriptions.Item label={formatMessage({ id: "guide.configuration.credential_secret" })}>{credential_secret}</Descriptions.Item>
-        </Descriptions>
-        <Alert className={`${styles.panel} ${styles.tipsAlert}`} message={(
-          <div>
-            {formatMessage({ id: "guide.configuration.tips"})}
-            <a style={{ marginLeft: 12 }} onClick={onDownload} ><Icon type={"download"}/></a>
-          </div>
-        )} type="warning" />
+              )
+            }
+            {
+              isInit && (
+                <>
+                  <Descriptions.Item label={formatMessage({ id: "guide.configuration.console_username" })}>{bootstrap_username}</Descriptions.Item>
+                  <Descriptions.Item label={formatMessage({ id: "guide.configuration.console_password" })}>{bootstrap_password.split("").map(() => "*")}</Descriptions.Item>
+                  </>
+              )
+            }
+            <Descriptions.Item label={formatMessage({ id: "guide.configuration.credential_secret" })}>{credential_secret}</Descriptions.Item>
+          </Descriptions>
+          <Alert className={`${styles.panel} ${styles.tipsAlert}`} message={(
+            <div>
+              {formatMessage({ id: "guide.configuration.tips"})}
+              <a style={{ marginLeft: 12 }} onClick={onDownload} ><Icon type={"download"}/></a>
+            </div>
+          )} type="warning" />
+        </div>
       </Result>
     </div>
   );

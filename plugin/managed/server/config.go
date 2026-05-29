@@ -41,7 +41,6 @@ import (
 	elastic "infini.sh/framework/modules/elastic"
 	"net/http"
 	"path"
-	"strings"
 	"sync"
 )
 
@@ -188,7 +187,7 @@ func (h APIHandler) syncConfigs(w http.ResponseWriter, req *http.Request, ps htt
 		log.Trace("request:", util.MustToJSON(obj))
 	}
 
-	if strings.EqualFold(obj.Client.Application.Name, "agent") {
+	if common.SupportsManagedAccessToken(obj.Client.Application.Name) {
 		instance := model.Instance{}
 		instance.ID = obj.Client.ID
 		exists, err := orm.Get(&instance)
@@ -204,7 +203,7 @@ func (h APIHandler) syncConfigs(w http.ResponseWriter, req *http.Request, ps htt
 			h.WriteError(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}
-		if err := agent_common.ValidateLegacyCompatibleManagerRequestAuth(req, &instance, (*model.BasicAuth)(&global.Env().SystemConfig.Configs.ManagerConfig.BasicAuth)); err != nil {
+		if err := validateManagedAgentRequestAuth(req, &instance); err != nil {
 			if agent_common.IsManagerAuthFailure(err) {
 				h.WriteError(w, err.Error(), http.StatusUnauthorized)
 			} else {

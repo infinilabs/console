@@ -433,7 +433,7 @@ func (h *APIHandler) HandleUpdateViewAction(w http.ResponseWriter, req *http.Req
 	ctx := &orm.Context{
 		Refresh: "wait_for",
 	}
-	err = orm.Save(ctx, viewReq.Attributes)
+	err = orm.Save(ctx, &viewReq.Attributes)
 	if err != nil {
 		log.Errorf("HandleUpdateViewAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)

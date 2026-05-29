@@ -397,10 +397,10 @@ func getPreferredConsoleTLSConfigs(consoleEndpoint string) []*frameworkconfig.TL
 	apiCfg := global.Env().SystemConfig.APIConfig
 
 	configs := make([]*frameworkconfig.TLSConfig, 0, 2)
-	if endpointMatchesPublishedEndpoint(consoleEndpoint, apiCfg.GetEndpoint()) {
+	if apiCfg.Enabled && endpointMatchesPublishedEndpoint(consoleEndpoint, apiCfg.GetEndpoint()) {
 		configs = append(configs, &apiCfg.TLSConfig)
 	}
-	if endpointMatchesPublishedEndpoint(consoleEndpoint, webCfg.GetEndpoint()) {
+	if webCfg.Enabled && endpointMatchesPublishedEndpoint(consoleEndpoint, webCfg.GetEndpoint()) {
 		configs = append(configs, &webCfg.TLSConfig)
 	}
 	if len(configs) > 0 {
@@ -657,13 +657,14 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 		"console_endpoint":          consoleEndpoint,
 		"console_domain":            consoleDomain,
 		"reverse_channel_endpoints": reverseChannelEndpoints,
-		"embedding_api":             fmt.Sprintf("%t", !reverseChannelEnabled),
+		"embedding_api":             "false",
 		"websocket_enabled":         fmt.Sprintf("%t", !reverseChannelEnabled),
 		"client_crt":                clientCertPEM,
 		"client_key":                clientKeyPEM,
 		"ca_crt":                    caCert,
 		"port":                      port,
 		"token":                     tokenStr,
+		"access_token":              managerTokenValue,
 		"manager_token":             managerTokenValue,
 		"manager_token_key":         common.AgentManagerTokenKey(),
 		"manager_token_id":          managerTokenRecord.ID,
@@ -708,10 +709,16 @@ func (h *APIHandler) getGatewayInstallScript(w http.ResponseWriter, req *http.Re
 
 	tpl := fasttemplate.New(string(buf), "{{", "}}")
 	consoleEndpoint := resolveConsoleEndpoint(req, gwCfg.Setup.ConsoleEndpoint)
+	consoleDomain := resolveConsoleTLSServerName(consoleEndpoint)
 	downloadURL, err := resolveGatewayDownloadURL(consoleEndpoint, gwCfg.Setup.DownloadURL)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Errorf("resolve gateway install script download url failed: %v", err)
+		return
+	}
+	_, managerTokenValue, err := common.CreatePendingManagerToken(common.AgentPendingTokenSourceVM)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -722,10 +729,12 @@ func (h *APIHandler) getGatewayInstallScript(w http.ResponseWriter, req *http.Re
 	_, err = tpl.Execute(w, map[string]interface{}{
 		"base_url":         downloadURL,
 		"console_endpoint": consoleEndpoint,
+		"console_domain":   consoleDomain,
 		"client_crt":       clientCertPEM,
 		"client_key":       clientKeyPEM,
 		"ca_crt":           caCert,
 		"port":             port,
+		"access_token":     managerTokenValue,
 		"version":          installVersion,
 	})
 	if err != nil {

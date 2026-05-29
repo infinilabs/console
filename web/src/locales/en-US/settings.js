@@ -22,6 +22,14 @@ export default {
     "Recipient email is invalid",
   "settings.email.server.form.temp_name": "New Config Name",
   "settings.email.server.message.test.success": "Sent successfully",
+  "settings.email.server.message.test.error.auth_required":
+    "SMTP credentials are required. Please check the username and password.",
+  "settings.email.server.message.test.error.smtp_auth_failed":
+    "SMTP authentication failed. Check the username, password, or provider-specific authorization code.",
+  "settings.email.server.message.test.error.sender_mismatch":
+    "SMTP authentication failed. Some providers require the sender address to match the authenticated account or an approved alias.",
+  "settings.email.server.message.test.error.tls_required":
+    "The SMTP server requires TLS or STARTTLS before authentication. Check the TLS setting and port.",
   "settings.system.tab.general": "General",
   "settings.system.tab.email": "Email Server",
   "settings.system.retention.title": "Data Retention",

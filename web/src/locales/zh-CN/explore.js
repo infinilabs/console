@@ -70,6 +70,30 @@ export default {
   "explore.view.index_pattern.create_field": "创建字段",
   "explore.view.index_pattern.all_field_types": "全部字段类型",
   "explore.view.index_pattern.all_languages": "全部语言",
+  "explore.view.index_pattern.field_editor.default_option": "- 默认 -",
+  "explore.view.index_pattern.field_editor.default_label": "默认",
+  "explore.view.index_pattern.field_editor.format": "格式",
+  "explore.view.index_pattern.field_editor.format_help":
+    "格式化允许您控制特定值的显示方式。它也可能完全改变值的显示结果，并导致 Discover 中的高亮失效。",
+  "explore.view.index_pattern.field_editor.save_field": "保存字段",
+  "explore.view.index_pattern.complex_field_editor.name": "名称",
+  "explore.view.index_pattern.complex_field_editor.name_required":
+    "名称不能为空",
+  "explore.view.index_pattern.complex_field_editor.new_field_placeholder":
+    "新字段",
+  "explore.view.index_pattern.complex_field_editor.duplicate_name":
+    "已存在名为 {name} 的字段。",
+  "explore.view.index_pattern.complex_field_editor.metric_name":
+    "指标名称",
+  "explore.view.index_pattern.complex_field_editor.function": "函数",
+  "explore.view.index_pattern.complex_field_editor.unit": "单位",
+  "explore.view.index_pattern.complex_field_editor.tags": "标签",
+  "explore.view.index_pattern.complex_field_editor.delete_title":
+    "删除字段“{name}”",
+  "explore.view.index_pattern.complex_field_editor.delete_confirm":
+    "删除后的字段无法恢复，确认要继续吗？",
+  "explore.view.index_pattern.complex_field_editor.edit_title":
+    "编辑 {name}",
   "explore.save_queries.title": "保存查询",
   "explore.save_queries.field.title": "标题",
   "explore.save_queries.field.tag": "标签",

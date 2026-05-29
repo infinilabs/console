@@ -82,4 +82,5 @@ func Init(cfg *config.AppConfig) {
 	data.InitAPI()
 	platform.InitAPI()
 	settings.InitAPI()
+	initConsoleSelfAPI()
 }

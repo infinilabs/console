@@ -19,6 +19,13 @@ export default {
   "settings.email.server.form.validation.recipient": "收件人邮箱格式不正确",
   "settings.email.server.form.temp_name": "新建配置名称",
   "settings.email.server.message.test.success": "发送成功",
+  "settings.email.server.message.test.error.auth_required": "SMTP 认证信息不能为空，请检查用户名和密码配置。",
+  "settings.email.server.message.test.error.smtp_auth_failed":
+    "SMTP 认证失败，请检查用户名、密码或邮箱服务商要求的授权码。",
+  "settings.email.server.message.test.error.sender_mismatch":
+    "SMTP 认证失败，部分邮箱服务商要求发件人地址与认证账号一致，或必须是该账号已授权的别名。",
+  "settings.email.server.message.test.error.tls_required":
+    "SMTP 服务器要求先启用 TLS/STARTTLS，请检查 TLS 配置和端口是否正确。",
   "settings.system.tab.general": "通用设置",
   "settings.system.tab.email": "邮件服务器",
   "settings.system.retention.title": "数据保留天数",

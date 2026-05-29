@@ -85,6 +85,12 @@ import { formatMessage } from "umi/locale";
 import { message } from 'antd';
 import { getRollupEnabled } from '@/utils/authority';
 
+const i18nText = (
+  id: string,
+  defaultMessage: string,
+  values?: Record<string, unknown>
+) => formatMessage({ id, defaultMessage }, values);
+
 export const getStatistics = (type) => {
   if (!type || type === 'string') return ["count",  "cardinality"];
   return [
@@ -119,7 +125,10 @@ const getFieldTypeFormatsList = (
     {
       id: '',
       defaultFieldFormat,
-      title: '- Default -',
+      title: i18nText(
+        "explore.view.index_pattern.field_editor.default_option",
+        "- Default -"
+      ),
     },
     ...formatsByType,
   ];
@@ -461,9 +470,11 @@ export class FieldEditor extends PureComponent<FieldEdiorProps, FieldEditorState
     const defaultFormat = (fieldTypeFormats[0] as InitialFieldTypeFormat).defaultFieldFormat.title;
 
     const label = defaultFormat ? (<>
-      Format (Default: <EuiCode>{defaultFormat}</EuiCode>)</>
+      {i18nText("explore.view.index_pattern.field_editor.format", "Format")} (
+      {i18nText("explore.view.index_pattern.field_editor.default_label", "Default")}: <EuiCode>{defaultFormat}</EuiCode>)
+    </>
     ) : (
-      "Format"
+      i18nText("explore.view.index_pattern.field_editor.format", "Format")
     );
 
     return (
@@ -471,8 +482,10 @@ export class FieldEditor extends PureComponent<FieldEdiorProps, FieldEditorState
         <EuiFormRow
           label={label}
           helpText={
-            `Formatting allows you to control the way that specific values are displayed. It can also cause values to be
-              completely changed and prevent highlighting in Discover from working.`
+            i18nText(
+              "explore.view.index_pattern.field_editor.format_help",
+              "Formatting allows you to control the way that specific values are displayed. It can also cause values to be completely changed and prevent highlighting in Discover from working."
+            )
           }
         >
           <EuiSelect
@@ -638,15 +651,15 @@ export class FieldEditor extends PureComponent<FieldEdiorProps, FieldEditorState
               data-test-subj="fieldSaveButton"
             >
               {isCreating ? (
-                "Create field"
+                i18nText("explore.view.index_pattern.create_field", "Create field")
               ) : (
-                "Save field"
+                i18nText("explore.view.index_pattern.field_editor.save_field", "Save field")
               )}
             </EuiButton>
           </EuiFlexItem>
           <EuiFlexItem grow={false}>
             <EuiButtonEmpty onClick={redirectAway} data-test-subj="fieldCancelButton">
-              Cancel
+              {i18nText("form.button.cancel", "Cancel")}
             </EuiButtonEmpty>
           </EuiFlexItem>
           {!isCreating && spec.scripted ? (
@@ -654,7 +667,7 @@ export class FieldEditor extends PureComponent<FieldEdiorProps, FieldEditorState
               <EuiFlexGroup justifyContent="flexEnd">
                 <EuiFlexItem grow={false}>
                   <EuiButtonEmpty color="danger" onClick={this.showDeleteModal}>
-                    Delete
+                    {i18nText("form.button.delete", "Delete")}
                   </EuiButtonEmpty>
                 </EuiFlexItem>
               </EuiFlexGroup>

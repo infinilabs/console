@@ -57,7 +57,9 @@ const STATUS = [
   {
     title: "disk",
     icon: () => <Icon component={DiskSvg} />,
-    render: () => <Disk />,
+    render: (data, loading) => (
+      <Disk data={data?.total_used_store_in_bytes || 0} loading={loading} />
+    ),
   },
 ];
 
@@ -117,7 +119,7 @@ export default connect(({ user }) => ({
               <IconTitle title={item.title} icon={item.icon} />
               <div className={styles.content}>
                 {item.render ? (
-                  item.render()
+                  item.render(status, loading)
                 ) : (
                   <Status
                     data={item.formatData(status)}

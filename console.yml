@@ -40,7 +40,7 @@ api:
     default_domain: localhost
 web:
   enabled: true
-  embedding_api: true
+  embedding_api: false
   websocket:
     enabled: true
     base_path: /ws

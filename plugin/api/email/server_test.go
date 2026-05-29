@@ -2,6 +2,7 @@ package email
 
 import (
 	"crypto/tls"
+	"errors"
 	"testing"
 
 	consolemodel "infini.sh/console/model"
@@ -120,5 +121,50 @@ func TestNewEmailTLSConfigSetsServerName(t *testing.T) {
 	}
 	if !cfg.InsecureSkipVerify {
 		t.Fatal("expected insecure skip verify to remain enabled")
+	}
+}
+
+func TestClassifyEmailServerTestSendErrorSenderMismatch(t *testing.T) {
+	server := &consolemodel.EmailServer{
+		Sender: "hello@example.com",
+		Auth: &frameworkmodel.BasicAuth{
+			Username: "notify@example.com",
+			Password: ucfg.SecretString("secret"),
+		},
+	}
+
+	key, reason := classifyEmailServerTestSendError(server, server.Sender, errors.New("gomail: could not send email 1: 550 5.7.1 authentication is required"))
+	if key != emailServerTestErrorKeySenderMismatch {
+		t.Fatalf("expected sender mismatch key, got %q", key)
+	}
+	if reason == "" {
+		t.Fatal("expected a human-readable reason")
+	}
+}
+
+func TestClassifyEmailServerTestSendErrorSMTPAuthFailure(t *testing.T) {
+	server := &consolemodel.EmailServer{
+		Auth: &frameworkmodel.BasicAuth{
+			Username: "notify@example.com",
+			Password: ucfg.SecretString("secret"),
+		},
+	}
+
+	key, reason := classifyEmailServerTestSendError(server, "notify@example.com", errors.New("535 Authentication failed"))
+	if key != emailServerTestErrorKeySMTPAuthFailed {
+		t.Fatalf("expected SMTP auth failure key, got %q", key)
+	}
+	if reason == "" {
+		t.Fatal("expected a human-readable reason")
+	}
+}
+
+func TestClassifyEmailServerTestSendErrorPassesUnknownErrorsThrough(t *testing.T) {
+	key, reason := classifyEmailServerTestSendError(nil, "", errors.New("dial tcp: connection refused"))
+	if key != "" {
+		t.Fatalf("expected no key, got %q", key)
+	}
+	if reason != "dial tcp: connection refused" {
+		t.Fatalf("expected original reason, got %q", reason)
 	}
 }

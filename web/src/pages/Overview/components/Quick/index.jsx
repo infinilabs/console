@@ -14,7 +14,6 @@ import {
   APPLICATION_SETTINGS_UPDATED_EVENT,
   getEnterpriseTaskManagerEnabled,
   hasAuthority,
-  refreshApplicationSettings,
 } from "@/utils/authority";
 
 const getRoutes = (taskManagerEnabled) => {
@@ -88,7 +87,7 @@ export default () => {
       setTaskManagerEnabled(getEnterpriseTaskManagerEnabled() === "true");
     };
 
-    refreshApplicationSettings(true).finally(syncTaskManagerEnabled);
+    syncTaskManagerEnabled();
     window.addEventListener(
       APPLICATION_SETTINGS_UPDATED_EVENT,
       syncTaskManagerEnabled

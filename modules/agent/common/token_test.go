@@ -21,6 +21,18 @@ func TestValidateManagerRequestAuth(t *testing.T) {
 		}
 	})
 
+	t.Run("accepts valid api token header", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/instance/_register", nil)
+		req.Header.Set(model.API_TOKEN, "manager-token")
+		instance := &model.Instance{ManagerCredentialID: "cred-1"}
+		err := validateManagerRequestAuth(req, instance, nil, func(instance *model.Instance, tokenValue string) (bool, error) {
+			return tokenValue == "manager-token", nil
+		}, false)
+		if err != nil {
+			t.Fatalf("expected api token auth to pass, got %v", err)
+		}
+	})
+
 	t.Run("rejects invalid manager token", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "/instance/_register", nil)
 		instance := &model.Instance{ManagerCredentialID: "cred-1"}

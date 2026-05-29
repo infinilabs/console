@@ -268,6 +268,7 @@ configs.auto_reload: true
 
 env:
   API_BINDING: "0.0.0.0:${port}"
+  SECURITY_ENABLED: true
 
 path.data: "${install_dir}/data"
 path.logs: "${install_dir}/log"
@@ -277,6 +278,8 @@ api:
   enabled: true
   network:
     binding: \$[[env.API_BINDING]]
+  security:
+    enabled: \$[[env.SECURITY_ENABLED]]
 
 configs:
   managed: true
@@ -284,6 +287,8 @@ configs:
   interval: "10s"
   servers:
     - "${server}"
+  manager:
+    access_token: '$[[keystore.CONFIGS_MANAGER_ACCESS_TOKEN]]'
   max_backup_files: 5
   soft_delete: false
   tls:
@@ -291,11 +296,25 @@ configs:
     cert_file: "config/client.crt"
     key_file: "config/client.key"
     ca_file: "config/ca.crt"
-    skip_insecure_verify: true
+    default_domain: "{{console_domain}}"
+    skip_insecure_verify: false
 
 node:
   major_ip_pattern: ".*"
 EOF
+}
+
+function install_manager_token() {
+  access_token="{{access_token}}"
+  gateway_svc=${install_dir}/${program_name}-${file_ext%%.*}
+
+  if [[ -z "${access_token}" ]]; then
+    echo "Error: access token is empty." >&2
+    exit 1
+  fi
+
+  echo "[gateway] waiting save console manager access token"
+  echo -n "${access_token}" | ${gateway_svc} keystore add "CONFIGS_MANAGER_ACCESS_TOKEN" --stdin --force >/dev/null
 }
 
 function uninstall_service() {
@@ -351,6 +370,7 @@ function main() {
   install_binary
   install_certs
   install_config
+  install_manager_token
   uninstall_service
   install_service
 

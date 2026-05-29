@@ -263,6 +263,20 @@ func ExtractBearerToken(req *http.Request) string {
 	return strings.TrimSpace(value[7:])
 }
 
+func ExtractAPIToken(req *http.Request) string {
+	if req == nil {
+		return ""
+	}
+	return strings.TrimSpace(req.Header.Get(model.API_TOKEN))
+}
+
+func ExtractManagerToken(req *http.Request) string {
+	if tokenValue := ExtractAPIToken(req); tokenValue != "" {
+		return tokenValue
+	}
+	return ExtractBearerToken(req)
+}
+
 func ValidateManagerRequestAuth(req *http.Request, instance *model.Instance, fallbackBasicAuth *model.BasicAuth) error {
 	return validateManagerRequestAuth(req, instance, fallbackBasicAuth, ValidateManagerToken, false)
 }
@@ -288,7 +302,7 @@ func validateManagerRequestAuth(
 		return fmt.Errorf("instance is nil")
 	}
 	if strings.TrimSpace(instance.ManagerCredentialID) != "" {
-		ok, err := validateToken(instance, ExtractBearerToken(req))
+		ok, err := validateToken(instance, ExtractManagerToken(req))
 		if err != nil {
 			return err
 		}
@@ -355,15 +369,15 @@ func HashAgentToken(tokenValue string) string {
 }
 
 func BuildManagerCredentialName(instance *model.Instance) string {
-	return fmt.Sprintf("%s (Agent)", getAgentCredentialDisplayName(instance))
+	return fmt.Sprintf("%s (%s)", getAgentCredentialDisplayName(instance), getManagedCredentialProduct(instance))
 }
 
 func BuildAccessCredentialName(instance *model.Instance) string {
-	return fmt.Sprintf("%s (Agent Access)", getAgentCredentialDisplayName(instance))
+	return fmt.Sprintf("%s (%s Access)", getAgentCredentialDisplayName(instance), getManagedCredentialProduct(instance))
 }
 
 func BuildPendingManagerCredentialName() string {
-	return fmt.Sprintf("%s (Agent)", util.PickRandomName())
+	return fmt.Sprintf("%s (Managed)", util.PickRandomName())
 }
 
 func BuildManagerCredentialTags() []string {
@@ -414,4 +428,13 @@ func getAgentCredentialDisplayName(instance *model.Instance) string {
 		return displayName
 	}
 	return util.PickRandomName()
+}
+
+func getManagedCredentialProduct(instance *model.Instance) string {
+	if instance != nil {
+		if name := strings.TrimSpace(instance.Application.Name); name != "" {
+			return strings.ToUpper(name[:1]) + name[1:]
+		}
+	}
+	return "Managed"
 }

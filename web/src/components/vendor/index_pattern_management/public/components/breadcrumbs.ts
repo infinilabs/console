@@ -18,11 +18,15 @@
  */
 
 import { IndexPattern } from "../../../data/public";
+import { formatMessage } from "umi/locale";
 
 export function getListBreadcrumbs() {
   return [
     {
-      text: "views",
+      text: formatMessage({
+        id: "explore.viewlist.title",
+        defaultMessage: "View",
+      }),
       href: `/data/views`,
     },
   ];
@@ -32,7 +36,10 @@ export function getCreateBreadcrumbs() {
   return [
     ...getListBreadcrumbs(),
     {
-      text: "Create view",
+      text: formatMessage({
+        id: "explore.createview.title",
+        defaultMessage: "Create View",
+      }),
       href: `/data/views/create`,
     },
   ];
@@ -64,7 +71,10 @@ export function getCreateFieldBreadcrumbs(indexPattern: IndexPattern) {
   return [
     ...getEditBreadcrumbs(indexPattern),
     {
-      text: "Create field",
+      text: formatMessage({
+        id: "explore.view.index_pattern.create_field",
+        defaultMessage: "Create field",
+      }),
     },
   ];
 }

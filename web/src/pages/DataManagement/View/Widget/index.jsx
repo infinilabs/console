@@ -200,15 +200,19 @@ export default (props) => {
     }
     const startMoment = floorMomentToBucket(range.from, bucketSize);
     let endMoment = ceilMomentToBucket(range.to, bucketSize);
+    const rawEndMoment = moment(range.to);
     if (!startMoment || !endMoment) {
       return null;
     }
-    if (endMoment.valueOf() === startMoment.valueOf()) {
+    if (
+      endMoment.valueOf() === startMoment.valueOf() ||
+      (rawEndMoment.isValid() && endMoment.valueOf() === rawEndMoment.valueOf())
+    ) {
       endMoment = endMoment.clone().add(parsedBucket.value, getMomentAddUnit(parsedBucket.unit));
     }
     return {
       from: startMoment.toISOString(),
-      to: endMoment.toISOString(),
+      to: endMoment.clone().subtract(1, "millisecond").toISOString(),
     };
   }
 

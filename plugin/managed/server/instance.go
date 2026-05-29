@@ -60,6 +60,7 @@ var instanceSecrets = map[string][]common.Secrets{} //map instance->secrets TODO
 func init() {
 	//for public usage, agent can report self to server, usually need to enroll by manager
 	api.HandleAPIMethod(api.POST, common.REGISTER_API, handler.registerInstance) //client register self to config servers
+	api.HandleAPIMethod(api.POST, instanceTokenExchangeAPI, handler.exchangeInstanceToken)
 
 	//for public usage, get install script
 	api.HandleAPIMethod(api.GET, getInstallScriptAPI, handler.getInstallScript)
@@ -117,13 +118,13 @@ func (h APIHandler) registerInstance(w http.ResponseWriter, req *http.Request, p
 
 	var pendingToConsume *agent_common.PendingRegistrationToken
 
-	if strings.EqualFold(obj.Application.Name, "agent") {
-		tokenValue := agent_common.ExtractBearerToken(req)
+	if common.SupportsManagedAccessToken(obj.Application.Name) {
+		tokenValue := agent_common.ExtractManagerToken(req)
 		if exists {
 			if oldInst.Created != nil {
 				obj.Created = oldInst.Created
 			}
-			if err := agent_common.ValidateLegacyCompatibleManagerRequestAuth(req, oldInst, (*model.BasicAuth)(&global.Env().SystemConfig.Configs.ManagerConfig.BasicAuth)); err != nil {
+			if err := validateManagedAgentRequestAuth(req, oldInst); err != nil {
 				if agent_common.IsManagerAuthFailure(err) {
 					h.WriteError(w, err.Error(), http.StatusUnauthorized)
 				} else {
@@ -136,7 +137,7 @@ func (h APIHandler) registerInstance(w http.ResponseWriter, req *http.Request, p
 			obj.BasicAuth = oldInst.BasicAuth
 		} else {
 			if tokenValue == "" {
-				h.WriteError(w, "missing agent manager token", http.StatusUnauthorized)
+				h.WriteError(w, "missing manager token", http.StatusUnauthorized)
 				return
 			}
 			pending, err := agent_common.FindPendingManagerTokenByValue(tokenValue)
@@ -163,7 +164,7 @@ func (h APIHandler) registerInstance(w http.ResponseWriter, req *http.Request, p
 		obj.Created = oldInst.Created
 	}
 
-	if exists && strings.EqualFold(obj.Application.Name, "agent") && registerReq.AccessToken != nil {
+	if exists && common.SupportsManagedAccessToken(obj.Application.Name) && registerReq.AccessToken != nil {
 		if err := upsertInstanceAccessCredential(obj, registerReq.AccessToken); err != nil {
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return

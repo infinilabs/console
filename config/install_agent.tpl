@@ -357,6 +357,8 @@ configs:
   allow_generated_metrics_tasks: false # allow auto-generated metrics tasks (e.g. k8s)
   interval: \$[[env.REMOTE_CONFIG_INTERVAL]]
   servers: \$[[env.REMOTE_CONFIG_SERVERS]] # config servers
+  manager:
+    access_token: '$[[keystore.CONFIGS_MANAGER_ACCESS_TOKEN]]'
   max_backup_files: 5
   soft_delete: false
   tls: #for mTLS connection with config servers
@@ -373,16 +375,16 @@ EOF
 }
 
 function install_manager_token() {
-  manager_token="{{manager_token}}"
-  manager_token_key="{{manager_token_key}}"
+  access_token="{{access_token}}"
   agent_svc=${install_dir}/${program_name}-${file_ext%%.*}
 
-  if [[ -z "${manager_token}" || -z "${manager_token_key}" ]]; then
-    return
+  if [[ -z "${access_token}" ]]; then
+    echo "Error: access token is empty." >&2
+    exit 1
   fi
 
-  echo "[agent] waiting save console manager token"
-  echo -n "${manager_token}" | ${agent_svc} keystore add "${manager_token_key}" --stdin --force >/dev/null
+  echo "[agent] waiting save console manager access token"
+  echo -n "${access_token}" | ${agent_svc} keystore add "CONFIGS_MANAGER_ACCESS_TOKEN" --stdin --force >/dev/null
 }
 
 function uninstall_service() {

@@ -13,6 +13,25 @@ import { formatMessage } from "umi/locale";
 import CredentialForm from "./CredentialForm";
 import { hasAuthority } from "@/utils/authority";
 
+const getEmailServerTestErrorMessage = (response) => {
+  if (response instanceof Error) {
+    return response.message;
+  }
+  const errorKey = response?.error?.key;
+  if (errorKey) {
+    return formatMessage({
+      id: errorKey,
+      defaultMessage: response?.error?.reason,
+    });
+  }
+  if (response?.error?.reason) {
+    return response.error.reason;
+  }
+  return formatMessage({
+    id: "app.message.http.status.500",
+  });
+};
+
 export default Form.create({ name: "email_server_cfg" })((props) => {
   const { form, config = {}, setState, onSaveClick } = props;
   const { getFieldDecorator } = form;
@@ -80,21 +99,28 @@ export default Form.create({ name: "email_server_cfg" })((props) => {
       }
       const send_to = [sendTo.trim()];
       delete values.sendTo;
-      const testRes = await request("/email/server/_test", {
-        method: "POST",
-        body: {
-          ...config,
-          ...values,
-          send_to,
+      const testRes = await request(
+        "/email/server/_test",
+        {
+          method: "POST",
+          body: {
+            ...config,
+            ...values,
+            send_to,
+          },
         },
-      });
+        false,
+        false
+      );
       if (testRes && testRes.acknowledged === true) {
         message.success(
           formatMessage({
             id: "settings.email.server.message.test.success",
           })
         );
+        return;
       }
+      message.error(getEmailServerTestErrorMessage(testRes));
     });
   };
 

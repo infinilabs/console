@@ -44,7 +44,6 @@ import { EmptyIndexPatternPrompt } from "./empty_index_pattern_prompt";
 import { getIndices } from "../create_index_pattern_wizard/lib";
 import { useGlobalContext } from "../../context";
 import { Card, Button, Table, Input, Divider, Popconfirm, message, Icon } from "antd";
-import PageHeaderWrapper from "@/components/PageHeaderWrapper";
 import styles from "@/pages/System/Cluster/step.less";
 import { router } from "umi";
 import { formatMessage } from "umi/locale";
@@ -289,72 +288,70 @@ export const IndexPatternTable = ({
   // }
 
   return (
-    <PageHeaderWrapper>
-      <Card>
+    <Card>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 15,
+        }}
+      >
+        <div style={{ maxWidth: 500, flex: "1 1 auto" }}>
+          <Search
+            allowClear
+            placeholder={formatMessage({ id: "listview.search.placeholder" })}
+            enterButton={formatMessage({ id: "form.button.search" })}
+            onSearch={(value) => {
+              setSearchValue(value);
+            }}
+            onChange={(e) => {
+              setSearchValue(e.currentTarget.value);
+            }}
+          />
+        </div>
+
         <div
           style={{
             display: "flex",
             alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: 15,
+            gap: 10,
           }}
         >
-          <div style={{ maxWidth: 500, flex: "1 1 auto" }}>
-            <Search
-              allowClear
-              placeholder={formatMessage({ id: "listview.search.placeholder" })}
-              enterButton={formatMessage({ id: "form.button.search" })}
-              onSearch={(value) => {
-                setSearchValue(value);
-              }}
-              onChange={(e) => {
-                setSearchValue(e.currentTarget.value);
-              }}
-            />
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
+          <Button
+            icon="redo"
+            onClick={() => {
+              onRefreshClick();
             }}
           >
-            <Button
-              icon="redo"
-              onClick={() => {
-                onRefreshClick();
-              }}
-            >
-              {formatMessage({ id: "form.button.refresh" })}
-            </Button>
-            {createButton}
-          </div>
+            {formatMessage({ id: "form.button.refresh" })}
+          </Button>
+          {createButton}
         </div>
-        <Table
-          size={"small"}
-          loading={isLoadingIndexPatterns}
-          bordered
-          dataSource={hits}
-          rowKey={"id"}
-          pagination={{
-            size: "small",
-            pageSize: queryParams.size,
-            total: hitsTotal,
-            onChange: (page) => {
-              dispatch({ type: "pagination", value: page });
-            },
-            showSizeChanger: true,
-            onShowSizeChange: (_, size) => {
-              dispatch({ type: "pageSizeChange", value: size });
-            },
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} of ${total} items`,
-          }}
-          columns={columns}
-        />
-      </Card>
-    </PageHeaderWrapper>
+      </div>
+      <Table
+        size={"small"}
+        loading={isLoadingIndexPatterns}
+        bordered
+        dataSource={hits}
+        rowKey={"id"}
+        pagination={{
+          size: "small",
+          pageSize: queryParams.size,
+          total: hitsTotal,
+          onChange: (page) => {
+            dispatch({ type: "pagination", value: page });
+          },
+          showSizeChanger: true,
+          onShowSizeChange: (_, size) => {
+            dispatch({ type: "pageSizeChange", value: size });
+          },
+          showTotal: (total, range) =>
+            `${range[0]}-${range[1]} of ${total} items`,
+        }}
+        columns={columns}
+      />
+    </Card>
   );
 };
 

@@ -72,6 +72,30 @@ export default {
   "explore.view.index_pattern.create_field": "Create field",
   "explore.view.index_pattern.all_field_types": "All field types",
   "explore.view.index_pattern.all_languages": "All languages",
+  "explore.view.index_pattern.field_editor.default_option": "- Default -",
+  "explore.view.index_pattern.field_editor.default_label": "Default",
+  "explore.view.index_pattern.field_editor.format": "Format",
+  "explore.view.index_pattern.field_editor.format_help":
+    "Formatting allows you to control the way that specific values are displayed. It can also cause values to be completely changed and prevent highlighting in Discover from working.",
+  "explore.view.index_pattern.field_editor.save_field": "Save field",
+  "explore.view.index_pattern.complex_field_editor.name": "Name",
+  "explore.view.index_pattern.complex_field_editor.name_required":
+    "Name is required",
+  "explore.view.index_pattern.complex_field_editor.new_field_placeholder":
+    "New field",
+  "explore.view.index_pattern.complex_field_editor.duplicate_name":
+    "You already have a field with the name {name}.",
+  "explore.view.index_pattern.complex_field_editor.metric_name":
+    "Metric Name",
+  "explore.view.index_pattern.complex_field_editor.function": "Function",
+  "explore.view.index_pattern.complex_field_editor.unit": "Unit",
+  "explore.view.index_pattern.complex_field_editor.tags": "Tags",
+  "explore.view.index_pattern.complex_field_editor.delete_title":
+    "Delete field '{name}'",
+  "explore.view.index_pattern.complex_field_editor.delete_confirm":
+    "You can't recover a deleted field. Are you sure you want to do this?",
+  "explore.view.index_pattern.complex_field_editor.edit_title":
+    "Edit {name}",
   "explore.save_queries.title": "Save Queries",
   "explore.save_queries.field.title": "Title",
   "explore.save_queries.field.tag": "Tag",

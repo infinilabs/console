@@ -926,32 +926,24 @@ func (h *APIHandler) getESNodeInfoViaProxyWithConfig(cfg *elastic.ElasticsearchC
 		Body:    body,
 	}
 
+	exists, instance, err := server.GetRuntimeInstanceByID(instanceID)
+	if err != nil || !exists || instance == nil {
+		if global.Env().IsDebug && err != nil {
+			log.Errorf("failed to load agent instance [%s] for node info proxy: %v", instanceID, err)
+		}
+		return false, true, nil
+	}
+
 	obj := elastic.LocalNodeInfo{}
-	res, err := ProxyAgentRequestViaChannel(instanceID, req, &obj)
+	res, err := proxyAgentRequest(instance, req, &obj)
 	if isForbiddenAgentReverseResult(res) {
 		return false, false, nil
 	}
 	if err != nil {
 		if global.Env().IsDebug {
-			log.Errorf("failed to proxy elasticsearch node info via agent reverse channel [%s]: %v", instanceID, err)
+			log.Errorf("failed to proxy elasticsearch node info via agent [%s]: %v", instanceID, err)
 		}
-		if !shouldFallbackToDirectAgentNodeInfo(err) {
-			return false, true, nil
-		}
-		exists, instance, getErr := server.GetRuntimeInstanceByID(instanceID)
-		if getErr != nil || !exists || instance == nil {
-			if global.Env().IsDebug && getErr != nil {
-				log.Errorf("failed to load agent instance [%s] for direct node info fallback: %v", instanceID, getErr)
-			}
-			return false, true, nil
-		}
-		if _, directErr := proxyAgentRequestDirect(instance, req, &obj); directErr != nil {
-			if global.Env().IsDebug {
-				log.Errorf("failed to proxy elasticsearch node info directly via agent [%s]: %v", instanceID, directErr)
-			}
-			return false, true, nil
-		}
-		return true, false, &obj
+		return false, true, nil
 	}
 
 	if res != nil && res.StatusCode == http.StatusOK {

@@ -244,6 +244,46 @@ func TestRefreshConsoleSelfAPIProxyUIRoutesKeepsPublicAPIRoutesPublic(t *testing
 	}
 }
 
+func TestRefreshConsoleSelfAPIProxyUIRoutesMirrorsLateProtectedAPIRoutesAfterWebStart(t *testing.T) {
+	originalAuthEnabled := global.Env().SystemConfig.WebAppConfig.Security.Enabled
+	t.Cleanup(func() {
+		global.Env().SystemConfig.WebAppConfig.Security.Enabled = originalAuthEnabled
+	})
+
+	global.Env().SystemConfig.WebAppConfig.Security.Enabled = false
+
+	initConsoleSelfAPI()
+
+	webCfg := config.WebAppConfig{}
+	webCfg.NetworkConfig.Binding = "127.0.0.1:0"
+	api2.StartWeb(webCfg)
+	defer api2.StopWeb(webCfg)
+
+	api2.HandleAPIMethod(api2.GET, "/late-runtime-ui-proxy-route", func(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	resp := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/late-runtime-ui-proxy-route", nil)
+	if err := api2.ServeRegisteredUIRequest(resp, req); err != nil {
+		t.Fatalf("serve runtime ui route before refresh: %v", err)
+	}
+	if resp.Code != http.StatusNotFound {
+		t.Fatalf("expected late API route to be absent before runtime refresh, got %d", resp.Code)
+	}
+
+	RefreshConsoleSelfAPIProxyUIRoutes()
+
+	resp = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, "/late-runtime-ui-proxy-route", nil)
+	if err := api2.ServeRegisteredUIRequest(resp, req); err != nil {
+		t.Fatalf("serve runtime ui route after refresh: %v", err)
+	}
+	if resp.Code != http.StatusNoContent {
+		t.Fatalf("expected late API route to be mirrored after runtime refresh, got %d", resp.Code)
+	}
+}
+
 func issueConsoleTestToken(t *testing.T, userID string) string {
 	t.Helper()
 

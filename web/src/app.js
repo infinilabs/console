@@ -29,7 +29,6 @@ import {
 import { startActivityAwareTokenRefresh } from "./utils/auth_session";
 import request from "./utils/request";
 import { setSetupRequired } from "@/utils/setup";
-import { getHealth } from "@/services/system"
 import PlatformContainer from "./components/PlatformContainer";
 import React from "react";
 import { message, notification } from "antd";
@@ -207,9 +206,8 @@ installChunkReloadRecovery();
 installConsoleWarningFilter();
 
 export async function patchRoutes(routes) {
-  await refreshApplicationSettings();
-  const healthRes = await getHealth();
-  setSetupRequired(`${healthRes?.setup_required}`);
+  const appSettings = await refreshApplicationSettings();
+  setSetupRequired(`${!!appSettings?.setup_required}`);
   if (getEnterpriseTaskManagerEnabled() !== "true") {
     routes = hideRoutesInMenu(routes, ["data_tools"], "");
   }

@@ -5,7 +5,7 @@ import Link from "umi/link";
 import { Checkbox, Alert, Icon,Button } from "antd";
 import router from "umi/router";
 import Login from "@/components/Login";
-import { getHealth } from "@/services/system";
+import { refreshApplicationSettings } from "@/utils/authority";
 import { getSetupRequired, setSetupRequired } from "@/utils/setup";
 import styles from "./Login.less";
 import "./LoginPage.scss";
@@ -33,7 +33,7 @@ class LoginPage extends Component {
 
   syncSetupState = async () => {
     try {
-      const res = await getHealth();
+      const res = await refreshApplicationSettings(true);
       setSetupRequired(`${!!res?.setup_required}`);
       if (res?.setup_required) {
         router.replace("/guide/initialization");

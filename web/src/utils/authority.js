@@ -3,6 +3,7 @@ import {
   getAuthorizationToken,
   getStoredLoginResponse,
 } from "./auth_session";
+import { setSetupRequired } from "./setup";
 
 const APPLICATION_AUTH_KEY = "infini-auth";
 const APPLICATION_ROLLUP_KEY = "infini-rollup-enabled";
@@ -14,6 +15,9 @@ let applicationSettingsCache = null;
 
 function persistApplicationSettings(res) {
   localStorage.setItem(APPLICATION_AUTH_KEY, `${res.auth_enabled}`);
+  if (typeof res.setup_required !== "undefined") {
+    setSetupRequired(`${!!res.setup_required}`);
+  }
   localStorage.setItem(
     APPLICATION_ROLLUP_KEY,
     `${!!res.system_cluster?.rollup_enabled}`

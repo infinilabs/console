@@ -59,42 +59,48 @@ func init() {
 
 	api.HandleAPIMethod(api.POST, common.SYNC_API, handler.syncConfigs)           //client sync configs from config servers
 	api.HandleAPIMethod(api.POST, "/configs/_reload", handler.refreshConfigsRepo) //client sync configs from config servers
-	//delegate api to instances
-	api.HandleAPIFunc("/ws_proxy", func(w http.ResponseWriter, req *http.Request) {
-		log.Debug(req.RequestURI)
-		endpoint, path, err := prepareWebsocketProxyRequest(req)
-		if err != nil {
-			handler.WriteError(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		if endpoint == "" {
-			handler.WriteError(w, "empty endpoint", http.StatusBadRequest)
-			return
-		}
-		var tlsConfig = &tls.Config{
-			InsecureSkipVerify: true,
-		}
-		target, err := url.Parse(endpoint)
-		if err != nil {
-			panic(err)
-		}
-		newURL, err := url.Parse(path)
-		if err != nil {
-			panic(err)
-		}
-		req.URL.Path = newURL.Path
-		req.URL.RawPath = newURL.RawPath
-		req.URL.RawQuery = ""
-		req.RequestURI = req.URL.RequestURI()
-		rewriteWebsocketProxyHeaders(req, target)
-		wsProxy := NewSingleHostReverseProxy(target)
-		wsProxy.Dial = (&net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 30 * time.Second,
-		}).Dial
-		wsProxy.TLSClientConfig = tlsConfig
-		wsProxy.ServeHTTP(w, req)
-	})
+	registerWebsocketProxyRoutes()
+}
+
+func registerWebsocketProxyRoutes() {
+	api.HandleAPIFunc("/ws_proxy", handleWebsocketProxy)
+	api.HandleUIFuncMethod(api.GET, "/ws_proxy", handleWebsocketProxy, api.RequireLogin())
+}
+
+func handleWebsocketProxy(w http.ResponseWriter, req *http.Request) {
+	log.Debug(req.RequestURI)
+	endpoint, path, err := prepareWebsocketProxyRequest(req)
+	if err != nil {
+		handler.WriteError(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if endpoint == "" {
+		handler.WriteError(w, "empty endpoint", http.StatusBadRequest)
+		return
+	}
+	var tlsConfig = &tls.Config{
+		InsecureSkipVerify: true,
+	}
+	target, err := url.Parse(endpoint)
+	if err != nil {
+		panic(err)
+	}
+	newURL, err := url.Parse(path)
+	if err != nil {
+		panic(err)
+	}
+	req.URL.Path = newURL.Path
+	req.URL.RawPath = newURL.RawPath
+	req.URL.RawQuery = ""
+	req.RequestURI = req.URL.RequestURI()
+	rewriteWebsocketProxyHeaders(req, target)
+	wsProxy := NewSingleHostReverseProxy(target)
+	wsProxy.Dial = (&net.Dialer{
+		Timeout:   30 * time.Second,
+		KeepAlive: 30 * time.Second,
+	}).Dial
+	wsProxy.TLSClientConfig = tlsConfig
+	wsProxy.ServeHTTP(w, req)
 }
 
 func rewriteWebsocketProxyHeaders(req *http.Request, target *url.URL) {
@@ -176,12 +182,8 @@ func normalizeWebsocketEndpoint(endpoint string) string {
 }
 
 func resolveInstanceWebsocketEndpoint(instance *framework_model.Instance, path, fallback string) string {
-	if strings.TrimSpace(path) == "/ws" && instance != nil {
-		for _, service := range instance.Services {
-			if strings.EqualFold(strings.TrimSpace(service.Name), "web") && strings.TrimSpace(service.Endpoint) != "" {
-				return normalizeWebsocketEndpoint(service.Endpoint)
-			}
-		}
+	if strings.TrimSpace(path) == "/ws" && instance != nil && strings.TrimSpace(instance.Endpoint) != "" {
+		return normalizeWebsocketEndpoint(instance.Endpoint)
 	}
 
 	if strings.TrimSpace(fallback) != "" {

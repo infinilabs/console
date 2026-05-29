@@ -1,6 +1,7 @@
 package server
 
 import (
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -14,6 +15,18 @@ import (
 	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/util"
 )
+
+func newTestBinding(t *testing.T) string {
+	t.Helper()
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen on random port: %v", err)
+	}
+	defer listener.Close()
+
+	return listener.Addr().String()
+}
 
 func TestShouldFallbackInstanceInfoPath(t *testing.T) {
 	testCases := []struct {
@@ -58,6 +71,24 @@ func TestShouldFallbackInstanceInfoPath(t *testing.T) {
 				t.Fatalf("unexpected fallback result: got %v want %v", actual, tc.expect)
 			}
 		})
+	}
+}
+
+func TestWebsocketProxyRouteServedOnWebWithoutEmbeddingAPI(t *testing.T) {
+	webCfg := config.WebAppConfig{}
+	webCfg.NetworkConfig.Binding = newTestBinding(t)
+	webCfg.EmbeddingAPI = false
+
+	api.StartWeb(webCfg)
+	defer api.StopWeb(webCfg)
+
+	resp := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/ws_proxy?path=%2Fws", nil)
+	if err := api.ServeRegisteredUIRequest(resp, req); err != nil {
+		t.Fatalf("serve ws proxy ui route: %v", err)
+	}
+	if resp.Code != http.StatusBadRequest {
+		t.Fatalf("expected ws proxy ui route to be registered, got %d", resp.Code)
 	}
 }
 
@@ -273,7 +304,7 @@ func TestFetchManagedInstanceStatsUsesLocalHandlerForCurrentInstanceID(t *testin
 	}
 }
 
-func TestResolveInstanceWebsocketEndpointPrefersWebServiceForLogViewer(t *testing.T) {
+func TestResolveInstanceWebsocketEndpointPrefersInstanceEndpointForLogViewer(t *testing.T) {
 	instance := &model.Instance{
 		Endpoint: "https://127.0.0.1:2900",
 		Services: []model.ServiceInfo{
@@ -282,8 +313,8 @@ func TestResolveInstanceWebsocketEndpointPrefersWebServiceForLogViewer(t *testin
 		},
 	}
 
-	if got := resolveInstanceWebsocketEndpoint(instance, "/ws", "wss://127.0.0.1:2900"); got != "wss://127.0.0.1:9000" {
-		t.Fatalf("expected web service websocket endpoint, got %q", got)
+	if got := resolveInstanceWebsocketEndpoint(instance, "/ws", "wss://127.0.0.1:9000"); got != "wss://127.0.0.1:2900" {
+		t.Fatalf("expected instance websocket endpoint, got %q", got)
 	}
 }
 

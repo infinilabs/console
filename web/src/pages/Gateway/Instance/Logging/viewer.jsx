@@ -39,7 +39,7 @@ const getRealtimeLogEndpoint = (instance = {}) => {
       `${service.endpoint || ""}`.trim() !== ""
     );
   });
-  return normalizeWebsocketEndpoint(webService?.endpoint || instance.endpoint || "");
+  return normalizeWebsocketEndpoint(instance.endpoint || webService?.endpoint || "");
 };
 
 const WebsocketLogViewer = ({ instance = {} }) => {

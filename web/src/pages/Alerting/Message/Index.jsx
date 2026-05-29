@@ -290,7 +290,7 @@ const Index = (props) => {
     {
       title: formatMessage({ id: "alert.message.table.status" }),
       dataIndex: "status",
-      width: 80,
+      width: 140,
       render: (text, record) => {
         return <EventMessageStatus record={record} />;
         // <HealthStatusView status={MessageStautsColor[text]} label={text} />

@@ -14,7 +14,14 @@ export default ({ record }) => {
     </div>
   );
   return (
-    <div>
+    <div
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        whiteSpace: "nowrap",
+      }}
+    >
       <Tag style={{ backgroundColor: MessageStautsColor[text], color: "#fff" }}>
         {firstUpperCase(text)}
       </Tag>

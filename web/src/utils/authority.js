@@ -13,6 +13,11 @@ export const APPLICATION_SETTINGS_UPDATED_EVENT =
 let applicationSettingsPromise = null;
 let applicationSettingsCache = null;
 
+export function invalidateApplicationSettingsCache() {
+  applicationSettingsPromise = null;
+  applicationSettingsCache = null;
+}
+
 function persistApplicationSettings(res) {
   localStorage.setItem(APPLICATION_AUTH_KEY, `${res.auth_enabled}`);
   if (typeof res.setup_required !== "undefined") {

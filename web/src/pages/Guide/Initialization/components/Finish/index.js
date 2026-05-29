@@ -1,8 +1,13 @@
 import { Alert, Button, Icon, Result, Descriptions, Spin } from "antd";
 import styles from "./index.less";
-import { Link } from "umi";
+import { router } from "umi";
 import { formatMessage } from "umi/locale";
 import { useEffect } from "react";
+import {
+  invalidateApplicationSettingsCache,
+  refreshApplicationSettings,
+} from "@/utils/authority";
+import { setSetupRequired } from "@/utils/setup";
 
 export default ({ formData, onPrev }) => {
 
@@ -55,7 +60,22 @@ export default ({ formData, onPrev }) => {
 
   useEffect(() => {
     localStorage.setItem("first-login",true);
-  }, [])
+    if (!isInitializing && !isFailed) {
+      setSetupRequired("false");
+      invalidateApplicationSettingsCache();
+    }
+  }, [isFailed, isInitializing])
+
+  const enterConsole = async () => {
+    setSetupRequired("false");
+    invalidateApplicationSettingsCache();
+    try {
+      await refreshApplicationSettings(true);
+    } catch (error) {
+      console.log(error);
+    }
+    router.replace("/user/login");
+  };
 
   return (
     <div className={styles.finish}>
@@ -90,16 +110,9 @@ export default ({ formData, onPrev }) => {
               {formatMessage({ id: "guide.step.prev" })}
             </Button>
           ) : (
-            <Link to="/user/login">
-              <Button
-                type="primary"
-                onClick={() => {
-                  localStorage.removeItem("infini-setup-required");
-                }}
-              >
-                {formatMessage({ id: "guide.enter.console" })}
-              </Button>
-            </Link>
+            <Button type="primary" onClick={enterConsole}>
+              {formatMessage({ id: "guide.enter.console" })}
+            </Button>
           )
         }
       >

@@ -61,11 +61,15 @@ var instanceSecrets = map[string][]common.Secrets{} //map instance->secrets TODO
 func init() {
 	//for public usage, agent can report self to server, usually need to enroll by manager
 	api.HandleAPIMethod(api.POST, common.REGISTER_API, handler.registerInstance) //client register self to config servers
+	api.HandleUIMethod(api.POST, common.REGISTER_API, handler.registerInstance)
 	api.HandleAPIMethod(api.POST, instanceTokenExchangeAPI, handler.exchangeInstanceToken)
+	api.HandleUIMethod(api.POST, instanceTokenExchangeAPI, handler.exchangeInstanceToken)
 
 	//for public usage, get install script
 	api.HandleAPIMethod(api.GET, getInstallScriptAPI, handler.getInstallScript)
+	api.HandleUIMethod(api.GET, getInstallScriptAPI, handler.getInstallScript)
 	api.HandleAPIMethod(api.GET, getGatewayInstallScriptAPI, handler.getGatewayInstallScript)
+	api.HandleUIMethod(api.GET, getGatewayInstallScriptAPI, handler.getGatewayInstallScript)
 
 	api.HandleAPIMethod(api.POST, "/instance/_generate_install_script", handler.RequireLogin(handler.generateInstallCommand))
 	api.HandleAPIMethod(api.POST, "/instance/_generate_gateway_install_script", handler.RequirePermission(handler.generateGatewayInstallCommand, enum.PermissionGatewayInstanceWrite))
@@ -476,7 +480,7 @@ func (h *APIHandler) getInstanceStatus(w http.ResponseWriter, req *http.Request,
 	for i := range instances {
 		instance := instances[i]
 		var resMap = util.MapStr{}
-		if !fetchManagedInstanceStats(&instance, &resMap) {
+		if !fetchManagedInstanceStats(req, &instance, &resMap) {
 			result[instance.ID] = util.MapStr{}
 			continue
 		}
@@ -485,7 +489,7 @@ func (h *APIHandler) getInstanceStatus(w http.ResponseWriter, req *http.Request,
 	h.WriteJSON(w, result, http.StatusOK)
 }
 
-func fetchManagedInstanceStats(instance *model.Instance, stats *util.MapStr) bool {
+func fetchManagedInstanceStats(currentReq *http.Request, instance *model.Instance, stats *util.MapStr) bool {
 	if instance == nil {
 		return false
 	}
@@ -502,6 +506,7 @@ func fetchManagedInstanceStats(instance *model.Instance, stats *util.MapStr) boo
 		log.Error(err)
 		return false
 	}
+	agent_common.ApplyBearerToken(req, effectiveManagedInstanceAccessToken(currentReq, instance))
 
 	if _, err := proxyInstanceRequest(instance, req, stats); err != nil {
 		log.Error(instance.GetEndpoint(), ",", err)
@@ -902,6 +907,19 @@ func effectiveInstanceProbeAccessToken(req *http.Request, endpoint, accessToken 
 		return accessToken
 	}
 	if req == nil || !shouldReuseCurrentRequestAuthForEndpoint(endpoint) {
+		return ""
+	}
+	return agent_common.ExtractBearerToken(req)
+}
+
+func effectiveManagedInstanceAccessToken(req *http.Request, instance *model.Instance) string {
+	if instance == nil {
+		return ""
+	}
+	if instance.AccessCredentialID != "" || instance.BasicAuth != nil {
+		return ""
+	}
+	if !shouldReuseCurrentRequestAuthForEndpoint(instance.GetEndpoint()) {
 		return ""
 	}
 	return agent_common.ExtractBearerToken(req)

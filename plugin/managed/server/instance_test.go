@@ -86,7 +86,7 @@ func TestProxyInstanceRequestUsesRegisteredProvider(t *testing.T) {
 	instance := &model.Instance{}
 	instance.ID = "agent-1"
 
-	ok := fetchManagedInstanceStats(instance, &stats)
+	ok := fetchManagedInstanceStats(nil, instance, &stats)
 	if !ok {
 		t.Fatal("expected stats fetch to succeed")
 	}
@@ -112,7 +112,7 @@ func TestFetchManagedInstanceStatsReturnsFalseOnProxyError(t *testing.T) {
 	instance := &model.Instance{}
 	instance.ID = "agent-1"
 
-	if fetchManagedInstanceStats(instance, &util.MapStr{}) {
+	if fetchManagedInstanceStats(nil, instance, &util.MapStr{}) {
 		t.Fatal("expected stats fetch to fail")
 	}
 }
@@ -188,6 +188,33 @@ func TestEffectiveInstanceProbeAccessTokenUsesCurrentBearerForLocalConsoleEndpoi
 	}
 	if got := effectiveInstanceProbeAccessToken(req, "https://127.0.0.1:9000", "explicit-token"); got != "explicit-token" {
 		t.Fatalf("expected explicit access token to win, got %q", got)
+	}
+}
+
+func TestEffectiveManagedInstanceAccessTokenUsesCurrentBearerForLocalConsoleEndpoint(t *testing.T) {
+	originalEnv := global.Env()
+	testEnv := env.EmptyEnv()
+	testEnv.SystemConfig.WebAppConfig = config.WebAppConfig{Enabled: true}
+	testEnv.SystemConfig.WebAppConfig.NetworkConfig.Binding = "0.0.0.0:9000"
+	global.RegisterEnv(testEnv)
+	defer global.RegisterEnv(originalEnv)
+
+	req := httptest.NewRequest(http.MethodGet, "/instance/stats", nil)
+	req.Header.Set("Authorization", "Bearer current-console-token")
+
+	localConsole := &model.Instance{Endpoint: "https://127.0.0.1:9000"}
+	if got := effectiveManagedInstanceAccessToken(req, localConsole); got != "current-console-token" {
+		t.Fatalf("expected current bearer token to be reused for local console endpoint, got %q", got)
+	}
+
+	localConsole.AccessCredentialID = "stored-access-credential"
+	if got := effectiveManagedInstanceAccessToken(req, localConsole); got != "" {
+		t.Fatalf("expected stored access credential to win over current bearer token, got %q", got)
+	}
+
+	remote := &model.Instance{Endpoint: "https://203.0.113.10:9000"}
+	if got := effectiveManagedInstanceAccessToken(req, remote); got != "" {
+		t.Fatalf("expected remote endpoint not to reuse current bearer token, got %q", got)
 	}
 }
 

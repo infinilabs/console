@@ -47,6 +47,7 @@ var apiHandler APIHandler
 
 func Init() {
 	apiHandler = APIHandler{Adapter: rbac.GetAdapter(adapterType)} //TODO handle hard coded
+	frameworkrbac.RegisterPublicUIAuthRoutes()
 
 	api.HandleAPIMethod(api.GET, "/permission/:type", apiHandler.RequireLogin(apiHandler.ListPermission))
 

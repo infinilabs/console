@@ -71,6 +71,7 @@ import (
 	"infini.sh/framework/lib/fasttemplate"
 	keystore2 "infini.sh/framework/lib/keystore"
 	elastic1 "infini.sh/framework/modules/elastic/common"
+	frameworkrbac "infini.sh/framework/modules/security/rbac"
 	"infini.sh/framework/plugins/replay"
 )
 
@@ -96,6 +97,7 @@ func (module *Module) Setup() {
 		return
 	}
 
+	api.HandleAPIMethod(api.POST, "/account/replay_nonce", core2.RequireSecureTransport(frameworkrbac.IssueReplayNonce))
 	api.HandleAPIMethod(api.POST, "/setup/_validate", core2.RequireSecureTransport(core2.RequireReplayProtection(module.validate)))
 	api.HandleAPIMethod(api.POST, "/setup/_initialize", core2.RequireSecureTransport(core2.RequireReplayProtection(module.initialize)))
 	api.HandleAPIMethod(api.POST, "/setup/_validate_secret", core2.RequireSecureTransport(core2.RequireReplayProtection(module.validateSecret)))

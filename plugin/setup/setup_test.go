@@ -24,14 +24,20 @@
 package task
 
 import (
+	"bytes"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
 
+	api2 "infini.sh/framework/core/api"
 	config2 "infini.sh/framework/core/config"
 	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/env"
 	"infini.sh/framework/core/global"
 )
 
@@ -116,6 +122,38 @@ func TestTaskConfigTemplateAllowsArrayEndpointSubstitution(t *testing.T) {
 	}
 	if !strings.Contains(content, `endpoints: ["http://192.168.3.8:9200"]`) {
 		t.Fatalf("expected endpoints array rendering, got:\n%s", content)
+	}
+}
+
+func TestSetupRegistersReplayNonceAPI(t *testing.T) {
+	oldEnv := global.Env()
+	testEnv := env.EmptyEnv()
+	testEnv.SystemConfig.PathConfig.Data = t.TempDir()
+	testEnv.EnableSetup(true)
+	global.RegisterEnv(testEnv)
+	defer global.RegisterEnv(oldEnv)
+
+	module := &Module{}
+	module.Setup()
+
+	req := httptest.NewRequest(http.MethodPost, "https://console.local/account/replay_nonce", bytes.NewBufferString(`{"method":"POST","path":"/setup/_validate"}`))
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+
+	api2.ServeRegisteredAPIRequest(resp, req)
+
+	if resp.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d: %s", http.StatusOK, resp.Code, resp.Body.String())
+	}
+
+	var body map[string]interface{}
+	if err := json.Unmarshal(resp.Body.Bytes(), &body); err != nil {
+		t.Fatalf("unmarshal response: %v", err)
+	}
+
+	nonce, ok := body["nonce"].(string)
+	if !ok || nonce == "" {
+		t.Fatalf("expected nonce in response, got %#v", body)
 	}
 }
 

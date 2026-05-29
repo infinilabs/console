@@ -65,6 +65,7 @@ export default {
   "overview.statistic.not_master_node": "Not Master Node",
   "overview.status.unavailable": "not available",
   "overview.status.available": "available",
+  "overview.status.unknown": "unknown",
   "overview.status.closed": "closed",
   "overview.status.deleted": "deleted",
   "overview.status.index_since": "Index is {status} since: {timestamp}",

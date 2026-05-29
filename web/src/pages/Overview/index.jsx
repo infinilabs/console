@@ -40,6 +40,7 @@ const STATUS = [
       const { node } = data || {};
       return [
         { group: "available", value: node?.available || 0, color: GREEN },
+        { group: "unknown", value: node?.unknown || 0, color: GREY },
         { group: "unavailable", value: node?.unavailable || 0, color: GREY },
       ];
     },

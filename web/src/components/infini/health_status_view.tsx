@@ -12,6 +12,8 @@ const getStatusLabel = (status?: string, label?: string) => {
   switch (String(status).toLowerCase()) {
     case "available":
       return formatMessage({ id: "overview.status.available" });
+    case "unknown":
+      return formatMessage({ id: "overview.status.unknown" });
     case "unavailable":
       return formatMessage({ id: "overview.status.unavailable" });
     default:

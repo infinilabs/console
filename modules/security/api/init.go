@@ -45,33 +45,41 @@ const adapterType = "native"
 
 var apiHandler APIHandler
 
+func permissionKeys(keys []string) []api.PermissionKey {
+	result := make([]api.PermissionKey, 0, len(keys))
+	for _, key := range keys {
+		result = append(result, api.PermissionKey(key))
+	}
+	return result
+}
+
 func Init() {
 	apiHandler = APIHandler{Adapter: rbac.GetAdapter(adapterType)} //TODO handle hard coded
 	frameworkrbac.RegisterPublicUIAuthRoutes()
 
-	api.HandleAPIMethod(api.GET, "/permission/:type", apiHandler.RequireLogin(apiHandler.ListPermission))
+	api.HandleAPIMethod(api.GET, "/permission/:type", apiHandler.RequireLogin(apiHandler.ListPermission), api.RequireLogin())
 
-	api.HandleAPIMethod(api.POST, "/role/:type", apiHandler.RequirePermission(apiHandler.CreateRole, enum.RoleAllPermission...))
-	api.HandleAPIMethod(api.GET, "/role/:id", apiHandler.RequirePermission(apiHandler.GetRole, enum.RoleReadPermission...))
-	api.HandleAPIMethod(api.DELETE, "/role/:id", apiHandler.RequirePermission(apiHandler.DeleteRole, enum.RoleAllPermission...))
-	api.HandleAPIMethod(api.PUT, "/role/:id", apiHandler.RequirePermission(apiHandler.UpdateRole, enum.RoleAllPermission...))
-	api.HandleAPIMethod(api.GET, "/role/_search", apiHandler.RequirePermission(apiHandler.SearchRole, enum.RoleReadPermission...))
+	api.HandleAPIMethod(api.POST, "/role/:type", apiHandler.RequirePermission(apiHandler.CreateRole, enum.RoleAllPermission...), api.RequirePermission(permissionKeys(enum.RoleAllPermission)...))
+	api.HandleAPIMethod(api.GET, "/role/:id", apiHandler.RequirePermission(apiHandler.GetRole, enum.RoleReadPermission...), api.RequirePermission(permissionKeys(enum.RoleReadPermission)...))
+	api.HandleAPIMethod(api.DELETE, "/role/:id", apiHandler.RequirePermission(apiHandler.DeleteRole, enum.RoleAllPermission...), api.RequirePermission(permissionKeys(enum.RoleAllPermission)...))
+	api.HandleAPIMethod(api.PUT, "/role/:id", apiHandler.RequirePermission(apiHandler.UpdateRole, enum.RoleAllPermission...), api.RequirePermission(permissionKeys(enum.RoleAllPermission)...))
+	api.HandleAPIMethod(api.GET, "/role/_search", apiHandler.RequirePermission(apiHandler.SearchRole, enum.RoleReadPermission...), api.RequirePermission(permissionKeys(enum.RoleReadPermission)...))
 
-	api.HandleAPIMethod(api.POST, "/user", apiHandler.RequireSecureTransport(apiHandler.RequireReplayProtection(apiHandler.RequirePermission(apiHandler.CreateUser, enum.UserAllPermission...))))
-	api.HandleAPIMethod(api.GET, "/user/:id", apiHandler.RequirePermission(apiHandler.GetUser, enum.UserReadPermission...))
-	api.HandleAPIMethod(api.DELETE, "/user/:id", apiHandler.RequirePermission(apiHandler.DeleteUser, enum.UserAllPermission...))
-	api.HandleAPIMethod(api.PUT, "/user/:id", apiHandler.RequirePermission(apiHandler.UpdateUser, enum.UserAllPermission...))
-	api.HandleAPIMethod(api.GET, "/user/_search", apiHandler.RequirePermission(apiHandler.SearchUser, enum.UserReadPermission...))
-	api.HandleAPIMethod(api.PUT, "/user/:id/password", apiHandler.RequireSecureTransport(apiHandler.RequireReplayProtection(apiHandler.RequirePermission(apiHandler.UpdateUserPassword, enum.UserAllPermission...))))
+	api.HandleAPIMethod(api.POST, "/user", apiHandler.RequireSecureTransport(apiHandler.RequireReplayProtection(apiHandler.RequirePermission(apiHandler.CreateUser, enum.UserAllPermission...))), api.RequirePermission(permissionKeys(enum.UserAllPermission)...))
+	api.HandleAPIMethod(api.GET, "/user/:id", apiHandler.RequirePermission(apiHandler.GetUser, enum.UserReadPermission...), api.RequirePermission(permissionKeys(enum.UserReadPermission)...))
+	api.HandleAPIMethod(api.DELETE, "/user/:id", apiHandler.RequirePermission(apiHandler.DeleteUser, enum.UserAllPermission...), api.RequirePermission(permissionKeys(enum.UserAllPermission)...))
+	api.HandleAPIMethod(api.PUT, "/user/:id", apiHandler.RequirePermission(apiHandler.UpdateUser, enum.UserAllPermission...), api.RequirePermission(permissionKeys(enum.UserAllPermission)...))
+	api.HandleAPIMethod(api.GET, "/user/_search", apiHandler.RequirePermission(apiHandler.SearchUser, enum.UserReadPermission...), api.RequirePermission(permissionKeys(enum.UserReadPermission)...))
+	api.HandleAPIMethod(api.PUT, "/user/:id/password", apiHandler.RequireSecureTransport(apiHandler.RequireReplayProtection(apiHandler.RequirePermission(apiHandler.UpdateUserPassword, enum.UserAllPermission...))), api.RequirePermission(permissionKeys(enum.UserAllPermission)...))
 
 	api.HandleAPIMethod(api.POST, "/account/replay_nonce", apiHandler.RequireSecureTransport(frameworkrbac.IssueReplayNonce))
 	api.HandleAPIMethod(api.POST, "/account/login/challenge", apiHandler.RequireSecureTransport(frameworkrbac.LoginChallenge))
 	api.HandleAPIMethod(api.POST, "/account/login", apiHandler.RequireSecureTransport(frameworkrbac.Login))
-	api.HandleAPIMethod(api.POST, "/account/refresh", apiHandler.RequireSecureTransport(apiHandler.RequireLogin(frameworkaccount.Refresh)))
+	api.HandleAPIMethod(api.POST, "/account/refresh", apiHandler.RequireSecureTransport(apiHandler.RequireLogin(frameworkaccount.Refresh)), api.RequireLogin())
 	api.HandleAPIMethod(api.POST, "/account/logout", frameworkaccount.Logout)
 	api.HandleAPIMethod(api.DELETE, "/account/logout", frameworkaccount.Logout)
 
-	api.HandleAPIMethod(api.GET, "/account/profile", apiHandler.RequireLogin(frameworkaccount.Profile))
-	api.HandleAPIMethod(api.PUT, "/account/password", apiHandler.RequireSecureTransport(apiHandler.RequireReplayProtection(apiHandler.RequireLogin(apiHandler.UpdatePassword))))
+	api.HandleAPIMethod(api.GET, "/account/profile", apiHandler.RequireLogin(frameworkaccount.Profile), api.RequireLogin())
+	api.HandleAPIMethod(api.PUT, "/account/password", apiHandler.RequireSecureTransport(apiHandler.RequireReplayProtection(apiHandler.RequireLogin(apiHandler.UpdatePassword))), api.RequireLogin())
 
 }

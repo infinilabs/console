@@ -1,6 +1,7 @@
 package api
 
 import (
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -17,6 +18,18 @@ import (
 	_ "infini.sh/framework/modules/security/account"
 	_ "infini.sh/framework/modules/security/http_filters"
 )
+
+func newTestWebBinding(t *testing.T) string {
+	t.Helper()
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen on random port: %v", err)
+	}
+	defer listener.Close()
+
+	return listener.Addr().String()
+}
 
 func TestExtractConsoleSelfAccessToken(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/stats", nil)
@@ -142,7 +155,7 @@ func TestConsoleAccountProfileUsesConsoleTokenOnUI(t *testing.T) {
 	global.Env().SystemConfig.WebAppConfig.Security.Enabled = true
 
 	webCfg := config.WebAppConfig{}
-	webCfg.NetworkConfig.Binding = "127.0.0.1:0"
+	webCfg.NetworkConfig.Binding = newTestWebBinding(t)
 
 	api2.StartWeb(webCfg)
 	resp := httptest.NewRecorder()
@@ -183,6 +196,11 @@ func TestRefreshConsoleSelfAPIProxyUIRoutesMirrorsLateProtectedAPIRoutes(t *test
 
 	initConsoleSelfAPI()
 
+	webCfg := config.WebAppConfig{}
+	webCfg.NetworkConfig.Binding = newTestWebBinding(t)
+	api2.StartWeb(webCfg)
+	defer api2.StopWeb(webCfg)
+
 	api2.HandleAPIMethod(api2.GET, "/late-ui-proxy-route", func(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
 		w.WriteHeader(http.StatusNoContent)
 	})
@@ -197,11 +215,6 @@ func TestRefreshConsoleSelfAPIProxyUIRoutesMirrorsLateProtectedAPIRoutes(t *test
 	}
 
 	RefreshConsoleSelfAPIProxyUIRoutes()
-
-	webCfg := config.WebAppConfig{}
-	webCfg.NetworkConfig.Binding = "127.0.0.1:0"
-	api2.StartWeb(webCfg)
-	defer api2.StopWeb(webCfg)
 
 	resp = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodGet, "/late-ui-proxy-route", nil)
@@ -230,7 +243,7 @@ func TestRefreshConsoleSelfAPIProxyUIRoutesKeepsPublicAPIRoutesPublic(t *testing
 	RefreshConsoleSelfAPIProxyUIRoutes()
 
 	webCfg := config.WebAppConfig{}
-	webCfg.NetworkConfig.Binding = "127.0.0.1:0"
+	webCfg.NetworkConfig.Binding = newTestWebBinding(t)
 	api2.StartWeb(webCfg)
 	defer api2.StopWeb(webCfg)
 
@@ -255,7 +268,7 @@ func TestRefreshConsoleSelfAPIProxyUIRoutesMirrorsLateProtectedAPIRoutesAfterWeb
 	initConsoleSelfAPI()
 
 	webCfg := config.WebAppConfig{}
-	webCfg.NetworkConfig.Binding = "127.0.0.1:0"
+	webCfg.NetworkConfig.Binding = newTestWebBinding(t)
 	api2.StartWeb(webCfg)
 	defer api2.StopWeb(webCfg)
 

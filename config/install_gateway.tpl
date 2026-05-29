@@ -288,7 +288,7 @@ configs:
   servers:
     - "${server}"
   manager:
-    access_token: '$[[keystore.CONFIGS_MANAGER_ACCESS_TOKEN]]'
+    access_token: '\$[[keystore.CONFIGS_MANAGER_ACCESS_TOKEN]]'
   max_backup_files: 5
   soft_delete: false
   tls:

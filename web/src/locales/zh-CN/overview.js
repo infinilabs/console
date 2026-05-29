@@ -64,6 +64,7 @@ export default {
   "overview.statistic.not_master_node": "非主节点",
   "overview.status.unavailable": "不可用",
   "overview.status.available": "可用",
+  "overview.status.unknown": "未知",
   "overview.status.closed": "已关闭",
   "overview.status.deleted": "已删除",
   "overview.status.index_since": "索引自 {timestamp} 起状态为 {status}",

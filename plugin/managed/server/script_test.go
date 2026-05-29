@@ -272,7 +272,7 @@ func TestGatewayInstallTemplateBootstrapsManagedConfig(t *testing.T) {
 		`managed: true`,
 		`panic_on_config_error: false`,
 		`    - "${server}"`,
-		`access_token: '$[[keystore.CONFIGS_MANAGER_ACCESS_TOKEN]]'`,
+		`access_token: '\$[[keystore.CONFIGS_MANAGER_ACCESS_TOKEN]]'`,
 		`SECURITY_ENABLED: true`,
 		`security:`,
 		`cert_file: "config/client.crt"`,
@@ -496,7 +496,7 @@ func TestAgentInstallTemplateBootstrapsManagerAccessToken(t *testing.T) {
 	).Replace(string(content))
 
 	expectedSnippets := []string{
-		`access_token: '$[[keystore.CONFIGS_MANAGER_ACCESS_TOKEN]]'`,
+		`access_token: '\$[[keystore.CONFIGS_MANAGER_ACCESS_TOKEN]]'`,
 		`access_token="BOOTSTRAP_TOKEN"`,
 		`keystore add "CONFIGS_MANAGER_ACCESS_TOKEN"`,
 	}

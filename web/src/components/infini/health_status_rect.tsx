@@ -4,6 +4,7 @@ export type ClusterHealthStatus =
   | "green"
   | "yellow"
   | "red"
+  | "unknown"
   | "available"
   | "unavailable"
   | "online"
@@ -13,6 +14,7 @@ const statusColorMap: Record<string, string> = {
   green: Color.GREEN,
   yellow: Color.YELLOW,
   red: Color.RED,
+  unknown: Color.GREY,
   available: Color.GREEN,
   unavailable: Color.UNAVAILABLE,
   online: Color.GREEN,

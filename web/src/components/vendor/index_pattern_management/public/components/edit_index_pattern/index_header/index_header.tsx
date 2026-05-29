@@ -75,13 +75,6 @@ export function IndexHeader({
       </EuiFlexItem> */}
       <EuiFlexItem grow={false} style={{ marginLeft: "auto" }}>
         <EuiFlexGroup responsive={false}>
-          {goBack && (
-            <EuiFlexItem>
-              <Button onClick={goBack}>
-                <Icon type="arrow-left" /> {formatMessage({ id: "explore.view.index_pattern.back_to_list" })}
-              </Button>
-            </EuiFlexItem>
-          )}
           {/* {defaultIndex !== indexPattern.id && setDefault && (
             <EuiFlexItem>
               <EuiToolTip content={setDefaultTooltip}>
@@ -120,6 +113,14 @@ export function IndexHeader({
                   <Icon type="delete" /> {removeTooltip}
                 </Button>
               </Popconfirm>
+            </EuiFlexItem>
+          )}
+          {goBack && (
+            <EuiFlexItem>
+              <Button onClick={goBack}>
+                <Icon type="arrow-left" />{" "}
+                {formatMessage({ id: "explore.view.index_pattern.back_to_list" })}
+              </Button>
             </EuiFlexItem>
           )}
         </EuiFlexGroup>

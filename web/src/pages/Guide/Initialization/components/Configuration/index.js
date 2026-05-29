@@ -199,7 +199,7 @@ export default ({ onNext, form, formData, onFormDataChange }) => {
 
             <Form.Item label={formatMessage({ id: 'guide.cluster.auth' })}>
                 {getFieldDecorator('isAuth', {
-                    initialValue: formData.isAuth,
+                    initialValue: formData.isAuth !== false,
                     valuePropName: 'checked',
                 })(
                     <Switch size="small" onChange={(checked) => {
@@ -209,7 +209,7 @@ export default ({ onNext, form, formData, onFormDataChange }) => {
                 )}
             </Form.Item>
 
-            {formData.isAuth && (
+            {(form.getFieldValue('isAuth') !== undefined ? form.getFieldValue('isAuth') : formData.isAuth) && (
                 <>
                     <Form.Item label={formatMessage({ id: 'guide.username' })}>
                         {getFieldDecorator('username', {

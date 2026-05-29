@@ -54,6 +54,7 @@ const sensitiveRequestRules = [
   { method: "POST", pattern: /^\/setup\/_validate$/ },
   { method: "POST", pattern: /^\/setup\/_initialize$/ },
   { method: "POST", pattern: /^\/setup\/_validate_secret$/ },
+  { method: "POST", pattern: /^\/setup\/_initialize_template$/ },
   { method: "POST", pattern: /^\/elasticsearch\/$/ },
   { method: "PUT", pattern: /^\/elasticsearch\/[^/]+$/ },
   { method: "POST", pattern: /^\/elasticsearch\/try_connect$/ },

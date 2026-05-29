@@ -97,11 +97,23 @@ func (module *Module) Setup() {
 		return
 	}
 
+	registerPublicSetupRoute := func(method api.Method, path string, handler func(w http.ResponseWriter, req *http.Request, ps httprouter.Params)) {
+		api.HandleUIMethod(method, path,
+			handler,
+			api.AllowPublicAccess())
+	}
+
+	registerPublicSetupRoute(api.POST, "/account/replay_nonce", core2.RequireSecureTransport(frameworkrbac.IssueReplayNonce))
+	registerPublicSetupRoute(api.POST, "/setup/_validate", core2.RequireSecureTransport(core2.RequireReplayProtection(module.validate)))
+	registerPublicSetupRoute(api.POST, "/setup/_initialize", core2.RequireSecureTransport(core2.RequireReplayProtection(module.initialize)))
+	registerPublicSetupRoute(api.POST, "/setup/_validate_secret", core2.RequireSecureTransport(core2.RequireReplayProtection(module.validateSecret)))
+	registerPublicSetupRoute(api.POST, "/setup/_initialize_template", core2.RequireSecureTransport(core2.RequireReplayProtection(module.initializeTemplate)))
+
 	api.HandleAPIMethod(api.POST, "/account/replay_nonce", core2.RequireSecureTransport(frameworkrbac.IssueReplayNonce))
 	api.HandleAPIMethod(api.POST, "/setup/_validate", core2.RequireSecureTransport(core2.RequireReplayProtection(module.validate)))
 	api.HandleAPIMethod(api.POST, "/setup/_initialize", core2.RequireSecureTransport(core2.RequireReplayProtection(module.initialize)))
 	api.HandleAPIMethod(api.POST, "/setup/_validate_secret", core2.RequireSecureTransport(core2.RequireReplayProtection(module.validateSecret)))
-	api.HandleAPIMethod(api.POST, "/setup/_initialize_template", module.initializeTemplate)
+	api.HandleAPIMethod(api.POST, "/setup/_initialize_template", core2.RequireSecureTransport(core2.RequireReplayProtection(module.initializeTemplate)))
 	elastic3.InitTestAPI()
 }
 

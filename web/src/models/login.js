@@ -6,11 +6,14 @@ import {
   getAccountLoginChallenge,
   getFakeCaptcha,
 } from "@/services/api";
-import { setAuthority } from "@/utils/authority";
+import {
+  getAuthEnabled,
+  setAuthority,
+  syncAuthorityFromResponse,
+} from "@/utils/authority";
 import { getPageQuery } from "@/utils/utils";
 import { reloadAuthorized } from "@/utils/Authorized";
 import * as CurrentUser from "@/utils/CurrentUser";
-import { getAuthEnabled } from "@/utils/authority";
 import { buildPasswordProof } from "@/utils/password";
 import {
   clearStoredLoginResponse,
@@ -59,7 +62,7 @@ export default {
       });
       // Login successfully
       if (response.status === "ok") {
-        setAuthority(response.privilege);
+        syncAuthorityFromResponse(response);
         reloadAuthorized();
         if (getAuthEnabled()) {
           yield put({
@@ -134,7 +137,9 @@ export default {
 
   reducers: {
     changeLoginStatus(state, { payload }) {
-      setAuthority(payload.currentAuthority);
+      if (typeof payload?.currentAuthority !== "undefined") {
+        setAuthority(payload.currentAuthority);
+      }
       return {
         ...state,
         status: payload.status,

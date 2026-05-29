@@ -33,32 +33,79 @@ function persistApplicationSettings(res) {
   );
 }
 
+function normalizeAuthorityValue(authority) {
+  if (authority == null || authority === "") {
+    return [];
+  }
+
+  let normalized = authority;
+  if (typeof normalized === "string") {
+    try {
+      normalized = JSON.parse(normalized);
+    } catch (e) {
+      normalized = authority;
+    }
+  }
+
+  if (typeof normalized === "string") {
+    return [normalized];
+  }
+
+  if (Array.isArray(normalized)) {
+    return normalized.filter((item) => typeof item === "string" && item);
+  }
+
+  return [];
+}
+
+export function extractAuthorityFromResponse(payload) {
+  const source = payload?._source || payload;
+  const candidates = [
+    source?.privilege,
+    payload?.privilege,
+    source?.permissions,
+    payload?.permissions,
+    source?.currentAuthority,
+    payload?.currentAuthority,
+  ];
+
+  for (const candidate of candidates) {
+    const authority = normalizeAuthorityValue(candidate);
+    if (authority.length > 0) {
+      return authority;
+    }
+  }
+
+  return [];
+}
+
 // use localStorage to store the authority info, which might be sent from server in actual project.
 export function getAuthority(str) {
-  // return localStorage.getItem('infini-console-authority') || ['admin', 'user'];
   const authorityString =
     typeof str === "undefined"
       ? localStorage.getItem("infini-console-authority")
       : str;
-  // authorityString could be admin, "admin", ["admin"]
-  let authority;
-  try {
-    authority = JSON.parse(authorityString);
-  } catch (e) {
-    authority = authorityString;
+  const authority = normalizeAuthorityValue(authorityString);
+  if (authority.length > 0 || typeof str !== "undefined") {
+    return authority;
   }
-  if (typeof authority === "string") {
-    return [authority];
-  }
-  return authority;
+  return extractAuthorityFromResponse(getStoredLoginResponse());
 }
 
 export function setAuthority(authority) {
-  const proAuthority = typeof authority === "string" ? [authority] : authority;
+  const proAuthority = normalizeAuthorityValue(authority);
   return localStorage.setItem(
     "infini-console-authority",
     JSON.stringify(proAuthority)
   );
+}
+
+export function syncAuthorityFromResponse(payload) {
+  const authority = extractAuthorityFromResponse(payload);
+  if (authority.length > 0) {
+    setAuthority(authority);
+  }
+  return authority;
 }
 
 export function hasAuthority(authority) {

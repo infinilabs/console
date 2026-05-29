@@ -194,6 +194,10 @@ class BasicLayout extends React.PureComponent {
         authResolved: true,
         sessionValid,
       });
+      if (!sessionValid) {
+        history.replace("/user/login");
+        return;
+      }
     }
     dispatch({
       type: "setting/getSetting",
@@ -451,6 +455,9 @@ class BasicLayout extends React.PureComponent {
       }
       return null;
     };
+    if (getAuthEnabled() === "true" && (!this.state.authResolved || !this.state.sessionValid)) {
+      return null;
+    }
     const layout = (
       <>
       {renderInvalidSecretNotification()}
@@ -492,6 +499,8 @@ class BasicLayout extends React.PureComponent {
                 value={{
                   ...(this.props.global || {}),
                   dispatch: this.props.dispatch,
+                  authResolved: this.state.authResolved,
+                  sessionValid: this.state.sessionValid,
                 }}
               >
                 <ErrorBoundary>{children}</ErrorBoundary>

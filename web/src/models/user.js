@@ -1,5 +1,7 @@
 import { query as queryUsers, queryCurrent } from "@/services/user";
 import { setCurrentUser } from "@/utils/CurrentUser";
+import { reloadAuthorized } from "@/utils/Authorized";
+import { syncAuthorityFromResponse } from "@/utils/authority";
 
 function normalizeCurrentUser(payload) {
   const source = payload?._source || payload;
@@ -35,6 +37,10 @@ export default {
     },
     *fetchCurrent(_, { call, put }) {
       const response = yield call(queryCurrent);
+      if (response && !response.error) {
+        syncAuthorityFromResponse(response);
+        reloadAuthorized();
+      }
       yield put({
         type: "saveCurrentUser",
         payload: response,

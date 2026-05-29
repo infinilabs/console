@@ -3,6 +3,7 @@ package server
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"infini.sh/framework/core/api"
@@ -309,6 +310,43 @@ func TestResolveInstanceWebsocketEndpointKeepsExplicitEndpointForNonLogPath(t *t
 
 	if got := resolveInstanceWebsocketEndpoint(instance, "/custom", "wss://127.0.0.1:9443/custom"); got != "wss://127.0.0.1:9443/custom" {
 		t.Fatalf("expected explicit websocket target to be preserved, got %q", got)
+	}
+}
+
+func TestRewriteWebsocketProxyHeadersRewritesOriginToTargetHost(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/ws_proxy?path=%2Fws", nil)
+	req.Header.Set("Origin", "https://192.168.3.8:9000")
+
+	target, err := url.Parse("ws://192.168.3.8:8080")
+	if err != nil {
+		t.Fatalf("failed to parse target: %v", err)
+	}
+
+	rewriteWebsocketProxyHeaders(req, target)
+
+	if got := req.Host; got != "192.168.3.8:8080" {
+		t.Fatalf("expected target host to be applied, got %q", got)
+	}
+	if got := req.Header.Get("Origin"); got != "http://192.168.3.8:8080" {
+		t.Fatalf("expected origin to be rewritten for target websocket host, got %q", got)
+	}
+}
+
+func TestRewriteWebsocketProxyHeadersKeepsOriginEmptyForNonBrowserClients(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/ws_proxy?path=%2Fws", nil)
+
+	target, err := url.Parse("wss://127.0.0.1:9000")
+	if err != nil {
+		t.Fatalf("failed to parse target: %v", err)
+	}
+
+	rewriteWebsocketProxyHeaders(req, target)
+
+	if got := req.Header.Get("Origin"); got != "" {
+		t.Fatalf("expected empty origin to remain empty, got %q", got)
+	}
+	if got := req.Host; got != "127.0.0.1:9000" {
+		t.Fatalf("expected target host to be applied, got %q", got)
 	}
 }
 

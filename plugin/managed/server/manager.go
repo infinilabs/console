@@ -86,8 +86,7 @@ func init() {
 		req.URL.RawPath = newURL.RawPath
 		req.URL.RawQuery = ""
 		req.RequestURI = req.URL.RequestURI()
-		req.Header.Set("HOST", target.Host)
-		req.Host = target.Host
+		rewriteWebsocketProxyHeaders(req, target)
 		wsProxy := NewSingleHostReverseProxy(target)
 		wsProxy.Dial = (&net.Dialer{
 			Timeout:   30 * time.Second,
@@ -96,6 +95,34 @@ func init() {
 		wsProxy.TLSClientConfig = tlsConfig
 		wsProxy.ServeHTTP(w, req)
 	})
+}
+
+func rewriteWebsocketProxyHeaders(req *http.Request, target *url.URL) {
+	if req == nil || target == nil {
+		return
+	}
+	req.Header.Set("HOST", target.Host)
+	req.Host = target.Host
+	if strings.TrimSpace(req.Header.Get("Origin")) == "" {
+		return
+	}
+	req.Header.Set("Origin", websocketProxyOrigin(target))
+}
+
+func websocketProxyOrigin(target *url.URL) string {
+	if target == nil || strings.TrimSpace(target.Host) == "" {
+		return ""
+	}
+	scheme := "http"
+	switch strings.ToLower(strings.TrimSpace(target.Scheme)) {
+	case "wss", "https":
+		scheme = "https"
+	case "ws", "http", "":
+		scheme = "http"
+	default:
+		scheme = strings.ToLower(strings.TrimSpace(target.Scheme))
+	}
+	return scheme + "://" + target.Host
 }
 
 func prepareWebsocketProxyRequest(req *http.Request) (string, string, error) {

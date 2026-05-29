@@ -5,6 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"infini.sh/framework/core/api"
+	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/config"
 	"infini.sh/framework/core/env"
 	"infini.sh/framework/core/global"
@@ -215,6 +217,58 @@ func TestEffectiveManagedInstanceAccessTokenUsesCurrentBearerForLocalConsoleEndp
 	remote := &model.Instance{Endpoint: "https://203.0.113.10:9000"}
 	if got := effectiveManagedInstanceAccessToken(req, remote); got != "" {
 		t.Fatalf("expected remote endpoint not to reuse current bearer token, got %q", got)
+	}
+}
+
+func TestShouldFetchManagedInstanceStatsLocallyUsesCurrentInstanceID(t *testing.T) {
+	originalEnv := global.Env()
+	testEnv := env.EmptyEnv()
+	testEnv.SystemConfig.NodeConfig.ID = "console-self"
+	global.RegisterEnv(testEnv)
+	defer global.RegisterEnv(originalEnv)
+
+	instance := &model.Instance{
+		Endpoint: "https://203.0.113.10:9443",
+	}
+	instance.ID = "console-self"
+	if !shouldFetchManagedInstanceStatsLocally(instance) {
+		t.Fatal("expected current instance ID to force local stats fetch")
+	}
+}
+
+func TestFetchManagedInstanceStatsUsesLocalHandlerForCurrentInstanceID(t *testing.T) {
+	originalEnv := global.Env()
+	testEnv := env.EmptyEnv()
+	testEnv.SystemConfig.NodeConfig.ID = "console-self"
+	global.RegisterEnv(testEnv)
+	defer global.RegisterEnv(originalEnv)
+
+	api.HandleAPIMethod(api.GET, "/stats", func(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"cluster":{"green":1}}`))
+	})
+
+	originalProviders := instanceProxyProviders
+	instanceProxyProviders = nil
+	defer func() {
+		instanceProxyProviders = originalProviders
+	}()
+	RegisterInstanceProxyProvider(func(instance *model.Instance, req *util.Request, responseObjectToUnMarshall interface{}) (*util.Result, bool, error) {
+		t.Fatal("expected self stats fetch to use local handler instead of proxy")
+		return nil, true, nil
+	})
+
+	stats := util.MapStr{}
+	instance := &model.Instance{
+		Endpoint: "https://203.0.113.10:9443",
+	}
+	instance.ID = "console-self"
+	if !fetchManagedInstanceStats(nil, instance, &stats) {
+		t.Fatal("expected stats fetch to succeed")
+	}
+	cluster, ok := stats["cluster"].(map[string]interface{})
+	if !ok || cluster["green"] == nil {
+		t.Fatalf("unexpected stats payload: %#v", stats)
 	}
 }
 

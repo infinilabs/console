@@ -494,8 +494,8 @@ func fetchManagedInstanceStats(currentReq *http.Request, instance *model.Instanc
 	if instance == nil {
 		return false
 	}
-	if shouldFetchManagedInstanceStatsLocally(instance) {
-		return fetchManagedInstanceStatsLocally(stats)
+	if shouldFetchManagedInstanceStatsLocally(instance) && fetchManagedInstanceStatsLocally(stats) {
+		return true
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
@@ -523,7 +523,21 @@ func shouldFetchManagedInstanceStatsLocally(instance *model.Instance) bool {
 	if instance == nil {
 		return false
 	}
+	if isCurrentManagedInstance(instance) {
+		return true
+	}
 	return shouldReuseCurrentRequestAuthForEndpoint(instance.GetEndpoint())
+}
+
+func isCurrentManagedInstance(instance *model.Instance) bool {
+	if instance == nil {
+		return false
+	}
+	instanceID := strings.TrimSpace(instance.ID)
+	if instanceID == "" {
+		return false
+	}
+	return instanceID == strings.TrimSpace(global.Env().SystemConfig.NodeConfig.ID)
 }
 
 func fetchManagedInstanceStatsLocally(stats *util.MapStr) bool {
@@ -535,7 +549,7 @@ func fetchManagedInstanceStatsLocally(stats *util.MapStr) bool {
 	applyConsoleLocalAPIAuth(req)
 	api.ServeRegisteredAPIRequest(recorder, req)
 	if recorder.Code != http.StatusOK {
-		log.Error("/stats,", recorder.Body.String())
+		log.Errorf("local /stats request failed, status: %d, body: %s", recorder.Code, recorder.Body.String())
 		return false
 	}
 	if err := util.FromJSONBytes(recorder.Body.Bytes(), stats); err != nil {

@@ -272,6 +272,46 @@ func TestFetchManagedInstanceStatsUsesLocalHandlerForCurrentInstanceID(t *testin
 	}
 }
 
+func TestResolveInstanceWebsocketEndpointPrefersWebServiceForLogViewer(t *testing.T) {
+	instance := &model.Instance{
+		Endpoint: "https://127.0.0.1:2900",
+		Services: []model.ServiceInfo{
+			{Name: "api", Endpoint: "https://127.0.0.1:2900"},
+			{Name: "web", Endpoint: "https://127.0.0.1:9000"},
+		},
+	}
+
+	if got := resolveInstanceWebsocketEndpoint(instance, "/ws", "wss://127.0.0.1:2900"); got != "wss://127.0.0.1:9000" {
+		t.Fatalf("expected web service websocket endpoint, got %q", got)
+	}
+}
+
+func TestResolveInstanceWebsocketEndpointFallsBackToInstanceEndpoint(t *testing.T) {
+	instance := &model.Instance{
+		Endpoint: "http://127.0.0.1:2900",
+		Services: []model.ServiceInfo{
+			{Name: "api", Endpoint: "http://127.0.0.1:2900"},
+		},
+	}
+
+	if got := resolveInstanceWebsocketEndpoint(instance, "/ws", ""); got != "ws://127.0.0.1:2900" {
+		t.Fatalf("expected instance endpoint websocket fallback, got %q", got)
+	}
+}
+
+func TestResolveInstanceWebsocketEndpointKeepsExplicitEndpointForNonLogPath(t *testing.T) {
+	instance := &model.Instance{
+		Endpoint: "https://127.0.0.1:2900",
+		Services: []model.ServiceInfo{
+			{Name: "web", Endpoint: "https://127.0.0.1:9000"},
+		},
+	}
+
+	if got := resolveInstanceWebsocketEndpoint(instance, "/custom", "wss://127.0.0.1:9443/custom"); got != "wss://127.0.0.1:9443/custom" {
+		t.Fatalf("expected explicit websocket target to be preserved, got %q", got)
+	}
+}
+
 func TestProxyInstanceRequestUsesLocalHandlerForCurrentInstanceID(t *testing.T) {
 	originalEnv := global.Env()
 	testEnv := env.EmptyEnv()

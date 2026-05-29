@@ -17,9 +17,47 @@ import request from "@/utils/request";
 import { formatMessage } from "umi/locale";
 import "./viewer.less";
 
+const normalizeWebsocketEndpoint = (endpoint = "") => {
+  const value = `${endpoint || ""}`.trim();
+  if (!value) {
+    return "";
+  }
+  if (value.startsWith("https://")) {
+    return `wss://${value.slice("https://".length)}`;
+  }
+  if (value.startsWith("http://")) {
+    return `ws://${value.slice("http://".length)}`;
+  }
+  return value;
+};
+
+const getRealtimeLogEndpoint = (instance = {}) => {
+  const services = Array.isArray(instance.services) ? instance.services : [];
+  const webService = services.find((service = {}) => {
+    return (
+      `${service.name || ""}`.trim().toLowerCase() === "web" &&
+      `${service.endpoint || ""}`.trim() !== ""
+    );
+  });
+  return normalizeWebsocketEndpoint(webService?.endpoint || instance.endpoint || "");
+};
+
 const WebsocketLogViewer = ({ instance = {} }) => {
-  let { endpoint = "" } = instance;
+  const endpoint = getRealtimeLogEndpoint(instance);
   if (endpoint === "") {
+    return (
+      <Empty
+        image={Empty.PRESENTED_IMAGE_SIMPLE}
+        description={formatMessage({
+          id: "gateway.instance.logging.endpoint.empty",
+        })}
+      />
+    );
+  }
+  let url;
+  try {
+    url = new URL(endpoint);
+  } catch (err) {
     return (
       <Empty
         image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -31,12 +69,6 @@ const WebsocketLogViewer = ({ instance = {} }) => {
   }
   const wsSchema =
     location.protocol.replace(":", "") === "https" ? "wss" : "ws";
-  const url = new URL(endpoint);
-  if (url.protocol === "https:") {
-    endpoint = endpoint.replace("https://", "wss://");
-  } else {
-    endpoint = endpoint.replace("http://", "ws://");
-  }
   const socketUrl = `${wsSchema}://${location.host}/ws_proxy?instance_id=${encodeURIComponent(
     instance.id
   )}&endpoint=${encodeURIComponent(endpoint)}&path=${encodeURIComponent("/ws")}`;

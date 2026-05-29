@@ -36,6 +36,7 @@ import (
 	"infini.sh/framework/core/api"
 	"infini.sh/framework/core/errors"
 	"infini.sh/framework/core/global"
+	framework_model "infini.sh/framework/core/model"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/modules/configs/common"
 	"net"
@@ -113,13 +114,41 @@ func prepareWebsocketProxyRequest(req *http.Request) (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	if endpoint == "" {
-		endpoint = strings.TrimSpace(instance.Endpoint)
-	}
+	endpoint = resolveInstanceWebsocketEndpoint(instance, path, endpoint)
 	if err := agent_common.ApplyInstanceHTTPRequestAuth(req, instance); err != nil {
 		return "", "", err
 	}
 	return endpoint, path, nil
+}
+
+func normalizeWebsocketEndpoint(endpoint string) string {
+	endpoint = strings.TrimSpace(endpoint)
+	switch {
+	case strings.HasPrefix(strings.ToLower(endpoint), "https://"):
+		return "wss://" + endpoint[len("https://"):]
+	case strings.HasPrefix(strings.ToLower(endpoint), "http://"):
+		return "ws://" + endpoint[len("http://"):]
+	default:
+		return endpoint
+	}
+}
+
+func resolveInstanceWebsocketEndpoint(instance *framework_model.Instance, path, fallback string) string {
+	if strings.TrimSpace(path) == "/ws" && instance != nil {
+		for _, service := range instance.Services {
+			if strings.EqualFold(strings.TrimSpace(service.Name), "web") && strings.TrimSpace(service.Endpoint) != "" {
+				return normalizeWebsocketEndpoint(service.Endpoint)
+			}
+		}
+	}
+
+	if strings.TrimSpace(fallback) != "" {
+		return normalizeWebsocketEndpoint(fallback)
+	}
+	if instance == nil {
+		return ""
+	}
+	return normalizeWebsocketEndpoint(instance.Endpoint)
 }
 
 var mTLSClient *http.Client //TODO get mTLSClient

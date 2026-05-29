@@ -276,6 +276,8 @@ func TestGatewayInstallTemplateBootstrapsManagedConfig(t *testing.T) {
 		`    - "${server}"`,
 		`access_token: '\$[[keystore.CONFIGS_MANAGER_ACCESS_TOKEN]]'`,
 		`SECURITY_ENABLED: true`,
+		`websocket:`,
+		`base_path: /ws`,
 		`security:`,
 		`username: '\$[[keystore.API_SECURITY_USERNAME]]'`,
 		`password: '\$[[keystore.API_SECURITY_PASSWORD]]'`,

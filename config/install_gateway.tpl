@@ -278,6 +278,10 @@ api:
   enabled: true
   network:
     binding: \$[[env.API_BINDING]]
+  websocket:
+    enabled: true
+    base_path: /ws
+    skip_host_verify: true
   security:
     enabled: \$[[env.SECURITY_ENABLED]]
     username: '\$[[keystore.API_SECURITY_USERNAME]]'

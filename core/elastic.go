@@ -30,6 +30,8 @@ import (
 	"infini.sh/framework/core/radix"
 	"infini.sh/framework/core/util"
 	"net/http"
+	"sort"
+	"strings"
 )
 
 func (handler Handler) IndexRequired(h httprouter.Handle, route ...string) httprouter.Handle {
@@ -80,6 +82,43 @@ func (handler Handler) ClusterRequired(h httprouter.Handle, route ...string) htt
 	}
 }
 
+func normalizeClusterIDs(clusterIDs []string) []string {
+	if len(clusterIDs) == 0 {
+		return nil
+	}
+
+	seen := map[string]struct{}{}
+	normalized := make([]string, 0, len(clusterIDs))
+	for _, clusterID := range clusterIDs {
+		clusterID = strings.TrimSpace(clusterID)
+		if clusterID == "" {
+			continue
+		}
+		if _, ok := seen[clusterID]; ok {
+			continue
+		}
+		seen[clusterID] = struct{}{}
+		normalized = append(normalized, clusterID)
+	}
+	if len(normalized) == 0 {
+		return nil
+	}
+	sort.Strings(normalized)
+	return normalized
+}
+
+func buildClusterFilter(field string, clusterIDs []string) util.MapStr {
+	clusterIDs = normalizeClusterIDs(clusterIDs)
+	if len(clusterIDs) == 0 {
+		return nil
+	}
+	return util.MapStr{
+		"terms": util.MapStr{
+			field: clusterIDs,
+		},
+	}
+}
+
 func (handler Handler) GetClusterFilter(r *http.Request, field string) (util.MapStr, bool) {
 	if !api.IsAuthEnable() {
 		return nil, true
@@ -88,21 +127,18 @@ func (handler Handler) GetClusterFilter(r *http.Request, field string) (util.Map
 	if hasAllPrivilege {
 		return nil, true
 	}
+	clusterIds = normalizeClusterIDs(clusterIds)
 	if len(clusterIds) == 0 {
 		return nil, false
 	}
-	return util.MapStr{
-		"terms": util.MapStr{
-			field: clusterIds,
-		},
-	}, false
+	return buildClusterFilter(field, clusterIds), false
 }
 func (handler Handler) GetAllowedClusters(r *http.Request) ([]string, bool) {
 	if !api.IsAuthEnable() {
 		return nil, true
 	}
 	hasAllPrivilege, clusterIds := rbac.GetCurrentUserCluster(r)
-	return clusterIds, hasAllPrivilege
+	return normalizeClusterIDs(clusterIds), hasAllPrivilege
 }
 
 func (handler Handler) GetAllowedIndices(r *http.Request, clusterID string) ([]string, bool) {

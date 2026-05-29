@@ -60,7 +60,7 @@ func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req
 		"size": 100,
 	}
 	clusterFilter, hasAllPrivilege := handler.GetClusterFilter(req, "id")
-	if !hasAllPrivilege && clusterFilter == nil {
+	if !hasAllPrivilege && len(clusterFilter) == 0 {
 		handler.WriteJSON(w, util.MapStr{
 			"nodes_count":               0,
 			"clusters_count":            0,
@@ -70,7 +70,7 @@ func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req
 		}, http.StatusOK)
 		return
 	}
-	if !hasAllPrivilege {
+	if !hasAllPrivilege && len(clusterFilter) > 0 {
 		queryDsl["query"] = clusterFilter
 	}
 
@@ -91,6 +91,9 @@ func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req
 			"error": err.Error(),
 		}, http.StatusInternalServerError)
 		return
+	}
+	if len(clusterIDs) == 0 {
+		clusterIDs = getConfiguredOverviewClusterIDs(clusterFilter)
 	}
 
 	totalStoreSize, err = handler.getOverviewTotalStoreSize(clusterIDs)
@@ -135,14 +138,19 @@ func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req
 	handler.WriteJSON(w, resBody, http.StatusOK)
 }
 
-func (handler APIHandler) getOverviewClusterIDs(clusterFilter interface{}) ([]interface{}, error) {
-	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
+func buildOverviewClusterQueryDSL(clusterFilter util.MapStr) util.MapStr {
 	queryDsl := util.MapStr{
 		"size": 100,
 	}
-	if clusterFilter != nil {
+	if len(clusterFilter) > 0 {
 		queryDsl["query"] = clusterFilter
 	}
+	return queryDsl
+}
+
+func (handler APIHandler) getOverviewClusterIDs(clusterFilter util.MapStr) ([]interface{}, error) {
+	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
+	queryDsl := buildOverviewClusterQueryDSL(clusterFilter)
 
 	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetIndexName(elastic.ElasticsearchConfig{}), util.MustToJSONBytes(queryDsl))
 	if err != nil {
@@ -154,6 +162,75 @@ func (handler APIHandler) getOverviewClusterIDs(clusterFilter interface{}) ([]in
 		clusterIDs = append(clusterIDs, hit.ID)
 	}
 	return clusterIDs, nil
+}
+
+func getConfiguredOverviewClusterIDs(clusterFilter util.MapStr) []interface{} {
+	allowedClusterIDs, restricted := extractConfiguredOverviewClusterIDs(clusterFilter)
+	clusterIDs := make([]interface{}, 0)
+	seen := map[string]struct{}{}
+
+	elastic.WalkConfigs(func(key, value interface{}) bool {
+		clusterID, ok := key.(string)
+		if !ok || clusterID == "" {
+			return true
+		}
+		if restricted {
+			if _, ok := allowedClusterIDs[clusterID]; !ok {
+				return true
+			}
+		}
+		if _, ok := seen[clusterID]; ok {
+			return true
+		}
+		seen[clusterID] = struct{}{}
+		clusterIDs = append(clusterIDs, clusterID)
+		return true
+	})
+
+	return clusterIDs
+}
+
+func extractConfiguredOverviewClusterIDs(clusterFilter util.MapStr) (map[string]struct{}, bool) {
+	if len(clusterFilter) == 0 {
+		return nil, false
+	}
+
+	terms, ok := clusterFilter["terms"]
+	if !ok {
+		return nil, true
+	}
+
+	termMap, ok := terms.(util.MapStr)
+	if !ok {
+		if genericTerms, ok := terms.(map[string]interface{}); ok {
+			termMap = util.MapStr(genericTerms)
+		} else {
+			return nil, true
+		}
+	}
+
+	ids, ok := termMap["id"]
+	if !ok {
+		return nil, true
+	}
+
+	result := map[string]struct{}{}
+	switch values := ids.(type) {
+	case []string:
+		for _, id := range values {
+			if id != "" {
+				result[id] = struct{}{}
+			}
+		}
+	case []interface{}:
+		for _, value := range values {
+			if id, ok := value.(string); ok && id != "" {
+				result[id] = struct{}{}
+			}
+		}
+	}
+
+	return result, true
 }
 
 func (handler APIHandler) getOverviewTotalStoreSize(clusterIDs []interface{}) (int, error) {

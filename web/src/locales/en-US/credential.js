@@ -15,9 +15,15 @@ export default {
   "credential.manage.drawer.edit.title": "Credential Detail",
 
   "credential.manage.form.type": "Type",
+  "credential.manage.form.type.required": "Please select type!",
   "credential.manage.form.name": "Name",
+  "credential.manage.form.name.required": "Please input name!",
   "credential.manage.form.username": "Username",
+  "credential.manage.form.username.required": "Please input username!",
   "credential.manage.form.password": "Password",
+  "credential.manage.form.password.required": "Please input password!",
+  "credential.manage.form.password.placeholder.edit":
+    "Original password is not displayed",
   "credential.manage.form.token": "Token",
   "credential.manage.form.token.required": "Please input token!",
   "credential.manage.form.token.placeholder": "Please input token!",

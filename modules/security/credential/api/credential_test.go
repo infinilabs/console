@@ -27,3 +27,21 @@ func TestCredentialNameConflictDetectsDifferentID(t *testing.T) {
 		t.Fatalf("expected different credential id to be treated as conflict")
 	}
 }
+
+func TestValidateCredentialUpdateRejectsTypeChange(t *testing.T) {
+	current := &credential.Credential{Type: credential.BasicAuth}
+	next := &credential.Credential{Type: credential.Token}
+
+	if err := validateCredentialUpdate(current, next); err == nil {
+		t.Fatalf("expected credential type change to be rejected")
+	}
+}
+
+func TestValidateCredentialUpdateAllowsSameType(t *testing.T) {
+	current := &credential.Credential{Type: credential.BasicAuth}
+	next := &credential.Credential{Type: credential.BasicAuth}
+
+	if err := validateCredentialUpdate(current, next); err != nil {
+		t.Fatalf("expected same credential type to be allowed, got %v", err)
+	}
+}

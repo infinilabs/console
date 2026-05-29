@@ -110,13 +110,14 @@ export default () => {
     }
     setSubmitLoading(true);
     const { name, type, tags, username, password, token_value } = value;
+    const credentialType = selectedItem?.type || type;
     const body = {
       name,
-      type,
+      type: credentialType,
       tags,
       payload: {},
     };
-    if (type === "basic_auth") {
+    if (credentialType === "basic_auth") {
       body.payload = {
         basic_auth: {
           username,
@@ -124,7 +125,7 @@ export default () => {
         },
       };
     }
-    if (type === "token") {
+    if (credentialType === "token") {
       body.payload = {
         token: {
           value: token_value,

@@ -29,8 +29,27 @@ export default Form.create()((props) => {
   const { getFieldDecorator } = form;
 
   const { payload = {} } = record || {};
+  const isEdit = !!record?.id;
 
   const [type, setType] = useState(record?.type);
+
+  const getRequiredMessage = (id, defaultMessage) =>
+    formatMessage({ id, defaultMessage });
+
+  const getRequiredRule = (id, defaultMessage) => ({
+    validator: (_, value, callback) => {
+      if (typeof value === "string") {
+        if (value.trim() === "") {
+          callback(getRequiredMessage(id, defaultMessage));
+          return;
+        }
+      } else if (value === undefined || value === null || value === "") {
+        callback(getRequiredMessage(id, defaultMessage));
+        return;
+      }
+      callback();
+    },
+  });
 
   const handleSubmit = async () => {
     if (submitLoading) {
@@ -54,10 +73,10 @@ export default Form.create()((props) => {
             {getFieldDecorator("username", {
               initialValue: payload[type]?.username,
               rules: [
-                {
-                  required: true,
-                  message: "Please inpurt username!",
-                },
+                getRequiredRule(
+                  "credential.manage.form.username.required",
+                  "Please input username!"
+                ),
               ],
             })(<Input />)}
           </Form.Item>
@@ -69,15 +88,24 @@ export default Form.create()((props) => {
             {getFieldDecorator("password", {
               initialValue: payload[type]?.password,
               rules: [
-                {
-                  required: record?.id ? false : true,
-                  message: "Please inpurt password!",
-                },
+                ...(isEdit
+                  ? []
+                  : [
+                      getRequiredRule(
+                        "credential.manage.form.password.required",
+                        "Please input password!"
+                      ),
+                    ]),
               ],
             })(
               <Input.Password
                 placeholder={
-                  record?.id ? "original password is not displayed" : ""
+                  isEdit
+                    ? formatMessage({
+                        id: "credential.manage.form.password.placeholder.edit",
+                        defaultMessage: "Original password is not displayed",
+                      })
+                    : ""
                 }
               />
             )}
@@ -95,12 +123,14 @@ export default Form.create()((props) => {
           {getFieldDecorator("token_value", {
             initialValue: payload[type]?.value,
             rules: [
-              {
-                required: record?.id ? false : true,
-                message: formatMessage({
-                  id: "credential.manage.form.token.required",
-                }),
-              },
+              ...(isEdit
+                ? []
+                : [
+                    getRequiredRule(
+                      "credential.manage.form.token.required",
+                      "Please input token!"
+                    ),
+                  ]),
             ],
           })(
             <Input.Password
@@ -131,13 +161,17 @@ export default Form.create()((props) => {
           {getFieldDecorator("type", {
             initialValue: record?.type,
             rules: [
-              {
-                required: true,
-                message: "Please select type!",
-              },
+              getRequiredRule(
+                "credential.manage.form.type.required",
+                "Please select type!"
+              ),
             ],
           })(
-            <Select key={`cred-${record?.type}`} onChange={(value) => setType(value)}>
+            <Select
+              key={`cred-${record?.type}`}
+              onChange={(value) => setType(value)}
+              disabled={isEdit}
+            >
               {TYPES.map((item) => (
                 <Select.Option key={`opt-${item.type}`} value={item.type}>{item.name}</Select.Option>
               ))}
@@ -152,10 +186,10 @@ export default Form.create()((props) => {
           {getFieldDecorator("name", {
             initialValue: record?.name,
             rules: [
-              {
-                required: true,
-                message: "Please input name!",
-              },
+              getRequiredRule(
+                "credential.manage.form.name.required",
+                "Please input name!"
+              ),
             ],
           })(<Input />)}
         </Form.Item>

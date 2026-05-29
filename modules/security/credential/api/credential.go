@@ -131,55 +131,54 @@ func (h *APIHandler) updateCredential(w http.ResponseWriter, req *http.Request, 
 		h.WriteError(w, "credential name already exists", http.StatusConflict)
 		return
 	}
+	err = validateCredentialUpdate(&obj, &newObj)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	encodeChanged := false
 	rotatedTokenValue := ""
-	if obj.Type != newObj.Type {
-		obj.Payload = newObj.Payload
-		encodeChanged = true
-	} else {
-		switch newObj.Type {
-		case credential.BasicAuth:
-			var oldPwd string
-			if oldParams, ok := obj.Payload[newObj.Type].(map[string]interface{}); ok {
-				if pwd, ok := oldParams["password"].(string); ok {
-					oldPwd = pwd
-				} else {
-					http.Error(w, fmt.Sprintf("invalid password of credential [%s]", obj.ID), http.StatusInternalServerError)
-					return
-				}
+	switch newObj.Type {
+	case credential.BasicAuth:
+		var oldPwd string
+		if oldParams, ok := obj.Payload[newObj.Type].(map[string]interface{}); ok {
+			if pwd, ok := oldParams["password"].(string); ok {
+				oldPwd = pwd
+			} else {
+				http.Error(w, fmt.Sprintf("invalid password of credential [%s]", obj.ID), http.StatusInternalServerError)
+				return
 			}
-			if params, ok := newObj.Payload[newObj.Type].(map[string]interface{}); ok {
-				if pwd, ok := params["password"].(string); ok && pwd != oldPwd {
-					obj.Payload = newObj.Payload
-					encodeChanged = true
-				} else {
-					if oldParams, ok := obj.Payload[obj.Type].(map[string]interface{}); ok {
-						oldParams["username"] = params["username"]
-					}
-				}
-			}
-		case credential.Token:
-			var oldValue string
-			if oldParams, ok := obj.Payload[newObj.Type].(map[string]interface{}); ok {
-				if value, ok := oldParams["value"].(string); ok {
-					oldValue = value
-				} else {
-					http.Error(w, fmt.Sprintf("invalid token value of credential [%s]", obj.ID), http.StatusInternalServerError)
-					return
-				}
-			}
-			if params, ok := newObj.Payload[newObj.Type].(map[string]interface{}); ok {
-				if value, ok := params["value"].(string); ok && value != oldValue {
-					obj.Payload = newObj.Payload
-					encodeChanged = true
-					rotatedTokenValue = oldValue
-				}
-			}
-		default:
-			h.WriteError(w, fmt.Sprintf("unsupport credential type [%s]", newObj.Type), http.StatusInternalServerError)
-			return
 		}
+		if params, ok := newObj.Payload[newObj.Type].(map[string]interface{}); ok {
+			if pwd, ok := params["password"].(string); ok && pwd != oldPwd {
+				obj.Payload = newObj.Payload
+				encodeChanged = true
+			}
+			if oldParams, ok := obj.Payload[obj.Type].(map[string]interface{}); ok {
+				oldParams["username"] = params["username"]
+			}
+		}
+	case credential.Token:
+		var oldValue string
+		if oldParams, ok := obj.Payload[newObj.Type].(map[string]interface{}); ok {
+			if value, ok := oldParams["value"].(string); ok {
+				oldValue = value
+			} else {
+				http.Error(w, fmt.Sprintf("invalid token value of credential [%s]", obj.ID), http.StatusInternalServerError)
+				return
+			}
+		}
+		if params, ok := newObj.Payload[newObj.Type].(map[string]interface{}); ok {
+			if value, ok := params["value"].(string); ok && value != oldValue {
+				obj.Payload = newObj.Payload
+				encodeChanged = true
+				rotatedTokenValue = oldValue
+			}
+		}
+	default:
+		h.WriteError(w, fmt.Sprintf("unsupport credential type [%s]", newObj.Type), http.StatusInternalServerError)
+		return
 	}
 	obj.Name = newObj.Name
 	obj.Type = newObj.Type
@@ -211,6 +210,16 @@ func (h *APIHandler) updateCredential(w http.ResponseWriter, req *http.Request, 
 	})
 
 	h.WriteUpdatedOKJSON(w, id)
+}
+
+func validateCredentialUpdate(current, next *credential.Credential) error {
+	if current == nil || next == nil {
+		return fmt.Errorf("credential update input can not be nil")
+	}
+	if current.Type != next.Type {
+		return fmt.Errorf("credential type cannot be changed")
+	}
+	return nil
 }
 
 func (h *APIHandler) deleteCredential(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {

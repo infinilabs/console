@@ -37,6 +37,7 @@ import (
 	"infini.sh/framework/core/task"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strconv"
 	"strings"
@@ -493,6 +494,9 @@ func fetchManagedInstanceStats(currentReq *http.Request, instance *model.Instanc
 	if instance == nil {
 		return false
 	}
+	if shouldFetchManagedInstanceStatsLocally(instance) {
+		return fetchManagedInstanceStatsLocally(stats)
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
@@ -513,6 +517,47 @@ func fetchManagedInstanceStats(currentReq *http.Request, instance *model.Instanc
 		return false
 	}
 	return true
+}
+
+func shouldFetchManagedInstanceStatsLocally(instance *model.Instance) bool {
+	if instance == nil {
+		return false
+	}
+	return shouldReuseCurrentRequestAuthForEndpoint(instance.GetEndpoint())
+}
+
+func fetchManagedInstanceStatsLocally(stats *util.MapStr) bool {
+	if stats == nil {
+		return false
+	}
+	recorder := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/stats", nil)
+	applyConsoleLocalAPIAuth(req)
+	api.ServeRegisteredAPIRequest(recorder, req)
+	if recorder.Code != http.StatusOK {
+		log.Error("/stats,", recorder.Body.String())
+		return false
+	}
+	if err := util.FromJSONBytes(recorder.Body.Bytes(), stats); err != nil {
+		log.Error(err)
+		return false
+	}
+	return true
+}
+
+func applyConsoleLocalAPIAuth(req *http.Request) {
+	if req == nil {
+		return
+	}
+	apiCfg := global.Env().SystemConfig.APIConfig
+	if !apiCfg.Security.Enabled {
+		return
+	}
+	username := strings.TrimSpace(apiCfg.Security.Username)
+	if username == "" {
+		return
+	}
+	req.SetBasicAuth(username, apiCfg.Security.Password)
 }
 func (h *APIHandler) clearInstance(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	appName := h.GetParameterOrDefault(req, "app_name", "")

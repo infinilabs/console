@@ -263,6 +263,8 @@ func TestGatewayInstallTemplateBootstrapsManagedConfig(t *testing.T) {
 		"{{ca_crt}}", "CA_CERT",
 		"{{port}}", "2900",
 		"{{access_token}}", "BOOTSTRAP_TOKEN",
+		"{{api_security_username}}", "managed_gateway",
+		"{{api_security_password}}", "LOCAL_API_PASSWORD",
 	).Replace(string(content))
 
 	expectedSnippets := []string{
@@ -275,11 +277,15 @@ func TestGatewayInstallTemplateBootstrapsManagedConfig(t *testing.T) {
 		`access_token: '\$[[keystore.CONFIGS_MANAGER_ACCESS_TOKEN]]'`,
 		`SECURITY_ENABLED: true`,
 		`security:`,
+		`username: '\$[[keystore.API_SECURITY_USERNAME]]'`,
+		`password: '\$[[keystore.API_SECURITY_PASSWORD]]'`,
 		`cert_file: "config/client.crt"`,
 		`default_domain: "console.local"`,
 		`skip_insecure_verify: false`,
 		`access_token="BOOTSTRAP_TOKEN"`,
 		`keystore add "CONFIGS_MANAGER_ACCESS_TOKEN"`,
+		`keystore add "API_SECURITY_USERNAME"`,
+		`keystore add "API_SECURITY_PASSWORD"`,
 		`macos_svc=/Library/LaunchDaemons/gateway.plist`,
 		`linux_svc=/etc/systemd/system/gateway.service`,
 		`(cd "${install_dir}" && $gateway_svc -service install &>/dev/null)`,

@@ -76,6 +76,7 @@ const defaultAgentDownloadURL = "https://release.infinilabs.com/agent/stable"
 const defaultGatewayDownloadURL = "https://release.infinilabs.com/gateway/stable"
 const defaultAgentInstallDir = "/infini/agent"
 const defaultGatewayInstallDir = "/infini/gateway"
+const defaultManagedGatewayAPIUsername = "managed_gateway"
 
 var expiredTokenCache = util.NewCacheWithExpireOnAdd(ExpiredIn, 100)
 
@@ -726,16 +727,19 @@ func (h *APIHandler) getGatewayInstallScript(w http.ResponseWriter, req *http.Re
 	if port == "" {
 		port = "2900"
 	}
+	localAPIPassword := util.GetUUID()
 	_, err = tpl.Execute(w, map[string]interface{}{
-		"base_url":         downloadURL,
-		"console_endpoint": consoleEndpoint,
-		"console_domain":   consoleDomain,
-		"client_crt":       clientCertPEM,
-		"client_key":       clientKeyPEM,
-		"ca_crt":           caCert,
-		"port":             port,
-		"access_token":     managerTokenValue,
-		"version":          installVersion,
+		"base_url":              downloadURL,
+		"console_endpoint":      consoleEndpoint,
+		"console_domain":        consoleDomain,
+		"client_crt":            clientCertPEM,
+		"client_key":            clientKeyPEM,
+		"ca_crt":                caCert,
+		"port":                  port,
+		"access_token":          managerTokenValue,
+		"api_security_username": defaultManagedGatewayAPIUsername,
+		"api_security_password": localAPIPassword,
+		"version":               installVersion,
 	})
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)

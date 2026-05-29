@@ -280,6 +280,8 @@ api:
     binding: \$[[env.API_BINDING]]
   security:
     enabled: \$[[env.SECURITY_ENABLED]]
+    username: '\$[[keystore.API_SECURITY_USERNAME]]'
+    password: '\$[[keystore.API_SECURITY_PASSWORD]]'
 
 configs:
   managed: true
@@ -317,6 +319,25 @@ function install_manager_token() {
   echo -n "${access_token}" | ${gateway_svc} keystore add "CONFIGS_MANAGER_ACCESS_TOKEN" --stdin --force >/dev/null
 }
 
+function install_api_security_credentials() {
+  api_security_username="{{api_security_username}}"
+  api_security_password="{{api_security_password}}"
+  gateway_svc=${install_dir}/${program_name}-${file_ext%%.*}
+
+  if [[ -z "${api_security_username}" ]]; then
+    echo "Error: api security username is empty." >&2
+    exit 1
+  fi
+  if [[ -z "${api_security_password}" ]]; then
+    echo "Error: api security password is empty." >&2
+    exit 1
+  fi
+
+  echo "[gateway] waiting save local api security credentials"
+  echo -n "${api_security_username}" | ${gateway_svc} keystore add "API_SECURITY_USERNAME" --stdin --force >/dev/null
+  echo -n "${api_security_password}" | ${gateway_svc} keystore add "API_SECURITY_PASSWORD" --stdin --force >/dev/null
+}
+
 function uninstall_service() {
   gateway_svc=${install_dir}/${program_name}-${file_ext%%.*}
   chmod 755 $gateway_svc
@@ -335,8 +356,14 @@ function install_service() {
   gateway_svc=${install_dir}/${program_name}-${file_ext%%.*}
   chmod 755 $gateway_svc
   echo "[gateway] waiting service install & start"
-  (cd "${install_dir}" && $gateway_svc -service install &>/dev/null)
-  (cd "${install_dir}" && $gateway_svc -service start &>/dev/null)
+  if ! (cd "${install_dir}" && $gateway_svc -service install &>/dev/null); then
+    echo "[gateway] failed to install service" >&2
+    exit 1
+  fi
+  if ! (cd "${install_dir}" && $gateway_svc -service start &>/dev/null); then
+    echo "[gateway] failed to start service" >&2
+    exit 1
+  fi
 }
 
 function main() {
@@ -371,6 +398,7 @@ function main() {
   install_certs
   install_config
   install_manager_token
+  install_api_security_credentials
   uninstall_service
   install_service
 

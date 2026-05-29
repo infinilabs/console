@@ -76,6 +76,12 @@ export default {
   "explore.view.index_pattern.field_editor.format_help":
     "格式化允许您控制特定值的显示方式。它也可能完全改变值的显示结果，并导致 Discover 中的高亮失效。",
   "explore.view.index_pattern.field_editor.save_field": "保存字段",
+  "explore.view.index_pattern.field_editor.statistics": "统计项",
+  "explore.view.index_pattern.field_editor.field": "字段",
+  "explore.view.index_pattern.field_editor.group_field": "分组字段",
+  "explore.view.index_pattern.field_editor.dividend_field": "被除数字段",
+  "explore.view.index_pattern.field_editor.divisor_field": "除数字段",
+  "explore.view.index_pattern.field_editor.add_new": "新增",
   "explore.view.index_pattern.complex_field_editor.name": "名称",
   "explore.view.index_pattern.complex_field_editor.name_required":
     "名称不能为空",

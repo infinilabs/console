@@ -53,7 +53,7 @@ func initConsoleSelfAPI() {
 	handler := consoleSelfAPIHandler{}
 	registerConsoleProtectedUIRoutes(handler)
 	registerConsoleAccountProxyUIRoutes(handler)
-	registerMissingConsoleAPIProxyUIRoutes(handler)
+	RefreshConsoleSelfAPIProxyUIRoutes()
 }
 
 func registerConsoleProtectedUIRoutes(handler consoleSelfAPIHandler) {
@@ -67,7 +67,28 @@ func registerConsoleAccountProxyUIRoutes(handler consoleSelfAPIHandler) {
 }
 
 func registerMissingConsoleAPIProxyUIRoutes(handler consoleSelfAPIHandler) {
-	frameworkapi.RegisterMissingAPIMethodUIRoutes(handler.requireLoginOrAccessToken(handler.proxyLocalAPI))
+	RefreshConsoleSelfAPIProxyUIRoutes()
+}
+
+func RefreshConsoleSelfAPIProxyUIRoutes() {
+	handler := consoleSelfAPIHandler{}
+	frameworkapi.WalkMissingAPIMethodUIRoutes(func(route frameworkapi.MissingAPIMethodUIRoute) {
+		proxyHandler := httprouter.Handle(handler.proxyLocalAPI)
+		if shouldProtectConsoleSelfProxyRoute(route.Options) {
+			proxyHandler = handler.requireLoginOrAccessToken(proxyHandler)
+		}
+		frameworkapi.HandleUIMethod(route.Route.Method, route.Route.Path, proxyHandler)
+	})
+}
+
+func shouldProtectConsoleSelfProxyRoute(options *frameworkapi.HandlerOptions) bool {
+	if options == nil {
+		return false
+	}
+	if len(options.RequirePermission) > 0 {
+		return true
+	}
+	return options.RequireLogin && !options.OptionLogin
 }
 
 func (h consoleSelfAPIHandler) proxyLocalAPI(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {

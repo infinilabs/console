@@ -22,15 +22,6 @@ import { Card, Empty } from "antd";
 import { CreateEditComplexFieldContainer } from "@/components/vendor/index_pattern_management/public/components/edit_index_pattern/create_edit_complex_field";
 
 const IndexPatterns = (props) => {
-  if (!props.selectedCluster?.id) {
-    return (
-      <PageHeaderWrapper>
-        <Card>
-          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
-        </Card>
-      </PageHeaderWrapper>
-    );
-  }
   const history = useMemo(() => {
     return new ScopedHistory(props.history, "/data/views");
   }, [props.history]);
@@ -65,7 +56,7 @@ const IndexPatterns = (props) => {
   }, [props.location?.pathname]);
 
   const createComponentKey = useMemo(() => {
-    const { http, uiSettings } = useGlobalContext();
+    const { http } = useGlobalContext();
     http.getServerBasePath = () => {
       return `${ESPrefix}/` + props.selectedCluster?.id;
     };
@@ -73,6 +64,10 @@ const IndexPatterns = (props) => {
   }, [props.selectedCluster]);
 
   useEffect(() => {
+    if (!props.selectedCluster?.id) {
+      return;
+    }
+
     const { http, uiSettings } = useGlobalContext();
     const initFetch = async () => {
       const defaultIndex = await http.fetch(
@@ -82,6 +77,16 @@ const IndexPatterns = (props) => {
     };
     initFetch();
   }, [props.selectedCluster]);
+
+  if (!props.selectedCluster?.id) {
+    return (
+      <PageHeaderWrapper breadcrumbList={breadcrumbList}>
+        <Card>
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        </Card>
+      </PageHeaderWrapper>
+    );
+  }
 
   return (
     <Router history={history}>

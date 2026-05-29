@@ -25,6 +25,7 @@ package security
 
 import (
 	"net/http"
+	"strings"
 
 	rbac "infini.sh/console/core/security"
 	"infini.sh/console/modules/security/realm"
@@ -93,7 +94,7 @@ func (frameworkRealmPasswordLoginProvider) AuthenticateByPassword(login, passwor
 	}
 
 	sessionUser := &frameworksecurity.UserSessionInfo{
-		Provider: user.AuthProvider,
+		Provider: normalizeFrameworkProvider(user.AuthProvider),
 		Login:    user.Username,
 		Roles:    roleNames(user.Roles),
 	}
@@ -115,6 +116,7 @@ func registerFrameworkAccountBridge() {
 		if sessionUser == nil {
 			return nil, nil
 		}
+		sessionUser.Provider = normalizeFrameworkProvider(sessionUser.Provider)
 
 		bridgedClaims := frameworksecurity.NewUserClaims()
 		bridgedClaims.UserSessionInfo = sessionUser
@@ -154,4 +156,11 @@ func roleNames(roles []rbac.UserRole) []string {
 		out = append(out, role.Name)
 	}
 	return out
+}
+
+func normalizeFrameworkProvider(provider string) string {
+	if strings.EqualFold(strings.TrimSpace(provider), "native") {
+		return frameworksecurity.DefaultNativeAuthBackend
+	}
+	return provider
 }

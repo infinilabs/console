@@ -78,6 +78,12 @@ export default {
   "explore.view.index_pattern.field_editor.format_help":
     "Formatting allows you to control the way that specific values are displayed. It can also cause values to be completely changed and prevent highlighting in Discover from working.",
   "explore.view.index_pattern.field_editor.save_field": "Save field",
+  "explore.view.index_pattern.field_editor.statistics": "Statistics",
+  "explore.view.index_pattern.field_editor.field": "Field",
+  "explore.view.index_pattern.field_editor.group_field": "Group Field",
+  "explore.view.index_pattern.field_editor.dividend_field": "Dividend Field",
+  "explore.view.index_pattern.field_editor.divisor_field": "Divisor Field",
+  "explore.view.index_pattern.field_editor.add_new": "Add New",
   "explore.view.index_pattern.complex_field_editor.name": "Name",
   "explore.view.index_pattern.complex_field_editor.name_required":
     "Name is required",

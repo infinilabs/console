@@ -35,6 +35,7 @@ import (
 	"infini.sh/framework/core/event"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/task"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -253,7 +254,8 @@ func (h *APIHandler) createInstance(w http.ResponseWriter, req *http.Request, ps
 	obj := &reqBody.Instance
 	var pendingToConsume *agent_common.PendingRegistrationToken
 
-	res, err := h.getInstanceInfo(obj.Endpoint, obj.BasicAuth, reqBody.AccessToken)
+	probeAccessToken := effectiveInstanceProbeAccessToken(req, obj.Endpoint, reqBody.AccessToken)
+	res, err := h.getInstanceInfo(obj.Endpoint, obj.BasicAuth, probeAccessToken)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -795,7 +797,8 @@ func (h *APIHandler) tryConnect(w http.ResponseWriter, req *http.Request, ps htt
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	connectRes, err := h.getInstanceInfo(reqBody.Endpoint, reqBody.BasicAuth, reqBody.AccessToken)
+	probeAccessToken := effectiveInstanceProbeAccessToken(req, reqBody.Endpoint, reqBody.AccessToken)
+	connectRes, err := h.getInstanceInfo(reqBody.Endpoint, reqBody.BasicAuth, probeAccessToken)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -891,6 +894,87 @@ func buildInstanceInfoPaths(isAgent bool, accessToken string) []string {
 		return []string{"/agent/_info", "/_info"}
 	}
 	return []string{"/_info"}
+}
+
+func effectiveInstanceProbeAccessToken(req *http.Request, endpoint, accessToken string) string {
+	accessToken = strings.TrimSpace(accessToken)
+	if accessToken != "" {
+		return accessToken
+	}
+	if req == nil || !shouldReuseCurrentRequestAuthForEndpoint(endpoint) {
+		return ""
+	}
+	return agent_common.ExtractBearerToken(req)
+}
+
+func shouldReuseCurrentRequestAuthForEndpoint(endpoint string) bool {
+	parsed, err := url.Parse(strings.TrimSpace(endpoint))
+	if err != nil || parsed == nil {
+		return false
+	}
+	host := strings.TrimSpace(parsed.Hostname())
+	if !isLocalManagedEndpointHost(host) {
+		return false
+	}
+	port := endpointPort(parsed)
+	if port == "" {
+		return false
+	}
+	if global.Env().SystemConfig.WebAppConfig.Enabled && endpointMatchesPort(global.Env().SystemConfig.WebAppConfig.GetEndpoint(), port) {
+		return true
+	}
+	if global.Env().SystemConfig.APIConfig.Enabled && endpointMatchesPort(global.Env().SystemConfig.APIConfig.GetEndpoint(), port) {
+		return true
+	}
+	return false
+}
+
+func isLocalManagedEndpointHost(host string) bool {
+	host = strings.TrimSpace(host)
+	if host == "" {
+		return false
+	}
+	if strings.EqualFold(host, "localhost") {
+		return true
+	}
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return false
+	}
+	if ip.IsLoopback() {
+		return true
+	}
+	for _, localIP := range util.GetLocalIPs() {
+		if parsed := net.ParseIP(strings.TrimSpace(localIP)); parsed != nil && parsed.Equal(ip) {
+			return true
+		}
+	}
+	return false
+}
+
+func endpointMatchesPort(endpoint, port string) bool {
+	parsed, err := url.Parse(strings.TrimSpace(endpoint))
+	if err != nil || parsed == nil {
+		return false
+	}
+	return endpointPort(parsed) == port
+}
+
+func endpointPort(parsed *url.URL) string {
+	if parsed == nil {
+		return ""
+	}
+	if port := strings.TrimSpace(parsed.Port()); port != "" {
+		return port
+	}
+	switch strings.ToLower(strings.TrimSpace(parsed.Scheme)) {
+	case "https":
+		return "443"
+	case "http":
+		return "80"
+	default:
+		return ""
+	}
 }
 
 func shouldFallbackInstanceInfoPath(path string, res *util.Result, err error) bool {

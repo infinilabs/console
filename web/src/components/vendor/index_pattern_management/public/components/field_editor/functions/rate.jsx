@@ -1,6 +1,8 @@
 import { EuiComboBox, EuiFormRow } from "@elastic/eui"
+import { formatMessage } from "umi/locale";
 
 export default (props) => {
+    const t = (id, defaultMessage) => formatMessage({ id, defaultMessage });
     const { indexPattern, spec, onChange } = props;
     const keys = Object.keys(spec?.function || {})
     const statistic = keys[0]
@@ -8,7 +10,7 @@ export default (props) => {
     const { field, group } = func || {}
 
     return (
-        <EuiFormRow label={'Field'} >
+        <EuiFormRow label={t("explore.view.index_pattern.field_editor.field", "Field")} >
             <EuiComboBox
                 singleSelection
                 options={indexPattern.fields?.filter((item) => !!item.spec?.name).map((item) => (

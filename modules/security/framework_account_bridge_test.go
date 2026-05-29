@@ -33,6 +33,9 @@ func TestFrameworkAccountBridgeAcceptsConsoleBearerToken(t *testing.T) {
 	if sessionUser == nil || sessionUser.UserID != "bridge-user" {
 		t.Fatalf("unexpected bridged session user: %#v", sessionUser)
 	}
+	if sessionUser.Provider != frameworksecurity.DefaultNativeAuthBackend {
+		t.Fatalf("expected bridged provider %q, got %q", frameworksecurity.DefaultNativeAuthBackend, sessionUser.Provider)
+	}
 }
 
 func TestFrameworkLicenseUIRouteAcceptsConsoleAdminToken(t *testing.T) {

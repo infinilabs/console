@@ -30,6 +30,7 @@ import (
 	"fmt"
 	api3 "infini.sh/console/modules/agent/api"
 	common2 "infini.sh/console/modules/agent/common"
+	uiapi "infini.sh/console/plugin/api"
 	"infini.sh/console/plugin/api/email"
 	"infini.sh/console/plugin/audit_log"
 	"infini.sh/framework/core/api"
@@ -236,6 +237,7 @@ func main() {
 		orm.RegisterSchemaWithIndexName(host.HostInfo{}, "host")
 
 		module.Start()
+		uiapi.RefreshConsoleSelfAPIProxyUIRoutes()
 
 		var initFunc = func(startDeferredModules bool) {
 			// check cluster health before initialization, refuse to start if status is red

@@ -807,7 +807,10 @@ export class FieldEditor extends PureComponent<FieldEdiorProps, FieldEditorState
     return (
       <>
         <EuiFormRow
-          label={'Metric Name'}
+          label={i18nText(
+            "explore.view.index_pattern.complex_field_editor.metric_name",
+            "Metric Name"
+          )}
         >
           <EuiFieldText
             value={spec?.metric_config?.name}
@@ -817,7 +820,10 @@ export class FieldEditor extends PureComponent<FieldEdiorProps, FieldEditorState
           />
         </EuiFormRow>
         <EuiFormRow
-          label={'Statistics'}
+          label={i18nText(
+            "explore.view.index_pattern.field_editor.statistics",
+            "Statistics"
+          )}
           helpText={
             isRollupEnabled ? `Rollup is enabled, some statistics will be disabled.` : ''
           }
@@ -833,7 +839,10 @@ export class FieldEditor extends PureComponent<FieldEdiorProps, FieldEditorState
         </EuiFormRow>
         
         <EuiFormRow
-          label={'Unit'}
+          label={i18nText(
+            "explore.view.index_pattern.complex_field_editor.unit",
+            "Unit"
+          )}
         >
           <EuiFieldText
             value={spec?.metric_config?.unit}
@@ -843,7 +852,10 @@ export class FieldEditor extends PureComponent<FieldEdiorProps, FieldEditorState
           />
         </EuiFormRow>
         <EuiFormRow
-          label={'Tags'}
+          label={i18nText(
+            "explore.view.index_pattern.complex_field_editor.tags",
+            "Tags"
+          )}
         >
           <Tags value={spec?.metric_config?.tags} onChange={(value) => {
             this.onMetricSettingsChange('tags', value)
@@ -1016,7 +1028,7 @@ export const Tags = ({ value = [], onChange }) => {
             onClick={showInput}
             style={{ height: '40px', lineHeight: '40px', fontSize: 14}}
           >
-            Add New
+            {i18nText("explore.view.index_pattern.field_editor.add_new", "Add New")}
           </EuiBadge>
         </EuiFlexItem>
       )}

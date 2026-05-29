@@ -2,9 +2,12 @@ package server
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
+	"infini.sh/framework/core/config"
 	"infini.sh/framework/core/env"
+	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/util"
 )
@@ -144,6 +147,47 @@ func TestGetRuntimeInstanceInfoUsesAgentInfoPathForAgentInstance(t *testing.T) {
 	}
 	if info == nil || info.Name != "agent-a" {
 		t.Fatalf("unexpected runtime instance info: %#v", info)
+	}
+}
+
+func TestShouldReuseCurrentRequestAuthForEndpoint(t *testing.T) {
+	originalEnv := global.Env()
+	testEnv := env.EmptyEnv()
+	testEnv.SystemConfig.WebAppConfig = config.WebAppConfig{Enabled: true}
+	testEnv.SystemConfig.WebAppConfig.NetworkConfig.Binding = "0.0.0.0:9000"
+	global.RegisterEnv(testEnv)
+	defer global.RegisterEnv(originalEnv)
+
+	if !shouldReuseCurrentRequestAuthForEndpoint("https://127.0.0.1:9000") {
+		t.Fatal("expected loopback console web endpoint to reuse current request auth")
+	}
+	if shouldReuseCurrentRequestAuthForEndpoint("https://127.0.0.1:9443") {
+		t.Fatal("expected different port not to reuse current request auth")
+	}
+	if shouldReuseCurrentRequestAuthForEndpoint("https://203.0.113.10:9000") {
+		t.Fatal("expected remote host not to reuse current request auth")
+	}
+}
+
+func TestEffectiveInstanceProbeAccessTokenUsesCurrentBearerForLocalConsoleEndpoint(t *testing.T) {
+	originalEnv := global.Env()
+	testEnv := env.EmptyEnv()
+	testEnv.SystemConfig.WebAppConfig = config.WebAppConfig{Enabled: true}
+	testEnv.SystemConfig.WebAppConfig.NetworkConfig.Binding = "0.0.0.0:9000"
+	global.RegisterEnv(testEnv)
+	defer global.RegisterEnv(originalEnv)
+
+	req := httptest.NewRequest(http.MethodPost, "/instance/try_connect", nil)
+	req.Header.Set("Authorization", "Bearer current-console-token")
+
+	if got := effectiveInstanceProbeAccessToken(req, "https://127.0.0.1:9000", ""); got != "current-console-token" {
+		t.Fatalf("expected current bearer token to be reused for local console endpoint, got %q", got)
+	}
+	if got := effectiveInstanceProbeAccessToken(req, "https://203.0.113.10:9000", ""); got != "" {
+		t.Fatalf("expected remote endpoint not to reuse current bearer token, got %q", got)
+	}
+	if got := effectiveInstanceProbeAccessToken(req, "https://127.0.0.1:9000", "explicit-token"); got != "explicit-token" {
+		t.Fatalf("expected explicit access token to win, got %q", got)
 	}
 }
 

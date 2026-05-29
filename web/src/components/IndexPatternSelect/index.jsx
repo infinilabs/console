@@ -1,12 +1,13 @@
 import DropdownList from "@/common/src/DropdownList";
 import { useMemo, useState } from "react";
 import { HealthStatusCircle } from "../infini/health_status_circle";
-import { getLocale } from "umi/locale";
+import { formatMessage, getLocale } from "umi/locale";
 import { Icon } from "antd";
 import Link from "umi/link";
 import styles from "./index.less";
 
 export default (props) => {
+    const t = (id, defaultMessage) => formatMessage({ id, defaultMessage });
 
     const { selectedIndexPattern, onIndexPatternChange, views = [], indices = [] } = props;
     
@@ -80,8 +81,10 @@ export default (props) => {
             let label = "Create Index";
             let link = "/data/index"
             if (showGroup && groups[0]?.value === 'view') {
-              label = "Create View";
+              label = t("explore.view.btn.create", "Create View");
               link = "/data/views/create"
+            } else {
+              label = t("explore.index.btn.create", "Create Index");
             } 
             const action = (
               <Link to={link}>

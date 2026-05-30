@@ -33,6 +33,7 @@ import (
 	httprouter "infini.sh/framework/core/api/router"
 	config3 "infini.sh/framework/core/config"
 	"infini.sh/framework/core/global"
+	"infini.sh/framework/core/kv"
 	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
@@ -47,6 +48,8 @@ import (
 var configProvidersLock = sync.RWMutex{}
 var configProviders = []func(instance model.Instance) []*common.ConfigFile{}
 var secretProviders = []func(instance model.Instance) *common.Secrets{}
+
+const managedSecretsHashBucket = "managed_instance_secret_hash"
 
 func RegisterConfigProvider(provider func(instance model.Instance) []*common.ConfigFile) {
 	configProvidersLock.Lock()
@@ -140,6 +143,40 @@ func getSecretsForInstance(instance model.Instance) *common.Secrets {
 		}
 	}
 	return &secrets
+}
+
+func getManagedSecretsHash(secrets *common.Secrets) string {
+	if secrets == nil || len(secrets.Keystore) == 0 {
+		return ""
+	}
+	return util.MD5digestString(util.MustToJSONBytes(secrets))
+}
+
+func getManagedSecretsHashKey(instance model.Instance) []byte {
+	return []byte(instance.ID)
+}
+
+func shouldSyncManagedSecrets(instance model.Instance, secrets *common.Secrets) bool {
+	hash := getManagedSecretsHash(secrets)
+	if hash == "" {
+		return false
+	}
+	currentHash, err := kv.GetValue(managedSecretsHashBucket, getManagedSecretsHashKey(instance))
+	if err != nil {
+		log.Error(err)
+		return true
+	}
+	return string(currentHash) != hash
+}
+
+func markManagedSecretsSynced(instance model.Instance, secrets *common.Secrets) {
+	hash := getManagedSecretsHash(secrets)
+	if hash == "" {
+		return
+	}
+	if err := kv.AddValue(managedSecretsHashBucket, getManagedSecretsHashKey(instance), []byte(hash)); err != nil {
+		log.Error(err)
+	}
 }
 
 func getConfigsForInstance(instance model.Instance) []*common.ConfigFile {
@@ -334,13 +371,19 @@ func (h APIHandler) syncConfigs(w http.ResponseWriter, req *http.Request, ps htt
 		}
 	}
 
-	//only if config changed, we change try to update the client's secrets, //TODO maybe there are coupled
-	if res.Changed {
-		secrets := getSecretsForInstance(obj.Client)
+	secrets := getSecretsForInstance(obj.Client)
+	secretsChanged := shouldSyncManagedSecrets(obj.Client, secrets)
+
+	// sync secrets when either config changed or the managed secret payload changed.
+	if res.Changed || secretsChanged {
+		res.Changed = true
 		res.Secrets = secrets
 	}
 
 	h.WriteJSON(w, res, 200)
+	if res.Changed && res.Secrets != nil {
+		markManagedSecretsSynced(obj.Client, res.Secrets)
+	}
 
 }
 

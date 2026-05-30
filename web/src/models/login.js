@@ -27,6 +27,7 @@ const invalidCredentialReasons = [
   "invalid login or password",
   "invalid username or password",
   "authentication_exception",
+  "user not found",
 ];
 
 const getLoginErrorMessage = (response) => {

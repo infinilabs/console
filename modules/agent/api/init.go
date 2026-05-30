@@ -74,7 +74,7 @@ func Init() {
 		ID:          "agent-auto-enroll-clusters",
 		Description: "auto enroll agent clusters",
 		Type:        "interval",
-		Interval:    "1m",
+		Interval:    "24h",
 		Singleton:   true,
 		Task: func(ctx context.Context) {
 			if err := startAutoEnroll(ClusterInfo{}); err != nil {

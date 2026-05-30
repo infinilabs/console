@@ -618,10 +618,10 @@ func runAutoEnroll(clusterInfo ClusterInfo) {
 				}
 			}
 		}
-		log.Debug("finish auto enroll")
+		log.Trace("finish auto enroll")
 	}()
 
-	log.Debug("start auto enroll")
+	log.Trace("start auto enroll")
 	q := &orm.Query{Conds: orm.And(orm.Eq("application.name", "agent"))}
 	q.From = 0
 	q.Size = 50000
@@ -651,7 +651,7 @@ func runAutoEnroll(clusterInfo ClusterInfo) {
 			log.Errorf("failed to refresh nodes for agent instance [%s] at [%s]: %v", maskLogToken(instanceID), maskLogEndpoint(instanceEndpoint), err)
 			continue
 		}
-		log.Debugf("instance:%v,%v, has: %v nodes, %v unknown nodes", maskLogToken(instanceID), maskLogEndpoint(instanceEndpoint), len(nodes.Nodes), len(nodes.UnknownProcess))
+		log.Tracef("instance:%v,%v, has: %v nodes, %v unknown nodes", maskLogToken(instanceID), maskLogEndpoint(instanceEndpoint), len(nodes.Nodes), len(nodes.UnknownProcess))
 		if len(nodes.UnknownProcess) > 0 {
 			pids := bindInstanceToCluster(clusterInfo, nodes, instanceID, instanceEndpoint)
 			if len(pids) > 0 {

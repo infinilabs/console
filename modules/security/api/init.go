@@ -79,7 +79,7 @@ func Init() {
 	api.HandleAPIMethod(api.POST, "/account/logout", frameworkaccount.Logout)
 	api.HandleAPIMethod(api.DELETE, "/account/logout", frameworkaccount.Logout)
 
-	api.HandleAPIMethod(api.GET, "/account/profile", apiHandler.RequireLogin(frameworkaccount.Profile), api.RequireLogin())
+	api.HandleAPIMethod(api.GET, "/account/profile", apiHandler.RequireLogin(apiHandler.Profile), api.RequireLogin())
 	api.HandleAPIMethod(api.PUT, "/account/password", apiHandler.RequireSecureTransport(apiHandler.RequireReplayProtection(apiHandler.RequireLogin(apiHandler.UpdatePassword))), api.RequireLogin())
 
 }

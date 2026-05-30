@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -17,6 +18,7 @@ import (
 	"infini.sh/framework/core/model"
 	_ "infini.sh/framework/modules/security/account"
 	_ "infini.sh/framework/modules/security/http_filters"
+	simplekv "infini.sh/framework/plugins/simple_kv"
 )
 
 func newTestWebBinding(t *testing.T) string {
@@ -148,11 +150,23 @@ func TestApplyConsoleLocalAPIAuth(t *testing.T) {
 
 func TestConsoleAccountProfileUsesConsoleTokenOnUI(t *testing.T) {
 	originalAuthEnabled := global.Env().SystemConfig.WebAppConfig.Security.Enabled
+	originalDataDir := global.Env().SystemConfig.PathConfig.Data
 	t.Cleanup(func() {
 		global.Env().SystemConfig.WebAppConfig.Security.Enabled = originalAuthEnabled
+		global.Env().SystemConfig.PathConfig.Data = originalDataDir
 	})
 
 	global.Env().SystemConfig.WebAppConfig.Security.Enabled = true
+	global.Env().SystemConfig.PathConfig.Data = t.TempDir()
+
+	kvModule := &simplekv.SimpleKV{}
+	kvModule.Setup()
+	if err := kvModule.Start(); err != nil {
+		t.Fatalf("start simple kv: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = kvModule.Stop()
+	})
 
 	webCfg := config.WebAppConfig{}
 	webCfg.NetworkConfig.Binding = newTestWebBinding(t)
@@ -183,6 +197,28 @@ func TestConsoleAccountProfileUsesConsoleTokenOnUI(t *testing.T) {
 	}
 	if resp.Code != http.StatusOK {
 		t.Fatalf("expected console token to work on overridden /account/profile ui route, got %d", resp.Code)
+	}
+
+	var profile struct {
+		ID          string   `json:"id"`
+		Roles       []string `json:"roles"`
+		Privilege   []string `json:"privilege"`
+		Permissions []string `json:"permissions"`
+	}
+	if err := json.Unmarshal(resp.Body.Bytes(), &profile); err != nil {
+		t.Fatalf("decode profile response: %v", err)
+	}
+	if profile.ID != "profile-user-override" {
+		t.Fatalf("expected proxied profile to preserve original user id, got %#v", profile)
+	}
+	if !containsString(profile.Roles, "Administrator") {
+		t.Fatalf("expected proxied profile to keep console roles, got %#v", profile)
+	}
+	if !containsString(profile.Privilege, "system.security:all") {
+		t.Fatalf("expected proxied profile to expose console privilege, got %#v", profile)
+	}
+	if !containsString(profile.Permissions, "system.security:all") {
+		t.Fatalf("expected proxied profile permissions to include console authority, got %#v", profile)
 	}
 }
 
@@ -327,4 +363,13 @@ func issueConsoleTestToken(t *testing.T, userID string) string {
 	})
 
 	return tokenString
+}
+
+func containsString(values []string, target string) bool {
+	for _, value := range values {
+		if value == target {
+			return true
+		}
+	}
+	return false
 }

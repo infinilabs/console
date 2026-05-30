@@ -6,14 +6,17 @@ import {
     getClusterConnectErrorMessageFromError,
     getClusterConnectErrorMessageFromResponse,
 } from '@/pages/System/Cluster/utils';
+import {
+    isValidEndpointHost,
+    normalizeEndpointHosts,
+} from '@/utils/utils';
 
 const formItemLayout = {
     labelCol: { md: { span: 8 } },
     wrapperCol: { md: { span: 10 } },
 };
 
-const stripSchema = (host = '') => host.trim().replace(/^https?:\/\//i, '');
-const normalizeHosts = (hosts = []) => (hosts || []).map(stripSchema).filter(Boolean);
+const normalizeHosts = (hosts = []) => normalizeEndpointHosts(hosts);
 
 const detectTLS = (hosts = []) => {
     let result = null;
@@ -152,8 +155,7 @@ export default ({ onNext, form, formData, onFormDataChange }) => {
 
     const validateHostsRule = (rule, value, callback) => {
         for (const raw of (value || [])) {
-            const host = stripSchema(raw);
-            if (!/^[\w.\-_~%]+(:\d+)?$/.test(host)) {
+            if (!isValidEndpointHost(raw)) {
                 return callback(formatMessage({ id: 'guide.cluster.host.validate' }));
             }
         }

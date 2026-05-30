@@ -30,6 +30,7 @@ import AgentCredentialForm from "./AgentCredentialForm";
 import { MANUAL_VALUE } from "./steps";
 import SearchEngines from "./components/SearchEngines";
 import Providers from "./components/Providers";
+import { isValidEndpointHost, normalizeEndpointHosts } from "@/utils/utils";
 import TrimSpaceInput from "@/components/TrimSpaceInput";
 import CollectMode from "./CollectMode";
 
@@ -351,7 +352,7 @@ class ClusterForm extends React.Component {
   validateHostsRule = (rule, value, callback) => {
     let vals = value || [];
     for(let i = 0; i < vals.length; i++) {
-      if (!/^[\w\.\-_~%]+(\:\d+)?$/.test(vals[i])) {
+      if (!isValidEndpointHost(vals[i])) {
         return callback(formatMessage({ id: "cluster.regist.form.verify.valid.endpoint" }));
       }
     }
@@ -498,6 +499,7 @@ class ClusterForm extends React.Component {
               >
                 {getFieldDecorator("hosts", {
                   initialValue: editValue.hosts,
+                  normalize: (value) => normalizeEndpointHosts(value),
                   rules: [
                     {
                       validator: this.validateHostsRule,

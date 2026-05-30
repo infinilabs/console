@@ -98,6 +98,8 @@ export default {
   "gateway.instance.logging.button.start": "Start",
   "gateway.instance.logging.button.stop": "Stop",
   "gateway.instance.logging.empty": "Click Start to display realtime logs",
+  "gateway.instance.logging.copy": "Copy logs",
+  "gateway.instance.logging.copy.success": "Copied logs to clipboard",
   "gateway.instance.logging.endpoint.label": "Endpoint",
   "gateway.instance.logging.endpoint.empty": "No instance endpoint is available",
   "gateway.instance.logging.placeholder.file_pattern":

@@ -43,7 +43,8 @@ export default {
   "guide.initialization.step.finish.desc": `Configuration completed, Start the journey of ${APP_DOMAIN} Console.`,
   "guide.cluster.host": "Host",
   "guide.cluster.host.required": "Please input host!",
-  "guide.cluster.host.validate": "Please input IP address and port number!",
+  "guide.cluster.host.validate":
+    "Please input a domain name or IP address, with an optional port number!",
   "guide.cluster.auth": "Auth",
   "guide.cluster.test.connection": "Test Connection",
   "guide.cluster.test.connection.error.version":

@@ -42,7 +42,7 @@ export default {
   "guide.initialization.step.finish.desc": `配置完成，开启 ${APP_DOMAIN} Console 之旅。`,
   "guide.cluster.host": "集群地址",
   "guide.cluster.host.required": "请输入集群地址！",
-  "guide.cluster.host.validate": "请输入IP地址和端口号！",
+  "guide.cluster.host.validate": "请输入域名或 IP 地址，可选端口号！",
   "guide.cluster.auth": "身份验证",
   "guide.cluster.test.connection": "连接测试",
   "guide.cluster.test.connection.error.version":

@@ -1,6 +1,11 @@
 import { Form, Input, Switch, Icon } from "antd";
 import { formatMessage } from "umi/locale";
-import { isTLS, removeHttpSchema } from "@/utils/utils";
+import {
+  isTLS,
+  isValidEndpointHost,
+  normalizeEndpointHost,
+  removeHttpSchema,
+} from "@/utils/utils";
 
 @Form.create()
 export class InitialStep extends React.Component {
@@ -52,7 +57,7 @@ export class InitialStep extends React.Component {
           {getFieldDecorator("endpoint", {
             initialValue: removeHttpSchema(initialValue?.endpoint || ""),
             normalize: (value) => {
-              return removeHttpSchema(value || "").trim()
+              return normalizeEndpointHost(value);
             },
             validateTrigger: ["onChange", "onBlur"],
             rules: [
@@ -63,11 +68,15 @@ export class InitialStep extends React.Component {
                 }),
               },
               {
-                type: "string",
-                pattern: /^([\w.-]+(:\d+)?)([/][\w.-]*)*\/?$/, //(https?:\/\/)?
-                message: formatMessage({
-                  id: "cluster.regist.form.verify.valid.endpoint",
-                }),
+                validator: (rule, value, callback) => {
+                  if (!value || isValidEndpointHost(value)) {
+                    callback();
+                    return;
+                  }
+                  callback(formatMessage({
+                    id: "cluster.regist.form.verify.valid.endpoint",
+                  }));
+                },
               },
             ],
           })(

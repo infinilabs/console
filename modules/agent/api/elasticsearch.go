@@ -658,7 +658,7 @@ func runAutoEnroll(clusterInfo ClusterInfo) {
 
 		if len(nodes.Nodes) > 0 {
 			for k, v := range nodes.Nodes {
-				log.Debug(k, v.Status, v.Enrolled)
+				log.Tracef("node status, id=%s, status=%v, enrolled=%v", k, v.Status, v.Enrolled)
 				if !v.Enrolled {
 					pids := bindInstanceToCluster(clusterInfo, nodes, instanceID, instanceEndpoint)
 					log.Infof("instance:%v,%v, success enroll %v nodes", instanceID, instanceEndpoint, len(pids))
@@ -875,10 +875,8 @@ func (h *APIHandler) internalProcessBind(clusterID, clusterUUID, instanceID, ins
 		success, tryAgain, nodeInfo = h.getESNodeInfoViaProxy(nodeHost, "https", auth, instanceID)
 	}
 
-	log.Debug(clusterUUID, nodeHost, instanceEndpoint, success, tryAgain, nodeInfo)
-
 	if success {
-		log.Debug("connect to es node success:", nodeHost, ", pid: ", pid)
+		log.Tracef("connect to es node success: cluster_uuid=%s, node=%s, instance=%s, pid=%d", clusterUUID, nodeHost, instanceEndpoint, pid)
 		if nodeInfo.ClusterInfo.ClusterUUID != clusterUUID {
 			log.Info("cluster uuid not match, cluster id: ", clusterID, ", cluster uuid: ", clusterUUID, ", node cluster uuid: ", nodeInfo.ClusterInfo.ClusterUUID)
 			return nil
@@ -905,6 +903,8 @@ func (h *APIHandler) internalProcessBind(clusterID, clusterUUID, instanceID, ins
 		}
 		return nodeInfo
 	}
+
+	log.Debugf("failed to connect to es node via agent proxy: cluster_uuid=%s, node=%s, instance=%s, pid=%d, retry_https=%v", clusterUUID, nodeHost, instanceEndpoint, pid, tryAgain)
 	return nil
 }
 

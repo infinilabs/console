@@ -11,7 +11,10 @@ import {
   Icon,
   Select,
   Switch,
+  Tooltip,
+  message,
 } from "antd";
+import { CopyToClipboard } from "react-copy-to-clipboard";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 import request from "@/utils/request";
 import { formatMessage } from "umi/locale";
@@ -194,6 +197,7 @@ const WebsocketLogViewer = ({ instance = {} }) => {
     }),
     []
   );
+  const copyText = useMemo(() => pubMessages.join("\n"), [pubMessages]);
 
   return (
     <div className="realtime-log-viewer">
@@ -306,6 +310,30 @@ const WebsocketLogViewer = ({ instance = {} }) => {
       </div>
       <div className="realtime-log-viewer__body">
         <div className="realtime-log-viewer__log-panel" ref={logPanelRef}>
+          <div className="realtime-log-viewer__floating-actions">
+            <Tooltip
+              title={formatMessage({ id: "gateway.instance.logging.copy" })}
+            >
+              <CopyToClipboard
+                text={copyText}
+                onCopy={() => {
+                  message.success(
+                    formatMessage({
+                      id: "gateway.instance.logging.copy.success",
+                    })
+                  );
+                }}
+              >
+                <Button
+                  className="realtime-log-viewer__copy-button"
+                  icon="copy"
+                  shape="circle"
+                  size="small"
+                  disabled={pubMessages.length === 0}
+                />
+              </CopyToClipboard>
+            </Tooltip>
+          </div>
           {!loggingConfig.realtime && pubMessages.length === 0 ? (
             <div className="realtime-log-viewer__empty">
               <Icon type="play-circle" theme="filled" />

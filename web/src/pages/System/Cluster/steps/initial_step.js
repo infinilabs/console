@@ -4,7 +4,11 @@ import CredentialForm from "../CredentialForm";
 import "../Form.scss";
 import SearchEngines from "../components/SearchEngines";
 import Providers from "../components/Providers";
-import { isTLS, removeHttpSchema } from "@/utils/utils";
+import {
+  isTLS,
+  isValidEndpointHost,
+  normalizeEndpointHosts,
+} from "@/utils/utils";
 
 export const MANUAL_VALUE = "manual";
 
@@ -44,7 +48,7 @@ export class InitialStep extends React.Component {
   validateHostsRule = (rule, value, callback) => {
     let vals = value || [];
     for(let i = 0; i < vals.length; i++) {
-      if (!/^[\w\.\-_~%]+(\:\d+)?$/.test(vals[i])) {
+      if (!isValidEndpointHost(vals[i])) {
         return callback(formatMessage({ id: "cluster.regist.form.verify.valid.endpoint" }));
       }
     }
@@ -119,7 +123,7 @@ export class InitialStep extends React.Component {
           {getFieldDecorator("hosts", {
             initialValue: initialValue?.hosts || [],
             normalize: (value) => {
-              return (value || []).map((v) => removeHttpSchema(v || "").trim());
+              return normalizeEndpointHosts(value);
             },
             validateTrigger: ["onChange", "onBlur"],
             rules: [

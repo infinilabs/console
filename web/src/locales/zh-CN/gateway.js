@@ -95,6 +95,8 @@ export default {
   "gateway.instance.logging.button.start": "开始",
   "gateway.instance.logging.button.stop": "停止",
   "gateway.instance.logging.empty": "点击开始后显示实时日志",
+  "gateway.instance.logging.copy": "复制日志",
+  "gateway.instance.logging.copy.success": "日志已复制到剪贴板",
   "gateway.instance.logging.endpoint.label": "连接地址",
   "gateway.instance.logging.endpoint.empty": "当前实例缺少可用地址",
   "gateway.instance.logging.placeholder.file_pattern":

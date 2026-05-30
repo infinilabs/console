@@ -14,7 +14,12 @@ import React from "react";
 import { formatMessage } from "umi/locale";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import request from "@/utils/request";
-import { isTLS, removeHttpSchema } from "@/utils/utils";
+import {
+  isTLS,
+  isValidEndpointHost,
+  normalizeEndpointHost,
+  removeHttpSchema,
+} from "@/utils/utils";
 
 const AUTH_TYPE_ACCESS_TOKEN = "access_token";
 const AUTH_TYPE_BASIC_AUTH = "basic_auth";
@@ -348,7 +353,7 @@ export class InitialStep extends React.Component {
             {getFieldDecorator("endpoint", {
               initialValue: removeHttpSchema(initialValue?.endpoint || ""),
               normalize: (value) => {
-                return removeHttpSchema(value || "").trim();
+                return normalizeEndpointHost(value);
               },
               validateTrigger: ["onChange", "onBlur"],
               rules: [
@@ -359,11 +364,15 @@ export class InitialStep extends React.Component {
                   }),
                 },
                 {
-                  type: "string",
-                  pattern: /^[\w\.\-_~%]+(\:\d+)?\s*$/,
-                  message: formatMessage({
-                    id: "cluster.regist.form.verify.valid.endpoint",
-                  }),
+                  validator: (rule, value, callback) => {
+                    if (!value || isValidEndpointHost(value)) {
+                      callback();
+                      return;
+                    }
+                    callback(formatMessage({
+                      id: "cluster.regist.form.verify.valid.endpoint",
+                    }));
+                  },
                 },
               ],
             })(

@@ -17,7 +17,12 @@ import useFetch from "@/lib/hooks/use_fetch";
 import request from "@/utils/request";
 import { formatMessage } from "umi/locale";
 import TagEditor from "@/components/infini/TagEditor";
-import { isTLS, removeHttpSchema } from "@/utils/utils";
+import {
+  isTLS,
+  isValidEndpointHost,
+  normalizeEndpointHost,
+  removeHttpSchema,
+} from "@/utils/utils";
 
 const formItemLayout = {
   labelCol: {
@@ -107,7 +112,7 @@ const InstanceForm = React.forwardRef((props) => {
             {getFieldDecorator("endpoint", {
               initialValue: removeHttpSchema(editValue?.endpoint),
               normalize: (value) => {
-                return removeHttpSchema(value || "").trim()
+                return normalizeEndpointHost(value);
               },
               validateTrigger: ["onChange", "onBlur"],
               rules: [
@@ -118,11 +123,15 @@ const InstanceForm = React.forwardRef((props) => {
                   }),
                 },
                 {
-                  type: "string",
-                  pattern: /^[\w\.\-_~%]+(\:\d+)?$/, //(https?:\/\/)?
-                  message: formatMessage({
-                    id: "cluster.regist.form.verify.valid.endpoint",
-                  }),
+                  validator: (rule, value, callback) => {
+                    if (!value || isValidEndpointHost(value)) {
+                      callback();
+                      return;
+                    }
+                    callback(formatMessage({
+                      id: "cluster.regist.form.verify.valid.endpoint",
+                    }));
+                  },
                 },
               ],
             })(

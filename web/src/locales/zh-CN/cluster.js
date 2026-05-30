@@ -108,7 +108,7 @@ export default {
   "cluster.regist.step.complete.tls.yes": "是",
   "cluster.regist.step.complete.tls.no": "否",
   "cluster.regist.form.verify.required.cluster_name": "请输入集群名称！",
-  "cluster.regist.form.verify.valid.endpoint": "请输入域名或 IP 地址和端口号！",
+  "cluster.regist.form.verify.valid.endpoint": "请输入域名或 IP 地址，可选端口号！",
   "cluster.regist.form.verify.required.endpoint": "请输入 endpoint 地址！",
   "cluster.regist.form.label.probe_path": "检测路径",
   "cluster.regist.form.placeholder.probe_path": "/_cluster/health",

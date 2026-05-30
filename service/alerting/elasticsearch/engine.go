@@ -54,6 +54,54 @@ import (
 type Engine struct {
 }
 
+const alertLogSampleLimit = 3
+
+func summarizeAlertCondition(cond *alerting.ConditionItem) string {
+	if cond == nil {
+		return "<nil>"
+	}
+
+	expression := cond.Expression
+	if len(expression) > 96 {
+		expression = expression[:93] + "..."
+	}
+
+	return fmt.Sprintf(
+		"period=%d operator=%s values=%v priority=%s type=%s bucket_count=%d expression=%q",
+		cond.MinimumPeriodMatch,
+		cond.Operator,
+		cond.Values,
+		cond.Priority,
+		cond.Type,
+		cond.BucketCount,
+		expression,
+	)
+}
+
+func summarizeAlertConditionResults(items []alerting.ConditionResultItem) string {
+	if len(items) == 0 {
+		return "matched=0"
+	}
+
+	limit := alertLogSampleLimit
+	if len(items) < limit {
+		limit = len(items)
+	}
+
+	samples := make([]string, 0, limit)
+	for i := 0; i < limit; i++ {
+		item := items[i]
+		samples = append(samples, fmt.Sprintf("groups=%v result=%v", item.GroupValues, item.ResultValue))
+	}
+
+	summary := fmt.Sprintf("matched=%d sample=[%s]", len(items), strings.Join(samples, "; "))
+	if len(items) > limit {
+		summary += fmt.Sprintf(" ...(and %d more)", len(items)-limit)
+	}
+
+	return summary
+}
+
 // GenerateQuery generate a final elasticsearch query dsl object
 // when RawFilter of rule is not empty, priority use it, otherwise to covert from Filter of rule (todo)
 // auto generate time filter query and then attach to final query
@@ -562,7 +610,7 @@ func (engine *Engine) CheckCondition(rule *alerting.Rule) (*alerting.ConditionRe
 					triggerCount = 0
 				}
 				if triggerCount >= cond.MinimumPeriodMatch {
-					log.Debugf("triggered condition  %v, groups: %v\n", cond, targetData.Groups)
+					log.Tracef("triggered condition: %s, groups=%v", summarizeAlertCondition(&cond), targetData.Groups)
 					// collect group values
 					grpValues := make([]string, 0, len(targetData.Groups))
 					for _, v := range targetData.Groups {
@@ -754,7 +802,7 @@ func (engine *Engine) CheckBucketCondition(rule *alerting.Rule, targetMetricData
 				}
 				if triggerCount >= cond.MinimumPeriodMatch {
 					groupValues := strings.Split(grps, "*")
-					log.Debugf("triggered condition  %v, groups: %v\n", cond, groupValues)
+					log.Tracef("triggered condition: %s, groups=%v", summarizeAlertCondition(&cond), groupValues)
 					resultItem := alerting.ConditionResultItem{
 						GroupValues:    groupValues,
 						ConditionItem:  &cond,
@@ -968,7 +1016,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			return fmt.Errorf("save alert message error: %w", err)
 		}
 	}
-	log.Debugf("check condition result of rule %s is %v", conditionResults, rule.ID)
+	log.Tracef("check condition result of rule %s: %s", rule.ID, summarizeAlertConditionResults(conditionResults))
 
 	// if alert message status equals ignored , then skip sending message to channel
 	if alertMessage.Status == alerting.MessageStateIgnored {

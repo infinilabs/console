@@ -114,7 +114,7 @@ export default {
   "cluster.regist.form.verify.required.cluster_name":
     "Please input cluster name!",
   "cluster.regist.form.verify.valid.endpoint":
-    "Please input a domain name or IP address and port number!",
+    "Please input a domain name or IP address, with an optional port number!",
   "cluster.regist.form.verify.required.endpoint": "Please input endpoint!",
   "cluster.regist.form.label.probe_path": "Probe Path",
   "cluster.regist.form.placeholder.probe_path": "/_cluster/health",

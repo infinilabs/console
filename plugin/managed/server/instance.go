@@ -33,6 +33,7 @@ import (
 	"fmt"
 	console_common "infini.sh/console/common"
 	agent_common "infini.sh/console/modules/agent/common"
+	frameworkcredential "infini.sh/framework/core/credential"
 	"infini.sh/framework/core/event"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/task"
@@ -59,6 +60,18 @@ import (
 
 var instanceConfigFiles = map[string][]string{}     //map instance->config files TODO lru cache, short life instance should be removed
 var instanceSecrets = map[string][]common.Secrets{} //map instance->secrets TODO lru cache, short life instance should be removed
+
+var getManagedInstanceByID = func(instance *model.Instance) (bool, error) {
+	return orm.Get(instance)
+}
+
+var deleteManagedInstanceRecord = func(instance *model.Instance) error {
+	return orm.Delete(&orm.Context{
+		Refresh: orm.WaitForRefresh,
+	}, instance)
+}
+
+var cleanupDeletedInstanceArtifactsFunc = cleanupDeletedInstanceArtifacts
 
 func init() {
 	//for public usage, agent can report self to server, usually need to enroll by manager
@@ -343,7 +356,7 @@ func (h *APIHandler) deleteInstance(w http.ResponseWriter, req *http.Request, ps
 	obj := model.Instance{}
 	obj.ID = id
 
-	exists, err := orm.Get(&obj)
+	exists, err := getManagedInstanceByID(&obj)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":    id,
@@ -352,16 +365,22 @@ func (h *APIHandler) deleteInstance(w http.ResponseWriter, req *http.Request, ps
 		return
 	}
 
-	err = orm.Delete(&orm.Context{
-		Refresh: orm.WaitForRefresh,
-	}, &obj)
+	err = deleteManagedInstanceRecord(&obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
 		return
 	}
 
-	h.WriteDeletedOKJSON(w, id)
+	payload := util.MapStr{
+		"_id":    id,
+		"result": "deleted",
+	}
+	if warnings := cleanupDeletedInstanceArtifactsFunc(&obj); len(warnings) > 0 {
+		payload["warnings"] = warnings
+	}
+
+	h.WriteJSON(w, payload, http.StatusOK)
 }
 
 func (h *APIHandler) updateInstance(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -1171,4 +1190,118 @@ func upsertInstanceAccessCredential(instance *model.Instance, registerToken *com
 	instance.AccessCredentialID = credentialID
 	instance.BasicAuth = nil
 	return nil
+}
+
+var canDeleteCredentialAfterInstanceRemoval = func(credentialID string) (bool, error) {
+	credentialID = strings.TrimSpace(credentialID)
+	if credentialID == "" {
+		return false, nil
+	}
+
+	q := orm.Query{
+		Size:  0,
+		Conds: orm.And(orm.Eq("credential_id", credentialID)),
+	}
+	err, result := orm.Search(elastic2.ElasticsearchConfig{}, &q)
+	if err != nil {
+		return false, fmt.Errorf("query elasticsearch config error: %w", err)
+	}
+	if result.Total > 0 {
+		return false, nil
+	}
+
+	q = orm.Query{
+		Size: 0,
+		Conds: orm.Or(
+			orm.Eq("manager_credential_id", credentialID),
+			orm.Eq("access_credential_id", credentialID),
+		),
+	}
+	err, result = orm.Search(model.Instance{}, &q)
+	if err != nil {
+		return false, fmt.Errorf("query instance config error: %w", err)
+	}
+	return result.Total == 0, nil
+}
+
+var deleteCredentialByID = func(credentialID string) error {
+	credentialID = strings.TrimSpace(credentialID)
+	if credentialID == "" {
+		return nil
+	}
+
+	cred := frameworkcredential.Credential{}
+	cred.ID = credentialID
+	exists, err := orm.Get(&cred)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return nil
+	}
+	return orm.Delete(&orm.Context{Refresh: orm.WaitForRefresh}, &cred)
+}
+
+var deletePendingRegistrationTokensByInstanceID = func(instanceID string) error {
+	instanceID = strings.TrimSpace(instanceID)
+	if instanceID == "" {
+		return nil
+	}
+
+	query := orm.Query{
+		Size: 1000,
+		Conds: orm.And(
+			orm.Eq("instance_id", instanceID),
+		),
+	}
+	records := []agent_common.PendingRegistrationToken{}
+	if err, _ := orm.SearchWithJSONMapper(&records, &query); err != nil {
+		return err
+	}
+
+	ctx := &orm.Context{Refresh: orm.WaitForRefresh}
+	for i := range records {
+		if err := orm.Delete(ctx, &records[i]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func cleanupDeletedInstanceArtifacts(instance *model.Instance) []string {
+	if instance == nil {
+		return nil
+	}
+
+	warnings := []string{}
+	seenCredentials := map[string]struct{}{}
+
+	for _, credentialID := range []string{instance.ManagerCredentialID, instance.AccessCredentialID} {
+		credentialID = strings.TrimSpace(credentialID)
+		if credentialID == "" {
+			continue
+		}
+		if _, exists := seenCredentials[credentialID]; exists {
+			continue
+		}
+		seenCredentials[credentialID] = struct{}{}
+
+		deletable, err := canDeleteCredentialAfterInstanceRemoval(credentialID)
+		if err != nil {
+			warnings = append(warnings, fmt.Sprintf("failed to inspect credential [%s]: %v", credentialID, err))
+			continue
+		}
+		if !deletable {
+			continue
+		}
+		if err := deleteCredentialByID(credentialID); err != nil {
+			warnings = append(warnings, fmt.Sprintf("failed to delete credential [%s]: %v", credentialID, err))
+		}
+	}
+
+	if err := deletePendingRegistrationTokensByInstanceID(instance.ID); err != nil {
+		warnings = append(warnings, fmt.Sprintf("failed to delete pending registration token for instance [%s]: %v", instance.ID, err))
+	}
+
+	return warnings
 }

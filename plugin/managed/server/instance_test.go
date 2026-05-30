@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 
 	"infini.sh/framework/core/api"
@@ -13,6 +14,7 @@ import (
 	"infini.sh/framework/core/env"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/model"
+	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 )
 
@@ -249,6 +251,97 @@ func TestEffectiveManagedInstanceAccessTokenUsesCurrentBearerForLocalConsoleEndp
 	remote := &model.Instance{Endpoint: "https://203.0.113.10:9000"}
 	if got := effectiveManagedInstanceAccessToken(req, remote); got != "" {
 		t.Fatalf("expected remote endpoint not to reuse current bearer token, got %q", got)
+	}
+}
+
+func TestCleanupDeletedInstanceArtifactsDeletesOwnedCredentialsAndPendingTokens(t *testing.T) {
+	oldCanDelete := canDeleteCredentialAfterInstanceRemoval
+	oldDeleteCredential := deleteCredentialByID
+	oldDeletePending := deletePendingRegistrationTokensByInstanceID
+	t.Cleanup(func() {
+		canDeleteCredentialAfterInstanceRemoval = oldCanDelete
+		deleteCredentialByID = oldDeleteCredential
+		deletePendingRegistrationTokensByInstanceID = oldDeletePending
+	})
+
+	deletableChecks := []string{}
+	deletedCredentials := []string{}
+	deletedPendingInstanceID := ""
+
+	canDeleteCredentialAfterInstanceRemoval = func(credentialID string) (bool, error) {
+		deletableChecks = append(deletableChecks, credentialID)
+		return credentialID != "shared-credential", nil
+	}
+	deleteCredentialByID = func(credentialID string) error {
+		deletedCredentials = append(deletedCredentials, credentialID)
+		return nil
+	}
+	deletePendingRegistrationTokensByInstanceID = func(instanceID string) error {
+		deletedPendingInstanceID = instanceID
+		return nil
+	}
+
+	warnings := cleanupDeletedInstanceArtifacts(&model.Instance{
+		ORMObjectBase:       orm.ORMObjectBase{ID: "probe-1"},
+		ManagerCredentialID: "manager-credential",
+		AccessCredentialID:  "shared-credential",
+	})
+
+	if len(warnings) != 0 {
+		t.Fatalf("expected no warnings, got %#v", warnings)
+	}
+	if len(deletableChecks) != 2 {
+		t.Fatalf("expected 2 deletable checks, got %#v", deletableChecks)
+	}
+	if len(deletedCredentials) != 1 || deletedCredentials[0] != "manager-credential" {
+		t.Fatalf("expected only owned credential to be deleted, got %#v", deletedCredentials)
+	}
+	if deletedPendingInstanceID != "probe-1" {
+		t.Fatalf("expected pending tokens for probe-1 to be deleted, got %q", deletedPendingInstanceID)
+	}
+}
+
+func TestDeleteInstanceReturnsCleanupWarnings(t *testing.T) {
+	oldGetInstance := getManagedInstanceByID
+	oldDeleteInstance := deleteManagedInstanceRecord
+	oldCleanup := cleanupDeletedInstanceArtifactsFunc
+	t.Cleanup(func() {
+		getManagedInstanceByID = oldGetInstance
+		deleteManagedInstanceRecord = oldDeleteInstance
+		cleanupDeletedInstanceArtifactsFunc = oldCleanup
+	})
+
+	getManagedInstanceByID = func(instance *model.Instance) (bool, error) {
+		instance.ManagerCredentialID = "manager-credential"
+		return true, nil
+	}
+	deleteManagedInstanceRecord = func(instance *model.Instance) error {
+		if instance == nil || instance.ID != "probe-1" {
+			t.Fatalf("unexpected instance delete request: %#v", instance)
+		}
+		return nil
+	}
+	cleanupDeletedInstanceArtifactsFunc = func(instance *model.Instance) []string {
+		if instance == nil || instance.ID != "probe-1" || instance.ManagerCredentialID != "manager-credential" {
+			t.Fatalf("unexpected cleanup instance: %#v", instance)
+		}
+		return []string{"failed to delete credential [manager-credential]: boom"}
+	}
+
+	req := httptest.NewRequest(http.MethodDelete, "/instance/probe-1", nil)
+	rec := httptest.NewRecorder()
+
+	(&APIHandler{}).deleteInstance(rec, req, httprouter.Params{{Key: "instance_id", Value: "probe-1"}})
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `"result":"deleted"`) {
+		t.Fatalf("expected deleted result in body, got %s", body)
+	}
+	if !strings.Contains(body, `"warnings":["failed to delete credential [manager-credential]: boom"]`) {
+		t.Fatalf("expected cleanup warnings in body, got %s", body)
 	}
 }
 

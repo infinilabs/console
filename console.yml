@@ -189,12 +189,10 @@ security:
 agent:
   setup:
     install_dir: /infini/agent
-    version: 1.30.3-2407
 
 gateway:
   setup:
     install_dir: /infini/gateway
-    version: 1.30.3-2407
 
 http_client:
   default:

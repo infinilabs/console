@@ -78,7 +78,12 @@ const defaultAgentInstallDir = "/infini/agent"
 const defaultGatewayInstallDir = "/infini/gateway"
 const defaultManagedGatewayAPIUsername = "managed_gateway"
 
+var refreshManagedLocalTemplatesForInstall func() ([]string, error)
 var expiredTokenCache = util.NewCacheWithExpireOnAdd(ExpiredIn, 100)
+
+func SetRefreshManagedLocalTemplatesForInstall(refresh func() ([]string, error)) {
+	refreshManagedLocalTemplatesForInstall = refresh
+}
 
 type gatewayConfig struct {
 	Setup *gatewaySetupConfig `config:"setup"`
@@ -615,6 +620,12 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 		return
 	}
 
+	if _, err := refreshManagedLocalTemplatesForInstall(); err != nil {
+		log.Errorf("refresh managed local templates failed before generating agent install script: %v", err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	agCfg := common.GetAgentConfig()
 	if agCfg == nil || agCfg.Setup == nil {
 		h.WriteError(w, "agent setup config was not found, please configure in the configuration file first", http.StatusInternalServerError)
@@ -696,6 +707,12 @@ func (h *APIHandler) getGatewayInstallScript(w http.ResponseWriter, req *http.Re
 	_, err := validateInstallToken(tokenStr, installProductGateway)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	if _, err := refreshManagedLocalTemplatesForInstall(); err != nil {
+		log.Errorf("refresh managed local templates failed before generating gateway install script: %v", err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

@@ -1,5 +1,53 @@
 import { stringify } from "qs";
-import request from "@/utils/request";
+import request, { formatResponse } from "@/utils/request";
+
+const normalizeAuthResponse = async (response) => {
+  if (!response || typeof response.text !== "function") {
+    if (response && typeof response === "object") {
+      return response;
+    }
+
+    return {
+      status: "error",
+      success: false,
+      error: {
+        reason: typeof response === "string" && response ? response : "",
+      },
+    };
+  }
+
+  let payload = {};
+  const body = await response.text();
+  if (body) {
+    try {
+      payload = JSON.parse(body);
+    } catch (error) {
+      payload = {
+        error: {
+          reason: body,
+        },
+      };
+    }
+  }
+
+  const normalized = formatResponse({
+    ...payload,
+    status: payload?.status || (response.ok ? "ok" : "error"),
+    success:
+      typeof payload?.success === "boolean" ? payload.success : response.ok,
+  });
+
+  if (!normalized?.error && !response.ok) {
+    normalized.error = {
+      reason: payload?.message || response.statusText || `HTTP ${response.status}`,
+    };
+  }
+
+  return {
+    ...normalized,
+    httpStatus: response.status,
+  };
+};
 
 export async function queryConsoleInfo() {
   return request("/_info");
@@ -108,22 +156,33 @@ export async function updateFakeList(params) {
 }
 
 export async function fakeAccountLogin(params) {
-  return request("/account/login", {
-    method: "POST",
-    body: params,
-  });
+  const response = await request(
+    "/account/login",
+    {
+      method: "POST",
+      body: params,
+      skipAuthRedirect: true,
+    },
+    true,
+    false
+  );
+
+  return normalizeAuthResponse(response);
 }
 
 export async function getAccountLoginChallenge(params) {
-  return request(
+  const response = await request(
     "/account/login/challenge",
     {
       method: "POST",
       body: params,
+      skipAuthRedirect: true,
     },
-    false,
+    true,
     false
   );
+
+  return normalizeAuthResponse(response);
 }
 
 export async function fakeAccountLogout() {

@@ -630,7 +630,9 @@ export default function request(
             if (location.href.includes('/insight/dashboard') && url.includes('/visualization/data')) {
               return e.rawResponse;
             }
-            router.push("/exception/403");
+            if (option?.skipAuthRedirect !== true) {
+              router.push("/exception/403");
+            }
           }
           if (status == 500) {
             router.push({

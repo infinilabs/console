@@ -40,6 +40,7 @@ import (
 	"infini.sh/console/core"
 	"infini.sh/console/core/security/enum"
 	agentapi "infini.sh/console/modules/agent/api"
+	managedserver "infini.sh/console/plugin/managed/server"
 	setupplugin "infini.sh/console/plugin/setup"
 	"infini.sh/framework/core/api"
 	httprouter "infini.sh/framework/core/api/router"
@@ -78,6 +79,7 @@ var retentionPolicyPattern = regexp.MustCompile(`-(\d+)days-retention$`)
 var retentionSizePattern = regexp.MustCompile(`(?i)^(\d+)([kmgt]b?|b)$`)
 
 func InitAPI() {
+	managedserver.SetRefreshManagedLocalTemplatesForInstall(RefreshManagedLocalTemplatesForInstall)
 	handler := SettingsAPI{}
 	api.HandleAPIMethod(api.GET, "/setting/system/retention", handler.RequirePermission(handler.getRetentionSetting, enum.PermissionElasticsearchClusterRead))
 	api.HandleAPIMethod(api.PUT, "/setting/system/retention", handler.RequireSecureTransport(handler.RequireReplayProtection(handler.RequirePermission(handler.updateRetentionSetting, enum.PermissionElasticsearchClusterWrite))))
@@ -1286,19 +1288,19 @@ func getSystemClusterClient() (elastic.API, *elastic.ElasticsearchConfig, error)
 	return client, cfg, nil
 }
 
-func (h *SettingsAPI) refreshLocalTemplates(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+func RefreshManagedLocalTemplatesForInstall() ([]string, error) {
 	if err := setupplugin.EnsureSystemClusterBasicAuth(); err != nil {
-		log.Error(err)
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, err
 	}
 	client, cfg, err := getSystemClusterClient()
 	if err != nil {
-		log.Error(err)
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, err
 	}
-	updatedFiles, err := refreshManagedLocalTemplates(client, cfg)
+	return refreshManagedLocalTemplates(client, cfg)
+}
+
+func (h *SettingsAPI) refreshLocalTemplates(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	updatedFiles, err := RefreshManagedLocalTemplatesForInstall()
 	if err != nil {
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)

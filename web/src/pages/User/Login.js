@@ -114,7 +114,8 @@ class LoginPage extends Component {
               login.type === "account" &&
               !submitting &&
               this.renderMessage(
-                formatMessage({ id: "app.login.message-invalid-credentials" })
+                login.message ||
+                  formatMessage({ id: "app.login.message-invalid-credentials" })
               )}
             <UserName name="userName" placeholder="username" />
             <Password

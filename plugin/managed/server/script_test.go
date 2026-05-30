@@ -2,6 +2,7 @@ package server
 
 import (
 	"crypto/tls"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -62,6 +63,34 @@ func TestGetDefaultEndpoint(t *testing.T) {
 				t.Fatalf("expected %q, got %q", tt.expected, got)
 			}
 		})
+	}
+}
+
+func TestGetInstallScriptFailsWhenManagedTemplatesRefreshFails(t *testing.T) {
+	oldRefresh := refreshManagedLocalTemplatesForInstall
+	refreshManagedLocalTemplatesForInstall = func() ([]string, error) {
+		return nil, fmt.Errorf("refresh failed")
+	}
+	t.Cleanup(func() {
+		refreshManagedLocalTemplatesForInstall = oldRefresh
+	})
+
+	token := util.GetUUID()
+	expiredTokenCache.Put(token, &Token{
+		CreatedAt: time.Now(),
+		Product:   installProductAgent,
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "http://console.local/instance/_get_install_script?token="+token, nil)
+	rec := httptest.NewRecorder()
+
+	(&APIHandler{}).getInstallScript(rec, req, nil)
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("expected status %d, got %d", http.StatusInternalServerError, rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "refresh failed") {
+		t.Fatalf("expected refresh error in body, got %q", rec.Body.String())
 	}
 }
 

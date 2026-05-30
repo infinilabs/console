@@ -74,7 +74,7 @@ type PendingRegistrationToken struct {
 
 func CreatePendingManagerToken(source string) (*PendingRegistrationToken, string, error) {
 	tokenValue := util.GenerateRandomString(48)
-	credentialID, err := SaveTokenCredential(BuildPendingManagerCredentialName(), []string{"agent", "token", "manager", "pending"}, tokenValue)
+	credentialID, err := SaveTokenCredential(BuildPendingManagerCredentialName(), BuildPendingManagerCredentialTags(), tokenValue)
 	if err != nil {
 		return nil, "", err
 	}
@@ -406,6 +406,10 @@ func BuildPendingManagerCredentialName() string {
 
 func BuildManagerCredentialTags() []string {
 	return []string{"agent", "token", agentManagerTokenPurpose}
+}
+
+func BuildPendingManagerCredentialTags() []string {
+	return []string{"agent", "token", agentManagerTokenPurpose, "pending"}
 }
 
 func BuildAccessCredentialTags() []string {

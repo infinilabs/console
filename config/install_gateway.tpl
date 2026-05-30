@@ -6,11 +6,12 @@ DEFAULT_DOWNLOAD_URL="{{base_url}}"
 DEFAULT_VERSION="{{version}}"
 
 function print_usage() {
-  echo "Usage: curl -ksSL http://console.local/instance/_get_gateway_install_script?token | sudo bash -s -- [-u url_for_download_program] [-v version_for_program] [-d target_install_dir]"
+  echo "Usage: curl -ksSL http://console.local/instance/_get_gateway_install_script?token | sudo bash -s -- [-u url_for_download_program] [-v version_for_program] [-d target_install_dir] [--no-service]"
   echo "Options:"
   echo "  -u, --url <url>             Install Gateway download URL, supports host, package directory, or direct package file URL"
   echo "  -v, --version <version>     Install Gateway version, default is Console configured version, current Console build version, or the latest version from the download source"
   echo "  -d, --install-dir <dir>     Install Gateway target path, default is /opt/gateway"
+  echo "      --no-service           Install without system service (for containers or environments without sudo)"
   exit 1
 }
 
@@ -370,12 +371,22 @@ function install_service() {
   fi
 }
 
+function print_no_service_notice() {
+  gateway_svc=${install_dir}/${program_name}-${file_ext%%.*}
+  chmod 755 $gateway_svc
+  echo "[gateway] skip service install because --no-service is enabled"
+  echo "[gateway] start Gateway in foreground after installation:"
+  echo "cd \"${install_dir}\" && ./$(basename "${gateway_svc}") -config gateway.yml"
+}
+
 function main() {
+  no_service="false"
   while [[ $# -gt 0 ]]; do
     case "$1" in
       -u|--url) url_download="$2"; shift 2 ;;
       -v|--version) version="$2"; shift 2 ;;
       -d|--install-dir) target_dir="$2"; shift 2 ;;
+      --no-service) no_service="true"; shift ;;
       *) print_usage ;;
     esac
   done
@@ -403,8 +414,12 @@ function main() {
   install_config
   install_manager_token
   install_api_security_credentials
-  uninstall_service
-  install_service
+  if [[ "$no_service" != "true" ]]; then
+    uninstall_service
+    install_service
+  else
+    print_no_service_notice
+  fi
 
   echo ""
   echo ""

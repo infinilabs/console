@@ -6,6 +6,16 @@ export default {
   "gateway.instance.btn.new": "New",
   "gateway.instance.install.title": "Install Gateway",
   "gateway.install.label.get_cmd": "Get Setup Command",
+  "gateway.install.advanced.title": "Advanced",
+  "gateway.install.no_sudo.label": "No sudo privileges",
+  "gateway.install.no_sudo.help":
+    "Recommended for containers or non-root environments. When enabled, the generated command removes sudo and appends --no-service. After installation, run Gateway in the foreground via your container or process manager.",
+  "gateway.install.no_sudo.help_line":
+    "If sudo or system services are unavailable in the current environment, append",
+  "gateway.install.no_sudo.tip.title": "Container / no sudo mode",
+  "gateway.install.no_sudo.tip.desc":
+    "This mode does not install or start a system service. After installation, run Gateway in the foreground and let Docker, Kubernetes, or another process manager handle startup and restarts.",
+  "gateway.install.no_sudo.command.title": "Foreground startup example",
   "gateway.entry.index.title": "ENTRY",
   "gateway.entry.index.description":
     "Entry management helps you to add, view, modify and delete the entry configuration of the INFINI Gateway conveniently and quickly.",

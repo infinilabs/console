@@ -194,6 +194,14 @@ func (h *APIHandler) generateGatewayInstallCommand(w http.ResponseWriter, req *h
 		h.WriteError(w, "user not found", http.StatusInternalServerError)
 		return
 	}
+	payload := installCommandRequest{}
+	if req.Body != nil {
+		defer req.Body.Close()
+		if err := json.NewDecoder(req.Body).Decode(&payload); err != nil && err != io.EOF {
+			h.WriteError(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
 
 	gwCfg := getGatewayConfig()
 	if gwCfg == nil || gwCfg.Setup == nil {
@@ -229,7 +237,7 @@ func (h *APIHandler) generateGatewayInstallCommand(w http.ResponseWriter, req *h
 		logAutoResolvedDownloadURL("gateway", downloadURL, defaultGatewayDownloadURL)
 	}
 	h.WriteJSON(w, util.MapStr{
-		"script":     buildGatewayInstallCommand(endpoint, location),
+		"script":     buildGatewayInstallCommand(endpoint, location, payload.NoService),
 		"token":      tokenStr,
 		"expired_at": t.CreatedAt.Add(ExpiredIn),
 	}, http.StatusOK)
@@ -247,9 +255,15 @@ func buildInstallCommand(endpoint, location string, noService bool) string {
 	return command
 }
 
-func buildGatewayInstallCommand(endpoint, location string) string {
-	command := fmt.Sprintf(`curl -ksSL %q |sudo bash -s -- -d %q`,
-		endpoint, location)
+func buildGatewayInstallCommand(endpoint, location string, noService bool) string {
+	shell := "sudo bash"
+	extraArgs := ""
+	if noService {
+		shell = "bash"
+		extraArgs = " --no-service"
+	}
+	command := fmt.Sprintf(`curl -ksSL %q |%s -s -- -d %q%s`,
+		endpoint, shell, location, extraArgs)
 	return command
 }
 

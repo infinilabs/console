@@ -326,16 +326,7 @@ func (h *APIHandler) searchCredential(w http.ResponseWriter, req *http.Request, 
 		keyword = h.GetParameterOrDefault(req, "keyword", "")
 		strSize = h.GetParameterOrDefault(req, "size", "20")
 		strFrom = h.GetParameterOrDefault(req, "from", "0")
-		mustQ   []interface{}
 	)
-	if keyword != "" {
-		mustQ = append(mustQ, util.MapStr{
-			"query_string": util.MapStr{
-				"default_field": "*",
-				"query":         keyword,
-			},
-		})
-	}
 	size, _ := strconv.Atoi(strSize)
 	if size <= 0 {
 		size = 20
@@ -345,24 +336,7 @@ func (h *APIHandler) searchCredential(w http.ResponseWriter, req *http.Request, 
 		from = 0
 	}
 
-	queryDSL := util.MapStr{
-		"size": size,
-		"from": from,
-		"sort": []util.MapStr{
-			{
-				"created": util.MapStr{
-					"order": "desc",
-				},
-			},
-		},
-	}
-	if len(mustQ) > 0 {
-		queryDSL["query"] = util.MapStr{
-			"bool": util.MapStr{
-				"must": mustQ,
-			},
-		}
-	}
+	queryDSL := buildCredentialSearchQueryDSL(keyword, from, size)
 
 	q := orm.Query{}
 	q.RawQuery = util.MustToJSONBytes(queryDSL)
@@ -384,6 +358,58 @@ func (h *APIHandler) searchCredential(w http.ResponseWriter, req *http.Request, 
 	}
 
 	h.WriteJSON(w, searchRes, http.StatusOK)
+}
+
+func buildCredentialSearchQueryDSL(keyword string, from, size int) util.MapStr {
+	mustQ := []interface{}{}
+	if keyword != "" {
+		mustQ = append(mustQ, util.MapStr{
+			"query_string": util.MapStr{
+				"default_field": "*",
+				"query":         keyword,
+			},
+		})
+	}
+
+	queryDSL := util.MapStr{
+		"size": size,
+		"from": from,
+		"sort": []util.MapStr{
+			{
+				"created": util.MapStr{
+					"order": "desc",
+				},
+			},
+		},
+	}
+	boolQuery := util.MapStr{
+		"must_not": []interface{}{
+			buildManagedPendingCredentialExclusion(),
+		},
+	}
+	if len(mustQ) > 0 {
+		boolQuery["must"] = mustQ
+	}
+	queryDSL["query"] = util.MapStr{
+		"bool": boolQuery,
+	}
+	return queryDSL
+}
+
+func buildManagedPendingCredentialExclusion() util.MapStr {
+	mustQ := make([]interface{}, 0, len(agent_common.BuildPendingManagerCredentialTags()))
+	for _, tag := range agent_common.BuildPendingManagerCredentialTags() {
+		mustQ = append(mustQ, util.MapStr{
+			"term": util.MapStr{
+				"tags": tag,
+			},
+		})
+	}
+	return util.MapStr{
+		"bool": util.MapStr{
+			"must": mustQ,
+		},
+	}
 }
 
 func (h *APIHandler) getCredential(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {

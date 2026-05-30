@@ -5,6 +5,15 @@ export default {
   "gateway.instance.btn.new": "新建",
   "gateway.instance.install.title": "安装 Gateway",
   "gateway.install.label.get_cmd": "获取安装命令",
+  "gateway.install.advanced.title": "高级配置",
+  "gateway.install.no_sudo.label": "无 sudo 权限",
+  "gateway.install.no_sudo.help":
+    "适用于容器或非 root 环境。开启后生成的命令会去掉 sudo，并自动追加 --no-service，安装完成后请将 Gateway 作为容器主进程或以前台方式运行。",
+  "gateway.install.no_sudo.help_line": "如当前环境没有 sudo 或不支持系统服务，可追加",
+  "gateway.install.no_sudo.tip.title": "容器/无 sudo 模式说明",
+  "gateway.install.no_sudo.tip.desc":
+    "此模式不会安装或启动系统服务。安装完成后，请以前台方式运行 Gateway，并由 Docker、Kubernetes 或其他进程管理器负责拉起与重启。",
+  "gateway.install.no_sudo.command.title": "前台启动示例",
   "gateway.entry.index.title": "入口管理",
   "gateway.entry.index.description":
     "入口管理帮助您方便快捷地添加、查看、修改以及删除极限网关的入口配置。",

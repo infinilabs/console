@@ -206,9 +206,23 @@ func TestBuildGatewayInstallCommand(t *testing.T) {
 	command := buildGatewayInstallCommand(
 		"https://console.local/instance/_get_gateway_install_script?token=abc",
 		"/srv/gateway",
+		false,
 	)
 
 	expected := `curl -ksSL "https://console.local/instance/_get_gateway_install_script?token=abc" |sudo bash -s -- -d "/srv/gateway"`
+	if command != expected {
+		t.Fatalf("expected %q, got %q", expected, command)
+	}
+}
+
+func TestBuildGatewayInstallCommandSkipsSudoForNoServiceMode(t *testing.T) {
+	command := buildGatewayInstallCommand(
+		"https://console.local/instance/_get_gateway_install_script?token=abc",
+		"/srv/gateway",
+		true,
+	)
+
+	expected := `curl -ksSL "https://console.local/instance/_get_gateway_install_script?token=abc" |bash -s -- -d "/srv/gateway" --no-service`
 	if command != expected {
 		t.Fatalf("expected %q, got %q", expected, command)
 	}
@@ -268,6 +282,8 @@ func TestGatewayInstallTemplateBootstrapsManagedConfig(t *testing.T) {
 	).Replace(string(content))
 
 	expectedSnippets := []string{
+		`[--no-service]`,
+		`--no-service           Install without system service`,
 		`echo -e "${ca_crt}" > ${install_dir}/config/ca.crt`,
 		`cat <<EOF > ${install_dir}/gateway.yml`,
 		`configs.auto_reload: true`,
@@ -290,8 +306,12 @@ func TestGatewayInstallTemplateBootstrapsManagedConfig(t *testing.T) {
 		`keystore add "API_SECURITY_PASSWORD"`,
 		`macos_svc=/Library/LaunchDaemons/gateway.plist`,
 		`linux_svc=/etc/systemd/system/gateway.service`,
+		`--no-service) no_service="true"; shift ;;`,
+		`if [[ "$no_service" != "true" ]]; then`,
 		`(cd "${install_dir}" && $gateway_svc -service install &>/dev/null)`,
 		`(cd "${install_dir}" && $gateway_svc -service start &>/dev/null)`,
+		`echo "[gateway] skip service install because --no-service is enabled"`,
+		`./$(basename "${gateway_svc}") -config gateway.yml`,
 		`Congratulations, gateway install success!`,
 	}
 

@@ -99,7 +99,7 @@ func (frameworkRealmPasswordLoginProvider) AuthenticateByPassword(login, passwor
 		Roles:    roleNames(user.Roles),
 	}
 	sessionUser.SetUserID(user.ID)
-	return sessionUser, nil
+	return rbac.EnsureFrameworkDefaultPermissions(sessionUser), nil
 }
 
 func registerFrameworkAccountBridge() {
@@ -117,6 +117,7 @@ func registerFrameworkAccountBridge() {
 			return nil, nil
 		}
 		sessionUser.Provider = normalizeFrameworkProvider(sessionUser.Provider)
+		rbac.EnsureFrameworkDefaultPermissions(sessionUser)
 
 		bridgedClaims := frameworksecurity.NewUserClaims()
 		bridgedClaims.UserSessionInfo = sessionUser

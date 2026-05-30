@@ -51,6 +51,10 @@ type ShortUser struct {
 
 const Secret = "console"
 
+var frameworkDefaultPermissions = []frameworksecurity.PermissionKey{
+	frameworksecurity.GetOrInitPermission("generic", "license", "info"),
+}
+
 func NewUserContext(ctx context.Context, clam *UserClaims) context.Context {
 	if clam != nil {
 		ctx = frameworksecurity.AddUserToContext(ctx, clam.ToSessionInfo())
@@ -115,5 +119,28 @@ func (u *ShortUser) ToSessionInfo() *frameworksecurity.UserSessionInfo {
 		Roles:    append([]string(nil), u.Roles...),
 	}
 	sessionUser.SetUserID(u.UserId)
+	return EnsureFrameworkDefaultPermissions(sessionUser)
+}
+
+func EnsureFrameworkDefaultPermissions(sessionUser *frameworksecurity.UserSessionInfo) *frameworksecurity.UserSessionInfo {
+	if sessionUser == nil {
+		return nil
+	}
+
+	for _, permission := range frameworkDefaultPermissions {
+		if !hasFrameworkPermission(sessionUser.Permissions, permission) {
+			sessionUser.Permissions = append(sessionUser.Permissions, permission)
+		}
+	}
+
 	return sessionUser
+}
+
+func hasFrameworkPermission(permissions []frameworksecurity.PermissionKey, permission frameworksecurity.PermissionKey) bool {
+	for _, existing := range permissions {
+		if existing == permission {
+			return true
+		}
+	}
+	return false
 }

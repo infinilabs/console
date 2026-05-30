@@ -76,3 +76,19 @@ func TestNewUserContextAlsoSeedsFrameworkContext(t *testing.T) {
 		t.Fatalf("expected framework session user id, got %q", sessionUser.UserID)
 	}
 }
+
+func TestEnsureFrameworkDefaultPermissionsAddsLicenseInfoOnce(t *testing.T) {
+	sessionUser := &frameworksecurity.UserSessionInfo{
+		Permissions: []frameworksecurity.PermissionKey{
+			frameworksecurity.GetSimplePermission("cluster", "unit", "read"),
+			frameworksecurity.GetSimplePermission("generic", "license", "info"),
+		},
+	}
+
+	EnsureFrameworkDefaultPermissions(sessionUser)
+	EnsureFrameworkDefaultPermissions(sessionUser)
+
+	if len(sessionUser.Permissions) != 2 {
+		t.Fatalf("expected default permissions to be added once, got %v", sessionUser.Permissions)
+	}
+}

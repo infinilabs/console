@@ -100,7 +100,15 @@ export default {
   "guide.initialization.finish.pending.desc": "已进入最后一步，您可以先下载配置，初始化完成后再进入 Console。",
   "guide.initialization.finish.pending.button": "初始化中",
   "guide.initialization.finish.failed": "初始化未完成",
-  "guide.initialization.finish.failed.desc": "请返回上一步检查配置后重试。",
+  "guide.initialization.finish.failed.desc": "请根据下方错误详情检查配置后重试。",
+  "guide.initialization.finish.error.invalid_bootstrap_password":
+    "管理员密码无效，请检查是否满足安全要求后重试。",
+  "guide.initialization.finish.error.bootstrap_password_strength":
+    "管理员密码未满足安全要求，请修改后重试。",
+  "guide.initialization.finish.error.bootstrap_password_required":
+    "已启用重置管理员账户，请填写管理员密码。",
+  "guide.initialization.finish.error.bootstrap_username_required":
+    "已启用重置管理员账户，请填写管理员用户名。",
 
   "health.modal.title": "服务受限",
   "health.modal.desc":

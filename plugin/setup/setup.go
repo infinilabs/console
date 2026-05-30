@@ -283,6 +283,7 @@ type SetupRequest struct {
 	} `json:"cluster"`
 
 	Skip               bool   `json:"skip"`
+	ResetUser          bool   `json:"reset_user"`
 	BootstrapUsername  string `json:"bootstrap_username"`
 	BootstrapPassword  string `json:"bootstrap_password"`
 	CredentialSecret   string `json:"credential_secret"`
@@ -303,6 +304,32 @@ var cfg1 elastic1.ORMConfig
 const defaultSetupAutoExpandReplicas = "0-1"
 
 var setupAutoExpandReplicasPattern = regexp.MustCompile(`^(false|all|\d+-\d+)$`)
+
+func (r *SetupRequest) shouldResetBootstrapUser() bool {
+	if !r.Skip {
+		return true
+	}
+	return r.ResetUser
+}
+
+func validateSetupBootstrap(request *SetupRequest) error {
+	request.BootstrapUsername = strings.TrimSpace(request.BootstrapUsername)
+	if !request.shouldResetBootstrapUser() {
+		request.BootstrapUsername = ""
+		request.BootstrapPassword = ""
+		return nil
+	}
+	if request.BootstrapUsername == "" {
+		return fmt.Errorf("bootstrap username is required when resetting administrator")
+	}
+	if strings.TrimSpace(request.BootstrapPassword) == "" {
+		return fmt.Errorf("bootstrap password is required when resetting administrator")
+	}
+	if !util.ValidateSecure(request.BootstrapPassword) {
+		return fmt.Errorf("bootstrap password does not meet security requirements")
+	}
+	return nil
+}
 
 func resolveSetupTemplateSettings(client elastic.API, request *SetupRequest) (int, string, error) {
 	primaryShards := request.PrimaryShards
@@ -579,8 +606,8 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		return
 	}
 
-	if !util.ValidateSecure(request.BootstrapPassword) {
-		module.WriteError(w, "invalid bootstrap password", http.StatusInternalServerError)
+	if err := validateSetupBootstrap(request); err != nil {
+		module.WriteError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -794,7 +821,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		panic(err)
 	}
 
-	if request.BootstrapUsername != "" && request.BootstrapPassword != "" {
+	if request.shouldResetBootstrapUser() {
 		//Save bootstrap user
 		user := security.User{}
 		user.ID = "default_user_" + request.BootstrapUsername

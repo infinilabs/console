@@ -104,7 +104,15 @@ export default {
   "guide.initialization.finish.pending.desc": "You are on the final step now. You can download the configuration first and enter Console after initialization completes.",
   "guide.initialization.finish.pending.button": "Initializing",
   "guide.initialization.finish.failed": "Initialization not completed",
-  "guide.initialization.finish.failed.desc": "Go back to the previous step, review the settings, and try again.",
+  "guide.initialization.finish.failed.desc": "Review the error details below, adjust the settings if needed, and try again.",
+  "guide.initialization.finish.error.invalid_bootstrap_password":
+    "The administrator password is invalid. Review the password requirements and try again.",
+  "guide.initialization.finish.error.bootstrap_password_strength":
+    "The administrator password does not meet the security requirements. Update it and try again.",
+  "guide.initialization.finish.error.bootstrap_password_required":
+    "Administrator password is required when resetting the administrator account.",
+  "guide.initialization.finish.error.bootstrap_username_required":
+    "Administrator username is required when resetting the administrator account.",
 
   "health.modal.title": "Services are limited",
   "health.modal.desc": `Please click the services health above to ensure the system cluster is running properly.`,

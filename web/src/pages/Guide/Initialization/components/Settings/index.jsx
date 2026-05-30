@@ -32,18 +32,21 @@ const formItemLayout = {
 
 export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
   const [confirmDirty, setConfirmDirty] = useState(false);
-  const [resetUser, setResetUser] = useState(false)
+  const [resetUser, setResetUser] = useState(Boolean(formData.reset_user))
   const [loading, setLoading] = useState(false);
   const [passwordHelp, setPasswordHelp] = useState(null);
 
   const handlePrev = () => {
     const resetValues = {
+      bootstrap_username: undefined,
       bootstrap_password: undefined,
       bootstrap_password_confirm: undefined,
       credential_secret: undefined,
+      reset_user: false,
       skip: false,
     };
     onFormDataChange(resetValues);
+    setResetUser(false);
     form.setFieldsValue(resetValues, () => {
       onPrev();
     });
@@ -111,8 +114,11 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
       }
       body.cluster = cluster;
       body.skip = skip;
-      body.bootstrap_username = bootstrap_username;
-      body.bootstrap_password = bootstrap_password;
+      body.reset_user = !skip || resetUser;
+      if (!skip || resetUser) {
+        body.bootstrap_username = bootstrap_username;
+        body.bootstrap_password = bootstrap_password;
+      }
       body.credential_secret = credential_secret;
       const res = await request(
         "/setup/_initialize",
@@ -201,8 +207,23 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
     generateKey();
   }, []);
 
+  useEffect(() => {
+    setResetUser(Boolean(formData.reset_user));
+  }, [formData.reset_user]);
+
   const onResetUserChange = (checked)=>{
     setResetUser(checked);
+    onFormDataChange({
+      reset_user: checked,
+      ...(checked ? {} : {
+        bootstrap_username: undefined,
+        bootstrap_password: undefined,
+        bootstrap_password_confirm: undefined,
+      }),
+    });
+    if (!checked) {
+      form.resetFields(["bootstrap_username", "bootstrap_password", "bootstrap_password_confirm"]);
+    }
   }
 
   const [verified, setVerified] = useState(undefined);

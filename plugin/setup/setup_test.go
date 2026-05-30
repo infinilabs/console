@@ -296,6 +296,59 @@ func TestSetupRegistersTryConnectUIRouteWhenSetupNotRequired(t *testing.T) {
 	}
 }
 
+func TestValidateSetupBootstrapSkipsAdminResetForSkipSetup(t *testing.T) {
+	req := &SetupRequest{
+		Skip:              true,
+		BootstrapUsername: "admin",
+		BootstrapPassword: "weak",
+	}
+
+	if err := validateSetupBootstrap(req); err != nil {
+		t.Fatalf("expected bootstrap validation to be skipped, got %v", err)
+	}
+	if req.BootstrapUsername != "" || req.BootstrapPassword != "" {
+		t.Fatalf("expected bootstrap credentials to be cleared when reset is disabled, got %#v", req)
+	}
+}
+
+func TestValidateSetupBootstrapRequiresPasswordWhenResettingAdmin(t *testing.T) {
+	req := &SetupRequest{
+		Skip:              true,
+		ResetUser:         true,
+		BootstrapUsername: "admin",
+	}
+
+	err := validateSetupBootstrap(req)
+	if err == nil || !strings.Contains(err.Error(), "bootstrap password is required") {
+		t.Fatalf("expected missing password error, got %v", err)
+	}
+}
+
+func TestValidateSetupBootstrapRequiresStrongPasswordWhenResettingAdmin(t *testing.T) {
+	req := &SetupRequest{
+		Skip:              true,
+		ResetUser:         true,
+		BootstrapUsername: "admin",
+		BootstrapPassword: "weakpass",
+	}
+
+	err := validateSetupBootstrap(req)
+	if err == nil || !strings.Contains(err.Error(), "does not meet security requirements") {
+		t.Fatalf("expected password strength error, got %v", err)
+	}
+}
+
+func TestValidateSetupBootstrapRequiresAdminOnInitialSetup(t *testing.T) {
+	req := &SetupRequest{
+		Skip: false,
+	}
+
+	err := validateSetupBootstrap(req)
+	if err == nil || !strings.Contains(err.Error(), "bootstrap username is required") {
+		t.Fatalf("expected missing username error, got %v", err)
+	}
+}
+
 func TestGatewayRelayTemplateRendersAsChildConfig(t *testing.T) {
 	content := renderGatewaySetupData(t, "gateway_relay.dat")
 

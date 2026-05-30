@@ -9,6 +9,30 @@ import {
 } from "@/utils/authority";
 import { setSetupRequired } from "@/utils/setup";
 
+const setupErrorMessageMap = {
+  "invalid bootstrap password":
+    "guide.initialization.finish.error.invalid_bootstrap_password",
+  "bootstrap password does not meet security requirements":
+    "guide.initialization.finish.error.bootstrap_password_strength",
+  "bootstrap password is required when resetting administrator":
+    "guide.initialization.finish.error.bootstrap_password_required",
+  "bootstrap username is required when resetting administrator":
+    "guide.initialization.finish.error.bootstrap_username_required",
+};
+
+const getSetupErrorMessage = (setupError) => {
+  if (!setupError) {
+    return null;
+  }
+
+  const messageId = setupErrorMessageMap[setupError];
+  if (messageId) {
+    return formatMessage({ id: messageId });
+  }
+
+  return setupError;
+};
+
 export default ({ formData, onPrev }) => {
 
   const {
@@ -28,6 +52,7 @@ export default ({ formData, onPrev }) => {
 
   const isInitializing = setupStatus === "running";
   const isFailed = setupStatus === "failed";
+  const localizedSetupError = getSetupErrorMessage(setupError);
 
   const onDownload = () => {
     let hostV = host
@@ -128,7 +153,7 @@ export default ({ formData, onPrev }) => {
             <Alert
             className={`${styles.panel} ${styles.statusAlert}`}
               message={formatMessage({ id: "guide.initialization.finish.failed.desc" })}
-              description={setupError}
+            description={localizedSetupError}
               type="error"
               showIcon
             />

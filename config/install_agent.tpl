@@ -324,6 +324,7 @@ api:
   enabled: false
 
 web:
+  access_log_enabled: false
   embedding_api: {{embedding_api}}
   enabled: true
   websocket:

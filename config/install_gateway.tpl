@@ -288,6 +288,9 @@ api:
     username: '\$[[keystore.API_SECURITY_USERNAME]]'
     password: '\$[[keystore.API_SECURITY_PASSWORD]]'
 
+web:
+  access_log_enabled: false
+
 configs:
   managed: true
   panic_on_config_error: false

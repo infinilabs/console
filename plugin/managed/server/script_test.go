@@ -315,6 +315,7 @@ func TestGatewayInstallTemplateBootstrapsManagedConfig(t *testing.T) {
 		`--no-service           Install without system service`,
 		`echo -e "${ca_crt}" > ${install_dir}/config/ca.crt`,
 		`cat <<EOF > ${install_dir}/gateway.yml`,
+		`access_log_enabled: false`,
 		`configs.auto_reload: true`,
 		`managed: true`,
 		`panic_on_config_error: false`,
@@ -373,6 +374,7 @@ func TestAgentInstallTemplateKeepsEmbeddedAPIDisabledWhenReverseChannelEnabled(t
 
 	expectedSnippets := []string{
 		`cat <<EOF > ${install_dir}/agent.yml`,
+		`access_log_enabled: false`,
 		`embedding_api: false`,
 		`websocket:`,
 		`enabled: false`,
@@ -411,6 +413,7 @@ func TestAgentInstallTemplateKeepsEmbeddedAPIDisabledWithoutReverseChannel(t *te
 	).Replace(string(content))
 
 	expectedSnippets := []string{
+		`access_log_enabled: false`,
 		`embedding_api: false`,
 		`enabled: true`,
 		`base_path: /ws`,
@@ -556,6 +559,7 @@ func TestAgentInstallTemplateBootstrapsManagerAccessToken(t *testing.T) {
 		`access_token: '\$[[keystore.CONFIGS_MANAGER_ACCESS_TOKEN]]'`,
 		`access_token="BOOTSTRAP_TOKEN"`,
 		`keystore add "CONFIGS_MANAGER_ACCESS_TOKEN"`,
+		`access_log_enabled: false`,
 	}
 	for _, snippet := range expectedSnippets {
 		if !strings.Contains(rendered, snippet) {

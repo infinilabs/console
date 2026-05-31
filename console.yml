@@ -40,6 +40,7 @@ api:
     default_domain: localhost
 web:
   enabled: true
+  access_log_enabled: false
   embedding_api: false
   websocket:
     enabled: true

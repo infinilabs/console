@@ -22,7 +22,15 @@ func validateManagedAgentRequestAuth(req *http.Request, instance *model.Instance
 }
 
 func validateLegacyCompatibleManagedAgentRequestAuth(req *http.Request, instance *model.Instance) error {
-	if shouldAllowLegacyManagedRequestWithoutAuth(req, instance) {
+	version := ""
+	if instance != nil {
+		version = instance.Application.Version.VersionNumber
+	}
+	return validateLegacyCompatibleManagedAgentRequestAuthForVersion(req, instance, version)
+}
+
+func validateLegacyCompatibleManagedAgentRequestAuthForVersion(req *http.Request, instance *model.Instance, version string) error {
+	if shouldAllowLegacyManagedRequestWithoutAuthVersion(req, version) {
 		return nil
 	}
 	return validateManagedAgentRequestAuth(req, instance)
@@ -57,7 +65,14 @@ func isLegacyManagedBasicAuthRequest(req *http.Request, instance *model.Instance
 }
 
 func shouldAllowLegacyManagedRequestWithoutAuth(req *http.Request, instance *model.Instance) bool {
-	if instance == nil || !isLegacyManagedVersion(instance.Application.Version.VersionNumber) {
+	if instance == nil {
+		return false
+	}
+	return shouldAllowLegacyManagedRequestWithoutAuthVersion(req, instance.Application.Version.VersionNumber)
+}
+
+func shouldAllowLegacyManagedRequestWithoutAuthVersion(req *http.Request, version string) bool {
+	if !isLegacyManagedVersion(version) {
 		return false
 	}
 	return req == nil || agent_common.ExtractManagerToken(req) == ""

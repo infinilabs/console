@@ -230,3 +230,65 @@ func TestExchangeInstanceTokenHandlesLookupError(t *testing.T) {
 		t.Fatalf("expected 400, got %d, body=%s", resp.Code, resp.Body.String())
 	}
 }
+
+func TestMigrateLegacyManagedRegisterAuthRotatesExistingManagerCredential(t *testing.T) {
+	originalUpsertInstanceManagerCredentialFunc := upsertInstanceManagerCredentialFunc
+	originalUpsertInstanceAccessCredentialFunc := upsertInstanceAccessCredentialFunc
+	originalFindPendingManagerTokenByValueFunc := findPendingManagerTokenByValueFunc
+	t.Cleanup(func() {
+		upsertInstanceManagerCredentialFunc = originalUpsertInstanceManagerCredentialFunc
+		upsertInstanceAccessCredentialFunc = originalUpsertInstanceAccessCredentialFunc
+		findPendingManagerTokenByValueFunc = originalFindPendingManagerTokenByValueFunc
+	})
+
+	current := &model.Instance{
+		Application: env.Application{
+			Name:    "agent",
+			Version: env.Version{VersionNumber: "1.30.3"},
+		},
+	}
+	existing := &model.Instance{
+		ManagerCredentialID: "manager-cred",
+		Application: env.Application{
+			Name:    "agent",
+			Version: env.Version{VersionNumber: "1.31.0"},
+		},
+	}
+	req := httptest.NewRequest(http.MethodPost, "/instance/_register", nil)
+	req.Header.Set(model.API_TOKEN, "new-bootstrap-token")
+
+	findPendingManagerTokenByValueFunc = func(tokenValue string) (*agent_common.PendingRegistrationToken, error) {
+		if tokenValue != "new-bootstrap-token" {
+			t.Fatalf("unexpected pending manager token lookup: %q", tokenValue)
+		}
+		return &agent_common.PendingRegistrationToken{}, nil
+	}
+
+	managerToken := ""
+	accessToken := ""
+	upsertInstanceManagerCredentialFunc = func(instance *model.Instance, tokenValue string) error {
+		managerToken = tokenValue
+		return nil
+	}
+	upsertInstanceAccessCredentialFunc = func(instance *model.Instance, registerToken *configcommon.RegisterToken) error {
+		if registerToken == nil {
+			t.Fatal("expected access token")
+		}
+		accessToken = registerToken.Value
+		return nil
+	}
+
+	migrated, err := migrateLegacyManagedRegisterAuth(req, current, existing, &configcommon.RegisterToken{Value: "agent-access-token"})
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if !migrated {
+		t.Fatal("expected legacy registration auth to migrate")
+	}
+	if managerToken != "new-bootstrap-token" {
+		t.Fatalf("expected manager token to rotate, got %q", managerToken)
+	}
+	if accessToken != "agent-access-token" {
+		t.Fatalf("expected access token to update, got %q", accessToken)
+	}
+}

@@ -19,6 +19,7 @@ var getRuntimeInstanceByIDFunc = GetRuntimeInstanceByID
 var validateManagedAgentRequestAuthFunc = validateManagedAgentRequestAuth
 var upsertInstanceManagerCredentialFunc = upsertInstanceManagerCredential
 var upsertInstanceAccessCredentialFunc = upsertInstanceAccessCredential
+var findPendingManagerTokenByValueFunc = agent_common.FindPendingManagerTokenByValue
 var saveManagedInstanceFunc = func(instance *model.Instance) error {
 	return orm.Save(&orm.Context{Refresh: orm.WaitForRefresh}, instance)
 }

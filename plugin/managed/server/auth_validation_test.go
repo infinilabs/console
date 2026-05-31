@@ -118,4 +118,16 @@ func TestValidateManagedAgentRequestAuth(t *testing.T) {
 			t.Fatal("expected newer version to stay on token flow")
 		}
 	})
+
+	t.Run("request legacy version overrides stored newer version", func(t *testing.T) {
+		req := httptest.NewRequest("POST", "/configs/_sync", nil)
+		instance := &model.Instance{
+			Application: env.Application{
+				Version: env.Version{VersionNumber: "1.31.0"},
+			},
+		}
+		if err := validateLegacyCompatibleManagedAgentRequestAuthForVersion(req, instance, "1.30.3"); err != nil {
+			t.Fatalf("expected request legacy version to allow compatibility auth, got %v", err)
+		}
+	})
 }

@@ -153,11 +153,13 @@ func (h APIHandler) registerInstance(w http.ResponseWriter, req *http.Request, p
 			obj.ManagerCredentialID = oldInst.ManagerCredentialID
 			obj.AccessCredentialID = oldInst.AccessCredentialID
 			obj.BasicAuth = oldInst.BasicAuth
-			validator := validateManagedAgentRequestAuthFunc
+			var err error
 			if legacyManagedRegister {
-				validator = validateLegacyCompatibleManagedAgentRequestAuth
+				err = validateLegacyCompatibleManagedAgentRequestAuthForVersion(req, oldInst, obj.Application.Version.VersionNumber)
+			} else {
+				err = validateManagedAgentRequestAuthFunc(req, oldInst)
 			}
-			if err := validator(req, oldInst); err != nil {
+			if err != nil {
 				legacyManagerCredentialMigrated, err = migrateLegacyManagedRegisterAuth(req, obj, oldInst, registerReq.AccessToken)
 				if err != nil {
 					h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -240,12 +242,21 @@ func migrateLegacyManagedRegisterAuth(req *http.Request, current *model.Instance
 	if req == nil || current == nil || existing == nil {
 		return false, nil
 	}
-	if strings.TrimSpace(existing.ManagerCredentialID) != "" {
-		return false, nil
-	}
 	managerToken := strings.TrimSpace(agent_common.ExtractManagerToken(req))
 	if managerToken == "" || accessToken == nil || strings.TrimSpace(accessToken.Value) == "" {
 		return false, nil
+	}
+	if strings.TrimSpace(existing.ManagerCredentialID) != "" {
+		if !isLegacyManagedVersion(current.Application.Version.VersionNumber) {
+			return false, nil
+		}
+		pending, err := findPendingManagerTokenByValueFunc(managerToken)
+		if err != nil {
+			return false, err
+		}
+		if pending == nil {
+			return false, nil
+		}
 	}
 	if err := upsertInstanceManagerCredentialFunc(current, managerToken); err != nil {
 		return false, err

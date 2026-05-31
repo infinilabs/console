@@ -69,9 +69,6 @@ export default (props) => {
                     loading={loading} 
                     onChange={onCredentialChange}
                 >
-                    {
-                        data.map((item) => <Select.Option value={item.id}>{item.name}</Select.Option>)
-                    }
                     <Select.Option key={MANUAL_VALUE} value={MANUAL_VALUE}>
                         {
                             formatMessage({
@@ -79,6 +76,9 @@ export default (props) => {
                             })
                         }
                     </Select.Option>
+                    {
+                        data.map((item) => <Select.Option key={item.id} value={item.id}>{item.name}</Select.Option>)
+                    }
                 </Select>
               )}
             </Form.Item>

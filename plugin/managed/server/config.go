@@ -51,6 +51,17 @@ var secretProviders = []func(instance model.Instance) *common.Secrets{}
 
 const managedSecretsHashBucket = "managed_instance_secret_hash"
 
+type managedConfigLogSummary struct {
+	Name     string `json:"name,omitempty"`
+	Location string `json:"location,omitempty"`
+	Updated  int64  `json:"updated,omitempty"`
+	Version  int64  `json:"version,omitempty"`
+	Size     int64  `json:"size,omitempty"`
+	Readonly bool   `json:"readonly,omitempty"`
+	Managed  bool   `json:"managed"`
+	Hash     string `json:"hash,omitempty"`
+}
+
 func RegisterConfigProvider(provider func(instance model.Instance) []*common.ConfigFile) {
 	configProvidersLock.Lock()
 	defer configProvidersLock.Unlock()
@@ -61,6 +72,30 @@ func RegisterSecretProvider(provider func(instance model.Instance) *common.Secre
 	configProvidersLock.Lock()
 	defer configProvidersLock.Unlock()
 	secretProviders = append(secretProviders, provider)
+}
+
+func summarizeManagedConfigsForLog(cfgs []*common.ConfigFile) []managedConfigLogSummary {
+	if len(cfgs) == 0 {
+		return nil
+	}
+
+	summaries := make([]managedConfigLogSummary, 0, len(cfgs))
+	for _, cfg := range cfgs {
+		if cfg == nil {
+			continue
+		}
+		summaries = append(summaries, managedConfigLogSummary{
+			Name:     cfg.Name,
+			Location: cfg.Location,
+			Updated:  cfg.Updated,
+			Version:  cfg.Version,
+			Size:     cfg.Size,
+			Readonly: cfg.Readonly,
+			Managed:  cfg.Managed,
+			Hash:     cfg.Hash,
+		})
+	}
+	return summaries
 }
 
 func refreshConfigsRepo() {
@@ -287,7 +322,7 @@ func (h APIHandler) syncConfigs(w http.ResponseWriter, req *http.Request, ps htt
 	}
 
 	if global.Env().IsDebug {
-		log.Debugf("get configs for agent(%v): %v", obj.Client.ID, util.MustToJSON(cfgs))
+		log.Debugf("get %d configs for agent(%v): %v", len(cfgs), obj.Client.ID, util.MustToJSON(summarizeManagedConfigsForLog(cfgs)))
 	}
 
 	if cfgs == nil || len(cfgs) == 0 {
@@ -330,7 +365,7 @@ func (h APIHandler) syncConfigs(w http.ResponseWriter, req *http.Request, ps htt
 					}
 
 					if global.Env().IsDebug {
-						log.Debugf("check version for config %v, %v vs %v, %v", k, v.Version, x.Version, x.Managed)
+						log.Tracef("check version for config %v, %v vs %v, %v", k, v.Version, x.Version, x.Managed)
 					}
 
 					//let's diff the version

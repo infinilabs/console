@@ -77,6 +77,38 @@ var deleteManagedInstanceRecord = func(instance *model.Instance) error {
 
 var cleanupDeletedInstanceArtifactsFunc = cleanupDeletedInstanceArtifacts
 
+func logManagedRegistration(stage string, instance *model.Instance, req *http.Request, detail string) {
+	if instance == nil {
+		return
+	}
+
+	remoteAddr := ""
+	if req != nil {
+		remoteAddr = req.RemoteAddr
+	}
+
+	message := fmt.Sprintf(
+		"managed agent registration %s: %v[%v], version=%v, endpoint=%v",
+		stage,
+		instance.Name,
+		console_common.MaskLogToken(instance.ID),
+		instance.Application.Version.VersionNumber,
+		console_common.MaskLogEndpoint(instance.Endpoint),
+	)
+	if remoteAddr != "" {
+		message = fmt.Sprintf("%s, remote=%v", message, remoteAddr)
+	}
+	if detail != "" {
+		message = fmt.Sprintf("%s, detail=%v", message, detail)
+	}
+
+	if stage == "failed" {
+		log.Warn(message)
+		return
+	}
+	log.Info(message)
+}
+
 func logLegacyManagedRegistration(stage string, instance *model.Instance, req *http.Request, detail string) {
 	if instance == nil {
 		return
@@ -168,10 +200,13 @@ func (h APIHandler) registerInstance(w http.ResponseWriter, req *http.Request, p
 		return
 	}
 
+	logManagedRegistration("received", obj, req, fmt.Sprintf("existing=%v", exists))
+
 	var pendingToConsume *agent_common.PendingRegistrationToken
 	legacyManagerCredentialMigrated := false
 	legacyManagedRegister := false
 	writeRegisterError := func(status int, detail string) {
+		logManagedRegistration("failed", obj, req, fmt.Sprintf("status=%d, detail=%s", status, detail))
 		if legacyManagedRegister {
 			logLegacyManagedRegistration("failed", obj, req, detail)
 		}
@@ -272,12 +307,17 @@ func (h APIHandler) registerInstance(w http.ResponseWriter, req *http.Request, p
 	}
 
 	log.Infof("register instance: %v[%v], %v", obj.Name, console_common.MaskLogToken(obj.ID), console_common.MaskLogEndpoint(obj.Endpoint))
+	detail := "registered successfully"
+	if exists {
+		detail = "updated existing registration successfully"
+	}
 	if legacyManagedRegister {
-		detail := "registered successfully"
 		if legacyManagerCredentialMigrated {
 			detail = "registered successfully with manager credential migration"
 		}
 		logLegacyManagedRegistration("succeeded", obj, req, detail)
+	} else {
+		logManagedRegistration("succeeded", obj, req, detail)
 	}
 
 	h.WriteAckOKJSON(w)

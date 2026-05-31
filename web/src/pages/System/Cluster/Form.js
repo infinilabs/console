@@ -166,8 +166,9 @@ class ClusterForm extends React.Component {
         host: values.host,
         hosts: values.hosts,
         probe_path: values.probe_path,
+        is_auth: this.state.needAuth === true,
         credential_id:
-          values.credential_id !== MANUAL_VALUE
+          this.state.needAuth === true && values.credential_id !== MANUAL_VALUE
             ? values.credential_id
             : undefined,
         basic_auth: {
@@ -304,7 +305,9 @@ class ClusterForm extends React.Component {
             newVals = {
               ...newVals,
               ...{
+                is_auth: this.state.needAuth === true,
                 credential_id:
+                  this.state.needAuth === true &&
                   values.credential_id !== MANUAL_VALUE
                     ? values.credential_id
                     : undefined,

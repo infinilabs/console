@@ -61,7 +61,8 @@ const (
 
 type elasticConfigPayload struct {
 	elastic.ElasticsearchConfig
-	ProbePath string `json:"probe_path,omitempty"`
+	ProbePath   string `json:"probe_path,omitempty"`
+	AuthEnabled *bool  `json:"is_auth,omitempty"`
 }
 
 var testAPI = TestAPI{}
@@ -94,6 +95,7 @@ func (h TestAPI) HandleTestConnectionAction(w http.ResponseWriter, req *http.Req
 	defer req.Body.Close()
 	config := &payload.ElasticsearchConfig
 	console_common.SetProbePath(config, payload.ProbePath)
+	applyExplicitPlatformAuthPreference(config, payload.AuthEnabled)
 	var url string
 	if config.Endpoint != "" {
 		url = config.Endpoint

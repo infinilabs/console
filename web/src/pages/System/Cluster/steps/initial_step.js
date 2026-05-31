@@ -17,7 +17,7 @@ export class InitialStep extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      needAuth: props.initialValue?.isAuth !== undefined,
+      needAuth: props.initialValue?.isAuth === true,
       isManual: props.initialValue?.credential_id === MANUAL_VALUE,
       isPageTLS: isTLS(props.initialValue?.host),
       showProbePath: !!props.initialValue?.probe_path,

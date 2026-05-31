@@ -39,7 +39,6 @@ const QueueList = (props) => {
   const [selectedRowKeysObject, setSelectedRowKeysObject] = useState({});
 
   const instanceID = props.match.params.instance_id;
-  const { value: instanceValue } = useFetch(`/instance/${instanceID}`, null, []);
   const { loading, error, value } = useFetch(
     `/instance/${instanceID}/_proxy?method=GET&path=/queue/stats`,
     {
@@ -124,10 +123,6 @@ const QueueList = (props) => {
     });
   };
 
-  const instanceName =
-    instanceValue?._source?.name ||
-    instanceValue?._source?.endpoint ||
-    instanceID;
   const breadcrumbList = [
     { title: "home", locale: "menu.home", href: "/" },
     { title: "resource", locale: "menu.resource" },
@@ -135,9 +130,6 @@ const QueueList = (props) => {
       title: "runtime_instance",
       locale: "menu.resource.runtime.instance",
       href: "/resource/runtime/instance",
-    },
-    {
-      title: instanceName,
     },
     {
       title: "runtime_queue",

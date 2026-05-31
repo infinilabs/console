@@ -124,6 +124,11 @@ export class ExtraStep extends React.Component {
       form: { getFieldDecorator },
       initialValue,
     } = this.props;
+    const endpointList = Array.isArray(initialValue?.hosts) && initialValue.hosts.length > 0
+      ? initialValue.hosts
+      : initialValue?.host
+        ? [initialValue.host]
+        : [];
     const formItemLayout = {
       labelCol: {
         xs: { span: 24 },
@@ -142,7 +147,7 @@ export class ExtraStep extends React.Component {
               id: "cluster.manage.table.column.endpoint",
             })}
           >
-            {initialValue?.host}
+            {endpointList.length > 0 ? endpointList.join(", ") : "-"}
           </Descriptions.Item>
           <Descriptions.Item
             label={formatMessage({
@@ -150,8 +155,13 @@ export class ExtraStep extends React.Component {
             })}
           >
             {initialValue?.isTLS ? (
-              <Icon type="lock" style={{ color: "#52c41a" }} />
-            ) : null}
+              <>
+                <Icon type="lock" style={{ color: "#52c41a", marginRight: 8 }} />
+                {formatMessage({ id: "cluster.regist.step.complete.tls.yes" })}
+              </>
+            ) : (
+              formatMessage({ id: "cluster.regist.step.complete.tls.no" })
+            )}
           </Descriptions.Item>
           <Descriptions.Item
             label={formatMessage({

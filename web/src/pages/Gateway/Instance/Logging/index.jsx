@@ -1,6 +1,6 @@
 import WebsocketLogViewer from "./viewer";
 import PageHeaderWrapper from "@/components/PageHeaderWrapper";
-import { Card, Tabs } from "antd";
+import { Button, Card, Tabs } from "antd";
 import useFetch from "@/lib/hooks/use_fetch";
 import { formatMessage } from "umi/locale";
 
@@ -11,8 +11,6 @@ const Logging = (props = {}) => {
     null,
     []
   );
-  const instanceName =
-    value?._source?.name || value?._source?.endpoint || match.params.instance_id;
   const breadcrumbList = [
     { title: "home", locale: "menu.home", href: "/" },
     { title: "resource", locale: "menu.resource" },
@@ -20,9 +18,6 @@ const Logging = (props = {}) => {
       title: "runtime_instance",
       locale: "menu.resource.runtime.instance",
       href: "/resource/runtime/instance",
-    },
-    {
-      title: instanceName,
     },
     {
       title: "runtime_logging",
@@ -33,7 +28,18 @@ const Logging = (props = {}) => {
     <PageHeaderWrapper breadcrumbList={breadcrumbList}>
       <Card>
         <div>
-          <Tabs defaultActiveKey="1">
+          <Tabs
+            defaultActiveKey="1"
+            tabBarExtraContent={
+              <Button
+                type="primary"
+                onClick={() => props.history.go(-1)}
+                style={{ marginLeft: 10 }}
+              >
+                {formatMessage({ id: "form.button.goback" })}
+              </Button>
+            }
+          >
             <Tabs.TabPane
               tab={formatMessage({ id: "gateway.instance.logging.tab.realtime" })}
               key="1"

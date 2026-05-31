@@ -108,6 +108,22 @@ func TestEnsureManagedAgentCollectionCredentialRequiresPlatformAuthInAgentMode(t
 	}
 }
 
+func TestEnsureManagedAgentCollectionCredentialAllowsNoAuthAgentMode(t *testing.T) {
+	conf := &elastic.ElasticsearchConfig{
+		Distribution:          elastic.Easysearch,
+		MetricCollectionMode:  elastic.ModeAgent,
+		NoDefaultAuthForAgent: true,
+		AgentBasicAuth:        &model.BasicAuth{Username: "infini-agent"},
+	}
+
+	if err := ensureManagedAgentCollectionCredential(conf, ""); err != nil {
+		t.Fatalf("expected explicit no-auth agent mode to be allowed, got %v", err)
+	}
+	if conf.AgentBasicAuth != nil {
+		t.Fatalf("expected stale auto agent basic auth to be cleared, got %#v", conf.AgentBasicAuth)
+	}
+}
+
 func TestEnsureManagedAgentCollectionCredentialSkipsUnsupportedDistribution(t *testing.T) {
 	conf := &elastic.ElasticsearchConfig{
 		Distribution:         elastic.Elasticsearch,
@@ -145,6 +161,62 @@ func TestHydrateRuntimeBasicAuthPropagatesGetterError(t *testing.T) {
 	})
 	if !errors.Is(err, wantErr) {
 		t.Fatalf("expected getter error %v, got %v", wantErr, err)
+	}
+}
+
+func TestApplyExplicitPlatformAuthPreferenceDisablesPlatformAuth(t *testing.T) {
+	authEnabled := false
+	conf := &elastic.ElasticsearchConfig{
+		CredentialID:          "cred-1",
+		BasicAuth:             &model.BasicAuth{Username: "admin"},
+		NoDefaultAuthForAgent: false,
+	}
+
+	applyExplicitPlatformAuthPreference(conf, &authEnabled)
+
+	if conf.CredentialID != "" {
+		t.Fatalf("expected credential to be cleared, got %q", conf.CredentialID)
+	}
+	if conf.BasicAuth != nil {
+		t.Fatalf("expected basic auth to be cleared, got %#v", conf.BasicAuth)
+	}
+	if !conf.NoDefaultAuthForAgent {
+		t.Fatal("expected no-default-auth flag to be enabled")
+	}
+}
+
+func TestApplyExplicitPlatformAuthPreferenceEnablesPlatformAuth(t *testing.T) {
+	authEnabled := true
+	conf := &elastic.ElasticsearchConfig{
+		NoDefaultAuthForAgent: true,
+	}
+
+	applyExplicitPlatformAuthPreference(conf, &authEnabled)
+
+	if conf.NoDefaultAuthForAgent {
+		t.Fatal("expected no-default-auth flag to be reset when auth is enabled")
+	}
+}
+
+func TestApplyExplicitPlatformAuthPreferenceToSourceDisablesPlatformAuth(t *testing.T) {
+	authEnabled := false
+	source := map[string]interface{}{
+		"credential_id": "cred-1",
+		"basic_auth": map[string]interface{}{
+			"username": "admin",
+		},
+	}
+
+	applyExplicitPlatformAuthPreferenceToSource(source, &authEnabled)
+
+	if source["credential_id"] != "" {
+		t.Fatalf("expected credential_id to be cleared, got %#v", source["credential_id"])
+	}
+	if value, ok := source["basic_auth"]; !ok || value != nil {
+		t.Fatalf("expected basic_auth to be cleared, got %#v", source["basic_auth"])
+	}
+	if source["no_default_auth_for_agent"] != true {
+		t.Fatalf("expected no_default_auth_for_agent to be true, got %#v", source["no_default_auth_for_agent"])
 	}
 }
 
@@ -239,10 +311,32 @@ func TestWrapAgentCollectionProvisionErrorForEasysearchRoleAPI(t *testing.T) {
 	}
 }
 
+func TestWrapAgentCollectionProvisionErrorForUnsupportedSecurityAPI(t *testing.T) {
+	err := wrapAgentCollectionProvisionError(
+		elastic.Easysearch,
+		"role",
+		errors.New(`{"error":{"root_cause":[{"type":"invalid_index_name_exception","reason":"Invalid index name [_security], must not start with '_', '-', or '+'","index_uuid":"_na_","index":"_security"}],"type":"invalid_index_name_exception","reason":"Invalid index name [_security], must not start with '_', '-', or '+'","index_uuid":"_na_","index":"_security"},"status":400}`),
+	)
+
+	if err == nil {
+		t.Fatal("expected wrapped error")
+	}
+	if !strings.Contains(err.Error(), "does not allow modifying _security/role") {
+		t.Fatalf("expected unsupported security api hint, got %v", err)
+	}
+}
+
 func TestShouldFallbackToPlatformCredentialForManagedAgentProvision(t *testing.T) {
 	err := errors.New("failed to create agent collection user: target Easysearch cluster does not allow modifying _security/user via the current credential")
 	if !shouldFallbackToPlatformCredentialForManagedAgentProvision(err) {
 		t.Fatalf("expected unsupported managed-user provisioning to fall back, got %v", err)
+	}
+}
+
+func TestShouldFallbackToPlatformCredentialForManagedAgentProvisionWithUnsupportedSecurityAPI(t *testing.T) {
+	err := errors.New("failed to create agent collection role: target Easysearch cluster does not allow modifying _security/role via the current credential")
+	if !shouldFallbackToPlatformCredentialForManagedAgentProvision(err) {
+		t.Fatalf("expected unsupported security api provisioning to fall back, got %v", err)
 	}
 }
 

@@ -26,11 +26,6 @@ const Index = (props) => {
   const editorRef = useRef(null);
 
   const instanceID = props.match.params.instance_id;
-  const { value: instanceValue } = useFetch(`/instance/${instanceID}`, null, []);
-  const instanceName =
-    instanceValue?._source?.name ||
-    instanceValue?._source?.endpoint ||
-    formatMessage({ id: "gateway.instance.field.name.label" });
   const visibleConfigs = useMemo(() => {
     return Object.keys(config.configs || {}).reduce((result, key) => {
       if (isVisibleManagedConfig(key)) {
@@ -46,9 +41,6 @@ const Index = (props) => {
       title: "runtime_instance",
       locale: "menu.resource.runtime.instance",
       href: "/resource/runtime/instance",
-    },
-    {
-      title: instanceName,
     },
     {
       title: "runtime_config",

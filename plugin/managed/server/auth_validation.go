@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	agent_common "infini.sh/console/modules/agent/common"
-	"infini.sh/framework/core/env"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/util"
@@ -23,35 +22,31 @@ func validateManagedAgentRequestAuth(req *http.Request, instance *model.Instance
 }
 
 func validateLegacyCompatibleManagedAgentRequestAuth(req *http.Request, instance *model.Instance) error {
-	if isLegacyManagedBasicAuthRequest(req, instance) {
+	if shouldAllowLegacyManagedRequestWithoutAuth(req, instance) {
 		return nil
 	}
 	return validateManagedAgentRequestAuth(req, instance)
 }
 
 func isLegacyManagedRegisterRequest(req *http.Request, client *model.Instance, accessToken *configcommon.RegisterToken) bool {
+	if client == nil {
+		return false
+	}
 	if accessToken != nil && strings.TrimSpace(accessToken.Value) != "" {
 		return false
 	}
-	return isLegacyManagedBasicAuthForVersion(req, client.Application.Version.VersionNumber)
+	return shouldAllowLegacyManagedRequestWithoutAuth(req, client)
 }
 
 func isLegacyManagedBasicAuthRequest(req *http.Request, instance *model.Instance) bool {
 	if instance == nil {
 		return false
 	}
-	return isLegacyManagedBasicAuthForVersion(req, instance.Application.Version.VersionNumber)
-}
-
-func isLegacyManagedBasicAuthForVersion(req *http.Request, version string) bool {
-	if !isLegacyManagedVersion(version) {
-		return false
-	}
-	if req == nil || agent_common.ExtractManagerToken(req) != "" {
+	if !isLegacyManagedVersion(instance.Application.Version.VersionNumber) {
 		return false
 	}
 	managerAuth := global.Env().SystemConfig.Configs.ManagerConfig.BasicAuth
-	if strings.TrimSpace(managerAuth.Username) == "" {
+	if req == nil || agent_common.ExtractManagerToken(req) != "" || strings.TrimSpace(managerAuth.Username) == "" {
 		return false
 	}
 	user, password, ok := req.BasicAuth()
@@ -59,6 +54,13 @@ func isLegacyManagedBasicAuthForVersion(req *http.Request, version string) bool 
 		return false
 	}
 	return user == managerAuth.Username && password == managerAuth.Password.Get()
+}
+
+func shouldAllowLegacyManagedRequestWithoutAuth(req *http.Request, instance *model.Instance) bool {
+	if instance == nil || !isLegacyManagedVersion(instance.Application.Version.VersionNumber) {
+		return false
+	}
+	return req == nil || agent_common.ExtractManagerToken(req) == ""
 }
 
 func isLegacyManagedVersion(version string) bool {
@@ -73,15 +75,9 @@ func isLegacyManagedVersion(version string) bool {
 			return false
 		}
 	}
-	cmp, err := parsed.Compare(nextManagedAuthVersionAfterLegacy())
+	cmp, err := parsed.Compare(legacyManagedAuthMaxVersion)
 	if err != nil {
 		return false
 	}
-	return cmp == -1
-}
-
-func nextManagedAuthVersionAfterLegacy() string {
-	legacyMax := env.Version{VersionNumber: legacyManagedAuthMaxVersion}
-	parsed := util.MustParseSemantic(legacyMax.VersionNumber)
-	return parsed.WithPatch(parsed.Patch() + 1).String()
+	return cmp <= 0
 }

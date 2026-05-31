@@ -12,8 +12,22 @@ const configs = [
 
 const MonitorConfigsForm = (props) => {
   const editValue = props.editValue;
-
   const { getFieldDecorator } = props.form;
+  const enabledLabel = formatMessage({
+    id: "cluster.manage.config_item.enabled",
+  });
+  const intervalLabel = formatMessage({
+    id: "cluster.manage.config_item.interval",
+  });
+  const intervalUnit = formatMessage({
+    id: "cluster.manage.config_item.interval.unit",
+  });
+
+  const getIntervalInitialValue = (value) => {
+    const normalized = `${value || ""}`.replace(/[^\d]/g, "");
+    return normalized ? Number(normalized) : 10;
+  };
+
   return (
     <div
       style={{
@@ -45,7 +59,7 @@ const MonitorConfigsForm = (props) => {
                     paddingRight: 10,
                   }}
                 >
-                  enabled
+                  {enabledLabel}
                 </span>
                 {getFieldDecorator(`monitor_configs.${item.key}.enabled`, {
                   valuePropName: "checked",
@@ -69,19 +83,20 @@ const MonitorConfigsForm = (props) => {
                     paddingRight: 10,
                   }}
                 >
-                  interval
+                  {intervalLabel}
                 </span>
                 {getFieldDecorator(`monitor_configs.${item.key}.interval`, {
-                  initialValue:
-                    editValue?.monitor_configs?.[item.key]?.interval || 10,
+                  initialValue: getIntervalInitialValue(
+                    editValue?.monitor_configs?.[item.key]?.interval
+                  ),
                   rules: [],
                 })(
                   <InputNumber
                     min={10}
                     max={3600}
                     step={10}
-                    formatter={(value) => `${value}s`}
-                    parser={(value) => value.replace("s", "")}
+                    formatter={(value) => `${value}${intervalUnit}`}
+                    parser={(value) => `${value || ""}`.replace(/[^\d]/g, "")}
                   />
                 )}
               </Form.Item>

@@ -241,7 +241,7 @@ func (h APIHandler) syncConfigs(w http.ResponseWriter, req *http.Request, ps htt
 			return
 		}
 		validator := validateManagedAgentRequestAuth
-		if isLegacyManagedBasicAuthRequest(req, &instance) {
+		if isLegacyManagedVersion(instance.Application.Version.VersionNumber) {
 			validator = validateLegacyCompatibleManagedAgentRequestAuth
 		}
 		if err := validator(req, &instance); err != nil {

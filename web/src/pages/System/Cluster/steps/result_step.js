@@ -7,6 +7,11 @@ import { MANUAL_VALUE } from "./initial_step";
 
 export const ResultStep = (props) => {
   const { clusterConfig, oneMoreClick, goToClusterList } = props;
+  const endpointList = Array.isArray(clusterConfig?.hosts) && clusterConfig.hosts.length > 0
+    ? clusterConfig.hosts
+    : clusterConfig?.host
+      ? [clusterConfig.host]
+      : [];
   const information = (
     <div className={styles.information}>
       <Row>
@@ -39,7 +44,9 @@ export const ResultStep = (props) => {
           ：
         </Col>
         <Col xs={24} sm={16}>
-          {clusterConfig?.hosts.map((host) => <div>{host}</div>)}
+          {endpointList.length > 0
+            ? endpointList.map((host) => <div key={host}>{host}</div>)
+            : "-"}
         </Col>
       </Row>
       <Row>

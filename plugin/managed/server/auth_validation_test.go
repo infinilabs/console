@@ -42,7 +42,6 @@ func TestValidateManagedAgentRequestAuth(t *testing.T) {
 
 	t.Run("legacy compatible auth accepts basic auth with credentialed instance", func(t *testing.T) {
 		req := httptest.NewRequest("POST", "/configs/_sync", nil)
-		req.SetBasicAuth("manager", "secret")
 		instance := &model.Instance{
 			ManagerCredentialID: "cred-1",
 			Application: env.Application{
@@ -50,13 +49,12 @@ func TestValidateManagedAgentRequestAuth(t *testing.T) {
 			},
 		}
 		if err := validateLegacyCompatibleManagedAgentRequestAuth(req, instance); err != nil {
-			t.Fatalf("expected legacy basic auth to pass, got %v", err)
+			t.Fatalf("expected legacy request without manager auth to pass, got %v", err)
 		}
 	})
 
-	t.Run("legacy register detection requires legacy basic auth and no access token", func(t *testing.T) {
+	t.Run("legacy register detection only depends on legacy version and missing token flow", func(t *testing.T) {
 		req := httptest.NewRequest("POST", "/instance/_register", nil)
-		req.SetBasicAuth("manager", "secret")
 		client := &model.Instance{
 			Application: env.Application{
 				Version: env.Version{VersionNumber: "1.30.4"},
@@ -65,14 +63,13 @@ func TestValidateManagedAgentRequestAuth(t *testing.T) {
 		if !isLegacyManagedRegisterRequest(req, client, nil) {
 			t.Fatal("expected legacy register request to be detected")
 		}
-		if !isLegacyManagedBasicAuthRequest(req, client) {
-			t.Fatal("expected legacy basic auth request to be detected")
+		if !shouldAllowLegacyManagedRequestWithoutAuth(req, client) {
+			t.Fatal("expected legacy no-auth request to be detected")
 		}
 	})
 
 	t.Run("register request with access token stays on new flow", func(t *testing.T) {
 		req := httptest.NewRequest("POST", "/instance/_register", nil)
-		req.SetBasicAuth("manager", "secret")
 		accessToken := &configcommon.RegisterToken{Value: "access-token"}
 		client := &model.Instance{
 			Application: env.Application{
@@ -87,26 +84,37 @@ func TestValidateManagedAgentRequestAuth(t *testing.T) {
 	t.Run("manager token request is not treated as legacy basic auth", func(t *testing.T) {
 		req := httptest.NewRequest("POST", "/instance/_register", nil)
 		req.Header.Set(model.API_TOKEN, "manager-token")
-		req.SetBasicAuth("manager", "secret")
 		client := &model.Instance{
 			Application: env.Application{
 				Version: env.Version{VersionNumber: "1.30.4"},
 			},
 		}
-		if isLegacyManagedBasicAuthRequest(req, client) {
-			t.Fatal("expected token-bearing request to avoid legacy basic auth flow")
+		if shouldAllowLegacyManagedRequestWithoutAuth(req, client) {
+			t.Fatal("expected token-bearing request to avoid legacy no-auth flow")
 		}
 	})
 
-	t.Run("newer version does not use legacy basic auth flow", func(t *testing.T) {
+	t.Run("legacy basic auth helper still recognizes matching basic auth", func(t *testing.T) {
 		req := httptest.NewRequest("POST", "/configs/_sync", nil)
 		req.SetBasicAuth("manager", "secret")
+		instance := &model.Instance{
+			Application: env.Application{
+				Version: env.Version{VersionNumber: "1.30.4"},
+			},
+		}
+		if !isLegacyManagedBasicAuthRequest(req, instance) {
+			t.Fatal("expected legacy basic auth request to be detected")
+		}
+	})
+
+	t.Run("newer version does not use legacy compatibility flow", func(t *testing.T) {
+		req := httptest.NewRequest("POST", "/configs/_sync", nil)
 		instance := &model.Instance{
 			Application: env.Application{
 				Version: env.Version{VersionNumber: "1.30.5"},
 			},
 		}
-		if isLegacyManagedBasicAuthRequest(req, instance) {
+		if shouldAllowLegacyManagedRequestWithoutAuth(req, instance) {
 			t.Fatal("expected newer version to stay on token flow")
 		}
 	})

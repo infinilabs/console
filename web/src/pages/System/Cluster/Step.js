@@ -122,9 +122,10 @@ const ClusterStep = ({ dispatch, history, query }) => {
             username: values.username,
             password: values.password,
           },
+          is_auth: values.isAuth === true,
           hosts: values.hosts,
           credential_id:
-            values.credential_id !== MANUAL_VALUE
+            values.isAuth === true && values.credential_id !== MANUAL_VALUE
               ? values.credential_id
               : undefined,
           schema: values.isTLS === true ? "https" : "http",
@@ -166,7 +167,9 @@ const ClusterStep = ({ dispatch, history, query }) => {
             hosts: clusterConfig.hosts,
             probe_path: clusterConfig.probe_path,
             location: clusterConfig.location,
+            is_auth: clusterConfig.isAuth === true,
             credential_id:
+              clusterConfig.isAuth === true &&
               clusterConfig.credential_id !== MANUAL_VALUE
                 ? clusterConfig.credential_id
                 : undefined,

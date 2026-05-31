@@ -81,6 +81,7 @@ func (h *APIHandler) HandleCreateClusterAction(w http.ResponseWriter, req *http.
 	}
 	conf := &payload.ElasticsearchConfig
 	console_common.SetProbePath(conf, payload.ProbePath)
+	applyExplicitPlatformAuthPreference(conf, payload.AuthEnabled)
 	conf.Enabled = true
 	conf.Monitored = true
 	if len(conf.Hosts) > 0 && conf.Host == "" {
@@ -213,6 +214,36 @@ func EnsureManagedAgentCredential(conf *elastic.ElasticsearchConfig, previousClu
 	return ensureManagedAgentCollectionCredential(conf, previousClusterName)
 }
 
+func applyExplicitPlatformAuthPreference(conf *elastic.ElasticsearchConfig, authEnabled *bool) {
+	if conf == nil || authEnabled == nil {
+		return
+	}
+
+	if !*authEnabled {
+		conf.CredentialID = ""
+		conf.BasicAuth = nil
+		conf.NoDefaultAuthForAgent = true
+		return
+	}
+
+	conf.NoDefaultAuthForAgent = false
+}
+
+func applyExplicitPlatformAuthPreferenceToSource(source map[string]interface{}, authEnabled *bool) {
+	if source == nil || authEnabled == nil {
+		return
+	}
+
+	if !*authEnabled {
+		source["credential_id"] = ""
+		source["basic_auth"] = nil
+		source["no_default_auth_for_agent"] = true
+		return
+	}
+
+	source["no_default_auth_for_agent"] = false
+}
+
 func hydrateRuntimeBasicAuth(conf *elastic.ElasticsearchConfig) error {
 	return hydrateRuntimeBasicAuthWithGetter(conf, common.GetBasicAuth)
 }
@@ -333,6 +364,11 @@ func ensureManagedAgentCollectionCredential(conf *elastic.ElasticsearchConfig, p
 		return err
 	}
 	if platformAuth == nil || platformAuth.Username == "" {
+		if conf.NoDefaultAuthForAgent {
+			conf.AgentCredentialID = ""
+			conf.AgentBasicAuth = nil
+			return nil
+		}
 		if conf.MetricCollectionMode == elastic.ModeAgent {
 			return fmt.Errorf("platform credential is required to create agent collection user")
 		}
@@ -532,13 +568,7 @@ func wrapAgentCollectionProvisionError(distribution, resource string, err error)
 		return nil
 	}
 
-	raw := err.Error()
-	lowerRaw := strings.ToLower(raw)
-
-	if distribution == elastic.Easysearch &&
-		strings.Contains(lowerRaw, `"status":"not_found"`) &&
-		strings.Contains(lowerRaw, "resource") &&
-		strings.Contains(lowerRaw, "not available") {
+	if distribution == elastic.Easysearch && isUnsupportedEasysearchSecurityAPIError(err) {
 		return fmt.Errorf(
 			"failed to create agent collection %s: target Easysearch cluster does not allow modifying _security/%s via the current credential; check security.restapi.roles_enabled and security.restapi.endpoints_disabled for %s access: %w",
 			resource,
@@ -647,6 +677,27 @@ func isUnavailableSecurityResourceError(err error) bool {
 		strings.Contains(lowerRaw, "not available")
 }
 
+func isUnsupportedEasysearchSecurityAPIError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if isUnavailableSecurityResourceError(err) {
+		return true
+	}
+
+	lowerRaw := strings.ToLower(err.Error())
+	return strings.Contains(lowerRaw, "invalid_index_name_exception") &&
+		strings.Contains(lowerRaw, `"_security"`)
+}
+
+func extractOptionalBool(value interface{}) *bool {
+	boolValue, ok := value.(bool)
+	if !ok {
+		return nil
+	}
+	return &boolValue
+}
+
 func (h *APIHandler) HandleGetClusterAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	id := ps.MustGetParameter("id")
 	clusterConf := elastic.ElasticsearchConfig{}
@@ -709,6 +760,8 @@ func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.
 		return
 	}
 	var oldCollectionMode = originConf.MetricCollectionMode
+	authEnabled := extractOptionalBool(conf["is_auth"])
+	delete(conf, "is_auth")
 	delete(conf, "agent_logs_paths")
 	buf := util.MustToJSONBytes(originConf)
 	source := map[string]interface{}{}
@@ -728,6 +781,7 @@ func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.
 		}
 		source[k] = v
 	}
+	applyExplicitPlatformAuthPreferenceToSource(source, authEnabled)
 
 	// convert hosts array to string to get first
 	if hosts, ok := conf["hosts"].([]interface{}); ok && len(hosts) > 0 {

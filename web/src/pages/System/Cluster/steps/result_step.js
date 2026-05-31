@@ -7,14 +7,7 @@ import { MANUAL_VALUE } from "./initial_step";
 
 const renderEndpoint = (host) => (
   <Tooltip key={host} title={host} placement="topLeft">
-    <div
-      style={{
-        maxWidth: "100%",
-        overflow: "hidden",
-        textOverflow: "ellipsis",
-        whiteSpace: "nowrap",
-      }}
-    >
+    <div className={styles.ellipsisValue}>
       {host}
     </div>
   </Tooltip>

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -16,7 +17,54 @@ import (
 	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
+	"infini.sh/framework/modules/configs/common"
 )
+
+func TestDecodeManagedRegisterRequestSupportsLegacyRawInstanceBody(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPost, common.REGISTER_API, bytes.NewBufferString(`{
+		"id":"legacy-agent-1",
+		"name":"LegacyAgent",
+		"application":{"name":"agent","version":{"number":"1.30.3"}},
+		"endpoint":"http://127.0.0.1:2900",
+		"network":{"ip":["192.168.3.9"],"major_ip":"192.168.3.9"}
+	}`))
+
+	registerReq, err := decodeManagedRegisterRequest(req)
+	if err != nil {
+		t.Fatalf("decode legacy raw register request: %v", err)
+	}
+	if registerReq.Client.ID != "legacy-agent-1" {
+		t.Fatalf("unexpected client id: %q", registerReq.Client.ID)
+	}
+	if registerReq.Client.Endpoint != "http://127.0.0.1:2900" {
+		t.Fatalf("unexpected client endpoint: %q", registerReq.Client.Endpoint)
+	}
+	if registerReq.Client.Application.Name != "agent" {
+		t.Fatalf("unexpected client application: %q", registerReq.Client.Application.Name)
+	}
+}
+
+func TestDecodeManagedRegisterRequestSupportsWrappedClientBody(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPost, common.REGISTER_API, bytes.NewBufferString(`{
+		"client":{
+			"id":"managed-agent-1",
+			"name":"ManagedAgent",
+			"application":{"name":"agent","version":{"number":"1.31.0"}},
+			"endpoint":"http://127.0.0.1:2900"
+		}
+	}`))
+
+	registerReq, err := decodeManagedRegisterRequest(req)
+	if err != nil {
+		t.Fatalf("decode wrapped register request: %v", err)
+	}
+	if registerReq.Client.ID != "managed-agent-1" {
+		t.Fatalf("unexpected client id: %q", registerReq.Client.ID)
+	}
+	if registerReq.Client.Endpoint != "http://127.0.0.1:2900" {
+		t.Fatalf("unexpected client endpoint: %q", registerReq.Client.Endpoint)
+	}
+}
 
 func newTestBinding(t *testing.T) string {
 	t.Helper()

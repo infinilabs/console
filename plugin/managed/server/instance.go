@@ -37,6 +37,7 @@ import (
 	"infini.sh/framework/core/event"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/task"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -137,6 +138,32 @@ func logLegacyManagedRegistration(stage string, instance *model.Instance, req *h
 	log.Warn(message)
 }
 
+func decodeManagedRegisterRequest(req *http.Request) (common.InstanceRegisterRequest, error) {
+	registerReq := common.InstanceRegisterRequest{}
+	body, err := io.ReadAll(req.Body)
+	if err != nil {
+		return registerReq, err
+	}
+	req.Body = io.NopCloser(bytes.NewReader(body))
+
+	if err := util.FromJSONBytes(body, &registerReq); err != nil {
+		return registerReq, err
+	}
+	if registerReq.Client.Endpoint != "" || registerReq.Client.ID != "" {
+		req.Body = io.NopCloser(bytes.NewReader(body))
+		return registerReq, nil
+	}
+
+	legacyInstance := model.Instance{}
+	if err := util.FromJSONBytes(body, &legacyInstance); err == nil {
+		if legacyInstance.Endpoint != "" || legacyInstance.ID != "" {
+			registerReq.Client = legacyInstance
+		}
+	}
+	req.Body = io.NopCloser(bytes.NewReader(body))
+	return registerReq, nil
+}
+
 func init() {
 	//for public usage, agent can report self to server, usually need to enroll by manager
 	api.HandleAPIMethod(api.POST, common.REGISTER_API, handler.registerInstance) //client register self to config servers
@@ -176,8 +203,7 @@ func init() {
 }
 
 func (h APIHandler) registerInstance(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	registerReq := common.InstanceRegisterRequest{}
-	err := h.DecodeJSON(req, &registerReq)
+	registerReq, err := decodeManagedRegisterRequest(req)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return

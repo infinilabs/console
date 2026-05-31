@@ -65,6 +65,10 @@ var getManagedInstanceByID = func(instance *model.Instance) (bool, error) {
 	return orm.Get(instance)
 }
 
+var saveManagedInstanceRecord = func(instance *model.Instance) error {
+	return orm.Save(&orm.Context{Refresh: orm.WaitForRefresh}, instance)
+}
+
 var deleteManagedInstanceRecord = func(instance *model.Instance) error {
 	return orm.Delete(&orm.Context{
 		Refresh: orm.WaitForRefresh,
@@ -137,61 +141,85 @@ func (h APIHandler) registerInstance(w http.ResponseWriter, req *http.Request, p
 	}
 
 	var pendingToConsume *agent_common.PendingRegistrationToken
+	legacyManagerCredentialMigrated := false
 
 	if common.SupportsManagedAccessToken(obj.Application.Name) {
+		legacyManagedRegister := isLegacyManagedRegisterRequest(req, obj, registerReq.AccessToken)
 		tokenValue := agent_common.ExtractManagerToken(req)
 		if exists {
 			if oldInst.Created != nil {
 				obj.Created = oldInst.Created
 			}
-			if err := validateManagedAgentRequestAuth(req, oldInst); err != nil {
-				if agent_common.IsManagerAuthFailure(err) {
-					h.WriteError(w, err.Error(), http.StatusUnauthorized)
-				} else {
-					h.WriteError(w, err.Error(), http.StatusInternalServerError)
-				}
-				return
-			}
 			obj.ManagerCredentialID = oldInst.ManagerCredentialID
 			obj.AccessCredentialID = oldInst.AccessCredentialID
 			obj.BasicAuth = oldInst.BasicAuth
+			validator := validateManagedAgentRequestAuthFunc
+			if legacyManagedRegister {
+				validator = validateLegacyCompatibleManagedAgentRequestAuth
+			}
+			if err := validator(req, oldInst); err != nil {
+				legacyManagerCredentialMigrated, err = migrateLegacyManagedRegisterAuth(req, obj, oldInst, registerReq.AccessToken)
+				if err != nil {
+					h.WriteError(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				if !legacyManagerCredentialMigrated {
+					if agent_common.IsManagerAuthFailure(err) {
+						h.WriteError(w, err.Error(), http.StatusUnauthorized)
+					} else {
+						h.WriteError(w, err.Error(), http.StatusInternalServerError)
+					}
+					return
+				}
+			}
 		} else {
-			if tokenValue == "" {
-				h.WriteError(w, "missing manager token", http.StatusUnauthorized)
-				return
+			if legacyManagedRegister {
+				if err := validateLegacyCompatibleManagedAgentRequestAuth(req, obj); err != nil {
+					if agent_common.IsManagerAuthFailure(err) {
+						h.WriteError(w, err.Error(), http.StatusUnauthorized)
+					} else {
+						h.WriteError(w, err.Error(), http.StatusInternalServerError)
+					}
+					return
+				}
+			} else {
+				if tokenValue == "" {
+					h.WriteError(w, "missing manager token", http.StatusUnauthorized)
+					return
+				}
+				pending, err := agent_common.FindPendingManagerTokenByValue(tokenValue)
+				if err != nil {
+					h.WriteError(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				if pending == nil {
+					h.WriteError(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+					return
+				}
+				obj.ManagerCredentialID = pending.CredentialID
+				if err := renamePendingManagerCredential(obj, pending.CredentialID); err != nil {
+					h.WriteError(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				if err := upsertInstanceAccessCredentialFunc(obj, registerReq.AccessToken); err != nil {
+					h.WriteError(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				pendingToConsume = pending
 			}
-			pending, err := agent_common.FindPendingManagerTokenByValue(tokenValue)
-			if err != nil {
-				h.WriteError(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			if pending == nil {
-				h.WriteError(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-				return
-			}
-			obj.ManagerCredentialID = pending.CredentialID
-			if err := renamePendingManagerCredential(obj, pending.CredentialID); err != nil {
-				h.WriteError(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			if err := upsertInstanceAccessCredential(obj, registerReq.AccessToken); err != nil {
-				h.WriteError(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			pendingToConsume = pending
 		}
 	} else if exists {
 		obj.Created = oldInst.Created
 	}
 
-	if exists && common.SupportsManagedAccessToken(obj.Application.Name) && registerReq.AccessToken != nil {
-		if err := upsertInstanceAccessCredential(obj, registerReq.AccessToken); err != nil {
+	if exists && common.SupportsManagedAccessToken(obj.Application.Name) && registerReq.AccessToken != nil && !legacyManagerCredentialMigrated {
+		if err := upsertInstanceAccessCredentialFunc(obj, registerReq.AccessToken); err != nil {
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	}
 
-	err = orm.Save(&orm.Context{Refresh: orm.WaitForRefresh}, obj)
+	err = saveManagedInstanceRecord(obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -206,6 +234,26 @@ func (h APIHandler) registerInstance(w http.ResponseWriter, req *http.Request, p
 	log.Infof("register instance: %v[%v], %v", obj.Name, console_common.MaskLogToken(obj.ID), console_common.MaskLogEndpoint(obj.Endpoint))
 
 	h.WriteAckOKJSON(w)
+}
+
+func migrateLegacyManagedRegisterAuth(req *http.Request, current *model.Instance, existing *model.Instance, accessToken *common.RegisterToken) (bool, error) {
+	if req == nil || current == nil || existing == nil {
+		return false, nil
+	}
+	if strings.TrimSpace(existing.ManagerCredentialID) != "" {
+		return false, nil
+	}
+	managerToken := strings.TrimSpace(agent_common.ExtractManagerToken(req))
+	if managerToken == "" || accessToken == nil || strings.TrimSpace(accessToken.Value) == "" {
+		return false, nil
+	}
+	if err := upsertInstanceManagerCredentialFunc(current, managerToken); err != nil {
+		return false, err
+	}
+	if err := upsertInstanceAccessCredentialFunc(current, accessToken); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func syncManagedInstanceEndpoint(client model.Instance) {

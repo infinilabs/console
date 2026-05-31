@@ -529,6 +529,23 @@ func TestLegacyAgentInstallTemplateSetsConfigTLSServerName(t *testing.T) {
 	}
 }
 
+func TestShouldUseLegacyInstallScriptTemplate(t *testing.T) {
+	tests := []struct {
+		version string
+		legacy  bool
+	}{
+		{version: "1.30.3", legacy: true},
+		{version: "1.30.4", legacy: true},
+		{version: "1.30.5", legacy: false},
+	}
+
+	for _, tc := range tests {
+		if got := shouldUseLegacyInstallScriptTemplate(tc.version); got != tc.legacy {
+			t.Fatalf("expected legacy=%v for version %s, got %v", tc.legacy, tc.version, got)
+		}
+	}
+}
+
 func TestAgentInstallTemplateBootstrapsManagerAccessToken(t *testing.T) {
 	templatePath := filepath.Join("..", "..", "..", "config", "install_agent.tpl")
 	content, err := os.ReadFile(templatePath)

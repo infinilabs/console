@@ -240,7 +240,11 @@ func (h APIHandler) syncConfigs(w http.ResponseWriter, req *http.Request, ps htt
 			h.WriteError(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}
-		if err := validateManagedAgentRequestAuth(req, &instance); err != nil {
+		validator := validateManagedAgentRequestAuth
+		if isLegacyManagedBasicAuthRequest(req, &instance) {
+			validator = validateLegacyCompatibleManagedAgentRequestAuth
+		}
+		if err := validator(req, &instance); err != nil {
 			if agent_common.IsManagerAuthFailure(err) {
 				h.WriteError(w, err.Error(), http.StatusUnauthorized)
 			} else {

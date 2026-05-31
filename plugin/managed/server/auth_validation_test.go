@@ -68,7 +68,7 @@ func TestValidateManagedAgentRequestAuth(t *testing.T) {
 		}
 	})
 
-	t.Run("register request with access token stays on new flow", func(t *testing.T) {
+	t.Run("legacy register request still uses compatibility flow even if access token is present", func(t *testing.T) {
 		req := httptest.NewRequest("POST", "/instance/_register", nil)
 		accessToken := &configcommon.RegisterToken{Value: "access-token"}
 		client := &model.Instance{
@@ -76,8 +76,8 @@ func TestValidateManagedAgentRequestAuth(t *testing.T) {
 				Version: env.Version{VersionNumber: "1.30.4"},
 			},
 		}
-		if isLegacyManagedRegisterRequest(req, client, accessToken) {
-			t.Fatal("expected token-capable register request to stay on new flow")
+		if !isLegacyManagedRegisterRequest(req, client, accessToken) {
+			t.Fatal("expected legacy register request to stay on compatibility flow")
 		}
 	})
 

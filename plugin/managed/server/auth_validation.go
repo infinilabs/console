@@ -40,10 +40,10 @@ func isLegacyManagedRegisterRequest(req *http.Request, client *model.Instance, a
 	if client == nil {
 		return false
 	}
-	if accessToken != nil && strings.TrimSpace(accessToken.Value) != "" {
+	if !shouldAllowLegacyManagedRequestWithoutAuth(req, client) {
 		return false
 	}
-	return shouldAllowLegacyManagedRequestWithoutAuth(req, client)
+	return true
 }
 
 func isLegacyManagedBasicAuthRequest(req *http.Request, instance *model.Instance) bool {

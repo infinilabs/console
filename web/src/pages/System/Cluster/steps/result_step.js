@@ -1,9 +1,24 @@
 import Result from "@/components/Result";
 import React, { Fragment } from "react";
-import { Button, Row, Col } from "antd";
+import { Button, Row, Col, Tooltip } from "antd";
 import styles from "./styles.less";
 import { formatMessage } from "umi/locale";
 import { MANUAL_VALUE } from "./initial_step";
+
+const renderEndpoint = (host) => (
+  <Tooltip key={host} title={host} placement="topLeft">
+    <div
+      style={{
+        maxWidth: "100%",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {host}
+    </div>
+  </Tooltip>
+);
 
 export const ResultStep = (props) => {
   const { clusterConfig, oneMoreClick, goToClusterList } = props;
@@ -45,7 +60,7 @@ export const ResultStep = (props) => {
         </Col>
         <Col xs={24} sm={16}>
           {endpointList.length > 0
-            ? endpointList.map((host) => <div key={host}>{host}</div>)
+            ? endpointList.map((host) => renderEndpoint(host))
             : "-"}
         </Col>
       </Row>

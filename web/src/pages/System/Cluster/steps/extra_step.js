@@ -6,6 +6,7 @@ import {
   InputNumber,
   Divider,
   Descriptions,
+  Tooltip,
   message,
 } from "antd";
 import { HealthStatusView } from "@/components/infini/health_status_view";
@@ -129,6 +130,7 @@ export class ExtraStep extends React.Component {
       : initialValue?.host
         ? [initialValue.host]
         : [];
+    const endpointText = endpointList.length > 0 ? endpointList.join(", ") : "-";
     const formItemLayout = {
       labelCol: {
         xs: { span: 24 },
@@ -147,7 +149,18 @@ export class ExtraStep extends React.Component {
               id: "cluster.manage.table.column.endpoint",
             })}
           >
-            {endpointList.length > 0 ? endpointList.join(", ") : "-"}
+            <Tooltip title={endpointText} placement="topLeft">
+              <div
+                style={{
+                  maxWidth: 320,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {endpointText}
+              </div>
+            </Tooltip>
           </Descriptions.Item>
           <Descriptions.Item
             label={formatMessage({

@@ -206,16 +206,16 @@ export default (props) => {
                     id: "cluster.manage.agent_credential.placeholder.auto_create",
                   })}
                 >
-                  {credentialOptions.map((item) => (
-                    <Select.Option key={item.id} value={item.id}>
-                      {item.name}
-                    </Select.Option>
-                  ))}
                   <Select.Option value={MANUAL_VALUE}>
                     {formatMessage({
                       id: "cluster.regist.step.connect.credential.manual",
                     })}
                   </Select.Option>
+                  {credentialOptions.map((item) => (
+                    <Select.Option key={item.id} value={item.id}>
+                      {item.name}
+                    </Select.Option>
+                  ))}
                 </Select>
               )}
             </div>

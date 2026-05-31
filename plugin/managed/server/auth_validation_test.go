@@ -53,7 +53,7 @@ func TestValidateManagedAgentRequestAuth(t *testing.T) {
 		}
 	})
 
-	t.Run("legacy register detection only depends on legacy version and missing token flow", func(t *testing.T) {
+	t.Run("legacy register detection only depends on legacy version", func(t *testing.T) {
 		req := httptest.NewRequest("POST", "/instance/_register", nil)
 		client := &model.Instance{
 			Application: env.Application{
@@ -81,7 +81,7 @@ func TestValidateManagedAgentRequestAuth(t *testing.T) {
 		}
 	})
 
-	t.Run("manager token request is not treated as legacy basic auth", func(t *testing.T) {
+	t.Run("legacy version still allows no-auth flow even if a manager token header is present", func(t *testing.T) {
 		req := httptest.NewRequest("POST", "/instance/_register", nil)
 		req.Header.Set(model.API_TOKEN, "manager-token")
 		client := &model.Instance{
@@ -89,8 +89,8 @@ func TestValidateManagedAgentRequestAuth(t *testing.T) {
 				Version: env.Version{VersionNumber: "1.30.4"},
 			},
 		}
-		if shouldAllowLegacyManagedRequestWithoutAuth(req, client) {
-			t.Fatal("expected token-bearing request to avoid legacy no-auth flow")
+		if !shouldAllowLegacyManagedRequestWithoutAuth(req, client) {
+			t.Fatal("expected legacy version to keep compatibility auth even with token headers present")
 		}
 	})
 

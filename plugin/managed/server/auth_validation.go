@@ -72,10 +72,7 @@ func shouldAllowLegacyManagedRequestWithoutAuth(req *http.Request, instance *mod
 }
 
 func shouldAllowLegacyManagedRequestWithoutAuthVersion(req *http.Request, version string) bool {
-	if !isLegacyManagedVersion(version) {
-		return false
-	}
-	return req == nil || agent_common.ExtractManagerToken(req) == ""
+	return isLegacyManagedVersion(version)
 }
 
 func isLegacyManagedVersion(version string) bool {

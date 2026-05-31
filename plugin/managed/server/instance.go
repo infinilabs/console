@@ -77,6 +77,34 @@ var deleteManagedInstanceRecord = func(instance *model.Instance) error {
 
 var cleanupDeletedInstanceArtifactsFunc = cleanupDeletedInstanceArtifacts
 
+func logLegacyManagedRegistration(stage string, instance *model.Instance, req *http.Request, detail string) {
+	if instance == nil {
+		return
+	}
+
+	remoteAddr := ""
+	if req != nil {
+		remoteAddr = req.RemoteAddr
+	}
+
+	message := fmt.Sprintf(
+		"legacy managed agent registration %s: %v[%v], version=%v, endpoint=%v",
+		stage,
+		instance.Name,
+		console_common.MaskLogToken(instance.ID),
+		instance.Application.Version.VersionNumber,
+		console_common.MaskLogEndpoint(instance.Endpoint),
+	)
+	if remoteAddr != "" {
+		message = fmt.Sprintf("%s, remote=%v", message, remoteAddr)
+	}
+	if detail != "" {
+		message = fmt.Sprintf("%s, detail=%v", message, detail)
+	}
+
+	log.Warn(message)
+}
+
 func init() {
 	//for public usage, agent can report self to server, usually need to enroll by manager
 	api.HandleAPIMethod(api.POST, common.REGISTER_API, handler.registerInstance) //client register self to config servers
@@ -142,9 +170,19 @@ func (h APIHandler) registerInstance(w http.ResponseWriter, req *http.Request, p
 
 	var pendingToConsume *agent_common.PendingRegistrationToken
 	legacyManagerCredentialMigrated := false
+	legacyManagedRegister := false
+	writeRegisterError := func(status int, detail string) {
+		if legacyManagedRegister {
+			logLegacyManagedRegistration("failed", obj, req, detail)
+		}
+		h.WriteError(w, detail, status)
+	}
 
 	if common.SupportsManagedAccessToken(obj.Application.Name) {
-		legacyManagedRegister := isLegacyManagedRegisterRequest(req, obj, registerReq.AccessToken)
+		legacyManagedRegister = isLegacyManagedRegisterRequest(req, obj, registerReq.AccessToken)
+		if legacyManagedRegister {
+			logLegacyManagedRegistration("detected", obj, req, "attempting compatibility registration")
+		}
 		tokenValue := agent_common.ExtractManagerToken(req)
 		if exists {
 			if oldInst.Created != nil {
@@ -162,14 +200,14 @@ func (h APIHandler) registerInstance(w http.ResponseWriter, req *http.Request, p
 			if err != nil {
 				legacyManagerCredentialMigrated, err = migrateLegacyManagedRegisterAuth(req, obj, oldInst, registerReq.AccessToken)
 				if err != nil {
-					h.WriteError(w, err.Error(), http.StatusInternalServerError)
+					writeRegisterError(http.StatusInternalServerError, err.Error())
 					return
 				}
 				if !legacyManagerCredentialMigrated {
 					if agent_common.IsManagerAuthFailure(err) {
-						h.WriteError(w, err.Error(), http.StatusUnauthorized)
+						writeRegisterError(http.StatusUnauthorized, err.Error())
 					} else {
-						h.WriteError(w, err.Error(), http.StatusInternalServerError)
+						writeRegisterError(http.StatusInternalServerError, err.Error())
 					}
 					return
 				}
@@ -178,33 +216,33 @@ func (h APIHandler) registerInstance(w http.ResponseWriter, req *http.Request, p
 			if legacyManagedRegister {
 				if err := validateLegacyCompatibleManagedAgentRequestAuth(req, obj); err != nil {
 					if agent_common.IsManagerAuthFailure(err) {
-						h.WriteError(w, err.Error(), http.StatusUnauthorized)
+						writeRegisterError(http.StatusUnauthorized, err.Error())
 					} else {
-						h.WriteError(w, err.Error(), http.StatusInternalServerError)
+						writeRegisterError(http.StatusInternalServerError, err.Error())
 					}
 					return
 				}
 			} else {
 				if tokenValue == "" {
-					h.WriteError(w, "missing manager token", http.StatusUnauthorized)
+					writeRegisterError(http.StatusUnauthorized, "missing manager token")
 					return
 				}
 				pending, err := agent_common.FindPendingManagerTokenByValue(tokenValue)
 				if err != nil {
-					h.WriteError(w, err.Error(), http.StatusInternalServerError)
+					writeRegisterError(http.StatusInternalServerError, err.Error())
 					return
 				}
 				if pending == nil {
-					h.WriteError(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+					writeRegisterError(http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 					return
 				}
 				obj.ManagerCredentialID = pending.CredentialID
 				if err := renamePendingManagerCredential(obj, pending.CredentialID); err != nil {
-					h.WriteError(w, err.Error(), http.StatusInternalServerError)
+					writeRegisterError(http.StatusInternalServerError, err.Error())
 					return
 				}
 				if err := upsertInstanceAccessCredentialFunc(obj, registerReq.AccessToken); err != nil {
-					h.WriteError(w, err.Error(), http.StatusInternalServerError)
+					writeRegisterError(http.StatusInternalServerError, err.Error())
 					return
 				}
 				pendingToConsume = pending
@@ -216,24 +254,31 @@ func (h APIHandler) registerInstance(w http.ResponseWriter, req *http.Request, p
 
 	if exists && common.SupportsManagedAccessToken(obj.Application.Name) && registerReq.AccessToken != nil && !legacyManagerCredentialMigrated {
 		if err := upsertInstanceAccessCredentialFunc(obj, registerReq.AccessToken); err != nil {
-			h.WriteError(w, err.Error(), http.StatusInternalServerError)
+			writeRegisterError(http.StatusInternalServerError, err.Error())
 			return
 		}
 	}
 
 	err = saveManagedInstanceRecord(obj)
 	if err != nil {
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		writeRegisterError(http.StatusInternalServerError, err.Error())
 		return
 	}
 	if pendingToConsume != nil {
 		if err := agent_common.MarkPendingRegistrationTokenConsumed(pendingToConsume, obj.ID); err != nil {
-			h.WriteError(w, err.Error(), http.StatusInternalServerError)
+			writeRegisterError(http.StatusInternalServerError, err.Error())
 			return
 		}
 	}
 
 	log.Infof("register instance: %v[%v], %v", obj.Name, console_common.MaskLogToken(obj.ID), console_common.MaskLogEndpoint(obj.Endpoint))
+	if legacyManagedRegister {
+		detail := "registered successfully"
+		if legacyManagerCredentialMigrated {
+			detail = "registered successfully with manager credential migration"
+		}
+		logLegacyManagedRegistration("succeeded", obj, req, detail)
+	}
 
 	h.WriteAckOKJSON(w)
 }

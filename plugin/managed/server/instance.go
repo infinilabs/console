@@ -203,7 +203,7 @@ func (h APIHandler) registerInstance(w http.ResponseWriter, req *http.Request, p
 		}
 	}
 
-	log.Infof("register instance: %v[%v], %v", obj.Name, obj.ID, obj.Endpoint)
+	log.Infof("register instance: %v[%v], %v", obj.Name, console_common.MaskLogToken(obj.ID), console_common.MaskLogEndpoint(obj.Endpoint))
 
 	h.WriteAckOKJSON(w)
 }

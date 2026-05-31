@@ -34,6 +34,7 @@ import (
 	"fmt"
 	log "github.com/cihub/seelog"
 	goversion "github.com/hashicorp/go-version"
+	console_common "infini.sh/console/common"
 	consoleconfig "infini.sh/console/config"
 	consolecore "infini.sh/console/core"
 	"infini.sh/console/core/security"
@@ -358,10 +359,10 @@ func resolvePackageDownloadURL(consoleEndpoint, downloadURL, defaultDownloadURL,
 
 func logAutoResolvedDownloadURL(product, downloadURL, defaultDownloadURL string) {
 	if downloadURL == defaultDownloadURL {
-		log.Warnf("%s.setup.download_url is empty, defaulting to public release mirror: %s", product, downloadURL)
+		log.Warnf("%s.setup.download_url is empty, defaulting to public release mirror: %s", product, console_common.MaskLogEndpoint(downloadURL))
 		return
 	}
-	log.Infof("%s.setup.download_url is empty, using Console self-hosted package path: %s", product, downloadURL)
+	log.Infof("%s.setup.download_url is empty, using Console self-hosted package path: %s", product, console_common.MaskLogEndpoint(downloadURL))
 }
 
 func resolveInstallDir(installDir, defaultInstallDir string) string {

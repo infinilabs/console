@@ -33,7 +33,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"net/url"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -350,11 +349,11 @@ func (h *APIHandler) getLogFilesByNode(w http.ResponseWriter, req *http.Request,
 	inst, logsPaths, err := getAgentByNodeID(clusterID, nodeID)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Errorf("failed to resolve agent for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
+		log.Errorf("failed to resolve agent for cluster [%s], node [%s]: %v", console_common.MaskLogToken(clusterID), console_common.MaskLogToken(nodeID), err)
 		return
 	}
 	if inst == nil {
-		log.Warnf("no agent associated with cluster [%s], node [%s]", clusterID, nodeID)
+		log.Warnf("no agent associated with cluster [%s], node [%s]", console_common.MaskLogToken(clusterID), console_common.MaskLogToken(nodeID))
 		h.WriteJSON(w, util.MapStr{
 			"success": false,
 			"reason":  "AGENT_NOT_FOUND",
@@ -364,7 +363,7 @@ func (h *APIHandler) getLogFilesByNode(w http.ResponseWriter, req *http.Request,
 	logFiles, err := GetSearchLogFiles(nil, inst, logsPaths)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Errorf("failed to get log files for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
+		log.Errorf("failed to get log files for cluster [%s], node [%s]: %v", console_common.MaskLogToken(clusterID), console_common.MaskLogToken(nodeID), err)
 		return
 	}
 	h.WriteJSON(w, util.MapStr{
@@ -379,7 +378,7 @@ func (h *APIHandler) getLogFileContent(w http.ResponseWriter, req *http.Request,
 	inst, logsPaths, err := getAgentByNodeID(clusterID, nodeID)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Errorf("failed to resolve agent for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
+		log.Errorf("failed to resolve agent for cluster [%s], node [%s]: %v", console_common.MaskLogToken(clusterID), console_common.MaskLogToken(nodeID), err)
 		return
 	}
 	if inst == nil {
@@ -397,19 +396,19 @@ func (h *APIHandler) getLogFileContent(w http.ResponseWriter, req *http.Request,
 	err = h.DecodeJSON(req, &reqBody)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Errorf("failed to decode log content request for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
+		log.Errorf("failed to decode log content request for cluster [%s], node [%s]: %v", console_common.MaskLogToken(clusterID), console_common.MaskLogToken(nodeID), err)
 		return
 	}
 	reqBody.LogsPath, err = pickAllowedLogsPath(logsPaths, reqBody.LogsPath)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Errorf("invalid logs path for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
+		log.Errorf("invalid logs path for cluster [%s], node [%s]: %v", console_common.MaskLogToken(clusterID), console_common.MaskLogToken(nodeID), err)
 		return
 	}
 	res, err := GetSearchLogFileContent(nil, inst, reqBody)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
-		log.Errorf("failed to get log content for cluster [%s], node [%s]: %v", clusterID, nodeID, err)
+		log.Errorf("failed to get log content for cluster [%s], node [%s]: %v", console_common.MaskLogToken(clusterID), console_common.MaskLogToken(nodeID), err)
 		return
 	}
 	h.WriteJSON(w, res, http.StatusOK)
@@ -648,24 +647,24 @@ func runAutoEnroll(clusterInfo ClusterInfo) {
 		}
 		nodes, err := refreshNodesInfo(instanceID)
 		if err != nil {
-			log.Errorf("failed to refresh nodes for agent instance [%s] at [%s]: %v", maskLogToken(instanceID), maskLogEndpoint(instanceEndpoint), err)
+			log.Errorf("failed to refresh nodes for agent instance [%s] at [%s]: %v", console_common.MaskLogToken(instanceID), console_common.MaskLogEndpoint(instanceEndpoint), err)
 			continue
 		}
-		log.Tracef("instance:%v,%v, has: %v nodes, %v unknown nodes", maskLogToken(instanceID), maskLogEndpoint(instanceEndpoint), len(nodes.Nodes), len(nodes.UnknownProcess))
+		log.Tracef("instance:%v,%v, has: %v nodes, %v unknown nodes", console_common.MaskLogToken(instanceID), console_common.MaskLogEndpoint(instanceEndpoint), len(nodes.Nodes), len(nodes.UnknownProcess))
 		if len(nodes.UnknownProcess) > 0 {
 			pids := bindInstanceToCluster(clusterInfo, nodes, instanceID, instanceEndpoint)
 			if len(pids) > 0 {
-				log.Infof("instance:%v,%v, success enroll %v nodes", maskLogToken(instanceID), maskLogEndpoint(instanceEndpoint), len(pids))
+				log.Infof("instance:%v,%v, success enroll %v nodes", console_common.MaskLogToken(instanceID), console_common.MaskLogEndpoint(instanceEndpoint), len(pids))
 			}
 		}
 
 		if len(nodes.Nodes) > 0 {
 			for k, v := range nodes.Nodes {
-				log.Tracef("node status, id=%s, status=%v, enrolled=%v", maskLogToken(k), v.Status, v.Enrolled)
+				log.Tracef("node status, id=%s, status=%v, enrolled=%v", console_common.MaskLogToken(k), v.Status, v.Enrolled)
 				if !v.Enrolled {
 					pids := bindInstanceToCluster(clusterInfo, nodes, instanceID, instanceEndpoint)
 					if len(pids) > 0 {
-						log.Infof("instance:%v,%v, success enroll %v nodes", maskLogToken(instanceID), maskLogEndpoint(instanceEndpoint), len(pids))
+						log.Infof("instance:%v,%v, success enroll %v nodes", console_common.MaskLogToken(instanceID), console_common.MaskLogEndpoint(instanceEndpoint), len(pids))
 					}
 					break
 				}
@@ -763,7 +762,7 @@ func bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elastic.DiscoveryResu
 		for _, clusterID := range clusterInfo.ClusterIDs {
 			preparedConf, err := elasticapi.PrepareClusterForAgentCollection(clusterID)
 			if err != nil {
-				log.Errorf("failed to prepare cluster [%s] for agent collection: %v", maskLogToken(clusterID), err)
+				log.Errorf("failed to prepare cluster [%s] for agent collection: %v", console_common.MaskLogToken(clusterID), err)
 				continue
 			}
 			meta := elastic.GetMetadata(clusterID)
@@ -771,9 +770,9 @@ func bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elastic.DiscoveryResu
 				states, err := elastic.GetClient(clusterID).GetClusterState()
 				if err != nil || states == nil {
 					if err != nil {
-						log.Errorf("failed to get cluster state for cluster [%s]: %v", maskLogToken(clusterID), err)
+						log.Errorf("failed to get cluster state for cluster [%s]: %v", console_common.MaskLogToken(clusterID), err)
 					} else {
-						log.Errorf("cluster state is empty for cluster [%s]", maskLogToken(clusterID))
+						log.Errorf("cluster state is empty for cluster [%s]", console_common.MaskLogToken(clusterID))
 					}
 					continue
 				}
@@ -781,11 +780,11 @@ func bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elastic.DiscoveryResu
 				clusterUUID := states.ClusterUUID
 				auth, err := common.GetAgentBasicAuth(preparedConf)
 				if err != nil {
-					log.Errorf("failed to get agent credential for cluster [%s]: %v", maskLogToken(clusterID), err)
+					log.Errorf("failed to get agent credential for cluster [%s]: %v", console_common.MaskLogToken(clusterID), err)
 					continue
 				}
 				if auth == nil || auth.Username == "" {
-					log.Errorf("cluster [%s] has no available agent credential", maskLogToken(clusterID))
+					log.Errorf("cluster [%s] has no available agent credential", console_common.MaskLogToken(clusterID))
 					continue
 				}
 
@@ -873,63 +872,6 @@ func listenAddressPriority(addr model.ListenAddr) int {
 	}
 }
 
-func maskLogToken(value string) string {
-	value = strings.TrimSpace(value)
-	if value == "" {
-		return "<empty>"
-	}
-
-	if len(value) <= 4 {
-		return "***"
-	}
-
-	if len(value) <= 8 {
-		return value[:1] + "***" + value[len(value)-1:]
-	}
-
-	return value[:2] + "***" + value[len(value)-2:]
-}
-
-func maskLogHost(value string) string {
-	value = strings.TrimSpace(value)
-	if value == "" {
-		return "<empty>"
-	}
-
-	host, port, err := net.SplitHostPort(value)
-	if err == nil {
-		_ = host
-		return "***:" + port
-	}
-
-	return "***"
-}
-
-func maskLogEndpoint(value string) string {
-	value = strings.TrimSpace(value)
-	if value == "" {
-		return "<empty>"
-	}
-
-	parsed, err := url.Parse(value)
-	if err == nil && parsed.Host != "" {
-		host := "***"
-		if port := parsed.Port(); port != "" {
-			host = host + ":" + port
-		}
-		if parsed.Scheme != "" {
-			return parsed.Scheme + "://" + host
-		}
-		return host
-	}
-
-	if strings.Contains(value, "://") {
-		return "***"
-	}
-
-	return maskLogHost(value)
-}
-
 func (h *APIHandler) internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint string, pid int, nodeHost string, auth *model.BasicAuth, cmdline string) *elastic.LocalNodeInfo {
 	success, tryAgain, nodeInfo := h.getESNodeInfoViaProxy(nodeHost, "http", auth, instanceID)
 	if !success && tryAgain {
@@ -938,9 +880,9 @@ func (h *APIHandler) internalProcessBind(clusterID, clusterUUID, instanceID, ins
 	}
 
 	if success {
-		log.Tracef("connect to es node success: cluster_uuid=%s, node=%s, instance=%s", maskLogToken(clusterUUID), maskLogHost(nodeHost), maskLogEndpoint(instanceEndpoint))
+		log.Tracef("connect to es node success: cluster_uuid=%s, node=%s, instance=%s", console_common.MaskLogToken(clusterUUID), console_common.MaskLogHost(nodeHost), console_common.MaskLogEndpoint(instanceEndpoint))
 		if nodeInfo.ClusterInfo.ClusterUUID != clusterUUID {
-			log.Infof("cluster uuid not match, cluster=%s, cluster_uuid=%s, node_cluster_uuid=%s", maskLogToken(clusterID), maskLogToken(clusterUUID), maskLogToken(nodeInfo.ClusterInfo.ClusterUUID))
+			log.Infof("cluster uuid not match, cluster=%s, cluster_uuid=%s, node_cluster_uuid=%s", console_common.MaskLogToken(clusterID), console_common.MaskLogToken(clusterUUID), console_common.MaskLogToken(nodeInfo.ClusterInfo.ClusterUUID))
 			return nil
 		}
 
@@ -966,7 +908,7 @@ func (h *APIHandler) internalProcessBind(clusterID, clusterUUID, instanceID, ins
 		return nodeInfo
 	}
 
-	log.Tracef("failed to connect to es node via agent proxy: cluster_uuid=%s, node=%s, instance=%s, retry_https=%v", maskLogToken(clusterUUID), maskLogHost(nodeHost), maskLogEndpoint(instanceEndpoint), tryAgain)
+	log.Tracef("failed to connect to es node via agent proxy: cluster_uuid=%s, node=%s, instance=%s, retry_https=%v", console_common.MaskLogToken(clusterUUID), console_common.MaskLogHost(nodeHost), console_common.MaskLogEndpoint(instanceEndpoint), tryAgain)
 	return nil
 }
 

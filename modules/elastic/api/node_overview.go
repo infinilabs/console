@@ -1085,63 +1085,177 @@ func (h *APIHandler) getNodeIndices(w http.ResponseWriter, req *http.Request, ps
 
 	resBody := map[string]interface{}{}
 	nodeUUID := ps.ByName("node_id")
-	q := &orm.Query{Size: 1}
-	q.AddSort("timestamp", orm.DESC)
-	q.Conds = orm.And(
-		orm.Eq("metadata.category", "elasticsearch"),
-		orm.Eq("metadata.labels.cluster_id", id),
-		orm.Eq("metadata.labels.node_id", nodeUUID),
-		orm.Eq("metadata.name", "node_routing_table"),
-	)
 
-	err, result := orm.Search(event.Event{}, q)
+	indices, err := h.getNodeLatestIndicesAgent(req, min, max, id, nodeUUID)
 	if err != nil {
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
+		return
 	}
-	namesM := util.MapStr{}
-	if len(result.Result) > 0 {
-		if data, ok := result.Result[0].(map[string]interface{}); ok {
-			if routingTable, exists := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "node_routing_table"}, data); exists {
-				if rows, ok := routingTable.([]interface{}); ok {
-					for _, row := range rows {
-						if v, ok := row.(map[string]interface{}); ok {
-							if indexName, ok := v["index"].(string); ok {
-								namesM[indexName] = true
-							}
-						}
-					}
+	h.WriteJSON(w, indices, http.StatusOK)
+}
+
+// getNodeLatestIndicesAgent builds the index list for a single node in agent mode.
+// It uses shard_stats (filtered to this node) as the primary source, enriched by IndexConfig.
+func (h *APIHandler) getNodeLatestIndicesAgent(req *http.Request, min, max, clusterID, nodeUUID string) ([]interface{}, error) {
+	allowedIndices, hasAllPrivilege := h.GetAllowedIndices(req, clusterID)
+	if !hasAllPrivilege && len(allowedIndices) == 0 {
+		return []interface{}{}, nil
+	}
+
+	clusterUUID, err := h.getClusterUUID(clusterID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Query shard_stats for this node in the time range.
+	query := util.MapStr{
+		"size": 10000,
+		"_source": []string{
+			"metadata.labels.index_name",
+			"metadata.labels.shard",
+			"metadata.labels.shard_id",
+			"payload.elasticsearch.shard_stats.docs",
+			"payload.elasticsearch.shard_stats.store",
+			"payload.elasticsearch.shard_stats.routing",
+			"timestamp",
+		},
+		"sort": []util.MapStr{
+			{"timestamp": util.MapStr{"order": "desc"}},
+		},
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"filter": []util.MapStr{
+					{"range": util.MapStr{"timestamp": util.MapStr{"gte": min, "lte": max}}},
+				},
+				"must": []util.MapStr{
+					{"term": util.MapStr{"metadata.category": util.MapStr{"value": "elasticsearch"}}},
+					{"term": util.MapStr{"metadata.labels.cluster_uuid": util.MapStr{"value": clusterUUID}}},
+					{"term": util.MapStr{"metadata.name": util.MapStr{"value": "shard_stats"}}},
+					{"term": util.MapStr{"metadata.labels.node_id": util.MapStr{"value": nodeUUID}}},
+				},
+			},
+		},
+	}
+	q := &orm.Query{RawQuery: util.MustToJSONBytes(query), WildcardIndex: true}
+	indexInfos := map[string]*ShardsSummary{}
+	seenShards := map[string]struct{}{}
+	_, searchResult := orm.Search(event.Event{}, q)
+	for _, hit := range searchResult.Result {
+		if hitM, ok := hit.(map[string]interface{}); ok {
+			shardDocCount, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "shard_stats", "docs", "count"}, hitM)
+			storeInBytes, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "shard_stats", "store", "size_in_bytes"}, hitM)
+			indexName, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "index_name"}, hitM)
+			shardID, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "shard_id"}, hitM)
+			shardNum, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "shard"}, hitM)
+			primary, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "shard_stats", "routing", "primary"}, hitM)
+			if v, ok := indexName.(string); ok {
+				dedupeKey := util.ToString(shardID)
+				if dedupeKey == "" {
+					dedupeKey = fmt.Sprintf("%s:%s:%v", v, util.ToString(shardNum), primary)
+				}
+				if _, exists := seenShards[dedupeKey]; exists {
+					continue
+				}
+				seenShards[dedupeKey] = struct{}{}
+				if _, ok = indexInfos[v]; !ok {
+					indexInfos[v] = &ShardsSummary{Index: v}
+				}
+				info := indexInfos[v]
+				if count, ok := shardDocCount.(float64); ok && primary == true {
+					info.DocsCount += int64(count)
+				}
+				if storeSize, ok := storeInBytes.(float64); ok {
+					info.StoreInBytes += int64(storeSize)
+				}
+				if primary == true {
+					info.Shards++
+				} else {
+					info.Replicas++
+				}
+				if info.Timestamp == nil {
+					info.Timestamp = hitM["timestamp"]
 				}
 			}
 		}
 	}
 
-	indexNames := make([]interface{}, 0, len(namesM))
-	for name, _ := range namesM {
-		indexNames = append(indexNames, name)
+	if len(indexInfos) == 0 {
+		return []interface{}{}, nil
 	}
 
-	q1 := &orm.Query{Size: 100}
-	q1.AddSort("timestamp", orm.DESC)
+	// Enrich with IndexConfig (state, health, configured shards/replicas).
+	indexNameList := make([]interface{}, 0, len(indexInfos))
+	for name := range indexInfos {
+		indexNameList = append(indexNameList, name)
+	}
+	q1 := &orm.Query{Size: len(indexInfos) + 10}
 	q1.Conds = orm.And(
 		orm.Eq("metadata.category", "elasticsearch"),
-		orm.Eq("metadata.cluster_id", id),
-		orm.In("metadata.index_name", indexNames),
+		orm.Eq("metadata.cluster_id", clusterID),
+		orm.In("metadata.index_name", indexNameList),
 		orm.NotEq("metadata.labels.index_status", "deleted"),
 	)
-	err, result = orm.Search(elastic.IndexConfig{}, q1)
-	if err != nil {
-		resBody["error"] = err.Error()
-		h.WriteJSON(w, resBody, http.StatusInternalServerError)
+	_, indexConfigResult := orm.Search(elastic.IndexConfig{}, q1)
+	indexConfigMap := map[string]map[string]interface{}{}
+	for _, hit := range indexConfigResult.Result {
+		if hitM, ok := hit.(map[string]interface{}); ok {
+			nameV, _ := util.GetMapValueByKeys([]string{"metadata", "index_name"}, hitM)
+			if name, ok2 := nameV.(string); ok2 {
+				indexConfigMap[name] = hitM
+			}
+		}
 	}
 
-	indices, err := h.getLatestIndices(req, min, max, id, &result)
-	if err != nil {
-		resBody["error"] = err.Error()
-		h.WriteJSON(w, resBody, http.StatusInternalServerError)
+	indices := []interface{}{}
+	var indexPattern *radix.Pattern
+	if !hasAllPrivilege {
+		indexPattern = radix.Compile(allowedIndices...)
 	}
 
-	h.WriteJSON(w, indices, http.StatusOK)
+	for indexName, info := range indexInfos {
+		if indexPattern != nil && !indexPattern.Match(indexName) {
+			continue
+		}
+		state := ""
+		health := ""
+		shardsNum := 0
+		replicasNum := info.Replicas
+		if cfg := indexConfigMap[indexName]; cfg != nil {
+			sv, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "state"}, cfg)
+			hv, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "health_status"}, cfg)
+			state, _ = sv.(string)
+			health, _ = hv.(string)
+			if sn, _ := util.GetMapValueByKeys([]string{"payload", "index_state", "settings", "index", "number_of_shards"}, cfg); sn != nil {
+				shardsNum, _ = util.ToInt(util.ToString(sn))
+			}
+			if rn, _ := util.GetMapValueByKeys([]string{"payload", "index_state", "settings", "index", "number_of_replicas"}, cfg); rn != nil {
+				replicasNum, _ = util.ToInt(util.ToString(rn))
+			}
+		}
+		if state == "delete" {
+			health = "N/A"
+		}
+		unassigned := 0
+		if shardsNum > 0 {
+			unassigned = (replicasNum+1)*shardsNum - info.Shards - info.Replicas
+			if unassigned < 0 {
+				unassigned = 0
+			}
+		}
+		indices = append(indices, util.MapStr{
+			"index":             indexName,
+			"status":            state,
+			"health":            health,
+			"timestamp":         info.Timestamp,
+			"docs_count":        info.DocsCount,
+			"shards":            info.Shards,
+			"replicas":          replicasNum,
+			"unassigned_shards": unassigned,
+			"store_size":        util.FormatBytes(float64(info.StoreInBytes), 1),
+		})
+	}
+	return indices, nil
 }
 
 type ShardsSummary struct {

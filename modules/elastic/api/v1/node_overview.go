@@ -966,17 +966,12 @@ func (h *APIHandler) GetNodeIndices(w http.ResponseWriter, req *http.Request, ps
 	}
 
 	// Step 2: IndexConfig provides health and status enrichment (optional).
-	indexNameList := make([]interface{}, 0, len(indexNames))
-	for name := range indexNames {
-		indexNameList = append(indexNameList, name)
-	}
-	q1 := &orm.Query{Size: len(indexNames) + 10}
+	// Query all IndexConfig for the cluster to avoid issues with orm.In.
+	q1 := &orm.Query{Size: 2000}
 	q1.AddSort("timestamp", orm.DESC)
 	q1.Conds = orm.And(
 		orm.Eq("metadata.category", "elasticsearch"),
 		orm.Eq("metadata.cluster_id", id),
-		orm.In("metadata.index_name", indexNameList),
-		orm.NotEq("metadata.labels.index_status", "deleted"),
 	)
 	_, indexConfigResult := orm.Search(elastic.IndexConfig{}, q1)
 	indexConfigMap := map[string]map[string]interface{}{}
@@ -984,7 +979,9 @@ func (h *APIHandler) GetNodeIndices(w http.ResponseWriter, req *http.Request, ps
 		if hitM, ok := hit.(map[string]interface{}); ok {
 			nameV, _ := util.GetMapValueByKeys([]string{"metadata", "index_name"}, hitM)
 			if name, ok := nameV.(string); ok {
-				indexConfigMap[name] = hitM
+				if _, exists := indexConfigMap[name]; !exists {
+					indexConfigMap[name] = hitM
+				}
 			}
 		}
 	}

@@ -150,30 +150,40 @@ export default (props) => {
           .clone()
           .startOf("hour")
           .add(Math.floor(currentMoment.minutes() / bucketValue) * bucketValue, "minutes");
-      case "h":
-        return currentMoment
-          .clone()
-          .startOf("day")
-          .add(Math.floor(currentMoment.hours() / bucketValue) * bucketValue, "hours");
-      case "d":
-        return currentMoment
-          .clone()
-          .startOf("month")
-          .add(Math.floor((currentMoment.date() - 1) / bucketValue) * bucketValue, "days");
-      case "w": {
-        const baseMoment = moment(0).startOf("week");
-        const diff = currentMoment.clone().startOf("week").diff(baseMoment, "weeks");
-        return baseMoment.clone().add(Math.floor(diff / bucketValue) * bucketValue, "weeks");
+      case "h": {
+        // Use UTC to match ES bucket alignment (no time_zone in backend queries)
+        const utcH = moment.utc(value);
+        return moment(
+          utcH.clone().startOf("day")
+            .add(Math.floor(utcH.hours() / bucketValue) * bucketValue, "hours")
+            .valueOf()
+        );
       }
-      case "M":
-        return currentMoment
-          .clone()
-          .startOf("year")
-          .add(Math.floor(currentMoment.month() / bucketValue) * bucketValue, "months");
+      case "d": {
+        const utcD = moment.utc(value);
+        return moment(
+          utcD.clone().startOf("month")
+            .add(Math.floor((utcD.date() - 1) / bucketValue) * bucketValue, "days")
+            .valueOf()
+        );
+      }
+      case "w": {
+        const baseMoment = moment.utc(0).startOf("week");
+        const diff = moment.utc(value).clone().startOf("week").diff(baseMoment, "weeks");
+        return moment(baseMoment.clone().add(Math.floor(diff / bucketValue) * bucketValue, "weeks").valueOf());
+      }
+      case "M": {
+        const utcM = moment.utc(value);
+        return moment(
+          utcM.clone().startOf("year")
+            .add(Math.floor(utcM.month() / bucketValue) * bucketValue, "months")
+            .valueOf()
+        );
+      }
       case "y": {
-        const baseMoment = moment(0).startOf("year");
-        const diff = currentMoment.clone().startOf("year").diff(baseMoment, "years");
-        return baseMoment.clone().add(Math.floor(diff / bucketValue) * bucketValue, "years");
+        const baseMoment = moment.utc(0).startOf("year");
+        const diff = moment.utc(value).clone().startOf("year").diff(baseMoment, "years");
+        return moment(baseMoment.clone().add(Math.floor(diff / bucketValue) * bucketValue, "years").valueOf());
       }
       default:
         return null;

@@ -31,6 +31,7 @@ import { baseFormattersPublic } from "../../components/vendor/data/public/field_
 import { deserializeFieldFormat } from "../../components/vendor/data/public/field_formats/utils/deserialize";
 import { ESPrefix } from "@/services/common";
 import request from "@/utils/request";
+import { getTimezone } from "@/utils/utils";
 
 const timeBucketConfig = {
   "histogram:maxBars": 100,
@@ -300,7 +301,7 @@ const getSearchParams = (
         [isCalendarInterval ? "calendar_interval" : "fixed_interval"]: timeExp,
         field: indexPattern.timeFieldName,
         min_doc_count: 1,
-        time_zone: "Asia/Shanghai",
+        time_zone: getTimezone(),
       },
     },
   };

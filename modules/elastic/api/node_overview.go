@@ -1185,16 +1185,13 @@ func (h *APIHandler) getNodeLatestIndicesAgent(req *http.Request, min, max, clus
 	}
 
 	// Enrich with IndexConfig (state, health, configured shards/replicas).
-	indexNameList := make([]interface{}, 0, len(indexInfos))
-	for name := range indexInfos {
-		indexNameList = append(indexNameList, name)
-	}
-	q1 := &orm.Query{Size: len(indexInfos) + 10}
+	// Query all IndexConfig for the cluster (same approach as GetClusterIndices)
+	// to avoid issues with orm.In on large index lists.
+	q1 := &orm.Query{Size: 2000}
+	q1.AddSort("timestamp", orm.DESC)
 	q1.Conds = orm.And(
 		orm.Eq("metadata.category", "elasticsearch"),
 		orm.Eq("metadata.cluster_id", clusterID),
-		orm.In("metadata.index_name", indexNameList),
-		orm.NotEq("metadata.labels.index_status", "deleted"),
 	)
 	_, indexConfigResult := orm.Search(elastic.IndexConfig{}, q1)
 	indexConfigMap := map[string]map[string]interface{}{}
@@ -1202,7 +1199,9 @@ func (h *APIHandler) getNodeLatestIndicesAgent(req *http.Request, min, max, clus
 		if hitM, ok := hit.(map[string]interface{}); ok {
 			nameV, _ := util.GetMapValueByKeys([]string{"metadata", "index_name"}, hitM)
 			if name, ok2 := nameV.(string); ok2 {
-				indexConfigMap[name] = hitM
+				if _, exists := indexConfigMap[name]; !exists {
+					indexConfigMap[name] = hitM
+				}
 			}
 		}
 	}

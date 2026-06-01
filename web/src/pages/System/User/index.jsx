@@ -11,7 +11,7 @@ import {
   message,
   Icon,
 } from "antd";
-import { formatMessage } from "umi/locale";
+import { formatMessage, getLocale } from "umi/locale";
 import useFetch from "@/lib/hooks/use_fetch";
 import { ESPrefix } from "@/services/common";
 import { useGlobal } from "@/layouts/GlobalContext";
@@ -105,7 +105,7 @@ const UserList = (props) => {
       },
       {
         title: formatMessage({ id: "table.field.actions" }),
-        width: 180,
+        width: getLocale() === "zh-CN" ? 180 : 220,
         render: (text, record) => (
           <div>
             {hasAuthority("system.security:all") ? (

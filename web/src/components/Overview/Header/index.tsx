@@ -219,6 +219,7 @@ export default (props: IProps) => {
               {...autoCompleteProps}
             >
               <Input.Search
+                allowClear={true}
                 placeholder={formatMessage({ id: "listview.search.placeholder" })}
                 enterButton={formatMessage({ id: "form.button.search" })}
                 onSearch={(value) => {

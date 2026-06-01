@@ -121,6 +121,17 @@ export default Form.create()((props) => {
     });
   };
 
+  const clearUploadState = () => {
+    setUploadState((prev) => ({
+      ...(prev || {}),
+      fileList: [],
+      data: undefined,
+    }));
+    form.setFieldsValue({
+      upload: [],
+    });
+  };
+
   const renderExportBody = () => {
     const associatedTypes = types
       .filter((item) => !item.isMain)
@@ -157,11 +168,13 @@ export default Form.create()((props) => {
     if (Array.isArray(e)) {
       return e;
     }
-    setUploadState({
-      ...(uploadState || {}),
-      fileList: [e.file],
-    });
-    return e && e.fileList;
+    const fileList = e?.fileList ? e.fileList.slice(-1) : [];
+    setUploadState((prev) => ({
+      ...(prev || {}),
+      fileList,
+      ...(fileList.length === 0 ? { data: undefined } : {}),
+    }));
+    return fileList;
   };
 
   const renderImportBody = () => {
@@ -170,7 +183,16 @@ export default Form.create()((props) => {
       fileList: uploadState?.fileList || [],
       multiple: false,
       name: "file",
+      onRemove() {
+        clearUploadState();
+        return true;
+      },
       onChange(info) {
+        const fileList = info?.fileList ? info.fileList.slice(-1) : [];
+        if (info.file.status === "removed" || fileList.length === 0) {
+          clearUploadState();
+          return;
+        }
         if (info.file.status !== "uploading") {
           //cat json content
           let reader = new FileReader();
@@ -178,10 +200,11 @@ export default Form.create()((props) => {
             const jsonStr = e.target.result;
             try {
               const jsonObj = JSON.parse(jsonStr);
-              setUploadState({
-                ...(uploadState || {}),
+              setUploadState((prev) => ({
+                ...(prev || {}),
+                fileList,
                 data: jsonObj,
-              });
+              }));
             } catch {
               message.error(`${info.file.name} is an invalid json file!`);
             }

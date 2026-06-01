@@ -3,19 +3,22 @@
 }
 
 .p-anchor {
+  position: relative;
   width: 30px;
   flex: 0 0 30px;
+  align-self: stretch;
   box-sizing: border-box;
 }
 
 .c-anchor {
-  position: sticky;
-  top: 12px;
+  position: absolute;
+  top: 0;
   width: 30px;
   box-sizing: border-box;
   padding-left: 10px;
   padding-top: 10px;
   cursor: pointer;
+  transition: transform 0.2s ease;
 
   .ant-timeline-item-head {
     width: 12px;

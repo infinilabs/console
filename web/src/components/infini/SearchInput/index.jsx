@@ -45,10 +45,11 @@ const normalizeEnterButton = (enterButton) => {
   return enterButton;
 };
 
-const SearchInput = ({ placeholder, enterButton, ...props }) => {
+const SearchInput = ({ placeholder, enterButton, allowClear = true, ...props }) => {
   return (
     <Search
       {...props}
+      allowClear={allowClear}
       placeholder={normalizePlaceholder(placeholder)}
       enterButton={normalizeEnterButton(enterButton)}
     />

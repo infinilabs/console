@@ -1,4 +1,4 @@
-import { Input, Select, Button } from "antd";
+import { Input, Select, Button, Icon } from "antd";
 import { formatMessage } from "umi/locale";
 
 const InputGroup = Input.Group;
@@ -14,6 +14,15 @@ const FilterSearchGroup = ({
   onSearch,
   onChange,
 }) => {
+  const handleClear = () => {
+    if (typeof onChange == "function") {
+      onChange("");
+    }
+    if (typeof onSearch == "function") {
+      onSearch("");
+    }
+  };
+
   const handleSearchChange = (e) => {
     const value = e.target?.value ?? "";
     if (!value && typeof onFilterChange == "function") {
@@ -47,10 +56,19 @@ const FilterSearchGroup = ({
         })}
       </Select>
       <Input
-        allowClear={true}
         value={searchValue}
         placeholder={formatMessage({ id: "listview.search.placeholder" })}
         style={{ width: `calc(100% - ${filterWidth}px - 88px)` }}
+        suffix={
+          searchValue ? (
+            <Icon
+              type="close-circle"
+              theme="filled"
+              style={{ color: "rgba(0,0,0,.25)", cursor: "pointer" }}
+              onClick={handleClear}
+            />
+          ) : null
+        }
         onPressEnter={() => {
           if (typeof onSearch == "function") {
             onSearch(searchValue || "");

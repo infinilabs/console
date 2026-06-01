@@ -61,27 +61,16 @@ const FilterSearchGroup = ({
         style={{ width: `calc(100% - ${filterWidth}px - 88px)` }}
         suffix={
           searchValue ? (
-            <span
+            <Icon
+              type="close-circle"
+              theme="filled"
               style={{
-                height: "100%",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
+                color: "rgba(0,0,0,.25)",
+                cursor: "pointer",
+                verticalAlign: "middle",
               }}
-            >
-              <Icon
-                type="close-circle"
-                theme="filled"
-                style={{
-                  color: "rgba(0,0,0,.25)",
-                  cursor: "pointer",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  lineHeight: 1,
-                }}
-                onClick={handleClear}
-              />
-            </span>
+              onClick={handleClear}
+            />
           ) : null
         }
         onPressEnter={() => {

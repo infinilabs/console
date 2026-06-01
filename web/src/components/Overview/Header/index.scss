@@ -22,26 +22,6 @@
     color: #fff;
   }
 
-  .centeredSearchInput {
-    :global(.ant-input-affix-wrapper) {
-      display: flex;
-      align-items: center;
-    }
-
-    :global(.ant-input-suffix) {
-      height: 100%;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    :global(.ant-input-clear-icon) {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      line-height: 1;
-    }
-  }
 }
 
 .suggest-item {

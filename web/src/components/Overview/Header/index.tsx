@@ -218,17 +218,19 @@ export default (props: IProps) => {
               onDropdownVisibleChange={setSearchOpen}
               {...autoCompleteProps}
             >
-              <Input.Search
-                allowClear={true}
-                placeholder={formatMessage({ id: "listview.search.placeholder" })}
-                enterButton={formatMessage({ id: "form.button.search" })}
-                onSearch={(value) => {
-                  onSearchChange(value);
-                  setSearchOpen(false);
-                }}
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-              />
+              <div className={styles.centeredSearchInput}>
+                <Input.Search
+                  allowClear={true}
+                  placeholder={formatMessage({ id: "listview.search.placeholder" })}
+                  enterButton={formatMessage({ id: "form.button.search" })}
+                  onSearch={(value) => {
+                    onSearchChange(value);
+                    setSearchOpen(false);
+                  }}
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                />
+              </div>
             </AutoComplete>
           </Input.Group>
         </div>

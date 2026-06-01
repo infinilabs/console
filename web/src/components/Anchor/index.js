@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Tooltip, Timeline } from "antd";
 import { formatMessage } from "umi/locale";
 import { throttle } from "lodash";
@@ -6,12 +6,9 @@ import "./index.scss";
 
 function Anchor({ links = [] }) {
   const [activeID, setActiveID] = useState(links[0]);
-  const [anchorOffset, setAnchorOffset] = useState(0);
-  const wrapperRef = useRef(null);
 
   useEffect(() => {
     setActiveID(links[0]);
-    setAnchorOffset(0);
   }, [links]);
 
   useEffect(() => {
@@ -40,31 +37,6 @@ function Anchor({ links = [] }) {
       setActiveID((prevActiveID) =>
         prevActiveID === nextActiveID ? prevActiveID : nextActiveID
       );
-
-      if (!wrapperRef.current) {
-        return;
-      }
-
-      const activeElement = document.getElementById(nextActiveID);
-      const timelineElement = wrapperRef.current.querySelector(".c-anchor");
-
-      if (!activeElement || !timelineElement) {
-        setAnchorOffset(0);
-        return;
-      }
-
-      const containerTop =
-        wrapperRef.current.getBoundingClientRect().top + window.pageYOffset;
-      const targetOffset =
-        activeElement.getBoundingClientRect().top +
-        window.pageYOffset -
-        containerTop;
-      const maxOffset = Math.max(
-        wrapperRef.current.offsetHeight - timelineElement.offsetHeight,
-        0
-      );
-
-      setAnchorOffset(Math.min(Math.max(targetOffset, 0), maxOffset));
     };
 
     const throttledScroll = throttle(handleScroll, 100, {
@@ -101,11 +73,8 @@ function Anchor({ links = [] }) {
   }
 
   return (
-    <div className="p-anchor" ref={wrapperRef}>
-      <div
-        className="c-anchor"
-        style={{ transform: `translateY(${anchorOffset}px)` }}
-      >
+    <div className="p-anchor">
+      <div className="c-anchor">
         <Timeline>
           {links.map((link) => (
             <Tooltip

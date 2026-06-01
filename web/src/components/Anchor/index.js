@@ -6,7 +6,7 @@ import "./index.scss";
 
 function Anchor({ links = [] }) {
   const [activeID, setActiveID] = useState(links[0]);
-  const [anchorStyle, setAnchorStyle] = useState({ visibility: "hidden" });
+  const [anchorStyle, setAnchorStyle] = useState({ top: 0 });
   const wrapperRef = useRef(null);
   const anchorRef = useRef(null);
 
@@ -49,22 +49,15 @@ function Anchor({ links = [] }) {
       const activeElement = document.getElementById(nextActiveID);
       const activeRect = activeElement?.getBoundingClientRect();
       const anchorHeight = anchorRef.current.offsetHeight || 0;
-      const minTop = 88;
-      const maxTop = Math.max(window.innerHeight - anchorHeight - 24, minTop);
+      const wrapperHeight = wrapperRef.current.offsetHeight || 0;
+      const maxTop = Math.max(wrapperHeight - anchorHeight, 0);
 
-      let nextTop = activeRect?.top ?? wrapperRect.top;
-      nextTop = Math.max(nextTop, minTop);
+      let nextTop = activeRect ? activeRect.top - wrapperRect.top : 0;
+      nextTop = Math.max(nextTop, 0);
       nextTop = Math.min(nextTop, maxTop);
-      nextTop = Math.max(nextTop, wrapperRect.top);
-      nextTop = Math.min(nextTop, wrapperRect.bottom - anchorHeight);
 
       setAnchorStyle({
-        left: wrapperRect.left,
         top: nextTop,
-        visibility:
-          wrapperRect.bottom <= minTop || wrapperRect.top >= window.innerHeight
-            ? "hidden"
-            : "visible",
       });
     };
 

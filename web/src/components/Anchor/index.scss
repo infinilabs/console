@@ -6,12 +6,14 @@
   position: relative;
   width: 30px;
   flex: 0 0 30px;
-  align-self: flex-start;
+  align-self: stretch;
   box-sizing: border-box;
 }
 
 .c-anchor {
-  position: fixed;
+  position: absolute;
+  top: 0;
+  right: 0;
   width: 30px;
   box-sizing: border-box;
   padding-left: 10px;

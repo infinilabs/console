@@ -21,6 +21,7 @@ export default (props) => {
   });
   return (
     <Tabs
+      className="anchor-sticky-tabs"
       type="card"
       tabBarGutter={10}
       tabPosition="right"

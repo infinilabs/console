@@ -1,6 +1,4 @@
-// AntD right-positioned tabs set overflow:hidden on the content container,
-// which breaks position:sticky. Override to allow sticky to work.
-.ant-tabs .ant-tabs-right-content {
+.anchor-sticky-tabs.ant-tabs .ant-tabs-right-content {
   overflow: visible;
 }
 

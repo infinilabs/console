@@ -162,6 +162,7 @@
 .px-box{
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   .px {
     flex: 1;
   }

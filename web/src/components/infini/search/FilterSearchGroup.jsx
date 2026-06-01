@@ -1,7 +1,6 @@
-import { Input, Select, Icon } from "antd";
+import { Input, Select, Button } from "antd";
 import { formatMessage } from "umi/locale";
 
-const { Search } = Input;
 const InputGroup = Input.Group;
 const Option = Select.Option;
 
@@ -15,18 +14,6 @@ const FilterSearchGroup = ({
   onSearch,
   onChange,
 }) => {
-  const handleClear = () => {
-    if (typeof onFilterChange == "function") {
-      onFilterChange(undefined);
-    }
-    if (typeof onChange == "function") {
-      onChange("");
-    }
-    if (typeof onSearch == "function") {
-      onSearch("");
-    }
-  };
-
   const handleSearchChange = (e) => {
     const value = e.target?.value ?? "";
     if (!value && typeof onFilterChange == "function") {
@@ -59,31 +46,28 @@ const FilterSearchGroup = ({
           );
         })}
       </Select>
-      <Search
-        enterButton={enterButton}
+      <Input
+        allowClear={true}
         value={searchValue}
-        suffix={
-          <Icon
-            type="close-circle"
-            theme="filled"
-            onClick={handleClear}
-            style={{
-              cursor: searchValue ? "pointer" : "default",
-              color: "rgba(0,0,0,.25)",
-              visibility: searchValue ? "visible" : "hidden",
-              pointerEvents: searchValue ? "auto" : "none",
-            }}
-          />
-        }
         placeholder={formatMessage({ id: "listview.search.placeholder" })}
-        style={{ width: `calc(100% - ${filterWidth}px)` }}
-        onSearch={(value) => {
+        style={{ width: `calc(100% - ${filterWidth}px - 88px)` }}
+        onPressEnter={() => {
           if (typeof onSearch == "function") {
-            onSearch(value);
+            onSearch(searchValue || "");
           }
         }}
         onChange={handleSearchChange}
       />
+      <Button
+        style={{ width: 88 }}
+        onClick={() => {
+          if (typeof onSearch == "function") {
+            onSearch(searchValue || "");
+          }
+        }}
+      >
+        {enterButton}
+      </Button>
     </InputGroup>
   );
 };

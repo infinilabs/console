@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Tooltip, Timeline } from "antd";
 import { formatMessage } from "umi/locale";
 import { throttle } from "lodash";
@@ -6,6 +6,9 @@ import "./index.scss";
 
 function Anchor({ links = [] }) {
   const [activeID, setActiveID] = useState(links[0]);
+  const [anchorStyle, setAnchorStyle] = useState({ visibility: "hidden" });
+  const wrapperRef = useRef(null);
+  const anchorRef = useRef(null);
 
   useEffect(() => {
     setActiveID(links[0]);
@@ -37,6 +40,32 @@ function Anchor({ links = [] }) {
       setActiveID((prevActiveID) =>
         prevActiveID === nextActiveID ? prevActiveID : nextActiveID
       );
+
+      if (!wrapperRef.current || !anchorRef.current) {
+        return;
+      }
+
+      const wrapperRect = wrapperRef.current.getBoundingClientRect();
+      const activeElement = document.getElementById(nextActiveID);
+      const activeRect = activeElement?.getBoundingClientRect();
+      const anchorHeight = anchorRef.current.offsetHeight || 0;
+      const minTop = 88;
+      const maxTop = Math.max(window.innerHeight - anchorHeight - 24, minTop);
+
+      let nextTop = activeRect?.top ?? wrapperRect.top;
+      nextTop = Math.max(nextTop, minTop);
+      nextTop = Math.min(nextTop, maxTop);
+      nextTop = Math.max(nextTop, wrapperRect.top);
+      nextTop = Math.min(nextTop, wrapperRect.bottom - anchorHeight);
+
+      setAnchorStyle({
+        left: wrapperRect.left,
+        top: nextTop,
+        visibility:
+          wrapperRect.bottom <= minTop || wrapperRect.top >= window.innerHeight
+            ? "hidden"
+            : "visible",
+      });
     };
 
     const throttledScroll = throttle(handleScroll, 100, {
@@ -73,8 +102,8 @@ function Anchor({ links = [] }) {
   }
 
   return (
-    <div className="p-anchor">
-      <div className="c-anchor">
+    <div className="p-anchor" ref={wrapperRef}>
+      <div className="c-anchor" ref={anchorRef} style={anchorStyle}>
         <Timeline>
           {links.map((link) => (
             <Tooltip

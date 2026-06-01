@@ -5,10 +5,14 @@ import { Icon } from "antd";
 
 export default React.memo((props) => {
 
-    const {nodes = [], onChange, mode, placeholder, renderItem, labelField="host", keyField="host", allowClear } = props;
+    const {nodes = [], onChange, value: valueProp, mode, placeholder, renderItem, labelField="host", keyField="host", allowClear } = props;
     
     const [sorter, setSorter] = useState([])
-    const [value, setValue] = useState([]);
+    const [value, setValue] = useState(valueProp || []);
+
+    useMemo(() => {
+      setValue(valueProp || []);
+    }, [valueProp]);
 
     return (
         <DropdownList

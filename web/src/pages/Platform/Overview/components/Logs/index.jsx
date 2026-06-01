@@ -316,6 +316,12 @@ export default (props) => {
         return result?.total?.value || result?.total || 0;
     }, [result?.total]);
 
+    const showHistogram = useMemo(() => {
+        const levelBuckets = result?.aggregations?.Level?.buckets;
+        if (!levelBuckets) return true;
+        return levelBuckets.length > 0;
+    }, [result?.aggregations?.Level]);
+
     const isNotEmpty = useMemo(() => {
         return totalHits > 0
     }, [totalHits])
@@ -399,6 +405,7 @@ export default (props) => {
                                             />
                                         </div>
                                     </div>
+                                    {showHistogram && (
                                     <div className={styles.histogram}>
                                         <WidgetRender
                                             widget={histogram}
@@ -413,6 +420,7 @@ export default (props) => {
                                             onGlobalQueriesChange={onHistogramQueriesChange}
                                         />
                                     </div>
+                                    )}
                                     <div className={styles.table}>
                                         <Table 
                                             size={"small"}

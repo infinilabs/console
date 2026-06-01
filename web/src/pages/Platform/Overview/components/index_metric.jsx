@@ -123,6 +123,7 @@ export default (props) => {
                   mode="multiple"  
                   placeholder="Select index"
                   allowClear
+                  value={param.index_name || []}
                   onChange={indexValueChange}/>
               </div>
             </div>

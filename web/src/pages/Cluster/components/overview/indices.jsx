@@ -201,6 +201,8 @@ const Indices = ({
             <FilterSearchGroup
               filterWidth={120}
               filterFields={filterFields}
+              filterValue={searchFilterFields[0] || undefined}
+              searchValue={searchValue}
               onFilterChange={(value) => {
                 let val = value ? [value] : [];
                 setSearchFilterFields(val);

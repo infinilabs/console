@@ -146,6 +146,7 @@ export default (props) => {
                   mode="multiple"  
                   placeholder="Select node"
                   allowClear
+                  value={param.node_name || []}
                   onChange={nodeValueChange}/>
               </div>
             </div>

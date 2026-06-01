@@ -5,10 +5,14 @@ import { Icon } from "antd";
 
 export default (props) => {
 
-    const {indices = [], onChange, mode, placeholder, renderItem, labelField="index", keyField="index", allowClear } = props;
+    const {indices = [], onChange, value: valueProp, mode, placeholder, renderItem, labelField="index", keyField="index", allowClear } = props;
     
     const [sorter, setSorter] = useState([])
-    const [value, setValue] = useState([]);
+    const [value, setValue] = useState(valueProp || []);
+
+    useMemo(() => {
+      setValue(valueProp || []);
+    }, [valueProp]);
 
     return (
         <DropdownList

@@ -254,6 +254,9 @@ func GenerateQuery(metric *Metric) (interface{}, error) {
 				"field": groups[i].Field,
 				"size":  limit,
 			}
+			if groups[i].Missing != "" {
+				termsCfg["missing"] = groups[i].Missing
+			}
 			if i == grpLength-1 && len(metric.Sort) > 0 {
 				//use bucket sort instead of terms order when time after group
 				if metric.UseBucketSort() && len(metric.Sort) > 0 {

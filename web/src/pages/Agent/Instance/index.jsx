@@ -235,17 +235,11 @@ const AgentList = (props) => {
       //     return text;
       //   },
       // },
-      // {
-      //   title: "Version",
-      //   dataIndex: "version.number",
-      // },
-      // {
-      //   title: "Last Updated",
-      //   dataIndex: "updated",
-      //   render: (text) => {
-      //     return moment(text).format("YYYY-MM-DD HH:mm:ss");
-      //   },
-      // },
+      {
+        title: formatMessage({ id: "overview.column.version" }),
+        width: 120,
+        render: (text, record) => record?.application?.version?.number || null,
+      },
       {
         title: formatMessage({ id: "table.field.actions" }),
         width: 100,

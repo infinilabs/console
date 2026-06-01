@@ -11,7 +11,7 @@ import (
 	configcommon "infini.sh/framework/modules/configs/common"
 )
 
-const legacyManagedAuthMaxVersion = "1.30.4"
+const legacyManagedAuthMaxVersion = agent_common.LegacyAgentMaxVersion
 
 func validateManagedAgentRequestAuth(req *http.Request, instance *model.Instance) error {
 	return agent_common.ValidateManagerRequestAuth(

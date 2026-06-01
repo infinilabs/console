@@ -44,6 +44,7 @@ import (
 	"github.com/buger/jsonparser"
 	log "github.com/cihub/seelog"
 	console_common "infini.sh/console/common"
+	agent_common "infini.sh/console/modules/agent/common"
 	elasticapi "infini.sh/console/modules/elastic/api"
 	"infini.sh/console/plugin/managed/server"
 	httprouter "infini.sh/framework/core/api/router"
@@ -286,14 +287,39 @@ type ClusterBinding struct {
 	LogsPaths []string `json:"logs_paths,omitempty"`
 }
 
+// isLegacyLogsPathAgent returns true when the agent predates multi-path logs_path support.
+func isLegacyLogsPathAgent(instance *model.Instance) bool {
+	if instance == nil {
+		return false
+	}
+	version := strings.TrimSpace(instance.Application.Version.VersionNumber)
+	if version == "" {
+		return false
+	}
+	parsed, err := util.ParseSemantic(version)
+	if err != nil {
+		parsed, err = util.ParseGeneric(version)
+		if err != nil {
+			return false
+		}
+	}
+	cmp, err := parsed.Compare(agent_common.LegacyAgentMaxVersion)
+	if err != nil {
+		return false
+	}
+	return cmp <= 0
+}
+
 func GetSearchLogFiles(ctx context.Context, instance *model.Instance, logsPaths []string) (interface{}, error) {
+	if len(logsPaths) == 0 {
+		return nil, fmt.Errorf("logs_path is not configured for this node")
+	}
+
 	body := util.MapStr{}
-	switch len(logsPaths) {
-	case 0:
-		body["logs_path"] = ""
-	case 1:
+	if len(logsPaths) == 1 || isLegacyLogsPathAgent(instance) {
+		// Always send a plain string for single-path or legacy agents (≤1.31.0).
 		body["logs_path"] = logsPaths[0]
-	default:
+	} else {
 		body["logs_path"] = logsPaths
 	}
 

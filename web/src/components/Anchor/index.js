@@ -50,11 +50,22 @@ function Anchor({ links = [] }) {
       const activeRect = activeElement?.getBoundingClientRect();
       const anchorHeight = anchorRef.current.offsetHeight || 0;
       const wrapperHeight = wrapperRef.current.offsetHeight || 0;
-      const maxTop = Math.max(wrapperHeight - anchorHeight, 0);
+      const viewportPadding = 16;
+      const maxTopInWrapper = Math.max(wrapperHeight - anchorHeight, 0);
+      const minVisibleTop = Math.max(0, viewportPadding - wrapperRect.top);
+      const maxVisibleTop = Math.min(
+        maxTopInWrapper,
+        window.innerHeight - viewportPadding - wrapperRect.top - anchorHeight
+      );
 
       let nextTop = activeRect ? activeRect.top - wrapperRect.top : 0;
-      nextTop = Math.max(nextTop, 0);
-      nextTop = Math.min(nextTop, maxTop);
+      if (maxVisibleTop >= minVisibleTop) {
+        nextTop = Math.max(nextTop, minVisibleTop);
+        nextTop = Math.min(nextTop, maxVisibleTop);
+      } else {
+        nextTop = Math.max(nextTop, 0);
+        nextTop = Math.min(nextTop, maxTopInWrapper);
+      }
 
       setAnchorStyle({
         top: nextTop,

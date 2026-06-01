@@ -1,6 +1,53 @@
 package common
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
+
+func TestMaskLogError(t *testing.T) {
+	testCases := []struct {
+		name   string
+		input  string
+		expect string
+	}{
+		{
+			name:   "nil error",
+			input:  "",
+			expect: "<nil>",
+		},
+		{
+			name:   "url in get error",
+			input:  `request error: Get "http://192.168.3.8:8080/elasticsearch/node/_discovery": dial tcp 192.168.3.8:8080: connect: connection refused`,
+			expect: `request error: Get "http://***:8080/elasticsearch/node/_discovery": dial tcp ***:8080: connect: connection refused`,
+		},
+		{
+			name:   "https url",
+			input:  `Post "https://10.0.0.1:9200/_bulk": connection refused`,
+			expect: `Post "https://***:9200/_bulk": connection refused`,
+		},
+		{
+			name:   "no sensitive data",
+			input:  "index out of range",
+			expect: "index out of range",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.name == "nil error" {
+				if actual := MaskLogError(nil); actual != tc.expect {
+					t.Fatalf("unexpected result, got %q want %q", actual, tc.expect)
+				}
+				return
+			}
+			err := fmt.Errorf("%s", tc.input)
+			if actual := MaskLogError(err); actual != tc.expect {
+				t.Fatalf("unexpected masked error, got %q want %q", actual, tc.expect)
+			}
+		})
+	}
+}
 
 func TestMaskLogToken(t *testing.T) {
 	testCases := []struct {

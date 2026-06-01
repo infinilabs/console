@@ -111,7 +111,7 @@ func TestValidateManagedAgentRequestAuth(t *testing.T) {
 		req := httptest.NewRequest("POST", "/configs/_sync", nil)
 		instance := &model.Instance{
 			Application: env.Application{
-				Version: env.Version{VersionNumber: "1.30.5"},
+				Version: env.Version{VersionNumber: "1.31.1"},
 			},
 		}
 		if shouldAllowLegacyManagedRequestWithoutAuth(req, instance) {
@@ -123,7 +123,7 @@ func TestValidateManagedAgentRequestAuth(t *testing.T) {
 		req := httptest.NewRequest("POST", "/configs/_sync", nil)
 		instance := &model.Instance{
 			Application: env.Application{
-				Version: env.Version{VersionNumber: "1.31.0"},
+				Version: env.Version{VersionNumber: "1.32.0"},
 			},
 		}
 		if err := validateLegacyCompatibleManagedAgentRequestAuthForVersion(req, instance, "1.30.3"); err != nil {

@@ -536,7 +536,8 @@ func TestShouldUseLegacyInstallScriptTemplate(t *testing.T) {
 	}{
 		{version: "1.30.3", legacy: true},
 		{version: "1.30.4", legacy: true},
-		{version: "1.30.5", legacy: false},
+		{version: "1.31.0", legacy: true},
+		{version: "1.31.1", legacy: false},
 	}
 
 	for _, tc := range tests {

@@ -926,6 +926,8 @@ func (h *APIHandler) GetNodeIndices(w http.ResponseWriter, req *http.Request, ps
 	resBody := map[string]interface{}{}
 	id := ps.ByName("id")
 	nodeUUID := ps.ByName("node_id")
+
+	// Step 1: routing table is the primary source of index names for this node.
 	q := &orm.Query{Size: 1}
 	q.AddSort("timestamp", orm.DESC)
 	q.Conds = orm.And(
@@ -939,8 +941,9 @@ func (h *APIHandler) GetNodeIndices(w http.ResponseWriter, req *http.Request, ps
 	if err != nil {
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
+		return
 	}
-	namesM := util.MapStr{}
+	indexNames := map[string]bool{}
 	if len(result.Result) > 0 {
 		if data, ok := result.Result[0].(map[string]interface{}); ok {
 			if routingTable, exists := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "node_routing_table"}, data); exists {
@@ -948,7 +951,7 @@ func (h *APIHandler) GetNodeIndices(w http.ResponseWriter, req *http.Request, ps
 					for _, row := range rows {
 						if v, ok := row.(map[string]interface{}); ok {
 							if indexName, ok := v["index"].(string); ok {
-								namesM[indexName] = true
+								indexNames[indexName] = true
 							}
 						}
 					}
@@ -957,36 +960,175 @@ func (h *APIHandler) GetNodeIndices(w http.ResponseWriter, req *http.Request, ps
 		}
 	}
 
-	indexNames := make([]interface{}, 0, len(namesM))
-	for name, _ := range namesM {
-		indexNames = append(indexNames, name)
+	if len(indexNames) == 0 {
+		h.WriteJSON(w, []interface{}{}, http.StatusOK)
+		return
 	}
 
-	q1 := &orm.Query{Size: 100}
+	// Step 2: IndexConfig provides health and status enrichment (optional).
+	indexNameList := make([]interface{}, 0, len(indexNames))
+	for name := range indexNames {
+		indexNameList = append(indexNameList, name)
+	}
+	q1 := &orm.Query{Size: len(indexNames) + 10}
 	q1.AddSort("timestamp", orm.DESC)
 	q1.Conds = orm.And(
 		orm.Eq("metadata.category", "elasticsearch"),
 		orm.Eq("metadata.cluster_id", id),
-		orm.In("metadata.index_name", indexNames),
+		orm.In("metadata.index_name", indexNameList),
 		orm.NotEq("metadata.labels.index_status", "deleted"),
 	)
-	err, result = orm.Search(elastic.IndexConfig{}, q1)
-	if err != nil {
-		resBody["error"] = err.Error()
-		h.WriteJSON(w, resBody, http.StatusInternalServerError)
+	_, indexConfigResult := orm.Search(elastic.IndexConfig{}, q1)
+	indexConfigMap := map[string]map[string]interface{}{}
+	for _, hit := range indexConfigResult.Result {
+		if hitM, ok := hit.(map[string]interface{}); ok {
+			nameV, _ := util.GetMapValueByKeys([]string{"metadata", "index_name"}, hitM)
+			if name, ok := nameV.(string); ok {
+				indexConfigMap[name] = hitM
+			}
+		}
 	}
 
-	indices, err := h.getLatestIndices(req, min, max, id, &result)
+	indices, err := h.getLatestNodeIndices(req, min, max, id, indexNames, indexConfigMap)
 	if err != nil {
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
+		return
 	}
 
 	h.WriteJSON(w, indices, http.StatusOK)
 }
 
-func (h *APIHandler) getLatestIndices(req *http.Request, min string, max string, clusterID string, result *orm.Result) ([]interface{}, error) {
+// getLatestNodeIndices builds the index list for a single node using the routing-table
+// index names as the primary source of truth, enriched by IndexConfig and index_stats.
+func (h *APIHandler) getLatestNodeIndices(req *http.Request, min string, max string, clusterID string, indexNames map[string]bool, indexConfigMap map[string]map[string]interface{}) ([]interface{}, error) {
 	//filter indices
+	allowedIndices, hasAllPrivilege := h.GetAllowedIndices(req, clusterID)
+	if !hasAllPrivilege && len(allowedIndices) == 0 {
+		return []interface{}{}, nil
+	}
+
+	// Query index_stats for metric enrichment (docs_count, store_size, etc.).
+	query := util.MapStr{
+		"size":    2000,
+		"_source": []string{"metadata", "payload.elasticsearch.index_stats.index_info", "timestamp"},
+		"collapse": util.MapStr{
+			"field": "metadata.labels.index_name",
+		},
+		"sort": []util.MapStr{
+			{
+				"timestamp": util.MapStr{
+					"order": "desc",
+				},
+			},
+		},
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"filter": []util.MapStr{
+					{
+						"range": util.MapStr{
+							"timestamp": util.MapStr{
+								"gte": min,
+								"lte": max,
+							},
+						},
+					},
+				},
+				"must": []util.MapStr{
+					{
+						"term": util.MapStr{
+							"metadata.category": util.MapStr{
+								"value": "elasticsearch",
+							},
+						},
+					},
+					{
+						"term": util.MapStr{
+							"metadata.labels.cluster_id": util.MapStr{
+								"value": clusterID,
+							},
+						},
+					},
+					{
+						"term": util.MapStr{
+							"metadata.name": util.MapStr{
+								"value": "index_stats",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	q := &orm.Query{RawQuery: util.MustToJSONBytes(query), WildcardIndex: true}
+	indexInfos := map[string]util.MapStr{}
+	err, searchResult := orm.Search(event.Event{}, q)
+	if err != nil {
+		log.Warnf("failed to enrich latest indices for cluster [%s] in v1 API, fallback to base index state only: %v", clusterID, err)
+	} else {
+		for _, hit := range searchResult.Result {
+			if hitM, ok := hit.(map[string]interface{}); ok {
+				indexInfo, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "index_stats", "index_info"}, hitM)
+				indexName, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "index_name"}, hitM)
+				if v, ok := indexName.(string); ok {
+					if infoM, ok := indexInfo.(map[string]interface{}); ok {
+						if _, ok = infoM["index"].(string); ok {
+							infoM["timestamp"] = hitM["timestamp"]
+							indexInfos[v] = infoM
+						}
+					}
+				}
+			}
+		}
+	}
+
+	indices := []interface{}{}
+	var indexPattern *radix.Pattern
+	if !hasAllPrivilege {
+		indexPattern = radix.Compile(allowedIndices...)
+	}
+
+	// Iterate over routing-table index names as the primary source so we always
+	// return results even when IndexConfig or index_stats data is absent.
+	for indexName := range indexNames {
+		if indexPattern != nil && !indexPattern.Match(indexName) {
+			continue
+		}
+		if info := indexInfos[indexName]; info != nil {
+			// Rich data from index_stats: apply any deletion status from IndexConfig.
+			if cfg := indexConfigMap[indexName]; cfg != nil {
+				state, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "state"}, cfg)
+				if state == "delete" {
+					info["status"] = "delete"
+					info["health"] = "N/A"
+				}
+			}
+			indices = append(indices, info)
+		} else if cfg := indexConfigMap[indexName]; cfg != nil {
+			// No index_stats but IndexConfig exists: return state and health from config.
+			state, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "state"}, cfg)
+			health, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "health_status"}, cfg)
+			if state == "delete" {
+				health = "N/A"
+			}
+			indices = append(indices, util.MapStr{
+				"index":     indexName,
+				"status":    state,
+				"health":    health,
+				"timestamp": cfg["timestamp"],
+			})
+		} else {
+			// Routing table only: return the index name so the UI shows it exists.
+			indices = append(indices, util.MapStr{
+				"index": indexName,
+			})
+		}
+	}
+	return indices, nil
+}
+
+// getLatestIndices is used by GetClusterIndices where IndexConfig is the primary source.
+func (h *APIHandler) getLatestIndices(req *http.Request, min string, max string, clusterID string, result *orm.Result) ([]interface{}, error) {
 	allowedIndices, hasAllPrivilege := h.GetAllowedIndices(req, clusterID)
 	if !hasAllPrivilege && len(allowedIndices) == 0 {
 		return []interface{}{}, nil

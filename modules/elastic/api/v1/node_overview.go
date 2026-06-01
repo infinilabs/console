@@ -917,7 +917,7 @@ func getNodeOnlineStatusOfRecentDay(nodeIDs []string) (map[string][]interface{},
 	return recentStatus, nil
 }
 
-func (h *APIHandler) getNodeIndices(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+func (h *APIHandler) GetNodeIndices(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	var (
 		min = h.GetParameterOrDefault(req, "min", "now-15m")
 		max = h.GetParameterOrDefault(req, "max", "now")

@@ -1072,13 +1072,18 @@ func getNodeOnlineStatusOfRecentDay(nodeIDs []string) (map[string][]interface{},
 }
 
 func (h *APIHandler) getNodeIndices(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	id := ps.ByName("id")
+	if GetMonitorState(id) == elastic.ModeAgentless {
+		h.APIHandler.GetNodeIndices(w, req, ps)
+		return
+	}
+
 	var (
 		min = h.GetParameterOrDefault(req, "min", "now-15m")
 		max = h.GetParameterOrDefault(req, "max", "now")
 	)
 
 	resBody := map[string]interface{}{}
-	id := ps.ByName("id")
 	nodeUUID := ps.ByName("node_id")
 	q := &orm.Query{Size: 1}
 	q.AddSort("timestamp", orm.DESC)
@@ -1278,10 +1283,6 @@ func (h *APIHandler) getLatestIndices(req *http.Request, min string, max string,
 			if state == "delete" {
 				health = "N/A"
 			}
-			shards, _ := util.GetMapValueByKeys([]string{"payload", "index_state", "settings", "index", "number_of_shards"}, hitM)
-			replicas, _ := util.GetMapValueByKeys([]string{"payload", "index_state", "settings", "index", "number_of_replicas"}, hitM)
-			shardsNum, _ := util.ToInt(shards.(string))
-			replicasNum, _ := util.ToInt(replicas.(string))
 			if v, ok := indexName.(string); ok {
 				if indexPattern != nil {
 					if !indexPattern.Match(v) {
@@ -1289,6 +1290,10 @@ func (h *APIHandler) getLatestIndices(req *http.Request, min string, max string,
 					}
 				}
 				if indexInfos[v] != nil {
+					shards, _ := util.GetMapValueByKeys([]string{"payload", "index_state", "settings", "index", "number_of_shards"}, hitM)
+					replicas, _ := util.GetMapValueByKeys([]string{"payload", "index_state", "settings", "index", "number_of_replicas"}, hitM)
+					shardsNum, _ := util.ToInt(util.ToString(shards))
+					replicasNum, _ := util.ToInt(util.ToString(replicas))
 					indices = append(indices, util.MapStr{
 						"index":             v,
 						"status":            state,

@@ -45,12 +45,11 @@ export default (props) => {
   };
 
   const indexValueChange = (value) => {
-    const indexNames = value.map(item=>item.index);
     setParam((param) => {
       delete param["top"];
       return {
         ...param,
-        index_name: indexNames,
+        index_name: value,
       };
     });
   };
@@ -62,8 +61,8 @@ export default (props) => {
     if (param.top) {
       newParams.top = param.top;
     }
-    if (param.index_name) {
-      newParams.index_name = param.index_name;
+    if (param.index_name?.length > 0) {
+      newParams.index_name = param.index_name.map(item => item.index);
     }
     if (bucketSize) {
       newParams.bucket_size = bucketSize

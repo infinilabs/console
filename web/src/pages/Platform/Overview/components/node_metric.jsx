@@ -51,12 +51,11 @@ export default (props) => {
 
   const nodeValueChange = useCallback(
     (value) => {
-      const nodeNames = value.map(item=>item.host);
       setParam((param) => {
         delete param["top"];
         return {
           ...param,
-          node_name: nodeNames,
+          node_name: value,
         };
       });
     },
@@ -74,8 +73,8 @@ export default (props) => {
     if (param.top) {
       newParams.top = param.top;
     }
-    if (param.node_name) {
-      newParams.node_name = param.node_name;
+    if (param.node_name?.length > 0) {
+      newParams.node_name = param.node_name.map(item => item.host);
     }
     if (bucketSize) {
       newParams.bucket_size = bucketSize

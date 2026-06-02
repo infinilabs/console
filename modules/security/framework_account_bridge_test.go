@@ -14,6 +14,7 @@ import (
 	"infini.sh/framework/core/config"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/kv"
+	"infini.sh/framework/core/orm"
 	frameworksecurity "infini.sh/framework/core/security"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -204,4 +205,76 @@ func issueConsoleBridgeTestToken(t *testing.T, userID string, roles ...string) s
 	})
 
 	return tokenString
+}
+
+type bridgeTestUserStore struct {
+	items map[string]rbac.User
+}
+
+func (s *bridgeTestUserStore) Get(id string) (rbac.User, error) {
+	if user, ok := s.items[id]; ok {
+		return user, nil
+	}
+	return rbac.User{}, nil
+}
+
+func (s *bridgeTestUserStore) GetBy(field string, value interface{}) (*rbac.User, error) {
+	return nil, nil
+}
+
+func (s *bridgeTestUserStore) Update(user *rbac.User) error {
+	if user == nil {
+		return nil
+	}
+	s.items[user.ID] = *user
+	return nil
+}
+
+func (s *bridgeTestUserStore) Create(user *rbac.User) (string, error) {
+	return "", nil
+}
+
+func (s *bridgeTestUserStore) Delete(id string) error {
+	return nil
+}
+
+func (s *bridgeTestUserStore) Search(keyword string, from, size int) (orm.Result, error) {
+	return orm.Result{}, nil
+}
+
+func TestPersistFrameworkChallengeUpgradeUpdatesLegacyUserCredentials(t *testing.T) {
+	store := &bridgeTestUserStore{
+		items: map[string]rbac.User{
+			"default_user_admin": {
+				ORMObjectBase: orm.ORMObjectBase{ID: "default_user_admin"},
+				Password:      "legacy-hash",
+			},
+		},
+	}
+	adapter := rbac.Adapter{User: store}
+	user := &frameworksecurity.UserAccount{
+		PasswordSalt:     "new-salt",
+		PasswordVerifier: "new-verifier",
+	}
+	user.ID = "default_user_admin"
+
+	if err := persistFrameworkChallengeUpgrade(adapter, user); err != nil {
+		t.Fatalf("expected challenge upgrade persistence to succeed, got %v", err)
+	}
+	updated := store.items["default_user_admin"]
+	if updated.PasswordSalt != "new-salt" {
+		t.Fatalf("expected password_salt to be updated, got %q", updated.PasswordSalt)
+	}
+	if updated.PasswordVerifier != "new-verifier" {
+		t.Fatalf("expected password_verifier to be updated, got %q", updated.PasswordVerifier)
+	}
+}
+
+func TestPersistFrameworkChallengeUpgradeSkipsMissingUserID(t *testing.T) {
+	store := &bridgeTestUserStore{items: map[string]rbac.User{}}
+	adapter := rbac.Adapter{User: store}
+
+	if err := persistFrameworkChallengeUpgrade(adapter, &frameworksecurity.UserAccount{}); err != nil {
+		t.Fatalf("expected empty user id to be ignored, got %v", err)
+	}
 }

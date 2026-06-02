@@ -495,7 +495,7 @@ func TestResolveConsoleTLSServerNameFallsBackToCertificateDNSNameForIPEndpoint(t
 }
 
 func TestLegacyAgentInstallTemplateSetsConfigTLSServerName(t *testing.T) {
-	templatePath := filepath.Join("..", "..", "..", "config", "install_legency_agent.tpl")
+	templatePath := filepath.Join("..", "..", "..", "config", "install_legacy_agent.tpl")
 	content, err := os.ReadFile(templatePath)
 	if err != nil {
 		t.Fatalf("failed to read legacy agent install template: %v", err)

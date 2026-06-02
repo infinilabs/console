@@ -529,7 +529,9 @@ const RuleForm = (props) => {
             })}
             extra={
               <Popover
-                title={"Example"}
+                title={formatMessage({
+                  id: "alert.rule.form.title.example",
+                })}
                 content={
                   <Editor
                     height="300px"
@@ -553,7 +555,11 @@ const RuleForm = (props) => {
                 }
                 trigger="click"
               >
-                <a>Example</a>
+                <a>
+                  {formatMessage({
+                    id: "alert.rule.form.title.example",
+                  })}
+                </a>
               </Popover>
             }
           >

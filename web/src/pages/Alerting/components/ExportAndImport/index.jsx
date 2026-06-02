@@ -206,15 +206,15 @@ export default Form.create()((props) => {
                 data: jsonObj,
               }));
             } catch {
-              message.error(`${info.file.name} is an invalid json file!`);
+              message.error(formatMessage({ id: "alert.import.upload.invalid_json" }));
             }
           };
           reader.readAsText(info.file.originFileObj);
         }
         if (info.file.status === "done") {
-          message.success(`${info.file.name} file uploaded successfully`);
+          message.success(formatMessage({ id: "alert.import.upload.success" }));
         } else if (info.file.status === "error") {
-          message.error(`${info.file.name} file upload failed.`);
+          message.error(formatMessage({ id: "alert.import.upload.failed" }));
         }
       },
     };

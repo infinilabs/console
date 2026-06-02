@@ -10,6 +10,36 @@ import Anchor from "@/components/Anchor";
 import MetricChart from "./MetricChart";
 import { createRef, useCallback, useEffect, useMemo, useState } from "react";
 
+const normalizeNodeSelection = (value, nodes = []) => {
+  if (Array.isArray(value)) {
+    return value;
+  }
+  if (!value) {
+    return [];
+  }
+  if (typeof value === "string") {
+    return nodes.find((item) => item?.host === value)
+      ? nodes.filter((item) => item?.host === value)
+      : [{ host: value }];
+  }
+  return [value];
+};
+
+const extractNodeNames = (value) => {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => (typeof item === "string" ? item : item?.host))
+      .filter(Boolean);
+  }
+  if (typeof value === "string") {
+    return [value];
+  }
+  if (value?.host) {
+    return [value.host];
+  }
+  return [];
+};
+
 export default (props) => {
 
   const { 
@@ -73,8 +103,9 @@ export default (props) => {
     if (param.top) {
       newParams.top = param.top;
     }
-    if (param.node_name?.length > 0) {
-      newParams.node_name = param.node_name.map(item => item.host);
+    const nodeNames = extractNodeNames(param.node_name);
+    if (nodeNames.length > 0) {
+      newParams.node_name = nodeNames;
     }
     if (bucketSize) {
       newParams.bucket_size = bucketSize
@@ -82,7 +113,7 @@ export default (props) => {
     return newParams;
   }, [param, timeRange, bucketSize]);
 
-  const formatedNodes = React.useMemo(() => {
+  const formatedNodes = useMemo(() => {
     if (!nodes) {
       return [];
     }
@@ -93,6 +124,10 @@ export default (props) => {
       }
     });
   }, [nodes]);
+  const selectedNodes = useMemo(
+    () => normalizeNodeSelection(param.node_name, formatedNodes),
+    [param.node_name, formatedNodes]
+  );
 
   const [charts, setCharts] = useState([])
 
@@ -145,7 +180,7 @@ export default (props) => {
                   mode="multiple"  
                   placeholder="Select node"
                   allowClear
-                  value={param.node_name || []}
+                  value={selectedNodes}
                   onChange={nodeValueChange}/>
               </div>
             </div>

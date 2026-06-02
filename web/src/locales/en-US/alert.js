@@ -216,6 +216,11 @@ export default {
   "alert.rule.table.columnns.category": "Category",
   "alert.rule.table.columnns.tags": "Tags",
   "alert.rule.table.columnns.last_notification_time": "Last notification",
+  "alert.import.submit.success": "Imported successfully",
+  "alert.import.submit.failed": "Import failed",
+  "alert.import.upload.success": "File uploaded successfully",
+  "alert.import.upload.failed": "File upload failed",
+  "alert.import.upload.invalid_json": "Invalid JSON file",
   // /alerting/rule/edit page 编辑规则页面
   "alert.rule.form.title.edit": "Edit Rules",
   "alert.rule.form.label.select_cluster": "Select cluster",
@@ -272,6 +277,7 @@ export default {
     "Template variables examples:",
   "alert.rule.form.title.example1": "Example1:",
   "alert.rule.form.title.example2": "Example2(array traversal):",
+  "alert.rule.form.title.example": "Example",
   "alert.rule.form.title.template_function": "Template functions",
   // alerting/rule/new page 新建规则页面
   "alert.rule.form.title.create": "Create Rules",

@@ -204,6 +204,11 @@ export default {
   "alert.rule.table.columnns.category": "分类",
   "alert.rule.table.columnns.tags": "标签",
   "alert.rule.table.columnns.last_notification_time": "最近告警",
+  "alert.import.submit.success": "导入成功",
+  "alert.import.submit.failed": "导入失败",
+  "alert.import.upload.success": "文件上传成功",
+  "alert.import.upload.failed": "文件上传失败",
+  "alert.import.upload.invalid_json": "无效的 JSON 文件",
   // /alerting/rule/edit page 编辑规则页面
   "alert.rule.form.title.edit": "编辑规则",
   "alert.rule.form.label.select_cluster": "选择集群",
@@ -257,6 +262,7 @@ export default {
   "alert.rule.form.title.template_variables_examples": "模板变量示例：",
   "alert.rule.form.title.example1": "示例1:",
   "alert.rule.form.title.example2": "示例2(数组遍历):",
+  "alert.rule.form.title.example": "示例",
   "alert.rule.form.title.template_function": "模板函数",
   // alerting/rule/new page 新建规则页面
   "alert.rule.form.title.create": "新建规则",

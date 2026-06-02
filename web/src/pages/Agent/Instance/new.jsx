@@ -2,6 +2,7 @@ import { Steps, Button, message, Spin, Card } from "antd";
 import { connect } from "dva";
 import { useState, useRef } from "react";
 import { InitialStep, ExtraStep, ResultStep } from "./Step";
+import { ConsoleAccessInfo } from "./Step/initial_step";
 import PageHeaderWrapper from "@/components/PageHeaderWrapper";
 import "@/assets/headercontent.scss";
 import { formatMessage } from "umi/locale";
@@ -90,6 +91,7 @@ const parseResponsePayload = async (response) => {
 const NewStep = ({ current, changeStep, history }) => {
   const formRef = useRef();
   const [instanceConfig, setInstanceConfig] = useState({});
+  const [registrationInfo, setRegistrationInfo] = useState({});
   const [isLoading, setIsLoading] = useState(false);
 
   const handleConnect = async () => {
@@ -199,6 +201,7 @@ const NewStep = ({ current, changeStep, history }) => {
 
   const oneMoreClick = () => {
     setInstanceConfig({ tags: ["default"] });
+    setRegistrationInfo({});
     changeStep(0);
   };
 
@@ -208,7 +211,13 @@ const NewStep = ({ current, changeStep, history }) => {
 
   const renderContent = (current) => {
     if (current === 0) {
-      return <InitialStep ref={formRef} initialValue={instanceConfig} />;
+      return (
+        <InitialStep
+          ref={formRef}
+          initialValue={instanceConfig}
+          onRegistrationInfoChange={setRegistrationInfo}
+        />
+      );
     } else if (current === 1) {
       return <ExtraStep initialValue={instanceConfig} ref={formRef} />;
     } else if (current === 2) {
@@ -229,13 +238,22 @@ const NewStep = ({ current, changeStep, history }) => {
           {formatMessage({
             id: "agent.instance.regist",
           })}
-          <Link to={"/resource/agent"}>
-            <Button type="primary">
-              {formatMessage({
-                id: "form.button.goback",
-              })}
-            </Button>
-          </Link>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <Link to={"/resource/agent"}>
+              <Button type="primary">
+                {formatMessage({
+                  id: "form.button.goback",
+                })}
+              </Button>
+            </Link>
+            <ConsoleAccessInfo
+              consoleEndpoint={registrationInfo.console_endpoint || instanceConfig.console_endpoint}
+              managerToken={registrationInfo.manager_token || instanceConfig.manager_token}
+              registrationExpiredAt={
+                registrationInfo.registration_expired_at || instanceConfig.registration_expired_at
+              }
+            />
+          </div>
         </div>
         <Spin spinning={isLoading}>
           <div className={styles.content}>

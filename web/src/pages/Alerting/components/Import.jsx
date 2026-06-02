@@ -53,11 +53,11 @@ export default Form.create()((props) => {
       body: uploadState.data,
     });
     if (res?.acknowledged) {
-      message.success("Imported succeed!");
+      message.success(formatMessage({ id: "alert.import.submit.success" }));
       if (onClose) onClose();
       if (onSuccess) onSuccess();
     } else {
-      message.error("Imported failed!");
+      message.error(formatMessage({ id: "alert.import.submit.failed" }));
     }
     setLoading(false);
   };
@@ -124,15 +124,15 @@ export default Form.create()((props) => {
                 data: jsonObj,
               }));
             } catch {
-              message.error(`${info.file.name} is an invalid json file!`);
+              message.error(formatMessage({ id: "alert.import.upload.invalid_json" }));
             }
           };
           reader.readAsText(info.file.originFileObj);
         }
         if (info.file.status === "done") {
-          message.success(`${info.file.name} file uploaded successfully`);
+          message.success(formatMessage({ id: "alert.import.upload.success" }));
         } else if (info.file.status === "error") {
-          message.error(`${info.file.name} file upload failed.`);
+          message.error(formatMessage({ id: "alert.import.upload.failed" }));
         }
       },
     };

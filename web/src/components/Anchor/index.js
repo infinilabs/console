@@ -1,17 +1,22 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Tooltip, Timeline } from "antd";
 import { formatMessage } from "umi/locale";
-import { throttle } from "lodash";
 import "./index.scss";
+
+const TOP_UPDATE_THRESHOLD = 6;
 
 function Anchor({ links = [] }) {
   const [activeID, setActiveID] = useState(links[0]);
   const [anchorStyle, setAnchorStyle] = useState({ top: 0 });
   const wrapperRef = useRef(null);
   const anchorRef = useRef(null);
+  const frameRef = useRef(null);
+  const lastTopRef = useRef(0);
 
   useEffect(() => {
     setActiveID(links[0]);
+    setAnchorStyle({ top: 0 });
+    lastTopRef.current = 0;
   }, [links]);
 
   useEffect(() => {
@@ -19,7 +24,8 @@ function Anchor({ links = [] }) {
       return undefined;
     }
 
-    const handleScroll = () => {
+    const updateAnchorPosition = () => {
+      frameRef.current = null;
       const scrollPosition = window.scrollY || document.documentElement.scrollTop;
       let nextActiveID = links[0];
 
@@ -67,24 +73,31 @@ function Anchor({ links = [] }) {
         nextTop = Math.min(nextTop, maxTopInWrapper);
       }
 
-      setAnchorStyle({
-        top: nextTop,
-      });
+      if (Math.abs(lastTopRef.current - nextTop) >= TOP_UPDATE_THRESHOLD) {
+        lastTopRef.current = nextTop;
+        setAnchorStyle({
+          top: nextTop,
+        });
+      }
     };
 
-    const throttledScroll = throttle(handleScroll, 100, {
-      leading: true,
-      trailing: true,
-    });
+    const handleScroll = () => {
+      if (frameRef.current !== null) {
+        return;
+      }
+      frameRef.current = window.requestAnimationFrame(updateAnchorPosition);
+    };
 
-    handleScroll();
-    window.addEventListener("scroll", throttledScroll, { passive: true });
-    window.addEventListener("resize", throttledScroll);
+    updateAnchorPosition();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleScroll);
 
     return () => {
-      window.removeEventListener("scroll", throttledScroll);
-      window.removeEventListener("resize", throttledScroll);
-      throttledScroll.cancel();
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleScroll);
+      if (frameRef.current !== null) {
+        window.cancelAnimationFrame(frameRef.current);
+      }
     };
   }, [links]);
 

@@ -20,6 +20,8 @@
   padding-top: 10px;
   cursor: pointer;
   z-index: 2;
+  transition: top 0.14s ease-out;
+  will-change: top;
 
   .ant-timeline-item-head {
     width: 12px;

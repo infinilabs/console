@@ -33,6 +33,37 @@ const gorupOrder = [
   "thread_pool_force_merge",
 ];
 
+const normalizeNodeSelection = (value, nodes = []) => {
+  if (Array.isArray(value)) {
+    return value;
+  }
+  if (!value) {
+    return [];
+  }
+  if (typeof value === "string") {
+    return nodes.includes(value) ? [value] : [value];
+  }
+  if (value?.host) {
+    return [value.host];
+  }
+  return [];
+};
+
+const extractNodeNames = (value) => {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => (typeof item === "string" ? item : item?.host))
+      .filter(Boolean);
+  }
+  if (typeof value === "string") {
+    return [value];
+  }
+  if (value?.host) {
+    return [value.host];
+  }
+  return [];
+};
+
 export default ({
   clusterID,
   timezone,
@@ -78,8 +109,9 @@ export default ({
     if (param.top) {
       newParams.top = param.top;
     }
-    if (param.node_name) {
-      newParams.node_name = param.node_name;
+    const selectedNodeNames = extractNodeNames(param.node_name);
+    if (selectedNodeNames.length > 0) {
+      newParams.node_name = selectedNodeNames;
     }
     return newParams;
   }, [param, timeRange]);
@@ -123,6 +155,10 @@ export default ({
     }
     return (nodes || []).map((item) => item?.ip + ":" + item?.port);
   }, [nodes]);
+  const selectedNodeNames = React.useMemo(
+    () => normalizeNodeSelection(param.node_name, nodeNames),
+    [param.node_name, nodeNames]
+  );
 
   const pointerUpdate = (event) => {
     chartRefs.current.forEach((ref) => {
@@ -180,7 +216,7 @@ export default ({
                 style={{ width: 200 }}
                 onChange={nodeValueChange}
                 placeholder="Select node"
-                value={param.node_name}
+                value={selectedNodeNames}
                 showSearch={true}
               >
                 {nodeNames.map((name) => (

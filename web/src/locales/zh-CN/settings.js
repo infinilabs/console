@@ -26,6 +26,8 @@ export default {
     "SMTP 认证失败，部分邮箱服务商要求发件人地址与认证账号一致，或必须是该账号已授权的别名。",
   "settings.email.server.message.test.error.tls_required":
     "SMTP 服务器要求先启用 TLS/STARTTLS，请检查 TLS 配置和端口是否正确。",
+  "settings.email.server.message.test.error.send_failed":
+    "测试邮件发送失败，请检查发件人、收件人、SMTP 配置以及邮箱服务商限制。",
   "settings.system.tab.general": "通用设置",
   "settings.system.tab.email": "邮件服务器",
   "settings.system.retention.title": "数据保留天数",

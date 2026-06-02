@@ -3,6 +3,7 @@ package email
 import (
 	"crypto/tls"
 	"errors"
+	"strings"
 	"testing"
 
 	consolemodel "infini.sh/console/model"
@@ -159,12 +160,22 @@ func TestClassifyEmailServerTestSendErrorSMTPAuthFailure(t *testing.T) {
 	}
 }
 
-func TestClassifyEmailServerTestSendErrorPassesUnknownErrorsThrough(t *testing.T) {
+func TestClassifyEmailServerTestSendErrorMapsUnknownErrorsToGenericMessage(t *testing.T) {
 	key, reason := classifyEmailServerTestSendError(nil, "", errors.New("dial tcp: connection refused"))
-	if key != "" {
-		t.Fatalf("expected no key, got %q", key)
+	if key != emailServerTestErrorKeySendFailed {
+		t.Fatalf("expected generic send failure key, got %q", key)
 	}
-	if reason != "dial tcp: connection refused" {
-		t.Fatalf("expected original reason, got %q", reason)
+	if reason == "" || reason == "dial tcp: connection refused" {
+		t.Fatalf("expected generic human-readable reason, got %q", reason)
+	}
+}
+
+func TestClassifyEmailServerTestSendErrorMapsSendRejectionToGenericMessage(t *testing.T) {
+	key, reason := classifyEmailServerTestSendError(nil, "", errors.New("gomail: could not send email 1: 554 5.5.3 RP:TRC"))
+	if key != emailServerTestErrorKeySendFailed {
+		t.Fatalf("expected generic send failure key, got %q", key)
+	}
+	if reason == "" || strings.Contains(strings.ToLower(reason), "gomail: could not send email") {
+		t.Fatalf("expected sanitized human-readable reason, got %q", reason)
 	}
 }

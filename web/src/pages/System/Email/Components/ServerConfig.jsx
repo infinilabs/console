@@ -14,8 +14,11 @@ import CredentialForm from "./CredentialForm";
 import { hasAuthority } from "@/utils/authority";
 
 const getEmailServerTestErrorMessage = (response) => {
+  const genericMessage = formatMessage({
+    id: "settings.email.server.message.test.error.send_failed",
+  });
   if (response instanceof Error) {
-    return response.message;
+    return genericMessage;
   }
   const errorKey = response?.error?.key;
   if (errorKey) {
@@ -25,7 +28,7 @@ const getEmailServerTestErrorMessage = (response) => {
     });
   }
   if (response?.error?.reason) {
-    return response.error.reason;
+    return genericMessage;
   }
   return formatMessage({
     id: "app.message.http.status.500",

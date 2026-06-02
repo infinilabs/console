@@ -30,6 +30,8 @@ export default {
     "SMTP authentication failed. Some providers require the sender address to match the authenticated account or an approved alias.",
   "settings.email.server.message.test.error.tls_required":
     "The SMTP server requires TLS or STARTTLS before authentication. Check the TLS setting and port.",
+  "settings.email.server.message.test.error.send_failed":
+    "Failed to send the test email. Check the sender, recipient, SMTP settings, and provider restrictions.",
   "settings.system.tab.general": "General",
   "settings.system.tab.email": "Email Server",
   "settings.system.retention.title": "Data Retention",

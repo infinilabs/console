@@ -52,6 +52,7 @@ const (
 	emailServerTestErrorKeySMTPAuthFailed = "settings.email.server.message.test.error.smtp_auth_failed"
 	emailServerTestErrorKeySenderMismatch = "settings.email.server.message.test.error.sender_mismatch"
 	emailServerTestErrorKeyTLSRequired    = "settings.email.server.message.test.error.tls_required"
+	emailServerTestErrorKeySendFailed     = "settings.email.server.message.test.error.send_failed"
 )
 
 func newEmailTLSConfig(serverName string, minVersion uint16) *tls.Config {
@@ -447,7 +448,11 @@ func classifyEmailServerTestSendError(server *model.EmailServer, sender string, 
 		return emailServerTestErrorKeyTLSRequired, "SMTP server requires TLS or STARTTLS before authentication"
 	}
 
-	return "", rawReason
+	if strings.Contains(normalizedReason, "could not send email") {
+		return emailServerTestErrorKeySendFailed, "SMTP server rejected the test email; verify the sender, recipient, and provider restrictions"
+	}
+
+	return emailServerTestErrorKeySendFailed, "Unable to send test email; verify the SMTP server address, port, TLS settings, and provider restrictions"
 }
 
 func isSMTPAuthenticationError(reason string) bool {

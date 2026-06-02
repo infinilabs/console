@@ -3,6 +3,8 @@ import { Tooltip, Timeline } from "antd";
 import { formatMessage } from "umi/locale";
 import "./index.scss";
 
+const ANCHOR_SCROLL_OFFSET = 120;
+const BOTTOM_SELECTION_EPSILON = 4;
 const TOP_UPDATE_THRESHOLD = 6;
 
 function Anchor({ links = [] }) {
@@ -28,18 +30,28 @@ function Anchor({ links = [] }) {
       frameRef.current = null;
       const scrollPosition = window.scrollY || document.documentElement.scrollTop;
       let nextActiveID = links[0];
+      const lastExistingLink = [...links]
+        .reverse()
+        .find((link) => document.getElementById(link));
+      const reachedPageBottom =
+        scrollPosition + window.innerHeight >=
+        document.documentElement.scrollHeight - BOTTOM_SELECTION_EPSILON;
 
-      for (let i = links.length - 1; i >= 0; i--) {
-        const anchorElement = document.getElementById(links[i]);
-        if (!anchorElement) {
-          continue;
-        }
+      if (reachedPageBottom && lastExistingLink) {
+        nextActiveID = lastExistingLink;
+      } else {
+        for (let i = links.length - 1; i >= 0; i--) {
+          const anchorElement = document.getElementById(links[i]);
+          if (!anchorElement) {
+            continue;
+          }
 
-        const offsetTop =
-          anchorElement.getBoundingClientRect().top + window.pageYOffset;
-        if (offsetTop <= scrollPosition + 120) {
-          nextActiveID = anchorElement.id;
-          break;
+          const offsetTop =
+            anchorElement.getBoundingClientRect().top + window.pageYOffset;
+          if (offsetTop <= scrollPosition + ANCHOR_SCROLL_OFFSET) {
+            nextActiveID = anchorElement.id;
+            break;
+          }
         }
       }
 
@@ -105,7 +117,9 @@ function Anchor({ links = [] }) {
     const targetElement = document.getElementById(targetId);
     if (targetElement) {
       const targetTop =
-        targetElement.getBoundingClientRect().top + window.pageYOffset - 120;
+        targetElement.getBoundingClientRect().top +
+        window.pageYOffset -
+        ANCHOR_SCROLL_OFFSET;
       setActiveID(targetId);
       window.scrollTo({
         behavior: "smooth",

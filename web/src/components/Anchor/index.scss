@@ -1,11 +1,34 @@
-.anchor-sticky-tabs.ant-tabs .ant-tabs-right-content {
-  overflow: visible;
+.anchor-sticky-tabs.ant-tabs {
+  .ant-tabs-content,
+  .ant-tabs-content-no-animated,
+  .ant-tabs-right-content,
+  .ant-tabs-tabpane {
+    overflow: visible;
+  }
+
+  &.ant-tabs-right .ant-tabs-bar,
+  &.ant-tabs-left .ant-tabs-bar {
+    border-inline-start: 1px solid #e8e8e8;
+    padding-inline-start: 12px;
+    margin-inline-start: 16px;
+  }
+
+  &.ant-tabs-right .ant-tabs-tab,
+  &.ant-tabs-left .ant-tabs-tab {
+    margin-bottom: 8px;
+  }
+
+  &.ant-tabs-right .ant-tabs-content.ant-tabs-content-no-animated.ant-tabs-right-content.ant-tabs-card-content,
+  &.ant-tabs-right .ant-tabs-right-content.ant-tabs-card-content {
+    padding-inline-start: 12px;
+  }
 }
 
 .p-anchor {
   position: relative;
   width: 30px;
   flex: 0 0 30px;
+  margin-left: 12px;
   align-self: stretch;
   box-sizing: border-box;
 }

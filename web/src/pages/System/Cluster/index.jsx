@@ -238,6 +238,7 @@ export default (props) => {
       title: formatMessage({ id: "cluster.manage.table.column.name" }),
       key: "name",
       width: 180,
+      fixed: "left",
       sortable: true,
       searchable: true,
       onHeaderCell: noWrapHeaderCell,

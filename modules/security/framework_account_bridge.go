@@ -24,12 +24,15 @@
 package security
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
 	rbac "infini.sh/console/core/security"
 	"infini.sh/console/modules/security/realm"
+	"infini.sh/framework/core/orm"
 	frameworksecurity "infini.sh/framework/core/security"
+	frameworkrbac "infini.sh/framework/modules/security/rbac"
 )
 
 type frameworkNativeAccountProvider struct {
@@ -104,6 +107,9 @@ func (frameworkRealmPasswordLoginProvider) AuthenticateByPassword(login, passwor
 
 func registerFrameworkAccountBridge() {
 	adapter := rbac.GetAdapter("native")
+	frameworkrbac.RegisterPasswordChallengeUpgradePersister(func(ctx *orm.Context, user *frameworksecurity.UserAccount) error {
+		return persistFrameworkChallengeUpgrade(adapter, user)
+	})
 	frameworksecurity.RegisterAuthenticationProvider("console-native-account-bridge", frameworkNativeAccountProvider{adapter: adapter})
 	frameworksecurity.RegisterAccountPasswordLoginProvider("console-realm-password-login", frameworkRealmPasswordLoginProvider{})
 	frameworksecurity.RegisterHTTPAuthFilterProvider("console-bearer-token", func(_ http.ResponseWriter, r *http.Request) (*frameworksecurity.UserClaims, error) {
@@ -132,6 +138,22 @@ func registerFrameworkAccountBridge() {
 		}
 		token["privilege"] = rbac.CombineUserRoles(user.Roles).Platform
 	})
+}
+
+func persistFrameworkChallengeUpgrade(adapter rbac.Adapter, user *frameworksecurity.UserAccount) error {
+	if user == nil || user.ID == "" {
+		return nil
+	}
+	legacyUser, err := adapter.User.Get(user.ID)
+	if err != nil {
+		return err
+	}
+	if legacyUser.ID == "" {
+		return fmt.Errorf("legacy user [%s] not found", user.ID)
+	}
+	legacyUser.PasswordSalt = user.PasswordSalt
+	legacyUser.PasswordVerifier = user.PasswordVerifier
+	return adapter.User.Update(&legacyUser)
 }
 
 func toFrameworkUserAccount(user *rbac.User) *frameworksecurity.UserAccount {

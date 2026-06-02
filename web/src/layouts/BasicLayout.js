@@ -27,7 +27,7 @@ import {
   isLogin,
   refreshApplicationSettings,
 } from "@/utils/authority";
-import { router, history } from "umi";
+import { router } from "umi";
 import request from "@/utils/request";
 import HealthProvider from "@/components/HealthProvider";
 import { getSetupRequired } from "@/utils/setup";
@@ -181,6 +181,21 @@ class BasicLayout extends React.PureComponent {
     this.state.welcomeModal.destroy();
   };
 
+  redirectToLogin = () => {
+    if (router && typeof router.replace === "function") {
+      router.replace("/user/login");
+      return;
+    }
+
+    const { history } = this.props;
+    if (history && typeof history.replace === "function") {
+      history.replace("/user/login");
+      return;
+    }
+
+    window.location.replace("/user/login");
+  };
+
   async componentDidMount() {
     const { menuData } = this.state;
     const { dispatch, global } = this.props;
@@ -195,7 +210,7 @@ class BasicLayout extends React.PureComponent {
         sessionValid,
       });
       if (!sessionValid) {
-        history.replace("/user/login");
+        this.redirectToLogin();
         return;
       }
     }

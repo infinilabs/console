@@ -100,6 +100,8 @@ export default ({
       {
         title: formatMessage({ id: "overview.column.name" }),
         dataIndex: "name",
+        fixed: "left",
+        width: 200,
         render: (text, record) => (
           <span>
             <IconText

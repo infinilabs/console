@@ -13,10 +13,12 @@ class InputSelect extends React.Component{
   }
 
   onClick = ({ key }) => {
+    const { normalizeValue } = this.props;
+    const nextValue = normalizeValue ? normalizeValue(key) : key;
     this.setState({
-      value: key,
+      value: nextValue,
     })
-    this.triggerChange(key)
+    this.triggerChange(nextValue)
   }
   triggerChange = (val)=>{
     let {onChange} = this.props;
@@ -26,6 +28,10 @@ class InputSelect extends React.Component{
   }
   handleChange = (ev) => {
     let val = ev.target.value;
+    const { normalizeValue } = this.props;
+    if (normalizeValue) {
+      val = normalizeValue(val);
+    }
     let filterData = this.props.data.slice();
     if(val != ""){
       filterData = filterData.filter(v=>v.value.includes(val))

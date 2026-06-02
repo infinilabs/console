@@ -23,6 +23,7 @@ import {
 } from 'antd';
 import StandardTable from '@/components/StandardTable';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
+import { formatMessage } from 'umi/locale';
 
 import styles from '../List/TableList.less';
 
@@ -452,11 +453,11 @@ class IngestPipeline extends PureComponent {
               rules: [{ required: true }],
             })(<Input placeholder="pipeline batch size" />)}
           </FormItem>
-          <FormItem labelCol={{ span: 6 }} wrapperCol={{ span: 15 }} label="管道批延迟">
+          <FormItem labelCol={{ span: 6 }} wrapperCol={{ span: 15 }} label={formatMessage({ id: 'synchronize.ingest_pipeline.batch_delay.label' })}>
             {form.getFieldDecorator('batch_delay', {
               initialValue: editingRecord.batch_delay,
               rules: [{ required: true }],
-            })(<Input placeholder="pipeline batch delay, eg: 50" />)}
+            })(<Input placeholder={formatMessage({ id: 'synchronize.ingest_pipeline.batch_delay.placeholder' })} />)}
           </FormItem>
           <FormItem labelCol={{ span: 6 }} wrapperCol={{ span: 15 }} label="队列类型">
             {form.getFieldDecorator('queue_type', {

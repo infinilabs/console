@@ -337,6 +337,12 @@ export default {
   "menu.synchronize.pipeline": "数据加工",
   "menu.synchronize.rebuild": "数据重建",
   "menu.synchronize.inout": "导入导出",
+  "synchronize.rebuild.target_index.label": "目标索引名",
+  "synchronize.rebuild.target_index.required": "请输入目标索引名称",
+  "synchronize.rebuild.target_index.invalid":
+    "目标索引名必须使用小写字母并且符合 Elasticsearch 索引命名要求。",
+  "synchronize.ingest_pipeline.batch_delay.label": "管道批延迟",
+  "synchronize.ingest_pipeline.batch_delay.placeholder": "管道批延迟，例如 50",
 
   "menu.backup": "备份管理",
   "menu.backup.overview": "概览",

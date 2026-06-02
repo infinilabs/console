@@ -337,6 +337,12 @@ export default {
   "menu.synchronize.pipeline": "PIPELINES",
   "menu.synchronize.rebuild": "REBUILD",
   "menu.synchronize.inout": "CONNECT",
+  "synchronize.rebuild.target_index.label": "Target index name",
+  "synchronize.rebuild.target_index.required": "Please enter the target index name",
+  "synchronize.rebuild.target_index.invalid":
+    "The target index name must be lowercase and use valid Elasticsearch index name characters.",
+  "synchronize.ingest_pipeline.batch_delay.label": "Pipeline batch delay",
+  "synchronize.ingest_pipeline.batch_delay.placeholder": "Pipeline batch delay, e.g. 50",
 
   "menu.backup": "BACKUP",
   "menu.backup.overview": "OVERVIEW",

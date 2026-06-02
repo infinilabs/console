@@ -89,6 +89,7 @@ import { hasAuthority } from "@/utils/authority";
 
 const SidebarMemoized = React.memo(DiscoverSidebar);
 const SHARE_STATE_VERSION = 1;
+const MANUAL_REFRESH_DEBOUNCE_MS = 800;
 
 const encodeShareState = (value) => {
   try {
@@ -161,6 +162,60 @@ const areArrayValuesEqual = (left = [], right = []) => {
   return left.every((item, index) => item === right[index]);
 };
 
+const hasFieldInIndexPattern = (indexPattern, fieldName) => {
+  if (!indexPattern || !fieldName) {
+    return false;
+  }
+  if (indexPattern.fields?.getByName) {
+    return !!indexPattern.fields.getByName(fieldName);
+  }
+  if (Array.isArray(indexPattern.fields)) {
+    return indexPattern.fields.some(
+      (field) => field?.name === fieldName || field?.displayName === fieldName
+    );
+  }
+  return false;
+};
+
+const getDateFieldsFromIndexPattern = (indexPattern) => {
+  if (!indexPattern?.fields) {
+    return [];
+  }
+  if (indexPattern.fields?.getByType) {
+    return indexPattern.fields
+      .getByType("date")
+      .map((field) => field?.displayName || field?.name)
+      .filter(Boolean);
+  }
+  if (Array.isArray(indexPattern.fields)) {
+    return indexPattern.fields
+      .filter((field) => field?.spec?.type === "date" || field?.type === "date")
+      .map((field) => field?.displayName || field?.name)
+      .filter(Boolean);
+  }
+  return [];
+};
+
+const resolveValidTimeFieldName = (indexPattern, preferredTimeField) => {
+  const candidates = [preferredTimeField, indexPattern?.timeFieldName].filter(Boolean);
+  const validCandidate = candidates.find((fieldName) =>
+    hasFieldInIndexPattern(indexPattern, fieldName)
+  );
+  if (validCandidate) {
+    return validCandidate;
+  }
+  const dateFields = getDateFieldsFromIndexPattern(indexPattern);
+  return dateFields.length === 1 ? dateFields[0] : "";
+};
+
+const buildSortByTimeField = (indexPattern, preferredTimeField) => {
+  const timeFieldName = resolveValidTimeFieldName(indexPattern, preferredTimeField);
+  return {
+    timeFieldName,
+    sort: timeFieldName ? [[timeFieldName, "desc"]] : [],
+  };
+};
+
 const {
   filterManager,
   queryStringManager,
@@ -199,6 +254,10 @@ const Discover = (props) => {
   const [showResultCount, setShowResultCount] = useState(true);
   const [selectedQueries, setSelectedQueries] = useState();
   const appliedShareRef = useRef("");
+  const manualRefreshRef = useRef({
+    lastTriggeredAt: 0,
+    timer: null,
+  });
 
   const [columnsParam, setColumnsParam] = useQueryParam("columns", ArrayParam);
 
@@ -294,21 +353,15 @@ const Discover = (props) => {
       typ,
       props.selectedCluster?.id
     );
+    const { timeFieldName, sort } = buildSortByTimeField(IP);
+    IP.timeFieldName = timeFieldName;
     subscriptions.unsubscribe();
     props.changeIndexPattern(IP);
-    if (IP.timeFieldName) {
-      setState({
-        ...state,
-        columns: ["_source"],
-        sort: [[IP.timeFieldName, 'desc']],
-      });
-    } else {
-      setState({
-        ...state,
-        columns: ["_source"],
-        sort: [],
-      });
-    }
+    setState({
+      ...state,
+      columns: ["_source"],
+      sort,
+    });
     if (filters && filters.length > 0) {
       if (isReset) {
         filterManager.setFilters(filters);
@@ -329,15 +382,15 @@ const Discover = (props) => {
       props.selectedCluster?.id
     );
     subscriptions.unsubscribe();
-    IP.timeFieldName = timeField;
+    const { timeFieldName, sort } = buildSortByTimeField(IP, timeField);
+    IP.timeFieldName = timeFieldName;
     props.changeIndexPattern(IP);
-    const newSort = [[timeField, 'desc']]
     setState((st) => ({
       ...st,
       columns: ["_source"],
-      sort: newSort,
+      sort,
     }));
-    updateQuery({ indexPattern: IP, sort: newSort });
+    updateQuery({ indexPattern: IP, sort });
   };
 
   //const indexPatterns = [{"id":"1ccce5c0-bb9a-11eb-957b-939add21a246","type":"index-pattern","namespaces":["default"],"updated_at":"2021-05-23T07:40:14.747Z","version":"WzkxOTEsNDhd","attributes":{"title":"test-custom*","timeFieldName":"created_at","fields":"[{\"count\":0,\"name\":\"_id\",\"type\":\"string\",\"esTypes\":[\"_id\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":false},{\"count\":0,\"name\":\"_index\",\"type\":\"string\",\"esTypes\":[\"_index\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":false},{\"count\":0,\"name\":\"_score\",\"type\":\"number\",\"scripted\":false,\"searchable\":false,\"aggregatable\":false,\"readFromDocValues\":false},{\"count\":0,\"name\":\"_source\",\"type\":\"_source\",\"esTypes\":[\"_source\"],\"scripted\":false,\"searchable\":false,\"aggregatable\":false,\"readFromDocValues\":false},{\"count\":0,\"name\":\"_type\",\"type\":\"string\",\"esTypes\":[\"_type\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":false},{\"count\":0,\"name\":\"address\",\"type\":\"string\",\"esTypes\":[\"text\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"count\":0,\"name\":\"address.keyword\",\"type\":\"string\",\"esTypes\":[\"keyword\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true,\"subType\":{\"multi\":{\"parent\":\"address\"}}},{\"count\":0,\"conflictDescriptions\":{\"text\":[\"test-custom1\"],\"long\":[\"test-custom\",\"test-custom8\",\"test-custom9\"]},\"name\":\"age\",\"type\":\"conflict\",\"esTypes\":[\"text\",\"long\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":false},{\"count\":0,\"name\":\"age.keyword\",\"type\":\"string\",\"esTypes\":[\"keyword\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true,\"subType\":{\"multi\":{\"parent\":\"age\"}}},{\"count\":0,\"name\":\"created_at\",\"type\":\"date\",\"esTypes\":[\"date\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true},{\"count\":0,\"name\":\"email\",\"type\":\"string\",\"esTypes\":[\"text\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"count\":0,\"name\":\"email.keyword\",\"type\":\"string\",\"esTypes\":[\"keyword\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true,\"subType\":{\"multi\":{\"parent\":\"email\"}}},{\"count\":0,\"name\":\"hobbies\",\"type\":\"string\",\"esTypes\":[\"text\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"count\":0,\"name\":\"hobbies.keyword\",\"type\":\"string\",\"esTypes\":[\"keyword\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true,\"subType\":{\"multi\":{\"parent\":\"hobbies\"}}},{\"count\":0,\"name\":\"id\",\"type\":\"string\",\"esTypes\":[\"text\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"count\":0,\"name\":\"id.keyword\",\"type\":\"string\",\"esTypes\":[\"keyword\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true,\"subType\":{\"multi\":{\"parent\":\"id\"}}},{\"count\":0,\"name\":\"name\",\"type\":\"string\",\"esTypes\":[\"text\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"count\":0,\"name\":\"name.keyword\",\"type\":\"string\",\"esTypes\":[\"keyword\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true,\"subType\":{\"multi\":{\"parent\":\"name\"}}}]"},"references":[],"migrationVersion":{"index-pattern":"7.6.0"}}];
@@ -480,6 +533,43 @@ const Discover = (props) => {
     ]
   );
 
+  const onManualRefresh = useCallback(
+    (payload) => {
+      const now = Date.now();
+      const elapsed = now - manualRefreshRef.current.lastTriggeredAt;
+      const triggerRefresh = () => {
+        manualRefreshRef.current.lastTriggeredAt = Date.now();
+        manualRefreshRef.current.timer = null;
+        updateQuery(payload);
+      };
+      if (elapsed >= MANUAL_REFRESH_DEBOUNCE_MS) {
+        if (manualRefreshRef.current.timer) {
+          clearTimeout(manualRefreshRef.current.timer);
+          manualRefreshRef.current.timer = null;
+        }
+        triggerRefresh();
+        return;
+      }
+      if (manualRefreshRef.current.timer) {
+        clearTimeout(manualRefreshRef.current.timer);
+      }
+      manualRefreshRef.current.timer = setTimeout(
+        triggerRefresh,
+        MANUAL_REFRESH_DEBOUNCE_MS - elapsed
+      );
+    },
+    [updateQuery]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (manualRefreshRef.current.timer) {
+        clearTimeout(manualRefreshRef.current.timer);
+        manualRefreshRef.current.timer = null;
+      }
+    };
+  }, []);
+
   const onQueriesSelect = async (record) => {
     queryStringManager.setQuery(record.query);
     timefilter.setTime(record.time_filter);
@@ -488,21 +578,20 @@ const Discover = (props) => {
       "index",
       props.selectedCluster?.id
     );
-    IP.timeFieldName = record.time_field;
+    const { timeFieldName, sort } = buildSortByTimeField(IP, record.time_field);
+    IP.timeFieldName = timeFieldName;
     subscriptions.unsubscribe();
     props.changeIndexPattern(IP);
     const newState = {
       ...state,
       columns: record.filter?.columns || ["_source"],
-    }
-    if (record.time_field) {
-      newState.sort = [[record.time_field, 'desc']]
-    }
+      sort,
+    };
     setState(newState);
     if (record.filter?.filters?.length > 0) {
       filterManager.setFilters(record.filter?.filters);
     }
-    updateQuery();
+    updateQuery({ indexPattern: IP, sort });
     setSelectedQueries(record);
     if (selectedQueriesId !== record.id) {
       setSelectedQueriesId(record.id);
@@ -728,7 +817,10 @@ const Discover = (props) => {
           return;
         }
         subscriptions.unsubscribe();
-        nextIndexPattern.timeFieldName = sharedState.timeField;
+        nextIndexPattern.timeFieldName = resolveValidTimeFieldName(
+          nextIndexPattern,
+          sharedState.timeField
+        );
         props.changeIndexPattern(nextIndexPattern);
       }
 
@@ -740,12 +832,19 @@ const Discover = (props) => {
         }
       }
 
+      const fallbackSort = buildSortByTimeField(
+        nextIndexPattern,
+        sharedState.timeField
+      ).sort;
       const nextSort =
         Array.isArray(sharedState.sort) && sharedState.sort.length > 0
-          ? sharedState.sort
-          : sharedState.timeField
-          ? [[sharedState.timeField, "desc"]]
-          : state.sort;
+          ? sharedState.sort.filter(
+              (sortItem) =>
+                Array.isArray(sortItem) &&
+                sortItem.length > 0 &&
+                hasFieldInIndexPattern(nextIndexPattern, sortItem[0])
+            )
+          : fallbackSort;
 
       setState((st) => ({
         ...st,
@@ -753,8 +852,9 @@ const Discover = (props) => {
           Array.isArray(sharedState.columns) && sharedState.columns.length > 0
             ? sharedState.columns
             : st.columns,
-        sort: nextSort,
+        sort: nextSort.length > 0 ? nextSort : fallbackSort,
       }));
+      const effectiveSort = nextSort.length > 0 ? nextSort : fallbackSort;
 
       if (sharedState.mode) {
         setMode(sharedState.mode);
@@ -765,7 +865,7 @@ const Discover = (props) => {
 
       updateQuery({
         indexPattern: nextIndexPattern,
-        sort: nextSort,
+        sort: effectiveSort,
       });
     };
 
@@ -778,20 +878,15 @@ const Discover = (props) => {
 
   useEffect(() => {
     if (indexPattern) {
-      if (indexPattern.timeFieldName) {
-        const newSort = [[indexPattern.timeFieldName, 'desc']]
-        setState({
-          ...state,
-          sort: newSort
-        });
-        updateQuery({ sort: newSort });
-      } else {
-        setState({
-          ...state,
-          sort: []
-        });
-        updateQuery({ sort: [] });
+      const { timeFieldName, sort } = buildSortByTimeField(indexPattern);
+      if (indexPattern.timeFieldName !== timeFieldName) {
+        indexPattern.timeFieldName = timeFieldName;
       }
+      setState({
+        ...state,
+        sort,
+      });
+      updateQuery({ sort });
     }
   }, [indexPattern]);
 
@@ -1248,7 +1343,7 @@ const Discover = (props) => {
               queryString: queryStringManager,
               timefilter,
               storage,
-              onQuerySubmit: updateQuery,
+              onQuerySubmit: onManualRefresh,
               services,
               dateRangeFrom: timeParam && timeParam[0] || "now-15m", // change by hardy
               dateRangeTo: timeParam && timeParam[1] || "now",
@@ -1606,13 +1701,7 @@ const DiscoverUI = (props) => {
   }, [props.selectedCluster]);
 
   const getTimeFields = (IP) => {
-    const timeFields = [];
-    IP.fields.forEach((field) => {
-      if (field.spec.type == "date") {
-        timeFields.push(field.displayName);
-      }
-    });
-    return timeFields;
+    return getDateFieldsFromIndexPattern(IP);
   };
   useEffect(() => {
     if (queryParam) {
@@ -1693,13 +1782,7 @@ const DiscoverUI = (props) => {
           }
         }
         const timeFields = getTimeFields(defaultIP);
-        if (
-          timeFields &&
-          timeFields.length == 1 &&
-          defaultIP.timeFieldName == ""
-        ) {
-          defaultIP.timeFieldName = timeFields[0];
-        }
+        defaultIP.timeFieldName = resolveValidTimeFieldName(defaultIP);
         setState({
           indexPatternList: ils,
           indexPattern: defaultIP,
@@ -1735,13 +1818,7 @@ const DiscoverUI = (props) => {
   const changeIndexPattern = React.useCallback(
     (indexPattern) => {
       const timeFields = getTimeFields(indexPattern);
-      if (
-        timeFields &&
-        timeFields.length == 1 &&
-        indexPattern.timeFieldName == ""
-      ) {
-        indexPattern.timeFieldName = timeFields[0];
-      }
+      indexPattern.timeFieldName = resolveValidTimeFieldName(indexPattern);
       setState({
         ...state,
         indexPattern,

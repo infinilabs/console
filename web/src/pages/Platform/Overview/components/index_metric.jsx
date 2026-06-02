@@ -11,6 +11,34 @@ import Anchor from "@/components/Anchor";
 import MetricChart from "./MetricChart";
 import { createRef, useEffect, useMemo, useState } from "react";
 
+const normalizeIndexSelection = (value, indices = []) => {
+  if (Array.isArray(value)) {
+    return value;
+  }
+  if (!value) {
+    return [];
+  }
+  if (typeof value === "string") {
+    return indices.find((item) => item?.index === value) ? indices.filter((item) => item?.index === value) : [{ index: value }];
+  }
+  return [value];
+};
+
+const extractIndexNames = (value) => {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => (typeof item === "string" ? item : item?.index))
+      .filter(Boolean);
+  }
+  if (typeof value === "string") {
+    return [value];
+  }
+  if (value?.index) {
+    return [value.index];
+  }
+  return [];
+};
+
 export default (props) => {
 
   const { 
@@ -61,8 +89,9 @@ export default (props) => {
     if (param.top) {
       newParams.top = param.top;
     }
-    if (param.index_name?.length > 0) {
-      newParams.index_name = param.index_name.map(item => item.index);
+    const indexNames = extractIndexNames(param.index_name);
+    if (indexNames.length > 0) {
+      newParams.index_name = indexNames;
     }
     if (bucketSize) {
       newParams.bucket_size = bucketSize
@@ -78,6 +107,7 @@ export default (props) => {
   const formatedIndices = useMemo(() => {
     return Object.values(indices || []);
   }, [indices]);
+  const selectedIndices = useMemo(() => normalizeIndexSelection(param.index_name, formatedIndices), [param.index_name, formatedIndices]);
 
   const [charts, setCharts] = useState([])
 
@@ -122,7 +152,7 @@ export default (props) => {
                   mode="multiple"  
                   placeholder="Select index"
                   allowClear
-                  value={param.index_name || []}
+                  value={selectedIndices}
                   onChange={indexValueChange}/>
               </div>
             </div>

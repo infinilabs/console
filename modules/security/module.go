@@ -97,6 +97,7 @@ func (module *Module) Start() error {
 
 	realm.Init(module.cfg)
 	registerFrameworkAccountBridge()
+	registerConsoleLicenseTrialBridge()
 
 	return nil
 }

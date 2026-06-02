@@ -11,12 +11,15 @@ import {
   Input,
   message,
   Drawer,
+  Dropdown,
+  Menu,
   Radio,
   Tag,
   Select,
   Checkbox,
   Modal,
   Icon,
+  Tooltip,
 } from "antd";
 import { formatMessage } from "umi/locale";
 import useFetch from "@/lib/hooks/use_fetch";
@@ -45,8 +48,80 @@ import { sorter } from "@/utils/utils";
 import { HealthStatusView } from "@/components/infini/health_status_view";
 import { isNumber } from "lodash";
 import SearchInput from "@/components/infini/SearchInput";
+import { CopyToClipboard } from "react-copy-to-clipboard";
 
 const AgentList = (props) => {
+  const renderCopyButton = (text, style = {}) => {
+    const button = (
+      <Tooltip title={formatMessage({ id: "agent.instance.registration.copy" })}>
+        <Icon
+          type="copy"
+          style={{
+            color: text ? "#007fff" : "rgba(0,0,0,0.25)",
+            cursor: text ? "pointer" : "not-allowed",
+            position: "absolute",
+            right: 8,
+            top: 8,
+            zIndex: 1,
+            fontSize: 16,
+            ...style,
+          }}
+        />
+      </Tooltip>
+    );
+
+    if (!text) {
+      return button;
+    }
+
+    return (
+      <CopyToClipboard
+        text={text}
+        onCopy={() => {
+          message.open({
+            type: "success",
+            key: "agent-registration-copy-success",
+            content: formatMessage({
+              id: "agent.install.setup.copy.success",
+            }),
+          });
+        }}
+      >
+        {button}
+      </CopyToClipboard>
+    );
+  };
+
+  const renderReadonlyBlock = (text) => (
+    <div
+      style={{
+        position: "relative",
+        borderRadius: 6,
+        fontSize: 14,
+        padding: "12px 40px 12px 12px",
+        background: "rgb(241, 242, 245)",
+        textAlign: "left",
+        lineHeight: 1.6,
+        overflow: "hidden",
+        fontFamily:
+          '"SFMono-Regular", Monaco, Menlo, Consolas, "Liberation Mono", "Ubuntu Mono", monospace',
+      }}
+    >
+      <div
+        style={{
+          overflowX: "auto",
+          overflowY: "hidden",
+          whiteSpace: "nowrap",
+          wordBreak: "normal",
+          paddingBottom: 2,
+        }}
+      >
+        {text || "-"}
+      </div>
+      {renderCopyButton(text)}
+    </div>
+  );
+
   const renderWrapCell = (text) => (
     <div style={{ minWidth: 0, whiteSpace: "normal", wordBreak: "break-all" }}>
       {text}
@@ -67,7 +142,14 @@ const AgentList = (props) => {
   );
   const [isLoading, setIsLoading] = React.useState(loading);
   const [btnLoading, setBtnLoading] = React.useState(false);
+  const [registrationAccessLoading, setRegistrationAccessLoading] = React.useState(false);
   const [delInstId, setDelInstId] = React.useState("");
+  const [consoleAccessModal, setConsoleAccessModal] = React.useState({
+    visible: false,
+    consoleEndpoint: "",
+    managerToken: "",
+    registrationExpiredAt: "",
+  });
   const onDeleteClick = useCallback(
     async (instanceID) => {
       const deleteRes = await request(`/instance/${instanceID}`, {
@@ -493,6 +575,58 @@ const AgentList = (props) => {
     });
   }, []);
 
+  const showConsoleAccessInfo = useCallback(async () => {
+    setRegistrationAccessLoading(true);
+    const res = await request("/instance/_prepare_registration", {
+      method: "POST",
+    });
+    setRegistrationAccessLoading(false);
+    if (res?.error) {
+      message.error(
+        formatMessage({ id: "agent.instance.registration.console.load_failed" })
+      );
+      return;
+    }
+    setConsoleAccessModal({
+      visible: true,
+      consoleEndpoint: res?.endpoint || "",
+      managerToken: res?.token || "",
+      registrationExpiredAt: res?.expired_at || "",
+    });
+  }, []);
+
+  const registrationActionMenu = (
+    <Menu
+      onClick={({ key }) => {
+        if (key === "console-info") {
+          showConsoleAccessInfo();
+        }
+      }}
+    >
+      <Menu.Item key="console-info">
+        {formatMessage({ id: "agent.instance.registration.menu.info" })}
+      </Menu.Item>
+    </Menu>
+  );
+
+  const consoleTokenTip = [
+    formatMessage({
+      id: "agent.instance.registration.console.token.tip",
+    }),
+  ];
+  if (consoleAccessModal.registrationExpiredAt) {
+    consoleTokenTip.push(
+      formatMessage(
+        {
+          id: "agent.instance.registration.console.token.expire.tip",
+        },
+        {
+          time: new Date(consoleAccessModal.registrationExpiredAt).toLocaleString(),
+        }
+      )
+    );
+  }
+
   return (
     <PageHeaderWrapper>
       <Card>
@@ -565,13 +699,15 @@ const AgentList = (props) => {
               {formatMessage({ id: "form.button.refresh" })}
             </Button>
             {hasAuthority("agent.instance:all") ? (
-              <Button
+              <Dropdown.Button
                 type="primary"
-                icon="plus"
+                icon="down"
+                overlay={registrationActionMenu}
                 onClick={() => router.push(`/resource/agent/new`)}
+                loading={registrationAccessLoading}
               >
-                {formatMessage({ id: "gateway.instance.btn.new" })}
-              </Button>
+                {formatMessage({ id: "agent.instance.regist" })}
+              </Dropdown.Button>
             ) : null}
           </div>
         </div>
@@ -770,6 +906,43 @@ const AgentList = (props) => {
         >
           <AutoEnroll onEnroll={onAutoEnroll} loading={btnLoading} />
         </Drawer>
+        <Modal
+          visible={consoleAccessModal.visible}
+          title={formatMessage({ id: "agent.instance.registration.console.title" })}
+          footer={null}
+          onCancel={() =>
+            setConsoleAccessModal((state) => ({
+              ...state,
+              visible: false,
+            }))
+          }
+          destroyOnClose
+        >
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ marginBottom: 8, fontWeight: 600, fontSize: 14 }}>
+              {formatMessage({
+                id: "agent.instance.registration.access.endpoint",
+              })}
+            </div>
+            {renderReadonlyBlock(consoleAccessModal.consoleEndpoint)}
+            <div style={{ marginTop: 8, color: "rgba(0,0,0,0.45)" }}>
+              {formatMessage({
+                id: "agent.instance.registration.console.endpoint.tip",
+              })}
+            </div>
+          </div>
+          <div>
+            <div style={{ marginBottom: 8, fontWeight: 600, fontSize: 14 }}>
+              {formatMessage({
+                id: "agent.instance.registration.access.credential",
+              })}
+            </div>
+            {renderReadonlyBlock(consoleAccessModal.managerToken)}
+            <div style={{ marginTop: 8, color: "rgba(0,0,0,0.45)" }}>
+              {consoleTokenTip.join(" ")}
+            </div>
+          </div>
+        </Modal>
       </Card>
     </PageHeaderWrapper>
   );

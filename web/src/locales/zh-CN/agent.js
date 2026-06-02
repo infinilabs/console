@@ -35,6 +35,8 @@ export default {
     "复制到探针 keystore，用于注册和同步配置。",
   "agent.instance.registration.console.token.expire.tip":
     "探针未在 {time} 前完成注册时，此凭据会过期。",
+  "agent.instance.registration.console.load_failed": "获取 INFINI Console 访问信息失败。",
+  "agent.instance.registration.menu.info": "INFINI Console 信息",
   "agent.instance.registration.agent.title": "探针访问信息",
   "agent.instance.registration.agent.token.required": "请输入访问凭据！",
   "agent.instance.registration.agent.endpoint.tip":

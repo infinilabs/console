@@ -38,6 +38,9 @@ export default {
     "Copy this access credential to the Agent keystore so the Agent can register and sync configs with Console.",
   "agent.instance.registration.console.token.expire.tip":
     "This access credential expires at {time} if the Agent has not completed registration.",
+  "agent.instance.registration.console.load_failed":
+    "Failed to load INFINI Console access info.",
+  "agent.instance.registration.menu.info": "INFINI Console Info",
   "agent.instance.registration.agent.title": "Agent Access Info",
   "agent.instance.registration.agent.token.required":
     "Please input access credential!",

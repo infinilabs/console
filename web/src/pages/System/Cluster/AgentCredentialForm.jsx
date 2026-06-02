@@ -98,7 +98,7 @@ export default (props) => {
   };
   const credentialGroupStyle = {
     display: "flex",
-    alignItems: "stretch",
+    alignItems: "center",
     flex: 1,
     minWidth: 0,
   };
@@ -106,10 +106,11 @@ export default (props) => {
     flex: 1,
     minWidth: 0,
   };
+  const refreshButtonSize = 32;
   const refreshButtonStyle = {
-    width: 28,
-    minWidth: 28,
-    height: "100%",
+    width: refreshButtonSize,
+    minWidth: refreshButtonSize,
+    height: refreshButtonSize,
     padding: 0,
     marginLeft: -1,
     borderTopLeftRadius: 0,
@@ -121,7 +122,8 @@ export default (props) => {
   };
   const refreshButtonWrapStyle = {
     display: "flex",
-    alignItems: "stretch",
+    alignItems: "center",
+    flex: `0 0 ${refreshButtonSize}px`,
   };
 
   const credentialOptions = useMemo(() => {

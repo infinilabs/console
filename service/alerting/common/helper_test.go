@@ -71,3 +71,23 @@ func TestEnsureEmailRecipients(t *testing.T) {
 		t.Fatalf("expected configured recipients to pass, got %v", err)
 	}
 }
+
+func TestValidateRenderedWebhookURL(t *testing.T) {
+	validURL, err := validateRenderedWebhookURL(" https://open.feishu.cn/open-apis/bot/v2/hook/abc ")
+	if err != nil {
+		t.Fatalf("expected valid webhook url, got %v", err)
+	}
+	if validURL != "https://open.feishu.cn/open-apis/bot/v2/hook/abc" {
+		t.Fatalf("expected trimmed webhook url, got %q", validURL)
+	}
+
+	_, err = validateRenderedWebhookURL("<no value>")
+	if err == nil || !strings.Contains(err.Error(), "rendered value is empty") {
+		t.Fatalf("expected empty-rendered-value error, got %v", err)
+	}
+
+	_, err = validateRenderedWebhookURL("open.feishu.cn/hook/abc")
+	if err == nil || !strings.Contains(err.Error(), "unsupported scheme") {
+		t.Fatalf("expected unsupported-scheme error, got %v", err)
+	}
+}

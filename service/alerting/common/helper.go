@@ -36,6 +36,8 @@ import (
 	"infini.sh/console/service/alerting/funcs"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
+	"net/url"
+	"strings"
 	"text/template"
 )
 
@@ -60,7 +62,10 @@ func PerformChannel(channel *alerting.Channel, ctx map[string]interface{}) ([]by
 		if err != nil {
 			return nil, err, message
 		}
-		wh.URL = string(urlBytes)
+		wh.URL, err = validateRenderedWebhookURL(string(urlBytes))
+		if err != nil {
+			return nil, err, message
+		}
 		act = &action.WebhookAction{
 			Data:    &wh,
 			Message: string(message),
@@ -95,6 +100,24 @@ func PerformChannel(channel *alerting.Channel, ctx map[string]interface{}) ([]by
 	}
 	executeResult, err := act.Execute()
 	return executeResult, err, message
+}
+
+func validateRenderedWebhookURL(raw string) (string, error) {
+	rendered := strings.TrimSpace(raw)
+	if rendered == "" || rendered == "<no value>" {
+		return "", fmt.Errorf("invalid webhook url: rendered value is empty")
+	}
+	parsed, err := url.Parse(rendered)
+	if err != nil {
+		return "", fmt.Errorf("invalid webhook url: %w", err)
+	}
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return "", fmt.Errorf("invalid webhook url: unsupported scheme %q", parsed.Scheme)
+	}
+	if parsed.Host == "" {
+		return "", fmt.Errorf("invalid webhook url: missing host")
+	}
+	return rendered, nil
 }
 
 func ResolveMessage(messageTemplate string, ctx map[string]interface{}) ([]byte, error) {

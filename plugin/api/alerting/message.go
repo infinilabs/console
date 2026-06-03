@@ -567,7 +567,10 @@ func buildAlertMessageIncident(message *alerting.AlertMessage, alerts []alerting
 		}
 		if message != nil && message.Status == alerting.MessageStateRecovered && getAlertDisplayState(&alertItem) == alerting.MessageStateRecovered {
 			incident.ResolveEventID = alertItem.ID
-			incident.ResolveAt = alertItem.Created
+			incident.ResolveAt = alertItem.Updated
+			if incident.ResolveAt.IsZero() {
+				incident.ResolveAt = alertItem.Created
+			}
 		}
 	}
 

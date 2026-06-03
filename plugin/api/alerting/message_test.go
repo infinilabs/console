@@ -31,7 +31,8 @@ func TestBuildAlertMessageIncident(t *testing.T) {
 		{
 			ID:                   "alert-3",
 			State:                alertmodel.AlertStateOK,
-			Created:              resolve,
+			Created:              start,
+			Updated:              resolve,
 			RecoverActionResults: []alertmodel.ActionExecutionResult{{ChannelType: "webhook"}},
 		},
 	}

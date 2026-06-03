@@ -1167,9 +1167,28 @@ func normalizeAlertTemplateText(text string) string {
 		if strings.TrimSpace(line) == "" {
 			continue
 		}
+		line = collapseDuplicatedLeadingAlertEmoji(line)
 		result = append(result, line)
 	}
 	return strings.Join(result, "\n")
+}
+
+func collapseDuplicatedLeadingAlertEmoji(line string) string {
+	trimmed := strings.TrimLeft(line, " \t")
+	for _, emoji := range []string{"🌈", "🔥"} {
+		double := emoji + " " + emoji
+		if strings.HasPrefix(trimmed, double) {
+			trimmed = emoji + strings.TrimPrefix(trimmed, emoji+emoji)
+			trimmed = strings.Replace(trimmed, double, emoji, 1)
+		}
+		for strings.HasPrefix(trimmed, emoji+emoji) {
+			trimmed = emoji + strings.TrimPrefix(trimmed, emoji+emoji)
+		}
+		for strings.HasPrefix(trimmed, emoji+"\t"+emoji) {
+			trimmed = emoji + strings.TrimPrefix(trimmed, emoji+"\t"+emoji)
+		}
+	}
+	return strings.Repeat(" ", len(line)-len(strings.TrimLeft(line, " "))) + trimmed
 }
 
 func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult, extraParams map[string]interface{}) map[string]interface{} {

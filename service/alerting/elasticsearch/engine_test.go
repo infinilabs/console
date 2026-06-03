@@ -196,6 +196,30 @@ Index: {{index .group_values 0}} of Cluster: {{$.resource_name}}, Max Shard Stor
 	}
 }
 
+func TestAttachTitleMessageToCtxCollapsesDuplicatedLeadingEmoji(t *testing.T) {
+	paramsCtx := map[string]interface{}{
+		"title": "🌈 [JVM utilization is Too High] Resolved",
+	}
+
+	err := attachTitleMessageToCtx(
+		"{{.title}}",
+		`[ INFINI Platform Alerting ]
+🌈 {{.title}}`,
+		paramsCtx,
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got := paramsCtx[alerting2.ParamMessage].(string)
+	if strings.Contains(got, "🌈 🌈") {
+		t.Fatalf("expected duplicated leading emoji to collapse, got %q", got)
+	}
+	if !strings.Contains(got, "🌈 [JVM utilization is Too High] Resolved") {
+		t.Fatalf("expected single emoji title line, got %q", got)
+	}
+}
+
 func TestFormatAlertDuration(t *testing.T) {
 	cases := []struct {
 		name     string

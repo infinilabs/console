@@ -48,3 +48,18 @@ func TestBuildAlertMessageIncident(t *testing.T) {
 		t.Fatalf("expected resolve time %v, got %v", resolve, incident.ResolveAt)
 	}
 }
+
+func TestGetRecoveredAtPrefersRecoveredAt(t *testing.T) {
+	recoveredAt := time.Unix(200, 0)
+	updatedAt := recoveredAt.Add(-3 * time.Minute)
+	message := &alertmodel.AlertMessage{
+		Status:      alertmodel.MessageStateRecovered,
+		Updated:     updatedAt,
+		RecoveredAt: recoveredAt,
+	}
+
+	got := getRecoveredAt(message)
+	if !got.Equal(recoveredAt) {
+		t.Fatalf("expected recovered_at %v, got %v", recoveredAt, got)
+	}
+}

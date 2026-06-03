@@ -938,6 +938,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			alertMessage.Status = alerting.MessageStateRecovered
 			alertMessage.ResourceID = rule.Resource.ID
 			alertMessage.ResourceName = rule.Resource.Name
+			alertMessage.RecoveredAt = alertItem.Created
 			err = saveAlertMessage(alertMessage)
 			if err != nil {
 				return fmt.Errorf("save alert message error: %w", err)

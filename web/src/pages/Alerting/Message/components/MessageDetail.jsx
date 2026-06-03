@@ -54,8 +54,8 @@ const MessageDetail = (props) => {
 
     setTimeRange({
       ...timeRange,
-      min: moment(startTimestamp).subtract(duration, 'ms').format("YYYY-MM-DDTHH:mm:ss.SSS"),
-      max: moment(endTimestamp).add(duration, 'ms').format("YYYY-MM-DDTHH:mm:ss.SSS"),
+      min: moment(startTimestamp).subtract(duration, 'ms').toISOString(),
+      max: moment(endTimestamp).add(duration, 'ms').toISOString(),
     });
   }
 

@@ -598,11 +598,18 @@ const AgentList = (props) => {
   const registrationActionMenu = (
     <Menu
       onClick={({ key }) => {
+        if (key === "register") {
+          router.push(`/resource/agent/new`);
+          return;
+        }
         if (key === "console-info") {
           showConsoleAccessInfo();
         }
       }}
     >
+      <Menu.Item key="register">
+        {formatMessage({ id: "agent.instance.registration.menu.register" })}
+      </Menu.Item>
       <Menu.Item key="console-info">
         {formatMessage({ id: "agent.instance.registration.menu.info" })}
       </Menu.Item>
@@ -699,15 +706,11 @@ const AgentList = (props) => {
               {formatMessage({ id: "form.button.refresh" })}
             </Button>
             {hasAuthority("agent.instance:all") ? (
-              <Dropdown.Button
-                type="primary"
-                icon="down"
-                overlay={registrationActionMenu}
-                onClick={() => router.push(`/resource/agent/new`)}
-                loading={registrationAccessLoading}
-              >
-                {formatMessage({ id: "agent.instance.regist" })}
-              </Dropdown.Button>
+              <Dropdown overlay={registrationActionMenu} trigger={["click"]}>
+                <Button type="primary" loading={registrationAccessLoading}>
+                  {formatMessage({ id: "form.button.new" })} <Icon type="down" />
+                </Button>
+              </Dropdown>
             ) : null}
           </div>
         </div>

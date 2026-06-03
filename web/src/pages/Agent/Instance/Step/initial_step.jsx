@@ -5,14 +5,11 @@ import {
   Icon,
   Divider,
   Spin,
-  message,
   Tooltip,
-  Popover,
   Radio,
 } from "antd";
 import React from "react";
 import { formatMessage } from "umi/locale";
-import { CopyToClipboard } from "react-copy-to-clipboard";
 import request from "@/utils/request";
 import {
   isTLS,
@@ -23,80 +20,6 @@ import {
 
 const AUTH_TYPE_ACCESS_TOKEN = "access_token";
 const AUTH_TYPE_BASIC_AUTH = "basic_auth";
-
-const renderCopyButton = (text, style = {}) => {
-  const button = (
-    <Tooltip
-      title={formatMessage({
-        id: "agent.instance.registration.copy",
-      })}
-    >
-      <Icon
-        type="copy"
-        style={{
-          color: text ? "#007fff" : "rgba(0,0,0,0.25)",
-          cursor: text ? "pointer" : "not-allowed",
-          position: "absolute",
-          right: 8,
-          top: 8,
-          zIndex: 1,
-          fontSize: 16,
-          ...style,
-        }}
-      />
-    </Tooltip>
-  );
-
-  if (!text) {
-    return button;
-  }
-  return (
-    <CopyToClipboard
-      text={text}
-      onCopy={() => {
-        message.open({
-          type: "success",
-          key: "agent-registration-copy-success",
-          content: formatMessage({
-            id: "agent.install.setup.copy.success",
-          }),
-        });
-      }}
-    >
-      {button}
-    </CopyToClipboard>
-  );
-};
-
-const renderReadonlyBlock = (text) => (
-  <div
-    style={{
-      position: "relative",
-      borderRadius: 6,
-      fontSize: 14,
-      padding: "12px 40px 12px 12px",
-      background: "rgb(241, 242, 245)",
-      textAlign: "left",
-      lineHeight: 1.6,
-      overflow: "hidden",
-      fontFamily:
-        '"SFMono-Regular", Monaco, Menlo, Consolas, "Liberation Mono", "Ubuntu Mono", monospace',
-    }}
-  >
-    <div
-      style={{
-        overflowX: "auto",
-        overflowY: "hidden",
-        whiteSpace: "nowrap",
-        wordBreak: "normal",
-        paddingBottom: 2,
-      }}
-    >
-      {text || "-"}
-    </div>
-    {renderCopyButton(text)}
-  </div>
-);
 
 const renderLabel = (labelId, tip) => {
   const label = formatMessage({
@@ -115,95 +38,6 @@ const renderLabel = (labelId, tip) => {
         />
       </Tooltip>
     </span>
-  );
-};
-
-export const ConsoleAccessInfo = ({ consoleEndpoint, managerToken, registrationExpiredAt }) => {
-  const hasConsoleAccessInfo = !!(consoleEndpoint || managerToken);
-  const title = formatMessage({
-    id: "agent.instance.registration.console.title",
-  });
-  const managerTokenTip = [
-    formatMessage({
-      id: "agent.instance.registration.console.token.tip",
-    }),
-  ];
-  if (registrationExpiredAt) {
-    managerTokenTip.push(
-      formatMessage(
-        {
-          id: "agent.instance.registration.console.token.expire.tip",
-        },
-        {
-          time: new Date(registrationExpiredAt).toLocaleString(),
-        }
-      )
-    );
-  }
-
-  const content = (
-    <div style={{ width: 420, maxWidth: "calc(100vw - 64px)" }}>
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ marginBottom: 8, fontWeight: 600, fontSize: 14 }}>
-          {renderLabel(
-            "agent.instance.registration.access.endpoint",
-            formatMessage({
-              id: "agent.instance.registration.console.endpoint.tip",
-            })
-          )}
-        </div>
-        {renderReadonlyBlock(consoleEndpoint)}
-      </div>
-
-      <div>
-        <div style={{ marginBottom: 8, fontWeight: 600, fontSize: 14 }}>
-          {renderLabel(
-            "agent.instance.registration.access.credential",
-            managerTokenTip.join(" ")
-          )}
-        </div>
-        {renderReadonlyBlock(managerToken)}
-      </div>
-    </div>
-  );
-
-  const trigger = (
-    <Tooltip title={title}>
-      <span
-        style={{
-          color: hasConsoleAccessInfo ? "#1890ff" : "rgba(0,0,0,0.25)",
-          cursor: hasConsoleAccessInfo ? "pointer" : "not-allowed",
-          fontSize: 14,
-          fontWeight: 500,
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 4,
-          whiteSpace: "nowrap",
-        }}
-      >
-        <span>{title}</span>
-        <Icon type="down" style={{ fontSize: 12 }} />
-      </span>
-    </Tooltip>
-  );
-
-  if (!hasConsoleAccessInfo) {
-    return trigger;
-  }
-
-  return (
-    <Popover
-      trigger="click"
-      placement="bottomRight"
-      title={
-        <span style={{ fontSize: 16, fontWeight: 600, lineHeight: "24px" }}>
-          {title}
-        </span>
-      }
-      content={content}
-    >
-      {trigger}
-    </Popover>
   );
 };
 

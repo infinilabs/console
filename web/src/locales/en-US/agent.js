@@ -40,7 +40,8 @@ export default {
     "This access credential expires at {time} if the Agent has not completed registration.",
   "agent.instance.registration.console.load_failed":
     "Failed to load INFINI Console access info.",
-  "agent.instance.registration.menu.info": "INFINI Console Info",
+  "agent.instance.registration.menu.register": "Agent Registration",
+  "agent.instance.registration.menu.info": "INFINI Console Access Info",
   "agent.instance.registration.agent.title": "Agent Access Info",
   "agent.instance.registration.agent.token.required":
     "Please input access credential!",

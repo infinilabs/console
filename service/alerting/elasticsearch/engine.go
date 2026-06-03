@@ -56,6 +56,39 @@ type Engine struct {
 
 const alertLogSampleLimit = 3
 
+func formatAlertDuration(duration time.Duration) string {
+	if duration < 0 {
+		duration = -duration
+	}
+	duration = duration.Truncate(time.Second)
+	if duration <= 0 {
+		return "0s"
+	}
+
+	totalSeconds := int64(duration / time.Second)
+	days := totalSeconds / (24 * 60 * 60)
+	totalSeconds %= 24 * 60 * 60
+	hours := totalSeconds / (60 * 60)
+	totalSeconds %= 60 * 60
+	minutes := totalSeconds / 60
+	seconds := totalSeconds % 60
+
+	var parts []string
+	if days > 0 {
+		parts = append(parts, fmt.Sprintf("%dd", days))
+	}
+	if hours > 0 {
+		parts = append(parts, fmt.Sprintf("%dh", hours))
+	}
+	if minutes > 0 {
+		parts = append(parts, fmt.Sprintf("%dm", minutes))
+	}
+	if seconds > 0 || len(parts) == 0 {
+		parts = append(parts, fmt.Sprintf("%ds", seconds))
+	}
+	return strings.Join(parts, "")
+}
+
 func summarizeAlertCondition(cond *alerting.ConditionItem) string {
 	if cond == nil {
 		return "<nil>"
@@ -916,7 +949,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 				paramsCtx = newParameterCtx(rule, checkResults, util.MapStr{
 					alerting2.ParamEventID:   alertMessage.ID,
 					alerting2.ParamTimestamp: alertItem.Created.Unix(),
-					"duration":               alertItem.Created.Sub(alertMessage.Created).String(),
+					"duration":               formatAlertDuration(alertItem.Created.Sub(alertMessage.Created)),
 					"trigger_at":             alertMessage.Created.Unix(),
 				})
 				err = attachTitleMessageToCtx(recoverCfg.Title, recoverCfg.Message, paramsCtx)
@@ -950,7 +983,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 	}
 	paramsCtx = newParameterCtx(rule, checkResults, util.MapStr{
 		alerting2.ParamTimestamp: alertItem.Created.Unix(),
-		"duration":               alertItem.Created.Sub(triggerAt).String(),
+		"duration":               formatAlertDuration(alertItem.Created.Sub(triggerAt)),
 		"trigger_at":             triggerAt.Unix(),
 	})
 
@@ -1053,7 +1086,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			paramsCtx = newParameterCtx(rule, checkResults, util.MapStr{
 				alerting2.ParamTimestamp: alertItem.Created.Unix(),
 				"priority":               priority,
-				"duration":               alertItem.Created.Sub(alertMessage.Created).String(),
+				"duration":               formatAlertDuration(alertItem.Created.Sub(alertMessage.Created)),
 				"trigger_at":             alertMessage.Created.Unix(),
 			})
 			if alertMessage != nil {
@@ -1240,7 +1273,7 @@ func (engine *Engine) Test(rule *alerting.Rule, msgType string) ([]alerting.Acti
 	paramsCtx := newParameterCtx(rule, checkResults, util.MapStr{
 		alerting2.ParamEventID:   util.GetUUID(),
 		alerting2.ParamTimestamp: now.Unix(),
-		"duration":               now.Sub(triggerAt).String(),
+		"duration":               formatAlertDuration(now.Sub(triggerAt)),
 		"trigger_at":             triggerAt.Unix(),
 	})
 	if msgType == "escalation" || msgType == "notification" {

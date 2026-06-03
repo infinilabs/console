@@ -12,7 +12,7 @@ import EventMessageCard from "./EventMessageCard";
 import EventDetailCard from "./EventDetailCard";
 import NotificationCard from "./NotificationCard";
 import AlertChartCard from "./AlertChartCard";
-import { useHistory } from "react-router-dom";
+import { useHistory, useLocation } from "react-router-dom";
 import WidgetLoader from "@/pages/DataManagement/View/WidgetLoader";
 import DatePicker from "@/common/src/DatePicker";
 import { getLocale } from "umi/locale";
@@ -93,12 +93,14 @@ const MessageDetail = (props) => {
     }
   }, []);
   const history = useHistory();
+  const location = useLocation();
+  const backTo = location?.state?.from || "/alerting/message";
 
   return (
     <Card title={messageDetail.title} bordered={false} extra={<Button
       type="primary"
       onClick={() => {
-        history.goBack();
+        history.push(backTo);
       }}
     >
       {formatMessage({ id: "form.button.goback" })}

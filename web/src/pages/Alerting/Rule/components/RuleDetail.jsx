@@ -291,7 +291,12 @@ const RuleDetail = (props) => {
         </div>
         {ruleDetail?.alerting_message ? (
           <Link
-            to={`/alerting/message/${ruleDetail?.alerting_message.id}`}
+            to={{
+              pathname: `/alerting/message/${ruleDetail?.alerting_message.id}`,
+              state: {
+                from: `${location.pathname}${location.search}`,
+              },
+            }}
             style={{
               display: "block",
               background: "rgba(255, 0, 0, 0.1)",

@@ -461,7 +461,12 @@ const Index = (props) => {
         <div>{title}</div>
         <div style={{ paddingRight: 30 }}>
           <Link
-              to={`/alerting/message/${id}`}
+              to={{
+                pathname: `/alerting/message/${id}`,
+                state: {
+                  from: `${window.location.pathname}${window.location.search}`,
+                },
+              }}
               onClick={(e) => {
                 if (window.location.pathname === `/alerting/message/${id}`) {
                   e.preventDefault();

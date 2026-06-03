@@ -90,7 +90,12 @@ export default ({ ruleID, timeRange, refresh, onTimeRangeChange }) => {
       render: (text, record) => {
         return (
           <Link
-            to={`/alerting/message/${record.id}`}
+            to={{
+              pathname: `/alerting/message/${record.id}`,
+              state: {
+                from: `${window.location.pathname}${window.location.search}`,
+              },
+            }}
             style={{
               maxWidth: 360,
               whiteSpace: "nowrap",

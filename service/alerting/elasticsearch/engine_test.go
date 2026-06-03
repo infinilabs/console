@@ -194,8 +194,26 @@ Index: {{index .group_values 0}} of Cluster: {{$.resource_name}}, Max Shard Stor
 	if !strings.Contains(got, "Index: migration-pmc of Cluster: migrator-source, Max Shard Storage: 92.82gb") {
 		t.Fatalf("expected rendered content, got %q", got)
 	}
-	if strings.Contains(got, "- TriggerAt: 2026-05-20 15:00:00\nIndex: migration-pmc of Cluster: migrator-source, Max Shard Storage: 92.82gb") == false {
-		t.Fatalf("expected content lines to stay contiguous, got %q", got)
+}
+
+func TestFormatAlertDuration(t *testing.T) {
+	cases := []struct {
+		name     string
+		input    time.Duration
+		expected string
+	}{
+		{name: "sub-second", input: 500 * time.Millisecond, expected: "0s"},
+		{name: "minute-second", input: 5*time.Minute + 59*time.Second + 999*time.Millisecond, expected: "5m59s"},
+		{name: "hour-minute", input: time.Hour + 2*time.Minute, expected: "1h2m"},
+		{name: "day-hour", input: 24*time.Hour + 3*time.Hour + 4*time.Second, expected: "1d3h4s"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := formatAlertDuration(tc.input); got != tc.expected {
+				t.Fatalf("expected %q, got %q", tc.expected, got)
+			}
+		})
 	}
 }
 

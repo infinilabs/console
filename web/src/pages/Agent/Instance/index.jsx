@@ -616,23 +616,9 @@ const AgentList = (props) => {
     </Menu>
   );
 
-  const consoleTokenTip = [
-    formatMessage({
-      id: "agent.instance.registration.console.token.tip",
-    }),
-  ];
-  if (consoleAccessModal.registrationExpiredAt) {
-    consoleTokenTip.push(
-      formatMessage(
-        {
-          id: "agent.instance.registration.console.token.expire.tip",
-        },
-        {
-          time: new Date(consoleAccessModal.registrationExpiredAt).toLocaleString(),
-        }
-      )
-    );
-  }
+  const consoleTokenTip = formatMessage({
+    id: "agent.instance.registration.console.token.tip",
+  });
 
   return (
     <PageHeaderWrapper>
@@ -941,9 +927,7 @@ const AgentList = (props) => {
               })}
             </div>
             {renderReadonlyBlock(consoleAccessModal.managerToken)}
-            <div style={{ marginTop: 8, color: "rgba(0,0,0,0.45)" }}>
-              {consoleTokenTip.join(" ")}
-            </div>
+            <div style={{ marginTop: 8, color: "rgba(0,0,0,0.45)" }}>{consoleTokenTip}</div>
           </div>
         </Modal>
       </Card>

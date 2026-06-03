@@ -35,13 +35,11 @@ export default {
   "agent.instance.registration.console.endpoint.tip":
     "Copy this access endpoint to the Agent managed configuration.",
   "agent.instance.registration.console.token.tip":
-    "Copy this access credential to the Agent keystore so the Agent can register and sync configs with Console.",
-  "agent.instance.registration.console.token.expire.tip":
-    "This access credential expires at {time} if the Agent has not completed registration.",
+    "Copy and keep this access credential securely.",
   "agent.instance.registration.console.load_failed":
     "Failed to load INFINI Console access info.",
-  "agent.instance.registration.menu.register": "Agent Registration",
-  "agent.instance.registration.menu.info": "INFINI Console Access Info",
+  "agent.instance.registration.menu.register": "Register",
+  "agent.instance.registration.menu.info": "Credential",
   "agent.instance.registration.agent.title": "Agent Access Info",
   "agent.instance.registration.agent.token.required":
     "Please input access credential!",

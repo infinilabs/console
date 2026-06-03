@@ -507,7 +507,7 @@ POST $[[SETUP_INDEX_PREFIX]]channel/$[[SETUP_DOC_TYPE]]/cj8e9s53q95gsdbb054g
     },
     "method": "POST",
     "url": "{{$.env.FEISHU_WEBHOOK_ENDPOINT}}",
-    "body": "{\n  \"msg_type\": \"interactive\",\n  \"card\": {\n      \"header\": {\n        \"title\": {\n          \"content\": \"[ INFINI Platform Alerting ]\",\n          \"tag\": \"plain_text\"\n        },\n        \"template\":\"green\"\n      },\n      \"elements\": [\n      {\n        \"tag\": \"markdown\",\n        \"content\": \"🌈 **{{.title}}**\"\n      },\n      {\n        \"tag\": \"hr\"\n      },\n      {\n        \"tag\": \"markdown\",\n        \"content\": \"{{ .message | str_replace \"\\n\" \"\\\\n\" }}\"\n      },\n      {\n        \"tag\": \"hr\"\n      },\n      {\n        \"tag\": \"markdown\",\n        \"content\": \"[View Incident]({{$.env.INFINI_CONSOLE_ENDPOINT}}/#/alerting/message/{{.event_id}})\"\n      }\n    ]\n  }\n}"
+    "body": "{\n  \"msg_type\": \"interactive\",\n  \"card\": {\n      \"header\": {\n        \"title\": {\n          \"content\": \"[ INFINI Platform Alerting ]\",\n          \"tag\": \"plain_text\"\n        },\n        \"template\":\"green\"\n      },\n      \"elements\": [\n      {\n        \"tag\": \"markdown\",\n        \"content\": \"**{{.title}}**\"\n      },\n      {\n        \"tag\": \"hr\"\n      },\n      {\n        \"tag\": \"markdown\",\n        \"content\": \"{{ .message | str_replace \"\\n\" \"\\\\n\" }}\"\n      },\n      {\n        \"tag\": \"hr\"\n      },\n      {\n        \"tag\": \"markdown\",\n        \"content\": \"[View Incident]({{$.env.INFINI_CONSOLE_ENDPOINT}}/#/alerting/message/{{.event_id}})\"\n      }\n    ]\n  }\n}"
   },
   "sub_type": "feishu",
   "enabled": false

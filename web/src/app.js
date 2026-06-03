@@ -43,7 +43,6 @@ notification.config({
 
 const CHUNK_RELOAD_KEY = "console.chunk-reload";
 const CHUNK_RELOAD_WINDOW_MS = 15000;
-const CHUNK_RELOAD_QUERY_KEY = "_reload_ts";
 
 if (!String.prototype.replaceAll) {
   String.prototype.replaceAll = function(search, replacement) {
@@ -85,13 +84,6 @@ const suppressUnhandledRejection = (event) => {
 
 const getCanonicalLocation = () => {
   const url = new URL(window.location.href);
-  url.searchParams.delete(CHUNK_RELOAD_QUERY_KEY);
-  return `${url.pathname}${url.search}${url.hash}`;
-};
-
-const buildReloadLocation = () => {
-  const url = new URL(window.location.href);
-  url.searchParams.set(CHUNK_RELOAD_QUERY_KEY, `${Date.now()}`);
   return `${url.pathname}${url.search}${url.hash}`;
 };
 
@@ -131,7 +123,7 @@ const installChunkReloadRecovery = () => {
     if (!isChunkLoadError(error) || !shouldReloadForChunkError()) {
       return false;
     }
-    window.location.replace(buildReloadLocation());
+    window.location.reload();
     return true;
   };
 

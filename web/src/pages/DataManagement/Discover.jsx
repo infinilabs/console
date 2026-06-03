@@ -118,7 +118,6 @@ const decodeShareState = (value) => {
 const updateHashQueryParams = (href, patch = {}) => {
   try {
     const url = new URL(href);
-    url.searchParams.delete("_reload_ts");
     const hashValue = (url.hash || "#").slice(1);
     const [hashPath, hashQuery = ""] = hashValue.split("?");
     const params = new URLSearchParams(hashQuery);

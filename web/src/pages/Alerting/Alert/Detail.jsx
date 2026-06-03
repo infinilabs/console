@@ -37,6 +37,7 @@ import { useHistory } from "react-router-dom";
 const Detail = (props) => {
   const [param, setParam] = useQueryParam("_g", JsonParam);
   const eventID = props.match.params?.event_id;
+  const displayState = alertDetail?.display_state || alertDetail?.state;
 
   const [alertDetail, setAlertDetail] = useState({});
   const fetchAlertDetail = (id) => {
@@ -153,8 +154,8 @@ const Detail = (props) => {
               })}
               content={
                 <HealthStatusView
-                  status={RuleStautsColor[alertDetail?.state]}
-                  label={firstUpperCase(alertDetail?.state)}
+                  status={RuleStautsColor[displayState]}
+                  label={firstUpperCase(displayState)}
                 />
               }
             />
@@ -179,7 +180,7 @@ const Detail = (props) => {
             <DescriptionItem
               title={formatMessage({ id: "alert.message.table.priority" })}
               content={
-                alertDetail?.state != "ok" ? (
+                displayState != "ok" && displayState != "recovered" ? (
                   <Tag color={PriorityColor[alertDetail?.priority]}>
                     {formatMessage({
                       id: `alert.message.priority.${alertDetail?.priority}`,

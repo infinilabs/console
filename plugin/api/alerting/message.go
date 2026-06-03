@@ -428,8 +428,19 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 	} else {
 		duration = time.Now().Sub(message.Created)
 	}
+	incident := resolveAlertMessageIncident(message)
+
+	triggerAt := message.Created
+	if !incident.TriggerAt.IsZero() {
+		triggerAt = incident.TriggerAt
+	}
+	resolveAt := message.Updated
+	if !incident.ResolveAt.IsZero() {
+		resolveAt = incident.ResolveAt
+	}
 	detailObj := util.MapStr{
 		"message_id":        message.ID,
+		"event_id":          message.ID,
 		"rule_id":           message.RuleID,
 		"rule_name":         rule.Name,
 		"rule_enabled":      rule.Enabled,
@@ -438,8 +449,12 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 		"priority":          message.Priority,
 		"created":           message.Created,
 		"updated":           message.Updated,
-		"resource_name":     rule.Resource.Name,
-		"resource_id":       rule.Resource.ID,
+		"trigger_at":        triggerAt,
+		"resolve_at":        resolveAt,
+		"trigger_event_id":  incident.TriggerEventID,
+		"resolve_event_id":  incident.ResolveEventID,
+		"resource_name":     firstNonEmptyString(message.ResourceName, rule.Resource.Name),
+		"resource_id":       firstNonEmptyString(message.ResourceID, rule.Resource.ID),
 		"resource_objects":  rule.Resource.Objects,
 		"conditions":        rule.Conditions,
 		"bucket_conditions": rule.BucketConditions,
@@ -453,6 +468,115 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 		"hit_condition":     hitCondition,
 	}
 	h.WriteJSON(w, detailObj, http.StatusOK)
+}
+
+type alertMessageIncident struct {
+	TriggerEventID string
+	ResolveEventID string
+	TriggerAt      time.Time
+	ResolveAt      time.Time
+}
+
+func resolveAlertMessageIncident(message *alerting.AlertMessage) alertMessageIncident {
+	if message == nil || message.RuleID == "" || message.Created.IsZero() {
+		return alertMessageIncident{}
+	}
+
+	endTime := time.Now()
+	if message.Status == alerting.MessageStateRecovered && !message.Updated.IsZero() {
+		endTime = message.Updated
+	}
+
+	must := []util.MapStr{
+		{
+			"term": util.MapStr{
+				"rule_id": util.MapStr{
+					"value": message.RuleID,
+				},
+			},
+		},
+		{
+			"range": util.MapStr{
+				"created": util.MapStr{
+					"gte": message.Created.Add(-1 * time.Second).UnixMilli(),
+					"lte": endTime.Add(1 * time.Second).UnixMilli(),
+				},
+			},
+		},
+	}
+	if message.ResourceID != "" {
+		must = append(must, util.MapStr{
+			"term": util.MapStr{
+				"resource_id": util.MapStr{
+					"value": message.ResourceID,
+				},
+			},
+		})
+	}
+
+	q := orm.Query{
+		RawQuery: util.MustToJSONBytes(util.MapStr{
+			"size": 100,
+			"sort": []util.MapStr{
+				{
+					"created": util.MapStr{
+						"order": "asc",
+					},
+				},
+			},
+			"query": util.MapStr{
+				"bool": util.MapStr{
+					"must": must,
+				},
+			},
+		}),
+	}
+
+	err, result := orm.Search(alerting.Alert{}, &q)
+	if err != nil || len(result.Result) == 0 {
+		return alertMessageIncident{}
+	}
+
+	alerts := make([]alerting.Alert, 0, len(result.Result))
+	for _, item := range result.Result {
+		alertItem, ok := parseAlertSearchResult(item)
+		if !ok {
+			continue
+		}
+		alerts = append(alerts, alertItem)
+	}
+
+	return buildAlertMessageIncident(message, alerts)
+}
+
+func firstNonEmptyString(values ...string) string {
+	for _, value := range values {
+		if value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func buildAlertMessageIncident(message *alerting.AlertMessage, alerts []alerting.Alert) alertMessageIncident {
+	incident := alertMessageIncident{}
+	for _, alertItem := range alerts {
+		if incident.TriggerEventID == "" && alertItem.State == alerting.AlertStateAlerting {
+			incident.TriggerEventID = alertItem.ID
+			incident.TriggerAt = alertItem.Created
+		}
+		if message != nil && message.Status == alerting.MessageStateRecovered && getAlertDisplayState(&alertItem) == alerting.MessageStateRecovered {
+			incident.ResolveEventID = alertItem.ID
+			incident.ResolveAt = alertItem.Created
+		}
+	}
+
+	if incident.TriggerEventID == "" && len(alerts) > 0 {
+		incident.TriggerEventID = alerts[0].ID
+		incident.TriggerAt = alerts[0].Created
+	}
+
+	return incident
 }
 
 func (h *AlertAPI) getMessageNotificationInfo(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {

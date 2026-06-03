@@ -164,7 +164,11 @@ const MessageDetail = (props) => {
                 from: timeRange.min || "now-7d", 
                 to: timeRange.max || "now"
               }}
-              queryParams={{state:"alerting", rule_id: messageDetail?.rule_id}}
+              queryParams={{
+                rule_id: messageDetail?.rule_id,
+                resource_id: messageDetail?.resource_id,
+                ...(messageDetail?.status === "recovered" ? {} : { state: "alerting" }),
+              }}
               onGlobalQueriesChange={(queries = {}) => {
                 if (!queries?.range?.from || !queries?.range?.to) {
                   return;
@@ -179,7 +183,13 @@ const MessageDetail = (props) => {
       </div>
       {messageDetail.message_id && <Tabs>
         <Tabs.TabPane tab={formatMessage({ id: "alert.rule.detail.title.alert_history" })} key="alert-history">
-          <RuleRecords ruleID={messageDetail?.rule_id} timeRange={timeRange} />
+          <RuleRecords
+            ruleID={messageDetail?.rule_id}
+            resourceID={messageDetail?.resource_id}
+            resolveEventID={messageDetail?.resolve_event_id}
+            messageStatus={messageDetail?.status}
+            timeRange={timeRange}
+          />
         </Tabs.TabPane>
       </Tabs>
   }

@@ -18,7 +18,16 @@ import { PriorityIconText } from "../../components/Statistic";
 import WidgetLoader from "@/pages/DataManagement/View/WidgetLoader";
 const Option = Select.Option;
 
-const RuleRecords = ({ ruleID, timeRange, showAertMetric = false, refresh, onTimeRangeChange }) => {
+const RuleRecords = ({
+  ruleID,
+  resourceID,
+  resolveEventID,
+  messageStatus,
+  timeRange,
+  showAertMetric = false,
+  refresh,
+  onTimeRangeChange,
+}) => {
   if (!ruleID || !timeRange.min) {
     return null;
   }
@@ -33,6 +42,7 @@ const RuleRecords = ({ ruleID, timeRange, showAertMetric = false, refresh, onTim
     from: 0,
     size: 10,
     rule_id: ruleID,
+    resource_id: resourceID,
     min: bounds.min.valueOf(),
     max: bounds.max.valueOf(),
   };
@@ -97,18 +107,22 @@ const RuleRecords = ({ ruleID, timeRange, showAertMetric = false, refresh, onTim
       title: formatMessage({ id: "alert.message.table.execution_status" }),
       dataIndex: "state",
       render: (text, record) => {
+        const displayState =
+          messageStatus === "recovered" && record.id === resolveEventID
+            ? "recovered"
+            : record.display_state || text;
         return (
           <div style={{ display: "flex", gap: 5 }}>
             <Tag
               style={{
-                backgroundColor: MessageStautsColor[text],
+                backgroundColor: MessageStautsColor[displayState],
                 color: "#fff",
                 border: "none",
               }}
             >
-              {firstUpperCase(text)}
+              {firstUpperCase(displayState)}
             </Tag>
-            {text != "ok" ? (
+            {displayState != "ok" && displayState != "recovered" ? (
               <PriorityIconText priority={record.priority} />
             ) : null}
           </div>
@@ -193,7 +207,7 @@ const RuleRecords = ({ ruleID, timeRange, showAertMetric = false, refresh, onTim
                 dispatch({ type: "state", value: value });
               }}
             >
-              {Object.keys(RuleStautsColor).map((item) => {
+              {Object.keys(RuleStautsColor).filter((item) => item !== "recovered").map((item) => {
                 return (
                   <Option key={item} value={item}>
                     {item}
@@ -231,6 +245,7 @@ const RuleRecords = ({ ruleID, timeRange, showAertMetric = false, refresh, onTim
             }}
             queryParams={{
               rule_id: ruleID,
+              resource_id: resourceID,
               priority: queryParams.priority,
               state: queryParams.state,
             }}

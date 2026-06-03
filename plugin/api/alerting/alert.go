@@ -66,6 +66,18 @@ func (h *AlertAPI) getAlert(w http.ResponseWriter, req *http.Request, ps httprou
 		return
 	}
 
+	if source, ok := parseAlertSearchResult(result.Result[0]); ok {
+		doc := util.MapStr{}
+		util.FromJSONBytes(util.MustToJSONBytes(source), &doc)
+		doc["display_state"] = getAlertDisplayState(&source)
+		h.WriteJSON(w, util.MapStr{
+			"found":   true,
+			"_id":     id,
+			"_source": doc,
+		}, 200)
+		return
+	}
+
 	h.WriteJSON(w, util.MapStr{
 		"found":   true,
 		"_id":     id,
@@ -84,6 +96,7 @@ func (h *AlertAPI) searchAlert(w http.ResponseWriter, req *http.Request, ps http
 		priority    = h.GetParameterOrDefault(req, "priority", "")
 		sort        = h.GetParameterOrDefault(req, "sort", "")
 		ruleID      = h.GetParameterOrDefault(req, "rule_id", "")
+		resourceID  = h.GetParameterOrDefault(req, "resource_id", "")
 		min         = h.GetParameterOrDefault(req, "min", "")
 		max         = h.GetParameterOrDefault(req, "max", "")
 		mustBuilder = &strings.Builder{}
@@ -92,6 +105,9 @@ func (h *AlertAPI) searchAlert(w http.ResponseWriter, req *http.Request, ps http
 	mustBuilder.WriteString(fmt.Sprintf(`{"range":{"created":{"gte":"%s", "lte": "%s"}}}`, min, max))
 	if ruleID != "" {
 		mustBuilder.WriteString(fmt.Sprintf(`,{"term":{"rule_id":{"value":"%s"}}}`, ruleID))
+	}
+	if resourceID != "" {
+		mustBuilder.WriteString(fmt.Sprintf(`,{"term":{"resource_id":{"value":"%s"}}}`, resourceID))
 	}
 
 	if sort != "" {
@@ -135,6 +151,34 @@ func (h *AlertAPI) searchAlert(w http.ResponseWriter, req *http.Request, ps http
 		return
 	}
 	h.Write(w, res.Raw)
+}
+
+func getAlertDisplayState(alertItem *alerting.Alert) string {
+	if alertItem == nil {
+		return ""
+	}
+	if alertItem.State == alerting.AlertStateOK && len(alertItem.RecoverActionResults) > 0 {
+		return alerting.MessageStateRecovered
+	}
+	return alertItem.State
+}
+
+func parseAlertSearchResult(item interface{}) (alerting.Alert, bool) {
+	switch value := item.(type) {
+	case alerting.Alert:
+		return value, true
+	case *alerting.Alert:
+		if value == nil {
+			return alerting.Alert{}, false
+		}
+		return *value, true
+	default:
+		alertItem := alerting.Alert{}
+		if err := util.FromJSONBytes(util.MustToJSONBytes(value), &alertItem); err != nil {
+			return alerting.Alert{}, false
+		}
+		return alertItem, true
+	}
 }
 
 func (h *AlertAPI) getAlertStats(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {

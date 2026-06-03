@@ -8,6 +8,8 @@ import EventMessageStatus from "./EventMessageStatus";
 export default ({msgItem})=>{
   const labelSpan = 6;
   const vSpan = 18;
+  const triggerAt = msgItem?.trigger_at || msgItem?.created;
+  const resolveAt = msgItem?.resolve_at || msgItem?.updated;
 
   const isBucketDiff = !!(msgItem && msgItem.bucket_conditions)
 
@@ -39,11 +41,11 @@ export default ({msgItem})=>{
         </Row>
         <Row>
           <Col span={labelSpan}>{formatMessage({ id: "alert.message.table.created" })}</Col>
-          <Col span={vSpan}>{formatUtcTimeToLocal(msgItem?.created)}</Col>
+          <Col span={vSpan}>{formatUtcTimeToLocal(triggerAt)}</Col>
         </Row>
         {msgItem.status === "recovered" ? <Row>
           <Col span={labelSpan}>{formatMessage({ id: "alert.message.detail.recover_time" })}</Col>
-          <Col span={vSpan}>{formatUtcTimeToLocal(msgItem?.updated)}</Col>
+          <Col span={vSpan}>{formatUtcTimeToLocal(resolveAt)}</Col>
         </Row>:null}
         <Row>
           <Col span={labelSpan}>{formatMessage({ id: "alert.message.table.duration" })}</Col>
@@ -67,7 +69,7 @@ export default ({msgItem})=>{
         </Row>
         <Row>
           <Col span={labelSpan}>{formatMessage({ id: "alert.message.detail.updated" })}</Col>
-          <Col span={vSpan}>{formatUtcTimeToLocal(msgItem?.updated)}</Col>
+          <Col span={vSpan}>{formatUtcTimeToLocal(resolveAt)}</Col>
         </Row>
       </div>
     </Card>

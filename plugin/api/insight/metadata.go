@@ -31,6 +31,7 @@ import (
 	"bytes"
 	"math"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"text/template"
@@ -48,6 +49,53 @@ import (
 	"infini.sh/framework/core/radix"
 	"infini.sh/framework/core/util"
 )
+
+func stringifyFormulaTemplateParam(value interface{}) interface{} {
+	switch v := value.(type) {
+	case float64:
+		return strconv.FormatFloat(v, 'f', -1, 64)
+	case float32:
+		return strconv.FormatFloat(float64(v), 'f', -1, 32)
+	case int:
+		return strconv.Itoa(v)
+	case int8:
+		return strconv.FormatInt(int64(v), 10)
+	case int16:
+		return strconv.FormatInt(int64(v), 10)
+	case int32:
+		return strconv.FormatInt(int64(v), 10)
+	case int64:
+		return strconv.FormatInt(v, 10)
+	case uint:
+		return strconv.FormatUint(uint64(v), 10)
+	case uint8:
+		return strconv.FormatUint(uint64(v), 10)
+	case uint16:
+		return strconv.FormatUint(uint64(v), 10)
+	case uint32:
+		return strconv.FormatUint(uint64(v), 10)
+	case uint64:
+		return strconv.FormatUint(v, 10)
+	default:
+		return value
+	}
+}
+
+func renderFormulaTemplate(formula string, params map[string]interface{}) (string, error) {
+	tpl, err := template.New("insight_formula").Parse(formula)
+	if err != nil {
+		return "", err
+	}
+	normalizedParams := map[string]interface{}{}
+	for key, value := range params {
+		normalizedParams[key] = stringifyFormulaTemplateParam(value)
+	}
+	msgBuffer := &bytes.Buffer{}
+	if err := tpl.Execute(msgBuffer, normalizedParams); err != nil {
+		return "", err
+	}
+	return msgBuffer.String(), nil
+}
 
 func (h *InsightAPI) HandleGetPreview(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	clusterID := ps.MustGetParameter("id")
@@ -297,16 +345,10 @@ func getMetricData(metric *insightpkg.Metric) (interface{}, error) {
 			grpMetricData := &insightpkg.MetricDataItem{}
 			isTimeSeries := false
 			for _, formula = range metric.Formulas {
-				tpl, err := template.New("insight_formula").Parse(formula)
+				resolvedFormula, err := renderFormulaTemplate(formula, params)
 				if err != nil {
 					return nil, err
 				}
-				msgBuffer := &bytes.Buffer{}
-				err = tpl.Execute(msgBuffer, params)
-				if err != nil {
-					return nil, err
-				}
-				resolvedFormula := msgBuffer.String()
 				expression, err := govaluate.NewEvaluableExpression(resolvedFormula)
 				if err != nil {
 					return nil, err

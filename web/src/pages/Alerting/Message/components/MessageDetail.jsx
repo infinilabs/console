@@ -44,7 +44,7 @@ const MessageDetail = (props) => {
     let endTimestamp = moment().valueOf();
 
     if (messageDetail?.status == "recovered") {
-      endTimestamp = moment(messageDetail.updated).valueOf();
+      endTimestamp = moment(messageDetail.resolve_at || messageDetail.updated).valueOf();
     }
 
     const duration = moment(messageDetail.updated).valueOf() - moment(messageDetail.created).valueOf()

@@ -220,6 +220,37 @@ func TestAttachTitleMessageToCtxCollapsesDuplicatedLeadingEmoji(t *testing.T) {
 	}
 }
 
+func TestAttachTitleMessageToCtxAppendsRecoveryContext(t *testing.T) {
+	paramsCtx := map[string]interface{}{
+		"event_id":         "evt-1",
+		"resource_name":    "INFINI_SYSTEM",
+		"objects":          []string{".infini_metrics*"},
+		"trigger_at":       "2026-06-04 10:45:25",
+		"timestamp":        "2026-06-04 11:13:25",
+		"duration":         "28m",
+		"recovery_context": "Node: es717 of Cluster: migrator-es717, JVM Usage: 85.9%",
+	}
+
+	err := attachTitleMessageToCtx(
+		"🌈 [resolved]",
+		`EventID: {{.event_id}}
+Target: {{.resource_name}}-{{.objects}}
+TriggerAt: {{.trigger_at}}
+ResolveAt: {{.timestamp}}
+Duration: {{.duration}}{{if .recovery_context}}
+{{.recovery_context}}{{end}}`,
+		paramsCtx,
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got := paramsCtx[alerting2.ParamMessage].(string)
+	if !strings.Contains(got, "Node: es717 of Cluster: migrator-es717, JVM Usage: 85.9%") {
+		t.Fatalf("expected recovery context in message, got %q", got)
+	}
+}
+
 func TestFormatAlertDuration(t *testing.T) {
 	cases := []struct {
 		name     string
@@ -238,6 +269,80 @@ func TestFormatAlertDuration(t *testing.T) {
 				t.Fatalf("expected %q, got %q", tc.expected, got)
 			}
 		})
+	}
+}
+
+func TestDiffRecoveredConditionResultItems(t *testing.T) {
+	makeItem := func(priority string, groups ...string) alerting.ConditionResultItem {
+		return alerting.ConditionResultItem{
+			GroupValues: groups,
+			ConditionItem: &alerting.ConditionItem{
+				Priority: priority,
+			},
+		}
+	}
+
+	previous := []alerting.ConditionResultItem{
+		makeItem("low", "cluster-a", "node-1"),
+		makeItem("medium", "cluster-a", "node-2"),
+		makeItem("high", "cluster-a", "node-3"),
+	}
+	current := []alerting.ConditionResultItem{
+		makeItem("high", "cluster-a", "node-3"),
+	}
+
+	recovered := diffRecoveredConditionResultItems(previous, current)
+	if len(recovered) != 2 {
+		t.Fatalf("expected 2 recovered items, got %d", len(recovered))
+	}
+	if got := strings.Join(recovered[0].GroupValues, ","); got != "cluster-a,node-1" {
+		t.Fatalf("expected first recovered item to be node-1, got %s", got)
+	}
+	if got := strings.Join(recovered[1].GroupValues, ","); got != "cluster-a,node-2" {
+		t.Fatalf("expected second recovered item to be node-2, got %s", got)
+	}
+}
+
+func TestDiffRecoveredConditionResultItemsIgnoresPriorityChanges(t *testing.T) {
+	makeItem := func(priority string, groups ...string) alerting.ConditionResultItem {
+		return alerting.ConditionResultItem{
+			GroupValues: groups,
+			ConditionItem: &alerting.ConditionItem{
+				Priority: priority,
+			},
+		}
+	}
+
+	previous := []alerting.ConditionResultItem{
+		makeItem("high", "cluster-a", "node-1"),
+	}
+	current := []alerting.ConditionResultItem{
+		makeItem("low", "cluster-a", "node-1"),
+	}
+
+	recovered := diffRecoveredConditionResultItems(previous, current)
+	if len(recovered) != 0 {
+		t.Fatalf("expected no recovered items when only priority changes, got %d", len(recovered))
+	}
+}
+
+func TestIsIncrementalRecoveryEnabled(t *testing.T) {
+	if isIncrementalRecoveryEnabled(nil) {
+		t.Fatal("expected nil config to disable incremental recovery")
+	}
+
+	cfg := &alerting.RecoveryNotificationConfig{
+		Enabled:                    true,
+		EventEnabled:               true,
+		IncrementalRecoveryEnabled: false,
+	}
+	if isIncrementalRecoveryEnabled(cfg) {
+		t.Fatal("expected incremental recovery to stay disabled by default")
+	}
+
+	cfg.IncrementalRecoveryEnabled = true
+	if !isIncrementalRecoveryEnabled(cfg) {
+		t.Fatal("expected incremental recovery to be enabled when all switches are on")
 	}
 }
 

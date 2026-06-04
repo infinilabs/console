@@ -104,6 +104,20 @@ export default (props) => {
         )}
       </Form.Item>
       <div style={channelEnabled ? {} : { height: 0, overflow: 'hidden'}}>
+        <Form.Item
+          label={formatMessage({
+            id: "alert.rule.form.label.incremental_recovery_notification",
+          })}
+          extra={formatMessage({
+            id: "alert.rule.form.help.incremental_recovery_notification",
+          })}
+        >
+          {getFieldDecorator("recovery_notification_config[incremental_recovery_enabled]", {
+            valuePropName: "checked",
+            initialValue: value.incremental_recovery_enabled || false,
+            rules: [],
+          })(<Switch />)}
+        </Form.Item>
         {
           (
             getFieldDecorator("recovery_notification_config[normal]", {

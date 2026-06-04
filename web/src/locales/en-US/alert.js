@@ -262,6 +262,10 @@ export default {
   "alert.rule.form.title.configure_alert_channel_recovery":
     "Notification recovery channels",
   "alert.rule.form.label.alert_channel": "Notification channels",
+  "alert.rule.form.label.incremental_recovery_notification":
+    "Incremental recovery notifications",
+  "alert.rule.form.help.incremental_recovery_notification":
+    "Disabled by default. When enabled, recovery notifications are sent for recovered groups as they clear instead of waiting for all groups to recover.",
   "alert.rule.form.label.accept_upgrade": "Notification escalation",
   "alert.rule.form.label.upgrade_notification_waiting_time":
     "Escalation waiting time",

@@ -135,6 +135,63 @@ func summarizeAlertConditionResults(items []alerting.ConditionResultItem) string
 	return summary
 }
 
+func getConditionResultItemKey(item alerting.ConditionResultItem) string {
+	return strings.Join(item.GroupValues, "\x1f")
+}
+
+func diffRecoveredConditionResultItems(previous, current []alerting.ConditionResultItem) []alerting.ConditionResultItem {
+	if len(previous) == 0 {
+		return nil
+	}
+
+	currentKeys := make(map[string]struct{}, len(current))
+	for _, item := range current {
+		currentKeys[getConditionResultItemKey(item)] = struct{}{}
+	}
+
+	recovered := make([]alerting.ConditionResultItem, 0, len(previous))
+	for _, item := range previous {
+		if _, ok := currentKeys[getConditionResultItemKey(item)]; ok {
+			continue
+		}
+		recovered = append(recovered, item)
+	}
+	return recovered
+}
+
+func isIncrementalRecoveryEnabled(cfg *alerting.RecoveryNotificationConfig) bool {
+	return cfg != nil && cfg.Enabled && cfg.EventEnabled && cfg.IncrementalRecoveryEnabled
+}
+
+func getLastConditionResults(ruleID string) ([]alerting.ConditionResultItem, error) {
+	if ruleID == "" {
+		return nil, nil
+	}
+
+	value, err := kv.GetValue(alerting2.KVLastConditionResults, []byte(ruleID))
+	if err != nil || len(value) == 0 {
+		return nil, err
+	}
+
+	var items []alerting.ConditionResultItem
+	if err := util.FromJSONBytes(value, &items); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+func saveLastConditionResults(ruleID string, items []alerting.ConditionResultItem) error {
+	if ruleID == "" {
+		return nil
+	}
+
+	value, err := util.ToJSONBytes(items)
+	if err != nil {
+		return err
+	}
+	return kv.AddValue(alerting2.KVLastConditionResults, []byte(ruleID), value)
+}
+
 // GenerateQuery generate a final elasticsearch query dsl object
 // when RawFilter of rule is not empty, priority use it, otherwise to covert from Filter of rule (todo)
 // auto generate time filter query and then attach to final query
@@ -857,8 +914,10 @@ func (engine *Engine) CheckBucketCondition(rule *alerting.Rule, targetMetricData
 func (engine *Engine) Do(rule *alerting.Rule) error {
 
 	var (
-		alertItem *alerting.Alert
-		err       error
+		alertItem                 *alerting.Alert
+		persistLastConditionItems bool
+		lastConditionItems        []alerting.ConditionResultItem
+		err                       error
 	)
 	defer func() {
 		if err != nil && alertItem == nil {
@@ -895,6 +954,11 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 				log.Errorf("save alert item failed, rule_id=%s, alert_id=%s, state=%s: %v", rule.ID, alertItem.ID, alertItem.State, err)
 			}
 		}
+		if persistLastConditionItems {
+			if err := saveLastConditionResults(rule.ID, lastConditionItems); err != nil {
+				log.Errorf("save last condition results failed, rule_id=%s: %v", rule.ID, err)
+			}
+		}
 	}()
 	log.Tracef("start check condition of rule %s", rule.ID)
 
@@ -926,7 +990,16 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 	if err != nil {
 		return fmt.Errorf("get alert message error: %w", err)
 	}
+	previousConditionResults, err := getLastConditionResults(rule.ID)
+	if err != nil {
+		return fmt.Errorf("get last condition results error: %w", err)
+	}
 	conditionResults := checkResults.ResultItems
+	recoveredConditionResults := diffRecoveredConditionResultItems(previousConditionResults, conditionResults)
+	if !checkResults.QueryResult.Nodata {
+		persistLastConditionItems = true
+		lastConditionItems = conditionResults
+	}
 	var paramsCtx map[string]interface{}
 	if len(conditionResults) == 0 {
 		alertItem.Priority = ""
@@ -935,6 +1008,30 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		}
 
 		if alertMessage != nil && alertMessage.Status != alerting.MessageStateRecovered && !checkResults.QueryResult.Nodata {
+			recoverCfg := rule.RecoveryNotificationConfig
+			if recoverCfg != nil && recoverCfg.EventEnabled && recoverCfg.Enabled {
+				recoveryContext, recoveredResults, err := buildRecoveryContext(rule, checkResults.QueryResult, recoveredConditionResults)
+				if err != nil {
+					return fmt.Errorf("build recovery context for rule [%s] error: %w", rule.ID, err)
+				}
+				if recoveryContext == "" {
+					recoveryContext = alertMessage.Message
+				}
+				paramsCtx = newParameterCtx(rule, checkResults, util.MapStr{
+					alerting2.ParamEventID:          alertMessage.ID,
+					alerting2.ParamRecoveredResults: recoveredResults,
+					alerting2.ParamTimestamp:        alertItem.Created.Unix(),
+					"duration":                      formatAlertDuration(alertItem.Created.Sub(alertMessage.Created)),
+					"recovery_context":              recoveryContext,
+					"trigger_at":                    alertMessage.Created.Unix(),
+				})
+				err = attachTitleMessageToCtx(recoverCfg.Title, recoverCfg.Message, paramsCtx)
+				if err != nil {
+					return fmt.Errorf("resolve recovery notification template for rule [%s] error: %w", rule.ID, err)
+				}
+				actionResults, _ := performChannels(rule.ID, "recovery_notification", recoverCfg.Normal, paramsCtx, false)
+				alertItem.RecoverActionResults = actionResults
+			}
 			alertMessage.Status = alerting.MessageStateRecovered
 			alertMessage.ResourceID = rule.Resource.ID
 			alertMessage.ResourceName = rule.Resource.Name
@@ -943,28 +1040,11 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			if err != nil {
 				return fmt.Errorf("save alert message error: %w", err)
 			}
-			// todo add recover notification to inner system message
-			// send recover message to channel
-			recoverCfg := rule.RecoveryNotificationConfig
-			if recoverCfg != nil && recoverCfg.EventEnabled && recoverCfg.Enabled {
-				paramsCtx = newParameterCtx(rule, checkResults, util.MapStr{
-					alerting2.ParamEventID:   alertMessage.ID,
-					alerting2.ParamTimestamp: alertItem.Created.Unix(),
-					"duration":               formatAlertDuration(alertItem.Created.Sub(alertMessage.Created)),
-					"trigger_at":             alertMessage.Created.Unix(),
-				})
-				err = attachTitleMessageToCtx(recoverCfg.Title, recoverCfg.Message, paramsCtx)
-				if err != nil {
-					return fmt.Errorf("resolve recovery notification template for rule [%s] error: %w", rule.ID, err)
-				}
-				actionResults, _ := performChannels(rule.ID, "recovery_notification", recoverCfg.Normal, paramsCtx, false)
-				alertItem.RecoverActionResults = actionResults
-				//clear history notification time
-				rule.LastNotificationTime = time.Time{}
-				rule.LastEscalationTime = time.Time{}
-				_ = kv.DeleteKey(alerting2.KVLastNotificationTime, []byte(rule.ID))
-				_ = kv.DeleteKey(alerting2.KVLastEscalationTime, []byte(rule.ID))
-			}
+			//clear history notification time
+			rule.LastNotificationTime = time.Time{}
+			rule.LastEscalationTime = time.Time{}
+			_ = kv.DeleteKey(alerting2.KVLastNotificationTime, []byte(rule.ID))
+			_ = kv.DeleteKey(alerting2.KVLastEscalationTime, []byte(rule.ID))
 		}
 		return nil
 	}
@@ -1006,6 +1086,29 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		paramsCtx[alerting2.ParamEventID] = newAlertMessage.ID
 	} else {
 		paramsCtx[alerting2.ParamEventID] = alertMessage.ID
+	}
+	if alertMessage != nil && alertMessage.Status != alerting.MessageStateRecovered && len(recoveredConditionResults) > 0 {
+		recoverCfg := rule.RecoveryNotificationConfig
+		if isIncrementalRecoveryEnabled(recoverCfg) {
+			recoveryContext, recoveredResults, err := buildRecoveryContext(rule, checkResults.QueryResult, recoveredConditionResults)
+			if err != nil {
+				return fmt.Errorf("build partial recovery context for rule [%s] error: %w", rule.ID, err)
+			}
+			recoveryParamsCtx := newParameterCtx(rule, checkResults, util.MapStr{
+				alerting2.ParamEventID:          alertMessage.ID,
+				alerting2.ParamRecoveredResults: recoveredResults,
+				alerting2.ParamTimestamp:        alertItem.Created.Unix(),
+				"duration":                      formatAlertDuration(alertItem.Created.Sub(alertMessage.Created)),
+				"recovery_context":              recoveryContext,
+				"trigger_at":                    alertMessage.Created.Unix(),
+			})
+			err = attachTitleMessageToCtx(recoverCfg.Title, recoverCfg.Message, recoveryParamsCtx)
+			if err != nil {
+				return fmt.Errorf("resolve partial recovery template for rule [%s] error: %w", rule.ID, err)
+			}
+			actionResults, _ := performChannels(rule.ID, "recovery_notification", recoverCfg.Normal, recoveryParamsCtx, false)
+			alertItem.RecoverActionResults = actionResults
+		}
 	}
 	title, message := rule.GetNotificationTitleAndMessage()
 	err = attachTitleMessageToCtx(title, message, paramsCtx)
@@ -1142,21 +1245,26 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 }
 
 func attachTitleMessageToCtx(title, message string, paramsCtx map[string]interface{}) error {
-	var (
-		tplBytes []byte
-		err      error
-	)
-	tplBytes, err = common.ResolveMessage(message, paramsCtx)
+	resolvedMessage, err := resolveAlertTemplateText(message, paramsCtx)
 	if err != nil {
 		return fmt.Errorf("resolve message template error: %w", err)
 	}
-	paramsCtx[alerting2.ParamMessage] = normalizeAlertTemplateText(string(tplBytes))
-	tplBytes, err = common.ResolveMessage(title, paramsCtx)
+	paramsCtx[alerting2.ParamMessage] = resolvedMessage
+
+	resolvedTitle, err := resolveAlertTemplateText(title, paramsCtx)
 	if err != nil {
 		return fmt.Errorf("resolve title template error: %w", err)
 	}
-	paramsCtx[alerting2.ParamTitle] = normalizeAlertTemplateText(string(tplBytes))
+	paramsCtx[alerting2.ParamTitle] = resolvedTitle
 	return nil
+}
+
+func resolveAlertTemplateText(template string, paramsCtx map[string]interface{}) (string, error) {
+	tplBytes, err := common.ResolveMessage(template, paramsCtx)
+	if err != nil {
+		return "", err
+	}
+	return normalizeAlertTemplateText(string(tplBytes)), nil
 }
 
 func normalizeAlertTemplateText(text string) string {
@@ -1272,6 +1380,24 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 		log.Errorf("merge template params error, rule_id=%s: %v", rule.ID, err)
 	}
 	return paramsCtx
+}
+
+func buildRecoveryContext(rule *alerting.Rule, queryResult *alerting.QueryResult, recoveredItems []alerting.ConditionResultItem) (string, interface{}, error) {
+	if len(recoveredItems) == 0 {
+		return "", nil, nil
+	}
+
+	recoveredCheckResults := &alerting.ConditionResult{
+		ResultItems: recoveredItems,
+		QueryResult: queryResult,
+	}
+	recoveredCtx := newParameterCtx(rule, recoveredCheckResults, nil)
+	_, messageTemplate := rule.GetNotificationTitleAndMessage()
+	recoveryContext, err := resolveAlertTemplateText(messageTemplate, recoveredCtx)
+	if err != nil {
+		return "", nil, err
+	}
+	return recoveryContext, recoveredCtx[alerting2.ParamResults], nil
 }
 
 func (engine *Engine) Test(rule *alerting.Rule, msgType string) ([]alerting.ActionExecutionResult, error) {

@@ -255,6 +255,9 @@ PUT $[[SETUP_INDEX_PREFIX]]alert-rule
           "event_enabled": {
             "type": "boolean"
           },
+          "incremental_recovery_enabled": {
+            "type": "boolean"
+          },
           "message": {
             "type": "keyword",
             "ignore_above": 256
@@ -676,7 +679,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-cal8n7p7h710d
   "recovery_notification_config": {
     "enabled": true,
     "title": "🌈 [{{.rule_name}}] Resolved",
-    "message": "EventID: {{.event_id}}  \nTarget: {{.resource_name}}-{{.objects}}  \nTriggerAt: {{.trigger_at | datetime}}  \nResolveAt: {{.timestamp | datetime}}  \nDuration: {{.duration}}  ",
+    "message": "EventID: {{.event_id}}  \nTarget: {{.resource_name}}-{{.objects}}  \nTriggerAt: {{.trigger_at | datetime}}  \nResolveAt: {{.timestamp | datetime}}  \nDuration: {{.duration}}{{if .recovery_context}}  \n{{.recovery_context}}{{end}}",
     "normal": [
       {
         "id": "cj8atf53q95lhahebg8g",
@@ -825,7 +828,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-calavvp7h710d
   "recovery_notification_config": {
     "enabled": true,
     "title": "🌈 [{{.rule_name}}] Resolved",
-    "message": "EventID: {{.event_id}}  \nTarget: {{.resource_name}}-{{.objects}}  \nTriggerAt: {{.trigger_at | datetime}}  \nResolveAt: {{.timestamp | datetime}}  \nDuration: {{.duration}}  ",
+    "message": "EventID: {{.event_id}}  \nTarget: {{.resource_name}}-{{.objects}}  \nTriggerAt: {{.trigger_at | datetime}}  \nResolveAt: {{.timestamp | datetime}}  \nDuration: {{.duration}}{{if .recovery_context}}  \n{{.recovery_context}}{{end}}",
     "normal": [
       {
         "id": "cj8bq8d3q95ogankugqg",
@@ -978,7 +981,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-cbp20n2anisjm
   "recovery_notification_config": {
     "enabled": true,
     "title": "🌈 [{{.rule_name}}] Resolved",
-    "message": "EventID: {{.event_id}}  \nTarget: {{.resource_name}}-{{.objects}}  \nTriggerAt: {{.trigger_at | datetime}}  \nResolveAt: {{.timestamp | datetime}}  \nDuration: {{.duration}}  ",
+    "message": "EventID: {{.event_id}}  \nTarget: {{.resource_name}}-{{.objects}}  \nTriggerAt: {{.trigger_at | datetime}}  \nResolveAt: {{.timestamp | datetime}}  \nDuration: {{.duration}}{{if .recovery_context}}  \n{{.recovery_context}}{{end}}",
     "normal": [
       {
         "id": "cj8bq8d3q95ogankugqg",
@@ -1152,7 +1155,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-cb34sfl6psfiq
   "recovery_notification_config": {
     "enabled": true,
     "title": "🌈 [{{.rule_name}}] Resolved",
-    "message": "EventID: {{.event_id}}  \nTarget: {{.resource_name}}-{{.objects}}  \nTriggerAt: {{.trigger_at | datetime}}  \nResolveAt: {{.timestamp | datetime}}  \nDuration: {{.duration}}  ",
+    "message": "EventID: {{.event_id}}  \nTarget: {{.resource_name}}-{{.objects}}  \nTriggerAt: {{.trigger_at | datetime}}  \nResolveAt: {{.timestamp | datetime}}  \nDuration: {{.duration}}{{if .recovery_context}}  \n{{.recovery_context}}{{end}}",
     "normal": [
       {
         "id": "cj8bq8d3q95ogankugqg",
@@ -1342,7 +1345,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-cbp2e4ianisjm
   "recovery_notification_config": {
     "enabled": true,
     "title": "🌈 [{{.rule_name}}] Resolved",
-    "message": "EventID: {{.event_id}}  \nTarget: {{.resource_name}}-{{.objects}}  \nTriggerAt: {{.trigger_at | datetime}}  \nResolveAt: {{.timestamp | datetime}}  \nDuration: {{.duration}}  ",
+    "message": "EventID: {{.event_id}}  \nTarget: {{.resource_name}}-{{.objects}}  \nTriggerAt: {{.trigger_at | datetime}}  \nResolveAt: {{.timestamp | datetime}}  \nDuration: {{.duration}}{{if .recovery_context}}  \n{{.recovery_context}}{{end}}",
     "normal": [
       {
         "id": "cj8bq8d3q95ogankugqg",
@@ -1526,7 +1529,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-calaqnh7h710d
   "recovery_notification_config": {
     "enabled": true,
     "title": "🌈 [{{.rule_name}}] Resolved",
-    "message": "EventID: {{.event_id}}  \nTarget: {{.resource_name}}-{{.objects}}  \nTriggerAt: {{.trigger_at | datetime}}  \nResolveAt: {{.timestamp | datetime}}  \nDuration: {{.duration}}  ",
+    "message": "EventID: {{.event_id}}  \nTarget: {{.resource_name}}-{{.objects}}  \nTriggerAt: {{.trigger_at | datetime}}  \nResolveAt: {{.timestamp | datetime}}  \nDuration: {{.duration}}{{if .recovery_context}}  \n{{.recovery_context}}{{end}}",
     "normal": [
       {
         "id": "cj8bq8d3q95ogankugqg",
@@ -1710,7 +1713,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-calakp97h710d
   "recovery_notification_config": {
     "enabled": true,
     "title": "🌈 [{{.rule_name}}] Resolved",
-    "message": "EventID: {{.event_id}}  \nTarget: {{.resource_name}}-{{.objects}}  \nTriggerAt: {{.trigger_at | datetime}}  \nResolveAt: {{.timestamp | datetime}}  \nDuration: {{.duration}}  ",
+    "message": "EventID: {{.event_id}}  \nTarget: {{.resource_name}}-{{.objects}}  \nTriggerAt: {{.trigger_at | datetime}}  \nResolveAt: {{.timestamp | datetime}}  \nDuration: {{.duration}}{{if .recovery_context}}  \n{{.recovery_context}}{{end}}",
     "normal": [
       {
         "id": "cj8bq8d3q95ogankugqg",
@@ -1865,7 +1868,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-calgapp7h710d
   "recovery_notification_config": {
     "enabled": true,
     "title": "🌈 [{{.rule_name}}] Resolved",
-    "message": "- EventID: {{.event_id}}\n- Target: {{.resource_name}}-{{.objects}}\n- TriggerAt: {{.trigger_at | datetime}}\n- ResolveAt: {{.timestamp | datetime}}\n- Duration: {{.duration}}",
+    "message": "- EventID: {{.event_id}}\n- Target: {{.resource_name}}-{{.objects}}\n- TriggerAt: {{.trigger_at | datetime}}\n- ResolveAt: {{.timestamp | datetime}}\n- Duration: {{.duration}}{{if .recovery_context}}\n{{.recovery_context}}{{end}}",
     "normal": [
       {
         "id": "cj8bq8d3q95ogankugqg",
@@ -2052,7 +2055,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-cal8n7p7h710d
   "recovery_notification_config": {
     "enabled": true,
     "title": "🌈 [{{.rule_name}}] Resolved",
-    "message": "EventID: {{.event_id}}  \nTarget: {{.resource_name}}-{{.objects}}  \nTriggerAt: {{.trigger_at | datetime}}  \nResolveAt: {{.timestamp | datetime}}  \nDuration: {{.duration}}  ",
+    "message": "EventID: {{.event_id}}  \nTarget: {{.resource_name}}-{{.objects}}  \nTriggerAt: {{.trigger_at | datetime}}  \nResolveAt: {{.timestamp | datetime}}  \nDuration: {{.duration}}{{if .recovery_context}}  \n{{.recovery_context}}{{end}}",
     "normal": [
       {
         "id": "cj8bq8d3q95ogankugqg",
@@ -2206,7 +2209,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-cujivv5ath26d
   "recovery_notification_config": {
     "enabled": true,
     "title": "🌈 [{{.rule_name}}] Resolved",
-    "message": "EventID: {{.event_id}}  \nTarget: {{.resource_name}}-{{.objects}}  \nTriggerAt: {{.trigger_at | datetime}}  \nResolveAt: {{.timestamp | datetime}}  \nDuration: {{.duration}}  ",
+    "message": "EventID: {{.event_id}}  \nTarget: {{.resource_name}}-{{.objects}}  \nTriggerAt: {{.trigger_at | datetime}}  \nResolveAt: {{.timestamp | datetime}}  \nDuration: {{.duration}}{{if .recovery_context}}  \n{{.recovery_context}}{{end}}",
     "normal": [
       {
         "id": "cj8bq8d3q95ogankugqg",

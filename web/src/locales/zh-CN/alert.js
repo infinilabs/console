@@ -251,7 +251,7 @@ export default {
   "alert.rule.form.label.alert_channel": "告警渠道",
   "alert.rule.form.label.incremental_recovery_notification": "分步恢复通知",
   "alert.rule.form.help.incremental_recovery_notification":
-    "默认关闭。开启后，分组告警会在部分分组恢复时立即发送恢复通知，而不是等所有分组全部恢复后再发送。",
+    "开启后，分组告警在部分分组恢复时会立即发送恢复通知。",
   "alert.rule.form.label.accept_upgrade": "接收升级",
   "alert.rule.form.label.upgrade_notification_waiting_time": "升级通知等待时间",
   "alert.rule.form.label.silent_period": "沉默周期",

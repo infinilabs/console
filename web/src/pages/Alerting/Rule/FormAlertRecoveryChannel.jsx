@@ -8,6 +8,7 @@ import {
   Icon,
   Tabs,
   TimePicker,
+  Tooltip,
 } from "antd";
 import { FunctionOutlined, SendOutlined } from "@ant-design/icons";
 import { useCallback, useMemo, useState } from "react";
@@ -105,12 +106,23 @@ export default (props) => {
       </Form.Item>
       <div style={channelEnabled ? {} : { height: 0, overflow: 'hidden'}}>
         <Form.Item
-          label={formatMessage({
-            id: "alert.rule.form.label.incremental_recovery_notification",
-          })}
-          extra={formatMessage({
-            id: "alert.rule.form.help.incremental_recovery_notification",
-          })}
+          label={
+            <span>
+              {formatMessage({
+                id: "alert.rule.form.label.incremental_recovery_notification",
+              })}
+              <Tooltip
+                title={formatMessage({
+                  id: "alert.rule.form.help.incremental_recovery_notification",
+                })}
+              >
+                <Icon
+                  type="info-circle"
+                  style={{ marginLeft: 8, color: "rgba(0, 0, 0, 0.45)" }}
+                />
+              </Tooltip>
+            </span>
+          }
         >
           {getFieldDecorator("recovery_notification_config[incremental_recovery_enabled]", {
             valuePropName: "checked",

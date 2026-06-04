@@ -265,7 +265,7 @@ export default {
   "alert.rule.form.label.incremental_recovery_notification":
     "Incremental recovery notifications",
   "alert.rule.form.help.incremental_recovery_notification":
-    "Disabled by default. When enabled, recovery notifications are sent for recovered groups as they clear instead of waiting for all groups to recover.",
+    "When enabled, grouped alerts send recovery notifications as each group recovers.",
   "alert.rule.form.label.accept_upgrade": "Notification escalation",
   "alert.rule.form.label.upgrade_notification_waiting_time":
     "Escalation waiting time",

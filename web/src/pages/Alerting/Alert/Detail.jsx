@@ -33,13 +33,32 @@ import ClusterName from "@/pages/System/Cluster/components/ClusterName";
 import Markdown from "@/components/Markdown";
 import { ExpressionView } from "./ExpressionView";
 import { useHistory } from "react-router-dom";
+import { stripDuplicatedAlertTitle } from "../utils/message";
 
 const Detail = (props) => {
   const [param, setParam] = useQueryParam("_g", JsonParam);
   const eventID = props.match.params?.event_id;
-  const displayState = alertDetail?.display_state || alertDetail?.state;
 
   const [alertDetail, setAlertDetail] = useState({});
+  const [ruleDetail, setRuleDetail] = useState({});
+  const displayState =
+    alertDetail?.display_state || alertDetail?.state || ruleDetail?.state;
+  const alertPriority =
+    alertDetail?.priority ||
+    alertDetail?.condition_result?.result_items?.[0]?.condition_item?.priority ||
+    ruleDetail?.bucket_conditions?.items?.[0]?.priority ||
+    ruleDetail?.conditions?.items?.[0]?.priority;
+  const expressionItems =
+    alertDetail?.condition?.items?.length > 0
+      ? alertDetail?.condition?.items
+      : ruleDetail?.bucket_conditions?.items?.length > 0
+      ? ruleDetail?.bucket_conditions?.items
+      : ruleDetail?.conditions?.items;
+  const alertMessage = stripDuplicatedAlertTitle(
+    alertDetail?.message,
+    alertDetail?.title
+  );
+
   const fetchAlertDetail = (id) => {
     const fetchData = async () => {
       const res = await request(`/alerting/alert/${id}`, {
@@ -47,6 +66,20 @@ const Detail = (props) => {
       });
       if (res && res._source) {
         setAlertDetail(res._source);
+      }
+    };
+    fetchData();
+  };
+
+  const fetchRuleDetail = (id) => {
+    const fetchData = async () => {
+      const res = await request(`/alerting/rule/${id}/info`, {
+        method: "GET",
+      });
+      if (res && !res.error) {
+        setRuleDetail(res);
+      } else {
+        setRuleDetail({});
       }
     };
     fetchData();
@@ -69,6 +102,14 @@ const Detail = (props) => {
   useEffect(() => {
     fetchAlertDetail(eventID);
   }, [eventID]);
+
+  useEffect(() => {
+    if (!alertDetail?.rule_id) {
+      setRuleDetail({});
+      return;
+    }
+    fetchRuleDetail(alertDetail.rule_id);
+  }, [alertDetail?.rule_id]);
 
   const AlertMessageView = ({ content }) => {
     const [visible, setVisible] = useState(false);
@@ -154,8 +195,8 @@ const Detail = (props) => {
               })}
               content={
                 <HealthStatusView
-                  status={RuleStautsColor[displayState]}
-                  label={firstUpperCase(displayState)}
+                  status={RuleStautsColor[displayState] || "gray"}
+                  label={displayState ? firstUpperCase(displayState) : "-"}
                 />
               }
             />
@@ -180,10 +221,12 @@ const Detail = (props) => {
             <DescriptionItem
               title={formatMessage({ id: "alert.message.table.priority" })}
               content={
-                displayState != "ok" && displayState != "recovered" ? (
-                  <Tag color={PriorityColor[alertDetail?.priority]}>
+                alertPriority &&
+                displayState != "ok" &&
+                displayState != "recovered" ? (
+                  <Tag color={PriorityColor[alertPriority]}>
                     {formatMessage({
-                      id: `alert.message.priority.${alertDetail?.priority}`,
+                      id: `alert.message.priority.${alertPriority}`,
                     })}
                   </Tag>
                 ) : (
@@ -225,7 +268,7 @@ const Detail = (props) => {
               title={formatMessage({
                 id: "alert.rule.table.columnns.expression",
               })}
-              content={<ExpressionView items={alertDetail?.condition?.items} />}
+              content={<ExpressionView items={expressionItems} />}
             />
           </Col>
         </Row>
@@ -250,7 +293,7 @@ const Detail = (props) => {
                 })}
                 content={
                   <Card size={"small"} style={{ width: "100%" }}>
-                    <Markdown source={alertDetail?.message} />
+                    <Markdown source={alertMessage} />
                   </Card>
                 }
               />

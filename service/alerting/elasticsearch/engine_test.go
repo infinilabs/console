@@ -215,8 +215,39 @@ func TestAttachTitleMessageToCtxCollapsesDuplicatedLeadingEmoji(t *testing.T) {
 	if strings.Contains(got, "🌈 🌈") {
 		t.Fatalf("expected duplicated leading emoji to collapse, got %q", got)
 	}
-	if !strings.Contains(got, "🌈 [JVM utilization is Too High] Resolved") {
-		t.Fatalf("expected single emoji title line, got %q", got)
+	if strings.Contains(got, "\n🌈 [JVM utilization is Too High] Resolved") {
+		t.Fatalf("expected duplicated non-leading title line to be removed, got %q", got)
+	}
+	if !strings.Contains(got, "[ INFINI Platform Alerting ]") {
+		t.Fatalf("expected remaining message content to stay, got %q", got)
+	}
+}
+
+func TestAttachTitleMessageToCtxStripsDuplicatedNonLeadingTitleLine(t *testing.T) {
+	paramsCtx := map[string]interface{}{
+		"title": "🔥 [Cluster Metrics Collection Anomaly] Alerting",
+	}
+
+	err := attachTitleMessageToCtx(
+		"{{.title}}",
+		`🔥 Incident #d8h972r5aeeotbtl08ug is ongoing
+{{.title}}
+Priority: warning`,
+		paramsCtx,
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got := paramsCtx[alerting2.ParamMessage].(string)
+	if strings.Contains(got, "\n🔥 [Cluster Metrics Collection Anomaly] Alerting") {
+		t.Fatalf("expected duplicated title line to be removed from message, got %q", got)
+	}
+	if !strings.Contains(got, "🔥 Incident #d8h972r5aeeotbtl08ug is ongoing") {
+		t.Fatalf("expected incident summary to remain, got %q", got)
+	}
+	if !strings.Contains(got, "Priority: warning") {
+		t.Fatalf("expected remaining message content to remain, got %q", got)
 	}
 }
 

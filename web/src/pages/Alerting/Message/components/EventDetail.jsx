@@ -110,7 +110,7 @@ const MessageDetail = (props) => {
     </Button>}>
       <ExpressionCard ruleID={messageDetail?.rule_id} expression={messageDetail?.expression}/>
       <div style={{marginTop: 15}}></div>
-      <EventMessageCard message={messageDetail.message}/>
+      <EventMessageCard message={messageDetail.message} title={messageDetail.title}/>
       <div style={{marginTop: 15}}></div>
       <div style={{display:"flex", gap: 15}}>
         <div style={{flex: "1 1 50%"}}>

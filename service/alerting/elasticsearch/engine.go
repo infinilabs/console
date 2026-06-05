@@ -1249,12 +1249,13 @@ func attachTitleMessageToCtx(title, message string, paramsCtx map[string]interfa
 	if err != nil {
 		return fmt.Errorf("resolve message template error: %w", err)
 	}
-	paramsCtx[alerting2.ParamMessage] = resolvedMessage
 
 	resolvedTitle, err := resolveAlertTemplateText(title, paramsCtx)
 	if err != nil {
 		return fmt.Errorf("resolve title template error: %w", err)
 	}
+	resolvedMessage = stripDuplicatedNonLeadingTitleLine(resolvedMessage, resolvedTitle)
+	paramsCtx[alerting2.ParamMessage] = resolvedMessage
 	paramsCtx[alerting2.ParamTitle] = resolvedTitle
 	return nil
 }
@@ -1298,6 +1299,32 @@ func collapseDuplicatedLeadingAlertEmoji(line string) string {
 		}
 	}
 	return strings.Repeat(" ", len(line)-len(strings.TrimLeft(line, " "))) + trimmed
+}
+
+func stripDuplicatedNonLeadingTitleLine(message, title string) string {
+	if title == "" || message == "" {
+		return message
+	}
+	normalizedTitle := strings.TrimSpace(title)
+	if normalizedTitle == "" {
+		return message
+	}
+	lines := strings.Split(message, "\n")
+	filtered := make([]string, 0, len(lines))
+	seenNonEmptyPrefix := false
+	removed := false
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if !removed && seenNonEmptyPrefix && trimmed == normalizedTitle {
+			removed = true
+			continue
+		}
+		if trimmed != "" {
+			seenNonEmptyPrefix = true
+		}
+		filtered = append(filtered, line)
+	}
+	return strings.Join(filtered, "\n")
 }
 
 func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult, extraParams map[string]interface{}) map[string]interface{} {

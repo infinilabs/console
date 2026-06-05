@@ -45,6 +45,51 @@ import (
 	"infini.sh/framework/core/util"
 )
 
+func buildChannelSort(sort string) []util.MapStr {
+	appendSort := func(sorters []util.MapStr, seen map[string]struct{}, field, order string) []util.MapStr {
+		if field == "" {
+			return sorters
+		}
+		if _, ok := seen[field]; ok {
+			return sorters
+		}
+		if order == "" {
+			order = "asc"
+		}
+		seen[field] = struct{}{}
+		return append(sorters, util.MapStr{
+			field: util.MapStr{
+				"order": order,
+			},
+		})
+	}
+
+	seen := map[string]struct{}{}
+	sorters := make([]util.MapStr, 0, 4)
+	sortParts := strings.Split(sort, ":")
+	sortField := sortParts[0]
+	sortDirection := ""
+	if len(sortParts) >= 2 {
+		sortDirection = sortParts[1]
+	}
+	if sortField != "" {
+		sorters = appendSort(sorters, seen, sortField, sortDirection)
+	}
+
+	for _, stableSort := range []struct {
+		field string
+		order string
+	}{
+		{field: "sub_type", order: "asc"},
+		{field: "type", order: "asc"},
+		{field: "name", order: "asc"},
+		{field: "updated", order: "desc"},
+	} {
+		sorters = appendSort(sorters, seen, stableSort.field, stableSort.order)
+	}
+	return sorters
+}
+
 func (h *AlertAPI) createChannel(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	var obj = &alerting.Channel{}
 	err := h.DecodeJSON(req, obj)
@@ -214,7 +259,7 @@ func (h *AlertAPI) searchChannel(w http.ResponseWriter, req *http.Request, ps ht
 		strFrom = h.GetParameterOrDefault(req, "from", "0")
 		subType = h.GetParameterOrDefault(req, "sub_type", "")
 		typ     = h.GetParameterOrDefault(req, "type", "")
-		sort    = h.GetParameterOrDefault(req, "sort", "updated:desc")
+		sort    = h.GetParameterOrDefault(req, "sort", "")
 	)
 	mustQ := []interface{}{}
 	if keyword != "" {
@@ -248,18 +293,6 @@ func (h *AlertAPI) searchChannel(w http.ResponseWriter, req *http.Request, ps ht
 	if from < 0 {
 		from = 0
 	}
-	var (
-		sortField     string
-		sortDirection string
-	)
-	sortParts := strings.Split(sort, ":")
-	sortField = sortParts[0]
-	if len(sortParts) >= 2 {
-		sortDirection = sortParts[1]
-	}
-	if sortDirection == "" {
-		sortDirection = "asc"
-	}
 	query := util.MapStr{
 		"size": size,
 		"from": from,
@@ -268,13 +301,7 @@ func (h *AlertAPI) searchChannel(w http.ResponseWriter, req *http.Request, ps ht
 				"must": mustQ,
 			},
 		},
-		"sort": []util.MapStr{
-			{
-				sortField: util.MapStr{
-					"order": sortDirection,
-				},
-			},
-		},
+		"sort": buildChannelSort(sort),
 	}
 
 	q := orm.Query{

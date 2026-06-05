@@ -38,6 +38,7 @@ import (
 	model2 "infini.sh/framework/core/model"
 	"infini.sh/framework/core/util"
 	elastic2 "infini.sh/framework/modules/elastic"
+	"os"
 	_ "time/tzdata"
 
 	log "github.com/cihub/seelog"
@@ -157,6 +158,15 @@ func main() {
 		config.Version, config.BuildNumber, config.LastCommitLog, config.BuildDate, config.EOLDate, terminalHeader, terminalFooter)
 
 	app.Init(nil)
+	if len(os.Args) > 1 && os.Args[1] == "recovery" {
+		if err := setup1.RunRecoveryCmd(os.Args[2:]); err != nil {
+			fmt.Println(err.Error())
+			app.Shutdown()
+			os.Exit(1)
+		}
+		app.Shutdown()
+		return
+	}
 	defer app.Shutdown()
 
 	modules := []module.ModuleItem{}

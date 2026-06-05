@@ -72,6 +72,24 @@ POST /.infini_cluster/_update_by_query?conflicts=proceed
 }
 ```
 
+### Console cannot start after the system cluster password is changed externally
+
+#### Fault Description
+
+If the system cluster password is rotated directly in Easysearch / Elasticsearch, the locally stored `SYSTEM_CLUSTER_PASS` used by Console will no longer match, and Console will fail to connect during startup.
+
+#### Solution
+
+Run the recovery command in the Console installation directory to refresh the local system cluster password. If the username changed too, provide it together:
+
+```bash
+./console recovery -pass 'new-password'
+./console recovery -user admin -pass 'new-password'
+printf '%s' 'new-password' | ./console recovery -stdin
+```
+
+Restart Console after the command finishes.
+
 ### Startup Error
 
 ```

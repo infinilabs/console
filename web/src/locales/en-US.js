@@ -92,7 +92,7 @@ export default {
   "form.button.add": "Add",
   "form.button.edit": "Edit",
   "form.button.update": "Update",
-  "form.button.clone": "Clone",
+  "form.button.clone": "Copy",
   "form.button.save": "Save",
   "form.button.submit": "Submit",
   "form.button.delete": "Delete",

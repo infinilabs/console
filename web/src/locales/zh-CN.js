@@ -97,7 +97,7 @@ export default {
   "form.button.add": "添加",
   "form.button.edit": "编辑",
   "form.button.update": "更新",
-  "form.button.clone": "克隆",
+  "form.button.clone": "复制",
   "form.button.save": "保存",
   "form.button.submit": "提交",
   "form.button.delete": "删除",

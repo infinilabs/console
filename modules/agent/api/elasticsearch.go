@@ -273,11 +273,13 @@ type BindingItem struct {
 	//infini system assigned id
 	ClusterID string `json:"cluster_id"`
 
-	ClusterUUID string   `json:"cluster_uuid"`
-	NodeUUID    string   `json:"node_uuid"`
-	PathHome    string   `json:"path_home,omitempty"`
-	PathLogs    string   `json:"path_logs"`
-	LogsPaths   []string `json:"logs_paths"`
+	ClusterUUID    string   `json:"cluster_uuid"`
+	NodeUUID       string   `json:"node_uuid"`
+	PublishAddress string   `json:"publish_address,omitempty"`
+	NodeName       string   `json:"node_name,omitempty"`
+	PathHome       string   `json:"path_home,omitempty"`
+	PathLogs       string   `json:"path_logs"`
+	LogsPaths      []string `json:"logs_paths"`
 
 	Updated int64 `json:"updated"`
 }
@@ -1191,6 +1193,20 @@ func hasUsableAgentBasicAuth(auth *model.BasicAuth) bool {
 	return auth == nil || auth.Username != ""
 }
 
+func (h *APIHandler) getEnrollNodeInfo(item BindingItem, auth *model.BasicAuth, preparedConf *elastic.ElasticsearchConfig, instanceID string) (bool, *elastic.LocalNodeInfo) {
+	nodeHost := strings.TrimSpace(item.PublishAddress)
+	if nodeHost != "" {
+		success, tryAgain, nodeInfo := h.getESNodeInfoViaProxy(nodeHost, "http", auth, instanceID)
+		if !success && tryAgain {
+			success, _, nodeInfo = h.getESNodeInfoViaProxy(nodeHost, "https", auth, instanceID)
+			return success, nodeInfo
+		}
+		return success, nodeInfo
+	}
+	success, _, nodeInfo := h.getESNodeInfoViaProxyWithConfig(preparedConf, instanceID)
+	return success, nodeInfo
+}
+
 func pickAllowedLogsPath(allowed []string, requested string) (string, error) {
 	allowed = normalizeLogsPaths(allowed, "")
 	if len(allowed) == 0 {
@@ -1294,9 +1310,19 @@ func (h *APIHandler) enrollESNode(w http.ResponseWriter, req *http.Request, ps h
 		return
 	}
 
-	success, _, nodeInfo := h.getESNodeInfoViaProxyWithConfig(preparedConf, instance.ID)
+	success, nodeInfo := h.getEnrollNodeInfo(item, preparedConf.BasicAuth, preparedConf, instance.ID)
 
-	if success {
+	if success && nodeInfo != nil {
+		if item.ClusterUUID != "" && nodeInfo.ClusterInfo.ClusterUUID != "" && item.ClusterUUID != nodeInfo.ClusterInfo.ClusterUUID {
+			h.WriteError(w, "cluster uuid not match", http.StatusInternalServerError)
+			return
+		}
+		if item.NodeUUID != "" && nodeInfo.NodeUUID != "" && item.NodeUUID != nodeInfo.NodeUUID {
+			h.WriteError(w, "node uuid not match", http.StatusInternalServerError)
+			return
+		}
+		item.ClusterUUID = nodeInfo.ClusterInfo.ClusterUUID
+		item.NodeUUID = nodeInfo.NodeUUID
 		if item.PathHome == "" {
 			item.PathHome = extractNodePathHome(nodeInfo.NodeInfo)
 		}

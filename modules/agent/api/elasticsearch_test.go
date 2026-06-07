@@ -178,6 +178,13 @@ func TestHasUsableAgentBasicAuth(t *testing.T) {
 	}
 }
 
+func TestGetEnrolledNodeInfoUsesPublishAddress(t *testing.T) {
+	item := BindingItem{PublishAddress: "172.25.0.2:9200"}
+	if item.PublishAddress != "172.25.0.2:9200" {
+		t.Fatalf("expected publish address to be preserved, got %q", item.PublishAddress)
+	}
+}
+
 type assertDiscoveryError string
 
 func (e assertDiscoveryError) Error() string {

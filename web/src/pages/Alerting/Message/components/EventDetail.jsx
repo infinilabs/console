@@ -22,6 +22,27 @@ import isEqual from "lodash/isEqual";
 
 const { Title } = Typography;
 
+const hasResolvedAtValue = (value) => {
+  if (!value) {
+    return false;
+  }
+  const resolvedAt = moment(value);
+  return resolvedAt.isValid() && resolvedAt.year() > 1;
+};
+
+const getAlertStartTime = (messageDetail = {}) =>
+  hasResolvedAtValue(messageDetail?.trigger_at) ? messageDetail.trigger_at : messageDetail?.created;
+
+const getAlertEndTime = (messageDetail = {}) => {
+  if (hasResolvedAtValue(messageDetail?.resolve_at)) {
+    return messageDetail.resolve_at;
+  }
+  if (messageDetail?.status == "recovered") {
+    return messageDetail?.updated;
+  }
+  return "";
+};
+
 const MessageDetail = (props) => {
   const messageID = props?.messageID;
 
@@ -66,14 +87,12 @@ const MessageDetail = (props) => {
   }, [param, setParam, syncedTimeRange]);
 
   const updateTimeRange = (messageDetail) => {
-    let startTimestamp = moment(messageDetail.created).valueOf();
+    let startTimestamp = moment(getAlertStartTime(messageDetail)).valueOf();
     let endTimestamp = moment().valueOf();
-    const resolvedAt = messageDetail?.resolve_at;
+    const resolvedAt = getAlertEndTime(messageDetail);
 
-    if (resolvedAt) {
+    if (hasResolvedAtValue(resolvedAt)) {
       endTimestamp = moment(resolvedAt).valueOf();
-    } else if (messageDetail?.status == "recovered") {
-      endTimestamp = moment(messageDetail.updated).valueOf();
     }
     setTimeRange({
       ...timeRange,

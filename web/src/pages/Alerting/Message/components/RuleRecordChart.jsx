@@ -27,6 +27,14 @@ import { MonitorDatePicker } from "@/components/infini/MonitorDatePicker";
 import { calculateBounds } from "@/components/vendor/data/common/query/timefilter";
 import metricsStyles from "@/pages/Cluster/Metrics.scss";
 
+const resolveAlertTime = (value) => {
+  if (!value) {
+    return "";
+  }
+  const parsed = moment(value);
+  return parsed.isValid() && parsed.year() > 1 ? value : "";
+};
+
 const RuleRecordChart = ({ data: messageDetail }) => {
   if (!messageDetail?.message_id) {
     return null;
@@ -51,13 +59,15 @@ const RuleRecordChart = ({ data: messageDetail }) => {
   const [metricData, setMetricData] = useState({});
 
   const [lineAnnotations] = useMemo(() => {
-    let startTimestamp = moment(messageDetail.created).valueOf();
+    const startTime = resolveAlertTime(messageDetail.trigger_at) || messageDetail.created;
+    const endTime = resolveAlertTime(messageDetail.resolve_at) || messageDetail.updated;
+    let startTimestamp = moment(startTime).valueOf();
     let endTimestamp = moment().valueOf();
 
     let from = startTimestamp - parseInt(messageDetail.duration / 4);
     let to = endTimestamp;
-    if (messageDetail?.status == "recovered") {
-      endTimestamp = moment(messageDetail.updated).valueOf();
+    if (messageDetail?.status == "recovered" && endTime) {
+      endTimestamp = moment(endTime).valueOf();
       to = endTimestamp + parseInt(messageDetail.duration / 4);
     }
     setTimeRange({

@@ -809,7 +809,7 @@ func bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elastic.DiscoveryResu
 					log.Errorf("failed to get agent credential for cluster [%s]: %v", console_common.MaskLogToken(clusterID), err)
 					continue
 				}
-				if auth == nil || auth.Username == "" {
+				if !hasUsableAgentBasicAuth(auth) {
 					log.Errorf("cluster [%s] has no available agent credential", console_common.MaskLogToken(clusterID))
 					continue
 				}
@@ -1187,6 +1187,10 @@ func firstString(items []string) string {
 	return items[0]
 }
 
+func hasUsableAgentBasicAuth(auth *model.BasicAuth) bool {
+	return auth == nil || auth.Username != ""
+}
+
 func pickAllowedLogsPath(allowed []string, requested string) (string, error) {
 	allowed = normalizeLogsPaths(allowed, "")
 	if len(allowed) == 0 {
@@ -1285,7 +1289,7 @@ func (h *APIHandler) enrollESNode(w http.ResponseWriter, req *http.Request, ps h
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if preparedConf.BasicAuth == nil || preparedConf.BasicAuth.Username == "" {
+	if !hasUsableAgentBasicAuth(preparedConf.BasicAuth) {
 		h.WriteError(w, "cluster has no available agent credential", http.StatusInternalServerError)
 		return
 	}

@@ -8,9 +8,19 @@ import { useEffect, useMemo, useState } from "react";
 import { formatMessage } from "umi/locale";
 import { buildWidgetByRule } from "../../Rule/components/RuleDetail";
 
+const resolveAlertTime = (value) => {
+  if (!value) {
+    return "";
+  }
+  const parsed = moment(value);
+  return parsed.isValid() && parsed.year() > 1 ? value : "";
+};
+
 export default ({msgItem, range, onRangeChange})=>{
 
-  const { rule_id, created, updated, expression } = msgItem;
+  const { rule_id, expression } = msgItem;
+  const created = resolveAlertTime(msgItem?.trigger_at) || msgItem?.created;
+  const updated = resolveAlertTime(msgItem?.resolve_at) || msgItem?.updated;
   const [rule, setRule] = useState()
   const [loading, setLoading] = useState()
 

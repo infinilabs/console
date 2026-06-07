@@ -5,11 +5,19 @@ import { PriorityColor } from "../../utils/constants";
 import { formatMessage } from "umi/locale";
 import EventMessageStatus from "./EventMessageStatus";
 
+const isValidAlertTime = (value) => {
+  if (!value) {
+    return false;
+  }
+  const parsed = moment(value);
+  return parsed.isValid() && parsed.year() > 1;
+};
+
 export default ({msgItem})=>{
   const labelSpan = 6;
   const vSpan = 18;
-  const triggerAt = msgItem?.trigger_at || msgItem?.created;
-  const resolveAt = msgItem?.resolve_at || msgItem?.updated;
+  const triggerAt = isValidAlertTime(msgItem?.trigger_at) ? msgItem.trigger_at : msgItem?.created;
+  const resolveAt = isValidAlertTime(msgItem?.resolve_at) ? msgItem.resolve_at : msgItem?.updated;
 
   const isBucketDiff = !!(msgItem && msgItem.bucket_conditions)
 

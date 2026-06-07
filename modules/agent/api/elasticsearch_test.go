@@ -166,6 +166,18 @@ func TestMaskLogHelpersRemainAvailable(t *testing.T) {
 	}
 }
 
+func TestHasUsableAgentBasicAuth(t *testing.T) {
+	if !hasUsableAgentBasicAuth(nil) {
+		t.Fatal("expected nil auth to be allowed for no-auth clusters")
+	}
+	if !hasUsableAgentBasicAuth(&model.BasicAuth{Username: "infini-agent"}) {
+		t.Fatal("expected normal auth to be allowed")
+	}
+	if hasUsableAgentBasicAuth(&model.BasicAuth{}) {
+		t.Fatal("expected empty username auth to be rejected")
+	}
+}
+
 type assertDiscoveryError string
 
 func (e assertDiscoveryError) Error() string {

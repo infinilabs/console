@@ -282,6 +282,14 @@ Duration: {{.duration}}{{if .recovery_context}}
 	}
 }
 
+func TestNormalizeAlertTemplateTextPreservesMarkdownHardBreakSpacing(t *testing.T) {
+	input := "EventID: 1  \nTarget: cluster  \nTriggerAt: now"
+	got := normalizeAlertTemplateText(input)
+	if got != input {
+		t.Fatalf("expected markdown hard-break spaces to be preserved, got %q", got)
+	}
+}
+
 func TestFormatAlertDuration(t *testing.T) {
 	cases := []struct {
 		name     string

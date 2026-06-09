@@ -1273,7 +1273,6 @@ func normalizeAlertTemplateText(text string) string {
 	lines := strings.Split(text, "\n")
 	result := make([]string, 0, len(lines))
 	for _, line := range lines {
-		line = strings.TrimRight(line, " \t")
 		if strings.TrimSpace(line) == "" {
 			continue
 		}

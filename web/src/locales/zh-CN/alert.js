@@ -300,6 +300,7 @@ export default {
   "alert.message.priority.ignored": "Ignored",
   "alert.message.priority.": "Undefined",
   "alert.message.priority.undefined": "未定义",
+  "alert.message.status.nodata": "无数据",
 
   "alert.message.table.created": "触发时间",
   "alert.message.table.priority": "告警级别",

@@ -317,6 +317,7 @@ export default {
   "alert.message.priority.ignored": "Ignored",
   "alert.message.priority.": "Undefined",
   "alert.message.priority.undefined": "Undefined",
+  "alert.message.status.nodata": "No data",
 
   "alert.message.table.created": "Created time",
   "alert.message.table.priority": "Priority",

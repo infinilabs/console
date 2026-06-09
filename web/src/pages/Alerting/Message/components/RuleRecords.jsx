@@ -111,6 +111,10 @@ const RuleRecords = ({
           messageStatus === "recovered" && record.id === resolveEventID
             ? "recovered"
             : record.display_state || text;
+        const displayLabel =
+          displayState === "nodata"
+            ? formatMessage({ id: "alert.message.status.nodata" })
+            : firstUpperCase(displayState);
         return (
           <div style={{ display: "flex", gap: 5 }}>
             <Tag
@@ -120,7 +124,7 @@ const RuleRecords = ({
                 border: "none",
               }}
             >
-              {firstUpperCase(displayState)}
+              {displayLabel}
             </Tag>
             {displayState != "ok" && displayState != "recovered" ? (
               <PriorityIconText priority={record.priority} />

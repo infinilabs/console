@@ -282,6 +282,36 @@ Duration: {{.duration}}{{if .recovery_context}}
 	}
 }
 
+func TestBuildRecoveryNotificationParamsDoesNotIncludeRecoveryContext(t *testing.T) {
+	rule := &alerting.Rule{
+		ID:   "rule-1",
+		Name: "test-rule",
+		Resource: alerting.Resource{
+			ID:   "cluster-1",
+			Name: "cluster-a",
+		},
+	}
+	checkResults := &alerting.ConditionResult{}
+	alertMessage := &alerting.AlertMessage{
+		ID:      "evt-1",
+		Created: time.Date(2026, 6, 9, 11, 45, 56, 0, time.Local),
+	}
+	alertItem := &alerting.Alert{
+		Created: time.Date(2026, 6, 9, 11, 47, 56, 0, time.Local),
+	}
+
+	paramsCtx := buildRecoveryNotificationParams(rule, checkResults, alertMessage, alertItem)
+	if _, ok := paramsCtx["recovery_context"]; ok {
+		t.Fatal("expected full recovery params to omit recovery_context")
+	}
+	if got := paramsCtx[alerting2.ParamEventID]; got != "evt-1" {
+		t.Fatalf("expected event id to be preserved, got %v", got)
+	}
+	if got := paramsCtx["duration"]; got != "2m" {
+		t.Fatalf("expected duration to be computed from alert times, got %v", got)
+	}
+}
+
 func TestNormalizeAlertTemplateTextPreservesMarkdownHardBreakSpacing(t *testing.T) {
 	input := "EventID: 1  \nTarget: cluster  \nTriggerAt: now"
 	got := normalizeAlertTemplateText(input)

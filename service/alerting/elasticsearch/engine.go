@@ -1010,21 +1010,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		if alertMessage != nil && alertMessage.Status != alerting.MessageStateRecovered && !checkResults.QueryResult.Nodata {
 			recoverCfg := rule.RecoveryNotificationConfig
 			if recoverCfg != nil && recoverCfg.EventEnabled && recoverCfg.Enabled {
-				recoveryContext, recoveredResults, err := buildRecoveryContext(rule, checkResults.QueryResult, recoveredConditionResults)
-				if err != nil {
-					return fmt.Errorf("build recovery context for rule [%s] error: %w", rule.ID, err)
-				}
-				if recoveryContext == "" {
-					recoveryContext = alertMessage.Message
-				}
-				paramsCtx = newParameterCtx(rule, checkResults, util.MapStr{
-					alerting2.ParamEventID:          alertMessage.ID,
-					alerting2.ParamRecoveredResults: recoveredResults,
-					alerting2.ParamTimestamp:        alertItem.Created.Unix(),
-					"duration":                      formatAlertDuration(alertItem.Created.Sub(alertMessage.Created)),
-					"recovery_context":              recoveryContext,
-					"trigger_at":                    alertMessage.Created.Unix(),
-				})
+				paramsCtx = buildRecoveryNotificationParams(rule, checkResults, alertMessage, alertItem)
 				err = attachTitleMessageToCtx(recoverCfg.Title, recoverCfg.Message, paramsCtx)
 				if err != nil {
 					return fmt.Errorf("resolve recovery notification template for rule [%s] error: %w", rule.ID, err)
@@ -1094,14 +1080,9 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			if err != nil {
 				return fmt.Errorf("build partial recovery context for rule [%s] error: %w", rule.ID, err)
 			}
-			recoveryParamsCtx := newParameterCtx(rule, checkResults, util.MapStr{
-				alerting2.ParamEventID:          alertMessage.ID,
-				alerting2.ParamRecoveredResults: recoveredResults,
-				alerting2.ParamTimestamp:        alertItem.Created.Unix(),
-				"duration":                      formatAlertDuration(alertItem.Created.Sub(alertMessage.Created)),
-				"recovery_context":              recoveryContext,
-				"trigger_at":                    alertMessage.Created.Unix(),
-			})
+			recoveryParamsCtx := buildRecoveryNotificationParams(rule, checkResults, alertMessage, alertItem)
+			recoveryParamsCtx[alerting2.ParamRecoveredResults] = recoveredResults
+			recoveryParamsCtx["recovery_context"] = recoveryContext
 			err = attachTitleMessageToCtx(recoverCfg.Title, recoverCfg.Message, recoveryParamsCtx)
 			if err != nil {
 				return fmt.Errorf("resolve partial recovery template for rule [%s] error: %w", rule.ID, err)
@@ -1424,6 +1405,15 @@ func buildRecoveryContext(rule *alerting.Rule, queryResult *alerting.QueryResult
 		return "", nil, err
 	}
 	return recoveryContext, recoveredCtx[alerting2.ParamResults], nil
+}
+
+func buildRecoveryNotificationParams(rule *alerting.Rule, checkResults *alerting.ConditionResult, alertMessage *alerting.AlertMessage, alertItem *alerting.Alert) map[string]interface{} {
+	return newParameterCtx(rule, checkResults, util.MapStr{
+		alerting2.ParamEventID:   alertMessage.ID,
+		alerting2.ParamTimestamp: alertItem.Created.Unix(),
+		"duration":               formatAlertDuration(alertItem.Created.Sub(alertMessage.Created)),
+		"trigger_at":             alertMessage.Created.Unix(),
+	})
 }
 
 func (engine *Engine) Test(rule *alerting.Rule, msgType string) ([]alerting.ActionExecutionResult, error) {

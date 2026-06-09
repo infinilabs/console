@@ -4,6 +4,11 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 export default ({ source, ref }) => {
+  const normalizedSource =
+    typeof source === "string"
+      ? source.replace(/\r\n/g, "\n").replace(/\n/g, "  \n")
+      : source;
+
   return (
     <div ref={ref}>
       <link
@@ -18,7 +23,7 @@ export default ({ source, ref }) => {
           className="markdown-body"
           components={{ a: LinkRenderer }}
         >
-          {source}
+          {normalizedSource}
         </ReactMarkdown>
       </IFrame>
     </div>

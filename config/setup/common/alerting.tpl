@@ -629,7 +629,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-cal8n7p7h710d
   },
   "notification_config": {
     "enabled": true,
-    "title": "Health of Clusters ({{len .results}} clusters in total) Changed to Red",
+    "title": "🔥 Health of Clusters ({{len .results}} clusters in total) Changed to Red",
     "message": "{{range .results}}\n{{$cn := lookup \"category=metadata, object=cluster, property=name, default=N/A\" (index .group_values 0) }}\n{{$cu := printf \"%s/#/cluster/monitor/elasticsearch/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0)}}\nCluster: [{{$cn}}]({{$cu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D%2C%22cluster_name%22:%22{{$cn | urlquery}}%22%7D) is Red now\n{{end}}",
     "normal": [
       {
@@ -678,7 +678,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-cal8n7p7h710d
   "category": "Platform",
   "recovery_notification_config": {
     "enabled": true,
-    "title": "🌈 [{{.rule_name}}] Resolved",
+    "title": "🌈 {{.rule_name}} Resolved",
     "message": "EventID: {{.event_id}}  \nTarget: {{.resource_name}}-{{.objects}}  \nTriggerAt: {{.trigger_at | datetime}}  \nResolveAt: {{.timestamp | datetime}}  \nDuration: {{.duration}}{{if .recovery_context}}  \n{{.recovery_context}}{{end}}",
     "normal": [
       {
@@ -778,7 +778,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-calavvp7h710d
   },
   "notification_config": {
     "enabled": true,
-    "title": "Health of Indices ({{len .results}} indices in total) Changed to Red",
+    "title": "🔥 Health of Indices ({{len .results}} indices in total) Changed to Red",
     "message": "{{range .results}}\n{{$cn := lookup \"category=metadata, object=cluster, property=name, default=N/A\" (index .group_values 0) }}\n{{$iu := printf \"%s/#/cluster/monitor/%s/indices/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0) (index .group_values 1)}}\n{{$cu := printf \"%s/#/cluster/monitor/elasticsearch/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0)}}\nIndex: [{{index .group_values 1}}]({{$iu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D%2C%22cluster_name%22:%22{{$cn | urlquery}}%22%7D) of Cluster: [{{$cn}}]({{$cu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D) is Red now\n{{end}}",
     "normal": [
       {
@@ -827,7 +827,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-calavvp7h710d
   "category": "Platform",
   "recovery_notification_config": {
     "enabled": true,
-    "title": "🌈 [{{.rule_name}}] Resolved",
+    "title": "🌈{{.rule_name}} Resolved",
     "message": "EventID: {{.event_id}}  \nTarget: {{.resource_name}}-{{.objects}}  \nTriggerAt: {{.trigger_at | datetime}}  \nResolveAt: {{.timestamp | datetime}}  \nDuration: {{.duration}}{{if .recovery_context}}  \n{{.recovery_context}}{{end}}",
     "normal": [
       {
@@ -931,7 +931,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-cbp20n2anisjm
   },
   "notification_config": {
     "enabled": true,
-    "title": "Elasticsearch node left cluster",
+    "title": "🔥 Elasticsearch node left cluster",
     "message": "{{range .results}}\n{{$cn := lookup \"category=metadata, object=cluster, property=name, default=N/A\" (index .group_values 0) }}\n{{$nn := lookup \"category=metadata, object=node, property=metadata.node_name, default=N/A\" (index .group_values 1) }}\n{{$nu := printf \"%s/#/cluster/monitor/%s/nodes/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0) (index .group_values 1)}}\n{{$cu := printf \"%s/#/cluster/monitor/elasticsearch/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0)}}\nNode: [{{$nn}}]({{$nu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D%2C%22cluster_name%22:%22{{$cn | urlquery}}%22%2C%22node_name%22:%22{{$nn}}%22%7D) of Cluster: [{{$cn}}]({{$cu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D%7D), Left: {{.result_value}}\n{{end}}",
     "normal": [
       {
@@ -980,7 +980,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-cbp20n2anisjm
   "category": "Platform",
   "recovery_notification_config": {
     "enabled": true,
-    "title": "🌈 [{{.rule_name}}] Resolved",
+    "title": "🌈 {{.rule_name}} Resolved",
     "message": "EventID: {{.event_id}}  \nTarget: {{.resource_name}}-{{.objects}}  \nTriggerAt: {{.trigger_at | datetime}}  \nResolveAt: {{.timestamp | datetime}}  \nDuration: {{.duration}}{{if .recovery_context}}  \n{{.recovery_context}}{{end}}",
     "normal": [
       {
@@ -1107,7 +1107,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-cb34sfl6psfiq
   },
   "notification_config": {
     "enabled": true,
-    "title": "Too Many Deleted Documents (>30%)",
+    "title": "🔥 Too Many Deleted Documents (>30%)",
     "message": "{{range .results}}\n{{$cn := lookup \"category=metadata, object=cluster, property=name, default=N/A\" (index .group_values 0) }}\n{{$iu := printf \"%s/#/cluster/monitor/%s/indices/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0) (index .group_values 1)}}\n{{$cu := printf \"%s/#/cluster/monitor/elasticsearch/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0)}}\nIndex: [{{index .group_values 1}}]({{$iu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D%2C%22cluster_name%22:%22{{$cn | urlquery}}%22%7D) of Cluster: [{{$cn}}]({{$cu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D%7D), Deleted: {{.result_value | to_fixed 2}}%\n{{end}}",
     "normal": [
       {
@@ -1154,7 +1154,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-cb34sfl6psfiq
   "category": "Platform",
   "recovery_notification_config": {
     "enabled": true,
-    "title": "🌈 [{{.rule_name}}] Resolved",
+    "title": "🌈 {{.rule_name}} Resolved",
     "message": "EventID: {{.event_id}}  \nTarget: {{.resource_name}}-{{.objects}}  \nTriggerAt: {{.trigger_at | datetime}}  \nResolveAt: {{.timestamp | datetime}}  \nDuration: {{.duration}}{{if .recovery_context}}  \n{{.recovery_context}}{{end}}",
     "normal": [
       {
@@ -1295,7 +1295,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-cbp2e4ianisjm
   },
   "notification_config": {
     "enabled": true,
-    "title": "Search latency is great than 500ms",
+    "title": "🔥 Search latency is great than 500ms",
     "message": "{{range .results}}\n{{$cn := lookup \"category=metadata, object=cluster, property=name, default=N/A\" (index .group_values 0) }}\n{{$iu := printf \"%s/#/cluster/monitor/%s/indices/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0) (index .group_values 1)}}\n{{$cu := printf \"%s/#/cluster/monitor/elasticsearch/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0)}}\nIndex: [{{index .group_values 1}}]({{$iu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D%2C%22cluster_name%22:%22{{$cn | urlquery}}%22%7D) of Cluster: [{{$cn}}]({{$cu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D%7D), Latency: {{.result_value | to_fixed 2}}ms\n{{end}}",
     "normal": [
       {
@@ -1344,7 +1344,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-cbp2e4ianisjm
   "category": "Platform",
   "recovery_notification_config": {
     "enabled": true,
-    "title": "🌈 [{{.rule_name}}] Resolved",
+    "title": "🌈 {{.rule_name}} Resolved",
     "message": "EventID: {{.event_id}}  \nTarget: {{.resource_name}}-{{.objects}}  \nTriggerAt: {{.trigger_at | datetime}}  \nResolveAt: {{.timestamp | datetime}}  \nDuration: {{.duration}}{{if .recovery_context}}  \n{{.recovery_context}}{{end}}",
     "normal": [
       {
@@ -1479,7 +1479,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-calaqnh7h710d
   },
   "notification_config": {
     "enabled": true,
-    "title": "JVM Usage of Nodes ({{len .results}} nodes in total) >= {{.first_threshold}}%",
+    "title": "🔥 JVM Usage of Nodes ({{len .results}} nodes in total) >= {{.first_threshold}}%",
     "message": "{{range .results}}\n{{$cn := lookup \"category=metadata, object=cluster, property=name, default=N/A\" (index .group_values 0) }}\n{{$nn := lookup \"category=metadata, object=node, property=metadata.node_name, default=N/A\" (index .group_values 1) }}\n{{$nu := printf \"%s/#/cluster/monitor/%s/nodes/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0) (index .group_values 1)}}\n{{$cu := printf \"%s/#/cluster/monitor/elasticsearch/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0)}}\nNode: [{{$nn}}]({{$nu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D%2C%22cluster_name%22:%22{{$cn | urlquery}}%22%2C%22node_name%22:%22{{$nn}}%22%7D) of Cluster: [{{$cn}}]({{$cu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D%7D), JVM Usage: {{.result_value | to_fixed 2}}%\n{{end}}",
     "normal": [
       {
@@ -1528,7 +1528,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-calaqnh7h710d
   "category": "Platform",
   "recovery_notification_config": {
     "enabled": true,
-    "title": "🌈 [{{.rule_name}}] Resolved",
+    "title": "🌈 {{.rule_name}} Resolved",
     "message": "EventID: {{.event_id}}  \nTarget: {{.resource_name}}-{{.objects}}  \nTriggerAt: {{.trigger_at | datetime}}  \nResolveAt: {{.timestamp | datetime}}  \nDuration: {{.duration}}{{if .recovery_context}}  \n{{.recovery_context}}{{end}}",
     "normal": [
       {
@@ -1663,7 +1663,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-calakp97h710d
   },
   "notification_config": {
     "enabled": true,
-    "title": "CPU Usage of Nodes ({{len .results}} nodes in total) >= {{.first_threshold}}%",
+    "title": "🔥 CPU Usage of Nodes ({{len .results}} nodes in total) >= {{.first_threshold}}%",
     "message": "{{range .results}}\n{{$cn := lookup \"category=metadata, object=cluster, property=name, default=N/A\" (index .group_values 0) }}\n{{$nn := lookup \"category=metadata, object=node, property=metadata.node_name, default=N/A\" (index .group_values 1) }}\n{{$nu := printf \"%s/#/cluster/monitor/%s/nodes/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0) (index .group_values 1)}}\n{{$cu := printf \"%s/#/cluster/monitor/elasticsearch/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0)}}\nNode: [{{$nn}}]({{$nu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D%2C%22cluster_name%22:%22{{$cn | urlquery}}%22%2C%22node_name%22:%22{{$nn}}%22%7D) of Cluster: [{{$cn}}]({{$cu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D%7D), CPU Usage: {{.result_value | to_fixed 2}}%\n{{end}}",
     "normal": [
       {
@@ -1712,7 +1712,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-calakp97h710d
   "category": "Platform",
   "recovery_notification_config": {
     "enabled": true,
-    "title": "🌈 [{{.rule_name}}] Resolved",
+    "title": "🌈 {{.rule_name}} Resolved",
     "message": "EventID: {{.event_id}}  \nTarget: {{.resource_name}}-{{.objects}}  \nTriggerAt: {{.trigger_at | datetime}}  \nResolveAt: {{.timestamp | datetime}}  \nDuration: {{.duration}}{{if .recovery_context}}  \n{{.recovery_context}}{{end}}",
     "normal": [
       {
@@ -1818,7 +1818,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-calgapp7h710d
   },
   "notification_config": {
     "enabled": true,
-    "title": "Shard Storage >55GB in ({{len .results}} indices in total)",
+    "title": "🔥 Shard Storage >55GB in ({{len .results}} indices in total)",
     "message": "{{range .results}}\n{{$cn := lookup \"category=metadata, object=cluster, property=name, default=N/A\" (index .group_values 0) }}\n{{$iu := printf \"%s/#/cluster/monitor/%s/indices/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0) (index .group_values 1)}}\n{{$cu := printf \"%s/#/cluster/monitor/elasticsearch/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0)}}\nIndex: [{{index .group_values 1}}]({{$iu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D%2C%22cluster_name%22:%22{{$cn | urlquery}}%22%7D) of Cluster: [{{$cn}}]({{$cu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D%7D), Max Shard Storage: {{.result_value | format_bytes 2}}\n{{end}}",
     "normal": [
       {
@@ -1867,7 +1867,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-calgapp7h710d
   "category": "Platform",
   "recovery_notification_config": {
     "enabled": true,
-    "title": "🌈 [{{.rule_name}}] Resolved",
+    "title": "🌈 {{.rule_name}} Resolved",
     "message": "- EventID: {{.event_id}}\n- Target: {{.resource_name}}-{{.objects}}\n- TriggerAt: {{.trigger_at | datetime}}\n- ResolveAt: {{.timestamp | datetime}}\n- Duration: {{.duration}}{{if .recovery_context}}\n{{.recovery_context}}{{end}}",
     "normal": [
       {
@@ -2007,7 +2007,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-cal8n7p7h710d
   },
   "notification_config": {
     "enabled": true,
-    "title": "Disk Usage of Nodes ({{len .results}} nodes in total) >= {{.first_threshold}}%",
+    "title": "🔥 Disk Usage of Nodes ({{len .results}} nodes in total) >= {{.first_threshold}}%",
     "message": "{{range .results}}\n{{$cn := lookup \"category=metadata, object=cluster, property=name, default=N/A\" (index .group_values 0) }}\n{{$nn := lookup \"category=metadata, object=node, property=metadata.node_name, default=N/A\" (index .group_values 1) }}\n{{$nu := printf \"%s/#/cluster/monitor/%s/nodes/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0) (index .group_values 1)}}\n{{$cu := printf \"%s/#/cluster/monitor/elasticsearch/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0)}}\nNode: [{{$nn}}]({{$nu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D%2C%22cluster_name%22:%22{{$cn | urlquery}}%22%2C%22node_name%22:%22{{$nn}}%22%7D) of Cluster: [{{$cn}}]({{$cu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D%7D), Usage: {{.result_value | to_fixed 2}}% / Free: {{.relation_values.b | format_bytes 2}}\n{{end}}",
     "normal": [
       {
@@ -2171,7 +2171,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-cujivv5ath26d
   },
   "notification_config": {
     "enabled": true,
-    "title": "🔥 [{{.rule_name}}] Alerting",
+    "title": "🔥 {{.rule_name}} Alerting",
     "message": "{{range .results}}\n{{$cn := lookup \"category=metadata, object=cluster, property=name, default=N/A\" (index .group_values 0) }}\n{{$cu := printf \"%s/#/cluster/monitor/elasticsearch/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0)}}\nCluster [[{{$cn}}]({{$cu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D%7D)] ({{index .group_values 1}}) metrics has dropped at {{.issue_timestamp | datetime}};\n{{end}}",
     "normal": [
       {
@@ -2208,7 +2208,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-cujivv5ath26d
   "category": "Platform",
   "recovery_notification_config": {
     "enabled": true,
-    "title": "🌈 [{{.rule_name}}] Resolved",
+    "title": "🌈 {{.rule_name}} Resolved",
     "message": "EventID: {{.event_id}}  \nTarget: {{.resource_name}}-{{.objects}}  \nTriggerAt: {{.trigger_at | datetime}}  \nResolveAt: {{.timestamp | datetime}}  \nDuration: {{.duration}}{{if .recovery_context}}  \n{{.recovery_context}}{{end}}",
     "normal": [
       {

@@ -13,11 +13,13 @@ export default ({ onEnroll, loading }) => {
   const [selectedCluster, setSelectedCluster] = useState([]);
   const [auths, setAuths] = useState([]);
 
-  const needCredentialSetup = (item) =>
-    !item?.credential_id &&
-    !item?.basic_auth?.username &&
-    !item?.agent_credential_id &&
-    !item?.agent_basic_auth?.username;
+  const needCredentialSetup = (item) => {
+    const needPlatformAuth = !!(item?.credential_id || item?.basic_auth?.username);
+    if (!needPlatformAuth) {
+      return false;
+    }
+    return !item?.agent_credential_id && !item?.agent_basic_auth?.username;
+  };
 
   const onEnrollClick = () => {
     if (selectedCluster.length === 0) return;

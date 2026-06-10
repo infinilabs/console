@@ -79,6 +79,9 @@ func remoteConfigProvider(instance model.Instance) []*common.ConfigFile {
 	for _, row := range searchResult.Result {
 		v, ok := row.(map[string]interface{})
 		if ok {
+			if shouldSkipGatewayConfigByType(instance, v) {
+				continue
+			}
 			x, ok := v["payload"]
 			if ok {
 				f, ok := x.(map[string]interface{})
@@ -109,6 +112,63 @@ func remoteConfigProvider(instance model.Instance) []*common.ConfigFile {
 	}
 
 	return result
+}
+
+func shouldSkipGatewayConfigByType(instance model.Instance, configDoc map[string]interface{}) bool {
+	if !strings.EqualFold(strings.TrimSpace(instance.Application.Name), "gateway") {
+		return false
+	}
+	instanceType := normalizeGatewayTypeLabel(instance.Labels["gateway_type"])
+	if instanceType == "" {
+		return false
+	}
+	configType := extractGatewayTypeFromConfigDoc(configDoc)
+	if configType == "" {
+		configType = inferGatewayTypeFromPayloadLocation(configDoc)
+	}
+	if configType == "" || configType == "_all" {
+		return false
+	}
+	return configType != instanceType
+}
+
+func normalizeGatewayTypeLabel(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "relay":
+		return "relay"
+	case "migration":
+		return "migration"
+	default:
+		return ""
+	}
+}
+
+func extractGatewayTypeFromConfigDoc(configDoc map[string]interface{}) string {
+	metadata, ok := configDoc["metadata"].(map[string]interface{})
+	if !ok {
+		return ""
+	}
+	labels, ok := metadata["labels"].(map[string]interface{})
+	if !ok {
+		return ""
+	}
+	return normalizeGatewayTypeLabel(util.ToString(labels["gateway_type"]))
+}
+
+func inferGatewayTypeFromPayloadLocation(configDoc map[string]interface{}) string {
+	payload, ok := configDoc["payload"].(map[string]interface{})
+	if !ok {
+		return ""
+	}
+	location := strings.ToLower(strings.TrimSpace(util.ToString(payload["location"])))
+	switch location {
+	case "relay.yml":
+		return "relay"
+	case "migration.yml":
+		return "migration"
+	default:
+		return ""
+	}
 }
 
 func rewriteLegacyAgentConfigContent(instance model.Instance, content string) string {

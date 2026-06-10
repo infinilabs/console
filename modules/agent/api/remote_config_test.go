@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	config2 "infini.sh/framework/core/config"
+	"infini.sh/framework/core/env"
+	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/util"
 )
 
@@ -184,5 +186,69 @@ func TestTaskConfigTemplateRendersEndpointArrayForLegacyAgent(t *testing.T) {
 	}
 	if len(parsed.Elasticsearch) != 1 || len(parsed.Elasticsearch[0].Endpoints) != 1 || parsed.Elasticsearch[0].Endpoints[0] != "http://192.168.3.8:9200" {
 		t.Fatalf("expected single endpoint array, got %#v", parsed.Elasticsearch)
+	}
+}
+
+func TestShouldSkipGatewayConfigByType(t *testing.T) {
+	instance := model.Instance{
+		Application: env.Application{Name: "gateway"},
+		Labels: map[string]string{
+			"gateway_type": "relay",
+		},
+	}
+
+	relayDoc := map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"labels": map[string]interface{}{
+				"gateway_type": "relay",
+			},
+		},
+		"payload": map[string]interface{}{
+			"location": "relay.yml",
+		},
+	}
+	if shouldSkipGatewayConfigByType(instance, relayDoc) {
+		t.Fatal("expected relay gateway to keep relay config")
+	}
+
+	migrationDoc := map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"labels": map[string]interface{}{
+				"gateway_type": "migration",
+			},
+		},
+		"payload": map[string]interface{}{
+			"location": "migration.yml",
+		},
+	}
+	if !shouldSkipGatewayConfigByType(instance, migrationDoc) {
+		t.Fatal("expected relay gateway to skip migration config")
+	}
+}
+
+func TestShouldSkipGatewayConfigByTypeWithLegacyConfigDoc(t *testing.T) {
+	instance := model.Instance{
+		Application: env.Application{Name: "gateway"},
+		Labels: map[string]string{
+			"gateway_type": "migration",
+		},
+	}
+
+	legacyRelayDoc := map[string]interface{}{
+		"payload": map[string]interface{}{
+			"location": "relay.yml",
+		},
+	}
+	if !shouldSkipGatewayConfigByType(instance, legacyRelayDoc) {
+		t.Fatal("expected migration gateway to skip legacy relay config")
+	}
+
+	legacyMigrationDoc := map[string]interface{}{
+		"payload": map[string]interface{}{
+			"location": "migration.yml",
+		},
+	}
+	if shouldSkipGatewayConfigByType(instance, legacyMigrationDoc) {
+		t.Fatal("expected migration gateway to keep legacy migration config")
 	}
 }

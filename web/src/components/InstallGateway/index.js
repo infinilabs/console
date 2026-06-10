@@ -1,4 +1,4 @@
-import { Alert, Button, Icon, message, Spin, Switch, Tooltip } from "antd";
+import { Alert, Button, Icon, message, Select, Spin, Switch, Tooltip } from "antd";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import { useEffect, useState } from "react";
 import { formatMessage } from "umi/locale";
@@ -103,18 +103,24 @@ const noServiceCodeStyle = {
 };
 
 export default ({ autoInit = false }) => {
+  const { Option } = Select;
   const [loading, setLoading] = useState(false);
   const [tokenInfo, setTokenInfo] = useState();
   const [noService, setNoService] = useState(false);
+  const [gatewayType, setGatewayType] = useState("migration");
   const [advancedVisible, setAdvancedVisible] = useState(false);
 
-  const fetchTokenInfo = async (noServiceEnabled = noService) => {
+  const fetchTokenInfo = async (
+    noServiceEnabled = noService,
+    gatewayTypeValue = gatewayType
+  ) => {
     setTokenInfo(undefined);
     setLoading(true);
     const res = await request("/instance/_generate_gateway_install_script", {
       method: "POST",
       body: {
         no_service: noServiceEnabled,
+        gateway_type: gatewayTypeValue,
       },
     });
     setTokenInfo(res);
@@ -153,6 +159,28 @@ export default ({ autoInit = false }) => {
             </Button>
             {advancedVisible ? (
               <div style={toggleRowStyle}>
+                <div style={toggleItemStyle}>
+                  <span style={toggleLabelStyle}>
+                    <span>{formatMessage({ id: "gateway.install.type.label" })}</span>
+                  </span>
+                  <Select
+                    value={gatewayType}
+                    style={{ width: 220 }}
+                    onChange={(value) => {
+                      setGatewayType(value);
+                      if (autoInit || tokenInfo) {
+                        fetchTokenInfo(noService, value);
+                      }
+                    }}
+                  >
+                    <Option value="migration">
+                      {formatMessage({ id: "gateway.install.type.migration" })}
+                    </Option>
+                    <Option value="relay">
+                      {formatMessage({ id: "gateway.install.type.relay" })}
+                    </Option>
+                  </Select>
+                </div>
                 <div style={toggleItemStyle}>
                   <span style={toggleLabelStyle}>
                     <span>{formatMessage({ id: "gateway.install.no_sudo.label" })}</span>

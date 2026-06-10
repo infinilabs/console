@@ -262,8 +262,10 @@ function install_config() {
   echo "[gateway] waiting generate config"
   port={{port}}
   console_endpoint="{{console_endpoint}}"
+  gateway_type="{{gateway_type}}"
   server=${register_server:-$console_endpoint}
   echo "[gateway] gateway api listening port $port, will sync configs from console endpoint [ $server ]"
+  echo "[gateway] gateway type: ${gateway_type}"
   cat <<EOF > ${install_dir}/gateway.yml
 configs.auto_reload: true
 
@@ -311,6 +313,8 @@ configs:
 
 node:
   major_ip_pattern: ".*"
+  labels:
+    gateway_type: "${gateway_type}"
 EOF
 }
 

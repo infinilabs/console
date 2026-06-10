@@ -268,14 +268,19 @@ function install_config() {
   echo "[agent] waiting generate config"
   port={{port}}
   console_endpoint="{{console_endpoint}}"
+  remote_config_servers='{{remote_config_servers}}'
 
   server=${register_server:-$console_endpoint}
+  if [[ -n "${register_server}" ]]; then
+    remote_config_servers="[\"${register_server}\"]"
+  fi
   echo "[agent] agent listening port $port, will register to console endpoint [ $server ]"
+  echo "[agent] remote config servers: ${remote_config_servers}"
   cat <<EOF > ${install_dir}/agent.yml
 env:
   WEB_BINDING: "0.0.0.0:${port}"
   MANAGED: true
-  REMOTE_CONFIG_SERVERS: ["${server}"]
+  REMOTE_CONFIG_SERVERS: ${remote_config_servers}
   REVERSE_CHANNEL_ENDPOINTS: {{reverse_channel_endpoints}}
   REMOTE_CONFIG_INTERVAL: "10s"
   SECURITY_ENABLED: true

@@ -6,6 +6,9 @@ export default {
   "gateway.instance.install.title": "安装 Gateway",
   "gateway.install.label.get_cmd": "获取安装命令",
   "gateway.install.advanced.title": "高级配置",
+  "gateway.install.type.label": "网关类型",
+  "gateway.install.type.migration": "迁移网关",
+  "gateway.install.type.relay": "转发网关",
   "gateway.install.no_sudo.label": "无 sudo 权限",
   "gateway.install.no_sudo.help":
     "适用于容器或非 root 环境。开启后生成的命令会去掉 sudo，并自动追加 --no-service，安装完成后请将 Gateway 作为容器主进程或以前台方式运行。",

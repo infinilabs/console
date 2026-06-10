@@ -43,6 +43,8 @@ import (
 	frameworkconfig "infini.sh/framework/core/config"
 	"infini.sh/framework/core/env"
 	"infini.sh/framework/core/global"
+	"infini.sh/framework/core/model"
+	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/lib/fasttemplate"
 	"io"
@@ -78,6 +80,8 @@ const defaultGatewayDownloadURL = "https://release.infinilabs.com/gateway/stable
 const defaultAgentInstallDir = "/infini/agent"
 const defaultGatewayInstallDir = "/infini/gateway"
 const defaultManagedGatewayAPIUsername = "managed_gateway"
+const gatewayTypeRelay = "relay"
+const gatewayTypeMigration = "migration"
 
 var refreshManagedLocalTemplatesForInstall func() ([]string, error)
 var expiredTokenCache = util.NewCacheWithExpireOnAdd(ExpiredIn, 100)
@@ -100,6 +104,7 @@ type gatewaySetupConfig struct {
 
 type installCommandRequest struct {
 	GatewayEndpoints     []string `json:"gateway_endpoints"`
+	GatewayType          string   `json:"gateway_type"`
 	EnableReverseChannel bool     `json:"enable_reverse_channel"`
 	NoService            bool     `json:"no_service"`
 }
@@ -112,6 +117,86 @@ func renderAgentReverseChannelEndpoints(req *http.Request, configuredEndpoints [
 		return `["${server}"]`
 	}
 	return string(util.MustToJSONBytes(resolveAgentReverseChannelEndpoints(req, configuredEndpoints)))
+}
+
+func normalizeGatewayType(gatewayType string) string {
+	switch strings.ToLower(strings.TrimSpace(gatewayType)) {
+	case gatewayTypeRelay:
+		return gatewayTypeRelay
+	case gatewayTypeMigration:
+		return gatewayTypeMigration
+	default:
+		return gatewayTypeMigration
+	}
+}
+
+func normalizeManagedServerEndpoints(endpoints []string) []string {
+	if len(endpoints) == 0 {
+		return nil
+	}
+	result := make([]string, 0, len(endpoints))
+	seen := map[string]struct{}{}
+	for _, endpoint := range endpoints {
+		normalized := strings.TrimSpace(strings.TrimRight(endpoint, "/"))
+		if normalized == "" {
+			continue
+		}
+		if _, exists := seen[normalized]; exists {
+			continue
+		}
+		seen[normalized] = struct{}{}
+		result = append(result, normalized)
+	}
+	return result
+}
+
+func listGatewayManagedEndpoints(gatewayType string) ([]string, error) {
+	queryDSL := util.MapStr{
+		"size": 1000,
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": []util.MapStr{
+					{"term": util.MapStr{"application.name": "gateway"}},
+				},
+			},
+		},
+	}
+	if gatewayType != "" {
+		queryDSL["query"] = util.MapStr{
+			"bool": util.MapStr{
+				"must": []util.MapStr{
+					{"term": util.MapStr{"application.name": "gateway"}},
+					{"term": util.MapStr{"labels.gateway_type": gatewayType}},
+				},
+			},
+		}
+	}
+	q := orm.Query{
+		RawQuery: util.MustToJSONBytes(queryDSL),
+	}
+	instances := []model.Instance{}
+	if err, _ := orm.SearchWithJSONMapper(&instances, &q); err != nil {
+		return nil, err
+	}
+	endpoints := make([]string, 0, len(instances))
+	for _, instance := range instances {
+		endpoint := strings.TrimSpace(strings.TrimRight(instance.GetEndpoint(), "/"))
+		if endpoint == "" {
+			continue
+		}
+		endpoints = append(endpoints, endpoint)
+	}
+	return normalizeManagedServerEndpoints(endpoints), nil
+}
+
+func resolveAgentRemoteConfigServers(consoleEndpoint string, requestedGatewayEndpoints []string) []string {
+	if endpoints := normalizeManagedServerEndpoints(requestedGatewayEndpoints); len(endpoints) > 0 {
+		return endpoints
+	}
+	if relayEndpoints, err := listGatewayManagedEndpoints(gatewayTypeRelay); err == nil && len(relayEndpoints) > 0 {
+		return relayEndpoints
+	}
+	return []string{strings.TrimRight(strings.TrimSpace(consoleEndpoint), "/")}
 }
 
 func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -150,7 +235,7 @@ func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Req
 	expiredTokenCache.Put(tokenStr, t)
 	consoleEndpoint := resolveConsoleEndpoint(req, agCfg.Setup.ConsoleEndpoint)
 	installVersion := strings.TrimSpace(agCfg.Setup.Version)
-	endpoint, err := buildInstallScriptURL(consoleEndpoint, tokenStr, installVersion, payload.EnableReverseChannel)
+	endpoint, err := buildInstallScriptURL(consoleEndpoint, tokenStr, installVersion, payload.EnableReverseChannel, payload.GatewayEndpoints)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Errorf("build agent install script url failed: %v", err)
@@ -226,12 +311,23 @@ func (h *APIHandler) generateGatewayInstallCommand(w http.ResponseWriter, req *h
 
 	consoleEndpoint := resolveConsoleEndpoint(req, gwCfg.Setup.ConsoleEndpoint)
 	installVersion := strings.TrimSpace(gwCfg.Setup.Version)
+	gatewayType := normalizeGatewayType(payload.GatewayType)
 	endpoint, err := buildInstallScriptURLForAPI(consoleEndpoint, getGatewayInstallScriptAPI, tokenStr, installVersion)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Errorf("build gateway install script url failed: %v", err)
 		return
 	}
+	parsedEndpoint, err := url.Parse(endpoint)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Errorf("parse gateway install script url failed: %v", err)
+		return
+	}
+	endpointQuery := parsedEndpoint.Query()
+	endpointQuery.Set("gateway_type", gatewayType)
+	parsedEndpoint.RawQuery = endpointQuery.Encode()
+	endpoint = parsedEndpoint.String()
 
 	downloadURL, err := resolveGatewayDownloadURL(consoleEndpoint, gwCfg.Setup.DownloadURL)
 	if err != nil {
@@ -273,21 +369,22 @@ func buildGatewayInstallCommand(endpoint, location string, noService bool) strin
 	return command
 }
 
-func buildInstallScriptURL(consoleEndpoint, tokenStr, installVersion string, enableReverseChannel bool) (string, error) {
+func buildInstallScriptURL(consoleEndpoint, tokenStr, installVersion string, enableReverseChannel bool, gatewayEndpoints []string) (string, error) {
 	endpoint, err := buildInstallScriptURLForAPI(consoleEndpoint, getInstallScriptAPI, tokenStr, installVersion)
 	if err != nil {
 		return "", err
 	}
-	if !enableReverseChannel {
-		return endpoint, nil
-	}
-
 	parsed, err := url.Parse(endpoint)
 	if err != nil {
 		return "", err
 	}
 	query := parsed.Query()
-	query.Set("enable_reverse_channel", "true")
+	if enableReverseChannel {
+		query.Set("enable_reverse_channel", "true")
+	}
+	for _, endpoint := range normalizeManagedServerEndpoints(gatewayEndpoints) {
+		query.Add("gateway_endpoint", endpoint)
+	}
 	parsed.RawQuery = query.Encode()
 	return parsed.String(), nil
 }
@@ -661,6 +758,7 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 
 	consoleEndpoint := resolveConsoleEndpoint(req, agCfg.Setup.ConsoleEndpoint)
 	consoleDomain := resolveConsoleTLSServerName(consoleEndpoint)
+	remoteConfigServers := resolveAgentRemoteConfigServers(consoleEndpoint, req.URL.Query()["gateway_endpoint"])
 	reverseChannelEnabled := strings.EqualFold(strings.TrimSpace(req.URL.Query().Get("enable_reverse_channel")), "true")
 	reverseChannelEndpoints := renderAgentReverseChannelEndpoints(
 		req,
@@ -683,6 +781,7 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 		"base_url":                  downloadURL,
 		"console_endpoint":          consoleEndpoint,
 		"console_domain":            consoleDomain,
+		"remote_config_servers":     string(util.MustToJSONBytes(remoteConfigServers)),
 		"reverse_channel_endpoints": reverseChannelEndpoints,
 		"embedding_api":             "false",
 		"websocket_enabled":         fmt.Sprintf("%t", !reverseChannelEnabled),
@@ -743,6 +842,7 @@ func (h *APIHandler) getGatewayInstallScript(w http.ResponseWriter, req *http.Re
 	tpl := fasttemplate.New(string(buf), "{{", "}}")
 	consoleEndpoint := resolveConsoleEndpoint(req, gwCfg.Setup.ConsoleEndpoint)
 	consoleDomain := resolveConsoleTLSServerName(consoleEndpoint)
+	gatewayType := normalizeGatewayType(req.URL.Query().Get("gateway_type"))
 	downloadURL, err := resolveGatewayDownloadURL(consoleEndpoint, gwCfg.Setup.DownloadURL)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -771,6 +871,7 @@ func (h *APIHandler) getGatewayInstallScript(w http.ResponseWriter, req *http.Re
 		"access_token":          managerTokenValue,
 		"api_security_username": defaultManagedGatewayAPIUsername,
 		"api_security_password": localAPIPassword,
+		"gateway_type":          gatewayType,
 		"version":               installVersion,
 	})
 	if err != nil {

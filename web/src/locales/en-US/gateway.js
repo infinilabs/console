@@ -7,6 +7,9 @@ export default {
   "gateway.instance.install.title": "Install Gateway",
   "gateway.install.label.get_cmd": "Get Setup Command",
   "gateway.install.advanced.title": "Advanced",
+  "gateway.install.type.label": "Gateway type",
+  "gateway.install.type.migration": "Migration gateway",
+  "gateway.install.type.relay": "Relay gateway",
   "gateway.install.no_sudo.label": "No sudo privileges",
   "gateway.install.no_sudo.help":
     "Recommended for containers or non-root environments. When enabled, the generated command removes sudo and appends --no-service. After installation, run Gateway in the foreground via your container or process manager.",

@@ -308,6 +308,7 @@ func TestGatewayInstallTemplateBootstrapsManagedConfig(t *testing.T) {
 		"{{access_token}}", "BOOTSTRAP_TOKEN",
 		"{{api_security_username}}", "managed_gateway",
 		"{{api_security_password}}", "LOCAL_API_PASSWORD",
+		"{{gateway_type}}", "relay",
 	).Replace(string(content))
 
 	expectedSnippets := []string{
@@ -330,6 +331,8 @@ func TestGatewayInstallTemplateBootstrapsManagedConfig(t *testing.T) {
 		`cert_file: "config/client.crt"`,
 		`default_domain: "console.local"`,
 		`skip_insecure_verify: false`,
+		`gateway_type: "relay"`,
+		`gateway_type: "relay"`,
 		`access_token="BOOTSTRAP_TOKEN"`,
 		`keystore add "CONFIGS_MANAGER_ACCESS_TOKEN"`,
 		`keystore add "API_SECURITY_USERNAME"`,
@@ -571,6 +574,7 @@ func TestAgentInstallTemplateBootstrapsManagerAccessToken(t *testing.T) {
 		"{{embedding_api}}", "false",
 		"{{websocket_enabled}}", "false",
 		"{{reverse_channel_endpoints}}", "[]",
+		"{{remote_config_servers}}", `["https://gateway-relay-1:2900","https://gateway-relay-2:2900"]`,
 	).Replace(string(content))
 
 	expectedSnippets := []string{
@@ -578,6 +582,8 @@ func TestAgentInstallTemplateBootstrapsManagerAccessToken(t *testing.T) {
 		`access_token="BOOTSTRAP_TOKEN"`,
 		`keystore add "CONFIGS_MANAGER_ACCESS_TOKEN"`,
 		`access_log_enabled: false`,
+		`REMOTE_CONFIG_SERVERS: ${remote_config_servers}`,
+		`remote_config_servers='["https://gateway-relay-1:2900","https://gateway-relay-2:2900"]'`,
 	}
 	for _, snippet := range expectedSnippets {
 		if !strings.Contains(rendered, snippet) {
@@ -613,7 +619,7 @@ func TestBuildInstallCommandSkipsSudoForNoServiceMode(t *testing.T) {
 }
 
 func TestBuildInstallScriptURLHonorsReverseChannelOption(t *testing.T) {
-	withoutReverse, err := buildInstallScriptURL("https://console.local", "abc", "1.2.3", false)
+	withoutReverse, err := buildInstallScriptURL("https://console.local", "abc", "1.2.3", false, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -621,12 +627,16 @@ func TestBuildInstallScriptURLHonorsReverseChannelOption(t *testing.T) {
 		t.Fatalf("did not expect reverse channel flag in %q", withoutReverse)
 	}
 
-	withReverse, err := buildInstallScriptURL("https://console.local", "abc", "1.2.3", true)
+	withReverse, err := buildInstallScriptURL("https://console.local", "abc", "1.2.3", true, []string{"https://relay1.local:2900", "https://relay2.local:2900"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if !strings.Contains(withReverse, "enable_reverse_channel=true") {
 		t.Fatalf("expected reverse channel flag in %q", withReverse)
+	}
+	if !strings.Contains(withReverse, "gateway_endpoint=https%3A%2F%2Frelay1.local%3A2900") ||
+		!strings.Contains(withReverse, "gateway_endpoint=https%3A%2F%2Frelay2.local%3A2900") {
+		t.Fatalf("expected relay gateway endpoints in %q", withReverse)
 	}
 }
 
@@ -644,6 +654,31 @@ func TestRenderAgentReverseChannelEndpoints(t *testing.T) {
 	got := renderAgentReverseChannelEndpoints(req, []string{"https://console-api.local:9443"}, true)
 	if got != `["https://console-api.local:9443"]` {
 		t.Fatalf("expected configured endpoints, got %q", got)
+	}
+}
+
+func TestNormalizeGatewayType(t *testing.T) {
+	if got := normalizeGatewayType("relay"); got != gatewayTypeRelay {
+		t.Fatalf("expected relay, got %q", got)
+	}
+	if got := normalizeGatewayType("migration"); got != gatewayTypeMigration {
+		t.Fatalf("expected migration, got %q", got)
+	}
+	if got := normalizeGatewayType("unknown"); got != gatewayTypeMigration {
+		t.Fatalf("expected migration fallback, got %q", got)
+	}
+}
+
+func TestNormalizeManagedServerEndpoints(t *testing.T) {
+	got := normalizeManagedServerEndpoints([]string{
+		" https://gw1.local:2900/ ",
+		"",
+		"https://gw1.local:2900",
+		"https://gw2.local:2900",
+	})
+	expected := []string{"https://gw1.local:2900", "https://gw2.local:2900"}
+	if strings.Join(got, ",") != strings.Join(expected, ",") {
+		t.Fatalf("expected %v, got %v", expected, got)
 	}
 }
 

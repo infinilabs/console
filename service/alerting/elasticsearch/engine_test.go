@@ -631,3 +631,58 @@ func TestGetRelationValuesReturnsValidMetricValues(t *testing.T) {
 		t.Fatalf("unexpected relation values: %#v", values)
 	}
 }
+
+func TestGenerateTimeFilterIgnoreReturnsMatchAll(t *testing.T) {
+	eng := &Engine{}
+	rule := &alerting.Rule{
+		Resource: alerting.Resource{
+			IgnoreTimeFilter: true,
+			TimeField:        "timestamp",
+		},
+	}
+
+	timeFilter, err := eng.generateTimeFilter(rule, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if timeFilter == nil {
+		t.Fatal("expected time filter map, got nil")
+	}
+	if _, ok := timeFilter["match_all"]; !ok {
+		t.Fatalf("expected match_all query, got %#v", timeFilter)
+	}
+}
+
+func TestGenerateTimeFilterReturnsRangeWhenEnabled(t *testing.T) {
+	eng := &Engine{}
+	rule := &alerting.Rule{
+		Name: "test-rule",
+		Resource: alerting.Resource{
+			TimeField: "timestamp",
+		},
+		Metrics: alerting.Metric{
+			Metric: insight.Metric{
+				BucketSize: "1m",
+			},
+		},
+	}
+
+	timeFilter, err := eng.generateTimeFilter(rule, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	rangeQuery, ok := timeFilter["range"].(util.MapStr)
+	if !ok {
+		t.Fatalf("expected range query, got %#v", timeFilter)
+	}
+	timeFieldRange, ok := rangeQuery["timestamp"].(util.MapStr)
+	if !ok {
+		t.Fatalf("expected timestamp range, got %#v", rangeQuery)
+	}
+	if _, ok = timeFieldRange["gte"]; !ok {
+		t.Fatalf("expected gte in range query, got %#v", timeFieldRange)
+	}
+	if _, ok = timeFieldRange["lte"]; !ok {
+		t.Fatalf("expected lte in range query, got %#v", timeFieldRange)
+	}
+}

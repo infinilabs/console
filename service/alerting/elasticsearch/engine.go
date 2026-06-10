@@ -451,7 +451,9 @@ func shouldIgnoreTimeFilter(rule *alerting.Rule) bool {
 
 func (engine *Engine) generateTimeFilter(rule *alerting.Rule, filterParam *alerting.FilterParam) (map[string]interface{}, error) {
 	if shouldIgnoreTimeFilter(rule) {
-		return nil, nil
+		return util.MapStr{
+			"match_all": util.MapStr{},
+		}, nil
 	}
 	timeStart, timeEnd := getQueryTimeRange(rule, filterParam)
 	timeQuery := util.MapStr{

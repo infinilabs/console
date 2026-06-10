@@ -552,13 +552,6 @@ const Index = (props) => {
   }, [queryParams?.start_time, queryParams?.end_time, minUpdated, maxUpdated]);
 
   const filterPriorityAndStatus = (params) => {
-    dispatch({
-      type: "timeChange",
-      value: {
-        start_time: "",
-        end_time: "",
-      },
-    });
     if (params.type === "priority") {
       dispatch({
         type: "status",

@@ -885,6 +885,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-cbp20n2anisjm
         "metadata.labels.status": "unavailable"
       }
     },
+    "ignore_time_filter": true,
     "time_field": "timestamp",
     "context": {
       "fields": null

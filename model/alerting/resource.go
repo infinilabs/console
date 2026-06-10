@@ -32,14 +32,15 @@ import (
 )
 
 type Resource struct {
-	ID        string                 `json:"resource_id" elastic_mapping:"resource_id:{type:keyword}"`
-	Name      string                 `json:"resource_name" elastic_mapping:"resource_name:{type:keyword}"`
-	Type      string                 `json:"type" elastic_mapping:"type:{type:keyword}"`
-	Objects   []string               `json:"objects" elastic_mapping:"objects:{type:keyword,copy_to:search_text}"`
-	Filter    FilterQuery            `json:"filter,omitempty" elastic_mapping:"-"`
-	RawFilter map[string]interface{} `json:"raw_filter,omitempty" elastic_mapping:"raw_filter:{type:object,enabled:false}"`
-	TimeField string                 `json:"time_field,omitempty" elastic_mapping:"id:{type:keyword}"`
-	Context   Context                `json:"context"`
+	ID               string                 `json:"resource_id" elastic_mapping:"resource_id:{type:keyword}"`
+	Name             string                 `json:"resource_name" elastic_mapping:"resource_name:{type:keyword}"`
+	Type             string                 `json:"type" elastic_mapping:"type:{type:keyword}"`
+	Objects          []string               `json:"objects" elastic_mapping:"objects:{type:keyword,copy_to:search_text}"`
+	Filter           FilterQuery            `json:"filter,omitempty" elastic_mapping:"-"`
+	RawFilter        map[string]interface{} `json:"raw_filter,omitempty" elastic_mapping:"raw_filter:{type:object,enabled:false}"`
+	TimeField        string                 `json:"time_field,omitempty" elastic_mapping:"id:{type:keyword}"`
+	IgnoreTimeFilter bool                   `json:"ignore_time_filter,omitempty" elastic_mapping:"ignore_time_filter:{type:boolean}"`
+	Context          Context                `json:"context"`
 }
 
 func (r Resource) Validate() error {

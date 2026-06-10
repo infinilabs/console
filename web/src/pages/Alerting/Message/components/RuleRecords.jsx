@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatESSearchResult } from "@/lib/elasticsearch/util";
 import Link from "umi/link";
 import request from "@/utils/request";
-import { formatUtcTimeToLocal, firstUpperCase } from "@/utils/utils";
+import { formatUtcTimeToLocal } from "@/utils/utils";
 import { HealthStatusView } from "@/components/infini/health_status_view";
 import {
   MessageStautsColor,
@@ -111,10 +111,10 @@ const RuleRecords = ({
           messageStatus === "recovered" && record.id === resolveEventID
             ? "recovered"
             : record.display_state || text;
-        const displayLabel =
-          displayState === "nodata"
-            ? formatMessage({ id: "alert.message.status.nodata" })
-            : firstUpperCase(displayState);
+        const displayLabel = formatMessage({
+          id: `alert.message.status.${displayState}`,
+          defaultMessage: displayState,
+        });
         return (
           <div style={{ display: "flex", gap: 5 }}>
             <Tag

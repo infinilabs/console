@@ -421,7 +421,38 @@ func getQueryTimeRange(rule *alerting.Rule, filterParam *alerting.FilterParam) (
 	return timeStart, timeEnd
 }
 
+func shouldIgnoreTimeFilter(rule *alerting.Rule) bool {
+	if rule == nil {
+		return false
+	}
+	if rule.Resource.IgnoreTimeFilter {
+		return true
+	}
+	hasNodeIndex := false
+	for _, object := range rule.Resource.Objects {
+		if object == ".infini_node" {
+			hasNodeIndex = true
+			break
+		}
+	}
+	if !hasNodeIndex {
+		return false
+	}
+	matchPhrase, ok := rule.Resource.RawFilter["match_phrase"].(map[string]interface{})
+	if !ok {
+		return false
+	}
+	status, ok := matchPhrase["metadata.labels.status"]
+	if !ok {
+		return false
+	}
+	return status == "unavailable"
+}
+
 func (engine *Engine) generateTimeFilter(rule *alerting.Rule, filterParam *alerting.FilterParam) (map[string]interface{}, error) {
+	if shouldIgnoreTimeFilter(rule) {
+		return nil, nil
+	}
 	timeStart, timeEnd := getQueryTimeRange(rule, filterParam)
 	timeQuery := util.MapStr{
 		"range": util.MapStr{

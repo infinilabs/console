@@ -22,7 +22,6 @@ import {
   filterSearchValue,
   sorter,
   formatUtcTimeToLocal,
-  firstUpperCase,
 } from "@/utils/utils";
 import { HealthStatusView } from "@/components/infini/health_status_view";
 import { PriorityColor, RuleStautsColor } from "../utils/constants";
@@ -196,7 +195,14 @@ const Detail = (props) => {
               content={
                 <HealthStatusView
                   status={RuleStautsColor[displayState] || "gray"}
-                  label={displayState ? firstUpperCase(displayState) : "-"}
+                  label={
+                    displayState
+                      ? formatMessage({
+                          id: `alert.message.status.${displayState}`,
+                          defaultMessage: displayState,
+                        })
+                      : "-"
+                  }
                 />
               }
             />

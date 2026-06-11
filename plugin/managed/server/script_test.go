@@ -618,7 +618,7 @@ func TestBuildInstallCommandSkipsSudoForNoServiceMode(t *testing.T) {
 }
 
 func TestBuildInstallScriptURLHonorsReverseChannelOption(t *testing.T) {
-	withoutReverse, err := buildInstallScriptURL("https://console.local", "abc", "1.2.3", false, nil)
+	withoutReverse, err := buildInstallScriptURL("https://console.local", "abc", "1.2.3", false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -626,16 +626,15 @@ func TestBuildInstallScriptURLHonorsReverseChannelOption(t *testing.T) {
 		t.Fatalf("did not expect reverse channel flag in %q", withoutReverse)
 	}
 
-	withReverse, err := buildInstallScriptURL("https://console.local", "abc", "1.2.3", true, []string{"https://relay1.local:2900", "https://relay2.local:2900"})
+	withReverse, err := buildInstallScriptURL("https://console.local", "abc", "1.2.3", true)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if !strings.Contains(withReverse, "enable_reverse_channel=true") {
 		t.Fatalf("expected reverse channel flag in %q", withReverse)
 	}
-	if !strings.Contains(withReverse, "gateway_endpoint=https%3A%2F%2Frelay1.local%3A2900") ||
-		!strings.Contains(withReverse, "gateway_endpoint=https%3A%2F%2Frelay2.local%3A2900") {
-		t.Fatalf("expected relay gateway endpoints in %q", withReverse)
+	if strings.Contains(withReverse, "gateway_endpoint=") {
+		t.Fatalf("did not expect relay gateway endpoints in %q", withReverse)
 	}
 }
 

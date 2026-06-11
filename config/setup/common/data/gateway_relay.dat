@@ -12,11 +12,6 @@ flow:
       - set_response:
           body: "request not allowed"
           status: 500
-  - name: gateway_relay_config_manager_flow
-    filter:
-      - elasticsearch:
-          elasticsearch: gateway_relay_config_manager
-          max_connection_per_node: 200
   - name: gateway_relay_ingest_flow
     filter:
       - basic_auth:
@@ -80,25 +75,11 @@ router:
           - "POST"
         enabled: true
         pattern:
-          - "/instance/_register"
-          - "/instance/_exchange_token"
-          - "/configs/_sync"
-        flow:
-          - gateway_relay_config_manager_flow
-      - method:
-          - "POST"
-        enabled: true
-        pattern:
           - "/{any_index}/_doc/"
         flow:
           - gateway_relay_ingest_flow
 
 elasticsearch:
-  - name: gateway_relay_config_manager
-    enabled: true
-    discovery:
-      enabled: false
-    endpoints: $[[env.CONFIG_MANAGER_SERVERS]]
   - name: gateway_relay_system
     enabled: true
     basic_auth:

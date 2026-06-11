@@ -189,13 +189,7 @@ func listGatewayManagedEndpoints(serviceType string) ([]string, error) {
 	return normalizeManagedServerEndpoints(endpoints), nil
 }
 
-func resolveAgentRemoteConfigServers(consoleEndpoint string, requestedGatewayEndpoints []string) []string {
-	if endpoints := normalizeManagedServerEndpoints(requestedGatewayEndpoints); len(endpoints) > 0 {
-		return endpoints
-	}
-	if relayEndpoints, err := listGatewayManagedEndpoints(gatewayTypeRelay); err == nil && len(relayEndpoints) > 0 {
-		return relayEndpoints
-	}
+func resolveAgentRemoteConfigServers(consoleEndpoint string) []string {
 	return []string{strings.TrimRight(strings.TrimSpace(consoleEndpoint), "/")}
 }
 
@@ -235,7 +229,7 @@ func (h *APIHandler) generateInstallCommand(w http.ResponseWriter, req *http.Req
 	expiredTokenCache.Put(tokenStr, t)
 	consoleEndpoint := resolveConsoleEndpoint(req, agCfg.Setup.ConsoleEndpoint)
 	installVersion := strings.TrimSpace(agCfg.Setup.Version)
-	endpoint, err := buildInstallScriptURL(consoleEndpoint, tokenStr, installVersion, payload.EnableReverseChannel, payload.GatewayEndpoints)
+	endpoint, err := buildInstallScriptURL(consoleEndpoint, tokenStr, installVersion, payload.EnableReverseChannel)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Errorf("build agent install script url failed: %v", err)
@@ -369,7 +363,7 @@ func buildGatewayInstallCommand(endpoint, location string, noService bool) strin
 	return command
 }
 
-func buildInstallScriptURL(consoleEndpoint, tokenStr, installVersion string, enableReverseChannel bool, gatewayEndpoints []string) (string, error) {
+func buildInstallScriptURL(consoleEndpoint, tokenStr, installVersion string, enableReverseChannel bool) (string, error) {
 	endpoint, err := buildInstallScriptURLForAPI(consoleEndpoint, getInstallScriptAPI, tokenStr, installVersion)
 	if err != nil {
 		return "", err
@@ -381,9 +375,6 @@ func buildInstallScriptURL(consoleEndpoint, tokenStr, installVersion string, ena
 	query := parsed.Query()
 	if enableReverseChannel {
 		query.Set("enable_reverse_channel", "true")
-	}
-	for _, endpoint := range normalizeManagedServerEndpoints(gatewayEndpoints) {
-		query.Add("gateway_endpoint", endpoint)
 	}
 	parsed.RawQuery = query.Encode()
 	return parsed.String(), nil
@@ -758,7 +749,7 @@ func (h *APIHandler) getInstallScript(w http.ResponseWriter, req *http.Request, 
 
 	consoleEndpoint := resolveConsoleEndpoint(req, agCfg.Setup.ConsoleEndpoint)
 	consoleDomain := resolveConsoleTLSServerName(consoleEndpoint)
-	remoteConfigServers := resolveAgentRemoteConfigServers(consoleEndpoint, req.URL.Query()["gateway_endpoint"])
+	remoteConfigServers := resolveAgentRemoteConfigServers(consoleEndpoint)
 	reverseChannelEnabled := strings.EqualFold(strings.TrimSpace(req.URL.Query().Get("enable_reverse_channel")), "true")
 	reverseChannelEndpoints := renderAgentReverseChannelEndpoints(
 		req,

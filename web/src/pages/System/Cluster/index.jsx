@@ -242,6 +242,11 @@ export default (props) => {
       sortable: true,
       searchable: true,
       onHeaderCell: noWrapHeaderCell,
+      onCell: () => ({
+        style: {
+          verticalAlign: "middle",
+        },
+      }),
       render: (text, record) => (
         <Tooltip title={text} placement="topLeft">
           <div

@@ -672,7 +672,7 @@ const Index = forwardRef((props, ref) => {
                   loading={loading}
                   columns={columnsNew}
                   dataSource={tableDataSource}
-                  scroll={scroll}
+                  scroll={tableDataSource.length > 0 ? scroll : undefined}
                   rowKey={"__listview_row_key"}
                   onChange={onTableChange}
                   pagination={{

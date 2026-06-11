@@ -320,7 +320,7 @@ func TestGatewayInstallTemplateBootstrapsManagedConfig(t *testing.T) {
 		`configs.auto_reload: true`,
 		`managed: true`,
 		`panic_on_config_error: false`,
-		`    - "${server}"`,
+		`servers: \$[[env.CONFIG_MANAGER_SERVERS]]`,
 		`access_token: '\$[[keystore.CONFIGS_MANAGER_ACCESS_TOKEN]]'`,
 		`SECURITY_ENABLED: true`,
 		`websocket:`,

@@ -264,11 +264,7 @@ function install_config() {
   console_endpoint="{{console_endpoint}}"
   service_type="{{service_type}}"
   config_manager_server=${register_server:-$console_endpoint}
-  server=$config_manager_server
-  if [[ "${service_type}" == "relay" ]]; then
-    server="http://127.0.0.1:8081"
-  fi
-  echo "[gateway] gateway api listening port $port, will sync configs from endpoint [ $server ]"
+  echo "[gateway] gateway api listening port $port"
   echo "[gateway] relay config manager upstream: ${config_manager_server}"
   echo "[gateway] service type: ${service_type}"
   cat <<EOF > ${install_dir}/gateway.yml
@@ -277,7 +273,7 @@ configs.auto_reload: true
 env:
   API_BINDING: "0.0.0.0:${port}"
   SECURITY_ENABLED: true
-  CONFIG_MANAGER_SERVERS: "[\"${config_manager_server}\"]"
+  CONFIG_MANAGER_SERVERS: ["${config_manager_server}"]
 
 path.data: "${install_dir}/data"
 path.logs: "${install_dir}/log"
@@ -303,8 +299,7 @@ configs:
   managed: true
   panic_on_config_error: false
   interval: "10s"
-  servers:
-    - "${server}"
+  servers: \$[[env.CONFIG_MANAGER_SERVERS]]
   manager:
     access_token: '\$[[keystore.CONFIGS_MANAGER_ACCESS_TOKEN]]'
   max_backup_files: 5

@@ -76,7 +76,7 @@ flow:
           when:
             contains:
               _ctx.request.path: /_bulk
-          elasticsearch: prod
+          elasticsearch: system
           level: node
           partition_size: 1
           fix_null_id: true
@@ -94,7 +94,7 @@ router:
           - ingest_flow
 
 elasticsearch:
-  - name: prod
+  - name: system
     enabled: true
     basic_auth:
       username: $[[SETUP_ES_USERNAME]]
@@ -124,7 +124,7 @@ pipeline:
 
 ## elasticsearch module for metadata refresh
 elastic:
-  elasticsearch: prod
+  elasticsearch: system
   enabled: true
   remote_configs: false
   health_check:

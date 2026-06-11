@@ -82,6 +82,7 @@ export default ({ onNext, form, formData, onFormDataChange }) => {
                 const body = {
                     hosts:  normalizeHosts(hosts),
                     schema: isTLS ? 'https' : 'http',
+                    reject_red: true,
                 };
                 if (isAuth) body.basic_auth = { username, password };
 

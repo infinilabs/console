@@ -63,6 +63,7 @@ type elasticConfigPayload struct {
 	elastic.ElasticsearchConfig
 	ProbePath   string `json:"probe_path,omitempty"`
 	AuthEnabled *bool  `json:"is_auth,omitempty"`
+	RejectRed   *bool  `json:"reject_red,omitempty"`
 }
 
 var testAPI = TestAPI{}
@@ -188,7 +189,7 @@ func (h TestAPI) HandleTestConnectionAction(w http.ResponseWriter, req *http.Req
 		resBody["number_of_data_nodes"] = healthInfo.NumberOf_data_nodes
 		resBody["active_shards"] = healthInfo.ActiveShards
 
-		if healthInfo.Status == "red" {
+		if payload.RejectRed != nil && *payload.RejectRed && healthInfo.Status == "red" {
 			resBody["error"] = buildTryConnectErrorPayload(errors.New("cluster health status is red, please fix the cluster before connecting"))
 			h.WriteJSON(w, resBody, http.StatusInternalServerError)
 			return

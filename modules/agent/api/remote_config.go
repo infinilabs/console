@@ -53,11 +53,11 @@ import (
 
 const systemClusterPassKey = "SYSTEM_CLUSTER_PASS"
 const systemClusterIngestPasswordKey = "SYSTEM_CLUSTER_INGEST_PASSWORD"
-const relayGatewayIngestPort = "8081"
 
 var systemIngestSchemaLineRegexp = regexp.MustCompile(`(?m)^(\s*schema:\s*).*$`)
 var systemIngestHostsLineRegexp = regexp.MustCompile(`(?m)^(\s*hosts:\s*).*$`)
 var systemIngestTLSBlockRegexp = regexp.MustCompile(`(?ms)^\s*#\s*tls:\s*#for mTLS connection with config servers\s*\n^\s*#\s*enabled:\s*true\s*\n^\s*#\s*ca_file:\s*/xxx/ca\.crt\s*\n^\s*#\s*cert_file:\s*/xxx/client\.crt\s*\n^\s*#\s*key_file:\s*/xxx/client\.key\s*\n^\s*#\s*skip_insecure_verify:\s*false\s*$`)
+var relayEntryBindingRegexp = regexp.MustCompile(`(?m)^\s*binding:\s*(.+?)\s*$`)
 
 type RemoteConfig struct {
 	orm.ORMObjectBase
@@ -128,6 +128,7 @@ func remoteConfigProvider(instance model.Instance) []*common.ConfigFile {
 }
 
 func listRelayGatewayIngestHosts() []string {
+	relayPort := discoverRelayGatewayIngestPort()
 	q := orm.Query{
 		Size: 1000,
 		Conds: orm.And(
@@ -148,17 +149,73 @@ func listRelayGatewayIngestHosts() []string {
 		}
 		endpoints = append(endpoints, endpoint)
 	}
-	return normalizeRelayGatewayIngestHosts(endpoints)
+	return normalizeRelayGatewayIngestHosts(endpoints, relayPort)
 }
 
-func normalizeRelayGatewayIngestHosts(endpoints []string) []string {
+func discoverRelayGatewayIngestPort() string {
+	q := orm.Query{
+		Size: 100,
+		Conds: orm.And(
+			orm.Eq("metadata.category", "app_settings"),
+			orm.Eq("metadata.name", "gateway"),
+			orm.Eq("metadata.labels.service_type", "relay"),
+		),
+	}
+	err, searchResult := orm.Search(RemoteConfig{}, &q)
+	if err != nil {
+		log.Errorf("failed to search relay gateway config docs for ingest port: %v", err)
+		return "8081"
+	}
+	for _, row := range searchResult.Result {
+		v, ok := row.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		payload, ok := v["payload"].(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if port := extractRelayGatewayIngestPort(util.ToString(payload["content"])); port != "" {
+			return port
+		}
+	}
+	return "8081"
+}
+
+func extractRelayGatewayIngestPort(content string) string {
+	if content == "" {
+		return ""
+	}
+	matches := relayEntryBindingRegexp.FindAllStringSubmatch(content, -1)
+	for _, match := range matches {
+		if len(match) < 2 {
+			continue
+		}
+		binding := strings.TrimSpace(strings.Trim(match[1], `"'`))
+		if binding == "" {
+			continue
+		}
+		if _, port, err := net.SplitHostPort(binding); err == nil && port != "" {
+			return port
+		}
+		if idx := strings.LastIndex(binding, ":"); idx > 0 && idx < len(binding)-1 {
+			return binding[idx+1:]
+		}
+	}
+	return ""
+}
+
+func normalizeRelayGatewayIngestHosts(endpoints []string, relayPort string) []string {
 	if len(endpoints) == 0 {
 		return nil
+	}
+	if relayPort == "" {
+		relayPort = "8081"
 	}
 	result := make([]string, 0, len(endpoints))
 	seen := map[string]struct{}{}
 	for _, endpoint := range endpoints {
-		host := relayGatewayIngestHostFromEndpoint(endpoint)
+		host := relayGatewayIngestHostFromEndpoint(endpoint, relayPort)
 		if host == "" {
 			continue
 		}
@@ -171,7 +228,7 @@ func normalizeRelayGatewayIngestHosts(endpoints []string) []string {
 	return result
 }
 
-func relayGatewayIngestHostFromEndpoint(endpoint string) string {
+func relayGatewayIngestHostFromEndpoint(endpoint, relayPort string) string {
 	normalized := strings.TrimSpace(strings.TrimRight(endpoint, "/"))
 	if normalized == "" {
 		return ""
@@ -188,7 +245,7 @@ func relayGatewayIngestHostFromEndpoint(endpoint string) string {
 	if host == "" {
 		return ""
 	}
-	return net.JoinHostPort(host, relayGatewayIngestPort)
+	return net.JoinHostPort(host, relayPort)
 }
 
 func rewriteAgentRelayIngestContent(instance model.Instance, location, content string, relayIngestHosts []string) string {

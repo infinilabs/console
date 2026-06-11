@@ -260,14 +260,27 @@ func TestNormalizeRelayGatewayIngestHosts(t *testing.T) {
 		"relay-2.local:2900",
 		"",
 		"https://[2001:db8::1]:2900",
-	})
+	}, "9443")
 	expected := []string{
-		"relay-1.local:8081",
-		"relay-2.local:8081",
-		"[2001:db8::1]:8081",
+		"relay-1.local:9443",
+		"relay-2.local:9443",
+		"[2001:db8::1]:9443",
 	}
 	if strings.Join(got, ",") != strings.Join(expected, ",") {
 		t.Fatalf("expected %v, got %v", expected, got)
+	}
+}
+
+func TestExtractRelayGatewayIngestPort(t *testing.T) {
+	content := strings.Join([]string{
+		"entry:",
+		"  - name: gateway_relay_entry",
+		"    network:",
+		"      binding: 0.0.0.0:9443",
+	}, "\n")
+
+	if got := extractRelayGatewayIngestPort(content); got != "9443" {
+		t.Fatalf("expected port 9443, got %q", got)
 	}
 }
 

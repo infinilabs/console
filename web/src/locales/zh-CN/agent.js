@@ -101,7 +101,7 @@ export default {
   "agent.install.no_sudo.entrypoint.title": "Dockerfile ENTRYPOINT 示例",
   "agent.install.no_sudo.cmd.title": "Dockerfile CMD 示例",
   "agent.instance.auto_associate.title": "自动关联集群",
-  "agent.instance.install.title": "安装 Agent",
+  "agent.instance.install.title": "安装探针",
 
   "agent.label.agent_credential": "探针凭据",
   "agent.credential.tip": "不需要凭据",

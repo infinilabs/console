@@ -616,6 +616,25 @@ const AgentList = (props) => {
     </Menu>
   );
 
+  const installActionMenu = (
+    <Menu
+      onClick={({ key }) => {
+        if (key === "install-probe") {
+          setEditState((st) => {
+            return {
+              ...st,
+              installVisible: true,
+            };
+          });
+        }
+      }}
+    >
+      <Menu.Item key="install-probe">
+        {formatMessage({ id: "agent.instance.install.title" })}
+      </Menu.Item>
+    </Menu>
+  );
+
   const consoleTokenTip = formatMessage({
     id: "agent.instance.registration.console.token.tip",
   });
@@ -672,19 +691,11 @@ const AgentList = (props) => {
                   >
                     {formatMessage({ id: "agent.instance.auto_associate.title" })}
                   </Button>
-                  <Button
-                    type="primary"
-                    onClick={() => {
-                      setEditState((st) => {
-                        return {
-                          ...st,
-                          installVisible: true,
-                        };
-                      });
-                    }}
-                  >
-                    {formatMessage({ id: "agent.instance.install.title" })}
-                  </Button>
+                  <Dropdown overlay={installActionMenu} trigger={["click"]}>
+                    <Button type="primary">
+                      {formatMessage({ id: "agent.instance.install.title" })} <Icon type="down" />
+                    </Button>
+                  </Dropdown>
                 </>
               )
             }

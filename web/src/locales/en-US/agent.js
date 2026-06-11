@@ -109,7 +109,7 @@ export default {
   "agent.install.no_sudo.entrypoint.title": "Dockerfile ENTRYPOINT example",
   "agent.install.no_sudo.cmd.title": "Dockerfile CMD example",
   "agent.instance.auto_associate.title": "Auto Enroll",
-  "agent.instance.install.title": "Install Agent",
+  "agent.instance.install.title": "Install Probe",
 
   "agent.label.agent_credential": "Probe Credential",
   "agent.credential.tip": "No credential required",

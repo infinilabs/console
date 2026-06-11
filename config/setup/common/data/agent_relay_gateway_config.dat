@@ -121,3 +121,8 @@ pipeline:
           queue_selector:
             labels:
               type: bulk_reshuffle
+
+modules:
+  - module: elastic
+    enabled: true
+    elasticsearch: prod

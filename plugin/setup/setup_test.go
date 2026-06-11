@@ -363,6 +363,7 @@ func TestGatewayRelayTemplateRendersAsChildConfig(t *testing.T) {
 		`password: "$[[keystore.SYSTEM_CLUSTER_INGEST_PASSWORD]]"`,
 		`queue_name_prefix: gateway_relay_async_bulk`,
 		`elasticsearch: gateway_relay_system`,
+		`continue_metadata_missing: true`,
 		`name: gateway_relay_bulk_request_ingest`,
 	)
 }

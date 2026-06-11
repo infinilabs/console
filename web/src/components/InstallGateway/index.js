@@ -102,12 +102,12 @@ const noServiceCodeStyle = {
     '"SFMono-Regular", Monaco, Menlo, Consolas, "Liberation Mono", "Ubuntu Mono", monospace',
 };
 
-export default ({ autoInit = false }) => {
+export default ({ autoInit = false, defaultGatewayType = "migration" }) => {
   const { Option } = Select;
   const [loading, setLoading] = useState(false);
   const [tokenInfo, setTokenInfo] = useState();
   const [noService, setNoService] = useState(false);
-  const [gatewayType, setGatewayType] = useState("migration");
+  const [gatewayType, setGatewayType] = useState(defaultGatewayType);
   const [advancedVisible, setAdvancedVisible] = useState(false);
 
   const fetchTokenInfo = async (
@@ -129,9 +129,13 @@ export default ({ autoInit = false }) => {
 
   useEffect(() => {
     if (autoInit) {
-      fetchTokenInfo();
+      fetchTokenInfo(false, defaultGatewayType);
     }
-  }, []);
+  }, [autoInit, defaultGatewayType]);
+
+  useEffect(() => {
+    setGatewayType(defaultGatewayType);
+  }, [defaultGatewayType]);
 
   return (
     <Spin spinning={loading}>

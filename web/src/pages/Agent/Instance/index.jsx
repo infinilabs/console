@@ -706,6 +706,7 @@ const AgentList = (props) => {
           loading={isLoading}
           bordered
           dataSource={instances}
+          scroll={instances.length > 0 ? { x: "max-content" } : undefined}
           rowKey={"id"}
           tableLayout="fixed"
           pagination={{
@@ -1045,6 +1046,7 @@ const DiscoverAgent = ({ addSuccessCb }) => {
         columns={columns}
         rowKey="id"
         dataSource={instances}
+        scroll={instances.length > 0 ? { x: "max-content" } : undefined}
       />
       <div style={{ textAlign: "right", marginTop: "1em" }}>
         <Button type="primary" onClick={onAddAgentsClick}>

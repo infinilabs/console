@@ -44,7 +44,7 @@ export default (props) => {
           },
         },
 {
-  title: "Cluster",
+  title: formatMessage({ id: "overview.column.cluster" }),
   dataIndex: "cluster_name",
   render: (text, record) => {
     return record.metadata?.cluster_name || "N/A";

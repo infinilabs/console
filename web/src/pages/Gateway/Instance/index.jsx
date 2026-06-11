@@ -452,6 +452,28 @@ export default (props) => {
 
   const [showEmptyUI, setShowEmptyUI] = useState(false);
   const [installVisible, setInstallVisible] = useState(false);
+  const [installGatewayType, setInstallGatewayType] = useState("migration");
+
+  const openInstallGateway = useCallback((type = "migration") => {
+    setInstallGatewayType(type);
+    setInstallVisible(true);
+  }, []);
+
+  const installGatewayMenu = (
+    <Menu
+      onClick={({ key }) => {
+        openInstallGateway(key);
+      }}
+    >
+      <Menu.Item key="migration">
+        {formatMessage({ id: "gateway.install.type.migration" })}
+      </Menu.Item>
+      <Menu.Item key="relay">
+        {formatMessage({ id: "gateway.install.type.relay" })}
+      </Menu.Item>
+    </Menu>
+  );
+
   if (showEmptyUI) {
     return <Wizard />;
   }
@@ -477,13 +499,14 @@ export default (props) => {
         headerToobarExtra={{
             getExtra: (props) => [
               hasAuthority("gateway.instance:all") ? (
-               <Button
+               <Dropdown.Button
                  type="primary"
                  style={{ order: -1 }}
-                 onClick={() => setInstallVisible(true)}
+                 overlay={installGatewayMenu}
+                 onClick={() => openInstallGateway("migration")}
                >
                  {formatMessage({ id: "gateway.instance.install.title" })}
-               </Button>
+               </Dropdown.Button>
              ) : null,
               hasAuthority("gateway.instance:all") ? (
               <Button
@@ -506,7 +529,10 @@ export default (props) => {
         onClose={() => setInstallVisible(false)}
         width={700}
       >
-        <InstallGateway autoInit={true} />
+        <InstallGateway
+          autoInit={true}
+          defaultGatewayType={installGatewayType}
+        />
       </Drawer>
     </PageHeaderWrapper>
   );

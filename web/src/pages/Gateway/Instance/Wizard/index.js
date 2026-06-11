@@ -9,11 +9,13 @@ export default () => {
   return (
     <Card className={styles.wizard}>
       <div className={styles.left}>
-        <div className={styles.title}>INFINI Gateway</div>
+        <div className={styles.title}>
+          {formatMessage({ id: "gateway.instance.install.title" })}
+        </div>
         <div className={styles.desc}>
           {formatMessage({ id: "gateway.guide.desc" })}
         </div>
-        <InstallGateway autoInit={true} />
+        <InstallGateway autoInit={true} defaultGatewayType="migration" />
         <div className={styles.tipsDesc}>
           <div>
             <span style={{ marginRight: 8 }}>

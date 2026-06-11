@@ -299,6 +299,54 @@ api:
 web:
   access_log_enabled: false
 
+badger:
+  mem_table_size: 10485760
+  memory_mode: false
+  num_level0_tables: 1
+  num_level0_tables_stall: 2
+  num_mem_tables: 1
+  path: ""
+  single_bucket_mode: true
+  sync_writes: false
+  value_log_file_size: 536870912
+  value_log_max_entries: 1000000
+  value_threshold: 1048576
+
+disk_queue:
+  auto_skip_corrupted_file: true
+  cleanup_files_on_init: true
+  compress:
+    delete_after_compress: true
+    idle_threshold: 5
+    message:
+      enabled: true
+    num_of_files_decompress_ahead: 3
+    segment:
+      enabled: false
+  eof_retry_delay_in_ms: 500
+  prepare_files_to_read: true
+  read_chan_buffer_size: 1000
+  retention:
+    max_num_of_local_files: 2
+  write_chan_buffer_size: 1000
+
+elastic:
+  enabled: true
+  remote_configs: false
+  skip_init_metadata_on_start: true
+  availability_check:
+    enabled: true
+    interval: 30s
+  cluster_settings_check:
+    enabled: false
+    interval: 60s
+  health_check:
+    enabled: true
+    interval: 30s
+  metadata_refresh:
+    enabled: true
+    interval: 60s
+
 configs:
   managed: true
   panic_on_config_error: false

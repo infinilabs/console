@@ -7,7 +7,7 @@ export default {
   "gateway.instance.install.title": "Install Gateway",
   "gateway.install.label.get_cmd": "Get Setup Command",
   "gateway.install.advanced.title": "Advanced",
-  "gateway.install.type.label": "Gateway type",
+  "gateway.install.type.label": "Service type",
   "gateway.install.type.migration": "Migration gateway",
   "gateway.install.type.relay": "Relay gateway",
   "gateway.install.no_sudo.label": "No sudo privileges",

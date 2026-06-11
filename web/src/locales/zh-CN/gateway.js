@@ -6,7 +6,7 @@ export default {
   "gateway.instance.install.title": "安装 Gateway",
   "gateway.install.label.get_cmd": "获取安装命令",
   "gateway.install.advanced.title": "高级配置",
-  "gateway.install.type.label": "网关类型",
+  "gateway.install.type.label": "服务类型",
   "gateway.install.type.migration": "迁移网关",
   "gateway.install.type.relay": "转发网关",
   "gateway.install.no_sudo.label": "无 sudo 权限",

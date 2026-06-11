@@ -270,7 +270,7 @@ function install_config() {
   fi
   echo "[gateway] gateway api listening port $port, will sync configs from endpoint [ $server ]"
   echo "[gateway] relay config manager upstream: ${config_manager_server}"
-  echo "[gateway] gateway type: ${service_type}"
+  echo "[gateway] service type: ${service_type}"
   cat <<EOF > ${install_dir}/gateway.yml
 configs.auto_reload: true
 

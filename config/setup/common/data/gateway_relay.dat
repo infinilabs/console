@@ -84,6 +84,7 @@ router:
 elasticsearch:
   - name: gateway_relay_system
     enabled: true
+    monitored: true
     basic_auth:
       username: "$[[SETUP_AGENT_USERNAME]]"
       password: "$[[keystore.$[[SETUP_AGENT_PASSWORD_KEY]]]]"

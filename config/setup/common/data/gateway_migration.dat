@@ -1,6 +1,7 @@
 elasticsearch:
   - name: gateway_migration_system
     enabled: true
+    monitored: true
     endpoints: $[[SETUP_ENDPOINTS]]
     discovery:
       enabled: false

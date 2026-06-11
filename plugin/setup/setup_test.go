@@ -360,6 +360,7 @@ func TestGatewayRelayTemplateRendersAsChildConfig(t *testing.T) {
 		`binding: 0.0.0.0:8081`,
 		`cert_file: "config/relay_server.crt"`,
 		`key_file: "config/relay_server.key"`,
+		`monitored: true`,
 		`password: "$[[keystore.SYSTEM_CLUSTER_INGEST_PASSWORD]]"`,
 		`queue_name_prefix: gateway_relay_async_bulk`,
 		`elasticsearch: gateway_relay_system`,
@@ -377,6 +378,7 @@ func TestGatewayMigrationTemplateRendersAsChildConfig(t *testing.T) {
 	assertNoChildConfigGlobals(t, content)
 	assertContainsAll(t, content,
 		`binding: 0.0.0.0:8082`,
+		`monitored: true`,
 		`password: "$[[keystore.SYSTEM_CLUSTER_INGEST_PASSWORD]]"`,
 		`name: logging-server`,
 		`queue_name_prefix: gateway_migration_async_bulk`,

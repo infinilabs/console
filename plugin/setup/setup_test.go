@@ -40,6 +40,7 @@ import (
 	"infini.sh/framework/core/env"
 	"infini.sh/framework/core/global"
 	replaysecurity "infini.sh/framework/core/security/replay"
+	"infini.sh/framework/core/util"
 )
 
 func TestInvokeSetupCallbackRunsOnlyOnce(t *testing.T) {
@@ -392,6 +393,58 @@ func TestGatewayMigrationTemplateRendersAsChildConfig(t *testing.T) {
 		`name: gateway_migration_async_ingest_bulk_requests`,
 		`name: gateway_migration_request_logging_merge`,
 	)
+}
+
+func TestBuildIngestRoleBodyIncludesAliasManagePermission(t *testing.T) {
+	roleBody := buildIngestRoleBody(".infini_")
+	raw := util.MustToJSONBytes(roleBody)
+
+	parsed := map[string]interface{}{}
+	if err := json.Unmarshal(raw, &parsed); err != nil {
+		t.Fatalf("unmarshal role body: %v", err)
+	}
+
+	indices, ok := parsed["indices"].([]interface{})
+	if !ok || len(indices) < 2 {
+		t.Fatalf("expected indices permissions, got %#v", parsed["indices"])
+	}
+	first, ok := indices[0].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected first indices permission object, got %#v", indices[0])
+	}
+	firstNames, ok := first["names"].([]interface{})
+	if !ok {
+		t.Fatalf("expected names array, got %#v", first["names"])
+	}
+	if len(firstNames) != 1 || firstNames[0] != "*" {
+		t.Fatalf("expected first names to be [*], got %#v", firstNames)
+	}
+	privileges, ok := first["privileges"].([]interface{})
+	if !ok {
+		t.Fatalf("expected privileges array, got %#v", first["privileges"])
+	}
+	found := false
+	for _, p := range privileges {
+		if p == "manage_aliases" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected manage_aliases permission, got %#v", privileges)
+	}
+
+	second, ok := indices[1].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected second indices permission object, got %#v", indices[1])
+	}
+	secondNames, ok := second["names"].([]interface{})
+	if !ok || len(secondNames) != 2 {
+		t.Fatalf("expected two index names in second permission, got %#v", second["names"])
+	}
+	if secondNames[0] != ".infini_logs*" || secondNames[1] != ".infini_metrics*" {
+		t.Fatalf("unexpected second names, got %#v", secondNames)
+	}
 }
 
 func TestAgentSetupTemplateSeedsRelayAndMigrationGatewayConfigs(t *testing.T) {

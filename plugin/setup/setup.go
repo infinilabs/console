@@ -1323,13 +1323,41 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 
 // initIngestUser initializes the ingest user with the required permissions for writing metrics and logs.
 func initIngestUser(client elastic.API, indexPrefix string, username, password string) error {
-	roleBody := util.MustToJSONBytes(util.MapStr{
+	roleBody := util.MustToJSONBytes(buildIngestRoleBody(indexPrefix))
+	err := client.PutRole(username, roleBody)
+	if err != nil {
+		return fmt.Errorf("failed to create ingest role: %w", err)
+	}
+	userBody := util.MustToJSONBytes(util.MapStr{
+		"roles":    []string{username},
+		"password": password,
+	})
+	err = client.PutUser(username, userBody)
+	if err != nil {
+		return fmt.Errorf("failed to create ingest user: %w", err)
+	}
+	return nil
+}
+
+func buildIngestRoleBody(indexPrefix string) util.MapStr {
+	return util.MapStr{
 		"cluster": []string{
 			"cluster_monitor",
 			"cluster_composite_ops",
 		},
 		"description": "Provide the minimum permissions for INFINI AGENT to write metrics and logs",
 		"indices": []util.MapStr{
+			{
+				"names": []string{
+					"*",
+				},
+				"query":          "",
+				"field_security": []string{},
+				"field_mask":     []string{},
+				"privileges": []string{
+					"manage_aliases",
+				},
+			},
 			{
 				"names": []string{
 					fmt.Sprintf("%slogs*", indexPrefix),
@@ -1346,18 +1374,5 @@ func initIngestUser(client elastic.API, indexPrefix string, username, password s
 				},
 			},
 		},
-	})
-	err := client.PutRole(username, roleBody)
-	if err != nil {
-		return fmt.Errorf("failed to create ingest role: %w", err)
 	}
-	userBody := util.MustToJSONBytes(util.MapStr{
-		"roles":    []string{username},
-		"password": password,
-	})
-	err = client.PutUser(username, userBody)
-	if err != nil {
-		return fmt.Errorf("failed to create ingest user: %w", err)
-	}
-	return nil
 }

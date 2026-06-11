@@ -145,7 +145,9 @@ class CreateForm extends React.Component {
               },
              {
                pattern: /^[a-z0-9._-]*$/,
-               message: "Index name must be lowercase and can only contain letters, numbers, dots, hyphens, and underscores",
+               message: formatMessage({
+                 id: "indices.field.name.lowercase_message",
+               }),
              },
            ],
           })(

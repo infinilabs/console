@@ -3,7 +3,7 @@ export default {
   "gateway.instance.new.title": "实例注册",
   "gateway.instance.new.description": "输入网关地址分步注册极限网关。",
   "gateway.instance.btn.new": "新建",
-  "gateway.instance.install.title": "安装 Gateway",
+  "gateway.instance.install.title": "安装网关",
   "gateway.install.label.get_cmd": "获取安装命令",
   "gateway.install.advanced.title": "高级配置",
   "gateway.install.type.label": "服务类型",

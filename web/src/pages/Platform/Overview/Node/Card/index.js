@@ -3,7 +3,6 @@ import { Icon, Spin, Tooltip } from "antd";
 import TinyArea from "@/components/infini/TinyArea";
 import { Pie } from "@/components/Charts";
 import { formatter } from "@/utils/format";
-import { formatMessage } from "umi/locale";
 import { StatusBlockGroup, StatusMask } from "@/components/infini/status_block";
 import { HealthStatusView } from "@/components/infini/health_status_view";
 import { formatUtcTimeToLocal } from "@/utils/utils";
@@ -168,11 +167,13 @@ export default (props) => {
                     ")"}
                 </div>
               </div>
-              <div className="metric">
-                <div className="value">{metadata?.cluster_name || "N/A"}</div>
-                <div className="lable">
-                  {formatMessage({ id: "overview.column.cluster" })}
+              <div className="metric cluster-metric">
+                <div className="value">
+                  <Tooltip placement="topLeft" title={metadata?.cluster_name || "N/A"}>
+                    <span className="cluster-value">{metadata?.cluster_name || "N/A"}</span>
+                  </Tooltip>
                 </div>
+                <div className="lable">Cluster</div>
               </div>
               <div className="metric">
                 <div className="value">

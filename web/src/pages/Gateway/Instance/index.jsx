@@ -499,15 +499,16 @@ export default (props) => {
         headerToobarExtra={{
             getExtra: (props) => [
               hasAuthority("gateway.instance:all") ? (
-               <Dropdown.Button
-                 type="primary"
-                 style={{ order: -1 }}
+               <Dropdown
                  overlay={installGatewayMenu}
-                 onClick={() => openInstallGateway("migration")}
+                 trigger={["click"]}
                >
-                 {formatMessage({ id: "gateway.instance.install.title" })}
-               </Dropdown.Button>
-             ) : null,
+                 <Button type="primary" style={{ order: -1 }}>
+                   {formatMessage({ id: "gateway.instance.install.title" })}
+                   <Icon type="down" />
+                 </Button>
+               </Dropdown>
+              ) : null,
               hasAuthority("gateway.instance:all") ? (
               <Button
                 type="primary"

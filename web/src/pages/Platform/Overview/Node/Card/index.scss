@@ -6,6 +6,20 @@
       .card-metadata-info {
         min-width: 480px;
       }
+      .cluster-metric {
+        min-width: 140px;
+        margin-right: 12px;
+        .value {
+          max-width: 140px;
+        }
+        .cluster-value {
+          display: inline-block;
+          max-width: 140px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+      }
     }
     .card-chart {
       min-width: 398px;

@@ -72,7 +72,7 @@ import (
 	"infini.sh/framework/lib/fasttemplate"
 	keystore2 "infini.sh/framework/lib/keystore"
 	elastic1 "infini.sh/framework/modules/elastic/common"
-	frameworkrbac "infini.sh/framework/modules/security/rbac"
+	frameworkrbac "infini.sh/framework/modules/security/native"
 	"infini.sh/framework/plugins/replay"
 )
 

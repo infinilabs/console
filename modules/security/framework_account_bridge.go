@@ -32,7 +32,7 @@ import (
 	"infini.sh/console/modules/security/realm"
 	"infini.sh/framework/core/orm"
 	frameworksecurity "infini.sh/framework/core/security"
-	frameworkrbac "infini.sh/framework/modules/security/rbac"
+	frameworkrbac "infini.sh/framework/modules/security/native"
 )
 
 type frameworkNativeAccountProvider struct {

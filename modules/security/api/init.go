@@ -33,7 +33,7 @@ import (
 	"infini.sh/console/core/security/enum"
 	"infini.sh/framework/core/api"
 	frameworkaccount "infini.sh/framework/modules/security/account"
-	frameworkrbac "infini.sh/framework/modules/security/rbac"
+	frameworkrbac "infini.sh/framework/modules/security/native"
 )
 
 type APIHandler struct {

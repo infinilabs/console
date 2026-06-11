@@ -8,6 +8,10 @@ import { formatMessage } from "umi/locale";
 
 const defaultAutoExpandReplicas = "0-1";
 const defaultEnableRollup = true;
+const skippableValidateTypes = new Set([
+    "elasticsearch_indices_exists",
+    "elasticsearch_template_exists",
+]);
 
 const getRecommendedPrimaryShards = ({ number_of_data_nodes, number_of_nodes } = {}) => {
     const dataNodes = Number(number_of_data_nodes) || 0;
@@ -145,6 +149,7 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
         onFormDataChange({ ...formData, skip: true})
         onNext();
     }
+    const canSkipValidationFailure = skippableValidateTypes.has(checkResult?.type);
 
     const [taskState, setTaskState] = useState({
         currentIndex: 1,
@@ -439,7 +444,9 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
                             )}
                             extra={[
                                 <Button type="primary" key="previous" onClick={handlePrev}>{ formatMessage({ id: 'guide.step.prev' }) }</Button>,
-                                <Button type="primary" key="skip" onClick={onSkipClick}>{ formatMessage({ id: 'guide.cluster.skip' }) }</Button>,
+                                canSkipValidationFailure ? (
+                                    <Button type="primary" key="skip" onClick={onSkipClick}>{ formatMessage({ id: 'guide.cluster.skip' }) }</Button>
+                                ) : null,
                             ]}
                         >
                             {
@@ -458,9 +465,11 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
                                     </div>
                                 )
                             }
-                            <div className={styles.skipDesc}>
-                                {formatMessage({ id: 'guide.cluster.skip.desc' })}
-                            </div>
+                            {canSkipValidationFailure ? (
+                                <div className={styles.skipDesc}>
+                                    {formatMessage({ id: 'guide.cluster.skip.desc' })}
+                                </div>
+                            ) : null}
                         </Result>
                     )
                 }

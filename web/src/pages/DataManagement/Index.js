@@ -143,13 +143,17 @@ class CreateForm extends React.Component {
                 }),
                 min: 5,
               },
-            ],
+             {
+               pattern: /^[a-z0-9._-]*$/,
+               message: "Index name must be lowercase and can only contain letters, numbers, dots, hyphens, and underscores",
+             },
+           ],
           })(
-            <Input
-              placeholder={formatMessage({
-                id: "indices.field.name.placeholder",
-              })}
-            />
+           <Input
+             placeholder={formatMessage({
+               id: "indices.field.name.placeholder",
+             })}
+           />
           )}
         </FormItem>
         <FormItem

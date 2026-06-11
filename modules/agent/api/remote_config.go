@@ -44,12 +44,20 @@ import (
 	"infini.sh/framework/modules/configs/common"
 	common2 "infini.sh/framework/modules/elastic/common"
 	metadata2 "infini.sh/framework/modules/elastic/metadata"
+	"net"
+	"net/url"
+	"regexp"
 	"strings"
 	"time"
 )
 
 const systemClusterPassKey = "SYSTEM_CLUSTER_PASS"
 const systemClusterIngestPasswordKey = "SYSTEM_CLUSTER_INGEST_PASSWORD"
+const relayGatewayIngestPort = "8081"
+
+var systemIngestSchemaLineRegexp = regexp.MustCompile(`(?m)^(\s*schema:\s*).*$`)
+var systemIngestHostsLineRegexp = regexp.MustCompile(`(?m)^(\s*hosts:\s*).*$`)
+var systemIngestTLSBlockRegexp = regexp.MustCompile(`(?ms)^\s*#\s*tls:\s*#for mTLS connection with config servers\s*\n^\s*#\s*enabled:\s*true\s*\n^\s*#\s*ca_file:\s*/xxx/ca\.crt\s*\n^\s*#\s*cert_file:\s*/xxx/client\.crt\s*\n^\s*#\s*key_file:\s*/xxx/client\.key\s*\n^\s*#\s*skip_insecure_verify:\s*false\s*$`)
 
 type RemoteConfig struct {
 	orm.ORMObjectBase
@@ -75,6 +83,10 @@ func remoteConfigProvider(instance model.Instance) []*common.ConfigFile {
 	}
 
 	result := []*common.ConfigFile{}
+	var relayIngestHosts []string
+	if strings.EqualFold(strings.TrimSpace(instance.Application.Name), "agent") {
+		relayIngestHosts = listRelayGatewayIngestHosts()
+	}
 
 	for _, row := range searchResult.Result {
 		v, ok := row.(map[string]interface{})
@@ -93,6 +105,7 @@ func remoteConfigProvider(instance model.Instance) []*common.ConfigFile {
 						item.Location = util.ToString(f["location"])
 						item.Content = util.ToString(f["content"])
 						item.Content = rewriteLegacyAgentConfigContent(instance, item.Content)
+						item.Content = rewriteAgentRelayIngestContent(instance, item.Location, item.Content, relayIngestHosts)
 						item.Version, _ = util.ToInt64(util.ToString(f["version"]))
 						item.Size = int64(len(item.Content))
 						item.Managed = true
@@ -112,6 +125,94 @@ func remoteConfigProvider(instance model.Instance) []*common.ConfigFile {
 	}
 
 	return result
+}
+
+func listRelayGatewayIngestHosts() []string {
+	q := orm.Query{
+		Size: 1000,
+		Conds: orm.And(
+			orm.Eq("application.name", "gateway"),
+			orm.Eq("labels.service_type", "relay"),
+		),
+	}
+	instances := []model.Instance{}
+	if err, _ := orm.SearchWithJSONMapper(&instances, &q); err != nil {
+		log.Errorf("failed to search relay gateways for ingest hosts: %v", err)
+		return nil
+	}
+	endpoints := make([]string, 0, len(instances))
+	for _, instance := range instances {
+		endpoint := strings.TrimSpace(strings.TrimRight(instance.GetEndpoint(), "/"))
+		if endpoint == "" {
+			continue
+		}
+		endpoints = append(endpoints, endpoint)
+	}
+	return normalizeRelayGatewayIngestHosts(endpoints)
+}
+
+func normalizeRelayGatewayIngestHosts(endpoints []string) []string {
+	if len(endpoints) == 0 {
+		return nil
+	}
+	result := make([]string, 0, len(endpoints))
+	seen := map[string]struct{}{}
+	for _, endpoint := range endpoints {
+		host := relayGatewayIngestHostFromEndpoint(endpoint)
+		if host == "" {
+			continue
+		}
+		if _, exists := seen[host]; exists {
+			continue
+		}
+		seen[host] = struct{}{}
+		result = append(result, host)
+	}
+	return result
+}
+
+func relayGatewayIngestHostFromEndpoint(endpoint string) string {
+	normalized := strings.TrimSpace(strings.TrimRight(endpoint, "/"))
+	if normalized == "" {
+		return ""
+	}
+	parseTarget := normalized
+	if !strings.Contains(parseTarget, "://") {
+		parseTarget = "http://" + parseTarget
+	}
+	parsed, err := url.Parse(parseTarget)
+	if err != nil || parsed == nil {
+		return ""
+	}
+	host := strings.TrimSpace(parsed.Hostname())
+	if host == "" {
+		return ""
+	}
+	return net.JoinHostPort(host, relayGatewayIngestPort)
+}
+
+func rewriteAgentRelayIngestContent(instance model.Instance, location, content string, relayIngestHosts []string) string {
+	if content == "" || len(relayIngestHosts) == 0 {
+		return content
+	}
+	if !strings.EqualFold(strings.TrimSpace(instance.Application.Name), "agent") {
+		return content
+	}
+	if !strings.EqualFold(strings.TrimSpace(location), "system_ingest_config.yml") {
+		return content
+	}
+	rewritten := systemIngestSchemaLineRegexp.ReplaceAllString(content, `${1}`+util.MustToJSON("https"))
+	rewritten = systemIngestHostsLineRegexp.ReplaceAllString(rewritten, `${1}`+string(util.MustToJSONBytes(relayIngestHosts)))
+	rewritten = systemIngestTLSBlockRegexp.ReplaceAllString(rewritten, strings.Join([]string{
+		"                tls: #for mTLS connection with config servers",
+		"                  enabled: true",
+		"                  ca_file: config/ca.crt",
+		"                  cert_file: config/client.crt",
+		"                  key_file: config/client.key",
+		"                  skip_domain_verify: true",
+		"                  skip_insecure_verify: false",
+	}, "\n"))
+	return rewritten
 }
 
 func shouldSkipGatewayConfigByType(instance model.Instance, configDoc map[string]interface{}) bool {

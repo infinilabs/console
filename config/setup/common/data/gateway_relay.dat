@@ -5,6 +5,12 @@ entry:
     max_concurrency: 200000
     network:
       binding: 0.0.0.0:8081
+    tls:
+      enabled: true
+      cert_file: "config/relay_server.crt"
+      key_file: "config/relay_server.key"
+      ca_file: "config/ca.crt"
+      skip_insecure_verify: false
 
 flow:
   - name: gateway_relay_deny_flow

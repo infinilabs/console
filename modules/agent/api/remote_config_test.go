@@ -252,3 +252,67 @@ func TestShouldSkipGatewayConfigByTypeWithLegacyConfigDoc(t *testing.T) {
 		t.Fatal("expected migration gateway to keep legacy migration config")
 	}
 }
+
+func TestNormalizeRelayGatewayIngestHosts(t *testing.T) {
+	got := normalizeRelayGatewayIngestHosts([]string{
+		"https://relay-1.local:2900",
+		"http://relay-1.local:2900/",
+		"relay-2.local:2900",
+		"",
+		"https://[2001:db8::1]:2900",
+	})
+	expected := []string{
+		"relay-1.local:8081",
+		"relay-2.local:8081",
+		"[2001:db8::1]:8081",
+	}
+	if strings.Join(got, ",") != strings.Join(expected, ",") {
+		t.Fatalf("expected %v, got %v", expected, got)
+	}
+}
+
+func TestRewriteAgentRelayIngestContent(t *testing.T) {
+	instance := model.Instance{Application: env.Application{Name: "agent"}}
+	content := strings.Join([]string{
+		"                basic_auth:",
+		"                  username: \"infini-ingest\"",
+		"                  password: \"$[[keystore.SYSTEM_CLUSTER_INGEST_PASSWORD]]\"",
+		"#                tls: #for mTLS connection with config servers",
+		"#                  enabled: true",
+		"#                  ca_file: /xxx/ca.crt",
+		"#                  cert_file: /xxx/client.crt",
+		"#                  key_file: /xxx/client.key",
+		"#                  skip_insecure_verify: false",
+		"                schema: \"https\"",
+		"                hosts: [\"192.168.3.8:9200\"]",
+	}, "\n")
+
+	rewritten := rewriteAgentRelayIngestContent(
+		instance,
+		"system_ingest_config.yml",
+		content,
+		[]string{"relay-1.local:8081", "relay-2.local:8081"},
+	)
+
+	if !strings.Contains(rewritten, `schema: "https"`) {
+		t.Fatalf("expected schema to be rewritten to https, got: %s", rewritten)
+	}
+	if !strings.Contains(rewritten, `hosts: ["relay-1.local:8081","relay-2.local:8081"]`) {
+		t.Fatalf("expected hosts to be rewritten to relay gateways, got: %s", rewritten)
+	}
+	if !strings.Contains(rewritten, `tls: #for mTLS connection with config servers`) ||
+		!strings.Contains(rewritten, `cert_file: config/client.crt`) ||
+		!strings.Contains(rewritten, `key_file: config/client.key`) {
+		t.Fatalf("expected tls block to be enabled for relay ingest, got: %s", rewritten)
+	}
+
+	unchanged := rewriteAgentRelayIngestContent(
+		instance,
+		"generated_metrics_tasks.yml",
+		content,
+		[]string{"relay-1.local:8081"},
+	)
+	if unchanged != content {
+		t.Fatalf("expected non-system-ingest config to remain unchanged")
+	}
+}

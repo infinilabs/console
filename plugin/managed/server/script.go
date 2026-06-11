@@ -820,6 +820,12 @@ func (h *APIHandler) getGatewayInstallScript(w http.ResponseWriter, req *http.Re
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	_, relayServerCertPEM, relayServerKeyPEM, err := common.GenerateServerCert(agCfg.Setup.CACertFile, agCfg.Setup.CAKeyFile)
+	if err != nil {
+		log.Errorf("generate gateway relay server certs failed: %v", err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	installVersion := h.GetParameterOrDefault(req, "version", getDefaultInstallVersion(gwCfg.Setup.Version))
 	scriptTplPath := path.Join(global.Env().GetConfigDir(), gatewayInstallScriptTemplate)
@@ -857,6 +863,8 @@ func (h *APIHandler) getGatewayInstallScript(w http.ResponseWriter, req *http.Re
 		"console_domain":        consoleDomain,
 		"client_crt":            clientCertPEM,
 		"client_key":            clientKeyPEM,
+		"relay_server_crt":      relayServerCertPEM,
+		"relay_server_key":      relayServerKeyPEM,
 		"ca_crt":                caCert,
 		"port":                  port,
 		"access_token":          managerTokenValue,

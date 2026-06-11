@@ -250,12 +250,16 @@ function install_certs() {
   ca_crt="{{ca_crt}}"
   client_crt="{{client_crt}}"
   client_key="{{client_key}}"
+  relay_server_crt="{{relay_server_crt}}"
+  relay_server_key="{{relay_server_key}}"
 
   mkdir -p ${install_dir}/config
   echo "[gateway] waiting generate certs"
   echo -e "${ca_crt}" > ${install_dir}/config/ca.crt
   echo -e "${client_crt}" > ${install_dir}/config/client.crt
   echo -e "${client_key}" > ${install_dir}/config/client.key
+  echo -e "${relay_server_crt}" > ${install_dir}/config/relay_server.crt
+  echo -e "${relay_server_key}" > ${install_dir}/config/relay_server.key
 }
 
 function install_config() {

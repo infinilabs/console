@@ -51,40 +51,47 @@ export default (props) => {
             );
           },
         },
-        {
-          title: formatMessage({ id: "overview.column.status" }),
-          dataIndex: "status",
-          render: (text, record) => {
-            return (
-              <Tooltip
-                title={
-                  <span
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 5,
-                      padding: 5,
-                    }}
-                  >
-                    <StatusBlockGroup data={record.metrics_status?.data} />
-                    <span>
-                      {record.metrics_status?.metric?.label +
-                        "(" +
-                        (record.metrics_status?.data?.length || 14) +
-                        " " +
-                        record.metrics_status?.metric?.units +
-                        ")"}
-                    </span>
-                  </span>
-                }
-              >
-                <div>
-                  <HealthStatusView status={record.metadata?.labels?.status} />
-                </div>
-              </Tooltip>
-            );
-          },
-        },
+{
+  title: "Cluster",
+  dataIndex: "cluster_name",
+  render: (text, record) => {
+    return record.metadata?.cluster_name || "N/A";
+  },
+},
+{
+  title: formatMessage({ id: "overview.column.status" }),
+  dataIndex: "status",
+  render: (text, record) => {
+    return (
+      <Tooltip
+        title={
+          <span
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 5,
+              padding: 5,
+            }}
+          >
+            <StatusBlockGroup data={record.metrics_status?.data} />
+            <span>
+              {record.metrics_status?.metric?.label +
+                "(" +
+                (record.metrics_status?.data?.length || 14) +
+                " " +
+                record.metrics_status?.metric?.units +
+                ")"}
+            </span>
+          </span>
+        }
+      >
+        <div>
+          <HealthStatusView status={record.metadata?.labels?.status} />
+        </div>
+      </Tooltip>
+    );
+  },
+},
         {
           title: formatMessage({ id: "overview.column.indices" }),
           dataIndex: "Indices",

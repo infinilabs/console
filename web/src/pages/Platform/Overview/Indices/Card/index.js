@@ -137,6 +137,12 @@ export default (props) => {
               <div className="title">
                 <Icon type="table" style={{ fontSize: 14 }} />
                 <span className="text">{metadata?.index_name}</span>
+                {metadata?.cluster_name && (
+                  <span style={{ marginLeft: 8, fontSize: 12, color: "#999" }}>
+                    <Icon type="cluster" style={{ marginRight: 4 }} />
+                    {metadata?.cluster_name}
+                  </span>
+                )}
               </div>
             </Tooltip>
 

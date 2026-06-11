@@ -43,9 +43,16 @@ export default (props) => {
             );
           },
         },
-        {
-          title: formatMessage({ id: "overview.column.health" }),
-          dataIndex: "health_status",
+{
+  title: "Cluster",
+  dataIndex: "cluster_name",
+  render: (text, record) => {
+    return record.metadata?.cluster_name || "N/A";
+  },
+},
+{
+  title: formatMessage({ id: "overview.column.health" }),
+  dataIndex: "health_status",
           render: (text, record) => {
             return (
               <Tooltip

@@ -32,6 +32,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	uri2 "net/url"
 	"path"
@@ -271,6 +272,32 @@ func (module *Module) Stop() error {
 	return nil
 }
 
+// isLocalhostAddress checks if the given hostname or IP is a localhost address
+func isLocalhostAddress(host string) bool {
+	if host == "" {
+		return false
+	}
+
+	// Check against common localhost names
+	localHostnames := map[string]bool{
+		"localhost": true,
+		"127.0.0.1": true,
+		"::1":       true,
+		"[::1]":     true,
+	}
+
+	if localHostnames[strings.ToLower(host)] {
+		return true
+	}
+
+	// Parse IP address to check if it's loopback
+	if ip := net.ParseIP(host); ip != nil {
+		return ip.IsLoopback()
+	}
+
+	return false
+}
+
 // SetupRequest represents the request structure for setting up the Elasticsearch cluster.
 type SetupRequest struct {
 	Cluster struct {
@@ -506,6 +533,19 @@ func (module *Module) initTempClient(request *SetupRequest) (error, elastic.API)
 		if request.Cluster.Host != "" && request.Cluster.Schema != "" {
 			request.Cluster.Endpoint = fmt.Sprintf("%v://%v", request.Cluster.Schema, request.Cluster.Host)
 		}
+	}
+
+	// Validate that the host is not a localhost address
+	hostToCheck := request.Cluster.Host
+	if hostToCheck == "" && request.Cluster.Endpoint != "" {
+		uri, err := uri2.Parse(request.Cluster.Endpoint)
+		if err == nil {
+			hostToCheck = uri.Hostname()
+		}
+	}
+
+	if isLocalhostAddress(hostToCheck) {
+		panic(errors.Errorf("cannot register cluster with localhost address (%s), please use a remote address that gateway can access", hostToCheck))
 	}
 
 	cfg = elastic.ElasticsearchConfig{

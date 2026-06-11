@@ -97,14 +97,18 @@ func collectPlatformPrivileges(roles []string) []string {
 }
 
 func privilegesToPermissionKeys(privileges []string) []frameworksecurity.PermissionKey {
-	sessionUser := &frameworksecurity.UserSessionInfo{
-		Permissions: make([]frameworksecurity.PermissionKey, 0, len(privileges)+1),
-	}
+	permissions := make([]frameworksecurity.PermissionKey, 0, len(privileges)+1)
 	for _, privilege := range normalizeStringList(privileges) {
-		sessionUser.Permissions = append(sessionUser.Permissions, frameworksecurity.PermissionKey(privilege))
+		permissions = append(permissions, frameworksecurity.PermissionKey(privilege))
+	}
+	sessionUser := &frameworksecurity.UserSessionInfo{
+		UserAssignedPermission: frameworksecurity.NewUserAssignedPermission(permissions, nil),
 	}
 	rbac.EnsureFrameworkDefaultPermissions(sessionUser)
-	return sessionUser.Permissions
+	if sessionUser.UserAssignedPermission == nil {
+		return nil
+	}
+	return sessionUser.UserAssignedPermission.GetPermissionKeys()
 }
 
 func normalizeStringList(values []string) []string {

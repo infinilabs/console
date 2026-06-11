@@ -64,7 +64,9 @@ func prepareConsoleUIUser(sessionUser *frameworksecurity.UserSessionInfo) *frame
 
 	cloned := *sessionUser
 	cloned.Roles = append([]string(nil), sessionUser.Roles...)
-	cloned.Permissions = append([]frameworksecurity.PermissionKey(nil), sessionUser.Permissions...)
+	if sessionUser.UserAssignedPermission != nil {
+		cloned.UserAssignedPermission = frameworksecurity.NewUserAssignedPermission(sessionUser.UserAssignedPermission.GetPermissionKeys(), nil)
+	}
 	consolesecurity.EnsureFrameworkDefaultPermissions(&cloned)
 
 	if hasConsoleAdminRole(cloned.Roles) {

@@ -127,13 +127,22 @@ func EnsureFrameworkDefaultPermissions(sessionUser *frameworksecurity.UserSessio
 		return nil
 	}
 
+	permissions := getFrameworkPermissionKeys(sessionUser)
 	for _, permission := range frameworkDefaultPermissions {
-		if !hasFrameworkPermission(sessionUser.Permissions, permission) {
-			sessionUser.Permissions = append(sessionUser.Permissions, permission)
+		if !hasFrameworkPermission(permissions, permission) {
+			permissions = append(permissions, permission)
 		}
 	}
+	sessionUser.UserAssignedPermission = frameworksecurity.NewUserAssignedPermission(permissions, nil)
 
 	return sessionUser
+}
+
+func getFrameworkPermissionKeys(sessionUser *frameworksecurity.UserSessionInfo) []frameworksecurity.PermissionKey {
+	if sessionUser == nil || sessionUser.UserAssignedPermission == nil {
+		return nil
+	}
+	return append([]frameworksecurity.PermissionKey(nil), sessionUser.UserAssignedPermission.GetPermissionKeys()...)
 }
 
 func hasFrameworkPermission(permissions []frameworksecurity.PermissionKey, permission frameworksecurity.PermissionKey) bool {

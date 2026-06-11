@@ -1386,21 +1386,7 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 	if err != nil {
 		log.Errorf("get env variables error, rule_id=%s: %v", rule.ID, err)
 	}
-	var (
-		min interface{}
-		max interface{}
-	)
-	if checkResults.QueryResult != nil {
-		min = checkResults.QueryResult.Min
-		max = checkResults.QueryResult.Max
-		if v, ok := min.(int64); ok {
-			//expand 60s
-			min = time.UnixMilli(v).Add(-time.Second * 60).UTC().Format("2006-01-02T15:04:05.999Z")
-		}
-		if v, ok := max.(int64); ok {
-			max = time.UnixMilli(v).Add(time.Second * 60).UTC().Format("2006-01-02T15:04:05.999Z")
-		}
-	}
+	min, max := resolveTemplateTimeRange(checkResults)
 	paramsCtx := util.MapStr{
 		alerting2.ParamRuleID:       rule.ID,
 		alerting2.ParamResourceID:   rule.Resource.ID,
@@ -1420,6 +1406,52 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 		log.Errorf("merge template params error, rule_id=%s: %v", rule.ID, err)
 	}
 	return paramsCtx
+}
+
+func resolveTemplateTimeRange(checkResults *alerting.ConditionResult) (string, string) {
+	if checkResults != nil && checkResults.QueryResult != nil {
+		if minTimestamp, ok := parseAlertTimestampMillis(checkResults.QueryResult.Min); ok {
+			if maxTimestamp, ok := parseAlertTimestampMillis(checkResults.QueryResult.Max); ok {
+				return formatAlertTimestampMillis(minTimestamp - 60*1000), formatAlertTimestampMillis(maxTimestamp + 60*1000)
+			}
+		}
+	}
+
+	if checkResults != nil && len(checkResults.ResultItems) > 0 {
+		if issueTimestamp, ok := parseAlertTimestampMillis(checkResults.ResultItems[0].IssueTimestamp); ok {
+			return formatAlertTimestampMillis(issueTimestamp - 60*1000), formatAlertTimestampMillis(issueTimestamp + 60*1000)
+		}
+	}
+
+	now := time.Now().UTC().UnixMilli()
+	return formatAlertTimestampMillis(now - 5*60*1000), formatAlertTimestampMillis(now + 60*1000)
+}
+
+func parseAlertTimestampMillis(value interface{}) (int64, bool) {
+	switch v := value.(type) {
+	case int64:
+		return v, true
+	case int:
+		return int64(v), true
+	case int32:
+		return int64(v), true
+	case float64:
+		return int64(v), true
+	case float32:
+		return int64(v), true
+	case string:
+		parsed, err := strconv.ParseInt(strings.TrimSpace(v), 10, 64)
+		if err != nil {
+			return 0, false
+		}
+		return parsed, true
+	default:
+		return 0, false
+	}
+}
+
+func formatAlertTimestampMillis(timestamp int64) string {
+	return time.UnixMilli(timestamp).UTC().Format("2006-01-02T15:04:05.999Z")
 }
 
 func buildRecoveryContext(rule *alerting.Rule, queryResult *alerting.QueryResult, recoveredItems []alerting.ConditionResultItem) (string, interface{}, error) {

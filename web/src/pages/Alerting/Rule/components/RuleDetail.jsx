@@ -84,6 +84,10 @@ export const buildWidgetByRule = (rule, queries, created, updated) => {
     }
   }
 
+  const ignoreTimeFilter = Boolean(
+    queries?.ignore_time_filter || queries?.ignoreTimeFilter
+  );
+
   const config = {
     bucket_size: bucketSize,
     format: formatMapping[format_type],
@@ -104,7 +108,7 @@ export const buildWidgetByRule = (rule, queries, created, updated) => {
         queries: {
           cluster_id: queries.cluster_id,
           indices: queries.indices,
-          time_field: queries.time_field,
+          time_field: ignoreTimeFilter ? undefined : queries.time_field,
           dsl: query,
         },
         type: "line",
@@ -229,6 +233,7 @@ const RuleDetail = (props) => {
       cluster_id: ruleDetail.resource_id,
       indices: ruleDetail.resource_objects,
       time_field: ruleDetail.resource_time_field,
+      ignore_time_filter: ruleDetail.resource_ignore_time_filter,
       raw_filter: ruleDetail.resource_raw_filter,
     }, ruleDetail?.created, ruleDetail?.updated);
   }, [ruleDetail]);

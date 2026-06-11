@@ -46,6 +46,7 @@ export default ({msgItem, range, onRangeChange})=>{
       "cluster_id": resource.resource_id,
       "indices": resource.objects,
       "time_field": resource.time_field,
+      "ignore_time_filter": resource.ignore_time_filter,
       "raw_filter": resource.raw_filter,
     }, created, updated)
   }, [JSON.stringify(rule), updated, created])

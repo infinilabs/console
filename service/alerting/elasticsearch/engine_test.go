@@ -341,6 +341,41 @@ func TestFormatAlertDuration(t *testing.T) {
 	}
 }
 
+func TestResolveTemplateTimeRangeFromQueryResult(t *testing.T) {
+	checkResults := &alerting.ConditionResult{
+		QueryResult: &alerting.QueryResult{
+			Min: int64(1781140000000),
+			Max: int64(1781140060000),
+		},
+	}
+
+	min, max := resolveTemplateTimeRange(checkResults)
+	if min != "2026-06-11T01:05:40Z" {
+		t.Fatalf("expected min to expand query min timestamp, got %q", min)
+	}
+	if max != "2026-06-11T01:08:40Z" {
+		t.Fatalf("expected max to expand query max timestamp, got %q", max)
+	}
+}
+
+func TestResolveTemplateTimeRangeFallsBackToIssueTimestamp(t *testing.T) {
+	checkResults := &alerting.ConditionResult{
+		ResultItems: []alerting.ConditionResultItem{
+			{
+				IssueTimestamp: "1781140060000",
+			},
+		},
+	}
+
+	min, max := resolveTemplateTimeRange(checkResults)
+	if min != "2026-06-11T01:06:40Z" {
+		t.Fatalf("expected min to use issue timestamp fallback, got %q", min)
+	}
+	if max != "2026-06-11T01:08:40Z" {
+		t.Fatalf("expected max to use issue timestamp fallback, got %q", max)
+	}
+}
+
 func TestDiffRecoveredConditionResultItems(t *testing.T) {
 	makeItem := func(priority string, groups ...string) alerting.ConditionResultItem {
 		return alerting.ConditionResultItem{

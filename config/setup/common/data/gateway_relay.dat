@@ -65,9 +65,12 @@ flow:
           elasticsearch: gateway_relay_system
           queue_name_prefix: gateway_relay_async_bulk
           level: node
-          partition_size: 1
+          partition_size: $[[SETUP_RELAY_PARTITION_SIZE]]
           continue_metadata_missing: true
           fix_null_id: true
+      - elasticsearch:
+          elasticsearch: gateway_relay_system
+          max_connection_per_node: 1000
 
 router:
   - name: gateway_relay_router
@@ -90,6 +93,7 @@ elasticsearch:
       password: "$[[keystore.$[[SETUP_AGENT_PASSWORD_KEY]]]]"
     discovery:
       enabled: false
+    metadata_cache_enabled: false
     endpoints: $[[SETUP_ENDPOINTS]]
 
 pipeline:

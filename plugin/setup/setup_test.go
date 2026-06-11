@@ -360,11 +360,16 @@ func TestGatewayRelayTemplateRendersAsChildConfig(t *testing.T) {
 		`binding: 0.0.0.0:8081`,
 		`cert_file: "config/relay_server.crt"`,
 		`key_file: "config/relay_server.key"`,
+		`metadata_refresh:`,
+		`remote_configs: false`,
 		`monitored: true`,
+		`metadata_cache_enabled: false`,
 		`password: "$[[keystore.SYSTEM_CLUSTER_INGEST_PASSWORD]]"`,
 		`queue_name_prefix: gateway_relay_async_bulk`,
+		`partition_size: 3`,
 		`elasticsearch: gateway_relay_system`,
 		`continue_metadata_missing: true`,
+		`max_connection_per_node: 1000`,
 		`name: gateway_relay_bulk_request_ingest`,
 	)
 }
@@ -378,6 +383,8 @@ func TestGatewayMigrationTemplateRendersAsChildConfig(t *testing.T) {
 	assertNoChildConfigGlobals(t, content)
 	assertContainsAll(t, content,
 		`binding: 0.0.0.0:8082`,
+		`metadata_refresh:`,
+		`remote_configs: false`,
 		`monitored: true`,
 		`password: "$[[keystore.SYSTEM_CLUSTER_INGEST_PASSWORD]]"`,
 		`name: logging-server`,
@@ -410,6 +417,7 @@ func renderGatewaySetupData(t *testing.T, name string) string {
 	content = strings.ReplaceAll(content, "$[[SETUP_AGENT_PASSWORD_KEY]]", "SYSTEM_CLUSTER_INGEST_PASSWORD")
 	content = strings.ReplaceAll(content, "$[[SETUP_ENDPOINTS]]", `["https://192.168.3.185:9201"]`)
 	content = strings.ReplaceAll(content, "$[[SETUP_INDEX_PREFIX]]", ".infini_")
+	content = strings.ReplaceAll(content, "$[[SETUP_RELAY_PARTITION_SIZE]]", "3")
 	return content
 }
 

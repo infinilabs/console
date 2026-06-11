@@ -355,12 +355,13 @@ func refreshManagedLocalTemplates(client elastic.API, cfg *elastic.Elasticsearch
 		return nil, err
 	}
 	replacements := map[string]string{
-		"SETUP_AGENT_USERNAME":     agentUsername,
-		"SETUP_AGENT_PASSWORD_KEY": passwordKey,
-		"SETUP_SCHEME":             schema,
-		"SETUP_HOSTS":              string(util.MustToJSONBytes(hosts)),
-		"SETUP_ENDPOINTS":          string(util.MustToJSONBytes(endpoints)),
-		"SETUP_INDEX_PREFIX":       indexPrefix,
+		"SETUP_AGENT_USERNAME":       agentUsername,
+		"SETUP_AGENT_PASSWORD_KEY":   passwordKey,
+		"SETUP_SCHEME":               schema,
+		"SETUP_HOSTS":                string(util.MustToJSONBytes(hosts)),
+		"SETUP_ENDPOINTS":            string(util.MustToJSONBytes(endpoints)),
+		"SETUP_INDEX_PREFIX":         indexPrefix,
+		"SETUP_RELAY_PARTITION_SIZE": strconv.Itoa(setupplugin.ResolveRelayPartitionSize(client)),
 	}
 	now := time.Now()
 	version := now.Unix()

@@ -388,6 +388,24 @@ func resolveSetupTemplateSettings(client elastic.API, request *SetupRequest) (in
 	return primaryShards, autoExpandReplicas, nil
 }
 
+func ResolveRelayPartitionSize(client elastic.API) int {
+	if client == nil {
+		return 1
+	}
+
+	health, err := client.ClusterHealth(context.Background())
+	if err != nil || health == nil {
+		return 1
+	}
+	if health.NumberOf_data_nodes > 0 {
+		return health.NumberOf_data_nodes
+	}
+	if health.NumberOfNodes > 0 {
+		return health.NumberOfNodes
+	}
+	return 1
+}
+
 // validate checks the Elasticsearch cluster configuration and validates the setup.
 func (module *Module) validate(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
@@ -1168,10 +1186,12 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 		break
 	}
 
-	primaryShards, autoExpandReplicas, err := resolveSetupTemplateSettings(elastic.GetClient(GlobalSystemElasticsearchID), request)
+	systemClient := elastic.GetClient(GlobalSystemElasticsearchID)
+	primaryShards, autoExpandReplicas, err := resolveSetupTemplateSettings(systemClient, request)
 	if err != nil {
 		panic(err)
 	}
+	relayPartitionSize := ResolveRelayPartitionSize(systemClient)
 
 	dslTplFile := path.Join(baseDir, dslTplFileName)
 	if !util.FileExists(dslTplFile) {
@@ -1257,6 +1277,8 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 			return w.Write([]byte(strconv.Itoa(primaryShards)))
 		case "SETUP_AUTO_EXPAND_REPLICAS":
 			return w.Write([]byte(autoExpandReplicas))
+		case "SETUP_RELAY_PARTITION_SIZE":
+			return w.Write([]byte(strconv.Itoa(relayPartitionSize)))
 		}
 		//ignore unresolved variable
 		return w.Write([]byte("$[[" + tag + "]]"))

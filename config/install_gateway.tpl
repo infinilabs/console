@@ -333,7 +333,7 @@ disk_queue:
 elastic:
   enabled: true
   remote_configs: false
-  skip_init_metadata_on_start: true
+  skip_init_metadata_on_start: false
   availability_check:
     enabled: true
     interval: 30s

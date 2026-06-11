@@ -1,3 +1,19 @@
+elastic:
+  enabled: true
+  availability_check:
+    enabled: true
+    interval: 30s
+  health_check:
+    enabled: true
+    interval: 30s
+  metadata_refresh:
+    enabled: true
+    interval: 60s
+  cluster_settings_check:
+    enabled: false
+    interval: 60s
+  remote_configs: false
+
 elasticsearch:
   - name: gateway_migration_system
     enabled: true

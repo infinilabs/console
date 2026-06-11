@@ -104,7 +104,7 @@ type gatewaySetupConfig struct {
 
 type installCommandRequest struct {
 	GatewayEndpoints     []string `json:"gateway_endpoints"`
-	GatewayType          string   `json:"gateway_type"`
+	ServiceType          string   `json:"service_type"`
 	EnableReverseChannel bool     `json:"enable_reverse_channel"`
 	NoService            bool     `json:"no_service"`
 }
@@ -137,7 +137,7 @@ func normalizeManagedServerEndpoints(endpoints []string) []string {
 	result := make([]string, 0, len(endpoints))
 	seen := map[string]struct{}{}
 	for _, endpoint := range endpoints {
-		normalized := strings.TrimSpace(strings.TrimRight(endpoint, "/"))
+		normalized := strings.TrimRight(strings.TrimSpace(endpoint), "/")
 		if normalized == "" {
 			continue
 		}
@@ -150,7 +150,7 @@ func normalizeManagedServerEndpoints(endpoints []string) []string {
 	return result
 }
 
-func listGatewayManagedEndpoints(gatewayType string) ([]string, error) {
+func listGatewayManagedEndpoints(serviceType string) ([]string, error) {
 	queryDSL := util.MapStr{
 		"size": 1000,
 		"query": util.MapStr{
@@ -161,12 +161,12 @@ func listGatewayManagedEndpoints(gatewayType string) ([]string, error) {
 			},
 		},
 	}
-	if gatewayType != "" {
+	if serviceType != "" {
 		queryDSL["query"] = util.MapStr{
 			"bool": util.MapStr{
 				"must": []util.MapStr{
 					{"term": util.MapStr{"application.name": "gateway"}},
-					{"term": util.MapStr{"labels.gateway_type": gatewayType}},
+					{"term": util.MapStr{"labels.service_type": serviceType}},
 				},
 			},
 		}
@@ -311,7 +311,7 @@ func (h *APIHandler) generateGatewayInstallCommand(w http.ResponseWriter, req *h
 
 	consoleEndpoint := resolveConsoleEndpoint(req, gwCfg.Setup.ConsoleEndpoint)
 	installVersion := strings.TrimSpace(gwCfg.Setup.Version)
-	gatewayType := normalizeGatewayType(payload.GatewayType)
+	serviceType := normalizeGatewayType(payload.ServiceType)
 	endpoint, err := buildInstallScriptURLForAPI(consoleEndpoint, getGatewayInstallScriptAPI, tokenStr, installVersion)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -325,7 +325,7 @@ func (h *APIHandler) generateGatewayInstallCommand(w http.ResponseWriter, req *h
 		return
 	}
 	endpointQuery := parsedEndpoint.Query()
-	endpointQuery.Set("gateway_type", gatewayType)
+	endpointQuery.Set("service_type", serviceType)
 	parsedEndpoint.RawQuery = endpointQuery.Encode()
 	endpoint = parsedEndpoint.String()
 
@@ -842,7 +842,7 @@ func (h *APIHandler) getGatewayInstallScript(w http.ResponseWriter, req *http.Re
 	tpl := fasttemplate.New(string(buf), "{{", "}}")
 	consoleEndpoint := resolveConsoleEndpoint(req, gwCfg.Setup.ConsoleEndpoint)
 	consoleDomain := resolveConsoleTLSServerName(consoleEndpoint)
-	gatewayType := normalizeGatewayType(req.URL.Query().Get("gateway_type"))
+	serviceType := normalizeGatewayType(req.URL.Query().Get("service_type"))
 	downloadURL, err := resolveGatewayDownloadURL(consoleEndpoint, gwCfg.Setup.DownloadURL)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -871,7 +871,7 @@ func (h *APIHandler) getGatewayInstallScript(w http.ResponseWriter, req *http.Re
 		"access_token":          managerTokenValue,
 		"api_security_username": defaultManagedGatewayAPIUsername,
 		"api_security_password": localAPIPassword,
-		"gateway_type":          gatewayType,
+		"service_type":          serviceType,
 		"version":               installVersion,
 	})
 	if err != nil {

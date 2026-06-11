@@ -120,7 +120,7 @@ export default ({ autoInit = false }) => {
       method: "POST",
       body: {
         no_service: noServiceEnabled,
-        gateway_type: gatewayTypeValue,
+        service_type: gatewayTypeValue,
       },
     });
     setTokenInfo(res);

@@ -193,14 +193,14 @@ func TestShouldSkipGatewayConfigByType(t *testing.T) {
 	instance := model.Instance{
 		Application: env.Application{Name: "gateway"},
 		Labels: map[string]string{
-			"gateway_type": "relay",
+			"service_type": "relay",
 		},
 	}
 
 	relayDoc := map[string]interface{}{
 		"metadata": map[string]interface{}{
 			"labels": map[string]interface{}{
-				"gateway_type": "relay",
+				"service_type": "relay",
 			},
 		},
 		"payload": map[string]interface{}{
@@ -214,7 +214,7 @@ func TestShouldSkipGatewayConfigByType(t *testing.T) {
 	migrationDoc := map[string]interface{}{
 		"metadata": map[string]interface{}{
 			"labels": map[string]interface{}{
-				"gateway_type": "migration",
+				"service_type": "migration",
 			},
 		},
 		"payload": map[string]interface{}{
@@ -230,7 +230,7 @@ func TestShouldSkipGatewayConfigByTypeWithLegacyConfigDoc(t *testing.T) {
 	instance := model.Instance{
 		Application: env.Application{Name: "gateway"},
 		Labels: map[string]string{
-			"gateway_type": "migration",
+			"service_type": "migration",
 		},
 	}
 

@@ -308,7 +308,7 @@ func TestGatewayInstallTemplateBootstrapsManagedConfig(t *testing.T) {
 		"{{access_token}}", "BOOTSTRAP_TOKEN",
 		"{{api_security_username}}", "managed_gateway",
 		"{{api_security_password}}", "LOCAL_API_PASSWORD",
-		"{{gateway_type}}", "relay",
+		"{{service_type}}", "relay",
 	).Replace(string(content))
 
 	expectedSnippets := []string{
@@ -331,8 +331,7 @@ func TestGatewayInstallTemplateBootstrapsManagedConfig(t *testing.T) {
 		`cert_file: "config/client.crt"`,
 		`default_domain: "console.local"`,
 		`skip_insecure_verify: false`,
-		`gateway_type: "relay"`,
-		`gateway_type: "relay"`,
+		`service_type: "${service_type}"`,
 		`access_token="BOOTSTRAP_TOKEN"`,
 		`keystore add "CONFIGS_MANAGER_ACCESS_TOKEN"`,
 		`keystore add "API_SECURITY_USERNAME"`,

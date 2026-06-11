@@ -118,7 +118,7 @@ func shouldSkipGatewayConfigByType(instance model.Instance, configDoc map[string
 	if !strings.EqualFold(strings.TrimSpace(instance.Application.Name), "gateway") {
 		return false
 	}
-	instanceType := normalizeGatewayTypeLabel(instance.Labels["gateway_type"])
+	instanceType := resolveGatewayServiceType(instance.Labels)
 	if instanceType == "" {
 		return false
 	}
@@ -130,6 +130,13 @@ func shouldSkipGatewayConfigByType(instance model.Instance, configDoc map[string
 		return false
 	}
 	return configType != instanceType
+}
+
+func resolveGatewayServiceType(labels map[string]string) string {
+	if labels == nil {
+		return ""
+	}
+	return normalizeGatewayTypeLabel(labels["service_type"])
 }
 
 func normalizeGatewayTypeLabel(value string) string {
@@ -152,7 +159,7 @@ func extractGatewayTypeFromConfigDoc(configDoc map[string]interface{}) string {
 	if !ok {
 		return ""
 	}
-	return normalizeGatewayTypeLabel(util.ToString(labels["gateway_type"]))
+	return normalizeGatewayTypeLabel(util.ToString(labels["service_type"]))
 }
 
 func inferGatewayTypeFromPayloadLocation(configDoc map[string]interface{}) string {

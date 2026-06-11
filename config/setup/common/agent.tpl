@@ -12,7 +12,7 @@ POST $[[SETUP_INDEX_PREFIX]]configs/$[[SETUP_DOC_TYPE]]/system_ingest_config_yml
   "metadata": {
     "labels": {
       "instance": "_all",
-      "gateway_type": "relay"
+      "service_type": "relay"
     },
     "category": "app_settings",
     "name": "agent"
@@ -33,7 +33,7 @@ POST $[[SETUP_INDEX_PREFIX]]configs/$[[SETUP_DOC_TYPE]]/task_config_tpl
   "metadata": {
     "labels": {
       "instance": "_all",
-      "gateway_type": "migration"
+      "service_type": "migration"
     },
     "category": "app_settings",
     "name": "agent"
@@ -54,7 +54,7 @@ POST $[[SETUP_INDEX_PREFIX]]configs/$[[SETUP_DOC_TYPE]]/agent_relay_gateway_conf
   "metadata": {
     "labels": {
       "instance": "_all",
-      "gateway_type": "relay"
+      "service_type": "relay"
     },
     "category": "app_settings",
     "name": "gateway"
@@ -75,7 +75,7 @@ POST $[[SETUP_INDEX_PREFIX]]configs/$[[SETUP_DOC_TYPE]]/gateway_migration_yml
   "metadata": {
     "labels": {
       "instance": "_all",
-      "gateway_type": "migration"
+      "service_type": "migration"
     },
     "category": "app_settings",
     "name": "gateway"

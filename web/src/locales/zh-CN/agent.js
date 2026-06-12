@@ -114,6 +114,6 @@ export default {
   "agent.instance.collection_interval.label": "采集间隔",
   "agent.instance.collection_interval.unit": "秒",
   "agent.instance.collection_interval.placeholder": "默认 10",
-  "agent.instance.collection_interval.tip": "Agent 从节点采集指标的间隔（秒）。留空或设为 0 表示使用 Agent 默认值（10 秒）。修改后 Agent 将在下次配置同步时自动生效。",
+  "agent.instance.collection_interval.tip": "节点指标采集间隔（秒）。留空或设为 0 使用默认值（10 秒）。修改后将在下次配置同步时生效。",
   "agent.instance.collection_interval.save.success": "采集间隔已更新"
 };

@@ -110,13 +110,19 @@ export default ({ msgItem, range, onRangeChange }) => {
       loading={loading}
     >
       {metricData?.lines?.length > 0 ? (
-        <div className={metricsStyles.vizChartContainer}>
+        <div>
           <Chart size={[, 240]} className={metricsStyles.vizChartItem}>
             <Settings
               showLegend
               legendPosition={Position.Bottom}
               tooltip={{
                 headerFormatter: ({ value }) => formatter.full_dates(value),
+              }}
+              theme={{
+                lineSeriesStyle: {
+                  line: { visible: false, strokeWidth: 0 },
+                  point: { visible: true, radius: 2, strokeWidth: 0 },
+                },
               }}
             />
             <RectAnnotation
@@ -172,4 +178,3 @@ export default ({ msgItem, range, onRangeChange }) => {
     </Card>
   );
 };
-

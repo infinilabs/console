@@ -1,6 +1,6 @@
 import Sum from "@/components/Icons/Sum";
 import request from "@/utils/request";
-import { Card, Icon, Empty, Tooltip } from "antd";
+import { Card, Icon, Empty, Tooltip, message } from "antd";
 import {
   Axis,
   Chart,
@@ -18,6 +18,7 @@ import moment from "moment";
 import { useEffect, useMemo, useState } from "react";
 import { formatMessage } from "umi/locale";
 import metricsStyles from "@/pages/Cluster/Metrics.scss";
+import { CopyToClipboard } from "react-copy-to-clipboard";
 
 const resolveAlertTime = (value) => {
   if (!value) return "";
@@ -33,6 +34,7 @@ export default ({ msgItem, range, onRangeChange }) => {
   const [rule, setRule] = useState();
   const [loading, setLoading] = useState(false);
   const [metricData, setMetricData] = useState({});
+  const [latestRequest, setLatestRequest] = useState("");
 
   const fetchRule = async (id) => {
     if (!id) { setRule(); return; }
@@ -48,6 +50,17 @@ export default ({ msgItem, range, onRangeChange }) => {
         method: "GET",
         queryParams: { min, max },
       });
+      setLatestRequest(
+        JSON.stringify(
+          {
+            method: "GET",
+            path: `/alerting/rule/${id}/history_metric`,
+            query: { min, max },
+          },
+          null,
+          2
+        )
+      );
       if (res && !res.error) {
         setMetricData(res.metric || {});
       }
@@ -110,7 +123,7 @@ export default ({ msgItem, range, onRangeChange }) => {
       loading={loading}
     >
       {metricData?.lines?.length > 0 ? (
-        <div>
+        <div style={{ position: "relative" }}>
           <Chart size={[, 240]} className={metricsStyles.vizChartItem}>
             <Settings
               showLegend
@@ -171,6 +184,20 @@ export default ({ msgItem, range, onRangeChange }) => {
               />
             ))}
           </Chart>
+          {latestRequest ? (
+            <div style={{ position: "absolute", right: 8, bottom: 8, zIndex: 1 }}>
+              <CopyToClipboard
+                text={latestRequest}
+                onCopy={() =>
+                  message.success(formatMessage({ id: "cluster.metrics.request.copy.success" }))
+                }
+              >
+                <Tooltip title={formatMessage({ id: "cluster.metrics.request.copy" })}>
+                  <Icon type="copy" style={{ color: "rgb(0, 127, 255)" }} />
+                </Tooltip>
+              </CopyToClipboard>
+            </div>
+          ) : null}
         </div>
       ) : (
         <Empty description={formatMessage({ id: "alert.message.detail.no_history_data" })} />

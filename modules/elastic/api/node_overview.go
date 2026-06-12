@@ -1092,6 +1092,13 @@ func (h *APIHandler) getNodeIndices(w http.ResponseWriter, req *http.Request, ps
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
 	}
+	// Agent mode primarily depends on shard_stats. When shard_stats is absent
+	// (e.g. newly created/idle index), fall back to routing-table based index
+	// listing to avoid returning an empty result.
+	if len(indices) == 0 {
+		h.APIHandler.GetNodeIndices(w, req, ps)
+		return
+	}
 	h.WriteJSON(w, indices, http.StatusOK)
 }
 

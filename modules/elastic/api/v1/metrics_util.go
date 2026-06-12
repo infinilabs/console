@@ -741,8 +741,18 @@ func ConvertBucketItemsToAggQuery(bucketItems []*common.BucketItem, metricItems 
 
 		switch bucketItem.Type {
 		case "terms":
+			termsParams := util.MapStr{}
+			for k, v := range bucketItem.Parameters {
+				termsParams[k] = v
+			}
+			// Some Elasticsearch-compatible engines return UnmappedTerms runtime
+			// errors on terms aggregation. Provide a default missing value so the
+			// aggregation can still be planned when the field is absent.
+			if _, ok := termsParams["missing"]; !ok {
+				termsParams["missing"] = ""
+			}
 			bucketAgg = util.MapStr{
-				"terms": bucketItem.Parameters,
+				"terms": termsParams,
 			}
 			break
 		case "date_histogram":

@@ -3,7 +3,6 @@ import {
   Card,
   Table,
   Popconfirm,
-  Divider,
   Form,
   Row,
   Col,
@@ -49,6 +48,12 @@ import { HealthStatusView } from "@/components/infini/health_status_view";
 import { isNumber } from "lodash";
 import SearchInput from "@/components/infini/SearchInput";
 import { CopyToClipboard } from "react-copy-to-clipboard";
+
+const menuItemContentStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+};
 
 const AgentList = (props) => {
   const renderCopyButton = (text, style = {}) => {
@@ -328,26 +333,39 @@ const AgentList = (props) => {
         render: (text, record) => (
           <div>
             {hasAuthority("agent.instance:all") ? (
-              <>
-                {/* <Divider key="d2" type="vertical" /> Task Assignment*/}
-                {/* <a onClick={() => onTaskSettingsClick(record)}>Task Settings</a>
-                <Divider key="d3" type="vertical" /> */}
-                <Link
-                  key="edit"
-                  to={`/resource/agent/instance/edit/${record.id}`}
-                >
-                  {formatMessage({ id: "form.button.edit" })}
-                </Link>
-                <Divider key="d3" type="vertical" />
-                <Popconfirm
-                  title={formatMessage({
-                    id: "agent.instance.delete.confirm.title",
-                  })}
-                  onConfirm={() => onDeleteClick(record.id)}
-                >
-                  <a>{formatMessage({ id: "form.button.delete" })}</a>
-                </Popconfirm>
-              </>
+              <Dropdown
+                overlay={
+                  <Menu>
+                   <Menu.Item key="edit">
+                     <Link to={`/resource/agent/instance/edit/${record.id}`}>
+                       <span style={menuItemContentStyle}>
+                         <Icon type="edit" />
+                         <span>{formatMessage({ id: "form.button.edit" })}</span>
+                       </span>
+                     </Link>
+                   </Menu.Item>
+                   <Menu.Item key="delete">
+                     <Popconfirm
+                       title={formatMessage({
+                         id: "agent.instance.delete.confirm.title",
+                       })}
+                       onConfirm={() => onDeleteClick(record.id)}
+                     >
+                       <a style={menuItemContentStyle}>
+                         <Icon type="delete" />
+                         <span>{formatMessage({ id: "form.button.delete" })}</span>
+                       </a>
+                     </Popconfirm>
+                   </Menu.Item>
+                  </Menu>
+                }
+                trigger={["click"]}
+              >
+                <Button size="small" icon="setting">
+                  {formatMessage({ id: "table.field.actions" })}
+                  <Icon type="down" />
+                </Button>
+              </Dropdown>
             ) : null}
           </div>
         ),
@@ -616,25 +634,6 @@ const AgentList = (props) => {
     </Menu>
   );
 
-  const installActionMenu = (
-    <Menu
-      onClick={({ key }) => {
-        if (key === "install-probe") {
-          setEditState((st) => {
-            return {
-              ...st,
-              installVisible: true,
-            };
-          });
-        }
-      }}
-    >
-      <Menu.Item key="install-probe">
-        {formatMessage({ id: "agent.instance.install.title" })}
-      </Menu.Item>
-    </Menu>
-  );
-
   const consoleTokenTip = formatMessage({
     id: "agent.instance.registration.console.token.tip",
   });
@@ -675,27 +674,39 @@ const AgentList = (props) => {
             {
               hasAuthority("agent.instance:all") && (
                 <>
-                  <Button loading={clearLoading} onClick={showClearConfirm}>
-                  {formatMessage({ id: "agent.instance.clear.title" })}
-                </Button>
                   <Button
-                    type="primary"
+                   loading={clearLoading}
+                   icon="delete"
+                   onClick={showClearConfirm}
+                  >
+                   {formatMessage({ id: "agent.instance.clear.title" })}
+                  </Button>
+                  <Button
+                   type="primary"
+                   icon="deployment-unit"
+                   onClick={() => {
+                     setEditState((st) => ({
+                       ...st,
+                       autoEnrollVisible: true,
+                     }));
+                   }}
+                  >
+                   {formatMessage({ id: "agent.instance.auto_associate.title" })}
+                  </Button>
+                  <Button
+                   type="primary"
+                   icon="deployment-unit"
                     onClick={() => {
                       setEditState((st) => {
                         return {
                           ...st,
-                          autoEnrollVisible: true,
+                          installVisible: true,
                         };
                       });
                     }}
                   >
-                    {formatMessage({ id: "agent.instance.auto_associate.title" })}
+                    {formatMessage({ id: "agent.instance.install.title" })}
                   </Button>
-                  <Dropdown overlay={installActionMenu} trigger={["click"]}>
-                    <Button type="primary">
-                      {formatMessage({ id: "agent.instance.install.title" })} <Icon type="down" />
-                    </Button>
-                  </Dropdown>
                 </>
               )
             }
@@ -704,8 +715,13 @@ const AgentList = (props) => {
             </Button>
             {hasAuthority("agent.instance:all") ? (
               <Dropdown overlay={registrationActionMenu} trigger={["click"]}>
-                <Button type="primary" loading={registrationAccessLoading}>
-                  {formatMessage({ id: "form.button.new" })} <Icon type="down" />
+                <Button
+                  type="primary"
+                  icon="plus"
+                  loading={registrationAccessLoading}
+                >
+                  {formatMessage({ id: "form.button.new" })}
+                  <Icon type="down" />
                 </Button>
               </Dropdown>
             ) : null}

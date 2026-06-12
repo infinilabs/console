@@ -59,6 +59,12 @@ const applicationIconStyle = {
   color: "rgba(0, 0, 0, 0.65)",
 };
 
+const menuItemContentStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+};
+
 const applicationMeta = {
   console: {
     label: "Console",
@@ -376,7 +382,10 @@ export default (props) => {
               key: "queue",
               content: (
                 <Link to={`/resource/runtime/instance/${record.id}/queue`}>
-                  {formatMessage({ id: "gateway.instance.menu.queue" })}
+                  <span style={menuItemContentStyle}>
+                    <Icon type="unordered-list" />
+                    <span>{formatMessage({ id: "gateway.instance.menu.queue" })}</span>
+                  </span>
                 </Link>
               ),
             },
@@ -384,7 +393,10 @@ export default (props) => {
               key: "task",
               content: (
                 <Link to={`/resource/runtime/instance/${record.id}/task`}>
-                  {formatMessage({ id: "gateway.instance.menu.task" })}
+                  <span style={menuItemContentStyle}>
+                    <Icon type="profile" />
+                    <span>{formatMessage({ id: "gateway.instance.menu.task" })}</span>
+                  </span>
                 </Link>
               ),
             }
@@ -396,30 +408,48 @@ export default (props) => {
               key: "logging",
               content: (
                 <Link to={`/resource/runtime/instance/${record.id}/logging`}>
-                  {formatMessage({ id: "gateway.instance.menu.logging" })}
-                </Link>
-              ),
-            });
-            menuItems.push({
-              key: "config",
-              content: (
-                <Link to={`/resource/runtime/instance/${record.id}/config`}>
-                  {formatMessage({ id: "gateway.instance.menu.config" })}
-                </Link>
-              ),
-            });
-          }
-          menuItems.push({
-            key: "edit",
-            content: (
-              <Link to={`/resource/runtime/instance/edit/${record.id}`}>
-                {formatMessage({ id: "form.button.edit" })}
+                <span style={menuItemContentStyle}>
+                  <Icon type="file-text" />
+                  <span>
+                    {formatMessage({ id: "gateway.instance.menu.logging" })}
+                  </span>
+                </span>
               </Link>
             ),
           });
           menuItems.push({
-            key: "delete",
-            content: <a>{formatMessage({ id: "form.button.delete" })}</a>,
+          key: "config",
+          content: (
+            <Link to={`/resource/runtime/instance/${record.id}/config`}>
+              <span style={menuItemContentStyle}>
+                <Icon type="setting" />
+                <span>{formatMessage({ id: "gateway.instance.menu.config" })}</span>
+              </span>
+            </Link>
+          ),
+          });
+          }
+          menuItems.push({
+          key: "edit",
+          content: (
+            <Link to={`/resource/runtime/instance/edit/${record.id}`}>
+              <span style={menuItemContentStyle}>
+                <Icon type="edit" />
+                <span>{formatMessage({ id: "form.button.edit" })}</span>
+              </span>
+            </Link>
+          ),
+          });
+          menuItems.push({
+          key: "delete",
+          content: (
+            <a>
+              <span style={menuItemContentStyle}>
+                <Icon type="delete" />
+                <span>{formatMessage({ id: "form.button.delete" })}</span>
+              </span>
+            </a>
+          ),
           });
         }
 
@@ -437,12 +467,14 @@ export default (props) => {
         return (
           <div>
             <Dropdown overlay={menu}>
-              <a
-                style={{ fontSize: "20px" }}
-                onClick={(e) => e.preventDefault()}
+              <Button
+                size="small"
+                icon="setting"
+                style={{ minWidth: 88 }}
               >
-                <Icon type="ellipsis" />
-              </a>
+                {formatMessage({ id: "table.field.actions" })}
+                <Icon type="down" />
+              </Button>
             </Dropdown>
           </div>
         );
@@ -503,7 +535,7 @@ export default (props) => {
                  overlay={installGatewayMenu}
                  trigger={["click"]}
                >
-                 <Button type="primary" style={{ order: -1 }}>
+                 <Button type="primary" icon="cloud-download" style={{ order: -1 }}>
                    {formatMessage({ id: "gateway.instance.install.title" })}
                    <Icon type="down" />
                  </Button>

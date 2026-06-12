@@ -15,6 +15,12 @@ import commonStyles from "@/common.less"
 
 import SearchInput from "@/components/infini/SearchInput";
 
+const searchButton = (
+  <Button type="primary">
+    {formatMessage({ id: "form.button.search" })}
+  </Button>
+);
+
 export default ({
   clusterID,
   clusterName,
@@ -215,12 +221,12 @@ export default ({
           <SearchInput
             allowClear
             placeholder="Type keyword to search"
-            enterButton="Search"
+            enterButton={searchButton}
             onSearch={(value) => {
-              setSearchValue(value);
+              setSearchValue(value.trim());
             }}
             onChange={(e) => {
-              setSearchValue(e.target.value);
+              setSearchValue(e.target.value.trim());
             }}
           />
         </div>

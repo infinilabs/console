@@ -209,8 +209,8 @@ export default (props) => {
                   }
                 >
                   <div className="value">
-                    {formatter.numberToHuman(summary?.docs_deleted)} /{" "}
-                    {formatter.numberToHuman(summary?.docs_count)}
+                    {formatter.number(summary?.docs_deleted || 0)} /{" "}
+                    {formatter.number(summary?.docs_count || 0)}
                   </div>
                 </Tooltip>
                 <div className="lable">Docs</div>

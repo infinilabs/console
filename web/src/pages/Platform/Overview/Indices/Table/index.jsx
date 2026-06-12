@@ -139,8 +139,8 @@ export default (props) => {
                   </span>
                 }
               >
-                {formatter.numberToHuman(record.summary?.docs_deleted)} /{" "}
-                {formatter.numberToHuman(record.summary?.docs_count)}
+                {formatter.number(record.summary?.docs_deleted || 0)} /{" "}
+                {formatter.number(record.summary?.docs_count || 0)}
               </Tooltip>
             );
           },

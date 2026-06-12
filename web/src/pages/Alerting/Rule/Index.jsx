@@ -477,10 +477,20 @@ export default (props) => {
                     >
                       {formatMessage({ id: "app.action.import" })}
                     </Button>
+                    <Button
+                      key="rule-export"
+                      icon="download"
+                      onClick={() => {
+                        setExportVisible(true);
+                      }}
+                    >
+                      {formatMessage({ id: "form.button.export" })}
+                    </Button>
                     <Import
                       title={formatMessage({
                         id: "alert.rule.export-import.label",
                       })}
+                      exampleType="AlertRule"
                       visible={importVisible}
                       onSuccess={refresh}
                       onClose={() => setImportVisible(false)}

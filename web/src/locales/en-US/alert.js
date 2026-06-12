@@ -416,6 +416,9 @@ export default {
   "alert.channel.empty": "No channels?",
   "alert.channel.export-import.label": " Channels",
   "alert.rule.export-import.label": " Rules",
+  "alert.import.example.title": "Import example",
+  "alert.import.example.tip.rule":
+    "Export one rule file first as a template, then edit and import with the same structure.",
 
   // 告警任务详情页面
   "alert.task.detail.title": "Alert Task Detail",

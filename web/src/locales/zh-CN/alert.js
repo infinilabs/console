@@ -397,6 +397,8 @@ export default {
   "alert.channel.empty": "没有告警渠道？",
   "alert.channel.export-import.label": "告警渠道",
   "alert.rule.export-import.label": "告警规则",
+  "alert.import.example.title": "导入示例",
+  "alert.import.example.tip.rule": "建议先导出一份规则文件作为模板，再按相同结构编辑后导入。",
 
   // 告警任务详情页面
   "alert.task.detail.title": "告警任务详情",

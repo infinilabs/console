@@ -272,74 +272,71 @@ const RuleForm = (props) => {
     // }, 200);
   }, [props.form]);
 
-  const handleSubmit = useCallback(
-    (parmas) => {
-      props.form.validateFields((err, values) => {
-        if (err) {
-          if (parmas.is_test) {
-            message.error("please check rule config!");
-          }
-          return false;
+  const handleSubmit = (parmas) => {
+    props.form.validateFields((err, values) => {
+      if (err) {
+        if (parmas.is_test) {
+          message.error("please check rule config!");
         }
+        return false;
+      }
 
-        let newValues = cloneDeep(values);
+      let newValues = cloneDeep(values);
 
-        switch (parmas?.category) {
-          case "notification":
-            newValues.notification_config[
-              "normal"
-            ] = newValues.notification_config["normal"]
-              .filter((item, i) => i == parmas.channel_index)
-              .map((item) => ({
-                ...item,
-                ...(parmas?.channel || {}),
-                enabled: true,
-              }));
-            newValues.notification_config["escalation"] = [];
-            newValues.recovery_notification_config["normal"] = [];
-            break;
-          case "escalation":
-            newValues.notification_config[
-              "escalation"
-            ] = newValues.notification_config["escalation"]
-              .filter((item, i) => i == parmas.channel_index)
-              .map((item) => ({
-                ...item,
-                ...(parmas?.channel || {}),
-                enabled: true,
-              }));
-            newValues.notification_config["normal"] = [];
-            newValues.recovery_notification_config["normal"] = [];
-            break;
-          case "recover_notification":
-            newValues.recovery_notification_config[
-              "normal"
-            ] = newValues.recovery_notification_config["normal"]
-              .filter((item, i) => i == parmas.channel_index)
-              .map((item) => ({
-                ...item,
-                ...(parmas?.channel || {}),
-                enabled: true,
-              }));
-            newValues.notification_config["normal"] = [];
-            newValues.notification_config["escalation"] = [];
-            break;
-        }
+      switch (parmas?.category) {
+        case "notification":
+          newValues.notification_config[
+            "normal"
+          ] = newValues.notification_config["normal"]
+            .filter((item, i) => i == parmas.channel_index)
+            .map((item) => ({
+              ...item,
+              ...(parmas?.channel || {}),
+              enabled: true,
+            }));
+          newValues.notification_config["escalation"] = [];
+          newValues.recovery_notification_config["normal"] = [];
+          break;
+        case "escalation":
+          newValues.notification_config[
+            "escalation"
+          ] = newValues.notification_config["escalation"]
+            .filter((item, i) => i == parmas.channel_index)
+            .map((item) => ({
+              ...item,
+              ...(parmas?.channel || {}),
+              enabled: true,
+            }));
+          newValues.notification_config["normal"] = [];
+          newValues.recovery_notification_config["normal"] = [];
+          break;
+        case "recover_notification":
+          newValues.recovery_notification_config[
+            "normal"
+          ] = newValues.recovery_notification_config["normal"]
+            .filter((item, i) => i == parmas.channel_index)
+            .map((item) => ({
+              ...item,
+              ...(parmas?.channel || {}),
+              enabled: true,
+            }));
+          newValues.notification_config["normal"] = [];
+          newValues.notification_config["escalation"] = [];
+          break;
+      }
 
-        const alert_objects = formatAlertObjects(newValues);
+      const alert_objects = formatAlertObjects(newValues);
 
-        if (parmas?.is_test) {
-          onSendTestClick(alert_objects[0], parmas?.category);
-          return;
-        }
+      if (parmas?.is_test) {
+        onSendTestClick(alert_objects[0], parmas?.category);
+        return;
+      }
 
-        if (typeof props.onSaveClick == "function") {
-          props.onSaveClick(alert_objects);
-        }
-      });
-    },
-    [props.form]
-  );
+      if (typeof props.onSaveClick == "function") {
+        props.onSaveClick(alert_objects);
+      }
+    });
+  };
 
   const [testState, setTestState] = useState({ loading: false, result: "" });
   const onSendTestClick = useCallback(async (values, type) => {

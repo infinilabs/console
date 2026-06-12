@@ -1,4 +1,5 @@
 import {
+  Alert,
   Button,
   Drawer,
   Dropdown,
@@ -31,6 +32,7 @@ export default Form.create()((props) => {
     visible = false,
     title,
     types = [],
+    exampleType,
     form,
     onSuccess,
     onClose,
@@ -96,6 +98,32 @@ export default Form.create()((props) => {
   };
 
   const renderImportBody = () => {
+    const alertRuleExample = `{
+  "metadatas": [
+    {
+      "type": "AlertRule",
+      "items": [
+        {
+          "id": "rule_cpu_high",
+          "name": "CPU High Alert",
+          "enabled": true,
+          "resource_id": "your_cluster_id",
+          "priority": "critical"
+        }
+      ]
+    },
+    {
+      "type": "AlertChannel",
+      "items": [
+        {
+          "id": "channel_email_default",
+          "name": "Default Email Channel"
+        }
+      ]
+    }
+  ]
+}`;
+    const showRuleExample = exampleType === "AlertRule";
     const uploadProps = {
       accept: "application/json",
       fileList: uploadState?.fileList || [],
@@ -146,49 +174,74 @@ export default Form.create()((props) => {
     } catch {}
 
     return (
-      <>
-        <Form.Item label={formatMessage({ id: "app.export.form.file" })}>
-          {getFieldDecorator("upload", {
-            getValueFromEvent: normFile,
-            rules: [
-              {
-                required: true,
-                message: "Please select file",
-              },
-            ],
-          })(
-            <Upload {...uploadProps}>
-              <Button>
-                <Icon type="upload" />{" "}
-                {formatMessage({ id: "app.export.form.file.button" })}
-              </Button>
-            </Upload>
+      <div style={{ display: showRuleExample ? "flex" : "block", gap: 16 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Form.Item label={formatMessage({ id: "app.export.form.file" })}>
+            {getFieldDecorator("upload", {
+              getValueFromEvent: normFile,
+              rules: [
+                {
+                  required: true,
+                  message: "Please select file",
+                },
+              ],
+            })(
+              <Upload {...uploadProps}>
+                <Button>
+                  <Icon type="upload" />{" "}
+                  {formatMessage({ id: "app.export.form.file.button" })}
+                </Button>
+              </Upload>
+            )}
+          </Form.Item>
+          {data && (
+            <Editor
+              height={showRuleExample ? "calc(100vh - 260px)" : "calc(100vh - 110px - 70px - 48px)"}
+              language="json"
+              theme="light"
+              value={data}
+              options={{
+                minimap: {
+                  enabled: false,
+                },
+                wordBasedSuggestions: true,
+              }}
+              onChange={(value) => {
+                try {
+                  const jsonObj = JSON.parse(value);
+                  setUploadState({
+                    ...(uploadState || {}),
+                    data: jsonObj,
+                  });
+                } catch {}
+              }}
+            />
           )}
-        </Form.Item>
-        {data && (
-          <Editor
-            height="calc(100vh - 110px - 70px - 48px)"
-            language="json"
-            theme="light"
-            value={data}
-            options={{
-              minimap: {
-                enabled: false,
-              },
-              wordBasedSuggestions: true,
-            }}
-            onChange={(value) => {
-              try {
-                const jsonObj = JSON.parse(value);
-                setUploadState({
-                  ...(uploadState || {}),
-                  data: jsonObj,
-                });
-              } catch {}
-            }}
-          />
-        )}
-      </>
+        </div>
+        {showRuleExample ? (
+          <div style={{ width: 280, flex: "0 0 280px" }}>
+            <Alert
+              showIcon
+              type="info"
+              message={formatMessage({ id: "alert.import.example.title" })}
+              description={formatMessage({ id: "alert.import.example.tip.rule" })}
+              style={{ marginBottom: 12 }}
+            />
+            <Editor
+              height="calc(100vh - 260px)"
+              language="json"
+              theme="light"
+              value={alertRuleExample}
+              options={{
+                minimap: {
+                  enabled: false,
+                },
+                readOnly: true,
+              }}
+            />
+          </div>
+        ) : null}
+      </div>
     );
   };
 

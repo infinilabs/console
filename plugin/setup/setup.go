@@ -324,6 +324,7 @@ var GlobalSystemElasticsearchID = "infini_default_system_cluster"
 const VersionTooOld = "elasticsearch_version_too_old"
 const IndicesExists = "elasticsearch_indices_exists"
 const TemplateExists = "elasticsearch_template_exists"
+const LocalhostAddress = "localhost_address"
 const VersionNotSupport = "unknown_cluster_version"
 
 var cfg1 elastic1.ORMConfig
@@ -445,6 +446,9 @@ func (module *Module) validate(w http.ResponseWriter, r *http.Request, ps httpro
 				}
 				if v != "" {
 					success = false
+					if errType == "" && strings.Contains(strings.ToLower(v), "cannot register cluster with localhost address") {
+						errType = LocalhostAddress
+					}
 					result["error"] = util.MapStr{
 						"reason": v,
 					}

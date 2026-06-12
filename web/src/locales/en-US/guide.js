@@ -50,6 +50,8 @@ export default {
   "guide.cluster.test.connection.error.version":
     "Elasticsearch required version 5.3 or above.",
   "guide.cluster.test.connection.failed": "Cluster connection failed.",
+  "guide.cluster.test.connection.localhost":
+    "The cluster address cannot use localhost. Please enter a remote address that the gateway can access.",
   "guide.cluster.validate.elasticsearch_version_too_old":
     "Elasticsearch version is too old.",
   "guide.cluster.validate.elasticsearch_indices_exists":
@@ -57,10 +59,15 @@ export default {
   "guide.cluster.validate.elasticsearch_template_exists":
     "Some related templates are already exists in the target cluster.",
   "guide.cluster.validate.default":
-    "Some related data are already exists in the target cluster.",
+    "Existing data was detected in the target cluster.",
+  "guide.cluster.validate.localhost_address":
+    "Localhost addresses cannot be used to register a cluster.",
+  "guide.cluster.validate.localhost.sub":
+    "Change the cluster address to a remote address that the gateway can access, then try again.",
   "guide.cluster.validate.sub":
-    "Perform the following requests in other terminal tools can delete the existing data, but you may lost data.",
-  "guide.cluster.validate.sub.strong": "[DO IT AT YOUR OWN RISK!]",
+    "If you want to continue, run the following requests in another terminal tool to remove the existing data, but data may be lost.",
+  "guide.cluster.validate.sub.strong": "[Please proceed with caution!]",
+  "guide.cluster.validate.refresh": "Recheck",
   "guide.cluster.skip": "Skip",
   "guide.cluster.skip.desc":
     "You can also skip this step and reuse the existing data.",

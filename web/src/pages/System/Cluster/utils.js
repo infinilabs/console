@@ -62,6 +62,13 @@ export const getClusterConnectErrorMessage = (
   }
 
   if (
+    lowerReason.includes("cannot register cluster with localhost address") ||
+    lowerReason.includes("please use a remote address that gateway can access")
+  ) {
+    return formatMessage({ id: "guide.cluster.test.connection.localhost" });
+  }
+
+  if (
     lowerReason.includes("invalid character '<' looking for beginning of value") ||
     lowerReason.includes("<!doctype html>") ||
     lowerReason.includes("<html")

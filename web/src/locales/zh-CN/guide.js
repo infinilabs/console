@@ -48,16 +48,22 @@ export default {
   "guide.cluster.test.connection.error.version":
     "Elasticsearch 要求 5.3 或更高版本。",
   "guide.cluster.test.connection.failed": "连接集群失败。",
+  "guide.cluster.test.connection.localhost":
+    "集群地址不能使用本地地址，请填写网关可访问的远程地址。",
   "guide.cluster.validate.elasticsearch_version_too_old":
     "Elasticsearch 版本太旧。",
   "guide.cluster.validate.elasticsearch_indices_exists":
     "目标群集中已存在一些相关索引。",
   "guide.cluster.validate.elasticsearch_template_exists":
     "目标群集中已存在一些相关模板。",
-  "guide.cluster.validate.default": "目标群集中已存在一些相关数据。",
+  "guide.cluster.validate.default": "目标群集中检测到已有数据。",
+  "guide.cluster.validate.localhost_address": "无法使用本地地址注册集群。",
+  "guide.cluster.validate.localhost.sub":
+    "请将集群地址修改为网关可访问的远程地址后重新检测。",
   "guide.cluster.validate.sub":
-    "在其他终端工具中执行以下请求可以删除现有数据，但可能会丢失数据。",
-  "guide.cluster.validate.sub.strong": "[风险自负！]",
+    "如果确认要继续，可以在其他终端工具中执行以下请求清理现有数据，但可能会丢失数据。",
+  "guide.cluster.validate.sub.strong": "[请谨慎操作！]",
+  "guide.cluster.validate.refresh": "重新检测",
   "guide.cluster.skip": "跳过",
   "guide.cluster.skip.desc": "您也可以跳过此步骤并重用现有数据。",
   "guide.user.title": "初始化管理员账户",

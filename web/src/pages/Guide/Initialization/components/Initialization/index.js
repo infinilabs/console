@@ -97,6 +97,9 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
 
     const recommendedPrimaryShards = getRecommendedPrimaryShards(formData);
     const rollupSupported = formData.distribution === "easysearch" && compareVersions(formData.version, "1.12.1") >= 0;
+    const validationType = checkResult?.type || "default";
+    const validationTitleId = `guide.cluster.validate.${validationType}`;
+    const showLocalhostValidation = validationType === "localhost_address";
     const initialTasks = [
         {
             name: "template_ilm",
@@ -428,19 +431,25 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
                             title={(
                                 <span className={styles.title}>
                                     <Tooltip title={checkResult?.reason}>
-                                        { formatMessage({ id: `guide.cluster.validate.${checkResult?.type || 'default'}`}) }
+                                        { formatMessage({ id: validationTitleId }) }
                                     </Tooltip>
                                     <a style={{ marginLeft: 12 }} onClick={onCheck}>
                                         <Icon type="reload" style={{ marginRight: 4 }}/>
-                                        { formatMessage({ id: 'guide.step.refresh' }) }
+                                        { formatMessage({ id: 'guide.cluster.validate.refresh' }) }
                                     </a>
                                 </span>
                             )}
                             subTitle={(
-                                <div>
-                                    <div>{ formatMessage({ id: 'guide.cluster.validate.sub' }) }</div>
-                                    <div><strong style={{color:"rgb(255, 0, 0)"}}>{ formatMessage({ id: 'guide.cluster.validate.sub.strong' }) }</strong></div>
-                                </div>
+                                showLocalhostValidation ? (
+                                    <div>
+                                        <div>{ formatMessage({ id: 'guide.cluster.validate.localhost.sub' }) }</div>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <div>{ formatMessage({ id: 'guide.cluster.validate.sub' }) }</div>
+                                        <div><strong style={{color:"rgb(255, 0, 0)"}}>{ formatMessage({ id: 'guide.cluster.validate.sub.strong' }) }</strong></div>
+                                    </div>
+                                )
                             )}
                             extra={[
                                 <Button type="primary" key="previous" onClick={handlePrev}>{ formatMessage({ id: 'guide.step.prev' }) }</Button>,

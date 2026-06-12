@@ -88,7 +88,7 @@ class Index extends PureComponent {
       render: (text, record) => (
         <div className="command-list-item">
           <span className="command-list-item__icon">
-            <Icon type="code" />
+            <Icon type="tool" />
           </span>
           <div className="command-list-item__body">
             <a

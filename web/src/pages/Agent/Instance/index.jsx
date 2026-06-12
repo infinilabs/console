@@ -652,12 +652,14 @@ const AgentList = (props) => {
         <div
           style={{
             display: "flex",
-            alignItems: "center",
+            alignItems: "flex-start",
             justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 10,
             marginBottom: 15,
           }}
         >
-          <div style={{ maxWidth: 450, flex: "1 1 auto" }}>
+          <div style={{ maxWidth: 450, minWidth: 0, flex: "1 1 320px" }}>
             <SearchInput
               allowClear
               placeholder={formatMessage({
@@ -676,6 +678,8 @@ const AgentList = (props) => {
             style={{
               display: "flex",
               alignItems: "center",
+              flexWrap: "wrap",
+              justifyContent: "flex-end",
               gap: 10,
             }}
           >

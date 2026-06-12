@@ -9,7 +9,6 @@ import (
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/orm"
-	"infini.sh/framework/core/util"
 	configcommon "infini.sh/framework/modules/configs/common"
 )
 
@@ -23,8 +22,8 @@ var findPendingManagerTokenByValueFunc = agent_common.FindPendingManagerTokenByV
 var saveManagedInstanceFunc = func(instance *model.Instance) error {
 	return orm.Save(&orm.Context{Refresh: orm.WaitForRefresh}, instance)
 }
-var generateManagedAPITokenFunc = func() string {
-	return util.GenerateRandomString(48)
+var generateManagedAPITokenFunc = func() (string, error) {
+	return agent_common.GenerateManagedTokenValue()
 }
 
 type tokenExchangeRequest struct {
@@ -116,7 +115,11 @@ func (h APIHandler) exchangeInstanceToken(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	managerAPIToken := generateManagedAPITokenFunc()
+	managerAPIToken, err := generateManagedAPITokenFunc()
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	if err := upsertInstanceManagerCredentialFunc(instance, managerAPIToken); err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return

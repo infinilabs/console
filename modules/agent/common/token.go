@@ -54,6 +54,7 @@ const (
 )
 
 var rotatedTokenCache = util.NewCacheWithExpireOnAdd(tokenGracePeriod, 1024)
+var getManagedTokenSeedFunc = credential.GetOrInitSecret
 
 var (
 	ErrInvalidManagerToken      = errors.New("invalid agent manager token")
@@ -73,13 +74,25 @@ type PendingRegistrationToken struct {
 }
 
 func CreatePendingManagerToken(source string) (*PendingRegistrationToken, string, error) {
-	tokenValue := util.GenerateRandomString(48)
+	tokenValue, err := GenerateManagedTokenValue()
+	if err != nil {
+		return nil, "", err
+	}
+
+	record, err := findPendingManagerToken(tokenValue)
+	if err != nil {
+		return nil, "", err
+	}
+	if record != nil {
+		return record, tokenValue, nil
+	}
+
 	credentialID, err := SaveTokenCredential(BuildPendingManagerCredentialName(), BuildPendingManagerCredentialTags(), tokenValue)
 	if err != nil {
 		return nil, "", err
 	}
 
-	record := &PendingRegistrationToken{
+	pendingRecord := &PendingRegistrationToken{
 		CredentialID: credentialID,
 		TokenHash:    HashAgentToken(tokenValue),
 		Purpose:      agentManagerTokenPurpose,
@@ -87,11 +100,20 @@ func CreatePendingManagerToken(source string) (*PendingRegistrationToken, string
 		Consumed:     false,
 		ExpiresAt:    time.Now().Add(defaultPendingTokenTTL).UnixMilli(),
 	}
-	record.ID = util.GetUUID()
-	if err := orm.Create(&orm.Context{Refresh: orm.WaitForRefresh}, record); err != nil {
+	pendingRecord.ID = util.GetUUID()
+	if err := orm.Create(&orm.Context{Refresh: orm.WaitForRefresh}, pendingRecord); err != nil {
 		return nil, "", err
 	}
-	return record, tokenValue, nil
+	return pendingRecord, tokenValue, nil
+}
+
+func GenerateManagedTokenValue() (string, error) {
+	seed, err := getManagedTokenSeedFunc()
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256(append([]byte("managed-bootstrap-token:v1:"), seed...))
+	return hex.EncodeToString(sum[:]), nil
 }
 
 func GetPendingRegistrationTokenByID(id string) (*PendingRegistrationToken, error) {
@@ -114,12 +136,36 @@ func FindPendingManagerTokenByValue(tokenValue string) (*PendingRegistrationToke
 	if tokenValue == "" {
 		return nil, nil
 	}
+	record, err := findPendingManagerToken(tokenValue)
+	if err != nil || record != nil {
+		return record, err
+	}
+
+	expectedToken, err := GenerateManagedTokenValue()
+	if err != nil {
+		return nil, err
+	}
+	if subtle.ConstantTimeCompare([]byte(expectedToken), []byte(tokenValue)) != 1 {
+		return nil, nil
+	}
+	return createPendingManagerToken(tokenValue, AgentPendingTokenSourceVM)
+}
+
+func MarkPendingRegistrationTokenConsumed(record *PendingRegistrationToken, instanceID string) error {
+	if record == nil {
+		return nil
+	}
+	record.Consumed = true
+	record.InstanceID = strings.TrimSpace(instanceID)
+	return orm.Update(&orm.Context{Refresh: orm.WaitForRefresh}, record)
+}
+
+func findPendingManagerToken(tokenValue string) (*PendingRegistrationToken, error) {
 	query := orm.Query{
 		Size: 1,
 		Conds: orm.And(
 			orm.Eq("token_hash", HashAgentToken(tokenValue)),
 			orm.Eq("purpose", agentManagerTokenPurpose),
-			orm.Eq("consumed", false),
 		),
 	}
 	records := []PendingRegistrationToken{}
@@ -130,19 +176,28 @@ func FindPendingManagerTokenByValue(tokenValue string) (*PendingRegistrationToke
 		return nil, nil
 	}
 	record := records[0]
-	if record.ExpiresAt > 0 && time.Now().UnixMilli() > record.ExpiresAt {
-		return nil, nil
-	}
 	return &record, nil
 }
 
-func MarkPendingRegistrationTokenConsumed(record *PendingRegistrationToken, instanceID string) error {
-	if record == nil {
-		return nil
+func createPendingManagerToken(tokenValue, source string) (*PendingRegistrationToken, error) {
+	credentialID, err := SaveTokenCredential(BuildPendingManagerCredentialName(), BuildPendingManagerCredentialTags(), tokenValue)
+	if err != nil {
+		return nil, err
 	}
-	record.Consumed = true
-	record.InstanceID = strings.TrimSpace(instanceID)
-	return orm.Update(&orm.Context{Refresh: orm.WaitForRefresh}, record)
+
+	record := &PendingRegistrationToken{
+		CredentialID: credentialID,
+		TokenHash:    HashAgentToken(tokenValue),
+		Purpose:      agentManagerTokenPurpose,
+		Source:       source,
+		Consumed:     false,
+		ExpiresAt:    time.Now().Add(defaultPendingTokenTTL).UnixMilli(),
+	}
+	record.ID = util.GetUUID()
+	if err := orm.Create(&orm.Context{Refresh: orm.WaitForRefresh}, record); err != nil {
+		return nil, err
+	}
+	return record, nil
 }
 
 func SaveTokenCredential(name string, tags []string, tokenValue string) (string, error) {

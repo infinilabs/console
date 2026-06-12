@@ -9,6 +9,29 @@ import (
 	ucfg "infini.sh/framework/lib/go-ucfg"
 )
 
+func TestGenerateManagedTokenValueIsDeterministic(t *testing.T) {
+	originalSeedFunc := getManagedTokenSeedFunc
+	t.Cleanup(func() {
+		getManagedTokenSeedFunc = originalSeedFunc
+	})
+
+	getManagedTokenSeedFunc = func() ([]byte, error) {
+		return []byte("credential-secret"), nil
+	}
+
+	first, err := GenerateManagedTokenValue()
+	if err != nil {
+		t.Fatalf("generate first token: %v", err)
+	}
+	second, err := GenerateManagedTokenValue()
+	if err != nil {
+		t.Fatalf("generate second token: %v", err)
+	}
+	if first != second {
+		t.Fatalf("expected deterministic token, got %q and %q", first, second)
+	}
+}
+
 func TestValidateManagerRequestAuth(t *testing.T) {
 	t.Run("accepts valid manager token", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "/instance/_register", nil)

@@ -102,8 +102,8 @@ func TestExchangeInstanceToken(t *testing.T) {
 		}
 		return nil
 	}
-	generateManagedAPITokenFunc = func() string {
-		return "manager-api-token"
+	generateManagedAPITokenFunc = func() (string, error) {
+		return "manager-api-token", nil
 	}
 
 	req := httptest.NewRequest(http.MethodPost, instanceTokenExchangeAPI, bytes.NewBufferString(`{"instance_id":"agent-1","agent_api_token":"agent-api-token"}`))
@@ -167,8 +167,8 @@ func TestExchangeInstanceTokenSupportsGateway(t *testing.T) {
 	saveManagedInstanceFunc = func(obj *model.Instance) error {
 		return nil
 	}
-	generateManagedAPITokenFunc = func() string {
-		return "manager-api-token"
+	generateManagedAPITokenFunc = func() (string, error) {
+		return "manager-api-token", nil
 	}
 
 	req := httptest.NewRequest(http.MethodPost, instanceTokenExchangeAPI, bytes.NewBufferString(`{"instance_id":"gateway-1","agent_api_token":"gateway-api-token"}`))

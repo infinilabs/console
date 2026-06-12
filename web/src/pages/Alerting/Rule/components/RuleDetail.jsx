@@ -43,6 +43,17 @@ import isEqual from "lodash/isEqual";
 
 const { Title } = Typography;
 
+const formatRuleDetailTime = (value, fallback) => {
+  const parsed = moment(value);
+  if (parsed.isValid() && parsed.year() > 1) {
+    return formatUtcTimeToLocal(value);
+  }
+  if (fallback) {
+    return formatUtcTimeToLocal(fallback);
+  }
+  return "-";
+};
+
 export const buildWidgetByRule = (rule, queries, created, updated) => {
   if (!rule) return;
 
@@ -62,6 +73,7 @@ export const buildWidgetByRule = (rule, queries, created, updated) => {
       pattern: "0.00%",
     },
   };
+
   let query;
   try {
     // handle empty raw_filter
@@ -272,8 +284,8 @@ const RuleDetail = (props) => {
           {formatMessage(
             { id: "alert.rule.detail.title.changed_desc" },
             {
-              updated: formatUtcTimeToLocal(ruleDetail?.updated),
-              created: formatUtcTimeToLocal(ruleDetail?.created),
+              updated: formatRuleDetailTime(ruleDetail?.updated, ruleDetail?.created),
+              created: formatRuleDetailTime(ruleDetail?.created),
               user: ruleDetail?.creator?.name,
             }
           )}

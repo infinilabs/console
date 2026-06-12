@@ -86,31 +86,36 @@ class Index extends PureComponent {
       dataIndex: "title",
       width: 420,
       render: (text, record) => (
-        <div className="command-list-item">
-          <span className="command-list-item__icon">
-            <Icon type="tool" />
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            minWidth: 0,
+          }}
+        >
+          <span
+            style={{
+              width: 16,
+              display: "inline-flex",
+              justifyContent: "center",
+              color: "rgba(0, 0, 0, 0.65)",
+            }}
+          >
+            <Icon type="appstore" />
           </span>
-          <div className="command-list-item__body">
-            <a
-              className="command-list-item__title"
-              title={text}
-              onClick={() => {
-                this.setState({
-                  editingCommand: record,
-                  drawerVisible: true,
-                });
-              }}
-            >
-              {text}
-            </a>
-            <div
-              className="command-list-item__summary"
-              title={this.getCommandSummary(record)}
-            >
-              {this.getCommandSummary(record)}
-            </div>
-          </div>
-        </div>
+          <a
+            title={`${text}${this.getCommandSummary(record) ? ` · ${this.getCommandSummary(record)}` : ""}`}
+            onClick={() => {
+              this.setState({
+                editingCommand: record,
+                drawerVisible: true,
+              });
+            }}
+          >
+            {text}
+          </a>
+        </span>
       ),
     },
     {

@@ -290,6 +290,17 @@ export default (props) => {
     return indicator;
   };
 
+  const formatRuleUpdatedTime = (updated, created) => {
+    const parsed = moment(updated);
+    if (parsed.isValid() && parsed.year() > 1) {
+      return formatUtcTimeToLocal(updated);
+    }
+    if (created) {
+      return formatUtcTimeToLocal(created);
+    }
+    return "-";
+  };
+
   const columns = [
     {
       title: formatMessage({ id: "alert.rule.table.columnns.category" }),
@@ -348,9 +359,10 @@ export default (props) => {
       title: formatMessage({ id: "alert.rule.table.columnns.updated" }),
       key: "updated",
       sortable: true,
-      render: (text, record) => (
-        <span title={text}>{formatUtcTimeToLocal(text)}</span>
-      ),
+      render: (text, record) => {
+        const displayUpdated = formatRuleUpdatedTime(text, record?.created);
+        return <span title={displayUpdated}>{displayUpdated}</span>;
+      },
     },
     {
       title: formatMessage({ id: "alert.rule.table.columnns.enabled" }),

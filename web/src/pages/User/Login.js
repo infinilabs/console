@@ -20,6 +20,7 @@ class LoginPage extends Component {
   state = {
     type: "account",
     autoLogin: true,
+    ssoProviders: [],
   };
 
   componentDidMount() {
@@ -35,6 +36,11 @@ class LoginPage extends Component {
     try {
       const res = await refreshApplicationSettings();
       setSetupRequired(`${!!res?.setup_required}`);
+      const oauthProviders = res?.security?.auth?.oauth || {};
+      const ssoProviders = Object.keys(oauthProviders)
+        .map((key) => oauthProviders[key])
+        .filter((item) => !!item?.url);
+      this.setState({ ssoProviders });
       if (res?.setup_required) {
         router.replace("/guide/initialization");
       }
@@ -95,7 +101,7 @@ class LoginPage extends Component {
 
   render() {
     const { login, submitting } = this.props;
-    const { type, autoLogin } = this.state;
+    const { type, autoLogin, ssoProviders } = this.state;
     return (
       <div className={`login-wrapper ${styles.main}`}>
         <Login
@@ -145,10 +151,20 @@ class LoginPage extends Component {
           <Submit loading={submitting}>
             <FormattedMessage id="app.login.login" />
           </Submit>
-          {<div className={styles.other}>
-            <FormattedMessage id="app.login.sign-in-with" />
-            <Button type="link" href="/sso/login/"><Icon type="github" className={styles.icon} theme="outlined" /></Button>
-          </div> }
+          {ssoProviders.length > 0 ? (
+            <div className={styles.other}>
+              <FormattedMessage id="app.login.sign-in-with" />
+              {ssoProviders.map((provider, index) => (
+                <Button key={provider.url || index} type="link" href={provider.url}>
+                  <Icon
+                    type={provider.icon || provider.type || "github"}
+                    className={styles.icon}
+                    theme="outlined"
+                  />
+                </Button>
+              ))}
+            </div>
+          ) : null}
         </Login>
       </div>
     );

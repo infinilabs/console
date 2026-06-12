@@ -1,5 +1,4 @@
 import {
-  Alert,
   Button,
   Drawer,
   Dropdown,
@@ -7,6 +6,7 @@ import {
   Icon,
   Menu,
   Select,
+  Tooltip,
   Upload,
   message,
 } from "antd";
@@ -174,61 +174,17 @@ export default Form.create()((props) => {
     } catch {}
 
     return (
-      <div style={{ display: showRuleExample ? "flex" : "block", gap: 16 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <Form.Item label={formatMessage({ id: "app.export.form.file" })}>
-            {getFieldDecorator("upload", {
-              getValueFromEvent: normFile,
-              rules: [
-                {
-                  required: true,
-                  message: "Please select file",
-                },
-              ],
-            })(
-              <Upload {...uploadProps}>
-                <Button>
-                  <Icon type="upload" />{" "}
-                  {formatMessage({ id: "app.export.form.file.button" })}
-                </Button>
-              </Upload>
-            )}
-          </Form.Item>
-          {data && (
-            <Editor
-              height={showRuleExample ? "calc(100vh - 260px)" : "calc(100vh - 110px - 70px - 48px)"}
-              language="json"
-              theme="light"
-              value={data}
-              options={{
-                minimap: {
-                  enabled: false,
-                },
-                wordBasedSuggestions: true,
-              }}
-              onChange={(value) => {
-                try {
-                  const jsonObj = JSON.parse(value);
-                  setUploadState({
-                    ...(uploadState || {}),
-                    data: jsonObj,
-                  });
-                } catch {}
-              }}
-            />
-          )}
-        </div>
+      <div>
         {showRuleExample ? (
-          <div style={{ width: 280, flex: "0 0 280px" }}>
-            <Alert
-              showIcon
-              type="info"
-              message={formatMessage({ id: "alert.import.example.title" })}
-              description={formatMessage({ id: "alert.import.example.tip.rule" })}
-              style={{ marginBottom: 12 }}
-            />
+          <>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+              <span>{formatMessage({ id: "alert.import.example.title" })}</span>
+              <Tooltip title={formatMessage({ id: "alert.import.example.tip.rule" })}>
+                <Icon type="info-circle" style={{ color: "rgba(0,0,0,0.45)" }} />
+              </Tooltip>
+            </div>
             <Editor
-              height="calc(100vh - 260px)"
+              height="180px"
               language="json"
               theme="light"
               value={alertRuleExample}
@@ -239,8 +195,50 @@ export default Form.create()((props) => {
                 readOnly: true,
               }}
             />
-          </div>
+            <div style={{ height: 12 }} />
+          </>
         ) : null}
+        <Form.Item label={formatMessage({ id: "app.export.form.file" })}>
+          {getFieldDecorator("upload", {
+            getValueFromEvent: normFile,
+            rules: [
+              {
+                required: true,
+                message: "Please select file",
+              },
+            ],
+          })(
+            <Upload {...uploadProps}>
+              <Button>
+                <Icon type="upload" />{" "}
+                {formatMessage({ id: "app.export.form.file.button" })}
+              </Button>
+            </Upload>
+          )}
+        </Form.Item>
+        {data && (
+          <Editor
+            height={showRuleExample ? "calc(100vh - 420px)" : "calc(100vh - 110px - 70px - 48px)"}
+            language="json"
+            theme="light"
+            value={data}
+            options={{
+              minimap: {
+                enabled: false,
+              },
+              wordBasedSuggestions: true,
+            }}
+            onChange={(value) => {
+              try {
+                const jsonObj = JSON.parse(value);
+                setUploadState({
+                  ...(uploadState || {}),
+                  data: jsonObj,
+                });
+              } catch {}
+            }}
+          />
+        )}
       </div>
     );
   };

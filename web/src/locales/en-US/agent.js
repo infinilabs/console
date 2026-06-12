@@ -29,7 +29,7 @@ export default {
   "agent.instance.field.endpoint.form.required":
     "Please input agent API endpoint!",
   "agent.instance.registration.copy": "Copy",
-  "agent.instance.registration.console.title": "INFINI Console Access Info",
+  "agent.instance.registration.console.title": "INFINI Console Access Credential",
   "agent.instance.registration.access.endpoint": "Access Endpoint",
   "agent.instance.registration.access.credential": "Access Credential",
   "agent.instance.registration.console.endpoint.tip":

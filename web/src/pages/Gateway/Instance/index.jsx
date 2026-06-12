@@ -467,14 +467,12 @@ export default (props) => {
         return (
           <div>
             <Dropdown overlay={menu}>
-              <Button
-                size="small"
-                icon="setting"
-                style={{ minWidth: 88 }}
+              <a
+                style={{ fontSize: "20px" }}
+                onClick={(e) => e.preventDefault()}
               >
-                {formatMessage({ id: "table.field.actions" })}
-                <Icon type="down" />
-              </Button>
+                <Icon type="ellipsis" />
+              </a>
             </Dropdown>
           </div>
         );
@@ -498,10 +496,16 @@ export default (props) => {
       }}
     >
       <Menu.Item key="migration">
-        {formatMessage({ id: "gateway.install.type.migration" })}
+        <span style={menuItemContentStyle}>
+          <Icon type="swap" />
+          <span>{formatMessage({ id: "gateway.install.type.migration" })}</span>
+        </span>
       </Menu.Item>
       <Menu.Item key="relay">
-        {formatMessage({ id: "gateway.install.type.relay" })}
+        <span style={menuItemContentStyle}>
+          <Icon type="share-alt" />
+          <span>{formatMessage({ id: "gateway.install.type.relay" })}</span>
+        </span>
       </Menu.Item>
     </Menu>
   );

@@ -238,11 +238,11 @@ export default ({
           }}
         >
           <Button
-            icon="redo"
             onClick={() => {
               onRefreshClick();
             }}
           >
+            <Icon type="redo" />
             {formatMessage({ id: "form.button.refresh" })}
           </Button>
         </div>

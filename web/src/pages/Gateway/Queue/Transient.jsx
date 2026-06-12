@@ -261,7 +261,7 @@ export default (props) => {
           </Button>
           {hasAuthority("gateway.instance:all") ? (
             <Dropdown overlay={batchMenu}>
-              <Button type="primary">
+              <Button type="primary" icon="appstore">
                 {formatMessage({ id: "form.button.batch_actions" })}
               </Button>
             </Dropdown>

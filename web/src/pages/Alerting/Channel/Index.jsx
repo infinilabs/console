@@ -499,7 +499,7 @@ const Index = (props) => {
                   {formatMessage({ id: "form.button.new" })}
                 </Button>
                 <Dropdown overlay={batchMenu}>
-                  <Button type="primary">
+                  <Button type="primary" icon="appstore">
                     {formatMessage({ id: "form.button.batch_actions" })}{" "}
                     <Icon type="down" />
                   </Button>

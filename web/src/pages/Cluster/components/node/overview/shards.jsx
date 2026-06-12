@@ -12,6 +12,12 @@ import { formatTimeRange } from "@/lib/elasticsearch/util";
 
 import SearchInput from "@/components/infini/SearchInput";
 
+const searchButton = (
+  <Button type="primary" icon="search">
+    {formatMessage({ id: "form.button.search" })}
+  </Button>
+);
+
 const Shards = ({ clusterID, clusterName, nodeID, timeRange, setSpinning }) => {
   if (!clusterID || !nodeID) {
     return null;
@@ -151,12 +157,12 @@ const Shards = ({ clusterID, clusterName, nodeID, timeRange, setSpinning }) => {
             <SearchInput
               allowClear
               placeholder="Type keyword to search"
-              enterButton="Search"
+              enterButton={searchButton}
               onSearch={(value) => {
-                setSearchValue(value);
+                setSearchValue(value.trim());
               }}
               onChange={(e) => {
-                setSearchValue(e.target.value);
+                setSearchValue(e.target.value.trim());
               }}
             />
           </div>
@@ -183,11 +189,11 @@ const Shards = ({ clusterID, clusterName, nodeID, timeRange, setSpinning }) => {
               />
             </div>
             <Button
-              icon="redo"
               onClick={() => {
                 onRefreshClick();
               }}
             >
+              <Icon type="redo" />
               {formatMessage({ id: "form.button.refresh" })}
             </Button>
           </div>

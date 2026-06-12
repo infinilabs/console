@@ -361,10 +361,12 @@ const AgentList = (props) => {
                 }
                 trigger={["click"]}
               >
-                <Button size="small" icon="setting">
-                  {formatMessage({ id: "table.field.actions" })}
-                  <Icon type="down" />
-                </Button>
+                <a
+                  style={{ fontSize: "20px" }}
+                  onClick={(e) => e.preventDefault()}
+                >
+                  <Icon type="ellipsis" />
+                </a>
               </Dropdown>
             ) : null}
           </div>
@@ -626,10 +628,16 @@ const AgentList = (props) => {
       }}
     >
       <Menu.Item key="register">
-        {formatMessage({ id: "agent.instance.registration.menu.register" })}
+        <span style={menuItemContentStyle}>
+          <Icon type="user-add" />
+          <span>{formatMessage({ id: "agent.instance.registration.menu.register" })}</span>
+        </span>
       </Menu.Item>
       <Menu.Item key="console-info">
-        {formatMessage({ id: "agent.instance.registration.menu.info" })}
+        <span style={menuItemContentStyle}>
+          <Icon type="safety-certificate" />
+          <span>{formatMessage({ id: "agent.instance.registration.menu.info" })}</span>
+        </span>
       </Menu.Item>
     </Menu>
   );
@@ -695,7 +703,7 @@ const AgentList = (props) => {
                   </Button>
                   <Button
                    type="primary"
-                   icon="deployment-unit"
+                   icon="cloud-download"
                     onClick={() => {
                       setEditState((st) => {
                         return {

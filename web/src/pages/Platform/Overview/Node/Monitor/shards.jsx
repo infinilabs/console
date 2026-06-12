@@ -240,11 +240,11 @@ export default ({ clusterID, clusterName, nodeID, timeRange, bucketSize }) => {
             />
           </div>
           <Button
-            icon="redo"
             onClick={() => {
               onRefreshClick();
             }}
           >
+            <Icon type="redo" />
             {formatMessage({ id: "form.button.refresh" })}
           </Button>
         </div>

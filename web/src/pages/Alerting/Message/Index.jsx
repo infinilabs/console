@@ -710,7 +710,7 @@ const Index = (props) => {
           >
             {hasAuthority("alerting.message:all") ? (
               <Dropdown overlay={batchMenu}>
-                <Button type="primary">
+                <Button type="primary" icon="appstore">
                   {formatMessage({ id: "form.button.batch_actions" })}{" "}
                   <Icon type="down" />
                 </Button>

@@ -26,7 +26,7 @@ export default {
     "探针地址，例如：127.0.0.1:2900",
   "agent.instance.field.endpoint.form.required": "请输入探针 API 地址！",
   "agent.instance.registration.copy": "复制",
-  "agent.instance.registration.console.title": "INFINI Console 访问信息",
+  "agent.instance.registration.console.title": "INFINI Console 访问凭据",
   "agent.instance.registration.access.endpoint": "访问地址",
   "agent.instance.registration.access.credential": "访问凭据",
   "agent.instance.registration.console.endpoint.tip":

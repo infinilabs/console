@@ -404,8 +404,18 @@ func (h *EmailAPI) testEmailServer(w http.ResponseWriter, req *http.Request, ps 
 	}
 	err = d.DialAndSend(message)
 	if err != nil {
-		log.Error(err)
 		key, reason := classifyEmailServerTestSendError(&reqBody.EmailServer, sender, err)
+		log.Errorf(
+			"email server test send failed, host=%s, port=%d, tls=%v, tls_min_version=%s, sender=%s, error_key=%s, reason=%s, err=%v",
+			reqBody.Host,
+			reqBody.Port,
+			reqBody.TLS,
+			reqBody.TLSMinVersion,
+			sender,
+			key,
+			reason,
+			err,
+		)
 		h.writeEmailServerTestError(w, key, reason, http.StatusInternalServerError)
 		return
 	}

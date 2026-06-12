@@ -26,6 +26,42 @@ const resolveAlertTime = (value) => {
   return parsed.isValid() && parsed.year() > 1 ? value : "";
 };
 
+const safeParseJSON = (value) => {
+  if (!value) return null;
+  if (typeof value === "object") return value;
+  if (typeof value !== "string") return null;
+  try {
+    return JSON.parse(value);
+  } catch (e) {
+    return null;
+  }
+};
+
+const buildCopyRequest = (msgItem, ruleID, min, max) => {
+  const queryDSL = safeParseJSON(msgItem?.condition_result?.query_result?.query);
+  const objects =
+    msgItem?.resource?.objects ||
+    msgItem?.resource_objects ||
+    msgItem?.objects ||
+    [];
+  const index = Array.isArray(objects) && objects.length > 0 ? objects.join(",") : "";
+  if (queryDSL) {
+    if (index) {
+      return `GET ${index}/_search\n${JSON.stringify(queryDSL, null, 2)}`;
+    }
+    return JSON.stringify(queryDSL, null, 2);
+  }
+  return JSON.stringify(
+    {
+      method: "GET",
+      path: `/alerting/rule/${ruleID}/history_metric`,
+      query: { min, max },
+    },
+    null,
+    2
+  );
+};
+
 export default ({ msgItem, range, onRangeChange }) => {
   const { rule_id, expression } = msgItem;
   const created = resolveAlertTime(msgItem?.trigger_at) || msgItem?.created;
@@ -50,17 +86,7 @@ export default ({ msgItem, range, onRangeChange }) => {
         method: "GET",
         queryParams: { min, max },
       });
-      setLatestRequest(
-        JSON.stringify(
-          {
-            method: "GET",
-            path: `/alerting/rule/${id}/history_metric`,
-            query: { min, max },
-          },
-          null,
-          2
-        )
-      );
+      setLatestRequest(buildCopyRequest(msgItem, id, min, max));
       if (res && !res.error) {
         setMetricData(res.metric || {});
       }

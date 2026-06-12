@@ -76,8 +76,8 @@ func Init() {
 	api.HandleAPIMethod(api.POST, "/account/login/challenge", apiHandler.RequireSecureTransport(frameworkrbac.LoginChallenge))
 	api.HandleAPIMethod(api.POST, "/account/login", apiHandler.RequireSecureTransport(frameworkrbac.Login))
 	api.HandleAPIMethod(api.POST, "/account/refresh", apiHandler.RequireSecureTransport(apiHandler.RequireLogin(frameworkaccount.Refresh)), api.RequireLogin())
-	api.HandleAPIMethod(api.POST, "/account/logout", frameworkaccount.Logout)
-	api.HandleAPIMethod(api.DELETE, "/account/logout", frameworkaccount.Logout)
+	api.HandleAPIMethod(api.POST, "/account/logout", apiHandler.RequireLogin(frameworkaccount.Logout), api.RequireLogin())
+	api.HandleAPIMethod(api.DELETE, "/account/logout", apiHandler.RequireLogin(frameworkaccount.Logout), api.RequireLogin())
 
 	api.HandleAPIMethod(api.GET, "/account/profile", apiHandler.RequireLogin(apiHandler.Profile), api.RequireLogin())
 	api.HandleAPIMethod(api.PUT, "/account/password", apiHandler.RequireSecureTransport(apiHandler.RequireReplayProtection(apiHandler.RequireLogin(apiHandler.UpdatePassword))), api.RequireLogin())

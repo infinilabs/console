@@ -26,15 +26,29 @@ const icon = () => (
 export default (props) => {
   const { currentUser } = props;
   const [stats, setStats] = useState({});
+  const [noticeCount, setNoticeCount] = useState(0);
   const [loading, setLoading] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
-    const res = await request(`/alerting/message/_stats`, {
-      method: "GET",
-    });
-    if (res?.alert?.current && !res?.error) {
-      setStats(res.alert.current);
+    const [alertRes, noticeRes] = await Promise.all([
+      request(`/alerting/message/_stats`, {
+        method: "GET",
+      }),
+      request(`/notification/_search`, {
+        method: "POST",
+        body: {
+          from: 0,
+          size: 0,
+          status: ["new"],
+        },
+      }),
+    ]);
+    if (alertRes?.alert?.current && !alertRes?.error) {
+      setStats(alertRes.alert.current);
+    }
+    if (!noticeRes?.error) {
+      setNoticeCount(noticeRes?.hits?.total?.value || 0);
     }
     setLoading(false);
   };
@@ -76,7 +90,7 @@ export default (props) => {
                   className={styles.num}
                   style={{ color: "rgb(2, 127, 254)" }}
                 >
-                  {currentUser.notifyCount || 0}
+                  {noticeCount || currentUser.notifyCount || 0}
                 </div>
                 <div className={styles.desc}>
                   {formatMessage({ id: "overview.message.notice" })}

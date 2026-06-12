@@ -73,6 +73,11 @@ export default {
   "overview.message.alert": "告警",
   "overview.message.notice": "通知",
   "overview.message.todo": "待办",
+  "platform.notification.table.title": "标题",
+  "platform.notification.table.created": "创建时间",
+  "platform.notification.table.status": "状态",
+  "platform.notification.status.new": "新通知",
+  "platform.notification.status.read": "已读",
 
   "overview.quick.alert": "告警管理",
   "overview.quick.dev_tools": "开发工具",

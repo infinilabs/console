@@ -74,6 +74,11 @@ export default {
   "overview.message.alert": "Alert",
   "overview.message.notice": "Notice",
   "overview.message.todo": "Todo",
+  "platform.notification.table.title": "Title",
+  "platform.notification.table.created": "Created",
+  "platform.notification.table.status": "Status",
+  "platform.notification.status.new": "New",
+  "platform.notification.status.read": "Read",
 
   "overview.quick.alert": "Setup Alerting Rules",
   "overview.quick.dev_tools": "Access Dev Tools",

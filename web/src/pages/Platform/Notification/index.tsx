@@ -110,22 +110,26 @@ const Index = (props) => {
 
   const columns = [
     {
-      title: "Title",
+      title: formatMessage({ id: "platform.notification.table.title" }),
       dataIndex: "title",
       render: (text, record) => <span>{record.title}</span>,
     },
     {
-      title: "Created",
+      title: formatMessage({ id: "platform.notification.table.created" }),
       dataIndex: "created",
       render: (text, record) => (
         <span title={text}>{moment(record.created).fromNow()}</span>
       ),
     },
     {
-      title: "Status",
+      title: formatMessage({ id: "platform.notification.table.status" }),
       dataIndex: "status",
       render: (text, record) => (
-        <Tag color={text == "new" ? "#108ee9" : "#108ee9"}>{text}</Tag>
+        <Tag color={text == "new" ? "#108ee9" : "default"}>
+          {text == "new"
+            ? formatMessage({ id: "platform.notification.status.new" })
+            : formatMessage({ id: "platform.notification.status.read" })}
+        </Tag>
       ),
     },
     {
@@ -201,41 +205,8 @@ const Index = (props) => {
   };
 
   return (
-    // <PageHeaderWrapper>
-    // <Card>
-    //   <Tabs defaultActiveKey="1" onChange={callback}>
-    //     <TabPane
-    //       tab={formatMessage({ id: "component.globalHeader.notification" })}
-    //       key="notification"
-    //     >
-    //       <Collapse>
-    //         {noticeData.notification?.map((item) => {
-    //           return (
-    //             <Panel header={item.title} key={item.id}>
-    //               <p>{item.body}</p>
-    //             </Panel>
-    //           );
-    //         })}
-    //       </Collapse>
-    //     </TabPane>
-
-    //     <TabPane
-    //       tab={formatMessage({ id: "component.globalHeader.todo" })}
-    //       key="todo"
-    //     >
-    //       <Collapse>
-    //         {noticeData.todo?.map((item) => {
-    //           return (
-    //             <Panel header={item.title} key={item.id}>
-    //               <p>{item.body}</p>
-    //             </Panel>
-    //           );
-    //         })}
-    //       </Collapse>
-    //     </TabPane>
-    //   </Tabs>
-    // </Card>
-    <Card>
+    <PageHeaderWrapper>
+      <Card>
       <div
         style={{
           display: "flex",
@@ -335,8 +306,8 @@ const Index = (props) => {
         expandRowByClick={true}
         onExpand={onExpand}
       />
-    </Card>
-    // </PageHeaderWrapper>
+      </Card>
+    </PageHeaderWrapper>
   );
 };
 

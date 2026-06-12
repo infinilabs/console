@@ -153,6 +153,7 @@ export const ConsoleUI = ({
   height = "50vh",
   mode = "global",
   reservePageSpace = mode === "global",
+  disableHoverScrollLock = false,
 }: any) => {
   const clusterMap = useMemo(() => {
     let cm = {};
@@ -444,8 +445,8 @@ export const ConsoleUI = ({
     >
       <div
         style={{ background: "#fff", height: "100%" }}
-        onMouseOver={disableWindowScroll}
-        onMouseOut={enableWindowScroll}
+        onMouseOver={disableHoverScrollLock ? undefined : disableWindowScroll}
+        onMouseOut={disableHoverScrollLock ? undefined : enableWindowScroll}
         id="console"
         ref={rootRef}
       >

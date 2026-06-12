@@ -26,6 +26,9 @@ const isMacPlatform = () =>
 
 export default class GlobalHeaderRight extends PureComponent {
   state = { consoleVisible: false, notificationPopupVisible: false };
+  bodyOverflow = "";
+  bodyPaddingRight = "";
+  rootPaddingBottom = "";
 
   isConsoleToggleShortcut = (event) => {
     const key = (event.key || "").toLowerCase();
@@ -49,14 +52,34 @@ export default class GlobalHeaderRight extends PureComponent {
     });
     return groupBy(newNotices, "type");
   }
+  getScrollbarWidth = () => {
+    if (typeof window === "undefined") {
+      return 0;
+    }
+    return Math.max(
+      0,
+      window.innerWidth - document.documentElement.clientWidth
+    );
+  };
   setConsoleVisible = (visible) => {
+    const body = document.body;
+    const root = document.querySelector("#root>div");
     this.setState({
       consoleVisible: visible,
     });
-    document.body.style.overflow = visible ? "hidden" : "";
-    var sl = document.querySelector("#root>div");
-    if (sl) {
-      sl.style.paddingBottom = "0px";
+    if (body) {
+      if (visible) {
+        this.bodyOverflow = body.style.overflow;
+        this.bodyPaddingRight = body.style.paddingRight;
+        body.style.overflow = "hidden";
+        body.style.paddingRight = `${this.getScrollbarWidth()}px`;
+      } else {
+        body.style.overflow = this.bodyOverflow;
+        body.style.paddingRight = this.bodyPaddingRight;
+      }
+    }
+    if (root) {
+      root.style.paddingBottom = "0px";
     }
   };
   onKeyDown = (e) => {
@@ -65,12 +88,18 @@ export default class GlobalHeaderRight extends PureComponent {
       hasAuthority("devtool.console:read");
     if (hasDevtoolPrivilege && this.isConsoleToggleShortcut(e)) {
       e.preventDefault();
-      if (this.state.consoleVisible) document.body.style.overflow = "";
       this.setConsoleVisible(!this.state.consoleVisible);
       return true;
     }
     return false;
   };
+  componentWillUnmount() {
+    const body = document.body;
+    if (body) {
+      body.style.overflow = this.bodyOverflow;
+      body.style.paddingRight = this.bodyPaddingRight;
+    }
+  }
   constructor(props) {
     super(props);
     this.onKeyDown = this.onKeyDown.bind(this);
@@ -354,6 +383,7 @@ export default class GlobalHeaderRight extends PureComponent {
                   clusterStatus={this.props.clusterStatus}
                   resizeable={true}
                   reservePageSpace={false}
+                  disableHoverScrollLock={true}
                 />
               )}
           </div>

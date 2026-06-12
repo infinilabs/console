@@ -82,6 +82,7 @@ const initialQueryParams = {
   size: 10,
   keyword: "",
 };
+const tableDefaultPageSize = 20;
 
 export default forwardRef((props: IProps, ref: any) => {
   const [param, setParam] = useQueryParam("_g", JsonParam);
@@ -127,6 +128,12 @@ export default forwardRef((props: IProps, ref: any) => {
     let obj = {};
     obj[currentTab] = value;
     setDispalyTypeObj({ ...dispalyTypeObj, ...obj });
+    if (
+      value === "table" &&
+      queryParams.size === initialQueryParams.size
+    ) {
+      dispatch({ type: "setPageSizeAndReset", value: tableDefaultPageSize });
+    }
   };
 
   function reducer(
@@ -148,6 +155,12 @@ export default forwardRef((props: IProps, ref: any) => {
       case "pageSizeChange":
         return {
           ...queryParams,
+          size: action.value,
+        };
+      case "setPageSizeAndReset":
+        return {
+          ...queryParams,
+          from: 0,
           size: action.value,
         };
       default:

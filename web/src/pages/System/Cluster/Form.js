@@ -8,7 +8,7 @@ import {
   Button,
   Switch,
   message,
-  Spin, Select,
+  Spin, Select, Tooltip,
 } from "antd";
 import router from "umi/router";
 
@@ -187,6 +187,7 @@ class ClusterForm extends React.Component {
             }
           : undefined,
         metric_collection_mode: values.metric_collection_mode || 'agentless',
+        agent_collection_interval: isAgentMode ? (values.agent_collection_interval || 0) : 0,
 
         description: values.description,
         enabled: values.enabled,
@@ -690,6 +691,28 @@ class ClusterForm extends React.Component {
                       tryConnect={this.tryConnect}
                       credentialRequired={this.state.agentCredentialRequired}
                     />
+                    <Form.Item
+                      label={
+                        <Tooltip title={formatMessage({ id: "agent.instance.collection_interval.tip" })}>
+                          {formatMessage({ id: "agent.instance.collection_interval.label" })}
+                          {" "}<Icon type="question-circle-o" style={{ color: "#999" }} />
+                        </Tooltip>
+                      }
+                    >
+                      {getFieldDecorator("agent_collection_interval", {
+                        initialValue: editValue?.agent_collection_interval || null,
+                      })(
+                        <InputNumber
+                          min={0}
+                          max={3600}
+                          step={10}
+                          placeholder={formatMessage({ id: "agent.instance.collection_interval.placeholder" })}
+                          formatter={(value) => value ? `${value} ${formatMessage({ id: "agent.instance.collection_interval.unit" })}` : ""}
+                          parser={(value) => `${value || ""}`.replace(/[^\d]/g, "")}
+                          style={{ width: 160 }}
+                        />
+                      )}
+                    </Form.Item>
                   </>
                 )
               }

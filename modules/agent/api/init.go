@@ -55,6 +55,7 @@ func Init() {
 	api.HandleAPIMethod(api.POST, "/instance/:instance_id/node/_discovery", handler.RequirePermission(handler.discoveryESNodesInfo, enum.PermissionAgentInstanceRead))
 	api.HandleAPIMethod(api.POST, "/instance/:instance_id/node/_enroll", handler.RequirePermission(handler.enrollESNode, enum.PermissionAgentInstanceWrite))
 	api.HandleAPIMethod(api.POST, "/instance/:instance_id/node/_revoke", handler.RequirePermission(handler.revokeESNode, enum.PermissionAgentInstanceWrite))
+	api.HandleAPIMethod(api.POST, "/instance/:instance_id/cluster/:cluster_id/_collection_interval", handler.RequirePermission(handler.updateClusterCollectionInterval, enum.PermissionAgentInstanceWrite))
 
 	api.HandleAPIMethod(api.POST, "/instance/node/_auto_enroll", handler.RequirePermission(handler.autoEnrollESNode, enum.PermissionAgentInstanceWrite))
 

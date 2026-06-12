@@ -29,6 +29,7 @@ func TestRenderAgentTaskTemplateConfigProducesValidYAML(t *testing.T) {
 		false,
 		true,
 		[]string{`C:\Program Files\Agent\logs`},
+		0,
 	)
 
 	cfg, err := config2.NewConfigWithYAML([]byte(content), "generated_metrics_tasks.yml")
@@ -116,6 +117,7 @@ func TestRenderAgentTaskTemplateConfigSupportsMultipleLogsPaths(t *testing.T) {
 		false,
 		true,
 		[]string{"/infini/easysearch/logs", "/infini/easysearch/gc"},
+		0,
 	)
 
 	cfg, err := config2.NewConfigWithYAML([]byte(content), "generated_metrics_tasks.yml")
@@ -141,6 +143,50 @@ func TestRenderAgentTaskTemplateConfigSupportsMultipleLogsPaths(t *testing.T) {
 	}
 	if got := parsed.Pipeline[1].Processor[0].Logs.LogsPath; len(got) != 2 || got[0] != "/infini/easysearch/logs" || got[1] != "/infini/easysearch/gc" {
 		t.Fatalf("expected logs paths to round-trip, got %#v", got)
+	}
+}
+
+func TestRenderAgentTaskPipelineConfigWithCustomInterval(t *testing.T) {
+	content := "elasticsearch:" + renderAgentTaskElasticsearchConfig(
+		"cluster-1_node-1",
+		"uuid:cluster",
+		"8.13.4",
+		"easysearch",
+		"https://192.168.3.8:9200",
+		"agent-user",
+		"$[[keystore.cluster-1_password]]",
+	) + "\npipeline:" + renderAgentTaskPipelineConfig(
+		"cluster-1_node-1",
+		"cluster-1",
+		"Cluster 1",
+		"uuid:cluster",
+		false,
+		true,
+		[]string{"/infini/easysearch/logs"},
+		30,
+	)
+
+	cfg, err := config2.NewConfigWithYAML([]byte(content), "generated_metrics_tasks.yml")
+	if err != nil {
+		t.Fatalf("expected generated yaml to parse with interval, got error: %v\n%s", err, content)
+	}
+
+	var parsed struct {
+		Pipeline []struct {
+			Interval string `config:"interval"`
+		} `config:"pipeline"`
+	}
+	if err := cfg.Unpack(&parsed); err != nil {
+		t.Fatalf("expected generated yaml to unpack with interval, got error: %v", err)
+	}
+	if len(parsed.Pipeline) != 2 {
+		t.Fatalf("expected 2 pipelines, got %d", len(parsed.Pipeline))
+	}
+	if got := parsed.Pipeline[0].Interval; got != "30s" {
+		t.Fatalf("expected interval to be 30s, got %q", got)
+	}
+	if got := parsed.Pipeline[1].Interval; got != "30s" {
+		t.Fatalf("expected logs pipeline interval to be 30s, got %q", got)
 	}
 }
 

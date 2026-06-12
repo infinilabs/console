@@ -612,6 +612,11 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 		}
 
 		taskID := v.ClusterID + "_" + v.NodeUUID
+		// Resolve effective collection interval: per-node override > cluster default > agent default (0)
+		collectionInterval := v.CollectionInterval
+		if collectionInterval == 0 {
+			collectionInterval = metadata.Config.AgentCollectionInterval
+		}
 		elasticBuffer.WriteString(renderAgentTaskElasticsearchConfig(
 			taskID,
 			v.ClusterUUID,
@@ -629,6 +634,7 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 			clusterLevelEnabled,
 			nodeLevelEnabled,
 			logsPaths,
+			collectionInterval,
 		))
 	}
 
@@ -657,7 +663,7 @@ func renderAgentTaskElasticsearchConfig(taskID, clusterUUID, version, distributi
 	)
 }
 
-func renderAgentTaskPipelineConfig(taskID, clusterID, clusterName, clusterUUID string, clusterLevelEnabled, nodeLevelEnabled bool, logsPaths []string) string {
+func renderAgentTaskPipelineConfig(taskID, clusterID, clusterName, clusterUUID string, clusterLevelEnabled, nodeLevelEnabled bool, logsPaths []string, collectionInterval int) string {
 	logsPathValue := `""`
 	switch len(logsPaths) {
 	case 0:
@@ -666,10 +672,15 @@ func renderAgentTaskPipelineConfig(taskID, clusterID, clusterName, clusterUUID s
 	default:
 		logsPathValue = util.MustToJSON(logsPaths)
 	}
+	intervalLine := ""
+	if collectionInterval > 0 {
+		intervalLine = fmt.Sprintf("\n    interval: %ds", collectionInterval)
+	}
 	return fmt.Sprintf(
-		"\n  - auto_start: %t\n    enabled: %t\n    keep_running: true\n    name: collect_%s_es_node_stats\n    retry_delay_in_ms: 10000\n    processor:\n      - es_node_stats:\n          elasticsearch: %s\n          labels:\n            cluster_id: %s\n            cluster_uuid: %s\n            cluster_name: %s\n          when:\n            cluster_available:\n              - %s\n\n  - auto_start: %t\n    enabled: %t\n    keep_running: true\n    name: collect_%s_es_logs\n    retry_delay_in_ms: 10000\n    processor:\n      - es_logs_processor:\n          elasticsearch: %s\n          labels:\n            cluster_id: %s\n            cluster_uuid: %s\n            cluster_name: %s\n          logs_path: %s\n          queue_name: logs\n          when:\n            cluster_available:\n              - %s\n",
+		"\n  - auto_start: %t\n    enabled: %t\n    keep_running: true%s\n    name: collect_%s_es_node_stats\n    retry_delay_in_ms: 10000\n    processor:\n      - es_node_stats:\n          elasticsearch: %s\n          labels:\n            cluster_id: %s\n            cluster_uuid: %s\n            cluster_name: %s\n          when:\n            cluster_available:\n              - %s\n\n  - auto_start: %t\n    enabled: %t\n    keep_running: true%s\n    name: collect_%s_es_logs\n    retry_delay_in_ms: 10000\n    processor:\n      - es_logs_processor:\n          elasticsearch: %s\n          labels:\n            cluster_id: %s\n            cluster_uuid: %s\n            cluster_name: %s\n          logs_path: %s\n          queue_name: logs\n          when:\n            cluster_available:\n              - %s\n",
 		nodeLevelEnabled,
 		nodeLevelEnabled,
+		intervalLine,
 		taskID,
 		util.MustToJSON(taskID),
 		util.MustToJSON(clusterID),
@@ -678,6 +689,7 @@ func renderAgentTaskPipelineConfig(taskID, clusterID, clusterName, clusterUUID s
 		util.MustToJSON(taskID),
 		nodeLevelEnabled,
 		nodeLevelEnabled,
+		intervalLine,
 		taskID,
 		util.MustToJSON(taskID),
 		util.MustToJSON(clusterID),

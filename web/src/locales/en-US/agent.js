@@ -118,5 +118,10 @@ export default {
   "agent.instance.revoke.confirm.title": "Sure to revoke?",
   "agent.instance.clear.title": "Clear Offline Instances",
   "agent.instance.clear.modal.title": "Are you sure you want to clear offline instances?",
-  "agent.instance.clear.modal.desc": "This operation will delete offline instances that have not reported metrics for 7 days."
+  "agent.instance.clear.modal.desc": "This operation will delete offline instances that have not reported metrics for 7 days.",
+  "agent.instance.collection_interval.label": "Collection Interval",
+  "agent.instance.collection_interval.unit": "s",
+  "agent.instance.collection_interval.placeholder": "Default 10",
+  "agent.instance.collection_interval.tip": "How often (in seconds) the Agent collects metrics from this cluster's nodes. Leave empty or set to 0 to use the Agent default (10 s). Changes take effect on the next config sync.",
+  "agent.instance.collection_interval.save.success": "Collection interval updated"
 };

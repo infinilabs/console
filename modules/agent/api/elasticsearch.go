@@ -92,6 +92,9 @@ func GetEnrolledNodesByAgent(instanceID string) (map[string]BindingItem, error) 
 						item.NodeUUID = nodeID
 						item.PathLogs = util.ToString(f["path_logs"])
 						item.LogsPaths = extractStringSlice(f["logs_paths"])
+						if v, ok := f["collection_interval"]; ok {
+							item.CollectionInterval = util.InterfaceToInt(v)
+						}
 
 						t, ok := v["updated"]
 						if ok {
@@ -280,6 +283,8 @@ type BindingItem struct {
 	PathHome       string   `json:"path_home,omitempty"`
 	PathLogs       string   `json:"path_logs"`
 	LogsPaths      []string `json:"logs_paths"`
+	// CollectionInterval is the metrics collection interval in seconds; 0 means use the agent default (10s).
+	CollectionInterval int `json:"collection_interval,omitempty"`
 
 	Updated int64 `json:"updated"`
 }
@@ -780,7 +785,69 @@ func (h *APIHandler) discoveryESNodesInfo(w http.ResponseWriter, req *http.Reque
 		}
 	}
 
+	// Enrich enrolled nodes with collection_interval from binding settings.
+	enrolledNodes, _ := GetEnrolledNodesByAgent(id)
+	if len(enrolledNodes) > 0 {
+		// Build a response map so we can add the extra field per node.
+		enrichedNodes := make(map[string]util.MapStr, len(nodes.Nodes))
+		for nodeID, nodeInfo := range nodes.Nodes {
+			m := util.MapStr{}
+			b := util.MustToJSONBytes(nodeInfo)
+			util.FromJSONBytes(b, &m)
+			if binding, ok := enrolledNodes[nodeID]; ok && binding.CollectionInterval > 0 {
+				m["collection_interval"] = binding.CollectionInterval
+			}
+			enrichedNodes[nodeID] = m
+		}
+		h.WriteJSON(w, util.MapStr{
+			"nodes":           enrichedNodes,
+			"unknown_process": nodes.UnknownProcess,
+		}, http.StatusOK)
+		return
+	}
+
 	h.WriteJSON(w, nodes, http.StatusOK)
+}
+
+// updateClusterCollectionInterval updates the metrics collection interval (in seconds)
+// for all nodes of a specific cluster on the given agent instance.
+func (h *APIHandler) updateClusterCollectionInterval(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	instanceID := ps.MustGetParameter("instance_id")
+	clusterID := ps.MustGetParameter("cluster_id")
+
+	body := struct {
+		CollectionInterval int `json:"collection_interval"`
+	}{}
+	if err := h.DecodeJSON(req, &body); err != nil {
+		h.WriteError(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if body.CollectionInterval < 0 {
+		h.WriteError(w, "collection_interval must be >= 0", http.StatusBadRequest)
+		return
+	}
+
+	enrolledNodes, err := GetEnrolledNodesByAgent(instanceID)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	updated := 0
+	for _, item := range enrolledNodes {
+		if item.ClusterID != clusterID {
+			continue
+		}
+		item.CollectionInterval = body.CollectionInterval
+		settings := NewNodeAgentSettings(instanceID, &item)
+		if err := orm.Save(&orm.Context{Refresh: "wait_for"}, settings); err != nil {
+			h.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		updated++
+	}
+
+	h.WriteJSON(w, util.MapStr{"acknowledged": true, "updated": updated}, http.StatusOK)
 }
 
 func bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elastic.DiscoveryResult, instanceID, instanceEndpoint string) map[int]*elastic.LocalNodeInfo {
@@ -1030,11 +1097,12 @@ func NewNodeAgentSettings(instanceID string, item *BindingItem) *model.Setting {
 	}
 
 	settings.Payload = util.MapStr{
-		"cluster_id":   item.ClusterID,
-		"cluster_uuid": item.ClusterUUID,
-		"node_uuid":    item.NodeUUID,
-		"path_logs":    firstString(logsPaths),
-		"logs_paths":   logsPaths,
+		"cluster_id":          item.ClusterID,
+		"cluster_uuid":        item.ClusterUUID,
+		"node_uuid":           item.NodeUUID,
+		"path_logs":           firstString(logsPaths),
+		"logs_paths":          logsPaths,
+		"collection_interval": item.CollectionInterval,
 	}
 
 	return &settings

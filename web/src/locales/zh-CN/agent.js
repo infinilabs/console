@@ -110,5 +110,10 @@ export default {
   "agent.instance.revoke.confirm.title": "确定要撤销吗？",
   "agent.instance.clear.title": "清理离线实例",
   "agent.instance.clear.modal.title": "您确定要清理离线实例？",
-  "agent.instance.clear.modal.desc": "该操作将会删除离线并且 7 天没有上报指标的实例"
+  "agent.instance.clear.modal.desc": "该操作将会删除离线并且 7 天没有上报指标的实例",
+  "agent.instance.collection_interval.label": "采集间隔",
+  "agent.instance.collection_interval.unit": "秒",
+  "agent.instance.collection_interval.placeholder": "默认 10",
+  "agent.instance.collection_interval.tip": "Agent 从节点采集指标的间隔（秒）。留空或设为 0 表示使用 Agent 默认值（10 秒）。修改后 Agent 将在下次配置同步时自动生效。",
+  "agent.instance.collection_interval.save.success": "采集间隔已更新"
 };

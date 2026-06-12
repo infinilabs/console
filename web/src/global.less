@@ -5,6 +5,11 @@ body,
   min-height: 100% !important;
 }
 
+html {
+  /* Reserve scrollbar gutter space to prevent layout jitter when scrollbar appears/disappears */
+  scrollbar-gutter: stable;
+}
+
 #root {
   min-width: 1200px;
 }

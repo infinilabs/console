@@ -11,8 +11,9 @@ import {
   Tabs,
   Icon,
   Tooltip,
+  InputNumber,
 } from "antd";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback, useRef } from "react";
 import { Link } from "umi";
 import { formatMessage } from "umi/locale";
 import { Associate } from "./Associate";
@@ -74,6 +75,47 @@ export const AgentRowDetail = ({ agentID, t }) => {
     processesTab: "elasticsearch",
     unknownAssociateVisible: false,
   });
+
+  // intervalEdit: map of clusterID -> { editing: bool, value: number|null, loading: bool }
+  const [intervalEdit, setIntervalEdit] = useState({});
+
+  const onIntervalEdit = useCallback((clusterID, currentInterval) => {
+    setIntervalEdit((prev) => ({
+      ...prev,
+      [clusterID]: { editing: true, value: currentInterval || null, loading: false },
+    }));
+  }, []);
+
+  const onIntervalCancel = useCallback((clusterID) => {
+    setIntervalEdit((prev) => {
+      const next = { ...prev };
+      delete next[clusterID];
+      return next;
+    });
+  }, []);
+
+  const onIntervalSave = useCallback(async (clusterID) => {
+    const editState = intervalEdit[clusterID];
+    if (!editState) return;
+    const interval = editState.value == null ? 0 : editState.value;
+    setIntervalEdit((prev) => ({
+      ...prev,
+      [clusterID]: { ...prev[clusterID], loading: true },
+    }));
+    const res = await request(`/instance/${agentID}/cluster/${clusterID}/_collection_interval`, {
+      method: "POST",
+      body: { collection_interval: interval },
+    });
+    setIntervalEdit((prev) => {
+      const next = { ...prev };
+      delete next[clusterID];
+      return next;
+    });
+    if (res && res.acknowledged) {
+      message.success(formatMessage({ id: "agent.instance.collection_interval.save.success" }));
+      setQueryParams((st) => ({ ...st, t: new Date().valueOf() }));
+    }
+  }, [agentID, intervalEdit]);
 
   const details = useMemo(
     () => [
@@ -237,6 +279,76 @@ export const AgentRowDetail = ({ agentID, t }) => {
         width: 100,
       },
       {
+        title: (
+          <Tooltip title={formatMessage({ id: "agent.instance.collection_interval.tip" })}>
+            {formatMessage({ id: "agent.instance.collection_interval.label" })}
+            {" "}<Icon type="question-circle-o" style={{ color: "#999" }} />
+          </Tooltip>
+        ),
+        width: 160,
+        render: (text, record) => {
+          if (!record.enrolled) return null;
+          const clusterID = record.cluster_id;
+          if (!clusterID) return null;
+          const edit = intervalEdit[clusterID];
+          const currentInterval = record.collection_interval || 0;
+          if (edit && edit.editing) {
+            return (
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <InputNumber
+                  size="small"
+                  min={0}
+                  max={3600}
+                  style={{ width: 70 }}
+                  value={edit.value}
+                  placeholder={formatMessage({ id: "agent.instance.collection_interval.placeholder" })}
+                  onChange={(val) => setIntervalEdit((prev) => ({
+                    ...prev,
+                    [clusterID]: { ...prev[clusterID], value: val },
+                  }))}
+                />
+                <span style={{ color: "#999", fontSize: 12 }}>
+                  {formatMessage({ id: "agent.instance.collection_interval.unit" })}
+                </span>
+                <Button
+                  type="link"
+                  size="small"
+                  style={{ padding: 0 }}
+                  loading={edit.loading}
+                  onClick={() => onIntervalSave(clusterID)}
+                >
+                  {formatMessage({ id: "form.button.save" })}
+                </Button>
+                <Button
+                  type="link"
+                  size="small"
+                  style={{ padding: 0 }}
+                  onClick={() => onIntervalCancel(clusterID)}
+                >
+                  {formatMessage({ id: "form.button.cancel" })}
+                </Button>
+              </div>
+            );
+          }
+          return (
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <span>
+                {currentInterval > 0
+                  ? `${currentInterval} ${formatMessage({ id: "agent.instance.collection_interval.unit" })}`
+                  : `10 ${formatMessage({ id: "agent.instance.collection_interval.unit" })}`}
+              </span>
+              {hasAuthority("agent.instance:all") && (
+                <Icon
+                  type="edit"
+                  style={{ color: "#1890ff", cursor: "pointer", fontSize: 12 }}
+                  onClick={() => onIntervalEdit(clusterID, currentInterval || null)}
+                />
+              )}
+            </div>
+          );
+        },
+      },
+      {
         title: formatMessage({ id: "table.field.actions" }),
         width: 140,
         render: (text, record) => (
@@ -308,7 +420,7 @@ export const AgentRowDetail = ({ agentID, t }) => {
         ),
       },
     ],
-    [agentID, btnLoading, t]
+    [agentID, btnLoading, t, intervalEdit, onIntervalEdit, onIntervalSave, onIntervalCancel]
   );
   const onRefreshClick = async () => {
     setQueryParams((st) => {

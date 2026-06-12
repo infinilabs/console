@@ -175,13 +175,6 @@ func (processor *MetadataProcessor) HandleNodeHealthChange(ev []byte) error {
 	if err != nil {
 		return err
 	}
-	log.Infof(
-		"[health_activity_trace] source=console.plugin.elastic.metadata event=node_health_change apply=.infini_node cluster_id=%s node_id=%s to=%s",
-		clusterID,
-		nodeID,
-		status,
-	)
-
 	esClient := elastic.GetClient(processor.config.Elasticsearch)
 	queryDslTpl := `{"script": {
     "source": "ctx._source.metadata.labels.status=params.status; ctx._source.timestamp=params.timestamp",

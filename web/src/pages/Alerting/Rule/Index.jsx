@@ -301,6 +301,20 @@ export default (props) => {
     return "-";
   };
 
+  const pickRuleTimeField = (record, primaryField, fallbackField) => {
+    const primary = record?.[primaryField];
+    const fallback = record?.[fallbackField];
+    const primaryParsed = moment(primary);
+    if (primaryParsed.isValid() && primaryParsed.year() > 1) {
+      return primary;
+    }
+    const fallbackParsed = moment(fallback);
+    if (fallbackParsed.isValid() && fallbackParsed.year() > 1) {
+      return fallback;
+    }
+    return primary || fallback;
+  };
+
   const columns = [
     {
       title: formatMessage({ id: "alert.rule.table.columnns.category" }),
@@ -360,7 +374,9 @@ export default (props) => {
       key: "updated",
       sortable: true,
       render: (text, record) => {
-        const displayUpdated = formatRuleUpdatedTime(text, record?.created);
+        const updated = pickRuleTimeField(record, "updated", "_updated");
+        const created = pickRuleTimeField(record, "created", "_created");
+        const displayUpdated = formatRuleUpdatedTime(updated, created);
         return <span title={displayUpdated}>{displayUpdated}</span>;
       },
     },

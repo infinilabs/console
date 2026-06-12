@@ -115,15 +115,42 @@ func normalizeRuleForSave(rule *alerting.Rule) error {
 	return nil
 }
 
+func ensureRuleTimestamps(rule *alerting.Rule, now time.Time) bool {
+	changed := false
+	if rule.Created.IsZero() {
+		rule.Created = now
+		changed = true
+	}
+	if rule.Updated.IsZero() || rule.Updated.Before(rule.Created) {
+		rule.Updated = now
+		changed = true
+	}
+	return changed
+}
+
+func backfillRuleTimestamps(rule *alerting.Rule) {
+	if rule == nil {
+		return
+	}
+	if !ensureRuleTimestamps(rule, time.Now()) {
+		return
+	}
+	if err := orm.Save(nil, rule); err != nil {
+		log.Errorf("failed to backfill rule timestamps for [%s]: %v", rule.ID, err)
+	}
+}
+
 func persistUpdatedRule(oldRule, rule *alerting.Rule) error {
 	changeLog, err := util.DiffTwoObject(oldRule, rule)
 	if err != nil {
 		log.Error(err)
 	}
 
+	now := time.Now()
 	rule.ID = oldRule.ID
 	rule.Created = oldRule.Created
-	rule.Updated = time.Now()
+	rule.Updated = now
+	ensureRuleTimestamps(rule, now)
 
 	if err := normalizeRuleForSave(rule); err != nil {
 		return err
@@ -270,6 +297,7 @@ func (alertAPI *AlertAPI) getRule(w http.ResponseWriter, req *http.Request, ps h
 		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	backfillRuleTimestamps(&obj)
 	// adapter version smaller than 1.6.0
 	if obj.Channels != nil && obj.NotificationConfig == nil {
 		obj.NotificationConfig = obj.Channels
@@ -311,6 +339,7 @@ func (alertAPI *AlertAPI) getRuleDetail(w http.ResponseWriter, req *http.Request
 		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	backfillRuleTimestamps(&obj)
 	metricExpression, _ := obj.Metrics.GenerateExpression()
 	conditions := obj.Conditions
 	if obj.BucketConditions != nil {
@@ -1036,6 +1065,7 @@ func (alertAPI *AlertAPI) enableRule(w http.ResponseWriter, req *http.Request, p
 		disableRule(&obj)
 	}
 	obj.Enabled = reqObj.Enabled
+	ensureRuleTimestamps(&obj, time.Now())
 	err = orm.Save(nil, &obj)
 	if err != nil {
 		log.Error(err)

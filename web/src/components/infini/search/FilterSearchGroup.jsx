@@ -81,6 +81,7 @@ const FilterSearchGroup = ({
         onChange={handleSearchChange}
       />
       <Button
+        type="primary"
         style={{ width: 88 }}
         onClick={() => {
           if (typeof onSearch == "function") {

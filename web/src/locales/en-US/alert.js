@@ -350,6 +350,7 @@ export default {
   "alert.message.detail.ignored_time": "Ignored time",
   "alert.message.detail.message": "Event message",
   "alert.message.detail.alert_metric_status": "Metrics",
+  "alert.message.detail.no_history_data": "No alert history data available",
   "alert.message.detail.execution_record": "History",
   "alert.message.detail.action_message": "Alert message",
   "alert.message.detail.action_result": "Execution result",

@@ -332,6 +332,7 @@ export default {
   "alert.message.detail.ignored_time": "忽略时间",
   "alert.message.detail.message": "事件内容",
   "alert.message.detail.alert_metric_status": "告警指标状态",
+  "alert.message.detail.no_history_data": "暂无告警历史数据",
   "alert.message.detail.execution_record": "执行记录",
   "alert.message.detail.action_message": "通知内容",
   "alert.message.detail.action_result": "执行结果",

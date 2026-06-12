@@ -122,7 +122,7 @@ const RuleRecordChart = ({ data: messageDetail }) => {
     });
 
     const fetchData = async () => {
-      let url = `/alerting/rule/${ruleID}/metric`;
+      let url = `/alerting/rule/${ruleID}/history_metric`;
       const res = await request(url, {
         method: "GET",
         queryParams: {

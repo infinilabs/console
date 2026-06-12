@@ -1167,6 +1167,145 @@ func (alertAPI *AlertAPI) getPreviewMetricData(w http.ResponseWriter, req *http.
 	}, http.StatusOK)
 }
 
+// getHistoryMetricData builds a time-series chart from alert-history records instead of source metric
+// data. This works for both non-time-series (state snapshot) rules and time-series rules whose
+// source data may have been removed by ILM.
+func (alertAPI *AlertAPI) getHistoryMetricData(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	ruleID := ps.ByName("rule_id")
+	rule := &alerting.Rule{ID: ruleID}
+	exists, err := orm.Get(rule)
+	if !exists || err != nil {
+		alertAPI.WriteJSON(w, util.MapStr{"_id": ruleID, "found": false}, http.StatusNotFound)
+		return
+	}
+	minStr := alertAPI.Get(req, "min", "")
+	maxStr := alertAPI.Get(req, "max", "")
+	_, min, max, err := api.GetMetricRangeAndBucketSize(minStr, maxStr, 60, 15)
+	if err != nil {
+		log.Error(err)
+		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	metricItem, err := buildMetricFromAlertHistory(rule, min, max)
+	if err != nil {
+		log.Error(err)
+		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	alertAPI.WriteJSON(w, util.MapStr{
+		"metric":       metricItem,
+		"bucket_label": rule.Metrics.BucketLabel,
+	}, http.StatusOK)
+}
+
+// buildMetricFromAlertHistory queries the alert-history index for a rule and assembles
+// a MetricItem whose lines are [timestamp_ms, value] pairs taken from condition_result.
+func buildMetricFromAlertHistory(rule *alerting.Rule, minMs, maxMs int64) (*alerting.AlertMetricItem, error) {
+	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
+	queryDsl := util.MapStr{
+		"size":    1000,
+		"_source": []string{"created", "condition_result", "state"},
+		"sort":    []util.MapStr{{"created": util.MapStr{"order": "asc"}}},
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": []util.MapStr{
+					{"term": util.MapStr{"rule_id": util.MapStr{"value": rule.ID}}},
+					{"range": util.MapStr{"created": util.MapStr{
+						"gte":    minMs,
+						"lte":    maxMs,
+						"format": "epoch_millis",
+					}}},
+				},
+			},
+		},
+	}
+	searchRes, err := esClient.SearchWithRawQueryDSL(
+		orm.GetWildcardIndexName(alerting.Alert{}),
+		util.MustToJSONBytes(queryDsl),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	type dataPoint = [2]interface{}
+	groupData := map[string][]dataPoint{}
+	groupOrder := []string{}
+	groupSeen := map[string]struct{}{}
+
+	for _, hit := range searchRes.Hits.Hits {
+		// parse timestamp from "created" field
+		createdStr, _ := hit.Source["created"].(string)
+		if createdStr == "" {
+			continue
+		}
+		t, err := time.Parse(time.RFC3339Nano, createdStr)
+		if err != nil {
+			t, err = time.Parse(time.RFC3339, createdStr)
+			if err != nil {
+				continue
+			}
+		}
+		ts := t.UnixNano() / 1e6
+
+		// condition_result is stored as object (enabled:false), read from _source map
+		condResultRaw, ok := hit.Source["condition_result"]
+		if !ok || condResultRaw == nil {
+			continue
+		}
+		condResultBytes, err := util.ToJSONBytes(condResultRaw)
+		if err != nil {
+			continue
+		}
+		var condResult alerting.ConditionResult
+		if err = util.FromJSONBytes(condResultBytes, &condResult); err != nil {
+			continue
+		}
+
+		for _, item := range condResult.ResultItems {
+			label := strings.Join(item.GroupValues, "-")
+			if label == "" {
+				label, _ = rule.GetOrInitExpression()
+			}
+			if _, seen := groupSeen[label]; !seen {
+				groupSeen[label] = struct{}{}
+				groupOrder = append(groupOrder, label)
+			}
+			val, _ := util.ExtractFloat(item.ResultValue)
+			groupData[label] = append(groupData[label], dataPoint{ts, val})
+		}
+	}
+
+	formatType := "num"
+	if rule.Metrics.FormatType != "" {
+		formatType = rule.Metrics.FormatType
+	}
+	metricItem := &alerting.AlertMetricItem{
+		MetricItem: common.MetricItem{
+			Group: rule.ID,
+			Key:   rule.ID,
+			Axis: []*common.MetricAxis{
+				{
+					ID: util.GetUUID(), Group: rule.ID, FormatType: formatType,
+					Position: "left", ShowGridLines: true, TickFormat: "0,0.[00]", Ticks: 5,
+				},
+			},
+		},
+	}
+	for _, label := range groupOrder {
+		metricItem.BucketGroups = append(metricItem.BucketGroups, []string{label})
+		metricItem.Lines = append(metricItem.Lines, &common.MetricLine{
+			Data: groupData[label],
+			Metric: common.MetricSummary{
+				Label:      label,
+				Group:      rule.ID,
+				TickFormat: "0,0.[00]",
+				FormatType: formatType,
+			},
+		})
+	}
+	return metricItem, nil
+}
+
 func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	rule := &alerting.Rule{
 		ID: ps.ByName("rule_id"),

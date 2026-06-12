@@ -971,13 +971,13 @@ func listenAddressPriority(addr model.ListenAddr) int {
 }
 
 func (h *APIHandler) internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint string, pid int, nodeHost string, auth *model.BasicAuth, cmdline string) *elastic.LocalNodeInfo {
-	endpointSchema := "http"
-	success, tryAgain, nodeInfo := h.getESNodeInfoViaProxy(nodeHost, "http", auth, instanceID)
+	endpointSchema := "https"
+	success, tryAgain, nodeInfo := h.getESNodeInfoViaProxy(nodeHost, "https", auth, instanceID)
 	if !success && tryAgain {
-		//try https again
-		success, tryAgain, nodeInfo = h.getESNodeInfoViaProxy(nodeHost, "https", auth, instanceID)
+		// fallback to http for clusters that expose plain-text HTTP only.
+		success, tryAgain, nodeInfo = h.getESNodeInfoViaProxy(nodeHost, "http", auth, instanceID)
 		if success {
-			endpointSchema = "https"
+			endpointSchema = "http"
 		}
 	}
 
@@ -1286,14 +1286,14 @@ func normalizeSchema(schema string) string {
 func (h *APIHandler) getEnrollNodeInfo(item BindingItem, auth *model.BasicAuth, preparedConf *elastic.ElasticsearchConfig, instanceID string) (bool, string, *elastic.LocalNodeInfo) {
 	nodeHost := strings.TrimSpace(item.PublishAddress)
 	if nodeHost != "" {
-		success, tryAgain, nodeInfo := h.getESNodeInfoViaProxy(nodeHost, "http", auth, instanceID)
+		success, tryAgain, nodeInfo := h.getESNodeInfoViaProxy(nodeHost, "https", auth, instanceID)
 		if success {
-			return true, "http", nodeInfo
+			return true, "https", nodeInfo
 		}
 		if !success && tryAgain {
-			success, _, nodeInfo = h.getESNodeInfoViaProxy(nodeHost, "https", auth, instanceID)
+			success, _, nodeInfo = h.getESNodeInfoViaProxy(nodeHost, "http", auth, instanceID)
 			if success {
-				return true, "https", nodeInfo
+				return true, "http", nodeInfo
 			}
 		}
 		return false, "", nodeInfo

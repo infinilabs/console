@@ -600,7 +600,11 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 			continue
 		}
 
-		nodeEndPoint := prepareAgentNodeEndpoint(metadata, publishAddress, v.EndpointSchema)
+		effectiveSchema := normalizeSchema(v.EndpointSchema)
+		if effectiveSchema == "" {
+			effectiveSchema = probeAndBackfillNodeEndpointSchema(instance, &v, publishAddress)
+		}
+		nodeEndPoint := prepareAgentNodeEndpoint(metadata, publishAddress, effectiveSchema)
 
 		logsPaths := normalizeLogsPaths(v.LogsPaths, v.PathLogs)
 		if len(logsPaths) == 0 {
@@ -666,6 +670,47 @@ func prepareAgentNodeEndpoint(_ *elastic.ElasticsearchMetadata, publishAddress, 
 		schema = "http"
 	}
 	return fmt.Sprintf("%s://%s", schema, host)
+}
+
+func probeAndBackfillNodeEndpointSchema(instanceID string, item *BindingItem, publishAddress string) string {
+	if item == nil {
+		return ""
+	}
+	host := strings.TrimSpace(publishAddress)
+	if host == "" {
+		return ""
+	}
+	auth, err := getAgentBasicAuth(item.ClusterID)
+	if err != nil {
+		log.Errorf("failed to get agent basic auth while probing node schema: cluster=%s, node=%s, err=%v", item.ClusterID, item.NodeUUID, err)
+		return ""
+	}
+	if !hasUsableAgentBasicAuth(auth) {
+		return ""
+	}
+
+	schema := ""
+	handler := &APIHandler{}
+	if success, tryAgain, _ := handler.getESNodeInfoViaProxy(host, "https", auth, instanceID); success {
+		schema = "https"
+	} else if tryAgain {
+		if success, _, _ := handler.getESNodeInfoViaProxy(host, "http", auth, instanceID); success {
+			schema = "http"
+		}
+	}
+	if schema == "" {
+		return ""
+	}
+
+	item.EndpointSchema = schema
+	if strings.TrimSpace(item.PublishAddress) == "" {
+		item.PublishAddress = host
+	}
+	settings := NewNodeAgentSettings(instanceID, item)
+	if err := orm.Save(&orm.Context{Refresh: "wait_for"}, settings); err != nil {
+		log.Errorf("failed to backfill node endpoint schema: node=%s, cluster=%s, schema=%s, err=%v", item.NodeUUID, item.ClusterID, schema, err)
+	}
+	return schema
 }
 
 func renderAgentTaskElasticsearchConfig(taskID, clusterUUID, version, distribution, nodeEndpoint, username, password string) string {

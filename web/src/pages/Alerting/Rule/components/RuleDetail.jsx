@@ -31,7 +31,6 @@ import ExternalLink from "@/components/Icons/ExternalLink";
 import NotificationCard from "./NotificationCard";
 import Sum from "@/components/Icons/Sum";
 import WidgetLoader, {
-  WidgetRender,
 } from "@/pages/DataManagement/View/WidgetLoader";
 import MessageRecord from "./MessageRecord";
 import { hasAuthority } from "@/utils/authority";
@@ -239,17 +238,6 @@ const RuleDetail = (props) => {
     }, 2000);
   }, []);
 
-  const widget = useMemo(() => {
-    if (!ruleDetail || !ruleDetail.rule_name) return;
-    return buildWidgetByRule(ruleDetail, {
-      cluster_id: ruleDetail.resource_id,
-      indices: ruleDetail.resource_objects,
-      time_field: ruleDetail.resource_time_field,
-      ignore_time_filter: ruleDetail.resource_ignore_time_filter,
-      raw_filter: ruleDetail.resource_raw_filter,
-    }, ruleDetail?.created, ruleDetail?.updated);
-  }, [ruleDetail]);
-
   return (
     <div>
       <div
@@ -416,14 +404,11 @@ const RuleDetail = (props) => {
             bodyStyle={{ height: 250, padding: 1 }}
           >
             {ruleDetail.rule_name ? (
-              <WidgetRender
-                widget={widget}
-                range={{
-                  from: state.timeRange.min,
-                  to: state.timeRange.max,
-                }}
-                refresh={state.refresh}
-                onGlobalQueriesChange={handleWidgetQueriesChange}
+              <RuleRecordChart
+                ruleID={ruleID}
+                timeRange={state.timeRange}
+                conditions={ruleDetail?.conditions}
+                clusterID={ruleDetail?.resource_id}
               />
             ) : (
               <Empty />

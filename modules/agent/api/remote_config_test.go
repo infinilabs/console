@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	config2 "infini.sh/framework/core/config"
+	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/env"
 	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/util"
@@ -373,5 +374,29 @@ func TestRewriteAgentRelayIngestContent(t *testing.T) {
 	)
 	if unchanged != content {
 		t.Fatalf("expected non-system-ingest config to remain unchanged")
+	}
+}
+
+func TestPrepareAgentNodeEndpointUsesBindingSchema(t *testing.T) {
+	meta := &elastic.ElasticsearchMetadata{
+		Config: &elastic.ElasticsearchConfig{
+			Schema: "http",
+		},
+	}
+	got := prepareAgentNodeEndpoint(meta, "10.244.0.10:9200", "https")
+	if got != "https://10.244.0.10:9200" {
+		t.Fatalf("expected binding schema to win, got %q", got)
+	}
+}
+
+func TestPrepareAgentNodeEndpointKeepsExplicitURL(t *testing.T) {
+	meta := &elastic.ElasticsearchMetadata{
+		Config: &elastic.ElasticsearchConfig{
+			Schema: "http",
+		},
+	}
+	got := prepareAgentNodeEndpoint(meta, "https://10.244.0.10:9200", "")
+	if got != "https://10.244.0.10:9200" {
+		t.Fatalf("expected explicit endpoint scheme to be preserved, got %q", got)
 	}
 }

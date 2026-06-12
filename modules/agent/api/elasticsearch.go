@@ -90,6 +90,8 @@ func GetEnrolledNodesByAgent(instanceID string) (map[string]BindingItem, error) 
 
 						item.ClusterUUID = util.ToString(f["cluster_uuid"])
 						item.NodeUUID = nodeID
+						item.PublishAddress = strings.TrimSpace(util.ToString(f["publish_address"]))
+						item.EndpointSchema = strings.TrimSpace(strings.ToLower(util.ToString(f["endpoint_schema"])))
 						item.PathLogs = util.ToString(f["path_logs"])
 						item.LogsPaths = extractStringSlice(f["logs_paths"])
 						if v, ok := f["collection_interval"]; ok {
@@ -279,6 +281,7 @@ type BindingItem struct {
 	ClusterUUID    string   `json:"cluster_uuid"`
 	NodeUUID       string   `json:"node_uuid"`
 	PublishAddress string   `json:"publish_address,omitempty"`
+	EndpointSchema string   `json:"endpoint_schema,omitempty"`
 	NodeName       string   `json:"node_name,omitempty"`
 	PathHome       string   `json:"path_home,omitempty"`
 	PathLogs       string   `json:"path_logs"`
@@ -968,10 +971,14 @@ func listenAddressPriority(addr model.ListenAddr) int {
 }
 
 func (h *APIHandler) internalProcessBind(clusterID, clusterUUID, instanceID, instanceEndpoint string, pid int, nodeHost string, auth *model.BasicAuth, cmdline string) *elastic.LocalNodeInfo {
+	endpointSchema := "http"
 	success, tryAgain, nodeInfo := h.getESNodeInfoViaProxy(nodeHost, "http", auth, instanceID)
 	if !success && tryAgain {
 		//try https again
 		success, tryAgain, nodeInfo = h.getESNodeInfoViaProxy(nodeHost, "https", auth, instanceID)
+		if success {
+			endpointSchema = "https"
+		}
 	}
 
 	if success {
@@ -983,11 +990,13 @@ func (h *APIHandler) internalProcessBind(clusterID, clusterUUID, instanceID, ins
 
 		//enroll this node
 		item := BindingItem{
-			ClusterID:   clusterID,
-			ClusterUUID: nodeInfo.ClusterInfo.ClusterUUID,
-			NodeUUID:    nodeInfo.NodeUUID,
-			PathHome:    extractNodePathHome(nodeInfo.NodeInfo),
-			LogsPaths:   deriveLogsPathsFromCmdline(cmdline, extractNodePathHome(nodeInfo.NodeInfo)),
+			ClusterID:      clusterID,
+			ClusterUUID:    nodeInfo.ClusterInfo.ClusterUUID,
+			NodeUUID:       nodeInfo.NodeUUID,
+			PublishAddress: strings.TrimSpace(nodeHost),
+			EndpointSchema: endpointSchema,
+			PathHome:       extractNodePathHome(nodeInfo.NodeInfo),
+			LogsPaths:      deriveLogsPathsFromCmdline(cmdline, extractNodePathHome(nodeInfo.NodeInfo)),
 		}
 		item.PathLogs = firstString(item.LogsPaths)
 
@@ -1100,6 +1109,8 @@ func NewNodeAgentSettings(instanceID string, item *BindingItem) *model.Setting {
 		"cluster_id":          item.ClusterID,
 		"cluster_uuid":        item.ClusterUUID,
 		"node_uuid":           item.NodeUUID,
+		"publish_address":     strings.TrimSpace(item.PublishAddress),
+		"endpoint_schema":     normalizeSchema(item.EndpointSchema),
 		"path_logs":           firstString(logsPaths),
 		"logs_paths":          logsPaths,
 		"collection_interval": item.CollectionInterval,
@@ -1261,18 +1272,42 @@ func hasUsableAgentBasicAuth(auth *model.BasicAuth) bool {
 	return auth == nil || auth.Username != ""
 }
 
-func (h *APIHandler) getEnrollNodeInfo(item BindingItem, auth *model.BasicAuth, preparedConf *elastic.ElasticsearchConfig, instanceID string) (bool, *elastic.LocalNodeInfo) {
+func normalizeSchema(schema string) string {
+	switch strings.ToLower(strings.TrimSpace(schema)) {
+	case "https":
+		return "https"
+	case "http":
+		return "http"
+	default:
+		return ""
+	}
+}
+
+func (h *APIHandler) getEnrollNodeInfo(item BindingItem, auth *model.BasicAuth, preparedConf *elastic.ElasticsearchConfig, instanceID string) (bool, string, *elastic.LocalNodeInfo) {
 	nodeHost := strings.TrimSpace(item.PublishAddress)
 	if nodeHost != "" {
 		success, tryAgain, nodeInfo := h.getESNodeInfoViaProxy(nodeHost, "http", auth, instanceID)
+		if success {
+			return true, "http", nodeInfo
+		}
 		if !success && tryAgain {
 			success, _, nodeInfo = h.getESNodeInfoViaProxy(nodeHost, "https", auth, instanceID)
-			return success, nodeInfo
+			if success {
+				return true, "https", nodeInfo
+			}
 		}
-		return success, nodeInfo
+		return false, "", nodeInfo
 	}
 	success, _, nodeInfo := h.getESNodeInfoViaProxyWithConfig(preparedConf, instanceID)
-	return success, nodeInfo
+	if !success {
+		return false, "", nodeInfo
+	}
+	if preparedConf != nil {
+		if schema := normalizeSchema(preparedConf.Schema); schema != "" {
+			return true, schema, nodeInfo
+		}
+	}
+	return true, "http", nodeInfo
 }
 
 func pickAllowedLogsPath(allowed []string, requested string) (string, error) {
@@ -1360,6 +1395,12 @@ func (h *APIHandler) enrollESNode(w http.ResponseWriter, req *http.Request, ps h
 		return
 	}
 
+	if strings.TrimSpace(item.PublishAddress) == "" && item.ClusterID != "" && item.NodeUUID != "" {
+		if nodeCfg, nodeErr := metadata.GetNodeConfig(item.ClusterID, item.NodeUUID); nodeErr == nil && nodeCfg != nil && nodeCfg.Payload.NodeInfo != nil {
+			item.PublishAddress = strings.TrimSpace(nodeCfg.Payload.NodeInfo.GetHttpPublishHost())
+		}
+	}
+
 	//check if the cluster's agent credential is valid
 	preparedConf, err := elasticapi.PrepareClusterForAgentCollection(item.ClusterID)
 	if err != nil {
@@ -1378,7 +1419,7 @@ func (h *APIHandler) enrollESNode(w http.ResponseWriter, req *http.Request, ps h
 		return
 	}
 
-	success, nodeInfo := h.getEnrollNodeInfo(item, preparedConf.BasicAuth, preparedConf, instance.ID)
+	success, endpointSchema, nodeInfo := h.getEnrollNodeInfo(item, preparedConf.BasicAuth, preparedConf, instance.ID)
 
 	if success && nodeInfo != nil {
 		if item.ClusterUUID != "" && nodeInfo.ClusterInfo.ClusterUUID != "" && item.ClusterUUID != nodeInfo.ClusterInfo.ClusterUUID {
@@ -1391,6 +1432,10 @@ func (h *APIHandler) enrollESNode(w http.ResponseWriter, req *http.Request, ps h
 		}
 		item.ClusterUUID = nodeInfo.ClusterInfo.ClusterUUID
 		item.NodeUUID = nodeInfo.NodeUUID
+		if item.PublishAddress == "" && nodeInfo.NodeInfo != nil {
+			item.PublishAddress = strings.TrimSpace(nodeInfo.NodeInfo.GetHttpPublishHost())
+		}
+		item.EndpointSchema = endpointSchema
 		if item.PathHome == "" {
 			item.PathHome = extractNodePathHome(nodeInfo.NodeInfo)
 		}

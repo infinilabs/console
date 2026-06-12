@@ -600,7 +600,7 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 			continue
 		}
 
-		nodeEndPoint := metadata.PrepareEndpoint(publishAddress)
+		nodeEndPoint := prepareAgentNodeEndpoint(metadata, publishAddress, v.EndpointSchema)
 
 		logsPaths := normalizeLogsPaths(v.LogsPaths, v.PathLogs)
 		if len(logsPaths) == 0 {
@@ -647,6 +647,25 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 	buffer.WriteString(fmt.Sprintf("#MANAGED_CONFIG_VERSION: %v\n#MANAGED: true\n", latestVersion))
 
 	return buffer.String(), hash
+}
+
+func prepareAgentNodeEndpoint(_ *elastic.ElasticsearchMetadata, publishAddress, endpointSchema string) string {
+	host := strings.TrimSpace(publishAddress)
+	if host == "" {
+		return ""
+	}
+	if strings.Contains(host, "://") {
+		if parsed, err := url.Parse(host); err == nil && parsed != nil && parsed.Host != "" {
+			return fmt.Sprintf("%s://%s", strings.ToLower(parsed.Scheme), parsed.Host)
+		}
+		return host
+	}
+	schema := normalizeSchema(endpointSchema)
+	if schema == "" {
+		// Keep backward compatibility for legacy bindings that were created before endpoint_schema existed.
+		schema = "http"
+	}
+	return fmt.Sprintf("%s://%s", schema, host)
 }
 
 func renderAgentTaskElasticsearchConfig(taskID, clusterUUID, version, distribution, nodeEndpoint, username, password string) string {

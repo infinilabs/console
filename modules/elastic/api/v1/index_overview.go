@@ -79,7 +79,7 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, ctx context.Context, 
 				summary := map[string]interface{}{}
 				if docs, ok := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "index_stats", "total", "docs"}, result); ok {
 					if docsM, ok := docs.(map[string]interface{}); ok {
-						summary["docs_deleted"] = docsM["docs_deleted"]
+						summary["docs_deleted"] = docsM["deleted"]
 						summary["docs_count"] = docsM["count"]
 					}
 				}

@@ -262,7 +262,7 @@ func (h APIHandler) syncConfigs(w http.ResponseWriter, req *http.Request, ps htt
 	if common.SupportsManagedAccessToken(obj.Client.Application.Name) {
 		instance := model.Instance{}
 		instance.ID = obj.Client.ID
-		exists, err := orm.Get(&instance)
+		exists, err := orm.GetV2(orm.NewContext(), &instance)
 		if err == elastic.ErrNotFound {
 			err = nil
 			exists = false

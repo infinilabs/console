@@ -982,7 +982,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 				}
 			}
 
-			err = orm.Save(nil, alertItem)
+			err = orm.Save(orm.NewContext(), alertItem)
 			if err != nil {
 				log.Errorf("save alert item failed, rule_id=%s, alert_id=%s, state=%s: %v", rule.ID, alertItem.ID, alertItem.State, err)
 			}
@@ -1152,7 +1152,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			Body:        alertItem.Message,
 			Link:        "/alerting/message",
 		}
-		err = orm.Create(nil, notification)
+		err = orm.Create(orm.NewContext(), notification)
 		if err != nil {
 			return fmt.Errorf("failed to create notification, err: %w", err)
 		}
@@ -1659,7 +1659,7 @@ func getLastAlertMessage(ruleID string, duration time.Duration) (*alerting.Alert
 
 func saveAlertMessageToES(message *alerting.AlertMessage) error {
 	message.Updated = time.Now()
-	return orm.Save(nil, message)
+	return orm.Save(orm.NewContext(), message)
 }
 
 func saveAlertMessage(message *alerting.AlertMessage) error {

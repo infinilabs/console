@@ -98,7 +98,7 @@ func (h *APIHandler) updateCredential(w http.ResponseWriter, req *http.Request, 
 	obj := credential.Credential{}
 
 	obj.ID = id
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":    id,
@@ -228,7 +228,7 @@ func (h *APIHandler) deleteCredential(w http.ResponseWriter, req *http.Request, 
 	obj := credential.Credential{}
 	obj.ID = id
 
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":    id,
@@ -417,7 +417,7 @@ func (h *APIHandler) getCredential(w http.ResponseWriter, req *http.Request, ps 
 	obj := credential.Credential{}
 
 	obj.ID = id
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":    id,

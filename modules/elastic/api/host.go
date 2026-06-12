@@ -156,7 +156,7 @@ func (h *APIHandler) updateHost(w http.ResponseWriter, req *http.Request, ps htt
 	obj := host.HostInfo{}
 
 	obj.ID = id
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":    id,
@@ -554,7 +554,7 @@ func (h *APIHandler) GetHostInfo(w http.ResponseWriter, req *http.Request, ps ht
 	hostID := ps.MustGetParameter("host_id")
 	hostInfo := &host.HostInfo{}
 	hostInfo.ID = hostID
-	exists, err := orm.Get(hostInfo)
+	exists, err := orm.GetV2(orm.NewContext(), hostInfo)
 	if err != nil {
 		log.Errorf("GetHostInfo failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -699,7 +699,7 @@ func (h *APIHandler) GetSingleHostMetrics(w http.ResponseWriter, req *http.Reque
 	hostID := ps.MustGetParameter("host_id")
 	hostInfo := &host.HostInfo{}
 	hostInfo.ID = hostID
-	exists, err := orm.Get(hostInfo)
+	exists, err := orm.GetV2(orm.NewContext(), hostInfo)
 	if err != nil {
 		log.Errorf("GetSingleHostMetrics failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -917,7 +917,7 @@ func (h *APIHandler) getGroupHostMetric(ctx context.Context, agentIDs []string, 
 func getHost(hostID string) (*host.HostInfo, error) {
 	hostInfo := &host.HostInfo{}
 	hostInfo.ID = hostID
-	exists, err := orm.Get(hostInfo)
+	exists, err := orm.GetV2(orm.NewContext(), hostInfo)
 	if err != nil {
 		return nil, fmt.Errorf("get host info error: %w", err)
 	}
@@ -1018,7 +1018,7 @@ func (h *APIHandler) GetHostOverviewInfo(w http.ResponseWriter, req *http.Reques
 	hostID := ps.MustGetParameter("host_id")
 	hostInfo := &host.HostInfo{}
 	hostInfo.ID = hostID
-	exists, err := orm.Get(hostInfo)
+	exists, err := orm.GetV2(orm.NewContext(), hostInfo)
 	if err != nil {
 		log.Errorf("GetHostOverviewInfo failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)

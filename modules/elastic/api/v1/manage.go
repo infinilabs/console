@@ -141,7 +141,7 @@ func (h *APIHandler) HandleGetClusterAction(w http.ResponseWriter, req *http.Req
 	id := ps.MustGetParameter("id")
 	clusterConf := elastic.ElasticsearchConfig{}
 	clusterConf.ID = id
-	exists, err := orm.Get(&clusterConf)
+	exists, err := orm.GetV2(orm.NewContext(), &clusterConf)
 	if err != nil || !exists {
 		log.Errorf("HandleGetClusterAction failed: %v", err)
 		h.Error404(w)
@@ -161,7 +161,7 @@ func (h *APIHandler) HandleUpdateClusterAction(w http.ResponseWriter, req *http.
 	id := ps.MustGetParameter("id")
 	originConf := elastic.ElasticsearchConfig{}
 	originConf.ID = id
-	exists, err := orm.Get(&originConf)
+	exists, err := orm.GetV2(orm.NewContext(), &originConf)
 	if err != nil || !exists {
 		log.Errorf("HandleUpdateClusterAction failed: %v", err)
 		h.Error404(w)
@@ -249,7 +249,7 @@ func (h *APIHandler) HandleDeleteClusterAction(w http.ResponseWriter, req *http.
 
 	esConfig := elastic.ElasticsearchConfig{}
 	esConfig.ID = id
-	ok, err := orm.Get(&esConfig)
+	ok, err := orm.GetV2(orm.NewContext(), &esConfig)
 	if err != nil {
 		log.Errorf("HandleDeleteClusterAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)

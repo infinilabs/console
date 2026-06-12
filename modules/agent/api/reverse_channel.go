@@ -41,7 +41,7 @@ func onAgentReverseConnect(sessionID string, w http.ResponseWriter, r *http.Requ
 
 	instance := model.Instance{}
 	instance.ID = instanceID
-	exists, err := orm.Get(&instance)
+	exists, err := orm.GetV2(orm.NewContext(), &instance)
 	if err == elastic.ErrNotFound {
 		err = nil
 		exists = false
@@ -117,7 +117,7 @@ func IsAgentReverseChannelConnected(instanceID string) bool {
 func loadReverseAccessToken(instanceID string) (string, error) {
 	instance := model.Instance{}
 	instance.ID = instanceID
-	exists, err := orm.Get(&instance)
+	exists, err := orm.GetV2(orm.NewContext(), &instance)
 	if err != nil || !exists {
 		return "", err
 	}

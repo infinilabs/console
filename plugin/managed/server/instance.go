@@ -63,7 +63,7 @@ var instanceConfigFiles = map[string][]string{}     //map instance->config files
 var instanceSecrets = map[string][]common.Secrets{} //map instance->secrets TODO lru cache, short life instance should be removed
 
 var getManagedInstanceByID = func(instance *model.Instance) (bool, error) {
-	return orm.Get(instance)
+	return orm.GetV2(orm.NewContext(), instance)
 }
 
 var saveManagedInstanceRecord = func(instance *model.Instance) error {
@@ -216,7 +216,7 @@ func (h APIHandler) registerInstance(w http.ResponseWriter, req *http.Request, p
 
 	oldInst := &model.Instance{}
 	oldInst.ID = obj.ID
-	exists, err := orm.Get(oldInst)
+	exists, err := orm.GetV2(orm.NewContext(), oldInst)
 	if err == elastic.ErrNotFound {
 		err = nil
 		exists = false
@@ -385,13 +385,13 @@ func syncManagedInstanceEndpoint(client model.Instance) {
 
 	existing := model.Instance{}
 	existing.ID = client.ID
-	exists, err := orm.Get(&existing)
+	exists, err := orm.GetV2(orm.NewContext(), &existing)
 	if err != nil || !exists || existing.Endpoint == client.Endpoint {
 		return
 	}
 
 	existing.Endpoint = client.Endpoint
-	if err := orm.Update(nil, &existing); err != nil {
+	if err := orm.Update(orm.NewContext(), &existing); err != nil {
 		log.Warnf("failed to update instance endpoint for [%s]: %v", client.ID, err)
 	}
 }
@@ -407,7 +407,7 @@ func (h *APIHandler) getInstance(w http.ResponseWriter, req *http.Request, ps ht
 	obj := model.Instance{}
 	obj.ID = id
 
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":   id,
@@ -460,7 +460,7 @@ func (h *APIHandler) createInstance(w http.ResponseWriter, req *http.Request, ps
 	}
 	obj.Application = res.Application
 
-	exists, err := orm.Get(obj)
+	exists, err := orm.GetV2(orm.NewContext(), obj)
 	if err != nil && err != elastic.ErrNotFound {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -558,7 +558,7 @@ func (h *APIHandler) updateInstance(w http.ResponseWriter, req *http.Request, ps
 	obj := model.Instance{}
 
 	obj.ID = id
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":    id,
@@ -580,7 +580,7 @@ func (h *APIHandler) updateInstance(w http.ResponseWriter, req *http.Request, ps
 	//protect
 	obj.ID = id
 	obj.Created = create
-	err = orm.Update(nil, &obj)
+	err = orm.Update(orm.NewContext(), &obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -1307,7 +1307,7 @@ func shouldFallbackInstanceInfoPath(path string, res *util.Result, err error) bo
 func GetRuntimeInstanceByID(instanceID string) (bool, *model.Instance, error) {
 	obj := model.Instance{}
 	obj.ID = instanceID
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
 	if err == elastic.ErrNotFound {
 		err = nil
 		exists = false
@@ -1402,7 +1402,7 @@ var deleteCredentialByID = func(credentialID string) error {
 
 	cred := frameworkcredential.Credential{}
 	cred.ID = credentialID
-	exists, err := orm.Get(&cred)
+	exists, err := orm.GetV2(orm.NewContext(), &cred)
 	if err != nil {
 		return err
 	}

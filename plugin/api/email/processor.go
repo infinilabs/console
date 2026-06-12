@@ -244,7 +244,7 @@ func queryEnabledEmailServerConfigByID(serverID string) (*EmailServerConfig, err
 	}
 	server := model.EmailServer{}
 	server.ID = serverID
-	exists, err := orm.Get(&server)
+	exists, err := orm.GetV2(orm.NewContext(), &server)
 	if err != nil {
 		return nil, err
 	}

@@ -135,7 +135,7 @@ func backfillRuleTimestamps(rule *alerting.Rule) {
 	if !ensureRuleTimestamps(rule, time.Now()) {
 		return
 	}
-	if err := orm.Save(nil, rule); err != nil {
+	if err := orm.Save(orm.NewContext(), rule); err != nil {
 		log.Errorf("failed to backfill rule timestamps for [%s]: %v", rule.ID, err)
 	}
 }
@@ -156,7 +156,7 @@ func persistUpdatedRule(oldRule, rule *alerting.Rule) error {
 		return err
 	}
 
-	if err := orm.Save(nil, rule); err != nil {
+	if err := orm.Save(orm.NewContext(), rule); err != nil {
 		return err
 	}
 	saveAlertActivity("alerting_rule_change", "update", util.MapStr{
@@ -246,7 +246,7 @@ func (alertAPI *AlertAPI) createRule(w http.ResponseWriter, req *http.Request, p
 			rule.Creator.Id = user.UserId
 		}
 
-		err = orm.Save(nil, &rule)
+		err = orm.Save(orm.NewContext(), &rule)
 		if err != nil {
 			log.Error(err)
 			alertAPI.WriteJSON(w, util.MapStr{
@@ -284,7 +284,7 @@ func (alertAPI *AlertAPI) getRule(w http.ResponseWriter, req *http.Request, ps h
 	obj := alerting.Rule{}
 	obj.ID = id
 
-	_, err := orm.Get(&obj)
+	_, err := orm.GetV2(orm.NewContext(), &obj)
 	if err != nil {
 		if errors.Is(err, elastic2.ErrNotFound) {
 			alertAPI.WriteJSON(w, util.MapStr{
@@ -326,7 +326,7 @@ func (alertAPI *AlertAPI) getRuleDetail(w http.ResponseWriter, req *http.Request
 	obj := alerting.Rule{}
 	obj.ID = id
 
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
 	if !exists || err != nil {
 		if errors.Is(err, elastic2.ErrNotFound) {
 			alertAPI.WriteJSON(w, util.MapStr{
@@ -540,7 +540,7 @@ func (alertAPI *AlertAPI) updateRule(w http.ResponseWriter, req *http.Request, p
 	oldRule := &alerting.Rule{}
 
 	oldRule.ID = id
-	exists, err := orm.Get(oldRule)
+	exists, err := orm.GetV2(orm.NewContext(), oldRule)
 	if !exists || err != nil {
 		log.Error(err)
 		alertAPI.WriteJSON(w, util.MapStr{
@@ -578,7 +578,7 @@ func (alertAPI *AlertAPI) syncRuleTemplate(w http.ResponseWriter, req *http.Requ
 	id := ps.MustGetParameter("rule_id")
 	oldRule := &alerting.Rule{ID: id}
 
-	exists, err := orm.Get(oldRule)
+	exists, err := orm.GetV2(orm.NewContext(), oldRule)
 	if !exists || err != nil {
 		log.Error(err)
 		alertAPI.WriteJSON(w, util.MapStr{
@@ -616,7 +616,7 @@ func (alertAPI *AlertAPI) deleteRule(w http.ResponseWriter, req *http.Request, p
 	obj := alerting.Rule{}
 	obj.ID = id
 
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
 	if !exists || err != nil {
 		log.Error(err)
 		alertAPI.WriteJSON(w, util.MapStr{
@@ -626,7 +626,7 @@ func (alertAPI *AlertAPI) deleteRule(w http.ResponseWriter, req *http.Request, p
 		return
 	}
 
-	err = orm.Delete(nil, &obj)
+	err = orm.Delete(orm.NewContext(), &obj)
 	if err != nil {
 		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -1050,7 +1050,7 @@ func (alertAPI *AlertAPI) enableRule(w http.ResponseWriter, req *http.Request, p
 	obj := alerting.Rule{}
 	obj.ID = id
 
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
 	if !exists || err != nil {
 		log.Error(err)
 		alertAPI.WriteJSON(w, util.MapStr{
@@ -1066,7 +1066,7 @@ func (alertAPI *AlertAPI) enableRule(w http.ResponseWriter, req *http.Request, p
 	}
 	obj.Enabled = reqObj.Enabled
 	ensureRuleTimestamps(&obj, time.Now())
-	err = orm.Save(nil, &obj)
+	err = orm.Save(orm.NewContext(), &obj)
 	if err != nil {
 		log.Error(err)
 		alertAPI.WriteError(w, fmt.Sprintf("save rule error:%v", err), http.StatusInternalServerError)
@@ -1132,7 +1132,7 @@ func checkResourceExists(rule *alerting.Rule) (bool, error) {
 	case "elasticsearch":
 		obj := elastic.ElasticsearchConfig{}
 		obj.ID = rule.Resource.ID
-		ok, err := orm.Get(&obj)
+		ok, err := orm.GetV2(orm.NewContext(), &obj)
 		if err != nil {
 			return false, err
 		}
@@ -1203,7 +1203,7 @@ func (alertAPI *AlertAPI) getPreviewMetricData(w http.ResponseWriter, req *http.
 func (alertAPI *AlertAPI) getHistoryMetricData(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	ruleID := ps.ByName("rule_id")
 	rule := &alerting.Rule{ID: ruleID}
-	exists, err := orm.Get(rule)
+	exists, err := orm.GetV2(orm.NewContext(), rule)
 	if !exists || err != nil {
 		alertAPI.WriteJSON(w, util.MapStr{"_id": ruleID, "found": false}, http.StatusNotFound)
 		return
@@ -1340,7 +1340,7 @@ func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request
 	rule := &alerting.Rule{
 		ID: ps.ByName("rule_id"),
 	}
-	exists, err := orm.Get(rule)
+	exists, err := orm.GetV2(orm.NewContext(), rule)
 	if !exists || err != nil {
 		alertAPI.WriteJSON(w, util.MapStr{
 			"_id":   rule.ID,

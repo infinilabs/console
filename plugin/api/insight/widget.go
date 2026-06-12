@@ -44,7 +44,7 @@ func (h *InsightAPI) createWidget(w http.ResponseWriter, req *http.Request, ps h
 		log.Error(err)
 		return
 	}
-	err = orm.Create(nil, obj)
+	err = orm.Create(orm.NewContext(), obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -61,7 +61,7 @@ func (h *InsightAPI) getWidget(w http.ResponseWriter, req *http.Request, ps http
 	obj := insight.Widget{}
 	obj.ID = id
 
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":   id,

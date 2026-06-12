@@ -157,7 +157,7 @@ func saveBasicAuthToCredential(srv *model.EmailServer) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	err = orm.Create(nil, &cred)
+	err = orm.Create(orm.NewContext(), &cred)
 	if err != nil {
 		return "", err
 	}
@@ -170,7 +170,7 @@ func (h *EmailAPI) getEmailServer(w http.ResponseWriter, req *http.Request, ps h
 	obj := model.EmailServer{}
 	obj.ID = id
 
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":   id,
@@ -192,7 +192,7 @@ func (h *EmailAPI) updateEmailServer(w http.ResponseWriter, req *http.Request, p
 	obj := model.EmailServer{}
 
 	obj.ID = id
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":    id,
@@ -253,7 +253,7 @@ func (h *EmailAPI) deleteEmailServer(w http.ResponseWriter, req *http.Request, p
 	obj := model.EmailServer{}
 	obj.ID = id
 
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":    id,

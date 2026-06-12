@@ -403,7 +403,7 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 	message := &alerting.AlertMessage{
 		ID: ps.ByName("message_id"),
 	}
-	exists, err := orm.Get(message)
+	exists, err := orm.GetV2(orm.NewContext(), message)
 	if !exists || err != nil {
 		log.Error(err)
 		h.WriteJSON(w, util.MapStr{
@@ -415,7 +415,7 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 	rule := &alerting.Rule{
 		ID: message.RuleID,
 	}
-	exists, err = orm.Get(rule)
+	exists, err = orm.GetV2(orm.NewContext(), rule)
 	if !exists || err != nil {
 		log.Error(err)
 		h.WriteError(w, fmt.Sprintf("rule [%s] not found", rule.ID), http.StatusInternalServerError)
@@ -603,7 +603,7 @@ func (h *AlertAPI) getMessageNotificationInfo(w http.ResponseWriter, req *http.R
 	message := &alerting.AlertMessage{
 		ID: ps.ByName("message_id"),
 	}
-	exists, err := orm.Get(message)
+	exists, err := orm.GetV2(orm.NewContext(), message)
 	if !exists || err != nil {
 		log.Error(err)
 		h.WriteJSON(w, util.MapStr{
@@ -615,7 +615,7 @@ func (h *AlertAPI) getMessageNotificationInfo(w http.ResponseWriter, req *http.R
 	rule := &alerting.Rule{
 		ID: message.RuleID,
 	}
-	exists, err = orm.Get(rule)
+	exists, err = orm.GetV2(orm.NewContext(), rule)
 	if !exists || err != nil {
 		log.Error(err)
 		h.WriteError(w, fmt.Sprintf("rule [%s] not found", rule.ID), http.StatusInternalServerError)

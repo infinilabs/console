@@ -119,7 +119,7 @@ func GetEnrolledNodesByAgent(instanceID string) (map[string]BindingItem, error) 
 func refreshNodesInfo(instanceID string) (*elastic.DiscoveryResult, error) {
 	instance := model.Instance{}
 	instance.ID = instanceID
-	exists, err := orm.Get(&instance)
+	exists, err := orm.GetV2(orm.NewContext(), &instance)
 	if err != nil {
 		return nil, fmt.Errorf("error on get agent instance: %w", err)
 	}
@@ -499,7 +499,7 @@ func getAgentByNodeID(clusterID, nodeID string) (*model.Instance, []string, erro
 						if ok {
 							inst := &model.Instance{}
 							inst.ID = util.ToString(id)
-							_, err = orm.Get(inst)
+							_, err = orm.GetV2(orm.NewContext(), inst)
 							if err != nil {
 								return nil, logsPaths, err
 							}
@@ -744,7 +744,7 @@ func (h *APIHandler) discoveryESNodesInfo(w http.ResponseWriter, req *http.Reque
 	id := ps.MustGetParameter("instance_id")
 	instance := model.Instance{}
 	instance.ID = id
-	exists, err := orm.Get(&instance)
+	exists, err := orm.GetV2(orm.NewContext(), &instance)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":   id,

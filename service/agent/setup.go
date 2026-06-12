@@ -76,7 +76,7 @@ func NewClusterAgentSettings(clusterID string, logsPaths []string) *model.Settin
 
 func GetClusterLogsPaths(clusterID string) ([]string, error) {
 	settings := NewClusterAgentSettings(clusterID, nil)
-	exists, err := orm.Get(settings)
+	exists, err := orm.GetV2(orm.NewContext(), settings)
 	if !exists {
 		if err != nil && err != elasticorm.ErrNotFound {
 			return nil, err
@@ -93,7 +93,7 @@ func SaveClusterLogsPaths(clusterID string, logsPaths []string) error {
 	settings := NewClusterAgentSettings(clusterID, logsPaths)
 	normalized, _ := settings.Payload["logs_paths"].([]string)
 	if len(normalized) == 0 {
-		exists, err := orm.Get(settings)
+		exists, err := orm.GetV2(orm.NewContext(), settings)
 		if !exists {
 			if err != nil && err != elasticorm.ErrNotFound {
 				return err

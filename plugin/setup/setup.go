@@ -788,7 +788,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	toSaveCfg := cfg
 	oldCfg := elastic.ElasticsearchConfig{}
 	oldCfg.ID = toSaveCfg.ID
-	_, _ = orm.Get(&oldCfg)
+	_, _ = orm.GetV2(orm.NewContext(), &oldCfg)
 	// If the old configuration exists, update it with the new values
 	if oldCfg.Name != "" {
 		toSaveCfg = oldCfg

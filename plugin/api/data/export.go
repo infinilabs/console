@@ -99,7 +99,7 @@ func indexExportData(eds []ExportData, patch bool) error {
 			if err != nil {
 				return err
 			}
-			err = orm.Save(nil, obj)
+			err = orm.Save(orm.NewContext(), obj)
 			if err != nil {
 				return err
 			}

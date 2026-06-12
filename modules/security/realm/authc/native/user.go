@@ -41,7 +41,7 @@ type User struct {
 func (dal *User) Get(id string) (rbac.User, error) {
 	user := rbac.User{}
 	user.ID = id
-	_, err := orm.Get(&user)
+	_, err := orm.GetV2(orm.NewContext(), &user)
 	return user, err
 }
 
@@ -64,18 +64,18 @@ func (dal *User) GetBy(field string, value interface{}) (*rbac.User, error) {
 
 func (dal *User) Update(user *rbac.User) error {
 
-	return orm.Update(nil, user)
+	return orm.Update(orm.NewContext(), user)
 }
 
 func (dal *User) Create(user *rbac.User) (string, error) {
 	user.ID = util.GetUUID()
-	return user.ID, orm.Save(nil, user)
+	return user.ID, orm.Save(orm.NewContext(), user)
 }
 
 func (dal *User) Delete(id string) error {
 	user := rbac.User{}
 	user.ID = id
-	return orm.Delete(nil, &user)
+	return orm.Delete(orm.NewContext(), &user)
 }
 
 func (dal *User) Search(keyword string, from, size int) (orm.Result, error) {

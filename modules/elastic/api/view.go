@@ -146,7 +146,7 @@ func (h *APIHandler) HandleDeleteViewAction(w http.ResponseWriter, req *http.Req
 	view := elastic.View{
 		ID: viewID,
 	}
-	_, err := orm.Get(&view)
+	_, err := orm.GetV2(orm.NewContext(), &view)
 	if err != nil {
 		log.Errorf("HandleDeleteViewAction failed: %v", err)
 		h.WriteJSON(w, err.Error(), http.StatusInternalServerError)
@@ -420,7 +420,7 @@ func (h *APIHandler) HandleUpdateViewAction(w http.ResponseWriter, req *http.Req
 	oldView := &elastic.View{
 		ID: id,
 	}
-	_, err = orm.Get(oldView)
+	_, err = orm.GetV2(orm.NewContext(), oldView)
 	if err != nil {
 		log.Errorf("HandleUpdateViewAction failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -497,7 +497,7 @@ func (h *APIHandler) HandleGetViewAction(w http.ResponseWriter, req *http.Reques
 	obj := elastic.View{}
 	obj.ID = id
 
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":   id,
@@ -527,7 +527,7 @@ func (h *APIHandler) SetDefaultLayout(w http.ResponseWriter, req *http.Request, 
 	id := ps.MustGetParameter("view_id")
 	viewObj := elastic.View{}
 	viewObj.ID = id
-	exists, err := orm.Get(&viewObj)
+	exists, err := orm.GetV2(orm.NewContext(), &viewObj)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":    id,

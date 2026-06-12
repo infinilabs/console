@@ -99,7 +99,7 @@ func (h *AlertAPI) createChannel(w http.ResponseWriter, req *http.Request, ps ht
 		return
 	}
 
-	err = orm.Create(nil, obj)
+	err = orm.Create(orm.NewContext(), obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -116,7 +116,7 @@ func (h *AlertAPI) getChannel(w http.ResponseWriter, req *http.Request, ps httpr
 	obj := alerting.Channel{}
 	obj.ID = id
 
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":   id,
@@ -138,7 +138,7 @@ func (h *AlertAPI) updateChannel(w http.ResponseWriter, req *http.Request, ps ht
 	obj := alerting.Channel{}
 
 	obj.ID = id
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":    id,
@@ -160,7 +160,7 @@ func (h *AlertAPI) updateChannel(w http.ResponseWriter, req *http.Request, ps ht
 	//protect
 	obj.ID = id
 	obj.Created = create
-	err = orm.Update(nil, &obj)
+	err = orm.Update(orm.NewContext(), &obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -438,7 +438,7 @@ func validateChannelsBeforeEnable(channelIDs []string) error {
 	for _, id := range channelIDs {
 		channel := alerting.Channel{}
 		channel.ID = id
-		exists, err := orm.Get(&channel)
+		exists, err := orm.GetV2(orm.NewContext(), &channel)
 		if err != nil {
 			return err
 		}

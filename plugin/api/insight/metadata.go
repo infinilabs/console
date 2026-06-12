@@ -121,7 +121,7 @@ func (h *InsightAPI) HandleGetPreview(w http.ResponseWriter, req *http.Request, 
 		view := elastic.View{
 			ID: reqBody.ViewID,
 		}
-		exists, err := orm.Get(&view)
+		exists, err := orm.GetV2(orm.NewContext(), &view)
 		if err != nil || !exists {
 			h.WriteJSON(w, util.MapStr{
 				"error": err.Error(),
@@ -225,7 +225,7 @@ func (h *InsightAPI) HandleGetMetadata(w http.ResponseWriter, req *http.Request,
 		view := elastic.View{
 			ID: reqBody.ViewID,
 		}
-		exists, err := orm.Get(&view)
+		exists, err := orm.GetV2(orm.NewContext(), &view)
 		if err != nil || !exists {
 			h.WriteError(w, err.Error(), http.StatusNotFound)
 			return

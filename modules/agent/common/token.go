@@ -99,7 +99,7 @@ func GetPendingRegistrationTokenByID(id string) (*PendingRegistrationToken, erro
 		return nil, nil
 	}
 	record := &PendingRegistrationToken{ORMObjectBase: orm.ORMObjectBase{ID: id}}
-	exists, err := orm.Get(record)
+	exists, err := orm.GetV2(orm.NewContext(), record)
 	if err != nil || !exists {
 		if err == nil {
 			return nil, fmt.Errorf("pending registration token not found")
@@ -172,7 +172,7 @@ func UpdateTokenCredential(credentialID, name string, tags []string, tokenValue 
 	}
 	cred := credential.Credential{}
 	cred.ID = credentialID
-	exists, err := orm.Get(&cred)
+	exists, err := orm.GetV2(orm.NewContext(), &cred)
 	if err != nil {
 		return err
 	}
@@ -199,7 +199,7 @@ func GetTokenCredentialValue(credentialID string) (string, error) {
 	}
 	cred := credential.Credential{}
 	cred.ID = credentialID
-	exists, err := orm.Get(&cred)
+	exists, err := orm.GetV2(orm.NewContext(), &cred)
 	if err != nil {
 		return "", err
 	}

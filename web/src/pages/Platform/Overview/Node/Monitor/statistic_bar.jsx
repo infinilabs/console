@@ -14,7 +14,7 @@ const vstyle = {
   fontWeight: "bold",
 };
 
-const StatisticBar = ({ clusterID, nodeID, timeRange, setSpinning }) => {
+const StatisticBar = ({ clusterID, nodeID, timeRange, setSpinning, onInfoChange }) => {
   if (!clusterID || !nodeID) {
     return null;
   }
@@ -31,6 +31,12 @@ const StatisticBar = ({ clusterID, nodeID, timeRange, setSpinning }) => {
   React.useEffect(() => {
     setSpinning(loading);
   }, [loading]);
+
+  React.useEffect(() => {
+    if (onInfoChange) {
+      onInfoChange(nodeValue);
+    }
+  }, [JSON.stringify(nodeValue)]);
 
   const isAvailable =
     loading ||

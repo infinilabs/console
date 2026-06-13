@@ -72,6 +72,9 @@ const getDuration = (from, to) => {
 
 const normalizeTimeValue = (value, fallback = "now-15m", keys = []) => {
   if (typeof value === "string" || typeof value === "number") {
+    if (typeof value === "number" && !Number.isFinite(value)) {
+      return fallback;
+    }
     return `${value}`;
   }
   if (value && typeof value === "object") {

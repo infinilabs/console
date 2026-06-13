@@ -870,7 +870,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-cbp20n2anisjm
   "id": "builtin-cbp20n2anisjmu4gehc5",
   "created": "2022-08-09T08:52:44.63345561Z",
   "updated": "2023-08-09T22:11:45.679048697+08:00",
-  "name": "Elasticsearch node left cluster",
+  "name": "Node left cluster",
   "enabled": true,
   "resource": {
     "resource_id": "$[[SETUP_RESOURCE_ID]]",
@@ -932,7 +932,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-cbp20n2anisjm
   },
   "notification_config": {
     "enabled": true,
-    "title": "🔥 Elasticsearch node left cluster",
+    "title": "🔥 Node left cluster",
     "message": "{{range .results}}\n{{$cn := lookup \"category=metadata, object=cluster, property=name, default=N/A\" (index .group_values 0) }}\n{{$nn := lookup \"category=metadata, object=node, property=metadata.node_name, default=N/A\" (index .group_values 1) }}\n{{$nu := printf \"%s/#/cluster/monitor/%s/nodes/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0) (index .group_values 1)}}\n{{$cu := printf \"%s/#/cluster/monitor/elasticsearch/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0)}}\nNode: [{{$nn}}]({{$nu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D%2C%22cluster_name%22:%22{{$cn | urlquery}}%22%2C%22node_name%22:%22{{$nn}}%22%7D) of Cluster: [{{$cn}}]({{$cu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D%7D), Left: {{.result_value}}\n{{end}}",
     "normal": [
       {

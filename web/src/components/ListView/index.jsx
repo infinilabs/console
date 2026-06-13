@@ -66,6 +66,45 @@ const normalizeTimeRange = (timeRange = {}, fallback = {}) => {
   };
 };
 
+const normalizeHistogramRange = (timeRange = {}) => {
+  const from = normalizeTimeRangeValue(timeRange?.from, "now-15m");
+  const to = normalizeTimeRangeValue(timeRange?.to, "now");
+  if (from === "auto" || to === "auto") {
+    return {
+      from: "now-15m",
+      to: "now",
+    };
+  }
+  return { from, to };
+};
+
+const resolveAutoHistogramRange = (timeRange = {}, aggregations = {}) => {
+  const normalized = normalizeHistogramRange(timeRange);
+  if (normalized.from !== "now-15m" || normalized.to !== "now") {
+    return normalized;
+  }
+  const isAuto =
+    normalizeTimeRangeValue(timeRange?.from, "") === "auto" ||
+    normalizeTimeRangeValue(timeRange?.to, "") === "auto";
+  if (!isAuto) {
+    return normalized;
+  }
+  const minValue = aggregations?.__listview_min_time?.value;
+  const maxValue = aggregations?.__listview_max_time?.value;
+  if (
+    Number.isFinite(minValue) &&
+    Number.isFinite(maxValue) &&
+    minValue > 0 &&
+    maxValue > 0
+  ) {
+    return {
+      from: moment(minValue).toISOString(),
+      to: moment(maxValue).toISOString(),
+    };
+  }
+  return normalized;
+};
+
 const buildTimestampKeywordFilter = (keyword, timeField) => {
   const value = `${keyword ?? ""}`.trim();
   if (!value || !timeField) {
@@ -167,7 +206,7 @@ const Index = forwardRef((props, ref) => {
   const [histogramState, setHistogramState] = useState({
     visible: histogramVisible,
     widget: histogramWidget,
-    range: defaultQueryParams.timeRange,
+    range: normalizeHistogramRange(defaultQueryParams.timeRange),
   });
   useEffect(() => {
     if (histogramEnable) {
@@ -323,6 +362,14 @@ const Index = forwardRef((props, ref) => {
         return sortJson;
       });
     }
+    const aggs = {
+      ...formatAggs,
+    };
+    const timeField = queryParams?.timeRange?.timeField;
+    if (timeField) {
+      aggs.__listview_min_time = { min: { field: timeField } };
+      aggs.__listview_max_time = { max: { field: timeField } };
+    }
     return {
       query: {
         bool: {
@@ -342,7 +389,7 @@ const Index = forwardRef((props, ref) => {
         },
       },
       sort: sort,
-      aggs: formatAggs,
+      aggs,
     };
   };
 
@@ -523,10 +570,7 @@ const Index = forwardRef((props, ref) => {
       timeRange: normalizedTimeRange,
     }));
     if (histogramEnable) {
-      let range = {
-        from: normalizedTimeRange.from,
-        to: normalizedTimeRange.to,
-      };
+      let range = normalizeHistogramRange(normalizedTimeRange);
       let series = histogramState.widget?.series?.map((item) => {
         item.queries.time_field = normalizedTimeRange.timeField;
         return item;
@@ -557,6 +601,15 @@ const Index = forwardRef((props, ref) => {
     const query = formatQueryBody(queryParams)?.query;
     return query ? JSON.stringify(query) : undefined;
   }, [JSON.stringify(queryParams)]);
+
+  const histogramRange = useMemo(
+    () =>
+      resolveAutoHistogramRange(
+        queryParams?.timeRange || {},
+        dataSource?.aggregations || {}
+      ),
+    [queryParams?.timeRange, dataSource?.aggregations]
+  );
 
   useEffect(() => {
     const nextParam = { ...(param || {}), ...queryParams };
@@ -709,7 +762,7 @@ const Index = forwardRef((props, ref) => {
               >
                 <WidgetRender
                   widget={histogramState.widget}
-                  range={histogramState.range}
+                  range={histogramRange}
                   query={histogramQuery}
                   queryParams={queryParams?.filters || {}}
                   onGlobalQueriesChange={onHistogramQueriesChange}

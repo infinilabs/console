@@ -44,13 +44,39 @@ export const WidgetRender = (props) => {
       return mergeFilters([], newFilters)
    }, [JSON.stringify(queryParams)])
 
+   const normalizeRangeValue = (value, fallback) => {
+      if (typeof value === "string" || typeof value === "number") {
+         return `${value}`;
+      }
+      if (value && typeof value === "object") {
+         for (const key of ["from", "to", "min", "max", "gte", "lte", "start", "end"]) {
+            if (
+              Object.prototype.hasOwnProperty.call(value, key) &&
+              value[key] !== undefined &&
+              value[key] !== null
+            ) {
+              return `${value[key]}`;
+            }
+         }
+      }
+      return fallback;
+   };
+
    const formatTimeRange = useMemo(() => {
-      if (!range.from || !range.to) return { from: 'now-15m', to: 'now'}
-      const bounds = calculateBounds(range);
-      return {
-         from: moment(bounds.min.valueOf()).tz(getTimezone()).utc().format(),
-         to: moment(bounds.max.valueOf()).tz(getTimezone()).utc().format(),
-      };
+      const from = normalizeRangeValue(range?.from, "now-15m");
+      const to = normalizeRangeValue(range?.to, "now");
+      if (!from || !to || from === "auto" || to === "auto") {
+         return { from: "now-15m", to: "now" };
+      }
+      try {
+         const bounds = calculateBounds({ from, to });
+         return {
+            from: moment(bounds.min.valueOf()).tz(getTimezone()).utc().format(),
+            to: moment(bounds.max.valueOf()).tz(getTimezone()).utc().format(),
+         };
+      } catch (e) {
+         return { from: "now-15m", to: "now" };
+      }
    }, [JSON.stringify(range), refresh]);
 
    const renderWidget = useMemo(() => {

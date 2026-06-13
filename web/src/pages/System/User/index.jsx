@@ -34,6 +34,12 @@ const firstColumnIconStyle = {
   fontSize: 12,
 };
 
+const displayOrDash = (value) => {
+  if (value === null || value === undefined) return "-";
+  const text = `${value}`.trim();
+  return text ? text : "-";
+};
+
 const UserList = (props) => {
   const [queryParams, setQueryParams] = React.useState({});
   const [searchValue, setSearchValue] = React.useState("");
@@ -73,34 +79,38 @@ const UserList = (props) => {
         render: (text) => (
           <div style={{ display: "flex", alignItems: "center" }}>
             <Icon type="user" style={firstColumnIconStyle} />
-            <span>{text}</span>
+            <span>{displayOrDash(text)}</span>
           </div>
         ),
       },
       {
         title: formatMessage({ id: "system.security.user.table.nickname" }),
         dataIndex: "nick_name",
+        render: (val) => displayOrDash(val),
       },
       {
         title: formatMessage({ id: "system.security.user.table.roles" }),
         dataIndex: "roles",
         render: (val) => {
-          return (val || []).map((role) => role.name).join(",");
+          const text = (val || []).map((role) => role.name).join(",");
+          return displayOrDash(text);
         },
       },
       {
         title: formatMessage({ id: "system.security.user.table.phone" }),
         dataIndex: "phone",
+        render: (val) => displayOrDash(val),
       },
       {
         title: formatMessage({ id: "system.security.user.table.email" }),
         dataIndex: "email",
+        render: (val) => displayOrDash(val),
       },
       {
         title: formatMessage({ id: "system.security.user.table.tags" }),
         dataIndex: "tags",
         render: (text) => {
-          return text;
+          return displayOrDash(text);
         },
       },
       {

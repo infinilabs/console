@@ -36,3 +36,14 @@ ul,
 ol {
   list-style: none;
 }
+
+@layout-header-height: 64px;
+
+:global {
+  .ant-drawer.ant-drawer-right {
+    .ant-drawer-content-wrapper {
+      top: @layout-header-height;
+      height: calc(100% - @layout-header-height);
+    }
+  }
+}

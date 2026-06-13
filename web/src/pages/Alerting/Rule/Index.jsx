@@ -36,6 +36,12 @@ import NoData from "./components/NoData";
 import { HealthStatusCircle } from "@/components/infini/health_status_circle";
 import { getSystemClusterID } from "@/utils/setup";
 
+const displayOrDash = (value) => {
+  if (value === null || value === undefined) return "-";
+  const text = `${value}`.trim();
+  return text ? text : "-";
+};
+
 export default (props) => {
   const ref = useRef(null);
   const [isLoading, setIsLoading] = React.useState();
@@ -326,7 +332,7 @@ export default (props) => {
         return text ? (
           <Tag style={{ color: "rgb(0, 127, 255)" }}>{text}</Tag>
         ) : (
-          <span>{text}</span>
+          <span>-</span>
         );
       },
     },
@@ -343,7 +349,7 @@ export default (props) => {
             style={{ display: "flex", alignItems: "center", gap: 5 }}
           >
             {renderRuleStatus(record)}
-            <span>{text}</span>
+            <span>{displayOrDash(text)}</span>
           </Link>
         );
       },
@@ -353,6 +359,9 @@ export default (props) => {
       key: "tags",
       searchable: true,
       render: (text, record) => {
+        if (!record.tags || record.tags.length === 0) {
+          return "-";
+        }
         return record.tags?.map((item) => {
           return (
             <Tag key={item} style={{ color: "rgb(0, 127, 255)" }}>
@@ -367,7 +376,7 @@ export default (props) => {
         id: "alert.rule.table.columnns.last_notification_time",
       }),
       key: "info.last_notification_time",
-      render: (text, record) => (text ? moment(text).fromNow() : text),
+      render: (text, record) => (text ? moment(text).fromNow() : "-"),
     },
     {
       title: formatMessage({ id: "alert.rule.table.columnns.updated" }),

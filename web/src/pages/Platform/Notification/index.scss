@@ -11,4 +11,11 @@
   .ant-table-tbody > tr.read > td a {
     color: rgba(0, 0, 0, 0.65);
   }
+  :global {
+    .notice-status-read {
+      color: rgba(0, 0, 0, 0.65);
+      background: #eef2f7;
+      border-color: #d6dee9;
+    }
+  }
 }

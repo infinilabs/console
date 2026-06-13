@@ -123,7 +123,10 @@ const RuleRecordChart = ({ ruleID, timeRange, conditions, clusterID }) => {
   };
 
   return (
-    <div className={metricsStyles.vizChartContainer}>
+    <div
+      className={metricsStyles.vizChartContainer}
+      style={{ border: "none", margin: 0, flex: "1 1 100%" }}
+    >
       <Chart size={[, 240]} className={metricsStyles.vizChartItem}>
         <Settings
           debug={false}

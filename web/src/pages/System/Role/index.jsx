@@ -36,6 +36,12 @@ const firstColumnIconStyle = {
   fontSize: 12,
 };
 
+const displayOrDash = (value) => {
+  if (value === null || value === undefined) return "-";
+  const text = `${value}`.trim();
+  return text ? text : "-";
+};
+
 const RoleList = (props) => {
   const [queryParams, setQueryParams] = React.useState({});
   const [searchValue, setSearchValue] = React.useState("");
@@ -84,13 +90,14 @@ const RoleList = (props) => {
         render: (text) => (
           <div style={{ display: "flex", alignItems: "center" }}>
             <Icon type="safety" style={firstColumnIconStyle} />
-            <span>{text}</span>
+            <span>{displayOrDash(text)}</span>
           </div>
         ),
       },
       {
         title: formatMessage({ id: "system.security.role.table.type" }),
         dataIndex: "type",
+        render: (val) => displayOrDash(val),
       },
       {
         title: formatMessage({ id: "system.security.role.table.builtin" }),
@@ -102,6 +109,7 @@ const RoleList = (props) => {
       {
         title: formatMessage({ id: "system.security.role.table.description" }),
         dataIndex: "description",
+        render: (val) => displayOrDash(val),
       },
       {
         title: formatMessage({ id: "table.field.actions" }),

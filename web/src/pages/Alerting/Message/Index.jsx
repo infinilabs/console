@@ -611,15 +611,30 @@ const Index = (props) => {
       "auto",
       ["to", "max", "lte", "end"]
     );
-    if (startTime && endTime) {
+    if (
+      startTime &&
+      endTime &&
+      startTime !== "auto" &&
+      endTime !== "auto"
+    ) {
       return {
         from: startTime,
         to: endTime,
       };
     }
+    if (minUpdated && maxUpdated) {
+      const minMoment = moment(minUpdated);
+      const maxMoment = moment(maxUpdated);
+      if (minMoment.isValid() && maxMoment.isValid()) {
+        return {
+          from: minUpdated,
+          to: maxUpdated,
+        };
+      }
+    }
     return {
-      from: minUpdated,
-      to: maxUpdated,
+      from: "now-15m",
+      to: "now",
     };
   }, [queryParams?.start_time, queryParams?.end_time, minUpdated, maxUpdated]);
 

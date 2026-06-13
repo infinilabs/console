@@ -26,8 +26,8 @@ export const Metrics = (props) => {
   const [state, setState] = useState({
     clusterID: clusterID,
     timeRange: {
-      min: "auto",
-      max: "auto",
+      min: "now-15m",
+      max: "now",
       timeFormatter: formatter.dates(1),
     },
   });

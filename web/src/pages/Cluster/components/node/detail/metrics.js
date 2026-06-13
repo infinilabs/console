@@ -28,8 +28,8 @@ export const Metrics = (props) => {
   const [spinning, setSpinning] = useState(false);
   const [state, setState] = useState({
     timeRange: {
-      min: "auto",
-      max: "auto",
+      min: "now-15m",
+      max: "now",
       timeFormatter: formatter.dates(1),
     },
   });

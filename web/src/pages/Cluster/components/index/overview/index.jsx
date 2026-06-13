@@ -28,8 +28,8 @@ const Index = (props) => {
     clusterName: param?.cluster_name || "",
     indexName: props.match.params?.index_name || "",
     timeRange: {
-      min: param?.timeRange?.min || "auto",
-      max: param?.timeRange?.max || "auto",
+      min: param?.timeRange?.min || "now-15m",
+      max: param?.timeRange?.max || "now",
       timeFormatter: formatter.dates(1),
     },
   });

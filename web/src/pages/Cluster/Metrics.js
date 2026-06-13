@@ -143,8 +143,8 @@ class ClusterMonitor extends PureComponent {
       clusterID: null,
       activeTab: props.param?.tab || "cluster",
       timeRange: {
-        min: "auto",
-        max: "auto",
+        min: "now-1h",
+        max: "now",
         timeFormatter: formatter.dates(1),
       },
     };

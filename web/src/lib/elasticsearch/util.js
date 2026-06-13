@@ -161,10 +161,15 @@ export function extractClusterIDFromURL() {
 }
 
 export function formatTimeRange(timeRange) {
-  const bounds = calculateBounds({
-    from: timeRange?.min,
-    to: timeRange?.max,
-  });
+  let bounds;
+  try {
+    bounds = calculateBounds({
+      from: timeRange?.min,
+      to: timeRange?.max,
+    });
+  } catch (e) {
+    bounds = null;
+  }
   if (!bounds || !Number.isFinite(bounds.min?.valueOf?.()) || !Number.isFinite(bounds.max?.valueOf?.())) {
     const min = timeRange?.min;
     const max = timeRange?.max;

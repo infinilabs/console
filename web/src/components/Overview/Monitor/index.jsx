@@ -143,7 +143,7 @@ const Monitor = (props) => {
   const [spinning, setSpinning] = useState(false);
 
   const [state, setState] = useState(formatState(initState({
-    timeRange: param?.timeRange || { min: "auto", max: "auto" },
+    timeRange: param?.timeRange || { min: "now-15m", max: "now" },
     timeInterval: formatTimeInterval(param?.timeInterval) || allTimeSettingsCache.timeInterval,
     timeout: formatTimeout(param?.timeout)  || allTimeSettingsCache.timeout || '10s',
     param: param,

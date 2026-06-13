@@ -548,6 +548,7 @@ export const AgentRowDetail = ({ agentID, t }) => {
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             {hasAuthority("agent.instance:all") && state.processesTab === "unknown" ? (
               <Button
+                icon="link"
                 type="primary"
                 onClick={() => {
                   setState((st) => {

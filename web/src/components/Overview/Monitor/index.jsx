@@ -137,7 +137,7 @@ const Monitor = (props) => {
   const [spinning, setSpinning] = useState(false);
 
   const [state, setState] = useState(formatState(initState({
-    timeRange: param?.timeRange || {},
+    timeRange: param?.timeRange || { min: "auto", max: "auto" },
     timeInterval: formatTimeInterval(param?.timeInterval) || allTimeSettingsCache.timeInterval,
     timeout: formatTimeout(param?.timeout)  || allTimeSettingsCache.timeout || '10s',
     param: param,
@@ -231,7 +231,7 @@ const Monitor = (props) => {
             <>
               <div style={{ marginBottom: 5 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <div style={{ maxWidth: 600 }}>
+                <div style={{ width: 350, maxWidth: "45vw", minWidth: 270 }}>
                     <DatePicker
                       locale={getLocale()}
                       start={state.timeRange.min}
@@ -271,6 +271,7 @@ const Monitor = (props) => {
                         setTimeZone(timeZone)
                       }}
                       recentlyUsedRangesKey={'monitor'}
+                      showAutoTimeRange={true}
                     />
                   </div>
                   <div className={styles.statusActions}>

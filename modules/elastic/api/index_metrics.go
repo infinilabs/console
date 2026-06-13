@@ -122,7 +122,7 @@ func (h *APIHandler) getIndexMetrics(ctx context.Context, req *http.Request, clu
 		top = len(indexNames)
 
 	} else {
-		indexNames, err = h.getTopIndexName(req, clusterID, top, min, max)
+		indexNames, err = h.getTopIndexName(req, clusterID, top, min, max, bucketSize)
 		if err != nil {
 			return nil, err
 		}
@@ -804,7 +804,7 @@ func (h *APIHandler) getIndexMetrics(ctx context.Context, req *http.Request, clu
 
 }
 
-func (h *APIHandler) getTopIndexName(req *http.Request, clusterID string, top int, min, max int64) ([]string, error) {
+func (h *APIHandler) getTopIndexName(req *http.Request, clusterID string, top int, min, max int64, bucketSize int) ([]string, error) {
 	ver := h.Client().GetVersion()
 	cr, _ := util.VersionCompare(ver.Number, "6.1")
 	if (ver.Distribution == "" || ver.Distribution == elastic.Elasticsearch) && cr == -1 {
@@ -859,18 +859,19 @@ func (h *APIHandler) getTopIndexName(req *http.Request, clusterID string, top in
 			},
 		})
 	}
-	bucketSizeStr := "60s"
-	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
-	if err != nil {
-		return nil, err
-	}
-
 	partition_num := 10
 	indexCount := v1.GetIndicesCount(clusterID)
 	if indexCount < 40 {
 		partition_num = 1
 	} else {
 		partition_num = indexCount / 20
+	}
+	estimatedIndexBuckets := estimateTopIndexBuckets(indexCount, partition_num)
+	bucketSize = normalizeTopIndexBucketSize(bucketSize, min, max, estimatedIndexBuckets)
+	bucketSizeStr := fmt.Sprintf("%ds", bucketSize)
+	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
+	if err != nil {
+		return nil, err
 	}
 
 	term_index := util.MapStr{
@@ -1064,4 +1065,56 @@ func (t TopTermOrder) Less(i, j int) bool {
 }
 func (t TopTermOrder) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
+}
+
+func normalizeTopIndexBucketSize(bucketSize int, min, max int64, indexBuckets int) int {
+	if bucketSize <= 0 {
+		bucketSize = 60
+	}
+	if max <= min {
+		return bucketSize
+	}
+	if indexBuckets <= 0 {
+		indexBuckets = 1
+	}
+	const (
+		esMaxBuckets      = int64(65535)
+		aggGroupCount     = int64(2) // group_by_index + group_by_index1
+		estShardBuckets   = int64(2) // estimated shard terms fan-out
+		basePerDateBucket = int64(1)
+	)
+	durationSeconds := (max - min) / 1000
+	if durationSeconds <= 0 {
+		return bucketSize
+	}
+	perDateCost := aggGroupCount * int64(indexBuckets) * (basePerDateBucket + estShardBuckets)
+	if perDateCost <= 0 {
+		perDateCost = 1
+	}
+	maxDateBuckets := esMaxBuckets / perDateCost
+	if maxDateBuckets < 1 {
+		maxDateBuckets = 1
+	}
+	minRequired := int((durationSeconds + maxDateBuckets - 1) / maxDateBuckets)
+	if minRequired > bucketSize {
+		bucketSize = minRequired
+	}
+	return bucketSize
+}
+
+func estimateTopIndexBuckets(indexCount, partitionNum int) int {
+	if indexCount <= 0 {
+		return 1
+	}
+	if partitionNum <= 0 {
+		partitionNum = 1
+	}
+	estimated := (indexCount + partitionNum - 1) / partitionNum
+	if estimated < 1 {
+		estimated = 1
+	}
+	if estimated > 10000 {
+		estimated = 10000
+	}
+	return estimated
 }

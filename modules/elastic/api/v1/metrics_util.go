@@ -324,9 +324,22 @@ func GetMetricRangeAndBucketSize(minStr string, maxStr string, bucketSize int, m
 	var rangeFrom, rangeTo time.Time
 	var err error
 	var useMinMax = bucketSize == 0
+	if strings.EqualFold(strings.TrimSpace(minStr), "auto") {
+		minStr = ""
+	}
+	if strings.EqualFold(strings.TrimSpace(maxStr), "auto") {
+		maxStr = ""
+	}
+	effectiveBucketSize := bucketSize
+	if effectiveBucketSize <= 0 {
+		effectiveBucketSize = minBucketSize
+	}
+	if effectiveBucketSize <= 0 {
+		effectiveBucketSize = GetMinBucketSize()
+	}
 	now := time.Now()
 	if minStr == "" {
-		rangeFrom = now.Add(-time.Second * time.Duration(bucketSize*metricCount+1))
+		rangeFrom = now.Add(-time.Second * time.Duration(effectiveBucketSize*metricCount+1))
 	} else {
 		//try 2021-08-21T14:06:04.818Z
 		rangeFrom, err = util.ParseStandardTime(minStr)
@@ -335,7 +348,7 @@ func GetMetricRangeAndBucketSize(minStr string, maxStr string, bucketSize int, m
 			v, err := util.ToInt64(minStr)
 			if err != nil {
 				log.Errorf("GetMetricRangeAndBucketSize invalid min timestamp [%s]: %v", minStr, err)
-				rangeFrom = now.Add(-time.Second * time.Duration(bucketSize*metricCount+1))
+				rangeFrom = now.Add(-time.Second * time.Duration(effectiveBucketSize*metricCount+1))
 			} else {
 				rangeFrom = util.FromUnixTimestamp(v / 1000)
 			}
@@ -343,14 +356,14 @@ func GetMetricRangeAndBucketSize(minStr string, maxStr string, bucketSize int, m
 	}
 
 	if maxStr == "" {
-		rangeTo = now.Add(-time.Second * time.Duration(int(1*(float64(bucketSize)))))
+		rangeTo = now.Add(-time.Second * time.Duration(effectiveBucketSize))
 	} else {
 		rangeTo, err = util.ParseStandardTime(maxStr)
 		if err != nil {
 			v, err := util.ToInt64(maxStr)
 			if err != nil {
 				log.Errorf("GetMetricRangeAndBucketSize invalid max timestamp [%s]: %v", maxStr, err)
-				rangeTo = now.Add(-time.Second * time.Duration(int(1*(float64(bucketSize)))))
+				rangeTo = now.Add(-time.Second * time.Duration(effectiveBucketSize))
 			} else {
 				rangeTo = util.FromUnixTimestamp(int64(v) / 1000)
 			}

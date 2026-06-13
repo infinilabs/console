@@ -13,11 +13,11 @@ import { SearchEngineIcon } from "@/lib/search_engines";
 import request from "@/utils/request";
 
 export default (props) => {
-  const { infoAction, id, parentLoading } = props;
+  const { infoAction, id, parentLoading, info: prefetchedInfo, infoLoading } = props;
   const clusterID = props.data?._id;
   const metadata = props.data._source || {};
 
-  const [info, setInfo] = useState({});
+  const [info, setInfo] = useState(prefetchedInfo || {});
   const [loading, setLoading] = useState(false)
 
   const fetchListInfo = async (id) => {
@@ -35,10 +35,14 @@ export default (props) => {
   };
 
   useEffect(() => {
+    if (prefetchedInfo) {
+      setInfo(prefetchedInfo);
+      return;
+    }
     if (!parentLoading) {
       fetchListInfo(id)
     }
-  }, [id, parentLoading])
+  }, [id, parentLoading, prefetchedInfo, infoAction])
 
   const summary = info?.summary || {};
   const metrics = info?.metrics || {};
@@ -111,7 +115,7 @@ export default (props) => {
   const healthStatus = metadata.labels?.health_status;
 
   return (
-    <Spin spinning={!parentLoading && loading}>
+    <Spin spinning={!parentLoading && (loading || infoLoading)}>
 
 <div className="card-wrap">
       <div

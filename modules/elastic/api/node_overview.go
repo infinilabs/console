@@ -677,6 +677,41 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 		}
 		metrics["node_health"] = healthMetric
 	} else if metricKey == ShardStateMetricKey {
+		nodeIdentityFilter := util.MapStr{
+			"bool": util.MapStr{
+				"minimum_should_match": 1,
+				"should": []util.MapStr{
+					{
+						"term": util.MapStr{
+							"metadata.labels.node_id": util.MapStr{
+								"value": nodeID,
+							},
+						},
+					},
+					{
+						"term": util.MapStr{
+							"metadata.labels.node_uuid": util.MapStr{
+								"value": nodeID,
+							},
+						},
+					},
+					{
+						"term": util.MapStr{
+							"payload.elasticsearch.shard_stats.routing.node": util.MapStr{
+								"value": nodeID,
+							},
+						},
+					},
+					{
+						"term": util.MapStr{
+							"payload.elasticsearch.shard_stats.routing.current_node": util.MapStr{
+								"value": nodeID,
+							},
+						},
+					},
+				},
+			},
+		}
 		query = util.MapStr{
 			"size": 0,
 			"query": util.MapStr{
@@ -698,13 +733,7 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 								},
 							},
 						},
-						{
-							"term": util.MapStr{
-								"metadata.labels.node_id": util.MapStr{
-									"value": nodeID,
-								},
-							},
-						},
+						nodeIdentityFilter,
 					},
 					"filter": []util.MapStr{
 						{
@@ -1115,6 +1144,18 @@ func (h *APIHandler) getNodeLatestIndicesAgent(req *http.Request, min, max, clus
 		return nil, err
 	}
 
+	nodeIdentityFilter := util.MapStr{
+		"bool": util.MapStr{
+			"minimum_should_match": 1,
+			"should": []util.MapStr{
+				{"term": util.MapStr{"metadata.labels.node_id": util.MapStr{"value": nodeUUID}}},
+				{"term": util.MapStr{"metadata.labels.node_uuid": util.MapStr{"value": nodeUUID}}},
+				{"term": util.MapStr{"payload.elasticsearch.shard_stats.routing.node": util.MapStr{"value": nodeUUID}}},
+				{"term": util.MapStr{"payload.elasticsearch.shard_stats.routing.current_node": util.MapStr{"value": nodeUUID}}},
+			},
+		},
+	}
+
 	// Query shard_stats for this node in the time range.
 	query := util.MapStr{
 		"size": 10000,
@@ -1139,7 +1180,7 @@ func (h *APIHandler) getNodeLatestIndicesAgent(req *http.Request, min, max, clus
 					{"term": util.MapStr{"metadata.category": util.MapStr{"value": "elasticsearch"}}},
 					{"term": util.MapStr{"metadata.labels.cluster_uuid": util.MapStr{"value": clusterUUID}}},
 					{"term": util.MapStr{"metadata.name": util.MapStr{"value": "shard_stats"}}},
-					{"term": util.MapStr{"metadata.labels.node_id": util.MapStr{"value": nodeUUID}}},
+					nodeIdentityFilter,
 				},
 			},
 		},

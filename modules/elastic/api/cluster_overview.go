@@ -1048,9 +1048,13 @@ func (h *APIHandler) getShardQPS(clusterID string, nodeUUID string, indexName st
 	}
 	if nodeUUID != "" {
 		must = append(must, util.MapStr{
-			"term": util.MapStr{
-				"metadata.labels.node_id": util.MapStr{
-					"value": nodeUUID,
+			"bool": util.MapStr{
+				"minimum_should_match": 1,
+				"should": []util.MapStr{
+					{"term": util.MapStr{"metadata.labels.node_id": util.MapStr{"value": nodeUUID}}},
+					{"term": util.MapStr{"metadata.labels.node_uuid": util.MapStr{"value": nodeUUID}}},
+					{"term": util.MapStr{"payload.elasticsearch.shard_stats.routing.node": util.MapStr{"value": nodeUUID}}},
+					{"term": util.MapStr{"payload.elasticsearch.shard_stats.routing.current_node": util.MapStr{"value": nodeUUID}}},
 				},
 			},
 		})

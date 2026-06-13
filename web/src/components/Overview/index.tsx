@@ -110,6 +110,8 @@ export default forwardRef((props: IProps, ref: any) => {
 
   const [searchField, setSearchField] = useState<string>();
   const [selectedItem, setSelectedItem] = useState<IRecord>({});
+  const [cardInfos, setCardInfos] = useState<Record<string, any>>({});
+  const [cardInfoLoadings, setCardInfoLoadings] = useState<Record<string, boolean>>({});
 
   const [dispalyTypeObj, setDispalyTypeObj] = useLocalStorage(
     "console:overview:displayType",
@@ -210,6 +212,7 @@ export default forwardRef((props: IProps, ref: any) => {
   const result = (value as any)?.hits || {};
   const { hits = [] } = result;
   const hasSide = sideSorterOptions.length > 0 || aggsParams.length > 0;
+  const displayType = dispalyTypeObj[currentTab] || "card";
 
   const initQueryParams = () => {
     extraQueryFields.forEach((item) => {
@@ -248,12 +251,57 @@ export default forwardRef((props: IProps, ref: any) => {
   };
 
   useEffect(() => {
-    if (hits.length === 0) {
+    if (displayType !== "card" || loading || hits.length === 0 || !infoAction) {
       return;
     }
-
-    // fetchListInfo();
-  }, [value]);
+    const ids = hits
+      .map((item) => listItemConfig.getId(item))
+      .filter((id): id is string => !!id && !cardInfos[id]);
+    if (ids.length === 0) {
+      return;
+    }
+    let cancelled = false;
+    const fetchListInfo = async () => {
+      setCardInfoLoadings((current) => {
+        const next = { ...current };
+        ids.forEach((id) => {
+          next[id] = true;
+        });
+        return next;
+      });
+      try {
+        const res = await request(
+          infoAction,
+          {
+            method: "POST",
+            body: ids,
+          },
+          false,
+          false
+        );
+        if (!cancelled && res && !res.error) {
+          setCardInfos((current) => ({
+            ...current,
+            ...res,
+          }));
+        }
+      } finally {
+        if (!cancelled) {
+          setCardInfoLoadings((current) => {
+            const next = { ...current };
+            ids.forEach((id) => {
+              next[id] = false;
+            });
+            return next;
+          });
+        }
+      }
+    };
+    fetchListInfo();
+    return () => {
+      cancelled = true;
+    };
+  }, [displayType, loading, hits, infoAction, listItemConfig, cardInfos]);
 
   useEffect(() => {
     const nextParam = { ...(param || {}), ...queryParams };
@@ -351,7 +399,7 @@ export default forwardRef((props: IProps, ref: any) => {
                 }}
               />
               <div className="search-result">
-                {dispalyTypeObj[currentTab] == "card" ? (
+                {displayType == "card" ? (
                   <List
                     dataSource={hits}
                     total={result?.total?.value || 0}
@@ -370,6 +418,8 @@ export default forwardRef((props: IProps, ref: any) => {
                         <listItemConfig.component
                           data={item}
                           id={infoField}
+                          info={cardInfos[infoField]}
+                          infoLoading={!!cardInfoLoadings[infoField]}
                           isActive={listItemConfig.getId(selectedItem?._id) == infoField}
                           onSelect={() => {
                             setSelectedItem(item);

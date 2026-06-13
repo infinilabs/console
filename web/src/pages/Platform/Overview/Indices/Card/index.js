@@ -12,7 +12,7 @@ import "./index.scss";
 import request from "@/utils/request";
 
 export default (props) => {
-  const { infoAction, id, parentLoading } = props;
+  const { infoAction, id, parentLoading, info: prefetchedInfo, infoLoading } = props;
   const metadata = props.data._source?.metadata || {};
   const timestamp = props.data._source?.timestamp
     ? formatUtcTimeToLocal(props.data._source?.timestamp)
@@ -27,7 +27,7 @@ export default (props) => {
     return items;
   };
 
-  const [info, setInfo] = useState({});
+  const [info, setInfo] = useState(prefetchedInfo || {});
   const [loading, setLoading] = useState(false)
 
   const fetchListInfo = async (id) => {
@@ -45,10 +45,14 @@ export default (props) => {
   };
 
   useEffect(() => {
+    if (prefetchedInfo) {
+      setInfo(prefetchedInfo);
+      return;
+    }
     if (!parentLoading) {
       fetchListInfo(id)
     }
-  }, [id, parentLoading])
+  }, [id, parentLoading, prefetchedInfo, infoAction])
 
   const summary = info?.summary || {};
   const metrics = info?.metrics || {};
@@ -107,7 +111,7 @@ export default (props) => {
   const unassignedShards = (numReplicas+1)*numShards-summary?.shards - summary?.replicas || 0
 
   return (
-    <Spin spinning={!parentLoading && loading}>
+    <Spin spinning={!parentLoading && (loading || infoLoading)}>
     <div className="card-wrap card-index">
       <div
         className={`card-item ${props.isActive ? "active" : ""}`}

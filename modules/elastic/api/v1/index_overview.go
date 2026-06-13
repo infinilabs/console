@@ -52,13 +52,11 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, ctx context.Context, 
 		h.WriteJSON(w, util.MapStr{}, http.StatusOK)
 		return
 	}
-	//only query first index
-	indexIDs = indexIDs[0:1]
 	q1 := orm.Query{WildcardIndex: true}
 	q1.Conds = orm.And(
 		orm.Eq("metadata.category", "elasticsearch"),
 		orm.Eq("metadata.name", "index_stats"),
-		orm.Eq("metadata.labels.index_id", indexIDs[0]),
+		orm.In("metadata.labels.index_id", indexIDs),
 	)
 	//q1.Collapse("metadata.labels.index_id")
 	q1.AddSort("timestamp", orm.DESC)

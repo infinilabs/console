@@ -284,7 +284,6 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, req *http.Request, ps
 		h.WriteJSON(w, util.MapStr{}, http.StatusOK)
 		return
 	}
-	indexIDs = indexIDs[0:1]
 	// map indexIDs(cluster_id:index_name => cluster_uuid:indexName)
 	var (
 		indexIDM          = map[string]string{}
@@ -333,11 +332,15 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, req *http.Request, ps
 			indexIDM[fmt.Sprintf("%s:%s", clusterID, indexName)] = newIndexID
 		}
 	}
+	if len(newIndexIDs) == 0 {
+		h.WriteJSON(w, util.MapStr{}, http.StatusOK)
+		return
+	}
 	q1 := orm.Query{WildcardIndex: true}
 	q1.Conds = orm.And(
 		orm.Eq("metadata.category", "elasticsearch"),
 		orm.Eq("metadata.name", "shard_stats"),
-		orm.Eq("metadata.labels.index_id", newIndexIDs[0]),
+		orm.In("metadata.labels.index_id", newIndexIDs),
 	)
 	q1.Collapse("metadata.labels.shard_id")
 	q1.AddSort("timestamp", orm.DESC)

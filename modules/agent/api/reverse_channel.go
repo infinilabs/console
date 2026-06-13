@@ -21,6 +21,9 @@ import (
 var errAgentReverseChannelDisconnected = framework_reverse.ErrDisconnected
 var errAgentReverseChannelNotConnected = framework_reverse.ErrNotConnected
 
+const reverseChannelRegistrationLabelKey = "registered_via_reverse_channel"
+const reverseChannelRegistrationLabelValue = "true"
+
 var agentReverseChannel = framework_reverse.NewSessionManager(framework_reverse.ManagerOptions{})
 var agentReverseChannelRegisterOnce sync.Once
 
@@ -57,6 +60,9 @@ func onAgentReverseConnect(sessionID string, w http.ResponseWriter, r *http.Requ
 	}
 	if err := agent_common.ValidateManagerRequestAuth(r, &instance, (*model.BasicAuth)(&global.Env().SystemConfig.Configs.ManagerConfig.BasicAuth)); err != nil {
 		return err
+	}
+	if err := ensureReverseChannelRegistrationMarker(&instance); err != nil {
+		log.Warnf("failed to persist reverse channel registration marker for agent [%s]: %v", instanceID, err)
 	}
 	agentReverseChannel.RegisterPendingSession(sessionID, instanceID)
 	return nil
@@ -112,6 +118,27 @@ func ProxyAgentRequestViaChannel(instanceID string, req *util.Request, responseO
 
 func IsAgentReverseChannelConnected(instanceID string) bool {
 	return agentReverseChannel.IsConnected(instanceID)
+}
+
+func shouldUseReverseChannelOnlyForInstance(instance *model.Instance) bool {
+	if instance == nil || instance.Labels == nil {
+		return false
+	}
+	return strings.EqualFold(strings.TrimSpace(instance.Labels[reverseChannelRegistrationLabelKey]), reverseChannelRegistrationLabelValue)
+}
+
+func ensureReverseChannelRegistrationMarker(instance *model.Instance) error {
+	if instance == nil {
+		return fmt.Errorf("instance is nil")
+	}
+	if shouldUseReverseChannelOnlyForInstance(instance) {
+		return nil
+	}
+	if instance.Labels == nil {
+		instance.Labels = map[string]string{}
+	}
+	instance.Labels[reverseChannelRegistrationLabelKey] = reverseChannelRegistrationLabelValue
+	return orm.Save(&orm.Context{Refresh: orm.WaitForRefresh}, instance)
 }
 
 func loadReverseAccessToken(instanceID string) (string, error) {

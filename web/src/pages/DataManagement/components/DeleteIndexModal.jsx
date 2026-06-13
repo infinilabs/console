@@ -1,4 +1,4 @@
-import { Modal, Checkbox, Tag, Badge, Alert, Icon, Tooltip } from "antd";
+import { Modal, Checkbox, Tag, Badge, Alert, Icon } from "antd";
 import { useCallback, useState, forwardRef, useMemo } from "react";
 import { FormattedMessage } from 'react-intl';
 import useFetch from "@/lib/hooks/use_fetch";
@@ -51,14 +51,6 @@ export default (props) => {
             cluster: <strong style={{ color: '#fa541c' }}>{selectedClusterName || selectedClusterId || "-"}</strong>
           }}
         />
-        {selectedClusterId && selectedClusterName !== selectedClusterId ? (
-          <>
-            {" "}
-            <Tooltip title={selectedClusterId}>
-              <Icon type="info-circle" />
-            </Tooltip>
-          </>
-        ) : null}
       </p>
       <ul style={{ maxHeight: 240, overflow: "scroll" }}>
         {props.items.map((item) => {

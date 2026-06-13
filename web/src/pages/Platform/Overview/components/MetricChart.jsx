@@ -150,6 +150,14 @@ export default (props) => {
       }
     };
 
+    const chartTimeFormatter =
+      typeof timeRange?.timeFormatter === "function"
+        ? (value) => {
+            const formatted = timeRange.timeFormatter(value);
+            return formatted == null ? "" : formatted;
+          }
+        : formatter.dates(1);
+
     const renderChart = () => {
       if (error) {
         return (
@@ -216,8 +224,8 @@ export default (props) => {
           <Axis
             id={`${metricKey}-bottom`}
             position={Position.Bottom}
-            labelFormat={timeRange.timeFormatter}
-            tickFormat={timeRange.timeFormatter}
+            labelFormat={chartTimeFormatter}
+            tickFormat={chartTimeFormatter}
           />
           {metricKey == "cluster_health" ? (
             <Axis

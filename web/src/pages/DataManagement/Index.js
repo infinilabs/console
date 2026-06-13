@@ -571,6 +571,16 @@ class Index extends PureComponent {
                     defaultChecked={this.state.showSystemIndices}
                   />
                 </div>
+                {hasAuthority("data.index:all") ? (
+                  <Button
+                    icon="delete"
+                    type="primary"
+                    disabled={!hasSelected}
+                    onClick={() => this.handleBatchDelete()}
+                  >
+                    {formatMessage({ id: "form.button.batch_delete" })}
+                  </Button>
+                ) : null}
                 <Button
                   icon="redo"
                   onClick={() => {
@@ -586,15 +596,6 @@ class Index extends PureComponent {
                     onClick={() => this.handleModalVisible(true)}
                   >
                     {formatMessage({ id: "form.button.new" })}
-                  </Button>
-                ) : null}
-                {hasAuthority("data.index:all") ? (
-                  <Button
-                    type="primary"
-                    disabled={!hasSelected}
-                    onClick={() => this.handleBatchDelete()}
-                  >
-                    {formatMessage({ id: "form.button.batch_delete" })}
                   </Button>
                 ) : null}
               </div>

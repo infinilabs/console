@@ -59,21 +59,53 @@ export const getAllTimeSettingsCache = () => {
 
 const getDuration = (from, to) => {
   if (!from || !to) return;
-  const bounds = calculateBounds({
-    from,
-    to,
-  });
-  return bounds.max.valueOf() - bounds.min.valueOf()
+  try {
+    const bounds = calculateBounds({
+      from,
+      to,
+    });
+    return bounds.max.valueOf() - bounds.min.valueOf()
+  } catch (e) {
+    return undefined;
+  }
 }
+
+const normalizeTimeValue = (value, fallback = "now-15m", keys = []) => {
+  if (typeof value === "string" || typeof value === "number") {
+    return `${value}`;
+  }
+  if (value && typeof value === "object") {
+    for (const key of keys) {
+      if (
+        Object.prototype.hasOwnProperty.call(value, key) &&
+        value[key] !== undefined &&
+        value[key] !== null
+      ) {
+        return `${value[key]}`;
+      }
+    }
+  }
+  return fallback;
+};
 
 export const initState = (state = {}) => {
   const { timeRange, timeInterval, timeout } = state || {}
-  const from = timeRange?.min || "now-15m"
-  const to = timeRange?.max || "now"
+  const from = normalizeTimeValue(
+    timeRange?.min ?? timeRange?.from,
+    "now-15m",
+    ["min", "from", "gte", "start"]
+  );
+  const to = normalizeTimeValue(
+    timeRange?.max ?? timeRange?.to,
+    "now",
+    ["max", "to", "lte", "end"]
+  );
   const duration = getDuration(from, to);
-  const gtOneHour = moment.duration(duration).asHours() > 1
-  const day = moment.duration(duration).asDays();
-  const intDay = parseInt(day) + 1;
+  const durationMs =
+    Number.isFinite(duration) && duration > 0 ? duration : 15 * 60 * 1000;
+  const gtOneHour = moment.duration(durationMs).asHours() > 1
+  const day = moment.duration(durationMs).asDays();
+  const intDay = Math.max(parseInt(day, 10) + 1, 1);
   return {
     ...state,
     timeRange: {
@@ -105,10 +137,7 @@ const Monitor = (props) => {
   const [spinning, setSpinning] = useState(false);
 
   const [state, setState] = useState(formatState(initState({
-    timeRange: {
-      min: param?.timeRange?.min || "now-15m",
-      max: param?.timeRange?.max || "now",
-    },
+    timeRange: param?.timeRange || {},
     timeInterval: formatTimeInterval(param?.timeInterval) || allTimeSettingsCache.timeInterval,
     timeout: formatTimeout(param?.timeout)  || allTimeSettingsCache.timeout || '10s',
     param: param,

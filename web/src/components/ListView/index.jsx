@@ -31,6 +31,41 @@ import { WidgetRender } from "@/pages/DataManagement/View/WidgetLoader";
 import { buildContainsQueryString } from "@/lib/elasticsearch/util";
 import moment from "moment";
 
+const normalizeTimeRangeValue = (value, fallback = "") => {
+  if (typeof value === "string" || typeof value === "number") {
+    return `${value}`;
+  }
+  if (value && typeof value === "object") {
+    const candidates = ["from", "to", "min", "max", "gte", "lte", "start", "end"];
+    for (const key of candidates) {
+      if (
+        Object.prototype.hasOwnProperty.call(value, key) &&
+        value[key] !== undefined &&
+        value[key] !== null
+      ) {
+        return `${value[key]}`;
+      }
+    }
+  }
+  return fallback;
+};
+
+const normalizeTimeRange = (timeRange = {}, fallback = {}) => {
+  const merged = {
+    ...(fallback || {}),
+    ...(timeRange || {}),
+  };
+  return {
+    ...merged,
+    from: normalizeTimeRangeValue(merged.from, fallback?.from || "now-7d"),
+    to: normalizeTimeRangeValue(merged.to, fallback?.to || "now"),
+    timeField:
+      typeof merged.timeField === "string"
+        ? merged.timeField
+        : fallback?.timeField || "",
+  };
+};
+
 const buildTimestampKeywordFilter = (keyword, timeField) => {
   const value = `${keyword ?? ""}`.trim();
   if (!value || !timeField) {
@@ -112,10 +147,22 @@ const Index = forwardRef((props, ref) => {
   };
 
   const [param, setParam] = useQueryParam("_g", JsonParam);
-  const [queryParams, setQueryParams] = useState({
-    ...defaultQueryParams,
-    ...param,
-    from: viewLayout === 'timeline' ? 0 : (defaultQueryParams.from ?? param.from)
+  const [queryParams, setQueryParams] = useState(() => {
+    const merged = {
+      ...defaultQueryParams,
+      ...(param || {}),
+      from:
+        viewLayout === "timeline"
+          ? 0
+          : defaultQueryParams.from ?? param?.from,
+    };
+    return {
+      ...merged,
+      timeRange: normalizeTimeRange(
+        merged?.timeRange,
+        defaultQueryParams?.timeRange
+      ),
+    };
   });
   const [histogramState, setHistogramState] = useState({
     visible: histogramVisible,
@@ -466,22 +513,22 @@ const Index = forwardRef((props, ref) => {
   };
 
   const onTimeRangeChange = ({ start, end, timeField }) => {
+    const normalizedTimeRange = normalizeTimeRange(
+      { from: start, to: end, timeField },
+      defaultQueryParams?.timeRange
+    );
     setQueryParams((st) => ({
       ...st,
       from: 0,
-      timeRange: {
-        from: start,
-        to: end,
-        timeField: timeField,
-      },
+      timeRange: normalizedTimeRange,
     }));
     if (histogramEnable) {
       let range = {
-        from: start,
-        to: end,
+        from: normalizedTimeRange.from,
+        to: normalizedTimeRange.to,
       };
       let series = histogramState.widget?.series?.map((item) => {
-        item.queries.time_field = timeField;
+        item.queries.time_field = normalizedTimeRange.timeField;
         return item;
       });
       let widget = { ...histogramState.widget, series };

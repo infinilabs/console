@@ -68,6 +68,24 @@ const isValidAlertTime = (value) => {
 const getAlertDisplayStartTime = (record = {}) =>
   isValidAlertTime(record?.trigger_at) ? record.trigger_at : record?.created;
 
+const normalizeQueryTimeValue = (value, fallback = "auto", keys = []) => {
+  if (typeof value === "string" || typeof value === "number") {
+    return `${value}`;
+  }
+  if (value && typeof value === "object") {
+    for (const key of keys) {
+      if (
+        Object.prototype.hasOwnProperty.call(value, key) &&
+        value[key] !== undefined &&
+        value[key] !== null
+      ) {
+        return `${value[key]}`;
+      }
+    }
+  }
+  return fallback;
+};
+
 const Index = (props) => {
   const [param, setParam] = useQueryParam("_g", JsonParam);
   const [searchValue, setSearchValue] = React.useState("");
@@ -83,13 +101,24 @@ const Index = (props) => {
   const [refresh, setRefresh] = useState({ isRefreshPaused: false });
   const [timeZone, setTimeZone] = useState(() => getTimezone());
 
+  const initialStartTime = normalizeQueryTimeValue(
+    param?.start_time,
+    "auto",
+    ["from", "min", "gte", "start"]
+  );
+  const initialEndTime = normalizeQueryTimeValue(
+    param?.end_time,
+    "auto",
+    ["to", "max", "lte", "end"]
+  );
+
   const initialQueryParams = {
     from: 0,
     size: 10,
     // status: "alerting",
-    start_time: "auto",
-    end_time: "auto",
-    ...param,
+    ...(param || {}),
+    start_time: initialStartTime,
+    end_time: initialEndTime,
   };
 
   const alertReducer = (queryParams, action) => {
@@ -382,19 +411,33 @@ const Index = (props) => {
 
   const fetchMessages = (queryParams) => {
     setLoading(true);
-    let params = queryParams;
+    const normalizedStartTime = normalizeQueryTimeValue(
+      queryParams?.start_time,
+      "auto",
+      ["from", "min", "gte", "start"]
+    );
+    const normalizedEndTime = normalizeQueryTimeValue(
+      queryParams?.end_time,
+      "auto",
+      ["to", "max", "lte", "end"]
+    );
+    let params = {
+      ...queryParams,
+      start_time: normalizedStartTime,
+      end_time: normalizedEndTime,
+    };
     if (
-      queryParams?.start_time &&
-      queryParams.end_time &&
-      queryParams.start_time !== "auto" &&
-      queryParams.end_time !== "auto"
+      normalizedStartTime &&
+      normalizedEndTime &&
+      normalizedStartTime !== "auto" &&
+      normalizedEndTime !== "auto"
     ) {
       const bounds = calculateBounds({
-        from: queryParams?.start_time,
-        to: queryParams.end_time,
+        from: normalizedStartTime,
+        to: normalizedEndTime,
       });
       params = {
-        ...queryParams,
+        ...params,
         min: bounds.min.valueOf(),
         max: bounds.max.valueOf(),
       };
@@ -558,10 +601,20 @@ const Index = (props) => {
   }, [dataSource.aggregations]);
 
   const widgetRange = useMemo(() => {
-    if (queryParams?.start_time && queryParams?.end_time) {
+    const startTime = normalizeQueryTimeValue(
+      queryParams?.start_time,
+      "auto",
+      ["from", "min", "gte", "start"]
+    );
+    const endTime = normalizeQueryTimeValue(
+      queryParams?.end_time,
+      "auto",
+      ["to", "max", "lte", "end"]
+    );
+    if (startTime && endTime) {
       return {
-        from: queryParams.start_time,
-        to: queryParams.end_time,
+        from: startTime,
+        to: endTime,
       };
     }
     return {
@@ -703,11 +756,12 @@ const Index = (props) => {
                 <Option value="recovered">recovered</Option>
               </Select>
 
-              <div style={{ flexGrow: 0 }}>
+              <div style={{ flexGrow: 0, width: 460, maxWidth: "55vw", minWidth: 320 }}>
                 <DatePicker
                   locale={getLocale()}
                   start={queryParams?.start_time}
                   end={queryParams?.end_time}
+                  showAutoTimeRange={true}
                   onRangeChange={onTimeChange}
                   {...refresh}
                   onRefreshChange={setRefresh}

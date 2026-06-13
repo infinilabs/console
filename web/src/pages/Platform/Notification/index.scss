@@ -4,7 +4,11 @@
     align-items: center;
     gap: 5px;
   }
-  .read {
-    background-color: #fafafa;
+  .ant-table-tbody > tr.read > td {
+    background-color: #f5f7fb !important;
+    color: rgba(0, 0, 0, 0.5);
+  }
+  .ant-table-tbody > tr.read > td a {
+    color: rgba(0, 0, 0, 0.65);
   }
 }

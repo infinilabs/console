@@ -31,8 +31,8 @@ import _ from "lodash";
 const RuleMetricChart = ({ conditions, values }) => {
   const [timeRange, setTimeRange] = React.useState(
     timeRange || {
-      min: "now-15m",
-      max: "now",
+      min: "auto",
+      max: "auto",
       timeFormatter: formatter.dates(1),
     }
   );

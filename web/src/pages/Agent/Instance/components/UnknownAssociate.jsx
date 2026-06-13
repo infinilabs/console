@@ -91,6 +91,7 @@ export default ({ onBatchEnroll, loading }) => {
         />
         <Button
           type="primary"
+          icon="link"
           disabled={clusterList.length === 0}
           onClick={onBatchEnrollClick}
           loading={loading}

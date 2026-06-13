@@ -30,8 +30,8 @@ const Index = (props) => {
     nodeName: param?.node_name || "",
     transportAddress: param?.transport_address || "",
     timeRange: {
-      min: param?.timeRange?.min || "now-15m",
-      max: param?.timeRange?.max || "now",
+      min: param?.timeRange?.min || "auto",
+      max: param?.timeRange?.max || "auto",
       timeFormatter: formatter.dates(1),
     },
   });

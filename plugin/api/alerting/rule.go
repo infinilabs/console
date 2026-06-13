@@ -1222,9 +1222,14 @@ func (alertAPI *AlertAPI) getHistoryMetricData(w http.ResponseWriter, req *http.
 		alertAPI.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	indexName, queryDsl := buildAlertHistoryQuery(rule.ID, min, max)
 	alertAPI.WriteJSON(w, util.MapStr{
 		"metric":       metricItem,
 		"bucket_label": rule.Metrics.BucketLabel,
+		"request": util.MapStr{
+			"index": indexName,
+			"query": queryDsl,
+		},
 	}, http.StatusOK)
 }
 
@@ -1232,25 +1237,9 @@ func (alertAPI *AlertAPI) getHistoryMetricData(w http.ResponseWriter, req *http.
 // a MetricItem whose lines are [timestamp_ms, value] pairs taken from condition_result.
 func buildMetricFromAlertHistory(rule *alerting.Rule, minMs, maxMs int64) (*alerting.AlertMetricItem, error) {
 	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
-	queryDsl := util.MapStr{
-		"size":    1000,
-		"_source": []string{"created", "condition_result", "state"},
-		"sort":    []util.MapStr{{"created": util.MapStr{"order": "asc"}}},
-		"query": util.MapStr{
-			"bool": util.MapStr{
-				"must": []util.MapStr{
-					{"term": util.MapStr{"rule_id": util.MapStr{"value": rule.ID}}},
-					{"range": util.MapStr{"created": util.MapStr{
-						"gte":    minMs,
-						"lte":    maxMs,
-						"format": "epoch_millis",
-					}}},
-				},
-			},
-		},
-	}
+	indexName, queryDsl := buildAlertHistoryQuery(rule.ID, minMs, maxMs)
 	searchRes, err := esClient.SearchWithRawQueryDSL(
-		orm.GetWildcardIndexName(alerting.Alert{}),
+		indexName,
 		util.MustToJSONBytes(queryDsl),
 	)
 	if err != nil {
@@ -1334,6 +1323,27 @@ func buildMetricFromAlertHistory(rule *alerting.Rule, minMs, maxMs int64) (*aler
 		})
 	}
 	return metricItem, nil
+}
+
+func buildAlertHistoryQuery(ruleID string, minMs, maxMs int64) (string, util.MapStr) {
+	queryDsl := util.MapStr{
+		"size":    1000,
+		"_source": []string{"created", "condition_result", "state"},
+		"sort":    []util.MapStr{{"created": util.MapStr{"order": "asc"}}},
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": []util.MapStr{
+					{"term": util.MapStr{"rule_id": util.MapStr{"value": ruleID}}},
+					{"range": util.MapStr{"created": util.MapStr{
+						"gte":    minMs,
+						"lte":    maxMs,
+						"format": "epoch_millis",
+					}}},
+				},
+			},
+		},
+	}
+	return orm.GetWildcardIndexName(alerting.Alert{}), queryDsl
 }
 
 func (alertAPI *AlertAPI) getMetricData(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {

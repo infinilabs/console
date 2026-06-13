@@ -146,8 +146,8 @@ const RuleDetail = (props) => {
   const [state, setState] = React.useState({
     spinning: false,
     timeRange: {
-      min: param?.timeRange?.min || "now-7d",
-      max: param?.timeRange?.max || "now",
+      min: param?.timeRange?.min || "auto",
+      max: param?.timeRange?.max || "auto",
       timeFormatter: formatter.dates(1),
     },
   });

@@ -65,7 +65,10 @@ export const WidgetRender = (props) => {
    const formatTimeRange = useMemo(() => {
       const from = normalizeRangeValue(range?.from, "now-15m");
       const to = normalizeRangeValue(range?.to, "now");
-      if (!from || !to || from === "auto" || to === "auto") {
+      if (from === "auto" || to === "auto") {
+         return { from: "auto", to: "auto" };
+      }
+      if (!from || !to) {
          return { from: "now-15m", to: "now" };
       }
       try {

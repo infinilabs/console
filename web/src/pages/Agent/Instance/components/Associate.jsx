@@ -358,6 +358,7 @@ const Result = ({ data, onComplete, loading = false }) => {
         </div>
         <Button
           type="primary"
+          icon="link"
           disabled={clusters.length === 0}
           onClick={onAssociateClick}
           loading={loading}

@@ -71,8 +71,8 @@ const normalizeHistogramRange = (timeRange = {}) => {
   const to = normalizeTimeRangeValue(timeRange?.to, "now");
   if (from === "auto" || to === "auto") {
     return {
-      from: "now-15m",
-      to: "now",
+      from: "auto",
+      to: "auto",
     };
   }
   return { from, to };
@@ -80,13 +80,13 @@ const normalizeHistogramRange = (timeRange = {}) => {
 
 const resolveAutoHistogramRange = (timeRange = {}, aggregations = {}) => {
   const normalized = normalizeHistogramRange(timeRange);
-  if (normalized.from !== "now-15m" || normalized.to !== "now") {
-    return normalized;
-  }
   const isAuto =
     normalizeTimeRangeValue(timeRange?.from, "") === "auto" ||
     normalizeTimeRangeValue(timeRange?.to, "") === "auto";
-  if (!isAuto) {
+  if (isAuto) {
+    return normalized;
+  }
+  if (normalized.from !== "now-15m" || normalized.to !== "now") {
     return normalized;
   }
   const minValue = aggregations?.__listview_min_time?.value;
@@ -97,9 +97,18 @@ const resolveAutoHistogramRange = (timeRange = {}, aggregations = {}) => {
     minValue > 0 &&
     maxValue > 0
   ) {
+    const minTs = Number(minValue);
+    const maxTs = Number(maxValue);
+    if (maxTs <= minTs) {
+      const center = maxTs > 0 ? maxTs : Date.now();
+      return {
+        from: moment(center).subtract(15, "minutes").toISOString(),
+        to: moment(center).toISOString(),
+      };
+    }
     return {
-      from: moment(minValue).toISOString(),
-      to: moment(maxValue).toISOString(),
+      from: moment(minTs).toISOString(),
+      to: moment(maxTs).toISOString(),
     };
   }
   return normalized;

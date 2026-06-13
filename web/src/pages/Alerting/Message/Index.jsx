@@ -639,8 +639,8 @@ const Index = (props) => {
       }
     }
     return {
-      from: "now-15m",
-      to: "now",
+      from: "auto",
+      to: "auto",
     };
   }, [queryParams?.start_time, queryParams?.end_time, minUpdated, maxUpdated]);
 

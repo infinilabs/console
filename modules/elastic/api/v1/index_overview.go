@@ -429,15 +429,67 @@ func (h *APIHandler) GetIndexShards(w http.ResponseWriter, req *http.Request, ps
 
 const IndexHealthMetricKey = "index_health"
 
+func normalizeRollupMetricIndexName(indexName string) string {
+	normalized := strings.TrimSpace(indexName)
+	if normalized == "" {
+		return normalized
+	}
+	prefixes := []string{
+		RollupClusterHealthKey + "_",
+		RollupIndexHealthKey + "_",
+		RollupClusterStataKey + "_",
+		RollupIndexStatsKey + "_",
+		RollupNodeStatsKey + "_",
+		RollupShardStatsMetricsKey + "_",
+		RollupShardStatsStateKey + "_",
+	}
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(normalized, prefix) {
+			return strings.TrimPrefix(normalized, prefix)
+		}
+	}
+	return normalized
+}
+
+func normalizeIndexHealthBucketSize(bucketSize int, min, max int64) int {
+	if bucketSize <= 0 {
+		bucketSize = 60
+	}
+	durationSeconds := (max - min) / 1000
+	if durationSeconds <= 0 {
+		return bucketSize
+	}
+	const (
+		maxBuckets = int64(65535)
+		minBuckets = int64(24)
+	)
+	minIntervalForMaxBuckets := int((durationSeconds + maxBuckets - 1) / maxBuckets)
+	if minIntervalForMaxBuckets < 1 {
+		minIntervalForMaxBuckets = 1
+	}
+	maxIntervalForMinBuckets := int(durationSeconds / minBuckets)
+	if bucketSize < minIntervalForMaxBuckets {
+		bucketSize = minIntervalForMaxBuckets
+	}
+	if maxIntervalForMinBuckets >= 1 && bucketSize > maxIntervalForMinBuckets {
+		bucketSize = maxIntervalForMinBuckets
+	}
+	if bucketSize < 1 {
+		bucketSize = 1
+	}
+	return bucketSize
+}
+
 func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	clusterID := ps.MustGetParameter("id")
-	indexName := ps.MustGetParameter("index")
-	if !h.IsIndexAllowed(req, clusterID, indexName) {
+	rawIndexName := ps.MustGetParameter("index")
+	if !h.IsIndexAllowed(req, clusterID, rawIndexName) {
 		h.WriteJSON(w, util.MapStr{
 			"error": http.StatusText(http.StatusForbidden),
 		}, http.StatusForbidden)
 		return
 	}
+	indexName := normalizeRollupMetricIndexName(rawIndexName)
 	var must = []util.MapStr{
 		{
 			"term": util.MapStr{
@@ -593,7 +645,9 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 }
 
 func (h *APIHandler) GetIndexHealthMetric(ctx context.Context, id, indexName string, min, max int64, bucketSize int) (*common.MetricItem, error) {
-	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
+	indexName = normalizeRollupMetricIndexName(indexName)
+	healthBucketSize := normalizeIndexHealthBucketSize(bucketSize, min, max)
+	bucketSizeStr := fmt.Sprintf("%vs", healthBucketSize)
 	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
 	if err != nil {
 		return nil, err
@@ -688,6 +742,7 @@ func (h *APIHandler) GetIndexHealthMetric(ctx context.Context, id, indexName str
 }
 
 func (h *APIHandler) GetIndexStatusOfRecentDay(clusterID, indexName string) (map[string][]interface{}, error) {
+	indexName = normalizeRollupMetricIndexName(indexName)
 	q := orm.Query{
 		WildcardIndex: true,
 	}

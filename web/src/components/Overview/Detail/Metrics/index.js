@@ -35,8 +35,8 @@ export default (props) => {
   const [spinning, setSpinning] = useState(false);
   const [state, setState] = useState(initState({
     timeRange: {
-      min: "now-15m",
-      max: "now",
+      min: "auto",
+      max: "auto",
     },
     timeInterval: allTimeSettingsCache.timeInterval,
     timeout: allTimeSettingsCache.timeout || '10s',

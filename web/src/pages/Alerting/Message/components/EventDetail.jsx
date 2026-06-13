@@ -164,8 +164,8 @@ const MessageDetail = (props) => {
           <AlertChartCard
             msgItem={messageDetail}
             range={{ 
-              from: timeRange.min || "now-7d", 
-              to: timeRange.max || "now"
+            from: timeRange.min || "auto", 
+            to: timeRange.max || "auto"
             }}
             onRangeChange={({ from, to }) => {
               handleTimeChange({
@@ -183,8 +183,8 @@ const MessageDetail = (props) => {
             {messageDetail?.rule_id ? <WidgetLoader 
               id="cji1ttq8go5i051pl1t1"
               range={{ 
-                from: timeRange.min || "now-7d", 
-                to: timeRange.max || "now"
+                from: timeRange.min || "auto", 
+                to: timeRange.max || "auto"
               }}
               queryParams={{
                 rule_id: messageDetail?.rule_id,

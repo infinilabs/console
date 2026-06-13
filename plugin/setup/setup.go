@@ -936,23 +936,8 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	//callback
 	InvokeSetupCallback()
 
-	//update credential state
-	q := util.MapStr{
-		"query": util.MapStr{
-			"range": util.MapStr{
-				"created": util.MapStr{
-					"lte": "now-30s",
-				},
-			},
-		},
-		"script": util.MapStr{
-			"source": fmt.Sprintf("ctx._source['invalid'] = %v", secretMismatch),
-		},
-	}
-	err = orm.UpdateBy(credential.Credential{}, util.MustToJSONBytes(q))
-	if err != nil {
-		log.Error(err)
-	}
+	//update credential state in background to avoid blocking setup response
+	go updateCredentialState(secretMismatch)
 
 	success = true
 }
@@ -1058,6 +1043,25 @@ func newSetupSaveContext() *orm.Context {
 	ctx := orm.NewContext()
 	ctx.Refresh = orm.WaitForRefresh
 	return ctx
+}
+
+func updateCredentialState(secretMismatch bool) {
+	q := util.MapStr{
+		"query": util.MapStr{
+			"range": util.MapStr{
+				"created": util.MapStr{
+					"lte": "now-30s",
+				},
+			},
+		},
+		"script": util.MapStr{
+			"source": fmt.Sprintf("ctx._source['invalid'] = %v", secretMismatch),
+		},
+	}
+	err := orm.UpdateBy(credential.Credential{}, util.MustToJSONBytes(q))
+	if err != nil {
+		log.Error(err)
+	}
 }
 
 // getYamlData reads a YAML file from the setup directory and returns its content as a byte slice.

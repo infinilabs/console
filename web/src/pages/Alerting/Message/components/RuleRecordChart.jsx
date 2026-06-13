@@ -51,8 +51,8 @@ const RuleRecordChart = ({ data: messageDetail }) => {
   });
 
   const [timeRange, setTimeRange] = React.useState({
-    min: "now-1d",
-    max: "now",
+    min: "auto",
+    max: "auto",
     timeFormatter: formatter.dates(1),
   });
 

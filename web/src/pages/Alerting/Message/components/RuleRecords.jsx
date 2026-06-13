@@ -35,8 +35,8 @@ const RuleRecords = ({
   const [loading, setLoading] = React.useState(true);
 
   const bounds = calculateBounds({
-    from: timeRange.min || "now-1d",
-    to: timeRange.max || "now",
+    from: timeRange.min || "auto",
+    to: timeRange.max || "auto",
   });
   const initialQueryParams = {
     from: 0,

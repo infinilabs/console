@@ -30,28 +30,44 @@ export default (props) => {
   const [loadings, setLoadings] = useState({});
 
   const fetchListInfo = async (data) => {
-    data?.forEach((item) => {
-      setLoadings((loadings) => ({
-        ...loadings,
-        [item.id]: true
-      }))
-      request(infoAction, {
-        method: "POST",
-        body: [item.id],
-      }, false, false).then((res) => {
-        if (res && !res.error) {
-          setInfos((infos) => ({
-            ...infos,
-            ...res
-          }));
-        }
-      }).finally(() => {
-        setLoadings((loadings) => ({
-          ...loadings,
-          [item.id]: false
-        }))
-      })
-    })
+    const ids = (data || [])
+      .map((item) => item?.id)
+      .filter((id) => !!id && !infos[id]);
+    if (ids.length === 0) {
+      return;
+    }
+    setLoadings((current) => {
+      const next = { ...current };
+      ids.forEach((id) => {
+        next[id] = true;
+      });
+      return next;
+    });
+    try {
+      const res = await request(
+        infoAction,
+        {
+          method: "POST",
+          body: ids,
+        },
+        false,
+        false
+      );
+      if (res && !res.error) {
+        setInfos((current) => ({
+          ...current,
+          ...res,
+        }));
+      }
+    } finally {
+      setLoadings((current) => {
+        const next = { ...current };
+        ids.forEach((id) => {
+          next[id] = false;
+        });
+        return next;
+      });
+    }
   };
 
   useEffect(() => {

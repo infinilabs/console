@@ -124,18 +124,31 @@ export default forwardRef((props: IProps, ref: any) => {
       decode: JSON.parse,
     }
   );
+  const pageSizeByDisplayRef = useRef<Record<string, number>>({
+    card: initialQueryParams.size,
+    table: tableDefaultPageSize,
+  });
+  const appliedDisplayTypeRef = useRef<string>();
   const onDisplayTypeChange = (value: string) => {
-    let obj = {};
-    obj[currentTab] = value;
-    setDispalyTypeObj({ ...dispalyTypeObj, ...obj });
-    if (
-      value === "table" &&
-      queryParams.size === initialQueryParams.size
-    ) {
-      dispatch({ type: "setPageSizeAndReset", value: tableDefaultPageSize });
-    }
+    const currentDisplayType = dispalyTypeObj[currentTab] || "card";
+    pageSizeByDisplayRef.current[currentDisplayType] = queryParams.size;
+    setDispalyTypeObj({ ...dispalyTypeObj, [currentTab]: value });
   };
 
+  useEffect(() => {
+    const displayType = dispalyTypeObj[currentTab] || "card";
+    if (appliedDisplayTypeRef.current === displayType) {
+      return;
+    }
+    appliedDisplayTypeRef.current = displayType;
+    const nextPageSize =
+      displayType === "table"
+        ? pageSizeByDisplayRef.current.table || tableDefaultPageSize
+        : pageSizeByDisplayRef.current.card || initialQueryParams.size;
+    if (queryParams.size !== nextPageSize || queryParams.from !== 0) {
+      dispatch({ type: "setPageSizeAndReset", value: nextPageSize });
+    }
+  }, [currentTab, dispalyTypeObj, queryParams.size, queryParams.from]);
   function reducer(
     queryParams: IQueryParams,
     action: { type: string; value: any }

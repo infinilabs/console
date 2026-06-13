@@ -231,7 +231,7 @@ const Monitor = (props) => {
             <>
               <div style={{ marginBottom: 5 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <div style={{ width: 350, maxWidth: "45vw", minWidth: 270 }}>
+                <div style={{ width: 280, maxWidth: "40vw", minWidth: 240 }}>
                     <DatePicker
                       locale={getLocale()}
                       start={state.timeRange.min}

@@ -37,6 +37,54 @@ const safeParseJSON = (value) => {
   }
 };
 
+const formatHistogramInterval = (seconds) => {
+  if (seconds % 86400 === 0) return `${seconds / 86400}d`;
+  if (seconds % 3600 === 0) return `${seconds / 3600}h`;
+  if (seconds % 60 === 0) return `${seconds / 60}m`;
+  return `${seconds}s`;
+};
+
+const getHistogramInterval = (min, max) => {
+  const durationSeconds = Math.max(Math.floor((Number(max) - Number(min)) / 1000), 1);
+  const idealBucketSeconds = durationSeconds / 30;
+  const niceIntervals = [
+    20,
+    30,
+    45,
+    60,
+    90,
+    120,
+    150,
+    180,
+    300,
+    450,
+    600,
+    900,
+    1200,
+    1800,
+    2700,
+    3600,
+    5400,
+    7200,
+    9000,
+    10800,
+    14400,
+    21600,
+    28800,
+    43200,
+    64800,
+    86400,
+  ];
+  const best = niceIntervals.reduce(
+    (closest, current) =>
+      Math.abs(current - idealBucketSeconds) < Math.abs(closest - idealBucketSeconds)
+        ? current
+        : closest,
+    niceIntervals[0]
+  );
+  return formatHistogramInterval(best);
+};
+
 const buildCopyRequest = (msgItem, ruleID, min, max) => {
   const queryDSL = safeParseJSON(msgItem?.condition_result?.query_result?.query);
   const objects =
@@ -51,15 +99,73 @@ const buildCopyRequest = (msgItem, ruleID, min, max) => {
     }
     return JSON.stringify(queryDSL, null, 2);
   }
-  return JSON.stringify(
+
+  const resourceID = msgItem?.resource_id || msgItem?.resource?.resource_id || "";
+  const state = msgItem?.state || "alerting";
+  const filters = [
+    { term: { rule_id: { value: ruleID } } },
+    { term: { resource_id: { value: resourceID } } },
+    { term: { state: { value: state } } },
+  ].filter((item) => {
+    const field = Object.keys(item.term || {})[0];
+    return field ? item.term[field].value !== "" : false;
+  });
+
+  const interval = getHistogramInterval(min, max);
+
+  return `GET .infini_alert-history/_search
+${JSON.stringify(
     {
-      method: "GET",
-      path: `/alerting/rule/${ruleID}/history_metric`,
-      query: { min, max },
+      aggs: {
+        filter_agg: {
+          aggs: {
+            time_buckets: {
+              aggs: {
+                priority_buckets: {
+                  aggs: {
+                    a: {
+                      value_count: {
+                        field: "id",
+                      },
+                    },
+                  },
+                  terms: {
+                    field: "priority",
+                    order: [{ _count: "desc" }],
+                    size: 10,
+                  },
+                },
+              },
+              date_histogram: {
+                field: "created",
+                interval,
+              },
+            },
+          },
+          filter: {
+            bool: {
+              filter: filters,
+              must: [
+                {
+                  range: {
+                    created: {
+                      gte: Number(min),
+                      lte: Number(max),
+                    },
+                  },
+                },
+              ],
+              must_not: [],
+              should: [],
+            },
+          },
+        },
+      },
+      size: 0,
     },
     null,
     2
-  );
+  )}`;
 };
 
 export default ({ msgItem, range, onRangeChange }) => {

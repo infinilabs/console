@@ -21,29 +21,37 @@ export default (props) => {
       bodyStyle={{
         padding: 0,
         height: "calc(100vh - 110px)",
-        overflow: "auto",
+        overflow: "hidden",
       }}
       destroyOnClose
     >
-      <div style={{ padding: 24, height: "100%" }}>{children}</div>
       <div
         style={{
-          position: "absolute",
-          right: 0,
-          bottom: 0,
-          width: "100%",
-          padding: "11px 16px",
-          backgroundColor: "#ffffff",
-          textAlign: "right",
-          borderTop: "1px solid #e9e9e9",
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
         }}
       >
-        <Button style={{ marginRight: 12 }} onClick={onClose}>
-          {formatMessage({ id: "form.button.cancel" })}
-        </Button>
-        <Button type="primary" loading={loading} onClick={() => onSubmit()}>
-          {formatMessage({ id: "form.button.submit" })}
-        </Button>
+        <div style={{ padding: 24, flex: 1, overflow: "visible" }}>{children}</div>
+        <div
+          style={{
+            flex: "none",
+            right: 0,
+            bottom: 0,
+            width: "100%",
+            padding: "11px 16px",
+            backgroundColor: "#ffffff",
+            textAlign: "right",
+            borderTop: "1px solid #e9e9e9",
+          }}
+        >
+          <Button style={{ marginRight: 12 }} onClick={onClose}>
+            {formatMessage({ id: "form.button.cancel" })}
+          </Button>
+          <Button type="primary" loading={loading} onClick={() => onSubmit()}>
+            {formatMessage({ id: "form.button.submit" })}
+          </Button>
+        </div>
       </div>
     </Drawer>
   );

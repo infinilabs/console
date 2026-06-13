@@ -356,26 +356,28 @@ export default Form.create()((props) => {
         bodyStyle={{
           padding: 0,
           height: "calc(100vh - 110px)",
-          overflow: "auto",
+          overflow: "hidden",
         }}
         destroyOnClose
       >
-        <div style={{ padding: 24, height: "100%" }}>
-          <Form {...FORM_ITEM_LAYOUT} colon={false}>
-            {body}
-          </Form>
-        </div>
-        <div className={styles.actions}>
-          <Button style={{ marginRight: 12 }} onClick={onClose}>
-            {formatMessage({ id: "form.button.cancel" })}
-          </Button>
-          <Button
-            type="primary"
-            loading={loading}
-            onClick={() => onSubmit(actionKey)}
-          >
-            {formatMessage({ id: "form.button.submit" })}
-          </Button>
+        <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+          <div style={{ padding: 24, flex: 1, overflow: "visible" }}>
+            <Form {...FORM_ITEM_LAYOUT} colon={false}>
+              {body}
+            </Form>
+          </div>
+          <div className={styles.actions}>
+            <Button style={{ marginRight: 12 }} onClick={onClose}>
+              {formatMessage({ id: "form.button.cancel" })}
+            </Button>
+            <Button
+              type="primary"
+              loading={loading}
+              onClick={() => onSubmit(actionKey)}
+            >
+              {formatMessage({ id: "form.button.submit" })}
+            </Button>
+          </div>
         </div>
       </Drawer>
     </>

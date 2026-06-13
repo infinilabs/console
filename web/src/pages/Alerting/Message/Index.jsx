@@ -128,6 +128,12 @@ const Index = (props) => {
           ...queryParams,
           priority: action.value,
         };
+      case "priorityAndStatus":
+        return {
+          ...queryParams,
+          status: action.status,
+          priority: action.priority,
+        };
       case "status":
         return {
           ...queryParams,
@@ -641,16 +647,17 @@ const Index = (props) => {
   const filterPriorityAndStatus = (params) => {
     if (params.type === "priority") {
       dispatch({
-        type: "status",
-        value: "alerting",
+        type: "priorityAndStatus",
+        status: "alerting",
+        priority: params.value,
       });
     } else {
       dispatch({
-        type: "priority",
-        value: undefined,
+        type: "priorityAndStatus",
+        status: "alerting",
+        priority: undefined,
       });
     }
-    dispatch(params);
   };
 
   return (

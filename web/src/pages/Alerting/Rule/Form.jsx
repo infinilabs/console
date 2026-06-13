@@ -67,7 +67,7 @@ const tailFormItemLayout = {
 };
 
 const RuleForm = (props) => {
-  const { submitLoading } = props;
+  const { submitLoading, clusterList = [] } = props;
   const editValue = props.value || {};
   const { getFieldDecorator } = props.form;
   const history = useHistory();
@@ -380,14 +380,24 @@ const RuleForm = (props) => {
     editValue?.resource?.objects || []
   );
   const selectedClusterDefault = editValue.id
-    ? {
+    ? clusterList.find(
+        (item) => item.id === editValue?.resource?.resource_id
+      ) || {
         id: editValue.resource.resource_id,
         name: editValue.resource.resource_name,
+        distribution: editValue?.resource?.distribution,
       }
     : props.selectedCluster;
-  const [selectedCluster, setSelectedCluster] = useState(
-    selectedClusterDefault
-  );
+  const [selectedCluster, setSelectedCluster] = useState(selectedClusterDefault);
+  useEffect(() => {
+    if (!editValue.id) return;
+    const selectedClusterFromList = clusterList.find(
+      (item) => item.id === editValue?.resource?.resource_id
+    );
+    if (selectedClusterFromList) {
+      setSelectedCluster(selectedClusterFromList);
+    }
+  }, [clusterList, editValue.id, editValue?.resource?.resource_id]);
   if (!editValue.id) {
     useMemo(() => {
       setSelectedCluster(props.selectedCluster);

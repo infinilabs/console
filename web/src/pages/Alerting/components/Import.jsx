@@ -184,7 +184,7 @@ export default Form.create()((props) => {
               </Tooltip>
             </div>
             <Editor
-              height="180px"
+              height="260px"
               language="json"
               theme="light"
               value={alertRuleExample}
@@ -193,6 +193,11 @@ export default Form.create()((props) => {
                   enabled: false,
                 },
                 readOnly: true,
+                scrollBeyondLastLine: false,
+                scrollbar: {
+                  vertical: "hidden",
+                  horizontal: "hidden",
+                },
               }}
             />
             <div style={{ height: 12 }} />

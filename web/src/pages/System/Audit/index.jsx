@@ -166,6 +166,7 @@ export default (props) => {
         rowSelectionExtra={{
           getExtra: (props) => [
             <Button
+              icon="download"
               type="primary"
               onClick={exportClick}
             >

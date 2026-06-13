@@ -212,7 +212,7 @@ export const Associate = Form.create({ name: "associate_form" })((props) => {
               isManual={state.isManual}
             />
             <Form.Item {...tailFormItemLayout}>
-              <Button type="primary" onClick={onConnectClick}>
+              <Button icon="thunderbolt" type="primary" onClick={onConnectClick}>
                 {formatMessage({
                   id: "cluster.regist.step.connect.title",
                 })}

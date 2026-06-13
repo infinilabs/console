@@ -16,7 +16,10 @@ const normalizeTimeValue = (value, fallback) => {
         value[key] !== undefined &&
         value[key] !== null
       ) {
-        return `${value[key]}`;
+        const candidate = value[key];
+        if (typeof candidate === "string" || typeof candidate === "number") {
+          return `${candidate}`;
+        }
       }
     }
   }

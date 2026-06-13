@@ -130,6 +130,17 @@ func InvokeSetupCallback() {
 	})
 }
 
+func InvokeSetupCallbackAsync() {
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Errorf("setup callback panic: %v", r)
+			}
+		}()
+		InvokeSetupCallback()
+	}()
+}
+
 func getOrCreateIngestPassword() (string, error) {
 	value, err := keystore.GetValue(systemClusterIngestPasswordKey)
 	if err == nil && len(value) > 0 {
@@ -933,8 +944,8 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	}
 	global.Env().CheckSetup()
 
-	//callback
-	InvokeSetupCallback()
+	// callback can take a while (template init/module starts), do it in background.
+	InvokeSetupCallbackAsync()
 
 	//update credential state in background to avoid blocking setup response
 	go updateCredentialState(secretMismatch)

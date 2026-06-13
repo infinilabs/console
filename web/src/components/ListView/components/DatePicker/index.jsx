@@ -34,6 +34,7 @@ export default (props) => {
     isRefreshPaused = true,
     onRefresh,
     recentlyUsedRangesKey = "listview-recently-used-ranges",
+    wrapperStyle = {},
   } = props;
 
   if (timeFields.length == 0) {
@@ -109,8 +110,15 @@ export default (props) => {
   //   setAutoFitLoading(false);
   // };
 
+  const containerStyle = {
+    width: "460px",
+    maxWidth: "55vw",
+    minWidth: 320,
+    ...wrapperStyle,
+  };
+
   return (
-    <div style={{ width: "460px", maxWidth: "55vw", minWidth: 320 }}>
+    <div style={containerStyle}>
       <DatePicker
         locale={locale}
         {...range}

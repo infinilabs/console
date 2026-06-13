@@ -113,33 +113,34 @@ const RoleList = (props) => {
       },
       {
         title: formatMessage({ id: "table.field.actions" }),
-        render: (text, record) => (
-          <div>
-            {hasAuthority("system.security:all") && record.builtin === false ? (
-              <>
-                <Link
-                  key="edit"
-                  to={
-                    record.type == "platform"
-                      ? `/system/security/role/platform/edit/${record.id}`
-                      : `/system/security/role/data/edit/${record.id}`
-                  }
-                >
-                  {formatMessage({ id: "form.button.edit" })}
-                </Link>
-                <Divider key="d2" type="vertical" />
-                <Popconfirm
-                  title={formatMessage({
-                    id: "system.security.confirm.delete",
-                  })}
-                  onConfirm={() => onDeleteClick(record.id)}
-                >
-                  <a>{formatMessage({ id: "form.button.delete" })}</a>
-                </Popconfirm>
-              </>
-            ) : null}
-          </div>
-        ),
+        render: (text, record) => {
+          if (!(hasAuthority("system.security:all") && record.builtin === false)) {
+            return "-";
+          }
+          return (
+            <div>
+              <Link
+                key="edit"
+                to={
+                  record.type == "platform"
+                    ? `/system/security/role/platform/edit/${record.id}`
+                    : `/system/security/role/data/edit/${record.id}`
+                }
+              >
+                {formatMessage({ id: "form.button.edit" })}
+              </Link>
+              <Divider key="d2" type="vertical" />
+              <Popconfirm
+                title={formatMessage({
+                  id: "system.security.confirm.delete",
+                })}
+                onConfirm={() => onDeleteClick(record.id)}
+              >
+                <a>{formatMessage({ id: "form.button.delete" })}</a>
+              </Popconfirm>
+            </div>
+          );
+        },
       },
     ],
 

@@ -15,7 +15,7 @@ const getStatusLabel = (status?: string, label?: string) => {
     case "unknown":
       return formatMessage({ id: "overview.status.unknown" });
     case "unavailable":
-      return formatMessage({ id: "overview.status.unavailable" });
+      return "unavailable";
     default:
       return status;
   }

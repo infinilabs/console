@@ -81,6 +81,10 @@ const applicationMeta = {
 };
 
 export default (props) => {
+  const renderTextOrDash = (value) => {
+    return value || value === 0 ? value : "-";
+  };
+
   const ref = useRef(null);
   const [isLoading, setIsLoading] = React.useState();
 
@@ -211,7 +215,7 @@ export default (props) => {
   const renderApplication = (value) => {
     const key = `${value || ""}`.trim().toLowerCase();
     const meta = applicationMeta[key] || {
-      label: key ? `${key.charAt(0).toUpperCase()}${key.slice(1)}` : "--",
+      label: key ? `${key.charAt(0).toUpperCase()}${key.slice(1)}` : "-",
       icon: "appstore",
     };
     return (
@@ -238,12 +242,14 @@ export default (props) => {
       key: "name",
       sortable: true,
       searchable: true,
+      render: (text) => renderTextOrDash(text),
     },
     {
       title: formatMessage({ id: "gateway.instance.column.endpoint" }),
       key: "endpoint",
       sortable: true,
       searchable: true,
+      render: (text) => renderTextOrDash(text),
     },
       {
         title: formatMessage({ id: "gateway.instance.column.status" }),
@@ -357,7 +363,10 @@ export default (props) => {
       aggregable: true,
       searchable: true,
       render: (text, record) => {
-        return Array.isArray(text) && text.join(",");
+        if (Array.isArray(text) && text.length > 0) {
+          return text.join(",");
+        }
+        return "-";
       },
     },
     {

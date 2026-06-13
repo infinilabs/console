@@ -22,8 +22,29 @@ const iconType = {
   create: "plus-square",
 };
 
+const isZeroTimeValue = (value) => {
+  if (typeof value !== "string") {
+    return false;
+  }
+  const normalized = value.trim().toLowerCase();
+  return (
+    normalized === "0001-01-01t00:00:00z" ||
+    normalized === "0001-01-01t00:00:00.000z"
+  );
+};
+
 const serializeDiffValue = (v) => {
+  if (v === null || v === undefined || v === "") {
+    return "-";
+  }
+  if (isZeroTimeValue(v)) {
+    return "-";
+  }
   if (typeof v == "string") {
+    const parsed = moment(v, moment.ISO_8601, true);
+    if (parsed.isValid()) {
+      return formatUtcTimeToLocal(parsed.toISOString());
+    }
     return v;
   }
   return JSON.stringify(v);
@@ -31,7 +52,9 @@ const serializeDiffValue = (v) => {
 
 const generateDiff = (diff) => {
   return (diff || []).map((changeLog, i) => {
-    const fieldPath = changeLog.path.join(".");
+    const fieldPath = Array.isArray(changeLog?.path)
+      ? changeLog.path.join(".")
+      : "-";
     switch (changeLog.type) {
       case "create":
         return (
@@ -278,6 +301,7 @@ export default (props) => {
         sideEnable={true}
         sideVisible={false}
         sidePlacement="left"
+        datePickerContainerStyle={{ width: 350, maxWidth: "45vw", minWidth: 270 }}
         histogramEnable={histogramState.enable}
         histogramVisible={histogramState.visible}
         histogramWidget={histogramState.widget}

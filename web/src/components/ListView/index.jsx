@@ -160,6 +160,7 @@ const Index = forwardRef((props, ref) => {
     showEmptyUI = false,
     setShowEmptyUI = null,
     scroll,
+    datePickerContainerStyle = {},
   } = props;
 
   const headerExtra = headerToobarExtra.getExtra
@@ -708,6 +709,7 @@ const Index = forwardRef((props, ref) => {
                     onTimeRangeChange={onTimeRangeChange}
                     isRefreshPaused={isRefreshPaused}
                     recentlyUsedRangesKey={collectionName}
+                    wrapperStyle={datePickerContainerStyle}
                   />
                 ) : null}
                 <Button

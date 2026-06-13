@@ -33,7 +33,7 @@ const firstColumnIconStyle = {
 export default () => {
   const initialQueryParams = {
     from: 0,
-    size: 10,
+    size: 20,
   };
 
   function reducer(queryParams, action) {

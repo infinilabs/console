@@ -203,7 +203,7 @@ class Index extends PureComponent {
     editingIndex: {},
     indexActiveKey: "overview",
     showSystemIndices: false,
-    pageSize: 10,
+    pageSize: 20,
     deleteIndexItems: [],
     deleteIndexVisible: false,
     deleteIndexConfirm: false,

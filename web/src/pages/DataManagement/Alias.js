@@ -152,7 +152,7 @@ class AliasManage extends PureComponent {
     selectedRows: [],
     formValues: {},
     updateFormValues: {},
-    pageSize: 10,
+    pageSize: 20,
     editMode: "UPDATE",
   };
 
@@ -581,7 +581,7 @@ class AliasIndexTable extends React.Component {
         size={"small"}
         pagination={{
           size: "small",
-          pageSize: 10,
+          pageSize: 20,
           showSizeChanger: true,
           showTotal: (total, range) =>
             `${range[0]}-${range[1]} of ${total} items`,

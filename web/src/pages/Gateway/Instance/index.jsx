@@ -535,7 +535,7 @@ export default (props) => {
         }}
         defaultQueryParams={{
           from: 0,
-          size: 10,
+          size: 20,
         }}
         sortEnable={true}
         sideEnable={true}

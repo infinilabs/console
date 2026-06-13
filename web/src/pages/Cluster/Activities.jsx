@@ -50,40 +50,74 @@ const serializeDiffValue = (v) => {
   return JSON.stringify(v);
 };
 
-const generateDiff = (diff) => {
+const buildTemplateContext = (record) => {
+  const labels = record?.metadata?.labels || {};
+  return {
+    ...labels,
+    timestamp: record?.timestamp,
+    trigger_at: labels.trigger_at || record?.timestamp,
+  };
+};
+
+const resolveTemplateString = (value, record) => {
+  if (typeof value !== "string" || !value.includes("{{")) {
+    return value;
+  }
+  const context = buildTemplateContext(record);
+  return value.replace(
+    /\{\{\s*\.([a-zA-Z0-9_]+)(\s*\|\s*datetime)?\s*\}\}/g,
+    (match, key, datetimeFlag) => {
+      const raw = context?.[key];
+      if (raw === null || raw === undefined || raw === "") {
+        return match;
+      }
+      if (datetimeFlag) {
+        const parsed = moment(raw, moment.ISO_8601, true);
+        if (parsed.isValid()) {
+          return formatUtcTimeToLocal(parsed.toISOString());
+        }
+      }
+      return `${raw}`;
+    }
+  );
+};
+
+const generateDiff = (diff, record) => {
   return (diff || []).map((changeLog, i) => {
     const fieldPath = Array.isArray(changeLog?.path)
       ? changeLog.path.join(".")
       : "-";
+    const fromValue = serializeDiffValue(resolveTemplateString(changeLog.from, record));
+    const toValue = serializeDiffValue(resolveTemplateString(changeLog.to, record));
     switch (changeLog.type) {
       case "create":
         return (
           <div key={i} style={{ background: "#E6FFEC" }}>
             <Icon style={{ fontSize: 12, marginRight: 10 }} type="plus" />
-            {fieldPath}: {serializeDiffValue(changeLog.to)}
+            {fieldPath}: {toValue}
           </div>
         );
       case "delete":
         return (
           <div key={i} style={{ background: "#FFEBE9" }}>
             <Icon style={{ fontSize: 12, marginRight: 10 }} type="minus" />
-            {fieldPath}: {serializeDiffValue(changeLog.from)}
+            {fieldPath}: {fromValue}
           </div>
         );
       case "update":
         return (
           <div key={i}>
             <Icon style={{ fontSize: 12, marginRight: 10 }} type="edit" />
-            {fieldPath}: {serializeDiffValue(changeLog.from)}{" "}
+            {fieldPath}: {fromValue}{" "}
             <Icon type="arrow-right" />
-            {serializeDiffValue(changeLog.to)}
+            {toValue}
           </div>
         );
     }
   });
 };
 
-const DiffItem = ({ diff }) => {
+const DiffItem = ({ diff, record }) => {
   const [state, setState] = useState({
     hasMore: false,
     style: { maxHeight: 63, overflowY: "hidden" },
@@ -102,7 +136,7 @@ const DiffItem = ({ diff }) => {
   return (
     <div>
       <div ref={itemRef} style={state.style}>
-        {generateDiff(diff || {})}
+        {generateDiff(diff || {}, record)}
       </div>
       {state.hasMore ? (
         <div>
@@ -217,7 +251,7 @@ export default (props) => {
           <GenerateDesc opers hit={hit} />
         </div>
         {record.changelog && record.changelog.length > 0 ? (
-          <DiffItem diff={record.changelog} />
+          <DiffItem diff={record.changelog} record={record} />
         ) : null}
       </>
     );

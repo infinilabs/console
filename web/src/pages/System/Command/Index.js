@@ -102,7 +102,7 @@ class Index extends PureComponent {
               color: "rgba(0, 0, 0, 0.65)",
             }}
           >
-            <Icon type="appstore" />
+            <Icon type="code" />
           </span>
           <a
             title={`${text}${this.getCommandSummary(record) ? ` · ${this.getCommandSummary(record)}` : ""}`}

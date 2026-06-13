@@ -1,4 +1,4 @@
-import { Form, Input, InputNumber, Icon, Switch } from "antd";
+import { Form, Input, InputNumber, Icon, Switch, Tooltip } from "antd";
 import { formatMessage } from "umi/locale";
 
 const InputGroup = Input.Group;
@@ -22,6 +22,23 @@ const MonitorConfigsForm = (props) => {
   const intervalUnit = formatMessage({
     id: "cluster.manage.config_item.interval.unit",
   });
+  const renderConfigLabel = (key) => (
+    <span>
+      {formatMessage({
+        id: `cluster.manage.monitor_configs.${key}`,
+      })}
+      <Tooltip
+        title={formatMessage({
+          id: `cluster.manage.monitor_configs.tips.${key}`,
+        })}
+      >
+        <Icon
+          type="question-circle-o"
+          style={{ marginLeft: 6, color: "#1890ff" }}
+        />
+      </Tooltip>
+    </span>
+  );
 
   const getIntervalInitialValue = (value) => {
     const normalized = `${value || ""}`.replace(/[^\d]/g, "");
@@ -45,9 +62,7 @@ const MonitorConfigsForm = (props) => {
         return (
           <Form.Item
             key={item.key}
-            label={formatMessage({
-              id: `cluster.manage.monitor_configs.${item.key}`,
-            })}
+            label={renderConfigLabel(item.key)}
           >
             <InputGroup compact>
               <Form.Item>

@@ -73,6 +73,8 @@ export default {
   "cluster.manage.config_item.interval.unit": "s",
   "cluster.manage.monitor_configs.cluster_health": "Cluster health",
   "cluster.manage.monitor_configs.cluster_stats": "Cluster stats",
+  "cluster.manage.monitor_configs.tips.cluster_health": "Collects cluster health summary metrics (green/yellow/red).",
+  "cluster.manage.monitor_configs.tips.cluster_stats": "Collects cluster-level statistics from _cluster/stats (nodes, shards, storage, etc.).",
   "cluster.manage.monitor_configs.node_stats": "Node stats",
   "cluster.manage.monitor_configs.index_stats": "Index stats",
   "cluster.manage.monitor_configs.index_health": "Index health",
@@ -83,6 +85,14 @@ export default {
   "cluster.manage.metadata_configs.metadata_refresh": "Metadata refresh",
   "cluster.manage.metadata_configs.cluster_settings_check":
     "Cluster settings check",
+  "cluster.manage.metadata_configs.tips.health_check":
+    "Periodically checks cluster health/reachability and updates cluster availability status.",
+  "cluster.manage.metadata_configs.tips.node_availability_check":
+    "Performs TCP checks against node addresses. Disable this when your cluster is reachable only through an HTTP proxy.",
+  "cluster.manage.metadata_configs.tips.metadata_refresh":
+    "Periodically refreshes metadata such as nodes and index aliases.",
+  "cluster.manage.metadata_configs.tips.cluster_settings_check":
+    "Periodically fetches and syncs cluster settings (transient/persistent).",
   "cluster.manage.monitor_configs.rollup_node_stats": "Node Stats",
   "cluster.manage.monitor_configs.rollup_index_stats": "Index Stats",
   "cluster.manage.monitor_configs.rollup_cluster_stats": "Cluster Stats",

@@ -3,7 +3,7 @@ import { Alert, Button, Divider, Form, Icon, Input, InputNumber, message, Result
 import styles from './index.less'
 import request from '@/utils/request';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
-import { formatMessage } from "umi/locale";
+import { formatMessage, getLocale } from "umi/locale";
 
 
 const defaultAutoExpandReplicas = "0-1";
@@ -220,6 +220,7 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
            const body = {
              cluster,
              initialize_template: currentTask.name,
+             language: getLocale(),
              primary_shards: formData.primary_shards,
              auto_expand_replicas: formData.auto_expand_replicas,
            }

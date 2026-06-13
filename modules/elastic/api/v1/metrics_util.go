@@ -371,6 +371,91 @@ func GetMetricRangeAndBucketSize(minStr string, maxStr string, bucketSize int, m
 	return bucketSize, min, max, nil
 }
 
+func buildDateHistogramParams(query map[string]interface{}, intervalField, bucketSizeStr string) util.MapStr {
+	params := util.MapStr{
+		"field":         "timestamp",
+		intervalField:   bucketSizeStr,
+		"min_doc_count": 0,
+	}
+	if bounds, ok := extractDateHistogramBounds(query); ok {
+		params["extended_bounds"] = bounds
+	}
+	return params
+}
+
+func extractDateHistogramBounds(query map[string]interface{}) (util.MapStr, bool) {
+	queryMap, ok := asMap(query["query"])
+	if !ok {
+		return nil, false
+	}
+	boolMap, ok := asMap(queryMap["bool"])
+	if !ok {
+		return nil, false
+	}
+	filters, ok := asSlice(boolMap["filter"])
+	if !ok {
+		return nil, false
+	}
+	for _, filterItem := range filters {
+		filterMap, ok := asMap(filterItem)
+		if !ok {
+			continue
+		}
+		rangeMap, ok := asMap(filterMap["range"])
+		if !ok {
+			continue
+		}
+		timestampRange, ok := asMap(rangeMap["timestamp"])
+		if !ok {
+			continue
+		}
+		min := firstNotNil(timestampRange["gte"], timestampRange["from"], timestampRange["gt"])
+		max := firstNotNil(timestampRange["lte"], timestampRange["to"], timestampRange["lt"])
+		if min != nil && max != nil {
+			return util.MapStr{
+				"min": min,
+				"max": max,
+			}, true
+		}
+	}
+	return nil, false
+}
+
+func asMap(value interface{}) (map[string]interface{}, bool) {
+	switch v := value.(type) {
+	case map[string]interface{}:
+		return v, true
+	case util.MapStr:
+		return map[string]interface{}(v), true
+	default:
+		return nil, false
+	}
+}
+
+func asSlice(value interface{}) ([]interface{}, bool) {
+	switch v := value.(type) {
+	case []interface{}:
+		return v, true
+	case []util.MapStr:
+		result := make([]interface{}, 0, len(v))
+		for _, item := range v {
+			result = append(result, item)
+		}
+		return result, true
+	default:
+		return nil, false
+	}
+}
+
+func firstNotNil(values ...interface{}) interface{} {
+	for _, value := range values {
+		if value != nil {
+			return value
+		}
+	}
+	return nil
+}
+
 // findClosestNiceInterval finds the interval in sortedNiceIntervals that is closest to targetSize.
 func findClosestNiceInterval(targetSize float64, sortedNiceIntervals []float64) float64 {
 	if len(sortedNiceIntervals) == 0 {
@@ -513,11 +598,8 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 	query["size"] = 0
 	query["aggs"] = util.MapStr{
 		"dates": util.MapStr{
-			"date_histogram": util.MapStr{
-				"field":       "timestamp",
-				intervalField: bucketSizeStr,
-			},
-			"aggs": aggs,
+			"date_histogram": buildDateHistogramParams(query, intervalField, bucketSizeStr),
+			"aggs":           aggs,
 		},
 	}
 	queryDSL := util.MustToJSONBytes(query)

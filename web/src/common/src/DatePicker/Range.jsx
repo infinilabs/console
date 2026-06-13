@@ -229,6 +229,7 @@ const Range = (props) => {
 
   const fullRangeText = useMemo(() => {
     if (isMinimum || !start || !end) return "";
+    if (start === 'auto') return currentLocales[`datepicker.quick_select.${start}`];
     if (showPrettyDuration(start, end, commonlyUsedRanges)) {
       return prettyDuration(
         start,

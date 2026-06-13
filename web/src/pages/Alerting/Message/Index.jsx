@@ -87,8 +87,8 @@ const Index = (props) => {
     from: 0,
     size: 10,
     // status: "alerting",
-    start_time: "now-7d",
-    end_time: "now",
+    start_time: "auto",
+    end_time: "auto",
     ...param,
   };
 
@@ -383,7 +383,12 @@ const Index = (props) => {
   const fetchMessages = (queryParams) => {
     setLoading(true);
     let params = queryParams;
-    if (queryParams?.start_time && queryParams.end_time) {
+    if (
+      queryParams?.start_time &&
+      queryParams.end_time &&
+      queryParams.start_time !== "auto" &&
+      queryParams.end_time !== "auto"
+    ) {
       const bounds = calculateBounds({
         from: queryParams?.start_time,
         to: queryParams.end_time,
@@ -701,8 +706,8 @@ const Index = (props) => {
               <div style={{ flexGrow: 0 }}>
                 <DatePicker
                   locale={getLocale()}
-                  start={param?.start_time}
-                  end={param?.end_time}
+                  start={queryParams?.start_time}
+                  end={queryParams?.end_time}
                   onRangeChange={onTimeChange}
                   {...refresh}
                   onRefreshChange={setRefresh}

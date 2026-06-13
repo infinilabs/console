@@ -220,7 +220,12 @@ const Index = forwardRef((props, ref) => {
 
     let filter = [];
     //time range
-    if (queryParams?.timeRange && queryParams?.timeRange?.timeField) {
+    if (
+      queryParams?.timeRange &&
+      queryParams?.timeRange?.timeField &&
+      queryParams?.timeRange?.from !== "auto" &&
+      queryParams?.timeRange?.to !== "auto"
+    ) {
       let range = {};
       range[queryParams.timeRange.timeField] = {
         gte: queryParams.timeRange.from,

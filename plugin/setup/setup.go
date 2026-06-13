@@ -315,6 +315,7 @@ type SetupRequest struct {
 	BootstrapPassword  string `json:"bootstrap_password"`
 	CredentialSecret   string `json:"credential_secret"`
 	InitializeTemplate string `json:"initialize_template"`
+	Language           string `json:"language,omitempty"`
 	PrimaryShards      int    `json:"primary_shards"`
 	AutoExpandReplicas string `json:"auto_expand_replicas"`
 }
@@ -1136,6 +1137,9 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 		}
 	case "alerting":
 		dslTplFileName = "alerting.tpl"
+		if localizedTemplate := resolveAlertingTemplateByLanguage(strings.TrimSpace(request.Language)); localizedTemplate != "" {
+			dslTplFileName = localizedTemplate
+		}
 	case "insight":
 		dslTplFileName = "insight.tpl"
 	case "view":
@@ -1198,6 +1202,10 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 	relayPartitionSize := ResolveRelayPartitionSize(systemClient)
 
 	dslTplFile := path.Join(baseDir, dslTplFileName)
+	if request.InitializeTemplate == "alerting" && !util.FileExists(dslTplFile) {
+		dslTplFileName = "alerting.tpl"
+		dslTplFile = path.Join(baseDir, dslTplFileName)
+	}
 	if !util.FileExists(dslTplFile) {
 		panic(errors.Errorf("template file %v for setup was missing", dslTplFile))
 	}
@@ -1207,6 +1215,7 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		panic(err)
 	}
+
 	if len(dsl) == 0 {
 		panic(fmt.Sprintf("got empty template [%s]", dslTplFile))
 	}
@@ -1378,5 +1387,16 @@ func buildIngestRoleBody(indexPrefix string) util.MapStr {
 				},
 			},
 		},
+	}
+}
+
+func resolveAlertingTemplateByLanguage(language string) string {
+	switch {
+	case strings.HasPrefix(strings.ToLower(language), "zh"):
+		return "alerting.zh-CN.tpl"
+	case strings.HasPrefix(strings.ToLower(language), "en"):
+		return "alerting.en-US.tpl"
+	default:
+		return ""
 	}
 }

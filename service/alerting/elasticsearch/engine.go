@@ -1150,7 +1150,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			Status:      model.NotificationStatusNew,
 			Title:       alertItem.Title,
 			Body:        alertItem.Message,
-			Link:        "/alerting/message",
+			Link:        fmt.Sprintf("/alerting/message/%s", alertMessage.ID),
 		}
 		err = orm.Create(orm.NewContext(), notification)
 		if err != nil {

@@ -162,7 +162,7 @@ export default (props) => {
         sideEnable={true}
         sideVisible={false}
         sidePlacement="left"
-        datePickerContainerStyle={{ width: 350, maxWidth: "45vw", minWidth: 270 }}
+        datePickerContainerStyle={{ width: 320, maxWidth: "45vw", minWidth: 270 }}
         rowSelectionExtra={{
           getExtra: (props) => [
             <Button

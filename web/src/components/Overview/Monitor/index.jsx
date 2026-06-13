@@ -245,6 +245,9 @@ const Monitor = (props) => {
                         setRefresh(newRefresh)
                       }}
                       onRefresh={(value) => handleTimeChange({ ...(value || {}), refresh: new Date().valueOf()})}
+                      onAutoFit={() => {
+                        handleTimeChange({ start: "auto", end: "auto", refresh: new Date().valueOf() });
+                      }}
                       showTimeSetting={true}
                       showTimeInterval={true}
                       timeInterval={state.timeInterval}

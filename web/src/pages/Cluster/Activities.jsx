@@ -9,6 +9,7 @@ import request from "@/utils/request";
 import ListView from "@/components/ListView";
 import GenerateDesc from "@/pages/Overview/components/Activities/GenerateDesc";
 import { getSystemClusterID } from "@/utils/setup";
+import moment from "moment";
 
 const opers = {
   delete: "deleted",
@@ -335,7 +336,7 @@ export default (props) => {
         sideEnable={true}
         sideVisible={false}
         sidePlacement="left"
-        datePickerContainerStyle={{ width: 350, maxWidth: "45vw", minWidth: 270 }}
+        datePickerContainerStyle={{ width: 320, maxWidth: "45vw", minWidth: 270 }}
         histogramEnable={histogramState.enable}
         histogramVisible={histogramState.visible}
         histogramWidget={histogramState.widget}

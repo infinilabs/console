@@ -517,16 +517,22 @@ class AliasIndexTable extends React.Component {
     {
       title: formatMessage({ id: "alias.table.field.index_routing" }),
       dataIndex: "index_routing",
+      render: (text) => {
+        return text || text === 0 ? text : "-";
+      },
     },
     {
       title: formatMessage({ id: "alias.table.field.search_routing" }),
       dataIndex: "search_routing",
+      render: (text) => {
+        return text || text === 0 ? text : "-";
+      },
     },
     {
       title: formatMessage({ id: "alias.table.field.filter" }),
       dataIndex: "filter",
       render: (text) => {
-        return text ? JSON.stringify(text) : "";
+        return text ? JSON.stringify(text) : "-";
       },
     },
     {

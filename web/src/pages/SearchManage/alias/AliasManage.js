@@ -408,16 +408,22 @@ class AliasIndexTable extends React.Component {
     {
       title: "索引路由",
       dataIndex: "index_routing",
+      render: (text) => {
+        return text || text === 0 ? text : "-";
+      },
     },
     {
       title: "搜索路由",
       dataIndex: "search_routing",
+      render: (text) => {
+        return text || text === 0 ? text : "-";
+      },
     },
     {
       title: "过滤查询",
       dataIndex: "filter",
       render: (text) => {
-        return text ? JSON.stringify(text) : "";
+        return text ? JSON.stringify(text) : "-";
       },
     },
     {

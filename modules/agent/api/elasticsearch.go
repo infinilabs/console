@@ -683,14 +683,14 @@ func runAutoEnroll(clusterInfo ClusterInfo) {
 		}
 		nodes, err := refreshNodesInfo(instanceID)
 		if err != nil {
-			log.Errorf("failed to refresh nodes for agent instance [%s] at [%s]: %s", console_common.MaskLogToken(instanceID), console_common.MaskLogEndpoint(instanceEndpoint), console_common.MaskLogError(err))
+			log.Errorf("failed to refresh nodes for agent instance [%s] at [%s]: %s", instanceID, console_common.MaskLogEndpoint(instanceEndpoint), console_common.MaskLogError(err))
 			continue
 		}
-		log.Tracef("instance:%v,%v, has: %v nodes, %v unknown nodes", console_common.MaskLogToken(instanceID), console_common.MaskLogEndpoint(instanceEndpoint), len(nodes.Nodes), len(nodes.UnknownProcess))
+		log.Tracef("instance:%v,%v, has: %v nodes, %v unknown nodes", instanceID, console_common.MaskLogEndpoint(instanceEndpoint), len(nodes.Nodes), len(nodes.UnknownProcess))
 		if len(nodes.UnknownProcess) > 0 {
 			pids := bindInstanceToCluster(clusterInfo, nodes, instanceID, instanceEndpoint)
 			if len(pids) > 0 {
-				log.Infof("instance:%v,%v, success enroll %v nodes", console_common.MaskLogToken(instanceID), console_common.MaskLogEndpoint(instanceEndpoint), len(pids))
+				log.Infof("instance:%v,%v, success enroll %v nodes", instanceID, console_common.MaskLogEndpoint(instanceEndpoint), len(pids))
 			}
 		}
 
@@ -700,7 +700,7 @@ func runAutoEnroll(clusterInfo ClusterInfo) {
 				if !v.Enrolled {
 					pids := bindInstanceToCluster(clusterInfo, nodes, instanceID, instanceEndpoint)
 					if len(pids) > 0 {
-						log.Infof("instance:%v,%v, success enroll %v nodes", console_common.MaskLogToken(instanceID), console_common.MaskLogEndpoint(instanceEndpoint), len(pids))
+						log.Infof("instance:%v,%v, success enroll %v nodes", instanceID, console_common.MaskLogEndpoint(instanceEndpoint), len(pids))
 					}
 					break
 				}

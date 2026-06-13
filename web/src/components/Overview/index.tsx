@@ -129,26 +129,7 @@ export default forwardRef((props: IProps, ref: any) => {
     table: tableDefaultPageSize,
   });
   const appliedDisplayTypeRef = useRef<string>();
-  const onDisplayTypeChange = (value: string) => {
-    const currentDisplayType = dispalyTypeObj[currentTab] || "card";
-    pageSizeByDisplayRef.current[currentDisplayType] = queryParams.size;
-    setDispalyTypeObj({ ...dispalyTypeObj, [currentTab]: value });
-  };
 
-  useEffect(() => {
-    const displayType = dispalyTypeObj[currentTab] || "card";
-    if (appliedDisplayTypeRef.current === displayType) {
-      return;
-    }
-    appliedDisplayTypeRef.current = displayType;
-    const nextPageSize =
-      displayType === "table"
-        ? pageSizeByDisplayRef.current.table || tableDefaultPageSize
-        : pageSizeByDisplayRef.current.card || initialQueryParams.size;
-    if (queryParams.size !== nextPageSize || queryParams.from !== 0) {
-      dispatch({ type: "setPageSizeAndReset", value: nextPageSize });
-    }
-  }, [currentTab, dispalyTypeObj, queryParams.size, queryParams.from]);
   function reducer(
     queryParams: IQueryParams,
     action: { type: string; value: any }
@@ -180,12 +161,32 @@ export default forwardRef((props: IProps, ref: any) => {
         throw new Error();
     }
   }
-  const [queryParams, dispatch] = useReducer(reducer, { 
+  const [queryParams, dispatch] = useReducer(reducer, {
     from: param?.from || initialQueryParams.from,
-    size: param?.size || initialQueryParams.size ,
-    keyword: param?.keyword || initialQueryParams.keyword
+    size: param?.size || initialQueryParams.size,
+    keyword: param?.keyword || initialQueryParams.keyword,
   });
 
+  const onDisplayTypeChange = (value: string) => {
+    const currentDisplayType = dispalyTypeObj[currentTab] || "card";
+    pageSizeByDisplayRef.current[currentDisplayType] = queryParams.size;
+    setDispalyTypeObj({ ...dispalyTypeObj, [currentTab]: value });
+  };
+
+  useEffect(() => {
+    const displayType = dispalyTypeObj[currentTab] || "card";
+    if (appliedDisplayTypeRef.current === displayType) {
+      return;
+    }
+    appliedDisplayTypeRef.current = displayType;
+    const nextPageSize =
+      displayType === "table"
+        ? pageSizeByDisplayRef.current.table || tableDefaultPageSize
+        : pageSizeByDisplayRef.current.card || initialQueryParams.size;
+    if (queryParams.size !== nextPageSize || queryParams.from !== 0) {
+      dispatch({ type: "setPageSizeAndReset", value: nextPageSize });
+    }
+  }, [currentTab, dispalyTypeObj, queryParams.size, queryParams.from]);
   const { run, loading, value } = useFetch(
     searchAction,
     {

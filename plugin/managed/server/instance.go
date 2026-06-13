@@ -92,7 +92,7 @@ func logManagedRegistration(stage string, instance *model.Instance, req *http.Re
 		"managed agent registration %s: %v[%v], version=%v, endpoint=%v",
 		stage,
 		instance.Name,
-		console_common.MaskLogToken(instance.ID),
+		instance.ID,
 		instance.Application.Version.VersionNumber,
 		console_common.MaskLogEndpoint(instance.Endpoint),
 	)
@@ -124,7 +124,7 @@ func logLegacyManagedRegistration(stage string, instance *model.Instance, req *h
 		"legacy managed agent registration %s: %v[%v], version=%v, endpoint=%v",
 		stage,
 		instance.Name,
-		console_common.MaskLogToken(instance.ID),
+		instance.ID,
 		instance.Application.Version.VersionNumber,
 		console_common.MaskLogEndpoint(instance.Endpoint),
 	)
@@ -332,7 +332,7 @@ func (h APIHandler) registerInstance(w http.ResponseWriter, req *http.Request, p
 		}
 	}
 
-	log.Infof("register instance: %v[%v], %v", obj.Name, console_common.MaskLogToken(obj.ID), console_common.MaskLogEndpoint(obj.Endpoint))
+	log.Infof("register instance: %v[%v], %v", obj.Name, obj.ID, console_common.MaskLogEndpoint(obj.Endpoint))
 	detail := "registered successfully"
 	if exists {
 		detail = "updated existing registration successfully"

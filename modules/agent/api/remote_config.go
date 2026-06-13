@@ -397,7 +397,7 @@ func dynamicAgentConfigProvider(instance model.Instance) []*common.ConfigFile {
 				panic(err)
 			}
 			latestTimestamp = time.Now().Unix()
-			log.Tracef("agent config hash changed for [%s]: %s -> %s, version=%v", console_common.MaskLogToken(instance.ID), console_common.MaskLogToken(string(v)), console_common.MaskLogToken(hash), latestTimestamp)
+			log.Tracef("agent config hash changed for [%s]: %s -> %s, version=%v", instance.ID, console_common.MaskLogToken(string(v)), console_common.MaskLogToken(hash), latestTimestamp)
 		}
 
 		cfg.Size = int64(len(cfg.Content))

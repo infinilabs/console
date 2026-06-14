@@ -1019,6 +1019,144 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-cbp20n2anisjm
     "id": "$[[SETUP_USER_ID]]"
   }
 }
+POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-cm4z6m5fv8l0qk2p9x7r
+{
+  "id": "builtin-cm4z6m5fv8l0qk2p9x7r",
+  "created": "2024-01-01T00:00:00Z",
+  "updated": "2024-01-01T00:00:00Z",
+  "name": "Cluster offline",
+  "enabled": true,
+  "resource": {
+    "resource_id": "$[[SETUP_RESOURCE_ID]]",
+    "resource_name": "$[[SETUP_RESOURCE_NAME]]",
+    "type": "elasticsearch",
+    "objects": [
+      ".infini_cluster"
+    ],
+    "filter": {},
+    "raw_filter": {
+      "match_phrase": {
+        "labels.health_status": "unavailable"
+      }
+    },
+    "ignore_time_filter": true,
+    "time_field": "updated",
+    "context": {
+      "fields": null
+    }
+  },
+  "metrics": {
+    "bucket_size": "1m",
+    "groups": [
+      {
+        "field": "id",
+        "limit": 50
+      }
+    ],
+    "formula": "a",
+    "items": [
+      {
+        "name": "a",
+        "field": "labels.health_status",
+        "statistic": "count"
+      }
+    ],
+    "format_type": "num",
+    "bucket_label": {
+      "enabled": false
+    },
+    "expression": "count(labels.health_status)"
+  },
+  "conditions": {
+    "operator": "any",
+    "items": [
+      {
+        "minimum_period_match": 1,
+        "operator": "gte",
+        "values": [
+          "1"
+        ],
+        "priority": "critical"
+      }
+    ]
+  },
+  "notification_config": {
+    "enabled": true,
+    "title": "🔥 Cluster offline",
+    "message": "{{range .results}}\n{{$cid := index .group_values 0 }}\n{{$cn := lookup \"category=metadata, object=cluster, property=name, default=N/A\" $cid }}\n{{$cu := printf \"%s/#/cluster/monitor/elasticsearch/%s\" $.env.INFINI_CONSOLE_ENDPOINT $cid}}\nCluster: [{{$cn}}]({{$cu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D%7D), Status: offline, Count: {{.result_value}}\n{{end}}",
+    "normal": [
+      {
+        "id": "cgnb2nt3q95nmusjl65g",
+        "enabled": true
+      },
+      {
+        "id": "cgnb2r53q95nmusjl6vg",
+        "enabled": true
+      },
+      {
+        "id": "ch1os6t3q95lk6lepkq0",
+        "enabled": true
+      },
+      {
+        "id": "cgnb2kt3q95nmusjl64g",
+        "enabled": true
+      },
+      {
+        "id": "cj865st3q95rega919ig",
+        "enabled": true
+      },
+      {
+        "id": "cgiospt3q95q49k3u00g",
+        "enabled": true
+      }
+    ],
+    "throttle_period": "1h",
+    "accept_time_range": {
+      "start": "00:00",
+      "end": "23:59"
+    }
+  },
+  "category": "Platform",
+  "recovery_notification_config": {
+    "enabled": true,
+    "title": "🌈 {{.rule_name}} Resolved",
+    "message": "EventID: {{.event_id}}  \nTarget: {{.resource_name}}-{{.objects}}  \nTriggerAt: {{.trigger_at | datetime}}  \nResolveAt: {{.timestamp | datetime}}  \nDuration: {{.duration}}{{if .recovery_context}}  \n{{.recovery_context}}{{end}}",
+    "normal": [
+      {
+        "id": "cj8bq8d3q95ogankugqg",
+        "enabled": true
+      },
+      {
+        "id": "cj8ctat3q95l9ebbntlg",
+        "enabled": true
+      },
+      {
+        "id": "cj8e9s53q95gsdbb054g",
+        "enabled": true
+      },
+      {
+        "id": "cj8e9gt3q95gsdbb0170",
+        "enabled": true
+      },
+      {
+        "id": "cj86l0l3q95rrpfea6ug",
+        "enabled": true
+      },
+      {
+        "id": "cj8atf53q95lhahebg8g",
+        "enabled": true
+      }
+    ],
+    "event_enabled": true
+  },
+  "schedule": {
+    "interval": "1m"
+  },
+  "creator": {
+    "name": "$[[SETUP_USERNAME]]",
+    "id": "$[[SETUP_USER_ID]]"
+  }
+}
 POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-cb34sfl6psfiqtovhpt4
 {
   "id": "builtin-cb34sfl6psfiqtovhpt4",

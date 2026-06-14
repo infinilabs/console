@@ -1,5 +1,6 @@
 import { useRef, useCallback, useState, useEffect } from "react";
 import { Button, Dropdown, Icon, Menu, Modal, Drawer, Descriptions } from "antd";
+import { connect } from "dva";
 import { formatMessage } from "umi/locale";
 
 import { formatESSearchResult } from "@/lib/elasticsearch/util";
@@ -12,8 +13,9 @@ import ListView from "@/components/ListView";
 import styles from './index.less';
 import { getSystemClusterID } from "@/utils/setup";
 
-export default (props) => {
+const AuditPage = (props) => {
   const listViewRef = useRef(null);
+  const { clusterList = [] } = props;
   const clusterID = getSystemClusterID();
   const collectionName = "audit_log";
   const timeField = "timestamp"; //timestamp
@@ -25,6 +27,26 @@ export default (props) => {
 
   const [visible, setVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState();
+
+  const getResourceDisplayName = useCallback(
+    (item) => {
+      const resourceName = item?.metadata?.labels?.resource_name;
+      if (!resourceName) {
+        return "-";
+      }
+      if (item?.metadata?.resource_type !== "cluster_management") {
+        return resourceName;
+      }
+      const matchedCluster = clusterList.find(
+        (cluster) =>
+          cluster?.id === resourceName ||
+          cluster?.cluster_uuid === resourceName ||
+          cluster?.name === resourceName
+      );
+      return matchedCluster?.name || resourceName;
+    },
+    [clusterList]
+  );
 
   const formatTableData = (value) => {
     let dataNew = formatESSearchResult(value);
@@ -277,7 +299,7 @@ export default (props) => {
             </div>
             <div className={styles.vertical}>
               <div className={styles.label}>资源名称</div>
-              <div className={styles.value}>{selectedItem.metadata.labels.resource_name || '-'}</div>
+              <div className={styles.value}>{getResourceDisplayName(selectedItem)}</div>
             </div>
             <div className={styles.vertical}>
               <div className={styles.label}>操作</div>
@@ -295,3 +317,7 @@ export default (props) => {
     </PageHeaderWrapper>
   );
 };
+
+export default connect(({ global }) => ({
+  clusterList: global.clusterList,
+}))(AuditPage);

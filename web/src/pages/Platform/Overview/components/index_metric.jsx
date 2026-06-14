@@ -165,6 +165,11 @@ export default (props) => {
       <div className="px-box">
         <div className="px">
             {metrics.filter((item) => !!item && !!item[1]).map((item) => {
+              const metricKeys = (item[1] || []).filter(Boolean);
+              const normalizedMetricKeys =
+                metricKeys.length % 2 === 1
+                  ? [...metricKeys, "__placeholder__"]
+                  : metricKeys;
               return (
                 <div key={item[0]} style={{ margin: "8px 0" }}>
                   <MetricContainer
@@ -174,24 +179,32 @@ export default (props) => {
                   >
                     <div className="metric-inner-cnt">
                       {
-                        item[1].map((metricKey) => (
-                          <MetricChart 
-                            key={metricKey} 
-                            instance={charts[metricKey]} 
-                            pointerUpdate={pointerUpdate}
-                            timezone={timezone} 
-                            timeRange={timeRange} 
-                            handleTimeChange={handleTimeChange} 
-                            fetchUrl={`${ESPrefix}/${clusterID}/index_metrics`}
-                            metricKey={metricKey}
-                            title={formatMessage({id: "cluster.metrics.index.axis." + metricKey + ".title"})} 
-                            queryParams={queryParams}
-                            className={"metric-item"}
-                            timeout={timeout}
-                            refresh={refresh}
-                            handleTimeIntervalChange={handleTimeIntervalChange}
-                          />
-                        ))
+                        normalizedMetricKeys.map((metricKey, idx) =>
+                          metricKey === "__placeholder__" ? (
+                            <div
+                              key={`${item[0]}-placeholder-${idx}`}
+                              className="metric-item metric-item-placeholder"
+                              aria-hidden="true"
+                            />
+                          ) : (
+                            <MetricChart
+                              key={metricKey}
+                              instance={charts[metricKey]}
+                              pointerUpdate={pointerUpdate}
+                              timezone={timezone}
+                              timeRange={timeRange}
+                              handleTimeChange={handleTimeChange}
+                              fetchUrl={`${ESPrefix}/${clusterID}/index_metrics`}
+                              metricKey={metricKey}
+                              title={formatMessage({id: "cluster.metrics.index.axis." + metricKey + ".title"})}
+                              queryParams={queryParams}
+                              className={"metric-item"}
+                              timeout={timeout}
+                              refresh={refresh}
+                              handleTimeIntervalChange={handleTimeIntervalChange}
+                            />
+                          )
+                        )
                       }
                     </div>
                   </MetricContainer>

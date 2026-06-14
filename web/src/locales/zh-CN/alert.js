@@ -216,6 +216,9 @@ export default {
   "alert.rule.form.label.select_object": "选择告警对象",
   "alert.rule.form.label.filter_condition": "筛选条件",
   "alert.rule.form.label.time_field": "时间字段",
+  "alert.rule.form.label.ignore_time_filter": "忽略时间过滤",
+  "alert.rule.form.help.ignore_time_filter":
+    "针对非时序规则开启后，将不再按时间范围过滤。",
   //Configure alert objects 配置告警对象
   "alert.rule.form.title.configure_alert_object": "配置告警对象",
   "alert.rule.form.label.alert_metric": "告警指标",

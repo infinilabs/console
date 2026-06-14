@@ -69,10 +69,13 @@ const tailFormItemLayout = {
 const RuleForm = (props) => {
   const { submitLoading, clusterList = [] } = props;
   const editValue = props.value || {};
-  const { getFieldDecorator } = props.form;
+  const { getFieldDecorator, setFieldsValue } = props.form;
   const history = useHistory();
   const [recoveryEnabled, setRecoveryEnabled] = useState(
     editValue?.recovery_notification_config?.event_enabled || false
+  );
+  const [ignoreTimeFilter, setIgnoreTimeFilter] = useState(
+    Boolean(editValue?.resource?.ignore_time_filter)
   );
 
   const [objectFields, setObjectFields] = useState({});
@@ -617,6 +620,30 @@ const RuleForm = (props) => {
             <Col span={11} offset={2} style={{ paddingLeft: 22 }}>
               <Form.Item
                 label={formatMessage({
+                  id: "alert.rule.form.label.ignore_time_filter",
+                })}
+                extra={formatMessage({
+                  id: "alert.rule.form.help.ignore_time_filter",
+                })}
+              >
+                {getFieldDecorator("resource.ignore_time_filter", {
+                  valuePropName: "checked",
+                  initialValue: ignoreTimeFilter,
+                })(
+                  <Switch
+                    onChange={(checked) => {
+                      setIgnoreTimeFilter(checked);
+                      if (checked) {
+                        setFieldsValue({
+                          "resource.time_field": undefined,
+                        });
+                      }
+                    }}
+                  />
+                )}
+              </Form.Item>
+              <Form.Item
+                label={formatMessage({
                   id: "alert.rule.form.label.time_field",
                 })}
               >
@@ -624,12 +651,13 @@ const RuleForm = (props) => {
                   initialValue: editValue?.resource?.time_field,
                   rules: [
                     {
-                      required: true,
+                      required: !ignoreTimeFilter,
                       message: "Please select time field!",
                     },
                   ],
                 })(
                   <Select
+                    disabled={ignoreTimeFilter}
                     allowClear
                     showSearch
                     placeholder="Type to search time field"

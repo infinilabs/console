@@ -228,6 +228,9 @@ export default {
   "alert.rule.form.label.select_object": "Select objects",
   "alert.rule.form.label.filter_condition": "Filter query",
   "alert.rule.form.label.time_field": "Time field",
+  "alert.rule.form.label.ignore_time_filter": "Ignore time filter",
+  "alert.rule.form.help.ignore_time_filter":
+    "Enable for non-time-series rules to query without a time range.",
   //Configure alert objects 配置告警对象
   "alert.rule.form.title.configure_alert_object": "Configure alert objects",
   "alert.rule.form.label.alert_metric": "Metrics",

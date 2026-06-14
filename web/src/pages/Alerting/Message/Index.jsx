@@ -66,7 +66,11 @@ const isValidAlertTime = (value) => {
 };
 
 const getAlertDisplayStartTime = (record = {}) =>
-  isValidAlertTime(record?.trigger_at) ? record.trigger_at : record?.created;
+  isValidAlertTime(record?.trigger_at)
+    ? record.trigger_at
+    : record?.status === "alerting" && isValidAlertTime(record?.updated)
+    ? record.updated
+    : record?.created;
 
 const normalizeQueryTimeValue = (value, fallback = "auto", keys = []) => {
   if (typeof value === "string" || typeof value === "number") {

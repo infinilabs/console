@@ -578,9 +578,11 @@ func firstNonEmptyString(values ...string) string {
 func buildAlertMessageIncident(message *alerting.AlertMessage, alerts []alerting.Alert) alertMessageIncident {
 	incident := alertMessageIncident{}
 	for _, alertItem := range alerts {
-		if incident.TriggerEventID == "" && alertItem.State == alerting.AlertStateAlerting {
-			incident.TriggerEventID = alertItem.ID
-			incident.TriggerAt = alertItem.Created
+		if alertItem.State == alerting.AlertStateAlerting {
+			if incident.TriggerEventID == "" || alertItem.Created.After(incident.TriggerAt) {
+				incident.TriggerEventID = alertItem.ID
+				incident.TriggerAt = alertItem.Created
+			}
 		}
 		if message != nil && message.Status == alerting.MessageStateRecovered && getAlertDisplayState(&alertItem) == alerting.MessageStateRecovered {
 			incident.ResolveEventID = alertItem.ID

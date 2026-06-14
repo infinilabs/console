@@ -21,12 +21,14 @@ func TestGetAlertDisplayState(t *testing.T) {
 
 func TestBuildAlertMessageIncident(t *testing.T) {
 	start := time.Unix(100, 0)
+	nextTrigger := start.Add(2 * time.Minute)
 	resolve := start.Add(5 * time.Minute)
 	message := &alertmodel.AlertMessage{
 		Status: alertmodel.MessageStateRecovered,
 	}
 	alerts := []alertmodel.Alert{
 		{ID: "alert-1", State: alertmodel.AlertStateAlerting, Created: start},
+		{ID: "alert-1b", State: alertmodel.AlertStateAlerting, Created: nextTrigger},
 		{ID: "alert-2", State: alertmodel.AlertStateOK, Created: resolve},
 		{
 			ID:                   "alert-3",
@@ -38,8 +40,11 @@ func TestBuildAlertMessageIncident(t *testing.T) {
 	}
 
 	incident := buildAlertMessageIncident(message, alerts)
-	if incident.TriggerEventID != "alert-1" {
-		t.Fatalf("expected trigger alert-1, got %s", incident.TriggerEventID)
+	if incident.TriggerEventID != "alert-1b" {
+		t.Fatalf("expected trigger alert-1b, got %s", incident.TriggerEventID)
+	}
+	if !incident.TriggerAt.Equal(nextTrigger) {
+		t.Fatalf("expected trigger time %v, got %v", nextTrigger, incident.TriggerAt)
 	}
 	if incident.ResolveEventID != "alert-3" {
 		t.Fatalf("expected resolve alert-3, got %s", incident.ResolveEventID)

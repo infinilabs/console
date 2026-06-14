@@ -8,37 +8,15 @@ import { HealthStatusView } from "@/components/infini/health_status_view";
 import { formatUtcTimeToLocal } from "@/utils/utils";
 import { FieldFilterFacet } from "@/components/Overview/List/FieldFilterFacet";
 import "./index.scss";
-import request from "@/utils/request";
 
 export default (props) => {
   const { infoAction, id, parentLoading, info: prefetchedInfo, infoLoading } = props;
   const metadata = props.data._source?.metadata || {};
   const [info, setInfo] = useState(prefetchedInfo || {});
-  const [loading, setLoading] = useState(false)
-
-  const fetchListInfo = async (id) => {
-    if (!id) return
-    setLoading(true)
-    const res = await request(infoAction, {
-      method: "POST",
-      body: [id],
-      ignoreTimeout: true
-    }, false, false);
-    if (res) {
-      setInfo(res[id] || {});
-    }
-    setLoading(false)
-  };
 
   useEffect(() => {
-    if (prefetchedInfo) {
-      setInfo(prefetchedInfo);
-      return;
-    }
-    if (!parentLoading) {
-      fetchListInfo(id)
-    }
-  }, [id, parentLoading, prefetchedInfo, infoAction])
+    setInfo(prefetchedInfo || {});
+  }, [prefetchedInfo]);
 
   const summary = info?.summary || {};
   const metrics = info?.metrics || {};
@@ -110,7 +88,7 @@ export default (props) => {
   const healthStatus = metadata?.labels?.status;
 
   return (
-    <Spin spinning={!parentLoading && (loading || infoLoading)}>
+    <Spin spinning={infoLoading}>
       
     <div className="card-wrap">
       <div

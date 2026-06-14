@@ -741,11 +741,11 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-calavvp7h710d
     "bucket_size": "1m",
     "groups": [
       {
-        "field": "metadata.cluster_id",
+        "field": "metadata.labels.cluster_id",
         "limit": 50
       },
       {
-        "field": "metadata.index_name",
+        "field": "metadata.labels.index_name",
         "limit": 1000
       }
     ],
@@ -753,7 +753,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-calavvp7h710d
     "items": [
       {
         "name": "a",
-        "field": "metadata.index_name",
+        "field": "metadata.labels.index_name",
         "statistic": "count"
       }
     ],
@@ -761,7 +761,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-calavvp7h710d
     "bucket_label": {
       "enabled": false
     },
-    "expression": "count(metadata.index_name)"
+    "expression": "count(metadata.labels.index_name)"
   },
   "conditions": {
     "operator": "any",

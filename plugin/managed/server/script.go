@@ -481,7 +481,7 @@ func logAutoResolvedDownloadURL(product, downloadURL, defaultDownloadURL string)
 		log.Warnf("%s.setup.download_url is empty, defaulting to public release mirror: %s", product, console_common.MaskLogEndpoint(downloadURL))
 		return
 	}
-	log.Infof("%s.setup.download_url is empty, using Console self-hosted package path: %s", product, console_common.MaskLogEndpoint(downloadURL))
+	log.Debugf("%s.setup.download_url is empty, using Console self-hosted package path: %s", product, console_common.MaskLogEndpoint(downloadURL))
 }
 
 func resolveInstallDir(installDir, defaultInstallDir string) string {
@@ -903,6 +903,7 @@ func (h *APIHandler) getGatewayInstallScript(w http.ResponseWriter, req *http.Re
 		"api_security_password": localAPIPassword,
 		"service_type":          serviceType,
 		"service_name":          resolveGatewayServiceName(serviceType),
+		"install_dir":           resolveGatewayInstallDir(serviceType, ""),
 		"version":               installVersion,
 	})
 	if err != nil {

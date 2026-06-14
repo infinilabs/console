@@ -461,7 +461,7 @@ function main() {
   program_name=gateway
   service_name="{{service_name}}"
   location=${url_download:-$DEFAULT_DOWNLOAD_URL}
-  install_dir=${target_dir:-/opt/$program_name}
+  install_dir=${target_dir:-{{install_dir}}}
   latest_version=""
   if [[ -z "${version}" && -z "${DEFAULT_VERSION}" ]]; then
     latest_version=$(get_latest_version "$location")

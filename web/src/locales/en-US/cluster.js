@@ -76,7 +76,9 @@ export default {
   "cluster.manage.monitor_configs.tips.cluster_health": "Collects cluster health summary metrics (green/yellow/red).",
   "cluster.manage.monitor_configs.tips.cluster_stats": "Collects cluster-level statistics from _cluster/stats (nodes, shards, storage, etc.).",
   "cluster.manage.monitor_configs.node_stats": "Node stats",
+  "cluster.manage.monitor_configs.tips.node_stats": "Collects per-node statistics from _nodes/stats (CPU, memory, disk, thread pools, etc.).",
   "cluster.manage.monitor_configs.index_stats": "Index stats",
+  "cluster.manage.monitor_configs.tips.index_stats": "Collects per-index statistics from _stats (documents, size, segments, merges, etc.).",
   "cluster.manage.monitor_configs.index_health": "Index health",
   "cluster.manage.monitor_configs.shard_stats": "Shard stats",
   "cluster.manage.metadata_configs.health_check": "Health check",
@@ -88,7 +90,7 @@ export default {
   "cluster.manage.metadata_configs.tips.health_check":
     "Periodically checks cluster health/reachability and updates cluster availability status.",
   "cluster.manage.metadata_configs.tips.node_availability_check":
-    "Performs TCP checks against node addresses. Disable this when your cluster is reachable only through an HTTP proxy.",
+    "Performs TCP checks against node addresses. This requires direct TCP access to nodes and cannot work when cluster is reachable only through HTTP proxy.",
   "cluster.manage.metadata_configs.tips.metadata_refresh":
     "Periodically refreshes metadata such as nodes and index aliases.",
   "cluster.manage.metadata_configs.tips.cluster_settings_check":

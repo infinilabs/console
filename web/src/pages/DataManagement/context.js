@@ -272,6 +272,7 @@ const getSearchParams = (
   queryFrom,
   trackTotalHits,
   size = 20,
+  searchAfter,
 ) => {
   // const timeExp = calculateAutoTimeExpression(timefilter.getTime());
   const timeExp = getTimeBuckets(internal).getInterval(true).expression;
@@ -294,13 +295,16 @@ const getSearchParams = (
     timeExp.includes("y") ||
     timeExp.includes("M");
 
+  // Reduce buckets for large time ranges to improve performance
+  const bounds = timefilter.getBounds();
+  const rangeMs = bounds.max - bounds.min;
+  const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+  const bucketCount = rangeMs >= sevenDaysMs ? 80 : 120;
   const aggs = {
     counts: {
-      date_histogram: {
-        //calendar_interval:
-        [isCalendarInterval ? "calendar_interval" : "fixed_interval"]: timeExp,
+      auto_date_histogram: {
         field: indexPattern.timeFieldName,
-        min_doc_count: 1,
+        buckets: bucketCount,
         time_zone: getTimezone(),
       },
     },
@@ -309,21 +313,21 @@ const getSearchParams = (
     index: indexPattern.index || indexPattern.title,
     body: {
       query: getEsQuery(indexPattern),
-      from: queryFrom || 0,
       size: size,
-
-      highlight: {
-        pre_tags: ["@highlighted-field@"],
-        post_tags: ["@/highlighted-field@"],
-        fields: {"*": {}}
-      },
       sort: esSort, //
     },
   };
-  if (indexPattern.timeFieldName) {
+  // Use search_after for pagination, fall back to from for first page
+  if (searchAfter) {
+    esRequest.body["search_after"] = searchAfter;
+  } else {
+    esRequest.body["from"] = queryFrom || 0;
+  }
+  // Only include aggs on the first page
+  if (!searchAfter && indexPattern.timeFieldName) {
     esRequest.body["aggs"] = aggs;
   }
-  if (inputAggs) {
+  if (!searchAfter && inputAggs) {
     esRequest.body["aggs"] = inputAggs;
   }
   if (distinctParams?.field && distinctParams?.enabled) {
@@ -331,6 +335,9 @@ const getSearchParams = (
   }
   if (trackTotalHits) {
     esRequest.body["track_total_hits"] = trackTotalHits;
+  } else {
+    // Default to 10000 to avoid expensive full count on large indices
+    esRequest.body["track_total_hits"] = 10000;
   }
 
   return esRequest;

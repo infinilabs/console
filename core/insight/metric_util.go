@@ -203,11 +203,12 @@ func GenerateQuery(metric *Metric) (interface{}, error) {
 			dateHistogramAggName = "auto_date_histogram"
 			buckets := metric.Buckets
 			if buckets == 0 {
-				buckets = 30
+				buckets = 120
 			}
 			dateHistogramAgg = util.MapStr{
-				"field":   metric.TimeField,
-				"buckets": buckets,
+				"field":            metric.TimeField,
+				"buckets":          buckets,
+				"minimum_interval": "minute",
 			}
 		} else {
 			dateHistogramAggName = "date_histogram"

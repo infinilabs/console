@@ -1,10 +1,19 @@
 import DropdownList from "@/common/src/DropdownList";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { HealthStatusCircle } from "../infini/health_status_circle";
 import { formatMessage, getLocale } from "umi/locale";
 import { Icon } from "antd";
 import Link from "umi/link";
 import styles from "./index.less";
+import request from "@/utils/request";
+import { ESPrefix } from "@/services/common";
+
+function formatCount(count) {
+  if (count == null) return "";
+  if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
+  if (count >= 1000) return `${(count / 1000).toFixed(1)}K`;
+  return `${count}`;
+}
 
 export default (props) => {
     const t = (id, defaultMessage) => formatMessage({ id, defaultMessage });
@@ -15,6 +24,26 @@ export default (props) => {
     const [filters, setFilters] = useState({ type: ['view', 'index']})
     const [groups, setGroups] = useState([])
     const [showGroup, setShowGroup] = useState(false)
+    const [indexCounts, setIndexCounts] = useState({});
+
+    // Extract clusterID from URL path
+    useEffect(() => {
+      const match = window.location.hash.match(/\/elasticsearch\/([^/?]+)/);
+      if (match && match[1]) {
+        const clusterID = match[1];
+        request(`${ESPrefix}/${clusterID}/_cat/indices`, { method: "GET" })
+          .then((res) => {
+            if (res && !res.error) {
+              const counts = {};
+              Object.keys(res).forEach((key) => {
+                counts[key] = res[key].docs_count || 0;
+              });
+              setIndexCounts(counts);
+            }
+          })
+          .catch(() => {});
+      }
+    }, [indices]);
 
     const formatData = useMemo(() => {
       const formatViews = views?.map((item) => ({
@@ -69,12 +98,19 @@ export default (props) => {
           rowKey="id"
           data={formatData}
           renderItem={(item) => (
-            <>
-              <div style={{ marginRight: 4, display: 'inline-block'}}>
-                {item.type === 'view' ? <Icon type="snippets" /> : <Icon type="table" />}
-              </div>
-              {item.name}
-            </>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+              <span>
+                <span style={{ marginRight: 4, display: 'inline-block'}}>
+                  {item.type === 'view' ? <Icon type="snippets" /> : <Icon type="table" />}
+                </span>
+                {item.name}
+              </span>
+              {item.type !== 'view' && indexCounts[item.id] != null && (
+                <span style={{ color: indexCounts[item.id] === 0 ? '#999' : '#006BB4', fontSize: 12, marginLeft: 8 }}>
+                  {formatCount(indexCounts[item.id])}
+                </span>
+              )}
+            </div>
           )}
           renderLabel={(item) => item.name}
           renderEmptyList={() => {

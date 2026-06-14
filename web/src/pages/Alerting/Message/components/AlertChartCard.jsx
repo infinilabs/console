@@ -37,17 +37,6 @@ const safeParseJSON = (value) => {
   }
 };
 
-const formatHistogramInterval = (seconds) => {
-  if (seconds % 86400 === 0) return `${seconds / 86400}d`;
-  if (seconds % 3600 === 0) return `${seconds / 3600}h`;
-  if (seconds % 60 === 0) return `${seconds / 60}m`;
-  return `${seconds}s`;
-};
-
-const getHistogramInterval = (min, max) => {
-  return "auto";
-};
-
 const buildCopyRequest = (msgItem, ruleID, min, max) => {
   const queryDSL = safeParseJSON(msgItem?.condition_result?.query_result?.query);
   const objects =
@@ -74,8 +63,6 @@ const buildCopyRequest = (msgItem, ruleID, min, max) => {
     return field ? item.term[field].value !== "" : false;
   });
 
-  const interval = getHistogramInterval(min, max);
-
   return `GET .infini_alert-history/_search
 ${JSON.stringify(
     {
@@ -99,9 +86,9 @@ ${JSON.stringify(
                   },
                 },
               },
-              date_histogram: {
+              auto_date_histogram: {
                 field: "created",
-                interval,
+                buckets: 120,
               },
             },
           },

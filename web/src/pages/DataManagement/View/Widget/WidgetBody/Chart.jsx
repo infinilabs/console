@@ -119,7 +119,22 @@ export default (props) => {
         newRange = getZoomRange(zoom, range, isTimeSeries)
         rangeFilter = buildFilterRange(filter, time_field, newRange)
       }
-      const bucketSize = isTimeSeries ? getBucketSize(bucketSizeCache || bucket_size, newRange) : undefined
+      const rawBucketSize = bucketSizeCache || bucket_size;
+      const bucketSize = isTimeSeries
+        ? (rawBucketSize === 'auto' ? 'auto' : getBucketSize(rawBucketSize, newRange))
+        : undefined
+      // Dynamic bucket count for auto_date_histogram: 80 for >=7d, 120 otherwise
+      let autoBuckets;
+      if (bucketSize === 'auto' && newRange) {
+        try {
+          const bounds = calculateBounds(newRange, { forceNow: getForceNow() });
+          if (bounds && bounds.min && bounds.max) {
+            const rangeMs = bounds.max.valueOf() - bounds.min.valueOf();
+            const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+            autoBuckets = rangeMs >= sevenDaysMs ? 80 : 120;
+          }
+        } catch (e) { /* ignore */ }
+      }
       if (fetchParamsCache) {
         fetchParamsCache.current.bucketSize = bucketSize
       }
@@ -222,6 +237,7 @@ export default (props) => {
             sort: item.sort || [],
             formula: item.formula || 'a',
             bucket_size: bucketSize,
+            ...(autoBuckets ? { buckets: autoBuckets } : {}),
           }
         })
         const promises = bodys.map((item) => getWidgetData(item))
@@ -403,7 +419,10 @@ export default (props) => {
       const { id, title, bucket_size, series = [] } = record;
       const { type } = series[0] || {}
       const { range, bucketSizeCache } = currentParams.currentQueries;
-      const bucketSize = currentParams?.isTimeSeries ? getBucketSize(bucketSizeCache || bucket_size, range) : undefined
+      const rawBucketSizeForRender = bucketSizeCache || bucket_size;
+      const bucketSize = currentParams?.isTimeSeries
+        ? (rawBucketSizeForRender === 'auto' ? 'auto' : getBucketSize(rawBucketSizeForRender, range))
+        : undefined
       const widget = WIDGETS.find((w) => w.type === type);
       let isGroup = false;
       if (result.data?.[0]?.group) {

@@ -91,6 +91,22 @@ const SidebarMemoized = React.memo(DiscoverSidebar);
 const SHARE_STATE_VERSION = 1;
 const MANUAL_REFRESH_DEBOUNCE_MS = 800;
 
+// Parse the interval string returned by auto_date_histogram (e.g. "1h", "30m", "1d")
+function parseAutoInterval(intervalStr, buckets) {
+  const match = intervalStr.match(/^(\d+)([smhdwMqy])$/);
+  if (!match) {
+    return buckets.getInterval(true);
+  }
+  const value = parseInt(match[1], 10);
+  const unitMap = { s: 'second', m: 'minute', h: 'hour', d: 'day', w: 'week', M: 'month', q: 'quarter', y: 'year' };
+  const unit = match[2];
+  return {
+    esValue: value,
+    esUnit: unit,
+    description: `${value} ${unitMap[unit] || unit}${value > 1 ? 's' : ''}`,
+  };
+}
+
 const encodeShareState = (value) => {
   try {
     return btoa(unescape(encodeURIComponent(JSON.stringify(value))))
@@ -278,7 +294,7 @@ const Discover = (props) => {
     "tth",
     BooleanParam
   );
-  const [timeout, setTimeout] = useState(localStorage.getItem('search_time_out') || '60s');
+  const [searchTimeout, setSearchTimeout] = useState(localStorage.getItem('search_time_out') || '60s');
   const [whetherToSample, setWhetherToSample] = useQueryParam(
     "wts",
     BooleanParam
@@ -409,6 +425,7 @@ const Discover = (props) => {
   const scrollableDesktop = useRef(null);
 
   const [queryFrom, setQueryFrom] = React.useState(0);
+  const searchAfterRef = useRef(null);
 
   const columns = state.columns;
   const traceParams = useRef({});
@@ -459,6 +476,7 @@ const Discover = (props) => {
       }
       if (!_payload?.isScrollLoad) {
         setQueryFrom(0);
+        searchAfterRef.current = null;
       }
 
       const params = getSearchParams(
@@ -468,7 +486,9 @@ const Discover = (props) => {
         _payload?.aggs || aggs,
         distinctParams || {},
         _payload?.isScrollLoad ? queryFrom : 0,
-        trackTotalHits
+        trackTotalHits,
+        20,
+        _payload?.isScrollLoad ? searchAfterRef.current : null,
       );
 
       const filters = cloneDeep(params?.body?.query?.bool?.filter || [])
@@ -499,6 +519,11 @@ const Discover = (props) => {
         };
       }
       res.hits.hits = res.hits.hits || [];
+      // Track search_after from last hit's sort for next page
+      if (res.hits.hits.length > 0) {
+        const lastHit = res.hits.hits[res.hits.hits.length - 1];
+        searchAfterRef.current = lastHit.sort || null;
+      }
       setSearchRes(res);
       const { query } = queryStringManager.getQuery();
       if (query != queryParam) {
@@ -644,7 +669,11 @@ const Discover = (props) => {
       return { histogramData: null, timeChartProps: null };
     }
     const buckets = getTimeBuckets(state.interval);
-    const interval = buckets.getInterval(true);
+    const aggregations = searchRes.aggregations;
+    const autoInterval = aggregations["counts"].interval;
+    const interval = autoInterval
+      ? parseAutoInterval(autoInterval, buckets)
+      : buckets.getInterval(true);
     const chartTable = {
       columns: [
         {
@@ -657,11 +686,38 @@ const Discover = (props) => {
       ],
       rows: [],
     };
-    let aggregations = searchRes.aggregations;
 
-    aggregations["counts"].buckets.forEach((bk) => {
-      chartTable.rows.push(bk);
-    });
+    const responseBuckets = aggregations["counts"].buckets || [];
+    const bounds = buckets.getBounds();
+    const intervalMs = moment.duration(interval.esValue, interval.esUnit).asMilliseconds();
+
+    const startMs = bounds.min ? bounds.min.valueOf() : 0;
+    const endMs = bounds.max ? bounds.max.valueOf() : 0;
+    const maxBuckets = 200;
+    const canFillGaps = intervalMs > 0 && startMs > 0 && endMs > startMs
+      && responseBuckets.length > 0
+      && ((endMs - startMs) / intervalMs) <= maxBuckets;
+
+    if (canFillGaps) {
+      // Use the first bucket key as the aligned start, then fill gaps
+      const firstKey = responseBuckets[0].key;
+      // Align start to interval boundary based on first bucket key
+      const alignedStart = firstKey - Math.ceil((firstKey - startMs) / intervalMs) * intervalMs;
+      const bucketMap = new Map();
+      responseBuckets.forEach((bk) => {
+        bucketMap.set(bk.key, bk.doc_count);
+      });
+      for (let t = alignedStart; t < endMs; t += intervalMs) {
+        chartTable.rows.push({
+          key: t,
+          doc_count: bucketMap.has(t) ? bucketMap.get(t) : 0,
+        });
+      }
+    } else {
+      responseBuckets.forEach((bk) => {
+        chartTable.rows.push(bk);
+      });
+    }
 
     //console.log(interval, moment.duration('1', 'd'))
     const dimensions = {
@@ -985,7 +1041,9 @@ const Discover = (props) => {
     }
   }
   const took = searchRes.took || 1;
-  const hits = searchRes.hits.total?.value || searchRes.hits.total;
+  const hitsTotal = searchRes.hits.total;
+  const hits = hitsTotal?.value ?? hitsTotal ?? 0;
+  const hitsRelation = hitsTotal?.relation || "eq";
   const resetQuery = () => {};
   const showDatePicker = indexPattern.timeFieldName != "";
 
@@ -1415,12 +1473,13 @@ const Discover = (props) => {
             searchInfo={{
               took,
               total: hits,
+              totalRelation: hitsRelation,
               ...timeChartProps,
             }}
             selectedQueriesId={selectedQueriesId}
             searchConfig={{
               trackTotalHits,
-              timeout: timeout,
+              timeout: searchTimeout,
               whetherToSample,
               sampleSize,
               topNumber,
@@ -1432,7 +1491,7 @@ const Discover = (props) => {
                   setTrackTotalHits(value);
                   break;
                 case 'time_out':
-                  setTimeout(value)
+                  setSearchTimeout(value)
                   localStorage.setItem('search_time_out', value)
                   break;
                 case 'whether_to_sample':
@@ -1535,6 +1594,7 @@ const Discover = (props) => {
                       //unmappedFieldsConfig={unmappedFieldsConfig}
                       //useNewFieldsApi={useNewFieldsApi}
                       indices={props.indices}
+                      clusterID={props.selectedCluster?.id}
                       distinctParams={distinctParams}
                       onDistinctParamsChange={onDistinctParamsChange}
                       total={hits}

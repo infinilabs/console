@@ -79,6 +79,10 @@ const defaultAgentDownloadURL = "https://release.infinilabs.com/agent/stable"
 const defaultGatewayDownloadURL = "https://release.infinilabs.com/gateway/stable"
 const defaultAgentInstallDir = "/infini/agent"
 const defaultGatewayInstallDir = "/infini/gateway"
+const defaultRelayGatewayInstallDir = "/infini/gateway-relay"
+const defaultMigrationGatewayInstallDir = "/infini/gateway-migration"
+const defaultRelayGatewayServiceName = "gateway-relay"
+const defaultMigrationGatewayServiceName = "gateway-migration"
 const defaultManagedGatewayAPIUsername = "managed_gateway"
 const gatewayTypeRelay = "relay"
 const gatewayTypeMigration = "migration"
@@ -127,6 +131,33 @@ func normalizeGatewayType(gatewayType string) string {
 		return gatewayTypeMigration
 	default:
 		return gatewayTypeMigration
+	}
+}
+
+func resolveGatewayInstallDir(serviceType, configuredInstallDir string) string {
+	configuredInstallDir = strings.TrimSpace(configuredInstallDir)
+	if configuredInstallDir != "" {
+		return configuredInstallDir
+	}
+
+	switch normalizeGatewayType(serviceType) {
+	case gatewayTypeRelay:
+		return defaultRelayGatewayInstallDir
+	case gatewayTypeMigration:
+		return defaultMigrationGatewayInstallDir
+	default:
+		return defaultGatewayInstallDir
+	}
+}
+
+func resolveGatewayServiceName(serviceType string) string {
+	switch normalizeGatewayType(serviceType) {
+	case gatewayTypeRelay:
+		return defaultRelayGatewayServiceName
+	case gatewayTypeMigration:
+		return defaultMigrationGatewayServiceName
+	default:
+		return defaultMigrationGatewayServiceName
 	}
 }
 
@@ -294,7 +325,8 @@ func (h *APIHandler) generateGatewayInstallCommand(w http.ResponseWriter, req *h
 		return
 	}
 
-	location := resolveInstallDir(gwCfg.Setup.InstallDir, defaultGatewayInstallDir)
+	serviceType := normalizeGatewayType(payload.ServiceType)
+	location := resolveGatewayInstallDir(serviceType, gwCfg.Setup.InstallDir)
 	tokenStr := util.GetUUID()
 	t := &Token{
 		CreatedAt: time.Now(),
@@ -305,7 +337,6 @@ func (h *APIHandler) generateGatewayInstallCommand(w http.ResponseWriter, req *h
 
 	consoleEndpoint := resolveConsoleEndpoint(req, gwCfg.Setup.ConsoleEndpoint)
 	installVersion := strings.TrimSpace(gwCfg.Setup.Version)
-	serviceType := normalizeGatewayType(payload.ServiceType)
 	endpoint, err := buildInstallScriptURLForAPI(consoleEndpoint, getGatewayInstallScriptAPI, tokenStr, installVersion)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -871,6 +902,7 @@ func (h *APIHandler) getGatewayInstallScript(w http.ResponseWriter, req *http.Re
 		"api_security_username": defaultManagedGatewayAPIUsername,
 		"api_security_password": localAPIPassword,
 		"service_type":          serviceType,
+		"service_name":          resolveGatewayServiceName(serviceType),
 		"version":               installVersion,
 	})
 	if err != nil {

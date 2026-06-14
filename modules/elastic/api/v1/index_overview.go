@@ -58,9 +58,9 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, ctx context.Context, 
 		orm.Eq("metadata.name", "index_stats"),
 		orm.In("metadata.labels.index_id", indexIDs),
 	)
-	//q1.Collapse("metadata.labels.index_id")
+	q1.Collapse("metadata.labels.index_id")
 	q1.AddSort("timestamp", orm.DESC)
-	q1.Size = 1
+	q1.Size = len(indexIDs)
 
 	err, results := orm.Search(&event.Event{}, &q1)
 	if err != nil {

@@ -635,6 +635,12 @@ const Index = (props) => {
       const minMoment = moment(minUpdated);
       const maxMoment = moment(maxUpdated);
       if (minMoment.isValid() && maxMoment.isValid()) {
+        if (maxMoment.valueOf() <= minMoment.valueOf()) {
+          return {
+            from: maxMoment.clone().subtract(15, "minutes").toISOString(),
+            to: maxMoment.toISOString(),
+          };
+        }
         return {
           from: minUpdated,
           to: maxUpdated,

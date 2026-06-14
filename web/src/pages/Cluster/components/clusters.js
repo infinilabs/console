@@ -113,25 +113,17 @@ const Clusters = (props) => {
     [queryParams, param?.filters, param?.sort]
   );
 
-  const fetchFilterAggs = async () => {
-    const res = await request(`${ESPrefix}/cluster/_search`, {
-      method: "POST",
-      body: {
-        size: 0,
-        aggs: aggsParams,
-      },
-    });
-    if (res?.aggregations) {
-      const fts = getSearchFacets(res, Object.keys(facetLabels));
-      if (fts.length > 0) {
-        setFacets(fts);
-      }
-    }
-  };
-
   const hits = value?.hits?.hits || [];
   const [infos, setInfos] = useState({});
   const [facets, setFacets] = useState([]);
+  React.useEffect(() => {
+    if (!value?.aggregations) {
+      return;
+    }
+    const fts = getSearchFacets(value, Object.keys(facetLabels));
+    setFacets(fts || []);
+  }, [value?.aggregations]);
+
   React.useEffect(() => {
     if (hits?.length == 0) {
       return;
@@ -160,8 +152,6 @@ const Clusters = (props) => {
     if (!param?.filters) {
       setParam({ ...param, filters: initialParams.filters });
     }
-
-    fetchFilterAggs();
   }, []);
 
   const hitsTotal = value?.hits?.total?.value || 0;

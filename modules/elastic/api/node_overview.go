@@ -199,8 +199,6 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 		h.WriteJSON(w, util.MapStr{}, http.StatusOK)
 		return
 	}
-	//only query one node info for fast response
-	nodeIDs = nodeIDs[0:1]
 	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
 	du, err := time.ParseDuration(timeout)
 	if err != nil {
@@ -239,8 +237,8 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 						},
 					},
 					{
-						"term": util.MapStr{
-							"metadata.labels.node_id": nodeIDs[0],
+						"terms": util.MapStr{
+							"metadata.labels.node_id": nodeIDs,
 						},
 					},
 				},
@@ -365,8 +363,8 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 					},
 				},
 				{
-					"term": util.MapStr{
-						"metadata.labels.node_id": nodeIDs[0],
+					"terms": util.MapStr{
+						"metadata.labels.node_id": nodeIDs,
 					},
 				},
 			},

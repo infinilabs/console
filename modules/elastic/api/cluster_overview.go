@@ -54,9 +54,6 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 		h.WriteJSON(w, util.MapStr{}, http.StatusOK)
 		return
 	}
-	//only query the first cluster info
-	clusterIDs = clusterIDs[0:1]
-
 	cids := make([]interface{}, 0, len(clusterIDs))
 	for _, clusterID := range clusterIDs {
 		cids = append(cids, clusterID)
@@ -68,7 +65,7 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 	q1.Conds = orm.And(
 		orm.Eq("metadata.category", "elasticsearch"),
 		orm.Eq("metadata.name", "cluster_stats"),
-		orm.Eq("metadata.labels.cluster_id", cids[0]),
+		orm.In("metadata.labels.cluster_id", cids),
 	)
 	q1.Collapse("metadata.labels.cluster_id")
 	q1.AddSort("timestamp", orm.DESC)
@@ -178,8 +175,8 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 		"bool": util.MapStr{
 			"must": []util.MapStr{
 				{
-					"term": util.MapStr{
-						"metadata.labels.cluster_uuid": clusterUUIDs[0],
+					"terms": util.MapStr{
+						"metadata.labels.cluster_uuid": clusterUUIDs,
 					},
 				},
 				{

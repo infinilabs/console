@@ -1,4 +1,4 @@
-import { Table, Button, Divider, Tag, Icon, Tooltip, message } from "antd";
+import { Table, Button, Divider, Tag, Icon, Tooltip, message, Empty } from "antd";
 import {
   Axis,
   Chart,
@@ -52,6 +52,12 @@ const RuleRecordChart = ({ ruleID, timeRange, conditions, clusterID }) => {
 
   const [metricData, setMetricData] = useState({});
   const [latestRequest, setLatestRequest] = useState("");
+  const hasMetricData = useMemo(() => {
+    if (!Array.isArray(metricData?.lines)) {
+      return false;
+    }
+    return metricData.lines.some((line) => Array.isArray(line?.data) && line.data.length > 0);
+  }, [metricData]);
 
   const [lineAnnotations] = useMemo(() => {
     //LineAnnotation
@@ -133,6 +139,21 @@ const RuleRecordChart = ({ ruleID, timeRange, conditions, clusterID }) => {
       setCustomLabels(res.labels)
     }
   };
+
+  if (!hasMetricData) {
+    return (
+      <div
+        className={metricsStyles.vizChartContainer}
+        style={{ border: "none", margin: 0, flex: "1 1 100%" }}
+      >
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description="暂无数据"
+          style={{ padding: 0 }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div

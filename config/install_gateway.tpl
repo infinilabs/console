@@ -111,7 +111,11 @@ function check_dir() {
   fi
 
   if [[ "$(ls -A ${install_dir})" ]]; then
-    echo "Error: The installation directory ${install_dir} should be clean." >&2; exit 1;
+    echo "[gateway] found existing files in ${install_dir}, cleaning up"
+    if [[ "${install_dir}" == "/" ]]; then
+      echo "Error: refusing to clean root directory /" >&2; exit 1;
+    fi
+    find "${install_dir}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
   fi
 }
 
@@ -405,15 +409,18 @@ function install_api_security_credentials() {
 
 function uninstall_service() {
   gateway_svc=${install_dir}/${program_name}-${file_ext%%.*}
+  if [[ ! -f "$gateway_svc" ]]; then
+    return
+  fi
   chmod 755 $gateway_svc
 
-  macos_svc=/Library/LaunchDaemons/gateway.plist
-  linux_svc=/etc/systemd/system/gateway.service
+  macos_svc=/Library/LaunchDaemons/${service_name}.plist
+  linux_svc=/etc/systemd/system/${service_name}.service
 
   if [[ -f "$linux_svc" || -f "$macos_svc" ]]; then
-    echo "[gateway] waiting service stop & uninstall for exist gateway"
-    (cd "${install_dir}" && $gateway_svc -service stop &>/dev/null)
-    (cd "${install_dir}" && $gateway_svc -service uninstall &>/dev/null)
+    echo "[gateway] waiting service stop & uninstall for exist ${service_name}"
+    (cd "${install_dir}" && SERVICE_NAME="${service_name}" $gateway_svc -service stop &>/dev/null || true)
+    (cd "${install_dir}" && SERVICE_NAME="${service_name}" $gateway_svc -service uninstall &>/dev/null || true)
   fi
 }
 
@@ -421,11 +428,11 @@ function install_service() {
   gateway_svc=${install_dir}/${program_name}-${file_ext%%.*}
   chmod 755 $gateway_svc
   echo "[gateway] waiting service install & start"
-  if ! (cd "${install_dir}" && $gateway_svc -service install &>/dev/null); then
+  if ! (cd "${install_dir}" && SERVICE_NAME="${service_name}" $gateway_svc -service install &>/dev/null); then
     echo "[gateway] failed to install service" >&2
     exit 1
   fi
-  if ! (cd "${install_dir}" && $gateway_svc -service start &>/dev/null); then
+  if ! (cd "${install_dir}" && SERVICE_NAME="${service_name}" $gateway_svc -service start &>/dev/null); then
     echo "[gateway] failed to start service" >&2
     exit 1
   fi
@@ -452,6 +459,7 @@ function main() {
   done
 
   program_name=gateway
+  service_name="{{service_name}}"
   location=${url_download:-$DEFAULT_DOWNLOAD_URL}
   install_dir=${target_dir:-/opt/$program_name}
   latest_version=""
@@ -460,22 +468,27 @@ function main() {
   fi
   version=${version:-${DEFAULT_VERSION:-$latest_version}}
   file_ext=""
+  if [[ -z "${service_name}" ]]; then
+    service_name="${program_name}"
+  fi
 
   if [[ -z "${version}" ]]; then
     echo "Error: Could not obtain the latest version number. Please check the network and try again.">&2; exit 1;
   else
-    echo "Name: [${program_name}], Version: [${version}], Path: [${install_dir}]"
+    echo "Name: [${program_name}], Service: [${service_name}], Version: [${version}], Path: [${install_dir}]"
   fi
 
-  check_dir
   check_platform
+  if [[ "$no_service" != "true" ]]; then
+    uninstall_service
+  fi
+  check_dir
   install_binary
   install_certs
   install_config
   install_manager_token
   install_api_security_credentials
   if [[ "$no_service" != "true" ]]; then
-    uninstall_service
     install_service
   else
     print_no_service_notice

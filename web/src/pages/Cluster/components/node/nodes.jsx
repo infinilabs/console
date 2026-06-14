@@ -139,29 +139,6 @@ const Nodes = (props) => {
     setParam({ ...param, ...queryParams });
   }, [queryParams]);
 
-  const fetchFilterAggs = async () => {
-    const res = await request(`${ESPrefix}/node/_search`, {
-      method: "POST",
-      body: {
-        size: 0,
-        aggs: aggsParams,
-      },
-    });
-    if (res?.aggregations) {
-      const fts = getSearchFacets(res, Object.keys(facetLabels));
-      const clusterFts = getSearchFacets(res, ["metadata.cluster_name"]);
-      if (fts.length > 0 || clusterFts.length > 0) {
-        dispatch({
-          type: "setFacets",
-          value: {
-            facets: fts,
-            clusterFacets: clusterFts,
-          },
-        });
-      }
-    }
-  };
-
   const { loading, error, value } = useFetch(
     `${ESPrefix}/node/_search`,
     {
@@ -190,6 +167,21 @@ const Nodes = (props) => {
 
   const hits = value?.hits?.hits || [];
   const hitsTotal = value?.hits?.total?.value || 0;
+  React.useEffect(() => {
+    if (!value?.aggregations) {
+      return;
+    }
+    const fts = getSearchFacets(value, Object.keys(facetLabels));
+    const clusterFts = getSearchFacets(value, ["metadata.cluster_name"]);
+    dispatch({
+      type: "setFacets",
+      value: {
+        facets: fts || [],
+        clusterFacets: clusterFts || [],
+      },
+    });
+  }, [value?.aggregations]);
+
   // const [infos, setInfos] = useState({});
   // const [facets, setFacets] = useState([]);
   React.useEffect(() => {
@@ -220,7 +212,6 @@ const Nodes = (props) => {
     if (!param?.filters) {
       setParam({ ...param, filters: initialParams.filters });
     }
-    fetchFilterAggs();
   }, []);
 
   const [itemDetail, setItemDetail] = React.useState({});

@@ -312,7 +312,6 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, req *http.Request, ps
 		newIndexIDs       []interface{}
 		clusterIndexNames = map[string][]string{}
 	)
-	indexID := indexIDs[0]
 	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
 	du, err := time.ParseDuration(timeout)
 	if err != nil {
@@ -326,21 +325,26 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, req *http.Request, ps
 		firstClusterID string
 		firstIndexName string
 	)
-	if v, ok := indexID.(string); ok {
+	for i, indexID := range indexIDs {
+		v, ok := indexID.(string)
+		if !ok {
+			h.WriteError(w, fmt.Sprintf("invalid index_id: %v", indexID), http.StatusInternalServerError)
+			return
+		}
 		parts := strings.Split(v, ":")
 		if len(parts) != 2 {
 			h.WriteError(w, fmt.Sprintf("invalid index_id: %s", indexID), http.StatusInternalServerError)
 			return
 		}
-		firstClusterID, firstIndexName = parts[0], parts[1]
-		if GetMonitorState(firstClusterID) == elastic.ModeAgentless {
-			h.APIHandler.FetchIndexInfo(w, ctx, indexIDs)
-			return
+		clusterID, indexName := parts[0], parts[1]
+		if i == 0 {
+			firstClusterID, firstIndexName = clusterID, indexName
+			if GetMonitorState(firstClusterID) == elastic.ModeAgentless {
+				h.APIHandler.FetchIndexInfo(w, ctx, indexIDs)
+				return
+			}
 		}
-		clusterIndexNames[firstClusterID] = append(clusterIndexNames[firstClusterID], firstIndexName)
-	} else {
-		h.WriteError(w, fmt.Sprintf("invalid index_id: %v", indexID), http.StatusInternalServerError)
-		return
+		clusterIndexNames[clusterID] = append(clusterIndexNames[clusterID], indexName)
 	}
 	for clusterID, indexNames := range clusterIndexNames {
 		clusterUUID, err := adapter.GetClusterUUID(clusterID)
@@ -402,6 +406,84 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, req *http.Request, ps
 					indexInfo.StoreInBytes += int64(storeSize)
 					if primary == true {
 						indexInfo.PriStoreInBytes += int64(storeSize)
+					}
+				}
+				missingIndexIDs := make([]interface{}, 0)
+				for _, idx := range newIndexIDs {
+					if idxStr, ok := idx.(string); ok {
+						if _, exists := summaryMap[idxStr]; !exists {
+							missingIndexIDs = append(missingIndexIDs, idxStr)
+						}
+					}
+				}
+				if len(missingIndexIDs) > 0 {
+					q2 := orm.Query{WildcardIndex: true}
+					q2.Conds = orm.And(
+						orm.Eq("metadata.category", "elasticsearch"),
+						orm.Eq("metadata.name", "index_stats"),
+						orm.In("metadata.labels.index_id", missingIndexIDs),
+					)
+					q2.Collapse("metadata.labels.index_id")
+					q2.AddSort("timestamp", orm.DESC)
+					q2.Size = len(missingIndexIDs)
+					err, indexResults := orm.Search(&event.Event{}, &q2)
+					if err != nil {
+						h.WriteJSON(w, util.MapStr{
+							"error": err.Error(),
+						}, http.StatusInternalServerError)
+						return
+					}
+					for _, v := range indexResults.Result {
+						result, ok := v.(map[string]interface{})
+						if !ok {
+							continue
+						}
+						indexIDVal, ok := util.GetMapValueByKeys([]string{"metadata", "labels", "index_id"}, result)
+						if !ok {
+							continue
+						}
+						indexIDStr, ok := indexIDVal.(string)
+						if !ok {
+							continue
+						}
+						if _, exists := summaryMap[indexIDStr]; !exists {
+							summaryMap[indexIDStr] = &ShardsSummary{}
+						}
+						summary := summaryMap[indexIDStr]
+						if docs, ok := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "index_stats", "total", "docs"}, result); ok {
+							if docsM, ok := docs.(map[string]interface{}); ok {
+								if count, ok := docsM["count"].(float64); ok {
+									summary.DocsCount = int64(count)
+								}
+								if deleted, ok := docsM["deleted"].(float64); ok {
+									summary.DocsDeleted = int64(deleted)
+								}
+							}
+						}
+						if indexInfo, ok := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "index_stats", "index_info"}, result); ok {
+							if infoM, ok := indexInfo.(map[string]interface{}); ok {
+								if idxName, ok := infoM["index"].(string); ok {
+									summary.Index = idxName
+								}
+								if shards, ok := infoM["shards"].(float64); ok {
+									summary.Shards = int(shards)
+								}
+								if replicas, ok := infoM["replicas"].(float64); ok {
+									summary.Replicas = int(replicas)
+								}
+								if storeSize, ok := infoM["store_size"].(string); ok {
+									if storeInBytes, err := util.ToBytes(storeSize); err == nil {
+										summary.StoreInBytes = int64(storeInBytes)
+									}
+								}
+								if priStoreSize, ok := infoM["pri_store_size"].(string); ok {
+									if priStoreInBytes, err := util.ToBytes(priStoreSize); err == nil {
+										summary.PriStoreInBytes = int64(priStoreInBytes)
+									}
+								}
+							}
+						}
+						summary.Timestamp = result["timestamp"]
 					}
 				}
 				if primary == true {

@@ -271,6 +271,27 @@ func TestResolveInstallDirHonorsConfiguredValue(t *testing.T) {
 	}
 }
 
+func TestResolveGatewayInstallDirUsesServiceDefaults(t *testing.T) {
+	if got := resolveGatewayInstallDir(gatewayTypeRelay, ""); got != defaultRelayGatewayInstallDir {
+		t.Fatalf("expected %q, got %q", defaultRelayGatewayInstallDir, got)
+	}
+	if got := resolveGatewayInstallDir(gatewayTypeMigration, ""); got != defaultMigrationGatewayInstallDir {
+		t.Fatalf("expected %q, got %q", defaultMigrationGatewayInstallDir, got)
+	}
+	if got := resolveGatewayInstallDir(gatewayTypeRelay, "/srv/custom-gateway"); got != "/srv/custom-gateway" {
+		t.Fatalf("expected %q, got %q", "/srv/custom-gateway", got)
+	}
+}
+
+func TestResolveGatewayServiceNameUsesServiceType(t *testing.T) {
+	if got := resolveGatewayServiceName(gatewayTypeRelay); got != defaultRelayGatewayServiceName {
+		t.Fatalf("expected %q, got %q", defaultRelayGatewayServiceName, got)
+	}
+	if got := resolveGatewayServiceName(gatewayTypeMigration); got != defaultMigrationGatewayServiceName {
+		t.Fatalf("expected %q, got %q", defaultMigrationGatewayServiceName, got)
+	}
+}
+
 func TestFormatBuildVersion(t *testing.T) {
 	if got := formatBuildVersion("1.2.3", "456"); got != "1.2.3-456" {
 		t.Fatalf("expected combined build version, got %q", got)
@@ -311,6 +332,7 @@ func TestGatewayInstallTemplateBootstrapsManagedConfig(t *testing.T) {
 		"{{api_security_username}}", "managed_gateway",
 		"{{api_security_password}}", "LOCAL_API_PASSWORD",
 		"{{service_type}}", "relay",
+		"{{service_name}}", "gateway-relay",
 	).Replace(string(content))
 
 	expectedSnippets := []string{
@@ -322,7 +344,7 @@ func TestGatewayInstallTemplateBootstrapsManagedConfig(t *testing.T) {
 		`cat <<EOF > ${install_dir}/gateway.yml`,
 		`access_log_enabled: false`,
 		`elastic:`,
-		`skip_init_metadata_on_start: true`,
+		`skip_init_metadata_on_start: false`,
 		`metadata_refresh:`,
 		`health_check:`,
 		`availability_check:`,
@@ -345,12 +367,13 @@ func TestGatewayInstallTemplateBootstrapsManagedConfig(t *testing.T) {
 		`keystore add "CONFIGS_MANAGER_ACCESS_TOKEN"`,
 		`keystore add "API_SECURITY_USERNAME"`,
 		`keystore add "API_SECURITY_PASSWORD"`,
-		`macos_svc=/Library/LaunchDaemons/gateway.plist`,
-		`linux_svc=/etc/systemd/system/gateway.service`,
+		`service_name="gateway-relay"`,
+		`macos_svc=/Library/LaunchDaemons/${service_name}.plist`,
+		`linux_svc=/etc/systemd/system/${service_name}.service`,
+		`SERVICE_NAME="${service_name}" $gateway_svc -service install`,
+		`SERVICE_NAME="${service_name}" $gateway_svc -service start`,
 		`--no-service) no_service="true"; shift ;;`,
 		`if [[ "$no_service" != "true" ]]; then`,
-		`(cd "${install_dir}" && $gateway_svc -service install &>/dev/null)`,
-		`(cd "${install_dir}" && $gateway_svc -service start &>/dev/null)`,
 		`echo "[gateway] skip service install because --no-service is enabled"`,
 		`./$(basename "${gateway_svc}") -config gateway.yml`,
 		`Congratulations, gateway install success!`,

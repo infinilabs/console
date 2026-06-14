@@ -1,4 +1,4 @@
-import { Table, Button, Divider, Tag, Icon } from "antd";
+import { Table, Button, Divider, Tag, Icon, Empty } from "antd";
 import {
   Axis,
   Chart,
@@ -46,6 +46,12 @@ const RuleMetricChart = ({ conditions, values }) => {
   });
 
   const [metricData, setMetricData] = useState({});
+  const hasMetricData = useMemo(() => {
+    if (!Array.isArray(metricData?.lines)) {
+      return false;
+    }
+    return metricData.lines.some((line) => Array.isArray(line?.data) && line.data.length > 0);
+  }, [metricData]);
 
   const [lineAnnotations] = useMemo(() => {
     //LineAnnotation
@@ -119,6 +125,21 @@ const RuleMetricChart = ({ conditions, values }) => {
   }, [values, timeRange]);
   let disableHeaderFormat = false;
   let headerUnit = "";
+
+  if (!hasMetricData) {
+    return (
+      <div
+        className={metricsStyles.vizChartContainer}
+        style={{ border: "none", margin: 0, flex: "1 1 100%" }}
+      >
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description="暂无数据"
+          style={{ padding: 0 }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div

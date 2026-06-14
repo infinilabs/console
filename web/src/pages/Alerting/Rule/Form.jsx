@@ -488,7 +488,7 @@ const RuleForm = (props) => {
           >
             {props.clusterList.length > 0 ? (
               <ClusterSelect 
-                width={300}
+                width={400}
                 dropdownWidth={400}
                 selectedCluster={selectedCluster} 
                 onChange={(item) => {

@@ -30,9 +30,10 @@ export default (props) => {
           display: "flex",
           flexDirection: "column",
           height: "100%",
+          minHeight: 0,
         }}
       >
-        <div style={{ padding: 24, flex: 1, overflow: "visible" }}>{children}</div>
+        <div style={{ padding: 24, flex: 1, minHeight: 0, overflow: "auto" }}>{children}</div>
         <div
           style={{
             flex: "none",

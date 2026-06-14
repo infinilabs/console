@@ -210,7 +210,7 @@ export default Form.create()((props) => {
             rules: [
               {
                 required: true,
-                message: "Please select file",
+                message: formatMessage({ id: "alert.import.select_file" }),
               },
             ],
           })(
@@ -224,7 +224,7 @@ export default Form.create()((props) => {
         </Form.Item>
         {data && (
           <Editor
-            height={showRuleExample ? "calc(100vh - 420px)" : "calc(100vh - 110px - 70px - 48px)"}
+            height={showRuleExample ? "50vh" : "55vh"}
             language="json"
             theme="light"
             value={data}

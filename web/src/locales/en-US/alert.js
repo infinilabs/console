@@ -218,6 +218,7 @@ export default {
   "alert.rule.table.columnns.last_notification_time": "Last notification",
   "alert.import.submit.success": "Imported successfully",
   "alert.import.submit.failed": "Import failed",
+  "alert.import.select_file": "Please select file",
   "alert.import.upload.success": "File uploaded successfully",
   "alert.import.upload.failed": "File upload failed",
   "alert.import.upload.invalid_json": "Invalid JSON file",

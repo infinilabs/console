@@ -206,6 +206,7 @@ export default {
   "alert.rule.table.columnns.last_notification_time": "最近告警",
   "alert.import.submit.success": "导入成功",
   "alert.import.submit.failed": "导入失败",
+  "alert.import.select_file": "请选择文件",
   "alert.import.upload.success": "文件上传成功",
   "alert.import.upload.failed": "文件上传失败",
   "alert.import.upload.invalid_json": "无效的 JSON 文件",

@@ -2,15 +2,18 @@ import * as React from "react";
 
 export default function useAsync(callback, dependencies = [], runInInit = true) {
   const loadingRef = React.useRef(false);
+  const pendingRef = React.useRef(false);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState();
   const [value, setValue] = React.useState();
 
   const callbackMemoized = React.useCallback(() => {
     if (loadingRef.current) {
+      pendingRef.current = true;
       return { loading: true, error, value };
     }
     loadingRef.current = true;
+    pendingRef.current = false;
     setLoading(true);
     setError(undefined);
     // setValue(undefined);
@@ -20,6 +23,10 @@ export default function useAsync(callback, dependencies = [], runInInit = true) 
       .finally(() => {
         loadingRef.current = false;
         setLoading(false);
+        if (pendingRef.current) {
+          pendingRef.current = false;
+          callbackMemoized();
+        }
       });
   }, dependencies);
 

@@ -102,7 +102,23 @@ func (h *AlertAPI) searchAlert(w http.ResponseWriter, req *http.Request, ps http
 		mustBuilder = &strings.Builder{}
 		sortBuilder = strings.Builder{}
 	)
-	mustBuilder.WriteString(fmt.Sprintf(`{"range":{"created":{"gte":"%s", "lte": "%s"}}}`, min, max))
+	timeRange := util.MapStr{}
+	if minValue, ok := normalizeTimeBound(min); ok {
+		timeRange["gte"] = minValue
+	}
+	if maxValue, ok := normalizeTimeBound(max); ok {
+		timeRange["lte"] = maxValue
+	}
+	if len(timeRange) > 0 {
+		timeFilter := util.MapStr{
+			"range": util.MapStr{
+				"created": timeRange,
+			},
+		}
+		mustBuilder.Write(util.MustToJSONBytes(timeFilter))
+	} else {
+		mustBuilder.WriteString(`{"match_all":{}}`)
+	}
 	if ruleID != "" {
 		mustBuilder.WriteString(fmt.Sprintf(`,{"term":{"rule_id":{"value":"%s"}}}`, ruleID))
 	}

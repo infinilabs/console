@@ -34,6 +34,7 @@ import (
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -66,6 +67,7 @@ func (h *APIHandler) HandleEseSearchAction(w http.ResponseWriter, req *http.Requ
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	sanitizeAutoRangeInMap(reqParams.Body)
 	//validate index search api permission
 	reqUser, err := security.FromUserContext(req.Context())
 	if err != nil {
@@ -205,6 +207,95 @@ func (h *APIHandler) HandleEseSearchAction(w http.ResponseWriter, req *http.Requ
 	h.WriteJSONHeader(w)
 	h.WriteHeader(w, http.StatusOK)
 	h.Write(w, searchRes.RawResult.Body)
+}
+
+func sanitizeAutoRangeInMap(data map[string]interface{}) bool {
+	if data == nil {
+		return false
+	}
+	changed := false
+	for key, val := range data {
+		switch typed := val.(type) {
+		case map[string]interface{}:
+			if key == "range" {
+				if sanitizeAutoRangeNode(typed) {
+					changed = true
+				}
+				if len(typed) == 0 {
+					delete(data, key)
+					changed = true
+				}
+				continue
+			}
+			if sanitizeAutoRangeInMap(typed) {
+				changed = true
+			}
+			if len(typed) == 0 {
+				delete(data, key)
+				changed = true
+			}
+		case []interface{}:
+			newList := make([]interface{}, 0, len(typed))
+			listChanged := false
+			for _, item := range typed {
+				if itemMap, ok := item.(map[string]interface{}); ok {
+					if sanitizeAutoRangeInMap(itemMap) {
+						listChanged = true
+					}
+					if len(itemMap) == 0 {
+						listChanged = true
+						continue
+					}
+					newList = append(newList, itemMap)
+					continue
+				}
+				newList = append(newList, item)
+			}
+			if listChanged {
+				data[key] = newList
+				changed = true
+			}
+		}
+	}
+	return changed
+}
+
+func sanitizeAutoRangeNode(rangeNode map[string]interface{}) bool {
+	changed := false
+	for field, condVal := range rangeNode {
+		cond, ok := condVal.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		for _, boundKey := range []string{"gte", "lte", "gt", "lt", "from", "to"} {
+			if isAutoRangeValue(cond[boundKey]) {
+				delete(cond, boundKey)
+				changed = true
+			}
+		}
+		if !hasRangeBounds(cond) {
+			delete(cond, "format")
+		}
+		if len(cond) == 0 || !hasRangeBounds(cond) {
+			delete(rangeNode, field)
+			changed = true
+		}
+	}
+	return changed
+}
+
+func hasRangeBounds(rangeCond map[string]interface{}) bool {
+	for _, key := range []string{"gte", "lte", "gt", "lt", "from", "to"} {
+		if _, ok := rangeCond[key]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func isAutoRangeValue(value interface{}) bool {
+	v, ok := value.(string)
+	return ok && strings.EqualFold(strings.TrimSpace(v), "auto")
 }
 
 func (h *APIHandler) HandleValueSuggestionAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {

@@ -277,11 +277,11 @@ func (h *AlertAPI) searchAlertMessage(w http.ResponseWriter, req *http.Request, 
 		tags        = h.GetParameterOrDefault(req, "tags", "")
 	)
 	timeRange := util.MapStr{}
-	if min != "" {
-		timeRange["gte"] = min
+	if minValue, ok := normalizeTimeBound(min); ok {
+		timeRange["gte"] = minValue
 	}
-	if max != "" {
-		timeRange["lte"] = max
+	if maxValue, ok := normalizeTimeBound(max); ok {
+		timeRange["lte"] = maxValue
 	}
 	if len(timeRange) > 0 {
 		timeFilter := util.MapStr{

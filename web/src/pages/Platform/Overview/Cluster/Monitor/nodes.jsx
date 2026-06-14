@@ -28,10 +28,6 @@ export default ({
   clusterAvailable,
   bucketSize,
 }) => {
-  const initialQueryParams = {
-    from: 0,
-    size: 20,
-  };
   const filterFields = {
     name: "Name",
     ip: "IP",
@@ -42,19 +38,6 @@ export default ({
   useMemo(() => {
     setShowRealtime(clusterAvailable);
   }, [clusterID, clusterAvailable]);
-
-  function reducer(queryParams, action) {
-    switch (action.type) {
-      case "pageSizeChange":
-        return {
-          ...queryParams,
-          size: action.value,
-        };
-      default:
-        throw new Error();
-    }
-  }
-  const [queryParams, dispatch] = React.useReducer(reducer, initialQueryParams);
 
   const {
     loading: nodesLoading,
@@ -328,12 +311,9 @@ export default ({
         columns={columns}
         pagination={{
           size: "small",
-          pageSize: queryParams.size,
+          pageSize: 20,
           total: hitsTotal,
-          showSizeChanger: true,
-          onShowSizeChange: (_, size) => {
-            dispatch({ type: "pageSizeChange", value: size });
-          },
+          showSizeChanger: false,
         }}
         scroll={{x: 'max-content' }}
       />

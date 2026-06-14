@@ -37,24 +37,6 @@ const Indices = ({
     setShowRealtime(clusterAvailable);
   }, [clusterID, clusterAvailable]);
 
-  const initialQueryParams = {
-    from: 0,
-    size: 20,
-  };
-
-  function reducer(queryParams, action) {
-    switch (action.type) {
-      case "pageSizeChange":
-        return {
-          ...queryParams,
-          size: action.value,
-        };
-      default:
-        throw new Error();
-    }
-  }
-  const [queryParams, dispatch] = React.useReducer(reducer, initialQueryParams);
-
   const {
     loading: indicesLoading,
     error: indicesError,
@@ -274,12 +256,9 @@ const Indices = ({
         columns={columns}
         pagination={{
           size: "small",
-          pageSize: queryParams.size,
+          pageSize: 20,
           total: hitsTotal,
-          showSizeChanger: true,
-          onShowSizeChange: (_, size) => {
-            dispatch({ type: "pageSizeChange", value: size });
-          },
+          showSizeChanger: false,
         }}
         scroll={{x: 'max-content' }}
       />

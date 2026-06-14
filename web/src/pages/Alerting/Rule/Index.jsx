@@ -42,6 +42,16 @@ const displayOrDash = (value) => {
   return text ? text : "-";
 };
 
+const normalizeRuleTimeValue = (value) => {
+  if (typeof value !== "string") {
+    return value;
+  }
+  return value.replace(
+    /(\.\d{3})\d+(Z|[+-]\d{2}:?\d{2})$/,
+    "$1$2"
+  );
+};
+
 export default (props) => {
   const ref = useRef(null);
   const [isLoading, setIsLoading] = React.useState();
@@ -297,19 +307,21 @@ export default (props) => {
   };
 
   const formatRuleUpdatedTime = (updated, created) => {
-    const parsed = moment(updated);
+    const normalizedUpdated = normalizeRuleTimeValue(updated);
+    const parsed = moment(normalizedUpdated);
     if (parsed.isValid() && parsed.year() > 1) {
-      return formatUtcTimeToLocal(updated);
+      return formatUtcTimeToLocal(normalizedUpdated);
     }
-    if (created) {
-      return formatUtcTimeToLocal(created);
+    const normalizedCreated = normalizeRuleTimeValue(created);
+    if (normalizedCreated) {
+      return formatUtcTimeToLocal(normalizedCreated);
     }
     return "-";
   };
 
   const pickRuleTimeField = (record, primaryField, fallbackField) => {
-    const primary = record?.[primaryField];
-    const fallback = record?.[fallbackField];
+    const primary = normalizeRuleTimeValue(record?.[primaryField]);
+    const fallback = normalizeRuleTimeValue(record?.[fallbackField]);
     const primaryParsed = moment(primary);
     if (primaryParsed.isValid() && primaryParsed.year() > 1) {
       return primary;

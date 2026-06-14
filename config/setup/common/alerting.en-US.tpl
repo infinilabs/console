@@ -1162,7 +1162,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-cb34sfl6psfiq
   "id": "builtin-cb34sfl6psfiqtovhpt4",
   "created": "2022-07-07T03:08:46.297166036Z",
   "updated": "2023-08-09T22:38:41.764325087+08:00",
-  "name": "Too Many Deleted Documents",
+  "name": "Too Many Deleted Documents (Only Index>31GB)",
   "enabled": true,
   "resource": {
     "resource_id": "$[[SETUP_RESOURCE_ID]]",
@@ -1173,12 +1173,16 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-cb34sfl6psfiq
     ],
     "filter": {},
     "raw_filter": {
-      "range": {
-        "payload.elasticsearch.cluster_stats.indices.store.size_in_bytes": {
-          "gte": 32212254720
-        }
-      }
-    },
+  "bool": {
+    "must": [
+      { "term": { "metadata.name": { "value": "index_stats" } } },
+      { "range": { "payload.elasticsearch.index_stats.primaries.store.size_in_bytes": { "gte": 32212254720 } } }
+    ],
+    "must_not": [
+      { "term": { "metadata.labels.index_name": { "value": "_all" } } }
+    ]
+  }
+},
     "time_field": "timestamp",
     "context": {
       "fields": null

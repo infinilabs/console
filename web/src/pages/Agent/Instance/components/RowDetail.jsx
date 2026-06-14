@@ -279,6 +279,7 @@ export const AgentRowDetail = ({ agentID, t }) => {
         width: 100,
       },
       {
+        key: "collection_interval",
         title: (
           <Tooltip title={formatMessage({ id: "agent.instance.collection_interval.tip" })}>
             {formatMessage({ id: "agent.instance.collection_interval.label" })}
@@ -597,7 +598,7 @@ export const AgentRowDetail = ({ agentID, t }) => {
                     { start: range[0], end: range[1], total }
                   ),
               }}
-              columns={columns}
+              columns={columns.filter((item) => item.key !== "collection_interval")}
             />
           </div>
         </TabPane>

@@ -320,6 +320,15 @@ func TestNormalizeAlertTemplateTextPreservesMarkdownHardBreakSpacing(t *testing.
 	}
 }
 
+func TestNormalizeAlertTemplateTextSplitsRepeatedNodeEntries(t *testing.T) {
+	input := "节点: es817 所属集群: migrator-es817, JVM 使用率: 65% 节点: es717 所属集群: migrator-es717, JVM 使用率: 56% 节点: node-03 所属集群: es-cluster-3node, JVM 使用率: 42%"
+	got := normalizeAlertTemplateText(input)
+	want := "节点: es817 所属集群: migrator-es817, JVM 使用率: 65%\n节点: es717 所属集群: migrator-es717, JVM 使用率: 56%\n节点: node-03 所属集群: es-cluster-3node, JVM 使用率: 42%"
+	if got != want {
+		t.Fatalf("expected repeated node entries to be split by lines, got %q", got)
+	}
+}
+
 func TestFormatAlertDuration(t *testing.T) {
 	cases := []struct {
 		name     string

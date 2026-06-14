@@ -17,6 +17,11 @@ export default (props) => {
   const clusterID = getSystemClusterID();
   const collectionName = "audit_log";
   const timeField = "timestamp"; //timestamp
+  const [histogramState, setHistogramState] = useState({
+    enable: true,
+    visible: false,
+    widget: {},
+  });
 
   const [visible, setVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState();
@@ -138,6 +143,61 @@ export default (props) => {
     const selectedRows =  listViewRef.current?.selectedRows.rows || []
     downloadFile(selectedRows, 'text/plain', 'audit_log.json')
   }
+
+  const initHistogramWidget = async () => {
+    let res = await request(`/collection/${collectionName}/metadata`);
+    let indexName = res?.metadata?.index_name || "";
+    if (indexName) {
+      let widget = {
+        bucket_size: "auto",
+        is_stack: true,
+        format: {
+          type: "number",
+          pattern: "0.00a",
+        },
+        legend: false,
+        series: [
+          {
+            metric: {
+              formula: "a",
+              groups: [
+                {
+                  field: "metadata.log_type",
+                  limit: 10,
+                },
+              ],
+              items: [
+                {
+                  field: "*",
+                  name: "a",
+                  statistic: "count",
+                },
+              ],
+              sort: [
+                {
+                  direction: "desc",
+                  key: "_count",
+                },
+              ],
+            },
+            queries: {
+              cluster_id: clusterID,
+              indices: [indexName],
+              time_field: timeField,
+            },
+            type: "date-histogram",
+          },
+        ],
+      };
+      setHistogramState((st) => ({ ...st, widget }));
+    }
+  };
+
+  useEffect(() => {
+    if (histogramState.enable) {
+      initHistogramWidget();
+    }
+  }, []);
   
   return (
     <PageHeaderWrapper>
@@ -163,6 +223,9 @@ export default (props) => {
         sideVisible={false}
         sidePlacement="left"
         datePickerContainerStyle={{ width: 320, maxWidth: "45vw", minWidth: 270 }}
+        histogramEnable={histogramState.enable}
+        histogramVisible={histogramState.visible}
+        histogramWidget={histogramState.widget}
         rowSelectionExtra={{
           getExtra: (props) => [
             <Button

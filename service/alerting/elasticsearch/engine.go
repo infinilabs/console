@@ -1291,9 +1291,36 @@ func normalizeAlertTemplateText(text string) string {
 			continue
 		}
 		line = collapseDuplicatedLeadingAlertEmoji(line)
-		result = append(result, line)
+		result = append(result, splitRepeatedMetricEntryLine(line)...)
 	}
 	return strings.Join(result, "\n")
+}
+
+func splitRepeatedMetricEntryLine(line string) []string {
+	for _, prefix := range []string{"节点:", "Node:"} {
+		if strings.Count(line, prefix) <= 1 {
+			continue
+		}
+		parts := strings.Split(line, prefix)
+		entries := make([]string, 0, len(parts))
+		for i, part := range parts {
+			part = strings.TrimSpace(part)
+			if i == 0 {
+				if part != "" {
+					entries = append(entries, part)
+				}
+				continue
+			}
+			if part == "" {
+				continue
+			}
+			entries = append(entries, prefix+" "+part)
+		}
+		if len(entries) > 1 {
+			return entries
+		}
+	}
+	return []string{line}
 }
 
 func collapseDuplicatedLeadingAlertEmoji(line string) string {

@@ -196,32 +196,15 @@ func GenerateQuery(metric *Metric) (interface{}, error) {
 	)
 	if metric.BucketSize != "" && metric.TimeField != "" {
 		useDateHistogram = true
-		if metric.BucketSize == "auto" {
-			dateHistogramAggName = "auto_date_histogram"
-			buckets := metric.Buckets
-			if buckets == 0 {
-				buckets = 2
-			}
-			dateHistogramAgg = util.MapStr{
-				"field":   metric.TimeField,
-				"buckets": buckets,
-			}
-		} else {
-			dateHistogramAggName = "date_histogram"
-			verInfo := elastic.GetClient(metric.ClusterId).GetVersion()
-
-			if verInfo.Number == "" {
-				panic("invalid version")
-			}
-
-			intervalField, err := elastic.GetDateHistogramIntervalField(verInfo.Distribution, verInfo.Number, metric.BucketSize)
-			if err != nil {
-				return nil, fmt.Errorf("get interval field error: %w", err)
-			}
-			dateHistogramAgg = util.MapStr{
-				"field":       metric.TimeField,
-				intervalField: metric.BucketSize,
-			}
+		// Default to auto for better handling of varying data densities
+		dateHistogramAggName = "auto_date_histogram"
+		buckets := metric.Buckets
+		if buckets == 0 {
+			buckets = 2
+		}
+		dateHistogramAgg = util.MapStr{
+			"field":   metric.TimeField,
+			"buckets": buckets,
 		}
 	}
 

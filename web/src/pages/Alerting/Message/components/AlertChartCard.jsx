@@ -45,44 +45,7 @@ const formatHistogramInterval = (seconds) => {
 };
 
 const getHistogramInterval = (min, max) => {
-  const durationSeconds = Math.max(Math.floor((Number(max) - Number(min)) / 1000), 1);
-  const idealBucketSeconds = durationSeconds / 30;
-  const niceIntervals = [
-    20,
-    30,
-    45,
-    60,
-    90,
-    120,
-    150,
-    180,
-    300,
-    450,
-    600,
-    900,
-    1200,
-    1800,
-    2700,
-    3600,
-    5400,
-    7200,
-    9000,
-    10800,
-    14400,
-    21600,
-    28800,
-    43200,
-    64800,
-    86400,
-  ];
-  const best = niceIntervals.reduce(
-    (closest, current) =>
-      Math.abs(current - idealBucketSeconds) < Math.abs(closest - idealBucketSeconds)
-        ? current
-        : closest,
-    niceIntervals[0]
-  );
-  return formatHistogramInterval(best);
+  return "auto";
 };
 
 const buildCopyRequest = (msgItem, ruleID, min, max) => {

@@ -273,7 +273,8 @@ func shouldFallbackToDirectAgentDiscovery(err error) bool {
 
 type BindingItem struct {
 	//infini system assigned id
-	ClusterID string `json:"cluster_id"`
+	ClusterID   string `json:"cluster_id"`
+	ClusterName string `json:"cluster_name,omitempty"`
 
 	ClusterUUID    string   `json:"cluster_uuid"`
 	NodeUUID       string   `json:"node_uuid"`
@@ -873,7 +874,7 @@ func bindInstanceToCluster(clusterInfo ClusterInfo, nodes *elastic.DiscoveryResu
 				}
 
 				clusterUUID := states.ClusterUUID
-				auth, err := common.GetAgentBasicAuth(preparedConf)
+				auth, err := resolveEnrollAgentAuth(preparedConf)
 				if err != nil {
 					log.Errorf("failed to get agent credential for cluster [%s]: %v", console_common.MaskLogToken(clusterID), err)
 					continue
@@ -1269,6 +1270,67 @@ func hasUsableAgentBasicAuth(auth *model.BasicAuth) bool {
 	return auth == nil || auth.Username != ""
 }
 
+func resolveEnrollClusterID(clusterID, clusterUUID, clusterName string) (string, error) {
+	clusterID = strings.TrimSpace(clusterID)
+	clusterUUID = strings.TrimSpace(clusterUUID)
+	clusterName = strings.TrimSpace(clusterName)
+
+	// Prefer the explicit cluster id from UI when it still exists and is enabled.
+	if clusterID != "" {
+		conf := &elastic.ElasticsearchConfig{}
+		conf.ID = clusterID
+		exists, err := orm.GetV2(orm.NewContext(), conf)
+		if err != nil {
+			return "", err
+		}
+		if exists && conf.Enabled {
+			if clusterUUID == "" || strings.TrimSpace(conf.ClusterUUID) == "" || strings.TrimSpace(conf.ClusterUUID) == clusterUUID {
+				return clusterID, nil
+			}
+		}
+	}
+
+	if clusterUUID == "" {
+		return clusterID, nil
+	}
+
+	q := orm.Query{
+		Size: 100,
+		Conds: orm.And(
+			orm.Eq("cluster_uuid", clusterUUID),
+			orm.Eq("enabled", true),
+		),
+	}
+	clusters := []elastic.ElasticsearchConfig{}
+	if err, _ := orm.SearchWithJSONMapper(&clusters, &q); err != nil {
+		return "", err
+	}
+	if len(clusters) == 0 {
+		return clusterID, nil
+	}
+	if clusterName != "" {
+		for _, item := range clusters {
+			if strings.TrimSpace(item.Name) == clusterName || strings.TrimSpace(item.RawName) == clusterName {
+				return item.ID, nil
+			}
+		}
+	}
+	return clusters[0].ID, nil
+}
+
+func resolveEnrollAgentAuth(conf *elastic.ElasticsearchConfig) (*model.BasicAuth, error) {
+	auth, err := common.GetAgentBasicAuth(conf)
+	if err == nil {
+		return auth, nil
+	}
+	if strings.Contains(strings.ToLower(err.Error()), "record not found") {
+		// Missing credential record should not block no-auth clusters from enrollment.
+		// Continue with anonymous access and let node probe decide reachability.
+		return nil, nil
+	}
+	return nil, err
+}
+
 func normalizeSchema(schema string) string {
 	switch strings.ToLower(strings.TrimSpace(schema)) {
 	case "https":
@@ -1391,6 +1453,14 @@ func (h *APIHandler) enrollESNode(w http.ResponseWriter, req *http.Request, ps h
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	resolvedClusterID, err := resolveEnrollClusterID(item.ClusterID, item.ClusterUUID, item.ClusterName)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if resolvedClusterID != "" {
+		item.ClusterID = resolvedClusterID
+	}
 
 	if strings.TrimSpace(item.PublishAddress) == "" && item.ClusterID != "" && item.NodeUUID != "" {
 		if nodeCfg, nodeErr := metadata.GetNodeConfig(item.ClusterID, item.NodeUUID); nodeErr == nil && nodeCfg != nil && nodeCfg.Payload.NodeInfo != nil {
@@ -1406,7 +1476,7 @@ func (h *APIHandler) enrollESNode(w http.ResponseWriter, req *http.Request, ps h
 	}
 
 	//use agent credential to access the node
-	preparedConf.BasicAuth, err = common.GetAgentBasicAuth(preparedConf)
+	preparedConf.BasicAuth, err = resolveEnrollAgentAuth(preparedConf)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return

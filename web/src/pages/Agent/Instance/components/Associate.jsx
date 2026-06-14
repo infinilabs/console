@@ -229,19 +229,27 @@ const Result = ({ data, onComplete, loading = false }) => {
   const { clusterList = [] } = useGlobal();
   const detectedLogsPaths = useMemo(() => getDetectedLogsPaths(data), [data]);
   const detectedLogsPath = detectedLogsPaths.join(", ");
-  const clusters = useMemo(
-    () => {
-      if (!data.cluster_info.cluster_uuid) {
-        return [];
-      }
-      return clusterList.filter((item) => {
-        return item.cluster_uuid == data.cluster_info.cluster_uuid;
+  const clusters = useMemo(() => {
+    const clusterUUID = `${data?.cluster_info?.cluster_uuid || ""}`.trim();
+    if (!clusterUUID) {
+      return [];
+    }
+    const clusterName = `${data?.cluster_info?.cluster_name || ""}`.trim();
+    const toTs = (item) => new Date(item?.updated || item?.created || 0).getTime() || 0;
+    return (clusterList || [])
+      .filter((item) => `${item?.cluster_uuid || ""}`.trim() === clusterUUID)
+      .sort((a, b) => {
+        const aName = `${a?.name || a?.raw_name || ""}`.trim();
+        const bName = `${b?.name || b?.raw_name || ""}`.trim();
+        const aNameMatched = clusterName && aName === clusterName ? 1 : 0;
+        const bNameMatched = clusterName && bName === clusterName ? 1 : 0;
+        if (aNameMatched !== bNameMatched) {
+          return bNameMatched - aNameMatched;
+        }
+        return toTs(b) - toTs(a);
       });
-    },
-    clusterList,
-    data.cluster_info.cluster_uuid
-  );
-  const selectedID = clusters[0]?.id || "";
+  }, [clusterList, data?.cluster_info?.cluster_uuid, data?.cluster_info?.cluster_name]);
+  const selectedID = useMemo(() => clusters[0]?.id || "", [clusters]);
   const clusterRef = useRef();
   const onAssociateClick = () => {
     if (typeof onComplete === "function") {

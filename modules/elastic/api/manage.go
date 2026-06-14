@@ -455,6 +455,14 @@ func getManagedAgentCredential(conf *elastic.ElasticsearchConfig, previousCluste
 
 	cred, err := common.GetCredential(conf.AgentCredentialID)
 	if err != nil {
+		// Agent credential can be deleted manually while cluster config still keeps
+		// the old credential id. Treat it as absent and let follow-up logic
+		// re-provision or fall back based on current auth settings.
+		if strings.Contains(strings.ToLower(err.Error()), "record not found") {
+			conf.AgentCredentialID = ""
+			conf.AgentBasicAuth = nil
+			return nil, nil, true, nil
+		}
 		return nil, nil, false, err
 	}
 	auth, err := cred.DecodeBasicAuth()

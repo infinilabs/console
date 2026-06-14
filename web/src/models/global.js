@@ -25,6 +25,35 @@ const CLUSTER_STATUS_CACHE_TTL = 60 * 1000;
 const CONSOLE_WELCOME_BANNER_STYLE =
   "color:#1677ff;font-size:14px;font-weight:700;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;";
 
+const mergeUniqueClusters = (existing = [], incoming = []) => {
+  const seenIDs = new Set();
+  const seenUUIDs = new Set();
+  const result = [];
+
+  const append = (item) => {
+    if (!item?.id) {
+      return;
+    }
+    const uuid = `${item.cluster_uuid || ""}`.trim();
+    if (seenIDs.has(item.id)) {
+      return;
+    }
+    if (uuid && seenUUIDs.has(uuid)) {
+      return;
+    }
+    seenIDs.add(item.id);
+    if (uuid) {
+      seenUUIDs.add(uuid);
+    }
+    result.push(item);
+  };
+
+  // Prefer fresh data from latest fetch, then backfill old entries that don't conflict.
+  incoming.forEach(append);
+  existing.forEach(append);
+  return result;
+};
+
 const formatBuildDate = (value) => {
   if (!value) {
     return value;
@@ -194,9 +223,10 @@ export default {
           });
         }
 
-        let newClusterList = search.name !== payload.name
-          ? data
-          : clusterList.concat(data);
+        let newClusterList =
+          search.name !== payload.name
+            ? data
+            : mergeUniqueClusters(clusterList, data);
 
         yield put({
           type: "saveData",

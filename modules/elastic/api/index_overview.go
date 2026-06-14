@@ -409,84 +409,6 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, req *http.Request, ps
 						indexInfo.PriStoreInBytes += storeSize
 					}
 				}
-				missingIndexIDs := make([]interface{}, 0)
-				for _, idx := range newIndexIDs {
-					if idxStr, ok := idx.(string); ok {
-						if _, exists := summaryMap[idxStr]; !exists {
-							missingIndexIDs = append(missingIndexIDs, idxStr)
-						}
-					}
-				}
-				if len(missingIndexIDs) > 0 {
-					q2 := orm.Query{WildcardIndex: true}
-					q2.Conds = orm.And(
-						orm.Eq("metadata.category", "elasticsearch"),
-						orm.Eq("metadata.name", "index_stats"),
-						orm.In("metadata.labels.index_id", missingIndexIDs),
-					)
-					q2.Collapse("metadata.labels.index_id")
-					q2.AddSort("timestamp", orm.DESC)
-					q2.Size = len(missingIndexIDs)
-					err, indexResults := orm.Search(&event.Event{}, &q2)
-					if err != nil {
-						h.WriteJSON(w, util.MapStr{
-							"error": err.Error(),
-						}, http.StatusInternalServerError)
-						return
-					}
-					for _, v := range indexResults.Result {
-						result, ok := v.(map[string]interface{})
-						if !ok {
-							continue
-						}
-						indexIDVal, ok := util.GetMapValueByKeys([]string{"metadata", "labels", "index_id"}, result)
-						if !ok {
-							continue
-						}
-						indexIDStr, ok := indexIDVal.(string)
-						if !ok {
-							continue
-						}
-						if _, exists := summaryMap[indexIDStr]; !exists {
-							summaryMap[indexIDStr] = &ShardsSummary{}
-						}
-						summary := summaryMap[indexIDStr]
-						if docs, ok := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "index_stats", "total", "docs"}, result); ok {
-							if docsM, ok := docs.(map[string]interface{}); ok {
-								if count, ok := parseInt64Value(docsM["count"]); ok {
-									summary.DocsCount = count
-								}
-								if deleted, ok := parseInt64Value(docsM["deleted"]); ok {
-									summary.DocsDeleted = deleted
-								}
-							}
-						}
-						if indexInfo, ok := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "index_stats", "index_info"}, result); ok {
-							if infoM, ok := indexInfo.(map[string]interface{}); ok {
-								if idxName, ok := infoM["index"].(string); ok {
-									summary.Index = idxName
-								}
-								if shards, ok := parseInt64Value(infoM["shards"]); ok {
-									summary.Shards = int(shards)
-								}
-								if replicas, ok := parseInt64Value(infoM["replicas"]); ok {
-									summary.Replicas = int(replicas)
-								}
-								if storeSize, ok := infoM["store_size"].(string); ok {
-									if storeInBytes, err := util.ToBytes(storeSize); err == nil {
-										summary.StoreInBytes = int64(storeInBytes)
-									}
-								}
-								if priStoreSize, ok := infoM["pri_store_size"].(string); ok {
-									if priStoreInBytes, err := util.ToBytes(priStoreSize); err == nil {
-										summary.PriStoreInBytes = int64(priStoreInBytes)
-									}
-								}
-							}
-						}
-						summary.Timestamp = result["timestamp"]
-					}
-				}
 				if isPrimary {
 					indexInfo.Shards++
 				} else {
@@ -494,6 +416,84 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, req *http.Request, ps
 				}
 				indexInfo.Timestamp = hitM["timestamp"]
 			}
+		}
+	}
+	missingIndexIDs := make([]interface{}, 0)
+	for _, idx := range newIndexIDs {
+		if idxStr, ok := idx.(string); ok {
+			if _, exists := summaryMap[idxStr]; !exists {
+				missingIndexIDs = append(missingIndexIDs, idxStr)
+			}
+		}
+	}
+	if len(missingIndexIDs) > 0 {
+		q2 := orm.Query{WildcardIndex: true}
+		q2.Conds = orm.And(
+			orm.Eq("metadata.category", "elasticsearch"),
+			orm.Eq("metadata.name", "index_stats"),
+			orm.In("metadata.labels.index_id", missingIndexIDs),
+		)
+		q2.Collapse("metadata.labels.index_id")
+		q2.AddSort("timestamp", orm.DESC)
+		q2.Size = len(missingIndexIDs)
+		err, indexResults := orm.Search(&event.Event{}, &q2)
+		if err != nil {
+			h.WriteJSON(w, util.MapStr{
+				"error": err.Error(),
+			}, http.StatusInternalServerError)
+			return
+		}
+		for _, v := range indexResults.Result {
+			result, ok := v.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			indexIDVal, ok := util.GetMapValueByKeys([]string{"metadata", "labels", "index_id"}, result)
+			if !ok {
+				continue
+			}
+			indexIDStr, ok := indexIDVal.(string)
+			if !ok {
+				continue
+			}
+			if _, exists := summaryMap[indexIDStr]; !exists {
+				summaryMap[indexIDStr] = &ShardsSummary{}
+			}
+			summary := summaryMap[indexIDStr]
+			if docs, ok := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "index_stats", "total", "docs"}, result); ok {
+				if docsM, ok := docs.(map[string]interface{}); ok {
+					if count, ok := parseInt64Value(docsM["count"]); ok {
+						summary.DocsCount = count
+					}
+					if deleted, ok := parseInt64Value(docsM["deleted"]); ok {
+						summary.DocsDeleted = deleted
+					}
+				}
+			}
+			if indexInfo, ok := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "index_stats", "index_info"}, result); ok {
+				if infoM, ok := indexInfo.(map[string]interface{}); ok {
+					if idxName, ok := infoM["index"].(string); ok {
+						summary.Index = idxName
+					}
+					if shards, ok := parseInt64Value(infoM["shards"]); ok {
+						summary.Shards = int(shards)
+					}
+					if replicas, ok := parseInt64Value(infoM["replicas"]); ok {
+						summary.Replicas = int(replicas)
+					}
+					if storeSize, ok := infoM["store_size"].(string); ok {
+						if storeInBytes, err := util.ToBytes(storeSize); err == nil {
+							summary.StoreInBytes = int64(storeInBytes)
+						}
+					}
+					if priStoreSize, ok := infoM["pri_store_size"].(string); ok {
+						if priStoreInBytes, err := util.ToBytes(priStoreSize); err == nil {
+							summary.PriStoreInBytes = int64(priStoreInBytes)
+						}
+					}
+				}
+			}
+			summary.Timestamp = result["timestamp"]
 		}
 	}
 

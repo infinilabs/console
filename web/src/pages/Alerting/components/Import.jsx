@@ -123,7 +123,8 @@ export default Form.create()((props) => {
     }
   ]
 }`;
-    const showRuleExample = exampleType === "AlertRule";
+    const showRuleExample = false;
+    //const showRuleExample = exampleType === "AlertRule";
     const uploadProps = {
       accept: "application/json",
       fileList: uploadState?.fileList || [],

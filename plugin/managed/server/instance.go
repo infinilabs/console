@@ -597,6 +597,7 @@ func (h *APIHandler) searchInstance(w http.ResponseWriter, req *http.Request, ps
 
 	var (
 		application = h.GetParameterOrDefault(req, "application", "")
+		serviceType = strings.TrimSpace(h.GetParameterOrDefault(req, "service_type", ""))
 		keyword     = h.GetParameterOrDefault(req, "keyword", "")
 		queryDSL    = `{"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d}`
 		strSize     = h.GetParameterOrDefault(req, "size", "20")
@@ -612,6 +613,12 @@ func (h *APIHandler) searchInstance(w http.ResponseWriter, req *http.Request, ps
 			mustBuilder.WriteString(",")
 		}
 		mustBuilder.WriteString(fmt.Sprintf(`{"term":{"application.name":"%s"}}`, application))
+	}
+	if serviceType != "" {
+		if mustBuilder.Len() > 0 {
+			mustBuilder.WriteString(",")
+		}
+		mustBuilder.WriteString(fmt.Sprintf(`{"bool":{"should":[{"term":{"labels.service_type":{"value":%q}}},{"term":{"metadata.labels.service_type":{"value":%q}}}],"minimum_should_match":1}}`, serviceType, serviceType))
 	}
 
 	size, _ := strconv.Atoi(strSize)

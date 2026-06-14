@@ -74,7 +74,8 @@ func PerformChannel(channel *alerting.Channel, ctx map[string]interface{}) ([]by
 		if channel.Email == nil {
 			return nil, fmt.Errorf("empty email channel config"), nil
 		}
-		message, err = ResolveMessage(channel.Email.Body, ctx)
+		emailCtx := buildEmailTemplateContext(ctx)
+		message, err = ResolveMessage(channel.Email.Body, emailCtx)
 		if err != nil {
 			return nil, err, message
 		}
@@ -100,6 +101,25 @@ func PerformChannel(channel *alerting.Channel, ctx map[string]interface{}) ([]by
 	}
 	executeResult, err := act.Execute()
 	return executeResult, err, message
+}
+
+func buildEmailTemplateContext(ctx map[string]interface{}) map[string]interface{} {
+	if ctx == nil {
+		return nil
+	}
+	emailCtx := make(map[string]interface{}, len(ctx))
+	for k, v := range ctx {
+		emailCtx[k] = v
+	}
+	for _, key := range []string{"message", "recovery_context"} {
+		value, ok := emailCtx[key].(string)
+		if !ok || value == "" {
+			continue
+		}
+		value = strings.ReplaceAll(value, "\r\n", "\n")
+		emailCtx[key] = strings.ReplaceAll(value, "\n", "<br/>")
+	}
+	return emailCtx
 }
 
 func validateRenderedWebhookURL(raw string) (string, error) {

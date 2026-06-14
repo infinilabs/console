@@ -91,3 +91,25 @@ func TestValidateRenderedWebhookURL(t *testing.T) {
 		t.Fatalf("expected unsupported-scheme error, got %v", err)
 	}
 }
+
+func TestBuildEmailTemplateContextConvertsLineBreaks(t *testing.T) {
+	input := map[string]interface{}{
+		"message":          "节点: node-01\n节点: node-02",
+		"recovery_context": "Node: a\r\nNode: b",
+		"title":            "unchanged",
+	}
+
+	got := buildEmailTemplateContext(input)
+	if got["message"] != "节点: node-01<br/>节点: node-02" {
+		t.Fatalf("expected message line breaks to be converted, got %q", got["message"])
+	}
+	if got["recovery_context"] != "Node: a<br/>Node: b" {
+		t.Fatalf("expected recovery_context line breaks to be converted, got %q", got["recovery_context"])
+	}
+	if got["title"] != "unchanged" {
+		t.Fatalf("expected unrelated fields unchanged, got %q", got["title"])
+	}
+	if input["message"] != "节点: node-01\n节点: node-02" {
+		t.Fatalf("expected input ctx to remain unchanged, got %q", input["message"])
+	}
+}

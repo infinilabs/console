@@ -35,7 +35,6 @@ import (
 
 	log "github.com/cihub/seelog"
 	"infini.sh/console/core/insight/function"
-	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/util"
 )
 

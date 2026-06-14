@@ -71,11 +71,18 @@ const getDuration = (from, to) => {
 }
 
 const normalizeTimeValue = (value, fallback = "now-15m", keys = []) => {
+  const normalizeCandidate = (candidate) => {
+    const normalized = `${candidate}`.trim();
+    if (!normalized || normalized.toLowerCase() === "auto") {
+      return fallback;
+    }
+    return normalized;
+  };
   if (typeof value === "string" || typeof value === "number") {
     if (typeof value === "number" && !Number.isFinite(value)) {
       return fallback;
     }
-    return `${value}`;
+    return normalizeCandidate(value);
   }
   if (value && typeof value === "object") {
     for (const key of keys) {
@@ -86,7 +93,7 @@ const normalizeTimeValue = (value, fallback = "now-15m", keys = []) => {
       ) {
         const candidate = value[key];
         if (typeof candidate === "string" || typeof candidate === "number") {
-          return `${candidate}`;
+          return normalizeCandidate(candidate);
         }
       }
     }
@@ -277,7 +284,7 @@ const Monitor = (props) => {
                         setTimeZone(timeZone)
                       }}
                       recentlyUsedRangesKey={'monitor'}
-                      showAutoTimeRange={true}
+                      showAutoTimeRange={false}
                     />
                   </div>
                   <div className={styles.statusActions}>

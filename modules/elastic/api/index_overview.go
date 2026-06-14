@@ -388,6 +388,7 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, req *http.Request, ps
 			indexID, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "index_id"}, hitM)
 			indexName, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "index_name"}, hitM)
 			primary, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "shard_stats", "routing", "primary"}, hitM)
+			isPrimary, _ := parseBoolValue(primary)
 			if v, ok := indexID.(string); ok {
 				if _, ok = summaryMap[v]; !ok {
 					summaryMap[v] = &ShardsSummary{}
@@ -396,16 +397,16 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, req *http.Request, ps
 				if iv, ok := indexName.(string); ok {
 					indexInfo.Index = iv
 				}
-				if count, ok := shardDocCount.(float64); ok && primary == true {
-					indexInfo.DocsCount += int64(count)
+				if count, ok := parseInt64Value(shardDocCount); ok && isPrimary {
+					indexInfo.DocsCount += count
 				}
-				if deleted, ok := shardDocDeleted.(float64); ok && primary == true {
-					indexInfo.DocsDeleted += int64(deleted)
+				if deleted, ok := parseInt64Value(shardDocDeleted); ok && isPrimary {
+					indexInfo.DocsDeleted += deleted
 				}
-				if storeSize, ok := storeInBytes.(float64); ok {
-					indexInfo.StoreInBytes += int64(storeSize)
-					if primary == true {
-						indexInfo.PriStoreInBytes += int64(storeSize)
+				if storeSize, ok := parseInt64Value(storeInBytes); ok {
+					indexInfo.StoreInBytes += storeSize
+					if isPrimary {
+						indexInfo.PriStoreInBytes += storeSize
 					}
 				}
 				missingIndexIDs := make([]interface{}, 0)
@@ -452,11 +453,11 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, req *http.Request, ps
 						summary := summaryMap[indexIDStr]
 						if docs, ok := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "index_stats", "total", "docs"}, result); ok {
 							if docsM, ok := docs.(map[string]interface{}); ok {
-								if count, ok := docsM["count"].(float64); ok {
-									summary.DocsCount = int64(count)
+								if count, ok := parseInt64Value(docsM["count"]); ok {
+									summary.DocsCount = count
 								}
-								if deleted, ok := docsM["deleted"].(float64); ok {
-									summary.DocsDeleted = int64(deleted)
+								if deleted, ok := parseInt64Value(docsM["deleted"]); ok {
+									summary.DocsDeleted = deleted
 								}
 							}
 						}
@@ -465,10 +466,10 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, req *http.Request, ps
 								if idxName, ok := infoM["index"].(string); ok {
 									summary.Index = idxName
 								}
-								if shards, ok := infoM["shards"].(float64); ok {
+								if shards, ok := parseInt64Value(infoM["shards"]); ok {
 									summary.Shards = int(shards)
 								}
-								if replicas, ok := infoM["replicas"].(float64); ok {
+								if replicas, ok := parseInt64Value(infoM["replicas"]); ok {
 									summary.Replicas = int(replicas)
 								}
 								if storeSize, ok := infoM["store_size"].(string); ok {
@@ -486,7 +487,7 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, req *http.Request, ps
 						summary.Timestamp = result["timestamp"]
 					}
 				}
-				if primary == true {
+				if isPrimary {
 					indexInfo.Shards++
 				} else {
 					indexInfo.Replicas++
@@ -787,20 +788,21 @@ func (h *APIHandler) GetIndexInfo(w http.ResponseWriter, req *http.Request, ps h
 			resultM, ok := row.(map[string]interface{})
 			if ok {
 				primary, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "shard_stats", "routing", "primary"}, resultM)
+				isPrimary, _ := parseBoolValue(primary)
 				storeInBytes, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "shard_stats", "store", "size_in_bytes"}, resultM)
 				if docs, ok := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "shard_stats", "docs", "count"}, resultM); ok {
 					//summary["docs"] = docs
-					if v, ok := docs.(float64); ok && primary == true {
-						shardSum.DocsCount += int64(v)
+					if v, ok := parseInt64Value(docs); ok && isPrimary {
+						shardSum.DocsCount += v
 					}
 				}
-				if storeSize, ok := storeInBytes.(float64); ok {
-					shardSum.StoreInBytes += int64(storeSize)
-					if primary == true {
-						shardSum.PriStoreInBytes += int64(storeSize)
+				if storeSize, ok := parseInt64Value(storeInBytes); ok {
+					shardSum.StoreInBytes += storeSize
+					if isPrimary {
+						shardSum.PriStoreInBytes += storeSize
 					}
 				}
-				if primary == true {
+				if isPrimary {
 					shardSum.Shards++
 				} else {
 					shardSum.Replicas++

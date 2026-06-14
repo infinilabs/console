@@ -1195,6 +1195,7 @@ func (h *APIHandler) getNodeLatestIndicesAgent(req *http.Request, min, max, clus
 			shardID, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "shard_id"}, hitM)
 			shardNum, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "shard"}, hitM)
 			primary, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "shard_stats", "routing", "primary"}, hitM)
+			isPrimary, _ := parseBoolValue(primary)
 			if v, ok := indexName.(string); ok {
 				dedupeKey := util.ToString(shardID)
 				if dedupeKey == "" {
@@ -1208,13 +1209,13 @@ func (h *APIHandler) getNodeLatestIndicesAgent(req *http.Request, min, max, clus
 					indexInfos[v] = &ShardsSummary{Index: v}
 				}
 				info := indexInfos[v]
-				if count, ok := shardDocCount.(float64); ok && primary == true {
-					info.DocsCount += int64(count)
+				if count, ok := parseInt64Value(shardDocCount); ok && isPrimary {
+					info.DocsCount += count
 				}
-				if storeSize, ok := storeInBytes.(float64); ok {
-					info.StoreInBytes += int64(storeSize)
+				if storeSize, ok := parseInt64Value(storeInBytes); ok {
+					info.StoreInBytes += storeSize
 				}
-				if primary == true {
+				if isPrimary {
 					info.Shards++
 				} else {
 					info.Replicas++
@@ -1396,6 +1397,7 @@ func (h *APIHandler) getLatestIndices(req *http.Request, min string, max string,
 				shardID, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "shard_id"}, hitM)
 				shardNum, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "shard"}, hitM)
 				primary, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "shard_stats", "routing", "primary"}, hitM)
+				isPrimary, _ := parseBoolValue(primary)
 				if v, ok := indexName.(string); ok {
 					dedupeKey := util.ToString(shardID)
 					if dedupeKey == "" {
@@ -1410,13 +1412,13 @@ func (h *APIHandler) getLatestIndices(req *http.Request, min string, max string,
 					}
 					indexInfo := indexInfos[v]
 					indexInfo.Index = v
-					if count, ok := shardDocCount.(float64); ok && primary == true {
-						indexInfo.DocsCount += int64(count)
+					if count, ok := parseInt64Value(shardDocCount); ok && isPrimary {
+						indexInfo.DocsCount += count
 					}
-					if storeSize, ok := storeInBytes.(float64); ok {
-						indexInfo.StoreInBytes += int64(storeSize)
+					if storeSize, ok := parseInt64Value(storeInBytes); ok {
+						indexInfo.StoreInBytes += storeSize
 					}
-					if primary == true {
+					if isPrimary {
 						indexInfo.Shards++
 					} else {
 						indexInfo.Replicas++

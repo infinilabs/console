@@ -265,6 +265,8 @@ func (h *InsightAPI) HandleGetMetricData(w http.ResponseWriter, req *http.Reques
 			return
 		}
 	}
+	sanitizeAutoRangeInValue(reqBody.Filter)
+	sanitizeAutoRangeInValue(reqBody.TimeFilter)
 	reqBody.ClusterId = clusterID
 	metricData, err := getMetricData(&reqBody)
 	if err != nil {

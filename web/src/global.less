@@ -42,8 +42,11 @@ ol {
 :global {
   .ant-drawer.ant-drawer-right {
     .ant-drawer-content-wrapper {
-      top: @layout-header-height;
-      height: calc(100% - @layout-header-height);
+      top: 0;
+      right: 0;
+      height: 100%;
+      width: 100vw !important;
+      max-width: 100vw;
     }
   }
 }

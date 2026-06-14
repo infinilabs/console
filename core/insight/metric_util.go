@@ -195,15 +195,27 @@ func GenerateQuery(metric *Metric) (interface{}, error) {
 	)
 	if metric.BucketSize != "" && metric.TimeField != "" {
 		useDateHistogram = true
-		// Default to auto for better handling of varying data densities
-		dateHistogramAggName = "auto_date_histogram"
-		buckets := metric.Buckets
-		if buckets == 0 {
-			buckets = 2
+		bucketSize := strings.TrimSpace(metric.BucketSize)
+		if bucketSize == "" {
+			bucketSize = "auto"
 		}
-		dateHistogramAgg = util.MapStr{
-			"field":   metric.TimeField,
-			"buckets": buckets,
+		if strings.EqualFold(bucketSize, "auto") {
+			dateHistogramAggName = "auto_date_histogram"
+			buckets := metric.Buckets
+			if buckets == 0 {
+				buckets = 30
+			}
+			dateHistogramAgg = util.MapStr{
+				"field":   metric.TimeField,
+				"buckets": buckets,
+			}
+		} else {
+			dateHistogramAggName = "date_histogram"
+			dateHistogramAgg = util.MapStr{
+				"field":         metric.TimeField,
+				"interval":      bucketSize,
+				"min_doc_count": 0,
+			}
 		}
 	}
 

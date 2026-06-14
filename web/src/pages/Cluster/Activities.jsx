@@ -327,7 +327,7 @@ export default (props) => {
         defaultQueryParams={{
           from: 0,
           size: 20,
-          timeRange: { from: "now-7d", to: "now", timeField: timeField },
+          timeRange: { from: "auto", to: "auto", timeField: timeField },
           sort: [[timeField, "desc"]],
         }}
         dateTimeEnable={true}

@@ -143,8 +143,8 @@ class ClusterMonitor extends PureComponent {
       clusterID: null,
       activeTab: props.param?.tab || "cluster",
       timeRange: {
-        min: "now-1h",
-        max: "now",
+        min: "auto",
+        max: "auto",
         timeFormatter: formatter.dates(1),
       },
     };
@@ -168,18 +168,26 @@ class ClusterMonitor extends PureComponent {
     fetchDataCount++;
     const { dispatch } = this.props;
     const { timeRange } = this.state;
-    const bounds = calculateBounds({
-      from: timeRange.min,
-      to: timeRange.max,
-    });
+    const useAutoRange =
+      `${timeRange?.min || ""}`.toLowerCase() === "auto" ||
+      `${timeRange?.max || ""}`.toLowerCase() === "auto";
+    const resolvedRange = useAutoRange
+      ? { min: "auto", max: "auto" }
+      : (() => {
+          const bounds = calculateBounds({
+            from: timeRange.min,
+            to: timeRange.max,
+          });
+          return {
+            min: bounds.min.valueOf(),
+            max: bounds.max.valueOf(),
+          };
+        })();
     Promise.resolve(
       dispatch({
         type: "clusterMonitor/fetchClusterMetrics",
         payload: {
-          timeRange: {
-            min: bounds.min.valueOf(),
-            max: bounds.max.valueOf(),
-          },
+          timeRange: resolvedRange,
           cluster_id: this.state.clusterID,
         },
       })
@@ -288,14 +296,17 @@ class ClusterMonitor extends PureComponent {
   }
 
   handleTimeChange = ({ start, end }) => {
-    const bounds = calculateBounds({
-      from: start,
-      to: end,
-    });
-    const day = moment
-      .duration(bounds.max.valueOf() - bounds.min.valueOf())
-      .asDays();
-    const intDay = parseInt(day) + 1;
+    let intDay = 1;
+    if (`${start || ""}`.toLowerCase() !== "auto" && `${end || ""}`.toLowerCase() !== "auto") {
+      const bounds = calculateBounds({
+        from: start,
+        to: end,
+      });
+      const day = moment
+        .duration(bounds.max.valueOf() - bounds.min.valueOf())
+        .asDays();
+      intDay = parseInt(day) + 1;
+    }
     this.setState(
       {
         timeRange: {

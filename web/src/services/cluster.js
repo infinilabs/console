@@ -10,8 +10,20 @@ export async function getClusterVersion(params) {
 export async function getClusterMetrics(params) {
   let id = params.cluster_id;
   delete params["cluster_id"];
-  const min = Number.isFinite(params?.timeRange?.min) ? params.timeRange.min : Date.now() - 15 * 60 * 1000;
-  const max = Number.isFinite(params?.timeRange?.max) ? params.timeRange.max : Date.now();
+  const rawMin = params?.timeRange?.min;
+  const rawMax = params?.timeRange?.max;
+  const min =
+    `${rawMin ?? ""}`.toLowerCase() === "auto"
+      ? "auto"
+      : Number.isFinite(rawMin)
+      ? rawMin
+      : Date.now() - 15 * 60 * 1000;
+  const max =
+    `${rawMax ?? ""}`.toLowerCase() === "auto"
+      ? "auto"
+      : Number.isFinite(rawMax)
+      ? rawMax
+      : Date.now();
   return request(
     `${ESPrefix}/${id}/metrics?min=${min}&max=${max}`,
     {

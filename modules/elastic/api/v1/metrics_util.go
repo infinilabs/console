@@ -289,6 +289,9 @@ func (h *APIHandler) GetMetricRangeAndBucketSize(req *http.Request, clusterID, m
 	bucketSize := 0
 
 	bucketSizeStr := h.GetParameterOrDefault(req, "bucket_size", "") //默认 10，每个 bucket 的时间范围，单位秒
+	if strings.EqualFold(strings.TrimSpace(bucketSizeStr), "auto") {
+		bucketSizeStr = ""
+	}
 	if bucketSizeStr != "" {
 		du, err := util.ParseDuration(bucketSizeStr)
 		if err != nil {

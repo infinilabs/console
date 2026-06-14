@@ -16,11 +16,11 @@ import styles from "../Metrics.scss";
 import { Spin, Radio, Select, Skeleton, Row, Col } from "antd";
 import { formatter, getFormatter, getNumFormatter } from "@/utils/format";
 import "./node_metric.scss";
-import { calculateBounds } from "@/components/vendor/data/common/query/timefilter";
 import moment from "moment";
 import { formatMessage } from "umi/locale";
 import MetricContainer from "./metric_container";
 import _ from "lodash";
+import { formatTimeRange } from "@/lib/elasticsearch/util";
 
 const gorupOrder = [
   "thread_pool_write",
@@ -98,14 +98,7 @@ export default ({
     [param]
   );
   const queryParams = React.useMemo(() => {
-    const bounds = calculateBounds({
-      from: timeRange.min,
-      to: timeRange.max,
-    });
-    let newParams = {
-      min: bounds.min.valueOf(),
-      max: bounds.max.valueOf(),
-    };
+    const newParams = formatTimeRange(timeRange);
     if (param.top) {
       newParams.top = param.top;
     }

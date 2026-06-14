@@ -310,7 +310,9 @@ const Detail = (props) => {
         <Row>
           <Col span={12}>
             <DescriptionItem
-              title="Query DSL"
+              title={formatMessage({
+                id: "alert.message.detail.query_dsl",
+              })}
               content={
                 <Editor
                   height="300px"
@@ -336,7 +338,9 @@ const Detail = (props) => {
           </Col>
           <Col span={12}>
             <DescriptionItem
-              title="Response"
+              title={formatMessage({
+                id: "alert.message.detail.response",
+              })}
               content={
                 <Editor
                   height="300px"

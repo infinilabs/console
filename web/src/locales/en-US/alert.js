@@ -356,6 +356,8 @@ export default {
   "alert.message.detail.action_result": "Execution result",
   "alert.message.detail.action_result_error": "Exection error",
   "alert.message.detail.alert_info": "Alert Detail",
+  "alert.message.detail.query_dsl": "Query DSL",
+  "alert.message.detail.response": "Response",
   "alert.message.detail.condition.type": "Condition Type",
   "alert.message.detail.condition": "Condition",
   "alert.message.detail.bucket_diff_type": "Bucket Diff Type",

@@ -1,4 +1,4 @@
-import { Table, Button, Divider, Tag, Icon, Empty } from "antd";
+import { Table, Button, Divider, Tag, Icon, Empty, Tooltip, message } from "antd";
 import {
   Axis,
   Chart,
@@ -27,6 +27,16 @@ import { MonitorDatePicker } from "@/components/infini/MonitorDatePicker";
 import { calculateBounds } from "@/components/vendor/data/common/query/timefilter";
 import metricsStyles from "@/pages/Cluster/Metrics.scss";
 import _ from "lodash";
+import { CopyToClipboard } from "react-copy-to-clipboard";
+
+const buildCopyRequestText = (requestPayload) => {
+  const index = requestPayload?.index;
+  const query = requestPayload?.query;
+  if (!index || !query) {
+    return "";
+  }
+  return `GET ${index}/_search\n${JSON.stringify(query, null, 2)}`;
+};
 
 const RuleMetricChart = ({ conditions, values }) => {
   const [timeRange, setTimeRange] = React.useState(
@@ -46,6 +56,7 @@ const RuleMetricChart = ({ conditions, values }) => {
   });
 
   const [metricData, setMetricData] = useState({});
+  const [latestRequest, setLatestRequest] = useState("");
   const hasMetricData = useMemo(() => {
     if (!Array.isArray(metricData?.lines)) {
       return false;
@@ -96,6 +107,7 @@ const RuleMetricChart = ({ conditions, values }) => {
       });
       if (res && !res.error) {
         setMetricData(res.metric);
+        setLatestRequest(buildCopyRequestText(res.request));
       }
       console.log("preview_metric res:", res);
     };
@@ -130,12 +142,20 @@ const RuleMetricChart = ({ conditions, values }) => {
     return (
       <div
         className={metricsStyles.vizChartContainer}
-        style={{ border: "none", margin: 0, flex: "1 1 100%" }}
+        style={{
+          border: "none",
+          margin: 0,
+          flex: "1 1 100%",
+          minHeight: 240,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
       >
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
           description="暂无数据"
-          style={{ padding: 0 }}
+          style={{ padding: 0, width: "100%" }}
         />
       </div>
     );
@@ -144,7 +164,7 @@ const RuleMetricChart = ({ conditions, values }) => {
   return (
     <div
       className={metricsStyles.vizChartContainer}
-      style={{ border: "none", margin: 0, flex: "1 1 100%" }}
+      style={{ border: "none", margin: 0, flex: "1 1 100%", position: "relative" }}
     >
       <Chart size={[, 240]} className={metricsStyles.vizChartItem}>
         <Settings
@@ -227,6 +247,20 @@ const RuleMetricChart = ({ conditions, values }) => {
           );
         })}
       </Chart>
+      {latestRequest ? (
+        <div style={{ position: "absolute", right: 8, bottom: 8, zIndex: 1 }}>
+          <CopyToClipboard
+            text={latestRequest}
+            onCopy={() =>
+              message.success(formatMessage({ id: "cluster.metrics.request.copy.success" }))
+            }
+          >
+            <Tooltip title={formatMessage({ id: "cluster.metrics.request.copy" })}>
+              <Icon type="copy" style={{ color: "rgb(0, 127, 255)" }} />
+            </Tooltip>
+          </CopyToClipboard>
+        </div>
+      ) : null}
     </div>
   );
 };

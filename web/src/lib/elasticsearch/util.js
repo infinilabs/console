@@ -161,6 +161,14 @@ export function extractClusterIDFromURL() {
 }
 
 export function formatTimeRange(timeRange) {
+  const rawMin = `${timeRange?.min ?? ""}`.trim().toLowerCase();
+  const rawMax = `${timeRange?.max ?? ""}`.trim().toLowerCase();
+  if (rawMin === "auto" || rawMax === "auto") {
+    return {
+      min: "auto",
+      max: "auto",
+    };
+  }
   let bounds;
   try {
     bounds = calculateBounds({

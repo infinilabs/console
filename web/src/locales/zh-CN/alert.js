@@ -338,6 +338,8 @@ export default {
   "alert.message.detail.action_result": "执行结果",
   "alert.message.detail.action_result_error": "规则执行错误",
   "alert.message.detail.alert_info": "告警详情",
+  "alert.message.detail.query_dsl": "查询 DSL",
+  "alert.message.detail.response": "响应",
   "alert.message.detail.condition.type": "触发条件类型",
   "alert.message.detail.condition": "触发条件",
   "alert.message.detail.bucket_diff_type": "分桶对比类型",

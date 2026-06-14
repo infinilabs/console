@@ -627,6 +627,23 @@ const Index = forwardRef((props, ref) => {
     [queryParams?.timeRange, dataSource?.aggregations]
   );
 
+  const histogramAutoRangePending = useMemo(() => {
+    const fromValue = normalizeTimeRangeValue(queryParams?.timeRange?.from, "");
+    const toValue = normalizeTimeRangeValue(queryParams?.timeRange?.to, "");
+    const isAuto = fromValue === "auto" || toValue === "auto";
+    if (!isAuto) {
+      return false;
+    }
+    const minValue = dataSource?.aggregations?.__listview_min_time?.value;
+    const maxValue = dataSource?.aggregations?.__listview_max_time?.value;
+    return !(
+      Number.isFinite(minValue) &&
+      Number.isFinite(maxValue) &&
+      minValue > 0 &&
+      maxValue > 0
+    );
+  }, [queryParams?.timeRange, dataSource?.aggregations]);
+
   useEffect(() => {
     const nextParam = { ...(param || {}), ...queryParams };
     if (isEqual(param || {}, nextParam)) {
@@ -777,13 +794,26 @@ const Index = forwardRef((props, ref) => {
                 className={styles.histogramWrap}
                 style={{ display: histogramState.visible ? "block" : "none" }}
               >
-                <WidgetRender
-                  widget={histogramState.widget}
-                  range={histogramRange}
-                  query={histogramQuery}
-                  queryParams={queryParams?.filters || {}}
-                  onGlobalQueriesChange={onHistogramQueriesChange}
-                />
+                {histogramAutoRangePending ? (
+                  <div
+                    style={{
+                      minHeight: 140,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Spin size="small" />
+                  </div>
+                ) : (
+                  <WidgetRender
+                    widget={histogramState.widget}
+                    range={histogramRange}
+                    query={histogramQuery}
+                    queryParams={queryParams?.filters || {}}
+                    onGlobalQueriesChange={onHistogramQueriesChange}
+                  />
+                )}
               </div>
             ) : null}
 

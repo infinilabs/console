@@ -46,6 +46,13 @@ import { pushCommand } from "../modules/mappings/mappings";
 import { formatMessage } from "umi/locale";
 import { hasAuthority } from "@/utils/authority";
 
+const getLocalizedSaveCommandError = (errorMessage?: string) => {
+  if (errorMessage === "title already exists") {
+    return formatMessage({ id: "command.message.title_exists" });
+  }
+  return errorMessage;
+};
+
 interface Props {
   getCurl: () => Promise<string>;
   getDocumentation: () => Promise<string | null>;
@@ -200,7 +207,7 @@ export default class ConsoleMenu extends Component<Props, State> {
       const result = await response?.json();
       if (result?.error) {
         notification.error({
-          message: result.error,
+          message: getLocalizedSaveCommandError(result.error),
         });
         return;
       }

@@ -9,6 +9,7 @@ export default {
   "command.manage.edit.title": "常用命令",
   "command.btn.newtag": "新建标签",
   "command.message.invalid.tag": "无效的标签内容",
+  "command.message.title_exists": "标题已存在",
   "command.manage.save.title": "保存为常用命令",
   "command.manage.title": "常用命令管理",
   "command.manage.description":

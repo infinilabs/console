@@ -9,6 +9,7 @@ export default {
   "command.manage.edit.title": "Command",
   "command.btn.newtag": "Add New Tag",
   "command.message.invalid.tag": "invalid tag",
+  "command.message.title_exists": "Title already exists",
   "command.manage.save.title": "Save As Command",
   "command.manage.title": "COMMANDS",
   "command.manage.description":

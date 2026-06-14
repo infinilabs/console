@@ -85,8 +85,14 @@ export const WidgetRender = (props) => {
       }
    }, [JSON.stringify(range), refresh]);
 
+   const hasRenderableWidget = useMemo(() => (
+      !!widget &&
+      Array.isArray(widget?.series) &&
+      widget.series.length > 0
+   ), [widget]);
+
    const renderWidget = useMemo(() => {
-      if (!widget) {
+      if (!hasRenderableWidget) {
          return widget;
       }
       if (widget.id) {
@@ -96,10 +102,10 @@ export const WidgetRender = (props) => {
          ...widget,
          id: fallbackWidgetIdRef.current,
       };
-   }, [widget]);
+   }, [widget, hasRenderableWidget]);
 
    return (
-      widget ? (
+      hasRenderableWidget ? (
          <div className={styles.content}>
             {
                showCopy && requests.length > 0 && (

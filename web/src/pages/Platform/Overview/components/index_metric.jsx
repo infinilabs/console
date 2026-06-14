@@ -39,6 +39,34 @@ const extractIndexNames = (value) => {
   return [];
 };
 
+const INDEX_GROUP_FALLBACK_METRICS = {
+  operations: "indexing_rate",
+  latency: "indexing_latency",
+  storage: "index_storage",
+  document: "doc_count",
+  memory: "segment_memory",
+  cache: "query_cache",
+};
+
+const buildChartEntries = (groupKey, metricKeys = []) => {
+  const normalizedMetricKeys = metricKeys.filter(Boolean);
+  const entries = normalizedMetricKeys.map((metricKey, index) => ({
+    metricKey,
+    chartId: `${metricKey}__${index}`,
+  }));
+  if (normalizedMetricKeys.length % 2 === 1 && normalizedMetricKeys.length > 0) {
+    const preferredMetric = INDEX_GROUP_FALLBACK_METRICS[groupKey];
+    const metricKey = normalizedMetricKeys.includes(preferredMetric)
+      ? preferredMetric
+      : normalizedMetricKeys[0];
+    entries.push({
+      metricKey,
+      chartId: `${metricKey}__extra`,
+    });
+  }
+  return entries;
+};
+
 export default (props) => {
 
   const { 
@@ -116,8 +144,8 @@ export default (props) => {
       const cs = {}
       metrics.forEach((item) => {
         if (item[1]?.length > 0) {
-          item[1].forEach((metricKey) => {
-            cs[metricKey] = createRef()
+          buildChartEntries(item[0], item[1]).forEach((entry) => {
+            cs[entry.chartId] = createRef()
           })
         }
       })
@@ -165,11 +193,7 @@ export default (props) => {
       <div className="px-box">
         <div className="px">
             {metrics.filter((item) => !!item && !!item[1]).map((item) => {
-              const metricKeys = (item[1] || []).filter(Boolean);
-              const normalizedMetricKeys =
-                metricKeys.length % 2 === 1
-                  ? [...metricKeys, "__placeholder__"]
-                  : metricKeys;
+              const chartEntries = buildChartEntries(item[0], item[1] || []);
               return (
                 <div key={item[0]} style={{ margin: "8px 0" }}>
                   <MetricContainer
@@ -179,32 +203,24 @@ export default (props) => {
                   >
                     <div className="metric-inner-cnt">
                       {
-                        normalizedMetricKeys.map((metricKey, idx) =>
-                          metricKey === "__placeholder__" ? (
-                            <div
-                              key={`${item[0]}-placeholder-${idx}`}
-                              className="metric-item metric-item-placeholder"
-                              aria-hidden="true"
-                            />
-                          ) : (
-                            <MetricChart
-                              key={metricKey}
-                              instance={charts[metricKey]}
-                              pointerUpdate={pointerUpdate}
-                              timezone={timezone}
-                              timeRange={timeRange}
-                              handleTimeChange={handleTimeChange}
-                              fetchUrl={`${ESPrefix}/${clusterID}/index_metrics`}
-                              metricKey={metricKey}
-                              title={formatMessage({id: "cluster.metrics.index.axis." + metricKey + ".title"})}
-                              queryParams={queryParams}
-                              className={"metric-item"}
-                              timeout={timeout}
-                              refresh={refresh}
-                              handleTimeIntervalChange={handleTimeIntervalChange}
-                            />
-                          )
-                        )
+                        chartEntries.map((entry) => (
+                          <MetricChart
+                            key={entry.chartId}
+                            instance={charts[entry.chartId]}
+                            pointerUpdate={pointerUpdate}
+                            timezone={timezone}
+                            timeRange={timeRange}
+                            handleTimeChange={handleTimeChange}
+                            fetchUrl={`${ESPrefix}/${clusterID}/index_metrics`}
+                            metricKey={entry.metricKey}
+                            title={formatMessage({id: "cluster.metrics.index.axis." + entry.metricKey + ".title"})}
+                            queryParams={queryParams}
+                            className={"metric-item"}
+                            timeout={timeout}
+                            refresh={refresh}
+                            handleTimeIntervalChange={handleTimeIntervalChange}
+                          />
+                        ))
                       }
                     </div>
                   </MetricContainer>

@@ -367,7 +367,7 @@ func (h *AlertAPI) searchAlertMessage(w http.ResponseWriter, req *http.Request, 
 		if !startAt.IsZero() {
 			hit.Source["trigger_at"] = startAt
 		}
-		hit.Source["updated"] = resolveAlertDisplayUpdatedTime(alertMessage, startAt)
+		hit.Source["updated"] = resolveAlertDisplayUpdatedTime(alertMessage, incident, startAt)
 		endTime := time.Now()
 		if alertMessage.Status == alerting.MessageStateRecovered {
 			if recoveredAt := getRecoveredAt(alertMessage); !recoveredAt.IsZero() {
@@ -409,22 +409,29 @@ func getRecoveredAt(message *alerting.AlertMessage) time.Time {
 	return time.Time{}
 }
 
-func resolveAlertDisplayUpdatedTime(message *alerting.AlertMessage, triggerAt time.Time) time.Time {
+func resolveAlertDisplayUpdatedTime(message *alerting.AlertMessage, incident alertMessageIncident, triggerAt time.Time) time.Time {
 	if message == nil {
 		if triggerAt.IsZero() {
 			return time.Time{}
 		}
 		return triggerAt
 	}
+	updatedAt := message.Updated
+	if !incident.LatestAt.IsZero() && (updatedAt.IsZero() || incident.LatestAt.After(updatedAt)) {
+		updatedAt = incident.LatestAt
+	}
 	if message.Status == alerting.MessageStateAlerting {
-		if !triggerAt.IsZero() && (message.Updated.IsZero() || message.Updated.Before(triggerAt)) {
+		if !triggerAt.IsZero() && (updatedAt.IsZero() || updatedAt.Before(triggerAt)) {
 			return triggerAt
 		}
 	}
-	return message.Updated
+	return updatedAt
 }
 
 func getIncidentStartTime(message *alerting.AlertMessage, incident alertMessageIncident) time.Time {
+	if message != nil && !message.Created.IsZero() {
+		return message.Created
+	}
 	if !incident.TriggerAt.IsZero() {
 		return incident.TriggerAt
 	}
@@ -503,7 +510,7 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 		"message":           message.Message,
 		"priority":          message.Priority,
 		"created":           message.Created,
-		"updated":           resolveAlertDisplayUpdatedTime(message, triggerAt),
+		"updated":           resolveAlertDisplayUpdatedTime(message, incident, triggerAt),
 		"recovered_at":      message.RecoveredAt,
 		"trigger_at":        triggerAt,
 		"resolve_at":        resolveAt,
@@ -531,6 +538,7 @@ type alertMessageIncident struct {
 	ResolveEventID string
 	TriggerAt      time.Time
 	ResolveAt      time.Time
+	LatestAt       time.Time
 }
 
 func resolveAlertMessageIncident(message *alerting.AlertMessage) alertMessageIncident {
@@ -617,8 +625,11 @@ func firstNonEmptyString(values ...string) string {
 func buildAlertMessageIncident(message *alerting.AlertMessage, alerts []alerting.Alert) alertMessageIncident {
 	incident := alertMessageIncident{}
 	for _, alertItem := range alerts {
+		if incident.LatestAt.IsZero() || alertItem.Created.After(incident.LatestAt) {
+			incident.LatestAt = alertItem.Created
+		}
 		if alertItem.State == alerting.AlertStateAlerting {
-			if incident.TriggerEventID == "" || alertItem.Created.After(incident.TriggerAt) {
+			if incident.TriggerEventID == "" || alertItem.Created.Before(incident.TriggerAt) {
 				incident.TriggerEventID = alertItem.ID
 				incident.TriggerAt = alertItem.Created
 			}

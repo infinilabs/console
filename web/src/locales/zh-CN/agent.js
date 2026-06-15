@@ -49,6 +49,7 @@ export default {
   "agent.instance.registration.auth.type": "认证方式",
   "agent.instance.registration.auth.type.access_token": "访问凭据",
   "agent.instance.registration.auth.type.basic_auth": "用户名 / 密码",
+  "agent.form.placeholder.auth.username": "请输入用户名",
   "agent.instance.step.result.button.register_new": "继续注册新探针",
   "agent.instance.step.result.button.view_list": "查看探针列表",
   "agent.instance.column.agent_ip": "探针 IP",

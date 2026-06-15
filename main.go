@@ -39,6 +39,7 @@ import (
 	"infini.sh/framework/core/util"
 	elastic2 "infini.sh/framework/modules/elastic"
 	"os"
+	"strings"
 	_ "time/tzdata"
 
 	log "github.com/cihub/seelog"
@@ -132,8 +133,11 @@ func getSystemClusterAppSetting() interface{} {
 
 	rollupEnabled, _ := util.GetMapValueByKeys([]string{"persistent", "rollup", "search", "enabled"}, settings)
 	rollupEnabledValue := false
-	if v, ok := rollupEnabled.(string); ok && v == "true" {
-		rollupEnabledValue = true
+	switch v := rollupEnabled.(type) {
+	case string:
+		rollupEnabledValue = strings.EqualFold(v, "true")
+	case bool:
+		rollupEnabledValue = v
 	}
 	return map[string]interface{}{
 		"distribution":     cfg.Distribution,

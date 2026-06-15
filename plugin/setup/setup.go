@@ -302,6 +302,7 @@ type SetupRequest struct {
 	Language           string `json:"language,omitempty"`
 	PrimaryShards      int    `json:"primary_shards"`
 	AutoExpandReplicas string `json:"auto_expand_replicas"`
+	EnableRollup       bool   `json:"enable_rollup"`
 }
 
 var GlobalSystemElasticsearchID = "infini_default_system_cluster"
@@ -1282,6 +1283,27 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 		}, http.StatusOK)
 		return
 	}
+
+	if request.InitializeTemplate == "rollup" && request.EnableRollup {
+		err = systemClient.UpdateClusterSettings(util.MustToJSONBytes(util.MapStr{
+			"persistent": util.MapStr{
+				"rollup": util.MapStr{
+					"search": util.MapStr{
+						"enabled": "true",
+					},
+					"hours_before": "24",
+				},
+			},
+		}))
+		if err != nil {
+			module.WriteJSON(w, util.MapStr{
+				"success": false,
+				"log":     fmt.Sprintf("initalize rollup settings failed: %v", err),
+			}, http.StatusOK)
+			return
+		}
+	}
+
 	module.WriteJSON(w, util.MapStr{
 		"success": true,
 		"log":     fmt.Sprintf("initalize template [%s] succeed", request.InitializeTemplate),

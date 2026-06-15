@@ -54,6 +54,7 @@ export default {
   "agent.instance.registration.auth.type": "Authentication Method",
   "agent.instance.registration.auth.type.access_token": "Access Credential",
   "agent.instance.registration.auth.type.basic_auth": "Username / Password",
+  "agent.form.placeholder.auth.username": "Please input username",
   "agent.instance.step.result.button.register_new": "Register Another Agent",
   "agent.instance.step.result.button.view_list": "View Agent List",
   "agent.instance.column.agent_ip": "Agent IP",

@@ -85,26 +85,6 @@ const tableDefaultPageSize = 20;
 const cardDefaultPageSize = initialQueryParams.size;
 const getDefaultPageSizeByDisplayType = (displayType: "card" | "table") =>
   displayType === "table" ? tableDefaultPageSize : cardDefaultPageSize;
-const stripLegacyOverviewURLParams = (params: any) => {
-  if (!params) {
-    return params;
-  }
-  let changed = false;
-  const next = { ...params };
-  Object.keys(next).forEach((key) => {
-    if (
-      key === "from" ||
-      key === "size" ||
-      key === "display_type" ||
-      /_(card|table)_(from|size)$/.test(key)
-    ) {
-      delete next[key];
-      changed = true;
-    }
-  });
-  return changed ? next : params;
-};
-
 export default forwardRef((props: IProps, ref: any) => {
   const [param, setParam] = useQueryParam("_g", JsonParam);
   const currentTab = param?.tab || "clusters";
@@ -205,13 +185,6 @@ export default forwardRef((props: IProps, ref: any) => {
       setDispalyTypeObj({ ...dispalyTypeObj, [currentTab]: displayType });
     }
   }, [currentTab, displayType, dispalyTypeObj, setDispalyTypeObj]);
-
-  useEffect(() => {
-    const nextParam = stripLegacyOverviewURLParams(param);
-    if (nextParam !== param) {
-      setParam(nextParam);
-    }
-  }, [param, setParam]);
 
   useEffect(() => {
     dispatch({

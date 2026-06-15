@@ -2,7 +2,7 @@ export default {
   "guide.header.title": "配置向导",
   "guide.initialization.step.configuration": "配置",
   "guide.initialization.step.configuration.desc":
-    "连接系统集群（Elasticsearch 要求 5.3 或更高版本）。",
+    "连接系统集群（Easysearch 要求 2.3 或更高版本）。",
   "guide.initialization.step.initialization": "初始化",
   "guide.initialization.step.initialization.desc":
     "初始化系统索引和模板的基本设置。",
@@ -46,12 +46,12 @@ export default {
   "guide.cluster.auth": "身份验证",
   "guide.cluster.test.connection": "连接测试",
   "guide.cluster.test.connection.error.version":
-    "Elasticsearch 要求 5.3 或更高版本。",
+    "Easysearch 要求 2.3 或更高版本。",
   "guide.cluster.test.connection.failed": "连接集群失败。",
   "guide.cluster.test.connection.localhost":
     "集群地址不能使用本地地址，请填写网关可访问的远程地址。",
   "guide.cluster.validate.elasticsearch_version_too_old":
-    "Elasticsearch 版本太旧。",
+    "Easysearch 版本太旧。",
   "guide.cluster.validate.elasticsearch_indices_exists":
     "目标群集中已存在一些相关索引。",
   "guide.cluster.validate.elasticsearch_template_exists":

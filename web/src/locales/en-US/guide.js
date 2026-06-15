@@ -2,7 +2,7 @@ export default {
   "guide.header.title": "Configuration Guide",
   "guide.initialization.step.configuration": "Configuration",
   "guide.initialization.step.configuration.desc":
-    "Connecting to system cluster (elasticsearch required version 5.3 or above).",
+    "Connecting to system cluster (Easysearch required version 2.3 or above).",
   "guide.initialization.step.initialization": "Initialization",
   "guide.initialization.step.initialization.desc":
     "Initializing basic settings for system indices and templates.",
@@ -48,12 +48,12 @@ export default {
   "guide.cluster.auth": "Auth",
   "guide.cluster.test.connection": "Test Connection",
   "guide.cluster.test.connection.error.version":
-    "Elasticsearch required version 5.3 or above.",
+    "Easysearch required version 2.3 or above.",
   "guide.cluster.test.connection.failed": "Cluster connection failed.",
   "guide.cluster.test.connection.localhost":
     "The cluster address cannot use localhost. Please enter a remote address that the gateway can access.",
   "guide.cluster.validate.elasticsearch_version_too_old":
-    "Elasticsearch version is too old.",
+    "Easysearch version is too old.",
   "guide.cluster.validate.elasticsearch_indices_exists":
     "Some related indices are already exists in the target cluster.",
   "guide.cluster.validate.elasticsearch_template_exists":

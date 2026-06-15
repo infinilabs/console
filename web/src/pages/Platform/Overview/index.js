@@ -85,6 +85,7 @@ const NewOverview = (props) => {
           onChange={(key) => {
             setParam((param) => {
               return {
+                ...(param || {}),
                 tab: key,
               };
             });

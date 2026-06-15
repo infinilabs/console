@@ -83,10 +83,19 @@ const initialQueryParams = {
   keyword: "",
 };
 const tableDefaultPageSize = 20;
+const isValidDisplayType = (value: unknown): value is "card" | "table" =>
+  value === "card" || value === "table";
+const toNumberOrDefault = (value: unknown, defaultValue: number) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : defaultValue;
+};
 
 export default forwardRef((props: IProps, ref: any) => {
   const [param, setParam] = useQueryParam("_g", JsonParam);
   const currentTab = param?.tab || "clusters";
+  const urlDisplayType = isValidDisplayType(param?.display_type)
+    ? param.display_type
+    : undefined;
 
   const {
     extraQueryFields = [],
@@ -164,20 +173,38 @@ export default forwardRef((props: IProps, ref: any) => {
     }
   }
   const [queryParams, dispatch] = useReducer(reducer, {
-    from: param?.from || initialQueryParams.from,
-    size: param?.size || initialQueryParams.size,
-    keyword: param?.keyword || initialQueryParams.keyword,
+    from: toNumberOrDefault(param?.from, initialQueryParams.from),
+    size: toNumberOrDefault(param?.size, initialQueryParams.size),
+    keyword: param?.keyword ?? initialQueryParams.keyword,
   });
+  const displayType = urlDisplayType || dispalyTypeObj[currentTab] || "card";
 
   const onDisplayTypeChange = (value: string) => {
-    const currentDisplayType = dispalyTypeObj[currentTab] || "card";
+    const currentDisplayType = displayType;
     pageSizeByDisplayRef.current[currentDisplayType] = queryParams.size;
+    setParam((currentParam) => ({
+      ...(currentParam || {}),
+      display_type: value,
+    }));
     setDispalyTypeObj({ ...dispalyTypeObj, [currentTab]: value });
   };
 
   useEffect(() => {
-    const displayType = dispalyTypeObj[currentTab] || "card";
+    if (dispalyTypeObj[currentTab] !== displayType) {
+      setDispalyTypeObj({ ...dispalyTypeObj, [currentTab]: displayType });
+    }
+  }, [currentTab, displayType, dispalyTypeObj, setDispalyTypeObj]);
+
+  useEffect(() => {
     if (appliedDisplayTypeRef.current === displayType) {
+      return;
+    }
+    if (
+      appliedDisplayTypeRef.current === undefined &&
+      Number.isFinite(Number(param?.size))
+    ) {
+      pageSizeByDisplayRef.current[displayType] = Number(param?.size);
+      appliedDisplayTypeRef.current = displayType;
       return;
     }
     appliedDisplayTypeRef.current = displayType;
@@ -188,7 +215,7 @@ export default forwardRef((props: IProps, ref: any) => {
     if (queryParams.size !== nextPageSize || queryParams.from !== 0) {
       dispatch({ type: "setPageSizeAndReset", value: nextPageSize });
     }
-  }, [currentTab, dispalyTypeObj, queryParams.size, queryParams.from]);
+  }, [currentTab, displayType, param?.size, queryParams.size, queryParams.from]);
   const { run, loading, value } = useFetch(
     searchAction,
     {
@@ -212,7 +239,6 @@ export default forwardRef((props: IProps, ref: any) => {
   const result = (value as any)?.hits || {};
   const { hits = [] } = result;
   const hasSide = sideSorterOptions.length > 0 || aggsParams.length > 0;
-  const displayType = dispalyTypeObj[currentTab] || "card";
 
   const initQueryParams = () => {
     extraQueryFields.forEach((item) => {
@@ -375,7 +401,7 @@ export default forwardRef((props: IProps, ref: any) => {
                   dispatch({ type: "search", value })
                 }}
                 onFacetChange={onFacetChange}
-                dispalyType={dispalyTypeObj[currentTab]}
+                dispalyType={displayType}
                 onDisplayTypeChange={onDisplayTypeChange}
                 autoCompleteConfig={{
                   action: searchAction,

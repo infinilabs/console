@@ -83,11 +83,29 @@ const initialQueryParams = {
   keyword: "",
 };
 const tableDefaultPageSize = 20;
+const cardDefaultPageSize = initialQueryParams.size;
 const isValidDisplayType = (value: unknown): value is "card" | "table" =>
   value === "card" || value === "table";
 const toNumberOrDefault = (value: unknown, defaultValue: number) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : defaultValue;
+};
+const getQueryParamKeysByDisplayType = (tab: string, displayType: "card" | "table") => ({
+  from: `${tab}_${displayType}_from`,
+  size: `${tab}_${displayType}_size`,
+});
+const getDefaultPageSizeByDisplayType = (displayType: "card" | "table") =>
+  displayType === "table" ? tableDefaultPageSize : cardDefaultPageSize;
+const getModeQueryParams = (
+  params: any,
+  tab: string,
+  displayType: "card" | "table"
+) => {
+  const keys = getQueryParamKeysByDisplayType(tab, displayType);
+  const defaultPageSize = getDefaultPageSizeByDisplayType(displayType);
+  const from = toNumberOrDefault(params?.[keys.from], initialQueryParams.from);
+  const size = toNumberOrDefault(params?.[keys.size], defaultPageSize);
+  return { from, size };
 };
 
 export default forwardRef((props: IProps, ref: any) => {
@@ -135,11 +153,8 @@ export default forwardRef((props: IProps, ref: any) => {
       decode: JSON.parse,
     }
   );
-  const pageSizeByDisplayRef = useRef<Record<string, number>>({
-    card: initialQueryParams.size,
-    table: tableDefaultPageSize,
-  });
-  const appliedDisplayTypeRef = useRef<string>();
+  const displayType = urlDisplayType || dispalyTypeObj[currentTab] || "card";
+  const modeQueryParams = getModeQueryParams(param, currentTab, displayType);
 
   function reducer(
     queryParams: IQueryParams,
@@ -168,20 +183,22 @@ export default forwardRef((props: IProps, ref: any) => {
           from: 0,
           size: action.value,
         };
+      case "setQuery":
+        return {
+          ...queryParams,
+          ...action.value,
+        };
       default:
         throw new Error();
     }
   }
   const [queryParams, dispatch] = useReducer(reducer, {
-    from: toNumberOrDefault(param?.from, initialQueryParams.from),
-    size: toNumberOrDefault(param?.size, initialQueryParams.size),
+    from: modeQueryParams.from,
+    size: modeQueryParams.size,
     keyword: param?.keyword ?? initialQueryParams.keyword,
   });
-  const displayType = urlDisplayType || dispalyTypeObj[currentTab] || "card";
 
   const onDisplayTypeChange = (value: string) => {
-    const currentDisplayType = displayType;
-    pageSizeByDisplayRef.current[currentDisplayType] = queryParams.size;
     setParam((currentParam) => ({
       ...(currentParam || {}),
       display_type: value,
@@ -196,26 +213,21 @@ export default forwardRef((props: IProps, ref: any) => {
   }, [currentTab, displayType, dispalyTypeObj, setDispalyTypeObj]);
 
   useEffect(() => {
-    if (appliedDisplayTypeRef.current === displayType) {
-      return;
-    }
+    const nextModeQueryParams = getModeQueryParams(param, currentTab, displayType);
     if (
-      appliedDisplayTypeRef.current === undefined &&
-      Number.isFinite(Number(param?.size))
+      queryParams.from === nextModeQueryParams.from &&
+      queryParams.size === nextModeQueryParams.size
     ) {
-      pageSizeByDisplayRef.current[displayType] = Number(param?.size);
-      appliedDisplayTypeRef.current = displayType;
       return;
     }
-    appliedDisplayTypeRef.current = displayType;
-    const nextPageSize =
-      displayType === "table"
-        ? pageSizeByDisplayRef.current.table || tableDefaultPageSize
-        : pageSizeByDisplayRef.current.card || initialQueryParams.size;
-    if (queryParams.size !== nextPageSize || queryParams.from !== 0) {
-      dispatch({ type: "setPageSizeAndReset", value: nextPageSize });
-    }
-  }, [currentTab, displayType, param?.size, queryParams.size, queryParams.from]);
+    dispatch({
+      type: "setQuery",
+      value: {
+        from: nextModeQueryParams.from,
+        size: nextModeQueryParams.size,
+      },
+    });
+  }, [param, currentTab, displayType, queryParams.from, queryParams.size]);
   const { run, loading, value } = useFetch(
     searchAction,
     {
@@ -330,12 +342,18 @@ export default forwardRef((props: IProps, ref: any) => {
   }, [displayType, loading, hits, infoAction, listItemConfig, cardInfos]);
 
   useEffect(() => {
-    const nextParam = { ...(param || {}), ...queryParams };
+    const keys = getQueryParamKeysByDisplayType(currentTab, displayType);
+    const nextParam = {
+      ...(param || {}),
+      ...queryParams,
+      [keys.from]: queryParams.from,
+      [keys.size]: queryParams.size,
+    };
     if (isEqual(param || {}, nextParam)) {
       return;
     }
     setParam(nextParam);
-  }, [param, queryParams, setParam]);
+  }, [param, queryParams, setParam, currentTab, displayType]);
 
   useEffect(() => {
     initQueryParams();

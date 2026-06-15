@@ -83,11 +83,9 @@ const NewOverview = (props) => {
       <div>
         <Tabs
           onChange={(key) => {
-            setParam((param) => {
-              return {
-                ...(param || {}),
-                tab: key,
-              };
+            setParam({
+              ...(param || {}),
+              tab: key,
             });
           }}
           destroyInactiveTabPane

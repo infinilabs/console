@@ -1690,7 +1690,7 @@ func getLastAlertMessage(ruleID string, duration time.Duration) (*alerting.Alert
 
 func saveAlertMessageToES(message *alerting.AlertMessage) error {
 	message.Updated = time.Now()
-	return orm.Save(orm.NewContext(), message)
+	return orm.Save(&orm.Context{Refresh: orm.WaitForRefresh}, message)
 }
 
 func saveAlertMessage(message *alerting.AlertMessage) error {

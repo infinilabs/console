@@ -133,6 +133,7 @@ export default forwardRef((props: IProps, ref: any) => {
   } = props;
 
   const drawRef = useRef<IDrawerRef>(null);
+  const syncingQueryParamsRef = useRef(false);
   const [sideVisible, setSideVisible] = useState(false);
 
   const [searchField, setSearchField] = useState<string>();
@@ -199,10 +200,10 @@ export default forwardRef((props: IProps, ref: any) => {
   });
 
   const onDisplayTypeChange = (value: string) => {
-    setParam((currentParam) => ({
-      ...(currentParam || {}),
+    setParam({
+      ...(param || {}),
       display_type: value,
-    }));
+    });
     setDispalyTypeObj({ ...dispalyTypeObj, [currentTab]: value });
   };
 
@@ -218,8 +219,10 @@ export default forwardRef((props: IProps, ref: any) => {
       queryParams.from === nextModeQueryParams.from &&
       queryParams.size === nextModeQueryParams.size
     ) {
+      syncingQueryParamsRef.current = false;
       return;
     }
+    syncingQueryParamsRef.current = true;
     dispatch({
       type: "setQuery",
       value: {
@@ -342,6 +345,9 @@ export default forwardRef((props: IProps, ref: any) => {
   }, [displayType, loading, hits, infoAction, listItemConfig, cardInfos]);
 
   useEffect(() => {
+    if (syncingQueryParamsRef.current) {
+      return;
+    }
     const keys = getQueryParamKeysByDisplayType(currentTab, displayType);
     const nextParam = {
       ...(param || {}),

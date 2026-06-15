@@ -365,6 +365,7 @@ func TestGatewayInstallTemplateBootstrapsManagedConfig(t *testing.T) {
 		`service_type: "${service_type}"`,
 		`access_token="BOOTSTRAP_TOKEN"`,
 		`keystore add "CONFIGS_MANAGER_ACCESS_TOKEN"`,
+		`keystore add "configs_manager_bootstrap_token"`,
 		`keystore add "API_SECURITY_USERNAME"`,
 		`keystore add "API_SECURITY_PASSWORD"`,
 		`service_name="gateway-relay"`,

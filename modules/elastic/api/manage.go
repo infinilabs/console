@@ -511,13 +511,13 @@ func initAgentCollectionUser(client elastic.API, distribution, username, passwor
 	if err != nil {
 		return username, err
 	}
-	if err := client.PutRole(username, roleBody); err != nil {
+	if err := putRoleWithRetry(client, username, roleBody); err != nil {
 		fallbackUsername, fallback := getManagedAgentCollectionFallbackUsername(distribution, username, err)
 		if !fallback {
 			return username, wrapAgentCollectionProvisionError(distribution, "role", err)
 		}
 		username = fallbackUsername
-		if err := client.PutRole(username, roleBody); err != nil {
+		if err := putRoleWithRetry(client, username, roleBody); err != nil {
 			return username, wrapAgentCollectionProvisionError(distribution, "role", err)
 		}
 	}
@@ -526,10 +526,36 @@ func initAgentCollectionUser(client elastic.API, distribution, username, passwor
 	if err != nil {
 		return username, err
 	}
-	if err := client.PutUser(username, userBody); err != nil {
+	if err := putUserWithRetry(client, username, userBody); err != nil {
 		return username, wrapAgentCollectionProvisionError(distribution, "user", err)
 	}
 	return username, nil
+}
+
+func putRoleWithRetry(client elastic.API, username string, roleBody []byte) error {
+	err := client.PutRole(username, roleBody)
+	if err != nil && isVersionConflictError(err) {
+		return client.PutRole(username, roleBody)
+	}
+	return err
+}
+
+func putUserWithRetry(client elastic.API, username string, userBody []byte) error {
+	err := client.PutUser(username, userBody)
+	if err != nil && isVersionConflictError(err) {
+		return client.PutUser(username, userBody)
+	}
+	return err
+}
+
+func isVersionConflictError(err error) bool {
+	if err == nil {
+		return false
+	}
+	lower := strings.ToLower(err.Error())
+	return strings.Contains(lower, "version conflict") &&
+		strings.Contains(lower, "required seqno") &&
+		strings.Contains(lower, "primary term")
 }
 
 func buildAgentCollectionRoleBody(distribution string) ([]byte, error) {

@@ -41,6 +41,7 @@ const (
 	ParamResourceName     = "resource_name" // 资源名称 如集群名称 es-v714
 	ParamEventID          = "event_id"      // 检查事件 ID
 	ParamResults          = "results"       //
+	ParamTotalResults     = "total_results" // 未截断的命中总数
 	ParamMessage          = "message"       //检查消息 自定义(模版渲染)
 	ParamTitle            = "title"
 	ParamThreshold        = "threshold"    //检查预设值 []string

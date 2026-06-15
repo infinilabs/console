@@ -367,6 +367,7 @@ func (h *AlertAPI) searchAlertMessage(w http.ResponseWriter, req *http.Request, 
 		if !startAt.IsZero() {
 			hit.Source["trigger_at"] = startAt
 		}
+		hit.Source["updated"] = resolveAlertDisplayUpdatedTime(alertMessage, startAt)
 		endTime := time.Now()
 		if alertMessage.Status == alerting.MessageStateRecovered {
 			if recoveredAt := getRecoveredAt(alertMessage); !recoveredAt.IsZero() {
@@ -406,6 +407,21 @@ func getRecoveredAt(message *alerting.AlertMessage) time.Time {
 		return message.Updated
 	}
 	return time.Time{}
+}
+
+func resolveAlertDisplayUpdatedTime(message *alerting.AlertMessage, triggerAt time.Time) time.Time {
+	if message == nil {
+		if triggerAt.IsZero() {
+			return time.Time{}
+		}
+		return triggerAt
+	}
+	if message.Status == alerting.MessageStateAlerting {
+		if !triggerAt.IsZero() && (message.Updated.IsZero() || message.Updated.Before(triggerAt)) {
+			return triggerAt
+		}
+	}
+	return message.Updated
 }
 
 func getIncidentStartTime(message *alerting.AlertMessage, incident alertMessageIncident) time.Time {
@@ -484,7 +500,7 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 		"message":           message.Message,
 		"priority":          message.Priority,
 		"created":           message.Created,
-		"updated":           message.Updated,
+		"updated":           resolveAlertDisplayUpdatedTime(message, triggerAt),
 		"recovered_at":      message.RecoveredAt,
 		"trigger_at":        triggerAt,
 		"resolve_at":        resolveAt,

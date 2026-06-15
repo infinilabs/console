@@ -68,3 +68,31 @@ func TestGetRecoveredAtPrefersRecoveredAt(t *testing.T) {
 		t.Fatalf("expected recovered_at %v, got %v", recoveredAt, got)
 	}
 }
+
+func TestResolveAlertDisplayUpdatedTimeForAlerting(t *testing.T) {
+	triggerAt := time.Unix(300, 0)
+	updatedAt := triggerAt.Add(-5 * time.Minute)
+	message := &alertmodel.AlertMessage{
+		Status:  alertmodel.MessageStateAlerting,
+		Updated: updatedAt,
+	}
+
+	got := resolveAlertDisplayUpdatedTime(message, triggerAt)
+	if !got.Equal(triggerAt) {
+		t.Fatalf("expected updated time to fallback to trigger_at %v, got %v", triggerAt, got)
+	}
+}
+
+func TestResolveAlertDisplayUpdatedTimeForRecovered(t *testing.T) {
+	triggerAt := time.Unix(300, 0)
+	updatedAt := triggerAt.Add(-5 * time.Minute)
+	message := &alertmodel.AlertMessage{
+		Status:  alertmodel.MessageStateRecovered,
+		Updated: updatedAt,
+	}
+
+	got := resolveAlertDisplayUpdatedTime(message, triggerAt)
+	if !got.Equal(updatedAt) {
+		t.Fatalf("expected recovered message to keep updated time %v, got %v", updatedAt, got)
+	}
+}

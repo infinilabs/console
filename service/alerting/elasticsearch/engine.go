@@ -1077,13 +1077,16 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			priority = conditionResult.ConditionItem.Priority
 		}
 	}
+	// trigger_at in notification templates should reflect the current evaluation run,
+	// while duration still tracks how long this alert event has been ongoing.
 	triggerAt := alertItem.Created
+	alertStartAt := alertItem.Created
 	if alertMessage != nil {
-		triggerAt = alertMessage.Created
+		alertStartAt = alertMessage.Created
 	}
 	paramsCtx = newParameterCtx(rule, checkResults, util.MapStr{
 		alerting2.ParamTimestamp: alertItem.Created.Unix(),
-		"duration":               formatAlertDuration(alertItem.Created.Sub(triggerAt)),
+		"duration":               formatAlertDuration(alertItem.Created.Sub(alertStartAt)),
 		"trigger_at":             triggerAt.Unix(),
 	})
 
@@ -1204,8 +1207,8 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			paramsCtx = newParameterCtx(rule, checkResults, util.MapStr{
 				alerting2.ParamTimestamp: alertItem.Created.Unix(),
 				"priority":               priority,
-				"duration":               formatAlertDuration(alertItem.Created.Sub(alertMessage.Created)),
-				"trigger_at":             alertMessage.Created.Unix(),
+				"duration":               formatAlertDuration(alertItem.Created.Sub(alertStartAt)),
+				"trigger_at":             triggerAt.Unix(),
 			})
 			if alertMessage != nil {
 				paramsCtx[alerting2.ParamEventID] = alertMessage.ID
@@ -1419,6 +1422,7 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 		alerting2.ParamResourceID:   rule.Resource.ID,
 		alerting2.ParamResourceName: rule.Resource.Name,
 		alerting2.ParamResults:      conditionParams,
+		alerting2.ParamTotalResults: len(checkResults.ResultItems),
 		"objects":                   rule.Resource.Objects,
 		"first_group_value":         firstGroupValue,
 		"first_threshold":           firstThreshold,

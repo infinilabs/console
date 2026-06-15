@@ -19,7 +19,6 @@ import Drawer, { IDrawerRef } from "./Drawer";
 import Title from "./Detail/Title";
 import Content from "./Detail/Content";
 import { useLocalStorage } from "@/lib/hooks/storage";
-import isEqual from "lodash/isEqual";
 
 interface IQueryParams {
   from: number;
@@ -84,36 +83,61 @@ const initialQueryParams = {
 };
 const tableDefaultPageSize = 20;
 const cardDefaultPageSize = initialQueryParams.size;
-const isValidDisplayType = (value: unknown): value is "card" | "table" =>
-  value === "card" || value === "table";
 const toNumberOrDefault = (value: unknown, defaultValue: number) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : defaultValue;
 };
-const getQueryParamKeysByDisplayType = (tab: string, displayType: "card" | "table") => ({
-  from: `${tab}_${displayType}_from`,
-  size: `${tab}_${displayType}_size`,
-});
 const getDefaultPageSizeByDisplayType = (displayType: "card" | "table") =>
   displayType === "table" ? tableDefaultPageSize : cardDefaultPageSize;
 const getModeQueryParams = (
-  params: any,
+  paginationState: any,
   tab: string,
   displayType: "card" | "table"
 ) => {
-  const keys = getQueryParamKeysByDisplayType(tab, displayType);
   const defaultPageSize = getDefaultPageSizeByDisplayType(displayType);
-  const from = toNumberOrDefault(params?.[keys.from], initialQueryParams.from);
-  const size = toNumberOrDefault(params?.[keys.size], defaultPageSize);
+  const modeState = paginationState?.[tab]?.[displayType] || {};
+  const from = toNumberOrDefault(modeState.from, initialQueryParams.from);
+  const size = toNumberOrDefault(modeState.size, defaultPageSize);
   return { from, size };
+};
+const updateModeQueryParams = (
+  paginationState: any,
+  tab: string,
+  displayType: "card" | "table",
+  params: { from: number; size: number }
+) => ({
+  ...(paginationState || {}),
+  [tab]: {
+    ...((paginationState || {})[tab] || {}),
+    [displayType]: {
+      from: params.from,
+      size: params.size,
+    },
+  },
+});
+const stripLegacyOverviewURLParams = (params: any) => {
+  if (!params) {
+    return params;
+  }
+  let changed = false;
+  const next = { ...params };
+  Object.keys(next).forEach((key) => {
+    if (
+      key === "from" ||
+      key === "size" ||
+      key === "display_type" ||
+      /_(card|table)_(from|size)$/.test(key)
+    ) {
+      delete next[key];
+      changed = true;
+    }
+  });
+  return changed ? next : params;
 };
 
 export default forwardRef((props: IProps, ref: any) => {
   const [param, setParam] = useQueryParam("_g", JsonParam);
   const currentTab = param?.tab || "clusters";
-  const urlDisplayType = isValidDisplayType(param?.display_type)
-    ? param.display_type
-    : undefined;
 
   const {
     extraQueryFields = [],
@@ -131,9 +155,7 @@ export default forwardRef((props: IProps, ref: any) => {
     detailTitleConfig,
     headerConfig = {},
   } = props;
-
   const drawRef = useRef<IDrawerRef>(null);
-  const syncingQueryParamsRef = useRef(false);
   const [sideVisible, setSideVisible] = useState(false);
 
   const [searchField, setSearchField] = useState<string>();
@@ -154,8 +176,16 @@ export default forwardRef((props: IProps, ref: any) => {
       decode: JSON.parse,
     }
   );
-  const displayType = urlDisplayType || dispalyTypeObj[currentTab] || "card";
-  const modeQueryParams = getModeQueryParams(param, currentTab, displayType);
+  const [paginationState, setPaginationState] = useLocalStorage(
+    "console:overview:pagination",
+    {},
+    {
+      encode: JSON.stringify,
+      decode: JSON.parse,
+    }
+  );
+  const displayType = dispalyTypeObj[currentTab] || "card";
+  const modeQueryParams = getModeQueryParams(paginationState, currentTab, displayType);
 
   function reducer(
     queryParams: IQueryParams,
@@ -200,10 +230,6 @@ export default forwardRef((props: IProps, ref: any) => {
   });
 
   const onDisplayTypeChange = (value: string) => {
-    setParam({
-      ...(param || {}),
-      display_type: value,
-    });
     setDispalyTypeObj({ ...dispalyTypeObj, [currentTab]: value });
   };
 
@@ -214,15 +240,20 @@ export default forwardRef((props: IProps, ref: any) => {
   }, [currentTab, displayType, dispalyTypeObj, setDispalyTypeObj]);
 
   useEffect(() => {
-    const nextModeQueryParams = getModeQueryParams(param, currentTab, displayType);
+    const nextParam = stripLegacyOverviewURLParams(param);
+    if (nextParam !== param) {
+      setParam(nextParam);
+    }
+  }, [param, setParam]);
+
+  useEffect(() => {
+    const nextModeQueryParams = getModeQueryParams(paginationState, currentTab, displayType);
     if (
       queryParams.from === nextModeQueryParams.from &&
       queryParams.size === nextModeQueryParams.size
     ) {
-      syncingQueryParamsRef.current = false;
       return;
     }
-    syncingQueryParamsRef.current = true;
     dispatch({
       type: "setQuery",
       value: {
@@ -230,7 +261,7 @@ export default forwardRef((props: IProps, ref: any) => {
         size: nextModeQueryParams.size,
       },
     });
-  }, [param, currentTab, displayType, queryParams.from, queryParams.size]);
+  }, [paginationState, currentTab, displayType, queryParams.from, queryParams.size]);
   const { run, loading, value } = useFetch(
     searchAction,
     {
@@ -345,21 +376,24 @@ export default forwardRef((props: IProps, ref: any) => {
   }, [displayType, loading, hits, infoAction, listItemConfig, cardInfos]);
 
   useEffect(() => {
-    if (syncingQueryParamsRef.current) {
+    const currentModeQueryParams = getModeQueryParams(
+      paginationState,
+      currentTab,
+      displayType
+    );
+    if (
+      currentModeQueryParams.from === queryParams.from &&
+      currentModeQueryParams.size === queryParams.size
+    ) {
       return;
     }
-    const keys = getQueryParamKeysByDisplayType(currentTab, displayType);
-    const nextParam = {
-      ...(param || {}),
-      ...queryParams,
-      [keys.from]: queryParams.from,
-      [keys.size]: queryParams.size,
-    };
-    if (isEqual(param || {}, nextParam)) {
-      return;
-    }
-    setParam(nextParam);
-  }, [param, queryParams, setParam, currentTab, displayType]);
+    setPaginationState(
+      updateModeQueryParams(paginationState, currentTab, displayType, {
+        from: queryParams.from,
+        size: queryParams.size,
+      })
+    );
+  }, [paginationState, queryParams.from, queryParams.size, currentTab, displayType, setPaginationState]);
 
   useEffect(() => {
     initQueryParams();

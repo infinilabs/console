@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Table, Tooltip, Progress, Spin } from "antd";
+import { Table, Tooltip, Progress } from "antd";
 import { formatter } from "@/utils/format";
 import { formatMessage } from "umi/locale";
 import { SearchEngineIcon } from "@/lib/search_engines";
@@ -49,7 +49,6 @@ export default (props) => {
                     <span>{record.metadata?.name}</span>
                   </div>
                 </Tooltip>
-                <Spin />
               </>
             );
           },

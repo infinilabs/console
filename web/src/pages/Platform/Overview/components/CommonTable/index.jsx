@@ -27,7 +27,6 @@ export default (props) => {
   } = props;
 
   const [infos, setInfos] = useState({});
-  const [loadings, setLoadings] = useState({});
 
   const fetchListInfo = async (data) => {
     const ids = (data || [])
@@ -36,37 +35,20 @@ export default (props) => {
     if (ids.length === 0) {
       return;
     }
-    setLoadings((current) => {
-      const next = { ...current };
-      ids.forEach((id) => {
-        next[id] = true;
-      });
-      return next;
-    });
-    try {
-      const res = await request(
-        infoAction,
-        {
-          method: "POST",
-          body: ids,
-        },
-        false,
-        false
-      );
-      if (res && !res.error) {
-        setInfos((current) => ({
-          ...current,
-          ...res,
-        }));
-      }
-    } finally {
-      setLoadings((current) => {
-        const next = { ...current };
-        ids.forEach((id) => {
-          next[id] = false;
-        });
-        return next;
-      });
+    const res = await request(
+      infoAction,
+      {
+        method: "POST",
+        body: ids,
+      },
+      false,
+      false
+    );
+    if (res && !res.error) {
+      setInfos((current) => ({
+        ...current,
+        ...res,
+      }));
     }
   };
 
@@ -108,7 +90,7 @@ export default (props) => {
             },
           };
         }}
-        rowClassName={(record) => `${styles.rowPointer} ${loadings[record.id] && !parentLoading ? styles.loading : ''}`}
+        rowClassName={styles.rowPointer}
       />
     </div>
   );

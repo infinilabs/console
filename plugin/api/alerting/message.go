@@ -478,7 +478,10 @@ func (h *AlertAPI) getAlertMessage(w http.ResponseWriter, req *http.Request, ps 
 	incident := resolveAlertMessageIncident(message)
 	resolveAt := getRecoveredAt(message)
 
-	triggerAt := getIncidentStartTime(message, incident)
+	triggerAt := message.Created
+	if triggerAt.IsZero() {
+		triggerAt = getIncidentStartTime(message, incident)
+	}
 	if resolveAt.IsZero() && !incident.ResolveAt.IsZero() {
 		resolveAt = incident.ResolveAt
 	}

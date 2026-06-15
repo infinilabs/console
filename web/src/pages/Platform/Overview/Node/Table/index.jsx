@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Tooltip, Progress, Icon, Spin } from "antd";
+import { Tooltip, Progress, Icon } from "antd";
 import { formatter } from "@/utils/format";
 import { formatMessage } from "umi/locale";
 import { HealthStatusView } from "@/components/infini/health_status_view";
@@ -46,7 +46,6 @@ export default (props) => {
                     <span>{record.metadata?.node_name}</span>
                   </div>
                 </Tooltip>
-                <Spin />
               </>
             );
           },

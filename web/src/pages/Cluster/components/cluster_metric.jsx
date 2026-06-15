@@ -50,8 +50,55 @@ export default ({
 
   const metrics = React.useMemo(() => {
     const { metrics = {} } = value || {};
-    return Object.values(metrics)
-      .sort((a, b) => a.order - b.order)
+    const sorted = Object.values(metrics).sort((a, b) => a.order - b.order);
+
+    // Fill gaps for auto_date_histogram (which only returns non-empty buckets)
+    sorted.forEach((metric) => {
+      if (!metric.lines) return;
+      metric.lines.forEach((line) => {
+        if (!line.data || line.data.length < 2) return;
+
+        if (line.type === "Bar") {
+          // Bar chart data: [{x, y, g}, ...] — fill gaps with gray "empty" bars
+          const timestamps = [...new Set(line.data.map((d) => d.x))].sort(
+            (a, b) => a - b
+          );
+          if (timestamps.length < 2) return;
+          // Infer interval from most common gap
+          const gaps = [];
+          for (let i = 1; i < timestamps.length; i++) {
+            gaps.push(timestamps[i] - timestamps[i - 1]);
+          }
+          gaps.sort((a, b) => a - b);
+          const intervalMs = gaps[Math.floor(gaps.length / 2)]; // median
+          if (!intervalMs || intervalMs <= 0) return;
+
+          const existingSet = new Set(timestamps.map(String));
+          const filledData = [...line.data];
+          const startTs = timestamps[0];
+          const endTs = timestamps[timestamps.length - 1];
+          const maxSlots = 200;
+          let count = 0;
+          for (
+            let ts = startTs;
+            ts <= endTs && count < maxSlots;
+            ts += intervalMs
+          ) {
+            count++;
+            if (!existingSet.has(String(ts))) {
+              filledData.push({ x: ts, y: 100, g: "empty" });
+            }
+          }
+          filledData.sort((a, b) => a.x - b.x || a.g.localeCompare(b.g));
+          line.data = filledData;
+        } else {
+          // Line chart data: [[timestamp, value], ...] — no gap-fill needed,
+          // @elastic/charts LineSeries connects dots naturally
+        }
+      });
+    });
+
+    return sorted;
   }, [value]);
 
   const chartRefs = React.useRef();
@@ -215,11 +262,11 @@ export default ({
                           data={item.data}
                           color={({ specId, yAccessor, splitAccessors }) => {
                             const g = splitAccessors.get("g");
-                            if (
-                              yAccessor === "y" &&
-                              ["red", "yellow", "green"].includes(g)
-                            ) {
-                              return g;
+                            if (yAccessor === "y") {
+                              if (g === "empty") return "#D3DAE6";
+                              if (["red", "yellow", "green"].includes(g)) {
+                                return g;
+                              }
                             }
                             return null;
                           }}

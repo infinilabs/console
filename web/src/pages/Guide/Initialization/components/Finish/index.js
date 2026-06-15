@@ -182,7 +182,7 @@ export default ({ formData, onPrev }) => {
                   </>
               )
             }
-            <Descriptions.Item label={formatMessage({ id: "guide.configuration.credential_secret" })}>{credential_secret}</Descriptions.Item>
+            <Descriptions.Item label={formatMessage({ id: "guide.configuration.credential_secret" })}>{credential_secret.split("").map(() => "*")}</Descriptions.Item>
           </Descriptions>
           <Alert className={`${styles.panel} ${styles.tipsAlert}`} message={(
             <div>

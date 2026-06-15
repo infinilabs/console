@@ -168,6 +168,36 @@ export default (props) => {
       }
       const axis = metric?.axis || [];
       const lines = metric?.lines || [];
+
+      // Fill gaps for Bar charts (auto_date_histogram only returns non-empty buckets)
+      lines.forEach((line) => {
+        if (line.type !== "Bar" || !line.data || line.data.length < 2) return;
+        const timestamps = [...new Set(line.data.map((d) => d.x))].sort(
+          (a, b) => a - b
+        );
+        if (timestamps.length < 2) return;
+        const gaps = [];
+        for (let i = 1; i < timestamps.length; i++) {
+          gaps.push(timestamps[i] - timestamps[i - 1]);
+        }
+        gaps.sort((a, b) => a - b);
+        const intervalMs = gaps[Math.floor(gaps.length / 2)];
+        if (!intervalMs || intervalMs <= 0) return;
+        const existingSet = new Set(timestamps.map(String));
+        const filledData = [...line.data];
+        const startTs = timestamps[0];
+        const endTs = timestamps[timestamps.length - 1];
+        const maxSlots = 200;
+        let count = 0;
+        for (let ts = startTs; ts <= endTs && count < maxSlots; ts += intervalMs) {
+          count++;
+          if (!existingSet.has(String(ts))) {
+            filledData.push({ x: ts, y: 100, g: "empty" });
+          }
+        }
+        filledData.sort((a, b) => a.x - b.x || (a.g || "").localeCompare(b.g || ""));
+        line.data = filledData;
+      });
       if (lines.every((item) => !item.data || item.data.length === 0)) {
         const emptyProps = {}
         if (metric?.min_bucket_size > 0 && metric?.hits_total > 0) {
@@ -274,6 +304,7 @@ export default (props) => {
                       yAccessor === "y"
                     
                     ) {
+                      if (g === "empty") return "#D3DAE6";
                       if( ["red", "yellow", "green"].includes(g)){
                         return g;
                       }

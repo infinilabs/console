@@ -2000,14 +2000,6 @@ func (h *APIHandler) getShardsMetric(ctx context.Context, id string, min, max in
 				},
 			},
 		},
-		"aggs": util.MapStr{
-			"dates": util.MapStr{
-				"date_histogram": util.MapStr{
-					"field":    "timestamp",
-					"interval": bucketSizeStr,
-				},
-			},
-		},
 	}
 	metricItem := newMetricItem("shard_count", 7, StorageGroupKey)
 	metricItem.AddAxi("counts", "group1", common.PositionLeft, "num", "0,0", "0,0.[00]", 5, false)
@@ -2077,14 +2069,6 @@ func (h *APIHandler) getCircuitBreakerMetric(ctx context.Context, id string, min
 				},
 			},
 		},
-		"aggs": util.MapStr{
-			"dates": util.MapStr{
-				"date_histogram": util.MapStr{
-					"field":    "timestamp",
-					"interval": bucketSizeStr,
-				},
-			},
-		},
 	}
 	metricItem := newMetricItem("circuit_breaker", 7, StorageGroupKey)
 	metricItem.AddAxi("Circuit Breaker", "group1", common.PositionLeft, "num", "0,0", "0,0.[00]", 5, false)
@@ -2100,10 +2084,7 @@ func (h *APIHandler) getCircuitBreakerMetric(ctx context.Context, id string, min
 
 func (h *APIHandler) getClusterStatusMetric(ctx context.Context, id string, min, max int64, bucketSize int) (*common.MetricItem, error) {
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
-	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
-	if err != nil {
-		return nil, err
-	}
+	bucketCount := calcBucketCount(min, max)
 	query := util.MapStr{
 		"query": util.MapStr{
 			"bool": util.MapStr{
@@ -2144,9 +2125,10 @@ func (h *APIHandler) getClusterStatusMetric(ctx context.Context, id string, min,
 		},
 		"aggs": util.MapStr{
 			"dates": util.MapStr{
-				"date_histogram": util.MapStr{
-					"field":       "timestamp",
-					intervalField: bucketSizeStr,
+				"auto_date_histogram": util.MapStr{
+					"field":            "timestamp",
+					"buckets":          bucketCount,
+					"minimum_interval": "minute",
 				},
 				"aggs": util.MapStr{
 					"groups": util.MapStr{

@@ -52,6 +52,7 @@ export function formatESSearchResult(esResp) {
       took: took,
       total: total,
       data: [],
+      aggregations: esResp.aggregations,
     };
   }
   let dataArr = [];

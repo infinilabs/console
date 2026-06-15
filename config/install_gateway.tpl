@@ -386,6 +386,7 @@ function install_manager_token() {
 
   echo "[gateway] waiting save console manager access token"
   echo -n "${access_token}" | ${gateway_svc} keystore add "CONFIGS_MANAGER_ACCESS_TOKEN" --stdin --force >/dev/null
+  echo -n "${access_token}" | ${gateway_svc} keystore add "configs_manager_bootstrap_token" --stdin --force >/dev/null
 }
 
 function install_api_security_credentials() {

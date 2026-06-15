@@ -190,21 +190,28 @@ export default ({ msgItem, range, onRangeChange }) => {
     return { x0, x1, y0: 0, y1: Number.MAX_SAFE_INTEGER };
   }, [created, updated]);
 
+  const hasMetricHistory = (metricData?.lines || []).length > 0;
+  const cardTitle = hasMetricHistory
+    ? formatMessage({ id: "alert.message.detail.alert_metric_status" })
+    : formatMessage({ id: "alert.message.detail.title.alert_history" });
+
   return (
     <Card
       size="small"
       title={
         <>
-          {formatMessage({ id: "alert.message.detail.alert_metric_status" })}
-          <Tooltip title={expression}>
-            <Icon component={Sum} style={{ color: "rgb(0, 127, 255)", backgroundColor: "#efefef", marginLeft: 5 }} />
-          </Tooltip>
+          {cardTitle}
+          {hasMetricHistory ? (
+            <Tooltip title={expression}>
+              <Icon component={Sum} style={{ color: "rgb(0, 127, 255)", backgroundColor: "#efefef", marginLeft: 5 }} />
+            </Tooltip>
+          ) : null}
         </>
       }
       bodyStyle={{ height: 250, padding: 1 }}
       loading={loading}
     >
-      {metricData?.lines?.length > 0 ? (
+      {hasMetricHistory ? (
         <div style={{ position: "relative" }}>
           <Chart size={[, 240]} className={metricsStyles.vizChartItem}>
             <Settings
@@ -282,7 +289,13 @@ export default ({ msgItem, range, onRangeChange }) => {
           ) : null}
         </div>
       ) : (
-        <Empty description={formatMessage({ id: "alert.message.detail.no_history_data" })} />
+        <div style={{ display: "flex", width: "100%", height: "100%", justifyContent: "center", alignItems: "center" }}>
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={formatMessage({ id: "alert.message.status.nodata" })}
+            style={{ padding: 0 }}
+          />
+        </div>
       )}
     </Card>
   );

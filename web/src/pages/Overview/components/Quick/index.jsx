@@ -9,6 +9,7 @@ import SecurityIcon from "./icons/SecurityIcon";
 import DiscoverIcon from "./icons/DiscoverIcon";
 import MonitorIcon from "./icons/MonitorIcon";
 import MigrationIcon from "./icons/MigrationIcon";
+import ComparisonIcon from "./icons/ComparisonIcon";
 import { formatMessage } from "umi/locale";
 import {
   APPLICATION_SETTINGS_UPDATED_EVENT,
@@ -58,7 +59,7 @@ const getRoutes = (taskManagerEnabled) => {
     routes.unshift({
       path: "/data_tools/comparison",
       name: "comparison",
-      icon: MigrationIcon,
+      icon: ComparisonIcon,
     });
   }
 

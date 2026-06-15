@@ -1042,6 +1042,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 
 		if alertMessage != nil && alertMessage.Status != alerting.MessageStateRecovered && !checkResults.QueryResult.Nodata {
 			recoverCfg := rule.RecoveryNotificationConfig
+			var lastActionCreatedAt time.Time
 			if recoverCfg != nil && recoverCfg.EventEnabled && recoverCfg.Enabled {
 				paramsCtx = buildRecoveryNotificationParams(rule, checkResults, alertMessage, alertItem)
 				err = attachTitleMessageToCtx(recoverCfg.Title, recoverCfg.Message, paramsCtx)
@@ -1050,11 +1051,17 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 				}
 				actionResults, _ := performChannels(rule.ID, "recovery_notification", recoverCfg.Normal, paramsCtx, false)
 				alertItem.RecoverActionResults = actionResults
+				if len(actionResults) > 0 {
+					lastActionCreatedAt = alertItem.Created
+				}
 			}
 			alertMessage.Status = alerting.MessageStateRecovered
 			alertMessage.ResourceID = rule.Resource.ID
 			alertMessage.ResourceName = rule.Resource.Name
 			alertMessage.RecoveredAt = alertItem.Created
+			if !lastActionCreatedAt.IsZero() {
+				alertMessage.Updated = lastActionCreatedAt
+			}
 			err = saveAlertMessage(alertMessage)
 			if err != nil {
 				return fmt.Errorf("save alert message error: %w", err)
@@ -1077,23 +1084,27 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			priority = conditionResult.ConditionItem.Priority
 		}
 	}
+	// trigger_at in notification templates should reflect the current evaluation run,
+	// while duration still tracks how long this alert event has been ongoing.
 	triggerAt := alertItem.Created
+	alertStartAt := alertItem.Created
 	if alertMessage != nil {
-		triggerAt = alertMessage.Created
+		alertStartAt = alertMessage.Created
 	}
 	paramsCtx = newParameterCtx(rule, checkResults, util.MapStr{
 		alerting2.ParamTimestamp: alertItem.Created.Unix(),
-		"duration":               formatAlertDuration(alertItem.Created.Sub(triggerAt)),
+		"duration":               formatAlertDuration(alertItem.Created.Sub(alertStartAt)),
 		"trigger_at":             triggerAt.Unix(),
 	})
 
 	alertItem.Priority = priority
+	var lastActionCreatedAt time.Time
 	var newAlertMessage *alerting.AlertMessage
 	if alertMessage == nil || alertMessage.Status == alerting.MessageStateRecovered {
 		newAlertMessage = &alerting.AlertMessage{
 			RuleID:       rule.ID,
 			Created:      alertItem.Created,
-			Updated:      time.Now(),
+			Updated:      alertItem.Created,
 			ID:           util.GetUUID(),
 			ResourceID:   rule.Resource.ID,
 			ResourceName: rule.Resource.Name,
@@ -1122,6 +1133,9 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			}
 			actionResults, _ := performChannels(rule.ID, "recovery_notification", recoverCfg.Normal, recoveryParamsCtx, false)
 			alertItem.RecoverActionResults = actionResults
+			if len(actionResults) > 0 {
+				lastActionCreatedAt = alertItem.Created
+			}
 		}
 	}
 	title, message := rule.GetNotificationTitleAndMessage()
@@ -1204,8 +1218,8 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 			paramsCtx = newParameterCtx(rule, checkResults, util.MapStr{
 				alerting2.ParamTimestamp: alertItem.Created.Unix(),
 				"priority":               priority,
-				"duration":               formatAlertDuration(alertItem.Created.Sub(alertMessage.Created)),
-				"trigger_at":             alertMessage.Created.Unix(),
+				"duration":               formatAlertDuration(alertItem.Created.Sub(alertStartAt)),
+				"trigger_at":             triggerAt.Unix(),
 			})
 			if alertMessage != nil {
 				paramsCtx[alerting2.ParamEventID] = alertMessage.ID
@@ -1215,6 +1229,9 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		if alertMessage == nil || period > periodDuration {
 			actionResults, _ := performChannels(rule.ID, "notification", notifyCfg.Normal, paramsCtx, false)
 			alertItem.ActionExecutionResults = actionResults
+			if len(actionResults) > 0 {
+				lastActionCreatedAt = alertItem.Created
+			}
 			//change and save last notification time in local kv store when action error count equals zero
 			rule.LastNotificationTime = time.Now()
 			strTime := time.Now().UTC().Format(time.RFC3339)
@@ -1245,6 +1262,9 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 				if time.Now().Sub(rule.LastEscalationTime.Local()) > periodDuration {
 					actionResults, _ := performChannels(rule.ID, "escalation", notifyCfg.Escalation, paramsCtx, false)
 					alertItem.EscalationActionResults = actionResults
+					if len(actionResults) > 0 {
+						lastActionCreatedAt = alertItem.Created
+					}
 					//todo init last escalation time when create task (by last alert item is escalated)
 					rule.LastEscalationTime = time.Now()
 					alertItem.IsEscalated = true
@@ -1253,6 +1273,13 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 				}
 
 			}
+		}
+	}
+	if alertMessage != nil && !lastActionCreatedAt.IsZero() {
+		alertMessage.Updated = lastActionCreatedAt
+		err = saveAlertMessage(alertMessage)
+		if err != nil {
+			return fmt.Errorf("save alert message error: %w", err)
 		}
 	}
 	return nil
@@ -1419,6 +1446,7 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 		alerting2.ParamResourceID:   rule.Resource.ID,
 		alerting2.ParamResourceName: rule.Resource.Name,
 		alerting2.ParamResults:      conditionParams,
+		alerting2.ParamTotalResults: len(checkResults.ResultItems),
 		"objects":                   rule.Resource.Objects,
 		"first_group_value":         firstGroupValue,
 		"first_threshold":           firstThreshold,
@@ -1685,11 +1713,13 @@ func getLastAlertMessage(ruleID string, duration time.Duration) (*alerting.Alert
 }
 
 func saveAlertMessageToES(message *alerting.AlertMessage) error {
-	message.Updated = time.Now()
-	return orm.Save(orm.NewContext(), message)
+	return orm.Save(&orm.Context{Refresh: orm.WaitForRefresh}, message)
 }
 
 func saveAlertMessage(message *alerting.AlertMessage) error {
+	if message.Updated.IsZero() {
+		message.Updated = time.Now()
+	}
 	//todo diff message if not change , then skip save to es ?
 	err := saveAlertMessageToES(message)
 	if err != nil {

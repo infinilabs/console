@@ -341,6 +341,19 @@ export default (props) => {
         }),
     },
     {
+      title: formatMessage({
+        id: "cluster.manage.metadata_configs.node_availability_check",
+      }),
+      width: 170,
+      sortable: true,
+      key: "metadata_configs.node_availability_check.enabled",
+      onHeaderCell: noWrapHeaderCell,
+      render: (text) =>
+        formatMessage({
+          id: text ? "cluster.manage.monitored.on" : "cluster.manage.monitored.off",
+        }),
+    },
+    {
       title: formatMessage({ id: "cluster.regist.step.connect.label.auth" }),
       width: 120,
       key: "credential_id",

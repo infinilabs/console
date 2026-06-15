@@ -135,7 +135,10 @@ func backfillRuleTimestamps(rule *alerting.Rule) {
 	if !ensureRuleTimestamps(rule, time.Now()) {
 		return
 	}
-	if err := orm.Save(orm.NewContext(), rule); err != nil {
+	ctx := orm.NewContext()
+	ctx.Set(orm.CheckExistsBeforeUpdate, false)
+	ctx.Set(orm.MergePartialFieldsBeforeUpdate, false)
+	if err := orm.Save(ctx, rule); err != nil {
 		log.Errorf("failed to backfill rule timestamps for [%s]: %v", rule.ID, err)
 	}
 }
@@ -156,7 +159,10 @@ func persistUpdatedRule(oldRule, rule *alerting.Rule) error {
 		return err
 	}
 
-	if err := orm.Save(orm.NewContext(), rule); err != nil {
+	ctx := &orm.Context{Refresh: orm.WaitForRefresh}
+	ctx.Set(orm.CheckExistsBeforeUpdate, false)
+	ctx.Set(orm.MergePartialFieldsBeforeUpdate, false)
+	if err := orm.Save(ctx, rule); err != nil {
 		return err
 	}
 	saveAlertActivity("alerting_rule_change", "update", util.MapStr{

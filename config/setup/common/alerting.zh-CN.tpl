@@ -629,7 +629,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-cal8n7p7h710d
   },
   "notification_config": {
     "enabled": true,
-    "title": "🔥 集群健康状态变为红色（共 {{len .results}} 个集群）",
+    "title": "{{if gt .total_results (len .results)}}🔥 集群健康状态变为红色（共 {{.total_results}} 个集群，当前展示前 {{len .results}} 个）{{else}}🔥 集群健康状态变为红色（共 {{.total_results}} 个集群）{{end}}",
     "message": "{{range .results}}\n{{$cn := lookup \"category=metadata, object=cluster, property=name, default=未知\" (index .group_values 0) }}\n{{$cu := printf \"%s/#/cluster/monitor/elasticsearch/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0)}}\n集群: [{{$cn}}]({{$cu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D%2C%22cluster_name%22:%22{{$cn | urlquery}}%22%7D) 当前为红色\n{{end}}",
     "normal": [
       {
@@ -778,7 +778,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-calavvp7h710d
   },
   "notification_config": {
     "enabled": true,
-    "title": "🔥 索引健康状态变为红色（共 {{len .results}} 个索引）",
+    "title": "{{if gt .total_results (len .results)}}🔥 索引健康状态变为红色（共 {{.total_results}} 个索引，当前展示前 {{len .results}} 个）{{else}}🔥 索引健康状态变为红色（共 {{.total_results}} 个索引）{{end}}",
     "message": "{{range .results}}\n{{$cn := lookup \"category=metadata, object=cluster, property=name, default=未知\" (index .group_values 0) }}\n{{$iu := printf \"%s/#/cluster/monitor/%s/indices/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0) (index .group_values 1)}}\n{{$cu := printf \"%s/#/cluster/monitor/elasticsearch/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0)}}\n索引: [{{index .group_values 1}}]({{$iu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D%2C%22cluster_name%22:%22{{$cn | urlquery}}%22%7D) 所属集群: [{{$cn}}]({{$cu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D) 当前为红色\n{{end}}",
     "normal": [
       {
@@ -1622,7 +1622,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-calaqnh7h710d
   },
   "notification_config": {
     "enabled": true,
-    "title": "🔥 节点 JVM 使用率过高（共 {{len .results}} 个节点）>= {{.first_threshold}}%",
+    "title": "{{if gt .total_results (len .results)}}🔥 节点 JVM 使用率过高（共 {{.total_results}} 个节点，当前展示前 {{len .results}} 个）>= {{.first_threshold}}%{{else}}🔥 节点 JVM 使用率过高（共 {{.total_results}} 个节点）>= {{.first_threshold}}%{{end}}",
     "message": "{{range .results}}\n{{$cn := lookup \"category=metadata, object=cluster, property=name, default=未知\" (index .group_values 0) }}\n{{$nn := lookup \"category=metadata, object=node, property=metadata.node_name, default=未知\" (index .group_values 1) }}\n{{$nu := printf \"%s/#/cluster/monitor/%s/nodes/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0) (index .group_values 1)}}\n{{$cu := printf \"%s/#/cluster/monitor/elasticsearch/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0)}}\n节点: [{{$nn}}]({{$nu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D%2C%22cluster_name%22:%22{{$cn | urlquery}}%22%2C%22node_name%22:%22{{$nn}}%22%7D) 所属集群: [{{$cn}}]({{$cu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D%7D), JVM 使用率: {{.result_value | to_fixed 2}}%\n{{end}}",
     "normal": [
       {
@@ -1806,7 +1806,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-calakp97h710d
   },
   "notification_config": {
     "enabled": true,
-    "title": "🔥 节点 CPU 使用率过高（共 {{len .results}} 个节点）>= {{.first_threshold}}%",
+    "title": "{{if gt .total_results (len .results)}}🔥 节点 CPU 使用率过高（共 {{.total_results}} 个节点，当前展示前 {{len .results}} 个）>= {{.first_threshold}}%{{else}}🔥 节点 CPU 使用率过高（共 {{.total_results}} 个节点）>= {{.first_threshold}}%{{end}}",
     "message": "{{range .results}}\n{{$cn := lookup \"category=metadata, object=cluster, property=name, default=未知\" (index .group_values 0) }}\n{{$nn := lookup \"category=metadata, object=node, property=metadata.node_name, default=未知\" (index .group_values 1) }}\n{{$nu := printf \"%s/#/cluster/monitor/%s/nodes/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0) (index .group_values 1)}}\n{{$cu := printf \"%s/#/cluster/monitor/elasticsearch/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0)}}\n节点: [{{$nn}}]({{$nu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D%2C%22cluster_name%22:%22{{$cn | urlquery}}%22%2C%22node_name%22:%22{{$nn}}%22%7D) 所属集群: [{{$cn}}]({{$cu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D%7D), CPU 使用率: {{.result_value | to_fixed 2}}%\n{{end}}",
     "normal": [
       {
@@ -1961,7 +1961,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-calgapp7h710d
   },
   "notification_config": {
     "enabled": true,
-    "title": "🔥 分片存储超过 55GB（共 {{len .results}} 个索引）",
+    "title": "{{if gt .total_results (len .results)}}🔥 分片存储超过 55GB（共 {{.total_results}} 个索引，当前展示前 {{len .results}} 个）{{else}}🔥 分片存储超过 55GB（共 {{.total_results}} 个索引）{{end}}",
     "message": "{{range .results}}\n{{$cn := lookup \"category=metadata, object=cluster, property=name, default=未知\" (index .group_values 0) }}\n{{$iu := printf \"%s/#/cluster/monitor/%s/indices/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0) (index .group_values 1)}}\n{{$cu := printf \"%s/#/cluster/monitor/elasticsearch/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0)}}\n索引: [{{index .group_values 1}}]({{$iu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D%2C%22cluster_name%22:%22{{$cn | urlquery}}%22%7D) 所属集群: [{{$cn}}]({{$cu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D%7D), 最大分片存储: {{.result_value | format_bytes 2}}\n{{end}}",
     "normal": [
       {
@@ -2150,7 +2150,7 @@ POST $[[SETUP_INDEX_PREFIX]]alert-rule/$[[SETUP_DOC_TYPE]]/builtin-cal8n7p7h710d
   },
   "notification_config": {
     "enabled": true,
-    "title": "🔥 节点磁盘使用率过高（共 {{len .results}} 个节点）>= {{.first_threshold}}%",
+    "title": "{{if gt .total_results (len .results)}}🔥 节点磁盘使用率过高（共 {{.total_results}} 个节点，当前展示前 {{len .results}} 个）>= {{.first_threshold}}%{{else}}🔥 节点磁盘使用率过高（共 {{.total_results}} 个节点）>= {{.first_threshold}}%{{end}}",
     "message": "{{range .results}}\n{{$cn := lookup \"category=metadata, object=cluster, property=name, default=未知\" (index .group_values 0) }}\n{{$nn := lookup \"category=metadata, object=node, property=metadata.node_name, default=未知\" (index .group_values 1) }}\n{{$nu := printf \"%s/#/cluster/monitor/%s/nodes/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0) (index .group_values 1)}}\n{{$cu := printf \"%s/#/cluster/monitor/elasticsearch/%s\" $.env.INFINI_CONSOLE_ENDPOINT (index .group_values 0)}}\n节点: [{{$nn}}]({{$nu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D%2C%22cluster_name%22:%22{{$cn | urlquery}}%22%2C%22node_name%22:%22{{$nn}}%22%7D) 所属集群: [{{$cn}}]({{$cu}}?_g=%7B%22timeRange%22:%7B%22min%22:%22{{$.min}}%22%2C%22max%22:%22{{$.max}}%22%7D%7D), 使用率: {{.result_value | to_fixed 2}}% / 可用: {{.relation_values.b | format_bytes 2}}\n{{end}}",
     "normal": [
       {

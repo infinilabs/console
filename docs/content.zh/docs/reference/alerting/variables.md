@@ -31,6 +31,7 @@ asciinema: true
 | title                      | string       | event title                                | Node (`{{.first_group_value}}`) disk used >= 90%        |
 | message                    | string       | event content                              | EventID：`{{.event_id}}`; Cluster：`{{.resource_name}}` |
 | results                    | array        | result of groups                           |                                                         |
+| total_results              | number       | total matched results before truncation    | 18                                                      |
 | results[0].threshold       | array        |                                            | ["90"]                                                  |
 | results[0].priority        | string       |                                            | high                                                    |
 | results[0].group_values    | array        |                                            | ["cluster-xxx", "node-xxx"]                             |

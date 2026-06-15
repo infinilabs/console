@@ -19,7 +19,6 @@ import Drawer, { IDrawerRef } from "./Drawer";
 import Title from "./Detail/Title";
 import Content from "./Detail/Content";
 import { useLocalStorage } from "@/lib/hooks/storage";
-import isEqual from "lodash/isEqual";
 
 interface IQueryParams {
   from: number;
@@ -83,7 +82,9 @@ const initialQueryParams = {
   keyword: "",
 };
 const tableDefaultPageSize = 20;
-
+const cardDefaultPageSize = initialQueryParams.size;
+const getDefaultPageSizeByDisplayType = (displayType: "card" | "table") =>
+  displayType === "table" ? tableDefaultPageSize : cardDefaultPageSize;
 export default forwardRef((props: IProps, ref: any) => {
   const [param, setParam] = useQueryParam("_g", JsonParam);
   const currentTab = param?.tab || "clusters";
@@ -104,7 +105,6 @@ export default forwardRef((props: IProps, ref: any) => {
     detailTitleConfig,
     headerConfig = {},
   } = props;
-
   const drawRef = useRef<IDrawerRef>(null);
   const [sideVisible, setSideVisible] = useState(false);
 
@@ -126,11 +126,8 @@ export default forwardRef((props: IProps, ref: any) => {
       decode: JSON.parse,
     }
   );
-  const pageSizeByDisplayRef = useRef<Record<string, number>>({
-    card: initialQueryParams.size,
-    table: tableDefaultPageSize,
-  });
-  const appliedDisplayTypeRef = useRef<string>();
+  const displayType = dispalyTypeObj[currentTab] || "card";
+  const defaultPageSize = getDefaultPageSizeByDisplayType(displayType);
 
   function reducer(
     queryParams: IQueryParams,
@@ -159,36 +156,45 @@ export default forwardRef((props: IProps, ref: any) => {
           from: 0,
           size: action.value,
         };
+      case "setQuery":
+        return {
+          ...queryParams,
+          ...action.value,
+        };
       default:
         throw new Error();
     }
   }
   const [queryParams, dispatch] = useReducer(reducer, {
-    from: param?.from || initialQueryParams.from,
-    size: param?.size || initialQueryParams.size,
-    keyword: param?.keyword || initialQueryParams.keyword,
+    from: initialQueryParams.from,
+    size: defaultPageSize,
+    keyword: param?.keyword ?? initialQueryParams.keyword,
   });
 
   const onDisplayTypeChange = (value: string) => {
-    const currentDisplayType = dispalyTypeObj[currentTab] || "card";
-    pageSizeByDisplayRef.current[currentDisplayType] = queryParams.size;
+    const nextDisplayType = value === "table" ? "table" : "card";
     setDispalyTypeObj({ ...dispalyTypeObj, [currentTab]: value });
+    dispatch({
+      type: "setPageSizeAndReset",
+      value: getDefaultPageSizeByDisplayType(nextDisplayType),
+    });
   };
 
   useEffect(() => {
-    const displayType = dispalyTypeObj[currentTab] || "card";
-    if (appliedDisplayTypeRef.current === displayType) {
-      return;
+    if (dispalyTypeObj[currentTab] !== displayType) {
+      setDispalyTypeObj({ ...dispalyTypeObj, [currentTab]: displayType });
     }
-    appliedDisplayTypeRef.current = displayType;
-    const nextPageSize =
-      displayType === "table"
-        ? pageSizeByDisplayRef.current.table || tableDefaultPageSize
-        : pageSizeByDisplayRef.current.card || initialQueryParams.size;
-    if (queryParams.size !== nextPageSize || queryParams.from !== 0) {
-      dispatch({ type: "setPageSizeAndReset", value: nextPageSize });
-    }
-  }, [currentTab, dispalyTypeObj, queryParams.size, queryParams.from]);
+  }, [currentTab, displayType, dispalyTypeObj, setDispalyTypeObj]);
+
+  useEffect(() => {
+    dispatch({
+      type: "setQuery",
+      value: {
+        from: initialQueryParams.from,
+        size: getDefaultPageSizeByDisplayType(displayType),
+      },
+    });
+  }, [currentTab, displayType]);
   const { run, loading, value } = useFetch(
     searchAction,
     {
@@ -212,7 +218,6 @@ export default forwardRef((props: IProps, ref: any) => {
   const result = (value as any)?.hits || {};
   const { hits = [] } = result;
   const hasSide = sideSorterOptions.length > 0 || aggsParams.length > 0;
-  const displayType = dispalyTypeObj[currentTab] || "card";
 
   const initQueryParams = () => {
     extraQueryFields.forEach((item) => {
@@ -304,14 +309,6 @@ export default forwardRef((props: IProps, ref: any) => {
   }, [displayType, loading, hits, infoAction, listItemConfig, cardInfos]);
 
   useEffect(() => {
-    const nextParam = { ...(param || {}), ...queryParams };
-    if (isEqual(param || {}, nextParam)) {
-      return;
-    }
-    setParam(nextParam);
-  }, [param, queryParams, setParam]);
-
-  useEffect(() => {
     initQueryParams();
   }, [JSON.stringify(param)]);
 
@@ -375,7 +372,7 @@ export default forwardRef((props: IProps, ref: any) => {
                   dispatch({ type: "search", value })
                 }}
                 onFacetChange={onFacetChange}
-                dispalyType={dispalyTypeObj[currentTab]}
+                dispalyType={displayType}
                 onDisplayTypeChange={onDisplayTypeChange}
                 autoCompleteConfig={{
                   action: searchAction,

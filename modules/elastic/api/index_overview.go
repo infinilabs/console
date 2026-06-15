@@ -668,7 +668,10 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, req *http.Request, ps
 	for _, tempIndexID := range indexIDs {
 		result := util.MapStr{}
 
-		indexID := tempIndexID.(string)
+		indexID, ok := tempIndexID.(string)
+		if !ok || indexID == "" {
+			continue
+		}
 		newIndexID := indexIDM[indexID]
 
 		result["summary"] = summaryMap[newIndexID]

@@ -223,6 +223,7 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
              language: getLocale(),
              primary_shards: formData.primary_shards,
              auto_expand_replicas: formData.auto_expand_replicas,
+            enable_rollup: rollupSupported ? formData.enable_rollup !== false : false,
            }
         const res = await request(
         "/setup/_initialize_template",

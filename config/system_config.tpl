@@ -7,7 +7,7 @@ elasticsearch:
     enabled: true
     monitored: true
     reserved: true
-    endpoint: $[[CLUSTER_ENDPOINT]]
+    endpoints: $[[CLUSTER_ENDPOINT]]
     discovery:
       enabled: false
     basic_auth:

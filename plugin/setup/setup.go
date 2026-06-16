@@ -811,7 +811,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		},
 	}
 	toSaveCfg.Created = &t
-	err = orm.Save(newSetupSaveContext(), &toSaveCfg)
+	err = orm.Save(orm.NewContext(), &toSaveCfg)
 	if err != nil {
 		panic(err)
 	}
@@ -822,7 +822,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		panic(err)
 	}
 	if previousAgentCredentialID != toSaveCfg.AgentCredentialID || previousNoDefaultAuthForAgent != toSaveCfg.NoDefaultAuthForAgent {
-		err = orm.Save(newSetupSaveContext(), &toSaveCfg)
+		err = orm.Save(orm.NewContext(), &toSaveCfg)
 		if err != nil {
 			panic(err)
 		}
@@ -857,7 +857,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		user.Roles = role
 		now := time.Now()
 		user.Created = &now
-		err = orm.Save(newSetupSaveContext(), &user)
+		err = orm.Save(orm.NewContext(), &user)
 		if err != nil {
 			panic(err)
 		}
@@ -870,9 +870,9 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	//save to local file
 	file := path.Join(global.Env().GetConfigDir(), "system_config.yml")
 	_, err = util.FilePutContent(file, fmt.Sprintf("configs.template:\n  - name: \"system\"\n    path: ./config/system_config.tpl\n    variable:\n      "+
-		"CLUSTER_ID: %v\n      CLUSTER_ENDPOINT: \"%v\"\n      "+
+		"CLUSTER_ID: %v\n      CLUSTER_ENDPOINT: \"[%v]\"\n      "+
 		"CLUSTER_USER: \"%v\"\n      CLUSTER_VER: \"%v\"\n      CLUSTER_DISTRIBUTION: \"%v\"\n      INDEX_PREFIX: \"%v\"",
-		GlobalSystemElasticsearchID, cfg.GetAnyEndpoint(), cfg.BasicAuth.Username, cfg.Version, cfg.Distribution, cfg1.IndexPrefix))
+		GlobalSystemElasticsearchID, cfg.GetAllEndpoints(), cfg.BasicAuth.Username, cfg.Version, cfg.Distribution, cfg1.IndexPrefix))
 	if err != nil {
 		panic(err)
 	}
@@ -984,17 +984,11 @@ func createCred(name, username, password string) string {
 	now := time.Now()
 	cred.Created = &now
 	cred.Updated = &now
-	err = orm.Save(newSetupSaveContext(), &cred)
+	err = orm.Save(orm.NewContext(), &cred)
 	if err != nil {
 		panic(err)
 	}
 	return cred.ID
-}
-
-func newSetupSaveContext() *orm.Context {
-	ctx := orm.NewContext()
-	ctx.Refresh = orm.WaitForRefresh
-	return ctx
 }
 
 func updateCredentialState(secretMismatch bool) {
@@ -1214,12 +1208,9 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 		case "SETUP_SCHEME":
 			return w.Write([]byte(request.Cluster.Schema))
 		case "SETUP_ENDPOINTS":
-			endpoints := []string{request.Cluster.Endpoint}
+			endpoints := make([]string, 0, len(request.Cluster.Hosts))
 			for _, host := range request.Cluster.Hosts {
-				endpoint := fmt.Sprintf("%s://%s", request.Cluster.Schema, host)
-				if !util.StringInArray(endpoints, endpoint) {
-					endpoints = append(endpoints, endpoint)
-				}
+				endpoints = append(endpoints, fmt.Sprintf("%s://%s", request.Cluster.Schema, host))
 			}
 			endpointBytes := util.MustToJSONBytes(endpoints)
 			endpointBytes = bytes.ReplaceAll(endpointBytes, []byte("\""), []byte("\\\""))

@@ -30,7 +30,6 @@ import (
 	"github.com/buger/jsonparser"
 	log "github.com/cihub/seelog"
 	"github.com/segmentio/encoding/json"
-	"infini.sh/console/core/security"
 	"infini.sh/framework/core/api"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
@@ -43,20 +42,6 @@ import (
 )
 
 var httpPool = fasthttp.NewRequestResponsePool("proxy_search")
-
-func getProxyUser(req *http.Request) string {
-	user, err := security.FromUserContext(req.Context())
-	if err != nil || user == nil {
-		return "-"
-	}
-	if user.Username != "" {
-		return user.Username
-	}
-	if user.UserId != "" {
-		return user.UserId
-	}
-	return "-"
-}
 
 func (h *APIHandler) HandleProxyAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	resBody := map[string]interface{}{}
@@ -141,27 +126,12 @@ func (h *APIHandler) HandleProxyAction(w http.ResponseWriter, req *http.Request,
 	newReq.Method = method
 	isSuperAdmin, permission, err := h.ValidateProxyRequest(newReq, targetClusterID)
 	if err != nil {
-		log.Errorf(
-			"HandleProxyAction failed: cluster_id=%s user=%s method=%s path=%s err=%v",
-			targetClusterID,
-			getProxyUser(req),
-			method,
-			realPath,
-			err,
-		)
+		log.Errorf("HandleProxyAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusForbidden)
 		return
 	}
 	if permission == "" && api.IsAuthEnable() && !isSuperAdmin {
-		log.Errorf(
-			"HandleProxyAction failed: cluster_id=%s user=%s method=%s path=%s err=%s",
-			targetClusterID,
-			getProxyUser(req),
-			method,
-			realPath,
-			"unknown request path",
-		)
 		resBody["error"] = "unknown request path"
 		h.WriteJSON(w, resBody, http.StatusForbidden)
 		return

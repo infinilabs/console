@@ -892,7 +892,7 @@ func (h *APIHandler) getGroupHostMetric(ctx context.Context, agentIDs []string, 
 			},
 		},
 	}
-	bucketCount := calcBucketCount(min, max)
+	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 
 	aggs := generateGroupAggs(hostMetricItems)
 	query["aggs"] = util.MapStr{
@@ -902,8 +902,11 @@ func (h *APIHandler) getGroupHostMetric(ctx context.Context, agentIDs []string, 
 			},
 			"aggs": util.MapStr{
 				"dates": util.MapStr{
-					"auto_date_histogram": buildAutoDateHistogramParams(query, bucketCount, min, max),
-					"aggs":                aggs,
+					"date_histogram": util.MapStr{
+						"field":          "timestamp",
+						"fixed_interval": bucketSizeStr,
+					},
+					"aggs": aggs,
 				},
 			},
 		},

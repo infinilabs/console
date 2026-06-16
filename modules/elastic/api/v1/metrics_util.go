@@ -472,125 +472,6 @@ func firstNotNil(values ...interface{}) interface{} {
 	return nil
 }
 
-// extractTimeRangeMs extracts min/max timestamps in milliseconds from the query's range filter.
-func extractTimeRangeMs(query map[string]interface{}) (int64, int64, bool) {
-	queryMap, ok := asMap(query["query"])
-	if !ok {
-		return 0, 0, false
-	}
-	boolMap, ok := asMap(queryMap["bool"])
-	if !ok {
-		return 0, 0, false
-	}
-	filters, ok := asSlice(boolMap["filter"])
-	if !ok {
-		return 0, 0, false
-	}
-	for _, filterItem := range filters {
-		filterMap, ok := asMap(filterItem)
-		if !ok {
-			continue
-		}
-		rangeMap, ok := asMap(filterMap["range"])
-		if !ok {
-			continue
-		}
-		timestampRange, ok := asMap(rangeMap["timestamp"])
-		if !ok {
-			continue
-		}
-		minVal := firstNotNil(timestampRange["gte"], timestampRange["from"], timestampRange["gt"])
-		maxVal := firstNotNil(timestampRange["lte"], timestampRange["to"], timestampRange["lt"])
-		if minVal != nil && maxVal != nil {
-			minMs := toInt64Ms(minVal)
-			maxMs := toInt64Ms(maxVal)
-			if minMs > 0 && maxMs > 0 {
-				return minMs, maxMs, true
-			}
-		}
-	}
-	return 0, 0, false
-}
-
-func toInt64Ms(v interface{}) int64 {
-	switch val := v.(type) {
-	case float64:
-		return int64(val)
-	case int64:
-		return val
-	case int:
-		return int64(val)
-	default:
-		return 0
-	}
-}
-
-// calcBucketCount returns the target bucket count based on time range.
-func calcBucketCount(minMs, maxMs int64) int {
-	rangeMs := maxMs - minMs
-	shortRangeMs := int64(12 * 60 * 60 * 1000)
-	sevenDaysMs := int64(7 * 24 * 60 * 60 * 1000)
-	if rangeMs > 0 && rangeMs <= shortRangeMs {
-		return 60 // Fixed bucket count for short ranges to align with collection interval
-	}
-	if rangeMs >= sevenDaysMs {
-		return 80
-	}
-	return 120
-}
-
-// buildAutoDateHistogramParams builds params for auto_date_histogram aggregation.
-func buildAutoDateHistogramParams(bucketCount int, minMs, maxMs int64) util.MapStr {
-	// auto_date_histogram only accepts calendar units here; keep the floor at second.
-	// The 20-second behavior is driven by bucketCount, not minimum_interval.
-	minimumInterval := "second"
-
-	return util.MapStr{
-		"field":            "timestamp",
-		"buckets":          bucketCount,
-		"minimum_interval": minimumInterval,
-	}
-}
-
-// parseAutoInterval parses auto_date_histogram interval string (e.g. "1m", "1h", "1d") to seconds.
-func parseAutoInterval(interval string) int {
-	if interval == "" {
-		return 60
-	}
-	interval = strings.TrimSpace(interval)
-	n := 0
-	i := 0
-	for i < len(interval) && interval[i] >= '0' && interval[i] <= '9' {
-		n = n*10 + int(interval[i]-'0')
-		i++
-	}
-	if n == 0 {
-		n = 1
-	}
-	if i >= len(interval) {
-		return n
-	}
-	unit := interval[i:]
-	switch unit {
-	case "s", "second":
-		return n
-	case "m", "minute":
-		return n * 60
-	case "h", "hour":
-		return n * 3600
-	case "d", "day":
-		return n * 86400
-	case "w", "week":
-		return n * 604800
-	case "M", "month":
-		return n * 2592000
-	case "y", "year":
-		return n * 31536000
-	default:
-		return 60
-	}
-}
-
 // findClosestNiceInterval finds the interval in sortedNiceIntervals that is closest to targetSize.
 func findClosestNiceInterval(targetSize float64, sortedNiceIntervals []float64) float64 {
 	if len(sortedNiceIntervals) == 0 {
@@ -723,21 +604,18 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 			}
 		}
 	}
+	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 
 	clusterID := global.MustLookupString(elastic.GlobalSystemElasticsearchID)
-
-	// Use auto_date_histogram with dynamic bucket count
-	minMs, maxMs, hasRange := extractTimeRangeMs(query)
-	bucketCount := 120
-	if hasRange {
-		bucketCount = calcBucketCount(minMs, maxMs)
+	intervalField, err := getDateHistogramIntervalField(clusterID, bucketSizeStr)
+	if err != nil {
+		return nil, err
 	}
-
 	query["size"] = 0
 	query["aggs"] = util.MapStr{
 		"dates": util.MapStr{
-			"auto_date_histogram": buildAutoDateHistogramParams(bucketCount, minMs, maxMs),
-			"aggs":                aggs,
+			"date_histogram": buildDateHistogramParams(query, intervalField, bucketSizeStr),
+			"aggs":           aggs,
 		},
 	}
 	queryDSL := util.MustToJSONBytes(query)
@@ -750,14 +628,8 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 	}
 
 	var minDate, maxDate int64
-	actualBucketSize := bucketSize
 	if response.StatusCode == 200 {
 		for _, v := range response.Aggregations {
-			if v.Interval != "" {
-				if parsed := parseAutoInterval(v.Interval); parsed > 0 {
-					actualBucketSize = parsed
-				}
-			}
 			for _, bucket := range v.Buckets {
 				v, ok := bucket["key"].(float64)
 				if !ok {
@@ -775,7 +647,7 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 							if ok {
 								if strings.HasSuffix(mk1, "_deriv") {
 									if _, ok := bucket[mk1+"_field2"]; !ok {
-										v3 = v3 / float64(actualBucketSize)
+										v3 = v3 / float64(bucketSize)
 									}
 								}
 								if field2, ok := bucket[mk1+"_field2"]; ok {
@@ -984,11 +856,6 @@ func ConvertBucketItemsToAggQuery(bucketItems []*common.BucketItem, metricItems 
 		case "date_histogram":
 			bucketAgg = util.MapStr{
 				"date_histogram": bucketItem.Parameters,
-			}
-			break
-		case "auto_date_histogram":
-			bucketAgg = util.MapStr{
-				"auto_date_histogram": bucketItem.Parameters,
 			}
 			break
 		case "date_range":

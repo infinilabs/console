@@ -395,7 +395,11 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 		}
 	}
 
-	bucketCount := 120
+	bucketSizeStr := fmt.Sprintf("%ds", bucketSize)
+	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
+	if err != nil {
+		panic(err)
+	}
 	query["size"] = 0
 	query["aggs"] = util.MapStr{
 		"group_by_level": util.MapStr{
@@ -405,8 +409,11 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 			},
 			"aggs": util.MapStr{
 				"dates": util.MapStr{
-					"auto_date_histogram": buildAutoDateHistogramParams(query, bucketCount, 0, 0),
-					"aggs":                aggs,
+					"date_histogram": util.MapStr{
+						"field":       "timestamp",
+						intervalField: bucketSizeStr,
+					},
+					"aggs": aggs,
 				},
 			},
 		},
@@ -837,13 +844,17 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 
 func getNodeShardStateMetric(ctx context.Context, query util.MapStr, bucketSize int) (*common.MetricItem, error) {
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
-	minMs, maxMs, _ := extractTimeRangeMs(query)
-	bucketCount := calcBucketCount(minMs, maxMs)
+	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
+	if err != nil {
+		return nil, err
+	}
 
-	query["size"] = 0
 	query["aggs"] = util.MapStr{
 		"dates": util.MapStr{
-			"auto_date_histogram": buildAutoDateHistogramParams(query, bucketCount, minMs, maxMs),
+			"date_histogram": util.MapStr{
+				"field":       "timestamp",
+				intervalField: bucketSizeStr,
+			},
 			"aggs": util.MapStr{
 				"groups": util.MapStr{
 					"terms": util.MapStr{
@@ -879,12 +890,16 @@ func getNodeShardStateMetric(ctx context.Context, query util.MapStr, bucketSize 
 
 func getNodeHealthMetric(ctx context.Context, query util.MapStr, bucketSize int) (*common.MetricItem, error) {
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
-	minMs, maxMs, _ := extractTimeRangeMs(query)
-	bucketCount := calcBucketCount(minMs, maxMs)
-	query["size"] = 0
+	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
+	if err != nil {
+		return nil, err
+	}
 	query["aggs"] = util.MapStr{
 		"dates": util.MapStr{
-			"auto_date_histogram": buildAutoDateHistogramParams(query, bucketCount, minMs, maxMs),
+			"date_histogram": util.MapStr{
+				"field":       "timestamp",
+				intervalField: bucketSizeStr,
+			},
 			"aggs": util.MapStr{
 				"min_uptime": util.MapStr{
 					"min": util.MapStr{

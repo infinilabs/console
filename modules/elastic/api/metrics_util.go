@@ -148,6 +148,7 @@ func (h *APIHandler) getMetrics(ctx context.Context, term_level string, query ma
 				}
 				if datesAgg, ok := bucket["dates"].(map[string]interface{}); ok {
 					if datesBuckets, ok := datesAgg["buckets"].([]interface{}); ok {
+						var preBucketSize, curBucketSize int
 						for _, dateBucket := range datesBuckets {
 							if bucketMap, ok := dateBucket.(map[string]interface{}); ok {
 								v, ok := bucketMap["key"].(float64)
@@ -157,6 +158,22 @@ func (h *APIHandler) getMetrics(ctx context.Context, term_level string, query ma
 								dateTime := int64(v)
 								minDate = util.MinInt64(minDate, dateTime)
 								maxDate = util.MaxInt64(maxDate, dateTime)
+
+								// check bucket size between previous and current
+								preBucketSize = curBucketSize
+								aggResult, aggExists := bucket[term_level].(map[string]interface{})
+								if aggExists {
+									buckets, bucketsOk := aggResult["buckets"].([]interface{})
+									if bucketsOk {
+										curBucketSize = len(buckets)
+									}
+								}
+
+								// skip: if the number of nodes in the previous and current buckets is not equal
+								if preBucketSize > 0 && curBucketSize > 0 && preBucketSize != curBucketSize {
+									log.Debugf("Multi Index Metrics Skipping bucket due to size mismatch: previous=%d, current=%d", preBucketSize, curBucketSize)
+									continue
+								}
 
 								for mk1, mv1 := range grpMetricData {
 									v1, ok := bucketMap[mk1]
@@ -316,130 +333,6 @@ func buildDateHistogramParams(query map[string]interface{}, intervalField, bucke
 	return params
 }
 
-// buildAutoDateHistogramParams builds params for auto_date_histogram aggregation.
-// bucketCount determines how many buckets ES should target.
-// minMs and maxMs are the query time range in milliseconds; used to determine appropriate minimum_interval.
-func buildAutoDateHistogramParams(query map[string]interface{}, bucketCount int, minMs, maxMs int64) util.MapStr {
-	// auto_date_histogram only accepts calendar units here; keep the floor at second.
-	// The 20-second behavior is driven by bucketCount, not minimum_interval.
-	minimumInterval := "second"
-
-	params := util.MapStr{
-		"field":            "timestamp",
-		"buckets":          bucketCount,
-		"minimum_interval": minimumInterval,
-	}
-	return params
-}
-
-// extractTimeRangeMs extracts min/max timestamps in milliseconds from the query's range filter.
-func extractTimeRangeMs(query map[string]interface{}) (int64, int64, bool) {
-	queryMap, ok := asMap(query["query"])
-	if !ok {
-		return 0, 0, false
-	}
-	boolMap, ok := asMap(queryMap["bool"])
-	if !ok {
-		return 0, 0, false
-	}
-	filters, ok := asSlice(boolMap["filter"])
-	if !ok {
-		return 0, 0, false
-	}
-	for _, filterItem := range filters {
-		filterMap, ok := asMap(filterItem)
-		if !ok {
-			continue
-		}
-		rangeMap, ok := asMap(filterMap["range"])
-		if !ok {
-			continue
-		}
-		timestampRange, ok := asMap(rangeMap["timestamp"])
-		if !ok {
-			continue
-		}
-		minVal := firstNotNil(timestampRange["gte"], timestampRange["from"], timestampRange["gt"])
-		maxVal := firstNotNil(timestampRange["lte"], timestampRange["to"], timestampRange["lt"])
-		if minVal != nil && maxVal != nil {
-			minMs := toInt64Ms(minVal)
-			maxMs := toInt64Ms(maxVal)
-			if minMs > 0 && maxMs > 0 {
-				return minMs, maxMs, true
-			}
-		}
-	}
-	return 0, 0, false
-}
-
-func toInt64Ms(v interface{}) int64 {
-	switch val := v.(type) {
-	case float64:
-		return int64(val)
-	case int64:
-		return val
-	case int:
-		return int64(val)
-	default:
-		return 0
-	}
-}
-
-// parseAutoInterval parses auto_date_histogram interval string (e.g. "1m", "1h", "1d") to seconds.
-func parseAutoInterval(interval string) int {
-	if interval == "" {
-		return 60 // default to 1 minute
-	}
-	// Try parsing as a duration-like string
-	interval = strings.TrimSpace(interval)
-	n := 0
-	i := 0
-	for i < len(interval) && interval[i] >= '0' && interval[i] <= '9' {
-		n = n*10 + int(interval[i]-'0')
-		i++
-	}
-	if n == 0 {
-		n = 1
-	}
-	if i >= len(interval) {
-		return n
-	}
-	unit := interval[i:]
-	switch unit {
-	case "s", "second":
-		return n
-	case "m", "minute":
-		return n * 60
-	case "h", "hour":
-		return n * 3600
-	case "d", "day":
-		return n * 86400
-	case "w", "week":
-		return n * 604800
-	case "M", "month":
-		return n * 2592000
-	case "y", "year":
-		return n * 31536000
-	default:
-		return 60
-	}
-}
-
-// calcBucketCount returns the target bucket count based on time range.
-// For short ranges (<12h), use fixed 60 buckets; for 7+ days use 80; otherwise 120.
-func calcBucketCount(minMs, maxMs int64) int {
-	rangeMs := maxMs - minMs
-	shortRangeMs := int64(12 * 60 * 60 * 1000)
-	sevenDaysMs := int64(7 * 24 * 60 * 60 * 1000)
-	if rangeMs > 0 && rangeMs <= shortRangeMs {
-		return 60 // Fixed bucket count for short ranges to align with collection interval
-	}
-	if rangeMs >= sevenDaysMs {
-		return 80
-	}
-	return 120
-}
-
 func extractDateHistogramBounds(query map[string]interface{}) (util.MapStr, bool) {
 	queryMap, ok := asMap(query["query"])
 	if !ok {
@@ -539,6 +432,7 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 			}
 
 			if line.Metric.IsDerivative {
+				//add which metric keys to extract
 				aggs[line.Metric.ID+"_deriv"] = util.MapStr{
 					"derivative": util.MapStr{
 						"buckets_path": line.Metric.ID,
@@ -554,20 +448,18 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 			}
 		}
 	}
+	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 
-	// Use auto_date_histogram with dynamic bucket count
 	clusterID := global.MustLookupString(elastic.GlobalSystemElasticsearchID)
-	minMs, maxMs, hasRange := extractTimeRangeMs(query)
-	bucketCount := 120
-	if hasRange {
-		bucketCount = calcBucketCount(minMs, maxMs)
+	intervalField, err := getDateHistogramIntervalField(clusterID, bucketSizeStr)
+	if err != nil {
+		return nil, err
 	}
-
 	query["size"] = 0
 	query["aggs"] = util.MapStr{
 		"dates": util.MapStr{
-			"auto_date_histogram": buildAutoDateHistogramParams(query, bucketCount, minMs, maxMs),
-			"aggs":                aggs,
+			"date_histogram": buildDateHistogramParams(query, intervalField, bucketSizeStr),
+			"aggs":           aggs,
 		},
 	}
 	queryDSL := util.MustToJSONBytes(query)
@@ -577,46 +469,8 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 	}
 
 	var minDate, maxDate int64
-	actualBucketSize := bucketSize // fallback to provided bucket size
-	if response.StatusCode != 200 {
-		var rawBody string
-		if response.RawResult != nil && len(response.RawResult.Body) > 0 {
-			rawBody = string(response.RawResult.Body)
-			if len(rawBody) > 500 {
-				rawBody = rawBody[:500]
-			}
-		}
-		log.Warnf("getSingleMetrics got non-200 status: %d, body: %s", response.StatusCode, rawBody)
-	}
-
 	if response.StatusCode == 200 {
-		if len(response.Aggregations) == 0 {
-			log.Warnf("getSingleMetrics: response has 0 aggregations, total=%v", response.GetTotal())
-		}
-		for aggName, v := range response.Aggregations {
-			// Parse the interval from auto_date_histogram response
-			if v.Interval != "" {
-				if parsed := parseAutoInterval(v.Interval); parsed > 0 {
-					actualBucketSize = parsed
-				}
-			}
-			if len(v.Buckets) == 0 {
-				log.Warnf("getSingleMetrics: agg[%s] has 0 buckets, interval=%q", aggName, v.Interval)
-			} else {
-				// Log first bucket keys to help debug
-				firstBucket := v.Buckets[0]
-				bucketKeys := make([]string, 0, len(firstBucket))
-				for k := range firstBucket {
-					bucketKeys = append(bucketKeys, k)
-				}
-				log.Debugf("getSingleMetrics: agg[%s] has %d buckets, interval=%q, actualBucketSize=%d, firstBucketKeys=%v, metricDataKeys=%v", aggName, len(v.Buckets), v.Interval, actualBucketSize, bucketKeys, func() []string {
-					keys := make([]string, 0, len(metricData))
-					for k := range metricData {
-						keys = append(keys, k)
-					}
-					return keys
-				}())
-			}
+		for _, v := range response.Aggregations {
 			for _, bucket := range v.Buckets {
 				v, ok := bucket["key"].(float64)
 				if !ok {
@@ -634,7 +488,7 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 							if ok {
 								if strings.HasSuffix(mk1, "_deriv") {
 									if _, ok := bucket[mk1+"_field2"]; !ok {
-										v3 = v3 / float64(actualBucketSize)
+										v3 = v3 / float64(bucketSize)
 									}
 								}
 								if field2, ok := bucket[mk1+"_field2"]; ok {
@@ -669,6 +523,15 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 		for _, line := range metricItem.Lines {
 			line.TimeRange = common.TimeRange{Min: minDate, Max: maxDate}
 			line.Data = metricData[line.Metric.GetDataKey()]
+			if v, ok := line.Data.([][]interface{}); ok && len(v) > 0 && bucketSize <= 60 {
+				// remove first metric dot
+				temp := v[1:]
+				// // remove first last dot
+				if len(temp) > 0 {
+					temp = temp[0 : len(temp)-1]
+				}
+				line.Data = temp
+			}
 		}
 		metricItem.Request = string(queryDSL)
 		metricItem.HitsTotal = response.GetTotal()
@@ -1216,6 +1079,7 @@ func (h *APIHandler) getSingleIndexMetricsByNodeStats(ctx context.Context, metri
 			}
 
 			if line.Metric.IsDerivative {
+				//add which metric keys to extract
 				sumAggs[line.Metric.ID+"_deriv"] = util.MapStr{
 					"derivative": util.MapStr{
 						"buckets_path": line.Metric.ID,
@@ -1239,20 +1103,18 @@ func (h *APIHandler) getSingleIndexMetricsByNodeStats(ctx context.Context, metri
 		},
 		"aggs": aggs,
 	}
+	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 
-	// Use auto_date_histogram with dynamic bucket count
 	clusterID := global.MustLookupString(elastic.GlobalSystemElasticsearchID)
-	minMs, maxMs, hasRange := extractTimeRangeMs(query)
-	bucketCount := 120
-	if hasRange {
-		bucketCount = calcBucketCount(minMs, maxMs)
+	intervalField, err := getDateHistogramIntervalField(clusterID, bucketSizeStr)
+	if err != nil {
+		return nil, err
 	}
-
 	query["size"] = 0
 	query["aggs"] = util.MapStr{
 		"dates": util.MapStr{
-			"auto_date_histogram": buildAutoDateHistogramParams(query, bucketCount, minMs, maxMs),
-			"aggs":                sumAggs,
+			"date_histogram": buildDateHistogramParams(query, intervalField, bucketSizeStr),
+			"aggs":           sumAggs,
 		},
 	}
 	return parseSingleIndexMetrics(ctx, term_level, clusterID, metricItems, query, bucketSize, metricData, metricItemsMap)
@@ -1299,6 +1161,7 @@ func (h *APIHandler) getSingleIndexMetrics(ctx context.Context, metricItems []*c
 			}
 
 			if line.Metric.IsDerivative {
+				//add which metric keys to extract
 				sumAggs[line.Metric.ID+"_deriv"] = util.MapStr{
 					"derivative": util.MapStr{
 						"buckets_path": line.Metric.ID,
@@ -1322,15 +1185,13 @@ func (h *APIHandler) getSingleIndexMetrics(ctx context.Context, metricItems []*c
 		},
 		"aggs": aggs,
 	}
+	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 
-	// Use auto_date_histogram with dynamic bucket count
 	clusterID := global.MustLookupString(elastic.GlobalSystemElasticsearchID)
-	minMs, maxMs, hasRange := extractTimeRangeMs(query)
-	bucketCount := 120
-	if hasRange {
-		bucketCount = calcBucketCount(minMs, maxMs)
+	intervalField, err := getDateHistogramIntervalField(clusterID, bucketSizeStr)
+	if err != nil {
+		return nil, err
 	}
-
 	if len(metricItems) > 0 && len(metricItems[0].Lines) > 0 && metricItems[0].Lines[0].Metric.OnlyPrimary {
 		query["query"] = util.MapStr{
 			"bool": util.MapStr{
@@ -1344,8 +1205,8 @@ func (h *APIHandler) getSingleIndexMetrics(ctx context.Context, metricItems []*c
 	query["size"] = 0
 	query["aggs"] = util.MapStr{
 		"dates": util.MapStr{
-			"auto_date_histogram": buildAutoDateHistogramParams(query, bucketCount, minMs, maxMs),
-			"aggs":                sumAggs,
+			"date_histogram": buildDateHistogramParams(query, intervalField, bucketSizeStr),
+			"aggs":           sumAggs,
 		},
 	}
 	return parseSingleIndexMetrics(ctx, term_level, clusterID, metricItems, query, bucketSize, metricData, metricItemsMap)
@@ -1362,44 +1223,10 @@ func parseSingleIndexMetrics(ctx context.Context, term_level, clusterID string, 
 	}
 
 	var minDate, maxDate int64
-	actualBucketSize := bucketSize // fallback
-
-	if response.StatusCode != 200 {
-		var rawBody string
-		if response.RawResult != nil && len(response.RawResult.Body) > 0 {
-			rawBody = string(response.RawResult.Body)
-			if len(rawBody) > 500 {
-				rawBody = rawBody[:500]
-			}
-		}
-		log.Warnf("parseSingleIndexMetrics got non-200 status: %d, body: %s", response.StatusCode, rawBody)
-	}
 
 	if response.StatusCode == 200 {
-		if len(response.Aggregations) == 0 {
-			log.Warnf("parseSingleIndexMetrics: response has 0 aggregations, total=%v", response.GetTotal())
-		}
-		for aggName, v := range response.Aggregations {
-			// Parse the interval from auto_date_histogram response
-			if v.Interval != "" {
-				if parsed := parseAutoInterval(v.Interval); parsed > 0 {
-					actualBucketSize = parsed
-				}
-			}
-			if len(v.Buckets) == 0 {
-				log.Warnf("parseSingleIndexMetrics: agg[%s] has 0 buckets, interval=%q", aggName, v.Interval)
-			} else {
-				firstBucket := v.Buckets[0]
-				bucketKeys := make([]string, 0, len(firstBucket))
-				for k := range firstBucket {
-					bucketKeys = append(bucketKeys, k)
-				}
-				metricKeys := make([]string, 0, len(metricData))
-				for k := range metricData {
-					metricKeys = append(metricKeys, k)
-				}
-				log.Debugf("parseSingleIndexMetrics: agg[%s] has %d buckets, interval=%q, actualBucketSize=%d, firstBucketKeys=%v, metricDataKeys=%v", aggName, len(v.Buckets), v.Interval, actualBucketSize, bucketKeys, metricKeys)
-			}
+		for _, v := range response.Aggregations {
+			var preBucketSize, curBucketSize int
 			for _, bucket := range v.Buckets {
 				v, ok := bucket["key"].(float64)
 				if !ok {
@@ -1410,6 +1237,22 @@ func parseSingleIndexMetrics(ctx context.Context, term_level, clusterID string, 
 				minDate = util.MinInt64(minDate, dateTime)
 				maxDate = util.MaxInt64(maxDate, dateTime)
 
+				// check bucket size between previous and current
+				preBucketSize = curBucketSize
+				aggResult, aggExists := bucket[term_level].(map[string]interface{})
+				if aggExists {
+					buckets, bucketsOk := aggResult["buckets"].([]interface{})
+					if bucketsOk {
+						curBucketSize = len(buckets)
+					}
+				}
+
+				// skip: if the number of nodes in the previous and current buckets is not equal
+				if preBucketSize > 0 && curBucketSize > 0 && preBucketSize != curBucketSize {
+					log.Debugf("Single Index Metrics Skipping bucket due to size mismatch: previous=%d, current=%d", preBucketSize, curBucketSize)
+					continue
+				}
+
 				for mk1, mv1 := range metricData {
 					v1, ok := bucket[mk1]
 					if ok {
@@ -1419,7 +1262,7 @@ func parseSingleIndexMetrics(ctx context.Context, term_level, clusterID string, 
 							if ok {
 								if strings.HasSuffix(mk1, "_deriv") {
 									if _, ok := bucket[mk1+"_field2"]; !ok {
-										v3 = v3 / float64(actualBucketSize)
+										v3 = v3 / float64(bucketSize)
 									}
 								}
 								if field2, ok := bucket[mk1+"_field2"]; ok {
@@ -1454,6 +1297,15 @@ func parseSingleIndexMetrics(ctx context.Context, term_level, clusterID string, 
 		for _, line := range metricItem.Lines {
 			line.TimeRange = common.TimeRange{Min: minDate, Max: maxDate}
 			line.Data = metricData[line.Metric.GetDataKey()]
+			if v, ok := line.Data.([][]interface{}); ok && len(v) > 0 && bucketSize <= 60 {
+				// remove first metric dot
+				temp := v[1:]
+				// // remove first last dot
+				if len(temp) > 0 {
+					temp = temp[0 : len(temp)-1]
+				}
+				line.Data = temp
+			}
 		}
 		metricItem.Request = string(queryDSL)
 		metricItem.HitsTotal = response.GetTotal()

@@ -1109,7 +1109,10 @@ func (h *APIHandler) getShardsMetric(ctx context.Context, id string, min, max in
 		},
 		"aggs": util.MapStr{
 			"dates": util.MapStr{
-				"auto_date_histogram": buildAutoDateHistogramParams(calcBucketCount(min, max), min, max),
+				"date_histogram": util.MapStr{
+					"field":    "timestamp",
+					"interval": bucketSizeStr,
+				},
 			},
 		},
 	}
@@ -1168,7 +1171,10 @@ func (h *APIHandler) getCircuitBreakerMetric(ctx context.Context, id string, min
 		},
 		"aggs": util.MapStr{
 			"dates": util.MapStr{
-				"auto_date_histogram": buildAutoDateHistogramParams(calcBucketCount(min, max), min, max),
+				"date_histogram": util.MapStr{
+					"field":    "timestamp",
+					"interval": bucketSizeStr,
+				},
 			},
 		},
 	}
@@ -1226,7 +1232,10 @@ func (h *APIHandler) getRollupMetric(ctx context.Context, key, id string, min, m
 		},
 		"aggs": util.MapStr{
 			"dates": util.MapStr{
-				"auto_date_histogram": buildAutoDateHistogramParams(calcBucketCount(min, max), min, max),
+				"date_histogram": util.MapStr{
+					"field":    "timestamp",
+					"interval": bucketSizeStr,
+				},
 			},
 		},
 	}
@@ -1244,6 +1253,10 @@ func (h *APIHandler) getRollupMetric(ctx context.Context, key, id string, min, m
 
 func (h *APIHandler) getClusterStatusMetric(ctx context.Context, id string, min, max int64, bucketSize int) (*common.MetricItem, error) {
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
+	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
+	if err != nil {
+		return nil, err
+	}
 	query := util.MapStr{
 		"query": util.MapStr{
 			"bool": util.MapStr{
@@ -1284,7 +1297,10 @@ func (h *APIHandler) getClusterStatusMetric(ctx context.Context, id string, min,
 		},
 		"aggs": util.MapStr{
 			"dates": util.MapStr{
-				"auto_date_histogram": buildAutoDateHistogramParams(calcBucketCount(min, max), min, max),
+				"date_histogram": util.MapStr{
+					"field":       "timestamp",
+					intervalField: bucketSizeStr,
+				},
 				"aggs": util.MapStr{
 					"group_status": util.MapStr{
 						"terms": util.MapStr{

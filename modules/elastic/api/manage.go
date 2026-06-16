@@ -511,13 +511,13 @@ func initAgentCollectionUser(client elastic.API, distribution, username, passwor
 	if err != nil {
 		return username, err
 	}
-	if err := putRoleWithRetry(client, username, roleBody); err != nil {
+	if err := client.PutRole(username, roleBody); err != nil {
 		fallbackUsername, fallback := getManagedAgentCollectionFallbackUsername(distribution, username, err)
 		if !fallback {
 			return username, wrapAgentCollectionProvisionError(distribution, "role", err)
 		}
 		username = fallbackUsername
-		if err := putRoleWithRetry(client, username, roleBody); err != nil {
+		if err := client.PutRole(username, roleBody); err != nil {
 			return username, wrapAgentCollectionProvisionError(distribution, "role", err)
 		}
 	}
@@ -526,36 +526,10 @@ func initAgentCollectionUser(client elastic.API, distribution, username, passwor
 	if err != nil {
 		return username, err
 	}
-	if err := putUserWithRetry(client, username, userBody); err != nil {
+	if err := client.PutUser(username, userBody); err != nil {
 		return username, wrapAgentCollectionProvisionError(distribution, "user", err)
 	}
 	return username, nil
-}
-
-func putRoleWithRetry(client elastic.API, username string, roleBody []byte) error {
-	err := client.PutRole(username, roleBody)
-	if err != nil && isVersionConflictError(err) {
-		return client.PutRole(username, roleBody)
-	}
-	return err
-}
-
-func putUserWithRetry(client elastic.API, username string, userBody []byte) error {
-	err := client.PutUser(username, userBody)
-	if err != nil && isVersionConflictError(err) {
-		return client.PutUser(username, userBody)
-	}
-	return err
-}
-
-func isVersionConflictError(err error) bool {
-	if err == nil {
-		return false
-	}
-	lower := strings.ToLower(err.Error())
-	return strings.Contains(lower, "version conflict") &&
-		strings.Contains(lower, "required seqno") &&
-		strings.Contains(lower, "primary term")
 }
 
 func buildAgentCollectionRoleBody(distribution string) ([]byte, error) {
@@ -2026,6 +2000,14 @@ func (h *APIHandler) getShardsMetric(ctx context.Context, id string, min, max in
 				},
 			},
 		},
+		"aggs": util.MapStr{
+			"dates": util.MapStr{
+				"date_histogram": util.MapStr{
+					"field":    "timestamp",
+					"interval": bucketSizeStr,
+				},
+			},
+		},
 	}
 	metricItem := newMetricItem("shard_count", 7, StorageGroupKey)
 	metricItem.AddAxi("counts", "group1", common.PositionLeft, "num", "0,0", "0,0.[00]", 5, false)
@@ -2095,6 +2077,14 @@ func (h *APIHandler) getCircuitBreakerMetric(ctx context.Context, id string, min
 				},
 			},
 		},
+		"aggs": util.MapStr{
+			"dates": util.MapStr{
+				"date_histogram": util.MapStr{
+					"field":    "timestamp",
+					"interval": bucketSizeStr,
+				},
+			},
+		},
 	}
 	metricItem := newMetricItem("circuit_breaker", 7, StorageGroupKey)
 	metricItem.AddAxi("Circuit Breaker", "group1", common.PositionLeft, "num", "0,0", "0,0.[00]", 5, false)
@@ -2110,7 +2100,10 @@ func (h *APIHandler) getCircuitBreakerMetric(ctx context.Context, id string, min
 
 func (h *APIHandler) getClusterStatusMetric(ctx context.Context, id string, min, max int64, bucketSize int) (*common.MetricItem, error) {
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
-	bucketCount := calcBucketCount(min, max)
+	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
+	if err != nil {
+		return nil, err
+	}
 	query := util.MapStr{
 		"query": util.MapStr{
 			"bool": util.MapStr{
@@ -2151,10 +2144,9 @@ func (h *APIHandler) getClusterStatusMetric(ctx context.Context, id string, min,
 		},
 		"aggs": util.MapStr{
 			"dates": util.MapStr{
-				"auto_date_histogram": util.MapStr{
-					"field":            "timestamp",
-					"buckets":          bucketCount,
-					"minimum_interval": "minute",
+				"date_histogram": util.MapStr{
+					"field":       "timestamp",
+					intervalField: bucketSizeStr,
 				},
 				"aggs": util.MapStr{
 					"groups": util.MapStr{

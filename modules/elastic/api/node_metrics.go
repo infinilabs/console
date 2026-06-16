@@ -25,6 +25,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	log "github.com/cihub/seelog"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/global"
@@ -114,6 +115,7 @@ const (
 )
 
 func (h *APIHandler) getNodeMetrics(ctx context.Context, clusterID string, bucketSize int, min, max int64, nodeName string, top int, metricKey string) (map[string]*common.MetricItem, error) {
+	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 	clusterUUID, err := h.getClusterUUID(clusterID)
 	if err != nil {
 		return nil, err
@@ -1142,7 +1144,11 @@ func (h *APIHandler) getNodeMetrics(ctx context.Context, clusterID string, bucke
 	}
 
 	aggs := generateGroupAggs(nodeMetricItems)
-	bucketCount := calcBucketCount(min, max)
+	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
+	if err != nil {
+		log.Errorf("getNodeMetrics failed: %v", err)
+		panic(err)
+	}
 
 	query["size"] = 0
 	query["aggs"] = util.MapStr{
@@ -1153,8 +1159,11 @@ func (h *APIHandler) getNodeMetrics(ctx context.Context, clusterID string, bucke
 			},
 			"aggs": util.MapStr{
 				"dates": util.MapStr{
-					"auto_date_histogram": buildAutoDateHistogramParams(query, bucketCount, min, max),
-					"aggs":                aggs,
+					"date_histogram": util.MapStr{
+						"field":       "timestamp",
+						intervalField: bucketSizeStr,
+					},
+					"aggs": aggs,
 				},
 			},
 		},
@@ -1170,11 +1179,15 @@ func (h *APIHandler) getTopNodeName(clusterID string, top int, lastMinutes int) 
 		return nil, nil
 	}
 	var (
-		now = time.Now()
-		max = now.UnixNano() / 1e6
-		min = now.Add(-time.Duration(lastMinutes)*time.Minute).UnixNano() / 1e6
+		now           = time.Now()
+		max           = now.UnixNano() / 1e6
+		min           = now.Add(-time.Duration(lastMinutes)*time.Minute).UnixNano() / 1e6
+		bucketSizeStr = "60s"
 	)
-	bucketCount := calcBucketCount(min, max)
+	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
+	if err != nil {
+		return nil, err
+	}
 
 	query := util.MapStr{
 		"size": 0,
@@ -1235,7 +1248,10 @@ func (h *APIHandler) getTopNodeName(clusterID string, top int, lastMinutes int) 
 						},
 					},
 					"dates": util.MapStr{
-						"auto_date_histogram": buildAutoDateHistogramParams(nil, bucketCount, min, max),
+						"date_histogram": util.MapStr{
+							"field":       "timestamp",
+							intervalField: bucketSizeStr,
+						},
 						"aggs": util.MapStr{
 							"search_query_total": util.MapStr{
 								"max": util.MapStr{
@@ -1271,7 +1287,10 @@ func (h *APIHandler) getTopNodeName(clusterID string, top int, lastMinutes int) 
 						},
 					},
 					"dates": util.MapStr{
-						"auto_date_histogram": buildAutoDateHistogramParams(nil, bucketCount, min, max),
+						"date_histogram": util.MapStr{
+							"field":       "timestamp",
+							intervalField: bucketSizeStr,
+						},
 						"aggs": util.MapStr{
 							"index_total": util.MapStr{
 								"max": util.MapStr{

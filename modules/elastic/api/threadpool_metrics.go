@@ -25,7 +25,10 @@ package api
 
 import (
 	"context"
+	"fmt"
 	log "github.com/cihub/seelog"
+	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/modules/elastic/common"
 	"strings"
@@ -82,6 +85,7 @@ func (h *APIHandler) getThreadPoolMetrics(ctx context.Context, clusterID string,
 	if err != nil {
 		return nil, err
 	}
+	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 	var must = []util.MapStr{
 		{
 			"term": util.MapStr{
@@ -616,7 +620,11 @@ func (h *APIHandler) getThreadPoolMetrics(ctx context.Context, clusterID string,
 			}
 		}
 	}
-	bucketCount := calcBucketCount(min, max)
+	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
+	if err != nil {
+		log.Errorf("getThreadPoolMetrics failed: %v", err)
+		panic(err)
+	}
 
 	query["size"] = 0
 	query["aggs"] = util.MapStr{
@@ -627,8 +635,11 @@ func (h *APIHandler) getThreadPoolMetrics(ctx context.Context, clusterID string,
 			},
 			"aggs": util.MapStr{
 				"dates": util.MapStr{
-					"auto_date_histogram": buildAutoDateHistogramParams(query, bucketCount, min, max),
-					"aggs":                aggs,
+					"date_histogram": util.MapStr{
+						"field":       "timestamp",
+						intervalField: bucketSizeStr,
+					},
+					"aggs": aggs,
 				},
 			},
 		},

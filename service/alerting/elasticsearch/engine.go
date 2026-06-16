@@ -1419,6 +1419,7 @@ func newParameterCtx(rule *alerting.Rule, checkResults *alerting.ConditionResult
 		alerting2.ParamResourceID:   rule.Resource.ID,
 		alerting2.ParamResourceName: rule.Resource.Name,
 		alerting2.ParamResults:      conditionParams,
+		alerting2.ParamTotalResults: len(checkResults.ResultItems),
 		"objects":                   rule.Resource.Objects,
 		"first_group_value":         firstGroupValue,
 		"first_threshold":           firstThreshold,

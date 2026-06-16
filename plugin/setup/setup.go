@@ -531,6 +531,7 @@ func (module *Module) initTempClient(request *SetupRequest) (error, elastic.API)
 			Username: request.Cluster.Username,
 			Password: ucfg.SecretString(request.Cluster.Password),
 		},
+		Hosts: request.Cluster.Hosts,
 	}
 
 	if cfg.Endpoint != "" && cfg.Host == "" {
@@ -870,7 +871,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	//save to local file
 	file := path.Join(global.Env().GetConfigDir(), "system_config.yml")
 	_, err = util.FilePutContent(file, fmt.Sprintf("configs.template:\n  - name: \"system\"\n    path: ./config/system_config.tpl\n    variable:\n      "+
-		"CLUSTER_ID: %v\n      CLUSTER_ENDPOINT: \"[%v]\"\n      "+
+		"CLUSTER_ID: %v\n      CLUSTER_ENDPOINT: \"%v\"\n      "+
 		"CLUSTER_USER: \"%v\"\n      CLUSTER_VER: \"%v\"\n      CLUSTER_DISTRIBUTION: \"%v\"\n      INDEX_PREFIX: \"%v\"",
 		GlobalSystemElasticsearchID, cfg.GetAllEndpoints(), cfg.BasicAuth.Username, cfg.Version, cfg.Distribution, cfg1.IndexPrefix))
 	if err != nil {

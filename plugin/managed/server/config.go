@@ -62,6 +62,35 @@ type managedConfigLogSummary struct {
 	Hash     string `json:"hash,omitempty"`
 }
 
+func managedConfigEffectiveHash(cfg common.ConfigFile) string {
+	if cfg.Hash != "" {
+		return cfg.Hash
+	}
+	if cfg.Content == "" {
+		return ""
+	}
+	return util.MD5digest(cfg.Content)
+}
+
+func managedConfigChanged(serverCfg, clientCfg common.ConfigFile) bool {
+	if serverCfg.Version > clientCfg.Version {
+		return true
+	}
+	if serverCfg.Version < clientCfg.Version {
+		return false
+	}
+
+	serverHash := managedConfigEffectiveHash(serverCfg)
+	clientHash := managedConfigEffectiveHash(clientCfg)
+	if serverHash != "" && clientHash != "" {
+		return serverHash != clientHash
+	}
+	if serverCfg.Content != "" && clientCfg.Content != "" {
+		return serverCfg.Content != clientCfg.Content
+	}
+	return serverCfg.Updated > clientCfg.Updated
+}
+
 func RegisterConfigProvider(provider func(instance model.Instance) []*common.ConfigFile) {
 	configProvidersLock.Lock()
 	defer configProvidersLock.Unlock()
@@ -368,10 +397,9 @@ func (h APIHandler) syncConfigs(w http.ResponseWriter, req *http.Request, ps htt
 						log.Tracef("check version for config %v, %v vs %v, %v", k, v.Version, x.Version, x.Managed)
 					}
 
-					//let's diff the version
-					if v.Version > x.Version {
+					if managedConfigChanged(v, x) {
 						if global.Env().IsDebug {
-							log.Trace("get newly version from server, let's sync to client: ", k)
+							log.Trace("managed config changed, let's sync to client: ", k, ", server version/hash=", v.Version, "/", managedConfigEffectiveHash(v), ", client version/hash=", x.Version, "/", managedConfigEffectiveHash(x))
 						}
 
 						res.Configs.UpdatedConfigs[k] = v

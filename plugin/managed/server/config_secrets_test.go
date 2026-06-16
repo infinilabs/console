@@ -106,3 +106,27 @@ func TestShouldSyncManagedSecretsIgnoresEmptySecrets(t *testing.T) {
 		t.Fatal("expected empty secrets not to trigger sync")
 	}
 }
+
+func TestManagedConfigChangedByVersion(t *testing.T) {
+	serverCfg := common.ConfigFile{Version: 2, Content: "a"}
+	clientCfg := common.ConfigFile{Version: 1, Content: "a"}
+	if !managedConfigChanged(serverCfg, clientCfg) {
+		t.Fatal("expected higher version to trigger sync")
+	}
+}
+
+func TestManagedConfigChangedByContentWhenVersionEqual(t *testing.T) {
+	serverCfg := common.ConfigFile{Version: 1, Content: "relay-hosts-new"}
+	clientCfg := common.ConfigFile{Version: 1, Content: "relay-hosts-old"}
+	if !managedConfigChanged(serverCfg, clientCfg) {
+		t.Fatal("expected content change with same version to trigger sync")
+	}
+}
+
+func TestManagedConfigUnchangedWhenVersionAndContentEqual(t *testing.T) {
+	serverCfg := common.ConfigFile{Version: 1, Content: "same-content"}
+	clientCfg := common.ConfigFile{Version: 1, Content: "same-content"}
+	if managedConfigChanged(serverCfg, clientCfg) {
+		t.Fatal("expected unchanged config not to trigger sync")
+	}
+}

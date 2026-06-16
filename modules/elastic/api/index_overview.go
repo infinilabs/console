@@ -46,28 +46,6 @@ import (
 	"infini.sh/framework/modules/elastic/common"
 )
 
-func normalizeRollupMetricIndexName(indexName string) string {
-	normalized := strings.TrimSpace(indexName)
-	if normalized == "" {
-		return normalized
-	}
-	prefixes := []string{
-		v1.RollupClusterHealthKey + "_",
-		v1.RollupIndexHealthKey + "_",
-		v1.RollupClusterStataKey + "_",
-		v1.RollupIndexStatsKey + "_",
-		v1.RollupNodeStatsKey + "_",
-		v1.RollupShardStatsMetricsKey + "_",
-		v1.RollupShardStatsStateKey + "_",
-	}
-	for _, prefix := range prefixes {
-		if strings.HasPrefix(normalized, prefix) {
-			return strings.TrimPrefix(normalized, prefix)
-		}
-	}
-	return normalized
-}
-
 func (h *APIHandler) SearchIndexMetadata(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	resBody := util.MapStr{}
 	reqBody := struct {
@@ -824,7 +802,7 @@ func (h *APIHandler) GetIndexShards(w http.ResponseWriter, req *http.Request, ps
 		h.APIHandler.GetIndexShards(w, req, ps)
 		return
 	}
-	indexName := ps.MustGetParameter("index")
+	indexName := strings.TrimSpace(ps.MustGetParameter("index"))
 	q1 := orm.Query{
 		Size:          1000,
 		WildcardIndex: true,
@@ -933,14 +911,13 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 		h.APIHandler.GetSingleIndexMetrics(w, req, ps)
 		return
 	}
-	rawIndexName := ps.MustGetParameter("index")
-	if !h.IsIndexAllowed(req, clusterID, rawIndexName) {
+	indexName := strings.TrimSpace(ps.MustGetParameter("index"))
+	if !h.IsIndexAllowed(req, clusterID, indexName) {
 		h.WriteJSON(w, util.MapStr{
 			"error": http.StatusText(http.StatusForbidden),
 		}, http.StatusForbidden)
 		return
 	}
-	//indexName := normalizeRollupMetricIndexName(rawIndexName)
 	clusterUUID, err := h.getClusterUUID(clusterID)
 	if err != nil {
 		log.Errorf("GetSingleIndexMetrics failed: %v", err)
@@ -967,7 +944,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 		{
 			"term": util.MapStr{
 				"metadata.labels.index_name": util.MapStr{
-					"value": rawIndexName,
+					"value": indexName,
 				},
 			},
 		},
@@ -1046,7 +1023,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 	metricItems := []*common.MetricItem{}
 	metrics := map[string]*common.MetricItem{}
 	if metricKey == ShardStateMetricKey {
-		shardStateMetric, err := h.getIndexShardsMetric(ctx, clusterID, rawIndexName, min, max, bucketSize, shardID)
+		shardStateMetric, err := h.getIndexShardsMetric(ctx, clusterID, indexName, min, max, bucketSize, shardID)
 		if err != nil {
 			log.Errorf("GetSingleIndexMetrics failed: %v", err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -1054,8 +1031,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 		}
 		metrics["shard_state"] = shardStateMetric
 	} else if metricKey == v1.IndexHealthMetricKey {
-		// Pass rawIndexName to GetIndexHealthMetric so it queries with the actual index name stored in metrics
-		healthMetric, err := h.GetIndexHealthMetric(ctx, clusterID, rawIndexName, min, max, bucketSize)
+		healthMetric, err := h.GetIndexHealthMetric(ctx, clusterID, indexName, min, max, bucketSize)
 		if err != nil {
 			log.Errorf("GetSingleIndexMetrics failed: %v", err)
 			h.WriteError(w, err, http.StatusInternalServerError)

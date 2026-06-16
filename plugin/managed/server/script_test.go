@@ -292,6 +292,18 @@ func TestResolveGatewayServiceNameUsesServiceType(t *testing.T) {
 	}
 }
 
+func TestNormalizeRelayRole(t *testing.T) {
+	if got := normalizeRelayRole("primary"); got != "primary" {
+		t.Fatalf("expected primary, got %q", got)
+	}
+	if got := normalizeRelayRole("SECONDARY"); got != "secondary" {
+		t.Fatalf("expected secondary, got %q", got)
+	}
+	if got := normalizeRelayRole("unknown"); got != "" {
+		t.Fatalf("expected empty for unknown relay role, got %q", got)
+	}
+}
+
 func TestFormatBuildVersion(t *testing.T) {
 	if got := formatBuildVersion("1.2.3", "456"); got != "1.2.3-456" {
 		t.Fatalf("expected combined build version, got %q", got)
@@ -332,6 +344,7 @@ func TestGatewayInstallTemplateBootstrapsManagedConfig(t *testing.T) {
 		"{{api_security_username}}", "managed_gateway",
 		"{{api_security_password}}", "LOCAL_API_PASSWORD",
 		"{{service_type}}", "relay",
+		"{{relay_role}}", "primary",
 		"{{service_name}}", "gateway-relay",
 	).Replace(string(content))
 
@@ -363,6 +376,7 @@ func TestGatewayInstallTemplateBootstrapsManagedConfig(t *testing.T) {
 		`default_domain: "console.local"`,
 		`skip_insecure_verify: false`,
 		`service_type: "${service_type}"`,
+		`relay_role: "${relay_role}"`,
 		`access_token="BOOTSTRAP_TOKEN"`,
 		`keystore add "CONFIGS_MANAGER_ACCESS_TOKEN"`,
 		`keystore add "configs_manager_bootstrap_token"`,

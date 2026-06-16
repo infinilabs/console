@@ -9,6 +9,9 @@ export default {
   "gateway.install.type.label": "服务类型",
   "gateway.install.type.migration": "迁移网关",
   "gateway.install.type.relay": "转发网关",
+  "gateway.install.relay_role.label": "中继角色",
+  "gateway.install.relay_role.primary": "主网关",
+  "gateway.install.relay_role.secondary": "备网关",
   "gateway.install.no_sudo.label": "无 sudo 权限",
   "gateway.install.no_sudo.help":
     "适用于容器或非 root 环境。开启后生成的命令会去掉 sudo，并自动追加 --no-service，安装完成后请将 Gateway 作为容器主进程或以前台方式运行。",

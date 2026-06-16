@@ -426,28 +426,6 @@ func (h *APIHandler) GetIndexShards(w http.ResponseWriter, req *http.Request, ps
 
 const IndexHealthMetricKey = "index_health"
 
-func normalizeRollupMetricIndexName(indexName string) string {
-	normalized := strings.TrimSpace(indexName)
-	if normalized == "" {
-		return normalized
-	}
-	prefixes := []string{
-		RollupClusterHealthKey + "_",
-		RollupIndexHealthKey + "_",
-		RollupClusterStataKey + "_",
-		RollupIndexStatsKey + "_",
-		RollupNodeStatsKey + "_",
-		RollupShardStatsMetricsKey + "_",
-		RollupShardStatsStateKey + "_",
-	}
-	for _, prefix := range prefixes {
-		if strings.HasPrefix(normalized, prefix) {
-			return strings.TrimPrefix(normalized, prefix)
-		}
-	}
-	return normalized
-}
-
 func normalizeIndexHealthBucketSize(bucketSize int, min, max int64) int {
 	if bucketSize <= 0 {
 		bucketSize = 60
@@ -486,12 +464,6 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 		}, http.StatusForbidden)
 		return
 	}
-
-	// Check if this is a cluster-level rollup (e.g., rollup_cluster_stats_index_name)
-	isClusterRollup := strings.HasPrefix(rawIndexName, RollupClusterHealthKey+"_") || strings.HasPrefix(rawIndexName, RollupClusterStataKey+"_")
-
-	// Note: We use rawIndexName directly in queries, not a normalized version
-	// Metrics data stores the full index name including any rollup prefix
 	var must = []util.MapStr{
 		{
 			"term": util.MapStr{
@@ -507,45 +479,20 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 				},
 			},
 		},
-	}
-
-	// Add metadata.name filter based on rollup type
-	if isClusterRollup {
-		if strings.HasPrefix(rawIndexName, RollupClusterStataKey+"_") {
-			must = append(must, util.MapStr{
-				"term": util.MapStr{
-					"metadata.name": util.MapStr{
-						"value": "cluster_stats",
-					},
-				},
-			})
-		} else if strings.HasPrefix(rawIndexName, RollupClusterHealthKey+"_") {
-			must = append(must, util.MapStr{
-				"term": util.MapStr{
-					"metadata.name": util.MapStr{
-						"value": "cluster_health",
-					},
-				},
-			})
-		}
-	} else {
-		// For index-level metrics, add both metadata.name and index_name filter
-		must = append(must,
-			util.MapStr{
-				"term": util.MapStr{
-					"metadata.name": util.MapStr{
-						"value": "index_stats",
-					},
+		{
+			"term": util.MapStr{
+				"metadata.name": util.MapStr{
+					"value": "index_stats",
 				},
 			},
-			util.MapStr{
-				"term": util.MapStr{
-					"metadata.labels.index_name": util.MapStr{
-						"value": rawIndexName,
-					},
+		},
+		{
+			"term": util.MapStr{
+				"metadata.labels.index_name": util.MapStr{
+					"value": rawIndexName,
 				},
 			},
-		)
+		},
 	}
 	resBody := map[string]interface{}{}
 	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, clusterID, MetricTypeIndexStats, 60)
@@ -586,7 +533,6 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 	defer cancel()
 	metrics := map[string]*common.MetricItem{}
 	if metricKey == IndexHealthMetricKey {
-		// Pass rawIndexName to GetIndexHealthMetric so it queries with the actual index name stored in metrics
 		healthMetric, err := h.GetIndexHealthMetric(ctx, clusterID, rawIndexName, min, max, bucketSize)
 		if err != nil {
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -673,8 +619,6 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 }
 
 func (h *APIHandler) GetIndexHealthMetric(ctx context.Context, id, indexName string, min, max int64, bucketSize int) (*common.MetricItem, error) {
-	// Note: indexName is passed as-is from GetSingleIndexMetrics (rawIndexName for rollup indices)
-	// Do NOT normalize here - the metrics data stores the full index name including rollup prefix
 	healthBucketSize := normalizeIndexHealthBucketSize(bucketSize, min, max)
 	bucketSizeStr := fmt.Sprintf("%vs", healthBucketSize)
 	bucketCount := calcBucketCount(min, max)
@@ -765,7 +709,6 @@ func (h *APIHandler) GetIndexHealthMetric(ctx context.Context, id, indexName str
 }
 
 func (h *APIHandler) GetIndexStatusOfRecentDay(clusterID, indexName string) (map[string][]interface{}, error) {
-	indexName = normalizeRollupMetricIndexName(indexName)
 	q := orm.Query{
 		WildcardIndex: true,
 	}
@@ -934,7 +877,7 @@ func (h *APIHandler) getIndexNodes(w http.ResponseWriter, req *http.Request, ps 
 	q.Conds = orm.And(
 		orm.Eq("metadata.category", "elasticsearch"),
 		orm.Eq("metadata.labels.cluster_id", id),
-		orm.Eq("metadata.labels.index_name", indexName), // Note: indexName passed from caller, may need normalization handling
+		orm.Eq("metadata.labels.index_name", indexName),
 		orm.Eq("metadata.name", "index_routing_table"),
 	)
 

@@ -10,6 +10,9 @@ export default {
   "gateway.install.type.label": "Service type",
   "gateway.install.type.migration": "Migration gateway",
   "gateway.install.type.relay": "Relay gateway",
+  "gateway.install.relay_role.label": "Relay role",
+  "gateway.install.relay_role.primary": "Primary gateway",
+  "gateway.install.relay_role.secondary": "Secondary gateway",
   "gateway.install.no_sudo.label": "No sudo privileges",
   "gateway.install.no_sudo.help":
     "Recommended for containers or non-root environments. When enabled, the generated command removes sudo and appends --no-service. After installation, run Gateway in the foreground via your container or process manager.",

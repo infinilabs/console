@@ -5,6 +5,22 @@ import { PriorityColor } from "../../utils/constants";
 import { formatMessage } from "umi/locale";
 import EventMessageStatus from "./EventMessageStatus";
 
+const calcSafeDuration = (msgItem) => {
+  const triggerAt = msgItem?.trigger_at;
+  const resolveAt = msgItem?.resolve_at;
+
+  const start = moment(triggerAt);
+  const end = resolveAt ? moment(resolveAt) : moment();
+
+  if (!start.isValid() || !end.isValid()) return "-";
+
+  const diffMs = end.diff(start);
+
+  if (diffMs < 0) return "-";
+
+  return moment.duration(diffMs).humanize();
+};
+
 const isValidAlertTime = (value) => {
   if (!value) {
     return false;
@@ -57,7 +73,7 @@ export default ({msgItem})=>{
         </Row>:null}
         <Row>
           <Col span={labelSpan}>{formatMessage({ id: "alert.message.table.duration" })}</Col>
-          <Col span={vSpan}>{moment.duration(msgItem?.duration).humanize()}</Col>
+          <Col span={vSpan}>{calcSafeDuration(msgItem)}</Col>
         </Row>
         <Row>
           <Col span={labelSpan}>{formatMessage({ id: "alert.message.detail.condition.type" })}</Col>

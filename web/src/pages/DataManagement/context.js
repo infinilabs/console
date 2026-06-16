@@ -253,14 +253,36 @@ export const getContext = () => {
   };
 };
 
+const sanitizeKql = (query) => {
+  if (!query || typeof query !== "string") return query;
+
+  return query
+    .replace(/(\w+):\/\/?/g, '$1__COLON__//')
+    .replace(/:([^\s"')\]])/g, ':"$1');
+};
+
 const getEsQuery = (indexPattern) => {
   const timeFilter = timefilter.createFilter(indexPattern);
-  return buildEsQuery(
-    indexPattern,
-    queryStringManager.getQuery(),
-    [...filterManager.getFilters(), ...(timeFilter ? [timeFilter] : [])]
-    // getEsQueryConfig(getUiSettings())
-  );
+
+  const rawQuery = queryStringManager.getQuery();
+  try {
+    return buildEsQuery(
+      indexPattern,
+      [
+        {
+          ...rawQuery,
+          query: sanitizeKql(rawQuery?.query),
+        }
+      ],
+      [...filterManager.getFilters(), ...(timeFilter ? [timeFilter] : [])]
+    );
+  } catch (e) {
+    console.warn("KQL parse failed, fallback to match_all", e);
+
+    return {
+      query: { match_all: {} }
+    };
+  }
 };
 
 const getSearchParams = (

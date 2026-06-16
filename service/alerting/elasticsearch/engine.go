@@ -982,7 +982,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 				}
 			}
 
-			err = orm.Save(orm.NewContext(), alertItem)
+			err = orm.Save(&orm.Context{Refresh: orm.WaitForRefresh}, alertItem)
 			if err != nil {
 				log.Errorf("save alert item failed, rule_id=%s, alert_id=%s, state=%s: %v", rule.ID, alertItem.ID, alertItem.State, err)
 			}
@@ -1078,9 +1078,9 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		}
 	}
 	triggerAt := alertItem.Created
-	if alertMessage != nil {
-		triggerAt = alertMessage.Created
-	}
+	//if alertMessage != nil {
+	//	triggerAt = alertMessage.Created
+	//}
 	paramsCtx = newParameterCtx(rule, checkResults, util.MapStr{
 		alerting2.ParamTimestamp: alertItem.Created.Unix(),
 		"duration":               formatAlertDuration(alertItem.Created.Sub(triggerAt)),

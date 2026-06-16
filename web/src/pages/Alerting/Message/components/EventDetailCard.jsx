@@ -7,7 +7,7 @@ import EventMessageStatus from "./EventMessageStatus";
 
 const calcSafeDuration = (msgItem) => {
   const triggerAt = msgItem?.trigger_at;
-  const resolveAt = msgItem?.resolve_at;
+  const resolveAt = msgItem?.updated;
 
   const start = moment(triggerAt);
   const end = resolveAt ? moment(resolveAt) : moment();

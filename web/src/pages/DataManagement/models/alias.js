@@ -4,13 +4,11 @@ import { getIndices } from "@/services/indices";
 const normalizeAliasDetail = (item = {}) => {
   const indexes = Array.isArray(item.indexes) ? item.indexes : [];
   const explicitWriteIndex = indexes.find((index) => index?.is_write_index)?.index;
-  const fallbackWriteIndex =
-    indexes.length === 1 ? indexes[0]?.index : undefined;
 
   return {
     ...item,
     indexes,
-    write_index: item.write_index || explicitWriteIndex || fallbackWriteIndex || "",
+    write_index: item.write_index || explicitWriteIndex || "",
   };
 };
 

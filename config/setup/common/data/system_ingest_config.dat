@@ -24,6 +24,8 @@ metrics:
       - load
   instance:
     enabled: true
+  overall:
+    enabled: true
 
 elastic:
   availability_check:

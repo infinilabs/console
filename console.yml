@@ -88,7 +88,7 @@ elastic:
     template_name: ".infini"
     index_prefix: ".infini_"
     build_template_for_object: false
-    # override_exists_template: true
+    override_exists_template: true
 
 metrics:
   enabled: true

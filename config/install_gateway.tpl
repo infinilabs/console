@@ -271,10 +271,12 @@ function install_config() {
   port={{port}}
   console_endpoint="{{console_endpoint}}"
   service_type="{{service_type}}"
+  relay_role="{{relay_role}}"
   config_manager_server=${register_server:-$console_endpoint}
   echo "[gateway] gateway api listening port $port"
   echo "[gateway] relay config manager upstream: ${config_manager_server}"
   echo "[gateway] service type: ${service_type}"
+  echo "[gateway] relay role: ${relay_role:-unset}"
   cat <<EOF > ${install_dir}/gateway.yml
 configs.auto_reload: true
 
@@ -372,6 +374,7 @@ node:
   major_ip_pattern: ".*"
   labels:
     service_type: "${service_type}"
+    relay_role: "${relay_role}"
 EOF
 }
 

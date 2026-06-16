@@ -109,6 +109,7 @@ type gatewaySetupConfig struct {
 type installCommandRequest struct {
 	GatewayEndpoints     []string `json:"gateway_endpoints"`
 	ServiceType          string   `json:"service_type"`
+	RelayRole            string   `json:"relay_role"`
 	EnableReverseChannel bool     `json:"enable_reverse_channel"`
 	NoService            bool     `json:"no_service"`
 }
@@ -131,6 +132,17 @@ func normalizeGatewayType(gatewayType string) string {
 		return gatewayTypeMigration
 	default:
 		return gatewayTypeMigration
+	}
+}
+
+func normalizeRelayRole(role string) string {
+	switch strings.ToLower(strings.TrimSpace(role)) {
+	case "primary":
+		return "primary"
+	case "secondary":
+		return "secondary"
+	default:
+		return ""
 	}
 }
 
@@ -326,6 +338,10 @@ func (h *APIHandler) generateGatewayInstallCommand(w http.ResponseWriter, req *h
 	}
 
 	serviceType := normalizeGatewayType(payload.ServiceType)
+	relayRole := normalizeRelayRole(payload.RelayRole)
+	if serviceType != gatewayTypeRelay {
+		relayRole = ""
+	}
 	location := resolveGatewayInstallDir(serviceType, gwCfg.Setup.InstallDir)
 	tokenStr := util.GetUUID()
 	t := &Token{
@@ -351,6 +367,9 @@ func (h *APIHandler) generateGatewayInstallCommand(w http.ResponseWriter, req *h
 	}
 	endpointQuery := parsedEndpoint.Query()
 	endpointQuery.Set("service_type", serviceType)
+	if relayRole != "" {
+		endpointQuery.Set("relay_role", relayRole)
+	}
 	parsedEndpoint.RawQuery = endpointQuery.Encode()
 	endpoint = parsedEndpoint.String()
 
@@ -871,6 +890,10 @@ func (h *APIHandler) getGatewayInstallScript(w http.ResponseWriter, req *http.Re
 	consoleEndpoint := resolveConsoleEndpoint(req, gwCfg.Setup.ConsoleEndpoint)
 	consoleDomain := resolveConsoleTLSServerName(consoleEndpoint)
 	serviceType := normalizeGatewayType(req.URL.Query().Get("service_type"))
+	relayRole := normalizeRelayRole(req.URL.Query().Get("relay_role"))
+	if serviceType != gatewayTypeRelay {
+		relayRole = ""
+	}
 	downloadURL, err := resolveGatewayDownloadURL(consoleEndpoint, gwCfg.Setup.DownloadURL)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -902,6 +925,7 @@ func (h *APIHandler) getGatewayInstallScript(w http.ResponseWriter, req *http.Re
 		"api_security_username": defaultManagedGatewayAPIUsername,
 		"api_security_password": localAPIPassword,
 		"service_type":          serviceType,
+		"relay_role":            relayRole,
 		"service_name":          resolveGatewayServiceName(serviceType),
 		"install_dir":           resolveGatewayInstallDir(serviceType, ""),
 		"version":               installVersion,

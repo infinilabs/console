@@ -47,6 +47,7 @@ import (
 	"net"
 	"net/url"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 )
@@ -58,6 +59,7 @@ var systemIngestSchemaLineRegexp = regexp.MustCompile(`(?m)^(\s*schema:\s*).*$`)
 var systemIngestHostsLineRegexp = regexp.MustCompile(`(?m)^(\s*hosts:\s*).*$`)
 var systemIngestTLSBlockRegexp = regexp.MustCompile(`(?ms)^\s*#\s*tls:\s*#for mTLS connection with config servers\s*\n^\s*#\s*enabled:\s*true\s*\n^\s*#\s*ca_file:\s*/xxx/ca\.crt\s*\n^\s*#\s*cert_file:\s*/xxx/client\.crt\s*\n^\s*#\s*key_file:\s*/xxx/client\.key\s*\n^\s*#\s*skip_insecure_verify:\s*false\s*$`)
 var relayEntryBindingRegexp = regexp.MustCompile(`(?m)^\s*binding:\s*(.+?)\s*$`)
+var relayIngestDialTimeout = net.DialTimeout
 
 type RemoteConfig struct {
 	orm.ORMObjectBase
@@ -129,27 +131,122 @@ func remoteConfigProvider(instance model.Instance) []*common.ConfigFile {
 
 func listRelayGatewayIngestHosts() []string {
 	relayPort := discoverRelayGatewayIngestPort()
-	q := orm.Query{
-		Size: 1000,
-		Conds: orm.And(
-			orm.Eq("application.name", "gateway"),
-			orm.Eq("labels.service_type", "relay"),
-		),
-	}
+	q := buildRelayGatewayInstancesQuery()
 	instances := []model.Instance{}
 	if err, _ := orm.SearchWithJSONMapper(&instances, &q); err != nil {
 		log.Errorf("failed to search relay gateways for ingest hosts: %v", err)
 		return nil
 	}
 	endpoints := make([]string, 0, len(instances))
+	roleByHost := map[string]string{}
 	for _, instance := range instances {
 		endpoint := strings.TrimSpace(strings.TrimRight(instance.GetEndpoint(), "/"))
 		if endpoint == "" {
 			continue
 		}
 		endpoints = append(endpoints, endpoint)
+		host := relayGatewayIngestHostFromEndpoint(endpoint, relayPort)
+		if host == "" {
+			continue
+		}
+		roleByHost[host] = preferredRelayRole(roleByHost[host], normalizeRelayRoleLabel(instance.Labels["relay_role"]))
 	}
-	return normalizeRelayGatewayIngestHosts(endpoints, relayPort)
+	relayIngestHosts := normalizeRelayGatewayIngestHosts(endpoints, relayPort)
+	sortRelayHosts(relayIngestHosts, roleByHost)
+	reachableHosts := filterReachableRelayIngestHosts(relayIngestHosts, 800*time.Millisecond)
+	sortRelayHosts(reachableHosts, roleByHost)
+	if len(reachableHosts) == 0 && len(relayIngestHosts) > 0 {
+		log.Warnf("none of relay ingest hosts are reachable from console, fallback to discovered hosts: %v", relayIngestHosts)
+		return relayIngestHosts
+	}
+	return reachableHosts
+}
+
+func normalizeRelayRoleLabel(role string) string {
+	switch strings.ToLower(strings.TrimSpace(role)) {
+	case "primary":
+		return "primary"
+	case "secondary":
+		return "secondary"
+	default:
+		return ""
+	}
+}
+
+func relayRolePriority(role string) int {
+	switch normalizeRelayRoleLabel(role) {
+	case "primary":
+		return 0
+	case "secondary":
+		return 1
+	default:
+		return 2
+	}
+}
+
+func preferredRelayRole(current, next string) string {
+	if relayRolePriority(next) < relayRolePriority(current) {
+		return next
+	}
+	return current
+}
+
+func sortRelayHosts(hosts []string, roleByHost map[string]string) {
+	sort.SliceStable(hosts, func(i, j int) bool {
+		iPriority := relayRolePriority(roleByHost[hosts[i]])
+		jPriority := relayRolePriority(roleByHost[hosts[j]])
+		if iPriority != jPriority {
+			return iPriority < jPriority
+		}
+		return hosts[i] < hosts[j]
+	})
+}
+
+func filterReachableRelayIngestHosts(hosts []string, timeout time.Duration) []string {
+	if len(hosts) == 0 {
+		return nil
+	}
+	if timeout <= 0 {
+		timeout = 800 * time.Millisecond
+	}
+	reachable := make([]string, 0, len(hosts))
+	for _, host := range hosts {
+		host = strings.TrimSpace(host)
+		if host == "" {
+			continue
+		}
+		conn, err := relayIngestDialTimeout("tcp", host, timeout)
+		if err != nil {
+			if global.Env().IsDebug {
+				log.Debugf("relay ingest host is not reachable from console: host=%s, err=%v", host, err)
+			}
+			continue
+		}
+		_ = conn.Close()
+		reachable = append(reachable, host)
+	}
+	return reachable
+}
+
+func buildRelayGatewayInstancesQuery() orm.Query {
+	queryDSL := util.MapStr{
+		"size": 1000,
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": []util.MapStr{
+					{"term": util.MapStr{"application.name": "gateway"}},
+				},
+				"should": []util.MapStr{
+					{"term": util.MapStr{"labels.service_type": "relay"}},
+					{"term": util.MapStr{"metadata.labels.service_type": "relay"}},
+				},
+				"minimum_should_match": 1,
+			},
+		},
+	}
+	return orm.Query{
+		RawQuery: util.MustToJSONBytes(queryDSL),
+	}
 }
 
 func discoverRelayGatewayIngestPort() string {

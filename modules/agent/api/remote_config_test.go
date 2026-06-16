@@ -1,10 +1,13 @@
 package api
 
 import (
+	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	config2 "infini.sh/framework/core/config"
 	"infini.sh/framework/core/elastic"
@@ -328,6 +331,63 @@ func TestExtractRelayGatewayIngestPort(t *testing.T) {
 
 	if got := extractRelayGatewayIngestPort(content); got != "9443" {
 		t.Fatalf("expected port 9443, got %q", got)
+	}
+}
+
+func TestBuildRelayGatewayInstancesQueryMatchesBothServiceTypeFields(t *testing.T) {
+	q := buildRelayGatewayInstancesQuery()
+	raw := string(q.RawQuery)
+	if !strings.Contains(raw, `"labels.service_type"`) {
+		t.Fatalf("expected query to match labels.service_type, got %s", raw)
+	}
+	if !strings.Contains(raw, `"metadata.labels.service_type"`) {
+		t.Fatalf("expected query to match metadata.labels.service_type, got %s", raw)
+	}
+	if !strings.Contains(raw, `"minimum_should_match":1`) {
+		t.Fatalf("expected query to require one relay service_type match, got %s", raw)
+	}
+}
+
+func TestFilterReachableRelayIngestHosts(t *testing.T) {
+	originalDial := relayIngestDialTimeout
+	defer func() { relayIngestDialTimeout = originalDial }()
+
+	relayIngestDialTimeout = func(network, address string, timeout time.Duration) (net.Conn, error) {
+		if address == "relay-1.local:8081" {
+			c1, c2 := net.Pipe()
+			_ = c2.Close()
+			return c1, nil
+		}
+		return nil, fmt.Errorf("connection refused")
+	}
+
+	filtered := filterReachableRelayIngestHosts([]string{
+		"relay-1.local:8081",
+		"relay-2.local:8081",
+	}, 500*time.Millisecond)
+	if len(filtered) != 1 || filtered[0] != "relay-1.local:8081" {
+		t.Fatalf("expected only reachable relay host, got %v", filtered)
+	}
+}
+
+func TestSortRelayHostsByRole(t *testing.T) {
+	hosts := []string{
+		"relay-b.local:8081",
+		"relay-a.local:8081",
+		"relay-c.local:8081",
+	}
+	roleByHost := map[string]string{
+		"relay-a.local:8081": "secondary",
+		"relay-b.local:8081": "primary",
+	}
+	sortRelayHosts(hosts, roleByHost)
+	expected := []string{
+		"relay-b.local:8081",
+		"relay-a.local:8081",
+		"relay-c.local:8081",
+	}
+	if strings.Join(hosts, ",") != strings.Join(expected, ",") {
+		t.Fatalf("expected hosts sorted by role then host, got %v", hosts)
 	}
 }
 

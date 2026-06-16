@@ -104,15 +104,18 @@ const noServiceCodeStyle = {
 
 export default ({ autoInit = false, defaultGatewayType = "migration" }) => {
   const { Option } = Select;
+  const defaultRelayRole = "primary";
   const [loading, setLoading] = useState(false);
   const [tokenInfo, setTokenInfo] = useState();
   const [noService, setNoService] = useState(false);
   const [gatewayType, setGatewayType] = useState(defaultGatewayType);
+  const [relayRole, setRelayRole] = useState(defaultRelayRole);
   const [advancedVisible, setAdvancedVisible] = useState(false);
 
   const fetchTokenInfo = async (
     noServiceEnabled = noService,
-    gatewayTypeValue = gatewayType
+    gatewayTypeValue = gatewayType,
+    relayRoleValue = relayRole
   ) => {
     setTokenInfo(undefined);
     setLoading(true);
@@ -121,6 +124,7 @@ export default ({ autoInit = false, defaultGatewayType = "migration" }) => {
       body: {
         no_service: noServiceEnabled,
         service_type: gatewayTypeValue,
+        relay_role: gatewayTypeValue === "relay" ? relayRoleValue : undefined,
       },
     });
     setTokenInfo(res);
@@ -129,12 +133,13 @@ export default ({ autoInit = false, defaultGatewayType = "migration" }) => {
 
   useEffect(() => {
     if (autoInit) {
-      fetchTokenInfo(false, defaultGatewayType);
+      fetchTokenInfo(false, defaultGatewayType, defaultRelayRole);
     }
   }, [autoInit, defaultGatewayType]);
 
   useEffect(() => {
     setGatewayType(defaultGatewayType);
+    setRelayRole(defaultRelayRole);
   }, [defaultGatewayType]);
 
   return (
@@ -173,7 +178,7 @@ export default ({ autoInit = false, defaultGatewayType = "migration" }) => {
                     onChange={(value) => {
                       setGatewayType(value);
                       if (autoInit || tokenInfo) {
-                        fetchTokenInfo(noService, value);
+                        fetchTokenInfo(noService, value, relayRole);
                       }
                     }}
                   >
@@ -185,9 +190,33 @@ export default ({ autoInit = false, defaultGatewayType = "migration" }) => {
                     </Option>
                   </Select>
                 </div>
+                {gatewayType === "relay" ? (
+                  <div style={toggleItemStyle}>
+                  <span style={toggleLabelStyle}>
+                    <span>{formatMessage({ id: "gateway.install.relay_role.label" })}</span>
+                  </span>
+                  <Select
+                    value={relayRole}
+                    style={{ width: 220 }}
+                    onChange={(value) => {
+                      setRelayRole(value);
+                      if (autoInit || tokenInfo) {
+                        fetchTokenInfo(noService, gatewayType, value);
+                      }
+                    }}
+                  >
+                    <Option value="primary">
+                      {formatMessage({ id: "gateway.install.relay_role.primary" })}
+                    </Option>
+                    <Option value="secondary">
+                      {formatMessage({ id: "gateway.install.relay_role.secondary" })}
+                    </Option>
+                  </Select>
+                  </div>
+                ) : null}
                 <div style={toggleItemStyle}>
                   <span style={toggleLabelStyle}>
-                    <span>{formatMessage({ id: "gateway.install.no_sudo.label" })}</span>
+                  <span>{formatMessage({ id: "gateway.install.no_sudo.label" })}</span>
                     <Tooltip title={formatMessage({ id: "gateway.install.no_sudo.help" })}>
                       <Icon type="info-circle" style={infoIconStyle} />
                     </Tooltip>
@@ -197,7 +226,7 @@ export default ({ autoInit = false, defaultGatewayType = "migration" }) => {
                     onChange={(checked) => {
                       setNoService(checked);
                       if (autoInit || tokenInfo) {
-                        fetchTokenInfo(checked);
+                        fetchTokenInfo(checked, gatewayType, relayRole);
                       }
                     }}
                   />

@@ -982,7 +982,7 @@ func (h *APIHandler) internalProcessBind(clusterID, clusterUUID, instanceID, ins
 	if success {
 		log.Tracef("connect to es node success: cluster_uuid=%s, node=%s, instance=%s", console_common.MaskLogToken(clusterUUID), console_common.MaskLogHost(nodeHost), console_common.MaskLogEndpoint(instanceEndpoint))
 		if nodeInfo.ClusterInfo.ClusterUUID != clusterUUID {
-			log.Infof("cluster uuid not match, cluster=%s, cluster_uuid=%s, node_cluster_uuid=%s", console_common.MaskLogToken(clusterID), console_common.MaskLogToken(clusterUUID), console_common.MaskLogToken(nodeInfo.ClusterInfo.ClusterUUID))
+			log.Debugf("cluster uuid not match, cluster=%s, cluster_uuid=%s, node_cluster_uuid=%s", console_common.MaskLogToken(clusterID), console_common.MaskLogToken(clusterUUID), console_common.MaskLogToken(nodeInfo.ClusterInfo.ClusterUUID))
 			return nil
 		}
 

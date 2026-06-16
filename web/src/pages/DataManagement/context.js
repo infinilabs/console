@@ -253,37 +253,63 @@ export const getContext = () => {
   };
 };
 
-const sanitizeKql = (query) => {
-  if (!query || typeof query !== "string") return query;
+  const sanitizeKql = (query) => {
+    if (!query || typeof query !== "string") return query;
+    const termRegex = /"[^"]*"|'[^']*'|[^\s()]+/g;
 
-  return query
-    .replace(/(\w+):\/\/?/g, '$1__COLON__//')
-    .replace(/:([^\s"')\]])/g, ':"$1');
-};
+    return query.replace(termRegex, (token) => {
+      if ((token.startsWith('"') && token.endsWith('"')) || 
+          (token.startsWith("'") && token.endsWith("'"))) {
+        return token;
+      }
 
-const getEsQuery = (indexPattern) => {
-  const timeFilter = timefilter.createFilter(indexPattern);
+      const colonIndex = token.indexOf(':');
+      if (colonIndex === -1) {
+        return token;
+      }
 
-  const rawQuery = queryStringManager.getQuery();
-  try {
-    return buildEsQuery(
-      indexPattern,
-      [
-        {
-          ...rawQuery,
-          query: sanitizeKql(rawQuery?.query),
+      const potentialField = token.substring(0, colonIndex);
+      
+      const isValidField = /^[a-zA-Z_@][a-zA-Z0-9_.]*$/.test(potentialField);
+
+      if (isValidField) {
+        const value = token.substring(colonIndex + 1);
+        
+        if (value.startsWith('"') || value.startsWith("'")) {
+          return token;
         }
-      ],
-      [...filterManager.getFilters(), ...(timeFilter ? [timeFilter] : [])]
-    );
-  } catch (e) {
-    console.warn("KQL parse failed, fallback to match_all", e);
+        
+        return `${potentialField}:"${value}"`;
+        
+      } else {
+        return `"${token}"`;
+      }
+    });
+  };
 
-    return {
-      query: { match_all: {} }
-    };
-  }
-};
+  const getEsQuery = (indexPattern) => {
+    const timeFilter = timefilter.createFilter(indexPattern);
+
+    const rawQuery = queryStringManager.getQuery();
+    try {
+      return buildEsQuery(
+        indexPattern,
+        [
+          {
+            ...rawQuery,
+            query: sanitizeKql(rawQuery?.query),
+          }
+        ],
+        [...filterManager.getFilters(), ...(timeFilter ? [timeFilter] : [])]
+      );
+    } catch (e) {
+      console.warn("KQL parse failed, fallback to match_all", e);
+
+      return {
+        query: { match_all: {} }
+      };
+    }
+  };
 
 const getSearchParams = (
   indexPattern,

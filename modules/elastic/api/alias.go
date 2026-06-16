@@ -58,8 +58,9 @@ func (h *APIHandler) HandleAliasAction(w http.ResponseWriter, req *http.Request,
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	esDistribution := elastic.GetMetadata(targetClusterID).Config.Distribution
 	esVersion := elastic.GetMetadata(targetClusterID).Config.Version
-	if r, _ := util.VersionCompare(esVersion, "6.4"); r == -1 {
+	if r, _ := util.VersionCompare(esVersion, "6.4"); r == -1 && esDistribution == "elasticsearch" {
 		for i := range aliasReq.Actions {
 			for k, v := range aliasReq.Actions[i] {
 				if v != nil && v["is_write_index"] != nil {
@@ -71,7 +72,6 @@ func (h *APIHandler) HandleAliasAction(w http.ResponseWriter, req *http.Request,
 	}
 
 	bodyBytes, _ := json.Marshal(aliasReq)
-
 	err = client.Alias(bodyBytes)
 	if err != nil {
 		log.Errorf("HandleAliasAction failed: %v", err)

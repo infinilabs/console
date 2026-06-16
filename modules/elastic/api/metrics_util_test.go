@@ -114,3 +114,17 @@ func TestConvertBucketItems(t *testing.T) {
 	fmt.Println(data)
 
 }
+
+func TestBuildAutoDateHistogramParamsUsesTwentySecondFloor(t *testing.T) {
+	params := buildAutoDateHistogramParams(nil, 120, 1, int64(15*60*1000)+1)
+	if got := params["minimum_interval"]; got != "second" {
+		t.Fatalf("expected minimum_interval second for 15m range, got %v", got)
+	}
+}
+
+func TestCalcBucketCountUsesFixedBucketsForShortRanges(t *testing.T) {
+	rangeMs := int64(15 * 60 * 1000)
+	if got := calcBucketCount(1, rangeMs+1); got != 60 {
+		t.Fatalf("expected 60 buckets for short range, got %d", got)
+	}
+}

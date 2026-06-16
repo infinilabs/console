@@ -391,10 +391,10 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 		}
 	}
 
-	bucketSizeStr := fmt.Sprintf("%ds", bucketSize)
-	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
-	if err != nil {
-		panic(err)
+	minMs, maxMs, hasRange := extractTimeRangeMs(query)
+	bucketCount := 120
+	if hasRange {
+		bucketCount = calcBucketCount(minMs, maxMs)
 	}
 	query["size"] = 0
 	query["aggs"] = util.MapStr{
@@ -405,9 +405,10 @@ func (h *APIHandler) FetchNodeInfo(w http.ResponseWriter, req *http.Request, ps 
 			},
 			"aggs": util.MapStr{
 				"dates": util.MapStr{
-					"date_histogram": util.MapStr{
-						"field":       "timestamp",
-						intervalField: bucketSizeStr,
+					"auto_date_histogram": util.MapStr{
+						"field":            "timestamp",
+						"buckets":          bucketCount,
+						"minimum_interval": "minute",
 					},
 					"aggs": aggs,
 				},
@@ -711,15 +712,18 @@ func (h *APIHandler) GetSingleNodeMetrics(w http.ResponseWriter, req *http.Reque
 
 func getNodeHealthMetric(query util.MapStr, bucketSize int) (*common.MetricItem, error) {
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
-	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
-	if err != nil {
-		return nil, err
+	minMs, maxMs, hasRange := extractTimeRangeMs(query)
+	bucketCount := 120
+	if hasRange {
+		bucketCount = calcBucketCount(minMs, maxMs)
 	}
+	query["size"] = 0
 	query["aggs"] = util.MapStr{
 		"dates": util.MapStr{
-			"date_histogram": util.MapStr{
-				"field":       "timestamp",
-				intervalField: bucketSizeStr,
+			"auto_date_histogram": util.MapStr{
+				"field":            "timestamp",
+				"buckets":          bucketCount,
+				"minimum_interval": "minute",
 			},
 			"aggs": util.MapStr{
 				"min_uptime": util.MapStr{

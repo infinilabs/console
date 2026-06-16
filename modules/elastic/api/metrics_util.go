@@ -318,11 +318,16 @@ func buildDateHistogramParams(query map[string]interface{}, intervalField, bucke
 
 // buildAutoDateHistogramParams builds params for auto_date_histogram aggregation.
 // bucketCount determines how many buckets ES should target.
-func buildAutoDateHistogramParams(query map[string]interface{}, bucketCount int) util.MapStr {
+// minMs and maxMs are the query time range in milliseconds; used to determine appropriate minimum_interval.
+func buildAutoDateHistogramParams(query map[string]interface{}, bucketCount int, minMs, maxMs int64) util.MapStr {
+	// auto_date_histogram only accepts calendar units here; keep the floor at second.
+	// The 20-second behavior is driven by bucketCount, not minimum_interval.
+	minimumInterval := "second"
+
 	params := util.MapStr{
 		"field":            "timestamp",
 		"buckets":          bucketCount,
-		"minimum_interval": "minute",
+		"minimum_interval": minimumInterval,
 	}
 	return params
 }
@@ -421,10 +426,14 @@ func parseAutoInterval(interval string) int {
 }
 
 // calcBucketCount returns the target bucket count based on time range.
-// For ranges >= 7 days, use 80 buckets; otherwise use 120 buckets.
+// For short ranges (<12h), use fixed 60 buckets; for 7+ days use 80; otherwise 120.
 func calcBucketCount(minMs, maxMs int64) int {
 	rangeMs := maxMs - minMs
+	shortRangeMs := int64(12 * 60 * 60 * 1000)
 	sevenDaysMs := int64(7 * 24 * 60 * 60 * 1000)
+	if rangeMs > 0 && rangeMs <= shortRangeMs {
+		return 60 // Fixed bucket count for short ranges to align with collection interval
+	}
 	if rangeMs >= sevenDaysMs {
 		return 80
 	}
@@ -557,7 +566,7 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 	query["size"] = 0
 	query["aggs"] = util.MapStr{
 		"dates": util.MapStr{
-			"auto_date_histogram": buildAutoDateHistogramParams(query, bucketCount),
+			"auto_date_histogram": buildAutoDateHistogramParams(query, bucketCount, minMs, maxMs),
 			"aggs":                aggs,
 		},
 	}
@@ -600,7 +609,7 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 				for k := range firstBucket {
 					bucketKeys = append(bucketKeys, k)
 				}
-				log.Infof("getSingleMetrics: agg[%s] has %d buckets, interval=%q, actualBucketSize=%d, firstBucketKeys=%v, metricDataKeys=%v", aggName, len(v.Buckets), v.Interval, actualBucketSize, bucketKeys, func() []string {
+				log.Debugf("getSingleMetrics: agg[%s] has %d buckets, interval=%q, actualBucketSize=%d, firstBucketKeys=%v, metricDataKeys=%v", aggName, len(v.Buckets), v.Interval, actualBucketSize, bucketKeys, func() []string {
 					keys := make([]string, 0, len(metricData))
 					for k := range metricData {
 						keys = append(keys, k)
@@ -1242,7 +1251,7 @@ func (h *APIHandler) getSingleIndexMetricsByNodeStats(ctx context.Context, metri
 	query["size"] = 0
 	query["aggs"] = util.MapStr{
 		"dates": util.MapStr{
-			"auto_date_histogram": buildAutoDateHistogramParams(query, bucketCount),
+			"auto_date_histogram": buildAutoDateHistogramParams(query, bucketCount, minMs, maxMs),
 			"aggs":                sumAggs,
 		},
 	}
@@ -1335,7 +1344,7 @@ func (h *APIHandler) getSingleIndexMetrics(ctx context.Context, metricItems []*c
 	query["size"] = 0
 	query["aggs"] = util.MapStr{
 		"dates": util.MapStr{
-			"auto_date_histogram": buildAutoDateHistogramParams(query, bucketCount),
+			"auto_date_histogram": buildAutoDateHistogramParams(query, bucketCount, minMs, maxMs),
 			"aggs":                sumAggs,
 		},
 	}
@@ -1389,7 +1398,7 @@ func parseSingleIndexMetrics(ctx context.Context, term_level, clusterID string, 
 				for k := range metricData {
 					metricKeys = append(metricKeys, k)
 				}
-				log.Infof("parseSingleIndexMetrics: agg[%s] has %d buckets, interval=%q, actualBucketSize=%d, firstBucketKeys=%v, metricDataKeys=%v", aggName, len(v.Buckets), v.Interval, actualBucketSize, bucketKeys, metricKeys)
+				log.Debugf("parseSingleIndexMetrics: agg[%s] has %d buckets, interval=%q, actualBucketSize=%d, firstBucketKeys=%v, metricDataKeys=%v", aggName, len(v.Buckets), v.Interval, actualBucketSize, bucketKeys, metricKeys)
 			}
 			for _, bucket := range v.Buckets {
 				v, ok := bucket["key"].(float64)

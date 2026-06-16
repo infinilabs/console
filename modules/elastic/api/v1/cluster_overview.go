@@ -172,14 +172,12 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 		})
 
 	clusterID := global.MustLookupString(elastic.GlobalSystemElasticsearchID)
-	intervalField, err := getDateHistogramIntervalField(clusterID, bucketSizeStr)
-	if err != nil {
-		panic(err)
-	}
+	bucketCount := 120
 	histgram := common.NewBucketItem(
-		common.DateHistogramBucket, util.MapStr{
-			"field":       "timestamp",
-			intervalField: bucketSizeStr,
+		"auto_date_histogram", util.MapStr{
+			"field":            "timestamp",
+			"buckets":          bucketCount,
+			"minimum_interval": "minute",
 		})
 	histgram.AddMetricItems(metricItems...)
 
@@ -677,12 +675,7 @@ type RealtimeNodeInfo struct {
 }
 
 func (h *APIHandler) getIndexQPS(clusterID string, bucketSizeInSeconds int) (map[string]util.MapStr, error) {
-	ver := h.Client().GetVersion()
-	bucketSizeStr := fmt.Sprintf("%ds", bucketSizeInSeconds)
-	intervalField, err := elastic.GetDateHistogramIntervalField(ver.Distribution, ver.Number, bucketSizeStr)
-	if err != nil {
-		return nil, err
-	}
+	bucketCount := 120
 
 	partition_num := 10
 	indexCount := GetIndicesCount(clusterID)
@@ -707,10 +700,7 @@ func (h *APIHandler) getIndexQPS(clusterID string, bucketSizeInSeconds int) (map
 				"terms": term_index,
 				"aggs": util.MapStr{
 					"date": util.MapStr{
-						"date_histogram": util.MapStr{
-							"field":       "timestamp",
-							intervalField: bucketSizeStr,
-						},
+						"auto_date_histogram": buildAutoDateHistogramParams(bucketCount, 0, 0),
 						"aggs": util.MapStr{
 							"index_total": util.MapStr{
 								"max": util.MapStr{

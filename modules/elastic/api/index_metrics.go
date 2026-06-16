@@ -48,7 +48,6 @@ func (h *APIHandler) getClusterUUID(clusterID string) (string, error) {
 }
 
 func (h *APIHandler) getIndexMetrics(ctx context.Context, req *http.Request, clusterID string, bucketSize int, min, max int64, indexName string, top int, shardID string, metricKey string) (map[string]*common.MetricItem, error) {
-	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 	clusterUUID, err := h.getClusterUUID(clusterID)
 	if err != nil {
 		return nil, err
@@ -711,11 +710,7 @@ func (h *APIHandler) getIndexMetrics(ctx context.Context, req *http.Request, clu
 		},
 		"aggs": aggs,
 	}
-	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
-	if err != nil {
-		log.Errorf("getIndexMetrics failed: %v", err)
-		panic(err)
-	}
+	bucketCount := calcBucketCount(min, max)
 
 	//we can do this because we are querying one metric once time
 	if indexMetricItems[0].MetricItem.OnlyPrimary {
@@ -766,11 +761,8 @@ func (h *APIHandler) getIndexMetrics(ctx context.Context, req *http.Request, clu
 			},
 			"aggs": util.MapStr{
 				"dates": util.MapStr{
-					"date_histogram": util.MapStr{
-						"field":       "timestamp",
-						intervalField: bucketSizeStr,
-					},
-					"aggs": sumAggs,
+					"auto_date_histogram": buildAutoDateHistogramParams(query, bucketCount, min, max),
+					"aggs":                sumAggs,
 				},
 				"max_store_bucket_sort": util.MapStr{
 					"bucket_sort": util.MapStr{
@@ -868,11 +860,7 @@ func (h *APIHandler) getTopIndexName(req *http.Request, clusterID string, top in
 	}
 	estimatedIndexBuckets := estimateTopIndexBuckets(indexCount, partition_num)
 	bucketSize = normalizeTopIndexBucketSize(bucketSize, min, max, estimatedIndexBuckets)
-	bucketSizeStr := fmt.Sprintf("%ds", bucketSize)
-	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
-	if err != nil {
-		return nil, err
-	}
+	bucketCount := calcBucketCount(min, max)
 
 	term_index := util.MapStr{
 		"field": "metadata.labels.index_name",
@@ -928,10 +916,7 @@ func (h *APIHandler) getTopIndexName(req *http.Request, clusterID string, top in
 						},
 					},
 					"dates": util.MapStr{
-						"date_histogram": util.MapStr{
-							"field":       "timestamp",
-							intervalField: bucketSizeStr,
-						},
+						"auto_date_histogram": buildAutoDateHistogramParams(nil, bucketCount, min, max),
 						"aggs": util.MapStr{
 							"term_shard": util.MapStr{
 								"terms": util.MapStr{
@@ -977,10 +962,7 @@ func (h *APIHandler) getTopIndexName(req *http.Request, clusterID string, top in
 						},
 					},
 					"dates": util.MapStr{
-						"date_histogram": util.MapStr{
-							"field":       "timestamp",
-							intervalField: bucketSizeStr,
-						},
+						"auto_date_histogram": buildAutoDateHistogramParams(nil, bucketCount, min, max),
 						"aggs": util.MapStr{
 							"term_shard": util.MapStr{
 								"terms": util.MapStr{

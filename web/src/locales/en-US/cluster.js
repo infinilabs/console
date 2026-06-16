@@ -62,10 +62,10 @@ export default {
   "cluster.manage.delete.confirm.cluster": "Cluster: {name}",
   "cluster.manage.delete.confirm.version": "Version: {version}",
   "cluster.manage.delete.confirm.endpoint": "Endpoint: {endpoint}",
-  "cluster.manage.agent_credential.tip.auto_create": "When probe collection mode is enabled, Console automatically creates the low-privilege infini-agent user for metrics and log collection. You can still override it with a custom probe credential below if needed.",
+  "cluster.manage.agent_credential.tip.auto_create": "When agent collection mode is enabled, Console automatically creates the low-privilege infini-agent user for metrics and log collection. You can still override it with a custom agent credential below if needed.",
   "cluster.manage.agent_credential.placeholder.auto_create": "Leave empty to auto create or fall back to the platform credential",
-  "cluster.manage.agent_credential.tip.agentless_skip": "Probe credentials are not needed in Agentless mode. Switch to Agent mode first if you want metrics and logs collected through agents.",
-  "cluster.manage.agent_logs_paths.label": "Probe log collection paths",
+  "cluster.manage.agent_credential.tip.agentless_skip": "Agent credentials are not needed in Agentless mode. Switch to Agent mode first if you want metrics and logs collected through agents.",
+  "cluster.manage.agent_logs_paths.label": "Agent log collection paths",
   "cluster.manage.agent_logs_paths.placeholder": "Enter one or more log directories",
   "cluster.manage.agent_logs_paths.tips": "These paths define the default Agent log collection directories for the cluster and are reused by later batch enroll and auto-enroll flows. Leave empty to keep using each node's detected path.logs.",
   "cluster.manage.config_item.enabled": "Enabled",
@@ -113,7 +113,7 @@ export default {
   "cluster.regist.step.complete.title": "Complete",
   "cluster.regist.step.connect.label.auth": "Auth",
   "cluster.regist.step.connect.label.credential": "Credential",
-  "cluster.regist.step.connect.label.agent_credential": "Probe credential",
+  "cluster.regist.step.connect.label.agent_credential": "Agent credential",
   "cluster.regist.step.connect.credential.manual": "Manual Input",
   "cluster.regist.step.connect.label.username": "Username",
   "cluster.regist.step.connect.label.password": "Password",
@@ -131,17 +131,17 @@ export default {
   "cluster.regist.form.verify.valid.endpoint":
     "Please input a domain name or IP address, with an optional port number!",
   "cluster.regist.form.verify.required.endpoint": "Please input endpoint!",
-  "cluster.regist.form.label.probe_path": "Probe Path",
+  "cluster.regist.form.label.probe_path": "Agent Path",
   "cluster.regist.form.placeholder.probe_path": "/_cluster/health",
-  "cluster.regist.form.toggle.probe_path": "Custom Probe Path",
+  "cluster.regist.form.toggle.probe_path": "Custom Agent Path",
   "cluster.regist.form.help.probe_path":
-    "Optional. Leave empty to use the default / probe path. Only needed for special cases such as WAF restrictions.",
+    "Optional. Leave empty to use the default / agent path. Only needed for special cases such as WAF restrictions.",
   "cluster.regist.form.verify.valid.probe_path":
-    "Probe path must start with /",
+    "Agent path must start with /",
   "cluster.regist.form.verify.required.credential":
     "Please select  Agent credential!",
   "cluster.regist.form.verify.required.agent_credential":
-    "Please select a probe credential!",
+    "Please select an Agent credential!",
   "cluster.regist.form.verify.required.auth_username":
     "Please input auth username!",
   "cluster.regist.form.verify.required.auth_password":

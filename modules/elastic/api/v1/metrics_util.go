@@ -528,11 +528,28 @@ func toInt64Ms(v interface{}) int64 {
 // calcBucketCount returns the target bucket count based on time range.
 func calcBucketCount(minMs, maxMs int64) int {
 	rangeMs := maxMs - minMs
+	shortRangeMs := int64(12 * 60 * 60 * 1000)
 	sevenDaysMs := int64(7 * 24 * 60 * 60 * 1000)
+	if rangeMs > 0 && rangeMs <= shortRangeMs {
+		return 60 // Fixed bucket count for short ranges to align with collection interval
+	}
 	if rangeMs >= sevenDaysMs {
 		return 80
 	}
 	return 120
+}
+
+// buildAutoDateHistogramParams builds params for auto_date_histogram aggregation.
+func buildAutoDateHistogramParams(bucketCount int, minMs, maxMs int64) util.MapStr {
+	// auto_date_histogram only accepts calendar units here; keep the floor at second.
+	// The 20-second behavior is driven by bucketCount, not minimum_interval.
+	minimumInterval := "second"
+
+	return util.MapStr{
+		"field":            "timestamp",
+		"buckets":          bucketCount,
+		"minimum_interval": minimumInterval,
+	}
 }
 
 // parseAutoInterval parses auto_date_histogram interval string (e.g. "1m", "1h", "1d") to seconds.
@@ -719,12 +736,8 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 	query["size"] = 0
 	query["aggs"] = util.MapStr{
 		"dates": util.MapStr{
-			"auto_date_histogram": util.MapStr{
-				"field":            "timestamp",
-				"buckets":          bucketCount,
-				"minimum_interval": "minute",
-			},
-			"aggs": aggs,
+			"auto_date_histogram": buildAutoDateHistogramParams(bucketCount, minMs, maxMs),
+			"aggs":                aggs,
 		},
 	}
 	queryDSL := util.MustToJSONBytes(query)
@@ -971,6 +984,11 @@ func ConvertBucketItemsToAggQuery(bucketItems []*common.BucketItem, metricItems 
 		case "date_histogram":
 			bucketAgg = util.MapStr{
 				"date_histogram": bucketItem.Parameters,
+			}
+			break
+		case "auto_date_histogram":
+			bucketAgg = util.MapStr{
+				"auto_date_histogram": bucketItem.Parameters,
 			}
 			break
 		case "date_range":

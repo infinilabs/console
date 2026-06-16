@@ -140,7 +140,6 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 		bucketSize = 60
 	}
 	var metricLen = 15
-	var bucketSizeStr = fmt.Sprintf("%vs", bucketSize)
 	indexMetricItems := []GroupMetricItem{}
 	metricItem := newMetricItem("cluster_indexing", 2, "cluster")
 	metricItem.OnlyPrimary = true
@@ -165,11 +164,7 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 		Units:        "query/s",
 	})
 
-	clusterID := global.MustLookupString(elastic.GlobalSystemElasticsearchID)
-	intervalField, err := getDateHistogramIntervalField(clusterID, bucketSizeStr)
-	if err != nil {
-		panic(err)
-	}
+	bucketCount := 120
 
 	query["query"] = util.MapStr{
 		"bool": util.MapStr{
@@ -246,11 +241,8 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 			},
 			"aggs": util.MapStr{
 				"dates": util.MapStr{
-					"date_histogram": util.MapStr{
-						"field":       "timestamp",
-						intervalField: bucketSizeStr,
-					},
-					"aggs": sumAggs,
+					"auto_date_histogram": buildAutoDateHistogramParams(query, bucketCount, 0, 0),
+					"aggs":                sumAggs,
 				},
 			},
 		},
@@ -311,7 +303,6 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 			"size":  top,
 		})
 
-	bucketSizeStr = "1d"
 	histgram := common.NewBucketItem(
 		common.DateRangeBucket, util.MapStr{
 			"field":     "timestamp",
@@ -879,12 +870,7 @@ type RealtimeNodeInfo struct {
 }
 
 func (h *APIHandler) getIndexQPS(clusterID string, bucketSizeInSeconds int) (map[string]util.MapStr, error) {
-	ver := h.Client().GetVersion()
-	bucketSizeStr := fmt.Sprintf("%ds", bucketSizeInSeconds)
-	intervalField, err := elastic.GetDateHistogramIntervalField(ver.Distribution, ver.Number, bucketSizeStr)
-	if err != nil {
-		return nil, err
-	}
+	bucketCount := 120
 	clusterUUID, err := adapter.GetClusterUUID(clusterID)
 	if err != nil {
 		return nil, err
@@ -914,10 +900,7 @@ func (h *APIHandler) getIndexQPS(clusterID string, bucketSizeInSeconds int) (map
 				"terms": term_index,
 				"aggs": util.MapStr{
 					"date": util.MapStr{
-						"date_histogram": util.MapStr{
-							"field":       "timestamp",
-							intervalField: bucketSizeStr,
-						},
+						"auto_date_histogram": buildAutoDateHistogramParams(nil, bucketCount, 0, 0),
 						"aggs": util.MapStr{
 							"term_shard": util.MapStr{
 								"terms": util.MapStr{
@@ -1017,12 +1000,7 @@ func (h *APIHandler) getIndexQPS(clusterID string, bucketSizeInSeconds int) (map
 }
 
 func (h *APIHandler) getShardQPS(clusterID string, nodeUUID string, indexName string, bucketSizeInSeconds int) (map[string]util.MapStr, error) {
-	ver := h.Client().GetVersion()
-	bucketSizeStr := fmt.Sprintf("%ds", bucketSizeInSeconds)
-	intervalField, err := elastic.GetDateHistogramIntervalField(ver.Distribution, ver.Number, bucketSizeStr)
-	if err != nil {
-		return nil, err
-	}
+	bucketCount := 120
 	clusterUUID, err := adapter.GetClusterUUID(clusterID)
 	if err != nil {
 		return nil, err
@@ -1075,10 +1053,7 @@ func (h *APIHandler) getShardQPS(clusterID string, nodeUUID string, indexName st
 				},
 				"aggs": util.MapStr{
 					"date": util.MapStr{
-						"date_histogram": util.MapStr{
-							"field":       "timestamp",
-							intervalField: bucketSizeStr,
-						},
+						"auto_date_histogram": buildAutoDateHistogramParams(nil, bucketCount, 0, 0),
 						"aggs": util.MapStr{
 							"query_total": util.MapStr{
 								"max": util.MapStr{
@@ -1135,12 +1110,7 @@ func (h *APIHandler) getShardQPS(clusterID string, nodeUUID string, indexName st
 }
 
 func (h *APIHandler) getNodeQPS(clusterID string, bucketSizeInSeconds int) (map[string]util.MapStr, error) {
-	ver := h.Client().GetVersion()
-	bucketSizeStr := fmt.Sprintf("%ds", bucketSizeInSeconds)
-	intervalField, err := elastic.GetDateHistogramIntervalField(ver.Distribution, ver.Number, bucketSizeStr)
-	if err != nil {
-		return nil, err
-	}
+	bucketCount := 120
 	clusterUUID, err := adapter.GetClusterUUID(clusterID)
 	if err != nil {
 		return nil, err
@@ -1155,10 +1125,7 @@ func (h *APIHandler) getNodeQPS(clusterID string, bucketSizeInSeconds int) (map[
 				},
 				"aggs": util.MapStr{
 					"date": util.MapStr{
-						"date_histogram": util.MapStr{
-							"field":       "timestamp",
-							intervalField: bucketSizeStr,
-						},
+						"auto_date_histogram": buildAutoDateHistogramParams(nil, bucketCount, 0, 0),
 						"aggs": util.MapStr{
 							"index_total": util.MapStr{
 								"max": util.MapStr{

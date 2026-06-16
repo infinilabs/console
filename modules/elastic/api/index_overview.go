@@ -627,11 +627,7 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, req *http.Request, ps
 		"aggs": aggs,
 	}
 
-	bucketSizeStr := fmt.Sprintf("%ds", bucketSize)
-	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
-	if err != nil {
-		panic(err)
-	}
+	bucketCount := 120
 	query["size"] = 0
 	query["aggs"] = util.MapStr{
 		"group_by_level": util.MapStr{
@@ -641,11 +637,8 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, req *http.Request, ps
 			},
 			"aggs": util.MapStr{
 				"dates": util.MapStr{
-					"date_histogram": util.MapStr{
-						"field":       "timestamp",
-						intervalField: bucketSizeStr,
-					},
-					"aggs": sumAggs,
+					"auto_date_histogram": buildAutoDateHistogramParams(query, bucketCount, 0, 0),
+					"aggs":                sumAggs,
 				},
 			},
 		},
@@ -947,7 +940,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 		}, http.StatusForbidden)
 		return
 	}
-	indexName := normalizeRollupMetricIndexName(rawIndexName)
+	//indexName := normalizeRollupMetricIndexName(rawIndexName)
 	clusterUUID, err := h.getClusterUUID(clusterID)
 	if err != nil {
 		log.Errorf("GetSingleIndexMetrics failed: %v", err)
@@ -974,7 +967,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 		{
 			"term": util.MapStr{
 				"metadata.labels.index_name": util.MapStr{
-					"value": indexName,
+					"value": rawIndexName,
 				},
 			},
 		},
@@ -1053,7 +1046,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 	metricItems := []*common.MetricItem{}
 	metrics := map[string]*common.MetricItem{}
 	if metricKey == ShardStateMetricKey {
-		shardStateMetric, err := h.getIndexShardsMetric(ctx, clusterID, indexName, min, max, bucketSize, shardID)
+		shardStateMetric, err := h.getIndexShardsMetric(ctx, clusterID, rawIndexName, min, max, bucketSize, shardID)
 		if err != nil {
 			log.Errorf("GetSingleIndexMetrics failed: %v", err)
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -1061,7 +1054,8 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 		}
 		metrics["shard_state"] = shardStateMetric
 	} else if metricKey == v1.IndexHealthMetricKey {
-		healthMetric, err := h.GetIndexHealthMetric(ctx, clusterID, indexName, min, max, bucketSize)
+		// Pass rawIndexName to GetIndexHealthMetric so it queries with the actual index name stored in metrics
+		healthMetric, err := h.GetIndexHealthMetric(ctx, clusterID, rawIndexName, min, max, bucketSize)
 		if err != nil {
 			log.Errorf("GetSingleIndexMetrics failed: %v", err)
 			h.WriteError(w, err, http.StatusInternalServerError)
@@ -1162,10 +1156,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 
 func (h *APIHandler) getIndexShardsMetric(ctx context.Context, id, indexName string, min, max int64, bucketSize int, shardID string) (*common.MetricItem, error) {
 	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
-	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
-	if err != nil {
-		return nil, err
-	}
+	bucketCount := calcBucketCount(min, max)
 	must := []util.MapStr{
 		{
 			"term": util.MapStr{
@@ -1223,10 +1214,7 @@ func (h *APIHandler) getIndexShardsMetric(ctx context.Context, id, indexName str
 		},
 		"aggs": util.MapStr{
 			"dates": util.MapStr{
-				"date_histogram": util.MapStr{
-					"field":       "timestamp",
-					intervalField: bucketSizeStr,
-				},
+				"auto_date_histogram": buildAutoDateHistogramParams(nil, bucketCount, min, max),
 				"aggs": util.MapStr{
 					"groups": util.MapStr{
 						"terms": util.MapStr{

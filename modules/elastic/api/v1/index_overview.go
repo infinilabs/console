@@ -214,10 +214,10 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, ctx context.Context, 
 		}
 	}
 
-	bucketSizeStr := fmt.Sprintf("%ds", bucketSize)
-	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
-	if err != nil {
-		panic(err)
+	minMs, maxMs, hasRange := extractTimeRangeMs(query)
+	bucketCount := 120
+	if hasRange {
+		bucketCount = calcBucketCount(minMs, maxMs)
 	}
 	query["size"] = 0
 	query["aggs"] = util.MapStr{
@@ -228,11 +228,8 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, ctx context.Context, 
 			},
 			"aggs": util.MapStr{
 				"dates": util.MapStr{
-					"date_histogram": util.MapStr{
-						"field":       "timestamp",
-						intervalField: bucketSizeStr,
-					},
-					"aggs": aggs,
+					"auto_date_histogram": buildAutoDateHistogramParams(bucketCount, minMs, maxMs),
+					"aggs":                aggs,
 				},
 			},
 		},
@@ -489,7 +486,12 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 		}, http.StatusForbidden)
 		return
 	}
-	indexName := normalizeRollupMetricIndexName(rawIndexName)
+
+	// Check if this is a cluster-level rollup (e.g., rollup_cluster_stats_index_name)
+	isClusterRollup := strings.HasPrefix(rawIndexName, RollupClusterHealthKey+"_") || strings.HasPrefix(rawIndexName, RollupClusterStataKey+"_")
+
+	// Note: We use rawIndexName directly in queries, not a normalized version
+	// Metrics data stores the full index name including any rollup prefix
 	var must = []util.MapStr{
 		{
 			"term": util.MapStr{
@@ -505,20 +507,45 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 				},
 			},
 		},
-		{
-			"term": util.MapStr{
-				"metadata.name": util.MapStr{
-					"value": "index_stats",
+	}
+
+	// Add metadata.name filter based on rollup type
+	if isClusterRollup {
+		if strings.HasPrefix(rawIndexName, RollupClusterStataKey+"_") {
+			must = append(must, util.MapStr{
+				"term": util.MapStr{
+					"metadata.name": util.MapStr{
+						"value": "cluster_stats",
+					},
+				},
+			})
+		} else if strings.HasPrefix(rawIndexName, RollupClusterHealthKey+"_") {
+			must = append(must, util.MapStr{
+				"term": util.MapStr{
+					"metadata.name": util.MapStr{
+						"value": "cluster_health",
+					},
+				},
+			})
+		}
+	} else {
+		// For index-level metrics, add both metadata.name and index_name filter
+		must = append(must,
+			util.MapStr{
+				"term": util.MapStr{
+					"metadata.name": util.MapStr{
+						"value": "index_stats",
+					},
 				},
 			},
-		},
-		{
-			"term": util.MapStr{
-				"metadata.labels.index_name": util.MapStr{
-					"value": indexName,
+			util.MapStr{
+				"term": util.MapStr{
+					"metadata.labels.index_name": util.MapStr{
+						"value": rawIndexName,
+					},
 				},
 			},
-		},
+		)
 	}
 	resBody := map[string]interface{}{}
 	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, clusterID, MetricTypeIndexStats, 60)
@@ -559,7 +586,8 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 	defer cancel()
 	metrics := map[string]*common.MetricItem{}
 	if metricKey == IndexHealthMetricKey {
-		healthMetric, err := h.GetIndexHealthMetric(ctx, clusterID, indexName, min, max, bucketSize)
+		// Pass rawIndexName to GetIndexHealthMetric so it queries with the actual index name stored in metrics
+		healthMetric, err := h.GetIndexHealthMetric(ctx, clusterID, rawIndexName, min, max, bucketSize)
 		if err != nil {
 			h.WriteError(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -645,13 +673,11 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 }
 
 func (h *APIHandler) GetIndexHealthMetric(ctx context.Context, id, indexName string, min, max int64, bucketSize int) (*common.MetricItem, error) {
-	indexName = normalizeRollupMetricIndexName(indexName)
+	// Note: indexName is passed as-is from GetSingleIndexMetrics (rawIndexName for rollup indices)
+	// Do NOT normalize here - the metrics data stores the full index name including rollup prefix
 	healthBucketSize := normalizeIndexHealthBucketSize(bucketSize, min, max)
 	bucketSizeStr := fmt.Sprintf("%vs", healthBucketSize)
-	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
-	if err != nil {
-		return nil, err
-	}
+	bucketCount := calcBucketCount(min, max)
 	query := util.MapStr{
 		"query": util.MapStr{
 			"bool": util.MapStr{
@@ -699,10 +725,7 @@ func (h *APIHandler) GetIndexHealthMetric(ctx context.Context, id, indexName str
 		},
 		"aggs": util.MapStr{
 			"dates": util.MapStr{
-				"date_histogram": util.MapStr{
-					"field":       "timestamp",
-					intervalField: bucketSizeStr,
-				},
+				"auto_date_histogram": buildAutoDateHistogramParams(bucketCount, min, max),
 				"aggs": util.MapStr{
 					"group_status": util.MapStr{
 						"terms": util.MapStr{
@@ -911,7 +934,7 @@ func (h *APIHandler) getIndexNodes(w http.ResponseWriter, req *http.Request, ps 
 	q.Conds = orm.And(
 		orm.Eq("metadata.category", "elasticsearch"),
 		orm.Eq("metadata.labels.cluster_id", id),
-		orm.Eq("metadata.labels.index_name", indexName),
+		orm.Eq("metadata.labels.index_name", indexName), // Note: indexName passed from caller, may need normalization handling
 		orm.Eq("metadata.name", "index_routing_table"),
 	)
 

@@ -70,6 +70,22 @@ const getAlertDisplayStartTime = (record = {}) =>
     ? record.trigger_at
     : record?.created;
 
+const calcSafeDuration = (msgItem) => {
+  const triggerAt = msgItem?.trigger_at;
+  const resolveAt = msgItem?.updated;
+
+  const start = moment(triggerAt);
+  const end = resolveAt ? moment(resolveAt) : moment();
+
+  if (!start.isValid() || !end.isValid()) return "-";
+
+  const diffMs = end.diff(start);
+
+  if (diffMs < 0) return "-";
+
+  return moment.duration(diffMs).humanize();
+};
+
 const normalizeQueryTimeValue = (value, fallback = "auto", keys = []) => {
   if (typeof value === "string" || typeof value === "number") {
     return `${value}`;
@@ -339,7 +355,7 @@ const Index = (props) => {
     {
       title: formatMessage({ id: "alert.message.table.duration" }),
       dataIndex: "duration",
-      render: (text, record) => moment.duration(text).humanize(),
+      render: (text, record) => calcSafeDuration(record),
     },
     {
       title: formatMessage({ id: "alert.message.table.status" }),

@@ -1078,9 +1078,6 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		}
 	}
 	triggerAt := alertItem.Created
-	//if alertMessage != nil {
-	//	triggerAt = alertMessage.Created
-	//}
 	paramsCtx = newParameterCtx(rule, checkResults, util.MapStr{
 		alerting2.ParamTimestamp: alertItem.Created.Unix(),
 		"duration":               formatAlertDuration(alertItem.Created.Sub(triggerAt)),
@@ -1135,6 +1132,9 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 		alertMessage = newAlertMessage
 		alertMessage.Title = alertItem.Title
 		alertMessage.Message = alertItem.Message
+		if alertMessage != nil {
+			alertMessage.Updated = alertMessage.Created
+		}
 		err = saveAlertMessage(newAlertMessage)
 		if err != nil {
 			return fmt.Errorf("save alert message error: %w", err)
@@ -1687,7 +1687,10 @@ func getLastAlertMessage(ruleID string, duration time.Duration) (*alerting.Alert
 
 func saveAlertMessageToES(message *alerting.AlertMessage) error {
 	message.Updated = time.Now()
-	return orm.Save(orm.NewContext(), message)
+	ctx := &orm.Context{Refresh: orm.WaitForRefresh}
+	ctx.Set(orm.CheckExistsBeforeUpdate, false)
+	ctx.Set(orm.MergePartialFieldsBeforeUpdate, false)
+	return orm.Save(ctx, message)
 }
 
 func saveAlertMessage(message *alerting.AlertMessage) error {

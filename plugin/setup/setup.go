@@ -457,8 +457,7 @@ func (module *Module) validate(w http.ResponseWriter, r *http.Request, ps httpro
 		panic(err)
 	}
 	if verInfo.Version.Distribution != elastic.Easysearch {
-		errType = VersionNotSupport
-		panic(errors.Errorf("only Easysearch is supported, got distribution: %v", verInfo.Version.Distribution))
+		log.Warnf("non-recommended search engine distribution detected: '%v'. For optimal performance and full feature support, it is highly recommended to use Easysearch.", verInfo.Version.Distribution)
 	}
 	cfg1 = elastic1.ORMConfig{}
 	exist, err := env.ParseConfig("elastic.orm", &cfg1)

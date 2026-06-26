@@ -3,6 +3,7 @@ package task
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -40,7 +41,7 @@ type recoveryCommandDeps struct {
 
 type systemClusterRecoveryConfig struct {
 	ClusterID    string
-	Endpoint     string
+	Endpoints    []string
 	Username     string
 	Version      string
 	Distribution string
@@ -271,7 +272,14 @@ func loadSystemClusterRecoveryConfig(filePath string) (*systemClusterRecoveryCon
 		case strings.HasPrefix(trimmed, "CLUSTER_ID:"):
 			cfg.ClusterID = parseTemplateVariableValue(trimmed)
 		case strings.HasPrefix(trimmed, "CLUSTER_ENDPOINT:"):
-			cfg.Endpoint = parseTemplateVariableValue(trimmed)
+			raw := parseTemplateVariableValue(trimmed)
+
+			var endpoints []string
+			if err := json.Unmarshal([]byte(raw), &endpoints); err != nil {
+				return nil, fmt.Errorf("parse CLUSTER_ENDPOINT failed: %w", err)
+			}
+
+			cfg.Endpoints = endpoints
 		case strings.HasPrefix(trimmed, "CLUSTER_USER:"):
 			cfg.Username = parseTemplateVariableValue(trimmed)
 		case strings.HasPrefix(trimmed, "CLUSTER_VER:"):
@@ -283,7 +291,7 @@ func loadSystemClusterRecoveryConfig(filePath string) (*systemClusterRecoveryCon
 		}
 	}
 
-	if strings.TrimSpace(cfg.Endpoint) == "" {
+	if len(cfg.Endpoints) < 1 {
 		return nil, fmt.Errorf("CLUSTER_ENDPOINT not found in system config [%s]", filePath)
 	}
 	return cfg, nil
@@ -353,7 +361,7 @@ func newSystemClusterRecoveryClient(cfg *systemClusterRecoveryConfig, username, 
 		ORMObjectBase: orm.ORMObjectBase{ID: tempID},
 		Name:          cfg.ClusterID,
 		Enabled:       true,
-		Endpoint:      cfg.Endpoint,
+		Endpoints:     cfg.Endpoints,
 		Version:       cfg.Version,
 		Distribution:  cfg.Distribution,
 		BasicAuth: &model.BasicAuth{

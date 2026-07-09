@@ -31,7 +31,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"infini.sh/framework/core/credential"
+	common2 "infini.sh/framework/modules/elastic/common"
+	"infini.sh/framework/modules/security/access_token"
 	"net/http"
+	"strings"
 	"time"
 
 	"infini.sh/framework/core/model"
@@ -157,9 +161,9 @@ func (inst *TaskWorker) TryConnectWithTimeout(duration time.Duration) error {
 }
 
 func (inst *TaskWorker) doRequest(req *util.Request, resBody interface{}) error {
-	if inst.BasicAuth != nil && inst.BasicAuth.Username != "" {
-		req.SetBasicAuth(inst.BasicAuth.Username, inst.BasicAuth.Password.Get())
-	}
+
+	_ = ApplyAuthFromInstance(&inst.Instance, req)
+
 	result, err := util.ExecuteRequest(req)
 	if err != nil {
 		return err
@@ -170,5 +174,47 @@ func (inst *TaskWorker) doRequest(req *util.Request, resBody interface{}) error 
 	if resBody != nil {
 		return util.FromJSONBytes(result.Body, resBody)
 	}
+	return nil
+}
+
+func ApplyAuthFromInstance(inst *model.Instance, req *util.Request) error {
+	if inst.BasicAuth != nil && inst.BasicAuth.Username != "" {
+		req.SetBasicAuth(inst.BasicAuth.Username, inst.BasicAuth.Password.Get())
+	} else if inst.AccessToken != "" {
+		req.AddHeader(model.API_TOKEN, inst.AccessToken)
+	} else if cred := inst.GetSystemString(model.CredentialIDSystemKey); cred != "" {
+		//try credential last
+		return ApplyCredentialToRequest(req, cred)
+	}
+	return nil
+}
+
+func ApplyCredentialToRequest(req *util.Request, credentialID string) error {
+	if req == nil || strings.TrimSpace(credentialID) == "" {
+		return nil
+	}
+
+	cred, err := common2.GetCredential(credentialID)
+	if err != nil {
+		return err
+	}
+
+	switch cred.Type {
+	case credential.BasicAuth:
+		auth, err := cred.DecodeBasicAuth()
+		if err != nil {
+			return err
+		}
+		req.SetBasicAuth(auth.Username, auth.Password.Get())
+	case credential.AccessToken:
+		token, err := cred.DecodeAccessToken()
+		if err != nil {
+			return err
+		}
+		req.AddHeader(access_token.HeaderAPIToken, token.AccessToken.Get())
+	default:
+		return fmt.Errorf("unsupported credential type [%s]", cred.Type)
+	}
+
 	return nil
 }

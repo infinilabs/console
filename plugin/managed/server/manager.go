@@ -106,6 +106,11 @@ func ProxyAgentRequest(tag, endpoint string, req *util.Request, responseObjectTo
 		}
 	})
 
+	err = prepareProxyAgentRequest(endpoint, req)
+	if err != nil {
+		return nil, err
+	}
+
 	req.Url = endpoint + req.Path
 
 	res, err = util.ExecuteRequestWithCatchFlag(mTLSClient, req, true)

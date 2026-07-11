@@ -38,6 +38,33 @@ import (
 	"time"
 )
 
+const kueryWildcardSymbol = "@kuery-wildcard@"
+
+func escapeSuggestionQuery(query string) string {
+	replacer := strings.NewReplacer(
+		".", "\\.",
+		"?", "\\?",
+		"+", "\\+",
+		"*", "\\*",
+		"|", "\\|",
+		"{", "\\{",
+		"}", "\\}",
+		"[", "\\[",
+		"]", "\\]",
+		"(", "\\(",
+		")", "\\)",
+		"\"", "\\\"",
+		"\\", "\\\\",
+		"#", "\\#",
+		"@", "\\@",
+		"&", "\\&",
+		"<", "\\<",
+		">", "\\>",
+		"~", "\\~",
+	)
+	return replacer.Replace(query)
+}
+
 func (h *APIHandler) HandleEseSearchAction(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	targetClusterID := ps.ByName("id")
 	exists, client, err := h.GetClusterClient(targetClusterID)
@@ -336,10 +363,15 @@ func (h *APIHandler) HandleValueSuggestionAction(w http.ResponseWriter, req *htt
 	if boolFilter == nil {
 		boolFilter = []interface{}{}
 	}
+	var values = []interface{}{}
+	query := strings.TrimSpace(reqParams.Query)
+	if query == "" || query == kueryWildcardSymbol || reqParams.FieldName == "" {
+		h.WriteJSON(w, values, http.StatusOK)
+		return
+	}
 	boolQ := util.MapStr{
 		"filter": boolFilter,
 	}
-	var values = []interface{}{}
 	indices, hasAll := h.GetAllowedIndices(req, targetClusterID)
 	if !hasAll {
 		if len(indices) == 0 {
@@ -356,14 +388,14 @@ func (h *APIHandler) HandleValueSuggestionAction(w http.ResponseWriter, req *htt
 	}
 	termsAgg := util.MapStr{
 		"field":          reqParams.FieldName,
+		"include":        escapeSuggestionQuery(query) + ".*",
 		"execution_hint": "map",
 		"shard_size":     10,
 	}
-	if strings.TrimSpace(reqParams.Query) != "" {
-		termsAgg["include"] = reqParams.Query + ".*"
-	}
 	queryBody := util.MapStr{
-		"size": 0,
+		"size":            0,
+		"timeout":         "1500ms",
+		"terminate_after": 10000,
 		"query": util.MapStr{
 			"bool": boolQ,
 		},

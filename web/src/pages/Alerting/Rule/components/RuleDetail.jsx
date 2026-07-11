@@ -11,9 +11,10 @@ import {
   Tabs,
 } from "antd";
 import Link from "umi/link";
+import router from "umi/router";
 import { formatMessage } from "umi/locale";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
-import { useHistory } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import request from "@/utils/request";
 import { formatter, getFormatter } from "@/utils/format";
 import { calculateBounds } from "@/components/vendor/data/common/query/timefilter";
@@ -30,7 +31,6 @@ import ExternalLink from "@/components/Icons/ExternalLink";
 import NotificationCard from "./NotificationCard";
 import Sum from "@/components/Icons/Sum";
 import WidgetLoader, {
-  WidgetRender,
 } from "@/pages/DataManagement/View/WidgetLoader";
 import MessageRecord from "./MessageRecord";
 import { hasAuthority } from "@/utils/authority";
@@ -38,8 +38,20 @@ import DatePicker from "@/common/src/DatePicker";
 import { getLocale } from "umi/locale";
 import { getTimezone } from "@/utils/utils";
 import moment from "moment";
+import isEqual from "lodash/isEqual";
 
 const { Title } = Typography;
+
+const formatRuleDetailTime = (value, fallback) => {
+  const parsed = moment(value);
+  if (parsed.isValid() && parsed.year() > 1) {
+    return formatUtcTimeToLocal(value);
+  }
+  if (fallback) {
+    return formatUtcTimeToLocal(fallback);
+  }
+  return "-";
+};
 
 export const buildWidgetByRule = (rule, queries, created, updated) => {
   if (!rule) return;
@@ -60,6 +72,7 @@ export const buildWidgetByRule = (rule, queries, created, updated) => {
       pattern: "0.00%",
     },
   };
+
   let query;
   try {
     // handle empty raw_filter
@@ -82,6 +95,10 @@ export const buildWidgetByRule = (rule, queries, created, updated) => {
     }
   }
 
+  const ignoreTimeFilter = Boolean(
+    queries?.ignore_time_filter || queries?.ignoreTimeFilter
+  );
+
   const config = {
     bucket_size: bucketSize,
     format: formatMapping[format_type],
@@ -102,7 +119,7 @@ export const buildWidgetByRule = (rule, queries, created, updated) => {
         queries: {
           cluster_id: queries.cluster_id,
           indices: queries.indices,
-          time_field: queries.time_field,
+          time_field: ignoreTimeFilter ? undefined : queries.time_field,
           dsl: query,
         },
         type: "line",
@@ -120,13 +137,17 @@ const RuleDetail = (props) => {
   if (!ruleID) {
     return null;
   }
+  const location = useLocation();
   const [param, setParam] = useQueryParam("_g", JsonParam);
-  const history = useHistory();
+  const backTo = useMemo(() => {
+    const searchParams = new URLSearchParams(location.search);
+    return searchParams.get("back_to");
+  }, [location.search]);
   const [state, setState] = React.useState({
     spinning: false,
     timeRange: {
-      min: param?.timeRange?.min || "now-7d",
-      max: param?.timeRange?.max || "now",
+      min: param?.timeRange?.min || "auto",
+      max: param?.timeRange?.max || "auto",
       timeFormatter: formatter.dates(1),
     },
   });
@@ -135,10 +156,20 @@ const RuleDetail = (props) => {
 
   const [refresh, setRefresh] = useState({ isRefreshPaused: true });
   const [timeZone, setTimeZone] = useState(() => getTimezone());
+  const syncedTimeRange = useMemo(
+    () => ({
+      min: state.timeRange.min,
+      max: state.timeRange.max,
+    }),
+    [state.timeRange.max, state.timeRange.min]
+  );
 
-  useMemo(() => {
-    setParam({ ...param, timeRange: state.timeRange });
-  }, [state.timeRange]);
+  useEffect(() => {
+    if (isEqual(param?.timeRange, syncedTimeRange)) {
+      return;
+    }
+    setParam({ ...param, timeRange: syncedTimeRange });
+  }, [param, setParam, syncedTimeRange]);
 
   const handleTimeChange = ({ start, end, refresh }) => {
     setState({
@@ -150,6 +181,16 @@ const RuleDetail = (props) => {
         timeFormatter: formatter.dates(1),
       },
       refresh: refresh || state.refresh 
+    });
+  };
+
+  const handleWidgetQueriesChange = (queries = {}) => {
+    if (!queries?.range?.from || !queries?.range?.to) {
+      return;
+    }
+    handleTimeChange({
+      start: queries.range.from,
+      end: queries.range.to,
     });
   };
 
@@ -197,16 +238,6 @@ const RuleDetail = (props) => {
     }, 2000);
   }, []);
 
-  const widget = useMemo(() => {
-    if (!ruleDetail || !ruleDetail.rule_name) return;
-    return buildWidgetByRule(ruleDetail, {
-      cluster_id: ruleDetail.resource_id,
-      indices: ruleDetail.resource_objects,
-      time_field: ruleDetail.resource_time_field,
-      raw_filter: ruleDetail.resource_raw_filter,
-    }, ruleDetail?.created, ruleDetail?.updated);
-  }, [ruleDetail]);
-
   return (
     <div>
       <div
@@ -229,7 +260,7 @@ const RuleDetail = (props) => {
             style={{ marginLeft: 20 }}
             type="primary"
             onClick={() => {
-              history.goBack();
+              router.push(backTo || "/alerting/rule");
             }}
           >
             {formatMessage({ id: "form.button.goback" })}
@@ -241,8 +272,8 @@ const RuleDetail = (props) => {
           {formatMessage(
             { id: "alert.rule.detail.title.changed_desc" },
             {
-              updated: formatUtcTimeToLocal(ruleDetail?.updated),
-              created: formatUtcTimeToLocal(ruleDetail?.created),
+              updated: formatRuleDetailTime(ruleDetail?.updated, ruleDetail?.created),
+              created: formatRuleDetailTime(ruleDetail?.created),
               user: ruleDetail?.creator?.name,
             }
           )}
@@ -265,7 +296,12 @@ const RuleDetail = (props) => {
         </div>
         {ruleDetail?.alerting_message ? (
           <Link
-            to={`/alerting/message/${ruleDetail?.alerting_message.id}`}
+            to={{
+              pathname: `/alerting/message/${ruleDetail?.alerting_message.id}`,
+              state: {
+                from: `${location.pathname}${location.search}`,
+              },
+            }}
             style={{
               display: "block",
               background: "rgba(255, 0, 0, 0.1)",
@@ -368,13 +404,11 @@ const RuleDetail = (props) => {
             bodyStyle={{ height: 250, padding: 1 }}
           >
             {ruleDetail.rule_name ? (
-              <WidgetRender
-                widget={widget}
-                range={{
-                  from: state.timeRange.min,
-                  to: state.timeRange.max,
-                }}
-                refresh={state.refresh}
+              <RuleRecordChart
+                ruleID={ruleID}
+                timeRange={state.timeRange}
+                conditions={ruleDetail?.conditions}
+                clusterID={ruleDetail?.resource_id}
               />
             ) : (
               <Empty />
@@ -389,15 +423,16 @@ const RuleDetail = (props) => {
             })}
             bodyStyle={{ height: 250, padding: 1 }}
           >
-            <WidgetLoader
-              id="cji1sc28go5i051pl1i0"
-              range={{
-                from: state.timeRange.min,
-                to: state.timeRange.max,
-              }}
-              queryParams={{ rule_id: ruleID }}
-              refresh={state.refresh}
-            />
+              <WidgetLoader
+                id="cji1sc28go5i051pl1i0"
+                range={{
+                  from: state.timeRange.min,
+                  to: state.timeRange.max,
+                }}
+                queryParams={{ rule_id: ruleID }}
+                refresh={state.refresh}
+                onGlobalQueriesChange={handleWidgetQueriesChange}
+              />
           </Card>
         </div>
       </div>
@@ -416,7 +451,12 @@ const RuleDetail = (props) => {
           key="alerts"
           tab={formatMessage({ id: "alert.rule.detail.title.alert_event" })}
         >
-          <MessageRecord ruleID={ruleID} timeRange={state.timeRange} refresh={state.refresh}/>
+          <MessageRecord
+            ruleID={ruleID}
+            timeRange={state.timeRange}
+            refresh={state.refresh}
+            onTimeRangeChange={handleTimeChange}
+          />
         </Tabs.TabPane>
         <Tabs.TabPane
           key="history"
@@ -427,6 +467,7 @@ const RuleDetail = (props) => {
             timeRange={state.timeRange}
             showAertMetric={true}
             refresh={state.refresh}
+            onTimeRangeChange={handleTimeChange}
           />
         </Tabs.TabPane>
       </Tabs>

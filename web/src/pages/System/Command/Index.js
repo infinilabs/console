@@ -20,16 +20,10 @@ import {
   Icon,
   Popconfirm,
   Switch,
+  Tag,
 } from "antd";
-// import { loader } from "@monaco-editor/react";
-import Editor from "@monaco-editor/react";
+import Editor from "@/components/monaco-editor";
 import { EuiCodeBlock } from "@elastic/eui";
-// loader.config({
-//   paths: {
-//     vs: "monaco-editor/min/vs",
-//   },
-// });
-
 import styles from "../../List/TableList.less";
 import { transformSettingsForApi } from "@/lib/elasticsearch/edit_settings";
 import PageHeaderWrapper from "@/components/PageHeaderWrapper";
@@ -38,11 +32,12 @@ import { formatMessage } from "umi/locale";
 import { deleteCommand } from "@/components/vendor/console/modules/mappings/mappings";
 import { hasAuthority } from "@/utils/authority";
 import "./index.scss";
+import SearchInput from "@/components/infini/SearchInput";
+import { formatUtcTimeToLocal } from "@/utils/utils";
 
 const FormItem = Form.Item;
 const { TextArea } = Input;
 const { TabPane } = Tabs;
-const { Search } = Input;
 
 /* eslint react/no-multi-comp:0 */
 @connect(({ command }) => ({
@@ -61,40 +56,109 @@ class Index extends PureComponent {
     searchValue: "",
     pageSize: 20,
   };
+
+  getCommandSummary = (record) => {
+    const requests = record?.requests || [];
+    const firstRequest = requests[0] || {};
+    const method = firstRequest.method || "";
+    const path = firstRequest.path || "";
+    const firstLine = [method, path].filter(Boolean).join(" ");
+    const requestCount = formatMessage(
+      {
+        id: "command.table.summary.requests",
+      },
+      { count: requests.length }
+    );
+
+    return [firstLine, requestCount].filter(Boolean).join(" · ");
+  };
+
+  renderCreatedAt = (value) => {
+    if (!value) {
+      return "-";
+    }
+    return formatUtcTimeToLocal(value);
+  };
+
   columns = [
     {
       title: formatMessage({ id: "command.table.field.name" }),
       dataIndex: "title",
+      width: 420,
       render: (text, record) => (
-        <a
-          onClick={() => {
-            this.setState({
-              editingCommand: record,
-              drawerVisible: true,
-            });
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            minWidth: 0,
           }}
         >
-          {text}
-        </a>
+          <span
+            style={{
+              width: 16,
+              display: "inline-flex",
+              justifyContent: "center",
+              color: "rgba(0, 0, 0, 0.65)",
+            }}
+          >
+            <Icon type="code" />
+          </span>
+          <a
+            title={`${text}${this.getCommandSummary(record) ? ` · ${this.getCommandSummary(record)}` : ""}`}
+            onClick={() => {
+              this.setState({
+                editingCommand: record,
+                drawerVisible: true,
+              });
+            }}
+          >
+            {text}
+          </a>
+        </span>
       ),
     },
     {
       title: formatMessage({ id: "command.table.field.tag" }),
       dataIndex: "tag",
       render: (val) => {
-        return (val || []).join(",");
+        if (!val || val.length === 0) {
+          return "-";
+        }
+        return (
+          <div className="command-tag-list">
+            {val.map((item) => (
+              <Tag key={item} color="blue">
+                {item}
+              </Tag>
+            ))}
+          </div>
+        );
       },
     },
     {
+      title: formatMessage({ id: "command.table.field.creator" }),
+      dataIndex: "creator",
+      width: 140,
+      render: (value) => value || "-",
+    },
+    {
+      title: formatMessage({ id: "command.table.field.created" }),
+      dataIndex: "created",
+      width: 180,
+      render: this.renderCreatedAt,
+    },
+    {
       title: formatMessage({ id: "table.field.actions" }),
+      width: 100,
       render: (text, record) => (
-        <Fragment>
-          {hasAuthority("system.command:all") ? (
-            <Popconfirm
-              title="Sure to delete?"
-              onConfirm={() => this.handleDeleteClick(record.id)}
-            >
-              <a>{formatMessage({ id: "form.button.delete" })}</a>
+            <Fragment key={record.id}>
+              {hasAuthority("system.command:all") ? (
+                <Popconfirm
+                  title={formatMessage({ id: "app.message.confirm.delete" })}
+                  onConfirm={() => this.handleDeleteClick(record.id)}
+                >
+                  <a>{formatMessage({ id: "form.button.delete" })}</a>
             </Popconfirm>
           ) : null}
         </Fragment>
@@ -261,7 +325,7 @@ class Index extends PureComponent {
               }}
             >
               <div style={{ maxWidth: 500, flex: "1 1 auto" }}>
-                <Search
+                <SearchInput
                   allowClear
                   placeholder="Type keyword to search"
                   enterButton="Search"
@@ -297,6 +361,7 @@ class Index extends PureComponent {
             </div>
 
             <Table
+              className="command-list-table"
               size={"small"}
               bordered
               dataSource={data}

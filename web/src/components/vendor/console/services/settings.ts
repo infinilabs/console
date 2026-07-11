@@ -35,7 +35,7 @@ export class Settings {
   constructor(private readonly storage: Storage) {}
 
   getFontSize() {
-    return this.storage.get('font_size', 12);
+    return this.storage.get('font_size', 13);
   }
 
   setFontSize(size: any) {
@@ -76,7 +76,7 @@ export class Settings {
   }
 
   getPolling() {
-    return this.storage.get('console_polling', true);
+    return this.storage.get('console_polling', false);
   }
 
   setPolling(polling: any) {

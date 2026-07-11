@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import Widget from "./Widget"
 import styles from "./WidgetLoader.less"
 import { Empty, Icon, message, Spin, Tooltip } from "antd"
@@ -11,10 +11,21 @@ import { CopyToClipboard } from "react-copy-to-clipboard";
 import { formatMessage } from "umi/locale";
 
 export const WidgetRender = (props) => {
-
-   const { widget, range, query, queryParams = {}, highlightRange = {}, refresh, showCopy = true } = props;
+ 
+   const {
+      widget,
+      range,
+      query,
+      queryParams = {},
+      highlightRange = {},
+      refresh,
+      showCopy = true,
+      onGlobalQueriesChange = () => {},
+      onHighlightRangeChange = () => {},
+   } = props;
    const [globalRangeCache, setGlobalRangeCache] = useState()
    const [requests, setRequests] = useState([])
+   const fallbackWidgetIdRef = useRef(`widget-${Math.random().toString(36).slice(2)}`)
 
    const filters = useMemo(() => {
       const newFilters = []
@@ -33,17 +44,68 @@ export const WidgetRender = (props) => {
       return mergeFilters([], newFilters)
    }, [JSON.stringify(queryParams)])
 
+   const normalizeRangeValue = (value, fallback) => {
+      if (typeof value === "string" || typeof value === "number") {
+         return `${value}`;
+      }
+      if (value && typeof value === "object") {
+         for (const key of ["from", "to", "min", "max", "gte", "lte", "start", "end"]) {
+            if (
+              Object.prototype.hasOwnProperty.call(value, key) &&
+              value[key] !== undefined &&
+              value[key] !== null
+            ) {
+              const candidate = value[key];
+              if (typeof candidate === "string" || typeof candidate === "number") {
+                return `${candidate}`;
+              }
+            }
+         }
+      }
+      return fallback;
+   };
+
    const formatTimeRange = useMemo(() => {
-      if (!range.from || !range.to) return { from: 'now-15m', to: 'now'}
-      const bounds = calculateBounds(range);
-      return {
-         from: moment(bounds.min.valueOf()).tz(getTimezone()).utc().format(),
-         to: moment(bounds.max.valueOf()).tz(getTimezone()).utc().format(),
-      };
+      const from = normalizeRangeValue(range?.from, "now-15m");
+      const to = normalizeRangeValue(range?.to, "now");
+      if (from === "auto" || to === "auto") {
+         return { from: "auto", to: "auto" };
+      }
+      if (!from || !to) {
+         return { from: "now-15m", to: "now" };
+      }
+      try {
+         const bounds = calculateBounds({ from, to });
+         return {
+            from: moment(bounds.min.valueOf()).tz(getTimezone()).utc().format(),
+            to: moment(bounds.max.valueOf()).tz(getTimezone()).utc().format(),
+         };
+      } catch (e) {
+         return { from: "now-15m", to: "now" };
+      }
    }, [JSON.stringify(range), refresh]);
 
+   const hasRenderableWidget = useMemo(() => (
+      !!widget &&
+      Array.isArray(widget?.series) &&
+      widget.series.length > 0
+   ), [widget]);
+
+   const renderWidget = useMemo(() => {
+      if (!hasRenderableWidget) {
+         return widget;
+      }
+      if (widget.id) {
+         return widget;
+      }
+      return {
+         ...widget,
+         id: fallbackWidgetIdRef.current,
+      };
+   }, [widget, hasRenderableWidget]);
+
    return (
-      widget ? (
+      hasRenderableWidget ? (
          <div className={styles.content}>
             {
                showCopy && requests.length > 0 && (
@@ -57,7 +119,7 @@ export const WidgetRender = (props) => {
                )
             }
             <Widget
-               record={widget}
+              record={renderWidget}
                globalQueries={{
                   range: formatTimeRange,
                   filters,
@@ -71,20 +133,22 @@ export const WidgetRender = (props) => {
                   hideHeader: true,
                   hideBorder: true,
                }}
-               globalRangeCache={globalRangeCache}
-               onGlobalRangeCacheChange={setGlobalRangeCache}
-               onGlobalQueriesChange={() => {}}
-               onClone={() => {}}
-               onRemove={() => {}}
-               onSave={() => {}}
-               onFullElement={() => {}}
-               clusterList={[]}
-               highlightRange={highlightRange}
-               onHighlightRangeChange={() => {}}
-               onResultChange={(res) => {
-                  setRequests(Array.isArray(res) ? res.filter((item) => !!item.request).map((item) => item.request) : [])
-               }}
-               refresh={refresh}
+               lockInteractions={false}
+               autoApplyRangeFilter={true}
+                globalRangeCache={globalRangeCache}
+                onGlobalRangeCacheChange={setGlobalRangeCache}
+                onGlobalQueriesChange={onGlobalQueriesChange}
+                onClone={() => {}}
+                onRemove={() => {}}
+                onSave={() => {}}
+                onFullElement={() => {}}
+                clusterList={[]}
+                highlightRange={highlightRange}
+                onHighlightRangeChange={onHighlightRangeChange}
+                onResultChange={(res) => {
+                   setRequests(Array.isArray(res) ? res.filter((item) => !!item.request).map((item) => item.request) : [])
+                }}
+                refresh={refresh}
             />
          </div>
       ) : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />

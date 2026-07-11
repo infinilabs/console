@@ -56,12 +56,11 @@ func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req
 	//	clusterIDs = append(clusterIDs, key)
 	//	return true
 	//})
-	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 	queryDsl := util.MapStr{
 		"size": 100,
 	}
-	clusterFilter, hasAllPrivilege := handler.GetClusterFilter(req, "_id")
-	if !hasAllPrivilege && clusterFilter == nil {
+	clusterFilter, hasAllPrivilege := handler.GetClusterFilter(req, "id")
+	if !hasAllPrivilege && len(clusterFilter) == 0 {
 		handler.WriteJSON(w, util.MapStr{
 			"nodes_count":               0,
 			"clusters_count":            0,
@@ -71,7 +70,7 @@ func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req
 		}, http.StatusOK)
 		return
 	}
-	if !hasAllPrivilege {
+	if !hasAllPrivilege && len(clusterFilter) > 0 {
 		queryDsl["query"] = clusterFilter
 	}
 
@@ -85,7 +84,7 @@ func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req
 		_ = service.LogAuditLog(auditLog)
 	}
 
-	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetIndexName(elastic.ElasticsearchConfig{}), util.MustToJSONBytes(queryDsl))
+	clusterIDs, err := handler.getOverviewClusterIDs(clusterFilter)
 	if err != nil {
 		log.Error(err)
 		handler.WriteJSON(w, util.MapStr{
@@ -93,34 +92,17 @@ func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req
 		}, http.StatusInternalServerError)
 		return
 	}
-	for _, hit := range searchRes.Hits.Hits {
-		clusterIDs = append(clusterIDs, hit.ID)
+	if len(clusterIDs) == 0 {
+		clusterIDs = getConfiguredOverviewClusterIDs(clusterFilter)
 	}
 
-	res, err := handler.getLatestClusterMonitorData(clusterIDs)
+	totalStoreSize, err = handler.getOverviewTotalStoreSize(clusterIDs)
 	if err != nil {
 		log.Error(err)
 		handler.WriteJSON(w, util.MapStr{
 			"error": err.Error(),
 		}, http.StatusInternalServerError)
 		return
-	}
-	for _, info := range res.Hits.Hits {
-		data := util.MapStr(info.Source)
-		//val, err := data.GetValue("payload.elasticsearch.cluster_stats.nodes.count.total")
-		//if err != nil {
-		//	log.Warn(err)
-		//}
-		//if num, ok := val.(float64); ok {
-		//	totalNode += int(num)
-		//}
-		val, err := data.GetValue("payload.elasticsearch.cluster_stats.indices.store.size_in_bytes")
-		if err != nil {
-			log.Warn(err)
-		}
-		if num, ok := val.(float64); ok {
-			totalStoreSize += int(num)
-		}
 	}
 
 	hostCount, err := handler.getMetricCount(orm.GetIndexName(host.HostInfo{}), "ip", nil)
@@ -154,6 +136,125 @@ func (handler APIHandler) ElasticsearchOverviewAction(w http.ResponseWriter, req
 		"indices_count":             indicesCount,
 	}
 	handler.WriteJSON(w, resBody, http.StatusOK)
+}
+
+func buildOverviewClusterQueryDSL(clusterFilter util.MapStr) util.MapStr {
+	queryDsl := util.MapStr{
+		"size": 100,
+	}
+	if len(clusterFilter) > 0 {
+		queryDsl["query"] = clusterFilter
+	}
+	return queryDsl
+}
+
+func (handler APIHandler) getOverviewClusterIDs(clusterFilter util.MapStr) ([]interface{}, error) {
+	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
+	queryDsl := buildOverviewClusterQueryDSL(clusterFilter)
+
+	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetIndexName(elastic.ElasticsearchConfig{}), util.MustToJSONBytes(queryDsl))
+	if err != nil {
+		return nil, err
+	}
+
+	clusterIDs := make([]interface{}, 0, len(searchRes.Hits.Hits))
+	for _, hit := range searchRes.Hits.Hits {
+		clusterIDs = append(clusterIDs, hit.ID)
+	}
+	return clusterIDs, nil
+}
+
+func getConfiguredOverviewClusterIDs(clusterFilter util.MapStr) []interface{} {
+	allowedClusterIDs, restricted := extractConfiguredOverviewClusterIDs(clusterFilter)
+	clusterIDs := make([]interface{}, 0)
+	seen := map[string]struct{}{}
+
+	elastic.WalkConfigs(func(key, value interface{}) bool {
+		clusterID, ok := key.(string)
+		if !ok || clusterID == "" {
+			return true
+		}
+		if restricted {
+			if _, ok := allowedClusterIDs[clusterID]; !ok {
+				return true
+			}
+		}
+		if _, ok := seen[clusterID]; ok {
+			return true
+		}
+		seen[clusterID] = struct{}{}
+		clusterIDs = append(clusterIDs, clusterID)
+		return true
+	})
+
+	return clusterIDs
+}
+
+func extractConfiguredOverviewClusterIDs(clusterFilter util.MapStr) (map[string]struct{}, bool) {
+	if len(clusterFilter) == 0 {
+		return nil, false
+	}
+
+	terms, ok := clusterFilter["terms"]
+	if !ok {
+		return nil, true
+	}
+
+	termMap, ok := terms.(util.MapStr)
+	if !ok {
+		if genericTerms, ok := terms.(map[string]interface{}); ok {
+			termMap = util.MapStr(genericTerms)
+		} else {
+			return nil, true
+		}
+	}
+
+	ids, ok := termMap["id"]
+	if !ok {
+		return nil, true
+	}
+
+	result := map[string]struct{}{}
+	switch values := ids.(type) {
+	case []string:
+		for _, id := range values {
+			if id != "" {
+				result[id] = struct{}{}
+			}
+		}
+	case []interface{}:
+		for _, value := range values {
+			if id, ok := value.(string); ok && id != "" {
+				result[id] = struct{}{}
+			}
+		}
+	}
+
+	return result, true
+}
+
+func (handler APIHandler) getOverviewTotalStoreSize(clusterIDs []interface{}) (int, error) {
+	if len(clusterIDs) == 0 {
+		return 0, nil
+	}
+
+	res, err := handler.getLatestClusterMonitorData(clusterIDs)
+	if err != nil {
+		return 0, err
+	}
+
+	totalStoreSize := 0
+	for _, info := range res.Hits.Hits {
+		data := util.MapStr(info.Source)
+		val, err := data.GetValue("payload.elasticsearch.cluster_stats.indices.store.size_in_bytes")
+		if err != nil {
+			log.Warn(err)
+		}
+		if num, ok := val.(float64); ok {
+			totalStoreSize += int(num)
+		}
+	}
+	return totalStoreSize, nil
 }
 
 func (handler APIHandler) getLatestClusterMonitorData(clusterIDs []interface{}) (*elastic.SearchResponse, error) {
@@ -368,6 +469,7 @@ func (handler APIHandler) ElasticsearchStatusSummaryAction(w http.ResponseWriter
 			"host": util.MapStr{
 				"online": 0,
 			},
+			"total_used_store_in_bytes": 0,
 		}, http.StatusOK)
 		return
 	}
@@ -404,8 +506,21 @@ func (handler APIHandler) ElasticsearchStatusSummaryAction(w http.ResponseWriter
 		for _, cid := range clusterIDs {
 			clusterIds = append(clusterIds, cid)
 		}
+	} else {
+		clusterIds, err = handler.getOverviewClusterIDs(nil)
+		if err != nil {
+			log.Error(err)
+			handler.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 	hostCount, err := handler.getMetricCount(orm.GetIndexName(elastic.NodeConfig{}), "metadata.host", clusterIds)
+	if err != nil {
+		log.Error(err)
+		handler.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	totalStoreSize, err := handler.getOverviewTotalStoreSize(clusterIds)
 	if err != nil {
 		log.Error(err)
 		handler.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -417,6 +532,7 @@ func (handler APIHandler) ElasticsearchStatusSummaryAction(w http.ResponseWriter
 		"host": util.MapStr{
 			"online": hostCount,
 		},
+		"total_used_store_in_bytes": totalStoreSize,
 	}, http.StatusOK)
 }
 

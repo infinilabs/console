@@ -17,7 +17,12 @@ import useFetch from "@/lib/hooks/use_fetch";
 import request from "@/utils/request";
 import { formatMessage } from "umi/locale";
 import TagEditor from "@/components/infini/TagEditor";
-import { isTLS, removeHttpSchema } from "@/utils/utils";
+import {
+  isTLS,
+  isValidEndpointHost,
+  normalizeEndpointHost,
+  removeHttpSchema,
+} from "@/utils/utils";
 
 const formItemLayout = {
   labelCol: {
@@ -99,31 +104,50 @@ const InstanceForm = React.forwardRef((props) => {
               ],
             })(<Input />)}
           </Form.Item>
-          <Form.Item label="Endpoint">
+          <Form.Item
+            label={formatMessage({
+              id: "gateway.instance.field.endpoint.label",
+            })}
+          >
             {getFieldDecorator("endpoint", {
               initialValue: removeHttpSchema(editValue?.endpoint),
               normalize: (value) => {
-                return removeHttpSchema(value || "").trim()
+                return normalizeEndpointHost(value);
               },
               validateTrigger: ["onChange", "onBlur"],
               rules: [
                 {
                   required: true,
                   message: formatMessage({
-                    id: "gateway.instance.field.endpoint.form.required",
+                    id: "agent.instance.field.endpoint.form.required",
                   }),
                 },
                 {
-                  type: "string",
-                  pattern: /^[\w\.\-_~%]+(\:\d+)?$/, //(https?:\/\/)?
-                  message: formatMessage({
-                    id: "cluster.regist.form.verify.valid.endpoint",
-                  }),
+                  validator: (rule, value, callback) => {
+                    if (!value || isValidEndpointHost(value)) {
+                      callback();
+                      return;
+                    }
+                    callback(formatMessage({
+                      id: "cluster.regist.form.verify.valid.endpoint",
+                    }));
+                  },
                 },
               ],
-            })(<Input onChange={handleEndpointChange} />)}
+            })(
+              <Input
+                onChange={handleEndpointChange}
+                placeholder={formatMessage({
+                  id: "agent.instance.field.endpoint.placeholder",
+                })}
+              />
+            )}
           </Form.Item>
-          <Form.Item label="TLS">
+          <Form.Item
+            label={formatMessage({
+              id: "gateway.instance.field.tls.label",
+            })}
+          >
             {getFieldDecorator("isTLS", {
               initialValue: isTLS(editValue?.endpoint),
             })(
@@ -158,7 +182,14 @@ const InstanceForm = React.forwardRef((props) => {
                 {getFieldDecorator("basic_auth.username", {
                   initialValue: editValue?.basic_auth?.username,
                   rules: [],
-                })(<Input autoComplete="off" />)}
+                })(
+                  <Input
+                    autoComplete="off"
+                    placeholder={formatMessage({
+                      id: "credential.manage.form.username",
+                    })}
+                  />
+                )}
               </Form.Item>
               <Form.Item
                 label={formatMessage({
@@ -169,7 +200,13 @@ const InstanceForm = React.forwardRef((props) => {
                 {getFieldDecorator("basic_auth.password", {
                   initialValue: editValue?.basic_auth?.password,
                   rules: [],
-                })(<Input.Password />)}
+                })(
+                  <Input.Password
+                    placeholder={formatMessage({
+                      id: "credential.manage.form.password",
+                    })}
+                  />
+                )}
               </Form.Item>
             </div>
           ) : (
@@ -202,7 +239,7 @@ const InstanceForm = React.forwardRef((props) => {
           </Form.Item>
           <Form.Item {...tailFormItemLayout}>
             <Button type="primary" onClick={handleSubmit}>
-              Save
+              {formatMessage({ id: "form.button.save" })}
             </Button>
           </Form.Item>
         </Form>

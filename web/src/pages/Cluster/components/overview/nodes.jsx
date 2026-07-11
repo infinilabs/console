@@ -96,6 +96,8 @@ const Nodes = ({
       {
         title: "Name",
         dataIndex: "name",
+        width: 220,
+        fixed: "left",
         render: (text, record) => (
           <span>
             <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
@@ -231,6 +233,8 @@ const Nodes = ({
             <FilterSearchGroup
               filterWidth={120}
               filterFields={filterFields}
+              filterValue={searchFilterFields[0] || undefined}
+              searchValue={searchValue}
               onFilterChange={(value) => {
                 let val = value ? [value] : [];
                 setSearchFilterFields(val);
@@ -275,6 +279,7 @@ const Nodes = ({
           dataSource={hits}
           rowKey={"id"}
           columns={columns}
+          scroll={{ x: 1200 }}
           pagination={{
             size: "small",
             pageSize: queryParams.size,

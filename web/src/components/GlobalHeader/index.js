@@ -60,7 +60,7 @@ export default class GlobalHeader extends PureComponent {
         {clusterList.length > 0 && _.isObject(this.props.clusterStatus) && clusterVisible && (
           <div style={{ marginLeft: 15, display: 'inline-block'}}>
             <ClusterSelect 
-              width={300}
+              width={400}
               dropdownWidth={400}
               selectedCluster={selectedCluster} 
               onChange={(item) => {

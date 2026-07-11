@@ -1,4 +1,5 @@
 import { Card, Col, Icon, Row } from "antd";
+import React, { useEffect, useState } from "react";
 import styles from "./index.less";
 import { router } from "umi";
 import MessageIcon from "./icons/MessageIcon";
@@ -7,51 +8,122 @@ import ClusterIcon from "./icons/ClusterIcon";
 import SecurityIcon from "./icons/SecurityIcon";
 import DiscoverIcon from "./icons/DiscoverIcon";
 import MonitorIcon from "./icons/MonitorIcon";
+import MigrationIcon from "./icons/MigrationIcon";
+import ComparisonIcon from "./icons/ComparisonIcon";
 import { formatMessage } from "umi/locale";
+import {
+  APPLICATION_SETTINGS_UPDATED_EVENT,
+  getEnterpriseTaskManagerEnabled,
+  hasAuthority,
+} from "@/utils/authority";
 
-const ROUTES = [
-  {
-    path: "/resource/cluster",
-    name: "cluster_regist",
-    icon: ClusterIcon,
-  },
-  {
-    path: "/alerting/message",
-    name: "alert",
-    icon: MessageIcon,
-  },
-  {
-    path: "/insight/discover",
-    name: "discover",
-    icon: DiscoverIcon,
-  },
-  {
-    path: "/cluster/monitor",
-    name: "monitor",
-    icon: MonitorIcon,
-  },
-  {
-    path: "/system/security",
-    name: "security",
-    icon: SecurityIcon,
-  },
-  {
-    path: "/devtool/console",
-    name: "dev_tools",
-    icon: DevToolIcon,
-  },
-];
+const getRoutes = (taskManagerEnabled) => {
+  const routes = [
+    {
+      path: "/resource/cluster",
+      name: "cluster_regist",
+      icon: ClusterIcon,
+    },
+    {
+      path: "/alerting/message",
+      name: "alert",
+      icon: MessageIcon,
+    },
+    {
+      path: "/insight/discover",
+      name: "discover",
+      icon: DiscoverIcon,
+    },
+    {
+      path: "/cluster/monitor",
+      name: "monitor",
+      icon: MonitorIcon,
+    },
+    {
+      path: "/system/security",
+      name: "security",
+      icon: SecurityIcon,
+    },
+    {
+      path: "/devtool/console",
+      name: "dev_tools",
+      icon: DevToolIcon,
+    },
+  ];
+
+  if (
+    taskManagerEnabled &&
+    (hasAuthority("data_tools.comparison:all") ||
+      hasAuthority("data_tools.comparison:read"))
+  ) {
+    routes.unshift({
+      path: "/data_tools/comparison",
+      name: "comparison",
+      icon: ComparisonIcon,
+    });
+  }
+
+  if (
+    taskManagerEnabled &&
+    (hasAuthority("data_tools.migration:all") ||
+      hasAuthority("data_tools.migration:read"))
+  ) {
+    routes.unshift({
+      path: "/data_tools/migration",
+      name: "migration",
+      icon: MigrationIcon,
+    });
+  }
+
+  return routes;
+};
 
 export default () => {
+  const [taskManagerEnabled, setTaskManagerEnabled] = useState(
+    getEnterpriseTaskManagerEnabled() === "true"
+  );
+
+  useEffect(() => {
+    const syncTaskManagerEnabled = () => {
+      setTaskManagerEnabled(getEnterpriseTaskManagerEnabled() === "true");
+    };
+
+    syncTaskManagerEnabled();
+    window.addEventListener(
+      APPLICATION_SETTINGS_UPDATED_EVENT,
+      syncTaskManagerEnabled
+    );
+    return () => {
+      window.removeEventListener(
+        APPLICATION_SETTINGS_UPDATED_EVENT,
+        syncTaskManagerEnabled
+      );
+    };
+  }, []);
+
+  const routes = getRoutes(taskManagerEnabled);
+  const compactLayout = routes.length > 6;
+
   return (
     <div className={styles.quick}>
       <div className={styles.title}>
         {formatMessage({ id: "overview.title.quick" })}
       </div>
       <Row gutter={8}>
-        {ROUTES.map((item, index) => (
-          <Col key={index} span={12} className={styles.item}>
-            <Card onClick={() => router.push(item.path)} size="small" bodyStyle={{display:"flex"}}>
+        {routes.map((item, index) => (
+          <Col
+            key={index}
+            xs={24}
+            sm={12}
+            lg={compactLayout ? 8 : 12}
+            xl={compactLayout ? 6 : 12}
+            className={styles.item}
+          >
+            <Card
+              onClick={() => router.push(item.path)}
+              size="small"
+              bodyStyle={{ display: "flex", alignItems: "center", height: "100%" }}
+            >
               <div style={{ display: "flex", alignItems: "center" }}>
                 {item.icon && (
                   <Icon className={styles.icon} component={item.icon} />

@@ -5,7 +5,7 @@ import Result from '@/components/Result';
 import PageHeaderWrapper from '@/components/PageHeaderWrapper';
 
 const extra = (
-  <Fragment>
+  <Fragment key="extra">
     <div
       style={{
         fontSize: 16,

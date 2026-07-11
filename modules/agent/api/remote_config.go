@@ -31,17 +31,35 @@ import (
 	"bytes"
 	"fmt"
 	log "github.com/cihub/seelog"
+	console_common "infini.sh/console/common"
+	agent_common "infini.sh/console/modules/agent/common"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/global"
+	"infini.sh/framework/core/keystore"
 	"infini.sh/framework/core/kv"
 	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
+	keystore2 "infini.sh/framework/lib/keystore"
 	"infini.sh/framework/modules/configs/common"
 	common2 "infini.sh/framework/modules/elastic/common"
 	metadata2 "infini.sh/framework/modules/elastic/metadata"
+	"net"
+	"net/url"
+	"regexp"
+	"sort"
+	"strings"
 	"time"
 )
+
+const systemClusterPassKey = "SYSTEM_CLUSTER_PASS"
+const systemClusterIngestPasswordKey = "SYSTEM_CLUSTER_INGEST_PASSWORD"
+
+var systemIngestSchemaLineRegexp = regexp.MustCompile(`(?m)^(\s*schema:\s*).*$`)
+var systemIngestHostsLineRegexp = regexp.MustCompile(`(?m)^(\s*hosts:\s*).*$`)
+var systemIngestTLSBlockRegexp = regexp.MustCompile(`(?ms)^\s*#\s*tls:\s*#for mTLS connection with config servers\s*\n^\s*#\s*enabled:\s*true\s*\n^\s*#\s*ca_file:\s*/xxx/ca\.crt\s*\n^\s*#\s*cert_file:\s*/xxx/client\.crt\s*\n^\s*#\s*key_file:\s*/xxx/client\.key\s*\n^\s*#\s*skip_insecure_verify:\s*false\s*$`)
+var relayEntryBindingRegexp = regexp.MustCompile(`(?m)^\s*binding:\s*(.+?)\s*$`)
+var relayIngestDialTimeout = net.DialTimeout
 
 type RemoteConfig struct {
 	orm.ORMObjectBase
@@ -67,10 +85,17 @@ func remoteConfigProvider(instance model.Instance) []*common.ConfigFile {
 	}
 
 	result := []*common.ConfigFile{}
+	var relayIngestHosts []string
+	if strings.EqualFold(strings.TrimSpace(instance.Application.Name), "agent") {
+		relayIngestHosts = listRelayGatewayIngestHosts()
+	}
 
 	for _, row := range searchResult.Result {
 		v, ok := row.(map[string]interface{})
 		if ok {
+			if shouldSkipGatewayConfigByType(instance, v) {
+				continue
+			}
 			x, ok := v["payload"]
 			if ok {
 				f, ok := x.(map[string]interface{})
@@ -81,6 +106,8 @@ func remoteConfigProvider(instance model.Instance) []*common.ConfigFile {
 						item.Name = util.ToString(name)
 						item.Location = util.ToString(f["location"])
 						item.Content = util.ToString(f["content"])
+						item.Content = rewriteLegacyAgentConfigContent(instance, item.Content)
+						item.Content = rewriteAgentRelayIngestContent(instance, item.Location, item.Content, relayIngestHosts)
 						item.Version, _ = util.ToInt64(util.ToString(f["version"]))
 						item.Size = int64(len(item.Content))
 						item.Managed = true
@@ -100,6 +127,330 @@ func remoteConfigProvider(instance model.Instance) []*common.ConfigFile {
 	}
 
 	return result
+}
+
+func listRelayGatewayIngestHosts() []string {
+	relayPort := discoverRelayGatewayIngestPort()
+	q := buildRelayGatewayInstancesQuery()
+	instances := []model.Instance{}
+	if err, _ := orm.SearchWithJSONMapper(&instances, &q); err != nil {
+		log.Errorf("failed to search relay gateways for ingest hosts: %v", err)
+		return nil
+	}
+	endpoints := make([]string, 0, len(instances))
+	roleByHost := map[string]string{}
+	for _, instance := range instances {
+		endpoint := strings.TrimSpace(strings.TrimRight(instance.GetEndpoint(), "/"))
+		if endpoint == "" {
+			continue
+		}
+		endpoints = append(endpoints, endpoint)
+		host := relayGatewayIngestHostFromEndpoint(endpoint, relayPort)
+		if host == "" {
+			continue
+		}
+		roleByHost[host] = preferredRelayRole(roleByHost[host], normalizeRelayRoleLabel(instance.Labels["relay_role"]))
+	}
+	relayIngestHosts := normalizeRelayGatewayIngestHosts(endpoints, relayPort)
+	sortRelayHosts(relayIngestHosts, roleByHost)
+	reachableHosts := filterReachableRelayIngestHosts(relayIngestHosts, 800*time.Millisecond)
+	sortRelayHosts(reachableHosts, roleByHost)
+	if len(reachableHosts) == 0 && len(relayIngestHosts) > 0 {
+		log.Warnf("none of relay ingest hosts are reachable from console, fallback to discovered hosts: %v", relayIngestHosts)
+		return relayIngestHosts
+	}
+	return reachableHosts
+}
+
+func normalizeRelayRoleLabel(role string) string {
+	switch strings.ToLower(strings.TrimSpace(role)) {
+	case "primary":
+		return "primary"
+	case "secondary":
+		return "secondary"
+	default:
+		return ""
+	}
+}
+
+func relayRolePriority(role string) int {
+	switch normalizeRelayRoleLabel(role) {
+	case "primary":
+		return 0
+	case "secondary":
+		return 1
+	default:
+		return 2
+	}
+}
+
+func preferredRelayRole(current, next string) string {
+	if relayRolePriority(next) < relayRolePriority(current) {
+		return next
+	}
+	return current
+}
+
+func sortRelayHosts(hosts []string, roleByHost map[string]string) {
+	sort.SliceStable(hosts, func(i, j int) bool {
+		iPriority := relayRolePriority(roleByHost[hosts[i]])
+		jPriority := relayRolePriority(roleByHost[hosts[j]])
+		if iPriority != jPriority {
+			return iPriority < jPriority
+		}
+		return hosts[i] < hosts[j]
+	})
+}
+
+func filterReachableRelayIngestHosts(hosts []string, timeout time.Duration) []string {
+	if len(hosts) == 0 {
+		return nil
+	}
+	if timeout <= 0 {
+		timeout = 800 * time.Millisecond
+	}
+	reachable := make([]string, 0, len(hosts))
+	for _, host := range hosts {
+		host = strings.TrimSpace(host)
+		if host == "" {
+			continue
+		}
+		conn, err := relayIngestDialTimeout("tcp", host, timeout)
+		if err != nil {
+			if global.Env().IsDebug {
+				log.Debugf("relay ingest host is not reachable from console: host=%s, err=%v", host, err)
+			}
+			continue
+		}
+		_ = conn.Close()
+		reachable = append(reachable, host)
+	}
+	return reachable
+}
+
+func buildRelayGatewayInstancesQuery() orm.Query {
+	queryDSL := util.MapStr{
+		"size": 1000,
+		"query": util.MapStr{
+			"bool": util.MapStr{
+				"must": []util.MapStr{
+					{"term": util.MapStr{"application.name": "gateway"}},
+				},
+				"should": []util.MapStr{
+					{"term": util.MapStr{"labels.service_type": "relay"}},
+					{"term": util.MapStr{"metadata.labels.service_type": "relay"}},
+				},
+				"minimum_should_match": 1,
+			},
+		},
+	}
+	return orm.Query{
+		RawQuery: util.MustToJSONBytes(queryDSL),
+	}
+}
+
+func discoverRelayGatewayIngestPort() string {
+	q := orm.Query{
+		Size: 100,
+		Conds: orm.And(
+			orm.Eq("metadata.category", "app_settings"),
+			orm.Eq("metadata.name", "gateway"),
+			orm.Eq("metadata.labels.service_type", "relay"),
+		),
+	}
+	err, searchResult := orm.Search(RemoteConfig{}, &q)
+	if err != nil {
+		log.Errorf("failed to search relay gateway config docs for ingest port: %v", err)
+		return "8081"
+	}
+	for _, row := range searchResult.Result {
+		v, ok := row.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		payload, ok := v["payload"].(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if port := extractRelayGatewayIngestPort(util.ToString(payload["content"])); port != "" {
+			return port
+		}
+	}
+	return "8081"
+}
+
+func extractRelayGatewayIngestPort(content string) string {
+	if content == "" {
+		return ""
+	}
+	matches := relayEntryBindingRegexp.FindAllStringSubmatch(content, -1)
+	for _, match := range matches {
+		if len(match) < 2 {
+			continue
+		}
+		binding := strings.TrimSpace(strings.Trim(match[1], `"'`))
+		if binding == "" {
+			continue
+		}
+		if _, port, err := net.SplitHostPort(binding); err == nil && port != "" {
+			return port
+		}
+		if idx := strings.LastIndex(binding, ":"); idx > 0 && idx < len(binding)-1 {
+			return binding[idx+1:]
+		}
+	}
+	return ""
+}
+
+func normalizeRelayGatewayIngestHosts(endpoints []string, relayPort string) []string {
+	if len(endpoints) == 0 {
+		return nil
+	}
+	if relayPort == "" {
+		relayPort = "8081"
+	}
+	result := make([]string, 0, len(endpoints))
+	seen := map[string]struct{}{}
+	for _, endpoint := range endpoints {
+		host := relayGatewayIngestHostFromEndpoint(endpoint, relayPort)
+		if host == "" {
+			continue
+		}
+		if _, exists := seen[host]; exists {
+			continue
+		}
+		seen[host] = struct{}{}
+		result = append(result, host)
+	}
+	return result
+}
+
+func relayGatewayIngestHostFromEndpoint(endpoint, relayPort string) string {
+	normalized := strings.TrimSpace(strings.TrimRight(endpoint, "/"))
+	if normalized == "" {
+		return ""
+	}
+	parseTarget := normalized
+	if !strings.Contains(parseTarget, "://") {
+		parseTarget = "http://" + parseTarget
+	}
+	parsed, err := url.Parse(parseTarget)
+	if err != nil || parsed == nil {
+		return ""
+	}
+	host := strings.TrimSpace(parsed.Hostname())
+	if host == "" {
+		return ""
+	}
+	return net.JoinHostPort(host, relayPort)
+}
+
+func rewriteAgentRelayIngestContent(instance model.Instance, location, content string, relayIngestHosts []string) string {
+	if content == "" || len(relayIngestHosts) == 0 {
+		return content
+	}
+	if !strings.EqualFold(strings.TrimSpace(instance.Application.Name), "agent") {
+		return content
+	}
+	if !strings.EqualFold(strings.TrimSpace(location), "system_ingest_config.yml") {
+		return content
+	}
+	rewritten := systemIngestSchemaLineRegexp.ReplaceAllString(content, `${1}`+util.MustToJSON("https"))
+	rewritten = systemIngestHostsLineRegexp.ReplaceAllString(rewritten, `${1}`+string(util.MustToJSONBytes(relayIngestHosts)))
+	rewritten = systemIngestTLSBlockRegexp.ReplaceAllString(rewritten, strings.Join([]string{
+		"                tls: #for mTLS connection with config servers",
+		"                  enabled: true",
+		"                  ca_file: config/ca.crt",
+		"                  cert_file: config/client.crt",
+		"                  key_file: config/client.key",
+		"                  skip_domain_verify: true",
+		"                  skip_insecure_verify: false",
+	}, "\n"))
+	return rewritten
+}
+
+func shouldSkipGatewayConfigByType(instance model.Instance, configDoc map[string]interface{}) bool {
+	if !strings.EqualFold(strings.TrimSpace(instance.Application.Name), "gateway") {
+		return false
+	}
+	instanceType := resolveGatewayServiceType(instance.Labels)
+	if instanceType == "" {
+		return false
+	}
+	configType := extractGatewayTypeFromConfigDoc(configDoc)
+	if configType == "" {
+		configType = inferGatewayTypeFromPayloadLocation(configDoc)
+	}
+	if configType == "" || configType == "_all" {
+		return false
+	}
+	return configType != instanceType
+}
+
+func resolveGatewayServiceType(labels map[string]string) string {
+	if labels == nil {
+		return ""
+	}
+	return normalizeGatewayTypeLabel(labels["service_type"])
+}
+
+func normalizeGatewayTypeLabel(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "relay":
+		return "relay"
+	case "migration":
+		return "migration"
+	default:
+		return ""
+	}
+}
+
+func extractGatewayTypeFromConfigDoc(configDoc map[string]interface{}) string {
+	metadata, ok := configDoc["metadata"].(map[string]interface{})
+	if !ok {
+		return ""
+	}
+	labels, ok := metadata["labels"].(map[string]interface{})
+	if !ok {
+		return ""
+	}
+	return normalizeGatewayTypeLabel(util.ToString(labels["service_type"]))
+}
+
+func inferGatewayTypeFromPayloadLocation(configDoc map[string]interface{}) string {
+	payload, ok := configDoc["payload"].(map[string]interface{})
+	if !ok {
+		return ""
+	}
+	location := strings.ToLower(strings.TrimSpace(util.ToString(payload["location"])))
+	switch location {
+	case "relay.yml":
+		return "relay"
+	case "migration.yml":
+		return "migration"
+	default:
+		return ""
+	}
+}
+
+func rewriteLegacyAgentConfigContent(instance model.Instance, content string) string {
+	if content == "" {
+		return content
+	}
+
+	if instance.Application.Name != "agent" && instance.Application.Name != "gateway" {
+		return content
+	}
+
+	if !strings.Contains(content, "$[[SETUP_AGENT_PASSWORD]]") {
+		return content
+	}
+
+	return strings.ReplaceAll(
+		content,
+		"$[[SETUP_AGENT_PASSWORD]]",
+		fmt.Sprintf("$[[keystore.%s]]", getSystemClusterIngestSecretKey()),
+	)
 }
 
 func dynamicAgentConfigProvider(instance model.Instance) []*common.ConfigFile {
@@ -143,7 +494,7 @@ func dynamicAgentConfigProvider(instance model.Instance) []*common.ConfigFile {
 				panic(err)
 			}
 			latestTimestamp = time.Now().Unix()
-			log.Infof("hash: %v vs %v, update version to current timestamp: %v", string(v), hash, latestTimestamp)
+			log.Tracef("agent config hash changed for [%s]: %s -> %s, version=%v", instance.ID, console_common.MaskLogToken(string(v)), console_common.MaskLogToken(hash), latestTimestamp)
 		}
 
 		cfg.Size = int64(len(cfg.Content))
@@ -156,13 +507,129 @@ func dynamicAgentConfigProvider(instance model.Instance) []*common.ConfigFile {
 	return result
 }
 
+func agentSecretProvider(instance model.Instance) *common.Secrets {
+	if instance.Application.Name != "agent" && instance.Application.Name != "gateway" {
+		return nil
+	}
+
+	secrets := &common.Secrets{Keystore: map[string]common.KeystoreValue{}}
+	appendKeystoreSecret(secrets, getSystemClusterIngestSecretKey())
+	appendTokenCredentialSecret(secrets, instance.ManagerCredentialID, agent_common.AgentManagerTokenKey())
+	if instance.Application.Name == "agent" {
+		appendTokenCredentialSecret(secrets, instance.AccessCredentialID, agent_common.AgentAccessTokenKey())
+	}
+
+	if instance.Application.Name == "agent" {
+		ids, err := GetEnrolledNodesByAgent(instance.ID)
+		if err != nil {
+			panic(err)
+		}
+
+		for _, v := range ids {
+			auth, err := getAgentBasicAuth(v.ClusterID)
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+			if auth == nil {
+				continue
+			}
+			secrets.Keystore[getAgentPasswordKey(v.ClusterID)] = common.KeystoreValue{
+				Type:  "plaintext",
+				Value: auth.Password.Get(),
+			}
+		}
+	}
+
+	if len(secrets.Keystore) == 0 {
+		return nil
+	}
+	return secrets
+}
+
+func getSystemClusterIngestSecretKey() string {
+	systemClusterID := global.MustLookupString(elastic.GlobalSystemElasticsearchID)
+
+	if metadata := elastic.GetMetadata(systemClusterID); metadata != nil && metadata.Config != nil {
+		if metadata.Config.Distribution == elastic.Easysearch {
+			return systemClusterIngestPasswordKey
+		}
+		return systemClusterPassKey
+	}
+
+	if cfg := elastic.GetConfigNoPanic(systemClusterID); cfg != nil {
+		if cfg.Distribution == elastic.Easysearch {
+			return systemClusterIngestPasswordKey
+		}
+		return systemClusterPassKey
+	}
+
+	return systemClusterPassKey
+}
+
+func appendKeystoreSecret(secrets *common.Secrets, key string) {
+	if secrets == nil || key == "" {
+		return
+	}
+	value, err := keystore.GetValue(key)
+	if err == keystore2.ErrKeyDoesntExists {
+		return
+	}
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	secrets.Keystore[key] = common.KeystoreValue{
+		Type:  "plaintext",
+		Value: string(value),
+	}
+}
+
+func appendTokenCredentialSecret(secrets *common.Secrets, credentialID, keystoreKey string) {
+	if secrets == nil || credentialID == "" || keystoreKey == "" {
+		return
+	}
+	value, err := agent_common.GetTokenCredentialValue(credentialID)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	if value == "" {
+		return
+	}
+	secrets.Keystore[keystoreKey] = common.KeystoreValue{
+		Type:  "plaintext",
+		Value: value,
+	}
+}
+
+func getAgentPasswordKey(clusterID string) string {
+	// One agent can bind multiple clusters, so the synced keystore entry must stay cluster-scoped.
+	return fmt.Sprintf("%s_password", clusterID)
+}
+
+func getAgentBasicAuth(clusterID string) (*model.BasicAuth, error) {
+	metadata := elastic.GetMetadata(clusterID)
+	if metadata == nil || metadata.Config == nil || metadata.Config.AgentCredentialID == "" {
+		return nil, nil
+	}
+
+	credential, err := common2.GetCredential(metadata.Config.AgentCredentialID)
+	if err != nil {
+		return nil, err
+	}
+
+	return credential.DecodeBasicAuth()
+}
+
 func getAgentIngestConfigs(instance string, items map[string]BindingItem) (string, string) {
 
 	if instance == "" {
 		panic("instance id is empty")
 	}
 
-	buffer := bytes.NewBuffer([]byte("configs.template:  "))
+	elasticBuffer := bytes.NewBufferString("elasticsearch:")
+	pipelineBuffer := bytes.NewBufferString("\npipeline:")
 
 	//sort items
 	newItems := []util.KeyValue{}
@@ -208,22 +675,12 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 			distribution = metadata.Config.Distribution
 			clusterName = metadata.Config.Name
 
-			if metadata.Config.AgentCredentialID != "" {
-				credential, err := common2.GetCredential(metadata.Config.AgentCredentialID)
-				if err != nil {
-					log.Error(err)
-					continue
-				}
-				var dv interface{}
-				dv, err = credential.Decode()
-				if err != nil {
-					log.Error(err)
-					continue
-				}
-				if auth, ok := dv.(model.BasicAuth); ok {
-					username = auth.Username
-					password = auth.Password.Get()
-				}
+			if auth, err := getAgentBasicAuth(v.ClusterID); err != nil {
+				log.Error(err)
+				continue
+			} else if auth != nil {
+				username = auth.Username
+				password = fmt.Sprintf("$[[keystore.%s]]", getAgentPasswordKey(v.ClusterID))
 			}
 		}
 
@@ -240,40 +697,168 @@ func getAgentIngestConfigs(instance string, items map[string]BindingItem) (strin
 			continue
 		}
 
-		nodeEndPoint := metadata.PrepareEndpoint(publishAddress)
+		effectiveSchema := normalizeSchema(v.EndpointSchema)
+		if effectiveSchema == "" {
+			effectiveSchema = probeAndBackfillNodeEndpointSchema(instance, &v, publishAddress)
+		}
+		nodeEndPoint := prepareAgentNodeEndpoint(metadata, publishAddress, effectiveSchema)
 
-		pathLogs := nodeInfo.Payload.NodeInfo.GetPathLogs()
+		logsPaths := normalizeLogsPaths(v.LogsPaths, v.PathLogs)
+		if len(logsPaths) == 0 {
+			logsPaths = normalizeLogsPaths(nil, nodeInfo.Payload.NodeInfo.GetPathLogs())
+		}
 
 		if v.Updated > latestVersion {
 			latestVersion = v.Updated
 		}
 
 		taskID := v.ClusterID + "_" + v.NodeUUID
-		buffer.Write([]byte(fmt.Sprintf("\n  - name: \"%v\"\n    path: ./config/task_config.tpl\n    "+
-			"variable:\n      "+
-			"TASK_ID: %v\n      "+
-			"CLUSTER_ID: %v\n      "+
-			"CLUSTER_NAME: %v\n      "+
-			"CLUSTER_UUID: %v\n      "+
-			"NODE_UUID: %v\n      "+
-			"CLUSTER_VERSION: %v\n      "+
-			"CLUSTER_DISTRIBUTION: %v\n      "+
-			"CLUSTER_ENDPOINT: [\"%v\"]\n      "+
-			"CLUSTER_USERNAME: \"%v\"\n      "+
-			"CLUSTER_PASSWORD: \"%v\"\n      "+
-			"CLUSTER_LEVEL_TASKS_ENABLED: %v\n      "+
-			"NODE_LEVEL_TASKS_ENABLED: %v\n      "+
-			"NODE_LOGS_PATH: \"%v\"\n\n\n", taskID, taskID,
-			v.ClusterID, clusterName, v.ClusterUUID, v.NodeUUID, version, distribution, nodeEndPoint, username, password, clusterLevelEnabled, nodeLevelEnabled, pathLogs)))
+		// Resolve effective collection interval: per-node override > cluster default > agent default (0)
+		collectionInterval := v.CollectionInterval
+		if collectionInterval == 0 {
+			collectionInterval = metadata.Config.AgentCollectionInterval
+		}
+		elasticBuffer.WriteString(renderAgentTaskElasticsearchConfig(
+			taskID,
+			v.ClusterUUID,
+			version,
+			distribution,
+			nodeEndPoint,
+			username,
+			password,
+		))
+		pipelineBuffer.WriteString(renderAgentTaskPipelineConfig(
+			taskID,
+			v.ClusterID,
+			clusterName,
+			v.ClusterUUID,
+			clusterLevelEnabled,
+			nodeLevelEnabled,
+			logsPaths,
+			collectionInterval,
+		))
 	}
+
+	buffer := bytes.NewBufferString(elasticBuffer.String())
+	buffer.WriteString(pipelineBuffer.String())
 
 	hash := util.MD5digest(buffer.String())
 
-	//password: $[[keystore.$[[CLUSTER_ID]]_password]]
 	buffer.WriteString("\n")
 	buffer.WriteString(fmt.Sprintf("#MANAGED_CONFIG_VERSION: %v\n#MANAGED: true\n", latestVersion))
 
 	return buffer.String(), hash
+}
+
+func prepareAgentNodeEndpoint(_ *elastic.ElasticsearchMetadata, publishAddress, endpointSchema string) string {
+	host := strings.TrimSpace(publishAddress)
+	if host == "" {
+		return ""
+	}
+	if strings.Contains(host, "://") {
+		if parsed, err := url.Parse(host); err == nil && parsed != nil && parsed.Host != "" {
+			return fmt.Sprintf("%s://%s", strings.ToLower(parsed.Scheme), parsed.Host)
+		}
+		return host
+	}
+	schema := normalizeSchema(endpointSchema)
+	if schema == "" {
+		// Keep backward compatibility for legacy bindings that were created before endpoint_schema existed.
+		schema = "http"
+	}
+	return fmt.Sprintf("%s://%s", schema, host)
+}
+
+func probeAndBackfillNodeEndpointSchema(instanceID string, item *BindingItem, publishAddress string) string {
+	if item == nil {
+		return ""
+	}
+	host := strings.TrimSpace(publishAddress)
+	if host == "" {
+		return ""
+	}
+	auth, err := getAgentBasicAuth(item.ClusterID)
+	if err != nil {
+		log.Errorf("failed to get agent basic auth while probing node schema: cluster=%s, node=%s, err=%v", item.ClusterID, item.NodeUUID, err)
+		return ""
+	}
+	if !hasUsableAgentBasicAuth(auth) {
+		return ""
+	}
+
+	schema := ""
+	handler := &APIHandler{}
+	if success, tryAgain, _ := handler.getESNodeInfoViaProxy(host, "https", auth, instanceID); success {
+		schema = "https"
+	} else if tryAgain {
+		if success, _, _ := handler.getESNodeInfoViaProxy(host, "http", auth, instanceID); success {
+			schema = "http"
+		}
+	}
+	if schema == "" {
+		return ""
+	}
+
+	item.EndpointSchema = schema
+	if strings.TrimSpace(item.PublishAddress) == "" {
+		item.PublishAddress = host
+	}
+	settings := NewNodeAgentSettings(instanceID, item)
+	if err := orm.Save(&orm.Context{Refresh: "wait_for"}, settings); err != nil {
+		log.Errorf("failed to backfill node endpoint schema: node=%s, cluster=%s, schema=%s, err=%v", item.NodeUUID, item.ClusterID, schema, err)
+	}
+	return schema
+}
+
+func renderAgentTaskElasticsearchConfig(taskID, clusterUUID, version, distribution, nodeEndpoint, username, password string) string {
+	return fmt.Sprintf(
+		"\n  - id: %s\n    name: %s\n    cluster_uuid: %s\n    enabled: true\n    monitored: true\n    distribution: %s\n    version: %s\n    endpoints: [%s]\n    discovery:\n      enabled: false\n    basic_auth:\n      username: %s\n      password: %s\n    traffic_control:\n      enabled: true\n      max_qps_per_node: 100\n      max_bytes_per_node: 10485760\n      max_connection_per_node: 5\n",
+		util.MustToJSON(taskID),
+		util.MustToJSON(taskID),
+		util.MustToJSON(clusterUUID),
+		util.MustToJSON(distribution),
+		util.MustToJSON(version),
+		util.MustToJSON(nodeEndpoint),
+		util.MustToJSON(username),
+		util.MustToJSON(password),
+	)
+}
+
+func renderAgentTaskPipelineConfig(taskID, clusterID, clusterName, clusterUUID string, clusterLevelEnabled, nodeLevelEnabled bool, logsPaths []string, collectionInterval int) string {
+	logsPathValue := `""`
+	switch len(logsPaths) {
+	case 0:
+	case 1:
+		logsPathValue = util.MustToJSON(logsPaths[0])
+	default:
+		logsPathValue = util.MustToJSON(logsPaths)
+	}
+	intervalLine := ""
+	if collectionInterval > 0 {
+		intervalLine = fmt.Sprintf("\n    interval: %ds", collectionInterval)
+	}
+	return fmt.Sprintf(
+		"\n  - auto_start: %t\n    enabled: %t\n    keep_running: true%s\n    name: collect_%s_es_node_stats\n    retry_delay_in_ms: 10000\n    processor:\n      - es_node_stats:\n          elasticsearch: %s\n          labels:\n            cluster_id: %s\n            cluster_uuid: %s\n            cluster_name: %s\n          when:\n            cluster_available:\n              - %s\n\n  - auto_start: %t\n    enabled: %t\n    keep_running: true%s\n    name: collect_%s_es_logs\n    retry_delay_in_ms: 10000\n    processor:\n      - es_logs_processor:\n          elasticsearch: %s\n          labels:\n            cluster_id: %s\n            cluster_uuid: %s\n            cluster_name: %s\n          logs_path: %s\n          queue_name: logs\n          when:\n            cluster_available:\n              - %s\n",
+		nodeLevelEnabled,
+		nodeLevelEnabled,
+		intervalLine,
+		taskID,
+		util.MustToJSON(taskID),
+		util.MustToJSON(clusterID),
+		util.MustToJSON(clusterUUID),
+		util.MustToJSON(clusterName),
+		util.MustToJSON(taskID),
+		nodeLevelEnabled,
+		nodeLevelEnabled,
+		intervalLine,
+		taskID,
+		util.MustToJSON(taskID),
+		util.MustToJSON(clusterID),
+		util.MustToJSON(clusterUUID),
+		util.MustToJSON(clusterName),
+		logsPathValue,
+		util.MustToJSON(taskID),
+	)
 }
 
 const LastAgentHash = "last_agent_hash"

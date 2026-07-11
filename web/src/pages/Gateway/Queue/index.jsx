@@ -123,8 +123,22 @@ const QueueList = (props) => {
     });
   };
 
+  const breadcrumbList = [
+    { title: "home", locale: "menu.home", href: "/" },
+    { title: "resource", locale: "menu.resource" },
+    {
+      title: "runtime_instance",
+      locale: "menu.resource.runtime.instance",
+      href: "/resource/runtime/instance",
+    },
+    {
+      title: "runtime_queue",
+      locale: "menu.resource.runtime.queue",
+    },
+  ];
+
   return (
-    <PageHeaderWrapper>
+    <PageHeaderWrapper breadcrumbList={breadcrumbList}>
       <Card className="queue-card">
         <Tabs
           activeKey={param?.tab || "transient"}
@@ -143,7 +157,10 @@ const QueueList = (props) => {
             </>
           }
         >
-          <TabPane tab="FIFO" key={"transient"}>
+          <TabPane
+            tab={formatMessage({ id: "gateway.queue.tab.fifo" })}
+            key={"transient"}
+          >
             <Transient
               instanceID={instanceID}
               queueData={{ data: depthQueues, total: depthQueuesTotal }}
@@ -153,7 +170,10 @@ const QueueList = (props) => {
               QueueTypeIcon
             />
           </TabPane>
-          <TabPane tab="SPMC" key={"persistent"}>
+          <TabPane
+            tab={formatMessage({ id: "gateway.queue.tab.spmc" })}
+            key={"persistent"}
+          >
             <Persistent
               instanceID={instanceID}
               queueData={{ data: consumerQueues, total: consumerQueuesTotal }}

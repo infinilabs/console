@@ -9,7 +9,14 @@ export default (props) => {
     isAgent,
     clusterID,
     nodeID,
+    info,
   } = props
+
+  const nodeRoles = Array.isArray(info?.roles) ? info.roles : [];
+  const hasDataRole =
+    nodeRoles.length === 0
+      ? true
+      : nodeRoles.some((role) => role === "data" || role?.startsWith?.("data_"));
 
   return (
     <ClusterMetric
@@ -25,7 +32,7 @@ export default (props) => {
         "index_latency",
         "search_latency",
         "parent_breaker",
-        isAgent ? "shard_state" : undefined,
+        isAgent && hasDataRole ? "shard_state" : undefined,
       ].filter((item) => !!item)}
     />
   );

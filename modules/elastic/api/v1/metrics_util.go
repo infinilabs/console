@@ -289,6 +289,9 @@ func (h *APIHandler) GetMetricRangeAndBucketSize(req *http.Request, clusterID, m
 	bucketSize := 0
 
 	bucketSizeStr := h.GetParameterOrDefault(req, "bucket_size", "") //默认 10，每个 bucket 的时间范围，单位秒
+	if strings.EqualFold(strings.TrimSpace(bucketSizeStr), "auto") {
+		bucketSizeStr = ""
+	}
 	if bucketSizeStr != "" {
 		du, err := util.ParseDuration(bucketSizeStr)
 		if err != nil {
@@ -324,9 +327,22 @@ func GetMetricRangeAndBucketSize(minStr string, maxStr string, bucketSize int, m
 	var rangeFrom, rangeTo time.Time
 	var err error
 	var useMinMax = bucketSize == 0
+	if strings.EqualFold(strings.TrimSpace(minStr), "auto") {
+		minStr = ""
+	}
+	if strings.EqualFold(strings.TrimSpace(maxStr), "auto") {
+		maxStr = ""
+	}
+	effectiveBucketSize := bucketSize
+	if effectiveBucketSize <= 0 {
+		effectiveBucketSize = minBucketSize
+	}
+	if effectiveBucketSize <= 0 {
+		effectiveBucketSize = GetMinBucketSize()
+	}
 	now := time.Now()
 	if minStr == "" {
-		rangeFrom = now.Add(-time.Second * time.Duration(bucketSize*metricCount+1))
+		rangeFrom = now.Add(-time.Second * time.Duration(effectiveBucketSize*metricCount+1))
 	} else {
 		//try 2021-08-21T14:06:04.818Z
 		rangeFrom, err = util.ParseStandardTime(minStr)
@@ -334,8 +350,8 @@ func GetMetricRangeAndBucketSize(minStr string, maxStr string, bucketSize int, m
 			//try 1629637500000
 			v, err := util.ToInt64(minStr)
 			if err != nil {
-				log.Error("invalid timestamp:", minStr, err)
-				rangeFrom = now.Add(-time.Second * time.Duration(bucketSize*metricCount+1))
+				log.Errorf("GetMetricRangeAndBucketSize invalid min timestamp [%s]: %v", minStr, err)
+				rangeFrom = now.Add(-time.Second * time.Duration(effectiveBucketSize*metricCount+1))
 			} else {
 				rangeFrom = util.FromUnixTimestamp(v / 1000)
 			}
@@ -343,14 +359,14 @@ func GetMetricRangeAndBucketSize(minStr string, maxStr string, bucketSize int, m
 	}
 
 	if maxStr == "" {
-		rangeTo = now.Add(-time.Second * time.Duration(int(1*(float64(bucketSize)))))
+		rangeTo = now.Add(-time.Second * time.Duration(effectiveBucketSize))
 	} else {
 		rangeTo, err = util.ParseStandardTime(maxStr)
 		if err != nil {
 			v, err := util.ToInt64(maxStr)
 			if err != nil {
-				log.Error("invalid timestamp:", maxStr, err)
-				rangeTo = now.Add(-time.Second * time.Duration(int(1*(float64(bucketSize)))))
+				log.Errorf("GetMetricRangeAndBucketSize invalid max timestamp [%s]: %v", maxStr, err)
+				rangeTo = now.Add(-time.Second * time.Duration(effectiveBucketSize))
 			} else {
 				rangeTo = util.FromUnixTimestamp(int64(v) / 1000)
 			}
@@ -369,6 +385,91 @@ func GetMetricRangeAndBucketSize(minStr string, maxStr string, bucketSize int, m
 	}
 
 	return bucketSize, min, max, nil
+}
+
+func buildDateHistogramParams(query map[string]interface{}, intervalField, bucketSizeStr string) util.MapStr {
+	params := util.MapStr{
+		"field":         "timestamp",
+		intervalField:   bucketSizeStr,
+		"min_doc_count": 0,
+	}
+	if bounds, ok := extractDateHistogramBounds(query); ok {
+		params["extended_bounds"] = bounds
+	}
+	return params
+}
+
+func extractDateHistogramBounds(query map[string]interface{}) (util.MapStr, bool) {
+	queryMap, ok := asMap(query["query"])
+	if !ok {
+		return nil, false
+	}
+	boolMap, ok := asMap(queryMap["bool"])
+	if !ok {
+		return nil, false
+	}
+	filters, ok := asSlice(boolMap["filter"])
+	if !ok {
+		return nil, false
+	}
+	for _, filterItem := range filters {
+		filterMap, ok := asMap(filterItem)
+		if !ok {
+			continue
+		}
+		rangeMap, ok := asMap(filterMap["range"])
+		if !ok {
+			continue
+		}
+		timestampRange, ok := asMap(rangeMap["timestamp"])
+		if !ok {
+			continue
+		}
+		min := firstNotNil(timestampRange["gte"], timestampRange["from"], timestampRange["gt"])
+		max := firstNotNil(timestampRange["lte"], timestampRange["to"], timestampRange["lt"])
+		if min != nil && max != nil {
+			return util.MapStr{
+				"min": min,
+				"max": max,
+			}, true
+		}
+	}
+	return nil, false
+}
+
+func asMap(value interface{}) (map[string]interface{}, bool) {
+	switch v := value.(type) {
+	case map[string]interface{}:
+		return v, true
+	case util.MapStr:
+		return map[string]interface{}(v), true
+	default:
+		return nil, false
+	}
+}
+
+func asSlice(value interface{}) ([]interface{}, bool) {
+	switch v := value.(type) {
+	case []interface{}:
+		return v, true
+	case []util.MapStr:
+		result := make([]interface{}, 0, len(v))
+		for _, item := range v {
+			result = append(result, item)
+		}
+		return result, true
+	default:
+		return nil, false
+	}
+}
+
+func firstNotNil(values ...interface{}) interface{} {
+	for _, value := range values {
+		if value != nil {
+			return value
+		}
+	}
+	return nil
 }
 
 // findClosestNiceInterval finds the interval in sortedNiceIntervals that is closest to targetSize.
@@ -513,11 +614,8 @@ func (h *APIHandler) getSingleMetrics(ctx context.Context, metricItems []*common
 	query["size"] = 0
 	query["aggs"] = util.MapStr{
 		"dates": util.MapStr{
-			"date_histogram": util.MapStr{
-				"field":       "timestamp",
-				intervalField: bucketSizeStr,
-			},
-			"aggs": aggs,
+			"date_histogram": buildDateHistogramParams(query, intervalField, bucketSizeStr),
+			"aggs":           aggs,
 		},
 	}
 	queryDSL := util.MustToJSONBytes(query)
@@ -615,7 +713,7 @@ func (h *APIHandler) getBucketMetrics(query map[string]interface{}, bucketItems 
 	//bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
 	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).SearchWithRawQueryDSL(getAllMetricsIndex(), util.MustToJSONBytes(query))
 	if err != nil {
-		log.Error(err)
+		log.Errorf("getBucketMetrics failed: %v", err)
 		panic(err)
 	}
 	//grpMetricItemsIndex := map[string]int{}
@@ -741,8 +839,18 @@ func ConvertBucketItemsToAggQuery(bucketItems []*common.BucketItem, metricItems 
 
 		switch bucketItem.Type {
 		case "terms":
+			termsParams := util.MapStr{}
+			for k, v := range bucketItem.Parameters {
+				termsParams[k] = v
+			}
+			// Some Elasticsearch-compatible engines return UnmappedTerms runtime
+			// errors on terms aggregation. Provide a default missing value so the
+			// aggregation can still be planned when the field is absent.
+			if _, ok := termsParams["missing"]; !ok {
+				termsParams["missing"] = ""
+			}
 			bucketAgg = util.MapStr{
-				"terms": bucketItem.Parameters,
+				"terms": termsParams,
 			}
 			break
 		case "date_histogram":
@@ -1058,7 +1166,7 @@ func parseHealthMetricData(buckets []elastic.BucketBase) ([]interface{}, error) 
 	for _, bucket := range buckets {
 		v, ok := bucket["key"].(float64)
 		if !ok {
-			log.Error("invalid bucket key")
+			log.Errorf("parseHealthMetricData invalid bucket key in aggregation response")
 			return nil, fmt.Errorf("invalid bucket key")
 		}
 		dateTime := int64(v)
@@ -1091,10 +1199,15 @@ func GetIndicesCount(clusterID string) int {
 	if meta != nil && meta.ClusterState != nil && meta.ClusterState.Metadata != nil && meta.ClusterState.Metadata.Indices != nil {
 		indexCount = len(meta.ClusterState.Metadata.Indices)
 	} else {
-		log.Warnf("Can't get indices from metadata with %s", clusterID)
 		esClient := elastic.GetClient(clusterID)
-		indexInfos, _ := esClient.GetIndices("")
-		indexCount = len(*indexInfos)
+		indexInfos, err := esClient.GetIndices("")
+		if err != nil {
+			log.Warnf("Can't get indices count with %s from metadata or indices API: %v", clusterID, err)
+			return indexCount
+		}
+		if indexInfos != nil {
+			indexCount = len(*indexInfos)
+		}
 	}
 	log.Debugf("Get cluster id %s indices count %d", clusterID, indexCount)
 	return indexCount

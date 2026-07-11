@@ -1,6 +1,74 @@
 .installAgent {
+    .advancedWrap {
+        margin-bottom: 16px;
+    }
+    .advancedWrapCentered {
+        text-align: left;
+    }
+    .advancedToggle {
+        padding: 0;
+        height: auto;
+        color: rgba(0, 0, 0, 0.65);
+        font-size: 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .toggleStack {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        column-gap: 24px;
+        row-gap: 12px;
+        margin-top: 8px;
+    }
+    .toggleStackCentered {
+        justify-content: left;
+        align-items: center;
+    }
+    .reverseChannelToggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 0 0 auto;
+    }
+    .reverseChannelLabel {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .reverseChannelInfo {
+        color: rgba(0, 0, 0, 0.45);
+        font-size: 12px;
+        cursor: pointer;
+    }
     .gateway {
-        margin-bottom: 20px;
+        display: block;
+        margin: 0 auto 20px;
+    }
+    .noServiceAlert {
+        margin-bottom: 16px;
+        text-align: left;
+    }
+    .noServiceAlertContent {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .noServiceCodeTitle {
+        font-weight: 500;
+        color: #101010;
+    }
+    .noServiceCodeBlock {
+        display: block;
+        padding: 8px 10px;
+        border-radius: 4px;
+        background: #f5f5f5;
+        color: #434343;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-family: "SFMono-Regular", Monaco, Menlo, Consolas, "Liberation Mono", "Ubuntu Mono", monospace;
     }
     .shell {
         .installtitle{
@@ -19,7 +87,11 @@
             padding: 12px 30px 12px 12px;
             background: rgb(241, 242, 245);
             position: relative;
-            word-break: break-all;
+            text-align: left;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-family: "SFMono-Regular", Monaco, Menlo, Consolas, "Liberation Mono", "Ubuntu Mono", monospace;
             margin-bottom: 30px;
 
             .copy {
@@ -35,14 +107,17 @@
             .title {
                 font-weight: 400;
                 color: #101010;
-                font-size: 14px;
+                font-size: 12px;
                 margin-bottom: 8px;
             }
             .content {
-                font-size: 14px;
+                font-size: 12px;
                 color: #565656;
                 p {
                     margin-bottom: 6px;
+                }
+                code {
+                    font-size: 12px;
                 }
                 .children {
                     margin: 0 8px;

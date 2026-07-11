@@ -34,6 +34,7 @@ import (
 	"net/http"
 	"time"
 
+	agent_common "infini.sh/console/modules/agent/common"
 	"infini.sh/framework/core/model"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/modules/pipeline"
@@ -157,8 +158,8 @@ func (inst *TaskWorker) TryConnectWithTimeout(duration time.Duration) error {
 }
 
 func (inst *TaskWorker) doRequest(req *util.Request, resBody interface{}) error {
-	if inst.BasicAuth != nil && inst.BasicAuth.Username != "" {
-		req.SetBasicAuth(inst.BasicAuth.Username, inst.BasicAuth.Password.Get())
+	if err := agent_common.ApplyInstanceRequestAuth(req, &inst.Instance); err != nil {
+		return err
 	}
 	result, err := util.ExecuteRequest(req)
 	if err != nil {

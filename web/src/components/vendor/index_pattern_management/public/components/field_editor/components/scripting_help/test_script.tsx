@@ -161,7 +161,7 @@ export class TestScript extends Component<TestScriptProps, TestScriptState> {
     }
 
     return (
-      <Fragment>
+      <Fragment key="scriptPreview">
         <EuiTitle size="xs">
           <p>First 10 results</p>
         </EuiTitle>
@@ -213,7 +213,7 @@ export class TestScript extends Component<TestScriptProps, TestScriptState> {
     });
 
     return (
-      <Fragment>
+      <Fragment key="toolbar">
         <EuiFormRow label={"Additional fields"} fullWidth>
           <EuiComboBox
             placeholder={"Select..."}
@@ -253,7 +253,7 @@ export class TestScript extends Component<TestScriptProps, TestScriptState> {
 
   render() {
     return (
-      <Fragment>
+      <Fragment key="testScript">
         <EuiSpacer />
         <EuiText>
           <h3>Preview results</h3>

@@ -1,10 +1,39 @@
-import { Alert, Button, Icon, Result, Descriptions } from "antd";
+import { Alert, Button, Icon, Result, Descriptions, Spin } from "antd";
 import styles from "./index.less";
-import { Link } from "umi";
+import { router } from "umi";
 import { formatMessage } from "umi/locale";
 import { useEffect } from "react";
+import {
+  invalidateApplicationSettingsCache,
+  refreshApplicationSettings,
+} from "@/utils/authority";
+import { setSetupRequired } from "@/utils/setup";
 
-export default ({ formData }) => {
+const setupErrorMessageMap = {
+  "invalid bootstrap password":
+    "guide.initialization.finish.error.invalid_bootstrap_password",
+  "bootstrap password does not meet security requirements":
+    "guide.initialization.finish.error.bootstrap_password_strength",
+  "bootstrap password is required when resetting administrator":
+    "guide.initialization.finish.error.bootstrap_password_required",
+  "bootstrap username is required when resetting administrator":
+    "guide.initialization.finish.error.bootstrap_username_required",
+};
+
+const getSetupErrorMessage = (setupError) => {
+  if (!setupError) {
+    return null;
+  }
+
+  const messageId = setupErrorMessageMap[setupError];
+  if (messageId) {
+    return formatMessage({ id: messageId });
+  }
+
+  return setupError;
+};
+
+export default ({ formData, onPrev }) => {
 
   const {
     host,
@@ -17,7 +46,13 @@ export default ({ formData }) => {
     bootstrap_username,
     bootstrap_password,
     credential_secret,
+    setupStatus = "success",
+    setupError,
   } = formData;
+
+  const isInitializing = setupStatus === "running";
+  const isFailed = setupStatus === "failed";
+  const localizedSetupError = getSetupErrorMessage(setupError);
 
   const onDownload = () => {
     let hostV = host
@@ -50,64 +85,112 @@ export default ({ formData }) => {
 
   useEffect(() => {
     localStorage.setItem("first-login",true);
-  }, [])
+    if (!isInitializing && !isFailed) {
+      setSetupRequired("false");
+      invalidateApplicationSettingsCache();
+    }
+  }, [isFailed, isInitializing])
+
+  const enterConsole = async () => {
+    setSetupRequired("false");
+    invalidateApplicationSettingsCache();
+    try {
+      await refreshApplicationSettings(true);
+    } catch (error) {
+      console.log(error);
+    }
+    router.replace("/user/login");
+  };
 
   return (
     <div className={styles.finish}>
       <Result
         icon={
-          <Icon className={styles.success} type="check-circle" theme="filled" />
+          isInitializing ? (
+            <Spin size="large" />
+          ) : isFailed ? (
+            <Icon type="close-circle" theme="filled" style={{ color: "#ff4d4f" }} />
+          ) : (
+            <Icon className={styles.success} type="check-circle" theme="filled" />
+          )
         }
         title={
           <span className={styles.title}>
-            {formatMessage({ id: "guide.completed" })}
+            {formatMessage({
+              id: isInitializing
+                ? "guide.initialization.finish.pending"
+                : isFailed
+                ? "guide.initialization.finish.failed"
+                : "guide.completed",
+            })}
           </span>
         }
         extra={
-          <Link to="/user/login">
-            <Button
-              type="primary"
-              onClick={() => {
-                localStorage.removeItem("infini-setup-required");
-              }}
-            >
+          isInitializing ? (
+            <Button type="primary" loading disabled>
+              {formatMessage({ id: "guide.initialization.finish.pending.button" })}
+            </Button>
+          ) : isFailed ? (
+            <Button type="primary" onClick={onPrev}>
+              {formatMessage({ id: "guide.step.prev" })}
+            </Button>
+          ) : (
+            <Button type="primary" onClick={enterConsole}>
               {formatMessage({ id: "guide.enter.console" })}
             </Button>
-          </Link>
+          )
         }
       >
-        <Descriptions 
-          bordered 
-          size="small" 
-          style={{width: "60%", margin: "auto", textAlign: 'center'}} 
-          title={formatMessage({ id: "guide.configuration.title" })} 
-          column={1}
-        >
-          <Descriptions.Item label={formatMessage({ id: "guide.configuration.cluster" })}>{isTLS ? `https://${hosts[0]}` : `http://${hosts[0]}`}</Descriptions.Item>
-          {
-            isAuth && (
-              <>
-              <Descriptions.Item label={formatMessage({ id: "guide.configuration.cluster_username" })}>{username}</Descriptions.Item>
-                <Descriptions.Item label={formatMessage({ id: "guide.configuration.cluster_password" })}>{password.split("").map(() => "*")}</Descriptions.Item>
-              </>
-            )
-          }
-          {
-            isInit && (
-              <>
-                <Descriptions.Item label={formatMessage({ id: "guide.configuration.console_username" })}>{bootstrap_username}</Descriptions.Item>
-                <Descriptions.Item label={formatMessage({ id: "guide.configuration.console_password" })}>{bootstrap_password.split("").map(() => "*")}</Descriptions.Item>
+        <div className={styles.panels}>
+          {isInitializing ? (
+            <Alert
+              className={`${styles.panel} ${styles.pendingAlert}`}
+              message={formatMessage({ id: "guide.initialization.finish.pending.desc" })}
+              type="info"
+            />
+          ) : null}
+          {isFailed ? (
+            <Alert
+            className={`${styles.panel} ${styles.statusAlert}`}
+              message={formatMessage({ id: "guide.initialization.finish.failed.desc" })}
+            description={localizedSetupError}
+              type="error"
+              showIcon
+            />
+          ) : null}
+          <Descriptions 
+            bordered 
+            size="small" 
+          className={`${styles.panel} ${styles.configTable}`}
+            title={formatMessage({ id: "guide.configuration.title" })} 
+            column={1}
+          >
+            <Descriptions.Item label={formatMessage({ id: "guide.configuration.cluster" })}>{isTLS ? `https://${hosts[0]}` : `http://${hosts[0]}`}</Descriptions.Item>
+            {
+              isAuth && (
+                <>
+                <Descriptions.Item label={formatMessage({ id: "guide.configuration.cluster_username" })}>{username}</Descriptions.Item>
+                  <Descriptions.Item label={formatMessage({ id: "guide.configuration.cluster_password" })}>{password.split("").map(() => "*")}</Descriptions.Item>
                 </>
-            )
-          }
-          <Descriptions.Item label={formatMessage({ id: "guide.configuration.credential_secret" })}>{credential_secret}</Descriptions.Item>
-        </Descriptions>
-        <Alert style={{width: "60%", margin: "auto", marginTop: 12, textAlign: 'center'}} message={(
-          <div>
-            {formatMessage({ id: "guide.configuration.tips"})}
-            <a style={{ marginLeft: 12 }} onClick={onDownload} ><Icon type={"download"}/></a>
-          </div>
-        )} type="warning" />
+              )
+            }
+            {
+              isInit && (
+                <>
+                  <Descriptions.Item label={formatMessage({ id: "guide.configuration.console_username" })}>{bootstrap_username}</Descriptions.Item>
+                  <Descriptions.Item label={formatMessage({ id: "guide.configuration.console_password" })}>{bootstrap_password.split("").map(() => "*")}</Descriptions.Item>
+                  </>
+              )
+            }
+            <Descriptions.Item label={formatMessage({ id: "guide.configuration.credential_secret" })}>{credential_secret.split("").map(() => "*")}</Descriptions.Item>
+          </Descriptions>
+          <Alert className={`${styles.panel} ${styles.tipsAlert}`} message={(
+            <div>
+              {formatMessage({ id: "guide.configuration.tips"})}
+              <a style={{ marginLeft: 12 }} onClick={onDownload} ><Icon type={"download"}/></a>
+            </div>
+          )} type="warning" />
+        </div>
       </Result>
     </div>
   );

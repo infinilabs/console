@@ -50,19 +50,21 @@ export interface EditIndexPatternProps extends RouteComponentProps {
 
 const mappingAPILink = "Mapping API";
 
-const mappingConflictHeader = "Mapping 冲突";
+const mappingConflictHeader = formatMessage({
+  id: "explore.view.index_pattern.mapping_conflict_title",
+});
 
 const confirmMessage =
   "This action resets the popularity counter of each field.";
 
 const confirmModalOptionsRefresh = {
-  confirmButtonText: "Refresh",
-  title: "Refresh field list?",
+  confirmButtonText: formatMessage({ id: "form.button.refresh" }),
+  title: formatMessage({ id: "explore.view.index_pattern.refreshFieldListTitle" }),
 };
 
 const confirmModalOptionsDelete = {
   confirmButtonText: "Delete",
-  title: "Delete view?",
+  title: formatMessage({ id: "explore.view.index_pattern.delete_confirm" }),
 };
 
 export const EditIndexPattern = withRouter(
@@ -150,7 +152,7 @@ export const EditIndexPattern = withRouter(
           Promise.resolve(
             data.indexPatterns.delete(indexPattern.id || id)
           ).then(function() {
-            history.push("");
+            history.push("/data/views");
           });
         }
       }
@@ -162,11 +164,36 @@ export const EditIndexPattern = withRouter(
       // });
     };
 
-    const timeFilterHeader = `时间字段: '${indexPattern.timeFieldName}'`;
+    const timeFilterHeader = formatMessage(
+      { id: "explore.view.index_pattern.time_field" },
+      { field: indexPattern.timeFieldName }
+    );
 
-    const mappingConflictLabel = `当前视图匹配的索引有 ${conflictedFields.length} 字段定义了几种类型，如 (string, integer, 等)。您可以继续使用冲突的字段, 但是不能和函数一起使用(系统不知道冲突字段类型)。您可以重新生成索引来解决这个问题`;
+    const mappingConflictLabel = formatMessage(
+      { id: "explore.view.index_pattern.mapping_conflict_desc" },
+      { count: conflictedFields.length }
+    );
 
-    const headingAriaLabel = "视图详情";
+    const headingAriaLabel = formatMessage({
+      id: "explore.view.index_pattern.detail_title",
+    });
+
+    const breadcrumbList = [
+      {
+        title: formatMessage({ id: "menu.home" }),
+        href: "/",
+      },
+      {
+        title: formatMessage({ id: "menu.data" }),
+      },
+      {
+        title: formatMessage({ id: "menu.data.view" }),
+        href: "/data/views",
+      },
+      {
+        title: indexPattern?.viewName || indexPattern?.title,
+      },
+    ];
 
     // chrome.docTitle.change(indexPattern.title);
 
@@ -175,7 +202,7 @@ export const EditIndexPattern = withRouter(
     );
 
     return (
-      <PageHeaderWrapper>
+      <PageHeaderWrapper breadcrumbList={breadcrumbList}>
         <EuiPanel paddingSize={"l"}>
           <div
             data-test-subj="editIndexPattern"
@@ -188,6 +215,7 @@ export const EditIndexPattern = withRouter(
               refreshFields={refreshFields}
               deleteIndexPatternClick={removePattern}
               defaultIndex={defaultIndex}
+              goBack={() => history.push("/data/views")}
             />
             {/* <EuiSpacer size="s" />
             {showTagsSection && (

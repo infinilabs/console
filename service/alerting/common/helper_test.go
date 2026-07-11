@@ -1,0 +1,115 @@
+package common
+
+import (
+	"strings"
+	"testing"
+
+	"infini.sh/console/model"
+	modelalerting "infini.sh/console/model/alerting"
+)
+
+func TestSelectFallbackEmailServerID(t *testing.T) {
+	server := model.EmailServer{}
+	server.ID = "smtp-1"
+
+	serverID, err := selectFallbackEmailServerID([]model.EmailServer{
+		server,
+	})
+	if err != nil {
+		t.Fatalf("expected single enabled server to be selected, got error: %v", err)
+	}
+	if serverID != "smtp-1" {
+		t.Fatalf("expected smtp-1, got %q", serverID)
+	}
+}
+
+func TestSelectFallbackEmailServerIDWithoutEnabledServer(t *testing.T) {
+	_, err := selectFallbackEmailServerID(nil)
+	if err == nil {
+		t.Fatal("expected error when no enabled smtp server exists")
+	}
+	if !strings.Contains(err.Error(), "no enabled smtp server") {
+		t.Fatalf("expected missing-server hint, got %v", err)
+	}
+}
+
+func TestSelectFallbackEmailServerIDWithMultipleEnabledServers(t *testing.T) {
+	server1 := model.EmailServer{}
+	server1.ID = "smtp-1"
+	server2 := model.EmailServer{}
+	server2.ID = "smtp-2"
+
+	_, err := selectFallbackEmailServerID([]model.EmailServer{
+		server1,
+		server2,
+	})
+	if err == nil {
+		t.Fatal("expected error when multiple enabled smtp servers exist")
+	}
+	if !strings.Contains(err.Error(), "multiple enabled smtp servers") {
+		t.Fatalf("expected multi-server hint, got %v", err)
+	}
+}
+
+func TestEnsureEmailRecipients(t *testing.T) {
+	err := ensureEmailRecipients(nil)
+	if err == nil {
+		t.Fatal("expected nil email config to fail")
+	}
+
+	email := &modelalerting.Email{}
+	err = ensureEmailRecipients(email)
+	if err == nil {
+		t.Fatal("expected missing recipients to fail")
+	}
+	if !strings.Contains(err.Error(), "at least one recipient") {
+		t.Fatalf("expected recipient hint, got %v", err)
+	}
+
+	email.Recipients.To = []string{"ops@example.com"}
+	if err = ensureEmailRecipients(email); err != nil {
+		t.Fatalf("expected configured recipients to pass, got %v", err)
+	}
+}
+
+func TestValidateRenderedWebhookURL(t *testing.T) {
+	validURL, err := validateRenderedWebhookURL(" https://open.feishu.cn/open-apis/bot/v2/hook/abc ")
+	if err != nil {
+		t.Fatalf("expected valid webhook url, got %v", err)
+	}
+	if validURL != "https://open.feishu.cn/open-apis/bot/v2/hook/abc" {
+		t.Fatalf("expected trimmed webhook url, got %q", validURL)
+	}
+
+	_, err = validateRenderedWebhookURL("<no value>")
+	if err == nil || !strings.Contains(err.Error(), "rendered value is empty") {
+		t.Fatalf("expected empty-rendered-value error, got %v", err)
+	}
+
+	_, err = validateRenderedWebhookURL("open.feishu.cn/hook/abc")
+	if err == nil || !strings.Contains(err.Error(), "unsupported scheme") {
+		t.Fatalf("expected unsupported-scheme error, got %v", err)
+	}
+}
+
+func TestBuildEmailTemplateContextConvertsLineBreaks(t *testing.T) {
+	input := map[string]interface{}{
+		"message":          "节点: node-01\n节点: node-02",
+		"recovery_context": "Node: a\r\nNode: b",
+		"title":            "unchanged",
+	}
+
+	got := buildEmailTemplateContext(input)
+	if got["message"] != "节点: node-01<br/>节点: node-02" {
+		t.Fatalf("expected message line breaks to be converted, got %q", got["message"])
+	}
+	if got["recovery_context"] != "Node: a<br/>Node: b" {
+		t.Fatalf("expected recovery_context line breaks to be converted, got %q", got["recovery_context"])
+	}
+	if got["title"] != "unchanged" {
+		t.Fatalf("expected unrelated fields unchanged, got %q", got["title"])
+	}
+	if input["message"] != "节点: node-01\n节点: node-02" {
+		t.Fatalf("expected input ctx to remain unchanged, got %q", input["message"])
+	}
+}

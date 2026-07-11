@@ -12,14 +12,36 @@ import EventMessageCard from "./EventMessageCard";
 import EventDetailCard from "./EventDetailCard";
 import NotificationCard from "./NotificationCard";
 import AlertChartCard from "./AlertChartCard";
-import { useHistory } from "react-router-dom";
+import { useHistory, useLocation } from "react-router-dom";
 import WidgetLoader from "@/pages/DataManagement/View/WidgetLoader";
 import DatePicker from "@/common/src/DatePicker";
 import { getLocale } from "umi/locale";
 import { getTimezone } from "@/utils/utils";
 import { JsonParam, QueryParamProvider, useQueryParam } from "use-query-params";
+import isEqual from "lodash/isEqual";
 
 const { Title } = Typography;
+
+const hasResolvedAtValue = (value) => {
+  if (!value) {
+    return false;
+  }
+  const resolvedAt = moment(value);
+  return resolvedAt.isValid() && resolvedAt.year() > 1;
+};
+
+const getAlertStartTime = (messageDetail = {}) =>
+  hasResolvedAtValue(messageDetail?.trigger_at) ? messageDetail.trigger_at : messageDetail?.created;
+
+const getAlertEndTime = (messageDetail = {}) => {
+  if (hasResolvedAtValue(messageDetail?.resolve_at)) {
+    return messageDetail.resolve_at;
+  }
+  if (messageDetail?.status == "recovered") {
+    return messageDetail?.updated;
+  }
+  return "";
+};
 
 const MessageDetail = (props) => {
   const messageID = props?.messageID;
@@ -49,22 +71,33 @@ const MessageDetail = (props) => {
 
   const [refresh, setRefresh] = useState({ isRefreshPaused: true });
   const [timeZone, setTimeZone] = useState(() => getTimezone());
+  const syncedTimeRange = useMemo(
+    () => ({
+      min: timeRange.min,
+      max: timeRange.max,
+    }),
+    [timeRange.max, timeRange.min]
+  );
 
-  useMemo(() => {
-    setParam({ ...param, timeRange: timeRange });
-  }, [timeRange]);
+  useEffect(() => {
+    if (isEqual(param?.timeRange, syncedTimeRange)) {
+      return;
+    }
+    setParam({ ...param, timeRange: syncedTimeRange });
+  }, [param, setParam, syncedTimeRange]);
 
   const updateTimeRange = (messageDetail) => {
-    let startTimestamp = moment(messageDetail.created).valueOf();
+    let startTimestamp = moment(getAlertStartTime(messageDetail)).valueOf();
     let endTimestamp = moment().valueOf();
+    const resolvedAt = getAlertEndTime(messageDetail);
 
-    if (messageDetail?.status == "recovered") {
-      endTimestamp = moment(messageDetail.updated).valueOf();
+    if (hasResolvedAtValue(resolvedAt)) {
+      endTimestamp = moment(resolvedAt).valueOf();
     }
     setTimeRange({
       ...timeRange,
-      min: moment(startTimestamp).format(),
-      max: moment(endTimestamp).format("YYYY-MM-DDTHH:mm:ss.SSS"),
+      min: moment(startTimestamp).toISOString(),
+      max: moment(endTimestamp).toISOString(),
     });
   }
 
@@ -82,19 +115,21 @@ const MessageDetail = (props) => {
     }
   }, []);
   const history = useHistory();
+  const location = useLocation();
+  const backTo = location?.state?.from || "/alerting/message";
 
   return (
     <Card title={messageDetail.title} bordered={false} extra={<Button
       type="primary"
       onClick={() => {
-        history.goBack();
+        history.push(backTo);
       }}
     >
       {formatMessage({ id: "form.button.goback" })}
     </Button>}>
       <ExpressionCard ruleID={messageDetail?.rule_id} expression={messageDetail?.expression}/>
       <div style={{marginTop: 15}}></div>
-      <EventMessageCard message={messageDetail.message}/>
+      <EventMessageCard message={messageDetail.message} title={messageDetail.title}/>
       <div style={{marginTop: 15}}></div>
       <div style={{display:"flex", gap: 15}}>
         <div style={{flex: "1 1 50%"}}>
@@ -129,9 +164,16 @@ const MessageDetail = (props) => {
           <AlertChartCard
             msgItem={messageDetail}
             range={{ 
-              from: timeRange.min || "now-7d", 
-              to: timeRange.max || "now"
-            }}/>
+            from: timeRange.min || "auto", 
+            to: timeRange.max || "auto"
+            }}
+            onRangeChange={({ from, to }) => {
+              handleTimeChange({
+                start: from,
+                end: to,
+              });
+            }}
+          />
         </div>
           <Card
             style={{flex: "1 1 50%"}}
@@ -141,16 +183,35 @@ const MessageDetail = (props) => {
             {messageDetail?.rule_id ? <WidgetLoader 
               id="cji1ttq8go5i051pl1t1"
               range={{ 
-                from: timeRange.min || "now-7d", 
-                to: timeRange.max || "now"
+                from: timeRange.min || "auto", 
+                to: timeRange.max || "auto"
               }}
-              queryParams={{state:"alerting", rule_id: messageDetail?.rule_id}}
+              queryParams={{
+                rule_id: messageDetail?.rule_id,
+                resource_id: messageDetail?.resource_id,
+                ...(messageDetail?.status === "recovered" ? {} : { state: "alerting" }),
+              }}
+              onGlobalQueriesChange={(queries = {}) => {
+                if (!queries?.range?.from || !queries?.range?.to) {
+                  return;
+                }
+                handleTimeChange({
+                  start: queries.range.from,
+                  end: queries.range.to,
+                });
+              }}
             /> : null}
           </Card>
       </div>
       {messageDetail.message_id && <Tabs>
-        <Tabs.TabPane tab={formatMessage({ id: "alert.rule.detail.title.alert_history" })}>
-          <RuleRecords ruleID={messageDetail?.rule_id} timeRange={timeRange} />
+        <Tabs.TabPane tab={formatMessage({ id: "alert.rule.detail.title.alert_history" })} key="alert-history">
+          <RuleRecords
+            ruleID={messageDetail?.rule_id}
+            resourceID={messageDetail?.resource_id}
+            resolveEventID={messageDetail?.resolve_event_id}
+            messageStatus={messageDetail?.status}
+            timeRange={timeRange}
+          />
         </Tabs.TabPane>
       </Tabs>
   }

@@ -4,6 +4,28 @@ import { message } from "antd";
 import request from "@/utils/request";
 import DatePicker from "@/common/src/DatePicker";
 
+const normalizeTimeValue = (value, fallback) => {
+  if (typeof value === "string" || typeof value === "number") {
+    return `${value}`;
+  }
+  if (value && typeof value === "object") {
+    const keys = ["from", "to", "min", "max", "gte", "lte", "start", "end"];
+    for (const key of keys) {
+      if (
+        Object.prototype.hasOwnProperty.call(value, key) &&
+        value[key] !== undefined &&
+        value[key] !== null
+      ) {
+        const candidate = value[key];
+        if (typeof candidate === "string" || typeof candidate === "number") {
+          return `${candidate}`;
+        }
+      }
+    }
+  }
+  return fallback;
+};
+
 export default (props) => {
   const {
     locale = "en-US",
@@ -15,6 +37,7 @@ export default (props) => {
     isRefreshPaused = true,
     onRefresh,
     recentlyUsedRangesKey = "listview-recently-used-ranges",
+    wrapperStyle = {},
   } = props;
 
   if (timeFields.length == 0) {
@@ -23,8 +46,8 @@ export default (props) => {
 
   const [range] = useMemo(() => {
     let range = {
-      start: timeRange.from || "now-15m",
-      end: timeRange.to || "now",
+      start: normalizeTimeValue(timeRange.from, "now-15m"),
+      end: normalizeTimeValue(timeRange.to, "now"),
       timeField: timeRange.timeField || "",
     };
     return [range];
@@ -90,8 +113,15 @@ export default (props) => {
   //   setAutoFitLoading(false);
   // };
 
+  const containerStyle = {
+    width: "460px",
+    maxWidth: "55vw",
+    minWidth: 320,
+    ...wrapperStyle,
+  };
+
   return (
-    <div style={{ minWidth: 60, maxWidth: 400 }}>
+    <div style={containerStyle}>
       <DatePicker
         locale={locale}
         {...range}
@@ -111,6 +141,7 @@ export default (props) => {
         timeZone={currentTimeZone}
         onTimeZoneChange={setCurrentTimeZone}
         recentlyUsedRangesKey={recentlyUsedRangesKey}
+        showAutoTimeRange={true}
       />
     </div>
   );

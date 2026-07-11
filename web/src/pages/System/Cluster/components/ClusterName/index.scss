@@ -1,7 +1,35 @@
 .cluster-name-link {
   display: flex;
   align-items: center;
-  > span {
-    margin-left: 3px;
+  min-width: 0;
+  gap: 4px;
+
+  &__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    line-height: 1;
+
+    :global(.anticon) {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      line-height: 1;
+      vertical-align: top;
+    }
+  }
+
+  &__text {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }

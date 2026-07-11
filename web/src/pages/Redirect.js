@@ -5,24 +5,31 @@ import { router } from "umi";
 import { getSetupRequired } from "@/utils/setup";
 
 export default (props) => {
-  const userAuthority = getAuthority();
-  const { menuData } = useGlobal();
+  const { menuData, authResolved, sessionValid } = useGlobal() || {};
   useEffect(() => {
     if (getSetupRequired() === 'true') {
-      router.push("/guide/initialization");
+      router.replace("/guide/initialization");
+      return;
     }
     if (getAuthEnabled() === "true") {
+      if (!authResolved) {
+        return;
+      }
+      if (!sessionValid) {
+        router.replace("/user/login");
+        return;
+      }
       //find authoriy page
-      const tpath = findFirstAuthorityPath(menuData, userAuthority);
+      const tpath = findFirstAuthorityPath(menuData, getAuthority());
       if (tpath) {
-        router.push(tpath);
+        router.replace(tpath);
       } else {
-        router.push("/user/login");
+        router.replace("/exception/403");
       }
     } else {
-      router.push("/cluster/overview");
+      router.replace("/cluster/overview");
     }
-  }, []);
+  }, [authResolved, menuData, sessionValid]);
   return null;
 };
 

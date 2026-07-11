@@ -1,5 +1,51 @@
 .initialization {
-    
+    height: 100%;
+
+    .contentInner {
+        width: 100%;
+        max-width: 860px;
+        margin: 0 auto;
+    }
+
+    .topAlert,
+    .fieldBlock,
+    .toggleBlock {
+        margin-bottom: 16px;
+    }
+
+    .fieldTitle {
+        margin-bottom: 8px;
+        font-weight: 500;
+    }
+
+    .fieldHelp {
+        margin-top: 8px;
+        color: rgba(0, 0, 0, 0.45);
+    }
+
+    .toggleBlock {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .toggleHelp {
+        margin-top: 4px;
+        color: rgba(0, 0, 0, 0.45);
+    }
+
+    .actionRow {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+        max-width: 520px;
+        margin: 16px auto 0;
+    }
+
+    .actionButton {
+        width: calc(50% - 6px);
+    }
+
     .warning {
         font-size: 46px;
         color: rgb(255, 215, 0);
@@ -30,6 +76,112 @@
         }
     }
 
+    .taskLogPanel {
+        height: auto;
+        margin-top: 8px;
+        padding: 8px 10px;
+        overflow: visible;
+        border-radius: 6px;
+        border: 1px solid #e8edf3;
+        background: #fafbfc;
+    }
+
+    .taskLogItem {
+        color: #445066;
+        line-height: 1.8;
+
+        & + .taskLogItem {
+            margin-top: 6px;
+        }
+    }
+
+    .taskLogMain {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        justify-content: space-between;
+        min-width: 0;
+        padding: 7px 10px 7px 12px;
+        border-radius: 6px;
+        background: #fff;
+        border: 1px solid #eef2f7;
+    }
+
+    .taskHeader {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .taskHeaderMain {
+        min-width: 0;
+    }
+
+    .taskHeaderActions {
+        margin-left: auto;
+        white-space: nowrap;
+    }
+
+    .taskLogName {
+        min-width: 0;
+        flex: 1 1 auto;
+        word-break: break-word;
+    }
+
+    .taskLogStatus {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+
+    .taskLogReasonIcon {
+        color: rgba(0, 0, 0, 0.45);
+    }
+
+    .taskStatusTag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 2px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 20px;
+        border: 1px solid transparent;
+    }
+
+    .taskStatusTagPending {
+        color: #5b667a;
+        background: #f3f5f8;
+        border-color: #e2e8f0;
+    }
+
+    .taskStatusTagRunning {
+        color: #0958d9;
+        background: #e6f4ff;
+        border-color: #91caff;
+    }
+
+    .taskStatusTagSuccess {
+        color: #237804;
+        background: #f6ffed;
+        border-color: #b7eb8f;
+    }
+
+    .taskStatusTagFailed {
+        color: #cf1322;
+        background: #fff1f0;
+        border-color: #ffa39e;
+    }
+
+    .taskStatusTagSkipped {
+        color: #ad6800;
+        background: #fff7e6;
+        border-color: #ffd591;
+    }
+
     .skipDesc {
         color: rgba(0, 0, 0, 0.45);
         font-size: 14px;
@@ -46,6 +198,17 @@
                 right: 36px;
             }
         }
+    }
+
+    .credentialSecretTip {
+        display: inline-block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: #ff0000;
+        line-height: 20px;
+        opacity: 0.7;
     }
 
     .refresh {

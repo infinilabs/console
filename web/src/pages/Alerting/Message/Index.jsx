@@ -59,6 +59,54 @@ import { getLocale } from "umi/locale";
 const { Search } = Input;
 const { Option } = Select;
 
+const isValidAlertTime = (value) => {
+  if (!value) return false;
+  const parsed = moment(value);
+  return parsed.isValid() && parsed.year() > 1;
+};
+
+const getAlertDisplayStartTime = (record = {}) =>
+  isValidAlertTime(record?.trigger_at)
+    ? record.trigger_at
+    : record?.created;
+
+const calcSafeDuration = (msgItem) => {
+  const triggerAt = msgItem?.trigger_at;
+  const resolveAt = msgItem?.updated;
+
+  const start = moment(triggerAt);
+  const end = resolveAt ? moment(resolveAt) : moment();
+
+  if (!start.isValid() || !end.isValid()) return "-";
+
+  const diffMs = end.diff(start);
+
+  if (diffMs < 0) return "-";
+
+  return moment.duration(diffMs).humanize();
+};
+
+const normalizeQueryTimeValue = (value, fallback = "auto", keys = []) => {
+  if (typeof value === "string" || typeof value === "number") {
+    return `${value}`;
+  }
+  if (value && typeof value === "object") {
+    for (const key of keys) {
+      if (
+        Object.prototype.hasOwnProperty.call(value, key) &&
+        value[key] !== undefined &&
+        value[key] !== null
+      ) {
+        const candidate = value[key];
+        if (typeof candidate === "string" || typeof candidate === "number") {
+          return `${candidate}`;
+        }
+      }
+    }
+  }
+  return fallback;
+};
+
 const Index = (props) => {
   const [param, setParam] = useQueryParam("_g", JsonParam);
   const [searchValue, setSearchValue] = React.useState("");
@@ -74,13 +122,24 @@ const Index = (props) => {
   const [refresh, setRefresh] = useState({ isRefreshPaused: false });
   const [timeZone, setTimeZone] = useState(() => getTimezone());
 
+  const initialStartTime = normalizeQueryTimeValue(
+    param?.start_time,
+    "auto",
+    ["from", "min", "gte", "start"]
+  );
+  const initialEndTime = normalizeQueryTimeValue(
+    param?.end_time,
+    "auto",
+    ["to", "max", "lte", "end"]
+  );
+
   const initialQueryParams = {
     from: 0,
     size: 10,
     // status: "alerting",
-    start_time: "now-7d",
-    end_time: "now",
-    ...param,
+    ...(param || {}),
+    start_time: initialStartTime,
+    end_time: initialEndTime,
   };
 
   const alertReducer = (queryParams, action) => {
@@ -89,6 +148,12 @@ const Index = (props) => {
         return {
           ...queryParams,
           priority: action.value,
+        };
+      case "priorityAndStatus":
+        return {
+          ...queryParams,
+          status: action.status,
+          priority: action.priority,
         };
       case "status":
         return {
@@ -278,19 +343,24 @@ const Index = (props) => {
       title: formatMessage({ id: "alert.message.table.created" }),
       dataIndex: "created",
       width: 180,
-      render: (text, record) => (
-        <span title={text}>{formatUtcTimeToLocal(text)}</span>
-      ),
+      render: (text, record) => {
+        const displayStartTime = getAlertDisplayStartTime(record);
+        return (
+          <span title={displayStartTime}>
+            {formatUtcTimeToLocal(displayStartTime)}
+          </span>
+        );
+      },
     },
     {
       title: formatMessage({ id: "alert.message.table.duration" }),
       dataIndex: "duration",
-      render: (text, record) => moment.duration(text).humanize(),
+      render: (text, record) => calcSafeDuration(record),
     },
     {
       title: formatMessage({ id: "alert.message.table.status" }),
       dataIndex: "status",
-      width: 80,
+      width: 140,
       render: (text, record) => {
         return <EventMessageStatus record={record} />;
         // <HealthStatusView status={MessageStautsColor[text]} label={text} />
@@ -356,16 +426,45 @@ const Index = (props) => {
     });
   };
 
+  const onWidgetQueriesChange = (queries = {}) => {
+    if (!queries?.range?.from || !queries?.range?.to) {
+      return;
+    }
+    onTimeChange({
+      start: queries.range.from,
+      end: queries.range.to,
+    });
+  };
+
   const fetchMessages = (queryParams) => {
     setLoading(true);
-    let params = queryParams;
-    if (queryParams?.start_time && queryParams.end_time) {
+    const normalizedStartTime = normalizeQueryTimeValue(
+      queryParams?.start_time,
+      "auto",
+      ["from", "min", "gte", "start"]
+    );
+    const normalizedEndTime = normalizeQueryTimeValue(
+      queryParams?.end_time,
+      "auto",
+      ["to", "max", "lte", "end"]
+    );
+    let params = {
+      ...queryParams,
+      start_time: normalizedStartTime,
+      end_time: normalizedEndTime,
+    };
+    if (
+      normalizedStartTime &&
+      normalizedEndTime &&
+      normalizedStartTime !== "auto" &&
+      normalizedEndTime !== "auto"
+    ) {
       const bounds = calculateBounds({
-        from: queryParams?.start_time,
-        to: queryParams.end_time,
+        from: normalizedStartTime,
+        to: normalizedEndTime,
       });
       params = {
-        ...queryParams,
+        ...params,
         min: bounds.min.valueOf(),
         max: bounds.max.valueOf(),
       };
@@ -404,9 +503,8 @@ const Index = (props) => {
   };
 
   useEffect(() => {
-    setParam({ ...param, ...queryParams });
+    setParam(prev => ({ ...prev, ...queryParams }));
     fetchMessages(queryParams);
-
     fetchMessageStats(queryParams);
   }, [queryParams]);
 
@@ -451,7 +549,19 @@ const Index = (props) => {
       >
         <div>{title}</div>
         <div style={{ paddingRight: 30 }}>
-          <Link to={`/alerting/message/${id}`}>
+          <Link
+              to={{
+                pathname: `/alerting/message/${id}`,
+                state: {
+                  from: `${window.location.pathname}${window.location.search}`,
+                },
+              }}
+              onClick={(e) => {
+                if (window.location.pathname === `/alerting/message/${id}`) {
+                  e.preventDefault();
+                }
+              }}
+            >
             <Button type="primary">
               {formatMessage({ id: "form.button.detail" })}
             </Button>
@@ -517,26 +627,64 @@ const Index = (props) => {
     };
   }, [dataSource.aggregations]);
 
+  const widgetRange = useMemo(() => {
+    const startTime = normalizeQueryTimeValue(
+      queryParams?.start_time,
+      "auto",
+      ["from", "min", "gte", "start"]
+    );
+    const endTime = normalizeQueryTimeValue(
+      queryParams?.end_time,
+      "auto",
+      ["to", "max", "lte", "end"]
+    );
+    if (
+      startTime &&
+      endTime &&
+      startTime !== "auto" &&
+      endTime !== "auto"
+    ) {
+      return {
+        from: startTime,
+        to: endTime,
+      };
+    }
+    if (minUpdated && maxUpdated) {
+      const minMoment = moment(minUpdated);
+      const maxMoment = moment(maxUpdated);
+      if (minMoment.isValid() && maxMoment.isValid()) {
+        if (maxMoment.valueOf() <= minMoment.valueOf()) {
+          return {
+            from: maxMoment.clone().subtract(15, "minutes").toISOString(),
+            to: maxMoment.toISOString(),
+          };
+        }
+        return {
+          from: minUpdated,
+          to: maxUpdated,
+        };
+      }
+    }
+    return {
+      from: "auto",
+      to: "auto",
+    };
+  }, [queryParams?.start_time, queryParams?.end_time, minUpdated, maxUpdated]);
+
   const filterPriorityAndStatus = (params) => {
-    dispatch({
-      type: "timeChange",
-      value: {
-        start_time: "",
-        end_time: "",
-      },
-    });
     if (params.type === "priority") {
       dispatch({
-        type: "status",
-        value: "alerting",
+        type: "priorityAndStatus",
+        status: "alerting",
+        priority: params.value,
       });
     } else {
       dispatch({
-        type: "priority",
-        value: undefined,
+        type: "priorityAndStatus",
+        status: "alerting",
+        priority: undefined,
       });
     }
-    dispatch(params);
   };
 
   return (
@@ -561,10 +709,9 @@ const Index = (props) => {
             >
               <WidgetLoader
                 id="cji1sc28go5i051pl1i0"
-                range={{
-                  from: "now-6M",
-                  to: "now",
-                }}
+                range={widgetRange}
+                queryParams={widgetQueryParams}
+                refresh={queryParams?.refresh}
               />
             </Card>
           </div>
@@ -658,11 +805,12 @@ const Index = (props) => {
                 <Option value="recovered">recovered</Option>
               </Select>
 
-              <div style={{ flexGrow: 0 }}>
+              <div style={{ flexGrow: 0, width: 460, maxWidth: "55vw", minWidth: 320 }}>
                 <DatePicker
                   locale={getLocale()}
-                  start={param?.start_time}
-                  end={param?.end_time}
+                  start={queryParams?.start_time}
+                  end={queryParams?.end_time}
+                  showAutoTimeRange={true}
                   onRangeChange={onTimeChange}
                   {...refresh}
                   onRefreshChange={setRefresh}
@@ -684,7 +832,7 @@ const Index = (props) => {
           >
             {hasAuthority("alerting.message:all") ? (
               <Dropdown overlay={batchMenu}>
-                <Button type="primary">
+                <Button type="primary" icon="appstore">
                   {formatMessage({ id: "form.button.batch_actions" })}{" "}
                   <Icon type="down" />
                 </Button>
@@ -703,12 +851,10 @@ const Index = (props) => {
         >
           <WidgetLoader
             id="cji1ttq8go5i051pl1t0"
-            range={{
-              from: minUpdated,
-              to: maxUpdated,
-            }}
+            range={widgetRange}
             queryParams={widgetQueryParams}
             refresh={queryParams?.refresh}
+            onGlobalQueriesChange={onWidgetQueriesChange}
           />
         </div>
         <Table

@@ -59,21 +59,66 @@ export const getAllTimeSettingsCache = () => {
 
 const getDuration = (from, to) => {
   if (!from || !to) return;
-  const bounds = calculateBounds({
-    from,
-    to,
-  });
-  return bounds.max.valueOf() - bounds.min.valueOf()
+  try {
+    const bounds = calculateBounds({
+      from,
+      to,
+    });
+    return bounds.max.valueOf() - bounds.min.valueOf()
+  } catch (e) {
+    return undefined;
+  }
 }
+
+const normalizeTimeValue = (value, fallback = "now-15m", keys = []) => {
+  const normalizeCandidate = (candidate) => {
+    const normalized = `${candidate}`.trim();
+    if (!normalized || normalized.toLowerCase() === "auto") {
+      return fallback;
+    }
+    return normalized;
+  };
+  if (typeof value === "string" || typeof value === "number") {
+    if (typeof value === "number" && !Number.isFinite(value)) {
+      return fallback;
+    }
+    return normalizeCandidate(value);
+  }
+  if (value && typeof value === "object") {
+    for (const key of keys) {
+      if (
+        Object.prototype.hasOwnProperty.call(value, key) &&
+        value[key] !== undefined &&
+        value[key] !== null
+      ) {
+        const candidate = value[key];
+        if (typeof candidate === "string" || typeof candidate === "number") {
+          return normalizeCandidate(candidate);
+        }
+      }
+    }
+  }
+  return fallback;
+};
 
 export const initState = (state = {}) => {
   const { timeRange, timeInterval, timeout } = state || {}
-  const from = timeRange?.min || "now-15m"
-  const to = timeRange?.max || "now"
+  const from = normalizeTimeValue(
+    timeRange?.min ?? timeRange?.from,
+    "now-15m",
+    ["min", "from", "gte", "start"]
+  );
+  const to = normalizeTimeValue(
+    timeRange?.max ?? timeRange?.to,
+    "now",
+    ["max", "to", "lte", "end"]
+  );
   const duration = getDuration(from, to);
-  const gtOneHour = moment.duration(duration).asHours() > 1
-  const day = moment.duration(duration).asDays();
-  const intDay = parseInt(day) + 1;
+  const durationMs =
+    Number.isFinite(duration) && duration > 0 ? duration : 15 * 60 * 1000;
+  const gtOneHour = moment.duration(durationMs).asHours() > 1
+  const day = moment.duration(durationMs).asDays();
+  const intDay = Math.max(parseInt(day, 10) + 1, 1);
   return {
     ...state,
     timeRange: {
@@ -105,10 +150,7 @@ const Monitor = (props) => {
   const [spinning, setSpinning] = useState(false);
 
   const [state, setState] = useState(formatState(initState({
-    timeRange: {
-      min: param?.timeRange?.min || "now-15m",
-      max: param?.timeRange?.max || "now",
-    },
+    timeRange: param?.timeRange || { min: "now-15m", max: "now" },
     timeInterval: formatTimeInterval(param?.timeInterval) || allTimeSettingsCache.timeInterval,
     timeout: formatTimeout(param?.timeout)  || allTimeSettingsCache.timeout || '10s',
     param: param,
@@ -119,20 +161,28 @@ const Monitor = (props) => {
   const [timeZone, setTimeZone] = useState(() => allTimeSettingsCache.timeZone || getTimezone());
 
   useEffect(() => {
-    setParam({ ...param, timeRange: state.timeRange, timeInterval: state.timeInterval, timeout: state.timeout });
+    const newParam = {
+      ...param,
+      timeRange: state.timeRange,
+      timeInterval: state.timeInterval,
+      timeout: state.timeout
+    };
+    if (JSON.stringify(newParam) !== JSON.stringify(param)) {
+      setParam(newParam);
+    }
   }, [state.timeRange, state.timeInterval, state.timeout]);
 
   const handleTimeChange = ({ start, end, timeInterval, timeout, refresh }) => {
-    setState(initState({
-      ...state,
+    setState((prevState) => initState({
+      ...prevState,
       param,
       timeRange: {
-        min: start,
-        max: end,
+        min: start || prevState?.timeRange?.min,
+        max: end || prevState?.timeRange?.max,
       },
-      timeInterval: timeInterval || state.timeInterval,
-      timeout: timeout || state.timeout,
-      refresh
+      timeInterval: timeInterval || prevState.timeInterval,
+      timeout: timeout || prevState.timeout,
+      refresh,
     }));
   }
 
@@ -194,7 +244,7 @@ const Monitor = (props) => {
             <>
               <div style={{ marginBottom: 5 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <div style={{ maxWidth: 600 }}>
+                <div style={{ width: 280, maxWidth: "40vw", minWidth: 240 }}>
                     <DatePicker
                       locale={getLocale()}
                       start={state.timeRange.min}
@@ -234,12 +284,13 @@ const Monitor = (props) => {
                         setTimeZone(timeZone)
                       }}
                       recentlyUsedRangesKey={'monitor'}
+                      showAutoTimeRange={false}
                     />
                   </div>
-                  <div style={{display: "flex"}}>
+                  <div className={styles.statusActions}>
                     {isSystemCluster(selectedCluster?.id) && getRollupEnabled() === "true" && <RollupStats
                       fetchUrl={`${ESPrefix}/${selectedCluster?.id}/_proxy?method=GET&path=/_rollup/jobs/*/_explain`}
-                      style={{ marginRight: 100 }}/>}
+                    />}
                     <CollectStatus filter={collectionStatsFilter} fetchUrl={`${ESPrefix}/${selectedCluster?.id}/_collection_stats`}/>
                   </div>
                 </div>

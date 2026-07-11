@@ -28,6 +28,7 @@ The syntax for rendering fields is `{{ .fieldname }}`, and the variable fields t
 | title             | string | event title                                | Node (`{{.first_group_value}}`) disk used >= 90%        |
 | message           | string | event content                              | EventID：`{{.event_id}}`; Cluster：`{{.resource_name}}` |
 | results           | array  | result of groups                           |                                                         |
+| total_results     | number | total matched results before truncation    | 18                                                      |
 | ┗ threshold       | array  |                                            | ["90"]                                                  |
 | ┗ priority        | string |                                            | high                                                    |
 | ┗ group_values    | array  |                                            | ["cluster-xxx", "node-xxx"]                             |

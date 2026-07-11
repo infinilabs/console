@@ -29,6 +29,8 @@ import (
 	_ "expvar"
 	"fmt"
 	api3 "infini.sh/console/modules/agent/api"
+	common2 "infini.sh/console/modules/agent/common"
+	uiapi "infini.sh/console/plugin/api"
 	"infini.sh/console/plugin/api/email"
 	"infini.sh/console/plugin/audit_log"
 	"infini.sh/framework/core/api"
@@ -36,6 +38,8 @@ import (
 	model2 "infini.sh/framework/core/model"
 	"infini.sh/framework/core/util"
 	elastic2 "infini.sh/framework/modules/elastic"
+	"os"
+	"strings"
 	_ "time/tzdata"
 
 	log "github.com/cihub/seelog"
@@ -55,7 +59,7 @@ import (
 	"infini.sh/framework/core/module"
 	"infini.sh/framework/core/orm"
 	task1 "infini.sh/framework/core/task"
-	_ "infini.sh/framework/modules/api"
+	apimodule "infini.sh/framework/modules/api"
 	"infini.sh/framework/modules/metrics"
 	"infini.sh/framework/modules/pipeline"
 	queue2 "infini.sh/framework/modules/queue/disk_queue"
@@ -68,6 +72,80 @@ import (
 
 var appConfig *config.AppConfig
 var appUI *UI
+
+func lookupSystemClusterID() (string, bool) {
+	value := global.Lookup(elastic.GlobalSystemElasticsearchID)
+	systemID, ok := value.(string)
+	if !ok || systemID == "" {
+		return "", false
+	}
+	return systemID, true
+}
+
+func getSystemClusterClient() (elastic.API, bool) {
+	systemID, ok := lookupSystemClusterID()
+	if !ok {
+		return nil, false
+	}
+
+	client := elastic.GetClientNoPanic(systemID)
+	if client == nil {
+		return nil, false
+	}
+	return client, true
+}
+
+func isSystemClusterRollupSupported(cfg *elastic.ElasticsearchConfig) bool {
+	if cfg == nil || cfg.Distribution != elastic.Easysearch || cfg.Version == "" {
+		return false
+	}
+
+	version, err := util.ParseSemantic(cfg.Version)
+	if err != nil {
+		log.Warnf("failed to parse system cluster version [%s] for rollup support: %v", cfg.Version, err)
+		return false
+	}
+
+	return version.AtLeast(util.MustParseSemantic("1.12.1"))
+}
+
+func getSystemClusterAppSetting() interface{} {
+	client, ok := getSystemClusterClient()
+	if !ok {
+		return nil
+	}
+
+	systemID, ok := lookupSystemClusterID()
+	if !ok {
+		return nil
+	}
+
+	cfg := elastic.GetConfigNoPanic(systemID)
+	if cfg == nil {
+		return nil
+	}
+
+	settings, err := client.GetClusterSettings(nil)
+	if err != nil {
+		log.Errorf("failed to get cluster settings with system cluster: %v", err)
+		return nil
+	}
+
+	rollupEnabled, _ := util.GetMapValueByKeys([]string{"persistent", "rollup", "search", "enabled"}, settings)
+	rollupEnabledValue := false
+	switch v := rollupEnabled.(type) {
+	case string:
+		rollupEnabledValue = strings.EqualFold(v, "true")
+	case bool:
+		rollupEnabledValue = v
+	}
+	return map[string]interface{}{
+		"distribution":     cfg.Distribution,
+		"version":          cfg.Version,
+		"rollup_enabled":   rollupEnabledValue,
+		"rollup_supported": isSystemClusterRollupSupported(cfg),
+	}
+}
 
 func main() {
 	terminalHeader := ("\n")
@@ -84,6 +162,15 @@ func main() {
 		config.Version, config.BuildNumber, config.LastCommitLog, config.BuildDate, config.EOLDate, terminalHeader, terminalFooter)
 
 	app.Init(nil)
+	if len(os.Args) > 1 && os.Args[1] == "recovery" {
+		if err := setup1.RunRecoveryCmd(os.Args[2:]); err != nil {
+			fmt.Println(err.Error())
+			app.Shutdown()
+			os.Exit(1)
+		}
+		app.Shutdown()
+		return
+	}
 	defer app.Shutdown()
 
 	modules := []module.ModuleItem{}
@@ -105,6 +192,7 @@ func main() {
 		//load core modules first
 		module.RegisterSystemModule(&setup1.Module{})
 		module.RegisterSystemModule(uiModule)
+		module.RegisterSystemModule(&apimodule.APIModule{})
 
 		if !global.Env().SetupRequired() {
 			for _, v := range modules {
@@ -157,76 +245,78 @@ func main() {
 		orm.RegisterSchemaWithIndexName(model.Notification{}, "notification")
 		orm.RegisterSchemaWithIndexName(model.EmailServer{}, "email-server")
 		orm.RegisterSchemaWithIndexName(model2.Instance{}, "instance")
+		orm.RegisterSchemaWithIndexName(common2.PendingRegistrationToken{}, "agent-registration-token")
 		orm.RegisterSchemaWithIndexName(api3.RemoteConfig{}, "configs")
 		orm.RegisterSchemaWithIndexName(model.AuditLog{}, "audit-logs")
 		orm.RegisterSchemaWithIndexName(host.HostInfo{}, "host")
 
 		module.Start()
+		uiapi.RefreshConsoleSelfAPIProxyUIRoutes()
 
-		var initFunc = func() {
+		var initFunc = func(startDeferredModules bool) {
 			// check cluster health before initialization, refuse to start if status is red
-			sysClusterID := global.MustLookupString(elastic.GlobalSystemElasticsearchID)
-			client := elastic.GetClient(sysClusterID)
-			health, err := client.ClusterHealth(context.Background())
-			if err != nil {
-				panic(fmt.Errorf("failed to get system cluster health: %v", err))
+			if err := setup1.EnsureSystemClusterBasicAuth(); err != nil {
+				panic(fmt.Errorf("failed to hydrate system cluster auth: %v", err))
 			}
-			if health != nil && health.Status == "red" {
-				panic(fmt.Errorf("system cluster health status is [red], please fix the cluster before starting"))
+			client, ok := getSystemClusterClient()
+			if !ok {
+				log.Warn("skip system cluster post-initialization, system cluster is not available")
+			} else {
+				health, err := client.ClusterHealth(context.Background())
+				if err != nil {
+					panic(fmt.Errorf("failed to get system cluster health: %v", err))
+				}
+				if health != nil && health.Status == "red" {
+					panic(fmt.Errorf("system cluster health status is [red], please fix the cluster before starting"))
+				}
+
+				elastic2.InitTemplate(false)
 			}
 
-			elastic2.InitTemplate(false)
-
-			if global.Env().SetupRequired() {
+			if startDeferredModules {
 				for k, v := range modules {
 					log.Debugf("start module: %v", k)
 					v.Value.Start()
 				}
 			}
 
-			task1.RunWithinGroup("initialize_alerting", func(ctx context.Context) error {
-				err := alerting2.InitTasks()
-				if err != nil {
-					log.Errorf("init alerting task error: %v", err)
-				}
-				return err
-			})
-			task1.RunWithinGroup("initialize_email_server", func(ctx context.Context) error {
-				err := email.InitEmailServer()
-				if err != nil {
-					log.Errorf("init email server error: %v", err)
-				}
-				return err
-			})
-			api.RegisterAppSetting("system_cluster", func() interface{} {
-				client := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
-				settings, err := client.GetClusterSettings(nil)
-				if err != nil {
-					log.Errorf("failed to get cluster settings with system cluster: %v", err)
-					return nil
-				}
-
-				rollupEnabled, _ := util.GetMapValueByKeys([]string{"persistent", "rollup", "search", "enabled"}, settings)
-				rollupEnabledValue := false
-				if v, ok := rollupEnabled.(string); ok && v == "true" {
-					rollupEnabledValue = true
-				}
-				return map[string]interface{}{
-					"rollup_enabled": rollupEnabledValue,
-				}
-			})
+			if orm.HasHandler() {
+				task1.RunWithinGroup("initialize_alerting", func(ctx context.Context) error {
+					err := alerting2.InitTasks()
+					if err != nil {
+						log.Errorf("init alerting task error: %v", err)
+					}
+					return err
+				})
+				task1.RunWithinGroup("initialize_email_server", func(ctx context.Context) error {
+					err := email.InitEmailServer()
+					if err != nil {
+						log.Errorf("init email server error: %v", err)
+					}
+					return err
+				})
+			} else {
+				log.Warn("skip alerting and email initialization, ORM handler is not registered")
+			}
+			api.RegisterAppSetting("system_cluster", getSystemClusterAppSetting)
 		}
 
 		if !global.Env().SetupRequired() {
-			initFunc()
+			initFunc(false)
 		} else {
-			setup1.RegisterSetupCallback(initFunc)
+			setup1.RegisterSetupCallback(func() {
+				initFunc(true)
+			})
 		}
 
 		if !global.Env().SetupRequired() {
-			err := bootstrapRequirementCheck()
-			if err != nil {
-				panic(err)
+			if _, ok := lookupSystemClusterID(); !ok {
+				log.Warn("skip bootstrap requirement check, system cluster is not available")
+			} else {
+				err := bootstrapRequirementCheck()
+				if err != nil {
+					panic(err)
+				}
 			}
 		}
 

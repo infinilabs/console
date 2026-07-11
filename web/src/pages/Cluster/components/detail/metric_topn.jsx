@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { ESPrefix } from "@/services/common";
 import useFetch from "@/lib/hooks/use_fetch";
 import Treemap from "@/components/infini/charts/Treemap";
+import { getLocalizedTreemapTitle } from "@/utils/treemap_title";
 
 export const MetricTopN = (props) => {
   const clusterID = props.data?._id || null;
@@ -18,7 +19,7 @@ export const MetricTopN = (props) => {
   return (
     <div>
       <div style={{ marginTop: "10px", marginBottom: "10px" }}>
-        <div>{treemapResult?._source?.name}</div>
+        <div>{getLocalizedTreemapTitle(treemapResult?._source?.name)}</div>
         {treemapData.children ? (
           <Treemap
             data={treemapData}

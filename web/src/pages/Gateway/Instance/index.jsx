@@ -1,5 +1,5 @@
 import PageHeaderWrapper from "@/components/PageHeaderWrapper";
-import { Button, Dropdown, Icon, Menu, message, Modal, Tooltip } from "antd";
+import { Button, Drawer, Dropdown, Icon, Menu, message, Modal, Tooltip } from "antd";
 import {
   useCallback,
   useEffect,
@@ -19,10 +19,72 @@ import moment from "moment";
 import { formatter } from "@/lib/format";
 import { hasAuthority } from "@/utils/authority";
 import Wizard from "./Wizard";
+import InstallGateway from "@/components/InstallGateway";
 import { isNumber } from "lodash";
 import { getSystemClusterID } from "@/utils/setup";
 
+const metricTransitionStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  transition: "color 0.2s ease, opacity 0.2s ease",
+};
+
+const metricLoadingStyle = {
+  ...metricTransitionStyle,
+  color: "rgba(0, 0, 0, 0.45)",
+};
+
+const metricValueStyle = {
+  ...metricTransitionStyle,
+  color: "rgba(0, 0, 0, 0.85)",
+};
+
+const metricUnavailableStyle = {
+  ...metricTransitionStyle,
+  color: "#cf1322",
+};
+
+const applicationCellStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+  minWidth: 0,
+};
+
+const applicationIconStyle = {
+  width: 16,
+  display: "inline-flex",
+  justifyContent: "center",
+  color: "rgba(0, 0, 0, 0.65)",
+};
+
+const menuItemContentStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+};
+
+const applicationMeta = {
+  console: {
+    label: "Console",
+    icon: "appstore",
+  },
+  gateway: {
+    label: "Gateway",
+    icon: "api",
+  },
+  agent: {
+    label: "Agent",
+    icon: "deployment-unit",
+  },
+};
+
 export default (props) => {
+  const renderTextOrDash = (value) => {
+    return value || value === 0 ? value : "-";
+  };
+
   const ref = useRef(null);
   const [isLoading, setIsLoading] = React.useState();
 
@@ -44,16 +106,28 @@ export default (props) => {
 
     if (res && !res.error) {
       let tableData = dataSource?.data?.map((item) => {
-        item.info = res?.[item.id] || {};
-        return item;
+        return {
+          ...item,
+          info: res?.[item.id] || {},
+          statsFetched: true,
+        };
       });
       dataSource.data = tableData;
-      // update dataSource
-      setTimeout(() => {
-        if (ref.current?.setDataSource) {
-          ref.current.setDataSource({ ...dataSource, data: tableData });
-        }
-      }, 500);
+      if (ref.current?.setDataSource) {
+        ref.current.setDataSource({ ...dataSource, data: tableData });
+      }
+      return;
+    }
+
+    const tableData = dataSource?.data?.map((item) => {
+      return {
+        ...item,
+        info: item.info || {},
+        statsFetched: true,
+      };
+    });
+    if (ref.current?.setDataSource) {
+      ref.current.setDataSource({ ...dataSource, data: tableData });
     }
   };
 
@@ -76,16 +150,21 @@ export default (props) => {
 
   const showDeleteConfirm = useCallback((record) => {
     Modal.confirm({
-      title: "Are you sure delete this item?",
+      title: formatMessage({ id: "gateway.instance.delete.confirm.title" }),
       content: (
         <>
-          <div>Name: {record.name}</div>
-          <div>Endpoint: {record.endpoint}</div>
+          <div>
+            {formatMessage({ id: "gateway.instance.column.name" })}: {record.name}
+          </div>
+          <div>
+            {formatMessage({ id: "gateway.instance.column.endpoint" })}:{" "}
+            {record.endpoint}
+          </div>
         </>
       ),
-      okText: "Yes",
+      okText: formatMessage({ id: "form.button.ok" }),
       okType: "danger",
-      cancelText: "No",
+      cancelText: formatMessage({ id: "form.button.cancel" }),
       onOk() {
         onDeleteClick(record.id);
       },
@@ -94,94 +173,200 @@ export default (props) => {
 
   const formatTableData = async (value) => {
     let dataNew = formatESSearchResult(value);
+    dataNew.data = (dataNew.data || []).map((item) => {
+      return {
+        ...item,
+        info: item.info || {},
+        statsFetched: false,
+      };
+    });
     //异步加载&更新扩展数据
     fetchInstanceStats(dataNew);
     return dataNew;
   };
 
+  const renderPendingMetric = (icon = "loading") => {
+    return (
+      <span style={metricLoadingStyle}>
+        <Icon type={icon} />
+        <span>--</span>
+      </span>
+    );
+  };
+
+  const renderUnavailableMetric = (icon = "warning") => {
+    return (
+      <span style={metricUnavailableStyle}>
+        <Icon type={icon} />
+        <span>--</span>
+      </span>
+    );
+  };
+
+  const renderMetricValue = (icon, value, color) => {
+    return (
+      <span style={metricValueStyle}>
+        <Icon type={icon} style={{ color }} />
+        <span>{value}</span>
+      </span>
+    );
+  };
+
+  const renderApplication = (value) => {
+    const key = `${value || ""}`.trim().toLowerCase();
+    const meta = applicationMeta[key] || {
+      label: key ? `${key.charAt(0).toUpperCase()}${key.slice(1)}` : "-",
+      icon: "appstore",
+    };
+    return (
+      <span style={applicationCellStyle}>
+        <span style={applicationIconStyle}>
+          <Icon type={meta.icon} />
+        </span>
+        <span>{meta.label}</span>
+      </span>
+    );
+  };
+
   const columns = [
     {
-      title: "Application",
+      title: formatMessage({ id: "gateway.instance.column.application" }),
       key: "application.name",
       sortable: true,
       searchable: true,
       aggregable: true,
+      render: (text) => renderApplication(text),
     },
     {
-      title: "Name",
+      title: formatMessage({ id: "gateway.instance.column.name" }),
       key: "name",
       sortable: true,
       searchable: true,
+      render: (text) => renderTextOrDash(text),
     },
     {
-      title: "Endpoint",
+      title: formatMessage({ id: "gateway.instance.column.endpoint" }),
       key: "endpoint",
       sortable: true,
       searchable: true,
+      render: (text) => renderTextOrDash(text),
     },
-    {
-      title: "Status",
-      key: "info.system",
-      render: (text, record) => {
-        return text ? (
-          <span style={{ color: "green" }}>Online</span>
-        ) : (
-          <span style={{ color: "red" }}>N/A</span>
-        );
+      {
+        title: formatMessage({ id: "gateway.instance.column.status" }),
+        key: "info.system",
+        render: (text, record) => {
+          if (!record.statsFetched) {
+            return (
+              <span style={metricLoadingStyle}>
+                <Icon type="loading" />
+                <span>
+                  {formatMessage({ id: "gateway.instance.status.checking" })}
+                </span>
+              </span>
+            );
+          }
+          return text ? (
+            <span style={{ ...metricValueStyle, color: "#389e0d" }}>
+              <Icon type="check-circle" theme="filled" />
+              {formatMessage({ id: "gateway.instance.status.online" })}
+            </span>
+          ) : (
+            <span style={metricUnavailableStyle}>
+              <Icon type="close-circle" theme="filled" />
+              {formatMessage({ id: "gateway.instance.status.unavailable" })}
+            </span>
+          );
+        },
       },
-    },
-    {
-      title: "CPU",
-      key: "info.system.cpu",
-      render: (text, record) => {
-        return text || isNumber(text) ? `${text}%` : null;
+      {
+        title: formatMessage({ id: "gateway.instance.column.cpu" }),
+        key: "info.system.cpu",
+        render: (text, record) => {
+          if (!record.statsFetched) {
+            return renderPendingMetric();
+          }
+          return text || isNumber(text)
+            ? renderMetricValue("dashboard", `${text}%`, "#1890ff")
+            : renderUnavailableMetric();
+        },
       },
-    },
-    {
-      title: "Memory",
-      key: "info.system.mem",
-      render: (text, record) => {
-        if (!text) {
-          return null;
-        }
-        const byteFormatted = formatter.bytes(text);
-        return byteFormatted.size + byteFormatted.unit;
+      {
+        title: formatMessage({ id: "gateway.instance.column.memory" }),
+        key: "info.system.mem",
+        render: (text, record) => {
+          if (!record.statsFetched) {
+            return renderPendingMetric();
+          }
+          if (!text) {
+            return renderUnavailableMetric();
+          }
+          const byteFormatted = formatter.bytes(text);
+          return renderMetricValue(
+            "database",
+            byteFormatted.size + byteFormatted.unit,
+            "#722ed1"
+          );
+        },
       },
-    },
     {
-      title: "Storage",
+      title: formatMessage({ id: "gateway.instance.column.storage" }),
       key: "info.disk",
       render: (text, record) => {
+        if (!record.statsFetched) {
+          return renderPendingMetric();
+        }
         if (!text) {
-          return null;
+          return renderUnavailableMetric();
         }
         const freeByteFormatted = formatter.bytes(record.info.disk.free);
         const storeByteFormatted = formatter.bytes(record.info.system.store);
         const allByteFormatted = formatter.bytes(record.info.disk.all);
         return (
-          <Tooltip title={"Free/Total: " + freeByteFormatted.size + freeByteFormatted.unit + "/" + allByteFormatted.size + allByteFormatted.unit}>
-            <span>{storeByteFormatted.size + storeByteFormatted.unit}</span>
+          <Tooltip
+            title={formatMessage(
+              { id: "gateway.instance.storage.tooltip" },
+              {
+                free: `${freeByteFormatted.size}${freeByteFormatted.unit}`,
+                total: `${allByteFormatted.size}${allByteFormatted.unit}`,
+              }
+            )}
+          >
+            {renderMetricValue(
+              "hdd",
+              storeByteFormatted.size + storeByteFormatted.unit,
+              "#fa8c16"
+            )}
           </Tooltip>
-        )
+        );
       },
     },
     {
-      title: "Uptime",
+      title: formatMessage({ id: "gateway.instance.column.uptime" }),
       key: "info.system.uptime_in_ms",
       render: (text, record) => {
-        if (!text) {
-          return null;
+        if (!record.statsFetched) {
+          return renderPendingMetric();
         }
-        return moment.duration(text, "ms").humanize();
+        if (!text) {
+          return renderUnavailableMetric("clock-circle");
+        }
+        return renderMetricValue(
+          "clock-circle",
+          moment.duration(text, "ms").humanize(),
+          "#13c2c2"
+        );
       },
     },
     {
-      title: "Tags",
+      title: formatMessage({ id: "gateway.instance.column.tags" }),
       key: "tags",
       aggregable: true,
       searchable: true,
       render: (text, record) => {
-        return Array.isArray(text) && text.join(",");
+        if (Array.isArray(text) && text.length > 0) {
+          return text.join(",");
+        }
+        return "-";
       },
     },
     {
@@ -198,61 +383,87 @@ export default (props) => {
           }
         };
 
-        const menuItems = [
-          {
-            key: "queue",
-            content: (
-              <Link to={`/resource/runtime/instance/${record.id}/queue`}>
-                Queue
-              </Link>
-            ),
-          },
-          {
-            key: "task",
-            content: (
-              <Link to={`/resource/runtime/instance/${record.id}/task`}>
-                Task
-              </Link>
-            ),
-          },
-          // {
-          //   key: "disk",
-          //   content: (
-          //     <Link to={`/resource/runtime/instance/${record.id}/disk`}>
-          //       Disk
-          //     </Link>
-          //   ),
-          // },
-        ];
+        const isUnavailable = record.statsFetched && !record.info?.system;
+        const menuItems = [];
+        if (!isUnavailable) {
+          menuItems.push(
+            {
+              key: "queue",
+              content: (
+                <Link to={`/resource/runtime/instance/${record.id}/queue`}>
+                  <span style={menuItemContentStyle}>
+                    <Icon type="unordered-list" />
+                    <span>{formatMessage({ id: "gateway.instance.menu.queue" })}</span>
+                  </span>
+                </Link>
+              ),
+            },
+            {
+              key: "task",
+              content: (
+                <Link to={`/resource/runtime/instance/${record.id}/task`}>
+                  <span style={menuItemContentStyle}>
+                    <Icon type="profile" />
+                    <span>{formatMessage({ id: "gateway.instance.menu.task" })}</span>
+                  </span>
+                </Link>
+              ),
+            }
+          );
+        }
         if (hasAuthority("gateway.instance:all")) {
-          menuItems.push({
-            key: "logging",
-            content: (
-              <Link to={`/resource/runtime/instance/${record.id}/logging`}>
-                Logging
+          if (!isUnavailable) {
+            menuItems.push({
+              key: "logging",
+              content: (
+                <Link to={`/resource/runtime/instance/${record.id}/logging`}>
+                <span style={menuItemContentStyle}>
+                  <Icon type="file-text" />
+                  <span>
+                    {formatMessage({ id: "gateway.instance.menu.logging" })}
+                  </span>
+                </span>
               </Link>
             ),
           });
           menuItems.push({
-            key: "config",
-            content: (
-              <Link to={`/resource/runtime/instance/${record.id}/config`}>
-                Config
-              </Link>
-            ),
+          key: "config",
+          content: (
+            <Link to={`/resource/runtime/instance/${record.id}/config`}>
+              <span style={menuItemContentStyle}>
+                <Icon type="setting" />
+                <span>{formatMessage({ id: "gateway.instance.menu.config" })}</span>
+              </span>
+            </Link>
+          ),
+          });
+          }
+          menuItems.push({
+          key: "edit",
+          content: (
+            <Link to={`/resource/runtime/instance/edit/${record.id}`}>
+              <span style={menuItemContentStyle}>
+                <Icon type="edit" />
+                <span>{formatMessage({ id: "form.button.edit" })}</span>
+              </span>
+            </Link>
+          ),
           });
           menuItems.push({
-            key: "edit",
-            content: (
-              <Link to={`/resource/runtime/instance/edit/${record.id}`}>
-                {formatMessage({ id: "form.button.edit" })}
-              </Link>
-            ),
+          key: "delete",
+          content: (
+            <a>
+              <span style={menuItemContentStyle}>
+                <Icon type="delete" />
+                <span>{formatMessage({ id: "form.button.delete" })}</span>
+              </span>
+            </a>
+          ),
           });
-          menuItems.push({
-            key: "delete",
-            content: <a>{formatMessage({ id: "form.button.delete" })}</a>,
-          });
+        }
+
+        if (menuItems.length === 0) {
+          return null;
         }
 
         const menu = (
@@ -279,6 +490,35 @@ export default (props) => {
   ];
 
   const [showEmptyUI, setShowEmptyUI] = useState(false);
+  const [installVisible, setInstallVisible] = useState(false);
+  const [installGatewayType, setInstallGatewayType] = useState("migration");
+
+  const openInstallGateway = useCallback((type = "migration") => {
+    setInstallGatewayType(type);
+    setInstallVisible(true);
+  }, []);
+
+  const installGatewayMenu = (
+    <Menu
+      onClick={({ key }) => {
+        openInstallGateway(key);
+      }}
+    >
+      <Menu.Item key="migration">
+        <span style={menuItemContentStyle}>
+          <Icon type="swap" />
+          <span>{formatMessage({ id: "gateway.install.type.migration" })}</span>
+        </span>
+      </Menu.Item>
+      <Menu.Item key="relay">
+        <span style={menuItemContentStyle}>
+          <Icon type="share-alt" />
+          <span>{formatMessage({ id: "gateway.install.type.relay" })}</span>
+        </span>
+      </Menu.Item>
+    </Menu>
+  );
+
   if (showEmptyUI) {
     return <Wizard />;
   }
@@ -295,15 +535,26 @@ export default (props) => {
         }}
         defaultQueryParams={{
           from: 0,
-          size: 10,
+          size: 20,
         }}
         sortEnable={true}
         sideEnable={true}
         sideVisible={false}
         sidePlacement="left"
         headerToobarExtra={{
-          getExtra: (props) => [
-            hasAuthority("gateway.instance:all") ? (
+            getExtra: (props) => [
+              hasAuthority("gateway.instance:all") ? (
+               <Dropdown
+                 overlay={installGatewayMenu}
+                 trigger={["click"]}
+               >
+                 <Button type="primary" icon="cloud-download" style={{ order: -1 }}>
+                   {formatMessage({ id: "gateway.instance.install.title" })}
+                   <Icon type="down" />
+                 </Button>
+               </Dropdown>
+              ) : null,
+              hasAuthority("gateway.instance:all") ? (
               <Button
                 type="primary"
                 icon="plus"
@@ -317,6 +568,18 @@ export default (props) => {
         showEmptyUI={showEmptyUI}
         setShowEmptyUI={setShowEmptyUI}
       />
+      <Drawer
+        title={formatMessage({ id: "gateway.instance.install.title" })}
+        visible={installVisible}
+        destroyOnClose
+        onClose={() => setInstallVisible(false)}
+        width={700}
+      >
+        <InstallGateway
+          autoInit={true}
+          defaultGatewayType={installGatewayType}
+        />
+      </Drawer>
     </PageHeaderWrapper>
   );
 };

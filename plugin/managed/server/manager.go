@@ -32,14 +32,17 @@ import (
 	"fmt"
 	log "github.com/cihub/seelog"
 	"infini.sh/console/core"
+	agent_common "infini.sh/console/modules/agent/common"
 	"infini.sh/framework/core/api"
 	"infini.sh/framework/core/errors"
 	"infini.sh/framework/core/global"
+	framework_model "infini.sh/framework/core/model"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/modules/configs/common"
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 )
@@ -56,36 +59,140 @@ func init() {
 
 	api.HandleAPIMethod(api.POST, common.SYNC_API, handler.syncConfigs)           //client sync configs from config servers
 	api.HandleAPIMethod(api.POST, "/configs/_reload", handler.refreshConfigsRepo) //client sync configs from config servers
-	//delegate api to instances
-	api.HandleAPIFunc("/ws_proxy", func(w http.ResponseWriter, req *http.Request) {
-		log.Debug(req.RequestURI)
-		endpoint := req.URL.Query().Get("endpoint")
-		path := req.URL.Query().Get("path")
-		var tlsConfig = &tls.Config{
-			InsecureSkipVerify: true,
+	registerWebsocketProxyRoutes()
+}
+
+func registerWebsocketProxyRoutes() {
+	api.HandleAPIFunc("/ws_proxy", handleWebsocketProxy)
+	api.HandleUIFuncMethod(api.GET, "/ws_proxy", handleWebsocketProxy, api.RequireLogin())
+}
+
+func handleWebsocketProxy(w http.ResponseWriter, req *http.Request) {
+	log.Debug(req.RequestURI)
+	endpoint, path, err := prepareWebsocketProxyRequest(req)
+	if err != nil {
+		handler.WriteError(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if endpoint == "" {
+		handler.WriteError(w, "empty endpoint", http.StatusBadRequest)
+		return
+	}
+	var tlsConfig = &tls.Config{
+		InsecureSkipVerify: true,
+	}
+	target, err := url.Parse(endpoint)
+	if err != nil {
+		panic(err)
+	}
+	newURL, err := url.Parse(path)
+	if err != nil {
+		panic(err)
+	}
+	req.URL.Path = newURL.Path
+	req.URL.RawPath = newURL.RawPath
+	req.URL.RawQuery = ""
+	req.RequestURI = req.URL.RequestURI()
+	rewriteWebsocketProxyHeaders(req, target)
+	wsProxy := NewSingleHostReverseProxy(target)
+	wsProxy.Dial = (&net.Dialer{
+		Timeout:   30 * time.Second,
+		KeepAlive: 30 * time.Second,
+	}).Dial
+	wsProxy.TLSClientConfig = tlsConfig
+	wsProxy.ServeHTTP(w, req)
+}
+
+func rewriteWebsocketProxyHeaders(req *http.Request, target *url.URL) {
+	if req == nil || target == nil {
+		return
+	}
+	req.Header.Set("HOST", target.Host)
+	req.Host = target.Host
+	if strings.TrimSpace(req.Header.Get("Origin")) == "" {
+		return
+	}
+	req.Header.Set("Origin", websocketProxyOrigin(target))
+}
+
+func websocketProxyOrigin(target *url.URL) string {
+	if target == nil || strings.TrimSpace(target.Host) == "" {
+		return ""
+	}
+	scheme := "http"
+	switch strings.ToLower(strings.TrimSpace(target.Scheme)) {
+	case "wss", "https":
+		scheme = "https"
+	case "ws", "http", "":
+		scheme = "http"
+	default:
+		scheme = strings.ToLower(strings.TrimSpace(target.Scheme))
+	}
+	return scheme + "://" + target.Host
+}
+
+func prepareWebsocketProxyRequest(req *http.Request) (string, string, error) {
+	if req == nil {
+		return "", "", fmt.Errorf("request is nil")
+	}
+	query := req.URL.Query()
+	endpoint := strings.TrimSpace(query.Get("endpoint"))
+	path := query.Get("path")
+	instanceID := strings.TrimSpace(query.Get("instance_id"))
+	if instanceID == "" {
+		return endpoint, path, nil
+	}
+
+	_, instance, err := GetRuntimeInstanceByID(instanceID)
+	if err != nil {
+		return "", "", err
+	}
+	endpoint = resolveInstanceWebsocketEndpoint(instance, path, endpoint)
+	if shouldApplyInstanceWebsocketAuth(instance, path) {
+		if err := agent_common.ApplyInstanceHTTPRequestAuth(req, instance); err != nil {
+			return "", "", err
 		}
-		target, err := url.Parse(endpoint)
-		if err != nil {
-			panic(err)
-		}
-		newURL, err := url.Parse(path)
-		if err != nil {
-			panic(err)
-		}
-		req.URL.Path = newURL.Path
-		req.URL.RawPath = newURL.RawPath
-		req.URL.RawQuery = ""
-		req.RequestURI = req.URL.RequestURI()
-		req.Header.Set("HOST", target.Host)
-		req.Host = target.Host
-		wsProxy := NewSingleHostReverseProxy(target)
-		wsProxy.Dial = (&net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 30 * time.Second,
-		}).Dial
-		wsProxy.TLSClientConfig = tlsConfig
-		wsProxy.ServeHTTP(w, req)
-	})
+	}
+	return endpoint, path, nil
+}
+
+func shouldApplyInstanceWebsocketAuth(instance *framework_model.Instance, path string) bool {
+	if instance == nil {
+		return false
+	}
+	if strings.TrimSpace(path) != "/ws" {
+		return true
+	}
+	if strings.EqualFold(strings.TrimSpace(instance.Application.Name), "console") {
+		return false
+	}
+	return true
+}
+
+func normalizeWebsocketEndpoint(endpoint string) string {
+	endpoint = strings.TrimSpace(endpoint)
+	switch {
+	case strings.HasPrefix(strings.ToLower(endpoint), "https://"):
+		return "wss://" + endpoint[len("https://"):]
+	case strings.HasPrefix(strings.ToLower(endpoint), "http://"):
+		return "ws://" + endpoint[len("http://"):]
+	default:
+		return endpoint
+	}
+}
+
+func resolveInstanceWebsocketEndpoint(instance *framework_model.Instance, path, fallback string) string {
+	if strings.TrimSpace(path) == "/ws" && instance != nil && strings.TrimSpace(instance.Endpoint) != "" {
+		return normalizeWebsocketEndpoint(instance.Endpoint)
+	}
+
+	if strings.TrimSpace(fallback) != "" {
+		return normalizeWebsocketEndpoint(fallback)
+	}
+	if instance == nil {
+		return ""
+	}
+	return normalizeWebsocketEndpoint(instance.Endpoint)
 }
 
 var mTLSClient *http.Client //TODO get mTLSClient

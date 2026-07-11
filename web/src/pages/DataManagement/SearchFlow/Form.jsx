@@ -22,6 +22,7 @@ import { useGlobal } from "@/layouts/GlobalContext";
 export default Form.create({ name: "trace_template_form" })(
   ({ form, history, match }) => {
     const { selectedCluster } = useGlobal();
+    const clusterId = selectedCluster?.id;
     const mode = React.useMemo(() => {
       const { template_id } = match.params;
       if (template_id) {
@@ -34,8 +35,11 @@ export default Form.create({ name: "trace_template_form" })(
       const { template_id } = match.params;
       if (template_id) {
         const fetchData = async () => {
+          if (!clusterId) {
+            return false;
+          }
           const res = await request(
-            `${ESPrefix}/${selectedCluster.id}/trace_template/${template_id}`,
+            `${ESPrefix}/${clusterId}/trace_template/${template_id}`,
             {}
           );
           if (!res || res.error) {
@@ -45,7 +49,7 @@ export default Form.create({ name: "trace_template_form" })(
         };
         fetchData();
       }
-    }, [selectedCluster]);
+    }, [clusterId]);
 
     const handleSubmit = React.useCallback(() => {
       form.validateFields(async (errors, values) => {
@@ -53,8 +57,11 @@ export default Form.create({ name: "trace_template_form" })(
           return;
         }
         let res = null;
+        if (!clusterId) {
+          return false;
+        }
         if (mode == "NEW") {
-          res = request(`${ESPrefix}/${selectedCluster.id}/trace_template`, {
+          res = request(`${ESPrefix}/${clusterId}/trace_template`, {
             method: "POST",
             body: values,
           });
@@ -62,7 +69,7 @@ export default Form.create({ name: "trace_template_form" })(
           const { template_id } = match.params;
 
           res = request(
-            `${ESPrefix}/${selectedCluster.id}/trace_template/${template_id}`,
+            `${ESPrefix}/${clusterId}/trace_template/${template_id}`,
             {
               method: "PUT",
               body: {
@@ -79,7 +86,7 @@ export default Form.create({ name: "trace_template_form" })(
         if (mode == "NEW") form.resetFields();
         message.success("save succeed");
       });
-    }, [selectedCluster, mode, editValue]);
+    }, [clusterId, mode, editValue]);
 
     const { getFieldDecorator } = form;
     const formItemLayout = {
@@ -104,7 +111,7 @@ export default Form.create({ name: "trace_template_form" })(
         },
       },
     };
-    if (!selectedCluster.id) {
+    if (!clusterId) {
       return null;
     }
     return (

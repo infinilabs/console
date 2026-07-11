@@ -36,6 +36,7 @@ export interface DiscoverIndexPatternProps {
    */
   setIndexPattern: (id: string, typ: string) => void;
   indices: string[];
+  clusterID?: string;
 }
 
 /**
@@ -46,6 +47,7 @@ export function DiscoverIndexPattern({
   selectedIndexPattern,
   setIndexPattern,
   indices,
+  clusterID,
 }: DiscoverIndexPatternProps) {
   const options: IndexPatternRef[] = (indexPatternList || []).map((entity) => ({
     id: entity.id,
@@ -98,6 +100,7 @@ export function DiscoverIndexPattern({
           }
         }}
         indices={indices}
+        clusterID={clusterID}
       />
     </div>
   );

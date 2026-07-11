@@ -10,35 +10,17 @@ import "./index.scss";
 import { Providers, ProviderIcon } from "@/lib/providers";
 import { formatMessage } from "umi/locale";
 import { SearchEngineIcon } from "@/lib/search_engines";
-import request from "@/utils/request";
 
 export default (props) => {
-  const { infoAction, id, parentLoading } = props;
+  const { infoAction, id, parentLoading, info: prefetchedInfo, infoLoading } = props;
   const clusterID = props.data?._id;
   const metadata = props.data._source || {};
 
-  const [info, setInfo] = useState({});
-  const [loading, setLoading] = useState(false)
-
-  const fetchListInfo = async (id) => {
-    if (!id) return
-    setLoading(true)
-    const res = await request(infoAction, {
-      method: "POST",
-      body: [id],
-      ignoreTimeout: true
-    }, false, false);
-    if (res) {
-      setInfo(res[id] || {});
-    }
-    setLoading(false)
-  };
+  const [info, setInfo] = useState(prefetchedInfo || {});
 
   useEffect(() => {
-    if (!parentLoading) {
-      fetchListInfo(id)
-    }
-  }, [id, parentLoading])
+    setInfo(prefetchedInfo || {});
+  }, [prefetchedInfo]);
 
   const summary = info?.summary || {};
   const metrics = info?.metrics || {};
@@ -111,7 +93,7 @@ export default (props) => {
   const healthStatus = metadata.labels?.health_status;
 
   return (
-    <Spin spinning={!parentLoading && loading}>
+    <Spin spinning={infoLoading}>
 
 <div className="card-wrap">
       <div

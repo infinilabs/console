@@ -1,12 +1,25 @@
 import Result from "@/components/Result";
 import React, { Fragment } from "react";
-import { Button, Row, Col } from "antd";
+import { Button, Row, Col, Tooltip } from "antd";
 import styles from "./styles.less";
 import { formatMessage } from "umi/locale";
 import { MANUAL_VALUE } from "./initial_step";
 
+const renderEndpoint = (host) => (
+  <Tooltip key={host} title={host} placement="topLeft">
+    <div className={styles.ellipsisValue}>
+      {host}
+    </div>
+  </Tooltip>
+);
+
 export const ResultStep = (props) => {
   const { clusterConfig, oneMoreClick, goToClusterList } = props;
+  const endpointList = Array.isArray(clusterConfig?.hosts) && clusterConfig.hosts.length > 0
+    ? clusterConfig.hosts
+    : clusterConfig?.host
+      ? [clusterConfig.host]
+      : [];
   const information = (
     <div className={styles.information}>
       <Row>
@@ -39,12 +52,17 @@ export const ResultStep = (props) => {
           ：
         </Col>
         <Col xs={24} sm={16}>
-          {clusterConfig?.hosts.map((host) => <div>{host}</div>)}
+          {endpointList.length > 0
+            ? endpointList.map((host) => renderEndpoint(host))
+            : "-"}
         </Col>
       </Row>
       <Row>
         <Col xs={24} sm={8} className={styles.label}>
-          TLS：
+          {formatMessage({
+            id: "cluster.manage.field.tls.label",
+          })}
+          ：
         </Col>
         <Col xs={24} sm={16}>
           {formatMessage({
@@ -57,7 +75,7 @@ export const ResultStep = (props) => {
     </div>
   );
   const actions = (
-    <Fragment>
+    <Fragment key="actions">
       <Button type="primary" onClick={oneMoreClick}>
         {formatMessage({
           id: "cluster.regist.step.complete.btn.create",

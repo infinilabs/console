@@ -38,6 +38,7 @@ import (
 	"infini.sh/console/core/security/enum"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/radix"
+	frameworksecurity "infini.sh/framework/core/security"
 	"infini.sh/framework/core/util"
 )
 
@@ -59,6 +60,13 @@ type IndexRequest struct {
 }
 
 type ElasticsearchAPIPrivilege map[string]map[string]struct{}
+
+var legacyPermissionAliases = map[string][]string{
+	"template.delete": {"indices.delete_template"},
+	"template.exists": {"indices.exists_template"},
+	"template.get":    {"indices.get_template"},
+	"template.put":    {"indices.put_template"},
+}
 
 func (ep ElasticsearchAPIPrivilege) Merge(epa ElasticsearchAPIPrivilege) {
 	for k, permissions := range epa {
@@ -98,6 +106,18 @@ func NewClusterRequest(ps httprouter.Params, privilege []string) ClusterRequest 
 	}
 }
 
+func hasPermissionOrAlias(permissions map[string]struct{}, permission string) bool {
+	if _, ok := permissions[permission]; ok {
+		return true
+	}
+	for _, alias := range legacyPermissionAliases[permission] {
+		if _, ok := permissions[alias]; ok {
+			return true
+		}
+	}
+	return false
+}
+
 func validateApiPermission(apiPrivileges map[string]struct{}, permissions map[string]struct{}) {
 	if _, ok := permissions["*"]; ok {
 		for privilege := range apiPrivileges {
@@ -105,8 +125,8 @@ func validateApiPermission(apiPrivileges map[string]struct{}, permissions map[st
 		}
 		return
 	}
-	for permission := range permissions {
-		if _, ok := apiPrivileges[permission]; ok {
+	for permission := range apiPrivileges {
+		if hasPermissionOrAlias(permissions, permission) {
 			delete(apiPrivileges, permission)
 		}
 	}
@@ -117,7 +137,7 @@ func validateApiPermission(apiPrivileges map[string]struct{}, permissions map[st
 		}
 		prefix := privilege[:position]
 
-		if _, ok := permissions[prefix+".*"]; ok {
+		if hasPermissionOrAlias(permissions, prefix+".*") {
 			delete(apiPrivileges, privilege)
 		}
 	}
@@ -284,12 +304,11 @@ func GetRoleCluster(roles []string) (bool, []string) {
 // GetCurrentUserCluster get cluster id by current login user
 // return true when has all cluster privilege, otherwise return cluster id list
 func GetCurrentUserCluster(req *http.Request) (bool, []string) {
-	ctxVal := req.Context().Value("user")
-	if userClaims, ok := ctxVal.(*UserClaims); ok {
-		return GetRoleCluster(userClaims.Roles)
-	} else {
-		panic("user context value not found")
+	user, err := FromUserContext(req.Context())
+	if err == nil && user != nil {
+		return GetRoleCluster(user.Roles)
 	}
+	return false, nil
 }
 
 func GetRoleIndex(roles []string, clusterID string) (bool, []string) {
@@ -313,18 +332,22 @@ func GetRoleIndex(roles []string, clusterID string) (bool, []string) {
 	return false, realIndex
 }
 
-func ValidateLogin(authorizationHeader string) (clams *UserClaims, err error) {
-
-	if authorizationHeader == "" {
-		err = errors.New("authorization header is empty")
-		return
+func ParseBearerToken(authorizationHeader string) (string, error) {
+	if strings.TrimSpace(authorizationHeader) == "" {
+		return "", errors.New("authorization header is empty")
 	}
 	fields := strings.Fields(authorizationHeader)
-	if fields[0] != "Bearer" || len(fields) != 2 {
-		err = errors.New("authorization header is invalid")
-		return
+	if len(fields) != 2 || !strings.EqualFold(fields[0], "Bearer") {
+		return "", errors.New("authorization header is invalid")
 	}
-	tokenString := fields[1]
+	return fields[1], nil
+}
+
+func ValidateLogin(authorizationHeader string) (clams *UserClaims, err error) {
+	tokenString, err := ParseBearerToken(authorizationHeader)
+	if err != nil {
+		return nil, err
+	}
 
 	token, err := jwt.ParseWithClaims(tokenString, &UserClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -333,7 +356,11 @@ func ValidateLogin(authorizationHeader string) (clams *UserClaims, err error) {
 		return []byte(Secret), nil
 	})
 	if err != nil {
-		return
+		sessionUser, frameworkErr := frameworksecurity.ValidateAuthorizationHeader(authorizationHeader)
+		if frameworkErr == nil {
+			return NewUserClaimsFromSession(sessionUser), nil
+		}
+		return nil, err
 	}
 	clams, ok := token.Claims.(*UserClaims)
 
@@ -350,6 +377,14 @@ func ValidateLogin(authorizationHeader string) (clams *UserClaims, err error) {
 	if tokenVal.ExpireIn < time.Now().Unix() {
 		err = errors.New("token is expire in")
 		DeleteUserToken(clams.UserId)
+		return
+	}
+	activeToken := tokenVal.Value
+	if activeToken == "" {
+		activeToken = tokenVal.JwtStr
+	}
+	if activeToken != "" && activeToken != tokenString {
+		err = errors.New("token is invalid")
 		return
 	}
 	if ok && token.Valid {

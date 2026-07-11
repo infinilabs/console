@@ -11,6 +11,8 @@ import styles from "./index.less";
 import { Editor } from "@/components/monaco-editor";
 import { hasAuthority } from "@/utils/authority";
 
+const isVisibleManagedConfig = (name = "") => /\.ya?ml$/i.test(name);
+
 const Index = (props) => {
   const [param, setParam] = useQueryParam("_g", JsonParam);
   const [loading, setLoading] = useState(false);
@@ -24,13 +26,34 @@ const Index = (props) => {
   const editorRef = useRef(null);
 
   const instanceID = props.match.params.instance_id;
+  const visibleConfigs = useMemo(() => {
+    return Object.keys(config.configs || {}).reduce((result, key) => {
+      if (isVisibleManagedConfig(key)) {
+        result[key] = config.configs[key];
+      }
+      return result;
+    }, {});
+  }, [config.configs]);
+  const breadcrumbList = [
+    { title: "home", locale: "menu.home", href: "/" },
+    { title: "resource", locale: "menu.resource" },
+    {
+      title: "runtime_instance",
+      locale: "menu.resource.runtime.instance",
+      href: "/resource/runtime/instance",
+    },
+    {
+      title: "runtime_config",
+      locale: "menu.resource.runtime.config",
+    },
+  ];
 
   const onRefresh = () => {
     loadConfig();
   };
 
   const onViewClick = (key) => {
-    let obj = config[key] ?? config.configs[key];
+    let obj = config[key] ?? visibleConfigs[key];
     setCurrentConfig(obj);
     if (obj) {
       setParam({ ...param, key: key });
@@ -120,10 +143,12 @@ const Index = (props) => {
   useEffect(() => {
     //加载默认配置文件
     let defaultKey = param?.key || "runtime";
-    if (config[defaultKey] || config.configs[defaultKey]) {
+    if (config[defaultKey] || visibleConfigs[defaultKey]) {
       onViewClick(defaultKey);
+    } else if (config.runtime) {
+      onViewClick("runtime");
     }
-  }, [config.runtime, config.main, config.configs]);
+  }, [config.runtime, config.main, visibleConfigs]);
 
   const RenderView = ({ data }) => {
     let splits = data?.name?.split(".");
@@ -138,18 +163,30 @@ const Index = (props) => {
         title={data?.name}
         extra={
           hasAuthority("gateway.instance:all") &&
-          config.configs?.[data?.name] ? (
+          visibleConfigs?.[data?.name] ? (
             <Popconfirm
               placement="topRight"
-              title="Are you sure to save?"
+              title={formatMessage({
+                id: "gateway.instance.config.save.confirm",
+                defaultMessage: "Are you sure to save?",
+              })}
               onConfirm={() => {
                 onUpdateClick(data?.name);
               }}
-              okText="Yes"
-              cancelText="No"
+              okText={formatMessage({
+                id: "form.button.ok",
+                defaultMessage: "OK",
+              })}
+              cancelText={formatMessage({
+                id: "form.button.cancel",
+                defaultMessage: "Cancel",
+              })}
             >
               <Button type="primary" loading={btnLoading}>
-                Save
+                {formatMessage({
+                  id: "form.button.save",
+                  defaultMessage: "Save",
+                })}
               </Button>
             </Popconfirm>
           ) : null
@@ -157,7 +194,13 @@ const Index = (props) => {
       >
         {/* <div>updated:{config?.updated}</div> */}
         {data?.location ? (
-          <div className={styles.label}>Location:{data?.location}</div>
+          <div className={styles.label}>
+            {formatMessage({
+              id: "gateway.instance.config.location",
+              defaultMessage: "Location",
+            })}
+            :{data?.location}
+          </div>
         ) : null}
 
         <div className={styles.editor}>
@@ -181,14 +224,23 @@ const Index = (props) => {
   };
 
   return (
-    <PageHeaderWrapper>
+    <PageHeaderWrapper breadcrumbList={breadcrumbList}>
       <Spin spinning={loading}>
         <div className={styles.config}>
           <Card
             className={styles.menu}
-            title={"Configs"}
+            title={formatMessage({
+              id: "gateway.instance.config.files",
+              defaultMessage: "Configs",
+            })}
             extra={
-              <a onClick={onRefresh} title="Refresh">
+              <a
+                onClick={onRefresh}
+                title={formatMessage({
+                  id: "form.button.refresh",
+                  defaultMessage: "Refresh",
+                })}
+              >
                 <Icon type="redo" style={{ color: "rgba(0, 127, 255, 1)" }} />
               </a>
             }
@@ -202,7 +254,10 @@ const Index = (props) => {
                   onViewClick("runtime");
                 }}
               >
-                Runtime
+                {formatMessage({
+                  id: "gateway.instance.config.runtime",
+                  defaultMessage: "Runtime",
+                })}
               </div>
               <div className={styles.hr}></div>
               <div
@@ -213,10 +268,13 @@ const Index = (props) => {
                   onViewClick("main");
                 }}
               >
-                Main
+                {formatMessage({
+                  id: "gateway.instance.config.main",
+                  defaultMessage: "Main",
+                })}
               </div>
               <div className={styles.hr}></div>
-              {Object.keys(config.configs).map((item) => {
+              {Object.keys(visibleConfigs).map((item) => {
                 return (
                   <div
                     className={`${styles.item} ${

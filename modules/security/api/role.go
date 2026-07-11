@@ -28,15 +28,19 @@
 package api
 
 import (
+	"encoding/json"
 	log "github.com/cihub/seelog"
 	rbac "infini.sh/console/core/security"
 	"infini.sh/framework/core/api"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"net/http"
 	"time"
 )
+
+const errRoleAssignedToUsers = "role is still assigned to users"
 
 func (h APIHandler) CreateRole(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	roleType := ps.MustGetParameter("type")
@@ -152,6 +156,17 @@ func (h APIHandler) DeleteRole(w http.ResponseWriter, r *http.Request, ps httpro
 	oldRole, err := h.Role.Get(id)
 	if err != nil {
 		h.ErrorInternalServer(w, err.Error())
+		return
+	}
+
+	assignedUsers, err := countUsersByRoleID(id)
+	if err != nil {
+		h.ErrorInternalServer(w, err.Error())
+		return
+	}
+	if assignedUsers > 0 {
+		h.WriteError(w, errRoleAssignedToUsers, http.StatusConflict)
+		return
 	}
 	err = h.Adapter.Role.Delete(id)
 
@@ -196,14 +211,30 @@ func (h APIHandler) UpdateRole(w http.ResponseWriter, r *http.Request, ps httpro
 	role.Updated = &now
 	role.Created = oldRole.Created
 	err = h.Role.Update(role)
-	delete(rbac.RoleMap, oldRole.Name)
-	rbac.RoleMap[role.Name] = *role
 
 	if err != nil {
 		_ = log.Error(err.Error())
 		h.ErrorInternalServer(w, err.Error())
 		return
 	}
+	delete(rbac.RoleMap, oldRole.Name)
+	rbac.RoleMap[role.Name] = *role
 	h.WriteOKJSON(w, api.UpdateResponse(id))
 	return
+}
+
+func countUsersByRoleID(roleID string) (int64, error) {
+	roleIDJSON, err := json.Marshal(roleID)
+	if err != nil {
+		return 0, err
+	}
+
+	query := orm.Query{
+		RawQuery: []byte(`{"query":{"term":{"roles.id":` + string(roleIDJSON) + `}},"size":0}`),
+	}
+	err, result := orm.Search(&rbac.User{}, &query)
+	if err != nil {
+		return 0, err
+	}
+	return result.Total, nil
 }

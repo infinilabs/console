@@ -1,0 +1,119 @@
+entry:
+  - name: gateway_relay_entry
+    enabled: true
+    router: gateway_relay_router
+    max_concurrency: 200000
+    network:
+      binding: 0.0.0.0:8081
+    tls:
+      enabled: true
+      cert_file: "config/relay_server.crt"
+      key_file: "config/relay_server.key"
+      ca_file: "config/ca.crt"
+      skip_insecure_verify: false
+
+flow:
+  - name: gateway_relay_deny_flow
+    filter:
+      - set_response:
+          body: "request not allowed"
+          status: 500
+  - name: gateway_relay_ingest_flow
+    filter:
+      - basic_auth:
+          valid_users:
+            "$[[SETUP_AGENT_USERNAME]]": "$[[keystore.$[[SETUP_AGENT_PASSWORD_KEY]]]]"
+      - request_body_json_del:
+          ignore_missing: true
+          path:
+            - payload.instance.pool.objects
+            - payload.elasticsearch.cluster_stats.indices.mappings
+            - payload.elasticsearch.cluster_stats.nodes.plugins
+            - payload.elasticsearch.shard_stats.bulk
+            - payload.elasticsearch.shard_stats.commit
+            - payload.elasticsearch.shard_stats.retention_leases
+            - payload.elasticsearch.shard_stats.seq_no
+            - payload.elasticsearch.shard_stats.shard_path
+            - payload.elasticsearch.shard_stats.sparse_vector
+            - payload.elasticsearch.shard_stats.dense_vector
+            - payload.elasticsearch.shard_stats.translog
+            - payload.elasticsearch.shard_stats.warmer
+            - payload.elasticsearch.shard_stats.indices.segments.file_sizes
+            - payload.elasticsearch.node_stats.attributes
+            - payload.elasticsearch.node_stats.discovery
+            - payload.elasticsearch.node_stats.script
+            - payload.elasticsearch.node_stats.repositories
+            - payload.elasticsearch.node_stats.script_cache
+            - payload.elasticsearch.node_stats.http.clients
+            - payload.elasticsearch.node_stats.indices.translog
+            - payload.elasticsearch.node_stats.indices.warmer
+            - payload.elasticsearch.node_stats.indices.segments.file_sizes
+            - payload.elasticsearch.node_stats.transport.actions
+            - payload.elasticsearch.node_stats.discovery.cluster_applier_stats
+      - rewrite_to_bulk:
+          type_removed: false
+      - bulk_request_mutate:
+          fix_null_id: true
+          generate_enhanced_id: true
+          index_rename:
+            metrics: "$[[SETUP_INDEX_PREFIX]]metrics"
+            logs: "$[[SETUP_INDEX_PREFIX]]logs"
+      - bulk_reshuffle:
+          when:
+            contains:
+              _ctx.request.path: /_bulk
+          elasticsearch: gateway_relay_system
+          queue_name_prefix: gateway_relay_async_bulk
+          level: node
+          partition_size: $[[SETUP_RELAY_PARTITION_SIZE]]
+          continue_metadata_missing: true
+          fix_null_id: true
+      - elasticsearch:
+          elasticsearch: gateway_relay_system
+          max_connection_per_node: 1000
+
+router:
+  - name: gateway_relay_router
+    default_flow: gateway_relay_deny_flow
+    rules:
+      - method:
+          - "POST"
+        enabled: true
+        pattern:
+          - "/{any_index}/_doc/"
+        flow:
+          - gateway_relay_ingest_flow
+
+elasticsearch:
+  - name: gateway_relay_system
+    enabled: true
+    monitored: true
+    basic_auth:
+      username: "$[[SETUP_AGENT_USERNAME]]"
+      password: "$[[keystore.$[[SETUP_AGENT_PASSWORD_KEY]]]]"
+    discovery:
+      enabled: false
+    metadata_cache_enabled: false
+    endpoints: $[[SETUP_ENDPOINTS]]
+
+pipeline:
+  - name: gateway_relay_bulk_request_ingest
+    auto_start: true
+    keep_running: true
+    processor:
+      - bulk_indexing:
+          max_connection_per_node: 100
+          num_of_slices: 1
+          max_worker_size: 30
+          idle_timeout_in_seconds: 10
+          bulk:
+            compress: false
+            batch_size_in_mb: 10
+            batch_size_in_docs: 10000
+          consumer:
+            fetch_max_messages: 100
+          queue_selector:
+            labels:
+              type: bulk_reshuffle
+              elasticsearch: gateway_relay_system
+              level: node

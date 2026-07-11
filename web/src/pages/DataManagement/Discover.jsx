@@ -70,6 +70,7 @@ import {
   BooleanParam
 } from "use-query-params";
 import { Link, Route } from "umi";
+import { formatMessage } from "umi/locale";
 import { ESPrefix } from "@/services/common";
 import TraceChart from "./trace_chart";
 import TraceSearch from "./SearchFlow/TraceSearch";
@@ -87,6 +88,148 @@ import { getTimezone } from "@/utils/utils";
 import { hasAuthority } from "@/utils/authority";
 
 const SidebarMemoized = React.memo(DiscoverSidebar);
+const SHARE_STATE_VERSION = 1;
+const MANUAL_REFRESH_DEBOUNCE_MS = 800;
+
+// Parse the interval string returned by auto_date_histogram (e.g. "1h", "30m", "1d")
+function parseAutoInterval(intervalStr, buckets) {
+  const match = intervalStr.match(/^(\d+)([smhdwMqy])$/);
+  if (!match) {
+    return buckets.getInterval(true);
+  }
+  const value = parseInt(match[1], 10);
+  const unitMap = { s: 'second', m: 'minute', h: 'hour', d: 'day', w: 'week', M: 'month', q: 'quarter', y: 'year' };
+  const unit = match[2];
+  return {
+    esValue: value,
+    esUnit: unit,
+    description: `${value} ${unitMap[unit] || unit}${value > 1 ? 's' : ''}`,
+  };
+}
+
+const encodeShareState = (value) => {
+  try {
+    return btoa(unescape(encodeURIComponent(JSON.stringify(value))))
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/g, "");
+  } catch (e) {
+    return "";
+  }
+};
+
+const decodeShareState = (value) => {
+  if (!value) {
+    return null;
+  }
+  try {
+    const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized + "=".repeat((4 - normalized.length % 4) % 4);
+    return JSON.parse(decodeURIComponent(escape(atob(padded))));
+  } catch (e) {
+    return null;
+  }
+};
+
+const updateHashQueryParams = (href, patch = {}) => {
+  try {
+    const url = new URL(href);
+    const hashValue = (url.hash || "#").slice(1);
+    const [hashPath, hashQuery = ""] = hashValue.split("?");
+    const params = new URLSearchParams(hashQuery);
+
+    Object.entries(patch).forEach(([key, value]) => {
+      params.delete(key);
+      if (
+        value === undefined ||
+        value === null ||
+        value === "" ||
+        (Array.isArray(value) && value.length === 0)
+      ) {
+        return;
+      }
+      if (Array.isArray(value)) {
+        value.forEach((item) => {
+          if (item !== undefined && item !== null && item !== "") {
+            params.append(key, String(item));
+          }
+        });
+        return;
+      }
+      params.set(key, String(value));
+    });
+
+    const nextQuery = params.toString();
+    url.hash = nextQuery ? `${hashPath}?${nextQuery}` : hashPath;
+    return url.toString();
+  } catch (e) {
+    return href;
+  }
+};
+
+const areArrayValuesEqual = (left = [], right = []) => {
+  if (left === right) {
+    return true;
+  }
+  if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) {
+    return false;
+  }
+  return left.every((item, index) => item === right[index]);
+};
+
+const hasFieldInIndexPattern = (indexPattern, fieldName) => {
+  if (!indexPattern || !fieldName) {
+    return false;
+  }
+  if (indexPattern.fields?.getByName) {
+    return !!indexPattern.fields.getByName(fieldName);
+  }
+  if (Array.isArray(indexPattern.fields)) {
+    return indexPattern.fields.some(
+      (field) => field?.name === fieldName || field?.displayName === fieldName
+    );
+  }
+  return false;
+};
+
+const getDateFieldsFromIndexPattern = (indexPattern) => {
+  if (!indexPattern?.fields) {
+    return [];
+  }
+  if (indexPattern.fields?.getByType) {
+    return indexPattern.fields
+      .getByType("date")
+      .map((field) => field?.displayName || field?.name)
+      .filter(Boolean);
+  }
+  if (Array.isArray(indexPattern.fields)) {
+    return indexPattern.fields
+      .filter((field) => field?.spec?.type === "date" || field?.type === "date")
+      .map((field) => field?.displayName || field?.name)
+      .filter(Boolean);
+  }
+  return [];
+};
+
+const resolveValidTimeFieldName = (indexPattern, preferredTimeField) => {
+  const candidates = [preferredTimeField, indexPattern?.timeFieldName].filter(Boolean);
+  const validCandidate = candidates.find((fieldName) =>
+    hasFieldInIndexPattern(indexPattern, fieldName)
+  );
+  if (validCandidate) {
+    return validCandidate;
+  }
+  const dateFields = getDateFieldsFromIndexPattern(indexPattern);
+  return dateFields.length === 1 ? dateFields[0] : "";
+};
+
+const buildSortByTimeField = (indexPattern, preferredTimeField) => {
+  const timeFieldName = resolveValidTimeFieldName(indexPattern, preferredTimeField);
+  return {
+    timeFieldName,
+    sort: timeFieldName ? [[timeFieldName, "desc"]] : [],
+  };
+};
 
 const {
   filterManager,
@@ -125,6 +268,11 @@ const Discover = (props) => {
   const [insightLoading, setInsightLoading] = useState(false);
   const [showResultCount, setShowResultCount] = useState(true);
   const [selectedQueries, setSelectedQueries] = useState();
+  const appliedShareRef = useRef("");
+  const manualRefreshRef = useRef({
+    lastTriggeredAt: 0,
+    timer: null,
+  });
 
   const [columnsParam, setColumnsParam] = useQueryParam("columns", ArrayParam);
 
@@ -141,11 +289,12 @@ const Discover = (props) => {
     "sq",
     StringParam
   );
+  const [shareParam] = useQueryParam("share", StringParam);
   const [trackTotalHits, setTrackTotalHits] = useQueryParam(
     "tth",
     BooleanParam
   );
-  const [timeout, setTimeout] = useState(localStorage.getItem('search_time_out') || '60s');
+  const [searchTimeout, setSearchTimeout] = useState(localStorage.getItem('search_time_out') || '60s');
   const [whetherToSample, setWhetherToSample] = useQueryParam(
     "wts",
     BooleanParam
@@ -219,21 +368,15 @@ const Discover = (props) => {
       typ,
       props.selectedCluster?.id
     );
+    const { timeFieldName, sort } = buildSortByTimeField(IP);
+    IP.timeFieldName = timeFieldName;
     subscriptions.unsubscribe();
     props.changeIndexPattern(IP);
-    if (IP.timeFieldName) {
-      setState({
-        ...state,
-        columns: ["_source"],
-        sort: [[IP.timeFieldName, 'desc']],
-      });
-    } else {
-      setState({
-        ...state,
-        columns: ["_source"],
-        sort: [],
-      });
-    }
+    setState({
+      ...state,
+      columns: ["_source"],
+      sort,
+    });
     if (filters && filters.length > 0) {
       if (isReset) {
         filterManager.setFilters(filters);
@@ -254,15 +397,15 @@ const Discover = (props) => {
       props.selectedCluster?.id
     );
     subscriptions.unsubscribe();
-    IP.timeFieldName = timeField;
+    const { timeFieldName, sort } = buildSortByTimeField(IP, timeField);
+    IP.timeFieldName = timeFieldName;
     props.changeIndexPattern(IP);
-    const newSort = [[timeField, 'desc']]
-    setState({
-      ...state,
+    setState((st) => ({
+      ...st,
       columns: ["_source"],
-      sort: newSort,
-    });
-    updateQuery({ sort: newSort });
+      sort,
+    }));
+    updateQuery({ indexPattern: IP, sort });
   };
 
   //const indexPatterns = [{"id":"1ccce5c0-bb9a-11eb-957b-939add21a246","type":"index-pattern","namespaces":["default"],"updated_at":"2021-05-23T07:40:14.747Z","version":"WzkxOTEsNDhd","attributes":{"title":"test-custom*","timeFieldName":"created_at","fields":"[{\"count\":0,\"name\":\"_id\",\"type\":\"string\",\"esTypes\":[\"_id\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":false},{\"count\":0,\"name\":\"_index\",\"type\":\"string\",\"esTypes\":[\"_index\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":false},{\"count\":0,\"name\":\"_score\",\"type\":\"number\",\"scripted\":false,\"searchable\":false,\"aggregatable\":false,\"readFromDocValues\":false},{\"count\":0,\"name\":\"_source\",\"type\":\"_source\",\"esTypes\":[\"_source\"],\"scripted\":false,\"searchable\":false,\"aggregatable\":false,\"readFromDocValues\":false},{\"count\":0,\"name\":\"_type\",\"type\":\"string\",\"esTypes\":[\"_type\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":false},{\"count\":0,\"name\":\"address\",\"type\":\"string\",\"esTypes\":[\"text\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"count\":0,\"name\":\"address.keyword\",\"type\":\"string\",\"esTypes\":[\"keyword\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true,\"subType\":{\"multi\":{\"parent\":\"address\"}}},{\"count\":0,\"conflictDescriptions\":{\"text\":[\"test-custom1\"],\"long\":[\"test-custom\",\"test-custom8\",\"test-custom9\"]},\"name\":\"age\",\"type\":\"conflict\",\"esTypes\":[\"text\",\"long\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":false},{\"count\":0,\"name\":\"age.keyword\",\"type\":\"string\",\"esTypes\":[\"keyword\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true,\"subType\":{\"multi\":{\"parent\":\"age\"}}},{\"count\":0,\"name\":\"created_at\",\"type\":\"date\",\"esTypes\":[\"date\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true},{\"count\":0,\"name\":\"email\",\"type\":\"string\",\"esTypes\":[\"text\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"count\":0,\"name\":\"email.keyword\",\"type\":\"string\",\"esTypes\":[\"keyword\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true,\"subType\":{\"multi\":{\"parent\":\"email\"}}},{\"count\":0,\"name\":\"hobbies\",\"type\":\"string\",\"esTypes\":[\"text\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"count\":0,\"name\":\"hobbies.keyword\",\"type\":\"string\",\"esTypes\":[\"keyword\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true,\"subType\":{\"multi\":{\"parent\":\"hobbies\"}}},{\"count\":0,\"name\":\"id\",\"type\":\"string\",\"esTypes\":[\"text\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"count\":0,\"name\":\"id.keyword\",\"type\":\"string\",\"esTypes\":[\"keyword\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true,\"subType\":{\"multi\":{\"parent\":\"id\"}}},{\"count\":0,\"name\":\"name\",\"type\":\"string\",\"esTypes\":[\"text\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"count\":0,\"name\":\"name.keyword\",\"type\":\"string\",\"esTypes\":[\"keyword\"],\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true,\"subType\":{\"multi\":{\"parent\":\"name\"}}}]"},"references":[],"migrationVersion":{"index-pattern":"7.6.0"}}];
@@ -282,6 +425,7 @@ const Discover = (props) => {
   const scrollableDesktop = useRef(null);
 
   const [queryFrom, setQueryFrom] = React.useState(0);
+  const searchAfterRef = useRef(null);
 
   const columns = state.columns;
   const traceParams = useRef({});
@@ -332,6 +476,7 @@ const Discover = (props) => {
       }
       if (!_payload?.isScrollLoad) {
         setQueryFrom(0);
+        searchAfterRef.current = null;
       }
 
       const params = getSearchParams(
@@ -341,7 +486,9 @@ const Discover = (props) => {
         _payload?.aggs || aggs,
         distinctParams || {},
         _payload?.isScrollLoad ? queryFrom : 0,
-        trackTotalHits
+        trackTotalHits,
+        20,
+        _payload?.isScrollLoad ? searchAfterRef.current : null,
       );
 
       const filters = cloneDeep(params?.body?.query?.bool?.filter || [])
@@ -372,12 +519,20 @@ const Discover = (props) => {
         };
       }
       res.hits.hits = res.hits.hits || [];
+      // Track search_after from last hit's sort for next page
+      if (res.hits.hits.length > 0) {
+        const lastHit = res.hits.hits[res.hits.hits.length - 1];
+        searchAfterRef.current = lastHit.sort || null;
+      }
       setSearchRes(res);
       const { query } = queryStringManager.getQuery();
       if (query != queryParam) {
         setQueryParam(query);
       }
-      setTimeParam([timefilter._time?.from, timefilter._time?.to]);
+      const nextTimeParam = [timefilter._time?.from, timefilter._time?.to];
+      if (!areArrayValuesEqual(timeParam || [], nextTimeParam)) {
+        setTimeParam(nextTimeParam);
+      }
 
       // let filters = filterManager.getFilters();
       // const tfilter = timefilter.createFilter(indexPattern);
@@ -402,6 +557,43 @@ const Discover = (props) => {
     ]
   );
 
+  const onManualRefresh = useCallback(
+    (payload) => {
+      const now = Date.now();
+      const elapsed = now - manualRefreshRef.current.lastTriggeredAt;
+      const triggerRefresh = () => {
+        manualRefreshRef.current.lastTriggeredAt = Date.now();
+        manualRefreshRef.current.timer = null;
+        updateQuery(payload);
+      };
+      if (elapsed >= MANUAL_REFRESH_DEBOUNCE_MS) {
+        if (manualRefreshRef.current.timer) {
+          clearTimeout(manualRefreshRef.current.timer);
+          manualRefreshRef.current.timer = null;
+        }
+        triggerRefresh();
+        return;
+      }
+      if (manualRefreshRef.current.timer) {
+        clearTimeout(manualRefreshRef.current.timer);
+      }
+      manualRefreshRef.current.timer = setTimeout(
+        triggerRefresh,
+        MANUAL_REFRESH_DEBOUNCE_MS - elapsed
+      );
+    },
+    [updateQuery]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (manualRefreshRef.current.timer) {
+        clearTimeout(manualRefreshRef.current.timer);
+        manualRefreshRef.current.timer = null;
+      }
+    };
+  }, []);
+
   const onQueriesSelect = async (record) => {
     queryStringManager.setQuery(record.query);
     timefilter.setTime(record.time_filter);
@@ -410,21 +602,20 @@ const Discover = (props) => {
       "index",
       props.selectedCluster?.id
     );
-    IP.timeFieldName = record.time_field;
+    const { timeFieldName, sort } = buildSortByTimeField(IP, record.time_field);
+    IP.timeFieldName = timeFieldName;
     subscriptions.unsubscribe();
     props.changeIndexPattern(IP);
     const newState = {
       ...state,
       columns: record.filter?.columns || ["_source"],
-    }
-    if (record.time_field) {
-      newState.sort = [[record.time_field, 'desc']]
-    }
+      sort,
+    };
     setState(newState);
     if (record.filter?.filters?.length > 0) {
       filterManager.setFilters(record.filter?.filters);
     }
-    updateQuery();
+    updateQuery({ indexPattern: IP, sort });
     setSelectedQueries(record);
     if (selectedQueriesId !== record.id) {
       setSelectedQueriesId(record.id);
@@ -478,7 +669,11 @@ const Discover = (props) => {
       return { histogramData: null, timeChartProps: null };
     }
     const buckets = getTimeBuckets(state.interval);
-    const interval = buckets.getInterval(true);
+    const aggregations = searchRes.aggregations;
+    const autoInterval = aggregations["counts"].interval;
+    const interval = autoInterval
+      ? parseAutoInterval(autoInterval, buckets)
+      : buckets.getInterval(true);
     const chartTable = {
       columns: [
         {
@@ -491,11 +686,38 @@ const Discover = (props) => {
       ],
       rows: [],
     };
-    let aggregations = searchRes.aggregations;
 
-    aggregations["counts"].buckets.forEach((bk) => {
-      chartTable.rows.push(bk);
-    });
+    const responseBuckets = aggregations["counts"].buckets || [];
+    const bounds = buckets.getBounds();
+    const intervalMs = moment.duration(interval.esValue, interval.esUnit).asMilliseconds();
+
+    const startMs = bounds.min ? bounds.min.valueOf() : 0;
+    const endMs = bounds.max ? bounds.max.valueOf() : 0;
+    const maxBuckets = 200;
+    const canFillGaps = intervalMs > 0 && startMs > 0 && endMs > startMs
+      && responseBuckets.length > 0
+      && ((endMs - startMs) / intervalMs) <= maxBuckets;
+
+    if (canFillGaps) {
+      // Use the first bucket key as the aligned start, then fill gaps
+      const firstKey = responseBuckets[0].key;
+      // Align start to interval boundary based on first bucket key
+      const alignedStart = firstKey - Math.ceil((firstKey - startMs) / intervalMs) * intervalMs;
+      const bucketMap = new Map();
+      responseBuckets.forEach((bk) => {
+        bucketMap.set(bk.key, bk.doc_count);
+      });
+      for (let t = alignedStart; t < endMs; t += intervalMs) {
+        chartTable.rows.push({
+          key: t,
+          doc_count: bucketMap.has(t) ? bucketMap.get(t) : 0,
+        });
+      }
+    } else {
+      responseBuckets.forEach((bk) => {
+        chartTable.rows.push(bk);
+      });
+    }
 
     //console.log(interval, moment.duration('1', 'd'))
     const dimensions = {
@@ -580,25 +802,146 @@ const Discover = (props) => {
   //   });
   // };
   useEffect(() => {
-    setColumnsParam(state.columns);
-  }, [state.columns]);
+    if (!areArrayValuesEqual(columnsParam || [], state.columns || [])) {
+      setColumnsParam(state.columns);
+    }
+  }, [columnsParam, state.columns]);
+
+  const getShareUrl = useCallback(() => {
+    const currentQuery = queryStringManager.getQuery()?.query || "";
+    const currentTime = timefilter.getTime() || {};
+    const shareState = encodeShareState({
+      version: SHARE_STATE_VERSION,
+      columns: state.columns || [],
+      filters: filterManager.getFilters() || [],
+      histogramVisible,
+      mode,
+      sort: state.sort || [],
+      timeField: indexPattern.timeFieldName || "",
+    });
+
+    return updateHashQueryParams(window.location.href, {
+      columns: state.columns,
+      index: indexPattern.type === "index" ? indexPattern.id : undefined,
+      query: currentQuery,
+      share: shareState || undefined,
+      sq: undefined,
+      time: [currentTime.from, currentTime.to],
+      viewID: indexPattern.type === "index" ? undefined : indexPattern.id,
+    });
+  }, [
+    histogramVisible,
+    indexPattern.id,
+    indexPattern.timeFieldName,
+    indexPattern.type,
+    mode,
+    state.columns,
+    state.sort,
+  ]);
+
+  useEffect(() => {
+    if (
+      !shareParam ||
+      appliedShareRef.current === shareParam ||
+      !indexPattern?.id ||
+      !props.selectedCluster?.id
+    ) {
+      return;
+    }
+
+    const sharedState = decodeShareState(shareParam);
+    appliedShareRef.current = shareParam;
+    if (!sharedState || sharedState.version !== SHARE_STATE_VERSION) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const applySharedState = async () => {
+      let nextIndexPattern = indexPattern;
+      if (
+        sharedState.timeField &&
+        sharedState.timeField !== indexPattern.timeFieldName
+      ) {
+        nextIndexPattern = await services.indexPatternService.get(
+          indexPattern.id,
+          indexPattern.type,
+          props.selectedCluster?.id
+        );
+        if (cancelled) {
+          return;
+        }
+        subscriptions.unsubscribe();
+        nextIndexPattern.timeFieldName = resolveValidTimeFieldName(
+          nextIndexPattern,
+          sharedState.timeField
+        );
+        props.changeIndexPattern(nextIndexPattern);
+      }
+
+      if (Array.isArray(sharedState.filters)) {
+        if (sharedState.filters.length > 0) {
+          filterManager.setFilters(sharedState.filters);
+        } else {
+          filterManager.removeAll();
+        }
+      }
+
+      const fallbackSort = buildSortByTimeField(
+        nextIndexPattern,
+        sharedState.timeField
+      ).sort;
+      const nextSort =
+        Array.isArray(sharedState.sort) && sharedState.sort.length > 0
+          ? sharedState.sort.filter(
+              (sortItem) =>
+                Array.isArray(sortItem) &&
+                sortItem.length > 0 &&
+                hasFieldInIndexPattern(nextIndexPattern, sortItem[0])
+            )
+          : fallbackSort;
+
+      setState((st) => ({
+        ...st,
+        columns:
+          Array.isArray(sharedState.columns) && sharedState.columns.length > 0
+            ? sharedState.columns
+            : st.columns,
+        sort: nextSort.length > 0 ? nextSort : fallbackSort,
+      }));
+      const effectiveSort = nextSort.length > 0 ? nextSort : fallbackSort;
+
+      if (sharedState.mode) {
+        setMode(sharedState.mode);
+      }
+      if (typeof sharedState.histogramVisible === "boolean") {
+        setHistogramVisible(sharedState.histogramVisible);
+      }
+
+      updateQuery({
+        indexPattern: nextIndexPattern,
+        sort: effectiveSort,
+      });
+    };
+
+    applySharedState();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [shareParam, indexPattern?.id, props.selectedCluster?.id]);
 
   useEffect(() => {
     if (indexPattern) {
-      if (indexPattern.timeFieldName) {
-        const newSort = [[indexPattern.timeFieldName, 'desc']]
-        setState({
-          ...state,
-          sort: newSort
-        });
-        updateQuery({ sort: newSort });
-      } else {
-        setState({
-          ...state,
-          sort: []
-        });
-        updateQuery({ sort: [] });
+      const { timeFieldName, sort } = buildSortByTimeField(indexPattern);
+      if (indexPattern.timeFieldName !== timeFieldName) {
+        indexPattern.timeFieldName = timeFieldName;
       }
+      setState({
+        ...state,
+        sort,
+      });
+      updateQuery({ sort });
     }
   }, [indexPattern]);
 
@@ -698,7 +1041,9 @@ const Discover = (props) => {
     }
   }
   const took = searchRes.took || 1;
-  const hits = searchRes.hits.total?.value || searchRes.hits.total;
+  const hitsTotal = searchRes.hits.total;
+  const hits = hitsTotal?.value ?? hitsTotal ?? 0;
+  const hitsRelation = hitsTotal?.relation || "eq";
   const resetQuery = () => {};
   const showDatePicker = indexPattern.timeFieldName != "";
 
@@ -1055,7 +1400,7 @@ const Discover = (props) => {
               queryString: queryStringManager,
               timefilter,
               storage,
-              onQuerySubmit: updateQuery,
+              onQuerySubmit: onManualRefresh,
               services,
               dateRangeFrom: timeParam && timeParam[0] || "now-15m", // change by hardy
               dateRangeTo: timeParam && timeParam[1] || "now",
@@ -1094,6 +1439,7 @@ const Discover = (props) => {
           <InsightBar
             ref={insightBarRef}
             loading={resultState === "loading"}
+            exportHits={records}
             queries={{
               clusterId: props.selectedCluster?.id,
               indexPattern: indexPattern,
@@ -1111,6 +1457,7 @@ const Discover = (props) => {
             //   layout,
             //   onChange: setLayout,
             // }}
+            getShareUrl={getShareUrl}
             isEmpty={resultState === "none" && queryFrom === 0}
             onQueriesSelect={onQueriesSelect}
             onQueriesRemove={(id) => {
@@ -1126,12 +1473,13 @@ const Discover = (props) => {
             searchInfo={{
               took,
               total: hits,
+              totalRelation: hitsRelation,
               ...timeChartProps,
             }}
             selectedQueriesId={selectedQueriesId}
             searchConfig={{
               trackTotalHits,
-              timeout: timeout,
+              timeout: searchTimeout,
               whetherToSample,
               sampleSize,
               topNumber,
@@ -1143,7 +1491,7 @@ const Discover = (props) => {
                   setTrackTotalHits(value);
                   break;
                 case 'time_out':
-                  setTimeout(value)
+                  setSearchTimeout(value)
                   localStorage.setItem('search_time_out', value)
                   break;
                 case 'whether_to_sample':
@@ -1246,6 +1594,7 @@ const Discover = (props) => {
                       //unmappedFieldsConfig={unmappedFieldsConfig}
                       //useNewFieldsApi={useNewFieldsApi}
                       indices={props.indices}
+                      clusterID={props.selectedCluster?.id}
                       distinctParams={distinctParams}
                       onDistinctParamsChange={onDistinctParamsChange}
                       total={hits}
@@ -1411,13 +1760,7 @@ const DiscoverUI = (props) => {
   }, [props.selectedCluster]);
 
   const getTimeFields = (IP) => {
-    const timeFields = [];
-    IP.fields.forEach((field) => {
-      if (field.spec.type == "date") {
-        timeFields.push(field.displayName);
-      }
-    });
-    return timeFields;
+    return getDateFieldsFromIndexPattern(IP);
   };
   useEffect(() => {
     if (queryParam) {
@@ -1498,13 +1841,7 @@ const DiscoverUI = (props) => {
           }
         }
         const timeFields = getTimeFields(defaultIP);
-        if (
-          timeFields &&
-          timeFields.length == 1 &&
-          defaultIP.timeFieldName == ""
-        ) {
-          defaultIP.timeFieldName = timeFields[0];
-        }
+        defaultIP.timeFieldName = resolveValidTimeFieldName(defaultIP);
         setState({
           indexPatternList: ils,
           indexPattern: defaultIP,
@@ -1540,13 +1877,7 @@ const DiscoverUI = (props) => {
   const changeIndexPattern = React.useCallback(
     (indexPattern) => {
       const timeFields = getTimeFields(indexPattern);
-      if (
-        timeFields &&
-        timeFields.length == 1 &&
-        indexPattern.timeFieldName == ""
-      ) {
-        indexPattern.timeFieldName = timeFields[0];
-      }
+      indexPattern.timeFieldName = resolveValidTimeFieldName(indexPattern);
       setState({
         ...state,
         indexPattern,
@@ -1587,14 +1918,16 @@ const DiscoverUI = (props) => {
         <Empty 
           description={
             <span>
-              The current cluster has no indices or views
+              {formatMessage({ id: "insight.discover.empty.no_indices_or_views" })}
             </span>
           }
           image={Empty.PRESENTED_IMAGE_SIMPLE}
         >
           {hasAuthority("data.index:all") && (
-            <Link to={"/data/index"}>
-              <Button type="primary">Create Now</Button>
+            <Link key="create-index" to={"/data/index"}>
+              <Button key="create-index-button" type="primary">
+                {formatMessage({ id: "insight.discover.empty.create_now" })}
+              </Button>
             </Link> 
           )}
         </Empty>

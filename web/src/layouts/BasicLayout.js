@@ -19,8 +19,15 @@ import Header from "./Header";
 import Context from "./MenuContext";
 import Exception403 from "../pages/Exception/403";
 import { GlobalContext } from "./GlobalContext";
-import { getAuthEnabled, getAuthority, isLogin } from "@/utils/authority";
-import { router, history } from "umi";
+import {
+  APPLICATION_SETTINGS_UPDATED_EVENT,
+  getAuthEnabled,
+  getAuthority,
+  getEnterpriseTaskManagerEnabled,
+  isLogin,
+  refreshApplicationSettings,
+} from "@/utils/authority";
+import { router } from "umi";
 import request from "@/utils/request";
 import HealthProvider from "@/components/HealthProvider";
 import { getSetupRequired } from "@/utils/setup";
@@ -69,7 +76,7 @@ const { Content } = Layout;
 function formatter(data, parentAuthority, parentName) {
   return data
     .map((item) => {
-      let locale = "menu";
+      let locale;
       if (parentName && item.name) {
         locale = `${parentName}.${item.name}`;
       } else if (item.name) {
@@ -95,6 +102,34 @@ function formatter(data, parentAuthority, parentName) {
       return null;
     })
     .filter((item) => item);
+}
+
+function filterMenuDataByName(menuData, names = []) {
+  return (menuData || []).map((item) => {
+    const nextItem = { ...item };
+    if (names.includes(nextItem.name)) {
+      nextItem.hideInMenu = true;
+    }
+    if (nextItem.children) {
+      nextItem.children = filterMenuDataByName(nextItem.children, names);
+    }
+    return nextItem;
+  });
+}
+
+function hasCurrentUserSession(response) {
+  if (!response || typeof response !== "object" || response.error) {
+    return false;
+  }
+
+  const source = response._source || response;
+  return !!(
+    source?.user_id ||
+    source?.id ||
+    response?._id ||
+    response?.id ||
+    source?.username
+  );
 }
 
 const memoizeOneFormatter = memoizeOne(formatter, isEqual);
@@ -133,9 +168,11 @@ class BasicLayout extends React.PureComponent {
   }
 
   state = {
+    authResolved: getAuthEnabled() !== "true",
     rendering: true,
     isMobile: false,
     menuData: this.getMenuData(),
+    sessionValid: getAuthEnabled() !== "true",
     welcomeModal: null,
   };
 
@@ -144,13 +181,38 @@ class BasicLayout extends React.PureComponent {
     this.state.welcomeModal.destroy();
   };
 
+  redirectToLogin = () => {
+    if (router && typeof router.replace === "function") {
+      router.replace("/user/login");
+      return;
+    }
+
+    const { history } = this.props;
+    if (history && typeof history.replace === "function") {
+      history.replace("/user/login");
+      return;
+    }
+
+    window.location.replace("/user/login");
+  };
+
   async componentDidMount() {
     const { menuData } = this.state;
     const { dispatch, global } = this.props;
+    let sessionValid = getAuthEnabled() !== "true";
     if (getAuthEnabled() === "true") {
-      dispatch({
+      const response = await dispatch({
         type: "user/fetchCurrent",
       });
+      sessionValid = hasCurrentUserSession(response);
+      this.setState({
+        authResolved: true,
+        sessionValid,
+      });
+      if (!sessionValid) {
+        this.redirectToLogin();
+        return;
+      }
     }
     dispatch({
       type: "setting/getSetting",
@@ -179,8 +241,31 @@ class BasicLayout extends React.PureComponent {
         // });
       }
     });
+    this.handleDataToolsLicenseRequired = () => {
+      this.licenceRef?.openToTab?.("license");
+    };
+    window.addEventListener(
+      "console:datatools-license-required",
+      this.handleDataToolsLicenseRequired
+    );
+    this.handleApplicationSettingsUpdated = async () => {
+      const menuData = this.getMenuData();
+      this.setState({ menuData });
+      await dispatch({
+        type: "global/saveData",
+        payload: {
+          menuData,
+        },
+      });
+    };
+    window.addEventListener(
+      APPLICATION_SETTINGS_UPDATED_EVENT,
+      this.handleApplicationSettingsUpdated
+    );
+    await refreshApplicationSettings();
+    await this.handleApplicationSettingsUpdated();
     let firstLogin = localStorage.getItem("first-login");
-    if (firstLogin === "true" && isLogin()) {
+    if (firstLogin === "true" && isLogin() && sessionValid) {
       localStorage.setItem("first-login", false);
       this.state.welcomeModal = Modal.info({
         title: (
@@ -214,6 +299,9 @@ class BasicLayout extends React.PureComponent {
       this.isInited = true;
       return;
     }
+    if (!this.state.authResolved || !this.state.sessionValid) {
+      return;
+    }
     if (isLogin()) {
       dispatch({
         type: "global/fetchClusterList",
@@ -240,6 +328,14 @@ class BasicLayout extends React.PureComponent {
   componentWillUnmount() {
     cancelAnimationFrame(this.renderRef);
     unenquireScreen(this.enquireHandler);
+    window.removeEventListener(
+      "console:datatools-license-required",
+      this.handleDataToolsLicenseRequired
+    );
+    window.removeEventListener(
+      APPLICATION_SETTINGS_UPDATED_EVENT,
+      this.handleApplicationSettingsUpdated
+    );
   }
 
   getContext() {
@@ -254,7 +350,11 @@ class BasicLayout extends React.PureComponent {
     const {
       route: { routes },
     } = this.props;
-    return memoizeOneFormatter(routes);
+    let menuData = memoizeOneFormatter(routes);
+    if (getEnterpriseTaskManagerEnabled() !== "true") {
+      menuData = filterMenuDataByName(menuData, ["data_tools"]);
+    }
+    return menuData;
     //
   }
 
@@ -290,8 +390,12 @@ class BasicLayout extends React.PureComponent {
     if (!currRouterData) {
       return APP_TITLE;
     }
+    const messageId = currRouterData.locale || currRouterData.name;
+    if (!messageId) {
+      return APP_TITLE;
+    }
     const message = formatMessage({
-      id: currRouterData.locale || currRouterData.name,
+      id: messageId,
       defaultMessage: currRouterData.name,
     });
     return `${message} - ${APP_TITLE}`;
@@ -348,7 +452,16 @@ class BasicLayout extends React.PureComponent {
     } = this.props;
     const { isMobile, menuData } = this.state;
     const isTop = PropsLayout === "topmenu";
+    const isDevtoolConsolePage = pathname.startsWith("/devtool/console");
+    const hideFooter = isDevtoolConsolePage;
     const routerConfig = this.matchParamsPath(pathname);
+    const contentStyle = isDevtoolConsolePage
+      ? {
+          ...this.getContentStyle(),
+          margin: 0,
+          overflow: "hidden",
+        }
+      : this.getContentStyle();
 
     const renderInvalidSecretNotification = () => {
       const secretMismatch = localStorage.getItem("secret_mismatch");
@@ -357,6 +470,9 @@ class BasicLayout extends React.PureComponent {
       }
       return null;
     };
+    if (getAuthEnabled() === "true" && (!this.state.authResolved || !this.state.sessionValid)) {
+      return null;
+    }
     const layout = (
       <>
       {renderInvalidSecretNotification()}
@@ -389,7 +505,7 @@ class BasicLayout extends React.PureComponent {
             {...this.props}
           />
 
-          <Content style={this.getContentStyle()}>
+          <Content style={contentStyle}>
             <Authorized
               authority={routerConfig && routerConfig.authority}
               noMatch={<Exception403 />}
@@ -398,6 +514,8 @@ class BasicLayout extends React.PureComponent {
                 value={{
                   ...(this.props.global || {}),
                   dispatch: this.props.dispatch,
+                  authResolved: this.state.authResolved,
+                  sessionValid: this.state.sessionValid,
                 }}
               >
                 <ErrorBoundary>{children}</ErrorBoundary>
@@ -405,7 +523,7 @@ class BasicLayout extends React.PureComponent {
             </Authorized>
           </Content>
 
-          <Footer />
+          {!hideFooter ? <Footer /> : null}
         </Layout>
       </Layout>
       </>

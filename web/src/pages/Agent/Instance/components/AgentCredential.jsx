@@ -1,5 +1,5 @@
 import { Alert, Button, Form, message } from "antd";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { formatMessage } from "umi/locale";
 
 import request from "@/utils/request";
@@ -25,25 +25,32 @@ export default Form.create()((props) => {
 
   const needAuth = !!(record.credential_id || record.basic_auth?.username);
 
+  useEffect(() => {
+    setIsManual(!record.agent_credential_id && !!record.agent_basic_auth?.username);
+  }, [record.agent_credential_id, record.agent_basic_auth?.username]);
+
   const onConfirm = async () => {
     form.validateFields(async (errors, values) => {
       if (errors) return;
       setSaveLoading(true);
       const { credential_id, basic_auth, metric_collection_mode } = record;
+      const isManualCredential = values.agent_credential_id === MANUAL_VALUE;
+      const manualAuth = isManualCredential
+        ? {
+            username: values.agent_username,
+            password: values.agent_password,
+          }
+        : undefined;
       const res = await request(`${ESPrefix}/${record.id}`, {
         method: "PUT",
         body: {
           credential_id,
           basic_auth,
           metric_collection_mode,
-          agent_credential_id:
-            values.agent_credential_id !== MANUAL_VALUE
-              ? values.agent_credential_id
-              : undefined,
-          agent_basic_auth: {
-            username: values.agent_username,
-            password: values.agent_password,
-          },
+          agent_credential_id: isManualCredential
+            ? undefined
+            : values.agent_credential_id,
+          agent_basic_auth: manualAuth,
         },
       });
       if (res?.result === "updated") {
@@ -52,20 +59,42 @@ export default Form.create()((props) => {
             id: "app.message.update.success",
           })
         );
-        const res = await request(`/elasticsearch/${record.id}`);
-        if (res?.found) {
-          onAgentCredentialSave(res._source);
-          if (res._source?.agent_credential_id) {
+        const latestRecordResponse = await request(`/elasticsearch/${record.id}`);
+        if (latestRecordResponse?.found) {
+          const latestSource = latestRecordResponse._source || {};
+          const nextRecord = {
+            ...record,
+            ...latestSource,
+            id: record.id,
+            agent_credential_id: isManualCredential
+              ? undefined
+              : latestSource.agent_credential_id || values.agent_credential_id,
+            agent_basic_auth: isManualCredential
+              ? {
+                  username:
+                    latestSource.agent_basic_auth?.username ||
+                    manualAuth?.username,
+                  // API read may not return password; keep freshly saved password for test connect.
+                  password:
+                    latestSource.agent_basic_auth?.password ||
+                    manualAuth?.password,
+                }
+              : latestSource.agent_basic_auth,
+          };
+          onAgentCredentialSave(nextRecord);
+          if (nextRecord?.agent_credential_id) {
             setIsManual(false);
           }
           form.setFieldsValue({
-            agent_credential_id: res._source?.agent_credential_id
-              ? res._source?.agent_credential_id
-              : res._source?.agent_basic_auth?.username
+            agent_credential_id: nextRecord?.agent_credential_id
+              ? nextRecord?.agent_credential_id
+              : nextRecord?.agent_basic_auth?.username
               ? MANUAL_VALUE
               : undefined,
-            agent_username: res._source.agent_basic_auth?.username,
-            agent_password: res._source.agent_basic_auth?.password,
+            agent_username: nextRecord.agent_basic_auth?.username,
+            agent_password: isManualCredential
+              ? manualAuth?.password
+              : nextRecord.agent_basic_auth?.password,
           });
         }
       } else {

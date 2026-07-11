@@ -14,6 +14,7 @@ import {
   AutoComplete,
   Switch,
   Popconfirm,
+  Icon,
 } from "antd";
 import PageHeaderWrapper from "@/components/PageHeaderWrapper";
 import "@/assets/headercontent.scss";
@@ -21,9 +22,15 @@ import { formatMessage } from "umi/locale";
 import { hasAuthority } from "@/utils/authority";
 import { isMatch, sorter } from "@/utils/utils";
 import { Link } from "umi";
+import SearchInput from "@/components/infini/SearchInput";
 
 const FormItem = Form.Item;
 const { TextArea } = Input;
+const firstColumnIconStyle = {
+  marginRight: 8,
+  color: "#999",
+  fontSize: 12,
+};
 
 const UpdateForm = Form.create()((props) => {
   const {
@@ -145,7 +152,8 @@ class AliasManage extends PureComponent {
     selectedRows: [],
     formValues: {},
     updateFormValues: {},
-    pageSize: 10,
+    pageSize: 20,
+    editMode: "UPDATE",
   };
 
   columns = [
@@ -153,25 +161,34 @@ class AliasManage extends PureComponent {
       title: formatMessage({ id: "alias.table.field.name" }),
       dataIndex: "alias",
       sorter: (a, b) => sorter.string(a, b, "alias"),
+      render: (text) => (
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <Icon type="tag" style={firstColumnIconStyle} />
+          <span>{text}</span>
+        </div>
+      ),
     },
     {
       title: formatMessage({ id: "alias.table.field.write_index" }),
+      with: 150,
       dataIndex: "write_index",
       sorter: (a, b) => sorter.string(a, b, "write_index"),
       render: (text, record) => {
+        if (!record.write_index) return "-";
         return <Link to={`/insight/discover?index=${text}`}>{text}</Link>;
       },
     },
     {
       title: formatMessage({ id: "table.field.actions" }),
+      width: 100,
       render: (text, record) => {
         return (
-          <Fragment>
+          <Fragment key={record.alias}>
             {/*<a onClick={() => this.handleUpdateModalVisible(true, record)}>别名设置</a>*/}
             {/*<Divider type="vertical" />*/}
             {hasAuthority("data.alias:all") ? (
               <Popconfirm
-                title="Sure to delete？"
+                title={formatMessage({ id: "app.message.confirm.delete" })}
                 onConfirm={() => this.handleDeleteAliasClick(record)}
               >
                 {" "}
@@ -278,10 +295,8 @@ class AliasManage extends PureComponent {
     let newState = {
       updateModalVisible: !!flag,
       updateFormValues: values,
+      editMode: values.alias ? "UPDATE" : "NEW",
     };
-    if (!values.alias) {
-      newState.editMode = "NEW";
-    }
 
     this.setState(newState);
   };
@@ -301,10 +316,10 @@ class AliasManage extends PureComponent {
     this.handleModalVisible();
   };
 
-  handleUpdate = (fields) => {
+  handleUpdate = async (fields) => {
     let upVals = {};
     for (let k in fields) {
-      if (fields[k]) {
+      if (fields[k] !== undefined && fields[k] !== null && fields[k] !== "") {
         if (k === "filter") {
           upVals[k] = JSON.parse(fields[k]);
         } else {
@@ -313,15 +328,25 @@ class AliasManage extends PureComponent {
       }
     }
     const { dispatch } = this.props;
-    dispatch({
+    const res = await dispatch({
       type: "alias/update",
       payload: {
         actionBody: upVals,
         clusterID: this.props.selectedClusterID,
       },
     });
-
-    message.success("updated successfully");
+    if (!res?.acknowledged) {
+      message.error(formatMessage({ id: "app.message.update.failed" }));
+      return;
+    }
+    message.success(
+      formatMessage({
+        id:
+          this.state.editMode === "NEW"
+            ? "app.message.create.success"
+            : "app.message.update.success",
+      })
+    );
     this.handleUpdateModalVisible();
   };
 
@@ -385,7 +410,7 @@ class AliasManage extends PureComponent {
               }}
             >
               <div style={{ maxWidth: 500, flex: "1 1 auto" }}>
-                <Input.Search
+                <SearchInput
                   allowClear
                   placeholder="Type keyword to search"
                   enterButton="Search"
@@ -493,16 +518,22 @@ class AliasIndexTable extends React.Component {
     {
       title: formatMessage({ id: "alias.table.field.index_routing" }),
       dataIndex: "index_routing",
+      render: (text) => {
+        return text || text === 0 ? text : "-";
+      },
     },
     {
       title: formatMessage({ id: "alias.table.field.search_routing" }),
       dataIndex: "search_routing",
+      render: (text) => {
+        return text || text === 0 ? text : "-";
+      },
     },
     {
       title: formatMessage({ id: "alias.table.field.filter" }),
       dataIndex: "filter",
       render: (text) => {
-        return text ? JSON.stringify(text) : "";
+        return text ? JSON.stringify(text) : "-";
       },
     },
     {
@@ -525,7 +556,7 @@ class AliasIndexTable extends React.Component {
             </a>
             <Divider type="vertical" />
             <Popconfirm
-              title="Sure to delete？"
+              title={formatMessage({ id: "app.message.confirm.delete" })}
               onConfirm={() => {
                 this.props.handleDeleteClick({
                   ...record,
@@ -551,7 +582,7 @@ class AliasIndexTable extends React.Component {
         size={"small"}
         pagination={{
           size: "small",
-          pageSize: 10,
+          pageSize: 20,
           showSizeChanger: true,
           showTotal: (total, range) =>
             `${range[0]}-${range[1]} of ${total} items`,

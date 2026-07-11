@@ -117,3 +117,12 @@ func Authorize(user *rbac.User) (bool, error) {
 	return false, errors.Errorf("failed to authorize user: %v", user.Username)
 
 }
+
+func HasNonNativeRealm() bool {
+	for _, realm := range realms {
+		if realm.GetType() != "native" {
+			return true
+		}
+	}
+	return false
+}

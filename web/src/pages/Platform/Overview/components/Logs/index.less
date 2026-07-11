@@ -1,26 +1,107 @@
 .logs {
-    display: flex;
-    gap: 12px;
     width: 100%;
     min-height: calc(100vh - 444px);
-    
-    .side {
-        width: 220px;
+
+    .emptyBlock {
+        width: 100%;
+        margin: 0;
+        text-align: center;
+
+        :global(.ant-empty-image) {
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        :global(.ant-empty-description) {
+            text-align: center;
+        }
     }
 
-    .result {
-        width: calc(100% - 220px - 12px);
+    .installAgentWrap {
+        width: 644px;
+        max-width: 100%;
+        margin: 0 auto;
+        text-align: left;
+    }
+}
+
+.logLayout {
+    display: flex;
+    width: 100%;
+    gap: 10px;
+
+    .sideWrap {
+        min-height: calc(100vh - 130px);
+        padding: 24px 15px;
+        background-color: #ffffff;
+    }
+
+    .contentWrap {
+        position: relative;
+        min-width: 0;
+
+        .expandAndCollapse {
+            cursor: pointer;
+            z-index: 10;
+            position: absolute;
+            left: 0;
+            top: 24px;
+            width: 14px;
+            height: 32px;
+            line-height: 32px;
+            border-radius: 0 4px 4px 0;
+            background-color: rgba(234, 244, 255, 1);
+            text-align: center;
+        }
+    }
+
+    .resultCard {
+        min-width: 0;
 
         .header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             margin-bottom: 16px;
         }
 
-        .histogram {
+        .searchBox {
+            flex: 1;
+            min-width: 0;
+            max-width: 600px;
+        }
+
+        :global(.ant-table-placeholder) {
+            border-bottom: none;
+        }
+    }
+
+    .histogram {
+        width: 100%;
+        height: 140px;
+        border: 1px solid rgb(232, 232, 232);
+        border-radius: 2px;
+        margin-bottom: 16px;
+    }
+
+    &.expand {
+        .sideWrap {
+            display: block;
+            width: 220px;
+        }
+
+        .contentWrap {
+            width: calc(100% - 220px);
+        }
+    }
+
+    &.collapse {
+        .sideWrap {
+            display: none;
+        }
+
+        .contentWrap {
             width: 100%;
-            height: 140px;
-            border: 1px solid rgb(232, 232, 232);
-            border-radius: 2px;
-            margin-bottom: 16px;
         }
     }
 }

@@ -23,7 +23,7 @@ INFINI Console Security 默认是开启的，如果需要关闭，可以修改 c
 ```aidl
 web:
   enabled: true
-  embedding_api: true
+  embedding_api: false
   auth:
     enabled: false
   ui:

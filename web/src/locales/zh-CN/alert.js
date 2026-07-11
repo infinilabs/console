@@ -204,12 +204,21 @@ export default {
   "alert.rule.table.columnns.category": "分类",
   "alert.rule.table.columnns.tags": "标签",
   "alert.rule.table.columnns.last_notification_time": "最近告警",
+  "alert.import.submit.success": "导入成功",
+  "alert.import.submit.failed": "导入失败",
+  "alert.import.select_file": "请选择文件",
+  "alert.import.upload.success": "文件上传成功",
+  "alert.import.upload.failed": "文件上传失败",
+  "alert.import.upload.invalid_json": "无效的 JSON 文件",
   // /alerting/rule/edit page 编辑规则页面
   "alert.rule.form.title.edit": "编辑规则",
   "alert.rule.form.label.select_cluster": "选择集群",
   "alert.rule.form.label.select_object": "选择告警对象",
   "alert.rule.form.label.filter_condition": "筛选条件",
   "alert.rule.form.label.time_field": "时间字段",
+  "alert.rule.form.label.ignore_time_filter": "忽略时间过滤",
+  "alert.rule.form.help.ignore_time_filter":
+    "针对非时序规则开启后，将不再按时间范围过滤。",
   //Configure alert objects 配置告警对象
   "alert.rule.form.title.configure_alert_object": "配置告警对象",
   "alert.rule.form.label.alert_metric": "告警指标",
@@ -244,6 +253,9 @@ export default {
   "alert.rule.form.title.configure_alert_channel": "告警通知",
   "alert.rule.form.title.configure_alert_channel_recovery": "告警恢复通知",
   "alert.rule.form.label.alert_channel": "告警渠道",
+  "alert.rule.form.label.incremental_recovery_notification": "分步恢复通知",
+  "alert.rule.form.help.incremental_recovery_notification":
+    "开启后，分组告警在部分分组恢复时会立即发送恢复通知。",
   "alert.rule.form.label.accept_upgrade": "接收升级",
   "alert.rule.form.label.upgrade_notification_waiting_time": "升级通知等待时间",
   "alert.rule.form.label.silent_period": "沉默周期",
@@ -257,6 +269,7 @@ export default {
   "alert.rule.form.title.template_variables_examples": "模板变量示例：",
   "alert.rule.form.title.example1": "示例1:",
   "alert.rule.form.title.example2": "示例2(数组遍历):",
+  "alert.rule.form.title.example": "示例",
   "alert.rule.form.title.template_function": "模板函数",
   // alerting/rule/new page 新建规则页面
   "alert.rule.form.title.create": "新建规则",
@@ -290,6 +303,16 @@ export default {
   "alert.message.priority.info": "P4(Info)",
   "alert.message.priority.ignored": "Ignored",
   "alert.message.priority.": "Undefined",
+  "alert.message.priority.undefined": "未定义",
+  "alert.message.status.alerting": "告警中",
+  "alert.message.status.ignored": "已忽略",
+  "alert.message.status.recovered": "已恢复",
+  "alert.message.status.ok": "正常",
+  "alert.message.status.error": "错误",
+  "alert.message.status.nodata": "无数据",
+  "alert.message.ignored.time": "忽略时间",
+  "alert.message.ignored.operator": "操作人",
+  "alert.message.ignored.reason": "原因",
 
   "alert.message.table.created": "触发时间",
   "alert.message.table.priority": "告警级别",
@@ -313,11 +336,14 @@ export default {
   "alert.message.detail.ignored_time": "忽略时间",
   "alert.message.detail.message": "事件内容",
   "alert.message.detail.alert_metric_status": "告警指标状态",
+  "alert.message.detail.no_history_data": "暂无告警历史数据",
   "alert.message.detail.execution_record": "执行记录",
   "alert.message.detail.action_message": "通知内容",
   "alert.message.detail.action_result": "执行结果",
   "alert.message.detail.action_result_error": "规则执行错误",
   "alert.message.detail.alert_info": "告警详情",
+  "alert.message.detail.query_dsl": "查询 DSL",
+  "alert.message.detail.response": "响应",
   "alert.message.detail.condition.type": "触发条件类型",
   "alert.message.detail.condition": "触发条件",
   "alert.message.detail.bucket_diff_type": "分桶对比类型",
@@ -339,7 +365,14 @@ export default {
   "alert.channel.form.advanced.custom": "(自定义)",
   "alert.channel.form.advanced.load.default": "加载渠道默认配置",
 
+  "alert.channel.form.webhook.url": "Webhook 地址",
+  "alert.channel.form.webhook.url.required": "请输入 Webhook 地址！",
+  "alert.channel.form.webhook.method": "请求方法",
+  "alert.channel.form.webhook.method.required": "请选择请求方法！",
+  "alert.channel.form.webhook.headers": "请求头",
   "alert.channel.form.webhook.template.title": "默认内容模板",
+  "alert.channel.form.webhook.body": "请求体",
+  "alert.channel.form.webhook.body.required": "请输入请求体！",
   "alert.channel.form.webhook.send.test": "发送测试消息",
 
   "alert.channel.form.email.server": "邮件服务器",
@@ -357,10 +390,21 @@ export default {
   "alert.channel.form.email.template.body": "正文",
   "alert.channel.form.email.template.body.required": "请输入正文！",
   "alert.channel.form.email.send.test": "发送测试邮件",
+  "alert.rule.form.template.sync": "同步模板",
+  "alert.rule.form.template.sync.success": "当前规则模板同步成功",
+  "alert.rule.form.template.sync.failed": "同步规则模板失败",
+  "alert.channel.enable.tip.email_incomplete":
+    "启用邮件渠道前，请先配置邮件服务器和至少一个收件人。",
+  "alert.channel.enable.tip.email_server":
+    "启用邮件渠道前，请先配置邮件服务器。",
+  "alert.channel.enable.tip.email_recipients":
+    "启用邮件渠道前，请先配置至少一个收件人。",
 
   "alert.channel.empty": "没有告警渠道？",
   "alert.channel.export-import.label": "告警渠道",
   "alert.rule.export-import.label": "告警规则",
+  "alert.import.example.title": "导入示例",
+  "alert.import.example.tip.rule": "建议先导出一份规则文件作为模板，再按相同结构编辑后导入。",
 
   // 告警任务详情页面
   "alert.task.detail.title": "告警任务详情",

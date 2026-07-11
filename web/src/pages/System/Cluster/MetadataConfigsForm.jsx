@@ -1,4 +1,4 @@
-import { Form, Input, InputNumber, Icon, Switch } from "antd";
+import { Form, Input, InputNumber, Icon, Switch, Tooltip } from "antd";
 import { formatMessage } from "umi/locale";
 
 const InputGroup = Input.Group;
@@ -12,17 +12,45 @@ const configs = [
 
 const MetadataConfigsForm = (props) => {
   const editValue = props.editValue;
-
   const { getFieldDecorator } = props.form;
+  const enabledLabel = formatMessage({
+    id: "cluster.manage.config_item.enabled",
+  });
+  const intervalLabel = formatMessage({
+    id: "cluster.manage.config_item.interval",
+  });
+  const intervalUnit = formatMessage({
+    id: "cluster.manage.config_item.interval.unit",
+  });
+  const renderConfigLabel = (key) => (
+    <span>
+      {formatMessage({
+        id: `cluster.manage.metadata_configs.${key}`,
+      })}
+      <Tooltip
+        title={formatMessage({
+          id: `cluster.manage.metadata_configs.tips.${key}`,
+        })}
+      >
+        <Icon
+          type="question-circle-o"
+          style={{ marginLeft: 6, color: "#1890ff" }}
+        />
+      </Tooltip>
+    </span>
+  );
+
+  const getIntervalInitialValue = (value) => {
+    const normalized = `${value || ""}`.replace(/[^\d]/g, "");
+    return normalized ? Number(normalized) : 10;
+  };
   return (
     <>
       {configs.map((item, i) => {
         return (
           <Form.Item
             key={i}
-            label={formatMessage({
-              id: `cluster.manage.metadata_configs.${item}`,
-            })}
+            label={renderConfigLabel(item)}
           >
             <InputGroup compact>
               <Form.Item>
@@ -34,7 +62,7 @@ const MetadataConfigsForm = (props) => {
                     paddingRight: 10,
                   }}
                 >
-                  enabled
+                  {enabledLabel}
                 </span>
                 {getFieldDecorator(`metadata_configs.${item}.enabled`, {
                   valuePropName: "checked",
@@ -56,19 +84,20 @@ const MetadataConfigsForm = (props) => {
                     paddingRight: 10,
                   }}
                 >
-                  interval
+                  {intervalLabel}
                 </span>
                 {getFieldDecorator(`metadata_configs.${item}.interval`, {
-                  initialValue:
-                    editValue?.metadata_configs?.[item]?.interval || 10,
+                  initialValue: getIntervalInitialValue(
+                    editValue?.metadata_configs?.[item]?.interval
+                  ),
                   rules: [],
                 })(
                   <InputNumber
                     min={10}
                     max={3600}
                     step={10}
-                    formatter={(value) => `${value}s`}
-                    parser={(value) => value.replace("s", "")}
+                    formatter={(value) => `${value}${intervalUnit}`}
+                    parser={(value) => `${value || ""}`.replace(/[^\d]/g, "")}
                   />
                 )}
               </Form.Item>

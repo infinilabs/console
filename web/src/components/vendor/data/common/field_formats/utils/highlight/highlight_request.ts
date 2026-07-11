@@ -28,8 +28,11 @@ export function getHighlightRequest(query: any, shouldHighlight: boolean) {
     pre_tags: [highlightTags.pre],
     post_tags: [highlightTags.post],
     fields: {
-      '*': {},
+      '*': {
+        number_of_fragments: 0,
+      },
     },
+    require_field_match: false,
     fragment_size: FRAGMENT_SIZE,
   };
 }

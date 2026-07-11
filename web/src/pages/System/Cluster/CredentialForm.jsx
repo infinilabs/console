@@ -82,14 +82,14 @@ export default (props) => {
             ],
           })(
             <Select loading={loading} onChange={onCredentialChange} allowClear>
-              {data.map((item) => (
-                <Select.Option value={item.id}>{item.name}</Select.Option>
-              ))}
               <Select.Option value={MANUAL_VALUE}>
                 {formatMessage({
                   id: "cluster.regist.step.connect.credential.manual",
                 })}
               </Select.Option>
+              {data.map((item) => (
+                <Select.Option value={item.id}>{item.name}</Select.Option>
+              ))}
             </Select>
           )}
         </Col>

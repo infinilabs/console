@@ -5,6 +5,7 @@ import { formatter } from "@/utils/format";
 import { HealthStatusCircle } from "@/components/infini/health_status_circle";
 import OverviewStatistic from "../../components/overview_statistic";
 import { formatUtcTimeToLocal } from "@/utils/utils";
+import { formatMessage } from "umi/locale";
 
 const vstyle = {
   fontSize: 12,
@@ -41,7 +42,7 @@ const StatisticBar = ({ clusterID, indexName, timeRange, setSpinning }) => {
     overviewStatistic = [
       {
         key: "Health",
-        title: "Health",
+        title: formatMessage({ id: "indices.field.health" }),
         value: indexValue?.index_info?.health,
         vstyle: {
           ...vstyle,
@@ -52,37 +53,37 @@ const StatisticBar = ({ clusterID, indexName, timeRange, setSpinning }) => {
       },
       {
         key: "Status",
-        title: "Status",
+        title: formatMessage({ id: "indices.field.status" }),
         value: indexValue?.index_info?.status ?? "N/A",
       },
       {
         key: "Total",
-        title: "Total",
+        title: formatMessage({ id: "indices.field.store_size" }),
         value: indexValue?.index_info?.store_size?.toUpperCase() ?? "N/A",
       },
       {
         key: "Primaries",
-        title: "Primaries",
+        title: formatMessage({ id: "indices.field.primary_store_size" }),
         value: indexValue?.index_info?.pri_store_size?.toUpperCase() ?? "N/A",
       },
       {
         key: "Documents",
-        title: "Documents",
+        title: formatMessage({ id: "indices.field.docs_count" }),
         value: formatter.number(indexValue?.index_info?.docs_count || 0),
       },
       {
         key: "Total shards",
-        title: "Total shards",
+        title: formatMessage({ id: "overview.statistic.total_shards" }),
         value: indexValue?.index_info?.shards ?? "N/A",
       },
       {
         key: "Unassigned shards",
-        title: "Unassigned shards",
+        title: formatMessage({ id: "cluster.monitor.summary.unassign_shard" }),
         value: indexValue?.unassigned_shards ?? "N/A",
       },
       {
         key: "Updated",
-        title: "Updated",
+        title: formatMessage({ id: "overview.statistic.updated" }),
         value: indexValue?.timestamp
           ? formatUtcTimeToLocal(indexValue?.timestamp)
           : "N/A",
@@ -95,15 +96,20 @@ const StatisticBar = ({ clusterID, indexName, timeRange, setSpinning }) => {
       {!isAvailable ? (
         <div className={"mask"}>
           <div>
-            Index is{" "}
-            {indexValue?.index_info?.status == "delete" ||
-            indexValue?.index_info?.status == "close"
-              ? `${indexValue?.index_info?.status}d`
-              : "not availabe"}{" "}
-            since:{" "}
-            {indexValue?.timestamp
-              ? formatUtcTimeToLocal(indexValue?.timestamp)
-              : "N/A"}
+            {formatMessage(
+              { id: "overview.status.index_since" },
+              {
+                status:
+                  indexValue?.index_info?.status == "delete"
+                    ? formatMessage({ id: "overview.status.deleted" })
+                    : indexValue?.index_info?.status == "close"
+                      ? formatMessage({ id: "overview.status.closed" })
+                      : formatMessage({ id: "overview.status.unavailable" }),
+                timestamp: indexValue?.timestamp
+                  ? formatUtcTimeToLocal(indexValue?.timestamp)
+                  : "N/A",
+              }
+            )}
           </div>
         </div>
       ) : null}

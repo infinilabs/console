@@ -8,6 +8,7 @@ import {
   Popconfirm,
   Table,
   message,
+  Icon,
 } from "antd";
 import PageHeaderWrapper from "@/components/PageHeaderWrapper";
 import styles from "./Index.less";
@@ -21,12 +22,18 @@ import { hasAuthority } from "@/utils/authority";
 import AutoTextEllipsis from "@/components/AutoTextEllipsis";
 import commonStyles from "@/common.less"
 
-const { Search } = Input;
+import SearchInput from "@/components/infini/SearchInput";
+
+const firstColumnIconStyle = {
+  marginRight: 8,
+  color: "#999",
+  fontSize: 12,
+};
 
 export default () => {
   const initialQueryParams = {
     from: 0,
-    size: 10,
+    size: 20,
   };
 
   function reducer(queryParams, action) {
@@ -58,6 +65,7 @@ export default () => {
 
   const [visible, setVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState();
+  const [submitLoading, setSubmitLoading] = useState(false);
 
   const [queryParams, dispatch] = useReducer(reducer, initialQueryParams);
 
@@ -97,14 +105,19 @@ export default () => {
   };
 
   const onSubmit = async (value) => {
-    const { name, type, tags, username, password } = value;
+    if (submitLoading) {
+      return;
+    }
+    setSubmitLoading(true);
+    const { name, type, tags, username, password, token_value } = value;
+    const credentialType = selectedItem?.type || type;
     const body = {
       name,
-      type,
+      type: credentialType,
       tags,
       payload: {},
     };
-    if (type === "basic_auth") {
+    if (credentialType === "basic_auth") {
       body.payload = {
         basic_auth: {
           username,
@@ -112,71 +125,105 @@ export default () => {
         },
       };
     }
+    if (credentialType === "token") {
+      body.payload = {
+        token: {
+          value: token_value,
+        },
+      };
+    }
     if (selectedItem) {
-      if (body.payload?.basic_auth?.password === "") {
-        delete body.payload.basic_auth["password"];
-      }
-      const res = await request(`/credential/${selectedItem.id}`, {
-        method: "PUT",
-        body,
-      });
-      if (res) {
-        if (res.result === "updated") {
-          message.success(
+      try {
+        if (body.payload?.basic_auth?.password === "") {
+          delete body.payload.basic_auth["password"];
+        }
+        if (body.payload?.token?.value === "") {
+          delete body.payload.token["value"];
+        }
+        const res = await request(`/credential/${selectedItem.id}`, {
+          method: "PUT",
+          body,
+        });
+        if (res?.error) {
+          message.error(res.error.reason || formatMessage({ id: "app.message.update.failed" }));
+          return;
+        }
+        if (res) {
+          if (res.result === "updated") {
+            message.success(
+              formatMessage({
+                id: "app.message.update.success",
+              })
+            );
+            setTimeout(() => {
+              setSelectedItem();
+              setVisible(false);
+              run();
+            }, 500);
+          } else if (res.result === "not_found") {
+            message.error(`Update failed: not found`);
+          }
+        } else {
+          console.log("Update failed: ", res);
+          message.error(
             formatMessage({
-              id: "app.message.update.success",
+              id: "app.message.update.failed",
             })
           );
-          setTimeout(() => {
-            setSelectedItem();
-            setVisible(false);
-            run();
-          }, 500);
-        } else if (res.result === "not_found") {
-          message.error(`Update failed: not found`);
         }
-      } else {
-        console.log("Update failed: ", res);
-        message.error(
-          formatMessage({
-            id: "app.message.update.failed",
-          })
-        );
+      } finally {
+        setSubmitLoading(false);
       }
     } else {
-      const res = await request(`/credential`, {
-        method: "POST",
-        body,
-      });
-      if (res) {
-        if (res.result === "created") {
-          message.success(
+      try {
+        const res = await request(`/credential`, {
+          method: "POST",
+          body,
+        });
+        if (res?.error) {
+          message.error(res.error.reason || formatMessage({ id: "app.message.create.failed" }));
+          return;
+        }
+        if (res) {
+          if (res.result === "created") {
+            message.success(
+              formatMessage({
+                id: "app.message.create.success",
+              })
+            );
+            setTimeout(() => {
+              setSelectedItem();
+              setVisible(false);
+              run();
+            }, 500);
+          }
+        } else {
+          console.log("Create failed: ", res);
+          message.error(
             formatMessage({
-              id: "app.message.create.success",
+              id: "app.message.create.failed",
             })
           );
-          setTimeout(() => {
-            setSelectedItem();
-            setVisible(false);
-            run();
-          }, 500);
         }
-      } else {
-        console.log("Create failed: ", res);
-        message.error(
-          formatMessage({
-            id: "app.message.create.failed",
-          })
-        );
+      } finally {
+        setSubmitLoading(false);
       }
     }
   };
 
   const columns = [
     {
-      title: "ID",
+      title: formatMessage({
+        id: "table.field.id",
+      }),
       dataIndex: "id",
       key: "id",
+      render: (text) => (
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <Icon type="key" style={firstColumnIconStyle} />
+          <span>{text}</span>
+        </div>
+      ),
     },
     {
       title: formatMessage({
@@ -231,7 +278,7 @@ export default () => {
       }),
       width: 150,
       render: (text, record) => (
-        <Fragment>
+        <Fragment key={record.id}>
           <a
             onClick={() => {
               setSelectedItem(record);
@@ -244,7 +291,7 @@ export default () => {
           </a>
           <Divider type="vertical" />
           <Popconfirm
-            title="Sure to delete?"
+            title={formatMessage({ id: "app.message.confirm.delete" })}
             onConfirm={() => onRemove(record.id)}
           >
             <a>
@@ -279,7 +326,7 @@ export default () => {
           }}
         >
           <div style={{ maxWidth: 500, flex: "1 1 auto" }}>
-            <Search
+            <SearchInput
               allowClear
               placeholder="Type keyword to search"
               enterButton="Search"
@@ -341,6 +388,9 @@ export default () => {
       <Drawer
         width={640}
         onClose={() => {
+          if (submitLoading) {
+            return;
+          }
           setVisible(false);
         }}
         visible={visible}
@@ -351,7 +401,7 @@ export default () => {
         })}
         destroyOnClose
       >
-        <CredentialForm record={selectedItem} onSubmit={onSubmit} />
+        <CredentialForm record={selectedItem} onSubmit={onSubmit} submitLoading={submitLoading} />
       </Drawer>
     </PageHeaderWrapper>
   );

@@ -150,6 +150,14 @@ export default (props) => {
       }
     };
 
+    const chartTimeFormatter =
+      typeof timeRange?.timeFormatter === "function"
+        ? (value) => {
+            const formatted = timeRange.timeFormatter(value);
+            return formatted == null ? "" : formatted;
+          }
+        : formatter.dates(1);
+
     const renderChart = () => {
       if (error) {
         return (
@@ -160,14 +168,44 @@ export default (props) => {
       }
       const axis = metric?.axis || [];
       const lines = metric?.lines || [];
+
+      // Fill gaps for Bar charts (auto_date_histogram only returns non-empty buckets)
+      lines.forEach((line) => {
+        if (line.type !== "Bar" || !line.data || line.data.length < 2) return;
+        const timestamps = [...new Set(line.data.map((d) => d.x))].sort(
+          (a, b) => a - b
+        );
+        if (timestamps.length < 2) return;
+        const gaps = [];
+        for (let i = 1; i < timestamps.length; i++) {
+          gaps.push(timestamps[i] - timestamps[i - 1]);
+        }
+        gaps.sort((a, b) => a - b);
+        const intervalMs = gaps[Math.floor(gaps.length / 2)];
+        if (!intervalMs || intervalMs <= 0) return;
+        const existingSet = new Set(timestamps.map(String));
+        const filledData = [...line.data];
+        const startTs = timestamps[0];
+        const endTs = timestamps[timestamps.length - 1];
+        const maxSlots = 200;
+        let count = 0;
+        for (let ts = startTs; ts <= endTs && count < maxSlots; ts += intervalMs) {
+          count++;
+          if (!existingSet.has(String(ts))) {
+            filledData.push({ x: ts, y: 100, g: "empty" });
+          }
+        }
+        filledData.sort((a, b) => a.x - b.x || (a.g || "").localeCompare(b.g || ""));
+        line.data = filledData;
+      });
       if (lines.every((item) => !item.data || item.data.length === 0)) {
         const emptyProps = {}
         if (metric?.min_bucket_size > 0 && metric?.hits_total > 0) {
           emptyProps.description = (
-            <>
-              <div style={{ wordBreak: 'break-all', textAlign: 'left', marginBotton: 2 }} >
+            <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 6, width: '100%' }}>
+              <span style={{ wordBreak: 'break-all' }}>
                 {formatMessage({ id: "cluster.metrics.time_interval.empty" }, { min_bucket_size: metric.min_bucket_size})}
-              </div>
+              </span>
               <Dropdown overlay={(
                 <Menu>
                   <Menu.Item onClick={() => handleTimeIntervalChange(`${metric?.min_bucket_size}s`)}>
@@ -178,11 +216,11 @@ export default (props) => {
                   </Menu.Item>
                 </Menu>
               )}>
-                <a onClick={e => e.preventDefault()}>
+                <a style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} onClick={e => e.preventDefault()}>
                   {formatMessage({ id: `cluster.metrics.time_interval.apply`})} <Icon type="down" />
                 </a>
               </Dropdown>
-            </>
+            </span>
           )
         }
         return (
@@ -216,8 +254,8 @@ export default (props) => {
           <Axis
             id={`${metricKey}-bottom`}
             position={Position.Bottom}
-            labelFormat={timeRange.timeFormatter}
-            tickFormat={timeRange.timeFormatter}
+            labelFormat={chartTimeFormatter}
+            tickFormat={chartTimeFormatter}
           />
           {metricKey == "cluster_health" ? (
             <Axis
@@ -266,6 +304,7 @@ export default (props) => {
                       yAccessor === "y"
                     
                     ) {
+                      if (g === "empty") return "#D3DAE6";
                       if( ["red", "yellow", "green"].includes(g)){
                         return g;
                       }
@@ -322,20 +361,27 @@ export default (props) => {
     }
   
     return (
-      <div key={metricKey} ref={containerRef} className={className} style={style}>
+      <div
+        key={metricKey}
+        ref={containerRef}
+        className={[styles.metricChartContainer, className].filter(Boolean).join(" ")}
+        style={style}
+      >
         {
-                metric?.request && (
-                  <CopyToClipboard text={`GET .infini_metrics/_search\n${metric.request}`}>
-                    <Tooltip title={formatMessage({id: "cluster.metrics.request.copy"})}>
-                      <Icon 
-                        className="copyReq"
-                        type="copy" 
-                        onClick={() => message.success(formatMessage({id: "cluster.metrics.request.copy.success"}))}
-                      />
-                    </Tooltip>
-                  </CopyToClipboard>
-                )
-              }
+          metric?.request && (
+            <div className={styles.copyAction}>
+              <CopyToClipboard text={`GET .infini_metrics/_search\n${metric.request}`}>
+                <Tooltip title={formatMessage({id: "cluster.metrics.request.copy"})}>
+                  <Icon
+                    className={styles.copyReq}
+                    type="copy"
+                    onClick={() => message.success(formatMessage({id: "cluster.metrics.request.copy.success"}))}
+                  />
+                </Tooltip>
+              </CopyToClipboard>
+            </div>
+          )
+        }
         <Spin spinning={loading}>
         <div className={styles.vizChartItemTitle}>
           <span>

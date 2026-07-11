@@ -1,0 +1,525 @@
+// Copyright (C) INFINI Labs & INFINI LIMITED.
+//
+// The INFINI Console is offered under the GNU Affero General Public License v3.0
+// and as commercial software.
+//
+// For commercial licensing, contact us at:
+//   - Website: infinilabs.com
+//   - Email: hello@infini.ltd
+//
+// Open Source licensed under AGPL V3:
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+package task
+
+import (
+	"bytes"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
+	"sync"
+	"testing"
+
+	api2 "infini.sh/framework/core/api"
+	config2 "infini.sh/framework/core/config"
+	"infini.sh/framework/core/elastic"
+	"infini.sh/framework/core/env"
+	"infini.sh/framework/core/global"
+	replaysecurity "infini.sh/framework/core/security/replay"
+	"infini.sh/framework/core/util"
+)
+
+func TestInvokeSetupCallbackRunsOnlyOnce(t *testing.T) {
+	previousCallbacks := setupFinishedCallback
+	previousOnce := setupCallbackOnce
+	defer func() {
+		setupFinishedCallback = previousCallbacks
+		setupCallbackOnce = previousOnce
+	}()
+
+	setupFinishedCallback = nil
+	setupCallbackOnce = sync.Once{}
+
+	count := 0
+	RegisterSetupCallback(func() {
+		count++
+	})
+	RegisterSetupCallback(func() {
+		count++
+	})
+
+	InvokeSetupCallback()
+	InvokeSetupCallback()
+
+	if count != 2 {
+		t.Fatalf("expected callbacks to run once each, got %d invocations", count)
+	}
+}
+
+func TestAcquireSetupInitialization(t *testing.T) {
+	releaseSetupInitialization()
+	defer releaseSetupInitialization()
+
+	if !acquireSetupInitialization() {
+		t.Fatal("expected first acquire to succeed")
+	}
+	if acquireSetupInitialization() {
+		t.Fatal("expected second acquire to fail while initialization is running")
+	}
+
+	releaseSetupInitialization()
+
+	if !acquireSetupInitialization() {
+		t.Fatal("expected acquire to succeed after release")
+	}
+}
+
+func TestEnsureSystemClusterBasicAuthSkipsWhenSystemClusterUnavailable(t *testing.T) {
+	previous := global.Lookup(elastic.GlobalSystemElasticsearchID)
+	defer global.Register(elastic.GlobalSystemElasticsearchID, previous)
+
+	global.Register(elastic.GlobalSystemElasticsearchID, "")
+
+	if err := EnsureSystemClusterBasicAuth(); err != nil {
+		t.Fatalf("expected nil error when system cluster id is unavailable, got %v", err)
+	}
+}
+
+func TestSystemIngestTemplateHostsRendersAsYAMLArray(t *testing.T) {
+	content := string(mustReadSetupDataFile(t, "system_ingest_config.dat"))
+	content = strings.ReplaceAll(content, "$[[SETUP_AGENT_USERNAME]]", "infini-ingest")
+	content = strings.ReplaceAll(content, "$[[SETUP_AGENT_PASSWORD_KEY]]", "SYSTEM_CLUSTER_INGEST_PASSWORD")
+	content = strings.ReplaceAll(content, "$[[SETUP_SCHEME]]", "http")
+	content = strings.ReplaceAll(content, "$[[SETUP_HOSTS]]", `["192.168.3.8:9200"]`)
+	content = strings.ReplaceAll(content, "$[[SETUP_INDEX_PREFIX]]", ".infini_")
+
+	if _, err := config2.NewConfigWithYAML([]byte(content), "system_ingest_config.yml"); err != nil {
+		t.Fatalf("expected rendered system_ingest_config to parse, got %v\n%s", err, content)
+	}
+	if !strings.Contains(content, `hosts: ["192.168.3.8:9200"]`) {
+		t.Fatalf("expected hosts array rendering, got:\n%s", content)
+	}
+}
+
+func TestTaskConfigTemplateAllowsArrayEndpointSubstitution(t *testing.T) {
+	content := string(mustReadSetupDataFile(t, "task_config_tpl.dat"))
+	content = strings.ReplaceAll(content, "$[[CLUSTER_ENDPOINT]]", `http://192.168.3.8:9200`)
+
+	if _, err := config2.NewConfigWithYAML([]byte(content), "task_config.tpl"); err != nil {
+		t.Fatalf("expected task_config.tpl to parse after endpoint substitution, got %v\n%s", err, content)
+	}
+	if !strings.Contains(content, `endpoints: ["http://192.168.3.8:9200"]`) {
+		t.Fatalf("expected endpoints array rendering, got:\n%s", content)
+	}
+}
+
+func TestSetupRegistersReplayNonceAPI(t *testing.T) {
+	oldEnv := global.Env()
+	testEnv := env.EmptyEnv()
+	testEnv.SystemConfig.PathConfig.Data = t.TempDir()
+	testEnv.EnableSetup(true)
+	global.RegisterEnv(testEnv)
+	defer global.RegisterEnv(oldEnv)
+
+	module := &Module{}
+	module.Setup()
+
+	req := httptest.NewRequest(http.MethodPost, "https://console.local/account/replay_nonce", bytes.NewBufferString(`{"method":"POST","path":"/setup/_validate"}`))
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+
+	api2.ServeRegisteredAPIRequest(resp, req)
+
+	if resp.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d: %s", http.StatusOK, resp.Code, resp.Body.String())
+	}
+
+	var body map[string]interface{}
+	if err := json.Unmarshal(resp.Body.Bytes(), &body); err != nil {
+		t.Fatalf("unmarshal response: %v", err)
+	}
+
+	nonce, ok := body["nonce"].(string)
+	if !ok || nonce == "" {
+		t.Fatalf("expected nonce in response, got %#v", body)
+	}
+}
+
+func TestSetupRegistersReplayNonceUIRoute(t *testing.T) {
+	oldEnv := global.Env()
+	testEnv := env.EmptyEnv()
+	testEnv.SystemConfig.PathConfig.Data = t.TempDir()
+	testEnv.EnableSetup(true)
+	global.RegisterEnv(testEnv)
+	defer global.RegisterEnv(oldEnv)
+
+	module := &Module{}
+	module.Setup()
+
+	webCfg := config2.WebAppConfig{}
+	webCfg.NetworkConfig.Binding = "127.0.0.1:0"
+	api2.StartWeb(webCfg)
+	defer api2.StopWeb(webCfg)
+
+	req := httptest.NewRequest(http.MethodPost, "https://console.local/account/replay_nonce", bytes.NewBufferString(`{"method":"POST","path":"/setup/_validate"}`))
+	req.Header.Set("Content-Type", "application/json")
+	resp := httptest.NewRecorder()
+
+	if err := api2.ServeRegisteredUIRequest(resp, req); err != nil {
+		t.Fatalf("serve ui request: %v", err)
+	}
+
+	if resp.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d: %s", http.StatusOK, resp.Code, resp.Body.String())
+	}
+
+	var body map[string]interface{}
+	if err := json.Unmarshal(resp.Body.Bytes(), &body); err != nil {
+		t.Fatalf("unmarshal response: %v", err)
+	}
+
+	nonce, ok := body["nonce"].(string)
+	if !ok || nonce == "" {
+		t.Fatalf("expected nonce in response, got %#v", body)
+	}
+}
+
+func TestSetupRegistersTryConnectUIRoute(t *testing.T) {
+	oldEnv := global.Env()
+	testEnv := env.EmptyEnv()
+	testEnv.SystemConfig.PathConfig.Data = t.TempDir()
+	testEnv.EnableSetup(true)
+	global.RegisterEnv(testEnv)
+	defer global.RegisterEnv(oldEnv)
+
+	module := &Module{}
+	module.Setup()
+
+	webCfg := config2.WebAppConfig{}
+	webCfg.NetworkConfig.Binding = "127.0.0.1:0"
+	api2.StartWeb(webCfg)
+	defer api2.StopWeb(webCfg)
+
+	nonceReq := httptest.NewRequest(http.MethodPost, "https://console.local/account/replay_nonce", bytes.NewBufferString(`{"method":"POST","path":"/elasticsearch/try_connect"}`))
+	nonceReq.Header.Set("Content-Type", "application/json")
+	nonceResp := httptest.NewRecorder()
+
+	if err := api2.ServeRegisteredUIRequest(nonceResp, nonceReq); err != nil {
+		t.Fatalf("serve nonce request: %v", err)
+	}
+
+	var nonceBody map[string]interface{}
+	if err := json.Unmarshal(nonceResp.Body.Bytes(), &nonceBody); err != nil {
+		t.Fatalf("unmarshal nonce response: %v", err)
+	}
+
+	nonce, ok := nonceBody["nonce"].(string)
+	if !ok || nonce == "" {
+		t.Fatalf("expected nonce in response, got %#v", nonceBody)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "https://console.local/elasticsearch/try_connect", bytes.NewBufferString(`{"hosts":["127.0.0.1:1"],"schema":"http"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(replaysecurity.HeaderName, nonce)
+	resp := httptest.NewRecorder()
+
+	if err := api2.ServeRegisteredUIRequest(resp, req); err != nil {
+		t.Fatalf("serve try_connect request: %v", err)
+	}
+
+	if resp.Code == http.StatusNotFound {
+		t.Fatalf("expected try_connect route to be registered on UI router, got 404")
+	}
+}
+
+func TestSetupRegistersTryConnectUIRouteWhenSetupNotRequired(t *testing.T) {
+	oldEnv := global.Env()
+	testEnv := env.EmptyEnv()
+	testEnv.SystemConfig.PathConfig.Data = t.TempDir()
+	if err := os.WriteFile(filepath.Join(testEnv.SystemConfig.PathConfig.Data, ".setup_lock"), []byte("1"), 0o644); err != nil {
+		t.Fatalf("write setup lock: %v", err)
+	}
+	testEnv.EnableSetup(true)
+	global.RegisterEnv(testEnv)
+	defer global.RegisterEnv(oldEnv)
+
+	module := &Module{}
+	module.Setup()
+
+	webCfg := config2.WebAppConfig{}
+	webCfg.NetworkConfig.Binding = "127.0.0.1:0"
+	api2.StartWeb(webCfg)
+	defer api2.StopWeb(webCfg)
+
+	nonceReq := httptest.NewRequest(http.MethodPost, "https://console.local/account/replay_nonce", bytes.NewBufferString(`{"method":"POST","path":"/elasticsearch/try_connect"}`))
+	nonceReq.Header.Set("Content-Type", "application/json")
+	nonceResp := httptest.NewRecorder()
+
+	if err := api2.ServeRegisteredUIRequest(nonceResp, nonceReq); err != nil {
+		t.Fatalf("serve nonce request: %v", err)
+	}
+
+	var nonceBody map[string]interface{}
+	if err := json.Unmarshal(nonceResp.Body.Bytes(), &nonceBody); err != nil {
+		t.Fatalf("unmarshal nonce response: %v", err)
+	}
+
+	nonce, ok := nonceBody["nonce"].(string)
+	if !ok || nonce == "" {
+		t.Fatalf("expected nonce in response, got %#v", nonceBody)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "https://console.local/elasticsearch/try_connect", bytes.NewBufferString(`{invalid`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(replaysecurity.HeaderName, nonce)
+	resp := httptest.NewRecorder()
+
+	if err := api2.ServeRegisteredUIRequest(resp, req); err != nil {
+		t.Fatalf("serve try_connect request: %v", err)
+	}
+
+	if resp.Code == http.StatusNotFound {
+		t.Fatalf("expected try_connect route to stay registered on UI router when setup is not required, got 404")
+	}
+}
+
+func TestValidateSetupBootstrapSkipsAdminResetForSkipSetup(t *testing.T) {
+	req := &SetupRequest{
+		Skip:              true,
+		BootstrapUsername: "admin",
+		BootstrapPassword: "weak",
+	}
+
+	if err := validateSetupBootstrap(req); err != nil {
+		t.Fatalf("expected bootstrap validation to be skipped, got %v", err)
+	}
+	if req.BootstrapUsername != "" || req.BootstrapPassword != "" {
+		t.Fatalf("expected bootstrap credentials to be cleared when reset is disabled, got %#v", req)
+	}
+}
+
+func TestValidateSetupBootstrapRequiresPasswordWhenResettingAdmin(t *testing.T) {
+	req := &SetupRequest{
+		Skip:              true,
+		ResetUser:         true,
+		BootstrapUsername: "admin",
+	}
+
+	err := validateSetupBootstrap(req)
+	if err == nil || !strings.Contains(err.Error(), "bootstrap password is required") {
+		t.Fatalf("expected missing password error, got %v", err)
+	}
+}
+
+func TestValidateSetupBootstrapRequiresStrongPasswordWhenResettingAdmin(t *testing.T) {
+	req := &SetupRequest{
+		Skip:              true,
+		ResetUser:         true,
+		BootstrapUsername: "admin",
+		BootstrapPassword: "weakpass",
+	}
+
+	err := validateSetupBootstrap(req)
+	if err == nil || !strings.Contains(err.Error(), "does not meet security requirements") {
+		t.Fatalf("expected password strength error, got %v", err)
+	}
+}
+
+func TestValidateSetupBootstrapRequiresAdminOnInitialSetup(t *testing.T) {
+	req := &SetupRequest{
+		Skip: false,
+	}
+
+	err := validateSetupBootstrap(req)
+	if err == nil || !strings.Contains(err.Error(), "bootstrap username is required") {
+		t.Fatalf("expected missing username error, got %v", err)
+	}
+}
+
+func TestGatewayRelayTemplateRendersAsChildConfig(t *testing.T) {
+	content := renderGatewaySetupData(t, "gateway_relay.dat")
+
+	if _, err := config2.NewConfigWithYAML([]byte(content), "relay.yml"); err != nil {
+		t.Fatalf("expected rendered relay config to parse, got %v\n%s", err, content)
+	}
+	assertNoChildConfigGlobals(t, content)
+	assertContainsAll(t, content,
+		`binding: 0.0.0.0:8081`,
+		`cert_file: "config/relay_server.crt"`,
+		`key_file: "config/relay_server.key"`,
+		`metadata_refresh:`,
+		`remote_configs: false`,
+		`monitored: true`,
+		`metadata_cache_enabled: false`,
+		`password: "$[[keystore.SYSTEM_CLUSTER_INGEST_PASSWORD]]"`,
+		`queue_name_prefix: gateway_relay_async_bulk`,
+		`partition_size: 3`,
+		`elasticsearch: gateway_relay_system`,
+		`continue_metadata_missing: true`,
+		`max_connection_per_node: 1000`,
+		`name: gateway_relay_bulk_request_ingest`,
+	)
+}
+
+func TestGatewayMigrationTemplateRendersAsChildConfig(t *testing.T) {
+	content := renderGatewaySetupData(t, "gateway_migration.dat")
+
+	if _, err := config2.NewConfigWithYAML([]byte(content), "migration.yml"); err != nil {
+		t.Fatalf("expected rendered migration config to parse, got %v\n%s", err, content)
+	}
+	assertNoChildConfigGlobals(t, content)
+	assertContainsAll(t, content,
+		`binding: 0.0.0.0:8082`,
+		`metadata_refresh:`,
+		`remote_configs: false`,
+		`monitored: true`,
+		`password: "$[[keystore.SYSTEM_CLUSTER_INGEST_PASSWORD]]"`,
+		`name: logging-server`,
+		`queue_name_prefix: gateway_migration_async_bulk`,
+		`name: gateway_migration_async_ingest_bulk_requests`,
+		`name: gateway_migration_request_logging_merge`,
+	)
+}
+
+func TestBuildIngestRoleBodyIncludesAliasManagePermission(t *testing.T) {
+	roleBody := buildIngestRoleBody(".infini_")
+	raw := util.MustToJSONBytes(roleBody)
+
+	parsed := map[string]interface{}{}
+	if err := json.Unmarshal(raw, &parsed); err != nil {
+		t.Fatalf("unmarshal role body: %v", err)
+	}
+
+	indices, ok := parsed["indices"].([]interface{})
+	if !ok || len(indices) < 2 {
+		t.Fatalf("expected indices permissions, got %#v", parsed["indices"])
+	}
+	first, ok := indices[0].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected first indices permission object, got %#v", indices[0])
+	}
+	firstNames, ok := first["names"].([]interface{})
+	if !ok {
+		t.Fatalf("expected names array, got %#v", first["names"])
+	}
+	if len(firstNames) != 1 || firstNames[0] != "*" {
+		t.Fatalf("expected first names to be [*], got %#v", firstNames)
+	}
+	privileges, ok := first["privileges"].([]interface{})
+	if !ok {
+		t.Fatalf("expected privileges array, got %#v", first["privileges"])
+	}
+	found := false
+	for _, p := range privileges {
+		if p == "manage_aliases" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected manage_aliases permission, got %#v", privileges)
+	}
+
+	second, ok := indices[1].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected second indices permission object, got %#v", indices[1])
+	}
+	secondNames, ok := second["names"].([]interface{})
+	if !ok || len(secondNames) != 2 {
+		t.Fatalf("expected two index names in second permission, got %#v", second["names"])
+	}
+	if secondNames[0] != ".infini_logs*" || secondNames[1] != ".infini_metrics*" {
+		t.Fatalf("unexpected second names, got %#v", secondNames)
+	}
+}
+
+func TestAgentSetupTemplateSeedsRelayAndMigrationGatewayConfigs(t *testing.T) {
+	content := string(mustReadSetupTemplateFile(t, "agent.tpl"))
+
+	assertContainsAll(t, content,
+		`"location": "relay.yml"`,
+		`"name": "relay.yml"`,
+		`"location": "migration.yml"`,
+		`"name": "migration.yml"`,
+		`"id": "gateway_migration_yml"`,
+	)
+	if strings.Contains(content, "agent_relay_gateway_config.yml") {
+		t.Fatalf("expected old relay file name to be removed, got:\n%s", content)
+	}
+}
+
+func renderGatewaySetupData(t *testing.T, name string) string {
+	t.Helper()
+
+	content := string(mustReadSetupDataFile(t, name))
+	content = strings.ReplaceAll(content, "$[[SETUP_AGENT_USERNAME]]", "infini-ingest")
+	content = strings.ReplaceAll(content, "$[[SETUP_AGENT_PASSWORD_KEY]]", "SYSTEM_CLUSTER_INGEST_PASSWORD")
+	content = strings.ReplaceAll(content, "$[[SETUP_ENDPOINTS]]", `["https://192.168.3.185:9201"]`)
+	content = strings.ReplaceAll(content, "$[[SETUP_INDEX_PREFIX]]", ".infini_")
+	content = strings.ReplaceAll(content, "$[[SETUP_RELAY_PARTITION_SIZE]]", "3")
+	return content
+}
+
+func assertNoChildConfigGlobals(t *testing.T, content string) {
+	t.Helper()
+
+	for _, forbidden := range []string{
+		"allow_multi_instance:",
+		"path.data:",
+		"path.logs:",
+		"path.configs:",
+		"configs.auto_reload:",
+		"\napi:",
+		"\nnode:",
+	} {
+		if strings.Contains(content, forbidden) {
+			t.Fatalf("expected child config to omit %q, got:\n%s", forbidden, content)
+		}
+	}
+}
+
+func assertContainsAll(t *testing.T, content string, expected ...string) {
+	t.Helper()
+
+	for _, item := range expected {
+		if !strings.Contains(content, item) {
+			t.Fatalf("expected content to contain %q, got:\n%s", item, content)
+		}
+	}
+}
+
+func mustReadSetupTemplateFile(t *testing.T, name string) []byte {
+	t.Helper()
+
+	path := filepath.Join("..", "..", "config", "setup", "common", name)
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("failed to read %s: %v", name, err)
+	}
+	return content
+}
+
+func mustReadSetupDataFile(t *testing.T, name string) []byte {
+	t.Helper()
+
+	path := filepath.Join("..", "..", "config", "setup", "common", "data", name)
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("failed to read %s: %v", name, err)
+	}
+	return content
+}

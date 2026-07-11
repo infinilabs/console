@@ -6,12 +6,14 @@ export const dslToQueryFilters = (dsl) => {
   let dslFilter = {}
   if (dsl) {
     try {
-      const dslObject = JSON.parse(dsl) || {}
-      if (dslObject.bool) {
-        dslFilter = dslObject.bool
+      const parsedDsl = typeof dsl === "string" ? JSON.parse(dsl) : dsl
+      const dslObject = parsedDsl || {}
+      const queryObject = dslObject.query || dslObject
+      if (queryObject.bool) {
+        dslFilter = queryObject.bool
       } else {
         dslFilter = {
-          filter: [dslObject]
+          filter: [queryObject]
         }
       }
     } catch (error) {

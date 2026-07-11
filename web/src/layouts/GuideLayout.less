@@ -3,9 +3,10 @@
 @pro-header-hover-bg: rgba(0, 0, 0, 0.025);
 
 .container {
-  display: block;
+  display: flex;
   flex-direction: column;
   min-height: 100vh;
+  overflow: hidden;
   background-color: #f7f9fc;
 
   .header {
@@ -50,11 +51,15 @@
   }
   
   .content {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    overflow: hidden;
   }
 
   .footer {
     padding: 0 16px;
-    margin: 48px 0 24px 0;
+    margin: 8px 0 12px 0;
     text-align: center;
     background-color: #f7f9fc;
 

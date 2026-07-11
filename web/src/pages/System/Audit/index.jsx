@@ -1,5 +1,6 @@
 import { useRef, useCallback, useState, useEffect } from "react";
 import { Button, Dropdown, Icon, Menu, Modal, Drawer, Descriptions } from "antd";
+import { connect } from "dva";
 import { formatMessage } from "umi/locale";
 
 import { formatESSearchResult } from "@/lib/elasticsearch/util";
@@ -12,14 +13,40 @@ import ListView from "@/components/ListView";
 import styles from './index.less';
 import { getSystemClusterID } from "@/utils/setup";
 
-export default (props) => {
+const AuditPage = (props) => {
   const listViewRef = useRef(null);
+  const { clusterList = [] } = props;
   const clusterID = getSystemClusterID();
   const collectionName = "audit_log";
   const timeField = "timestamp"; //timestamp
+  const [histogramState, setHistogramState] = useState({
+    enable: true,
+    visible: false,
+    widget: {},
+  });
 
   const [visible, setVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState();
+
+  const getResourceDisplayName = useCallback(
+    (item) => {
+      const resourceName = item?.metadata?.labels?.resource_name;
+      if (!resourceName) {
+        return "-";
+      }
+      if (item?.metadata?.resource_type !== "cluster_management") {
+        return resourceName;
+      }
+      const matchedCluster = clusterList.find(
+        (cluster) =>
+          cluster?.id === resourceName ||
+          cluster?.cluster_uuid === resourceName ||
+          cluster?.name === resourceName
+      );
+      return matchedCluster?.name || resourceName;
+    },
+    [clusterList]
+  );
 
   const formatTableData = (value) => {
     let dataNew = formatESSearchResult(value);
@@ -138,6 +165,61 @@ export default (props) => {
     const selectedRows =  listViewRef.current?.selectedRows.rows || []
     downloadFile(selectedRows, 'text/plain', 'audit_log.json')
   }
+
+  const initHistogramWidget = async () => {
+    let res = await request(`/collection/${collectionName}/metadata`);
+    let indexName = res?.metadata?.index_name || "";
+    if (indexName) {
+      let widget = {
+        bucket_size: "auto",
+        is_stack: true,
+        format: {
+          type: "number",
+          pattern: "0.00a",
+        },
+        legend: false,
+        series: [
+          {
+            metric: {
+              formula: "a",
+              groups: [
+                {
+                  field: "metadata.log_type",
+                  limit: 10,
+                },
+              ],
+              items: [
+                {
+                  field: "*",
+                  name: "a",
+                  statistic: "count",
+                },
+              ],
+              sort: [
+                {
+                  direction: "desc",
+                  key: "_count",
+                },
+              ],
+            },
+            queries: {
+              cluster_id: clusterID,
+              indices: [indexName],
+              time_field: timeField,
+            },
+            type: "date-histogram",
+          },
+        ],
+      };
+      setHistogramState((st) => ({ ...st, widget }));
+    }
+  };
+
+  useEffect(() => {
+    if (histogramState.enable) {
+      initHistogramWidget();
+    }
+  }, []);
   
   return (
     <PageHeaderWrapper>
@@ -152,19 +234,24 @@ export default (props) => {
         }}
         defaultQueryParams={{
           from: 0,
-          size: 10,
-          timeRange: { from: "now-7d", to: "now", timeField: timeField },
+          size: 20,
+          timeRange: { from: "auto", to: "auto", timeField: timeField },
           sort: [[timeField, "desc"]],
         }}
         dateTimeEnable={true}
         isRefreshPaused={true}
         sortEnable={true}
         sideEnable={true}
-        sideVisible={true}
+        sideVisible={false}
         sidePlacement="left"
+        datePickerContainerStyle={{ width: 320, maxWidth: "45vw", minWidth: 270 }}
+        histogramEnable={histogramState.enable}
+        histogramVisible={histogramState.visible}
+        histogramWidget={histogramState.widget}
         rowSelectionExtra={{
           getExtra: (props) => [
             <Button
+              icon="download"
               type="primary"
               onClick={exportClick}
             >
@@ -212,7 +299,7 @@ export default (props) => {
             </div>
             <div className={styles.vertical}>
               <div className={styles.label}>资源名称</div>
-              <div className={styles.value}>{selectedItem.metadata.labels.resource_name || '-'}</div>
+              <div className={styles.value}>{getResourceDisplayName(selectedItem)}</div>
             </div>
             <div className={styles.vertical}>
               <div className={styles.label}>操作</div>
@@ -230,3 +317,7 @@ export default (props) => {
     </PageHeaderWrapper>
   );
 };
+
+export default connect(({ global }) => ({
+  clusterList: global.clusterList,
+}))(AuditPage);

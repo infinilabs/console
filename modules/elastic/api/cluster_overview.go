@@ -54,9 +54,6 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 		h.WriteJSON(w, util.MapStr{}, http.StatusOK)
 		return
 	}
-	//only query the first cluster info
-	clusterIDs = clusterIDs[0:1]
-
 	cids := make([]interface{}, 0, len(clusterIDs))
 	for _, clusterID := range clusterIDs {
 		cids = append(cids, clusterID)
@@ -68,7 +65,7 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 	q1.Conds = orm.And(
 		orm.Eq("metadata.category", "elasticsearch"),
 		orm.Eq("metadata.name", "cluster_stats"),
-		orm.Eq("metadata.labels.cluster_id", cids[0]),
+		orm.In("metadata.labels.cluster_id", cids),
 	)
 	q1.Collapse("metadata.labels.cluster_id")
 	q1.AddSort("timestamp", orm.DESC)
@@ -126,7 +123,7 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 	for _, cid := range clusterIDs {
 		clusterUUID, err := adapter.GetClusterUUID(cid)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("FetchClusterInfo failed: %v", err)
 			continue
 		}
 		clusterUUIDs = append(clusterUUIDs, clusterUUID)
@@ -178,8 +175,8 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 		"bool": util.MapStr{
 			"must": []util.MapStr{
 				{
-					"term": util.MapStr{
-						"metadata.labels.cluster_uuid": clusterUUIDs[0],
+					"terms": util.MapStr{
+						"metadata.labels.cluster_uuid": clusterUUIDs,
 					},
 				},
 				{
@@ -261,7 +258,7 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
 	du, err := time.ParseDuration(timeout)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("FetchClusterInfo failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -269,7 +266,7 @@ func (h *APIHandler) FetchClusterInfo(w http.ResponseWriter, req *http.Request, 
 	defer cancel()
 	indexMetrics, err := h.getMetrics(ctx, term_level, query, indexMetricItems, bucketSize)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("FetchClusterInfo failed: %v", err)
 		if errors.Is(err, context.DeadlineExceeded) {
 			h.WriteError(w, cerr.New(cerr.ErrTypeRequestTimeout, "", err).Error(), http.StatusRequestTimeout)
 			return
@@ -537,9 +534,6 @@ func (h *APIHandler) GetClusterNodes(w http.ResponseWriter, req *http.Request, p
 	clusterUUID, err := adapter.GetClusterUUID(id)
 	query := util.MapStr{
 		"size": 1000,
-		"collapse": util.MapStr{
-			"field": "metadata.labels.node_id",
-		},
 		"sort": []util.MapStr{
 			{
 				"timestamp": util.MapStr{
@@ -606,8 +600,18 @@ func (h *APIHandler) GetClusterNodes(w http.ResponseWriter, req *http.Request, p
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 	}
 	nodeInfos := map[string]util.MapStr{}
+	seenNodeInfos := map[string]struct{}{}
 	for _, hit := range searchResult.Result {
 		if hitM, ok := hit.(map[string]interface{}); ok {
+			nodeID, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "node_id"}, hitM)
+			nodeIDStr := util.ToString(nodeID)
+			if nodeIDStr == "" {
+				continue
+			}
+			if _, exists := seenNodeInfos[nodeIDStr]; exists {
+				continue
+			}
+			seenNodeInfos[nodeIDStr] = struct{}{}
 			shardInfo, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "node_stats", "shard_info"}, hitM)
 			var totalShards float64
 			if v, ok := shardInfo.(map[string]interface{}); ok {
@@ -626,7 +630,6 @@ func (h *APIHandler) GetClusterNodes(w http.ResponseWriter, req *http.Request, p
 			heapUsage, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "node_stats", "jvm", "mem", "heap_used_percent"}, hitM)
 			availDisk, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "node_stats", "fs", "total", "available_in_bytes"}, hitM)
 			totalDisk, _ := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "node_stats", "fs", "total", "total_in_bytes"}, hitM)
-			nodeID, _ := util.GetMapValueByKeys([]string{"metadata", "labels", "node_id"}, hitM)
 			var usedDisk string
 			if v, ok := availDisk.(float64); ok {
 				availDisk = util.ByteSize(uint64(v))
@@ -635,8 +638,8 @@ func (h *APIHandler) GetClusterNodes(w http.ResponseWriter, req *http.Request, p
 				}
 			}
 
-			if v, ok := nodeID.(string); ok {
-				nodeInfos[v] = util.MapStr{
+			if nodeIDStr != "" {
+				nodeInfos[nodeIDStr] = util.MapStr{
 					"timestamp":    hitM["timestamp"],
 					"shards":       totalShards,
 					"cpu":          cpu,
@@ -718,7 +721,7 @@ func (h *APIHandler) GetRealtimeClusterNodes(w http.ResponseWriter, req *http.Re
 	}
 	catShardsInfo, err := esClient.CatShards()
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetRealtimeClusterNodes failed: %v", err)
 	}
 	shardCounts := map[string]int{}
 	nodeM := map[string]string{}
@@ -1042,9 +1045,13 @@ func (h *APIHandler) getShardQPS(clusterID string, nodeUUID string, indexName st
 	}
 	if nodeUUID != "" {
 		must = append(must, util.MapStr{
-			"term": util.MapStr{
-				"metadata.labels.node_id": util.MapStr{
-					"value": nodeUUID,
+			"bool": util.MapStr{
+				"minimum_should_match": 1,
+				"should": []util.MapStr{
+					{"term": util.MapStr{"metadata.labels.node_id": util.MapStr{"value": nodeUUID}}},
+					{"term": util.MapStr{"metadata.labels.node_uuid": util.MapStr{"value": nodeUUID}}},
+					{"term": util.MapStr{"payload.elasticsearch.shard_stats.routing.node": util.MapStr{"value": nodeUUID}}},
+					{"term": util.MapStr{"payload.elasticsearch.shard_stats.routing.current_node": util.MapStr{"value": nodeUUID}}},
 				},
 			},
 		})
@@ -1326,7 +1333,7 @@ func (h *APIHandler) SearchClusterMetadata(w http.ResponseWriter, req *http.Requ
 		}
 	}
 
-	clusterFilter, hasAllPrivilege := h.GetClusterFilter(req, "_id")
+	clusterFilter, hasAllPrivilege := h.GetClusterFilter(req, "id")
 	if !hasAllPrivilege && clusterFilter == nil {
 		h.WriteJSON(w, elastic.SearchResponse{}, http.StatusOK)
 		return
@@ -1444,7 +1451,7 @@ func (h *APIHandler) getClusterMonitorState(w http.ResponseWriter, req *http.Req
 	dsl := util.MustToJSONBytes(queryDSL)
 	response, err := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID)).SearchWithRawQueryDSL(getAllMetricsIndex(), dsl)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("getClusterMonitorState failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

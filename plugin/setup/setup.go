@@ -35,16 +35,21 @@ import (
 	"net/http"
 	uri2 "net/url"
 	"path"
+	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
+	console_common "infini.sh/console/common"
+	core2 "infini.sh/console/core"
 	"infini.sh/console/core/security"
 	"infini.sh/framework/lib/go-ucfg"
 	elastic2 "infini.sh/framework/modules/elastic"
 
 	log "github.com/cihub/seelog"
-	"golang.org/x/crypto/bcrypt"
 	elastic3 "infini.sh/console/modules/elastic/api"
 	security2 "infini.sh/console/modules/security"
 	"infini.sh/framework/core/api"
@@ -60,19 +65,19 @@ import (
 	"infini.sh/framework/core/module"
 	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/pipeline"
+	frameworksecurity "infini.sh/framework/core/security"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/lib/fasthttp"
 	"infini.sh/framework/lib/fasttemplate"
 	keystore2 "infini.sh/framework/lib/keystore"
-	"infini.sh/framework/modules/elastic/adapter"
 	elastic1 "infini.sh/framework/modules/elastic/common"
+	frameworkrbac "infini.sh/framework/modules/security/native"
 	"infini.sh/framework/plugins/replay"
 )
 
 // Easysearch auto create ingest user password
-const ingestUser = "infini_ingest"
-
-var ingestPassword = util.GenerateSecureString(20)
+const ingestUser = "infini-ingest"
+const systemClusterIngestPasswordKey = "SYSTEM_CLUSTER_INGEST_PASSWORD"
 
 type Module struct {
 	api.Handler
@@ -87,38 +92,168 @@ func init() {
 }
 
 func (module *Module) Setup() {
-
-	if !global.Env().SetupRequired() {
-		return
+	registerPublicSetupRoute := func(method api.Method, path string, handler func(w http.ResponseWriter, req *http.Request, ps httprouter.Params)) {
+		api.HandleUIMethod(method, path,
+			handler,
+			api.AllowPublicAccess())
 	}
 
-	api.HandleAPIMethod(api.POST, "/setup/_validate", module.validate)
-	api.HandleAPIMethod(api.POST, "/setup/_initialize", module.initialize)
-	api.HandleAPIMethod(api.POST, "/setup/_validate_secret", module.validateSecret)
-	api.HandleAPIMethod(api.POST, "/setup/_initialize_template", module.initializeTemplate)
+	registerPublicSetupRoute(api.POST, "/account/replay_nonce", core2.RequireSecureTransport(frameworkrbac.IssueReplayNonce))
+	registerPublicSetupRoute(api.POST, "/setup/_validate", core2.RequireSecureTransport(core2.RequireReplayProtection(module.validate)))
+	registerPublicSetupRoute(api.POST, "/setup/_initialize", core2.RequireSecureTransport(core2.RequireReplayProtection(module.initialize)))
+	registerPublicSetupRoute(api.POST, "/setup/_validate_secret", core2.RequireSecureTransport(core2.RequireReplayProtection(module.validateSecret)))
+	registerPublicSetupRoute(api.POST, "/setup/_initialize_template", core2.RequireSecureTransport(core2.RequireReplayProtection(module.initializeTemplate)))
+	elastic3.RegisterPublicUITestAPI()
+
+	api.HandleAPIMethod(api.POST, "/account/replay_nonce", core2.RequireSecureTransport(frameworkrbac.IssueReplayNonce))
+	api.HandleAPIMethod(api.POST, "/setup/_validate", core2.RequireSecureTransport(core2.RequireReplayProtection(module.validate)))
+	api.HandleAPIMethod(api.POST, "/setup/_initialize", core2.RequireSecureTransport(core2.RequireReplayProtection(module.initialize)))
+	api.HandleAPIMethod(api.POST, "/setup/_validate_secret", core2.RequireSecureTransport(core2.RequireReplayProtection(module.validateSecret)))
+	api.HandleAPIMethod(api.POST, "/setup/_initialize_template", core2.RequireSecureTransport(core2.RequireReplayProtection(module.initializeTemplate)))
 	elastic3.InitTestAPI()
 }
 
 var setupFinishedCallback = []func(){}
+var setupCallbackOnce sync.Once
+var setupInitializeRunning uint32
 
 func RegisterSetupCallback(f func()) {
 	setupFinishedCallback = append(setupFinishedCallback, f)
 }
 
 func InvokeSetupCallback() {
-	for _, v := range setupFinishedCallback {
-		v()
+	setupCallbackOnce.Do(func() {
+		for _, v := range setupFinishedCallback {
+			v()
+		}
+	})
+}
+
+func InvokeSetupCallbackAsync() {
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Errorf("setup callback panic: %v", r)
+			}
+		}()
+		InvokeSetupCallback()
+	}()
+}
+
+func getOrCreateIngestPassword() (string, error) {
+	value, err := keystore.GetValue(systemClusterIngestPasswordKey)
+	if err == nil && len(value) > 0 {
+		return string(value), nil
 	}
+	if err != nil && err != keystore2.ErrKeyDoesntExists {
+		return "", err
+	}
+
+	password := util.GenerateSecureString(20)
+	if err := keystore.SetValue(systemClusterIngestPasswordKey, []byte(password)); err != nil {
+		return "", err
+	}
+	return password, nil
+}
+
+func acquireSetupInitialization() bool {
+	return atomic.CompareAndSwapUint32(&setupInitializeRunning, 0, 1)
+}
+
+func releaseSetupInitialization() {
+	atomic.StoreUint32(&setupInitializeRunning, 0)
+}
+
+func EnsureSystemClusterBasicAuth() error {
+	sysClusterID, ok := lookupSystemClusterID()
+	if !ok {
+		return nil
+	}
+	conf := elastic.GetConfigNoPanic(sysClusterID)
+	if conf == nil || (conf.BasicAuth != nil && conf.BasicAuth.Username != "") || conf.CredentialID == "" {
+		return nil
+	}
+
+	basicAuth, err := elastic1.GetBasicAuth(conf)
+	if err != nil {
+		return err
+	}
+	if basicAuth == nil {
+		return nil
+	}
+
+	conf.BasicAuth = basicAuth
+	if meta := elastic.GetMetadata(sysClusterID); meta != nil && meta.Config != nil {
+		meta.Config.BasicAuth = basicAuth
+	}
+	elastic.UpdateConfig(*conf)
+	return nil
+}
+
+func ResolveManagedAgentTemplateCredentials(client elastic.API, indexPrefix string) (string, string, error) {
+	if client == nil {
+		return "", "", fmt.Errorf("system cluster client not found")
+	}
+	version := client.GetVersion()
+	distribution := version.Distribution
+	if distribution == "" {
+		distribution = elastic.Elasticsearch
+	}
+	if distribution == elastic.Easysearch {
+		agentPassword, err := getOrCreateIngestPassword()
+		if err != nil {
+			return "", "", err
+		}
+		if _, err := client.GetPrivileges(); err != nil {
+			return "", "", err
+		}
+		if err := initIngestUser(client, indexPrefix, ingestUser, agentPassword); err != nil {
+			return "", "", err
+		}
+		return ingestUser, systemClusterIngestPasswordKey, nil
+	}
+	if err := EnsureSystemClusterBasicAuth(); err != nil {
+		return "", "", err
+	}
+	sysClusterID, ok := lookupSystemClusterID()
+	if !ok {
+		return "", "SYSTEM_CLUSTER_PASS", nil
+	}
+	cfg := elastic.GetConfigNoPanic(sysClusterID)
+	if cfg != nil && cfg.BasicAuth != nil {
+		return cfg.BasicAuth.Username, "SYSTEM_CLUSTER_PASS", nil
+	}
+	return "", "SYSTEM_CLUSTER_PASS", nil
+}
+
+func lookupSystemClusterID() (string, bool) {
+	value := global.Lookup(elastic.GlobalSystemElasticsearchID)
+	sysClusterID, ok := value.(string)
+	if !ok || sysClusterID == "" {
+		return "", false
+	}
+	return sysClusterID, true
 }
 
 // Start initializes the module and registers a change event for credentials.
 func (module *Module) Start() error {
+	if !global.Env().SetupRequired() {
+		if err := EnsureSystemClusterBasicAuth(); err != nil {
+			log.Error(err)
+		}
+	}
 	credential.RegisterChangeEvent(func(cred *credential.Credential) {
 		if cred == nil {
 			return
 		}
-		sysClusterID := global.MustLookupString(elastic.GlobalSystemElasticsearchID)
+		sysClusterID, ok := lookupSystemClusterID()
+		if !ok {
+			return
+		}
 		conf := elastic.GetConfig(sysClusterID)
+		if conf == nil {
+			return
+		}
 		if conf.CredentialID != cred.ID {
 			return
 		}
@@ -132,6 +267,11 @@ func (module *Module) Start() error {
 			if err != nil {
 				log.Error(err)
 			}
+			conf.BasicAuth = &basicAuth
+			if meta := elastic.GetMetadata(sysClusterID); meta != nil && meta.Config != nil {
+				meta.Config.BasicAuth = &basicAuth
+			}
+			elastic.UpdateConfig(*conf)
 		}
 	})
 	return nil
@@ -154,20 +294,102 @@ type SetupRequest struct {
 	} `json:"cluster"`
 
 	Skip               bool   `json:"skip"`
+	ResetUser          bool   `json:"reset_user"`
 	BootstrapUsername  string `json:"bootstrap_username"`
 	BootstrapPassword  string `json:"bootstrap_password"`
 	CredentialSecret   string `json:"credential_secret"`
 	InitializeTemplate string `json:"initialize_template"`
+	Language           string `json:"language,omitempty"`
+	PrimaryShards      int    `json:"primary_shards"`
+	AutoExpandReplicas string `json:"auto_expand_replicas"`
+	EnableRollup       bool   `json:"enable_rollup"`
 }
 
 var GlobalSystemElasticsearchID = "infini_default_system_cluster"
 
-const VersionTooOld = "elasticsearch_version_too_old"
 const IndicesExists = "elasticsearch_indices_exists"
 const TemplateExists = "elasticsearch_template_exists"
 const VersionNotSupport = "unknown_cluster_version"
 
 var cfg1 elastic1.ORMConfig
+
+const defaultSetupAutoExpandReplicas = "0-1"
+
+var setupAutoExpandReplicasPattern = regexp.MustCompile(`^(false|all|\d+-\d+)$`)
+
+func (r *SetupRequest) shouldResetBootstrapUser() bool {
+	if !r.Skip {
+		return true
+	}
+	return r.ResetUser
+}
+
+func validateSetupBootstrap(request *SetupRequest) error {
+	request.BootstrapUsername = strings.TrimSpace(request.BootstrapUsername)
+	if !request.shouldResetBootstrapUser() {
+		request.BootstrapUsername = ""
+		request.BootstrapPassword = ""
+		return nil
+	}
+	if request.BootstrapUsername == "" {
+		return fmt.Errorf("bootstrap username is required when resetting administrator")
+	}
+	if strings.TrimSpace(request.BootstrapPassword) == "" {
+		return fmt.Errorf("bootstrap password is required when resetting administrator")
+	}
+	if !util.ValidateSecure(request.BootstrapPassword) {
+		return fmt.Errorf("bootstrap password does not meet security requirements")
+	}
+	return nil
+}
+
+func resolveSetupTemplateSettings(client elastic.API, request *SetupRequest) (int, string, error) {
+	primaryShards := request.PrimaryShards
+	if primaryShards <= 0 {
+		health, err := client.ClusterHealth(context.Background())
+		if err != nil {
+			return 0, "", err
+		}
+		if health != nil {
+			if health.NumberOf_data_nodes > 0 {
+				primaryShards = health.NumberOf_data_nodes
+			} else if health.NumberOfNodes > 0 {
+				primaryShards = health.NumberOfNodes
+			}
+		}
+	}
+	if primaryShards <= 0 {
+		primaryShards = 1
+	}
+
+	autoExpandReplicas := strings.TrimSpace(request.AutoExpandReplicas)
+	if autoExpandReplicas == "" {
+		autoExpandReplicas = defaultSetupAutoExpandReplicas
+	}
+	if !setupAutoExpandReplicasPattern.MatchString(autoExpandReplicas) {
+		return 0, "", errors.Errorf("invalid auto expand replicas, expected false, all, or a range like 0-1")
+	}
+
+	return primaryShards, autoExpandReplicas, nil
+}
+
+func ResolveRelayPartitionSize(client elastic.API) int {
+	if client == nil {
+		return 1
+	}
+
+	health, err := client.ClusterHealth(context.Background())
+	if err != nil || health == nil {
+		return 1
+	}
+	if health.NumberOf_data_nodes > 0 {
+		return health.NumberOf_data_nodes
+	}
+	if health.NumberOfNodes > 0 {
+		return health.NumberOfNodes
+	}
+	return 1
+}
 
 // validate checks the Elasticsearch cluster configuration and validates the setup.
 func (module *Module) validate(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -230,28 +452,12 @@ func (module *Module) validate(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 
 	//validate version
-	verInfo, err := adapter.ClusterVersion(elastic.GetMetadata(cfg.ID))
+	verInfo, err := console_common.ClusterVersion(elastic.GetMetadata(cfg.ID))
 	if err != nil {
 		panic(err)
 	}
-	if verInfo.Version.Distribution == elastic.Elasticsearch {
-		if verInfo.Version.Number != "" {
-			ver := &util.Version{}
-			ver, err = util.ParseSemantic(verInfo.Version.Number)
-			if err != nil {
-				panic(err)
-			}
-			if ver.Major() == 5 && ver.Minor() < 3 {
-				errType = VersionTooOld
-				panic(errors.Errorf("elasticsearch version(%v) should greater than v5.3", verInfo.Version.Number))
-			} else if ver.Major() < 5 {
-				errType = VersionTooOld
-				panic(errors.Errorf("elasticsearch version(%v) should greater than v5.3", verInfo.Version.Number))
-			}
-		}
-	} else if verInfo.Version.Distribution != elastic.Easysearch && verInfo.Version.Distribution != elastic.Opensearch {
-		errType = VersionNotSupport
-		panic(errors.Errorf("unknown distribution (%v)", verInfo.Version.Distribution))
+	if verInfo.Version.Distribution != elastic.Easysearch {
+		log.Warnf("non-recommended search engine distribution detected: '%v'. For optimal performance and full feature support, it is highly recommended to use Easysearch.", verInfo.Version.Distribution)
 	}
 	cfg1 = elastic1.ORMConfig{}
 	exist, err := env.ParseConfig("elastic.orm", &cfg1)
@@ -324,6 +530,7 @@ func (module *Module) initTempClient(request *SetupRequest) (error, elastic.API)
 			Username: request.Cluster.Username,
 			Password: ucfg.SecretString(request.Cluster.Password),
 		},
+		Hosts: request.Cluster.Hosts,
 	}
 
 	if cfg.Endpoint != "" && cfg.Host == "" {
@@ -338,7 +545,7 @@ func (module *Module) initTempClient(request *SetupRequest) (error, elastic.API)
 	cfg.ID = GlobalSystemElasticsearchID
 	cfg.Name = "INFINI_SYSTEM (" + util.PickRandomName() + ")"
 	elastic.InitMetadata(&cfg, true)
-	verInfo, err := adapter.ClusterVersion(elastic.GetMetadata(cfg.ID))
+	verInfo, err := console_common.ClusterVersion(elastic.GetMetadata(cfg.ID))
 	if err != nil {
 		panic(err)
 	}
@@ -402,6 +609,11 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		module.WriteError(w, "setup not permitted", http.StatusInternalServerError)
 		return
 	}
+	if !acquireSetupInitialization() {
+		module.WriteError(w, "setup is already running", http.StatusConflict)
+		return
+	}
+	defer releaseSetupInitialization()
 	request := &SetupRequest{}
 	err := module.DecodeJSON(r, request)
 	if err != nil {
@@ -409,8 +621,8 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		return
 	}
 
-	if !util.ValidateSecure(request.BootstrapPassword) {
-		module.WriteError(w, "invalid bootstrap password", http.StatusInternalServerError)
+	if err := validateSetupBootstrap(request); err != nil {
+		module.WriteError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -529,7 +741,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	toSaveCfg := cfg
 	oldCfg := elastic.ElasticsearchConfig{}
 	oldCfg.ID = toSaveCfg.ID
-	_, _ = orm.Get(&oldCfg)
+	_, _ = orm.GetV2(orm.NewContext(), &oldCfg)
 	// If the old configuration exists, update it with the new values
 	if oldCfg.Name != "" {
 		toSaveCfg = oldCfg
@@ -599,24 +811,44 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		},
 	}
 	toSaveCfg.Created = &t
-	err = orm.Save(nil, &toSaveCfg)
+	err = orm.Save(orm.NewContext(), &toSaveCfg)
 	if err != nil {
 		panic(err)
 	}
+	previousAgentCredentialID := toSaveCfg.AgentCredentialID
+	previousNoDefaultAuthForAgent := toSaveCfg.NoDefaultAuthForAgent
+	err = elastic3.EnsureManagedAgentCredential(&toSaveCfg, oldCfg.Name)
+	if err != nil {
+		panic(err)
+	}
+	if previousAgentCredentialID != toSaveCfg.AgentCredentialID || previousNoDefaultAuthForAgent != toSaveCfg.NoDefaultAuthForAgent {
+		err = orm.Save(orm.NewContext(), &toSaveCfg)
+		if err != nil {
+			panic(err)
+		}
+	}
+	if meta := elastic.GetMetadata(toSaveCfg.ID); meta != nil && meta.Config != nil {
+		meta.Config.AgentCredentialID = toSaveCfg.AgentCredentialID
+		meta.Config.NoDefaultAuthForAgent = toSaveCfg.NoDefaultAuthForAgent
+	}
+	elastic.UpdateConfig(toSaveCfg)
+	if err := EnsureSystemClusterBasicAuth(); err != nil {
+		panic(err)
+	}
 
-	if request.BootstrapUsername != "" && request.BootstrapPassword != "" {
+	if request.shouldResetBootstrapUser() {
 		//Save bootstrap user
 		user := security.User{}
 		user.ID = "default_user_" + request.BootstrapUsername
 		user.Username = request.BootstrapUsername
 		user.Nickname = request.BootstrapUsername
-		var hash []byte
-		hash, err = bcrypt.GenerateFromPassword([]byte(request.BootstrapPassword), bcrypt.DefaultCost)
+		material, err := frameworksecurity.GeneratePasswordMaterial(request.BootstrapPassword)
 		if err != nil {
 			panic(err)
 		}
-
-		user.Password = string(hash)
+		user.Password = material.Hash
+		user.PasswordSalt = material.Salt
+		user.PasswordVerifier = material.Verifier
 		role := []security.UserRole{}
 		role = append(role, security.UserRole{
 			ID:   security.RoleAdminName,
@@ -625,7 +857,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		user.Roles = role
 		now := time.Now()
 		user.Created = &now
-		err = orm.Save(nil, &user)
+		err = orm.Save(orm.NewContext(), &user)
 		if err != nil {
 			panic(err)
 		}
@@ -638,15 +870,12 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	//save to local file
 	file := path.Join(global.Env().GetConfigDir(), "system_config.yml")
 	_, err = util.FilePutContent(file, fmt.Sprintf("configs.template:\n  - name: \"system\"\n    path: ./config/system_config.tpl\n    variable:\n      "+
-		"CLUSTER_ID: %v\n      CLUSTER_ENDPOINT: \"%v\"\n      "+
+		"CLUSTER_ID: %v\n      CLUSTER_ENDPOINT: [%v]\n      "+
 		"CLUSTER_USER: \"%v\"\n      CLUSTER_VER: \"%v\"\n      CLUSTER_DISTRIBUTION: \"%v\"\n      INDEX_PREFIX: \"%v\"",
-		GlobalSystemElasticsearchID, cfg.GetAnyEndpoint(), cfg.BasicAuth.Username, cfg.Version, cfg.Distribution, cfg1.IndexPrefix))
+		GlobalSystemElasticsearchID, strings.Join(cfg.GetAllEndpoints(), ","), cfg.BasicAuth.Username, cfg.Version, cfg.Distribution, cfg1.IndexPrefix))
 	if err != nil {
 		panic(err)
 	}
-
-	//callback
-	InvokeSetupCallback()
 
 	//place setup lock file
 	setupLock := path.Join(global.Env().GetDataDir(), ".setup_lock")
@@ -654,23 +883,13 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	if err != nil {
 		panic(err)
 	}
-	//update credential state
-	q := util.MapStr{
-		"query": util.MapStr{
-			"range": util.MapStr{
-				"created": util.MapStr{
-					"lte": "now-30s",
-				},
-			},
-		},
-		"script": util.MapStr{
-			"source": fmt.Sprintf("ctx._source['invalid'] = %v", secretMismatch),
-		},
-	}
-	err = orm.UpdateBy(credential.Credential{}, util.MustToJSONBytes(q))
-	if err != nil {
-		log.Error(err)
-	}
+	global.Env().CheckSetup()
+
+	// callback can take a while (template init/module starts), do it in background.
+	InvokeSetupCallbackAsync()
+
+	//update credential state in background to avoid blocking setup response
+	go updateCredentialState(secretMismatch)
 
 	success = true
 }
@@ -765,11 +984,30 @@ func createCred(name, username, password string) string {
 	now := time.Now()
 	cred.Created = &now
 	cred.Updated = &now
-	err = orm.Save(nil, &cred)
+	err = orm.Save(orm.NewContext(), &cred)
 	if err != nil {
 		panic(err)
 	}
 	return cred.ID
+}
+
+func updateCredentialState(secretMismatch bool) {
+	q := util.MapStr{
+		"query": util.MapStr{
+			"range": util.MapStr{
+				"created": util.MapStr{
+					"lte": "now-30s",
+				},
+			},
+		},
+		"script": util.MapStr{
+			"source": fmt.Sprintf("ctx._source['invalid'] = %v", secretMismatch),
+		},
+	}
+	err := orm.UpdateBy(credential.Credential{}, util.MustToJSONBytes(q))
+	if err != nil {
+		log.Error(err)
+	}
 }
 
 // getYamlData reads a YAML file from the setup directory and returns its content as a byte slice.
@@ -820,9 +1058,12 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 	}
 	baseDir := path.Join(global.Env().GetConfigDir(), "setup")
 	var (
-		dslTplFileName = "noop.tpl"
-		useCommon      = true
-		rollupEnabled  = false
+		dslTplFileName   = "noop.tpl"
+		useCommon        = true
+		rollupEnabled    = false
+		agentUsername    = request.Cluster.Username
+		agentPassword    = request.Cluster.Password
+		agentPasswordKey = "SYSTEM_CLUSTER_PASS"
 	)
 	if large, _ := util.VersionCompare(ver.Number, "1.12.1"); large >= 0 {
 		rollupEnabled = true
@@ -846,22 +1087,29 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 		}
 	case "alerting":
 		dslTplFileName = "alerting.tpl"
+		if localizedTemplate := resolveAlertingTemplateByLanguage(strings.TrimSpace(request.Language)); localizedTemplate != "" {
+			dslTplFileName = localizedTemplate
+		}
 	case "insight":
 		dslTplFileName = "insight.tpl"
 	case "view":
 		dslTplFileName = "view.tpl"
 	case "agent":
 		if ver.Distribution == elastic.Easysearch {
-			err = keystore.SetValue("SYSTEM_CLUSTER_INGEST_PASSWORD", []byte(ingestPassword))
+			agentPassword, err = getOrCreateIngestPassword()
 			if err != nil {
 				panic(err)
 			}
+			agentUsername = ingestUser
+			agentPasswordKey = systemClusterIngestPasswordKey
 			client := elastic.GetClient(GlobalSystemElasticsearchID)
-			if privileges, _ := client.GetPrivileges(); len(privileges) > 0 {
-				err = initIngestUser(client, cfg1.IndexPrefix, ingestUser, ingestPassword)
-				if err != nil {
-					panic(err)
-				}
+			_, err = client.GetPrivileges()
+			if err != nil {
+				panic(err)
+			}
+			err = initIngestUser(client, cfg1.IndexPrefix, agentUsername, agentPassword)
+			if err != nil {
+				panic(err)
 			}
 		}
 		dslTplFileName = "agent.tpl"
@@ -896,7 +1144,18 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 		break
 	}
 
+	systemClient := elastic.GetClient(GlobalSystemElasticsearchID)
+	primaryShards, autoExpandReplicas, err := resolveSetupTemplateSettings(systemClient, request)
+	if err != nil {
+		panic(err)
+	}
+	relayPartitionSize := ResolveRelayPartitionSize(systemClient)
+
 	dslTplFile := path.Join(baseDir, dslTplFileName)
+	if request.InitializeTemplate == "alerting" && !util.FileExists(dslTplFile) {
+		dslTplFileName = "alerting.tpl"
+		dslTplFile = path.Join(baseDir, dslTplFileName)
+	}
 	if !util.FileExists(dslTplFile) {
 		panic(errors.Errorf("template file %v for setup was missing", dslTplFile))
 	}
@@ -906,6 +1165,7 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		panic(err)
 	}
+
 	if len(dsl) == 0 {
 		panic(fmt.Sprintf("got empty template [%s]", dslTplFile))
 	}
@@ -926,8 +1186,10 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 			return w.Write(getYamlData("system_ingest_config.dat"))
 		case "SETUP_TASK_CONFIG_TPL":
 			return w.Write(getYamlData("task_config_tpl.dat"))
-		case "SETUP_AGENT_RELAY_GATEWAY_CONFIG":
-			return w.Write(getYamlData("agent_relay_gateway_config.dat"))
+		case "SETUP_GATEWAY_RELAY_CONFIG":
+			return w.Write(getYamlData("gateway_relay.dat"))
+		case "SETUP_GATEWAY_MIGRATION_CONFIG":
+			return w.Write(getYamlData("gateway_migration.dat"))
 		}
 		//ignore unresolved variable
 		return w.Write([]byte("$[[" + tag + "]]"))
@@ -940,26 +1202,15 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 		case "SETUP_ES_PASSWORD":
 			return w.Write([]byte(request.Cluster.Password))
 		case "SETUP_AGENT_USERNAME":
-			if ver.Distribution == elastic.Easysearch {
-				return w.Write([]byte(ingestUser))
-			} else {
-				return w.Write([]byte(request.Cluster.Username))
-			}
-		case "SETUP_AGENT_PASSWORD":
-			if ver.Distribution == elastic.Easysearch {
-				return w.Write([]byte(ingestPassword))
-			} else {
-				return w.Write([]byte(request.Cluster.Password))
-			}
+			return w.Write([]byte(agentUsername))
+		case "SETUP_AGENT_PASSWORD_KEY":
+			return w.Write([]byte(agentPasswordKey))
 		case "SETUP_SCHEME":
 			return w.Write([]byte(request.Cluster.Schema))
 		case "SETUP_ENDPOINTS":
-			endpoints := []string{request.Cluster.Endpoint}
+			endpoints := make([]string, 0, len(request.Cluster.Hosts))
 			for _, host := range request.Cluster.Hosts {
-				endpoint := fmt.Sprintf("%s://%s", request.Cluster.Schema, host)
-				if !util.StringInArray(endpoints, endpoint) {
-					endpoints = append(endpoints, endpoint)
-				}
+				endpoints = append(endpoints, fmt.Sprintf("%s://%s", request.Cluster.Schema, host))
 			}
 			endpointBytes := util.MustToJSONBytes(endpoints)
 			endpointBytes = bytes.ReplaceAll(endpointBytes, []byte("\""), []byte("\\\""))
@@ -982,6 +1233,12 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 			return w.Write([]byte(request.BootstrapUsername))
 		case "SETUP_DOC_TYPE":
 			return w.Write([]byte(docType))
+		case "SETUP_PRIMARY_SHARDS":
+			return w.Write([]byte(strconv.Itoa(primaryShards)))
+		case "SETUP_AUTO_EXPAND_REPLICAS":
+			return w.Write([]byte(autoExpandReplicas))
+		case "SETUP_RELAY_PARTITION_SIZE":
+			return w.Write([]byte(strconv.Itoa(relayPartitionSize)))
 		}
 		//ignore unresolved variable
 		return w.Write([]byte("$[[" + tag + "]]"))
@@ -1017,6 +1274,27 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 		}, http.StatusOK)
 		return
 	}
+
+	if request.InitializeTemplate == "rollup" && request.EnableRollup {
+		err = systemClient.UpdateClusterSettings(util.MustToJSONBytes(util.MapStr{
+			"persistent": util.MapStr{
+				"rollup": util.MapStr{
+					"search": util.MapStr{
+						"enabled": "true",
+					},
+					"hours_before": "24",
+				},
+			},
+		}))
+		if err != nil {
+			module.WriteJSON(w, util.MapStr{
+				"success": false,
+				"log":     fmt.Sprintf("initalize rollup settings failed: %v", err),
+			}, http.StatusOK)
+			return
+		}
+	}
+
 	module.WriteJSON(w, util.MapStr{
 		"success": true,
 		"log":     fmt.Sprintf("initalize template [%s] succeed", request.InitializeTemplate),
@@ -1026,39 +1304,67 @@ func (module *Module) initializeTemplate(w http.ResponseWriter, r *http.Request,
 
 // initIngestUser initializes the ingest user with the required permissions for writing metrics and logs.
 func initIngestUser(client elastic.API, indexPrefix string, username, password string) error {
-	roleTpl := `{
-	  "cluster": [
-		"cluster_monitor",
-		"cluster_composite_ops"
-	  ],
-	 "description": "Provide the minimum permissions for INFINI AGENT to write metrics and logs",
-	  "indices": [{
-		"names": [
-		  "%slogs*", "%smetrics*"
-		],
-		"query": "",
-		"field_security": [],
-		"field_mask": [],
-		"privileges": [
-		  "create_index","index","manage_aliases","write"
-		]
-	  }]
-	}`
-	roleBody := fmt.Sprintf(roleTpl, indexPrefix, indexPrefix)
-	err := client.PutRole(username, []byte(roleBody))
+	roleBody := util.MustToJSONBytes(buildIngestRoleBody(indexPrefix))
+	err := client.PutRole(username, roleBody)
 	if err != nil {
 		return fmt.Errorf("failed to create ingest role: %w", err)
 	}
-	userTpl := `{
-		"roles": [
-			"%s"
-		],
-		"password": "%s"}`
-
-	userBody := fmt.Sprintf(userTpl, username, password)
-	err = client.PutUser(username, []byte(userBody))
+	userBody := util.MustToJSONBytes(util.MapStr{
+		"roles":    []string{username},
+		"password": password,
+	})
+	err = client.PutUser(username, userBody)
 	if err != nil {
 		return fmt.Errorf("failed to create ingest user: %w", err)
 	}
 	return nil
+}
+
+func buildIngestRoleBody(indexPrefix string) util.MapStr {
+	return util.MapStr{
+		"cluster": []string{
+			"cluster_monitor",
+			"cluster_composite_ops",
+		},
+		"description": "Provide the minimum permissions for INFINI AGENT to write metrics and logs",
+		"indices": []util.MapStr{
+			{
+				"names": []string{
+					"*",
+				},
+				"query":          "",
+				"field_security": []string{},
+				"field_mask":     []string{},
+				"privileges": []string{
+					"manage_aliases",
+				},
+			},
+			{
+				"names": []string{
+					fmt.Sprintf("%slogs*", indexPrefix),
+					fmt.Sprintf("%smetrics*", indexPrefix),
+				},
+				"query":          "",
+				"field_security": []string{},
+				"field_mask":     []string{},
+				"privileges": []string{
+					"create_index",
+					"index",
+					"manage_aliases",
+					"write",
+				},
+			},
+		},
+	}
+}
+
+func resolveAlertingTemplateByLanguage(language string) string {
+	switch {
+	case strings.HasPrefix(strings.ToLower(language), "zh"):
+		return "alerting.zh-CN.tpl"
+	case strings.HasPrefix(strings.ToLower(language), "en"):
+		return "alerting.en-US.tpl"
+	default:
+		return ""
+	}
 }

@@ -19,19 +19,11 @@
 
 import React from 'react';
 
-import { EuiFlexGroup, EuiFlexItem, EuiLoadingSpinner, EuiTitle } from '@elastic/eui';
+import { EuiFlexGroup, EuiFlexItem, EuiLoadingSpinner } from '@elastic/eui';
 
 
 export const LoadingState = () => (
   <EuiFlexGroup justifyContent="center" alignItems="center" direction="column" gutterSize="s">
-    <EuiFlexItem grow={false}>
-      <EuiTitle size="s">
-        <h2 style={{ textAlign: 'center' }}>
-          Checking for Elasticsearch data
-        </h2>
-      </EuiTitle>
-    </EuiFlexItem>
-
     <EuiFlexItem grow={false}>
       <EuiLoadingSpinner size="l" />
     </EuiFlexItem>

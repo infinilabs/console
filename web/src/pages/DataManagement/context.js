@@ -256,46 +256,6 @@ export const getContext = () => {
   };
 };
 
-  const sanitizeKql = (query) => {
-    if (!query || typeof query !== "string") return query;
-    const termRegex = /"[^"]*"|'[^']*'|[^\s()]+/g;
-
-    return query.replace(termRegex, (token) => {
-      if (token === ":") {
-        return token;
-      }
-      if ((token.startsWith('"') && token.endsWith('"')) || 
-          (token.startsWith("'") && token.endsWith("'"))) {
-        return token;
-      }
-
-      const colonIndex = token.indexOf(':');
-      if (colonIndex === -1) {
-        return token;
-      }
-
-      const potentialField = token.substring(0, colonIndex);
-      
-      const isValidField = /^[a-zA-Z_@][a-zA-Z0-9_.]*$/.test(potentialField);
-
-      if (isValidField) {
-        const value = token.substring(colonIndex + 1);
-        if (!value) {
-          return token;
-        }
-        
-        if (value.startsWith('"') || value.startsWith("'")) {
-          return token;
-        }
-        
-        return `${potentialField}:"${value}"`;
-        
-      } else {
-        return `"${token}"`;
-      }
-    });
-  };
-
   const getEsQuery = (indexPattern) => {
     const timeFilter = timefilter.createFilter(indexPattern);
 
@@ -306,7 +266,7 @@ export const getContext = () => {
         [
           {
             ...rawQuery,
-            query: sanitizeKql(rawQuery?.query),
+            query: rawQuery?.query,
           }
         ],
         [...filterManager.getFilters(), ...(timeFilter ? [timeFilter] : [])]

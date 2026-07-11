@@ -317,9 +317,10 @@ func (h *APIHandler) HandleValueSuggestionAction(w http.ResponseWriter, req *htt
 	}
 
 	var reqParams = struct {
-		BoolFilter interface{} `json:"boolFilter"`
-		FieldName  string      `json:"field"`
-		Query      string      `json:"query"`
+		BoolFilter    interface{} `json:"boolFilter"`
+		BoolFilterAlt interface{} `json:"bool_filter"`
+		FieldName     string      `json:"field"`
+		Query         string      `json:"query"`
 	}{}
 	err = h.DecodeJSON(req, &reqParams)
 	if err != nil {
@@ -328,8 +329,15 @@ func (h *APIHandler) HandleValueSuggestionAction(w http.ResponseWriter, req *htt
 		return
 	}
 	indexName := ps.ByName("index")
+	boolFilter := reqParams.BoolFilter
+	if boolFilter == nil {
+		boolFilter = reqParams.BoolFilterAlt
+	}
+	if boolFilter == nil {
+		boolFilter = []interface{}{}
+	}
 	boolQ := util.MapStr{
-		"filter": reqParams.BoolFilter,
+		"filter": boolFilter,
 	}
 	var values = []interface{}{}
 	indices, hasAll := h.GetAllowedIndices(req, targetClusterID)
@@ -346,6 +354,14 @@ func (h *APIHandler) HandleValueSuggestionAction(w http.ResponseWriter, req *htt
 			},
 		}
 	}
+	termsAgg := util.MapStr{
+		"field":          reqParams.FieldName,
+		"execution_hint": "map",
+		"shard_size":     10,
+	}
+	if strings.TrimSpace(reqParams.Query) != "" {
+		termsAgg["include"] = reqParams.Query + ".*"
+	}
 	queryBody := util.MapStr{
 		"size": 0,
 		"query": util.MapStr{
@@ -353,12 +369,7 @@ func (h *APIHandler) HandleValueSuggestionAction(w http.ResponseWriter, req *htt
 		},
 		"aggs": util.MapStr{
 			"suggestions": util.MapStr{
-				"terms": util.MapStr{
-					"field":          reqParams.FieldName,
-					"include":        reqParams.Query + ".*",
-					"execution_hint": "map",
-					"shard_size":     10,
-				},
+				"terms": termsAgg,
 			},
 		},
 	}
@@ -366,12 +377,17 @@ func (h *APIHandler) HandleValueSuggestionAction(w http.ResponseWriter, req *htt
 
 	searchRes, err := client.SearchWithRawQueryDSL(indexName, queryBodyBytes)
 	if err != nil {
-		log.Errorf("HandleValueSuggestionAction failed: %v", err)
-		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		log.Warnf("HandleValueSuggestionAction fallback to empty suggestions: %v", err)
+		h.WriteJSON(w, values, http.StatusOK)
 		return
 	}
 
-	for _, bucket := range searchRes.Aggregations["suggestions"].Buckets {
+	suggestionAgg, ok := searchRes.Aggregations["suggestions"]
+	if !ok {
+		h.WriteJSON(w, values, http.StatusOK)
+		return
+	}
+	for _, bucket := range suggestionAgg.Buckets {
 		values = append(values, bucket["key"])
 	}
 	h.WriteJSON(w, values, http.StatusOK)

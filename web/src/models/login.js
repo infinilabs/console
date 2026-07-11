@@ -82,7 +82,12 @@ export default {
   effects: {
     *login({ payload }, { call, put }) {
       const username = payload.username || payload.userName;
-      let loginPayload = payload;
+      const passwordPayload = {
+        userName: username,
+        password: payload.password,
+        type: payload.type,
+      };
+      let loginPayload = null;
       let response;
 
       try {
@@ -104,8 +109,12 @@ export default {
             proof,
           };
         } else if (challenge?.status === "ok" && challenge?.method === "plain") {
-          // Legacy accounts keep using the original password payload until the backend upgrades verifier data.
-          loginPayload = payload;
+          // Keep plaintext fallback only when the backend explicitly asks for it.
+          loginPayload = passwordPayload;
+        } else {
+          throw new Error(
+            challenge?.error?.reason || challenge?.message || "unsupported login challenge response"
+          );
         }
 
         response = yield call(fakeAccountLogin, loginPayload);

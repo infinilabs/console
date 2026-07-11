@@ -29,6 +29,8 @@ import {
 import { FieldFormatsRegistry } from "../../components/vendor/data/common/field_formats";
 import { baseFormattersPublic } from "../../components/vendor/data/public/field_formats";
 import { deserializeFieldFormat } from "../../components/vendor/data/public/field_formats/utils/deserialize";
+import { getHighlightRequest } from "../../components/vendor/data/common/field_formats";
+import { UI_SETTINGS } from "../../components/vendor/data/common/constants";
 import { ESPrefix } from "@/services/common";
 import request from "@/utils/request";
 import { getTimezone } from "@/utils/utils";
@@ -100,6 +102,7 @@ fieldFormats.deserialize = deserializeFieldFormat.bind(fieldFormats);
 const indexPatternsApiClient = new IndexPatternsApiClient(http);
 const uiconfigs = {
   ["metaFields"]: ["_source", "_id", "_type", "_index"], //'_score'
+  [UI_SETTINGS.DOC_HIGHLIGHT]: true,
   defaultIndex: "",
 };
 const uiSettings = {
@@ -258,6 +261,9 @@ export const getContext = () => {
     const termRegex = /"[^"]*"|'[^']*'|[^\s()]+/g;
 
     return query.replace(termRegex, (token) => {
+      if (token === ":") {
+        return token;
+      }
       if ((token.startsWith('"') && token.endsWith('"')) || 
           (token.startsWith("'") && token.endsWith("'"))) {
         return token;
@@ -274,6 +280,9 @@ export const getContext = () => {
 
       if (isValidField) {
         const value = token.substring(colonIndex + 1);
+        if (!value) {
+          return token;
+        }
         
         if (value.startsWith('"') || value.startsWith("'")) {
           return token;
@@ -365,6 +374,13 @@ const getSearchParams = (
       sort: esSort, //
     },
   };
+  const highlightRequest = getHighlightRequest(
+    esRequest.body.query,
+    uiSettings.get(UI_SETTINGS.DOC_HIGHLIGHT)
+  );
+  if (highlightRequest) {
+    esRequest.body.highlight = highlightRequest;
+  }
   // Use search_after for pagination, fall back to from for first page
   if (searchAfter) {
     esRequest.body["search_after"] = searchAfter;

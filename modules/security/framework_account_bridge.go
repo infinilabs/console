@@ -39,6 +39,8 @@ type frameworkNativeAccountProvider struct {
 	adapter rbac.Adapter
 }
 
+var hasNonNativeRealm = realm.HasNonNativeRealm
+
 func (p frameworkNativeAccountProvider) GetUserByID(id string) (bool, *frameworksecurity.UserAccount, error) {
 	user, err := p.adapter.User.Get(id)
 	if err != nil {
@@ -56,6 +58,11 @@ func (p frameworkNativeAccountProvider) GetUserByLogin(login string) (bool, *fra
 		return false, nil, err
 	}
 	if user == nil || user.ID == "" {
+		if hasNonNativeRealm() {
+			return true, &frameworksecurity.UserAccount{
+				Name: login,
+			}, nil
+		}
 		return false, nil, nil
 	}
 	return true, toFrameworkUserAccount(user), nil

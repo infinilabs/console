@@ -278,3 +278,54 @@ func TestPersistFrameworkChallengeUpgradeSkipsMissingUserID(t *testing.T) {
 		t.Fatalf("expected empty user id to be ignored, got %v", err)
 	}
 }
+
+func TestFrameworkNativeAccountProviderFallsBackToPlainForExternalRealm(t *testing.T) {
+	originalHasNonNativeRealm := hasNonNativeRealm
+	hasNonNativeRealm = func() bool { return true }
+	t.Cleanup(func() {
+		hasNonNativeRealm = originalHasNonNativeRealm
+	})
+
+	store := &bridgeTestUserStore{items: map[string]rbac.User{}}
+	provider := frameworkNativeAccountProvider{
+		adapter: rbac.Adapter{User: store},
+	}
+
+	exists, account, err := provider.GetUserByLogin("ldap-user")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if !exists {
+		t.Fatal("expected external realm fallback account to exist")
+	}
+	if account == nil || account.Name != "ldap-user" {
+		t.Fatalf("unexpected fallback account: %#v", account)
+	}
+	if account.ID != "" {
+		t.Fatalf("expected fallback account id to be empty, got %q", account.ID)
+	}
+}
+
+func TestFrameworkNativeAccountProviderNoFallbackWithoutExternalRealm(t *testing.T) {
+	originalHasNonNativeRealm := hasNonNativeRealm
+	hasNonNativeRealm = func() bool { return false }
+	t.Cleanup(func() {
+		hasNonNativeRealm = originalHasNonNativeRealm
+	})
+
+	store := &bridgeTestUserStore{items: map[string]rbac.User{}}
+	provider := frameworkNativeAccountProvider{
+		adapter: rbac.Adapter{User: store},
+	}
+
+	exists, account, err := provider.GetUserByLogin("unknown-user")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if exists {
+		t.Fatal("expected unknown user without external realm fallback to not exist")
+	}
+	if account != nil {
+		t.Fatalf("expected nil account, got %#v", account)
+	}
+}

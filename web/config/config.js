@@ -28,6 +28,7 @@ const proxyPaths = [
   "/role/",
   "/permission/",
   "/account/",
+  "/auth/",
   "/notification/",
   "/agent/",
   "/insight/",

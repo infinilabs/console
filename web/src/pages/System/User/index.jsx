@@ -10,6 +10,7 @@ import {
   Input,
   message,
   Icon,
+  Switch,
 } from "antd";
 import { formatMessage, getLocale } from "umi/locale";
 import useFetch from "@/lib/hooks/use_fetch";
@@ -39,6 +40,11 @@ const displayOrDash = (value) => {
   const text = `${value}`.trim();
   return text ? text : "-";
 };
+
+const isAdministratorUser = (record) =>
+  (record?.roles || []).some(
+    (role) => role?.id === "Administrator" || role?.name === "Administrator"
+  );
 
 const UserList = (props) => {
   const [queryParams, setQueryParams] = React.useState({});
@@ -71,6 +77,25 @@ const UserList = (props) => {
     },
     [setQueryParams]
   );
+  const onToggleEnabledClick = useCallback(
+    async (userID, enabled) => {
+      const actionUrl = enabled ? "/user/_enable" : "/user/_disable";
+      const res = await request(actionUrl, {
+        method: "POST",
+        body: [userID],
+      });
+      if (res?.acknowledged) {
+        message.success(formatMessage({ id: "app.message.operate.success" }));
+        onRefreshClick();
+        return;
+      }
+      message.error(formatMessage({ id: "app.message.operate.failed" }));
+    },
+    [setQueryParams]
+  );
+
+  const normalizeEnabled = (value) => value !== false;
+
   const columns = useMemo(
     () => [
       {
@@ -114,8 +139,28 @@ const UserList = (props) => {
         },
       },
       {
+        title: formatMessage({ id: "system.security.user.table.status" }),
+        dataIndex: "enabled",
+        render: (enabled, record) => {
+          if (isAdministratorUser(record)) {
+            return "-";
+          }
+          const checked = normalizeEnabled(enabled);
+          return (
+            <Switch
+              size="small"
+              checked={checked}
+              disabled={!hasAuthority("system.security:all")}
+              onChange={(nextChecked) =>
+                onToggleEnabledClick(record.id, nextChecked)
+              }
+            />
+          );
+        },
+      },
+      {
         title: formatMessage({ id: "table.field.actions" }),
-        width: getLocale() === "zh-CN" ? 180 : 220,
+        width: getLocale() === "zh-CN" ? 180 : 240,
         render: (text, record) => (
           <div>
             {hasAuthority("system.security:all") ? (
@@ -151,7 +196,7 @@ const UserList = (props) => {
       },
     ],
 
-    [value]
+    [value, onToggleEnabledClick]
   );
   const { data: users, total } = React.useMemo(() => {
     setIsLoading(loading);

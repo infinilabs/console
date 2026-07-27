@@ -40,6 +40,7 @@ const ctxUserKey = "user"
 type UserClaims struct {
 	*jwt.RegisteredClaims
 	*ShortUser
+	PermissionKeys []string `json:"permission_keys,omitempty"`
 }
 
 type ShortUser struct {
@@ -97,8 +98,17 @@ func NewUserClaimsFromSession(sessionUser *frameworksecurity.UserSessionInfo) *U
 	if shortUser == nil {
 		return nil
 	}
+	var permissionKeys []string
+	if sessionUser != nil && sessionUser.UserAssignedPermission != nil {
+		keys := sessionUser.UserAssignedPermission.GetPermissionKeys()
+		permissionKeys = make([]string, 0, len(keys))
+		for _, key := range keys {
+			permissionKeys = append(permissionKeys, string(key))
+		}
+	}
 	return &UserClaims{
-		ShortUser: shortUser,
+		ShortUser:      shortUser,
+		PermissionKeys: permissionKeys,
 	}
 }
 
@@ -106,7 +116,21 @@ func (u *UserClaims) ToSessionInfo() *frameworksecurity.UserSessionInfo {
 	if u == nil {
 		return nil
 	}
-	return u.ShortUser.ToSessionInfo()
+	sessionUser := u.ShortUser.ToSessionInfo()
+	if sessionUser == nil {
+		return nil
+	}
+	permissionKeys := make([]frameworksecurity.PermissionKey, 0, len(u.PermissionKeys))
+	for _, permissionKey := range u.PermissionKeys {
+		if permissionKey == "" {
+			continue
+		}
+		permissionKeys = append(permissionKeys, frameworksecurity.PermissionKey(permissionKey))
+	}
+	if len(permissionKeys) > 0 {
+		sessionUser.UserAssignedPermission = frameworksecurity.NewUserAssignedPermission(permissionKeys, nil)
+	}
+	return EnsureFrameworkDefaultPermissions(sessionUser)
 }
 
 func (u *ShortUser) ToSessionInfo() *frameworksecurity.UserSessionInfo {

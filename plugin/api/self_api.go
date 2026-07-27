@@ -41,6 +41,22 @@ var consoleAccountProxyUIRoutes = []frameworkapi.ProtectedAPIRoute{
 	{Method: frameworkapi.PUT, Path: "/account/password"},
 }
 
+var consolePublicProxyUIRoutes = []frameworkapi.ProtectedAPIRoute{
+	{Method: frameworkapi.GET, Path: "/_info"},
+	{Method: frameworkapi.GET, Path: "/health"},
+	{Method: frameworkapi.GET, Path: "/_license/info"},
+	{Method: frameworkapi.POST, Path: "/account/replay_nonce"},
+	{Method: frameworkapi.POST, Path: "/account/login/challenge"},
+	{Method: frameworkapi.POST, Path: "/account/login"},
+	{Method: frameworkapi.POST, Path: "/setup/_validate"},
+	{Method: frameworkapi.POST, Path: "/setup/_initialize"},
+	{Method: frameworkapi.POST, Path: "/setup/_validate_secret"},
+	{Method: frameworkapi.POST, Path: "/setup/_initialize_template"},
+	{Method: frameworkapi.GET, Path: "/setting/application"},
+	{Method: frameworkapi.GET, Path: "/instance/_get_install_script"},
+	{Method: frameworkapi.GET, Path: "/instance/_get_gateway_install_script"},
+}
+
 type consoleSelfAPIHandler struct {
 	frameworkapi.Handler
 }
@@ -74,21 +90,42 @@ func RefreshConsoleSelfAPIProxyUIRoutes() {
 	handler := consoleSelfAPIHandler{}
 	frameworkapi.WalkMissingAPIMethodUIRoutes(func(route frameworkapi.MissingAPIMethodUIRoute) {
 		proxyHandler := httprouter.Handle(handler.proxyLocalAPI)
-		if shouldProtectConsoleSelfProxyRoute(route.Options) {
+		if shouldProtectConsoleSelfProxyRoute(route.Route, route.Options) {
 			proxyHandler = handler.requireLoginOrAccessToken(proxyHandler)
 		}
 		frameworkapi.HandleUIMethod(route.Route.Method, route.Route.Path, proxyHandler)
 	})
 }
 
-func shouldProtectConsoleSelfProxyRoute(options *frameworkapi.HandlerOptions) bool {
-	if options == nil {
+func shouldProtectConsoleSelfProxyRoute(route frameworkapi.ProtectedAPIRoute, options *frameworkapi.HandlerOptions) bool {
+	if !frameworkapi.IsAuthEnable() {
 		return false
+	}
+	if isConsolePublicProxyRoute(route) {
+		return false
+	}
+	if options == nil {
+		return true
 	}
 	if len(options.RequirePermission) > 0 {
 		return true
 	}
-	return options.RequireLogin && !options.OptionLogin
+	if options.RequireLogin && !options.OptionLogin {
+		return true
+	}
+	if !options.RequireLogin && !options.OptionLogin {
+		return false
+	}
+	return true
+}
+
+func isConsolePublicProxyRoute(route frameworkapi.ProtectedAPIRoute) bool {
+	for _, publicRoute := range consolePublicProxyUIRoutes {
+		if publicRoute.Method == route.Method && publicRoute.Path == route.Path {
+			return true
+		}
+	}
+	return false
 }
 
 func (h consoleSelfAPIHandler) proxyLocalAPI(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {
@@ -113,7 +150,7 @@ func (h consoleSelfAPIHandler) requireLoginOrAccessToken(next httprouter.Handle)
 		}
 
 		if frameworkapi.IsAuthEnable() {
-			if _, err := consolesecurity.ValidateLogin(req.Header.Get("Authorization")); err == nil {
+			if _, err := consolesecurity.ValidateLoginFromRequest(req); err == nil {
 				next(w, req, ps)
 				return
 			}

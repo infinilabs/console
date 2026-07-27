@@ -333,6 +333,36 @@ func TestRefreshConsoleSelfAPIProxyUIRoutesMirrorsLateProtectedAPIRoutesAfterWeb
 	}
 }
 
+func TestShouldProtectConsoleSelfProxyRouteAllowsKnownPublicRoutes(t *testing.T) {
+	originalAuthEnabled := global.Env().SystemConfig.WebAppConfig.Security.Enabled
+	t.Cleanup(func() {
+		global.Env().SystemConfig.WebAppConfig.Security.Enabled = originalAuthEnabled
+	})
+	global.Env().SystemConfig.WebAppConfig.Security.Enabled = true
+
+	if shouldProtectConsoleSelfProxyRoute(api2.ProtectedAPIRoute{Method: api2.POST, Path: "/account/login"}, nil) {
+		t.Fatal("expected account login route to remain public")
+	}
+	if shouldProtectConsoleSelfProxyRoute(api2.ProtectedAPIRoute{Method: api2.GET, Path: "/instance/_get_install_script"}, nil) {
+		t.Fatal("expected install script route to remain public")
+	}
+	if shouldProtectConsoleSelfProxyRoute(api2.ProtectedAPIRoute{Method: api2.GET, Path: "/_info"}, nil) {
+		t.Fatal("expected _info route to remain public")
+	}
+	if shouldProtectConsoleSelfProxyRoute(api2.ProtectedAPIRoute{Method: api2.GET, Path: "/health"}, nil) {
+		t.Fatal("expected health route to remain public")
+	}
+	if shouldProtectConsoleSelfProxyRoute(api2.ProtectedAPIRoute{Method: api2.GET, Path: "/_license/info"}, nil) {
+		t.Fatal("expected license info route to remain public")
+	}
+	if shouldProtectConsoleSelfProxyRoute(api2.ProtectedAPIRoute{Method: api2.GET, Path: "/setting/application"}, nil) {
+		t.Fatal("expected application setting route to remain public")
+	}
+	if !shouldProtectConsoleSelfProxyRoute(api2.ProtectedAPIRoute{Method: api2.GET, Path: "/_version"}, nil) {
+		t.Fatal("expected unannotated non-whitelisted route to be protected")
+	}
+}
+
 func issueConsoleTestToken(t *testing.T, userID string) string {
 	t.Helper()
 

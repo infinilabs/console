@@ -497,7 +497,7 @@ func resolvePackageDownloadURL(consoleEndpoint, downloadURL, defaultDownloadURL,
 
 func logAutoResolvedDownloadURL(product, downloadURL, defaultDownloadURL string) {
 	if downloadURL == defaultDownloadURL {
-		log.Warnf("%s.setup.download_url is empty, defaulting to public release mirror: %s", product, console_common.MaskLogEndpoint(downloadURL))
+		log.Debugf("%s.setup.download_url is empty, defaulting to public release mirror: %s", product, console_common.MaskLogEndpoint(downloadURL))
 		return
 	}
 	log.Debugf("%s.setup.download_url is empty, using Console self-hosted package path: %s", product, console_common.MaskLogEndpoint(downloadURL))

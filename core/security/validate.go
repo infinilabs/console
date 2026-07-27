@@ -31,6 +31,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"time"
 
@@ -394,6 +395,51 @@ func ValidateLogin(authorizationHeader string) (clams *UserClaims, err error) {
 
 }
 
+func ValidateLoginFromRequest(req *http.Request) (claims *UserClaims, err error) {
+	if req == nil {
+		return nil, errors.New("request is nil")
+	}
+
+	sessionUser, frameworkErr := frameworksecurity.ValidateLogin(httptest.NewRecorder(), req)
+	if frameworkErr == nil && sessionUser != nil && sessionUser.IsValid() {
+		claims = NewUserClaimsFromSession(sessionUser)
+		if claims == nil || claims.ShortUser == nil {
+			return nil, errors.New("invalid user info")
+		}
+		if err = enrichClaimsFromNativeUser(claims); err != nil {
+			return nil, err
+		}
+		return claims, nil
+	}
+
+	claims, err = ValidateLogin(req.Header.Get("Authorization"))
+	if err != nil {
+		return nil, err
+	}
+	if err = enrichClaimsFromNativeUser(claims); err != nil {
+		return nil, err
+	}
+	return claims, nil
+}
+
+func enrichClaimsFromNativeUser(claims *UserClaims) error {
+	if claims == nil || claims.ShortUser == nil || claims.UserId == "" {
+		return nil
+	}
+	user, err := GetAdapter("native").User.Get(claims.UserId)
+	if err != nil || user.ID == "" {
+		return nil
+	}
+	if !user.IsEnabled() {
+		return fmt.Errorf("user account [%s] is disabled", claims.Username)
+	}
+	if len(claims.Roles) == 0 {
+		roles, _ := user.GetPermissions()
+		claims.Roles = roles
+	}
+	return nil
+}
+
 func ValidatePermission(claims *UserClaims, permissions []string) (err error) {
 
 	user := claims.ShortUser
@@ -402,9 +448,20 @@ func ValidatePermission(claims *UserClaims, permissions []string) (err error) {
 		err = errors.New("user id is empty")
 		return
 	}
+	if len(claims.PermissionKeys) > 0 {
+		userPermissionMap := make(map[string]struct{}, len(claims.PermissionKeys))
+		for _, permission := range claims.PermissionKeys {
+			userPermissionMap[permission] = struct{}{}
+		}
+		for _, permission := range permissions {
+			if _, ok := userPermissionMap[permission]; !ok {
+				return errors.New("permission denied")
+			}
+		}
+		return nil
+	}
 	if user.Roles == nil {
-		err = errors.New("api permission is empty")
-		return
+		return errors.New("api permission is empty")
 	}
 
 	// 权限校验

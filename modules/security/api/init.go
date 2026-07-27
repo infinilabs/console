@@ -70,6 +70,8 @@ func Init() {
 	api.HandleAPIMethod(api.DELETE, "/user/:id", apiHandler.RequirePermission(apiHandler.DeleteUser, enum.UserAllPermission...), api.RequirePermission(permissionKeys(enum.UserAllPermission)...))
 	api.HandleAPIMethod(api.PUT, "/user/:id", apiHandler.RequirePermission(apiHandler.UpdateUser, enum.UserAllPermission...), api.RequirePermission(permissionKeys(enum.UserAllPermission)...))
 	api.HandleAPIMethod(api.GET, "/user/_search", apiHandler.RequirePermission(apiHandler.SearchUser, enum.UserReadPermission...), api.RequirePermission(permissionKeys(enum.UserReadPermission)...))
+	api.HandleAPIMethod(api.POST, "/user/_enable", apiHandler.RequirePermission(apiHandler.EnableUser, enum.UserAllPermission...), api.RequirePermission(permissionKeys(enum.UserAllPermission)...))
+	api.HandleAPIMethod(api.POST, "/user/_disable", apiHandler.RequirePermission(apiHandler.DisableUser, enum.UserAllPermission...), api.RequirePermission(permissionKeys(enum.UserAllPermission)...))
 	api.HandleAPIMethod(api.PUT, "/user/:id/password", apiHandler.RequireSecureTransport(apiHandler.RequireReplayProtection(apiHandler.RequirePermission(apiHandler.UpdateUserPassword, enum.UserAllPermission...))), api.RequirePermission(permissionKeys(enum.UserAllPermission)...))
 
 	api.HandleAPIMethod(api.POST, "/account/replay_nonce", apiHandler.RequireSecureTransport(frameworkrbac.IssueReplayNonce))

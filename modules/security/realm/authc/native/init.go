@@ -67,6 +67,9 @@ func (r *NativeRealm) Authenticate(username, password string) (bool, *rbac.User,
 	if user == nil {
 		return false, nil, fmt.Errorf("user account [%s] not found", username)
 	}
+	if !user.IsEnabled() {
+		return false, nil, fmt.Errorf("user account [%s] is disabled", username)
+	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err == bcrypt.ErrMismatchedHashAndPassword {

@@ -137,6 +137,15 @@ func (handler APIHandler) HandleUpdateSettingsAction(w http.ResponseWriter, req 
 		handler.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
 	}
+	claims, auditLogErr := security.ValidateLoginFromRequest(req)
+	if auditLogErr == nil && claims != nil && handler.GetHeader(req, "Referer", "") != "" {
+		auditLog, _ := model.NewAuditLogBuilderWithDefault().WithOperator(claims.Username).
+			WithLogTypeOperation().WithResourceTypeClusterManagement().
+			WithEventName("update index settings").WithEventSourceIP(common.GetClientIP(req)).
+			WithResourceName(targetClusterID).WithOperationTypeModification().
+			WithEventRecord(indexName + ": " + util.MustToJSON(settings)).Build()
+		_ = service.LogAuditLog(auditLog)
+	}
 	resBody["result"] = "updated"
 	handler.WriteJSON(w, resBody, http.StatusCreated)
 }
@@ -162,7 +171,7 @@ func (handler APIHandler) HandleCreateIndexAction(w http.ResponseWriter, req *ht
 	targetClusterID := ps.ByName("id")
 	client := elastic.GetClient(targetClusterID)
 	indexName := ps.ByName("index")
-	claims, auditLogErr := security.ValidateLogin(req.Header.Get("Authorization"))
+	claims, auditLogErr := security.ValidateLoginFromRequest(req)
 	if auditLogErr == nil && handler.GetHeader(req, "Referer", "") != "" {
 		auditLog, _ := model.NewAuditLogBuilderWithDefault().WithOperator(claims.Username).
 			WithLogTypeOperation().WithResourceTypeClusterManagement().

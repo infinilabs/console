@@ -43,10 +43,25 @@ type User struct {
 	Email            string   `json:"email" elastic_mapping:"email: { type: keyword }"`
 	Phone            string   `json:"phone" elastic_mapping:"phone: { type: keyword }"`
 	Tags             []string `json:"tags" elastic_mapping:"mobile: { type: keyword }"`
+	Enabled          *bool    `json:"enabled,omitempty" elastic_mapping:"enabled: { type: boolean }"`
 
 	AvatarUrl string      `json:"avatar_url" elastic_mapping:"avatar_url: { type: keyword }"`
 	Roles     []UserRole  `json:"roles" elastic_mapping:"roles: { type: object }"`
 	Payload   interface{} `json:"-"` //used for storing additional data derived from auth provider
+}
+
+func (user *User) IsEnabled() bool {
+	if user == nil || user.Enabled == nil {
+		return true
+	}
+	return *user.Enabled
+}
+
+func (user *User) SetEnabled(enabled bool) {
+	if user == nil {
+		return
+	}
+	user.Enabled = &enabled
 }
 
 func (user *User) GetPermissions() (roles []string, privileges []string) {

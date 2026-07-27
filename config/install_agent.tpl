@@ -114,12 +114,27 @@ function check_dir() {
       if [[ "${no_service}" != "true" ]]; then
         uninstall_service
       fi
-      rm -rf ${install_dir}/*
+      cleanup_install_dir_preserving_runtime_data
     else
       echo "Error: Please manual clean exists agent files at ${install_dir}, reinstall again."
       exit 1
     fi
   fi
+}
+
+function cleanup_install_dir_preserving_runtime_data() {
+  echo "[agent] preserving runtime data in ${install_dir}/data and ${install_dir}/log"
+  shopt -s dotglob nullglob
+  for item in "${install_dir}"/*; do
+    name="$(basename "${item}")"
+    case "${name}" in
+      data|log)
+        continue
+        ;;
+    esac
+    rm -rf "${item}"
+  done
+  shopt -u dotglob nullglob
 }
 
 function check_platform() {

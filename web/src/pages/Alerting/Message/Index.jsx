@@ -453,21 +453,18 @@ const Index = (props) => {
       start_time: normalizedStartTime,
       end_time: normalizedEndTime,
     };
-    if (
-      normalizedStartTime &&
-      normalizedEndTime &&
-      normalizedStartTime !== "auto" &&
-      normalizedEndTime !== "auto"
-    ) {
+    if (normalizedStartTime && normalizedEndTime) {
       const bounds = calculateBounds({
-        from: normalizedStartTime,
-        to: normalizedEndTime,
+        from: normalizedStartTime || "auto",
+        to: normalizedEndTime || "auto",
       });
-      params = {
-        ...params,
-        min: bounds.min.valueOf(),
-        max: bounds.max.valueOf(),
-      };
+      if (bounds?.min && bounds?.max) {
+        params = {
+          ...params,
+          min: bounds.min.valueOf(),
+          max: bounds.max.valueOf(),
+        };
+      }
     }
 
     const fetchData = async () => {

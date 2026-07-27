@@ -57,7 +57,7 @@ func (handler Handler) RequireLogin(h httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 		if api.IsAuthEnable() {
-			claims, err := security.ValidateLogin(r.Header.Get("Authorization"))
+			claims, err := security.ValidateLoginFromRequest(r)
 			if err != nil {
 				handler.WriteError(w, err.Error(), http.StatusUnauthorized)
 				return
@@ -77,7 +77,7 @@ func (handler Handler) RequirePermission(h httprouter.Handle, permissions ...str
 		}
 
 		if api.IsAuthEnable() {
-			claims, err := security.ValidateLogin(r.Header.Get("Authorization"))
+			claims, err := security.ValidateLoginFromRequest(r)
 			if err != nil {
 				handler.WriteError(w, err.Error(), http.StatusUnauthorized)
 				return
@@ -119,7 +119,7 @@ func (handler Handler) RequireClusterPermission(h httprouter.Handle, permissions
 
 		if api.IsAuthEnable() {
 			id := ps.ByName("id")
-			claims, err := security.ValidateLogin(r.Header.Get("Authorization"))
+			claims, err := security.ValidateLoginFromRequest(r)
 			if err != nil {
 				handler.WriteError(w, err.Error(), http.StatusUnauthorized)
 				return

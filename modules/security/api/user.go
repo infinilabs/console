@@ -72,6 +72,7 @@ func (h APIHandler) CreateUser(w http.ResponseWriter, r *http.Request, ps httpro
 	user.Password = material.Hash
 	user.PasswordSalt = material.Salt
 	user.PasswordVerifier = material.Verifier
+	user.SetEnabled(true)
 
 	now := time.Now()
 	user.Created = &now
@@ -159,6 +160,9 @@ func (h APIHandler) UpdateUser(w http.ResponseWriter, r *http.Request, ps httpro
 	user.Password = oldUser.Password
 	user.PasswordSalt = oldUser.PasswordSalt
 	user.PasswordVerifier = oldUser.PasswordVerifier
+	if user.Enabled == nil {
+		user.SetEnabled(oldUser.IsEnabled())
+	}
 	err = h.User.Update(&user)
 
 	if err != nil {
@@ -179,6 +183,77 @@ func (h APIHandler) UpdateUser(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 	h.WriteOKJSON(w, api.UpdateResponse(id))
 	return
+}
+
+func (h APIHandler) EnableUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	h.batchSetUserEnabled(w, r, true)
+}
+
+func (h APIHandler) DisableUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	h.batchSetUserEnabled(w, r, false)
+}
+
+func (h APIHandler) batchSetUserEnabled(w http.ResponseWriter, r *http.Request, enabled bool) {
+	var userIDs []string
+	if err := h.DecodeJSON(r, &userIDs); err != nil {
+		h.Error400(w, err.Error())
+		return
+	}
+	if len(userIDs) == 0 {
+		h.WriteAckOKJSON(w)
+		return
+	}
+
+	reqUser, err := rbac.FromUserContext(r.Context())
+	if err != nil {
+		log.Error("failed to get user from context, err: %v", err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	for _, userID := range userIDs {
+		user, err := h.User.Get(userID)
+		if errors.Is(err, elastic.ErrNotFound) {
+			h.WriteJSON(w, api.NotFoundResponse(userID), http.StatusNotFound)
+			return
+		}
+		if err != nil {
+			h.ErrorInternalServer(w, err.Error())
+			return
+		}
+
+		if reqUser != nil && reqUser.UserId == userID && !enabled {
+			h.Error400(w, "can not disable yourself")
+			return
+		}
+		if !enabled && isAdministratorUser(user) {
+			h.Error400(w, "can not disable administrator")
+			return
+		}
+
+		if user.IsEnabled() == enabled {
+			continue
+		}
+		user.SetEnabled(enabled)
+		if err = h.User.Update(&user); err != nil {
+			h.ErrorInternalServer(w, err.Error())
+			return
+		}
+		if !enabled {
+			rbac.DeleteUserToken(userID)
+		}
+	}
+
+	h.WriteAckOKJSON(w)
+}
+
+func isAdministratorUser(user rbac.User) bool {
+	for _, role := range user.Roles {
+		if role.ID == rbac.RoleAdminName || role.Name == rbac.RoleAdminName {
+			return true
+		}
+	}
+	return false
 }
 
 func (h APIHandler) DeleteUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

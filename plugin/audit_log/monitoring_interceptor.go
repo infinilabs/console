@@ -59,7 +59,7 @@ func (m *MonitoringInterceptor) PreHandle(c context.Context, _ http.ResponseWrit
 		targetClusterID = matches[1]
 		eventName = strings.Replace(matches[2], "/", " ", -1)
 	}
-	claims, auditLogErr := security.ValidateLogin(request.Header.Get("Authorization"))
+	claims, auditLogErr := security.ValidateLoginFromRequest(request)
 	if auditLogErr == nil && handler.GetHeader(request, "Referer", "") != "" {
 		auditLog, _ := model.NewAuditLogBuilderWithDefault().WithOperator(claims.Username).
 			WithLogTypeAccess().WithResourceTypeClusterManagement().

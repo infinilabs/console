@@ -38,7 +38,7 @@ func (handler Handler) IndexRequired(h httprouter.Handle, route ...string) httpr
 
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		if api.IsAuthEnable() {
-			claims, err := rbac.ValidateLogin(r.Header.Get("Authorization"))
+			claims, err := rbac.ValidateLoginFromRequest(r)
 			if err != nil {
 				handler.WriteError(w, err.Error(), http.StatusUnauthorized)
 				return
@@ -63,7 +63,7 @@ func (handler Handler) ClusterRequired(h httprouter.Handle, route ...string) htt
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 		if api.IsAuthEnable() {
-			claims, err := rbac.ValidateLogin(r.Header.Get("Authorization"))
+			claims, err := rbac.ValidateLoginFromRequest(r)
 			if err != nil {
 				handler.WriteError(w, err.Error(), http.StatusUnauthorized)
 				return
@@ -170,7 +170,7 @@ func (handler Handler) ValidateProxyRequest(req *http.Request, clusterID string)
 	if !api.IsAuthEnable() {
 		return false, "", nil
 	}
-	claims, err := rbac.ValidateLogin(req.Header.Get("Authorization"))
+	claims, err := rbac.ValidateLoginFromRequest(req)
 	if err != nil {
 		return false, "", err
 	}

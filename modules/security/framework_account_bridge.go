@@ -46,7 +46,7 @@ func (p frameworkNativeAccountProvider) GetUserByID(id string) (bool, *framework
 	if err != nil {
 		return false, nil, err
 	}
-	if user.ID == "" {
+	if user.ID == "" || !user.IsEnabled() {
 		return false, nil, nil
 	}
 	return true, toFrameworkUserAccount(&user), nil
@@ -63,6 +63,9 @@ func (p frameworkNativeAccountProvider) GetUserByLogin(login string) (bool, *fra
 				Name: login,
 			}, nil
 		}
+		return false, nil, nil
+	}
+	if !user.IsEnabled() {
 		return false, nil, nil
 	}
 	return true, toFrameworkUserAccount(user), nil
@@ -119,13 +122,30 @@ func registerFrameworkAccountBridge() {
 	})
 	frameworksecurity.RegisterAuthenticationProvider("console-native-account-bridge", frameworkNativeAccountProvider{adapter: adapter})
 	frameworksecurity.RegisterAccountPasswordLoginProvider("console-realm-password-login", frameworkRealmPasswordLoginProvider{})
-	frameworksecurity.RegisterHTTPAuthFilterProvider("console-bearer-token", func(_ http.ResponseWriter, r *http.Request) (*frameworksecurity.UserClaims, error) {
-		claims, err := rbac.ValidateLogin(r.Header.Get("Authorization"))
+	frameworksecurity.RegisterHTTPAuthFilterProviderWithPriority("console-bearer-token", func(_ http.ResponseWriter, r *http.Request) (*frameworksecurity.UserClaims, error) {
+		authorization := strings.TrimSpace(r.Header.Get("Authorization"))
+		if authorization == "" {
+			return nil, nil
+		}
+
+		sessionUser, frameworkErr := frameworksecurity.ValidateAuthorizationHeader(authorization)
+		if frameworkErr == nil && sessionUser != nil && sessionUser.IsValid() {
+			if err := validateNativeAccountEnabled(adapter, sessionUser); err != nil {
+				return nil, err
+			}
+			bridgedClaims := frameworksecurity.NewUserClaims()
+			bridgedClaims.UserSessionInfo = sessionUser
+			return bridgedClaims, nil
+		}
+
+		claims, err := rbac.ValidateLogin(authorization)
 		if err != nil || claims == nil {
 			return nil, err
 		}
-
-		sessionUser := claims.ToSessionInfo()
+		if err := validateLegacyNativeAccountEnabled(adapter, claims); err != nil {
+			return nil, err
+		}
+		sessionUser = claims.ToSessionInfo()
 		if sessionUser == nil {
 			return nil, nil
 		}
@@ -138,13 +158,55 @@ func registerFrameworkAccountBridge() {
 			bridgedClaims.RegisteredClaims = claims.RegisteredClaims
 		}
 		return bridgedClaims, nil
-	})
+	}, 15)
 	frameworksecurity.RegisterSessionTokenResponseDecorator("console-platform-privilege", func(token map[string]interface{}, user *frameworksecurity.UserSessionInfo) {
 		if user == nil {
 			return
 		}
 		token["privilege"] = rbac.CombineUserRoles(user.Roles).Platform
 	})
+}
+
+func validateNativeAccountEnabled(adapter rbac.Adapter, sessionUser *frameworksecurity.UserSessionInfo) error {
+	if sessionUser == nil || !isNativeProvider(sessionUser.Provider) {
+		return nil
+	}
+	userID := strings.TrimSpace(sessionUser.UserID)
+	if userID == "" {
+		return fmt.Errorf("user id is empty")
+	}
+	user, err := adapter.User.Get(userID)
+	if err != nil {
+		return err
+	}
+	if !user.IsEnabled() {
+		return fmt.Errorf("user account [%s] is disabled", sessionUser.Login)
+	}
+	return nil
+}
+
+func validateLegacyNativeAccountEnabled(adapter rbac.Adapter, claims *rbac.UserClaims) error {
+	if claims == nil || claims.ShortUser == nil || !isNativeProvider(claims.ShortUser.Provider) {
+		return nil
+	}
+	userID := strings.TrimSpace(claims.ShortUser.UserId)
+	if userID == "" {
+		return fmt.Errorf("user id is empty")
+	}
+	user, err := adapter.User.Get(userID)
+	if err != nil {
+		return err
+	}
+	if !user.IsEnabled() {
+		rbac.DeleteUserToken(userID)
+		return fmt.Errorf("user account [%s] is disabled", claims.ShortUser.Username)
+	}
+	return nil
+}
+
+func isNativeProvider(provider string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(provider))
+	return normalized == "" || normalized == "native" || normalized == strings.ToLower(frameworksecurity.DefaultNativeAuthBackend)
 }
 
 func persistFrameworkChallengeUpgrade(adapter rbac.Adapter, user *frameworksecurity.UserAccount) error {

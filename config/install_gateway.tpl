@@ -111,12 +111,27 @@ function check_dir() {
   fi
 
   if [[ "$(ls -A ${install_dir})" ]]; then
-    echo "[gateway] found existing files in ${install_dir}, cleaning up"
+    echo "[gateway] found existing files in ${install_dir}, cleaning up while preserving runtime data"
     if [[ "${install_dir}" == "/" ]]; then
       echo "Error: refusing to clean root directory /" >&2; exit 1;
     fi
-    find "${install_dir}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+    cleanup_install_dir_preserving_runtime_data
   fi
+}
+
+function cleanup_install_dir_preserving_runtime_data() {
+  echo "[gateway] preserving runtime data in ${install_dir}/data and ${install_dir}/log"
+  shopt -s dotglob nullglob
+  for item in "${install_dir}"/*; do
+    name="$(basename "${item}")"
+    case "${name}" in
+      data|log)
+        continue
+        ;;
+    esac
+    rm -rf "${item}"
+  done
+  shopt -u dotglob nullglob
 }
 
 function check_platform() {

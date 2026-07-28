@@ -838,6 +838,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 
 	if request.shouldResetBootstrapUser() {
 		//Save bootstrap user
+		enabled := true
 		user := security.User{}
 		user.ID = "default_user_" + request.BootstrapUsername
 		user.Username = request.BootstrapUsername
@@ -847,6 +848,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 			panic(err)
 		}
 		user.Password = material.Hash
+		user.Enabled = &enabled
 		user.PasswordSalt = material.Salt
 		user.PasswordVerifier = material.Verifier
 		role := []security.UserRole{}

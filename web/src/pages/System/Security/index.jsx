@@ -25,8 +25,6 @@ import "@/assets/headercontent.scss";
 const { TabPane } = Tabs;
 import User from "../User/index";
 import Role from "../Role/index";
-import Token from "./Token";
-import { hasAuthority } from "@/utils/authority";
 
 const Security = (props) => {
   const [param, setParam] = useQueryParam("_g", JsonParam);
@@ -51,15 +49,6 @@ const Security = (props) => {
           >
             <Role />
           </TabPane>
-          //TODO: with CRUD for system.security:all
-          {hasAuthority("security:auth:api-token:search") ? (
-            <TabPane
-              tab={<span>{formatMessage({ id: "system.security.tab.token" })}</span>}
-              key="token"
-            >
-              <Token />
-            </TabPane>
-          ) : null}
         </Tabs>
       </Card>
     </PageHeaderWrapper>

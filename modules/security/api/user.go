@@ -94,7 +94,7 @@ func (h APIHandler) CreateUser(w http.ResponseWriter, r *http.Request, ps httpro
 		auditLog, _ := model.NewAuditLogBuilderWithDefault().WithOperator(localUser.Username).
 			WithLogTypeOperation().WithResourceTypeAccountCenter().
 			WithEventName("create user").WithEventSourceIP(common.GetClientIP(r)).
-			WithResourceName(user.Username).WithOperationTypeCreate().
+			WithResourceName(user.Username).WithOperationTypeNew().
 			WithEventRecord(util.MustToJSON(user)).Build()
 		_ = service.LogAuditLog(auditLog)
 	}
@@ -330,7 +330,7 @@ func (h APIHandler) DeleteUser(w http.ResponseWriter, r *http.Request, ps httpro
 		auditLog, _ := model.NewAuditLogBuilderWithDefault().WithOperator(user.Username).
 			WithLogTypeOperation().WithResourceTypeAccountCenter().
 			WithEventName("delete user").WithEventSourceIP(common.GetClientIP(r)).
-			WithResourceName(resourceName).WithOperationTypeDelete().
+			WithResourceName(resourceName).WithOperationTypeDeletion().
 			WithEventRecord(resourceName).Build()
 		_ = service.LogAuditLog(auditLog)
 	}

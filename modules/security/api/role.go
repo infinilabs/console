@@ -89,7 +89,7 @@ func (h APIHandler) CreateRole(w http.ResponseWriter, r *http.Request, ps httpro
 		auditLog, _ := model.NewAuditLogBuilderWithDefault().WithOperator(localUser.Username).
 			WithLogTypeOperation().WithResourceTypeAccountCenter().
 			WithEventName("create role").WithEventSourceIP(common.GetClientIP(r)).
-			WithResourceName(role.Name).WithOperationTypeCreate().
+			WithResourceName(role.Name).WithOperationTypeNew().
 			WithEventRecord(util.MustToJSON(role)).Build()
 		_ = service.LogAuditLog(auditLog)
 	}
@@ -194,7 +194,7 @@ func (h APIHandler) DeleteRole(w http.ResponseWriter, r *http.Request, ps httpro
 		auditLog, _ := model.NewAuditLogBuilderWithDefault().WithOperator(localUser.Username).
 			WithLogTypeOperation().WithResourceTypeAccountCenter().
 			WithEventName("delete role").WithEventSourceIP(common.GetClientIP(r)).
-			WithResourceName(oldRole.Name).WithOperationTypeDelete().
+			WithResourceName(oldRole.Name).WithOperationTypeDeletion().
 			WithEventRecord(util.MustToJSON(oldRole)).Build()
 		_ = service.LogAuditLog(auditLog)
 	}

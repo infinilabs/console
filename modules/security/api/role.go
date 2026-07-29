@@ -30,7 +30,10 @@ package api
 import (
 	"encoding/json"
 	log "github.com/cihub/seelog"
+	"infini.sh/console/common"
 	rbac "infini.sh/console/core/security"
+	"infini.sh/console/model"
+	"infini.sh/console/service"
 	"infini.sh/framework/core/api"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/elastic"
@@ -45,13 +48,13 @@ const errRoleAssignedToUsers = "role is still assigned to users"
 func (h APIHandler) CreateRole(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	roleType := ps.MustGetParameter("type")
 
-	//localUser, err := rbac.FromUserContext(r.Context())
-	//if err != nil {
-	//	log.Error(err.Error())
-	//	h.ErrorInternalServer(w, err.Error())
-	//	return
-	//}
-	err := rbac.IsAllowRoleType(roleType)
+	localUser, err := rbac.FromUserContext(r.Context())
+	if err != nil {
+		log.Error(err.Error())
+		h.ErrorInternalServer(w, err.Error())
+		return
+	}
+	err = rbac.IsAllowRoleType(roleType)
 	if err != nil {
 		h.ErrorInternalServer(w, err.Error())
 		return
@@ -81,6 +84,16 @@ func (h APIHandler) CreateRole(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	}
 	rbac.RoleMap[role.Name] = *role
+
+	if r.Header.Get("Referer") != "" {
+		auditLog, _ := model.NewAuditLogBuilderWithDefault().WithOperator(localUser.Username).
+			WithLogTypeOperation().WithResourceTypeAccountCenter().
+			WithEventName("create role").WithEventSourceIP(common.GetClientIP(r)).
+			WithResourceName(role.Name).WithOperationTypeCreate().
+			WithEventRecord(util.MustToJSON(role)).Build()
+		_ = service.LogAuditLog(auditLog)
+	}
+
 	h.WriteOKJSON(w, api.CreateResponse(id))
 	return
 
@@ -147,12 +160,12 @@ func (h APIHandler) GetRole(w http.ResponseWriter, r *http.Request, ps httproute
 func (h APIHandler) DeleteRole(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	id := ps.MustGetParameter("id")
 
-	//localUser, err := biz.FromUserContext(r.Context())
-	//if err != nil {
-	//	log.Error(err.Error())
-	//	h.ErrorInternalServer(w, err.Error())
-	//	return
-	//}
+	localUser, err := rbac.FromUserContext(r.Context())
+	if err != nil {
+		log.Error(err.Error())
+		h.ErrorInternalServer(w, err.Error())
+		return
+	}
 	oldRole, err := h.Role.Get(id)
 	if err != nil {
 		h.ErrorInternalServer(w, err.Error())
@@ -176,20 +189,30 @@ func (h APIHandler) DeleteRole(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	}
 	delete(rbac.RoleMap, oldRole.Name)
+
+	if r.Header.Get("Referer") != "" {
+		auditLog, _ := model.NewAuditLogBuilderWithDefault().WithOperator(localUser.Username).
+			WithLogTypeOperation().WithResourceTypeAccountCenter().
+			WithEventName("delete role").WithEventSourceIP(common.GetClientIP(r)).
+			WithResourceName(oldRole.Name).WithOperationTypeDelete().
+			WithEventRecord(util.MustToJSON(oldRole)).Build()
+		_ = service.LogAuditLog(auditLog)
+	}
+
 	h.WriteOKJSON(w, api.DeleteResponse(id))
 	return
 }
 
 func (h APIHandler) UpdateRole(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	id := ps.MustGetParameter("id")
-	//localUser, err := biz.FromUserContext(r.Context())
-	//if err != nil {
-	//	log.Error(err.Error())
-	//	h.ErrorInternalServer(w, err.Error())
-	//	return
-	//}
+	localUser, err := rbac.FromUserContext(r.Context())
+	if err != nil {
+		log.Error(err.Error())
+		h.ErrorInternalServer(w, err.Error())
+		return
+	}
 	role := &rbac.Role{}
-	err := h.DecodeJSON(r, role)
+	err = h.DecodeJSON(r, role)
 	if err != nil {
 		h.Error400(w, err.Error())
 		return
@@ -219,6 +242,16 @@ func (h APIHandler) UpdateRole(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 	delete(rbac.RoleMap, oldRole.Name)
 	rbac.RoleMap[role.Name] = *role
+
+	if r.Header.Get("Referer") != "" {
+		auditLog, _ := model.NewAuditLogBuilderWithDefault().WithOperator(localUser.Username).
+			WithLogTypeOperation().WithResourceTypeAccountCenter().
+			WithEventName("update role").WithEventSourceIP(common.GetClientIP(r)).
+			WithResourceName(role.Name).WithOperationTypeModification().
+			WithEventRecord(util.MustToJSON(role)).Build()
+		_ = service.LogAuditLog(auditLog)
+	}
+
 	h.WriteOKJSON(w, api.UpdateResponse(id))
 	return
 }

@@ -24,12 +24,16 @@
 package api
 
 import (
+	"net/http"
+
 	"golang.org/x/crypto/bcrypt"
+	"infini.sh/console/common"
 	rbac "infini.sh/console/core/security"
+	"infini.sh/console/model"
+	"infini.sh/console/service"
 	"infini.sh/framework/core/api"
 	httprouter "infini.sh/framework/core/api/router"
 	frameworksecurity "infini.sh/framework/core/security"
-	"net/http"
 )
 
 func (h APIHandler) UpdatePassword(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -73,5 +77,15 @@ func (h APIHandler) UpdatePassword(w http.ResponseWriter, r *http.Request, ps ht
 		h.ErrorInternalServer(w, err.Error())
 		return
 	}
+
+	if r.Header.Get("Referer") != "" {
+		auditLog, _ := model.NewAuditLogBuilderWithDefault().WithOperator(reqUser.Username).
+			WithLogTypeOperation().WithResourceTypeAccountCenter().
+			WithEventName("update password").WithEventSourceIP(common.GetClientIP(r)).
+			WithResourceName(reqUser.Username).WithOperationTypeModification().
+			WithEventRecord("user updated password").Build()
+		_ = service.LogAuditLog(auditLog)
+	}
+
 	h.WriteOKJSON(w, api.UpdateResponse(reqUser.UserId))
 }

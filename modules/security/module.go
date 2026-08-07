@@ -39,6 +39,7 @@ import (
 	"infini.sh/framework/core/env"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/orm"
+	_ "infini.sh/framework/modules/security/access_token"
 )
 
 type Module struct {

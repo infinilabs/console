@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,6 +14,18 @@ import (
 	"infini.sh/framework/core/global"
 )
 
+func newTestBinding(t *testing.T) string {
+	t.Helper()
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen on random port: %v", err)
+	}
+	defer listener.Close()
+
+	return listener.Addr().String()
+}
+
 func TestInitRegistersPublicLoginUIRoutes(t *testing.T) {
 	oldEnv := global.Env()
 	testEnv := env.EmptyEnv()
@@ -23,7 +36,7 @@ func TestInitRegistersPublicLoginUIRoutes(t *testing.T) {
 	Init()
 
 	webCfg := config2.WebAppConfig{}
-	webCfg.NetworkConfig.Binding = "127.0.0.1:0"
+	webCfg.NetworkConfig.Binding = newTestBinding(t)
 	api2.StartWeb(webCfg)
 	defer api2.StopWeb(webCfg)
 

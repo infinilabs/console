@@ -10,6 +10,7 @@ import {
   Modal,
   Popconfirm,
   Table,
+  Tooltip,
   message,
 } from "antd";
 import { formatMessage } from "umi/locale";
@@ -24,6 +25,33 @@ const firstColumnIconStyle = {
   marginRight: 8,
   color: "#999",
   fontSize: 12,
+};
+
+const ellipsisTextStyle = {
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+};
+
+const copyText = async (text) => {
+  if (!text) {
+    return false;
+  }
+  if (navigator?.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return true;
+  }
+
+  const input = document.createElement("textarea");
+  input.value = text;
+  input.setAttribute("readonly", "readonly");
+  input.style.position = "fixed";
+  input.style.top = "-9999px";
+  document.body.appendChild(input);
+  input.select();
+  const copied = document.execCommand("copy");
+  document.body.removeChild(input);
+  return copied;
 };
 
 const TokenForm = Form.create()(({ form, record, onSubmit, submitLoading }) => {
@@ -106,10 +134,11 @@ const Token = () => {
   const [submitLoading, setSubmitLoading] = useState(false);
   const [selectedItem, setSelectedItem] = useState();
 
-  const canSearch = hasAuthority("security:auth:api-token:search");
-  const canCreate = hasAuthority("security:auth:api-token:create");
-  const canUpdate = hasAuthority("security:auth:api-token:update");
-  const canDelete = hasAuthority("security:auth:api-token:delete");
+  const canSearch =
+    hasAuthority("system.security:all") || hasAuthority("system.security:read");
+  const canCreate = hasAuthority("system.security:all");
+  const canUpdate = hasAuthority("system.security:all");
+  const canDelete = hasAuthority("system.security:all");
 
   const { loading, value, run } = useFetch(
     "/auth/access_token/_search",
@@ -133,6 +162,18 @@ const Token = () => {
       okText: formatMessage({ id: "form.button.ok" }),
       width: 640,
     });
+  };
+
+  const onCopy = async (token) => {
+    try {
+      const copied = await copyText(token);
+      if (!copied) {
+        throw new Error("copy failed");
+      }
+      message.success(formatMessage({ id: "system.security.token.copy.success" }));
+    } catch (e) {
+      message.error(formatMessage({ id: "system.security.token.copy.failed" }));
+    }
   };
 
   const onDelete = async (tokenID) => {
@@ -199,33 +240,84 @@ const Token = () => {
     }
   };
 
-  const { data, total } = useMemo(() => formatESSearchResult(value), [value]);
+  const { data, total } = useMemo(() => {
+    if (!value || value.error) {
+      return {
+        data: [],
+        total: 0,
+      };
+    }
+    return formatESSearchResult(value);
+  }, [value]);
 
   const columns = [
     {
       title: formatMessage({ id: "table.field.id" }),
       dataIndex: "id",
+      width: 240,
       render: (text) => (
         <div style={{ display: "flex", alignItems: "center" }}>
           <Icon type="safety-certificate" style={firstColumnIconStyle} />
-          <span>{text || "-"}</span>
+          <span style={ellipsisTextStyle} title={text || "-"}>
+            {text || "-"}
+          </span>
         </div>
       ),
     },
     {
+      title: formatMessage({ id: "system.security.token.table.token" }),
+      dataIndex: "access_token",
+      width: 220,
+      render: (text) => {
+        if (!text) {
+          return "-";
+        }
+        return (
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ ...ellipsisTextStyle, flex: 1 }} title={text}>
+              {text}
+            </span>
+            <Tooltip title={formatMessage({ id: "system.security.token.copy.tooltip" })}>
+              <Icon
+                type="copy"
+                style={{ cursor: "pointer", color: "#1890ff" }}
+                onClick={() => onCopy(text)}
+              />
+            </Tooltip>
+          </div>
+        );
+      },
+    },
+    {
       title: formatMessage({ id: "system.security.token.table.name" }),
       dataIndex: "name",
-      render: (text) => text || "-",
+      render: (text) => (
+        <div style={ellipsisTextStyle} title={text || "-"}>
+          {text || "-"}
+        </div>
+      ),
     },
     {
       title: formatMessage({ id: "system.security.token.table.description" }),
       dataIndex: "description",
-      render: (text) => text || "-",
+      render: (text) => (
+        <div style={ellipsisTextStyle} title={text || "-"}>
+          {text || "-"}
+        </div>
+      ),
     },
     {
       title: formatMessage({ id: "system.security.token.table.permissions" }),
       dataIndex: "permissions",
-      render: (permissions) => (permissions || []).join(", ") || "-",
+      width: 260,
+      render: (permissions) => {
+        const text = (permissions || []).join(", ") || "-";
+        return (
+          <Tooltip title={text}>
+            <div style={ellipsisTextStyle}>{text}</div>
+          </Tooltip>
+        );
+      },
     },
     {
       title: formatMessage({ id: "system.security.token.table.expire" }),
@@ -307,7 +399,7 @@ const Token = () => {
       </div>
       <Table
         size="small"
-        loading={loading}
+        loading={canSearch ? loading : false}
         bordered
         dataSource={data}
         rowKey="id"

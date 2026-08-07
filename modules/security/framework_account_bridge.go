@@ -112,6 +112,11 @@ func (frameworkRealmPasswordLoginProvider) AuthenticateByPassword(login, passwor
 		Roles:    roleNames(user.Roles),
 	}
 	sessionUser.SetUserID(user.ID)
+	_, privilege := user.GetPermissions()
+	sessionUser.UserAssignedPermission = frameworksecurity.NewUserAssignedPermission(
+		rbac.ExpandFrameworkPermissionKeysForPlatformPrivileges(privilege),
+		nil,
+	)
 	return rbac.EnsureFrameworkDefaultPermissions(sessionUser), nil
 }
 

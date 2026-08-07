@@ -982,7 +982,7 @@ func (engine *Engine) Do(rule *alerting.Rule) error {
 				}
 			}
 
-			err = orm.Save(&orm.Context{Refresh: orm.WaitForRefresh}, alertItem)
+			err = saveAlertItemToES(alertItem)
 			if err != nil {
 				log.Errorf("save alert item failed, rule_id=%s, alert_id=%s, state=%s: %v", rule.ID, alertItem.ID, alertItem.State, err)
 			}
@@ -1687,10 +1687,18 @@ func getLastAlertMessage(ruleID string, duration time.Duration) (*alerting.Alert
 
 func saveAlertMessageToES(message *alerting.AlertMessage) error {
 	message.Updated = time.Now()
-	ctx := &orm.Context{Refresh: orm.WaitForRefresh}
+	ctx := orm.NewContext().DirectAccess()
+	ctx.Refresh = orm.WaitForRefresh
 	ctx.Set(orm.CheckExistsBeforeUpdate, false)
 	ctx.Set(orm.MergePartialFieldsBeforeUpdate, false)
 	return orm.Save(ctx, message)
+}
+
+func saveAlertItemToES(alertItem *alerting.Alert) error {
+	alertItem.Updated = time.Now()
+	ctx := orm.NewContext().DirectAccess()
+	ctx.Refresh = orm.WaitForRefresh
+	return orm.Create(ctx, alertItem)
 }
 
 func saveAlertMessage(message *alerting.AlertMessage) error {

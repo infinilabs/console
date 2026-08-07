@@ -97,10 +97,7 @@ func collectPlatformPrivileges(roles []string) []string {
 }
 
 func privilegesToPermissionKeys(privileges []string) []frameworksecurity.PermissionKey {
-	permissions := make([]frameworksecurity.PermissionKey, 0, len(privileges)+1)
-	for _, privilege := range normalizeStringList(privileges) {
-		permissions = append(permissions, frameworksecurity.PermissionKey(privilege))
-	}
+	permissions := rbac.ExpandFrameworkPermissionKeysForPlatformPrivileges(normalizeStringList(privileges))
 	sessionUser := &frameworksecurity.UserSessionInfo{
 		UserAssignedPermission: frameworksecurity.NewUserAssignedPermission(permissions, nil),
 	}

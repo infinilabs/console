@@ -391,6 +391,80 @@ func TestUpdateRollupJobsStopsManagedJobsIndividually(t *testing.T) {
 	}
 }
 
+func TestRolloverManagedRetentionWriteIndices(t *testing.T) {
+	requester := &mockRawRequester{
+		responses: map[string]*util.Result{
+			"POST http://example.com/.infini_metrics/_rollover": {
+				StatusCode: http.StatusOK,
+				Body:       []byte(`{"rolled_over":true}`),
+			},
+			"POST http://example.com/.infini_logs/_rollover": {
+				StatusCode: http.StatusOK,
+				Body:       []byte(`{"rolled_over":true}`),
+			},
+			"POST http://example.com/.infini_requests_logging/_rollover": {
+				StatusCode: http.StatusOK,
+				Body:       []byte(`{"rolled_over":true}`),
+			},
+			"POST http://example.com/.infini_async_bulk_results/_rollover": {
+				StatusCode: http.StatusOK,
+				Body:       []byte(`{"rolled_over":true}`),
+			},
+			"POST http://example.com/.infini_alert-history/_rollover": {
+				StatusCode: http.StatusOK,
+				Body:       []byte(`{"rolled_over":true}`),
+			},
+			"POST http://example.com/.infini_activities/_rollover": {
+				StatusCode: http.StatusOK,
+				Body:       []byte(`{"rolled_over":true}`),
+			},
+		},
+	}
+
+	if err := rolloverManagedRetentionWriteIndices(requester, &elastic.ElasticsearchConfig{Endpoint: "http://example.com"}, ".infini_"); err != nil {
+		t.Fatalf("rolloverManagedRetentionWriteIndices returned error: %v", err)
+	}
+
+	if len(requester.calls) != 6 {
+		t.Fatalf("expected 6 rollover requests, got %#v", requester.calls)
+	}
+}
+
+func TestRolloverManagedRetentionWriteIndicesSkipsMissingAlias(t *testing.T) {
+	requester := &mockRawRequester{
+		responses: map[string]*util.Result{
+			"POST http://example.com/.infini_metrics/_rollover": {
+				StatusCode: http.StatusNotFound,
+				Body:       []byte(`{"error":"alias [.infini_metrics] missing"}`),
+			},
+			"POST http://example.com/.infini_logs/_rollover": {
+				StatusCode: http.StatusOK,
+				Body:       []byte(`{"rolled_over":true}`),
+			},
+			"POST http://example.com/.infini_requests_logging/_rollover": {
+				StatusCode: http.StatusOK,
+				Body:       []byte(`{"rolled_over":true}`),
+			},
+			"POST http://example.com/.infini_async_bulk_results/_rollover": {
+				StatusCode: http.StatusOK,
+				Body:       []byte(`{"rolled_over":true}`),
+			},
+			"POST http://example.com/.infini_alert-history/_rollover": {
+				StatusCode: http.StatusOK,
+				Body:       []byte(`{"rolled_over":true}`),
+			},
+			"POST http://example.com/.infini_activities/_rollover": {
+				StatusCode: http.StatusOK,
+				Body:       []byte(`{"rolled_over":true}`),
+			},
+		},
+	}
+
+	if err := rolloverManagedRetentionWriteIndices(requester, &elastic.ElasticsearchConfig{Endpoint: "http://example.com"}, ".infini_"); err != nil {
+		t.Fatalf("rolloverManagedRetentionWriteIndices should ignore 404 aliases, got %v", err)
+	}
+}
+
 type mockRawRequester struct {
 	responses map[string]*util.Result
 	calls     []string

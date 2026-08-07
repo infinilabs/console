@@ -159,6 +159,17 @@ func getManagedRetentionTemplateNames(indexPrefix string) []string {
 	}
 }
 
+func getManagedRetentionAliases(indexPrefix string) []string {
+	return []string{
+		indexPrefix + "metrics",
+		indexPrefix + "logs",
+		indexPrefix + "requests_logging",
+		indexPrefix + "async_bulk_results",
+		indexPrefix + "alert-history",
+		indexPrefix + "activities",
+	}
+}
+
 func getManagedRetentionIndexPatterns(indexPrefix string) []string {
 	return []string{
 		indexPrefix + "metrics*",
@@ -1101,6 +1112,29 @@ func getRetentionSettings(client elastic.API, cfg *elastic.ElasticsearchConfig) 
 	return days, maxSize, nil
 }
 
+func rolloverManagedRetentionWriteIndices(requester rawRequester, cfg *elastic.ElasticsearchConfig, indexPrefix string) error {
+	for _, aliasName := range getManagedRetentionAliases(indexPrefix) {
+		_, statusCode, err := rawJSONRequest(
+			requester,
+			cfg,
+			util.Verb_POST,
+			"/"+url.PathEscape(aliasName)+"/_rollover",
+			util.MapStr{
+				"conditions": util.MapStr{
+					"max_docs": 0,
+				},
+			},
+		)
+		if statusCode == http.StatusNotFound {
+			continue
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func updateRetentionSettings(client elastic.API, cfg *elastic.ElasticsearchConfig, days int, maxSize string) error {
 	requester, ok := client.(rawRequester)
 	if !ok {
@@ -1208,6 +1242,9 @@ func updateRetentionSettings(client elastic.API, cfg *elastic.ElasticsearchConfi
 		},
 	)
 	if err != nil {
+		return err
+	}
+	if err := rolloverManagedRetentionWriteIndices(requester, cfg, indexPrefix); err != nil {
 		return err
 	}
 

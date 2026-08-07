@@ -55,6 +55,8 @@ var consolePublicProxyUIRoutes = []frameworkapi.ProtectedAPIRoute{
 	{Method: frameworkapi.GET, Path: "/setting/application"},
 	{Method: frameworkapi.GET, Path: "/instance/_get_install_script"},
 	{Method: frameworkapi.GET, Path: "/instance/_get_gateway_install_script"},
+	{Method: frameworkapi.POST, Path: "/configs/_sync"},
+	{Method: frameworkapi.POST, Path: "/configs/_reload"},
 }
 
 type consoleSelfAPIHandler struct {

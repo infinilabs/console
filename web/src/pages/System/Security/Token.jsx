@@ -10,7 +10,6 @@ import {
   Modal,
   Popconfirm,
   Table,
-  Tooltip,
   message,
 } from "antd";
 import { formatMessage } from "umi/locale";
@@ -31,6 +30,25 @@ const ellipsisTextStyle = {
   overflow: "hidden",
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
+};
+
+const tokenPreviewStyle = {
+  position: "relative",
+  marginTop: 12,
+  padding: "16px 52px 16px 16px",
+  borderRadius: 6,
+  background: "rgb(241, 242, 245)",
+  color: "rgba(0, 0, 0, 0.85)",
+  fontFamily:
+    '"SFMono-Regular", Monaco, Menlo, Consolas, "Liberation Mono", "Ubuntu Mono", monospace',
+  lineHeight: 1.6,
+  wordBreak: "break-all",
+};
+
+const tokenPreviewCopyButtonStyle = {
+  position: "absolute",
+  top: 12,
+  right: 12,
 };
 
 const copyText = async (text) => {
@@ -156,7 +174,17 @@ const Token = () => {
       content: (
         <div>
           <p>{formatMessage({ id: "system.security.token.create.result.tip" })}</p>
-          <Input.TextArea readOnly rows={4} value={token} />
+          <div style={tokenPreviewStyle}>
+            <Button
+              type="link"
+              icon="copy"
+              style={tokenPreviewCopyButtonStyle}
+              onClick={() => onCopy(token)}
+            >
+              {formatMessage({ id: "system.security.token.copy.tooltip" })}
+            </Button>
+            <div>{token}</div>
+          </div>
         </div>
       ),
       okText: formatMessage({ id: "form.button.ok" }),
@@ -263,30 +291,6 @@ const Token = () => {
           </span>
         </div>
       ),
-    },
-    {
-      title: formatMessage({ id: "system.security.token.table.token" }),
-      dataIndex: "access_token",
-      width: 220,
-      render: (text) => {
-        if (!text) {
-          return "-";
-        }
-        return (
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ ...ellipsisTextStyle, flex: 1 }} title={text}>
-              {text}
-            </span>
-            <Tooltip title={formatMessage({ id: "system.security.token.copy.tooltip" })}>
-              <Icon
-                type="copy"
-                style={{ cursor: "pointer", color: "#1890ff" }}
-                onClick={() => onCopy(text)}
-              />
-            </Tooltip>
-          </div>
-        );
-      },
     },
     {
       title: formatMessage({ id: "system.security.token.table.name" }),

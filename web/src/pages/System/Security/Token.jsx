@@ -2,6 +2,7 @@ import React, { useMemo, useReducer, useState } from "react";
 import {
   Button,
   Card,
+  DatePicker,
   Divider,
   Drawer,
   Form,
@@ -9,6 +10,7 @@ import {
   Input,
   Modal,
   Popconfirm,
+  Switch,
   Table,
   message,
 } from "antd";
@@ -51,6 +53,8 @@ const tokenPreviewCopyButtonStyle = {
   right: 12,
 };
 
+const getDefaultTokenExpireTime = () => moment().add(1, "year");
+
 const copyText = async (text) => {
   if (!text) {
     return false;
@@ -75,11 +79,17 @@ const copyText = async (text) => {
 const TokenForm = Form.create()(({ form, record, onSubmit, submitLoading }) => {
   const { getFieldDecorator, validateFields } = form;
   const isEdit = !!record;
+  const [neverExpire, setNeverExpire] = useState(!(Number(record?.expire_in) > 0));
+
   const submit = (e) => {
     e.preventDefault();
     validateFields((err, values) => {
       if (!err) {
-        onSubmit(values);
+        onSubmit({
+          name: values.name,
+          description: values.description,
+          expire_in: values.never_expire ? 0 : values.expire_in.unix(),
+        });
       }
     });
   };
@@ -101,6 +111,65 @@ const TokenForm = Form.create()(({ form, record, onSubmit, submitLoading }) => {
         {getFieldDecorator("description", {
           initialValue: record?.description || "",
         })(<Input.TextArea rows={3} />)}
+      </Form.Item>
+      <Form.Item label={formatMessage({ id: "system.security.token.form.never_expire" })}>
+        {getFieldDecorator("never_expire", {
+          initialValue: !(Number(record?.expire_in) > 0),
+          valuePropName: "checked",
+        })(
+          <Switch
+            onChange={(checked) => {
+              setNeverExpire(checked);
+              if (!checked && !form.getFieldValue("expire_in")) {
+                form.setFieldsValue({
+                  expire_in: getDefaultTokenExpireTime(),
+                });
+              }
+            }}
+          />
+        )}
+      </Form.Item>
+      <Form.Item label={formatMessage({ id: "system.security.token.form.expire" })}>
+        {getFieldDecorator("expire_in", {
+          initialValue:
+            Number(record?.expire_in) > 0
+              ? moment.unix(record.expire_in)
+              : getDefaultTokenExpireTime(),
+          rules: neverExpire
+            ? []
+            : [
+                {
+                  validator: (_, value, callback) => {
+                    if (!value) {
+                      callback(
+                        formatMessage({
+                          id: "system.security.token.form.expire.required",
+                        })
+                      );
+                      return;
+                    }
+                    if (!value.isAfter(moment())) {
+                      callback(
+                        formatMessage({
+                          id: "system.security.token.form.expire.future",
+                        })
+                      );
+                      return;
+                    }
+                    callback();
+                  },
+                },
+              ],
+        })(
+          <DatePicker
+            showTime
+            style={{ width: "100%" }}
+            disabled={neverExpire}
+            disabledDate={(current) =>
+              current && current < moment().startOf("day")
+            }
+          />
+        )}
       </Form.Item>
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
         <Button onClick={() => onSubmit(null)} disabled={submitLoading}>
@@ -234,6 +303,7 @@ const Token = () => {
           body: {
             name: formValue.name,
             description: formValue.description,
+            expire_in: formValue.expire_in,
           },
         });
         if (res?.result === "updated") {
@@ -252,6 +322,7 @@ const Token = () => {
         body: {
           name: formValue.name,
           description: formValue.description,
+          expire_in: formValue.expire_in,
         },
       });
       if (res?._id && res?.access_token) {

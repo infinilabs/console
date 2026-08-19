@@ -59,44 +59,42 @@ export default Form.create()((props) => {
             id: "app.message.update.success",
           })
         );
-        const latestRecordResponse = await request(`/elasticsearch/${record.id}`);
-        if (latestRecordResponse?.found) {
-          const latestSource = latestRecordResponse._source || {};
-          const nextRecord = {
+        const nextRecord = {
             ...record,
-            ...latestSource,
-            id: record.id,
-            agent_credential_id: isManualCredential
-              ? undefined
-              : latestSource.agent_credential_id || values.agent_credential_id,
-            agent_basic_auth: isManualCredential
-              ? {
-                  username:
-                    latestSource.agent_basic_auth?.username ||
-                    manualAuth?.username,
-                  // API read may not return password; keep freshly saved password for test connect.
-                  password:
-                    latestSource.agent_basic_auth?.password ||
-                    manualAuth?.password,
-                }
-              : latestSource.agent_basic_auth,
+            credential_id,
+            basic_auth,
+            metric_collection_mode,
+            agent_credential_id: isManualCredential ? undefined : values.agent_credential_id,
+            agent_basic_auth: isManualCredential ? manualAuth : record.agent_basic_auth,
           };
           onAgentCredentialSave(nextRecord);
           if (nextRecord?.agent_credential_id) {
             setIsManual(false);
           }
-          form.setFieldsValue({
-            agent_credential_id: nextRecord?.agent_credential_id
-              ? nextRecord?.agent_credential_id
-              : nextRecord?.agent_basic_auth?.username
-              ? MANUAL_VALUE
-              : undefined,
-            agent_username: nextRecord.agent_basic_auth?.username,
-            agent_password: isManualCredential
-              ? manualAuth?.password
-              : nextRecord.agent_basic_auth?.password,
-          });
-        }
+
+          try {
+            const latestRecordResponse = await request(`${ESPrefix}/${record.id}`); // 建议和 PUT 用同一个前缀
+            if (latestRecordResponse?.found) {
+              const latestSource = latestRecordResponse._source || {};
+              const refreshedRecord = {
+                ...nextRecord,
+                ...latestSource,
+                id: record.id,
+              };
+              onAgentCredentialSave(refreshedRecord);
+              form.setFieldsValue({
+                agent_credential_id: refreshedRecord?.agent_credential_id
+                  ? refreshedRecord.agent_credential_id
+                  : refreshedRecord?.agent_basic_auth?.username
+                  ? MANUAL_VALUE
+                  : undefined,
+                agent_username: refreshedRecord.agent_basic_auth?.username,
+                agent_password: refreshedRecord.agent_basic_auth?.password,
+              });
+            }
+          } catch (e) {
+            console.warn("refresh cluster after save failed", e);
+          }
       } else {
         message.error(
           formatMessage({

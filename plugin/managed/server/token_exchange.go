@@ -58,10 +58,12 @@ func upsertInstanceManagerCredential(instance *model.Instance, tokenValue string
 	}
 	if instance.ManagerCredentialID != "" {
 		previous, err := agent_common.GetTokenCredentialValue(instance.ManagerCredentialID)
-		if err != nil {
+		if err != nil && !isManagedCredentialSecretDecodeError(err) {
 			return err
 		}
-		agent_common.RememberPreviousToken(instance.ManagerCredentialID, previous)
+		if err == nil {
+			agent_common.RememberPreviousToken(instance.ManagerCredentialID, previous)
+		}
 		return agent_common.UpdateTokenCredential(
 			instance.ManagerCredentialID,
 			agent_common.BuildManagerCredentialName(instance),
@@ -80,6 +82,10 @@ func upsertInstanceManagerCredential(instance *model.Instance, tokenValue string
 	}
 	instance.ManagerCredentialID = credentialID
 	return nil
+}
+
+func isManagedCredentialSecretDecodeError(err error) bool {
+	return err != nil && strings.Contains(strings.ToLower(err.Error()), "message authentication failed")
 }
 
 func (h APIHandler) exchangeInstanceToken(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {

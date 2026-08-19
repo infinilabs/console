@@ -383,6 +383,9 @@ func validateManagerRequestAuth(
 	if strings.TrimSpace(instance.ManagerCredentialID) != "" {
 		ok, err := validateToken(instance, ExtractManagerToken(req))
 		if err != nil {
+			if isCredentialSecretDecodeError(err) {
+				return ErrInvalidManagerToken
+			}
 			return err
 		}
 		if !ok {
@@ -440,6 +443,10 @@ func getRotatedTokenValue(credentialID string) string {
 		return ""
 	}
 	return tokenValue
+}
+
+func isCredentialSecretDecodeError(err error) bool {
+	return err != nil && strings.Contains(strings.ToLower(err.Error()), "message authentication failed")
 }
 
 func HashAgentToken(tokenValue string) string {

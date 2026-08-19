@@ -1,6 +1,7 @@
 package common
 
 import (
+	"errors"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -62,6 +63,17 @@ func TestValidateManagerRequestAuth(t *testing.T) {
 		instance := &model.Instance{ManagerCredentialID: "cred-1"}
 		err := validateManagerRequestAuth(req, instance, nil, func(instance *model.Instance, tokenValue string) (bool, error) {
 			return false, nil
+		}, false)
+		if err != ErrInvalidManagerToken {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("treats credential secret mismatch as invalid manager token", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/instance/_register", nil)
+		instance := &model.Instance{ManagerCredentialID: "cred-1"}
+		err := validateManagerRequestAuth(req, instance, nil, func(instance *model.Instance, tokenValue string) (bool, error) {
+			return false, errors.New("cipher: message authentication failed")
 		}, false)
 		if err != ErrInvalidManagerToken {
 			t.Fatalf("unexpected error: %v", err)

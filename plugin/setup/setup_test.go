@@ -34,11 +34,13 @@ import (
 	"sync"
 	"testing"
 
+	"infini.sh/console/core/security"
 	api2 "infini.sh/framework/core/api"
 	config2 "infini.sh/framework/core/config"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/env"
 	"infini.sh/framework/core/global"
+	"infini.sh/framework/core/orm"
 	replaysecurity "infini.sh/framework/core/security/replay"
 	"infini.sh/framework/core/util"
 )
@@ -347,6 +349,77 @@ func TestValidateSetupBootstrapRequiresAdminOnInitialSetup(t *testing.T) {
 	err := validateSetupBootstrap(req)
 	if err == nil || !strings.Contains(err.Error(), "bootstrap username is required") {
 		t.Fatalf("expected missing username error, got %v", err)
+	}
+}
+
+func TestBuildBootstrapUserCreatesAdminUser(t *testing.T) {
+	user, isNewUser, err := buildBootstrapUser(nil, "admin", "StrongPass!1")
+	if err != nil {
+		t.Fatalf("build bootstrap user: %v", err)
+	}
+	if !isNewUser {
+		t.Fatal("expected new user to be created")
+	}
+	if user.ID != "default_user_admin" {
+		t.Fatalf("expected default admin id, got %s", user.ID)
+	}
+	if user.Username != "admin" || user.Nickname != "admin" {
+		t.Fatalf("expected username and nickname to be admin, got %#v", user)
+	}
+	if user.Created == nil || user.Updated == nil {
+		t.Fatal("expected timestamps to be set for new user")
+	}
+	if !user.IsEnabled() {
+		t.Fatal("expected new bootstrap user to be enabled")
+	}
+	if !hasUserRole(user.Roles, security.RoleAdminName) {
+		t.Fatalf("expected admin role to be assigned, got %#v", user.Roles)
+	}
+	if user.Password == "" || user.PasswordSalt == "" || user.PasswordVerifier == "" {
+		t.Fatal("expected password material to be generated")
+	}
+}
+
+func TestBuildBootstrapUserUpdatesExistingAdminUser(t *testing.T) {
+	enabled := false
+	existing := &security.User{
+		ORMObjectBase: orm.ORMObjectBase{ID: "existing-admin"},
+		Username:      "admin",
+		Nickname:      "Administrator",
+		Email:         "admin@example.com",
+		Enabled:       &enabled,
+		Roles: []security.UserRole{
+			{ID: "custom", Name: "custom"},
+		},
+		Password:         "old-hash",
+		PasswordSalt:     "old-salt",
+		PasswordVerifier: "old-verifier",
+	}
+
+	user, isNewUser, err := buildBootstrapUser(existing, "admin", "StrongPass!1")
+	if err != nil {
+		t.Fatalf("build bootstrap user: %v", err)
+	}
+	if isNewUser {
+		t.Fatal("expected existing user to be updated")
+	}
+	if user.ID != existing.ID {
+		t.Fatalf("expected existing id to be preserved, got %s", user.ID)
+	}
+	if user.Email != existing.Email {
+		t.Fatalf("expected unrelated fields to be preserved, got %s", user.Email)
+	}
+	if !user.IsEnabled() {
+		t.Fatal("expected existing bootstrap user to be re-enabled")
+	}
+	if !hasUserRole(user.Roles, "custom") || !hasUserRole(user.Roles, security.RoleAdminName) {
+		t.Fatalf("expected existing roles plus admin role, got %#v", user.Roles)
+	}
+	if user.Password == existing.Password || user.PasswordSalt == existing.PasswordSalt || user.PasswordVerifier == existing.PasswordVerifier {
+		t.Fatal("expected password material to be refreshed")
+	}
+	if user.Updated == nil {
+		t.Fatal("expected updated timestamp to be set")
 	}
 }
 

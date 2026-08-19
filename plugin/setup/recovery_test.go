@@ -109,7 +109,7 @@ func TestLoadSystemClusterRecoveryConfig(t *testing.T) {
   - name: "system"
     variable:
       CLUSTER_ID: infini_default_system_cluster
-      CLUSTER_ENDPOINT: "https://127.0.0.1:9200"
+      CLUSTER_ENDPOINT: ["https://127.0.0.1:9200"]
       CLUSTER_USER: "admin"
       CLUSTER_VER: "8.18.0"
       CLUSTER_DISTRIBUTION: "easysearch"
@@ -126,8 +126,8 @@ func TestLoadSystemClusterRecoveryConfig(t *testing.T) {
 	if cfg.ClusterID != "infini_default_system_cluster" {
 		t.Fatalf("unexpected cluster id: %s", cfg.ClusterID)
 	}
-	if cfg.Endpoint != "https://127.0.0.1:9200" {
-		t.Fatalf("unexpected endpoint: %s", cfg.Endpoint)
+	if len(cfg.Endpoints) != 1 || cfg.Endpoints[0] != "https://127.0.0.1:9200" {
+		t.Fatalf("unexpected endpoints: %#v", cfg.Endpoints)
 	}
 	if cfg.Username != "admin" {
 		t.Fatalf("unexpected username: %s", cfg.Username)

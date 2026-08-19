@@ -343,6 +343,94 @@ func validateSetupBootstrap(request *SetupRequest) error {
 	return nil
 }
 
+func upsertBootstrapUser(username, password string) error {
+	existingUser, err := findBootstrapUserByUsername(username)
+	if err != nil {
+		return err
+	}
+
+	user, isNewUser, err := buildBootstrapUser(existingUser, username, password)
+	if err != nil {
+		return err
+	}
+
+	if isNewUser {
+		return orm.Save(orm.NewContext(), user)
+	}
+
+	if err := orm.Update(orm.NewContext(), user); err != nil {
+		return err
+	}
+	security.DeleteUserToken(user.ID)
+	return nil
+}
+
+func findBootstrapUserByUsername(username string) (*security.User, error) {
+	user := &security.User{}
+	err, result := orm.GetBy("name", username, user)
+	if err != nil {
+		return nil, err
+	}
+	if len(result.Result) == 0 {
+		return nil, nil
+	}
+
+	buf := util.MustToJSONBytes(result.Result[0])
+	util.MustFromJSONBytes(buf, user)
+	return user, nil
+}
+
+func buildBootstrapUser(existingUser *security.User, username, password string) (*security.User, bool, error) {
+	material, err := frameworksecurity.GeneratePasswordMaterial(password)
+	if err != nil {
+		return nil, false, err
+	}
+
+	enabled := true
+	now := time.Now()
+	adminRole := security.UserRole{
+		ID:   security.RoleAdminName,
+		Name: security.RoleAdminName,
+	}
+
+	if existingUser != nil && existingUser.ID != "" {
+		user := *existingUser
+		user.Username = username
+		user.Nickname = username
+		user.Password = material.Hash
+		user.PasswordSalt = material.Salt
+		user.PasswordVerifier = material.Verifier
+		user.Enabled = &enabled
+		if !hasUserRole(user.Roles, adminRole.Name) {
+			user.Roles = append(user.Roles, adminRole)
+		}
+		user.Updated = &now
+		return &user, false, nil
+	}
+
+	user := &security.User{}
+	user.ID = "default_user_" + username
+	user.Username = username
+	user.Nickname = username
+	user.Password = material.Hash
+	user.PasswordSalt = material.Salt
+	user.PasswordVerifier = material.Verifier
+	user.Enabled = &enabled
+	user.Roles = []security.UserRole{adminRole}
+	user.Created = &now
+	user.Updated = &now
+	return user, true, nil
+}
+
+func hasUserRole(roles []security.UserRole, roleName string) bool {
+	for _, role := range roles {
+		if role.Name == roleName {
+			return true
+		}
+	}
+	return false
+}
+
 func resolveSetupTemplateSettings(client elastic.API, request *SetupRequest) (int, string, error) {
 	primaryShards := request.PrimaryShards
 	if primaryShards <= 0 {
@@ -739,6 +827,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	security2.InitSchema()
 	elastic2.InitSchema()
 	toSaveCfg := cfg
+	runtimeCfg := cfg
 	oldCfg := elastic.ElasticsearchConfig{}
 	oldCfg.ID = toSaveCfg.ID
 	_, _ = orm.GetV2(orm.NewContext(), &oldCfg)
@@ -751,6 +840,7 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 		toSaveCfg.Source = cfg.Source
 		toSaveCfg.Version = cfg.Version
 		toSaveCfg.Distribution = cfg.Distribution
+		runtimeCfg = toSaveCfg
 	}
 	if request.Cluster.Username != "" || request.Cluster.Password != "" {
 		var reuseOldCred = false
@@ -770,6 +860,8 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 			toSaveCfg.CredentialID = credId
 			toSaveCfg.BasicAuth = nil
 		}
+		runtimeCfg.BasicAuth = cfg.BasicAuth
+		runtimeCfg.CredentialID = toSaveCfg.CredentialID
 	}
 
 	// Process the cluster configuration
@@ -817,50 +909,29 @@ func (module *Module) initialize(w http.ResponseWriter, r *http.Request, ps http
 	}
 	previousAgentCredentialID := toSaveCfg.AgentCredentialID
 	previousNoDefaultAuthForAgent := toSaveCfg.NoDefaultAuthForAgent
-	err = elastic3.EnsureManagedAgentCredential(&toSaveCfg, oldCfg.Name)
+	err = elastic3.EnsureManagedAgentCredential(&runtimeCfg, oldCfg.Name)
 	if err != nil {
 		panic(err)
 	}
+	toSaveCfg.AgentCredentialID = runtimeCfg.AgentCredentialID
+	toSaveCfg.NoDefaultAuthForAgent = runtimeCfg.NoDefaultAuthForAgent
 	if previousAgentCredentialID != toSaveCfg.AgentCredentialID || previousNoDefaultAuthForAgent != toSaveCfg.NoDefaultAuthForAgent {
 		err = orm.Save(orm.NewContext(), &toSaveCfg)
 		if err != nil {
 			panic(err)
 		}
 	}
-	if meta := elastic.GetMetadata(toSaveCfg.ID); meta != nil && meta.Config != nil {
-		meta.Config.AgentCredentialID = toSaveCfg.AgentCredentialID
-		meta.Config.NoDefaultAuthForAgent = toSaveCfg.NoDefaultAuthForAgent
+	if meta := elastic.GetMetadata(runtimeCfg.ID); meta != nil && meta.Config != nil {
+		meta.Config.AgentCredentialID = runtimeCfg.AgentCredentialID
+		meta.Config.NoDefaultAuthForAgent = runtimeCfg.NoDefaultAuthForAgent
 	}
-	elastic.UpdateConfig(toSaveCfg)
+	elastic.UpdateConfig(runtimeCfg)
 	if err := EnsureSystemClusterBasicAuth(); err != nil {
 		panic(err)
 	}
 
 	if request.shouldResetBootstrapUser() {
-		//Save bootstrap user
-		enabled := true
-		user := security.User{}
-		user.ID = "default_user_" + request.BootstrapUsername
-		user.Username = request.BootstrapUsername
-		user.Nickname = request.BootstrapUsername
-		material, err := frameworksecurity.GeneratePasswordMaterial(request.BootstrapPassword)
-		if err != nil {
-			panic(err)
-		}
-		user.Password = material.Hash
-		user.Enabled = &enabled
-		user.PasswordSalt = material.Salt
-		user.PasswordVerifier = material.Verifier
-		role := []security.UserRole{}
-		role = append(role, security.UserRole{
-			ID:   security.RoleAdminName,
-			Name: security.RoleAdminName,
-		})
-		user.Roles = role
-		now := time.Now()
-		user.Created = &now
-		err = orm.Save(orm.NewContext(), &user)
-		if err != nil {
+		if err := upsertBootstrapUser(request.BootstrapUsername, request.BootstrapPassword); err != nil {
 			panic(err)
 		}
 	}

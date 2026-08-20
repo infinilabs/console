@@ -95,6 +95,7 @@ func init() {
 	api.HandleAPIMethod(api.POST, "/elasticsearch/node/info", clusterAPI.RequirePermission(clusterAPI.FetchNodeInfo, enum.PermissionElasticsearchMetricRead))
 	api.HandleAPIMethod(api.GET, "/elasticsearch/:id/indices", clusterAPI.RequirePermission(clusterAPI.GetClusterIndices, enum.PermissionElasticsearchMetricRead, enum.PermissionElasticsearchIndexRead))
 	api.HandleAPIMethod(api.GET, "/elasticsearch/:id/indices/realtime", clusterAPI.RequireLogin(clusterAPI.GetRealtimeClusterIndices))
+	api.HandleAPIMethod(api.GET, "/elasticsearch/:id/migration/indices/realtime", clusterAPI.RequireLogin(clusterAPI.GetRealtimeClusterIndices2))
 	api.HandleAPIMethod(api.GET, "/elasticsearch/:id/node/:node_id/shards", clusterAPI.RequireClusterPermission(clusterAPI.RequirePermission(clusterAPI.GetNodeShards, enum.PermissionElasticsearchMetricRead)))
 	api.HandleAPIMethod(api.GET, "/elasticsearch/:id/node/:node_id/info", clusterAPI.RequireClusterPermission(clusterAPI.RequirePermission(clusterAPI.GetNodeInfo, enum.PermissionElasticsearchMetricRead, enum.PermissionElasticsearchNodeRead)))
 	api.HandleAPIMethod(api.GET, "/elasticsearch/:id/node/:node_id/metrics", clusterAPI.RequireClusterPermission(clusterAPI.RequirePermission(clusterAPI.GetSingleNodeMetrics, enum.PermissionElasticsearchMetricRead)))

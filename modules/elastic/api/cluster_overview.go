@@ -805,6 +805,53 @@ func (h *APIHandler) GetClusterIndices(w http.ResponseWriter, req *http.Request,
 	h.WriteJSON(w, indices, http.StatusOK)
 }
 
+func (h *APIHandler) GetRealtimeClusterIndices2(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	resBody := map[string]interface{}{}
+	id := ps.ByName("id")
+	if GetMonitorState(id) == elastic.ModeAgentless {
+		h.APIHandler.GetRealtimeClusterIndices(w, req, ps)
+		return
+	}
+	meta := elastic.GetMetadata(id)
+	if meta == nil || !meta.IsAvailable() {
+		h.WriteJSON(w, []interface{}{}, http.StatusOK)
+		return
+	}
+	//filter indices
+	allowedIndices, hasAllPrivilege := h.GetAllowedIndices(req, id)
+	if !hasAllPrivilege && len(allowedIndices) == 0 {
+		h.WriteJSON(w, []interface{}{}, http.StatusOK)
+		return
+	}
+
+	esClient := elastic.GetClient(id)
+	indexInfos, err := esClient.GetIndices("")
+	if err != nil {
+		resBody["error"] = err.Error()
+		h.WriteJSON(w, resBody, http.StatusInternalServerError)
+		return
+	}
+	if !hasAllPrivilege {
+		filterIndices := map[string]elastic.IndexInfo{}
+		pattern := radix.Compile(allowedIndices...)
+		for indexName, indexInfo := range *indexInfos {
+			if pattern.Match(indexName) {
+				filterIndices[indexName] = indexInfo
+			}
+		}
+		indexInfos = &filterIndices
+	}
+
+	var indices []RealtimeIndexInfo
+	for _, item := range *indexInfos {
+		info := RealtimeIndexInfo{
+			IndexInfo: IndexInfo(item),
+		}
+		indices = append(indices, info)
+	}
+	h.WriteJSON(w, indices, http.StatusOK)
+}
+
 func (h *APIHandler) GetRealtimeClusterIndices(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	resBody := map[string]interface{}{}
 	id := ps.ByName("id")

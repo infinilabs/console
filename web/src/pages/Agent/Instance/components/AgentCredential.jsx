@@ -33,7 +33,7 @@ export default Form.create()((props) => {
     form.validateFields(async (errors, values) => {
       if (errors) return;
       setSaveLoading(true);
-      const { credential_id, basic_auth, metric_collection_mode } = record;
+      const { credential_id, basic_auth } = record;
       const isManualCredential = values.agent_credential_id === MANUAL_VALUE;
       const manualAuth = isManualCredential
         ? {
@@ -46,7 +46,7 @@ export default Form.create()((props) => {
         body: {
           credential_id,
           basic_auth,
-          metric_collection_mode,
+          "agent",
           agent_credential_id: isManualCredential
             ? undefined
             : values.agent_credential_id,

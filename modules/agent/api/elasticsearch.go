@@ -994,7 +994,11 @@ func (h *APIHandler) internalProcessBind(clusterID, clusterUUID, instanceID, ins
 			PublishAddress: strings.TrimSpace(nodeHost),
 			EndpointSchema: endpointSchema,
 			PathHome:       extractNodePathHome(nodeInfo.NodeInfo),
-			LogsPaths:      deriveLogsPathsFromCmdline(cmdline, extractNodePathHome(nodeInfo.NodeInfo)),
+			LogsPaths: deriveLogsPathsFromCmdline(
+				cmdline,
+				extractNodePathHome(nodeInfo.NodeInfo),
+				extractNodePathLogs(nodeInfo.NodeInfo),
+			),
 		}
 		item.PathLogs = firstString(item.LogsPaths)
 
@@ -1162,21 +1166,54 @@ var (
 	cmdlineGCFileRegx   = regexp.MustCompile(`(?:^|\s)-Xlog:[^\s]*?file=([^\s]+)`)
 )
 
-func deriveLogsPathsFromCmdline(cmdline, fallbackHome string) []string {
+func deriveLogsPathsFromCmdline(cmdline, fallbackHome string, fallbackLogs ...string) []string {
 	pathHome := extractCmdlineValue(cmdlinePathHomeRegx, cmdline)
 	if pathHome == "" {
 		pathHome = strings.TrimSpace(fallbackHome)
 	}
 
-	currentLogsPath := extractCmdlineValue(cmdlinePathLogsRegx, cmdline)
-	if currentLogsPath == "" && pathHome != "" {
-		currentLogsPath = filepath.Join(pathHome, "logs")
+	result := make([]string, 0, 3)
+
+	// 1. prefer _nodes settings.path.logs
+	for _, logsPath := range fallbackLogs {
+		result = appendLogsDir(result, logsPath, pathHome)
 	}
 
-	result := make([]string, 0, 2)
-	result = appendLogsDir(result, currentLogsPath, pathHome)
-	result = appendLogsFileDir(result, trimGCLogFileValue(extractCmdlineValue(cmdlineGCFileRegx, cmdline)), pathHome)
+	// 2. cmdline -Des.path.logs
+	cmdlineLogsPath := extractCmdlineValue(cmdlinePathLogsRegx, cmdline)
+	result = appendLogsDir(result, cmdlineLogsPath, pathHome)
+
+	// 3. default ${path.home}/logs
+	if len(result) == 0 && pathHome != "" {
+		result = appendLogsDir(result, filepath.Join(pathHome, "logs"), pathHome)
+	}
+
+	// 4. GC log path
+	result = appendLogsFileDir(
+		result,
+		trimGCLogFileValue(extractCmdlineValue(cmdlineGCFileRegx, cmdline)),
+		pathHome,
+	)
+
 	return result
+}
+
+func extractNodePathLogs(nodeInfo *elastic.NodesInfo) string {
+	if nodeInfo == nil {
+		return ""
+	}
+
+	path, ok := nodeInfo.Settings["path"]
+	if !ok {
+		return ""
+	}
+
+	pathObj, ok := path.(map[string]interface{})
+	if !ok {
+		return ""
+	}
+
+	return strings.TrimSpace(util.ToString(pathObj["logs"]))
 }
 
 func extractCmdlineValue(reg *regexp.Regexp, cmdline string) string {
@@ -1506,7 +1543,11 @@ func (h *APIHandler) enrollESNode(w http.ResponseWriter, req *http.Request, ps h
 		if item.PathHome == "" {
 			item.PathHome = extractNodePathHome(nodeInfo.NodeInfo)
 		}
-		item.LogsPaths = deriveLogsPathsFromCmdline("", item.PathHome)
+		item.LogsPaths = deriveLogsPathsFromCmdline(
+			"",
+			item.PathHome,
+			extractNodePathLogs(nodeInfo.NodeInfo),
+		)
 		item.PathLogs = firstString(item.LogsPaths)
 		// Save will create the binding on first manual enroll and update it on subsequent enrolls.
 		settings := NewNodeAgentSettings(instID, &item)

@@ -110,33 +110,27 @@ export default (props) => {
 
   return (
     <>
-      <Form.Item
-        label={formatMessage({
-          id: "cluster.regist.step.connect.label.agent_credential",
-        })}
-      >
-        {getFieldDecorator("agent_credential_id", {
-          initialValue: initialValue?.agent_credential_id
-            ? initialValue?.agent_credential_id
-            : initialValue?.username
-            ? MANUAL_VALUE
-            : undefined,
-          rules: [
-            {
-              required: credentialRequired,
-              message: formatMessage({
-                id: "cluster.regist.form.verify.required.agent_credential",
-              }),
-            },
-          ],
-        })(
-          <div style={credentialGroupStyle}>
-            <div style={credentialSelectWrapStyle}>
+      <Form.Item label={formatMessage({ id: "cluster.regist.step.connect.label.agent_credential" })}>
+        <div style={credentialGroupStyle}>
+          <div style={credentialSelectWrapStyle}>
+            {getFieldDecorator("agent_credential_id", {
+              initialValue: initialValue?.agent_credential_id
+                ? initialValue?.agent_credential_id
+                : initialValue?.username
+                ? MANUAL_VALUE
+                : undefined,
+              rules: [
+                {
+                  required: credentialRequired,
+                  message: formatMessage({
+                    id: "cluster.regist.form.verify.required.agent_credential",
+                  }),
+                },
+              ],
+            })(
               <Select loading={loading} onChange={onCredentialChange} allowClear>
                 <Select.Option value={MANUAL_VALUE}>
-                  {formatMessage({
-                    id: "cluster.regist.step.connect.credential.manual",
-                  })}
+                  {formatMessage({ id: "cluster.regist.step.connect.credential.manual" })}
                 </Select.Option>
                 {credentialOptions.map((item) => (
                   <Select.Option key={item.id} value={item.id}>
@@ -144,22 +138,22 @@ export default (props) => {
                   </Select.Option>
                 ))}
               </Select>
-            </div>
-            <div style={refreshButtonWrapStyle}>
-              <Tooltip title={formatMessage({ id: "form.button.refresh" })}>
-                <span style={refreshButtonWrapStyle}>
-                  <Button
-                    icon="reload"
-                    onClick={() => run()}
-                    loading={loading}
-                    disabled={!canReadCredential}
-                    style={refreshButtonStyle}
-                  />
-                </span>
-              </Tooltip>
-            </div>
+            )}
           </div>
-        )}
+          <div style={refreshButtonWrapStyle}>
+            <Tooltip title={formatMessage({ id: "form.button.refresh" })}>
+              <span style={refreshButtonWrapStyle}>
+                <Button
+                  icon="reload"
+                  onClick={() => run()}
+                  loading={loading}
+                  disabled={!canReadCredential}
+                  style={refreshButtonStyle}
+                />
+              </span>
+            </Tooltip>
+          </div>
+        </div>
       </Form.Item>
       {isManual && (
         <>

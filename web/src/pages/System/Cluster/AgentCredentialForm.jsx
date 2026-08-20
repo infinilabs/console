@@ -167,87 +167,49 @@ export default (props) => {
 
   return (
     <>
-      <Form.Item
-        label={
-          <span>
-            {formatMessage({
-              id: "cluster.regist.step.connect.label.agent_credential",
-            })}
-            <Tooltip
-              title={formatMessage({
-                id: "cluster.manage.agent_credential.tip.auto_create",
-              })}
-            >
-              <Icon
-                type="info-circle"
-                style={{ marginLeft: 8, color: "#1890ff" }}
-              />
-            </Tooltip>
-          </span>
-        }
-      >
-        <div style={credentialActionsStyle}>
-          <div style={credentialGroupStyle}>
-            <div style={credentialSelectWrapStyle}>
-              {getFieldDecorator("agent_credential_id", {
-                initialValue: getInitialAgentCredentialValue(initialValue),
-                rules: [
-                  {
-                    required: credentialRequired,
-                    message: formatMessage({
-                      id: "cluster.regist.form.verify.required.agent_credential",
-                    }),
-                  },
-                ],
-              })(
-                <Select
-                  loading={loading}
-                  onChange={onCredentialChange}
-                  allowClear
-                  placeholder={formatMessage({
-                    id: "cluster.manage.agent_credential.placeholder.auto_create",
-                  })}
-                >
-                  <Select.Option value={MANUAL_VALUE}>
-                    {formatMessage({
-                      id: "cluster.regist.step.connect.credential.manual",
-                    })}
+      <Form.Item label={formatMessage({ id: "cluster.regist.step.connect.label.agent_credential" })}>
+        <div style={credentialGroupStyle}>
+          <div style={credentialSelectWrapStyle}>
+            {getFieldDecorator("agent_credential_id", {
+              initialValue: initialValue?.agent_credential_id
+                ? initialValue?.agent_credential_id
+                : initialValue?.username
+                ? MANUAL_VALUE
+                : undefined,
+              rules: [
+                {
+                  required: credentialRequired,
+                  message: formatMessage({
+                    id: "cluster.regist.form.verify.required.agent_credential",
+                  }),
+                },
+              ],
+            })(
+              <Select loading={loading} onChange={onCredentialChange} allowClear>
+                <Select.Option value={MANUAL_VALUE}>
+                  {formatMessage({ id: "cluster.regist.step.connect.credential.manual" })}
+                </Select.Option>
+                {credentialOptions.map((item) => (
+                  <Select.Option key={item.id} value={item.id}>
+                    {item.name}
                   </Select.Option>
-                  {credentialOptions.map((item) => (
-                    <Select.Option key={item.id} value={item.id}>
-                      {item.name}
-                    </Select.Option>
-                  ))}
-                </Select>
-              )}
-            </div>
-            <div style={refreshButtonWrapStyle}>
-              <Tooltip title={formatMessage({ id: "form.button.refresh" })}>
-                <span style={refreshButtonWrapStyle}>
-                  <Button
-                    icon="reload"
-                    onClick={() => run()}
-                    loading={loading}
-                    disabled={!canReadCredential}
-                    style={refreshButtonStyle}
-                  />
-                </span>
-              </Tooltip>
-            </div>
+                ))}
+              </Select>
+            )}
           </div>
-          {selectedCredential ? (
-            <Button
-              loading={btnLoading}
-              type="primary"
-              onClick={() => {
-                tryConnect("agent");
-              }}
-            >
-              {formatMessage({
-                id: "cluster.manage.btn.try_connect",
-              })}
-            </Button>
-          ) : null}
+          <div style={refreshButtonWrapStyle}>
+            <Tooltip title={formatMessage({ id: "form.button.refresh" })}>
+              <span style={refreshButtonWrapStyle}>
+                <Button
+                  icon="reload"
+                  onClick={() => run()}
+                  loading={loading}
+                  disabled={!canReadCredential}
+                  style={refreshButtonStyle}
+                />
+              </span>
+            </Tooltip>
+          </div>
         </div>
       </Form.Item>
       {isManual && (

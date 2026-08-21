@@ -2,12 +2,14 @@ import Markdown from "@/components/Markdown";
 import { Card } from "antd";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { formatMessage } from "umi/locale";
+import { stripDuplicatedAlertTitle } from "../../utils/message";
 
-export default ({ message }) => {
+export default ({ message, title }) => {
   const [state, setState] = useState({
     hasMore: false,
     style: { maxHeight: 110, overflowY: "hidden" },
   });
+  const content = stripDuplicatedAlertTitle(message, title);
   const itemRef = useCallback((node) => {
     setTimeout(() => {
       if (node && node.scrollHeight > node.offsetHeight) {
@@ -26,7 +28,7 @@ export default ({ message }) => {
       title={formatMessage({ id: "alert.rule.form.label.event_message" })}
     >
       <div ref={itemRef} style={state.style}>
-        <Markdown source={message} />
+        <Markdown source={content} />
       </div>
       {state.hasMore ? (
         <div style={{ marginTop: 5 }}>

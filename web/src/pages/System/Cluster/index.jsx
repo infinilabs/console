@@ -1,12 +1,8 @@
 import PageHeaderWrapper from "@/components/PageHeaderWrapper";
-import { Button, Dropdown, Icon, Menu, message, Modal } from "antd";
+import { Button, Dropdown, Icon, Menu, message, Modal, Tooltip } from "antd";
 import {
   useCallback,
-  useEffect,
-  useMemo,
-  useState,
   useRef,
-  Fragment,
 } from "react";
 import { formatMessage } from "umi/locale";
 import { formatESSearchResult } from "@/lib/elasticsearch/util";
@@ -20,6 +16,27 @@ import { hasAuthority } from "@/utils/authority";
 import { useGlobal } from "@/layouts/GlobalContext";
 import { ESPrefix } from "@/services/common";
 import { getSystemClusterID } from "@/utils/setup";
+
+// 统一的省略 + Tooltip 渲染
+const renderWithTooltip = (text, maxWidth = "100%") => (
+  <Tooltip title={text} placement="topLeft">
+    <span
+      style={{
+        display: "inline-block",
+        maxWidth,
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+        verticalAlign: "bottom",
+      }}
+    >
+      {text}
+    </span>
+  </Tooltip>
+);
+
+// 让所有列表头不换行
+const noWrapHeaderCell = () => ({ style: { whiteSpace: "nowrap" } });
 
 export default (props) => {
   const ref = useRef(null);
@@ -38,6 +55,7 @@ export default (props) => {
       },
     });
   }, []);
+
   const onEditClick = useCallback(async (record) => {
     dispatch({
       type: "clusterConfig/saveData",
@@ -47,82 +65,157 @@ export default (props) => {
       },
     });
   }, []);
+
   const onDeleteClick = useCallback(async (id) => {
     return dispatch({
       type: "clusterConfig/deleteCluster",
-      payload: {
-        id: id,
-      },
+      payload: { id },
     }).then((result) => {
-      if (result?.result == "deleted") {
-        message.success(
-          formatMessage({
-            id: "app.message.delete.success",
-          })
-        );
+      if (result?.result === "deleted") {
+        message.success(formatMessage({ id: "app.message.delete.success" }));
         setIsLoading(true);
         setTimeout(() => {
           ref.current?.refresh();
         }, 1000);
       } else {
         console.log("delete failed:", result);
-        message.success(
-          formatMessage({
-            id: "app.message.delete.failed",
-          })
-        );
+        message.error(formatMessage({ id: "app.message.delete.failed" }));
       }
     });
   }, []);
 
+  const onMonitorClick = useCallback(async (ids, actionKey) => {
+    let actionUrl = "";
+    if (actionKey === "enable") {
+      actionUrl = `${ESPrefix}/_enable`;
+    } else if (actionKey === "disable") {
+      actionUrl = `${ESPrefix}/_disable`;
+    }
+    if (!actionUrl || !(ids instanceof Array)) {
+      message.warn(formatMessage({ id: "app.message.warning.invalid.params" }));
+      return;
+    }
+
+    setIsLoading(true);
+    const res = await request(actionUrl, {
+      method: "POST",
+      body: ids,
+    });
+
+    if (res?.acknowledged) {
+      message.success(formatMessage({ id: "app.message.operate.success" }));
+      ref.current?.refresh();
+      dispatch({
+        type: "global/fetchClusterStatus",
+      });
+    } else {
+      message.error(
+        res?.message ||
+          res?.error ||
+          formatMessage({ id: "app.message.operate.failed" })
+      );
+    }
+    setIsLoading(false);
+  }, []);
+
   const showDeleteConfirm = useCallback((record) => {
     Modal.confirm({
-      title: "Are you sure delete this item?",
+      title: formatMessage({ id: "cluster.manage.delete.confirm.title" }),
       content: (
         <>
-          <div>Cluster: {record.name}</div>
-          <div>Version: {record.version}</div>
-          <div>Endpoint: {record.endpoint}</div>
+          <div>
+            {formatMessage(
+              { id: "cluster.manage.delete.confirm.cluster" },
+              { name: record.name }
+            )}
+          </div>
+          <div>
+            {formatMessage(
+              { id: "cluster.manage.delete.confirm.version" },
+              { version: record.version }
+            )}
+          </div>
+          <div>
+            {formatMessage(
+              { id: "cluster.manage.delete.confirm.endpoint" },
+              { endpoint: record.endpoint }
+            )}
+          </div>
         </>
       ),
-      okText: "Yes",
+      okText: formatMessage({ id: "form.button.ok" }),
       okType: "danger",
-      cancelText: "No",
+      cancelText: formatMessage({ id: "form.button.cancel" }),
       onOk() {
         onDeleteClick(record.id);
       },
     });
   }, []);
 
+  const showMonitorConfirm = useCallback((record, actionKey) => {
+    const isEnable = actionKey === "enable";
+    Modal.confirm({
+      title: formatMessage({
+        id: isEnable
+          ? "cluster.manage.monitoring.confirm.enable.title"
+          : "cluster.manage.monitoring.confirm.disable.title",
+      }),
+      content: (
+        <>
+          <div>
+            {formatMessage(
+              { id: "cluster.manage.monitoring.confirm.cluster" },
+              { name: record.name }
+            )}
+          </div>
+          <div>
+            {formatMessage(
+              { id: "cluster.manage.monitoring.confirm.version" },
+              { version: record.version }
+            )}
+          </div>
+          <div>
+            {formatMessage(
+              { id: "cluster.manage.monitoring.confirm.endpoint" },
+              { endpoint: record.endpoint }
+            )}
+          </div>
+        </>
+      ),
+      okText: formatMessage({ id: "form.button.ok" }),
+      cancelText: formatMessage({ id: "form.button.cancel" }),
+      onOk() {
+        onMonitorClick([record.id], actionKey);
+      },
+    });
+  }, []);
+
   const onClean = async (type) => {
-    setIsLoading(true)
+    setIsLoading(true);
     const res = await request(`${ESPrefix}/metadata/${type}`, {
-        method: 'DELETE'
-    })
+      method: "DELETE",
+    });
     if (res?.acknowledged) {
-        message.success(formatMessage({ id: "app.message.operate.success"}))
+      message.success(formatMessage({ id: "app.message.operate.success" }));
     }
-    setIsLoading(false)
-  }
+    setIsLoading(false);
+  };
 
   const showCleanConfirm = (type) => {
-    let title
-    if (type === 'node') {
-      title = formatMessage({ id: "form.button.clean.unavailable.nodes.desc" })
-    } else  if (type === 'index') {
-      title = formatMessage({ id: "form.button.clean.deleted.indices.desc" })
-    }
+    const titleId =
+      type === "node"
+        ? "form.button.clean.unavailable.nodes.desc"
+        : "form.button.clean.deleted.indices.desc";
     Modal.confirm({
-      title,
+      title: formatMessage({ id: titleId }),
       onOk() {
-        onClean(type)
+        onClean(type);
       },
     });
   };
 
-  const formatTableData = async (value) => {    
+  const formatTableData = async (value) => {
     let dataNew = formatESSearchResult(value);
-    //更新扩展数据
     let tableData = dataNew?.data?.map((item) => {
       item.number_of_nodes =
         clusterStatus?.[item.id]?.health?.number_of_nodes || 0;
@@ -135,125 +228,161 @@ export default (props) => {
   const columns = [
     {
       title: "Distribution",
+      width: 150,
       key: "distribution",
       aggregable: true,
       visible: false,
+      onHeaderCell: noWrapHeaderCell,
     },
     {
-      title: formatMessage({
-        id: "cluster.manage.table.column.name",
-      }),
+      title: formatMessage({ id: "cluster.manage.table.column.name" }),
       key: "name",
+      width: 180,
+      fixed: "left",
       sortable: true,
       searchable: true,
-      render: (text, record) => {
-        return (
-          <ClusterName
-            name={text}
-            distribution={record.distribution}
-            id={record.id}
-          />
-        );
-      },
+      onHeaderCell: noWrapHeaderCell,
+      onCell: () => ({
+        style: {
+          verticalAlign: "middle",
+        },
+      }),
+      render: (text, record) => (
+        <Tooltip title={text} placement="topLeft">
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 160,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <ClusterName
+              name={text}
+              distribution={record.distribution}
+              id={record.id}
+            />
+          </div>
+        </Tooltip>
+      ),
     },
     {
-      title: formatMessage({
-        id: "cluster.manage.table.column.health",
-      }),
+      title: formatMessage({ id: "cluster.manage.table.column.health" }),
+      width: 100,
       key: "labels.health_status",
       sortable: true,
       searchable: true,
       aggregable: true,
-      render: (text, record) => {
-        return <HealthStatusView status={text} />;
-      },
+      onHeaderCell: noWrapHeaderCell,
+      render: (text) => <HealthStatusView status={text} />,
     },
     {
-      title: formatMessage({
-        id: "cluster.manage.table.column.version",
-      }),
+      title: formatMessage({ id: "cluster.manage.table.column.version" }),
+      width: 100,
       key: "version",
       sortable: true,
       searchable: true,
       aggregable: true,
+      ellipsis: true,
+      onHeaderCell: noWrapHeaderCell,
+      render: renderWithTooltip,
     },
     {
-      title: formatMessage({
-        id: "cluster.manage.table.column.node_count",
-      }),
+      title: formatMessage({ id: "cluster.manage.table.column.node_count" }),
+      width: 80,
       key: "number_of_nodes",
+      onHeaderCell: noWrapHeaderCell,
     },
     {
-      title: formatMessage({
-        id: "cluster.manage.table.column.endpoint",
-      }),
+      title: formatMessage({ id: "cluster.manage.table.column.endpoint" }),
       key: "endpoint",
+      width: 200,
       sortable: true,
       searchable: true,
+      ellipsis: true,
+      onHeaderCell: noWrapHeaderCell,
+      render: (text) => renderWithTooltip(text, 180),
     },
     {
-      title: formatMessage({
-        id: "cluster.manage.table.column.monitored",
-      }),
+      title: formatMessage({ id: "cluster.manage.table.column.monitor_toggle" }),
+      width: 120,
       key: "monitored",
       sortable: true,
-      render: (text, record) => {
-        return formatMessage({
-          id: text
-            ? "cluster.manage.monitored.on"
-            : "cluster.manage.monitored.off",
-        });
-      },
+      onHeaderCell: noWrapHeaderCell,
+      render: (text) =>
+        formatMessage({
+          id: text ? "cluster.manage.monitored.on" : "cluster.manage.monitored.off",
+        }),
     },
     {
-      title: formatMessage({
-        id: "cluster.manage.table.column.monitor_mode",
-      }),
+      title: formatMessage({ id: "cluster.manage.table.column.monitor_mode" }),
+      width: 150,
       key: "metric_collection_mode",
       sortable: false,
-      render: (text) => {
-        return text === "agent" ? "Agent" : "Agentless";
-      },
+      onHeaderCell: noWrapHeaderCell,
+      render: (text) =>
+        formatMessage({
+          id:
+            text === "agent"
+              ? "cluster.manage.metric_collection_mode.option.agent"
+              : "cluster.manage.metric_collection_mode.option.agentless",
+        }),
     },
     {
-      title: formatMessage({
-        id: "cluster.manage.table.column.discovery.enabled",
-      }),
+      title: formatMessage({ id: "cluster.manage.table.column.discovery.enabled" }),
+      width: 150,
       sortable: true,
       key: "discovery.enabled",
-      render: (text, record) => {
-        return formatMessage({
-          id: text
-            ? "cluster.manage.monitored.on"
-            : "cluster.manage.monitored.off",
-        });
-      },
+      onHeaderCell: noWrapHeaderCell,
+      render: (text) =>
+        formatMessage({
+          id: text ? "cluster.manage.monitored.on" : "cluster.manage.monitored.off",
+        }),
     },
     {
       title: formatMessage({
-        id: "cluster.regist.step.connect.label.auth",
+        id: "cluster.manage.metadata_configs.node_availability_check",
       }),
+      width: 170,
+      sortable: true,
+      key: "metadata_configs.node_availability_check.enabled",
+      onHeaderCell: noWrapHeaderCell,
+      render: (text) =>
+        formatMessage({
+          id: text ? "cluster.manage.monitored.on" : "cluster.manage.monitored.off",
+        }),
+    },
+    {
+      title: formatMessage({ id: "cluster.regist.step.connect.label.auth" }),
+      width: 120,
       key: "credential_id",
-      // aggregable: true,
-      render: (text, record) => {
-        return record.credential_id || record?.basic_auth?.username
+      onHeaderCell: noWrapHeaderCell,
+      render: (text, record) =>
+        record.credential_id || record?.basic_auth?.username
           ? formatMessage({ id: "cluster.regist.step.complete.tls.yes" })
-          : formatMessage({ id: "cluster.regist.step.complete.tls.no" });
-      },
+          : formatMessage({ id: "cluster.regist.step.complete.tls.no" }),
     },
     {
-      title: formatMessage({
-        id: "table.field.actions",
-      }),
+      title: formatMessage({ id: "table.field.actions" }),
+      width: 80,
       align: "center",
+      fixed: "right", // 操作列固定在右侧，不随横向滚动消失
+      onHeaderCell: noWrapHeaderCell,
       render: (text, record) => {
         const onMenuClick = ({ key }) => {
           switch (key) {
+            case "enable_monitoring":
+              showMonitorConfirm(record, "enable");
+              break;
+            case "disable_monitoring":
+              showMonitorConfirm(record, "disable");
+              break;
             case "clean_nodes":
-              showCleanConfirm('node');
+              showCleanConfirm("node");
               break;
             case "clean_indices":
-              showCleanConfirm('index');
+              showCleanConfirm("index");
               break;
             case "delete":
               showDeleteConfirm(record);
@@ -268,13 +397,19 @@ export default (props) => {
             content: (
               <Link
                 to={`/resource/cluster/${record.id}/edit`}
-                onClick={() => {
-                  onEditClick(record);
-                }}
+                onClick={() => onEditClick(record)}
               >
                 {formatMessage({ id: "form.button.edit" })}
               </Link>
             ),
+          });
+          menuItems.push({
+            key: record.monitored ? "disable_monitoring" : "enable_monitoring",
+            content: formatMessage({
+              id: record.monitored
+                ? "cluster.manage.monitoring.disable.action"
+                : "cluster.manage.monitoring.enable.action",
+            }),
           });
           menuItems.push({
             key: "clean_nodes",
@@ -294,61 +429,62 @@ export default (props) => {
 
         const menu = (
           <Menu onClick={onMenuClick}>
-            {menuItems.map((item) => {
-              return <Menu.Item key={item.key}>{item.content}</Menu.Item>;
-            })}
+            {menuItems.map((item) => (
+              <Menu.Item key={item.key}>{item.content}</Menu.Item>
+            ))}
           </Menu>
         );
+
         return (
-          <div>
-            <Dropdown overlay={menu}>
-              <a
-                style={{ fontSize: "20px" }}
-                onClick={(e) => e.preventDefault()}
-              >
-                <Icon type="ellipsis" />
-              </a>
-            </Dropdown>
-          </div>
+          <Dropdown overlay={menu}>
+            <a style={{ fontSize: "20px" }} onClick={(e) => e.preventDefault()}>
+              <Icon type="ellipsis" />
+            </a>
+          </Dropdown>
         );
       },
     },
   ];
 
   if (!hasAuthority("system.cluster:all")) {
-    columns.splice(columns.length - 1)
+    columns.splice(columns.length - 1);
   }
 
   return (
     <PageHeaderWrapper>
-      <ListView
-        ref={ref}
-        clusterID={clusterID}
-        collectionName={collectionName}
-        columns={columns}
-        formatDataSource={(value) => {
-          return formatTableData(value);
-        }}
-        defaultQueryParams={{
-          from: 0,
-          size: 20,
-        }}
-        sortEnable={true}
-        sideEnable={true}
-        sideVisible={false}
-        sidePlacement="left"
-        headerToobarExtra={{
-          getExtra: (props) => [
-            hasAuthority("system.cluster:all") ? (
-              <Link to="/resource/cluster/regist" onClick={onNewClick}>
-                <Button type="primary" icon="plus">
-                  {formatMessage({ id: "gateway.instance.btn.new" })}
-                </Button>
-              </Link>
-            ) : null,
-          ],
-        }}
-      />
+      <div style={{ overflowX: "auto", width: "100%" }}>
+        <ListView
+          ref={ref}
+          clusterID={clusterID}
+          collectionName={collectionName}
+          columns={columns}
+          formatDataSource={(value) => formatTableData(value)}
+          defaultQueryParams={{
+            from: 0,
+            size: 20,
+            sort: [
+              ["name", "asc"],
+              ["id", "asc"],
+            ],
+          }}
+          sortEnable={true}
+          sideEnable={true}
+          sideVisible={false}
+          sidePlacement="left"
+          scroll={{ x: "max-content" }} // 超出横向滚动，避免撑破布局
+          headerToobarExtra={{
+            getExtra: () => [
+              hasAuthority("system.cluster:all") ? (
+                <Link to="/resource/cluster/regist" onClick={onNewClick}>
+                  <Button type="primary" icon="plus">
+                    {formatMessage({ id: "gateway.instance.btn.new" })}
+                  </Button>
+                </Link>
+              ) : null,
+            ],
+          }}
+        />
+      </div>
     </PageHeaderWrapper>
   );
 };

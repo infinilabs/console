@@ -15,7 +15,7 @@ export default (props) => {
   const overviews = [
     {
       key: "indices",
-      title: "Indices",
+      titleId: "overview.title.index",
       action: `${ESPrefix}/${clusterID}/node/${nodeID}/indices`,
       component: MetricIndices,
     },

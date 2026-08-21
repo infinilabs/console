@@ -110,12 +110,13 @@ type NotificationConfig struct {
 }
 
 type RecoveryNotificationConfig struct {
-	Enabled         bool      `json:"enabled"` // channel enabled
-	Title           string    `json:"title"`   //text template
-	Message         string    `json:"message"` // text template
-	AcceptTimeRange TimeRange `json:"accept_time_range,omitempty"`
-	Normal          []Channel `json:"normal,omitempty"`
-	EventEnabled    bool      `json:"event_enabled"`
+	Enabled                    bool      `json:"enabled"` // channel enabled
+	Title                      string    `json:"title"`   //text template
+	Message                    string    `json:"message"` // text template
+	AcceptTimeRange            TimeRange `json:"accept_time_range,omitempty"`
+	Normal                     []Channel `json:"normal,omitempty"`
+	EventEnabled               bool      `json:"event_enabled"`
+	IncrementalRecoveryEnabled bool      `json:"incremental_recovery_enabled"`
 }
 
 type MessageTemplate struct {

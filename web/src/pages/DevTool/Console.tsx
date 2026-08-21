@@ -22,6 +22,7 @@ import { ResizeBar } from "@/components/infini/resize_bar";
 import maximizeSvg from "@/assets/window-maximize.svg";
 import restoreSvg from "@/assets/window-restore.svg";
 import ClusterSelect from "@/components/ClusterSelect";
+import { getPreferredCluster } from "@/utils/setup";
 
 const MaximizeIcon = (props = {}) => {
   return <img height="14px" width="14px" {...props} src={maximizeSvg} />;
@@ -143,14 +144,16 @@ function calcHeightToPX(height: string) {
 }
 
 export const ConsoleUI = ({
-  selectedCluster,
-  clusterList,
-  clusterStatus,
+  selectedCluster = {},
+  clusterList = [],
+  clusterStatus = {},
   minimize = false,
   onMinimizeClick,
   resizeable = false,
   height = "50vh",
   mode = "global",
+  reservePageSpace = mode === "global",
+  disableHoverScrollLock = false,
 }: any) => {
   const clusterMap = useMemo(() => {
     let cm = {};
@@ -158,27 +161,29 @@ export const ConsoleUI = ({
       return cm;
     }
     (clusterList || []).map((cluster: any) => {
-      cluster.status = clusterStatus[cluster.id]?.health?.status;
+      const nextCluster = { ...cluster };
+      nextCluster.status = clusterStatus[cluster.id]?.health?.status;
       if (!clusterStatus[cluster.id]?.available) {
-        cluster.status = "unavailable";
+        nextCluster.status = "unavailable";
       }
-      cm[cluster.id] = cluster;
+      cm[cluster.id] = nextCluster;
     });
     return cm;
   }, [clusterList, clusterStatus]);
   const initialDefaultState = () => {
-    let defaultCluster = selectedCluster;
-    if (!defaultCluster.id) {
-      defaultCluster = clusterList[0];
-    }
-    const defaultActiveKey = `${defaultCluster.id ||
-      ""}:${new Date().valueOf()}`;
-    const defaultState = defaultCluster
+    const defaultCluster = getPreferredCluster(clusterList, {
+      selectedClusterID: selectedCluster?.id,
+    });
+    const defaultClusterID = defaultCluster?.id || "";
+    const defaultActiveKey = defaultClusterID
+      ? `${defaultClusterID}:${new Date().valueOf()}`
+      : "";
+    const defaultState = defaultClusterID
       ? {
           panes: [
             {
               key: defaultActiveKey,
-              cluster_id: defaultCluster.id,
+              cluster_id: defaultClusterID,
               title: defaultCluster.name,
             },
           ],
@@ -339,8 +344,8 @@ export const ConsoleUI = ({
     ),
   };
 
-  setClusterID(tabState.activeKey?.split(":")[0]);
-  const panes = tabState.panes.filter((pane: any) => {
+  setClusterID(tabState.activeKey?.split(":")[0] || "");
+  const panes = (tabState.panes || []).filter((pane: any) => {
     pane.closable = true;
     return typeof clusterMap[pane.cluster_id] != "undefined";
   });
@@ -376,10 +381,16 @@ export const ConsoleUI = ({
   }, [isFullscreen]);
 
   const disableWindowScroll = () => {
+    if (mode !== "global") {
+      return;
+    }
     document.body.style.overflow = "hidden";
   };
 
   const enableWindowScroll = () => {
+    if (mode !== "global") {
+      return;
+    }
     document.body.style.overflow = "";
   };
   const onTabNodeMoved = (newOrder: string[]) => {
@@ -391,10 +402,13 @@ export const ConsoleUI = ({
     });
   };
   useEffect(() => {
-    if (mode != "global") {
+    var sl = document.querySelector("#root>div");
+    if (!reservePageSpace) {
+      if (sl) {
+        sl.style.paddingBottom = "0px";
+      }
       return;
     }
-    var sl = document.querySelector("#root>div");
     if (sl) {
       if (typeof editorHeight == "number")
         sl.style.paddingBottom = editorHeight + "px";
@@ -402,7 +416,12 @@ export const ConsoleUI = ({
         sl.style.paddingBottom = editorHeight;
       }
     }
-  }, [editorHeight]);
+    return () => {
+      if (sl) {
+        sl.style.paddingBottom = "0px";
+      }
+    };
+  }, [editorHeight, reservePageSpace]);
 
   return (
     <Resizable
@@ -426,8 +445,8 @@ export const ConsoleUI = ({
     >
       <div
         style={{ background: "#fff", height: "100%" }}
-        onMouseOver={disableWindowScroll}
-        onMouseOut={enableWindowScroll}
+        onMouseOver={disableHoverScrollLock ? undefined : disableWindowScroll}
+        onMouseOut={disableHoverScrollLock ? undefined : enableWindowScroll}
         id="console"
         ref={rootRef}
       >
@@ -476,5 +495,5 @@ export default connect(({ global, loading }) => ({
   selectedCluster: global.selectedCluster,
   clusterList: global.clusterList,
   clusterStatus: global.clusterStatus,
-  height: window.innerHeight - 75 + "px",
+  height: window.innerHeight - 64 + "px",
 }))(ConsoleUI);

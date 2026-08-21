@@ -45,6 +45,51 @@ import (
 	"infini.sh/framework/core/util"
 )
 
+func buildChannelSort(sort string) []util.MapStr {
+	appendSort := func(sorters []util.MapStr, seen map[string]struct{}, field, order string) []util.MapStr {
+		if field == "" {
+			return sorters
+		}
+		if _, ok := seen[field]; ok {
+			return sorters
+		}
+		if order == "" {
+			order = "asc"
+		}
+		seen[field] = struct{}{}
+		return append(sorters, util.MapStr{
+			field: util.MapStr{
+				"order": order,
+			},
+		})
+	}
+
+	seen := map[string]struct{}{}
+	sorters := make([]util.MapStr, 0, 4)
+	sortParts := strings.Split(sort, ":")
+	sortField := sortParts[0]
+	sortDirection := ""
+	if len(sortParts) >= 2 {
+		sortDirection = sortParts[1]
+	}
+	if sortField != "" {
+		sorters = appendSort(sorters, seen, sortField, sortDirection)
+	}
+
+	for _, stableSort := range []struct {
+		field string
+		order string
+	}{
+		{field: "sub_type", order: "asc"},
+		{field: "type", order: "asc"},
+		{field: "name", order: "asc"},
+		{field: "updated", order: "desc"},
+	} {
+		sorters = appendSort(sorters, seen, stableSort.field, stableSort.order)
+	}
+	return sorters
+}
+
 func (h *AlertAPI) createChannel(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	var obj = &alerting.Channel{}
 	err := h.DecodeJSON(req, obj)
@@ -54,7 +99,7 @@ func (h *AlertAPI) createChannel(w http.ResponseWriter, req *http.Request, ps ht
 		return
 	}
 
-	err = orm.Create(nil, obj)
+	err = orm.Create(orm.NewContext(), obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -71,7 +116,7 @@ func (h *AlertAPI) getChannel(w http.ResponseWriter, req *http.Request, ps httpr
 	obj := alerting.Channel{}
 	obj.ID = id
 
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":   id,
@@ -93,7 +138,7 @@ func (h *AlertAPI) updateChannel(w http.ResponseWriter, req *http.Request, ps ht
 	obj := alerting.Channel{}
 
 	obj.ID = id
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":    id,
@@ -115,7 +160,7 @@ func (h *AlertAPI) updateChannel(w http.ResponseWriter, req *http.Request, ps ht
 	//protect
 	obj.ID = id
 	obj.Created = create
-	err = orm.Update(nil, &obj)
+	err = orm.Update(orm.NewContext(), &obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -214,7 +259,7 @@ func (h *AlertAPI) searchChannel(w http.ResponseWriter, req *http.Request, ps ht
 		strFrom = h.GetParameterOrDefault(req, "from", "0")
 		subType = h.GetParameterOrDefault(req, "sub_type", "")
 		typ     = h.GetParameterOrDefault(req, "type", "")
-		sort    = h.GetParameterOrDefault(req, "sort", "updated:desc")
+		sort    = h.GetParameterOrDefault(req, "sort", "")
 	)
 	mustQ := []interface{}{}
 	if keyword != "" {
@@ -248,18 +293,6 @@ func (h *AlertAPI) searchChannel(w http.ResponseWriter, req *http.Request, ps ht
 	if from < 0 {
 		from = 0
 	}
-	var (
-		sortField     string
-		sortDirection string
-	)
-	sortParts := strings.Split(sort, ":")
-	sortField = sortParts[0]
-	if len(sortParts) >= 2 {
-		sortDirection = sortParts[1]
-	}
-	if sortDirection == "" {
-		sortDirection = "asc"
-	}
 	query := util.MapStr{
 		"size": size,
 		"from": from,
@@ -268,13 +301,7 @@ func (h *AlertAPI) searchChannel(w http.ResponseWriter, req *http.Request, ps ht
 				"must": mustQ,
 			},
 		},
-		"sort": []util.MapStr{
-			{
-				sortField: util.MapStr{
-					"order": sortDirection,
-				},
-			},
-		},
+		"sort": buildChannelSort(sort),
 	}
 
 	q := orm.Query{
@@ -353,6 +380,12 @@ func (alertAPI *AlertAPI) batchEnableChannel(w http.ResponseWriter, req *http.Re
 		return
 	}
 	if len(channelIDs) > 0 {
+		err = validateChannelsBeforeEnable(channelIDs)
+		if err != nil {
+			log.Error(err)
+			alertAPI.WriteError(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 		err = setChannelEnabled(true, channelIDs)
 		if err != nil {
 			log.Error(err)
@@ -399,4 +432,52 @@ func setChannelEnabled(enabled bool, channelIDs []string) error {
 	}
 	err := orm.UpdateBy(alerting.Channel{}, util.MustToJSONBytes(q))
 	return err
+}
+
+func validateChannelsBeforeEnable(channelIDs []string) error {
+	for _, id := range channelIDs {
+		channel := alerting.Channel{}
+		channel.ID = id
+		exists, err := orm.GetV2(orm.NewContext(), &channel)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			return fmt.Errorf("channel [%s] not found", id)
+		}
+		if err = validateChannelBeforeEnable(&channel); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateChannelBeforeEnable(channel *alerting.Channel) error {
+	if channel == nil {
+		return fmt.Errorf("empty channel")
+	}
+
+	channelType := channel.SubType
+	if channelType == "" {
+		channelType = channel.Type
+	}
+	if channelType != alerting.ChannelEmail {
+		return nil
+	}
+
+	if channel.Email == nil {
+		return fmt.Errorf("email channel [%s] is incomplete, please configure the smtp server and recipients first", channel.Name)
+	}
+
+	if channel.Email.ServerID == "" && len(channel.Email.Recipients.To) == 0 {
+		return fmt.Errorf("email channel [%s] is incomplete, please configure the smtp server and recipients first", channel.Name)
+	}
+	if channel.Email.ServerID == "" {
+		return fmt.Errorf("email channel [%s] is incomplete, please configure the smtp server first", channel.Name)
+	}
+	if len(channel.Email.Recipients.To) == 0 {
+		return fmt.Errorf("email channel [%s] is incomplete, please configure at least one recipient first", channel.Name)
+	}
+
+	return nil
 }

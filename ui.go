@@ -45,8 +45,19 @@ type UI struct {
 }
 
 func (h UI) InitUI() {
+	localPath, err := config.ResolveSelfHostedPackageBasePath(h.Config.UI.LocalPath)
+	if err != nil {
+		log.Errorf("failed to resolve self-hosted package path [%s]: %v", h.Config.UI.LocalPath, err)
+		localPath = h.Config.UI.LocalPath
+	}
 
-	vfs.RegisterFS(public.StaticFS{StaticFolder: h.Config.UI.LocalPath, TrimLeftPath: h.Config.UI.LocalPath, CheckLocalFirst: h.Config.UI.LocalEnabled, SkipVFS: !h.Config.UI.VFSEnabled})
+	if h.Config.UI.LocalEnabled {
+		if err := config.EnsureSelfHostedPackageDirs(localPath); err != nil {
+			log.Errorf("failed to prepare self-hosted package directories under [%s]: %v", localPath, err)
+		}
+	}
+
+	vfs.RegisterFS(public.StaticFS{StaticFolder: localPath, TrimLeftPath: localPath, CheckLocalFirst: h.Config.UI.LocalEnabled, SkipVFS: !h.Config.UI.VFSEnabled})
 
 	basePath := "/" + strings.Trim(global.Env().SystemConfig.WebAppConfig.BasePath, "/")
 
@@ -57,9 +68,13 @@ func (h UI) InitUI() {
 	// b) Create the final handler that acts as a dispatcher for the sub-path.
 	finalHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Check if the request is for the sub-path's entrypoint.
-		if r.Method == "GET" && (r.URL.Path == "/" || r.URL.Path == basePath+"/" || r.URL.Path == basePath) {
+		if r.Method == "GET" && isIndexRequest(r.URL.Path, basePath) {
 			serveDynamicIndex(w, r, basePath)
 			return
+		}
+
+		if r.Method == "GET" && shouldDisableCache(r.URL.Path, basePath) {
+			setNoCacheHeaders(w)
 		}
 
 		// For all other requests, delegate to the static file handler.
@@ -89,6 +104,25 @@ func (h UI) InitUI() {
 	})
 }
 
+func isIndexRequest(path, basePath string) bool {
+	return path == "/" ||
+		path == "/index.html" ||
+		path == basePath ||
+		path == basePath+"/" ||
+		path == basePath+"/index.html"
+}
+
+func shouldDisableCache(path, basePath string) bool {
+	return path == "/manifest.json" ||
+		path == basePath+"/manifest.json"
+}
+
+func setNoCacheHeaders(w http.ResponseWriter) {
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	w.Header().Set("Pragma", "no-cache")
+	w.Header().Set("Expires", "0")
+}
+
 // Helper function for serving the DYNAMIC index.html with replacements.
 func serveDynamicIndex(w http.ResponseWriter, r *http.Request, basePath string) {
 	file, err := vfs.VFS().Open("/index.html")
@@ -113,9 +147,7 @@ func serveDynamicIndex(w http.ResponseWriter, r *http.Request, basePath string) 
 	content = bytes.ReplaceAll(content, []byte(`window.routerBase = "/";`), []byte(`window.routerBase = "`+jsBasePath+`";`))
 	content = bytes.ReplaceAll(content, []byte(`window.publicPath = "/";`), []byte(`window.publicPath = "`+jsBasePath+`";`))
 
-	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
-	w.Header().Set("Pragma", "no-cache")
-	w.Header().Set("Expires", "0")
+	setNoCacheHeaders(w)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Write(content)
 }

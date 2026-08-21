@@ -1,23 +1,46 @@
-import { Input, Select } from "antd";
-const { Search } = Input;
+import { Input, Select, Button, Icon } from "antd";
+import { formatMessage } from "umi/locale";
+
 const InputGroup = Input.Group;
 const Option = Select.Option;
 
 const FilterSearchGroup = ({
-  enterButton = true,
+  enterButton = formatMessage({ id: "form.button.search" }),
   filterWidth = 120,
   filterFields,
+  filterValue,
+  searchValue,
   onFilterChange,
   onSearch,
   onChange,
 }) => {
+  const handleClear = () => {
+    if (typeof onChange == "function") {
+      onChange("");
+    }
+    if (typeof onSearch == "function") {
+      onSearch("");
+    }
+  };
+
+  const handleSearchChange = (e) => {
+    const value = e.target?.value ?? "";
+    if (!value && typeof onFilterChange == "function") {
+      onFilterChange(undefined);
+    }
+    if (typeof onChange == "function") {
+      onChange(value);
+    }
+  };
+
   return (
     <InputGroup compact>
       <Select
         allowClear={true}
+        value={filterValue}
         style={{ width: filterWidth }}
         dropdownMatchSelectWidth={false}
-        placeholder="Filters"
+        placeholder={formatMessage({ id: "listview.filters.placeholder" })}
         onChange={(value) => {
           if (typeof onFilterChange == "function") {
             onFilterChange(value);
@@ -32,22 +55,42 @@ const FilterSearchGroup = ({
           );
         })}
       </Select>
-      <Search
-        enterButton={enterButton}
-        allowClear={true}
-        placeholder="Type keyword to search"
-        style={{ width: `calc(100% - ${filterWidth}px)` }}
-        onSearch={(value) => {
+      <Input
+        value={searchValue}
+        placeholder={formatMessage({ id: "listview.search.placeholder" })}
+        style={{ width: `calc(100% - ${filterWidth}px - 88px)` }}
+        suffix={
+          searchValue ? (
+            <Icon
+              type="close-circle"
+              theme="filled"
+              style={{
+                color: "rgba(0,0,0,.25)",
+                cursor: "pointer",
+                verticalAlign: "middle",
+              }}
+              onClick={handleClear}
+            />
+          ) : null
+        }
+        onPressEnter={() => {
           if (typeof onSearch == "function") {
-            onSearch(value);
+            onSearch(searchValue || "");
           }
         }}
-        onChange={(e) => {
-          if (typeof onChange == "function") {
-            onChange(e.currentTarget.value);
-          }
-        }}
+        onChange={handleSearchChange}
       />
+      <Button
+        type="primary"
+        style={{ width: 88 }}
+        onClick={() => {
+          if (typeof onSearch == "function") {
+            onSearch(searchValue || "");
+          }
+        }}
+      >
+        {enterButton}
+      </Button>
     </InputGroup>
   );
 };

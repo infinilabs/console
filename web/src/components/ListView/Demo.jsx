@@ -163,16 +163,16 @@ export default (props) => {
 
   const showDeleteConfirm = (record) => {
     Modal.confirm({
-      title: "Are you sure delete this item?",
+      title: formatMessage({ id: "app.message.confirm.delete" }),
       content: (
         <>
           <div>Name: {record.name}</div>
           <div>Endpoint: {record.endpoint}</div>
         </>
       ),
-      okText: "Yes",
+      okText: formatMessage({ id: "form.button.ok" }),
       okType: "danger",
-      cancelText: "No",
+      cancelText: formatMessage({ id: "form.button.cancel" }),
       onOk() {
         onDeleteClick(record.id);
       },

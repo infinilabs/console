@@ -48,7 +48,7 @@ func (h *InsightAPI) createVisualization(w http.ResponseWriter, req *http.Reques
 		log.Error(err)
 		return
 	}
-	err = orm.Create(nil, obj)
+	err = orm.Create(orm.NewContext(), obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -68,7 +68,7 @@ func (h *InsightAPI) getVisualization(w http.ResponseWriter, req *http.Request, 
 	obj := insight.Visualization{}
 	obj.ID = id
 
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":   id,
@@ -89,7 +89,7 @@ func (h *InsightAPI) updateVisualization(w http.ResponseWriter, req *http.Reques
 	obj := insight.Visualization{}
 
 	obj.ID = id
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":    id,
@@ -111,7 +111,7 @@ func (h *InsightAPI) updateVisualization(w http.ResponseWriter, req *http.Reques
 	//protect
 	obj.ID = id
 	obj.Created = create
-	err = orm.Update(nil, &obj)
+	err = orm.Update(orm.NewContext(), &obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -130,7 +130,7 @@ func (h *InsightAPI) deleteVisualization(w http.ResponseWriter, req *http.Reques
 	obj := insight.Visualization{}
 	obj.ID = id
 
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":    id,
@@ -139,7 +139,7 @@ func (h *InsightAPI) deleteVisualization(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	err = orm.Delete(nil, &obj)
+	err = orm.Delete(orm.NewContext(), &obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)

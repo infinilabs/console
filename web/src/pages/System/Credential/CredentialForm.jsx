@@ -1,14 +1,6 @@
-import { Form, Input, Select, Button, Drawer, Tag, Icon } from "antd";
+import { Spin, Form, Input, Select, Button, Tag, Icon, Tooltip } from "antd";
 import { formatMessage } from "umi/locale";
-import {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import request from "@/utils/request";
+import { forwardRef, useEffect, useRef, useState } from "react";
 
 const formItemLayout = {
   labelCol: {
@@ -26,21 +18,46 @@ const TYPES = [
     type: "basic_auth",
     name: "basic_auth",
   },
+  {
+    type: "token",
+    name: "token",
+  },
 ];
 
 export default Form.create()((props) => {
-  const { form, record, onSubmit } = props;
+  const { form, record, onSubmit, submitLoading } = props;
   const { getFieldDecorator } = form;
 
   const { payload = {} } = record || {};
+  const isEdit = !!record?.id;
 
   const [type, setType] = useState(record?.type);
-  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = () => {
+  const getRequiredMessage = (id, defaultMessage) =>
+    formatMessage({ id, defaultMessage });
+
+  const getRequiredRule = (id, defaultMessage) => ({
+    validator: (_, value, callback) => {
+      if (typeof value === "string") {
+        if (value.trim() === "") {
+          callback(getRequiredMessage(id, defaultMessage));
+          return;
+        }
+      } else if (value === undefined || value === null || value === "") {
+        callback(getRequiredMessage(id, defaultMessage));
+        return;
+      }
+      callback();
+    },
+  });
+
+  const handleSubmit = async () => {
+    if (submitLoading) {
+      return;
+    }
     form.validateFields(async (err, values) => {
       if (err) return;
-      onSubmit(values);
+      await onSubmit(values);
     });
   };
 
@@ -56,10 +73,10 @@ export default Form.create()((props) => {
             {getFieldDecorator("username", {
               initialValue: payload[type]?.username,
               rules: [
-                {
-                  required: true,
-                  message: "Please inpurt username!",
-                },
+                getRequiredRule(
+                  "credential.manage.form.username.required",
+                  "Please input username!"
+                ),
               ],
             })(<Input />)}
           </Form.Item>
@@ -71,20 +88,60 @@ export default Form.create()((props) => {
             {getFieldDecorator("password", {
               initialValue: payload[type]?.password,
               rules: [
-                {
-                  required: record?.id ? false : true,
-                  message: "Please inpurt password!",
-                },
+                ...(isEdit
+                  ? []
+                  : [
+                      getRequiredRule(
+                        "credential.manage.form.password.required",
+                        "Please input password!"
+                      ),
+                    ]),
               ],
             })(
               <Input.Password
                 placeholder={
-                  record?.id ? "original password is not displayed" : ""
+                  isEdit
+                    ? formatMessage({
+                        id: "credential.manage.form.password.placeholder.edit",
+                        defaultMessage: "Original password is not displayed",
+                      })
+                    : ""
                 }
               />
             )}
           </Form.Item>
         </>
+      );
+    }
+    if (type === "token") {
+      return (
+        <Form.Item
+          label={formatMessage({
+            id: "credential.manage.form.token",
+          })}
+        >
+          {getFieldDecorator("token_value", {
+            initialValue: payload[type]?.value,
+            rules: [
+              ...(isEdit
+                ? []
+                : [
+                    getRequiredRule(
+                      "credential.manage.form.token.required",
+                      "Please input token!"
+                    ),
+                  ]),
+            ],
+          })(
+            <Input.Password
+              placeholder={formatMessage({
+                id: record?.id
+                  ? "credential.manage.form.token.placeholder.edit"
+                  : "credential.manage.form.token.placeholder",
+              })}
+            />
+          )}
+        </Form.Item>
       );
     }
   };
@@ -94,63 +151,69 @@ export default Form.create()((props) => {
   }, [record?.type]);
 
   return (
-    <Form {...formItemLayout} colon={false} loading={true}>
-      <Form.Item
-        label={formatMessage({
-          id: "credential.manage.form.type",
-        })}
-      >
-        {getFieldDecorator("type", {
-          initialValue: record?.type,
-          rules: [
-            {
-              required: true,
-              message: "Please select type!",
-            },
-          ],
-        })(
-          <Select onChange={(value) => setType(value)}>
-            {TYPES.map((item) => (
-              <Select.Option value={item.type}>{item.name}</Select.Option>
-            ))}
-          </Select>
-        )}
-      </Form.Item>
-      <Form.Item
-        label={formatMessage({
-          id: "credential.manage.form.name",
-        })}
-      >
-        {getFieldDecorator("name", {
-          initialValue: record?.name,
-          rules: [
-            {
-              required: true,
-              message: "Please input name!",
-            },
-          ],
-        })(<Input />)}
-      </Form.Item>
-      {renderAuth(type)}
-      <Form.Item
-        label={formatMessage({
-          id: "credential.manage.form.tags",
-        })}
-      >
-        {getFieldDecorator("tags", {
-          initialValue: record?.tags || [],
-        })(<Tags />)}
-      </Form.Item>
-      <Form.Item label=" ">
-        <div style={{ textAlign: "right" }}>
-          <Button type="primary" onClick={handleSubmit}>
-            {formatMessage({
-              id: record ? "form.button.save" : "form.button.submit",
-            })}
-          </Button>
-        </div>
-      </Form.Item>
-    </Form>
+    <Spin spinning={!!submitLoading}>
+      <Form {...formItemLayout} colon={false}>
+        <Form.Item 
+          label={formatMessage({
+            id: "credential.manage.form.type",
+          })}
+        >
+          {getFieldDecorator("type", {
+            initialValue: record?.type,
+            rules: [
+              getRequiredRule(
+                "credential.manage.form.type.required",
+                "Please select type!"
+              ),
+            ],
+          })(
+            <Select
+              key={`cred-${record?.type}`}
+              onChange={(value) => setType(value)}
+              disabled={isEdit}
+            >
+              {TYPES.map((item) => (
+                <Select.Option key={`opt-${item.type}`} value={item.type}>{item.name}</Select.Option>
+              ))}
+            </Select>
+          )}
+        </Form.Item>
+        <Form.Item
+          label={formatMessage({
+            id: "credential.manage.form.name",
+          })}
+        >
+          {getFieldDecorator("name", {
+            initialValue: record?.name,
+            rules: [
+              getRequiredRule(
+                "credential.manage.form.name.required",
+                "Please input name!"
+              ),
+            ],
+          })(<Input />)}
+        </Form.Item>
+        {renderAuth(type)}
+        <Form.Item
+          label={formatMessage({
+            id: "credential.manage.form.tags",
+          })}
+        >
+          {getFieldDecorator("tags", {
+            initialValue: record?.tags || [],
+          })(<Tags />)}
+        </Form.Item>
+        <Form.Item label=" ">
+          <div style={{ textAlign: "right" }}>
+            <Button type="primary" onClick={handleSubmit} loading={!!submitLoading} disabled={!!submitLoading}>
+              {formatMessage({
+                id: record ? "form.button.save" : "form.button.submit",
+              })}
+            </Button>
+          </div>
+        </Form.Item>
+      </Form>
+    </Spin>
   );
 });
 

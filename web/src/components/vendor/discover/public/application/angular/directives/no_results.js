@@ -51,7 +51,7 @@ export class DiscoverNoResults extends Component {
 
     if (timeFieldName) {
       timeFieldMessage = (
-        <Fragment>
+        <Fragment key="timeFieldMessage">
           <EuiSpacer size="xl" />
 
           <EuiText>
@@ -73,7 +73,11 @@ export class DiscoverNoResults extends Component {
                   id: "explore.no_results.timerange.tips",
                 })}
               </a>
-              <Spin spinning={timeTipsLoading} indicator={antIcon}/>
+              {timeTipsLoading ? (
+                <span style={{ display: "inline-flex", marginLeft: 8 }}>
+                  {antIcon}
+                </span>
+              ) : null}
             </p>
           </EuiText>
         </Fragment>
@@ -135,7 +139,7 @@ export class DiscoverNoResults extends Component {
       ];
 
       luceneQueryMessage = (
-        <Fragment>
+        <Fragment key="luceneQueryMessage">
           <EuiSpacer size="xl" />
 
           <EuiText>
@@ -162,7 +166,7 @@ export class DiscoverNoResults extends Component {
     }
 
     return (
-      <Fragment>
+      <Fragment key="discoverNoResults">
         <EuiSpacer size="xl" />
 
         <EuiFlexGroup justifyContent="center">

@@ -26,7 +26,7 @@ const links = [
 ];
 
 const copyright = (
-  <Fragment>
+  <Fragment key="copyright">
     Copyright <Icon type="copyright" /> {new Date().getFullYear()} {APP_AUTHOR}
   </Fragment>
 );

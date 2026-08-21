@@ -119,6 +119,7 @@ func GeneratePipelineConfig(servers []model.EmailServer) (string, error) {
 				"refresh_timestamp": time.Now().UnixMilli(),
 			},
 			"min_tls_version": srv.TLSMinVersion,
+			"sender":          ResolveSender(srv.Sender, srv.Auth.Username),
 			"auth": util.MapStr{
 				"username": srv.Auth.Username,
 				"password": fmt.Sprintf("$[[keystore.%s]]", key),
@@ -147,7 +148,7 @@ func GeneratePipelineConfig(servers []model.EmailServer) (string, error) {
 							},
 							"processor": []util.MapStr{
 								{
-									"smtp": util.MapStr{
+									"console_smtp": util.MapStr{
 										"idle_timeout_in_seconds": 1,
 										"servers":                 smtpServers,
 										"templates": util.MapStr{

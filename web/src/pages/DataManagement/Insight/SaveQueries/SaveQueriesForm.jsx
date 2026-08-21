@@ -1,6 +1,7 @@
 import { Button, Form, Icon, Input, Popover, Select } from 'antd';
 import React from 'react';
 import styles from './index.less';
+import { formatMessage } from 'umi/locale';
 
 class SaveQueriesForm extends React.Component {
     state = {
@@ -39,7 +40,7 @@ class SaveQueriesForm extends React.Component {
         const { form , data, record} = this.props;
         const { getFieldValue } = form
         if (!record?.id && value && data.findIndex((item) => item.title === value) !== -1) {
-            callback('Changed title already exists!')
+            callback(formatMessage({ id: 'explore.save_queries.validation.title_exists' }))
         }
         callback()
     }
@@ -51,13 +52,13 @@ class SaveQueriesForm extends React.Component {
         
         return (
             <Form className={styles.form} colon={false}>
-                <Form.Item label="Title">
+                <Form.Item label={formatMessage({ id: 'explore.save_queries.field.title' })}>
                     {getFieldDecorator('title', {
                         initialValue: record?.title,
                         rules: [
                             {
                                 required: true,
-                                message: 'Please input title!',
+                                message: formatMessage({ id: 'explore.save_queries.validation.title_required' }),
                             },
                             {
                                 validator: this.checkTitle
@@ -71,7 +72,7 @@ class SaveQueriesForm extends React.Component {
                     }}/>)}
                 </Form.Item>
                 <Form.Item 
-                    label="Tag" 
+                    label={formatMessage({ id: 'explore.save_queries.field.tag' })} 
                 >
                     {getFieldDecorator('tags', {
                         initialValue: record?.tags?.[0],
@@ -79,19 +80,21 @@ class SaveQueriesForm extends React.Component {
                         <Input />
                     )}
                 </Form.Item>
-                <Form.Item label="Description">
+                <Form.Item label={formatMessage({ id: 'explore.save_queries.field.description' })}>
                     {getFieldDecorator('description', {
                         initialValue: record?.description,
                     })(<Input />)}
                 </Form.Item>
                 <Form.Item className={styles.actions}>
-                    <Button>Cancel</Button>
+                    <Button>{formatMessage({ id: 'explore.save_queries.button.cancel' })}</Button>
                     <Button 
                         type='primary'
                         onClick={this.onSave}
                         loading={loading}
                     >
-                        {record?.id ? 'Update' : 'Save'}
+                        {record?.id
+                            ? formatMessage({ id: 'explore.save_queries.button.update' })
+                            : formatMessage({ id: 'explore.save_queries.button.save' })}
                     </Button>
                 </Form.Item>
             </Form>

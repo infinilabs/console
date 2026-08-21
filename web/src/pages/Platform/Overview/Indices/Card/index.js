@@ -9,10 +9,9 @@ import moment from "moment";
 import { formatUtcTimeToLocal } from "@/utils/utils";
 import { FieldFilterFacet } from "@/components/Overview/List/FieldFilterFacet";
 import "./index.scss";
-import request from "@/utils/request";
 
 export default (props) => {
-  const { infoAction, id, parentLoading } = props;
+  const { infoAction, id, parentLoading, info: prefetchedInfo, infoLoading } = props;
   const metadata = props.data._source?.metadata || {};
   const timestamp = props.data._source?.timestamp
     ? formatUtcTimeToLocal(props.data._source?.timestamp)
@@ -27,28 +26,11 @@ export default (props) => {
     return items;
   };
 
-  const [info, setInfo] = useState({});
-  const [loading, setLoading] = useState(false)
-
-  const fetchListInfo = async (id) => {
-    if (!id) return
-    setLoading(true)
-    const res = await request(infoAction, {
-      method: "POST",
-      body: [id],
-      ignoreTimeout: true
-    }, false, false);
-    if (res) {
-      setInfo(res[id] || {});
-    }
-    setLoading(false)
-  };
+  const [info, setInfo] = useState(prefetchedInfo || {});
 
   useEffect(() => {
-    if (!parentLoading) {
-      fetchListInfo(id)
-    }
-  }, [id, parentLoading])
+    setInfo(prefetchedInfo || {});
+  }, [prefetchedInfo]);
 
   const summary = info?.summary || {};
   const metrics = info?.metrics || {};
@@ -107,7 +89,7 @@ export default (props) => {
   const unassignedShards = (numReplicas+1)*numShards-summary?.shards - summary?.replicas || 0
 
   return (
-    <Spin spinning={!parentLoading && loading}>
+    <Spin spinning={infoLoading}>
     <div className="card-wrap card-index">
       <div
         className={`card-item ${props.isActive ? "active" : ""}`}
@@ -153,6 +135,14 @@ export default (props) => {
                     metrics.status?.metric?.units +
                     ")"}
                 </div>
+              </div>
+              <div className="metric cluster-metric">
+                <div className="value">
+                  <Tooltip placement="topLeft" title={metadata?.cluster_name || "N/A"}>
+                    <span className="cluster-value">{metadata?.cluster_name || "N/A"}</span>
+                  </Tooltip>
+                </div>
+                <div className="lable">Cluster</div>
               </div>
 
               <div className="metric">
@@ -201,8 +191,8 @@ export default (props) => {
                   }
                 >
                   <div className="value">
-                    {formatter.numberToHuman(summary?.docs_deleted)} /{" "}
-                    {formatter.numberToHuman(summary?.docs_count)}
+                    {formatter.number(summary?.docs_deleted || 0)} /{" "}
+                    {formatter.number(summary?.docs_count || 0)}
                   </div>
                 </Tooltip>
                 <div className="lable">Docs</div>

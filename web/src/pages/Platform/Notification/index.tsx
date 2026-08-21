@@ -36,10 +36,81 @@ import { hasAuthority } from "@/utils/authority";
 import "./index.scss";
 import _ from "lodash";
 import Markdown from "@/components/Markdown";
+import SearchInput from "@/components/infini/SearchInput";
 
 const { TabPane } = Tabs;
-const { Search } = Input;
 const { Option } = Select;
+
+const normalizeTimeValue = (value, fallback = "auto", keys = []) => {
+  if (typeof value === "string" || typeof value === "number") {
+    return `${value}`;
+  }
+  if (value && typeof value === "object") {
+    for (const key of keys) {
+      if (
+        Object.prototype.hasOwnProperty.call(value, key) &&
+        value[key] !== undefined &&
+        value[key] !== null
+      ) {
+        const candidate = value[key];
+        if (typeof candidate === "string" || typeof candidate === "number") {
+          return `${candidate}`;
+        }
+      }
+    }
+  }
+  return fallback;
+};
+
+const tryParseJSON = (value) => {
+  if (!value || typeof value !== "string") return undefined;
+  try {
+    return JSON.parse(value);
+  } catch (e) {
+    return undefined;
+  }
+};
+
+const normalizeAlertingMessageLink = (rawLink = "") => {
+  let link = rawLink || "";
+  if (link.indexOf("/#") === 0) {
+    link = link.substr(2);
+  }
+  if (!link || !link.includes("/alerting/message")) {
+    return link;
+  }
+  const [pathname, queryString = ""] = link.split("?");
+  if (!queryString) {
+    return pathname;
+  }
+  const params = new URLSearchParams(queryString);
+  const rawG = params.get("_g");
+  if (!rawG) {
+    return link;
+  }
+  const parsedG = tryParseJSON(rawG) || tryParseJSON(decodeURIComponent(rawG));
+  if (!parsedG || typeof parsedG !== "object") {
+    return pathname;
+  }
+  const normalizedG = { ...parsedG };
+  const range = normalizedG?.timeRange;
+  if (typeof normalizedG.start_time !== "string") {
+    normalizedG.start_time = normalizeTimeValue(
+      normalizedG.start_time ?? range?.min ?? range?.from,
+      "auto",
+      ["from", "min", "gte", "start"]
+    );
+  }
+  if (typeof normalizedG.end_time !== "string") {
+    normalizedG.end_time = normalizeTimeValue(
+      normalizedG.end_time ?? range?.max ?? range?.to,
+      "auto",
+      ["to", "max", "lte", "end"]
+    );
+  }
+  params.set("_g", JSON.stringify(normalizedG));
+  return `${pathname}?${params.toString()}`;
+};
 
 const Index = (props) => {
   const [param, setParam] = useQueryParam("_g", JsonParam);
@@ -110,31 +181,35 @@ const Index = (props) => {
 
   const columns = [
     {
-      title: "Title",
+      title: formatMessage({ id: "platform.notification.table.title" }),
       dataIndex: "title",
       render: (text, record) => <span>{record.title}</span>,
     },
     {
-      title: "Created",
+      title: formatMessage({ id: "platform.notification.table.created" }),
       dataIndex: "created",
       render: (text, record) => (
         <span title={text}>{moment(record.created).fromNow()}</span>
       ),
     },
     {
-      title: "Status",
+      title: formatMessage({ id: "platform.notification.table.status" }),
       dataIndex: "status",
       render: (text, record) => (
-        <Tag color={text == "new" ? "#108ee9" : "#108ee9"}>{text}</Tag>
+        <Tag
+          color={text == "new" ? "#108ee9" : undefined}
+          className={text == "new" ? "" : "notice-status-read"}
+        >
+          {text == "new"
+            ? formatMessage({ id: "platform.notification.status.new" })
+            : formatMessage({ id: "platform.notification.status.read" })}
+        </Tag>
       ),
     },
     {
       title: formatMessage({ id: "table.field.actions" }),
       render: (text, record) => {
-        let link = record.link || "";
-        if (link.indexOf("/#") === 0) {
-          link = link.substr(2);
-        }
+        const link = normalizeAlertingMessageLink(record.link || "");
         return (
           <div>
             <Link key="link" to={`${link}`} disabled={link ? false : true}>
@@ -201,41 +276,8 @@ const Index = (props) => {
   };
 
   return (
-    // <PageHeaderWrapper>
-    // <Card>
-    //   <Tabs defaultActiveKey="1" onChange={callback}>
-    //     <TabPane
-    //       tab={formatMessage({ id: "component.globalHeader.notification" })}
-    //       key="notification"
-    //     >
-    //       <Collapse>
-    //         {noticeData.notification?.map((item) => {
-    //           return (
-    //             <Panel header={item.title} key={item.id}>
-    //               <p>{item.body}</p>
-    //             </Panel>
-    //           );
-    //         })}
-    //       </Collapse>
-    //     </TabPane>
-
-    //     <TabPane
-    //       tab={formatMessage({ id: "component.globalHeader.todo" })}
-    //       key="todo"
-    //     >
-    //       <Collapse>
-    //         {noticeData.todo?.map((item) => {
-    //           return (
-    //             <Panel header={item.title} key={item.id}>
-    //               <p>{item.body}</p>
-    //             </Panel>
-    //           );
-    //         })}
-    //       </Collapse>
-    //     </TabPane>
-    //   </Tabs>
-    // </Card>
-    <Card>
+    <PageHeaderWrapper>
+      <Card>
       <div
         style={{
           display: "flex",
@@ -245,7 +287,7 @@ const Index = (props) => {
         }}
       >
         <div style={{ width: 500 }}>
-          <Search
+          <SearchInput
             allowClear
             placeholder="Type keyword to search"
             enterButton="Search"
@@ -335,8 +377,8 @@ const Index = (props) => {
         expandRowByClick={true}
         onExpand={onExpand}
       />
-    </Card>
-    // </PageHeaderWrapper>
+      </Card>
+    </PageHeaderWrapper>
   );
 };
 

@@ -6,7 +6,7 @@ import PageHeaderWrapper from "@/components/PageHeaderWrapper";
 import "@/assets/headercontent.scss";
 import { formatMessage } from "umi/locale";
 import request from "@/utils/request";
-import { isTLS, addHttpSchema } from "@/utils/utils";
+import { addHttpSchema } from "@/utils/utils";
 import styles from "./new.less";
 import { Link } from "umi";
 
@@ -29,6 +29,63 @@ const steps = [
     }),
   },
 ];
+
+const sanitizeRegistrationAuth = (values = {}) => {
+  const sanitized = { ...values };
+  const isAuth = !!sanitized.isAuth;
+  const authType = sanitized.auth_type;
+
+  delete sanitized.isAuth;
+  delete sanitized.auth_type;
+
+  if (!isAuth) {
+    delete sanitized.access_token;
+    delete sanitized.basic_auth;
+    return sanitized;
+  }
+
+  if (authType === "basic_auth") {
+    const username = sanitized.basic_auth?.username?.trim?.() || "";
+    const password = sanitized.basic_auth?.password || "";
+    sanitized.basic_auth = {
+      username,
+      password,
+    };
+    delete sanitized.access_token;
+    return sanitized;
+  }
+
+  sanitized.access_token = (sanitized.access_token || "").trim();
+  delete sanitized.basic_auth;
+  return sanitized;
+};
+
+const parseResponsePayload = async (response) => {
+  if (!response || typeof response.text !== "function") {
+    return null;
+  }
+
+  const text = await response.text();
+  if (!text) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    const htmlIndex = text.indexOf("<!DOCTYPE");
+    if (htmlIndex > -1) {
+      const jsonText = text.slice(0, htmlIndex).trim();
+      if (jsonText) {
+        try {
+          return JSON.parse(jsonText);
+        } catch (e) {}
+      }
+    }
+  }
+
+  return null;
+};
 
 const NewStep = ({ current, changeStep, history }) => {
   const formRef = useRef();
@@ -54,6 +111,7 @@ const NewStep = ({ current, changeStep, history }) => {
       ...result,
       endpoint: (result.endpoint || "").trim(),
     };
+    result = sanitizeRegistrationAuth(result);
     setIsLoading(true);
 
     result.endpoint = addHttpSchema(result.endpoint, result?.isTLS);
@@ -101,16 +159,21 @@ const NewStep = ({ current, changeStep, history }) => {
     const newVals = {
       id: instanceConfig.instance_id,
       ...instanceConfig,
-      ...result,
+      ...sanitizeRegistrationAuth(result),
     };
     setIsLoading(true);
     const res = await request(`/instance`, {
       method: "POST",
       body: newVals,
-    });
-    if (res && !res.error) {
-      return true;
-    } else {
+    }, true);
+    if (res?.ok) {
+      const payload = await parseResponsePayload(res);
+      if (payload && !payload.error) {
+        setInstanceConfig(newVals);
+        return true;
+      }
+    }
+    {
       setIsLoading(false);
       return false;
     }
@@ -136,6 +199,7 @@ const NewStep = ({ current, changeStep, history }) => {
 
   const oneMoreClick = () => {
     setInstanceConfig({ tags: ["default"] });
+    setRegistrationInfo({});
     changeStep(0);
   };
 
@@ -145,7 +209,12 @@ const NewStep = ({ current, changeStep, history }) => {
 
   const renderContent = (current) => {
     if (current === 0) {
-      return <InitialStep ref={formRef} initialValue={instanceConfig} />;
+      return (
+        <InitialStep
+          ref={formRef}
+          initialValue={instanceConfig}
+        />
+      );
     } else if (current === 1) {
       return <ExtraStep initialValue={instanceConfig} ref={formRef} />;
     } else if (current === 2) {
@@ -163,17 +232,18 @@ const NewStep = ({ current, changeStep, history }) => {
     <PageHeaderWrapper>
       <Card className={styles.steps}>
         <div className={styles.header}>
-          {/* {formatMessage({
-              id: "gateway.instance.regist",
-          })} */}
-          Agent Registration
-          <Link to={"/resource/agent"}>
-            <Button type="primary">
-              {formatMessage({
-                id: "form.button.goback",
-              })}
-            </Button>
-          </Link>
+          {formatMessage({
+            id: "agent.instance.regist",
+          })}
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <Link to={"/resource/agent"}>
+              <Button type="primary">
+                {formatMessage({
+                  id: "form.button.goback",
+                })}
+              </Button>
+            </Link>
+          </div>
         </div>
         <Spin spinning={isLoading}>
           <div className={styles.content}>

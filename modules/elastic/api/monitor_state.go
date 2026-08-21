@@ -28,14 +28,13 @@
 package api
 
 import (
-	"fmt"
 	"infini.sh/framework/core/elastic"
 )
 
 func GetMonitorState(clusterID string) string {
 	conf := elastic.GetConfig(clusterID)
 	if conf == nil {
-		panic(fmt.Errorf("config of cluster [%s] is not found", clusterID))
+		return elastic.ModeAgentless
 	}
 	if conf.MetricCollectionMode == "" {
 		if conf.MonitorConfigs != nil && !conf.MonitorConfigs.NodeStats.Enabled && !conf.MonitorConfigs.IndexStats.Enabled {

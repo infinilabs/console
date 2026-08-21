@@ -5,40 +5,151 @@ type TransformOptions = {
   targetDistribution: string,
 }
 
+const pruneKeys = (target: any, keys: string[]) => {
+  if (!target || typeof target !== "object" || Array.isArray(target)) {
+    return;
+  }
+  keys.forEach((key) => {
+    delete target[key];
+  });
+}
+
+const sanitizeElasticsearchPayload = (config: any) => {
+  pruneKeys(config, ["version", "modified_date", "modified_date_string", "in_use_by", "_id", "_version", "_seq_no", "_primary_term"]);
+  return config;
+}
+
+const sanitizeISMPayload = (config: any) => {
+  if(!config || !config.policy){
+    return {};
+  }
+  pruneKeys(config, ["version", "modified_date", "modified_date_string", "in_use_by", "_id", "_version", "_seq_no", "_primary_term", "policy_seq_no", "policy_primary_term"]);
+  const policy = config.policy;
+  pruneKeys(policy, ["policy_id", "last_updated_time", "created_time", "_meta"]);
+  if(!policy["description"]){
+    policy["description"] = "tranform with infini console";
+  }
+  if(!policy["default_state"]){
+    policy["default_state"] = policy.states?.[0]?.name;
+  }
+  if(Array.isArray(policy["ism_template"])){
+    policy["ism_template"] = policy["ism_template"]
+      .filter((item: any) => item && typeof item === "object" && !Array.isArray(item))
+      .map((item: any) => {
+        const nextItem = { ...item };
+        pruneKeys(nextItem, ["last_updated_time"]);
+        nextItem.index_patterns = Array.isArray(nextItem.index_patterns)
+          ? nextItem.index_patterns.filter((pattern: any) => typeof pattern === "string" && pattern.trim())
+          : [];
+        if(typeof nextItem.priority !== "number"){
+          nextItem.priority = 100;
+        }
+        return nextItem;
+      })
+      .filter((item: any) => item.index_patterns.length > 0);
+  } else if(policy["ism_template"] && typeof policy["ism_template"] === "object"){
+    policy["ism_template"] = [policy["ism_template"]];
+    return sanitizeISMPayload({ policy });
+  } else {
+    delete policy["ism_template"];
+  }
+  if(Array.isArray(policy["ism_template"]) && policy["ism_template"].length === 0){
+    delete policy["ism_template"];
+  }
+  return {
+    policy,
+  };
+}
+
+const stripWaitForSnapshotFromPhases = (config: any) => {
+  const phases = config?.policy?.phases;
+  if(!phases || typeof phases !== "object"){
+    return config;
+  }
+  Object.keys(phases).forEach((phaseName) => {
+    const actions = phases?.[phaseName]?.actions;
+    if(actions && typeof actions === "object" && !Array.isArray(actions)){
+      delete actions.wait_for_snapshot;
+    }
+  });
+  return config;
+}
+
+const stripDeleteSearchableSnapshotFromPhases = (config: any) => {
+  const phases = config?.policy?.phases;
+  if(!phases || typeof phases !== "object"){
+    return config;
+  }
+  Object.keys(phases).forEach((phaseName) => {
+    const deleteAction = phases?.[phaseName]?.actions?.delete;
+    if(deleteAction && typeof deleteAction === "object" && !Array.isArray(deleteAction)){
+      delete deleteAction.delete_searchable_snapshot;
+    }
+  });
+  return config;
+}
+
+const stripWaitForSnapshotFromStates = (config: any) => {
+  const states = config?.policy?.states;
+  if(!Array.isArray(states)){
+    return config;
+  }
+  config.policy.states = states.map((state: any) => {
+    const actions = Array.isArray(state?.actions) ? state.actions : [];
+    return {
+      ...state,
+      actions: actions.filter((action: any) => {
+        return !(action && typeof action === "object" && !Array.isArray(action) && action.wait_for_snapshot !== undefined);
+      }),
+    };
+  });
+  return config;
+}
+
 export const transform = (config: any, options: TransformOptions) => {
-  if(options.sourceDistribution === SearchEngines.Opensearch){
-    return transformOpensearchToElasticsearch(config);
-  }
   if(options.targetDistribution === SearchEngines.Opensearch){
-    return transformElasticsearchToOpensearch(config);
+    if(returnsInternalILMPolicy(options.sourceDistribution)){
+      return stripWaitForSnapshotFromStates(normalizeISMPolicy(config));
+    }
+    return stripWaitForSnapshotFromStates(transformElasticsearchToISM(config));
   }
-  
+  if(returnsInternalILMPolicy(options.sourceDistribution)){
+    return transformISMToElasticsearch(config);
+  }
+  if(options.targetDistribution === SearchEngines.Easysearch){
+    return stripDeleteSearchableSnapshotFromPhases(stripWaitForSnapshotFromPhases(config));
+  }
   return config
 }
 
-const transformElasticsearchToOpensearch = (config: any) =>{
+const returnsInternalILMPolicy = (distribution: string) => {
+  return distribution === SearchEngines.Opensearch || distribution === SearchEngines.Easysearch;
+}
+
+const normalizeISMPolicy = (config: any) => {
   if(!config || !config.policy){
     return {};
   }
   const policy = config.policy;
-  //rename
   [{from: "last_updated_time", to: "modified_date"}, {from :"schema_version", to:"version"}].forEach(item=>{
     if(config[item.to]){
       policy[item.from] = config[item.to];
       delete config[item.to];
     }
   })
+  return sanitizeISMPayload(config);
+}
+
+const transformElasticsearchToISM = (config: any) =>{
+  if(!config || !config.policy){
+    return {};
+  }
+  const policy = config.policy;
   if(policy["phases"]){
     policy["states"] = transformPhases(policy["phases"]);
     delete policy["phases"];
   }
-  policy["description"] = "tranform with infini console";
-  policy["default_state"] = policy.states[0]?.name;
-  policy["ism_template"] = {
-    "index_patterns": [],
-    "priority": 100
-  }
-  return config;
+  return normalizeISMPolicy(config);
 }
 
 const transformPhases = (phases: any)=>{
@@ -52,16 +163,25 @@ const transformPhases = (phases: any)=>{
         "transitions": [],
       }
       Object.keys(phases[pk].actions).forEach(key => {
-        if(pk === "delete"){
-          delete  phases[pk].actions[key]["delete_searchable_snapshot"];
-        }
         //transform action key
         let tkey = key;
         if(key === "set_priority"){
           tkey = "index_priority";
+        } else if(key === "allocate"){
+          tkey = "allocation";
+        } else if(key === "forcemerge"){
+          tkey = "force_merge";
+        } else if(key === "readonly"){
+          tkey = "read_only";
         }
         //transform action value
         let tvalue = phases[pk].actions[key];
+        if(tvalue && typeof tvalue === "object" && !Array.isArray(tvalue)){
+          tvalue = { ...tvalue };
+        }
+        if(pk === "delete" && tvalue && typeof tvalue === "object"){
+          delete tvalue["delete_searchable_snapshot"];
+        }
         if(key === "rollover"){
           tvalue = transformRollover(tvalue, true)
         }
@@ -96,7 +216,7 @@ const transformPhases = (phases: any)=>{
   return states;
 }
 
-const transformOpensearchToElasticsearch = (config: any)=>{
+const transformISMToElasticsearch = (config: any)=>{
   if(!config || !config.policy){
     return {};
   }
@@ -115,7 +235,7 @@ const transformOpensearchToElasticsearch = (config: any)=>{
     delete policy[key]
   }
   
-  return config;
+  return sanitizeElasticsearchPayload(config);
 }
 
 const transformStates = (states: any[])=>{
@@ -123,20 +243,32 @@ const transformStates = (states: any[])=>{
   states.forEach((st)=>{
     const actions = {};
     (st.actions || []).forEach((action: any)=>{
-      const ak = Object.keys(action).shift();
-      if(!ak) {
-        return;
-      }
-      let tkey = ak;
-      let tvalue = action[ak];
-      if(tkey === "rollover"){
-        tvalue = transformRollover(tvalue, false);
-      }
-      //transform key
-      if(tkey === "index_priority"){
-        tkey = "set_priority";
-      }
-      actions[tkey] = tvalue
+      Object.keys(action || {}).forEach((ak)=>{
+        if(ak === "retry" || ak === "timeout"){
+          return;
+        }
+        let tkey = ak;
+        let tvalue = action[ak];
+        if(tvalue && typeof tvalue === "object" && !Array.isArray(tvalue)){
+          tvalue = { ...tvalue };
+        }
+        if(tkey === "rollover"){
+          tvalue = transformRollover(tvalue, false);
+        }
+        if(tkey === "index_priority"){
+          tkey = "set_priority";
+        } else if(tkey === "allocation"){
+          tkey = "allocate";
+          if(tvalue && typeof tvalue === "object"){
+            delete tvalue.wait_for;
+          }
+        } else if(tkey === "force_merge"){
+          tkey = "forcemerge";
+        } else if(tkey === "read_only"){
+          tkey = "readonly";
+        }
+        actions[tkey] = tvalue
+      })
     })
     phases[st.name] = {
       actions
@@ -152,6 +284,9 @@ const transformStates = (states: any[])=>{
 }
 
 const transformRollover = (rolloverCfg: any, reverse: boolean) => {
+  if(rolloverCfg && typeof rolloverCfg === "object" && !Array.isArray(rolloverCfg) && !reverse){
+    delete rolloverCfg.copy_alias;
+  }
   [{from: "min_size", to:"max_size"},{from:"min_primary_shard_size", to:"max_primary_shard_size"}, 
   {from: "min_doc_count", to:"max_docs"},{from: "min_index_age", to:"max_age"}].forEach((item)=>{
     if(reverse){

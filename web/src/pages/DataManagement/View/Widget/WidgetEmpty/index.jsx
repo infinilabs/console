@@ -1,4 +1,5 @@
 import { Icon, Popconfirm } from 'antd';
+import { formatMessage } from "umi/locale";
 import styles from './index.less';
 
 export default (props) => {
@@ -9,7 +10,7 @@ export default (props) => {
     return (
         <div className={`${styles.empty} widget-drag-handle`}>
             <Popconfirm
-                title={"Sure to delete?"}
+                title={formatMessage({ id: "app.message.confirm.delete" })}
                 onConfirm={() => handleRemove(record)}
             >
                 <div className={styles.remove}>x</div>

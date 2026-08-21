@@ -42,7 +42,7 @@ class BakAndRestore extends Component {
       title: "仓库名",
       dataIndex: "id",
       render: (text, record) => (
-        <Fragment>
+        <Fragment key={record.id}>
           <a onClick={() => this.handleSnapshotClick(record)}>{record.id}</a>
         </Fragment>
       ),
@@ -54,7 +54,7 @@ class BakAndRestore extends Component {
     {
       title: "操作",
       render: (text, record) => (
-        <Fragment>
+        <Fragment key={record.id}>
           {/* <a onClick={() => this.handleDownload(record)}>下载</a>
           <Divider type="vertical" /> */}
           <a
@@ -74,7 +74,7 @@ class BakAndRestore extends Component {
       title: "快照",
       dataIndex: "id",
       render: (text, record) => (
-        <Fragment>
+        <Fragment key={record.id}>
           <a onClick={() => this.handleSnapshotClick(record)}>{record.id}</a>
         </Fragment>
       ),
@@ -102,7 +102,7 @@ class BakAndRestore extends Component {
     {
       title: "操作",
       render: (text, record) => (
-        <Fragment>
+        <Fragment key={record.id}>
           <a onClick={() => this.handleDownload(record)}>下载</a>
           <Divider type="vertical" />
           <a
@@ -155,7 +155,7 @@ class BakAndRestore extends Component {
 
   render() {
     return (
-      <Fragment>
+      <Fragment key="bakAndRestore">
         <Card bordered={false}>
           <div>{this.snapshotTable()}</div>
         </Card>

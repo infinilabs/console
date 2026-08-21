@@ -4,6 +4,7 @@ import { Button, Input, Select, Icon } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DataRoleFromContext } from "./context";
 import { ESPrefix } from "@/services/common";
+import { formatMessage } from "umi/locale";
 const InputGroup = Input.Group;
 const Option = Select.Option;
 
@@ -76,12 +77,16 @@ const IndexPrivilegeField = ({ privileges = [], value = [], onChange }) => {
           marginTop: 10,
         }}
       >
-        <div style={{ width: "50%" }}>Index</div>
-        <div style={{ width: "50%" }}>Privilege</div>
+        <div style={{ width: "50%" }}>
+          {formatMessage({ id: "system.role.data.index_privilege.index" })}
+        </div>
+        <div style={{ width: "50%" }}>
+          {formatMessage({ id: "system.role.data.index_privilege.privilege" })}
+        </div>
       </div>
       {indexPrivilegeEl}
       <Button icon="plus" type="primary" onClick={onAddClick}>
-        Add
+        {formatMessage({ id: "form.button.add" })}
       </Button>
     </div>
   );

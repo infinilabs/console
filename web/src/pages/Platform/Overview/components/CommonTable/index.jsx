@@ -27,31 +27,29 @@ export default (props) => {
   } = props;
 
   const [infos, setInfos] = useState({});
-  const [loadings, setLoadings] = useState({});
 
   const fetchListInfo = async (data) => {
-    data?.forEach((item) => {
-      setLoadings((loadings) => ({
-        ...loadings,
-        [item.id]: true
-      }))
-      request(infoAction, {
+    const ids = (data || [])
+      .map((item) => item?.id)
+      .filter((id) => !!id && !infos[id]);
+    if (ids.length === 0) {
+      return;
+    }
+    const res = await request(
+      infoAction,
+      {
         method: "POST",
-        body: [item.id],
-      }, false, false).then((res) => {
-        if (res && !res.error) {
-          setInfos((infos) => ({
-            ...infos,
-            ...res
-          }));
-        }
-      }).finally(() => {
-        setLoadings((loadings) => ({
-          ...loadings,
-          [item.id]: false
-        }))
-      })
-    })
+        body: ids,
+      },
+      false,
+      false
+    );
+    if (res && !res.error) {
+      setInfos((current) => ({
+        ...current,
+        ...res,
+      }));
+    }
   };
 
   useEffect(() => {
@@ -71,6 +69,7 @@ export default (props) => {
         loading={loading}
         columns={columns}
         dataSource={tableData}
+        scroll={{ x: "max-content" }}
         rowKey={"id"}
         pagination={{
           size: "small",
@@ -91,7 +90,7 @@ export default (props) => {
             },
           };
         }}
-        rowClassName={(record) => `${styles.rowPointer} ${loadings[record.id] && !parentLoading ? styles.loading : ''}`}
+        rowClassName={styles.rowPointer}
       />
     </div>
   );

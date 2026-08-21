@@ -8,7 +8,7 @@ import {
   Button,
   Switch,
   message,
-  Spin, Select,
+  Spin, Select, Tooltip,
 } from "antd";
 import router from "umi/router";
 
@@ -20,12 +20,17 @@ import { formatMessage } from "umi/locale";
 import TagEditor from "@/components/infini/TagEditor";
 import MonitorConfigsForm from "./MonitorConfigsForm";
 import MetadataConfigsForm from "./MetadataConfigsForm";
-import { formatConfigsValues } from "./utils";
+import {
+  formatConfigsValues,
+  getClusterProbePath,
+  getClusterConnectErrorMessageFromResponse,
+} from "./utils";
 import CredentialForm from "./CredentialForm";
 import AgentCredentialForm from "./AgentCredentialForm";
 import { MANUAL_VALUE } from "./steps";
 import SearchEngines from "./components/SearchEngines";
 import Providers from "./components/Providers";
+import { isValidEndpointHost, normalizeEndpointHosts } from "@/utils/utils";
 import TrimSpaceInput from "@/components/TrimSpaceInput";
 import CollectMode from "./CollectMode";
 
@@ -47,6 +52,7 @@ class ClusterForm extends React.Component {
       btnLoading: false,
       btnLoadingAgent: false,
       submitLoading: false,
+      showProbePath: !!getClusterProbePath(props.clusterConfig?.editValue),
     };
   }
 
@@ -99,6 +105,7 @@ class ClusterForm extends React.Component {
           isManual,
           collectMode,
           monitored: editValue?.hasOwnProperty("monitored") ? editValue?.monitored : false,
+          showProbePath: !!getClusterProbePath(editValue),
         });
       }
     });
@@ -158,8 +165,10 @@ class ClusterForm extends React.Component {
         name: values.name,
         host: values.host,
         hosts: values.hosts,
+        probe_path: values.probe_path,
+        is_auth: this.state.needAuth === true,
         credential_id:
-          values.credential_id !== MANUAL_VALUE
+          this.state.needAuth === true && values.credential_id !== MANUAL_VALUE
             ? values.credential_id
             : undefined,
         basic_auth: {
@@ -171,11 +180,14 @@ class ClusterForm extends React.Component {
           values.agent_credential_id !== MANUAL_VALUE && isAgentMode
             ? values.agent_credential_id
             : undefined,
-        agent_basic_auth: {
-          username: values.agent_username,
-          password: values.agent_password,
-        },
+        agent_basic_auth: isAgentMode
+          ? {
+              username: values.agent_username,
+              password: values.agent_password,
+            }
+          : undefined,
         metric_collection_mode: values.metric_collection_mode || 'agentless',
+        agent_collection_interval: isAgentMode ? (values.agent_collection_interval || 0) : 0,
 
         description: values.description,
         enabled: values.enabled,
@@ -273,6 +285,7 @@ class ClusterForm extends React.Component {
             hosts: values.hosts,
 
             schema: values.isTLS === true ? "https" : "http",
+            probe_path: values.probe_path,
           };
           if (type === "agent") {
             newVals = {
@@ -293,7 +306,9 @@ class ClusterForm extends React.Component {
             newVals = {
               ...newVals,
               ...{
+                is_auth: this.state.needAuth === true,
                 credential_id:
+                  this.state.needAuth === true &&
                   values.credential_id !== MANUAL_VALUE
                     ? values.credential_id
                     : undefined,
@@ -310,7 +325,7 @@ class ClusterForm extends React.Component {
             type: "clusterConfig/doTryConnect",
             payload: newVals,
           });
-          if (res) {
+          if (res && !res.error) {
             message.success(
               formatMessage({
                 id: "app.message.connect.success",
@@ -320,6 +335,13 @@ class ClusterForm extends React.Component {
               version: res.version,
             });
             this.clusterUUID = res.cluster_uuid;
+          } else if (res?.error) {
+            message.error(
+              getClusterConnectErrorMessageFromResponse(
+                res,
+                "cluster.regist.try_connect.failed"
+              )
+            );
           }
           if (type === "agent") {
             this.setState({ btnLoadingAgent: false });
@@ -334,11 +356,22 @@ class ClusterForm extends React.Component {
   validateHostsRule = (rule, value, callback) => {
     let vals = value || [];
     for(let i = 0; i < vals.length; i++) {
-      if (!/^[\w\.\-_~%]+(\:\d+)?$/.test(vals[i])) {
+      if (!isValidEndpointHost(vals[i])) {
         return callback(formatMessage({ id: "cluster.regist.form.verify.valid.endpoint" }));
       }
     }
     // validation passed
+    callback();
+  };
+  validateProbePathRule = (rule, value, callback) => {
+    if (!value) {
+      callback();
+      return;
+    }
+    if (!String(value).trim().startsWith("/")) {
+      callback(formatMessage({ id: "cluster.regist.form.verify.valid.probe_path" }));
+      return;
+    }
     callback();
   };
 
@@ -367,6 +400,15 @@ class ClusterForm extends React.Component {
       },
     };
     const { editValue, editMode } = this.props.clusterConfig;
+    const breadcrumbList = [
+      { title: "home", locale: "menu.home", href: "/" },
+      { title: "resource", locale: "menu.resource" },
+      { title: "cluster", locale: "menu.resource.cluster", href: "/resource/cluster" },
+      {
+        title: "editCluster",
+        locale: editMode === "NEW" ? "menu.resource.registCluster" : "menu.resource.editCluster",
+      },
+    ];
     //add host value to hosts field if it's empty
     if(editValue.host){
       if(!editValue.hosts){
@@ -378,7 +420,7 @@ class ClusterForm extends React.Component {
       }
     }
     return (
-      <PageHeaderWrapper>
+      <PageHeaderWrapper breadcrumbList={breadcrumbList}>
         <Card
           title={formatMessage({
             id:
@@ -461,6 +503,7 @@ class ClusterForm extends React.Component {
               >
                 {getFieldDecorator("hosts", {
                   initialValue: editValue.hosts,
+                  normalize: (value) => normalizeEndpointHosts(value),
                   rules: [
                     {
                       validator: this.validateHostsRule,
@@ -480,7 +523,11 @@ class ClusterForm extends React.Component {
                   rules: [],
                 })(<Input type="hidden" />)}
               </Form.Item>
-              <Form.Item label="TLS">
+              <Form.Item
+                label={formatMessage({
+                  id: "cluster.manage.field.tls.label",
+                })}
+              >
                 {getFieldDecorator("isTLS", {
                   initialValue: editValue?.schema === "https",
                   valuePropName: "checked",
@@ -491,6 +538,47 @@ class ClusterForm extends React.Component {
                   />
                 )}
               </Form.Item>
+              <Form.Item label={formatMessage({ id: "app.action.advanced" })}>
+                <Button
+                  type="link"
+                  style={{ paddingLeft: 0 }}
+                  onClick={() =>
+                    this.setState((st) => ({ showProbePath: !st.showProbePath }))
+                  }
+                >
+                  {formatMessage({
+                    id: this.state.showProbePath
+                      ? "form.button.collapse"
+                      : "cluster.regist.form.toggle.probe_path",
+                  })}
+                </Button>
+              </Form.Item>
+              {this.state.showProbePath ? (
+                <Form.Item
+                  label={formatMessage({
+                    id: "cluster.regist.form.label.probe_path",
+                  })}
+                  extra={formatMessage({
+                    id: "cluster.regist.form.help.probe_path",
+                  })}
+                >
+                  {getFieldDecorator("probe_path", {
+                    initialValue: getClusterProbePath(editValue),
+                    normalize: (value) => (value || "").trim(),
+                    rules: [
+                      {
+                        validator: this.validateProbePathRule,
+                      },
+                    ],
+                  })(
+                    <Input
+                      placeholder={formatMessage({
+                        id: "cluster.regist.form.placeholder.probe_path",
+                      })}
+                    />
+                  )}
+                </Form.Item>
+              ) : null}
               <Form.Item
                 label={formatMessage({
                   id: "cluster.regist.step.connect.label.auth",
@@ -588,20 +676,44 @@ class ClusterForm extends React.Component {
               />
               {
                 this.state.collectMode === 'agent' && (
-                  <AgentCredentialForm
-                    btnLoading={this.state.btnLoadingAgent}
-                    needAuth={this.state.needAuth}
-                    form={this.props.form}
-                    initialValue={{
-                      ...editValue,
-                      username: editValue.agent_basic_auth?.username,
-                      password: editValue.agent_basic_auth?.password,
-                    }}
-                    isManual={this.state.isManual}
-                    isEdit={true}
-                    tryConnect={this.tryConnect}
-                    credentialRequired={this.state.agentCredentialRequired}
-                  />
+                  <>
+                    <AgentCredentialForm
+                      btnLoading={this.state.btnLoadingAgent}
+                      needAuth={this.state.needAuth}
+                      form={this.props.form}
+                      initialValue={{
+                        ...editValue,
+                        username: editValue.agent_basic_auth?.username,
+                        password: editValue.agent_basic_auth?.password,
+                      }}
+                      isManual={this.state.isManual}
+                      isEdit={true}
+                      tryConnect={this.tryConnect}
+                      credentialRequired={this.state.agentCredentialRequired}
+                    />
+                    <Form.Item
+                      label={
+                        <Tooltip title={formatMessage({ id: "agent.instance.collection_interval.tip" })}>
+                          {formatMessage({ id: "agent.instance.collection_interval.label" })}
+                          {" "}<Icon type="question-circle-o" style={{ color: "#999" }} />
+                        </Tooltip>
+                      }
+                    >
+                      {getFieldDecorator("agent_collection_interval", {
+                        initialValue: editValue?.agent_collection_interval || null,
+                      })(
+                        <InputNumber
+                          min={0}
+                          max={3600}
+                          step={10}
+                          placeholder={formatMessage({ id: "agent.instance.collection_interval.placeholder" })}
+                          formatter={(value) => value ? `${value} ${formatMessage({ id: "agent.instance.collection_interval.unit" })}` : ""}
+                          parser={(value) => `${value || ""}`.replace(/[^\d]/g, "")}
+                          style={{ width: 160 }}
+                        />
+                      )}
+                    </Form.Item>
+                  </>
                 )
               }
               {
@@ -618,7 +730,11 @@ class ClusterForm extends React.Component {
                 form={this.props.form}
                 editValue={editValue}
               />
-              <Form.Item label="Tags">
+              <Form.Item
+                label={formatMessage({
+                  id: "cluster.manage.field.tags.label",
+                })}
+              >
                 {getFieldDecorator("tags", {
                   initialValue: editValue.tags,
                   rules: [],

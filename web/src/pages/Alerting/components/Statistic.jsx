@@ -6,7 +6,7 @@ import Notification from "@/components/Icons/Notification";
 import Mute from "@/components/Icons/Mute";
 
 export default ({ stats = {}, dispatch }) => {
-  const keys = ["critical", "high", "medium", "low", "info", "ignored"];
+  const keys = ["critical", "high", "medium", "low", "info"];
   let total = 0;
   for (let key of keys) {
     total += stats[key] || 0;

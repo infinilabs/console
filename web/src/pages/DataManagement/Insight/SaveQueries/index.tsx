@@ -2,6 +2,7 @@ import { Drawer, Icon } from 'antd';
 import { useMemo, useState } from 'react';
 import { IRecord } from '../InsightBar';
 import WrappedSaveQueriesForm from './SaveQueriesForm';
+import { formatMessage } from 'umi/locale';
 
 interface IProps {
   tags: string[],
@@ -31,11 +32,11 @@ export default (props: IProps) => {
       <Icon 
         type="save" 
         theme={isSaved ? "filled": ""} 
-        title="Save Queries"
+        title={formatMessage({ id: "explore.save_queries.title" })}
         onClick={() => setVisible(true)}
       />
       <Drawer
-        title="Save Queries"
+        title={formatMessage({ id: "explore.save_queries.title" })}
         placement="right"
         onClose={() => {
           setVisible(false)

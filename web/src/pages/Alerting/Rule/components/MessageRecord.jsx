@@ -12,7 +12,16 @@ import moment from "moment";
 import { Link } from "umi";
 const Option = Select.Option;
 
-export default ({ ruleID, timeRange, refresh }) => {
+const isValidAlertTime = (value) => {
+  if (!value) return false;
+  const parsed = moment(value);
+  return parsed.isValid() && parsed.year() > 1;
+};
+
+const getAlertDisplayStartTime = (record = {}) =>
+  isValidAlertTime(record?.trigger_at) ? record.trigger_at : record?.created;
+
+export default ({ ruleID, timeRange, refresh, onTimeRangeChange }) => {
   const initialQueryParams = {
     from: 0,
     size: 10,
@@ -90,7 +99,12 @@ export default ({ ruleID, timeRange, refresh }) => {
       render: (text, record) => {
         return (
           <Link
-            to={`/alerting/message/${record.id}`}
+            to={{
+              pathname: `/alerting/message/${record.id}`,
+              state: {
+                from: `${window.location.pathname}${window.location.search}`,
+              },
+            }}
             style={{
               maxWidth: 360,
               whiteSpace: "nowrap",
@@ -125,9 +139,14 @@ export default ({ ruleID, timeRange, refresh }) => {
       title: formatMessage({ id: "alert.message.table.created" }),
       dataIndex: "created",
       width: 200,
-      render: (text, record) => (
-        <span title={text}>{formatUtcTimeToLocal(text)}</span>
-      ),
+      render: (text, record) => {
+        const displayStartTime = getAlertDisplayStartTime(record);
+        return (
+          <span title={displayStartTime}>
+            {formatUtcTimeToLocal(displayStartTime)}
+          </span>
+        );
+      },
     },
     {
       title: formatMessage({ id: "alert.message.table.duration" }),
@@ -166,6 +185,16 @@ export default ({ ruleID, timeRange, refresh }) => {
   ];
   const onRefreshClick = () => {
     dispatch({ type: "refresh" });
+  };
+
+  const onWidgetQueriesChange = (queries = {}) => {
+    if (!queries?.range?.from || !queries?.range?.to || typeof onTimeRangeChange !== "function") {
+      return;
+    }
+    onTimeRangeChange({
+      start: queries.range.from,
+      end: queries.range.to,
+    });
   };
 
   return (
@@ -262,6 +291,7 @@ export default ({ ruleID, timeRange, refresh }) => {
             status: queryParams.status,
           }}
           refresh={refresh}
+          onGlobalQueriesChange={onWidgetQueriesChange}
         />
       </div>
       <Table

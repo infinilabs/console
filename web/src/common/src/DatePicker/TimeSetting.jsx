@@ -55,7 +55,7 @@ const TimeSetting = props => {
       unit: timeout.replace(`${value}`, ''),
     }
   }, [timeout])
-  
+
   return (
     <div className={styles.timeSetting}>
       <div className={styles.title}>{currentLocales[`datepicker.time_setting`]}</div>
@@ -155,7 +155,7 @@ const TimeSetting = props => {
                   </Select>
                 </>
               )
-            }  
+            }
           </div>
         </div>
       )}

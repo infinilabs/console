@@ -1,4 +1,5 @@
 export default {
+  "listview.filters.placeholder": "筛选",
   "listview.search.placeholder": "搜索",
   "listview.search.response.tip": "找到 {total} 条结果 （用时 {took} 毫秒）",
   "listview.sort": "排序",

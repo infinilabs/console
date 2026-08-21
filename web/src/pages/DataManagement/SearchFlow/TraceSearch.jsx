@@ -1,20 +1,23 @@
 import React, { useRef } from "react";
-import { Input, Select, Button } from "antd";
+import { Input, Select } from "antd";
 import useFetch from "@/lib/hooks/use_fetch";
 import { ESPrefix } from "@/services/common";
 import { useGlobal } from "@/layouts/GlobalContext";
 import { formatESSearchResult } from "@/lib/elasticsearch/util";
 import { on } from "@svgdotjs/svg.js";
+import SearchInput from "@/components/infini/SearchInput";
 
 export default ({ onTraceIDSearch }) => {
   const { selectedCluster } = useGlobal();
+  const clusterId = selectedCluster?.id;
   const [queryParams, setQueryParams] = React.useState({ size: 1000 });
   const { loading, error, value } = useFetch(
-    `${ESPrefix}/${selectedCluster.id}/trace_template`,
+    `${ESPrefix}/${clusterId}/trace_template`,
     {
       queryParams: queryParams,
     },
-    [selectedCluster, queryParams]
+    [clusterId, queryParams],
+    !!clusterId
   );
   const [selectedTemplate, setSelectedTemplate] = React.useState();
   const { data: templates, total } = React.useMemo(() => {
@@ -59,15 +62,11 @@ export default ({ onTraceIDSearch }) => {
           ))}
         </Select>
 
-        <Input.Search
+        <SearchInput
           size="large"
           style={{ width: "60%" }}
           placeholder="Input trace field value"
-          enterButton={
-            <Button icon="search" type="primary">
-              搜索
-            </Button>
-          }
+          disabled={!clusterId}
           onSearch={onTraceSearch}
         />
       </Input.Group>

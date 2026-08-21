@@ -50,6 +50,7 @@ func (h *APIHandler) HandleAddCommonCommandAction(w http.ResponseWriter, req *ht
 	}
 
 	reqParams.Created = time.Now()
+	reqParams.Creator = h.GetCurrentUser(req)
 	reqParams.ID = util.GetUUID()
 	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 
@@ -132,7 +133,7 @@ func (h *APIHandler) HandleQueryCommonCommandAction(w http.ResponseWriter, req *
 
 	var (
 		keyword       = h.GetParameterOrDefault(req, "keyword", "")
-		queryDSL      = `{"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d}`
+		queryDSL      = `{"query":{"bool":{"must":[%s]}},"sort":[{"created":{"order":"desc","missing":"_last"}}], "size": %d, "from": %d}`
 		strSize       = h.GetParameterOrDefault(req, "size", "20")
 		strFrom       = h.GetParameterOrDefault(req, "from", "0")
 		filterBuilder = &strings.Builder{}

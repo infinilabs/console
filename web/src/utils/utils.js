@@ -243,6 +243,35 @@ export function removeHttpSchema(val) {
   return val?.replace(/^https?:\/\//i, "");
 }
 
+export function normalizeEndpointHost(val) {
+  const raw = `${val || ""}`.trim();
+  if (!raw) {
+    return "";
+  }
+
+  const candidate = /^[a-z][a-z\d+\-.]*:\/\//i.test(raw)
+    ? raw
+    : `http://${raw}`;
+
+  try {
+    const parsed = new URL(candidate);
+    if (parsed.host) {
+      return parsed.host.trim();
+    }
+  } catch (e) {}
+
+  return removeHttpSchema(raw).replace(/[/?#].*$/, "").trim();
+}
+
+export function normalizeEndpointHosts(vals = []) {
+  return (vals || []).map((item) => normalizeEndpointHost(item)).filter(Boolean);
+}
+
+export function isValidEndpointHost(val) {
+  const host = normalizeEndpointHost(val);
+  return /^(?:[\w.\-_~%]+(?::\d+)?|\[[0-9A-Fa-f:.%]+\](?::\d+)?)$/.test(host);
+}
+
 export function addHttpSchema(val, isTLS = false) {
   let schema = isTLS ? "https" : "http";
   val = schema + "://" + removeHttpSchema(val);

@@ -65,14 +65,14 @@ func (h *APIHandler) enrollHost(w http.ResponseWriter, req *http.Request, ps htt
 		case "agent":
 			obj := model.Instance{}
 			obj.ID = hi.AgentID
-			exists, err := orm.Get(&obj)
+			exists, err := orm.GetV2(orm.NewContext(), &obj)
 			if !exists || err != nil {
 				continue
 			}
 			hostInfo = &host.HostInfo{}
 			hostInfo.IP = hi.IP
 			hostInfo.AgentID = hi.AgentID
-			err = orm.Create(nil, hostInfo)
+			err = orm.Create(orm.NewContext(), hostInfo)
 			if err != nil {
 				errors[hi.IP] = util.MapStr{
 					"error": err.Error(),
@@ -158,7 +158,7 @@ func (h *APIHandler) GetHostAgentInfo(w http.ResponseWriter, req *http.Request, 
 
 	obj := model.Instance{}
 	obj.ID = hostInfo.AgentID
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":   hostInfo.AgentID,
@@ -179,7 +179,7 @@ func (h *APIHandler) GetHostAgentInfo(w http.ResponseWriter, req *http.Request, 
 func getHost(hostID string) (*host.HostInfo, error) {
 	hostInfo := &host.HostInfo{}
 	hostInfo.ID = hostID
-	exists, err := orm.Get(hostInfo)
+	exists, err := orm.GetV2(orm.NewContext(), hostInfo)
 	if err != nil {
 		return nil, fmt.Errorf("get host info error: %w", err)
 	}
@@ -193,7 +193,7 @@ func (h *APIHandler) GetHostElasticProcess(w http.ResponseWriter, req *http.Requ
 	hostID := ps.MustGetParameter("host_id")
 	hostInfo := &host.HostInfo{}
 	hostInfo.ID = hostID
-	exists, err := orm.Get(hostInfo)
+	exists, err := orm.GetV2(orm.NewContext(), hostInfo)
 	if err != nil {
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
@@ -210,7 +210,7 @@ func (h *APIHandler) GetHostElasticProcess(w http.ResponseWriter, req *http.Requ
 
 	obj := model.Instance{}
 	obj.ID = hostInfo.AgentID
-	exists, err = orm.Get(&obj)
+	exists, err = orm.GetV2(orm.NewContext(), &obj)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":   hostInfo.AgentID,

@@ -24,13 +24,67 @@ interface CalculateBoundsOptions {
   forceNow?: Date;
 }
 
+const extractTimeValue = (
+  value: unknown,
+  fallback: string,
+  keys: Array<'from' | 'to' | 'min' | 'max' | 'gte' | 'lte' | 'start' | 'end'>
+): string => {
+  let current: unknown = value;
+  for (let i = 0; i < 4; i += 1) {
+    if (typeof current === 'string' || typeof current === 'number') {
+      const normalized = `${current}`.trim();
+      if (!normalized || normalized === 'auto' || normalized === '[object Object]') {
+        return fallback;
+      }
+      return normalized;
+    }
+    if (current && typeof current === 'object') {
+      const record = current as Record<string, unknown>;
+      let next: unknown = undefined;
+      for (const key of keys) {
+        if (record[key] !== undefined && record[key] !== null) {
+          next = record[key];
+          break;
+        }
+      }
+      if (next === undefined) {
+        break;
+      }
+      current = next;
+      continue;
+    }
+    break;
+  }
+  return fallback;
+};
+
 export function calculateBounds(
   timeRange: TimeRange,
   options: CalculateBoundsOptions = {}
 ): TimeRangeBounds {
+  const from = extractTimeValue((timeRange as any)?.from, 'now-15m', [
+    'from',
+    'min',
+    'gte',
+    'start',
+    'to',
+    'max',
+    'lte',
+    'end',
+  ]);
+  const to = extractTimeValue((timeRange as any)?.to, 'now', [
+    'to',
+    'max',
+    'lte',
+    'end',
+    'from',
+    'min',
+    'gte',
+    'start',
+  ]);
   return {
-    min: dateMath.parse(timeRange.from, { forceNow: options.forceNow }),
-    max: dateMath.parse(timeRange.to, { roundUp: true, forceNow: options.forceNow }),
+    min: dateMath.parse(from, { forceNow: options.forceNow }),
+    max: dateMath.parse(to, { roundUp: true, forceNow: options.forceNow }),
   };
 }
 

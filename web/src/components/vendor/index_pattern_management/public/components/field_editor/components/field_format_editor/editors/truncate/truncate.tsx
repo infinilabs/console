@@ -43,7 +43,7 @@ export class TruncateFormatEditor extends DefaultFormatEditor<TruncateFormatEdit
     const { error, samples } = this.state;
 
     return (
-      <Fragment>
+      <Fragment key="truncateFormatEditor">
         <EuiFormRow
           label={
             "Field length"

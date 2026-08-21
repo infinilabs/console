@@ -123,7 +123,7 @@ export default (props) => {
           </a>
           <Divider type="vertical" />
           <Popconfirm
-            title="Sure to delete?"
+            title={formatMessage({ id: "app.message.confirm.delete" })}
             onConfirm={() => {
               dispatch({
                 type: "delete",

@@ -42,7 +42,7 @@ func GetBasicAuth(srv *model.EmailServer) (basicAuth model2.BasicAuth, err error
 	if srv.CredentialID != "" {
 		cred := credential.Credential{}
 		cred.ID = srv.CredentialID
-		_, err = orm.Get(&cred)
+		_, err = orm.GetV2(orm.NewContext(), &cred)
 		if err != nil {
 			return
 		}

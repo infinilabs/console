@@ -15,6 +15,27 @@ import AlertChartCard from "./AlertChartCard";
 
 const { Title } = Typography;
 
+const hasResolvedAtValue = (value) => {
+  if (!value) {
+    return false;
+  }
+  const resolvedAt = moment(value);
+  return resolvedAt.isValid() && resolvedAt.year() > 1;
+};
+
+const getAlertStartTime = (messageDetail = {}) =>
+  hasResolvedAtValue(messageDetail?.trigger_at) ? messageDetail.trigger_at : messageDetail?.created;
+
+const getAlertEndTime = (messageDetail = {}) => {
+  if (hasResolvedAtValue(messageDetail?.resolve_at)) {
+    return messageDetail.resolve_at;
+  }
+  if (messageDetail?.status == "recovered") {
+    return messageDetail?.updated;
+  }
+  return "";
+};
+
 const MessageDetail = (props) => {
   const messageID = props?.messageID;
 
@@ -40,21 +61,33 @@ const MessageDetail = (props) => {
   });
 
   const updateTimeRange = (messageDetail) => {
-    let startTimestamp = moment(messageDetail.created).valueOf();
+    let startTimestamp = moment(getAlertStartTime(messageDetail)).valueOf();
     let endTimestamp = moment().valueOf();
+    const resolvedAt = getAlertEndTime(messageDetail);
 
-    if (messageDetail?.status == "recovered") {
-      endTimestamp = moment(messageDetail.updated).valueOf();
+    if (hasResolvedAtValue(resolvedAt)) {
+      endTimestamp = moment(resolvedAt).valueOf();
     }
 
-    const duration = moment(messageDetail.updated).valueOf() - moment(messageDetail.created).valueOf()
+    const duration = Math.max(endTimestamp - startTimestamp, 0);
 
     setTimeRange({
       ...timeRange,
-      min: moment(startTimestamp).subtract(duration, 'ms').format("YYYY-MM-DDTHH:mm:ss.SSS"),
-      max: moment(endTimestamp).add(duration, 'ms').format("YYYY-MM-DDTHH:mm:ss.SSS"),
+      min: moment(startTimestamp).subtract(duration, 'ms').toISOString(),
+      max: moment(endTimestamp).add(duration, 'ms').toISOString(),
     });
   }
+
+  const handleChartRangeChange = ({ from, to }) => {
+    if (!from || !to) {
+      return;
+    }
+    setTimeRange((previous) => ({
+      ...previous,
+      min: from,
+      max: to,
+    }));
+  };
 
   useEffect(() => {
     if (messageID) {
@@ -76,7 +109,7 @@ const MessageDetail = (props) => {
             {<AlertChartCard msgItem={messageDetail} range={{ 
               from: timeRange.min, 
               to: timeRange.max
-            }}/>}
+            }} onRangeChange={handleChartRangeChange} />}
           </div>
         </Tabs.TabPane>
         <Tabs.TabPane tab={formatMessage({ id: "alert.message.detail.title.notification" })} key="notification">

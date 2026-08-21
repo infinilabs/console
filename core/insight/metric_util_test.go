@@ -374,3 +374,37 @@ func TestCollectMetricDataWithPercentage(t *testing.T) {
 	}
 
 }
+
+func TestMergeGroupValuesPreservesFirstSeenGroupOrder(t *testing.T) {
+	metricData := []MetricData{
+		{
+			Groups: []MetricDataGroup{{Value: "node_stats"}},
+			Data: map[string][]MetricDataItem{
+				"a": {{Timestamp: float64(2000), Value: float64(2)}},
+			},
+		},
+		{
+			Groups: []MetricDataGroup{{Value: "cluster_health"}},
+			Data: map[string][]MetricDataItem{
+				"a": {{Timestamp: float64(2000), Value: float64(8)}},
+			},
+		},
+		{
+			Groups: []MetricDataGroup{{Value: "node_stats"}},
+			Data: map[string][]MetricDataItem{
+				"a": {{Timestamp: float64(1000), Value: float64(1)}},
+			},
+		},
+	}
+
+	merged := MergeGroupValues(metricData)
+	if assert.Len(t, merged, 2) {
+		assert.Equal(t, "node_stats", merged[0].Groups[0].Value)
+		assert.Equal(t, "cluster_health", merged[1].Groups[0].Value)
+	}
+
+	if assert.Len(t, merged[0].Data["a"], 2) {
+		assert.Equal(t, float64(1000), merged[0].Data["a"][0].Timestamp)
+		assert.Equal(t, float64(2000), merged[0].Data["a"][1].Timestamp)
+	}
+}

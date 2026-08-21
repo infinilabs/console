@@ -12,7 +12,7 @@ import {
   Row,
   Col,
   Modal,
-  List, 
+  List,
 } from "antd";
 import styles from "../Initialization/index.less";
 import request from "@/utils/request";
@@ -32,18 +32,21 @@ const formItemLayout = {
 
 export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
   const [confirmDirty, setConfirmDirty] = useState(false);
-  const [resetUser, setResetUser] = useState(false)
+  const [resetUser, setResetUser] = useState(Boolean(formData.reset_user))
   const [loading, setLoading] = useState(false);
   const [passwordHelp, setPasswordHelp] = useState(null);
 
   const handlePrev = () => {
     const resetValues = {
+      bootstrap_username: undefined,
       bootstrap_password: undefined,
       bootstrap_password_confirm: undefined,
       credential_secret: undefined,
+      reset_user: false,
       skip: false,
     };
     onFormDataChange(resetValues);
+    setResetUser(false);
     form.setFieldsValue(resetValues, () => {
       onPrev();
     });
@@ -76,15 +79,17 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
       const newValues = {
         ...formData,
         ...values,
+        setupStatus: "running",
+        setupError: undefined,
       };
       onFormDataChange(newValues);
+      onNext();
       onInitialize(newValues);
     });
   }
-
+ 
   const onInitialize = async (formData) => {
     try {
-      setLoading(true);
       const {
         hosts,
         isTLS,
@@ -109,8 +114,11 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
       }
       body.cluster = cluster;
       body.skip = skip;
-      body.bootstrap_username = bootstrap_username;
-      body.bootstrap_password = bootstrap_password;
+      body.reset_user = !skip || resetUser;
+      if (!skip || resetUser) {
+        body.bootstrap_username = bootstrap_username;
+        body.bootstrap_password = bootstrap_password;
+      }
       body.credential_secret = credential_secret;
       const res = await request(
         "/setup/_initialize",
@@ -125,14 +133,25 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
         if(res.secret_mismatch === true){
           localStorage.setItem("secret_mismatch", "1");
         }
-        onNext();
+        onFormDataChange({
+          ...formData,
+          setupStatus: "success",
+          setupError: undefined,
+        });
       } else {
-        message.error(res?.error?.reason);
+        onFormDataChange({
+          ...formData,
+          setupStatus: "failed",
+          setupError: res?.error?.reason,
+        });
       }
-      setLoading(false);
     } catch (error) {
       console.log(error);
-      setLoading(false);
+      onFormDataChange({
+        ...formData,
+        setupStatus: "failed",
+        setupError: error?.message,
+      });
     }
   };
 
@@ -188,8 +207,23 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
     generateKey();
   }, []);
 
+  useEffect(() => {
+    setResetUser(Boolean(formData.reset_user));
+  }, [formData.reset_user]);
+
   const onResetUserChange = (checked)=>{
     setResetUser(checked);
+    onFormDataChange({
+      reset_user: checked,
+      ...(checked ? {} : {
+        bootstrap_username: undefined,
+        bootstrap_password: undefined,
+        bootstrap_password_confirm: undefined,
+      }),
+    });
+    if (!checked) {
+      form.resetFields(["bootstrap_username", "bootstrap_password", "bootstrap_password_confirm"]);
+    }
   }
 
   const [verified, setVerified] = useState(undefined);
@@ -341,16 +375,11 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
             )}
           </Form.Item>
           <Form.Item label=" ">
-            <div
-              style={{
-                color: "#ff0000",
-                lineHeight: "20px",
-                opacity: 0.7,
-                wordBreak: "break-all",
-              }}
-            >
-              {formatMessage({ id: "guide.credential_secret.tips" })}
-            </div>
+            <Tooltip title={formatMessage({ id: "guide.credential_secret.tips" })}>
+                <div className={styles.credentialSecretTip}>
+                  {formatMessage({ id: "guide.credential_secret.tips" })}
+                </div>
+             </Tooltip>
           </Form.Item>
           <Form.Item label=" ">
             <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -412,14 +441,7 @@ export default ({ onPrev, onNext, form, formData, onFormDataChange }) => {
          
         </Form.Item>
         <Form.Item label=" ">
-          <div
-            style={{
-              color: "#ff0000",
-              lineHeight: "20px",
-              opacity: 0.7,
-              wordBreak: "break-all",
-            }}
-          >
+          <div className={styles.credentialSecretTip}>
             {formatMessage({ id: "guide.credential_secret.tips" })}
           </div>
         </Form.Item>

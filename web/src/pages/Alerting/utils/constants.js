@@ -24,6 +24,7 @@ export const RuleStautsColor = {
   alerting: "red",
   error: "error",
   ok: "green",
+  recovered: "green",
   nodata: "gray",
 };
 

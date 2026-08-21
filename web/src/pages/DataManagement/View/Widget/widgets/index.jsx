@@ -105,6 +105,19 @@ export const getXOptions = (record, result, params) => {
 
   const { isGroup, bucketSize = '', isTimeSeries } = params
 
+  // Infer time format from data range when bucketSize is "auto"
+  const inferAutoTimeFormat = () => {
+    if (!data || data.length < 2) return 'HH:mm';
+    const timestamps = data.map((d) => d.timestamp).filter(Boolean).sort((a, b) => a - b);
+    if (timestamps.length < 2) return 'HH:mm';
+    const rangeMs = timestamps[timestamps.length - 1] - timestamps[0];
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+    const oneDay = 24 * 60 * 60 * 1000;
+    if (rangeMs >= sevenDays) return 'YYYY-MM-DD';
+    if (rangeMs >= oneDay) return 'MM-DD HH:mm';
+    return 'HH:mm';
+  };
+
   const options = {
     xField: isTimeSeries ? 'timestamp' : 'group',
     xAxis: {
@@ -125,7 +138,9 @@ export const getXOptions = (record, result, params) => {
               'h': 'HH:mm',
               'd': 'YYYY-MM-DD'
             }
-            return formatTime(value, timeFormatters[bucketSize.replace(/\d+/g, '')]);
+            const unit = bucketSize.replace(/\d+/g, '');
+            const fmt = timeFormatters[unit] || inferAutoTimeFormat();
+            return formatTime(value, fmt);
           }
         },
       },
@@ -175,6 +190,8 @@ export const getTooltipOption = (record, bucketSize = '', showTitle = true) => {
         'h': 'YYYY-MM-DD HH:mm',
         'd': 'YYYY-MM-DD'
       }
+      const unit = bucketSize.replace(/\d+/g, '');
+      const tooltipFmt = timeFormatters[unit] || 'YYYY-MM-DD HH:mm';
       const validItems = items.filter(item => item.value !== undefined);
       const sortedItems = [...validItems].sort((a, b) => b.value - a.value);
       return (
@@ -182,7 +199,7 @@ export const getTooltipOption = (record, bucketSize = '', showTitle = true) => {
           {
             showTitle && (
               <h5 style={{ marginTop: 12 }}>
-                { Number.isInteger(Number(title)) ? formatTime(title, timeFormatters[bucketSize.replace(/\d+/g, '')]) : title}
+                { Number.isInteger(Number(title)) ? formatTime(title, tooltipFmt) : title}
               </h5>
             )
           }

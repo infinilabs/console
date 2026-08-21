@@ -18,7 +18,7 @@ const DropdownList = (props) => {
     popoverClassName = "",
     popoverPlacement = "bottomLeft",
     children,
-    width = 300,
+    width = 400,
     dropdownWidth,
     locale = "en-US",
     allowClear = false,

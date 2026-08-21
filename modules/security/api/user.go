@@ -32,14 +32,18 @@ import (
 	"errors"
 	"github.com/buger/jsonparser"
 	log "github.com/cihub/seelog"
-	"golang.org/x/crypto/bcrypt"
+	"infini.sh/console/common"
 	rbac "infini.sh/console/core/security"
+	"infini.sh/console/model"
+	"infini.sh/console/service"
 	"infini.sh/framework/core/api"
 	httprouter "infini.sh/framework/core/api/router"
+	frameworksecurity "infini.sh/framework/core/security"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/modules/elastic"
 	"net/http"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -54,21 +58,25 @@ func (h APIHandler) CreateUser(w http.ResponseWriter, r *http.Request, ps httpro
 		h.Error400(w, "username is required")
 		return
 	}
-	//localUser, err := biz.FromUserContext(r.Context())
-	//if err != nil {
-	//	log.Error(err.Error())
-	//	h.ErrorInternalServer(w, err.Error())
-	//	return
-	//}
+	localUser, err := rbac.FromUserContext(r.Context())
+	if err != nil {
+		log.Error(err.Error())
+		h.ErrorInternalServer(w, err.Error())
+		return
+	}
 	if h.userNameExists(w, user.Username) {
 		return
 	}
 	randStr := util.GenerateSecureString(16)
-	hash, err := bcrypt.GenerateFromPassword([]byte(randStr), bcrypt.DefaultCost)
+	material, err := frameworksecurity.GeneratePasswordMaterial(randStr)
 	if err != nil {
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
-	user.Password = string(hash)
+	user.Password = material.Hash
+	user.PasswordSalt = material.Salt
+	user.PasswordVerifier = material.Verifier
+	user.SetEnabled(true)
 
 	now := time.Now()
 	user.Created = &now
@@ -81,6 +89,16 @@ func (h APIHandler) CreateUser(w http.ResponseWriter, r *http.Request, ps httpro
 		h.ErrorInternalServer(w, err.Error())
 		return
 	}
+
+	if r.Header.Get("Referer") != "" {
+		auditLog, _ := model.NewAuditLogBuilderWithDefault().WithOperator(localUser.Username).
+			WithLogTypeOperation().WithResourceTypeAccountCenter().
+			WithEventName("create user").WithEventSourceIP(common.GetClientIP(r)).
+			WithResourceName(user.Username).WithOperationTypeNew().
+			WithEventRecord(util.MustToJSON(user)).Build()
+		_ = service.LogAuditLog(auditLog)
+	}
+
 	h.WriteOKJSON(w, util.MapStr{
 		"_id":      id,
 		"password": randStr,
@@ -117,6 +135,9 @@ func (h APIHandler) GetUser(w http.ResponseWriter, r *http.Request, ps httproute
 		h.ErrorInternalServer(w, err.Error())
 		return
 	}
+	user.Password = ""
+	user.PasswordSalt = ""
+	user.PasswordVerifier = ""
 	h.WriteOKJSON(w, api.FoundResponse(id, user))
 	return
 }
@@ -130,12 +151,12 @@ func (h APIHandler) UpdateUser(w http.ResponseWriter, r *http.Request, ps httpro
 		h.Error400(w, err.Error())
 		return
 	}
-	//localUser, err := biz.FromUserContext(r.Context())
-	//if err != nil {
-	//	log.Error(err.Error())
-	//	h.ErrorInternalServer(w, err.Error())
-	//	return
-	//}
+	localUser, err := rbac.FromUserContext(r.Context())
+	if err != nil {
+		log.Error(err.Error())
+		h.ErrorInternalServer(w, err.Error())
+		return
+	}
 	oldUser, err := h.User.Get(id)
 	if err != nil {
 		_ = log.Error(err.Error())
@@ -150,6 +171,12 @@ func (h APIHandler) UpdateUser(w http.ResponseWriter, r *http.Request, ps httpro
 	user.Updated = &now
 	user.Created = oldUser.Created
 	user.ID = id
+	user.Password = oldUser.Password
+	user.PasswordSalt = oldUser.PasswordSalt
+	user.PasswordVerifier = oldUser.PasswordVerifier
+	if user.Enabled == nil {
+		user.SetEnabled(oldUser.IsEnabled())
+	}
 	err = h.User.Update(&user)
 
 	if err != nil {
@@ -168,8 +195,104 @@ func (h APIHandler) UpdateUser(w http.ResponseWriter, r *http.Request, ps httpro
 	if len(changeLog) > 0 {
 		rbac.DeleteUserToken(id)
 	}
+
+	if r.Header.Get("Referer") != "" {
+		auditLog, _ := model.NewAuditLogBuilderWithDefault().WithOperator(localUser.Username).
+			WithLogTypeOperation().WithResourceTypeAccountCenter().
+			WithEventName("update user").WithEventSourceIP(common.GetClientIP(r)).
+			WithResourceName(user.Username).WithOperationTypeModification().
+			WithEventRecord(util.MustToJSON(user)).Build()
+		_ = service.LogAuditLog(auditLog)
+	}
+
 	h.WriteOKJSON(w, api.UpdateResponse(id))
 	return
+}
+
+func (h APIHandler) EnableUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	h.batchSetUserEnabled(w, r, true)
+}
+
+func (h APIHandler) DisableUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	h.batchSetUserEnabled(w, r, false)
+}
+
+func (h APIHandler) batchSetUserEnabled(w http.ResponseWriter, r *http.Request, enabled bool) {
+	var userIDs []string
+	if err := h.DecodeJSON(r, &userIDs); err != nil {
+		h.Error400(w, err.Error())
+		return
+	}
+	if len(userIDs) == 0 {
+		h.WriteAckOKJSON(w)
+		return
+	}
+
+	reqUser, err := rbac.FromUserContext(r.Context())
+	if err != nil {
+		log.Error("failed to get user from context, err: %v", err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var updatedUsernames []string
+	for _, userID := range userIDs {
+		user, err := h.User.Get(userID)
+		if errors.Is(err, elastic.ErrNotFound) {
+			h.WriteJSON(w, api.NotFoundResponse(userID), http.StatusNotFound)
+			return
+		}
+		if err != nil {
+			h.ErrorInternalServer(w, err.Error())
+			return
+		}
+
+		if reqUser != nil && reqUser.UserId == userID && !enabled {
+			h.Error400(w, "can not disable yourself")
+			return
+		}
+		if !enabled && isAdministratorUser(user) {
+			h.Error400(w, "can not disable administrator")
+			return
+		}
+
+		if user.IsEnabled() == enabled {
+			continue
+		}
+		user.SetEnabled(enabled)
+		if err = h.User.Update(&user); err != nil {
+			h.ErrorInternalServer(w, err.Error())
+			return
+		}
+		if !enabled {
+			rbac.DeleteUserToken(userID)
+		}
+		updatedUsernames = append(updatedUsernames, user.Username)
+	}
+
+	if len(updatedUsernames) > 0 && r.Header.Get("Referer") != "" {
+		eventName := "enable user"
+		if !enabled {
+			eventName = "disable user"
+		}
+		auditLog, _ := model.NewAuditLogBuilderWithDefault().WithOperator(reqUser.Username).
+			WithLogTypeOperation().WithResourceTypeAccountCenter().
+			WithEventName(eventName).WithEventSourceIP(common.GetClientIP(r)).
+			WithResourceName(strings.Join(updatedUsernames, ",")).WithOperationTypeModification().
+			WithEventRecord(util.MustToJSON(updatedUsernames)).Build()
+		_ = service.LogAuditLog(auditLog)
+	}
+
+	h.WriteAckOKJSON(w)
+}
+
+func isAdministratorUser(user rbac.User) bool {
+	for _, role := range user.Roles {
+		if role.ID == rbac.RoleAdminName || role.Name == rbac.RoleAdminName {
+			return true
+		}
+	}
+	return false
 }
 
 func (h APIHandler) DeleteUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -184,6 +307,9 @@ func (h APIHandler) DeleteUser(w http.ResponseWriter, r *http.Request, ps httpro
 		h.WriteError(w, "can not delete yourself", http.StatusInternalServerError)
 		return
 	}
+
+	oldUser, getErr := h.User.Get(id)
+
 	err = h.User.Delete(id)
 	if errors.Is(err, elastic.ErrNotFound) {
 		h.WriteJSON(w, api.NotFoundResponse(id), http.StatusNotFound)
@@ -195,6 +321,20 @@ func (h APIHandler) DeleteUser(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	}
 	rbac.DeleteUserToken(id)
+
+	if r.Header.Get("Referer") != "" {
+		resourceName := id
+		if getErr == nil {
+			resourceName = oldUser.Username
+		}
+		auditLog, _ := model.NewAuditLogBuilderWithDefault().WithOperator(user.Username).
+			WithLogTypeOperation().WithResourceTypeAccountCenter().
+			WithEventName("delete user").WithEventSourceIP(common.GetClientIP(r)).
+			WithResourceName(resourceName).WithOperationTypeDeletion().
+			WithEventRecord(resourceName).Build()
+		_ = service.LogAuditLog(auditLog)
+	}
+
 	h.WriteOKJSON(w, api.DeleteResponse(id))
 	return
 }
@@ -217,6 +357,8 @@ func (h APIHandler) SearchUser(w http.ResponseWriter, r *http.Request, ps httpro
 	hitsBuf.Write([]byte("["))
 	jsonparser.ArrayEach(res.Raw, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 		value = jsonparser.Delete(value, "_source", "password")
+		value = jsonparser.Delete(value, "_source", "password_salt")
+		value = jsonparser.Delete(value, "_source", "password_verifier")
 		hitsBuf.Write(value)
 		hitsBuf.Write([]byte(","))
 	}, "hits", "hits")
@@ -249,23 +391,26 @@ func (h APIHandler) UpdateUserPassword(w http.ResponseWriter, r *http.Request, p
 		h.Error400(w, err.Error())
 		return
 	}
-	//localUser, err := biz.FromUserContext(r.Context())
-	//if err != nil {
-	//	log.Error(err.Error())
-	//	h.ErrorInternalServer(w, err.Error())
-	//	return
-	//}
+	localUser, err := rbac.FromUserContext(r.Context())
+	if err != nil {
+		log.Error(err.Error())
+		h.ErrorInternalServer(w, err.Error())
+		return
+	}
 	user, err := h.User.Get(id)
 	if err != nil {
 		_ = log.Error(err.Error())
 		h.ErrorInternalServer(w, err.Error())
 		return
 	}
-	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	material, err := frameworksecurity.GeneratePasswordMaterial(req.Password)
 	if err != nil {
+		h.ErrorInternalServer(w, err.Error())
 		return
 	}
-	user.Password = string(hash)
+	user.Password = material.Hash
+	user.PasswordSalt = material.Salt
+	user.PasswordVerifier = material.Verifier
 	//t:=time.Now()
 	//user.Updated =&t
 	err = h.User.Update(&user)
@@ -276,6 +421,15 @@ func (h APIHandler) UpdateUserPassword(w http.ResponseWriter, r *http.Request, p
 	}
 	//disable old token to let user login
 	rbac.DeleteUserToken(id)
+
+	if r.Header.Get("Referer") != "" {
+		auditLog, _ := model.NewAuditLogBuilderWithDefault().WithOperator(localUser.Username).
+			WithLogTypeOperation().WithResourceTypeAccountCenter().
+			WithEventName("reset user password").WithEventSourceIP(common.GetClientIP(r)).
+			WithResourceName(user.Username).WithOperationTypeModification().
+			WithEventRecord("password reset for user: " + user.Username).Build()
+		_ = service.LogAuditLog(auditLog)
+	}
 
 	h.WriteOKJSON(w, api.UpdateResponse(id))
 	return

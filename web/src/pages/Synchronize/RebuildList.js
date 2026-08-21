@@ -107,14 +107,14 @@ class RebuildList extends React.Component {
     },
     {
       title: formatMessage({ id: "table.field.actions" }),
-      render: (text, record) => (
-        <div>
-          <Popconfirm
-            title="Sure to delete?"
-            onConfirm={() => this.handleDeleteClick(record)}
-          >
-            <a key="delete">Delete</a>
-          </Popconfirm>
+        render: (text, record) => (
+          <div>
+            <Popconfirm
+              title={formatMessage({ id: "app.message.confirm.delete" })}
+              onConfirm={() => this.handleDeleteClick(record)}
+            >
+              <a key="delete">{formatMessage({ id: "form.button.delete" })}</a>
+            </Popconfirm>
           {record.status == "FAILED" ? (
             <span>
               <Divider type="vertical" />

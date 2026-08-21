@@ -181,8 +181,8 @@ var (
 	AliasReadPermission    = []string{"alias:read", "alias:write"}
 	ViewsAllPermission     = []string{PermissionViewRead, PermissionViewWrite, PermissionLayoutRead, PermissionLayoutWrite}
 	ViewsReadPermission    = []string{PermissionViewRead, PermissionLayoutRead}
-	DiscoverReadPermission = []string{PermissionViewRead}
-	DiscoverAllPermission  = []string{PermissionViewRead}
+	DiscoverReadPermission = []string{PermissionViewRead, PermissionLayoutRead}
+	DiscoverAllPermission  = []string{PermissionViewRead, PermissionLayoutRead, PermissionLayoutWrite}
 
 	RuleReadPermission         = []string{PermissionAlertRuleRead, PermissionAlertHistoryRead}
 	RuleAllPermission          = []string{PermissionAlertRuleRead, PermissionAlertRuleWrite, PermissionAlertHistoryRead, PermissionElasticsearchClusterRead}

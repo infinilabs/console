@@ -74,7 +74,7 @@ func lookupMetadata(object string, property string, defaultValue string, id stri
 		buf = util.MustToJSONBytes(cfg)
 		err := util.FromJSONBytes(buf, &cfgM)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("lookup metadata decode failed, object=%s, property=%s, id=%s: %v", object, property, id, err)
 			return defaultValue
 		}
 		delete(cfgM, "basic_auth")
@@ -83,7 +83,7 @@ func lookupMetadata(object string, property string, defaultValue string, id stri
 		cfg.ID = id
 		err, result := orm.GetBy("metadata.node_id", id, &cfg)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("lookup metadata get node failed, object=%s, property=%s, id=%s: %v", object, property, id, err)
 			return defaultValue
 		}
 		if len(result.Result) == 0 {
@@ -92,7 +92,7 @@ func lookupMetadata(object string, property string, defaultValue string, id stri
 		buf = util.MustToJSONBytes(result.Result[0])
 		err = util.FromJSONBytes(buf, &cfgM)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("lookup metadata decode failed, object=%s, property=%s, id=%s: %v", object, property, id, err)
 			return defaultValue
 		}
 	case "index":
@@ -103,7 +103,7 @@ func lookupMetadata(object string, property string, defaultValue string, id stri
 		q.Conds = orm.And(orm.Eq("metadata.index_id", id))
 		err, result := orm.Search(cfg, q)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("lookup metadata search index failed, object=%s, property=%s, id=%s: %v", object, property, id, err)
 			return defaultValue
 		}
 		if len(result.Result) == 0 {
@@ -112,7 +112,7 @@ func lookupMetadata(object string, property string, defaultValue string, id stri
 		buf = util.MustToJSONBytes(result.Result[0])
 		err = util.FromJSONBytes(buf, &cfgM)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("lookup metadata decode failed, object=%s, property=%s, id=%s: %v", object, property, id, err)
 			return defaultValue
 		}
 	}

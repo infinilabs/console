@@ -1,31 +1,111 @@
 import request from "./request";
+import {
+  getAuthorizationToken,
+  getStoredLoginResponse,
+} from "./auth_session";
+import { setSetupRequired } from "./setup";
+
+const APPLICATION_AUTH_KEY = "infini-auth";
+const APPLICATION_ROLLUP_KEY = "infini-rollup-enabled";
+const ENTERPRISE_TASK_MANAGER_KEY = "infini-enterprise-task-manager-enabled";
+export const APPLICATION_SETTINGS_UPDATED_EVENT =
+  "console:application-settings-updated";
+let applicationSettingsPromise = null;
+let applicationSettingsCache = null;
+
+export function invalidateApplicationSettingsCache() {
+  applicationSettingsPromise = null;
+  applicationSettingsCache = null;
+}
+
+function persistApplicationSettings(res) {
+  localStorage.setItem(APPLICATION_AUTH_KEY, `${res.auth_enabled}`);
+  if (typeof res.setup_required !== "undefined") {
+    setSetupRequired(`${!!res.setup_required}`);
+  }
+  localStorage.setItem(
+    APPLICATION_ROLLUP_KEY,
+    `${!!res.system_cluster?.rollup_enabled}`
+  );
+  localStorage.setItem(
+    ENTERPRISE_TASK_MANAGER_KEY,
+    `${!!res.enterprise_plugins?.task_manager}`
+  );
+}
+
+function normalizeAuthorityValue(authority) {
+  if (authority == null || authority === "") {
+    return [];
+  }
+
+  let normalized = authority;
+  if (typeof normalized === "string") {
+    try {
+      normalized = JSON.parse(normalized);
+    } catch (e) {
+      normalized = authority;
+    }
+  }
+
+  if (typeof normalized === "string") {
+    return [normalized];
+  }
+
+  if (Array.isArray(normalized)) {
+    return normalized.filter((item) => typeof item === "string" && item);
+  }
+
+  return [];
+}
+
+export function extractAuthorityFromResponse(payload) {
+  const source = payload?._source || payload;
+  const candidates = [
+    source?.privilege,
+    payload?.privilege,
+    source?.permissions,
+    payload?.permissions,
+    source?.currentAuthority,
+    payload?.currentAuthority,
+  ];
+
+  for (const candidate of candidates) {
+    const authority = normalizeAuthorityValue(candidate);
+    if (authority.length > 0) {
+      return authority;
+    }
+  }
+
+  return [];
+}
 
 // use localStorage to store the authority info, which might be sent from server in actual project.
 export function getAuthority(str) {
-  // return localStorage.getItem('infini-console-authority') || ['admin', 'user'];
   const authorityString =
     typeof str === "undefined"
       ? localStorage.getItem("infini-console-authority")
       : str;
-  // authorityString could be admin, "admin", ["admin"]
-  let authority;
-  try {
-    authority = JSON.parse(authorityString);
-  } catch (e) {
-    authority = authorityString;
+  const authority = normalizeAuthorityValue(authorityString);
+  if (authority.length > 0 || typeof str !== "undefined") {
+    return authority;
   }
-  if (typeof authority === "string") {
-    return [authority];
-  }
-  return authority;
+  return extractAuthorityFromResponse(getStoredLoginResponse());
 }
 
 export function setAuthority(authority) {
-  const proAuthority = typeof authority === "string" ? [authority] : authority;
+  const proAuthority = normalizeAuthorityValue(authority);
   return localStorage.setItem(
     "infini-console-authority",
     JSON.stringify(proAuthority)
   );
+}
+
+export function syncAuthorityFromResponse(payload) {
+  const authority = extractAuthorityFromResponse(payload);
+  if (authority.length > 0) {
+    setAuthority(authority);
+  }
+  return authority;
 }
 
 export function hasAuthority(authority) {
@@ -37,49 +117,60 @@ export function hasAuthority(authority) {
 }
 
 export function getAuthEnabled() {
-  return localStorage.getItem("infini-auth");
+  return localStorage.getItem(APPLICATION_AUTH_KEY);
 }
 
 export function isLogin() {
-  const responseStr = localStorage.getItem("login-response");
-  if (responseStr) {
-    let loginResponse = null;
-    try {
-      loginResponse = JSON.parse(responseStr);
-      if (loginResponse?.username && loginResponse?.status == "ok") {
-        return true;
-      }
-    } catch (err) {
-      console.error(err);
-    }
+  const loginResponse = getStoredLoginResponse();
+  if (loginResponse?.username && loginResponse?.status == "ok") {
+    return true;
   }
   return false;
 }
 
 export function getAuthorizationHeader() {
-  const responseStr = localStorage.getItem("login-response");
-  if (responseStr) {
-    let loginResponse = null;
-    try {
-      loginResponse = JSON.parse(responseStr);
-    } catch (err) {
-      console.error(err);
-    }
-    if (loginResponse) {
-      return "Bearer " + loginResponse.access_token;
-    }
+  const accessToken = getAuthorizationToken();
+  if (accessToken) {
+    return "Bearer " + accessToken;
   }
   return "";
 }
 
 export function getRollupEnabled() {
-  return localStorage.getItem("infini-rollup-enabled");
+  return localStorage.getItem(APPLICATION_ROLLUP_KEY);
 }
 
-(async function() {
-  const res = await request("/setting/application");
-  if (res && !res.error) {
-    localStorage.setItem("infini-auth", res.auth_enabled);
-    localStorage.setItem('infini-rollup-enabled', res.system_cluster?.rollup_enabled || false)
+export function getEnterpriseTaskManagerEnabled() {
+  return localStorage.getItem(ENTERPRISE_TASK_MANAGER_KEY);
+}
+
+export async function refreshApplicationSettings(force = false) {
+  if (applicationSettingsPromise) {
+    return applicationSettingsPromise;
   }
-})();
+
+  if (!force && applicationSettingsCache) {
+    return applicationSettingsCache;
+  }
+
+  applicationSettingsPromise = request("/setting/application")
+    .then((res) => {
+      if (res && !res.error) {
+        persistApplicationSettings(res);
+        applicationSettingsCache = res;
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent(APPLICATION_SETTINGS_UPDATED_EVENT, {
+              detail: res,
+            })
+          );
+        }
+      }
+      return res;
+    })
+    .finally(() => {
+      applicationSettingsPromise = null;
+    });
+
+  return applicationSettingsPromise;
+}

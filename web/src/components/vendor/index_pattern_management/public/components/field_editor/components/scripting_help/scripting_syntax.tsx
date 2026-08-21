@@ -28,7 +28,7 @@ export const ScriptingSyntax = () => {
   const docLinksScriptedFields =  useGlobalContext().docLinks?.links//useKibana<IndexPatternManagmentContext>().services.docLinks?.links
     .scriptedFields;
   return (
-    <Fragment>
+    <Fragment key="scriptingSyntax">
       <EuiSpacer />
       <EuiText>
         <h3>

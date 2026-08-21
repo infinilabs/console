@@ -185,16 +185,16 @@ class Summary extends PureComponent {
         {
             title: '操作',
             render: (text, record) => (
-                <Fragment>
-<Divider type="vertical" />
-    <a onClick={() => {
-    this.state.selectedRows.push(record);
-    this.handleDeleteClick();
-}}>删除</a>
-</Fragment>
-),
-},
-];
+                <Fragment key={record.keyword}>
+                <Divider type="vertical" />
+                    <a onClick={() => {
+                    this.state.selectedRows.push(record);
+                    this.handleDeleteClick();
+                }}>删除</a>
+                </Fragment>
+                ),
+            },
+    ];
 
 componentDidMount() {
     const { dispatch } = this.props;
@@ -399,7 +399,7 @@ render() {
         handleUpdate: this.handleUpdate,
     };
     return (
-        <Fragment>
+        <Fragment key="summary">
         <Card bordered={false}>
         <Row>
         <Col sm={8} xs={24}>

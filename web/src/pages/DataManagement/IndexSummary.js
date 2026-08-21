@@ -172,7 +172,7 @@ class IndexSummary extends Component {
   render() {
     let data = JSON.parse(datasource);
     return (
-        <Fragment>
+        <Fragment key="indexSummary">
             <Card>
               <div>
                 <Row>

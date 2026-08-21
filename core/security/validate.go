@@ -31,6 +31,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"time"
 
@@ -38,6 +39,7 @@ import (
 	"infini.sh/console/core/security/enum"
 	httprouter "infini.sh/framework/core/api/router"
 	"infini.sh/framework/core/radix"
+	frameworksecurity "infini.sh/framework/core/security"
 	"infini.sh/framework/core/util"
 )
 
@@ -59,6 +61,13 @@ type IndexRequest struct {
 }
 
 type ElasticsearchAPIPrivilege map[string]map[string]struct{}
+
+var legacyPermissionAliases = map[string][]string{
+	"template.delete": {"indices.delete_template"},
+	"template.exists": {"indices.exists_template"},
+	"template.get":    {"indices.get_template"},
+	"template.put":    {"indices.put_template"},
+}
 
 func (ep ElasticsearchAPIPrivilege) Merge(epa ElasticsearchAPIPrivilege) {
 	for k, permissions := range epa {
@@ -98,6 +107,18 @@ func NewClusterRequest(ps httprouter.Params, privilege []string) ClusterRequest 
 	}
 }
 
+func hasPermissionOrAlias(permissions map[string]struct{}, permission string) bool {
+	if _, ok := permissions[permission]; ok {
+		return true
+	}
+	for _, alias := range legacyPermissionAliases[permission] {
+		if _, ok := permissions[alias]; ok {
+			return true
+		}
+	}
+	return false
+}
+
 func validateApiPermission(apiPrivileges map[string]struct{}, permissions map[string]struct{}) {
 	if _, ok := permissions["*"]; ok {
 		for privilege := range apiPrivileges {
@@ -105,8 +126,8 @@ func validateApiPermission(apiPrivileges map[string]struct{}, permissions map[st
 		}
 		return
 	}
-	for permission := range permissions {
-		if _, ok := apiPrivileges[permission]; ok {
+	for permission := range apiPrivileges {
+		if hasPermissionOrAlias(permissions, permission) {
 			delete(apiPrivileges, permission)
 		}
 	}
@@ -117,7 +138,7 @@ func validateApiPermission(apiPrivileges map[string]struct{}, permissions map[st
 		}
 		prefix := privilege[:position]
 
-		if _, ok := permissions[prefix+".*"]; ok {
+		if hasPermissionOrAlias(permissions, prefix+".*") {
 			delete(apiPrivileges, privilege)
 		}
 	}
@@ -284,12 +305,11 @@ func GetRoleCluster(roles []string) (bool, []string) {
 // GetCurrentUserCluster get cluster id by current login user
 // return true when has all cluster privilege, otherwise return cluster id list
 func GetCurrentUserCluster(req *http.Request) (bool, []string) {
-	ctxVal := req.Context().Value("user")
-	if userClaims, ok := ctxVal.(*UserClaims); ok {
-		return GetRoleCluster(userClaims.Roles)
-	} else {
-		panic("user context value not found")
+	user, err := FromUserContext(req.Context())
+	if err == nil && user != nil {
+		return GetRoleCluster(user.Roles)
 	}
+	return false, nil
 }
 
 func GetRoleIndex(roles []string, clusterID string) (bool, []string) {
@@ -313,18 +333,22 @@ func GetRoleIndex(roles []string, clusterID string) (bool, []string) {
 	return false, realIndex
 }
 
-func ValidateLogin(authorizationHeader string) (clams *UserClaims, err error) {
-
-	if authorizationHeader == "" {
-		err = errors.New("authorization header is empty")
-		return
+func ParseBearerToken(authorizationHeader string) (string, error) {
+	if strings.TrimSpace(authorizationHeader) == "" {
+		return "", errors.New("authorization header is empty")
 	}
 	fields := strings.Fields(authorizationHeader)
-	if fields[0] != "Bearer" || len(fields) != 2 {
-		err = errors.New("authorization header is invalid")
-		return
+	if len(fields) != 2 || !strings.EqualFold(fields[0], "Bearer") {
+		return "", errors.New("authorization header is invalid")
 	}
-	tokenString := fields[1]
+	return fields[1], nil
+}
+
+func ValidateLogin(authorizationHeader string) (clams *UserClaims, err error) {
+	tokenString, err := ParseBearerToken(authorizationHeader)
+	if err != nil {
+		return nil, err
+	}
 
 	token, err := jwt.ParseWithClaims(tokenString, &UserClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -333,7 +357,11 @@ func ValidateLogin(authorizationHeader string) (clams *UserClaims, err error) {
 		return []byte(Secret), nil
 	})
 	if err != nil {
-		return
+		sessionUser, frameworkErr := frameworksecurity.ValidateAuthorizationHeader(authorizationHeader)
+		if frameworkErr == nil {
+			return NewUserClaimsFromSession(sessionUser), nil
+		}
+		return nil, err
 	}
 	clams, ok := token.Claims.(*UserClaims)
 
@@ -352,11 +380,64 @@ func ValidateLogin(authorizationHeader string) (clams *UserClaims, err error) {
 		DeleteUserToken(clams.UserId)
 		return
 	}
+	activeToken := tokenVal.Value
+	if activeToken == "" {
+		activeToken = tokenVal.JwtStr
+	}
+	if activeToken != "" && activeToken != tokenString {
+		err = errors.New("token is invalid")
+		return
+	}
 	if ok && token.Valid {
 		return clams, nil
 	}
 	return
 
+}
+
+func ValidateLoginFromRequest(req *http.Request) (claims *UserClaims, err error) {
+	if req == nil {
+		return nil, errors.New("request is nil")
+	}
+
+	sessionUser, frameworkErr := frameworksecurity.ValidateLogin(httptest.NewRecorder(), req)
+	if frameworkErr == nil && sessionUser != nil && sessionUser.IsValid() {
+		claims = NewUserClaimsFromSession(sessionUser)
+		if claims == nil || claims.ShortUser == nil {
+			return nil, errors.New("invalid user info")
+		}
+		if err = enrichClaimsFromNativeUser(claims); err != nil {
+			return nil, err
+		}
+		return claims, nil
+	}
+
+	claims, err = ValidateLogin(req.Header.Get("Authorization"))
+	if err != nil {
+		return nil, err
+	}
+	if err = enrichClaimsFromNativeUser(claims); err != nil {
+		return nil, err
+	}
+	return claims, nil
+}
+
+func enrichClaimsFromNativeUser(claims *UserClaims) error {
+	if claims == nil || claims.ShortUser == nil || claims.UserId == "" {
+		return nil
+	}
+	user, err := GetAdapter("native").User.Get(claims.UserId)
+	if err != nil || user.ID == "" {
+		return nil
+	}
+	if !user.IsEnabled() {
+		return fmt.Errorf("user account [%s] is disabled", claims.Username)
+	}
+	if len(claims.Roles) == 0 {
+		roles, _ := user.GetPermissions()
+		claims.Roles = roles
+	}
+	return nil
 }
 
 func ValidatePermission(claims *UserClaims, permissions []string) (err error) {
@@ -367,9 +448,20 @@ func ValidatePermission(claims *UserClaims, permissions []string) (err error) {
 		err = errors.New("user id is empty")
 		return
 	}
+	if len(claims.PermissionKeys) > 0 {
+		userPermissionMap := make(map[string]struct{}, len(claims.PermissionKeys))
+		for _, permission := range claims.PermissionKeys {
+			userPermissionMap[permission] = struct{}{}
+		}
+		for _, permission := range permissions {
+			if _, ok := userPermissionMap[permission]; !ok {
+				return errors.New("permission denied")
+			}
+		}
+		return nil
+	}
 	if user.Roles == nil {
-		err = errors.New("api permission is empty")
-		return
+		return errors.New("api permission is empty")
 	}
 
 	// 权限校验

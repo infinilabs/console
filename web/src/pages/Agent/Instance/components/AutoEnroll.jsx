@@ -13,11 +13,19 @@ export default ({ onEnroll, loading }) => {
   const [selectedCluster, setSelectedCluster] = useState([]);
   const [auths, setAuths] = useState([]);
 
+  const needCredentialSetup = (item) => {
+    const needPlatformAuth = !!(item?.credential_id || item?.basic_auth?.username);
+    if (!needPlatformAuth) {
+      return false;
+    }
+    return !item?.agent_credential_id && !item?.agent_basic_auth?.username;
+  };
+
   const onEnrollClick = () => {
     if (selectedCluster.length === 0) return;
     const newAuths = [...auths]
     selectedCluster.forEach((item) => {
-      if (item.credential_id && !item.agent_credential_id) {
+      if (needCredentialSetup(item)) {
         newAuths.push(item)
       }
     })
@@ -73,15 +81,16 @@ export default ({ onEnroll, loading }) => {
         )
       }
       <div style={{ marginTop: 10, textAlign: "right" }}>
-        <div style={{ marginBottom: 15, color: "rgba(130,129,136,1)" }}>
-          <span>
-            {formatMessage({
-              id: "agent.instance.associate.tips.metric",
-            })}
-          </span>
-        </div>
+        <Alert
+          style={{ marginBottom: 15, textAlign: "left" }}
+          type="success"
+          message={formatMessage({
+            id: "agent.instance.associate.tips.metric",
+          })}
+        />
         <Button
           type="primary"
+          icon="link"
           disabled={clusterList.length === 0}
           onClick={onEnrollClick}
           loading={loading}

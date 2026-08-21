@@ -52,17 +52,15 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, ctx context.Context, 
 		h.WriteJSON(w, util.MapStr{}, http.StatusOK)
 		return
 	}
-	//only query first index
-	indexIDs = indexIDs[0:1]
 	q1 := orm.Query{WildcardIndex: true}
 	q1.Conds = orm.And(
 		orm.Eq("metadata.category", "elasticsearch"),
 		orm.Eq("metadata.name", "index_stats"),
-		orm.Eq("metadata.labels.index_id", indexIDs[0]),
+		orm.In("metadata.labels.index_id", indexIDs),
 	)
-	//q1.Collapse("metadata.labels.index_id")
+	q1.Collapse("metadata.labels.index_id")
 	q1.AddSort("timestamp", orm.DESC)
-	q1.Size = 1
+	q1.Size = len(indexIDs)
 
 	err, results := orm.Search(&event.Event{}, &q1)
 	if err != nil {
@@ -79,7 +77,7 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, ctx context.Context, 
 				summary := map[string]interface{}{}
 				if docs, ok := util.GetMapValueByKeys([]string{"payload", "elasticsearch", "index_stats", "total", "docs"}, result); ok {
 					if docsM, ok := docs.(map[string]interface{}); ok {
-						summary["docs_deleted"] = docsM["docs_deleted"]
+						summary["docs_deleted"] = docsM["deleted"]
 						summary["docs_count"] = docsM["count"]
 					}
 				}
@@ -130,7 +128,7 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, ctx context.Context, 
 	}
 	statusMetric, err := h.GetIndexStatusOfRecentDay(firstClusterID, firstIndexName)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("FetchIndexInfo failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -241,7 +239,7 @@ func (h *APIHandler) FetchIndexInfo(w http.ResponseWriter, ctx context.Context, 
 	}
 	metrics, err := h.getMetrics(ctx, query, nodeMetricItems, bucketSize)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("FetchIndexInfo failed: %v", err)
 		h.WriteError(w, err, http.StatusInternalServerError)
 		return
 	}
@@ -431,6 +429,35 @@ func (h *APIHandler) GetIndexShards(w http.ResponseWriter, req *http.Request, ps
 
 const IndexHealthMetricKey = "index_health"
 
+func normalizeIndexHealthBucketSize(bucketSize int, min, max int64) int {
+	if bucketSize <= 0 {
+		bucketSize = 60
+	}
+	durationSeconds := (max - min) / 1000
+	if durationSeconds <= 0 {
+		return bucketSize
+	}
+	const (
+		maxBuckets = int64(65535)
+		minBuckets = int64(24)
+	)
+	minIntervalForMaxBuckets := int((durationSeconds + maxBuckets - 1) / maxBuckets)
+	if minIntervalForMaxBuckets < 1 {
+		minIntervalForMaxBuckets = 1
+	}
+	maxIntervalForMinBuckets := int(durationSeconds / minBuckets)
+	if bucketSize < minIntervalForMaxBuckets {
+		bucketSize = minIntervalForMaxBuckets
+	}
+	if maxIntervalForMinBuckets >= 1 && bucketSize > maxIntervalForMinBuckets {
+		bucketSize = maxIntervalForMinBuckets
+	}
+	if bucketSize < 1 {
+		bucketSize = 1
+	}
+	return bucketSize
+}
+
 func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	clusterID := ps.MustGetParameter("id")
 	indexName := ps.MustGetParameter("index")
@@ -473,7 +500,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 	resBody := map[string]interface{}{}
 	bucketSize, min, max, err := h.GetMetricRangeAndBucketSize(req, clusterID, MetricTypeIndexStats, 60)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetSingleIndexMetrics failed: %v", err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -501,7 +528,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 	timeout := h.GetParameterOrDefault(req, "timeout", "60s")
 	du, err := time.ParseDuration(timeout)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("GetSingleIndexMetrics failed: %v", err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -575,7 +602,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 		}
 		metrics, err = h.getSingleMetrics(ctx, metricItems, query, bucketSize)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("GetSingleIndexMetrics failed: %v", err)
 			h.WriteError(w, err, http.StatusInternalServerError)
 			return
 		}
@@ -584,7 +611,7 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 		if metricItem.HitsTotal > 0 && metricItem.MinBucketSize == 0 {
 			minBucketSize, err := GetMetricMinBucketSize(clusterID, MetricTypeIndexStats)
 			if err != nil {
-				log.Error(err)
+				log.Errorf("GetSingleIndexMetrics failed: %v", err)
 			} else {
 				metricItem.MinBucketSize = int64(minBucketSize)
 			}
@@ -595,7 +622,8 @@ func (h *APIHandler) GetSingleIndexMetrics(w http.ResponseWriter, req *http.Requ
 }
 
 func (h *APIHandler) GetIndexHealthMetric(ctx context.Context, id, indexName string, min, max int64, bucketSize int) (*common.MetricItem, error) {
-	bucketSizeStr := fmt.Sprintf("%vs", bucketSize)
+	healthBucketSize := normalizeIndexHealthBucketSize(bucketSize, min, max)
+	bucketSizeStr := fmt.Sprintf("%vs", healthBucketSize)
 	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
 	if err != nil {
 		return nil, err
@@ -668,7 +696,7 @@ func (h *APIHandler) GetIndexHealthMetric(ctx context.Context, id, indexName str
 		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, cerr.New(cerr.ErrTypeRequestTimeout, "", err)
 		}
-		log.Error(err)
+		log.Errorf("GetIndexHealthMetric failed: %v", err)
 		return nil, err
 	}
 
@@ -757,6 +785,7 @@ func (h *APIHandler) GetIndexStatusOfRecentDay(clusterID, indexName string) (map
 					"term_health": util.MapStr{
 						"terms": util.MapStr{
 							"field": "payload.elasticsearch.index_health.status",
+							"size":  10,
 						},
 					},
 				},

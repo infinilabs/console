@@ -40,4 +40,10 @@ describe('test getBreadcrumb', () => {
     const urlNameList = urlToList('/userinfo/2144').map(url => getBreadcrumb(routerData, url).name);
     expect(urlNameList).toEqual(['用户列表', '用户信息']);
   });
+
+  it('Hide unmatched path segment', () => {
+    expect(getBreadcrumb(routerData, '/userinfo/2144/edit')).toEqual({
+      hideInBreadcrumb: true,
+    });
+  });
 });

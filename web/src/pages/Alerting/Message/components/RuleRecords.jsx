@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatESSearchResult } from "@/lib/elasticsearch/util";
 import Link from "umi/link";
 import request from "@/utils/request";
-import { formatUtcTimeToLocal, firstUpperCase } from "@/utils/utils";
+import { formatUtcTimeToLocal } from "@/utils/utils";
 import { HealthStatusView } from "@/components/infini/health_status_view";
 import {
   MessageStautsColor,
@@ -18,7 +18,16 @@ import { PriorityIconText } from "../../components/Statistic";
 import WidgetLoader from "@/pages/DataManagement/View/WidgetLoader";
 const Option = Select.Option;
 
-const RuleRecords = ({ ruleID, timeRange, showAertMetric = false, refresh }) => {
+const RuleRecords = ({
+  ruleID,
+  resourceID,
+  resolveEventID,
+  messageStatus,
+  timeRange,
+  showAertMetric = false,
+  refresh,
+  onTimeRangeChange,
+}) => {
   if (!ruleID || !timeRange.min) {
     return null;
   }
@@ -26,13 +35,14 @@ const RuleRecords = ({ ruleID, timeRange, showAertMetric = false, refresh }) => 
   const [loading, setLoading] = React.useState(true);
 
   const bounds = calculateBounds({
-    from: timeRange.min || "now-1d",
-    to: timeRange.max || "now",
+    from: timeRange.min || "auto",
+    to: timeRange.max || "auto",
   });
   const initialQueryParams = {
     from: 0,
     size: 10,
     rule_id: ruleID,
+    resource_id: resourceID,
     min: bounds.min.valueOf(),
     max: bounds.max.valueOf(),
   };
@@ -70,6 +80,16 @@ const RuleRecords = ({ ruleID, timeRange, showAertMetric = false, refresh }) => 
   const onRefreshClick = () => {
     dispatch({ type: "refresh" });
   };
+
+  const onWidgetQueriesChange = (queries = {}) => {
+    if (!queries?.range?.from || !queries?.range?.to || typeof onTimeRangeChange !== "function") {
+      return;
+    }
+    onTimeRangeChange({
+      start: queries.range.from,
+      end: queries.range.to,
+    });
+  };
   const [queryParams, dispatch] = React.useReducer(
     alertReducer,
     initialQueryParams
@@ -87,18 +107,26 @@ const RuleRecords = ({ ruleID, timeRange, showAertMetric = false, refresh }) => 
       title: formatMessage({ id: "alert.message.table.execution_status" }),
       dataIndex: "state",
       render: (text, record) => {
+        const displayState =
+          messageStatus === "recovered" && record.id === resolveEventID
+            ? "recovered"
+            : record.display_state || text;
+        const displayLabel = formatMessage({
+          id: `alert.message.status.${displayState}`,
+          defaultMessage: displayState,
+        });
         return (
           <div style={{ display: "flex", gap: 5 }}>
             <Tag
               style={{
-                backgroundColor: MessageStautsColor[text],
+                backgroundColor: MessageStautsColor[displayState],
                 color: "#fff",
                 border: "none",
               }}
             >
-              {firstUpperCase(text)}
+              {displayLabel}
             </Tag>
-            {text != "ok" ? (
+            {displayState != "ok" && displayState != "recovered" ? (
               <PriorityIconText priority={record.priority} />
             ) : null}
           </div>
@@ -183,7 +211,7 @@ const RuleRecords = ({ ruleID, timeRange, showAertMetric = false, refresh }) => 
                 dispatch({ type: "state", value: value });
               }}
             >
-              {Object.keys(RuleStautsColor).map((item) => {
+              {Object.keys(RuleStautsColor).filter((item) => item !== "recovered").map((item) => {
                 return (
                   <Option key={item} value={item}>
                     {item}
@@ -221,10 +249,12 @@ const RuleRecords = ({ ruleID, timeRange, showAertMetric = false, refresh }) => 
             }}
             queryParams={{
               rule_id: ruleID,
+              resource_id: resourceID,
               priority: queryParams.priority,
               state: queryParams.state,
             }}
             refresh={refresh}
+            onGlobalQueriesChange={onWidgetQueriesChange}
           />
         </div>
       ) : null}

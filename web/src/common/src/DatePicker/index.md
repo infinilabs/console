@@ -33,3 +33,4 @@
 | onTimeZoneChange | 时区变更的回调 | (timeZone: string) => void | - | 1.0.0 |
 | commonlyUsedRanges | 快速选择列表 | {start: string, end: string, label: string}[] | [] | 1.0.0 |
 | recentlyUsedRangesKey | 时间范围历史字段 | string | - | 1.0.0 |
+| showAutoTimeRange | 是否显示自动  | boolean | false | 1.0.0 |

@@ -43,7 +43,7 @@ func (h *APIHandler) HandleCrateTraceTemplateAction(w http.ResponseWriter, req *
 	exists, client, err := h.GetClusterClient(targetClusterID)
 
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleCrateTraceTemplateAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -51,7 +51,7 @@ func (h *APIHandler) HandleCrateTraceTemplateAction(w http.ResponseWriter, req *
 
 	if !exists {
 		resBody["error"] = fmt.Sprintf("cluster [%s] not found", targetClusterID)
-		log.Error(resBody["error"])
+		log.Errorf("HandleCrateTraceTemplateAction failed: %v", resBody["error"])
 		h.WriteJSON(w, resBody, http.StatusNotFound)
 		return
 	}
@@ -60,7 +60,7 @@ func (h *APIHandler) HandleCrateTraceTemplateAction(w http.ResponseWriter, req *
 
 	err = h.DecodeJSON(req, traceReq)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleCrateTraceTemplateAction failed: %v", err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -72,7 +72,7 @@ func (h *APIHandler) HandleCrateTraceTemplateAction(w http.ResponseWriter, req *
 	var id = util.GetUUID()
 	insertRes, err := client.Index(orm.GetIndexName(elastic.TraceTemplate{}), "", id, traceReq, "wait_for")
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleCrateTraceTemplateAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -112,7 +112,7 @@ func (h *APIHandler) HandleSearchTraceTemplateAction(w http.ResponseWriter, req 
 	res, err := esClient.SearchWithRawQueryDSL(orm.GetIndexName(elastic.TraceTemplate{}), []byte(queryDSL))
 
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleSearchTraceTemplateAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -127,7 +127,7 @@ func (h *APIHandler) HandleSaveTraceTemplateAction(w http.ResponseWriter, req *h
 	reqParams := elastic.TraceTemplate{}
 	err := h.DecodeJSON(req, &reqParams)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleSaveTraceTemplateAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -137,7 +137,7 @@ func (h *APIHandler) HandleSaveTraceTemplateAction(w http.ResponseWriter, req *h
 	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 	_, err = esClient.Index(orm.GetIndexName(reqParams), "", reqParams.ID, reqParams, "wait_for")
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleSaveTraceTemplateAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusOK)
 		return
@@ -157,7 +157,7 @@ func (h *APIHandler) HandleGetTraceTemplateAction(w http.ResponseWriter, req *ht
 	indexName := orm.GetIndexName(elastic.TraceTemplate{})
 	getResponse, err := h.Client().Get(indexName, "", id)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleGetTraceTemplateAction failed: %v", err)
 		resBody["error"] = err.Error()
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 	}
@@ -170,7 +170,7 @@ func (h *APIHandler) HandleDeleteTraceTemplateAction(w http.ResponseWriter, req 
 	esClient := elastic.GetClient(global.MustLookupString(elastic.GlobalSystemElasticsearchID))
 	delRes, err := esClient.Delete(orm.GetIndexName(elastic.TraceTemplate{}), "", id, "wait_for")
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleDeleteTraceTemplateAction failed: %v", err)
 		resBody["error"] = err.Error()
 		if delRes != nil {
 			h.WriteJSON(w, resBody, delRes.StatusCode)

@@ -9,6 +9,7 @@ import ClusterName from "@/pages/System/Cluster/components/ClusterName";
 import { useGlobalClusters } from "@/layouts/GlobalContext";
 import Markdown from "@/components/Markdown";
 import { Link } from "umi";
+import { useLocation } from "react-router-dom";
 
 const DescriptionItem = ({ title, content }) => (
   <div
@@ -41,6 +42,11 @@ const MessageCard = (props) => {
     return null;
   }
   const data = props?.data || {};
+  const location = useLocation();
+  const ruleDetailLink = {
+    pathname: `/alerting/rule/${data.rule_id}`,
+    search: `?back_to=${encodeURIComponent(`${location.pathname}${location.search}`)}`,
+  };
 
   const clusterM = useGlobalClusters();
 
@@ -50,7 +56,7 @@ const MessageCard = (props) => {
         <Col span={24}>
           <DescriptionItem
             title={formatMessage({ id: "alert.rule.table.columnns.rule_name" })}
-            content={<Link to={`/alerting/rule/${data.rule_id}`}>{data?.rule_name}</Link>}
+            content={<Link to={ruleDetailLink}>{data?.rule_name}</Link>}
           />
         </Col>
       </Row>

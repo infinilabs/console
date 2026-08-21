@@ -67,7 +67,7 @@ func (h *PlatformAPI) searchCollection(w http.ResponseWriter, req *http.Request,
 		return
 	}
 	if api.IsAuthEnable() {
-		claims, err := security.ValidateLogin(req.Header.Get("Authorization"))
+		claims, err := security.ValidateLoginFromRequest(req)
 		if err != nil {
 			h.WriteError(w, err.Error(), http.StatusUnauthorized)
 			return

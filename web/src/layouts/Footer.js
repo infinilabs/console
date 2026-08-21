@@ -7,7 +7,7 @@ const FooterView = () => (
   <Footer style={{ padding: 0 }}>
     <GlobalFooter
       links={[]}
-      copyright={<Fragment>©{APP_AUTHOR}, All Rights Reserved.</Fragment>}
+      copyright={<Fragment key="footerCopyright">©{APP_AUTHOR}, All Rights Reserved.</Fragment>}
     />
   </Footer>
 );

@@ -16,11 +16,40 @@ export default connect()((props) => {
   const [status, setStatus] = useState({});
   const [testLoading, setTestLoading] = useState(false);
 
+  const getTryConnectErrorMessage = (error) => {
+    if (!error) {
+      return "";
+    }
+    if (typeof error === "string") {
+      return error;
+    }
+    if (typeof error?.reason === "string") {
+      return error.reason;
+    }
+    try {
+      return JSON.stringify(error);
+    } catch (e) {
+      return `${error}`;
+    }
+  };
+
+  const extractHostFromEndpoint = (value) => {
+    const endpoint = `${value || ""}`.trim();
+    if (!endpoint) {
+      return "";
+    }
+    const normalized = endpoint.replace(/^https?:\/\//i, "");
+    return normalized.split("/")[0] || "";
+  };
+
   const onAgentCredentialSave = async (values) => {
     const newSelectedCluster = cloneDeep(selectedCluster);
     const index = newSelectedCluster.findIndex((item) => item.id === values.id);
     if (index !== -1) {
-      newSelectedCluster[index] = values;
+      newSelectedCluster[index] = {
+        ...newSelectedCluster[index],
+        ...values,
+      };
       setSelectedCluster(newSelectedCluster);
     }
     dispatch({
@@ -32,12 +61,16 @@ export default connect()((props) => {
     });
     dispatch({
         type: "global/fetchClusterStatus",
+        payload: {
+            force: true,
+        },
     })
   };
 
   const expandedRowRender = (record) => {
     return (
       <AgentCredential
+        key={`${record.id}:${record.agent_credential_id || record.agent_basic_auth?.username || ""}`}
         record={record}
         onAgentCredentialSave={(values) => onAgentCredentialSave(values)}
       />
@@ -46,40 +79,61 @@ export default connect()((props) => {
 
   const tryConnect = async (values) => {
     setTestLoading(true);
-    const body = {
-      basic_auth: {
-        username: values.agent_basic_auth?.username,
-        password: values.agent_basic_auth?.password,
-      },
-      host: values.host,
-      credential_id:
-        values.agent_credential_id !== MANUAL_VALUE
-          ? values.agent_credential_id
-          : undefined,
-      schema: values.schema || "http",
-    };
-    if (
-      values.credential_id &&
-      !body.credential_id &&
-      (!body.basic_auth.username || !body.basic_auth.password)
-    ) {
-      message.warning(formatMessage({ id: "agent.instance.associate.tips.connected.check" }));
+    try {
+      const hosts = (values?.hosts || [])
+        .map((item) => `${item || ""}`.trim())
+        .filter(Boolean);
+      const endpointHost = extractHostFromEndpoint(values?.endpoint);
+      const endpoints = (values?.endpoints || [])
+        .map((item) => extractHostFromEndpoint(item))
+        .filter(Boolean);
+      const host = `${values?.host || ""}`.trim() || endpointHost || endpoints[0] || hosts[0];
+      const username = values.agent_basic_auth?.username;
+      const password = values.agent_basic_auth?.password;
+      const body = {
+        host,
+        hosts: hosts.length > 0 ? hosts : host ? [host] : undefined,
+        schema: values.schema || "http",
+        credential_id:
+          values.agent_credential_id && values.agent_credential_id !== MANUAL_VALUE
+            ? values.agent_credential_id
+            : undefined,
+      };
+      if (username || password) {
+        body.basic_auth = {
+          username,
+          password,
+        };
+      }
+      if (!body.host && (!body.hosts || body.hosts.length === 0)) {
+        message.warning(
+          formatMessage({ id: "cluster.regist.form.verify.required.endpoint" })
+        );
+        return;
+      }
+      if (
+        values.credential_id &&
+        !body.credential_id &&
+        (!username || !password)
+      ) {
+        message.warning(formatMessage({ id: "agent.instance.associate.tips.connected.check" }));
+        return;
+      }
+      const res = await request(`${ESPrefix}/try_connect`, {
+        method: "POST",
+        body,
+        showErrorInner: true,
+      }, false, false);
+      setStatus((prev) => ({
+        ...prev,
+        [values.id]: {
+          status: res?.status,
+          error: getTryConnectErrorMessage(res?.error),
+        },
+      }));
+    } finally {
       setTestLoading(false);
-      return;
     }
-    const res = await request(`${ESPrefix}/try_connect`, {
-      method: "POST",
-      body,
-      showErrorInner: true,
-    }, false, false);
-    setStatus({
-      ...status,
-      [values.id]: {
-        status: res?.status,
-        error: res?.error,
-      },
-    });
-    setTestLoading(false);
   };
 
   return (
@@ -131,7 +185,13 @@ export default connect()((props) => {
               dataIndex: "agent_credential_id",
               key: "agent_credential_id",
               render: (text, record) => {
-                return record.agent_credential_id ? "Set" : "No set";
+                return record.agent_credential_id || record.agent_basic_auth?.username
+                  ? formatMessage({
+                      id: "agent.instance.associate.credential_status.set",
+                    })
+                  : formatMessage({
+                      id: "agent.instance.associate.credential_status.unset",
+                    });
               },
             },
             {
@@ -141,8 +201,11 @@ export default connect()((props) => {
               render: (text, record) => {
                 if (!status[record.id]) return "-";
                 if (status[record.id].error) {
+                  const errorMessage = getTryConnectErrorMessage(
+                    status[record.id].error
+                  );
                   return (
-                    <Tooltip title={status[record.id].error}>
+                    <Tooltip title={errorMessage}>
                       <span style={{ color: "red" }}>{formatMessage({ id: "alert.rule.table.columnns.status.failed"})}</span>
                     </Tooltip>
                   );

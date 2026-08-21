@@ -67,7 +67,7 @@ export const SavedQueryListItem = ({
   );
 
   return (
-    <Fragment>
+    <Fragment key={savedQuery.id}>
       <EuiListGroupItem
         className={classes}
         key={savedQuery.id}

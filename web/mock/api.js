@@ -374,22 +374,6 @@ export default {
           "eol_date": "2023-12-31T10:10:10Z"
         },
         "tagline": "A light-weight but powerful agent."
-      },
-      "basic_auth": {},
-      "endpoint": "http://192.168.3.25:2900",
-      "host": {
-        "name": "INFINI-4.local",
-        "os": {
-          "name": "darwin",
-          "architecture": "arm64",
-          "version": "22.6.0"
-        }
-      },
-      "network": {
-        "ip": [
-          "192.168.3.25"
-        ],
-        "major_ip": "192.168.3.25"
       }
     });
   },

@@ -7,6 +7,7 @@ package data
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	log "github.com/cihub/seelog"
 	"infini.sh/console/model"
@@ -80,19 +81,25 @@ func indexExportData(eds []ExportData, patch bool) error {
 			}
 			buf := util.MustToJSONBytes(row)
 			err := util.FromJSONBytes(buf, obj)
-			// 当导出无版本号，并且为告警规则，并且导出数据无分类时
-			if patch && ed.Type == DataTypeAlertRule {
+			if ed.Type == DataTypeAlertRule {
 				if rule, ok := obj.(*alerting.Rule); ok {
-					if len(obj.(*alerting.Rule).Category) == 0 {
+					if patch && len(rule.Category) == 0 {
 						rule.Category = "Platform"
-						obj = rule
 					}
+					now := time.Now()
+					if rule.Created.IsZero() {
+						rule.Created = now
+					}
+					if rule.Updated.IsZero() || rule.Updated.Before(rule.Created) {
+						rule.Updated = now
+					}
+					obj = rule
 				}
 			}
 			if err != nil {
 				return err
 			}
-			err = orm.Save(nil, obj)
+			err = orm.Save(orm.NewContext(), obj)
 			if err != nil {
 				return err
 			}

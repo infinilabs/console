@@ -79,6 +79,8 @@ export const MetricNodes = ({
     {
       title: "Name",
       dataIndex: "name",
+      fixed: "left",
+      width: 180,
       render: (text, record) => (
         <span>
           <Link
@@ -93,6 +95,7 @@ export const MetricNodes = ({
     {
       title: "Status",
       dataIndex: "status",
+      width: 120,
       render: (text, record) => <HealthStatusView status={text} />,
       sorter: (a, b) => sorter.string(a, b, "status"),
     },
@@ -143,6 +146,7 @@ export const MetricNodes = ({
           size={"small"}
           bordered
           dataSource={hits}
+          scroll={{ x: 300 }}
           rowKey={(record, index) => index}
           columns={columns}
           pagination={{

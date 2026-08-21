@@ -188,7 +188,7 @@ class DropdownSelect extends React.Component {
           >
             <input
               className={styles["btn-ds"]}
-              style={{ outline: "none", width: this.props.width || "300px" }}
+              style={{ outline: "none", width: this.props.width || "400px" }}
               onChange={this.handleInputChange}
               placeholder={formatMessage({
                 id: "console.cluster.select.placeholder",

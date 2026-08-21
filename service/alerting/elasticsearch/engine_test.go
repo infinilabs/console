@@ -31,11 +31,13 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
 	"infini.sh/console/core/insight"
 	"infini.sh/console/model/alerting"
+	alerting2 "infini.sh/console/service/alerting"
 	"infini.sh/framework/core/elastic"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/modules/elastic/adapter/elasticsearch"
@@ -152,6 +154,309 @@ func TestGenerateAgg(t *testing.T) {
 		Statistic: "p99",
 	})
 	fmt.Println(util.MustToJSON(agg))
+}
+
+func TestAttachTitleMessageToCtxRemovesBlankLines(t *testing.T) {
+	paramsCtx := map[string]interface{}{
+		"priority":      "critical",
+		"event_id":      "evt-1",
+		"resource_name": "migrator-source",
+		"objects":       []string{"migration-pmc"},
+		"trigger_at":    "2026-05-20 15:00:00",
+		"results": []util.MapStr{
+			{
+				"group_values": []string{"migration-pmc"},
+				"result_value": "92.82gb",
+			},
+		},
+	}
+
+	err := attachTitleMessageToCtx(
+		"Alert: {{.resource_name}}",
+		`- Priority:{{.priority}}
+- EventID: {{.event_id}}
+- Target: {{.resource_name}}-{{.objects}}
+- TriggerAt: {{.trigger_at}}
+            
+{{range .results}}
+Index: {{index .group_values 0}} of Cluster: {{$.resource_name}}, Max Shard Storage: {{.result_value}}
+{{end}}`,
+		paramsCtx,
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got := paramsCtx[alerting2.ParamMessage].(string)
+	if strings.Contains(got, "\n\n") {
+		t.Fatalf("expected blank lines to be removed, got %q", got)
+	}
+	if !strings.Contains(got, "Index: migration-pmc of Cluster: migrator-source, Max Shard Storage: 92.82gb") {
+		t.Fatalf("expected rendered content, got %q", got)
+	}
+}
+
+func TestAttachTitleMessageToCtxCollapsesDuplicatedLeadingEmoji(t *testing.T) {
+	paramsCtx := map[string]interface{}{
+		"title": "🌈 [JVM utilization is Too High] Resolved",
+	}
+
+	err := attachTitleMessageToCtx(
+		"{{.title}}",
+		`[ INFINI Platform Alerting ]
+🌈 {{.title}}`,
+		paramsCtx,
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got := paramsCtx[alerting2.ParamMessage].(string)
+	if strings.Contains(got, "🌈 🌈") {
+		t.Fatalf("expected duplicated leading emoji to collapse, got %q", got)
+	}
+	if strings.Contains(got, "\n🌈 [JVM utilization is Too High] Resolved") {
+		t.Fatalf("expected duplicated non-leading title line to be removed, got %q", got)
+	}
+	if !strings.Contains(got, "[ INFINI Platform Alerting ]") {
+		t.Fatalf("expected remaining message content to stay, got %q", got)
+	}
+}
+
+func TestAttachTitleMessageToCtxStripsDuplicatedNonLeadingTitleLine(t *testing.T) {
+	paramsCtx := map[string]interface{}{
+		"title": "🔥 [Cluster Metrics Collection Anomaly] Alerting",
+	}
+
+	err := attachTitleMessageToCtx(
+		"{{.title}}",
+		`🔥 Incident #d8h972r5aeeotbtl08ug is ongoing
+{{.title}}
+Priority: warning`,
+		paramsCtx,
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got := paramsCtx[alerting2.ParamMessage].(string)
+	if strings.Contains(got, "\n🔥 [Cluster Metrics Collection Anomaly] Alerting") {
+		t.Fatalf("expected duplicated title line to be removed from message, got %q", got)
+	}
+	if !strings.Contains(got, "🔥 Incident #d8h972r5aeeotbtl08ug is ongoing") {
+		t.Fatalf("expected incident summary to remain, got %q", got)
+	}
+	if !strings.Contains(got, "Priority: warning") {
+		t.Fatalf("expected remaining message content to remain, got %q", got)
+	}
+}
+
+func TestAttachTitleMessageToCtxAppendsRecoveryContext(t *testing.T) {
+	paramsCtx := map[string]interface{}{
+		"event_id":         "evt-1",
+		"resource_name":    "INFINI_SYSTEM",
+		"objects":          []string{".infini_metrics*"},
+		"trigger_at":       "2026-06-04 10:45:25",
+		"timestamp":        "2026-06-04 11:13:25",
+		"duration":         "28m",
+		"recovery_context": "Node: es717 of Cluster: migrator-es717, JVM Usage: 85.9%",
+	}
+
+	err := attachTitleMessageToCtx(
+		"🌈 [resolved]",
+		`EventID: {{.event_id}}
+Target: {{.resource_name}}-{{.objects}}
+TriggerAt: {{.trigger_at}}
+ResolveAt: {{.timestamp}}
+Duration: {{.duration}}{{if .recovery_context}}
+{{.recovery_context}}{{end}}`,
+		paramsCtx,
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got := paramsCtx[alerting2.ParamMessage].(string)
+	if !strings.Contains(got, "Node: es717 of Cluster: migrator-es717, JVM Usage: 85.9%") {
+		t.Fatalf("expected recovery context in message, got %q", got)
+	}
+}
+
+func TestBuildRecoveryNotificationParamsDoesNotIncludeRecoveryContext(t *testing.T) {
+	rule := &alerting.Rule{
+		ID:   "rule-1",
+		Name: "test-rule",
+		Resource: alerting.Resource{
+			ID:   "cluster-1",
+			Name: "cluster-a",
+		},
+	}
+	checkResults := &alerting.ConditionResult{}
+	alertMessage := &alerting.AlertMessage{
+		ID:      "evt-1",
+		Created: time.Date(2026, 6, 9, 11, 45, 56, 0, time.Local),
+	}
+	alertItem := &alerting.Alert{
+		Created: time.Date(2026, 6, 9, 11, 47, 56, 0, time.Local),
+	}
+
+	paramsCtx := buildRecoveryNotificationParams(rule, checkResults, alertMessage, alertItem)
+	if _, ok := paramsCtx["recovery_context"]; ok {
+		t.Fatal("expected full recovery params to omit recovery_context")
+	}
+	if got := paramsCtx[alerting2.ParamEventID]; got != "evt-1" {
+		t.Fatalf("expected event id to be preserved, got %v", got)
+	}
+	if got := paramsCtx["duration"]; got != "2m" {
+		t.Fatalf("expected duration to be computed from alert times, got %v", got)
+	}
+}
+
+func TestNormalizeAlertTemplateTextPreservesMarkdownHardBreakSpacing(t *testing.T) {
+	input := "EventID: 1  \nTarget: cluster  \nTriggerAt: now"
+	got := normalizeAlertTemplateText(input)
+	if got != input {
+		t.Fatalf("expected markdown hard-break spaces to be preserved, got %q", got)
+	}
+}
+
+func TestNormalizeAlertTemplateTextSplitsRepeatedNodeEntries(t *testing.T) {
+	input := "节点: es817 所属集群: migrator-es817, JVM 使用率: 65% 节点: es717 所属集群: migrator-es717, JVM 使用率: 56% 节点: node-03 所属集群: es-cluster-3node, JVM 使用率: 42%"
+	got := normalizeAlertTemplateText(input)
+	want := "节点: es817 所属集群: migrator-es817, JVM 使用率: 65%\n节点: es717 所属集群: migrator-es717, JVM 使用率: 56%\n节点: node-03 所属集群: es-cluster-3node, JVM 使用率: 42%"
+	if got != want {
+		t.Fatalf("expected repeated node entries to be split by lines, got %q", got)
+	}
+}
+
+func TestFormatAlertDuration(t *testing.T) {
+	cases := []struct {
+		name     string
+		input    time.Duration
+		expected string
+	}{
+		{name: "sub-second", input: 500 * time.Millisecond, expected: "0s"},
+		{name: "minute-second", input: 5*time.Minute + 59*time.Second + 999*time.Millisecond, expected: "5m59s"},
+		{name: "hour-minute", input: time.Hour + 2*time.Minute, expected: "1h2m"},
+		{name: "day-hour", input: 24*time.Hour + 3*time.Hour + 4*time.Second, expected: "1d3h4s"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := formatAlertDuration(tc.input); got != tc.expected {
+				t.Fatalf("expected %q, got %q", tc.expected, got)
+			}
+		})
+	}
+}
+
+func TestResolveTemplateTimeRangeFromQueryResult(t *testing.T) {
+	checkResults := &alerting.ConditionResult{
+		QueryResult: &alerting.QueryResult{
+			Min: int64(1781140000000),
+			Max: int64(1781140060000),
+		},
+	}
+
+	min, max := resolveTemplateTimeRange(checkResults)
+	if min != "2026-06-11T01:05:40Z" {
+		t.Fatalf("expected min to expand query min timestamp, got %q", min)
+	}
+	if max != "2026-06-11T01:08:40Z" {
+		t.Fatalf("expected max to expand query max timestamp, got %q", max)
+	}
+}
+
+func TestResolveTemplateTimeRangeFallsBackToIssueTimestamp(t *testing.T) {
+	checkResults := &alerting.ConditionResult{
+		ResultItems: []alerting.ConditionResultItem{
+			{
+				IssueTimestamp: "1781140060000",
+			},
+		},
+	}
+
+	min, max := resolveTemplateTimeRange(checkResults)
+	if min != "2026-06-11T01:06:40Z" {
+		t.Fatalf("expected min to use issue timestamp fallback, got %q", min)
+	}
+	if max != "2026-06-11T01:08:40Z" {
+		t.Fatalf("expected max to use issue timestamp fallback, got %q", max)
+	}
+}
+
+func TestDiffRecoveredConditionResultItems(t *testing.T) {
+	makeItem := func(priority string, groups ...string) alerting.ConditionResultItem {
+		return alerting.ConditionResultItem{
+			GroupValues: groups,
+			ConditionItem: &alerting.ConditionItem{
+				Priority: priority,
+			},
+		}
+	}
+
+	previous := []alerting.ConditionResultItem{
+		makeItem("low", "cluster-a", "node-1"),
+		makeItem("medium", "cluster-a", "node-2"),
+		makeItem("high", "cluster-a", "node-3"),
+	}
+	current := []alerting.ConditionResultItem{
+		makeItem("high", "cluster-a", "node-3"),
+	}
+
+	recovered := diffRecoveredConditionResultItems(previous, current)
+	if len(recovered) != 2 {
+		t.Fatalf("expected 2 recovered items, got %d", len(recovered))
+	}
+	if got := strings.Join(recovered[0].GroupValues, ","); got != "cluster-a,node-1" {
+		t.Fatalf("expected first recovered item to be node-1, got %s", got)
+	}
+	if got := strings.Join(recovered[1].GroupValues, ","); got != "cluster-a,node-2" {
+		t.Fatalf("expected second recovered item to be node-2, got %s", got)
+	}
+}
+
+func TestDiffRecoveredConditionResultItemsIgnoresPriorityChanges(t *testing.T) {
+	makeItem := func(priority string, groups ...string) alerting.ConditionResultItem {
+		return alerting.ConditionResultItem{
+			GroupValues: groups,
+			ConditionItem: &alerting.ConditionItem{
+				Priority: priority,
+			},
+		}
+	}
+
+	previous := []alerting.ConditionResultItem{
+		makeItem("high", "cluster-a", "node-1"),
+	}
+	current := []alerting.ConditionResultItem{
+		makeItem("low", "cluster-a", "node-1"),
+	}
+
+	recovered := diffRecoveredConditionResultItems(previous, current)
+	if len(recovered) != 0 {
+		t.Fatalf("expected no recovered items when only priority changes, got %d", len(recovered))
+	}
+}
+
+func TestIsIncrementalRecoveryEnabled(t *testing.T) {
+	if isIncrementalRecoveryEnabled(nil) {
+		t.Fatal("expected nil config to disable incremental recovery")
+	}
+
+	cfg := &alerting.RecoveryNotificationConfig{
+		Enabled:                    true,
+		EventEnabled:               true,
+		IncrementalRecoveryEnabled: false,
+	}
+	if isIncrementalRecoveryEnabled(cfg) {
+		t.Fatal("expected incremental recovery to stay disabled by default")
+	}
+
+	cfg.IncrementalRecoveryEnabled = true
+	if !isIncrementalRecoveryEnabled(cfg) {
+		t.Fatal("expected incremental recovery to be enabled when all switches are on")
+	}
 }
 
 func TestGeneratePercentilesAggQuery(t *testing.T) {
@@ -318,5 +623,110 @@ func TestConvertFilterQuery(t *testing.T) {
 	}
 	if dsl := util.MustToJSON(q); dsl != targetDsl {
 		t.Errorf("expect dsl %s but got %s", targetDsl, dsl)
+	}
+}
+
+func TestGetRelationValuesSkipsNilMetricValue(t *testing.T) {
+	queryResult := &alerting.QueryResult{
+		MetricData: []insight.MetricData{
+			{
+				Data: map[string][]insight.MetricDataItem{
+					"a": {{Timestamp: int64(1), Value: float64(12)}},
+					"b": {{Timestamp: int64(1), Value: nil}},
+				},
+			},
+		},
+	}
+
+	values, ok := getRelationValues(queryResult, []insight.MetricItem{
+		{Name: "a"},
+		{Name: "b"},
+	}, 0, 0)
+
+	if ok {
+		t.Fatalf("expected relation values with nil metric to be skipped")
+	}
+	if values != nil {
+		t.Fatalf("expected nil relation values, got %#v", values)
+	}
+}
+
+func TestGetRelationValuesReturnsValidMetricValues(t *testing.T) {
+	queryResult := &alerting.QueryResult{
+		MetricData: []insight.MetricData{
+			{
+				Data: map[string][]insight.MetricDataItem{
+					"a": {{Timestamp: int64(1), Value: float64(12)}},
+					"b": {{Timestamp: int64(1), Value: float64(7)}},
+				},
+			},
+		},
+	}
+
+	values, ok := getRelationValues(queryResult, []insight.MetricItem{
+		{Name: "a"},
+		{Name: "b"},
+	}, 0, 0)
+
+	if !ok {
+		t.Fatalf("expected relation values to be available")
+	}
+	if values["a"] != float64(12) || values["b"] != float64(7) {
+		t.Fatalf("unexpected relation values: %#v", values)
+	}
+}
+
+func TestGenerateTimeFilterIgnoreReturnsMatchAll(t *testing.T) {
+	eng := &Engine{}
+	rule := &alerting.Rule{
+		Resource: alerting.Resource{
+			IgnoreTimeFilter: true,
+			TimeField:        "timestamp",
+		},
+	}
+
+	timeFilter, err := eng.generateTimeFilter(rule, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if timeFilter == nil {
+		t.Fatal("expected time filter map, got nil")
+	}
+	if _, ok := timeFilter["match_all"]; !ok {
+		t.Fatalf("expected match_all query, got %#v", timeFilter)
+	}
+}
+
+func TestGenerateTimeFilterReturnsRangeWhenEnabled(t *testing.T) {
+	eng := &Engine{}
+	rule := &alerting.Rule{
+		Name: "test-rule",
+		Resource: alerting.Resource{
+			TimeField: "timestamp",
+		},
+		Metrics: alerting.Metric{
+			Metric: insight.Metric{
+				BucketSize: "1m",
+			},
+		},
+	}
+
+	timeFilter, err := eng.generateTimeFilter(rule, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	rangeQuery, ok := timeFilter["range"].(util.MapStr)
+	if !ok {
+		t.Fatalf("expected range query, got %#v", timeFilter)
+	}
+	timeFieldRange, ok := rangeQuery["timestamp"].(util.MapStr)
+	if !ok {
+		t.Fatalf("expected timestamp range, got %#v", rangeQuery)
+	}
+	if _, ok = timeFieldRange["gte"]; !ok {
+		t.Fatalf("expected gte in range query, got %#v", timeFieldRange)
+	}
+	if _, ok = timeFieldRange["lte"]; !ok {
+		t.Fatalf("expected lte in range query, got %#v", timeFieldRange)
 	}
 }

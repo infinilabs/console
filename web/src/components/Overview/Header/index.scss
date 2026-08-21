@@ -6,6 +6,25 @@
     flex: 1 1 auto;
     max-width: 640px;
     display: flex;
+
+    :global(.ant-select-auto-complete.ant-select .ant-input-search.ant-select-search__field.ant-input-search-enter-button.ant-input-affix-wrapper) {
+      height: 100%;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    :global(.ant-select-auto-complete.ant-select .ant-input-search.ant-select-search__field.ant-input-search-enter-button.ant-input-affix-wrapper .ant-input-suffix) {
+      height: 100%;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    :global(.ant-select-auto-complete.ant-select .ant-input-search.ant-select-search__field.ant-input-search-enter-button.ant-input-affix-wrapper .ant-input-clear-icon) {
+      display: inline-flex;
+      align-items: center;
+      line-height: 1;
+    }
+
     .buttonGroup {
       width: 95px;
       .ant-radio-button-wrapper {
@@ -21,6 +40,7 @@
     background-color: #939ea0 !important;
     color: #fff;
   }
+
 }
 
 .suggest-item {

@@ -36,6 +36,7 @@ import (
 	"infini.sh/console/plugin/api/layout"
 	"infini.sh/console/plugin/api/notification"
 	"infini.sh/console/plugin/api/platform"
+	"infini.sh/console/plugin/api/settings"
 	"infini.sh/framework/core/api"
 )
 
@@ -52,7 +53,7 @@ func Init(cfg *config.AppConfig) {
 	api.HandleAPIMethod(api.POST, path.Join(esPrefix, "doc/:index"), handler.IndexRequired(handler.HandleAddDocumentAction, "doc.create"))
 	api.HandleAPIMethod(api.PUT, path.Join(esPrefix, "doc/:index/:docId"), handler.IndexRequired(handler.HandleUpdateDocumentAction, "doc.update"))
 	api.HandleAPIMethod(api.DELETE, path.Join(esPrefix, "doc/:index/:docId"), handler.IndexRequired(handler.HandleDeleteDocumentAction, "doc.delete"))
-	api.HandleAPIMethod(api.GET, path.Join(esPrefix, "doc/_validate"), handler.ValidateDocIDAction)
+	api.HandleAPIMethod(api.GET, path.Join(esPrefix, "doc/_validate"), handler.RequireClusterPermission(handler.RequirePermission(handler.ValidateDocIDAction, enum.PermissionElasticsearchIndexRead)))
 
 	api.HandleAPIMethod(api.GET, path.Join(esPrefix, "_cat/indices"), handler.RequireLogin(handler.HandleCatIndicesAction))
 	api.HandleAPIMethod(api.GET, path.Join(esPrefix, "index/:index/_mappings"), handler.IndexRequired(handler.HandleGetMappingsAction, "indices.get_mapping"))
@@ -80,4 +81,6 @@ func Init(cfg *config.AppConfig) {
 	email.InitAPI()
 	data.InitAPI()
 	platform.InitAPI()
+	settings.InitAPI()
+	initConsoleSelfAPI()
 }

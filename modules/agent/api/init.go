@@ -28,10 +28,13 @@
 package api
 
 import (
+	"context"
 	"infini.sh/console/core"
 	"infini.sh/console/core/security/enum"
 	"infini.sh/console/plugin/managed/server"
+	agentservice "infini.sh/console/service/agent"
 	"infini.sh/framework/core/api"
+	"infini.sh/framework/core/task"
 )
 
 type APIHandler struct {
@@ -40,23 +43,44 @@ type APIHandler struct {
 
 func Init() {
 	handler := APIHandler{}
+	registerAgentReverseChannel()
 	api.HandleAPIMethod(api.POST, "/host/_enroll", handler.enrollHost)
 	api.HandleAPIMethod(api.GET, "/host/:host_id/agent/info", handler.GetHostAgentInfo)
 	api.HandleAPIMethod(api.GET, "/host/:host_id/processes", handler.GetHostElasticProcess)
 	api.HandleAPIMethod(api.DELETE, "/host/:host_id", handler.deleteHost)
+	api.HandleAPIMethod(api.POST, "/agent/instance/stats", handler.RequirePermission(handler.getAgentInstanceStatus, enum.PermissionAgentInstanceRead))
 
 	//bind agent with nodes
 	api.HandleAPIMethod(api.GET, "/instance/:instance_id/node/_discovery", handler.RequirePermission(handler.discoveryESNodesInfo, enum.PermissionAgentInstanceRead))
 	api.HandleAPIMethod(api.POST, "/instance/:instance_id/node/_discovery", handler.RequirePermission(handler.discoveryESNodesInfo, enum.PermissionAgentInstanceRead))
 	api.HandleAPIMethod(api.POST, "/instance/:instance_id/node/_enroll", handler.RequirePermission(handler.enrollESNode, enum.PermissionAgentInstanceWrite))
 	api.HandleAPIMethod(api.POST, "/instance/:instance_id/node/_revoke", handler.RequirePermission(handler.revokeESNode, enum.PermissionAgentInstanceWrite))
+	api.HandleAPIMethod(api.POST, "/instance/:instance_id/cluster/:cluster_id/_collection_interval", handler.RequirePermission(handler.updateClusterCollectionInterval, enum.PermissionAgentInstanceWrite))
 
 	api.HandleAPIMethod(api.POST, "/instance/node/_auto_enroll", handler.RequirePermission(handler.autoEnrollESNode, enum.PermissionAgentInstanceWrite))
 
 	//get elasticsearch node logs, direct fetch or via stored logs(TODO)
-	api.HandleAPIMethod(api.GET, "/elasticsearch/:id/node/:node_id/logs/_list", handler.RequirePermission(handler.getLogFilesByNode, enum.PermissionAgentInstanceRead))
-	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/node/:node_id/logs/_read", handler.RequirePermission(handler.getLogFileContent, enum.PermissionAgentInstanceRead))
+	api.HandleAPIMethod(api.GET, "/elasticsearch/:id/node/:node_id/logs/_list", handler.RequireClusterPermission(handler.RequirePermission(handler.getLogFilesByNode, enum.PermissionElasticsearchMetricRead, enum.PermissionElasticsearchNodeRead)))
+	api.HandleAPIMethod(api.POST, "/elasticsearch/:id/node/:node_id/logs/_read", handler.RequireClusterPermission(handler.RequirePermission(handler.getLogFileContent, enum.PermissionElasticsearchMetricRead, enum.PermissionElasticsearchNodeRead)))
 
 	server.RegisterConfigProvider(remoteConfigProvider)
 	server.RegisterConfigProvider(dynamicAgentConfigProvider)
+	server.RegisterSecretProvider(agentSecretProvider)
+	agentservice.RegisterAutoEnrollCallback(func(clusterIDs []string) {
+		if err := startAutoEnroll(ClusterInfo{ClusterIDs: clusterIDs}); err != nil {
+			// ignore concurrent trigger errors here; manual/scheduled runs already cover the next pass
+		}
+	})
+	task.RegisterScheduleTask(task.ScheduleTask{
+		ID:          "agent-auto-enroll-clusters",
+		Description: "auto enroll agent clusters",
+		Type:        "interval",
+		Interval:    "24h",
+		Singleton:   true,
+		Task: func(ctx context.Context) {
+			if err := startAutoEnroll(ClusterInfo{}); err != nil {
+				// ignore concurrent trigger errors; the running task will complete the current scan
+			}
+		},
+	})
 }

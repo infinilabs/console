@@ -2,6 +2,7 @@ import React from "react";
 import { ESPrefix } from "@/services/common";
 import { formatter } from "@/utils/format";
 import Infos from "@/components/Overview/Detail/Infos";
+import { formatMessage } from "umi/locale";
 
 export default (props) => {
   const nodeID = props.data?._source?.metadata?.node_id;
@@ -44,7 +45,7 @@ export default (props) => {
 
   return (
     <Infos
-      header="Node Info"
+      header={formatMessage({ id: "overview.info.node" })}
       action={`${ESPrefix}/${clusterID}/node/${nodeID}/info`}
       formatInfo={formatInfo}
     />

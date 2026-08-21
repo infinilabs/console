@@ -24,7 +24,7 @@ class Repository extends Component {
     {
       title: '仓库名',
       dataIndex: 'id',
-      render: (text, record) => (<Fragment>
+      render: (text, record) => (<Fragment key={record.id}>
           <a onClick={() => this.handleRepoClick(record)}>{record.id}</a>
         </Fragment>
       )
@@ -36,7 +36,7 @@ class Repository extends Component {
     {
       title: '操作',
       render: (text, record) => (
-        <Fragment>
+        <Fragment key={record.id}>
           {/* <a onClick={() => this.handleDownload(record)}>下载</a>
           <Divider type="vertical" /> */}
           <a onClick={() => {
@@ -82,7 +82,7 @@ class Repository extends Component {
 
   render() {
     return (
-      <Fragment>
+      <Fragment key="repository">
         <Card
           bordered={false}
           onTabChange={this.onOperationTabChange}

@@ -12,6 +12,12 @@ import styles from "./index.less";
 
 const DEFAULT_COMMONLY_USED_RANGES = [
   {
+    start: "auto",
+    end: "auto",
+    label: "Auto",
+    key: "auto",
+  },
+  {
     start: "now/d",
     end: "now/d",
     label: "Today",
@@ -96,6 +102,7 @@ const DatePicker = (props) => {
     recentlyUsedRangesKey,
     onRefreshChange,
     onRefresh,
+    showAutoTimeRange = false,
   } = props;
 
   const [prevQuickSelect, setPrevQuickSelect] = useState();
@@ -237,11 +244,12 @@ const DatePicker = (props) => {
           timeFields={timeFields}
           showTimeInterval={showTimeInterval}
           timeInterval={timeInterval}
+          timeIntervalDisabled={timeIntervalDisabled}
           showTimeout={showTimeout}
           timeout={timeout}
           autoFitLoading={autoFitLoading}
           timeZone={timeZone}
-          commonlyUsedRanges={commonlyUsedRanges}
+          commonlyUsedRanges={commonlyUsedRanges.filter((item) => item.key !== 'auto' || showAutoTimeRange)}
           recentlyUsedRanges={recentlyUsedRanges}
           isMinimum={isMinimum}
           prevQuickSelect={prevQuickSelect}

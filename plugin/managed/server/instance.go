@@ -28,12 +28,20 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	console_common "infini.sh/console/common"
+	agent_common "infini.sh/console/modules/agent/common"
+	frameworkcredential "infini.sh/framework/core/credential"
 	"infini.sh/framework/core/event"
 	"infini.sh/framework/core/global"
 	"infini.sh/framework/core/task"
+	"io"
+	"net"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -54,14 +62,124 @@ import (
 var instanceConfigFiles = map[string][]string{}     //map instance->config files TODO lru cache, short life instance should be removed
 var instanceSecrets = map[string][]common.Secrets{} //map instance->secrets TODO lru cache, short life instance should be removed
 
+var getManagedInstanceByID = func(instance *model.Instance) (bool, error) {
+	return orm.GetV2(orm.NewContext(), instance)
+}
+
+var saveManagedInstanceRecord = func(instance *model.Instance) error {
+	return orm.Save(&orm.Context{Refresh: orm.WaitForRefresh}, instance)
+}
+
+var deleteManagedInstanceRecord = func(instance *model.Instance) error {
+	return orm.Delete(&orm.Context{
+		Refresh: orm.WaitForRefresh,
+	}, instance)
+}
+
+var cleanupDeletedInstanceArtifactsFunc = cleanupDeletedInstanceArtifacts
+
+func logManagedRegistration(stage string, instance *model.Instance, req *http.Request, detail string) {
+	if instance == nil {
+		return
+	}
+
+	remoteAddr := ""
+	if req != nil {
+		remoteAddr = req.RemoteAddr
+	}
+
+	message := fmt.Sprintf(
+		"managed agent registration %s: %v[%v], version=%v, endpoint=%v",
+		stage,
+		instance.Name,
+		instance.ID,
+		instance.Application.Version.VersionNumber,
+		console_common.MaskLogEndpoint(instance.Endpoint),
+	)
+	if remoteAddr != "" {
+		message = fmt.Sprintf("%s, remote=%v", message, remoteAddr)
+	}
+	if detail != "" {
+		message = fmt.Sprintf("%s, detail=%v", message, detail)
+	}
+
+	if stage == "failed" {
+		log.Warn(message)
+		return
+	}
+	log.Info(message)
+}
+
+func logLegacyManagedRegistration(stage string, instance *model.Instance, req *http.Request, detail string) {
+	if instance == nil {
+		return
+	}
+
+	remoteAddr := ""
+	if req != nil {
+		remoteAddr = req.RemoteAddr
+	}
+
+	message := fmt.Sprintf(
+		"legacy managed agent registration %s: %v[%v], version=%v, endpoint=%v",
+		stage,
+		instance.Name,
+		instance.ID,
+		instance.Application.Version.VersionNumber,
+		console_common.MaskLogEndpoint(instance.Endpoint),
+	)
+	if remoteAddr != "" {
+		message = fmt.Sprintf("%s, remote=%v", message, remoteAddr)
+	}
+	if detail != "" {
+		message = fmt.Sprintf("%s, detail=%v", message, detail)
+	}
+
+	log.Warn(message)
+}
+
+func decodeManagedRegisterRequest(req *http.Request) (common.InstanceRegisterRequest, error) {
+	registerReq := common.InstanceRegisterRequest{}
+	body, err := io.ReadAll(req.Body)
+	if err != nil {
+		return registerReq, err
+	}
+	req.Body = io.NopCloser(bytes.NewReader(body))
+
+	if err := util.FromJSONBytes(body, &registerReq); err != nil {
+		return registerReq, err
+	}
+	if registerReq.Client.Endpoint != "" || registerReq.Client.ID != "" {
+		req.Body = io.NopCloser(bytes.NewReader(body))
+		return registerReq, nil
+	}
+
+	legacyInstance := model.Instance{}
+	if err := util.FromJSONBytes(body, &legacyInstance); err == nil {
+		if legacyInstance.Endpoint != "" || legacyInstance.ID != "" {
+			registerReq.Client = legacyInstance
+		}
+	}
+	req.Body = io.NopCloser(bytes.NewReader(body))
+	return registerReq, nil
+}
+
 func init() {
 	//for public usage, agent can report self to server, usually need to enroll by manager
 	api.HandleAPIMethod(api.POST, common.REGISTER_API, handler.registerInstance) //client register self to config servers
+	api.HandleUIMethod(api.POST, common.REGISTER_API, handler.registerInstance)
+	api.HandleAPIMethod(api.POST, instanceTokenExchangeAPI, handler.exchangeInstanceToken)
+	api.HandleUIMethod(api.POST, instanceTokenExchangeAPI, handler.exchangeInstanceToken)
 
 	//for public usage, get install script
-	api.HandleAPIMethod(api.GET, GET_INSTALL_SCRIPT_API, handler.getInstallScript)
+	api.HandleAPIMethod(api.GET, getInstallScriptAPI, handler.getInstallScript)
+	api.HandleUIMethod(api.GET, getInstallScriptAPI, handler.getInstallScript)
+	api.HandleAPIMethod(api.GET, getGatewayInstallScriptAPI, handler.getGatewayInstallScript)
+	api.HandleUIMethod(api.GET, getGatewayInstallScriptAPI, handler.getGatewayInstallScript)
 
 	api.HandleAPIMethod(api.POST, "/instance/_generate_install_script", handler.RequireLogin(handler.generateInstallCommand))
+	api.HandleAPIMethod(api.POST, "/instance/_generate_gateway_install_script", handler.RequirePermission(handler.generateGatewayInstallCommand, enum.PermissionGatewayInstanceWrite))
+	api.HandleAPIMethod(api.POST, "/instance/_prepare_registration", handler.RequirePermission(handler.prepareRegistration, enum.PermissionGatewayInstanceWrite))
 
 	api.HandleAPIMethod(api.POST, "/instance", handler.RequirePermission(handler.createInstance, enum.PermissionGatewayInstanceWrite))
 	api.HandleAPIMethod(api.GET, "/instance/:instance_id", handler.RequirePermission(handler.getInstance, enum.PermissionAgentInstanceRead))
@@ -85,13 +203,12 @@ func init() {
 }
 
 func (h APIHandler) registerInstance(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-
-	var obj = &model.Instance{}
-	err := h.DecodeJSON(req, obj)
+	registerReq, err := decodeManagedRegisterRequest(req)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	obj := &registerReq.Client
 	if obj.Endpoint == "" {
 		h.WriteError(w, "empty endpoint", http.StatusInternalServerError)
 		return
@@ -99,19 +216,184 @@ func (h APIHandler) registerInstance(w http.ResponseWriter, req *http.Request, p
 
 	oldInst := &model.Instance{}
 	oldInst.ID = obj.ID
-	exists, err := orm.Get(oldInst)
-	if exists {
-		obj.Created = oldInst.Created
+	exists, err := orm.GetV2(orm.NewContext(), oldInst)
+	if err == elastic.ErrNotFound {
+		err = nil
+		exists = false
 	}
-	err = orm.Save(nil, obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	log.Infof("register instance: %v[%v], %v", obj.Name, obj.ID, obj.Endpoint)
+	logManagedRegistration("received", obj, req, fmt.Sprintf("existing=%v", exists))
+
+	var pendingToConsume *agent_common.PendingRegistrationToken
+	legacyManagerCredentialMigrated := false
+	legacyManagedRegister := false
+	writeRegisterError := func(status int, detail string) {
+		logManagedRegistration("failed", obj, req, fmt.Sprintf("status=%d, detail=%s", status, detail))
+		if legacyManagedRegister {
+			logLegacyManagedRegistration("failed", obj, req, detail)
+		}
+		h.WriteError(w, detail, status)
+	}
+
+	if common.SupportsManagedAccessToken(obj.Application.Name) {
+		legacyManagedRegister = isLegacyManagedRegisterRequest(req, obj, registerReq.AccessToken)
+		if legacyManagedRegister {
+			logLegacyManagedRegistration("detected", obj, req, "attempting compatibility registration")
+		}
+		tokenValue := agent_common.ExtractManagerToken(req)
+		if exists {
+			if oldInst.Created != nil {
+				obj.Created = oldInst.Created
+			}
+			obj.ManagerCredentialID = oldInst.ManagerCredentialID
+			obj.AccessCredentialID = oldInst.AccessCredentialID
+			obj.BasicAuth = oldInst.BasicAuth
+			var err error
+			if legacyManagedRegister {
+				err = validateLegacyCompatibleManagedAgentRequestAuthForVersion(req, oldInst, obj.Application.Version.VersionNumber)
+			} else {
+				err = validateManagedAgentRequestAuthFunc(req, oldInst)
+			}
+			if err != nil {
+				legacyManagerCredentialMigrated, err = migrateLegacyManagedRegisterAuth(req, obj, oldInst, registerReq.AccessToken)
+				if err != nil {
+					writeRegisterError(http.StatusInternalServerError, err.Error())
+					return
+				}
+				if !legacyManagerCredentialMigrated {
+					if agent_common.IsManagerAuthFailure(err) {
+						writeRegisterError(http.StatusUnauthorized, err.Error())
+					} else {
+						writeRegisterError(http.StatusInternalServerError, err.Error())
+					}
+					return
+				}
+			}
+		} else {
+			if legacyManagedRegister {
+				if err := validateLegacyCompatibleManagedAgentRequestAuth(req, obj); err != nil {
+					if agent_common.IsManagerAuthFailure(err) {
+						writeRegisterError(http.StatusUnauthorized, err.Error())
+					} else {
+						writeRegisterError(http.StatusInternalServerError, err.Error())
+					}
+					return
+				}
+			} else {
+				if tokenValue == "" {
+					writeRegisterError(http.StatusUnauthorized, "missing manager token")
+					return
+				}
+				pending, err := agent_common.FindPendingManagerTokenByValue(tokenValue)
+				if err != nil {
+					writeRegisterError(http.StatusInternalServerError, err.Error())
+					return
+				}
+				if pending == nil {
+					writeRegisterError(http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+					return
+				}
+				obj.ManagerCredentialID = pending.CredentialID
+				if err := renamePendingManagerCredential(obj, pending.CredentialID); err != nil {
+					writeRegisterError(http.StatusInternalServerError, err.Error())
+					return
+				}
+				if err := upsertInstanceAccessCredentialFunc(obj, registerReq.AccessToken); err != nil {
+					writeRegisterError(http.StatusInternalServerError, err.Error())
+					return
+				}
+				pendingToConsume = pending
+			}
+		}
+	} else if exists {
+		obj.Created = oldInst.Created
+	}
+
+	if exists && common.SupportsManagedAccessToken(obj.Application.Name) && registerReq.AccessToken != nil && !legacyManagerCredentialMigrated {
+		if err := upsertInstanceAccessCredentialFunc(obj, registerReq.AccessToken); err != nil {
+			writeRegisterError(http.StatusInternalServerError, err.Error())
+			return
+		}
+	}
+
+	err = saveManagedInstanceRecord(obj)
+	if err != nil {
+		writeRegisterError(http.StatusInternalServerError, err.Error())
+		return
+	}
+	if pendingToConsume != nil {
+		if err := agent_common.MarkPendingRegistrationTokenConsumed(pendingToConsume, obj.ID); err != nil {
+			writeRegisterError(http.StatusInternalServerError, err.Error())
+			return
+		}
+	}
+
+	log.Infof("register instance: %v[%v], %v", obj.Name, obj.ID, console_common.MaskLogEndpoint(obj.Endpoint))
+	detail := "registered successfully"
+	if exists {
+		detail = "updated existing registration successfully"
+	}
+	if legacyManagedRegister {
+		if legacyManagerCredentialMigrated {
+			detail = "registered successfully with manager credential migration"
+		}
+		logLegacyManagedRegistration("succeeded", obj, req, detail)
+	} else {
+		logManagedRegistration("succeeded", obj, req, detail)
+	}
 
 	h.WriteAckOKJSON(w)
+}
+
+func migrateLegacyManagedRegisterAuth(req *http.Request, current *model.Instance, existing *model.Instance, accessToken *common.RegisterToken) (bool, error) {
+	if req == nil || current == nil || existing == nil {
+		return false, nil
+	}
+	managerToken := strings.TrimSpace(agent_common.ExtractManagerToken(req))
+	if managerToken == "" || accessToken == nil || strings.TrimSpace(accessToken.Value) == "" {
+		return false, nil
+	}
+	if strings.TrimSpace(existing.ManagerCredentialID) != "" {
+		if !isLegacyManagedVersion(current.Application.Version.VersionNumber) {
+			return false, nil
+		}
+		pending, err := findPendingManagerTokenByValueFunc(managerToken)
+		if err != nil {
+			return false, err
+		}
+		if pending == nil {
+			return false, nil
+		}
+	}
+	if err := upsertInstanceManagerCredentialFunc(current, managerToken); err != nil {
+		return false, err
+	}
+	if err := upsertInstanceAccessCredentialFunc(current, accessToken); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func syncManagedInstanceEndpoint(client model.Instance) {
+	if client.ID == "" || client.Endpoint == "" {
+		return
+	}
+
+	existing := model.Instance{}
+	existing.ID = client.ID
+	exists, err := orm.GetV2(orm.NewContext(), &existing)
+	if err != nil || !exists || existing.Endpoint == client.Endpoint {
+		return
+	}
+
+	existing.Endpoint = client.Endpoint
+	if err := orm.Update(orm.NewContext(), &existing); err != nil {
+		log.Warnf("failed to update instance endpoint for [%s]: %v", client.ID, err)
+	}
 }
 
 func (h APIHandler) enrollInstance(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -125,7 +407,7 @@ func (h *APIHandler) getInstance(w http.ResponseWriter, req *http.Request, ps ht
 	obj := model.Instance{}
 	obj.ID = id
 
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":   id,
@@ -147,15 +429,22 @@ func (h *APIHandler) getInstance(w http.ResponseWriter, req *http.Request, ps ht
 }
 
 func (h *APIHandler) createInstance(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
-	var obj = &model.Instance{}
-	err := h.DecodeJSON(req, obj)
+	var reqBody struct {
+		model.Instance
+		RegistrationID string `json:"registration_id"`
+		AccessToken    string `json:"access_token"`
+	}
+	err := h.DecodeJSON(req, &reqBody)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
 		return
 	}
+	obj := &reqBody.Instance
+	var pendingToConsume *agent_common.PendingRegistrationToken
 
-	res, err := h.getInstanceInfo(obj.Endpoint, obj.BasicAuth)
+	probeAccessToken := effectiveInstanceProbeAccessToken(req, obj.Endpoint, reqBody.AccessToken)
+	res, err := h.getInstanceInfo(obj.Endpoint, obj.BasicAuth, probeAccessToken)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -171,7 +460,7 @@ func (h *APIHandler) createInstance(w http.ResponseWriter, req *http.Request, ps
 	}
 	obj.Application = res.Application
 
-	exists, err := orm.Get(obj)
+	exists, err := orm.GetV2(orm.NewContext(), obj)
 	if err != nil && err != elastic.ErrNotFound {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -181,11 +470,47 @@ func (h *APIHandler) createInstance(w http.ResponseWriter, req *http.Request, ps
 		h.WriteError(w, "instance already registered", http.StatusInternalServerError)
 		return
 	}
-	err = orm.Create(nil, obj)
+	if reqBody.RegistrationID != "" {
+		pending, err := agent_common.GetPendingRegistrationTokenByID(reqBody.RegistrationID)
+		if err != nil {
+			h.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if pending == nil || pending.Consumed || (pending.ExpiresAt > 0 && time.Now().UnixMilli() > pending.ExpiresAt) {
+			h.WriteError(w, "registration token is invalid", http.StatusUnauthorized)
+			return
+		}
+		obj.ManagerCredentialID = pending.CredentialID
+		if err := renamePendingManagerCredential(obj, pending.CredentialID); err != nil {
+			h.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		pendingToConsume = pending
+	}
+	if strings.TrimSpace(reqBody.AccessToken) != "" {
+		credentialID, err := agent_common.SaveTokenCredential(
+			agent_common.BuildAccessCredentialName(obj),
+			agent_common.BuildAccessCredentialTags(),
+			reqBody.AccessToken,
+		)
+		if err != nil {
+			h.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		obj.AccessCredentialID = credentialID
+		obj.BasicAuth = nil
+	}
+	err = orm.Create(&orm.Context{Refresh: orm.WaitForRefresh}, obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
 		return
+	}
+	if pendingToConsume != nil {
+		if err := agent_common.MarkPendingRegistrationTokenConsumed(pendingToConsume, obj.ID); err != nil {
+			h.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 
 	h.WriteJSON(w, util.MapStr{
@@ -201,7 +526,7 @@ func (h *APIHandler) deleteInstance(w http.ResponseWriter, req *http.Request, ps
 	obj := model.Instance{}
 	obj.ID = id
 
-	exists, err := orm.Get(&obj)
+	exists, err := getManagedInstanceByID(&obj)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":    id,
@@ -210,14 +535,22 @@ func (h *APIHandler) deleteInstance(w http.ResponseWriter, req *http.Request, ps
 		return
 	}
 
-	err = orm.Delete(nil, &obj)
+	err = deleteManagedInstanceRecord(&obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
 		return
 	}
 
-	h.WriteDeletedOKJSON(w, id)
+	payload := util.MapStr{
+		"_id":    id,
+		"result": "deleted",
+	}
+	if warnings := cleanupDeletedInstanceArtifactsFunc(&obj); len(warnings) > 0 {
+		payload["warnings"] = warnings
+	}
+
+	h.WriteJSON(w, payload, http.StatusOK)
 }
 
 func (h *APIHandler) updateInstance(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -225,7 +558,7 @@ func (h *APIHandler) updateInstance(w http.ResponseWriter, req *http.Request, ps
 	obj := model.Instance{}
 
 	obj.ID = id
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
 	if !exists || err != nil {
 		h.WriteJSON(w, util.MapStr{
 			"_id":    id,
@@ -247,7 +580,7 @@ func (h *APIHandler) updateInstance(w http.ResponseWriter, req *http.Request, ps
 	//protect
 	obj.ID = id
 	obj.Created = create
-	err = orm.Update(nil, &obj)
+	err = orm.Update(orm.NewContext(), &obj)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		log.Error(err)
@@ -264,6 +597,7 @@ func (h *APIHandler) searchInstance(w http.ResponseWriter, req *http.Request, ps
 
 	var (
 		application = h.GetParameterOrDefault(req, "application", "")
+		serviceType = strings.TrimSpace(h.GetParameterOrDefault(req, "service_type", ""))
 		keyword     = h.GetParameterOrDefault(req, "keyword", "")
 		queryDSL    = `{"query":{"bool":{"must":[%s]}}, "size": %d, "from": %d}`
 		strSize     = h.GetParameterOrDefault(req, "size", "20")
@@ -279,6 +613,12 @@ func (h *APIHandler) searchInstance(w http.ResponseWriter, req *http.Request, ps
 			mustBuilder.WriteString(",")
 		}
 		mustBuilder.WriteString(fmt.Sprintf(`{"term":{"application.name":"%s"}}`, application))
+	}
+	if serviceType != "" {
+		if mustBuilder.Len() > 0 {
+			mustBuilder.WriteString(",")
+		}
+		mustBuilder.WriteString(fmt.Sprintf(`{"bool":{"should":[{"term":{"labels.service_type":{"value":%q}}},{"term":{"metadata.labels.service_type":{"value":%q}}}],"minimum_should_match":1}}`, serviceType, serviceType))
 	}
 
 	size, _ := strconv.Atoi(strSize)
@@ -327,54 +667,157 @@ func (h *APIHandler) getInstanceStatus(w http.ResponseWriter, req *http.Request,
 	}
 	q.RawQuery = util.MustToJSONBytes(queryDSL)
 
-	err, res := orm.Search(&model.Instance{}, &q)
-	if err != nil {
+	instances := []model.Instance{}
+	if err, _ := orm.SearchWithJSONMapper(&instances, &q); err != nil {
 		log.Error(err)
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	result := util.MapStr{}
-	for _, item := range res.Result {
-		instance := util.MapStr(item.(map[string]interface{}))
-		if err != nil {
-			log.Error(err)
-			continue
-		}
-		endpoint, _ := instance.GetValue("endpoint")
-
-		gid, _ := instance.GetValue("id")
-
-		//req := &proxy.Request{
-		//	Endpoint: endpoint.(string),
-		//	Method:   http.MethodGet,
-		//	Path:     "/stats",
-		//}
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-		defer cancel()
-		req := &util.Request{
-			Method:  http.MethodGet,
-			Path:    "/stats",
-			Context: ctx,
-		}
-
-		username, _ := instance.GetValue("basic_auth.username")
-		if username != nil && username.(string) != "" {
-			password, _ := instance.GetValue("basic_auth.password")
-			if password != nil && password.(string) != "" {
-				req.SetBasicAuth(username.(string), password.(string))
-			}
-		}
-
+	for i := range instances {
+		instance := instances[i]
 		var resMap = util.MapStr{}
-		_, err := ProxyAgentRequest("runtime", endpoint.(string), req, &resMap)
-		if err != nil {
-			log.Error(endpoint, ",", err)
-			result[gid.(string)] = util.MapStr{}
+		if !fetchManagedInstanceStats(req, &instance, &resMap) {
+			result[instance.ID] = util.MapStr{}
 			continue
 		}
-		result[gid.(string)] = resMap
+		result[instance.ID] = resMap
 	}
 	h.WriteJSON(w, result, http.StatusOK)
+}
+
+func fetchManagedInstanceStats(currentReq *http.Request, instance *model.Instance, stats *util.MapStr) bool {
+	if instance == nil {
+		return false
+	}
+	if shouldFetchManagedInstanceStatsLocally(instance) && fetchManagedInstanceStatsLocally(stats) {
+		return true
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	req := &util.Request{
+		Method:  http.MethodGet,
+		Path:    "/stats",
+		Context: ctx,
+	}
+	if err := agent_common.ApplyInstanceRequestAuth(req, instance); err != nil {
+		log.Error(err)
+		return false
+	}
+	agent_common.ApplyBearerToken(req, effectiveManagedInstanceAccessToken(currentReq, instance))
+
+	if _, err := proxyInstanceRequest(instance, req, stats); err != nil {
+		log.Error(instance.GetEndpoint(), ",", err)
+		return false
+	}
+	return true
+}
+
+func shouldFetchManagedInstanceStatsLocally(instance *model.Instance) bool {
+	if instance == nil {
+		return false
+	}
+	if isCurrentManagedInstance(instance) {
+		return true
+	}
+	return shouldReuseCurrentRequestAuthForEndpoint(instance.GetEndpoint())
+}
+
+func isCurrentManagedInstance(instance *model.Instance) bool {
+	if instance == nil {
+		return false
+	}
+	instanceID := strings.TrimSpace(instance.ID)
+	if instanceID == "" {
+		return false
+	}
+	return instanceID == strings.TrimSpace(global.Env().SystemConfig.NodeConfig.ID)
+}
+
+func fetchManagedInstanceStatsLocally(stats *util.MapStr) bool {
+	if stats == nil {
+		return false
+	}
+	res, err := proxyManagedAPIRequestLocally(&util.Request{
+		Method: http.MethodGet,
+		Path:   "/stats",
+	}, stats)
+	if err != nil {
+		body := ""
+		status := 0
+		if res != nil {
+			body = string(res.Body)
+			status = res.StatusCode
+		}
+		log.Errorf("local /stats request failed, status: %d, body: %s", status, body)
+		return false
+	}
+	return true
+}
+
+func proxyManagedAPIRequestLocally(req *util.Request, responseObjectToUnMarshall interface{}) (*util.Result, error) {
+	if req == nil {
+		return nil, fmt.Errorf("request is nil")
+	}
+	requestPath := strings.TrimSpace(req.Path)
+	if requestPath == "" {
+		return nil, fmt.Errorf("request path is empty")
+	}
+
+	bodyReader := bytes.NewReader(req.Body)
+	localReq := httptest.NewRequest(req.Method, requestPath, bodyReader)
+	if req.Context != nil {
+		localReq = localReq.WithContext(req.Context)
+	}
+	for key, value := range req.AllHeaders() {
+		localReq.Header.Set(key, value)
+	}
+	if req.ContentType != "" {
+		localReq.Header.Set("Content-Type", req.ContentType)
+	}
+	applyConsoleLocalAPIAuth(localReq)
+
+	recorder := httptest.NewRecorder()
+	api.ServeRegisteredAPIRequest(recorder, localReq)
+	httpResult := recorder.Result()
+	defer httpResult.Body.Close()
+
+	res := &util.Result{
+		StatusCode: recorder.Code,
+		Body:       append([]byte(nil), recorder.Body.Bytes()...),
+		Headers:    map[string][]string{},
+	}
+	for key, values := range httpResult.Header {
+		res.Headers[strings.ToLower(key)] = append([]string(nil), values...)
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return res, fmt.Errorf("request error: %v, %v", nil, string(res.Body))
+	}
+	if responseObjectToUnMarshall != nil && len(res.Body) > 0 {
+		if err := util.FromJSONBytes(res.Body, responseObjectToUnMarshall); err != nil {
+			return res, err
+		}
+	}
+	return res, nil
+}
+
+func applyConsoleLocalAPIAuth(req *http.Request) {
+	if req == nil {
+		return
+	}
+	apiCfg := global.Env().SystemConfig.APIConfig
+	if !apiCfg.Security.Enabled {
+		return
+	}
+	username := strings.TrimSpace(apiCfg.Security.Username)
+	if username == "" {
+		return
+	}
+	req.SetBasicAuth(username, apiCfg.Security.Password)
 }
 func (h *APIHandler) clearInstance(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	appName := h.GetParameterOrDefault(req, "app_name", "")
@@ -438,7 +881,13 @@ func (h *APIHandler) clearInstanceByAppName(appName string) error {
 			// check whether the instance is still online
 			for _, instanceID := range toRemoveIDs {
 				if inst, ok := instsCache[instanceID]; ok {
-					_, err = h.getInstanceInfo(inst.Endpoint, inst.BasicAuth)
+					if _, tokenErr := agent_common.GetTokenCredentialValue(inst.AccessCredentialID); tokenErr != nil {
+						err = tokenErr
+					} else {
+						if inst != nil {
+							_, err = h.getRuntimeInstanceInfo(inst)
+						}
+					}
 					if err == nil {
 						// Skip online instance, do not append to filtered list
 						continue
@@ -559,55 +1008,120 @@ func (h *APIHandler) proxy(w http.ResponseWriter, req *http.Request, ps httprout
 		Context: ctx,
 		Body:    reqBody,
 	}
-	if obj.BasicAuth != nil {
-		req1.SetBasicAuth(obj.BasicAuth.Username, obj.BasicAuth.Password.Get())
+	if err := agent_common.ApplyInstanceRequestAuth(req1, obj); err != nil {
+		panic(err)
 	}
 
-	res, err := ProxyAgentRequest("runtime", obj.GetEndpoint(), req1, nil)
+	res, err := proxyInstanceRequest(obj, req1, nil)
 	if err != nil {
 		panic(err)
+	}
+
+	if isSensitiveInfoPath(path) && len(res.Body) > 0 {
+		res.Body, err = console_common.SanitizeInstanceInfoBytes(res.Body)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	h.WriteHeader(w, res.StatusCode)
 	h.Write(w, res.Body)
 }
 
-func (h *APIHandler) getInstanceInfo(endpoint string, basicAuth *model.BasicAuth) (*model.Instance, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-	req1 := &util.Request{
-		Method:  http.MethodGet,
-		Path:    "/_info",
-		Context: ctx,
-	}
-	if basicAuth != nil {
-		req1.SetBasicAuth(basicAuth.Username, basicAuth.Password.Get())
-	}
-	obj := &model.Instance{}
-	_, err := ProxyAgentRequest("runtime", endpoint, req1, obj)
-	if err != nil {
-		return nil, err
-	}
-	return obj, err
+func (h *APIHandler) getInstanceInfo(endpoint string, basicAuth *model.BasicAuth, accessToken string) (*model.Instance, error) {
+	paths := buildInstanceInfoPaths(false, accessToken)
 
+	var lastErr error
+	for _, infoPath := range paths {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+		req1 := &util.Request{
+			Method:  http.MethodGet,
+			Path:    infoPath,
+			Context: ctx,
+		}
+		if strings.TrimSpace(accessToken) != "" {
+			agent_common.ApplyBearerToken(req1, accessToken)
+		} else if basicAuth != nil {
+			req1.SetBasicAuth(basicAuth.Username, basicAuth.Password.Get())
+		}
+		obj := &model.Instance{}
+		res, err := ProxyAgentRequest("runtime", endpoint, req1, obj)
+		cancel()
+		if err == nil {
+			return obj, nil
+		}
+		if lastErr == nil {
+			lastErr = err
+		}
+		if !shouldFallbackInstanceInfoPath(infoPath, res, err) {
+			return nil, err
+		}
+	}
+
+	return nil, lastErr
+}
+
+func (h *APIHandler) getRuntimeInstanceInfo(instance *model.Instance) (*model.Instance, error) {
+	if instance == nil {
+		return nil, fmt.Errorf("instance is nil")
+	}
+
+	paths := buildInstanceInfoPaths(strings.EqualFold(instance.Application.Name, "agent"), "")
+	var lastErr error
+	for _, infoPath := range paths {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+		req1 := &util.Request{
+			Method:  http.MethodGet,
+			Path:    infoPath,
+			Context: ctx,
+		}
+		if err := agent_common.ApplyInstanceRequestAuth(req1, instance); err != nil {
+			cancel()
+			return nil, err
+		}
+
+		obj := &model.Instance{}
+		res, err := proxyInstanceRequest(instance, req1, obj)
+		cancel()
+		if err == nil {
+			return obj, nil
+		}
+		if lastErr == nil {
+			lastErr = err
+		}
+		if !shouldFallbackInstanceInfoPath(infoPath, res, err) {
+			return nil, err
+		}
+	}
+	return nil, lastErr
 }
 
 func (h *APIHandler) tryConnect(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	var reqBody = struct {
-		Endpoint  string           `json:"endpoint"`
-		BasicAuth *model.BasicAuth `json:"basic_auth"`
+		Endpoint    string           `json:"endpoint"`
+		BasicAuth   *model.BasicAuth `json:"basic_auth"`
+		AccessToken string           `json:"access_token"`
 	}{}
 	err := h.DecodeJSON(req, &reqBody)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	connectRes, err := h.getInstanceInfo(reqBody.Endpoint, reqBody.BasicAuth)
+	probeAccessToken := effectiveInstanceProbeAccessToken(req, reqBody.Endpoint, reqBody.AccessToken)
+	connectRes, err := h.getInstanceInfo(reqBody.Endpoint, reqBody.BasicAuth, probeAccessToken)
 	if err != nil {
 		h.WriteError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	h.WriteJSON(w, connectRes, http.StatusOK)
+	h.WriteJSON(w, console_common.SanitizeInstanceInfoMap(util.MapStr{
+		"id":          connectRes.ID,
+		"name":        connectRes.Name,
+		"application": connectRes.Application,
+		"labels":      connectRes.Labels,
+		"tags":        connectRes.Tags,
+		"description": connectRes.Description,
+		"status":      connectRes.Status,
+	}), http.StatusOK)
 }
 
 func (h *APIHandler) tryESConnect(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
@@ -654,11 +1168,11 @@ func (h *APIHandler) tryESConnect(w http.ResponseWriter, req *http.Request, ps h
 		Context: ctx,
 		Body:    body,
 	}
-	if reqBody.BasicAuth != nil {
-		req1.SetBasicAuth(reqBody.BasicAuth.Username, reqBody.BasicAuth.Password.Get())
+	if err := agent_common.ApplyInstanceRequestAuth(req1, instance); err != nil {
+		panic(err)
 	}
 
-	res, err := ProxyAgentRequest("runtime", instance.GetEndpoint(), req1, nil)
+	res, err := proxyInstanceRequest(instance, req1, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -674,11 +1188,137 @@ func (h *APIHandler) tryESConnect(w http.ResponseWriter, req *http.Request, ps h
 	h.Write(w, res.Body)
 }
 
+func isSensitiveInfoPath(rawPath string) bool {
+	if rawPath == "" {
+		return false
+	}
+	parsed, err := url.Parse(rawPath)
+	if err != nil {
+		return rawPath == "/_info" || rawPath == "/agent/_info"
+	}
+	return parsed.Path == "/_info" || parsed.Path == "/agent/_info"
+}
+
+func buildInstanceInfoPaths(isAgent bool, accessToken string) []string {
+	if isAgent || strings.TrimSpace(accessToken) != "" {
+		return []string{"/agent/_info", "/_info"}
+	}
+	return []string{"/_info"}
+}
+
+func effectiveInstanceProbeAccessToken(req *http.Request, endpoint, accessToken string) string {
+	accessToken = strings.TrimSpace(accessToken)
+	if accessToken != "" {
+		return accessToken
+	}
+	if req == nil || !shouldReuseCurrentRequestAuthForEndpoint(endpoint) {
+		return ""
+	}
+	return agent_common.ExtractBearerToken(req)
+}
+
+func effectiveManagedInstanceAccessToken(req *http.Request, instance *model.Instance) string {
+	if instance == nil {
+		return ""
+	}
+	if instance.AccessCredentialID != "" || instance.BasicAuth != nil {
+		return ""
+	}
+	if !shouldReuseCurrentRequestAuthForEndpoint(instance.GetEndpoint()) {
+		return ""
+	}
+	return agent_common.ExtractBearerToken(req)
+}
+
+func shouldReuseCurrentRequestAuthForEndpoint(endpoint string) bool {
+	parsed, err := url.Parse(strings.TrimSpace(endpoint))
+	if err != nil || parsed == nil {
+		return false
+	}
+	host := strings.TrimSpace(parsed.Hostname())
+	if !isLocalManagedEndpointHost(host) {
+		return false
+	}
+	port := endpointPort(parsed)
+	if port == "" {
+		return false
+	}
+	if global.Env().SystemConfig.WebAppConfig.Enabled && endpointMatchesPort(global.Env().SystemConfig.WebAppConfig.GetEndpoint(), port) {
+		return true
+	}
+	if global.Env().SystemConfig.APIConfig.Enabled && endpointMatchesPort(global.Env().SystemConfig.APIConfig.GetEndpoint(), port) {
+		return true
+	}
+	return false
+}
+
+func isLocalManagedEndpointHost(host string) bool {
+	host = strings.TrimSpace(host)
+	if host == "" {
+		return false
+	}
+	if strings.EqualFold(host, "localhost") {
+		return true
+	}
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return false
+	}
+	if ip.IsLoopback() {
+		return true
+	}
+	for _, localIP := range util.GetLocalIPs() {
+		if parsed := net.ParseIP(strings.TrimSpace(localIP)); parsed != nil && parsed.Equal(ip) {
+			return true
+		}
+	}
+	return false
+}
+
+func endpointMatchesPort(endpoint, port string) bool {
+	parsed, err := url.Parse(strings.TrimSpace(endpoint))
+	if err != nil || parsed == nil {
+		return false
+	}
+	return endpointPort(parsed) == port
+}
+
+func endpointPort(parsed *url.URL) string {
+	if parsed == nil {
+		return ""
+	}
+	if port := strings.TrimSpace(parsed.Port()); port != "" {
+		return port
+	}
+	switch strings.ToLower(strings.TrimSpace(parsed.Scheme)) {
+	case "https":
+		return "443"
+	case "http":
+		return "80"
+	default:
+		return ""
+	}
+}
+
+func shouldFallbackInstanceInfoPath(path string, res *util.Result, err error) bool {
+	if path != "/agent/_info" || err == nil {
+		return false
+	}
+	if res != nil {
+		return res.StatusCode == http.StatusNotFound
+	}
+	return true
+}
+
 // TODO check permission by user
 func GetRuntimeInstanceByID(instanceID string) (bool, *model.Instance, error) {
 	obj := model.Instance{}
 	obj.ID = instanceID
-	exists, err := orm.Get(&obj)
+	exists, err := orm.GetV2(orm.NewContext(), &obj)
+	if err == elastic.ErrNotFound {
+		err = nil
+		exists = false
+	}
 	if !exists || err != nil {
 		if !exists {
 			err = fmt.Errorf("instance not found")
@@ -686,4 +1326,159 @@ func GetRuntimeInstanceByID(instanceID string) (bool, *model.Instance, error) {
 		return exists, nil, err
 	}
 	return true, &obj, err
+}
+
+func renamePendingManagerCredential(instance *model.Instance, credentialID string) error {
+	if instance == nil || credentialID == "" {
+		return nil
+	}
+	tokenValue, err := agent_common.GetTokenCredentialValue(credentialID)
+	if err != nil {
+		return err
+	}
+	return agent_common.UpdateTokenCredential(
+		credentialID,
+		agent_common.BuildManagerCredentialName(instance),
+		agent_common.BuildManagerCredentialTags(),
+		tokenValue,
+	)
+}
+
+func upsertInstanceAccessCredential(instance *model.Instance, registerToken *common.RegisterToken) error {
+	if instance == nil || registerToken == nil || strings.TrimSpace(registerToken.Value) == "" {
+		return nil
+	}
+	if instance.AccessCredentialID != "" {
+		return agent_common.UpdateTokenCredential(
+			instance.AccessCredentialID,
+			agent_common.BuildAccessCredentialName(instance),
+			agent_common.BuildAccessCredentialTags(),
+			registerToken.Value,
+		)
+	}
+	credentialID, err := agent_common.SaveTokenCredential(
+		agent_common.BuildAccessCredentialName(instance),
+		agent_common.BuildAccessCredentialTags(),
+		registerToken.Value,
+	)
+	if err != nil {
+		return err
+	}
+	instance.AccessCredentialID = credentialID
+	instance.BasicAuth = nil
+	return nil
+}
+
+var canDeleteCredentialAfterInstanceRemoval = func(credentialID string) (bool, error) {
+	credentialID = strings.TrimSpace(credentialID)
+	if credentialID == "" {
+		return false, nil
+	}
+
+	q := orm.Query{
+		Size:  0,
+		Conds: orm.And(orm.Eq("credential_id", credentialID)),
+	}
+	err, result := orm.Search(elastic2.ElasticsearchConfig{}, &q)
+	if err != nil {
+		return false, fmt.Errorf("query elasticsearch config error: %w", err)
+	}
+	if result.Total > 0 {
+		return false, nil
+	}
+
+	q = orm.Query{
+		Size: 0,
+		Conds: orm.Or(
+			orm.Eq("manager_credential_id", credentialID),
+			orm.Eq("access_credential_id", credentialID),
+		),
+	}
+	err, result = orm.Search(model.Instance{}, &q)
+	if err != nil {
+		return false, fmt.Errorf("query instance config error: %w", err)
+	}
+	return result.Total == 0, nil
+}
+
+var deleteCredentialByID = func(credentialID string) error {
+	credentialID = strings.TrimSpace(credentialID)
+	if credentialID == "" {
+		return nil
+	}
+
+	cred := frameworkcredential.Credential{}
+	cred.ID = credentialID
+	exists, err := orm.GetV2(orm.NewContext(), &cred)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return nil
+	}
+	return orm.Delete(&orm.Context{Refresh: orm.WaitForRefresh}, &cred)
+}
+
+var deletePendingRegistrationTokensByInstanceID = func(instanceID string) error {
+	instanceID = strings.TrimSpace(instanceID)
+	if instanceID == "" {
+		return nil
+	}
+
+	query := orm.Query{
+		Size: 1000,
+		Conds: orm.And(
+			orm.Eq("instance_id", instanceID),
+		),
+	}
+	records := []agent_common.PendingRegistrationToken{}
+	if err, _ := orm.SearchWithJSONMapper(&records, &query); err != nil {
+		return err
+	}
+
+	ctx := &orm.Context{Refresh: orm.WaitForRefresh}
+	for i := range records {
+		if err := orm.Delete(ctx, &records[i]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func cleanupDeletedInstanceArtifacts(instance *model.Instance) []string {
+	if instance == nil {
+		return nil
+	}
+
+	warnings := []string{}
+	seenCredentials := map[string]struct{}{}
+
+	for _, credentialID := range []string{instance.ManagerCredentialID, instance.AccessCredentialID} {
+		credentialID = strings.TrimSpace(credentialID)
+		if credentialID == "" {
+			continue
+		}
+		if _, exists := seenCredentials[credentialID]; exists {
+			continue
+		}
+		seenCredentials[credentialID] = struct{}{}
+
+		deletable, err := canDeleteCredentialAfterInstanceRemoval(credentialID)
+		if err != nil {
+			warnings = append(warnings, fmt.Sprintf("failed to inspect credential [%s]: %v", credentialID, err))
+			continue
+		}
+		if !deletable {
+			continue
+		}
+		if err := deleteCredentialByID(credentialID); err != nil {
+			warnings = append(warnings, fmt.Sprintf("failed to delete credential [%s]: %v", credentialID, err))
+		}
+	}
+
+	if err := deletePendingRegistrationTokensByInstanceID(instance.ID); err != nil {
+		warnings = append(warnings, fmt.Sprintf("failed to delete pending registration token for instance [%s]: %v", instance.ID, err))
+	}
+
+	return warnings
 }

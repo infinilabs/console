@@ -22,15 +22,41 @@ import { Card, Empty } from "antd";
 import { CreateEditComplexFieldContainer } from "@/components/vendor/index_pattern_management/public/components/edit_index_pattern/create_edit_complex_field";
 
 const IndexPatterns = (props) => {
-  if (!props.selectedCluster?.id) {
-    return <Card ><Empty image={Empty.PRESENTED_IMAGE_SIMPLE} /></Card>;
-  }
   const history = useMemo(() => {
     return new ScopedHistory(props.history, "/data/views");
   }, [props.history]);
 
+  const breadcrumbList = useMemo(() => {
+    const pathname = props.location?.pathname || "";
+    const items = [
+      {
+        title: formatMessage({ id: "menu.home" }),
+        href: "/",
+      },
+      {
+        title: formatMessage({ id: "menu.data" }),
+      },
+      {
+        title: formatMessage({ id: "menu.data.view" }),
+        href: "/data/views",
+      },
+    ];
+
+    if (pathname.startsWith("/data/views/create")) {
+      items.push({
+        title: formatMessage({ id: "menu.data.view.create" }),
+      });
+    } else if (pathname.startsWith("/data/views/patterns/")) {
+      items.push({
+        title: formatMessage({ id: "menu.data.view.detail" }),
+      });
+    }
+
+    return items;
+  }, [props.location?.pathname]);
+
   const createComponentKey = useMemo(() => {
-    const { http, uiSettings } = useGlobalContext();
+    const { http } = useGlobalContext();
     http.getServerBasePath = () => {
       return `${ESPrefix}/` + props.selectedCluster?.id;
     };
@@ -38,6 +64,10 @@ const IndexPatterns = (props) => {
   }, [props.selectedCluster]);
 
   useEffect(() => {
+    if (!props.selectedCluster?.id) {
+      return;
+    }
+
     const { http, uiSettings } = useGlobalContext();
     const initFetch = async () => {
       const defaultIndex = await http.fetch(
@@ -48,11 +78,21 @@ const IndexPatterns = (props) => {
     initFetch();
   }, [props.selectedCluster]);
 
+  if (!props.selectedCluster?.id) {
+    return (
+      <PageHeaderWrapper breadcrumbList={breadcrumbList}>
+        <Card>
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        </Card>
+      </PageHeaderWrapper>
+    );
+  }
+
   return (
     <Router history={history}>
       <Switch>
         <Route path={["/create"]}>
-          <PageHeaderWrapper>
+          <PageHeaderWrapper breadcrumbList={breadcrumbList}>
             <CreateIndexPatternWizardWithRouter key={createComponentKey} />
           </PageHeaderWrapper>
         </Route>
@@ -76,10 +116,12 @@ const IndexPatterns = (props) => {
           <EditIndexPatternContainer selectedCluster={props.selectedCluster} />
         </Route>
         <Route path={["/"]}>
-          <IndexPatternTableWithRouter
-            canSave={hasAuthority("data.view:all")}
-            selectedCluster={props.selectedCluster}
-          />
+          <PageHeaderWrapper breadcrumbList={breadcrumbList}>
+            <IndexPatternTableWithRouter
+              canSave={hasAuthority("data.view:all")}
+              selectedCluster={props.selectedCluster}
+            />
+          </PageHeaderWrapper>
         </Route>
       </Switch>
     </Router>

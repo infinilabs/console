@@ -29,13 +29,17 @@ package server
 
 import (
 	log "github.com/cihub/seelog"
+	agent_common "infini.sh/console/modules/agent/common"
 	httprouter "infini.sh/framework/core/api/router"
 	config3 "infini.sh/framework/core/config"
 	"infini.sh/framework/core/global"
+	"infini.sh/framework/core/kv"
 	"infini.sh/framework/core/model"
+	"infini.sh/framework/core/orm"
 	"infini.sh/framework/core/util"
 	"infini.sh/framework/modules/configs/common"
 	"infini.sh/framework/modules/configs/config"
+	elastic "infini.sh/framework/modules/elastic"
 	"net/http"
 	"path"
 	"sync"
@@ -43,11 +47,84 @@ import (
 
 var configProvidersLock = sync.RWMutex{}
 var configProviders = []func(instance model.Instance) []*common.ConfigFile{}
+var secretProviders = []func(instance model.Instance) *common.Secrets{}
+
+const managedSecretsHashBucket = "managed_instance_secret_hash"
+
+type managedConfigLogSummary struct {
+	Name     string `json:"name,omitempty"`
+	Location string `json:"location,omitempty"`
+	Updated  int64  `json:"updated,omitempty"`
+	Version  int64  `json:"version,omitempty"`
+	Size     int64  `json:"size,omitempty"`
+	Readonly bool   `json:"readonly,omitempty"`
+	Managed  bool   `json:"managed"`
+	Hash     string `json:"hash,omitempty"`
+}
+
+func managedConfigEffectiveHash(cfg common.ConfigFile) string {
+	if cfg.Hash != "" {
+		return cfg.Hash
+	}
+	if cfg.Content == "" {
+		return ""
+	}
+	return util.MD5digest(cfg.Content)
+}
+
+func managedConfigChanged(serverCfg, clientCfg common.ConfigFile) bool {
+	if serverCfg.Version > clientCfg.Version {
+		return true
+	}
+	if serverCfg.Version < clientCfg.Version {
+		return false
+	}
+
+	serverHash := managedConfigEffectiveHash(serverCfg)
+	clientHash := managedConfigEffectiveHash(clientCfg)
+	if serverHash != "" && clientHash != "" {
+		return serverHash != clientHash
+	}
+	if serverCfg.Content != "" && clientCfg.Content != "" {
+		return serverCfg.Content != clientCfg.Content
+	}
+	return serverCfg.Updated > clientCfg.Updated
+}
 
 func RegisterConfigProvider(provider func(instance model.Instance) []*common.ConfigFile) {
 	configProvidersLock.Lock()
 	defer configProvidersLock.Unlock()
 	configProviders = append(configProviders, provider)
+}
+
+func RegisterSecretProvider(provider func(instance model.Instance) *common.Secrets) {
+	configProvidersLock.Lock()
+	defer configProvidersLock.Unlock()
+	secretProviders = append(secretProviders, provider)
+}
+
+func summarizeManagedConfigsForLog(cfgs []*common.ConfigFile) []managedConfigLogSummary {
+	if len(cfgs) == 0 {
+		return nil
+	}
+
+	summaries := make([]managedConfigLogSummary, 0, len(cfgs))
+	for _, cfg := range cfgs {
+		if cfg == nil {
+			continue
+		}
+		summaries = append(summaries, managedConfigLogSummary{
+			Name:     cfg.Name,
+			Location: cfg.Location,
+			Updated:  cfg.Updated,
+			Version:  cfg.Version,
+			Size:     cfg.Size,
+			Readonly: cfg.Readonly,
+			Managed:  cfg.Managed,
+			Hash:     cfg.Hash,
+		})
+	}
+	return summaries
 }
 
 func refreshConfigsRepo() {
@@ -120,7 +197,50 @@ func getSecretsForInstance(instance model.Instance) *common.Secrets {
 			}
 		}
 	}
+
+	for _, providerSecrets := range getSecretsFromExternalProviders(instance) {
+		if providerSecrets == nil {
+			continue
+		}
+		for k, v := range providerSecrets.Keystore {
+			secrets.Keystore[k] = v
+		}
+	}
 	return &secrets
+}
+
+func getManagedSecretsHash(secrets *common.Secrets) string {
+	if secrets == nil || len(secrets.Keystore) == 0 {
+		return ""
+	}
+	return util.MD5digestString(util.MustToJSONBytes(secrets))
+}
+
+func getManagedSecretsHashKey(instance model.Instance) []byte {
+	return []byte(instance.ID)
+}
+
+func shouldSyncManagedSecrets(instance model.Instance, secrets *common.Secrets) bool {
+	hash := getManagedSecretsHash(secrets)
+	if hash == "" {
+		return false
+	}
+	currentHash, err := kv.GetValue(managedSecretsHashBucket, getManagedSecretsHashKey(instance))
+	if err != nil {
+		log.Error(err)
+		return true
+	}
+	return string(currentHash) != hash
+}
+
+func markManagedSecretsSynced(instance model.Instance, secrets *common.Secrets) {
+	hash := getManagedSecretsHash(secrets)
+	if hash == "" {
+		return
+	}
+	if err := kv.AddValue(managedSecretsHashBucket, getManagedSecretsHashKey(instance), []byte(hash)); err != nil {
+		log.Error(err)
+	}
 }
 
 func getConfigsForInstance(instance model.Instance) []*common.ConfigFile {
@@ -168,6 +288,42 @@ func (h APIHandler) syncConfigs(w http.ResponseWriter, req *http.Request, ps htt
 		log.Trace("request:", util.MustToJSON(obj))
 	}
 
+	if common.SupportsManagedAccessToken(obj.Client.Application.Name) {
+		instance := model.Instance{}
+		instance.ID = obj.Client.ID
+		exists, err := orm.GetV2(orm.NewContext(), &instance)
+		if err == elastic.ErrNotFound {
+			err = nil
+			exists = false
+		}
+		if err != nil {
+			h.WriteError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if !exists {
+			h.WriteError(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+		var authErr error
+		if shouldAllowLegacyManagedRequestWithoutAuthVersion(req, obj.Client.Application.Version.VersionNumber) {
+			authErr = validateLegacyCompatibleManagedAgentRequestAuthForVersion(req, &instance, obj.Client.Application.Version.VersionNumber)
+		} else {
+			authErr = validateManagedAgentRequestAuth(req, &instance)
+		}
+		if authErr != nil {
+			if agent_common.IsManagerAuthFailure(authErr) {
+				h.WriteError(w, authErr.Error(), http.StatusUnauthorized)
+			} else {
+				h.WriteError(w, authErr.Error(), http.StatusInternalServerError)
+			}
+			return
+		}
+		obj.Client.ManagerCredentialID = instance.ManagerCredentialID
+		obj.Client.AccessCredentialID = instance.AccessCredentialID
+	}
+
+	syncManagedInstanceEndpoint(obj.Client)
+
 	//TODO, check the client's and the server's hash, if same, skip the sync
 
 	var res = common.ConfigSyncResponse{}
@@ -195,7 +351,7 @@ func (h APIHandler) syncConfigs(w http.ResponseWriter, req *http.Request, ps htt
 	}
 
 	if global.Env().IsDebug {
-		log.Debugf("get configs for agent(%v): %v", obj.Client.ID, util.MustToJSON(cfgs))
+		log.Debugf("get %d configs for agent(%v): %v", len(cfgs), obj.Client.ID, util.MustToJSON(summarizeManagedConfigsForLog(cfgs)))
 	}
 
 	if cfgs == nil || len(cfgs) == 0 {
@@ -238,13 +394,12 @@ func (h APIHandler) syncConfigs(w http.ResponseWriter, req *http.Request, ps htt
 					}
 
 					if global.Env().IsDebug {
-						log.Debugf("check version for config %v, %v vs %v, %v", k, v.Version, x.Version, x.Managed)
+						log.Tracef("check version for config %v, %v vs %v, %v", k, v.Version, x.Version, x.Managed)
 					}
 
-					//let's diff the version
-					if v.Version > x.Version {
+					if managedConfigChanged(v, x) {
 						if global.Env().IsDebug {
-							log.Trace("get newly version from server, let's sync to client: ", k)
+							log.Trace("managed config changed, let's sync to client: ", k, ", server version/hash=", v.Version, "/", managedConfigEffectiveHash(v), ", client version/hash=", x.Version, "/", managedConfigEffectiveHash(x))
 						}
 
 						res.Configs.UpdatedConfigs[k] = v
@@ -285,13 +440,19 @@ func (h APIHandler) syncConfigs(w http.ResponseWriter, req *http.Request, ps htt
 		}
 	}
 
-	//only if config changed, we change try to update the client's secrets, //TODO maybe there are coupled
-	if res.Changed {
-		secrets := getSecretsForInstance(obj.Client)
+	secrets := getSecretsForInstance(obj.Client)
+	secretsChanged := shouldSyncManagedSecrets(obj.Client, secrets)
+
+	// sync secrets when either config changed or the managed secret payload changed.
+	if res.Changed || secretsChanged {
+		res.Changed = true
 		res.Secrets = secrets
 	}
 
 	h.WriteJSON(w, res, 200)
+	if res.Changed && res.Secrets != nil {
+		markManagedSecretsSynced(obj.Client, res.Secrets)
+	}
 
 }
 
@@ -306,4 +467,17 @@ func getConfigsFromExternalProviders(client model.Instance) []*common.ConfigFile
 		}
 	}
 	return cfgs
+}
+
+func getSecretsFromExternalProviders(client model.Instance) []*common.Secrets {
+	configProvidersLock.Lock()
+	defer configProvidersLock.Unlock()
+	var secrets []*common.Secrets
+	for _, p := range secretProviders {
+		s := p(client)
+		if s != nil {
+			secrets = append(secrets, s)
+		}
+	}
+	return secrets
 }

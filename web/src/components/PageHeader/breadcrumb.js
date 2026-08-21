@@ -15,7 +15,7 @@ export const getBreadcrumb = (breadcrumbNameMap, url) => {
   }
   return (
     breadcrumb || {
-      name: url.split("/").pop(),
+      hideInBreadcrumb: true,
     }
   );
 };

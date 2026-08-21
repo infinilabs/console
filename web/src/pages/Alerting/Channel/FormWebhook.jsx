@@ -45,26 +45,34 @@ export default (props) => {
     <>
       {
         !isAdvanced && (
-          <Form.Item label="Webhook URL">
+          <Form.Item
+            label={formatMessage({ id: "alert.channel.form.webhook.url" })}
+          >
             {getFieldDecorator([valueProps, 'webhook', 'url'].filter((item) => !!item).join('.'), {
               initialValue: editValue?.url,
               rules: [
                 {
                   required: true,
-                  message: "Please input URL!",
+                  message: formatMessage({
+                    id: "alert.channel.form.webhook.url.required",
+                  }),
                 },
               ],
             })(<Input />)}
           </Form.Item>
         )
       }
-      <Form.Item label="HTTP Method">
+      <Form.Item
+        label={formatMessage({ id: "alert.channel.form.webhook.method" })}
+      >
         {getFieldDecorator([valueProps, 'webhook', 'method'].filter((item) => !!item).join('.'), {
           initialValue: editValue?.method || "POST",
           rules: [
             {
               required: true,
-              message: "Please select method!",
+              message: formatMessage({
+                id: "alert.channel.form.webhook.method.required",
+              }),
             },
           ],
         })(
@@ -74,7 +82,9 @@ export default (props) => {
           </Select>
         )}
       </Form.Item>
-      <Form.Item label="Headers">
+      <Form.Item
+        label={formatMessage({ id: "alert.channel.form.webhook.headers" })}
+      >
         <FormHttpHeaders
           form={props.form}
           headerParams={editValue.header_params}
@@ -92,13 +102,18 @@ export default (props) => {
         )
       }
       
-      <Form.Item label="Body" extra={<VariablesExampleLabel />}>
+      <Form.Item
+        label={formatMessage({ id: "alert.channel.form.webhook.body" })}
+        extra={<VariablesExampleLabel />}
+      >
         {getFieldDecorator([valueProps, 'webhook', 'body'].filter((item) => !!item).join('.'), {
           initialValue: editValue?.body,
           rules: [
             {
               required: true,
-              message: "Please input body!",
+              message: formatMessage({
+                id: "alert.channel.form.webhook.body.required",
+              }),
             },
           ],
         })(

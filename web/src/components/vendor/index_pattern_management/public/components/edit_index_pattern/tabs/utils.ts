@@ -22,6 +22,7 @@ import { Dictionary, countBy, defaults, uniq } from 'lodash';
 import { IndexPatternManagementStart } from '../../../../../../plugins/index_pattern_management/public';
 import { TAB_INDEXED_FIELDS, TAB_SCRIPTED_FIELDS, TAB_SOURCE_FILTERS } from '../constants';
 import { IndexPattern, IndexPatternField } from '../../../import';
+import { formatMessage } from "umi/locale";
 
 function filterByName(items: IndexPatternField[], filter: string) {
   const lowercaseFilter = (filter || '').toLowerCase();
@@ -56,13 +57,13 @@ function getTitle(type: string, filteredCount: Dictionary<number>, totalCount: D
   let title = '';
   switch (type) {
     case 'indexed':
-      title = 'Fields';
+      title = formatMessage({ id: "explore.view.index_pattern.tab.fields" });
       break;
     case 'scripted':
-      title = 'Scripted fields';
+      title = formatMessage({ id: "explore.view.index_pattern.tab.scripted_fields" });
       break;
     case 'sourceFilters':
-      title = 'Source filters';
+      title = formatMessage({ id: "explore.view.index_pattern.tab.source_filters" });
       break;
   }
   const count = ` (${
@@ -114,9 +115,13 @@ export function getPath(field: IndexPatternField, indexPattern: IndexPattern) {
   return `/patterns/${indexPattern?.id}/field/${field.name}`;
 }
 
-const allTypesDropDown = 'All field types';
+const allTypesDropDown = formatMessage({
+  id: "explore.view.index_pattern.all_field_types",
+});
 
-const allLangsDropDown = 'All languages';
+const allLangsDropDown = formatMessage({
+  id: "explore.view.index_pattern.all_languages",
+});
 
 export function convertToEuiSelectOption(options: string[], type: string) {
   const euiOptions =

@@ -24,23 +24,10 @@ export default (props) => {
     innerRadius: 0.6,
     legend: false,
     label: false,
-    interactions: [
-      {
-        type: "element-active",
-      },
-    ],
     statistic: {
       title: false,
     },
     data: filterData,
-    state: {
-      active: {
-        style: {
-          lineWidth: 0,
-          cursor: "pointer",
-        },
-      },
-    },
   };
 
   return <Pie {...config} />;

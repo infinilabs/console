@@ -36,7 +36,9 @@ export default Form.create()(({ form }) => {
 
     const [current, setCurrent] = useState(0);
 
-    const [formData, setFormData] = useState({});
+    const [formData, setFormData] = useState({
+        isAuth: true,
+    });
 
     const step = steps[current];
 

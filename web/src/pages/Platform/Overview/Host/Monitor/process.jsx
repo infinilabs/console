@@ -11,7 +11,7 @@ import { filterSearchValue, sorter, formatUtcTimeToLocal } from "@/utils/utils";
 import { formatTimeRange } from "@/lib/elasticsearch/util";
 import moment from 'moment';
 
-const { Search } = Input;
+import SearchInput from "@/components/infini/SearchInput";
 
 export default ({ hostID }) => {
   const [searchValue, setSearchValue] = React.useState("");
@@ -63,23 +63,23 @@ export default ({ hostID }) => {
 
   const columns = [
     {
-      title: "PID",
+      title: formatMessage({ id: "overview.column.pid" }),
       dataIndex: "pid",
     },
     {
-      title: "Cluster",
+      title: formatMessage({ id: "overview.column.cluster" }),
       dataIndex: "cluster_name",
     },
     {
-      title: "Node",
+      title: formatMessage({ id: "overview.column.node" }),
       dataIndex: "node_name",
     },
     {
-      title: "Status",
+      title: formatMessage({ id: "overview.column.status" }),
       dataIndex: "pid_status",
     },
     {
-      title: "UpTime",
+      title: formatMessage({ id: "overview.column.uptime" }),
       dataIndex: "uptime_in_ms",
       render: (text) => moment.duration(text, "ms").humanize(),
     },
@@ -96,7 +96,7 @@ export default ({ hostID }) => {
         }}
       >
         <div style={{ maxWidth: 500, flex: "1 1 auto" }}>
-          <Search
+          <SearchInput
             allowClear
             placeholder="Type keyword to search"
             enterButton="Search"

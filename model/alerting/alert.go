@@ -85,6 +85,7 @@ type AlertMessage struct {
 	ID            string    `json:"id,omitempty"      elastic_meta:"_id" elastic_mapping:"id: { type: keyword }"`
 	Created       time.Time `json:"created,omitempty" elastic_mapping:"created: { type: date }"`
 	Updated       time.Time `json:"updated,omitempty" elastic_mapping:"updated: { type: date }"`
+	RecoveredAt   time.Time `json:"recovered_at,omitempty" elastic_mapping:"recovered_at: { type: date }"`
 	RuleID        string    `json:"rule_id"  elastic_mapping:"rule_id: { type: keyword,copy_to:search_text }"`
 	ResourceID    string    `json:"resource_id"  elastic_mapping:"resource_id: { type: keyword,copy_to:search_text }"`
 	ResourceName  string    `json:"resource_name"  elastic_mapping:"resource_name: { type: keyword,copy_to:search_text }"`

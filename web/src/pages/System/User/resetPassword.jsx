@@ -37,7 +37,7 @@ export const passwordRules = [
   {
     id: 'guide.password.rule.length',
     text: formatMessage({ id: 'guide.password.rule.length' }), 
-    regex: /.{8,}/,
+    regex: /.{10,}/,
   },
   {
     id: 'guide.password.rule.uppercase',
@@ -57,7 +57,7 @@ export const passwordRules = [
   {
     id: 'guide.password.rule.special',
     text: formatMessage({ id: 'guide.password.rule.special' }), 
-    regex: /[^A-Za-z0-9]/,
+    regex: /[!@#%^&*_+\-=?]/,
   },
 ];
 
@@ -66,6 +66,12 @@ export default Form.create({ name: "user_form_new" })((props) => {
   const { form, match } = props;
   const { getFieldDecorator } = form;
   const [passwordHelp, setPasswordHelp] = useState(null);
+  const breadcrumbList = [
+    { title: "home", locale: "menu.home", href: "/" },
+    { title: "system", locale: "menu.system" },
+    { title: "security", locale: "menu.system.security" },
+    { title: "reset_password", locale: "menu.system.reset_password" },
+  ];
   
   const onCancelClick = () => {
     props.history.go(-1);
@@ -118,7 +124,7 @@ export default Form.create({ name: "user_form_new" })((props) => {
     });
   };
   return (
-    <PageHeaderWrapper>
+    <PageHeaderWrapper breadcrumbList={breadcrumbList}>
       <Card
         extra={
           <div>

@@ -12,7 +12,7 @@ import { Icon } from "antd";
 
 export default (props) => {
 
-    const { record, result, options, isGroup, isLock, onReady, bucketSize, isTimeSeries, highlightRange, currentQueries = {}, handleContextMenu, onChartElementClick } = props;
+    const { record, result, options, isGroup, isLock, onReady, bucketSize, isTimeSeries, highlightRange, currentQueries = {}, handleContextMenu, onChartElementClick, autoApplyRangeFilter } = props;
 
     const { id, is_stack, is_percent, drilling = {}, series, legend } = record;
 
@@ -39,13 +39,18 @@ export default (props) => {
             brushMenuRef.current.close()
           },
           onEnd: (params, position) => {
-            brushMenuRef.current?.open({
+            const nextParams = {
               ...currentQueries,
               range: {
                 ...(currentQueries.range || {}),
                 ...(params.range || {})
               }
-            }, position)
+            };
+            if (autoApplyRangeFilter) {
+              handleContextMenu(nextParams, TYPE_RANGE_FILTER);
+              return;
+            }
+            brushMenuRef.current?.open(nextParams, position)
           },
         })
       }

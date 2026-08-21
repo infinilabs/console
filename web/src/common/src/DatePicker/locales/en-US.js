@@ -1,4 +1,5 @@
 export default {
+  "datepicker.quick_select.auto": "Auto",
   "datepicker.quick_select.auto_fit": "Auto fit",
   "datepicker.quick_select.today": "Today",
   "datepicker.quick_select.this_week": "This week",

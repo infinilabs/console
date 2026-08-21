@@ -97,6 +97,8 @@ export class DiscoverHistogram extends Component {
     }
 
     const data = chartData.values;
+    const dataWithHits = data.filter((d) => d.y > 0);
+    const dataEmpty = data.filter((d) => d.y === 0).map((d) => ({ ...d, y: 0.5 }));
     const isDarkMode = false;
 
     /*
@@ -156,6 +158,7 @@ export class DiscoverHistogram extends Component {
           onElementClick={this.onElementClick(xInterval)}
           tooltip={tooltipProps}
           theme={LIGHT_THEME}
+          showLegend={false}
           // baseTheme={chartsBaseTheme}
         />
         <Axis
@@ -173,11 +176,8 @@ export class DiscoverHistogram extends Component {
         <Axis
           id="discover-histogram-bottom-axis"
           position={Position.Bottom}
-          // title={chartData.xAxisLabel}
           tickFormat={this.formatXValue}
-          ticks={10}
-          //showGridLines
-          hide={true}
+          ticks={6}
         />
         <CurrentTime isDarkMode={isDarkMode} domainEnd={domainEnd} />
         <Endzones
@@ -195,10 +195,25 @@ export class DiscoverHistogram extends Component {
           yScaleType={ScaleType.Linear}
           xAccessor="x"
           yAccessors={["y"]}
-          data={data}
+          data={dataWithHits}
           timeZone={timeZone}
-          name={chartData.yAxisLabel}
+          name="Hits"
+          color="#54B399"
         />
+        {dataEmpty.length > 0 && (
+          <HistogramBarSeries
+            id="discover-histogram-empty"
+            minBarHeight={2}
+            xScaleType={ScaleType.Time}
+            yScaleType={ScaleType.Linear}
+            xAccessor="x"
+            yAccessors={["y"]}
+            data={dataEmpty}
+            timeZone={timeZone}
+            name="No data"
+            color="#D3DAE6"
+          />
+        )}
       </Chart>
     );
   }

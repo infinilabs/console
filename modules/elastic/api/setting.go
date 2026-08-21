@@ -47,7 +47,7 @@ func (h *APIHandler) HandleSettingAction(w http.ResponseWriter, req *http.Reques
 
 	err := h.DecodeJSON(req, &reqParams)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleSettingAction failed: %v", err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -63,7 +63,7 @@ func (h *APIHandler) HandleSettingAction(w http.ResponseWriter, req *http.Reques
 	}
 
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleSettingAction failed: %v", err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return
@@ -83,7 +83,7 @@ func (h *APIHandler) HandleGetSettingAction(w http.ResponseWriter, req *http.Req
 	searchRes, err := esClient.SearchWithRawQueryDSL(orm.GetIndexName(elastic.Setting{}), []byte(queryDSL))
 
 	if err != nil {
-		log.Error(err)
+		log.Errorf("HandleGetSettingAction failed: %v", err)
 		resBody["error"] = err
 		h.WriteJSON(w, resBody, http.StatusInternalServerError)
 		return

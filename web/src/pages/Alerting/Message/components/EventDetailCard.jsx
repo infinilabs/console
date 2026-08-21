@@ -5,9 +5,35 @@ import { PriorityColor } from "../../utils/constants";
 import { formatMessage } from "umi/locale";
 import EventMessageStatus from "./EventMessageStatus";
 
+const calcSafeDuration = (msgItem) => {
+  const triggerAt = msgItem?.trigger_at;
+  const resolveAt = msgItem?.updated;
+
+  const start = moment(triggerAt);
+  const end = resolveAt ? moment(resolveAt) : moment();
+
+  if (!start.isValid() || !end.isValid()) return "-";
+
+  const diffMs = end.diff(start);
+
+  if (diffMs < 0) return "-";
+
+  return moment.duration(diffMs).humanize();
+};
+
+const isValidAlertTime = (value) => {
+  if (!value) {
+    return false;
+  }
+  const parsed = moment(value);
+  return parsed.isValid() && parsed.year() > 1;
+};
+
 export default ({msgItem})=>{
   const labelSpan = 6;
   const vSpan = 18;
+  const triggerAt = isValidAlertTime(msgItem?.trigger_at) ? msgItem.trigger_at : msgItem?.created;
+  const resolveAt = isValidAlertTime(msgItem?.resolve_at) ? msgItem.resolve_at : msgItem?.updated;
 
   const isBucketDiff = !!(msgItem && msgItem.bucket_conditions)
 
@@ -39,15 +65,15 @@ export default ({msgItem})=>{
         </Row>
         <Row>
           <Col span={labelSpan}>{formatMessage({ id: "alert.message.table.created" })}</Col>
-          <Col span={vSpan}>{formatUtcTimeToLocal(msgItem?.created)}</Col>
+          <Col span={vSpan}>{formatUtcTimeToLocal(triggerAt)}</Col>
         </Row>
         {msgItem.status === "recovered" ? <Row>
           <Col span={labelSpan}>{formatMessage({ id: "alert.message.detail.recover_time" })}</Col>
-          <Col span={vSpan}>{formatUtcTimeToLocal(msgItem?.updated)}</Col>
+          <Col span={vSpan}>{formatUtcTimeToLocal(resolveAt)}</Col>
         </Row>:null}
         <Row>
           <Col span={labelSpan}>{formatMessage({ id: "alert.message.table.duration" })}</Col>
-          <Col span={vSpan}>{moment.duration(msgItem?.duration).humanize()}</Col>
+          <Col span={vSpan}>{calcSafeDuration(msgItem)}</Col>
         </Row>
         <Row>
           <Col span={labelSpan}>{formatMessage({ id: "alert.message.detail.condition.type" })}</Col>
@@ -67,7 +93,7 @@ export default ({msgItem})=>{
         </Row>
         <Row>
           <Col span={labelSpan}>{formatMessage({ id: "alert.message.detail.updated" })}</Col>
-          <Col span={vSpan}>{formatUtcTimeToLocal(msgItem?.updated)}</Col>
+          <Col span={vSpan}>{formatUtcTimeToLocal(resolveAt)}</Col>
         </Row>
       </div>
     </Card>

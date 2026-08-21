@@ -36,3 +36,7 @@ log/
 /web/
 .github
 src/common*/
+/public
+plugin/enterprise/
+src/components/Licence
+locales/*/license.js

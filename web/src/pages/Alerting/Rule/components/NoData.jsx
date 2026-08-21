@@ -49,6 +49,7 @@ export default ({ onSuccess }) => {
             </Button>
             <Import
               title={formatMessage({ id: "alert.rule.export-import.label" })}
+              exampleType="AlertRule"
               visible={importVisible}
               onSuccess={onSuccess}
               onClose={() => setImportVisible(false)}

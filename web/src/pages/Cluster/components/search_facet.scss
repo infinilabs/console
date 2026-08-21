@@ -10,10 +10,33 @@
     }
     .search-facet-value {
       display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      :global {
+        label.ant-checkbox-wrapper {
+          display: flex;
+          align-items: center;
+          flex: 1 1 auto;
+          min-width: 0;
+        }
+        label.ant-checkbox-wrapper > span:first-child {
+          flex: 0 0 auto;
+        }
+        label.ant-checkbox-wrapper > span:last-child {
+          flex: 1 1 auto;
+          min-width: 0;
+          overflow: hidden;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+        }
+      }
       .count {
         margin-left: auto;
+        flex: 0 0 auto;
         color: #888;
         font-size: 0.85em;
+        white-space: nowrap;
       }
     }
   }

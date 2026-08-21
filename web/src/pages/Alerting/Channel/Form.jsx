@@ -65,6 +65,18 @@ const ChannelForm = (props) => {
   const [editValue, setEditValue] = useState(props.value || {});
   const { getFieldDecorator } = props.form;
   const history = useHistory();
+  const breadcrumbList = [
+    { title: "home", locale: "menu.home", href: "/" },
+    { title: "alerting", locale: "menu.alerting" },
+    { title: "channel", locale: "menu.alerting.channel", href: "/alerting/channel" },
+    {
+      title: "channel-form",
+      locale:
+        props.title === formatMessage({ id: "alert.channel.form.title.edit" })
+          ? "menu.alerting.edit_channel"
+          : "menu.alerting.new_channel",
+    },
+  ];
 
   const [currentType, setCurrentType] = useState();
 
@@ -117,7 +129,7 @@ const ChannelForm = (props) => {
   }, [editValue?.sub_type, editValue?.type])
 
   return (
-    <PageHeaderWrapper>
+    <PageHeaderWrapper breadcrumbList={breadcrumbList}>
       <Card
         bordered={false}
         title={props.title || ""}

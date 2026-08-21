@@ -32,7 +32,7 @@ import SearchSelectFacet from "../search_select_facet";
 import { FilteredTags } from "../filtered_tags";
 import Sorter from "@/components/infini/search/sort/sort";
 
-const { Search } = Input;
+import SearchInput from "@/components/infini/SearchInput";
 const InputGroup = Input.Group;
 const Option = Select.Option;
 const filterWidth = 120;
@@ -97,26 +97,6 @@ const Indices = (props) => {
     setParam({ ...param, ...queryParams });
   }, [queryParams]);
 
-  const fetchFilterAggs = async () => {
-    const res = await request(`${ESPrefix}/index/_search`, {
-      method: "POST",
-      body: {
-        size: 0,
-        aggs: aggsParams,
-      },
-    });
-    if (res?.aggregations) {
-      const fts = getSearchFacets(res, Object.keys(facetLabels));
-      const clusterFts = getSearchFacets(res, ["metadata.cluster_name"]);
-      if (fts.length > 0) {
-        setFacets({
-          chb: fts,
-          clusterFts,
-        });
-      }
-    }
-  };
-
   const { loading, error, value } = useFetch(
     `${ESPrefix}/index/_search`,
     {
@@ -141,6 +121,17 @@ const Indices = (props) => {
 
   const hits = value?.hits?.hits || [];
   const hitsTotal = value?.hits?.total?.value || 0;
+  React.useEffect(() => {
+    if (!value?.aggregations) {
+      return;
+    }
+    const fts = getSearchFacets(value, Object.keys(facetLabels));
+    const clusterFts = getSearchFacets(value, ["metadata.cluster_name"]);
+    setFacets({
+      chb: fts || [],
+      clusterFts: clusterFts || [],
+    });
+  }, [value?.aggregations]);
 
   const [itemDetail, setItemDetail] = React.useState({});
   const handleItemDetail = (item) => {
@@ -173,8 +164,6 @@ const Indices = (props) => {
     if (!param?.filters) {
       setParam({ ...param, filters: initialParams.filters });
     }
-
-    fetchFilterAggs();
   }, []);
 
   function renderOption(item) {
@@ -292,7 +281,7 @@ const Indices = (props) => {
                   open={searchOpen}
                   onDropdownVisibleChange={setSearchOpen}
                 >
-                  <Search
+                  <SearchInput
                     placeholder="Type keyword to search"
                     enterButton="Search"
                     onSearch={(value) => {

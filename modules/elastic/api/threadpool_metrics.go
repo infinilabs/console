@@ -111,7 +111,7 @@ func (h *APIHandler) getThreadPoolMetrics(ctx context.Context, clusterID string,
 	} else {
 		nodeNames, err = h.getTopNodeName(clusterID, top, 15)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("getThreadPoolMetrics failed: %v", err)
 		}
 	}
 	if len(nodeNames) > 0 {
@@ -622,7 +622,7 @@ func (h *APIHandler) getThreadPoolMetrics(ctx context.Context, clusterID string,
 	}
 	intervalField, err := getDateHistogramIntervalField(global.MustLookupString(elastic.GlobalSystemElasticsearchID), bucketSizeStr)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("getThreadPoolMetrics failed: %v", err)
 		panic(err)
 	}
 

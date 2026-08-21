@@ -4,7 +4,18 @@
     align-items: center;
     gap: 5px;
   }
-  .read {
-    opacity: 0.4;
+  .ant-table-tbody > tr.read > td {
+    background-color: #f5f7fb !important;
+    color: rgba(0, 0, 0, 0.5);
+  }
+  .ant-table-tbody > tr.read > td a {
+    color: rgba(0, 0, 0, 0.65);
+  }
+  :global {
+    .notice-status-read {
+      color: rgba(0, 0, 0, 0.65);
+      background: #eef2f7;
+      border-color: #d6dee9;
+    }
   }
 }

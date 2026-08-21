@@ -11,7 +11,7 @@ import moment from "moment";
 
 export default (props) => {
 
-    const { record, result, options, isGroup, isLock, onReady, bucketSize, isTimeSeries, highlightRange, brushMenu, currentQueries = {}, handleContextMenu  } = props;
+    const { record, result, options, isGroup, isLock, onReady, bucketSize, isTimeSeries, highlightRange, brushMenu, currentQueries = {}, handleContextMenu, autoApplyRangeFilter  } = props;
 
     const { id, is_percent, drilling = {}, legend } = record;
 
@@ -26,13 +26,18 @@ export default (props) => {
             brushMenuRef.current.close()
           },
           onEnd: (params, position) => {
-            brushMenuRef.current.open({
+            const nextParams = {
               ...currentQueries,
               range: {
                 ...(currentQueries.range || {}),
                 ...(params.range || {})
               }
-            }, position)
+            };
+            if (autoApplyRangeFilter) {
+              handleContextMenu(nextParams, TYPE_RANGE_FILTER);
+              return;
+            }
+            brushMenuRef.current.open(nextParams, position)
           }
         })
       }

@@ -213,7 +213,7 @@ class LogstashConfig extends Component {
         )
       };
     return (
-        <Fragment>
+        <Fragment key="logstashConfig">
             <Card
             bordered={false}
             tabList={operationTabList}

@@ -19,6 +19,11 @@ export default (props) => {
             queryFilters={[
                 {
                     "term": {
+                        "metadata.category": "elasticsearch"
+                    }
+                },
+                {
+                    "term": {
                         "metadata.labels.cluster_id": clusterID
                     }
                 }

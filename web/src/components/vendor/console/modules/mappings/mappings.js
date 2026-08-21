@@ -295,6 +295,7 @@ export function clear() {
   perIndexTypes = {};
   perAliasIndexes = {};
   templates = [];
+  commands = [];
 }
 
 function retrieveSettings(settingsKey, settingsToRetrieve, clusterID) {
@@ -436,11 +437,7 @@ export function retrieveAutoCompleteInfo(
 async function loadCommands(commandsPromise) {
   const commandRes = await commandsPromise.json();
   const hits = commandRes.hits.hits;
-  if (hits && hits.length > 0) {
-    hits.forEach((hit) => {
-      commands.push(hit);
-    });
-  }
+  commands = hits && hits.length > 0 ? [...hits] : [];
 }
 
 export function pushCommand(cmd) {

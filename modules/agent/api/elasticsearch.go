@@ -1216,10 +1216,19 @@ func extractNodePathLogs(nodeInfo *elastic.NodesInfo) string {
 	return strings.TrimSpace(util.ToString(pathObj["logs"]))
 }
 
+// extractCmdlineValue returns the value of the LAST matching occurrence.
+// JVM command-line flags (e.g. -Xlog:...file=..., -Des.path.home=...) follow
+// "last one wins" semantics when the same flag is specified multiple times,
+// which happens in practice when a wrapper script appends an extra -Xlog
+// override after the default one baked into jvm.options.
 func extractCmdlineValue(reg *regexp.Regexp, cmdline string) string {
-	matches := reg.FindStringSubmatch(cmdline)
-	if len(matches) > 1 {
-		return trimCmdlinePathValue(matches[1])
+	matches := reg.FindAllStringSubmatch(cmdline, -1)
+	if len(matches) == 0 {
+		return ""
+	}
+	last := matches[len(matches)-1]
+	if len(last) > 1 {
+		return trimCmdlinePathValue(last[1])
 	}
 	return ""
 }

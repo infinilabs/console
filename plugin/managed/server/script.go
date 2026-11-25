@@ -316,6 +316,46 @@ func (h *APIHandler) prepareRegistration(w http.ResponseWriter, req *http.Reques
 	}, http.StatusOK)
 }
 
+// prepareGatewayDockerRegistration returns the same one-time manager token and
+// client certificate material used by the binary installer, for Docker bootstrap.
+func (h *APIHandler) prepareGatewayDockerRegistration(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+	gwCfg := getGatewayConfig()
+	if gwCfg == nil || gwCfg.Setup == nil {
+		h.WriteError(w, "gateway setup config was not found", http.StatusInternalServerError)
+		return
+	}
+	agCfg := common.GetAgentConfig()
+	if agCfg == nil || agCfg.Setup == nil {
+		h.WriteError(w, "managed certificate authority config was not found", http.StatusInternalServerError)
+		return
+	}
+
+	caCert, clientCertPEM, clientKeyPEM, err := common.GenerateClientCert(agCfg.Setup.CACertFile, agCfg.Setup.CAKeyFile)
+	if err != nil {
+		log.Errorf("generate gateway docker registration certs failed: %v", err)
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	record, tokenValue, err := common.CreatePendingManagerToken(common.AgentPendingTokenSourceUI)
+	if err != nil {
+		h.WriteError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	consoleEndpoint := resolveConsoleEndpoint(req, gwCfg.Setup.ConsoleEndpoint)
+	h.WriteJSON(w, util.MapStr{
+		"id":          record.ID,
+		"endpoint":    consoleEndpoint,
+		"token":       tokenValue,
+		"expired_at":  time.UnixMilli(record.ExpiresAt),
+		"ca_cert":     string(caCert),
+		"client_cert": string(clientCertPEM),
+		"client_key":  string(clientKeyPEM),
+		"version":     getDefaultInstallVersion(gwCfg.Setup.Version),
+	}, http.StatusOK)
+}
+
 func (h *APIHandler) generateGatewayInstallCommand(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
 	user, err := security.FromUserContext(req.Context())
 	if err != nil || user == nil {

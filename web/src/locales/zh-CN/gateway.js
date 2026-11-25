@@ -1,4 +1,8 @@
 export default {
+  "gateway.install.mode.binary": "二进制部署",
+  "gateway.install.mode.docker": "Docker 部署",
+  "gateway.install.docker.persistence": "请保留 gateway-data 数据卷。重建容器时复用该卷，Gateway 才能恢复注册身份。",
+
   "gateway.instance.index.title": "实例管理",
   "gateway.instance.new.title": "实例注册",
   "gateway.instance.new.description": "输入网关地址分步注册极限网关。",

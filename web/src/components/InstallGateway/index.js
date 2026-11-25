@@ -1,4 +1,4 @@
-import { Alert, Button, Icon, message, Select, Spin, Switch, Tooltip } from "antd";
+import { Alert, Button, Icon, message, Radio, Select, Spin, Switch, Tooltip } from "antd";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import { useEffect, useState } from "react";
 import { formatMessage } from "umi/locale";
@@ -102,6 +102,36 @@ const noServiceCodeStyle = {
     '"SFMono-Regular", Monaco, Menlo, Consolas, "Liberation Mono", "Ubuntu Mono", monospace',
 };
 
+const shellContinuation = String.fromCharCode(92);
+const shellQuote = (value) =>
+  "'" + String(value || "").replace(/'/g, "'" + shellContinuation + "''") + "'";
+
+const buildDockerCommand = (registration) => {
+  const version = registration.version || "latest";
+  const certDir = ".gateway-console-certs";
+  const writeCert = (fileName, content, marker) =>
+    `cat > ${certDir}/${fileName} <<'${marker}'\n${content}\n${marker}`;
+  return [
+    `mkdir -p ${certDir} && chmod 700 ${certDir}`,
+    writeCert("ca.crt", registration.ca_cert, "GATEWAY_CA_CERT"),
+    writeCert("client.crt", registration.client_cert, "GATEWAY_CLIENT_CERT"),
+    writeCert("client.key", registration.client_key, "GATEWAY_CLIENT_KEY"),
+    writeCert("registration.token", registration.token, "GATEWAY_REGISTRATION_TOKEN"),
+    `chmod 600 ${certDir}/client.key ${certDir}/registration.token`,
+    "docker volume create gateway-data",
+    `docker run -d --restart unless-stopped --name gateway ${shellContinuation}`,
+    `  -p 2900:2900 -p 8000:8000 ${shellContinuation}`,
+    `  -e GATEWAY_CONSOLE_ENDPOINT=${shellQuote(registration.endpoint)} ${shellContinuation}`,
+    `  -e GATEWAY_REGISTRATION_TOKEN_FILE=/run/console-certs/registration.token ${shellContinuation}`,
+    `  -e GATEWAY_CONSOLE_CA_CERT_FILE=/run/console-certs/ca.crt ${shellContinuation}`,
+    `  -e GATEWAY_CONSOLE_CLIENT_CERT_FILE=/run/console-certs/client.crt ${shellContinuation}`,
+    `  -e GATEWAY_CONSOLE_CLIENT_KEY_FILE=/run/console-certs/client.key ${shellContinuation}`,
+    `  -v "$(pwd)/${certDir}:/run/console-certs:ro" ${shellContinuation}`,
+    `  -v gateway-data:/data ${shellContinuation}`,
+    `  infinilabs/gateway:${version}`,
+  ].join(String.fromCharCode(10));
+};
+
 export default ({ autoInit = false, defaultGatewayType = "migration" }) => {
   const { Option } = Select;
   const defaultRelayRole = "primary";
@@ -111,23 +141,32 @@ export default ({ autoInit = false, defaultGatewayType = "migration" }) => {
   const [gatewayType, setGatewayType] = useState(defaultGatewayType);
   const [relayRole, setRelayRole] = useState(defaultRelayRole);
   const [advancedVisible, setAdvancedVisible] = useState(false);
+  const [deploymentMode, setDeploymentMode] = useState("binary");
 
   const fetchTokenInfo = async (
     noServiceEnabled = noService,
     gatewayTypeValue = gatewayType,
-    relayRoleValue = relayRole
+    relayRoleValue = relayRole,
+    deploymentModeValue = deploymentMode
   ) => {
     setTokenInfo(undefined);
     setLoading(true);
-    const res = await request("/instance/_generate_gateway_install_script", {
-      method: "POST",
-      body: {
-        no_service: noServiceEnabled,
-        service_type: gatewayTypeValue,
-        relay_role: gatewayTypeValue === "relay" ? relayRoleValue : undefined,
-      },
-    });
-    setTokenInfo(res);
+    if (deploymentModeValue === "docker") {
+      const res = await request("/instance/_prepare_gateway_docker_registration", {
+        method: "POST",
+      });
+      setTokenInfo({ ...res, script: buildDockerCommand(res) });
+    } else {
+      const res = await request("/instance/_generate_gateway_install_script", {
+        method: "POST",
+        body: {
+          no_service: noServiceEnabled,
+          service_type: gatewayTypeValue,
+          relay_role: gatewayTypeValue === "relay" ? relayRoleValue : undefined,
+        },
+      });
+      setTokenInfo(res);
+    }
     setLoading(false);
   };
 
@@ -149,6 +188,19 @@ export default ({ autoInit = false, defaultGatewayType = "migration" }) => {
           {formatMessage({ id: "gateway.install.label.get_cmd" })}
         </Button>
       )}
+      <div style={{ marginBottom: 16 }}>
+        <Radio.Group
+          value={deploymentMode}
+          onChange={(event) => {
+            const mode = event.target.value;
+            setDeploymentMode(mode);
+            fetchTokenInfo(noService, gatewayType, relayRole, mode);
+          }}
+        >
+          <Radio.Button value="binary">{formatMessage({ id: "gateway.install.mode.binary" })}</Radio.Button>
+          <Radio.Button value="docker">{formatMessage({ id: "gateway.install.mode.docker" })}</Radio.Button>
+        </Radio.Group>
+      </div>
       {tokenInfo && (
         <div>
           <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>
@@ -157,7 +209,7 @@ export default ({ autoInit = false, defaultGatewayType = "migration" }) => {
           <div style={{ color: "#565656", marginBottom: 10 }}>
             {formatMessage({ id: "gateway.guide.quick_install.desc" })}
           </div>
-          <div style={advancedWrapStyle}>
+          {deploymentMode === "binary" ? <div style={advancedWrapStyle}>
             <Button
               type="link"
               style={advancedToggleStyle}
@@ -233,13 +285,13 @@ export default ({ autoInit = false, defaultGatewayType = "migration" }) => {
                 </div>
               </div>
             ) : null}
-          </div>
-          <div style={intranetNoticeStyle}>
+          </div> : null}
+          {deploymentMode === "binary" ? <div style={intranetNoticeStyle}>
             <div style={{ color: "#101010", fontWeight: 500, marginBottom: 4 }}>
               {formatMessage({ id: "gateway.guide.intranet.title" })}
             </div>
             <div>{formatMessage({ id: "gateway.guide.intranet.desc" })}</div>
-          </div>
+          </div> : null}
           <div style={shellContainerStyle}>
             {tokenInfo.script}
             <CopyToClipboard text={tokenInfo.script}>
@@ -258,7 +310,7 @@ export default ({ autoInit = false, defaultGatewayType = "migration" }) => {
               />
             </CopyToClipboard>
           </div>
-          {noService ? (
+          {deploymentMode === "binary" && noService ? (
             <Alert
               style={noServiceAlertStyle}
               type="info"
@@ -277,7 +329,7 @@ export default ({ autoInit = false, defaultGatewayType = "migration" }) => {
               }
             />
           ) : null}
-          <div style={{ fontSize: 12, color: "#565656" }}>
+          {deploymentMode === "binary" ? <div style={{ fontSize: 12, color: "#565656" }}>
             <div style={{ fontWeight: 400, color: "#101010", marginBottom: 8 }}>
               {formatMessage({ id: "gateway.guide.tips.title" })}
             </div>
@@ -309,7 +361,13 @@ export default ({ autoInit = false, defaultGatewayType = "migration" }) => {
                 {formatMessage({ id: "gateway.guide.tips.install_manually" })}
               </a>
             </p>
-          </div>
+          </div> : (
+            <Alert
+              type="info"
+              showIcon
+              message={formatMessage({ id: "gateway.install.docker.persistence" })}
+            />
+          )}
         </div>
       )}
     </Spin>

@@ -1,4 +1,8 @@
 export default {
+  "gateway.install.mode.binary": "Binary",
+  "gateway.install.mode.docker": "Docker",
+  "gateway.install.docker.persistence": "Keep the gateway-data volume and reuse it when recreating the container to restore the Gateway identity.",
+
   "gateway.instance.index.title": "INSTANCE",
   "gateway.instance.new.title": "CREATE INSTANCE",
   "gateway.instance.new.description":

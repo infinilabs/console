@@ -67,6 +67,9 @@ func initConsoleSelfAPI() {
 	if _, err := ensureConsoleSelfAccessToken(); err != nil {
 		log.Errorf("failed to initialize console self access token: %v", err)
 	}
+	if _, err := consolesecurity.EnsureGatewayBootstrapSecret(); err != nil {
+		log.Errorf("failed to initialize Gateway bootstrap secret: %v", err)
+	}
 
 	handler := consoleSelfAPIHandler{}
 	registerConsoleProtectedUIRoutes(handler)
@@ -146,6 +149,11 @@ func (h consoleSelfAPIHandler) proxyAccountAPI(w http.ResponseWriter, req *http.
 
 func (h consoleSelfAPIHandler) requireLoginOrAccessToken(next httprouter.Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+		if req.URL.Path == "/instance/_prepare_gateway_docker_registration" &&
+			consolesecurity.ValidateGatewayBootstrapSecret(req.Header.Get(consolesecurity.GatewayBootstrapSecretHeader)) {
+			next(w, req, ps)
+			return
+		}
 		if validateConsoleSelfAccessToken(extractConsoleSelfAccessToken(req)) {
 			next(w, req, ps)
 			return

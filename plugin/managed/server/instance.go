@@ -47,6 +47,7 @@ import (
 	"time"
 
 	log "github.com/cihub/seelog"
+	"infini.sh/console/core/security"
 	"infini.sh/console/core/security/enum"
 	"infini.sh/framework/core/api"
 	httprouter "infini.sh/framework/core/api/router"
@@ -164,6 +165,17 @@ func decodeManagedRegisterRequest(req *http.Request) (common.InstanceRegisterReq
 	return registerReq, nil
 }
 
+func (h APIHandler) requireGatewayBootstrapOrPermission(next httprouter.Handle) httprouter.Handle {
+	permissionHandler := h.RequirePermission(next, enum.PermissionGatewayInstanceWrite)
+	return func(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+		if security.ValidateGatewayBootstrapSecret(req.Header.Get(security.GatewayBootstrapSecretHeader)) {
+			next(w, req, ps)
+			return
+		}
+		permissionHandler(w, req, ps)
+	}
+}
+
 func init() {
 	//for public usage, agent can report self to server, usually need to enroll by manager
 	api.HandleAPIMethod(api.POST, common.REGISTER_API, handler.registerInstance) //client register self to config servers
@@ -180,7 +192,7 @@ func init() {
 	api.HandleAPIMethod(api.POST, "/instance/_generate_install_script", handler.RequireLogin(handler.generateInstallCommand))
 	api.HandleAPIMethod(api.POST, "/instance/_generate_gateway_install_script", handler.RequirePermission(handler.generateGatewayInstallCommand, enum.PermissionGatewayInstanceWrite))
 	api.HandleAPIMethod(api.POST, "/instance/_prepare_registration", handler.RequirePermission(handler.prepareRegistration, enum.PermissionGatewayInstanceWrite))
-	api.HandleAPIMethod(api.POST, "/instance/_prepare_gateway_docker_registration", handler.RequirePermission(handler.prepareGatewayDockerRegistration, enum.PermissionGatewayInstanceWrite))
+	api.HandleAPIMethod(api.POST, "/instance/_prepare_gateway_docker_registration", handler.requireGatewayBootstrapOrPermission(handler.prepareGatewayDockerRegistration))
 
 	api.HandleAPIMethod(api.POST, "/instance", handler.RequirePermission(handler.createInstance, enum.PermissionGatewayInstanceWrite))
 	api.HandleAPIMethod(api.GET, "/instance/:instance_id", handler.RequirePermission(handler.getInstance, enum.PermissionAgentInstanceRead))
